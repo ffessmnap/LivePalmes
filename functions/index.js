@@ -9863,14 +9863,23 @@ async function nativePortalCalendarItems(ranges) {
   return [...new Map(events.map(event => [event.id, view.listItem(event)])).values()];
 }
 
-async function nativePortalCompetition(input, authorize) {
+async function nativeDocumentAuthors(documents) {
+  const ids=[...new Set(documents.map(document=>document.uploadedBy?.uid).filter(Boolean))];
+  if(!ids.length)return documents;
+  // Auth identities only, one batch <=100; no former sporting collection read.
+  const users=await getAuth().getUsers(ids.map(uid=>({uid}))).catch(()=>({users:[]}));
+  const byId=new Map(users.users.map(user=>[user.uid,user]));
+  return documents.map(document=>{const user=byId.get(document.uploadedBy?.uid);return user?{...document,uploadedBy:{uid:user.uid,name:cleanText(user.displayName),email:cleanText(user.email)}}:document;});
+}
+async function nativePortalCompetition(input, authorize, includeUploaders=false) {
   const pool = require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD);
   const native = require("./nap-portal-competitions");
   const view = require("./nap-portal-workspaces");
   const pack = await native.readNativeCompetition(pool, input, authorize);
   if (!pack) throw new HttpsError("not-found", "Competition NAP introuvable.");
   const competition = view.competitionItem(pack, ENGAGEMENT_EVENT_DEFINITION_BY_CODE);
-  competition.clubDocuments = await view.readDocuments(pool, input);
+  competition.clubDocuments = await view.readDocuments(pool, input, {includeUploader:includeUploaders});
+  if(includeUploaders)competition.clubDocuments=await nativeDocumentAuthors(competition.clubDocuments);
   competition.documentCount = competition.clubDocuments.length;
   return competition;
 }
@@ -10040,7 +10049,7 @@ exports.getEngagementCalendarEvent = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONME
   const calendarEventId = cleanText(request.data?.calendarEventId).slice(0, 128);
   if (!calendarEventId) throw new HttpsError("invalid-argument", "Evenement requis.");
   if (ENVIRONMENT.projectId === "livepalmes-test") {
-    const event = await nativePortalCompetition(calendarEventId, item => assertCanManageEngagementCompetition(context, item));
+    const event = await nativePortalCompetition(calendarEventId, item => assertCanManageEngagementCompetition(context, item), true);
     return { ok: true, source: "nap", event: { ...event, sourceType: "calendarEvent", eventType: event.competitionType,
       regionalPastReadOnly: !context.national && engagementEventIsPast(event) } };
   }
@@ -10228,7 +10237,7 @@ exports.getEngagementCompetition = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT
     throw new HttpsError("invalid-argument", "Competition requise.");
   }
   if (ENVIRONMENT.projectId === "livepalmes-test") {
-    const competition = await nativePortalCompetition(competitionId, event => assertCanManageEngagementCompetition(context, event));
+    const competition = await nativePortalCompetition(competitionId, event => assertCanManageEngagementCompetition(context, event), true);
     return { ok: true, source: "nap", competition: { ...competition, regionalPastReadOnly: !context.national && engagementEventIsPast(competition) } };
   }
   const doc = await db.collection("engagementCompetitions").doc(competitionId).get();
@@ -10289,7 +10298,7 @@ async function mutateNativeCompetitionDocument(request, action) {
   const competitionId = request.data?.calendarEventId || request.data?.competitionId;
   const pool = require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD);
   try {
-    return await require("./nap-competition-documents").mutate(pool, {...request.data, competitionId, action, actorUid:context.uid}, {
+    const result=await require("./nap-competition-documents").mutate(pool, {...request.data, competitionId, action, actorUid:context.uid}, {
       authorize:async (connection,id,kind) => {
         const calendar=require("./nap-direct-calendar");
         const rows=await require("./nap-portal-competitions").bounded(connection,`${calendar.SELECT_EVENT.replace(" FROM competitions c",",cp.id AS parameter_id,cp.niveau FROM competitions c")}${calendar.EVENT_JOINS} WHERE c.id=? LIMIT 2`,[id],1);
@@ -10308,6 +10317,8 @@ async function mutateNativeCompetitionDocument(request, action) {
         complete:(operation,target)=>writeAuditLogOnce("nap.document.saved",context.uid,target,operation)
       }
     });
+    result.documents=await nativeDocumentAuthors(result.documents);
+    return result;
   } catch(error) {
     if(error instanceof HttpsError)throw error;
     throw new HttpsError(error instanceof RangeError?"resource-exhausted":error instanceof TypeError?"failed-precondition":"unavailable",error instanceof RangeError||error instanceof TypeError?error.message:"Document NAP à vérifier. La sauvegarde est conservée ; rechargez avant de reprendre.");

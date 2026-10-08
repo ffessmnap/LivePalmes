@@ -38,6 +38,7 @@ const upload={action:"upload",competitionId:"5162",actorUid:"administrator",file
  assert.equal(f.writes,2);assert.ok(f.queries<=12);assert.ok(f.rows[0].location.length<=255);assert.ok(f.rows[0].storage_path.length<=160);
  assert.ok(f.history.indexOf("journal")<f.history.indexOf("upload"));assert.ok(f.history.indexOf("upload")<f.history.indexOf("write"));
  assert.ok(f.history.includes("complete"));assert.equal(f.history.at(-1),"release");
+ assert.equal(docs.item(f.rows[0]).uploadedBy,undefined,"club and public reads exclude uploader identities");assert.equal(docs.item(f.rows[0],{includeUploader:true}).uploadedBy.uid,"administrator");
  const edit=fixture(f.rows);const edited=await docs.mutate(edit.pool,{...upload,action:"update",documentId:"nap-42",expectedFingerprint:created.documents[0].napFingerprint,title:"Titre corrigé",category:"access"},edit.services);
  assert.equal(edited.documents[0].title,"Titre corrigé");assert.equal(edited.documents[0].category,"access");assert.equal(edit.uploaded,false);assert.equal(edit.rows[0].location,f.rows[0].location);
  const replace=fixture(f.rows);const replaced=await docs.mutate(replace.pool,{...upload,documentId:"nap-42",expectedFingerprint:created.documents[0].napFingerprint,fileName:"nouvelle-version.pdf"},replace.services);assert.notEqual(replaced.documents[0].url,created.documents[0].url);assert.equal(replace.rows[0].id,42);assert.ok(replace.history.indexOf("cleanup")>replace.history.indexOf("complete"));

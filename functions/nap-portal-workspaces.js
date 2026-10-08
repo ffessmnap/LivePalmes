@@ -121,7 +121,7 @@ function entryItem(pack, context, categoryForBirthDate, competition = {}) {
     nativeOptions: pack.options, qualificationAlert: null, documents: {}, updatedAt: pack.readAt,
     nativeWarnings: [leaders.length > 1 ? "Plusieurs chefs d'equipe NAP conserves." : "", relays.length ? "Categories natives des relais conservees." : ""].filter(Boolean) };
 }
-async function readDocuments(connection, competitionId) {
-  return require("./nap-competition-documents").readDocuments(connection, competitionId);
+async function readDocuments(connection, competitionId, options={}) {
+  return require("./nap-competition-documents").readDocuments(connection, competitionId, options);
 }
 module.exports = { json, fingerprint, listItem, competitionItem, nativeTime, entryItem, entryWithCourseRules, readDocuments, nativeCourseCode };

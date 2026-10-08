@@ -15,7 +15,7 @@ const digest=x=>createHash("sha256").update(JSON.stringify(x)).digest("hex");
 const stamp=()=>new Date().toISOString().replace("T"," ").replace("Z","000");
 const inferred=row=>{const text=`${row.name} ${row.type_label} ${row.comment}`;return /protocole|r[ée]sultat/i.test(text)?"results":/affiche/i.test(text)?"poster":/r[èe]glement/i.test(text)?"rules":/circulaire|invitation/i.test(text)?"circular":"information";};
 function option(row){return row.document_id==null?null:Object.fromEntries(OPTIONS.map(k=>[k,["document_id","size","version"].includes(k)?Number(row[k]):row[k]]));}
-function item(row){
+function item(row,{includeUploader=false}={}){
  const url=calendar.publicUrl(row.location),extra=option(row);
  let fileName=extra?.file_name||"";
  if(!fileName&&url){try{fileName=decodeURIComponent(new URL(url).pathname.split("/").pop()||"");}catch{fileName="";}}
@@ -24,13 +24,14 @@ function item(row){
   fileName,contentType:extra?.content_type||helpers.canonicalDocumentContentType(fileName),
   storagePath:extra?.storage_path||"",size:Number(extra?.size||0),source:extra?.storage_path?"":"legacy",nativeDocument:true,
   updatedAt:extra?.updated_at||row.date||"",uploadedAt:extra?.created_at||row.date||"",
-  napFingerprint:digest([Object.fromEntries(FIELDS.map(k=>[k,row[k]])),extra])};
+  napFingerprint:digest([Object.fromEntries(FIELDS.map(k=>[k,row[k]])),extra]),
+  ...(includeUploader===true?{uploadedBy:{uid:extra?.created_by||"",name:"",email:""}}:{})};
 }
 async function rows(connection,id){
  const [result]=await connection.execute({sql:`SELECT ${FIELDS.map(k=>`d.\`${k}\``).join(",")},${OPTIONS.map(k=>`o.\`${k}\``).join(",")},t.label AS type_label FROM documents d FORCE INDEX (livepalmes_compet_public_id) LEFT JOIN documents_types t FORCE INDEX (PRIMARY) ON t.id=d.type LEFT JOIN livepalmes_document_options o FORCE INDEX (PRIMARY) ON o.document_id=d.id WHERE d.competition=? AND d.public='Y' ORDER BY d.id LIMIT 101`,timeout:10000},[id]);
  if(result.length>100)throw new RangeError("Documents trop volumineux.");return result;
 }
-async function readDocuments(connection,id){return(await rows(connection,calendar.positiveId(id))).map(item).filter(x=>x.url);}
+async function readDocuments(connection,id,options={}){return(await rows(connection,calendar.positiveId(id))).map(row=>item(row,options)).filter(x=>x.url);}
 function nativeRow(row){return Object.fromEntries(FIELDS.map(k=>[k,row[k]]));}
 function writePlan(action,before,after,authority){
  const scope=authority?` AND EXISTS (SELECT 1 FROM competitions c FORCE INDEX (PRIMARY) JOIN compet_parametres cp FORCE INDEX (PRIMARY) ON cp.id=? WHERE c.id=? AND ${["date","enddate","comite"].map(k=>nativeEqual(`c.${k}`)).join(" AND ")} AND cp.compet=c.id AND ${nativeEqual("cp.niveau")})`:"";
@@ -110,7 +111,7 @@ async function mutate(pool,input,services){
     if(!/^competition-documents\/nap\/[a-f0-9-]{36}\.[a-z0-9]+$/.test(previous.storage_path))storageDeleted=false;
     else try{await services.deleteFile(previous.storage_path);}catch{storageDeleted=false;}
   }
-  return {ok:true,source:"nap",competitionId:input.competitionId,calendarEventId:input.calendarEventId||"",documentId:`nap-${documentId}`,storageDeleted,documents:verified.map(item).filter(x=>x.url)};
+  return {ok:true,source:"nap",competitionId:input.competitionId,calendarEventId:input.calendarEventId||"",documentId:`nap-${documentId}`,storageDeleted,documents:verified.map(row=>item(row,{includeUploader:true})).filter(x=>x.url)};
  }finally{try{if(locked)await q("SELECT RELEASE_LOCK(?)",[locked]);}finally{connection.release();}}
 }
 module.exports={FIELDS,OPTIONS,OPTION_SCHEMA,item,rows,readDocuments,writePlan,mutate};
