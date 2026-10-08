@@ -29,6 +29,9 @@ assert.equal(elements.engagementsClubTeamFirstName.disabled,false);assert.equal(
 (async()=>{
   await sandbox.saveEngagementClubTeamLeader();assert.equal(calls.length,1);assert.equal(calls[0].name,"saveEngagementClubTeamLeader");
   assert.deepEqual(JSON.parse(JSON.stringify(calls[0].input)),{competitionId:"legacy-nap-5140",leaderId:"51",expectedFingerprint:"native-fingerprint",patch:{firstName:"Chef",lastName:"CORRIGE",birthDate:"1980-01-02"}});
-  sandbox.selectedEngagementCompetition.entryStatus="closed";sandbox.updateEngagementClubTeamLeaderActions();assert.equal(elements.engagementsClubTeamModifyButton.disabled,true);assert.equal(elements.engagementsClubTeamSaveButton.disabled,true);await sandbox.saveEngagementClubTeamLeader();assert.equal(calls.length,1);
+  sandbox.selectedEngagementClubEntry={napFingerprint:"empty-dossier",teamLeader:{}};
+  sandbox.updateEngagementClubTeamFormMode();assert.equal(elements.engagementsClubTeamBirthDate.required,true);
+  await sandbox.saveEngagementClubTeamLeader();assert.equal(calls.length,2);assert.equal(calls[1].input.leaderId,undefined);assert.equal(calls[1].input.expectedFingerprint,"empty-dossier");
+  sandbox.selectedEngagementCompetition.entryStatus="closed";sandbox.updateEngagementClubTeamLeaderActions();assert.equal(elements.engagementsClubTeamModifyButton.disabled,true);assert.equal(elements.engagementsClubTeamSaveButton.disabled,true);await sandbox.saveEngagementClubTeamLeader();assert.equal(calls.length,2);
   console.log("NAP leader UI: licence blank, native fields only, no old people call and closed form locked");
 })().catch(error=>{console.error(error);process.exitCode=1;});

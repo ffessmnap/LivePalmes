@@ -40,6 +40,7 @@ const sandbox = { exports: {}, ENVIRONMENT: { projectId: "livepalmes-test" }, CA
     if(name === "./nap-club-person-create") return {createNativePerson:async(connection,input,audit,authorize)=>{assert.equal(connection,pool);assert.equal(input.clubId,context.clubId);assert.equal(input.actorUid,context.uid);await authorize(input);await audit.prepare("operation",{});await audit.checkpoint("operation",{});calls.push("person-create");await audit.complete("operation",{});return {ok:true,source:"nap"};}};
     if(name === "./nap-club-person-edit") return {editNativePerson:async(connection,input,audit,authorize)=>{if(input.personId==="old-id") throw new TypeError("Native reference required");assert.equal(connection,pool);assert.equal(input.clubId,context.clubId);assert.equal(input.actorUid,context.uid);await authorize(input);await audit.prepare("operation",{});calls.push("person-identity");await audit.complete("operation",{});return {ok:true,source:"nap"};}};
     if (name === "./nap-team-leader-change") return {editNativeTeamLeader:async(connection,input,audit,authorize)=>{assert.equal(connection,pool);assert.equal(input.clubId,context.clubId);assert.equal(input.actorUid,context.uid);await authorize(event);await audit.prepare("operation",{});calls.push("leader-edit");await audit.complete("operation",{});return {ok:true,source:"nap"};}};
+    if (name === "./nap-team-leader-create") return {createNativeTeamLeader:async(connection,input,audit,authorize)=>{assert.equal(connection,pool);assert.equal(input.clubId,context.clubId);assert.equal(input.actorUid,context.uid);assert.equal(input.leaderId,undefined);await authorize(event);await audit.prepare("operation",{});await audit.checkpoint("operation",{});calls.push("leader-create");await audit.complete("operation",{});return {ok:true,source:"nap"};}};
     if (name === "./nap-swimmer-entry-plan") return require("../functions/nap-swimmer-entry-plan");
     if (name === "./nap-entry-course-rules") return require("../functions/nap-entry-course-rules");
     if (name === "./nap-portal-competition-change") return {applyCompetitionChange:async(connection,input,audit,authorize)=>{assert.equal(connection,pool);assert.equal(input.actorUid,management.uid);assert.equal(input.national,management.national);await authorize(event);await audit.prepare("operation",{});calls.push("write");await audit.complete("operation",{});return {ok:true,source:"nap"};}};
@@ -78,6 +79,9 @@ for (const name of ["listEngagementCompetitions", "listEngagementCalendarEvents"
   assert.equal(leader.competition.nativeTeamLeaderEditable,true);
   assert.equal(leader.competition.nativeSwimmerSelectionEditable,true,"selection remains available after a native leader correction");
   assert.deepEqual(calls,["open-check","audit-backup","leader-edit","audit-complete","detail","documents","entry"]);
+  calls.length=0;
+  await sandbox.exports.saveEngagementClubTeamLeader({data:{competitionId:event.id,clubId:"999",actorUid:"spoof",patch:{firstName:"Chef",lastName:"Native",birthDate:"1980-01-02"}}});
+  assert.deepEqual(calls,["open-check","audit-backup","audit-checkpoint","leader-create","audit-complete","detail","documents","entry"]);
   nativeParameters.qualif=1;
   const restrictedLeader=await sandbox.exports.saveEngagementClubTeamLeader({data:{competitionId:event.id,leaderId:51,patch:{firstName:"Chef"}}});
   assert.equal(restrictedLeader.competition.nativeSwimmerSelectionEditable,false,"leader correction must not unlock unmapped qualifications");

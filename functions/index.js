@@ -10593,7 +10593,7 @@ exports.getEngagementClubEntry = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.p
     const pack = await require("./nap-portal-entries").readNativeClubEntry(pool, { competitionId, clubId: context.clubId }, ({ clubId }) => {
       if (String(clubId) !== String(context.clubId)) throw new HttpsError("permission-denied", "Dossier hors du club autorise.");
     });
-    return { ok: true, source: "nap", competition: { ...competition, nativeTeamLeaderEditable: pack.leaders.length === 1, nativeRelaysEditable: competition.competitionType === "pool" && pack.leaders.length === 1 && !require("./nap-swimmer-entry-plan").selectionLockReason(competition), nativeOfficialsEditable: pack.leaders.length === 1 && new Set((pack.officials || []).map(row=>String(row.officiel))).size<=80, nativeIndividualEntriesEditable: pack.leaders.length === 1 && !require("./nap-entry-course-rules").courseLockReason(competition), nativeSwimmerSelectionEditable: pack.leaders.length === 1 && !require("./nap-swimmer-entry-plan").selectionLockReason(competition) }, entry: await nativeClubEntryView(pack,context,competition),
+    return { ok: true, source: "nap", competition: { ...competition, nativeTeamLeaderEditable: pack.leaders.length <= 1, nativeRelaysEditable: competition.competitionType === "pool" && pack.leaders.length === 1 && !require("./nap-swimmer-entry-plan").selectionLockReason(competition), nativeOfficialsEditable: pack.leaders.length === 1 && new Set((pack.officials || []).map(row=>String(row.officiel))).size<=80, nativeIndividualEntriesEditable: pack.leaders.length === 1 && !require("./nap-entry-course-rules").courseLockReason(competition), nativeSwimmerSelectionEditable: pack.leaders.length === 1 && !require("./nap-swimmer-entry-plan").selectionLockReason(competition) }, entry: await nativeClubEntryView(pack,context,competition),
       readStats: portalReadStats("getEngagementClubEntry", startedAt, { baseDocuments: 1, variableDocumentsMax: 0, cacheHit: false }),
       sqlBudget: { queriesMax: 24, rowsMax: 19719 } };
   }
@@ -11904,17 +11904,21 @@ exports.saveEngagementClubTeamLeader = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRON
   if (ENVIRONMENT.projectId === "livepalmes-test") {
     try {
       const pool = require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD);
-      const result = await require("./nap-team-leader-change").editNativeTeamLeader(pool, {
+      const saveLeader = request.data?.leaderId == null || request.data.leaderId === ""
+        ? require("./nap-team-leader-create").createNativeTeamLeader
+        : require("./nap-team-leader-change").editNativeTeamLeader;
+      const result = await saveLeader(pool, {
         competitionId, clubId: String(context.clubId), actorUid: context.uid,
         leaderId: request.data?.leaderId, expectedFingerprint: request.data?.expectedFingerprint, patch: request.data?.patch
       }, {
         read: async operation => { const snapshot = await db.collection("auditLogs").doc(`nap-team-leader-${operation}-before`).get(); return snapshot.exists ? snapshot.data().target : null; },
         prepare: (operation, target) => db.collection("auditLogs").doc(`nap-team-leader-${operation}-before`).create({ action: "nap.teamLeader.change.prepare", actorUid: context.uid, target, createdAt: new Date().toISOString() }),
+        checkpoint: (operation, target) => db.collection("auditLogs").doc(`nap-team-leader-${operation}-before`).update({ target, updatedAt: new Date().toISOString() }),
         complete: (operation, target) => writeAuditLogOnce("engagementClubEntry.teamLeaderSaved", context.uid, target, operation)
       }, event => assertEngagementClubWriteOpen(event));
       const competition = await nativePortalCompetition(competitionId, () => {});
       const pack = await require("./nap-portal-entries").readNativeClubEntry(pool, { competitionId, clubId: context.clubId }, () => {});
-      return { ...result, competition: { ...competition, nativeTeamLeaderEditable: pack.leaders.length === 1, nativeRelaysEditable: competition.competitionType === "pool" && pack.leaders.length === 1 && !require("./nap-swimmer-entry-plan").selectionLockReason(competition), nativeOfficialsEditable: pack.leaders.length === 1 && new Set((pack.officials || []).map(row=>String(row.officiel))).size<=80, nativeIndividualEntriesEditable: pack.leaders.length === 1 && !require("./nap-entry-course-rules").courseLockReason(competition), nativeSwimmerSelectionEditable: pack.leaders.length === 1 && !require("./nap-swimmer-entry-plan").selectionLockReason(competition) }, entry: await nativeClubEntryView(pack,context,competition) };
+      return { ...result, competition: { ...competition, nativeTeamLeaderEditable: pack.leaders.length <= 1, nativeRelaysEditable: competition.competitionType === "pool" && pack.leaders.length === 1 && !require("./nap-swimmer-entry-plan").selectionLockReason(competition), nativeOfficialsEditable: pack.leaders.length === 1 && new Set((pack.officials || []).map(row=>String(row.officiel))).size<=80, nativeIndividualEntriesEditable: pack.leaders.length === 1 && !require("./nap-entry-course-rules").courseLockReason(competition), nativeSwimmerSelectionEditable: pack.leaders.length === 1 && !require("./nap-swimmer-entry-plan").selectionLockReason(competition) }, entry: await nativeClubEntryView(pack,context,competition) };
     } catch (error) {
       if (error instanceof HttpsError) throw error;
       throw new HttpsError(error instanceof TypeError ? "failed-precondition" : error instanceof RangeError ? "resource-exhausted" : "unavailable", error instanceof TypeError || error instanceof RangeError ? error.message : "Modification NAP a verifier. Reprenez la meme correction ; la sauvegarde est conservee.");

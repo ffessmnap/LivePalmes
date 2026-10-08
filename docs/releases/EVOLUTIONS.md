@@ -2,6 +2,13 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### Premier dossier club NAP — 8 octobre 2026
+
+- Verrou identifié : le portail permettait uniquement de corriger une déclaration de chef d'équipe existante. Une compétition ouverte restait donc consultable pour un club n'ayant encore aucun chef déclaré.
+- Ajout de la première déclaration dans la table native chefsdequipe, depuis les champs d'identité existants du portail. Licence facultative et vide ; date de naissance requise à la création. Aucun changement IntraNAP, personne de l'annuaire, engagement, schéma, droit ou email. Les remplacements, retraits et renonciations ne sont pas déduits de cette première déclaration.
+- Budget : ouverture inchangée (24 requêtes maximum avec restrictions), désignation bornée à 28 appels SQL dont les 22 lectures natives existantes ; une insertion, une vérification indexée, journal avant écriture et checkpoints de l'identifiant généré. Retour actualisé borné à 23 lectures supplémentaires ; aucune lecture par nageur ni croissance avec l'historique total. Une issue incertaine de l'insertion est bloquée pour vérification, jamais répétée silencieusement.
+- Contrôles ciblés : dossier vide/existant, mauvais club/utilisateur, fermeture, identité invalide ou conflit de rôle, modification concurrente et reprise sans doublon. EXPLAIN réel sans écriture confirmé indexé dans NAP. Vérification globale, publication TEST et recette à terminer ; aucune validation utilisateur revendiquée.
+
 ### Engagements eau libre et restrictions natives — 8 octobre 2026
 
 - Règles confirmées : une distance native sans suffixe signifie Surface. Les participations préalables nécessitent un résultat NAP dans au moins une compétition de la liste ; leur raccordement et celui des qualifications restent à terminer.
@@ -9,7 +16,7 @@
 - Restrictions vérifiées à l'écran IntraNAP : Jumièges / 1000 M, catégories 4, 5, 26, 28 et 58–61 décochées et enregistrées avec swim=0 ; catégories autorisées cochées par défaut sans ligne de restriction. Le serveur applique ces exclusions et retourne les courses permises pour la grille LivePalmes.
 - Budget avant/après : aucune requête de performance en eau libre ; références de catégories lues une seule fois pour le dossier lorsqu'il comporte des restrictions, au plus 200 lignes. Ouverture bornée à 24 requêtes au lieu de 23 dans ce cas ; action individuelle bornée à 36 au lieu de 35 avec au plus trois écritures groupées. Aucun accès par nageur, nouveau schéma, droit, mail ou PROD.
 - Recette du lot précédent : PR 182, publication commune TEST 37731900686 réussie. Sur la seule compétition d'essai 5162/CNHC, AGNAOU 100SF est enregistré avec 599999 ; ALRIQUET 50SF, temps connu choisi 00:24.36, est enregistré avec 002436. Les deux valeurs ont été relues dans NAP et vérifiées dans IntraNAP. Aucune validation utilisateur du nouveau lot n'est déduite de cette recette.
-- Nouveau lot : tests ciblés réussis (correspondances, conservation historique, exclusions serveur/grille, absence d'historique en eau libre). Contrôle global Windows : syntaxe et tests métier passent, arrêt sur l'assertion CRLF préexistante du workflow ; contrôle Linux exact requis. Publication TEST et recette à venir.
+- PR 183 intégrée sur 0b734f33c9e6b4632ef783f347e3556f3f202e84 : CI Linux exact 37734965942 et publication TEST commune 37735163725 réussies. Version cliente 18 vérifiée. Tests ciblés réussis (correspondances, conservation historique, exclusions serveur/grille, absence d'historique en eau libre). Contrôle global Windows : syntaxe et tests métier passent, arrêt sur l'assertion CRLF préexistante du workflow. Recette des nouvelles compétitions à poursuivre ; aucune validation utilisateur revendiquée.
 - Inventaire en lecture seule de la saison : 63 compétitions futures, 10 avec engagements activés, aucune de ces dix avec qualification, participation préalable ou limite de catégorie native. Les courses « 2KMSUPPORT » sont affichées en 2 000 m Support ; le suffixe « Mixte » du 4X50SF est reconnu sans modifier les règles LivePalmes du relais ni son code natif. Les compétitions fermées ou non ouvertes restent soumises à leurs paramètres NAP.
 
 ### Engagements : trois modes natifs et courses de 25 m — 8 octobre 2026
