@@ -36,7 +36,7 @@ function selectionLockReason(competition) {
   if(!parameters) return "Parametres natifs a verifier avant la selection.";
   if(require("./nap-entry-qualification-policy").qualificationPending(competition)) return "Le controle des qualifications reste a raccorder pour modifier ce dossier.";
   try {require("./nap-entry-participation-rules").requirements(competition);} catch {return "Les conditions natives de participation restent a verifier avant cette selection.";}
-  if([parameters.cat_d,parameters.cat_f].some(value=>value!=null && value!=="")) return "Les limites de categories natives restent a verifier avant cette selection.";
+  try {require("./nap-entry-birth-policy").bounds(competition);} catch {return "Les limites de categories natives restent a verifier avant cette selection.";}
   return "";
 }
 module.exports={planSelection,selectionLockReason};

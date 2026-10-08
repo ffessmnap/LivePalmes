@@ -19,6 +19,16 @@ assert.throws(()=>planSelection({...pack,inscriptions:[...pack.inscriptions,{id:
 assert.throws(()=>planSelection({...pack,relays:[]},[{swimmerId:1,selected:false}]),/hors/);
 const competition={event:{eventType:"pool"},nativeParameters:{qualif:0,cat_d:null,cat_f:null},participations:[],options:null};
 assert.equal(selectionLockReason(competition),"");
+const birthPolicy=require("../functions/nap-entry-birth-policy");
+const birthCompetition={...competition,nativeParameters:{...competition.nativeParameters,cat_d:"2000-01-01",cat_f:"2010-12-31"}};
+assert.equal(selectionLockReason(birthCompetition),"");
+for(const birthDate of ["2000-01-01","2005-02-28","2010-12-31"]) assert.equal(birthPolicy.eligible(birthCompetition,{birthDate}),true);
+for(const birthDate of ["1999-12-31","2011-01-01"]) assert.equal(birthPolicy.eligible(birthCompetition,{birthDate}),false);
+assert.equal(birthPolicy.eligible({...birthCompetition,nativeParameters:{cat_d:null,cat_f:"2010-12-31"}},{birthDate:"1999-12-31"}),true);
+assert.equal(birthPolicy.eligible({...birthCompetition,nativeParameters:{cat_d:"2000-01-01",cat_f:null}},{birthDate:"2011-01-01"}),true);
+for(const cat_d of ["2000-02-30","0000-00-00",9,"2011-01-01"]) assert.match(selectionLockReason({...birthCompetition,nativeParameters:{...birthCompetition.nativeParameters,cat_d}}),/categories/);
+for(const birthDate of ["",null,"2001-02-29"]) assert.throws(()=>birthPolicy.eligible(birthCompetition,{birthDate}),/naissance/);
+assert.equal(birthPolicy.eligible(competition,{birthDate:null}),true,"unrestricted historic identities are not rejected by a nonexistent date limit");
 assert.equal(selectionLockReason({...competition,nativeParameters:{...competition.nativeParameters,qualif:29}}),"");
 for(const qualif of [28,30,1,"invalid"]) assert.match(selectionLockReason({...competition,nativeParameters:{...competition.nativeParameters,qualif}}),/qualifications/);
 assert.match(selectionLockReason({...competition,nativeParameters:{...competition.nativeParameters,qualif:29},qualifications:{enabled:true}}),/qualifications/);

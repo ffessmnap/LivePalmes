@@ -17,7 +17,11 @@ const {previewNativeTimes:preview}=require("../functions/nap-entry-time-preview"
   competition.qualifications={enabled:true};await assert.rejects(()=>preview({},input,services),/qualifications/);delete competition.qualifications;
   competition.options={qualifications_enabled:1};await assert.rejects(()=>preview({},input,services),/qualifications/);competition.options=null;
   competition.nativeParameters.qualif=0;
-  competition.event.eventType="openWater";const water=await preview({},input,services);assert.equal(calls,2);assert.equal(water.sqlBudget.historyQueries,0);
+  pack.swimmers[0].birthDate="2000-01-01";pack.swimmers[1].birthDate="1999-12-31";
+  competition.nativeParameters.cat_d="2000-01-01";competition.nativeParameters.cat_f="2000-01-01";
+  const birthFiltered=await preview({},input,services);assert.equal(birthFiltered.swimmers[0].individualEntries.length,1);assert.deepEqual(birthFiltered.swimmers[1].individualEntries,[]);
+  delete competition.nativeParameters.cat_d;delete competition.nativeParameters.cat_f;
+  competition.event.eventType="openWater";const water=await preview({},input,services);assert.equal(calls,3);assert.equal(water.sqlBudget.historyQueries,0);
   competition.event.eventType="pool";competition.participations=[{participation:10,modeengagement:"presencetps"},{participation:11,modeengagement:"presencetps"}];
   let participationQueries=0;
   const evidenceConnection={execute:async query=>{participationQueries++;assert.match(query.sql,/FROM perfs FORCE INDEX \(nageur\)/);return [[{nageur:1,compet:11}]];}};

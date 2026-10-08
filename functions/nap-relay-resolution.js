@@ -50,6 +50,7 @@ async function resolveRelay(input,services) {
     }
   }
   const ids=relay.memberIds.map(positiveId);
+  for(const id of ids) require("./nap-entry-birth-policy").assertEligible(pack,dossier.swimmers.find(person=>Number(person.id)===id));
   const participation=require("./nap-entry-participation-rules");
   const evidence=await participation.readEvidence(connection,ids.map(id=>({id})),pack);
   if(ids.some(id=>!participation.eligible(pack,id,evidence))) throw new TypeError("Chaque relayeur doit avoir un resultat NAP dans au moins une competition requise.");

@@ -28,6 +28,11 @@ assert.equal(ui.engagementClubProgramItemAllowsSwimmer({eventCode:"OW500BI"},{sw
  assert.equal(entry.swimmers[0].individualEntries[0].nativeTime,"000000","a now-disallowed historical entry is retained");
  await entryWithCourseRules(connection,pack,{}, {...competition,nativeRules:{participations:[],restrictions:[]}},services);
  assert.equal(queries,1,"unrestricted dossier adds no reference query");
+ const birthLimited={...competition,nativeParameters:{...competition.nativeParameters,cat_f:"2013-12-31"},nativeRules:{participations:[],restrictions:[]}};
+ const outsideBirth=await entryWithCourseRules(connection,pack,{},birthLimited,services);
+ assert.equal(queries,1,"birth-date limits alone require no additional SQL");
+ assert.deepEqual(outsideBirth.swimmers[0].nativeAllowedEventCodes,[]);assert.match(outsideBirth.swimmers[0].nativeCourseWarning,/hors des limites/);
+ assert.equal(outsideBirth.swimmers[0].individualEntries[0].nativeTime,"000000","historical engagement is retained when the birth limit excludes the swimmer");
  const required={...competition,nativeRules:{participations:[{participation:10,modeengagement:"presence"},{participation:11,modeengagement:"presence"}],restrictions:[]}};
  let presenceReads=0;
  const notEligible=await entryWithCourseRules({execute:async query=>{presenceReads++;assert.match(query.sql,/FROM perfs FORCE INDEX \(nageur\)/);return [[]];}},pack,{},required,services);

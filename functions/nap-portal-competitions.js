@@ -56,7 +56,7 @@ async function readNativeCompetition(connection, input, authorize) {
   const program = sessions.length ? await bounded(connection, `SELECT id,session,course,sexe,pos,final FROM winpalme_courses FORCE INDEX (livepalmes_session_pos_id) WHERE session IN (${sessions.map(() => "?").join(",")}) ORDER BY session,pos,id LIMIT 1921`, sessions.map(session => session.id), LIMITS.program) : [];
   const nativeSnapshot = {
     competition: Object.fromEntries(["id","libelle","lieu","date","enddate","comite","description","bassin","chrono","ld"].map(key => [key,row[key] ?? null])),
-    parameters: { id:row.parameter_id,compet:row.id,...Object.fromEntries(["actif","dateactif","date_limit","officiel","nb_lignes","mailtxt","mailjuges","tps_d","tps_f","niveau","saisie","relais"].map(key=>[key,row[key] ?? null])) }
+    parameters: { id:row.parameter_id,compet:row.id,...Object.fromEntries(["actif","dateactif","date_limit","officiel","nb_lignes","mailtxt","mailjuges","tps_d","tps_f","niveau","saisie","relais","cat_d","cat_f","qualif"].map(key=>[key,row[key] ?? null])) }
   };
   return { source: "nap", readAt: new Date().toISOString(), event: {...event,...entryState({...row,entry_closed:options[0]?.entry_closed})}, nativeParameters, nativeSnapshot, nativeOrganizerId: row.organisateur, nativeDelegate: row.delegue, nativeComments: row.comments,
     courses, restrictions, participations, committees, options: options[0] || null, courseOptions, fees: fees[0] || null, detailedProgram: detailedProgram[0] || null, groups, standards, qualifyingCompetitions, sessions, program };

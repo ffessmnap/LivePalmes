@@ -31,6 +31,8 @@ const services={view:()=>({events:[event]}),validate:async(raw)=>{validations++;
   identityChanged=true;
   await assert.rejects(()=>resolveRelay({connection,competition,pack,change:membersChange},services),/Identite/);
   identityChanged=false;
+  await resolveRelay({connection,competition:{...competition,nativeParameters:{...competition.nativeParameters,cat_d:person.birthDate,cat_f:person.birthDate}},pack,change:membersChange},services);
+  await assert.rejects(()=>resolveRelay({connection,competition:{...competition,nativeParameters:{...competition.nativeParameters,cat_f:"1999-12-31"}},pack,change:membersChange},services),/hors des limites/);
   const required={...competition,participations:[{participation:10,modeengagement:"presence"},{participation:11,modeengagement:"presence"}]};
   const withEvidence={execute:async(query,values)=>query.sql.includes("FROM perfs")?[[{nageur:12,compet:11}]]:connection.execute(query,values)};
   await resolveRelay({connection:withEvidence,competition:required,pack,change:membersChange},services);
