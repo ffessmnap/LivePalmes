@@ -13,7 +13,7 @@ function statements(input,plan,pack){
   const authority=authorityGuard('engagements',{competitions:pack.nativeSnapshot.competition,compet_parametres:pack.nativeSnapshot.parameters});
   authority.sql+=' AND EXISTS (SELECT 1 FROM compet_parametres scope_q FORCE INDEX (PRIMARY) WHERE scope_q.id=? AND scope_q.qualif <=> ?)';
   authority.values.push(positiveId(pack.nativeSnapshot.parameters.id),pack.nativeParameters.qualif??null);
-  authority.sql+=" AND EXISTS (SELECT 1 FROM livepalmes_qualification_jobs scope_j FORCE INDEX (PRIMARY) WHERE scope_j.id=? AND scope_j.competition_id=? AND scope_j.state='apply' AND scope_j.version=? AND BINARY scope_j.cursor=BINARY ?)";
+  authority.sql+=" AND EXISTS (SELECT 1 FROM livepalmes_qualification_jobs scope_j FORCE INDEX (PRIMARY) WHERE scope_j.id=? AND scope_j.competition_id=? AND scope_j.state='apply' AND scope_j.version=? AND BINARY scope_j.`cursor`=BINARY ?)";
   authority.values.push(job.id,id,String(job.version),job.cursor);
   if(pack.options){authority.sql+=' AND EXISTS (SELECT 1 FROM livepalmes_competition_options scope_o FORCE INDEX (PRIMARY) WHERE scope_o.competition_id=? AND scope_o.version=?)';authority.values.push(id,String(pack.options.version));}
   else {authority.sql+=' AND NOT EXISTS (SELECT 1 FROM livepalmes_competition_options scope_o FORCE INDEX (PRIMARY) WHERE scope_o.competition_id=?)';authority.values.push(id);}
