@@ -122,10 +122,6 @@ function entryItem(pack, context, categoryForBirthDate, competition = {}) {
     nativeWarnings: [leaders.length > 1 ? "Plusieurs chefs d'equipe NAP conserves." : "", relays.length ? "Categories natives des relais conservees." : ""].filter(Boolean) };
 }
 async function readDocuments(connection, competitionId) {
-  const rows = await native.bounded(connection,
-    "SELECT d.id,d.name,d.location,d.comment,d.public,t.label AS type_label FROM documents d FORCE INDEX (livepalmes_compet_public_id) LEFT JOIN documents_types t ON t.id=d.type WHERE d.competition=? AND d.public='Y' ORDER BY d.id LIMIT 101",
-    [calendar.positiveId(competitionId)], 100);
-  return rows.map(row => ({ id: `nap-${row.id}`, title: text(row.name) || text(row.type_label), url: calendar.publicUrl(row.location),
-    description: text(row.comment), category: /protocole|r[ée]sultat/i.test(`${row.name} ${row.type_label}`) ? "results" : "information", nativeDocument: true })).filter(row => row.url);
+  return require("./nap-competition-documents").readDocuments(connection, competitionId);
 }
 module.exports = { json, fingerprint, listItem, competitionItem, nativeTime, entryItem, entryWithCourseRules, readDocuments, nativeCourseCode };

@@ -10284,7 +10284,36 @@ async function engagementCompetitionDocumentContext(request) {
   return { context, competitionId: eventId, calendarEventId, sourceType, ref, snapshot };
 }
 
-exports.uploadEngagementCompetitionDocument = onCall(ENGAGEMENT_DOCUMENT_UPLOAD_OPTIONS, async (request) => {
+async function mutateNativeCompetitionDocument(request, action) {
+  const context = await engagementAccessContext(request);
+  const competitionId = request.data?.calendarEventId || request.data?.competitionId;
+  const pool = require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD);
+  try {
+    return await require("./nap-competition-documents").mutate(pool, {...request.data, competitionId, action, actorUid:context.uid}, {
+      authorize:async (connection,id,kind) => {
+        const calendar=require("./nap-direct-calendar");
+        const rows=await require("./nap-portal-competitions").bounded(connection,`${calendar.SELECT_EVENT.replace(" FROM competitions c",",cp.id AS parameter_id,cp.niveau FROM competitions c")}${calendar.EVENT_JOINS} WHERE c.id=? LIMIT 2`,[id],1);
+        if(!rows.length) throw new HttpsError("not-found","Compétition NAP introuvable.");
+        const event=require("./nap-portal-competitions").portalEventFromRow(rows[0]);
+        assertCanManageEngagementCompetition(context,event);
+        if(kind==="delete") assertCanDeleteEngagementDocument(context,event);
+        return Object.fromEntries(["id","date","enddate","comite","parameter_id","niveau"].map(key=>[key,rows[0][key]??null]));
+      },
+      downloadUrl:(path,token)=>competitionDocumentDownloadUrl(LIVEPALMES_STORAGE_BUCKET,path,token),
+      saveFile:(upload,decoded)=>storage.bucket(LIVEPALMES_STORAGE_BUCKET).file(upload.path).save(decoded.buffer,{resumable:false,metadata:{contentType:decoded.contentType,cacheControl:"public, max-age=300, must-revalidate",metadata:{firebaseStorageDownloadTokens:upload.token}}}),
+      audit:{
+        read:async operation=>{const saved=await db.collection("auditLogs").doc(`nap-document-${operation}-before`).get();return saved.exists?saved.data().target:null;},
+        prepare:(operation,target)=>db.collection("auditLogs").doc(`nap-document-${operation}-before`).create({action:"nap.document.prepare",actorUid:context.uid,target,createdAt:new Date().toISOString()}),
+        complete:(operation,target)=>writeAuditLogOnce("nap.document.saved",context.uid,target,operation)
+      }
+    });
+  } catch(error) {
+    if(error instanceof HttpsError)throw error;
+    throw new HttpsError(error instanceof RangeError?"resource-exhausted":error instanceof TypeError?"failed-precondition":"unavailable",error instanceof RangeError||error instanceof TypeError?error.message:"Document NAP à vérifier. La sauvegarde est conservée ; rechargez avant de reprendre.");
+  }
+}
+exports.uploadEngagementCompetitionDocument = onCall({ ...ENGAGEMENT_DOCUMENT_UPLOAD_OPTIONS, ...(ENVIRONMENT.projectId === "livepalmes-test" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
+  if(ENVIRONMENT.projectId === "livepalmes-test") return mutateNativeCompetitionDocument(request,"upload");
   const { context, competitionId, calendarEventId, sourceType, ref, snapshot } = await engagementCompetitionDocumentContext(request);
   const requestedDocumentId = cleanText(request.data?.documentId).slice(0, 80);
   const initialDocuments = cleanCompetitionDocuments(snapshot.data()?.clubDocuments || [], { includeUploader: true });
@@ -10388,7 +10417,8 @@ exports.uploadEngagementCompetitionDocument = onCall(ENGAGEMENT_DOCUMENT_UPLOAD_
   };
 });
 
-exports.updateEngagementCompetitionDocument = onCall(CALLABLE_OPTIONS, async (request) => {
+exports.updateEngagementCompetitionDocument = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.projectId === "livepalmes-test" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
+  if(ENVIRONMENT.projectId === "livepalmes-test") return mutateNativeCompetitionDocument(request,"update");
   const { context, competitionId, calendarEventId, sourceType, ref } = await engagementCompetitionDocumentContext(request);
   const documentId = cleanText(request.data?.documentId).slice(0, 80);
   if (!documentId) throw new HttpsError("invalid-argument", "Document requis.");
@@ -10424,7 +10454,8 @@ exports.updateEngagementCompetitionDocument = onCall(CALLABLE_OPTIONS, async (re
   return { ok: true, competitionId, calendarEventId, documentId, documents: updatedDocuments };
 });
 
-exports.deleteEngagementCompetitionDocument = onCall(CALLABLE_OPTIONS, async (request) => {
+exports.deleteEngagementCompetitionDocument = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.projectId === "livepalmes-test" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
+  if(ENVIRONMENT.projectId === "livepalmes-test") return mutateNativeCompetitionDocument(request,"delete");
   const { context, competitionId, calendarEventId, sourceType, ref } = await engagementCompetitionDocumentContext(request);
   const documentId = cleanText(request.data?.documentId).slice(0, 80);
   if (!documentId) throw new HttpsError("invalid-argument", "Document requis.");
@@ -10468,6 +10499,7 @@ exports.deleteEngagementCompetitionDocument = onCall(CALLABLE_OPTIONS, async (re
 });
 
 exports.previewEngagementCompetitionDocumentNotification = onCall(CALLABLE_OPTIONS, async (request) => {
+  if(ENVIRONMENT.projectId === "livepalmes-test") { await engagementAccessContext(request); return {ok:true,disabled:true,recipientCount:0,clubCount:0}; }
   const { competitionId, snapshot } = await engagementCompetitionDocumentContext(request);
   const recipients = engagementCompetitionDocumentRecipients(
     await engagementActiveClubMailRecipients(db),
@@ -10482,6 +10514,7 @@ exports.previewEngagementCompetitionDocumentNotification = onCall(CALLABLE_OPTIO
 });
 
 exports.notifyEngagementCompetitionDocuments = onCall(ENGAGEMENT_MAIL_CALLABLE_OPTIONS, async (request) => {
+  if(ENVIRONMENT.projectId === "livepalmes-test") { await engagementAccessContext(request); return {ok:true,disabled:true,sentCount:0,errorCount:0}; }
   const { context, competitionId, snapshot } = await engagementCompetitionDocumentContext(request);
   const competition = engagementCompetitionDetailItem(snapshot);
   const documentIds = Array.from(new Set((Array.isArray(request.data?.documentIds) ? request.data.documentIds : [])

@@ -296,7 +296,7 @@
     if ((!file && !editingDocumentId) || (file && file.size > 10 * 1024 * 1024)) { message.textContent = "Choisissez un fichier de 10 Mo maximum."; return; }
     message.textContent = "Mise en ligne…";
     try {
-      const values = { calendarEventId: current.id, documentId: editingDocumentId, title: form.elements.title.value, category: form.elements.category.value, description: form.elements.description.value };
+      const values = { calendarEventId: current.id, documentId: editingDocumentId, expectedFingerprint:(current.clubDocuments || []).find(item=>item.id===editingDocumentId)?.napFingerprint, title: form.elements.title.value, category: form.elements.category.value, description: form.elements.description.value };
       const result = file
         ? await call("uploadEngagementCompetitionDocument", { ...values, fileName: file.name, fileDataUrl: await readFile(file) })
         : await call("updateEngagementCompetitionDocument", values);
@@ -310,7 +310,7 @@
 
   async function deleteEventDocument(documentId) {
     if (!global.confirm("Supprimer ce document public ?")) return;
-    const result = await call("deleteEngagementCompetitionDocument", { calendarEventId: current.id, documentId });
+    const result = await call("deleteEngagementCompetitionDocument", { calendarEventId: current.id, documentId, expectedFingerprint:(current.clubDocuments || []).find(item=>item.id===documentId)?.napFingerprint });
     current.clubDocuments = result.documents || [];
     ensureDialog().querySelector("[data-calendar-document-list]").innerHTML = renderDocuments(current.clubDocuments);
     global.dispatchEvent(new CustomEvent("livepalmes:calendar-events-changed", { detail: { action: "upsert", event: { ...current, documentCount: current.clubDocuments.length } } }));
