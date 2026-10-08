@@ -11,6 +11,22 @@ function fixturePack() {
 }
 const pack=fixturePack();
 const input=patch=>({competitionId:"legacy-nap-5140",actorUid:"admin",national:true,expectedFingerprint:fingerprint(pack),patch});
+assert.throws(()=>planCompetitionChange(pack,{...input({level:"regional",regionId:"3"}),national:false},now),/reserve au national/);
+const transfer=planCompetitionChange(pack,input({level:"regional",regionId:"Ile de France"}),now);
+assert.equal(transfer.operations.find(o=>o.table==="competitions").after.comite,3);
+assert.equal(transfer.operations.find(o=>o.table==="compet_parametres").after.niveau,1);
+assert.equal(transfer.operations.find(o=>o.table==="compet_parametres").after.actif,1);
+const international=planCompetitionChange(pack,input({level:"international",regionId:""}),now);
+assert.equal(international.operations.find(o=>o.table==="competitions").after.comite,5);
+assert.equal(international.operations.find(o=>o.table==="compet_parametres").after.niveau,8);
+for(const patch of [{level:"unknown"},{level:"regional",regionId:"garbage"},{level:"national",regionId:"3"},{level:"regional",regionId:"3",nativeNationalLevelCode:4}]) assert.throws(()=>planCompetitionChange(pack,input(patch),now));
+const regional={...fixturePack(),event:{...pack.event,level:"regional"},committees:[{id:1,comite:2},{id:2,comite:3}]};
+const regionalInput=patch=>({...input(patch),national:false,expectedFingerprint:fingerprint(regional)});
+const invitations=planCompetitionChange(regional,regionalInput({invitedRegionIds:["Ile de France","Grand Est"]}),now);
+assert.deepEqual(invitations.operations.find(o=>o.table==="compet_comites").after,[1,3]);
+assert.deepEqual(invitations.operations.find(o=>o.table==="compet_comites").before,regional.committees);
+assert.equal(invitations.operations.some(o=>o.table==="competitions"||o.table==="compet_parametres"),false);
+for(const committees of [[{id:1,comite:19}],[{id:1,comite:2},{id:2,comite:2}]]) {const legacy={...regional,committees};assert.throws(()=>planCompetitionChange(legacy,{...regionalInput({invitedRegionIds:[]}),expectedFingerprint:fingerprint(legacy)},now),/ancienne|doublon/);}
 const nationalKind=planCompetitionChange(pack,input({nativeNationalLevelCode:4}),now);
 assert.deepEqual(nationalKind.operations.map(o=>o.table),["compet_parametres"]);
 assert.equal(nationalKind.operations[0].after.niveau,4);

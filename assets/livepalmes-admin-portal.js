@@ -3954,6 +3954,14 @@
         primaryRegionField: elements.engagementsEditRegionId
       });
     }
+    if(selectedEngagementCompetition?.napSource) {
+      for(const select of [elements.engagementsEditRegionId,elements.engagementsEditInvitedRegionIds]) if(select) for(const option of select.options) if(option.value && !Object.values(LIVEPALMES_REFERENCE_REGION_LABELS).includes(option.value)) option.disabled=true;
+      if(elements.engagementsEditLevel) elements.engagementsEditLevel.disabled=!isNational || selectedEngagementCompetition.nativeLevelRecognized===false;
+      if(elements.engagementsEditRegionId) elements.engagementsEditRegionId.disabled=!isNational || !["regional","departemental"].includes(elements.engagementsEditLevel?.value);
+      if(elements.engagementsEditInvitedRegionIds) elements.engagementsEditInvitedRegionIds.disabled=selectedEngagementCompetition.nativeInvitationsEditable===false || !["regional","departemental"].includes(elements.engagementsEditLevel?.value);
+      renderInvitedRegionChoices(elements.engagementsEditInvitedRegionIds,elements.engagementsEditInvitedRegionChoices);
+      if(elements.engagementsEditNationalKindLabel) elements.engagementsEditNationalKindLabel.hidden=elements.engagementsEditLevel?.value!=="national" || selectedEngagementCompetition.level!=="national" || !["pool","openWater"].includes(selectedEngagementCompetition.competitionType);
+    }
   }
 
   function updateEngagementQualificationFields(prefix = "create") {
@@ -4365,7 +4373,10 @@
     }
     if (competition.napSource === true) {
       const fields = editCompetitionFields();
-      for (const key of ["level", "regionId", "invitedRegionIds"]) if (fields[key]) fields[key].disabled = true;
+      const national=(currentAccessProfile?.capabilities || []).includes("engagements.national.manage");
+      if(fields.level) fields.level.disabled=!national || competition.nativeLevelRecognized===false;
+      if(fields.regionId) fields.regionId.disabled=!national || !["regional","departemental"].includes(fields.level?.value);
+      if(fields.invitedRegionIds) fields.invitedRegionIds.disabled=competition.nativeInvitationsEditable===false || !["regional","departemental"].includes(fields.level?.value);
       if (fields.missingEntryTimeMode) {
         fields.missingEntryTimeMode.disabled = false;
         const labels = {manual: "Saisie possible", forbidden: "Aucune saisie — meilleur temps connu obligatoire", default595999: "Aucune saisie — temps connu au choix, sinon sans temps"};
@@ -15325,7 +15336,7 @@
         if (cacheRevision !== engagementCalendarCacheRevision) return null;
         let competitions = [
           ...(Array.isArray(result.competitions) ? result.competitions.map((item) => ({ ...item, sourceType: "competition" })) : []),
-          ...(Array.isArray(calendarEventResult.events) ? calendarEventResult.events.map((item) => ({ ...item, sourceType: "calendarEvent" })) : [])
+          ...(Array.isArray(calendarEventResult.events) ? calendarEventResult.events.map((item) => ({ ...item, sourceType: item.napSource ? "competition" : "calendarEvent" })) : [])
         ];
         if (requestedMode === "admin" && !canUse("engagements.national.manage")) {
           competitions = competitions.filter((competition) => canManageEngagementCompetitionScope(competition));
@@ -15511,6 +15522,10 @@
     for (const key of ["name", "date", "endDate", "location", "city", "address", "organizer", "organizerEmail", "teamLeadersWhatsAppUrl", "publicDescription", "waterBodyType", "computerEmail", "officialsManagerEmail", "poolLength", "timingType", "entryStatus"]) values[key] = fields[key]?.value || "";
     values.canceled = fields.canceled?.checked === true;
     values.missingEntryTimeMode = fields.missingEntryTimeMode?.value || "";
+    if(fields.level && !fields.level.disabled) values.level=fields.level.value;
+    if(fields.regionId && !fields.regionId.disabled) values.regionId=fields.regionId.value;
+    else if(fields.level && !fields.level.disabled && ["national","international"].includes(fields.level.value)) values.regionId="";
+    if(fields.invitedRegionIds && !fields.invitedRegionIds.disabled && ["regional","departemental"].includes(fields.level?.value)) values.invitedRegionIds=selectedRegionMultiSelectValues(fields.invitedRegionIds);
     if(elements.engagementsEditNationalKindLabel?.hidden === false && !elements.engagementsEditNationalKind?.disabled) values.nativeNationalLevelCode=Number(elements.engagementsEditNationalKind.value);
     values.qualificationStartDate=fields.qualificationMode?.value === "period" ? fields.qualificationStart?.value || "" : "";
     values.qualificationEndDate=fields.qualificationMode?.value === "period" ? fields.qualificationEnd?.value || "" : "";
@@ -15538,6 +15553,7 @@
         return false;
       }
       if (patch.entryStatus === "closed" && !global.confirm("Fermer les engagements dans LivePalmes et IntraNAP ? Les engagements existants et la date limite seront conservés.")) return false;
+      if (["level","regionId","invitedRegionIds"].some(key=>Object.hasOwn(patch,key)) && !global.confirm("Modifier le niveau ou les régions admises dans LivePalmes et IntraNAP ? L’accès des clubs aux nouvelles inscriptions peut changer. Les engagements déjà enregistrés seront conservés.")) return false;
       if (patch.entryStatus === "open" && !global.confirm("Ouvrir les engagements dans LivePalmes et IntraNAP ? L’envoi des courriels est encore en cours de raccordement : cette ouverture n’enverra pas de courriel aux clubs.")) return false;
       if (button) button.disabled = true;
       if (elements.engagementsDetailStatus) { elements.engagementsDetailStatus.textContent = "Enregistrement dans NAP..."; elements.engagementsDetailStatus.dataset.tone = "loading"; }
