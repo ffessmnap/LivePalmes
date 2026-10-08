@@ -28,5 +28,9 @@ assert.equal(ui.engagementClubProgramItemAllowsSwimmer({eventCode:"OW500BI"},{sw
  assert.equal(entry.swimmers[0].individualEntries[0].nativeTime,"000000","a now-disallowed historical entry is retained");
  await entryWithCourseRules(connection,pack,{}, {...competition,nativeRules:{participations:[],restrictions:[]}},services);
  assert.equal(queries,1,"unrestricted dossier adds no reference query");
+ const required={...competition,nativeRules:{participations:[{participation:10,modeengagement:"presence"},{participation:11,modeengagement:"presence"}],restrictions:[]}};
+ let presenceReads=0;
+ const notEligible=await entryWithCourseRules({execute:async query=>{presenceReads++;assert.match(query.sql,/FROM perfs FORCE INDEX \(nageur\)/);return [[]];}},pack,{},required,services);
+ assert.equal(presenceReads,1);assert.deepEqual(notEligible.swimmers[0].nativeAllowedEventCodes,[]);assert.equal(notEligible.swimmers[0].individualEntries[0].nativeTime,"000000","existing entry remains visible without the new eligibility");
  console.log("Native open-water aliases, raw storage, historical retention and one grouped category reference verified");
 })().catch(error=>{console.error(error);process.exitCode=1;});

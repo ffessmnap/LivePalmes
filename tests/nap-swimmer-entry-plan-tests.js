@@ -22,6 +22,8 @@ assert.equal(selectionLockReason(competition),"");
 assert.equal(selectionLockReason({...competition,event:{eventType:"openWater"}}),"");
 assert.match(selectionLockReason({...competition,event:{eventType:"training"}}),/Type/);
 assert.match(selectionLockReason({...competition,participations:[{participation:2}]}),/participation/);
+assert.equal(selectionLockReason({...competition,participations:[{participation:2,modeengagement:"presence"}]}),"");
+assert.equal(selectionLockReason({...competition,participations:[{participation:2,modeengagement:"tps"}]}),"");
 assert.match(selectionLockReason({...competition,nativeParameters:{...competition.nativeParameters,cat_f:9}}),/categories/);
 assert.match(selectionLockReason({...competition,options:{qualifications_enabled:1}}),/qualifications/);
 assert.match(selectionLockReason({...competition,participations:undefined}),/participation/);

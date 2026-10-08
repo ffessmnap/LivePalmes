@@ -24,10 +24,12 @@ assert.equal(locks.clubEngagementTabHiddenWhenWriteLocked("relays"),true);assert
 locks.selectedEngagementCompetition.entryStatus="closed";assert.match(locks.engagementClubIndividualEntriesLockReason(),/fermes/);
 assert.match(locks.engagementClubStepLockReason("entries"),/fermes/);
 locks.selectedEngagementCompetition.entryStatus="open";locks.global.LivePalmesEnvironment.isTest=false;assert.match(locks.engagementClubIndividualEntriesLockReason(),/raccordement/);
-const courseUi={selectedEngagementCompetition:{napSource:true},engagementClubIndividualEvents:()=>[{code:"50AP",nativeRecognized:true,nativeCourses:[{sexe:"M"}]}],engagementSwimmerCategory:()=>"M",ENGAGEMENT_INDIVIDUAL_CATEGORY_DEFINITIONS:[["M"]],ENGAGEMENT_EVENT_FORBIDDEN_CATEGORIES:{"50AP":new Set(["P","B","M"])}};
+const courseUi={selectedEngagementClubEntry:{},selectedEngagementCompetition:{napSource:true},engagementClubIndividualEvents:()=>[{code:"50AP",nativeRecognized:true,nativeCourses:[{sexe:"M"}]}],engagementSwimmerCategory:()=>"M",ENGAGEMENT_INDIVIDUAL_CATEGORY_DEFINITIONS:[["M"]],ENGAGEMENT_EVENT_FORBIDDEN_CATEGORIES:{"50AP":new Set(["P","B","M"])}};
 vm.createContext(courseUi);vm.runInContext(source.slice(source.indexOf("  function engagementClubProgramItemAllowsSwimmer("),source.indexOf("  function engagementClubProgramSessionsForSex(")),courseUi);
 assert.equal(courseUi.engagementClubProgramItemAllowsSwimmer({eventCode:"50AP"},{sex:"M"}),false);
 courseUi.engagementSwimmerCategory=()=>"C";assert.equal(courseUi.engagementClubProgramItemAllowsSwimmer({eventCode:"50AP"},{sex:"M"}),true);assert.equal(courseUi.engagementClubProgramItemAllowsSwimmer({eventCode:"50AP"},{sex:"F"}),false);
+courseUi.selectedEngagementClubEntry={swimmers:[{swimmerIndexId:"1",nativeAllowedEventCodes:[]}]};
+assert.equal(courseUi.engagementClubProgramItemAllowsSwimmer({eventCode:"50AP"},{swimmerIndexId:"1",sex:"M"}),false,"a native participation refusal also disables the otherwise allowed course");
 const swimmer={swimmerIndexId:"1",individualEntries:[{eventCode:"50BI",nativeTime:"14200",nativeEntryId:"20",entryTimeMode:"native",entryTime:"1:42.00"}]};
 const state={selectedEngagementCompetition:{napSource:true},selectedEngagementClubEntry:{swimmers:[swimmer]},selectedEngagementClubSwimmerRows:()=>[swimmer],elements:{},engagementManualIndividualTimesAllowed:()=>true,updateQualificationCheckboxes:()=>{},updateEngagementClubEntriesSummary:()=>{},renderEngagementClubSummary:()=>{}};
 vm.createContext(state);vm.runInContext(source.slice(source.indexOf("  function mergeEngagementClubSwimmerEventTimes("),source.indexOf("  function markEngagementClubSwimmerEventTimesError(")),state);

@@ -15,7 +15,7 @@ vm.createContext(context);vm.runInContext(source.slice(start,end),context);
 (async()=>{
  const request={data:{competitionId:"legacy-nap-5140"}};
  const response=await context.exports.generateEngagementClubRecapPdf(request);
- assert.equal(response.source,"nap");assert.equal(response.fromStorage,false);assert.equal(Buffer.from(response.pdfBase64,"base64").toString(),"%PDF-example");assert.equal(response.sqlBudget.queriesMax,24);assert.equal(read,2);assert.equal(built,1);
+ assert.equal(response.source,"nap");assert.equal(response.fromStorage,false);assert.equal(Buffer.from(response.pdfBase64,"base64").toString(),"%PDF-example");assert.equal(response.sqlBudget.queriesMax,25);assert.equal(read,2);assert.equal(built,1);
  assert.deepEqual(Array.from(context.exports.generateEngagementClubRecapPdf.options.secrets),["LIVEPALMES_NAP_PASSWORD"]);
  denied=true;await assert.rejects(()=>context.exports.generateEngagementClubRecapPdf(request),/Denied/);assert.equal(read,2);denied=false;
  wrongClub=true;await assert.rejects(()=>context.exports.generateEngagementClubRecapPdf(request),/hors du club/);assert.equal(built,1);wrongClub=false;

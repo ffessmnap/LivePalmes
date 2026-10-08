@@ -1,5 +1,6 @@
 "use strict";
 const { createHash } = require("node:crypto");
+const {nativeEqual}=require("./nap-native-compare");
 const { createNapPool } = require("./nap-mysql");
 const { swimmerId } = require("./nap-direct-swimmer");
 const { fingerprint, planIdentityChange } = require("./nap-portal-swimmer-change");
@@ -54,7 +55,7 @@ async function correctPortalIdentity(connection, input, audit, linked) {
   if (!alreadyApplied) {
     const columns = saved.changedColumns;
     if (!columns.length || columns.some(key => !["nom", "prenom", "date", "sexe"].includes(key))) throw new TypeError("Correction invalide.");
-    const sql = `UPDATE nageurs SET ${columns.map(key => `\`${key}\`=?`).join(",")} WHERE ${COLUMNS.map(key => `BINARY \`${key}\` <=> BINARY ?`).join(" AND ")} LIMIT 1`;
+    const sql = `UPDATE nageurs SET ${columns.map(key => `\`${key}\`=?`).join(",")} WHERE ${COLUMNS.map(key => nativeEqual(`\`${key}\``)).join(" AND ")} LIMIT 1`;
     const [result] = await connection.execute({ sql, timeout: 10000 }, [...columns.map(key => saved.after[key]), ...COLUMNS.map(key => saved.before[key])]);
     if (result.affectedRows !== 1) throw new TypeError("La fiche a change. Rechargez avant de corriger.");
   }
