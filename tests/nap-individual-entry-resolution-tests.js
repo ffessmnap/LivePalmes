@@ -25,5 +25,18 @@ const input={competition,pack,changes:[{swimmerId:1,entries:native}],histories:n
   resolved=await resolveChanges({...input,pack:invalid,changes:[{swimmerId:1,entries:[{...native[0],nativeTime:"599999"},native[1],native[2],{eventCode:"400BI"}]}]},services);
   plan=planIndividualEntries(invalid,resolved);assert.deepEqual(plan.plans[0].updates,[]);assert.deepEqual(plan.plans[0].removals,[]);
   await assert.rejects(()=>resolveChanges({...input,changes:[{swimmerId:1,entries:[...native,{eventCode:"400BI",entryTimeMode:"manual",manualEntryTime:"3:30.00"}]}]},{...services,validateTimes:async()=>{throw Error("record protection");}}),/record protection/);
+  const waterNative={...competition,event:{eventType:"openWater"}};
+  const waterView={...view,competitionType:"openWater",events:[{code:"OW1000SF",type:"individual",nativeRecognized:true,nativeCourses:[{course:"1000",sexe:"M"}]},{code:"OW500BI",type:"individual",nativeRecognized:true,nativeCourses:[{course:"500BI",sexe:"M"}]}]};
+  const waterPack={...pack,individual:[{id:20,engagement:11,course:"1000",tps:"000000"}]};
+  const waterServices={...services,view:()=>waterView,automatic:()=>{throw Error("no performance time lookup for open water");},validateTimes:()=>{throw Error("no records comparison for open water");}};
+  const waterInput={...input,competition:waterNative,pack:waterPack,changes:[{swimmerId:1,entries:[{eventCode:"OW1000SF",entryTimeMode:"native",nativeEntryId:"20",nativeTime:"000000"},{eventCode:"OW500BI",entryTimeMode:"notRequired"}]}]};
+  const waterResolved=await resolveChanges(waterInput,waterServices);
+  const waterPlan=planIndividualEntries(waterPack,waterResolved);
+  assert.deepEqual(waterResolved[0].managedCourses,["1000","500BI"]);
+  assert.deepEqual(waterPlan.plans[0].updates,[]);
+  assert.equal(waterPlan.plans[0].additions[0].course,"500BI");
+  assert.equal(waterPlan.plans[0].additions[0].tps,"000000");
+  await assert.rejects(()=>resolveChanges({...waterInput,changes:[{swimmerId:1,entries:[{eventCode:"OW500BI",entryTime:"3:00.00"}]}]},waterServices),/Aucun temps/);
+  await assert.rejects(()=>resolveChanges(waterInput,{...waterServices,view:()=>({...waterView,events:[{...waterView.events[0],nativeCourses:[{course:"1000",sexe:"M"},{course:"1000SF",sexe:"M"}]},waterView.events[1]]})}),/ambigue/);
   console.log("Native individual resolution: unchanged raw/unknown/invalid times preserved, trusted automatic/manual rules and grouped RF/MPF checks verified");
 })().catch(error=>{console.error(error);process.exitCode=1;});

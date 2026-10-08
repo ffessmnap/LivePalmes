@@ -101,6 +101,7 @@ function runUnitTests() {
     "nap-entry-time-rules-tests.js",
     "nap-entry-static-records-tests.js",
     "nap-entry-course-rules-tests.js",
+    "nap-open-water-entry-tests.js",
     "nap-individual-entry-resolution-tests.js",
     "nap-entry-history-callable-tests.js",
     "nap-entry-time-preview-callable-tests.js",

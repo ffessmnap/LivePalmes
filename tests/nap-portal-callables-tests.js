@@ -34,7 +34,7 @@ const sandbox = { exports: {}, ENVIRONMENT: { projectId: "livepalmes-test" }, CA
       readNativeCompetition: async (_, id, authorize) => { assert.equal(id, event.id); await authorize(event); calls.push("detail"); return { event }; }
     };
     if (name === "./nap-portal-workspaces") return { listItem: item => ({ ...item, napSource: true }), competitionItem: pack => ({ ...pack.event, eventType:"pool",nativeParameters,nativeRules:{participations:[]},napSource: true }),
-      readDocuments: async () => { calls.push("documents"); return []; }, entryItem: pack => ({ source: "nap", clubId: pack.clubId }) };
+      readDocuments: async () => { calls.push("documents"); return []; }, entryWithCourseRules: async (_,pack) => ({ source: "nap", clubId: pack.clubId }) };
     if (name === "./nap-portal-entries") return { readNativeClubEntry: async (_, input, authorize) => { await authorize(input); calls.push("entry"); return {...input,leaders:[{id:51}]}; } };
     if(name === "./nap-club-person-status") return {changeNativePersonStatus:async(connection,input,audit,authorize)=>{if(input.personId==="old-id") throw new TypeError("Native reference required");assert.equal(connection,pool);assert.equal(input.clubId,context.clubId);assert.equal(input.actorUid,context.uid);await authorize(input);await audit.prepare("operation",{});calls.push("person-status");await audit.complete("operation",{});return {ok:true,source:"nap"};}};
     if(name === "./nap-club-person-create") return {createNativePerson:async(connection,input,audit,authorize)=>{assert.equal(connection,pool);assert.equal(input.clubId,context.clubId);assert.equal(input.actorUid,context.uid);await authorize(input);await audit.prepare("operation",{});await audit.checkpoint("operation",{});calls.push("person-create");await audit.complete("operation",{});return {ok:true,source:"nap"};}};
@@ -72,7 +72,7 @@ for (const name of ["listEngagementCompetitions", "listEngagementCalendarEvents"
   assert.deepEqual(calls, ["authorize"]);
   const entry = await sandbox.exports.getEngagementClubEntry({ data: { competitionId: event.id, clubId: "999" } });
   assert.equal(entry.entry.clubId, "00123", "Caller cannot choose another club dossier");
-  assert.equal(entry.sqlBudget.queriesMax, 23);
+  assert.equal(entry.sqlBudget.queriesMax, 24);
   calls.length=0;
   const leader=await sandbox.exports.saveEngagementClubTeamLeader({data:{competitionId:event.id,clubId:"999",actorUid:"spoof",leaderId:51,patch:{firstName:"Chef",lastName:"Native",birthDate:"1980-01-02"}}});
   assert.equal(leader.competition.nativeTeamLeaderEditable,true);

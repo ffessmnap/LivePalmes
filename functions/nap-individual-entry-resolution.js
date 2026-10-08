@@ -20,12 +20,21 @@ async function resolveChanges(input,services) {
     if(people.length!==1 || links.length!==1) throw new TypeError("Nageur non engage ou inscription native ambigue.");
     const person=people[0],before=dossier.individual.filter(row=>Number(row.engagement)===Number(links[0].id));
     const managedCourses=allowedCourses(person,pack,competition,categories,services);
+    const openWater=competition.competitionType==="openWater";
+    const storageCode=code=>{
+      if(!openWater) return code;
+      const event=competition.events.find(row=>row.code===code);
+      const nativeCodes=[...new Set((event?.nativeCourses || []).filter(row=>row.sexe===person.sex).map(row=>normalize(row.course)))];
+      if(nativeCodes.length!==1) throw new TypeError("Correspondance native de la course eau libre ambigue.");
+      return nativeCodes[0];
+    };
     const entries=[],manualEntries=[],requested=new Set();
     for(const raw of change.entries) {
       const code=normalize(raw?.eventCode);
       if(!/^[A-Z0-9]{1,32}$/.test(code) || requested.has(code)) throw new TypeError("Course demandee invalide ou dupliquee.");
       requested.add(code);
-      const saved=before.filter(row=>normalize(row.course)===code);
+      const stored=managedCourses.includes(code) ? storageCode(code) : code;
+      const saved=before.filter(row=>normalize(row.course)===stored || openWater && require("./nap-open-water-courses").displayCode(row.course,"openWater")===code);
       if(saved.length>1) throw new TypeError("Courses natives dupliquees a verifier avant modification.");
       const unchanged=saved.length===1 && raw.entryTimeMode==="native" && String(raw.nativeEntryId)===String(saved[0].id) && raw.nativeTime===saved[0].tps;
       if(!managedCourses.includes(code)) {
@@ -34,10 +43,15 @@ async function resolveChanges(input,services) {
       }
       if(unchanged) {
         if(!/^\d{1,6}$/.test(saved[0].tps) || Number(saved[0].tps.slice(-4,-2)||0)>59) managedCourses.splice(managedCourses.indexOf(code),1);
-        else entries.push({course:code,tps:saved[0].tps});
+        else entries.push({course:stored,tps:saved[0].tps});
         continue;
       }
       if(raw.entryTimeMode==="native") throw new TypeError("Temps natif modifie ailleurs. Rechargez le dossier.");
+      if(openWater) {
+        if(raw.manualEntryTime || raw.entryTime) throw new TypeError("Aucun temps a saisir pour une course eau libre.");
+        entries.push({course:stored,tps:"000000"});
+        continue;
+      }
       const resolved=resolveTime({...raw,eventCode:code},competition,{
         automatic:entry=>services.automatic(entry,histories.get(String(id)) || [],competition),parse:services.parse,
         known:entry=>require("./nap-entry-time-policy").known(entry,histories.get(String(id)) || [],competition,services.parse)
@@ -45,11 +59,12 @@ async function resolveChanges(input,services) {
       entries.push({course:code,tps:resolved.nativeTime==="599999" ? "599999" : compact(resolved.entryTimeValue)});
       if(resolved.entryTimeMode==="manual") manualEntries.push(resolved);
     }
-    const untouched=before.filter(row=>!managedCourses.includes(row.course));
+    const managedNativeCourses=managedCourses.map(storageCode);
+    const untouched=before.filter(row=>!managedNativeCourses.includes(row.course));
     const maximum=Number(competition.maxEventsPerSwimmer || 0);
     if(maximum>0 && new Set([...entries.map(row=>row.course),...untouched.map(row=>normalize(row.course))]).size>maximum) throw new TypeError("Limite d'epreuves par nageur depassee.");
     if(manualEntries.length) manualSwimmers.push({...person,category:services.category(competition.date,person.birthDate),individualEntries:manualEntries});
-    result.push({swimmerId:id,managedCourses,entries});
+    result.push({swimmerId:id,managedCourses:managedNativeCourses,entries});
   }
   if(manualSwimmers.length) await services.validateTimes(manualSwimmers,competition);
   return result;

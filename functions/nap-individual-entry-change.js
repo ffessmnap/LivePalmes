@@ -49,7 +49,7 @@ async function saveNativeIndividualEntries(pool,input,services) {
     if(!target) {
       const ids=new Set(input.changes.map(row=>positiveId(row?.swimmerId))),people=pack.swimmers.filter(row=>ids.has(Number(row.id)));
       if(ids.size!==input.changes.length || people.length!==ids.size) throw new TypeError("Nageurs hors du dossier autorise ou dupliques.");
-      const histories=people.length ? await readers.history(connection,people) : new Map();
+      const histories=people.length && competition.event.eventType!=="openWater" ? await readers.history(connection,people) : new Map();
       const changes=await services.resolve({connection,competition,pack,changes:input.changes,histories});
       if(!Array.isArray(changes) || changes.length!==ids.size || new Set(changes.map(row=>Number(row.swimmerId))).size!==ids.size || changes.some(row=>!ids.has(Number(row.swimmerId)))) throw new TypeError("Resolution des courses incomplete.");
       const plan=planIndividualEntries(pack,changes);
