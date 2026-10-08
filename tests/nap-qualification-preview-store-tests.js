@@ -18,6 +18,14 @@ async function main(){
  const bad=fixture(true);await assert.rejects(savePage(bad.connection,input,page),TypeError);assert.deepEqual(bad.counts(),{saved:0,rollbacks:1,commits:0},'The page and parent progress roll back together');
  assert.throws(()=>prepare({...input,national:false},page));assert.throws(()=>prepare(input,{...page,finished:false,cursor:''}));
  assert.throws(()=>prepare(input,{...page,items:[{before:{swimmerId:'912'},sourceHash:'b'.repeat(64),entries:[],removed:[]}]}));
+ const nativeEntry={nativeId:44,eventCode:'50BI',nativeTime:'14200'},before={swimmerId:'912',clubId:'00106',inscriptionId:100,entries:[nativeEntry]};
+ const item={before,sourceHash:require('node:crypto').createHash('sha256').update(JSON.stringify(before)).digest('hex'),entries:[nativeEntry],removed:[],targetTimes:[{nativeId:44,tps:'013900'}]};
+ const nonempty={...page,items:[item]};assert.equal(prepare(input,nonempty).value.items[0].before.entries[0].nativeTime,'14200');
+ assert.throws(()=>prepare(input,{...page,items:[{...item,targetTimes:[]}]}),/Temps/);
+ assert.throws(()=>prepare(input,{...page,items:[{...item,targetTimes:[{nativeId:45,tps:'013900'}]}]}),/Temps/);
+ assert.throws(()=>prepare(input,{...page,items:[{...item,targetTimes:[{nativeId:44,tps:'016000'}]}]}),/Temps/);
+ const regenerated=prepare({...input,previous:{...previous,payload:{...previous.payload,generation:1}}},nonempty);
+ assert.notEqual(regenerated.id,prepare(input,nonempty).id,'Fresh confirmation uses distinct immutable pages after changed sporting proofs');
  console.log('NAP qualification preview storage: atomic native page/progress, replay without duplication, concurrent failure rollback, scope and immutable dossier hashes; offline.');
 }
 main().catch(error=>{console.error(error);process.exitCode=1;});

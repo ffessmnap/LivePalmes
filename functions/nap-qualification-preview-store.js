@@ -17,9 +17,12 @@ function prepare(input,page){
     const actual=createHash('sha256').update(JSON.stringify(item.before)).digest('hex');if(actual!==item.sourceHash)throw new TypeError('Empreinte du dossier incompatible.');
     const original=item.before.entries,partition=[...item.entries,...item.removed];
     if(!Array.isArray(original)||original.length>300||partition.length!==original.length||new Set(partition.map(row=>row.nativeId)).size!==partition.length||!isDeepStrictEqual([...original].sort((a,b)=>a.nativeId-b.nativeId),partition.sort((a,b)=>a.nativeId-b.nativeId)))throw new TypeError('Courses conservees ou retirees incompatibles avec le dossier.');
+    if(!Array.isArray(item.targetTimes)||item.targetTimes.length!==item.entries.length||new Set(item.targetTimes.map(row=>row.nativeId)).size!==item.entries.length||item.targetTimes.some(row=>!item.entries.some(entry=>entry.nativeId===row.nativeId)||typeof row.tps!=='string'||!/^\d{1,6}$/.test(row.tps)||row.tps!=='599999'&&Number(row.tps.slice(-4,-2)||0)>59))throw new TypeError('Temps automatiques du controle incomplets ou incompatibles.');
     seen.add(item.before.swimmerId);removed+=item.removed.length;
   }
-  const id=createHash('sha256').update(JSON.stringify([input.jobId,previous.cursor])).digest('hex');
+  const generation=previous.payload.generation??0;
+  if(!Number.isSafeInteger(generation)||generation<0)throw new TypeError('Generation du controle invalide.');
+  const id=createHash('sha256').update(JSON.stringify([input.jobId,generation,previous.cursor])).digest('hex');
   const value=JSON.parse(jobs.payload({parentId:input.jobId,previousCursor:previous.cursor,nextCursor:page.cursor,finished:page.finished,items:page.items}));
   const pageIds=previous.payload.pageIds||[];
   if(!Array.isArray(pageIds)||pageIds.length>=1000||pageIds.some(id=>!/^[a-f0-9]{64}$/.test(id))||new Set(pageIds).size!==pageIds.length)throw new RangeError('Controle trop volumineux ou pages ambigues.');

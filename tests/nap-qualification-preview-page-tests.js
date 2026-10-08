@@ -11,7 +11,7 @@ function fixture({enrolled=[swimmer],approved=[],qualified=false}={}){
   if(statement.sql.includes('FROM livepalmes_qualification_grants'))return [approved];
   throw new Error('Unexpected query');
  }};
- const services={authorize:async()=>{authorized=true;},categoryFor:()=> 'S',readHistory:async(connection,people)=>{historyQueries++;return new Map(people.map(p=>[p.id,qualified?[{competitionId:'5140',course:'50BI',timeValue:2400,date:'2026-01-01',pool:'50',chrono:'E'}]:[]]));}};
+ const services={authorize:async()=>{authorized=true;},categoryFor:()=> 'S',automatic:()=>({entryTimeMode:'known',entryTimeValue:2400}),readHistory:async(connection,people)=>{historyQueries++;return new Map(people.map(p=>[p.id,qualified?[{competitionId:'5140',course:'50BI',timeValue:2400,date:'2026-01-01',pool:'50',chrono:'E'}]:[]]));}};
  return {connection,services,counts:()=>({queries,historyQueries})};
 }
 async function main(){

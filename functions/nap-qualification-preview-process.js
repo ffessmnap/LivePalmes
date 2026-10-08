@@ -25,7 +25,9 @@ async function processPreview(pool,input,services){
     if(input.action&&input.action!=='preview')throw new TypeError('Cette action doit passer par le circuit de confirmation et application.');
     if(job.state!=='preview')return {state:job.state,count:job.payload.count,applyStarted:job.payload.applyStarted===true};
     if(fingerprint(pack)!==job.payload.expectedFingerprint)throw new TypeError('Les parametres de la competition ont change. Annulez cet apercu puis relancez le controle.');
-    const page=await (services.previewPage||previewPage)(connection,{competitionId:scope.competitionId,national:true,cursor:job.cursor,rules:job.payload.rules,date:pack.event.date,events:services.eventsFor(pack)},services);
+    if(job.payload.rules.enabled&&(typeof services.automatic!=='function'||typeof services.competitionFor!=='function'))throw new TypeError('Calcul automatique et periode des temps requis pour cette grille.');
+    const competition=services.competitionFor?services.competitionFor(pack,job.payload.rules):undefined;
+    const page=await (services.previewPage||previewPage)(connection,{competitionId:scope.competitionId,national:true,cursor:job.cursor,rules:job.payload.rules,date:pack.event.date,events:services.eventsFor(pack),competition},services);
     const saved=await (services.savePage||savePage)(connection,{...input,previous:job},page);
     return {...saved,removed:page.items.flatMap(item=>item.removed.map(row=>({...row,club:item.before.clubId,swimmerIndexId:item.before.swimmerId}))),applyStarted:job.payload.applyStarted===true};
   }finally{
