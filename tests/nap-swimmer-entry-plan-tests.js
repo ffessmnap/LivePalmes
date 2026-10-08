@@ -19,6 +19,11 @@ assert.throws(()=>planSelection({...pack,inscriptions:[...pack.inscriptions,{id:
 assert.throws(()=>planSelection({...pack,relays:[]},[{swimmerId:1,selected:false}]),/hors/);
 const competition={event:{eventType:"pool"},nativeParameters:{qualif:0,cat_d:null,cat_f:null},participations:[],options:null};
 assert.equal(selectionLockReason(competition),"");
+assert.equal(selectionLockReason({...competition,nativeParameters:{...competition.nativeParameters,qualif:29}}),"");
+for(const qualif of [28,30,1,"invalid"]) assert.match(selectionLockReason({...competition,nativeParameters:{...competition.nativeParameters,qualif}}),/qualifications/);
+assert.match(selectionLockReason({...competition,nativeParameters:{...competition.nativeParameters,qualif:29},qualifications:{enabled:true}}),/qualifications/);
+assert.match(selectionLockReason({...competition,nativeParameters:{...competition.nativeParameters,qualif:29},options:{qualifications_enabled:1}}),/qualifications/);
+assert.match(selectionLockReason({...competition,nativeParameters:{...competition.nativeParameters,qualif:29,cat_f:9}}),/categories/);
 assert.equal(selectionLockReason({...competition,event:{eventType:"openWater"}}),"");
 assert.match(selectionLockReason({...competition,event:{eventType:"training"}}),/Type/);
 assert.match(selectionLockReason({...competition,participations:[{participation:2}]}),/participation/);

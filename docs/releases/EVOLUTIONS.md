@@ -2,6 +2,14 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### Grille NAP sans minimum sportif — 8 octobre 2026
+
+- Antoine confirme que la grille native « Grille - 595999 » (qualif_types 29, identifiant vérifié en lecture seule) ne demande aucun minimum sportif. Ce type partage maintenant le contrôle centralisé des engagements et de l'aperçu des temps avec l'absence de grille.
+- Les autres grilles natives restent protégées tant que leur contrôle n'est pas raccordé. Une qualification complémentaire LivePalmes active continue de bloquer même avec le type 29 ; catégories, participation préalable, restrictions par course et modes de saisie restent inchangés.
+- Budget inchangé : aucune lecture supplémentaire, aucune écriture sportive, migration ou changement de structure. Tests ciblés des deux parcours, des autres grilles et des conditions indépendantes ; publication et recette à terminer. Aucun retour utilisateur sur cette version revendiqué.
+- Suivi précédent : PR 188, CI 37768212308 et TEST 37768720216 réussis ; ZIP administrateur CNHC/5162 généré depuis NAP, un PDF annoncé par l'interface, contrôles ordinateur/mobile effectués. Le fichier téléchargé n'a pas été ouvert par l'assistant.
+- PR 189 intégrée sur 057aecd213fea8f3595aa29bb56b257333955f58, CI 37769615897 et TEST 37770037325 réussis. Preuve Hosting be5d3e6b924059a2, removeEngagementClubTeamLeader ACTIVE au commit exact. Recette après rechargement : retrait désactivé dans le dossier CNHC/5162 contenant des participants, message invitant à remplacer le chef. Aucune suppression réelle ni validation utilisateur de ce retrait.
+
 ### Retrait du chef d'équipe d'un dossier NAP vide — 8 octobre 2026
 
 - Règle LivePalmes conservée : retrait possible seulement sans nageur inscrit, officiel ni relais ; sinon remplacer le chef. Aucune exception nationale ajoutée à cette règle. Une seule déclaration native est retirée, jamais les options du dossier, les fiches des personnes ou les engagements.
