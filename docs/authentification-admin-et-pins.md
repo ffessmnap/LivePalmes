@@ -15,7 +15,7 @@ Le portail et ces mecanismes sont encore en phase de finalisation et de test.
 
 Les utilisateurs se connectent avec une adresse email et un mot de passe geres par Firebase Authentication.
 
-La session du Portail est verrouillee apres 30 minutes sans interaction. Un avertissement apparait apres 25 minutes et permet de prolonger la session. Le deverrouillage demande a nouveau le mot de passe du compte Firebase, sans effacer les informations et saisies deja presentes dans la page. Cette protection est partagee entre les onglets du navigateur et ne concerne pas les consoles de LivePalmes Direct.
+La session du Portail ne se verrouille plus automatiquement en cas d'inactivite. Elle reste ouverte jusqu'a une deconnexion volontaire, une invalidation Firebase ou la desactivation du compte. Les consoles de LivePalmes Direct conservent leurs propres protections et expirations.
 
 Le compte LivePalmes porte ensuite des capacites et un perimetre qui determinent ce que la personne peut consulter ou modifier : club, region, national, Records / MPF, import de competitions, DTN, administration ou acces au Direct.
 

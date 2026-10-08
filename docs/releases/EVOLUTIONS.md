@@ -2,6 +2,12 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### Suppression du verrouillage automatique du Portail — 8 octobre 2026
+
+- Demande d'Antoine : suppression de l'avertissement après 25 minutes et du verrouillage après 30 minutes d'inactivité. Le Portail ne redemande plus le mot de passe pour ce seul motif.
+- Déconnexion manuelle, invalidation Firebase, désactivation du compte, réauthentification des opérations sensibles et protections propres à LivePalmes Direct inchangées.
+- Chargement du module retiré, dialogues supprimés, tests et captures de référence adaptés. Vérification globale, publication TEST et recette à terminer ; aucune validation utilisateur revendiquée.
+
 ### Participation préalable et choix des temps NAP — 8 octobre 2026
 
 - Règle confirmée par Antoine : un résultat enregistré dans NAP dans au moins une compétition requise suffit. Une inscription seule ne suffit pas. Les modes natifs presence, tps et presencetps conservent respectivement leur condition de présence, leur liste de références de temps, ou les deux.

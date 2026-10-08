@@ -18,7 +18,7 @@
     <link rel="stylesheet" href="assets/livepalmes-portal-shell.css?v=20260920-shell-2">
     <link rel="stylesheet" href="assets/livepalmes-portal-workspaces.css?v=20260921-button-weight-1">
   </head>
-  <body class="admin-portal-page" data-admin-auth="loading" data-portal-session="pending" aria-busy="true">
+  <body class="admin-portal-page" data-admin-auth="loading" aria-busy="true">
     <header class="admin-portal-topbar">
       <img class="admin-portal-federal-logo" src="logo-ffessm-nage-avec-palmes.png?v=20260722-admin-portal-1" alt="FFESSM Nage avec palmes">
       <div class="admin-portal-brand">
@@ -174,40 +174,6 @@
         </details>
       </section>
 
-      <dialog id="adminPortalSessionWarning" class="admin-portal-session-dialog" aria-labelledby="adminPortalSessionWarningTitle">
-        <div class="admin-portal-session-dialog-heading">
-          <span>Session inactive</span>
-          <h2 id="adminPortalSessionWarningTitle">Toujours présent&nbsp;?</h2>
-        </div>
-        <p>Votre portail sera verrouillé dans <strong id="adminPortalSessionCountdown">5 min</strong> si aucune activité n’est détectée.</p>
-        <div class="admin-portal-actions">
-          <button id="adminPortalSessionContinue" class="admin-primary-button" type="button">Continuer ma session</button>
-          <button id="adminPortalSessionWarningSignOut" class="ghost-button" type="button">Se déconnecter</button>
-        </div>
-      </dialog>
-
-      <dialog id="adminPortalSessionLock" class="admin-portal-session-dialog admin-portal-session-lock" aria-labelledby="adminPortalSessionLockTitle">
-        <div class="admin-portal-session-dialog-heading">
-          <span>Session verrouillée</span>
-          <h2 id="adminPortalSessionLockTitle">Reconnectez-vous</h2>
-        </div>
-        <p>Le Portail a été verrouillé après 30 minutes d’inactivité. Vos informations affichées et vos saisies sont conservées.</p>
-        <form id="adminPortalSessionUnlockForm" class="admin-portal-form">
-          <label>
-            Email
-            <input id="adminPortalSessionEmail" type="email" autocomplete="username" readonly>
-          </label>
-          <label>
-            Mot de passe
-            <input id="adminPortalSessionPassword" type="password" autocomplete="current-password" required>
-          </label>
-          <div class="admin-portal-actions">
-            <button type="submit">Déverrouiller</button>
-            <button id="adminPortalSessionLockSignOut" class="ghost-button" type="button">Se déconnecter</button>
-          </div>
-        </form>
-        <p id="adminPortalSessionMessage" class="admin-portal-message" aria-live="polite"></p>
-      </dialog>
 
       <section id="adminPortalDashboard" class="admin-portal-dashboard" hidden>
         <div class="admin-portal-layout">
@@ -2801,7 +2767,6 @@
     <script src="assets/livepalmes-engagement-qualifications.js?v=20260915-import-seconds"></script>
   <script src="assets/livepalmes-admin-portal.js?v=20261008-nap-participation-20"></script>
     <script src="assets/livepalmes-license-administration.js?v=20260902-license-control-1"></script>
-    <script src="assets/livepalmes-portal-session.js?v=20260829-session-lock-1"></script>
     <script src="assets/livepalmes-admin-calendar-events.js?v=20260830-calendar-auto-publish-1"></script>
     <script src="assets/livepalmes-portal-ux.js?v=20260920-ux-consistency-1"></script>
 <script src="assets/livepalmes-legal-footer.js?v=20260920-legal-1"></script>
