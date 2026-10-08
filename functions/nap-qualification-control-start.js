@@ -30,7 +30,7 @@ async function beginControl(pool,input,services){
     if(!target.changed)return {ok:true,unchanged:true};
     const active=await query("SELECT id FROM livepalmes_qualification_jobs FORCE INDEX (competition_state) WHERE competition_id=? AND state IN ('preview','ready','apply') ORDER BY state,id LIMIT 2",[competitionId]);
     if(active.length)throw new TypeError('Un controle des qualifications est deja en cours. Reprenez-le avant de modifier la grille.');
-    const value={expectedFingerprint:input.expectedFingerprint,rules:target.rules,before:target.before,after:target.after,count:0,applyStarted:false};
+    const value={expectedFingerprint:input.expectedFingerprint,nativeSnapshot:pack.nativeSnapshot,rules:target.rules,before:target.before,after:target.after,count:0,generation:0,applyStarted:false};
     const payload=jobs.payload(value);
     const authority={competitions:pack.nativeSnapshot.competition,compet_parametres:pack.nativeSnapshot.parameters};
     const guard=authorityGuard('livepalmes_qualification_jobs',authority);

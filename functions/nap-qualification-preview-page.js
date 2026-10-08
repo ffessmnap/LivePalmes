@@ -38,7 +38,8 @@ async function previewPage(connection,input,services){
     const evaluation=engine.evaluate({rules,category:services.categoryFor(input.date,p.birthDate),sex:p.sex,events:input.events,rows,approvals:approved.map(row=>({eventCode:row.event_code,status:row.status}))});
     const result=engine.reconcile(original,evaluation);
     const before={swimmerId:p.id,name:p.name,clubId:p.clubId,birthDate:p.birthDate,sex:p.sex,inscriptionId:links[index],entries:original};
-    return {before,sourceHash:createHash('sha256').update(JSON.stringify(before)).digest('hex'),entries:result.entries,removed:result.removed,evaluation};
+    const targetTimes=rules.enabled?require('./nap-qualification-target-times').targetTimes(result.entries,rows,input.competition||{date:input.date,qualifications:rules},services.automatic):result.entries.map(entry=>({nativeId:entry.nativeId,tps:entry.nativeTime}));
+    return {before,sourceHash:createHash('sha256').update(JSON.stringify(before)).digest('hex'),entries:result.entries,removed:result.removed,evaluation,targetTimes};
   });
   const last=selected.at(-1);
   return {items,cursor:raw.length===6?JSON.stringify({swimmerId:positiveId(last.id),inscriptionId:positiveId(last.inscription_id)}):'',finished:raw.length<6,sqlBudget:{queries:4,swimmersMax:5,historyRowsMax:20000}};
