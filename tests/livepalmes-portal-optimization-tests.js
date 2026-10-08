@@ -1313,7 +1313,7 @@ assert.ok(portal.includes("engagementCompetitionsLoadedRange"));
 assert.ok(portal.includes('ENGAGEMENT_CALENDAR_SESSION_CACHE_PREFIX = "livepalmes.portal.engagementCalendar.v4."'));
 assert.ok(portal.includes('ENGAGEMENT_CLUB_WORKSPACE_SESSION_CACHE_PREFIX = "livepalmes.portal.engagementWorkspace.v2."'));
 assert.ok(portal.includes("teamLeadersWhatsAppUrl: engagementTeamLeadersWhatsAppUrl(competition.teamLeadersWhatsAppUrl)"));
-assert.ok(portalHtml.includes('livepalmes-admin-portal.js?v=20261008-nap-perimetres-28'));
+assert.ok(portalHtml.includes('livepalmes-admin-portal.js?v=20261008-nap-qualifications-29'));
 assert.ok(portal.includes('city: String(competition.city || "")'));
 assert.ok(portal.includes('address: String(competition.address || "")'));
 assert.ok(portalHtml.includes('livepalmes-admin-calendar-events.js?v=20261008-nap-perimetres-28'));
