@@ -11,6 +11,8 @@ for (const saisie of [0,-1]) assert.equal(courseLockReason({...native,nativePara
 assert.match(courseLockReason({...native,nativeParameters:{...native.nativeParameters,saisie:9}}),/verifier/);
 assert.match(courseLockReason({...native,nativeParameters:{...native.nativeParameters,saisie:1},restrictions:[{}]}),/restrictions/);
 assert.deepEqual(allowedCourses(person,native,competition,categories,services),["50BI","50AP"]);
+assert.deepEqual(allowedCourses(person,{...native,nativeParameters:{...native.nativeParameters,cat_d:person.birthDate,cat_f:person.birthDate}},competition,categories,services),["50BI","50AP"]);
+assert.throws(()=>allowedCourses(person,{...native,nativeParameters:{...native.nativeParameters,cat_d:"2014-01-01"}},competition,categories,services),/hors des limites/);
 const restricted={...native,restrictions:[{course:"50BI",categorie:1,swim:0}]};
 assert.deepEqual(allowedCourses(person,restricted,competition,categories,services),["50AP"]);
 assert.deepEqual(allowedCourses(person,restricted,competition,categories,{...services,nativeAllowed:()=>false}),["50AP"]);

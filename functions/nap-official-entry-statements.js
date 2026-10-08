@@ -18,6 +18,14 @@ function deadline(value) {
 function entryAuthority(authority,competitionId,clubId) {
   if(!authority || !Object.hasOwn(authority,"options")) throw new TypeError("Fermeture complementaire NAP requise.");
   const base=authorityGuard("officielsengager",authority),leader=authority.nativeLeader;
+  // Snapshot fields from the native reader also guard IntraNAP edits between
+  // eligibility checks and a MyISAM write; older before-images may omit them.
+  const nativeParameters=authority.compet_parametres;
+  const additional=["cat_d","cat_f","qualif"].filter(key=>Object.hasOwn(nativeParameters,key));
+  if(additional.length) {
+    base.sql+=` AND EXISTS (SELECT 1 FROM compet_parametres scope_limits FORCE INDEX (PRIMARY) WHERE scope_limits.id=? AND ${additional.map(key=>nativeEqual(`scope_limits.\`${key}\``)).join(" AND ")})`;
+    base.values.push(positiveId(nativeParameters.id),...additional.map(key=>nativeParameters[key]));
+  }
   if(clubId!==undefined && (!leader || Number(leader.compet)!==Number(competitionId) || ![String(leader.club),String(leader.pourclub)].includes(String(clubId)))) throw new TypeError("Chef d'equipe natif requis pour l'enregistrement.");
   const leaderColumns=SOURCES.leaders.columns;
   if(clubId!==undefined && leaderColumns.some(key=>!Object.hasOwn(leader,key))) throw new TypeError("Chef d'equipe natif incomplet.");

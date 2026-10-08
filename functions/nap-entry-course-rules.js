@@ -17,6 +17,7 @@ function courseLockReason(pack) {
 function allowedCourses(person,pack,competition,categories,services) {
   const reason=selectionLockReason(pack);
   if(reason) throw new TypeError(reason);
+  require("./nap-entry-birth-policy").assertEligible(pack,person);
   if(!Array.isArray(categories) || categories.length>200 || typeof services?.age!=="function" || typeof services?.category!=="function" || typeof services?.forbidden!=="function") throw new TypeError("Correspondance native des categories requise.");
   const age=services.age(competition.date,person.birthDate),category=services.category(competition.date,person.birthDate);
   if(!Number.isInteger(age) || age<0 || age>120 || !category || !["F","M"].includes(person.sex)) throw new TypeError("Identite NAP a completer avant les courses.");
