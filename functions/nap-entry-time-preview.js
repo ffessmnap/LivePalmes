@@ -25,7 +25,7 @@ async function previewNativeTimes(connection,input,services) {
   const evidence=await participation.readEvidence(connection,people,competition);
   if(competition.event.eventType==="openWater") return {ok:true,source:"nap",swimmers:people.map(person=>({swimmerIndexId:String(person.id),individualEntries:[]})),sqlBudget:{queriesMax:presence?23:22,historyQueries:0}};
   const histories=await readers.history(connection,people);
-  const swimmers=people.map(person=>({swimmerIndexId:String(person.id),individualEntries:participation.eligible(competition,person.id,evidence) ? services.preview(person,participation.filterTimes(histories.get(String(person.id))||[],competition),competition,pack) : []}));
+  const swimmers=people.map(person=>({swimmerIndexId:String(person.id),individualEntries:require("./nap-entry-birth-policy").eligible(competition,person) && participation.eligible(competition,person.id,evidence) ? services.preview(person,participation.filterTimes(histories.get(String(person.id))||[],competition),competition,pack) : []}));
   return {ok:true,source:"nap",swimmers,sqlBudget:{queriesMax:presence?24:23,historyQueries:1,historyRowsMax:20000}};
 }
 module.exports={previewNativeTimes};

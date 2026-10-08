@@ -23,6 +23,11 @@ assert.match(add.sql,/scope_c/);assert.match(add.sql,/scope_p/);assert.match(add
 assert.ok(add.values.includes(native.nom));assert.ok(add.values.includes("2026-10-07 19:59:00.000"));
 assert.match(add.sql,/FROM chefsdequipe scope_l/);assert.equal(add.expectedRows,1);
 const remove=bound(deletion(plan,[before],authority,end));
+const withLimits={...authority,compet_parametres:{...authority.compet_parametres,cat_d:"2000-01-01",cat_f:"2010-12-31",qualif:29}};
+const guardedLimits=bound(insertion(plan,[{native,options:null}],withLimits,end));
+assert.match(guardedLimits.sql,/compet_parametres scope_limits FORCE INDEX \(PRIMARY\)/);
+for(const field of ["cat_d","cat_f","qualif"]) assert.ok(guardedLimits.sql.includes('scope_limits.`'+field+'`'));
+assert.ok(guardedLimits.values.includes("2000-01-01"));assert.ok(guardedLimits.values.includes("2010-12-31"));assert.ok(guardedLimits.values.includes(29));
 assert.equal(remove.expectedRows,1);assert.throws(()=>insertion(plan,[{native,options:null}],{...authority,nativeLeader:null},end),/Chef/);
 assert.deepEqual(remove.values.slice(0,4),[20,5140,8,"106"]);assert.match(remove.sql,/id=\? AND compet=\? AND officiel=\?/);assert.match(remove.sql,/LIMIT 200$/);
 assert.throws(()=>selectedStatement(Array(81).fill(7),"106"));

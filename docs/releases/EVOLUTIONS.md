@@ -2,6 +2,12 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### Limites natives de dates de naissance — 8 octobre 2026
+
+- Antoine confirme les mêmes limites qu'IntraNAP, avec les deux dates incluses. Les champs natifs cat_d/cat_f sont contrôlés pour l'ajout d'un nageur, les courses proposées, l'aperçu des temps et la composition des relais. Une borne seule est acceptée ; dates invalides ou inversées refusées.
+- Les engagements historiques restent visibles et ne sont pas supprimés lorsque le nageur est désormais hors limites. Les écritures vérifient aussi les anciennes valeurs cat_d/cat_f/qualif dans la requête pour détecter une modification concurrente dans IntraNAP.
+- Budget préparé avant accès : zéro requête supplémentaire, aucun changement de structure, aucune migration, aucune écriture d'essai. Comparaisons sur les identités déjà chargées ; sous-requête atomique par PK dans les écritures existantes. Tests des bornes incluses, hors limites, date invalide, relais, refus avant écriture et conservation des anciens engagements. Publication et recette restantes, sans validation utilisateur revendiquée.
+
 ### Grille NAP sans minimum sportif — 8 octobre 2026
 
 - Antoine confirme que la grille native « Grille - 595999 » (qualif_types 29, identifiant vérifié en lecture seule) ne demande aucun minimum sportif. Ce type partage maintenant le contrôle centralisé des engagements et de l'aperçu des temps avec l'absence de grille.

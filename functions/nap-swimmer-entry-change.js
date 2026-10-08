@@ -64,6 +64,7 @@ async function saveNativeSwimmerSelection(pool,input,services) {
     if(competition.event.entryStatus!=="open" || !Number.isFinite(Date.parse(competition.event.entryDeadlineAt)) || Date.now()>=Date.parse(competition.event.entryDeadlineAt)) throw new TypeError("Les engagements sont fermes.");
     if(pack.leaders.length!==1 || !String(pack.leaders[0].nom||"").trim() || !String(pack.leaders[0].prenom||"").trim()) throw new TypeError("Chef d'equipe NAP a verifier avant les nageurs.");
     const plan=target ? remaining(target.plan,pack) : planSelection(pack,input.changes);
+    for(const person of plan.additions) require("./nap-entry-birth-policy").assertEligible(competition,person);
     await services.validate({connection,competition,pack,plan});
     if(!plan.additions.length&&!plan.removals.length) return {ok:true,source:"nap",operation,writesExecuted:0,nativeEntry:pack,competition};
     if(plan.removals.length && (await query("SELECT id FROM forfait FORCE INDEX (livepalmes_compet_engagement_id) WHERE compet=? LIMIT 1",[input.competitionId])).length) throw new TypeError("Cette competition contient des forfaits anciens. Leur lien NAP doit etre confirme avant le retrait d'un nageur.");
