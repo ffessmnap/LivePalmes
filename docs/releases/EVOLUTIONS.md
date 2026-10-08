@@ -2,6 +2,13 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### Retrait du chef d'équipe d'un dossier NAP vide — 8 octobre 2026
+
+- Règle LivePalmes conservée : retrait possible seulement sans nageur inscrit, officiel ni relais ; sinon remplacer le chef. Aucune exception nationale ajoutée à cette règle. Une seule déclaration native est retirée, jamais les options du dossier, les fiches des personnes ou les engagements.
+- Budget fixé avant implémentation : au plus 29 opérations SQL pour le retrait puis 25 lectures pour le retour du dossier ; une seule DELETE native, journal technique préalable avec une lecture et quatre écritures au plus. Verrou commun, empreinte du dossier, ancienne déclaration exacte, fermeture et absence de participants vérifiées dans la requête ; EXPLAIN indexé et absence de déclencheur exigés. Réponse incertaine relue sans renouveler aveuglément la suppression.
+- Tests hors réseau réussis : chaque type de participant bloque, refus hors droits / après fermeture / sans index / avec déclencheur, sauvegarde avant suppression, concurrence et reprise après réponse perdue. Aucune suppression réelle effectuée. Recette du bouton et contrôles complets à terminer.
+- Plan EXPLAIN réel vérifié sans DELETE : index natifs pour inscriptions, officiels, relais et paramètres ; le dossier CNHC d'essai, contenant des participants, donne Impossible WHERE. Les déclarations pour un autre club restent bloquées jusqu'à vérification de leur portée dans IntraNAP, pour ne pas retirer un chef d'un autre dossier.
+
 ### Statistiques et exports administrateur depuis NAP — 8 octobre 2026
 
 - Raccordement TEST préparé : récapitulatifs de clubs, statistiques, PDF individuel administrateur, ZIP des PDF et TXT piscine lisent les engagements NAP. Aucun accès aux anciennes collections sportives ni cache Storage dans ces branches. Aucun engagement, temps, schéma ou courriel modifié. TXT eau libre toujours bloqué tant que son format n'est pas validé.
@@ -9,6 +16,7 @@
 - Budget fixé avant implémentation : une action administrateur lit au plus 24 requêtes SQL groupées (15 pour la compétition et ses documents, neuf pour tous les dossiers), sans requête par club ou par ligne. Dossiers bornés à 39 200 lignes, 500 clubs ; dépassement refusé sans résultat partiel. ZIP limité à 7 Mo avant encodage, PDF et TXT individuels à 10 Mo. Zéro écriture sportive et aucune reconstruction de cache à l'ouverture.
 - Lecture réelle en lecture seule sur la compétition d'essai : un club, quatre nageurs et relais retrouvés ; neuf plans EXPLAIN utilisent les index existants, sans parcours complet. Tests des droits avant identités, bornes, références absentes, temps natifs conservés et ZIP (CRC, annuaire, contenus, tailles, noms sûrs) réussis. Vérification globale, publication et recette de la version commune à terminer ; aucune validation utilisateur revendiquée.
 - PR 187 intégrée sur 5d1ee880f46e758ef2469cfad261a971f869719c, CI Linux 37766840150 et TEST 37767211346 réussis. Preuve Hosting 0dd5a88b11a04558 et cinq Functions actives au commit exact. Recette administrateur CNHC/5162 : statistiques 4 nageurs / 3 courses / 2 relais / 0 officiel, origine non connue affichée ; PDF individuel et TXT générés et téléchargés selon les confirmations de l'interface. Aucun engagement écrit. Le bouton ZIP avait disparu du HTML : réintroduction TEST dans la GED préparée, client 22, recette ZIP restante. Qualifications et gestion du chef, création de compétition et dépôt de documents restent à raccorder ; l'abandon total des collections sportives ne peut pas encore être confirmé.
+- PR 188 intégrée sur ad404ff78d4c1fc4e6dfec7340dd55e32ae9294c, CI 37768212308 et TEST commun 37768720216 réussis, client 22 vérifié. Action ZIP CNHC/5162 : bandeau « PDF clubs prêts », un PDF généré ; contrôles GED ordinateur et mobile 390 px, bouton ZIP et PDF individuel accessibles sans débordement. Archive technique relue indépendamment par .NET ; récupération et ouverture du téléchargement réel par l'utilisateur non attestées. Aucune écriture sportive ou envoi de mail.
 
 ### Suppression du verrouillage automatique du Portail — 8 octobre 2026
 

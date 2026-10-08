@@ -2061,11 +2061,11 @@
       const hasParticipants = engagementClubEntryHasParticipants(entry);
       elements.engagementsClubTeamRemoveButton.hidden = !canRemoveTeamLeader || editorVisible;
       elements.engagementsClubTeamRemoveButton.disabled = Boolean(writeLockReason || hasParticipants);
-      if (nativeLeaderEdit) elements.engagementsClubTeamRemoveButton.disabled = true;
+      if (nativeLeaderEdit && teamLeader.externalClub) elements.engagementsClubTeamRemoveButton.disabled = true;
       elements.engagementsClubTeamRemoveButton.title = hasParticipants
         ? "Le dossier contient des nageurs, des officiels ou des relais : remplacez le chef d'équipe."
         : "Retirer le chef d'équipe et supprimer ce dossier vide.";
-      if (nativeLeaderEdit) elements.engagementsClubTeamRemoveButton.title = "Le retrait du chef d'équipe NAP est encore en cours de raccordement.";
+      if (nativeLeaderEdit && teamLeader.externalClub) elements.engagementsClubTeamRemoveButton.title = "Déclaration pour un autre club à vérifier dans IntraNAP avant retrait.";
     }
   }
 
@@ -11008,7 +11008,11 @@
 
   async function removeEngagementClubTeamLeader() {
     if (!selectedEngagementCompetitionId || !canUse("engagements.club.manage")) return false;
-    if (showEngagementClubWriteLock(elements.engagementsClubTeamMessage)) return false;
+    const removalCompetitionId = selectedEngagementCompetitionId;
+    const removalClubId = String(activeEngagementClubProfile().clubId || "");
+    const removalScopeCurrent = () => selectedEngagementCompetitionId === removalCompetitionId && String(activeEngagementClubProfile().clubId || "") === removalClubId;
+    const nativeLeaderEdit = selectedEngagementCompetition?.nativeReadOnly === true && selectedEngagementCompetition?.nativeTeamLeaderEditable === true;
+    if (nativeLeaderEdit ? Boolean(engagementClubTeamLeaderLockReason()) : showEngagementClubWriteLock(elements.engagementsClubTeamMessage)) return false;
     const entry = selectedEngagementClubEntry || {};
     const teamLeader = entry.teamLeader || {};
     if (teamLeader.mode !== "person" || !engagementClubTeamComplete(entry)) return false;
@@ -11029,8 +11033,11 @@
     }
     try {
       const result = await callFunction("removeEngagementClubTeamLeader", {
-        competitionId: selectedEngagementCompetitionId
+        competitionId: removalCompetitionId,
+        ...(nativeLeaderEdit ? {leaderId:teamLeader.nativeLeaderId,expectedFingerprint:entry.napFingerprint} : {})
       });
+      if (!removalScopeCurrent()) return true;
+      if (result.competition) selectedEngagementCompetition = {...selectedEngagementCompetition,...result.competition};
       selectedEngagementClubEntry = result.entry || {};
       setSelectedEngagementCompetitionClubEntryExists(false);
       renderEngagementClubEntry(selectedEngagementClubEntry);
@@ -11041,6 +11048,7 @@
       setEngagementSaveState("saved");
       return true;
     } catch (error) {
+      if (!removalScopeCurrent()) return false;
       if (elements.engagementsClubTeamMessage) {
         elements.engagementsClubTeamMessage.textContent = `Retrait impossible : ${error?.message || error}`;
         elements.engagementsClubTeamMessage.dataset.tone = "error";
@@ -11048,8 +11056,8 @@
       setEngagementSaveState("error");
       return false;
     } finally {
-      if (elements.engagementsClubTeamRemoveButton && !elements.engagementsClubTeamRemoveButton.hidden) {
-        elements.engagementsClubTeamRemoveButton.disabled = Boolean(engagementClubWriteLocked() || engagementClubEntryHasParticipants());
+      if (removalScopeCurrent() && elements.engagementsClubTeamRemoveButton && !elements.engagementsClubTeamRemoveButton.hidden) {
+        elements.engagementsClubTeamRemoveButton.disabled = Boolean(engagementClubTeamLeaderLockReason() || engagementClubEntryHasParticipants() || nativeLeaderEdit && teamLeader.externalClub);
       }
     }
   }
