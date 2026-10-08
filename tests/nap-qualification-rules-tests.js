@@ -11,6 +11,9 @@ const check=rows=>engine.evaluate({rules,category:"S",sex:"M",events,rows}).cour
 assert.equal(check([row]),true);
 for(const change of [{timeValue:2600},{pool:"25"},{chrono:"manual"},{date:"2024-12-31"},{competitionId:"legacy-nap-999"}]) assert.equal(check([{...row,...change}]),false);
 assert.deepEqual(fromPack({options:{qualifications_enabled:0}}),{enabled:false,groups:[],standards:{}});
-for(const changed of [{groups:[{...pack.groups[0],competition_id:999}]},{groups:[...pack.groups,...pack.groups]},{standards:[...pack.standards,...pack.standards]},{qualifyingCompetitions:[{group_id:99,qualifying_competition_id:5140}]},{groups:[{...pack.groups[0],categories:'["invalid"]'}]}]) assert.throws(()=>fromPack({...pack,...changed},events));
+for(const changed of [{groups:[{...pack.groups[0],competition_id:999}]},{groups:[...pack.groups,...pack.groups]},{standards:[...pack.standards,...pack.standards]},{qualifyingCompetitions:[{group_id:99,qualifying_competition_id:5140}]},{groups:[{...pack.groups[0],categories:'["invalid"]'}]},{groups:[{...pack.groups[0],electronic_only:null}]}]) assert.throws(()=>fromPack({...pack,...changed},events));
+const noMinimum=fromPack({...pack,standards:[{...pack.standards[0],minimum_centiseconds:null}]},events);
+assert.equal(engine.evaluate({rules:noMinimum,category:"S",sex:"M",events,rows:[row]}).courses["50BI"].allowed,true);
+assert.equal(engine.evaluate({rules:noMinimum,category:"S",sex:"M",events,rows:[]}).courses["50BI"].allowed,false,"Keep the existing requirement for a known admissible result even without a minimum");
 assert.equal(pack.groups[0].categories,'["S"]',"Do not mutate the native snapshot");
 console.log("NAP qualification reader: existing engine, native selections, sporting filters and malformed snapshots tested offline.");

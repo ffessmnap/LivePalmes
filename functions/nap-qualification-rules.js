@@ -16,6 +16,7 @@ function fromPack(pack,events=[]) {
   const ids=new Set(),positions=new Set();
   for(const group of groups) {
     if(Number(group.competition_id)!==id||!Number.isSafeInteger(group.id)||group.id<=0||ids.has(group.id)||!Number.isSafeInteger(group.position)||group.position<0||positions.has(group.position)) throw new TypeError("Groupe NAP ambigu ou hors competition.");
+    if(![0,1].includes(group.electronic_only)||![0,1].includes(group.bonus_requires_selected)) throw new TypeError("Choix de qualification NAP incomplet.");
     ids.add(group.id);positions.add(group.position);
   }
   const selections=new Map(groups.map(group=>[group.id,[]]));
