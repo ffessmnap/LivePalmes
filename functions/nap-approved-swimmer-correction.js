@@ -1,5 +1,6 @@
 "use strict";
 const { createHash } = require("node:crypto");
+const {nativeEqual}=require("./nap-native-compare");
 const OPERATION = "nap-correct-swimmer-912-fauvau";
 const COLUMNS = ["id", "nom", "prenom", "date", "sexe", "club", "actif", "wc", "edf", "creation", "number"];
 const hash = row => createHash("sha256").update(JSON.stringify(COLUMNS.map(key => row[key]))).digest("hex");
@@ -25,7 +26,7 @@ async function approvedSwimmerCorrection(pool, input, audit) {
   const alreadyApplied = currentHash === preparation.afterHash;
   if (!alreadyApplied) {
     // Compare every saved column atomically; update only the authorized surname.
-    const guards = COLUMNS.map(key => `BINARY \`${key}\` <=> BINARY ?`).join(" AND ");
+    const guards = COLUMNS.map(key => nativeEqual(`\`${key}\``)).join(" AND ");
     const [result] = await pool.execute({ sql: `UPDATE nageurs SET nom=? WHERE ${guards} LIMIT 1`, timeout: 10000 }, ["FAUVAU", ...COLUMNS.map(key => preparation.before[key])]);
     if (result.affectedRows !== 1) throw new Error("Modification concurrente, correction refusee.");
   }

@@ -11,6 +11,9 @@ async function resolveChanges(input,services) {
   const {competition:pack,pack:dossier,changes,histories,categories}=input;
   if(!Array.isArray(changes) || !changes.length || changes.length>100 || !(histories instanceof Map) || typeof services?.view!=="function" || typeof services?.automatic!=="function" || typeof services?.parse!=="function" || typeof services?.validateTimes!=="function") throw new TypeError("Resolution des courses natives incomplete.");
   const competition=services.view(pack),result=[],manualSwimmers=[],seen=new Set();
+  const participation=require("./nap-entry-participation-rules");
+  const requestedPeople=dossier.swimmers.filter(person=>changes.some(change=>Number(change.swimmerId)===Number(person.id)));
+  const evidence=await participation.readEvidence(input.connection,requestedPeople,pack);
   for(const change of changes) {
     const id=positiveId(change.swimmerId);
     if(seen.has(id) || !Array.isArray(change.entries) || change.entries.length>64) throw new TypeError("Courses demandees invalides ou dupliquees.");
@@ -19,6 +22,7 @@ async function resolveChanges(input,services) {
     const links=dossier.inscriptions.filter(row=>Number(row.nageur)===id);
     if(people.length!==1 || links.length!==1) throw new TypeError("Nageur non engage ou inscription native ambigue.");
     const person=people[0],before=dossier.individual.filter(row=>Number(row.engagement)===Number(links[0].id));
+    const eligible=participation.eligible(pack,id,evidence),history=participation.filterTimes(histories.get(String(id)) || [],pack);
     const managedCourses=allowedCourses(person,pack,competition,categories,services);
     const openWater=competition.competitionType==="openWater";
     const storageCode=code=>{
@@ -47,14 +51,15 @@ async function resolveChanges(input,services) {
         continue;
       }
       if(raw.entryTimeMode==="native") throw new TypeError("Temps natif modifie ailleurs. Rechargez le dossier.");
+      if(!eligible) throw new TypeError("Un resultat NAP dans au moins une competition requise est necessaire pour ajouter ou modifier une course.");
       if(openWater) {
         if(raw.manualEntryTime || raw.entryTime) throw new TypeError("Aucun temps a saisir pour une course eau libre.");
         entries.push({course:stored,tps:"000000"});
         continue;
       }
       const resolved=resolveTime({...raw,eventCode:code},competition,{
-        automatic:entry=>services.automatic(entry,histories.get(String(id)) || [],competition),parse:services.parse,
-        known:entry=>require("./nap-entry-time-policy").known(entry,histories.get(String(id)) || [],competition,services.parse)
+        automatic:entry=>services.automatic(entry,history,competition),parse:services.parse,
+        known:entry=>require("./nap-entry-time-policy").known(entry,history,competition,services.parse)
       });
       entries.push({course:code,tps:resolved.nativeTime==="599999" ? "599999" : compact(resolved.entryTimeValue)});
       if(resolved.entryTimeMode==="manual") manualEntries.push(resolved);

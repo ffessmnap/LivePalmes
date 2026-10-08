@@ -23,7 +23,7 @@ vm.createContext(context);vm.runInContext(source.slice(start,end),context);
 (async()=>{
   const save=context.exports.saveEngagementClubRelays;
   const result=await save({data:{competitionId:"legacy-nap-5162",clubId:"999",relayChange:{action:"create"}}});
-  assert.equal(result.source,"nap");assert.equal(result.sqlBudget.queriesMax,61);
+  assert.equal(result.source,"nap");assert.equal(result.sqlBudget.queriesMax,63);
   await save({data:{competitionId:"legacy-nap-5162",removeRelayId:"99"}});assert.equal(calls.length,2);
   assert.deepEqual(Array.from(save.options.secrets),["LIVEPALMES_NAP_PASSWORD"]);
   allowed=false;await assert.rejects(()=>save({data:{}}),/Denied/);assert.equal(calls.length,2);

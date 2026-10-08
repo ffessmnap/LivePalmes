@@ -1,5 +1,6 @@
 "use strict";
 const { createHash } = require("node:crypto");
+const {nativeEqual}=require("./nap-native-compare");
 const { swimmerId } = require("./nap-direct-swimmer");
 const EDITABLE = ["firstName", "lastName", "birthDate", "sex"];
 function fingerprint(row) {
@@ -27,7 +28,7 @@ function planIdentityChange(row, proposed, expectedFingerprint) {
   // This is a plan only. No caller currently executes the statement.
   // Compare raw old values, including club, to avoid overwriting a concurrent edit.
   return { source: "nap", mode: "swimmer-identity-preview", writesExecuted: false, id, before, after, expectedFingerprint: hash, changedColumns,
-    sql: "UPDATE nageurs SET nom=?,prenom=?,date=?,sexe=? WHERE id=? AND BINARY nom=BINARY ? AND BINARY prenom=BINARY ? AND date=? AND BINARY sexe=BINARY ? AND BINARY club=BINARY ? LIMIT 1",
+    sql: `UPDATE nageurs SET nom=?,prenom=?,date=?,sexe=? WHERE id=? AND ${nativeEqual("nom","=")} AND ${nativeEqual("prenom","=")} AND date=? AND BINARY sexe=BINARY ? AND BINARY club=BINARY ? LIMIT 1`,
     parameters: [after.nom, after.prenom, after.date, after.sexe, id, row.nom, row.prenom, row.date, row.sexe, row.club] };
 }
 async function previewIdentityChange(pool, input) {

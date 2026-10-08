@@ -72,11 +72,18 @@ function nativeTime(raw) {
 async function entryWithCourseRules(connection,pack,context,competition,services) {
   const entry=entryItem(pack,context,birthDate=>services.category(competition.date,birthDate),competition);
   const rules=require("./nap-entry-course-rules");
-  if(!competition.nativeRules?.restrictions?.length || rules.courseLockReason(competition)) return entry;
-  const categories=await rules.readCategories(connection);
+  if(rules.courseLockReason(competition)) return entry;
+  const participation=require("./nap-entry-participation-rules"),presence=participation.requirements(competition).presence.size>0;
+  const restricted=Boolean(competition.nativeRules?.restrictions?.length);
+  if(!restricted && !presence) return entry;
+  const categories=restricted ? await rules.readCategories(connection) : null;
+  const evidence=await participation.readEvidence(connection,entry.swimmers,competition);
   const native={...competition,restrictions:competition.nativeRules.restrictions};
   for(const person of entry.swimmers) {
-    try { person.nativeAllowedEventCodes=rules.allowedCourses(person,native,competition,categories,services); }
+    try {
+      if(!participation.eligible(competition,person.id,evidence)) throw new TypeError("Un resultat NAP dans au moins une competition requise est necessaire.");
+      if(restricted) person.nativeAllowedEventCodes=rules.allowedCourses(person,native,competition,categories,services);
+    }
     catch(error) { if(!(error instanceof TypeError)) throw error;person.nativeAllowedEventCodes=[];person.nativeCourseWarning=error.message; }
   }
   return entry;

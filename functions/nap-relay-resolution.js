@@ -50,6 +50,9 @@ async function resolveRelay(input,services) {
     }
   }
   const ids=relay.memberIds.map(positiveId);
+  const participation=require("./nap-entry-participation-rules");
+  const evidence=await participation.readEvidence(connection,ids.map(id=>({id})),pack);
+  if(ids.some(id=>!participation.eligible(pack,id,evidence))) throw new TypeError("Chaque relayeur doit avoir un resultat NAP dans au moins une competition requise.");
   const people=ids.length?(await connection.execute({sql:`SELECT id,date,sexe,club FROM nageurs FORCE INDEX (PRIMARY) WHERE id IN (${ids.map(()=>"?").join(",")}) ORDER BY id LIMIT 4`,timeout:10000},ids))[0]:[];
   if(people.length!==ids.length || people.some(row=>{
     const source=dossier.swimmers.find(person=>Number(person.id)===Number(row.id));

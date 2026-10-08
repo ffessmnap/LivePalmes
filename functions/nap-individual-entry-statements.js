@@ -1,4 +1,5 @@
 "use strict";
+const {nativeEqual}=require("./nap-native-compare");
 // Statement preparation only; no writes are executed here. Three grouped
 // writes maximum regardless of the number of swimmers in the change.
 const {positiveId}=require("./nap-direct-calendar");
@@ -10,7 +11,7 @@ function statements(plan,authority,end) {
   if(authority.nativeLeader) {
     const leader=authority.nativeLeader,columns=["id","compet","nom","prenom","date","club","pourclub"];
     if(columns.some(key=>!Object.hasOwn(leader,key)) || Number(leader.compet)!==Number(plan.competitionId) || ![String(leader.club),String(leader.pourclub)].includes(String(plan.clubId))) throw new TypeError("Chef d'equipe hors dossier.");
-    guard.sql+=` AND EXISTS (SELECT 1 FROM chefsdequipe scope_l FORCE INDEX (PRIMARY) WHERE scope_l.id=? AND ${columns.map(key=>`BINARY scope_l.\`${key}\` <=> BINARY ?`).join(" AND ")})`;
+    guard.sql+=` AND EXISTS (SELECT 1 FROM chefsdequipe scope_l FORCE INDEX (PRIMARY) WHERE scope_l.id=? AND ${columns.map(key=>nativeEqual(`scope_l.\`${key}\``)).join(" AND ")})`;
     guard.values.push(positiveId(leader.id),...columns.map(key=>leader[key]));
   }
   // The historic forfait linkage is ambiguous. Fail closed if one appears,
