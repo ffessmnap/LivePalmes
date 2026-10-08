@@ -25,6 +25,11 @@ const { readCompetitionResults } = require("../functions/nap-direct-competition-
   assert.equal(calendar.eventFromRow({ ...raw, libelle: "Stage de detection" }).eventType, "stage");
   assert.equal(calendar.eventFromRow({ ...raw, libelle: "Reunion regionale" }).eventType, "meeting");
   assert.equal(calendar.eventFromRow({ ...raw, libelle: "Stage", ld: 1 }).eventType, "openWater");
+  const explicit=calendar.eventFromRow({...raw,libelle:"Stage competition",event_type:"pool",created_by:"private",organizer_email:"private@example.test"});
+  assert.equal(explicit.eventType,"pool");
+  assert.ok(!("event_type" in explicit) && !("created_by" in explicit) && !("organizer_email" in explicit));
+  assert.equal(calendar.eventFromRow({...raw,event_type:null,libelle:"Stage"}).eventType,"stage");
+  assert.equal(calendar.eventFromRow({...raw,event_type:"invalid",libelle:"Stage"}).eventType,"stage");
   let queries = [];
   const pool = { execute: async (query, values) => {
     queries.push({ query, values });

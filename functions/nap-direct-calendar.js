@@ -30,7 +30,8 @@ function eventFromRow(row) {
   const titleType = /formation|initiateur|juge|chronom|recyclage|[ée]valuateur|sauv.?nage/i.test(name) ? "training"
     : /stage|d[ée]tection/i.test(name) ? "stage"
     : /r[ée]union|assembl[ée]e|colloque|s[ée]minair|date limite/i.test(name) ? "meeting" : "";
-  const eventType = Number(row.ld) === 1 ? "openWater" : ({ "Eau libre": "openWater", Formation: "training", Stage: "stage", "Réunion": "meeting" }[kind] || titleType || (kind === "Piscine" ? "pool" : "other"));
+  const explicitType = ["pool","openWater","training","stage","meeting","other"].includes(row.event_type) ? row.event_type : "";
+  const eventType = explicitType || (Number(row.ld) === 1 ? "openWater" : ({ "Eau libre": "openWater", Formation: "training", Stage: "stage", "Réunion": "meeting" }[kind] || titleType || (kind === "Piscine" ? "pool" : "other")));
   const level = nativeLevel(row.native_level_code) || ({ "Départementale": "departemental", "Départemental": "departemental", "Régionale": "regional", "Régional": "regional", "Championnat de Zones": "regional", "Critériums Nationaux": "national", Nationale: "national", National: "national", International: "international", Internationale: "international" }[text(row.level_label)] || ({ MONDE: "international", EUROPE: "international", FRANCE: "national", ZONE: "regional", REGIONAUX: "regional" })[text(row.scope_label)] || "");
   const regionId = ["national", "international"].includes(level) ? "" : rules.committeeId(row.comite);
   const id = `legacy-nap-${row.id}`;
@@ -48,7 +49,9 @@ function eventFromRow(row) {
     resultsPublishedAt: Number(row.has_results) ? date(row.date) : "",
     results: { pdfUrl, url: Number(row.has_results) ? `competition.html?id=${id}#competitionResultsTitle` : "", dataPath: Number(row.has_results) ? `results/${id}.json` : "" }, documents: [], program: [] };
 }
-const SELECT_EVENT = "SELECT STRAIGHT_JOIN c.id,c.libelle,c.lieu,c.date,c.enddate,c.comite,c.description,c.filepdf,c.affiche,c.bassin,c.chrono,c.ld,t.label AS type_label,l.label AS level_label,s.label AS scope_label,cp.nb_lignes,cp.niveau AS native_level_code,cp.actif,cp.date_limit,co.entry_closed,co.whatsapp_url AS portal_whatsapp,co.city AS portal_city,co.address AS portal_address,co.organizer_label AS portal_organizer,co.water_body_type AS portal_water_body_type,co.canceled AS portal_canceled,EXISTS(SELECT 1 FROM perfs p FORCE INDEX (livepalmes_compet_id) WHERE p.compet=c.id LIMIT 1) AS has_results FROM competitions c";
+// Optional additive fields stay server-side; eventFromRow whitelists the public response.
+// Same indexed query and row bound before/after the approved column addition.
+const SELECT_EVENT = "SELECT STRAIGHT_JOIN c.id,c.libelle,c.lieu,c.date,c.enddate,c.comite,c.description,c.filepdf,c.affiche,c.bassin,c.chrono,c.ld,t.label AS type_label,l.label AS level_label,s.label AS scope_label,cp.nb_lignes,cp.niveau AS native_level_code,cp.actif,cp.date_limit,co.*,co.entry_closed,co.whatsapp_url AS portal_whatsapp,co.city AS portal_city,co.address AS portal_address,co.organizer_label AS portal_organizer,co.water_body_type AS portal_water_body_type,co.canceled AS portal_canceled,EXISTS(SELECT 1 FROM perfs p FORCE INDEX (livepalmes_compet_id) WHERE p.compet=c.id LIMIT 1) AS has_results FROM competitions c";
 const EVENT_JOINS = " LEFT JOIN compet_parametres cp ON cp.compet=c.id LEFT JOIN compet_level l ON l.id=cp.niveau LEFT JOIN compet_types t ON t.id=c.typecnc LEFT JOIN compet_type s ON s.id=c.type LEFT JOIN livepalmes_competition_options co ON co.competition_id=c.id";
 async function execute(pool, sql, values = []) { return (await pool.execute({ sql, timeout: 10000 }, values))[0]; }
 async function readCalendarManifest(pool) {
