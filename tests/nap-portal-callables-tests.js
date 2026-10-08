@@ -93,6 +93,12 @@ for (const name of ["listEngagementCompetitions", "listEngagementCalendarEvents"
   await assert.rejects(sandbox.exports.createEngagementCompetition({data:{}}),error=>error.code==="invalid-argument");
   await assert.rejects(sandbox.exports.createEngagementCalendarEvent({data:{}}),error=>error.code==="failed-precondition");
   calls.length=0;management={uid:"national-admin",national:true};await sandbox.exports.createEngagementCompetition({data:{competitionType:"pool",creationId:"request-id",actorUid:"spoof",regionId:"PACA"}});assert.deepEqual(calls,["authorize","audit-backup","audit-checkpoint","competition-create","audit-complete","authorize","detail","documents"]);
+  for(const eventType of ["training","stage","meeting"]) {
+    calls.length=0;
+    const created=await sandbox.exports.createEngagementCalendarEvent({data:{eventType,creationId:"request-id",actorUid:"spoof",regionId:"PACA"}});
+    assert.equal(created.source,"nap");assert.equal(created.event.id,event.id);
+    assert.deepEqual(calls,["authorize","audit-backup","audit-checkpoint","competition-create","audit-complete","authorize","detail","documents"]);
+  }
   calls.length=0;management={uid:"region-admin",national:false,region:true,regionId:"AURA"};
   await assert.rejects(sandbox.exports.updateEngagementCompetition({data:{competitionId:event.id,actorUid:"spoof",national:true,patch:{entryStatus:"closed"}}}),error=>error.code==="permission-denied");assert.deepEqual(calls,["authorize"]);
   calls.length=0;management.regionId=event.regionId;past=true;

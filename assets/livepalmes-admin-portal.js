@@ -15693,6 +15693,7 @@
     try {
       const genericEvent = ["training", "stage", "meeting", "other"].includes(elements.engagementsCompetitionType?.value || "");
       const result = await callFunction(genericEvent ? "createEngagementCalendarEvent" : "createEngagementCompetition", genericEvent ? {
+        creationId: payload.creationId,
         eventType: elements.engagementsCompetitionType.value,
         name: payload.name,
         date: payload.date,
@@ -15712,7 +15713,7 @@
       await loadEngagementCompetitions({ force: true });
       upsertEngagementCalendarItemFromServer(
         genericEvent ? result.event : result.competition,
-        genericEvent ? "calendarEvent" : "competition"
+        result.source === "nap" ? "competition" : genericEvent ? "calendarEvent" : "competition"
       );
       newlyCreatedEngagementCompetitionId = genericEvent ? "" : result.competition?.id || "";
       if (elements.engagementsCreateMessage) {
