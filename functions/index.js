@@ -5691,10 +5691,20 @@ const qualificationService = createQualificationService({ db, HttpsError, catego
   access: engagementAccessContext, clubAccess: engagementClubAccessContext, entryIdFor: engagementClubEntryId,
   assertOpen: assertEngagementClubWriteOpen, audit: writeAuditLog });
 
-exports.listEngagementQualificationSources = onCall(CALLABLE_OPTIONS, (request) => qualificationService.listSources(request));
-exports.processEngagementQualificationJob = onCall({ ...CALLABLE_OPTIONS, timeoutSeconds: 300 }, (request) => qualificationService.process(request));
-exports.grantEngagementQualificationException = onCall(CALLABLE_OPTIONS, (request) => qualificationService.grantException(request));
-exports.acknowledgeEngagementQualificationAlert = onCall(CALLABLE_OPTIONS, (request) => qualificationService.acknowledgeAlert(request));
+exports.listEngagementQualificationSources = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.projectId === "livepalmes-test" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")], maxInstances:2, concurrency:4, timeoutSeconds:60 } : {}) }, async (request) => {
+  if (ENVIRONMENT.projectId !== "livepalmes-test") return qualificationService.listSources(request);
+  const context=await engagementAccessContext(request);
+  if(!context.national) throw new HttpsError("permission-denied","Droit national des engagements requis.");
+  try {
+    return await require("./nap-qualification-sources").listSources(require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD),request.data);
+  } catch(error) {
+    throw new HttpsError(error instanceof TypeError ? "invalid-argument" : "unavailable",error instanceof TypeError ? error.message : "Liste des competitions NAP momentanement indisponible.");
+  }
+});
+const pendingNapQualificationWrite = () => { throw new HttpsError("failed-precondition","Le raccordement NAP des controles et exceptions est en cours. Aucun engagement n'a ete modifie."); };
+exports.processEngagementQualificationJob = onCall({ ...CALLABLE_OPTIONS, timeoutSeconds: 300 }, (request) => ENVIRONMENT.projectId === "livepalmes-test" ? pendingNapQualificationWrite() : qualificationService.process(request));
+exports.grantEngagementQualificationException = onCall(CALLABLE_OPTIONS, (request) => ENVIRONMENT.projectId === "livepalmes-test" ? pendingNapQualificationWrite() : qualificationService.grantException(request));
+exports.acknowledgeEngagementQualificationAlert = onCall(CALLABLE_OPTIONS, (request) => ENVIRONMENT.projectId === "livepalmes-test" ? pendingNapQualificationWrite() : qualificationService.acknowledgeAlert(request));
 // Retired endpoints remain deny-only so previously deployed clients cannot use
 // the removed request workflow. Historical documents are not migrated or erased.
 const retiredQualificationRequest = () => { throw new HttpsError("failed-precondition", "Les demandes de dérogation sont supprimées. Une exception peut être accordée directement par le National."); };
