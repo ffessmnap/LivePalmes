@@ -3,6 +3,7 @@
 // One audit read and two audit writes. No entry, licence or role is rewritten.
 const {createHash}=require("node:crypto");
 const {isDeepStrictEqual}=require("node:util");
+const {nativeEqual}=require("./nap-native-compare");
 const {SOURCES,OPTION_COLUMNS,normalizeOptions,person}=require("./nap-club-people");
 const {reference}=require("./nap-club-person-status");
 const {date}=require("./nap-direct-calendar");
@@ -21,7 +22,7 @@ function planIdentity(native,patch) {
 function statement(before,after) {
   const changed=["nom","prenom","date"].filter(key=>before[key]!==after[key]);
   if(!changed.length) throw new TypeError("Aucun champ a modifier.");
-  return {sql:`UPDATE officiels SET ${changed.map(key=>`\`${key}\`=?`).join(",")} WHERE id=? AND ${spec.columns.slice(1).map(key=>`BINARY \`${key}\` <=> BINARY ?`).join(" AND ")} LIMIT 1`,values:[...changed.map(key=>after[key]),before.id,...spec.columns.slice(1).map(key=>before[key])]};
+  return {sql:`UPDATE officiels SET ${changed.map(key=>`\`${key}\`=?`).join(",")} WHERE id=? AND ${spec.columns.slice(1).map(key=>nativeEqual(`\`${key}\``)).join(" AND ")} LIMIT 1`,values:[...changed.map(key=>after[key]),before.id,...spec.columns.slice(1).map(key=>before[key])]};
 }
 async function editNativePerson(pool,input,audit,authorize) {
   if(typeof authorize!=="function" || typeof input?.clubId!=="string" || !/^\d{1,16}$/.test(input.clubId) || typeof input.actorUid!=="string" || !input.actorUid || input.actorUid.length>128 || !/^[a-f0-9]{64}$/.test(input.expectedFingerprint || "")) throw new TypeError("Fiche et perimetre NAP requis.");

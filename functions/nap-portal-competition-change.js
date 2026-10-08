@@ -2,6 +2,7 @@
 // Explicit patches only: untouched native fields, courses and entries stay intact.
 // MyISAM operations are journaled separately; never claim a cross-table rollback.
 const { createHash } = require("node:crypto");
+const {nativeEqual}=require("./nap-native-compare");
 const { isDeepStrictEqual } = require("node:util");
 const native = require("./nap-portal-competitions");
 const calendar = require("./nap-direct-calendar");
@@ -138,7 +139,7 @@ function authorityGuard(target, snapshot) {
   for(const table of ["competitions","compet_parametres"]) {
     if(table===target) continue;
     const spec=SPECS[table], row=selectRow(snapshot[table],spec),alias=table==="competitions" ? "scope_c" : "scope_p";
-    clauses.push(`EXISTS (SELECT 1 FROM \`${table}\` ${alias} WHERE ${alias}.\`${spec.key}\`=? AND ${spec.columns.map(key=>`BINARY ${alias}.\`${key}\` <=> BINARY ?`).join(" AND ")})`);
+    clauses.push(`EXISTS (SELECT 1 FROM \`${table}\` ${alias} WHERE ${alias}.\`${spec.key}\`=? AND ${spec.columns.map(key=>nativeEqual(`${alias}.\`${key}\``)).join(" AND ")})`);
     values.push(row[spec.key],...spec.columns.map(key=>row[key]));
   }
   return {sql:clauses.join(" AND "),values};
@@ -152,7 +153,7 @@ function buildStatement(item, authority) {
   if(before) {
     const columns=spec.columns.filter(key=>!isDeepStrictEqual(normalizedRow(before)[key],normalizedRow(after)[key]));
     if(!columns.length) throw new TypeError("Modification vide.");
-    const guard=spec.columns.map(key=>JSON_COLUMNS.has(key) ? `\`${key}\` <=> CAST(? AS JSON)` : `BINARY \`${key}\` <=> BINARY ?`).join(" AND ");
+    const guard=spec.columns.map(key=>JSON_COLUMNS.has(key) ? `\`${key}\` <=> CAST(? AS JSON)` : nativeEqual(`\`${key}\``)).join(" AND ");
     return {sql:`UPDATE \`${item.table}\` SET ${columns.map(key=>`\`${key}\`=?`).join(",")} WHERE \`${spec.key}\`=? AND ${guard} AND ${scope.sql} LIMIT 1`,values:[...columns.map(key=>value(key,after)),after[spec.key],...spec.columns.map(key=>value(key,before)),...scope.values]};
   }
   if(!item.table.startsWith("livepalmes_")) throw new TypeError("Insertion native interdite.");

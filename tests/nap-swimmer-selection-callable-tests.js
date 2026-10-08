@@ -9,12 +9,13 @@ const competition={event:{eventType:"pool"},nativeParameters:{qualif:0,cat_d:nul
 const person={id:"1",firstName:"Person",lastName:"Example",birthDate:"1990-01-01",sex:"M",clubId:"106"};
 const context={nativeClubEntryView:async()=>({source:"nap"}),exports:{},ENVIRONMENT:{projectId:"livepalmes-test"},CALLABLE_OPTIONS:{},defineSecret:value=>value,onCall:(options,fn)=>Object.assign(fn,{options}),HttpsError,TypeError,RangeError,Date,process:{env:{LIVEPALMES_NAP_PASSWORD:"placeholder"}},cleanText:value=>String(value??"").trim(),cleanIsoDate:value=>/^\d{4}-\d{2}-\d{2}$/.test(value||"")?value:"",ageCategoryFromDates:()=>"S",ENGAGEMENT_EVENT_DEFINITION_BY_CODE:new Map(),engagementClubAccessContext:async()=>({clubId:"106",uid:"actor"}),writeAuditLogOnce:async()=>{complete++;},db:{collection:name=>{assert.equal(name,"auditLogs","TEST writes no legacy sports collections");return {doc:()=>({get:async()=>{read++;return {exists:false};},create:async()=>{prepare++;}})};}},require:name=>{
   if(name==="./nap-swimmer-entry-plan") return require("../functions/nap-swimmer-entry-plan");
+  if(name==="./nap-entry-participation-rules") return require("../functions/nap-entry-participation-rules");
   if(name==="./nap-portal-swimmers") return {portalPool:()=>({native:true})};
   if(name==="./nap-portal-workspaces") return {competitionItem:()=>({date:"2026-10-11"}),entryItem:()=>({source:"nap"})};
   if(name==="./nap-swimmer-entry-change") return {saveNativeSwimmerSelection:async(pool,input,services)=>{
     assert.equal(pool.native,true);assert.equal(input.clubId,"106");assert.equal(input.actorUid,"actor");assert.equal(input.changes[0].swimmerId,"1");assert.equal(Object.hasOwn(input.changes[0],"licenseNumber"),false);
     await services.authorize({clubId:"106"});await assert.rejects(async()=>services.authorize({clubId:"999"}),/hors/);
-    services.validate({competition,pack,plan:{additions:[person]}});
+    await services.validate({connection:{execute:async query=>{assert.match(query.sql,/FROM perfs FORCE INDEX \(nageur\)/);return [[]];}},competition,pack,plan:{additions:[person]}});
     await services.audit.read("operation");await services.audit.prepare("operation",{});await services.audit.complete("operation",{});calls++;
     return {nativeEntry:pack,competition,operation:"operation",writesExecuted:1};
   }};
@@ -27,6 +28,7 @@ vm.createContext(context);vm.runInContext(source.slice(start,end),context);
   await context.exports.saveEngagementClubSwimmerSelection({data:{...request.data,swimmerIndexId:"1",selected:true}});assert.equal(calls,2);
   competition.nativeParameters.qualif=1;await assert.rejects(()=>context.exports.saveEngagementClubSwimmerSelections(request),/qualifications/);assert.equal(calls,2);competition.nativeParameters.qualif=0;
   competition.participations=[{participation:123}];await assert.rejects(()=>context.exports.saveEngagementClubSwimmerSelections(request),/participation/);assert.equal(calls,2);competition.participations=[];
+  competition.participations=[{participation:123,modeengagement:"presence"}];await assert.rejects(()=>context.exports.saveEngagementClubSwimmerSelections(request),/resultat NAP/);assert.equal(calls,2);competition.participations=[];
   competition.event.eventType="training";await assert.rejects(()=>context.exports.saveEngagementClubSwimmerSelections(request),/Type/);assert.equal(calls,2);competition.event.eventType="pool";
   competition.nativeParameters.cat_d=1;await assert.rejects(()=>context.exports.saveEngagementClubSwimmerSelections(request),/categories/);assert.equal(calls,2);competition.nativeParameters.cat_d=null;
   pack.leaders=[{prenom:"Person",nom:"Example",date:"1990-01-01"}];await assert.rejects(()=>context.exports.saveEngagementClubSwimmerSelections(request),/chef/);assert.equal(calls,2);

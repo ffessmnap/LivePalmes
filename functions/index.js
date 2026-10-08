@@ -10593,9 +10593,9 @@ exports.getEngagementClubEntry = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.p
     const pack = await require("./nap-portal-entries").readNativeClubEntry(pool, { competitionId, clubId: context.clubId }, ({ clubId }) => {
       if (String(clubId) !== String(context.clubId)) throw new HttpsError("permission-denied", "Dossier hors du club autorise.");
     });
-    return { ok: true, source: "nap", competition: { ...competition, nativeTeamLeaderEditable: pack.leaders.length <= 1, nativeRelaysEditable: competition.competitionType === "pool" && pack.leaders.length === 1 && !require("./nap-swimmer-entry-plan").selectionLockReason(competition), nativeOfficialsEditable: pack.leaders.length === 1 && new Set((pack.officials || []).map(row=>String(row.officiel))).size<=80, nativeIndividualEntriesEditable: pack.leaders.length === 1 && !require("./nap-entry-course-rules").courseLockReason(competition), nativeSwimmerSelectionEditable: pack.leaders.length === 1 && !require("./nap-swimmer-entry-plan").selectionLockReason(competition) }, entry: await nativeClubEntryView(pack,context,competition),
+    return { ok: true, source: "nap", competition: { ...competition, nativeTeamLeaderEditable: pack.leaders.length <= 1, nativeTeamLeaderRequired: pack.leaders.length === 0, nativeRelaysEditable: competition.competitionType === "pool" && pack.leaders.length === 1 && !require("./nap-swimmer-entry-plan").selectionLockReason(competition), nativeOfficialsEditable: pack.leaders.length === 1 && new Set((pack.officials || []).map(row=>String(row.officiel))).size<=80, nativeIndividualEntriesEditable: pack.leaders.length === 1 && !require("./nap-entry-course-rules").courseLockReason(competition), nativeSwimmerSelectionEditable: pack.leaders.length === 1 && !require("./nap-swimmer-entry-plan").selectionLockReason(competition) }, entry: await nativeClubEntryView(pack,context,competition),
       readStats: portalReadStats("getEngagementClubEntry", startedAt, { baseDocuments: 1, variableDocumentsMax: 0, cacheHit: false }),
-      sqlBudget: { queriesMax: 24, rowsMax: 19719 } };
+      sqlBudget: { queriesMax: 25, rowsMax: 20519 } };
   }
   const competitionRef = db.collection("engagementCompetitions").doc(competitionId);
   const entryRef = db.collection("engagementClubEntries").doc(engagementClubEntryId(competitionId, context.clubId));
@@ -10688,7 +10688,7 @@ async function generateNativeClubRecapPdf(context, competitionId) {
     const pdf = await buildEngagementClubRecapPdf(competition, entry);
     if (!Buffer.isBuffer(pdf.buffer) || pdf.buffer.length > 10000000) throw new RangeError("Recapitulatif trop volumineux.");
     return { ok: true, source: "nap", fileName: pdf.fileName, contentType: "application/pdf", generatedAt: pdf.generatedAt,
-      fromStorage: false, pdfBase64: pdf.buffer.toString("base64"), sqlBudget: { queriesMax: 24, rowsMax: 19719 } };
+      fromStorage: false, pdfBase64: pdf.buffer.toString("base64"), sqlBudget: { queriesMax: 25, rowsMax: 20519 } };
   } catch (error) {
     if (error instanceof HttpsError) throw error;
     throw new HttpsError(error instanceof RangeError ? "resource-exhausted" : error instanceof TypeError ? "failed-precondition" : "unavailable",
@@ -11918,7 +11918,7 @@ exports.saveEngagementClubTeamLeader = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRON
       }, event => assertEngagementClubWriteOpen(event));
       const competition = await nativePortalCompetition(competitionId, () => {});
       const pack = await require("./nap-portal-entries").readNativeClubEntry(pool, { competitionId, clubId: context.clubId }, () => {});
-      return { ...result, competition: { ...competition, nativeTeamLeaderEditable: pack.leaders.length <= 1, nativeRelaysEditable: competition.competitionType === "pool" && pack.leaders.length === 1 && !require("./nap-swimmer-entry-plan").selectionLockReason(competition), nativeOfficialsEditable: pack.leaders.length === 1 && new Set((pack.officials || []).map(row=>String(row.officiel))).size<=80, nativeIndividualEntriesEditable: pack.leaders.length === 1 && !require("./nap-entry-course-rules").courseLockReason(competition), nativeSwimmerSelectionEditable: pack.leaders.length === 1 && !require("./nap-swimmer-entry-plan").selectionLockReason(competition) }, entry: await nativeClubEntryView(pack,context,competition) };
+      return { ...result, competition: { ...competition, nativeTeamLeaderEditable: pack.leaders.length <= 1, nativeTeamLeaderRequired: pack.leaders.length === 0, nativeRelaysEditable: competition.competitionType === "pool" && pack.leaders.length === 1 && !require("./nap-swimmer-entry-plan").selectionLockReason(competition), nativeOfficialsEditable: pack.leaders.length === 1 && new Set((pack.officials || []).map(row=>String(row.officiel))).size<=80, nativeIndividualEntriesEditable: pack.leaders.length === 1 && !require("./nap-entry-course-rules").courseLockReason(competition), nativeSwimmerSelectionEditable: pack.leaders.length === 1 && !require("./nap-swimmer-entry-plan").selectionLockReason(competition) }, entry: await nativeClubEntryView(pack,context,competition) };
     } catch (error) {
       if (error instanceof HttpsError) throw error;
       throw new HttpsError(error instanceof TypeError ? "failed-precondition" : error instanceof RangeError ? "resource-exhausted" : "unavailable", error instanceof TypeError || error instanceof RangeError ? error.message : "Modification NAP a verifier. Reprenez la meme correction ; la sauvegarde est conservee.");
@@ -12289,7 +12289,7 @@ async function saveNativeClubOfficials(context,request) {
     });
     const competition=require("./nap-portal-workspaces").competitionItem(result.competition,ENGAGEMENT_EVENT_DEFINITION_BY_CODE);
     return {ok:true,source:"nap",operation:result.operation,writesExecuted:result.writesExecuted,
-      entry:await nativeClubEntryView(result.nativeEntry,context,competition),sqlBudget:{queriesMax:32,writesMax:2}};
+      entry:await nativeClubEntryView(result.nativeEntry,context,competition),sqlBudget:{queriesMax:33,writesMax:2}};
   } catch(error) {
     if(error instanceof HttpsError) throw error;
     throw new HttpsError(error instanceof RangeError?"resource-exhausted":error instanceof TypeError?"failed-precondition":"unavailable",error instanceof RangeError || error instanceof TypeError?error.message:"Enregistrement NAP a verifier. Reprenez la meme selection ; la sauvegarde est conservee.");
@@ -16206,7 +16206,7 @@ async function saveNativeClubIndividualEntries(context,request) {
     const competition=require("./nap-portal-workspaces").competitionItem(result.competition,ENGAGEMENT_EVENT_DEFINITION_BY_CODE);
     return {ok:true,source:"nap",operation:result.operation,writesExecuted:result.writesExecuted,
       entry:await nativeClubEntryView(result.nativeEntry,context,competition),
-      sqlBudget:{queriesMax:36,writesMax:3}};
+      sqlBudget:{queriesMax:38,writesMax:3}};
   } catch(error) {
     if(error instanceof HttpsError) throw error;
     throw new HttpsError(error instanceof RangeError?"resource-exhausted":error instanceof TypeError?"failed-precondition":"unavailable",error instanceof RangeError || error instanceof TypeError?error.message:"Enregistrement NAP a verifier. Reprenez la meme modification ; la sauvegarde est conservee.");
@@ -16373,11 +16373,13 @@ async function saveNativeClubSwimmerSelections(context,request,rawChanges) {
         // Open/deadline are checked by the executor, permitting confirmation of
         // an already completed operation after closure without another write.
       },
-      validate:({competition,pack,plan})=>{
+      validate:async({connection,competition,pack,plan})=>{
         const reason=require("./nap-swimmer-entry-plan").selectionLockReason(competition);
         if(reason) throw new TypeError(reason);
+        const participation=require("./nap-entry-participation-rules"),evidence=await participation.readEvidence(connection,plan.additions,competition);
         const samePerson=(person,row)=>cleanText(person.firstName).toLocaleLowerCase("fr-FR")===cleanText(row.prenom).toLocaleLowerCase("fr-FR") && cleanText(person.lastName).toLocaleLowerCase("fr-FR")===cleanText(row.nom).toLocaleLowerCase("fr-FR") && (!cleanIsoDate(row.date) || cleanIsoDate(person.birthDate)===cleanIsoDate(row.date));
         for(const person of plan.additions) {
+          if(!participation.eligible(competition,person.id,evidence)) throw new TypeError("Un resultat NAP dans au moins une competition requise est necessaire pour engager ce nageur.");
           if(!person.firstName || !person.lastName || !cleanIsoDate(person.birthDate) || !["F","M"].includes(person.sex)) throw new TypeError("Completez l'identite NAP du nageur avant l'engagement.");
           if(pack.leaders.some(row=>samePerson(person,row))) throw new TypeError("Une meme personne ne peut pas etre nageur et chef d'equipe sur cette competition.");
           if(pack.officials.some(row=>samePerson(person,row))) throw new TypeError("Une meme personne ne peut pas etre nageur et officiel sur cette competition.");
@@ -16390,7 +16392,7 @@ async function saveNativeClubSwimmerSelections(context,request,rawChanges) {
       }
     });
     const competition=require("./nap-portal-workspaces").competitionItem(result.competition,ENGAGEMENT_EVENT_DEFINITION_BY_CODE);
-    return {ok:true,source:"nap",operation:result.operation,writesExecuted:result.writesExecuted,entry:await nativeClubEntryView(result.nativeEntry,context,competition),sqlBudget:{queriesMax:43,writesMax:4}};
+    return {ok:true,source:"nap",operation:result.operation,writesExecuted:result.writesExecuted,entry:await nativeClubEntryView(result.nativeEntry,context,competition),sqlBudget:{queriesMax:45,writesMax:4}};
   } catch(error) {
     if(error instanceof HttpsError) throw error;
     throw new HttpsError(error instanceof RangeError?"resource-exhausted":error instanceof TypeError?"failed-precondition":"unavailable",error instanceof RangeError || error instanceof TypeError?error.message:"Enregistrement NAP a verifier. Reprenez la meme modification ; la sauvegarde est conservee.");
@@ -16759,7 +16761,7 @@ async function saveNativeClubRelays(context,request) {
       })});
     }
     const competition=require("./nap-portal-workspaces").competitionItem(result.competition,ENGAGEMENT_EVENT_DEFINITION_BY_CODE);
-    return {ok:true,source:"nap",operation:result.operation,writesExecuted:result.writesExecuted,entry:await nativeClubEntryView(result.nativeEntry,context,competition),sqlBudget:{queriesMax:61,writesMax:5}};
+    return {ok:true,source:"nap",operation:result.operation,writesExecuted:result.writesExecuted,entry:await nativeClubEntryView(result.nativeEntry,context,competition),sqlBudget:{queriesMax:63,writesMax:5}};
   } catch(error) {
     if(error instanceof HttpsError) throw error;
     throw new HttpsError(error instanceof RangeError?"resource-exhausted":error instanceof TypeError?"failed-precondition":"unavailable",error instanceof RangeError || error instanceof TypeError?error.message:"Enregistrement NAP a verifier. Reprenez la meme modification ; la sauvegarde est conservee.");

@@ -31,7 +31,7 @@ vm.createContext(context);vm.runInContext(source.slice(start,end),context);
 (async()=>{
   const request={data:{competitionId:"legacy-nap-5140",swimmers:[{swimmerIndexId:"1",clubId:"999",individualEntries:[{eventCode:"50BI"}]}],expectedFingerprint:"a".repeat(64),mutationId:"11111111-1111-4111-8111-111111111111"}};
   const result=await context.exports.saveEngagementClubIndividualEntries(request);
-  assert.equal(result.source,"nap");assert.equal(result.entry.source,"nap");assert.equal(result.sqlBudget.queriesMax,36);assert.equal(calls,1);assert.equal(categoriesReads,1);assert.equal(recordsReads,0);
+  assert.equal(result.source,"nap");assert.equal(result.entry.source,"nap");assert.equal(result.sqlBudget.queriesMax,38);assert.equal(calls,1);assert.equal(categoriesReads,1);assert.equal(recordsReads,0);
   assert.deepEqual(Array.from(context.exports.saveEngagementClubIndividualEntries.options.secrets),["LIVEPALMES_NAP_PASSWORD"]);
   request.data.swimmers[0].individualEntries[0].entryTimeMode="manual";
   await context.exports.saveEngagementClubIndividualEntries(request);assert.equal(recordsReads,1);assert.equal(validated,1);

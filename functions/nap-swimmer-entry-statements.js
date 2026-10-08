@@ -1,4 +1,5 @@
 "use strict";
+const {nativeEqual}=require("./nap-native-compare");
 const {positiveId}=require("./nap-direct-calendar");
 const {entryAuthority,deadline}=require("./nap-official-entry-statements");
 // Four grouped statements maximum. This module never executes SQL.
@@ -7,7 +8,7 @@ function statements(plan,authority,end) {
   if(!/^\d{1,16}$/.test(clubId) || !Array.isArray(plan.additions) || !Array.isArray(plan.removals) || plan.additions.length+plan.removals.length>50 || Number(authority?.competitions?.id)!==competitionId || Number(authority?.compet_parametres?.compet)!==competitionId || Number(authority?.compet_parametres?.actif)!==1) throw new TypeError("Selection ouverte et bornee requise.");
   const guard=entryAuthority(authority,competitionId),leader=authority.nativeLeader,columns=["id","compet","nom","prenom","date","club","pourclub"];
   if(!leader || columns.some(key=>!Object.hasOwn(leader,key)) || Number(leader.compet)!==competitionId || ![String(leader.club),String(leader.pourclub)].includes(clubId)) throw new TypeError("Chef d'equipe hors du dossier.");
-  guard.sql+=` AND EXISTS (SELECT 1 FROM chefsdequipe scope_l FORCE INDEX (PRIMARY) WHERE scope_l.id=? AND ${columns.map(key=>`BINARY scope_l.\`${key}\` <=> BINARY ?`).join(" AND ")})`;
+  guard.sql+=` AND EXISTS (SELECT 1 FROM chefsdequipe scope_l FORCE INDEX (PRIMARY) WHERE scope_l.id=? AND ${columns.map(key=>nativeEqual(`scope_l.\`${key}\``)).join(" AND ")})`;
   guard.values.push(positiveId(leader.id),...columns.map(key=>leader[key]));
   // Do not interpret the ambiguous historic forfait.engagement linkage.
   const withoutForfeits="NOT EXISTS (SELECT 1 FROM forfait scope_f FORCE INDEX (livepalmes_compet_engagement_id) WHERE scope_f.compet=?)";
@@ -15,7 +16,7 @@ function statements(plan,authority,end) {
   function personScope(person,values) {
     if(String(person.clubId)!==clubId) throw new TypeError("Nageur hors du dossier.");
     values.push(positiveId(person.id),clubId,person.lastName,person.firstName,person.birthDate,person.sex);
-    return "EXISTS (SELECT 1 FROM nageurs scope_n FORCE INDEX (PRIMARY) WHERE scope_n.id=? AND BINARY scope_n.club=BINARY ? AND BINARY scope_n.nom <=> BINARY ? AND BINARY scope_n.prenom <=> BINARY ? AND BINARY scope_n.date <=> BINARY ? AND BINARY scope_n.sexe <=> BINARY ?)";
+    return `EXISTS (SELECT 1 FROM nageurs scope_n FORCE INDEX (PRIMARY) WHERE scope_n.id=? AND BINARY scope_n.club=BINARY ? AND ${nativeEqual("scope_n.nom")} AND ${nativeEqual("scope_n.prenom")} AND BINARY scope_n.date <=> BINARY ? AND BINARY scope_n.sexe <=> BINARY ?)`;
   }
   const individuals=[],members=[],inscriptions=[];
   for(const removal of plan.removals) {
@@ -59,7 +60,7 @@ function statements(plan,authority,end) {
     const values=[competitionId,competitionId],rows=plan.additions.map(person=>{
       const scopeValues=[];personScope(person,scopeValues);
       values.push(...scopeValues);
-      return "(n.id=? AND BINARY n.club=BINARY ? AND BINARY n.nom <=> BINARY ? AND BINARY n.prenom <=> BINARY ? AND BINARY n.date <=> BINARY ? AND BINARY n.sexe <=> BINARY ?)";
+      return `(n.id=? AND BINARY n.club=BINARY ? AND ${nativeEqual("n.nom")} AND ${nativeEqual("n.prenom")} AND BINARY n.date <=> BINARY ? AND BINARY n.sexe <=> BINARY ?)`;
     });
     values.push(...guard.values,deadline(end));
     result.push({kind:"insert",sql:`INSERT INTO nageursengager (compet,nageur) SELECT ?,n.id FROM nageurs n FORCE INDEX (PRIMARY) LEFT JOIN nageursengager existing FORCE INDEX (livepalmes_compet_nageur_id) ON existing.compet=? AND existing.nageur=n.id WHERE existing.id IS NULL AND (${rows.join(" OR ")}) AND ${guard.sql} AND UTC_TIMESTAMP() < ? ORDER BY n.id LIMIT 50`,values});

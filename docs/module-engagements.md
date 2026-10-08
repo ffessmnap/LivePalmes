@@ -351,6 +351,8 @@ Transition NAP autorisee par Antoine le 6 octobre 2026 : sur TEST, la declaratio
 
 Raccordement du premier dossier NAP : lorsqu'aucun chef n'est encore declare, les champs nom, prenom et date de naissance permettent de creer la declaration native du club. Une declaration existante reste corrigeable. Une absence de declaration ne signifie jamais une renonciation ; les options exterieures et de renonciation restent a raccorder separement.
 
+Participation prealable NAP, regle confirmee le 8 octobre 2026 : lorsque des competitions sont requises, un resultat enregistre dans au moins une de celles de la liste suffit ; une inscription seule ne suffit pas. Les modes presence, tps et presencetps controlent respectivement cette participation, les competitions sources des temps connus, ou les deux. Les regles de periode et de saisie des temps restent appliquees. Les engagements historiques ne sont pas reecrits.
+
 Si le chef d'equipe n'est pas du club, son club doit etre renseigne.
 
 Si le club ne declare pas de chef d'equipe, il doit cocher explicitement une case indiquant qu'il renonce au droit de reclamation.

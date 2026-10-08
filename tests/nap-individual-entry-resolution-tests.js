@@ -38,5 +38,16 @@ const input={competition,pack,changes:[{swimmerId:1,entries:native}],histories:n
   assert.equal(waterPlan.plans[0].additions[0].tps,"000000");
   await assert.rejects(()=>resolveChanges({...waterInput,changes:[{swimmerId:1,entries:[{eventCode:"OW500BI",entryTime:"3:00.00"}]}]},waterServices),/Aucun temps/);
   await assert.rejects(()=>resolveChanges(waterInput,{...waterServices,view:()=>({...waterView,events:[{...waterView.events[0],nativeCourses:[{course:"1000",sexe:"M"},{course:"1000SF",sexe:"M"}]},waterView.events[1]]})}),/ambigue/);
+  const presence={...competition,participations:[{participation:10,modeengagement:"presence"},{participation:11,modeengagement:"presence"}]};
+  let evidenceReads=0;
+  const evidenceConnection={execute:async query=>{evidenceReads++;assert.match(query.sql,/FROM perfs FORCE INDEX \(nageur\)/);return [[{nageur:1,compet:11}]];}};
+  const adding={...input,competition:presence,connection:evidenceConnection,changes:[{swimmerId:1,entries:[...native,{eventCode:"400BI"}]}]};
+  await resolveChanges(adding,services);assert.equal(evidenceReads,1,"one recorded result in either required competition allows a new course");
+  const noResult={execute:async()=>[[]]};
+  await assert.rejects(()=>resolveChanges({...adding,connection:noResult},services),/resultat NAP/);
+  await resolveChanges({...input,competition:presence,connection:noResult},services);
+  await resolveChanges({...input,competition:presence,connection:noResult,changes:[{swimmerId:1,entries:[]}]},services);
+  const timeRestricted={...competition,participations:[{participation:20,modeengagement:"tps"}]};
+  await resolveChanges({...input,competition:timeRestricted,histories:new Map([["1",[{competitionId:"20"},{competitionId:"99"}]]]),changes:[{swimmerId:1,entries:[...native,{eventCode:"400BI"}]}]},{...services,automatic:(entry,rows)=>{assert.deepEqual(rows,[{competitionId:"20"}]);return {eventCode:entry.eventCode,entryTimeMode:"known",entryTimeValue:20000};}});
   console.log("Native individual resolution: unchanged raw/unknown/invalid times preserved, trusted automatic/manual rules and grouped RF/MPF checks verified");
 })().catch(error=>{console.error(error);process.exitCode=1;});

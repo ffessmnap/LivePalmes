@@ -3,6 +3,7 @@
 // dossier or reconcile sporting entries. Budget: 14 competition + 8 dossier
 // reads, trigger/PK checks, one guarded UPDATE and one verification read.
 const {isDeepStrictEqual}=require("node:util");
+const {nativeEqual}=require("./nap-native-compare");
 const {positiveId,date}=require("./nap-direct-calendar");
 const {fingerprint}=require("./nap-portal-workspaces");
 const {operationHash,authorityGuard}=require("./nap-portal-competition-change");
@@ -33,7 +34,7 @@ function buildLeaderUpdate(plan,authority,deadline) {
   const scope=authorityGuard("chefsdequipe",authority);
   const changed=["nom","prenom","date"].filter(key=>plan.before[key]!==plan.after[key]);
   if(!changed.length) throw new TypeError("Aucun champ a modifier.");
-  return {sql:`UPDATE chefsdequipe SET ${changed.map(key=>`\`${key}\`=?`).join(",")} WHERE id=? AND ${COLUMNS.slice(1).map(key=>`BINARY \`${key}\` <=> BINARY ?`).join(" AND ")} AND ${scope.sql} AND UTC_TIMESTAMP() < ? LIMIT 1`,values:[...changed.map(key=>plan.after[key]),plan.before.id,...COLUMNS.slice(1).map(key=>plan.before[key]),...scope.values,deadline.replace("T"," ").replace("Z","")]};
+  return {sql:`UPDATE chefsdequipe SET ${changed.map(key=>`\`${key}\`=?`).join(",")} WHERE id=? AND ${COLUMNS.slice(1).map(key=>nativeEqual(`\`${key}\``)).join(" AND ")} AND ${scope.sql} AND UTC_TIMESTAMP() < ? LIMIT 1`,values:[...changed.map(key=>plan.after[key]),plan.before.id,...COLUMNS.slice(1).map(key=>plan.before[key]),...scope.values,deadline.replace("T"," ").replace("Z","")]};
 }
 async function editNativeTeamLeader(pool,input,audit,authorize) {
   if(typeof authorize!=="function" || !/^\d{1,16}$/.test(String(input.clubId))) throw new TypeError("Club autorise requis.");

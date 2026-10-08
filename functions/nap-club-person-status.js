@@ -1,4 +1,5 @@
 "use strict";
+const {nativeEqual}=require("./nap-native-compare");
 // Only the LivePalmes active flag changes. Native identities and entries stay intact.
 // Fixed budget: 12 SQL calls maximum, one options write; one audit read/two writes.
 const {createHash}=require("node:crypto");
@@ -19,7 +20,7 @@ function reference(value) {
 }
 function buildStatusStatement(kind,before,previous,after) {
   const spec=SOURCES[kind];
-  const nativeGuard=spec.columns.map(key=>`BINARY n.\`${key}\` <=> BINARY ?`).join(" AND ");
+  const nativeGuard=spec.columns.map(key=>nativeEqual(`n.\`${key}\``)).join(" AND ");
   const nativeValues=spec.columns.map(key=>before[key]);
   if(previous) return {
     sql:`UPDATE ${table} o JOIN \`${spec.table}\` n ON n.id=? SET o.active=?,o.version=?,o.updated_at=?,o.updated_by=? WHERE o.source=? AND o.person_id=? AND ${OPTION_COLUMNS.map(key=>`BINARY o.\`${key}\` <=> BINARY ?`).join(" AND ")} AND ${nativeGuard}`,

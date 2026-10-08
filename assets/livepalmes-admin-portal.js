@@ -3538,6 +3538,7 @@
       napSource: competition.napSource === true,
       nativeReadOnly: competition.nativeReadOnly === true,
       nativeTeamLeaderEditable: competition.nativeTeamLeaderEditable === true,
+      nativeTeamLeaderRequired: competition.nativeTeamLeaderRequired === true,
       legacyCompetitionId: String(competition.legacyCompetitionId || ""),
       sourceType: competition.sourceType === "calendarEvent" ? "calendarEvent" : "competition",
       eventType: String(competition.eventType || ""),
@@ -10577,7 +10578,7 @@
       ].filter((item) => item && item !== "-").join(" · ");
     }
     if (elements.engagementsDetailMeta) elements.engagementsDetailMeta.innerHTML = competition.napSource === true
-      ? `<p role="status">${escapeHtml(global.LivePalmesEnvironment?.isTest === true && competition.nativeRelaysEditable && !competition.nativeIndividualEntriesEditable ? "La sélection des nageurs et les relais peuvent être enregistrés." : global.LivePalmesEnvironment?.isTest === true && competition.nativeIndividualEntriesEditable ? (competition.nativeRelaysEditable ? "Les nageurs, leurs courses, les officiels et les relais peuvent être enregistrés." : "Les nageurs, leurs courses et les officiels peuvent être enregistrés. Les relais restent consultables.") : global.LivePalmesEnvironment?.isTest === true && competition.nativeSwimmerSelectionEditable ? "La sélection des nageurs est disponible. La saisie des courses, des officiels et des relais sera disponible prochainement." : "Ce dossier est consultable. Les fonctions de saisie sont progressivement mises à disposition.")}</p>${(competition.nativeWarnings || []).map(warning => `<p>${escapeHtml(warning)}</p>`).join("")}`
+      ? `<p role="status">${escapeHtml(global.LivePalmesEnvironment?.isTest === true && competition.nativeTeamLeaderRequired ? "Déclarez votre chef d’équipe pour commencer les engagements." : global.LivePalmesEnvironment?.isTest === true && competition.nativeRelaysEditable && !competition.nativeIndividualEntriesEditable ? "La sélection des nageurs et les relais peuvent être enregistrés." : global.LivePalmesEnvironment?.isTest === true && competition.nativeIndividualEntriesEditable ? (competition.nativeRelaysEditable ? "Les nageurs, leurs courses, les officiels et les relais peuvent être enregistrés." : "Les nageurs, leurs courses et les officiels peuvent être enregistrés. Les relais restent consultables.") : global.LivePalmesEnvironment?.isTest === true && competition.nativeSwimmerSelectionEditable ? "La sélection des nageurs est disponible. La saisie des courses, des officiels et des relais sera disponible prochainement." : "Ce dossier est consultable. Les fonctions de saisie sont progressivement mises à disposition.")}</p>${(competition.nativeWarnings || []).map(warning => `<p>${escapeHtml(warning)}</p>`).join("")}`
       : "";
     const adminMode = isEngagementAdminMode();
     if (elements.engagementsDetailLevel) {

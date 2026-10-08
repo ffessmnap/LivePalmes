@@ -1,4 +1,5 @@
 "use strict";
+const {nativeEqual}=require("./nap-native-compare");
 // Unregistered preparation: one grouped PK lookup (80 people), one INSERT
 // and one DELETE maximum. No statement is executed by this module.
 const {SOURCES,OPTION_COLUMNS}=require("./nap-club-people");
@@ -20,7 +21,7 @@ function entryAuthority(authority,competitionId,clubId) {
   if(clubId!==undefined && (!leader || Number(leader.compet)!==Number(competitionId) || ![String(leader.club),String(leader.pourclub)].includes(String(clubId)))) throw new TypeError("Chef d'equipe natif requis pour l'enregistrement.");
   const leaderColumns=SOURCES.leaders.columns;
   if(clubId!==undefined && leaderColumns.some(key=>!Object.hasOwn(leader,key))) throw new TypeError("Chef d'equipe natif incomplet.");
-  const guard=clubId===undefined?base:{sql:`${base.sql} AND EXISTS (SELECT 1 FROM chefsdequipe scope_l WHERE ${leaderColumns.map(key=>key==="id"?"scope_l.id=?":`BINARY scope_l.\`${key}\` <=> BINARY ?`).join(" AND ")})`,values:[...base.values,...leaderColumns.map(key=>leader[key])]},options=authority.options;
+  const guard=clubId===undefined?base:{sql:`${base.sql} AND EXISTS (SELECT 1 FROM chefsdequipe scope_l WHERE ${leaderColumns.map(key=>key==="id"?"scope_l.id=?":nativeEqual(`scope_l.\`${key}\``)).join(" AND ")})`,values:[...base.values,...leaderColumns.map(key=>leader[key])]},options=authority.options;
   if(options===null) return {sql:`${guard.sql} AND NOT EXISTS (SELECT 1 FROM livepalmes_competition_options scope_o WHERE scope_o.competition_id=?)`,values:[...guard.values,positiveId(competitionId)]};
   if(!options || typeof options!=="object" || Number(options.competition_id)!==Number(competitionId) || !Object.hasOwn(options,"canceled") || !Object.hasOwn(options,"entry_closed")) throw new TypeError("Fermeture NAP a verifier.");
   return {sql:`${guard.sql} AND EXISTS (SELECT 1 FROM livepalmes_competition_options scope_o WHERE scope_o.competition_id=? AND BINARY scope_o.canceled <=> BINARY ? AND BINARY scope_o.entry_closed <=> BINARY ? AND COALESCE(scope_o.canceled,0)=0 AND COALESCE(scope_o.entry_closed,0)=0)`,values:[...guard.values,positiveId(competitionId),options.canceled,options.entry_closed]};
@@ -31,7 +32,7 @@ function insertion(plan,people,authority,end) {
   const predicates=plan.additions.map(native=>{
     const peers=people.filter(item=>Number(item.native.id)===Number(native.id));
     if(peers.length!==1 || String(native.club)!==plan.clubId) throw new TypeError("Source officiel NAP a verifier.");
-    const predicates=columns.map(key=>key==="id" ? "n.id=?" : `BINARY n.\`${key}\` <=> BINARY ?`);
+    const predicates=columns.map(key=>key==="id" ? "n.id=?" : nativeEqual(`n.\`${key}\``));
     values.push(...columns.map(key=>native[key]));
     if(peers[0].options) {
       predicates.push(...OPTION_COLUMNS.map(key=>`BINARY q.\`${key}\` <=> BINARY ?`));
