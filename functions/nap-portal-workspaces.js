@@ -28,9 +28,10 @@ function competitionItem(pack, definitions = new Map()) {
   const options = pack.options || {}, parameters = pack.nativeParameters;
   const courses = new Map();
   for (const row of pack.courses) {
-    const eventCode = nativeCourseCode(row.course) || `NAP-${row.id_course}`;
+    const waterDefinition=pack.event.eventType==="openWater" && !Number(row.relais) ? require("./nap-open-water-courses").definition(row.course) : null;
+    const eventCode = waterDefinition?.code || nativeCourseCode(row.course) || `NAP-${row.id_course}`;
     if (!courses.has(eventCode)) {
-      const definition = definitions.get(eventCode);
+      const definition = waterDefinition || definitions.get(eventCode);
       const extra = pack.courseOptions.find(item => code(item.event_code) === eventCode);
       courses.set(eventCode, { ...(definition || {}), code: eventCode, label: definition?.label || text(row.course) || `Course NAP ${row.id_course}`,
         type: Number(row.relais) ? "relay" : "individual", categoryRestrictions: json(extra?.category_restrictions, []),
@@ -66,14 +67,28 @@ function nativeTime(raw) {
   return { nativeTime: raw, entryTime: value ? time.formatTime(value) : text(raw), entryTimeValue: value || 0,
     entryTimeMode: "native", entryTimeWarning: !value && text(raw) ? "Temps natif conserve." : "" };
 }
-function entryItem(pack, context, categoryForBirthDate) {
+// At most one bounded reference query for an entire restricted dossier.
+// No extra read when there are no native course restrictions.
+async function entryWithCourseRules(connection,pack,context,competition,services) {
+  const entry=entryItem(pack,context,birthDate=>services.category(competition.date,birthDate),competition);
+  const rules=require("./nap-entry-course-rules");
+  if(!competition.nativeRules?.restrictions?.length || rules.courseLockReason(competition)) return entry;
+  const categories=await rules.readCategories(connection);
+  const native={...competition,restrictions:competition.nativeRules.restrictions};
+  for(const person of entry.swimmers) {
+    try { person.nativeAllowedEventCodes=rules.allowedCourses(person,native,competition,categories,services); }
+    catch(error) { if(!(error instanceof TypeError)) throw error;person.nativeAllowedEventCodes=[];person.nativeCourseWarning=error.message; }
+  }
+  return entry;
+}
+function entryItem(pack, context, categoryForBirthDate, competition = {}) {
   const identities = new Map(pack.swimmers.map(person => [String(person.id), person]));
   const swimmers = pack.inscriptions.map(inscription => {
     const person = identities.get(String(inscription.nageur));
     if (!person) throw new TypeError("Inscription NAP sans fiche nageur.");
     return { ...person, swimmerIndexId: String(person.id), licenseNumber: "", category: categoryForBirthDate(person.birthDate), nativeInscriptionId: String(inscription.id),
       individualEntries: pack.individual.filter(row => String(row.engagement) === String(inscription.id)).map(row => ({
-        nativeEntryId: String(row.id), eventCode: code(row.course), status: "selected", manualEntryTime: "", ...nativeTime(row.tps) })) };
+        nativeEntryId: String(row.id), eventCode: require("./nap-open-water-courses").displayCode(row.course,competition.eventType || competition.competitionType), status: "selected", manualEntryTime: "", ...nativeTime(row.tps) })) };
   });
   const leaders = pack.leaders.map(row => ({ nativeLeaderId: String(row.id), personId: `nap-leader-${row.id}`, mode: "person",
     firstName: text(row.prenom), lastName: text(row.nom), birthDate: calendar.date(row.date), sex: "", licenseNumber: "",
@@ -104,4 +119,4 @@ async function readDocuments(connection, competitionId) {
   return rows.map(row => ({ id: `nap-${row.id}`, title: text(row.name) || text(row.type_label), url: calendar.publicUrl(row.location),
     description: text(row.comment), category: /protocole|r[ée]sultat/i.test(`${row.name} ${row.type_label}`) ? "results" : "information", nativeDocument: true })).filter(row => row.url);
 }
-module.exports = { json, fingerprint, listItem, competitionItem, nativeTime, entryItem, readDocuments, nativeCourseCode };
+module.exports = { json, fingerprint, listItem, competitionItem, nativeTime, entryItem, entryWithCourseRules, readDocuments, nativeCourseCode };

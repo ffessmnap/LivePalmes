@@ -11,7 +11,7 @@ function courseLockReason(pack) {
   if(reason) return reason;
   try { require("./nap-entry-time-policy").policy(pack.nativeParameters?.saisie); } catch { return "Mode natif de saisie des temps a verifier."; }
   const restrictions=pack.restrictions || pack.nativeRules?.restrictions;
-  if(!Array.isArray(restrictions) || restrictions.length) return "Les restrictions natives par course restent a verifier avant la modification des courses.";
+  if(!Array.isArray(restrictions) || restrictions.length>3000 || restrictions.some(row=>!row || !/^[A-Z0-9]{1,32}$/.test(String(row.course)) || !Number.isSafeInteger(Number(row.categorie)) || Number(row.categorie)<=0 || ![0,1,"0","1"].includes(row.swim))) return "Les restrictions natives par course restent a verifier avant la modification des courses.";
   return "";
 }
 function allowedCourses(person,pack,competition,categories,services) {
@@ -28,12 +28,12 @@ function allowedCourses(person,pack,competition,categories,services) {
     if(event.type!=="individual" || !event.nativeRecognized || !event.nativeCourses.some(row=>String(row.sexe)===person.sex)) continue;
     if(services.forbidden(event.code,category)) continue;
     if(event.categoryRestrictions?.length && !event.categoryRestrictions.includes(category)) continue;
-    const restrictions=pack.restrictions.filter(row=>String(row.course)===event.code && Number(row.categorie)===Number(matches[0].id));
+    const nativeCodes=event.nativeCourses.map(row=>String(row.course || event.code));
+    const restrictions=pack.restrictions.filter(row=>nativeCodes.includes(String(row.course)) && Number(row.categorie)===Number(matches[0].id));
     if(restrictions.length>1 || restrictions.some(row=>![0,1].includes(Number(row.swim)))) throw new TypeError("Restriction native ambigue a verifier.");
-    // Value semantics must be supplied after comparing the private diagnostic
-    // to IntraNAP's visible checked/unchecked state; never guess that encoding.
-    if(restrictions.length && typeof services.nativeAllowed!=="function") throw new TypeError("Correspondance des restrictions natives a verifier.");
-    if(restrictions.length && !services.nativeAllowed(restrictions[0].swim)) continue;
+    // Verified on IntraNAP Jumièges 5194 / 1000 M: native 0 rows are
+    // unchecked; absent rows are checked and allowed by default.
+    if(restrictions.length && Number(restrictions[0].swim)!==1) continue;
     result.push(event.code);
   }
   return result;

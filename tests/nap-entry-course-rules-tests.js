@@ -12,9 +12,12 @@ assert.match(courseLockReason({...native,nativeParameters:{...native.nativeParam
 assert.match(courseLockReason({...native,nativeParameters:{...native.nativeParameters,saisie:1},restrictions:[{}]}),/restrictions/);
 assert.deepEqual(allowedCourses(person,native,competition,categories,services),["50BI","50AP"]);
 const restricted={...native,restrictions:[{course:"50BI",categorie:1,swim:0}]};
-assert.throws(()=>allowedCourses(person,restricted,competition,categories,services),/Correspondance/);
+assert.deepEqual(allowedCourses(person,restricted,competition,categories,services),["50AP"]);
 assert.deepEqual(allowedCourses(person,restricted,competition,categories,{...services,nativeAllowed:()=>false}),["50AP"]);
-assert.deepEqual(allowedCourses(person,restricted,competition,categories,{...services,nativeAllowed:()=>true}),["50BI","50AP"]);
+assert.deepEqual(allowedCourses(person,restricted,competition,categories,{...services,nativeAllowed:()=>true}),["50AP"],"a callback cannot bypass an unchecked native restriction");
+assert.deepEqual(allowedCourses(person,{...restricted,restrictions:[{course:"50BI",categorie:1,swim:1}]},competition,categories,services),["50BI","50AP"]);
+assert.equal(courseLockReason({...restricted,nativeParameters:{...restricted.nativeParameters,saisie:0}}),"");
+assert.deepEqual(allowedCourses(person,{...restricted,event:{eventType:"openWater"},restrictions:[{course:"1000",categorie:1,swim:0}]},{...competition,events:[{code:"OW1000SF",type:"individual",nativeRecognized:true,nativeCourses:[{course:"1000",sexe:"M"}]}]},categories,services),[],"restriction uses the native code rather than its LP display alias");
 assert.throws(()=>allowedCourses(person,native,competition,[...categories,categories[0]],services),/ambigue/);
 assert.throws(()=>allowedCourses(person,native,competition,[{...categories[0],age_d:null}],services),/absente/);
 assert.throws(()=>allowedCourses(person,{...native,participations:[{}]},competition,categories,services),/participation/);
