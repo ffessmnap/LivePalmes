@@ -35,8 +35,12 @@ function validateExisting(metadata) {
     if (closure.length && (spec.name !== "livepalmes_competition_options" || closure.length !== 1 ||
         normalizeType(closure[0].COLUMN_TYPE) !== "tinyint" || closure[0].IS_NULLABLE !== "YES" ||
         closure[0].COLUMN_DEFAULT !== null || closure[0].EXTRA)) throw new Error("Champ de fermeture incompatible.");
-    // Accept only the separately approved additive closure marker, never arbitrary extras.
-    const columns = rawColumns.filter(c => c.COLUMN_NAME !== "entry_closed");
+    const eventType = rawColumns.filter(c => c.COLUMN_NAME === "event_type");
+    if (eventType.length && (spec.name !== "livepalmes_competition_options" || eventType.length !== 1 ||
+        normalizeType(eventType[0].COLUMN_TYPE) !== "varchar(16)" || eventType[0].IS_NULLABLE !== "YES" ||
+        eventType[0].COLUMN_DEFAULT !== null || eventType[0].EXTRA)) throw new Error("Champ de type incompatible.");
+    // Only the two separately approved nullable markers may extend this baseline.
+    const columns = rawColumns.filter(c => !["entry_closed", "event_type"].includes(c.COLUMN_NAME));
     if (columns.length !== spec.columns.length || columns.some((c, i) => {
       const expected = spec.columns[i];
       return c.COLUMN_NAME !== expected.name || normalizeType(c.COLUMN_TYPE) !== expected.type ||

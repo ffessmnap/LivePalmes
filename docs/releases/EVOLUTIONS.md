@@ -2,6 +2,13 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### Type explicite des événements NAP — 8 octobre 2026
+
+- Étape 1/7 : Antoine autorise après sauvegarde le seul champ nullable `event_type varchar(16)` dans `livepalmes_competition_options`, sans saisie ni import en cours. Code compatible publié avant cet ajout séparé ; aucune migration automatique au déploiement. Les anciennes lignes restent NULL et conservent leur classification historique.
+- Budget inchangé : même lecture de saison indexée bornée à 500 événements, aucune requête supplémentaire ni lecture par ligne. Les colonnes du complément sont lues côté serveur pour fonctionner avant/après l'ajout ; seule la réponse publique explicitement construite est transmise, jamais les auteurs ou contacts privés. Création : trois lignes et au plus 18 requêtes, type choisi conservé si le champ existe, titre ambigu refusé sinon avant toute écriture.
+- Tests : compatibilité sans champ, ancienne classification, priorité du type choisi, données privées exclues, marqueur divergent refusé ; création avec/sans colonne et sans doublon. La création Formation/Stage/Réunion et le réglage des sous-types restent à terminer.
+- PR 193 : main `46f315dabc1ceb792029e595007741dfa3a8d741`, CI `37792693515` et TEST commun `37793166195` réussis ; preuve Hosting `82ecf2c8dddfae37`. La création réelle de « Test raccordement création LivePalmes », 7 novembre 2026, Paris, régional Île-de-France, sans ouverture ni mail, est spécifiquement autorisée par Antoine ; recette encore à faire.
+
 ### Création des compétitions piscine et eau libre dans NAP — 8 octobre 2026
 
 - Étape 1/7 de la bascule : remplacer la création TEST bloquée par l'enregistrement natif, sans accès aux anciennes collections sportives. Formulaire simple conservé ; publication au calendrier avec engagements inactifs, aucune course ni date limite et aucun envoi. Antoine choisit la saisie libre des temps par défaut et le type précis à renseigner ensuite. Les dérogations et restrictions IntraNAP ne sont pas reprises : leurs fonctions LivePalmes restent à terminer.
