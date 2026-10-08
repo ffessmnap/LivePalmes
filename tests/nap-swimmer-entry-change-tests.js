@@ -32,6 +32,10 @@ function fixture() {
 (async()=>{
   let f=fixture(),result=await save(f.pool,f.input,f.services);assert.equal(result.writesExecuted,4);assert.equal(f.pack.individual[0].id,22);assert.equal(f.pack.members[0].id,42);assert.deepEqual(f.pack.relays,f.initial.relays);assert.equal(f.queries.at(-1),"release");
   f.close();await save(f.pool,f.input,f.services);assert.equal(f.writes(),4,"completed retry after closure does not write");
+  f=fixture();let effectAttempts=0,preparedEffects=0;
+  f.services.prepareEffects=async()=>{preparedEffects++;return {grants:[{version:'1'}]};};
+  f.services.afterSaved=async(c,target)=>{assert.deepEqual(target.effects,{grants:[{version:'1'}]});if(++effectAttempts===1)throw Error('Exception update interrupted');};
+  await assert.rejects(save(f.pool,f.input,f.services),/Exception update/);assert.equal(f.writes(),4);f.close();await save(f.pool,f.input,f.services);assert.equal(f.writes(),4);assert.equal(preparedEffects,1);assert.equal(effectAttempts,2);
   for(const step of [1,2,3,4]) {f=fixture();f.setFail(step);await assert.rejects(()=>save(f.pool,f.input,f.services),/Interrupted/);f.setFail(0);await save(f.pool,f.input,f.services);assert.equal(f.writes(),4);}
   f=fixture();f.failPrepare();await assert.rejects(()=>save(f.pool,f.input,f.services),/Journal/);assert.equal(f.writes(),0);
   f=fixture();f.setBirthLimits("2090-01-01",null);await assert.rejects(()=>save(f.pool,f.input,f.services),/hors des limites/);assert.equal(f.writes(),0);assert.equal(f.queries.some(sql=>/^(?:INSERT|DELETE)/.test(sql)),false);

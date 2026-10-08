@@ -15557,7 +15557,12 @@
       if (patch.entryStatus === "open" && !global.confirm("Ouvrir les engagements dans LivePalmes et IntraNAP ? L’envoi des courriels est encore en cours de raccordement : cette ouverture n’enverra pas de courriel aux clubs.")) return false;
       if (button) button.disabled = true;
       if (elements.engagementsDetailStatus) { elements.engagementsDetailStatus.textContent = "Enregistrement dans NAP..."; elements.engagementsDetailStatus.dataset.tone = "loading"; }
-      const result = await callFunction("updateEngagementCompetition", { competitionId:selectedEngagementCompetition.id, expectedFingerprint:selectedEngagementCompetition.napFingerprint, patch });
+      let result = await callFunction("updateEngagementCompetition", { competitionId:selectedEngagementCompetition.id, expectedFingerprint:selectedEngagementCompetition.napFingerprint, patch });
+      if (result.qualificationJobId) {
+        selectedEngagementCompetition.qualificationJobId = result.qualificationJobId;
+        renderQualificationJobActions();
+        result = await finishQualificationJob(result.qualificationJobId);
+      }
       selectedEngagementCompetition = result.competition;
       nativeCompetitionEditBaseline = null;
       invalidateEngagementCalendarCaches();

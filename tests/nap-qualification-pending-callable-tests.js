@@ -11,6 +11,11 @@ async function main(){
  for(const handler of Object.values(context.exports))await handler({data:{competitionId:5162}});
  assert.equal(nativeWrites,3);assert.equal(legacyWrites,0,'TEST must not write old sporting Firebase collections');
  context.ENVIRONMENT.projectId='livepalmes-production';for(const handler of Object.values(context.exports))await handler({});assert.equal(legacyWrites,3);assert.equal(nativeWrites,3);
+ const triggerStart=source.indexOf('exports.syncEngagementQualificationTargets ='),triggerEnd=source.indexOf('function engagementQualificationRowAllowed',triggerStart);
+ context.onDocumentWritten=(_,handler)=>handler;context.REGION='europe-west1';context.ENGAGEMENT_ENTRY_TIME_CACHES_COLLECTION='cache';context.qualificationService.syncTargets=()=>legacyWrites++;context.qualificationService.revalidateCache=()=>legacyWrites++;
+ vm.runInContext(source.slice(triggerStart,triggerEnd),context);
+ context.ENVIRONMENT.projectId='livepalmes-test';await context.exports.syncEngagementQualificationTargets({});await context.exports.revalidateEngagementQualificationCache({});assert.equal(legacyWrites,3,'Retired sporting Firebase triggers must do nothing on TEST');
+ context.ENVIRONMENT.projectId='livepalmes-production';await context.exports.syncEngagementQualificationTargets({});await context.exports.revalidateEngagementQualificationCache({});assert.equal(legacyWrites,5,'PROD remains unchanged until its separately approved migration');
  console.log('Native qualification callables: authorization before NAP connection, native TEST routes and timestamps, old sporting Firebase excluded, PROD unchanged; offline.');
 }
 main().catch(error=>{console.error(error);process.exitCode=1;});

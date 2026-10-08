@@ -15,7 +15,7 @@ async function previewNativeTimes(connection,input,services) {
   if(!competition) throw new TypeError("Competition NAP introuvable.");
   const pack=await readers.entry(connection,{competitionId,clubId},services.authorize);
   if(pack.leaders.length!==1 || !String(pack.leaders[0].nom||"").trim() || !String(pack.leaders[0].prenom||"").trim()) throw new TypeError("Chef d'equipe NAP a verifier avant les courses.");
-  if(require("./nap-entry-qualification-policy").qualificationPending(competition)) throw new TypeError("Le controle des qualifications NAP reste a raccorder avant cet apercu.");
+  if(require("./nap-entry-qualification-policy").qualificationPending(competition,{engineReady:typeof services.prepareQualifications==='function'})) throw new TypeError("Le controle des qualifications NAP reste a raccorder avant cet apercu.");
   const people=ids.map(id=>{
     const matches=pack.swimmers.filter(row=>Number(row.id)===id && String(row.clubId)===clubId);
     if(matches.length!==1 || input.enrolledOnly && !pack.inscriptions.some(row=>Number(row.nageur)===id)) throw new TypeError("Nageur non engage ou hors du club autorise.");
@@ -25,7 +25,10 @@ async function previewNativeTimes(connection,input,services) {
   const evidence=await participation.readEvidence(connection,people,competition);
   if(competition.event.eventType==="openWater") return {ok:true,source:"nap",swimmers:people.map(person=>({swimmerIndexId:String(person.id),individualEntries:[]})),sqlBudget:{queriesMax:presence?23:22,historyQueries:0}};
   const histories=await readers.history(connection,people);
-  const swimmers=people.map(person=>({swimmerIndexId:String(person.id),individualEntries:require("./nap-entry-birth-policy").eligible(competition,person) && participation.eligible(competition,person.id,evidence) ? services.preview(person,participation.filterTimes(histories.get(String(person.id))||[],competition),competition,pack) : []}));
-  return {ok:true,source:"nap",swimmers,sqlBudget:{queriesMax:presence?24:23,historyQueries:1,historyRowsMax:20000}};
+  const active=Number(competition.options?.qualifications_enabled)===1||competition.qualifications?.enabled===true;
+  const evaluations=active?await services.prepareQualifications(connection,{pack:competition,people,histories}):null;
+  if(active&&(!(evaluations instanceof Map)||people.some(person=>evaluations.get(String(person.id))?.enabled!==true)))throw new TypeError('Evaluations de qualification incompletes.');
+  const swimmers=people.map(person=>({swimmerIndexId:String(person.id),individualEntries:require("./nap-entry-birth-policy").eligible(competition,person) && participation.eligible(competition,person.id,evidence) ? services.preview(person,participation.filterTimes(histories.get(String(person.id))||[],competition),competition,pack,evaluations?.get(String(person.id))) : []}));
+  return {ok:true,source:"nap",swimmers,sqlBudget:{queriesMax:(presence?24:23)+(active?1:0),historyQueries:1,historyRowsMax:20000}};
 }
 module.exports={previewNativeTimes};

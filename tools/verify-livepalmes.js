@@ -90,6 +90,7 @@ function runUnitTests() {
     "nap-qualification-target-pack-tests.js",
     "nap-qualification-people-tests.js",
     "nap-qualification-edit-lock-tests.js",
+    "nap-qualification-entry-effects-tests.js",
     "nap-approved-qualification-schema-tests.js",
     "nap-course-removal-tests.js",
     "nap-team-leader-change-tests.js",

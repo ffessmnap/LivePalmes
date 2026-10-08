@@ -8,6 +8,7 @@ const pool = {};
 const event = { id: "legacy-nap-5140", date: "2026-10-11", competitionType: "pool", level: "regional", regionId: "PACA", nationalManagementOnly: false };
 let management = { national: true, uid: "admin" };
 let past=false;
+let qualificationRules={enabled:false},startedControls=0;
 const nativeParameters={qualif:0,cat_d:null,cat_f:null};
 const context = { uid: "club-admin", clubId: "00123", clubName: "Club" };
 class HttpsError extends Error { constructor(code, message) { super(message); this.code = code; } }
@@ -15,6 +16,7 @@ const sandbox = { exports: {}, ENVIRONMENT: { projectId: "livepalmes-test" }, CA
   onCall: (_, callback) => callback, HttpsError, TypeError, process: { env: {} }, ENGAGEMENT_EVENT_DEFINITION_BY_CODE: new Map(),
   ENGAGEMENT_COMPETITION_LEVELS: new Set(["regional", "national"]), ENGAGEMENT_ENTRY_STATUSES: new Set(["open", "closed", "upcoming"]),
   cleanEngagementProgramSessions:()=>[],
+  nativeQualificationServices:()=>({eventsFor:()=>[],competitionFor:()=>({qualifications:qualificationRules})}),qualificationEngine:{validateRules:value=>value},
   cleanEngagementCalendarEventPayload:raw=>({...raw,level:raw.level||"regional",regionId:raw.regionId||"PACA"}), CLUB_REFERENCE_REGION_LABELS:{"16":"PACA"},
   cleanText: value => String(value || ""), cleanIsoDate: value => /^\d{4}-\d\d-\d\d$/.test(String(value)) ? value : "",
   engagementSeasonEndYearFromIsoDate: value => Number(value.slice(0, 4)) + (value.slice(5, 7) >= "09" ? 1 : 0),
@@ -28,6 +30,9 @@ const sandbox = { exports: {}, ENVIRONMENT: { projectId: "livepalmes-test" }, CA
   assertEngagementClubWriteOpen:()=>calls.push("open-check"),
   db: { getAll: () => { throw new Error("Old sports read"); }, collection: name => { if(name!=="auditLogs") throw new Error("Old sports read");return {doc:()=>({get:async()=>({exists:false}),create:async()=>calls.push("audit-backup"),update:async()=>calls.push("audit-checkpoint")})}; } },
   require: name => {
+    if(name==='node:util')return require('node:util');
+    if(name==='./nap-qualification-control-start')return {beginControl:async(connection,input)=>{assert.equal(connection,pool);assert.equal(input.actorUid,management.uid);assert.equal(input.national,true);assert.equal(Object.hasOwn(input.patch,'qualifications'),false);startedControls++;return {qualificationJobId:'a'.repeat(64)};}};
+    if(name === "./nap-qualification-jobs")return {activeControl:async()=>''};
     if(name === "./nap-qualification-edit-lock")return {ordinaryEdit:async(connection,id,action,services)=>{assert.equal(connection,pool);assert.equal(typeof services.authorize,'function');return action();}};
     if (name === "./nap-portal-swimmers") return { portalPool: () => pool };
     if(name === "./nap-competition-create") return {createCompetition:async(connection,input,audit,authorize)=>{assert.equal(connection,pool);assert.equal(input.actorUid,management.uid);assert.equal(input.creationId,"request-id");assert.equal(input.committeeId,"16");await authorize(input.event);await audit.prepare("operation",{});await audit.checkpoint("operation",{});calls.push("competition-create");await audit.complete("operation",{});return {ok:true,source:"nap",competitionId:event.id};}};
@@ -110,5 +115,15 @@ for (const name of ["listEngagementCompetitions", "listEngagementCalendarEvents"
   calls.length=0;
   const removed=await sandbox.exports.updateEngagementCompetition({data:{competitionId:event.id,patch:{removeNativeCourseId:90,confirmCourseRemoval:true},actorUid:"spoof",national:false}});
   assert.equal(removed.source,"nap");assert.deepEqual(calls,["authorize","audit-backup","course-removal","audit-complete","authorize","detail","documents"]);
+  calls.length=0;past=false;management={uid:'region-admin',national:false,region:true,regionId:event.regionId};
+  qualificationRules={enabled:true};
+  await assert.rejects(sandbox.exports.updateEngagementCompetition({data:{competitionId:event.id,patch:{date:'2026-10-12'}}}),error=>error.code==='permission-denied');assert.equal(startedControls,0);assert.ok(!calls.includes('write'));
+  calls.length=0;management={uid:'national-admin',national:true};
+  const controlled=await sandbox.exports.updateEngagementCompetition({data:{competitionId:event.id,expectedFingerprint:'f'.repeat(64),patch:{date:'2026-10-12',name:'Virtual change'}}});
+  assert.equal(controlled.qualificationJobId,'a'.repeat(64));assert.equal(startedControls,1);assert.ok(!calls.includes('write'),'Combined parameters must remain virtual before national review');
+  calls.length=0;
+  await sandbox.exports.updateEngagementCompetition({data:{competitionId:event.id,patch:{qualifications:{enabled:false}}}});assert.equal(startedControls,2);assert.ok(!calls.includes('write'));
+  calls.length=0;qualificationRules={enabled:false};
+  const noChange=await sandbox.exports.updateEngagementCompetition({data:{competitionId:event.id,patch:{qualifications:{enabled:false}}}});assert.equal(noChange.unchanged,true);assert.equal(startedControls,2);assert.ok(!calls.includes('write'));
   console.log("NAP portal callables: scope, authenticated club, native reads and no old sports fallback verified");
 })().catch(error => { console.error(error); process.exitCode = 1; });
