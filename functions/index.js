@@ -16977,9 +16977,28 @@ exports.saveEngagementClubRelays = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT
   };
 });
 
-exports.createEngagementCompetition = onCall(CALLABLE_OPTIONS, async (request) => {
+exports.createEngagementCompetition = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.projectId === "livepalmes-test" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")], maxInstances:2, concurrency:4, timeoutSeconds:120 } : {}) }, async (request) => {
   const context = await engagementAccessContext(request);
-  if (ENVIRONMENT.projectId === "livepalmes-test") throw new HttpsError("failed-precondition", "Creation dans NAP en cours de raccordement. Aucune competition ne sera creee dans l'ancienne base LivePalmes.");
+  if (ENVIRONMENT.projectId === "livepalmes-test") {
+    const raw=request.data || {};
+    if (!["pool","openWater"].includes(raw.competitionType)) throw new HttpsError("invalid-argument","Choisissez le type de competition.");
+    const event=cleanEngagementCalendarEventPayload({...raw,eventType:raw.competitionType},context);
+    event.competitionType=raw.competitionType;
+    const committeeId=["national","international"].includes(event.level) ? (event.level==="national"?4:5) : Object.keys(CLUB_REFERENCE_REGION_LABELS).find(id=>engagementRegionsMatch(id,event.regionId));
+    try {
+      const result=await require("./nap-competition-create").createCompetition(require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD),{actorUid:context.uid,creationId:raw.creationId,committeeId,event},{
+        read:async operation=>{const snapshot=await db.collection("auditLogs").doc(`nap-competition-create-${operation}-before`).get();return snapshot.exists?snapshot.data().target:null;},
+        prepare:(operation,target)=>db.collection("auditLogs").doc(`nap-competition-create-${operation}-before`).create({action:"nap.competition.create.prepare",actorUid:context.uid,target,createdAt:new Date().toISOString()}),
+        checkpoint:(operation,target)=>db.collection("auditLogs").doc(`nap-competition-create-${operation}-before`).update({target}),
+        complete:(operation,target)=>writeAuditLogOnce("engagementCompetition.created",context.uid,target,operation)
+      },proposed=>assertCanModifyEngagementEvent(context,proposed));
+      const competition=await nativePortalCompetition(result.competitionId,proposed=>assertCanManageEngagementCompetition(context,proposed));
+      return {...result,competition};
+    } catch(error) {
+      if(error instanceof HttpsError) throw error;
+      throw new HttpsError(error instanceof TypeError?"failed-precondition":error instanceof RangeError?"resource-exhausted":"unavailable",error instanceof TypeError||error instanceof RangeError?error.message:"Creation NAP a verifier. Conservez le formulaire : ne creez pas une seconde competition.");
+    }
+  }
   if (!ENGAGEMENT_COMPETITION_TYPES.has(cleanText(request.data?.competitionType))) {
     throw new HttpsError("invalid-argument", "Choisissez le type de competition : piscine ou eau libre.");
   }

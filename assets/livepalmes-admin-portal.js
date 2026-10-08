@@ -15682,6 +15682,8 @@
       return;
     }
     const payload = engagementCompetitionPayloadFromForm();
+    if (elements.engagementsCreateForm && !elements.engagementsCreateForm.dataset.napCreationId) elements.engagementsCreateForm.dataset.napCreationId=global.crypto.randomUUID();
+    payload.creationId=elements.engagementsCreateForm?.dataset.napCreationId;
     const button = elements.engagementsCreateForm?.querySelector("button[type='submit']");
     if (button) button.disabled = true;
     if (elements.engagementsCreateMessage) {
@@ -15701,6 +15703,7 @@
         regionId: payload.regionId
       } : payload);
       elements.engagementsCreateForm?.reset();
+      if (elements.engagementsCreateForm) delete elements.engagementsCreateForm.dataset.napCreationId;
       updateEngagementMaxEventsFields("create");
       updateEngagementCreateFormAccess();
       invalidateEngagementCalendarCaches();
