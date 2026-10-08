@@ -76,10 +76,8 @@ async function readCompetition(pool, input) {
   if (rows.length > 1) throw new RangeError("Parametres de competition ambigus.");
   if (!rows.length) return { source: "nap", event: null };
   const event = eventFromRow(rows[0]);
-  const documents = await execute(pool, `SELECT d.id,d.name,d.location,d.comment,t.label AS type_label FROM documents d FORCE INDEX (livepalmes_compet_public_id) LEFT JOIN documents_types t ON t.id=d.type WHERE d.competition=? AND d.public='Y' ORDER BY d.id LIMIT ${MAX_DOCUMENTS + 1}`, [id]);
-  if (documents.length > MAX_DOCUMENTS) throw new RangeError("Documents trop volumineux.");
-  const category = value => /protocole|r[ée]sultat/i.test(value) ? "results" : /affiche/i.test(value) ? "poster" : /r[èe]glement/i.test(value) ? "rules" : /circulaire|invitation/i.test(value) ? "circular" : "information";
-  event.documents = documents.map(row => ({ id: `nap-${row.id}`, title: text(row.name) || text(row.type_label) || "Document officiel", description: text(row.comment), category: category(text(`${row.name} ${row.type_label} ${row.comment}`)), url: publicUrl(row.location) })).filter(document => document.url);
+  const documents = await require("./nap-competition-documents").readDocuments(pool,id);
+  event.documents = documents.map(({id,title,description,category,url})=>({id,title,description,category,url}));
   const poster = publicUrl(rows[0].affiche);
   if (poster && !event.documents.some(document => document.url === poster)) event.documents.push({ title: "Affiche", category: "poster", url: poster });
   if (!event.results.pdfUrl) event.results.pdfUrl = event.documents.find(document => document.category === "results" && /\.pdf(?:$|[?#])/i.test(document.url))?.url || "";

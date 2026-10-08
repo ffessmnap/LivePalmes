@@ -9227,6 +9227,7 @@
         const result = await callFunction("updateEngagementCompetitionDocument", {
           competitionId: selectedEngagementCompetitionId,
           documentId: editingDocument.id,
+          expectedFingerprint: editingDocument.napFingerprint,
           ...values[0]
         });
         updateSelectedEngagementCompetitionDocuments(result.documents || []);
@@ -9241,7 +9242,7 @@
             const fileDataUrl = await readEngagementCompetitionDocumentFile(file);
             const result = await callFunction("uploadEngagementCompetitionDocument", {
               competitionId: selectedEngagementCompetitionId,
-              ...(editingDocument ? { documentId: editingDocument.id } : {}),
+              ...(editingDocument ? { documentId: editingDocument.id, expectedFingerprint:editingDocument.napFingerprint } : {}),
               ...draft,
               fileName: file.name,
               fileDataUrl
@@ -9299,7 +9300,8 @@
     try {
       const result = await callFunction("deleteEngagementCompetitionDocument", {
         competitionId: selectedEngagementCompetitionId,
-        documentId
+        documentId,
+        expectedFingerprint:document.napFingerprint
       });
       updateSelectedEngagementCompetitionDocuments(result.documents || []);
       if (elements.engagementsDocumentsSummary) {

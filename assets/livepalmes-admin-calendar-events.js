@@ -209,7 +209,7 @@
         <p class="admin-portal-message" data-calendar-event-message aria-live="polite"></p>
         <div class="admin-portal-actions"><button class="ghost-button danger" type="button" data-calendar-event-delete ${deletionPending ? "disabled" : ""}>${deletionPending ? "Suppression demandée" : regionalPastReadOnly ? "Demander la suppression" : "Supprimer"}</button>${regionalPastReadOnly ? "" : '<button type="submit">Enregistrer</button>'}</div>
       </form>
-      <section class="admin-engagements-card admin-calendar-documents"><h3>Documents publics</h3><p>Tous les fichiers ajoutés ici sont accessibles sans connexion. Un remplacement conserve la même URL publique.</p>
+      <section class="admin-engagements-card admin-calendar-documents"><h3>Documents publics</h3><p>Tous les fichiers ajoutés ici sont accessibles sans connexion. Un remplacement met à jour le document proposé dans la fiche de la compétition.</p>
         <div data-calendar-document-list>${renderDocuments(event.clubDocuments || [])}</div>
         <details class="admin-calendar-document-editor" data-calendar-document-editor><summary>Ajouter un document</summary><form class="admin-engagements-form" data-calendar-document-form><div class="admin-engagements-form-section-grid"><label>Fichier<input name="file" type="file" required></label><label>Titre<input name="title" maxlength="160" required></label><label>Catégorie<select name="category">${Object.entries(CATEGORIES).map(([value, label]) => `<option value="${value}">${label}</option>`).join("")}</select></label><label>Description<input name="description" maxlength="500"></label></div><div class="admin-portal-actions"><button type="submit" data-calendar-document-submit>Mettre en ligne</button><button class="ghost-button" type="button" data-calendar-document-cancel hidden>Annuler la modification</button></div><p class="admin-portal-message" data-calendar-document-message aria-live="polite"></p></form></details>
       </section>`;
@@ -296,7 +296,7 @@
     if ((!file && !editingDocumentId) || (file && file.size > 10 * 1024 * 1024)) { message.textContent = "Choisissez un fichier de 10 Mo maximum."; return; }
     message.textContent = "Mise en ligne…";
     try {
-      const values = { calendarEventId: current.id, documentId: editingDocumentId, title: form.elements.title.value, category: form.elements.category.value, description: form.elements.description.value };
+      const values = { calendarEventId: current.id, documentId: editingDocumentId, expectedFingerprint:(current.clubDocuments || []).find(item=>item.id===editingDocumentId)?.napFingerprint, title: form.elements.title.value, category: form.elements.category.value, description: form.elements.description.value };
       const result = file
         ? await call("uploadEngagementCompetitionDocument", { ...values, fileName: file.name, fileDataUrl: await readFile(file) })
         : await call("updateEngagementCompetitionDocument", values);
@@ -310,7 +310,7 @@
 
   async function deleteEventDocument(documentId) {
     if (!global.confirm("Supprimer ce document public ?")) return;
-    const result = await call("deleteEngagementCompetitionDocument", { calendarEventId: current.id, documentId });
+    const result = await call("deleteEngagementCompetitionDocument", { calendarEventId: current.id, documentId, expectedFingerprint:(current.clubDocuments || []).find(item=>item.id===documentId)?.napFingerprint });
     current.clubDocuments = result.documents || [];
     ensureDialog().querySelector("[data-calendar-document-list]").innerHTML = renderDocuments(current.clubDocuments);
     global.dispatchEvent(new CustomEvent("livepalmes:calendar-events-changed", { detail: { action: "upsert", event: { ...current, documentCount: current.clubDocuments.length } } }));
