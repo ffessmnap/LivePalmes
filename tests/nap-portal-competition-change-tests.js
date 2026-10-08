@@ -26,7 +26,10 @@ const invitations=planCompetitionChange(regional,regionalInput({invitedRegionIds
 assert.deepEqual(invitations.operations.find(o=>o.table==="compet_comites").after,[1,3]);
 assert.deepEqual(invitations.operations.find(o=>o.table==="compet_comites").before,regional.committees);
 assert.equal(invitations.operations.some(o=>o.table==="competitions"||o.table==="compet_parametres"),false);
-for(const committees of [[{id:1,comite:19}],[{id:1,comite:2},{id:2,comite:2}]]) {const legacy={...regional,committees};assert.throws(()=>planCompetitionChange(legacy,{...regionalInput({invitedRegionIds:[]}),expectedFingerprint:fingerprint(legacy)},now),/ancienne|doublon/);}
+for(const committees of [[{id:1,comite:99}],[{id:1,comite:2},{id:2,comite:2}]]) {const legacy={...regional,committees};assert.throws(()=>planCompetitionChange(legacy,{...regionalInput({invitedRegionIds:[]}),expectedFingerprint:fingerprint(legacy)},now),/ancienne|doublon/);}
+const openPack={...regional,committees:[{id:1,comite:2},{id:2,comite:19}]};
+const openPlan=planCompetitionChange(openPack,{...regionalInput({invitedRegionIds:["Grand Est"]}),expectedFingerprint:fingerprint(openPack)},now);
+assert.deepEqual(openPlan.operations.find(o=>o.table==="compet_comites").after,[1,19],"Unused native Open must remain unchanged while regions can be edited");
 const nationalKind=planCompetitionChange(pack,input({nativeNationalLevelCode:4}),now);
 assert.deepEqual(nationalKind.operations.map(o=>o.table),["compet_parametres"]);
 assert.equal(nationalKind.operations[0].after.niveau,4);

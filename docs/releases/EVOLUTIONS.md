@@ -2,6 +2,13 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### Ancienne indication Open ignorée — 8 octobre 2026
+
+- Antoine précise que le code natif 19 Open indiquait l'admission de non-licenciés, option inutilisée : LivePalmes ne doit pas en tenir compte. Il ne représente aucune région et ne donne aucune ouverture supplémentaire. Il reste conservé dans les lignes natives lors d'une modification des invitations ; les autres codes inconnus restent protégés.
+- Aucun nouveau champ, index, scan ou appel : budget de lecture et d'écriture inchangé. Tests hors réseau de présentation et de plan de modification, conservation du code 19 et refus des anciens codes inconnus. Publication TEST et recette à compléter ; aucune donnée réelle modifiée pour ces tests.
+- PR 198 publiée sur main 8815ed3c61eece2c56370fc5002ad7c183cb7199 : CI 37808509589 et TEST 37808950861 réussis, Hosting ad5e98f219852cbe. Formulaire vérifié sur ordinateur et mobile, modifications annulées sans enregistrement ; choix Autre absent à la création, International simple, invitations modifiables en régional. Aucune validation utilisateur de toute la recette revendiquée.
+- Suite étape 2 : terminer la conservation dans NAP des grilles, restrictions et dérogations LivePalmes ; ne pas reprendre les anciennes restrictions IntraNAP inutilisées, conformément à la décision utilisateur. Qualification et contrôles déjà présents à analyser avant extension.
+
 ### Périmètre des compétitions et régions invitées — 8 octobre 2026
 
 - Antoine confirme : International reste un niveau simple ; retirer le choix de création « Autre », sans effacer d'ancien événement ; seul le National peut changer le niveau ou transférer la région organisatrice ; les régions modifient les invitations dans leur propre périmètre et restent bloquées après la compétition. Le type d'événement natif demeure définitif. Les formations/stages/réunions NAP passent par la fiche native commune, sans ancien enregistrement sportif Firebase.
