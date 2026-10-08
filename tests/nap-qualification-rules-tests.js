@@ -1,0 +1,16 @@
+"use strict";
+const assert=require("node:assert/strict");
+const {fromPack}=require("../functions/nap-qualification-rules");
+const engine=require("../functions/engagement-qualification");
+const pack={event:{id:"legacy-nap-5162"},options:{qualifications_enabled:1},groups:[{id:42,competition_id:5162,position:1,label:"Seniors",categories:'["S"]',mode:"each",start_date:"2025-01-01",end_date:"2026-12-31",pools:'["50"]',electronic_only:1,competition_mode:"selected",bonus_requires_selected:0}],standards:[{competition_id:5162,category:"S",sex:"M",event_code:"50BI",minimum_centiseconds:2500}],qualifyingCompetitions:[{group_id:42,qualifying_competition_id:5140}]};
+const events=[{type:"individual",code:"50BI",categories:["S"]}];
+const rules=fromPack(pack,events);
+assert.deepEqual(rules.groups[0].competitionIds,["legacy-nap-5140"]);
+const row={competitionId:"legacy-nap-5140",course:"50BI",timeValue:2400,date:"2026-01-01",pool:"50",chrono:"electronic"};
+const check=rows=>engine.evaluate({rules,category:"S",sex:"M",events,rows}).courses["50BI"].qualified;
+assert.equal(check([row]),true);
+for(const change of [{timeValue:2600},{pool:"25"},{chrono:"manual"},{date:"2024-12-31"},{competitionId:"legacy-nap-999"}]) assert.equal(check([{...row,...change}]),false);
+assert.deepEqual(fromPack({options:{qualifications_enabled:0}}),{enabled:false,groups:[],standards:{}});
+for(const changed of [{groups:[{...pack.groups[0],competition_id:999}]},{groups:[...pack.groups,...pack.groups]},{standards:[...pack.standards,...pack.standards]},{qualifyingCompetitions:[{group_id:99,qualifying_competition_id:5140}]},{groups:[{...pack.groups[0],categories:'["invalid"]'}]}]) assert.throws(()=>fromPack({...pack,...changed},events));
+assert.equal(pack.groups[0].categories,'["S"]',"Do not mutate the native snapshot");
+console.log("NAP qualification reader: existing engine, native selections, sporting filters and malformed snapshots tested offline.");
