@@ -10301,6 +10301,7 @@ async function mutateNativeCompetitionDocument(request, action) {
       },
       downloadUrl:(path,token)=>competitionDocumentDownloadUrl(LIVEPALMES_STORAGE_BUCKET,path,token),
       saveFile:(upload,decoded)=>storage.bucket(LIVEPALMES_STORAGE_BUCKET).file(upload.path).save(decoded.buffer,{resumable:false,metadata:{contentType:decoded.contentType,cacheControl:"public, max-age=300, must-revalidate",metadata:{firebaseStorageDownloadTokens:upload.token}}}),
+      deleteFile:path=>storage.bucket(LIVEPALMES_STORAGE_BUCKET).file(path).delete({ignoreNotFound:true}),
       audit:{
         read:async operation=>{const saved=await db.collection("auditLogs").doc(`nap-document-${operation}-before`).get();return saved.exists?saved.data().target:null;},
         prepare:(operation,target)=>db.collection("auditLogs").doc(`nap-document-${operation}-before`).create({action:"nap.document.prepare",actorUid:context.uid,target,createdAt:new Date().toISOString()}),

@@ -95,9 +95,15 @@ async function mutate(pool,input,services){
   const verified=await rows(connection,id),found=verified.find(row=>Number(row.id)===documentId);
   if(action==="delete"?Boolean(found):!found||!isDeepStrictEqual(nativeRow(found),after)||!isDeepStrictEqual(option(found),extra))throw new Error("Document enregistré à vérifier : sauvegarde conservée.");
   await services.audit.complete(operation,{competitionId:id,documentId,action,verified:true});
-  // No automatic physical deletion: a failed cross-engine step retains files
-  // and its durable journal, and legacy NAP hosting is never touched.
-  return {ok:true,source:"nap",competitionId:input.competitionId,calendarEventId:input.calendarEventId||"",documentId:`nap-${documentId}`,storageDeleted:action==="delete"?false:undefined,documents:verified.map(item).filter(x=>x.url)};
+  // Only an obsolete managed file is removed, after verified native writes and
+  // the journal. Failure before this point preserves both versions. Legacy NAP
+  // hosting is never deleted by LivePalmes.
+  let storageDeleted=true;
+  if(previous?.storage_path&&previous.storage_path!==extra?.storage_path){
+    if(!/^competition-documents\/nap\/[a-f0-9-]{36}\.[a-z0-9]+$/.test(previous.storage_path))storageDeleted=false;
+    else try{await services.deleteFile(previous.storage_path);}catch{storageDeleted=false;}
+  }
+  return {ok:true,source:"nap",competitionId:input.competitionId,calendarEventId:input.calendarEventId||"",documentId:`nap-${documentId}`,storageDeleted,documents:verified.map(item).filter(x=>x.url)};
  }finally{try{if(locked)await q("SELECT RELEASE_LOCK(?)",[locked]);}finally{connection.release();}}
 }
 module.exports={FIELDS,OPTIONS,item,rows,readDocuments,writePlan,mutate};

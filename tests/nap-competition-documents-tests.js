@@ -24,6 +24,7 @@ function fixture(initial=[]){
  }};
  const services={authorize:async()=>structuredClone(authority),downloadUrl:(path,token)=>helpers.competitionDocumentDownloadUrl("livepalmes-test.appspot.com",path,token),
   saveFile:async()=>{assert.ok(saved);if(failedFile)throw Error("Storage unavailable");uploaded=true;history.push("upload");},
+  deleteFile:async()=>{assert.ok(history.includes("complete"));history.push("cleanup");},
   audit:{read:async()=>saved,prepare:async(_key,plan)=>{saved=structuredClone(plan);history.push("journal");},complete:async()=>history.push("complete")}};
  return {pool:{getConnection:async()=>connection},services,connection,history,get rows(){return current;},get saved(){return saved;},get writes(){return writes;},get queries(){return queryCount;},get uploaded(){return uploaded;},failWrite:()=>failedWrite=true,failFile:()=>failedFile=true};
 }
@@ -36,8 +37,9 @@ const upload={action:"upload",competitionId:"5162",actorUid:"administrator",file
  assert.ok(f.history.includes("complete"));assert.equal(f.history.at(-1),"release");
  const edit=fixture(f.rows);const edited=await docs.mutate(edit.pool,{...upload,action:"update",documentId:"nap-42",expectedFingerprint:created.documents[0].napFingerprint,title:"Titre corrigé",category:"access"},edit.services);
  assert.equal(edited.documents[0].title,"Titre corrigé");assert.equal(edited.documents[0].category,"access");assert.equal(edit.uploaded,false);assert.equal(edit.rows[0].location,f.rows[0].location);
+ const replace=fixture(f.rows);const replaced=await docs.mutate(replace.pool,{...upload,documentId:"nap-42",expectedFingerprint:created.documents[0].napFingerprint,fileName:"nouvelle-version.pdf"},replace.services);assert.notEqual(replaced.documents[0].url,created.documents[0].url);assert.equal(replace.rows[0].id,42);assert.ok(replace.history.indexOf("cleanup")>replace.history.indexOf("complete"));
  const deletion=fixture(edit.rows);const deleted=await docs.mutate(deletion.pool,{action:"delete",competitionId:5162,actorUid:"administrator",documentId:"nap-42",expectedFingerprint:edited.documents[0].napFingerprint},deletion.services);
- assert.deepEqual(deleted.documents,[]);assert.equal(deleted.storageDeleted,false);assert.equal(deletion.writes,2);
+ assert.deepEqual(deleted.documents,[]);assert.equal(deleted.storageDeleted,true);assert.equal(deletion.writes,2);assert.ok(deletion.history.includes("cleanup"));
  const concurrent=fixture(f.rows);await assert.rejects(docs.mutate(concurrent.pool,{...upload,documentId:"nap-42",expectedFingerprint:"obsolete"},concurrent.services),/changé/);assert.equal(concurrent.writes,0);
  const refused=fixture();refused.services.authorize=async()=>{throw Error("Forbidden");};await assert.rejects(docs.mutate(refused.pool,upload,refused.services),/Forbidden/);assert.equal(refused.writes,0);assert.equal(refused.uploaded,false);
  const failed=fixture();failed.failWrite();await assert.rejects(docs.mutate(failed.pool,upload,failed.services),/vérifier/);assert.equal(failed.writes,1);assert.ok(failed.saved);assert.ok(!failed.history.includes("complete"));
