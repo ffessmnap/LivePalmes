@@ -28,10 +28,14 @@ async function reviewControl(connection,input,services){
     const pages=new Map(rows.map(row=>{
       const payload=typeof row.payload==='string'?JSON.parse(row.payload):row.payload;
       jobs.payload(payload);
-      if(!selection.includes(row.id)||Number(row.competition_id)!==scope.competitionId||row.state!=='page'||payload.parentId!==scope.id||!Array.isArray(payload.items)||payload.items.length>5)throw new TypeError('Page hors du controle autorise.');
+      if(!selection.includes(row.id)||Number(row.competition_id)!==scope.competitionId||row.state!=='page'||payload.parentId!==scope.id||!Array.isArray(payload.items)||payload.items.length>(payload.kind==='relay'?20:5))throw new TypeError('Page hors du controle autorise.');
       return [row.id,payload];
     }));
     const removed=selection.flatMap(id=>pages.get(id).items.flatMap(item=>{
+      if(pages.get(id).kind==='relay'){
+        if(!item.before||typeof item.remove!=='boolean')throw new TypeError('Detail de relais incomplet.');
+        return item.remove?[{club:item.before.clubId,relayId:item.before.relayId,eventCode:`Relais ${item.before.relayId}`,name:`Relais ${item.before.relayId}`}]:[];
+      }
       if(!item.before||!Array.isArray(item.removed)||item.removed.length>300)throw new TypeError('Detail de controle incomplet.');
       return item.removed.map(row=>({...row,club:item.before.clubId,swimmerIndexId:item.before.swimmerId,name:item.before.name||`Nageur ${item.before.swimmerId}`}));
     }));

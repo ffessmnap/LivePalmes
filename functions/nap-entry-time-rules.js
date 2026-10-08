@@ -6,7 +6,7 @@ function resolveTime(entry, competition, services, preview = false) {
   if (typeof services?.automatic !== "function" || typeof services?.parse !== "function") {
     throw new TypeError("Calcul et validation des temps requis.");
   }
-  const mode = competition.missingEntryTimeMode ?? "manual";
+  const mode = competition.qualifications?.enabled ? "default595999" : competition.missingEntryTimeMode ?? "manual";
   if (!["", "manual", "forbidden", "default595999", "none"].includes(mode)) {
     throw new TypeError("Reglage de temps inconnu.");
   }
@@ -14,7 +14,7 @@ function resolveTime(entry, competition, services, preview = false) {
     return { eventCode: entry.eventCode, status: "selected", entryTimeMode: "notRequired" };
   }
   if (mode === "none") throw new TypeError("Reglage piscine a verifier.");
-  if(competition.napSource===true && Number(competition.nativeParameters?.saisie)===0 && entry.entryTimeMode==="known" && entry.entryTime) {
+  if(!competition.qualifications?.enabled && competition.napSource===true && Number(competition.nativeParameters?.saisie)===0 && entry.entryTimeMode==="known" && entry.entryTime) {
     if(typeof services.known!=="function") throw new TypeError("Historique natif requis pour ce choix de temps.");
     return services.known(entry);
   }

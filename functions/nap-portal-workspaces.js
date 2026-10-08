@@ -120,7 +120,7 @@ function entryItem(pack, context, categoryForBirthDate, competition = {}) {
       firstName: text(row.prenom), lastName: text(row.nom), birthDate: calendar.date(row.date), licenseNumber: "", sex: "" })),
     // Multiple leaders are kept explicitly, without selecting one arbitrarily.
     teamLeader: leaders.length === 1 ? leaders[0] : {}, nativeLeaders: leaders, teamLeaderComplete: leaders.length === 1,
-    nativeOptions: pack.options, qualificationAlert: null, documents: {}, updatedAt: pack.readAt,
+    nativeOptions: pack.options, qualificationAlert: json(pack.options?.submission_metadata,{}).qualificationAlert||null, documents: {}, updatedAt: pack.readAt,
     nativeWarnings: [leaders.length > 1 ? "Plusieurs chefs d'equipe NAP conserves." : "", relays.length ? "Categories natives des relais conservees." : ""].filter(Boolean) };
 }
 async function readDocuments(connection, competitionId, options={}) {

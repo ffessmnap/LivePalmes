@@ -1,0 +1,11 @@
+"use strict";
+const assert=require('node:assert/strict');
+const {targetPack}=require('../functions/nap-qualification-target-pack');
+const pack={event:{id:'legacy-nap-5162',competitionType:'pool',eventType:'pool',date:'2026-11-07'},nativeSnapshot:{competition:{id:5162,libelle:'Essai',date:'2026-11-07',lieu:'Paris',bassin:50,comite:3,ld:0},parameters:{id:4000,compet:5162,niveau:1,tps_d:null,tps_f:null}},nativeParameters:{parameter_id:4000,niveau:1,tps_d:null,tps_f:null,qualif:29,saisie:1},options:{competition_id:5162,event_type:'pool',qualifications_enabled:1,version:'1'},committees:[]};
+const before=structuredClone(pack);
+assert.equal(targetPack(pack,[]),pack,'No parameter patch must preserve exact native fingerprint');
+const target=targetPack(pack,[{table:'competitions',after:{...pack.nativeSnapshot.competition,date:'2026-12-01'}},{table:'compet_parametres',after:{...pack.nativeSnapshot.parameters,tps_d:'2025-09-01',tps_f:'2026-08-31'}},{table:'livepalmes_competition_options',after:{competition_id:5162,address:'Adresse test',version:'2'}}]);
+assert.equal(target.event.date,'2026-12-01');assert.equal(target.nativeParameters.tps_d,'2025-09-01');assert.equal(target.nativeParameters.tps_f,'2026-08-31');assert.equal(target.nativeParameters.qualif,29);assert.equal(target.options.qualifications_enabled,1);assert.equal(target.options.event_type,'pool');
+assert.deepEqual(pack,before,'Preview cannot change the original native snapshot');
+assert.throws(()=>targetPack(pack,[{table:'perfs',after:{}}]),/Table/);
+console.log('Qualification target parameters: combined date/period preview, untouched original snapshot, preserved native policy and unsupported table refusal; offline.');

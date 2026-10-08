@@ -20,17 +20,21 @@ async function beginControl(pool,input,services){
     locked=true;
     const pack=await (services.readCompetition||native.readNativeCompetition)(connection,competitionId,services.authorize);
     if(!pack)throw new TypeError('Competition NAP introuvable.');
-    const target=plan(pack,input),jobId=digest([competitionId,input.actorUid,input.expectedFingerprint,target.rules]);
+    if(require('./nap-portal-workspaces').fingerprint(pack)!==input.expectedFingerprint)throw new TypeError('La competition a change. Rechargez sa fiche.');
+    const nativeOperations=input.patch&&Object.keys(input.patch).length?require('./nap-portal-competition-change').planCompetitionChange(pack,{...input,eventDefinitions:services.eventDefinitions,normalizeProgram:services.normalizeProgram}).operations:[];
+    const targetPack=require('./nap-qualification-target-pack').targetPack(pack,nativeOperations);
+    const target=plan(targetPack,{...input,events:services.eventsFor?services.eventsFor(targetPack):input.events,expectedFingerprint:require('./nap-portal-workspaces').fingerprint(targetPack)}),jobId=digest([competitionId,input.actorUid,input.expectedFingerprint,target.rules,input.patch||{}]);
+    target.before={options:pack.options,groups:pack.groups,standards:pack.standards,qualifyingCompetitions:pack.qualifyingCompetitions};
     const scope={competitionId,actorUid:input.actorUid,national:true,jobId};
     const existing=await jobs.readJob(connection,scope);
     if(existing){
       if(existing.actor_uid!==input.actorUid||!isDeepStrictEqual(existing.payload.rules,target.rules)||existing.payload.expectedFingerprint!==input.expectedFingerprint)throw new TypeError('Controle existant incompatible.');
       return {qualificationJobId:jobId,state:existing.state,resumed:true};
     }
-    if(!target.changed)return {ok:true,unchanged:true};
+    if(!target.changed&&!nativeOperations.length)return {ok:true,unchanged:true};
     const active=await query("SELECT id FROM livepalmes_qualification_jobs FORCE INDEX (competition_state) WHERE competition_id=? AND state IN ('preview','ready','apply') ORDER BY state,id LIMIT 2",[competitionId]);
     if(active.length)throw new TypeError('Un controle des qualifications est deja en cours. Reprenez-le avant de modifier la grille.');
-    const value={expectedFingerprint:input.expectedFingerprint,nativeSnapshot:pack.nativeSnapshot,rules:target.rules,before:target.before,after:target.after,count:0,generation:0,applyStarted:false};
+    const value={expectedFingerprint:input.expectedFingerprint,nativeSnapshot:pack.nativeSnapshot,nativeOperations,patch:input.patch||{},rules:target.rules,before:target.before,after:target.after,count:0,generation:0,applyStarted:false};
     const payload=jobs.payload(value);
     const authority={competitions:pack.nativeSnapshot.competition,compet_parametres:pack.nativeSnapshot.parameters};
     const guard=authorityGuard('livepalmes_qualification_jobs',authority);
