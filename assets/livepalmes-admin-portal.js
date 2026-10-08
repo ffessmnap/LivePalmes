@@ -4379,6 +4379,10 @@
       if(fields.regionId) fields.regionId.disabled=!national || !["regional","departemental"].includes(fields.level?.value);
       if(fields.invitedRegionIds) fields.invitedRegionIds.disabled=competition.nativeInvitationsEditable===false || !["regional","departemental"].includes(fields.level?.value);
       if (fields.missingEntryTimeMode) {
+        if(!fields.missingEntryTimeMode.querySelector("option[value='forbidden']")){
+          const option=document.createElement('option');option.value='forbidden';option.textContent='Aucune saisie — meilleur temps connu obligatoire';fields.missingEntryTimeMode.append(option);
+        }
+        fields.missingEntryTimeMode.value=competition.missingEntryTimeMode || '';
         fields.missingEntryTimeMode.disabled = competition.qualifications?.enabled === true;
         const labels = {manual: "Saisie possible", forbidden: "Aucune saisie — meilleur temps connu obligatoire", default595999: "Aucune saisie — temps connu au choix, sinon sans temps"};
         for (const option of fields.missingEntryTimeMode.options) if (labels[option.value]) option.textContent = labels[option.value];
