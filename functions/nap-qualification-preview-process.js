@@ -26,10 +26,11 @@ async function processPreview(pool,input,services){
     if(job.state!=='preview')return {state:job.state,count:job.payload.count,applyStarted:job.payload.applyStarted===true};
     if(fingerprint(pack)!==job.payload.expectedFingerprint)throw new TypeError('Les parametres de la competition ont change. Annulez cet apercu puis relancez le controle.');
     if(job.payload.rules.enabled&&(typeof services.automatic!=='function'||typeof services.competitionFor!=='function'))throw new TypeError('Calcul automatique et periode des temps requis pour cette grille.');
-    const competition=services.competitionFor?services.competitionFor(pack,job.payload.rules):undefined;
-    const page=await (services.previewPage||previewPage)(connection,{competitionId:scope.competitionId,national:true,cursor:job.cursor,rules:job.payload.rules,date:pack.event.date,events:services.eventsFor(pack),competition},services);
-    const saved=await (services.savePage||savePage)(connection,{...input,previous:job},page);
-    return {...saved,removed:page.items.flatMap(item=>item.removed.map(row=>({...row,club:item.before.clubId,swimmerIndexId:item.before.swimmerId}))),applyStarted:job.payload.applyStarted===true};
+    const target=job.payload.nativeOperations?.length?require('./nap-qualification-target-pack').targetPack(pack,job.payload.nativeOperations):pack;
+    const competition=services.competitionFor?services.competitionFor(target,job.payload.rules):undefined;
+    const page=job.payload.phase==='relay'?await require('./nap-qualification-relay-preview').relayPreview(connection,{competitionId:scope.competitionId,national:true,cursor:job.cursor,enabled:job.payload.rules.enabled,rules:job.payload.rules,date:target.event.date,events:services.eventsFor(target)},services):await (services.previewPage||previewPage)(connection,{competitionId:scope.competitionId,national:true,cursor:job.cursor,rules:job.payload.rules,date:target.event.date,events:services.eventsFor(target),competition},services);
+    const saved=await (services.savePage||savePage)(connection,{...input,includeRelays:true,previous:job},page);
+    return {...saved,removed:page.kind==='relay'?page.items.filter(item=>item.remove).map(item=>({club:item.before.clubId,relayId:item.before.relayId})):page.items.flatMap(item=>item.removed.map(row=>({...row,club:item.before.clubId,swimmerIndexId:item.before.swimmerId}))),applyStarted:job.payload.applyStarted===true};
   }finally{
     try{if(locked&&Number((await query('SELECT RELEASE_LOCK(?) AS released',[lockName(scope.competitionId)]))[0]?.released)!==1)safe=false;}catch{safe=false;}
     if(safe)connection.release();else connection.destroy();

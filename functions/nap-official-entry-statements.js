@@ -18,6 +18,8 @@ function deadline(value) {
 function entryAuthority(authority,competitionId,clubId) {
   if(!authority || !Object.hasOwn(authority,"options")) throw new TypeError("Fermeture complementaire NAP requise.");
   const base=authorityGuard("officielsengager",authority),leader=authority.nativeLeader;
+  base.sql+=" AND NOT EXISTS (SELECT 1 FROM livepalmes_qualification_jobs scope_job FORCE INDEX (competition_state) WHERE scope_job.competition_id=? AND scope_job.state IN ('preview','ready','apply'))";
+  base.values.push(positiveId(competitionId));
   // Snapshot fields from the native reader also guard IntraNAP edits between
   // eligibility checks and a MyISAM write; older before-images may omit them.
   const nativeParameters=authority.compet_parametres;

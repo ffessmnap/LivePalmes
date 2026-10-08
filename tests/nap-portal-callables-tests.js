@@ -28,6 +28,7 @@ const sandbox = { exports: {}, ENVIRONMENT: { projectId: "livepalmes-test" }, CA
   assertEngagementClubWriteOpen:()=>calls.push("open-check"),
   db: { getAll: () => { throw new Error("Old sports read"); }, collection: name => { if(name!=="auditLogs") throw new Error("Old sports read");return {doc:()=>({get:async()=>({exists:false}),create:async()=>calls.push("audit-backup"),update:async()=>calls.push("audit-checkpoint")})}; } },
   require: name => {
+    if(name === "./nap-qualification-edit-lock")return {ordinaryEdit:async(connection,id,action,services)=>{assert.equal(connection,pool);assert.equal(typeof services.authorize,'function');return action();}};
     if (name === "./nap-portal-swimmers") return { portalPool: () => pool };
     if(name === "./nap-competition-create") return {createCompetition:async(connection,input,audit,authorize)=>{assert.equal(connection,pool);assert.equal(input.actorUid,management.uid);assert.equal(input.creationId,"request-id");assert.equal(input.committeeId,"16");await authorize(input.event);await audit.prepare("operation",{});await audit.checkpoint("operation",{});calls.push("competition-create");await audit.complete("operation",{});return {ok:true,source:"nap",competitionId:event.id};}};
     if(name === "./nap-club-people") return {readClubPeople:async(connection,input,authorize)=>{assert.equal(connection,pool);assert.equal(input.clubId,context.clubId);await authorize(input);calls.push("native-people");return {source:"nap",people:[],hasMore:false};}};

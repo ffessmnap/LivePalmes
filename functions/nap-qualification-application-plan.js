@@ -37,7 +37,7 @@ function applicationPlan(input,saved,current){
 function restartStatement(input){
   const job=jobs.validate(input.previous,input),generation=job.payload.generation??0;
   if(job.state!=='apply'||!Number.isSafeInteger(generation)||generation<0)throw new TypeError('Reprise du controle invalide.');
-  const payload={...job.payload,generation:generation+1,pageIds:[],count:0,applyPage:0,applyStarted:true};
+  const payload={...job.payload,generation:generation+1,pageIds:[],anchors:[],phase:'individual',count:0,applyPage:0,applyStarted:true};
   return jobs.transitionStatement(job,{...input,state:'preview',cursor:'',payload});
 }
 module.exports={applicationPlan,restartStatement};

@@ -15,6 +15,13 @@ const input={competition,pack,changes:[{swimmerId:1,entries:native}],histories:n
   let resolved=await resolveChanges(input,services),plan=planIndividualEntries(pack,resolved);
   assert.equal(automaticCalls,0);assert.equal(manualCalls,0);assert.equal(resolved[0].entries[0].tps,"14200");assert.equal(resolved[0].entries[1].tps,"000000");
   assert.deepEqual(plan.plans[0].updates,[]);assert.deepEqual(plan.plans[0].removals,[]);
+  const gridView={...view,napSource:true,qualifications:{enabled:true}};
+  const gridServices={...services,view:()=>gridView,prepareQualifications:async()=>new Map([['1',{enabled:true,mode:'each',courses:{'50BI':{allowed:true,qualified:true},'200BI':{allowed:true,qualified:true},'400BI':{allowed:false,qualified:false}}}]]),automatic:entry=>({eventCode:entry.eventCode,entryTimeMode:'known',entryTimeValue:entry.eventCode==='50BI'?10200:20000})};
+  const gridResolved=await resolveChanges(input,gridServices);
+  assert.equal(gridResolved[0].entries[0].tps,'14200','An unchanged sporting time keeps its original native representation under a grid');
+  assert.equal(gridResolved[0].entries[1].tps,'032000','Active grid recomputes even an existing native entry automatically');
+  await assert.rejects(resolveChanges({...input,changes:[{swimmerId:1,entries:[...native,{eventCode:'400BI'}]}]},gridServices),/qualifications/);
+  await assert.rejects(resolveChanges(input,{...gridServices,prepareQualifications:undefined}),/Controle des qualifications/);
   resolved=await resolveChanges({...input,changes:[{swimmerId:1,entries:[...native,{eventCode:"400BI"}]}]},services);
   plan=planIndividualEntries(pack,resolved);assert.equal(plan.plans[0].additions[0].tps,"032000");assert.deepEqual(plan.plans[0].updates,[]);
   await resolveChanges({...input,changes:[{swimmerId:1,entries:[...native,{eventCode:"400BI",entryTimeMode:"manual",manualEntryTime:"3:30.00"}]}]},services);assert.equal(manualCalls,1);

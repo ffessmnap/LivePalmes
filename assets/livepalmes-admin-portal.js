@@ -4187,7 +4187,7 @@
       status.textContent = action === "cancel" ? "Annulation du contrôle…" : "Reprise du contrôle…";
       try {
         if (action === "cancel") {
-          await callFunction("processEngagementQualificationJob", { jobId, action: "cancel" });
+          await callFunction("processEngagementQualificationJob", { competitionId: competition.id, jobId, action: "cancel" });
           if (selectedEngagementCompetition?.id === competition.id) selectedEngagementCompetition.qualificationJobId = "";
           renderQualificationJobActions();
           elements.engagementsDetailStatus.textContent = "Contrôle annulé. Vous pouvez maintenant enregistrer votre saisie.";
@@ -4233,7 +4233,7 @@
     let result = { state: "preview" }; const removed = [];
     while (["preview", "apply"].includes(result.state)) {
       try {
-        result = await callFunction("processEngagementQualificationJob", { jobId });
+        result = await callFunction("processEngagementQualificationJob", { competitionId: selectedEngagementCompetition.id, jobId });
       } catch (error) {
         if (error.details?.qualificationJobCancelled && selectedEngagementCompetition?.qualificationJobId === jobId) selectedEngagementCompetition.qualificationJobId = "";
         renderQualificationJobActions();
@@ -4245,18 +4245,18 @@
         removed.length = 0;
         let cursor = "";
         do {
-          const page = await callFunction("processEngagementQualificationJob", { jobId, action: "details", cursor });
+          const page = await callFunction("processEngagementQualificationJob", { competitionId: selectedEngagementCompetition.id, jobId, action: "details", cursor });
           removed.push(...(page.removed || [])); cursor = page.cursor || "";
         } while (cursor);
         const details = removed.map((item) => `${item.club || ""} · ${item.name || item.swimmerIndexId || "Relais"} · ${item.eventCode}`).join("\n");
         if (!global.confirm(`Enregistrer les règles de qualification ?\n${result.count || 0} engagement(s) seront supprimés. Avec une grille active, les temps individuels seront recalculés automatiquement. Les performances historiques seront conservées.\n\n${details}`)) {
           if (result.applyStarted) throw new Error("Application partiellement effectuée. Reprenez le contrôle pour confirmer les changements restants.");
-          await callFunction("processEngagementQualificationJob", { jobId, action: "cancel" });
+          await callFunction("processEngagementQualificationJob", { competitionId: selectedEngagementCompetition.id, jobId, action: "cancel" });
           selectedEngagementCompetition.qualificationJobId = "";
           renderQualificationJobActions();
           throw new Error("Modification des qualifications annulée.");
         }
-        result = await callFunction("processEngagementQualificationJob", { jobId, action: "confirm" });
+        result = await callFunction("processEngagementQualificationJob", { competitionId: selectedEngagementCompetition.id, jobId, action: "confirm" });
       }
     }
     if (result.state !== "done") throw new Error("Contrôle interrompu. Reprenez-le depuis la fiche compétition.");
