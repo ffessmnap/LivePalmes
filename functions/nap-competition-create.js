@@ -1,5 +1,5 @@
 "use strict";
-// Fixed creation budget: <=18 SQL calls, then the existing bounded detail reader.
+// Fixed creation budget: <=17 SQL calls, then the existing bounded detail reader.
 // Native MyISAM inserts are checkpointed; an uncertain generated id is never retried.
 const {createHash}=require("node:crypto");
 const {isDeepStrictEqual}=require("node:util");
@@ -19,7 +19,7 @@ function planCreation(input) {
   const comite=Number(input.committeeId);
   if(!Number.isInteger(comite)||comite<1||comite>2147483647) throw new TypeError("Region NAP requise.");
   const kind=({pool:0,openWater:1,training:2,stage:3,meeting:4})[event.competitionType];
-  const competition={libelle:name,lieu:city,date,enddate,comite,comments:"",filepdf:null,filetxt:null,bassin:null,chrono:null,ld:kind,wid:"",equipe:null,reference:0,arrived:null,integration:null,type:6,organisateur:0,delegue:"",typecnc:kind,derogation:0,affiche:"",live:0,qualiffrance:0,description:"",integrationstatus:0};
+  const competition={libelle:name,lieu:city,date,enddate,comite,comments:"",filepdf:null,filetxt:null,bassin:null,chrono:null,ld:kind,wid:"",equipe:null,reference:0,arrived:null,integration:null,type:kind,organisateur:0,delegue:"",typecnc:0,derogation:0,affiche:"",live:0,qualiffrance:0,description:"",integrationstatus:0};
   const parameters={cat_d:null,cat_f:null,tps_d:null,tps_f:null,date_limit:null,actif:0,dateactif:null,mailtxt:"",mailjuges:"",user:null,sendtxt:0,sendpdfclubs:0,sendpdfjuges:0,sendforfait:0,qualif:0,who:null,officiel:0,saisie:1,relais:0,wc:null,send48:0,niveau:({departemental:0,regional:1,national:2,international:8})[event.level],open:0,type_chrono_elec:0,nb_nageurs:0,no_premiere_ligne:1,nb_lignes:0,mailcontrole:"",sendpdfcontrole:0,logocompet:"",live_header:"",live_hashtag:""};
   return {competition,parameters};
 }
@@ -59,8 +59,6 @@ async function createCompetition(pool,input,audit,authorize) {
     if((await query("SELECT TRIGGER_NAME FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA=DATABASE() AND EVENT_OBJECT_TABLE IN ('competitions','compet_parametres','livepalmes_competition_options') LIMIT 4")).length) throw new TypeError("Declencheur NAP a verifier.");
     const kinds=await query("SELECT id,label FROM compet_types FORCE INDEX(PRIMARY) WHERE id IN (0,1,2,3,4) ORDER BY id LIMIT 5");
     if(!isDeepStrictEqual(kinds,[{id:0,label:"Piscine"},{id:1,label:"Eau libre"},{id:2,label:"Formation"},{id:3,label:"Stage"},{id:4,label:"Réunion"}])) throw new TypeError("Types NAP modifies.");
-    const scopes=await query("SELECT id,label FROM compet_type FORCE INDEX(PRIMARY) WHERE id=6 LIMIT 1");
-    if(!isDeepStrictEqual(scopes,[{id:6,label:"AUTRE"}])) throw new TypeError("Type general NAP modifie.");
     if(!saved) {
       saved={operation,creationId:input.creationId,actorUid:input.actorUid,proposed,phase:"prepared",timestamp:new Date().toISOString().replace("T"," ").replace("Z","000")};
       await audit.prepare(operation,saved);
