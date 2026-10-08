@@ -3,7 +3,7 @@
 // the established single Save/Cancel behavior: qualifications, date and time
 // period are evaluated together, then persisted only after confirmation.
 function targetPack(pack,operations=[]){
-  if(!Array.isArray(operations)||operations.length>6)throw new TypeError('Parametres du controle incompatibles.');
+  if(!Array.isArray(operations)||operations.length>7)throw new TypeError('Parametres du controle incompatibles.');
   if(!operations.length)return pack;
   const result=structuredClone(pack);
   for(const operation of operations){
@@ -16,6 +16,7 @@ function targetPack(pack,operations=[]){
     else if(operation.table==='livepalmes_competition_fees')result.fees=row;
     else if(operation.table==='livepalmes_competition_programs')result.detailedProgram=row;
     else if(operation.table==='compet_comites')result.committees=row.map(comite=>({compet:Number(result.nativeSnapshot.competition.id),comite}));
+    else if(operation.table==='livepalmes_course_options')result.courseOptions=row;
     else throw new TypeError('Table de parametres non prise en charge par le controle.');
   }
   const native=result.nativeSnapshot.competition,parameters=result.nativeParameters,options=result.options||{};

@@ -128,6 +128,9 @@ function planCompetitionChange(pack, input, nowMs = Date.now()) {
       const previous=typeof pack.detailedProgram?.program_sessions==="string" ? JSON.parse(pack.detailedProgram.program_sessions) : pack.detailedProgram?.program_sessions || [];
       if(previous.some(session=>session.items?.some(item=>!known.has(item.eventCode) && !input.eventDefinitions?.has(item.eventCode))) || Array.isArray(value) && value.some(session=>session.items?.some(item=>!known.has(item.eventCode)))) throw new TypeError("Une course ancienne doit etre raccordee avant de modifier le programme. Elle reste conservee.");
       supplemental("livepalmes_competition_programs",pack.detailedProgram).program_sessions=require("./nap-program-validation").validateProgram(value,events,input.normalizeProgram);
+    } else if (field === "courseOptions") {
+      const operation=require('./nap-course-options-change').plan(pack,value,input,now);
+      before.courseOptions=operation.before;after.courseOptions=operation.after;
     } else if (field === "fees") {
       if (!value || typeof value !== "object" || Array.isArray(value) || Object.keys(value).some(k=>!["enabled","swimmerFee","individualEventFee","relayFee","helloAssoUrl"].includes(k))) throw new TypeError("Tarifs invalides.");
       const fees=supplemental("livepalmes_competition_fees",pack.fees); fees.enabled=bool(value.enabled);
@@ -149,8 +152,13 @@ function planCompetitionChange(pack, input, nowMs = Date.now()) {
     if (!after.competitions.chrono || pack.event.competitionType === "pool" && (!after.competitions.bassin || !after.compet_parametres.nb_lignes)) throw new TypeError("Renseignez le bassin et le chronometrage avant ouverture.");
   }
   const operations=[];
+  if(after.courseOptions&&after.nativeInvitations)throw new TypeError('Enregistrez les regions et les reglages de courses separement.');
   for(const [table,row] of Object.entries(after)) {
     if(table==="nativeInvitations") continue;
+    if(table==='courseOptions'){
+      if(!isDeepStrictEqual(before[table],row))operations.push({table:'livepalmes_course_options',key:'competition_id',before:before[table],after:row});
+      continue;
+    }
     if (before[table] && isDeepStrictEqual(normalizedRow(before[table]),normalizedRow(row))) continue;
     if (table.startsWith("livepalmes_")) { row.updated_at=now; row.updated_by=input.actorUid; row.version=String(BigInt(before[table]?.version || "0")+1n); }
     operations.push({table,key:SPECS[table].key,before:before[table],after:row});
@@ -204,7 +212,7 @@ async function applyCompetitionChange(pool, input, audit, authorize) {
       if(Buffer.byteLength(JSON.stringify(saved))>500000) throw new RangeError("Sauvegarde trop volumineuse.");
       await audit.prepare(operation,saved);
     }
-    if(saved.actorUid!==input.actorUid || saved.operation!==operation || saved.competitionId!==calendar.positiveId(input.competitionId) || saved.expectedFingerprint!==input.expectedFingerprint || saved.planHash!==rowHash({operations:saved.operations}) || !Array.isArray(saved.operations) || saved.operations.length>6) throw new TypeError("Sauvegarde incompatible.");
+    if(saved.actorUid!==input.actorUid || saved.operation!==operation || saved.competitionId!==calendar.positiveId(input.competitionId) || saved.expectedFingerprint!==input.expectedFingerprint || saved.planHash!==rowHash({operations:saved.operations}) || !Array.isArray(saved.operations) || saved.operations.length>7) throw new TypeError("Sauvegarde incompatible.");
     if(saved.operations.some(item=>item.table==="compet_comites")) {
       if((await query("SELECT TRIGGER_NAME FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA=DATABASE() AND EVENT_OBJECT_TABLE='compet_comites' LIMIT 1")).length) throw new TypeError("Declencheur des regions a verifier.");
       // One short, bounded native list replacement. Table locks also serialize
@@ -216,6 +224,10 @@ async function applyCompetitionChange(pool, input, audit, authorize) {
     const authority={competitions:pack.nativeSnapshot.competition,compet_parametres:pack.nativeSnapshot.parameters};
     let resumed=false;
     for(const item of saved.operations) {
+      if(item.table==='livepalmes_course_options'){
+        if(tablesLocked)throw new TypeError('Modifiez les regions et les reglages de courses separement.');
+        const result=await require('./nap-course-options-change').apply(connection,item,saved.competitionId,authority);resumed=resumed||result.resumed;continue;
+      }
       if(item.table==="compet_comites") {
         if(item.key!=="compet" || !Array.isArray(item.before) || item.before.length>50 || item.before.some(row=>!Number.isInteger(row.id)||!Number.isInteger(row.comite)) || !Array.isArray(item.after) || !isDeepStrictEqual([...require("./nap-competition-scope").invitations(item.after.filter(id=>id!==19),0),...(item.before.some(row=>row.comite===19)?[19]:[])].sort((a,b)=>a-b),item.after)) throw new TypeError("Sauvegarde des regions incompatible.");
         const rows=()=>query("SELECT id,comite FROM compet_comites FORCE INDEX(livepalmes_compet_comite_id) WHERE compet=? ORDER BY comite,id LIMIT 51",[saved.competitionId]);

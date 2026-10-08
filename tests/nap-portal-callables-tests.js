@@ -16,6 +16,7 @@ const sandbox = { exports: {}, ENVIRONMENT: { projectId: "livepalmes-test" }, CA
   onCall: (_, callback) => callback, HttpsError, TypeError, process: { env: {} }, ENGAGEMENT_EVENT_DEFINITION_BY_CODE: new Map(),
   ENGAGEMENT_COMPETITION_LEVELS: new Set(["regional", "national"]), ENGAGEMENT_ENTRY_STATUSES: new Set(["open", "closed", "upcoming"]),
   cleanEngagementProgramSessions:()=>[],
+  cleanEngagementCompetitionEvents:raw=>raw,
   nativeQualificationServices:()=>({eventsFor:()=>[],competitionFor:()=>({qualifications:qualificationRules})}),qualificationEngine:{validateRules:value=>value},
   cleanEngagementCalendarEventPayload:raw=>({...raw,level:raw.level||"regional",regionId:raw.regionId||"PACA"}), CLUB_REFERENCE_REGION_LABELS:{"16":"PACA"},
   cleanText: value => String(value || ""), cleanIsoDate: value => /^\d{4}-\d\d-\d\d$/.test(String(value)) ? value : "",
