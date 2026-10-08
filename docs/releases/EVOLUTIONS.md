@@ -2,11 +2,19 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### Statistiques et exports administrateur depuis NAP — 8 octobre 2026
+
+- Raccordement TEST préparé : récapitulatifs de clubs, statistiques, PDF individuel administrateur, ZIP des PDF et TXT piscine lisent les engagements NAP. Aucun accès aux anciennes collections sportives ni cache Storage dans ces branches. Aucun engagement, temps, schéma ou courriel modifié. TXT eau libre toujours bloqué tant que son format n'est pas validé.
+- Choix confirmés par Antoine : afficher « origine non connue » pour les anciens temps dont la provenance manque ; proposer un ZIP de tous les PDF tout en conservant le téléchargement individuel.
+- Budget fixé avant implémentation : une action administrateur lit au plus 24 requêtes SQL groupées (15 pour la compétition et ses documents, neuf pour tous les dossiers), sans requête par club ou par ligne. Dossiers bornés à 39 200 lignes, 500 clubs ; dépassement refusé sans résultat partiel. ZIP limité à 7 Mo avant encodage, PDF et TXT individuels à 10 Mo. Zéro écriture sportive et aucune reconstruction de cache à l'ouverture.
+- Lecture réelle en lecture seule sur la compétition d'essai : un club, quatre nageurs et relais retrouvés ; neuf plans EXPLAIN utilisent les index existants, sans parcours complet. Tests des droits avant identités, bornes, références absentes, temps natifs conservés et ZIP (CRC, annuaire, contenus, tailles, noms sûrs) réussis. Vérification globale, publication et recette de la version commune à terminer ; aucune validation utilisateur revendiquée.
+
 ### Suppression du verrouillage automatique du Portail — 8 octobre 2026
 
 - Demande d'Antoine : suppression de l'avertissement après 25 minutes et du verrouillage après 30 minutes d'inactivité. Le Portail ne redemande plus le mot de passe pour ce seul motif.
 - Déconnexion manuelle, invalidation Firebase, désactivation du compte, réauthentification des opérations sensibles et protections propres à LivePalmes Direct inchangées.
 - Chargement du module retiré, dialogues supprimés, tests et captures de référence adaptés. Vérification globale, publication TEST et recette à terminer ; aucune validation utilisateur revendiquée.
+- PR 186 fusionnée, commit 29cbb16f757fc473e24241835478fa1a4845568d publié sur TEST par le run 37759319975 réussi. Hosting relu : version 1ed35098cd0a71d2, accueil et portail HTTP 200, dialogues d'inactivité absents. PROD reste 58df08dd27a05880585ba68ce78f65a8c2ca47da. Aucune validation utilisateur déduite.
 
 ### Participation préalable et choix des temps NAP — 8 octobre 2026
 
@@ -16,6 +24,7 @@
 - Budget avant/après : ouverture 24 → 25 requêtes maximum, dont une lecture groupée supplémentaire au plus pour tous les nageurs inscrits (800 témoins maximum). Enregistrement individuel 36 → 38, sélection 43 → 45 et relais 61 → 63 au pire, car le contrôle et le retour du dossier peuvent chacun relire cette preuve. Officiels 32 → 33 et PDF 24 → 25 ; aucune écriture supplémentaire ni lecture par ligne. Désignation du premier chef : 28 opérations puis retour borné à 25 lectures, soit 53 au pire avec documents, restrictions et présence.
 - Tests ciblés : présence dans une des compétitions, refus sans résultat, filtres de temps, conservation historique, retrait, relais et grille cliente. Contrôle global exact et publication TEST à terminer ; aucune validation utilisateur revendiquée.
 - Correction des comparaisons de concurrence natives : conversion explicite des deux valeurs en utf8mb4 avant comparaison binaire, conservant casse, accents et NULL. Diagnostic réel en lecture seule : le lieu accentué de Jumièges échouait avec latin1 contre utf8mb4 ; après correction, EXPLAIN de la première déclaration retrouve les clés PRIMARY et livepalmes_compet_id, sans écriture ni changement de données. Tous les tests NAP passent après cette correction.
+- PR 185 intégrée sur a68f7373e86ef4028e1fad512c422df870cf9814 ; CI Linux exact 37739425476 vert, TEST commun 37739653975 réussi, preuve locale test-proof-37739653975/test-proof.json et client 20 vérifiés. Les six compétitions actuellement ouvertes sont accessibles à l'écran CNHC : cinq formulaires de premier chef actifs, dossier d'essai avec quatre nageurs, leurs courses et deux relais conservés. Contrôles ordinateur/mobile du relais ; aucune nouvelle écriture réelle dans cette recette. L'insertion du premier chef, les qualifications, les statistiques et exports administrateur restent à vérifier/raccorder ; aucune validation utilisateur revendiquée.
 - Recette du lot précédent : PR 184 intégrée sur 2bbbd29ef2d2e3908962de04abc488dd7247ba97, CI exact 37737119654 vert et TEST commun 37737361315 réussi. Après déverrouillage, les champs et le bouton du premier chef sont disponibles dans Jumièges/CNHC, sans écriture hors compétition d'essai. L'ancien résumé de consultation seule est corrigé dans ce lot : il invite maintenant à déclarer le chef. Pas de preuve d'insertion réelle revendiquée.
 
 ### Premier dossier club NAP — 8 octobre 2026

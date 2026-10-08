@@ -8751,6 +8751,7 @@
     return {
       known: "Temps connu",
       manual: "Saisie manuelle",
+      native: "Origine non connue",
       default595999: "Temps par défaut"
     }[String(mode || "")] || "";
   }
@@ -8801,6 +8802,7 @@
     const warningParts = [
       counts.incompleteClubCount ? `${counts.incompleteClubCount} dossier${counts.incompleteClubCount > 1 ? "s" : ""} à vérifier` : "",
       !openWater && counts.manualTimeCount ? `${counts.manualTimeCount} temps saisi${counts.manualTimeCount > 1 ? "s" : ""} manuellement` : "",
+      !openWater && counts.unknownTimeOriginCount ? `${counts.unknownTimeOriginCount} temps : origine non connue` : "",
       !openWater && counts.defaultTimeCount ? `${counts.defaultTimeCount} temps par défaut 59:59.99` : "",
       counts.unknownSexCount ? `${counts.unknownSexCount} sexe${counts.unknownSexCount > 1 ? "s" : ""} non renseigné${counts.unknownSexCount > 1 ? "s" : ""}` : "",
       statistics.truncated ? "Liste détaillée limitée aux 10 000 premiers engagements" : ""
@@ -11520,6 +11522,7 @@
       const result = await callFunction("generateEngagementCompetitionClubRecapPdfs", {
         competitionId: selectedEngagementCompetitionId
       });
+      if (result.zipBase64) downloadBase64File(result.zipBase64, result.fileName || "recapitulatifs-clubs.zip", "application/zip");
       if (Array.isArray(result.entries) && result.entries.length) {
         const byClubId = new Map(result.entries.map((entry) => [entry.clubId, entry]));
         engagementClubRecapEntries = engagementClubRecapEntries.map((entry) =>
