@@ -42,7 +42,7 @@ function fixture() {
 (async()=>{
   const p=planCreation(input);assert.equal(p.parameters.saisie,1);assert.equal(p.parameters.actif,0);assert.equal(p.parameters.date_limit,null);assert.equal(p.parameters.qualif,0);
   assert.equal(planCreation({...input,event:{...input.event,competitionType:"openWater"}}).competition.ld,1);
-  for(const event of [{...input.event,date:"2026-02-30"},{...input.event,city:"x".repeat(65)},{...input.event,level:"unknown"},{...input.event,name:"🏊"}])assert.throws(()=>planCreation({...input,event}),TypeError);
+  for(const event of [{...input.event,date:"2026-02-30"},{...input.event,city:"x".repeat(65)},{...input.event,level:"unknown"},{...input.event,name:"🏊"},{...input.event,name:"Stage competition"}])assert.throws(()=>planCreation({...input,event}),TypeError);
   let s=fixture();await s.run();assert.equal(s.writes,3);assert.ok(s.queries<=18);assert.ok(s.done&&s.released);await s.run();assert.equal(s.writes,3,"completed retry does not duplicate");
   for(const flag of ["drift","trigger","wrongType","busy","noClosure"]){s=fixture();s[flag]=true;await assert.rejects(s.run());assert.equal(s.writes,0);assert.equal(s.saved,null);}
   s=fixture();await assert.rejects(s.run(input,()=>{throw Error("denied");}));assert.equal(s.queries,0);

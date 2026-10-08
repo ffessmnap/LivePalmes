@@ -19,6 +19,7 @@ function planCreation(input) {
   const comite=Number(input.committeeId);
   if(!Number.isInteger(comite)||comite<1||comite>2147483647) throw new TypeError("Region NAP requise.");
   const competition={libelle:name,lieu:city,date,enddate,comite,comments:"",filepdf:null,filetxt:null,bassin:null,chrono:null,ld:event.competitionType==="openWater"?1:0,wid:"",equipe:null,reference:0,arrived:null,integration:null,type:6,organisateur:0,delegue:"",typecnc:event.competitionType==="openWater"?1:0,derogation:0,affiche:"",live:0,qualiffrance:0,description:"",integrationstatus:0};
+  if(require("./nap-direct-calendar").eventFromRow({...competition,type_label:event.competitionType==="pool"?"Piscine":"Eau libre"}).eventType!==event.competitionType) throw new TypeError("Ce titre est actuellement interprete comme une formation, un stage ou une reunion par le calendrier NAP. Choisissez un titre de competition sans ces mots pour le moment.");
   const parameters={cat_d:null,cat_f:null,tps_d:null,tps_f:null,date_limit:null,actif:0,dateactif:null,mailtxt:"",mailjuges:"",user:null,sendtxt:0,sendpdfclubs:0,sendpdfjuges:0,sendforfait:0,qualif:0,who:null,officiel:0,saisie:1,relais:0,wc:null,send48:0,niveau:({departemental:0,regional:1,national:2,international:8})[event.level],open:0,type_chrono_elec:0,nb_nageurs:0,no_premiere_ligne:1,nb_lignes:0,mailcontrole:"",sendpdfcontrole:0,logocompet:"",live_header:"",live_hashtag:""};
   return {competition,parameters};
 }
