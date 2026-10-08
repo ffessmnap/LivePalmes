@@ -15,10 +15,11 @@ const sandbox = { exports: {}, ENVIRONMENT: { projectId: "livepalmes-test" }, CA
   onCall: (_, callback) => callback, HttpsError, TypeError, process: { env: {} }, ENGAGEMENT_EVENT_DEFINITION_BY_CODE: new Map(),
   ENGAGEMENT_COMPETITION_LEVELS: new Set(["regional", "national"]), ENGAGEMENT_ENTRY_STATUSES: new Set(["open", "closed", "upcoming"]),
   cleanEngagementProgramSessions:()=>[],
+  cleanEngagementCalendarEventPayload:raw=>({...raw,level:raw.level||"regional",regionId:raw.regionId||"PACA"}), CLUB_REFERENCE_REGION_LABELS:{"16":"PACA"},
   cleanText: value => String(value || ""), cleanIsoDate: value => /^\d{4}-\d\d-\d\d$/.test(String(value)) ? value : "",
   engagementSeasonEndYearFromIsoDate: value => Number(value.slice(0, 4)) + (value.slice(5, 7) >= "09" ? 1 : 0),
   engagementSeasonBoundsFromEndYear: endYear => ({ endYear, startYear: endYear - 1, startDate: `${endYear - 1}-09-01`, endDate: `${endYear}-08-31` }),
-  engagementRegionsMatch: (left, right) => left === right,
+  engagementRegionsMatch: (left, right) => left === right || left === "16" && right === "PACA",
   engagementAccessContext: async () => management, engagementClubAccessContext: async () => context,
   assertCanManageEngagementCompetition: (actor, item) => { calls.push("authorize"); if (!actor.national && actor.regionId !== item.regionId) throw new HttpsError("permission-denied", "Hors region"); },
   engagementEventIsPast: () => past, ageCategoryFromDates: () => "M30+", portalReadStats: () => ({}),
@@ -28,6 +29,7 @@ const sandbox = { exports: {}, ENVIRONMENT: { projectId: "livepalmes-test" }, CA
   db: { getAll: () => { throw new Error("Old sports read"); }, collection: name => { if(name!=="auditLogs") throw new Error("Old sports read");return {doc:()=>({get:async()=>({exists:false}),create:async()=>calls.push("audit-backup"),update:async()=>calls.push("audit-checkpoint")})}; } },
   require: name => {
     if (name === "./nap-portal-swimmers") return { portalPool: () => pool };
+    if(name === "./nap-competition-create") return {createCompetition:async(connection,input,audit,authorize)=>{assert.equal(connection,pool);assert.equal(input.actorUid,management.uid);assert.equal(input.creationId,"request-id");assert.equal(input.committeeId,"16");await authorize(input.event);await audit.prepare("operation",{});await audit.checkpoint("operation",{});calls.push("competition-create");await audit.complete("operation",{});return {ok:true,source:"nap",competitionId:event.id};}};
     if(name === "./nap-club-people") return {readClubPeople:async(connection,input,authorize)=>{assert.equal(connection,pool);assert.equal(input.clubId,context.clubId);await authorize(input);calls.push("native-people");return {source:"nap",people:[],hasMore:false};}};
     if (name === "./nap-portal-competitions") return {
       readNativeCompetitionSeason: async (connection, year) => { assert.equal(connection, pool); assert.equal(year, 2027); calls.push("season"); return { events: [event, { ...event, id: "legacy-nap-5200", competitionType: "training" }] }; },
@@ -88,7 +90,9 @@ for (const name of ["listEngagementCompetitions", "listEngagementCalendarEvents"
   nativeParameters.qualif=0;
   const preload = await sandbox.exports.preloadEngagementClubWorkspaces({ data: { competitionIds: [event.id] } });
   assert.equal(preload.workspaces.length, 0);
-  for (const name of ["createEngagementCompetition", "createEngagementCalendarEvent"]) await assert.rejects(sandbox.exports[name]({ data: {} }), error => error.code === "failed-precondition");
+  await assert.rejects(sandbox.exports.createEngagementCompetition({data:{}}),error=>error.code==="invalid-argument");
+  await assert.rejects(sandbox.exports.createEngagementCalendarEvent({data:{}}),error=>error.code==="failed-precondition");
+  calls.length=0;management={uid:"national-admin",national:true};await sandbox.exports.createEngagementCompetition({data:{competitionType:"pool",creationId:"request-id",actorUid:"spoof",regionId:"PACA"}});assert.deepEqual(calls,["authorize","audit-backup","audit-checkpoint","competition-create","audit-complete","authorize","detail","documents"]);
   calls.length=0;management={uid:"region-admin",national:false,region:true,regionId:"AURA"};
   await assert.rejects(sandbox.exports.updateEngagementCompetition({data:{competitionId:event.id,actorUid:"spoof",national:true,patch:{entryStatus:"closed"}}}),error=>error.code==="permission-denied");assert.deepEqual(calls,["authorize"]);
   calls.length=0;management.regionId=event.regionId;past=true;
