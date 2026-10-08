@@ -59,6 +59,7 @@ function runUnitTests() {
     "nap-approved-closure-schema-tests.js",
     "nap-approved-people-schema-tests.js",
     "nap-competition-documents-tests.js",
+    "nap-competition-create-tests.js",
     "nap-engagement-contract-tests.js",
     "nap-portal-competitions-tests.js",
     "nap-portal-competition-change-tests.js",

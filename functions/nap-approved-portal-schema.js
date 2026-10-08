@@ -92,4 +92,4 @@ async function approvedPortalSchema(pool, input) {
     finally { connection.release(); }
   }
 }
-module.exports = { tables, plan, planHash, validateExisting, approvedPortalSchema };
+module.exports = { tables, plan, planHash, validateExisting, approvedPortalSchema, inspect };
