@@ -12,7 +12,12 @@ const {previewNativeTimes:preview}=require("../functions/nap-entry-time-preview"
   await assert.rejects(()=>preview({}, {...input,swimmerIds:[1,1]},services));
   pack.inscriptions=[];await assert.rejects(()=>preview({},input,services));pack.inscriptions=[{nageur:1},{nageur:2}];
   competition.nativeParameters.qualif=1;await assert.rejects(()=>preview({},input,services),/qualifications/);competition.nativeParameters.qualif=0;
-  competition.event.eventType="openWater";const water=await preview({},input,services);assert.equal(calls,1);assert.equal(water.sqlBudget.historyQueries,0);
+  competition.nativeParameters.qualif=29;
+  const unrestricted=await preview({},input,services);assert.equal(unrestricted.swimmers[0].individualEntries[0].entryTime,"1:42.00");
+  competition.qualifications={enabled:true};await assert.rejects(()=>preview({},input,services),/qualifications/);delete competition.qualifications;
+  competition.options={qualifications_enabled:1};await assert.rejects(()=>preview({},input,services),/qualifications/);competition.options=null;
+  competition.nativeParameters.qualif=0;
+  competition.event.eventType="openWater";const water=await preview({},input,services);assert.equal(calls,2);assert.equal(water.sqlBudget.historyQueries,0);
   competition.event.eventType="pool";competition.participations=[{participation:10,modeengagement:"presencetps"},{participation:11,modeengagement:"presencetps"}];
   let participationQueries=0;
   const evidenceConnection={execute:async query=>{participationQueries++;assert.match(query.sql,/FROM perfs FORCE INDEX \(nageur\)/);return [[{nageur:1,compet:11}]];}};
