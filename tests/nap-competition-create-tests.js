@@ -40,9 +40,9 @@ function fixture() {
   return s;
 }
 (async()=>{
-  const p=planCreation(input);assert.equal(p.parameters.saisie,1);assert.equal(p.parameters.actif,0);assert.equal(p.parameters.date_limit,null);assert.equal(p.parameters.qualif,0);
+  const p=planCreation(input);assert.equal(p.competition.type,0);assert.equal(p.competition.typecnc,0);assert.equal(p.parameters.saisie,1);assert.equal(p.parameters.actif,0);assert.equal(p.parameters.date_limit,null);assert.equal(p.parameters.qualif,0);
   for(const date of ["1900-01-01","9999-01-01"]) assert.throws(()=>planCreation({...input,event:{...input.event,date,endDate:date}}),/saisons/);
-  assert.equal(planCreation({...input,event:{...input.event,competitionType:"openWater"}}).competition.ld,1);
+  const water=planCreation({...input,event:{...input.event,competitionType:"openWater"}}).competition;assert.equal(water.ld,1);assert.equal(water.type,1);assert.equal(water.typecnc,0);
   for(const event of [{...input.event,date:"2026-02-30"},{...input.event,city:"x".repeat(65)},{...input.event,level:"unknown"},{...input.event,name:"🏊"}])assert.throws(()=>planCreation({...input,event}),TypeError);
   const ambiguous={...input,event:{...input.event,name:"Stage competition"}};
   let s=fixture();await assert.rejects(s.run(ambiguous),/type explicite/);assert.equal(s.writes,0);
@@ -50,9 +50,9 @@ function fixture() {
   for(const [competitionType,kind] of [["training",2],["stage",3],["meeting",4]]) {
     const data={...input,event:{...input.event,competitionType}};
     s=fixture();await assert.rejects(s.run(data),/type explicite requis/);assert.equal(s.writes,0);
-    s=fixture();s.eventType=true;await s.run(data);assert.equal(s.competition.ld,kind);assert.equal(s.competition.typecnc,kind);assert.equal(s.options.event_type,competitionType);assert.equal(s.parameters.actif,0);assert.ok(s.queries<=18);
+    s=fixture();s.eventType=true;await s.run(data);assert.equal(s.competition.ld,kind);assert.equal(s.competition.type,kind);assert.equal(s.competition.typecnc,0);assert.equal(s.options.event_type,competitionType);assert.equal(s.parameters.actif,0);assert.ok(s.queries<=17);
   }
-  s=fixture();await s.run();assert.equal(s.writes,3);assert.ok(s.queries<=18);assert.ok(s.done&&s.released);await s.run();assert.equal(s.writes,3,"completed retry does not duplicate");
+  s=fixture();await s.run();assert.equal(s.writes,3);assert.ok(s.queries<=17);assert.ok(s.done&&s.released);await s.run();assert.equal(s.writes,3,"completed retry does not duplicate");
   for(const flag of ["drift","trigger","wrongType","busy","noClosure"]){s=fixture();s[flag]=true;await assert.rejects(s.run());assert.equal(s.writes,0);assert.equal(s.saved,null);}
   s=fixture();await assert.rejects(s.run(input,()=>{throw Error("denied");}));assert.equal(s.queries,0);
   for(const flag of ["lostReply","lostParameterReply","failCheckpoint"]){s=fixture();s[flag]=true;await assert.rejects(s.run());const writes=s.writes;s[flag]=false;await assert.rejects(s.run(),/identifiant non confirme/);assert.equal(s.writes,writes,"uncertain native id cannot be retried");}

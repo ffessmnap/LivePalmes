@@ -2,6 +2,14 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### Correspondance native du type d'événement — 8 octobre 2026
+
+- La recette IntraNAP de la nouvelle fiche 5220 révèle que `competitions.type` porte le type d'événement (0 piscine, 1 eau libre, 2 formation, 3 stage, 4 réunion), et `typecnc` la famille du championnat ; la première création avait interprété ces deux champs à l'envers. Le parcours de création reste à corriger avant d'être considéré terminé.
+- Vérification réelle en lecture, indexée et bornée : 121 événements de la saison 2025-2026, même correspondance `type=ld` sur les événements observés ; fiches existantes 5140 et 5162 en piscine `type=0/typecnc=0`. Le code crée désormais `type=ld=type choisi`, `typecnc=0` par défaut, sans déduire un championnat. Les jointures de référence utilisent leurs champs respectifs ; aucune donnée existante n'est reclassée par écriture.
+- Seule fiche d'essai 5220 corrigée après sauvegarde, avec identifiant et anciennes valeurs stricts, dans le périmètre de sa création autorisée. Champs sportifs, paramètres, ouverture, courses et envois inchangés. Preuves locales `outputs/creation-5220-kind-before.json` et `outputs/creation-5220-kind-result.json` ; comparaison complète avant/après confirme un seul champ changé. IntraNAP affiche désormais les options d’engagement, dont « Saisie possible ». Publication du correctif de création à terminer ; aucune validation utilisateur revendiquée.
+- Budget de création réduit d'un appel de référence inutilisé (17 SQL maximum), mêmes trois lignes et journal, aucun parcours supplémentaire. Tests des valeurs natives des cinq types et des deux jointures, puis CI et recette commune obligatoires.
+- PR 195 : CI 37797809004 et TEST commun 37798272565 réussis, main 7eadc8a77dccdbfec647c6a0563a80bd399f8cf6, Hosting ffb430fbdffa2af5. Deux fonctions de création actives sur ce commit. Ces preuves n'effacent pas l'anomalie détectée ensuite ; la recette complète de création demeure à terminer avec le correctif.
+
 ### Création des formations, stages et réunions dans NAP — 8 octobre 2026
 
 - Étape 1/7 : le formulaire existant passe par la même création native protégée pour Formation, Stage et Réunion. Correspondance vérifiée en lecture dans le formulaire IntraNAP : `ld` 2, 3 et 4 ; mêmes codes `compet_types`. Champ explicite obligatoire pour ces créations, aucune ancienne collection sportive utilisée sur TEST, UUID et journal réutilisés. « Autre » reste bloqué en attente de l'arbitrage demandé à Antoine.
