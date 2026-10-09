@@ -46,7 +46,9 @@ Un lot contient une seule saison et un nageur ne doit apparaître qu’une fois,
 - `ambigu` : plusieurs identités exactes ;
 - `introuvable`, `timeout` ou `erreur` : contrôle manuel nécessaire.
 
-L’export conserve tous les candidats et toutes les comparaisons. L’import LivePalmes devra seulement valider automatiquement les lignes `validable` non ambiguës ; les autres restent à arbitrer dans l’administration nationale.
+L’export contient exactement une ligne par nageur, avec son statut et les informations du lot. Les données fédérales sont renseignées uniquement pour la correspondance d’identité unique retenue (`validable`, `licence_expiree` ou `anomalie_licence`). Pour les cas ambigus, les identités proches sans correspondance exacte, les introuvables et les recherches interrompues, ces champs restent vides : aucun candidat n’est choisi arbitrairement. Le statut et le détail restent disponibles pour le contrôle manuel.
+
+L’import LivePalmes peut ainsi lire une seule ligne par identifiant. Seules les lignes `validable` non ambiguës sont proposées pour validation ; les autres restent à arbitrer dans l’administration nationale.
 
 ## Sécurité et limites
 
