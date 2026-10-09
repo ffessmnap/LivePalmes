@@ -21,7 +21,9 @@ if ((process.env.TARGET_FIREBASE_PROJECT || "") !== PROJECT_ID) {
 }
 
 const selectedLots = lot === "all-safe" ? ALL_SAFE_LOTS : [lot];
-const napSchedulerOnly=process.env.NAP_NOTIFICATION_SCHEDULER_ONLY==='true';
+const schedulerScope=process.env.NAP_NOTIFICATION_SCHEDULER_ONLY||'false';
+if(!['true','false'].includes(schedulerScope))throw new Error('Selection de scheduler TEST invalide.');
+const napSchedulerOnly=schedulerScope==='true';
 if(napSchedulerOnly&&lot!=='schedulers')throw new Error('La selection du scheduler NAP est reservee au lot schedulers.');
 const selected = napSchedulerOnly ? ['closeDueEngagementCompetitions'] : selectedLots.flatMap((name) => LOTS[name]).concat(lot === "all-safe" ? TEST_NON_MAIL_FUNCTIONS : []);
 if (new Set(selected).size !== selected.length) throw new Error("Une Function est présente dans plusieurs lots sélectionnés.");
