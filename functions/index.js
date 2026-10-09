@@ -13219,10 +13219,18 @@ exports.createEngagementClubSwimmer = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONM
   };
 });
 
-exports.listEngagementNationalClubSwimmers = onCall(CALLABLE_OPTIONS, async (request) => {
+exports.listEngagementNationalClubSwimmers = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
   const context = await engagementAccessContext(request);
   if (!context.national) {
     throw new HttpsError("permission-denied", "Lecture reservee au niveau national.");
+  }
+  if (ENVIRONMENT.sportingDataSource === "nap") {
+    try {
+      const service = require("./nap-portal-swimmers");
+      return await service.listNationalSwimmers(service.portalPool(process.env.LIVEPALMES_NAP_PASSWORD), {cursor:request.data?.cursor});
+    } catch (error) {
+      throw new HttpsError(error instanceof TypeError ? "invalid-argument" : "unavailable", error instanceof TypeError ? error.message : "Annuaire national NAP indisponible. Reessayez.");
+    }
   }
   const limit = Math.min(200, Math.max(20, Math.trunc(Number(request.data?.limit) || 80)));
   const snapshot = await db

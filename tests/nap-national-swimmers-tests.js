@@ -1,0 +1,21 @@
+"use strict";
+const assert=require("node:assert/strict"),fs=require("node:fs"),vm=require("node:vm");
+const service=require("../functions/nap-portal-swimmers");
+(async()=>{
+  let calls=0,rows=[];
+  const pool={execute:async({sql,timeout},values)=>{calls++;assert.equal(timeout,10000);assert.match(sql,/nageurs n FORCE INDEX \(PRIMARY\)/);assert.match(sql,/WHERE n.id>\? ORDER BY n.id LIMIT 101/);assert.equal(values.length,1);return [rows];}};
+  assert.equal((await service.listNationalSwimmers(pool)).nextCursor,null);
+  const row=id=>({id,nom:"TEST",prenom:"Personne",date:"1980-01-01",sexe:"M",club:"106",number:"A-05-000001",actif:1});
+  rows=Array.from({length:101},(_,i)=>row(i+1));
+  const first=await service.listNationalSwimmers(pool);assert.equal(first.swimmers.length,100);assert.equal(first.nextCursor,100);assert.equal(first.hasMore,true);assert.equal(first.swimmers[0].licenseNumber,"A-05-000001");assert.equal(first.swimmers[0].active,true);
+  rows=[{...row(101),number:null,actif:0}];const last=await service.listNationalSwimmers(pool,{cursor:100});assert.equal(last.hasMore,false);assert.equal(last.swimmers[0].licenseNumber,"");assert.equal(last.swimmers[0].active,false);
+  const before=calls;for(const cursor of [-1,"100",1.2,2147483648]) await assert.rejects(service.listNationalSwimmers(pool,{cursor}),TypeError);assert.equal(calls,before);
+  rows=[row(100)];await assert.rejects(service.listNationalSwimmers(pool,{cursor:100}),TypeError);
+  rows=Array.from({length:102},(_,i)=>row(i+1));await assert.rejects(service.listNationalSwimmers(pool),RangeError);
+  const source=fs.readFileSync(require.resolve("../functions/index.js"),"utf8"),start=source.indexOf("exports.listEngagementNationalClubSwimmers ="),end=source.indexOf("\nfunction nationalSwimmerSearchMatches",start);
+  let national=true,reads=0;
+  const sandbox={exports:{},ENVIRONMENT:{sportingDataSource:"nap"},CALLABLE_OPTIONS:{},process:{env:{}},TypeError,HttpsError:class extends Error{},defineSecret:v=>v,onCall:(o,f)=>Object.assign(f,{options:o}),engagementAccessContext:async()=>({national}),require:()=>({portalPool:()=>({}),listNationalSwimmers:async(p,input)=>{reads++;assert.equal(input.cursor,100);return {source:"nap"};}}),db:new Proxy({},{get(){throw Error("Legacy sporting database forbidden");}})};
+  vm.runInNewContext(source.slice(start,end),sandbox);const callable=sandbox.exports.listEngagementNationalClubSwimmers;
+  assert.equal(callable.options.secrets[0],"LIVEPALMES_NAP_PASSWORD");assert.equal((await callable({data:{cursor:100}})).source,"nap");national=false;await assert.rejects(callable({data:{}}));assert.equal(reads,1);
+  console.log("National swimmer directory: one bounded indexed page, native licences/status, cursor validation and authorization before legacy-free reads passed.");
+})().catch(error=>{console.error(error);process.exitCode=1;});
