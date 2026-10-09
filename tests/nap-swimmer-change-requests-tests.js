@@ -67,7 +67,7 @@ function fixture(options = {}) {
   assert.deepEqual([...settingsTest.sandbox.exports.resolveEngagementSwimmerChangeRequest.settings.secrets],["LIVEPALMES_NAP_PASSWORD"]);
   assert.equal(settingsProd.sandbox.exports.resolveEngagementSwimmerChangeRequest.settings,settingsProd.sandbox.ENGAGEMENT_SWIMMER_CORRECTION_MAIL_OPTIONS,"production retains its email bindings");
   let reads = 0;
-  const connection = { execute: async (query, params) => { reads++; assert.equal(query.sql, "SELECT id,nom,prenom,date,sexe,club FROM nageurs WHERE id=? LIMIT 1"); assert.deepEqual(params, [42]); return [[before]]; } };
+  const connection = { execute: async (query, params) => { reads++; assert.equal(query.sql, "SELECT id,nom,prenom,date,sexe,number,club FROM nageurs WHERE id=? LIMIT 1"); assert.deepEqual(params, [42]); return [[before]]; } };
   const prepared = await prepareRequest(connection, input, context);
   assert.equal(reads, 1); assert.equal(prepared.proposed.lastName, "CORRIGE"); assert.equal(prepared.expectedFingerprint, fingerprint(before));
   for (const bad of [{ ...input, napSource: false }, { ...input, reason: "" }, { ...input, proposed: { club: "1" } }, { ...input, proposed: { licenseNumber: "A-12-12345" } }]) await assert.rejects(prepareRequest(connection, bad, context), TypeError);
@@ -100,7 +100,8 @@ function fixture(options = {}) {
   const clubDenied = fixture({ clubDenied: true }); await assert.rejects(clubDenied.submit(), error => error.code === "permission-denied"); assert.equal(clubDenied.count().queries, 0);
   const browser = fs.readFileSync("assets/livepalmes-admin-portal.js", "utf8");
   assert.ok(browser.includes("if (swimmer.napSource && elements.engagementsSwimmerCorrectionForm)"));
-  assert.ok(browser.includes('swimmer.napSource ? "" : swimmer.licenseNumber'));
+  assert.ok(browser.includes('String(swimmer.licenseNumber ?? "")'));
+  assert.ok(browser.includes('if (payload.napSource) delete payload.proposed.licenseNumber;'));
   const snapshotCode = source.slice(source.indexOf("function engagementSwimmerIdentitySnapshot("), source.indexOf("function cleanEngagementSwimmerIdentityCorrection("));
   const dtoCode = source.slice(source.indexOf("function engagementSwimmerChangeRequestItem("), source.indexOf("async function sendEngagementSwimmerChangeResolutionNotification("));
   const dto = { cleanText: value => String(value || ""), cleanIsoDate: value => value || "", cleanFirestoreValue: value => value };
@@ -115,11 +116,19 @@ function fixture(options = {}) {
     engagementSwimmerDisplayName: () => "Test", clubDisplayLabel: () => "Club" };
   vm.runInNewContext(browser.slice(browser.indexOf("  function openEngagementSwimmerCorrectionDialog("), browser.indexOf("  async function submitEngagementSwimmerCorrection(")), ui);
   for (const mode of ["request", "direct", "review"]) {
-    ui.openEngagementSwimmerCorrectionDialog({ ...saved.current, licenseNumber: "OLD-LICENCE" }, mode);
+    ui.openEngagementSwimmerCorrectionDialog({ ...saved.current, licenseNumber: "A-11-526612" }, mode);
     assert.equal(elements.engagementsSwimmerCorrectionForm.dataset.napSource, "true");
-    assert.equal(elements.engagementsSwimmerCorrectionLicense.readOnly, true); assert.equal(elements.engagementsSwimmerCorrectionLicense.value, "");
+    assert.equal(elements.engagementsSwimmerCorrectionLicense.readOnly, true); assert.equal(elements.engagementsSwimmerCorrectionLicense.value, "A-11-526612");
     assert.equal(elements.engagementsSwimmerCorrectionLastName.maxLength, 64);
     assert.equal(elements.engagementsSwimmerCorrectionReason.required, mode !== "review");
   }
+  const selectedUi = {
+    selectedEngagementCompetition: {napSource:true}, selectedEngagementClubEntry: {swimmers:[]},
+    selectedEngagementClubEntryRowsBySwimmerId:()=>new Map(), elements:{engagementsClubSwimmersForm:{querySelectorAll:()=>[{
+      querySelector: selector => selector.includes("-id]") ? {checked:true,dataset:{engagementClubSwimmerId:"42"}} : {value:"a-11-001234"}
+    }]}}
+  };
+  vm.runInNewContext(browser.slice(browser.indexOf("  function selectedEngagementClubSwimmerRows("), browser.indexOf("  function selectedEngagementClubEntryRowsBySwimmerId(")),selectedUi);
+  assert.equal(selectedUi.selectedEngagementClubSwimmerRows()[0].licenseNumber,"a-11-001234");
   console.log("Demandes NAP : club, validation nationale, sauvegarde, reprise apres SQL, refus, concurrence et absence d'ancienne base verifies sans reseau ni envoi.");
 })().catch(error => { console.error(error); process.exitCode = 1; });

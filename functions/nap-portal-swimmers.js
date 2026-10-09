@@ -11,7 +11,7 @@ function portalPool(password) { if (!pool) pool = createNapPool(password); retur
 function person(row) {
   const firstName = rules.cleanText(row.prenom), lastName = rules.cleanText(row.nom), id = String(row.id);
   return { id, swimmerId: id, swimmerIndexId: id, source: "reference", napSource: true, napFingerprint: fingerprint(row),
-    firstName, lastName, name: [firstName, lastName].join(" "), birthDate: row.date, sex: row.sexe,
+    licenseNumber: String(row.number ?? "").trim(), firstName, lastName, name: [firstName, lastName].join(" "), birthDate: row.date, sex: row.sexe,
     clubId: String(row.club || ""), club: rules.cleanText(row.abre_club || row.nom_club), clubName: rules.cleanText(row.nom_club),
     identityKey: rules.swimmerIdentityKey(firstName, lastName, row.date), sourceIds: [id] };
 }
@@ -19,12 +19,12 @@ async function searchPortalSwimmers(connection, query) {
   const result = await require("./nap-direct-search").searchDirectSwimmers(connection, query);
   if (!result.swimmers.length) return { ...result, swimmers: [] };
   const ids = result.swimmers.map(item => swimmerId(item.id));
-  const [rows] = await connection.execute({ sql: `SELECT n.id,n.nom,n.prenom,n.date,n.sexe,n.club,cl.abre_club,cl.nom_club FROM nageurs n LEFT JOIN clubs cl ON cl.num_club=n.club AND CAST(cl.num_club AS CHAR)=n.club WHERE n.id IN (${ids.map(() => "?").join(",")}) ORDER BY n.nom,n.prenom,n.date,n.id LIMIT 20`, timeout: 10000 }, ids);
+  const [rows] = await connection.execute({ sql: `SELECT n.id,n.nom,n.prenom,n.date,n.sexe,n.number,n.club,cl.abre_club,cl.nom_club FROM nageurs n LEFT JOIN clubs cl ON cl.num_club=n.club AND CAST(cl.num_club AS CHAR)=n.club WHERE n.id IN (${ids.map(() => "?").join(",")}) ORDER BY n.nom,n.prenom,n.date,n.id LIMIT 20`, timeout: 10000 }, ids);
   return { ...result, swimmers: rows.map(person) };
 }
 async function listPortalClubSwimmers(connection, clubId) {
   if (!/^\d{1,16}$/.test(String(clubId))) throw new TypeError("Club NAP invalide.");
-  const [rows] = await connection.execute({ sql: "SELECT n.id,n.nom,n.prenom,n.date,n.sexe,n.club,cl.abre_club,cl.nom_club FROM nageurs n FORCE INDEX (livepalmes_club_id) LEFT JOIN clubs cl ON cl.num_club=n.club AND CAST(cl.num_club AS CHAR)=n.club WHERE n.club=? ORDER BY n.id LIMIT 801", timeout: 10000 }, [String(clubId)]);
+  const [rows] = await connection.execute({ sql: "SELECT n.id,n.nom,n.prenom,n.date,n.sexe,n.number,n.club,cl.abre_club,cl.nom_club FROM nageurs n FORCE INDEX (livepalmes_club_id) LEFT JOIN clubs cl ON cl.num_club=n.club AND CAST(cl.num_club AS CHAR)=n.club WHERE n.club=? ORDER BY n.id LIMIT 801", timeout: 10000 }, [String(clubId)]);
   if (rows.length > 800) throw new RangeError("Effectif superieur a 800 nageurs : pagination requise.");
   return rows.map(person);
 }

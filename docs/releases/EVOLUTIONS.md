@@ -2,6 +2,12 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 9 octobre 2026 — Licences natives NAP
+
+- Demande utilisateur : utiliser le champ `nageurs.number`, importé et vérifié séparément, comme licence des nageurs du portail. Conservation sous forme de chaîne, lettres, tirets et zéros initiaux préservés ; NULL ou vide signifie non renseigné. Aucun import ni modification de licence.
+- Lectures privées existantes enrichies : effectifs club, recherche nationale, dossiers et récapitulatifs administratifs, membres des relais, corrections d’identité. Aucun appel supplémentaire : mêmes index, limites et autorisations ; neuf lectures groupées maximum pour les récapitulatifs administratifs. Aucun ajout aux recherches publiques ni rapprochement des officiels par nom.
+- Licence affichée en lecture seule dans la correction d’identité, exclue du formulaire transmis. Tests ciblés sur chaînes, valeurs absentes, dossiers et demandes de correction. Vérification globale et publication TEST à contrôler avant validation finale.
+
 ### Étape 4 — résultats directement NAP, préparation en cours — 9 octobre 2026
 
 - Périmètre confirmé : première mise en production avec TXT WinPalme seulement ; Excel international reporté explicitement. Les administrateurs autorisés à importer peuvent confirmer les retraits d'un remplacement, après aperçu ; la suppression unitaire définitive reste nationale.

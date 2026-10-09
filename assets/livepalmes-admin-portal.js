@@ -5865,7 +5865,9 @@
           birthDate: checkbox.dataset.engagementClubSwimmerBirthDate || "",
           sex: checkbox.dataset.engagementClubSwimmerSex || "",
           category: checkbox.dataset.engagementClubSwimmerCategory || "",
-          licenseNumber: String(licenseField?.value || licenseField?.dataset.engagementClubSwimmerLicense || "").trim().toUpperCase(),
+          licenseNumber: selectedEngagementCompetition?.napSource === true
+            ? String(licenseField?.value ?? licenseField?.dataset.engagementClubSwimmerLicense ?? "").trim()
+            : String(licenseField?.value || licenseField?.dataset.engagementClubSwimmerLicense || "").trim().toUpperCase(),
           individualEventCodes: individualEntries.map((entry) => entry.eventCode),
           individualEntries
         };
@@ -13115,7 +13117,7 @@
     if (elements.engagementsSwimmerCorrectionFirstName) elements.engagementsSwimmerCorrectionFirstName.maxLength = swimmer.napSource ? 64 : 80;
     if (elements.engagementsSwimmerCorrectionBirthDate) elements.engagementsSwimmerCorrectionBirthDate.value = swimmer.birthDate || "";
     if (elements.engagementsSwimmerCorrectionSex) elements.engagementsSwimmerCorrectionSex.value = swimmer.sex || "";
-    if (elements.engagementsSwimmerCorrectionLicense) elements.engagementsSwimmerCorrectionLicense.value = swimmer.napSource ? "" : swimmer.licenseNumber || "";
+    if (elements.engagementsSwimmerCorrectionLicense) elements.engagementsSwimmerCorrectionLicense.value = String(swimmer.licenseNumber ?? "");
     if (elements.engagementsSwimmerCorrectionTitle) elements.engagementsSwimmerCorrectionTitle.textContent = review ? "Modifier et valider la demande" : direct ? "Modifier le nageur" : "Demander une correction";
     if (elements.engagementsSwimmerCorrectionContext) elements.engagementsSwimmerCorrectionContext.textContent = `${name} · ${clubDisplayLabel(swimmer, { fallback: "Club non renseigné" })}`;
     if (elements.engagementsSwimmerCorrectionReasonLabel) elements.engagementsSwimmerCorrectionReasonLabel.textContent = review ? "Commentaire national (facultatif)" : direct ? "Motif de la correction" : swimmer.napSource ? "Motif de la demande" : "Motif de la demande (facultatif)";
@@ -13154,6 +13156,7 @@
       },
       reason: elements.engagementsSwimmerCorrectionReason?.value || ""
     };
+    if (payload.napSource) delete payload.proposed.licenseNumber;
     setFormPending(
       elements.engagementsSwimmerCorrectionForm,
       true,
@@ -18069,7 +18072,7 @@
         }
         renderEngagementClubEntries();
         renderEngagementClubRelays();
-        if (checkbox?.checked && changedSwimmer.licenseNumber && !ENGAGEMENT_SWIMMER_LICENSE_PATTERN.test(changedSwimmer.licenseNumber)) {
+        if (selectedEngagementCompetition?.napSource !== true && checkbox?.checked && changedSwimmer.licenseNumber && !ENGAGEMENT_SWIMMER_LICENSE_PATTERN.test(changedSwimmer.licenseNumber)) {
           if (elements.engagementsClubSwimmersMessage) {
             elements.engagementsClubSwimmersMessage.textContent = "La licence doit respecter le format A-12-34567 lorsqu'elle est renseignée.";
             elements.engagementsClubSwimmersMessage.dataset.tone = "error";
