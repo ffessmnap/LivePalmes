@@ -72,6 +72,7 @@ function runUnitTests() {
     "nap-qualification-control-start-tests.js",
     "nap-qualification-preview-page-tests.js",
     "nap-qualification-preview-store-tests.js",
+    "nap-qualification-source-hash-tests.js",
     "nap-qualification-preview-process-tests.js",
     "nap-qualification-control-review-tests.js",
     "nap-qualification-target-times-tests.js",
