@@ -13,6 +13,7 @@ async function main() {
     canUse: () => national, qualificationEditor: { read: () => ({ enabled: true }) }, engagementCompetitionType: () => "pool",
     finishQualificationJob: async () => { calls.push("resume"); return { competition: { id: "meet", qualificationJobId: "" } }; },
     renderEngagementCompetitionDetail: () => {},
+    clearEngagementDetailTabDirty: tab => calls.push(`clear:${tab}`),
     callFunction: async (name) => { calls.push(name); if (name === "updateEngagementCompetition" && conflict) throw new Error("Un contrôle de qualification est déjà en cours."); if (name === "getEngagementCompetition") return { competition: { id: "meet", qualificationJobId: "job" } }; if (cancelFails) throw new Error("Application commencée : reprenez le traitement."); return {}; }
   };
   vm.createContext(context);
@@ -39,6 +40,7 @@ async function main() {
   assert.equal(banner.hidden, false);
   await banner.children[1].onclick();
   assert.ok(calls.includes("resume"));
+  assert.ok(calls.includes("clear:general"), "La reprise réussie retire le faux avertissement sans marquer les autres onglets enregistrés.");
   national = false; context.selectedEngagementCompetition.qualificationJobId = "job";
   context.renderQualificationJobActions(); assert.equal(banner.hidden, true);
   console.log("Reprise qualifications : visibilité, conflit périmé, annulation protégée et lectures bornées OK.");

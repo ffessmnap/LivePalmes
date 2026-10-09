@@ -4146,6 +4146,20 @@
         await flushEngagementClubIndividualEntriesAutosave();
         await engagementClubEntryMutationQueue;
         if (scope !== qualificationExceptionContext()) return;
+        if (selectedEngagementClubEntry?.napSource === true) {
+          const saved = await queueEngagementClubEntryMutation({
+            competitionId, renderScope: "entries", messageElement: errorText,
+            errorPrefix: "Impossible de fermer l’alerte",
+            execute: async () => {
+              if (scope !== qualificationExceptionContext()) throw new Error("Le dossier sélectionné a changé.");
+              await callFunction("acknowledgeEngagementQualificationAlert", { competitionId, alertAt: alert.at });
+              return callFunction("getEngagementClubEntry", { competitionId });
+            }
+          });
+          if (!saved || scope !== qualificationExceptionContext()) return;
+          warning.remove();
+          return;
+        }
         await callFunction("acknowledgeEngagementQualificationAlert", { competitionId, alertAt: alert.at });
         if (scope !== qualificationExceptionContext()) return;
         if (selectedEngagementClubEntry?.qualificationAlert?.at === alert.at) selectedEngagementClubEntry.qualificationAlert = null;
@@ -4196,6 +4210,7 @@
           const result = await finishQualificationJob(jobId);
           selectedEngagementCompetition = result.competition;
           renderEngagementCompetitionDetail(result.competition);
+          clearEngagementDetailTabDirty("general");
         }
       } catch (error) {
         status.textContent = error.message;
