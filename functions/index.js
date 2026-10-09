@@ -12938,9 +12938,20 @@ exports.previewEngagementClubSwimmerCreation = onCall(CALLABLE_OPTIONS, async (r
   };
 });
 
-exports.previewEngagementClubSwimmerRecovery = onCall(CALLABLE_OPTIONS, async (request) => {
+exports.previewEngagementClubSwimmerRecovery = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")], maxInstances:2, concurrency:4 } : {}) }, async (request) => {
   const startedAt = Date.now();
   const context = await engagementClubAccessContext(request);
+  if (ENVIRONMENT.sportingDataSource === "nap") {
+    try {
+      const preview = await require("./nap-swimmer-recovery").previewRecovery(require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD), {
+        clubId:String(context.clubId),licenseNumber:cleanText(request.data?.licenseNumber).toUpperCase()
+      }, scope=>{if(scope.clubId!==String(context.clubId)) throw new HttpsError("permission-denied","Nageur hors club.");});
+      return {ok:true,...preview};
+    } catch(error) {
+      if(error instanceof HttpsError) throw error;
+      throw new HttpsError(error instanceof TypeError || error instanceof RangeError?"failed-precondition":"unavailable",error instanceof TypeError || error instanceof RangeError?error.message:"Lecture NAP indisponible. Reessayez.");
+    }
+  }
   const preview = await engagementSwimmerRecoveryPreview(db, request.data?.licenseNumber, context);
   return {
     ok: true,
@@ -12953,9 +12964,23 @@ exports.previewEngagementClubSwimmerRecovery = onCall(CALLABLE_OPTIONS, async (r
   };
 });
 
-exports.recoverEngagementClubSwimmer = onCall(CALLABLE_OPTIONS, async (request) => {
+exports.recoverEngagementClubSwimmer = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")], maxInstances:2, concurrency:4 } : {}) }, async (request) => {
   const startedAt = Date.now();
   const context = await engagementClubAccessContext(request);
+  if (ENVIRONMENT.sportingDataSource === "nap") {
+    try {
+      return await require("./nap-swimmer-recovery").recoverSwimmer(require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD),{
+        clubId:String(context.clubId),actorUid:context.uid,licenseNumber:cleanText(request.data?.licenseNumber).toUpperCase(),mutationId:request.data?.mutationId,expectedFingerprint:request.data?.expectedFingerprint
+      },{
+        read:async operation=>{const snapshot=await db.collection("auditLogs").doc(`nap-swimmer-recovery-${operation}-before`).get();return snapshot.exists?snapshot.data().target:null;},
+        prepare:(operation,target)=>db.collection("auditLogs").doc(`nap-swimmer-recovery-${operation}-before`).create({action:"nap.swimmer.recovery.prepare",actorUid:context.uid,target,createdAt:new Date().toISOString()}),
+        complete:(operation,target)=>writeAuditLogOnce("engagementClubSwimmer.recovered",context.uid,target,operation)
+      },scope=>{if(scope.clubId!==String(context.clubId)) throw new HttpsError("permission-denied","Nageur hors club.");});
+    } catch(error) {
+      if(error instanceof HttpsError) throw error;
+      throw new HttpsError(error instanceof TypeError || error instanceof RangeError?"failed-precondition":"unavailable",error instanceof TypeError || error instanceof RangeError?error.message:"Recuperation NAP a verifier. Reprenez la meme action ; la sauvegarde est conservee.");
+    }
+  }
   const preview = await engagementSwimmerRecoveryPreview(db, request.data?.licenseNumber, context);
   if (!preview.found) throw new HttpsError("not-found", "Nageur introuvable dans la base.");
   if (preview.sameClub) throw new HttpsError("already-exists", "Ce nageur est deja connu dans votre club.");

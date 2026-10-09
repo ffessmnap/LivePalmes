@@ -12152,8 +12152,10 @@
     if (elements.engagementsClubRecoverSwimmerButton) elements.engagementsClubRecoverSwimmerButton.disabled = true;
     setEngagementClubNewSwimmerMessage("Récupération du nageur...", "loading");
     try {
+      if (recovery.source === "nap" && !recovery.mutationId) recovery.mutationId = global.crypto.randomUUID();
       const result = await callFunction("recoverEngagementClubSwimmer", {
         licenseNumber: recovery.swimmer.licenseNumber,
+        ...(recovery.source === "nap" ? {mutationId:recovery.mutationId,expectedFingerprint:recovery.swimmer.napFingerprint} : {}),
         competitionId: selectedEngagementCompetitionId || ""
       });
       invalidateEngagementClubSwimmersCache();
