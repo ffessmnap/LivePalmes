@@ -787,6 +787,8 @@
     engagementsClubRecoverSwimmerButton: document.querySelector("#adminEngagementsClubRecoverSwimmerButton"),
     engagementsClubNewSwimmerAlerts: document.querySelector("#adminEngagementsClubNewSwimmerAlerts"),
     engagementsDocumentsSummary: document.querySelector("#adminEngagementsDocumentsSummary"),
+    engagementsNotificationPreviewActions: document.querySelector("#adminEngagementsNotificationPreviewActions"),
+    engagementsNotificationPreviewStatus: document.querySelector("#adminEngagementsNotificationPreviewStatus"),
     engagementsLongOperation: document.querySelector("#adminEngagementsLongOperation"),
     engagementsDocumentsTitle: document.querySelector("#adminEngagementsDocumentsTitle"),
     engagementsSharedDocumentsCount: document.querySelector("#adminEngagementsSharedDocumentsCount"),
@@ -9411,6 +9413,9 @@
 
   function renderEngagementDocuments(competition = selectedEngagementCompetition || {}) {
     const adminMode = isEngagementAdminMode();
+    if (elements.engagementsNotificationPreviewActions) elements.engagementsNotificationPreviewActions.hidden =
+      !adminMode || global.LivePalmesEnvironment?.isTest !== true || competition.napSource !== true;
+    if (elements.engagementsNotificationPreviewStatus) elements.engagementsNotificationPreviewStatus.textContent = "";
     if (elements.engagementsGenerateClubRecapsButton) elements.engagementsGenerateClubRecapsButton.hidden = !adminMode || competition.napSource !== true;
     const openWater = engagementCompetitionType(competition) === "openWater";
     const documentsHead = elements.engagementsDocumentsTitle?.closest(".admin-engagements-documents-head");
@@ -11691,6 +11696,7 @@
     if (!selectedEngagementCompetitionId || !isEngagementAdminMode()) return;
     const button = elements.engagementsPrepareOpeningEmailsButton;
     if (button) button.disabled = true;
+    if (elements.engagementsNotificationPreviewStatus) elements.engagementsNotificationPreviewStatus.textContent = "Calcul des destinataires…";
     if (elements.engagementsDocumentsSummary) {
       elements.engagementsDocumentsSummary.textContent = "Preparation des mails d'ouverture...";
     }
@@ -11705,6 +11711,7 @@
       if (result.disabled) {
         const message = `TEST : ${Number(result.recipientCount || 0)} destinataire(s) prévus pour l'ouverture. Aucun mail préparé ni envoyé.`;
         if (elements.engagementsDocumentsSummary) elements.engagementsDocumentsSummary.textContent = message;
+        if (elements.engagementsNotificationPreviewStatus) elements.engagementsNotificationPreviewStatus.textContent = message;
         finishEngagementLongOperation("success", "Aperçu des notifications", message);
         return;
       }
@@ -11715,6 +11722,7 @@
         finishEngagementLongOperation("success", "Courriels d'ouverture préparés", elements.engagementsDocumentsSummary.textContent);
       }
     } catch (error) {
+      if (elements.engagementsNotificationPreviewStatus) elements.engagementsNotificationPreviewStatus.textContent = `Aperçu impossible : ${error?.message || error}`;
       if (elements.engagementsDocumentsSummary) {
         elements.engagementsDocumentsSummary.textContent = `Preparation mails ouverture impossible : ${error?.message || error}`;
       }
@@ -11728,6 +11736,7 @@
     if (!selectedEngagementCompetitionId || !isEngagementAdminMode()) return;
     const button = elements.engagementsPrepareClubRecapEmailsButton;
     if (button) button.disabled = true;
+    if (elements.engagementsNotificationPreviewStatus) elements.engagementsNotificationPreviewStatus.textContent = "Vérification des récapitulatifs…";
     if (elements.engagementsDocumentsSummary) {
       elements.engagementsDocumentsSummary.textContent = "Preparation des mails PDF clubs...";
     }
@@ -11742,6 +11751,7 @@
       if (result.disabled) {
         const message = `TEST : ${Number(result.recipientCount || 0)} destinataire(s) prévus pour ${Number(result.clubCount || 0)} club(s). Aucun mail préparé ni envoyé.`;
         if (elements.engagementsDocumentsSummary) elements.engagementsDocumentsSummary.textContent = message;
+        if (elements.engagementsNotificationPreviewStatus) elements.engagementsNotificationPreviewStatus.textContent = message;
         finishEngagementLongOperation("success", "Aperçu des récapitulatifs", message);
         return;
       }
@@ -11774,6 +11784,7 @@
         );
       }
     } catch (error) {
+      if (elements.engagementsNotificationPreviewStatus) elements.engagementsNotificationPreviewStatus.textContent = `Aperçu impossible : ${error?.message || error}`;
       if (elements.engagementsDocumentsSummary) {
         elements.engagementsDocumentsSummary.textContent = `Préparation des e-mails PDF impossible : ${error?.message || error}`;
       }

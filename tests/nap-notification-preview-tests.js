@@ -98,7 +98,7 @@ async function run() {
     assert.ok(start > 0 && end > start);
     const apiCalls = [], finishes = [];
     const ui = { selectedEngagementCompetitionId: competition.id, isEngagementAdminMode: () => true,
-      elements: { engagementsDocumentsSummary: {}, engagementsPrepareOpeningEmailsButton: {}, engagementsPrepareClubRecapEmailsButton: {} },
+      elements: { engagementsDocumentsSummary: {}, engagementsNotificationPreviewStatus: {}, engagementsPrepareOpeningEmailsButton: {}, engagementsPrepareClubRecapEmailsButton: {} },
       startEngagementLongOperation: () => {}, finishEngagementLongOperation: (...args) => finishes.push(args),
       callFunction: async call => { apiCalls.push(call); return { disabled: true, recipientCount: 12, clubCount: 3 }; },
       loadEngagementMailJobs: () => { throw new Error("Unnecessary reload after read-only preview"); } };
@@ -106,7 +106,14 @@ async function run() {
     await ui[name]();
     assert.deepEqual(apiCalls, [expectedCall]); assert.equal(finishes.length, 1);
     assert.match(ui.elements.engagementsDocumentsSummary.textContent, /TEST.*12.*Aucun mail préparé ni envoyé/);
+    assert.equal(ui.elements.engagementsNotificationPreviewStatus.textContent, ui.elements.engagementsDocumentsSummary.textContent);
   }
+  const html = fs.readFileSync("portail.html", "utf8");
+  for (const id of ["adminEngagementsPrepareOpeningEmailsButton", "adminEngagementsPrepareClubRecapEmailsButton", "adminEngagementsNotificationPreviewStatus"]) {
+    assert.equal(html.split(`id="${id}"`).length - 1, 1);
+  }
+  assert.ok(html.includes('id="adminEngagementsNotificationPreviewActions" hidden'));
+  assert.ok(portal.includes('!adminMode || global.LivePalmesEnvironment?.isTest !== true || competition.napSource !== true'));
   console.log("Aperçus notifications NAP : autorisation, sources, périmètres natifs, budgets et absence d'envoi OK.");
 }
 run().catch(error => { console.error(error); process.exitCode = 1; });
