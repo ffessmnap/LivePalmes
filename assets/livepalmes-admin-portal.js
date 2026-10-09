@@ -9240,7 +9240,9 @@
           competitionId: selectedEngagementCompetitionId
         });
         const confirmed = global.confirm(
-          `Mettre en ligne ${engagementCompetitionDocumentFiles.length} document${engagementCompetitionDocumentFiles.length > 1 ? "s" : ""} et envoyer un e-mail à ${Number(audience.recipientCount || 0)} administrateur${Number(audience.recipientCount || 0) > 1 ? "s" : ""} de ${Number(audience.clubCount || 0)} club${Number(audience.clubCount || 0) > 1 ? "s" : ""} ?`
+          audience.disabled
+            ? `Mettre en ligne ${engagementCompetitionDocumentFiles.length} document(s) ? TEST : aucun mail ne sera envoyé. ${Number(audience.recipientCount || 0)} destinataire(s) seraient concernés.`
+            : `Mettre en ligne ${engagementCompetitionDocumentFiles.length} document${engagementCompetitionDocumentFiles.length > 1 ? "s" : ""} et envoyer un e-mail à ${Number(audience.recipientCount || 0)} administrateur${Number(audience.recipientCount || 0) > 1 ? "s" : ""} de ${Number(audience.clubCount || 0)} club${Number(audience.clubCount || 0) > 1 ? "s" : ""} ?`
         );
         if (!confirmed) {
           if (elements.engagementsDocumentFormMessage) elements.engagementsDocumentFormMessage.textContent = "Mise en ligne annulée.";
@@ -9317,7 +9319,8 @@
         elements.engagementsDocumentsSummary.textContent = errors.length
           ? `${publishedIds.length} document${publishedIds.length > 1 ? "s" : ""} mis en ligne. ${errors.join(" · ")}`
           : notification
-            ? `${publishedIds.length} document${publishedIds.length > 1 ? "s" : ""} mis en ligne · ${Number(notification.sentCount || 0)} e-mail${Number(notification.sentCount || 0) > 1 ? "s" : ""} envoyé${Number(notification.sentCount || 0) > 1 ? "s" : ""}${notification.configurationMissing ? " · configuration e-mail manquante" : Number(notification.errorCount || 0) ? ` · ${notification.errorCount} en erreur` : ""}.`
+            ? notification.disabled ? `${publishedIds.length} document(s) mis en ligne. TEST : aucun mail envoyé.`
+              : `${publishedIds.length} document${publishedIds.length > 1 ? "s" : ""} mis en ligne · ${Number(notification.sentCount || 0)} e-mail${Number(notification.sentCount || 0) > 1 ? "s" : ""} envoyé${Number(notification.sentCount || 0) > 1 ? "s" : ""}${notification.configurationMissing ? " · configuration e-mail manquante" : Number(notification.errorCount || 0) ? ` · ${notification.errorCount} en erreur` : ""}.`
             : editingDocument && !publishesFile
               ? "Informations du document enregistrées."
               : `${publishedIds.length} document${publishedIds.length > 1 ? "s" : ""} mis en ligne.`;
@@ -11699,6 +11702,12 @@
       const result = await callFunction("prepareEngagementOpeningNotificationEmails", {
         competitionId: selectedEngagementCompetitionId
       });
+      if (result.disabled) {
+        const message = `TEST : ${Number(result.recipientCount || 0)} destinataire(s) prévus pour l'ouverture. Aucun mail préparé ni envoyé.`;
+        if (elements.engagementsDocumentsSummary) elements.engagementsDocumentsSummary.textContent = message;
+        finishEngagementLongOperation("success", "Aperçu des notifications", message);
+        return;
+      }
       await loadEngagementMailJobs({ force: true });
       if (elements.engagementsDocumentsSummary) {
         const count = Number(result.jobCount || 0);
@@ -11730,6 +11739,12 @@
       const result = await callFunction("prepareEngagementClubRecapEmails", {
         competitionId: selectedEngagementCompetitionId
       });
+      if (result.disabled) {
+        const message = `TEST : ${Number(result.recipientCount || 0)} destinataire(s) prévus pour ${Number(result.clubCount || 0)} club(s). Aucun mail préparé ni envoyé.`;
+        if (elements.engagementsDocumentsSummary) elements.engagementsDocumentsSummary.textContent = message;
+        finishEngagementLongOperation("success", "Aperçu des récapitulatifs", message);
+        return;
+      }
       if (Number(result.jobCount || 0)) {
         updateSelectedEngagementDocumentStatus("clubRecapEmails", "generated");
       }
@@ -15681,6 +15696,12 @@
     );
     try {
       const preparation = await callFunction("prepareEngagementOpeningNotificationEmails", { competitionId });
+      if (preparation.disabled) {
+        const message = `Engagements ouverts. TEST : ${Number(preparation.recipientCount || 0)} destinataire(s) prévus, aucun mail envoyé.`;
+        if (statusTarget) { statusTarget.textContent = message; statusTarget.dataset.tone = "ok"; }
+        finishEngagementLongOperation("success", "Engagements ouverts", message);
+        return preparation;
+      }
       const jobCount = Number(preparation.jobCount || 0);
       if (!jobCount) {
         if (statusTarget) {
