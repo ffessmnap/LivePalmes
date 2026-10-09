@@ -5,8 +5,8 @@ const path = require("node:path");
 const { ALL_SAFE_LOTS, LOTS, METADATA, PUBLICATION_EFFECT_FUNCTIONS, TEST_NON_MAIL_FUNCTIONS } = require("../tools/firebase-test-backend-lots");
 
 const rootDir = path.join(__dirname, "..");
-const workflow = fs.readFileSync(path.join(rootDir, ".github", "workflows", "livepalmes-test-backend.yml"), "utf8");
-const qualificationAutoWorkflow = fs.readFileSync(path.join(rootDir, ".github", "workflows", "livepalmes-qualification-test-auto.yml"), "utf8");
+const workflow = fs.readFileSync(path.join(rootDir, ".github", "workflows", "livepalmes-test-backend.yml"), "utf8").replace(/\r\n/g,"\n");
+const qualificationAutoWorkflow = fs.readFileSync(path.join(rootDir, ".github", "workflows", "livepalmes-qualification-test-auto.yml"), "utf8").replace(/\r\n/g,"\n");
 const bootstrap = fs.readFileSync(path.join(rootDir, "functions", "bootstrap-get-current-access-user.js"), "utf8");
 const staging = fs.readFileSync(path.join(rootDir, "tools", "prepare-firebase-test-functions.js"), "utf8");
 
@@ -92,17 +92,17 @@ assert.doesNotMatch(bootstrap, /defineSecret|onSchedule|nodemailer|LIVEPALMES_SM
 const stagedRoot = path.join(rootDir, ".firebase-test-functions");
 const manifestPath = path.join(stagedRoot, "access-manifest.json");
 try {
-  for (const selectedLot of ["access", "nap", "all-safe"]) {
+  for (const [selectedLot,napOnly] of [["access",false], ["nap",false], ["all-safe",false], ["schedulers",true]]) {
   childProcess.execFileSync(process.execPath, [path.join(rootDir, "tools", "prepare-firebase-test-functions.js"), selectedLot], {
     cwd: rootDir,
-    env: { ...process.env, TARGET_FIREBASE_PROJECT: "livepalmes-test" },
+    env: { ...process.env, TARGET_FIREBASE_PROJECT: "livepalmes-test",NAP_NOTIFICATION_SCHEDULER_ONLY:String(napOnly) },
     stdio: "pipe"
   });
   assert.equal(
     fs.readFileSync(path.join(stagedRoot, "functions", ".env.livepalmes-test"), "utf8"),
     "LIVEPALMES_ENFORCE_APP_CHECK=false\n"
   );
-  childProcess.execFileSync(path.join(rootDir, "functions", "node_modules", ".bin", "firebase-functions"), [], {
+  childProcess.execFileSync(process.execPath, [path.join(rootDir, "functions", "node_modules", "firebase-functions", "lib", "bin", "firebase-functions.js")], {
     cwd: path.join(stagedRoot, "functions"),
     env: {
       ...process.env,
@@ -115,10 +115,11 @@ try {
     stdio: "pipe"
   });
   const manifest = fs.readFileSync(manifestPath, "utf8");
-  const expectedNames=selectedLot==="all-safe"?ALL_SAFE_LOTS.flatMap(name=>LOTS[name]).concat(TEST_NON_MAIL_FUNCTIONS):LOTS[selectedLot];
+  const expectedNames=napOnly?["closeDueEngagementCompetitions"]:selectedLot==="all-safe"?ALL_SAFE_LOTS.flatMap(name=>LOTS[name]).concat(TEST_NON_MAIL_FUNCTIONS):LOTS[selectedLot];
   assert.deepEqual(Object.keys(JSON.parse(manifest).endpoints).sort(), [...expectedNames].sort());
   const declaredSecrets = JSON.parse(manifest).params.filter(param => param.type === "secret").map(param => param.name).sort();
-  assert.deepEqual(declaredSecrets, selectedLot==="all-safe"?["LIVEPALMES_NAP_PASSWORD"]:[...METADATA[selectedLot].secrets].sort());
+  assert.deepEqual(declaredSecrets, napOnly||selectedLot==="all-safe"?["LIVEPALMES_NAP_PASSWORD"]:[...METADATA[selectedLot].secrets].sort());
+  if(napOnly)assert.deepEqual(JSON.parse(manifest).endpoints.closeDueEngagementCompetitions.secretEnvironmentVariables.map(item=>item.key),["LIVEPALMES_NAP_PASSWORD"]);
   if(selectedLot==="all-safe") for (const name of TEST_NON_MAIL_FUNCTIONS) assert.deepEqual(JSON.parse(manifest).endpoints[name].secretEnvironmentVariables.map(item=>item.key),["LIVEPALMES_NAP_PASSWORD"]);
   for (const secret of METADATA.email.secrets) {
     assert.doesNotMatch(manifest, new RegExp(secret), `Le manifeste access expose encore ${secret}.`);
