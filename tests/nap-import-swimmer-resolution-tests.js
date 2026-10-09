@@ -1,0 +1,18 @@
+"use strict";
+const assert = require("node:assert/strict");
+const { resolveSwimmers } = require("../functions/nap-import-swimmer-resolution");
+const file = { swimmerId: "999", lastName: "FAUVEAU", firstName: "Antoine", birthDate: "1990-01-01", sex: "M" };
+const native = { id: 912, nom: "Fauveau", prenom: "Antoine", date: "1990-01-01", sexe: "M" };
+assert.deepEqual(resolveSwimmers([file], [native]).resolved, [{ rowIndex: 0, swimmerId: 912, source: "exact-identity" }]);
+assert.equal(resolveSwimmers([file], [{ ...native, id: 999, nom: "AUTRE" }]).canConfirm, false, "a file id must not override contradictory NAP identity");
+assert.equal(resolveSwimmers([file], []).unresolved[0].reason, "unknown-identity");
+assert.equal(resolveSwimmers([file], [native, { ...native, id: 913 }]).unresolved[0].reason, "ambiguous-identity");
+assert.equal(resolveSwimmers([file], [native, { ...native, id: 913 }], [{ rowIndex: 0, swimmerId: 913 }]).resolved[0].swimmerId, 913);
+assert.throws(() => resolveSwimmers([file], [native], [{ rowIndex: 0, swimmerId: 999 }]), /relue/);
+assert.throws(() => resolveSwimmers([file], [native], [{ rowIndex: 0, swimmerId: 912 }, { rowIndex: 0, swimmerId: 912 }]), /limite|Choix/);
+assert.throws(() => resolveSwimmers([file], [native, native]), /doublon/);
+assert.equal(resolveSwimmers([{ ...file, birthDate: "1990-02-31" }], [native]).unresolved[0].reason, "incomplete-identity");
+assert.equal(resolveSwimmers([{ ...file, birthDate: "1991-01-01" }], [native]).canConfirm, false);
+assert.throws(() => resolveSwimmers(Array(5001).fill(file), [native]), /limite/);
+assert.equal(resolveSwimmers(Array(5000).fill(file), [native]).resolved.length, 5000);
+console.log("NAP import resolution: exact identity, contradictory file ids, ambiguous matches, explicit choices and bounded batches passed.");
