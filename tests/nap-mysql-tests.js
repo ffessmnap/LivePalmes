@@ -13,7 +13,9 @@ async function main() {
   let calls = 0;
   const pool = { execute: async (query, values) => {
     calls++;
-    assert.match(query.sql, /WHERE nageur = \? AND id > \? ORDER BY id LIMIT 51$/);
+    assert.match(query.sql, /AND nageur = \? AND id > \? ORDER BY id LIMIT 51$/);
+    assert.match(query.sql, /lpv\.performance_id=perfs\.id AND lpv\.hidden=1/);
+    assert.match(query.sql, /FORCE INDEX \(PRIMARY\)/);
     assert.doesNotMatch(query.sql, /INSERT|UPDATE|DELETE/);
     assert.deepEqual(values, [12, 100]);
     return [Array.from({ length: 51 }, (_, i) => ({ id: 101 + i, tps: "001234" }))];

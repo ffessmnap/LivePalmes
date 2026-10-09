@@ -1,4 +1,5 @@
 "use strict";
+const {visiblePerformanceSql}=require("./nap-performance-visibility");
 // Existing IntraNAP modes: presence, tps, presencetps. One indexed grouped
 // read at most for 800 people; no read at all without a presence requirement.
 const {positiveId}=require("./nap-direct-calendar");
@@ -23,7 +24,7 @@ async function readEvidence(connection,people,pack) {
   // The existing nageur index is (nageur,compet): this grouped, covering
   // query visits only the requested swimmers/competitions, never all results.
   const targets=[...presence];
-  const [rows]=await connection.execute({sql:`SELECT nageur,MIN(compet) AS compet FROM perfs FORCE INDEX (nageur) WHERE nageur IN (${ids.map(()=>"?").join(",")}) AND compet IN (${targets.map(()=>"?").join(",")}) GROUP BY nageur ORDER BY nageur LIMIT 801`,timeout:10000},[...ids,...targets]);
+  const [rows]=await connection.execute({sql:`SELECT nageur,MIN(compet) AS compet FROM perfs FORCE INDEX (nageur) WHERE ${visiblePerformanceSql('perfs')} AND nageur IN (${ids.map(()=>"?").join(",")}) AND compet IN (${targets.map(()=>"?").join(",")}) GROUP BY nageur ORDER BY nageur LIMIT 801`,timeout:10000},[...ids,...targets]);
   if(rows.length>ids.length) throw new RangeError("Resultats de participation trop volumineux.");
   const seen=new Set();
   for(const row of rows) {

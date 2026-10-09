@@ -1,4 +1,5 @@
 "use strict";
+const {visiblePerformanceSql}=require("./nap-performance-visibility");
 const rules = require("./nap-performance-normalization");
 const MAX_HISTORY = 2000;
 function swimmerId(input) {
@@ -38,7 +39,7 @@ async function readDirectSwimmer(pool, input) {
     sex: rules.cleanText(raw.sexe), clubId: String(raw.club || ""), club: rules.cleanText(raw.abre_club || raw.nom_club), clubName: rules.cleanText(raw.nom_club) };
   person.name = [person.firstName, person.lastName].filter(Boolean).join(" ");
   person.identityKey = rules.swimmerIdentityKey(person.firstName, person.lastName, person.birthDate);
-  const [rawRows] = await pool.execute({ sql: `SELECT p.id, p.course, p.cat, p.tps, p.passage, p.relais, c.id AS competition_id, c.libelle, c.lieu, c.date, c.bassin, c.chrono, c.ld, COALESCE(cp.num_club, cn.num_club) AS selected_club, COALESCE(cp.abre_club, cn.abre_club) AS abre_club, COALESCE(cp.nom_club, cn.nom_club) AS nom_club, COALESCE(cp.comite_club, cn.comite_club) AS comite_club FROM perfs p LEFT JOIN competitions c ON c.id = p.compet LEFT JOIN clubs cp ON cp.num_club = p.club AND CAST(cp.num_club AS CHAR) = p.club LEFT JOIN clubs cn ON cn.num_club = ? AND CAST(cn.num_club AS CHAR) = ? WHERE p.nageur = ? ORDER BY p.id LIMIT ${MAX_HISTORY + 1}`, timeout: 10000 }, [raw.club, raw.club, id]);
+  const [rawRows] = await pool.execute({ sql: `SELECT p.id, p.course, p.cat, p.tps, p.passage, p.relais, c.id AS competition_id, c.libelle, c.lieu, c.date, c.bassin, c.chrono, c.ld, COALESCE(cp.num_club, cn.num_club) AS selected_club, COALESCE(cp.abre_club, cn.abre_club) AS abre_club, COALESCE(cp.nom_club, cn.nom_club) AS nom_club, COALESCE(cp.comite_club, cn.comite_club) AS comite_club FROM perfs p LEFT JOIN competitions c ON c.id = p.compet LEFT JOIN clubs cp ON cp.num_club = p.club AND CAST(cp.num_club AS CHAR) = p.club LEFT JOIN clubs cn ON cn.num_club = ? AND CAST(cn.num_club AS CHAR) = ? WHERE ${visiblePerformanceSql()} AND p.nageur = ? ORDER BY p.id LIMIT ${MAX_HISTORY + 1}`, timeout: 10000 }, [raw.club, raw.club, id]);
   if (rawRows.length > MAX_HISTORY) throw new RangeError("Historique trop volumineux pour cette lecture bornee.");
   const rows = rawRows.map(row => performanceRow(row, person)).filter(Boolean);
   if (!rows.length) return { source: "nap", swimmer: null };

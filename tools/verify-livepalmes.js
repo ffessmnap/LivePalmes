@@ -71,6 +71,7 @@ function runUnitTests() {
     "nap-import-swimmer-resolution-tests.js",
     "nap-performance-change-plan-tests.js",
     "nap-performance-write-tests.js",
+    "nap-performance-visibility-tests.js",
     "nap-engagement-contract-tests.js",
     "nap-portal-competitions-tests.js",
     "nap-portal-competition-change-tests.js",
