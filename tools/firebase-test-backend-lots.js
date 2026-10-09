@@ -58,7 +58,7 @@ const LOTS = Object.freeze({
     "refreshDtnListingCache", "getDtnListingOverview", "rebuildPerformanceSwimmerIndexNextPage",
     "rebuildPerformanceTopIndexNextPage", "importHistoricalPerformanceRows", "exportAdditionalPerformanceData",
     "getPerformanceBaseMigrationStatus", "migratePerformanceBaseNextChunk",
-    "getPerformancePublicationJobStatus"
+    "getPerformancePublicationJobStatus", "getNapPerformanceAdministration"
   ],
   publications: [
     "storeCompetitionPdf", "deleteCompetitionPdf", "syncOfficialResultToPublicIndex",

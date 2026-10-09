@@ -21756,8 +21756,29 @@ exports.retryPerformancePublicationJob = onCall(CALLABLE_OPTIONS, async (request
   return { ok: true, publicationJob };
 });
 
-exports.savePerformanceCorrection = onCall(CALLABLE_OPTIONS, async (request) => {
+const NAP_PERFORMANCE_OPTIONS={...CALLABLE_OPTIONS,...(ENVIRONMENT.projectId==="livepalmes-test"?{secrets:[defineSecret("LIVEPALMES_NAP_PASSWORD")],maxInstances:2,concurrency:4}: {})};
+function authorizeNativePerformance(request) {
+  if(!request.auth?.uid)throw new HttpsError("unauthenticated","Connexion requise.");
+  assertCapability(request,"competitions.import");
+  const caps=request.auth.token?.livepalmesCapabilities||{};
+  return {uid:request.auth.uid,national:ADMIN_UIDS.has(request.auth.uid)||caps["admin.full"]===true||caps["engagements.national.manage"]===true};
+}
+function nativePerformanceFailure(error) {
+  if(error instanceof HttpsError)return error;
+  return new HttpsError(error instanceof TypeError?"failed-precondition":error instanceof RangeError?"resource-exhausted":"unavailable",
+    error instanceof TypeError||error instanceof RangeError?error.message:"Operation NAP interrompue. Reprenez la meme operation ; la sauvegarde est conservee.");
+}
+exports.getNapPerformanceAdministration=onCall(NAP_PERFORMANCE_OPTIONS,async request=>{
+  if(ENVIRONMENT.projectId!=="livepalmes-test")throw new HttpsError("failed-precondition","Raccordement disponible sur TEST uniquement.");
+  try{return await require("./nap-performance-administration").createPerformanceAdministration({authorize:authorizeNativePerformance,getPool:()=>require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD)})(request);}
+  catch(error){throw nativePerformanceFailure(error);}
+});
+exports.savePerformanceCorrection = onCall(NAP_PERFORMANCE_OPTIONS, async (request) => {
   assertCapability(request, "competitions.import");
+  if(ENVIRONMENT.projectId==="livepalmes-test") {
+    try{return await require("./nap-performance-write").createPerformanceWriter({authorize:authorizeNativePerformance,getPool:()=>require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD)}).change(request,request.data);}
+    catch(error){throw nativePerformanceFailure(error);}
+  }
   const data = request.data || {};
   const targetKey = cleanText(data.targetKey).slice(0, 240);
   if (!targetKey) {
