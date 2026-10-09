@@ -235,12 +235,15 @@ jobs:
         run: |
           set -euo pipefail
           node - <<'NODE'
-          const { initializeApp } = require("./functions/node_modules/firebase-admin/app");
-          const { getFirestore } = require("./functions/node_modules/firebase-admin/firestore");
+          const functionsRequire = require("node:module").createRequire(require("node:path").resolve("functions/package.json"));
+          const { initializeApp } = functionsRequire("firebase-admin/app");
+          const { getFirestore } = functionsRequire("firebase-admin/firestore");
           initializeApp({ projectId: "livepalmes-test" });
           const db = getFirestore();
           Promise.all([
-            db.collection("engagementClosureQueue").limit(1).get(),
+            // Only documents with a scheduling field can be consumed by this scheduler.
+            // Retained audit traces without runAt are not pending work.
+            db.collection("engagementClosureQueue").orderBy("runAt").limit(1).get(),
             process.env.NAP_NOTIFICATION_SCHEDULER_ONLY === "true" ? Promise.resolve({ empty: true }) : db.collection("performancePublicationJobs").where("status", "in", ["pending", "processing"]).limit(1).get()
           ]).then(([closures, publications]) => {
             if (!closures.empty || !publications.empty) throw new Error("Files TEST non vides : activation des schedulers refusée.");

@@ -187,6 +187,7 @@ function runUnitTests() {
     "livepalmes-legal-pages-tests.js",
     "livepalmes-result-regression-tests.js",
     "livepalmes-test-backend-workflow-tests.js",
+    "livepalmes-scheduler-preflight-tests.js",
     "firebase-test-access-bootstrap-tests.js",
     "firebase-test-data-sync-tests.js",
     "livepalmes-public-results-index-tests.js",
