@@ -45,7 +45,7 @@ async function run() {
   assert.equal(queries, 1, "Unmapped identifiers are never guessed or scanned");
   await assert.rejects(nativeClubScopes({ execute: async () => [[]] }, [{ clubId: "106", capabilities: ["engagements.club.manage"] }]), /existant/);
   const names = ["previewEngagementCompetitionDocumentNotification", "notifyEngagementCompetitionDocuments",
-    "prepareEngagementOpeningNotificationEmails", "prepareEngagementClubRecapEmails", "sendEngagementPreparedEmails", "listEngagementCompetitionMailJobs"];
+    "prepareEngagementOpeningNotificationEmails", "prepareEngagementClubRecapEmails", "sendEngagementPreparedEmails"];
   for (const name of names) {
     const start = source.indexOf(`exports.${name} =`), end = source.indexOf("\n});", start) + 4;
     assert.ok(start > 0 && end > start);

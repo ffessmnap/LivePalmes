@@ -32,6 +32,11 @@ async function run(){
   const many=Array.from({length:51},(_,i)=>({email:`person${i}@example.org`}));
   const opening=await page({kind:'opening',cursor:''},competition,{...services,recipients:async()=>many});
   assert.equal(opening.jobs.length,50);assert.equal(opening.done,false);assert.equal(opening.nextCursor,'50');
+  let persisted=0;
+  const real=await page({kind:'closure',phase:'clubs',cursor:''},competition,{...services,simulation:false,
+    persistAttachment:async(_event,file,metadata)=>{persisted++;assert.ok(Buffer.isBuffer(file.buffer));assert.equal(metadata.sha256.length,64);return {...metadata,storagePath:'private/test-file'};}});
+  assert.equal(persisted,5);assert.equal(real.jobs[0].attachments[0].storagePath,'private/test-file');
+  assert.ok(!Object.hasOwn(real.jobs[0].attachments[0],'buffer'),'only the private attachment reference is queued');
   console.log('NAP notification pages: grouped native reads, bounded PDFs, stable pages, export policy and TEST guard passed.');
 }
 run().catch(error=>{console.error(error);process.exitCode=1;});

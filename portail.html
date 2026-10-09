@@ -482,6 +482,12 @@
               </div>
 
               <div class="admin-national-home-groups">
+                <section id="adminNationalMailControl" class="admin-national-home-group" hidden aria-labelledby="adminNationalMailControlTitle">
+                  <div class="admin-national-home-group-head"><h3 id="adminNationalMailControlTitle">Mails automatiques</h3></div>
+                  <p id="adminNationalMailControlStatus" role="status">Chargement du réglage…</p>
+                  <p>Notifications des compétitions. Une coupure annule les mails en attente, sans rattrapage à la réactivation.</p>
+                  <button id="adminNationalMailControlToggle" class="ghost-button" type="button" disabled>Chargement…</button>
+                </section>
                 <section class="admin-national-home-group admin-national-home-priority" aria-labelledby="adminNationalPendingTitle">
                   <div class="admin-national-home-group-head">
                     <h3 id="adminNationalPendingTitle">&Agrave; traiter</h3>
@@ -1709,11 +1715,11 @@
                           </div>
                           <div id="adminEngagementsDocumentsList" class="admin-engagements-documents-list"></div>
                           <div id="adminEngagementsNotificationPreviewActions" hidden>
-                            <p class="admin-portal-message">TEST : vérifiez les destinataires sans envoyer de mail ni modifier la compétition.</p>
+                            <p class="admin-portal-message">Les vérifications affichent un aperçu sans envoi. Le traitement des notifications suit le réglage national ; sur TEST, les mails partent uniquement vers livepalmes@nap-ffessm.fr.</p>
                             <div class="admin-portal-actions">
                               <button id="adminEngagementsPrepareOpeningEmailsButton" class="ghost-button" type="button">Vérifier les destinataires à l’ouverture</button>
                               <button id="adminEngagementsPrepareClubRecapEmailsButton" class="ghost-button" type="button">Vérifier les récapitulatifs à la fermeture</button>
-                                <button id="adminEngagementsProcessNativeNotificationsButton" class="ghost-button" type="button">Préparer un lot de notifications sans envoi</button>
+                                <button id="adminEngagementsProcessNativeNotificationsButton" class="ghost-button" type="button">Traiter les notifications TEST</button>
                             </div>
                             <p id="adminEngagementsNotificationPreviewStatus" class="admin-portal-message" aria-live="polite"></p>
                           </div>
@@ -2784,7 +2790,7 @@
     <script src="assets/livepalmes-whatsapp-qr.js?v=20260831-whatsapp-qr-1"></script>
     <link rel="stylesheet" href="assets/livepalmes-engagement-qualifications.css">
     <script src="assets/livepalmes-engagement-qualifications.js?v=20260915-import-seconds"></script>
-  <script src="assets/livepalmes-admin-portal.js?v=20261009-nap-notifications-33"></script>
+  <script src="assets/livepalmes-admin-portal.js?v=20261009-national-mail-control-34"></script>
     <script src="assets/livepalmes-license-administration.js?v=20260902-license-control-1"></script>
     <script src="assets/livepalmes-admin-calendar-events.js?v=20261008-nap-perimetres-28"></script>
     <script src="assets/livepalmes-portal-ux.js?v=20260920-ux-consistency-1"></script>

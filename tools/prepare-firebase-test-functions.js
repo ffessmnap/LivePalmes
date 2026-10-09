@@ -27,7 +27,7 @@ const napSchedulerOnly=schedulerScope==='true';
 if(napSchedulerOnly&&lot!=='schedulers')throw new Error('La selection du scheduler NAP est reservee au lot schedulers.');
 const selected = napSchedulerOnly ? ['closeDueEngagementCompetitions'] : selectedLots.flatMap((name) => LOTS[name]).concat(lot === "all-safe" ? TEST_NON_MAIL_FUNCTIONS : []);
 if (new Set(selected).size !== selected.length) throw new Error("Une Function est présente dans plusieurs lots sélectionnés.");
-const selectedSecrets = napSchedulerOnly ? ['LIVEPALMES_NAP_PASSWORD'] : [...new Set(selectedLots.flatMap((name) => METADATA[name].secrets).concat(lot === "all-safe" ? ["LIVEPALMES_NAP_PASSWORD"] : []))];
+const selectedSecrets = napSchedulerOnly ? [...new Set(['LIVEPALMES_NAP_PASSWORD',...METADATA.email.secrets])] : [...new Set(selectedLots.flatMap((name) => METADATA[name].secrets).concat(lot === "all-safe" ? ["LIVEPALMES_NAP_PASSWORD"] : []))];
 
 fs.rmSync(path.dirname(destination), { recursive: true, force: true });
 fs.cpSync(source, destination, {

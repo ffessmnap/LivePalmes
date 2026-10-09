@@ -8,7 +8,8 @@ async function run(){
   const calls=[];
   const automation={COLLECTION:'engagementClosureQueue',currentEvent:()=>true,processEvent:async()=>{calls.push('process');return {done:true,jobCount:1,attachmentCount:1};},adoptOpenCompetitions:async(_db,input)=>{calls.push('adopt');assert.equal(input.season,2027);return {openingCount:0};}};
   let national=true,allowed=true;
-  const sandbox={exports:{},ENVIRONMENT:{projectId:'livepalmes-test'},ENGAGEMENT_NOTIFICATION_PREVIEW_OPTIONS:{},onCall:(_options,handler)=>handler,
+  const sandbox={exports:{},ENVIRONMENT:{projectId:'livepalmes-test'},ENGAGEMENT_NOTIFICATION_PREVIEW_OPTIONS:{},ENGAGEMENT_NOTIFICATION_MAIL_SECRETS:['smtp'],defineSecret:name=>name,onCall:(_options,handler)=>handler,
+    deliverNativeNotificationJobs:async id=>{assert.equal(id,'5162');return {sent:1};},
     HttpsError:class extends Error{constructor(code,message){super(message);this.code=code;}},
     engagementAccessContext:async()=>({national}),assertCanManageEngagementCompetition:()=>{if(!allowed)throw Error('denied');},
     nativePortalCompetition:async(id,authorize)=>{calls.push('competition');await authorize({id});},
@@ -38,7 +39,7 @@ async function run(){
   for(const projectId of ['livepalmes-test','livepalmes']){
     const options={ENVIRONMENT:{projectId},REGION:'europe-west1',defineSecret:name=>name,ENGAGEMENT_NOTIFICATION_MAIL_SECRETS:['smtp']};
     vm.runInNewContext(source.slice(schedulerStart,schedulerEnd)+'\nthis.options=ENGAGEMENT_CLOSURE_SCHEDULER_OPTIONS;',options);
-    assert.deepEqual(Array.from(options.options.secrets),projectId==='livepalmes-test'?['LIVEPALMES_NAP_PASSWORD']:['smtp']);
+    assert.deepEqual(Array.from(options.options.secrets),projectId==='livepalmes-test'?['LIVEPALMES_NAP_PASSWORD','smtp']:['smtp']);
   }
   assert.match(source.slice(source.indexOf('exports.closeDueEngagementCompetitions ='),source.indexOf('exports.saveEngagementClubTeamLeader =')),/if\(ENVIRONMENT.projectId==='livepalmes-test'\)[\s\S]*return null;[\s\S]*engagementCompetitions/);
   let armed=0;
@@ -50,6 +51,6 @@ async function run(){
   assert.equal(armed,0);
   await armSandbox.armNativeCompetitionNotification({uid:'admin'},{competitionId:'legacy-nap-5162',patch:{entryDeadlineLocal:'2026-11-06 19:00:00'}},'operation');
   assert.equal(armed,1,'Paris local deadline edits rearm the closure');
-  console.log('NAP notification callable: scope first, bounded technical queue, national adoption, TEST-only processing and no SMTP secrets passed.');
+  console.log('NAP notification callable: scope first, bounded technical queue, national adoption and explicit TEST mail bindings passed.');
 }
 run().catch(error=>{console.error(error);process.exitCode=1;});
