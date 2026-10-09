@@ -275,6 +275,8 @@ exports.getNapSwimmerPerformances = onCall({
   });
 }
 const ENGAGEMENT_MAIL_CALLABLE_OPTIONS = { ...CALLABLE_OPTIONS, secrets: ENGAGEMENT_NOTIFICATION_MAIL_SECRETS, timeoutSeconds: 300 };
+const ENGAGEMENT_NOTIFICATION_PREVIEW_OPTIONS = { ...CALLABLE_OPTIONS,
+  ...(ENVIRONMENT.projectId === "livepalmes-test" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) };
 const NOTIFICATION_PREFERENCE_CALLABLE_OPTIONS = { ...CALLABLE_OPTIONS, secrets: [LIVEPALMES_NOTIFICATION_LINK_SECRET] };
 const ENGAGEMENT_DOCUMENT_UPLOAD_OPTIONS = { ...CALLABLE_OPTIONS, timeoutSeconds: 120, memory: "512MiB" };
 const ENGAGEMENT_SWIMMER_CORRECTION_OPTIONS = { ...CALLABLE_OPTIONS, timeoutSeconds: 540, memory: "1GiB" };
@@ -10591,8 +10593,8 @@ exports.deleteEngagementCompetitionDocument = onCall({ ...CALLABLE_OPTIONS, ...(
   return { ok: true, competitionId, calendarEventId, documentId, documents: updatedDocuments, storageDeleted };
 });
 
-exports.previewEngagementCompetitionDocumentNotification = onCall(CALLABLE_OPTIONS, async (request) => {
-  if(ENVIRONMENT.projectId === "livepalmes-test") { await engagementAccessContext(request); return {ok:true,disabled:true,recipientCount:0,clubCount:0}; }
+exports.previewEngagementCompetitionDocumentNotification = onCall(ENGAGEMENT_NOTIFICATION_PREVIEW_OPTIONS, async (request) => {
+  if (ENVIRONMENT.projectId === "livepalmes-test") return nativeNotificationPreview(request, "documents");
   const { competitionId, snapshot } = await engagementCompetitionDocumentContext(request);
   const recipients = engagementCompetitionDocumentRecipients(
     await engagementActiveClubMailRecipients(db),
@@ -10606,8 +10608,8 @@ exports.previewEngagementCompetitionDocumentNotification = onCall(CALLABLE_OPTIO
   };
 });
 
-exports.notifyEngagementCompetitionDocuments = onCall(ENGAGEMENT_MAIL_CALLABLE_OPTIONS, async (request) => {
-  if(ENVIRONMENT.projectId === "livepalmes-test") { await engagementAccessContext(request); return {ok:true,disabled:true,sentCount:0,errorCount:0}; }
+exports.notifyEngagementCompetitionDocuments = onCall(ENVIRONMENT.projectId === "livepalmes-test" ? ENGAGEMENT_NOTIFICATION_PREVIEW_OPTIONS : ENGAGEMENT_MAIL_CALLABLE_OPTIONS, async (request) => {
+  if (ENVIRONMENT.projectId === "livepalmes-test") return nativeNotificationPreview(request, "documents");
   const { context, competitionId, snapshot } = await engagementCompetitionDocumentContext(request);
   const competition = engagementCompetitionDetailItem(snapshot);
   const documentIds = Array.from(new Set((Array.isArray(request.data?.documentIds) ? request.data.documentIds : [])
@@ -10878,6 +10880,36 @@ async function nativeAdminCompetitionEntries(context,competitionId) {
   } catch(error) {
     if(error instanceof HttpsError) throw error;
     throw new HttpsError(error instanceof RangeError?"resource-exhausted":error instanceof TypeError?"failed-precondition":"unavailable",error instanceof RangeError || error instanceof TypeError?error.message:"Lecture des engagements NAP indisponible.");
+  }
+}
+async function nativeNotificationPreview(request, kind) {
+  const context = await engagementAccessContext(request);
+  const competitionId = cleanText(request.data?.calendarEventId || request.data?.competitionId).slice(0, 128);
+  if (!competitionId) throw new HttpsError("invalid-argument", "Compétition requise.");
+  try {
+    return await require("./nap-notification-preview").preview({ competitionId, kind,
+      documentIds: kind === "documents" && Object.hasOwn(request.data || {}, "documentIds") ? request.data.documentIds : undefined }, {
+      competition: id => nativePortalCompetition(id, event => assertCanManageEngagementCompetition(context, event)),
+      recipients: async () => {
+        const state = await engagementMailRecipientIndexStateRef(db).get();
+        if (state.data()?.status !== "ready") throw new HttpsError("failed-precondition", "Annuaire des destinataires indisponible. Sa reconstruction doit être demandée séparément.");
+        return require("./nap-notification-preview").nativeClubScopes(
+          require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD), await engagementMailRecipientsFromIndex(db));
+      },
+      select: (type, recipients, competition) => type === "opening"
+        ? engagementCompetitionOpeningRecipients(recipients, competition, [engagementMailRecipientFromContext(context)].filter(Boolean))
+        : engagementCompetitionDocumentRecipients(recipients, competition),
+      clubRecipients: recipients => engagementCompetitionNotificationRecipients(engagementDedupMailRecipients(recipients))
+        .filter(recipient => recipient.clubId && engagementRecipientHasCapability(recipient, "engagements.club.manage")),
+      entries: competition => require("./nap-admin-entries").readAdminEntries(
+        require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD), { competitionId, competition },
+        event => assertCanManageEngagementCompetition(context, event), { category: ageCategoryFromDates }),
+      hasParticipants: engagementClubEntryHasParticipants
+    });
+  } catch (error) {
+    if (error instanceof HttpsError) throw error;
+    throw new HttpsError(error instanceof TypeError ? "failed-precondition" : error instanceof RangeError ? "resource-exhausted" : "unavailable",
+      error instanceof TypeError || error instanceof RangeError ? error.message : "Aperçu des notifications NAP indisponible.");
   }
 }
 exports.listEngagementCompetitionClubRecaps = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.projectId === "livepalmes-test" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
@@ -11313,11 +11345,16 @@ exports.generateEngagementCompetitionTxtExport = onCall({ ...CALLABLE_OPTIONS, .
   };
 });
 
-exports.listEngagementCompetitionMailJobs = onCall(CALLABLE_OPTIONS, async (request) => {
+exports.listEngagementCompetitionMailJobs = onCall(ENGAGEMENT_NOTIFICATION_PREVIEW_OPTIONS, async (request) => {
   const context = await engagementAccessContext(request);
   const competitionId = cleanText(request.data?.competitionId).slice(0, 128);
   if (!competitionId) {
     throw new HttpsError("invalid-argument", "Competition requise.");
+  }
+  if (ENVIRONMENT.projectId === "livepalmes-test") {
+    await nativePortalCompetition(competitionId, event => assertCanManageEngagementCompetition(context, event));
+    // Old outbox entries cannot be sent in TEST and are not sporting sources.
+    return { ok: true, source: "nap", disabled: true, competitionId, jobs: [], totalCount: 0, hasMore: false, nextCursor: null };
   }
   const competition = await db.collection("engagementCompetitions").doc(competitionId).get();
   if (!competition.exists) {
@@ -11359,7 +11396,8 @@ exports.listEngagementCompetitionMailJobs = onCall(CALLABLE_OPTIONS, async (requ
   };
 });
 
-exports.prepareEngagementOpeningNotificationEmails = onCall(CALLABLE_OPTIONS, async (request) => {
+exports.prepareEngagementOpeningNotificationEmails = onCall(ENGAGEMENT_NOTIFICATION_PREVIEW_OPTIONS, async (request) => {
+  if (ENVIRONMENT.projectId === "livepalmes-test") return nativeNotificationPreview(request, "opening");
   const context = await engagementAccessContext(request);
   const competitionId = cleanText(request.data?.competitionId).slice(0, 128);
   if (!competitionId) {
@@ -11499,7 +11537,8 @@ async function prepareEngagementClubRecapEmailJobs(db, competitionSnapshot, opti
   };
 }
 
-exports.prepareEngagementClubRecapEmails = onCall(CALLABLE_OPTIONS, async (request) => {
+exports.prepareEngagementClubRecapEmails = onCall(ENGAGEMENT_NOTIFICATION_PREVIEW_OPTIONS, async (request) => {
+  if (ENVIRONMENT.projectId === "livepalmes-test") return nativeNotificationPreview(request, "club_recaps");
   const context = await engagementAccessContext(request);
   const competitionId = cleanText(request.data?.competitionId).slice(0, 128);
   if (!competitionId) {
@@ -11809,7 +11848,8 @@ async function sendEngagementPreparedEmailJobs(db, competitionSnapshot, context 
   };
 }
 
-exports.sendEngagementPreparedEmails = onCall(ENGAGEMENT_MAIL_CALLABLE_OPTIONS, async (request) => {
+exports.sendEngagementPreparedEmails = onCall(ENVIRONMENT.projectId === "livepalmes-test" ? ENGAGEMENT_NOTIFICATION_PREVIEW_OPTIONS : ENGAGEMENT_MAIL_CALLABLE_OPTIONS, async (request) => {
+  if (ENVIRONMENT.projectId === "livepalmes-test") return nativeNotificationPreview(request, "send");
   const context = await engagementAccessContext(request);
   const competitionId = cleanText(request.data?.competitionId).slice(0, 128);
   if (!competitionId) {

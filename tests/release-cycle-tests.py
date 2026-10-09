@@ -39,7 +39,16 @@ class ReleaseTests(unittest.TestCase):
         self.assertIn('resolveEngagementSwimmerChangeRequest',m.safe_functions(root,'livepalmes-test'))
         self.assertNotIn('resolveEngagementSwimmerChangeRequest',m.safe_functions(root,'livepalmes'))
         self.assertNotIn('resolveEngagementSwimmerChangeRequest',m.safe_functions(root))
-        for name in ['sendEngagementPreparedEmails','closeDueEngagementCompetitions','resolveEngagementAccessRequest']:
+
+    def test_native_notification_previews_never_extend_production_scope(self):
+        root=Path(__file__).parents[1]
+        test_scope=m.safe_functions(root,'livepalmes-test')
+        production_scope=m.safe_functions(root,'livepalmes')
+        for name in ['notifyEngagementCompetitionDocuments','listEngagementCompetitionMailJobs',
+                     'prepareEngagementOpeningNotificationEmails','prepareEngagementClubRecapEmails','sendEngagementPreparedEmails']:
+            self.assertIn(name,test_scope)
+            self.assertNotIn(name,production_scope)
+        for name in ['closeDueEngagementCompetitions','resolveEngagementAccessRequest']:
             self.assertNotIn(name,m.safe_functions(root,'livepalmes-test'))
         with self.assertRaises(ValueError):m.safe_functions(root,'unknown')
     def test_reuse_only_successful_verification_of_exact_candidate(self):

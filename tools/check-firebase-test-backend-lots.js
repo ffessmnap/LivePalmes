@@ -21,7 +21,9 @@ assert.deepEqual(ALL_SAFE_LOTS, ["access", "engagement-core", "performance", "pu
 assert.ok(!ALL_SAFE_LOTS.includes("email") && !ALL_SAFE_LOTS.includes("schedulers"));
 
 const emailSecrets = new Set(METADATA.email.secrets);
-assert.deepEqual(require("./firebase-test-backend-lots").TEST_NON_MAIL_FUNCTIONS,["resolveEngagementSwimmerChangeRequest"]);
+assert.deepEqual(require("./firebase-test-backend-lots").TEST_NON_MAIL_FUNCTIONS,["resolveEngagementSwimmerChangeRequest",
+  "notifyEngagementCompetitionDocuments", "listEngagementCompetitionMailJobs",
+  "prepareEngagementOpeningNotificationEmails", "prepareEngagementClubRecapEmails", "sendEngagementPreparedEmails"]);
 assert.equal(emailSecrets.size, 7);
 for (const lot of ["access", "engagement-core", "performance", "publications"]) {
   assert.deepEqual(METADATA[lot].secrets, [], `${lot} ne doit exiger aucun secret email.`);
