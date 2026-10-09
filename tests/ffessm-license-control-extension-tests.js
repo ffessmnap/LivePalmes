@@ -119,7 +119,9 @@ assert.equal(core.parseDelimited(core.exportResultsCsv([])).length, 1);
 const extensionRoot = path.join(__dirname, "..", "tools", "ffessm-license-control-extension");
 const manifest = JSON.parse(fs.readFileSync(path.join(extensionRoot, "manifest.json"), "utf8"));
 assert.deepEqual(manifest.content_scripts[0].matches, ["https://macommission.ffessm.fr/*"]);
-assert.deepEqual(manifest.content_scripts[0].js, ["core.js", "content.js"]);
+assert.deepEqual(manifest.content_scripts[0].js, ["core.js", "report.js", "content.js"]);
 assert.equal(manifest.permissions, undefined);
 
 console.log("Tests extension contrôle licences FFESSM : OK");
+
+require("./ffessm-license-report-tests.js");

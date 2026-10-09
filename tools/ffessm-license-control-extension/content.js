@@ -3,6 +3,7 @@
 
   if (window.top !== window || document.getElementById("livepalmes-license-control-launcher")) return;
   const core = window.LivePalmesLicenseControl;
+  const report = window.LivePalmesLicenseReport;
   if (!core) return;
 
   const IDS = {
@@ -17,6 +18,8 @@
     retry: "livepalmes-license-control-retry",
     stop: "livepalmes-license-control-stop",
     export: "livepalmes-license-control-export",
+    excel: "livepalmes-license-control-excel",
+    competition: "livepalmes-license-control-competition",
     status: "livepalmes-license-control-status",
     results: "livepalmes-license-control-results"
   };
@@ -89,6 +92,8 @@
     document.getElementById(IDS.retry).disabled = running || !retryable;
     document.getElementById(IDS.stop).disabled = !running;
     document.getElementById(IDS.export).disabled = running || !state.results.length;
+    document.getElementById(IDS.excel).disabled = running || !state.results.length || !report;
+    document.getElementById(IDS.competition).disabled = running || !state.batch;
     document.getElementById(IDS.file).disabled = running;
     document.getElementById(IDS.input).disabled = running;
     document.getElementById(IDS.panel).setAttribute("aria-busy", running ? "true" : "false");
@@ -336,6 +341,10 @@
       setStatus(error?.message || String(error), "error");
     }
     state.results = [];
+    const competitions = report?.competitionNames(state.batch?.people || []) || [];
+    document.getElementById(IDS.competition).innerHTML = competitions.length
+      ? competitions.map(name => `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`).join("")
+      : '<option value="">Compétition non renseignée</option>';
     renderResults();
     setRunning(false);
   }
@@ -350,18 +359,35 @@
     }
   }
 
-  function exportCsv() {
-    if (!state.results.length || !state.batch) return;
-    const content = core.exportResultsCsv(state.results);
-    const blob = new Blob([content], { type: "text/csv;charset=utf-8" });
+  function downloadFile(blob, filename) {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = `controle-licences-ffessm-${state.batch.season}-${new Date().toISOString().slice(0, 10)}.csv`;
+    link.download = filename;
     document.body.appendChild(link);
     link.click();
     link.remove();
     window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
+  function exportCsv() {
+    if (state.running || !state.results.length || !state.batch) return;
+    downloadFile(new Blob([core.exportResultsCsv(state.results)], { type: "text/csv;charset=utf-8" }),
+      `controle-licences-ffessm-${state.batch.season}-${new Date().toISOString().slice(0, 10)}.csv`);
+  }
+
+  function exportExcel() {
+    if (state.running || !state.results.length || !state.batch || !report) return;
+    try {
+      const competition = document.getElementById(IDS.competition).value;
+      const bytes = report.exportReportXlsx(state.batch, state.results, competition);
+      const name = (core.normalizeText(competition || "competition").toLowerCase().replace(/\s+/g, "-").slice(0, 80) || "competition");
+      downloadFile(new Blob([bytes], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }),
+        `bilan-licences-${name}-${state.batch.season}-${new Date().toISOString().slice(0, 10)}.xlsx`);
+      setStatus("Bilan Excel exporté pour la compétition sélectionnée.", "ok");
+    } catch (error) {
+      setStatus(`Export Excel impossible : ${error?.message || error}`, "error");
+    }
   }
 
   function mount() {
@@ -377,7 +403,7 @@
     panel.hidden = true;
     panel.setAttribute("aria-label", "Contrôle des licences LivePalmes");
     panel.innerHTML = `
-      <header><div><strong>Contrôle des licences</strong><span>LivePalmes × Ma Commission</span></div><button id="${IDS.close}" type="button" aria-label="Fermer">×</button></header>
+      <header><div><strong>Contrôle des licences</strong><span>LivePalmes × Ma Commission · v1.1.0</span></div><button id="${IDS.close}" type="button" aria-label="Fermer">×</button></header>
       <div class="livepalmes-license-control-body">
         <p class="livepalmes-license-control-help">Chargez le fichier exporté par LivePalmes. Le module compare identité, numéro et date de validité fédérale sans lire vos identifiants de connexion.</p>
         <label class="livepalmes-license-control-file"><span>Fichier LivePalmes</span><input id="${IDS.file}" type="file" accept=".csv,text/csv"></label>
@@ -390,9 +416,10 @@
           <button id="${IDS.export}" type="button" class="secondary" disabled>Exporter pour LivePalmes</button>
           <label>Pause <input id="${IDS.delay}" type="number" min="1500" step="500" value="2000"> ms</label>
         </div>
+        <div class="livepalmes-license-control-report"><label for="${IDS.competition}">Bilan organisateur — compétition</label><select id="${IDS.competition}" disabled><option value="">Chargez un fichier LivePalmes</option></select><button id="${IDS.excel}" type="button" disabled>Exporter le bilan Excel</button></div>
         <p id="${IDS.status}" class="livepalmes-license-control-status" aria-live="polite">Chargez un fichier LivePalmes pour commencer.</p>
         <div id="${IDS.results}" class="livepalmes-license-control-results"></div>
-        <p class="livepalmes-license-control-privacy">Les données restent dans cette page et ne sont exportées que lorsque vous cliquez sur « Exporter pour LivePalmes ».</p>
+        <p class="livepalmes-license-control-privacy">Les données restent dans cette page. Exportez le CSV pour LivePalmes ou le bilan Excel pour l’organisateur.</p>
       </div>`;
 
     document.body.append(launcher, panel);
@@ -418,6 +445,7 @@
       setStatus("Arrêt demandé après l’opération fédérale en cours…", "warning");
     });
     document.getElementById(IDS.export).addEventListener("click", exportCsv);
+    document.getElementById(IDS.excel).addEventListener("click", exportExcel);
   }
 
   mount();

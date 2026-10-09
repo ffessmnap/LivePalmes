@@ -50,6 +50,14 @@ L’export contient exactement une ligne par nageur, avec son statut et les info
 
 L’import LivePalmes peut ainsi lire une seule ligne par identifiant. Seules les lignes `validable` non ambiguës sont proposées pour validation ; les autres restent à arbitrer dans l’administration nationale.
 
+## Bilan Excel pour l’organisateur
+
+Après le contrôle, choisir une compétition dans « Bilan organisateur — compétition », puis cliquer sur **Exporter le bilan Excel**. Le fichier `.xlsx` contient uniquement les nageurs inscrits à cette compétition : synthèse, une ligne par nageur, filtres, en-têtes figés et écarts détaillés. Les dossiers à vérifier apparaissent avant les conformes ; les dates sont de vraies dates Excel. La colonne Contrôle utilise des couleurs sobres et les informations fédérales sont limitées aux correspondances d’identité retenues.
+
+Si le contrôle a été arrêté, les nageurs restants sont explicitement marqués **Non contrôlé** et comptés séparément. Le sélecteur lit `competitions_sources`, où LivePalmes sépare les compétitions par ` | `. En l’absence de cette information, le bilan porte la mention « Compétition non renseignée » et concerne le lot entier.
+
+Le CSV de retour pour LivePalmes reste disponible et inchangé. L’Excel est généré localement, sans dépendance réseau ni envoi automatique.
+
 ## Sécurité et limites
 
 - L’extension est limitée à `macommission.ffessm.fr` et n’a aucune permission réseau supplémentaire.

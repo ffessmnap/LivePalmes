@@ -2,6 +2,13 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 10 octobre — Bilan Excel des licences FFESSM 1.1.0
+
+- À la demande d’Antoine, ajout d’un export Excel destiné à l’organisateur, en complément du CSV LivePalmes. Sélection d’une compétition du lot ; une ligne par nageur inscrit, y compris les personnes non contrôlées après un arrêt. En-tête avec saison, lot et date d’export, compteurs de contrôle, filtres, en-têtes figés, statuts colorés et détail des écarts ; cas à vérifier affichés avant les conformes. Données fédérales réservées à une identité exacte unique, comme dans le CSV. Aucune modification des critères fédéraux.
+- Code : `fa9ccf6c08cb9af848ae4567a2b0cf8a8ef5cd0a` ; extension `1.1.0`. Module XLSX autonome, sans nouvelle dépendance ni permission Chrome. Présentation du tableau de contrôle corrigée pour conserver les colonnes et leur défilement sur mobile.
+- Preuves ciblées : syntaxe, tests du CSV et du bilan Excel réussis sur des données fictives ; sélection de compétition, nageurs communs à deux compétitions, contrôles partiels, erreurs et identités incertaines. Fichier XLSX relu indépendamment et rendu pour vérifier la mise en page ; téléchargement des deux formats contrôlé dans Chrome, sur ordinateur et mobile. Contrôles globaux GitHub requis avant intégration.
+- Retour utilisateur : Antoine confirme le bon fonctionnement de la version `1.0.2` (PR #219) dans cette conversation, avant la demande d’ajout du bilan Excel. Le nouveau bilan `1.1.0` reste à essayer sur une compétition réelle. Extension installée localement : aucun déploiement Firebase nécessaire ; aucune écriture fédérale ni modification de données LivePalmes.
+
 ### 10 octobre — Export des licences FFESSM 1.0.2
 
 - À la demande d’Antoine, le CSV de retour contient une ligne par nageur au lieu d’une ligne par candidat. Données fédérales limitées à l’identité unique retenue ; cas ambigus, candidats non concordants, absences et erreurs conservés avec statut mais sans identité arbitraire. Colonne `candidat_no` retirée ; colonnes utilisées par l’import LivePalmes conservées.
