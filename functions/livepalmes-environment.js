@@ -1,6 +1,7 @@
 const PROJECTS = {
   livepalmes: {
     name: "production",
+    sportingDataSource: "nap",
     projectId: "livepalmes",
     hostingOrigin: "https://livepalmes.web.app",
     firebaseStorageBucket: "livepalmes.firebasestorage.app",
@@ -9,6 +10,7 @@ const PROJECTS = {
   },
   "livepalmes-test": {
     name: "test",
+    sportingDataSource: "nap",
     projectId: "livepalmes-test",
     hostingOrigin: "https://livepalmes-test.web.app",
     firebaseStorageBucket: "livepalmes-test.firebasestorage.app",

@@ -6,7 +6,7 @@ class HttpsError extends Error {constructor(code,message){super(message);this.co
 function fixture() {
  const trace=[],exports={};
  const authorize=request=>{trace.push("auth");if(!request.auth?.uid)throw new HttpsError("permission-denied","denied");return{uid:request.auth.uid};};
- const context={exports,COMPETITION_IMPORT_CALLABLE_OPTIONS:{},onCall:(_,handler)=>handler,ENVIRONMENT:{projectId:"livepalmes-test"},assertCapability:authorize,authorizeNativePerformance:authorize,HttpsError,process:{env:{LIVEPALMES_NAP_PASSWORD:"fixture"}},nativePerformanceFailure:error=>new HttpsError("unavailable","Native operation interrupted"),
+ const context={exports,COMPETITION_IMPORT_CALLABLE_OPTIONS:{},onCall:(_,handler)=>handler,ENVIRONMENT:{sportingDataSource:"nap",projectId:"livepalmes"},assertCapability:authorize,authorizeNativePerformance:authorize,HttpsError,process:{env:{LIVEPALMES_NAP_PASSWORD:"fixture"}},nativePerformanceFailure:error=>new HttpsError("unavailable","Native operation interrupted"),
  db:new Proxy({},{get(){throw Error("Legacy sporting Firebase accessed");}}),require:name=>{
   if(name==="./nap-portal-swimmers")return{portalPool:()=>{trace.push("pool");return{};}};
   if(name==="./nap-import-preview")return{previewNativeImport:async()=>{trace.push("preview");return{};}};

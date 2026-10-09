@@ -32,6 +32,8 @@ const production = browserContext("livepalmes.web.app").config;
 production.assertSafe();
 assert.equal(production.name, "production");
 assert.equal(production.firebaseConfig.projectId, "livepalmes");
+assert.equal(production.sportingDataSource, "nap");
+assert.equal(production.napReaderUrl, "https://europe-west1-livepalmes.cloudfunctions.net/readNapPublicSwimmer");
 assert.equal(production.publicStorageUrl("calendar/index.json"), "https://storage.googleapis.com/livepalmes-public-data-718081132564/calendar/index.json");
 assert.deepEqual(Array.from(production.legacyAdminUids), ["AgvWJjvLOfe3uB0lz0Xr3wwJxzT2"]);
 
@@ -47,6 +49,8 @@ assert.equal(preview.firebaseConfig.projectId, "livepalmes-test");
 assert.throws(() => browserContext("livepalmes-test--pr-112-5bx9w11z.web.app", "production"), /domaine TEST/);
 assert.equal(browserContext("livepalmes-test--pr-112-5bx9w11z.web.app.example.com").config.isTest, false);
 const test = testPage.config;
+assert.equal(test.sportingDataSource, "nap");
+assert.equal(test.napReaderUrl, "https://europe-west1-livepalmes-test.cloudfunctions.net/readNapPublicSwimmer");
 test.assertSafe();
 assert.match(test.firebaseConfig.apiKey, /^AIza[0-9A-Za-z_-]{35}$/);
 assert.equal(test.firebaseConfig.appId, "1:206080168534:web:70dad29434b9878ecea1f7");
@@ -62,6 +66,9 @@ publicTestPage.listeners.get("DOMContentLoaded")();
 assert.ok(publicTestPage.inserted.some((element) => element.dataset.livepalmesTestBanner === "true" && element.dataset.variant === "public"));
 
 assert.equal(livePalmesEnvironment({ GCLOUD_PROJECT: "livepalmes" }).legacyAdminUids.length, 1);
+for (const projectId of ["livepalmes", "livepalmes-test"]) {
+  assert.equal(livePalmesEnvironment({ GCLOUD_PROJECT: projectId }).sportingDataSource, "nap");
+}
 assert.equal(livePalmesEnvironment({ GCLOUD_PROJECT: "livepalmes-test" }).legacyAdminUids.length, 0);
 assert.equal(livePalmesEnvironment({ GCLOUD_PROJECT: "livepalmes-test" }).publicBucket, "livepalmes-test-public-data-206080168534");
 assert.throws(() => livePalmesEnvironment({ GCLOUD_PROJECT: "unexpected-project" }), /non autorise/);

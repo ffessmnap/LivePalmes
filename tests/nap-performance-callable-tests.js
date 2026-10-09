@@ -6,7 +6,7 @@ class HttpsError extends Error{constructor(code,message){super(message);this.cod
 function fixture(){
  const exports={},trace=[],options=[];
  const authorize=request=>{if(!request.auth?.token?.livepalmesCapabilities?.["competitions.import"])throw new HttpsError("permission-denied","denied");};
- vm.runInNewContext(section,{exports,ENVIRONMENT:{projectId:"livepalmes-test"},CALLABLE_OPTIONS:{},defineSecret:x=>x,onCall:(o,fn)=>{options.push(o);return fn;},ADMIN_UIDS:new Set(),HttpsError,TypeError,RangeError,assertCapability:authorize,process:{env:{LIVEPALMES_NAP_PASSWORD:"test-only"}},require:name=>{
+ vm.runInNewContext(section,{exports,ENVIRONMENT:{sportingDataSource:"nap",projectId:"livepalmes"},CALLABLE_OPTIONS:{},defineSecret:x=>x,onCall:(o,fn)=>{options.push(o);return fn;},ADMIN_UIDS:new Set(),HttpsError,TypeError,RangeError,assertCapability:authorize,process:{env:{LIVEPALMES_NAP_PASSWORD:"test-only"}},require:name=>{
   if(name==="./nap-portal-swimmers")return{portalPool:()=>{trace.push("pool");return {};}};
   if(name==="./nap-performance-administration")return{createPerformanceAdministration:o=>async request=>{await o.authorize(request);await o.getPool();return{source:"nap"};}};
   if(name==="./nap-performance-write")return{createPerformanceWriter:o=>({change:async(request,input)=>{const actor=await o.authorize(request);await o.getPool();if(input.fail)throw Error("secret sql driver error");return{source:"nap",national:actor.national};}})};

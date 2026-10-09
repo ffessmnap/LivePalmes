@@ -50,7 +50,7 @@ async function run() {
     const start = source.indexOf(`exports.${name} =`), end = source.indexOf("\n});", start) + 4;
     assert.ok(start > 0 && end > start);
     let previews = 0, authorizations = 0;
-    const sandbox = { exports: {}, ENVIRONMENT: { projectId: "livepalmes-test" },
+    const sandbox = { exports: {}, ENVIRONMENT: {sportingDataSource:"nap", projectId: "livepalmes-test" },
       ENGAGEMENT_NOTIFICATION_PREVIEW_OPTIONS: {}, ENGAGEMENT_MAIL_CALLABLE_OPTIONS: {},
       onCall: (_options, handler) => handler,
       nativeNotificationPreview: async () => { previews++; return { disabled: true }; },
@@ -114,7 +114,7 @@ async function run() {
     assert.equal(html.split(`id="${id}"`).length - 1, 1);
   }
   assert.ok(html.includes('id="adminEngagementsNotificationPreviewActions" hidden'));
-  assert.ok(portal.includes('!adminMode || global.LivePalmesEnvironment?.isTest !== true || competition.napSource !== true'));
+  assert.ok(portal.includes('!adminMode || global.LivePalmesEnvironment?.sportingDataSource !== "nap" || competition.napSource !== true'));
   console.log("Aperçus notifications NAP : autorisation, sources, périmètres natifs, budgets et absence d'envoi OK.");
 }
 run().catch(error => { console.error(error); process.exitCode = 1; });

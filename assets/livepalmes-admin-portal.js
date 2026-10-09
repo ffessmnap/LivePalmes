@@ -2071,7 +2071,7 @@
   function updateNativeCompetitionPersonCreationButton() {
     const button=elements.engagementsClubTeamNativePersonCreate;
     if(!button) return;
-    const native=global.LivePalmesEnvironment?.isTest===true && selectedEngagementCompetition?.nativeReadOnly===true;
+    const native=global.LivePalmesEnvironment?.sportingDataSource === "nap" && selectedEngagementCompetition?.nativeReadOnly===true;
     button.hidden=!native;
     button.disabled=!native || engagementClubPersonSaving || !canUse("engagements.club.manage") || Boolean(engagementClubWriteLockReason({...selectedEngagementCompetition,nativeReadOnly:false}));
   }
@@ -2135,22 +2135,22 @@
 
   function engagementClubSwimmerSelectionLockReason() {
     const competition=selectedEngagementCompetition || {};
-    return engagementClubWriteLockReason(global.LivePalmesEnvironment?.isTest===true && competition.nativeSwimmerSelectionEditable===true ? {...competition,nativeReadOnly:false} : competition);
+    return engagementClubWriteLockReason(global.LivePalmesEnvironment?.sportingDataSource === "nap" && competition.nativeSwimmerSelectionEditable===true ? {...competition,nativeReadOnly:false} : competition);
   }
 
   function engagementClubIndividualEntriesLockReason() {
     const competition=selectedEngagementCompetition || {};
-    return engagementClubWriteLockReason(global.LivePalmesEnvironment?.isTest===true && competition.nativeIndividualEntriesEditable===true ? {...competition,nativeReadOnly:false} : competition);
+    return engagementClubWriteLockReason(global.LivePalmesEnvironment?.sportingDataSource === "nap" && competition.nativeIndividualEntriesEditable===true ? {...competition,nativeReadOnly:false} : competition);
   }
 
   function engagementClubOfficialsLockReason() {
     const competition=selectedEngagementCompetition || {};
-    return engagementClubWriteLockReason(global.LivePalmesEnvironment?.isTest===true && competition.nativeOfficialsEditable===true ? {...competition,nativeReadOnly:false} : competition);
+    return engagementClubWriteLockReason(global.LivePalmesEnvironment?.sportingDataSource === "nap" && competition.nativeOfficialsEditable===true ? {...competition,nativeReadOnly:false} : competition);
   }
 
   function engagementClubRelaysLockReason() {
     const competition=selectedEngagementCompetition || {};
-    return engagementClubWriteLockReason(global.LivePalmesEnvironment?.isTest===true && competition.nativeRelaysEditable===true ? {...competition,nativeReadOnly:false} : competition);
+    return engagementClubWriteLockReason(global.LivePalmesEnvironment?.sportingDataSource === "nap" && competition.nativeRelaysEditable===true ? {...competition,nativeReadOnly:false} : competition);
   }
 
   function engagementClubTeamLeaderLockReason() {
@@ -2797,7 +2797,7 @@
   function loadDtnModule() {
     if (dtnModuleLoadPromise) return dtnModuleLoadPromise;
     dtnModuleLoadPromise = loadScriptOnce(
-      "assets/livepalmes-dtn-seasons.js?v=20261007-nap-dtn-2",
+      "assets/livepalmes-dtn-seasons.js?v=20261009-nap-production-3",
       "livepalmes-dtn-qualifications-script"
     ).then(() => global.LivePalmesDtnQualifications?.init?.()).catch((error) => {
       dtnModuleLoadPromise = null;
@@ -2897,7 +2897,7 @@
         ["performances/public/data/performance-public/version.js", "adminImportVersionScript"]
       ];
       await Promise.all(scripts.map(([src, id]) => loadScriptOnce(src, id)));
-      await loadScriptOnce("performances/public/import-competitions.js?v=20260831-import-dialog-1", "adminImportModuleScript");
+      await loadScriptOnce("performances/public/import-competitions.js?v=20261009-nap-production-2", "adminImportModuleScript");
       if (includeSpreadsheet) await loadImportSpreadsheet();
       watchImportWorkbench();
     })().catch((error) => {
@@ -9459,7 +9459,7 @@
   function renderEngagementDocuments(competition = selectedEngagementCompetition || {}) {
     const adminMode = isEngagementAdminMode();
     if (elements.engagementsNotificationPreviewActions) elements.engagementsNotificationPreviewActions.hidden =
-      !adminMode || global.LivePalmesEnvironment?.isTest !== true || competition.napSource !== true;
+      !adminMode || global.LivePalmesEnvironment?.sportingDataSource !== "nap" || competition.napSource !== true;
     if (elements.engagementsNotificationPreviewStatus) elements.engagementsNotificationPreviewStatus.textContent = "";
     if (elements.engagementsGenerateClubRecapsButton) elements.engagementsGenerateClubRecapsButton.hidden = !adminMode || competition.napSource !== true;
     const openWater = engagementCompetitionType(competition) === "openWater";
@@ -10675,7 +10675,7 @@
       ].filter((item) => item && item !== "-").join(" · ");
     }
     if (elements.engagementsDetailMeta) elements.engagementsDetailMeta.innerHTML = competition.napSource === true
-      ? `<p role="status">${escapeHtml(global.LivePalmesEnvironment?.isTest === true && competition.nativeTeamLeaderRequired ? "Déclarez votre chef d’équipe pour commencer les engagements." : global.LivePalmesEnvironment?.isTest === true && competition.nativeRelaysEditable && !competition.nativeIndividualEntriesEditable ? "La sélection des nageurs et les relais peuvent être enregistrés." : global.LivePalmesEnvironment?.isTest === true && competition.nativeIndividualEntriesEditable ? (competition.nativeRelaysEditable ? "Les nageurs, leurs courses, les officiels et les relais peuvent être enregistrés." : "Les nageurs, leurs courses et les officiels peuvent être enregistrés. Les relais restent consultables.") : global.LivePalmesEnvironment?.isTest === true && competition.nativeSwimmerSelectionEditable ? "La sélection des nageurs est disponible. La saisie des courses, des officiels et des relais sera disponible prochainement." : "Les paramètres et le programme de cette compétition sont disponibles.")}</p>${(competition.nativeWarnings || []).map(warning => `<p>${escapeHtml(warning)}</p>`).join("")}`
+      ? `<p role="status">${escapeHtml(global.LivePalmesEnvironment?.sportingDataSource === "nap" && competition.nativeTeamLeaderRequired ? "Déclarez votre chef d’équipe pour commencer les engagements." : global.LivePalmesEnvironment?.sportingDataSource === "nap" && competition.nativeRelaysEditable && !competition.nativeIndividualEntriesEditable ? "La sélection des nageurs et les relais peuvent être enregistrés." : global.LivePalmesEnvironment?.sportingDataSource === "nap" && competition.nativeIndividualEntriesEditable ? (competition.nativeRelaysEditable ? "Les nageurs, leurs courses, les officiels et les relais peuvent être enregistrés." : "Les nageurs, leurs courses et les officiels peuvent être enregistrés. Les relais restent consultables.") : global.LivePalmesEnvironment?.sportingDataSource === "nap" && competition.nativeSwimmerSelectionEditable ? "La sélection des nageurs est disponible. La saisie des courses, des officiels et des relais sera disponible prochainement." : "Les paramètres et le programme de cette compétition sont disponibles.")}</p>${(competition.nativeWarnings || []).map(warning => `<p>${escapeHtml(warning)}</p>`).join("")}`
       : "";
     const adminMode = isEngagementAdminMode();
     if (elements.engagementsDetailLevel) {
@@ -11254,7 +11254,7 @@
       engagementClubSwimmersClubId = "";
       engagementClubSwimmersCachedAt = 0;
     }
-    if (!engagementClubSwimmersLoaded && !force && !global.LivePalmesEnvironment?.isTest) {
+    if (!engagementClubSwimmersLoaded && !force && global.LivePalmesEnvironment?.sportingDataSource !== "nap") {
       const cached = readEngagementClubSwimmersCache();
       if (cached) {
         engagementClubSwimmers = cached.swimmers;
@@ -11437,7 +11437,7 @@
   async function saveEngagementClubRelays(event, messageElement = elements.engagementsClubRelaysMessage, relayRowsOverride = null, removeRelayId = "", nativeRelay = null) {
     event?.preventDefault?.();
     if (!selectedEngagementCompetitionId || !canUse("engagements.club.manage")) return false;
-    const native=global.LivePalmesEnvironment?.isTest===true && selectedEngagementCompetition?.napSource===true;
+    const native=global.LivePalmesEnvironment?.sportingDataSource === "nap" && selectedEngagementCompetition?.napSource===true;
     if(native && !engagementClubNativeRelayRetry && (engagementClubNativeOfficialRetry || engagementClubNativeSelectionRetry || engagementClubNativeIndividualRetry)) {
       if(messageElement) {messageElement.textContent="Un enregistrement NAP reste à vérifier avant de modifier les relais.";messageElement.dataset.tone="error";}
       return false;
@@ -13611,7 +13611,7 @@
     try {
       const [result, publicSwimmers] = await Promise.all([
         callFunction("searchEngagementNationalSwimmers", { query, limit: 60 }),
-        global.LivePalmesEnvironment.isTest ? Promise.resolve([]) : searchEngagementAdminPublicSwimmers(query, 80)
+        (global.LivePalmesEnvironment.sportingDataSource === "nap") ? Promise.resolve([]) : searchEngagementAdminPublicSwimmers(query, 80)
       ]);
       engagementNationalSwimmers = mergeEngagementNationalSwimmerResults([
         ...publicSwimmers,
@@ -15009,7 +15009,7 @@
   }
 
   function openNativeCompetitionPersonCreation() {
-    if(global.LivePalmesEnvironment?.isTest!==true || engagementClubPersonSaving || !canUse("engagements.club.manage")) return;
+    if(global.LivePalmesEnvironment?.sportingDataSource !== "nap" || engagementClubPersonSaving || !canUse("engagements.club.manage")) return;
     const form=elements.engagementsClubPersonForm,dialog=elements.engagementsClubPersonDialog;
     if(!form || !dialog || engagementClubPersonFormHome) return;
     openEngagementClubPersonForm();
@@ -15033,7 +15033,7 @@
   }
 
   function openEngagementClubPersonForm(person = null) {
-    const native = global.LivePalmesEnvironment?.isTest === true;
+    const native = global.LivePalmesEnvironment?.sportingDataSource === "nap";
     if(native && (engagementClubPersonSaving || person && !person.nativeIdentityEditable)) return;
     resetEngagementClubPersonForm();
     if (!native && !engagementClubSwimmersLoaded) void loadEngagementClubSwimmers({ silent: true });
@@ -15104,7 +15104,7 @@
   function renderEngagementClubPeople() {
     updateNativeCompetitionPersonCreationButton();
     if (!elements.engagementsClubPeopleList) return;
-    const nativeReadOnly = global.LivePalmesEnvironment?.isTest === true;
+    const nativeReadOnly = global.LivePalmesEnvironment?.sportingDataSource === "nap";
     if(elements.engagementsClubPeopleAddButton) elements.engagementsClubPeopleAddButton.disabled = nativeReadOnly && (!engagementClubPeopleLoaded || engagementClubPeopleLoading || engagementClubPersonSaving);
     if(elements.engagementsClubPeopleLoadMore) {
       elements.engagementsClubPeopleLoadMore.hidden = !engagementClubPeopleHasMore;
@@ -15170,7 +15170,7 @@
     }
     engagementClubPeopleLoading = true;
     const requestVersion = engagementClubPeopleRequestVersion;
-    if(elements.engagementsClubPeopleAddButton && global.LivePalmesEnvironment?.isTest) elements.engagementsClubPeopleAddButton.disabled = true;
+    if(elements.engagementsClubPeopleAddButton && global.LivePalmesEnvironment?.sportingDataSource === "nap") elements.engagementsClubPeopleAddButton.disabled = true;
     if(elements.engagementsClubPeopleLoadMore) elements.engagementsClubPeopleLoadMore.disabled = true;
     if (elements.engagementsClubPeopleStatus && !silent) {
       elements.engagementsClubPeopleStatus.textContent = "Chargement de Mes officiels...";
@@ -15211,7 +15211,7 @@
   async function saveEngagementClubPerson(event) {
     event?.preventDefault?.();
     if (!canUse("engagements.club.manage")) return;
-    const native=global.LivePalmesEnvironment?.isTest === true;
+    const native=global.LivePalmesEnvironment?.sportingDataSource === "nap";
     if(native && engagementClubPersonSaving) return;
     const requestVersion=engagementClubPeopleRequestVersion;
     if (!native && !elements.engagementsClubPersonRoleTeamLeader?.checked && !elements.engagementsClubPersonRoleOfficial?.checked) {
@@ -17849,7 +17849,7 @@
     });
     elements.engagementsClubTeamNativePersonCreate?.addEventListener("click",openNativeCompetitionPersonCreation);
     elements.engagementsClubTeamPersonCreate?.addEventListener("click", () => {
-      if(global.LivePalmesEnvironment?.isTest===true) {openNativeCompetitionPersonCreation();return;}
+      if(global.LivePalmesEnvironment?.sportingDataSource === "nap") {openNativeCompetitionPersonCreation();return;}
       const radio = elements.engagementsClubTeamForm?.querySelector('input[name="adminEngagementsClubTeamMode"][value="person"]');
       if (radio) radio.checked = true;
       if (elements.engagementsClubTeamPersonSelect) elements.engagementsClubTeamPersonSelect.value = "";
@@ -18564,7 +18564,7 @@
         }
         if (activeEngagementsTab === "clubPeople") {
           closeEngagementCompetitionDetail();
-          loadEngagementClubPeople({force:global.LivePalmesEnvironment?.isTest === true});
+          loadEngagementClubPeople({force:global.LivePalmesEnvironment?.sportingDataSource === "nap"});
           loadEngagementClubSwimmers({ silent: true });
         }
         if (activeEngagementsTab === "clubSwimmers") {

@@ -7,7 +7,7 @@ let calls=[],reply;
 const elements={engagementsClubPersonForm:{dataset:{},hidden:true,checkValidity:()=>true,querySelector:()=>({})},engagementsClubPersonMessage:{dataset:{}}};
 for(const name of ["Id","FirstName","LastName","BirthDate","Sex","License","SwimmerId","SwimmerSource","RoleTeamLeader","RoleOfficial","SwimmerSearch","SwimmerResults"]) elements[`engagementsClubPerson${name}`]=field();
 elements.engagementsClubPersonSex.matches=()=>true;
-const sandbox={global:{LivePalmesEnvironment:{isTest:true},crypto:{randomUUID:()=>"11111111-1111-4111-8111-111111111111"}},elements,engagementClubPeople:[{...item}],engagementClubPeopleRequestVersion:0,engagementClubSwimmersLoaded:false,activeEngagementsDetailTab:"team",
+const sandbox={global:{LivePalmesEnvironment:{sportingDataSource:"nap",isTest:true},crypto:{randomUUID:()=>"11111111-1111-4111-8111-111111111111"}},elements,engagementClubPeople:[{...item}],engagementClubPeopleRequestVersion:0,engagementClubSwimmersLoaded:false,activeEngagementsDetailTab:"team",
   engagementClubPersonSaving:false,engagementClubPersonFormHome:null,closeEngagementClubPersonDialog:()=>{},canUse:()=>true,resetEngagementClubPersonForm:()=>{},loadEngagementClubSwimmers:()=>{throw Error("No unnecessary swimmer reads");},renderEngagementClubPersonSwimmerOptions:()=>{},renderEngagementClubPeople:()=>{},renderEngagementClubTeamPersonOptions:()=>{},renderEngagementClubOfficials:()=>{},loadEngagementClubPeople:()=>{throw Error("No directory reload after native reply");},
   callFunction:async(name,input)=>{calls.push({name,input:JSON.parse(JSON.stringify(input))});return typeof reply==="function"?reply():reply;}};
 vm.createContext(sandbox);

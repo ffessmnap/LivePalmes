@@ -13,7 +13,7 @@ let mode = "manual", allowed = true, calls = 0;
 class HttpsError extends Error { constructor(code, message) { super(message); this.code = code; } }
 const dossier = { inscriptions: [{ id: 9, nageur: 1 }, { id: 10, nageur: 2 }],
   individual: [{ engagement: 9, course: "100SF" }, { engagement: 9, course: "200SF" }, { engagement: 10, course: "50SF" }] };
-const context = { exports: {}, ENVIRONMENT: { projectId: "livepalmes-test" }, CALLABLE_OPTIONS: {},
+const context = { exports: {}, ENVIRONMENT: {sportingDataSource:"nap", projectId: "livepalmes-test" }, CALLABLE_OPTIONS: {},
   defineSecret: value => value, onCall: (options, fn) => Object.assign(fn, { options }), HttpsError,
   process: { env: { LIVEPALMES_NAP_PASSWORD: "test-placeholder" } },
   cleanText: value => String(value ?? "").trim(), cleanEngagementMissingEntryTimeMode: value => value || "manual",
@@ -43,7 +43,7 @@ vm.createContext(context); vm.runInContext(source.slice(start, end), context);
   mode = "forbidden"; await assert.rejects(() => context.exports.getEngagementClubEntryTimeHistory(request), /pas autorisee/);
   allowed = false; const before = calls;
   await assert.rejects(() => context.exports.getEngagementClubEntryTimeHistory(request), /Denied/); assert.equal(calls, before);
-  allowed = true; context.ENVIRONMENT.projectId = "livepalmes";
-  await assert.rejects(() => context.exports.getEngagementClubEntryTimeHistory(request), /Legacy Firestore path/);
+  allowed = true; mode = "manual"; context.ENVIRONMENT.projectId = "livepalmes";
+  assert.equal((await context.exports.getEngagementClubEntryTimeHistory(request)).source,"nap");
   console.log("Native history callable checks authenticated club, enrolled swimmer, saved courses and manual mode without legacy reads");
 })().catch(error => { console.error(error); process.exitCode = 1; });

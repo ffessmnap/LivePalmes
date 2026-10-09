@@ -8,7 +8,7 @@ assert.equal(timeLabels.engagementEntryTimeDisplayLabel(noTime),"Sans temps conn
 assert.equal(timeLabels.engagementEntryTimeDisplayLabel({entryTimeMode:"default595999",entryTime:"59:59.99"}),"Sans temps connu");
 timeLabels.selectedEngagementCompetition={};
 assert.equal(timeLabels.engagementEntryTimeDisplayLabel({entryTimeMode:"default595999",entryTime:"59:59.99"}),"59:59.99","legacy presentation is preserved");
-const locks={selectedEngagementCompetition:{napSource:true,nativeReadOnly:true,nativeIndividualEntriesEditable:true,entryStatus:"open",entryDeadlineAt:"2099-01-01T00:00:00Z"},global:{LivePalmesEnvironment:{isTest:true}},engagementClubTeamComplete:()=>true,isEngagementAdminMode:()=>false};
+const locks={selectedEngagementCompetition:{napSource:true,nativeReadOnly:true,nativeIndividualEntriesEditable:true,entryStatus:"open",entryDeadlineAt:"2099-01-01T00:00:00Z"},global:{LivePalmesEnvironment:{sportingDataSource:"nap",isTest:true}},engagementClubTeamComplete:()=>true,isEngagementAdminMode:()=>false};
 vm.createContext(locks);vm.runInContext(source.slice(source.indexOf("  function engagementClubWriteLockReason("),source.indexOf("  const ENGAGEMENT_DETAIL_TAB_LABELS")),locks);
 assert.equal(locks.engagementClubIndividualEntriesLockReason(),"");assert.equal(locks.clubEngagementTabHiddenWhenWriteLocked("entries"),false);
 assert.equal(locks.engagementClubStepLockReason("entries"),"");
@@ -23,7 +23,7 @@ assert.match(locks.engagementClubTeamLeaderLockReason(),/consultable/);
 assert.equal(locks.clubEngagementTabHiddenWhenWriteLocked("relays"),true);assert.equal(locks.clubEngagementTabHiddenWhenWriteLocked("officials"),true);
 locks.selectedEngagementCompetition.entryStatus="closed";assert.match(locks.engagementClubIndividualEntriesLockReason(),/fermes/);
 assert.match(locks.engagementClubStepLockReason("entries"),/fermes/);
-locks.selectedEngagementCompetition.entryStatus="open";locks.global.LivePalmesEnvironment.isTest=false;assert.match(locks.engagementClubIndividualEntriesLockReason(),/consultable/);
+locks.selectedEngagementCompetition.entryStatus="open";locks.global.LivePalmesEnvironment.sportingDataSource="firebase";assert.match(locks.engagementClubIndividualEntriesLockReason(),/consultable/);
 locks.global.LivePalmesEnvironment.isTest=true;locks.selectedEngagementCompetition.qualificationJobId='a'.repeat(64);
 assert.match(locks.engagementClubIndividualEntriesLockReason(),/Contrôle/,'A pending national control blocks club writes even with a native write capability');
 delete locks.selectedEngagementCompetition.qualificationJobId;
