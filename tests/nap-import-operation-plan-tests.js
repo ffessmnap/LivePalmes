@@ -1,0 +1,18 @@
+"use strict";
+const assert=require("node:assert/strict"),{prepareImportOperation,pendingTableChanges,tableFingerprint}=require("../functions/nap-import-operation-plan"),{COLUMNS}=require("../functions/nap-performance-change-plan");
+const old={id:973,nageur:168,compet:5162,course:"100SF",cat:"HSE",tps:"14200",points:"0",newpoints:"0",passage:0,club:"106",relais:0,pid:null,classement:1};
+const {id,...native}=old;
+const pack={canConfirm:true,competition:{id:5162},expectedFingerprint:"before",previewFingerprint:"preview",existing:[old],existingRelays:[],incoming:[{sourceLine:4,row:{...native,tps:"014200"}}],incomingRelays:[],statusRows:[],decoded:{excluded:[]}};
+const input={expectedFingerprint:"before",previewFingerprint:"preview"};
+let plan=prepareImportOperation(pack,{perfs:1000,relays:100},input);assert.equal(plan.perfs.after[0].id,973);assert.equal(plan.perfs.after[0].tps,"14200");assert.equal(plan.perfs.additions.length,0);
+const changed={...pack,incoming:[{sourceLine:4,row:{...native,tps:"014100"}}]};assert.throws(()=>prepareImportOperation(changed,{perfs:1000,relays:100},input),/explicitement/);
+plan=prepareImportOperation(changed,{perfs:1000,relays:100},{...input,confirmReplacement:true});assert.equal(plan.perfs.additions[0].row.id,1000);assert.equal(plan.perfs.removals[0].id,973);
+assert.equal(pendingTableChanges([old],plan.perfs,COLUMNS).additions.length,1);
+assert.equal(pendingTableChanges([],plan.perfs,COLUMNS).additions.length,1,"resume after delete before insert");
+assert.equal(pendingTableChanges(plan.perfs.after,plan.perfs,COLUMNS).additions.length,0,"resume after lost insert response");
+assert.throws(()=>pendingTableChanges([{...old,tps:"013000"}],plan.perfs,COLUMNS),/modifies/);
+assert.throws(()=>pendingTableChanges([{...old,id:1001}],plan.perfs,COLUMNS),/modifies/);
+assert.equal(tableFingerprint(plan.perfs.after,COLUMNS),tableFingerprint(plan.perfs.after.map(r=>({...r,points:String(r.points),newpoints:String(r.newpoints)})),COLUMNS));
+assert.throws(()=>prepareImportOperation(pack,{perfs:1000,relays:100},{...input,previewFingerprint:"stale"}),/aperçu/);
+const statusesOnly=prepareImportOperation({...pack,incoming:[],statusRows:[{status:"DSQ"}]},{perfs:1000,relays:100},{...input,confirmReplacement:true});assert.equal(statusesOnly.perfs.after.length,0);assert.equal(statusesOnly.statusRows.length,1);
+console.log("NAP import operation plans: explicit removals, preserved native ids/raw times, stable allocation, partial-write recovery and concurrent-change refusal verified without writes.");

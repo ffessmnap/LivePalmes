@@ -315,7 +315,8 @@ const PERFORMANCE_PUBLICATION_SCHEDULER_OPTIONS = {
   timeoutSeconds: 540,
   memory: "1GiB"
 };
-const COMPETITION_IMPORT_CALLABLE_OPTIONS = { ...PUBLIC_PERFORMANCE_CALLABLE_OPTIONS };
+const COMPETITION_IMPORT_CALLABLE_OPTIONS = { ...PUBLIC_PERFORMANCE_CALLABLE_OPTIONS,
+  ...(ENVIRONMENT.projectId==="livepalmes-test"?{secrets:[defineSecret("LIVEPALMES_NAP_PASSWORD")],maxInstances:2,concurrency:4}: {}) };
 const PUBLIC_RESULT_TRIGGER_OPTIONS = {
   region: REGION,
   document: "competitions/{competitionId}/results/{resultId}",
@@ -17686,8 +17687,14 @@ exports.resolveEngagementCompetitionDeletionRequest = onCall(CALLABLE_OPTIONS, a
   };
 });
 
-exports.previewCompetitionImport = onCall(CALLABLE_OPTIONS, async (request) => {
+exports.previewCompetitionImport = onCall(COMPETITION_IMPORT_CALLABLE_OPTIONS, async (request) => {
   assertCapability(request, "competitions.import");
+  if(ENVIRONMENT.projectId==="livepalmes-test") {
+    authorizeNativePerformance(request);
+    if(request.data?.sourceType==="international-xlsx"||request.data?.workbook)throw new HttpsError("failed-precondition","Le raccordement de l'import Excel international reste a terminer ; aucune ancienne base ne sera utilisee.");
+    try{return require("./nap-import-response").importPreviewResponse(await require("./nap-import-preview").previewNativeImport(require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD),request.data||{}));}
+    catch(error){throw nativePerformanceFailure(error);}
+  }
   const parsed = parseCompetitionImportPayload(request.data || {});
   const fileHash = stableHash(parsed.fileHashSeed || "");
   const importId = importDocumentId(parsed.metadata, fileHash);
@@ -17940,6 +17947,11 @@ async function stageCompetitionImportReplacement(options = {}) {
 
 exports.createCompetitionImport = onCall(COMPETITION_IMPORT_CALLABLE_OPTIONS, async (request) => {
   assertCapability(request, "competitions.import");
+  if(ENVIRONMENT.projectId==="livepalmes-test") {
+    if(request.data?.sourceType==="international-xlsx"||request.data?.workbook)throw new HttpsError("failed-precondition","Import Excel NAP non disponible pour le moment.");
+    try{return await require("./nap-import-write").createNativeImportWriter({authorize:authorizeNativePerformance,getPool:()=>require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD)})(request);}
+    catch(error){throw nativePerformanceFailure(error);}
+  }
   const fileName = cleanText(request.data?.fileName).slice(0, 180);
   const confirmImportId = cleanText(request.data?.importId);
   const parsed = parseCompetitionImportPayload(request.data || {});
@@ -18134,6 +18146,7 @@ exports.createCompetitionImport = onCall(COMPETITION_IMPORT_CALLABLE_OPTIONS, as
 });
 
 exports.resumeCompetitionImportPublication = onCall(COMPETITION_IMPORT_CALLABLE_OPTIONS, async (request) => {
+  if (ENVIRONMENT.projectId === "livepalmes-test") throw new HttpsError("failed-precondition", "Cette ancienne action Firebase est désactivée sur TEST : les résultats sont gérés dans NAP.");
   assertCapability(request, "competitions.import");
   const importId = cleanText(request.data?.importId).slice(0, 160);
   if (!importId) {
@@ -18225,8 +18238,14 @@ exports.resumeCompetitionImportPublication = onCall(COMPETITION_IMPORT_CALLABLE_
   };
 });
 
-exports.listCompetitionImports = onCall(CALLABLE_OPTIONS, async (request) => {
+exports.listCompetitionImports = onCall(COMPETITION_IMPORT_CALLABLE_OPTIONS, async (request) => {
   assertCapability(request, "competitions.import");
+  if (ENVIRONMENT.projectId === "livepalmes-test") {
+    authorizeNativePerformance(request);
+    try {
+      return await require("./nap-import-history").readImportHistory(require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD));
+    } catch(error) { throw nativePerformanceFailure(error); }
+  }
   const snapshot = await db
     .collection("performanceImports")
     .orderBy("importedAt", "desc")
@@ -18379,6 +18398,7 @@ async function markCompetitionImportDeleted(importId, context = {}) {
 }
 
 exports.deleteCompetitionImport = onCall(PUBLIC_PERFORMANCE_CALLABLE_OPTIONS, async (request) => {
+  if (ENVIRONMENT.projectId === "livepalmes-test") throw new HttpsError("failed-precondition", "Cette ancienne action Firebase est désactivée sur TEST : les résultats sont gérés dans NAP.");
   assertCapability(request, "competitions.import");
   const importId = cleanText(request.data?.importId).slice(0, 160);
   if (!importId) {
@@ -18454,6 +18474,7 @@ exports.deleteCompetitionImport = onCall(PUBLIC_PERFORMANCE_CALLABLE_OPTIONS, as
 });
 
 exports.updateCompetitionImportRecordAlertDecision = onCall(CALLABLE_OPTIONS, async (request) => {
+  if (ENVIRONMENT.projectId === "livepalmes-test") throw new HttpsError("failed-precondition", "Cette ancienne action Firebase est désactivée sur TEST : les résultats sont gérés dans NAP.");
   assertCapability(request, "competitions.import");
   const importId = cleanText(request.data?.importId).slice(0, 160);
   const alertIndex = Number(request.data?.alertIndex);
@@ -19998,6 +20019,7 @@ async function getPerformanceBaseRowsBySwimmer(data = {}) {
 }
 
 exports.rebuildPerformanceSwimmerIndexNextPage = onCall(PUBLIC_PERFORMANCE_CALLABLE_OPTIONS, async (request) => {
+  if (ENVIRONMENT.projectId === "livepalmes-test") throw new HttpsError("failed-precondition", "Cette ancienne action Firebase est désactivée sur TEST : les résultats sont gérés dans NAP.");
   assertAdmin(request);
   const stateRef = db.collection(PERFORMANCE_SWIMMER_INDEX_STATE_COLLECTION).doc("default");
   const stateSnapshot = await stateRef.get();
@@ -20052,6 +20074,7 @@ exports.rebuildPerformanceSwimmerIndexNextPage = onCall(PUBLIC_PERFORMANCE_CALLA
 });
 
 exports.rebuildPerformanceTopIndexNextPage = onCall(PUBLIC_PERFORMANCE_CALLABLE_OPTIONS, async (request) => {
+  if (ENVIRONMENT.projectId === "livepalmes-test") throw new HttpsError("failed-precondition", "Cette ancienne action Firebase est désactivée sur TEST : les résultats sont gérés dans NAP.");
   assertAdmin(request);
   const stateRef = db.collection(PERFORMANCE_TOP_INDEX_STATE_COLLECTION).doc("default");
   const stateSnapshot = await stateRef.get();
@@ -21071,6 +21094,7 @@ function historicalRowsFromChunkPayload(payload = {}) {
 }
 
 exports.importHistoricalPerformanceRows = onCall(MIGRATION_CALLABLE_OPTIONS, async (request) => {
+  if (ENVIRONMENT.projectId === "livepalmes-test") throw new HttpsError("failed-precondition", "Cette ancienne action Firebase est désactivée sur TEST : les résultats sont gérés dans NAP.");
   assertAdmin(request);
   const data = request.data || {};
   const source = cleanText(data.source || "intranap").slice(0, 80);
@@ -21232,11 +21256,13 @@ async function publishAdditionalPerformanceDataSnapshot() {
 }
 
 exports.exportAdditionalPerformanceData = onCall(CALLABLE_OPTIONS, async (request) => {
+  if (ENVIRONMENT.projectId === "livepalmes-test") throw new HttpsError("failed-precondition", "Cette ancienne action Firebase est désactivée sur TEST : les résultats sont gérés dans NAP.");
   assertCapability(request, "competitions.import");
   return buildAdditionalPerformanceDataSnapshot();
 });
 
 exports.publishPerformancePublicData = onCall(PUBLIC_PERFORMANCE_CALLABLE_OPTIONS, async (request) => {
+  if (ENVIRONMENT.projectId === "livepalmes-test") throw new HttpsError("failed-precondition", "Cette ancienne action Firebase est désactivée sur TEST : les résultats sont gérés dans NAP.");
   assertAdmin(request);
   try {
     const publicSnapshot = await publishAdditionalPerformanceDataSnapshot();
@@ -21257,6 +21283,7 @@ exports.publishPerformancePublicData = onCall(PUBLIC_PERFORMANCE_CALLABLE_OPTION
 });
 
 exports.getPerformanceBaseMigrationStatus = onCall(MIGRATION_CALLABLE_OPTIONS, async (request) => {
+  if (ENVIRONMENT.projectId === "livepalmes-test") throw new HttpsError("failed-precondition", "Cette ancienne action Firebase est désactivée sur TEST : les résultats sont gérés dans NAP.");
   assertAdmin(request);
   const manifest = await performanceBaseMigrationManifest();
   const chunks = await migrationChunkStatuses(manifest.chunks);
@@ -21274,6 +21301,7 @@ exports.getPerformanceBaseMigrationStatus = onCall(MIGRATION_CALLABLE_OPTIONS, a
 });
 
 exports.migratePerformanceBaseNextChunk = onCall(MIGRATION_CALLABLE_OPTIONS, async (request) => {
+  if (ENVIRONMENT.projectId === "livepalmes-test") throw new HttpsError("failed-precondition", "Cette ancienne action Firebase est désactivée sur TEST : les résultats sont gérés dans NAP.");
   assertAdmin(request);
   const manifest = await performanceBaseMigrationManifest();
   const chunks = await migrationChunkStatuses(manifest.chunks);
@@ -21687,12 +21715,14 @@ async function processPerformancePublicationJob(jobRef) {
 }
 
 exports.publishPerformanceCorrectionJob = onDocumentCreated(PERFORMANCE_PUBLICATION_JOB_OPTIONS, async (event) => {
+  if (ENVIRONMENT.projectId === "livepalmes-test") return null;
   if (!event.data?.exists) return;
   const result = await processPerformancePublicationJob(event.data.ref);
   if (result.retryable) throw result.error;
 });
 
 exports.resumePerformancePublicationJobs = onSchedule(PERFORMANCE_PUBLICATION_SCHEDULER_OPTIONS, async () => {
+  if (ENVIRONMENT.projectId === "livepalmes-test") return null;
   const [pendingSnapshot, processingSnapshot] = await Promise.all([
     db.collection(PERFORMANCE_PUBLICATION_JOBS_COLLECTION).where("status", "==", "pending").limit(3).get(),
     db.collection(PERFORMANCE_PUBLICATION_JOBS_COLLECTION).where("status", "==", "processing").limit(3).get()
@@ -21705,6 +21735,7 @@ exports.resumePerformancePublicationJobs = onSchedule(PERFORMANCE_PUBLICATION_SC
 });
 
 exports.getPerformancePublicationJobStatus = onCall(CALLABLE_OPTIONS, async (request) => {
+  if (ENVIRONMENT.projectId === "livepalmes-test") throw new HttpsError("failed-precondition", "Cette ancienne action Firebase est désactivée sur TEST : les résultats sont gérés dans NAP.");
   assertCapability(request, "competitions.import");
   const jobId = cleanText(request.data?.jobId).slice(0, 80);
   if (!jobId) throw new HttpsError("invalid-argument", "Travail de publication manquant.");
@@ -21714,6 +21745,7 @@ exports.getPerformancePublicationJobStatus = onCall(CALLABLE_OPTIONS, async (req
 });
 
 exports.retryPerformancePublicationJob = onCall(CALLABLE_OPTIONS, async (request) => {
+  if (ENVIRONMENT.projectId === "livepalmes-test") throw new HttpsError("failed-precondition", "Cette ancienne action Firebase est désactivée sur TEST : les résultats sont gérés dans NAP.");
   assertCapability(request, "competitions.import");
   const jobId = cleanText(request.data?.jobId).slice(0, 80);
   if (!jobId) throw new HttpsError("invalid-argument", "Travail de publication manquant.");
