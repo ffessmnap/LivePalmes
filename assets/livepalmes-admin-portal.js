@@ -17874,14 +17874,17 @@
     elements.engagementsProcessNativeNotificationsButton?.addEventListener("click", async()=>{
       const button=elements.engagementsProcessNativeNotificationsButton,status=elements.engagementsNotificationPreviewStatus;
       if(!selectedEngagementCompetitionId||!isEngagementAdminMode())return;
+      const competitionId=selectedEngagementCompetitionId;
       button.disabled=true;
       if(status)status.textContent='Préparation des notifications TEST… Aucun mail ne sera envoyé.';
       try{
-        const result=await callFunction('processNapCompetitionNotifications',{action:'process',competitionId:selectedEngagementCompetitionId});
+        const result=await callFunction('processNapCompetitionNotifications',{action:'process',competitionId});
+        if(selectedEngagementCompetitionId!==competitionId)return;
         if(status)status.textContent=`TEST : ${result.jobCount||0} mail(s) et ${result.attachmentCount||0} pièce(s) préparés dans ce lot. Aucun envoi. ${result.remaining?'La préparation peut être poursuivie avec ce bouton.':'Aucun autre lot à traiter pour le moment.'}`;
       }catch(error){
+        if(selectedEngagementCompetitionId!==competitionId)return;
         if(/reprise explicite/i.test(error?.message||'')&&global.confirm('Les engagements ou paramètres NAP ont changé. Recommencer la préparation avec les données actuelles, sans envoyer de mail ?')){
-          try{await callFunction('processNapCompetitionNotifications',{action:'restart',competitionId:selectedEngagementCompetitionId});if(status)status.textContent='Reprise enregistrée. Vous pouvez préparer le prochain lot, sans envoi.';}
+          try{await callFunction('processNapCompetitionNotifications',{action:'restart',competitionId});if(status&&selectedEngagementCompetitionId===competitionId)status.textContent='Reprise enregistrée. Vous pouvez préparer le prochain lot, sans envoi.';}
           catch(retryError){if(status)status.textContent=`Reprise impossible : ${retryError?.message||retryError}`;}
         }else if(status)status.textContent=`Préparation interrompue : ${error?.message||error}`;
       }

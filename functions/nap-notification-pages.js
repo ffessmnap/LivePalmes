@@ -48,11 +48,11 @@ async function page(event,competition,services){
   }
   if(competition.competitionType==='pool'&&competition.computerEmail){
     const attachment=manifest(await services.txt(competition,entries,pack.clubsById),'text/plain; charset=utf-8');attachmentCount++;
-    jobs.push(services.mail('entries_txt',competition,{email:competition.computerEmail,clubId:'informatique'},{attachments:[attachment]}));
+    jobs.push(services.mail('entries_txt',competition,{email:competition.computerEmail,clubId:'informatique'},{fileName:attachment.fileName,attachments:[attachment]}));
   }else skippedCount++;
   if(competition.officialsRequired===true&&competition.officialsManagerEmail){
-    const attachment=manifest(await services.officialsPdf(competition,entries),'application/pdf');attachmentCount++;
-    jobs.push(services.mail('officials_pdf',competition,{email:competition.officialsManagerEmail,clubId:'jury'},{attachments:[attachment]}));
+    const pdf=await services.officialsPdf(competition,entries),attachment=manifest(pdf,'application/pdf');attachmentCount++;
+    jobs.push(services.mail('officials_pdf',competition,{email:competition.officialsManagerEmail,clubId:'jury'},{officialCount:pdf.officialCount,attachments:[attachment]}));
   }else skippedCount++;
   return {jobs,attachmentCount,skippedCount,sourceHash,done:true};
 }

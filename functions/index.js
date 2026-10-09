@@ -10930,11 +10930,11 @@ function nativeNotificationAutomationServices() {
     entries:competition=>require("./nap-admin-entries").readAdminEntries(pool,{competitionId:competition.id,competition},()=>{},{category:ageCategoryFromDates}),
     hasParticipants:engagementClubEntryHasParticipants,clubPdf:buildEngagementClubRecapPdf,
     txt:(competition,entries,clubs)=>buildEngagementCompetitionTxt(competition,entries.map(entry=>({...entry,swimmers:entry.swimmers.map(person=>({...person,individualEntries:person.individualEntries.map(course=>course.nativeTime==='599999'?{...course,entryTime:'',manualEntryTime:'',entryTimeValue:0,entryTimeMode:'default595999'}:course)}))})),clubs),
-    officialsPdf:(competition,entries)=>buildEngagementOfficialsPdf(competition,entries.flatMap(entry=>(entry.officials||[]).map(person=>({club:entry.clubName||entry.clubCode,lastName:person.lastName,firstName:person.firstName,birthDate:person.birthDate,licenseNumber:''})))),
+    officialsPdf:(competition,entries)=>buildEngagementOfficialsPdf(competition,engagementOfficialsPdfRows(entries)),
     mail:(kind,competition,recipient,details)=>{
       const type=kind==='opening'?'opening_notification':kind==='documents'?'competition_documents':kind==='club_recap'?'club_recap_pdf':kind;
       const subject=kind==='opening'?engagementOpeningMailSubject(competition):kind==='documents'?engagementCompetitionDocumentMailSubject(competition,details.documents):kind==='club_recap'?engagementClubRecapMailSubject(competition,details.entry):kind==='entries_txt'?engagementTxtMailSubject(competition):engagementOfficialsMailSubject(competition);
-      const text=kind==='opening'?engagementOpeningMailText(competition):kind==='documents'?engagementCompetitionDocumentMailText(competition,details.documents):kind==='club_recap'?engagementClubRecapMailText(competition,details.entry):kind==='entries_txt'?engagementTxtMailText(competition,{}):engagementOfficialsMailText(competition,{});
+      const text=kind==='opening'?engagementOpeningMailText(competition):kind==='documents'?engagementCompetitionDocumentMailText(competition,details.documents):kind==='club_recap'?engagementClubRecapMailText(competition,details.entry):kind==='entries_txt'?engagementTxtMailText(competition,details):engagementOfficialsMailText(competition,details);
       return {type,competitionId:competition.id,competitionName:competition.name,clubId:String(recipient.clubId||''),toEmail:normalizeEmail(recipient.email),recipientUid:String(recipient.uid||''),subject,textBody:text,attachments:details.attachments||[]};
     },
     job:(event,competition,payload,now)=>{
