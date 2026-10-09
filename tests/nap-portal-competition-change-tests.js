@@ -135,6 +135,19 @@ function fixture(settings={}) {
     // Firestore may reorder fields: a saved plan must remain verifiable on retry.
     state.saved=Object.fromEntries(Object.entries(state.saved).reverse());
     const retry=await applyCompetitionChange(state.pool,input({entryStatus:"closed"}),state.audit,()=>{});assert.equal(retry.resumed,true);assert.equal(state.writes.length,2);
+    // A completion callback rereads NAP while the ordinary edit guard holds
+    // the first slot of the two-connection pool. The write slot must be free.
+    state=fixture();native.readNativeCompetition=state.read;
+    state.audit.complete=async()=>{assert.equal(state.released,1,"Completion must not wait for a third connection");state.completed++;};
+    await applyCompetitionChange(state.pool,input({entryStatus:"closed"}),state.audit,()=>{});
+    assert.equal(state.released,1);assert.equal(state.completed,1);
+    state=fixture();native.readNativeCompetition=state.read;
+    state.audit.complete=async()=>{assert.equal(state.released,1);throw new Error("Completion interrupted");};
+    await assert.rejects(applyCompetitionChange(state.pool,input({entryStatus:"closed"}),state.audit,()=>{}),/Completion interrupted/);
+    assert.equal(state.released,1);assert.ok(state.saved);
+    state.audit.complete=async()=>{state.completed++;};
+    assert.equal((await applyCompetitionChange(state.pool,input({entryStatus:"closed"}),state.audit,()=>{})).resumed,true);
+    assert.equal(state.completed,1);assert.equal(state.released,2);
     for(const settings of [{auditFailure:true},{race:true}]) {
       state=fixture(settings);native.readNativeCompetition=state.read;
       await assert.rejects(applyCompetitionChange(state.pool,input({name:"New name"}),state.audit,()=>{}));assert.equal(state.writes.length,0);

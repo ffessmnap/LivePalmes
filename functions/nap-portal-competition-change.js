@@ -198,7 +198,7 @@ function buildStatement(item, authority) {
 }
 async function applyCompetitionChange(pool, input, audit, authorize) {
   if(typeof authorize !== "function") throw new TypeError("Controle du perimetre requis.");
-  const operation=operationHash(input), connection=await pool.getConnection();let tablesLocked=false;
+  const operation=operationHash(input), connection=await pool.getConnection();let tablesLocked=false,released=false;
   // MySQL does not support preparing LOCK/UNLOCK TABLES. These are fixed
   // internal statements; every statement containing values stays prepared.
   const query=async(sql,values=[]) => (await (/^(LOCK TABLES|UNLOCK TABLES)/.test(sql) ? connection.query({sql,timeout:10000}) : connection.execute({sql,timeout:10000},values)))[0];
@@ -262,8 +262,11 @@ async function applyCompetitionChange(pool, input, audit, authorize) {
       if(Object.hasOwn(authority,item.table)) authority[item.table]=after;
     }
     if(tablesLocked) {await query("UNLOCK TABLES");tablesLocked=false;}
+    // Completion can reread NAP. Return this connection first: the ordinary
+    // edit guard already holds the other connection of the bounded pool.
+    connection.release();released=true;
     await audit.complete(operation,{competitionId:saved.competitionId,operation,actorUid:input.actorUid,changedTables:saved.operations.map(item=>item.table),verified:true,resumed});
     return {ok:true,source:"nap",operation,resumed};
-  } finally { try {if(tablesLocked) await query("UNLOCK TABLES");} catch(error) {connection.destroy();throw error;} finally {connection.release();} }
+  } finally { try {if(tablesLocked) await query("UNLOCK TABLES");} catch(error) {connection.destroy();throw error;} finally {if(!released)connection.release();} }
 }
 module.exports={SPECS,planCompetitionChange,operationHash,applyCompetitionChange,normalizedRow,authorityGuard,buildStatement};
