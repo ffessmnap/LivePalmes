@@ -44,23 +44,24 @@ assert.equal(view.nativeTime("14200").nativeTime, "14200");
 assert.equal(view.nativeTime("599999").nativeTime, "599999");
 assert.equal(view.nativeTime("599999").entryTimeValue, 0);
 const entryPack = { source: "nap", readAt: "now", competitionId: "5140", clubId: "00123",
-  swimmers: [{ id: "912", swimmerIndexId: "912", firstName: "Antoine", lastName: "FAUVAU", birthDate: "1994-01-01", licenseNumber: "obsolete" }],
+  swimmers: [{ id: "912", swimmerIndexId: "912", firstName: "Antoine", lastName: "FAUVAU", birthDate: "1994-01-01", licenseNumber: "A-11-526612" }],
   inscriptions: [{ id: 100, nageur: 912 }, { id: 101, nageur: 912 }],
   individual: [{ id: 50, engagement: 100, course: "50BI", tps: "14200" }, { id: 51, engagement: 100, course: "50BI", tps: "014200" }],
   relays: [{ id: 2, categorie: 0, course: 95, course_code: "ANCIEN", sexe: "?", tps: "599999" }],
-  members: [{ id: 90, relais: 2, pos: 4, nageur: 912, nom: "FAUVAU", prenom: "Antoine" }],
+  members: [{ id: 90, relais: 2, pos: 4, nageur: 912, number: "A-11-526612", nom: "FAUVAU", prenom: "Antoine" }],
   officials: [{ id: 3, officiel: 5, nom: "Officiel", prenom: "Test" }],
   leaders: [{ id: 1, nom: "Premier", prenom: "Chef" }, { id: 2, nom: "Second", prenom: "Chef" }], options: null };
 const entry = view.entryItem(entryPack, { clubName: "Club" }, () => "M30");
 assert.equal(entry.clubId, "00123");
 assert.equal(entry.swimmers.length, 2);
 assert.equal(entry.swimmers[0].individualEntries.length, 2);
-assert.equal(entry.swimmers[0].licenseNumber, "");
+assert.equal(entry.swimmers[0].licenseNumber, "A-11-526612");
 assert.equal(entry.swimmers[0].category, "M30");
 assert.equal(entry.relays.length, 1);
 assert.equal(entry.relays[0].nativeCategory, 0);
 assert.equal(entry.relays[0].genderMode, "");
 assert.equal(entry.relays[0].members[0].nativePosition, 4);
+assert.equal(entry.relays[0].members[0].licenseNumber, "A-11-526612");
 assert.equal(entry.nativeLeaders.length, 2);
 assert.deepEqual(entry.teamLeader, {});
 assert.equal(entry.teamLeaderComplete, false);
