@@ -14411,6 +14411,7 @@ exports.listEngagementNationalClubs = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONM
   if (!context.national) throw new HttpsError("permission-denied", "Lecture des clubs reservee au niveau national.");
   if (ENVIRONMENT.sportingDataSource === "nap") {
     try {
+      if(request.data?.deletionClubId!==undefined){const clubId=String(request.data.deletionClubId);return{ok:true,source:"nap",clubId,deletionEligible:Boolean(await require("./nap-club-provenance").eligibility(db,clubId))};}
       const result=await require("./nap-club-directory").directory(require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD));
       const adminDirectory=request.data?.includeAdministrators===true?await readEngagementClubAdminDirectory(db):null;
       return {...result,...(adminDirectory?{clubAdministrators:adminDirectory.administrators,clubAdministratorsAvailable:adminDirectory.available!==false,clubAdministratorsBootstrapped:adminDirectory.bootstrapped===true}:{})};
@@ -14511,7 +14512,7 @@ exports.saveEngagementNationalClub = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONME
         read:async operation=>{const doc=await db.collection("auditLogs").doc(`nap-club-create-${operation}-before`).get();return doc.exists?doc.data().target:null;},
         prepare:(operation,target)=>db.collection("auditLogs").doc(`nap-club-create-${operation}-before`).create({action:"nap.clubCreate.prepare",actorUid:context.uid,target,createdAt:new Date().toISOString()}),
         checkpoint:(operation,target)=>db.collection("auditLogs").doc(`nap-club-create-${operation}-before`).update({target}),
-        complete:(operation,target)=>writeAuditLogOnce("nap.clubCreate.complete",context.uid,target,`nap-club-create-${operation}-complete`)
+        complete:async(operation,target)=>{await writeAuditLogOnce("nap.clubCreate.complete",context.uid,target,`nap-club-create-${operation}-complete`);await require("./nap-club-provenance").record(db,operation,target,context.uid);}
       },()=>{if(!context.national)throw new HttpsError("permission-denied","Action nationale requise.");});}
       catch(error) {if(error instanceof HttpsError)throw error;throw new HttpsError(error instanceof TypeError?"failed-precondition":"unavailable",error instanceof TypeError?error.message:"Creation club NAP a verifier. Reprenez la meme action ; sauvegarde conservee.");}
     }
@@ -14595,8 +14596,7 @@ exports.saveEngagementNationalClub = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONME
   };
 });
 
-exports.deleteEngagementNationalClub = onCall(CALLABLE_OPTIONS, async (request) => {
-  if (ENVIRONMENT.sportingDataSource === "nap") throw new HttpsError("failed-precondition", "Cette ancienne suppression Firebase est desactivee. Utilisez la gestion NAP de la fiche.");
+exports.deleteEngagementNationalClub = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
   const context = await engagementAccessContext(request);
   if (!context.national) throw new HttpsError("permission-denied", "Suppression des clubs reservee au niveau national.");
   if (request.data?.confirmPermanent !== true) {
@@ -14604,6 +14604,16 @@ exports.deleteEngagementNationalClub = onCall(CALLABLE_OPTIONS, async (request) 
   }
   const clubId = cleanText(request.data?.clubId).slice(0, 40);
   if (!clubId) throw new HttpsError("invalid-argument", "Club requis.");
+  if(ENVIRONMENT.sportingDataSource === "nap"){
+    try{return await require("./nap-club-deletion").deleteClub(require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD),{clubId,actorUid:context.uid,confirmPermanent:true,expectedFingerprint:request.data?.expectedFingerprint},{
+      creation:clubId=>require("./nap-club-provenance").creation(db,clubId),
+      assertNoAccounts:async clubId=>{const [users,requests]=await Promise.all([db.collection("users").where("clubId","==",clubId).limit(1).get(),db.collection("engagementAccessRequests").where("clubId","==",clubId).where("status","==","pending").limit(1).get()]);if(!users.empty||!requests.empty)throw new TypeError("Ce club possede un compte ou une demande d'acces. Desactivez-le plutot que de le supprimer.");},
+      read:async operation=>{const doc=await db.collection("auditLogs").doc(`nap-club-delete-${operation}-before`).get();return doc.exists?doc.data().target:null;},
+      prepare:(operation,target)=>db.collection("auditLogs").doc(`nap-club-delete-${operation}-before`).create({action:"nap.clubDelete.prepare",actorUid:context.uid,target,createdAt:new Date().toISOString()}),
+      complete:(operation,target)=>writeAuditLogOnce("nap.clubDelete.complete",context.uid,target,`nap-club-delete-${operation}-complete`)
+    },()=>{if(!context.national)throw new HttpsError("permission-denied","Suppression nationale requise.");});}
+    catch(error){if(error instanceof HttpsError)throw error;throw new HttpsError(error instanceof TypeError||error instanceof RangeError?"failed-precondition":"unavailable",error instanceof TypeError||error instanceof RangeError?error.message:"Suppression club NAP a verifier. Reprenez la meme action ; sauvegarde conservee.");}
+  }
   if (CLUB_REFERENCE_BY_ID.has(clubId)) {
     throw new HttpsError("failed-precondition", "Un club historique doit etre desactive et ne peut pas etre supprime.");
   }
@@ -15087,8 +15097,7 @@ exports.requestEngagementClubSwimmerDeletion = onCall(CALLABLE_OPTIONS, async (r
   return { ok: true, deleted: false, requested: true, usage };
 });
 
-exports.deleteEngagementNationalClubSwimmer = onCall(CALLABLE_OPTIONS, async (request) => {
-  if (ENVIRONMENT.sportingDataSource === "nap") throw new HttpsError("failed-precondition", "Cette ancienne suppression Firebase est desactivee. Utilisez la gestion NAP de la fiche.");
+exports.deleteEngagementNationalClubSwimmer = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
   const context = await engagementAccessContext(request);
   if (!context.national) {
     throw new HttpsError("permission-denied", "Suppression reservee au niveau national.");
@@ -15099,6 +15108,18 @@ exports.deleteEngagementNationalClubSwimmer = onCall(CALLABLE_OPTIONS, async (re
   }
   if (request.data?.confirmPermanent !== true) {
     throw new HttpsError("failed-precondition", "Confirmation de suppression definitive requise.");
+  }
+  if (ENVIRONMENT.sportingDataSource === "nap") {
+    try {
+      return await require("./nap-swimmer-deletion").deleteSwimmer(require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD),{
+        swimmerId,actorUid:context.uid,confirmPermanent:true,expectedFingerprint:request.data?.expectedFingerprint,
+        expectedActivityFingerprint:request.data?.expectedActivityFingerprint,expectedLicenseNumber:request.data?.expectedLicenseNumber
+      },{
+        read:async operation=>{const [saved,reservation]=await Promise.all([db.collection("auditLogs").doc(`nap-swimmer-delete-${operation}-before`).get(),db.collection("auditLogs").doc(`nap-swimmer-merge-person-${swimmerId}`).get()]);if(reservation.exists&&reservation.data().state==="pending")throw new TypeError("Une fusion de cette fiche doit etre terminee avant sa suppression.");return saved.exists?saved.data().target:null;},
+        prepare:(operation,target)=>db.collection("auditLogs").doc(`nap-swimmer-delete-${operation}-before`).create({action:"nap.swimmerDelete.prepare",actorUid:context.uid,target,createdAt:new Date().toISOString()}),
+        complete:(operation,target)=>writeAuditLogOnce("nap.swimmerDelete.complete",context.uid,target,`nap-swimmer-delete-${operation}-complete`)
+      },()=>{if(!context.national)throw new HttpsError("permission-denied","Suppression nationale requise.");});
+    }catch(error){if(error instanceof HttpsError)throw error;throw new HttpsError(error instanceof TypeError||error instanceof RangeError?"failed-precondition":"unavailable",error instanceof TypeError||error instanceof RangeError?error.message:"Suppression NAP a verifier. Reprenez la meme action ; sauvegarde conservee.");}
   }
   const ref = db.collection("engagementClubSwimmers").doc(swimmerId);
   const snapshot = await ref.get();
