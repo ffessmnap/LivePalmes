@@ -21,8 +21,8 @@
     return rank[status(left)] - rank[status(right)] || String(left.date).localeCompare(String(right.date)) || String(left.name).localeCompare(String(right.name), "fr");
   }
   async function json(path) {
-    if (global.LivePalmesEnvironment.isTest) {
-      const url = new URL("https://europe-west1-livepalmes-test.cloudfunctions.net/readNapPublicSwimmer");
+    if (global.LivePalmesEnvironment.sportingDataSource === "nap") {
+      const url = new URL(global.LivePalmesEnvironment.napReaderUrl);
       const season = path.match(/^seasons\/([0-9]{4})\.json$/);
       const event = path.match(/^events\/(legacy-nap-[1-9][0-9]*)\.json$/);
       const results = path.match(/^results\/(legacy-nap-[1-9][0-9]*)\.json$/);

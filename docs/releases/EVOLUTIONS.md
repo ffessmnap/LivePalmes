@@ -2,13 +2,22 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 9 octobre 2026 — Préparation de l’activation NAP en production — en cours
+
+- Demande utilisateur : préparer la bascule complète, sans publication PROD avant bilan approuvé. La source sportive NAP est distincte de l’environnement Firebase ; les comptes, journaux techniques, fichiers hébergés et la redirection TEST des mails sont conservés. Les fichiers statiques Records/MPF restent inchangés.
+- Préparation locale : sélecteur explicite `sportingDataSource`, URL publique NAP propre à chaque projet, parcours portail/import/correction/DTN et neutralisation des anciens traitements sportifs selon la source. L’endpoint privilégié d’export/migration reste strictement TEST. Aucun schéma, donnée ni déploiement PROD modifié.
+- Après accord spécifique « Oui » du 9 octobre : secret `LIVEPALMES_NAP_PASSWORD` créé dans le projet de production depuis la version TEST, version 1 active ; accès Secret Accessor limité au compte de service d’exécution de production sur ce secret. Valeur jamais affichée, aucun fichier de mot de passe créé. Aucun site ni traitement publié ou lancé en production.
+- Budget avant/après : zéro lecture supplémentaire pour le choix de source, identique à chaque ouverture/action/rafraîchissement. Les requêtes groupées, index, plafonds, pagination et caches NAP existants sont réutilisés. Aucun export ou reconstruction automatique ajouté.
+- Vérifications locales : syntaxe de 677 fichiers contrôlée avant ajout du test de routage ; 209 suites applicatives réussies, dont les refus d’accès à l’ancien référentiel. Le contrôle du workflow dépendant de Bash échoue sous Windows et doit être vérifié en CI Linux. Les parcours modifiés restent à revérifier sur le commit regroupé ; aucune validation utilisateur de ce nouveau code revendiquée.
+- Bloquants découverts par l’audit : création/récupération de nageurs et certains écrans nationaux clubs/officiels encore sur l’ancienne base ; traitement séparé des mails/schedulers ; recalcul DTN et recette finale ; bilan de publication immuable. Version non prête pour PROD.
+
 ### 9 octobre 2026 — Contrôles des licences et validations par saison NAP
 
 - Autorisations utilisateur : complément des validations et index des licences, aucune saisie/import en cours ; correction du numéro par l’administration nationale conservée. Numéros natifs conservés en chaînes, sans conversion ni normalisation de format. Un numéro présent ne suffit plus à afficher une validation.
 - Schéma additif sauvegardé et vérifié le 9 octobre : table InnoDB `livepalmes_swimmer_license_seasons`, index `nageurs(number,id)`. Preuve locale `nap-license-schema-backup-2026-10-09T17-30-48-555Z-proof.json` dans les sorties du dossier de travail. Aucun numéro ni résultat existant modifié lors de cette opération.
 - Budget : listes privées enrichies par jointure sur clé primaire, même nombre d’appels et mêmes limites. Préparation : trois lectures groupées (compétitions, individuels, relayeurs), cinq compétitions et 800 personnes maximum, 8 005 lignes natives maximum. Validation : 100 personnes maximum, six lectures natives groupées maximum, une correction groupée conditionnelle et une écriture transactionnelle des validations ; journal technique groupé, aucun ancien référentiel sportif Firestore utilisé sur TEST. Rafraîchissement explicite, aucun parcours total ni lecture par nageur.
 - Avant-image durable des corrections MyISAM, comparaison de toutes les colonnes, reprise après interruption, contrôle des doublons natifs et des validations de saison, verrou entre appels LivePalmes. Validité fédérale et règles de saison existantes conservées. Les comptes et journaux techniques restent Firebase.
-- Tests ciblés réussis ; vérification globale et publication TEST en cours. Aucun essai de correction ou validation de licence réelle effectué, aucune validation utilisateur revendiquée. PROD inchangée.
+- PR #216 intégrée dans `36a2de49edf649017a77d4115f15f0b62f0e74a5`, publication TEST réussie `37967758798`. CI Linux réussie `37967417034`. Sur demande explicite d’Antoine, validation réelle NAP de sa licence `A-05-222647`, nageur 912, saison 2026-2027, avec sauvegarde et relecture ; numéro et fiche nageur inchangés. Badge vérifié dans le portail. Cette écriture a utilisé le service natif existant, pas le clic de validation de l’écran national. Retour utilisateur : « parfait donc tout est bon? », puis accord pour poursuivre la recette finale. PROD inchangée.
 
 ### 9 octobre 2026 — Licences natives NAP
 

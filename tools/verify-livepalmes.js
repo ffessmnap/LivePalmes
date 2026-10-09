@@ -202,6 +202,7 @@ function runUnitTests() {
     "livepalmes-basic-tests.js",
     "livepalmes-admin-auth-tests.js",
     "livepalmes-environment-tests.js",
+    "nap-production-routing-tests.js",
     "livepalmes-legal-pages-tests.js",
     "livepalmes-result-regression-tests.js",
     "livepalmes-test-backend-workflow-tests.js",

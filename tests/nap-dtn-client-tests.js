@@ -3,7 +3,7 @@ const assert=require("node:assert/strict"),fs=require("node:fs"),vm=require("nod
 function fixture() {
   const trace=[],status={dataset:{},textContent:""};let resolve;
   const service={httpsCallable:(name,options)=>data=>{trace.push({name,options,data});return name==="getDtnSeasonOverview"?new Promise(r=>{resolve=r;}):Promise.resolve({data:{}});}};
-  const user={uid:"test"},global={LivePalmesEnvironment:{isTest:true},firebase:{auth:()=>({currentUser:user}),app:()=>({functions:()=>service})},LivePalmesAppConfig:{},confirm:()=>true};
+  const user={uid:"test"},global={LivePalmesEnvironment:{sportingDataSource:"nap",isTest:true},firebase:{auth:()=>({currentUser:user}),app:()=>({functions:()=>service})},LivePalmesAppConfig:{},confirm:()=>true};
   const source=fs.readFileSync("assets/livepalmes-dtn-seasons.js","utf8").replace("  global.LivePalmesDtnQualifications = { init };","  global.hooks={state,call,rebuild,sourceRowsForSelection,setup:()=>{el={status};}};");
   vm.runInNewContext(source,{window:global,document:{},status});global.hooks.setup();Object.assign(global.hooks.state,{id:"2025-2026",device:"settings",dirty:false});
   return {hooks:global.hooks,trace,status,finish:data=>resolve({data})};

@@ -5,8 +5,8 @@
   const swimmerSearchCache = new Map();
   const publicVersion = global.LIVEPALMES_PERFORMANCE_PUBLIC_VERSION || summary.generatedAt || "20260602-swimmer-card-2";
   const params = new URLSearchParams(global.location.search);
-  const usesNapDirectData = global.LivePalmesEnvironment.isTest === true;
-  const napReaderUrl = "https://europe-west1-livepalmes-test.cloudfunctions.net/readNapPublicSwimmer";
+  const usesNapDirectData = global.LivePalmesEnvironment.sportingDataSource === "nap";
+  const napReaderUrl = global.LivePalmesEnvironment.napReaderUrl;
   let napSearchTimer;
   async function readNap(parameters) {
     const url = new URL(napReaderUrl);
