@@ -5,7 +5,9 @@ const clubs=require("../functions/nap-club-directory"),people=require("../functi
  const native={num_club:106,federal_club:"001234",nom_club:"Club",abre_club:"CN",comite_club:3,actif_club:0,ville:"Paris",postalcode:"75001"};
  let queries=0,rows=[native];
  const pool={execute:async({sql,timeout})=>{queries++;assert.equal(timeout,10000);assert.match(sql,/FORCE INDEX \(PRIMARY\).*ORDER BY num_club LIMIT 1001/);return [rows];}};
- const result=await clubs.directory(pool);assert.equal(result.clubs[0].federalNumber,"001234");assert.equal(result.clubs[0].active,false);assert.equal(result.clubs[0].city,"Paris");assert.equal(queries,1);
+ const result=await clubs.directory(pool);assert.equal(result.clubs[0].federalNumber,"001234");assert.equal(result.clubs[0].active,false);assert.equal(result.clubs[0].city,"Paris");assert.equal(result.clubs[0].regionId,"3");assert.equal(queries,1);
+ for(const nativeId of Object.keys(clubs.CLUB_REGIONS)){const item=clubs.club({...native,comite_club:Number(nativeId)});assert.equal(clubs.region(item.regionId),Number(nativeId),"native committee must round-trip unchanged");}
+ assert.equal(clubs.region("12"),23);assert.equal(clubs.club({...native,comite_club:12}).regionId,"nap-12");assert.equal(clubs.club({...native,comite_club:23}).regionId,"12");
  rows=Array.from({length:1001},()=>native);await assert.rejects(clubs.directory(pool),RangeError);
  let allowed=false,calls=0;
  const nativePeople={execute:async({sql},values)=>{

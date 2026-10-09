@@ -13337,7 +13337,7 @@
       if (regionId && club.regionId !== regionId) return false;
       const haystack = normalizedEngagementClubSearch([
         club.clubId, club.clubCode, club.clubName, club.federalNumber,
-        club.city, club.postalCode, club.regionId
+        club.city, club.postalCode, club.regionId, club.regionLabel
       ].filter(Boolean).join(" "));
       return terms.every((term) => haystack.includes(term));
     });
@@ -13381,6 +13381,8 @@
 
   function renderEngagementNationalClubs() {
     if (!elements.engagementsNationalClubsList) return;
+    const regionFilter=elements.engagementsNationalClubsRegionFilter;
+    if(regionFilter){const existing=new Set(Array.from(regionFilter.options,option=>option.value));for(const club of engagementNationalClubs){if(club.napSource&&club.regionId&&!existing.has(club.regionId)){regionFilter.add(new Option(club.regionLabel||club.regionId,club.regionId));existing.add(club.regionId);}}}
     const clubs = filteredEngagementNationalClubs();
     const renderedClubs = clubs.slice(0, engagementNationalClubsVisibleLimit);
     if (elements.engagementsNationalClubsStatus) {
@@ -13390,7 +13392,7 @@
     elements.engagementsNationalClubsList.innerHTML = clubs.length
       ? renderedClubs.map((club) => `<article class="admin-national-club-card" data-national-club-id="${escapeHtml(club.clubId)}">
           <div class="admin-national-club-card-main"><strong>${escapeHtml(club.clubCode || club.clubName)}</strong><span>${escapeHtml(club.clubName)}</span><small>${escapeHtml([club.city, club.postalCode].filter(Boolean).join(" · ") || "Localité non renseignée")}</small></div>
-          <div class="admin-national-club-card-reference"><span>Numéro fédéral</span><strong>${escapeHtml(club.federalNumber || "À renseigner")}</strong><small>${escapeHtml(LIVEPALMES_REFERENCE_REGION_LABELS[club.regionId] || club.regionId || "Région inconnue")}</small></div>
+          <div class="admin-national-club-card-reference"><span>Numéro fédéral</span><strong>${escapeHtml(club.federalNumber || "À renseigner")}</strong><small>${escapeHtml(LIVEPALMES_REFERENCE_REGION_LABELS[club.regionId] || club.regionLabel || club.regionId || "Région inconnue")}</small></div>
           ${engagementNationalClubAdministratorsHtml(club.clubId)}
           <span class="admin-national-club-status" data-active="${club.active !== false}">${club.active !== false ? "Actif" : "Inactif"}</span>
           <button class="ghost-button compact" type="button" data-engagement-national-club-edit="${escapeHtml(club.clubId)}">Modifier</button>
@@ -13495,7 +13497,11 @@
     }
     if (elements.engagementsNationalClubCode) elements.engagementsNationalClubCode.value = club.clubCode || "";
     if (elements.engagementsNationalClubName) elements.engagementsNationalClubName.value = club.clubName || "";
-    if (elements.engagementsNationalClubRegion) elements.engagementsNationalClubRegion.value = club.regionId || "";
+    if (elements.engagementsNationalClubRegion) {
+      const select=elements.engagementsNationalClubRegion;
+      if(club.napSource&&club.regionId&&!Array.from(select.options).some(option=>option.value===club.regionId))select.add(new Option(club.regionLabel||club.regionId,club.regionId));
+      select.value = club.regionId || "";
+    }
     if (elements.engagementsNationalClubCity) elements.engagementsNationalClubCity.value = club.city || "";
     if (elements.engagementsNationalClubPostalCode) elements.engagementsNationalClubPostalCode.value = club.postalCode || "";
     if (elements.engagementsNationalClubActive) elements.engagementsNationalClubActive.checked = club.active !== false;
