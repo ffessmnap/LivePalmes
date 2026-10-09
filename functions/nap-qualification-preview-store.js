@@ -4,6 +4,7 @@
 // and advances its parent together; no engagement or grid is written here.
 const {createHash}=require('node:crypto');
 const {isDeepStrictEqual}=require('node:util');
+const {matches}=require('./nap-qualification-source-hash');
 const jobs=require('./nap-qualification-jobs');
 const {cursor}=require('./nap-qualification-preview-page');
 function prepare(input,page){
@@ -17,11 +18,11 @@ function prepare(input,page){
   for(const item of page.items){
     if(relay){
       const before=item?.before;
-      if(!before||!Number.isSafeInteger(before.relayId)||before.relayId<=0||seen.has(before.relayId)||typeof item.remove!=='boolean'||!Array.isArray(before.members)||before.members.length>6||Number(before.entry?.id)!==before.relayId||Number(before.entry?.compet)!==Number(input.competitionId)||String(before.entry?.club)!==before.clubId||before.members.some(member=>Number(member.relais)!==before.relayId)||createHash('sha256').update(JSON.stringify(before)).digest('hex')!==item.sourceHash)throw new TypeError('Relais sauvegarde incompatible.');
+      if(!before||!Number.isSafeInteger(before.relayId)||before.relayId<=0||seen.has(before.relayId)||typeof item.remove!=='boolean'||!Array.isArray(before.members)||before.members.length>6||Number(before.entry?.id)!==before.relayId||Number(before.entry?.compet)!==Number(input.competitionId)||String(before.entry?.club)!==before.clubId||before.members.some(member=>Number(member.relais)!==before.relayId)||!matches(before,item.sourceHash,true))throw new TypeError('Relais sauvegarde incompatible.');
       seen.add(before.relayId);removed+=item.remove?1:0;continue;
     }
     if(!item?.before||!/^[a-f0-9]{64}$/.test(item.sourceHash)||!Array.isArray(item.entries)||!Array.isArray(item.removed)||seen.has(item.before.swimmerId))throw new TypeError('Resultat de controle incomplet.');
-    const actual=createHash('sha256').update(JSON.stringify(item.before)).digest('hex');if(actual!==item.sourceHash)throw new TypeError('Empreinte du dossier incompatible.');
+    if(!matches(item.before,item.sourceHash))throw new TypeError('Empreinte du dossier incompatible.');
     const original=item.before.entries,partition=[...item.entries,...item.removed];
     if(!Array.isArray(original)||original.length>300||partition.length!==original.length||new Set(partition.map(row=>row.nativeId)).size!==partition.length||!isDeepStrictEqual([...original].sort((a,b)=>a.nativeId-b.nativeId),partition.sort((a,b)=>a.nativeId-b.nativeId)))throw new TypeError('Courses conservees ou retirees incompatibles avec le dossier.');
     if(!Array.isArray(item.targetTimes)||item.targetTimes.length!==item.entries.length||new Set(item.targetTimes.map(row=>row.nativeId)).size!==item.entries.length||item.targetTimes.some(row=>!item.entries.some(entry=>entry.nativeId===row.nativeId)||typeof row.tps!=='string'||!/^\d{1,6}$/.test(row.tps)||row.tps!=='599999'&&Number(row.tps.slice(-4,-2)||0)>59))throw new TypeError('Temps automatiques du controle incomplets ou incompatibles.');
