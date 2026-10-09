@@ -12,7 +12,7 @@ function portalPool(password) { if (!pool) pool = createNapPool(password); retur
 function person(row) {
   const firstName = rules.cleanText(row.prenom), lastName = rules.cleanText(row.nom), id = String(row.id);
   return { id, swimmerId: id, swimmerIndexId: id, source: "reference", napSource: true, napFingerprint: fingerprint(row),
-    ...(row.actif !== undefined ? {clubActivityStatus: require("./nap-swimmer-activity").status(row), napActivityFingerprint: require("./nap-swimmer-activity").fingerprint(row)} : {}),
+    ...(row.actif !== undefined ? {active: require("./nap-swimmer-activity").status(row) === "active", clubActivityStatus: require("./nap-swimmer-activity").status(row), napActivityFingerprint: require("./nap-swimmer-activity").fingerprint(row)} : {}),
     ...licenseState.state(row), firstName, lastName, name: [firstName, lastName].join(" "), birthDate: row.date, sex: row.sexe,
     clubId: String(row.club || ""), club: rules.cleanText(row.abre_club || row.nom_club), clubName: rules.cleanText(row.nom_club),
     identityKey: rules.swimmerIdentityKey(firstName, lastName, row.date), sourceIds: [id] };
