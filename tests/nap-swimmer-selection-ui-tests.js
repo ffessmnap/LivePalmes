@@ -2,14 +2,14 @@
 const assert=require("node:assert/strict"),fs=require("node:fs"),vm=require("node:vm");
 const source=fs.readFileSync("assets/livepalmes-admin-portal.js","utf8");
 const start=source.indexOf("  function engagementClubWriteLockReason("),end=source.indexOf("  const ENGAGEMENT_DETAIL_TAB_LABELS",start);
-const context={selectedEngagementCompetition:{napSource:true,nativeReadOnly:true,nativeSwimmerSelectionEditable:true,entryStatus:"open",entryDeadlineAt:"2099-10-07T19:59:00.000Z"},global:{LivePalmesEnvironment:{isTest:true}},engagementClubTeamComplete:()=>true,isEngagementAdminMode:()=>false};
+const context={selectedEngagementCompetition:{napSource:true,nativeReadOnly:true,nativeSwimmerSelectionEditable:true,entryStatus:"open",entryDeadlineAt:"2099-10-07T19:59:00.000Z"},global:{LivePalmesEnvironment:{sportingDataSource:"nap",isTest:true}},engagementClubTeamComplete:()=>true,isEngagementAdminMode:()=>false};
 vm.createContext(context);vm.runInContext(source.slice(start,end),context);
 assert.equal(context.engagementClubSwimmerSelectionLockReason(),"");assert.equal(context.clubEngagementTabHiddenWhenWriteLocked("swimmers"),false);
 assert.equal(context.engagementClubWriteLocked(),true,"other native writes remain locked");
 for(const tab of ["entries","relays","officials"]) assert.equal(context.clubEngagementTabHiddenWhenWriteLocked(tab),true);
 context.selectedEngagementCompetition.entryStatus="closed";assert.match(context.engagementClubSwimmerSelectionLockReason(),/fermes/);
 context.selectedEngagementCompetition.entryStatus="open";context.selectedEngagementCompetition.nativeSwimmerSelectionEditable=false;assert.match(context.engagementClubSwimmerSelectionLockReason(),/consultable/);
-context.selectedEngagementCompetition.nativeSwimmerSelectionEditable=true;context.global.LivePalmesEnvironment.isTest=false;assert.match(context.engagementClubSwimmerSelectionLockReason(),/consultable/);
+context.selectedEngagementCompetition.nativeSwimmerSelectionEditable=true;context.global.LivePalmesEnvironment.sportingDataSource="firebase";assert.match(context.engagementClubSwimmerSelectionLockReason(),/consultable/);
 assert.match(source,/expectedFingerprint:engagementClubLastPersistedEntry\?\.napFingerprint,mutationId:global.crypto.randomUUID\(\)/);
 assert.match(source,/engagementClubNativeSelectionRetry=payload/);assert.match(source,/callFunction\("saveEngagementClubSwimmerSelections",payload\)/);
 // Execute the real autosave and retry branches: a failed response must retain

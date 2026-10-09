@@ -1,0 +1,12 @@
+"use strict";
+const assert=require("node:assert/strict"),fs=require("node:fs"),vm=require("node:vm");
+const source=fs.readFileSync(require.resolve("../functions/index.js"),"utf8"),a=source.indexOf("exports.mergeEngagementNationalClubPerson ="),b=source.indexOf("\nexports.",a+1);
+(async()=>{
+ let national=true,calls=0;
+ const sandbox={exports:{},ENVIRONMENT:{sportingDataSource:"nap"},CALLABLE_OPTIONS:{},process:{env:{}},TypeError,Date,HttpsError:class extends Error{},defineSecret:v=>v,onCall:(o,f)=>Object.assign(f,{options:o}),engagementAccessContext:async()=>({national,uid:"national"}),cleanText:v=>String(v||""),db:new Proxy({},{get(){throw Error("Legacy sporting database forbidden");}}),require:n=>n==="./nap-portal-swimmers"?{portalPool:()=>({})}:{mergePeople:async(p,input,audit,authorize)=>{calls++;await authorize();assert.equal(input.sourcePersonId,"nap-official-7");assert.equal(input.targetPersonId,"nap-official-8");assert.equal(input.sourceFingerprint,"source");assert.equal(input.targetFingerprint,"target");return {ok:true,source:"nap"};}}};
+ vm.runInNewContext(source.slice(a,b),sandbox);const callable=sandbox.exports.mergeEngagementNationalClubPerson;
+ assert.equal(callable.options.secrets[0],"LIVEPALMES_NAP_PASSWORD");const data={sourcePersonId:"nap-official-7",targetPersonId:"nap-official-8",sourceFingerprint:"source",targetFingerprint:"target",confirmMerge:true};assert.equal((await callable({data})).source,"nap");await assert.rejects(callable({data:{...data,confirmMerge:false}}));national=false;await assert.rejects(callable({data}));assert.equal(calls,1);
+ const client=fs.readFileSync(require.resolve("../assets/livepalmes-admin-portal.js"),"utf8"),start=client.indexOf("  async function mergeEngagementNationalPerson("),end=client.indexOf("  function ",client.indexOf("  async function mergeSelectedEngagementNationalPeople(",start));const block=client.slice(start,end);
+ assert.equal((block.match(/sourceFingerprint: source.napFingerprint/g)||[]).length,2);assert.equal((block.match(/targetFingerprint: target.napFingerprint/g)||[]).length,2);assert.match(block,/Object.assign\(target,result.targetPerson\)/,"Bulk merging uses the freshly returned target fingerprint");
+ console.log("Native person merge callable: confirmation/auth before NAP, no old sporting access, both displayed fingerprints and refreshed bulk target passed.");
+})().catch(e=>{console.error(e);process.exitCode=1;});

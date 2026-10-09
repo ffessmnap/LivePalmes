@@ -2,12 +2,12 @@
   let summary = global.LIVEPALMES_INTRANAP_SUMMARY || { filters: { courses: [], categories: [], seasons: [], regions: [] }, counts: {} };
   const publicVersion = global.LIVEPALMES_PERFORMANCE_PUBLIC_VERSION || summary.generatedAt || "20260602-intranap-4";
   const params = new URLSearchParams(global.location.search);
-  const usesNapDirectData = global.LivePalmesEnvironment.isTest === true;
+  const usesNapDirectData = global.LivePalmesEnvironment.sportingDataSource === "nap";
   let napRequest = 0;
   let napLimit = 25;
   let napFiltersKey = "";
   async function readNap(action, filters = {}) {
-    const url = new URL("https://europe-west1-livepalmes-test.cloudfunctions.net/readNapPublicSwimmer");
+    const url = new URL(global.LivePalmesEnvironment.napReaderUrl);
     url.searchParams.set("action", action);
     for (const key of ["course", "sex", "category", "season", "region", "pool", "birthYear"]) if (filters[key]) url.searchParams.set(key, filters[key]);
     url.searchParams.set("limit", String(napLimit));

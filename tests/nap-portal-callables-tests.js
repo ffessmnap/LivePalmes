@@ -12,7 +12,7 @@ let qualificationRules={enabled:false},startedControls=0;
 const nativeParameters={qualif:0,cat_d:null,cat_f:null};
 const context = { uid: "club-admin", clubId: "00123", clubName: "Club" };
 class HttpsError extends Error { constructor(code, message) { super(message); this.code = code; } }
-const sandbox = { exports: {}, ENVIRONMENT: { projectId: "livepalmes-test" }, CALLABLE_OPTIONS: {}, defineSecret: name => name,
+const sandbox = { exports: {}, ENVIRONMENT: {sportingDataSource:"nap", projectId: "livepalmes-test" }, CALLABLE_OPTIONS: {}, defineSecret: name => name,
   onCall: (_, callback) => callback, HttpsError, TypeError, process: { env: {} }, ENGAGEMENT_EVENT_DEFINITION_BY_CODE: new Map(),
   ENGAGEMENT_COMPETITION_LEVELS: new Set(["regional", "national"]), ENGAGEMENT_ENTRY_STATUSES: new Set(["open", "closed", "upcoming"]),
   cleanEngagementProgramSessions:()=>[],

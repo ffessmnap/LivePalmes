@@ -5,7 +5,7 @@ const start=source.indexOf('async function sendEngagementMailJob('),end=source.i
 assert.ok(start>0&&end>start);
 async function main(){
   let enabled=true,sent=0,cancelDuringDownload=false,job;
-  const sandbox={Date,OPTIONAL_COMPETITION_MAIL_TYPES:new Set(),ENVIRONMENT:{projectId:'livepalmes-test'},
+  const sandbox={Date,OPTIONAL_COMPETITION_MAIL_TYPES:new Set(),ENVIRONMENT:{sportingDataSource:"nap",projectId:'livepalmes-test'},
     cleanText:value=>String(value||''),normalizeEmail:value=>String(value||'').toLowerCase(),cleanFirestoreValue:value=>value,
     livePalmesMailHtml:text=>`<p>${text}</p>`,engagementMailJobItemFromData:data=>data,
     engagementMailAttachments:async()=>{if(cancelDuringDownload)enabled=false;return [];},

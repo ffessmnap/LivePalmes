@@ -1,4 +1,5 @@
 "use strict";
+const {notMerged}=require("./nap-swimmer-merge-state");
 const {positiveId}=require("./nap-direct-calendar");
 const {selectionLockReason}=require("./nap-swimmer-entry-plan");
 const {readCategories}=require("./nap-entry-course-rules");
@@ -59,7 +60,7 @@ async function resolveRelay(input,services) {
   const participation=require("./nap-entry-participation-rules");
   const evidence=await participation.readEvidence(connection,ids.map(id=>({id})),pack);
   if(ids.some(id=>!participation.eligible(pack,id,evidence))) throw new TypeError("Chaque relayeur doit avoir un resultat NAP dans au moins une competition requise.");
-  const people=ids.length?(await connection.execute({sql:`SELECT id,date,sexe,club FROM nageurs FORCE INDEX (PRIMARY) WHERE id IN (${ids.map(()=>"?").join(",")}) ORDER BY id LIMIT 4`,timeout:10000},ids))[0]:[];
+  const people=ids.length?(await connection.execute({sql:`SELECT id,date,sexe,club FROM nageurs FORCE INDEX (PRIMARY) WHERE id IN (${ids.map(()=>"?").join(",")}) AND ${notMerged()} ORDER BY id LIMIT 4`,timeout:10000},ids))[0]:[];
   if(people.length!==ids.length || people.some(row=>{
     const source=dossier.swimmers.find(person=>Number(person.id)===Number(row.id));
     return !source || String(row.club)!==String(dossier.clubId) || row.date!==source.birthDate || row.sexe!==source.sex;

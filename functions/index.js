@@ -173,13 +173,15 @@ const OPTIONAL_COMPETITION_MAIL_TYPES = new Set([
 const HASH_ITERATIONS = 120000;
 const HASH_BYTES = 32;
 const CALLABLE_OPTIONS = { region: REGION, invoker: "public" };
-// Preparation NAP exclusive a TEST : aucune activation implicite en production.
-if (ENVIRONMENT.projectId === "livepalmes-test") {
+// Public sporting reads use NAP; operational migration tools remain TEST-only.
+if (ENVIRONMENT.sportingDataSource === "nap") {
   const napPassword = defineSecret("LIVEPALMES_NAP_PASSWORD");
   let napPool;
   exports.readNapPublicSwimmer = onRequest({
     region: REGION, invoker: "public", secrets: [napPassword], maxInstances: 2, concurrency: 4, timeoutSeconds: 30,
-    cors: [/^https:\/\/livepalmes-test(?:--[a-z0-9-]+)?\.web\.app$/, "https://livepalmes-test.firebaseapp.com"]
+    cors: ENVIRONMENT.name === "test"
+      ? [/^https:\/\/livepalmes-test(?:--[a-z0-9-]+)?\.web\.app$/, "https://livepalmes-test.firebaseapp.com"]
+      : ["https://livepalmes.web.app", "https://livepalmes.firebaseapp.com"]
   }, async (request, response) => {
     response.set("Cache-Control", "no-store");
     if (request.method !== "GET") { response.status(405).json({ error: "Methode interdite." }); return; }
@@ -203,6 +205,27 @@ if (ENVIRONMENT.projectId === "livepalmes-test") {
         : "Consultation NAP indisponible." });
     }
   });
+exports.getNapSwimmerPerformances = onCall({
+    ...CALLABLE_OPTIONS, secrets: [napPassword],
+    maxInstances: 2, concurrency: 4, timeoutSeconds: 30
+  }, async (request) => {
+    if (!request.auth) throw new HttpsError("unauthenticated", "Connexion requise.");
+    assertAdmin(request);
+    let input;
+    try { input = performanceRequest(request.data); }
+    catch { throw new HttpsError("invalid-argument", "Identifiants NAP entiers requis."); }
+    try {
+      if (!napPool) napPool = createNapPool(napPassword.value());
+      return await readSwimmerPerformances(napPool, input);
+    } catch {
+      // Ne pas exposer les erreurs du pilote, les secrets ou les donnees.
+      throw new HttpsError("unavailable", "Consultation NAP indisponible. Verifier la configuration serveur.");
+    }
+  });
+}
+if (ENVIRONMENT.projectId === "livepalmes-test") {
+  const napPassword = defineSecret("LIVEPALMES_NAP_PASSWORD");
+  let napPool;
   // Export reserve au compte de publication TEST, jamais accessible au public.
   const { inspectExportSources, readExportPage, readSourceSchema } = require("./nap-public-export");
   exports.exportNapPublicPage = onRequest({
@@ -256,27 +279,10 @@ if (ENVIRONMENT.projectId === "livepalmes-test") {
       response.status(error instanceof TypeError ? 400 : 503).json({ error: "Export NAP indisponible." });
     }
   });
-exports.getNapSwimmerPerformances = onCall({
-    ...CALLABLE_OPTIONS, secrets: [napPassword],
-    maxInstances: 2, concurrency: 4, timeoutSeconds: 30
-  }, async (request) => {
-    if (!request.auth) throw new HttpsError("unauthenticated", "Connexion requise.");
-    assertAdmin(request);
-    let input;
-    try { input = performanceRequest(request.data); }
-    catch { throw new HttpsError("invalid-argument", "Identifiants NAP entiers requis."); }
-    try {
-      if (!napPool) napPool = createNapPool(napPassword.value());
-      return await readSwimmerPerformances(napPool, input);
-    } catch {
-      // Ne pas exposer les erreurs du pilote, les secrets ou les donnees.
-      throw new HttpsError("unavailable", "Consultation NAP indisponible. Verifier la configuration serveur.");
-    }
-  });
 }
 const ENGAGEMENT_MAIL_CALLABLE_OPTIONS = { ...CALLABLE_OPTIONS, secrets: ENGAGEMENT_NOTIFICATION_MAIL_SECRETS, timeoutSeconds: 300 };
 const ENGAGEMENT_NOTIFICATION_PREVIEW_OPTIONS = { ...CALLABLE_OPTIONS,
-  ...(ENVIRONMENT.projectId === "livepalmes-test" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) };
+  ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) };
 const NOTIFICATION_PREFERENCE_CALLABLE_OPTIONS = { ...CALLABLE_OPTIONS, secrets: [LIVEPALMES_NOTIFICATION_LINK_SECRET] };
 const ENGAGEMENT_DOCUMENT_UPLOAD_OPTIONS = { ...CALLABLE_OPTIONS, timeoutSeconds: 120, memory: "512MiB" };
 const ENGAGEMENT_SWIMMER_CORRECTION_OPTIONS = { ...CALLABLE_OPTIONS, timeoutSeconds: 540, memory: "1GiB" };
@@ -297,7 +303,7 @@ const ENGAGEMENT_CLOSURE_SCHEDULER_OPTIONS = {
   timeZone: "Europe/Paris",
   timeoutSeconds: 540,
   memory: "1GiB",
-  secrets: ENVIRONMENT.projectId === "livepalmes-test" ? [defineSecret("LIVEPALMES_NAP_PASSWORD"), ...ENGAGEMENT_NOTIFICATION_MAIL_SECRETS] : ENGAGEMENT_NOTIFICATION_MAIL_SECRETS
+  secrets: ENVIRONMENT.sportingDataSource === "nap" ? [defineSecret("LIVEPALMES_NAP_PASSWORD"), ...ENGAGEMENT_NOTIFICATION_MAIL_SECRETS] : ENGAGEMENT_NOTIFICATION_MAIL_SECRETS
 };
 const MIGRATION_CALLABLE_OPTIONS = { region: REGION, invoker: "public", timeoutSeconds: 540, memory: "1GiB" };
 const PUBLIC_PERFORMANCE_CALLABLE_OPTIONS = { region: REGION, invoker: "public", timeoutSeconds: 120, memory: "1GiB" };
@@ -316,7 +322,7 @@ const PERFORMANCE_PUBLICATION_SCHEDULER_OPTIONS = {
   memory: "1GiB"
 };
 const COMPETITION_IMPORT_CALLABLE_OPTIONS = { ...PUBLIC_PERFORMANCE_CALLABLE_OPTIONS,
-  ...(ENVIRONMENT.projectId==="livepalmes-test"?{secrets:[defineSecret("LIVEPALMES_NAP_PASSWORD")],maxInstances:2,concurrency:4}: {}) };
+  ...(ENVIRONMENT.sportingDataSource === "nap"?{secrets:[defineSecret("LIVEPALMES_NAP_PASSWORD")],maxInstances:2,concurrency:4}: {}) };
 const PUBLIC_RESULT_TRIGGER_OPTIONS = {
   region: REGION,
   document: "competitions/{competitionId}/results/{resultId}",
@@ -5694,8 +5700,8 @@ const qualificationService = createQualificationService({ db, HttpsError, catego
   access: engagementAccessContext, clubAccess: engagementClubAccessContext, entryIdFor: engagementClubEntryId,
   assertOpen: assertEngagementClubWriteOpen, audit: writeAuditLog });
 
-exports.listEngagementQualificationSources = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.projectId === "livepalmes-test" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")], maxInstances:2, concurrency:4, timeoutSeconds:60 } : {}) }, async (request) => {
-  if (ENVIRONMENT.projectId !== "livepalmes-test") return qualificationService.listSources(request);
+exports.listEngagementQualificationSources = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")], maxInstances:2, concurrency:4, timeoutSeconds:60 } : {}) }, async (request) => {
+  if (ENVIRONMENT.sportingDataSource !== "nap") return qualificationService.listSources(request);
   const context=await engagementAccessContext(request);
   if(!context.national) throw new HttpsError("permission-denied","Droit national des engagements requis.");
   try {
@@ -5722,21 +5728,21 @@ function nativeQualificationServices(context) {
       },event=>assertCanModifyEngagementEvent(context,event))
   };
 }
-const nativeQualificationOptions=ENVIRONMENT.projectId==="livepalmes-test"?{secrets:[defineSecret("LIVEPALMES_NAP_PASSWORD")],maxInstances:2,concurrency:4}:{};
+const nativeQualificationOptions=ENVIRONMENT.sportingDataSource === "nap"?{secrets:[defineSecret("LIVEPALMES_NAP_PASSWORD")],maxInstances:2,concurrency:4}:{};
 const nativeQualificationNow=()=>new Date().toISOString().replace('T',' ').replace('Z','000');
 function nativeQualificationError(error){
   if(error instanceof HttpsError)return error;
   return new HttpsError(error instanceof TypeError?"failed-precondition":error instanceof RangeError?"resource-exhausted":"unavailable",error instanceof TypeError||error instanceof RangeError?error.message:"Traitement NAP interrompu. Reprenez le meme controle ; sa sauvegarde est conservee.");
 }
 exports.processEngagementQualificationJob = onCall({ ...CALLABLE_OPTIONS,...nativeQualificationOptions,timeoutSeconds:300 }, async request=>{
-  if(ENVIRONMENT.projectId!=="livepalmes-test")return qualificationService.process(request);
+  if(ENVIRONMENT.sportingDataSource !== "nap")return qualificationService.process(request);
   const context=await engagementAccessContext(request);
   if(!context.national)throw new HttpsError("permission-denied","Droit national des engagements requis.");
   try{return await require("./nap-qualification-callables").process(require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD),{competitionId:request.data?.competitionId,jobId:request.data?.jobId,action:request.data?.action,cursor:request.data?.cursor,national:true,actorUid:context.uid,now:nativeQualificationNow()},nativeQualificationServices(context));}
   catch(error){throw nativeQualificationError(error);}
 });
 exports.grantEngagementQualificationException = onCall({ ...CALLABLE_OPTIONS,...nativeQualificationOptions,timeoutSeconds:60 },async request=>{
-  if(ENVIRONMENT.projectId!=="livepalmes-test")return qualificationService.grantException(request);
+  if(ENVIRONMENT.sportingDataSource !== "nap")return qualificationService.grantException(request);
   const context=await engagementAccessContext(request);
   if(!context.national)throw new HttpsError("permission-denied","Droit national des engagements requis.");
   const club=await engagementClubAccessContext(request);
@@ -5744,7 +5750,7 @@ exports.grantEngagementQualificationException = onCall({ ...CALLABLE_OPTIONS,...
   catch(error){throw nativeQualificationError(error);}
 });
 exports.acknowledgeEngagementQualificationAlert = onCall({ ...CALLABLE_OPTIONS,...nativeQualificationOptions,timeoutSeconds:60 },async request=>{
-  if(ENVIRONMENT.projectId!=="livepalmes-test")return qualificationService.acknowledgeAlert(request);
+  if(ENVIRONMENT.sportingDataSource !== "nap")return qualificationService.acknowledgeAlert(request);
   const context=await engagementClubAccessContext(request);
   let connection;
   try{
@@ -5760,9 +5766,9 @@ exports.requestEngagementQualificationDerogation = onCall(CALLABLE_OPTIONS, reti
 exports.listEngagementQualificationRequests = onCall(CALLABLE_OPTIONS, retiredQualificationRequest);
 exports.resolveEngagementQualificationRequest = onCall(CALLABLE_OPTIONS, retiredQualificationRequest);
 exports.syncEngagementQualificationTargets = onDocumentWritten({ region: REGION,
-  document: "engagementClubEntries/{entryId}", retry: true, timeoutSeconds: 540 }, (event) => ENVIRONMENT.projectId === "livepalmes-test" ? null : qualificationService.syncTargets(event));
+  document: "engagementClubEntries/{entryId}", retry: true, timeoutSeconds: 540 }, (event) => ENVIRONMENT.sportingDataSource === "nap" ? null : qualificationService.syncTargets(event));
 exports.revalidateEngagementQualificationCache = onDocumentWritten({ region: REGION,
-  document: `${ENGAGEMENT_ENTRY_TIME_CACHES_COLLECTION}/{cacheId}`, retry: true, timeoutSeconds: 540 }, (event) => ENVIRONMENT.projectId === "livepalmes-test" ? null : qualificationService.revalidateCache(event));
+  document: `${ENGAGEMENT_ENTRY_TIME_CACHES_COLLECTION}/{cacheId}`, retry: true, timeoutSeconds: 540 }, (event) => ENVIRONMENT.sportingDataSource === "nap" ? null : qualificationService.revalidateCache(event));
 
 function engagementQualificationRowAllowed(row = {}, competition = {}) {
   if (row.active === false || row.status === "hidden") return false;
@@ -10002,7 +10008,7 @@ async function nativeClubEntryView(pack,context,competition) {
   });
 }
 
-exports.listEngagementCompetitions = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.projectId === "livepalmes-test" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
+exports.listEngagementCompetitions = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
   const startedAt = Date.now();
   const manageOnly = request.data?.manageOnly === true;
   const managementContext = manageOnly ? await engagementAccessContext(request) : null;
@@ -10031,7 +10037,7 @@ exports.listEngagementCompetitions = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONME
     ? cleanText(request.data.entryStatus)
     : "";
   const seasonEndYears = Array.from(new Set(ranges.map((range) => range.season.endYear)));
-  if (ENVIRONMENT.projectId === "livepalmes-test") {
+  if (ENVIRONMENT.sportingDataSource === "nap") {
     const items = await nativePortalCalendarItems(ranges);
     const competitions = items.filter(item => ["pool", "openWater"].includes(item.competitionType))
       .filter(item => ranges.some(range => item.date >= range.startDate && item.date <= range.endDate))
@@ -10100,7 +10106,7 @@ exports.listEngagementCompetitions = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONME
   };
 });
 
-exports.listEngagementCalendarEvents = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.projectId === "livepalmes-test" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
+exports.listEngagementCalendarEvents = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
   const startedAt = Date.now();
   const context = await engagementAccessContext(request);
   if (!context.national && (!context.region || !context.regionId)) {
@@ -10119,7 +10125,7 @@ exports.listEngagementCalendarEvents = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRON
     };
   });
   const seasonEndYears = Array.from(new Set(ranges.map((range) => range.season.endYear)));
-  if (ENVIRONMENT.projectId === "livepalmes-test") {
+  if (ENVIRONMENT.sportingDataSource === "nap") {
     const items = await nativePortalCalendarItems(ranges);
     return { ok: true, source: "nap", events: items.filter(item => !["pool", "openWater"].includes(item.competitionType))
       .filter(item => ranges.some(range => item.date >= range.startDate && item.date <= range.endDate))
@@ -10155,11 +10161,11 @@ exports.listEngagementCalendarEvents = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRON
   };
 });
 
-exports.getEngagementCalendarEvent = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.projectId === "livepalmes-test" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
+exports.getEngagementCalendarEvent = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
   const context = await engagementAccessContext(request);
   const calendarEventId = cleanText(request.data?.calendarEventId).slice(0, 128);
   if (!calendarEventId) throw new HttpsError("invalid-argument", "Evenement requis.");
-  if (ENVIRONMENT.projectId === "livepalmes-test") {
+  if (ENVIRONMENT.sportingDataSource === "nap") {
     const event = await nativePortalCompetition(calendarEventId, item => assertCanManageEngagementCompetition(context, item), true);
     return { ok: true, source: "nap", event: { ...event, sourceType: "calendarEvent", eventType: event.competitionType,
       regionalPastReadOnly: !context.national && engagementEventIsPast(event) } };
@@ -10181,9 +10187,9 @@ exports.getEngagementCalendarEvent = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONME
   };
 });
 
-exports.createEngagementCalendarEvent = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.projectId === "livepalmes-test" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")], maxInstances:2, concurrency:4, timeoutSeconds:120 } : {}) }, async (request) => {
+exports.createEngagementCalendarEvent = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")], maxInstances:2, concurrency:4, timeoutSeconds:120 } : {}) }, async (request) => {
   const context = await engagementAccessContext(request);
-  if (ENVIRONMENT.projectId === "livepalmes-test") {
+  if (ENVIRONMENT.sportingDataSource === "nap") {
     const raw=request.data || {};
     if (!["training","stage","meeting"].includes(raw.eventType)) throw new HttpsError("failed-precondition","Choisissez Formation, Stage ou Reunion. Le type Autre n'est pas propose.");
     const result=await createNativePortalCalendarRecord(raw,context,raw.eventType);
@@ -10346,13 +10352,13 @@ exports.setEngagementOpenWaterCourseStatus = onCall(CALLABLE_OPTIONS, async (req
   return { ok: true, courses };
 });
 
-exports.getEngagementCompetition = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.projectId === "livepalmes-test" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
+exports.getEngagementCompetition = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
   const context = await engagementAccessContext(request);
   const competitionId = cleanText(request.data?.competitionId).slice(0, 128);
   if (!competitionId) {
     throw new HttpsError("invalid-argument", "Competition requise.");
   }
-  if (ENVIRONMENT.projectId === "livepalmes-test") {
+  if (ENVIRONMENT.sportingDataSource === "nap") {
     const competition = await nativePortalCompetition(competitionId, event => assertCanManageEngagementCompetition(context, event), true);
     return { ok: true, source: "nap", competition: { ...competition, regionalPastReadOnly: !context.national && engagementEventIsPast(competition) } };
   }
@@ -10440,8 +10446,8 @@ async function mutateNativeCompetitionDocument(request, action) {
     throw new HttpsError(error instanceof RangeError?"resource-exhausted":error instanceof TypeError?"failed-precondition":"unavailable",error instanceof RangeError||error instanceof TypeError?error.message:"Document NAP à vérifier. La sauvegarde est conservée ; rechargez avant de reprendre.");
   }
 }
-exports.uploadEngagementCompetitionDocument = onCall({ ...ENGAGEMENT_DOCUMENT_UPLOAD_OPTIONS, ...(ENVIRONMENT.projectId === "livepalmes-test" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
-  if(ENVIRONMENT.projectId === "livepalmes-test") return mutateNativeCompetitionDocument(request,"upload");
+exports.uploadEngagementCompetitionDocument = onCall({ ...ENGAGEMENT_DOCUMENT_UPLOAD_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
+  if(ENVIRONMENT.sportingDataSource === "nap") return mutateNativeCompetitionDocument(request,"upload");
   const { context, competitionId, calendarEventId, sourceType, ref, snapshot } = await engagementCompetitionDocumentContext(request);
   const requestedDocumentId = cleanText(request.data?.documentId).slice(0, 80);
   const initialDocuments = cleanCompetitionDocuments(snapshot.data()?.clubDocuments || [], { includeUploader: true });
@@ -10545,8 +10551,8 @@ exports.uploadEngagementCompetitionDocument = onCall({ ...ENGAGEMENT_DOCUMENT_UP
   };
 });
 
-exports.updateEngagementCompetitionDocument = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.projectId === "livepalmes-test" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
-  if(ENVIRONMENT.projectId === "livepalmes-test") return mutateNativeCompetitionDocument(request,"update");
+exports.updateEngagementCompetitionDocument = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
+  if(ENVIRONMENT.sportingDataSource === "nap") return mutateNativeCompetitionDocument(request,"update");
   const { context, competitionId, calendarEventId, sourceType, ref } = await engagementCompetitionDocumentContext(request);
   const documentId = cleanText(request.data?.documentId).slice(0, 80);
   if (!documentId) throw new HttpsError("invalid-argument", "Document requis.");
@@ -10582,8 +10588,8 @@ exports.updateEngagementCompetitionDocument = onCall({ ...CALLABLE_OPTIONS, ...(
   return { ok: true, competitionId, calendarEventId, documentId, documents: updatedDocuments };
 });
 
-exports.deleteEngagementCompetitionDocument = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.projectId === "livepalmes-test" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
-  if(ENVIRONMENT.projectId === "livepalmes-test") return mutateNativeCompetitionDocument(request,"delete");
+exports.deleteEngagementCompetitionDocument = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
+  if(ENVIRONMENT.sportingDataSource === "nap") return mutateNativeCompetitionDocument(request,"delete");
   const { context, competitionId, calendarEventId, sourceType, ref } = await engagementCompetitionDocumentContext(request);
   const documentId = cleanText(request.data?.documentId).slice(0, 80);
   if (!documentId) throw new HttpsError("invalid-argument", "Document requis.");
@@ -10627,7 +10633,7 @@ exports.deleteEngagementCompetitionDocument = onCall({ ...CALLABLE_OPTIONS, ...(
 });
 
 exports.previewEngagementCompetitionDocumentNotification = onCall(ENGAGEMENT_NOTIFICATION_PREVIEW_OPTIONS, async (request) => {
-  if (ENVIRONMENT.projectId === "livepalmes-test") return nativeNotificationPreview(request, "documents");
+  if (ENVIRONMENT.sportingDataSource === "nap") return nativeNotificationPreview(request, "documents");
   const { competitionId, snapshot } = await engagementCompetitionDocumentContext(request);
   const recipients = engagementCompetitionDocumentRecipients(
     await engagementActiveClubMailRecipients(db),
@@ -10641,8 +10647,8 @@ exports.previewEngagementCompetitionDocumentNotification = onCall(ENGAGEMENT_NOT
   };
 });
 
-exports.notifyEngagementCompetitionDocuments = onCall(ENVIRONMENT.projectId === "livepalmes-test" ? ENGAGEMENT_NOTIFICATION_PREVIEW_OPTIONS : ENGAGEMENT_MAIL_CALLABLE_OPTIONS, async (request) => {
-  if (ENVIRONMENT.projectId === "livepalmes-test") return queueNativeDocumentNotification(request);
+exports.notifyEngagementCompetitionDocuments = onCall(ENVIRONMENT.sportingDataSource === "nap" ? ENGAGEMENT_NOTIFICATION_PREVIEW_OPTIONS : ENGAGEMENT_MAIL_CALLABLE_OPTIONS, async (request) => {
+  if (ENVIRONMENT.sportingDataSource === "nap") return queueNativeDocumentNotification(request);
   const { context, competitionId, snapshot } = await engagementCompetitionDocumentContext(request);
   const competition = engagementCompetitionDetailItem(snapshot);
   const documentIds = Array.from(new Set((Array.isArray(request.data?.documentIds) ? request.data.documentIds : [])
@@ -10742,14 +10748,14 @@ exports.notifyEngagementCompetitionDocuments = onCall(ENVIRONMENT.projectId === 
   };
 });
 
-exports.getEngagementClubEntry = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.projectId === "livepalmes-test" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
+exports.getEngagementClubEntry = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
   const startedAt = Date.now();
   const context = await engagementClubAccessContext(request);
   const competitionId = cleanText(request.data?.competitionId).slice(0, 128);
   if (!competitionId) {
     throw new HttpsError("invalid-argument", "Competition requise.");
   }
-  if (ENVIRONMENT.projectId === "livepalmes-test") {
+  if (ENVIRONMENT.sportingDataSource === "nap") {
     const competition = await nativePortalCompetition(competitionId, () => {});
     const pool = require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD);
     const pack = await require("./nap-portal-entries").readNativeClubEntry(pool, { competitionId, clubId: context.clubId }, ({ clubId }) => {
@@ -10787,7 +10793,7 @@ exports.preloadEngagementClubWorkspaces = onCall(CALLABLE_OPTIONS, async (reques
   const context = await engagementClubAccessContext(request);
   // Native workspaces are read when actually opened. Prefetch must neither
   // consult the abandoned sports collections nor hide an IntraNAP edit.
-  if (ENVIRONMENT.projectId === "livepalmes-test") return { ok: true, source: "nap", workspaces: [] };
+  if (ENVIRONMENT.sportingDataSource === "nap") return { ok: true, source: "nap", workspaces: [] };
   const competitionIds = Array.from(new Set(
     (Array.isArray(request.data?.competitionIds) ? request.data.competitionIds : [])
       .map((competitionId) => cleanText(competitionId).slice(0, 128))
@@ -10858,13 +10864,13 @@ async function generateNativeClubRecapPdf(context, competitionId) {
   }
 }
 
-exports.generateEngagementClubRecapPdf = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.projectId === "livepalmes-test" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
+exports.generateEngagementClubRecapPdf = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
   const context = await engagementClubAccessContext(request);
   const competitionId = cleanText(request.data?.competitionId).slice(0, 128);
   if (!competitionId) {
     throw new HttpsError("invalid-argument", "Competition requise.");
   }
-  if (ENVIRONMENT.projectId === "livepalmes-test") return generateNativeClubRecapPdf(context, competitionId);
+  if (ENVIRONMENT.sportingDataSource === "nap") return generateNativeClubRecapPdf(context, competitionId);
   const competition = await db.collection("engagementCompetitions").doc(competitionId).get();
   if (!competition.exists) {
     throw new HttpsError("not-found", "Competition d'engagements introuvable.");
@@ -10948,7 +10954,7 @@ async function nativeNotificationPreview(request, kind) {
 // Reuse the queue and builders. Preview retains manifests only; delivery is
 // explicitly selected and gated by the national setting on TEST.
 function nativeNotificationAutomationServices(simulation = true) {
-  if(ENVIRONMENT.projectId!=="livepalmes-test")throw new HttpsError("failed-precondition","Notifications NAP réservées au TEST à ce stade.");
+  if(ENVIRONMENT.sportingDataSource !== "nap")throw new HttpsError("failed-precondition","Source NAP requise.");
   const pool=require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD);
   let recipientPromise;
   const services={simulation,deleteField:()=>FieldValue.delete(),
@@ -11029,7 +11035,7 @@ async function queueNativeDocumentNotification(request) {
   return {...preview,previewOnly:false,queued:true};
 }
 exports.processNapCompetitionNotifications = onCall({ ...ENGAGEMENT_NOTIFICATION_PREVIEW_OPTIONS,secrets:[defineSecret('LIVEPALMES_NAP_PASSWORD'),...ENGAGEMENT_NOTIFICATION_MAIL_SECRETS],timeoutSeconds:300,memory:'1GiB' },async request=>{
-  if(ENVIRONMENT.projectId!=='livepalmes-test')throw new HttpsError('failed-precondition','Notifications NAP réservées au TEST à ce stade.');
+  if(ENVIRONMENT.sportingDataSource !== "nap")throw new HttpsError('failed-precondition','Source NAP requise.');
   const context=await engagementAccessContext(request),automation=require('./nap-notification-automation');
   try{
     if(request.data?.action==='adopt-open-season'){
@@ -11058,13 +11064,13 @@ exports.processNapCompetitionNotifications = onCall({ ...ENGAGEMENT_NOTIFICATION
     return {ok:true,source:'nap',disabled:false,sentCount:delivery.sent,processedCount:results.length,jobCount:results.reduce((sum,result)=>sum+(result.jobCount||0),0),attachmentCount:results.reduce((sum,result)=>sum+(result.attachmentCount||0),0),remaining:Math.max(0,due.length-results.filter(result=>result.done||result.skipped).length)};
   }catch(error){if(error instanceof HttpsError)throw error;throw new HttpsError(error instanceof TypeError?'failed-precondition':error instanceof RangeError?'resource-exhausted':'unavailable',error instanceof TypeError||error instanceof RangeError?error.message:'Preparation NAP interrompue : vous pouvez reprendre le traitement.');}
 });
-exports.listEngagementCompetitionClubRecaps = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.projectId === "livepalmes-test" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
+exports.listEngagementCompetitionClubRecaps = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
   const context = await engagementAccessContext(request);
   const competitionId = cleanText(request.data?.competitionId).slice(0, 128);
   if (!competitionId) {
     throw new HttpsError("invalid-argument", "Competition requise.");
   }
-  if(ENVIRONMENT.projectId==="livepalmes-test") {
+  if(ENVIRONMENT.sportingDataSource === "nap") {
     const result=await nativeAdminCompetitionEntries(context,competitionId);
     return {ok:true,source:"nap",competitionId,summaryGenerated:false,summaryReady:true,entries:result.entries.filter(engagementClubEntryHasParticipants).map(entry=>({...engagementCompetitionEntrySummaryItem(entry),totalFee:engagementPdfFeeTotal(entry,result.competition)})),sqlBudget:result.sqlBudget};
   }
@@ -11231,12 +11237,12 @@ function engagementCompetitionStatisticsItem(entries = [], competition = {}) {
   return { counts, events, clubs: clubRows, truncated };
 }
 
-exports.getEngagementCompetitionStatistics = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.projectId === "livepalmes-test" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
+exports.getEngagementCompetitionStatistics = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
   const startedAt = Date.now();
   const context = await engagementAccessContext(request);
   const competitionId = cleanText(request.data?.competitionId).slice(0, 128);
   if (!competitionId) throw new HttpsError("invalid-argument", "Competition requise.");
-  if(ENVIRONMENT.projectId==="livepalmes-test") {
+  if(ENVIRONMENT.sportingDataSource === "nap") {
     const result=await nativeAdminCompetitionEntries(context,competitionId);
     return {ok:true,source:"nap",competitionId,generatedAt:result.generatedAt,...engagementCompetitionStatisticsItem(result.entries,result.competition),sqlBudget:result.sqlBudget};
   }
@@ -11291,14 +11297,14 @@ exports.getEngagementCompetitionStatistics = onCall({ ...CALLABLE_OPTIONS, ...(E
   };
 });
 
-exports.generateEngagementClubRecapPdfForAdmin = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.projectId === "livepalmes-test" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
+exports.generateEngagementClubRecapPdfForAdmin = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
   const context = await engagementAccessContext(request);
   const competitionId = cleanText(request.data?.competitionId).slice(0, 128);
   const clubId = cleanText(request.data?.clubId).slice(0, 40);
   if (!competitionId || !clubId) {
     throw new HttpsError("invalid-argument", "Competition et club requis.");
   }
-  if(ENVIRONMENT.projectId==="livepalmes-test") {
+  if(ENVIRONMENT.sportingDataSource === "nap") {
     const result=await nativeAdminCompetitionEntries(context,competitionId),entry=result.entries.find(item=>item.clubId===clubId);
     if(!entry || !engagementClubEntryHasParticipants(entry)) throw new HttpsError("not-found","Aucun participant NAP pour ce club.");
     const pdf=await buildEngagementClubRecapPdf(result.competition,entry);
@@ -11345,13 +11351,13 @@ exports.generateEngagementClubRecapPdfForAdmin = onCall({ ...CALLABLE_OPTIONS, .
   };
 });
 
-exports.generateEngagementCompetitionClubRecapPdfs = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.projectId === "livepalmes-test" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
+exports.generateEngagementCompetitionClubRecapPdfs = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
   const context = await engagementAccessContext(request);
   const competitionId = cleanText(request.data?.competitionId).slice(0, 128);
   if (!competitionId) {
     throw new HttpsError("invalid-argument", "Competition requise.");
   }
-  if (ENVIRONMENT.projectId === "livepalmes-test") {
+  if (ENVIRONMENT.sportingDataSource === "nap") {
     const result = await nativeAdminCompetitionEntries(context, competitionId);
     const files = [], entries = [];
     let bytes = 0, skippedCount = 0;
@@ -11439,13 +11445,13 @@ exports.generateEngagementCompetitionClubRecapPdfs = onCall({ ...CALLABLE_OPTION
   };
 });
 
-exports.generateEngagementCompetitionTxtExport = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.projectId === "livepalmes-test" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
+exports.generateEngagementCompetitionTxtExport = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
   const context = await engagementAccessContext(request);
   const competitionId = cleanText(request.data?.competitionId).slice(0, 128);
   if (!competitionId) {
     throw new HttpsError("invalid-argument", "Competition requise.");
   }
-  if(ENVIRONMENT.projectId==="livepalmes-test") {
+  if(ENVIRONMENT.sportingDataSource === "nap") {
     const result=await nativeAdminCompetitionEntries(context,competitionId);
     if(result.competition.competitionType!=="pool") throw new HttpsError("failed-precondition","L'export TXT eau libre sera disponible apres validation de son format.");
     const entries=result.entries.filter(engagementClubEntryHasParticipants).map(entry=>({...entry,swimmers:entry.swimmers.map(person=>({...person,individualEntries:person.individualEntries.map(course=>course.nativeTime==="599999"?{...course,entryTime:"",manualEntryTime:"",entryTimeValue:0,entryTimeMode:"default595999"}:course)}))}));
@@ -11497,7 +11503,7 @@ exports.listEngagementCompetitionMailJobs = onCall(ENGAGEMENT_NOTIFICATION_PREVI
   if (!competitionId) {
     throw new HttpsError("invalid-argument", "Competition requise.");
   }
-  if (ENVIRONMENT.projectId === "livepalmes-test") {
+  if (ENVIRONMENT.sportingDataSource === "nap") {
     competitionId=String(require('./nap-direct-calendar').positiveId(competitionId));
     await nativePortalCompetition(competitionId, event => assertCanManageEngagementCompetition(context, event));
   } else {
@@ -11524,7 +11530,7 @@ exports.listEngagementCompetitionMailJobs = onCall(ENGAGEMENT_NOTIFICATION_PREVI
   const pageDocuments = snapshot.docs.slice(0, pageSize);
   const control=require('./engagement-mail-control'),setting=await control.read(db);
   const jobs = pageDocuments
-    .filter(doc=>ENVIRONMENT.projectId!=='livepalmes-test'||doc.data().source==='nap')
+    .filter(doc=>ENVIRONMENT.sportingDataSource !== "nap"||doc.data().source==='nap')
     .map(doc=>{
       const data=doc.data()||{};
       const gate=control.decision(setting,data,ENVIRONMENT.projectId);
@@ -11549,7 +11555,7 @@ exports.listEngagementCompetitionMailJobs = onCall(ENGAGEMENT_NOTIFICATION_PREVI
 });
 
 exports.prepareEngagementOpeningNotificationEmails = onCall(ENGAGEMENT_NOTIFICATION_PREVIEW_OPTIONS, async (request) => {
-  if (ENVIRONMENT.projectId === "livepalmes-test") return nativeNotificationPreview(request, "opening");
+  if (ENVIRONMENT.sportingDataSource === "nap") return nativeNotificationPreview(request, "opening");
   const context = await engagementAccessContext(request);
   const competitionId = cleanText(request.data?.competitionId).slice(0, 128);
   if (!competitionId) {
@@ -11690,7 +11696,7 @@ async function prepareEngagementClubRecapEmailJobs(db, competitionSnapshot, opti
 }
 
 exports.prepareEngagementClubRecapEmails = onCall(ENGAGEMENT_NOTIFICATION_PREVIEW_OPTIONS, async (request) => {
-  if (ENVIRONMENT.projectId === "livepalmes-test") return nativeNotificationPreview(request, "club_recaps");
+  if (ENVIRONMENT.sportingDataSource === "nap") return nativeNotificationPreview(request, "club_recaps");
   const context = await engagementAccessContext(request);
   const competitionId = cleanText(request.data?.competitionId).slice(0, 128);
   if (!competitionId) {
@@ -12000,8 +12006,8 @@ async function sendEngagementPreparedEmailJobs(db, competitionSnapshot, context 
   };
 }
 
-exports.sendEngagementPreparedEmails = onCall(ENVIRONMENT.projectId === "livepalmes-test" ? ENGAGEMENT_NOTIFICATION_PREVIEW_OPTIONS : ENGAGEMENT_MAIL_CALLABLE_OPTIONS, async (request) => {
-  if (ENVIRONMENT.projectId === "livepalmes-test") return nativeNotificationPreview(request, "send");
+exports.sendEngagementPreparedEmails = onCall(ENVIRONMENT.sportingDataSource === "nap" ? ENGAGEMENT_NOTIFICATION_PREVIEW_OPTIONS : ENGAGEMENT_MAIL_CALLABLE_OPTIONS, async (request) => {
+  if (ENVIRONMENT.sportingDataSource === "nap") return nativeNotificationPreview(request, "send");
   const context = await engagementAccessContext(request);
   const competitionId = cleanText(request.data?.competitionId).slice(0, 128);
   if (!competitionId) {
@@ -12234,7 +12240,7 @@ exports.closeDueEngagementCompetitions = onSchedule(ENGAGEMENT_CLOSURE_SCHEDULER
     .limit(ENGAGEMENT_CLOSURE_BATCH_LIMIT)
     .get();
   const results = [];
-  if(ENVIRONMENT.projectId==='livepalmes-test'){
+  if(ENVIRONMENT.sportingDataSource === "nap"){
     const automation=require('./nap-notification-automation'),services=nativeNotificationAutomationServices(false);
     for(const event of snapshot.docs){
       // Old technical events are retained, never interpreted as native data.
@@ -12281,13 +12287,13 @@ exports.closeDueEngagementCompetitions = onSchedule(ENGAGEMENT_CLOSURE_SCHEDULER
   return null;
 });
 
-exports.saveEngagementClubTeamLeader = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.projectId === "livepalmes-test" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
+exports.saveEngagementClubTeamLeader = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
   const context = await engagementClubAccessContext(request);
   const competitionId = cleanText(request.data?.competitionId).slice(0, 128);
   if (!competitionId) {
     throw new HttpsError("invalid-argument", "Competition requise.");
   }
-  if (ENVIRONMENT.projectId === "livepalmes-test") {
+  if (ENVIRONMENT.sportingDataSource === "nap") {
     try {
       const pool = require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD);
       const saveLeader = request.data?.leaderId == null || request.data.leaderId === ""
@@ -12409,9 +12415,9 @@ exports.saveEngagementClubTeamLeader = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRON
   };
 });
 
-exports.removeEngagementClubTeamLeader = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.projectId === "livepalmes-test" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
+exports.removeEngagementClubTeamLeader = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
   const context = await engagementClubAccessContext(request);
-  if (ENVIRONMENT.projectId === "livepalmes-test") {
+  if (ENVIRONMENT.sportingDataSource === "nap") {
     try {
       const competitionId = cleanText(request.data?.competitionId).slice(0,128);
       const pool = require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD);
@@ -12474,10 +12480,10 @@ exports.removeEngagementClubTeamLeader = onCall({ ...CALLABLE_OPTIONS, ...(ENVIR
   };
 });
 
-exports.listEngagementClubPeople = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.projectId === "livepalmes-test" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
+exports.listEngagementClubPeople = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
   const startedAt = Date.now();
   const context = await engagementClubAccessContext(request);
-  if (ENVIRONMENT.projectId === "livepalmes-test") {
+  if (ENVIRONMENT.sportingDataSource === "nap") {
     try {
       const result = await require("./nap-club-people").readClubPeople(require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD), {clubId:context.clubId,cursor:request.data?.cursor}, ({clubId}) => {
         if(clubId!==context.clubId) throw new HttpsError("permission-denied", "Personnes hors du club autorise.");
@@ -12532,9 +12538,9 @@ async function resolveEngagementClubPersonSwimmer(db, context = {}, rawPerson = 
   return swimmer;
 }
 
-exports.saveEngagementClubPerson = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.projectId === "livepalmes-test" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
+exports.saveEngagementClubPerson = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
   const context = await engagementClubAccessContext(request);
-  if(ENVIRONMENT.projectId === "livepalmes-test") {
+  if(ENVIRONMENT.sportingDataSource === "nap") {
     try {
       if (!cleanText(request.data?.personId)) {
         return await require("./nap-club-person-create").createNativePerson(require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD), {
@@ -12623,9 +12629,9 @@ exports.saveEngagementClubPerson = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT
   };
 });
 
-exports.setEngagementClubPersonStatus = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.projectId === "livepalmes-test" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
+exports.setEngagementClubPersonStatus = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
   const context = await engagementClubAccessContext(request);
-  if(ENVIRONMENT.projectId === "livepalmes-test") {
+  if(ENVIRONMENT.sportingDataSource === "nap") {
     try {
       const pool=require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD);
       return await require("./nap-club-person-status").changeNativePersonStatus(pool,{
@@ -12702,9 +12708,9 @@ async function saveNativeClubOfficials(context,request) {
   }
 }
 
-exports.saveEngagementClubOfficials = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.projectId === "livepalmes-test" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
+exports.saveEngagementClubOfficials = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
   const context = await engagementClubAccessContext(request);
-  if(ENVIRONMENT.projectId==="livepalmes-test") return saveNativeClubOfficials(context,request);
+  if(ENVIRONMENT.sportingDataSource === "nap") return saveNativeClubOfficials(context,request);
   const competitionId = cleanText(request.data?.competitionId).slice(0, 128);
   if (!competitionId) {
     throw new HttpsError("invalid-argument", "Competition requise.");
@@ -12773,20 +12779,17 @@ exports.saveEngagementClubOfficials = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONM
   };
 });
 
-exports.listEngagementClubSwimmers = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.projectId === "livepalmes-test" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
+exports.listEngagementClubSwimmers = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
   const startedAt = Date.now();
   const context = await engagementClubAccessContext(request);
   const limit = Math.min(800, Math.max(50, Math.trunc(Number(request.data?.limit) || 400)));
-  if (ENVIRONMENT.projectId === "livepalmes-test") {
+  if (ENVIRONMENT.sportingDataSource === "nap") {
     try {
       const nap = require("./nap-portal-swimmers");
       const people = await nap.listPortalClubSwimmers(nap.portalPool(process.env.LIVEPALMES_NAP_PASSWORD), context.clubId);
-      const roster = await engagementClubRosterRef(db, context.clubId).get();
-      const metadata = Object.values(roster.data()?.swimmers || {}).filter(item => item.napSource === true);
-      return { ok: true, clubId: context.clubId, source: "nap", swimmers: people.map((item, index) => ({
-        ...item, category: currentEngagementCategoryFromBirthDate(item.birthDate),
-        clubActivityStatus: metadata.find(meta => String(meta.swimmerIndexId || meta.id) === item.id)?.clubActivityStatus || "active"
-      })), readStats: portalReadStats("listEngagementClubSwimmers", startedAt, { baseDocuments: 2, variableDocumentsMax: 0, cacheHit: false }) };
+      return { ok: true, clubId: context.clubId, source: "nap", swimmers: people.map(item => ({
+        ...item, category: currentEngagementCategoryFromBirthDate(item.birthDate)
+      })), readStats: portalReadStats("listEngagementClubSwimmers", startedAt, { baseDocuments: 1, variableDocumentsMax: 0, cacheHit: false }) };
     } catch (error) {
       throw new HttpsError(error instanceof TypeError ? "invalid-argument" : "unavailable", "Effectif NAP indisponible. " + (error instanceof RangeError ? error.message : "Reessayez le chargement."));
     }
@@ -12815,7 +12818,7 @@ exports.listEngagementClubSwimmers = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONME
   };
 });
 
-exports.setEngagementClubSwimmerActivityStatus = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.projectId === "livepalmes-test" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
+exports.setEngagementClubSwimmerActivityStatus = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
   const startedAt = Date.now();
   const context = await engagementClubAccessContext(request);
   const swimmerIndexId = cleanText(request.data?.swimmerIndexId).slice(0, 80);
@@ -12824,20 +12827,20 @@ exports.setEngagementClubSwimmerActivityStatus = onCall({ ...CALLABLE_OPTIONS, .
   if (!swimmerIndexId || !status) {
     throw new HttpsError("invalid-argument", "Nageur et statut actif ou inactif requis.");
   }
+  if (ENVIRONMENT.sportingDataSource === "nap") {
+    try {
+      const result=await require("./nap-swimmer-activity").change(require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD), {
+        id:swimmerIndexId,clubId:String(context.clubId),actorUid:context.uid,status,expectedFingerprint:request.data?.expectedFingerprint
+      }, {
+        read:async operation=>{const doc=await db.collection("auditLogs").doc(`nap-swimmer-activity-${operation}-before`).get();return doc.exists?doc.data().target:null;},
+        prepare:(operation,target)=>db.collection("auditLogs").doc(`nap-swimmer-activity-${operation}-before`).create({action:"nap.swimmerActivity.prepare",actorUid:context.uid,target,createdAt:new Date().toISOString()}),
+        complete:(operation,target)=>writeAuditLogOnce("nap.swimmerActivity.complete",context.uid,target,`nap-swimmer-activity-${operation}-complete`)
+      });
+      return result;
+    } catch(error) { throw new HttpsError(error instanceof TypeError?"failed-precondition":"unavailable",error instanceof TypeError?error.message:"Statut NAP a verifier. Rechargez la fiche avant de reessayer."); }
+  }
   const rosterRef = engagementClubRosterRef(db, context.clubId);
   const snapshot = await rosterRef.get();
-  if (ENVIRONMENT.projectId === "livepalmes-test") {
-    const nap = require("./nap-portal-swimmers");
-    const id = require("./nap-direct-swimmer").swimmerId(swimmerIndexId);
-    const [rows] = await nap.portalPool(process.env.LIVEPALMES_NAP_PASSWORD).execute({ sql: "SELECT id,nom,prenom,date,sexe,number,club FROM nageurs WHERE id=? AND club=? LIMIT 1", timeout: 10000 }, [id, context.clubId]);
-    if (rows.length !== 1) throw new HttpsError("not-found", "Nageur absent de cet effectif NAP.");
-    const swimmer = nap.person(rows[0]);
-    const now = new Date().toISOString();
-    const updated = { ...swimmer, clubActivityStatus: status, clubActivityStatusSource: "club", clubActivityStatusUpdatedAt: now, clubActivityStatusUpdatedBy: context.uid };
-    await rosterRef.set({ clubId: context.clubId, updatedAt: now, swimmers: { [engagementClubRosterSwimmerKey(swimmer)]: updated } }, { merge: true });
-    await writeAuditLog("engagementClubSwimmer.activityStatusUpdated", context.uid, { clubId: context.clubId, swimmerIndexId: swimmer.id, source: "nap", status });
-    return { ok: true, swimmer: updated };
-  }
   if (!snapshot.exists) throw new HttpsError("not-found", "Effectif du club introuvable.");
   const data = snapshot.data() || {};
   const entries = data.swimmers && typeof data.swimmers === "object" ? data.swimmers : {};
@@ -12917,8 +12920,19 @@ exports.rebuildEngagementClubAggregates = onCall(MIGRATION_CALLABLE_OPTIONS, asy
   };
 });
 
-exports.previewEngagementClubSwimmerCreation = onCall(CALLABLE_OPTIONS, async (request) => {
+exports.previewEngagementClubSwimmerCreation = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")], maxInstances:2, concurrency:4 } : {}) }, async (request) => {
   const context = await engagementClubAccessContext(request);
+  if (ENVIRONMENT.sportingDataSource === "nap") {
+    try {
+      const input={clubId:String(context.clubId),actorUid:context.uid,swimmer:request.data?.swimmer,creationId:request.data?.creationId,confirmAlerts:request.data?.confirmAlerts};
+      const authorize=scope=>{if(scope.clubId!==String(context.clubId)) throw new HttpsError("permission-denied","Nageur hors club.");};
+      const formatAlert=(match,type)=>engagementNewSwimmerAlertFromMatch(match,{...context,clubId:String(context.clubId)},type);
+      return await require("./nap-swimmer-creation").previewCreation(require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD),input,authorize,formatAlert);
+    } catch(error) {
+      if(error instanceof HttpsError) throw error;
+      throw new HttpsError(error instanceof TypeError || error instanceof RangeError?"failed-precondition":"unavailable",error instanceof TypeError || error instanceof RangeError?error.message:"Creation NAP a verifier. Reprenez la meme action ; sauvegarde conservee.");
+    }
+  }
   const swimmer = cleanEngagementNewSwimmer(request.data?.swimmer || {}, context);
   await assertNoEngagementSwimmerLicenseConflict(db, swimmer);
   const alerts = await buildEngagementNewSwimmerAlerts(swimmer, context);
@@ -12932,9 +12946,20 @@ exports.previewEngagementClubSwimmerCreation = onCall(CALLABLE_OPTIONS, async (r
   };
 });
 
-exports.previewEngagementClubSwimmerRecovery = onCall(CALLABLE_OPTIONS, async (request) => {
+exports.previewEngagementClubSwimmerRecovery = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")], maxInstances:2, concurrency:4 } : {}) }, async (request) => {
   const startedAt = Date.now();
   const context = await engagementClubAccessContext(request);
+  if (ENVIRONMENT.sportingDataSource === "nap") {
+    try {
+      const preview = await require("./nap-swimmer-recovery").previewRecovery(require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD), {
+        clubId:String(context.clubId),licenseNumber:cleanText(request.data?.licenseNumber).toUpperCase()
+      }, scope=>{if(scope.clubId!==String(context.clubId)) throw new HttpsError("permission-denied","Nageur hors club.");});
+      return {ok:true,...preview};
+    } catch(error) {
+      if(error instanceof HttpsError) throw error;
+      throw new HttpsError(error instanceof TypeError || error instanceof RangeError?"failed-precondition":"unavailable",error instanceof TypeError || error instanceof RangeError?error.message:"Lecture NAP indisponible. Reessayez.");
+    }
+  }
   const preview = await engagementSwimmerRecoveryPreview(db, request.data?.licenseNumber, context);
   return {
     ok: true,
@@ -12947,9 +12972,23 @@ exports.previewEngagementClubSwimmerRecovery = onCall(CALLABLE_OPTIONS, async (r
   };
 });
 
-exports.recoverEngagementClubSwimmer = onCall(CALLABLE_OPTIONS, async (request) => {
+exports.recoverEngagementClubSwimmer = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")], maxInstances:2, concurrency:4 } : {}) }, async (request) => {
   const startedAt = Date.now();
   const context = await engagementClubAccessContext(request);
+  if (ENVIRONMENT.sportingDataSource === "nap") {
+    try {
+      return await require("./nap-swimmer-recovery").recoverSwimmer(require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD),{
+        clubId:String(context.clubId),actorUid:context.uid,licenseNumber:cleanText(request.data?.licenseNumber).toUpperCase(),mutationId:request.data?.mutationId,expectedFingerprint:request.data?.expectedFingerprint
+      },{
+        read:async operation=>{const snapshot=await db.collection("auditLogs").doc(`nap-swimmer-recovery-${operation}-before`).get();return snapshot.exists?snapshot.data().target:null;},
+        prepare:(operation,target)=>db.collection("auditLogs").doc(`nap-swimmer-recovery-${operation}-before`).create({action:"nap.swimmer.recovery.prepare",actorUid:context.uid,target,createdAt:new Date().toISOString()}),
+        complete:(operation,target)=>writeAuditLogOnce("engagementClubSwimmer.recovered",context.uid,target,operation)
+      },scope=>{if(scope.clubId!==String(context.clubId)) throw new HttpsError("permission-denied","Nageur hors club.");});
+    } catch(error) {
+      if(error instanceof HttpsError) throw error;
+      throw new HttpsError(error instanceof TypeError || error instanceof RangeError?"failed-precondition":"unavailable",error instanceof TypeError || error instanceof RangeError?error.message:"Recuperation NAP a verifier. Reprenez la meme action ; la sauvegarde est conservee.");
+    }
+  }
   const preview = await engagementSwimmerRecoveryPreview(db, request.data?.licenseNumber, context);
   if (!preview.found) throw new HttpsError("not-found", "Nageur introuvable dans la base.");
   if (preview.sameClub) throw new HttpsError("already-exists", "Ce nageur est deja connu dans votre club.");
@@ -13056,8 +13095,24 @@ exports.recoverEngagementClubSwimmer = onCall(CALLABLE_OPTIONS, async (request) 
   };
 });
 
-exports.createEngagementClubSwimmer = onCall(CALLABLE_OPTIONS, async (request) => {
+exports.createEngagementClubSwimmer = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")], maxInstances:2, concurrency:4 } : {}) }, async (request) => {
   const context = await engagementClubAccessContext(request);
+  if (ENVIRONMENT.sportingDataSource === "nap") {
+    try {
+      const input={clubId:String(context.clubId),actorUid:context.uid,swimmer:request.data?.swimmer,creationId:request.data?.creationId,confirmAlerts:request.data?.confirmAlerts};
+      const authorize=scope=>{if(scope.clubId!==String(context.clubId)) throw new HttpsError("permission-denied","Nageur hors club.");};
+      const formatAlert=(match,type)=>engagementNewSwimmerAlertFromMatch(match,{...context,clubId:String(context.clubId)},type);
+      return await require("./nap-swimmer-creation").createSwimmer(require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD),input,{
+        read:async operation=>{const doc=await db.collection("auditLogs").doc(`nap-swimmer-create-${operation}-before`).get();return doc.exists?doc.data().target:null;},
+        prepare:(operation,target)=>db.collection("auditLogs").doc(`nap-swimmer-create-${operation}-before`).create({action:"nap.swimmerCreate.prepare",actorUid:context.uid,target,createdAt:new Date().toISOString()}),
+        checkpoint:(operation,target)=>db.collection("auditLogs").doc(`nap-swimmer-create-${operation}-before`).update({target}),
+        complete:(operation,target)=>writeAuditLogOnce("nap.swimmerCreate.complete",context.uid,target,`nap-swimmer-create-${operation}-complete`)
+      },authorize,formatAlert);
+    } catch(error) {
+      if(error instanceof HttpsError) throw error;
+      throw new HttpsError(error instanceof TypeError || error instanceof RangeError?"failed-precondition":"unavailable",error instanceof TypeError || error instanceof RangeError?error.message:"Creation NAP a verifier. Reprenez la meme action ; sauvegarde conservee.");
+    }
+  }
   const swimmer = cleanEngagementNewSwimmer(request.data?.swimmer || {}, context);
   const now = new Date().toISOString();
   const docId = stableHash([
@@ -13164,10 +13219,18 @@ exports.createEngagementClubSwimmer = onCall(CALLABLE_OPTIONS, async (request) =
   };
 });
 
-exports.listEngagementNationalClubSwimmers = onCall(CALLABLE_OPTIONS, async (request) => {
+exports.listEngagementNationalClubSwimmers = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
   const context = await engagementAccessContext(request);
   if (!context.national) {
     throw new HttpsError("permission-denied", "Lecture reservee au niveau national.");
+  }
+  if (ENVIRONMENT.sportingDataSource === "nap") {
+    try {
+      const service = require("./nap-portal-swimmers");
+      return await service.listNationalSwimmers(service.portalPool(process.env.LIVEPALMES_NAP_PASSWORD), {cursor:request.data?.cursor});
+    } catch (error) {
+      throw new HttpsError(error instanceof TypeError ? "invalid-argument" : "unavailable", error instanceof TypeError ? error.message : "Annuaire national NAP indisponible. Reessayez.");
+    }
   }
   const limit = Math.min(200, Math.max(20, Math.trunc(Number(request.data?.limit) || 80)));
   const snapshot = await db
@@ -13264,14 +13327,14 @@ async function searchEngagementNationalSwimmerDocs(db, query = "", limit = 40) {
     .slice(0, limit);
 }
 
-exports.searchEngagementNationalSwimmers = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.projectId === "livepalmes-test" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
+exports.searchEngagementNationalSwimmers = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
   const context = await engagementAccessContext(request);
   if (!context.national) {
     throw new HttpsError("permission-denied", "Recherche reservee au niveau national.");
   }
   const query = cleanText(request.data?.query).slice(0, 120);
   const limit = Math.min(80, Math.max(10, Math.trunc(Number(request.data?.limit) || 40)));
-  if (ENVIRONMENT.projectId === "livepalmes-test") {
+  if (ENVIRONMENT.sportingDataSource === "nap") {
     try {
       const nap = require("./nap-portal-swimmers");
       const result = await nap.searchPortalSwimmers(nap.portalPool(process.env.LIVEPALMES_NAP_PASSWORD), query);
@@ -13334,11 +13397,11 @@ function engagementLicenseControlPerson(swimmer = {}, entry = {}, competitions =
   };
 }
 
-exports.prepareEngagementLicenseControlBatch = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.projectId === "livepalmes-test" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
+exports.prepareEngagementLicenseControlBatch = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
   const startedAt = Date.now();
   const context = await engagementAccessContext(request);
   if (!context.national) throw new HttpsError("permission-denied", "Controle des licences reserve au niveau national.");
-  if (ENVIRONMENT.projectId === "livepalmes-test") {
+  if (ENVIRONMENT.sportingDataSource === "nap") {
     try { return await require("./nap-license-control").prepareBatch(require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD),request.data || {}); }
     catch(error) { throw new HttpsError(error instanceof TypeError ? "failed-precondition" : error instanceof RangeError ? "resource-exhausted" : "unavailable",error instanceof TypeError || error instanceof RangeError ? error.message : "Controle NAP indisponible."); }
   }
@@ -13423,10 +13486,10 @@ exports.prepareEngagementLicenseControlBatch = onCall({ ...CALLABLE_OPTIONS, ...
   };
 });
 
-exports.validateEngagementSwimmerLicenses = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.projectId === "livepalmes-test" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
+exports.validateEngagementSwimmerLicenses = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
   const context = await engagementAccessContext(request);
   if (!context.national) throw new HttpsError("permission-denied", "Validation des licences reservee au niveau national.");
-  if (ENVIRONMENT.projectId === "livepalmes-test") {
+  if (ENVIRONMENT.sportingDataSource === "nap") {
     const connection=await require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD).getConnection();
     let locked=false;
     try {
@@ -14209,9 +14272,9 @@ async function sendEngagementSwimmerChangeResolutionNotification(payload = {}) {
   }
 }
 
-exports.requestEngagementClubSwimmerChange = onCall({ ...ENGAGEMENT_SWIMMER_CORRECTION_OPTIONS, ...(ENVIRONMENT.projectId === "livepalmes-test" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
+exports.requestEngagementClubSwimmerChange = onCall({ ...ENGAGEMENT_SWIMMER_CORRECTION_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
   const context = await engagementClubAccessContext(request);
-  if (ENVIRONMENT.projectId === "livepalmes-test") {
+  if (ENVIRONMENT.sportingDataSource === "nap") {
     try {
       const nap = require("./nap-portal-swimmers");
       const proposal = await require("./nap-swimmer-change-requests").prepareRequest(nap.portalPool(process.env.LIVEPALMES_NAP_PASSWORD), request.data, context);
@@ -14342,10 +14405,18 @@ exports.getEngagementNationalAdministrationOverview = onCall(CALLABLE_OPTIONS, a
   };
 });
 
-exports.listEngagementNationalClubs = onCall(CALLABLE_OPTIONS, async (request) => {
+exports.listEngagementNationalClubs = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
   const startedAt = Date.now();
   const context = await engagementAccessContext(request);
   if (!context.national) throw new HttpsError("permission-denied", "Lecture des clubs reservee au niveau national.");
+  if (ENVIRONMENT.sportingDataSource === "nap") {
+    try {
+      if(request.data?.deletionClubId!==undefined){const clubId=String(request.data.deletionClubId);return{ok:true,source:"nap",clubId,deletionEligible:Boolean(await require("./nap-club-provenance").eligibility(db,clubId))};}
+      const result=await require("./nap-club-directory").directory(require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD));
+      const adminDirectory=request.data?.includeAdministrators===true?await readEngagementClubAdminDirectory(db):null;
+      return {...result,...(adminDirectory?{clubAdministrators:adminDirectory.administrators,clubAdministratorsAvailable:adminDirectory.available!==false,clubAdministratorsBootstrapped:adminDirectory.bootstrapped===true}:{})};
+    } catch(error) {throw new HttpsError("unavailable",error instanceof RangeError?error.message:"Annuaire NAP indisponible. Reessayez.");}
+  }
   if (request.data?.directoryMode === true) {
     const [directorySnapshot, adminDirectory] = await Promise.all([
       publicEngagementClubDirectoryRef().get(),
@@ -14410,8 +14481,12 @@ exports.listEngagementNationalClubs = onCall(CALLABLE_OPTIONS, async (request) =
   };
 });
 
-exports.getPublicEngagementClubDirectory = onCall(CALLABLE_OPTIONS, async () => {
+exports.getPublicEngagementClubDirectory = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async () => {
   const startedAt = Date.now();
+  if (ENVIRONMENT.sportingDataSource === "nap") {
+    try {return await require("./nap-club-directory").directory(require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD));}
+    catch(error) {throw new HttpsError("unavailable",error instanceof RangeError?error.message:"Annuaire NAP indisponible. Reessayez.");}
+  }
   const snapshot = await publicEngagementClubDirectoryRef().get();
   const clubsById = snapshot.exists && snapshot.data()?.clubs && typeof snapshot.data().clubs === "object"
     ? snapshot.data().clubs
@@ -14427,10 +14502,27 @@ exports.getPublicEngagementClubDirectory = onCall(CALLABLE_OPTIONS, async () => 
   };
 });
 
-exports.saveEngagementNationalClub = onCall(CALLABLE_OPTIONS, async (request) => {
+exports.saveEngagementNationalClub = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
   const context = await engagementAccessContext(request);
   if (!context.national) throw new HttpsError("permission-denied", "Modification des clubs reservee au niveau national.");
   const requestedClubId = cleanText(request.data?.clubId).slice(0, 40);
+  if (ENVIRONMENT.sportingDataSource === "nap") {
+    if(!requestedClubId) {
+      try {return await require("./nap-club-create").create(require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD),{actorUid:context.uid,club:request.data?.club,creationId:request.data?.creationId},{
+        read:async operation=>{const doc=await db.collection("auditLogs").doc(`nap-club-create-${operation}-before`).get();return doc.exists?doc.data().target:null;},
+        prepare:(operation,target)=>db.collection("auditLogs").doc(`nap-club-create-${operation}-before`).create({action:"nap.clubCreate.prepare",actorUid:context.uid,target,createdAt:new Date().toISOString()}),
+        checkpoint:(operation,target)=>db.collection("auditLogs").doc(`nap-club-create-${operation}-before`).update({target}),
+        complete:async(operation,target)=>{await writeAuditLogOnce("nap.clubCreate.complete",context.uid,target,`nap-club-create-${operation}-complete`);await require("./nap-club-provenance").record(db,operation,target,context.uid);}
+      },()=>{if(!context.national)throw new HttpsError("permission-denied","Action nationale requise.");});}
+      catch(error) {if(error instanceof HttpsError)throw error;throw new HttpsError(error instanceof TypeError?"failed-precondition":"unavailable",error instanceof TypeError?error.message:"Creation club NAP a verifier. Reprenez la meme action ; sauvegarde conservee.");}
+    }
+    try {return await require("./nap-club-change").edit(require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD),{clubId:requestedClubId,actorUid:context.uid,club:request.data?.club,expectedFingerprint:request.data?.expectedFingerprint,confirmFederalNumberChange:request.data?.confirmFederalNumberChange},{
+      read:async operation=>{const doc=await db.collection("auditLogs").doc(`nap-club-edit-${operation}-before`).get();return doc.exists?doc.data().target:null;},
+      prepare:(operation,target)=>db.collection("auditLogs").doc(`nap-club-edit-${operation}-before`).create({action:"nap.clubEdit.prepare",actorUid:context.uid,target,createdAt:new Date().toISOString()}),
+      complete:(operation,target)=>writeAuditLogOnce("nap.clubEdit.complete",context.uid,target,`nap-club-edit-${operation}-complete`)
+    },()=>{if(!context.national)throw new HttpsError("permission-denied","Action nationale requise.");});}
+    catch(error) {if(error instanceof HttpsError)throw error;throw new HttpsError(error instanceof TypeError?"failed-precondition":"unavailable",error instanceof TypeError?error.message:"Modification club NAP a verifier. Rechargez la fiche.");}
+  }
   const baseClub = requestedClubId ? CLUB_REFERENCE_BY_ID.get(requestedClubId) || {} : {};
   const existingSnapshot = requestedClubId
     ? await db.collection(ENGAGEMENT_CLUBS_COLLECTION).doc(requestedClubId).get()
@@ -14504,7 +14596,7 @@ exports.saveEngagementNationalClub = onCall(CALLABLE_OPTIONS, async (request) =>
   };
 });
 
-exports.deleteEngagementNationalClub = onCall(CALLABLE_OPTIONS, async (request) => {
+exports.deleteEngagementNationalClub = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
   const context = await engagementAccessContext(request);
   if (!context.national) throw new HttpsError("permission-denied", "Suppression des clubs reservee au niveau national.");
   if (request.data?.confirmPermanent !== true) {
@@ -14512,6 +14604,16 @@ exports.deleteEngagementNationalClub = onCall(CALLABLE_OPTIONS, async (request) 
   }
   const clubId = cleanText(request.data?.clubId).slice(0, 40);
   if (!clubId) throw new HttpsError("invalid-argument", "Club requis.");
+  if(ENVIRONMENT.sportingDataSource === "nap"){
+    try{return await require("./nap-club-deletion").deleteClub(require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD),{clubId,actorUid:context.uid,confirmPermanent:true,expectedFingerprint:request.data?.expectedFingerprint},{
+      creation:clubId=>require("./nap-club-provenance").creation(db,clubId),
+      assertNoAccounts:async clubId=>{const [users,requests]=await Promise.all([db.collection("users").where("clubId","==",clubId).limit(1).get(),db.collection("engagementAccessRequests").where("clubId","==",clubId).where("status","==","pending").limit(1).get()]);if(!users.empty||!requests.empty)throw new TypeError("Ce club possede un compte ou une demande d'acces. Desactivez-le plutot que de le supprimer.");},
+      read:async operation=>{const doc=await db.collection("auditLogs").doc(`nap-club-delete-${operation}-before`).get();return doc.exists?doc.data().target:null;},
+      prepare:(operation,target)=>db.collection("auditLogs").doc(`nap-club-delete-${operation}-before`).create({action:"nap.clubDelete.prepare",actorUid:context.uid,target,createdAt:new Date().toISOString()}),
+      complete:(operation,target)=>writeAuditLogOnce("nap.clubDelete.complete",context.uid,target,`nap-club-delete-${operation}-complete`)
+    },()=>{if(!context.national)throw new HttpsError("permission-denied","Suppression nationale requise.");});}
+    catch(error){if(error instanceof HttpsError)throw error;throw new HttpsError(error instanceof TypeError||error instanceof RangeError?"failed-precondition":"unavailable",error instanceof TypeError||error instanceof RangeError?error.message:"Suppression club NAP a verifier. Reprenez la meme action ; sauvegarde conservee.");}
+  }
   if (CLUB_REFERENCE_BY_ID.has(clubId)) {
     throw new HttpsError("failed-precondition", "Un club historique doit etre desactive et ne peut pas etre supprime.");
   }
@@ -14599,7 +14701,7 @@ exports.getPortalPendingRequestOverview = onCall(CALLABLE_OPTIONS, async (reques
   };
 });
 
-exports.resolveEngagementSwimmerChangeRequest = onCall(ENVIRONMENT.projectId === "livepalmes-test"
+exports.resolveEngagementSwimmerChangeRequest = onCall(ENVIRONMENT.sportingDataSource === "nap"
   ? { ...ENGAGEMENT_SWIMMER_CORRECTION_OPTIONS, secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] }
   : ENGAGEMENT_SWIMMER_CORRECTION_MAIL_OPTIONS, async (request) => {
   const context = await engagementAccessContext(request);
@@ -14614,7 +14716,7 @@ exports.resolveEngagementSwimmerChangeRequest = onCall(ENVIRONMENT.projectId ===
   const snapshot = await ref.get();
   if (!snapshot.exists) throw new HttpsError("not-found", "Demande de correction introuvable.");
   const data = snapshot.data() || {};
-  if (ENVIRONMENT.projectId === "livepalmes-test") {
+  if (ENVIRONMENT.sportingDataSource === "nap") {
     let nativeConnection, nativeLock, resolution, claimed = false, claimWasExisting = false, writeAttempted = false;
     try {
       const helper = require("./nap-swimmer-change-requests");
@@ -14767,11 +14869,11 @@ exports.resolveEngagementSwimmerChangeRequest = onCall(ENVIRONMENT.projectId ===
   return { ok: true, request: engagementSwimmerChangeRequestItem(updated), result };
 });
 
-exports.updateEngagementNationalSwimmerIdentity = onCall({ ...ENGAGEMENT_SWIMMER_CORRECTION_OPTIONS, ...(ENVIRONMENT.projectId === "livepalmes-test" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
+exports.updateEngagementNationalSwimmerIdentity = onCall({ ...ENGAGEMENT_SWIMMER_CORRECTION_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
   const context = await engagementAccessContext(request);
   if (!context.national) throw new HttpsError("permission-denied", "Correction reservee au niveau national.");
-  if (ENVIRONMENT.projectId === "livepalmes-test" && request.data?.napSource !== true) throw new HttpsError("failed-precondition", "Rechargez la recherche NAP avant de corriger cette fiche.");
-  if (ENVIRONMENT.projectId === "livepalmes-test" && request.data?.napSource === true) {
+  if (ENVIRONMENT.sportingDataSource === "nap" && request.data?.napSource !== true) throw new HttpsError("failed-precondition", "Rechargez la recherche NAP avant de corriger cette fiche.");
+  if (ENVIRONMENT.sportingDataSource === "nap" && request.data?.napSource === true) {
     const nap = require("./nap-portal-swimmers");
     try {
       if (cleanText(request.data.proposed?.licenseNumber)) throw new TypeError("Le numero de licence NAP est en lecture seule.");
@@ -14819,7 +14921,7 @@ exports.updateEngagementNationalSwimmerIdentity = onCall({ ...ENGAGEMENT_SWIMMER
   return { ok: true, ...result };
 });
 
-exports.setEngagementNationalClubSwimmerStatus = onCall(CALLABLE_OPTIONS, async (request) => {
+exports.setEngagementNationalClubSwimmerStatus = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
   const context = await engagementAccessContext(request);
   if (!context.national) {
     throw new HttpsError("permission-denied", "Action reservee au niveau national.");
@@ -14829,6 +14931,19 @@ exports.setEngagementNationalClubSwimmerStatus = onCall(CALLABLE_OPTIONS, async 
     throw new HttpsError("invalid-argument", "Nageur requis.");
   }
   const active = request.data?.active === true;
+  if (ENVIRONMENT.sportingDataSource === "nap") {
+    try {
+      const pool=require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD);
+      const id=require("./nap-direct-swimmer").swimmerId(swimmerId);
+      const [rows]=await pool.execute({sql:"SELECT club FROM nageurs WHERE id=? LIMIT 1",timeout:10000},[id]);
+      if(rows.length!==1) throw new TypeError("Nageur NAP introuvable.");
+      return await require("./nap-swimmer-activity").change(pool,{id,clubId:String(rows[0].club),actorUid:context.uid,status:active?"active":"inactive",expectedFingerprint:request.data?.expectedFingerprint},{
+        read:async operation=>{const doc=await db.collection("auditLogs").doc(`nap-swimmer-activity-${operation}-before`).get();return doc.exists?doc.data().target:null;},
+        prepare:(operation,target)=>db.collection("auditLogs").doc(`nap-swimmer-activity-${operation}-before`).create({action:"nap.swimmerActivity.prepare",actorUid:context.uid,target,createdAt:new Date().toISOString()}),
+        complete:(operation,target)=>writeAuditLogOnce("nap.swimmerActivity.complete",context.uid,target,`nap-swimmer-activity-${operation}-complete`)
+      });
+    } catch(error) {throw new HttpsError(error instanceof TypeError?"failed-precondition":"unavailable",error instanceof TypeError?error.message:"Statut NAP a verifier. Rechargez la fiche.");}
+  }
   const ref = db.collection("engagementClubSwimmers").doc(swimmerId);
   const snapshot = await ref.get();
   if (!snapshot.exists) {
@@ -14914,6 +15029,7 @@ async function deleteEngagementClubSwimmerPermanently(ref, snapshot, context = {
 }
 
 exports.requestEngagementClubSwimmerDeletion = onCall(CALLABLE_OPTIONS, async (request) => {
+  if (ENVIRONMENT.sportingDataSource === "nap") throw new HttpsError("failed-precondition", "Cette ancienne suppression Firebase est desactivee. Utilisez la gestion NAP de la fiche.");
   const context = await engagementClubAccessContext(request);
   const swimmerId = cleanText(request.data?.swimmerId).slice(0, 80);
   if (!swimmerId) {
@@ -14981,7 +15097,7 @@ exports.requestEngagementClubSwimmerDeletion = onCall(CALLABLE_OPTIONS, async (r
   return { ok: true, deleted: false, requested: true, usage };
 });
 
-exports.deleteEngagementNationalClubSwimmer = onCall(CALLABLE_OPTIONS, async (request) => {
+exports.deleteEngagementNationalClubSwimmer = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
   const context = await engagementAccessContext(request);
   if (!context.national) {
     throw new HttpsError("permission-denied", "Suppression reservee au niveau national.");
@@ -14992,6 +15108,18 @@ exports.deleteEngagementNationalClubSwimmer = onCall(CALLABLE_OPTIONS, async (re
   }
   if (request.data?.confirmPermanent !== true) {
     throw new HttpsError("failed-precondition", "Confirmation de suppression definitive requise.");
+  }
+  if (ENVIRONMENT.sportingDataSource === "nap") {
+    try {
+      return await require("./nap-swimmer-deletion").deleteSwimmer(require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD),{
+        swimmerId,actorUid:context.uid,confirmPermanent:true,expectedFingerprint:request.data?.expectedFingerprint,
+        expectedActivityFingerprint:request.data?.expectedActivityFingerprint,expectedLicenseNumber:request.data?.expectedLicenseNumber
+      },{
+        read:async operation=>{const [saved,reservation]=await Promise.all([db.collection("auditLogs").doc(`nap-swimmer-delete-${operation}-before`).get(),db.collection("auditLogs").doc(`nap-swimmer-merge-person-${swimmerId}`).get()]);if(reservation.exists&&reservation.data().state==="pending")throw new TypeError("Une fusion de cette fiche doit etre terminee avant sa suppression.");return saved.exists?saved.data().target:null;},
+        prepare:(operation,target)=>db.collection("auditLogs").doc(`nap-swimmer-delete-${operation}-before`).create({action:"nap.swimmerDelete.prepare",actorUid:context.uid,target,createdAt:new Date().toISOString()}),
+        complete:(operation,target)=>writeAuditLogOnce("nap.swimmerDelete.complete",context.uid,target,`nap-swimmer-delete-${operation}-complete`)
+      },()=>{if(!context.national)throw new HttpsError("permission-denied","Suppression nationale requise.");});
+    }catch(error){if(error instanceof HttpsError)throw error;throw new HttpsError(error instanceof TypeError||error instanceof RangeError?"failed-precondition":"unavailable",error instanceof TypeError||error instanceof RangeError?error.message:"Suppression NAP a verifier. Reprenez la meme action ; sauvegarde conservee.");}
   }
   const ref = db.collection("engagementClubSwimmers").doc(swimmerId);
   const snapshot = await ref.get();
@@ -15014,6 +15142,7 @@ exports.deleteEngagementNationalClubSwimmer = onCall(CALLABLE_OPTIONS, async (re
 });
 
 exports.listEngagementSwimmerDeletionRequests = onCall(CALLABLE_OPTIONS, async (request) => {
+  if (ENVIRONMENT.sportingDataSource === "nap") throw new HttpsError("failed-precondition", "Cette ancienne suppression Firebase est desactivee. Utilisez la gestion NAP de la fiche.");
   const context = await engagementAccessContext(request);
   if (!context.national) {
     throw new HttpsError("permission-denied", "Lecture reservee au niveau national.");
@@ -15054,6 +15183,7 @@ exports.listEngagementSwimmerDeletionRequests = onCall(CALLABLE_OPTIONS, async (
 });
 
 exports.resolveEngagementSwimmerDeletionRequest = onCall(CALLABLE_OPTIONS, async (request) => {
+  if (ENVIRONMENT.sportingDataSource === "nap") throw new HttpsError("failed-precondition", "Cette ancienne suppression Firebase est desactivee. Utilisez la gestion NAP de la fiche.");
   const context = await engagementAccessContext(request);
   if (!context.national) {
     throw new HttpsError("permission-denied", "Validation reservee au niveau national.");
@@ -15346,10 +15476,18 @@ async function searchEngagementNationalSwimmerMergeTargetDocs(db, sourceSwimmer 
   return Array.from(docs.values()).slice(0, limit);
 }
 
-exports.searchEngagementNationalSwimmerMergeTargets = onCall(CALLABLE_OPTIONS, async (request) => {
+exports.searchEngagementNationalSwimmerMergeTargets = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
   const context = await engagementAccessContext(request);
   if (!context.national) {
     throw new HttpsError("permission-denied", "Recherche reservee au niveau national.");
+  }
+  if (ENVIRONMENT.sportingDataSource === "nap") {
+    try {
+      const pool = require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD);
+      return await require("./nap-swimmer-merge-search").searchMergeTargets(pool, {sourceSwimmerId:request.data?.sourceSwimmerId,query:request.data?.query});
+    } catch (error) {
+      throw new HttpsError(error instanceof TypeError ? "invalid-argument" : "unavailable", "Recherche NAP indisponible. Precisez le nom, le prenom ou l'identifiant de la fiche a conserver.");
+    }
   }
   const sourceSwimmerId = cleanText(request.data?.sourceSwimmerId).slice(0, 80);
   const sourceSource = cleanText(request.data?.sourceSource || "engagement").slice(0, 40);
@@ -15467,17 +15605,30 @@ async function readPerformanceDocsForNationalSwimmerMerge(db, sourceSwimmer = {}
   return rows;
 }
 
-exports.mergeEngagementNationalClubSwimmer = onCall(ENGAGEMENT_SWIMMER_CORRECTION_OPTIONS, async (request) => {
+exports.mergeEngagementNationalClubSwimmer = onCall({ ...ENGAGEMENT_SWIMMER_CORRECTION_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
   const context = await engagementAccessContext(request);
   if (!context.national) {
     throw new HttpsError("permission-denied", "Fusion reservee au niveau national.");
+  }
+  if (ENVIRONMENT.sportingDataSource === "nap") {
+    if (request.data?.confirmMerge !== true) throw new HttpsError("failed-precondition", "Confirmation de fusion requise.");
+    try {
+      return await require("./nap-swimmer-merge").mergeSwimmers(require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD),{
+        sourceSwimmerId:request.data?.sourceSwimmerId,targetSwimmerId:request.data?.targetSwimmerId,
+        sourceFingerprint:request.data?.sourceFingerprint,targetFingerprint:request.data?.targetFingerprint,
+        sourceLicenseNumber:request.data?.sourceLicenseNumber,targetLicenseNumber:request.data?.targetLicenseNumber,
+        actorUid:context.uid,confirmMerge:true,confirmClubMismatch:request.data?.confirmClubMismatch===true,confirmLicenseMismatch:request.data?.confirmLicenseMismatch===true
+      },require("./nap-swimmer-merge-audit").createAudit(db,{sourceSwimmerId:request.data?.sourceSwimmerId,targetSwimmerId:request.data?.targetSwimmerId,actorUid:context.uid},writeAuditLogOnce),async()=>{if(!context.national)throw new TypeError("Fusion reservee au niveau national.");});
+    } catch(error) {
+      if(error instanceof HttpsError)throw error;
+      throw new HttpsError(error instanceof TypeError||error instanceof RangeError?"failed-precondition":"unavailable",error instanceof TypeError||error instanceof RangeError?error.message:"Fusion NAP interrompue. Conservez les deux fiches choisies et reprenez la meme demande.");
+    }
   }
   const sourceSwimmerId = cleanText(request.data?.sourceSwimmerId).slice(0, 80);
   const sourceSource = cleanText(request.data?.sourceSource || "engagement").slice(0, 40);
   const sourceIdentityKey = cleanText(request.data?.sourceIdentityKey).slice(0, 180);
   const targetSwimmerId = cleanText(request.data?.targetSwimmerId).slice(0, 80);
   const targetSource = cleanText(request.data?.targetSource || "performances").slice(0, 40);
-  if (ENVIRONMENT.projectId === "livepalmes-test" && (sourceSource === "reference" || targetSource === "reference")) throw new HttpsError("failed-precondition", "La fusion NAP n'est pas encore raccordee. Aucune ancienne fiche n'a ete modifiee.");
   const targetIdentityKey = cleanText(request.data?.targetIdentityKey).slice(0, 180);
   if (!sourceSwimmerId || !targetSwimmerId || (sourceSource === targetSource && sourceSwimmerId === targetSwimmerId)) {
     throw new HttpsError("invalid-argument", "Nageurs source et cible requis.");
@@ -15689,6 +15840,7 @@ exports.mergeEngagementNationalClubSwimmer = onCall(ENGAGEMENT_SWIMMER_CORRECTIO
 exports.repairEngagementNationalSwimmerMergePublication = onCall(ENGAGEMENT_SWIMMER_CORRECTION_OPTIONS, async (request) => {
   const context = await engagementAccessContext(request);
   if (!context.national) throw new HttpsError("permission-denied", "Reparation reservee au niveau national.");
+  if(ENVIRONMENT.sportingDataSource==="nap")throw new HttpsError("failed-precondition","Les fiches NAP sont lues directement. Utilisez Finaliser la fusion depuis la fiche fusionnee.");
   const sourceSwimmerId = cleanText(request.data?.sourceSwimmerId).slice(0, 80);
   const sourceSource = cleanText(request.data?.sourceSource || "performances").slice(0, 40);
   const sourceIdentityKey = cleanText(request.data?.sourceIdentityKey).slice(0, 180);
@@ -15728,10 +15880,14 @@ exports.repairEngagementNationalSwimmerMergePublication = onCall(ENGAGEMENT_SWIM
   return { ok: true, publicSnapshot };
 });
 
-exports.listEngagementNationalClubPeople = onCall(CALLABLE_OPTIONS, async (request) => {
+exports.listEngagementNationalClubPeople = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
   const context = await engagementAccessContext(request);
   if (!context.national) {
     throw new HttpsError("permission-denied", "Lecture reservee au niveau national.");
+  }
+  if (ENVIRONMENT.sportingDataSource === "nap") {
+    try {return await require("./nap-club-people").readNationalPeople(require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD),{cursor:request.data?.cursor},()=>{if(!context.national) throw new HttpsError("permission-denied","Lecture nationale requise.");});}
+    catch(error) {throw new HttpsError(error instanceof TypeError?"invalid-argument":"unavailable",error instanceof TypeError?error.message:"Annuaire national NAP indisponible. Reessayez.");}
   }
   const limit = Math.min(200, Math.max(20, Math.trunc(Number(request.data?.limit) || 80)));
   const snapshot = await db
@@ -15745,7 +15901,7 @@ exports.listEngagementNationalClubPeople = onCall(CALLABLE_OPTIONS, async (reque
   };
 });
 
-exports.setEngagementNationalClubPersonStatus = onCall(CALLABLE_OPTIONS, async (request) => {
+exports.setEngagementNationalClubPersonStatus = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
   const context = await engagementAccessContext(request);
   if (!context.national) {
     throw new HttpsError("permission-denied", "Action reservee au niveau national.");
@@ -15755,6 +15911,22 @@ exports.setEngagementNationalClubPersonStatus = onCall(CALLABLE_OPTIONS, async (
     throw new HttpsError("invalid-argument", "Personne requise.");
   }
   const active = request.data?.active === true;
+  if (ENVIRONMENT.sportingDataSource === "nap") {
+    try {
+      const statusService=require("./nap-club-person-status");
+      const ref=statusService.reference(personId),spec=require("./nap-club-people").SOURCES[ref.kind];
+      const pool=require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD);
+      const [rows]=await pool.execute({sql:`SELECT club FROM \`${spec.table}\` WHERE id=? LIMIT 1`,timeout:10000},[ref.id]);
+      if(rows.length!==1) throw new TypeError("Personne NAP introuvable.");
+      const clubId=String(rows[0].club);
+      const result=await statusService.changeNativePersonStatus(pool,{personId,clubId,actorUid:context.uid,active,expectedFingerprint:request.data?.expectedFingerprint},{
+        read:async operation=>{const doc=await db.collection("auditLogs").doc(`nap-person-status-${operation}-before`).get();return doc.exists?doc.data().target:null;},
+        prepare:(operation,target)=>db.collection("auditLogs").doc(`nap-person-status-${operation}-before`).create({action:"nap.personStatus.prepare",actorUid:context.uid,target,createdAt:new Date().toISOString()}),
+        complete:(operation,target)=>writeAuditLogOnce("nap.personStatus.complete",context.uid,target,`nap-person-status-${operation}-complete`)
+      },scope=>{if(!context.national || scope.clubId!==clubId) throw new HttpsError("permission-denied","Personne hors perimetre.");});
+      return result;
+    } catch(error) {if(error instanceof HttpsError) throw error;throw new HttpsError(error instanceof TypeError?"failed-precondition":"unavailable",error instanceof TypeError?error.message:"Statut NAP a verifier. Rechargez la fiche.");}
+  }
   const ref = db.collection("engagementClubPeople").doc(personId);
   const snapshot = await ref.get();
   if (!snapshot.exists) {
@@ -15791,7 +15963,7 @@ exports.setEngagementNationalClubPersonStatus = onCall(CALLABLE_OPTIONS, async (
   };
 });
 
-exports.deleteEngagementNationalClubPerson = onCall(CALLABLE_OPTIONS, async (request) => {
+exports.deleteEngagementNationalClubPerson = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
   const context = await engagementAccessContext(request);
   if (!context.national) {
     throw new HttpsError("permission-denied", "Suppression reservee au niveau national.");
@@ -15802,6 +15974,15 @@ exports.deleteEngagementNationalClubPerson = onCall(CALLABLE_OPTIONS, async (req
   }
   if (request.data?.confirmPermanent !== true) {
     throw new HttpsError("failed-precondition", "Confirmation de suppression definitive requise.");
+  }
+  if (ENVIRONMENT.sportingDataSource === "nap") {
+    try {
+      return await require("./nap-person-deletion").deletePerson(require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD),{personId,actorUid:context.uid,confirmPermanent:true,expectedFingerprint:request.data?.expectedFingerprint},{
+        read:async operation=>{const doc=await db.collection("auditLogs").doc(`nap-person-delete-${operation}-before`).get();return doc.exists?doc.data().target:null;},
+        prepare:(operation,target)=>db.collection("auditLogs").doc(`nap-person-delete-${operation}-before`).create({action:"nap.personDelete.prepare",actorUid:context.uid,target,createdAt:new Date().toISOString()}),
+        complete:(operation,target)=>writeAuditLogOnce("nap.personDelete.complete",context.uid,target,`nap-person-delete-${operation}-complete`)
+      },()=>{if(!context.national) throw new HttpsError("permission-denied","Suppression nationale requise.");});
+    } catch(error) {if(error instanceof HttpsError) throw error;throw new HttpsError(error instanceof TypeError?"failed-precondition":"unavailable",error instanceof TypeError?error.message:"Suppression NAP a verifier. Rechargez la fiche ; sauvegarde conservee.");}
   }
   const ref = db.collection("engagementClubPeople").doc(personId);
   const snapshot = await ref.get();
@@ -15989,7 +16170,7 @@ function mergeEngagementClubEntryOfficials(officials = [], sourceId = "", target
   return { officials: merged, changed };
 }
 
-exports.mergeEngagementNationalClubPerson = onCall(CALLABLE_OPTIONS, async (request) => {
+exports.mergeEngagementNationalClubPerson = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
   const context = await engagementAccessContext(request);
   if (!context.national) {
     throw new HttpsError("permission-denied", "Fusion reservee au niveau national.");
@@ -16001,6 +16182,15 @@ exports.mergeEngagementNationalClubPerson = onCall(CALLABLE_OPTIONS, async (requ
   }
   if (request.data?.confirmMerge !== true) {
     throw new HttpsError("failed-precondition", "Confirmation de fusion requise.");
+  }
+  if (ENVIRONMENT.sportingDataSource === "nap") {
+    try {
+      return await require("./nap-person-merge").mergePeople(require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD),{sourcePersonId,targetPersonId,actorUid:context.uid,confirmMerge:true,confirmClubMismatch:request.data?.confirmClubMismatch===true,sourceFingerprint:request.data?.sourceFingerprint,targetFingerprint:request.data?.targetFingerprint},{
+        read:async operation=>{const doc=await db.collection("auditLogs").doc(`nap-person-merge-${operation}-before`).get();return doc.exists?doc.data().target:null;},
+        prepare:(operation,target)=>db.collection("auditLogs").doc(`nap-person-merge-${operation}-before`).create({action:"nap.personMerge.prepare",actorUid:context.uid,target,createdAt:new Date().toISOString()}),
+        complete:(operation,target)=>writeAuditLogOnce("nap.personMerge.complete",context.uid,target,`nap-person-merge-${operation}-complete`)
+      },()=>{if(!context.national)throw new HttpsError("permission-denied","Fusion nationale requise.");});
+    }catch(error){if(error instanceof HttpsError)throw error;throw new HttpsError(error instanceof TypeError?"failed-precondition":"unavailable",error instanceof TypeError?error.message:"Fusion NAP a verifier. Rechargez les fiches ; sauvegarde conservee.");}
   }
   const sourceRef = db.collection("engagementClubPeople").doc(sourcePersonId);
   const targetRef = db.collection("engagementClubPeople").doc(targetPersonId);
@@ -16332,7 +16522,7 @@ exports.previewEngagementClubEntryTimes = onCall(CALLABLE_OPTIONS, async (reques
   };
 });
 
-exports.getEngagementClubEntryTimeHistory = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.projectId === "livepalmes-test" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
+exports.getEngagementClubEntryTimeHistory = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
   const startedAt = Date.now();
   const context = await engagementClubAccessContext(request);
   const competitionId = cleanText(request.data?.competitionId).slice(0, 128);
@@ -16340,7 +16530,7 @@ exports.getEngagementClubEntryTimeHistory = onCall({ ...CALLABLE_OPTIONS, ...(EN
   if (!competitionId || !swimmerIndexId) {
     throw new HttpsError("invalid-argument", "Competition et nageur requis.");
   }
-  if (ENVIRONMENT.projectId === "livepalmes-test") {
+  if (ENVIRONMENT.sportingDataSource === "nap") {
     return nativeClubEntryTimeHistory(context, competitionId, swimmerIndexId, request.data?.eventCodes);
   }
   const competitionRef = db.collection("engagementCompetitions").doc(competitionId);
@@ -16439,7 +16629,7 @@ async function previewNativeClubEntryTimes(context,competitionId,swimmerIds,enro
   }
 }
 
-exports.previewEngagementClubSwimmerEventTimes = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.projectId === "livepalmes-test" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
+exports.previewEngagementClubSwimmerEventTimes = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
   const context = await engagementClubAccessContext(request);
   const competitionId = cleanText(request.data?.competitionId).slice(0, 128);
   const swimmerIndexId = cleanText(request.data?.swimmerIndexId).slice(0, 80);
@@ -16453,7 +16643,7 @@ exports.previewEngagementClubSwimmerEventTimes = onCall({ ...CALLABLE_OPTIONS, .
     throw new HttpsError("invalid-argument", "Competition et nageur requis.");
   }
 
-  if(ENVIRONMENT.projectId==="livepalmes-test") {
+  if(ENVIRONMENT.sportingDataSource === "nap") {
     const result=await previewNativeClubEntryTimes(context,competitionId,[swimmerIndexId],false);
     return {...result,swimmerIndexId,individualEntries:result.swimmers[0].individualEntries};
   }
@@ -16526,7 +16716,7 @@ exports.previewEngagementClubSwimmerEventTimes = onCall({ ...CALLABLE_OPTIONS, .
   };
 });
 
-exports.previewEngagementClubSwimmerEventTimesBatch = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.projectId === "livepalmes-test" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
+exports.previewEngagementClubSwimmerEventTimesBatch = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
   const startedAt = Date.now();
   const context = await engagementClubAccessContext(request);
   const competitionId = cleanText(request.data?.competitionId).slice(0, 128);
@@ -16536,7 +16726,7 @@ exports.previewEngagementClubSwimmerEventTimesBatch = onCall({ ...CALLABLE_OPTIO
   if (!competitionId || !swimmerIds.length) {
     throw new HttpsError("invalid-argument", "Competition et nageurs requis.");
   }
-  if(ENVIRONMENT.projectId==="livepalmes-test") return previewNativeClubEntryTimes(context,competitionId,swimmerIds,true);
+  if(ENVIRONMENT.sportingDataSource === "nap") return previewNativeClubEntryTimes(context,competitionId,swimmerIds,true);
   const competitionRef = db.collection("engagementCompetitions").doc(competitionId);
   const entryRef = db.collection("engagementClubEntries").doc(engagementClubEntryId(competitionId, context.clubId));
   const [competition, entry] = await db.getAll(competitionRef, entryRef);
@@ -16640,9 +16830,9 @@ async function saveNativeClubIndividualEntries(context,request) {
   }
 }
 
-exports.saveEngagementClubIndividualEntries = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.projectId === "livepalmes-test" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
+exports.saveEngagementClubIndividualEntries = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
   const context = await engagementClubAccessContext(request);
-  if(ENVIRONMENT.projectId==="livepalmes-test") return saveNativeClubIndividualEntries(context,request);
+  if(ENVIRONMENT.sportingDataSource === "nap") return saveNativeClubIndividualEntries(context,request);
   const competitionId = cleanText(request.data?.competitionId).slice(0, 128);
   if (!competitionId) {
     throw new HttpsError("invalid-argument", "Competition requise.");
@@ -16828,9 +17018,9 @@ async function saveNativeClubSwimmerSelections(context,request,rawChanges) {
   }
 }
 
-exports.saveEngagementClubSwimmerSelection = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.projectId === "livepalmes-test" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
+exports.saveEngagementClubSwimmerSelection = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
   const context = await engagementClubAccessContext(request);
-  if (ENVIRONMENT.projectId === "livepalmes-test") return saveNativeClubSwimmerSelections(context,request,[{swimmerIndexId:request.data?.swimmer?.swimmerIndexId || request.data?.swimmerIndexId,selected:request.data?.selected}]);
+  if (ENVIRONMENT.sportingDataSource === "nap") return saveNativeClubSwimmerSelections(context,request,[{swimmerIndexId:request.data?.swimmer?.swimmerIndexId || request.data?.swimmerIndexId,selected:request.data?.selected}]);
   const competitionId = cleanText(request.data?.competitionId).slice(0, 128);
   const swimmerIndexId = cleanText(request.data?.swimmer?.swimmerIndexId || request.data?.swimmerIndexId).slice(0, 80);
   const selected = request.data?.selected === true;
@@ -16943,10 +17133,10 @@ exports.saveEngagementClubSwimmerSelection = onCall({ ...CALLABLE_OPTIONS, ...(E
   };
 });
 
-exports.saveEngagementClubSwimmerSelections = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.projectId === "livepalmes-test" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
+exports.saveEngagementClubSwimmerSelections = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
   const startedAt = Date.now();
   const context = await engagementClubAccessContext(request);
-  if (ENVIRONMENT.projectId === "livepalmes-test") return saveNativeClubSwimmerSelections(context,request,request.data?.changes);
+  if (ENVIRONMENT.sportingDataSource === "nap") return saveNativeClubSwimmerSelections(context,request,request.data?.changes);
   const competitionId = cleanText(request.data?.competitionId).slice(0, 128);
   const rawChanges = Array.isArray(request.data?.changes) ? request.data.changes.slice(0, 50) : [];
   if (!competitionId || !rawChanges.length) {
@@ -17198,9 +17388,9 @@ async function saveNativeClubRelays(context,request) {
   }
 }
 
-exports.saveEngagementClubRelays = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.projectId === "livepalmes-test" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
+exports.saveEngagementClubRelays = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
   const context = await engagementClubAccessContext(request);
-  if(ENVIRONMENT.projectId==="livepalmes-test") return saveNativeClubRelays(context,request);
+  if(ENVIRONMENT.sportingDataSource === "nap") return saveNativeClubRelays(context,request);
   const competitionId = cleanText(request.data?.competitionId).slice(0, 128);
   if (!competitionId) {
     throw new HttpsError("invalid-argument", "Competition requise.");
@@ -17285,9 +17475,9 @@ exports.saveEngagementClubRelays = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT
   };
 });
 
-exports.createEngagementCompetition = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.projectId === "livepalmes-test" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")], maxInstances:2, concurrency:4, timeoutSeconds:120 } : {}) }, async (request) => {
+exports.createEngagementCompetition = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")], maxInstances:2, concurrency:4, timeoutSeconds:120 } : {}) }, async (request) => {
   const context = await engagementAccessContext(request);
-  if (ENVIRONMENT.projectId === "livepalmes-test") {
+  if (ENVIRONMENT.sportingDataSource === "nap") {
     const raw=request.data || {};
     if (!["pool","openWater"].includes(raw.competitionType)) throw new HttpsError("invalid-argument","Choisissez le type de competition.");
     return createNativePortalCalendarRecord(raw,context,raw.competitionType);
@@ -17335,13 +17525,13 @@ exports.createEngagementCompetition = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONM
   };
 });
 
-exports.updateEngagementCompetition = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.projectId === "livepalmes-test" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")], maxInstances:2, concurrency:4, timeoutSeconds:120 } : {}) }, async (request) => {
+exports.updateEngagementCompetition = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")], maxInstances:2, concurrency:4, timeoutSeconds:120 } : {}) }, async (request) => {
   const context = await engagementAccessContext(request);
   const competitionId = cleanText(request.data?.competitionId).slice(0, 128);
   if (!competitionId) {
     throw new HttpsError("invalid-argument", "Competition requise.");
   }
-  if (ENVIRONMENT.projectId === "livepalmes-test") {
+  if (ENVIRONMENT.sportingDataSource === "nap") {
     const nativeChange = require("./nap-portal-competition-change");
     const pool = require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD);
     const authorize = event => assertCanModifyEngagementEvent(context,event);
@@ -17706,7 +17896,7 @@ exports.resolveEngagementCompetitionDeletionRequest = onCall(CALLABLE_OPTIONS, a
 
 exports.previewCompetitionImport = onCall(COMPETITION_IMPORT_CALLABLE_OPTIONS, async (request) => {
   assertCapability(request, "competitions.import");
-  if(ENVIRONMENT.projectId==="livepalmes-test") {
+  if(ENVIRONMENT.sportingDataSource === "nap") {
     authorizeNativePerformance(request);
     if(request.data?.sourceType==="international-xlsx"||request.data?.workbook)throw new HttpsError("failed-precondition","Le raccordement de l'import Excel international reste a terminer ; aucune ancienne base ne sera utilisee.");
     try{return require("./nap-import-response").importPreviewResponse(await require("./nap-import-preview").previewNativeImport(require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD),request.data||{}));}
@@ -17964,7 +18154,7 @@ async function stageCompetitionImportReplacement(options = {}) {
 
 exports.createCompetitionImport = onCall(COMPETITION_IMPORT_CALLABLE_OPTIONS, async (request) => {
   assertCapability(request, "competitions.import");
-  if(ENVIRONMENT.projectId==="livepalmes-test") {
+  if(ENVIRONMENT.sportingDataSource === "nap") {
     if(request.data?.sourceType==="international-xlsx"||request.data?.workbook)throw new HttpsError("failed-precondition","Import Excel NAP non disponible pour le moment.");
     try{return await require("./nap-import-write").createNativeImportWriter({authorize:authorizeNativePerformance,getPool:()=>require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD)})(request);}
     catch(error){throw nativePerformanceFailure(error);}
@@ -18163,7 +18353,7 @@ exports.createCompetitionImport = onCall(COMPETITION_IMPORT_CALLABLE_OPTIONS, as
 });
 
 exports.resumeCompetitionImportPublication = onCall(COMPETITION_IMPORT_CALLABLE_OPTIONS, async (request) => {
-  if (ENVIRONMENT.projectId === "livepalmes-test") throw new HttpsError("failed-precondition", "Cette ancienne action Firebase est désactivée sur TEST : les résultats sont gérés dans NAP.");
+  if (ENVIRONMENT.sportingDataSource === "nap") throw new HttpsError("failed-precondition", "Cette ancienne action Firebase est désactivée : les résultats sont gérés dans NAP.");
   assertCapability(request, "competitions.import");
   const importId = cleanText(request.data?.importId).slice(0, 160);
   if (!importId) {
@@ -18257,7 +18447,7 @@ exports.resumeCompetitionImportPublication = onCall(COMPETITION_IMPORT_CALLABLE_
 
 exports.listCompetitionImports = onCall(COMPETITION_IMPORT_CALLABLE_OPTIONS, async (request) => {
   assertCapability(request, "competitions.import");
-  if (ENVIRONMENT.projectId === "livepalmes-test") {
+  if (ENVIRONMENT.sportingDataSource === "nap") {
     authorizeNativePerformance(request);
     try {
       return await require("./nap-import-history").readImportHistory(require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD));
@@ -18415,7 +18605,7 @@ async function markCompetitionImportDeleted(importId, context = {}) {
 }
 
 exports.deleteCompetitionImport = onCall(PUBLIC_PERFORMANCE_CALLABLE_OPTIONS, async (request) => {
-  if (ENVIRONMENT.projectId === "livepalmes-test") throw new HttpsError("failed-precondition", "Cette ancienne action Firebase est désactivée sur TEST : les résultats sont gérés dans NAP.");
+  if (ENVIRONMENT.sportingDataSource === "nap") throw new HttpsError("failed-precondition", "Cette ancienne action Firebase est désactivée : les résultats sont gérés dans NAP.");
   assertCapability(request, "competitions.import");
   const importId = cleanText(request.data?.importId).slice(0, 160);
   if (!importId) {
@@ -18491,7 +18681,7 @@ exports.deleteCompetitionImport = onCall(PUBLIC_PERFORMANCE_CALLABLE_OPTIONS, as
 });
 
 exports.updateCompetitionImportRecordAlertDecision = onCall(CALLABLE_OPTIONS, async (request) => {
-  if (ENVIRONMENT.projectId === "livepalmes-test") throw new HttpsError("failed-precondition", "Cette ancienne action Firebase est désactivée sur TEST : les résultats sont gérés dans NAP.");
+  if (ENVIRONMENT.sportingDataSource === "nap") throw new HttpsError("failed-precondition", "Cette ancienne action Firebase est désactivée : les résultats sont gérés dans NAP.");
   assertCapability(request, "competitions.import");
   const importId = cleanText(request.data?.importId).slice(0, 160);
   const alertIndex = Number(request.data?.alertIndex);
@@ -19062,7 +19252,7 @@ async function performanceTopRowsFromIndex(filters = {}) {
 }
 
 function dtnSeasonService() {
-  const native = ENVIRONMENT.projectId === "livepalmes-test";
+  const native = ENVIRONMENT.sportingDataSource === "nap";
   const factory = native ? require("./nap-dtn-season-service").createNativeDtnSeasonService : createDtnSeasonService;
   return factory({
     db, fieldPath: FieldPath,
@@ -19079,11 +19269,11 @@ function dtnSeasonService() {
   });
 }
 
-const DTN_SEASON_OPTIONS = ENVIRONMENT.projectId === "livepalmes-test" ? {
+const DTN_SEASON_OPTIONS = ENVIRONMENT.sportingDataSource === "nap" ? {
   ...CALLABLE_OPTIONS, secrets: ["LIVEPALMES_NAP_PASSWORD"], timeoutSeconds: 540, memory: "1GiB", maxInstances: 2, concurrency: 4
 } : CALLABLE_OPTIONS;
 async function invokeDtnSeason(method, request) {
-  if (ENVIRONMENT.projectId !== "livepalmes-test") return dtnSeasonService()[method](request);
+  if (ENVIRONMENT.sportingDataSource !== "nap") return dtnSeasonService()[method](request);
   try { return await dtnSeasonService()[method](request); }
   catch (error) {
     if (error instanceof HttpsError) throw error;
@@ -19395,7 +19585,7 @@ async function enqueueDtnQualificationJob(job = {}) {
 }
 
 exports.buildDtnQualificationView = onDocumentCreated(DTN_QUALIFICATION_JOB_OPTIONS, async (event) => {
-  if (ENVIRONMENT.projectId === "livepalmes-test") return;
+  if (ENVIRONMENT.sportingDataSource === "nap") return;
   const snapshot = event.data;
   if (!snapshot?.exists) return;
   const job = snapshot.data() || {};
@@ -19453,7 +19643,7 @@ exports.buildDtnQualificationView = onDocumentCreated(DTN_QUALIFICATION_JOB_OPTI
 
 exports.refreshDtnQualificationCache = onCall(CALLABLE_OPTIONS, async (request) => {
   assertCapability(request, "dtn.view");
-  if (ENVIRONMENT.projectId === "livepalmes-test") throw new HttpsError("failed-precondition", "Utilisez la DTN par saison pour recalculer les resultats.");
+  if (ENVIRONMENT.sportingDataSource === "nap") throw new HttpsError("failed-precondition", "Utilisez la DTN par saison pour recalculer les resultats.");
   const seasonYear = Number(request.data?.seasonYear || 0);
   if (!Number.isInteger(seasonYear) || !DTN_EDF_COMPETITION_IDS_BY_SEASON[seasonYear]) {
     throw new HttpsError("invalid-argument", "Saison DTN invalide.");
@@ -19479,7 +19669,7 @@ exports.refreshDtnQualificationCache = onCall(CALLABLE_OPTIONS, async (request) 
 exports.getDtnQualificationOverview = onCall(CALLABLE_OPTIONS, async (request) => {
   const startedAt = Date.now();
   assertCapability(request, "dtn.view");
-  if (ENVIRONMENT.projectId === "livepalmes-test") throw new HttpsError("failed-precondition", "Utilisez la DTN par saison pour consulter les resultats.");
+  if (ENVIRONMENT.sportingDataSource === "nap") throw new HttpsError("failed-precondition", "Utilisez la DTN par saison pour consulter les resultats.");
   const seasonYear = Number(request.data?.seasonYear || 0);
   const sex = normalizeCategoryCode(request.data?.sex);
   const allowedStandardIds = new Set(["TSP", "TRP", "TJP", "TEP", "TU16C2", "TU16C1"]);
@@ -19599,7 +19789,7 @@ function normalizeDtnListingRules(inputRules = []) {
 
 exports.refreshDtnListingCache = onCall(CALLABLE_OPTIONS, async (request) => {
   assertCapability(request, "dtn.view");
-  if (ENVIRONMENT.projectId === "livepalmes-test") throw new HttpsError("failed-precondition", "Utilisez la DTN par saison pour recalculer les resultats.");
+  if (ENVIRONMENT.sportingDataSource === "nap") throw new HttpsError("failed-precondition", "Utilisez la DTN par saison pour recalculer les resultats.");
   const seasonYear = Number(request.data?.seasonYear || 0);
   if (!Number.isInteger(seasonYear) || !DTN_LISTING_SEASON_YEARS.has(seasonYear)) {
     throw new HttpsError("invalid-argument", "Saison DTN invalide.");
@@ -19622,7 +19812,7 @@ exports.refreshDtnListingCache = onCall(CALLABLE_OPTIONS, async (request) => {
 exports.getDtnListingOverview = onCall(CALLABLE_OPTIONS, async (request) => {
   const startedAt = Date.now();
   assertCapability(request, "dtn.view");
-  if (ENVIRONMENT.projectId === "livepalmes-test") throw new HttpsError("failed-precondition", "Utilisez la DTN par saison pour consulter les resultats.");
+  if (ENVIRONMENT.sportingDataSource === "nap") throw new HttpsError("failed-precondition", "Utilisez la DTN par saison pour consulter les resultats.");
   const seasonYear = Number(request.data?.seasonYear || 0);
   if (!Number.isInteger(seasonYear) || seasonYear < 2000 || seasonYear > 2100 || !DTN_LISTING_SEASON_YEARS.has(seasonYear)) {
     throw new HttpsError("invalid-argument", "Saison DTN invalide.");
@@ -20036,7 +20226,7 @@ async function getPerformanceBaseRowsBySwimmer(data = {}) {
 }
 
 exports.rebuildPerformanceSwimmerIndexNextPage = onCall(PUBLIC_PERFORMANCE_CALLABLE_OPTIONS, async (request) => {
-  if (ENVIRONMENT.projectId === "livepalmes-test") throw new HttpsError("failed-precondition", "Cette ancienne action Firebase est désactivée sur TEST : les résultats sont gérés dans NAP.");
+  if (ENVIRONMENT.sportingDataSource === "nap") throw new HttpsError("failed-precondition", "Cette ancienne action Firebase est désactivée : les résultats sont gérés dans NAP.");
   assertAdmin(request);
   const stateRef = db.collection(PERFORMANCE_SWIMMER_INDEX_STATE_COLLECTION).doc("default");
   const stateSnapshot = await stateRef.get();
@@ -20091,7 +20281,7 @@ exports.rebuildPerformanceSwimmerIndexNextPage = onCall(PUBLIC_PERFORMANCE_CALLA
 });
 
 exports.rebuildPerformanceTopIndexNextPage = onCall(PUBLIC_PERFORMANCE_CALLABLE_OPTIONS, async (request) => {
-  if (ENVIRONMENT.projectId === "livepalmes-test") throw new HttpsError("failed-precondition", "Cette ancienne action Firebase est désactivée sur TEST : les résultats sont gérés dans NAP.");
+  if (ENVIRONMENT.sportingDataSource === "nap") throw new HttpsError("failed-precondition", "Cette ancienne action Firebase est désactivée : les résultats sont gérés dans NAP.");
   assertAdmin(request);
   const stateRef = db.collection(PERFORMANCE_TOP_INDEX_STATE_COLLECTION).doc("default");
   const stateSnapshot = await stateRef.get();
@@ -21111,7 +21301,7 @@ function historicalRowsFromChunkPayload(payload = {}) {
 }
 
 exports.importHistoricalPerformanceRows = onCall(MIGRATION_CALLABLE_OPTIONS, async (request) => {
-  if (ENVIRONMENT.projectId === "livepalmes-test") throw new HttpsError("failed-precondition", "Cette ancienne action Firebase est désactivée sur TEST : les résultats sont gérés dans NAP.");
+  if (ENVIRONMENT.sportingDataSource === "nap") throw new HttpsError("failed-precondition", "Cette ancienne action Firebase est désactivée : les résultats sont gérés dans NAP.");
   assertAdmin(request);
   const data = request.data || {};
   const source = cleanText(data.source || "intranap").slice(0, 80);
@@ -21273,13 +21463,13 @@ async function publishAdditionalPerformanceDataSnapshot() {
 }
 
 exports.exportAdditionalPerformanceData = onCall(CALLABLE_OPTIONS, async (request) => {
-  if (ENVIRONMENT.projectId === "livepalmes-test") throw new HttpsError("failed-precondition", "Cette ancienne action Firebase est désactivée sur TEST : les résultats sont gérés dans NAP.");
+  if (ENVIRONMENT.sportingDataSource === "nap") throw new HttpsError("failed-precondition", "Cette ancienne action Firebase est désactivée : les résultats sont gérés dans NAP.");
   assertCapability(request, "competitions.import");
   return buildAdditionalPerformanceDataSnapshot();
 });
 
 exports.publishPerformancePublicData = onCall(PUBLIC_PERFORMANCE_CALLABLE_OPTIONS, async (request) => {
-  if (ENVIRONMENT.projectId === "livepalmes-test") throw new HttpsError("failed-precondition", "Cette ancienne action Firebase est désactivée sur TEST : les résultats sont gérés dans NAP.");
+  if (ENVIRONMENT.sportingDataSource === "nap") throw new HttpsError("failed-precondition", "Cette ancienne action Firebase est désactivée : les résultats sont gérés dans NAP.");
   assertAdmin(request);
   try {
     const publicSnapshot = await publishAdditionalPerformanceDataSnapshot();
@@ -21300,7 +21490,7 @@ exports.publishPerformancePublicData = onCall(PUBLIC_PERFORMANCE_CALLABLE_OPTION
 });
 
 exports.getPerformanceBaseMigrationStatus = onCall(MIGRATION_CALLABLE_OPTIONS, async (request) => {
-  if (ENVIRONMENT.projectId === "livepalmes-test") throw new HttpsError("failed-precondition", "Cette ancienne action Firebase est désactivée sur TEST : les résultats sont gérés dans NAP.");
+  if (ENVIRONMENT.sportingDataSource === "nap") throw new HttpsError("failed-precondition", "Cette ancienne action Firebase est désactivée : les résultats sont gérés dans NAP.");
   assertAdmin(request);
   const manifest = await performanceBaseMigrationManifest();
   const chunks = await migrationChunkStatuses(manifest.chunks);
@@ -21318,7 +21508,7 @@ exports.getPerformanceBaseMigrationStatus = onCall(MIGRATION_CALLABLE_OPTIONS, a
 });
 
 exports.migratePerformanceBaseNextChunk = onCall(MIGRATION_CALLABLE_OPTIONS, async (request) => {
-  if (ENVIRONMENT.projectId === "livepalmes-test") throw new HttpsError("failed-precondition", "Cette ancienne action Firebase est désactivée sur TEST : les résultats sont gérés dans NAP.");
+  if (ENVIRONMENT.sportingDataSource === "nap") throw new HttpsError("failed-precondition", "Cette ancienne action Firebase est désactivée : les résultats sont gérés dans NAP.");
   assertAdmin(request);
   const manifest = await performanceBaseMigrationManifest();
   const chunks = await migrationChunkStatuses(manifest.chunks);
@@ -21732,14 +21922,14 @@ async function processPerformancePublicationJob(jobRef) {
 }
 
 exports.publishPerformanceCorrectionJob = onDocumentCreated(PERFORMANCE_PUBLICATION_JOB_OPTIONS, async (event) => {
-  if (ENVIRONMENT.projectId === "livepalmes-test") return null;
+  if (ENVIRONMENT.sportingDataSource === "nap") return null;
   if (!event.data?.exists) return;
   const result = await processPerformancePublicationJob(event.data.ref);
   if (result.retryable) throw result.error;
 });
 
 exports.resumePerformancePublicationJobs = onSchedule(PERFORMANCE_PUBLICATION_SCHEDULER_OPTIONS, async () => {
-  if (ENVIRONMENT.projectId === "livepalmes-test") return null;
+  if (ENVIRONMENT.sportingDataSource === "nap") return null;
   const [pendingSnapshot, processingSnapshot] = await Promise.all([
     db.collection(PERFORMANCE_PUBLICATION_JOBS_COLLECTION).where("status", "==", "pending").limit(3).get(),
     db.collection(PERFORMANCE_PUBLICATION_JOBS_COLLECTION).where("status", "==", "processing").limit(3).get()
@@ -21752,7 +21942,7 @@ exports.resumePerformancePublicationJobs = onSchedule(PERFORMANCE_PUBLICATION_SC
 });
 
 exports.getPerformancePublicationJobStatus = onCall(CALLABLE_OPTIONS, async (request) => {
-  if (ENVIRONMENT.projectId === "livepalmes-test") throw new HttpsError("failed-precondition", "Cette ancienne action Firebase est désactivée sur TEST : les résultats sont gérés dans NAP.");
+  if (ENVIRONMENT.sportingDataSource === "nap") throw new HttpsError("failed-precondition", "Cette ancienne action Firebase est désactivée : les résultats sont gérés dans NAP.");
   assertCapability(request, "competitions.import");
   const jobId = cleanText(request.data?.jobId).slice(0, 80);
   if (!jobId) throw new HttpsError("invalid-argument", "Travail de publication manquant.");
@@ -21762,7 +21952,7 @@ exports.getPerformancePublicationJobStatus = onCall(CALLABLE_OPTIONS, async (req
 });
 
 exports.retryPerformancePublicationJob = onCall(CALLABLE_OPTIONS, async (request) => {
-  if (ENVIRONMENT.projectId === "livepalmes-test") throw new HttpsError("failed-precondition", "Cette ancienne action Firebase est désactivée sur TEST : les résultats sont gérés dans NAP.");
+  if (ENVIRONMENT.sportingDataSource === "nap") throw new HttpsError("failed-precondition", "Cette ancienne action Firebase est désactivée : les résultats sont gérés dans NAP.");
   assertCapability(request, "competitions.import");
   const jobId = cleanText(request.data?.jobId).slice(0, 80);
   if (!jobId) throw new HttpsError("invalid-argument", "Travail de publication manquant.");
@@ -21805,7 +21995,7 @@ exports.retryPerformancePublicationJob = onCall(CALLABLE_OPTIONS, async (request
   return { ok: true, publicationJob };
 });
 
-const NAP_PERFORMANCE_OPTIONS={...CALLABLE_OPTIONS,...(ENVIRONMENT.projectId==="livepalmes-test"?{secrets:[defineSecret("LIVEPALMES_NAP_PASSWORD")],maxInstances:2,concurrency:4}: {})};
+const NAP_PERFORMANCE_OPTIONS={...CALLABLE_OPTIONS,...(ENVIRONMENT.sportingDataSource === "nap"?{secrets:[defineSecret("LIVEPALMES_NAP_PASSWORD")],maxInstances:2,concurrency:4}: {})};
 function authorizeNativePerformance(request) {
   if(!request.auth?.uid)throw new HttpsError("unauthenticated","Connexion requise.");
   assertCapability(request,"competitions.import");
@@ -21818,13 +22008,13 @@ function nativePerformanceFailure(error) {
     error instanceof TypeError||error instanceof RangeError?error.message:"Operation NAP interrompue. Reprenez la meme operation ; la sauvegarde est conservee.");
 }
 exports.getNapPerformanceAdministration=onCall(NAP_PERFORMANCE_OPTIONS,async request=>{
-  if(ENVIRONMENT.projectId!=="livepalmes-test")throw new HttpsError("failed-precondition","Raccordement disponible sur TEST uniquement.");
+  if(ENVIRONMENT.sportingDataSource !== "nap")throw new HttpsError("failed-precondition","Source NAP requise.");
   try{return await require("./nap-performance-administration").createPerformanceAdministration({authorize:authorizeNativePerformance,getPool:()=>require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD)})(request);}
   catch(error){throw nativePerformanceFailure(error);}
 });
 exports.savePerformanceCorrection = onCall(NAP_PERFORMANCE_OPTIONS, async (request) => {
   assertCapability(request, "competitions.import");
-  if(ENVIRONMENT.projectId==="livepalmes-test") {
+  if(ENVIRONMENT.sportingDataSource === "nap") {
     try{return await require("./nap-performance-write").createPerformanceWriter({authorize:authorizeNativePerformance,getPool:()=>require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD)}).change(request,request.data);}
     catch(error){throw nativePerformanceFailure(error);}
   }

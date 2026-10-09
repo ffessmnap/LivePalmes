@@ -21,6 +21,9 @@ const SPECS = {
   participationRules: { table: "compet_participations", name: "livepalmes_compet_id", columns: ["compet", "id"] },
   invitedCommittees: { table: "compet_comites", name: "livepalmes_compet_comite_id", columns: ["compet", "comite", "id"] }
 };
+for (const spec of require("./nap-club-deletion-references").indexes) {
+  SPECS[`clubDeletion_${spec.table}_${spec.columns[0]}`] = spec;
+}
 function validIndex(rows, spec) {
   const found = rows.filter(row => row.Key_name === spec.name).sort((a, b) => Number(a.Seq_in_index) - Number(b.Seq_in_index));
   if (!found.length) return false;

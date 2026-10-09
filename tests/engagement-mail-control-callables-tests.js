@@ -8,7 +8,7 @@ async function main(){
     update:async(_db,input,actor)=>{assert.equal(actor.national,true);writes++;return {enabled:input.enabled,revision:2};},decision:()=>({allowed:true})};
   const sandbox={exports:{},CALLABLE_OPTIONS:{},ENGAGEMENT_NOTIFICATION_PREVIEW_OPTIONS:{},onCall:(_options,handler)=>handler,
     HttpsError:class extends Error{constructor(code,message){super(message);this.code=code;}},
-    ENVIRONMENT:{projectId:'livepalmes-test'},db:{},engagementAccessContext:async()=>({national,uid:'actor'}),writeAuditLog:async()=>{},
+    ENVIRONMENT:{sportingDataSource:"nap",projectId:'livepalmes-test'},db:{},engagementAccessContext:async()=>({national,uid:'actor'}),writeAuditLog:async()=>{},
     require:name=>{assert.equal(name,'./engagement-mail-control');return control;}};
   for(const name of ['getEngagementAutomaticMailControl','updateEngagementAutomaticMailControl'])vm.runInNewContext(endpoint(name),sandbox);
   for(const name of Object.keys(sandbox.exports))await assert.rejects(()=>sandbox.exports[name]({data:{enabled:false,expectedRevision:1}}),error=>error.code==='permission-denied');

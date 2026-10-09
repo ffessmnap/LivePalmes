@@ -2,13 +2,92 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 9 octobre — Derniers parcours de suppression (préparation PR #217)
+
+- Arbitrages confirmés : nageur utilisé seulement désactivable ; nageur sans historique supprimable par le niveau national. Club historique seulement désactivable ; nouveau club créé dans LivePalmes supprimable uniquement sans données ni comptes rattachés.
+- Suppression nationale d'un nageur sans historique reliée au bouton et au callable natifs : dix-sept références indexées, empreintes affichées d'identité/statut/licence, sauvegarde préalable et reprise après interruption. Budget maximal 40 SQL et 101 validations de saison ; aucun nouveau schéma nécessaire pour ce moteur. Anciennes demandes de suppression club/nageur Firestore refusées en mode NAP.
+- Suppression nationale d'un nouveau club : preuve de création technique fixe dans `auditLogs`, vingt-quatre contrôles NAP indexés bornés à une ligne, sauvegarde préalable et suppression conditionnelle de la fiche affichée. Budget maximal 40 SQL ; au plus quatre lectures de comptes/demandes (deux contrôles à une ligne répétés avant suppression), deux lectures de preuve de création et un journal préalable. Ouverture de l'annuaire inchangée ; ouverture d'une fiche club : une lecture technique supplémentaire pour proposer l'action, sans requête par ligne.
+- Après accord explicite et confirmation d'absence de saisie/import : dix-neuf index non uniques ajoutés, sauvegarde de structure vérifiée puis contrôle de chaque index. Aucun club ni résultat modifié. EXPLAIN réels des vingt-quatre références et de la suppression club : tous indexés ; aucune suppression exécutée. La preuve de création utilise les journaux techniques existants, aucune nouvelle collection sportive.
+- Tests simulés : autorisation avant connexion, historique/comptes bloquants, fiche ou licence changée, sauvegarde refusée, preuve de création incompatible et reprise sans suppression répétée. EXPLAIN réels des dix-sept contrôles et des deux suppressions nageur également indexés. Aucun nageur ni club réel supprimé pour les essais.
+- Contrôles Linux précédents réussis (`db083f0793716849e8ba062d0f313119b6a6fcb3`, run 37995318774) ; ces activations doivent encore passer leur contrôle Linux final et la recette TEST commune. PROD inchangée ; aucune validation utilisateur déduite des tests.
+
+### 9 octobre — Fusion des nageurs NAP (préparation PR #217)
+
+- Après accord explicite : table `livepalmes_swimmer_merges` et quatorze index ajoutés après sauvegarde de structure, contrôle des écritures actives et vérification finale. Aucune fusion réelle effectuée pour les essais.
+- Fusion nationale native : empreintes des deux fiches et licences affichées, sauvegarde avant écriture, réservations techniques empêchant deux fusions concurrentes et reprise après interruption. Résultats, déclarations, engagements et anciens liens de fusion raccordés à la cible ; temps et points bruts conservés. Les courses déjà présentes sur la cible conservent leur temps.
+- Arbitrage confirmé : si la cible n'a pas de licence, reprendre celle de la source avec ses validations par saison, leurs dates et validateurs ; sinon conserver la licence cible. Aucune validation inventée. Les conflits de composition de relais ou de dérogations nécessitent une résolution explicite.
+- Ancienne fiche masquée dans le club et exclue des créations, corrections de licence, imports et nouvelles inscriptions ; anciens liens publics résolus vers la cible. Contrôles groupés dans les requêtes existantes, aucun appel supplémentaire par nageur.
+- Budget fusion : au plus 165 appels SQL, 4 000 liens capturés et journal plafonné à 500 Ko ; lectures et écritures groupées sous verrous natifs. Journal dans `auditLogs` uniquement, sans ancienne collection sportive.
+- Tests simulés : reprise après chaque réponse d'écriture perdue, réservations concurrentes, licence chaîne et validation conservée. EXPLAIN réels des dix-neuf écritures préparées : accès PRIMARY range, aucune écriture exécutée. Contrôles Linux du commit final et recette TEST commune encore nécessaires.
+- Les suppressions natives de clubs/nageurs restent à terminer ; ce lot ne constitue pas une validation de bascule complète. PROD inchangée.
+
+### 9 octobre — Recherche des cibles de fusion nageur NAP (préparation PR #217)
+
+- Recherche nationale raccordée aux index NAP existants, source exclue, identités et licences relues en groupe. Aucun appel à l'ancienne recherche sportive depuis le parcours natif.
+- Budget : aucun appel supplémentaire à l'ouverture ; recherche explicite et rafraîchissement au plus trois requêtes SQL, 42 candidats et 20 fiches relues, indépendamment de la taille totale de la base. Pas d'écriture.
+- Tests ciblés : autorisation avant lecture, numéro de licence chaîne, bornes, fiche source absente et absence de repli Firebase réussis. EXPLAIN réels des trois requêtes : PRIMARY et index de noms ; seuls les ensembles dérivés bornés sont parcourus. Aucune mutation réelle.
+- Vérification globale locale : syntaxe des 707 fichiers et suites NAP réussies ; arrêt au test de workflow Bash sous Windows (`main / access`). Le contrôle Linux du commit exact reste requis.
+- La fusion native des nageurs et les suppressions de clubs/nageurs restent à terminer. Proposition d'une table de suivi et de quatorze index nageur préparée dans `outputs/complement-fusions-nageurs-nap.sql` du dossier de travail ; accord spécifique demandé, aucun de ces ajouts appliqué. Conservation de la validation de licence lors d'une fusion à arbitrer.
+- Le lot précédent officiels du commit `9bc0f8ad74003b6e60744087eb1bd80bc531459a` a réussi les contrôles Linux : run 37983885932. Cette recherche nécessite ses propres contrôles Linux et la recette TEST commune. PROD inchangée.
+
+### 9 octobre — Suppression et fusion des personnes NAP (préparation PR #217)
+
+- Après accord spécifique utilisateur : complément `livepalmes_deleted_people_history` et index `officielsengager(officiel,id)` ajoutés après sauvegarde et contrôlés. Aucune personne ni aucun engagement modifié ; essais d'écriture exclusivement simulés.
+- Suppression nationale raccordée : empreinte de la fiche affichée, sauvegarde avant écriture, identité conservée par engagement, reprise après interruption et refus de concurrence. Les liens et les déclarations historiques `chefsdequipe` sont conservés. Lecture club/nationale de l'identité historique par jointure PRIMARY, sans requête supplémentaire.
+- Fusion explicite des personnes réutilisables : fiche cible conservée, rôles réunis, engagements d'officiel regroupés comme dans le portail antérieur, déclarations historiques de chef d'équipe intactes. Empreintes source/cible, confirmation spéciale pour clubs différents, journal et reprise MyISAM ; la fusion groupée utilise l'empreinte cible retournée après chaque action.
+- Budgets : suppression au plus 25 appels SQL / 2 001 liens ; fusion au plus 35 appels / 4 001 liens. Sauvegarde plafonnée à 500 Ko. Verrous natifs protègent également contre les écritures d'IntraNAP pendant chaque action confirmée.
+- Tests simulés de droits, concurrence, reprises après chaque phase, historique, options et routage sans ancienne base réussis. EXPLAIN réels de suppression, mise à jour des liens et lectures historiques : PRIMARY ou index ciblés ; aucune mutation exécutée pour ces preuves.
+- Contrôle global local avant fusion : syntaxe et suites NAP réussies, arrêt habituel sur le test de workflow Bash sous Windows. Vérification Linux du commit `9bc0f8ad` réussie (run 37983885932) ; recette visuelle et TEST commun encore nécessaires. PROD inchangée.
+
+### 9 octobre — Lecture nationale des nageurs NAP (préparation PR #217)
+
+- Ancien callable national raccordé à NAP : autorisation avant toute lecture, licence chaîne et statut natif, pagination par identifiant (100 personnes, une requête, 101 lignes maximum), sans lecture des anciens nageurs Firebase.
+- Tests simulés : bornes, continuation, licence vide, statut inactif, refus des curseurs invalides et des réponses incohérentes, routage sans ancienne base.
+- Plan SQL réel vérifié en lecture seule : nageurs PRIMARY range, clubs et validations de licence PRIMARY eq_ref. Aucune donnée modifiée.
+- Contrôles Linux et aperçu du commit précédent `e8a70610` réussis : run 37981439755. Cette nouvelle lecture nécessite ses propres contrôles avant intégration ; TEST commun non modifié.
+
+### 9 octobre — Annuaires NAP (préparation PR #217, non déployée)
+
+- Lecture nationale des clubs dans NAP, création et correction natives avec sauvegarde technique, reprise et contrôle des doublons ; tests simulés et plans SQL réels en lecture seule vérifiés.
+- Index `clubs(federal_club,num_club)` ajouté après accord spécifique et sauvegarde de structure ; aucun club modifié.
+- Annuaires nationaux paginés : au plus deux requêtes indexées et 202 lignes par page. Aucun chargement automatique de toutes les pages.
+- Déclarations historiques de chefs d’équipe conservées. Affichage regroupé uniquement sur nom, prénom, date de naissance et club strictement identiques ; priorité à une unique personne réutilisable correspondante. Identités incomplètes et correspondances ambiguës conservées séparément. Aucun rapprochement écrit dans NAP.
+- Syntaxe des 693 fichiers et suites NAP réussies localement ; arrêt du contrôle global sur le test de workflow dépendant de Bash sous Windows (`main / access`), comme précédemment. Contrôle Linux CI, vérification commune TEST et contrôle visuel encore nécessaires ; suppressions/fusions nationales natives restent à terminer avant bilan PROD.
+
+### 9 octobre — Statut des nageurs NAP (préparation, non déployé)
+
+- Création club raccordée à NAP : licence obligatoire conservée comme chaîne, contrôles de doublons bornés, inversion bloquée, nouveau nageur actif. Intention sauvegardée avant insertion et identifiant généré mémorisé avant confirmation ; reprise client avec la même demande. Budget initial maximum dix appels SQL, 426 candidats au plus ; aucune copie dans les anciennes collections sportives. Alertes confirmées conservées dans le journal technique.
+- EXPLAIN réel en lecture seule de l’insertion : club PRIMARY, licence livepalmes_license_number_id, inversion nageurs_clef ; aucune insertion exécutée. Tests création/service et routage natif des deux callables réussis.
+- Vérification globale locale : syntaxe et suites NAP réussies, arrêt sur le test de workflow Bash sous Windows (`main / access`). Vérification Linux GitHub nécessaire avant intégration.
+
+
+- Lecture seule comparée avec IntraNAP : `nageurs.actif=1` signifie actif, `0` inactif. Proposition de nouvelle table retirée ; aucun changement de structure.
+- Effectif club : statut NAP dans la requête groupée existante, plafond 801 lignes ; suppression de la lecture du roster Firebase. Rafraîchissement de même coût, cache client conservé.
+- Changement de statut : contrôle du club, sauvegarde technique préalable, empreinte du statut affiché, mise à jour conditionnelle et relecture. Maximum quatre appels SQL, une écriture native, une lecture et deux écritures du journal. Aucun scan ni lecture par nageur affiché.
+- Tests simulés : actif/inactif, concurrence, mauvais club, sauvegarde impossible, déclencheur inattendu, reprise après écriture. Aucune fiche réelle modifiée. Validation commune TEST encore à effectuer après intégration.
+
+
+### 9 octobre 2026 — Préparation de l’activation NAP en production — en cours
+
+- Demande utilisateur : préparer la bascule complète, sans publication PROD avant bilan approuvé. La source sportive NAP est distincte de l’environnement Firebase ; les comptes, journaux techniques, fichiers hébergés et la redirection TEST des mails sont conservés. Les fichiers statiques Records/MPF restent inchangés.
+- Préparation locale : sélecteur explicite `sportingDataSource`, URL publique NAP propre à chaque projet, parcours portail/import/correction/DTN et neutralisation des anciens traitements sportifs selon la source. L’endpoint privilégié d’export/migration reste strictement TEST. Aucun schéma, donnée ni déploiement PROD modifié.
+- Après accord spécifique « Oui » du 9 octobre : secret `LIVEPALMES_NAP_PASSWORD` créé dans le projet de production depuis la version TEST, version 1 active ; accès Secret Accessor limité au compte de service d’exécution de production sur ce secret. Valeur jamais affichée, aucun fichier de mot de passe créé. Aucun site ni traitement publié ou lancé en production.
+- Budget avant/après : zéro lecture supplémentaire pour le choix de source, identique à chaque ouverture/action/rafraîchissement. Les requêtes groupées, index, plafonds, pagination et caches NAP existants sont réutilisés. Aucun export ou reconstruction automatique ajouté.
+- Vérifications locales : syntaxe de 677 fichiers contrôlée avant ajout du test de routage ; 209 suites applicatives réussies, dont les refus d’accès à l’ancien référentiel. Le contrôle du workflow dépendant de Bash échoue sous Windows et doit être vérifié en CI Linux. Les parcours modifiés restent à revérifier sur le commit regroupé ; aucune validation utilisateur de ce nouveau code revendiquée.
+- Arbitrage utilisateur du 9 octobre : licence obligatoire pour créer un nouveau nageur ; les fiches existantes sans licence restent engageables. La présence du numéro ne vaut pas validation de saison.
+- Récupération par licence : aperçu et transfert préparés sur NAP, sans ancien annuaire sportif. Règle conservée : un résultat publié dans la saison bloque le transfert club. Sauvegarde complète avant changement du seul champ `club`, comparaison intégrale de la fiche, contrôle atomique des résultats et du club destination, reprise après réponse réseau incertaine. Aucun transfert réel effectué.
+- Budget récupération : aperçu au plus deux SQL, deux correspondances de licence et 2 001 témoins de résultats ; dépassement refusé. Transfert au plus dix SQL (dont verrou/libération, contrôle des déclencheurs et EXPLAIN), un journal lu et deux écritures techniques d’audit ; une seule mise à jour native. Les deux gardes de résultats de la mise à jour lisent chacune au plus 2 001 témoins via l’index nageur ; jointures par clés primaires, aucun scan global ni appel par résultat. Une nouvelle tentative appliquée ne répète pas la modification. Aucun chargement à l’ouverture de page : lectures seulement sur action explicite.
+- Plan SQL réel contrôlé en lecture seule le 9 octobre : `nageurs.PRIMARY`, deux accès `perfs.nageur`, clés primaires des compétitions, du masquage et du club ; aucune écriture exécutée. Tests hors réseau : bornes de saison incluses, licence en double, historique incomplet/trop grand, droits, sauvegarde indisponible, changements concurrents, réponse perdue et reprise.
+- CI PR #217 : contrôle Linux 37974749914 arrêté sur trois attentes de version du script portail restées anciennes ; attentes corrigées et test portail réussi localement. Nouveau contrôle requis avant intégration.
+- Bloquants découverts par l’audit : création/récupération de nageurs et certains écrans nationaux clubs/officiels encore sur l’ancienne base ; traitement séparé des mails/schedulers ; recalcul DTN et recette finale ; bilan de publication immuable. Version non prête pour PROD.
+
 ### 9 octobre 2026 — Contrôles des licences et validations par saison NAP
 
 - Autorisations utilisateur : complément des validations et index des licences, aucune saisie/import en cours ; correction du numéro par l’administration nationale conservée. Numéros natifs conservés en chaînes, sans conversion ni normalisation de format. Un numéro présent ne suffit plus à afficher une validation.
 - Schéma additif sauvegardé et vérifié le 9 octobre : table InnoDB `livepalmes_swimmer_license_seasons`, index `nageurs(number,id)`. Preuve locale `nap-license-schema-backup-2026-10-09T17-30-48-555Z-proof.json` dans les sorties du dossier de travail. Aucun numéro ni résultat existant modifié lors de cette opération.
 - Budget : listes privées enrichies par jointure sur clé primaire, même nombre d’appels et mêmes limites. Préparation : trois lectures groupées (compétitions, individuels, relayeurs), cinq compétitions et 800 personnes maximum, 8 005 lignes natives maximum. Validation : 100 personnes maximum, six lectures natives groupées maximum, une correction groupée conditionnelle et une écriture transactionnelle des validations ; journal technique groupé, aucun ancien référentiel sportif Firestore utilisé sur TEST. Rafraîchissement explicite, aucun parcours total ni lecture par nageur.
 - Avant-image durable des corrections MyISAM, comparaison de toutes les colonnes, reprise après interruption, contrôle des doublons natifs et des validations de saison, verrou entre appels LivePalmes. Validité fédérale et règles de saison existantes conservées. Les comptes et journaux techniques restent Firebase.
-- Tests ciblés réussis ; vérification globale et publication TEST en cours. Aucun essai de correction ou validation de licence réelle effectué, aucune validation utilisateur revendiquée. PROD inchangée.
+- PR #216 intégrée dans `36a2de49edf649017a77d4115f15f0b62f0e74a5`, publication TEST réussie `37967758798`. CI Linux réussie `37967417034`. Sur demande explicite d’Antoine, validation réelle NAP de sa licence `A-05-222647`, nageur 912, saison 2026-2027, avec sauvegarde et relecture ; numéro et fiche nageur inchangés. Badge vérifié dans le portail. Cette écriture a utilisé le service natif existant, pas le clic de validation de l’écran national. Retour utilisateur : « parfait donc tout est bon? », puis accord pour poursuivre la recette finale. PROD inchangée.
 
 ### 9 octobre 2026 — Licences natives NAP
 

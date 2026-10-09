@@ -24,7 +24,7 @@
     if (uid && uid !== user.uid) { state.views.clear(); state.sources.clear(); throw new Error("Le compte a changé. Rechargez le portail."); }
     uid = user.uid;
     if (!service) { service = firebase.app().functions(config?.firebaseFunctionsRegion || "europe-west1"); service = config?.configureFunctionsService?.(service) || service; }
-    const options = global.LivePalmesEnvironment?.isTest && name === "getDtnSeasonOverview" && data.rebuild === true ? { timeout: 540000 } : undefined;
+    const options = global.LivePalmesEnvironment?.sportingDataSource === "nap" && name === "getDtnSeasonOverview" && data.rebuild === true ? { timeout: 540000 } : undefined;
     return (await service.httpsCallable(name, options)(data)).data;
   }
   function message(value, error = false) { el.status.textContent = value; el.status.dataset.tone = error ? "error" : ""; }
