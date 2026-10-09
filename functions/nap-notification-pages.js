@@ -1,6 +1,6 @@
 "use strict";
-// TEST preparation only: use the established PDF/TXT builders but retain only
-// attachment manifests. No SMTP, upload, sporting cache or generated PDF copy.
+// Established PDF/TXT builders. Preview retains manifests only; real delivery
+// delegates private attachment persistence to the explicitly gated adapter.
 const {createHash}=require('node:crypto');
 const {hash}=require('./nap-notification-automation');
 function manifest(file,contentType){
@@ -14,7 +14,11 @@ function cursor(value,maximum){
   return result;
 }
 async function page(event,competition,services){
-  if(services.simulation!==true)throw new TypeError('Preparation native reservee au TEST sans envoi.');
+  if(services.simulation!==true && typeof services.persistAttachment!=='function')throw new TypeError('Preparation native reservee au TEST sans envoi.');
+  async function attachment(file,contentType){
+    const metadata=manifest(file,contentType);
+    return services.simulation===true?metadata:services.persistAttachment(event,file,metadata);
+  }
   const recipients=await services.recipients();
   if(!Array.isArray(recipients)||recipients.length>10000)throw new RangeError('Annuaire de notifications trop volumineux.');
   if(event.kind==='opening'||event.kind==='documents'){
@@ -40,19 +44,19 @@ async function page(event,competition,services){
     for(const entry of batch){
       const clubRecipients=selected.filter(recipient=>String(recipient.clubId)===String(entry.clubId));
       if(!entry.teamLeaderComplete||!clubRecipients.length){skippedCount++;continue;}
-      const attachment=manifest(await services.clubPdf(competition,entry),'application/pdf');attachmentCount++;
-      for(const recipient of clubRecipients)jobs.push(services.mail('club_recap',competition,recipient,{entry,attachments:[attachment]}));
+      const file=await attachment(await services.clubPdf(competition,entry),'application/pdf');attachmentCount++;
+      for(const recipient of clubRecipients)jobs.push(services.mail('club_recap',competition,recipient,{entry,attachments:[file]}));
     }
     return {jobs,attachmentCount,skippedCount,sourceHash,done:false,nextPhase:offset+batch.length>=entries.length?'exports':'clubs',
       nextCursor:offset+batch.length>=entries.length?'':String(offset+batch.length)};
   }
   if(competition.competitionType==='pool'&&competition.computerEmail){
-    const attachment=manifest(await services.txt(competition,entries,pack.clubsById),'text/plain; charset=utf-8');attachmentCount++;
-    jobs.push(services.mail('entries_txt',competition,{email:competition.computerEmail,clubId:'informatique'},{fileName:attachment.fileName,attachments:[attachment]}));
+    const file=await attachment(await services.txt(competition,entries,pack.clubsById),'text/plain; charset=utf-8');attachmentCount++;
+    jobs.push(services.mail('entries_txt',competition,{email:competition.computerEmail,clubId:'informatique'},{fileName:file.fileName,attachments:[file]}));
   }else skippedCount++;
   if(competition.officialsRequired===true&&competition.officialsManagerEmail){
-    const pdf=await services.officialsPdf(competition,entries),attachment=manifest(pdf,'application/pdf');attachmentCount++;
-    jobs.push(services.mail('officials_pdf',competition,{email:competition.officialsManagerEmail,clubId:'jury'},{officialCount:pdf.officialCount,attachments:[attachment]}));
+    const pdf=await services.officialsPdf(competition,entries),file=await attachment(pdf,'application/pdf');attachmentCount++;
+    jobs.push(services.mail('officials_pdf',competition,{email:competition.officialsManagerEmail,clubId:'jury'},{officialCount:pdf.officialCount,attachments:[file]}));
   }else skippedCount++;
   return {jobs,attachmentCount,skippedCount,sourceHash,done:true};
 }

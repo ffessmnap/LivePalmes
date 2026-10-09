@@ -77,6 +77,14 @@ async function processEvent(db, ref, services, now = new Date().toISOString()) {
   });
   if(!claimed)return {skipped:true};
   try {
+    if (services.allowEvent && !await services.allowEvent(claimed)) {
+      await db.runTransaction(async transaction=>{
+        const fresh=await transaction.get(ref);
+        if(fresh.data()?.lease===lease)transaction.update(ref,{status:'cancelled',reason:'automatic-mails-disabled-or-discarded',
+          lease:services.deleteField(),leaseUntil:services.deleteField(),runAt:services.deleteField(),updatedAt:now});
+      });
+      return {skipped:true,reason:'automatic-mails-disabled-or-discarded'};
+    }
     const competition=await services.competition(claimed.competitionId);
     const result=eligible(claimed,competition,now)?await services.page(claimed,competition):{cancelled:true,jobs:[],done:true};
     if(!Array.isArray(result.jobs)||result.jobs.length>100 || Number(result.attachmentCount||0)>7)throw new RangeError("Lot de notification trop volumineux.");
@@ -133,7 +141,7 @@ async function adoptOpenCompetitions(db,input,services,now=new Date().toISOStrin
   return {source:'nap',adopted,openingCount:0,nextOffset:offset+events.length,done:offset+events.length>=pack.events.length};
 }
 async function resumeBlocked(db,ref,services,now=new Date().toISOString()) {
-  if(services.simulation!==true)throw new TypeError('Reprise native reservee au TEST sans envoi.');
+  if(services.simulation!==true)throw new TypeError('Reprise des mails interrompus à vérifier pour éviter un nouvel envoi des mails déjà transmis.');
   return db.runTransaction(async transaction=>{
     const snapshot=await transaction.get(ref),event=snapshot.data();
     if(!event||event.source!=='nap'||event.status!=='blocked')return {reused:true};
