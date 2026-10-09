@@ -1,4 +1,5 @@
 "use strict";
+const {notMerged}=require("./nap-swimmer-merge-state");
 const {createHash}=require("node:crypto");
 const {reviewWinPalmeResults,compactTime}=require("./nap-winpalme-results");
 const {resolveSwimmers}=require("./nap-import-swimmer-resolution");
@@ -23,9 +24,9 @@ async function previewNativeImport(pool,input) {
   const swimmerBindings=choices(input.swimmerBindings||[],5000),memberBindings=choices(input.memberBindings||[],2000),clubBindings=choices(input.clubBindings||[],1000);
   const selectedIds=[...new Set([...swimmerBindings,...memberBindings].map(b=>positiveId(b.swimmerId)))];
   const names=[...new Set(individual.map(r=>r.lastName))];
-  const named=names.length?await q(pool,`SELECT id,nom,prenom,date,sexe,club FROM nageurs FORCE INDEX (nageurs_clef) WHERE nom IN (${names.map(()=>"?").join(",")}) ORDER BY nom,prenom,date LIMIT 10001`,names):[];
+  const named=names.length?await q(pool,`SELECT id,nom,prenom,date,sexe,club FROM nageurs FORCE INDEX (nageurs_clef) WHERE nom IN (${names.map(()=>"?").join(",")}) AND ${notMerged()} ORDER BY nom,prenom,date LIMIT 10001`,names):[];
   if(named.length>10000)throw new RangeError("Trop de fiches candidates. Reduisez le lot avant import.");
-  const selected=selectedIds.length?await q(pool,`SELECT id,nom,prenom,date,sexe,club FROM nageurs WHERE id IN (${selectedIds.map(()=>"?").join(",")}) LIMIT 7001`,selectedIds):[];
+  const selected=selectedIds.length?await q(pool,`SELECT id,nom,prenom,date,sexe,club FROM nageurs WHERE id IN (${selectedIds.map(()=>"?").join(",")}) AND ${notMerged()} LIMIT 7001`,selectedIds):[];
   const candidates=[...new Map([...named,...selected].map(r=>[r.id,r])).values()];
   if(candidates.length>10000)throw new RangeError("Trop de fiches candidates.");
   const seen=new Set();

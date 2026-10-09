@@ -1,4 +1,5 @@
 "use strict";
+const {notMerged}=require("./nap-swimmer-merge-state");
 // Preview: four indexed reads, at most 426 candidate rows, no old directory.
 // Creation: durable intent and generated-id checkpoint; alerts stay in the audit.
 const {createHash}=require("node:crypto");
@@ -23,17 +24,17 @@ async function previewCreation(connection,input,authorize,formatAlert) {
   if(typeof authorize!=="function" || typeof formatAlert!=="function") throw new TypeError("Controle du club et des alertes requis.");
   await authorize({clubId:input.clubId});
   const query=async(sql,values)=>(await connection.execute({sql,timeout:10000},values))[0];
-  const matches=await query("SELECT id FROM nageurs FORCE INDEX (livepalmes_license_number_id) WHERE number=? LIMIT 2",[native.number]);
+  const matches=await query(`SELECT id FROM nageurs FORCE INDEX (livepalmes_license_number_id) WHERE number=? AND ${notMerged()} LIMIT 2`,[native.number]);
   if(matches.length) throw new TypeError("Cette licence existe deja dans NAP. Recherchez ou recuperez la fiche existante.");
   const candidates=new Map();
   const add=rows=>{for(const row of rows){if(!Number.isSafeInteger(Number(row.id)) || Number(row.id)<1) throw new TypeError("Fiche NAP incoherente.");candidates.set(String(row.id),person(row));}};
   const select="SELECT n.id,n.nom,n.prenom,n.date,n.sexe,n.number,n.club,cl.nom_club,cl.abre_club FROM";
-  const exact="SELECT id FROM nageurs FORCE INDEX (nageurs_clef) WHERE nom=? AND prenom=? AND date=? LIMIT 11";
+  const exact=`SELECT id FROM nageurs FORCE INDEX (nageurs_clef) WHERE nom=? AND prenom=? AND date=? AND ${notMerged()} LIMIT 11`;
   const exactRows=await query(`${select} ((${exact}) UNION (${exact})) candidates JOIN nageurs n FORCE INDEX (PRIMARY) ON n.id=candidates.id LEFT JOIN clubs cl FORCE INDEX (PRIMARY) ON cl.num_club=n.club AND CAST(cl.num_club AS CHAR)=n.club LIMIT 22`,[native.nom,native.prenom,native.date,native.prenom,native.nom,native.date]);
   add(exactRows);
   const prefixes=[...new Set([tokens(native.nom)[0],tokens(native.prenom)[0]].filter(Boolean).map(token=>token.slice(0,Math.min(6,token.length))))];
   for(const prefix of prefixes) {
-    const rows=await query(`${select} (SELECT id FROM nageurs FORCE INDEX (nageurs_clef) WHERE nom LIKE ? ESCAPE '=' LIMIT 201) candidates JOIN nageurs n FORCE INDEX (PRIMARY) ON n.id=candidates.id LEFT JOIN clubs cl FORCE INDEX (PRIMARY) ON cl.num_club=n.club AND CAST(cl.num_club AS CHAR)=n.club LIMIT 201`,[`${likeLiteral(prefix)}%`]);
+    const rows=await query(`${select} (SELECT id FROM nageurs FORCE INDEX (nageurs_clef) WHERE nom LIKE ? ESCAPE '=' AND ${notMerged()} LIMIT 201) candidates JOIN nageurs n FORCE INDEX (PRIMARY) ON n.id=candidates.id LEFT JOIN clubs cl FORCE INDEX (PRIMARY) ON cl.num_club=n.club AND CAST(cl.num_club AS CHAR)=n.club LIMIT 201`,[`${likeLiteral(prefix)}%`]);
     if(rows.length>200) throw new RangeError("Trop de rapprochements possibles. Verification nationale requise avant creation.");
     add(rows);
   }
@@ -54,7 +55,7 @@ async function previewCreation(connection,input,authorize,formatAlert) {
 }
 function insertion(native,timestamp) {
   const keys=["nom","prenom","date","sexe","club","number","actif","creation"];
-  return {sql:`INSERT INTO nageurs (${keys.map(key=>`\`${key}\``).join(",")}) SELECT ${keys.map(()=>"?").join(",")} FROM clubs cl FORCE INDEX (PRIMARY) WHERE cl.num_club=? AND NOT EXISTS (SELECT 1 FROM nageurs duplicate FORCE INDEX (livepalmes_license_number_id) WHERE duplicate.number=? LIMIT 1) AND NOT EXISTS (SELECT 1 FROM nageurs inverted FORCE INDEX (nageurs_clef) WHERE inverted.nom=? AND inverted.prenom=? AND inverted.date=? AND ?<>? LIMIT 1)`,values:[...keys.map(key=>key==="creation"?timestamp:native[key]),native.club,native.number,native.prenom,native.nom,native.date,native.prenom,native.nom]};
+  return {sql:`INSERT INTO nageurs (${keys.map(key=>`\`${key}\``).join(",")}) SELECT ${keys.map(()=>"?").join(",")} FROM clubs cl FORCE INDEX (PRIMARY) WHERE cl.num_club=? AND NOT EXISTS (SELECT 1 FROM nageurs duplicate FORCE INDEX (livepalmes_license_number_id) WHERE duplicate.number=? AND ${notMerged("duplicate")} LIMIT 1) AND NOT EXISTS (SELECT 1 FROM nageurs inverted FORCE INDEX (nageurs_clef) WHERE inverted.nom=? AND inverted.prenom=? AND inverted.date=? AND ?<>? AND ${notMerged("inverted")} LIMIT 1)`,values:[...keys.map(key=>key==="creation"?timestamp:native[key]),native.club,native.number,native.prenom,native.nom,native.date,native.prenom,native.nom]};
 }
 async function createSwimmer(pool,input,audit,authorize,formatAlert) {
   const native=proposed(input);

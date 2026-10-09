@@ -14,6 +14,6 @@ async function searchMergeTargets(pool, input = {}) {
   const query = requested || String(sources[0].nom || "").trim();
   if (query.length < 2 || query.length > 80) throw new TypeError("Precisez le nom, le prenom ou l'identifiant de la fiche a conserver.");
   const result = await searchPortalSwimmers(pool, query);
-  return {ok:true,source:"nap",swimmers:result.swimmers.filter(item=>String(item.id)!==String(id)),hasMore:result.hasMore,sqlBudget:{queriesMax:3,candidateRowsMax:42,identityRowsMax:20}};
+  return {ok:true,source:"nap",swimmers:result.swimmers.filter(item=>String(item.id)!==String(id)&&item.status!=="merged"),hasMore:result.hasMore,sqlBudget:{queriesMax:3,candidateRowsMax:42,identityRowsMax:20}};
 }
 module.exports = {searchMergeTargets};

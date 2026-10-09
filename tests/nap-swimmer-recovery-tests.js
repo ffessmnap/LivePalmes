@@ -10,7 +10,7 @@ const result=(id,date,published=1)=>({id,nageur:912,competition_id:5162,date,pub
   const pool={execute:async({sql,timeout},values)=>{
     assert.equal(allowed,true);assert.equal(timeout,10000);calls++;
     if(sql.includes("FROM nageurs n")) {
-      assert.match(sql,/FORCE INDEX \(livepalmes_license_number_id\)/);assert.match(sql,/WHERE n.number=\? ORDER BY n.id LIMIT 2$/);assert.deepEqual(values,[input.licenseNumber]);return [matches];
+      assert.match(sql,/FORCE INDEX \(livepalmes_license_number_id\)/);assert.match(sql,/WHERE n.number=\? AND NOT EXISTS \(SELECT 1 FROM livepalmes_swimmer_merges WHERE swimmer_id=n.id\) ORDER BY n.id LIMIT 2$/);assert.deepEqual(values,[input.licenseNumber]);return [matches];
     }
     assert.match(sql,/FROM \(SELECT id,nageur,compet FROM perfs FORCE INDEX \(nageur\) WHERE nageur=\? LIMIT 2001\)/);
     assert.match(sql,/livepalmes_performance_visibility/);assert.deepEqual(values,[912]);return [history];

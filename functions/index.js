@@ -15579,17 +15579,30 @@ async function readPerformanceDocsForNationalSwimmerMerge(db, sourceSwimmer = {}
   return rows;
 }
 
-exports.mergeEngagementNationalClubSwimmer = onCall(ENGAGEMENT_SWIMMER_CORRECTION_OPTIONS, async (request) => {
+exports.mergeEngagementNationalClubSwimmer = onCall({ ...ENGAGEMENT_SWIMMER_CORRECTION_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
   const context = await engagementAccessContext(request);
   if (!context.national) {
     throw new HttpsError("permission-denied", "Fusion reservee au niveau national.");
+  }
+  if (ENVIRONMENT.sportingDataSource === "nap") {
+    if (request.data?.confirmMerge !== true) throw new HttpsError("failed-precondition", "Confirmation de fusion requise.");
+    try {
+      return await require("./nap-swimmer-merge").mergeSwimmers(require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD),{
+        sourceSwimmerId:request.data?.sourceSwimmerId,targetSwimmerId:request.data?.targetSwimmerId,
+        sourceFingerprint:request.data?.sourceFingerprint,targetFingerprint:request.data?.targetFingerprint,
+        sourceLicenseNumber:request.data?.sourceLicenseNumber,targetLicenseNumber:request.data?.targetLicenseNumber,
+        actorUid:context.uid,confirmMerge:true,confirmClubMismatch:request.data?.confirmClubMismatch===true,confirmLicenseMismatch:request.data?.confirmLicenseMismatch===true
+      },require("./nap-swimmer-merge-audit").createAudit(db,{sourceSwimmerId:request.data?.sourceSwimmerId,targetSwimmerId:request.data?.targetSwimmerId,actorUid:context.uid},writeAuditLogOnce),async()=>{if(!context.national)throw new TypeError("Fusion reservee au niveau national.");});
+    } catch(error) {
+      if(error instanceof HttpsError)throw error;
+      throw new HttpsError(error instanceof TypeError||error instanceof RangeError?"failed-precondition":"unavailable",error instanceof TypeError||error instanceof RangeError?error.message:"Fusion NAP interrompue. Conservez les deux fiches choisies et reprenez la meme demande.");
+    }
   }
   const sourceSwimmerId = cleanText(request.data?.sourceSwimmerId).slice(0, 80);
   const sourceSource = cleanText(request.data?.sourceSource || "engagement").slice(0, 40);
   const sourceIdentityKey = cleanText(request.data?.sourceIdentityKey).slice(0, 180);
   const targetSwimmerId = cleanText(request.data?.targetSwimmerId).slice(0, 80);
   const targetSource = cleanText(request.data?.targetSource || "performances").slice(0, 40);
-  if (ENVIRONMENT.sportingDataSource === "nap" && (sourceSource === "reference" || targetSource === "reference")) throw new HttpsError("failed-precondition", "La fusion NAP n'est pas encore raccordee. Aucune ancienne fiche n'a ete modifiee.");
   const targetIdentityKey = cleanText(request.data?.targetIdentityKey).slice(0, 180);
   if (!sourceSwimmerId || !targetSwimmerId || (sourceSource === targetSource && sourceSwimmerId === targetSwimmerId)) {
     throw new HttpsError("invalid-argument", "Nageurs source et cible requis.");
@@ -15801,6 +15814,7 @@ exports.mergeEngagementNationalClubSwimmer = onCall(ENGAGEMENT_SWIMMER_CORRECTIO
 exports.repairEngagementNationalSwimmerMergePublication = onCall(ENGAGEMENT_SWIMMER_CORRECTION_OPTIONS, async (request) => {
   const context = await engagementAccessContext(request);
   if (!context.national) throw new HttpsError("permission-denied", "Reparation reservee au niveau national.");
+  if(ENVIRONMENT.sportingDataSource==="nap")throw new HttpsError("failed-precondition","Les fiches NAP sont lues directement. Utilisez Finaliser la fusion depuis la fiche fusionnee.");
   const sourceSwimmerId = cleanText(request.data?.sourceSwimmerId).slice(0, 80);
   const sourceSource = cleanText(request.data?.sourceSource || "performances").slice(0, 40);
   const sourceIdentityKey = cleanText(request.data?.sourceIdentityKey).slice(0, 180);

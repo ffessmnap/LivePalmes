@@ -1,4 +1,5 @@
 "use strict";
+const {notMerged}=require("./nap-swimmer-merge-state");
 const {randomUUID}=require("node:crypto");
 const license=require("./nap-license-state");
 const {positiveId}=require("./nap-direct-calendar");
@@ -42,12 +43,12 @@ async function validateBatch(connection,input,actorUid,audit) {
   });
   const marks=items.map(()=>"?").join(",");
   // Check every proposed owner before correcting anything. Uses the approved number index.
-  const owners=await query(connection,`SELECT id,number FROM nageurs FORCE INDEX (livepalmes_license_number_id) WHERE number IN (${marks}) LIMIT 201`,items.map(item=>item.number),200);
+  const owners=await query(connection,`SELECT id,number FROM nageurs FORCE INDEX (livepalmes_license_number_id) WHERE number IN (${marks}) AND ${notMerged()} LIMIT 201`,items.map(item=>item.number),200);
   if(owners.some(owner=>!items.some(item=>item.id===Number(owner.id)&&item.number.toUpperCase()===license.number(owner.number).toUpperCase()))) throw new TypeError("Une licence appartient deja a une autre fiche NAP.");
   // Corrections have their own durable journal and are intentionally outside the
   // InnoDB transaction: native nageurs is MyISAM. A retry resumes verified writes.
   await require("./nap-license-correction").correctLicenses(connection,items,actorUid,audit);
-  const verifiedOwners=await query(connection,`SELECT id,number FROM nageurs FORCE INDEX (livepalmes_license_number_id) WHERE number IN (${marks}) LIMIT 201`,items.map(item=>item.number),200);
+  const verifiedOwners=await query(connection,`SELECT id,number FROM nageurs FORCE INDEX (livepalmes_license_number_id) WHERE number IN (${marks}) AND ${notMerged()} LIMIT 201`,items.map(item=>item.number),200);
   if(verifiedOwners.length!==items.length || verifiedOwners.some(owner=>!items.some(item=>item.id===Number(owner.id)&&item.number.toUpperCase()===license.number(owner.number).toUpperCase()))) throw new TypeError("Conflit de licence apres correction : rechargez le lot.");
   await connection.beginTransaction();
   try {
@@ -55,8 +56,8 @@ async function validateBatch(connection,input,actorUid,audit) {
     if(previous.some(row=>!items.some(item=>item.id===Number(row.swimmer_id)&&item.number.toUpperCase()===license.number(row.license_number).toUpperCase()))) throw new TypeError("Cette licence est deja validee pour une autre fiche pendant cette saison.");
     const tuples=items.map(()=>"SELECT ? AS swimmer_id,? AS season,? AS license_number,? AS status,? AS source,? AS expiry,? AS actor").join(" UNION ALL ");
     const values=items.flatMap(item=>[item.id,season.label,item.number,"valid",source,item.expiry,actorUid]);
-    await connection.execute({sql:`INSERT INTO livepalmes_swimmer_license_seasons (swimmer_id,season,license_number,status,source,federal_validity_end_date,validated_at,validated_by,version) SELECT t.swimmer_id,t.season,t.license_number,t.status,t.source,t.expiry,UTC_TIMESTAMP(6),t.actor,1 FROM (${tuples}) t JOIN nageurs n ON n.id=t.swimmer_id WHERE BINARY CONVERT(n.number USING utf8mb4)=BINARY CONVERT(t.license_number USING utf8mb4) ON DUPLICATE KEY UPDATE license_number=VALUES(license_number),status=VALUES(status),source=VALUES(source),federal_validity_end_date=VALUES(federal_validity_end_date),validated_at=VALUES(validated_at),validated_by=VALUES(validated_by),version=version+1`,timeout:10000},values);
-    const rows=await query(connection,`SELECT n.id,n.number,${license.projection()} FROM nageurs n FORCE INDEX (PRIMARY) ${license.join("n","v",season.label)} WHERE n.id IN (${marks}) LIMIT 101`,items.map(item=>item.id),100);
+    await connection.execute({sql:`INSERT INTO livepalmes_swimmer_license_seasons (swimmer_id,season,license_number,status,source,federal_validity_end_date,validated_at,validated_by,version) SELECT t.swimmer_id,t.season,t.license_number,t.status,t.source,t.expiry,UTC_TIMESTAMP(6),t.actor,1 FROM (${tuples}) t JOIN nageurs n ON n.id=t.swimmer_id WHERE ${notMerged("n")} AND BINARY CONVERT(n.number USING utf8mb4)=BINARY CONVERT(t.license_number USING utf8mb4) ON DUPLICATE KEY UPDATE license_number=VALUES(license_number),status=VALUES(status),source=VALUES(source),federal_validity_end_date=VALUES(federal_validity_end_date),validated_at=VALUES(validated_at),validated_by=VALUES(validated_by),version=version+1`,timeout:10000},values);
+    const rows=await query(connection,`SELECT n.id,n.number,${license.projection()} FROM nageurs n FORCE INDEX (PRIMARY) ${license.join("n","v",season.label)} WHERE n.id IN (${marks}) AND ${notMerged("n")} LIMIT 101`,items.map(item=>item.id),100);
     if(rows.length!==items.length || rows.some(row=>license.state(row,season.label).licenseSeasonStatus!=="valid" || !items.some(item=>item.id===Number(row.id)&&item.number===license.number(row.number)))) throw new Error("Verification des validations incomplete.");
     await connection.commit();
     return {ok:true,source:"nap",season:season.label,validatedCount:items.length,validatedAt:new Date().toISOString()};

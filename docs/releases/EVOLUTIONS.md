@@ -2,6 +2,16 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 9 octobre — Fusion des nageurs NAP (préparation PR #217)
+
+- Après accord explicite : table `livepalmes_swimmer_merges` et quatorze index ajoutés après sauvegarde de structure, contrôle des écritures actives et vérification finale. Aucune fusion réelle effectuée pour les essais.
+- Fusion nationale native : empreintes des deux fiches et licences affichées, sauvegarde avant écriture, réservations techniques empêchant deux fusions concurrentes et reprise après interruption. Résultats, déclarations, engagements et anciens liens de fusion raccordés à la cible ; temps et points bruts conservés. Les courses déjà présentes sur la cible conservent leur temps.
+- Arbitrage confirmé : si la cible n'a pas de licence, reprendre celle de la source avec ses validations par saison, leurs dates et validateurs ; sinon conserver la licence cible. Aucune validation inventée. Les conflits de composition de relais ou de dérogations nécessitent une résolution explicite.
+- Ancienne fiche masquée dans le club et exclue des créations, corrections de licence, imports et nouvelles inscriptions ; anciens liens publics résolus vers la cible. Contrôles groupés dans les requêtes existantes, aucun appel supplémentaire par nageur.
+- Budget fusion : au plus 165 appels SQL, 4 000 liens capturés et journal plafonné à 500 Ko ; lectures et écritures groupées sous verrous natifs. Journal dans `auditLogs` uniquement, sans ancienne collection sportive.
+- Tests simulés : reprise après chaque réponse d'écriture perdue, réservations concurrentes, licence chaîne et validation conservée. EXPLAIN réels des dix-neuf écritures préparées : accès PRIMARY range, aucune écriture exécutée. Contrôles Linux du commit final et recette TEST commune encore nécessaires.
+- Les suppressions natives de clubs/nageurs restent à terminer ; ce lot ne constitue pas une validation de bascule complète. PROD inchangée.
+
 ### 9 octobre — Recherche des cibles de fusion nageur NAP (préparation PR #217)
 
 - Recherche nationale raccordée aux index NAP existants, source exclue, identités et licences relues en groupe. Aucun appel à l'ancienne recherche sportive depuis le parcours natif.
