@@ -15450,10 +15450,18 @@ async function searchEngagementNationalSwimmerMergeTargetDocs(db, sourceSwimmer 
   return Array.from(docs.values()).slice(0, limit);
 }
 
-exports.searchEngagementNationalSwimmerMergeTargets = onCall(CALLABLE_OPTIONS, async (request) => {
+exports.searchEngagementNationalSwimmerMergeTargets = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
   const context = await engagementAccessContext(request);
   if (!context.national) {
     throw new HttpsError("permission-denied", "Recherche reservee au niveau national.");
+  }
+  if (ENVIRONMENT.sportingDataSource === "nap") {
+    try {
+      const pool = require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD);
+      return await require("./nap-swimmer-merge-search").searchMergeTargets(pool, {sourceSwimmerId:request.data?.sourceSwimmerId,query:request.data?.query});
+    } catch (error) {
+      throw new HttpsError(error instanceof TypeError ? "invalid-argument" : "unavailable", "Recherche NAP indisponible. Precisez le nom, le prenom ou l'identifiant de la fiche a conserver.");
+    }
   }
   const sourceSwimmerId = cleanText(request.data?.sourceSwimmerId).slice(0, 80);
   const sourceSource = cleanText(request.data?.sourceSource || "engagement").slice(0, 40);
