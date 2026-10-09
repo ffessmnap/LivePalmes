@@ -170,8 +170,7 @@
     const candidates = [
       person.currentLicense,
       `${person.lastName} ${person.firstName}`,
-      person.lastName,
-      person.firstName
+      person.lastName
     ].map((value) => String(value ?? "").trim()).filter((value) => normalizeText(value).length >= 3);
     const seen = new Set();
     return candidates.filter((value) => {
