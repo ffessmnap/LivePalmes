@@ -71,7 +71,8 @@ assert.ok(!ALL_SAFE_LOTS.includes("schedulers"));
 assert.deepEqual(METADATA.access.secrets, []);
 assert.deepEqual(METADATA["engagement-core"].secrets, []);
 assert.deepEqual(METADATA.performance.secrets, []);
-assert.equal(METADATA.email.secrets.length, 7);
+assert.equal(METADATA.email.secrets.length, 8);
+assert.ok(METADATA.email.secrets.includes("LIVEPALMES_NAP_PASSWORD"));
 for (const lot of ["access", "engagement-core", "performance"]) {
   assert.ok(!LOTS[lot].some((name) => PUBLICATION_EFFECT_FUNCTIONS.includes(name)));
 }
