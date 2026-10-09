@@ -1043,6 +1043,7 @@
   let engagementClubAvailableSwimmersSexFilter = "all";
   let engagementClubInactiveSwimmersExpanded = false;
   let engagementClubSwimmerRecovery = null;
+  let engagementClubSwimmerCreationRetry = null;
   let engagementClubSwimmersRenderedCompetitionId = "";
   let engagementClubEntriesRenderedCompetitionId = "";
   let engagementClubRelaysRenderedCompetitionId = "";
@@ -6926,6 +6927,7 @@
       const result = await callFunction("setEngagementClubSwimmerActivityStatus", {
         swimmerIndexId: cleanId,
         source: source || "performances",
+        expectedFingerprint: engagementClubSwimmers.find(item => String(item.swimmerIndexId || item.id) === cleanId)?.napActivityFingerprint,
         status: cleanStatus
       });
       const swimmerIndex = engagementClubSwimmers.findIndex((item) =>
@@ -11945,6 +11947,7 @@
   }
 
   function resetEngagementClubNewSwimmerForm() {
+    engagementClubSwimmerCreationRetry = null;
     [
       elements.engagementsClubNewSwimmerFirstName,
       elements.engagementsClubNewSwimmerLastName,
@@ -12083,6 +12086,10 @@
     if (elements.engagementsClubNewSwimmerSaveButton) elements.engagementsClubNewSwimmerSaveButton.disabled = true;
     setEngagementClubNewSwimmerMessage("Vérification des rapprochements...", "loading");
     try {
+      let result;
+      if (engagementClubSwimmerCreationRetry && JSON.stringify(engagementClubSwimmerCreationRetry.swimmer) === JSON.stringify(swimmer)) {
+        result = await callFunction("createEngagementClubSwimmer", engagementClubSwimmerCreationRetry);
+      } else {
       const recovery = await callFunction("previewEngagementClubSwimmerRecovery", {
         licenseNumber: swimmer.licenseNumber
       });
@@ -12119,11 +12126,15 @@
         return;
       }
       setEngagementClubNewSwimmerMessage("Création du nageur...", "loading");
-      const result = await callFunction("createEngagementClubSwimmer", {
+      const payload = {
         competitionId: selectedEngagementCompetitionId || "",
         swimmer,
-        confirmAlerts: alerts.length > 0
-      });
+        confirmAlerts: alerts.length > 0,
+        ...(preview.source === "nap" ? {creationId: global.crypto.randomUUID()} : {})
+      };
+      if (preview.source === "nap") engagementClubSwimmerCreationRetry = payload;
+      result = await callFunction("createEngagementClubSwimmer", payload);
+      }
       invalidateEngagementClubSwimmersCache();
       await loadEngagementClubSwimmers({ force: true, silent: true });
       renderEngagementClubNewSwimmerAlerts(Array.isArray(result.alerts) ? result.alerts : [], { confirmed: true });

@@ -2,6 +2,19 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 9 octobre — Statut des nageurs NAP (préparation, non déployé)
+
+- Création club raccordée à NAP : licence obligatoire conservée comme chaîne, contrôles de doublons bornés, inversion bloquée, nouveau nageur actif. Intention sauvegardée avant insertion et identifiant généré mémorisé avant confirmation ; reprise client avec la même demande. Budget initial maximum dix appels SQL, 426 candidats au plus ; aucune copie dans les anciennes collections sportives. Alertes confirmées conservées dans le journal technique.
+- EXPLAIN réel en lecture seule de l’insertion : club PRIMARY, licence livepalmes_license_number_id, inversion nageurs_clef ; aucune insertion exécutée. Tests création/service et routage natif des deux callables réussis.
+- Vérification globale locale : syntaxe et suites NAP réussies, arrêt sur le test de workflow Bash sous Windows (`main / access`). Vérification Linux GitHub nécessaire avant intégration.
+
+
+- Lecture seule comparée avec IntraNAP : `nageurs.actif=1` signifie actif, `0` inactif. Proposition de nouvelle table retirée ; aucun changement de structure.
+- Effectif club : statut NAP dans la requête groupée existante, plafond 801 lignes ; suppression de la lecture du roster Firebase. Rafraîchissement de même coût, cache client conservé.
+- Changement de statut : contrôle du club, sauvegarde technique préalable, empreinte du statut affiché, mise à jour conditionnelle et relecture. Maximum quatre appels SQL, une écriture native, une lecture et deux écritures du journal. Aucun scan ni lecture par nageur affiché.
+- Tests simulés : actif/inactif, concurrence, mauvais club, sauvegarde impossible, déclencheur inattendu, reprise après écriture. Aucune fiche réelle modifiée. Validation commune TEST encore à effectuer après intégration.
+
+
 ### 9 octobre 2026 — Préparation de l’activation NAP en production — en cours
 
 - Demande utilisateur : préparer la bascule complète, sans publication PROD avant bilan approuvé. La source sportive NAP est distincte de l’environnement Firebase ; les comptes, journaux techniques, fichiers hébergés et la redirection TEST des mails sont conservés. Les fichiers statiques Records/MPF restent inchangés.
