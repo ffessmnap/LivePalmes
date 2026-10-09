@@ -1,4 +1,5 @@
 "use strict";
+const {visiblePerformanceSql}=require("./nap-performance-visibility");
 const rules = require("./nap-performance-normalization");
 const MAX_EVENTS = 500;
 const MAX_DOCUMENTS = 100;
@@ -51,7 +52,7 @@ function eventFromRow(row) {
 }
 // Optional additive fields stay server-side; eventFromRow whitelists the public response.
 // Same indexed query and row bound before/after the approved column addition.
-const SELECT_EVENT = "SELECT STRAIGHT_JOIN c.id,c.libelle,c.lieu,c.date,c.enddate,c.comite,c.description,c.filepdf,c.affiche,c.bassin,c.chrono,c.ld,t.label AS type_label,l.label AS level_label,s.label AS scope_label,cp.nb_lignes,cp.niveau AS native_level_code,cp.actif,cp.date_limit,co.*,co.entry_closed,co.whatsapp_url AS portal_whatsapp,co.city AS portal_city,co.address AS portal_address,co.organizer_label AS portal_organizer,co.water_body_type AS portal_water_body_type,co.canceled AS portal_canceled,EXISTS(SELECT 1 FROM perfs p FORCE INDEX (livepalmes_compet_id) WHERE p.compet=c.id LIMIT 1) AS has_results FROM competitions c";
+const SELECT_EVENT = `SELECT STRAIGHT_JOIN c.id,c.libelle,c.lieu,c.date,c.enddate,c.comite,c.description,c.filepdf,c.affiche,c.bassin,c.chrono,c.ld,t.label AS type_label,l.label AS level_label,s.label AS scope_label,cp.nb_lignes,cp.niveau AS native_level_code,cp.actif,cp.date_limit,co.*,co.entry_closed,co.whatsapp_url AS portal_whatsapp,co.city AS portal_city,co.address AS portal_address,co.organizer_label AS portal_organizer,co.water_body_type AS portal_water_body_type,co.canceled AS portal_canceled,(EXISTS(SELECT 1 FROM perfs p FORCE INDEX (livepalmes_compet_id) WHERE ${visiblePerformanceSql()} AND p.compet=c.id LIMIT 1) OR EXISTS(SELECT 1 FROM perfs_relais r FORCE INDEX (livepalmes_compet_id) WHERE r.compet=c.id LIMIT 1) OR EXISTS(SELECT 1 FROM livepalmes_performance_imports ri FORCE INDEX (PRIMARY) WHERE ri.id=SHA2(CONCAT('["nap-results-current",',c.id,']'),256) AND ri.status='current' LIMIT 1)) AS has_results FROM competitions c`;
 const EVENT_JOINS = " LEFT JOIN compet_parametres cp ON cp.compet=c.id LEFT JOIN compet_level l ON l.id=cp.niveau LEFT JOIN compet_types t ON t.id=c.type LEFT JOIN compet_type s ON s.id=c.typecnc LEFT JOIN livepalmes_competition_options co ON co.competition_id=c.id";
 async function execute(pool, sql, values = []) { return (await pool.execute({ sql, timeout: 10000 }, values))[0]; }
 async function readCalendarManifest(pool) {

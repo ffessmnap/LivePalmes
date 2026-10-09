@@ -1,4 +1,5 @@
 "use strict";
+const {visiblePerformanceSql}=require("./nap-performance-visibility");
 const rules = require("./nap-performance-normalization");
 const { performanceRow } = require("./nap-direct-swimmer");
 const { MAX_RESULTS, positiveId, text, execute } = require("./nap-direct-calendar");
@@ -13,8 +14,10 @@ function personFor(row) {
 }
 async function readCompetitionResults(pool, input) {
   const id = positiveId(input);
-  const rows = await execute(pool, `SELECT STRAIGHT_JOIN ${PROJECTION},COALESCE(cp.abre_club,cn.abre_club) AS abre_club,COALESCE(cp.nom_club,cn.nom_club) AS nom_club FROM perfs p FORCE INDEX (livepalmes_compet_id) JOIN competitions c ON c.id=p.compet LEFT JOIN nageurs n ON n.id=p.nageur LEFT JOIN clubs cp ON cp.num_club=p.club AND CAST(cp.num_club AS CHAR)=p.club LEFT JOIN clubs cn ON cn.num_club=n.club AND CAST(cn.num_club AS CHAR)=n.club WHERE p.compet=? ORDER BY p.id LIMIT ${MAX_RESULTS + 1}`, [id]);
+  const rows = await execute(pool, `SELECT STRAIGHT_JOIN ${PROJECTION},COALESCE(cp.abre_club,cn.abre_club) AS abre_club,COALESCE(cp.nom_club,cn.nom_club) AS nom_club FROM perfs p FORCE INDEX (livepalmes_compet_id) JOIN competitions c ON c.id=p.compet LEFT JOIN nageurs n ON n.id=p.nageur LEFT JOIN clubs cp ON cp.num_club=p.club AND CAST(cp.num_club AS CHAR)=p.club LEFT JOIN clubs cn ON cn.num_club=n.club AND CAST(cn.num_club AS CHAR)=n.club WHERE ${visiblePerformanceSql()} AND p.compet=? ORDER BY p.id LIMIT ${MAX_RESULTS + 1}`, [id]);
   if (rows.length > MAX_RESULTS) throw new RangeError("Resultats trop volumineux.");
+  const relays=await execute(pool,"SELECT STRAIGHT_JOIN r.id,r.distance,r.categorie,r.tps4,cl.abre_club,cl.nom_club FROM perfs_relais r FORCE INDEX (livepalmes_compet_id) LEFT JOIN clubs cl ON cl.num_club=r.club AND CAST(cl.num_club AS CHAR)=r.club WHERE r.compet=? ORDER BY r.id LIMIT 1001",[id]);
+  if(relays.length>1000)throw new RangeError("Resultats de relais trop volumineux.");
   const participants = [...new Set(rows.filter(row => !Number(row.relais)).map(row => Number(row.nageur)).filter(value => value > 0))];
   const personal = new Map(), seasonal = new Map();
   let markersAvailable = participants.length <= MAX_PARTICIPANTS;
@@ -23,7 +26,7 @@ async function readCompetitionResults(pool, input) {
     const counted = await execute(pool, `SELECT COUNT(*) AS count FROM (SELECT nageur FROM perfs FORCE INDEX (nageur) WHERE nageur IN (${placeholders}) LIMIT ${MAX_HISTORY_ROWS + 1}) bounded`, participants);
     markersAvailable = Number(counted[0]?.count) <= MAX_HISTORY_ROWS;
     if (markersAvailable) {
-      const history = await execute(pool, `SELECT STRAIGHT_JOIN ${PROJECTION} FROM perfs p FORCE INDEX (nageur) JOIN competitions c ON c.id=p.compet JOIN nageurs n ON n.id=p.nageur WHERE p.nageur IN (${placeholders}) LIMIT ${MAX_HISTORY_ROWS + 1}`, participants);
+      const history = await execute(pool, `SELECT STRAIGHT_JOIN ${PROJECTION} FROM perfs p FORCE INDEX (nageur) JOIN competitions c ON c.id=p.compet JOIN nageurs n ON n.id=p.nageur WHERE ${visiblePerformanceSql()} AND p.nageur IN (${placeholders}) LIMIT ${MAX_HISTORY_ROWS + 1}`, participants);
       if (history.length > MAX_HISTORY_ROWS) markersAvailable = false;
       else for (const row of history) {
         const performance = performanceRow(row, personFor(row));
@@ -36,6 +39,8 @@ async function readCompetitionResults(pool, input) {
   }
   const groups = new Map();
   for (const row of rows) {
+    // perfs.relais rows are individual relay legs, not the team's final result.
+    if(Number(row.relais)!==0)continue;
     const person = personFor(row), normalized = performanceRow(row, person);
     if (normalized?.isIntermediate || Number(row.passage) > 0) continue;
     const relay = Number(row.relais) !== 0;
@@ -51,6 +56,18 @@ async function readCompetitionResults(pool, input) {
       time: timeValue ? rules.formatTime(timeValue) : text(row.tps), timeValue: timeValue || Infinity,
       personalBest: markersAvailable && !relay && Boolean(timeValue) && personal.get(key) === timeValue,
       seasonBest: markersAvailable && !relay && Boolean(timeValue) && seasonal.get(seasonKey) === timeValue });
+  }
+  for(const row of relays) {
+    const course=text(row.distance),sex=/^F/.test(row.categorie)?"F":/^H/.test(row.categorie)?"M":"X",key=`${course}|${sex}|relay`,timeValue=rules.parseCompactTime(row.tps4);
+    if(!groups.has(key))groups.set(key,{eventLabel:`${course} · Relais`,sexLabel:({F:"Femmes",M:"Hommes"})[sex]||"Mixte",performances:[]});
+    groups.get(key).performances.push({id:`relay:${row.id}`,swimmer:text(row.nom_club||row.abre_club)||"Équipe non renseignée",swimmerId:"",isRelay:true,club:text(row.abre_club||row.nom_club),category:text(row.categorie),categoryLabel:text(row.categorie),time:timeValue?rules.formatTime(timeValue):text(row.tps4),timeValue:timeValue||Infinity,personalBest:false,seasonBest:false});
+  }
+  const statuses=await require("./nap-import-status-results").readImportStatusResults(pool,id);
+  for(const row of statuses) {
+    const key=`${row.course}|${row.sex}|${row.isRelay?"relay":"individual"}`;
+    if(!groups.has(key))groups.set(key,{eventLabel:`${row.course}${row.isRelay?" · Relais":""}`,sexLabel:({F:"Femmes",M:"Hommes"})[row.sex]||"Mixte",performances:[]});
+    const {course,sex,...performance}=row;
+    groups.get(key).performances.push({...performance,timeValue:Infinity});
   }
   return { source: "nap", readAt: new Date().toISOString(), competitionId: String(id), markersAvailable,
     groups: [...groups.values()].map(group => ({ ...group, markersAvailable, performances: group.performances.sort((a, b) => a.timeValue - b.timeValue || a.swimmer.localeCompare(b.swimmer, "fr")).map(({ timeValue, ...performance }) => performance) })) };

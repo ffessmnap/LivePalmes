@@ -1,4 +1,5 @@
 "use strict";
+const {visiblePerformanceSql}=require("./nap-performance-visibility");
 // On-demand native history for a grouped entry action. No export, cache or
 // Firestore fallback. One indexed SQL query, <=100 people / 20000 raw rows.
 const {swimmerId,performanceRow,MAX_HISTORY}=require("./nap-direct-swimmer");
@@ -8,7 +9,7 @@ function historyStatement(people) {
   if(!Array.isArray(people) || !people.length || people.length>100) throw new RangeError("De 1 a 100 nageurs NAP requis.");
   const ids=people.map(person=>swimmerId(person.id));
   if(new Set(ids).size!==ids.length) throw new TypeError("Nageurs NAP dupliques.");
-  return {sql:`SELECT p.id,p.nageur,p.course,p.cat,p.tps,p.passage,p.relais,c.id AS competition_id,c.libelle,c.lieu,c.date,c.bassin,c.chrono,c.ld,COALESCE(cp.num_club,cn.num_club) AS selected_club,COALESCE(cp.abre_club,cn.abre_club) AS abre_club,COALESCE(cp.nom_club,cn.nom_club) AS nom_club,COALESCE(cp.comite_club,cn.comite_club) AS comite_club FROM perfs p FORCE INDEX (nageur) JOIN nageurs n FORCE INDEX (PRIMARY) ON n.id=p.nageur LEFT JOIN competitions c ON c.id=p.compet LEFT JOIN clubs cp ON cp.num_club=p.club AND CAST(cp.num_club AS CHAR)=p.club LEFT JOIN clubs cn ON cn.num_club=n.club AND CAST(cn.num_club AS CHAR)=n.club WHERE p.nageur IN (${ids.map(()=>"?").join(",")}) ORDER BY p.nageur,p.id LIMIT 20001`,values:ids};
+  return {sql:`SELECT p.id,p.nageur,p.course,p.cat,p.tps,p.passage,p.relais,c.id AS competition_id,c.libelle,c.lieu,c.date,c.bassin,c.chrono,c.ld,COALESCE(cp.num_club,cn.num_club) AS selected_club,COALESCE(cp.abre_club,cn.abre_club) AS abre_club,COALESCE(cp.nom_club,cn.nom_club) AS nom_club,COALESCE(cp.comite_club,cn.comite_club) AS comite_club FROM perfs p FORCE INDEX (nageur) JOIN nageurs n FORCE INDEX (PRIMARY) ON n.id=p.nageur LEFT JOIN competitions c ON c.id=p.compet LEFT JOIN clubs cp ON cp.num_club=p.club AND CAST(cp.num_club AS CHAR)=p.club LEFT JOIN clubs cn ON cn.num_club=n.club AND CAST(cn.num_club AS CHAR)=n.club WHERE ${visiblePerformanceSql()} AND p.nageur IN (${ids.map(()=>"?").join(",")}) ORDER BY p.nageur,p.id LIMIT 20001`,values:ids};
 }
 async function readEntryHistory(connection,people) {
   const query=historyStatement(people);

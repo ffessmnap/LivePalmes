@@ -310,6 +310,8 @@ Dans les fiches de compétition, le formulaire de déclaration du chef d’équi
 
 ### Boutons
 
+L'aperçu d'import NAP du portail utilise les boutons existants et une liste de contrôle par pages de 100 lignes. Chaque ligne regroupe identité, course et temps, puis les éventuels champs de rattachement ou d'exclusion. Les champs restent bornés à la largeur disponible sur mobile. Les résultats retirés apparaissent séparément et exigent une confirmation explicite avant l'action principale d'enregistrement.
+
 | Variante | Classes courantes | Usage |
 |---|---|---|
 | Primaire | `.primary-button`, bouton de formulaire principal | Action principale d’un bloc |

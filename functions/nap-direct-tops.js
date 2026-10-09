@@ -1,4 +1,5 @@
 "use strict";
+const {visiblePerformanceSql}=require("./nap-performance-visibility");
 const rules = require("./nap-performance-normalization");
 const { performanceRow } = require("./nap-direct-swimmer");
 const MAX_COURSE_ROWS = 150000;
@@ -41,7 +42,7 @@ function filters(input) {
 function queryFor(input, facet = false) {
   const f = filters(input);
   const encodedMinimum = Math.floor(rules.MIN_TIME_BY_COURSE[f.course] / 6000) * 10000 + rules.MIN_TIME_BY_COURSE[f.course] % 6000;
-  const where = ["p.course = ?", "p.relais = 0", "TRIM(n.sexe) = ?", "COALESCE(c.ld, 0) <> 1", "c.id <> 0", "TRIM(p.tps) REGEXP '^[0-9]+$'", "CAST(TRIM(p.tps) AS UNSIGNED) BETWEEN ? AND 995999", "MOD(FLOOR(CAST(TRIM(p.tps) AS UNSIGNED) / 100), 100) < 60", `${CATEGORY_SQL} <> ''`];
+  const where = [visiblePerformanceSql(), "p.course = ?", "p.relais = 0", "TRIM(n.sexe) = ?", "COALESCE(c.ld, 0) <> 1", "c.id <> 0", "TRIM(p.tps) REGEXP '^[0-9]+$'", "CAST(TRIM(p.tps) AS UNSIGNED) BETWEEN ? AND 995999", "MOD(FLOOR(CAST(TRIM(p.tps) AS UNSIGNED) / 100), 100) < 60", `${CATEGORY_SQL} <> ''`];
   const values = [f.course, f.sex, encodedMinimum];
   if (f.category) { where.push(`${CATEGORY_SQL} = ?`); values.push(f.category); }
   if (f.season) { where.push(`${season} = ?`); values.push(Number(f.season)); }
