@@ -131,13 +131,15 @@ function moduleGraph(files = {}) {
   return { imports, inspect, signature };
 }
 
-function testBranch(node) {
+function registrationBranch(node) {
   const test = node?.test;
-  return node.type === "IfStatement" && !node.alternate && node.consequent.type === "BlockStatement" &&
+  if (!(node.type === "IfStatement" && !node.alternate && node.consequent.type === "BlockStatement" &&
     test?.type === "BinaryExpression" && test.operator === "===" &&
     test.left.type === "MemberExpression" && !test.left.computed &&
-    test.left.object.name === "ENVIRONMENT" && test.left.property.name === "projectId" &&
-    test.right.type === "Literal" && test.right.value === "livepalmes-test";
+    test.left.object.name === "ENVIRONMENT" && test.right.type === "Literal")) return null;
+  if (test.left.property.name === "projectId" && test.right.value === "livepalmes-test") return "test";
+  if (test.left.property.name === "sportingDataSource" && test.right.value === "nap") return "nap";
+  return null;
 }
 
 function fingerprints(source, common, files = {}) {
@@ -145,10 +147,18 @@ function fingerprints(source, common, files = {}) {
   const graph = moduleGraph(files);
   const owner = "functions/index.js";
   const groups = new Map();
-  const entries = ast.body.flatMap(node => testBranch(node)
-    ? node.consequent.body.map(child => ({ node: child, group: "test" }))
-    : [{ node, group: "global" }]);
-  const branchShared = [];
+  // Recognize declarations inside the two literal environment guards without
+  // assuming either guard is true. Their condition remains in every guarded hash.
+  // Unknown conditions, else branches and cross-export references stay broad.
+  const branchShared = new Map();
+  const entries = ast.body.flatMap(node => {
+    const group = registrationBranch(node);
+    if (!group) return [{ node, group: "global" }];
+    if (!branchShared.has(group)) branchShared.set(group, []);
+    branchShared.get(group).push(node.test);
+    return node.consequent.body.map(child => ({ node: child, group }));
+  });
+  const share = (node, group) => (group === "global" ? shared : branchShared.get(group)).push(node);
   const exportGroups = new Map();
   const exports = new Map();
   const shared = [];
@@ -178,6 +188,26 @@ function fingerprints(source, common, files = {}) {
     }
   }
   let conservative = false;
+  for (const { node, group } of entries) {
+    if (group !== "nap") continue;
+    const safeInitializer = init => !init || inert(init) ||
+      init.type === "CallExpression" && init.callee.type === "Identifier" &&
+        secretFactories.has(init.callee.name) && init.arguments.length === 1 &&
+        init.arguments[0].type === "Literal" && typeof init.arguments[0].value === "string" ||
+      init.type === "CallExpression" && init.callee.name === "require" &&
+        init.arguments.length === 1 && typeof init.arguments[0].value === "string" &&
+        init.arguments[0].value.startsWith(".") && Object.keys(files).length &&
+        graph.imports(init, owner).every(name => graph.inspect(name).pure);
+    // Extending recognition to the NAP guard must not isolate arbitrary
+    // initializers that could affect even unguarded endpoints.
+    if (node.type === "FunctionDeclaration" ||
+        node.type === "VariableDeclaration" && node.declarations.every(d => safeInitializer(d.init))) continue;
+    const expression = node.type === "ExpressionStatement" && node.expression;
+    if (expression?.type === "AssignmentExpression" && expression.operator === "=" &&
+        expression.left.type === "MemberExpression" && !expression.left.computed &&
+        expression.left.object.name === "exports") continue; // registration checked below
+    conservative = true;
+  }
   for (const { node } of entries) {
     if (node.type === "FunctionDeclaration" && secretFactories.has(node.id?.name)) conservative = true;
     if (node.type === "VariableDeclaration") for (const declaration of node.declarations) {
@@ -225,12 +255,12 @@ function fingerprints(source, common, files = {}) {
       const id = node.declarations[0].id;
       const names = id.type === "Identifier" ? [id.name] : id.type === "ObjectPattern"
         ? id.properties.map(p => p.type === "Property" && p.value.type === "Identifier" ? p.value.name : null) : [];
-      if (!names.length || names.some(n => !n)) { (group === "test" ? branchShared : shared).push(node); continue; }
+      if (!names.length || names.some(n => !n)) { share(node, group); continue; }
       for (const name of names) {
         if (declarations.has(name)) throw new Error("Declaration dupliquee");
         declarations.set(name, node); groups.set(name, group);
       }
-    } else (group === "test" ? branchShared : shared).push(node);
+    } else share(node, group);
   }
   walk(ast, node => {
     // Aliased/cross-export references or dynamic execution defeat local independence.
@@ -250,7 +280,7 @@ function fingerprints(source, common, files = {}) {
     while (pending.length) {
       const name = pending.pop();
       if (!declarations.has(name) || reached.has(name)) continue;
-      if (groups.get(name) === "test" && group !== "test") continue;
+      if (groups.get(name) !== "global" && groups.get(name) !== group) continue;
       reached.add(name);
       pending.push(...refs.get(name));
     }
@@ -269,7 +299,7 @@ function fingerprints(source, common, files = {}) {
   const functions = {};
   for (const [name, node] of exports) {
     const group = exportGroups.get(name);
-    const contextual = group === "test" ? branchShared : [];
+    const contextual = branchShared.get(group) || [];
     dependencies[name] = conservative ? [...declarations.keys()].sort() : closure([node, ...contextual], group);
     const modules = conservative ? Object.keys(files) : moduleNames([node, ...contextual, ...dependencies[name].map(dep => declarations.get(dep))]);
     functions[name] = hash(JSON.stringify([baseline, text(node),

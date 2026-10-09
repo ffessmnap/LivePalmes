@@ -2,6 +2,12 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 10 octobre — Sélection ciblée des fonctions NAP à publier
+
+- À la demande d'Antoine après le run TEST 38002678575 réussi (`b2f8bcfd25318c36673976df4572cb06796e9a47`), correction de la détection qui interprétait la garde d'activation NAP comme un cas dynamique et republiait les 147 fonctions ordinaires. La comparaison utilise toujours les révisions prouvées et toutes les dépendances directes/indirectes ; aucune liste manuelle de fonctions à ignorer.
+- Reconnaissance statique de la garde NAP, condition conservée dans l'empreinte ; effets inconnus, conditions différentes, `else`, références entre exports, preuve absente et dépendances communes conservent les protections existantes. Aucun code applicatif, droit, secret, donnée ni fonction métier modifié.
+- Régression sur les deux commits réellement publiés : quatre fonctions clubs attendues au lieu du backend entier. Tests des initialisations et de l'environnement partagés, des modules indirects et des replis larges ; tests de cycle de publication simulés. Contrôle global Linux puis vérification du circuit TEST commun requis avant de conclure ; aucun déploiement PROD autorisé par cette évolution.
+
 ### 10 octobre — Recette du raccordement et comités des clubs
 
 - PR #217 intégrée ; TEST commun `3d168e3e00dc50c1ab2b912fc691993ad8f7caf1` publié avec succès, run 37999492258. Recherche nationale d'Antoine Fauveau, licence chaîne `A-05-222647`, actions nationales et absence de suppression du club historique CNHC vérifiées en lecture seule. Aucune fiche modifiée pour la recette.
