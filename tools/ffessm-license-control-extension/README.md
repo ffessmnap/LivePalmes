@@ -4,6 +4,12 @@
 
 Extension locale Chrome/Edge qui contrôle un lot exporté par LivePalmes depuis une session **Ma Commission FFESSM** déjà connectée. Elle compare le numéro de licence, l’identité, la date de naissance et la date finale de validité affichée par le site fédéral.
 
+## Ordre des recherches
+
+L’extension cherche d’abord par numéro de licence lorsqu’il est renseigné, puis par nom et prénom, et enfin par nom seul si aucune correspondance concluante n’a été trouvée. Elle ne recherche jamais par prénom seul, afin d’éviter de parcourir de longues listes de résultats sans nom de famille.
+
+Les candidats restent contrôlés sur le nom, le prénom, la date de naissance, le numéro de licence et la validité requise pour la saison.
+
 ## Règle sportive appliquée
 
 La saison sportive va du 1er septembre de l’année A au 31 août de l’année A+1. Pour être validable pendant la saison `A-A+1`, une licence doit être valable au moins jusqu’au **31 décembre A+1**.
