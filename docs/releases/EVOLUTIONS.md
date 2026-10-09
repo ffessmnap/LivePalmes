@@ -2,6 +2,13 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 9 octobre — Derniers parcours de suppression (préparation PR #217)
+
+- Anciennes actions de suppression club/nageur Firebase explicitement refusées en mode NAP avant toute lecture de l'ancien référentiel. Tests d'isolation des cinq actions réussis.
+- Moteur de suppression d'un nageur sans historique préparé, pas encore relié à un bouton/callable : lecture bornée de dix-sept références indexées, empreintes affichées d'identité/statut/licence, sauvegarde préalable, refus de fiche utilisée, conservation des sauvegardes et reprise après chaque écriture interrompue. Budget maximal 40 SQL et 101 validations de saison ; aucun nouveau schéma nécessaire pour ce moteur.
+- Tests exclusivement simulés : autorisation avant connexion, historique bloquant, licence changée, sauvegarde refusée et reprise sans suppression répétée. EXPLAIN réels des dix-sept contrôles et des deux suppressions : index ciblés ou PRIMARY ; aucune mutation exécutée.
+- Confirmation métier redemandée pour les suppressions des nageurs utilisés et des clubs historiques avant activation. Aucune nouvelle validation utilisateur déduite des tests. Contrôle Linux final et recette TEST commune restent nécessaires.
+
 ### 9 octobre — Fusion des nageurs NAP (préparation PR #217)
 
 - Après accord explicite : table `livepalmes_swimmer_merges` et quatorze index ajoutés après sauvegarde de structure, contrôle des écritures actives et vérification finale. Aucune fusion réelle effectuée pour les essais.
