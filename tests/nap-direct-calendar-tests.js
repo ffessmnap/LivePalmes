@@ -46,6 +46,7 @@ const { readCompetitionResults } = require("../functions/nap-direct-competition-
   assert.match(calendar.EVENT_JOINS,/compet_types t ON t.id=c\.type LEFT/);
   assert.match(calendar.EVENT_JOINS,/compet_type s ON s.id=c\.typecnc LEFT/);
   assert.ok(!calendar.SELECT_EVENT.includes("program_sessions"),"No detailed JSON loaded for every season row");
+  assert.match(calendar.SELECT_EVENT,/livepalmes_performance_imports ri FORCE INDEX \(PRIMARY\)/,"status-only imports expose their competition results through an indexed current-version pointer");
   await assert.rejects(calendar.readCalendarSeason({ execute: async () => [Array(501).fill(raw)] }, 2026), RangeError);
   queries = [];
   const performance = { id: 973, nageur: 168, nom: "Exemple", prenom: "Nageur", birth_date: "1980-01-01", sexe: "M", competition_id: 2, libelle: "Compétition", date: "2004-02-29", bassin: 50, chrono: "E", ld: 0, course: "100SF", cat: "HSE", tps: "14200", passage: 0, relais: 0 };
