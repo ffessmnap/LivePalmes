@@ -2,6 +2,11 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 10 octobre — Extension de contrôle des licences FFESSM 1.0.1
+
+- À la demande d’Antoine, suppression de la recherche par prénom seul dans Ma Commission ; ordre conservé : licence si renseignée, nom + prénom, nom seul. Identité, date de naissance et validité de saison inchangées.
+- Vérification de syntaxe et suite ciblée de l’extension réussies, notamment l’ordre des recherches avec/sans licence et un nom composé. Essai sur Ma Commission et retour utilisateur encore nécessaires ; aucune donnée fédérale ou LivePalmes modifiée. Extension locale : pas de déploiement Firebase nécessaire pour installer l’archive.
+
 ### 9 octobre — Derniers parcours de suppression (préparation PR #217)
 
 - Arbitrages confirmés : nageur utilisé seulement désactivable ; nageur sans historique supprimable par le niveau national. Club historique seulement désactivable ; nouveau club créé dans LivePalmes supprimable uniquement sans données ni comptes rattachés.
