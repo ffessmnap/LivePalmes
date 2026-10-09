@@ -14242,6 +14242,7 @@
     try {
       await callFunction("deleteEngagementNationalClubPerson", {
         personId: cleanId,
+        expectedFingerprint: person.napFingerprint,
         confirmPermanent: true
       });
       engagementNationalPeopleLoaded = false;
@@ -14263,7 +14264,7 @@
     const target = engagementNationalPeople.find((item) => item.id === targetId) || {};
     const sourceName = [source.firstName, source.lastName].filter(Boolean).join(" ") || source.licenseNumber || "cette fiche";
     const targetName = [target.firstName, target.lastName].filter(Boolean).join(" ") || target.licenseNumber || "la fiche cible";
-    if (!global.confirm(`Fusionner ${sourceName} vers ${targetName} ? La fiche source sera marquée comme fusionnée et retirée des listes club.`)) return;
+    if (!global.confirm(`Fusionner ${sourceName} vers ${targetName} ? Les rôles et engagements seront repris sur la fiche choisie ; la fiche source sera retirée des listes club.`)) return;
     const licenseMismatch = Boolean(source.licenseNumber && target.licenseNumber && source.licenseNumber !== target.licenseNumber);
     if (licenseMismatch && !global.confirm(`Attention : les numéros de licence sont différents (${source.licenseNumber} / ${target.licenseNumber}). Confirmer quand même la fusion ?`)) return;
     const clubMismatch = Boolean(source.clubId && target.clubId && source.clubId !== target.clubId);
@@ -14276,6 +14277,8 @@
       const result = await callFunction("mergeEngagementNationalClubPerson", {
         sourcePersonId: sourceId,
         targetPersonId: targetId,
+        sourceFingerprint: source.napFingerprint,
+        targetFingerprint: target.napFingerprint,
         confirmMerge: true,
         confirmLicenseMismatch: licenseMismatch,
         confirmClubMismatch: clubMismatch
@@ -14325,13 +14328,16 @@
     const errors = [];
     for (const source of sources) {
       try {
-        await callFunction("mergeEngagementNationalClubPerson", {
+        const result = await callFunction("mergeEngagementNationalClubPerson", {
           sourcePersonId: source.id,
           targetPersonId: targetId,
+          sourceFingerprint: source.napFingerprint,
+          targetFingerprint: target.napFingerprint,
           confirmMerge: true,
           confirmLicenseMismatch: true,
           confirmClubMismatch: true
         });
+        if(result.targetPerson) Object.assign(target,result.targetPerson);
         successCount += 1;
       } catch (error) {
         const sourceName = [source.firstName, source.lastName].filter(Boolean).join(" ") || source.licenseNumber || source.id;

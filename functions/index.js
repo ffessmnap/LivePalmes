@@ -15915,7 +15915,7 @@ exports.setEngagementNationalClubPersonStatus = onCall({ ...CALLABLE_OPTIONS, ..
   };
 });
 
-exports.deleteEngagementNationalClubPerson = onCall(CALLABLE_OPTIONS, async (request) => {
+exports.deleteEngagementNationalClubPerson = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
   const context = await engagementAccessContext(request);
   if (!context.national) {
     throw new HttpsError("permission-denied", "Suppression reservee au niveau national.");
@@ -15926,6 +15926,15 @@ exports.deleteEngagementNationalClubPerson = onCall(CALLABLE_OPTIONS, async (req
   }
   if (request.data?.confirmPermanent !== true) {
     throw new HttpsError("failed-precondition", "Confirmation de suppression definitive requise.");
+  }
+  if (ENVIRONMENT.sportingDataSource === "nap") {
+    try {
+      return await require("./nap-person-deletion").deletePerson(require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD),{personId,actorUid:context.uid,confirmPermanent:true,expectedFingerprint:request.data?.expectedFingerprint},{
+        read:async operation=>{const doc=await db.collection("auditLogs").doc(`nap-person-delete-${operation}-before`).get();return doc.exists?doc.data().target:null;},
+        prepare:(operation,target)=>db.collection("auditLogs").doc(`nap-person-delete-${operation}-before`).create({action:"nap.personDelete.prepare",actorUid:context.uid,target,createdAt:new Date().toISOString()}),
+        complete:(operation,target)=>writeAuditLogOnce("nap.personDelete.complete",context.uid,target,`nap-person-delete-${operation}-complete`)
+      },()=>{if(!context.national) throw new HttpsError("permission-denied","Suppression nationale requise.");});
+    } catch(error) {if(error instanceof HttpsError) throw error;throw new HttpsError(error instanceof TypeError?"failed-precondition":"unavailable",error instanceof TypeError?error.message:"Suppression NAP a verifier. Rechargez la fiche ; sauvegarde conservee.");}
   }
   const ref = db.collection("engagementClubPeople").doc(personId);
   const snapshot = await ref.get();
@@ -16113,7 +16122,7 @@ function mergeEngagementClubEntryOfficials(officials = [], sourceId = "", target
   return { officials: merged, changed };
 }
 
-exports.mergeEngagementNationalClubPerson = onCall(CALLABLE_OPTIONS, async (request) => {
+exports.mergeEngagementNationalClubPerson = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
   const context = await engagementAccessContext(request);
   if (!context.national) {
     throw new HttpsError("permission-denied", "Fusion reservee au niveau national.");
@@ -16125,6 +16134,15 @@ exports.mergeEngagementNationalClubPerson = onCall(CALLABLE_OPTIONS, async (requ
   }
   if (request.data?.confirmMerge !== true) {
     throw new HttpsError("failed-precondition", "Confirmation de fusion requise.");
+  }
+  if (ENVIRONMENT.sportingDataSource === "nap") {
+    try {
+      return await require("./nap-person-merge").mergePeople(require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD),{sourcePersonId,targetPersonId,actorUid:context.uid,confirmMerge:true,confirmClubMismatch:request.data?.confirmClubMismatch===true,sourceFingerprint:request.data?.sourceFingerprint,targetFingerprint:request.data?.targetFingerprint},{
+        read:async operation=>{const doc=await db.collection("auditLogs").doc(`nap-person-merge-${operation}-before`).get();return doc.exists?doc.data().target:null;},
+        prepare:(operation,target)=>db.collection("auditLogs").doc(`nap-person-merge-${operation}-before`).create({action:"nap.personMerge.prepare",actorUid:context.uid,target,createdAt:new Date().toISOString()}),
+        complete:(operation,target)=>writeAuditLogOnce("nap.personMerge.complete",context.uid,target,`nap-person-merge-${operation}-complete`)
+      },()=>{if(!context.national)throw new HttpsError("permission-denied","Fusion nationale requise.");});
+    }catch(error){if(error instanceof HttpsError)throw error;throw new HttpsError(error instanceof TypeError?"failed-precondition":"unavailable",error instanceof TypeError?error.message:"Fusion NAP a verifier. Rechargez les fiches ; sauvegarde conservee.");}
   }
   const sourceRef = db.collection("engagementClubPeople").doc(sourcePersonId);
   const targetRef = db.collection("engagementClubPeople").doc(targetPersonId);

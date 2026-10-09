@@ -2,6 +2,15 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 9 octobre — Suppression et fusion des personnes NAP (préparation PR #217)
+
+- Après accord spécifique utilisateur : complément `livepalmes_deleted_people_history` et index `officielsengager(officiel,id)` ajoutés après sauvegarde et contrôlés. Aucune personne ni aucun engagement modifié ; essais d'écriture exclusivement simulés.
+- Suppression nationale raccordée : empreinte de la fiche affichée, sauvegarde avant écriture, identité conservée par engagement, reprise après interruption et refus de concurrence. Les liens et les déclarations historiques `chefsdequipe` sont conservés. Lecture club/nationale de l'identité historique par jointure PRIMARY, sans requête supplémentaire.
+- Fusion explicite des personnes réutilisables : fiche cible conservée, rôles réunis, engagements d'officiel regroupés comme dans le portail antérieur, déclarations historiques de chef d'équipe intactes. Empreintes source/cible, confirmation spéciale pour clubs différents, journal et reprise MyISAM ; la fusion groupée utilise l'empreinte cible retournée après chaque action.
+- Budgets : suppression au plus 25 appels SQL / 2 001 liens ; fusion au plus 35 appels / 4 001 liens. Sauvegarde plafonnée à 500 Ko. Verrous natifs protègent également contre les écritures d'IntraNAP pendant chaque action confirmée.
+- Tests simulés de droits, concurrence, reprises après chaque phase, historique, options et routage sans ancienne base réussis. EXPLAIN réels de suppression, mise à jour des liens et lectures historiques : PRIMARY ou index ciblés ; aucune mutation exécutée pour ces preuves.
+- Contrôle global local avant fusion : syntaxe et suites NAP réussies, arrêt habituel sur le test de workflow Bash sous Windows. Vérification Linux du commit précédent `488037e0` réussie ; contrôles Linux du nouveau lot et recette visuelle encore nécessaires. TEST commun et PROD inchangés.
+
 ### 9 octobre — Lecture nationale des nageurs NAP (préparation PR #217)
 
 - Ancien callable national raccordé à NAP : autorisation avant toute lecture, licence chaîne et statut natif, pagination par identifiant (100 personnes, une requête, 101 lignes maximum), sans lecture des anciens nageurs Firebase.
