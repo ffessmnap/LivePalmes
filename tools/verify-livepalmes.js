@@ -141,6 +141,8 @@ function runUnitTests() {
     "nap-swimmer-merge-callable-tests.js",
     "nap-swimmer-merge-audit-tests.js",
     "nap-swimmer-merge-state-tests.js",
+    "nap-swimmer-deletion-tests.js",
+    "nap-legacy-deletion-isolation-tests.js",
     "nap-person-history-schema-tests.js",
     "nap-person-deletion-plan-tests.js",
     "nap-person-deletion-tests.js",

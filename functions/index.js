@@ -14596,6 +14596,7 @@ exports.saveEngagementNationalClub = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONME
 });
 
 exports.deleteEngagementNationalClub = onCall(CALLABLE_OPTIONS, async (request) => {
+  if (ENVIRONMENT.sportingDataSource === "nap") throw new HttpsError("failed-precondition", "Cette ancienne suppression Firebase est desactivee. Utilisez la gestion NAP de la fiche.");
   const context = await engagementAccessContext(request);
   if (!context.national) throw new HttpsError("permission-denied", "Suppression des clubs reservee au niveau national.");
   if (request.data?.confirmPermanent !== true) {
@@ -15018,6 +15019,7 @@ async function deleteEngagementClubSwimmerPermanently(ref, snapshot, context = {
 }
 
 exports.requestEngagementClubSwimmerDeletion = onCall(CALLABLE_OPTIONS, async (request) => {
+  if (ENVIRONMENT.sportingDataSource === "nap") throw new HttpsError("failed-precondition", "Cette ancienne suppression Firebase est desactivee. Utilisez la gestion NAP de la fiche.");
   const context = await engagementClubAccessContext(request);
   const swimmerId = cleanText(request.data?.swimmerId).slice(0, 80);
   if (!swimmerId) {
@@ -15086,6 +15088,7 @@ exports.requestEngagementClubSwimmerDeletion = onCall(CALLABLE_OPTIONS, async (r
 });
 
 exports.deleteEngagementNationalClubSwimmer = onCall(CALLABLE_OPTIONS, async (request) => {
+  if (ENVIRONMENT.sportingDataSource === "nap") throw new HttpsError("failed-precondition", "Cette ancienne suppression Firebase est desactivee. Utilisez la gestion NAP de la fiche.");
   const context = await engagementAccessContext(request);
   if (!context.national) {
     throw new HttpsError("permission-denied", "Suppression reservee au niveau national.");
@@ -15118,6 +15121,7 @@ exports.deleteEngagementNationalClubSwimmer = onCall(CALLABLE_OPTIONS, async (re
 });
 
 exports.listEngagementSwimmerDeletionRequests = onCall(CALLABLE_OPTIONS, async (request) => {
+  if (ENVIRONMENT.sportingDataSource === "nap") throw new HttpsError("failed-precondition", "Cette ancienne suppression Firebase est desactivee. Utilisez la gestion NAP de la fiche.");
   const context = await engagementAccessContext(request);
   if (!context.national) {
     throw new HttpsError("permission-denied", "Lecture reservee au niveau national.");
@@ -15158,6 +15162,7 @@ exports.listEngagementSwimmerDeletionRequests = onCall(CALLABLE_OPTIONS, async (
 });
 
 exports.resolveEngagementSwimmerDeletionRequest = onCall(CALLABLE_OPTIONS, async (request) => {
+  if (ENVIRONMENT.sportingDataSource === "nap") throw new HttpsError("failed-precondition", "Cette ancienne suppression Firebase est desactivee. Utilisez la gestion NAP de la fiche.");
   const context = await engagementAccessContext(request);
   if (!context.national) {
     throw new HttpsError("permission-denied", "Validation reservee au niveau national.");
