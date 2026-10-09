@@ -9,7 +9,7 @@ const original={id:42,nom:"EXEMPLE",prenom:"Test",date:"2000-01-01",sexe:"F",clu
   for(const input of [{season:"2026-2028",competitionIds:[1]},{season:"2026-2027",competitionIds:[]},{season:"2026-2027",competitionIds:[1,2,3,4,5,6]}]) await assert.rejects(prepareBatch({execute:()=>{throw Error("should not read");}},input));
   let reads=0;
   const batch=await prepareBatch({execute:async({sql})=>{reads++;assert.ok(sql.includes("LIMIT"));return [reads===1?[{id:1,name:"Test",date:"2026-11-07"}]:[{...original,compet:1}]];}},{season:"2026-2027",competitionIds:["legacy-nap-1"]});
-  assert.equal(reads,2);assert.equal(batch.people[0].expectedLicenseNumber,original.number);assert.equal(batch.people[0].seasonStatus,"to_check");assert.equal(batch.people[0].livePalmesId,"42");
+  assert.equal(reads,3);assert.equal(batch.people.length,1);assert.equal(batch.people[0].expectedLicenseNumber,original.number);assert.equal(batch.people[0].seasonStatus,"to_check");assert.equal(batch.people[0].livePalmesId,"42");
   const noRead={execute:()=>{throw Error("should not read");}};
   for(const items of [[],[{swimmerIndexId:42,licenseNumber:"",expectedLicenseNumber:""}],[{swimmerIndexId:42,licenseNumber:"A-11-1",expectedLicenseNumber:"",federalValidityEndDate:"2027-02-29"}]]) await assert.rejects(validateBatch(noRead,{season:"2026-2027",source:"admin_import",items},"national",{}));
   let row={...original},saved,updates=0,queries=0,completes=0;

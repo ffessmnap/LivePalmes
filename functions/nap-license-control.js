@@ -15,8 +15,9 @@ async function prepareBatch(connection,input) {
   const competitions=await query(connection,`SELECT id,libelle AS name,date FROM competitions FORCE INDEX (PRIMARY) WHERE id IN (${marks}) ORDER BY id LIMIT 6`,ids,5);
   if(competitions.length!==ids.length || competitions.some(row=>!row.date || row.date<season.startDate || row.date>season.endDate)) throw new TypeError("Competition absente ou hors saison.");
   const rows=await query(connection,`SELECT e.compet,n.id,n.nom,n.prenom,n.date,n.sexe,n.number,n.club,cl.abre_club,cl.nom_club,${license.projection()} FROM nageursengager e FORCE INDEX (livepalmes_compet_nageur_id) LEFT JOIN nageurs n ON n.id=e.nageur LEFT JOIN clubs cl ON cl.num_club=n.club AND CAST(cl.num_club AS CHAR)=n.club ${license.join("n","v",season.label)} WHERE e.compet IN (${marks}) ORDER BY e.compet,e.nageur,e.id LIMIT 4001`,ids,4000);
+  const relayRows=await query(connection,`SELECT r.compet,n.id,n.nom,n.prenom,n.date,n.sexe,n.number,n.club,cl.abre_club,cl.nom_club,${license.projection()} FROM engagements_relais r FORCE INDEX (livepalmes_compet_club_id) STRAIGHT_JOIN engagements_relayeurs m FORCE INDEX (livepalmes_relais_pos_id) ON m.relais=r.id LEFT JOIN nageurs n ON n.id=m.nageur LEFT JOIN clubs cl ON cl.num_club=n.club AND CAST(cl.num_club AS CHAR)=n.club ${license.join("n","v",season.label)} WHERE r.compet IN (${marks}) ORDER BY r.compet,r.id,m.pos,m.id LIMIT 4001`,ids,4000);
   const people=new Map();
-  for(const row of rows) {
+  for(const row of [...rows,...relayRows]) {
     if(!row.id) throw new TypeError("Inscription sans fiche NAP.");
     const id=String(row.id),competition=competitions.find(item=>Number(item.id)===Number(row.compet));
     if(!people.has(id)) people.set(id,{...person(row),...license.state(row,season.label),livePalmesId:id,expectedLicenseNumber:license.number(row.number),seasonStatus:license.state(row,season.label).licenseSeasonStatus,validatedAt:row.license_validated_at||"",validationSource:row.license_validation_source||"",federalValidityEndDate:row.license_validity_end_date||"",competitionIds:[],competitions:[]});
@@ -24,7 +25,7 @@ async function prepareBatch(connection,input) {
     if(!target.competitionIds.includes(String(row.compet))) {target.competitionIds.push(String(row.compet));target.competitions.push(competition.name);}
   }
   if(people.size>800) throw new RangeError("Le lot depasse 800 nageurs.");
-  return {ok:true,source:"nap",batchId:`licences-${season.label}-${randomUUID()}`,season,competitions:competitions.map(item=>({...item,id:String(item.id)})),people:[...people.values()].sort((a,b)=>a.lastName.localeCompare(b.lastName,"fr")||a.firstName.localeCompare(b.firstName,"fr")),readStats:{nativeQueries:2,maxNativeRows:4005}};
+  return {ok:true,source:"nap",batchId:`licences-${season.label}-${randomUUID()}`,season,competitions:competitions.map(item=>({...item,id:String(item.id)})),people:[...people.values()].sort((a,b)=>a.lastName.localeCompare(b.lastName,"fr")||a.firstName.localeCompare(b.firstName,"fr")),readStats:{nativeQueries:3,maxNativeRows:8005}};
 }
 function validDate(value) {
   return typeof value==="string" && /^\d{4}-\d{2}-\d{2}$/.test(value) && Number.isFinite(Date.parse(value+"T00:00:00Z")) && new Date(value+"T00:00:00Z").toISOString().slice(0,10)===value;
