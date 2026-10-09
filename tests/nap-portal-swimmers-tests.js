@@ -26,6 +26,7 @@ function fixture(options = {}) {
 (async () => {
   assert.equal(person(original).napFingerprint, fingerprint(original));
   assert.ok(!("number" in person(original)));
+  for (const [number, expected] of [["A-11-526612", "A-11-526612"], ["001234", "001234"], [null, ""], [undefined, ""], ["", ""], ["   ", ""]]) assert.equal(person({...original, number}).licenseNumber, expected);
   assert.ok(!("wc" in person(original)));
   const f = fixture(); await f.run(); assert.equal(f.writes(), 1); assert.deepEqual(f.row(), { ...original, nom: "CORRIGE" }); assert.equal(f.completed().verified, true);
   assert.equal((await f.run()).alreadyApplied, true); assert.equal(f.writes(), 1);

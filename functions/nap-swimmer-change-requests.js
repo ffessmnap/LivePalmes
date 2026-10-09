@@ -6,7 +6,7 @@ const { fingerprint, planIdentityChange } = require("./nap-portal-swimmer-change
 const FIELDS = ["firstName", "lastName", "birthDate", "sex"];
 function proposedFields(raw) {
   if (!raw || typeof raw !== "object" || Array.isArray(raw) || Object.keys(raw).some(key => !FIELDS.includes(key) && key !== "licenseNumber")) throw new TypeError("Champs de correction invalides.");
-  if (raw.licenseNumber) throw new TypeError("Les licences seront ajoutees dans NAP ulterieurement.");
+  if (raw.licenseNumber) throw new TypeError("Le numero de licence NAP est en lecture seule.");
   return Object.fromEntries(FIELDS.filter(key => Object.hasOwn(raw, key)).map(key => [key, raw[key]]));
 }
 async function prepareRequest(connection, input, context) {
@@ -15,9 +15,9 @@ async function prepareRequest(connection, input, context) {
   const id = swimmerId(input.swimmerId), fields = proposedFields(input.proposed);
   const reason = typeof input.reason === "string" ? input.reason.trim() : "";
   if (!reason || reason.length > 500) throw new TypeError("Le motif de la demande est obligatoire, 500 caracteres maximum.");
-  const [rows] = await connection.execute({ sql: "SELECT id,nom,prenom,date,sexe,club FROM nageurs WHERE id=? LIMIT 1", timeout: 10000 }, [id]);
+  const [rows] = await connection.execute({ sql: "SELECT id,nom,prenom,date,sexe,number,club FROM nageurs WHERE id=? LIMIT 1", timeout: 10000 }, [id]);
   if (rows.length !== 1 || String(rows[0].club) !== String(context.clubId)) throw new TypeError("Nageur absent du club actif.");
-  const before = Object.fromEntries(["id", "nom", "prenom", "date", "sexe", "club"].map(key => [key, rows[0][key]]));
+  const before = Object.fromEntries(["id", "nom", "prenom", "date", "sexe", "number", "club"].map(key => [key, rows[0][key]]));
   const plan = planIdentityChange(before, fields, input.expectedFingerprint);
   return { napSource: true, nativeBefore: before, expectedFingerprint: fingerprint(before),
     requestedSource: "reference", requestedSwimmerId: String(id), targetSource: "reference", targetSwimmerId: String(id),

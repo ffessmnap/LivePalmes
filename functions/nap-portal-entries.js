@@ -27,7 +27,7 @@ async function readNativeClubEntry(connection, input, authorize) {
     [competitionId, clubId], LIMITS.relays);
   const relayIds = relays.map(row => positiveId(row.id));
   const members = relayIds.length ? await bounded(connection,
-    `SELECT m.id,m.relais,m.pos,m.nageur,n.nom,n.prenom,n.date,n.sexe,n.club FROM engagements_relayeurs m FORCE INDEX (livepalmes_relais_pos_id) LEFT JOIN nageurs n ON n.id=m.nageur WHERE m.relais IN (${placeholders(relayIds)}) ORDER BY m.relais,m.pos,m.id LIMIT 1201`,
+    `SELECT m.id,m.relais,m.pos,m.nageur,n.nom,n.prenom,n.date,n.sexe,n.number,n.club FROM engagements_relayeurs m FORCE INDEX (livepalmes_relais_pos_id) LEFT JOIN nageurs n ON n.id=m.nageur WHERE m.relais IN (${placeholders(relayIds)}) ORDER BY m.relais,m.pos,m.id LIMIT 1201`,
     relayIds, LIMITS.members) : [];
   const officials = await bounded(connection,
     "SELECT e.id,e.compet,e.officiel,e.club,o.nom,o.prenom,o.date FROM officielsengager e FORCE INDEX (livepalmes_compet_club_id) LEFT JOIN officiels o ON o.id=e.officiel WHERE e.compet=? AND e.club=? ORDER BY e.id LIMIT 201",

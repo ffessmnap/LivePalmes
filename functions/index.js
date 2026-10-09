@@ -12784,7 +12784,6 @@ exports.listEngagementClubSwimmers = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONME
       const roster = await engagementClubRosterRef(db, context.clubId).get();
       const metadata = Object.values(roster.data()?.swimmers || {}).filter(item => item.napSource === true);
       return { ok: true, clubId: context.clubId, source: "nap", swimmers: people.map((item, index) => ({
-        licenseNumber: "",
         ...item, category: currentEngagementCategoryFromBirthDate(item.birthDate),
         clubActivityStatus: metadata.find(meta => String(meta.swimmerIndexId || meta.id) === item.id)?.clubActivityStatus || "active"
       })), readStats: portalReadStats("listEngagementClubSwimmers", startedAt, { baseDocuments: 2, variableDocumentsMax: 0, cacheHit: false }) };
@@ -12830,7 +12829,7 @@ exports.setEngagementClubSwimmerActivityStatus = onCall({ ...CALLABLE_OPTIONS, .
   if (ENVIRONMENT.projectId === "livepalmes-test") {
     const nap = require("./nap-portal-swimmers");
     const id = require("./nap-direct-swimmer").swimmerId(swimmerIndexId);
-    const [rows] = await nap.portalPool(process.env.LIVEPALMES_NAP_PASSWORD).execute({ sql: "SELECT id,nom,prenom,date,sexe,club FROM nageurs WHERE id=? AND club=? LIMIT 1", timeout: 10000 }, [id, context.clubId]);
+    const [rows] = await nap.portalPool(process.env.LIVEPALMES_NAP_PASSWORD).execute({ sql: "SELECT id,nom,prenom,date,sexe,number,club FROM nageurs WHERE id=? AND club=? LIMIT 1", timeout: 10000 }, [id, context.clubId]);
     if (rows.length !== 1) throw new HttpsError("not-found", "Nageur absent de cet effectif NAP.");
     const swimmer = nap.person(rows[0]);
     const now = new Date().toISOString();
@@ -13278,7 +13277,6 @@ exports.searchEngagementNationalSwimmers = onCall({ ...CALLABLE_OPTIONS, ...(ENV
       const result = await nap.searchPortalSwimmers(nap.portalPool(process.env.LIVEPALMES_NAP_PASSWORD), query);
       return { ok: true, query, source: "nap", hasMore: result.hasMore, swimmers: result.swimmers.map((item, index) => ({
         ...item, category: currentEngagementCategoryFromBirthDate(item.birthDate),
-        licenseNumber: "",
         id: item.id, swimmerIndexId: item.id, swimmerId: item.id, source: "reference", napSource: true,
         firstName: item.firstName, lastName: item.lastName, birthDate: item.birthDate, sex: item.sex, name: item.name, clubId: item.clubId, club: item.club, clubName: item.clubName, identityKey: item.identityKey, napFingerprint: item.napFingerprint
       })) };
@@ -14757,7 +14755,7 @@ exports.updateEngagementNationalSwimmerIdentity = onCall({ ...ENGAGEMENT_SWIMMER
   if (ENVIRONMENT.projectId === "livepalmes-test" && request.data?.napSource === true) {
     const nap = require("./nap-portal-swimmers");
     try {
-      if (cleanText(request.data.proposed?.licenseNumber)) throw new TypeError("Les licences seront ajoutees dans NAP ulterieurement.");
+      if (cleanText(request.data.proposed?.licenseNumber)) throw new TypeError("Le numero de licence NAP est en lecture seule.");
       const { licenseNumber, ...proposed } = request.data.proposed || {};
       return await nap.correctPortalIdentity(nap.portalPool(process.env.LIVEPALMES_NAP_PASSWORD), {
         id: request.data.swimmerId, expectedFingerprint: request.data.expectedFingerprint, proposed,
