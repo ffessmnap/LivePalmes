@@ -1,0 +1,25 @@
+"use strict";
+const assert=require("node:assert/strict"),{decodeWinPalmeResults,reviewWinPalmeResults,compactTime,date}=require("../functions/nap-winpalme-results");
+const head="REN;05/06/2026;Competition;Ville\nBAS;50;E\nCLU;PAN;Club\n";
+const individual=(status="NAG",final="1:42.00")=>["NAG","NOM","PRENOM","01/02/2000","M","PAN","","100SF","1:30.00","HSE",status,"00.00","00.00","00.00","00.00",final,status==="DSQ"?"Faux depart":"","123","1","1","HSE","","912"].join(";");
+const relay=["REL","PAN","X140","4X100SF","3:05.00","","NAG","42.91","1:38.67","2:32.39","00.00","3:19.25","12","13","14","15","","465","1","1",""].join(";");
+let parsed=decodeWinPalmeResults(head+individual()+"\n"+relay);
+assert.equal(parsed.confirmable,true);assert.equal(parsed.rows[0].time,"014200");assert.equal(parsed.rows[1].time,"031925");assert.deepEqual(parsed.rows[1].memberHints,["12","13","14","15"]);assert.equal(parsed.summary.relays,1);
+for(const status of ["ABD","DSQ","FRT"]){const p=decodeWinPalmeResults(head+individual(status,"1:00.00"));assert.equal(p.confirmable,true);assert.equal(p.rows[0].time,null);assert.equal(p.rows[0].eligible,false);assert.equal(p.rows[0].rawFinalTime,"1:00.00");assert.equal(p.summary.statusOnly,1);}
+parsed=decodeWinPalmeResults(head+individual("NAG",""));assert.equal(parsed.confirmable,false);assert.equal(parsed.rows[0].time,null,"never replace missing final time with entry time");
+assert.equal(decodeWinPalmeResults(head+individual("XXX")).confirmable,false);
+assert.equal(decodeWinPalmeResults(head+individual()+"\nUNKNOWN;test").confirmable,false);
+assert.equal(decodeWinPalmeResults(head+individual("","")).summary.rows,1,"unknown status remains visible in preview");
+const reviewSource=head+individual()+"\n"+individual("","");
+const blankLine=decodeWinPalmeResults(reviewSource).rows[1].sourceLine;
+assert.equal(reviewWinPalmeResults(reviewSource).confirmable,false);
+const reviewed=reviewWinPalmeResults(reviewSource,[blankLine]);
+assert.equal(reviewed.confirmable,true);assert.equal(reviewed.rows.length,1);assert.equal(reviewed.excluded.length,1);assert.equal(reviewed.excluded[0].entryTime,"1:30.00");
+for(const lines of [[4],[999],[blankLine,blankLine],["5"]])assert.throws(()=>reviewWinPalmeResults(reviewSource,lines));
+assert.throws(()=>reviewWinPalmeResults(head+individual("DSQ",""),[4]));
+assert.equal(date("31/02/2026"),"");assert.equal(date("29/02/2024"),"2024-02-29");
+for(const t of ["00.00","1:60.00","14200","1:2","-1.00","1:00.000"])assert.equal(compactTime(t),null);
+assert.equal(compactTime("42,91"),"004291");assert.equal(compactTime("3:15.00"),"031500");
+assert.throws(()=>decodeWinPalmeResults(head+Array(5001).fill(individual()).join("\n")),/5 000/);
+assert.throws(()=>decodeWinPalmeResults(head),/Aucun/);
+console.log("WinPalme NAP decoding: individuals, relays, retained non-valid statuses, missing final time refusal, complete preview and bounded input verified.");

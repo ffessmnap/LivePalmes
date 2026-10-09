@@ -46,33 +46,38 @@ const { readCompetitionResults } = require("../functions/nap-direct-competition-
   assert.match(calendar.EVENT_JOINS,/compet_types t ON t.id=c\.type LEFT/);
   assert.match(calendar.EVENT_JOINS,/compet_type s ON s.id=c\.typecnc LEFT/);
   assert.ok(!calendar.SELECT_EVENT.includes("program_sessions"),"No detailed JSON loaded for every season row");
+  assert.match(calendar.SELECT_EVENT,/livepalmes_performance_imports ri FORCE INDEX \(PRIMARY\)/,"status-only imports expose their competition results through an indexed current-version pointer");
   await assert.rejects(calendar.readCalendarSeason({ execute: async () => [Array(501).fill(raw)] }, 2026), RangeError);
   queries = [];
   const performance = { id: 973, nageur: 168, nom: "Exemple", prenom: "Nageur", birth_date: "1980-01-01", sexe: "M", competition_id: 2, libelle: "Compétition", date: "2004-02-29", bassin: 50, chrono: "E", ld: 0, course: "100SF", cat: "HSE", tps: "14200", passage: 0, relais: 0 };
   const resultPool = { execute: async (query, values) => {
     queries.push({ query, values });
-    return [query.sql.includes("COUNT(*)") ? [{ count: 2 }] : query.sql.includes("WHERE p.compet=?") ? [performance] : [performance, { ...performance, id: 974, tps: "014200" }]];
+    if(query.sql.includes("FROM livepalmes_performance_imports"))return [[]];
+    return [query.sql.includes("FROM perfs_relais") ? [] : query.sql.includes("COUNT(*)") ? [{ count: 2 }] : query.sql.includes("p.compet=?") ? [performance] : [performance, { ...performance, id: 974, tps: "014200" }]];
   } };
   const result = await readCompetitionResults(resultPool, 2);
   assert.equal(result.groups[0].performances[0].time, "1:42.00");
   assert.equal(result.groups[0].performances[0].personalBest, true);
-  const missingPersonPool = { execute: async query => [query.sql.includes("COUNT(*)") ? [{ count: 0 }] : query.sql.includes("WHERE p.compet=?") ? [{ ...performance, nom: null, prenom: null }] : []] };
+  const missingPersonPool = { execute: async query => [query.sql.includes("FROM perfs_relais") || query.sql.includes("FROM livepalmes_performance_imports") ? [] : query.sql.includes("COUNT(*)") ? [{ count: 0 }] : query.sql.includes("p.compet=?") ? [{ ...performance, nom: null, prenom: null }] : []] };
   const missingPerson = (await readCompetitionResults(missingPersonPool, 2)).groups[0].performances[0];
   assert.equal(missingPerson.swimmer, "Nageur non renseigné");
   assert.equal(missingPerson.swimmerId, "");
-  assert.equal(queries.length, 3);
-  assert.deepEqual(queries[1].values, [168]);
+  assert.equal(queries.length, 5);
+  assert.deepEqual(queries[2].values, [168]);
   const changed = { execute: async (query, values) => {
     const [rows] = await resultPool.execute(query, values);
-    return [query.sql.includes("WHERE p.nageur IN") ? rows.map(row => ({ ...row, tps: "013000" })) : rows];
+    return [query.sql.includes("p.nageur IN") ? rows.map(row => ({ ...row, tps: "013000" })) : rows];
   } };
   assert.equal((await readCompetitionResults(changed, 2)).groups[0].performances[0].personalBest, false);
   const relayPool = { execute: async (query, values) => {
+    if(query.sql.includes("FROM perfs_relais"))return [[{id:21,distance:"4X100SF",categorie:"FDA",tps4:"033894",nom_club:"Équipe"}]];
     const [rows] = await resultPool.execute(query, values);
-    return [query.sql.includes("WHERE p.compet=?") ? [...rows, { ...performance, id: 975, relais: 1, nom_club: "Équipe" }] : rows];
+    return [query.sql.includes("p.compet=?") ? [...rows, { ...performance, id: 975, relais: 1, nom_club: "Équipe" }] : rows];
   } };
   const withRelay = await readCompetitionResults(relayPool, 2);
   assert.equal(withRelay.groups.length, 2);
+  assert.equal(withRelay.groups[1].performances.length,1,"relay leg must not appear as a second team result");
+  assert.equal(withRelay.groups[1].performances[0].time,"3:38.94");
   assert.equal(withRelay.groups[1].performances[0].isRelay, true);
   assert.equal(withRelay.groups[1].performances[0].swimmerId, "");
   assert.equal(withRelay.groups[1].performances[0].personalBest, false);

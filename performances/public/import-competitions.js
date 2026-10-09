@@ -83,6 +83,8 @@
   let correctionSelectedSwimmer = null;
   let correctionRows = [];
   let correctionSelectedRow = null;
+  const nativeCorrections=()=>global.LivePalmesEnvironment?.isTest===true;
+  let nativeCorrectionCursor=0,nativeCorrectionMore=false,nativeCorrectionNational=false;
   let correctionPublicationMonitorToken = 0;
   let correctionPublicationResumeStarted = "";
   const CORRECTION_PUBLICATION_JOB_SESSION_KEY = "livepalmes.performanceCorrectionPublicationJob";
@@ -520,6 +522,7 @@
   }
 
   async function ensureCorrectionReference() {
+    if(nativeCorrections())return;
     await Promise.all([
       loadGlobalDataFromScript("LIVEPALMES_INTRANAP_SUMMARY", "intranap-summary.js")
     ]);
@@ -530,6 +533,7 @@
   }
 
   async function loadCorrectionOverlay() {
+    if(nativeCorrections())return {performances:[],swimmers:[],corrections:[]};
     if (correctionOverlay) return correctionOverlay;
     const url = global.LivePalmesAppConfig?.performanceAdditionalDataUrl;
     if (!url) {
@@ -587,6 +591,7 @@
   }
 
   async function searchPerformanceBaseSwimmers(query) {
+    if(nativeCorrections())return (await callFunction("getNapPerformanceAdministration",{action:"search",query})).swimmers||[];
     const cleanQuery = normalize(query);
     if (correctionSearchCache.has(cleanQuery)) return correctionSearchCache.get(cleanQuery);
     const tokens = cleanQuery.split(/\s+/).filter((token) => token.length >= 2);
@@ -650,6 +655,11 @@
   }
 
   async function loadCorrectionPerformanceBaseRows(swimmer) {
+    if(nativeCorrections()) {
+      const result=await callFunction("getNapPerformanceAdministration",{action:"list",swimmerId:swimmer.id,cursor:0});
+      nativeCorrectionCursor=result.cursor;nativeCorrectionMore=result.hasMore;nativeCorrectionNational=result.national===true;
+      return result.rows||[];
+    }
     const ids = swimmerKnownIds(swimmer);
     const identityKey = swimmer.identityKey || "";
     const cacheKey = JSON.stringify({ file: swimmer.perfFile || "", ids: ids.slice().sort(), identityKey });
@@ -705,6 +715,8 @@
     setCorrectionListVisible(true);
     elements.correctionResults.innerHTML = `<tr><td colspan="6">Chargement des performances...</td></tr>`;
     const baseRows = await loadCorrectionPerformanceBaseRows(swimmer);
+    const moreButton=document.querySelector("#performanceCorrectionMore");
+    if(moreButton)moreButton.hidden=!nativeCorrections()||!nativeCorrectionMore;
     correctionRows = baseRows
       .sort((a, b) => String(b.date || "").localeCompare(String(a.date || "")) || String(a.course || "").localeCompare(String(b.course || "")));
     updateCorrectionFilters();
@@ -752,7 +764,7 @@
 
   function renderCorrectionRows() {
     if (!elements.correctionResults) return;
-    const rows = filteredCorrectionRows().slice(0, 80);
+    const rows = filteredCorrectionRows().slice(0, nativeCorrections()?5000:80);
     if (!correctionSelectedSwimmer) {
       elements.correctionResults.innerHTML = `<tr><td colspan="6">Selectionne un nageur pour afficher ses performances.</td></tr>`;
       return;
@@ -765,7 +777,7 @@
       <tr class="performance-correction-row" data-correction-row="${index}" tabindex="0">
         <td>${escapeHtml(formatDate(row.date))}</td>
         <td>${escapeHtml(courseLabel(row.course))}</td>
-        <td class="time">${escapeHtml(row.time || "-")}</td>
+        <td class="time">${escapeHtml(row.time || "-")}${row.hidden?" (masqué)":""}</td>
         <td>${escapeHtml(row.swimmer || displayName(correctionSelectedSwimmer))}</td>
         <td>${escapeHtml(row.club || "-")}</td>
         <td>${escapeHtml(row.competition || row.location || "-")}</td>
@@ -818,6 +830,16 @@
     elements.correctionLocation.value = row.location || "";
     elements.correctionReason.value = "";
     renderCorrectionSplits(row);
+    if(nativeCorrections()) {
+      elements.correctionDate.disabled=true;elements.correctionLocation.disabled=true;
+      elements.correctionDate.title=elements.correctionLocation.title="À corriger depuis la fiche compétition.";
+      elements.correctionClub.value=row.clubId||"";
+      elements.correctionClub.parentElement.firstChild.textContent="Identifiant du club NAP ";
+      elements.correctionSplits.parentElement.hidden=true;
+      elements.correctionHide.textContent=row.hidden?"Rétablir le résultat":"Masquer le résultat";
+      const deleteButton=document.querySelector("#performanceCorrectionDelete");
+      if(deleteButton)deleteButton.hidden=!nativeCorrectionNational;
+    }
     elements.correctionForm.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
@@ -958,8 +980,46 @@
     );
   }
 
+  async function saveNativePerformanceCorrection(action) {
+    const row=correctionSelectedRow,reason=elements.correctionReason.value.trim();
+    if(!row||!reason)throw new Error("Motif obligatoire.");
+    const patch={};
+    if(action==="correct") {
+      normalizeTimeField(elements.correctionTime);
+      if(parseTimeValue(elements.correctionTime.value)!==parseTimeValue(row.time)) {
+        const value=parseTimeValue(elements.correctionTime.value);
+        if(!Number.isSafeInteger(value)||value<=0||value>=600000)throw new Error("Temps invalide.");
+        patch.tps=`${String(Math.floor(value/6000)).padStart(2,"0")}${String(Math.floor(value/100)%60).padStart(2,"0")}${String(value%100).padStart(2,"0")}`;
+      }
+      if(elements.correctionClub.value.trim()!==row.clubId) {
+        const club=Number(elements.correctionClub.value.trim());
+        if(!Number.isSafeInteger(club)||club<1)throw new Error("Identifiant de club NAP invalide.");
+        patch.club=club;
+      }
+      if(!Object.keys(patch).length)throw new Error("Aucune valeur ne change.");
+    }
+    const input={performanceId:Number(row.id),expectedFingerprint:row.expectedFingerprint,action,patch,reason,confirmDeletion:action==="delete"};
+    const key=JSON.stringify(input);
+    // Keep the same id after an interrupted response; the server verifies the
+    // complete before/after image and refuses conflicting replays.
+    if(row.pendingOperation?.key!==key)row.pendingOperation={key,id:global.crypto.randomUUID()};
+    input.operationId=row.pendingOperation.id;
+    setCorrectionControlsBusy(true);
+    startImportProgress("Enregistrement du résultat…","Vérification et enregistrement dans NAP.","",elements.correctionProgress);
+    try {
+      await callFunction("savePerformanceCorrection",input);
+      resetCorrectionEditor({keepRows:true});
+      correctionRows=await loadCorrectionPerformanceBaseRows(correctionSelectedSwimmer);
+      updateCorrectionFilters();renderCorrectionRows();
+      const more=document.querySelector("#performanceCorrectionMore");if(more)more.hidden=!nativeCorrectionMore;
+      finishImportProgress("success",action==="delete"?"Résultat supprimé définitivement":action==="hide"?"Résultat masqué":action==="restore"?"Résultat rétabli":"Correction enregistrée","La base NAP est à jour. Les calculs DTN existants devront être recalculés s’ils sont devenus périmés.",elements.correctionProgress);
+    }catch(error){finishImportProgress("error","Enregistrement à vérifier",error?.message||String(error),elements.correctionProgress);throw error;}
+    finally{setCorrectionControlsBusy(false);elements.correctionDate.disabled=true;elements.correctionLocation.disabled=true;}
+  }
+
   async function savePerformanceCorrection(hidden = false) {
     if (!correctionSelectedRow) return;
+    if(nativeCorrections())return saveNativePerformanceCorrection(hidden?(correctionSelectedRow.hidden?"restore":"hide"):"correct");
     const reason = elements.correctionReason.value.trim();
     if (!reason) {
       setMessage(elements.message, "Motif obligatoire pour enregistrer une correction.");
@@ -1036,13 +1096,14 @@
     if (elements.loginPanel) elements.loginPanel.hidden = signedIn;
     if (elements.workbench) elements.workbench.hidden = !signedIn;
     if (elements.correctionWorkbench) elements.correctionWorkbench.hidden = !signedIn;
-    if (elements.superAdminPanel) elements.superAdminPanel.hidden = !superAdmin;
+    if (elements.superAdminPanel) elements.superAdminPanel.hidden = !superAdmin || nativeCorrections();
+    if (elements.importsExport) elements.importsExport.hidden = nativeCorrections();
     if (signedIn && elements.loginForm) elements.loginForm.reset();
     const profile = status.profile || {};
     const name = [profile.firstName, profile.lastName].filter(Boolean).join(" ") || status.email || "Profil LivePalmes";
     if (elements.sessionLabel) elements.sessionLabel.textContent = name;
     if (signedIn && (!isIntegratedAdminView || global.location.hash === "#import-competitions")) loadImports();
-    const publicationJobId = signedIn ? storedCorrectionPublicationJob() : "";
+    const publicationJobId = signedIn && !nativeCorrections() ? storedCorrectionPublicationJob() : "";
     if (publicationJobId && correctionPublicationResumeStarted !== publicationJobId) {
       correctionPublicationResumeStarted = publicationJobId;
       void monitorCorrectionPublication(publicationJobId, { immediate: true });
@@ -1304,7 +1365,111 @@
     if (elements.previewPage) elements.previewPage.textContent = `Page ${currentPreviewPage} sur ${pageCount}`;
   }
 
+  let nativeImportOperation = null;
+  function collectNativeImportChoices() {
+    const host = elements.warnings;
+    for (const key of ['swimmerBindings','memberBindings','clubBindings','excludedSourceLines']) currentPayload[key] ||= [];
+    const previous = JSON.stringify(currentPayload);
+    const competition = host.querySelector('[data-nap-competition]');
+    if (competition?.value) currentPayload.competitionId = Number(competition.value);
+    for (const [attribute, key, fields] of [
+      ['data-nap-swimmer', 'swimmerBindings', ['sourceLine']],
+      ['data-nap-member', 'memberBindings', ['sourceLine', 'position']],
+      ['data-nap-club', 'clubBindings', ['code']]
+    ]) {
+      const values = new Map((currentPayload[key] || []).map(v => [fields.map(f => v[f]).join(':'), v]));
+      host.querySelectorAll(`[${attribute}]`).forEach(input => {
+        const parts = JSON.parse(input.getAttribute(attribute));
+        const id = parts.join(':');
+        if (!input.value.trim()) values.delete(id);
+        else values.set(id, { ...Object.fromEntries(fields.map((f, i) => [f, parts[i]])), [key === 'clubBindings' ? 'clubId' : 'swimmerId']: key === 'clubBindings' ? input.value.trim() : Number(input.value) });
+      });
+      currentPayload[key] = [...values.values()];
+    }
+    const excluded = new Set(currentPayload.excludedSourceLines || []);
+    host.querySelectorAll('[data-nap-exclude]').forEach(input => {
+      const line = Number(input.dataset.napExclude);
+      if (input.checked) excluded.add(line); else excluded.delete(line);
+    });
+    currentPayload.excludedSourceLines = [...excluded];
+    if (previous !== JSON.stringify(currentPayload)) currentPreview.canConfirm = false;
+  }
+  function renderNativeImportPreview(result, page = 0) {
+    currentPreview = result;
+    elements.preview.hidden = false;
+    elements.validate.hidden = true;
+    if (elements.replace) elements.replace.hidden = true;
+    if (elements.existingImport) elements.existingImport.hidden = true;
+    if (elements.previewPagination) elements.previewPagination.hidden = true;
+    if (elements.previewFilter) elements.previewFilter.closest('.competition-import-preview-tools').hidden = true;
+    if (elements.sample) elements.sample.closest('.import-table-wrap').hidden = true;
+    elements.sample.innerHTML = '';
+    const metadata = result.metadata || {};
+    elements.summary.textContent = `${metadata.competitionName || 'Résultats WinPalme'} — ${metadata.date || ''} — ${result.rows.length} lignes à contrôler`;
+    const input = (attribute, parts, value = '') => `<input type="text" inputmode="numeric" ${attribute}="${escapeHtml(JSON.stringify(parts))}" value="${escapeHtml(value)}" aria-label="Identifiant NAP" placeholder="Identifiant NAP">`;
+    const unresolved = new Map((result.unresolved || []).map(r => [r.sourceLine, r]));
+    const members = result.unresolvedMembers || [];
+    const rows = result.rows.slice(page * 100, (page + 1) * 100);
+    const controls = rows.map(row => {
+      const person = unresolved.get(row.sourceLine);
+      const binding = (currentPayload.swimmerBindings || []).find(b => b.sourceLine === row.sourceLine);
+      const memberControls = members.filter(m => m.sourceLine === row.sourceLine).map(m => {
+        const saved = (currentPayload.memberBindings || []).find(b => b.sourceLine === m.sourceLine && b.position === m.position);
+        return `<label>Relayeur ${m.position} ${input('data-nap-member', [m.sourceLine, m.position], saved?.swimmerId)}</label>`;
+      }).join(' ');
+      return `<p class="nap-import-review-row"><strong>Ligne ${row.sourceLine} : ${escapeHtml([row.lastName, row.firstName, row.course, row.clubCode, row.time || row.status].filter(Boolean).join(' — '))}</strong>
+        ${person ? `<label>Fiche nageur ${input('data-nap-swimmer', [row.sourceLine], binding?.swimmerId)}</label><small>Fiches possibles : ${escapeHtml(person.candidateIds?.join(', ') || 'aucune ; créer la fiche dans Mes nageurs si nécessaire')}</small>` : ''}${memberControls}
+        ${!row.status && !row.time ? `<label><input type="checkbox" data-nap-exclude="${row.sourceLine}" ${(currentPayload.excludedSourceLines || []).includes(row.sourceLine) ? 'checked' : ''}> Écarter explicitement cette ligne sans résultat</label>` : ''}</p>`;
+    }).join('');
+    const diff = result.diff;
+    const removals = diff?.removals || [];
+    const issues = result.issues || [], clubs = result.unresolvedClubs || [];
+    const issueLabels = {'competition-date-mismatch':'La date du fichier diffère de celle de la compétition.', 'competition-pool-mismatch':'La longueur de bassin diffère de celle de la compétition.', 'competition-timing-mismatch':'Le chronométrage du fichier manque ou diffère de celui de la compétition.', 'invalid-points-or-rank':'Les points ou le classement sont invalides.', 'duplicate-relay-member':'Un nageur apparaît deux fois dans le même relais.', 'unsupported-course':'Cette course n’est pas reconnue.', 'multiple-competitions':'Le fichier contient plusieurs compétitions.', 'unsupported-record':'Cette ligne du fichier n’est pas reconnue.', 'incomplete-result':'La ligne de résultat est incomplète.', 'unknown-status':'Le statut du résultat manque ou n’est pas reconnu.', 'missing-or-invalid-final-time':'Le temps final manque ou est invalide.', 'missing-result-reference':'Le club, la course ou la catégorie manque.', 'incomplete-swimmer-identity':'L’identité du nageur est incomplète.', 'missing-competition':'La date ou le nom de la compétition manque.'};
+    const totalPages = Math.max(1, Math.ceil(Math.max(result.rows.length, removals.length, issues.length, clubs.length) / 100));
+    elements.warnings.innerHTML = `
+      ${result.requiresCompetitionChoice ? `<label>Compétition existante <select data-nap-competition><option value="">Choisir la compétition</option>${result.competitions.map(c => `<option value="${Number(c.id)}">${escapeHtml(`${c.id} — ${c.libelle} — ${c.lieu}`)}</option>`).join('')}</select></label><p>Si la compétition manque, créez-la dans le calendrier avant l’import.</p>` : `<p>Compétition NAP : ${escapeHtml(result.competition?.libelle || '')} (${Number(result.competition?.id)})</p>`}
+      ${issues.slice(page * 100, (page + 1) * 100).map(i => `<p>${i.sourceLine ? `Ligne ${Number(i.sourceLine)} : ` : ''}${escapeHtml(issueLabels[i.code] || i.code)}</p>`).join('')}
+      ${clubs.slice(page * 100, (page + 1) * 100).map(c => `<label>Club ${escapeHtml(c.code)} : ${input('data-nap-club', [c.code], (currentPayload.clubBindings || []).find(b => b.code === c.code)?.clubId)}</label>`).join('')}
+      ${controls}
+      ${diff ? `<p>Individuels : ${diff.summary.individual.additions} ajout(s), ${diff.summary.individual.removals} retrait(s), ${diff.summary.individual.unchanged} conservé(s). Relais : ${diff.summary.relays.additions} ajout(s), ${diff.summary.relays.removals} retrait(s), ${diff.summary.relays.unchanged} conservé(s). Statuts sans temps valable : ${diff.summary.statuses}. Lignes écartées : ${diff.summary.excluded}.</p>` : ''}
+      ${removals.slice(page * 100, (page + 1) * 100).map(r => `<p>Retrait : ${escapeHtml(`${r.kind} #${r.id} — nageur ${r.swimmerId || 'relais'} — ${r.course} — ${r.time} — club ${r.clubId}`)}</p>`).join('')}
+      <p>Page ${page + 1} / ${totalPages}</p><div class="admin-portal-actions"><button type="button" class="ghost-button" data-nap-previous ${page === 0 ? 'disabled' : ''}>Précédent</button> <button type="button" class="ghost-button" data-nap-next ${page + 1 >= totalPages ? 'disabled' : ''}>Suivant</button>
+      <button type="button" class="ghost-button" data-nap-refresh>Actualiser l’aperçu avec mes choix</button></div>
+      ${diff?.requiresReplacementConfirmation ? '<label><input type="checkbox" data-nap-replacement> Je confirme les retraits affichés et le remplacement. L’ancienne version sera sauvegardée.</label>' : ''}
+      <button type="button" class="primary-button" data-nap-save ${result.canConfirm ? '' : 'disabled'}>Enregistrer les résultats dans NAP</button>`;
+    elements.warnings.querySelector('[data-nap-previous]').onclick = () => { collectNativeImportChoices(); renderNativeImportPreview(result, page - 1); };
+    elements.warnings.querySelector('[data-nap-next]').onclick = () => { collectNativeImportChoices(); renderNativeImportPreview(result, page + 1); };
+    elements.warnings.querySelector('[data-nap-refresh]').onclick = async () => {
+      collectNativeImportChoices(); nativeImportOperation = null;
+      try { renderNativeImportPreview(await callFunction('previewCompetitionImport', currentPayload)); }
+      catch (error) { setMessage(elements.message, error.message || String(error)); }
+    };
+    elements.warnings.querySelector('[data-nap-save]').onclick = saveNativeImport;
+    elements.warnings.querySelectorAll('input, select').forEach(control => control.addEventListener('change', () => {
+      if (!control.hasAttribute('data-nap-replacement')) elements.warnings.querySelector('[data-nap-save]').disabled = true;
+    }));
+  }
+  async function saveNativeImport() {
+    if (!currentPreview?.canConfirm || !currentPayload) return;
+    const replace = Boolean(elements.warnings.querySelector('[data-nap-replacement]')?.checked);
+    if (currentPreview.diff?.requiresReplacementConfirmation && !replace) { setMessage(elements.message, 'Confirmez explicitement les retraits avant de continuer.'); return; }
+    if (!global.confirm('Enregistrer ces résultats dans NAP ? Les résultats seront visibles immédiatement.')) return;
+    nativeImportOperation ||= { ...currentPayload, fileName: currentFile.name, operationId: global.crypto.randomUUID(), expectedFingerprint: currentPreview.expectedFingerprint, previewFingerprint: currentPreview.previewFingerprint, confirmReplacement: replace };
+    const button = elements.warnings.querySelector('[data-nap-save]');
+    button.disabled = true;
+    startImportProgress('Enregistrement dans NAP…', 'Sauvegarde de l’ancienne version et vérification des résultats.', 'import');
+    try {
+      const result = await callFunction('createCompetitionImport', nativeImportOperation);
+      finishImportProgress('success', 'Résultats enregistrés dans NAP', `Import ${result.importId}. Les données sont disponibles directement.`);
+      currentPreview.canConfirm = false;
+      await loadImports();
+    } catch (error) {
+      finishImportProgress('error', 'Enregistrement à vérifier', `${error.message || error} Vous pouvez réessayer le même enregistrement sans créer de doublons.`);
+      button.disabled = false;
+    }
+  }
   function renderPreview(result) {
+    if (result.source === "nap") { renderNativeImportPreview(result); return; }
     currentPreview = result;
     currentPreviewPage = 1;
     const metadata = result.metadata || {};
@@ -1428,6 +1593,7 @@
     elements.preview.hidden = true;
     try {
       currentPayload = await buildPreviewPayload(file);
+      nativeImportOperation = null;
       currentRawText = currentPayload.rawText || "";
       const result = await callFunction("previewCompetitionImport", currentPayload);
       renderPreview(result);
@@ -1444,6 +1610,7 @@
   }
 
   async function validateImport() {
+    if (currentPreview?.source === "nap") { await saveNativeImport(); return; }
     if (!currentPreview || !currentPayload || !currentFile) {
       setMessage(elements.message, "Previsualise le fichier avant de valider.");
       return;
@@ -1713,6 +1880,25 @@
   }
 
   function renderImports(items = []) {
+    if (nativeCorrections()) {
+      importsCache = Array.isArray(items) ? items : [];
+      elements.importsList.innerHTML = importsCache.length ? importsCache.map(item => `<article><h3>${escapeHtml(item.metadata?.competitionName || `Compétition ${item.competitionId}`)}</h3><p>${escapeHtml(item.fileName)} — ${escapeHtml(item.status === 'completed' ? 'Enregistré dans NAP' : item.status === 'replaced' ? 'Ancienne version conservée' : 'Enregistrement interrompu : reprendre avec le même fichier et les mêmes choix')}</p><small>${escapeHtml(item.importedAt || '')} — ${escapeHtml(item.importId)}</small></article>`).join('') : '<p>Aucun import NAP enregistré.</p>';
+      if (elements.importsFilterSummary) elements.importsFilterSummary.textContent = 'Derniers imports NAP (50 entrées maximum).';
+      importsCache.filter(item => item.status === 'prepared').forEach(item => {
+        const button = document.createElement('button');
+        button.type = 'button'; button.textContent = `Reprendre ${item.fileName}`;
+        button.addEventListener('click', async () => {
+          if (!global.confirm('Reprendre cet enregistrement avec les choix déjà confirmés ?')) return;
+          button.disabled = true;
+          try {
+            await callFunction('createCompetitionImport', {resumeImportId:item.importId});
+            await loadImports();
+          } catch(error) { setMessage(elements.message, error.message || String(error)); button.disabled = false; }
+        });
+        elements.importsList.append(button);
+      });
+      return;
+    }
     if (!elements.importsList) return;
     elements.importsList.querySelectorAll(".competition-import-row[open][data-import-id]").forEach((row) => {
       openImportIds.add(row.dataset.importId);
@@ -2206,10 +2392,23 @@
       });
     });
     elements.correctionHide?.addEventListener("click", () => {
-      if (!global.confirm("La suppression de cette performance est definitive. Confirmer la suppression ?")) return;
+      if (!global.confirm(nativeCorrections()?(correctionSelectedRow?.hidden?"Rétablir ce résultat dans les consultations et calculs ?":"Masquer ce résultat des consultations et calculs ? Il restera rétablissable."):"La suppression de cette performance est definitive. Confirmer la suppression ?")) return;
       savePerformanceCorrection(true).catch((error) => {
         if (!ensureImportProgress()) setMessage(elements.message, `Suppression impossible : ${error?.message || error}`);
       });
+    });
+    document.querySelector("#performanceCorrectionDelete")?.addEventListener("click",()=>{
+      if(!nativeCorrections()||!nativeCorrectionNational||!global.confirm("Supprimer définitivement ce résultat NAP ? Cette action est irréversible ; une trace de l'ancienne valeur sera conservée."))return;
+      saveNativePerformanceCorrection("delete").catch(error=>setMessage(elements.message,error.message));
+    });
+    document.querySelector("#performanceCorrectionMore")?.addEventListener("click",async event=>{
+      if(!nativeCorrections()||!correctionSelectedSwimmer||!nativeCorrectionMore)return;
+      const button=event.currentTarget;button.disabled=true;
+      try {
+        const result=await callFunction("getNapPerformanceAdministration",{action:"list",swimmerId:correctionSelectedSwimmer.id,cursor:nativeCorrectionCursor});
+        nativeCorrectionCursor=result.cursor;nativeCorrectionMore=result.hasMore;
+        correctionRows.push(...result.rows);updateCorrectionFilters();renderCorrectionRows();button.hidden=!nativeCorrectionMore;
+      }catch(error){setMessage(elements.message,error.message);}finally{button.disabled=false;}
     });
     elements.correctionRetryPublication?.addEventListener("click", async () => {
       const jobId = elements.correctionRetryPublication.dataset.jobId || storedCorrectionPublicationJob();
