@@ -70,6 +70,7 @@ function runUnitTests() {
     "nap-competition-create-tests.js",
     "nap-import-swimmer-resolution-tests.js",
     "nap-import-diff-tests.js",
+    "nap-import-preview-tests.js",
     "nap-winpalme-results-tests.js",
     "nap-performance-administration-tests.js",
     "nap-performance-callable-tests.js",
