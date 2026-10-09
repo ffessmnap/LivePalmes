@@ -12805,7 +12805,7 @@
                   <button class="ghost-button" type="button" data-engagement-national-swimmer-action="edit" data-engagement-national-swimmer-id="${escapeHtml(sourceId)}" data-engagement-national-swimmer-source="${escapeHtml(sourceType)}">Modifier la fiche</button>
                   ${!engagementNationalSwimmerMergeMode ? "" : `<button class="ghost-button" type="button" data-engagement-national-swimmer-action="merge" data-engagement-national-swimmer-id="${escapeHtml(sourceId)}" data-engagement-national-swimmer-source="${escapeHtml(sourceType)}">Choisir une autre cible</button>`}
                   ${sourceType !== "engagement" && !swimmer.napSource ? "" : `<button class="ghost-button" type="button" data-engagement-national-swimmer-action="${active ? "disable" : "enable"}" data-engagement-national-swimmer-id="${escapeHtml(sourceId)}" data-engagement-national-swimmer-source="${escapeHtml(sourceType)}">${active ? "Désactiver" : "Réactiver"}</button>`}
-                  ${sourceType === "engagement" ? `<button class="ghost-button admin-engagements-danger-button" type="button" data-engagement-national-swimmer-action="delete" data-engagement-national-swimmer-id="${escapeHtml(sourceId)}" data-engagement-national-swimmer-source="${escapeHtml(sourceType)}">Supprimer</button>` : ""}
+                  ${sourceType === "engagement" || swimmer.napSource ? `<button class="ghost-button admin-engagements-danger-button" type="button" data-engagement-national-swimmer-action="delete" data-engagement-national-swimmer-id="${escapeHtml(sourceId)}" data-engagement-national-swimmer-source="${escapeHtml(sourceType)}">Supprimer</button>` : ""}
                 </div>
               </details>
             `}
@@ -13509,6 +13509,13 @@
     }
     if (!elements.engagementsNationalClubDialog?.open) elements.engagementsNationalClubDialog?.showModal();
     elements.engagementsNationalClubFederalNumber?.focus();
+    if(club.napSource&&club.clubId){
+      club.napDeletionEligible=false;
+      callFunction("listEngagementNationalClubs",{deletionClubId:club.clubId}).then(result=>{
+        club.napDeletionEligible=result?.deletionEligible===true;
+        if(elements.engagementsNationalClubId?.value===club.clubId&&elements.engagementsNationalClubDelete)elements.engagementsNationalClubDelete.hidden=!club.napDeletionEligible;
+      }).catch(()=>{});
+    }
   }
 
   async function saveEngagementNationalClub(event) {
@@ -13564,7 +13571,7 @@
   async function deleteEngagementNationalClub() {
     const clubId = elements.engagementsNationalClubId?.value || "";
     const club = engagementNationalClubs.find((item) => item.clubId === clubId);
-    if (!club || club.source !== "national") return;
+    if (!club || (club.source !== "national" && !club.napDeletionEligible)) return;
     if (!global.confirm(`Supprimer définitivement ${club.clubCode || club.clubName} ? Cette action n'est possible que si aucune donnée n'est liée à ce club.`)) return;
     if (elements.engagementsNationalClubDelete) elements.engagementsNationalClubDelete.disabled = true;
     if (elements.engagementsNationalClubMessage) {
@@ -13572,7 +13579,7 @@
       elements.engagementsNationalClubMessage.dataset.tone = "loading";
     }
     try {
-      await callFunction("deleteEngagementNationalClub", { clubId, confirmPermanent: true });
+      await callFunction("deleteEngagementNationalClub", { clubId, confirmPermanent: true, ...(club.napSource?{expectedFingerprint:club.napFingerprint}:{}) });
       engagementNationalClubs = engagementNationalClubs.filter((item) => item.clubId !== clubId);
       accessClubReference = accessClubReference.filter((item) => item.clubId !== clubId);
       accessClubReferenceById.delete(clubId);
@@ -13711,7 +13718,7 @@
     if (!cleanId || !canDeleteEngagementCompetitionDirectly()) return;
     const swimmer = engagementNationalSwimmers.find((item) => item.id === cleanId || item.swimmerIndexId === cleanId) || {};
     const name = engagementSwimmerDisplayName(swimmer, "ce nageur");
-    if (!global.confirm(`Supprimer définitivement ${name} de la base des nageurs créés par les clubs ? Cette action est irréversible.`)) return;
+    if (!global.confirm(`Supprimer définitivement ${name} ? Cette action est irréversible et sera refusée si la fiche possède un historique. Dans ce cas, utilisez « Désactiver ».`)) return;
     if (elements.engagementsNationalSwimmersStatus) {
       elements.engagementsNationalSwimmersStatus.textContent = "Suppression définitive en cours...";
       elements.engagementsNationalSwimmersStatus.dataset.tone = "loading";
@@ -13719,7 +13726,8 @@
     try {
       await callFunction("deleteEngagementNationalClubSwimmer", {
         swimmerId: cleanId,
-        confirmPermanent: true
+        confirmPermanent: true,
+        ...(swimmer.napSource ? {expectedFingerprint:swimmer.napFingerprint,expectedActivityFingerprint:swimmer.napActivityFingerprint,expectedLicenseNumber:swimmer.licenseNumber||""} : {})
       });
       engagementNationalSwimmersLoaded = false;
       invalidateEngagementClubSwimmersCache();
