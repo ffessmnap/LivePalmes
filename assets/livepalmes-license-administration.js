@@ -48,11 +48,16 @@
   }
 
   function normalizeLicense(value) {
+    if (state.batch?.source === "nap") return String(value ?? "").trim();
     const compact = String(value || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
     if (!compact) return "";
     const letter = compact.match(/[A-Z]/)?.[0] || "";
     const digits = compact.replace(/\D/g, "");
     return [letter, digits.slice(0, 2), digits.slice(2)].filter(Boolean).join("-");
+  }
+
+  function acceptableLicense(value) {
+    return state.batch?.source === "nap" ? Boolean(String(value ?? "").trim() && String(value).length <= 100 && !/[\u0000-\u001f\u007f]/.test(value)) : LICENSE_PATTERN.test(value);
   }
 
   function initializeSeasons() {
@@ -186,6 +191,7 @@
       const season = values[at("saison")] || "";
       if (batchId !== state.batch.batchId || season !== state.batch.season.label) throw new Error("Le fichier ne correspond pas au lot et à la saison affichés.");
       const id = values[at("livepalmes_id")] || "";
+      if (state.batch.source === "nap" && (!state.batch.people.some(person => person.livePalmesId === id) || imported.has(id))) throw new Error("Le retour contient un identifiant NAP inconnu ou dupliqué.");
       const result = {
         status: values[at("statut")] || "",
         licenseNumber: normalizeLicense(values[at("licence_ffessm")] || ""),
@@ -223,7 +229,7 @@
 
   function syncValidateButton() {
     const selected = selectedPeople();
-    elements.validate.disabled = state.validating || !selected.length || selected.some((person) => !LICENSE_PATTERN.test(person.licenseNumber));
+    elements.validate.disabled = state.validating || !selected.length || selected.some((person) => !acceptableLicense(person.licenseNumber));
     elements.validate.textContent = selected.length ? `Valider la sélection (${selected.length})` : "Valider la sélection";
   }
 
@@ -238,10 +244,10 @@
       return `<tr data-license-person-id="${escapeHtml(person.livePalmesId)}">
         <td><input type="checkbox" data-license-select ${person.selected ? "checked" : ""} ${person.seasonStatus === "valid" ? "disabled" : ""} aria-label="Sélectionner ${escapeHtml(`${person.firstName} ${person.lastName}`)}"></td>
         <td><span class="admin-license-admin-person"><strong>${escapeHtml(`${person.lastName} ${person.firstName}`)}</strong><small>${escapeHtml(displayDate(person.birthDate))} · ${escapeHtml(person.clubName || person.clubId || "Club non renseigné")}</small></span></td>
-        <td><input type="text" value="${escapeHtml(person.licenseNumber)}" data-license-number aria-label="Licence de ${escapeHtml(`${person.firstName} ${person.lastName}`)}"><small>${LICENSE_PATTERN.test(person.licenseNumber) ? "" : "Format attendu : A-12-34567"}</small></td>
+        <td><input type="text" value="${escapeHtml(person.licenseNumber)}" data-license-number aria-label="Licence de ${escapeHtml(`${person.firstName} ${person.lastName}`)}"><small>${acceptableLicense(person.licenseNumber) ? "" : "Format attendu : A-12-34567"}</small></td>
         <td><span class="admin-license-admin-source">${person.competitions.map((name) => `<span>${escapeHtml(name)}</span>`).join("")}</span></td>
         <td><span class="admin-license-admin-state" data-state="${escapeHtml(status.code)}">${escapeHtml(status.label)}</span>${imported?.validity ? `<small> jusqu’au ${escapeHtml(imported.validity)}</small>` : ""}${imported?.details ? `<small>${escapeHtml(imported.details)}</small>` : ""}</td>
-        <td><span class="admin-license-admin-row-actions"><button class="ghost-button" type="button" data-license-edit>Modifier la fiche</button>${person.seasonStatus === "valid" ? "" : `<button type="button" data-license-validate-one ${LICENSE_PATTERN.test(person.licenseNumber) ? "" : "disabled"}>Valider</button>`}</span></td>
+        <td><span class="admin-license-admin-row-actions"><button class="ghost-button" type="button" data-license-edit>Modifier la fiche</button>${person.seasonStatus === "valid" ? "" : `<button type="button" data-license-validate-one ${acceptableLicense(person.licenseNumber) ? "" : "disabled"}>Valider</button>`}</span></td>
       </tr>`;
     }).join("")}</tbody></table>`;
     syncValidateButton();
@@ -279,7 +285,7 @@
 
   async function validatePeople(people) {
     if (!people.length || state.validating) return;
-    const invalid = people.find((person) => !LICENSE_PATTERN.test(person.licenseNumber));
+    const invalid = people.find((person) => !acceptableLicense(person.licenseNumber));
     if (invalid) { setStatus(`Format de licence invalide pour ${invalid.firstName} ${invalid.lastName}.`, "error"); return; }
     if (!window.confirm(`Valider ${people.length} licence${people.length > 1 ? "s" : ""} pour la saison ${state.batch.season.label} ?`)) return;
     state.validating = true;
@@ -295,6 +301,8 @@
             source,
             items: group.slice(index, index + 100).map(validationPayload)
           });
+          group.slice(index, index + 100).forEach(person => { person.seasonStatus = "valid"; person.selected = false; person.expectedLicenseNumber = person.licenseNumber; });
+          bridge.licensesChanged?.();
         }
       }
       people.forEach((person) => { person.seasonStatus = "valid"; person.selected = false; });
@@ -319,14 +327,14 @@
     const person = state.batch?.people.find((item) => item.livePalmesId === row?.dataset.licensePersonId);
     if (!person) return;
     if (event.target.matches("[data-license-select]")) person.selected = event.target.checked;
-    if (event.target.matches("[data-license-number]")) { person.licenseNumber = normalizeLicense(event.target.value); event.target.value = person.licenseNumber; }
+    if (event.target.matches("[data-license-number]")) { person.licenseNumber = normalizeLicense(event.target.value); person.seasonStatus = "to_check"; state.imported.delete(person.livePalmesId); event.target.value = person.licenseNumber; }
     renderBatch();
   });
   elements.results.addEventListener("input", (event) => {
     if (!event.target.matches("[data-license-number]")) return;
     const row = event.target.closest("[data-license-person-id]");
     const person = state.batch?.people.find((item) => item.livePalmesId === row?.dataset.licensePersonId);
-    if (person) { person.licenseNumber = normalizeLicense(event.target.value); syncValidateButton(); }
+    if (person) { person.licenseNumber = normalizeLicense(event.target.value); person.seasonStatus = "to_check"; state.imported.delete(person.livePalmesId); syncValidateButton(); }
   });
   elements.results.addEventListener("click", (event) => {
     const button = event.target.closest("button");

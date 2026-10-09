@@ -109,7 +109,7 @@ function entryItem(pack, context, categoryForBirthDate, competition = {}) {
     const members = pack.members.filter(member => String(member.relais) === String(row.id)).map(member => ({
       nativeMemberId: String(member.id), nativePosition: member.pos, swimmerIndexId: String(member.nageur), swimmerId: String(member.nageur),
       firstName: text(member.prenom), lastName: text(member.nom), name: [text(member.prenom), text(member.nom)].join(" "),
-      birthDate: calendar.date(member.date), sex: text(member.sexe), clubId: text(member.club), licenseNumber: text(member.number) }));
+      birthDate: calendar.date(member.date), sex: text(member.sexe), clubId: text(member.club), ...require("./nap-license-state").state(member) }));
     return { relayId: String(row.id), nativeCategory: row.categorie, category: relayDetail?.category || `NAP-${row.categorie}`, eventCode: nativeCourseCode(row.course_code) || `NAP-${row.course}`,
       nativeCourseId: row.course, genderMode: relayDetail?.genderMode || ({ F: "female", M: "male", X: "mixed", 0: "mixed" })[text(row.sexe)] || "",
       manualEntryTime: "", ...nativeTime(row.tps), members, memberIds: members.map(member => member.swimmerIndexId) };
