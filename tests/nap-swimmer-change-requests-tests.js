@@ -122,5 +122,13 @@ function fixture(options = {}) {
     assert.equal(elements.engagementsSwimmerCorrectionLastName.maxLength, 64);
     assert.equal(elements.engagementsSwimmerCorrectionReason.required, mode !== "review");
   }
+  const selectedUi = {
+    selectedEngagementCompetition: {napSource:true}, selectedEngagementClubEntry: {swimmers:[]},
+    selectedEngagementClubEntryRowsBySwimmerId:()=>new Map(), elements:{engagementsClubSwimmersForm:{querySelectorAll:()=>[{
+      querySelector: selector => selector.includes("-id]") ? {checked:true,dataset:{engagementClubSwimmerId:"42"}} : {value:"a-11-001234"}
+    }]}}
+  };
+  vm.runInNewContext(browser.slice(browser.indexOf("  function selectedEngagementClubSwimmerRows("), browser.indexOf("  function selectedEngagementClubEntryRowsBySwimmerId(")),selectedUi);
+  assert.equal(selectedUi.selectedEngagementClubSwimmerRows()[0].licenseNumber,"a-11-001234");
   console.log("Demandes NAP : club, validation nationale, sauvegarde, reprise apres SQL, refus, concurrence et absence d'ancienne base verifies sans reseau ni envoi.");
 })().catch(error => { console.error(error); process.exitCode = 1; });

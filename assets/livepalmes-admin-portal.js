@@ -5865,7 +5865,9 @@
           birthDate: checkbox.dataset.engagementClubSwimmerBirthDate || "",
           sex: checkbox.dataset.engagementClubSwimmerSex || "",
           category: checkbox.dataset.engagementClubSwimmerCategory || "",
-          licenseNumber: String(licenseField?.value || licenseField?.dataset.engagementClubSwimmerLicense || "").trim().toUpperCase(),
+          licenseNumber: selectedEngagementCompetition?.napSource === true
+            ? String(licenseField?.value ?? licenseField?.dataset.engagementClubSwimmerLicense ?? "").trim()
+            : String(licenseField?.value || licenseField?.dataset.engagementClubSwimmerLicense || "").trim().toUpperCase(),
           individualEventCodes: individualEntries.map((entry) => entry.eventCode),
           individualEntries
         };
@@ -18070,7 +18072,7 @@
         }
         renderEngagementClubEntries();
         renderEngagementClubRelays();
-        if (checkbox?.checked && changedSwimmer.licenseNumber && !ENGAGEMENT_SWIMMER_LICENSE_PATTERN.test(changedSwimmer.licenseNumber)) {
+        if (selectedEngagementCompetition?.napSource !== true && checkbox?.checked && changedSwimmer.licenseNumber && !ENGAGEMENT_SWIMMER_LICENSE_PATTERN.test(changedSwimmer.licenseNumber)) {
           if (elements.engagementsClubSwimmersMessage) {
             elements.engagementsClubSwimmersMessage.textContent = "La licence doit respecter le format A-12-34567 lorsqu'elle est renseignée.";
             elements.engagementsClubSwimmersMessage.dataset.tone = "error";
