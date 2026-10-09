@@ -12787,12 +12787,9 @@ exports.listEngagementClubSwimmers = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONME
     try {
       const nap = require("./nap-portal-swimmers");
       const people = await nap.listPortalClubSwimmers(nap.portalPool(process.env.LIVEPALMES_NAP_PASSWORD), context.clubId);
-      const roster = await engagementClubRosterRef(db, context.clubId).get();
-      const metadata = Object.values(roster.data()?.swimmers || {}).filter(item => item.napSource === true);
-      return { ok: true, clubId: context.clubId, source: "nap", swimmers: people.map((item, index) => ({
-        ...item, category: currentEngagementCategoryFromBirthDate(item.birthDate),
-        clubActivityStatus: metadata.find(meta => String(meta.swimmerIndexId || meta.id) === item.id)?.clubActivityStatus || "active"
-      })), readStats: portalReadStats("listEngagementClubSwimmers", startedAt, { baseDocuments: 2, variableDocumentsMax: 0, cacheHit: false }) };
+      return { ok: true, clubId: context.clubId, source: "nap", swimmers: people.map(item => ({
+        ...item, category: currentEngagementCategoryFromBirthDate(item.birthDate)
+      })), readStats: portalReadStats("listEngagementClubSwimmers", startedAt, { baseDocuments: 1, variableDocumentsMax: 0, cacheHit: false }) };
     } catch (error) {
       throw new HttpsError(error instanceof TypeError ? "invalid-argument" : "unavailable", "Effectif NAP indisponible. " + (error instanceof RangeError ? error.message : "Reessayez le chargement."));
     }
@@ -12830,20 +12827,20 @@ exports.setEngagementClubSwimmerActivityStatus = onCall({ ...CALLABLE_OPTIONS, .
   if (!swimmerIndexId || !status) {
     throw new HttpsError("invalid-argument", "Nageur et statut actif ou inactif requis.");
   }
+  if (ENVIRONMENT.sportingDataSource === "nap") {
+    try {
+      const result=await require("./nap-swimmer-activity").change(require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD), {
+        id:swimmerIndexId,clubId:String(context.clubId),actorUid:context.uid,status,expectedFingerprint:request.data?.expectedFingerprint
+      }, {
+        read:async operation=>{const doc=await db.collection("auditLogs").doc(`nap-swimmer-activity-${operation}-before`).get();return doc.exists?doc.data().target:null;},
+        prepare:(operation,target)=>db.collection("auditLogs").doc(`nap-swimmer-activity-${operation}-before`).create({action:"nap.swimmerActivity.prepare",actorUid:context.uid,target,createdAt:new Date().toISOString()}),
+        complete:(operation,target)=>writeAuditLogOnce("nap.swimmerActivity.complete",context.uid,target,`nap-swimmer-activity-${operation}-complete`)
+      });
+      return result;
+    } catch(error) { throw new HttpsError(error instanceof TypeError?"failed-precondition":"unavailable",error instanceof TypeError?error.message:"Statut NAP a verifier. Rechargez la fiche avant de reessayer."); }
+  }
   const rosterRef = engagementClubRosterRef(db, context.clubId);
   const snapshot = await rosterRef.get();
-  if (ENVIRONMENT.sportingDataSource === "nap") {
-    const nap = require("./nap-portal-swimmers");
-    const id = require("./nap-direct-swimmer").swimmerId(swimmerIndexId);
-    const [rows] = await nap.portalPool(process.env.LIVEPALMES_NAP_PASSWORD).execute({ sql: "SELECT id,nom,prenom,date,sexe,number,club FROM nageurs WHERE id=? AND club=? LIMIT 1", timeout: 10000 }, [id, context.clubId]);
-    if (rows.length !== 1) throw new HttpsError("not-found", "Nageur absent de cet effectif NAP.");
-    const swimmer = nap.person(rows[0]);
-    const now = new Date().toISOString();
-    const updated = { ...swimmer, clubActivityStatus: status, clubActivityStatusSource: "club", clubActivityStatusUpdatedAt: now, clubActivityStatusUpdatedBy: context.uid };
-    await rosterRef.set({ clubId: context.clubId, updatedAt: now, swimmers: { [engagementClubRosterSwimmerKey(swimmer)]: updated } }, { merge: true });
-    await writeAuditLog("engagementClubSwimmer.activityStatusUpdated", context.uid, { clubId: context.clubId, swimmerIndexId: swimmer.id, source: "nap", status });
-    return { ok: true, swimmer: updated };
-  }
   if (!snapshot.exists) throw new HttpsError("not-found", "Effectif du club introuvable.");
   const data = snapshot.data() || {};
   const entries = data.swimmers && typeof data.swimmers === "object" ? data.swimmers : {};
@@ -12923,8 +12920,19 @@ exports.rebuildEngagementClubAggregates = onCall(MIGRATION_CALLABLE_OPTIONS, asy
   };
 });
 
-exports.previewEngagementClubSwimmerCreation = onCall(CALLABLE_OPTIONS, async (request) => {
+exports.previewEngagementClubSwimmerCreation = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")], maxInstances:2, concurrency:4 } : {}) }, async (request) => {
   const context = await engagementClubAccessContext(request);
+  if (ENVIRONMENT.sportingDataSource === "nap") {
+    try {
+      const input={clubId:String(context.clubId),actorUid:context.uid,swimmer:request.data?.swimmer,creationId:request.data?.creationId,confirmAlerts:request.data?.confirmAlerts};
+      const authorize=scope=>{if(scope.clubId!==String(context.clubId)) throw new HttpsError("permission-denied","Nageur hors club.");};
+      const formatAlert=(match,type)=>engagementNewSwimmerAlertFromMatch(match,{...context,clubId:String(context.clubId)},type);
+      return await require("./nap-swimmer-creation").previewCreation(require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD),input,authorize,formatAlert);
+    } catch(error) {
+      if(error instanceof HttpsError) throw error;
+      throw new HttpsError(error instanceof TypeError || error instanceof RangeError?"failed-precondition":"unavailable",error instanceof TypeError || error instanceof RangeError?error.message:"Creation NAP a verifier. Reprenez la meme action ; sauvegarde conservee.");
+    }
+  }
   const swimmer = cleanEngagementNewSwimmer(request.data?.swimmer || {}, context);
   await assertNoEngagementSwimmerLicenseConflict(db, swimmer);
   const alerts = await buildEngagementNewSwimmerAlerts(swimmer, context);
@@ -13087,8 +13095,24 @@ exports.recoverEngagementClubSwimmer = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRON
   };
 });
 
-exports.createEngagementClubSwimmer = onCall(CALLABLE_OPTIONS, async (request) => {
+exports.createEngagementClubSwimmer = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")], maxInstances:2, concurrency:4 } : {}) }, async (request) => {
   const context = await engagementClubAccessContext(request);
+  if (ENVIRONMENT.sportingDataSource === "nap") {
+    try {
+      const input={clubId:String(context.clubId),actorUid:context.uid,swimmer:request.data?.swimmer,creationId:request.data?.creationId,confirmAlerts:request.data?.confirmAlerts};
+      const authorize=scope=>{if(scope.clubId!==String(context.clubId)) throw new HttpsError("permission-denied","Nageur hors club.");};
+      const formatAlert=(match,type)=>engagementNewSwimmerAlertFromMatch(match,{...context,clubId:String(context.clubId)},type);
+      return await require("./nap-swimmer-creation").createSwimmer(require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD),input,{
+        read:async operation=>{const doc=await db.collection("auditLogs").doc(`nap-swimmer-create-${operation}-before`).get();return doc.exists?doc.data().target:null;},
+        prepare:(operation,target)=>db.collection("auditLogs").doc(`nap-swimmer-create-${operation}-before`).create({action:"nap.swimmerCreate.prepare",actorUid:context.uid,target,createdAt:new Date().toISOString()}),
+        checkpoint:(operation,target)=>db.collection("auditLogs").doc(`nap-swimmer-create-${operation}-before`).update({target}),
+        complete:(operation,target)=>writeAuditLogOnce("nap.swimmerCreate.complete",context.uid,target,`nap-swimmer-create-${operation}-complete`)
+      },authorize,formatAlert);
+    } catch(error) {
+      if(error instanceof HttpsError) throw error;
+      throw new HttpsError(error instanceof TypeError || error instanceof RangeError?"failed-precondition":"unavailable",error instanceof TypeError || error instanceof RangeError?error.message:"Creation NAP a verifier. Reprenez la meme action ; sauvegarde conservee.");
+    }
+  }
   const swimmer = cleanEngagementNewSwimmer(request.data?.swimmer || {}, context);
   const now = new Date().toISOString();
   const docId = stableHash([
