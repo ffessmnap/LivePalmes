@@ -74,6 +74,7 @@ function runUnitTests() {
     "nap-import-operation-plan-tests.js",
     "nap-import-write-tests.js",
     "nap-import-client-tests.js",
+    "nap-import-callable-tests.js",
     "nap-import-history-tests.js",
     "nap-import-status-results-tests.js",
     "nap-winpalme-results-tests.js",
