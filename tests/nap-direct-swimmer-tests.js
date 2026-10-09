@@ -19,6 +19,9 @@ const perf = { id: 0, course: "50SF", cat: "HSE", tps: "002000", competition_id:
   assert.equal(queries.length, 4); // Each consultation reads NAP again.
   assert.ok(queries.every(({ query }) => query.timeout === 10000 && /LIMIT (1|2001)$/.test(query.sql)));
   assert.ok(queries.every(({ query }) => !/number|license|password/i.test(query.sql)));
+  const aliasCalls=[];
+  const redirected=await readDirectSwimmer({execute:async(query,parameters)=>{aliasCalls.push(parameters);return [query.sql.startsWith("SELECT n.")?[person]:[perf]];}},99);
+  assert.equal(redirected.swimmer.id,"1");assert.deepEqual(aliasCalls[0],[99]);assert.equal(aliasCalls[1].at(-1),1);
   await assert.rejects(readDirectSwimmer({ execute: async query => [query.sql.startsWith("SELECT n.") ? [person] : Array(2001).fill(perf)] }, 1), RangeError);
   console.log("NAP fiche directe : relecture actuelle, id zero, requetes groupees et historique borne sans troncature silencieuse.");
 })().catch(error => { console.error(error); process.exitCode = 1; });

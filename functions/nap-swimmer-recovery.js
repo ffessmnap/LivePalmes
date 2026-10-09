@@ -1,4 +1,5 @@
 "use strict";
+const {notMerged}=require("./nap-swimmer-merge-state");
 // Preview: two indexed reads, two licence matches and 2,001 history witnesses.
 // Transfer: ten SQL calls maximum; durable backup, only club changes, safe retry.
 // No old sporting directory, result-time inference or silent truncation.
@@ -15,7 +16,7 @@ async function previewRecovery(connection, input, authorize) {
   if (typeof input.licenseNumber !== "string" || !/^[A-Z]-\d{2}-\d+$/.test(input.licenseNumber) || input.licenseNumber.length > 100) throw new TypeError("Numero de licence invalide.");
   const season = licenses.seasonInfo(input.season || licenses.currentSeason());
   await authorize({clubId:input.clubId});
-  const [matches] = await connection.execute({sql:`SELECT n.id,n.nom,n.prenom,n.date,n.sexe,n.number,n.club,cl.abre_club,cl.nom_club,${licenses.projection()} FROM nageurs n FORCE INDEX (livepalmes_license_number_id) LEFT JOIN clubs cl ON cl.num_club=n.club AND CAST(cl.num_club AS CHAR)=n.club ${licenses.join("n","v",season.label)} WHERE n.number=? ORDER BY n.id LIMIT 2`,timeout:10000},[input.licenseNumber]);
+  const [matches] = await connection.execute({sql:`SELECT n.id,n.nom,n.prenom,n.date,n.sexe,n.number,n.club,cl.abre_club,cl.nom_club,${licenses.projection()} FROM nageurs n FORCE INDEX (livepalmes_license_number_id) LEFT JOIN clubs cl ON cl.num_club=n.club AND CAST(cl.num_club AS CHAR)=n.club ${licenses.join("n","v",season.label)} WHERE n.number=? AND ${notMerged("n")} ORDER BY n.id LIMIT 2`,timeout:10000},[input.licenseNumber]);
   if (!Array.isArray(matches) || matches.length > 1) throw new TypeError("Plusieurs nageurs portent cette licence. Verification nationale requise.");
   if (!matches.length) return {source:"nap",found:false,licenseNumber:input.licenseNumber};
   const native = matches[0];
@@ -36,7 +37,7 @@ async function previewRecovery(connection, input, authorize) {
 function transferStatement(before,after,season) {
   if(COLUMNS.some(key=>!Object.hasOwn(before,key)) || COLUMNS.some(key=>key!=="club" && before[key]!==after[key]) || !/^\d{1,16}$/.test(after.club)) throw new TypeError("Transfert NAP invalide.");
   const bounded="SELECT id,compet FROM perfs FORCE INDEX (nageur) WHERE nageur=? LIMIT 2001";
-  return {sql:`UPDATE nageurs n SET n.club=? WHERE n.id=? AND ${COLUMNS.map(key=>nativeEqual(`n.\`${key}\``)).join(" AND ")} AND EXISTS (SELECT 1 FROM clubs cl FORCE INDEX (PRIMARY) WHERE cl.num_club=?) AND (SELECT COUNT(*) FROM (${bounded}) counted)<=2000 AND NOT EXISTS (SELECT 1 FROM (${bounded}) p LEFT JOIN competitions c FORCE INDEX (PRIMARY) ON c.id=p.compet WHERE ${visiblePerformanceSql()} AND (c.date BETWEEN ? AND ? OR MONTH(c.date)=0 OR DAY(c.date)=0 OR c.date IS NULL)) LIMIT 1`,values:[after.club,before.id,...COLUMNS.map(key=>before[key]),after.club,before.id,before.id,season.startDate,season.endDate]};
+  return {sql:`UPDATE nageurs n SET n.club=? WHERE ${notMerged("n")} AND n.id=? AND ${COLUMNS.map(key=>nativeEqual(`n.\`${key}\``)).join(" AND ")} AND EXISTS (SELECT 1 FROM clubs cl FORCE INDEX (PRIMARY) WHERE cl.num_club=?) AND (SELECT COUNT(*) FROM (${bounded}) counted)<=2000 AND NOT EXISTS (SELECT 1 FROM (${bounded}) p LEFT JOIN competitions c FORCE INDEX (PRIMARY) ON c.id=p.compet WHERE ${visiblePerformanceSql()} AND (c.date BETWEEN ? AND ? OR MONTH(c.date)=0 OR DAY(c.date)=0 OR c.date IS NULL)) LIMIT 1`,values:[after.club,before.id,...COLUMNS.map(key=>before[key]),after.club,before.id,before.id,season.startDate,season.endDate]};
 }
 async function recoverSwimmer(pool,input,audit,authorize) {
   if(typeof authorize!=="function" || typeof input?.clubId!=="string" || !/^\d{1,16}$/.test(input.clubId) || typeof input.actorUid!=="string" || !input.actorUid || input.actorUid.length>128 || !/^[a-f0-9]{64}$/.test(input.expectedFingerprint||"") || !/^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/.test(input.mutationId||"") || typeof input.licenseNumber!=="string" || !/^[A-Z]-\d{2}-\d+$/.test(input.licenseNumber) || input.licenseNumber.length>100) throw new TypeError("Recuperation confirmee et fiche requises.");
@@ -55,13 +56,13 @@ async function recoverSwimmer(pool,input,audit,authorize) {
     if(!plan) {
       const preview=await previewRecovery(connection,{clubId:input.clubId,licenseNumber:input.licenseNumber,season:season.label},authorize);
       if(!preview.found || preview.sameClub || !preview.eligible) throw new TypeError("Recuperation impossible : fiche deja rattachee ou resultat publie cette saison. Verification nationale requise.");
-      const [before]=await query(`SELECT ${COLUMNS.map(key=>`\`${key}\``).join(",")} FROM nageurs WHERE id=? LIMIT 1`,[Number(preview.swimmer.id)]);
+      const [before]=await query(`SELECT ${COLUMNS.map(key=>`\`${key}\``).join(",")} FROM nageurs WHERE id=? AND ${notMerged()} LIMIT 1`,[Number(preview.swimmer.id)]);
       if(!before || fingerprint(before)!==input.expectedFingerprint || before.club===input.clubId || licenses.number(before.number).toUpperCase()!==input.licenseNumber) throw new TypeError("La fiche a change. Recherchez de nouveau le nageur.");
       const after={...before,club:input.clubId};
       plan={kind:"native-swimmer-recovery",operation,actorUid:input.actorUid,clubId:input.clubId,mutationId:input.mutationId,licenseNumber:input.licenseNumber,expectedFingerprint:input.expectedFingerprint,season,before,after,beforeHash:hash(before),afterHash:hash(after)};
       await audit.prepare(operation,plan);
     }
-    const [current]=await query(`SELECT ${COLUMNS.map(key=>`\`${key}\``).join(",")} FROM nageurs WHERE id=? LIMIT 1`,[plan.before.id]);
+    const [current]=await query(`SELECT ${COLUMNS.map(key=>`\`${key}\``).join(",")} FROM nageurs WHERE id=? AND ${notMerged()} LIMIT 1`,[plan.before.id]);
     const alreadyApplied=current && hash(current)===plan.afterHash;
     if(!alreadyApplied) {
       if(!current || hash(current)!==plan.beforeHash) throw new TypeError("La fiche a change. Recuperation a verifier.");
@@ -73,7 +74,7 @@ async function recoverSwimmer(pool,input,audit,authorize) {
       const result=await query(statement.sql,statement.values);
       if(result.affectedRows!==1) throw new TypeError("Fiche, club ou resultats modifies. Recuperation non appliquee.");
     }
-    const [verified]=await query(`SELECT ${COLUMNS.map(key=>`\`${key}\``).join(",")} FROM nageurs WHERE id=? LIMIT 1`,[plan.before.id]);
+    const [verified]=await query(`SELECT ${COLUMNS.map(key=>`\`${key}\``).join(",")} FROM nageurs WHERE id=? AND ${notMerged()} LIMIT 1`,[plan.before.id]);
     if(!verified || hash(verified)!==plan.afterHash) throw new Error("Verification de recuperation incomplete.");
     await audit.complete(operation,{swimmerId:String(verified.id),fromClubId:String(plan.before.club),clubId:input.clubId,seasonLabel:plan.season.label,verified:true,changedColumns:["club"]});
     return {ok:true,source:"nap",operation,alreadyApplied,swimmer:person(verified)};

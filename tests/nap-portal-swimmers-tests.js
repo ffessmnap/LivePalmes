@@ -91,7 +91,7 @@ function fixture(options = {}) {
   const clubConnection = { execute: async (query, values) => {
     clubQueries++;
     assert.ok(query.sql.includes("FORCE INDEX (livepalmes_club_id)"));
-    assert.ok(query.sql.includes("WHERE n.club=? ORDER BY n.id LIMIT 801"));
+    assert.ok(query.sql.includes("WHERE n.club=? AND m.swimmer_id IS NULL ORDER BY n.id LIMIT 801"));
     assert.deepEqual(values, ["106"]);
     return [[original]];
   } };

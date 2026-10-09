@@ -1,4 +1,5 @@
 "use strict";
+const {notMerged}=require("./nap-swimmer-merge-state");
 const {createHash}=require("node:crypto");
 const {COLUMNS,hash}=require("./nap-approved-swimmer-correction");
 const {nativeEqual}=require("./nap-native-compare");
@@ -10,7 +11,7 @@ async function correctLicense(connection,input,audit) {
   if(!proposed || proposed.length>100 || /[\u0000-\u001f\u007f]/.test(proposed) || typeof input.expectedLicenseNumber!=="string" || !input.actorUid || input.actorUid.length>128) throw new TypeError("Correction de licence invalide.");
   const operation=createHash("sha256").update(JSON.stringify([id,input.expectedLicenseNumber,proposed,input.actorUid])).digest("hex");
   const read=async()=>{
-    const [rows]=await connection.execute({sql:`SELECT ${COLUMNS.map(key=>`\`${key}\``).join(",")} FROM nageurs WHERE id=? LIMIT 1`,timeout:10000},[id]);
+    const [rows]=await connection.execute({sql:`SELECT ${COLUMNS.map(key=>`\`${key}\``).join(",")} FROM nageurs WHERE id=? AND ${notMerged()} LIMIT 1`,timeout:10000},[id]);
     if(rows.length!==1) throw new TypeError("Nageur introuvable.");
     return rows[0];
   };
@@ -25,11 +26,11 @@ async function correctLicense(connection,input,audit) {
   if(saved.operation!==operation || saved.id!==id || saved.actorUid!==input.actorUid || saved.beforeHash!==hash(saved.before) || saved.afterHash!==hash(saved.after) || number(saved.before.number)!==input.expectedLicenseNumber || saved.after.number!==proposed || COLUMNS.some(key=>key!=="number" && saved.before[key]!==saved.after[key])) throw new Error("Sauvegarde de licence incompatible.");
   const currentHash=hash(row);
   if(currentHash!==saved.beforeHash && currentHash!==saved.afterHash) throw new TypeError("La fiche a change. Rechargez la liste.");
-  const [owners]=await connection.execute({sql:"SELECT id FROM nageurs FORCE INDEX (livepalmes_license_number_id) WHERE number=? AND id<>? LIMIT 2",timeout:10000},[proposed,id]);
+  const [owners]=await connection.execute({sql:`SELECT id FROM nageurs FORCE INDEX (livepalmes_license_number_id) WHERE number=? AND id<>? AND ${notMerged()} LIMIT 2`,timeout:10000},[proposed,id]);
   if(owners.length) throw new TypeError("Cette licence appartient deja a une autre fiche NAP.");
   const alreadyApplied=currentHash===saved.afterHash;
   if(!alreadyApplied) {
-    const [result]=await connection.execute({sql:`UPDATE nageurs SET number=? WHERE ${COLUMNS.map(key=>nativeEqual(`\`${key}\``)).join(" AND ")} LIMIT 1`,timeout:10000},[proposed,...COLUMNS.map(key=>saved.before[key])]);
+    const [result]=await connection.execute({sql:`UPDATE nageurs SET number=? WHERE ${notMerged()} AND ${COLUMNS.map(key=>nativeEqual(`\`${key}\``)).join(" AND ")} LIMIT 1`,timeout:10000},[proposed,...COLUMNS.map(key=>saved.before[key])]);
     if(result.affectedRows!==1) throw new TypeError("La fiche a change. Rechargez la liste.");
   }
   const verified=await read();
@@ -42,7 +43,7 @@ async function correctLicenses(connection,items,actorUid,audit) {
   const operation=createHash("sha256").update(JSON.stringify([actorUid,items])).digest("hex");
   const marks=items.map(()=>"?").join(","),ids=items.map(item=>item.id);
   const read=async()=>{
-    const [rows]=await connection.execute({sql:`SELECT ${COLUMNS.map(key=>`\`${key}\``).join(",")} FROM nageurs FORCE INDEX (PRIMARY) WHERE id IN (${marks}) ORDER BY id LIMIT 101`,timeout:10000},ids);
+    const [rows]=await connection.execute({sql:`SELECT ${COLUMNS.map(key=>`\`${key}\``).join(",")} FROM nageurs FORCE INDEX (PRIMARY) WHERE id IN (${marks}) AND ${notMerged()} ORDER BY id LIMIT 101`,timeout:10000},ids);
     if(rows.length!==items.length) throw new TypeError("Fiches NAP absentes.");
     return rows;
   };
@@ -69,7 +70,7 @@ async function correctLicenses(connection,items,actorUid,audit) {
   if(pending.length) {
     const cases=pending.map(()=>"WHEN ? THEN ?").join(" ");
     const guards=pending.map(()=>`(${COLUMNS.map(key=>nativeEqual(`\`${key}\``)).join(" AND ")})`).join(" OR ");
-    await connection.execute({sql:`UPDATE nageurs SET number=CASE id ${cases} ELSE number END WHERE ${guards} LIMIT 100`,timeout:10000},[...pending.flatMap(change=>[change.before.id,change.after.number]),...pending.flatMap(change=>COLUMNS.map(key=>change.before[key]))]);
+    await connection.execute({sql:`UPDATE nageurs SET number=CASE id ${cases} ELSE number END WHERE (${guards}) AND ${notMerged()} LIMIT 100`,timeout:10000},[...pending.flatMap(change=>[change.before.id,change.after.number]),...pending.flatMap(change=>COLUMNS.map(key=>change.before[key]))]);
   }
   const verified=await read();
   if(saved.changes.some(change=>hash(verified.find(row=>Number(row.id)===Number(change.after.id)))!==change.afterHash)) throw new Error("Correction concurrente : verification incomplete, reprendre le lot sauvegarde.");

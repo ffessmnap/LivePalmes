@@ -1,4 +1,5 @@
 "use strict";
+const {notMerged}=require("./nap-swimmer-merge-state");
 const {nativeEqual}=require("./nap-native-compare");
 const {positiveId}=require("./nap-direct-calendar");
 const {entryAuthority,deadline}=require("./nap-official-entry-statements");
@@ -16,7 +17,7 @@ function statements(plan,authority,end) {
   function personScope(person,values) {
     if(String(person.clubId)!==clubId) throw new TypeError("Nageur hors du dossier.");
     values.push(positiveId(person.id),clubId,person.lastName,person.firstName,person.birthDate,person.sex);
-    return `EXISTS (SELECT 1 FROM nageurs scope_n FORCE INDEX (PRIMARY) WHERE scope_n.id=? AND BINARY scope_n.club=BINARY ? AND ${nativeEqual("scope_n.nom")} AND ${nativeEqual("scope_n.prenom")} AND BINARY scope_n.date <=> BINARY ? AND BINARY scope_n.sexe <=> BINARY ?)`;
+    return `EXISTS (SELECT 1 FROM nageurs scope_n FORCE INDEX (PRIMARY) WHERE scope_n.id=? AND ${notMerged("scope_n")} AND BINARY scope_n.club=BINARY ? AND ${nativeEqual("scope_n.nom")} AND ${nativeEqual("scope_n.prenom")} AND BINARY scope_n.date <=> BINARY ? AND BINARY scope_n.sexe <=> BINARY ?)`;
   }
   const individuals=[],members=[],inscriptions=[];
   for(const removal of plan.removals) {
@@ -63,7 +64,7 @@ function statements(plan,authority,end) {
       return `(n.id=? AND BINARY n.club=BINARY ? AND ${nativeEqual("n.nom")} AND ${nativeEqual("n.prenom")} AND BINARY n.date <=> BINARY ? AND BINARY n.sexe <=> BINARY ?)`;
     });
     values.push(...guard.values,deadline(end));
-    result.push({kind:"insert",sql:`INSERT INTO nageursengager (compet,nageur) SELECT ?,n.id FROM nageurs n FORCE INDEX (PRIMARY) LEFT JOIN nageursengager existing FORCE INDEX (livepalmes_compet_nageur_id) ON existing.compet=? AND existing.nageur=n.id WHERE existing.id IS NULL AND (${rows.join(" OR ")}) AND ${guard.sql} AND UTC_TIMESTAMP() < ? ORDER BY n.id LIMIT 50`,values});
+    result.push({kind:"insert",sql:`INSERT INTO nageursengager (compet,nageur) SELECT ?,n.id FROM nageurs n FORCE INDEX (PRIMARY) LEFT JOIN nageursengager existing FORCE INDEX (livepalmes_compet_nageur_id) ON existing.compet=? AND existing.nageur=n.id WHERE existing.id IS NULL AND ${notMerged("n")} AND (${rows.join(" OR ")}) AND ${guard.sql} AND UTC_TIMESTAMP() < ? ORDER BY n.id LIMIT 50`,values});
   }
   return result;
 }

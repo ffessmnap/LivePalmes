@@ -1,4 +1,5 @@
 "use strict";
+const {notMerged}=require("./nap-swimmer-merge-state");
 // Fixed budget: two PK reads, trigger check, one guarded UPDATE; audit read/two writes.
 const {createHash}=require("node:crypto");
 const {COLUMNS,hash}=require("./nap-approved-swimmer-correction");
@@ -13,7 +14,7 @@ async function change(connection,input,audit) {
   if(!/^\d{1,16}$/.test(input.clubId||"") || !input.actorUid || !["active","inactive"].includes(input.status) || !/^[a-f0-9]{64}$/.test(input.expectedFingerprint||"")) throw new TypeError("Fiche et statut requis.");
   const operation=createHash("sha256").update(JSON.stringify([id,input.clubId,input.actorUid,input.status,input.expectedFingerprint])).digest("hex");
   const query=async(sql,values=[]) => (await connection.execute({sql,timeout:10000},values))[0];
-  const read=async()=>{const rows=await query(`SELECT ${COLUMNS.map(k=>`\`${k}\``).join(",")} FROM nageurs WHERE id=? LIMIT 1`,[id]);if(rows.length!==1 || String(rows[0].club)!==input.clubId) throw new TypeError("Nageur absent de cet effectif NAP.");return rows[0];};
+  const read=async()=>{const rows=await query(`SELECT ${COLUMNS.map(k=>`\`${k}\``).join(",")} FROM nageurs WHERE id=? AND ${notMerged()} LIMIT 1`,[id]);if(rows.length!==1 || String(rows[0].club)!==input.clubId) throw new TypeError("Nageur absent de cet effectif NAP.");return rows[0];};
   const row=await read(); status(row);
   let saved=await audit.read(operation);
   if(!saved) {
@@ -26,7 +27,7 @@ async function change(connection,input,audit) {
   if(hash(row)!==saved.afterHash) {
     if(hash(row)!==saved.beforeHash) throw new TypeError("La fiche a change. Rechargez avant d'enregistrer.");
     if((await query("SELECT TRIGGER_NAME FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA=DATABASE() AND EVENT_OBJECT_TABLE='nageurs' LIMIT 1")).length) throw new TypeError("Declencheur NAP a verifier.");
-    const result=await query(`UPDATE nageurs SET actif=? WHERE id=? AND ${COLUMNS.map(k=>nativeEqual(`\`${k}\``)).join(" AND ")} LIMIT 1`,[saved.after.actif,id,...COLUMNS.map(k=>saved.before[k])]);
+    const result=await query(`UPDATE nageurs SET actif=? WHERE ${notMerged()} AND id=? AND ${COLUMNS.map(k=>nativeEqual(`\`${k}\``)).join(" AND ")} LIMIT 1`,[saved.after.actif,id,...COLUMNS.map(k=>saved.before[k])]);
     if(result.affectedRows!==1) throw new TypeError("La fiche a change. Rechargez avant d'enregistrer.");
   }
   const verified=await read();

@@ -24,7 +24,7 @@ function fixture(options = {}) {
       if (query.sql.includes("GET_LOCK")) { const acquired = !locked; if (acquired) locked = true; return [[{ acquired: acquired ? 1 : 0 }]]; }
       if (query.sql.includes("RELEASE_LOCK")) { locked = false; return [[{ released: 1 }]]; }
       if (query.sql.includes("FORCE INDEX")) return [[]];
-      if (query.sql.startsWith("SELECT")) { assert.ok(query.sql.includes("WHERE id=? LIMIT 1")); assert.equal(params[0], 42); return [[{ ...row }]]; }
+      if (query.sql.startsWith("SELECT")) { assert.match(query.sql,/WHERE id=\?(?: AND NOT EXISTS \(SELECT 1 FROM livepalmes_swimmer_merges WHERE swimmer_id=nageurs.id\))? LIMIT 1/); assert.equal(params[0], 42); return [[{ ...row }]]; }
       assert.ok(query.sql.startsWith("UPDATE nageurs SET")); assert.ok(audits.size, "durable backup must precede SQL");
       sqlWrites++; row.nom = params[0]; return [{ affectedRows: 1 }];
     }, release: () => { releases++; }, destroy: () => { locked = false; }

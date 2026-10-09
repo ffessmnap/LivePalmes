@@ -17,7 +17,7 @@ function fixture(options={}) {
     if(query.sql.includes("FORCE INDEX")) return [options.duplicate?[{id:43}]:[]];
     if(query.sql.startsWith("SELECT")) return [[{...current}]];
     assert.ok(saved,"backup must precede write");
-    assert.ok(query.sql.startsWith("UPDATE nageurs SET number=? WHERE BINARY"));
+    assert.match(query.sql,/^UPDATE nageurs SET number=\? WHERE NOT EXISTS \(SELECT 1 FROM livepalmes_swimmer_merges WHERE swimmer_id=nageurs.id\) AND BINARY/);
     assert.equal(values.length,12);writes++;
     if(options.race) return [{affectedRows:0}];
     current.number=values[0];return [{affectedRows:1}];

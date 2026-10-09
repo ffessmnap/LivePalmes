@@ -12,7 +12,7 @@ function fixture(){
     if(sql.includes("RELEASE_LOCK")) return [[{released:1}]];
     if(sql.startsWith("SELECT id FROM nageurs")) {assert.match(sql,/FORCE INDEX \(livepalmes_license_number_id\).*LIMIT 2$/);return [state.licenseMatches];}
     if(sql.includes(" UNION ")) return [state.exact];
-    if(sql.includes("nom LIKE")) {assert.match(sql,/ESCAPE '=' LIMIT 201/);return [state.similar];}
+    if(sql.includes("nom LIKE")) {assert.match(sql,/ESCAPE '=' AND NOT EXISTS \(SELECT 1 FROM livepalmes_swimmer_merges WHERE swimmer_id=nageurs.id\) LIMIT 201/);return [state.similar];}
     if(sql.includes("TRIGGERS")) return [state.trigger?[{}]:[]];
     if(sql.startsWith("EXPLAIN")) return [[{table:"duplicate",key:state.badPlan?null:"livepalmes_license_number_id"},{table:"cl",key:"PRIMARY"}]];
     if(sql.startsWith("INSERT INTO nageurs")) {

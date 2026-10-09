@@ -1,4 +1,5 @@
 "use strict";
+const {notMerged}=require("./nap-swimmer-merge-state");
 // Native MyISAM import: immutable before/after journal before every sporting
 // mutation, bounded bulk statements and verified recovery, no fake rollback.
 const {COLUMNS,positiveId}=require("./nap-performance-change-plan");
@@ -46,7 +47,7 @@ function createNativeImportWriter({getPool,authorize,preview=previewNativeImport
       if(initial&&(initial.created_by!==actor.uid||Number(initial.competition_id)!==competitionId||saved?.requestHash!==requestHash))throw new TypeError("Identifiant d'operation deja utilise avec un autre contenu.");
       if(!saved)pack=preparedPreview;
       if((await q("SELECT TRIGGER_NAME FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA=DATABASE() AND EVENT_OBJECT_TABLE IN ('perfs','perfs_relais') LIMIT 1")).length)throw new TypeError("Declencheurs NAP a verifier avant import.");
-      await conn.query({sql:"LOCK TABLES perfs WRITE, perfs_relais WRITE, livepalmes_performance_imports WRITE, livepalmes_performance_import_rows WRITE, livepalmes_performance_visibility WRITE, competitions READ, nageurs READ, clubs READ",timeout:10000});locked=true;
+      await conn.query({sql:"LOCK TABLES perfs WRITE, perfs_relais WRITE, livepalmes_performance_imports WRITE, livepalmes_performance_import_rows WRITE, livepalmes_performance_visibility WRITE, competitions READ, nageurs READ, livepalmes_swimmer_merges READ, clubs READ",timeout:10000});locked=true;
       const currentPointer=await pointer();
       if(currentPointer.activeImportId&&currentPointer.activeImportId!==id)throw new TypeError("Un import interrompu doit etre repris avant un autre fichier.");
       // A completed old receipt must never roll back a newer import.
@@ -70,7 +71,7 @@ function createNativeImportWriter({getPool,authorize,preview=previewNativeImport
         await q("INSERT INTO livepalmes_performance_imports (id,competition_id,file_hash,file_name,source_type,status,row_count,metadata,created_at,created_by,updated_at) VALUES (?,?,?,?,'ffessm-txt','prepared',?,?,UTC_TIMESTAMP(6),?,UTC_TIMESTAMP(6))",[id,competitionId,saved.fileHash,input.fileName,plan.perfs.after.length+plan.relays.after.length+plan.statusRows.length,JSON.stringify(saved),actor.uid]);
       }
       const ids=saved.people.map(r=>r.id),clubIds=saved.clubs.map(r=>r.num_club);
-      const people=ids.length?await q(`SELECT id,nom,prenom,date,sexe,club FROM nageurs WHERE id IN (${ids.map(()=>"?").join(",")}) ORDER BY id LIMIT 10001`,ids):[];
+      const people=ids.length?await q(`SELECT id,nom,prenom,date,sexe,club FROM nageurs WHERE id IN (${ids.map(()=>"?").join(",")}) AND ${notMerged()} ORDER BY id LIMIT 10001`,ids):[];
       const clubs=clubIds.length?await q(`SELECT num_club,abre_club,nom_club FROM clubs WHERE num_club IN (${clubIds.map(()=>"?").join(",")}) ORDER BY num_club LIMIT 1001`,clubIds):[];
       if(!sameContext(people,saved.people,["id","nom","prenom","date","sexe","club"])||!sameContext(clubs,saved.clubs,["num_club","abre_club","nom_club"]))throw new TypeError("Une fiche ou un club a change. Verification de l'import requise.");
       const competition=(await q("SELECT id,libelle,date,lieu,bassin,chrono FROM competitions WHERE id=? LIMIT 1",[competitionId]))[0];

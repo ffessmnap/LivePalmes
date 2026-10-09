@@ -31,10 +31,11 @@ function performanceRow(row, person, entryHistory = false) {
   };
 }
 async function readDirectSwimmer(pool, input) {
-  const id = swimmerId(input);
-  const [people] = await pool.execute({ sql: "SELECT n.id, n.nom, n.prenom, n.date, n.sexe, n.club, cl.abre_club, cl.nom_club FROM nageurs n LEFT JOIN clubs cl ON cl.num_club = n.club AND CAST(cl.num_club AS CHAR) = n.club WHERE n.id = ? LIMIT 1", timeout: 10000 }, [id]);
+  const requestedId = swimmerId(input);
+  const [people] = await pool.execute({ sql: "SELECT n.id, n.nom, n.prenom, n.date, n.sexe, n.club, cl.abre_club, cl.nom_club FROM nageurs requested FORCE INDEX (PRIMARY) LEFT JOIN livepalmes_swimmer_merges m FORCE INDEX (PRIMARY) ON m.swimmer_id=requested.id JOIN nageurs n FORCE INDEX (PRIMARY) ON n.id=COALESCE(m.target_id,requested.id) LEFT JOIN clubs cl ON cl.num_club = n.club AND CAST(cl.num_club AS CHAR) = n.club WHERE requested.id = ? LIMIT 1", timeout: 10000 }, [requestedId]);
   if (!people.length) return { source: "nap", swimmer: null };
   const raw = people[0];
+  const id = swimmerId(raw.id);
   const person = { id: String(raw.id), firstName: rules.cleanText(raw.prenom), lastName: rules.cleanText(raw.nom), birthDate: raw.date,
     sex: rules.cleanText(raw.sexe), clubId: String(raw.club || ""), club: rules.cleanText(raw.abre_club || raw.nom_club), clubName: rules.cleanText(raw.nom_club) };
   person.name = [person.firstName, person.lastName].filter(Boolean).join(" ");

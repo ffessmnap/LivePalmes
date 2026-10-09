@@ -12781,10 +12781,10 @@
       return `
         <tr class="admin-engagements-national-swimmer-row" data-engagement-national-swimmer-id="${escapeHtml(sourceId)}" data-engagement-national-swimmer-source="${escapeHtml(sourceType)}" data-engagement-national-swimmer-key="${escapeHtml(sourceKey)}" data-active="${active ? "true" : "false"}" data-merged="${merged ? "true" : "false"}">
           <td class="admin-engagements-national-choice">
-            ${merged || swimmer.napSource ? "" : `<input type="radio" name="adminEngagementsNationalSwimmerKeep" value="${escapeHtml(sourceKey)}" title="Conserver cette fiche" data-engagement-national-swimmer-keep>`}
+            ${merged ? "" : `<input type="radio" name="adminEngagementsNationalSwimmerKeep" value="${escapeHtml(sourceKey)}" title="Conserver cette fiche" data-engagement-national-swimmer-keep>`}
           </td>
           <td class="admin-engagements-national-choice">
-            ${merged || swimmer.napSource ? "" : `<input type="checkbox" value="${escapeHtml(sourceKey)}" title="Fusionner cette fiche vers la fiche conservee" data-engagement-national-swimmer-merge-check>`}
+            ${merged ? "" : `<input type="checkbox" value="${escapeHtml(sourceKey)}" title="Fusionner cette fiche vers la fiche conservee" data-engagement-national-swimmer-merge-check>`}
           </td>
           <td class="admin-engagements-national-merge-only"><span class="admin-engagements-duplicate-badge" data-score="${escapeHtml(alertLabel.score)}">${escapeHtml(alertLabel.label)}</span></td>
           <td><strong>${escapeHtml(swimmer.lastName || name)}</strong></td>
@@ -12796,14 +12796,14 @@
           <td>${escapeHtml(perfCount ? String(perfCount) : "-")}</td>
           <td>${escapeHtml(statusLabel)}</td>
           <td class="admin-engagements-national-table-actions">
-            ${merged ? `
+            ${merged ? (swimmer.napSource ? `<button class="ghost-button" type="button" data-engagement-national-swimmer-action="repair-publication" data-engagement-national-swimmer-id="${escapeHtml(sourceId)}" data-engagement-national-swimmer-source="${escapeHtml(sourceType)}">Finaliser la fusion</button>` : `
               <button class="ghost-button" type="button" title="À utiliser seulement si la fiche publique ou les performances ne sont pas correctement synchronisées après la fusion." data-engagement-national-swimmer-action="repair-publication" data-engagement-national-swimmer-id="${escapeHtml(sourceId)}" data-engagement-national-swimmer-source="${escapeHtml(sourceType)}">Réparer la publication publique</button>
-            ` : `
+            `) : `
               <details class="admin-national-row-menu">
                 <summary aria-label="Actions pour ${escapeHtml(name)}" title="Actions">&#8942;</summary>
                 <div>
                   <button class="ghost-button" type="button" data-engagement-national-swimmer-action="edit" data-engagement-national-swimmer-id="${escapeHtml(sourceId)}" data-engagement-national-swimmer-source="${escapeHtml(sourceType)}">Modifier la fiche</button>
-                  ${!engagementNationalSwimmerMergeMode || swimmer.napSource ? "" : `<button class="ghost-button" type="button" data-engagement-national-swimmer-action="merge" data-engagement-national-swimmer-id="${escapeHtml(sourceId)}" data-engagement-national-swimmer-source="${escapeHtml(sourceType)}">Choisir une autre cible</button>`}
+                  ${!engagementNationalSwimmerMergeMode ? "" : `<button class="ghost-button" type="button" data-engagement-national-swimmer-action="merge" data-engagement-national-swimmer-id="${escapeHtml(sourceId)}" data-engagement-national-swimmer-source="${escapeHtml(sourceType)}">Choisir une autre cible</button>`}
                   ${sourceType !== "engagement" && !swimmer.napSource ? "" : `<button class="ghost-button" type="button" data-engagement-national-swimmer-action="${active ? "disable" : "enable"}" data-engagement-national-swimmer-id="${escapeHtml(sourceId)}" data-engagement-national-swimmer-source="${escapeHtml(sourceType)}">${active ? "Désactiver" : "Réactiver"}</button>`}
                   ${sourceType === "engagement" ? `<button class="ghost-button admin-engagements-danger-button" type="button" data-engagement-national-swimmer-action="delete" data-engagement-national-swimmer-id="${escapeHtml(sourceId)}" data-engagement-national-swimmer-source="${escapeHtml(sourceType)}">Supprimer</button>` : ""}
                 </div>
@@ -13814,6 +13814,10 @@
         targetSwimmerId: targetId,
         targetSource,
         targetIdentityKey: target.identityKey || "",
+        sourceFingerprint: source.napFingerprint || "",
+        targetFingerprint: target.napFingerprint || "",
+        sourceLicenseNumber: String(source.licenseNumber || "").trim(),
+        targetLicenseNumber: String(target.licenseNumber || "").trim(),
         confirmMerge: true,
         confirmLicenseMismatch: licenseMismatch,
         confirmClubMismatch: clubMismatch
@@ -13846,7 +13850,7 @@
     const sources = sourceKeys.map(engagementNationalSwimmerByKey).filter(Boolean);
     if (!target || !sources.length) return;
     const targetName = [target.firstName, target.lastName].filter(Boolean).join(" ") || target.name || targetKey;
-    const licenseMismatch = sources.some((source) => source.licenseNumber && target.licenseNumber && source.licenseNumber !== target.licenseNumber);
+    const licenseMismatch = new Set([target,...sources].map(person=>String(person.licenseNumber||"").trim()).filter(Boolean)).size>1;
     const clubMismatch = sources.some((source) => source.clubId && target.clubId && source.clubId !== target.clubId);
     const warning = [
       licenseMismatch ? "numéros de licence différents" : "",
@@ -13867,17 +13871,22 @@
       const sourceKey = engagementNationalSwimmerKey(source);
       const [sourceSourceRaw, sourceIdRaw] = sourceKey.split(":");
       try {
-        await callFunction("mergeEngagementNationalClubSwimmer", {
+        const result = await callFunction("mergeEngagementNationalClubSwimmer", {
           sourceSwimmerId: sourceIdRaw,
           sourceSource: sourceSourceRaw || "engagement",
           sourceIdentityKey: source.identityKey || "",
           targetSwimmerId: targetIdRaw,
           targetSource: targetSourceRaw || "performances",
           targetIdentityKey: target.identityKey || "",
+          sourceFingerprint: source.napFingerprint || "",
+          targetFingerprint: target.napFingerprint || "",
+          sourceLicenseNumber: String(source.licenseNumber || "").trim(),
+          targetLicenseNumber: String(target.licenseNumber || "").trim(),
           confirmMerge: true,
           confirmLicenseMismatch: true,
           confirmClubMismatch: true
         });
+        if(result?.target?.napSource)Object.assign(target,result.target);
         successCount += 1;
       } catch (error) {
         const sourceName = [source.firstName, source.lastName].filter(Boolean).join(" ") || source.name || sourceKey;
@@ -13901,6 +13910,17 @@
     const swimmer = engagementNationalSwimmers.find((item) =>
       (item.source || "performances") === swimmerSource && (item.id === swimmerId || item.swimmerIndexId === swimmerId)
     ) || {};
+    if(swimmer.napSource) {
+      try {
+        const found=await callFunction("searchEngagementNationalSwimmerMergeTargets",{sourceSwimmerId:swimmerId,query:String(swimmer.mergedIntoId||"")});
+        const target=found.swimmers?.find(item=>String(item.id)===String(swimmer.mergedIntoId));
+        if(!target)throw new Error("La fiche conservée est introuvable.");
+        await callFunction("mergeEngagementNationalClubSwimmer",{sourceSwimmerId:swimmerId,targetSwimmerId:target.id,sourceFingerprint:swimmer.napFingerprint,targetFingerprint:target.napFingerprint,sourceLicenseNumber:String(swimmer.licenseNumber||"").trim(),targetLicenseNumber:String(target.licenseNumber||"").trim(),confirmMerge:true,confirmClubMismatch:true,confirmLicenseMismatch:true});
+        await loadEngagementNationalSwimmers({force:true,silent:true});
+        if(elements.engagementsNationalSwimmersStatus)elements.engagementsNationalSwimmersStatus.textContent="Fusion NAP vérifiée et finalisée.";
+      }catch(error){if(elements.engagementsNationalSwimmersStatus)elements.engagementsNationalSwimmersStatus.textContent=`Finalisation impossible : ${error?.message||error}`;}
+      return;
+    }
     const name = engagementSwimmerDisplayName(swimmer, "cette fiche fusionnée");
     if (!swimmerId || !global.confirm(`Réparer la publication publique de ${name} ? À utiliser seulement si la fiche publique ou les performances ne sont pas correctement synchronisées après la fusion. L’ancienne fiche publique sera retirée et ses performances seront rattachées à la fiche conservée.`)) return;
     if (elements.engagementsNationalSwimmersStatus) {
