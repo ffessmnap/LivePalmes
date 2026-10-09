@@ -3,7 +3,7 @@
   const ENGAGEMENT_SWIMMER_LICENSE_PATTERN = /^[A-Z]-\d{2}-\d+$/;
   const PORTAL_NAV_PIN_STORAGE_KEY = "livepalmes.portal.navPinned";
   const PORTAL_ACTIVE_CLUB_SESSION_KEY = "livepalmes.portal.activeClubId";
-  const ENGAGEMENT_NATIONAL_CLUB_CACHE_KEY = "livepalmes.portal.nationalClubs.v1";
+  const ENGAGEMENT_NATIONAL_CLUB_CACHE_KEY = "livepalmes.portal.nationalClubs.v2";
   const ENGAGEMENT_CALENDAR_SESSION_CACHE_PREFIX = "livepalmes.portal.engagementCalendar.v4.";
   const ENGAGEMENT_CALENDAR_CACHE_TTL_MS = 5 * 60 * 1000;
   const ENGAGEMENT_CLUB_WORKSPACE_SESSION_CACHE_PREFIX = "livepalmes.portal.engagementWorkspace.v2.";
@@ -593,6 +593,7 @@
     engagementsSwimmerCorrectionReasonLabel: document.querySelector("#adminEngagementsSwimmerCorrectionReasonLabel"),
     engagementsSwimmerCorrectionReason: document.querySelector("#adminEngagementsSwimmerCorrectionReason"),
     engagementsSwimmerCorrectionMessage: document.querySelector("#adminEngagementsSwimmerCorrectionMessage"),
+    engagementsNationalPeopleMore: document.querySelector("#adminEngagementsNationalPeopleMore"),
     engagementsNationalPeopleRefresh: document.querySelector("#adminEngagementsNationalPeopleRefresh"),
     engagementsNationalPeopleStatus: document.querySelector("#adminEngagementsNationalPeopleStatus"),
     engagementsNationalPeopleSearch: document.querySelector("#adminEngagementsNationalPeopleSearch"),
@@ -1008,6 +1009,8 @@
   let engagementNationalPeople = [];
   let engagementNationalPeopleLoaded = false;
   let engagementNationalPeopleLoading = false;
+  let engagementNationalPeopleCursor = null;
+  let engagementNationalClubCreationRetry = null;
   let engagementNationalPersonMergeSourceId = "";
   let engagementNationalPeopleMergeMode = false;
   let engagementNationalAuditLogs = [];
@@ -3344,6 +3347,24 @@
   function loadAccessClubReference() {
     if (accessClubReference.length) return Promise.resolve(accessClubReference);
     if (accessClubReferenceLoadPromise) return accessClubReferenceLoadPromise;
+    if (global.LivePalmesEnvironment?.sportingDataSource === "nap") {
+      accessClubReferenceLoadPromise = callFunction("getPublicEngagementClubDirectory", {}).then(result=>{
+        accessClubReference = (Array.isArray(result.clubs)?result.clubs:[]).map(normalizeAccessClubReference).filter(club=>club.clubId && club.clubName);
+        accessClubReferenceById = new Map(accessClubReference.map(club=>[club.clubId,club]));
+        populateAccessRegionChoices();
+        populateAccessClubSelect(elements.accessClubId?.value || "");
+        populatePublicAccessRequestClubSelect(elements.publicAccessRequestClubId?.value || "");
+        populateEngagementAccessRequestEditClubSelect(elements.engagementsAccessRequestEditClubId?.value || "");
+        if(currentAccessProfile) {renderPortalScopeContext(currentAccessProfile);renderEngagementsProfile(currentAccessProfile);}
+        return accessClubReference;
+      }).catch(error=>{
+        accessClubReferenceLoadPromise = null;
+        setAccessMessage(`Referentiel NAP indisponible : ${error?.message || error}`);
+        setPublicAccessRequestMessage(`Referentiel NAP indisponible : ${error?.message || error}`);
+        return [];
+      });
+      return accessClubReferenceLoadPromise;
+    }
     accessClubReferenceLoadPromise = loadScriptOnce(
       "performances/public/data/club-reference.js?v=20260813-national-clubs-3",
       "adminAccessReferenceScript"
@@ -4949,7 +4970,7 @@
       if (licenseKey) peopleByLicense.set(licenseKey, person);
     });
     const candidates = [
-      ...engagementClubPeople
+      ...visibleNativePeople(engagementClubPeople)
         .filter((person) => person.active)
         .map((person) => ({ ...person, selectionId: person.id, candidateType: "person" })),
       ...engagementClubSwimmers
@@ -5172,7 +5193,7 @@
   }
 
   function engagementClubOfficialPeople() {
-    const candidates = engagementClubPeople
+    const candidates = visibleNativePeople(engagementClubPeople)
       .filter((person) => person.active)
       .map((person) => ({ ...person, candidateType: "person", selectionId: person.id }));
     if(selectedEngagementClubEntry?.source==="nap") {
@@ -12783,7 +12804,7 @@
                 <div>
                   <button class="ghost-button" type="button" data-engagement-national-swimmer-action="edit" data-engagement-national-swimmer-id="${escapeHtml(sourceId)}" data-engagement-national-swimmer-source="${escapeHtml(sourceType)}">Modifier la fiche</button>
                   ${!engagementNationalSwimmerMergeMode || swimmer.napSource ? "" : `<button class="ghost-button" type="button" data-engagement-national-swimmer-action="merge" data-engagement-national-swimmer-id="${escapeHtml(sourceId)}" data-engagement-national-swimmer-source="${escapeHtml(sourceType)}">Choisir une autre cible</button>`}
-                  ${sourceType !== "engagement" ? "" : `<button class="ghost-button" type="button" data-engagement-national-swimmer-action="${active ? "disable" : "enable"}" data-engagement-national-swimmer-id="${escapeHtml(sourceId)}" data-engagement-national-swimmer-source="${escapeHtml(sourceType)}">${active ? "Désactiver" : "Réactiver"}</button>`}
+                  ${sourceType !== "engagement" && !swimmer.napSource ? "" : `<button class="ghost-button" type="button" data-engagement-national-swimmer-action="${active ? "disable" : "enable"}" data-engagement-national-swimmer-id="${escapeHtml(sourceId)}" data-engagement-national-swimmer-source="${escapeHtml(sourceType)}">${active ? "Désactiver" : "Réactiver"}</button>`}
                   ${sourceType === "engagement" ? `<button class="ghost-button admin-engagements-danger-button" type="button" data-engagement-national-swimmer-action="delete" data-engagement-national-swimmer-id="${escapeHtml(sourceId)}" data-engagement-national-swimmer-source="${escapeHtml(sourceType)}">Supprimer</button>` : ""}
                 </div>
               </details>
@@ -13398,7 +13419,7 @@
     }
     try {
       await loadAccessClubReference();
-      const referenceRows = global.LIVEPALMES_CLUB_REFERENCE?.clubs || [];
+      const referenceRows = global.LivePalmesEnvironment?.sportingDataSource === "nap" ? [] : global.LIVEPALMES_CLUB_REFERENCE?.clubs || [];
       const cached = force ? { clubs: [], syncedThrough: "" } : readEngagementNationalClubCache();
       const storedById = new Map(cached.clubs.map((club) => [club.clubId, club]));
       engagementNationalClubs = mergeEngagementNationalClubDirectory(referenceRows, cached.clubs);
@@ -13463,6 +13484,7 @@
   }
 
   function openEngagementNationalClubDialog(clubId = "") {
+    engagementNationalClubCreationRetry = null;
     const club = engagementNationalClubs.find((item) => item.clubId === clubId) || {};
     if (elements.engagementsNationalClubForm) elements.engagementsNationalClubForm.reset();
     if (elements.engagementsNationalClubId) elements.engagementsNationalClubId.value = club.clubId || "";
@@ -13503,9 +13525,10 @@
       elements.engagementsNationalClubMessage.dataset.tone = "loading";
     }
     try {
-      const result = await callFunction("saveEngagementNationalClub", {
+      const payload = {
         clubId,
         confirmFederalNumberChange: federalNumberChanged,
+        expectedFingerprint: engagementNationalClubs.find(item=>item.clubId===clubId)?.napFingerprint,
         club: {
           federalNumber: elements.engagementsNationalClubFederalNumber?.value || "",
           clubCode: elements.engagementsNationalClubCode?.value || "",
@@ -13515,7 +13538,12 @@
           postalCode: elements.engagementsNationalClubPostalCode?.value || "",
           active: elements.engagementsNationalClubActive?.checked === true
         }
-      });
+      };
+      if(!clubId && global.LivePalmesEnvironment?.sportingDataSource === "nap") {
+        if(!engagementNationalClubCreationRetry || JSON.stringify(engagementNationalClubCreationRetry.club)!==JSON.stringify(payload.club)) engagementNationalClubCreationRetry = {...payload,creationId:global.crypto.randomUUID()};
+      }
+      const result = await callFunction("saveEngagementNationalClub", !clubId && engagementNationalClubCreationRetry ? engagementNationalClubCreationRetry : payload);
+      engagementNationalClubCreationRetry = null;
       const saved = result.club || {};
       engagementNationalClubs = engagementNationalClubs.filter((club) => club.clubId !== saved.clubId).concat(saved)
         .sort((left, right) => String(left.clubName || "").localeCompare(String(right.clubName || ""), "fr"));
@@ -13664,6 +13692,7 @@
     try {
       await callFunction("setEngagementNationalClubSwimmerStatus", {
         swimmerId: cleanId,
+        expectedFingerprint: swimmer.napActivityFingerprint,
         active
       });
       engagementNationalSwimmersLoaded = false;
@@ -13926,14 +13955,15 @@
         ? `Fusionnee vers ${person.mergedIntoName || person.mergedIntoId || "une autre fiche"}`
         : active ? "Actif" : "Desactive";
       const sourceId = person.id || "";
-      const mergeOpen = engagementNationalPeopleMergeMode && engagementNationalPersonMergeSourceId === sourceId;
+      const historical = person.napSource && person.nativePersonKind === "leaders";
+      const mergeOpen = !historical && engagementNationalPeopleMergeMode && engagementNationalPersonMergeSourceId === sourceId;
       const mergeCandidates = engagementNationalPersonMergeCandidates(sourceId);
       const alertLabel = engagementNationalPersonDuplicateAlertLabel(person, people);
       const clubLabel = clubDisplayLabel(person, { fallback: "Club non renseigné" });
       return `
         <tr class="admin-engagements-national-person-row" data-engagement-national-person-id="${escapeHtml(sourceId)}" data-active="${active ? "true" : "false"}" data-merged="${merged ? "true" : "false"}">
-          <td class="admin-engagements-national-choice">${merged ? "" : `<input type="radio" name="adminEngagementsNationalPersonKeep" value="${escapeHtml(sourceId)}" title="Conserver cette fiche" data-engagement-national-person-keep>`}</td>
-          <td class="admin-engagements-national-choice">${merged ? "" : `<input type="checkbox" value="${escapeHtml(sourceId)}" title="Fusionner cette fiche vers la fiche conservee" data-engagement-national-person-merge-check>`}</td>
+          <td class="admin-engagements-national-choice">${merged || historical ? "" : `<input type="radio" name="adminEngagementsNationalPersonKeep" value="${escapeHtml(sourceId)}" title="Conserver cette fiche" data-engagement-national-person-keep>`}</td>
+          <td class="admin-engagements-national-choice">${merged || historical ? "" : `<input type="checkbox" value="${escapeHtml(sourceId)}" title="Fusionner cette fiche vers la fiche conservee" data-engagement-national-person-merge-check>`}</td>
           <td class="admin-engagements-national-merge-only"><span class="admin-engagements-duplicate-badge" data-score="${escapeHtml(alertLabel.score)}">${escapeHtml(alertLabel.label)}</span></td>
           <td><strong>${escapeHtml(person.lastName || name)}</strong></td>
           <td>${escapeHtml(person.firstName || "")}</td>
@@ -13942,14 +13972,14 @@
           <td>${escapeHtml(clubLabel)}</td>
           <td>${escapeHtml(statusLabel)}</td>
           <td class="admin-engagements-national-table-actions">
-            <details class="admin-national-row-menu">
+            ${historical ? '<span>Déclaration historique</span>' : `<details class="admin-national-row-menu">
               <summary aria-label="Actions pour ${escapeHtml(name)}" title="Actions">&#8942;</summary>
               <div>
                 ${merged || !engagementNationalPeopleMergeMode ? "" : `<button class="ghost-button" type="button" data-engagement-national-person-action="merge" data-engagement-national-person-id="${escapeHtml(sourceId)}">Choisir une autre cible</button>`}
                 ${merged ? "" : `<button class="ghost-button" type="button" data-engagement-national-person-action="${active ? "disable" : "enable"}" data-engagement-national-person-id="${escapeHtml(sourceId)}">${active ? "Désactiver" : "Réactiver"}</button>`}
                 <button class="ghost-button admin-engagements-danger-button" type="button" data-engagement-national-person-action="delete" data-engagement-national-person-id="${escapeHtml(sourceId)}">Supprimer</button>
               </div>
-            </details>
+            </details>`}
           </td>
         </tr>
         ${mergeOpen ? `
@@ -14002,7 +14032,7 @@
 
   function updateEngagementNationalPeopleStatus(filteredCount = engagementNationalPeople.length) {
     if (!elements.engagementsNationalPeopleStatus) return;
-    const total = engagementNationalPeople.length;
+    const total = visibleNativePeople(engagementNationalPeople).length;
     if (!total) {
       elements.engagementsNationalPeopleStatus.textContent = "Aucun officiel chargé.";
       elements.engagementsNationalPeopleStatus.dataset.tone = "ok";
@@ -14015,10 +14045,34 @@
     elements.engagementsNationalPeopleStatus.dataset.tone = "ok";
   }
 
+  // Presentation only: retain every native declaration and its competition ID.
+  // Missing identity fields never justify collapsing historical namesakes.
+  function visibleNativePeople(people) {
+    const key = person => {
+      if (!person.napSource || !person.firstName || !person.lastName || !person.birthDate || !person.clubId) return null;
+      return JSON.stringify([person.clubId, person.lastName.trim(), person.firstName.trim(), person.birthDate]);
+    };
+    const officials = new Map();
+    for (const person of people) {
+      if (person.nativePersonKind !== "officials" || !person.roles?.teamLeader) continue;
+      const identity = key(person);
+      if (identity) officials.set(identity, (officials.get(identity) || 0) + 1);
+    }
+    const seen = new Set();
+    return people.filter(person => {
+      if (person.nativePersonKind !== "leaders") return true;
+      const identity = key(person);
+      if (!identity) return true;
+      if (officials.get(identity) === 1 || seen.has(identity)) return false;
+      seen.add(identity);
+      return true;
+    });
+  }
+
   function filteredEngagementNationalPeople() {
     const terms = normalizedEngagementClubSearch(elements.engagementsNationalPeopleSearch?.value || "").split(/\s+/).filter(Boolean);
     const status = elements.engagementsNationalPeopleStatusFilter?.value || "";
-    return engagementNationalPeople.filter((person) => {
+    return visibleNativePeople(engagementNationalPeople).filter((person) => {
       if (!engagementNationalStatusMatches(person, status)) return false;
       if (!terms.length) return true;
       const haystack = normalizedEngagementClubSearch([
@@ -14043,7 +14097,7 @@
     const source = engagementNationalPeople.find((person) => person.id === sourceId);
     if (!source) return [];
     return engagementNationalPeople
-      .filter((person) => person.id && person.id !== sourceId)
+      .filter((person) => person.id && person.id !== sourceId && !(person.napSource && person.nativePersonKind === "leaders"))
       .filter((person) => person.status !== "merged" && !person.mergedIntoId)
       .sort((left, right) =>
         Number(right.clubId === source.clubId) - Number(left.clubId === source.clubId) ||
@@ -14112,9 +14166,9 @@
     renderEngagementNationalPeople();
   }
 
-  async function loadEngagementNationalPeople({ force = false, silent = false } = {}) {
+  async function loadEngagementNationalPeople({ force = false, silent = false, append = false } = {}) {
     if (!canDeleteEngagementCompetitionDirectly() || engagementNationalPeopleLoading) return;
-    if (engagementNationalPeopleLoaded && !force) return;
+    if (engagementNationalPeopleLoaded && !force && !append) return;
     engagementNationalPeopleLoading = true;
     if (elements.engagementsNationalPeopleRefresh) elements.engagementsNationalPeopleRefresh.disabled = true;
     if (elements.engagementsNationalPeopleStatus && !silent) {
@@ -14122,8 +14176,11 @@
       elements.engagementsNationalPeopleStatus.dataset.tone = "loading";
     }
     try {
-      const result = await callFunction("listEngagementNationalClubPeople", { limit: 120 });
-      engagementNationalPeople = Array.isArray(result.people) ? result.people : [];
+      const result = await callFunction("listEngagementNationalClubPeople", { limit: 120, ...(append && engagementNationalPeopleCursor ? {cursor:engagementNationalPeopleCursor} : {}) });
+      const page = Array.isArray(result.people) ? result.people : [];
+      engagementNationalPeople = append ? Array.from(new Map([...engagementNationalPeople,...page].map(item=>[item.id,item])).values()) : page;
+      engagementNationalPeopleCursor = result.hasMore === true ? result.nextCursor : null;
+      if(elements.engagementsNationalPeopleMore) elements.engagementsNationalPeopleMore.hidden = !engagementNationalPeopleCursor;
       engagementNationalPeopleLoaded = true;
       markLastRefresh(elements.engagementsNationalPeopleStatus);
       renderEngagementNationalPeople();
@@ -14158,6 +14215,7 @@
     try {
       await callFunction("setEngagementNationalClubPersonStatus", {
         personId: cleanId,
+        expectedFingerprint: person.napFingerprint,
         active
       });
       engagementNationalPeopleLoaded = false;
@@ -15136,7 +15194,7 @@
           <span role="columnheader">Statut</span>
           <span role="columnheader">Actions</span>
         </div>
-        ${[...engagementClubPeople]
+        ${visibleNativePeople(engagementClubPeople)
           .sort((left, right) => `${left.lastName || ""} ${left.firstName || ""}`.localeCompare(`${right.lastName || ""} ${right.firstName || ""}`, "fr", { sensitivity: "base" }))
           .map((person, index) => {
       const name = [person.lastName, person.firstName].filter(Boolean).join(" ") || "Personne sans nom";
@@ -17414,6 +17472,7 @@
         button.closest("[data-engagement-swimmer-change-request]")
       );
     });
+    elements.engagementsNationalPeopleMore?.addEventListener("click", () => loadEngagementNationalPeople({append:true}));
     elements.engagementsNationalPeopleRefresh?.addEventListener("click", () => loadEngagementNationalPeople({ force: true }));
     elements.engagementsNationalPeopleList?.addEventListener("click", (event) => {
       const button = event.target.closest("[data-engagement-national-person-action]");

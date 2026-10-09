@@ -1,0 +1,18 @@
+"use strict";
+const assert=require("node:assert/strict"),fs=require("node:fs"),vm=require("node:vm");
+const source=fs.readFileSync(require.resolve("../assets/livepalmes-admin-portal.js"),"utf8");
+const a=source.indexOf("  function visibleNativePeople("),b=source.indexOf("  function filteredEngagementNationalPeople(",a);
+const context={};vm.createContext(context);vm.runInContext(source.slice(a,b),context);
+const leader=(id,extra={})=>({id,napSource:true,nativePersonKind:"leaders",firstName:"Antoine",lastName:"FAUVEAU",birthDate:"1980-01-01",clubId:"106",nativeCompetitionId:id,...extra});
+const first=leader("one"),second=leader("two"),otherClub=leader("other",{clubId:"107"}),namesake=leader("namesake",{birthDate:"1981-01-01"});
+const rows=[first,second,otherClub,namesake],snapshot=JSON.stringify(rows);
+assert.equal(context.visibleNativePeople(rows).length,3);assert.equal(JSON.stringify(rows),snapshot,"No mutation of history or native IDs");
+assert.equal(context.visibleNativePeople([first,leader("unknown",{birthDate:""}),leader("unknown2",{birthDate:""})]).length,3);
+const official=leader("official",{nativePersonKind:"officials",roles:{teamLeader:true}});
+assert.deepEqual(Array.from(context.visibleNativePeople([first,second,official]),p=>p.id),["official"]);
+assert.equal(context.visibleNativePeople([first,official,{...official,id:"another-official"}]).length,3,"Ambiguous reusable identities stay separate");
+assert.equal(context.visibleNativePeople([first,leader("different-case",{firstName:"antoine"})]).length,2,"No fuzzy matching");
+assert.equal(context.visibleNativePeople([first,second]).length,1,"Historical declarations arriving on separate pages collapse at rendering");
+assert.match(source,/visibleNativePeople\(engagementClubPeople\)/);
+assert.match(source,/visibleNativePeople\(engagementNationalPeople\)\.filter/);
+console.log("NAP people display: exact identity, pagination, retained history, missing dates, namesakes and ambiguous reusable records passed.");

@@ -26,7 +26,7 @@ async function change(connection,input,audit) {
   if(hash(row)!==saved.afterHash) {
     if(hash(row)!==saved.beforeHash) throw new TypeError("La fiche a change. Rechargez avant d'enregistrer.");
     if((await query("SELECT TRIGGER_NAME FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA=DATABASE() AND EVENT_OBJECT_TABLE='nageurs' LIMIT 1")).length) throw new TypeError("Declencheur NAP a verifier.");
-    const result=await query(`UPDATE nageurs SET actif=? WHERE ${COLUMNS.map(k=>nativeEqual(`\`${k}\``)).join(" AND ")} LIMIT 1`,[saved.after.actif,...COLUMNS.map(k=>saved.before[k])]);
+    const result=await query(`UPDATE nageurs SET actif=? WHERE id=? AND ${COLUMNS.map(k=>nativeEqual(`\`${k}\``)).join(" AND ")} LIMIT 1`,[saved.after.actif,id,...COLUMNS.map(k=>saved.before[k])]);
     if(result.affectedRows!==1) throw new TypeError("La fiche a change. Rechargez avant d'enregistrer.");
   }
   const verified=await read();

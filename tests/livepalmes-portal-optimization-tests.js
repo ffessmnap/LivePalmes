@@ -1755,7 +1755,7 @@ assert.ok(portal.includes('callFunction("saveEngagementNationalClub"'));
 assert.ok(portal.includes('callFunction("getPublicEngagementClubDirectory"'));
 assert.ok(portal.includes('callFunction("deleteEngagementNationalClub"'));
 assert.ok(portal.includes('club.active !== false && normalizedRegionKey(club.regionId) === regionKey'));
-assert.ok(portal.includes('const ENGAGEMENT_NATIONAL_CLUB_CACHE_KEY = "livepalmes.portal.nationalClubs.v1";'));
+assert.ok(portal.includes('const ENGAGEMENT_NATIONAL_CLUB_CACHE_KEY = "livepalmes.portal.nationalClubs.v2";'));
 assert.ok(portal.includes("function readEngagementNationalClubCache"));
 assert.ok(portal.includes("function mergeEngagementNationalClubDirectory"));
 assert.ok(portal.includes("engagementNationalClubSyncStart(cached.syncedThrough)"));

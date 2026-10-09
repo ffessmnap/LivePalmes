@@ -2,6 +2,14 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 9 octobre — Annuaires NAP (préparation PR #217, non déployée)
+
+- Lecture nationale des clubs dans NAP, création et correction natives avec sauvegarde technique, reprise et contrôle des doublons ; tests simulés et plans SQL réels en lecture seule vérifiés.
+- Index `clubs(federal_club,num_club)` ajouté après accord spécifique et sauvegarde de structure ; aucun club modifié.
+- Annuaires nationaux paginés : au plus deux requêtes indexées et 202 lignes par page. Aucun chargement automatique de toutes les pages.
+- Déclarations historiques de chefs d’équipe conservées. Affichage regroupé uniquement sur nom, prénom, date de naissance et club strictement identiques ; priorité à une unique personne réutilisable correspondante. Identités incomplètes et correspondances ambiguës conservées séparément. Aucun rapprochement écrit dans NAP.
+- Syntaxe des 693 fichiers et suites NAP réussies localement ; arrêt du contrôle global sur le test de workflow dépendant de Bash sous Windows (`main / access`), comme précédemment. Contrôle Linux CI, vérification commune TEST et contrôle visuel encore nécessaires ; suppressions/fusions nationales natives restent à terminer avant bilan PROD.
+
 ### 9 octobre — Statut des nageurs NAP (préparation, non déployé)
 
 - Création club raccordée à NAP : licence obligatoire conservée comme chaîne, contrôles de doublons bornés, inversion bloquée, nouveau nageur actif. Intention sauvegardée avant insertion et identifiant généré mémorisé avant confirmation ; reprise client avec la même demande. Budget initial maximum dix appels SQL, 426 candidats au plus ; aucune copie dans les anciennes collections sportives. Alertes confirmées conservées dans le journal technique.
