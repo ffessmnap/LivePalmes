@@ -56,8 +56,7 @@
 }
 
 #livepalmes-license-control-panel > header div,
-.livepalmes-license-control-summary,
-.livepalmes-license-control-results td {
+.livepalmes-license-control-summary {
   display: flex;
   flex-direction: column;
   gap: 2px;
@@ -226,6 +225,7 @@
 
 .livepalmes-license-control-results table {
   width: 100%;
+  min-width: 640px;
   border-collapse: collapse;
   font-size: 12px;
 }
@@ -292,3 +292,50 @@
     animation-duration: 1.8s;
   }
 }
+
+.livepalmes-license-control-report {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 6px 8px;
+  padding: 10px;
+  border: 1px solid #d8dee8;
+  border-radius: 6px;
+  background: #f8fafc;
+}
+.livepalmes-license-control-report label {
+  grid-column: 1 / -1;
+  color: #334155;
+  font-size: 12px;
+}
+.livepalmes-license-control-report select {
+  box-sizing: border-box;
+  min-width: 0;
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #94a3b8;
+  border-radius: 6px;
+  background: #fff;
+  color: #172033;
+}
+.livepalmes-license-control-report button {
+  padding: 8px 11px;
+  border: 1px solid #1559a6;
+  border-radius: 6px;
+  background: #fff;
+  color: #1559a6;
+  cursor: pointer;
+}
+.livepalmes-license-control-report button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+@media (max-width: 640px) {
+  .livepalmes-license-control-report { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* Les cellules gardent leur disposition de tableau ; seul le tableau défile sur mobile. */
+.livepalmes-license-control-body > * { flex-shrink: 0; }
+.livepalmes-license-control-results td strong,
+.livepalmes-license-control-results td small { display: block; }
+.livepalmes-license-control-results td small { margin-top: 2px; }
