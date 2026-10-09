@@ -8,7 +8,7 @@ async function run(){
   const calls=[];
   const automation={COLLECTION:'engagementClosureQueue',currentEvent:()=>true,processEvent:async()=>{calls.push('process');return {done:true,jobCount:1,attachmentCount:1};},adoptOpenCompetitions:async(_db,input)=>{calls.push('adopt');assert.equal(input.season,2027);return {openingCount:0};}};
   let national=true,allowed=true;
-  const sandbox={exports:{},ENVIRONMENT:{projectId:'livepalmes-test'},ENGAGEMENT_NOTIFICATION_PREVIEW_OPTIONS:{},ENGAGEMENT_NOTIFICATION_MAIL_SECRETS:['smtp'],defineSecret:name=>name,onCall:(_options,handler)=>handler,
+  const sandbox={exports:{},ENVIRONMENT:{sportingDataSource:"nap",projectId:'livepalmes-test'},ENGAGEMENT_NOTIFICATION_PREVIEW_OPTIONS:{},ENGAGEMENT_NOTIFICATION_MAIL_SECRETS:['smtp'],defineSecret:name=>name,onCall:(_options,handler)=>handler,
     deliverNativeNotificationJobs:async id=>{assert.equal(id,'5162');return {sent:1};},
     HttpsError:class extends Error{constructor(code,message){super(message);this.code=code;}},
     engagementAccessContext:async()=>({national}),assertCanManageEngagementCompetition:()=>{if(!allowed)throw Error('denied');},
@@ -33,15 +33,15 @@ async function run(){
   const adopted=await sandbox.exports.processNapCompetitionNotifications({data:{action:'adopt-open-season',season:2027}});
   assert.equal(adopted.openingCount,0);assert.deepEqual(calls,['adopt']);
   calls.length=0;sandbox.ENVIRONMENT.projectId='livepalmes';
-  await assert.rejects(sandbox.exports.processNapCompetitionNotifications({data:{action:'process'}}),error=>error.code==='failed-precondition');
-  assert.deepEqual(calls,[],'PROD cannot execute TEST simulation');
+  allowed=true; await sandbox.exports.processNapCompetitionNotifications({data:{action:'process',competitionId:'5162'}});
+  assert.deepEqual(calls,['competition','engagementClosureQueue','process'],'PROD uses the same NAP processing with authorization');
   const schedulerStart=source.indexOf('const ENGAGEMENT_CLOSURE_SCHEDULER_OPTIONS ='),schedulerEnd=source.indexOf('\n};',schedulerStart)+3;
   for(const projectId of ['livepalmes-test','livepalmes']){
-    const options={ENVIRONMENT:{projectId},REGION:'europe-west1',defineSecret:name=>name,ENGAGEMENT_NOTIFICATION_MAIL_SECRETS:['smtp']};
+    const options={ENVIRONMENT:{sportingDataSource:"nap",projectId},REGION:'europe-west1',defineSecret:name=>name,ENGAGEMENT_NOTIFICATION_MAIL_SECRETS:['smtp']};
     vm.runInNewContext(source.slice(schedulerStart,schedulerEnd)+'\nthis.options=ENGAGEMENT_CLOSURE_SCHEDULER_OPTIONS;',options);
-    assert.deepEqual(Array.from(options.options.secrets),projectId==='livepalmes-test'?['LIVEPALMES_NAP_PASSWORD','smtp']:['smtp']);
+    assert.deepEqual(Array.from(options.options.secrets),['LIVEPALMES_NAP_PASSWORD','smtp']);
   }
-  assert.match(source.slice(source.indexOf('exports.closeDueEngagementCompetitions ='),source.indexOf('exports.saveEngagementClubTeamLeader =')),/if\(ENVIRONMENT.projectId==='livepalmes-test'\)[\s\S]*return null;[\s\S]*engagementCompetitions/);
+  assert.match(source.slice(source.indexOf('exports.closeDueEngagementCompetitions ='),source.indexOf('exports.saveEngagementClubTeamLeader =')),/if\(ENVIRONMENT.sportingDataSource === "nap"\)[\s\S]*return null;[\s\S]*engagementCompetitions/);
   let armed=0;
   const armSandbox={nativePortalCompetition:async(_id,authorize)=>{authorize({});return {id:'legacy-nap-5162',entryStatus:'open',entryDeadlineAt:'2026-11-06T18:00:00.000Z'};},
     assertCanManageEngagementCompetition:()=>{},db:{collection:name=>{assert.equal(name,'auditLogs');return {doc:()=>({get:async()=>({exists:true,data:()=>({target:{notificationOpeningRequested:true}})})})};}},

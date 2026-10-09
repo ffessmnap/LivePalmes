@@ -7,6 +7,8 @@
     production: {
       name: "production",
       isTest: false,
+      sportingDataSource: "nap",
+      napReaderUrl: "https://europe-west1-livepalmes.cloudfunctions.net/readNapPublicSwimmer",
       firebaseConfig: {
         apiKey: "AIzaSyC4sh5R8eU9SAnEsqyji6aJKnpUGgbE-AM",
         authDomain: "livepalmes.firebaseapp.com",
@@ -24,6 +26,8 @@
     test: {
       name: "test",
       isTest: true,
+      sportingDataSource: "nap",
+      napReaderUrl: "https://europe-west1-livepalmes-test.cloudfunctions.net/readNapPublicSwimmer",
       firebaseConfig: {
         apiKey: "AIzaSyAFOL4tPzNm3NwDaEJ-tdNoBOer69TrrkY",
         authDomain: "livepalmes-test.firebaseapp.com",

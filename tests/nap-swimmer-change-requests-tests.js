@@ -24,7 +24,7 @@ function fixture(options = {}) {
       if (query.sql.includes("GET_LOCK")) { const acquired = !locked; if (acquired) locked = true; return [[{ acquired: acquired ? 1 : 0 }]]; }
       if (query.sql.includes("RELEASE_LOCK")) { locked = false; return [[{ released: 1 }]]; }
       if (query.sql.includes("FORCE INDEX")) return [[]];
-      if (query.sql.startsWith("SELECT")) { assert.ok(query.sql.includes("WHERE id=? LIMIT 1")); assert.equal(params[0], 42); return [[{ ...row }]]; }
+      if (query.sql.startsWith("SELECT")) { assert.match(query.sql,/WHERE id=\?(?: AND NOT EXISTS \(SELECT 1 FROM livepalmes_swimmer_merges WHERE swimmer_id=nageurs.id\))? LIMIT 1/); assert.equal(params[0], 42); return [[{ ...row }]]; }
       assert.ok(query.sql.startsWith("UPDATE nageurs SET")); assert.ok(audits.size, "durable backup must precede SQL");
       sqlWrites++; row.nom = params[0]; return [{ affectedRows: 1 }];
     }, release: () => { releases++; }, destroy: () => { locked = false; }
@@ -39,7 +39,7 @@ function fixture(options = {}) {
     }
   });
   const sandbox = { exports: {}, onCall: (settings, callback) => Object.assign(callback, { settings }), ENGAGEMENT_SWIMMER_CORRECTION_OPTIONS: {}, ENGAGEMENT_SWIMMER_CORRECTION_MAIL_OPTIONS: { secrets: [] },
-    ENVIRONMENT: { projectId: options.project || "livepalmes-test" }, defineSecret: value => value, process: { env: {} }, TypeError, RangeError, HttpsError: CallableError,
+    ENVIRONMENT: {sportingDataSource:"nap", projectId: options.project || "livepalmes-test" }, defineSecret: value => value, process: { env: {} }, TypeError, RangeError, HttpsError: CallableError,
     cleanText: value => String(value || ""), cleanFirestoreValue: value => value, stableHash,
     ENGAGEMENT_SWIMMER_CHANGE_REQUESTS_COLLECTION: "requests",
     engagementClubAccessContext: async () => { if (options.clubDenied) throw new CallableError("permission-denied", "denied"); return context; },
@@ -65,7 +65,7 @@ function fixture(options = {}) {
 (async () => {
   const settingsTest=fixture(),settingsProd=fixture({project:"livepalmes"});
   assert.deepEqual([...settingsTest.sandbox.exports.resolveEngagementSwimmerChangeRequest.settings.secrets],["LIVEPALMES_NAP_PASSWORD"]);
-  assert.equal(settingsProd.sandbox.exports.resolveEngagementSwimmerChangeRequest.settings,settingsProd.sandbox.ENGAGEMENT_SWIMMER_CORRECTION_MAIL_OPTIONS,"production retains its email bindings");
+  assert.deepEqual([...settingsProd.sandbox.exports.resolveEngagementSwimmerChangeRequest.settings.secrets],["LIVEPALMES_NAP_PASSWORD"],"production uses NAP identity correction");
   let reads = 0;
   const connection = { execute: async (query, params) => { reads++; assert.equal(query.sql, "SELECT id,nom,prenom,date,sexe,number,club FROM nageurs WHERE id=? LIMIT 1"); assert.deepEqual(params, [42]); return [[before]]; } };
   const prepared = await prepareRequest(connection, input, context);

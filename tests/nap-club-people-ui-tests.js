@@ -4,7 +4,7 @@ const source=fs.readFileSync(require.resolve("../assets/livepalmes-admin-portal.
 const start=source.indexOf("  async function loadEngagementClubPeople(");
 const end=source.indexOf("\n  async function saveEngagementClubPerson(",start);
 let replies=[],inputs=[];
-const sandbox={global:{LivePalmesEnvironment:{isTest:true}},canUse:()=>true,engagementClubPeopleLoading:false,engagementClubPeopleLoaded:false,
+const sandbox={global:{LivePalmesEnvironment:{sportingDataSource:"nap",isTest:true}},canUse:()=>true,engagementClubPeopleLoading:false,engagementClubPeopleLoaded:false,
   engagementClubPeople:[],engagementClubPeopleHasMore:false,engagementClubPeopleCursor:null,engagementClubPeopleRequestVersion:0,
   activeEngagementsTab:"clubPeople",activeEngagementsDetailTab:"team",elements:{engagementsClubPeopleAddButton:{},engagementsClubPeopleLoadMore:{},engagementsClubPeopleStatus:{dataset:{}}},
   renderEngagementClubPeople:()=>{},renderEngagementClubPersonSwimmerOptions:()=>{},renderEngagementClubTeamPersonOptions:()=>{},renderEngagementClubOfficials:()=>{},

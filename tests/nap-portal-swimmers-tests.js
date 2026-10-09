@@ -50,7 +50,7 @@ function fixture(options = {}) {
   assert.ok(update.includes("oldLivepalmesLinksIgnored: true"));
   let nativeCalls=0,auditWrites=0;
   class NativeError extends Error {constructor(code,message){super(message);this.code=code;}}
-  const nativeSandbox={exports:{},onCall:(_,callback)=>callback,ENGAGEMENT_SWIMMER_CORRECTION_OPTIONS:{},ENVIRONMENT:{projectId:"livepalmes-test"},defineSecret:value=>value,TypeError,RangeError,HttpsError:NativeError,process:{env:{}},cleanText:value=>String(value || ""),
+  const nativeSandbox={exports:{},onCall:(_,callback)=>callback,ENGAGEMENT_SWIMMER_CORRECTION_OPTIONS:{},ENVIRONMENT:{sportingDataSource:"nap",projectId:"livepalmes-test"},defineSecret:value=>value,TypeError,RangeError,HttpsError:NativeError,process:{env:{}},cleanText:value=>String(value || ""),
     engagementAccessContext:async()=>({national:true,uid:"trusted-national"}),
     db:{collection:name=>{assert.equal(name,"auditLogs","old sports database must never be read or written");return {doc:()=>({get:async()=>({exists:false}),create:async()=>auditWrites++})};}},
     writeAuditLogOnce:async(_,uid)=>{assert.equal(uid,"trusted-national");auditWrites++;},
@@ -63,9 +63,9 @@ function fixture(options = {}) {
   vm.runInNewContext(update,nativeSandbox);
   await assert.rejects(nativeSandbox.exports.updateEngagementNationalSwimmerIdentity({data:{source:"engagement",proposed:{}}}),error=>error.code==="failed-precondition");assert.equal(nativeCalls,0);
   await nativeSandbox.exports.updateEngagementNationalSwimmerIdentity({data:{napSource:true,swimmerId:"42",actorUid:"spoof",proposed:{lastName:"CORRIGE"},reason:"Correction"}});assert.equal(nativeCalls,1);assert.equal(auditWrites,2);
-  assert.ok(update.includes('ENVIRONMENT.projectId === "livepalmes-test"'));
+  assert.ok(update.includes('ENVIRONMENT.sportingDataSource === "nap"'));
   const browser = fs.readFileSync("assets/livepalmes-admin-portal.js", "utf8");
-  assert.ok(browser.includes("global.LivePalmesEnvironment.isTest ? Promise.resolve([]) : searchEngagementAdminPublicSwimmers"));
+  assert.ok(browser.includes("(global.LivePalmesEnvironment.sportingDataSource === \"nap\") ? Promise.resolve([]) : searchEngagementAdminPublicSwimmers"));
   assert.ok(browser.includes('expectedFingerprint: elements.engagementsSwimmerCorrectionForm?.dataset.expectedFingerprint'));
   assert.ok(source.includes("licenseNumber: next.licenseNumber ?? item.licenseNumber"));
   const accessCode = source.slice(source.indexOf("async function engagementAccessContext("), source.indexOf("async function accessManagementContext("));
@@ -77,7 +77,7 @@ function fixture(options = {}) {
     { auth: { uid: "disabled" }, status: "inactive", capabilities: { "engagements.national.manage": true }, expected: "permission-denied" }
   ]) {
     let napCalls = 0;
-    const sandbox = { exports: {}, onCall: (options, callback) => callback, CALLABLE_OPTIONS: {}, ENGAGEMENT_SWIMMER_CORRECTION_OPTIONS: {}, ENVIRONMENT: { projectId: "livepalmes-test" }, defineSecret: value => value,
+    const sandbox = { exports: {}, onCall: (options, callback) => callback, CALLABLE_OPTIONS: {}, ENGAGEMENT_SWIMMER_CORRECTION_OPTIONS: {}, ENVIRONMENT: {sportingDataSource:"nap", projectId: "livepalmes-test" }, defineSecret: value => value,
       ADMIN_UIDS: new Set(), FUNCTIONS_EMULATOR_ACTIVE: false, HttpsError: AccessError, cleanText: value => String(value || ""), normalizedAccessScope: () => ({}), competitionEmailNotificationsEnabled: () => true,
       db: { collection: name => { assert.equal(name, "users"); return { doc: () => ({ get: async () => ({ exists: true, data: () => ({ status: scenario.status, capabilities: scenario.capabilities }) }) }) }; } },
       require: () => { napCalls++; throw new Error("NAP must not be accessed"); } };
@@ -91,7 +91,7 @@ function fixture(options = {}) {
   const clubConnection = { execute: async (query, values) => {
     clubQueries++;
     assert.ok(query.sql.includes("FORCE INDEX (livepalmes_club_id)"));
-    assert.ok(query.sql.includes("WHERE n.club=? ORDER BY n.id LIMIT 801"));
+    assert.ok(query.sql.includes("WHERE n.club=? AND m.swimmer_id IS NULL ORDER BY n.id LIMIT 801"));
     assert.deepEqual(values, ["106"]);
     return [[original]];
   } };

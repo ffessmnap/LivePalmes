@@ -1,4 +1,5 @@
 "use strict";
+const {notMerged}=require("./nap-swimmer-merge-state");
 const { createHash } = require("node:crypto");
 const {nativeEqual}=require("./nap-native-compare");
 const { swimmerId } = require("./nap-direct-swimmer");
@@ -36,7 +37,7 @@ async function previewIdentityChange(pool, input) {
   const [rows] = await pool.execute({ sql: "SELECT id,nom,prenom,date,sexe,club FROM nageurs WHERE id=? LIMIT 1", timeout: 10000 }, [id]);
   if (!rows.length) throw new TypeError("Nageur introuvable.");
   const plan = planIdentityChange(rows[0], input.proposed, input.expectedFingerprint);
-  const [matches] = await pool.execute({ sql: "SELECT id FROM nageurs FORCE INDEX (nageurs_clef) WHERE nom=? AND prenom=? AND date=? AND id<>? LIMIT 3", timeout: 10000 }, [plan.after.nom, plan.after.prenom, plan.after.date, id]);
+  const [matches] = await pool.execute({ sql: `SELECT id FROM nageurs FORCE INDEX (nageurs_clef) WHERE nom=? AND prenom=? AND date=? AND id<>? AND ${notMerged()} LIMIT 3`, timeout: 10000 }, [plan.after.nom, plan.after.prenom, plan.after.date, id]);
   return { ...plan, possibleDuplicateIds: matches.map(row => String(row.id)) };
 }
 module.exports = { fingerprint, planIdentityChange, previewIdentityChange };

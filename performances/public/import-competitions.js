@@ -83,7 +83,7 @@
   let correctionSelectedSwimmer = null;
   let correctionRows = [];
   let correctionSelectedRow = null;
-  const nativeCorrections=()=>global.LivePalmesEnvironment?.isTest===true;
+  const nativeCorrections=()=>global.LivePalmesEnvironment?.sportingDataSource === "nap";
   let nativeCorrectionCursor=0,nativeCorrectionMore=false,nativeCorrectionNational=false;
   let correctionPublicationMonitorToken = 0;
   let correctionPublicationResumeStarted = "";

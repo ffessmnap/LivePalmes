@@ -31,7 +31,7 @@ async function readNativeClubEntry(connection, input, authorize) {
     `SELECT m.id,m.relais,m.pos,m.nageur,n.nom,n.prenom,n.date,n.sexe,n.number,n.club,${licenseState.projection()} FROM engagements_relayeurs m FORCE INDEX (livepalmes_relais_pos_id) LEFT JOIN nageurs n ON n.id=m.nageur ${licenseState.join()} WHERE m.relais IN (${placeholders(relayIds)}) ORDER BY m.relais,m.pos,m.id LIMIT 1201`,
     relayIds, LIMITS.members) : [];
   const officials = await bounded(connection,
-    "SELECT e.id,e.compet,e.officiel,e.club,o.nom,o.prenom,o.date FROM officielsengager e FORCE INDEX (livepalmes_compet_club_id) LEFT JOIN officiels o ON o.id=e.officiel WHERE e.compet=? AND e.club=? ORDER BY e.id LIMIT 201",
+    "SELECT e.id,e.compet,e.officiel,e.club,COALESCE(h.nom,o.nom) AS nom,COALESCE(h.prenom,o.prenom) AS prenom,COALESCE(h.date,o.date) AS date FROM officielsengager e FORCE INDEX (livepalmes_compet_club_id) LEFT JOIN officiels o ON o.id=e.officiel LEFT JOIN livepalmes_deleted_people_history h ON h.engagement_id=e.id AND h.person_id=e.officiel AND h.competition_id=e.compet AND h.entry_club=e.club WHERE e.compet=? AND e.club=? ORDER BY e.id LIMIT 201",
     [competitionId, clubId], LIMITS.officials);
   // 'pourclub' is used by IntraNAP for a leader representing another club.
   // Keep both native fields; never turn a missing leader into a waiver.

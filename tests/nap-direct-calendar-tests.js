@@ -85,7 +85,7 @@ const { readCompetitionResults } = require("../functions/nap-direct-competition-
   const vm = require("node:vm"), fs = require("node:fs"), path = require("node:path");
   const requests = [];
   let revision = 1, available = true;
-  const browser = { window: { LivePalmesEnvironment: { isTest: true, publicStorageUrl: () => "https://old-data.invalid/calendar" }, location: { hostname: "livepalmes-test.web.app" } }, URL,
+  const browser = { window: { LivePalmesEnvironment: {sportingDataSource:"nap",napReaderUrl:"https://europe-west1-livepalmes-test.cloudfunctions.net/readNapPublicSwimmer", isTest: true, publicStorageUrl: () => "https://old-data.invalid/calendar" }, location: { hostname: "livepalmes-test.web.app" } }, URL,
     fetch: async (url, options) => { requests.push({ url: String(url), options }); return { ok: available, json: async () => ({ source: "nap", event: { id: "legacy-nap-2", name: `Revision ${revision}` } }) }; } };
   vm.runInNewContext(fs.readFileSync(path.join(__dirname, "../assets/public/livepalmes-public-calendar.js"), "utf8"), browser);
   assert.equal((await browser.window.LivePalmesPublicCalendar.json("events/legacy-nap-2.json")).name, "Revision 1");
