@@ -1,7 +1,7 @@
 "use strict";
 const assert=require("node:assert/strict"),fs=require("node:fs"),vm=require("node:vm");
 const source=fs.readFileSync("functions/index.js","utf8");
-const start=source.indexOf("async function generateNativeClubRecapPdf("),end=source.indexOf("exports.listEngagementCompetitionClubRecaps",start);
+const start=source.indexOf("async function generateNativeClubRecapPdf("),end=source.indexOf("async function nativeAdminCompetitionEntries(",start);
 class HttpsError extends Error{constructor(code,message){super(message);this.code=code;}}
 const pack={clubId:"106",swimmers:[{id:"1"}],relays:[{id:2}],individual:[{tps:"14200"}]};
 let read=0,built=0,denied=false,wrongClub=false,fail=false;

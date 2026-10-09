@@ -10932,10 +10932,12 @@ function nativeNotificationAutomationServices() {
     txt:(competition,entries,clubs)=>buildEngagementCompetitionTxt(competition,entries.map(entry=>({...entry,swimmers:entry.swimmers.map(person=>({...person,individualEntries:person.individualEntries.map(course=>course.nativeTime==='599999'?{...course,entryTime:'',manualEntryTime:'',entryTimeValue:0,entryTimeMode:'default595999'}:course)}))})),clubs),
     officialsPdf:(competition,entries)=>buildEngagementOfficialsPdf(competition,engagementOfficialsPdfRows(entries)),
     mail:(kind,competition,recipient,details)=>{
+      const email=normalizeEmail(recipient.email);
+      if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email))throw new TypeError('Adresse de destinataire invalide : corrigez le contact avant de reprendre.');
       const type=kind==='opening'?'opening_notification':kind==='documents'?'competition_documents':kind==='club_recap'?'club_recap_pdf':kind;
       const subject=kind==='opening'?engagementOpeningMailSubject(competition):kind==='documents'?engagementCompetitionDocumentMailSubject(competition,details.documents):kind==='club_recap'?engagementClubRecapMailSubject(competition,details.entry):kind==='entries_txt'?engagementTxtMailSubject(competition):engagementOfficialsMailSubject(competition);
       const text=kind==='opening'?engagementOpeningMailText(competition):kind==='documents'?engagementCompetitionDocumentMailText(competition,details.documents):kind==='club_recap'?engagementClubRecapMailText(competition,details.entry):kind==='entries_txt'?engagementTxtMailText(competition,details):engagementOfficialsMailText(competition,details);
-      return {type,competitionId:competition.id,competitionName:competition.name,clubId:String(recipient.clubId||''),toEmail:normalizeEmail(recipient.email),recipientUid:String(recipient.uid||''),subject,textBody:text,attachments:details.attachments||[]};
+      return {type,competitionId:competition.id,competitionName:competition.name,clubId:String(recipient.clubId||''),toEmail:email,recipientUid:String(recipient.uid||''),subject,textBody:text,attachments:details.attachments||[]};
     },
     job:(event,competition,payload,now)=>{
       const data={...payload,notificationId:`${event.operation}:${Number(event.generation||0)}`,source:'nap',simulation:true,status:'disabled',reason:'test-emails-disabled',createdAt:now,updatedAt:now,sentAt:''};
