@@ -80,6 +80,42 @@ assert.match(csv, /date_validite_requise/);
 assert.match(csv, /31\/12\/2027/);
 assert.match(csv, /validable/);
 
+
+const unrelatedRow = {
+  license: "Z-99-999999", name: "MARTIN Camille", birthDate: "01/01/2000", validity: "31/12/2027"
+};
+const exactAmongCandidates = core.analyzeCandidates(person, [unrelatedRow, {
+  license: "A-12-345678", name: "DUPONT Camille", birthDate: "19/03/2004", validity: "31/12/2027"
+}]);
+const notFound = core.analyzeCandidates(person, []);
+const mixedResults = [
+  exactAmongCandidates, expired, otherLicense, closeIdentity, ambiguous, notFound,
+  { ...person, status: "timeout", details: "Recherche interrompue.", candidates: [] }
+].map((result, index) => ({ ...result, livePalmesId: `swimmer-${index + 1}` }));
+const exportedRows = core.parseDelimited(core.exportResultsCsv(mixedResults));
+const exportedHeaders = exportedRows[0];
+const field = (rowIndex, name) => exportedRows[rowIndex][exportedHeaders.indexOf(name)];
+assert.equal(exportedRows.length, mixedResults.length + 1, "Un seul résultat exporté par nageur.");
+assert.equal(new Set(exportedRows.slice(1).map(row => row[exportedHeaders.indexOf("livepalmes_id")])).size, mixedResults.length);
+assert.equal(exportedHeaders.includes("candidat_no"), false);
+assert.equal(field(1, "licence_ffessm"), "A-12-345678");
+assert.equal(field(1, "identite_ffessm"), "DUPONT Camille");
+assert.equal(field(1, "statut"), "validable");
+assert.equal(field(2, "validite_ffessm"), "31/12/2026");
+assert.equal(field(3, "licence_ffessm"), "B-98-765432");
+assert.equal(field(3, "statut"), "anomalie_licence");
+for (const rowIndex of [4, 5, 6, 7]) {
+  for (const name of ["licence_ffessm", "identite_ffessm", "date_naissance_ffessm", "structure_ffessm", "validite_ffessm"]) {
+    assert.equal(field(rowIndex, name), "", "Aucune identité arbitraire exportée.");
+  }
+}
+assert.equal(field(4, "statut"), "anomalie_identite");
+assert.equal(field(5, "statut"), "ambigu");
+assert.equal(field(6, "statut"), "introuvable");
+assert.equal(field(7, "statut"), "timeout");
+assert.equal(field(7, "date_validite_requise"), "31/12/2027");
+assert.equal(core.parseDelimited(core.exportResultsCsv([])).length, 1);
+
 const extensionRoot = path.join(__dirname, "..", "tools", "ffessm-license-control-extension");
 const manifest = JSON.parse(fs.readFileSync(path.join(extensionRoot, "manifest.json"), "utf8"));
 assert.deepEqual(manifest.content_scripts[0].matches, ["https://macommission.ffessm.fr/*"]);

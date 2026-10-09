@@ -264,17 +264,19 @@
   function exportResultsCsv(results = [], controlledAt = new Date().toISOString()) {
     const header = [
       "lot_id", "saison", "livepalmes_id", "nom_livepalmes", "prenom_livepalmes",
-      "date_naissance_livepalmes", "licence_livepalmes", "competitions_sources", "candidat_no",
+      "date_naissance_livepalmes", "licence_livepalmes", "competitions_sources",
       "licence_ffessm", "identite_ffessm", "date_naissance_ffessm", "structure_ffessm",
       "validite_ffessm", "date_validite_requise", "nom_prenom_correspondent",
       "date_naissance_correspond", "licence_correspond", "validite_suffisante",
       "correspondance_exacte", "statut", "details", "controle_le"
     ];
-    const rows = results.flatMap((result) => {
-      const candidates = result.candidates?.length ? result.candidates : [null];
-      return candidates.map((candidate) => [
+    const rows = results.map((result) => {
+      const candidate = result.status !== "ambigu" && result.selectedCandidate?.exactIdentity
+        ? result.selectedCandidate
+        : null;
+      return [
         result.batchId, result.season, result.livePalmesId, result.lastName, result.firstName,
-        result.birthDate, result.currentLicense, result.competitions, candidate?.candidateNumber || "",
+        result.birthDate, result.currentLicense, result.competitions,
         candidate?.license || "", candidate?.name || "", candidate?.birthDate || "",
         candidate?.structure || "", candidate?.validity || "", result.requiredValidity,
         candidate ? booleanCell(candidate.nameMatches) : "non_renseignee",
@@ -283,7 +285,7 @@
         candidate ? booleanCell(candidate.validitySufficient) : "non_renseignee",
         candidate ? booleanCell(candidate.exactMatch) : "non_renseignee",
         result.status, result.details, controlledAt
-      ]);
+      ];
     });
     return `\uFEFF${[header, ...rows].map((row) => row.map(csvCell).join(";")).join("\r\n")}\r\n`;
   }
