@@ -47,7 +47,7 @@ async function applyControl(pool,input,services){
         if(typeof job.payload.nativePatchFingerprint!=='string'||!job.payload.nativePatchFingerprint)throw new TypeError('Empreinte de finalisation absente.');
         // Keep the same actor and fingerprint after a partial MyISAM update:
         // the existing native change journal then resumes the original operation.
-        await services.applyNativePatch({competitionId:scope.competitionId,actorUid:job.payload.confirmedBy,expectedFingerprint:job.payload.nativePatchFingerprint,patch:job.payload.patch});
+        await services.applyNativePatch({competitionId:scope.competitionId,actorUid:job.payload.confirmedBy,expectedFingerprint:job.payload.nativePatchFingerprint,patch:job.payload.patch,...(job.payload.notificationOpeningRequested===undefined?{}:{notificationOpeningRequested:job.payload.notificationOpeningRequested})});
       }
       const done=jobs.transitionStatement(job,{...input,state:'done',cursor:'',payload:{...job.payload,completedAt:input.now}});
       if(Number((await query(done.sql,done.values)).affectedRows)!==1)throw new TypeError('Validation du controle a verifier. Reprenez-le.');

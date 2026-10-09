@@ -28,6 +28,7 @@ const sandbox = { exports: {}, ENVIRONMENT: { projectId: "livepalmes-test" }, CA
   engagementEventIsPast: () => past, ageCategoryFromDates: () => "M30+", portalReadStats: () => ({}),
   assertCanModifyEngagementEvent:(actor,item)=>{sandbox.assertCanManageEngagementCompetition(actor,item);if(past && !actor.national) throw new HttpsError("failed-precondition","Past event");},
   writeAuditLogOnce:async()=>calls.push("audit-complete"),
+  armNativeCompetitionNotification:async(actor,input)=>{assert.equal(actor.uid,management.uid);assert.equal(input.competitionId,event.id);},
   assertEngagementClubWriteOpen:()=>calls.push("open-check"),
   db: { getAll: () => { throw new Error("Old sports read"); }, collection: name => { if(name!=="auditLogs") throw new Error("Old sports read");return {doc:()=>({get:async()=>({exists:false}),create:async()=>calls.push("audit-backup"),update:async()=>calls.push("audit-checkpoint")})}; } },
   require: name => {

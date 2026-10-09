@@ -29,6 +29,11 @@ on:
         description: Pour schedulers uniquement, saisir livepalmes-test-schedulers-empty
         required: false
         type: string
+      nap_notifications_only:
+        description: Pour schedulers uniquement, déployer seulement les notifications NAP sans SMTP
+        required: false
+        type: boolean
+        default: false
   workflow_call:
     inputs:
       lot:
@@ -48,6 +53,10 @@ on:
         required: false
         type: string
         default: ""
+      nap_notifications_only:
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -64,6 +73,7 @@ env:
   LIVEPALMES_ENFORCE_APP_CHECK: 'false'
   FIREBASE_CLI: ./tests/firestore-rules/node_modules/.bin/firebase
   CANDIDATE_SHA: ${{ github.sha }}
+  NAP_NOTIFICATION_SCHEDULER_ONLY: ${{ inputs.nap_notifications_only || false }}
 
 jobs:
   deployer-backend-test:
@@ -103,6 +113,9 @@ jobs:
           esac
           if [ "$SELECTED_LOT" = "schedulers" ]; then
             test "$SCHEDULER_CONFIRMATION" = "livepalmes-test-schedulers-empty"
+          fi
+          if [ "$NAP_NOTIFICATION_SCHEDULER_ONLY" = "true" ]; then
+            test "$SELECTED_LOT" = "schedulers"
           fi
 
       - name: Récupérer exactement la version confirmée
@@ -211,7 +224,7 @@ jobs:
           SELECTED_LOT: ${{ inputs.lot }}
         run: |
           set -euo pipefail
-          node -e 'const metadata = require("./tools/firebase-test-backend-lots").METADATA; metadata[process.env.SELECTED_LOT].secrets.forEach(value => console.log(value))' |
+          node -e 'const metadata = require("./tools/firebase-test-backend-lots").METADATA; (process.env.NAP_NOTIFICATION_SCHEDULER_ONLY === "true" ? ["LIVEPALMES_NAP_PASSWORD"] : metadata[process.env.SELECTED_LOT].secrets).forEach(value => console.log(value))' |
           while IFS= read -r secret; do
             gcloud secrets describe "$secret" --project=livepalmes-test --format='value(name)' >/dev/null
           done
@@ -228,7 +241,7 @@ jobs:
           const db = getFirestore();
           Promise.all([
             db.collection("engagementClosureQueue").limit(1).get(),
-            db.collection("performancePublicationJobs").where("status", "in", ["pending", "processing"]).limit(1).get()
+            process.env.NAP_NOTIFICATION_SCHEDULER_ONLY === "true" ? Promise.resolve({ empty: true }) : db.collection("performancePublicationJobs").where("status", "in", ["pending", "processing"]).limit(1).get()
           ]).then(([closures, publications]) => {
             if (!closures.empty || !publications.empty) throw new Error("Files TEST non vides : activation des schedulers refusée.");
             console.log("Files TEST vérifiées vides.");
