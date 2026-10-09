@@ -5,6 +5,7 @@ const {id,...native}=old;
 const pack={canConfirm:true,competition:{id:5162},expectedFingerprint:"before",previewFingerprint:"preview",existing:[old],existingRelays:[],incoming:[{sourceLine:4,row:{...native,tps:"014200"}}],incomingRelays:[],statusRows:[],decoded:{excluded:[]}};
 const input={expectedFingerprint:"before",previewFingerprint:"preview"};
 let plan=prepareImportOperation(pack,{perfs:1000,relays:100},input);assert.equal(plan.perfs.after[0].id,973);assert.equal(plan.perfs.after[0].tps,"14200");assert.equal(plan.perfs.additions.length,0);
+const nativeMetadata=prepareImportOperation({...pack,existing:[{...old,newpoints:"123",pid:42}]},{perfs:1000,relays:100},input);assert.equal(nativeMetadata.perfs.after[0].newpoints,"123");assert.equal(nativeMetadata.perfs.after[0].pid,42);assert.equal(nativeMetadata.perfs.additions.length,0,"unsupplied NAP fields do not turn unchanged results into removals");
 const changed={...pack,incoming:[{sourceLine:4,row:{...native,tps:"014100"}}]};assert.throws(()=>prepareImportOperation(changed,{perfs:1000,relays:100},input),/explicitement/);
 plan=prepareImportOperation(changed,{perfs:1000,relays:100},{...input,confirmReplacement:true});assert.equal(plan.perfs.additions[0].row.id,1000);assert.equal(plan.perfs.removals[0].id,973);
 assert.equal(pendingTableChanges([old],plan.perfs,COLUMNS).additions.length,1);

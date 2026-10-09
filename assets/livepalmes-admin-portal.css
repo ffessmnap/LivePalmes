@@ -14006,6 +14006,20 @@
   box-shadow: 0 0 0 3px rgba(11, 114, 133, 0.1);
 }
 
+#adminImportView .nap-import-review-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--admin-border, #dce5e9);
+  overflow-wrap: anywhere;
+}
+
+#adminImportView .nap-import-review-row input[type="text"] {
+  width: min(100%, 220px);
+  box-sizing: border-box;
+}
+
 #adminImportView .import-summary-grid div {
   border-color: #e0e6e8;
   border-radius: 8px;

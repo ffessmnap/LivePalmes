@@ -69,6 +69,7 @@ async function previewNativeImport(pool,input) {
   const issues=[...decoded.issues];
   if(competition.date!==decoded.metadata.date)issues.push({sourceLine:0,code:"competition-date-mismatch"});
   if(String(competition.bassin)!==decoded.metadata.pool)issues.push({sourceLine:0,code:"competition-pool-mismatch"});
+  if(!["E","M"].includes(decoded.metadata.timing)||competition.chrono!==decoded.metadata.timing)issues.push({sourceLine:0,code:"competition-timing-mismatch"});
   const incoming=[],incomingRelays=[],statusRows=[];
   const integer=value=>{if(!/^\d{1,9}$/.test(String(value)))return null;return Number(value);};
   for(const row of decoded.rows) {

@@ -1368,6 +1368,7 @@
   let nativeImportOperation = null;
   function collectNativeImportChoices() {
     const host = elements.warnings;
+    for (const key of ['swimmerBindings','memberBindings','clubBindings','excludedSourceLines']) currentPayload[key] ||= [];
     const previous = JSON.stringify(currentPayload);
     const competition = host.querySelector('[data-nap-competition]');
     if (competition?.value) currentPayload.competitionId = Number(competition.value);
@@ -1400,6 +1401,8 @@
     if (elements.replace) elements.replace.hidden = true;
     if (elements.existingImport) elements.existingImport.hidden = true;
     if (elements.previewPagination) elements.previewPagination.hidden = true;
+    if (elements.previewFilter) elements.previewFilter.closest('.competition-import-preview-tools').hidden = true;
+    if (elements.sample) elements.sample.closest('.import-table-wrap').hidden = true;
     elements.sample.innerHTML = '';
     const metadata = result.metadata || {};
     elements.summary.textContent = `${metadata.competitionName || 'Résultats WinPalme'} — ${metadata.date || ''} — ${result.rows.length} lignes à contrôler`;
@@ -1414,7 +1417,7 @@
         const saved = (currentPayload.memberBindings || []).find(b => b.sourceLine === m.sourceLine && b.position === m.position);
         return `<label>Relayeur ${m.position} ${input('data-nap-member', [m.sourceLine, m.position], saved?.swimmerId)}</label>`;
       }).join(' ');
-      return `<p><strong>Ligne ${row.sourceLine} : ${escapeHtml([row.lastName, row.firstName, row.course, row.clubCode, row.time || row.status].filter(Boolean).join(' — '))}</strong>
+      return `<p class="nap-import-review-row"><strong>Ligne ${row.sourceLine} : ${escapeHtml([row.lastName, row.firstName, row.course, row.clubCode, row.time || row.status].filter(Boolean).join(' — '))}</strong>
         ${person ? `<label>Fiche nageur ${input('data-nap-swimmer', [row.sourceLine], binding?.swimmerId)}</label><small>Fiches possibles : ${escapeHtml(person.candidateIds?.join(', ') || 'aucune ; créer la fiche dans Mes nageurs si nécessaire')}</small>` : ''}${memberControls}
         ${!row.status && !row.time ? `<label><input type="checkbox" data-nap-exclude="${row.sourceLine}" ${(currentPayload.excludedSourceLines || []).includes(row.sourceLine) ? 'checked' : ''}> Écarter explicitement cette ligne sans résultat</label>` : ''}</p>`;
     }).join('');
@@ -1428,10 +1431,10 @@
       ${controls}
       ${diff ? `<p>Individuels : ${diff.summary.individual.additions} ajout(s), ${diff.summary.individual.removals} retrait(s), ${diff.summary.individual.unchanged} conservé(s). Relais : ${diff.summary.relays.additions} ajout(s), ${diff.summary.relays.removals} retrait(s), ${diff.summary.relays.unchanged} conservé(s). Statuts sans temps valable : ${diff.summary.statuses}. Lignes écartées : ${diff.summary.excluded}.</p>` : ''}
       ${removals.slice(page * 100, (page + 1) * 100).map(r => `<p>Retrait : ${escapeHtml(`${r.kind} #${r.id} — nageur ${r.swimmerId || 'relais'} — ${r.course} — ${r.time} — club ${r.clubId}`)}</p>`).join('')}
-      <p>Page ${page + 1} / ${totalPages}</p><button type="button" data-nap-previous ${page === 0 ? 'disabled' : ''}>Précédent</button> <button type="button" data-nap-next ${page + 1 >= totalPages ? 'disabled' : ''}>Suivant</button>
-      <button type="button" data-nap-refresh>Actualiser l’aperçu avec mes choix</button>
+      <p>Page ${page + 1} / ${totalPages}</p><div class="admin-portal-actions"><button type="button" class="ghost-button" data-nap-previous ${page === 0 ? 'disabled' : ''}>Précédent</button> <button type="button" class="ghost-button" data-nap-next ${page + 1 >= totalPages ? 'disabled' : ''}>Suivant</button>
+      <button type="button" class="ghost-button" data-nap-refresh>Actualiser l’aperçu avec mes choix</button></div>
       ${diff?.requiresReplacementConfirmation ? '<label><input type="checkbox" data-nap-replacement> Je confirme les retraits affichés et le remplacement. L’ancienne version sera sauvegardée.</label>' : ''}
-      <button type="button" data-nap-save ${result.canConfirm ? '' : 'disabled'}>Enregistrer les résultats dans NAP</button>`;
+      <button type="button" class="primary-button" data-nap-save ${result.canConfirm ? '' : 'disabled'}>Enregistrer les résultats dans NAP</button>`;
     elements.warnings.querySelector('[data-nap-previous]').onclick = () => { collectNativeImportChoices(); renderNativeImportPreview(result, page - 1); };
     elements.warnings.querySelector('[data-nap-next]').onclick = () => { collectNativeImportChoices(); renderNativeImportPreview(result, page + 1); };
     elements.warnings.querySelector('[data-nap-refresh]').onclick = async () => {

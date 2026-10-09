@@ -9,16 +9,19 @@ function canonical(row,columns,{equivalentTimes=false}={}) {
 }
 function tableDiff(before,incoming,columns) {
   const queues=new Map(),fields=columns.filter(c=>c!=="id");
+  // WinPalme does not supply NAP's secondary score or parent reference.
+  // Matching an unchanged sporting result must retain those native values.
+  const matchingFields=fields.filter(c=>c!=="newpoints"&&c!=="pid");
   for(const row of [...before].sort((a,b)=>a.id-b.id)) {
     positiveId(row.id);
     if(columns.some(c=>!Object.hasOwn(row,c)))throw new TypeError("Avant-image native incomplete.");
-    const key=canonical(row,fields,{equivalentTimes:true}),queue=queues.get(key)||[];queue.push(row);queues.set(key,queue);
+    const key=canonical(row,matchingFields,{equivalentTimes:true}),queue=queues.get(key)||[];queue.push(row);queues.set(key,queue);
   }
   if(new Set(before.map(r=>r.id)).size!==before.length)throw new TypeError("Avant-image en doublon.");
   const unchanged=[],additions=[];
   for(const item of incoming) {
     if(fields.some(c=>!Object.hasOwn(item.row,c))||Object.keys(item.row).length!==fields.length)throw new TypeError("Resultat propose incomplet.");
-    const key=canonical(item.row,fields,{equivalentTimes:true}),match=queues.get(key)?.shift();
+    const key=canonical(item.row,matchingFields,{equivalentTimes:true}),match=queues.get(key)?.shift();
     if(match)unchanged.push({sourceLine:item.sourceLine,row:match});else additions.push(item);
   }
   return {unchanged,additions,removals:[...queues.values()].flat().sort((a,b)=>a.id-b.id)};
