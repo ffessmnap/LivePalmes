@@ -2,6 +2,13 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 9 octobre — Lecture nationale des nageurs NAP (préparation PR #217)
+
+- Ancien callable national raccordé à NAP : autorisation avant toute lecture, licence chaîne et statut natif, pagination par identifiant (100 personnes, une requête, 101 lignes maximum), sans lecture des anciens nageurs Firebase.
+- Tests simulés : bornes, continuation, licence vide, statut inactif, refus des curseurs invalides et des réponses incohérentes, routage sans ancienne base.
+- Plan SQL réel vérifié en lecture seule : nageurs PRIMARY range, clubs et validations de licence PRIMARY eq_ref. Aucune donnée modifiée.
+- Contrôles Linux et aperçu du commit précédent `e8a70610` réussis : run 37981439755. Cette nouvelle lecture nécessite ses propres contrôles avant intégration ; TEST commun non modifié.
+
 ### 9 octobre — Annuaires NAP (préparation PR #217, non déployée)
 
 - Lecture nationale des clubs dans NAP, création et correction natives avec sauvegarde technique, reprise et contrôle des doublons ; tests simulés et plans SQL réels en lecture seule vérifiés.

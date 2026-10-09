@@ -30,6 +30,20 @@ async function listPortalClubSwimmers(connection, clubId) {
   if (rows.length > 800) throw new RangeError("Effectif superieur a 800 nageurs : pagination requise.");
   return rows.map(person);
 }
+// National directory: one indexed keyset page, no legacy roster or per-row read.
+async function listNationalSwimmers(connection, input = {}) {
+  const cursor = input.cursor === undefined || input.cursor === null ? 0 : input.cursor;
+  if (!Number.isSafeInteger(cursor) || cursor < 0 || cursor > 2147483647) throw new TypeError("Page nationale invalide.");
+  const [rows] = await connection.execute({sql:`SELECT n.id,n.nom,n.prenom,n.date,n.sexe,n.number,n.club,n.actif,cl.abre_club,cl.nom_club,${licenseState.projection()} FROM nageurs n FORCE INDEX (PRIMARY) LEFT JOIN clubs cl FORCE INDEX (PRIMARY) ON cl.num_club=n.club AND CAST(cl.num_club AS CHAR)=n.club ${licenseState.join()} WHERE n.id>? ORDER BY n.id LIMIT 101`,timeout:10000},[cursor]);
+  if (rows.length > 101) throw new RangeError("Page nationale trop volumineuse.");
+  let previous = cursor;
+  for (const row of rows) {
+    if (!Number.isSafeInteger(Number(row.id)) || Number(row.id) <= previous || Number(row.id) > 2147483647) throw new TypeError("Page nationale incoherente.");
+    previous = Number(row.id);
+  }
+  const page = rows.slice(0,100), hasMore = rows.length > 100;
+  return {ok:true,source:"nap",swimmers:page.map(person),hasMore,nextCursor:hasMore?Number(page.at(-1).id):null,sqlBudget:{queriesMax:1,rowsMax:101}};
+}
 async function correctPortalIdentity(connection, input, audit, linked) {
   const id = swimmerId(input?.id);
   if (!/^[a-f0-9]{64}$/.test(input.expectedFingerprint || "") || !input.actorUid || !input.reason?.trim() || input.reason.length > 500) throw new TypeError("Fiche et motif requis.");
@@ -68,4 +82,4 @@ async function correctPortalIdentity(connection, input, audit, linked) {
   await audit.complete(operation, { id, operation, actorUid: input.actorUid, changedColumns: saved.changedColumns, beforeHash: saved.beforeHash, afterHash: saved.afterHash, verified: true, ...dependentResult });
   return result;
 }
-module.exports = { portalPool, person, searchPortalSwimmers, listPortalClubSwimmers, correctPortalIdentity };
+module.exports = { portalPool, person, searchPortalSwimmers, listPortalClubSwimmers, listNationalSwimmers, correctPortalIdentity };

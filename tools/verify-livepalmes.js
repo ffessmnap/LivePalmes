@@ -132,6 +132,7 @@ function runUnitTests() {
     "nap-team-leader-ui-tests.js",
     "nap-club-people-tests.js",
     "nap-national-directories-tests.js",
+    "nap-national-swimmers-tests.js",
     "nap-club-change-tests.js",
     "nap-club-create-tests.js",
     "nap-people-display-tests.js",
