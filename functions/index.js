@@ -297,7 +297,7 @@ const ENGAGEMENT_CLOSURE_SCHEDULER_OPTIONS = {
   timeZone: "Europe/Paris",
   timeoutSeconds: 540,
   memory: "1GiB",
-  secrets: ENGAGEMENT_NOTIFICATION_MAIL_SECRETS
+  secrets: ENVIRONMENT.projectId === "livepalmes-test" ? [defineSecret("LIVEPALMES_NAP_PASSWORD")] : ENGAGEMENT_NOTIFICATION_MAIL_SECRETS
 };
 const MIGRATION_CALLABLE_OPTIONS = { region: REGION, invoker: "public", timeoutSeconds: 540, memory: "1GiB" };
 const PUBLIC_PERFORMANCE_CALLABLE_OPTIONS = { region: REGION, invoker: "public", timeoutSeconds: 120, memory: "1GiB" };
@@ -5716,8 +5716,8 @@ function nativeQualificationServices(context) {
       {...input,national:true,eventDefinitions:ENGAGEMENT_EVENT_DEFINITION_BY_CODE,normalizeProgram:cleanEngagementProgramSessions,normalizeEvents:cleanEngagementCompetitionEvents},
       {
         read:async operation=>{const snapshot=await db.collection("auditLogs").doc(`nap-competition-${operation}-before`).get();return snapshot.exists?snapshot.data().target:null;},
-        prepare:(operation,target)=>db.collection("auditLogs").doc(`nap-competition-${operation}-before`).create({action:"nap.competition.change.prepare",actorUid:input.actorUid,target,createdAt:new Date().toISOString()}),
-        complete:(operation,target)=>writeAuditLogOnce("nap.competition.changed",input.actorUid,target,operation)
+        prepare:(operation,target)=>db.collection("auditLogs").doc(`nap-competition-${operation}-before`).create({action:"nap.competition.change.prepare",actorUid:input.actorUid,target:{...target,notificationOpeningRequested:input.notificationOpeningRequested===true},createdAt:new Date().toISOString()}),
+        complete:async(operation,target)=>{await armNativeCompetitionNotification(context,input,operation);await writeAuditLogOnce("nap.competition.changed",input.actorUid,target,operation);}
       },event=>assertCanModifyEngagementEvent(context,event))
   };
 }
@@ -10609,7 +10609,7 @@ exports.previewEngagementCompetitionDocumentNotification = onCall(ENGAGEMENT_NOT
 });
 
 exports.notifyEngagementCompetitionDocuments = onCall(ENVIRONMENT.projectId === "livepalmes-test" ? ENGAGEMENT_NOTIFICATION_PREVIEW_OPTIONS : ENGAGEMENT_MAIL_CALLABLE_OPTIONS, async (request) => {
-  if (ENVIRONMENT.projectId === "livepalmes-test") return nativeNotificationPreview(request, "documents");
+  if (ENVIRONMENT.projectId === "livepalmes-test") return queueNativeDocumentNotification(request);
   const { context, competitionId, snapshot } = await engagementCompetitionDocumentContext(request);
   const competition = engagementCompetitionDetailItem(snapshot);
   const documentIds = Array.from(new Set((Array.isArray(request.data?.documentIds) ? request.data.documentIds : [])
@@ -10912,6 +10912,91 @@ async function nativeNotificationPreview(request, kind) {
       error instanceof TypeError || error instanceof RangeError ? error.message : "Aperçu des notifications NAP indisponible.");
   }
 }
+// Reuse the existing technical queue and builders, with an unconditional TEST
+// simulation guard. This adapter cannot upload files or call a mail transporter.
+function nativeNotificationAutomationServices() {
+  if(ENVIRONMENT.projectId!=="livepalmes-test")throw new HttpsError("failed-precondition","Simulation NAP reservee au TEST.");
+  const pool=require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD);
+  let recipientPromise;
+  const services={simulation:true,deleteField:()=>FieldValue.delete(),
+    competition:async id=>({...await nativePortalCompetition(id,()=>{}),id:String(require('./nap-direct-calendar').positiveId(id))}),
+    recipients:()=>recipientPromise||=(async()=>{
+      const state=await engagementMailRecipientIndexStateRef(db).get();
+      if(state.data()?.status!=="ready")throw new TypeError("Annuaire des destinataires indisponible.");
+      return require("./nap-notification-preview").nativeClubScopes(pool,await engagementMailRecipientsFromIndex(db));
+    })(),
+    select:(kind,recipients,competition,event)=>kind==='opening'?engagementCompetitionOpeningRecipients(recipients,competition,recipients.filter(recipient=>recipient.uid===event.actorUid)):engagementCompetitionDocumentRecipients(recipients,competition),
+    clubRecipients:recipients=>engagementCompetitionNotificationRecipients(engagementDedupMailRecipients(recipients)).filter(recipient=>recipient.clubId&&engagementRecipientHasCapability(recipient,"engagements.club.manage")),
+    entries:competition=>require("./nap-admin-entries").readAdminEntries(pool,{competitionId:competition.id,competition},()=>{},{category:ageCategoryFromDates}),
+    hasParticipants:engagementClubEntryHasParticipants,clubPdf:buildEngagementClubRecapPdf,
+    txt:(competition,entries,clubs)=>buildEngagementCompetitionTxt(competition,entries.map(entry=>({...entry,swimmers:entry.swimmers.map(person=>({...person,individualEntries:person.individualEntries.map(course=>course.nativeTime==='599999'?{...course,entryTime:'',manualEntryTime:'',entryTimeValue:0,entryTimeMode:'default595999'}:course)}))})),clubs),
+    officialsPdf:(competition,entries)=>buildEngagementOfficialsPdf(competition,entries.flatMap(entry=>(entry.officials||[]).map(person=>({club:entry.clubName||entry.clubCode,lastName:person.lastName,firstName:person.firstName,birthDate:person.birthDate,licenseNumber:''})))),
+    mail:(kind,competition,recipient,details)=>{
+      const type=kind==='opening'?'opening_notification':kind==='documents'?'competition_documents':kind==='club_recap'?'club_recap_pdf':kind;
+      const subject=kind==='opening'?engagementOpeningMailSubject(competition):kind==='documents'?engagementCompetitionDocumentMailSubject(competition,details.documents):kind==='club_recap'?engagementClubRecapMailSubject(competition,details.entry):kind==='entries_txt'?engagementTxtMailSubject(competition):engagementOfficialsMailSubject(competition);
+      const text=kind==='opening'?engagementOpeningMailText(competition):kind==='documents'?engagementCompetitionDocumentMailText(competition,details.documents):kind==='club_recap'?engagementClubRecapMailText(competition,details.entry):kind==='entries_txt'?engagementTxtMailText(competition,{}):engagementOfficialsMailText(competition,{});
+      return {type,competitionId:competition.id,competitionName:competition.name,clubId:String(recipient.clubId||''),toEmail:normalizeEmail(recipient.email),recipientUid:String(recipient.uid||''),subject,textBody:text,attachments:details.attachments||[]};
+    },
+    job:(event,competition,payload,now)=>{
+      const data={...payload,notificationId:`${event.operation}:${Number(event.generation||0)}`,source:'nap',simulation:true,status:'disabled',reason:'test-emails-disabled',createdAt:now,updatedAt:now,sentAt:''};
+      return {...data,id:engagementMailJobId(data)};
+    }
+  };
+  services.page=(event,competition)=>require("./nap-notification-pages").page(event,competition,services);
+  return services;
+}
+async function armNativeCompetitionNotification(context,input,operation) {
+  const patch=input.patch||{};
+  if(!['entryStatus','entryDeadlineAt','entryDeadlineLocal'].some(key=>Object.hasOwn(patch,key)))return;
+  const competition=await nativePortalCompetition(input.competitionId,event=>assertCanManageEngagementCompetition(context,event));
+  const journal=await db.collection('auditLogs').doc(`nap-competition-${operation}-before`).get();
+  if(!journal.exists)throw new TypeError('Sauvegarde de notification introuvable.');
+  const requested=journal.data()?.target?.notificationOpeningRequested===true;
+  await require('./nap-notification-automation').arm(db,{competitionId:String(require('./nap-direct-calendar').positiveId(competition.id)),operation,
+    action:competition.entryStatus,deadline:competition.entryDeadlineAt,openingRequested:requested,actorUid:context.uid,newCycle:requested});
+}
+async function queueNativeDocumentNotification(request) {
+  const preview=await nativeNotificationPreview(request,'documents');
+  const context=await engagementAccessContext(request);
+  const competition=await nativePortalCompetition(request.data?.competitionId||request.data?.calendarEventId,event=>assertCanManageEngagementCompetition(context,event));
+  const ids=request.data?.documentIds;
+  if(!Array.isArray(ids)||!ids.length||ids.length>20)throw new HttpsError('invalid-argument','Documents a notifier requis.');
+  const documents=competition.clubDocuments.filter(document=>ids.includes(document.id));
+  if(documents.length!==new Set(ids).size)throw new HttpsError('failed-precondition','Les documents ont change. Rechargez la fiche.');
+  const automation=require('./nap-notification-automation');
+  await automation.arm(db,{competitionId:String(require('./nap-direct-calendar').positiveId(competition.id)),
+    action:'documents',documentIds:ids,actorUid:context.uid,operation:automation.hash(['documents-v1',competition.id,context.uid,documents])});
+  return {...preview,previewOnly:false,queued:true};
+}
+exports.processNapCompetitionNotifications = onCall({ ...ENGAGEMENT_NOTIFICATION_PREVIEW_OPTIONS,timeoutSeconds:300,memory:'1GiB' },async request=>{
+  if(ENVIRONMENT.projectId!=='livepalmes-test')throw new HttpsError('failed-precondition','Verification NAP reservee au TEST sans envoi.');
+  const context=await engagementAccessContext(request),automation=require('./nap-notification-automation');
+  try{
+    if(request.data?.action==='adopt-open-season'){
+      if(!context.national)throw new HttpsError('permission-denied','Reprise reservee au niveau national.');
+      return await automation.adoptOpenCompetitions(db,{season:request.data.season,offset:request.data.offset},{
+        authorize:async()=>{},season:async year=>{const pack=await require('./nap-portal-competitions').readNativeCompetitionSeason(require('./nap-portal-swimmers').portalPool(process.env.LIVEPALMES_NAP_PASSWORD),year);return {...pack,events:pack.events.map(event=>({...event,id:String(require('./nap-direct-calendar').positiveId(event.id))}))};}});
+    }
+    if(!['process','restart'].includes(request.data?.action))throw new TypeError('Action de notification inconnue.');
+    const competitionId=String(require('./nap-direct-calendar').positiveId(request.data.competitionId));
+    await nativePortalCompetition(competitionId,event=>assertCanManageEngagementCompetition(context,event));
+    const snapshot=await db.collection(automation.COLLECTION).where('competitionId','==',competitionId).limit(101).get();
+    if(snapshot.size>100)throw new RangeError('Historique technique trop volumineux : maintenance requise.');
+    const now=new Date().toISOString(),services=nativeNotificationAutomationServices(),results=[];
+    const pointer=snapshot.docs.find(doc=>doc.id===`nap-state-${competitionId}`)?.data()||{};
+    const events=snapshot.docs.filter(doc=>doc.data().source==='nap'&&['opening','closure','documents'].includes(doc.data().kind)&&automation.currentEvent(doc.data(),pointer));
+    const blocked=events.filter(doc=>doc.data().status==='blocked');
+    if(request.data.action==='restart'){
+      const results=[];
+      for(const doc of blocked.slice(0,2))results.push(await automation.resumeBlocked(db,doc.ref,services,now));
+      return {ok:true,disabled:true,sentCount:0,resumedCount:results.filter(result=>result.resumed).length,remaining:Math.max(0,blocked.length-results.length)};
+    }
+    if(blocked.length)throw new TypeError('Preparation interrompue apres une modification NAP. Une reprise explicite est necessaire.');
+    const due=events.filter(doc=>doc.data().runAt&&doc.data().runAt<=now&&!['completed','cancelled'].includes(doc.data().status)).sort((a,b)=>a.data().runAt.localeCompare(b.data().runAt));
+    for(const doc of due.slice(0,2))results.push(await automation.processEvent(db,doc.ref,services,now));
+    return {ok:true,source:'nap',disabled:true,sentCount:0,processedCount:results.length,jobCount:results.reduce((sum,result)=>sum+(result.jobCount||0),0),attachmentCount:results.reduce((sum,result)=>sum+(result.attachmentCount||0),0),remaining:Math.max(0,due.length-results.filter(result=>result.done||result.reason==='superseded').length)};
+  }catch(error){if(error instanceof HttpsError)throw error;throw new HttpsError(error instanceof TypeError?'failed-precondition':error instanceof RangeError?'resource-exhausted':'unavailable',error instanceof TypeError||error instanceof RangeError?error.message:'Preparation NAP interrompue : vous pouvez reprendre le traitement.');}
+});
 exports.listEngagementCompetitionClubRecaps = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.projectId === "livepalmes-test" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
   const context = await engagementAccessContext(request);
   const competitionId = cleanText(request.data?.competitionId).slice(0, 128);
@@ -12082,6 +12167,16 @@ exports.closeDueEngagementCompetitions = onSchedule(ENGAGEMENT_CLOSURE_SCHEDULER
     .limit(ENGAGEMENT_CLOSURE_BATCH_LIMIT)
     .get();
   const results = [];
+  if(ENVIRONMENT.projectId==='livepalmes-test'){
+    const automation=require('./nap-notification-automation'),services=nativeNotificationAutomationServices();
+    for(const event of snapshot.docs){
+      // Old technical events are retained, never interpreted as native data.
+      if(event.data()?.source!=='nap')continue;
+      try{results.push(await automation.processEvent(db,event.ref,services,now));}
+      catch{results.push({status:'failed'});}
+    }
+    return null;
+  }
   for (const queueSnapshot of snapshot.docs) {
     const queue = queueSnapshot.data() || {};
     const competitionId = cleanText(queue.competitionId || queueSnapshot.id).slice(0, 128);
@@ -17167,6 +17262,7 @@ exports.updateEngagementCompetition = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONM
     const authorize = event => assertCanModifyEngagementEvent(context,event);
     try {
       const patch={...(request.data?.patch||{})},incoming=request.data?.qualifications??patch.qualifications;
+      if(request.data?.notificationOpeningRequested!==undefined&&typeof request.data.notificationOpeningRequested!=='boolean')throw new TypeError("Choix du mail d'ouverture invalide.");
       delete patch.qualifications;
       if(incoming!==undefined||['date','qualificationStartDate','qualificationEndDate','courseOptions'].some(key=>Object.hasOwn(patch,key))){
         const pack=await require("./nap-portal-competitions").readNativeCompetition(pool,competitionId,authorize);
@@ -17178,7 +17274,7 @@ exports.updateEngagementCompetition = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONM
         const affects=changed||rules.enabled&&['date','qualificationStartDate','qualificationEndDate','courseOptions'].some(key=>Object.hasOwn(patch,key));
         if(affects){
           if(!context.national)throw new HttpsError("permission-denied","Cette modification affecte les qualifications : intervention nationale requise.");
-          return await require("./nap-qualification-control-start").beginControl(pool,{competitionId,actorUid:context.uid,national:true,expectedFingerprint:request.data?.expectedFingerprint,patch,rules,events},services);
+          return await require("./nap-qualification-control-start").beginControl(pool,{competitionId,actorUid:context.uid,national:true,expectedFingerprint:request.data?.expectedFingerprint,patch,rules,events,notificationOpeningRequested:request.data?.notificationOpeningRequested===true},services);
         }
         if(!Object.keys(patch).length)return {ok:true,unchanged:true,competition:await nativePortalCompetition(competitionId,event=>assertCanManageEngagementCompetition(context,event))};
       }
@@ -17188,8 +17284,8 @@ exports.updateEngagementCompetition = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONM
         eventDefinitions:ENGAGEMENT_EVENT_DEFINITION_BY_CODE,normalizeProgram:cleanEngagementProgramSessions,normalizeEvents:cleanEngagementCompetitionEvents
       }, {
         read:async operation => { const snapshot=await db.collection("auditLogs").doc(`nap-competition-${operation}-before`).get(); return snapshot.exists ? snapshot.data().target : null; },
-        prepare:(operation,target) => db.collection("auditLogs").doc(`nap-competition-${operation}-before`).create({action:"nap.competition.change.prepare",actorUid:context.uid,target,createdAt:new Date().toISOString()}),
-        complete:(operation,target) => writeAuditLogOnce("nap.competition.changed",context.uid,target,operation)
+        prepare:(operation,target) => db.collection("auditLogs").doc(`nap-competition-${operation}-before`).create({action:"nap.competition.change.prepare",actorUid:context.uid,target:{...target,notificationOpeningRequested:request.data?.notificationOpeningRequested===true},createdAt:new Date().toISOString()}),
+        complete:async(operation,target) => {await armNativeCompetitionNotification(context,{competitionId,patch},operation);await writeAuditLogOnce("nap.competition.changed",context.uid,target,operation);}
       },authorize),{authorize});
       const competition=await nativePortalCompetition(competitionId,event=>assertCanManageEngagementCompetition(context,event));
       return {...result,competition:{...competition,regionalPastReadOnly:!context.national && engagementEventIsPast(competition)}};
