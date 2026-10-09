@@ -6,7 +6,7 @@
 
 - Demande utilisateur : utiliser le champ `nageurs.number`, importé et vérifié séparément, comme licence des nageurs du portail. Conservation sous forme de chaîne, lettres, tirets et zéros initiaux préservés ; NULL ou vide signifie non renseigné. Aucun import ni modification de licence.
 - Lectures privées existantes enrichies : effectifs club, recherche nationale, dossiers et récapitulatifs administratifs, membres des relais, corrections d’identité. Aucun appel supplémentaire : mêmes index, limites et autorisations ; neuf lectures groupées maximum pour les récapitulatifs administratifs. Aucun ajout aux recherches publiques ni rapprochement des officiels par nom.
-- Licence affichée en lecture seule dans la correction d’identité, exclue du formulaire transmis. Tests ciblés sur chaînes, valeurs absentes, dossiers et demandes de correction. Vérification globale et publication TEST à contrôler avant validation finale.
+- Licence affichée en lecture seule dans la correction d’identité, exclue du formulaire transmis. Tests ciblés sur chaînes, valeurs absentes, dossiers et demandes de correction. Contrôle global Linux réussi (run 37961296439), PR 214 intégrée en 61ba1671d35b9e0822f01434663cf636ce28c59a et publication TEST 37961550667 réussie. Licence réelle constatée dans l’effectif CNHC. Le contrôle du formulaire révèle un ancien script en cache : référence du script actualisée dans la PR 215, formulaire à revérifier après cette publication. Aucun enregistrement réel effectué.
 
 ### Étape 4 — résultats directement NAP, préparation en cours — 9 octobre 2026
 
