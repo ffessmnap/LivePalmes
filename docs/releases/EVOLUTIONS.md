@@ -2,6 +2,11 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 10 octobre — Export des licences FFESSM 1.0.2
+
+- À la demande d’Antoine, le CSV de retour contient une ligne par nageur au lieu d’une ligne par candidat. Données fédérales limitées à l’identité unique retenue ; cas ambigus, candidats non concordants, absences et erreurs conservés avec statut mais sans identité arbitraire. Colonne `candidat_no` retirée ; colonnes utilisées par l’import LivePalmes conservées.
+- Syntaxe et tests ciblés réussis : plusieurs candidats pour un nageur, identité retenue, ambiguïté, licence différente/expirée, absence et timeout. Contrôle réel Ma Commission et réimport utilisateur encore nécessaires. Pas de modification des critères de validation ni d’écriture fédérale/LivePalmes ; extension locale, aucun déploiement Firebase nécessaire.
+
 ### 10 octobre — Extension de contrôle des licences FFESSM 1.0.1
 
 - À la demande d’Antoine, suppression de la recherche par prénom seul dans Ma Commission ; ordre conservé : licence si renseignée, nom + prénom, nom seul. Identité, date de naissance et validité de saison inchangées.
