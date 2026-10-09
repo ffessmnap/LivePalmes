@@ -2,6 +2,12 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 10 octobre — Recette du raccordement et comités des clubs
+
+- PR #217 intégrée ; TEST commun `3d168e3e00dc50c1ab2b912fc691993ad8f7caf1` publié avec succès, run 37999492258. Recherche nationale d'Antoine Fauveau, licence chaîne `A-05-222647`, actions nationales et absence de suppression du club historique CNHC vérifiées en lecture seule. Aucune fiche modifiée pour la recette.
+- La recette a révélé un champ comité vide : l'annuaire renvoyait un libellé là où les listes attendent un code. Correction ciblée de la correspondance clubs uniquement ; NAP confirme que Corse vaut 23 et Nouvelle-Calédonie 12, alors que le formulaire LivePalmes utilise 12 pour Corse. Les comités supplémentaires conservent un code explicitement natif et leur libellé, sans modifier les valeurs stockées. Filtre régional et choix courant conservés, aucun nouveau parcours ni requête.
+- Tests de correspondance aller-retour pour tous les comités existants, création et correction simulées ; aucune écriture réelle. Cette correction doit encore être contrôlée par CI et publiée sur TEST avant de conclure la recette. PROD inchangée, aucune validation utilisateur inventée.
+
 ### 10 octobre — Bilan Excel des licences FFESSM 1.1.0
 
 - À la demande d’Antoine, ajout d’un export Excel destiné à l’organisateur, en complément du CSV LivePalmes. Sélection d’une compétition du lot ; une ligne par nageur inscrit, y compris les personnes non contrôlées après un arrêt. En-tête avec saison, lot et date d’export, compteurs de contrôle, filtres, en-têtes figés, statuts colorés et détail des écarts ; cas à vérifier affichés avant les conformes. Données fédérales réservées à une identité exacte unique, comme dans le CSV. Aucune modification des critères fédéraux.
