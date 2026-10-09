@@ -11,6 +11,12 @@ const batch = core.parseLivePalmesBatch([
 ].join("\n"));
 const person = batch.people[0];
 
+assert.deepEqual(core.searchQueries(person), ["A-12-345678", "DUPONT Camille", "DUPONT"]);
+assert.deepEqual(core.searchQueries({ ...person, currentLicense: "" }), ["DUPONT Camille", "DUPONT"]);
+assert.deepEqual(core.searchQueries({ ...person, lastName: "LE GOFF", firstName: "Jean-Pierre" }), [
+  "A-12-345678", "LE GOFF Jean-Pierre", "LE GOFF"
+]);
+
 assert.equal(batch.requiredValidity, "31/12/2027");
 assert.equal(person.birthDate, "19/03/2004");
 assert.equal(core.requiredValidityForSeason("2026-2027"), "31/12/2027");
