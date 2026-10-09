@@ -133,6 +133,7 @@ function runUnitTests() {
     "nap-club-people-tests.js",
     "nap-national-directories-tests.js",
     "nap-national-swimmers-tests.js",
+    "nap-swimmer-merge-search-tests.js",
     "nap-person-history-schema-tests.js",
     "nap-person-deletion-plan-tests.js",
     "nap-person-deletion-tests.js",

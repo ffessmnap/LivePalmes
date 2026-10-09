@@ -13757,7 +13757,7 @@
           query,
           limit: 25
         }),
-        query ? searchEngagementAdminPublicSwimmers(query, 40) : Promise.resolve([])
+        query && global.LivePalmesEnvironment?.sportingDataSource !== "nap" ? searchEngagementAdminPublicSwimmers(query, 40) : Promise.resolve([])
       ]);
       engagementNationalSwimmerMergeTargets = mergeEngagementNationalSwimmerResults([
         ...publicSwimmers,

@@ -2,6 +2,15 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 9 octobre — Recherche des cibles de fusion nageur NAP (préparation PR #217)
+
+- Recherche nationale raccordée aux index NAP existants, source exclue, identités et licences relues en groupe. Aucun appel à l'ancienne recherche sportive depuis le parcours natif.
+- Budget : aucun appel supplémentaire à l'ouverture ; recherche explicite et rafraîchissement au plus trois requêtes SQL, 42 candidats et 20 fiches relues, indépendamment de la taille totale de la base. Pas d'écriture.
+- Tests ciblés : autorisation avant lecture, numéro de licence chaîne, bornes, fiche source absente et absence de repli Firebase réussis. EXPLAIN réels des trois requêtes : PRIMARY et index de noms ; seuls les ensembles dérivés bornés sont parcourus. Aucune mutation réelle.
+- Vérification globale locale : syntaxe des 707 fichiers et suites NAP réussies ; arrêt au test de workflow Bash sous Windows (`main / access`). Le contrôle Linux du commit exact reste requis.
+- La fusion native des nageurs et les suppressions de clubs/nageurs restent à terminer. Proposition d'une table de suivi et de quatorze index nageur préparée dans `outputs/complement-fusions-nageurs-nap.sql` du dossier de travail ; accord spécifique demandé, aucun de ces ajouts appliqué. Conservation de la validation de licence lors d'une fusion à arbitrer.
+- Le lot précédent officiels du commit `9bc0f8ad74003b6e60744087eb1bd80bc531459a` a réussi les contrôles Linux : run 37983885932. Cette recherche nécessite ses propres contrôles Linux et la recette TEST commune. PROD inchangée.
+
 ### 9 octobre — Suppression et fusion des personnes NAP (préparation PR #217)
 
 - Après accord spécifique utilisateur : complément `livepalmes_deleted_people_history` et index `officielsengager(officiel,id)` ajoutés après sauvegarde et contrôlés. Aucune personne ni aucun engagement modifié ; essais d'écriture exclusivement simulés.
@@ -9,7 +18,7 @@
 - Fusion explicite des personnes réutilisables : fiche cible conservée, rôles réunis, engagements d'officiel regroupés comme dans le portail antérieur, déclarations historiques de chef d'équipe intactes. Empreintes source/cible, confirmation spéciale pour clubs différents, journal et reprise MyISAM ; la fusion groupée utilise l'empreinte cible retournée après chaque action.
 - Budgets : suppression au plus 25 appels SQL / 2 001 liens ; fusion au plus 35 appels / 4 001 liens. Sauvegarde plafonnée à 500 Ko. Verrous natifs protègent également contre les écritures d'IntraNAP pendant chaque action confirmée.
 - Tests simulés de droits, concurrence, reprises après chaque phase, historique, options et routage sans ancienne base réussis. EXPLAIN réels de suppression, mise à jour des liens et lectures historiques : PRIMARY ou index ciblés ; aucune mutation exécutée pour ces preuves.
-- Contrôle global local avant fusion : syntaxe et suites NAP réussies, arrêt habituel sur le test de workflow Bash sous Windows. Vérification Linux du commit précédent `488037e0` réussie ; contrôles Linux du nouveau lot et recette visuelle encore nécessaires. TEST commun et PROD inchangés.
+- Contrôle global local avant fusion : syntaxe et suites NAP réussies, arrêt habituel sur le test de workflow Bash sous Windows. Vérification Linux du commit `9bc0f8ad` réussie (run 37983885932) ; recette visuelle et TEST commun encore nécessaires. PROD inchangée.
 
 ### 9 octobre — Lecture nationale des nageurs NAP (préparation PR #217)
 
