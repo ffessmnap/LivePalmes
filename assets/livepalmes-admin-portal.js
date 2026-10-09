@@ -1934,7 +1934,48 @@
 
   async function loadEngagementNationalOverview({ force = false } = {}) {
     if (!canDeleteEngagementCompetitionDirectly()) return;
+    loadNationalAutomaticMailControl(force);
     await loadPortalPendingOverview({ force });
+  }
+
+  let nationalAutomaticMailControl = null, nationalAutomaticMailLoading = false, nationalAutomaticMailLoadedAt = 0;
+  async function loadNationalAutomaticMailControl(force = false) {
+    const panel = document.getElementById('adminNationalMailControl');
+    const status = document.getElementById('adminNationalMailControlStatus');
+    const button = document.getElementById('adminNationalMailControlToggle');
+    if (!panel || !status || !button || !canDeleteEngagementCompetitionDirectly()) return;
+    panel.hidden = false;
+    if (nationalAutomaticMailLoading || (!force && Date.now() - nationalAutomaticMailLoadedAt < 30000)) return;
+    nationalAutomaticMailLoading = true; button.disabled = true;
+    try {
+      nationalAutomaticMailControl = await callFunction('getEngagementAutomaticMailControl', {});
+      nationalAutomaticMailLoadedAt = Date.now();
+      renderNationalAutomaticMailControl(status, button);
+    } catch (error) { status.textContent = error.message || 'Réglage indisponible.'; }
+    finally { nationalAutomaticMailLoading = false; button.disabled = !nationalAutomaticMailControl; }
+    button.onclick = async () => {
+      if (nationalAutomaticMailLoading || !nationalAutomaticMailControl) return;
+      nationalAutomaticMailLoading = true; button.disabled = true;
+      try {
+        nationalAutomaticMailControl = await callFunction('updateEngagementAutomaticMailControl', {
+          enabled: !nationalAutomaticMailControl.enabled, expectedRevision: nationalAutomaticMailControl.revision
+        });
+        nationalAutomaticMailLoadedAt = Date.now();
+        renderNationalAutomaticMailControl(status, button);
+      } catch (error) {
+        status.textContent = error.message || 'Modification impossible.';
+        nationalAutomaticMailControl = null; nationalAutomaticMailLoadedAt = 0;
+      } finally {
+        nationalAutomaticMailLoading = false; button.disabled = !nationalAutomaticMailControl;
+        if (!nationalAutomaticMailControl) loadNationalAutomaticMailControl(true);
+      }
+    };
+  }
+  function renderNationalAutomaticMailControl(status, button) {
+    const setting = nationalAutomaticMailControl;
+    status.textContent = `Mails automatiques ${setting.enabled ? 'activés' : 'désactivés'}.${setting.testRecipient ? ` TEST : tous les mails sont dirigés vers ${setting.testRecipient}.` : ''}`;
+    button.textContent = setting.enabled ? 'Désactiver les mails automatiques' : 'Activer les mails automatiques';
+    button.setAttribute('aria-pressed', String(setting.enabled));
   }
 
   function updateEngagementDetailEditState() {
@@ -9009,7 +9050,7 @@
             </span>
             <span role="cell">${escapeHtml(clubDisplayLabel(job, { fallback: "-" }))}</span>
             <span role="cell">
-              <span class="admin-engagements-mail-status">${escapeHtml({ ready: "En attente d'envoi", sent: "Envoyé", failed: "En erreur", blocked_missing_config: "Configuration manquante", cancelled_no_participants: "Annulé — aucun participant" }[job.status] || job.statusLabel || job.status || "Non envoyé")}</span>
+              <span class="admin-engagements-mail-status">${escapeHtml({ ready: "En attente d'envoi", sending: "Envoi en cours — ne pas relancer", cancelled: "Annulé", disabled: "Désactivé", sent: "Envoyé", failed: "En erreur", blocked_missing_config: "Configuration manquante", cancelled_no_participants: "Annulé — aucun participant" }[job.status] || job.statusLabel || job.status || "Non envoyé")}</span>
               <small>${escapeHtml(job.updatedAt ? formatDeadline(job.updatedAt).replace(/^Limite /, "") : "")}</small>
             </span>
           </div>
@@ -9244,7 +9285,7 @@
         });
         const confirmed = global.confirm(
           audience.disabled
-            ? `Mettre en ligne ${engagementCompetitionDocumentFiles.length} document(s) ? TEST : aucun mail ne sera envoyé. ${Number(audience.recipientCount || 0)} destinataire(s) seraient concernés.`
+            ? `Mettre en ligne ${engagementCompetitionDocumentFiles.length} document(s) ? Les notifications autorisées par le réglage national partiront uniquement vers livepalmes@nap-ffessm.fr sur TEST.`
             : `Mettre en ligne ${engagementCompetitionDocumentFiles.length} document${engagementCompetitionDocumentFiles.length > 1 ? "s" : ""} et envoyer un e-mail à ${Number(audience.recipientCount || 0)} administrateur${Number(audience.recipientCount || 0) > 1 ? "s" : ""} de ${Number(audience.clubCount || 0)} club${Number(audience.clubCount || 0) > 1 ? "s" : ""} ?`
         );
         if (!confirmed) {
@@ -9322,7 +9363,7 @@
         elements.engagementsDocumentsSummary.textContent = errors.length
           ? `${publishedIds.length} document${publishedIds.length > 1 ? "s" : ""} mis en ligne. ${errors.join(" · ")}`
           : notification
-            ? notification.disabled ? `${publishedIds.length} document(s) mis en ligne. TEST : aucun mail envoyé.`
+            ? notification.queued ? `${publishedIds.length} document(s) mis en ligne. Notifications programmées selon le réglage national ; sur TEST, uniquement vers livepalmes@nap-ffessm.fr.` : notification.disabled ? `${publishedIds.length} document(s) mis en ligne. TEST : aucun mail envoyé.`
               : `${publishedIds.length} document${publishedIds.length > 1 ? "s" : ""} mis en ligne · ${Number(notification.sentCount || 0)} e-mail${Number(notification.sentCount || 0) > 1 ? "s" : ""} envoyé${Number(notification.sentCount || 0) > 1 ? "s" : ""}${notification.configurationMissing ? " · configuration e-mail manquante" : Number(notification.errorCount || 0) ? ` · ${notification.errorCount} en erreur` : ""}.`
             : editingDocument && !publishesFile
               ? "Informations du document enregistrées."
@@ -15603,7 +15644,7 @@
       }
       if (patch.entryStatus === "closed" && !global.confirm("Fermer les engagements dans LivePalmes et IntraNAP ? Les engagements existants et la date limite seront conservés.")) return false;
       if (["level","regionId","invitedRegionIds"].some(key=>Object.hasOwn(patch,key)) && !global.confirm("Modifier le niveau ou les régions admises dans LivePalmes et IntraNAP ? L’accès des clubs aux nouvelles inscriptions peut changer. Les engagements déjà enregistrés seront conservés.")) return false;
-      if (patch.entryStatus === "open" && !global.confirm("Ouvrir les engagements dans LivePalmes et IntraNAP ? Sur TEST, les notifications seront préparées sans envoi réel.")) return false;
+      if (patch.entryStatus === "open" && !global.confirm("Ouvrir les engagements dans LivePalmes et IntraNAP ? Les notifications autorisées par le réglage national partiront uniquement vers livepalmes@nap-ffessm.fr sur TEST.")) return false;
       const notificationOpeningRequested=patch.entryStatus==='open' && (selectedEngagementCompetition.entryStatus!=='closed'||confirmEngagementReopeningMail({...selectedEngagementCompetition,...patch}));
       if (button) button.disabled = true;
       if (elements.engagementsDetailStatus) { elements.engagementsDetailStatus.textContent = "Enregistrement dans NAP..."; elements.engagementsDetailStatus.dataset.tone = "loading"; }
@@ -15710,7 +15751,7 @@
     try {
       const preparation = await callFunction("prepareEngagementOpeningNotificationEmails", { competitionId });
       if (preparation.disabled) {
-        const message = `Engagements ouverts. TEST : ${Number(preparation.recipientCount || 0)} destinataire(s) prévus, aucun mail envoyé.`;
+        const message = `Engagements ouverts. TEST : ${Number(preparation.recipientCount || 0)} destinataire(s) prévus. Notifications programmées selon le réglage national, uniquement vers livepalmes@nap-ffessm.fr.`;
         if (statusTarget) { statusTarget.textContent = message; statusTarget.dataset.tone = "ok"; }
         finishEngagementLongOperation("success", "Engagements ouverts", message);
         return preparation;
@@ -17876,17 +17917,15 @@
       if(!selectedEngagementCompetitionId||!isEngagementAdminMode())return;
       const competitionId=selectedEngagementCompetitionId;
       button.disabled=true;
-      if(status)status.textContent='Préparation des notifications TEST… Aucun mail ne sera envoyé.';
+      if(status)status.textContent='Traitement des notifications TEST… Les mails autorisés partent uniquement vers livepalmes@nap-ffessm.fr.';
       try{
         const result=await callFunction('processNapCompetitionNotifications',{action:'process',competitionId});
         if(selectedEngagementCompetitionId!==competitionId)return;
-        if(status)status.textContent=`TEST : ${result.jobCount||0} mail(s) et ${result.attachmentCount||0} pièce(s) préparés dans ce lot. Aucun envoi. ${result.remaining?'La préparation peut être poursuivie avec ce bouton.':'Aucun autre lot à traiter pour le moment.'}`;
+        if(status)status.textContent=`TEST : ${result.jobCount||0} mail(s) et ${result.attachmentCount||0} pièce(s) préparés ; ${result.sentCount||0} mail(s) envoyés vers livepalmes@nap-ffessm.fr. ${result.remaining?'Le traitement peut être poursuivi avec ce bouton.':'Aucun autre lot à traiter pour le moment.'}`;
+        await loadEngagementMailJobs({ force: true });
       }catch(error){
         if(selectedEngagementCompetitionId!==competitionId)return;
-        if(/reprise explicite/i.test(error?.message||'')&&global.confirm('Les engagements ou paramètres NAP ont changé. Recommencer la préparation avec les données actuelles, sans envoyer de mail ?')){
-          try{await callFunction('processNapCompetitionNotifications',{action:'restart',competitionId});if(status&&selectedEngagementCompetitionId===competitionId)status.textContent='Reprise enregistrée. Vous pouvez préparer le prochain lot, sans envoi.';}
-          catch(retryError){if(status)status.textContent=`Reprise impossible : ${retryError?.message||retryError}`;}
-        }else if(status)status.textContent=`Préparation interrompue : ${error?.message||error}`;
+        if(status)status.textContent=`Traitement interrompu : ${error?.message||error}`;
       }
       finally{button.disabled=false;}
     });
