@@ -13334,10 +13334,14 @@ function engagementLicenseControlPerson(swimmer = {}, entry = {}, competitions =
   };
 }
 
-exports.prepareEngagementLicenseControlBatch = onCall(CALLABLE_OPTIONS, async (request) => {
+exports.prepareEngagementLicenseControlBatch = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.projectId === "livepalmes-test" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
   const startedAt = Date.now();
   const context = await engagementAccessContext(request);
   if (!context.national) throw new HttpsError("permission-denied", "Controle des licences reserve au niveau national.");
+  if (ENVIRONMENT.projectId === "livepalmes-test") {
+    try { return await require("./nap-license-control").prepareBatch(require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD),request.data || {}); }
+    catch(error) { throw new HttpsError(error instanceof TypeError ? "failed-precondition" : error instanceof RangeError ? "resource-exhausted" : "unavailable",error instanceof TypeError || error instanceof RangeError ? error.message : "Controle NAP indisponible."); }
+  }
   const season = engagementLicenseControlSeason(request.data?.season);
   const competitionIds = Array.from(new Set((Array.isArray(request.data?.competitionIds) ? request.data.competitionIds : [])
     .map((id) => cleanText(id).slice(0, 128))
@@ -13419,9 +13423,24 @@ exports.prepareEngagementLicenseControlBatch = onCall(CALLABLE_OPTIONS, async (r
   };
 });
 
-exports.validateEngagementSwimmerLicenses = onCall(CALLABLE_OPTIONS, async (request) => {
+exports.validateEngagementSwimmerLicenses = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.projectId === "livepalmes-test" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
   const context = await engagementAccessContext(request);
   if (!context.national) throw new HttpsError("permission-denied", "Validation des licences reservee au niveau national.");
+  if (ENVIRONMENT.projectId === "livepalmes-test") {
+    const connection=await require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD).getConnection();
+    let locked=false;
+    try {
+      const [lock]=await connection.execute({sql:"SELECT GET_LOCK('livepalmes_license_control',0) AS acquired",timeout:10000});
+      if(Number(lock[0]?.acquired)!==1) throw new TypeError("Un controle de licences est deja en cours.");
+      locked=true;
+      return await require("./nap-license-control").validateBatch(connection,request.data || {},context.uid,{
+        read:async operation=>{const snapshot=await db.collection("auditLogs").doc(`nap-licenses-${operation}-before`).get();return snapshot.exists?snapshot.data().target:null;},
+        prepare:(operation,target)=>db.collection("auditLogs").doc(`nap-licenses-${operation}-before`).create({action:"nap.licenses.correction.prepare",actorUid:context.uid,target,createdAt:new Date().toISOString()}),
+        complete:(operation,target)=>writeAuditLogOnce("nap.licenses.corrected",context.uid,target,operation)
+      });
+    } catch(error) {throw new HttpsError(error instanceof TypeError ? "failed-precondition" : error instanceof RangeError ? "resource-exhausted" : "unavailable",error instanceof TypeError || error instanceof RangeError ? error.message : "Validation a verifier. La sauvegarde est conservee : reprenez le meme lot.");}
+    finally {try{if(locked)await connection.execute({sql:"SELECT RELEASE_LOCK('livepalmes_license_control')",timeout:10000});}finally{connection.release();}}
+  }
   const season = engagementLicenseControlSeason(request.data?.season);
   const source = cleanText(request.data?.source) === "admin_import" ? "admin_import" : "national_manual";
   const rawItems = Array.isArray(request.data?.items) ? request.data.items.slice(0, 100) : [];

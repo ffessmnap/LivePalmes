@@ -2500,6 +2500,7 @@
 
   global.LivePalmesLicenseAdministration = Object.freeze({
     callFunction,
+    licensesChanged: () => invalidateEngagementClubSwimmersCache(),
     canManage: () => canDeleteEngagementCompetitionDirectly(),
     openSwimmer: (swimmer, opener = null) => openEngagementSwimmerCorrectionDialog(swimmer, "direct", opener)
   });
@@ -6739,9 +6740,9 @@
     if (!licenseNumber) return "";
     const verificationStatus = swimmer.licenseVerificationStatus || selected.licenseVerificationStatus || "";
     const seasonStatus = swimmer.licenseSeasonStatus || selected.licenseSeasonStatus || "";
-    const requiresAttention = ["pending", "rejected", "conflict"].includes(verificationStatus) || ["to_check", "invalid"].includes(seasonStatus);
+    const requiresAttention = verificationStatus !== "verified" || seasonStatus !== "valid";
     const label = requiresAttention
-      ? engagementSwimmerLicenseStatusLabel(swimmer, selected)
+      ? engagementSwimmerLicenseStatusLabel(swimmer, selected) || "Licence et saison à vérifier"
       : "Licence et saison vérifiées";
     return `<span class="admin-engagements-club-swimmer-license-status" title="${escapeHtml(label)}" aria-label="${escapeHtml(label)}">${requiresAttention ? "!" : "✓"}</span>`;
   }
