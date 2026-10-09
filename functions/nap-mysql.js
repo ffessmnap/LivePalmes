@@ -1,4 +1,5 @@
 const mysql = require("mysql2/promise");
+const {visiblePerformanceSql}=require("./nap-performance-visibility");
 
 function napPoolOptions(password) {
   if (!password) {
@@ -27,7 +28,7 @@ function performanceRequest(data = {}) {
 async function readSwimmerPerformances(pool, input) {
   const { swimmerId, afterId } = performanceRequest(input);
   const [rows] = await pool.execute({
-    sql: "SELECT id, nageur, compet, course, cat, tps, points, newpoints, passage, club, relais, pid, classement FROM perfs WHERE nageur = ? AND id > ? ORDER BY id LIMIT 51",
+    sql: `SELECT id, nageur, compet, course, cat, tps, points, newpoints, passage, club, relais, pid, classement FROM perfs WHERE ${visiblePerformanceSql('perfs')} AND nageur = ? AND id > ? ORDER BY id LIMIT 51`,
     timeout: 10000
   }, [swimmerId, afterId === null ? -1 : afterId]);
   const hasMore = rows.length > 50;

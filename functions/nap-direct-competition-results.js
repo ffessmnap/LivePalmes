@@ -1,4 +1,5 @@
 "use strict";
+const {visiblePerformanceSql}=require("./nap-performance-visibility");
 const rules = require("./nap-performance-normalization");
 const { performanceRow } = require("./nap-direct-swimmer");
 const { MAX_RESULTS, positiveId, text, execute } = require("./nap-direct-calendar");
@@ -13,7 +14,7 @@ function personFor(row) {
 }
 async function readCompetitionResults(pool, input) {
   const id = positiveId(input);
-  const rows = await execute(pool, `SELECT STRAIGHT_JOIN ${PROJECTION},COALESCE(cp.abre_club,cn.abre_club) AS abre_club,COALESCE(cp.nom_club,cn.nom_club) AS nom_club FROM perfs p FORCE INDEX (livepalmes_compet_id) JOIN competitions c ON c.id=p.compet LEFT JOIN nageurs n ON n.id=p.nageur LEFT JOIN clubs cp ON cp.num_club=p.club AND CAST(cp.num_club AS CHAR)=p.club LEFT JOIN clubs cn ON cn.num_club=n.club AND CAST(cn.num_club AS CHAR)=n.club WHERE p.compet=? ORDER BY p.id LIMIT ${MAX_RESULTS + 1}`, [id]);
+  const rows = await execute(pool, `SELECT STRAIGHT_JOIN ${PROJECTION},COALESCE(cp.abre_club,cn.abre_club) AS abre_club,COALESCE(cp.nom_club,cn.nom_club) AS nom_club FROM perfs p FORCE INDEX (livepalmes_compet_id) JOIN competitions c ON c.id=p.compet LEFT JOIN nageurs n ON n.id=p.nageur LEFT JOIN clubs cp ON cp.num_club=p.club AND CAST(cp.num_club AS CHAR)=p.club LEFT JOIN clubs cn ON cn.num_club=n.club AND CAST(cn.num_club AS CHAR)=n.club WHERE ${visiblePerformanceSql()} AND p.compet=? ORDER BY p.id LIMIT ${MAX_RESULTS + 1}`, [id]);
   if (rows.length > MAX_RESULTS) throw new RangeError("Resultats trop volumineux.");
   const participants = [...new Set(rows.filter(row => !Number(row.relais)).map(row => Number(row.nageur)).filter(value => value > 0))];
   const personal = new Map(), seasonal = new Map();
@@ -23,7 +24,7 @@ async function readCompetitionResults(pool, input) {
     const counted = await execute(pool, `SELECT COUNT(*) AS count FROM (SELECT nageur FROM perfs FORCE INDEX (nageur) WHERE nageur IN (${placeholders}) LIMIT ${MAX_HISTORY_ROWS + 1}) bounded`, participants);
     markersAvailable = Number(counted[0]?.count) <= MAX_HISTORY_ROWS;
     if (markersAvailable) {
-      const history = await execute(pool, `SELECT STRAIGHT_JOIN ${PROJECTION} FROM perfs p FORCE INDEX (nageur) JOIN competitions c ON c.id=p.compet JOIN nageurs n ON n.id=p.nageur WHERE p.nageur IN (${placeholders}) LIMIT ${MAX_HISTORY_ROWS + 1}`, participants);
+      const history = await execute(pool, `SELECT STRAIGHT_JOIN ${PROJECTION} FROM perfs p FORCE INDEX (nageur) JOIN competitions c ON c.id=p.compet JOIN nageurs n ON n.id=p.nageur WHERE ${visiblePerformanceSql()} AND p.nageur IN (${placeholders}) LIMIT ${MAX_HISTORY_ROWS + 1}`, participants);
       if (history.length > MAX_HISTORY_ROWS) markersAvailable = false;
       else for (const row of history) {
         const performance = performanceRow(row, personFor(row));

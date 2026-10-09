@@ -51,12 +51,12 @@ const { readCompetitionResults } = require("../functions/nap-direct-competition-
   const performance = { id: 973, nageur: 168, nom: "Exemple", prenom: "Nageur", birth_date: "1980-01-01", sexe: "M", competition_id: 2, libelle: "Compétition", date: "2004-02-29", bassin: 50, chrono: "E", ld: 0, course: "100SF", cat: "HSE", tps: "14200", passage: 0, relais: 0 };
   const resultPool = { execute: async (query, values) => {
     queries.push({ query, values });
-    return [query.sql.includes("COUNT(*)") ? [{ count: 2 }] : query.sql.includes("WHERE p.compet=?") ? [performance] : [performance, { ...performance, id: 974, tps: "014200" }]];
+    return [query.sql.includes("COUNT(*)") ? [{ count: 2 }] : query.sql.includes("p.compet=?") ? [performance] : [performance, { ...performance, id: 974, tps: "014200" }]];
   } };
   const result = await readCompetitionResults(resultPool, 2);
   assert.equal(result.groups[0].performances[0].time, "1:42.00");
   assert.equal(result.groups[0].performances[0].personalBest, true);
-  const missingPersonPool = { execute: async query => [query.sql.includes("COUNT(*)") ? [{ count: 0 }] : query.sql.includes("WHERE p.compet=?") ? [{ ...performance, nom: null, prenom: null }] : []] };
+  const missingPersonPool = { execute: async query => [query.sql.includes("COUNT(*)") ? [{ count: 0 }] : query.sql.includes("p.compet=?") ? [{ ...performance, nom: null, prenom: null }] : []] };
   const missingPerson = (await readCompetitionResults(missingPersonPool, 2)).groups[0].performances[0];
   assert.equal(missingPerson.swimmer, "Nageur non renseigné");
   assert.equal(missingPerson.swimmerId, "");
@@ -64,12 +64,12 @@ const { readCompetitionResults } = require("../functions/nap-direct-competition-
   assert.deepEqual(queries[1].values, [168]);
   const changed = { execute: async (query, values) => {
     const [rows] = await resultPool.execute(query, values);
-    return [query.sql.includes("WHERE p.nageur IN") ? rows.map(row => ({ ...row, tps: "013000" })) : rows];
+    return [query.sql.includes("p.nageur IN") ? rows.map(row => ({ ...row, tps: "013000" })) : rows];
   } };
   assert.equal((await readCompetitionResults(changed, 2)).groups[0].performances[0].personalBest, false);
   const relayPool = { execute: async (query, values) => {
     const [rows] = await resultPool.execute(query, values);
-    return [query.sql.includes("WHERE p.compet=?") ? [...rows, { ...performance, id: 975, relais: 1, nom_club: "Équipe" }] : rows];
+    return [query.sql.includes("p.compet=?") ? [...rows, { ...performance, id: 975, relais: 1, nom_club: "Équipe" }] : rows];
   } };
   const withRelay = await readCompetitionResults(relayPool, 2);
   assert.equal(withRelay.groups.length, 2);
