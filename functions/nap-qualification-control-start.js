@@ -43,7 +43,7 @@ async function beginControl(pool,input,services){
       if(running&&running.actor_uid===input.actorUid&&running.payload.expectedFingerprint===input.expectedFingerprint&&isDeepStrictEqual(running.payload.rules,target.rules)&&isDeepStrictEqual(running.payload.patch,input.patch||{}))return {qualificationJobId:running.id,state:running.state,resumed:true};
     }
     if(active.length)throw new TypeError('Un controle des qualifications est deja en cours. Reprenez-le avant de modifier la grille.');
-    const value={expectedFingerprint:input.expectedFingerprint,nativeSnapshot:pack.nativeSnapshot,nativeOperations,patch:input.patch||{},rules:target.rules,before:target.before,after:target.after,count:0,generation:0,applyStarted:false};
+    const value={expectedFingerprint:input.expectedFingerprint,nativeSnapshot:pack.nativeSnapshot,nativeOperations,patch:input.patch||{},rules:target.rules,before:target.before,after:target.after,count:0,generation:0,applyStarted:false,...(input.notificationOpeningRequested===undefined?{}:{notificationOpeningRequested:input.notificationOpeningRequested===true})};
     const payload=jobs.payload(value);
     const authority={competitions:pack.nativeSnapshot.competition,compet_parametres:pack.nativeSnapshot.parameters};
     const guard=authorityGuard('livepalmes_qualification_jobs',authority);

@@ -54,6 +54,7 @@ async function run() {
       ENGAGEMENT_NOTIFICATION_PREVIEW_OPTIONS: {}, ENGAGEMENT_MAIL_CALLABLE_OPTIONS: {},
       onCall: (_options, handler) => handler,
       nativeNotificationPreview: async () => { previews++; return { disabled: true }; },
+      queueNativeDocumentNotification: async () => { previews++; return { disabled: true,queued:true }; },
       engagementAccessContext: async () => ({ national: true }), cleanText: value => String(value || ""),
       nativePortalCompetition: async (id, authorize) => { assert.equal(id, competition.id); authorize(competition); },
       assertCanManageEngagementCompetition: () => { authorizations++; },
@@ -65,7 +66,7 @@ async function run() {
     if (name === "listEngagementCompetitionMailJobs") assert.equal(authorizations, 1);
   }
   const helperStart = source.indexOf("async function nativeNotificationPreview(");
-  const helperEnd = source.indexOf("exports.listEngagementCompetitionClubRecaps =", helperStart);
+  const helperEnd = source.indexOf("function nativeNotificationAutomationServices(", helperStart);
   const helper = source.slice(helperStart, helperEnd);
   assert.ok(helper.includes('state.data()?.status !== "ready"'));
   assert.equal(helper.includes("bootstrapEngagementMailRecipientIndex"), false);

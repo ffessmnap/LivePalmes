@@ -9,7 +9,7 @@ const context={exports:{},ENVIRONMENT:{projectId:"livepalmes-test"},CALLABLE_OPT
   if(name==="./nap-admin-entries")return {readAdminEntries:async(pool,input,authorize)=>{await authorize(input.competition);read++;return {entries:[entry],clubsById:new Map(),generatedAt:"now",sqlBudget:{queriesMax:9,rowsMax:39200,writesMax:0}};}};
   throw Error("Unexpected dependency");
 }};
-const chunks=[source.slice(source.indexOf("async function nativeAdminCompetitionEntries("),source.indexOf("function engagementCompetitionStatisticsItem("))];
+const chunks=[source.slice(source.indexOf("async function nativeAdminCompetitionEntries("),source.indexOf("async function nativeNotificationPreview(")),source.slice(source.indexOf("exports.listEngagementCompetitionClubRecaps ="),source.indexOf("function engagementCompetitionStatisticsItem("))];
 context.clubRecapZip = require("../functions/club-recap-zip").clubRecapZip;
 chunks.push(source.slice(source.indexOf("exports.generateEngagementCompetitionClubRecapPdfs ="), source.indexOf("exports.generateEngagementCompetitionTxtExport =")));
 for(const [name,next] of [["getEngagementCompetitionStatistics","generateEngagementClubRecapPdfForAdmin"],["generateEngagementClubRecapPdfForAdmin","generateEngagementCompetitionClubRecapPdfs"],["generateEngagementCompetitionTxtExport","listEngagementCompetitionMailJobs"]]) chunks.push(source.slice(source.indexOf(`exports.${name} =`),source.indexOf(`exports.${next} =`)));

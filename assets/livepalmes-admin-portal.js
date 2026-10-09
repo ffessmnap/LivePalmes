@@ -789,6 +789,7 @@
     engagementsDocumentsSummary: document.querySelector("#adminEngagementsDocumentsSummary"),
     engagementsNotificationPreviewActions: document.querySelector("#adminEngagementsNotificationPreviewActions"),
     engagementsNotificationPreviewStatus: document.querySelector("#adminEngagementsNotificationPreviewStatus"),
+    engagementsProcessNativeNotificationsButton: document.querySelector("#adminEngagementsProcessNativeNotificationsButton"),
     engagementsLongOperation: document.querySelector("#adminEngagementsLongOperation"),
     engagementsDocumentsTitle: document.querySelector("#adminEngagementsDocumentsTitle"),
     engagementsSharedDocumentsCount: document.querySelector("#adminEngagementsSharedDocumentsCount"),
@@ -15602,10 +15603,11 @@
       }
       if (patch.entryStatus === "closed" && !global.confirm("Fermer les engagements dans LivePalmes et IntraNAP ? Les engagements existants et la date limite seront conservés.")) return false;
       if (["level","regionId","invitedRegionIds"].some(key=>Object.hasOwn(patch,key)) && !global.confirm("Modifier le niveau ou les régions admises dans LivePalmes et IntraNAP ? L’accès des clubs aux nouvelles inscriptions peut changer. Les engagements déjà enregistrés seront conservés.")) return false;
-      if (patch.entryStatus === "open" && !global.confirm("Ouvrir les engagements dans LivePalmes et IntraNAP ? L’envoi des courriels est encore en cours de raccordement : cette ouverture n’enverra pas de courriel aux clubs.")) return false;
+      if (patch.entryStatus === "open" && !global.confirm("Ouvrir les engagements dans LivePalmes et IntraNAP ? Sur TEST, les notifications seront préparées sans envoi réel.")) return false;
+      const notificationOpeningRequested=patch.entryStatus==='open' && (selectedEngagementCompetition.entryStatus!=='closed'||confirmEngagementReopeningMail({...selectedEngagementCompetition,...patch}));
       if (button) button.disabled = true;
       if (elements.engagementsDetailStatus) { elements.engagementsDetailStatus.textContent = "Enregistrement dans NAP..."; elements.engagementsDetailStatus.dataset.tone = "loading"; }
-      let result = await callFunction("updateEngagementCompetition", { competitionId:selectedEngagementCompetition.id, expectedFingerprint:selectedEngagementCompetition.napFingerprint, patch });
+      let result = await callFunction("updateEngagementCompetition", { competitionId:selectedEngagementCompetition.id, expectedFingerprint:selectedEngagementCompetition.napFingerprint, patch,notificationOpeningRequested });
       if (result.qualificationJobId) {
         selectedEngagementCompetition.qualificationJobId = result.qualificationJobId;
         renderQualificationJobActions();
@@ -17869,6 +17871,25 @@
     elements.engagementsPrepareOpeningEmailsButton?.addEventListener("click", prepareEngagementOpeningEmails);
     elements.engagementsGenerateClubRecapsButton?.addEventListener("click", generateEngagementAdminClubRecapPdfs);
     elements.engagementsPrepareClubRecapEmailsButton?.addEventListener("click", prepareEngagementClubRecapEmails);
+    elements.engagementsProcessNativeNotificationsButton?.addEventListener("click", async()=>{
+      const button=elements.engagementsProcessNativeNotificationsButton,status=elements.engagementsNotificationPreviewStatus;
+      if(!selectedEngagementCompetitionId||!isEngagementAdminMode())return;
+      const competitionId=selectedEngagementCompetitionId;
+      button.disabled=true;
+      if(status)status.textContent='Préparation des notifications TEST… Aucun mail ne sera envoyé.';
+      try{
+        const result=await callFunction('processNapCompetitionNotifications',{action:'process',competitionId});
+        if(selectedEngagementCompetitionId!==competitionId)return;
+        if(status)status.textContent=`TEST : ${result.jobCount||0} mail(s) et ${result.attachmentCount||0} pièce(s) préparés dans ce lot. Aucun envoi. ${result.remaining?'La préparation peut être poursuivie avec ce bouton.':'Aucun autre lot à traiter pour le moment.'}`;
+      }catch(error){
+        if(selectedEngagementCompetitionId!==competitionId)return;
+        if(/reprise explicite/i.test(error?.message||'')&&global.confirm('Les engagements ou paramètres NAP ont changé. Recommencer la préparation avec les données actuelles, sans envoyer de mail ?')){
+          try{await callFunction('processNapCompetitionNotifications',{action:'restart',competitionId});if(status&&selectedEngagementCompetitionId===competitionId)status.textContent='Reprise enregistrée. Vous pouvez préparer le prochain lot, sans envoi.';}
+          catch(retryError){if(status)status.textContent=`Reprise impossible : ${retryError?.message||retryError}`;}
+        }else if(status)status.textContent=`Préparation interrompue : ${error?.message||error}`;
+      }
+      finally{button.disabled=false;}
+    });
     elements.engagementsSendOpeningEmailsButton?.addEventListener("click", () => sendEngagementPreparedEmails("opening_notification"));
     elements.engagementsSendClubRecapEmailsButton?.addEventListener("click", () => sendEngagementPreparedEmails("club_recap_pdf"));
     elements.engagementsClubRecapFiles?.addEventListener("click", (event) => {
