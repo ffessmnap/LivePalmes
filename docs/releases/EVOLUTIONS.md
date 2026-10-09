@@ -2,6 +2,14 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 9 octobre 2026 — Contrôles des licences et validations par saison NAP
+
+- Autorisations utilisateur : complément des validations et index des licences, aucune saisie/import en cours ; correction du numéro par l’administration nationale conservée. Numéros natifs conservés en chaînes, sans conversion ni normalisation de format. Un numéro présent ne suffit plus à afficher une validation.
+- Schéma additif sauvegardé et vérifié le 9 octobre : table InnoDB `livepalmes_swimmer_license_seasons`, index `nageurs(number,id)`. Preuve locale `nap-license-schema-backup-2026-10-09T17-30-48-555Z-proof.json` dans les sorties du dossier de travail. Aucun numéro ni résultat existant modifié lors de cette opération.
+- Budget : listes privées enrichies par jointure sur clé primaire, même nombre d’appels et mêmes limites. Préparation : trois lectures groupées (compétitions, individuels, relayeurs), cinq compétitions et 800 personnes maximum, 8 005 lignes natives maximum. Validation : 100 personnes maximum, six lectures natives groupées maximum, une correction groupée conditionnelle et une écriture transactionnelle des validations ; journal technique groupé, aucun ancien référentiel sportif Firestore utilisé sur TEST. Rafraîchissement explicite, aucun parcours total ni lecture par nageur.
+- Avant-image durable des corrections MyISAM, comparaison de toutes les colonnes, reprise après interruption, contrôle des doublons natifs et des validations de saison, verrou entre appels LivePalmes. Validité fédérale et règles de saison existantes conservées. Les comptes et journaux techniques restent Firebase.
+- Tests ciblés réussis ; vérification globale et publication TEST en cours. Aucun essai de correction ou validation de licence réelle effectué, aucune validation utilisateur revendiquée. PROD inchangée.
+
 ### 9 octobre 2026 — Licences natives NAP
 
 - Demande utilisateur : utiliser le champ `nageurs.number`, importé et vérifié séparément, comme licence des nageurs du portail. Conservation sous forme de chaîne, lettres, tirets et zéros initiaux préservés ; NULL ou vide signifie non renseigné. Aucun import ni modification de licence.
