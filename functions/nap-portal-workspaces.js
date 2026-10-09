@@ -97,7 +97,7 @@ function entryItem(pack, context, categoryForBirthDate, competition = {}) {
   const swimmers = pack.inscriptions.map(inscription => {
     const person = identities.get(String(inscription.nageur));
     if (!person) throw new TypeError("Inscription NAP sans fiche nageur.");
-    return { ...person, swimmerIndexId: String(person.id), licenseNumber: "", category: categoryForBirthDate(person.birthDate), nativeInscriptionId: String(inscription.id),
+    return { ...person, swimmerIndexId: String(person.id), licenseNumber: String(person.licenseNumber ?? "").trim(), category: categoryForBirthDate(person.birthDate), nativeInscriptionId: String(inscription.id),
       individualEntries: pack.individual.filter(row => String(row.engagement) === String(inscription.id)).map(row => ({
         nativeEntryId: String(row.id), eventCode: require("./nap-open-water-courses").displayCode(row.course,competition.eventType || competition.competitionType), status: "selected", manualEntryTime: "", ...nativeTime(row.tps) })) };
   });
@@ -109,7 +109,7 @@ function entryItem(pack, context, categoryForBirthDate, competition = {}) {
     const members = pack.members.filter(member => String(member.relais) === String(row.id)).map(member => ({
       nativeMemberId: String(member.id), nativePosition: member.pos, swimmerIndexId: String(member.nageur), swimmerId: String(member.nageur),
       firstName: text(member.prenom), lastName: text(member.nom), name: [text(member.prenom), text(member.nom)].join(" "),
-      birthDate: calendar.date(member.date), sex: text(member.sexe), clubId: text(member.club), licenseNumber: "" }));
+      birthDate: calendar.date(member.date), sex: text(member.sexe), clubId: text(member.club), licenseNumber: text(member.number) }));
     return { relayId: String(row.id), nativeCategory: row.categorie, category: relayDetail?.category || `NAP-${row.categorie}`, eventCode: nativeCourseCode(row.course_code) || `NAP-${row.course}`,
       nativeCourseId: row.course, genderMode: relayDetail?.genderMode || ({ F: "female", M: "male", X: "mixed", 0: "mixed" })[text(row.sexe)] || "",
       manualEntryTime: "", ...nativeTime(row.tps), members, memberIds: members.map(member => member.swimmerIndexId) };
