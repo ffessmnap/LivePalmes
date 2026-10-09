@@ -297,7 +297,7 @@ const ENGAGEMENT_CLOSURE_SCHEDULER_OPTIONS = {
   timeZone: "Europe/Paris",
   timeoutSeconds: 540,
   memory: "1GiB",
-  secrets: ENVIRONMENT.projectId === "livepalmes-test" ? [defineSecret("LIVEPALMES_NAP_PASSWORD")] : ENGAGEMENT_NOTIFICATION_MAIL_SECRETS
+  secrets: ENVIRONMENT.projectId === "livepalmes-test" ? [defineSecret("LIVEPALMES_NAP_PASSWORD"), ...ENGAGEMENT_NOTIFICATION_MAIL_SECRETS] : ENGAGEMENT_NOTIFICATION_MAIL_SECRETS
 };
 const MIGRATION_CALLABLE_OPTIONS = { region: REGION, invoker: "public", timeoutSeconds: 540, memory: "1GiB" };
 const PUBLIC_PERFORMANCE_CALLABLE_OPTIONS = { region: REGION, invoker: "public", timeoutSeconds: 120, memory: "1GiB" };
@@ -8362,6 +8362,26 @@ function engagementMailPreparedStatus() {
   return engagementMailSmtpConfig().ready ? "ready" : "blocked_missing_config";
 }
 
+exports.getEngagementAutomaticMailControl = onCall(CALLABLE_OPTIONS, async request => {
+  const context = await engagementAccessContext(request);
+  if (!context.national) throw new HttpsError('permission-denied', 'Administration nationale requise.');
+  const control = require('./engagement-mail-control');
+  return { ...await control.read(db), testRecipient: ENVIRONMENT.projectId === 'livepalmes-test' ? control.TEST_ADDRESS : '' };
+});
+exports.updateEngagementAutomaticMailControl = onCall(CALLABLE_OPTIONS, async request => {
+  const context = await engagementAccessContext(request);
+  if (!context.national) throw new HttpsError('permission-denied', 'Administration nationale requise.');
+  try {
+    const control = require('./engagement-mail-control');
+    const result = await control.update(db, request.data, context);
+    await writeAuditLog('engagementNotifications.deliveryControlChanged', context.uid, { enabled: result.enabled, revision: result.revision });
+    return { ...result, testRecipient: ENVIRONMENT.projectId === 'livepalmes-test' ? control.TEST_ADDRESS : '' };
+  } catch (error) {
+    throw new HttpsError(error instanceof TypeError ? 'failed-precondition' : 'unavailable',
+      error instanceof TypeError ? error.message : 'Réglage des mails indisponible.');
+  }
+});
+
 function engagementMailPreparedReason() {
   return engagementMailSmtpConfig().ready ? "" : "Configuration technique d'envoi mail non branchee.";
 }
@@ -9027,6 +9047,8 @@ async function engagementMailAttachments(job = {}) {
     if (!storagePath) continue;
     const buffer = await readStoredEngagementClubRecapPdf({ storagePath });
     if (!buffer?.length) continue;
+    if (attachment.sha256 && (buffer.length !== attachment.size || crypto.createHash('sha256').update(buffer).digest('hex') !== attachment.sha256))
+      throw new TypeError('Pièce jointe différente du document préparé.');
     attachments.push({
       filename: cleanText(attachment.fileName) || "document-livepalmes.pdf",
       content: buffer,
@@ -9080,13 +9102,22 @@ async function sendEngagementMailJob(transporter, doc, config, context) {
       html = content.html;
     }
     if (!html) html = livePalmesMailHtml(text);
+    const attachments = await engagementMailAttachments(data);
+    // Fresh server read immediately before SMTP; never trust the UI switch.
+    const control = require('./engagement-mail-control');
+    const gate = control.decision(await control.read(db), data, ENVIRONMENT.projectId);
+    if (!gate.allowed) {
+      const update = { status: 'cancelled', reason: gate.reason, updatedAt: new Date().toISOString() };
+      await doc.ref.set(update, { merge: true });
+      return engagementMailJobItemFromData({ ...data, ...update }, doc.id);
+    }
     const info = await transporter.sendMail({
       from: `LivePalmes <${config.fromEmail}>`,
-      to: toEmail,
-      subject,
+      to: gate.to,
+      subject: gate.test ? `[TEST LivePalmes] ${subject}` : subject,
       text,
       ...(html ? { html } : {}),
-      attachments: await engagementMailAttachments(data)
+      attachments
     });
     const update = cleanFirestoreValue({
       status: "sent",
@@ -9095,6 +9126,7 @@ async function sendEngagementMailJob(transporter, doc, config, context) {
       sentBy: context.uid || "",
       sentByEmail: context.email || "",
       providerMessageId: cleanText(info?.messageId).slice(0, 180),
+      deliveredTo: gate.to,
       updatedAt: now,
       updatedBy: context.uid || ""
     });
@@ -10912,13 +10944,23 @@ async function nativeNotificationPreview(request, kind) {
       error instanceof TypeError || error instanceof RangeError ? error.message : "Aperçu des notifications NAP indisponible.");
   }
 }
-// Reuse the existing technical queue and builders, with an unconditional TEST
-// simulation guard. This adapter cannot upload files or call a mail transporter.
-function nativeNotificationAutomationServices() {
-  if(ENVIRONMENT.projectId!=="livepalmes-test")throw new HttpsError("failed-precondition","Simulation NAP reservee au TEST.");
+// Reuse the queue and builders. Preview retains manifests only; delivery is
+// explicitly selected and gated by the national setting on TEST.
+function nativeNotificationAutomationServices(simulation = true) {
+  if(ENVIRONMENT.projectId!=="livepalmes-test")throw new HttpsError("failed-precondition","Notifications NAP réservées au TEST à ce stade.");
   const pool=require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD);
   let recipientPromise;
-  const services={simulation:true,deleteField:()=>FieldValue.delete(),
+  const services={simulation,deleteField:()=>FieldValue.delete(),
+    allowEvent: simulation ? undefined : async event => {
+      const control=require('./engagement-mail-control');
+      return control.decision(await control.read(db),{createdAt:event.createdAt,notificationDueAt:event.automatic?event.deadline:event.createdAt},ENVIRONMENT.projectId).allowed;
+    },
+    persistAttachment: simulation ? undefined : async (event,file,metadata) => {
+      const storagePath=`engagements/notification-mail/${event.competitionId}/${event.operation}/${metadata.sha256}`;
+      await storage.bucket(LIVEPALMES_STORAGE_BUCKET).file(storagePath).save(file.buffer,{resumable:false,
+        metadata:{contentType:metadata.contentType,cacheControl:'private, no-store'}});
+      return {...metadata,storagePath};
+    },
     competition:async id=>({...await nativePortalCompetition(id,()=>{}),id:String(require('./nap-direct-calendar').positiveId(id))}),
     recipients:()=>recipientPromise||=(async()=>{
       const state=await engagementMailRecipientIndexStateRef(db).get();
@@ -10940,12 +10982,27 @@ function nativeNotificationAutomationServices() {
       return {type,competitionId:competition.id,competitionName:competition.name,clubId:String(recipient.clubId||''),toEmail:email,recipientUid:String(recipient.uid||''),subject,textBody:text,attachments:details.attachments||[]};
     },
     job:(event,competition,payload,now)=>{
-      const data={...payload,notificationId:`${event.operation}:${Number(event.generation||0)}`,source:'nap',simulation:true,status:'disabled',reason:'test-emails-disabled',createdAt:now,updatedAt:now,sentAt:''};
+      const data={...payload,notificationId:`${event.operation}:${Number(event.generation||0)}`,source:'nap',simulation,
+        status:simulation?'disabled':'ready',reason:simulation?'test-emails-disabled':'',
+        notificationDueAt:event.automatic?event.deadline:event.createdAt,
+        notificationEvent:{kind:event.kind,cycleKey:event.cycleKey,closureKey:event.closureKey,automatic:event.automatic},
+        createdAt:now,updatedAt:now,sentAt:''};
       return {...data,id:engagementMailJobId(data)};
     }
   };
   services.page=(event,competition)=>require("./nap-notification-pages").page(event,competition,services);
   return services;
+}
+async function deliverNativeNotificationJobs(competitionId = '') {
+  const control=require('./engagement-mail-control');
+  if(!(await control.read(db)).enabled)return {processed:0,sent:0};
+  const config=engagementMailSmtpConfig();
+  if(!config.ready)throw new TypeError('Configuration des mails indisponible.');
+  const transporter=nodemailer.createTransport(config.transport);
+  try {
+    return await require('./nap-mail-delivery').drain(db,{projectId:ENVIRONMENT.projectId,competitionId,
+      send:doc=>sendEngagementMailJob(transporter,doc,config,{uid:'nap-notification-automation',email:''})});
+  } finally { transporter.close(); }
 }
 async function armNativeCompetitionNotification(context,input,operation) {
   const patch=input.patch||{};
@@ -10970,8 +11027,8 @@ async function queueNativeDocumentNotification(request) {
     action:'documents',documentIds:ids,actorUid:context.uid,operation:automation.hash(['documents-v1',competition.id,context.uid,documents])});
   return {...preview,previewOnly:false,queued:true};
 }
-exports.processNapCompetitionNotifications = onCall({ ...ENGAGEMENT_NOTIFICATION_PREVIEW_OPTIONS,timeoutSeconds:300,memory:'1GiB' },async request=>{
-  if(ENVIRONMENT.projectId!=='livepalmes-test')throw new HttpsError('failed-precondition','Verification NAP reservee au TEST sans envoi.');
+exports.processNapCompetitionNotifications = onCall({ ...ENGAGEMENT_NOTIFICATION_PREVIEW_OPTIONS,secrets:[defineSecret('LIVEPALMES_NAP_PASSWORD'),...ENGAGEMENT_NOTIFICATION_MAIL_SECRETS],timeoutSeconds:300,memory:'1GiB' },async request=>{
+  if(ENVIRONMENT.projectId!=='livepalmes-test')throw new HttpsError('failed-precondition','Notifications NAP réservées au TEST à ce stade.');
   const context=await engagementAccessContext(request),automation=require('./nap-notification-automation');
   try{
     if(request.data?.action==='adopt-open-season'){
@@ -10984,7 +11041,7 @@ exports.processNapCompetitionNotifications = onCall({ ...ENGAGEMENT_NOTIFICATION
     await nativePortalCompetition(competitionId,event=>assertCanManageEngagementCompetition(context,event));
     const snapshot=await db.collection(automation.COLLECTION).where('competitionId','==',competitionId).limit(101).get();
     if(snapshot.size>100)throw new RangeError('Historique technique trop volumineux : maintenance requise.');
-    const now=new Date().toISOString(),services=nativeNotificationAutomationServices(),results=[];
+    const now=new Date().toISOString(),services=nativeNotificationAutomationServices(false),results=[];
     const pointer=snapshot.docs.find(doc=>doc.id===`nap-state-${competitionId}`)?.data()||{};
     const events=snapshot.docs.filter(doc=>doc.data().source==='nap'&&['opening','closure','documents'].includes(doc.data().kind)&&automation.currentEvent(doc.data(),pointer));
     const blocked=events.filter(doc=>doc.data().status==='blocked');
@@ -10996,7 +11053,8 @@ exports.processNapCompetitionNotifications = onCall({ ...ENGAGEMENT_NOTIFICATION
     if(blocked.length)throw new TypeError('Preparation interrompue apres une modification NAP. Une reprise explicite est necessaire.');
     const due=events.filter(doc=>doc.data().runAt&&doc.data().runAt<=now&&!['completed','cancelled'].includes(doc.data().status)).sort((a,b)=>a.data().runAt.localeCompare(b.data().runAt));
     for(const doc of due.slice(0,2))results.push(await automation.processEvent(db,doc.ref,services,now));
-    return {ok:true,source:'nap',disabled:true,sentCount:0,processedCount:results.length,jobCount:results.reduce((sum,result)=>sum+(result.jobCount||0),0),attachmentCount:results.reduce((sum,result)=>sum+(result.attachmentCount||0),0),remaining:Math.max(0,due.length-results.filter(result=>result.done||result.reason==='superseded').length)};
+    const delivery=await deliverNativeNotificationJobs(competitionId);
+    return {ok:true,source:'nap',disabled:false,sentCount:delivery.sent,processedCount:results.length,jobCount:results.reduce((sum,result)=>sum+(result.jobCount||0),0),attachmentCount:results.reduce((sum,result)=>sum+(result.attachmentCount||0),0),remaining:Math.max(0,due.length-results.filter(result=>result.done||result.skipped).length)};
   }catch(error){if(error instanceof HttpsError)throw error;throw new HttpsError(error instanceof TypeError?'failed-precondition':error instanceof RangeError?'resource-exhausted':'unavailable',error instanceof TypeError||error instanceof RangeError?error.message:'Preparation NAP interrompue : vous pouvez reprendre le traitement.');}
 });
 exports.listEngagementCompetitionClubRecaps = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.projectId === "livepalmes-test" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
@@ -11434,20 +11492,18 @@ exports.generateEngagementCompetitionTxtExport = onCall({ ...CALLABLE_OPTIONS, .
 
 exports.listEngagementCompetitionMailJobs = onCall(ENGAGEMENT_NOTIFICATION_PREVIEW_OPTIONS, async (request) => {
   const context = await engagementAccessContext(request);
-  const competitionId = cleanText(request.data?.competitionId).slice(0, 128);
+  let competitionId = cleanText(request.data?.competitionId).slice(0, 128);
   if (!competitionId) {
     throw new HttpsError("invalid-argument", "Competition requise.");
   }
   if (ENVIRONMENT.projectId === "livepalmes-test") {
+    competitionId=String(require('./nap-direct-calendar').positiveId(competitionId));
     await nativePortalCompetition(competitionId, event => assertCanManageEngagementCompetition(context, event));
-    // Old outbox entries cannot be sent in TEST and are not sporting sources.
-    return { ok: true, source: "nap", disabled: true, competitionId, jobs: [], totalCount: 0, hasMore: false, nextCursor: null };
+  } else {
+    const competition = await db.collection("engagementCompetitions").doc(competitionId).get();
+    if (!competition.exists) throw new HttpsError("not-found", "Competition d'engagements introuvable.");
+    assertCanManageEngagementCompetition(context, competition.data() || {});
   }
-  const competition = await db.collection("engagementCompetitions").doc(competitionId).get();
-  if (!competition.exists) {
-    throw new HttpsError("not-found", "Competition d'engagements introuvable.");
-  }
-  assertCanManageEngagementCompetition(context, competition.data() || {});
   const pageSize = Math.min(200, Math.max(20, Math.trunc(Number(request.data?.pageSize) || 100)));
   const cursor = request.data?.cursor && typeof request.data.cursor === "object" ? request.data.cursor : {};
   const documentId = FieldPath.documentId();
@@ -11465,8 +11521,16 @@ exports.listEngagementCompetitionMailJobs = onCall(ENGAGEMENT_NOTIFICATION_PREVI
       : db.collection(ENGAGEMENT_MAIL_JOBS_COLLECTION).where("competitionId", "==", competitionId).count().get()
   ]);
   const pageDocuments = snapshot.docs.slice(0, pageSize);
+  const control=require('./engagement-mail-control'),setting=await control.read(db);
   const jobs = pageDocuments
-    .map((doc) => engagementMailJobItemFromData(doc.data() || {}, doc.id))
+    .filter(doc=>ENVIRONMENT.projectId!=='livepalmes-test'||doc.data().source==='nap')
+    .map(doc=>{
+      const data=doc.data()||{};
+      const gate=control.decision(setting,data,ENVIRONMENT.projectId);
+      return engagementMailJobItemFromData({...data,
+        ...(['ready','pending'].includes(data.status)&&!gate.allowed?{status:'cancelled',reason:gate.reason}:{}),
+        ...(ENVIRONMENT.projectId==='livepalmes-test'?{toEmail:control.TEST_ADDRESS}:{})},doc.id);
+    })
     .sort((left, right) => cleanText(right.updatedAt).localeCompare(cleanText(left.updatedAt)) || cleanText(left.toEmail).localeCompare(cleanText(right.toEmail)));
   const lastDocument = pageDocuments.at(-1);
   return {
@@ -12170,13 +12234,14 @@ exports.closeDueEngagementCompetitions = onSchedule(ENGAGEMENT_CLOSURE_SCHEDULER
     .get();
   const results = [];
   if(ENVIRONMENT.projectId==='livepalmes-test'){
-    const automation=require('./nap-notification-automation'),services=nativeNotificationAutomationServices();
+    const automation=require('./nap-notification-automation'),services=nativeNotificationAutomationServices(false);
     for(const event of snapshot.docs){
       // Old technical events are retained, never interpreted as native data.
       if(event.data()?.source!=='nap')continue;
       try{results.push(await automation.processEvent(db,event.ref,services,now));}
       catch{results.push({status:'failed'});}
     }
+    await deliverNativeNotificationJobs();
     return null;
   }
   for (const queueSnapshot of snapshot.docs) {

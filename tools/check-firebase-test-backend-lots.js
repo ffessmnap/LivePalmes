@@ -22,10 +22,10 @@ assert.ok(!ALL_SAFE_LOTS.includes("email") && !ALL_SAFE_LOTS.includes("scheduler
 
 const emailSecrets = new Set(METADATA.email.secrets);
 assert.deepEqual(require("./firebase-test-backend-lots").TEST_NON_MAIL_FUNCTIONS,["resolveEngagementSwimmerChangeRequest",
-  "processNapCompetitionNotifications",
   "notifyEngagementCompetitionDocuments", "listEngagementCompetitionMailJobs",
   "prepareEngagementOpeningNotificationEmails", "prepareEngagementClubRecapEmails", "sendEngagementPreparedEmails"]);
-assert.equal(emailSecrets.size, 7);
+assert.equal(emailSecrets.size, 8);
+assert.ok(emailSecrets.has('LIVEPALMES_NAP_PASSWORD'));
 for (const lot of ["access", "engagement-core", "performance", "publications"]) {
   assert.deepEqual(METADATA[lot].secrets, [], `${lot} ne doit exiger aucun secret email.`);
 }

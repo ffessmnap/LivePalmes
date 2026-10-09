@@ -11,6 +11,7 @@ const LOTS = Object.freeze({
     "rebuildAccessDirectoryIndexNextPage", "rebuildAccessDirectorySnapshotNextPage"
   ],
   "engagement-core": [
+    "getEngagementAutomaticMailControl", "updateEngagementAutomaticMailControl",
     "grantEngagementQualificationException",
     "acknowledgeEngagementQualificationAlert",
     "listEngagementQualificationSources", "processEngagementQualificationJob", "requestEngagementQualificationDerogation", "listEngagementQualificationRequests", "resolveEngagementQualificationRequest", "revalidateEngagementQualificationCache", "syncEngagementQualificationTargets",
@@ -117,16 +118,16 @@ const METADATA = Object.freeze({
     dependencies: ["Firestore TEST: résultats, calendrier, records et performances", "Storage TEST: livepalmes-test-public-data-206080168534"]
   },
   email: {
-    secrets: ["LIVEPALMES_SMTP_HOST", "LIVEPALMES_SMTP_PORT", "LIVEPALMES_SMTP_USER", "LIVEPALMES_SMTP_PASS", "LIVEPALMES_SMTP_SECURE", "LIVEPALMES_MAIL_FROM", "LIVEPALMES_NOTIFICATION_LINK_SECRET"],
+    secrets: ["LIVEPALMES_NAP_PASSWORD", "LIVEPALMES_SMTP_HOST", "LIVEPALMES_SMTP_PORT", "LIVEPALMES_SMTP_USER", "LIVEPALMES_SMTP_PASS", "LIVEPALMES_SMTP_SECURE", "LIVEPALMES_MAIL_FROM", "LIVEPALMES_NOTIFICATION_LINK_SECRET"],
     apis: ["cloudfunctions.googleapis.com", "run.googleapis.com", "cloudbuild.googleapis.com", "artifactregistry.googleapis.com", "firestore.googleapis.com", "secretmanager.googleapis.com"],
     iam: ["roles/cloudfunctions.developer", "roles/iam.serviceAccountUser", "runtime: roles/datastore.user + roles/secretmanager.secretAccessor limité aux secrets TEST"],
-    dependencies: ["Firestore TEST: users, demandes, shards et engagementMailJobs", "Auth TEST", "SMTP de capture exclusivement TEST", "Hosting TEST pour les liens de préférences"]
+    dependencies: ["Firestore TEST: users, demandes, shards et engagementMailJobs", "Auth TEST", "Notifications TEST redirigees uniquement vers livepalmes@nap-ffessm.fr", "Hosting TEST pour les liens de préférences"]
   },
   schedulers: {
-    secrets: ["LIVEPALMES_SMTP_HOST", "LIVEPALMES_SMTP_PORT", "LIVEPALMES_SMTP_USER", "LIVEPALMES_SMTP_PASS", "LIVEPALMES_SMTP_SECURE", "LIVEPALMES_MAIL_FROM", "LIVEPALMES_NOTIFICATION_LINK_SECRET"],
+    secrets: ["LIVEPALMES_NAP_PASSWORD", "LIVEPALMES_SMTP_HOST", "LIVEPALMES_SMTP_PORT", "LIVEPALMES_SMTP_USER", "LIVEPALMES_SMTP_PASS", "LIVEPALMES_SMTP_SECURE", "LIVEPALMES_MAIL_FROM", "LIVEPALMES_NOTIFICATION_LINK_SECRET"],
     apis: ["cloudfunctions.googleapis.com", "run.googleapis.com", "cloudbuild.googleapis.com", "artifactregistry.googleapis.com", "firestore.googleapis.com", "storage.googleapis.com", "cloudscheduler.googleapis.com", "secretmanager.googleapis.com"],
     iam: ["roles/cloudfunctions.developer", "roles/cloudscheduler.admin", "roles/iam.serviceAccountUser", "runtime: rôles Firestore/Storage/Secret Manager TEST des traitements appelés"],
-    dependencies: ["Firestore TEST: engagementClosureQueue et performancePublicationJobs", "Buckets TEST", "SMTP de capture TEST pour closeDueEngagementCompetitions"]
+    dependencies: ["Firestore TEST: engagementClosureQueue et performancePublicationJobs", "Buckets TEST", "Notifications TEST redirigees pour closeDueEngagementCompetitions"]
   }
 });
 
@@ -134,7 +135,6 @@ const ALL_SAFE_LOTS = Object.freeze(["access", "engagement-core", "performance",
 // Exact TEST-only exceptions: NAP resolution and notification previews have
 // neither SMTP bindings nor sends. PROD remains email and outside ordinary PROD.
 const TEST_NON_MAIL_FUNCTIONS = Object.freeze(["resolveEngagementSwimmerChangeRequest",
-  "processNapCompetitionNotifications",
   "notifyEngagementCompetitionDocuments", "listEngagementCompetitionMailJobs",
   "prepareEngagementOpeningNotificationEmails", "prepareEngagementClubRecapEmails", "sendEngagementPreparedEmails"]);
 

@@ -30,7 +30,7 @@ on:
         required: false
         type: string
       nap_notifications_only:
-        description: Pour schedulers uniquement, déployer seulement les notifications NAP sans SMTP
+        description: Pour schedulers uniquement, déployer seulement les notifications NAP avec redirection mail TEST
         required: false
         type: boolean
         default: false
@@ -224,7 +224,7 @@ jobs:
           SELECTED_LOT: ${{ inputs.lot }}
         run: |
           set -euo pipefail
-          node -e 'const metadata = require("./tools/firebase-test-backend-lots").METADATA; (process.env.NAP_NOTIFICATION_SCHEDULER_ONLY === "true" ? ["LIVEPALMES_NAP_PASSWORD"] : metadata[process.env.SELECTED_LOT].secrets).forEach(value => console.log(value))' |
+          node -e 'const metadata = require("./tools/firebase-test-backend-lots").METADATA; (process.env.NAP_NOTIFICATION_SCHEDULER_ONLY === "true" ? metadata.email.secrets : metadata[process.env.SELECTED_LOT].secrets).forEach(value => console.log(value))' |
           while IFS= read -r secret; do
             gcloud secrets describe "$secret" --project=livepalmes-test --format='value(name)' >/dev/null
           done

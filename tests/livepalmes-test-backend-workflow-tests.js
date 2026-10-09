@@ -71,7 +71,8 @@ assert.ok(!ALL_SAFE_LOTS.includes("schedulers"));
 assert.deepEqual(METADATA.access.secrets, []);
 assert.deepEqual(METADATA["engagement-core"].secrets, []);
 assert.deepEqual(METADATA.performance.secrets, []);
-assert.equal(METADATA.email.secrets.length, 7);
+assert.equal(METADATA.email.secrets.length, 8);
+assert.ok(METADATA.email.secrets.includes("LIVEPALMES_NAP_PASSWORD"));
 for (const lot of ["access", "engagement-core", "performance"]) {
   assert.ok(!LOTS[lot].some((name) => PUBLICATION_EFFECT_FUNCTIONS.includes(name)));
 }
@@ -118,11 +119,12 @@ try {
   const expectedNames=napOnly?["closeDueEngagementCompetitions"]:selectedLot==="all-safe"?ALL_SAFE_LOTS.flatMap(name=>LOTS[name]).concat(TEST_NON_MAIL_FUNCTIONS):LOTS[selectedLot];
   assert.deepEqual(Object.keys(JSON.parse(manifest).endpoints).sort(), [...expectedNames].sort());
   const declaredSecrets = JSON.parse(manifest).params.filter(param => param.type === "secret").map(param => param.name).sort();
-  assert.deepEqual(declaredSecrets, napOnly||selectedLot==="all-safe"?["LIVEPALMES_NAP_PASSWORD"]:[...METADATA[selectedLot].secrets].sort());
-  if(napOnly)assert.deepEqual(JSON.parse(manifest).endpoints.closeDueEngagementCompetitions.secretEnvironmentVariables.map(item=>item.key),["LIVEPALMES_NAP_PASSWORD"]);
+  assert.deepEqual(declaredSecrets, napOnly?[...METADATA.email.secrets].sort():selectedLot==="all-safe"?["LIVEPALMES_NAP_PASSWORD"]:[...METADATA[selectedLot].secrets].sort());
+  if(napOnly)assert.deepEqual(JSON.parse(manifest).endpoints.closeDueEngagementCompetitions.secretEnvironmentVariables.map(item=>item.key),["LIVEPALMES_NAP_PASSWORD",...require('../tools/firebase-test-backend-lots').METADATA.email.secrets.filter(name=>name!=="LIVEPALMES_NAP_PASSWORD")]);
   if(selectedLot==="all-safe") for (const name of TEST_NON_MAIL_FUNCTIONS) assert.deepEqual(JSON.parse(manifest).endpoints[name].secretEnvironmentVariables.map(item=>item.key),["LIVEPALMES_NAP_PASSWORD"]);
   for (const secret of METADATA.email.secrets) {
-    assert.doesNotMatch(manifest, new RegExp(secret), `Le manifeste access expose encore ${secret}.`);
+    if (napOnly || ((selectedLot === "all-safe" || selectedLot === "nap") && secret === "LIVEPALMES_NAP_PASSWORD")) continue;
+    assert.doesNotMatch(manifest, new RegExp(secret), `Le manifeste ${selectedLot} expose encore ${secret}.`);
   }
   }
 } finally {
