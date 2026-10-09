@@ -2,7 +2,7 @@
 // Two relay headers and their members, grouped and keyset-paginated on the
 // existing competition/club/id index. Qualification anchors come from the
 // individual preview, never from an old sporting Firebase document.
-const {createHash}=require('node:crypto');
+const {sourceHash}=require('./nap-qualification-source-hash');
 const {positiveId}=require('./nap-direct-calendar');
 const engine=require('./engagement-qualification');
 function cursor(value){
@@ -34,7 +34,7 @@ async function relayPreview(connection,input,services){
     const memberIds=team.map(member=>String(positiveId(member.nageur)));
     const allowed=!input.enabled||engine.relayEligible({memberIds},swimmers,evaluations);
     const before={relayId:positiveId(row.id),clubId:String(row.club),entry:row,members:team};
-    return {before,sourceHash:createHash('sha256').update(JSON.stringify(before)).digest('hex'),remove:!allowed};
+    return {before,sourceHash:sourceHash(before),remove:!allowed};
   });
   const last=relays.at(-1);
   return {kind:'relay',items,finished:raw.length<3,cursor:raw.length===3?JSON.stringify({clubId:String(last.club),relayId:positiveId(last.id)}):''};

@@ -2,7 +2,7 @@
 // One native impact-preview page, never an entry write. <=5 swimmers, 4 grouped
 // indexed queries (enrolments, courses, exceptions, history). No query per course
 // or swimmer; rows are checked before a single sporting evaluation is returned.
-const {createHash}=require('node:crypto');
+const {sourceHash}=require('./nap-qualification-source-hash');
 const {positiveId}=require('./nap-direct-calendar');
 const {person}=require('./nap-portal-swimmers');
 const {readEntryHistory}=require('./nap-entry-performance-history');
@@ -39,7 +39,7 @@ async function previewPage(connection,input,services){
     const result=engine.reconcile(original,evaluation);
     const before={swimmerId:p.id,name:p.name,clubId:p.clubId,birthDate:p.birthDate,sex:p.sex,inscriptionId:links[index],entries:original};
     const targetTimes=rules.enabled?require('./nap-qualification-target-times').targetTimes(result.entries,rows,input.competition||{date:input.date,qualifications:rules},services.automatic):result.entries.map(entry=>({nativeId:entry.nativeId,tps:entry.nativeTime}));
-    return {before,sourceHash:createHash('sha256').update(JSON.stringify(before)).digest('hex'),entries:result.entries,removed:result.removed,evaluation,targetTimes};
+    return {before,sourceHash:sourceHash(before),entries:result.entries,removed:result.removed,evaluation,targetTimes};
   });
   const last=selected.at(-1);
   return {items,cursor:raw.length===6?JSON.stringify({swimmerId:positiveId(last.id),inscriptionId:positiveId(last.inscription_id)}):'',finished:raw.length<6,sqlBudget:{queries:4,swimmersMax:5,historyRowsMax:20000}};
