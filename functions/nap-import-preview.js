@@ -72,7 +72,7 @@ async function previewNativeImport(pool,input) {
   const incoming=[],incomingRelays=[],statusRows=[];
   const integer=value=>{if(!/^\d{1,9}$/.test(String(value)))return null;return Number(value);};
   for(const row of decoded.rows) {
-    if(!row.eligible){statusRows.push(row);continue;}
+    if(!row.eligible){statusRows.push({...row,swimmerId:swimmerByLine.get(row.sourceLine)||null,clubId:clubByCode.get(row.clubCode)||null,members:row.kind==="REL"?relayMembers.get(row.sourceLine):undefined});continue;}
     const club=clubByCode.get(row.clubCode),points=integer(row.points),rank=integer(row.rank);
     if(points===null||rank===null)issues.push({sourceLine:row.sourceLine,code:"invalid-points-or-rank"});
     if(row.kind==="REL") {

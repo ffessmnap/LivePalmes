@@ -62,6 +62,13 @@ async function readCompetitionResults(pool, input) {
     if(!groups.has(key))groups.set(key,{eventLabel:`${course} · Relais`,sexLabel:({F:"Femmes",M:"Hommes"})[sex]||"Mixte",performances:[]});
     groups.get(key).performances.push({id:`relay:${row.id}`,swimmer:text(row.nom_club||row.abre_club)||"Équipe non renseignée",swimmerId:"",isRelay:true,club:text(row.abre_club||row.nom_club),category:text(row.categorie),categoryLabel:text(row.categorie),time:timeValue?rules.formatTime(timeValue):text(row.tps4),timeValue:timeValue||Infinity,personalBest:false,seasonBest:false});
   }
+  const statuses=await require("./nap-import-status-results").readImportStatusResults(pool,id);
+  for(const row of statuses) {
+    const key=`${row.course}|${row.sex}|${row.isRelay?"relay":"individual"}`;
+    if(!groups.has(key))groups.set(key,{eventLabel:`${row.course}${row.isRelay?" · Relais":""}`,sexLabel:({F:"Femmes",M:"Hommes"})[row.sex]||"Mixte",performances:[]});
+    const {course,sex,...performance}=row;
+    groups.get(key).performances.push({...performance,timeValue:Infinity});
+  }
   return { source: "nap", readAt: new Date().toISOString(), competitionId: String(id), markersAvailable,
     groups: [...groups.values()].map(group => ({ ...group, markersAvailable, performances: group.performances.sort((a, b) => a.timeValue - b.timeValue || a.swimmer.localeCompare(b.swimmer, "fr")).map(({ timeValue, ...performance }) => performance) })) };
 }
