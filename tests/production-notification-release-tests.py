@@ -24,6 +24,41 @@ test_state = load('test_notification_state', 'test-notification-state.py')
 
 
 class NotificationReleaseTests(unittest.TestCase):
+    def test_public_nap_extension_is_exact_and_works_without_application_diff(self):
+        request = {'schema': 1, 'candidate': 'a' * 40, 'productionCommit': 'a' * 40,
+                   'productionHosting': 'sites/livepalmes/versions/existing',
+                   'testRun': 1, 'changes': [{'title': 'Missing public NAP reader', 'paths': [],
+                     'status': 'validated', 'validation': 'Explicit correction approval'}],
+                   'excludedBackendReview': 'Only public reader; no migrations or diagnostics',
+                   'additionalPublicNapFunctions': ['readNapPublicSwimmer'],
+                   'additionalPublicNapApproval': 'Explicit approval', 'initialAutomaticMailEnabled': False}
+        self.assertTrue(cycle.validate_request(request, []))
+        for names in [['exportNapPublicPage'], ['getNapSwimmerPerformances'], ['readNapPublicSwimmer', 'exportNapPublicPage']]:
+            with self.assertRaises(ValueError):
+                cycle.approved_public_nap_functions({**request, 'additionalPublicNapFunctions': names})
+        with self.assertRaises(ValueError):
+            cycle.approved_public_nap_functions({**request, 'additionalPublicNapApproval': ''})
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / 'request.json').write_text(json.dumps(request))
+            (root / 'credentials.json').write_text(json.dumps({'project_id': 'livepalmes'}))
+            (root / 'selection.json').write_text(json.dumps(['readNapPublicSwimmer']))
+            with patch.dict(os.environ, {'PLAN': str(root), 'GOOGLE_APPLICATION_CREDENTIALS': str(root / 'credentials.json'),
+                                        'CANDIDATE_SHA': 'a' * 40}), patch.object(cycle, 'safe_functions', return_value=[]), patch.object(cycle, 'deploy_command') as deploy:
+                cycle.deploy_batches('livepalmes', '.', root, root / 'selection.json', True)
+                command = deploy.call_args.args[0]
+                self.assertEqual(command[command.index('--only') + 1], 'functions:readNapPublicSwimmer')
+
+    def test_runtime_nap_check_never_accepts_firebase_or_missing_reader(self):
+        runtime = load('nap_runtime_check', 'check-production-nap-runtime.py')
+        self.assertEqual(runtime.check(lambda url: {'source': 'nap'}), 5)
+        with self.assertRaises(ValueError):
+            runtime.check(lambda url: {'source': 'firestore'})
+        def unavailable(url):
+            raise OSError('404')
+        with self.assertRaises(OSError):
+            runtime.check(unavailable)
+
     def test_unserved_top_files_only(self):
         top = cycle.TOP_PREFIXES[0] + '200BI/M-S.json'
         record = 'performances/public/data/records.json'
