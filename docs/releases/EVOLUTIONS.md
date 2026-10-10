@@ -2,6 +2,13 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 10 octobre — Validation partielle des licences et choix du CSV
+
+- Antoine demande de valider les fiches correctes malgré les doublons bloquants, de conserver le statut des fiches non enregistrées et de choisir entre tous les nageurs du lot et les licences non validées pour la saison (choix par défaut).
+- Le serveur NAP précontrôle les numéros, propriétaires, fiches modifiées et validations de saison en trois lectures groupées bornées supplémentaires par lot de 100. Les fiches admissibles utilisent le journal et la transaction existants ; la réponse contient exclusivement les identifiants confirmés et les motifs des blocages. Aucun schéma, droit ou numéro réel changé pour la recette. Une erreur technique non confirmée ne produit jamais de statut validé à l’écran et n’arrête pas les lots suivants.
+- Budget : ouverture/rafraîchissement inchangés ; filtre CSV en mémoire sans requête. Validation : au plus 100 fiches par appel, trois lectures supplémentaires indexées et bornées à 100/200/100 lignes ; pas de requête par fiche ni de scan global. Journal groupé et insertion groupée conservés.
+- Tests hors ligne : lot mixte, doublons proposés et existants, licence de saison déjà attribuée, fiche absente/modifiée, affichage fidèle aux confirmations, erreur réseau puis poursuite du lot suivant, CSV complet/à contrôler. Contrôle global et publication TEST à effectuer ; PROD exclue, validation utilisateur non déclarée.
+
 ### 10 octobre — Compatibilité des index autorisés de l’historique des personnes
 
 - Le validateur accepte les trois index de recherche déjà autorisés (club du dossier, club de la personne, compétition), uniquement avec leurs colonnes exactes. Les deux index obligatoires restent exigés ; tout index inconnu, incomplet, unique ou préfixé est refusé.

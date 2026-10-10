@@ -14,6 +14,7 @@
     workspace: document.querySelector("#adminLicenseControlWorkspace"),
     summary: document.querySelector("#adminLicenseControlSummary"),
     exportButton: document.querySelector("#adminLicenseControlExport"),
+    exportScope: document.querySelector("#adminLicenseControlExportScope"),
     importInput: document.querySelector("#adminLicenseControlImport"),
     selectPending: document.querySelector("#adminLicenseControlSelectPending"),
     validate: document.querySelector("#adminLicenseControlValidate"),
@@ -146,7 +147,9 @@
   function exportBatch() {
     if (!state.batch) return;
     const header = ["lot_id", "saison", "livepalmes_id", "nom", "prenom", "date_naissance", "licence_livepalmes", "competitions_sources", "club_livepalmes"];
-    const rows = state.batch.people.map((person) => [
+    const people = elements.exportScope?.value === "all" ? state.batch.people : state.batch.people.filter(person => person.seasonStatus !== "valid");
+    if (!people.length) { setStatus("Toutes les licences du lot sont déjà validées pour cette saison.", "ok"); return; }
+    const rows = people.map((person) => [
       state.batch.batchId, state.batch.season.label, person.livePalmesId, person.lastName, person.firstName,
       displayDate(person.birthDate), person.licenseNumber, person.competitions.join(" | "), person.clubName || person.clubId || ""
     ]);
@@ -229,7 +232,7 @@
 
   function syncValidateButton() {
     const selected = selectedPeople();
-    elements.validate.disabled = state.validating || !selected.length || selected.some((person) => !acceptableLicense(person.licenseNumber));
+    elements.validate.disabled = state.validating || !selected.length;
     elements.validate.textContent = selected.length ? `Valider la sélection (${selected.length})` : "Valider la sélection";
   }
 
@@ -242,12 +245,12 @@
       const status = rowState(person);
       const imported = state.imported.get(person.livePalmesId);
       return `<tr data-license-person-id="${escapeHtml(person.livePalmesId)}">
-        <td><input type="checkbox" data-license-select ${person.selected ? "checked" : ""} ${person.seasonStatus === "valid" ? "disabled" : ""} aria-label="Sélectionner ${escapeHtml(`${person.firstName} ${person.lastName}`)}"></td>
+        <td><input type="checkbox" data-license-select ${person.selected ? "checked" : ""} ${person.seasonStatus === "valid" || state.validating ? "disabled" : ""} aria-label="Sélectionner ${escapeHtml(`${person.firstName} ${person.lastName}`)}"></td>
         <td><span class="admin-license-admin-person"><strong>${escapeHtml(`${person.lastName} ${person.firstName}`)}</strong><small>${escapeHtml(displayDate(person.birthDate))} · ${escapeHtml(person.clubName || person.clubId || "Club non renseigné")}</small></span></td>
-        <td><input type="text" value="${escapeHtml(person.licenseNumber)}" data-license-number aria-label="Licence de ${escapeHtml(`${person.firstName} ${person.lastName}`)}"><small>${acceptableLicense(person.licenseNumber) ? "" : "Format attendu : A-12-34567"}</small></td>
+        <td><input type="text" value="${escapeHtml(person.licenseNumber)}" data-license-number ${state.validating ? "disabled" : ""} aria-label="Licence de ${escapeHtml(`${person.firstName} ${person.lastName}`)}"><small>${acceptableLicense(person.licenseNumber) ? "" : "Format attendu : A-12-34567"}</small></td>
         <td><span class="admin-license-admin-source">${person.competitions.map((name) => `<span>${escapeHtml(name)}</span>`).join("")}</span></td>
-        <td><span class="admin-license-admin-state" data-state="${escapeHtml(status.code)}">${escapeHtml(status.label)}</span>${imported?.validity ? `<small> jusqu’au ${escapeHtml(imported.validity)}</small>` : ""}${imported?.details ? `<small>${escapeHtml(imported.details)}</small>` : ""}</td>
-        <td><span class="admin-license-admin-row-actions"><button class="ghost-button" type="button" data-license-edit>Modifier la fiche</button>${person.seasonStatus === "valid" ? "" : `<button type="button" data-license-validate-one ${acceptableLicense(person.licenseNumber) ? "" : "disabled"}>Valider</button>`}</span></td>
+        <td><span class="admin-license-admin-state" data-state="${escapeHtml(status.code)}">${escapeHtml(status.label)}</span>${imported?.validity ? `<small> jusqu’au ${escapeHtml(imported.validity)}</small>` : ""}${imported?.details ? `<small>${escapeHtml(imported.details)}</small>` : ""}${person.validationError ? `<small role="alert">Enregistrement bloqué : ${escapeHtml(person.validationError)}</small>` : ""}</td>
+        <td><span class="admin-license-admin-row-actions"><button class="ghost-button" type="button" data-license-edit ${state.validating ? "disabled" : ""}>Modifier la fiche</button>${person.seasonStatus === "valid" ? "" : `<button type="button" data-license-validate-one ${acceptableLicense(person.licenseNumber) && !state.validating ? "" : "disabled"}>Valider</button>`}</span></td>
       </tr>`;
     }).join("")}</tbody></table>`;
     syncValidateButton();
@@ -285,33 +288,53 @@
 
   async function validatePeople(people) {
     if (!people.length || state.validating) return;
-    const invalid = people.find((person) => !acceptableLicense(person.licenseNumber));
-    if (invalid) { setStatus(`Format de licence invalide pour ${invalid.firstName} ${invalid.lastName}.`, "error"); return; }
     if (!window.confirm(`Valider ${people.length} licence${people.length > 1 ? "s" : ""} pour la saison ${state.batch.season.label} ?`)) return;
     state.validating = true;
-    syncValidateButton();
+    [elements.season, elements.prepare, elements.reload, elements.importInput, elements.selectPending].forEach(element => { element.disabled = true; });
+    renderBatch();
     setStatus(`Validation de ${people.length} licence${people.length > 1 ? "s" : ""}…`, "loading");
+    let validatedCount = 0, blockedCount = 0;
     try {
       const imported = people.filter((person) => state.imported.get(person.livePalmesId)?.status === "validable");
       const manual = people.filter((person) => !imported.includes(person));
       for (const [group, source] of [[imported, "admin_import"], [manual, "national_manual"]]) {
         for (let index = 0; index < group.length; index += 100) {
-          await bridge.callFunction("validateEngagementSwimmerLicenses", {
-            season: state.batch.season.label,
-            source,
-            items: group.slice(index, index + 100).map(validationPayload)
-          });
-          group.slice(index, index + 100).forEach(person => { person.seasonStatus = "valid"; person.selected = false; person.expectedLicenseNumber = person.licenseNumber; });
-          bridge.licensesChanged?.();
+          const chunk = group.slice(index, index + 100);
+          try {
+            const result = await bridge.callFunction("validateEngagementSwimmerLicenses", {
+              season: state.batch.season.label,
+              source,
+              items: group.slice(index, index + 100).map(validationPayload),
+              partialValidation: true
+            });
+            const validated = new Set(result.validatedIds || (state.batch.source !== "nap" && result.ok && result.validatedCount === chunk.length ? chunk.map(person => person.livePalmesId) : []));
+            for (const person of chunk) {
+              if (validated.has(person.livePalmesId)) {
+                person.seasonStatus = "valid"; person.selected = false;
+                person.expectedLicenseNumber = person.licenseNumber; person.validationError = "";
+                validatedCount++;
+              } else {
+                const failure = result.blocked?.find(item => item.id === person.livePalmesId);
+                person.validationError = failure ? `${failure.reason}${failure.conflictingSwimmerIds?.length ? ` Fiche(s) NAP : ${failure.conflictingSwimmerIds.join(", ")}.` : ""}` : "Enregistrement non confirmé. Rechargez le lot avant de réessayer.";
+                blockedCount++;
+              }
+            }
+            if (validated.size) bridge.licensesChanged?.();
+          } catch (error) {
+            for (const person of chunk) person.validationError = `Enregistrement non confirmé : ${error?.message || error}. Rechargez le lot avant de réessayer.`;
+            blockedCount += chunk.length;
+          }
+          renderBatch();
         }
       }
-      people.forEach((person) => { person.seasonStatus = "valid"; person.selected = false; });
       renderBatch();
-      setStatus(`${people.length} licence${people.length > 1 ? "s ont" : " a"} été validée${people.length > 1 ? "s" : ""} pour ${state.batch.season.label}.`, "ok");
+      setStatus(`${validatedCount} fiche(s) validée(s), ${blockedCount} fiche(s) bloquée(s) pour ${state.batch.season.label}. Les motifs sont indiqués sur les lignes concernées.`, blockedCount ? "warning" : "ok");
     } catch (error) {
       setStatus(`Validation impossible : ${error?.message || error}`, "error");
     } finally {
       state.validating = false;
+      [elements.season, elements.reload, elements.importInput, elements.selectPending].forEach(element => { element.disabled = false; });
+      syncPrepareButton();
       renderBatch();
     }
   }

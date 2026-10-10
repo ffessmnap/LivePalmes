@@ -31,7 +31,7 @@ async function prepareBatch(connection,input) {
 function validDate(value) {
   return typeof value==="string" && /^\d{4}-\d{2}-\d{2}$/.test(value) && Number.isFinite(Date.parse(value+"T00:00:00Z")) && new Date(value+"T00:00:00Z").toISOString().slice(0,10)===value;
 }
-async function validateBatch(connection,input,actorUid,audit) {
+async function validateAtomicBatch(connection,input,actorUid,audit) {
   const season=license.seasonInfo(input?.season),source=input?.source;
   if(!["admin_import","national_manual"].includes(source) || !actorUid || actorUid.length>128 || !Array.isArray(input.items) || !input.items.length || input.items.length>100) throw new TypeError("Lot de validation invalide.");
   const ids=new Set(),numbers=new Set();
@@ -62,5 +62,46 @@ async function validateBatch(connection,input,actorUid,audit) {
     await connection.commit();
     return {ok:true,source:"nap",season:season.label,validatedCount:items.length,validatedAt:new Date().toISOString()};
   } catch(error) {await connection.rollback();throw error;}
+}
+async function validateBatch(connection,input,actorUid,audit) {
+  if(input?.partialValidation!==true) return validateAtomicBatch(connection,input,actorUid,audit);
+  const season=license.seasonInfo(input?.season),source=input?.source;
+  if(!["admin_import","national_manual"].includes(source) || !actorUid || actorUid.length>128 || !Array.isArray(input.items) || !input.items.length || input.items.length>100) throw new TypeError("Lot de validation invalide.");
+  const ids=new Set(),blocked=[],candidates=[];
+  const block=(item,reason,conflictingSwimmerIds=[])=>blocked.push({id:String(item.id),reason,conflictingSwimmerIds:conflictingSwimmerIds.map(String)});
+  for(const raw of input.items) {
+    const id=positiveId(raw.swimmerIndexId||raw.livePalmesId);
+    if(ids.has(id)) throw new TypeError("Nageur duplique dans la selection.");
+    ids.add(id);
+    const item={id,raw,number:license.number(raw.licenseNumber)};
+    if(!item.number || item.number.length>100 || /[\u0000-\u001f\u007f]/.test(item.number) || typeof raw.expectedLicenseNumber!=="string") block(item,"Licence absente ou invalide.");
+    else if(source==="admin_import" && (!validDate(raw.federalValidityEndDate)||raw.federalValidityEndDate<season.requiredValidityDate)) block(item,"La licence ne couvre pas la saison demandee.");
+    else candidates.push(item);
+  }
+  const distinct=candidates.filter(item=>{
+    const duplicates=candidates.filter(other=>other.id!==item.id && other.number.toUpperCase()===item.number.toUpperCase());
+    if(duplicates.length) {block(item,"Licence proposee pour plusieurs fiches du lot.",duplicates.map(other=>other.id));return false;}return true;
+  });
+  let eligible=[];
+  if(distinct.length) {
+    const marks=distinct.map(()=>"?").join(",");
+    const current=await query(connection,`SELECT id,number FROM nageurs FORCE INDEX (PRIMARY) WHERE id IN (${marks}) AND ${notMerged()} LIMIT 101`,distinct.map(item=>item.id),100);
+    const owners=await query(connection,`SELECT id,number FROM nageurs FORCE INDEX (livepalmes_license_number_id) WHERE number IN (${marks}) AND ${notMerged()} LIMIT 201`,distinct.map(item=>item.number),200);
+    const previous=await query(connection,`SELECT swimmer_id,license_number FROM livepalmes_swimmer_license_seasons FORCE INDEX (season_license) WHERE season=? AND license_number IN (${marks}) LIMIT 101`,[season.label,...distinct.map(item=>item.number)],100);
+    eligible=distinct.filter(item=>{
+      const row=current.find(row=>Number(row.id)===item.id);
+      const conflicts=owners.filter(owner=>Number(owner.id)!==item.id && license.number(owner.number).toUpperCase()===item.number.toUpperCase()).map(owner=>owner.id);
+      const seasonConflicts=previous.filter(owner=>Number(owner.swimmer_id)!==item.id && license.number(owner.license_number).toUpperCase()===item.number.toUpperCase()).map(owner=>owner.swimmer_id);
+      if(!row) block(item,"Fiche NAP absente ou fusionnee.");
+      else if(license.number(row.number)!==item.raw.expectedLicenseNumber && license.number(row.number)!==item.number) block(item,"La licence a change. Rechargez le lot.");
+      else if(conflicts.length) block(item,"Licence deja affectee a une autre fiche NAP.",conflicts);
+      else if(seasonConflicts.length) block(item,"Licence deja validee pour une autre fiche pendant cette saison.",seasonConflicts);
+      else return true;
+      return false;
+    });
+  }
+  let result={ok:true,source:"nap",season:season.label,validatedCount:0};
+  if(eligible.length) result=await validateAtomicBatch(connection,{...input,items:eligible.map(item=>item.raw)},actorUid,audit);
+  return {...result,validatedIds:eligible.map(item=>String(item.id)),blocked,blockedCount:blocked.length};
 }
 module.exports={prepareBatch,validateBatch,validDate};
