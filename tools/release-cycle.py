@@ -403,12 +403,30 @@ def reusable_verification(evidence, candidate):
         'schema': 1, 'candidate': candidate, 'suite': 'verify-livepalmes', 'result': 'success'}
 
 
+def verify_test_candidate(request, evidence, info):
+    require(evidence['candidate'] == info['head_sha'], 'Preuve TEST hors commit du run')
+    if evidence['candidate'] == request['candidate']:
+        return
+    # Repair-only: keep the already-published application SHA, never substitute newer application code.
+    equivalent = request.get('testEquivalentCandidate')
+    require(approved_public_nap_functions(request) == ['readNapPublicSwimmer']
+            and request['candidate'] == request['productionCommit']
+            and isinstance(equivalent, str) and SHA.fullmatch(equivalent)
+            and evidence['candidate'] == equivalent, 'Version TEST differente du candidat')
+    subprocess.run(['git', 'merge-base', '--is-ancestor', request['candidate'], equivalent], cwd=ROOT, check=True)
+    paths = git('diff', '--name-only', '--no-renames', request['candidate'], equivalent).splitlines()
+    require(all(path.startswith(('.github/', 'docs/', 'tools/', 'tests/')) for path in paths),
+            'Difference applicative interdite pour la preuve du lecteur NAP')
+    require(backend_fingerprints(request['candidate']) == backend_fingerprints(equivalent),
+            'Empreintes backend differentes pour la preuve du lecteur NAP')
+
+
 def verify_test(directory, live=True):
     root = Path(directory)
     request = read(root / 'request.json')
     info = artifact(request['testRun'], 'test-proof', root / 'test', '.github/workflows/livepalmes-test-common.yml')
     evidence = read(root / 'test/test-proof.json')
-    require(evidence['candidate'] == request['candidate'] == info['head_sha'], 'Version TEST differente du candidat')
+    verify_test_candidate(request, evidence, info)
     if live:
         require(snapshot('livepalmes-test') == evidence['state'], 'TEST a change depuis sa publication : refaire le bilan')
     if os.environ.get('DTN_EXTENSION_CHECKS') == 'success':
