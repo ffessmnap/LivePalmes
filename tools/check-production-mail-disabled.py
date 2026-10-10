@@ -20,7 +20,7 @@ def disabled(document):
 
 def main():
     request = json.loads((Path(os.environ['PLAN']) / 'request.json').read_text())
-    if not request.get('additionalNotificationFunctions'):
+    if not request.get('additionalNotificationFunctions') and not request.get('additionalPublicNapFunctions'):
         print('Aucune extension notifications ; aucun acces Firestore.')
         return
     if request.get('initialAutomaticMailEnabled') is not False:

@@ -48,8 +48,17 @@ def approved_native_identity_secret(value):
 
 def approved_extra_functions(value):
     approved_native_identity_secret(value)
-    names = approved_pdf_functions(value) + approved_dtn_functions(value) + approved_notification_functions(value)
+    names = approved_pdf_functions(value) + approved_dtn_functions(value) + approved_notification_functions(value) + approved_public_nap_functions(value)
     require(len(names) == len(set(names)), 'Extensions de publication superposees')
+    return names
+
+
+def approved_public_nap_functions(value):
+    names = value.get('additionalPublicNapFunctions', [])
+    require(isinstance(names, list) and (names == [] or names == ['readNapPublicSwimmer']), 'Extension publique NAP interdite')
+    require(not names or (isinstance(value.get('additionalPublicNapApproval'), str)
+            and bool(value['additionalPublicNapApproval'].strip()) and value.get('initialAutomaticMailEnabled') is False),
+            'Accord lecteur public NAP avec mails desactives requis')
     return names
 
 
@@ -276,6 +285,7 @@ def validate_request(value, paths):
     require(isinstance(value.get('testRun'), int) and value['testRun'] > 0, 'Preuve TEST requise')
     application, backend = classify([p for p in paths if p not in ignored_top_paths(paths, value['candidate'])])
     extra = approved_extra_functions(value)
+    backend = backend or bool(approved_public_nap_functions(value))
     require(not extra or backend, 'Extension PDF sans changement backend')
     covered = set()
     require(isinstance(value.get('changes'), list) and value['changes'], 'Bilan des evolutions requis')
@@ -417,7 +427,7 @@ def prepare_selection(directory, candidate):
         require(all(not needs_function(names.get(n), n, request['candidate']) for n in selected), 'Backend TEST incomplet ou pas au code valide')
         extra = approved_extra_functions(request)
         notification = approved_notification_functions(request)
-        require(all(not needs_function(names.get(n), n, request['candidate']) for n in notification),
+        require(all(not needs_function(names.get(n), n, request['candidate']) for n in notification + approved_public_nap_functions(request)),
                 'Notifications TEST absentes ou pas au code valide')
         if approved_dtn_functions(request):
             require(read(directory / 'test-proof.json').get('dtnExtensionVerification') == {'schema': 1, 'candidate': request['candidate'], 'suite': 'dtn-shared-invalidation', 'mode': 'offline-no-invocation', 'result': 'success', 'functions': sorted(DTN_FUNCTIONS)}, 'Preuve des dependances DTN absente ou incompatible')
@@ -486,7 +496,8 @@ def stage(candidate, project, destination, sha):
         subprocess.run(['node', str(Path(candidate) / 'tools/prepare-firebase-test-functions.js'), 'all-safe', str(Path(destination).resolve())], check=True)
     index = Path(destination) / 'functions/index.js'
     if project == 'livepalmes' and os.environ.get('PLAN'):
-        notification = approved_notification_functions(read(Path(os.environ['PLAN']) / 'request.json'))
+        request = read(Path(os.environ['PLAN']) / 'request.json')
+        notification = approved_notification_functions(request) + approved_public_nap_functions(request)
         if notification:
             index.write_text(index.read_text() + '\nfor (const name of ' + json.dumps(notification) + ') { if (!backend[name]?.__endpoint) throw new Error("Export notifications absent: " + name); exports[name] = backend[name]; }\n')
     index.write_text(index.read_text() + '\nfor (const fn of Object.values(exports)) { if (!fn.__endpoint) throw new Error("Endpoint absent"); fn.__endpoint.labels = { ...fn.__endpoint.labels, "livepalmes-commit": ' + json.dumps(sha) + ' }; }\n')
@@ -520,7 +531,7 @@ def deploy_batches(project, candidate, stage_path, selection_path, dry_run):
     selected = read(selection_path)
     extra = approved_extra_functions(read(Path(os.environ['PLAN']) / 'request.json')) if project == 'livepalmes' and os.environ.get('PLAN') else []
     require(len(selected) == len(set(selected)) and set(selected).issubset(set(safe_functions(candidate, project)) | set(extra)), 'Selection interdite')
-    source_only = set(extra) - set(approved_notification_functions(read(Path(os.environ['PLAN']) / 'request.json'))) if extra else set()
+    source_only = set(extra) - set(approved_notification_functions(read(Path(os.environ['PLAN']) / 'request.json'))) - set(approved_public_nap_functions(read(Path(os.environ['PLAN']) / 'request.json'))) if extra else set()
     selected = [name for name in selected if name not in source_only]
     cli = str(Path(candidate).resolve() / 'tests/firestore-rules/node_modules/.bin/firebase')
     sha = os.environ['CANDIDATE_SHA']

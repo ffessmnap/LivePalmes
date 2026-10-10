@@ -100,18 +100,22 @@ def main():
             selected = requested
         selected_functions = [f for f in functions if f["name"].split("/")[-1] in selected]
         notification = cycle.approved_notification_functions(plan) if os.environ.get('PLAN') else []
-        source_only = set(extra) - set(notification)
+        public_nap = cycle.approved_public_nap_functions(plan) if os.environ.get('PLAN') else []
+        source_only = set(extra) - set(notification) - set(public_nap)
         if not source_only.issubset({f['name'].split('/')[-1] for f in selected_functions}):
             raise ValueError('Traitement PDF existant absent')
         report['additionalPdfFunctions'] = plan.get('additionalPdfFunctions', []) if os.environ.get('PLAN') else []
         report['additionalDtnFunctions'] = plan.get('additionalDtnFunctions', []) if os.environ.get('PLAN') else []
         report['nativeIdentityNapSecret'] = cycle.approved_native_identity_secret(plan) if os.environ.get('PLAN') else False
         report['additionalNotificationFunctions'] = notification
+        report['additionalPublicNapFunctions'] = public_nap
         if notification:
             contract = json.loads(subprocess.check_output(['node', '-e', 'console.log(JSON.stringify(require(process.argv[1]).plan(process.argv[2])))',
                 str(Path(__file__).with_name('prepare-production-notifications.js')), report['candidate']], text=True))
             report['notificationExpectedSecrets'] = contract['expectedSecrets']
         app_checks = set(f.get("serviceConfig", {}).get("environmentVariables", {}).get("LIVEPALMES_ENFORCE_APP_CHECK", "false") for f in selected_functions if f['name'].split('/')[-1] not in source_only)
+        if not app_checks and set(selected).issubset(set(public_nap)):
+            app_checks = {'false'}  # New public HTTP reader; no callable App Check setting.
         if selected and (len(app_checks) != 1 or not app_checks.issubset({"true", "false"})):
             raise ValueError("App Check heterogene ou invalide")
         report["appCheck"] = next(iter(app_checks), "false")
