@@ -1,8 +1,8 @@
 (function exposeLicenseReport(root, factory) {
-  const api = factory();
+  const api = factory(typeof module === "object" && module.exports ? require("./core.js") : root.LivePalmesLicenseControl);
   if (typeof module === "object" && module.exports) module.exports = api;
   else root.LivePalmesLicenseReport = api;
-})(typeof window !== "undefined" ? window : {}, () => {
+})(typeof window !== "undefined" ? window : {}, (core) => {
   "use strict";
 
   const LABELS = {
@@ -10,8 +10,8 @@
     anomalie_identite: "Identité à vérifier", ambigu: "Correspondance ambiguë", introuvable: "Introuvable",
     timeout: "Contrôle à relancer", erreur: "Erreur de contrôle", non_controle: "Non contrôlé"
   };
-  const WIDTHS = [22, 20, 14, 19, 19, 15, 26, 65];
-  const HEADERS = ["Nom", "Prénom", "Date de naissance", "Licence LivePalmes", "Licence FFESSM", "Validité FFESSM", "Contrôle", "Écart constaté"];
+  const WIDTHS = [22, 20, 28, 14, 19, 19, 15, 26, 60, 80];
+  const HEADERS = ["Nom", "Prénom", "Club LivePalmes", "Date de naissance", "Licence LivePalmes", "Licence FFESSM", "Validité FFESSM", "Contrôle", "Écart constaté", "Observations"];
 
   function competitionsOf(person) {
     return String(person.competitions || "").split("|").map(value => value.trim()).filter(Boolean);
@@ -23,6 +23,93 @@
 
   function retainedCandidate(result) {
     return result.status !== "ambigu" && result.selectedCandidate?.exactIdentity ? result.selectedCandidate : null;
+  }
+
+
+  function nameParts(person, candidate) {
+    const raw = String(candidate.name || "").trim();
+    const tokens = Array.from(raw.matchAll(/[\p{L}\p{N}]+/gu)).map(match => ({
+      value: core.normalizeText(match[0]), start: match.index, end: match.index + match[0].length
+    })).filter(token => token.value);
+    const parts = [];
+    for (const [field, other] of [["lastName", "firstName"], ["firstName", "lastName"]]) {
+      const expected = core.normalizeText(person[field]).split(" ").filter(Boolean);
+      if (!expected.length || tokens.length <= expected.length) continue;
+      for (const atStart of [true, false]) {
+        const offset = atStart ? 0 : tokens.length - expected.length;
+        if (!expected.every((value, index) => tokens[offset + index].value === value)) continue;
+        const known = atStart ? raw.slice(0, tokens[expected.length - 1].end) : raw.slice(tokens[offset].start);
+        const remainder = atStart ? raw.slice(tokens[expected.length].start) : raw.slice(0, tokens[offset - 1].end);
+        parts.push({ [field]: known.trim(), [other]: remainder.trim() });
+      }
+    }
+    return parts;
+  }
+
+  function smallNameDifference(left, right) {
+    const a = core.normalizeText(left).replace(/\s/g, ""), b = core.normalizeText(right).replace(/\s/g, "");
+    if (!a || !b || a === b || Math.min(a.length, b.length) < 3 || Math.max(a.length, b.length) > 100) return false;
+    // Distance de Damerau-Levenshtein : une inversion voisine compte pour une faute.
+    const matrix = Array.from({ length: a.length + 1 }, (_, i) => [i]);
+    for (let j = 0; j <= b.length; j += 1) matrix[0][j] = j;
+    for (let i = 1; i <= a.length; i += 1) {
+      for (let j = 1; j <= b.length; j += 1) {
+        matrix[i][j] = Math.min(matrix[i - 1][j] + 1, matrix[i][j - 1] + 1,
+          matrix[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+        if (i > 1 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1]) {
+          matrix[i][j] = Math.min(matrix[i][j], matrix[i - 2][j - 2] + 1);
+        }
+      }
+    }
+    const distance = matrix[a.length][b.length], longest = Math.max(a.length, b.length);
+    return distance <= (longest < 6 ? 1 : 2) && distance / longest <= 0.25;
+  }
+
+  function identityLead(person, candidate) {
+    const matches = new Map();
+    const birthDate = core.normalizeDate(candidate.birthDate);
+    for (const parts of nameParts(person, candidate)) {
+      const last = core.normalizeText(parts.lastName) === core.normalizeText(person.lastName);
+      const first = core.normalizeText(parts.firstName) === core.normalizeText(person.firstName);
+      const date = birthDate && birthDate === person.birthDate;
+      let lead = null;
+      if (!last && first && date && smallNameDifference(parts.lastName, person.lastName)) {
+        lead = { field: "Nom", local: person.lastName, federal: parts.lastName, agreement: "Prénom et date de naissance concordent." };
+      } else if (last && !first && date && smallNameDifference(parts.firstName, person.firstName)) {
+        lead = { field: "Prénom", local: person.firstName, federal: parts.firstName, agreement: "Nom et date de naissance concordent." };
+      } else if (last && first && !date) {
+        lead = { field: "Date de naissance", local: person.birthDate, federal: birthDate || "non renseignée", agreement: "Nom et prénom concordent." };
+      }
+      if (lead) matches.set([lead.field, lead.federal].join("|"), lead);
+    }
+    return matches.size === 1 ? Array.from(matches.values())[0] : null;
+  }
+
+  function observation(result) {
+    const retained = retainedCandidate(result);
+    if (retained) {
+      const notes = new Set();
+      for (const parts of nameParts(result, retained)) {
+        if (["lastName", "firstName"].every(field => core.normalizeText(parts[field]) === core.normalizeText(result[field]))) {
+          for (const [field, label] of [["lastName", "Nom"], ["firstName", "Prénom"]]) {
+            const presentation = value => String(value).normalize("NFC").toUpperCase().replace(/\s+/g, " ").trim();
+            if (presentation(parts[field]) !== presentation(result[field])) {
+              notes.add(label + " : LivePalmes « " + result[field] + " » ; Ma Commission « " + parts[field] + " ». Différence d’accent ou de présentation, déjà tolérée par le contrôle.");
+            }
+          }
+        }
+      }
+      return Array.from(notes).join("\n");
+    }
+    if (result.status !== "anomalie_identite") return "";
+    const leads = (result.candidates || []).map(candidate => ({ candidate, lead: identityLead(result, candidate) })).filter(item => item.lead);
+    if (leads.length > 1) return "Plusieurs profils concordent sur deux éléments d’identité. Aucune piste unique ; contrôle manuel nécessaire.";
+    if (leads.length !== 1) return "";
+    const { candidate, lead } = leads[0];
+    return "Piste unique à vérifier — profil Ma Commission : " + candidate.name + ", né(e) le " + (candidate.birthDate || "date non renseignée") +
+      (candidate.license ? ", licence " + candidate.license : "") + ".\n" +
+      lead.field + " : LivePalmes « " + lead.local + " » ; Ma Commission « " + lead.federal + " ». " + lead.agreement +
+      "\nRapprochement non validé. Vérifier les justificatifs pour déterminer la valeur correcte.";
   }
 
   function discrepancy(result, candidate) {
@@ -55,9 +142,9 @@
       const candidate = retainedCandidate(result);
       return {
         id: person.livePalmesId, status: result.status,
-        values: [person.lastName, person.firstName, person.birthDate, person.currentLicense,
+        values: [person.lastName, person.firstName, person.clubName || "Non renseigné", person.birthDate, person.currentLicense,
           candidate?.license || "", candidate?.validity || "", LABELS[result.status] || "À vérifier",
-          discrepancy(result, candidate)]
+          discrepancy(result, candidate), observation(result)]
       };
     }).sort((a, b) => (a.status === "validable") - (b.status === "validable") ||
       String(a.values[0]).localeCompare(String(b.values[0]), "fr") || String(a.values[1]).localeCompare(String(b.values[1]), "fr"));
@@ -107,18 +194,18 @@
       const n = index + 9;
       const statusStyle = result.status === "validable" ? 4 : result.status === "non_controle" ? 8 :
         ["licence_expiree", "erreur"].includes(result.status) ? 9 : 5;
-      const lines = Math.max(...result.values.map((value, i) => Math.ceil(String(value || "").length / (WIDTHS[i] - 2))));
-      const cells = result.values.map((value, i) => cell(`${String.fromCharCode(65 + i)}${n}`, value, i === 6 ? statusStyle : 0, i === 2 || i === 5)).join("");
+      const lines = Math.max(...result.values.map((value, i) => String(value || "").split("\n").reduce((total, line) => total + Math.max(1, Math.ceil(line.length / (WIDTHS[i] - 2))), 0)));
+      const cells = result.values.map((value, i) => cell(`${String.fromCharCode(65 + i)}${n}`, value, i === 7 ? statusStyle : 0, i === 3 || i === 6)).join("");
       data += row(n, cells, Math.min(400, Math.max(36, 14 * lines + 10)));
     });
     const last = report.rows.length + 8;
     return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
-<sheetPr><pageSetUpPr fitToPage="1"/></sheetPr><dimension ref="A1:H${last}"/>
+<sheetPr><pageSetUpPr fitToPage="1"/></sheetPr><dimension ref="A1:J${last}"/>
 <sheetViews><sheetView workbookViewId="0" showGridLines="0"><pane ySplit="8" topLeftCell="A9" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews>
 <sheetFormatPr defaultRowHeight="24"/><cols>${WIDTHS.map((w, i) => `<col min="${i + 1}" max="${i + 1}" width="${w}" customWidth="1"/>`).join("")}</cols>
-<sheetData>${data}</sheetData><autoFilter ref="A8:H${last}"/>
-<mergeCells count="4"><mergeCell ref="A1:H1"/><mergeCell ref="A2:H2"/><mergeCell ref="A3:H3"/><mergeCell ref="A6:H6"/></mergeCells>
+<sheetData>${data}</sheetData><autoFilter ref="A8:J${last}"/>
+<mergeCells count="4"><mergeCell ref="A1:J1"/><mergeCell ref="A2:J2"/><mergeCell ref="A3:J3"/><mergeCell ref="A6:J6"/></mergeCells>
 <printOptions horizontalCentered="1"/><pageMargins left="0.25" right="0.25" top="0.4" bottom="0.4" header="0.2" footer="0.2"/>
 <pageSetup paperSize="8" orientation="landscape" fitToWidth="1" fitToHeight="0"/>
 <headerFooter><oddFooter>&amp;L${xml(report.competition)}&amp;RPage &amp;P / &amp;N</oddFooter></headerFooter></worksheet>`;
