@@ -10282,9 +10282,10 @@ exports.deleteEngagementCalendarEvent = onCall(CALLABLE_OPTIONS, async (request)
   return { ok: true, deleted: true, calendarEventId };
 });
 
-exports.listEngagementOpenWaterCourses = onCall(CALLABLE_OPTIONS, async (request) => {
+exports.listEngagementOpenWaterCourses = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
   const startedAt = Date.now();
   await engagementAccessContext(request);
+  if (ENVIRONMENT.sportingDataSource === "nap") return require("./nap-open-water-library").read(require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD));
   const snapshot = await engagementOpenWaterCourseConfigRef().get();
   return {
     ok: true,
@@ -10297,7 +10298,7 @@ exports.listEngagementOpenWaterCourses = onCall(CALLABLE_OPTIONS, async (request
   };
 });
 
-exports.addEngagementOpenWaterCourse = onCall(CALLABLE_OPTIONS, async (request) => {
+exports.addEngagementOpenWaterCourse = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
   const context = await engagementAccessContext(request);
   if (!context.national && (!context.region || !context.regionId)) {
     throw new HttpsError("permission-denied", "Droit regional ou national requis pour modifier la bibliotheque eau libre.");
@@ -10306,6 +10307,7 @@ exports.addEngagementOpenWaterCourse = onCall(CALLABLE_OPTIONS, async (request) 
     distance: request.data?.distance,
     discipline: request.data?.discipline
   });
+  if (ENVIRONMENT.sportingDataSource === "nap") return require("./nap-open-water-library").change(require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD), {action:"add",course}, context.uid, saved => writeAuditLog("engagementOpenWaterCourse.nativeChange",context.uid,saved));
   const ref = engagementOpenWaterCourseConfigRef();
   const now = new Date().toISOString();
   let courses = [];
@@ -10333,7 +10335,7 @@ exports.addEngagementOpenWaterCourse = onCall(CALLABLE_OPTIONS, async (request) 
   return { ok: true, course, courses };
 });
 
-exports.setEngagementOpenWaterCourseStatus = onCall(CALLABLE_OPTIONS, async (request) => {
+exports.setEngagementOpenWaterCourseStatus = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
   const context = await engagementAccessContext(request);
   if (!context.national && (!context.region || !context.regionId)) {
     throw new HttpsError("permission-denied", "Droit regional ou national requis pour modifier la bibliotheque eau libre.");
@@ -10341,6 +10343,7 @@ exports.setEngagementOpenWaterCourseStatus = onCall(CALLABLE_OPTIONS, async (req
   const courseId = cleanText(request.data?.courseId).slice(0, 60);
   const active = request.data?.active === true;
   if (!courseId) throw new HttpsError("invalid-argument", "Course eau libre requise.");
+  if (ENVIRONMENT.sportingDataSource === "nap") return require("./nap-open-water-library").change(require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD), {action:"status",courseId,active}, context.uid, saved => writeAuditLog("engagementOpenWaterCourse.nativeChange",context.uid,saved));
   const ref = engagementOpenWaterCourseConfigRef();
   const now = new Date().toISOString();
   let courses = [];

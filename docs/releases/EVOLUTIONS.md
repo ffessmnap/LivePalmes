@@ -2,6 +2,16 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 10 octobre — Fin du raccordement calendrier : préparation hors ligne
+
+- Même règle confirmée pour formations, stages et réunions : régional dans son périmètre jusqu'au dernier jour, national ensuite ; documents encore modifiables par le régional après la date. Avertissement et confirmation avant suppression.
+- Préparation de la lecture NAP de la bibliothèque eau libre et des détails des événements (lien d'inscription, échéance UTC, programme). Les helpers ne sont pas encore raccordés aux fonctions publiées : aucun changement de fonctionnement TEST ou PROD.
+- Budget prévu : une lecture par clé primaire, une ligne maximum pour chaque complément à l'ouverture et au rafraîchissement. Aucun parcours par course/session, aucun repli Firebase. Les changements de bibliothèque seront préparés avec un témoin de version ; conserver jusqu'à 111 courses historiques/default sans troncature, tout en gardant la limite existante de 100 pour les ajouts.
+- Tests ciblés hors ligne réussis : programme et échéance aller-retour, bornes, refus d'un type compétition, bibliothèque absente/invalide, doublons, témoin périmé, conservation des anciennes courses. Tests DTN calcul/service/diagnostic également réussis sans connexion réelle.
+- Contrôle global local : syntaxe de 742 fichiers réussie ; arrêt sur le test de workflow Windows `livepalmes-test-backend-workflow-tests.js` (`main / access`), déjà observé avant cette préparation. Le contrôle Linux du futur commit reste nécessaire ; ne pas présenter le contrôle global comme réussi.
+- Antoine autorise finalement les deux compléments et confirme l'absence de saisie/import ; il demande les courses par défaut et **aucune reprise Firebase**. Deux tables créées et vérifiées après sauvegarde locale relue (`calendar-structure-before-*.json`, reçu `calendar-schema-result.json` dans l'espace de travail). La bibliothèque a été initialisée avec les onze définitions par défaut du code existant, sauvegarde avant insertion ; aucun ancien résultat, nageur ou engagement modifié.
+- Les trois actions de bibliothèque sont raccordées à NAP dans le code en préparation ; liste en une lecture indexée, modification en une lecture verrouillée et une écriture conditionnelle, sauvegarde technique avant écriture et transaction InnoDB. Les détails formations/stages/réunions restent à raccorder avant de déclarer l'ensemble terminé. Rien publié à ce stade.
+
 ### 10 octobre — Validation partielle des licences et choix du CSV
 
 - Antoine demande de valider les fiches correctes malgré les doublons bloquants, de conserver le statut des fiches non enregistrées et de choisir entre tous les nageurs du lot et les licences non validées pour la saison (choix par défaut).
