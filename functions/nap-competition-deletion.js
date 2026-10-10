@@ -17,6 +17,7 @@ async function readPlan(query,id,scope){
  // These two parent sets are required for the child-program/qualification queries.
  for(const ref of refs.filter(r=>r.cleanup)){
   const rows=sorted(await query(`SELECT * FROM \`${ref.table}\` FORCE INDEX(\`${ref.index}\`) WHERE \`${ref.field}\`=? LIMIT ${MAX_ROWS+1}`,[id]));
+  if(ref.table==="livepalmes_qualification_jobs"&&rows.some(row=>!["done","cancelled"].includes(row.state)))throw new TypeError("Terminez ou annulez le controle de qualification avant suppression.");
   total+=rows.length;if(total>MAX_ROWS)throw new RangeError("Dossier trop volumineux pour cette suppression ; aucune donnee retiree.");
   cleanup.push({...ref,rows});
  }

@@ -95,7 +95,7 @@ module.exports=[
     "table": "livepalmes_club_entry_options",
     "field": "competition_id",
     "index": "PRIMARY",
-    "cleanup": false
+    "cleanup": true
   },
   {
     "table": "livepalmes_competition_fees",
@@ -149,7 +149,7 @@ module.exports=[
     "table": "livepalmes_qualification_grants",
     "field": "competition_id",
     "index": "competition_club",
-    "cleanup": false
+    "cleanup": true
   },
   {
     "table": "livepalmes_qualification_groups",
@@ -161,7 +161,7 @@ module.exports=[
     "table": "livepalmes_qualification_jobs",
     "field": "competition_id",
     "index": "competition_state",
-    "cleanup": false
+    "cleanup": true
   },
   {
     "table": "livepalmes_qualification_standards",
