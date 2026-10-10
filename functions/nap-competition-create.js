@@ -1,5 +1,6 @@
 "use strict";
-// Fixed creation budget: <=17 SQL calls, then the existing bounded detail reader.
+// Fixed creation budget: <=17 SQL calls for competitions, <=26 for generic
+// calendar events, then the existing bounded detail reader.
 // Native MyISAM inserts are checkpointed; an uncertain generated id is never retried.
 const {createHash}=require("node:crypto");
 const {isDeepStrictEqual}=require("node:util");
@@ -21,10 +22,17 @@ function planCreation(input) {
   const kind=({pool:0,openWater:1,training:2,stage:3,meeting:4})[event.competitionType];
   const competition={libelle:name,lieu:city,date,enddate,comite,comments:"",filepdf:null,filetxt:null,bassin:null,chrono:null,ld:kind,wid:"",equipe:null,reference:0,arrived:null,integration:null,type:kind,organisateur:0,delegue:"",typecnc:0,derogation:0,affiche:"",live:0,qualiffrance:0,description:"",integrationstatus:0};
   const parameters={cat_d:null,cat_f:null,tps_d:null,tps_f:null,date_limit:null,actif:0,dateactif:null,mailtxt:"",mailjuges:"",user:null,sendtxt:0,sendpdfclubs:0,sendpdfjuges:0,sendforfait:0,qualif:0,who:null,officiel:0,saisie:1,relais:0,wc:null,send48:0,niveau:({departemental:0,regional:1,national:2,international:8})[event.level],open:0,type_chrono_elec:0,nb_nageurs:0,no_premiere_ligne:1,nb_lignes:0,mailcontrole:"",sendpdfcontrole:0,logocompet:"",live_header:"",live_hashtag:""};
+  if(require("./nap-calendar-event-details").KINDS.has(event.competitionType)) {
+    competition.lieu=text(event.location||city,64,true);
+    const description=String(event.publicDescription||"");
+    if(description.length>3000||/[^\u0009\u000a\u000d\u0020-\u00ff]/.test(description+competition.lieu))throw new TypeError("Description ou lieu non compatible avec NAP.");
+    competition.description=description;
+    return {competition,parameters,calendarExtras:{...require("./nap-calendar-event-details").normalize(event),address:text(event.address||"",300),city:text(event.city,120,true),organizer_label:text(event.organizer||"",160),canceled:event.canceled===true?1:0}};
+  }
   return {competition,parameters};
 }
 function insert(table,row,guard=null) {
-  if(!["competitions","compet_parametres","livepalmes_competition_options"].includes(table)) throw new TypeError("Table invalide.");
+  if(!["competitions","compet_parametres","livepalmes_competition_options","livepalmes_calendar_event_details"].includes(table)) throw new TypeError("Table invalide.");
   const keys=Object.keys(row);
   return {sql:`INSERT INTO \`${table}\` (${keys.map(k=>`\`${k}\``).join(",")}) ${guard ? `SELECT ${keys.map(()=>"?").join(",")} FROM DUAL WHERE ${guard.sql}` : `VALUES (${keys.map(()=>"?").join(",")})`}`,values:[...Object.values(row),...(guard?.values||[])]};
 }
@@ -38,7 +46,7 @@ async function createCompetition(pool,input,audit,authorize) {
   const operation=createHash("sha256").update(JSON.stringify(["competition-create",input.actorUid,input.creationId])).digest("hex");
   const connection=await pool.getConnection();let locked=false;
   const query=async(sql,values=[])=> (await connection.execute({sql,timeout:10000},values))[0];
-  const readRow=async(table,id)=> (await query(`SELECT * FROM \`${table}\` FORCE INDEX(PRIMARY) WHERE ${table==="livepalmes_competition_options"?"competition_id":"id"}=? LIMIT 1`,[id]))[0];
+  const readRow=async(table,id)=> (await query(`SELECT * FROM \`${table}\` FORCE INDEX(PRIMARY) WHERE ${table.startsWith("livepalmes_")?"competition_id":"id"}=? LIMIT 1`,[id]))[0];
   const verify=(row,expected)=> {if(!row||Object.entries(expected).some(([key,value])=>!isDeepStrictEqual(row[key],value))) throw new TypeError("La nouvelle competition a change. Verification requise.");};
   try {
     if(Number((await query("SELECT GET_LOCK(?,0) AS acquired",["lp-competition-create"]))[0]?.acquired)!==1) throw new TypeError("Creation en cours. Reessayez.");
@@ -54,9 +62,11 @@ async function createCompetition(pool,input,audit,authorize) {
     const metadata=await schema.inspect(connection);
     const hasEventType=metadata.columns.some(c=>c.TABLE_NAME==="livepalmes_competition_options" && c.COLUMN_NAME==="event_type");
     if(!hasEventType && !["pool","openWater"].includes(input.event.competitionType)) throw new TypeError("Champ de type explicite requis avant creation de cet evenement.");
+    if(proposed.calendarExtras && !require("./nap-approved-calendar-schema").validate(await require("./nap-approved-calendar-schema").inspect(connection)).every(Boolean))throw new TypeError("Complement calendrier absent.");
     if(!hasEventType && require("./nap-direct-calendar").eventFromRow({...proposed.competition,type_label:input.event.competitionType==="pool"?"Piscine":"Eau libre"}).eventType!==input.event.competitionType) throw new TypeError("Ce titre necessite le champ de type explicite dans NAP. Aucune competition creee.");
     if(!metadata.columns.some(c=>c.TABLE_NAME==="livepalmes_competition_options" && c.COLUMN_NAME==="entry_closed")) throw new TypeError("Champ de fermeture NAP absent : creation a verifier.");
-    if((await query("SELECT TRIGGER_NAME FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA=DATABASE() AND EVENT_OBJECT_TABLE IN ('competitions','compet_parametres','livepalmes_competition_options') LIMIT 4")).length) throw new TypeError("Declencheur NAP a verifier.");
+    const triggerTables=["competitions","compet_parametres","livepalmes_competition_options",...(proposed.calendarExtras?["livepalmes_calendar_event_details"]:[])];
+    if((await query(`SELECT TRIGGER_NAME FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA=DATABASE() AND EVENT_OBJECT_TABLE IN (${triggerTables.map(()=>"?").join(",")}) LIMIT 1`,triggerTables)).length) throw new TypeError("Declencheur NAP a verifier.");
     const kinds=await query("SELECT id,label FROM compet_types FORCE INDEX(PRIMARY) WHERE id IN (0,1,2,3,4) ORDER BY id LIMIT 5");
     if(!isDeepStrictEqual(kinds,[{id:0,label:"Piscine"},{id:1,label:"Eau libre"},{id:2,label:"Formation"},{id:3,label:"Stage"},{id:4,label:"Réunion"}])) throw new TypeError("Types NAP modifies.");
     if(!saved) {
@@ -85,6 +95,7 @@ async function createCompetition(pool,input,audit,authorize) {
     verify(await readRow("compet_parametres",saved.parameterId),{id:saved.parameterId,...parameters});
     const options=Object.fromEntries(schema.tables[0].columns.map(c=>[c.name,c.name==="competition_id"?saved.nativeId:c.name==="version"?"1":c.name.endsWith("_at")?saved.timestamp:c.name.endsWith("_by")?input.actorUid:null]));
     options.entry_closed=null;
+    if(proposed.calendarExtras) for(const key of ["address","city","organizer_label","canceled"])options[key]=proposed.calendarExtras[key];
     if(hasEventType) options.event_type=input.event.competitionType;
     if(saved.phase==="parameters") {
       const guard=competitionGuard(saved.nativeId,proposed.competition);
@@ -93,6 +104,19 @@ async function createCompetition(pool,input,audit,authorize) {
       try {if((await query(statement.sql,statement.values)).affectedRows!==1) throw new Error("Complement non enregistre.");} catch(error){if(error.code!=="ER_DUP_ENTRY") throw error;}
     }
     verify(await readRow("livepalmes_competition_options",saved.nativeId),options);
+    if(proposed.calendarExtras) {
+      const extra=proposed.calendarExtras;
+      const details={competition_id:saved.nativeId,registration_url:extra.registrationUrl,registration_deadline_at:extra.entryDeadlineAt?extra.entryDeadlineAt.replace("T"," ").replace("Z","000"):null,program_sessions:JSON.stringify(extra.programSessions),version:"1",updated_at:saved.timestamp,updated_by:input.actorUid};
+      const previous=await readRow("livepalmes_calendar_event_details",saved.nativeId);
+      if(!previous) {
+        const statement=insert("livepalmes_calendar_event_details",details,competitionGuard(saved.nativeId,proposed.competition));
+        try{if((await query(statement.sql,statement.values)).affectedRows!==1)throw new Error("Details non enregistres.");}catch(error){if(error.code!=="ER_DUP_ENTRY")throw error;}
+      }
+      const actual=await readRow("livepalmes_calendar_event_details",saved.nativeId);
+      // MySQL JSON serialisation is not byte-stable.
+      const normalize=row=>({...row,program_sessions:typeof row?.program_sessions==="string"?JSON.parse(row.program_sessions):row?.program_sessions});
+      verify(normalize(actual),normalize(details));
+    }
     saved={...saved,phase:"complete"};await audit.checkpoint(operation,saved);await audit.complete(operation,{competitionId:saved.nativeId,verified:true});
     return {ok:true,source:"nap",competitionId:`legacy-nap-${saved.nativeId}`};
   } finally {try {if(locked) await query("SELECT RELEASE_LOCK(?)",["lp-competition-create"]);} finally {connection.release();}}

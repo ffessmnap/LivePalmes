@@ -11,6 +11,12 @@ function fixture() {
     if(sql.includes("GET_LOCK"))return [[{acquired:s.busy?0:1}]];
     if(sql.includes("RELEASE_LOCK"))return [[{released:1}]];
     if(sql.startsWith("SHOW CREATE")){const table=sql.match(/`([^`]+)`/)[1];return [[{"Create Table":contract[table]+(s.drift?" altered":"")}]];}
+    const calendarSpec=require("../functions/nap-approved-calendar-schema").specs.find(spec=>spec.table===values[0]);
+    if(calendarSpec && sql.includes("information_schema.")) {
+      if(sql.includes("TABLES"))return [[{ENGINE:"InnoDB",TABLE_COLLATION:"utf8mb4_unicode_ci"}]];
+      if(sql.includes("COLUMNS"))return [calendarSpec.columns.map(([name,type,nullable,def])=>({COLUMN_NAME:name,COLUMN_TYPE:type,IS_NULLABLE:nullable,COLUMN_DEFAULT:def??null,EXTRA:""}))];
+      return [[{INDEX_NAME:"PRIMARY",COLUMN_NAME:calendarSpec.key,SEQ_IN_INDEX:1,NON_UNIQUE:0,SUB_PART:null}]];
+    }
     if(sql.includes("information_schema.TABLES"))return [schema.tables.map(t=>({TABLE_NAME:t.name,ENGINE:"InnoDB",TABLE_COLLATION:"utf8mb4_unicode_ci"}))];
     if(sql.includes("information_schema.COLUMNS"))return [[...schema.tables.flatMap(t=>t.columns.map(c=>({TABLE_NAME:t.name,COLUMN_NAME:c.name,COLUMN_TYPE:c.type,IS_NULLABLE:c.nullable?"YES":"NO",COLUMN_DEFAULT:c.defaultValue,EXTRA:c.extra}))),...(s.eventType?[{TABLE_NAME:"livepalmes_competition_options",COLUMN_NAME:"event_type",COLUMN_TYPE:"varchar(16)",IS_NULLABLE:"YES",COLUMN_DEFAULT:null,EXTRA:""}]:[]),...(s.noClosure?[]:[{TABLE_NAME:"livepalmes_competition_options",COLUMN_NAME:"entry_closed",COLUMN_TYPE:"tinyint",IS_NULLABLE:"YES",COLUMN_DEFAULT:null,EXTRA:""}])]];
     if(sql.includes("information_schema.STATISTICS"))return [schema.tables.flatMap(t=>t.keys.flatMap(k=>k.columns.map((c,i)=>({TABLE_NAME:t.name,INDEX_NAME:k.name,COLUMN_NAME:c,SEQ_IN_INDEX:i+1,NON_UNIQUE:k.unique?0:1,SUB_PART:null}))))];
@@ -24,6 +30,7 @@ function fixture() {
       const row=Object.fromEntries(keys.map((k,i)=>[k,values[i]]));
       if(table==="competitions") {assert.equal(s.saved.phase,"writing");s.competition={id:99,...row};s.writes++;if(s.lostReply)throw Error("network");return [{affectedRows:1,insertId:99}];}
       if(table==="compet_parametres") {assert.equal(s.saved.phase,"writing");assert.match(sql,/NOT EXISTS.*FORCE INDEX\(compet\)/);s.parameters={id:77,...row};s.writes++;if(s.lostParameterReply)throw Error("network");return [{affectedRows:1,insertId:77}];}
+      if(table==="livepalmes_calendar_event_details"){assert.match(sql,/competitions FORCE INDEX\(PRIMARY\)/);s.calendarDetails=row;s.writes++;if(s.lostCalendarReply){s.lostCalendarReply=false;throw Error("network");}return [{affectedRows:1}];}
       assert.match(sql,/compet_parametres FORCE INDEX\(PRIMARY\)/);
       if(s.failOptions){s.failOptions=false;throw Error("network");}
       if(s.options)throw Object.assign(Error("duplicate"),{code:"ER_DUP_ENTRY"});
@@ -32,6 +39,7 @@ function fixture() {
     if(sql.includes("FROM `competitions`"))return [s.competition?[s.competition]:[]];
     if(sql.includes("FROM `compet_parametres`"))return [s.parameters?[s.parameters]:[]];
     if(sql.includes("FROM `livepalmes_competition_options`"))return [s.options?[s.options]:[]];
+    if(sql.includes("FROM `livepalmes_calendar_event_details`"))return [s.calendarDetails?[s.calendarDetails]:[]];
     throw Error("Unexpected query");
   }};
   s.run=(data=input,authorize=()=>{s.authorized++;})=>createCompetition({getConnection:async()=>conn},data,{
@@ -50,7 +58,7 @@ function fixture() {
   for(const [competitionType,kind] of [["training",2],["stage",3],["meeting",4]]) {
     const data={...input,event:{...input.event,competitionType}};
     s=fixture();await assert.rejects(s.run(data),/type explicite requis/);assert.equal(s.writes,0);
-    s=fixture();s.eventType=true;await s.run(data);assert.equal(s.competition.ld,kind);assert.equal(s.competition.type,kind);assert.equal(s.competition.typecnc,0);assert.equal(s.options.event_type,competitionType);assert.equal(s.parameters.actif,0);assert.ok(s.queries<=17);
+    s=fixture();s.eventType=true;await s.run(data);assert.equal(s.competition.ld,kind);assert.equal(s.competition.type,kind);assert.equal(s.competition.typecnc,0);assert.equal(s.options.event_type,competitionType);assert.equal(s.parameters.actif,0);assert.ok(s.queries<=26);assert.equal(s.calendarDetails.competition_id,99);
   }
   s=fixture();await s.run();assert.equal(s.writes,3);assert.ok(s.queries<=17);assert.ok(s.done&&s.released);await s.run();assert.equal(s.writes,3,"completed retry does not duplicate");
   for(const flag of ["drift","trigger","wrongType","busy","noClosure"]){s=fixture();s[flag]=true;await assert.rejects(s.run());assert.equal(s.writes,0);assert.equal(s.saved,null);}
@@ -59,5 +67,8 @@ function fixture() {
   s=fixture();s.failOptions=true;await assert.rejects(s.run());assert.equal(s.writes,2);await s.run();assert.equal(s.writes,3,"identified native rows reused");
   s=fixture();s.failOptions=true;await assert.rejects(s.run());s.competition.libelle="Changed";await assert.rejects(s.run(),/a change/);assert.equal(s.writes,2);
   s=fixture();await s.run();await assert.rejects(s.run({...input,event:{...input.event,name:"Different"}}),/incompatible/);assert.equal(s.writes,3);
+  s=fixture();s.eventType=true;s.lostCalendarReply=true;
+  const training={...input,event:{...input.event,competitionType:"training",registrationUrl:"https://example.org",programSessions:[{label:"Accueil"}],address:"Adresse",organizer:"CNHC"}};
+  await assert.rejects(s.run(training),/network/);assert.equal(s.writes,4);await s.run(training);assert.equal(s.writes,4,"Lost calendar reply must not duplicate the event or details");assert.equal(s.options.organizer_label,"CNHC");
   console.log("NAP competition creation: validation, budget, guards and uncertain retries passed");
 })().catch(error=>{console.error(error);process.exitCode=1;});

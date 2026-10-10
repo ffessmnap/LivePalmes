@@ -56,6 +56,7 @@ function competitionItem(pack, definitions = new Map()) {
     missingEntryTimeMode: parameters.saisie == null ? "" : require("./nap-entry-time-policy").policy(parameters.saisie), maxEventsPerSwimmer: options.max_events_per_swimmer ?? 0,
     qualifications: require("./nap-qualification-rules").fromPack(pack,events),
     fees, programSessions: json(pack.detailedProgram?.program_sessions, []), events,
+    ...(require("./nap-calendar-event-details").KINDS.has(pack.event.competitionType) ? require("./nap-calendar-event-details").fromRow(pack.calendarDetails) : {}),
     eventCount: events.length, individualEventCount: events.filter(item => item.type === "individual").length,
     relayEventCount: events.filter(item => item.type === "relay").length,
     clubDocuments: [], documents: {}, generatedFiles: [], nativeOptionsConfigured: pack.options !== null,
