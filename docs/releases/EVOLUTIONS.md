@@ -2,6 +2,14 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 10 octobre — Suppression native des compétitions inutilisées (préparation)
+
+- Antoine confirme la suppression uniquement sans engagements ni résultats, y compris en présence de documents/programme après avertissement et confirmation. Droits existants conservés : régional dans son périmètre avant la fin de compétition, national pour les événements passés.
+- Préparation native : aperçu explicite avec documents, courses et programme retirés ; confirmation liée à une empreinte du dossier, refus des historiques et références depuis une autre compétition, sauvegarde des lignes avant écriture, verrous MyISAM et refus des reprises automatiques après interruption. Les objets Google hébergés ne sont pas détruits par cette action : les rattachements NAP sont retirés, la sauvegarde conservée.
+- Budget : aucun accès supplémentaire à l’ouverture ; au clic, lecteur de périmètre existant puis au plus 110 requêtes SQL fixes, 2 000 lignes et 500 ko pour le dossier. Aperçu sans écriture ; confirmation avec une sauvegarde technique et un reçu. Aucun parcours ne dépend du volume total de NAP.
+- 21 index non uniques autorisés explicitement par Antoine sans saisie/import et ajoutés sur 17 tables après sauvegarde. Journal local `outputs/application-index-suppression-competitions-1791632332275.ndjson` dans l’espace de travail ; chaque index vérifié. Aucun engagement, résultat ni compétition modifié pour cette opération.
+- Tests simulés réussis : périmètre, refus des engagements/résultats, changements après aperçu, sauvegarde indisponible et interruption. Vérification réelle strictement en lecture seule : compétition 5162 refusée car utilisée ; aperçu disponible pour la compétition d’essai 5220. Aucun DELETE exécuté. Contrôle global Linux et publication/recette TEST encore nécessaires. PROD inchangée.
+
 ### 10 octobre — Isolation des anciens traitements sportifs Firebase en mode NAP
 
 - Audit final du portail : six déclencheurs historiques de calendriers/effectifs/agrégats sont arrêtés avant tout accès sportif Firebase lorsque NAP est actif. Les anciens boutons serveur de reconstruction et suppression Firebase refusent désormais ces actions dans ce mode ; aucun traitement de comptes, notification, Records/MPF ou LivePalmes Direct changé.
