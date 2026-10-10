@@ -10673,7 +10673,7 @@
     if (elements.engagementsSaveButton) elements.engagementsSaveButton.hidden = true;
     if (elements.engagementsEditCancelTop) elements.engagementsEditCancelTop.hidden = true;
     if (elements.engagementsDeleteButton) {
-      const canRequestOrDelete = competition.napSource !== true && isEngagementAdminMode() && canManageEngagementCompetitionScope(competition);
+      const canRequestOrDelete = isEngagementAdminMode() && canManageEngagementCompetitionScope(competition) && (competition.napSource !== true || canDeleteEngagementCompetitionImmediately(competition));
       const deletionPending = isEngagementAdminMode() && competition.deletionRequestStatus === "pending";
       const directDelete = canDeleteEngagementCompetitionImmediately(competition);
       elements.engagementsDeleteButton.hidden = !canRequestOrDelete;
@@ -12216,10 +12216,33 @@
     const competition = selectedEngagementCompetition;
     const directDelete = canDeleteEngagementCompetitionImmediately(competition);
     const actionLabel = directDelete ? "Supprimer définitivement" : "Demander la suppression de";
-    const confirmMessage = directDelete
-      ? `${actionLabel} la compétition "${competition.name || "sans nom"}" ? Cette action est irréversible.`
-      : `${actionLabel} la compétition "${competition.name || "sans nom"}" ? Un administrateur national devra valider la suppression.`;
-    if (!global.confirm(confirmMessage)) return;
+    let nativePreview = null;
+    if (competition.napSource === true) {
+      if (!directDelete) return;
+      if (elements.engagementsDeleteButton) elements.engagementsDeleteButton.disabled = true;
+      if (elements.engagementsDetailStatus) elements.engagementsDetailStatus.textContent = "Vérification des engagements et résultats…";
+      try {
+        nativePreview = await callFunction("deleteEngagementCompetition", { competitionId: competition.id, previewOnly: true });
+        if (nativePreview?.source !== "nap" || !nativePreview.expectedFingerprint) throw new Error("Aperçu de suppression indisponible.");
+      } catch (error) {
+        if (elements.engagementsDetailStatus) {
+          elements.engagementsDetailStatus.textContent = `Suppression impossible : ${error?.message || error}`;
+          elements.engagementsDetailStatus.dataset.tone = "error";
+        }
+        return;
+      } finally {
+        if (elements.engagementsDeleteButton) elements.engagementsDeleteButton.disabled = false;
+      }
+    }
+    const confirmMessage = nativePreview
+      ? `Supprimer définitivement la compétition "${nativePreview.name || competition.name || "sans nom"}" ?\n\nÉléments retirés : ${nativePreview.documents} document(s) rattaché(s), ${nativePreview.courses} course(s), ${nativePreview.programSessions} session(s), ${nativePreview.programCourses} passage(s)${nativePreview.detailedProgram ? ", programme détaillé" : ""}, ainsi que les paramètres de la compétition.\n\nAucun engagement ni résultat n'est présent. Cette action est irréversible.`
+      : directDelete
+        ? `${actionLabel} la compétition "${competition.name || "sans nom"}" ? Cette action est irréversible.`
+        : `${actionLabel} la compétition "${competition.name || "sans nom"}" ? Un administrateur national devra valider la suppression.`;
+    if (!global.confirm(confirmMessage)) {
+      if (nativePreview && elements.engagementsDetailStatus) elements.engagementsDetailStatus.textContent = "Suppression annulée.";
+      return;
+    }
 
     const deleteButtonLabel = elements.engagementsDeleteButton?.textContent || "";
     let deletionCompleted = false;
@@ -12237,7 +12260,8 @@
 
     try {
       await callFunction(directDelete ? "deleteEngagementCompetition" : "requestEngagementCompetitionDeletion", {
-        competitionId: competition.id
+        competitionId: competition.id,
+        ...(nativePreview ? { confirmPermanent: true, expectedFingerprint: nativePreview.expectedFingerprint } : {})
       });
       deletionCompleted = true;
       if (directDelete) {
