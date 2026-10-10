@@ -68,8 +68,8 @@ jobs:
           python tests/production-notification-release-tests.py
       - name: Verifier la compatibilite des outils avec le code TEST
         run: |
+          npm ci --prefix tooling/tests/firestore-rules --ignore-scripts
           node - <<'JS'
-          const {execFileSync}=require('node:child_process');
           const fingerprints=require('./tooling/tools/release-function-fingerprints');
           const {FUNCTIONS}=require('./tooling/tools/prepare-production-notifications');
           const tested=fingerprints.fromGit('./tooling',process.env.CANDIDATE);
