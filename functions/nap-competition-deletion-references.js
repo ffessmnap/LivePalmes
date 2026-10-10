@@ -1,6 +1,7 @@
 "use strict";
 // Fixed metadata-reviewed native references; no runtime table names from the client.
 module.exports=[
+  {"table":"livepalmes_calendar_event_details","field":"competition_id","index":"PRIMARY","cleanup":true},
   {
     "table": "chefsdequipe",
     "field": "compet",

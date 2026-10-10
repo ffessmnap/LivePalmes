@@ -9,7 +9,7 @@
     meeting: "Réunion",
     other: "Autre"
   };
-  const LEVELS = { departemental: "Départemental", regional: "Régional", national: "National" };
+  const LEVELS = { departemental: "Départemental", regional: "Régional", national: "National", international:"International" };
   const CATEGORIES = { poster: "Affiche", circular: "Circulaire", rules: "Règlement", information: "Information", access: "Plan / accès", results: "Résultats", other: "Autre" };
 
   function programSessionLabel(label, index) {
@@ -133,7 +133,12 @@
       const editDocument = event.target.closest("[data-calendar-document-edit]");
       if (editDocument) startDocumentEdit(editDocument.dataset.calendarDocumentEdit);
       if (event.target.closest("[data-calendar-document-cancel]")) cancelDocumentEdit();
-      if (event.target.closest("[data-calendar-event-delete]")) deleteEvent();
+      const deleteButton=event.target.closest("[data-calendar-event-delete]");
+      if(deleteButton) {
+        deleteButton.disabled=true;
+        deleteEvent().catch(error=>{const message=dialog.querySelector("[data-calendar-event-message]");if(message)message.textContent=`Suppression impossible : ${error?.message || error}`;})
+          .finally(()=>{if(deleteButton.isConnected && !(current?.source==="nap"&&current?.regionalPastReadOnly) && current?.deletionRequestStatus!=="pending")deleteButton.disabled=false;});
+      }
     });
     dialog.addEventListener("submit", (event) => {
       if (event.target.matches("[data-calendar-event-form]")) saveEvent(event);
@@ -154,15 +159,15 @@
     const unknownOption = value && !TYPES[value]
       ? `<option value="${escapeHtml(value)}" selected>Type importé (${escapeHtml(value)})</option>`
       : (!value ? '<option value="" selected disabled>À choisir</option>' : "");
-    return unknownOption + Object.entries(TYPES).map(([optionValue, label]) =>
+    return unknownOption + Object.entries(TYPES).filter(([optionValue])=>current?.source !== "nap" || ["training","stage","meeting"].includes(optionValue)).map(([optionValue, label]) =>
       `<option value="${optionValue}" ${value === optionValue ? "selected" : ""}>${label}</option>`
     ).join("");
   }
 
   function renderProgram(program = []) {
     return program.map((session, index) => `
-      <div class="admin-calendar-program-row" data-calendar-program-row>
-        <label>Session<input data-program-label maxlength="80" value="${escapeHtml(programSessionLabel(session.label, index))}" required></label>
+      <div class="admin-calendar-program-row" data-calendar-program-row data-program-session-id="${escapeHtml(session.id || `session-${index+1}`)}">
+        <label>Session<input data-program-label maxlength="80" value="${escapeHtml(programSessionLabel(session.label || session.title, index))}" required></label>
         <label>Date<input data-program-date type="date" value="${escapeHtml(session.date || current?.date || "")}"></label>
         <label>Début<input data-program-start type="time" value="${escapeHtml(session.startTime || "")}"></label>
         <label>Fin<input data-program-end type="time" value="${escapeHtml(session.endTime || "")}"></label>
@@ -207,7 +212,7 @@
         ${regionalPastReadOnly ? renderReadOnlyInformation(event) : renderEditableInformation(event)}
         ${regionalPastReadOnly ? renderReadOnlyProgram(event.programSessions || event.program || []) : `<fieldset class="admin-engagements-form-section"><legend>Programme synthétique</legend><div data-calendar-program-list>${renderProgram(event.programSessions || event.program || [])}</div><button class="ghost-button compact" type="button" data-calendar-program-add>Ajouter une réunion</button></fieldset>`}
         <p class="admin-portal-message" data-calendar-event-message aria-live="polite"></p>
-        <div class="admin-portal-actions"><button class="ghost-button danger" type="button" data-calendar-event-delete ${deletionPending ? "disabled" : ""}>${deletionPending ? "Suppression demandée" : regionalPastReadOnly ? "Demander la suppression" : "Supprimer"}</button>${regionalPastReadOnly ? "" : '<button type="submit">Enregistrer</button>'}</div>
+        <div class="admin-portal-actions"><button class="ghost-button danger" type="button" data-calendar-event-delete ${deletionPending || regionalPastReadOnly && event.source === "nap" ? "disabled" : ""}>${deletionPending ? "Suppression demandée" : regionalPastReadOnly && event.source === "nap" ? "Suppression réservée au national" : regionalPastReadOnly ? "Demander la suppression" : "Supprimer"}</button>${regionalPastReadOnly ? "" : '<button type="submit">Enregistrer</button>'}</div>
       </form>
       <section class="admin-engagements-card admin-calendar-documents"><h3>Documents publics</h3><p>Tous les fichiers ajoutés ici sont accessibles sans connexion. Un remplacement met à jour le document proposé dans la fiche de la compétition.</p>
         <div data-calendar-document-list>${renderDocuments(event.clubDocuments || [])}</div>
@@ -218,13 +223,15 @@
   function addProgramRow() {
     const list = ensureDialog().querySelector("[data-calendar-program-list]");
     const index = list.querySelectorAll("[data-calendar-program-row]").length;
-    list.insertAdjacentHTML("beforeend", renderProgram([{ label: `Session ${index + 1}`, date: current?.date || "" }]));
+    list.insertAdjacentHTML("beforeend", renderProgram([{ id:`session-${Date.now()}-${index+1}`,label: `Session ${index + 1}`, date: current?.date || "" }]));
   }
 
   function payloadFromForm(form) {
     const data = new FormData(form);
     const deadline = data.get("entryDeadlineAt") ? new Date(data.get("entryDeadlineAt")) : null;
     const program = Array.from(form.querySelectorAll("[data-calendar-program-row]")).map((row) => ({
+      id:row.dataset.programSessionId,
+      items:(current?.programSessions || current?.program || []).find((session,index)=>(session.id || `session-${index+1}`)===row.dataset.programSessionId)?.items || [],
       label: row.querySelector("[data-program-label]").value,
       date: row.querySelector("[data-program-date]").value,
       startTime: row.querySelector("[data-program-start]").value,
@@ -241,7 +248,7 @@
     const message = form.querySelector("[data-calendar-event-message]");
     message.textContent = "Enregistrement…";
     try {
-      const result = await call("updateEngagementCalendarEvent", { calendarEventId: current.id, ...payloadFromForm(form) });
+      const result = await call("updateEngagementCalendarEvent", { calendarEventId: current.id, expectedFingerprint:current.napFingerprint, ...payloadFromForm(form) });
       render(result.event);
       ensureDialog().querySelector("[data-calendar-event-message]").textContent = "Événement enregistré.";
       global.dispatchEvent(new CustomEvent("livepalmes:calendar-events-changed", { detail: { action: "upsert", event: result.event } }));
@@ -319,6 +326,16 @@
   async function deleteEvent() {
     const regionalPastReadOnly = current?.regionalPastReadOnly === true;
     if (current?.deletionRequestStatus === "pending") return;
+    if(current?.source === "nap") {
+      if(regionalPastReadOnly)return;
+      const calendarEventId=current.id;
+      const preview=await call("deleteEngagementCalendarEvent",{calendarEventId,previewOnly:true});
+      if(!global.confirm(`Supprimer définitivement « ${preview.name || current.name} » ?\n${preview.documents || 0} document(s) rattaché(s).${preview.detailedProgram ? " Un programme est également présent." : ""}\n${preview.warning || "Cette action est irréversible."}`))return;
+      await call("deleteEngagementCalendarEvent",{calendarEventId,confirmPermanent:true,expectedFingerprint:preview.expectedFingerprint});
+      ensureDialog().close();
+      global.dispatchEvent(new CustomEvent("livepalmes:calendar-events-changed",{detail:{action:"delete",calendarEventId}}));
+      return;
+    }
     if (!global.confirm(regionalPastReadOnly
       ? `Demander au niveau national la suppression de « ${current.name} » ?`
       : `Supprimer définitivement « ${current.name} » ?`)) return;
