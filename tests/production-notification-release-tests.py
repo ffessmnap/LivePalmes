@@ -20,6 +20,7 @@ def load(name, filename):
 cycle = load('notification_cycle', 'release-cycle.py')
 guard = load('notification_guard', 'check-production-mail-disabled.py')
 state = load('notification_state', 'production-release-state.py')
+test_state = load('test_notification_state', 'test-notification-state.py')
 
 
 class NotificationReleaseTests(unittest.TestCase):
@@ -36,6 +37,17 @@ class NotificationReleaseTests(unittest.TestCase):
         for path in [record, 'firebase.json']:
             with self.assertRaises(ValueError):
                 cycle.classify([path])
+
+    def test_targeted_test_refresh_preserves_other_functions(self):
+        candidate = 'a' * 40
+        before = {'functions': [{'name': name, 'state': 'ACTIVE', 'commit': 'b' * 40}
+                               for name in sorted(test_state.NAMES | {'unrelated'})]}
+        after = {'functions': [{**f, 'commit': candidate} if f['name'] in test_state.NAMES else dict(f)
+                              for f in before['functions']]}
+        test_state.unchanged(before, after, candidate)
+        after['functions'][-1]['revision'] = 'unexpected'
+        with self.assertRaises(ValueError):
+            test_state.unchanged(before, after, candidate)
 
     def request(self):
         return {'additionalNotificationFunctions': sorted(cycle.NOTIFICATION_FUNCTIONS),

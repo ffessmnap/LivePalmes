@@ -295,7 +295,9 @@ jobs:
 
       - name: Couper les mails TEST et limiter la publication aux quatre traitements autorisés
         if: inputs.notification_final_check
-        run: node tools/refresh-test-notifications.js prepare "$RUNNER_TEMP/function-selector.txt" "$RUNNER_TEMP/notification-control.json"
+        run: |
+          python tools/test-notification-state.py before "$RUNNER_TEMP/notification-before.json"
+          node tools/refresh-test-notifications.js prepare "$RUNNER_TEMP/function-selector.txt" "$RUNNER_TEMP/notification-control.json"
 
       - name: Attester le commit des Functions du lot
         if: inputs.lot != 'bootstrap'
@@ -350,7 +352,9 @@ jobs:
 
       - name: Vérifier que les mails TEST restent désactivés
         if: inputs.notification_final_check
-        run: node tools/refresh-test-notifications.js verify
+        run: |
+          node tools/refresh-test-notifications.js verify
+          python tools/test-notification-state.py after "$RUNNER_TEMP/notification-before.json"
 
       - uses: actions/upload-artifact@v4
         if: inputs.notification_final_check
