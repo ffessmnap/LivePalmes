@@ -147,6 +147,7 @@ function runUnitTests() {
     "nap-club-deletion-index-tests.js",
     "nap-native-deletion-callable-tests.js",
     "nap-legacy-deletion-isolation-tests.js",
+    "nap-legacy-background-isolation-tests.js",
     "nap-person-history-schema-tests.js",
     "nap-person-deletion-plan-tests.js",
     "nap-person-deletion-tests.js",

@@ -2,6 +2,12 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 10 octobre — Isolation des anciens traitements sportifs Firebase en mode NAP
+
+- Audit final du portail : six déclencheurs historiques de calendriers/effectifs/agrégats sont arrêtés avant tout accès sportif Firebase lorsque NAP est actif. Les anciens boutons serveur de reconstruction et suppression Firebase refusent désormais ces actions dans ce mode ; aucun traitement de comptes, notification, Records/MPF ou LivePalmes Direct changé.
+- Les compteurs nationaux ne lisent plus les anciennes demandes de suppression sportives : deux agrégations techniques fixes (corrections d’identité et comptes), contre quatre auparavant. Liste des anciennes suppressions de compétition vide en mode NAP, après contrôle du droit national. Aucun N+1 ni reconstruction implicite.
+- Tests simulés des gardes, du maintien du fonctionnement hors NAP et des deux compteurs réussis. Vérification globale et publication TEST encore requises ; aucune validation utilisateur ni publication PROD déclarée. Suppression native des compétitions sans engagements/résultats confirmée par Antoine, encore en préparation séparée ; aucune suppression réelle pour la recette.
+
 ### 10 octobre — Sélection ciblée des fonctions NAP à publier
 
 - À la demande d'Antoine après le run TEST 38002678575 réussi (`b2f8bcfd25318c36673976df4572cb06796e9a47`), correction de la détection qui interprétait la garde d'activation NAP comme un cas dynamique et republiait les 147 fonctions ordinaires. La comparaison utilise toujours les révisions prouvées et toutes les dépendances directes/indirectes ; aucune liste manuelle de fonctions à ignorer.
