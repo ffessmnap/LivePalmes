@@ -1316,7 +1316,7 @@ assert.ok(portal.includes("teamLeadersWhatsAppUrl: engagementTeamLeadersWhatsApp
 assert.ok(portalHtml.includes('livepalmes-admin-portal.js?v=20261009-nap-production-37'));
 assert.ok(portal.includes('city: String(competition.city || "")'));
 assert.ok(portal.includes('address: String(competition.address || "")'));
-assert.ok(portalHtml.includes('livepalmes-admin-calendar-events.js?v=20261008-nap-perimetres-28'));
+assert.ok(portalHtml.includes('livepalmes-admin-calendar-events.js?v=20261010-nap-calendar-details'));
 assert.ok(portal.includes("ENGAGEMENT_CALENDAR_CACHE_TTL_MS = 5 * 60 * 1000"));
 assert.ok(portal.includes("engagementCompetitionCalendarMemoryCache"));
 assert.ok(portal.includes("engagementCompetitionCalendarRequests"));
