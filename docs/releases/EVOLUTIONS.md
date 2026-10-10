@@ -2,6 +2,14 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 10 octobre — Suppression native des compétitions inutilisées (préparation)
+
+- Antoine confirme la suppression uniquement sans engagements ni résultats, y compris en présence de documents/programme après avertissement et confirmation. Droits existants conservés : régional dans son périmètre avant la fin de compétition, national pour les événements passés.
+- Préparation native : aperçu explicite avec documents, courses et programme retirés ; confirmation liée à une empreinte du dossier, refus des historiques et références depuis une autre compétition, sauvegarde des lignes avant écriture, verrous MyISAM et refus des reprises automatiques après interruption. Les objets Google hébergés ne sont pas détruits par cette action : les rattachements NAP sont retirés, la sauvegarde conservée.
+- Budget : aucun accès supplémentaire à l’ouverture ; au clic, lecteur de périmètre existant puis au plus 110 requêtes SQL fixes, 2 000 lignes et 500 ko pour le dossier. Aperçu sans écriture ; confirmation avec une sauvegarde technique et un reçu. Aucun parcours ne dépend du volume total de NAP.
+- 21 index non uniques autorisés explicitement par Antoine sans saisie/import et ajoutés sur 17 tables après sauvegarde. Journal local `outputs/application-index-suppression-competitions-1791632332275.ndjson` dans l’espace de travail ; chaque index vérifié. Aucun engagement, résultat ni compétition modifié pour cette opération.
+- Tests simulés réussis : périmètre, refus des engagements/résultats, changements après aperçu, sauvegarde indisponible et interruption. Vérification réelle strictement en lecture seule : compétition 5162 refusée car utilisée ; aperçu disponible pour la compétition d’essai 5220. Aucun DELETE exécuté. Contrôle global Linux et publication/recette TEST encore nécessaires. PROD inchangée.
+
 ### 10 octobre — Clubs et observations du bilan licences 1.2.0
 
 - Antoine confirme que le bilan Excel `1.1.0` répond à son besoin (PR #220), puis demande le club et une observation sur une correspondance unique comportant une seule différence d’identité. Extension `1.2.0`, code préparé depuis `ecefc6967538edca665333f0102f76019668746d`, évolution initiale `157ac73053868197ab20e751d3229d73ec1f283f`.

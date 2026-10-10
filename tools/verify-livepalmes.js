@@ -68,6 +68,7 @@ function runUnitTests() {
     "engagement-mail-send-guard-tests.js",
     "nap-mail-delivery-tests.js",
     "nap-competition-create-tests.js",
+    "nap-competition-deletion-tests.js",
     "nap-import-swimmer-resolution-tests.js",
     "nap-import-diff-tests.js",
     "nap-import-preview-tests.js",
