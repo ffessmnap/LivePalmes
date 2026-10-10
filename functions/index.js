@@ -1100,7 +1100,18 @@ async function engagementClubAccessContext(request) {
   if (isSwitchingClub && capabilities["engagements.club.switch"] !== true) {
     throw new HttpsError("permission-denied", "Droit de changement de club requis.");
   }
-  const activeClub = isSwitchingClub ? await engagementClubById(requestedClubId) : null;
+  let activeClub = null;
+  if (isSwitchingClub) {
+    if (ENVIRONMENT.sportingDataSource === "nap") {
+      try {
+        const pool = require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD);
+        activeClub = await require("./nap-club-directory").findClub(pool, requestedClubId);
+      } catch (error) {
+        throw new HttpsError(error instanceof TypeError ? "invalid-argument" : "unavailable",
+          error instanceof TypeError ? error.message : "Club NAP indisponible. Reessayez.");
+      }
+    } else activeClub = await engagementClubById(requestedClubId);
+  }
   if (isSwitchingClub && (!activeClub || !CLUB_REFERENCE_REGION_LABELS[activeClub.regionId])) {
     throw new HttpsError("invalid-argument", "Club actif inconnu.");
   }
@@ -10839,7 +10850,7 @@ exports.getEngagementClubEntry = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.s
   };
 });
 
-exports.preloadEngagementClubWorkspaces = onCall(CALLABLE_OPTIONS, async (request) => {
+exports.preloadEngagementClubWorkspaces = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
   const startedAt = Date.now();
   const context = await engagementClubAccessContext(request);
   // Native workspaces are read when actually opened. Prefetch must neither
@@ -16562,6 +16573,7 @@ function engagementEntryTimeStats(swimmers = []) {
 }
 
 exports.previewEngagementClubEntryTimes = onCall(CALLABLE_OPTIONS, async (request) => {
+  if (ENVIRONMENT.sportingDataSource === "nap") throw new HttpsError("failed-precondition", "Cette ancienne saisie Firebase est desactivee. Utilisez les engagements NAP.");
   const context = await engagementClubAccessContext(request);
   const competitionId = cleanText(request.data?.competitionId).slice(0, 128);
   if (!competitionId) {
@@ -17324,6 +17336,7 @@ exports.saveEngagementClubSwimmerSelections = onCall({ ...CALLABLE_OPTIONS, ...(
 });
 
 exports.saveEngagementClubSwimmers = onCall(CALLABLE_OPTIONS, async (request) => {
+  if (ENVIRONMENT.sportingDataSource === "nap") throw new HttpsError("failed-precondition", "Cette ancienne saisie Firebase est desactivee. Utilisez les engagements NAP.");
   const context = await engagementClubAccessContext(request);
   const competitionId = cleanText(request.data?.competitionId).slice(0, 128);
   if (!competitionId) {
