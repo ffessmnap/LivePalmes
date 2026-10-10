@@ -2,6 +2,11 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 10 octobre — Preuve TEST actualisée du lecteur NAP, candidat PROD conservé
+
+- Le bilan `38087139465` a correctement refusé l'ancienne révision TEST du lecteur (`a529f556`, 7 octobre). Antoine demande de poursuivre jusqu'à la PROD complète, avec sollicitation en cas de droit ou de choix nécessaire.
+- Actualisation du lot NAP TEST par le circuit existant (`38087459416`), puis preuve commune demandée (`38087526270`) sur `8e54f5fb`. Le candidat PROD reste `1df545a6` : réparation limitée au seul lecteur absent. Le circuit exige une ascendance Git démontrée, zéro différence hors outils/tests/docs/workflows et l'égalité de toutes les empreintes backend. Une différence applicative, de configuration, de données ou d'empreinte bloque toujours la publication. Aucune preuve ni validation utilisateur n'est inventée.
+- Tests hors ligne : refus de tout changement applicatif, de tout autre candidat/commit PROD, d'un run incohérent ou d'empreintes différentes. Le contrôle réel NAP et la sauvegarde chiffrée restent obligatoires. Les runs TEST sont encore à conclure avant le nouveau bilan PROD.
 ### 10 octobre — Correction du lecteur public NAP PROD manquant
 
 - La publication `38084497538` du candidat `1df545a6` est terminée, mais son contrôle externe a trouvé `readNapPublicSwimmer` absent (404). Le lot historique NAP, contenant aussi des outils TEST, était exclu du circuit ordinaire. Antoine demande explicitement « corrige alors ».

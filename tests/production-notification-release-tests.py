@@ -24,6 +24,26 @@ test_state = load('test_notification_state', 'test-notification-state.py')
 
 
 class NotificationReleaseTests(unittest.TestCase):
+    def test_equivalent_test_proof_is_restricted_to_same_application_nap_repair(self):
+        request = {'candidate': 'a' * 40, 'productionCommit': 'a' * 40,
+                   'testEquivalentCandidate': 'b' * 40,
+                   'additionalPublicNapFunctions': ['readNapPublicSwimmer'],
+                   'additionalPublicNapApproval': 'Explicit approval', 'initialAutomaticMailEnabled': False}
+        evidence = {'candidate': 'b' * 40}
+        info = {'head_sha': 'b' * 40}
+        with patch.object(cycle.subprocess, 'run'), patch.object(cycle, 'backend_fingerprints', return_value={'reader': 'same'}), patch.object(cycle, 'git', return_value='tools/release-cycle.py'):
+            cycle.verify_test_candidate(request, evidence, info)
+            for bad in [{**request, 'productionCommit': 'c' * 40}, {**request, 'testEquivalentCandidate': 'c' * 40}, {**request, 'additionalPublicNapFunctions': []}]:
+                with self.assertRaises(ValueError):
+                    cycle.verify_test_candidate(bad, evidence, info)
+        for path in ['functions/index.js', 'assets/livepalmes-environment.js', 'firebase.json', 'performances/public/data/records.json', 'portail.html']:
+            with patch.object(cycle.subprocess, 'run'), patch.object(cycle, 'git', return_value=path), self.assertRaises(ValueError):
+                cycle.verify_test_candidate(request, evidence, info)
+        with patch.object(cycle.subprocess, 'run'), patch.object(cycle, 'git', return_value='tools/helper.py'), patch.object(cycle, 'backend_fingerprints', side_effect=[{'reader': 'old'}, {'reader': 'new'}]), self.assertRaises(ValueError):
+            cycle.verify_test_candidate(request, evidence, info)
+        with self.assertRaises(ValueError):
+            cycle.verify_test_candidate(request, evidence, {'head_sha': 'c' * 40})
+
     def test_public_nap_extension_is_exact_and_works_without_application_diff(self):
         request = {'schema': 1, 'candidate': 'a' * 40, 'productionCommit': 'a' * 40,
                    'productionHosting': 'sites/livepalmes/versions/existing',
