@@ -22,4 +22,10 @@ async function directory(pool) {
  if(rows.length>1000) throw new RangeError("Annuaire NAP superieur a 1000 clubs : pagination requise.");
  return {ok:true,source:"nap",clubs:rows.map(club),replaceDirectory:true,hasMore:false,cursor:null,syncWatermark:new Date().toISOString(),sqlBudget:{queriesMax:1,rowsMax:1001}};
 }
-module.exports={COLUMNS,CLUB_REGIONS,portalRegion,region,club,directory,fingerprint};
+async function findClub(pool, value) {
+ const id=String(value ?? "");
+ if(!/^[1-9]\d{0,15}$/.test(id) || !Number.isSafeInteger(Number(id))) throw new TypeError("Identifiant club NAP invalide.");
+ const [rows]=await pool.execute({sql:`SELECT ${COLUMNS.map(k=>`\`${k}\``).join(",")} FROM clubs FORCE INDEX (PRIMARY) WHERE num_club = ? LIMIT 1`,values:[Number(id)],timeout:10000});
+ return rows.length ? club(rows[0]) : null;
+}
+module.exports={findClub,COLUMNS,CLUB_REGIONS,portalRegion,region,club,directory,fingerprint};

@@ -2,6 +2,15 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+
+### 11 octobre — Changement de club actif exclusivement NAP
+
+- Accord explicite d'Antoine : conserver LivePalmes Direct et corriger le dernier référentiel de changement de club avant nettoyage. Aucune suppression de données dans cette évolution, aucun déploiement PROD autorisé par cette correction.
+- Le contexte club charge le club demandé dans NAP par sa clé primaire et reprend son nom et sa région via le mapping existant. Aucun repli vers le référentiel Firebase ou les anciens fichiers si le club manque ou si NAP est indisponible. Droits contrôlés avant la requête, périmètres inchangés.
+- Budget : une lecture du compte Firebase comme auparavant ; zéro lecture sportive Firebase ; au plus une requête NAP indexée retournant une ligne par changement de club. Sans changement de club, aucune requête NAP supplémentaire. Aucun scan, cache de secours ni écriture.
+- Liaison du secret NAP ajoutée au préchargement, qui appelle également le contexte club. Deux anciens points d'entrée de saisie Firebase encore présents sont refusés en mode NAP avant toute lecture ou écriture.
+- Tests hors ligne : club natif et région Corse, refus avant SQL sans droit, absence, panne sans repli ni secret exposé, identifiant invalide, club habituel, anciens points d'entrée et secret du préchargement. Vérification globale et publication TEST à conclure ; aucune validation utilisateur déclarée.
+
 ### 10 octobre — Adaptateur runtime du secret du lecteur NAP PROD
 
 - Le run ciblé `38088043259` a créé le lecteur et conservé toutes les autres fonctions, mais le contrôle réel a bloqué Hosting sur HTTP 400. Cause identifiée dans le paquet PROD : le préparateur historique remplace `defineSecret` par une chaîne, alors que le lecteur public appelle `.value()`.
