@@ -17,11 +17,17 @@ import zipfile
 ALLOWED = {'prepareEngagementClubRecapEmails', 'closeDueEngagementCompetitions', 'resumePerformancePublicationJobs', 'resolveEngagementSwimmerChangeRequest'}
 
 
-def source_patch(before, source, sha):
+def source_patch(before, source, sha, native_identity=False):
     if before['name'].split('/')[-1] not in ALLOWED:
         raise ValueError('Traitement hors autorisation PDF')
-    return {'name': before['name'], 'buildConfig': {'source': {'storageSource': source}},
+    result = {'name': before['name'], 'buildConfig': {'source': {'storageSource': source}},
             'labels': {**before.get('labels', {}), 'livepalmes-commit': sha}}
+    if native_identity:
+        if before['name'].split('/')[-1] != 'resolveEngagementSwimmerChangeRequest':
+            raise ValueError('Liaison NAP reservee aux corrections de nageurs')
+        result['serviceConfig'] = {'secretEnvironmentVariables': [{'key': 'LIVEPALMES_NAP_PASSWORD',
+            'secret': 'LIVEPALMES_NAP_PASSWORD', 'projectId': 'livepalmes', 'version': 'latest'}]}
+    return result
 
 
 def archive(candidate, sha):
@@ -50,6 +56,7 @@ def main(candidate, plan, backup):
     request = json.loads((plan / 'request.json').read_text())
     spec = importlib.util.spec_from_file_location('cycle', Path(__file__).with_name('release-cycle.py'))
     cycle = importlib.util.module_from_spec(spec); spec.loader.exec_module(cycle)
+    native_identity = cycle.approved_native_identity_secret(request)
     names = cycle.approved_pdf_functions(request) + cycle.approved_dtn_functions(request)
     if not names:
         print('Aucun traitement PDF supplementaire demande.')
@@ -82,8 +89,12 @@ def main(candidate, plan, backup):
         pass
     for name in names:
         full = state.PREFIX + name
-        body = source_patch(before[full], upload['storageSource'], request['candidate'])
-        state.wait_operation(state.request(state.API + full + '?updateMask=build_config.source,labels', 'PATCH', body))
+        identity_binding = native_identity and name == 'resolveEngagementSwimmerChangeRequest'
+        if bool(report.get('nativeIdentityNapSecret')) != native_identity:
+            raise ValueError('Liaison NAP hors sauvegarde approuvee')
+        body = source_patch(before[full], upload['storageSource'], request['candidate'], identity_binding)
+        mask = 'build_config.source,labels' + (',service_config.secret_environment_variables' if identity_binding else '')
+        state.wait_operation(state.request(state.API + full + '?updateMask=' + mask, 'PATCH', body))
         print('Source autorisee actualisee : ' + name, flush=True)
     state.check_after(backup, backup / 'after.json', True)
 

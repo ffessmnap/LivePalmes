@@ -6,6 +6,7 @@
 
 - Accord explicite : actualiser seulement les quatre traitements TEST encore anciens, avec les mails TEST désactivés pendant le contrôle ; aucune publication PROD. Réutilisation du circuit backend authentifié existant et de son verrou de concurrence. Sélection exacte de quatre exports, branche main et cible TEST imposées, coupure avec témoin de version et sans rattrapage à la réactivation. Vérification de la coupure après déploiement ; le réglage reste désactivé.
 - Les anciens TOP sont déjà exclus du Hosting. Leur exclusion du bilan est désormais conditionnée à la présence des exclusions exactes dans tous les targets du candidat ; aucune modification des fichiers générés, Records ou MPF. Une configuration qui sert ces TOP conserve le blocage habituel.
+- Accord complémentaire explicite : préparer la liaison NAP du traitement de correction des nageurs pour le futur déploiement, sans publication. Option séparée dans le bilan, sauvegarde de la configuration, remplacement des seules liaisons de secrets de ce traitement et contrôle de conservation du reste ; le comportement source seule des anciens bilans reste inchangé. Aucune modification de droits ni de données.
 - PR #229 intégrée en `e15d8c9e` ; préparation hors ligne réussie : run `38075640652`, candidat TEST `ccca0cc5`, sans accès Google. Tests ciblés de cette suite en cours ; déploiement TEST et validation utilisateur non encore déclarés.
 
 ### 10 octobre — Préparation limitée des notifications NAP pour PROD (PR #229)
