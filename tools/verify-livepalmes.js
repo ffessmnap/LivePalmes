@@ -230,6 +230,8 @@ function runUnitTests() {
     "nap-entry-person-access-ui-tests.js",
     "nap-calendar-contract-tests.js",
     "nap-calendar-event-details-tests.js",
+    "nap-calendar-event-callables-tests.js",
+    "nap-calendar-event-change-tests.js",
     "nap-approved-calendar-schema-tests.js",
     "nap-direct-calendar-tests.js",
     "nap-approved-index-tests.js",

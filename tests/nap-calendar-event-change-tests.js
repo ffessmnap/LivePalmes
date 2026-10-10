@@ -1,0 +1,22 @@
+"use strict";
+const assert=require("node:assert/strict");
+const mod=require("../functions/nap-portal-competition-change"),{fingerprint}=require("../functions/nap-portal-workspaces");
+const competition={id:5162,libelle:"Formation",lieu:"Paris",date:"2026-11-07",enddate:"2026-11-07",comite:3,description:"",bassin:null,chrono:null,ld:2,type:2};
+const parameters=Object.fromEntries(mod.SPECS.compet_parametres.columns.map(key=>[key,null]));Object.assign(parameters,{id:19,compet:5162,actif:0,niveau:1});
+const options=Object.fromEntries(mod.SPECS.livepalmes_competition_options.columns.map(key=>[key,null]));Object.assign(options,{competition_id:5162,version:"1",event_type:"training"});
+const pack={source:"nap",event:{competitionType:"training",level:"regional"},nativeSnapshot:{competition,parameters},nativeParameters:{parameter_id:19},options,calendarDetails:null,committees:[],courses:[],courseOptions:[],groups:[],standards:[],fees:null,detailedProgram:null};
+const input={competitionId:"legacy-nap-5162",actorUid:"regional",national:false,expectedFingerprint:fingerprint(pack),patch:{eventType:"meeting",calendarDetails:{registrationUrl:"https://example.org",entryDeadlineAt:"2026-11-06T20:00:00+01:00",programSessions:[{label:"Accueil",startTime:"09:00",summary:"Presentation"}]}}};
+const plan=mod.planCompetitionChange(pack,input,Date.parse("2026-10-10T12:00:00Z"));
+assert.deepEqual(plan.operations.map(item=>item.table),["competitions","livepalmes_competition_options","livepalmes_calendar_event_details"]);
+assert.equal(plan.operations[0].after.type,4);assert.equal(plan.operations[0].after.ld,4);
+assert.equal(plan.operations[1].after.event_type,"meeting");
+const details=plan.operations[2];assert.equal(details.after.registration_deadline_at,"2026-11-06 19:00:00.000000");assert.equal(details.after.version,"1");assert.equal(details.after.program_sessions[0].title,"Accueil");assert.equal(details.after.updated_by,"regional");
+assert.deepEqual(parameters,pack.nativeSnapshot.parameters);assert.equal(pack.options.event_type,"training");assert.equal(pack.calendarDetails,null);
+for(const operation of plan.operations){const statement=mod.buildStatement(operation,{competitions:competition,compet_parametres:parameters});assert.equal((statement.sql.match(/\?/g)||[]).length,statement.values.length);assert.match(statement.sql,/scope_/);}
+assert.throws(()=>mod.planCompetitionChange({...pack,event:{...pack.event,competitionType:"pool"}},{...input,expectedFingerprint:fingerprint({...pack,event:{...pack.event,competitionType:"pool"}})}),/requis|reserves/);
+assert.throws(()=>mod.planCompetitionChange(pack,{...input,expectedFingerprint:"stale"}),/change/);
+assert.throws(()=>mod.planCompetitionChange(pack,{...input,patch:{eventType:"pool"}}),/requis/);
+const previous={...details.after,version:"3"};const newer={...pack,calendarDetails:previous};
+const changed=mod.planCompetitionChange(newer,{...input,expectedFingerprint:fingerprint(newer),patch:{calendarDetails:{registrationUrl:"https://example.org/new",programSessions:[]}}});
+assert.equal(changed.operations[0].before.version,"3");assert.equal(changed.operations[0].after.version,"4");assert.equal(changed.operations[0].after.registration_deadline_at,null);
+console.log("Native calendar changes: shared type, UTC deadline, programme, preserved sporting rows and scoped conditional SQL passed offline.");

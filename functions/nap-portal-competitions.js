@@ -49,17 +49,19 @@ async function readNativeCompetition(connection, input, authorize) {
   const courseOptions = await bounded(connection, "SELECT * FROM livepalmes_course_options WHERE competition_id=? ORDER BY event_code LIMIT 301", [id], LIMITS.courses);
   const fees = await bounded(connection, "SELECT * FROM livepalmes_competition_fees WHERE competition_id=? LIMIT 1", [id], 1);
   const detailedProgram = await bounded(connection, "SELECT * FROM livepalmes_competition_programs WHERE competition_id=? LIMIT 1", [id], 1);
+  const calendarDetails = require("./nap-calendar-event-details").KINDS.has(event.competitionType)
+    ? await bounded(connection, "SELECT * FROM livepalmes_calendar_event_details FORCE INDEX (PRIMARY) WHERE competition_id=? LIMIT 1", [id], 1) : null;
   const groups = await bounded(connection, "SELECT * FROM livepalmes_qualification_groups WHERE competition_id=? ORDER BY position LIMIT 13", [id], LIMITS.groups);
   const standards = await bounded(connection, "SELECT * FROM livepalmes_qualification_standards WHERE competition_id=? ORDER BY category,sex,event_code LIMIT 3001", [id], LIMITS.standards);
   const qualifyingCompetitions = groups.length ? await bounded(connection, `SELECT * FROM livepalmes_qualification_competitions WHERE group_id IN (${groups.map(() => "?").join(",")}) ORDER BY group_id,qualifying_competition_id LIMIT 2401`, groups.map(group => group.id), LIMITS.qualifyingCompetitions) : [];
   const sessions = await bounded(connection, "SELECT id,label,description,session,state,`begin` FROM winpalme_sessions FORCE INDEX (livepalmes_compet_session_id) WHERE compet=? ORDER BY session,id LIMIT 13", [id], LIMITS.sessions);
   const program = sessions.length ? await bounded(connection, `SELECT id,session,course,sexe,pos,final FROM winpalme_courses FORCE INDEX (livepalmes_session_pos_id) WHERE session IN (${sessions.map(() => "?").join(",")}) ORDER BY session,pos,id LIMIT 1921`, sessions.map(session => session.id), LIMITS.program) : [];
   const nativeSnapshot = {
-    competition: Object.fromEntries(["id","libelle","lieu","date","enddate","comite","description","bassin","chrono","ld"].map(key => [key,row[key] ?? null])),
+    competition: {...Object.fromEntries(["id","libelle","lieu","date","enddate","comite","description","bassin","chrono","ld"].map(key => [key,row[key] ?? null])),type:row.native_type??null},
     parameters: { id:row.parameter_id,compet:row.id,...Object.fromEntries(["actif","dateactif","date_limit","officiel","nb_lignes","mailtxt","mailjuges","tps_d","tps_f","niveau","saisie","relais","cat_d","cat_f","qualif"].map(key=>[key,row[key] ?? null])) }
   };
   return { source: "nap", readAt: new Date().toISOString(), event: {...event,...entryState({...row,entry_closed:options[0]?.entry_closed})}, nativeParameters, nativeSnapshot, nativeOrganizerId: row.organisateur, nativeDelegate: row.delegue, nativeComments: row.comments,
-    courses, restrictions, participations, committees, options: options[0] || null, courseOptions, fees: fees[0] || null, detailedProgram: detailedProgram[0] || null, groups, standards, qualifyingCompetitions, sessions, program };
+    courses, restrictions, participations, committees, options: options[0] || null, courseOptions, fees: fees[0] || null, detailedProgram: detailedProgram[0] || null, ...(calendarDetails ? {calendarDetails:calendarDetails[0]||null} : {}), groups, standards, qualifyingCompetitions, sessions, program };
 }
 // Private compatibility proof, deliberately excludes names, contacts and descriptions.
 async function inspectNativeCompetitions(connection) {
