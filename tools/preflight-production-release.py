@@ -99,11 +99,18 @@ def main():
                 raise ValueError("Selection hors perimetre")
             selected = requested
         selected_functions = [f for f in functions if f["name"].split("/")[-1] in selected]
-        if not set(extra).issubset({f['name'].split('/')[-1] for f in selected_functions}):
+        notification = cycle.approved_notification_functions(plan) if os.environ.get('PLAN') else []
+        source_only = set(extra) - set(notification)
+        if not source_only.issubset({f['name'].split('/')[-1] for f in selected_functions}):
             raise ValueError('Traitement PDF existant absent')
         report['additionalPdfFunctions'] = plan.get('additionalPdfFunctions', []) if os.environ.get('PLAN') else []
         report['additionalDtnFunctions'] = plan.get('additionalDtnFunctions', []) if os.environ.get('PLAN') else []
-        app_checks = set(f.get("serviceConfig", {}).get("environmentVariables", {}).get("LIVEPALMES_ENFORCE_APP_CHECK", "false") for f in selected_functions if f['name'].split('/')[-1] not in extra)
+        report['additionalNotificationFunctions'] = notification
+        if notification:
+            contract = json.loads(subprocess.check_output(['node', '-e', 'console.log(JSON.stringify(require(process.argv[1]).plan(process.argv[2])))',
+                str(Path(__file__).with_name('prepare-production-notifications.js')), report['candidate']], text=True))
+            report['notificationExpectedSecrets'] = contract['expectedSecrets']
+        app_checks = set(f.get("serviceConfig", {}).get("environmentVariables", {}).get("LIVEPALMES_ENFORCE_APP_CHECK", "false") for f in selected_functions if f['name'].split('/')[-1] not in source_only)
         if selected and (len(app_checks) != 1 or not app_checks.issubset({"true", "false"})):
             raise ValueError("App Check heterogene ou invalide")
         report["appCheck"] = next(iter(app_checks), "false")

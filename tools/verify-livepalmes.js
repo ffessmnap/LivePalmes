@@ -66,6 +66,7 @@ function runUnitTests() {
     "engagement-mail-control-tests.js",
     "engagement-mail-control-callables-tests.js",
     "engagement-mail-send-guard-tests.js",
+    "production-notification-preparation-tests.js",
     "nap-mail-delivery-tests.js",
     "nap-competition-create-tests.js",
     "nap-competition-deletion-tests.js",

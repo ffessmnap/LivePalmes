@@ -95,6 +95,10 @@ jobs:
 
         python tooling/tests/production-release-state-tests.py
 
+        python tooling/tests/production-notification-release-tests.py
+
+        node tooling/tests/production-notification-preparation-tests.js
+
         node tooling/tests/production-backup-crypto-tests.js'
     - uses: google-github-actions/auth@v3
       if: inputs.resume_run == '0'
@@ -114,6 +118,8 @@ jobs:
     - name: Verifier que PROD correspond encore au bilan
       if: inputs.resume_run == '0'
       run: python tooling/tools/release-cycle.py compare-prod "$PLAN"
+    - name: Verifier les mails desactives avant la bascule NAP
+      run: python tooling/tools/check-production-mail-disabled.py
     - name: Sauvegarder le code PROD avant publication
       id: backup
       if: inputs.resume_run == '0'
@@ -183,6 +189,9 @@ jobs:
         == 'false' && (steps.backup.outcome == 'success' || steps.resume.outcome == 'success')))
       run: python tooling/tools/production-release-state.py check "$RUNNER_TEMP/prod-backup" "$RUNNER_TEMP/production-after.json"
         "$DEPLOY_OUTCOME"
+    - name: Confirmer les mails desactives avant Hosting
+      if: steps.state.outcome == 'success' && steps.functions.outcome != 'failure'
+      run: python tooling/tools/check-production-mail-disabled.py
     - uses: actions/upload-artifact@v4
       with:
         name: production-after
