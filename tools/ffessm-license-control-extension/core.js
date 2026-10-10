@@ -13,7 +13,8 @@
     firstName: ["prenom", "prenom_livepalmes", "first_name", "firstname"],
     birthDate: ["date_naissance", "date_naissance_livepalmes", "birth_date", "birthdate"],
     currentLicense: ["licence_livepalmes", "licence", "license_number"],
-    competitions: ["competitions_sources", "competitions", "competition"]
+    competitions: ["competitions_sources", "competitions", "competition"],
+    clubName: ["club_livepalmes", "club", "club_name", "nom_club"]
   };
 
   function normalizeText(value) {
@@ -141,7 +142,8 @@
         firstName: value("firstName"),
         birthDate: normalizeDate(value("birthDate")),
         currentLicense: indexes.currentLicense >= 0 ? normalizeLicense(value("currentLicense")) : "",
-        competitions: indexes.competitions >= 0 ? value("competitions") : ""
+        competitions: indexes.competitions >= 0 ? value("competitions") : "",
+        clubName: indexes.clubName >= 0 ? value("clubName") : ""
       };
       if (!person.batchId || !person.season || !person.livePalmesId || !person.lastName || !person.firstName || !person.birthDate) {
         throw new Error(`Ligne ${person.line} : lot, saison, identifiant, identité ou date de naissance manquant.`);
