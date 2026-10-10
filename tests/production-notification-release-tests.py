@@ -89,6 +89,23 @@ class NotificationReleaseTests(unittest.TestCase):
                     state.check_after(root, root / 'after.json', True)
                 self.assertIn('Secrets notifications differents', (root / 'after.json').read_text())
 
+    def test_notification_functions_reach_cli_dry_run_without_extending_selection(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            request = self.request()
+            (root / 'request.json').write_text(json.dumps(request))
+            (root / 'credentials.json').write_text(json.dumps({'project_id': 'livepalmes'}))
+            (root / 'selection.json').write_text(json.dumps(request['additionalNotificationFunctions']))
+            with patch.dict(os.environ, {'PLAN': str(root), 'GOOGLE_APPLICATION_CREDENTIALS': str(root / 'credentials.json'),
+                                        'CANDIDATE_SHA': 'a' * 40}), patch.object(cycle, 'safe_functions', return_value=[]), \
+                    patch.object(cycle, 'deploy_command') as deploy:
+                cycle.deploy_batches('livepalmes', '.', root, root / 'selection.json', True)
+                self.assertEqual(deploy.call_count, 1)
+                command = deploy.call_args.args[0]
+                self.assertIn('--dry-run', command)
+                self.assertEqual(set(command[command.index('--only') + 1].split(',')),
+                                 {'functions:' + name for name in cycle.NOTIFICATION_FUNCTIONS})
+
 
 if __name__ == '__main__':
     unittest.main()
