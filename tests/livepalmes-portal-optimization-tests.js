@@ -1714,7 +1714,8 @@ assert.ok(functions.includes("Impossible d'ouvrir les engagements : la date de c
 assert.ok(functions.includes('"engagements.club.switch"'));
 assert.ok(functions.includes("Le droit de changement de club requiert le droit engagements club."));
 assert.ok(functions.includes("const requestedClubId = cleanText(request.data?.activeClubId).slice(0, 40);"));
-assert.ok(functions.includes("const activeClub = isSwitchingClub ? await engagementClubById(requestedClubId) : null;"));
+// The native club-switch behavior is exercised by nap-club-switch-tests.js.
+assert.ok(functions.includes('activeClub = await require("./nap-club-directory").findClub(pool, requestedClubId);'));
 assert.ok(functions.includes("exports.listEngagementNationalClubs"));
 assert.ok(functions.includes("exports.saveEngagementNationalClub"));
 assert.ok(functions.includes('.orderBy("updatedAt", "asc")'));
