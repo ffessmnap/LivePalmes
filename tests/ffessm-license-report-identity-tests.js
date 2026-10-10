@@ -65,6 +65,7 @@ const functions = [
 ].join("\n");
 let exported;
 vm.runInNewContext(functions + "\nexportBatch();", {
+ elements: {exportScope:{value:"all"}},
  state: {batch:{batchId:"lot-clubs",season:{label:"2026-2027"},people:[
   {livePalmesId:"p1",lastName:"DUPONT",firstName:"Camille",birthDate:"2004-03-19",licenseNumber:"A-12-345678",competitions:["Meeting A","Meeting B"],clubName:'Club "Bleu"; Palmes',clubId:"33"},
   {livePalmesId:"p2",lastName:"MARTIN",firstName:"Alex",birthDate:"2005-04-20",licenseNumber:"",competitions:["Meeting A"],clubName:"",clubId:"44"},
