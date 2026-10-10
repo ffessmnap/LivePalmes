@@ -36,7 +36,18 @@ def approved_dtn_functions(value):
     return names
 
 
+def approved_native_identity_secret(value):
+    approval = value.get('nativeIdentityNapSecretApproval')
+    if approval is None:
+        return False
+    require(isinstance(approval, str) and bool(approval.strip())
+            and 'resolveEngagementSwimmerChangeRequest' in approved_dtn_functions(value),
+            'Accord specifique de liaison NAP pour les corrections requis')
+    return True
+
+
 def approved_extra_functions(value):
+    approved_native_identity_secret(value)
     names = approved_pdf_functions(value) + approved_dtn_functions(value) + approved_notification_functions(value)
     require(len(names) == len(set(names)), 'Extensions de publication superposees')
     return names

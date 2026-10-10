@@ -49,6 +49,14 @@ class NotificationReleaseTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             test_state.unchanged(before, after, candidate)
 
+    def test_native_identity_secret_requires_specific_approval(self):
+        request = {'additionalDtnFunctions': sorted(cycle.DTN_FUNCTIONS), 'additionalDtnApproval': 'Accord DTN'}
+        self.assertFalse(cycle.approved_native_identity_secret(request))
+        self.assertTrue(cycle.approved_native_identity_secret({**request, 'nativeIdentityNapSecretApproval': 'Accord explicite'}))
+        for value in [{**request, 'nativeIdentityNapSecretApproval': ''}, {'nativeIdentityNapSecretApproval': 'Accord'}]:
+            with self.assertRaises(ValueError):
+                cycle.approved_native_identity_secret(value)
+
     def request(self):
         return {'additionalNotificationFunctions': sorted(cycle.NOTIFICATION_FUNCTIONS),
                 'additionalNotificationApproval': 'Accord specifique Infra du bilan exact',
