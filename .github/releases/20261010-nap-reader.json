@@ -1,0 +1,21 @@
+{
+  "schema": 1,
+  "candidate": "1df545a62de67a24ff32ca4d1046cce4be6d499f",
+  "productionCommit": "1df545a62de67a24ff32ca4d1046cce4be6d499f",
+  "productionHosting": "sites/livepalmes/versions/e60fd54b15155788",
+  "testRun": 38076970989,
+  "changes": [
+    {
+      "title": "Completer la publication NAP par le lecteur public manquant, code inchange",
+      "status": "validated",
+      "validation": "Antoine, 10 octobre 2026 : « corrige alors », apres signalement du lecteur readNapPublicSwimmer absent de PROD. Le commit applicatif reste exclusivement 1df545a62de67a24ff32ca4d1046cce4be6d499f.",
+      "paths": []
+    }
+  ],
+  "additionalPublicNapFunctions": [
+    "readNapPublicSwimmer"
+  ],
+  "additionalPublicNapApproval": "Accord explicite de correction du lecteur public manquant par Antoine le 10 octobre 2026 ; meme commit, sauvegarde verifiee, mails desactives et arret sur derive.",
+  "initialAutomaticMailEnabled": false,
+  "excludedBackendReview": "Uniquement creation du lecteur public readNapPublicSwimmer du candidat exact. Ni exportNapPublicPage ni outil de migration ni diagnostic administrateur. Les 152 fonctions deja publiees sont conservees et leurs revisions sont controlees inchangées. Aucun envoi, aucune donnee modifiee, aucune regle/index, Records/MPF inchanges. Le controle runtime NAP reel devient obligatoire avant Hosting."
+}

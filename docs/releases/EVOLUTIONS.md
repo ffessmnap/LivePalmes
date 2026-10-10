@@ -2,6 +2,11 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 10 octobre — Correction du lecteur public NAP PROD manquant
+
+- La publication `38084497538` du candidat `1df545a6` est terminée, mais son contrôle externe a trouvé `readNapPublicSwimmer` absent (404). Le lot historique NAP, contenant aussi des outils TEST, était exclu du circuit ordinaire. Antoine demande explicitement « corrige alors ».
+- Extension nominative limitée au lecteur public existant, depuis le même candidat applicatif et la même preuve TEST `38076970989`. Aucun outil d'export/migration ni diagnostic administrateur publié. Nouvelle sauvegarde chiffrée vérifiée, contrôle des exclusions et des mails désactivés conservés.
+- Contrôle réel de cinq lectures NAP depuis PROD avant Hosting : fiche nageur, calendrier, fiche compétition, résultats et TOP. Le succès des seules métadonnées ne suffit plus. Circuit à vérifier puis publication ciblée à exécuter ; aucune validation utilisateur du correctif déclarée.
 ### 10 octobre — Publication PROD NAP autorisée
 
 - Candidat exclusivement `1df545a62de67a24ff32ca4d1046cce4be6d499f`, preuve TEST réussie `38076970989`. Bilan final préalable `precontrole-prod-final-20261010T194247Z` approuvé explicitement dans Infra, accord confirmé par Antoine dans cette conversation. Cette autorisation de publication ne remplace pas les contrôles techniques réels.
