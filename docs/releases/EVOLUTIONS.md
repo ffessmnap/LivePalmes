@@ -2,6 +2,12 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 10 octobre — Compatibilité des index autorisés de l’historique des personnes
+
+- Le validateur accepte les trois index de recherche déjà autorisés (club du dossier, club de la personne, compétition), uniquement avec leurs colonnes exactes. Les deux index obligatoires restent exigés ; tout index inconnu, incomplet, unique ou préfixé est refusé.
+- Aucun changement de structure ni de données. Même budget : quatre lectures de métadonnées fixes, lecture des index bornée à neuf lignes pour détecter une structure inattendue.
+- Tests hors ligne : huit combinaisons autorisées, index invalides refusés, sauvegarde et absence de nouvelle opération DDL sur une structure existante. Publication TEST regroupée avec les PR #223, #224 (licences) et #225 prévue après contrôle global ; PROD inchangée.
+
 ### 10 octobre — Suppression native des compétitions inutilisées (préparation)
 
 - Antoine confirme la suppression uniquement sans engagements ni résultats, y compris en présence de documents/programme après avertissement et confirmation. Droits existants conservés : régional dans son périmètre avant la fin de compétition, national pour les événements passés.
