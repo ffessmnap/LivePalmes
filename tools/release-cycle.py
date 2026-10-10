@@ -451,11 +451,14 @@ def compare_prod(directory):
 def stage(candidate, project, destination, sha):
     require(project in PROJECTS and SHA.fullmatch(sha), 'Cible ou commit invalide')
     if project == 'livepalmes':
-        subprocess.run(['node', str(ROOT / 'tools/prepare-production-functions.js'), candidate, destination, os.environ['APP_CHECK'],
-                        str(Path(os.environ['PLAN']) / 'request.json') if os.environ.get('PLAN') else ''], check=True)
+        subprocess.run(['node', str(ROOT / 'tools/prepare-production-functions.js'), candidate, destination, os.environ['APP_CHECK']], check=True)
     else:
         subprocess.run(['node', str(Path(candidate) / 'tools/prepare-firebase-test-functions.js'), 'all-safe', str(Path(destination).resolve())], check=True)
     index = Path(destination) / 'functions/index.js'
+    if project == 'livepalmes' and os.environ.get('PLAN'):
+        notification = approved_notification_functions(read(Path(os.environ['PLAN']) / 'request.json'))
+        if notification:
+            index.write_text(index.read_text() + '\nfor (const name of ' + json.dumps(notification) + ') { if (!backend[name]?.__endpoint) throw new Error("Export notifications absent: " + name); exports[name] = backend[name]; }\n')
     index.write_text(index.read_text() + '\nfor (const fn of Object.values(exports)) { if (!fn.__endpoint) throw new Error("Endpoint absent"); fn.__endpoint.labels = { ...fn.__endpoint.labels, "livepalmes-commit": ' + json.dumps(sha) + ' }; }\n')
 
 
