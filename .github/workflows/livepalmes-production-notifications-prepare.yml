@@ -1,0 +1,62 @@
+name: Preparer les notifications NAP de production sans publication
+'on':
+  workflow_dispatch:
+    inputs:
+      candidate:
+        description: Commit complet integre sur main et publie sur TEST
+        required: true
+        type: string
+      app_check:
+        description: Valeur App Check relevee dans le bilan production
+        required: true
+        type: choice
+        options: ['false', 'true']
+permissions:
+  contents: read
+jobs:
+  prepare:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      TARGET_FIREBASE_PROJECT: livepalmes
+      CANDIDATE: ${{ inputs.candidate }}
+      APP_CHECK: ${{ inputs.app_check }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Verifier le commit integre
+        run: |
+          [[ "$CANDIDATE" =~ ^[0-9a-f]{40}$ ]]
+          git merge-base --is-ancestor "$CANDIDATE" origin/main
+          git checkout --detach "$CANDIDATE"
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: functions/package-lock.json
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Verifier les protections de notification sans reseau
+        run: |
+          node tests/production-notification-preparation-tests.js
+          node tests/engagement-mail-control-tests.js
+          node tests/engagement-mail-send-guard-tests.js
+          node tests/nap-mail-delivery-tests.js
+          node tests/nap-notification-automation-tests.js
+          python tests/production-notification-release-tests.py
+      - name: Preparer uniquement le perimetre approuve
+        run: node tools/prepare-production-notifications.js "$GITHUB_WORKSPACE" "$RUNNER_TEMP/notification-package" "$CANDIDATE" "$APP_CHECK"
+      - name: Conserver le paquet et le bilan sans acces Google
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-notifications-preparation
+          path: ${{ runner.temp }}/notification-package
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 14
+      - name: Rappeler les limites
+        run: echo 'Paquet de preparation uniquement. Aucun deploiement, secret, changement de droits, appel metier ou envoi de mail. La publication reste soumise au bilan Infra et aux controles de configuration et de retour arriere.' >> "$GITHUB_STEP_SUMMARY"

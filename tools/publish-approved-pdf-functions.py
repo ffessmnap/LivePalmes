@@ -50,7 +50,7 @@ def main(candidate, plan, backup):
     request = json.loads((plan / 'request.json').read_text())
     spec = importlib.util.spec_from_file_location('cycle', Path(__file__).with_name('release-cycle.py'))
     cycle = importlib.util.module_from_spec(spec); spec.loader.exec_module(cycle)
-    names = cycle.approved_extra_functions(request)
+    names = cycle.approved_pdf_functions(request) + cycle.approved_dtn_functions(request)
     if not names:
         print('Aucun traitement PDF supplementaire demande.')
         return

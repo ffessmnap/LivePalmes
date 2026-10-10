@@ -2,6 +2,15 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 10 octobre — Préparation limitée des notifications NAP pour PROD
+
+- Accord d'Antoine : préparer le circuit des notifications NAP et de la clôture, sans publication PROD ni envoi ; mails automatiques désactivés au départ, activation nationale après contrôle.
+- Préparateur séparé de neuf exports exacts : préférences, documents, listes/préparation/envoi des dossiers, traitement NAP et clôture. Le circuit ordinaire continue d'exclure mails et schedulers ; aucun élargissement silencieux. Comptes, corrections d'identité et ordonnanceur de publication des performances exclus de ce paquet.
+- Workflow de préparation sans identité Google ni secret : vérifie le commit intégré, les protections hors ligne, puis conserve le paquet et le manifeste. Le manifeste ne vaut pas autorisation PROD. Extension explicite du circuit existant : neuf noms exacts, accord séparé dans le bilan, preuve TEST du code de chaque traitement, absence de recouvrement avec l'ancienne extension PDF, création bornée du traitement manquant, sauvegarde et contrôle des secrets après publication. Pas de lecture métier ni de changement en base pendant cette préparation.
+- Lors de la future publication approuvée seulement : une lecture du réglage technique et une lecture de la planification avant puis après les Functions. Réglage absent = désactivé, réglage actif/invalide ou planification modifiée = blocage avant Hosting. Aucune écriture de réglage, aucun rattrapage des mails ignorés. Retour arrière du code et des liaisons via la sauvegarde existante ; retrait de la fonction créée via le mécanisme existant des nouvelles fonctions.
+- Lecture réelle de configuration PROD : SMTP authentifié sans envoi, index technique des destinataires prêt ; ancien ordonnanceur encore actif, fonction `processNapCompetitionNotifications` absente, liaison au secret NAP à prévoir sur les traitements concernés. Aucune configuration PROD modifiée. Ces constats ne prouvent pas encore la disponibilité d'une publication complète : sauvegarde/configuration/retour arrière et preuve TEST du candidat exact restent requis dans le bilan Infra.
+- Tests ciblés hors ligne : périmètre exact, rejet des références non immuables, correspondance avec les secrets réellement déclarés et horaire conservé ; contrôle global et CI à effectuer. Aucune validation utilisateur du nouveau code déclarée.
+
 ### 10 octobre — Fin du raccordement calendrier et bibliothèque eau libre (PR #228)
 
 - Même règle confirmée pour formations, stages et réunions : régional dans son périmètre jusqu'au dernier jour, national ensuite ; documents encore modifiables par le régional après la date. Avertissement et confirmation avant suppression.
