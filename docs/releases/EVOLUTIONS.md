@@ -2,6 +2,14 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 10 octobre — Clubs et observations du bilan licences 1.2.0
+
+- Antoine confirme que le bilan Excel `1.1.0` répond à son besoin (PR #220), puis demande le club et une observation sur une correspondance unique comportant une seule différence d’identité. Extension `1.2.0`, code préparé depuis `ecefc6967538edca665333f0102f76019668746d`, évolution initiale `157ac73053868197ab20e751d3229d73ec1f283f`.
+- Ajout des colonnes Club LivePalmes et Observations. Le CSV du lot transmet le club déjà présent en mémoire (`club_livepalmes`) ; anciens CSV compatibles avec club non renseigné. Budget supplémentaire : zéro lecture et zéro écriture à l’ouverture, à l’export et au rafraîchissement ; aucune requête par nageur, aucun backend ni donnée sportive modifié.
+- Une piste est affichée uniquement si un seul profil concorde sur deux éléments : faute limitée du nom/prénom avec les autres éléments concordants, ou date différente/manquante avec nom et prénom concordants. Noms composés et ordre inversé couverts. Plusieurs profils plausibles restent à départager sans en attribuer un. Accents et présentation déjà tolérés sont signalés sans changer le statut. Valeurs des deux sources montrées, sans présumer laquelle contient une erreur ; aucune validation/correction automatique et colonnes fédérales vides pour les pistes. CSV de retour et recherches sans prénom seul conservés.
+- Syntaxe et tests ciblés réussis : export réel du portail puis relecture par l’extension, clubs avec caractères CSV, contrôles partiels, noms/prénoms fautifs, accents, noms composés, ordre inversé, date différente/manquante, deux écarts, homonymes, candidats non pertinents et déduplication. XLSX relu avec openpyxl et rendu pour contrôler la mise en page. Parcours du panneau et génération des fichiers par les boutons contrôlés hors ligne dans Chrome, ordinateur/mobile ; Chrome annule l’écriture disque automatisée dans cet environnement, téléchargement réel restant à essayer.
+- Contrôle global GitHub requis avant intégration. Publication du nouvel export de lot sur TEST commun nécessaire pour disposer des clubs dans tous les nouveaux CSV ; PROD exclue. Le déclenchement du workflow TEST n’est pas disponible dans cette session et aucune preuve de publication de cette évolution n’est annoncée. Nouvelle extension locale et pistes à vérifier par Antoine sur une compétition réelle.
+
 ### 10 octobre — Isolation des anciens traitements sportifs Firebase en mode NAP
 
 - Audit final du portail : six déclencheurs historiques de calendriers/effectifs/agrégats sont arrêtés avant tout accès sportif Firebase lorsque NAP est actif. Les anciens boutons serveur de reconstruction et suppression Firebase refusent désormais ces actions dans ce mode ; aucun traitement de comptes, notification, Records/MPF ou LivePalmes Direct changé.

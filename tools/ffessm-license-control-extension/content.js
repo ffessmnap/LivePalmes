@@ -403,7 +403,7 @@
     panel.hidden = true;
     panel.setAttribute("aria-label", "Contrôle des licences LivePalmes");
     panel.innerHTML = `
-      <header><div><strong>Contrôle des licences</strong><span>LivePalmes × Ma Commission · v1.1.0</span></div><button id="${IDS.close}" type="button" aria-label="Fermer">×</button></header>
+      <header><div><strong>Contrôle des licences</strong><span>LivePalmes × Ma Commission · v1.2.0</span></div><button id="${IDS.close}" type="button" aria-label="Fermer">×</button></header>
       <div class="livepalmes-license-control-body">
         <p class="livepalmes-license-control-help">Chargez le fichier exporté par LivePalmes. Le module compare identité, numéro et date de validité fédérale sans lire vos identifiants de connexion.</p>
         <label class="livepalmes-license-control-file"><span>Fichier LivePalmes</span><input id="${IDS.file}" type="file" accept=".csv,text/csv"></label>

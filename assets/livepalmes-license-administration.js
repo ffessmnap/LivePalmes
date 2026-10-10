@@ -145,10 +145,10 @@
 
   function exportBatch() {
     if (!state.batch) return;
-    const header = ["lot_id", "saison", "livepalmes_id", "nom", "prenom", "date_naissance", "licence_livepalmes", "competitions_sources"];
+    const header = ["lot_id", "saison", "livepalmes_id", "nom", "prenom", "date_naissance", "licence_livepalmes", "competitions_sources", "club_livepalmes"];
     const rows = state.batch.people.map((person) => [
       state.batch.batchId, state.batch.season.label, person.livePalmesId, person.lastName, person.firstName,
-      displayDate(person.birthDate), person.licenseNumber, person.competitions.join(" | ")
+      displayDate(person.birthDate), person.licenseNumber, person.competitions.join(" | "), person.clubName || person.clubId || ""
     ]);
     download(`\uFEFF${[header, ...rows].map((row) => row.map(csvCell).join(";")).join("\r\n")}\r\n`, `lot-licences-${state.batch.season.label}.csv`);
   }
