@@ -5,6 +5,29 @@ const vm = require("node:vm");
 const tool = require("../tools/prepare-production-notifications");
 const { LOTS } = require("../tools/firebase-test-backend-lots");
 const source = fs.readFileSync(require.resolve("../functions/index.js"), "utf8");
+// Execute the real public handler with the staged PROD secret adapter, offline.
+const { adaptSecrets } = require("../tools/prepare-production-nap-reader");
+assert.throws(() => adaptSecrets("unexpected"));
+const adapter = adaptSecrets("const defineSecret = name => name;");
+const publicBlock = source.slice(source.indexOf('if (ENVIRONMENT.sportingDataSource === "nap")'),
+  source.indexOf('if (ENVIRONMENT.projectId === "livepalmes-test")'));
+let credentialSeen;
+const runtime = { process: { env: {} }, exports: {}, ENVIRONMENT: { sportingDataSource: "nap", name: "production" },
+  REGION: "europe-west1", CALLABLE_OPTIONS: {}, onRequest: (_options, handler) => handler,
+  onCall: (_options, handler) => handler,
+  createNapPool: credential => { credentialSeen = credential; return { mockPool: true }; },
+  require: name => { assert.equal(name, "./nap-direct-swimmer"); return {
+    readDirectSwimmer: async (pool, id) => { assert.equal(pool.mockPool, true); assert.equal(id, "7322"); return { source: "nap" }; }
+  }; }
+};
+vm.createContext(runtime);
+vm.runInContext(adapter + "\n" + publicBlock, runtime);
+assert.equal(credentialSeen, undefined); // No value read during deployment analysis.
+runtime.process.env.LIVEPALMES_NAP_PASSWORD = "offline-runtime-fixture";
+runtime.exports.readNapPublicSwimmer({ method: "GET", query: { id: "7322" } }, {
+  set: () => {}, status: code => { throw new Error("Unexpected HTTP status " + code); },
+  json: value => { assert.equal(value.source, "nap"); assert.equal(credentialSeen, "offline-runtime-fixture"); }
+}).catch(error => { console.error(error.message); process.exitCode = 1; });
 const plan = tool.plan("a".repeat(40));
 assert.deepEqual(tool.approved({}), []);
 const approval = { additionalNotificationFunctions: [...tool.FUNCTIONS], additionalNotificationApproval: "Infra exact release", initialAutomaticMailEnabled: false };

@@ -515,6 +515,8 @@ def stage(candidate, project, destination, sha):
     index = Path(destination) / 'functions/index.js'
     if project == 'livepalmes' and os.environ.get('PLAN'):
         request = read(Path(os.environ['PLAN']) / 'request.json')
+        if approved_public_nap_functions(request):
+            subprocess.run(['node', str(ROOT / 'tools/prepare-production-nap-reader.js'), destination], check=True)
         notification = approved_notification_functions(request) + approved_public_nap_functions(request)
         if notification:
             index.write_text(index.read_text() + '\nfor (const name of ' + json.dumps(notification) + ') { if (!backend[name]?.__endpoint) throw new Error("Export notifications absent: " + name); exports[name] = backend[name]; }\n')
