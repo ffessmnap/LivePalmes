@@ -13,7 +13,9 @@ function validate(meta) {
   if(history) {
     if(meta.tables[0].ENGINE!=="InnoDB" || meta.tables[0].TABLE_COLLATION!=="utf8mb4_unicode_ci" || meta.columns.length!==columns.length || meta.columns.some((c,i)=>c.COLUMN_NAME!==columns[i][0] || normalize(c.COLUMN_TYPE)!==columns[i][1] || c.IS_NULLABLE!=="NO" || c.COLUMN_DEFAULT!==null || c.EXTRA)) throw new TypeError("Structure historique incompatible.");
     const expected={PRIMARY:["engagement_id"],person_engagement:["person_id","engagement_id"]};
-    if(meta.historyIndexes.length!==3 || Object.entries(expected).some(([name,names])=>{const rows=meta.historyIndexes.filter(r=>r.INDEX_NAME===name).sort((a,b)=>Number(a.SEQ_IN_INDEX)-Number(b.SEQ_IN_INDEX));return rows.length!==names.length || rows.some((r,i)=>r.COLUMN_NAME!==names[i] || Number(r.SEQ_IN_INDEX)!==i+1 || Number(r.NON_UNIQUE)!==(name==="PRIMARY"?0:1) || r.SUB_PART!==null);})) throw new TypeError("Index historique incompatible.");
+    const optional={livepalmes_entry_club_id:["entry_club","engagement_id"],livepalmes_club_id:["club","engagement_id"],livepalmes_delete_competition_id:["competition_id"]};
+    for(const [name,names] of Object.entries(optional)) if(meta.historyIndexes.some(r=>r.INDEX_NAME===name)) expected[name]=names;
+    if(meta.historyIndexes.length!==Object.values(expected).reduce((total,names)=>total+names.length,0) || Object.entries(expected).some(([name,names])=>{const rows=meta.historyIndexes.filter(r=>r.INDEX_NAME===name).sort((a,b)=>Number(a.SEQ_IN_INDEX)-Number(b.SEQ_IN_INDEX));return rows.length!==names.length || rows.some((r,i)=>r.COLUMN_NAME!==names[i] || Number(r.SEQ_IN_INDEX)!==i+1 || Number(r.NON_UNIQUE)!==(name==="PRIMARY"?0:1) || r.SUB_PART!==null);})) throw new TypeError("Index historique incompatible.");
   }
   if(meta.entryIndexes.length && (meta.entryIndexes.length!==2 || meta.entryIndexes.some((r,i)=>r.COLUMN_NAME!==["officiel","id"][i] || Number(r.SEQ_IN_INDEX)!==i+1 || Number(r.NON_UNIQUE)!==1 || r.SUB_PART!==null))) throw new TypeError("Index des liens incompatible.");
   return {history,index:meta.entryIndexes.length===2};
@@ -21,7 +23,7 @@ function validate(meta) {
 async function inspect(connection) {
   const query=async(sql,values)=>(await connection.execute({sql,timeout:10000},values))[0];
   const projection="INDEX_NAME,COLUMN_NAME,SEQ_IN_INDEX,NON_UNIQUE,SUB_PART";
-  const meta={tables:await query("SELECT ENGINE,TABLE_COLLATION FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME=? LIMIT 2",[table]),columns:await query("SELECT COLUMN_NAME,COLUMN_TYPE,IS_NULLABLE,COLUMN_DEFAULT,EXTRA FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME=? ORDER BY ORDINAL_POSITION LIMIT 11",[table]),historyIndexes:await query(`SELECT ${projection} FROM information_schema.STATISTICS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME=? ORDER BY INDEX_NAME,SEQ_IN_INDEX LIMIT 4`,[table]),entryIndexes:await query(`SELECT ${projection} FROM information_schema.STATISTICS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='officielsengager' AND INDEX_NAME=? ORDER BY SEQ_IN_INDEX LIMIT 3`,[index])};
+  const meta={tables:await query("SELECT ENGINE,TABLE_COLLATION FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME=? LIMIT 2",[table]),columns:await query("SELECT COLUMN_NAME,COLUMN_TYPE,IS_NULLABLE,COLUMN_DEFAULT,EXTRA FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME=? ORDER BY ORDINAL_POSITION LIMIT 11",[table]),historyIndexes:await query(`SELECT ${projection} FROM information_schema.STATISTICS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME=? ORDER BY INDEX_NAME,SEQ_IN_INDEX LIMIT 9`,[table]),entryIndexes:await query(`SELECT ${projection} FROM information_schema.STATISTICS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='officielsengager' AND INDEX_NAME=? ORDER BY SEQ_IN_INDEX LIMIT 3`,[index])};
   validate(meta);return meta;
 }
 async function applyApproved(pool,input,backup) {
