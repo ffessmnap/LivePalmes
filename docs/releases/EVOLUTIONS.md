@@ -2,6 +2,11 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 10 octobre — Adaptateur runtime du secret du lecteur NAP PROD
+
+- Le run ciblé `38088043259` a créé le lecteur et conservé toutes les autres fonctions, mais le contrôle réel a bloqué Hosting sur HTTP 400. Cause identifiée dans le paquet PROD : le préparateur historique remplace `defineSecret` par une chaîne, alors que le lecteur public appelle `.value()`.
+- Adaptation limitée au paquet du lecteur explicitement demandé : conserver le nom attendu par le SDK et la lecture tardive `.value()` depuis l'environnement runtime. Aucun secret lu pendant la préparation, aucune valeur enregistrée, aucun droit ni commit applicatif changé. Le préparateur ordinaire reste inchangé.
+- Test hors ligne du vrai handler public et de l'adaptateur du paquet, avec pool simulé : la création ne lit aucune valeur, la requête lit la valeur runtime et renvoie NAP. Suites de 12 et 37 scénarios réussies. Reprise protégée prévue depuis `38088043259`, même sauvegarde chiffrée vérifiée, contrôle réel obligatoire et mails désactivés.
 ### 10 octobre — Preuve TEST actualisée du lecteur NAP, candidat PROD conservé
 
 - Le bilan `38087139465` a correctement refusé l'ancienne révision TEST du lecteur (`a529f556`, 7 octobre). Antoine demande de poursuivre jusqu'à la PROD complète, avec sollicitation en cas de droit ou de choix nécessaire.
