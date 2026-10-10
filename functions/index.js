@@ -17657,9 +17657,28 @@ exports.updateEngagementCompetition = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONM
   };
 });
 
-exports.deleteEngagementCompetition = onCall(CALLABLE_OPTIONS, async (request) => {
-  if (ENVIRONMENT.sportingDataSource === "nap") throw new HttpsError("failed-precondition", "Cette ancienne action Firebase est desactivee : utilisez la fiche NAP.");
+exports.deleteEngagementCompetition = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
   const context = await engagementAccessContext(request);
+  if (ENVIRONMENT.sportingDataSource === "nap") {
+    const pool = require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD);
+    try {
+      return await require("./nap-competition-deletion").competitionDeletion(pool, {
+        competitionId: request.data?.competitionId, actorUid: context.uid,
+        previewOnly: request.data?.previewOnly === true, confirmPermanent: request.data?.confirmPermanent === true,
+        expectedFingerprint: request.data?.expectedFingerprint
+      }, {
+        prepare: (id, target) => db.collection("auditLogs").doc(`nap-competition-delete-${id}-before`).create({action:"nap.competitionDelete.prepare",actorUid:context.uid,target,createdAt:new Date().toISOString()}),
+        complete: (id, target) => writeAuditLogOnce("nap.competitionDelete.complete",context.uid,target,`nap-competition-delete-${id}-complete`)
+      }, async id => {
+        const pack = await require("./nap-portal-competitions").readNativeCompetition(pool,id,event=>assertCanModifyEngagementEvent(context,event));
+        if (!pack) throw new HttpsError("not-found", "Competition NAP introuvable.");
+        return pack;
+      });
+    } catch (error) {
+      if (error instanceof HttpsError) throw error;
+      throw new HttpsError("failed-precondition", error?.code === 6 || error?.code === "ALREADY_EXISTS" ? "Une suppression est deja en cours ou doit etre verifiee ; aucune nouvelle tentative automatique." : error instanceof TypeError || error instanceof RangeError ? error.message : "Suppression NAP a verifier ; sauvegarde conservee si la confirmation avait commence.");
+    }
+  }
   const competitionId = cleanText(request.data?.competitionId).slice(0, 128);
   if (!competitionId) {
     throw new HttpsError("invalid-argument", "Competition requise.");
