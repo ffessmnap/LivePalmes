@@ -1,0 +1,92 @@
+name: Preparer les notifications NAP de production sans publication
+'on':
+  workflow_dispatch:
+    inputs:
+      candidate:
+        description: Commit complet integre sur main et publie sur TEST
+        required: true
+        type: string
+      test_run:
+        description: Run TEST commun reussi du candidat exact
+        required: true
+        type: string
+      app_check:
+        description: Valeur App Check relevee dans le bilan production
+        required: true
+        type: choice
+        options: ['false', 'true']
+permissions:
+  contents: read
+  actions: read
+jobs:
+  prepare:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      TARGET_FIREBASE_PROJECT: livepalmes
+      CANDIDATE: ${{ inputs.candidate }}
+      APP_CHECK: ${{ inputs.app_check }}
+      TEST_RUN: ${{ inputs.test_run }}
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+          path: tooling
+      - name: Verifier le commit integre
+        run: |
+          [[ "$CANDIDATE" =~ ^[0-9a-f]{40}$ ]]
+          git -C tooling merge-base --is-ancestor "$CANDIDATE" origin/main
+          [[ "$TEST_RUN" =~ ^[0-9]+$ ]]
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$TEST_RUN" > "$RUNNER_TEMP/test-run.json"
+          jq -e --arg sha "$CANDIDATE" '.head_sha == $sha and .status == "completed" and .conclusion == "success" and .run_attempt == 1 and .path == ".github/workflows/livepalmes-test-common.yml"' "$RUNNER_TEMP/test-run.json"
+          gh run download "$TEST_RUN" --repo "$GITHUB_REPOSITORY" --name test-proof --dir "$RUNNER_TEMP/test-proof"
+          jq -e --arg sha "$CANDIDATE" '.candidate == $sha and .verification.candidate == $sha and .verification.schema == 1 and .verification.suite == "verify-livepalmes" and .verification.result == "success"' "$RUNNER_TEMP/test-proof/test-proof.json"
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.candidate }}
+          persist-credentials: false
+          path: candidate
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: tooling/functions/package-lock.json
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Verifier les protections de notification sans reseau
+        working-directory: tooling
+        run: |
+          node tests/production-notification-preparation-tests.js
+          node tests/engagement-mail-control-tests.js
+          node tests/engagement-mail-send-guard-tests.js
+          node tests/nap-mail-delivery-tests.js
+          node tests/nap-notification-automation-tests.js
+          python tests/production-notification-release-tests.py
+      - name: Verifier la compatibilite des outils avec le code TEST
+        run: |
+          npm ci --prefix tooling/tests/firestore-rules --ignore-scripts
+          node - <<'JS'
+          const fingerprints=require('./tooling/tools/release-function-fingerprints');
+          const {FUNCTIONS}=require('./tooling/tools/prepare-production-notifications');
+          const tested=fingerprints.fromGit('./tooling',process.env.CANDIDATE);
+          const current=fingerprints.fromGit('./tooling',process.env.GITHUB_SHA);
+          if(FUNCTIONS.some(name=>!tested.functions[name]||tested.functions[name]!==current.functions[name]))throw Error('Code TEST different des protections verifiees');
+          JS
+      - name: Preparer uniquement le perimetre approuve
+        run: |
+          node tooling/tools/prepare-production-notifications.js "$GITHUB_WORKSPACE/candidate" "$RUNNER_TEMP/notification-package" "$CANDIDATE" "$APP_CHECK"
+          cp "$RUNNER_TEMP/test-proof/test-proof.json" "$RUNNER_TEMP/notification-package/test-proof.json"
+      - name: Conserver le paquet et le bilan sans acces Google
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-notifications-preparation
+          path: ${{ runner.temp }}/notification-package
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 14
+      - name: Rappeler les limites
+        run: echo 'Paquet de preparation uniquement. Aucun deploiement, secret, changement de droits, appel metier ou envoi de mail. La publication reste soumise au bilan Infra et aux controles de configuration et de retour arriere.' >> "$GITHUB_STEP_SUMMARY"

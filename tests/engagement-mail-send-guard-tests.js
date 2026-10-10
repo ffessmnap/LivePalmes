@@ -12,13 +12,21 @@ async function main(){
     db:{collection:name=>{assert.equal(name,control.COLLECTION);return {doc:id=>{assert.equal(id,control.DOCUMENT);return {get:async()=>({data:()=>({enabled,enabledSince:'2026-01-01T00:00:00.000Z'})})};}};}},
     require:name=>{assert.equal(name,'./engagement-mail-control');return control;}};
   vm.runInNewContext(source.slice(start,end),sandbox);
-  const transport={sendMail:async payload=>{sent++;assert.equal(payload.to,control.TEST_ADDRESS);assert.match(payload.subject,/^\[TEST LivePalmes\]/);return {messageId:'test'};}};
+  const transport={sendMail:async payload=>{sent++;assert.equal(payload.to,sandbox.ENVIRONMENT.projectId==='livepalmes-test'?control.TEST_ADDRESS:'club@example.org');if(sandbox.ENVIRONMENT.projectId==='livepalmes-test')assert.match(payload.subject,/^\[TEST LivePalmes\]/);else assert.equal(payload.subject,'Competition');return {messageId:'test'};}};
   const doc={id:'mail',ref:{set:async patch=>{job={...job,...patch};}},data:()=>job};
   const fresh=()=>({toEmail:'club@example.org',subject:'Competition',textBody:'Message',createdAt:'2026-10-09T12:00:00.000Z'});
   job=fresh();assert.equal((await sandbox.sendEngagementMailJob(transport,doc,{fromEmail:control.TEST_ADDRESS},{uid:'national'})).status,'sent');assert.equal(sent,1);
   enabled=false;job=fresh();assert.equal((await sandbox.sendEngagementMailJob(transport,doc,{fromEmail:control.TEST_ADDRESS},{})).status,'cancelled');assert.equal(sent,1);
   enabled=true;cancelDuringDownload=true;job=fresh();
   assert.equal((await sandbox.sendEngagementMailJob(transport,doc,{fromEmail:control.TEST_ADDRESS},{})).status,'cancelled');assert.equal(sent,1,'A switch-off during attachment loading is checked before SMTP.');
-  console.log('Actual mail sender: fresh server kill switch, late switch-off, TEST recipient and subject verified without network.');
+  sandbox.ENVIRONMENT.projectId='livepalmes';cancelDuringDownload=false;enabled=true;job=fresh();
+  assert.equal((await sandbox.sendEngagementMailJob(transport,doc,{fromEmail:control.TEST_ADDRESS},{})).status,'sent');assert.equal(sent,2);
+  enabled=false;job=fresh();
+  assert.equal((await sandbox.sendEngagementMailJob(transport,doc,{fromEmail:control.TEST_ADDRESS},{})).status,'cancelled');assert.equal(sent,2);
+  enabled=true;job={...fresh(),createdAt:'2025-12-31T23:59:59.000Z'};
+  assert.equal((await sandbox.sendEngagementMailJob(transport,doc,{fromEmail:control.TEST_ADDRESS},{})).status,'cancelled');assert.equal(sent,2);
+  enabled=true;cancelDuringDownload=true;job=fresh();
+  assert.equal((await sandbox.sendEngagementMailJob(transport,doc,{fromEmail:control.TEST_ADDRESS},{})).status,'cancelled');assert.equal(sent,2);
+  console.log('Actual mail sender: TEST/PROD recipients, subject, late kill switch and no catch-up verified without network.');
 }
 main().catch(error=>{console.error(error);process.exitCode=1;});
