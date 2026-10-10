@@ -108,7 +108,7 @@ def main():
         report['additionalNotificationFunctions'] = notification
         if notification:
             contract = json.loads(subprocess.check_output(['node', '-e', 'console.log(JSON.stringify(require(process.argv[1]).plan(process.argv[2])))',
-                str(root / 'tools/prepare-production-notifications.js'), report['candidate']], text=True))
+                str(Path(__file__).with_name('prepare-production-notifications.js')), report['candidate']], text=True))
             report['notificationExpectedSecrets'] = contract['expectedSecrets']
         app_checks = set(f.get("serviceConfig", {}).get("environmentVariables", {}).get("LIVEPALMES_ENFORCE_APP_CHECK", "false") for f in selected_functions if f['name'].split('/')[-1] not in source_only)
         if selected and (len(app_checks) != 1 or not app_checks.issubset({"true", "false"})):
