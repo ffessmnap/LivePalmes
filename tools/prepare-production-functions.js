@@ -4,16 +4,13 @@ const path = require("node:path");
 const { execFileSync } = require("node:child_process");
 const { ALL_SAFE_LOTS, LOTS } = require("./firebase-test-backend-lots");
 
-function prepare(root, destination, appCheck, request = {}) {
+function prepare(root, destination, appCheck) {
   if (process.env.TARGET_FIREBASE_PROJECT !== "livepalmes") throw new Error("Cible PROD explicite requise");
   if (!["true", "false"].includes(appCheck)) throw new Error("App Check PROD non verifie");
   const source = path.join(root, "functions");
   const files = execFileSync("git", ["ls-files", "-z", "functions/"], { cwd: root, encoding: "utf8" }).split("\0").filter(Boolean);
   const selected = ALL_SAFE_LOTS.flatMap(lot => LOTS[lot]);
   if (new Set(selected).size !== selected.length || selected.some(name => [...LOTS.email, ...LOTS.schedulers].includes(name))) throw new Error("Selection invalide");
-  // Explicit extension only; ordinary callers retain the safe scope unchanged.
-  const extra = require("./prepare-production-notifications").approved(request);
-  selected.push(...extra);
   if (fs.existsSync(destination)) throw new Error("Destination deja presente");
   fs.mkdirSync(path.join(destination, "functions"), { recursive: true });
   for (const file of files) {
@@ -40,7 +37,6 @@ function prepare(root, destination, appCheck, request = {}) {
 }
 module.exports = { prepare };
 if (require.main === module) {
-  const request = process.argv[5] ? JSON.parse(fs.readFileSync(process.argv[5], "utf8")) : {};
-  const selected = prepare(process.argv[2], process.argv[3], process.argv[4], request);
-  console.log(`${selected.length} Functions selectionnees ; notifications seulement sur accord specifique du bilan.`);
+  const selected = prepare(process.argv[2], process.argv[3], process.argv[4]);
+  console.log(`${selected.length} Functions selectionnees, aucun mail ni scheduler.`);
 }
