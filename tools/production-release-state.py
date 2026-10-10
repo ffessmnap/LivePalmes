@@ -64,6 +64,15 @@ def check_after(backup, destination, require_success):
         if f and name.split('/')[-1] in (report.get('additionalPdfFunctions', []) + report.get('additionalDtnFunctions', [])):
             old = rollback_patch(before[name], {})
             new = rollback_patch(f, {})
+            if name.split('/')[-1] == 'resolveEngagementSwimmerChangeRequest' and report.get('nativeIdentityNapSecret'):
+                expected = [{'key': 'LIVEPALMES_NAP_PASSWORD', 'secret': 'LIVEPALMES_NAP_PASSWORD',
+                             'projectId': 'livepalmes', 'version': 'latest'}]
+                actual = new['serviceConfig'].get('secretEnvironmentVariables', [])
+                actual = [{**item, 'projectId': 'livepalmes' if str(item.get('projectId')) in {'livepalmes', '718081132564'} else item.get('projectId')} for item in actual]
+                if actual != expected:
+                    errors.append('Liaison NAP corrections differente')
+                old['serviceConfig'].pop('secretEnvironmentVariables', None)
+                new['serviceConfig'].pop('secretEnvironmentVariables', None)
             if any(old.get(k) != new.get(k) for k in ['serviceConfig', 'eventTrigger', 'buildConfig']):
                 errors.append('Configuration PDF modifiee: ' + name.split('/')[-1])
         short = name.split('/')[-1]

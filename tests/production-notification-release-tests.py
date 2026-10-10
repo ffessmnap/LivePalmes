@@ -20,9 +20,43 @@ def load(name, filename):
 cycle = load('notification_cycle', 'release-cycle.py')
 guard = load('notification_guard', 'check-production-mail-disabled.py')
 state = load('notification_state', 'production-release-state.py')
+test_state = load('test_notification_state', 'test-notification-state.py')
 
 
 class NotificationReleaseTests(unittest.TestCase):
+    def test_unserved_top_files_only(self):
+        top = cycle.TOP_PREFIXES[0] + '200BI/M-S.json'
+        record = 'performances/public/data/records.json'
+        hosting = {'public': '.', 'ignore': [prefix + '**' for prefix in cycle.TOP_PREFIXES]}
+        with patch.object(cycle, 'git', return_value=json.dumps({'hosting': hosting})):
+            self.assertEqual(cycle.ignored_top_paths([top, record], 'HEAD'), [top])
+        for value in [{'public': '.', 'ignore': []}, [hosting, {'public': '.', 'ignore': []}],
+                      {'public': 'other', 'ignore': hosting['ignore']}]:
+            with patch.object(cycle, 'git', return_value=json.dumps({'hosting': value})):
+                self.assertEqual(cycle.ignored_top_paths([top], 'HEAD'), [])
+        for path in [record, 'firebase.json']:
+            with self.assertRaises(ValueError):
+                cycle.classify([path])
+
+    def test_targeted_test_refresh_preserves_other_functions(self):
+        candidate = 'a' * 40
+        before = {'functions': [{'name': name, 'state': 'ACTIVE', 'commit': 'b' * 40}
+                               for name in sorted(test_state.NAMES | {'unrelated'})]}
+        after = {'functions': [{**f, 'commit': candidate} if f['name'] in test_state.NAMES else dict(f)
+                              for f in before['functions']]}
+        test_state.unchanged(before, after, candidate)
+        next(f for f in after['functions'] if f['name'] == 'unrelated')['revision'] = 'unexpected'
+        with self.assertRaises(ValueError):
+            test_state.unchanged(before, after, candidate)
+
+    def test_native_identity_secret_requires_specific_approval(self):
+        request = {'additionalDtnFunctions': sorted(cycle.DTN_FUNCTIONS), 'additionalDtnApproval': 'Accord DTN'}
+        self.assertFalse(cycle.approved_native_identity_secret(request))
+        self.assertTrue(cycle.approved_native_identity_secret({**request, 'nativeIdentityNapSecretApproval': 'Accord explicite'}))
+        for value in [{**request, 'nativeIdentityNapSecretApproval': ''}, {'nativeIdentityNapSecretApproval': 'Accord'}]:
+            with self.assertRaises(ValueError):
+                cycle.approved_native_identity_secret(value)
+
     def request(self):
         return {'additionalNotificationFunctions': sorted(cycle.NOTIFICATION_FUNCTIONS),
                 'additionalNotificationApproval': 'Accord specifique Infra du bilan exact',
