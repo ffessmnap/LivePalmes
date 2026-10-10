@@ -10,11 +10,12 @@ const { parisDeadline } = require("./nap-paris-time");
 const { fingerprint } = require("./nap-portal-workspaces");
 const schema = require("./nap-approved-portal-schema");
 const SPECS = Object.freeze({
-  competitions: { key: "id", columns: ["id","libelle","lieu","date","enddate","comite","description","bassin","chrono","ld"] },
+  competitions: { key: "id", columns: ["id","libelle","lieu","date","enddate","comite","description","bassin","chrono","ld","type"] },
   compet_parametres: { key: "id", columns: ["id","compet","actif","dateactif","date_limit","officiel","nb_lignes","mailtxt","mailjuges","tps_d","tps_f","niveau","saisie","relais"] },
-  livepalmes_competition_options: { key: "competition_id", columns: [...schema.tables[0].columns.map(c => c.name), "entry_closed"] },
+  livepalmes_competition_options: { key: "competition_id", columns: [...schema.tables[0].columns.map(c => c.name), "entry_closed", "event_type"] },
   livepalmes_competition_fees: { key: "competition_id", columns: schema.tables[2].columns.map(c => c.name) },
-  livepalmes_competition_programs: { key: "competition_id", columns: schema.tables[7].columns.map(c=>c.name) }
+  livepalmes_competition_programs: { key: "competition_id", columns: schema.tables[7].columns.map(c=>c.name) },
+  livepalmes_calendar_event_details: {key:"competition_id",columns:require("./nap-approved-calendar-schema").specs[1].columns.map(c=>c[0])}
 });
 const JSON_COLUMNS = new Set(["invited_region_ids","program_sessions"]);
 const string = (value, max, required = false) => {
@@ -57,8 +58,8 @@ function canonical(value) {
 }
 function rowHash(row) { return createHash("sha256").update(JSON.stringify(canonical(normalizedRow(row)))).digest("hex"); }
 function selectRow(row, spec) {
-  if (!row || spec.columns.some(key => !Object.hasOwn(row,key))) throw new TypeError("Sauvegarde native incomplete.");
-  return Object.fromEntries(spec.columns.map(key=>[key,row[key]]));
+  if (!row || spec.columns.some(key => !Object.hasOwn(row,key) && !["type","event_type"].includes(key))) throw new TypeError("Sauvegarde native incomplete.");
+  return Object.fromEntries(spec.columns.map(key=>[key,row[key]??null]));
 }
 function emptyRow(table, id, actorUid, now) {
   return Object.fromEntries(SPECS[table].columns.map(key => [key, key === "competition_id" ? id : key === "version" ? "0" : key === "created_by" ? actorUid : key === "created_at" ? now : null]));
@@ -90,7 +91,21 @@ function planCompetitionChange(pack, input, nowMs = Date.now()) {
   }
   for (const [field,value] of Object.entries(patch)) {
     if(field === "level" || field === "regionId") continue;
-    if(field === "invitedRegionIds") {
+    if(field === "eventType") {
+      const kinds=require("./nap-calendar-event-details").KINDS;
+      if(!kinds.has(pack.event.competitionType)||!kinds.has(value))throw new TypeError("Type de formation, stage ou reunion requis.");
+      supplemental("livepalmes_competition_options",pack.options).event_type=value;
+      after.competitions.type=after.competitions.ld=({training:2,stage:3,meeting:4})[value];
+    }
+    else if(field === "calendarDetails") {
+      if(!require("./nap-calendar-event-details").KINDS.has(pack.event.competitionType))throw new TypeError("Details reserves aux formations, stages et reunions.");
+      const details=require("./nap-calendar-event-details").normalize(value);
+      const row=supplemental("livepalmes_calendar_event_details",pack.calendarDetails);
+      row.registration_url=details.registrationUrl;
+      row.registration_deadline_at=details.entryDeadlineAt?details.entryDeadlineAt.replace("T"," ").replace("Z","000"):null;
+      row.program_sessions=details.programSessions;
+    }
+    else if(field === "invitedRegionIds") {
       if(!["departemental","regional"].includes(effectiveLevel)) throw new TypeError("Regions invitees reservees aux competitions regionales ou departementales.");
       if(pack.committees.some(row=>Number(row.comite)!==19 && !Object.hasOwn(scope.REGIONS,String(row.comite)))) throw new TypeError("Une admission ancienne doit etre verifiee avant de modifier les regions invitees.");
       if(new Set(pack.committees.map(row=>row.comite)).size!==pack.committees.length) throw new TypeError("Regions natives en doublon : verification requise.");
@@ -238,7 +253,7 @@ async function applyCompetitionChange(pool, input, audit, authorize) {
         for(const table of ["competitions","compet_parametres"]) {
           const spec=SPECS[table],expected=selectRow(authority[table],spec);
           const actual=await query(`SELECT ${spec.columns.map(key=>`\`${key}\``).join(",")} FROM \`${table}\` WHERE \`${spec.key}\`=? LIMIT 1`,[expected[spec.key]]);
-          if(actual.length!==1 || !isDeepStrictEqual(actual[0],expected)) throw new TypeError("Perimetre modifie : regions conservees.");
+          if(actual.length!==1 || !isDeepStrictEqual(selectRow(actual[0],spec),expected)) throw new TypeError("Perimetre modifie : regions conservees.");
         }
         const removed=current.filter(row=>!item.after.includes(row.comite));
         if(removed.length) {const result=await query(`DELETE FROM compet_comites WHERE compet=? AND id IN (${removed.map(()=>"?").join(",")})`,[saved.competitionId,...removed.map(row=>row.id)]);if(result.affectedRows!==removed.length) throw new Error("Retrait des regions a verifier.");}

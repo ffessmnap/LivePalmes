@@ -10200,7 +10200,7 @@ exports.createEngagementCalendarEvent = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRO
     const raw=request.data || {};
     if (!["training","stage","meeting"].includes(raw.eventType)) throw new HttpsError("failed-precondition","Choisissez Formation, Stage ou Reunion. Le type Autre n'est pas propose.");
     const result=await createNativePortalCalendarRecord(raw,context,raw.eventType);
-    return {...result,event:result.competition};
+    return {...result,event:{...result.competition,sourceType:"calendarEvent",eventType:result.competition.competitionType,regionalPastReadOnly:!context.national&&engagementEventIsPast(result.competition)}};
   }
   const eventData = cleanEngagementCalendarEventPayload(request.data || {}, context);
   const now = new Date().toISOString();
@@ -10226,10 +10226,34 @@ exports.createEngagementCalendarEvent = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRO
   return { ok: true, event: engagementCalendarEventDetailItem({ id: ref.id, data: () => payload }, { includeDocumentUploader: true }) };
 });
 
-exports.updateEngagementCalendarEvent = onCall(CALLABLE_OPTIONS, async (request) => {
+exports.updateEngagementCalendarEvent = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")], maxInstances:2, concurrency:4, timeoutSeconds:120 } : {}) }, async (request) => {
   const context = await engagementAccessContext(request);
   const calendarEventId = cleanText(request.data?.calendarEventId).slice(0, 128);
   if (!calendarEventId) throw new HttpsError("invalid-argument", "Evenement requis.");
+  if (ENVIRONMENT.sportingDataSource === "nap") {
+    const pool=require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD);
+    const authorize=event=>{assertCanModifyEngagementEvent(context,event);if(!require("./nap-calendar-event-details").KINDS.has(event.competitionType))throw new HttpsError("failed-precondition","Formation, stage ou reunion requis.");};
+    try {
+      const pack=await require("./nap-portal-competitions").readNativeCompetition(pool,calendarEventId,authorize);
+      if(!pack)throw new HttpsError("not-found","Evenement NAP introuvable.");
+      const proposed=cleanEngagementCalendarEventPayload(request.data||{},context);
+      assertCanManageEngagementCompetition(context,proposed);
+      const patch=Object.fromEntries(["name","date","endDate","address","city","organizer","publicDescription","canceled","eventType"].map(key=>[key,proposed[key]]));
+      patch.location=proposed.location||proposed.city;
+      patch.calendarDetails={registrationUrl:proposed.registrationUrl,entryDeadlineAt:proposed.entryDeadlineAt,programSessions:proposed.programSessions};
+      if(proposed.level!==pack.event.level||!engagementRegionsMatch(proposed.regionId,pack.event.regionId)){patch.level=proposed.level;patch.regionId=proposed.regionId;}
+      const result=await require("./nap-qualification-edit-lock").ordinaryEdit(pool,calendarEventId,()=>require("./nap-portal-competition-change").applyCompetitionChange(pool,{competitionId:calendarEventId,actorUid:context.uid,national:context.national,expectedFingerprint:request.data?.expectedFingerprint,patch},{
+        read:async operation=>{const saved=await db.collection("auditLogs").doc(`nap-calendar-event-${operation}-before`).get();return saved.exists?saved.data().target:null;},
+        prepare:(operation,target)=>db.collection("auditLogs").doc(`nap-calendar-event-${operation}-before`).create({action:"nap.calendarEvent.change.prepare",actorUid:context.uid,target,createdAt:new Date().toISOString()}),
+        complete:(operation,target)=>writeAuditLogOnce("nap.calendarEvent.changed",context.uid,target,operation)
+      },authorize),{authorize});
+      const event=await nativePortalCompetition(calendarEventId,item=>assertCanManageEngagementCompetition(context,item),true);
+      return {...result,event:{...event,sourceType:"calendarEvent",eventType:event.competitionType,regionalPastReadOnly:!context.national&&engagementEventIsPast(event)}};
+    } catch(error) {
+      if(error instanceof HttpsError)throw error;
+      throw new HttpsError(error instanceof TypeError?"failed-precondition":error instanceof RangeError?"resource-exhausted":"unavailable",error instanceof TypeError||error instanceof RangeError?error.message:"Enregistrement NAP a verifier ; la sauvegarde est conservee.");
+    }
+  }
   const ref = db.collection(ENGAGEMENT_CALENDAR_EVENTS_COLLECTION).doc(calendarEventId);
   const snapshot = await ref.get();
   if (!snapshot.exists) throw new HttpsError("not-found", "Evenement introuvable.");
@@ -10256,11 +10280,27 @@ exports.updateEngagementCalendarEvent = onCall(CALLABLE_OPTIONS, async (request)
   };
 });
 
-exports.deleteEngagementCalendarEvent = onCall(CALLABLE_OPTIONS, async (request) => {
-  if (ENVIRONMENT.sportingDataSource === "nap") throw new HttpsError("failed-precondition", "Cette ancienne action Firebase est desactivee : utilisez la fiche NAP.");
+exports.deleteEngagementCalendarEvent = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
   const context = await engagementAccessContext(request);
   const calendarEventId = cleanText(request.data?.calendarEventId).slice(0, 128);
   if (!calendarEventId) throw new HttpsError("invalid-argument", "Evenement requis.");
+  if (ENVIRONMENT.sportingDataSource === "nap") {
+    const pool=require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD);
+    try {
+      const result=await require("./nap-competition-deletion").competitionDeletion(pool,{competitionId:calendarEventId,actorUid:context.uid,previewOnly:request.data?.previewOnly===true,confirmPermanent:request.data?.confirmPermanent===true,expectedFingerprint:request.data?.expectedFingerprint},{
+        prepare:(id,target)=>db.collection("auditLogs").doc(`nap-competition-delete-${id}-before`).create({action:"nap.calendarEventDelete.prepare",actorUid:context.uid,target,createdAt:new Date().toISOString()}),
+        complete:(id,target)=>writeAuditLogOnce("nap.calendarEventDelete.complete",context.uid,target,`nap-competition-delete-${id}-complete`)
+      },async id=>{
+        const pack=await require("./nap-portal-competitions").readNativeCompetition(pool,id,event=>assertCanModifyEngagementEvent(context,event));
+        if(!pack||!require("./nap-calendar-event-details").KINDS.has(pack.event.competitionType))throw new HttpsError("failed-precondition","Formation, stage ou reunion requis.");
+        return pack;
+      });
+      return {...result,calendarEventId,...(request.data?.previewOnly===true?{warning:"L'événement, ses documents rattachés, son programme et ses paramètres seront retirés. Cette action est irréversible."}:{})};
+    } catch(error) {
+      if(error instanceof HttpsError)throw error;
+      throw new HttpsError("failed-precondition",error instanceof TypeError||error instanceof RangeError?error.message:"Suppression NAP a verifier ; aucune nouvelle tentative automatique.");
+    }
+  }
   const ref = db.collection(ENGAGEMENT_CALENDAR_EVENTS_COLLECTION).doc(calendarEventId);
   const snapshot = await ref.get();
   if (!snapshot.exists) throw new HttpsError("not-found", "Evenement introuvable.");

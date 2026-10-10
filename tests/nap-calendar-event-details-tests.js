@@ -18,6 +18,14 @@ async function run() {
   const connection={execute:async(query,values)=>{reads++;assert.match(query.sql,/FORCE INDEX \(PRIMARY\).*LIMIT 1/);assert.deepEqual(values,[5162]);return [[]];}};
   await details.read(connection,"legacy-nap-5162","training");assert.equal(reads,1);
   await assert.rejects(details.read(connection,"5162","pool"),/requis/);assert.equal(reads,1);
+  let publicReads=0;
+  const publicResult=await require("../functions/nap-direct-calendar").readCompetition({execute:async(query,values)=>{
+    publicReads++;assert.deepEqual(values,[5162]);
+    if(query.sql.includes("FROM competitions c"))return [[{id:5162,libelle:"Formation",date:"2026-11-07",event_type:"training",ld:2,has_results:0}]];
+    if(query.sql.includes("FROM livepalmes_calendar_event_details"))return [[{registration_url:result.registrationUrl,registration_deadline_at:"2026-11-06 19:00:00.000000",program_sessions:JSON.stringify(result.programSessions),updated_by:"private-admin"}]];
+    return [[]];
+  }},5162);
+  assert.equal(publicReads,4);assert.equal(publicResult.event.registrationUrl,result.registrationUrl);assert.equal(publicResult.event.entryDeadlineAt,result.entryDeadlineAt);assert.equal(publicResult.event.program[0].title,"Accueil");assert.ok(!JSON.stringify(publicResult).includes("private-admin"));
   console.log("NAP calendar details: UTC round trip, shared programme format, bounded read and event-type guard passed.");
 }
 run().catch(error=>{console.error(error);process.exitCode=1;});
