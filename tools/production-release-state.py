@@ -66,6 +66,17 @@ def check_after(backup, destination, require_success):
             new = rollback_patch(f, {})
             if any(old.get(k) != new.get(k) for k in ['serviceConfig', 'eventTrigger', 'buildConfig']):
                 errors.append('Configuration PDF modifiee: ' + name.split('/')[-1])
+        short = name.split('/')[-1]
+        if f and short in report.get('additionalNotificationFunctions', []):
+            secrets = f.get('serviceConfig', {}).get('secretEnvironmentVariables', [])
+            expected_secrets = report.get('notificationExpectedSecrets', {}).get(short)
+            if expected_secrets is None or len(secrets) != len(expected_secrets) or {s.get('key') for s in secrets} != set(expected_secrets) or any(
+                    s.get('secret') != s.get('key') or str(s.get('projectId')) not in {'livepalmes', '718081132564'} for s in secrets):
+                errors.append('Secrets notifications differents: ' + short)
+            if short == 'closeDueEngagementCompetitions' and (not before.get(name) or
+                    f.get('eventTrigger', {}).get('eventType') != before[name].get('eventTrigger', {}).get('eventType') or
+                    f.get('eventTrigger', {}).get('pubsubTopic') != before[name].get('eventTrigger', {}).get('pubsubTopic')):
+                errors.append('Declencheur de cloture modifie: ' + short)
     if set(after) != set(before) | selected:
         errors.append("Inventaire inattendu")
     destination.write_text(json.dumps({"candidate": report["candidate"], "functions": [identity(f) for f in after.values()], "errors": errors}, indent=2))
