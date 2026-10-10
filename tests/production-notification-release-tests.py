@@ -23,6 +23,20 @@ state = load('notification_state', 'production-release-state.py')
 
 
 class NotificationReleaseTests(unittest.TestCase):
+    def test_unserved_top_files_only(self):
+        top = cycle.TOP_PREFIXES[0] + '200BI/M-S.json'
+        record = 'performances/public/data/records.json'
+        hosting = {'public': '.', 'ignore': [prefix + '**' for prefix in cycle.TOP_PREFIXES]}
+        with patch.object(cycle, 'git', return_value=json.dumps({'hosting': hosting})):
+            self.assertEqual(cycle.ignored_top_paths([top, record], 'HEAD'), [top])
+        for value in [{'public': '.', 'ignore': []}, [hosting, {'public': '.', 'ignore': []}],
+                      {'public': 'other', 'ignore': hosting['ignore']}]:
+            with patch.object(cycle, 'git', return_value=json.dumps({'hosting': value})):
+                self.assertEqual(cycle.ignored_top_paths([top], 'HEAD'), [])
+        for path in [record, 'firebase.json']:
+            with self.assertRaises(ValueError):
+                cycle.classify([path])
+
     def request(self):
         return {'additionalNotificationFunctions': sorted(cycle.NOTIFICATION_FUNCTIONS),
                 'additionalNotificationApproval': 'Accord specifique Infra du bilan exact',

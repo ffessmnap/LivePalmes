@@ -29,6 +29,11 @@ on:
         description: Pour schedulers uniquement, saisir livepalmes-test-schedulers-empty
         required: false
         type: string
+      notification_final_check:
+        description: Actualiser uniquement les quatre traitements de notification autorisés, mails TEST coupés
+        required: false
+        type: boolean
+        default: false
       nap_notifications_only:
         description: Pour schedulers uniquement, déployer seulement les notifications NAP avec redirection mail TEST
         required: false
@@ -53,6 +58,11 @@ on:
         required: false
         type: string
         default: ""
+      notification_final_check:
+        description: Actualiser uniquement les quatre traitements de notification autorisés, mails TEST coupés
+        required: false
+        type: boolean
+        default: false
       nap_notifications_only:
         required: false
         type: boolean
@@ -73,6 +83,7 @@ env:
   LIVEPALMES_ENFORCE_APP_CHECK: 'false'
   FIREBASE_CLI: ./tests/firestore-rules/node_modules/.bin/firebase
   CANDIDATE_SHA: ${{ github.sha }}
+  NOTIFICATION_FINAL_CHECK: ${{ inputs.notification_final_check || false }}
   NAP_NOTIFICATION_SCHEDULER_ONLY: ${{ inputs.nap_notifications_only || false }}
 
 jobs:
@@ -111,6 +122,11 @@ jobs:
             bootstrap|access|engagement-core|performance|nap|publications|email|schedulers|all-safe) ;;
             *) echo "Lot interdit."; exit 1 ;;
           esac
+          if [ "$NOTIFICATION_FINAL_CHECK" = "true" ]; then
+            test "$GITHUB_REF" = "refs/heads/main"
+            test "$SELECTED_LOT" = "email"
+            test "$NAP_NOTIFICATION_SCHEDULER_ONLY" = "false"
+          fi
           if [ "$SELECTED_LOT" = "schedulers" ]; then
             test "$SCHEDULER_CONFIRMATION" = "livepalmes-test-schedulers-empty"
           fi
@@ -212,6 +228,9 @@ jobs:
           const lots = lot === "all-safe" ? ["bootstrap", ...ALL_SAFE_LOTS] : [lot];
           console.log([...new Set(lots.flatMap(name => METADATA[name].apis))].join("\n"));
           NODE
+          if [ "$NOTIFICATION_FINAL_CHECK" = "true" ]; then
+            echo cloudscheduler.googleapis.com >> "$RUNNER_TEMP/required-apis.txt"
+          fi
           gcloud services list --project=livepalmes-test --enabled --format='value(config.name)' > "$RUNNER_TEMP/enabled-apis.txt"
           while IFS= read -r api; do
             grep -Fxq "$api" "$RUNNER_TEMP/enabled-apis.txt" || { echo "API TEST manquante: $api"; exit 1; }
@@ -274,6 +293,10 @@ jobs:
           node tools/prepare-firebase-test-functions.js "$SELECTED_LOT" > "$RUNNER_TEMP/function-selector.txt"
           npm ci --prefix .firebase-test-functions/functions
 
+      - name: Couper les mails TEST et limiter la publication aux quatre traitements autorisés
+        if: inputs.notification_final_check
+        run: node tools/refresh-test-notifications.js prepare "$RUNNER_TEMP/function-selector.txt" "$RUNNER_TEMP/notification-control.json"
+
       - name: Attester le commit des Functions du lot
         if: inputs.lot != 'bootstrap'
         shell: bash
@@ -324,6 +347,18 @@ jobs:
           set -euo pipefail
           selector="$(sed 's/[^,]*/functions:&/g' "$RUNNER_TEMP/function-selector.txt")"
           "$FIREBASE_CLI" deploy --config .firebase-test-functions/firebase.json --project livepalmes-test --only "$selector" --non-interactive --force
+
+      - name: Vérifier que les mails TEST restent désactivés
+        if: inputs.notification_final_check
+        run: node tools/refresh-test-notifications.js verify
+
+      - uses: actions/upload-artifact@v4
+        if: inputs.notification_final_check
+        with:
+          name: test-notification-control
+          path: ${{ runner.temp }}/notification-control.json
+          if-no-files-found: error
+          retention-days: 14
 
       - name: Conserver les revisions du lot TEST
         if: inputs.lot != 'bootstrap' && github.ref == 'refs/heads/main'
