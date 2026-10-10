@@ -34,11 +34,11 @@ assert.equal(a.rows.some(r => r.id === "4"), false, "Pas de nageur d'une autre c
 assert.equal(new Set(a.rows.map(r => r.id)).size, a.rows.length);
 assert.deepEqual(a.summary, { total: 8, controlled: 7, conforming: 1, toReview: 6, pending: 1 });
 assert.equal(a.rows.at(-1).status, "validable", "Les dossiers à vérifier sont placés en premier.");
-assert.equal(a.rows.find(r => r.id === "3").values[4], "B-98-765432");
-assert.match(a.rows.find(r => r.id === "3").values[7], /insuffisante/);
+assert.equal(a.rows.find(r => r.id === "3").values[5], "B-98-765432");
+assert.match(a.rows.find(r => r.id === "3").values[8], /insuffisante/);
 for (const id of ["5", "6", "7", "8", "9"]) {
-  assert.equal(a.rows.find(r => r.id === id).values[4], "", "Pas de licence fédérale non concordante.");
-  assert.equal(a.rows.find(r => r.id === id).values[5], "");
+  assert.equal(a.rows.find(r => r.id === id).values[5], "", "Pas de licence fédérale non concordante.");
+  assert.equal(a.rows.find(r => r.id === id).values[6], "");
 }
 const b = report.buildReport(batch, results, "Meeting B");
 assert.deepEqual(b.summary, { total: 2, controlled: 2, conforming: 2, toReview: 0, pending: 0 });
@@ -62,7 +62,7 @@ while (buffer.readUInt32LE(offset) === 0x04034b50) {
 }
 assert.equal(files.size, 6);
 const sheet = files.get("xl/worksheets/sheet1.xml");
-assert.match(sheet, /autoFilter ref="A8:H16"/);
+assert.match(sheet, /autoFilter ref="A8:J16"/);
 assert.match(sheet, /state="frozen"/);
 assert.match(sheet, /D'ÉTÉ &amp; FILS/);
 assert.equal(sheet.includes("AUTRE PERSONNE"), false);
@@ -74,3 +74,5 @@ if (process.env.LIVEPALMES_REPORT_SAMPLE) {
   fs.writeFileSync(path.resolve(process.env.LIVEPALMES_REPORT_SAMPLE), buffer);
 }
 console.log("Tests bilan Excel licences FFESSM : OK");
+
+require("./ffessm-license-report-identity-tests.js");

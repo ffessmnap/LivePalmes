@@ -66,3 +66,11 @@ Le CSV de retour pour LivePalmes reste disponible et inchangé. L’Excel est g�
 - Une pause minimale de 1,5 seconde est imposée entre les recherches.
 - Les numéros de licence et dates de naissance sont des données personnelles : conserver puis supprimer les exports selon les règles applicables.
 - Une évolution de l’interface Ma Commission peut nécessiter une adaptation des sélecteurs.
+
+## Club et observations (1.2.0)
+
+Le CSV envoyé à l’extension accepte la colonne facultative `club_livepalmes` (également `club`, `club_name`, `nom_club`). L’export du lot LivePalmes transmet désormais le club déjà connu, sans nouvelle lecture. Refaire cet export pour obtenir le club de tous les nageurs ; un ancien CSV reste compatible, avec « Non renseigné » dans la colonne Club LivePalmes.
+
+Une colonne Observations indique une piste uniquement lorsqu’un profil est le seul à concorder sur deux éléments d’identité : nom ou prénom avec une petite faute et les deux autres éléments concordants, ou date de naissance différente/manquante avec nom et prénom concordants. La comparaison tolère une à deux insertions, suppressions, substitutions ou inversions voisines selon la longueur, au maximum 25 % du nom ; les noms trop différents ne produisent aucune suggestion. Les noms composés et l’ordre nom/prénom ou prénom/nom sont pris en charge aux limites du nom affiché. Plusieurs profils plausibles restent à départager sans identité proposée arbitrairement.
+
+L’observation montre le profil fédéral et les deux valeurs de l’élément différent. Elle ne détermine pas quelle base a raison et n’entraîne ni validation ni correction automatique. Les colonnes Licence FFESSM et Validité FFESSM restent vides pour une piste non rapprochée. Une différence d’accent ou de présentation déjà tolérée par le contrôle peut également être signalée sans changer le statut.
