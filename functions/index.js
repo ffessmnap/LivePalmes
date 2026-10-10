@@ -5135,6 +5135,7 @@ async function rebuildEngagementCompetitionCalendar(db, endYear) {
 }
 
 exports.rebuildEngagementCompetitionCalendars = onCall(MIGRATION_CALLABLE_OPTIONS, async (request) => {
+  if (ENVIRONMENT.sportingDataSource === "nap") throw new HttpsError("failed-precondition", "Cette ancienne action Firebase est desactivee : utilisez la fiche NAP.");
   const startedAt = Date.now();
   const context = await engagementAccessContext(request);
   if (!context.national) {
@@ -5209,6 +5210,7 @@ exports.syncEngagementCompetitionToCalendar = onDocumentWritten({
   region: REGION,
   document: "engagementCompetitions/{competitionId}"
 }, async (event) => {
+  if (ENVIRONMENT.sportingDataSource === "nap") return null;
   const resolvedChange = await syncEngagementCompetitionCalendarFromChange(event);
   await publishPublicCalendarChange(event, "competition", resolvedChange);
 });
@@ -5252,6 +5254,7 @@ exports.syncEngagementCalendarEventToCalendar = onDocumentWritten({
   region: REGION,
   document: `${ENGAGEMENT_CALENDAR_EVENTS_COLLECTION}/{calendarEventId}`
 }, async (event) => {
+  if (ENVIRONMENT.sportingDataSource === "nap") return null;
   await syncEngagementCalendarEventFromChange(event);
   await publishPublicCalendarChange(event, "calendarEvent");
 });
@@ -7242,6 +7245,7 @@ exports.syncEngagementClubEntryToCompetitionSummary = onDocumentWritten({
   region: REGION,
   document: "engagementClubEntries/{entryId}"
 }, async (event) => {
+  if (ENVIRONMENT.sportingDataSource === "nap") return null;
   await syncEngagementCompetitionEntrySummaryFromChange(event);
 });
 
@@ -9400,6 +9404,7 @@ exports.syncEngagementClubPersonToRoster = onDocumentWritten({
   region: REGION,
   document: "engagementClubPeople/{personId}"
 }, async (event) => {
+  if (ENVIRONMENT.sportingDataSource === "nap") return null;
   await syncEngagementClubPeopleRosterFromChange(event);
 });
 
@@ -9644,6 +9649,7 @@ exports.syncPerformanceSwimmerToEngagementClubRoster = onDocumentWritten({
   region: REGION,
   document: `${PERFORMANCE_SWIMMERS_COLLECTION}/{swimmerIndexId}`
 }, async (event) => {
+  if (ENVIRONMENT.sportingDataSource === "nap") return null;
   await syncEngagementClubRosterFromSwimmerChange(event, "performances");
 });
 
@@ -9651,6 +9657,7 @@ exports.syncEngagementClubSwimmerToRoster = onDocumentWritten({
   region: REGION,
   document: "engagementClubSwimmers/{swimmerId}"
 }, async (event) => {
+  if (ENVIRONMENT.sportingDataSource === "nap") return null;
   await syncEngagementClubRosterFromSwimmerChange(event, "engagement");
 });
 
@@ -10250,6 +10257,7 @@ exports.updateEngagementCalendarEvent = onCall(CALLABLE_OPTIONS, async (request)
 });
 
 exports.deleteEngagementCalendarEvent = onCall(CALLABLE_OPTIONS, async (request) => {
+  if (ENVIRONMENT.sportingDataSource === "nap") throw new HttpsError("failed-precondition", "Cette ancienne action Firebase est desactivee : utilisez la fiche NAP.");
   const context = await engagementAccessContext(request);
   const calendarEventId = cleanText(request.data?.calendarEventId).slice(0, 128);
   if (!calendarEventId) throw new HttpsError("invalid-argument", "Evenement requis.");
@@ -12881,6 +12889,7 @@ exports.setEngagementClubSwimmerActivityStatus = onCall({ ...CALLABLE_OPTIONS, .
 });
 
 exports.rebuildEngagementClubAggregates = onCall(MIGRATION_CALLABLE_OPTIONS, async (request) => {
+  if (ENVIRONMENT.sportingDataSource === "nap") throw new HttpsError("failed-precondition", "Cette ancienne action Firebase est desactivee : utilisez la fiche NAP.");
   const startedAt = Date.now();
   const context = await engagementAccessContext(request);
   if (!context.national) {
@@ -14378,6 +14387,16 @@ exports.listEngagementSwimmerChangeRequests = onCall(CALLABLE_OPTIONS, async (re
 });
 
 async function engagementNationalAdministrationPendingCounts() {
+  if (ENVIRONMENT.sportingDataSource === "nap") {
+    const snapshots = await Promise.all([
+      db.collection(ENGAGEMENT_SWIMMER_CHANGE_REQUESTS_COLLECTION).where("status", "==", "pending").count().get(),
+      db.collection("accessUserDeletionRequests").where("status", "==", "pending").count().get()
+    ]);
+    const swimmerChanges = Math.max(0, Number(snapshots[0].data()?.count || 0));
+    const accountDeletions = Math.max(0, Number(snapshots[1].data()?.count || 0));
+    return { swimmerChanges, dataDeletions: 0, accountDeletions, total: swimmerChanges + accountDeletions };
+  }
+
   const [competitionSnapshot, swimmerSnapshot, correctionSnapshot, accountSnapshot] = await Promise.all([
     db.collection("engagementCompetitionDeletionRequests").where("status", "==", "pending").count().get(),
     db.collection("engagementSwimmerDeletionRequests").where("status", "==", "pending").count().get(),
@@ -17639,6 +17658,7 @@ exports.updateEngagementCompetition = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONM
 });
 
 exports.deleteEngagementCompetition = onCall(CALLABLE_OPTIONS, async (request) => {
+  if (ENVIRONMENT.sportingDataSource === "nap") throw new HttpsError("failed-precondition", "Cette ancienne action Firebase est desactivee : utilisez la fiche NAP.");
   const context = await engagementAccessContext(request);
   const competitionId = cleanText(request.data?.competitionId).slice(0, 128);
   if (!competitionId) {
@@ -17721,6 +17741,7 @@ exports.deleteEngagementCompetition = onCall(CALLABLE_OPTIONS, async (request) =
 });
 
 exports.requestEngagementCompetitionDeletion = onCall(CALLABLE_OPTIONS, async (request) => {
+  if (ENVIRONMENT.sportingDataSource === "nap") throw new HttpsError("failed-precondition", "Cette ancienne action Firebase est desactivee : utilisez la fiche NAP.");
   const context = await engagementAccessContext(request);
   if (context.national) {
     throw new HttpsError("failed-precondition", "Un niveau national peut supprimer directement l'evenement.");
@@ -17785,6 +17806,7 @@ exports.listEngagementCompetitionDeletionRequests = onCall(CALLABLE_OPTIONS, asy
   const status = ["pending", "approved", "rejected"].includes(cleanText(request.data?.status))
     ? cleanText(request.data.status)
     : "pending";
+  if (ENVIRONMENT.sportingDataSource === "nap") return { ok: true, source: "nap", status, requests: [] };
   const limit = Math.min(100, Math.max(10, Math.trunc(Number(request.data?.limit) || 50)));
   const snapshot = await db
     .collection("engagementCompetitionDeletionRequests")
@@ -17821,6 +17843,7 @@ exports.listEngagementCompetitionDeletionRequests = onCall(CALLABLE_OPTIONS, asy
 });
 
 exports.resolveEngagementCompetitionDeletionRequest = onCall(CALLABLE_OPTIONS, async (request) => {
+  if (ENVIRONMENT.sportingDataSource === "nap") throw new HttpsError("failed-precondition", "Cette ancienne action Firebase est desactivee : utilisez la fiche NAP.");
   const context = await engagementAccessContext(request);
   if (!context.national) {
     throw new HttpsError("permission-denied", "Validation reservee au niveau national.");
