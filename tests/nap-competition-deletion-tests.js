@@ -45,8 +45,11 @@ function fixture(){
  assert.equal(result.deleted,true);assert.equal(f.state.competitions.length,0);assert.equal(f.state.documents.length,0);
  assert.equal(f.log.filter(x=>x.complete).length,1);
  const backup=f.log.find(x=>x.backup).backup;assert.equal(backup.plan.cleanup.find(r=>r.table==="documents").rows[0].url,"https://example.test/protocol.pdf");
+ assert.ok(!mod.locks(true).includes(" WRITE"));
  const deletes=f.log.filter(x=>x.sql?.startsWith("DELETE"));assert.match(deletes.at(-1).sql,/DELETE FROM competitions/);
  assert.ok(f.log.some(x=>x.sql==="UNLOCK TABLES"));
+ f=fixture();f.state.livepalmes_club_entry_options=[{competition_id:5162,club_id:"1"}];f.state.livepalmes_qualification_jobs=[{id:"old",competition_id:5162,state:"done"}];f.state.winpalme_sessions=[{id:7,compet:5162}];f.state.winpalme_courses=[{id:8,session:7}];preview=await f.run();assert.equal(preview.programCourses,1);await f.run({previewOnly:false,confirmPermanent:true,expectedFingerprint:preview.expectedFingerprint});const childDelete=f.log.findIndex(x=>x.sql?.startsWith("DELETE FROM `winpalme_courses`"));const parentDelete=f.log.findIndex(x=>x.sql?.startsWith("DELETE FROM `winpalme_sessions`"));assert.ok(childDelete>=0&&childDelete<parentDelete);assert.deepEqual(f.log[childDelete].values,[7]);
+ for(const state of ["preview","ready","apply","unknown"]){f=fixture();f.state.livepalmes_qualification_jobs=[{state}];await assert.rejects(f.run(),/controle de qualification/);assert.ok(!f.log.some(x=>x.backup));}
  for(const table of ["nageursengager","engagements_relais","perfs","perfs_relais","officielsengager","chefsdequipe","import_relais"]){f=fixture();f.state[table]=[{id:1}];await assert.rejects(f.run(),/engagements, resultats ou un historique/);assert.ok(!f.log.some(x=>x.backup||x.sql?.startsWith("DELETE")));}
  for(const flag of ["externalParticipation","externalQualification","triggers"]){f=fixture();f.options[flag]=true;await assert.rejects(f.run());assert.ok(!f.log.some(x=>x.backup));}
  f=fixture();f.options.denied=true;await assert.rejects(f.run(),/Denied/);assert.equal(f.log.length,0);
