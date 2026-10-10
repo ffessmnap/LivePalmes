@@ -222,13 +222,32 @@ TEST_TOP_FILES = {
 }
 
 
+TOP_PREFIXES = tuple('performances/public/data/' + directory + '/' + kind + '/'
+                     for directory in ('performance-public', 'performance-public-firestore')
+                     for kind in ('tops', 'tops-preview'))
+
+
+def ignored_top_paths(paths, candidate):
+    """Exclude only TOP files demonstrably absent from every Hosting payload."""
+    tops = [p for p in paths if p.startswith(TOP_PREFIXES)]
+    if not tops:
+        return []
+    config = json.loads(git('show', candidate + ':firebase.json'))
+    hosting = config.get('hosting', [])
+    targets = hosting if isinstance(hosting, list) else [hosting]
+    return [p for p in tops if targets and all(isinstance(t, dict) and t.get('public') == '.'
+            and any(p.startswith(prefix) and prefix + '**' in t.get('ignore', [])
+                    for prefix in TOP_PREFIXES) for t in targets)]
+
+
 def classify_test(paths, approved_top_files=False):
     # Exact files authorized by Antoine on TEST, 5 October 2026.
     # Ordinary and production classification remain unchanged.
-    allowed = set(TEST_TOP_FILES).intersection(paths) if approved_top_files else set()
-    for path in sorted(allowed):
+    allowed = set(ignored_top_paths(paths, 'HEAD'))
+    explicitly_approved = set(TEST_TOP_FILES).intersection(paths) - allowed if approved_top_files else set()
+    for path in sorted(explicitly_approved):
         require(git('rev-parse', 'HEAD:' + path) == TEST_TOP_FILES[path], 'Fichier TOP different de la version autorisee: ' + path)
-    return classify([path for path in paths if path not in allowed])
+    return classify([path for path in paths if path not in allowed | explicitly_approved])
 
 
 def classify(paths):
@@ -244,7 +263,7 @@ def validate_request(value, paths):
         require(isinstance(value.get(key), str) and SHA.fullmatch(value[key]), 'SHA complet requis: ' + key)
     require(re.fullmatch(r'sites/livepalmes/versions/[A-Za-z0-9_-]+', value.get('productionHosting', '')), 'Version Hosting PROD requise')
     require(isinstance(value.get('testRun'), int) and value['testRun'] > 0, 'Preuve TEST requise')
-    application, backend = classify(paths)
+    application, backend = classify([p for p in paths if p not in ignored_top_paths(paths, value['candidate'])])
     extra = approved_extra_functions(value)
     require(not extra or backend, 'Extension PDF sans changement backend')
     covered = set()
