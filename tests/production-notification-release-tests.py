@@ -45,7 +45,7 @@ class NotificationReleaseTests(unittest.TestCase):
         after = {'functions': [{**f, 'commit': candidate} if f['name'] in test_state.NAMES else dict(f)
                               for f in before['functions']]}
         test_state.unchanged(before, after, candidate)
-        after['functions'][-1]['revision'] = 'unexpected'
+        next(f for f in after['functions'] if f['name'] == 'unrelated')['revision'] = 'unexpected'
         with self.assertRaises(ValueError):
             test_state.unchanged(before, after, candidate)
 
