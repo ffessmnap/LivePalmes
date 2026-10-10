@@ -2,6 +2,11 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 10 octobre — Publication PROD NAP autorisée
+
+- Candidat exclusivement `1df545a62de67a24ff32ca4d1046cce4be6d499f`, preuve TEST réussie `38076970989`. Bilan final préalable `precontrole-prod-final-20261010T194247Z` approuvé explicitement dans Infra, accord confirmé par Antoine dans cette conversation. Cette autorisation de publication ne remplace pas les contrôles techniques réels.
+- Neuf traitements de notification/clôture et paire DTN/NAP inclus, avec liaison du secret NAP pour les corrections d'identité. Mails automatiques désactivés sans rattrapage ; anciennes données Firebase conservées. Aucun envoi ni migration.
+- PR limitée au bilan de publication et au présent registre ; aucun fichier applicatif modifié. Le circuit protégé doit recontrôler TEST/PROD, créer puis vérifier sa sauvegarde chiffrée avant toute modification, et arrêter sur dérive. Publication et contrôles du runtime PROD encore à exécuter.
 ### 10 octobre — Contrôle final ciblé des notifications TEST
 
 - Accord explicite : actualiser seulement les quatre traitements TEST encore anciens, avec les mails TEST désactivés pendant le contrôle ; aucune publication PROD. Réutilisation du circuit backend authentifié existant et de son verrou de concurrence. Sélection exacte de quatre exports, branche main et cible TEST imposées, coupure avec témoin de version et sans rattrapage à la réactivation. Vérification de la coupure après déploiement ; le réglage reste désactivé.
