@@ -183,6 +183,7 @@ function runUnitTests() {
     "nap-portal-swimmers-tests.js",
     "nap-license-state-tests.js",
     "nap-license-control-tests.js",
+    "nap-license-partial-validation-tests.js",
     "nap-swimmer-change-requests-tests.js",
     "nap-club-person-edit-tests.js",
     "nap-club-person-create-tests.js",
