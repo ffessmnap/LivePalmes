@@ -125,7 +125,14 @@ const NAP_RETIRED_FUNCTIONS = Object.freeze([
   "buildDtnQualificationView",
   "preloadEngagementClubWorkspaces"
 ]);
-const retiredNapNames = new Set(NAP_RETIRED_FUNCTIONS);
+// Audited endpoints with no current NAP caller. Keep declarations for rollback,
+// but never recreate them through an ordinary or targeted publication lot.
+const NAP_UNUSED_FUNCTIONS = Object.freeze([
+  "listEngagementNationalClubSwimmers",
+  "getEngagementNationalAdministrationOverview",
+  "listEngagementCompetitionDeletionRequests"
+]);
+const retiredNapNames = new Set([...NAP_RETIRED_FUNCTIONS, ...NAP_UNUSED_FUNCTIONS]);
 function activeLotFunctions(lot) {
   if (!Object.prototype.hasOwnProperty.call(LOTS, lot)) throw new Error("Lot Firebase inconnu: " + lot);
   return LOTS[lot].filter(name => !retiredNapNames.has(name));
@@ -203,4 +210,4 @@ const PUBLICATION_EFFECT_FUNCTIONS = Object.freeze([
   "resumePerformancePublicationJobs"
 ]);
 
-module.exports = { NAP_RETIRED_FUNCTIONS, activeLotFunctions, ALL_SAFE_LOTS, LOTS, METADATA, PROJECT_ID, PUBLICATION_EFFECT_FUNCTIONS, TEST_NON_MAIL_FUNCTIONS };
+module.exports = { NAP_RETIRED_FUNCTIONS, NAP_UNUSED_FUNCTIONS, activeLotFunctions, ALL_SAFE_LOTS, LOTS, METADATA, PROJECT_ID, PUBLICATION_EFFECT_FUNCTIONS, TEST_NON_MAIL_FUNCTIONS };
