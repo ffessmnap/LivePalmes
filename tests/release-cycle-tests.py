@@ -11,6 +11,13 @@ spec=importlib.util.spec_from_file_location('cycle',Path(__file__).parents[1]/'t
 m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m)
 
 class ReleaseTests(unittest.TestCase):
+    def setUp(self):
+        # Offline scenarios must not inherit the release request of the CI runner.
+        environment = patch.dict(os.environ)
+        environment.start()
+        self.addCleanup(environment.stop)
+        os.environ.pop('PLAN', None)
+
     def test_test_deploy_retries_only_prepublication_list_failure(self):
         class Cli:
             def __init__(self, code, output): self.code, self.stdout = code, io.StringIO(output)
