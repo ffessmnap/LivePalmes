@@ -1,0 +1,25 @@
+{
+  "schema": 1,
+  "candidate": "812bad64681a232e6cc3868ba7ec112bcdac7ca2",
+  "productionCommit": "0efa4fe6a82e41dd7fc64e17d00f339bb87b98ec",
+  "productionHosting": "sites/livepalmes/versions/ca558f64556dad76",
+  "testRun": 38131360968,
+  "changes": [
+    {
+      "title": "Demandes et validation d'accès des nouveaux clubs directement dans NAP",
+      "status": "validated",
+      "paths": [
+        "functions/index.js",
+        "functions/nap-club-access-request.js"
+      ],
+      "validation": "Ok si tout est bon sur TEST tu peux préparer le bilan et publier cette correction en PROD, uniquement les deux fonctions, avec sauvegarde vérifiée et mails désactivés. Ne supprime pas encore les données Firebase. Preuve technique TEST commune 38131360968 ; publication ciblée 38131101981. Recherche SQL indexée et refus HTTP sans écriture vérifiés ; aucune création réelle pour les essais."
+    }
+  ],
+  "excludedBackendReview": "Empreintes comparées : seules submitEngagementAccessRequest et resolveEngagementAccessRequest diffèrent. Sélection exclusivement limitée à ces deux fonctions, arrêt si élargissement. Autres notifications, schedulers, DTN, Direct, règles, index et données exclus. Hosting du candidat exact en dernier selon le circuit protégé. Aucun nettoyage Firebase.",
+  "additionalAccessRequestFunctions": [
+    "submitEngagementAccessRequest",
+    "resolveEngagementAccessRequest"
+  ],
+  "additionalAccessRequestApproval": "Ok si tout est bon sur TEST tu peux préparer le bilan et publier cette correction en PROD, uniquement les deux fonctions, avec sauvegarde vérifiée et mails désactivés. Ne supprime pas encore les données Firebase.",
+  "initialAutomaticMailEnabled": false
+}

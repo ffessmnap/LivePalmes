@@ -2,6 +2,12 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 11 octobre — Promotion PROD ciblée des demandes de nouveaux clubs
+
+- Accord explicite d’Antoine : publier uniquement les deux fonctions de demande/validation, après sauvegarde vérifiée, mails désactivés et sans supprimer les données Firebase. Candidat immuable `812bad64681a232e6cc3868ba7ec112bcdac7ca2`, preuve TEST commune `38131360968`, publication ciblée TEST `38131101981`.
+- Le circuit PROD calcule les dépendances et bloque toute sélection différente de la paire. Il conserve les six secrets SMTP existants et ajoute la liaison NAP, vérifie les sept liaisons PROD après publication et conserve toutes les autres fonctions. Aucun droit ajouté, aucun envoi ou essai de création réelle.
+- État PROD relu : `0efa4fe6`, Hosting `ca558f64556dad76`, mails automatiques désactivés. Bilan figé et sauvegarde chiffrée vérifiée obligatoires avant publication.
+
 ### 11 octobre — Publication ciblée des demandes d'accès NAP
 
 - Accord explicite d'Antoine pour adapter le circuit aux seules fonctions `submitEngagementAccessRequest` et `resolveEngagementAccessRequest`, sans autres traitements mail ni schedulers. Correction applicative intégrée par la PR #238, commit `c9fffd1c` ; vérifications GitHub réussies dans le run `38130066233`.
