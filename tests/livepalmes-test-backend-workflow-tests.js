@@ -2,7 +2,7 @@ const assert = require("node:assert/strict");
 const childProcess = require("node:child_process");
 const fs = require("node:fs");
 const path = require("node:path");
-const { ALL_SAFE_LOTS, LOTS, METADATA, PUBLICATION_EFFECT_FUNCTIONS, TEST_NON_MAIL_FUNCTIONS } = require("../tools/firebase-test-backend-lots");
+const { activeLotFunctions, ALL_SAFE_LOTS, LOTS, METADATA, PUBLICATION_EFFECT_FUNCTIONS, TEST_NON_MAIL_FUNCTIONS } = require("../tools/firebase-test-backend-lots");
 
 const rootDir = path.join(__dirname, "..");
 const workflow = fs.readFileSync(path.join(rootDir, ".github", "workflows", "livepalmes-test-backend.yml"), "utf8").replace(/\r\n/g,"\n");
@@ -116,7 +116,7 @@ try {
     stdio: "pipe"
   });
   const manifest = fs.readFileSync(manifestPath, "utf8");
-  const expectedNames=napOnly?["closeDueEngagementCompetitions"]:selectedLot==="all-safe"?ALL_SAFE_LOTS.flatMap(name=>LOTS[name]).concat(TEST_NON_MAIL_FUNCTIONS):LOTS[selectedLot];
+  const expectedNames=napOnly?["closeDueEngagementCompetitions"]:selectedLot==="all-safe"?ALL_SAFE_LOTS.flatMap(activeLotFunctions).concat(TEST_NON_MAIL_FUNCTIONS):activeLotFunctions(selectedLot);
   assert.deepEqual(Object.keys(JSON.parse(manifest).endpoints).sort(), [...expectedNames].sort());
   const declaredSecrets = JSON.parse(manifest).params.filter(param => param.type === "secret").map(param => param.name).sort();
   assert.deepEqual(declaredSecrets, napOnly?[...METADATA.email.secrets].sort():selectedLot==="all-safe"?["LIVEPALMES_NAP_PASSWORD"]:[...METADATA[selectedLot].secrets].sort());

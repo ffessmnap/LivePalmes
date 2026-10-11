@@ -2,7 +2,7 @@
 
 const fs = require("node:fs");
 const path = require("node:path");
-const { ALL_SAFE_LOTS, LOTS, METADATA, PROJECT_ID, TEST_NON_MAIL_FUNCTIONS } = require("./firebase-test-backend-lots");
+const { ALL_SAFE_LOTS, activeLotFunctions, LOTS, METADATA, PROJECT_ID, TEST_NON_MAIL_FUNCTIONS } = require("./firebase-test-backend-lots");
 
 const root = path.join(__dirname, "..");
 const source = path.join(root, "functions");
@@ -25,7 +25,7 @@ const schedulerScope=process.env.NAP_NOTIFICATION_SCHEDULER_ONLY||'false';
 if(!['true','false'].includes(schedulerScope))throw new Error('Selection de scheduler TEST invalide.');
 const napSchedulerOnly=schedulerScope==='true';
 if(napSchedulerOnly&&lot!=='schedulers')throw new Error('La selection du scheduler NAP est reservee au lot schedulers.');
-const selected = napSchedulerOnly ? ['closeDueEngagementCompetitions'] : selectedLots.flatMap((name) => LOTS[name]).concat(lot === "all-safe" ? TEST_NON_MAIL_FUNCTIONS : []);
+const selected = napSchedulerOnly ? ['closeDueEngagementCompetitions'] : selectedLots.flatMap(activeLotFunctions).concat(lot === "all-safe" ? TEST_NON_MAIL_FUNCTIONS : []);
 if (new Set(selected).size !== selected.length) throw new Error("Une Function est présente dans plusieurs lots sélectionnés.");
 const selectedSecrets = napSchedulerOnly ? [...new Set(['LIVEPALMES_NAP_PASSWORD',...METADATA.email.secrets])] : [...new Set(selectedLots.flatMap((name) => METADATA[name].secrets).concat(lot === "all-safe" ? ["LIVEPALMES_NAP_PASSWORD"] : []))];
 

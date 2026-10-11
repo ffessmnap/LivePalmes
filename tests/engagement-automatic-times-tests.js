@@ -11,7 +11,7 @@ async function main() {
   const rows = [{ course: "100SF", timeValue: 6000, publicKey: "proof", date: "2026-01-01" }];
   const context = { cleanText: (value) => String(value || "").trim(), HttpsError: Error,
     getEngagementQualificationRows: async () => { reads++; return rows; }, getEngagementEntryTimeRowsForSwimmer: async () => rows,
-    qualificationService: { evaluate: async () => ({ enabled: true, courses: { "100SF": { qualified: true }, "50SF": { allowed: true } } }) },
+    qualificationService: () => ({ evaluate: async () => ({ enabled: true, courses: { "100SF": { qualified: true }, "50SF": { allowed: true } } }) }),
     qualificationEngine: { reconcile: () => ({ removed: [] }) },
     bestEngagementKnownTime: (history, code) => history.find((row) => row.course === code),
     cleanEngagementEntryIndividualEntries: (entries) => entries,

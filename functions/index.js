@@ -5718,14 +5718,20 @@ function qualificationEvents(competition = {}) {
       .filter((category) => !(ENGAGEMENT_EVENT_FORBIDDEN_CATEGORIES[event.code] || new Set()).has(category)) }));
 }
 
-const qualificationService = createQualificationService({ db, HttpsError, categoryFor: ageCategoryFromDates,
-  eventsFor: qualificationEvents, rowsFor: getEngagementQualificationRows, cacheIdFor: engagementEntryTimeCacheId,
-  automaticEntryFor: automaticEngagementIndividualEntry,
-  access: engagementAccessContext, clubAccess: engagementClubAccessContext, entryIdFor: engagementClubEntryId,
-  assertOpen: assertEngagementClubWriteOpen, audit: writeAuditLog });
+let legacyQualificationService;
+function qualificationService() {
+  if (!legacyQualificationService) {
+    legacyQualificationService = createQualificationService({ db, HttpsError, categoryFor: ageCategoryFromDates,
+      eventsFor: qualificationEvents, rowsFor: getEngagementQualificationRows, cacheIdFor: engagementEntryTimeCacheId,
+      automaticEntryFor: automaticEngagementIndividualEntry,
+      access: engagementAccessContext, clubAccess: engagementClubAccessContext, entryIdFor: engagementClubEntryId,
+      assertOpen: assertEngagementClubWriteOpen, audit: writeAuditLog });
+  }
+  return legacyQualificationService;
+}
 
 exports.listEngagementQualificationSources = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")], maxInstances:2, concurrency:4, timeoutSeconds:60 } : {}) }, async (request) => {
-  if (ENVIRONMENT.sportingDataSource !== "nap") return qualificationService.listSources(request);
+  if (ENVIRONMENT.sportingDataSource !== "nap") return qualificationService().listSources(request);
   const context=await engagementAccessContext(request);
   if(!context.national) throw new HttpsError("permission-denied","Droit national des engagements requis.");
   try {
@@ -5759,14 +5765,14 @@ function nativeQualificationError(error){
   return new HttpsError(error instanceof TypeError?"failed-precondition":error instanceof RangeError?"resource-exhausted":"unavailable",error instanceof TypeError||error instanceof RangeError?error.message:"Traitement NAP interrompu. Reprenez le meme controle ; sa sauvegarde est conservee.");
 }
 exports.processEngagementQualificationJob = onCall({ ...CALLABLE_OPTIONS,...nativeQualificationOptions,timeoutSeconds:300 }, async request=>{
-  if(ENVIRONMENT.sportingDataSource !== "nap")return qualificationService.process(request);
+  if(ENVIRONMENT.sportingDataSource !== "nap")return qualificationService().process(request);
   const context=await engagementAccessContext(request);
   if(!context.national)throw new HttpsError("permission-denied","Droit national des engagements requis.");
   try{return await require("./nap-qualification-callables").process(require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD),{competitionId:request.data?.competitionId,jobId:request.data?.jobId,action:request.data?.action,cursor:request.data?.cursor,national:true,actorUid:context.uid,now:nativeQualificationNow()},nativeQualificationServices(context));}
   catch(error){throw nativeQualificationError(error);}
 });
 exports.grantEngagementQualificationException = onCall({ ...CALLABLE_OPTIONS,...nativeQualificationOptions,timeoutSeconds:60 },async request=>{
-  if(ENVIRONMENT.sportingDataSource !== "nap")return qualificationService.grantException(request);
+  if(ENVIRONMENT.sportingDataSource !== "nap")return qualificationService().grantException(request);
   const context=await engagementAccessContext(request);
   if(!context.national)throw new HttpsError("permission-denied","Droit national des engagements requis.");
   const club=await engagementClubAccessContext(request);
@@ -5774,7 +5780,7 @@ exports.grantEngagementQualificationException = onCall({ ...CALLABLE_OPTIONS,...
   catch(error){throw nativeQualificationError(error);}
 });
 exports.acknowledgeEngagementQualificationAlert = onCall({ ...CALLABLE_OPTIONS,...nativeQualificationOptions,timeoutSeconds:60 },async request=>{
-  if(ENVIRONMENT.sportingDataSource !== "nap")return qualificationService.acknowledgeAlert(request);
+  if(ENVIRONMENT.sportingDataSource !== "nap")return qualificationService().acknowledgeAlert(request);
   const context=await engagementClubAccessContext(request);
   let connection;
   try{
@@ -5790,9 +5796,9 @@ exports.requestEngagementQualificationDerogation = onCall(CALLABLE_OPTIONS, reti
 exports.listEngagementQualificationRequests = onCall(CALLABLE_OPTIONS, retiredQualificationRequest);
 exports.resolveEngagementQualificationRequest = onCall(CALLABLE_OPTIONS, retiredQualificationRequest);
 exports.syncEngagementQualificationTargets = onDocumentWritten({ region: REGION,
-  document: "engagementClubEntries/{entryId}", retry: true, timeoutSeconds: 540 }, (event) => ENVIRONMENT.sportingDataSource === "nap" ? null : qualificationService.syncTargets(event));
+  document: "engagementClubEntries/{entryId}", retry: true, timeoutSeconds: 540 }, (event) => ENVIRONMENT.sportingDataSource === "nap" ? null : qualificationService().syncTargets(event));
 exports.revalidateEngagementQualificationCache = onDocumentWritten({ region: REGION,
-  document: `${ENGAGEMENT_ENTRY_TIME_CACHES_COLLECTION}/{cacheId}`, retry: true, timeoutSeconds: 540 }, (event) => ENVIRONMENT.sportingDataSource === "nap" ? null : qualificationService.revalidateCache(event));
+  document: `${ENGAGEMENT_ENTRY_TIME_CACHES_COLLECTION}/{cacheId}`, retry: true, timeoutSeconds: 540 }, (event) => ENVIRONMENT.sportingDataSource === "nap" ? null : qualificationService().revalidateCache(event));
 
 function engagementQualificationRowAllowed(row = {}, competition = {}) {
   if (row.active === false || row.status === "hidden") return false;
@@ -6162,7 +6168,7 @@ function validateEngagementRelayEntryTimes(relays = [], competition = {}, record
 async function resolveEngagementIndividualEntriesForSwimmer(swimmer = {}, entries = [], competition = {}) {
   if (!entries.length) return [];
   const rows = competition.qualifications?.enabled ? await getEngagementQualificationRows(swimmer, competition) : await getEngagementEntryTimeRowsForSwimmer(swimmer);
-  const evaluation = competition.qualifications?.enabled ? await qualificationService.evaluate(swimmer, competition, rows) : { enabled: false };
+  const evaluation = competition.qualifications?.enabled ? await qualificationService().evaluate(swimmer, competition, rows) : { enabled: false };
   if (!competition.qualificationPreview && qualificationEngine.reconcile(entries, evaluation).removed.length) {
     throw new HttpsError("failed-precondition", "Engagement non conforme aux qualifications. Sélectionnez une course qualifiée et vérifiez les conditions des courses supplémentaires.");
   }
@@ -17026,7 +17032,7 @@ exports.saveEngagementClubIndividualEntries = onCall({ ...CALLABLE_OPTIONS, ...(
       if (competitionData.qualifications?.enabled && latestSwimmers.some((swimmer) => changedById.has(swimmer.swimmerIndexId) && JSON.stringify(swimmer) !== JSON.stringify(savedSwimmersById.get(swimmer.swimmerIndexId)))) {
         throw new HttpsError("aborted", "Les engagements ont changé. Rechargez avant de recommencer.");
       }
-      qualificationService.revokeRemovedExceptions(transaction, competitionId, latestSwimmers, swimmers, context.uid);
+      qualificationService().revokeRemovedExceptions(transaction, competitionId, latestSwimmers, swimmers, context.uid);
       const relays = qualificationRelaysAfterIndividualChange(latestEntry.data()?.relays || [], swimmers, competitionData);
       updatedEntryData = {
         ...(latestEntry.data() || {}),
@@ -17161,7 +17167,7 @@ exports.saveEngagementClubSwimmerSelection = onCall({ ...CALLABLE_OPTIONS, ...(E
       updatedBy: changed ? context.uid : cleanText(entry.data()?.updatedBy)
     };
     if (!changed) return;
-    qualificationService.revokeRemovedExceptions(transaction, competitionId, savedSwimmers, swimmers, context.uid);
+    qualificationService().revokeRemovedExceptions(transaction, competitionId, savedSwimmers, swimmers, context.uid);
     transaction.set(entryRef, {
       swimmers,
       relays,
@@ -17294,7 +17300,7 @@ exports.saveEngagementClubSwimmerSelections = onCall({ ...CALLABLE_OPTIONS, ...(
       updatedBy: changedCount ? context.uid : cleanText(entry.data()?.updatedBy)
     };
     if (!changedCount) return;
-    qualificationService.revokeRemovedExceptions(transaction, competitionId, savedSwimmers, swimmers, context.uid);
+    qualificationService().revokeRemovedExceptions(transaction, competitionId, savedSwimmers, swimmers, context.uid);
     transaction.set(entryRef, { swimmers, relays, updatedAt: now, updatedBy: context.uid }, { merge: true });
     validatedSwimmers.forEach((swimmer) => {
       if (!swimmer.licenseNumber || swimmer.licenseLocked) return;
@@ -17374,7 +17380,7 @@ exports.saveEngagementClubSwimmers = onCall(CALLABLE_OPTIONS, async (request) =>
   const currentEntry = await batch.get(entryRef);
   assertEngagementClubWriteOpen(currentCompetition.data() || {});
   if (currentCompetition.updateTime.toMillis() !== competition.updateTime.toMillis() || currentEntry.updateTime.toMillis() !== entry.updateTime.toMillis()) throw new HttpsError("aborted", "La fiche a changé. Rechargez-la.");
-  qualificationService.revokeRemovedExceptions(batch, competitionId, currentEntry.data()?.swimmers || [], swimmers, context.uid);
+  qualificationService().revokeRemovedExceptions(batch, competitionId, currentEntry.data()?.swimmers || [], swimmers, context.uid);
   batch.set(entryRef, {
     swimmers,
     relays,
@@ -17534,7 +17540,7 @@ exports.saveEngagementClubRelays = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT
     const evaluations = {};
     const memberIds = new Set(relays.flatMap((relay) => relay.memberIds || []));
     for (const swimmer of swimmers.filter((item) => memberIds.has(item.swimmerIndexId) && item.individualEntries?.length)) {
-      evaluations[swimmer.swimmerIndexId] = await qualificationService.evaluate(swimmer, { ...competitionData, id: competitionId });
+      evaluations[swimmer.swimmerIndexId] = await qualificationService().evaluate(swimmer, { ...competitionData, id: competitionId });
     }
     if (relays.some((relay) => !qualificationEngine.relayEligible(relay, swimmers, evaluations))) {
       throw new HttpsError("failed-precondition", "Chaque relais composé doit comprendre un nageur qualifié et engagé sur une course individuelle qualifiée. Une composition vide peut être renseignée lors de la compétition.");
@@ -17701,7 +17707,7 @@ exports.updateEngagementCompetition = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONM
   if (affectsQualifications) {
     payload.qualificationVersion = Number(snapshot.data()?.qualificationVersion || 0) + 1;
     if (!context.national) throw new HttpsError("permission-denied", "Cette modification affecte les qualifications : intervention nationale requise.");
-    return qualificationService.begin(request, docRef, payload, snapshot.updateTime.toMillis());
+    return qualificationService().begin(request, docRef, payload, snapshot.updateTime.toMillis());
   }
   await db.runTransaction(async (tx) => {
     const latest = await tx.get(docRef);

@@ -133,7 +133,7 @@ def output(**values):
 
 def safe_functions(root, project='livepalmes'):
     require(project in PROJECTS, 'Projet interdit')
-    return json.loads(run(['node', '-e', 'const {ALL_SAFE_LOTS,LOTS,TEST_NON_MAIL_FUNCTIONS=[]}=require(process.argv[1]);console.log(JSON.stringify(ALL_SAFE_LOTS.flatMap(x=>LOTS[x]).concat(process.argv[2]==="livepalmes-test"?TEST_NON_MAIL_FUNCTIONS:[])))', str(Path(root).resolve() / 'tools/firebase-test-backend-lots.js'), project]))
+    return json.loads(run(['node', '-e', 'const {ALL_SAFE_LOTS,activeLotFunctions,TEST_NON_MAIL_FUNCTIONS=[]}=require(process.argv[1]);console.log(JSON.stringify(ALL_SAFE_LOTS.flatMap(activeLotFunctions).concat(process.argv[2]==="livepalmes-test"?TEST_NON_MAIL_FUNCTIONS:[])))', str(Path(root).resolve() / 'tools/firebase-test-backend-lots.js'), project]))
 
 
 @lru_cache(maxsize=64)
