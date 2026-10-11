@@ -92,6 +92,8 @@ jobs:
 
         python tests/release-cycle-tests.py
 
+        python tests/release-composed-evidence-tests.py
+
         node tests/release-function-fingerprints-tests.js'
     - uses: google-github-actions/auth@v3
       with:

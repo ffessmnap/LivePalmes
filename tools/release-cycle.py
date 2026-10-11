@@ -451,6 +451,30 @@ def verify_test(directory, live=True):
     info = artifact(request['testRun'], 'test-proof', root / 'test', '.github/workflows/livepalmes-test-common.yml')
     evidence = read(root / 'test/test-proof.json')
     verify_test_candidate(request, evidence, info)
+    # Compose explicitly requested, authenticated backend artifacts. Never infer a
+    # revision from a label alone or silently accept unrelated TEST drift.
+    runs = request.get('testBackendRuns', [])
+    require(isinstance(runs, list) and len(runs) <= 20 and all(type(r) is int and r > 0 for r in runs)
+            and len(runs) == len(set(runs)), 'Runs backend TEST invalides')
+    functions = {f['name']: f for f in evidence['state'].get('functions', [])}
+    updated = set()
+    for run_id in runs:
+        destination = root / ('test-targeted-' + str(run_id))
+        source = artifact(run_id, 'test-backend-proof', destination, '.github/workflows/livepalmes-test-backend.yml')
+        targeted = read(destination / 'test-backend-proof.json')
+        require(targeted.get('schema') == 1 and targeted.get('candidate') == source['head_sha']
+                and targeted['candidate'] == request['candidate'], 'Commit preuve ciblee TEST incompatible')
+        rows = targeted.get('state', {}).get('functions', [])
+        require(rows and len({f['name'] for f in rows}) == len(rows), 'Preuve ciblee vide ou dupliquee')
+        for f in rows:
+            require(f['name'] in functions and f['name'] not in updated
+                    and f.get('state') == 'ACTIVE' and f.get('revision') and f.get('updateTime')
+                    and f.get('commit') == targeted['candidate'], 'Revision ciblee TEST invalide')
+            functions[f['name']] = f
+            updated.add(f['name'])
+        write(root / ('test-backend-' + str(run_id) + '.json'), targeted)
+    if runs:
+        evidence['state']['functions'] = sorted(functions.values(), key=lambda f: f['name'])
     if live:
         require(snapshot('livepalmes-test') == evidence['state'], 'TEST a change depuis sa publication : refaire le bilan')
     if os.environ.get('DTN_EXTENSION_CHECKS') == 'success':
@@ -498,7 +522,49 @@ def production_evidence(directory):
         functions.append({**f, 'commit': commit})
     state = {'hosting': {**hosting, 'message': f'LivePalmes {plan["candidate"]} run {run_id}'},
              'functions': sorted(functions, key=lambda f: f['name'])}
+    state = apply_cleanup_evidence(root, state, run_id)
     write(root / 'baseline.json', {'productionRun': run_id, 'productionCommit': plan['candidate'], 'source': 'verified-publication-artifacts'})
+    return state
+
+
+def apply_cleanup_evidence(root, state, production_run):
+    """Replay a reviewed, hash-pinned historical removal, never a live baseline reset."""
+    request = read(root / 'request.json') if (root / 'request.json').exists() else {}
+    reference = request.get('productionCleanupEvidence')
+    if reference is None:
+        return state
+    require(isinstance(reference, dict) and set(reference) == {'path', 'sha256'}, 'Reference nettoyage invalide')
+    path = reference['path']
+    require(isinstance(path, str) and re.fullmatch(r'\.github/releases/evidence/[A-Za-z0-9_-]+\.json', path),
+            'Chemin preuve nettoyage interdit')
+    raw = git('show', 'HEAD:' + path).encode() + b'\n'
+    require(hashlib.sha256(raw).hexdigest() == reference['sha256'], 'Empreinte nettoyage invalide')
+    proof = json.loads(raw)
+    require(proof.get('schema') == 1 and proof.get('productionRun') == production_run
+            and proof.get('project') == 'livepalmes' and proof.get('approval'), 'Origine nettoyage invalide')
+    allowed = set(json.loads(run(['node', '-e', 'const m=require(process.argv[1]);console.log(JSON.stringify([...m.NAP_RETIRED_FUNCTIONS,...m.NAP_UNUSED_FUNCTIONS]))', str(ROOT / 'tools/firebase-test-backend-lots.js')])))
+    steps = proof.get('steps', [])
+    require(steps and len(steps) <= 20, 'Etapes nettoyage absentes')
+    for step in steps:
+        require(step.get('completedAt') and step.get('backupVerified') is True
+                and re.fullmatch(r'[0-9a-f]{64}', step.get('backupSha256', ''))
+                and step.get('napWrites') == 0 and step.get('mailSends') == 0, 'Nettoyage non verifie')
+        require(step.get('hosting') == {k: state['hosting'][k] for k in ['version', 'message']}, 'Hosting modifie par nettoyage')
+        before = step.get('before', [])
+        after = step.get('after', [])
+        require(len({f['name'] for f in before}) == len(before)
+                and sorted(before, key=lambda f: f['name']) == state['functions'],
+                'Etat avant nettoyage different de la preuve PROD')
+        deleted = step.get('deleted', [])
+        require(deleted and len(deleted) == len(set(deleted))
+                and all(n.startswith('projects/livepalmes/locations/europe-west1/functions/')
+                        and n.split('/')[-1] in allowed for n in deleted)
+                and set(deleted).issubset({f['name'] for f in state['functions']}), 'Suppressions historiques interdites')
+        remaining = [f for f in state['functions'] if f['name'] not in deleted]
+        require(len({f['name'] for f in after}) == len(after)
+                and sorted(after, key=lambda f: f['name']) == remaining, 'Autre modification pendant nettoyage')
+        state = {**state, 'functions': remaining}
+    write(root / 'production-cleanup-proof.json', proof)
     return state
 
 

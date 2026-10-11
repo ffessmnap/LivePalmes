@@ -1,0 +1,22 @@
+{
+  "schema": 1,
+  "candidate": "7036940bd1c057e4fd693bf04d42bd9efba81b5c",
+  "productionCommit": "498a6c0d83bd8b7614b8cb85942298e0154132d3",
+  "productionHosting": "sites/livepalmes/versions/72eb7cb511a4d317",
+  "testRun": 38175818400,
+  "testBackendRuns": [38176119901],
+  "productionCleanupEvidence": {
+    "path": ".github/releases/evidence/20261011-prod-cleanups.json",
+    "sha256": "5866585ee42d66b3a43153e948f321775e574c2e8bb4a7fd7b4191cdef1c6a5f"
+  },
+  "changes": [{
+    "title": "Optimisations des lectures NAP et requetes TOP",
+    "status": "validated",
+    "validation": "Antoine a valide la recette TEST puis autorise la publication PROD des seules optimisations, apres sauvegarde verifiee, mails desactives, aucune ecriture NAP et arret en cas ecart. Il a ensuite explicitement autorise la correction du controle pour integrer les preuves TEST ciblees et les nettoyages PROD verifies, puis la reprise du circuit. Bilan TEST bilan-optimisation-nap-test-20261011T213000Z ; commit applicatif inchange.",
+    "paths": ["functions/nap-direct-competition-results.js", "functions/nap-direct-tops.js", "performances/public/tops.js", "performances/tops.html"]
+  }],
+  "additionalPublicNapFunctions": ["readNapPublicSwimmer"],
+  "additionalPublicNapApproval": "Publication du lecteur public NAP optimise explicitement autorisee par Antoine avec sauvegarde verifiee et mails desactives. exportNapPublicPage est un diagnostic TEST uniquement et reste exclu de PROD.",
+  "initialAutomaticMailEnabled": false,
+  "excludedBackendReview": "Analyse statique des dependances de 498a6c0 vers 7036940 : seuls readNapPublicSwimmer et exportNapPublicPage changent ; le diagnostic TEST est exclu. Aucune notification, tache automatique, DTN, configuration de service, regle/index, donnee NAP ou Firebase a modifier. Les 44 suppressions deja realisees sont integrees comme preuves historiques uniquement, aucune nouvelle suppression. Toute autre derive bloque. Comparaison complete avant sauvegarde ; sauvegarde chiffree rouverte et verifiee avant toute publication."
+}
