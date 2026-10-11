@@ -76,6 +76,13 @@ def check_after(backup, destination, require_success):
             if any(old.get(k) != new.get(k) for k in ['serviceConfig', 'eventTrigger', 'buildConfig']):
                 errors.append('Configuration PDF modifiee: ' + name.split('/')[-1])
         short = name.split('/')[-1]
+        if f and short in report.get('additionalAccessRequestFunctions', []):
+            secrets = f.get('serviceConfig', {}).get('secretEnvironmentVariables', [])
+            expected = report.get('accessRequestExpectedSecrets', [])
+            if len(expected) != 7 or len(secrets) != len(expected) or {s.get('key') for s in secrets} != set(expected) or any(
+                    s.get('secret') != s.get('key') or str(s.get('projectId')) not in {'livepalmes', '718081132564'}
+                    or re.fullmatch(r'latest|[1-9][0-9]*', str(s.get('version'))) is None for s in secrets):
+                errors.append('Secrets demandes NAP differents: ' + short)
         if f and short in report.get('additionalPublicNapFunctions', []):
             secrets = f.get('serviceConfig', {}).get('secretEnvironmentVariables', [])
             if len(secrets) != 1 or secrets[0].get('key') != 'LIVEPALMES_NAP_PASSWORD' or secrets[0].get('secret') != 'LIVEPALMES_NAP_PASSWORD' or str(secrets[0].get('projectId')) not in {'livepalmes', '718081132564'}:

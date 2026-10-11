@@ -28,6 +28,19 @@ def archive_manifest(data):
         return {i.filename: hashlib.sha256(archive.read(i)).hexdigest() for i in infos}
 
 
+def access_request_runtime_allowed(service):
+    """Preserve the six existing SMTP bindings, optionally already connected to NAP."""
+    expected = {"LIVEPALMES_SMTP_HOST", "LIVEPALMES_SMTP_PORT", "LIVEPALMES_SMTP_USER", "LIVEPALMES_SMTP_PASS", "LIVEPALMES_SMTP_SECURE", "LIVEPALMES_MAIL_FROM"}
+    secrets = service.get('secretEnvironmentVariables', [])
+    keys = [s.get('key') for s in secrets]
+    return (not service.get('secretVolumes') and len(keys) == len(set(keys))
+            and set(keys) in (expected, expected | {'LIVEPALMES_NAP_PASSWORD'})
+            and all(set(s) == {'key', 'secret', 'projectId', 'version'}
+                    and s['key'] == s['secret'] and str(s['projectId']) in {'livepalmes', '718081132564'}
+                    and re.fullmatch(r'latest|[1-9][0-9]*', str(s['version'])) for s in secrets)
+            and ordinary_runtime_allowed({**service, 'secretEnvironmentVariables': []}))
+
+
 def ordinary_runtime_allowed(service):
     """Recognize the existing PROD NAP binding; never read secret values."""
     allowed_keys = {"EVENTARC_CLOUD_EVENT_SOURCE", "FIREBASE_CONFIG", "FUNCTION_SIGNATURE_TYPE", "FUNCTION_TARGET", "GCLOUD_PROJECT", "LIVEPALMES_ENFORCE_APP_CHECK", "LOG_EXECUTION_ID"}
@@ -119,7 +132,10 @@ def main():
         selected_functions = [f for f in functions if f["name"].split("/")[-1] in selected]
         notification = cycle.approved_notification_functions(plan) if os.environ.get('PLAN') else []
         public_nap = cycle.approved_public_nap_functions(plan) if os.environ.get('PLAN') else []
-        source_only = set(extra) - set(notification) - set(public_nap)
+        access_requests = cycle.approved_access_request_functions(plan) if os.environ.get('PLAN') else []
+        if os.environ.get('PLAN'):
+            cycle.require_access_request_selection(plan, selected)
+        source_only = set(extra) - set(notification) - set(public_nap) - set(access_requests)
         if not source_only.issubset({f['name'].split('/')[-1] for f in selected_functions}):
             raise ValueError('Traitement PDF existant absent')
         report['additionalPdfFunctions'] = plan.get('additionalPdfFunctions', []) if os.environ.get('PLAN') else []
@@ -127,6 +143,8 @@ def main():
         report['nativeIdentityNapSecret'] = cycle.approved_native_identity_secret(plan) if os.environ.get('PLAN') else False
         report['additionalNotificationFunctions'] = notification
         report['additionalPublicNapFunctions'] = public_nap
+        report['additionalAccessRequestFunctions'] = access_requests
+        report['accessRequestExpectedSecrets'] = cycle.ACCESS_REQUEST_SECRETS if access_requests else []
         if notification:
             contract = json.loads(subprocess.check_output(['node', '-e', 'console.log(JSON.stringify(require(process.argv[1]).plan(process.argv[2])))',
                 str(Path(__file__).with_name('prepare-production-notifications.js')), report['candidate']], text=True))
@@ -141,6 +159,8 @@ def main():
         if backup:
             for f in selected_functions:
                 service = f.get("serviceConfig", {})
+                if f['name'].split('/')[-1] in access_requests and not access_request_runtime_allowed(service):
+                    raise ValueError('Configuration demandes acces inattendue')
                 if f['name'].split('/')[-1] not in extra and not ordinary_runtime_allowed(service):
                     raise ValueError("Configuration runtime inattendue")
                 if f.get("environment") != "GEN_2" or f.get("buildConfig", {}).get("runtime") != "nodejs22" or f.get("state") != "ACTIVE":
