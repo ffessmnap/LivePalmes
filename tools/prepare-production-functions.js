@@ -2,14 +2,14 @@
 const fs = require("node:fs");
 const path = require("node:path");
 const { execFileSync } = require("node:child_process");
-const { ALL_SAFE_LOTS, LOTS } = require("./firebase-test-backend-lots");
+const { ALL_SAFE_LOTS, activeLotFunctions, LOTS } = require("./firebase-test-backend-lots");
 
 function prepare(root, destination, appCheck) {
   if (process.env.TARGET_FIREBASE_PROJECT !== "livepalmes") throw new Error("Cible PROD explicite requise");
   if (!["true", "false"].includes(appCheck)) throw new Error("App Check PROD non verifie");
   const source = path.join(root, "functions");
   const files = execFileSync("git", ["ls-files", "-z", "functions/"], { cwd: root, encoding: "utf8" }).split("\0").filter(Boolean);
-  const selected = ALL_SAFE_LOTS.flatMap(lot => LOTS[lot]);
+  const selected = ALL_SAFE_LOTS.flatMap(activeLotFunctions);
   if (new Set(selected).size !== selected.length || selected.some(name => [...LOTS.email, ...LOTS.schedulers].includes(name))) throw new Error("Selection invalide");
   if (fs.existsSync(destination)) throw new Error("Destination deja presente");
   fs.mkdirSync(path.join(destination, "functions"), { recursive: true });

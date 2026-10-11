@@ -109,3 +109,11 @@ Antoine a explicitement autorisé à 22:55 Paris la mise à jour de `resumePerfo
 TEST : les deux traitements sont absents de cet environnement (inventaire vérifié le 30 septembre). L’option `dtn_extension` vérifie hors ligne les chaînes d’appel et le comportement des écritures d’invalidation saisonnière, avec une base simulée, sans activer Scheduler ou des envois. La preuve TEST distingue explicitement `offline-no-invocation` d’un déploiement réel et lie ce résultat au candidat exact. Le bilan refuse une preuve absente ou incompatible. Le backend ordinaire reste publié et vérifié sur TEST.
 
 PROD conserve les configurations, secrets, App Check et programmation en place ; seule la source et son étiquette de commit sont actualisées. Aucune invocation métier ou action sur les données n’est ajoutée. La sauvegarde vérifiée et le retour arrière couvrent les deux fonctions. Un test d’intégration réel de ces deux déclencheurs n’est pas effectué dans ce circuit.
+
+## Retrait progressif des anciens traitements NAP — 11 octobre 2026
+
+La liste NAP_RETIRED_FUNCTIONS de tools/firebase-test-backend-lots.js exclut 41 traitements devenus sans effet des selections ordinaires et des lots specialises. Ils restent classes, declares dans le backend et deployes : cette etape ne demande aucune suppression distante et conserve les donnees historiques. Les controles d'inventaire complet et de revisions des fonctions non selectionnees restent actifs. Une suppression distante sera preparee dans un perimetre distinct.
+
+Le service historique de qualification Firestore est cree uniquement a son premier usage et conserve ensuite la meme instance. Les callbacks et regles restent inchanges ; une retouche du contexte club n'est plus une dependance commune due a cette initialisation. Les autres initialisations partagees et les cas ambigus restent conservateurs.
+
+La modification des preparateurs et de la liste de selection change les empreintes communes : une premiere publication large des seules fonctions actives peut etre necessaire. Les gains sont attendus sur les publications suivantes ; aucune duree fixe n'est garantie.
