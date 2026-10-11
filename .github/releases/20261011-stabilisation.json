@@ -1,0 +1,21 @@
+{
+  "schema": 1,
+  "excludedBackendReview": "Aucune extension email/scheduler/DTN dans ce manifeste. Fonctions historiques conservees, aucune suppression. Selection calculee par le circuit ; controle des exclusions et de leur equivalence obligatoire avant publication. Mails desactives sans rattrapage.",
+  "productionCommit": "812bad64681a232e6cc3868ba7ec112bcdac7ca2",
+  "testRun": 38152839574,
+  "productionHosting": "sites/livepalmes/versions/8bc0a8d4f1ca8196",
+  "candidate": "498a6c0d83bd8b7614b8cb85942298e0154132d3",
+  "changes": [
+    {
+      "status": "validated",
+      "title": "Stabilisation NAP et cache du portail",
+      "validation": "Accord explicite du 11 octobre 2026 : bilan-stabilisation-20261011T155301Z et complement-bilan-dtn-20261011T1826Z valides. Publication du seul commit 498a6c0d83bd8b7614b8cb85942298e0154132d3 avec preuve TEST 38152839574, sauvegarde verifiee et controle du retour arriere. Mails automatiques desactives sans rattrapage, aucune suppression de fonction, modification NAP ou autre changement, arret en cas ecart.",
+      "paths": [
+        "assets/livepalmes-admin-portal.js",
+        "functions/index.js",
+        "portail.html"
+      ]
+    }
+  ],
+  "initialAutomaticMailEnabled": false
+}
