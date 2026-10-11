@@ -29,6 +29,11 @@ on:
         description: Pour schedulers uniquement, saisir livepalmes-test-schedulers-empty
         required: false
         type: string
+      access_requests_only:
+        description: Publier uniquement les deux fonctions de demandes d'acces avec NAP, sans envoi
+        required: false
+        type: boolean
+        default: false
       notification_final_check:
         description: Actualiser uniquement les quatre traitements de notification autorisés, mails TEST coupés
         required: false
@@ -58,6 +63,11 @@ on:
         required: false
         type: string
         default: ""
+      access_requests_only:
+        description: Publier uniquement les deux fonctions de demandes d'acces avec NAP, sans envoi
+        required: false
+        type: boolean
+        default: false
       notification_final_check:
         description: Actualiser uniquement les quatre traitements de notification autorisés, mails TEST coupés
         required: false
@@ -83,6 +93,7 @@ env:
   LIVEPALMES_ENFORCE_APP_CHECK: 'false'
   FIREBASE_CLI: ./tests/firestore-rules/node_modules/.bin/firebase
   CANDIDATE_SHA: ${{ github.sha }}
+  ACCESS_REQUESTS_ONLY: ${{ inputs.access_requests_only || false }}
   NOTIFICATION_FINAL_CHECK: ${{ inputs.notification_final_check || false }}
   NAP_NOTIFICATION_SCHEDULER_ONLY: ${{ inputs.nap_notifications_only || false }}
 
@@ -122,6 +133,12 @@ jobs:
             bootstrap|access|engagement-core|performance|nap|publications|email|schedulers|all-safe) ;;
             *) echo "Lot interdit."; exit 1 ;;
           esac
+          if [ "$ACCESS_REQUESTS_ONLY" = "true" ]; then
+            test "$GITHUB_REF" = "refs/heads/main"
+            test "$SELECTED_LOT" = "email"
+            test "$NOTIFICATION_FINAL_CHECK" = "false"
+            test "$NAP_NOTIFICATION_SCHEDULER_ONLY" = "false"
+          fi
           if [ "$NOTIFICATION_FINAL_CHECK" = "true" ]; then
             test "$GITHUB_REF" = "refs/heads/main"
             test "$SELECTED_LOT" = "email"
@@ -185,6 +202,7 @@ jobs:
           node tools/verify-livepalmes.js
           node tools/check-firebase-test-backend-lots.js
           node tests/livepalmes-test-backend-workflow-tests.js
+          python tests/test-access-request-state-tests.py
 
       - name: Vérifier le secret GitHub backend TEST
         shell: bash
@@ -299,6 +317,12 @@ jobs:
           python tools/test-notification-state.py before "$RUNNER_TEMP/notification-before.json"
           node tools/refresh-test-notifications.js prepare "$RUNNER_TEMP/function-selector.txt" "$RUNNER_TEMP/notification-control.json"
 
+      - name: Limiter aux deux fonctions de demandes avec mails TEST deja desactives
+        if: inputs.access_requests_only
+        run: |
+          python tools/test-access-request-state.py before "$RUNNER_TEMP/access-request-before.json"
+          node tools/refresh-test-access-requests.js prepare "$RUNNER_TEMP/function-selector.txt"
+
       - name: Attester le commit des Functions du lot
         if: inputs.lot != 'bootstrap'
         shell: bash
@@ -363,6 +387,12 @@ jobs:
           path: ${{ runner.temp }}/notification-control.json
           if-no-files-found: error
           retention-days: 14
+
+      - name: Controler les deux fonctions de demandes et les traitements conserves
+        if: inputs.access_requests_only
+        run: |
+          node tools/refresh-test-access-requests.js verify
+          python tools/test-access-request-state.py after "$RUNNER_TEMP/access-request-before.json"
 
       - name: Conserver les revisions du lot TEST
         if: inputs.lot != 'bootstrap' && github.ref == 'refs/heads/main'
