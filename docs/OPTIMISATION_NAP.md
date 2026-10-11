@@ -24,7 +24,7 @@ Ces bornes concernent les lignes renvoyées/comptées, pas une garantie sur les 
 - TOP navigateur : regroupement des filtres pendant 100 ms, partage des demandes identiques encore en cours. Réponse supprimée de la mémoire dès achèvement, y compris en erreur ; consultation ultérieure fraîche, aucun cache de données. Les réponses dépassées restent ignorées.
 - TOP SQL sans filtre régional : recherche des clubs après sélection des 5 001 candidats, années de naissance sans recherche de clubs. Filtre régional inchangé : la région doit sélectionner les candidats avant LIMIT.
 - Résultats : historique transféré limité aux courses présentes dans la compétition. Le comptage préalable de tout l’historique et ses plafonds restent inchangés ; mêmes meilleurs temps personnels/saisonniers.
-- Calendrier : projection explicite des seuls champs d’options utilisés ; aucune lecture `co.*`.
+- Calendrier : projection `co.*` étudiée mais conservée. Sa modification touchait un helper partagé par 53 fonctions pour un gain non démontré ; ne pas élargir ce lot pour cette retouche. Les comparaisons de deux saisons établissent la référence, pas un gain de latence attribuable.
 - Ancien audit Firestore marqué historique, ne pas relancer les reconstructions retirées.
 
 ## Mesures de référence

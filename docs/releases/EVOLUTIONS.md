@@ -5,7 +5,7 @@
 ### 11 octobre — Optimisation des consultations NAP sans cache périmé
 
 - Antoine autorise le plan de l’audit actuel : mesures, réduction des appels inutiles, SQL ciblé et validation TEST ; aucune publication PROD implicite.
-- TOP : demandes rapprochées regroupées et requêtes identiques en cours partagées ; jointures clubs différées sans filtre régional. Résultats : historique limité aux courses affichées, comptage protecteur conservé. Calendrier : options publiques explicitement sélectionnées.
+- TOP : demandes rapprochées regroupées et requêtes identiques en cours partagées ; jointures clubs différées sans filtre régional. Résultats : historique limité aux courses affichées, comptage protecteur conservé. Calendrier : mesures de référence ; réduction de projection différée car elle élargissait le déploiement sans gain démontré.
 - Comparaisons NAP en lecture seule : quatre TOP identiques, calendriers de deux saisons identiques, 153 résultats compétition 2652 identiques ; historique transféré réduit de 12 426 à 8 521 lignes. Aucun changement de donnée, index, cache temporisé ou DTN. Mesures ponctuelles détaillées dans docs/OPTIMISATION_NAP.md.
 - Tests ciblés réussis ; suite globale et preuve TEST commune à obtenir. Aucun état « validé utilisateur » déduit de ces tests.
 

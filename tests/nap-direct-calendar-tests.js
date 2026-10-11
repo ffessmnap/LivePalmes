@@ -16,7 +16,6 @@ const { readCompetitionResults } = require("../functions/nap-direct-competition-
   assert.equal(supplemented.city,"Ville corrigée"); assert.equal(supplemented.address,"Adresse");
   assert.equal(supplemented.organizer,"Organisateur"); assert.equal(supplemented.canceled,true);
   assert.equal(supplemented.waterBodyType,"lake"); assert.equal(supplemented.organizerEmail,undefined);
-  assert.ok(!calendar.SELECT_EVENT.includes("co.*"), "Only public calendar option fields are selected");
   assert.ok(calendar.EVENT_JOINS.includes("co.competition_id=c.id"));
   const shared=calendar.eventFromRow({...raw,native_level_code:3,date_limit:"2099-10-07 21:59:17",actif:0,entry_closed:1,portal_whatsapp:"https://chat.whatsapp.com/example"});
   assert.equal(shared.level,"national");assert.equal(shared.entryStatus,"closed");assert.ok(shared.entryDeadlineAt.endsWith("19:59:17.000Z"));
