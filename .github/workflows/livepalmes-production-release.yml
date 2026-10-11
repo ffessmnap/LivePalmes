@@ -97,6 +97,8 @@ jobs:
 
         python tooling/tests/production-notification-release-tests.py
 
+        python tooling/tests/production-access-request-release-tests.py
+
         node tooling/tests/production-notification-preparation-tests.js
 
         node tooling/tests/production-backup-crypto-tests.js'
