@@ -91,6 +91,8 @@ jobs:
 
         python tooling/tests/release-cycle-tests.py
 
+        python tooling/tests/release-composed-evidence-tests.py
+
         python tooling/tests/production-pdf-functions-tests.py
 
         python tooling/tests/production-release-state-tests.py

@@ -7,7 +7,14 @@
 - Antoine autorise le plan de l’audit actuel : mesures, réduction des appels inutiles, SQL ciblé et validation TEST ; aucune publication PROD implicite.
 - TOP : demandes rapprochées regroupées et requêtes identiques en cours partagées ; jointures clubs différées sans filtre régional. Résultats : historique limité aux courses affichées, comptage protecteur conservé. Calendrier : mesures de référence ; réduction de projection différée car elle élargissait le déploiement sans gain démontré.
 - Comparaisons NAP en lecture seule : quatre TOP identiques, calendriers de deux saisons identiques, 153 résultats compétition 2652 identiques ; historique transféré réduit de 12 426 à 8 521 lignes. Aucun changement de donnée, index, cache temporisé ou DTN. Mesures ponctuelles détaillées dans docs/OPTIMISATION_NAP.md.
-- Tests ciblés réussis ; suite globale et preuve TEST commune à obtenir. Aucun état « validé utilisateur » déduit de ces tests.
+- PR #247 intégrée : candidat `7036940bd1c057e4fd693bf04d42bd9efba81b5c`. Suite complète `38175665424`, Hosting TEST commun `38175818400`, lot backend NAP `38176119901` réussis. Le lot fixe comprend deux endpoints dont le code change et un compagnon inchangé ; les autres révisions et PROD restent intactes. Recette TOP 25/50 et filtres course/saison réussie, lectures NAP déployées HTTP 200.
+- Antoine valide le bilan `bilan-optimisation-nap-test-20261011T213000Z`, puis autorise la publication PROD après sauvegarde vérifiée, mails désactivés, sans écriture NAP et arrêt en cas d'écart.
+- La préparation révèle que le circuit ne compose pas les preuves ciblées TEST pour PROD et ignore les nettoyages historiques. PR #248 : composition explicite des preuves authentifiées, reprise hashée des deux nettoyages vérifiés, comparaison réelle complète conservée. Correction et reprise explicitement autorisées ; candidat applicatif inchangé. Publication PROD en attente du bilan protégé, aucun succès présumé.
+
+### 12 octobre — Preuves historiques des nettoyages PROD
+
+- Les 41 puis 3 fonctions autorisées ont été retirées après sauvegardes chiffrées vérifiées le 11 octobre ; bilans locaux `bilan-nettoyage-fonctions-prod-20261011T195605Z` et `bilan-trois-fonctions-prod-20261011T205804Z` contrôlés par leurs SHA-256. Inventaire final : 111 fonctions PROD et 113 TEST, révisions conservées et Hosting inchangé.
+- La PR #248 rattache les inventaires exacts avant/après et les références de sauvegarde au circuit, sans nouvelle suppression. Une différence de révision, une suppression non classée obsolète, un ajout ou un Hosting différent restent bloquants. Aucun droit Google, mail ni donnée NAP modifiés.
 
 ### 11 octobre — Empreintes des listes de retrait sans republication globale
 
