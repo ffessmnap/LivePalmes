@@ -2,6 +2,12 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 11 octobre — Publication ciblée des demandes d'accès NAP
+
+- Accord explicite d'Antoine pour adapter le circuit aux seules fonctions `submitEngagementAccessRequest` et `resolveEngagementAccessRequest`, sans autres traitements mail ni schedulers. Correction applicative intégrée par la PR #238, commit `c9fffd1c` ; vérifications GitHub réussies dans le run `38130066233`.
+- Le circuit TEST exige main, le lot email et l'option exclusive `access_requests_only`. Il vérifie les mails déjà désactivés sans écrire leur configuration, limite le paquet et le sélecteur aux deux fonctions, puis contrôle leurs révisions, leurs sept liaisons de secrets TEST et l'absence de modification des autres fonctions.
+- Aucun envoi ni création de club réel pour les essais, aucune suppression Firebase. Tests hors ligne des gardes, de la sélection et des métadonnées avant publication TEST ; aucune validation utilisateur inventée.
+
 ### 11 octobre — Demandes d'accès des nouveaux clubs raccordées à NAP
 
 - Antoine autorise la correction et sa vérification sur TEST avant PROD, ainsi que la poursuite de l'audit avant tout nettoyage Firebase. Aucune suppression ni création de club réel pour les essais.
