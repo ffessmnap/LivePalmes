@@ -5,6 +5,7 @@ import importlib.util
 import io
 import json
 import os
+import re
 from pathlib import Path
 import subprocess
 import urllib.error
@@ -25,6 +26,23 @@ def archive_manifest(data):
             raise ValueError("Chemin archive invalide")
         # Hashes only; no old code is executed or extracted, no file contents logged.
         return {i.filename: hashlib.sha256(archive.read(i)).hexdigest() for i in infos}
+
+
+def ordinary_runtime_allowed(service):
+    """Recognize the existing PROD NAP binding; never read secret values."""
+    allowed_keys = {"EVENTARC_CLOUD_EVENT_SOURCE", "FIREBASE_CONFIG", "FUNCTION_SIGNATURE_TYPE", "FUNCTION_TARGET", "GCLOUD_PROJECT", "LIVEPALMES_ENFORCE_APP_CHECK", "LOG_EXECUTION_ID"}
+    if set(service.get("environmentVariables", {})) - allowed_keys or service.get("secretVolumes"):
+        return False
+    secrets = service.get("secretEnvironmentVariables", [])
+    if not secrets:
+        return True
+    if len(secrets) != 1:
+        return False
+    secret = secrets[0]
+    return (set(secret) == {"key", "secret", "projectId", "version"}
+            and secret["key"] == secret["secret"] == "LIVEPALMES_NAP_PASSWORD"
+            and str(secret["projectId"]) in {"livepalmes", "718081132564"}
+            and re.fullmatch(r"latest|[1-9][0-9]*", str(secret["version"])) is not None)
 
 
 def main():
@@ -121,10 +139,9 @@ def main():
         report["appCheck"] = next(iter(app_checks), "false")
         report["newFunctions"] = sorted(set(selected) - {f["name"].split("/")[-1] for f in selected_functions})
         if backup:
-            allowed_keys = {"EVENTARC_CLOUD_EVENT_SOURCE", "FIREBASE_CONFIG", "FUNCTION_SIGNATURE_TYPE", "FUNCTION_TARGET", "GCLOUD_PROJECT", "LIVEPALMES_ENFORCE_APP_CHECK", "LOG_EXECUTION_ID"}
             for f in selected_functions:
                 service = f.get("serviceConfig", {})
-                if f['name'].split('/')[-1] not in extra and (set(service.get("environmentVariables", {})) - allowed_keys or service.get("secretEnvironmentVariables") or service.get("secretVolumes")):
+                if f['name'].split('/')[-1] not in extra and not ordinary_runtime_allowed(service):
                     raise ValueError("Configuration runtime inattendue")
                 if f.get("environment") != "GEN_2" or f.get("buildConfig", {}).get("runtime") != "nodejs22" or f.get("state") != "ACTIVE":
                     raise ValueError("Function PROD incompatible")

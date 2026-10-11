@@ -10,6 +10,22 @@ spec.loader.exec_module(module)
 
 
 class SourceArchiveTests(unittest.TestCase):
+    def test_existing_nap_binding_only(self):
+        base = {"environmentVariables": {"LIVEPALMES_ENFORCE_APP_CHECK": "false"}}
+        self.assertTrue(module.ordinary_runtime_allowed(base))
+        secret = {"key": "LIVEPALMES_NAP_PASSWORD", "secret": "LIVEPALMES_NAP_PASSWORD",
+                  "projectId": "livepalmes", "version": "2"}
+        for project in ["livepalmes", "718081132564"]:
+            for version in ["2", "latest"]:
+                self.assertTrue(module.ordinary_runtime_allowed({**base, "secretEnvironmentVariables": [{**secret, "projectId": project, "version": version}]}))
+        for patch in [{"key": "SMTP_PASS"}, {"secret": "SMTP_PASS"}, {"projectId": "livepalmes-test"},
+                      {"version": ""}, {"version": "0"}, {"version": "alias"}, {"unexpected": "field"}]:
+            self.assertFalse(module.ordinary_runtime_allowed({**base, "secretEnvironmentVariables": [{**secret, **patch}]}))
+        for secrets in [[secret, secret], [{k: v for k, v in secret.items() if k != "version"}]]:
+            self.assertFalse(module.ordinary_runtime_allowed({**base, "secretEnvironmentVariables": secrets}))
+        self.assertFalse(module.ordinary_runtime_allowed({**base, "secretVolumes": [{"mountPath": "/secret"}]}))
+        self.assertFalse(module.ordinary_runtime_allowed({"environmentVariables": {"UNEXPECTED": "value"}}))
+
     def archive(self, name, value=b"secret-never-in-report"):
         buffer = io.BytesIO()
         with zipfile.ZipFile(buffer, "w") as archive:
