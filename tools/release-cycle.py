@@ -48,7 +48,7 @@ def approved_native_identity_secret(value):
 
 def approved_extra_functions(value):
     approved_native_identity_secret(value)
-    names = approved_pdf_functions(value) + approved_dtn_functions(value) + approved_notification_functions(value) + approved_public_nap_functions(value)
+    names = approved_pdf_functions(value) + approved_dtn_functions(value) + approved_notification_functions(value) + approved_public_nap_functions(value) + approved_access_request_functions(value)
     require(len(names) == len(set(names)), 'Extensions de publication superposees')
     return names
 
@@ -76,6 +76,30 @@ def approved_notification_functions(value):
             and bool(value['additionalNotificationApproval'].strip()) and value.get('initialAutomaticMailEnabled') is False),
             'Accord specifique notifications avec mails desactives requis')
     return names
+
+
+ACCESS_REQUEST_FUNCTIONS = {'submitEngagementAccessRequest', 'resolveEngagementAccessRequest'}
+ACCESS_REQUEST_SECRETS = ['LIVEPALMES_NAP_PASSWORD', 'LIVEPALMES_SMTP_HOST', 'LIVEPALMES_SMTP_PORT',
+    'LIVEPALMES_SMTP_USER', 'LIVEPALMES_SMTP_PASS', 'LIVEPALMES_SMTP_SECURE', 'LIVEPALMES_MAIL_FROM']
+
+
+def approved_access_request_functions(value):
+    names = value.get('additionalAccessRequestFunctions', [])
+    require(isinstance(names, list) and all(isinstance(n, str) for n in names)
+            and len(names) == len(set(names)) and set(names).issubset(ACCESS_REQUEST_FUNCTIONS), 'Extension demandes interdite')
+    require(not names or (set(names) == ACCESS_REQUEST_FUNCTIONS
+            and isinstance(value.get('additionalAccessRequestApproval'), str)
+            and bool(value['additionalAccessRequestApproval'].strip())
+            and value.get('initialAutomaticMailEnabled') is False
+            and not any(value.get(key) for key in ['additionalPdfFunctions', 'additionalDtnFunctions',
+                        'additionalNotificationFunctions', 'additionalPublicNapFunctions'])),
+            'Accord exclusif des deux demandes avec mails desactives requis')
+    return names
+
+
+def require_access_request_selection(request, selected):
+    names = approved_access_request_functions(request)
+    require(not names or set(selected) == set(names), 'Publication demandes : seules les deux fonctions sont autorisees')
 
 
 def require(value, message):
@@ -445,7 +469,7 @@ def prepare_selection(directory, candidate):
         require(all(not needs_function(names.get(n), n, request['candidate']) for n in selected), 'Backend TEST incomplet ou pas au code valide')
         extra = approved_extra_functions(request)
         notification = approved_notification_functions(request)
-        require(all(not needs_function(names.get(n), n, request['candidate']) for n in notification + approved_public_nap_functions(request)),
+        require(all(not needs_function(names.get(n), n, request['candidate']) for n in notification + approved_public_nap_functions(request) + approved_access_request_functions(request)),
                 'Notifications TEST absentes ou pas au code valide')
         if approved_dtn_functions(request):
             require(read(directory / 'test-proof.json').get('dtnExtensionVerification') == {'schema': 1, 'candidate': request['candidate'], 'suite': 'dtn-shared-invalidation', 'mode': 'offline-no-invocation', 'result': 'success', 'functions': sorted(DTN_FUNCTIONS)}, 'Preuve des dependances DTN absente ou incompatible')
@@ -490,6 +514,7 @@ def freeze_plan(directory, evidence=False):
     names = {f['name'].split('/')[-1]: f for f in state['functions']}
     selected = read(root / 'selection.json')
     selected = [n for n in selected if n in approved_extra_functions(request) or needs_function(names.get(n), n, request['candidate'])]
+    require_access_request_selection(request, selected)
     write(root / 'selection.json', selected)
     with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as summary:
         summary.write('\n## Bilan avant publication\n\n')
@@ -517,7 +542,7 @@ def stage(candidate, project, destination, sha):
         request = read(Path(os.environ['PLAN']) / 'request.json')
         if approved_public_nap_functions(request):
             subprocess.run(['node', str(ROOT / 'tools/prepare-production-nap-reader.js'), destination], check=True)
-        notification = approved_notification_functions(request) + approved_public_nap_functions(request)
+        notification = approved_notification_functions(request) + approved_public_nap_functions(request) + approved_access_request_functions(request)
         if notification:
             index.write_text(index.read_text() + '\nfor (const name of ' + json.dumps(notification) + ') { if (!backend[name]?.__endpoint) throw new Error("Export notifications absent: " + name); exports[name] = backend[name]; }\n')
     index.write_text(index.read_text() + '\nfor (const fn of Object.values(exports)) { if (!fn.__endpoint) throw new Error("Endpoint absent"); fn.__endpoint.labels = { ...fn.__endpoint.labels, "livepalmes-commit": ' + json.dumps(sha) + ' }; }\n')
@@ -551,7 +576,9 @@ def deploy_batches(project, candidate, stage_path, selection_path, dry_run):
     selected = read(selection_path)
     extra = approved_extra_functions(read(Path(os.environ['PLAN']) / 'request.json')) if project == 'livepalmes' and os.environ.get('PLAN') else []
     require(len(selected) == len(set(selected)) and set(selected).issubset(set(safe_functions(candidate, project)) | set(extra)), 'Selection interdite')
-    source_only = set(extra) - set(approved_notification_functions(read(Path(os.environ['PLAN']) / 'request.json'))) - set(approved_public_nap_functions(read(Path(os.environ['PLAN']) / 'request.json'))) if extra else set()
+    source_only = set(extra) - set(approved_notification_functions(read(Path(os.environ['PLAN']) / 'request.json'))) - set(approved_public_nap_functions(read(Path(os.environ['PLAN']) / 'request.json'))) - set(approved_access_request_functions(read(Path(os.environ['PLAN']) / 'request.json'))) if extra else set()
+    if project == 'livepalmes' and os.environ.get('PLAN'):
+        require_access_request_selection(read(Path(os.environ['PLAN']) / 'request.json'), selected)
     selected = [name for name in selected if name not in source_only]
     cli = str(Path(candidate).resolve() / 'tests/firestore-rules/node_modules/.bin/firebase')
     sha = os.environ['CANDIDATE_SHA']
