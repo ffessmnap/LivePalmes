@@ -167,3 +167,11 @@ for (const [label, before, after, expected] of [
   assert.deepEqual(selected,expected.sort(),label);
   console.log(`${label} reel : ${selected.length} traitement(s) concernes : ${selected.join(', ') || 'aucun'}`);
 }
+
+// Real current backend: the historical qualification factory must not make
+// club access a startup dependency of unrelated account/Direct endpoints.
+const currentSha=require("node:child_process").execFileSync("git",["rev-parse","HEAD"],{cwd:root,encoding:"utf8"}).trim();
+const current=fromGit(root,currentSha);
+assert.equal(current.mode,"dependency-closure");
+assert.ok(!current.commonDeclarations.includes("engagementClubAccessContext"),"Club callback still shared at initialization");
+console.log("Backend courant : contexte club absent des dependances communes au demarrage.");
