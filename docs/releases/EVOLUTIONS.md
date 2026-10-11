@@ -2,6 +2,14 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 11 octobre — Actualisation du script portail après stabilisation NAP
+
+- La PR #242 est publiée sur TEST commun : commit `173af561`, run `38150715019`, suite complète réussie. Les lectures NAP publiques, nageurs, calendrier et dossier CNHC sont vérifiées sans écriture ; mails coupés et PROD inchangée.
+- Le contrôle navigateur a révélé un script portail conservé en cache : sa référence versionnée n’avait pas changé malgré la modification du script. Le numéro de version est actualisé ; aucun changement de règle de cache, de fonction, de droit ou de donnée.
+- La page DTN s’ouvre mais indique des calculs absents ou périmés : aucun recalcul lancé durant ce contrôle en lecture seule.
+- Correction en préparation TEST ; validation utilisateur et publication PROD en attente. Les 41 fonctions historiques ne sont pas supprimées.
+
+
 ### 11 octobre — Promotion PROD ciblée des demandes de nouveaux clubs
 
 - Accord explicite d’Antoine : publier uniquement les deux fonctions de demande/validation, après sauvegarde vérifiée, mails désactivés et sans supprimer les données Firebase. Candidat immuable `812bad64681a232e6cc3868ba7ec112bcdac7ca2`, preuve TEST commune `38131360968`, publication ciblée TEST `38131101981`.
