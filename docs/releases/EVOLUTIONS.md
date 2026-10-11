@@ -2,6 +2,12 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 11 octobre — Sauvegarde PROD compatible avec la liaison NAP existante
+
+- Antoine autorise explicitement la correction du contrôle de sauvegarde et la reprise pour le même candidat applicatif `0efa4fe6`. Le run `38126986988` s'est arrêté avant chiffrement et avant toute publication ; PROD reste `1df545a6`.
+- Le contrôle accepte uniquement un secret `LIVEPALMES_NAP_PASSWORD`, clé et nom identiques, projet PROD `livepalmes` ou son numéro `718081132564`, version positive ou `latest`. Les autres secrets, doublons, volumes et variables non prévues restent refusés. Aucun droit ni secret n'est modifié.
+- Tests ciblés du contrat NAP, conservation des contrôles d'état et notifications réussis localement. Suite complète Linux et reprise protégée à vérifier. Preuve TEST commune applicative réutilisée : `38090360085` ; sauvegarde chiffrée vérifiée obligatoire, mails désactivés, aucun nettoyage Firebase.
+
 
 ### 11 octobre — Changement de club actif exclusivement NAP
 
