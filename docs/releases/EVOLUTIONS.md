@@ -2,6 +2,12 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 11 octobre — Empreintes des listes de retrait sans republication globale
+
+- Les trois endpoints inutilisés ont été sauvegardés et retirés de TEST : 113 fonctions conservées, PROD inchangée à 114, mails désactivés et contrôles NAP/nationaux réussis. PR #245 intégrée ; bilan local bilan-trois-fonctions-test-20261011.
+- Le contrôle sans déploiement 38170855243 a bloqué car le fichier de listes entrait intégralement dans les empreintes communes. Correction limitée aux registres de retrait statiques : métadonnées, helpers, scripts de préparation et syntaxe inconnue conservent leurs protections.
+- Régression sur les deux commits réels et tests des changements sensibles ; vérification commune TEST sans déploiement en préparation. Aucun changement PROD ni écriture NAP.
+
 ### 11 octobre — Retrait TEST de trois endpoints sans usage NAP
 
 - Audit en lecture seule des 114 fonctions PROD : trois candidates, deux sans appel applicatif trouvé et une liste historique court-circuitée par l’interface NAP.
