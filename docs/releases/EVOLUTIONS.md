@@ -2,6 +2,13 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 11 octobre — Optimisation des consultations NAP sans cache périmé
+
+- Antoine autorise le plan de l’audit actuel : mesures, réduction des appels inutiles, SQL ciblé et validation TEST ; aucune publication PROD implicite.
+- TOP : demandes rapprochées regroupées et requêtes identiques en cours partagées ; jointures clubs différées sans filtre régional. Résultats : historique limité aux courses affichées, comptage protecteur conservé. Calendrier : options publiques explicitement sélectionnées.
+- Comparaisons NAP en lecture seule : quatre TOP identiques, calendriers de deux saisons identiques, 153 résultats compétition 2652 identiques ; historique transféré réduit de 12 426 à 8 521 lignes. Aucun changement de donnée, index, cache temporisé ou DTN. Mesures ponctuelles détaillées dans docs/OPTIMISATION_NAP.md.
+- Tests ciblés réussis ; suite globale et preuve TEST commune à obtenir. Aucun état « validé utilisateur » déduit de ces tests.
+
 ### 11 octobre — Empreintes des listes de retrait sans republication globale
 
 - Les trois endpoints inutilisés ont été sauvegardés et retirés de TEST : 113 fonctions conservées, PROD inchangée à 114, mails désactivés et contrôles NAP/nationaux réussis. PR #245 intégrée ; bilan local bilan-trois-fonctions-test-20261011.

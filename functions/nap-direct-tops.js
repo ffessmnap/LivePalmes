@@ -50,6 +50,17 @@ function queryFor(input, facet = false) {
   if (f.birthYear && !facet) { where.push("YEAR(n.date) = ?"); values.push(Number(f.birthYear)); }
   if (f.region) { const regions = f.region.split(",").map(Number); where.push(`COALESCE(cp.comite_club, cn.comite_club) IN (${regions.map(() => "?").join(",")})`); values.push(...regions); }
   const suffix = facet ? "GROUP BY YEAR(n.date) ORDER BY YEAR(n.date) DESC LIMIT 10001" : `ORDER BY CAST(TRIM(p.tps) AS UNSIGNED), c.date, p.id LIMIT ${MAX_CANDIDATES + 1}`;
+  if (!f.region) {
+    // Club labels do not affect selection without a regional filter. Resolve
+    // them only for the bounded candidates instead of every matching swim.
+    const baseFrom = FROM.slice(0, FROM.indexOf(" LEFT JOIN clubs cp"));
+    if (facet) return { sql: `SELECT YEAR(n.date) AS birthYear ${baseFrom} WHERE ${where.join(" AND ")} ${suffix}`, values };
+    const clubStart = PROJECTION.indexOf(", COALESCE(cp.num_club");
+    const candidateProjection = PROJECTION.slice(0, clubStart) + ", p.club AS performance_club, n.club AS swimmer_club";
+    const clubProjection = PROJECTION.slice(clubStart + 2);
+    const candidates = `SELECT ${candidateProjection} ${baseFrom} WHERE ${where.join(" AND ")} ${suffix}`;
+    return { sql: `SELECT q.*, ${clubProjection} FROM (${candidates}) q LEFT JOIN clubs cp ON cp.num_club = q.performance_club AND CAST(cp.num_club AS CHAR) = q.performance_club LEFT JOIN clubs cn ON cn.num_club = q.swimmer_club AND CAST(cn.num_club AS CHAR) = q.swimmer_club ORDER BY CAST(TRIM(q.tps) AS UNSIGNED), q.date, q.id`, values };
+  }
   return { sql: `SELECT ${facet ? "YEAR(n.date) AS birthYear" : PROJECTION} ${FROM} WHERE ${where.join(" AND ")} ${suffix}`, values };
 }
 async function courseBudget(pool, course) {

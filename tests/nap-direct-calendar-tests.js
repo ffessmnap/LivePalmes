@@ -16,6 +16,7 @@ const { readCompetitionResults } = require("../functions/nap-direct-competition-
   assert.equal(supplemented.city,"Ville corrigée"); assert.equal(supplemented.address,"Adresse");
   assert.equal(supplemented.organizer,"Organisateur"); assert.equal(supplemented.canceled,true);
   assert.equal(supplemented.waterBodyType,"lake"); assert.equal(supplemented.organizerEmail,undefined);
+  assert.ok(!calendar.SELECT_EVENT.includes("co.*"), "Only public calendar option fields are selected");
   assert.ok(calendar.EVENT_JOINS.includes("co.competition_id=c.id"));
   const shared=calendar.eventFromRow({...raw,native_level_code:3,date_limit:"2099-10-07 21:59:17",actif:0,entry_closed:1,portal_whatsapp:"https://chat.whatsapp.com/example"});
   assert.equal(shared.level,"national");assert.equal(shared.entryStatus,"closed");assert.ok(shared.entryDeadlineAt.endsWith("19:59:17.000Z"));
@@ -64,6 +65,11 @@ const { readCompetitionResults } = require("../functions/nap-direct-competition-
   assert.equal(missingPerson.swimmerId, "");
   assert.equal(queries.length, 5);
   assert.deepEqual(queries[2].values, [168]);
+  assert.deepEqual(queries[3].values, [168, "100SF"]);
+  assert.match(queries[3].query.sql, /p.course IN \(\?\)/);
+  assert.ok(!queries[2].query.sql.includes("course IN"), "Safety count still covers the entire participant history");
+  const oversized = { execute: async (query, values) => query.sql.includes("COUNT(*)") ? [[{count:100001}]] : resultPool.execute(query, values) };
+  assert.equal((await readCompetitionResults(oversized, 2)).markersAvailable, false, "Course filter must never bypass the global history safety ceiling");
   const changed = { execute: async (query, values) => {
     const [rows] = await resultPool.execute(query, values);
     return [query.sql.includes("p.nageur IN") ? rows.map(row => ({ ...row, tps: "013000" })) : rows];

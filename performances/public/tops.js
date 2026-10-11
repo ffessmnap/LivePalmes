@@ -6,17 +6,34 @@
   let napRequest = 0;
   let napLimit = 25;
   let napFiltersKey = "";
+  let napRenderTimer = null;
+  const napLoads = new Map();
+  // Only share in-flight requests: every later visit still reads current NAP.
+  function scheduleNapRender(filters) {
+    global.clearTimeout(napRenderTimer);
+    napRenderTimer = global.setTimeout(() => {
+      napRenderTimer = null;
+      void renderNap(filters);
+    }, 100);
+  }
   async function readNap(action, filters = {}) {
     const url = new URL(global.LivePalmesEnvironment.napReaderUrl);
     url.searchParams.set("action", action);
     for (const key of ["course", "sex", "category", "season", "region", "pool", "birthYear"]) if (filters[key]) url.searchParams.set(key, filters[key]);
     url.searchParams.set("limit", String(napLimit));
     if (action === "top" && birthYearFilterOpen) url.searchParams.set("years", "1");
-    const response = await fetch(url, { cache: "no-store", signal: AbortSignal.timeout(30000) });
-    if (!response.ok) throw new Error("Consultation des performances indisponible.");
-    const data = await response.json();
-    if (data.source !== "nap") throw new Error("Reponse des performances invalide.");
-    return data;
+    const key = url.href;
+    if (napLoads.has(key)) return napLoads.get(key);
+    const pending = (async () => {
+      const response = await fetch(url, { cache: "no-store", signal: AbortSignal.timeout(30000) });
+      if (!response.ok) throw new Error("Consultation des performances indisponible.");
+      const data = await response.json();
+      if (data.source !== "nap") throw new Error("Reponse des performances invalide.");
+      return data;
+    })();
+    napLoads.set(key, pending);
+    try { return await pending; }
+    finally { if (napLoads.get(key) === pending) napLoads.delete(key); }
   }
   async function renderNap(filters) {
     const request = ++napRequest;
@@ -713,7 +730,11 @@
   function render() {
     const filters = currentFilters();
     updateTitle(filters);
-    if (usesNapDirectData) ++napRequest;
+    if (usesNapDirectData) {
+      ++napRequest;
+      global.clearTimeout(napRenderTimer);
+      napRenderTimer = null;
+    }
 
     if (!filters.sex && !filters.course) {
       addOptions(elements.birthYear, [], "Toutes les ann\u00e9es");
@@ -739,7 +760,7 @@
       return;
     }
 
-    if (usesNapDirectData) { renderNap(filters); return; }
+    if (usesNapDirectData) { scheduleNapRender(filters); return; }
 
     const buckets = topBucketsForFilters(filters);
     const failedBucket = buckets.find((bucket) => bucketErrors.has(bucketKey(bucket)));
