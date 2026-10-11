@@ -160,6 +160,7 @@ function runUnitTests() {
     "nap-person-merge-callable-tests.js",
     "nap-club-change-tests.js",
     "nap-club-create-tests.js",
+    "nap-club-access-request-tests.js",
     "nap-people-display-tests.js",
     "nap-club-person-status-tests.js",
     "nap-club-person-status-ui-tests.js",
