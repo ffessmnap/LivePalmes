@@ -309,6 +309,61 @@ function fingerprints(source, common, files = {}) {
   return { mode: conservative ? "whole-backend" : "dependency-closure", functions, dependencies, commonDeclarations: commonNames };
 }
 
+// Only the two explicit retirement registries are selection-only. Keep every
+// other declaration, metadata, helper and preparation script in the signature.
+// Unexpected syntax or use of either registry falls back to the full source.
+function retirementRegistrySignature(source) {
+  try {
+    const ast = acorn.parse(source, { ecmaVersion: "latest" });
+    const names = new Set(["NAP_RETIRED_FUNCTIONS", "NAP_UNUSED_FUNCTIONS"]);
+    const permitted = new Set();
+    let setNode, exportObject;
+    for (const node of ast.body) {
+      if (node.type === "VariableDeclaration" && node.declarations.length === 1) {
+        const d = node.declarations[0];
+        if (names.has(d.id.name)) {
+          const init = d.init;
+          if (node.kind !== "const" || init?.type !== "CallExpression" ||
+              init.callee?.object?.name !== "Object" || init.callee.property?.name !== "freeze" ||
+              init.arguments.length !== 1 || init.arguments[0].type !== "ArrayExpression" ||
+              !init.arguments[0].elements.every(e => e?.type === "Literal" && typeof e.value === "string")) return source;
+          walk(node, n => permitted.add(n));
+          init.arguments[0].elements = [];
+        }
+        if (d.id.name === "retiredNapNames") {
+          if (d.init?.type !== "NewExpression" || d.init.callee.name !== "Set" || d.init.arguments.length !== 1) return source;
+          const arg = d.init.arguments[0];
+          const direct = arg.type === "Identifier" && arg.name === "NAP_RETIRED_FUNCTIONS";
+          const combined = arg.type === "ArrayExpression" && arg.elements.length === 2 &&
+            arg.elements.every((e, i) => e.type === "SpreadElement" && e.argument.name === ["NAP_RETIRED_FUNCTIONS", "NAP_UNUSED_FUNCTIONS"][i]);
+          if (!direct && !combined) return source;
+          walk(node, n => permitted.add(n));
+          setNode = d.init;
+        }
+      }
+      if (node.type === "ExpressionStatement" && node.expression.type === "AssignmentExpression" &&
+          node.expression.left.object?.name === "module" && node.expression.left.property?.name === "exports") {
+        exportObject = node.expression.right;
+        if (exportObject.type !== "ObjectExpression") return source;
+        for (const property of exportObject.properties) {
+          if (names.has(property.key?.name)) {
+            if (!property.shorthand || property.computed || property.type !== "Property") return source;
+            walk(property, n => permitted.add(n));
+          }
+        }
+      }
+    }
+    if (!setNode || !exportObject) return source;
+    let unsafe = false;
+    walk(ast, node => { if (node.type === "Identifier" && names.has(node.name) && !permitted.has(node)) unsafe = true; });
+    if (unsafe) return source;
+    ast.body = ast.body.filter(node => !(node.type === "VariableDeclaration" && node.declarations.length === 1 && node.declarations[0].id.name === "NAP_UNUSED_FUNCTIONS"));
+    setNode.arguments = [{ type: "Identifier", name: "NAP_RETIRED_FUNCTIONS" }];
+    exportObject.properties = exportObject.properties.filter(p => p.key?.name !== "NAP_UNUSED_FUNCTIONS");
+    return JSON.stringify(ast, (key, value) => ["start", "end", "raw"].includes(key) ? undefined : value);
+  } catch { return source; }
+}
+
 function fromGit(root, sha) {
   if (!/^[a-f0-9]{40}$/.test(sha)) throw new Error("SHA complet requis");
   const git = args => execFileSync("git", args, { cwd: root, encoding: "utf8", maxBuffer: 16 * 1024 * 1024 });
@@ -321,8 +376,12 @@ function fromGit(root, sha) {
     if (name.startsWith("functions/") && /\.(js|json)$/.test(name) && !/\/package(?:-lock)?\.json$/.test(name))
       files[name] = { sha: metadata.split(" ")[2], source: name.endsWith(".js") ? git(["show", sha + ":" + name]) : "" };
   }
-  const tree = lines.filter(line => !files[line.split("\t")[1]]);
+  const tree = lines.filter(line => !files[line.split("\t")[1]]).map(line => {
+    const name = line.split("\t")[1];
+    return name === "tools/firebase-test-backend-lots.js"
+      ? name + ":" + hash(retirementRegistrySignature(git(["show", sha + ":" + name]))) : line;
+  });
   return fingerprints(source, tree, files);
 }
-module.exports = { fingerprints, fromGit };
+module.exports = { fingerprints, fromGit, retirementRegistrySignature };
 if (require.main === module) console.log(JSON.stringify(fromGit(process.argv[2], process.argv[3])));
