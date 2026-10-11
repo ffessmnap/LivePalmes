@@ -2,6 +2,12 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 11 octobre — Retrait TEST de trois endpoints sans usage NAP
+
+- Audit en lecture seule des 114 fonctions PROD : trois candidates, deux sans appel applicatif trouvé et une liste historique court-circuitée par l’interface NAP.
+- Autorisation d’Antoine : vérifier puis nettoyer uniquement TEST ; PROD reste inchangée. Les trois endpoints sont exclus des lots pour éviter leur recréation, leurs déclarations et les helpers partagés sont conservés.
+- Sauvegarde, vérification TEST avant/après et bilan de retrait en préparation ; aucune suppression PROD ni écriture NAP autorisée par cette évolution.
+
 ### 11 octobre — Actualisation du script portail après stabilisation NAP
 
 - La PR #242 est publiée sur TEST commun : commit `173af561`, run `38150715019`, suite complète réussie. Les lectures NAP publiques, nageurs, calendrier et dossier CNHC sont vérifiées sans écriture ; mails coupés et PROD inchangée.

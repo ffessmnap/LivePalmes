@@ -4,7 +4,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 const vm = require("node:vm");
 const acorn = require("./firestore-rules/node_modules/acorn");
-const { NAP_RETIRED_FUNCTIONS, activeLotFunctions, LOTS, ALL_SAFE_LOTS } = require("../tools/firebase-test-backend-lots");
+const { NAP_RETIRED_FUNCTIONS, NAP_UNUSED_FUNCTIONS, activeLotFunctions, LOTS, ALL_SAFE_LOTS } = require("../tools/firebase-test-backend-lots");
 const source = fs.readFileSync(path.join(__dirname, "../functions/index.js"), "utf8");
 const ast = acorn.parse(source, {ecmaVersion:"latest"});
 const handlers = new Map(ast.body.filter(n => n.type === "ExpressionStatement" && n.expression.type === "AssignmentExpression" && n.expression.left.object?.name === "exports").map(n => [n.expression.left.property.name, n.expression.right.arguments.at(-1)]));
@@ -12,7 +12,8 @@ class HttpsError extends Error { constructor(code, message) { super(message); th
 (async () => {
   assert.equal(NAP_RETIRED_FUNCTIONS.length, 41);
   assert.equal(new Set(NAP_RETIRED_FUNCTIONS).size, 41);
-  const retired = new Set(NAP_RETIRED_FUNCTIONS);
+  const retired = new Set([...NAP_RETIRED_FUNCTIONS, ...NAP_UNUSED_FUNCTIONS]);
+  assert.deepEqual([...NAP_UNUSED_FUNCTIONS].sort(), ["getEngagementNationalAdministrationOverview", "listEngagementCompetitionDeletionRequests", "listEngagementNationalClubSwimmers"]);
   for (const lot of Object.keys(LOTS)) {
     assert.deepEqual(activeLotFunctions(lot), LOTS[lot].filter(n => !retired.has(n)));
   }
