@@ -57,6 +57,17 @@ for (const dynamic of ['\nglobalThis["eval"]("x");', '\nrequire(name);', '\nrequ
   assert.equal(fingerprints(modular+dynamic, 'deps').mode, 'whole-backend');
 }
 assert.throws(()=>fingerprints(modular+'\nfunction leaf(){}','deps'), /duplique/);
+// Lazy compatibility services must not turn a club callback into a shared initializer.
+const lazyService = `const {onCall}=require("firebase-functions/v2/https");
+function clubAccess(){return 1;}
+let savedService;
+function service(){return savedService || (savedService=createService({clubAccess}));}
+exports.club=onCall({},()=>clubAccess());
+exports.compatibility=onCall({},()=>service().read());
+exports.unrelated=onCall({},()=>23);`;
+assert.deepEqual(changed(lazyService,lazyService.replace("return 1","return 2")),["club","compatibility"]);
+const eagerService=lazyService.replace("let savedService;","let savedService=createService({clubAccess});");
+assert.deepEqual(changed(eagerService,eagerService.replace("return 1","return 2")),["club","compatibility","unrelated"]);
 // Conditional TEST registrations and static module closures are independent of the core.
 const conditional = modular + `
 const {defineSecret}=require("firebase-functions/params");

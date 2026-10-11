@@ -116,7 +116,7 @@ def main():
             seen.add(page)
         else:
             raise ValueError("Inventaire incomplet")
-        selected = json.loads(subprocess.check_output(["node", "-e", 'const {ALL_SAFE_LOTS,LOTS}=require(process.argv[1]);console.log(JSON.stringify(ALL_SAFE_LOTS.flatMap(x=>LOTS[x])))', str(root / "tools/firebase-test-backend-lots.js")], text=True))
+        selected = json.loads(subprocess.check_output(["node", "-e", 'const {ALL_SAFE_LOTS,activeLotFunctions}=require(process.argv[1]);console.log(JSON.stringify(ALL_SAFE_LOTS.flatMap(activeLotFunctions)))', str(root / "tools/firebase-test-backend-lots.js")], text=True))
         extra = []
         if os.environ.get('PLAN'):
             plan = json.loads((Path(os.environ['PLAN']) / 'request.json').read_text())
