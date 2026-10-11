@@ -3010,6 +3010,7 @@ function engagementAccessExistingClubPayload(club = {}) {
 }
 
 async function findEngagementClubByFederalNumber(federalNumber = "") {
+  if (ENVIRONMENT.sportingDataSource === "nap") return require("./nap-club-access-request").findByFederalNumber(require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD), federalNumber);
   const cleanNumber = cleanText(federalNumber).toUpperCase().slice(0, 24);
   if (!cleanNumber) return null;
   const referenceClub = CLUB_REFERENCE_BY_FEDERAL_NUMBER.get(cleanNumber);
@@ -3036,7 +3037,14 @@ async function resolveExistingClubForAccessRequest(payload = {}) {
     : payload;
 }
 
-async function createClubFromEngagementAccessRequest(payload = {}, actorUid = "") {
+async function createClubFromEngagementAccessRequest(payload = {}, actorUid = "", requestId = "") {
+  if (ENVIRONMENT.sportingDataSource === "nap") return require("./nap-club-access-request").createFromRequest(
+    require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD), {payload, actorUid, requestId}, {
+      read: async operation => { const doc = await db.collection("auditLogs").doc(`nap-club-create-${operation}-before`).get(); return doc.exists ? doc.data().target : null; },
+      prepare: (operation, target) => db.collection("auditLogs").doc(`nap-club-create-${operation}-before`).create({action:"nap.clubCreate.prepare",actorUid,target,createdAt:new Date().toISOString()}),
+      checkpoint: (operation, target) => db.collection("auditLogs").doc(`nap-club-create-${operation}-before`).update({target}),
+      complete: async (operation, target) => { await writeAuditLogOnce("nap.clubCreate.complete",actorUid,target,`nap-club-create-${operation}-complete`); await require("./nap-club-provenance").record(db,operation,target,actorUid); }
+    });
   const existingClub = await findEngagementClubByFederalNumber(payload.newClub?.federalNumber);
   if (existingClub) return { club: existingClub, created: false };
   let cleaned;
@@ -3288,15 +3296,16 @@ async function sendEngagementAccessAdminNotifications(payload = {}) {
   };
 }
 
-exports.submitEngagementAccessRequest = onCall(PORTAL_ACCESS_REQUEST_OPTIONS, async (request) => {
+exports.submitEngagementAccessRequest = onCall({ ...PORTAL_ACCESS_REQUEST_OPTIONS, secrets: ENVIRONMENT.sportingDataSource === "nap" ? [...ENGAGEMENT_MAIL_SECRETS, defineSecret("LIVEPALMES_NAP_PASSWORD") ] : ENGAGEMENT_MAIL_SECRETS }, async (request) => {
   const uid = cleanText(request.auth?.uid);
   if (cleanText(request.data?.website)) {
     throw new HttpsError("invalid-argument", "Demande invalide.");
   }
   let payload = cleanEngagementAccessRequestPayload(request.data || {}, request);
-  payload = await resolveExistingClubForAccessRequest(payload);
   const now = new Date().toISOString();
   await consumePublicAccessRequestRateLimit(request, now);
+  try { payload = await resolveExistingClubForAccessRequest(payload); }
+  catch (error) { throw new HttpsError(error instanceof TypeError ? "failed-precondition" : "unavailable", error instanceof TypeError ? error.message : "Annuaire NAP indisponible. Reessayez."); }
   const existingAccount = await engagementExistingAccessAccount(payload.email);
   if (existingAccount) {
     const guidanceEmail = await sendEngagementExistingAccountNotice(existingAccount);
@@ -3387,7 +3396,7 @@ exports.listEngagementAccessRequests = onCall(CALLABLE_OPTIONS, async (request) 
   };
 });
 
-exports.resolveEngagementAccessRequest = onCall(PORTAL_ACCESS_REQUEST_OPTIONS, async (request) => {
+exports.resolveEngagementAccessRequest = onCall({ ...PORTAL_ACCESS_REQUEST_OPTIONS, secrets: ENVIRONMENT.sportingDataSource === "nap" ? [...ENGAGEMENT_MAIL_SECRETS, defineSecret("LIVEPALMES_NAP_PASSWORD") ] : ENGAGEMENT_MAIL_SECRETS }, async (request) => {
   const context = await engagementAccessContext(request);
   const requestId = cleanText(request.data?.requestId).slice(0, 80);
   const decision = cleanText(request.data?.decision);
@@ -3435,7 +3444,8 @@ exports.resolveEngagementAccessRequest = onCall(PORTAL_ACCESS_REQUEST_OPTIONS, a
       if (!context.national) {
         throw new HttpsError("permission-denied", "La creation d'un club est reservee au niveau national.");
       }
-      clubCreationResult = await createClubFromEngagementAccessRequest(resolvedData, context.uid);
+      try { clubCreationResult = await createClubFromEngagementAccessRequest(resolvedData, context.uid, requestId); }
+      catch (error) { if (error instanceof HttpsError) throw error; throw new HttpsError(error instanceof TypeError ? "failed-precondition" : "unavailable", error instanceof TypeError ? error.message : "Creation du club a verifier. Reprenez la meme demande ; sauvegarde conservee."); }
       resolvedData = {
         ...resolvedData,
         ...engagementAccessExistingClubPayload(clubCreationResult.club)
