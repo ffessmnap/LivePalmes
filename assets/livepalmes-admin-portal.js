@@ -12683,6 +12683,13 @@
   }
 
   async function loadEngagementDeletionRequests({ force = false, silent = false } = {}) {
+    if (global.LivePalmesEnvironment?.sportingDataSource === "nap") {
+      engagementDeletionRequests = [];
+      engagementDeletionRequestsLoaded = true;
+      updateEngagementDeletionRequestBadge(0);
+      renderEngagementDeletionRequests();
+      return;
+    }
     if (!canDeleteEngagementCompetitionDirectly() || engagementDeletionRequestsLoading) return;
     if (engagementDeletionRequestsLoaded && !force) return;
     engagementDeletionRequestsLoading = true;

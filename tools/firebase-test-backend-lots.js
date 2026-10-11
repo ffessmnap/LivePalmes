@@ -80,6 +80,57 @@ const LOTS = Object.freeze({
   schedulers: ["resumePerformancePublicationJobs", "closeDueEngagementCompetitions"]
 });
 
+// NAP-retired endpoints stay declared/deployed for compatibility. Ordinary
+// and targeted lots omit them; no remote deletion is requested by this list.
+const NAP_RETIRED_FUNCTIONS = Object.freeze([
+  "rebuildEngagementCompetitionCalendars",
+  "syncEngagementCompetitionToCalendar",
+  "syncEngagementCalendarEventToCalendar",
+  "syncEngagementClubEntryToCompetitionSummary",
+  "syncEngagementClubPersonToRoster",
+  "syncPerformanceSwimmerToEngagementClubRoster",
+  "syncEngagementClubSwimmerToRoster",
+  "rebuildEngagementClubAggregates",
+  "requestEngagementClubSwimmerDeletion",
+  "listEngagementSwimmerDeletionRequests",
+  "resolveEngagementSwimmerDeletionRequest",
+  "previewEngagementClubEntryTimes",
+  "saveEngagementClubSwimmers",
+  "requestEngagementCompetitionDeletion",
+  "resolveEngagementCompetitionDeletionRequest",
+  "resumeCompetitionImportPublication",
+  "deleteCompetitionImport",
+  "updateCompetitionImportRecordAlertDecision",
+  "refreshDtnQualificationCache",
+  "getDtnQualificationOverview",
+  "refreshDtnListingCache",
+  "getDtnListingOverview",
+  "rebuildPerformanceSwimmerIndexNextPage",
+  "rebuildPerformanceTopIndexNextPage",
+  "importHistoricalPerformanceRows",
+  "exportAdditionalPerformanceData",
+  "publishPerformancePublicData",
+  "getPerformanceBaseMigrationStatus",
+  "migratePerformanceBaseNextChunk",
+  "publishPerformanceCorrectionJob",
+  "resumePerformancePublicationJobs",
+  "getPerformancePublicationJobStatus",
+  "retryPerformancePublicationJob",
+  "syncEngagementQualificationTargets",
+  "revalidateEngagementQualificationCache",
+  "requestEngagementQualificationDerogation",
+  "listEngagementQualificationRequests",
+  "resolveEngagementQualificationRequest",
+  "repairEngagementNationalSwimmerMergePublication",
+  "buildDtnQualificationView",
+  "preloadEngagementClubWorkspaces"
+]);
+const retiredNapNames = new Set(NAP_RETIRED_FUNCTIONS);
+function activeLotFunctions(lot) {
+  if (!Object.prototype.hasOwnProperty.call(LOTS, lot)) throw new Error("Lot Firebase inconnu: " + lot);
+  return LOTS[lot].filter(name => !retiredNapNames.has(name));
+}
+
 const METADATA = Object.freeze({
   nap: {
     secrets: ["LIVEPALMES_NAP_PASSWORD"],
@@ -152,4 +203,4 @@ const PUBLICATION_EFFECT_FUNCTIONS = Object.freeze([
   "resumePerformancePublicationJobs"
 ]);
 
-module.exports = { ALL_SAFE_LOTS, LOTS, METADATA, PROJECT_ID, PUBLICATION_EFFECT_FUNCTIONS, TEST_NON_MAIL_FUNCTIONS };
+module.exports = { NAP_RETIRED_FUNCTIONS, activeLotFunctions, ALL_SAFE_LOTS, LOTS, METADATA, PROJECT_ID, PUBLICATION_EFFECT_FUNCTIONS, TEST_NON_MAIL_FUNCTIONS };

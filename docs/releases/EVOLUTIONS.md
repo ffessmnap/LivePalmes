@@ -976,3 +976,11 @@ Antoine precise une lecture directe NAP, sans export a relancer. Run de publicat
 - Antoine ne peut pas modifier IntraNAP ; LivePalmes doit progressivement le remplacer. Les engagements partages sont immediats dans NAP. Les regles supplementaires LivePalmes ne bloquent pas les saisies IntraNAP : controle manuel par Antoine. Anciennes options absentes non renseignees ou desactivees ; engagements existants visibles avec alerte, sans suppression ou correction automatique. Aucun accord de structure deduit.
 - Diagnostic prive etendu aux quatre tables winpalme_* deja presentes dans le catalogue. Liste fixe de 24 tables, cinq requetes de metadonnees, plafonds 400 colonnes et 200 elements d'index, refus de depassement. Aucune ligne sportive lue ni ecriture NAP. Objectif : eviter des tables de programme en doublon.
 - Diagnostic precedent #129 : CI 37475685373, backend TEST 37476130996 et lecture 37476515774 reussis ; 20 tables, 198 colonnes, 52 elements d'index. Inventaire local de revue remis, schema final d'extensions encore a presenter.
+
+### Stabilisation des publications apres bascule NAP — 11 octobre 2026
+
+- Demande d'Antoine : suivre la recommandation de nettoyage avant les prochaines evolutions.
+- 41 fonctions sans effet ou refusees en mode NAP exclues des selections des lots et du circuit commun ; declarations, fonctions deployees et donnees historiques conservees. Aucun DELETE distant.
+- Service de qualification Firestore historique initialise a la demande, avec instance reutilisee et callbacks inchanges, pour reduire les dependances communes au demarrage.
+- Ecran historique des demandes de suppression : aucun appel aux anciens endpoints en mode NAP (zero lecture/ecriture supplementaire a l'ouverture et au rafraichissement). Parcours hors NAP conserve.
+- Tests hors ligne : gardes des 41 fonctions, conservation des services actifs, initialisation differee, absence d'appel UI et regression des empreintes. CI et TEST commun a confirmer ; aucune validation utilisateur ni publication PROD revendiquee.
