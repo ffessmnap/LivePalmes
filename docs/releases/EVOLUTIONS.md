@@ -2,6 +2,15 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 11 octobre — Demandes d'accès des nouveaux clubs raccordées à NAP
+
+- Antoine autorise la correction et sa vérification sur TEST avant PROD, ainsi que la poursuite de l'audit avant tout nettoyage Firebase. Aucune suppression ni création de club réel pour les essais.
+- La recherche par numéro fédéral lit uniquement NAP, avec l'index existant et au plus deux lignes. Les doublons NAP bloquent sans repli vers Firebase. La validation nationale réutilise la création NAP existante, sa sauvegarde préalable et sa reprise idempotente ; le compte reçoit l'identifiant natif du club.
+- Les deux fonctions de demande/validation reçoivent le secret NAP en plus de leurs liaisons mail existantes. Aucune modification de droits ni de schéma. Comptes, demandes et traces techniques restent dans Firebase.
+- Budget ajouté : une requête indexée par recherche ; lors d'une création, une lecture de reçu technique, une recherche bornée puis le circuit natif existant (au plus sept appels SQL et un INSERT). Aucun scan sportif Firestore, aucun N+1. La limitation des demandes publiques précède la recherche NAP.
+- Tests hors ligne : numéro fédéral conservé comme chaîne, région Corse, absence, doublons, panne sans repli, création et reprise sans deuxième INSERT, reçu incertain et liaisons de secrets. Vérification globale et TEST commun en cours ; aucune validation utilisateur déclarée.
+
+
 ### 11 octobre — Sauvegarde PROD compatible avec la liaison NAP existante
 
 - Antoine autorise explicitement la correction du contrôle de sauvegarde et la reprise pour le même candidat applicatif `0efa4fe6`. Le run `38126986988` s'est arrêté avant chiffrement et avant toute publication ; PROD reste `1df545a6`.
