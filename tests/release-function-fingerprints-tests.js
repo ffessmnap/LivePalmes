@@ -175,3 +175,25 @@ const current=fromGit(root,currentSha);
 assert.equal(current.mode,"dependency-closure");
 assert.ok(!current.commonDeclarations.includes("engagementClubAccessContext"),"Club callback still shared at initialization");
 console.log("Backend courant : contexte club absent des dependances communes au demarrage.");
+
+// Retirement-only changes must not force republication of unchanged handlers.
+const { retirementRegistrySignature } = require("../tools/release-function-fingerprints");
+const cp = require("node:child_process");
+const lotBefore = cp.execFileSync("git", ["show", "25221188f57c1d80ed0f4055b1d4ba30c1bb462d:tools/firebase-test-backend-lots.js"], {cwd:root,encoding:"utf8"});
+const lotAfter = cp.execFileSync("git", ["show", "5eb876129f3198749f9468da4f681dda2cc7a9d9:tools/firebase-test-backend-lots.js"], {cwd:root,encoding:"utf8"});
+assert.equal(retirementRegistrySignature(lotBefore), retirementRegistrySignature(lotAfter));
+const registryBefore = fromGit(root, "25221188f57c1d80ed0f4055b1d4ba30c1bb462d");
+const registryAfter = fromGit(root, "5eb876129f3198749f9468da4f681dda2cc7a9d9");
+assert.deepEqual(registryBefore.functions, registryAfter.functions);
+for (const changed of [
+  lotAfter.replace('TLS obligatoire', 'TLS change'),
+  lotAfter.replace('return LOTS[lot].filter', 'return LOTS.other.filter'),
+  lotAfter.replace('roles/datastore.user', 'roles/owner'),
+  lotAfter.replace('"getCurrentAccessUser", "createOrUpdateAccessUser"', '"getCurrentAccessUser", "anotherHandler"')
+]) { assert.notEqual(changed, lotAfter); assert.notEqual(retirementRegistrySignature(changed), retirementRegistrySignature(lotAfter)); }
+for (const unsafe of [
+  lotAfter.replace('"listEngagementNationalClubSwimmers",\n  "getEngagementNationalAdministrationOverview"', 'dynamicName,\n  "getEngagementNationalAdministrationOverview"'),
+  lotAfter + '\nconsume(NAP_UNUSED_FUNCTIONS);',
+  lotAfter.replace('new Set([...NAP_RETIRED_FUNCTIONS, ...NAP_UNUSED_FUNCTIONS])', 'new Set(compute())')
+]) { assert.notEqual(unsafe, lotAfter); assert.equal(retirementRegistrySignature(unsafe), unsafe); }
+console.log("Listes de retrait : aucune republication des handlers inchanges ; metadonnees, algorithme, droits et syntaxe inconnue restent conservateurs.");
