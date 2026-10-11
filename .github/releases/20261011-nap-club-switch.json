@@ -1,0 +1,20 @@
+{
+  "schema": 1,
+  "candidate": "0efa4fe6a82e41dd7fc64e17d00f339bb87b98ec",
+  "productionCommit": "1df545a62de67a24ff32ca4d1046cce4be6d499f",
+  "productionHosting": "sites/livepalmes/versions/3bf45b0219704519",
+  "testRun": 38090360085,
+  "changes": [
+    {
+      "validation": "Antoine : ah oui ok, si tout est bon en test tu peux pousser en prod. Controle technique CNHC -> PAN -> CNHC reussi ; run TEST commun 38090360085 termine en succes pour le commit exact.",
+      "title": "Changement de club actif raccorde a NAP",
+      "status": "validated",
+      "paths": [
+        "functions/index.js",
+        "functions/nap-club-directory.js"
+      ]
+    }
+  ],
+  "excludedBackendReview": "Correction du contexte club et des deux anciens chemins Firebase desactives en mode NAP. Le repli large vient du callback clubAccess conserve dans createQualificationService, sans execution a initialisation. Aucun changement de logique, de configuration, de secret ni de programmation des notifications, du lecteur public ou des deux traitements DTN exclus. Ces fonctions restent aux revisions PROD prouvees et sont controlees inchangees. Aucune suppression Firebase ni modification de donnees, aucun envoi. Mails automatiques conserves desactives, sans rattrapage.",
+  "initialAutomaticMailEnabled": false
+}
