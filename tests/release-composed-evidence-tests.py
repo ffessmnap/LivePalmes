@@ -54,8 +54,10 @@ class EvidenceTests(unittest.TestCase):
                 with patch.object(m,'git',return_value=raw.strip()),patch.object(m,'run',return_value='["retired"]'):
                     return m.apply_cleanup_evidence(root,state,12)
             self.assertEqual(apply(proof)['functions'],[two])
+            reordered=copy.deepcopy(proof);reordered['steps'][0]['before'].reverse()
+            self.assertEqual(apply(reordered)['functions'],[two])
             with self.assertRaises(ValueError): apply(proof,'0'*64)
-            for key,value in [('before',[two]),('after',[dict(two,revision='changed')]),('deleted',[two['name']]),('backupVerified',False),('hosting',dict(hosting,version='wrong')),('napWrites',1)]:
+            for key,value in [('before',[two]),('before',[one,one,two]),('after',[two,two]),('after',[dict(two,revision='changed')]),('deleted',[two['name']]),('backupVerified',False),('hosting',dict(hosting,version='wrong')),('napWrites',1)]:
                 wrong=copy.deepcopy(proof);wrong['steps'][0][key]=value
                 with self.assertRaises(ValueError):apply(wrong)
             wrong=copy.deepcopy(proof);wrong['productionRun']=13

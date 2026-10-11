@@ -550,14 +550,19 @@ def apply_cleanup_evidence(root, state, production_run):
                 and re.fullmatch(r'[0-9a-f]{64}', step.get('backupSha256', ''))
                 and step.get('napWrites') == 0 and step.get('mailSends') == 0, 'Nettoyage non verifie')
         require(step.get('hosting') == {k: state['hosting'][k] for k in ['version', 'message']}, 'Hosting modifie par nettoyage')
-        require(step.get('before') == state['functions'], 'Etat avant nettoyage different de la preuve PROD')
+        before = step.get('before', [])
+        after = step.get('after', [])
+        require(len({f['name'] for f in before}) == len(before)
+                and sorted(before, key=lambda f: f['name']) == state['functions'],
+                'Etat avant nettoyage different de la preuve PROD')
         deleted = step.get('deleted', [])
         require(deleted and len(deleted) == len(set(deleted))
                 and all(n.startswith('projects/livepalmes/locations/europe-west1/functions/')
                         and n.split('/')[-1] in allowed for n in deleted)
                 and set(deleted).issubset({f['name'] for f in state['functions']}), 'Suppressions historiques interdites')
         remaining = [f for f in state['functions'] if f['name'] not in deleted]
-        require(step.get('after') == remaining, 'Autre modification pendant nettoyage')
+        require(len({f['name'] for f in after}) == len(after)
+                and sorted(after, key=lambda f: f['name']) == remaining, 'Autre modification pendant nettoyage')
         state = {**state, 'functions': remaining}
     write(root / 'production-cleanup-proof.json', proof)
     return state
