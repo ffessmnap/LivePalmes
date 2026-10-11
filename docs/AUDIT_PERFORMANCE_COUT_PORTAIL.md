@@ -2,7 +2,13 @@
 
 <!-- description: Synthèse des lectures Firestore du portail LivePalmes, optimisations appliquées et procédure sûre de mise en service. -->
 
-## Résultat cible
+## État après bascule NAP — 11 octobre 2026
+
+Le contenu ci-dessous décrit l’ancienne architecture Firestore et reste une archive. Ne pas exécuter son ancien ordre de mise en service : les reconstructions et déclencheurs sportifs historiques ont été retirés. Comptes, réglages techniques et LivePalmes Direct restent distincts.
+
+Le suivi actuel est dans `docs/OPTIMISATION_NAP.md`. Les budgets SQL sont distingués des lectures techniques Firestore et des lignes réellement examinées par MySQL.
+
+## Résultat cible historique
 
 Le parcours quotidien d'un club repose sur des documents agrégés et des appels bornés. Les filtres d'affichage restent locaux, les actions rapprochées sont regroupées et les calculs lourds ne bloquent plus l'interface.
 

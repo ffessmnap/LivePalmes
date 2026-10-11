@@ -64,6 +64,11 @@ const { readCompetitionResults } = require("../functions/nap-direct-competition-
   assert.equal(missingPerson.swimmerId, "");
   assert.equal(queries.length, 5);
   assert.deepEqual(queries[2].values, [168]);
+  assert.deepEqual(queries[3].values, [168, "100SF"]);
+  assert.match(queries[3].query.sql, /p.course IN \(\?\)/);
+  assert.ok(!queries[2].query.sql.includes("course IN"), "Safety count still covers the entire participant history");
+  const oversized = { execute: async (query, values) => query.sql.includes("COUNT(*)") ? [[{count:100001}]] : resultPool.execute(query, values) };
+  assert.equal((await readCompetitionResults(oversized, 2)).markersAvailable, false, "Course filter must never bypass the global history safety ceiling");
   const changed = { execute: async (query, values) => {
     const [rows] = await resultPool.execute(query, values);
     return [query.sql.includes("p.nageur IN") ? rows.map(row => ({ ...row, tps: "013000" })) : rows];

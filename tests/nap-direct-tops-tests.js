@@ -17,6 +17,12 @@ function raw(id, swimmer, tps, date = "2020-01-01") {
   assert.throws(() => top.filters({ ...input, limit: 2001 }), TypeError);
   assert.equal(top.filters({ ...input, season: "207" }).season, "207");
   assert.equal(top.filters({ ...input, birthYear: "0000" }).birthYear, "0000");
+  const deferred = top.queryFor(input);
+  assert.match(deferred.sql, /FROM \(SELECT .* LIMIT 5001\) q LEFT JOIN clubs cp/);
+  assert.match(deferred.sql, /ORDER BY CAST\(TRIM\(q.tps\) AS UNSIGNED\), q.date, q.id$/);
+  const facet = top.queryFor(input, true);
+  assert.ok(!facet.sql.includes("JOIN clubs"), "Birth years without regional filter need no club lookup");
+  assert.ok(!query.sql.includes(") q LEFT JOIN clubs"), "Regional selection retains club predicates before LIMIT");
   let records = [raw(1, 168, "14200"), raw(2, 168, "014200", "2019-01-01"), raw(3, 169, "10000"), raw(4, 170, "11000")];
   let reads = 0;
   const pool = { execute: async query => { reads++; return query.sql.startsWith("SELECT COUNT") ? [[{ rowCount: 100 }]] : [records]; } };

@@ -26,7 +26,11 @@ async function readCompetitionResults(pool, input) {
     const counted = await execute(pool, `SELECT COUNT(*) AS count FROM (SELECT nageur FROM perfs FORCE INDEX (nageur) WHERE nageur IN (${placeholders}) LIMIT ${MAX_HISTORY_ROWS + 1}) bounded`, participants);
     markersAvailable = Number(counted[0]?.count) <= MAX_HISTORY_ROWS;
     if (markersAvailable) {
-      const history = await execute(pool, `SELECT STRAIGHT_JOIN ${PROJECTION} FROM perfs p FORCE INDEX (nageur) JOIN competitions c ON c.id=p.compet JOIN nageurs n ON n.id=p.nageur WHERE ${visiblePerformanceSql()} AND p.nageur IN (${placeholders}) LIMIT ${MAX_HISTORY_ROWS + 1}`, participants);
+      // Keep the original all-history safety count, but transfer only courses
+      // displayed in this competition. Other courses cannot affect its PB/SB.
+      const courses = [...new Set(rows.map(row => String(row.course || "")))];
+      const coursePlaceholders = courses.map(() => "?").join(",");
+      const history = await execute(pool, `SELECT STRAIGHT_JOIN ${PROJECTION} FROM perfs p FORCE INDEX (nageur) JOIN competitions c ON c.id=p.compet JOIN nageurs n ON n.id=p.nageur WHERE ${visiblePerformanceSql()} AND p.nageur IN (${placeholders}) AND p.course IN (${coursePlaceholders}) LIMIT ${MAX_HISTORY_ROWS + 1}`, [...participants, ...courses]);
       if (history.length > MAX_HISTORY_ROWS) markersAvailable = false;
       else for (const row of history) {
         const performance = performanceRow(row, personFor(row));
