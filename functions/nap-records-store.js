@@ -49,8 +49,8 @@ async function publish(pool,input,actor){
     if(pointer.length!==1)throw new TypeError("Reference Records/MPF absente.");
     const previous=await query(connection,"SELECT revision,payload,payload_sha256,actor_uid FROM livepalmes_records_versions FORCE INDEX (operation_id) WHERE operation_id=? LIMIT 1",[input.operationId]);
     if(previous.length){
-      const result=unpack(previous),saved={...result.data};delete saved.updatedBy;delete saved.updatedByEmail;
-      const retried={...proposed};delete retried.updatedBy;delete retried.updatedByEmail;
+      const result=unpack(previous),saved={...result.data};delete saved.updatedBy;delete saved.updatedByEmail;delete saved.updatedAt;
+      const retried={...proposed};delete retried.updatedBy;delete retried.updatedByEmail;delete retried.updatedAt;
       if(previous[0].actor_uid!==actor.uid || hash(saved)!==hash(retried)||result.revision!==input.expectedRevision+1)throw new TypeError("Operation Records/MPF incompatible.");
       await connection.commit();transaction=false;
       return {...result,replayed:true};
@@ -58,8 +58,8 @@ async function publish(pool,input,actor){
     if(Number(pointer[0].revision)!==input.expectedRevision)throw new TypeError("Un autre gestionnaire a publie. Rechargez les Records/MPF avant de recommencer.");
     const revision=input.expectedRevision+1;
     if(!Number.isSafeInteger(revision))throw new RangeError("Version Records/MPF hors limite.");
-    // Keep the proposed publication date stable across retries, but attribute it on the server.
-    const data=validate({...proposed,updatedBy:actor.uid,updatedByEmail:String(actor.email||"")});
+    // Generate attribution/date once on the server; replay returns that exact saved version.
+    const data=validate({...proposed,updatedAt:new Date().toISOString(),updatedBy:actor.uid,updatedByEmail:String(actor.email||"")});
     await query(connection,"INSERT INTO livepalmes_records_versions (revision,operation_id,payload,payload_sha256,created_at,actor_uid,source) VALUES (?,?,?,?,UTC_TIMESTAMP(6),?,?)",[revision,input.operationId,JSON.stringify(data),hash(data),actor.uid,"portal"]);
     const changed=await query(connection,"UPDATE livepalmes_records_current SET revision=?,updated_at=UTC_TIMESTAMP(6) WHERE id=1 AND revision=? LIMIT 1",[revision,input.expectedRevision]);
     if(changed.affectedRows!==1)throw new TypeError("La version active a change.");

@@ -26,6 +26,7 @@ function fake({revision=1,failUpdate=false,prior=null}={}){
   const publicRead=await store.read(fake());assert.equal(publicRead.data.recordHistory,undefined);assert.equal(publicRead.data.updatedByEmail,undefined);
   const input={expectedRevision:1,operationId:"11111111-1111-4111-8111-111111111111",data};
   const pool=fake();const result=await store.publish(pool,input,{uid:"admin",email:"actor@example.test"});assert.equal(result.revision,2);assert.equal(result.data.updatedBy,"admin");assert.equal(pool.state().committed,true);assert.equal(pool.state().released,true);
+  assert.notEqual(result.data.updatedAt,data.updatedAt);assert.ok(Number.isFinite(Date.parse(result.data.updatedAt)));
   const conflict=fake({revision:2});await assert.rejects(()=>store.publish(conflict,input,{uid:"admin"}),/gestionnaire/);assert.equal(conflict.state().saved,null);assert.equal(conflict.state().rolledBack,true);
   const failed=fake({failUpdate:true});await assert.rejects(()=>store.publish(failed,input,{uid:"admin"}),/version active/);assert.equal(failed.state().committed,false);assert.equal(failed.state().rolledBack,true);
   const retry=fake({revision:2,prior:pool.state().saved});const replay=await store.publish(retry,input,{uid:"admin"});assert.equal(replay.replayed,true);assert.equal(retry.state().saved,null);
