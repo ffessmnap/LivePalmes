@@ -199,6 +199,10 @@ Le titre reste le point focal. Les boutons du bandeau sont translucides, bordés
 
 L’accueil emploie une grande zone de marque puis une grille statique de deux cartes thématiques : performances et calendrier fédéral. Chaque carte combine une icône, un titre, une description courte et un groupe d’actions. Les descriptions utilisent une graisse moyenne afin de réserver le gras soutenu aux titres et aux actions. L’accueil ne recherche pas de compétition en direct et ne charge aucune donnée Firestore. Un bandeau secondaire placé sous cette grille oriente les clubs et responsables fédéraux vers le Portail LivePalmes sans le confondre avec les rubriques publiques. Il reste horizontal sur ordinateur et empile son texte puis son bouton pleine largeur sous `920 px`.
 
+### Fiches du calendrier public
+
+Les informations pratiques masquent « Bassin » et « Lignes d’eau » pour les compétitions eau libre, les réunions et les formations, même si la source fournit ces valeurs. Les compétitions piscine conservent ces champs lorsqu’ils sont renseignés. Cette règle concerne uniquement la présentation, sans modification des données source.
+
 ### Consoles
 
 Sur grand écran, la structure principale est une grille composée d’une barre latérale de `260–340 px` et d’une zone de travail flexible. La barre latérale peut rester fixe pendant le défilement. Sous `1040 px`, la structure passe sur une seule colonne.

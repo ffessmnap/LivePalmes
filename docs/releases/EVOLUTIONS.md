@@ -2,6 +2,11 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 12 octobre — Informations de bassin pertinentes dans le calendrier
+
+- Demande d'Antoine : ne pas afficher le type de bassin ni le nombre de lignes pour l'eau libre, les réunions et les formations, champs obligatoires mais non pertinents dans INTRANAP.
+- Masquage des deux lignes uniquement dans la fiche publique pour les types openWater, meeting et training ; compétitions piscine et autres types inchangés. Données source, lectures, backend, droits et mails inchangés ; zéro appel supplémentaire. Version du script renouvelée.
+- Tests ciblés : données importées présentes mais champs masqués pour chacun des trois types, conservation en piscine et absence sans valeur. Recette mobile/ordinateur, contrôles complets et publication TEST Hosting seul à attester. Aucune validation utilisateur de la version publiée encore déclarée.
 ### 12 octobre — Publication des retouches visuelles sans backend
 
 - Demande explicite : examiner et corriger le circuit pour publier seulement les retouches visuelles sur TEST, sans NAP, droits ni mails. Retouches intégrées par #258, commit `e9bba081` ; tests complets et aperçu isolé réussis (`38243326079`). Le contrôle sans déploiement `38243607108` a proposé 103 fonctions et refusé le backend ; aucun Hosting commun ni backend publié par ce contrôle.
