@@ -233,9 +233,11 @@ def test_selection(directory, candidate):
     write(root / 'test-before.json', before)
     write(root / 'test-selection.json', selected)
     write(root / 'test-selection-reasons.json', reasons)
-    output(backend=str(bool(selected)).lower())
     print(f'Functions TEST a publier : {len(selected)} / {len(safe)} ; revisions prouvees : {len(trusted)}.')
     print('Selection : ' + (', '.join(selected) or 'aucune'))
+    require(os.environ.get('HOSTING_ONLY') != 'true' or not selected,
+            'Hosting seul refuse : backend different ou sans preuve ; aucun deploiement autorise')
+    output(backend=str(bool(selected)).lower())
 
 
 def backend_proof(directory, selector):

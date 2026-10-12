@@ -380,7 +380,7 @@ function fromGit(root, sha) {
     const name = line.split("\t")[1];
     return name === "tools/firebase-test-backend-lots.js"
       ? name + ":" + hash(retirementRegistrySignature(git(["show", sha + ":" + name]))) : line;
-  });
+  }).sort(); // Normalize before sorting: a selection-only blob hash must not reorder the common signature.
   return fingerprints(source, tree, files);
 }
 module.exports = { fingerprints, fromGit, retirementRegistrySignature };
