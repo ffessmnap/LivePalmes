@@ -175,10 +175,7 @@ Scripts et styles principaux :
 - `performances/public/styles.css`
 - `performances/public/import-competitions.css`
 
-Donnees publiques :
-
-
-Attention : ce dossier contient beaucoup de fichiers generes. Ce volume est normal.
+Les performances publiques (TOP et fiches nageurs) sont lues depuis NAP. Les anciens exports sportifs statiques ont été retirés ; `performances/public/reference.js` conserve seulement les libellés et l'ordre des courses/catégories. Les générateurs historiques utiles aux tests hors ligne sont conservés avec une sortie explicite hors publication. Aucun effacement des copies distantes n'accompagne ce nettoyage.
 
 ## 5. Technique et maintenance
 
