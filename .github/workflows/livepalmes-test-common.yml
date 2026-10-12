@@ -22,6 +22,11 @@ run-name: ${{ inputs.verification_only && 'Verification TEST sans deploiement' |
         required: true
         type: boolean
         default: false
+      hosting_only:
+        description: Publier seulement Hosting ; refuser toute selection backend non vide
+        required: true
+        type: boolean
+        default: false
 permissions:
   contents: read
   actions: read
@@ -37,6 +42,7 @@ jobs:
     env:
       CANDIDATE_SHA: ${{ github.sha }}
       TARGET_FIREBASE_PROJECT: livepalmes-test
+      HOSTING_ONLY: ${{ inputs.hosting_only }}
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
     - uses: actions/checkout@v7
@@ -104,16 +110,16 @@ jobs:
       id: selection
       run: python tools/release-cycle.py test-selection "$RUNNER_TEMP" .
     - name: Preparer le backend TEST
-      if: steps.selection.outputs.backend == 'true' && !inputs.verification_only
+      if: steps.selection.outputs.backend == 'true' && !inputs.verification_only && !inputs.hosting_only
       run: 'python tools/release-cycle.py stage . livepalmes-test "$RUNNER_TEMP/.firebase-test-functions" "$CANDIDATE_SHA"
 
         npm ci --prefix "$RUNNER_TEMP/.firebase-test-functions/functions"'
     - name: Simuler les Functions TEST
-      if: steps.selection.outputs.backend == 'true' && !inputs.verification_only
+      if: steps.selection.outputs.backend == 'true' && !inputs.verification_only && !inputs.hosting_only
       run: python tools/release-cycle.py batches livepalmes-test . "$RUNNER_TEMP/.firebase-test-functions" "$RUNNER_TEMP/test-selection.json"
         dry-run
     - name: Publier et controler les Functions TEST
-      if: steps.selection.outputs.backend == 'true' && !inputs.verification_only
+      if: steps.selection.outputs.backend == 'true' && !inputs.verification_only && !inputs.hosting_only
       run: python tools/release-cycle.py batches livepalmes-test . "$RUNNER_TEMP/.firebase-test-functions" "$RUNNER_TEMP/test-selection.json"
         deploy
     - name: Controler le backend TEST et les Functions conservees

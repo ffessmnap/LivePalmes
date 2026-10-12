@@ -188,6 +188,13 @@ assert.equal(retirementRegistrySignature(recordsRetired), retirementRegistrySign
 const registryBefore = fromGit(root, "25221188f57c1d80ed0f4055b1d4ba30c1bb462d");
 const registryAfter = fromGit(root, "5eb876129f3198749f9468da4f681dda2cc7a9d9");
 assert.deepEqual(registryBefore.functions, registryAfter.functions);
+// The RF/MPF retirement changed the raw blob's position among common files.
+// Compare the full real fingerprints, not only the normalized registry text.
+assert.deepEqual(
+  fromGit(root, "b0020e51ebd6e686054efd3451882dd2c1d60d94").functions,
+  fromGit(root, "e9bba081c41d1375ea0071f1ca24997402f39be4").functions,
+  "Retirement-only blob reordering must not select any backend function"
+);
 for (const changed of [
   lotAfter.replace('TLS obligatoire', 'TLS change'),
   lotAfter.replace('return LOTS[lot].filter', 'return LOTS.other.filter'),
