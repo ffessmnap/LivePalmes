@@ -22,9 +22,15 @@ class HttpsError extends Error { constructor(code, message) { super(message); th
   for (const name of ["getCurrentAccessUser","syncOfficialResultToPublicIndex","storeCompetitionPdf","savePerformanceCorrection","createCompetitionImport","getDtnSeasonOverview"]) assert.ok(active.includes(name), name);
   assert.ok(!active.includes("syncPublicRecordsData"));
   assert.ok(handlers.has("syncPublicRecordsData"), "Declaration conservée pour le retour arrière");
+  const removedCalendar = new Set(["rebuildEngagementCompetitionCalendars", "syncEngagementCompetitionToCalendar", "syncEngagementCalendarEventToCalendar"]);
   for (const name of NAP_RETIRED_FUNCTIONS) {
     assert.ok(Object.values(LOTS).flat().includes(name), "Compatibility registration retained: " + name);
     const node = handlers.get(name);
+    if (removedCalendar.has(name)) {
+      assert.equal(node, undefined, "Calendar declaration must remain absent: " + name);
+      assert.ok(!active.includes(name));
+      continue;
+    }
     assert.ok(node, name);
     const sandbox = { ENVIRONMENT:{sportingDataSource:"nap"}, HttpsError, Date,
       assertCapability:()=>{}, engagementAccessContext:async()=>({national:true}),
@@ -60,5 +66,5 @@ class HttpsError extends Error { constructor(code, message) { super(message); th
   const ui={global:{LivePalmesEnvironment:{sportingDataSource:"nap"}},callFunction:()=>{calls++;throw Error("Legacy endpoint called");},updateEngagementDeletionRequestBadge:n=>{badge=n;},renderEngagementDeletionRequests:()=>{renders++;}};
   vm.runInNewContext("let engagementDeletionRequests,engagementDeletionRequestsLoaded;\n"+portal.slice(loader.start,loader.end)+"\nthis.load=loadEngagementDeletionRequests;",ui);
   await ui.load({force:true});assert.equal(calls,0);assert.equal(renders,1);assert.equal(badge,0);
-  console.log("NAP release cleanup: 41 retired handlers inert, active services retained, lazy compatibility service and native UI zero-call path verified offline.");
+  console.log("NAP release cleanup: three calendar declarations absent, 38 retained handlers inert, active services and native UI zero-call path verified offline.");
 })().catch(error=>{console.error(error);process.exitCode=1;});
