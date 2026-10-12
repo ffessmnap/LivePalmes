@@ -1,4 +1,24 @@
 (function attachLivePalmesPublicRecordsSource(global) {
+  let nativeLoaded = false;
+  let pendingLoad = null;
+  const usesNap = () => global.LivePalmesEnvironment?.sportingDataSource === "nap";
+  function load() {
+    if (!usesNap()) return Promise.resolve(global.LIVEPALMES_RECORDS);
+    if (pendingLoad) return pendingLoad;
+    const url = new URL(global.LivePalmesEnvironment.napReaderUrl);
+    url.searchParams.set("action", "records");
+    pendingLoad = global.fetch(url.href, { cache: "no-store", signal: global.AbortSignal?.timeout?.(10000) })
+      .then(async response => {
+        if (!response.ok) throw new Error("Référence RF/MPF NAP indisponible.");
+        const result = await response.json();
+        if (result.source !== "nap" || !Array.isArray(result.data?.records) || !Array.isArray(result.data?.franceRecords)) throw new Error("Référence RF/MPF NAP invalide.");
+        global.LIVEPALMES_RECORDS = result.data;
+        nativeLoaded = true;
+        return result.data;
+      }).catch(error => { nativeLoaded = false; throw error; })
+      .finally(() => { pendingLoad = null; });
+    return pendingLoad;
+  }
   const CATEGORY_LABELS = {
     P: "Poussin",
     B: "Benjamin",
@@ -13,6 +33,7 @@
   }
 
   function sourceRows(source = global.LIVEPALMES_RECORDS) {
+    if (usesNap() && !nativeLoaded) return [];
     if (!source) return [];
     return [
       ...(Array.isArray(source.franceRecords) ? source.franceRecords : []),
@@ -86,7 +107,7 @@
 
   function mergeIntoLiveData(data = {}, source = global.LIVEPALMES_RECORDS) {
     const records = toConsoleRecords(source);
-    if (!records.length) return data || {};
+    if (!records.length && !usesNap()) return data || {};
     return {
       ...(data || {}),
       records,
@@ -100,6 +121,7 @@
   }
 
   global.LivePalmesPublicRecordsSource = {
+    load,
     mergeIntoLiveData,
     toConsoleRecords
   };
