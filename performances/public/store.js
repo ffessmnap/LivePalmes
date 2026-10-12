@@ -114,7 +114,7 @@
   }
   async function loadNapRecords(options) {
     let result;
-    if (options?.administration === true) result = await napCall("getNapRecordsAdministration");
+    if (options?.administration === true) result = await napCall("getNapPerformanceAdministration", { recordsAction: "read" });
     else {
       const url = new URL(global.LivePalmesEnvironment.napReaderUrl);
       url.searchParams.set("action", "records");
@@ -158,7 +158,7 @@
       const sportingContent = value => JSON.stringify([value.records, value.franceRecords, value.filters, value.cutoffDate, value.generatedAt]);
       if (pendingNapPublication && sportingContent(pendingNapPublication.data) !== sportingContent(data)) throw new Error("Une publication reste à vérifier. Rechargez avant de modifier le brouillon.");
       if (!pendingNapPublication) pendingNapPublication = { expectedRevision: napRevision, operationId: global.crypto.randomUUID(), data };
-      const result = await napCall("publishNapRecords", pendingNapPublication);
+      const result = await napCall("savePerformanceCorrection", { ...pendingNapPublication, recordsAction: "publish" });
       napRevision = result.revision;
       pendingNapPublication = null;
       global.LIVEPALMES_RECORDS = result.data;
