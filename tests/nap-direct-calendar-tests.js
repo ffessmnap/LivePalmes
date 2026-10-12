@@ -9,6 +9,13 @@ const { readCompetitionResults } = require("../functions/nap-direct-competition-
   assert.equal(calendar.publicUrl("https://user:pass@example.com/a.pdf"), "");
   assert.equal(calendar.publicUrl("ged/2026/a b.pdf"), "https://nap.ffessm.fr/ged/2026/a%20b.pdf");
   const raw = { id: 2, libelle: "Compétition", date: "2004-02-29", lieu: "Verdun", bassin: 0, chrono: "E", ld: 0, type_label: "Piscine", level_label: "Championnat de Zones", has_results: 1 };
+  const comment = "Adresse\nÉchauffement : 13h\n<script>alert(1)</script>";
+  const sharedComments = calendar.eventFromRow({...raw,comments:comment,description:"Présentation historique"});
+  assert.equal(sharedComments.description,comment);
+  assert.equal(sharedComments.legacyDescription,"Présentation historique");
+  assert.equal(calendar.eventFromRow({...raw,comments:comment,description:comment}).legacyDescription,"");
+  assert.equal(calendar.eventFromRow({...raw,comments:"",description:"Ancien texte"}).legacyDescription,"Ancien texte");
+  assert.match(calendar.SELECT_EVENT,/c\.description,c\.comments/);
   const mapped = calendar.eventFromRow(raw);
   assert.equal(mapped.poolLength, ""); assert.equal(mapped.level, "regional"); assert.equal(mapped.timingType, "electronic");
   assert.equal(mapped.city, "Verdun");

@@ -10,7 +10,7 @@ const { parisDeadline } = require("./nap-paris-time");
 const { fingerprint } = require("./nap-portal-workspaces");
 const schema = require("./nap-approved-portal-schema");
 const SPECS = Object.freeze({
-  competitions: { key: "id", columns: ["id","libelle","lieu","date","enddate","comite","description","bassin","chrono","ld","type"] },
+  competitions: { key: "id", columns: ["id","libelle","lieu","date","enddate","comite","description","comments","bassin","chrono","ld","type"] },
   compet_parametres: { key: "id", columns: ["id","compet","actif","dateactif","date_limit","officiel","nb_lignes","mailtxt","mailjuges","tps_d","tps_f","niveau","saisie","relais"] },
   livepalmes_competition_options: { key: "competition_id", columns: [...schema.tables[0].columns.map(c => c.name), "entry_closed", "event_type"] },
   livepalmes_competition_fees: { key: "competition_id", columns: schema.tables[2].columns.map(c => c.name) },
@@ -34,7 +34,7 @@ function optionalEmail(value) {
 }
 const nativeFields = {
   name: ["competitions","libelle",v => string(v,255,true)], location: ["competitions","lieu",v => string(v,64,true)],
-  date: ["competitions","date",day], endDate: ["competitions","enddate",day], publicDescription: ["competitions","description",v => string(v,3000)],
+  date: ["competitions","date",day], endDate: ["competitions","enddate",day], publicDescription: ["competitions","comments",v => string(v,3000)],
   poolLength: ["competitions","bassin",v => { if (!["", "25", "33", "50"].includes(String(v))) throw new TypeError("Bassin invalide."); return v === "" ? null : Number(v); }],
   timingType: ["competitions","chrono",v => { if (!["", "electronic", "manual"].includes(v)) throw new TypeError("Chronometrage invalide."); return ({electronic:"E",manual:"M"})[v] || null; }],
   poolLaneCount: ["compet_parametres","nb_lignes",v => { if (!Number.isInteger(v) || v !== 0 && (v < 4 || v > 10)) throw new TypeError("Nombre de lignes invalide."); return v; }],

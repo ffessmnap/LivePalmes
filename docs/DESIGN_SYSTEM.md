@@ -203,6 +203,8 @@ L’accueil emploie une grande zone de marque puis une grille statique de deux c
 
 Les informations pratiques masquent « Bassin », « Lignes d’eau » et « Chronométrage » pour les compétitions eau libre, les réunions, les formations et les stages, même si la source fournit ces valeurs. Les compétitions piscine conservent ces champs lorsqu’ils sont renseignés. Cette règle concerne uniquement la présentation, sans modification des données source.
 
+Les commentaires publics du calendrier et du portail partagent le champ `competitions.comments` d’INTRANAP. Les retours à la ligne sont conservés, le texte est échappé. Une ancienne `description` distincte reste visible sous « Présentation existante », sans fusion automatique ni suppression.
+
 ### Consoles
 
 Sur grand écran, la structure principale est une grille composée d’une barre latérale de `260–340 px` et d’une zone de travail flexible. La barre latérale peut rester fixe pendant le défilement. Sous `1040 px`, la structure passe sur une seule colonne.

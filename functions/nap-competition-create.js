@@ -26,7 +26,7 @@ function planCreation(input) {
     competition.lieu=text(event.location||city,64,true);
     const description=String(event.publicDescription||"");
     if(description.length>3000||/[^\u0009\u000a\u000d\u0020-\u00ff]/.test(description+competition.lieu))throw new TypeError("Description ou lieu non compatible avec NAP.");
-    competition.description=description;
+    competition.comments=description;
     return {competition,parameters,calendarExtras:{...require("./nap-calendar-event-details").normalize(event),address:text(event.address||"",300),city:text(event.city,120,true),organizer_label:text(event.organizer||"",160),canceled:event.canceled===true?1:0}};
   }
   return {competition,parameters};

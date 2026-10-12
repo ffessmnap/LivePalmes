@@ -71,7 +71,8 @@
           ${readOnlyItem("Inscription", registration)}
           ${readOnlyItem("Publication", `<span class="admin-calendar-status" data-tone="success">${event.publicationStatus === "published" ? "Publié" : "Non publié"}</span>`)}
           ${readOnlyItem("Statut", canceled)}
-          ${readOnlyItem("Présentation", escapeHtml(event.publicDescription), "admin-calendar-readonly-item--full")}
+          ${readOnlyItem("Commentaires publics", escapeHtml(event.publicDescription), "admin-calendar-readonly-item--full")}
+          ${event.legacyDescription ? readOnlyItem("Présentation existante", escapeHtml(event.legacyDescription), "admin-calendar-readonly-item--full") : ""}
         </dl>
       </section>`;
   }
@@ -91,7 +92,8 @@
       <label>Clôture des inscriptions<input name="entryDeadlineAt" type="datetime-local" value="${escapeHtml(isoToLocalInput(event.entryDeadlineAt))}"></label>
       <label>Lien d’inscription<input name="registrationUrl" type="url" maxlength="500" value="${escapeHtml(event.registrationUrl)}" placeholder="https://..."></label>
       <label class="admin-calendar-event-check"><input name="canceled" type="checkbox" ${event.canceled ? "checked" : ""}> Événement annulé</label>
-      <label class="admin-calendar-event-description">Présentation<textarea name="publicDescription" maxlength="3000" rows="4">${escapeHtml(event.publicDescription)}</textarea></label>
+      <label class="admin-calendar-event-description">Commentaires publics (partagés avec INTRANAP)<textarea name="publicDescription" maxlength="3000" rows="4">${escapeHtml(event.publicDescription)}</textarea></label>
+    ${event.legacyDescription ? `<p class="admin-calendar-event-description" style="white-space:pre-wrap"><strong>Présentation existante conservée</strong><br>${escapeHtml(event.legacyDescription)}</p>` : ""}
     </div></fieldset>`;
   }
 

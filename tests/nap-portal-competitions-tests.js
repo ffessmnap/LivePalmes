@@ -28,13 +28,14 @@ const { SPECS, approvedIndexOperation } = require("../functions/nap-approved-ind
   let authorized = false, calls = [];
   const pool = { execute: async ({sql}, values) => {
     calls.push({sql,values}); assert.ok(sql.startsWith("SELECT ")); assert.match(sql, /LIMIT \d+$/);
-    if (sql.includes("FROM competitions c")) return [[{id:5140,libelle:"Bi fins cup",date:"2026-10-11",enddate:"2026-10-11",ld:0,type_label:"Piscine",level_label:"Régionale",parameter_id:123,actif:1,saisie:1,relais:1,mailtxt:"private@example.test"}]];
+    if (sql.includes("FROM competitions c")) return [[{id:5140,comments:"Horaires INTRANAP",description:"Ancienne présentation",libelle:"Bi fins cup",date:"2026-10-11",enddate:"2026-10-11",ld:0,type_label:"Piscine",level_label:"Régionale",parameter_id:123,actif:1,saisie:1,relais:1,mailtxt:"private@example.test"}]];
     assert.equal(authorized,true,"scope checked before any dependent query");
     if (sql.includes("FROM compet_courses")) return [[{id:1,course:"legacy unknown course",cost:"3",sexe:"F"}]];
     if (sql.includes("FROM courses_swim")) return [[{id:1,course:"50BI",categorie:8,swim:0}]];
     return [[]];
   }};
   const result = await readNativeCompetition(pool, "legacy-nap-5140", event => { assert.equal(event.legacyCompetitionId,"5140"); authorized=true; });
+  assert.equal(result.event.description,"Horaires INTRANAP"); assert.equal(result.nativeSnapshot.competition.comments,"Horaires INTRANAP"); assert.equal(result.event.legacyDescription,"Ancienne présentation");
   assert.equal(result.options,null); assert.equal(result.fees,null); assert.equal(result.courses[0].course,"legacy unknown course"); assert.equal(result.restrictions[0].swim,0);
   assert.equal(result.nativeParameters.saisie,1); assert.equal(result.nativeParameters.cat_d,null); assert.equal(result.detailedProgram,null); assert.equal(calls.length,12);
   assert.ok(!calls.some(c=>c.sql.includes("WHERE group_id IN") || c.sql.includes("WHERE session IN")),"empty sets do not query all children");
