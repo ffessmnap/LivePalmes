@@ -16,6 +16,8 @@ La copie statique RF/MPF et ses outils historiques ont été retirés du dépôt
 
 ## Ancien pipeline
 
+Après inventaire et accord du 12 octobre, les déclarations des trois anciennes fonctions calendrier déjà absentes de TEST/PROD et leurs auxiliaires isolés sont retirés du code. Leurs noms restent dans les exclusions de déploiement. Les 3 587 objets `calendar/` TEST ont été archivés localement avec générations et empreintes vérifiées puis supprimés ; PROD, autres préfixes, documents et PDF restent conservés. Voir `releases/EVOLUTIONS.md` pour la preuve et la recette. Aucun déploiement de fonction n'accompagne ce retrait.
+
 Le lecteur calendrier public utilise exclusivement les actions NAP `calendar-manifest`, `calendar-season`, `competition` et `competition-results`. Les chemins `results/*.json` sont des routes logiques vers NAP, pas des fichiers Storage à supprimer. En cas d'erreur NAP, aucun repli vers Storage n'est effectué.
 
 Pour une recette locale hors ligne, définir `window.LIVEPALMES_PUBLIC_CALENDAR_FIXTURES = true` avant le lecteur, uniquement sur `localhost` ou `127.0.0.1`. Les fixtures sont alors lues sous `/tests/fixtures/public-calendar/` ; aucune URL distante personnalisée n'est acceptée. Sans cette option, localhost conserve le lecteur NAP configuré. L'ancienne option `LIVEPALMES_PUBLIC_CALENDAR_BASE` n'est plus utilisée.

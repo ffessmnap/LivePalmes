@@ -4,14 +4,17 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
 const {
-  ALL_SAFE_LOTS, LOTS, METADATA, PROJECT_ID, PUBLICATION_EFFECT_FUNCTIONS
+  ALL_SAFE_LOTS, LOTS, METADATA, PROJECT_ID, PUBLICATION_EFFECT_FUNCTIONS, NAP_RETIRED_FUNCTIONS
 } = require("./firebase-test-backend-lots");
 
 const root = path.join(__dirname, "..");
 const backend = fs.readFileSync(path.join(root, "functions", "index.js"), "utf8");
 const exported = [...backend.matchAll(/^\s*exports\.([A-Za-z0-9_]+)\s*=\s*on(?:Call|Schedule|DocumentCreated|DocumentUpdated|DocumentWritten|Request)\s*\(/gm)]
   .map((match) => match[1]);
-const classified = Object.values(LOTS).flat();
+// Keep retirement tombstones to prevent reintroduction. Only absent, explicitly
+// retired exports may remain in the historical lot inventory.
+const classified = Object.values(LOTS).flat().filter(name =>
+  exported.includes(name) || !NAP_RETIRED_FUNCTIONS.includes(name));
 
 assert.equal(PROJECT_ID, "livepalmes-test");
 assert.equal(new Set(exported).size, exported.length, "Un export Firebase est déclaré plusieurs fois.");
