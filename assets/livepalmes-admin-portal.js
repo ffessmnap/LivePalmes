@@ -2802,7 +2802,7 @@
   function loadDtnModule() {
     if (dtnModuleLoadPromise) return dtnModuleLoadPromise;
     dtnModuleLoadPromise = loadScriptOnce(
-      "assets/livepalmes-dtn-seasons.js?v=20261009-nap-production-3",
+      "assets/livepalmes-dtn-seasons.js?v=20261012-lots23-1",
       "livepalmes-dtn-qualifications-script"
     ).then(() => global.LivePalmesDtnQualifications?.init?.()).catch((error) => {
       dtnModuleLoadPromise = null;
