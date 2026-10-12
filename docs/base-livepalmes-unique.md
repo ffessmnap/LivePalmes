@@ -1,6 +1,8 @@
 # Base active des performances LivePalmes
 
-<!-- description: Organisation actuelle de la base interne des performances, de son journal de modifications et de ses index. -->
+<!-- description: Historique avant bascule : Ancienne base active Firestore des performances. Voir NAP_REFERENCE.md pour le fonctionnement actuel. -->
+
+> **Archive historique — 12 octobre 2026.** Ce document décrit une étape antérieure, pas le fonctionnement actuel. Les affirmations « actuel », « à faire », « TEST seulement » et les commandes ci-dessous sont datées. Ne pas relancer copie Firebase, migration ou reconstruction sportive sur cette base. Voir [la référence NAP actuelle](NAP_REFERENCE.md) et [la procédure de publication](releases/PROCEDURE.md).
 
 ## Rôle de la base
 

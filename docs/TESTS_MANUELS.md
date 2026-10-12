@@ -2,6 +2,23 @@
 
 <!-- description: Checklist de tests manuels à exécuter avant une publication ou après une modification sensible. -->
 
+## Recette actuelle NAP — à lire avant les scénarios historiques
+
+TEST partage la vraie base NAP. Les scénarios d'écriture ci-dessous ne sont pas autorisés par une simple vérification : exiger accord spécifique, données ciblées et sauvegarde. Ne pas déclencher recalcul DTN, import, fusion, suppression ou mail pour un contrôle de lecture. Les scénarios Direct restent distincts et inchangés.
+
+1. Lecture : connexion/session, recherche de région/club à la demande d'accès, changement de club de session, effectifs actifs/inactifs et licence alphanumérique, calendrier public/portail, fiche et documents/protocoles, résultats, TOP et fiche nageur. Vérifier la source NAP sans secours vers les anciens agrégats sportifs.
+2. Licences (jeu autorisé ou tests hors ligne) : CSV tous/non validés ; numéro vide et lettres/tirets ; validation par saison ; lot avec fiche bloquée en doublon et fiche admissible. Seules les fiches réellement enregistrées passent à « validé », les autres restent signalées. Licence obligatoire à la création, ne pas imposer ce choix aux engagements existants.
+3. Compétitions/engagements (jeu autorisé) : périmètres région/national, verrouillage régional dès le lendemain sauf documents ; fermeture commune ; trois modes des temps NAP, grille active automatique, limites de naissance inclusives, résultat préalable dans au moins une compétition ; relais, officiels, chef d'équipe, PDF individuel/ZIP et TXT piscine.
+4. Résultats (jeu autorisé ou tests hors ligne) : TXT WinPalme, aperçu/remplacement avec retraits explicites, refus d'état concurrent, points importés, statuts sans temps sportif, lignes vides signalées ; temps/club sur résultat et date/lieu sur compétition ; masquage et suppression définitive nationale distincts.
+5. DTN : ouverture des trois dispositifs et actualisation d'affichage sans changer la date de calcul. Recalcul uniquement sur demande métier explicite, jamais pour un smoke test.
+6. Mails : lire le réglage national sans le changer ; vérifier hors ligne la coupure et l'absence de rattrapage. Aucun envoi réel sans autorisation. TEST redirige les notifications automatiques vers l'adresse de test prévue. Ne pas supposer que la coupure automatique bloque aussi les mails de compte/sécurité ou les envois manuels.
+7. Publication : preuves exactes et inventaires, sauvegarde du code chiffrée rouverte/vérifiée, rollback du code, mails selon réglage autorisé. Ne pas assimiler cette sauvegarde à celle de NAP. Voir [PROCEDURE.md](releases/PROCEDURE.md).
+
+Reportés : validation du TXT eau libre dans WinPalme ; import Excel international hors première mise en production. Les Records/MPF gardent leur propre recette Firebase/statique.
+
+**Les anciens scénarios portail ci-dessous restent une bibliothèque UI, pas une prescription de stockage.** Les mentions d'index sportifs Firestore à reconstruire, fichiers TOP sources DTN, finalisation d'anciennes publications ou agrégats d'engagements sont obsolètes : les remplacer par les contrôles NAP ci-dessus. Ne pas lancer leurs anciennes commandes pour la recette actuelle.
+
+
 Cette checklist sert avant une publication importante ou apres une modification sensible.
 
 ## Test rapide obligatoire

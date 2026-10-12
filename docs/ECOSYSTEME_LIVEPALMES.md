@@ -6,7 +6,7 @@
 
 LivePalmes est un ecosysteme numerique dedie a la nage avec palmes. Il aide a preparer les competitions et les engagements, a gerer les donnees sportives et les acces, puis a rendre les performances consultables par le public.
 
-Son portail principal est actuellement en cours de finalisation et de test. Il continue d'etre ameliore et peut recevoir de petits modules complementaires selon les besoins confirmes.
+Le portail et les consultations sportives publiques sont raccordés à NAP en production. Voir [la référence actuelle](NAP_REFERENCE.md) pour les sources, exceptions et limites.
 
 ## Les trois composantes
 
@@ -38,7 +38,7 @@ Cet espace est accessible sans compte. Il permet de consulter toute l'annee :
 - les performances historiques ;
 - les fiches nageurs.
 
-Les informations affichees sont preparees sous forme de fichiers legers pour que les pages restent rapides, meme avec plusieurs centaines de milliers de performances.
+TOP et fiches nageurs consultent directement NAP via le serveur, avec des lectures bornées. Records et MPF conservent leurs fichiers publics et leur administration Firebase distincte.
 
 ### 3. LivePalmes Direct
 
@@ -55,9 +55,10 @@ Pour le portail et les performances :
 ```text
 Clubs et responsables habilites
         -> Portail LivePalmes
-        -> base de donnees protegee
-        -> fichiers publics prepares
-        -> Records, MPF, TOP et fiches nageurs
+        -> serveur LivePalmes contrôlé
+        -> NAP : compétitions, engagements, résultats, TOP, nageurs, DTN
+
+Administration Records/MPF -> source Firebase conservée -> fichiers publics
 ```
 
 Pour une competition nationale equipee du Direct :
@@ -93,7 +94,7 @@ GitHub n'est pas la base active de LivePalmes. Une modification conservee sur Gi
 Firebase regroupe plusieurs services Google utilises par LivePalmes :
 
 - **Hosting** est la vitrine qui rend les pages accessibles sur Internet ;
-- **Firestore** est le cahier central partage qui conserve les donnees actives ;
+- **Firestore** conserve les comptes/réglages/traces techniques, LivePalmes Direct et la source d’administration Records/MPF ; les données métier du portail sont dans NAP ;
 - **Authentication** verifie l'identite des personnes connectees ;
 - **Cloud Functions** realise les controles et traitements sensibles en coulisses ;
 - **Storage** est l'armoire a fichiers pour les PDF et les gros fichiers publics.

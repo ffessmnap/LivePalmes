@@ -2,6 +2,14 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 12 octobre — Consolidation documentaire après bascule
+
+- Demande explicite d’Antoine : vérifier avec le code actuel, regrouper les mises à jour et identifier les anciens documents obsolètes, sans accès/modification NAP ni déploiement.
+- Référence actuelle `docs/NAP_REFERENCE.md` : sources NAP, comptes/technique Firebase, Direct et exception d’administration Firebase/publication statique Records/MPF ; licences, temps, droits, résultats, DTN, notifications et limites de sauvegarde/rollback.
+- Architecture, intégration engagements, gestion des performances, pipeline public et recette harmonisés. Anciennes reprises/copies Firestore et journaux de première connexion marqués historiques, sans suppression ; documents mixtes signalés et référencés. Aucun changement de code, configuration, droits ou donnée.
+- Relecture contre main `807dce65`, liens locaux et diff documentaire contrôlés ; validation CI et intégration suivies dans la PR regroupée. Aucune recette métier ou nouvelle validation utilisateur présumée.
+
+
 ### 12 octobre — Clôture du plan initial d'optimisation NAP
 
 - Publication PROD du candidat `7036940bd1c057e4fd693bf04d42bd9efba81b5c` réussie dans [38179490926](https://github.com/ffessmnap/LivePalmes/actions/runs/38179490926), après sauvegarde chiffrée rouverte et vérifiée. Une fonction actualisée, 110 conservées ; durée totale observée 229 s. Preuves TEST réutilisées : `38175818400` et `38176119901`, contrôles de composition intégrés par PR #248.

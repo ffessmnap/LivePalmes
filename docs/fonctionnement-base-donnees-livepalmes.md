@@ -1,6 +1,8 @@
 # La base nageurs et performances de LivePalmes
 
-<!-- description: Présentation courte de la base des nageurs, des performances et des bibliothèques de données utilisées par LivePalmes. -->
+<!-- description: Historique avant bascule : Ancien fonctionnement à base Firestore et exports INTRANAP. Voir NAP_REFERENCE.md pour le fonctionnement actuel. -->
+
+> **Archive historique — 12 octobre 2026.** Ce document décrit une étape antérieure, pas le fonctionnement actuel. Les affirmations « actuel », « à faire », « TEST seulement » et les commandes ci-dessous sont datées. Ne pas relancer copie Firebase, migration ou reconstruction sportive sur cette base. Voir [la référence NAP actuelle](NAP_REFERENCE.md) et [la procédure de publication](releases/PROCEDURE.md).
 
 Ce document présente la partie « patrimoine de données » de LivePalmes : les nageurs, leurs performances, les TOP, les fiches nageurs, les clubs, les Records et les MPF.
 

@@ -1,5 +1,9 @@
 # Qualifications des engagements piscine
 
+<!-- description: Règles fonctionnelles des qualifications piscine ; architecture Firestore historique, circuit actuel dans NAP_REFERENCE.md. -->
+
+> **Périmètre actualisé — 12 octobre 2026.** Les descriptions de stockage sportif Firestore, de fichiers TOP comme source des calculs et les inventaires/étapes de migration ci-dessous sont historiques. Les règles fonctionnelles non remplacées restent utiles ; pour le circuit NAP et les arbitrages actuels, suivre [NAP_REFERENCE.md](NAP_REFERENCE.md). Pour les lots de publication, suivre [PROCEDURE.md](releases/PROCEDURE.md) et la sélection versionnée, sans recréer les fonctions retirées.
+
 Cette évolution ajoute une grille optionnelle à la fiche compétition du calendrier. La création conserve le parcours existant : créer la compétition, puis « Compléter maintenant » pour définir les courses et la grille. Seuls les comptes disposant du droit national des engagements peuvent configurer la grille, confirmer son application ou décider des dérogations. Ces contrôles sont aussi effectués côté serveur.
 
 ## Règles implémentées
