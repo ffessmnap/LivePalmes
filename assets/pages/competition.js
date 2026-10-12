@@ -9,7 +9,7 @@
   const resultCourseOrder=["50SF","100SF","200SF","400SF","800SF","1500SF","50AP","100IS","200IS","400IS","50BI","100BI","200BI","400BI","4X50SF","4X100SF","4X200SF","4X100SB","4X100BIX"];
   const resultCourseRanks=new Map(resultCourseOrder.map((course,index)=>[course,index]));
   function poolFactsHtml(event) {
-    if (["openWater", "meeting", "training"].includes(event.eventType)) return "";
+    if (["openWater", "meeting", "training", "stage"].includes(event.eventType)) return "";
     return `${event.poolLength?`<dt>Bassin</dt><dd>${api.escapeHtml(event.poolLength)} m</dd>`:""}${event.poolLaneCount?`<dt>Lignes d’eau</dt><dd>${api.escapeHtml(event.poolLaneCount)}</dd>`:""}${timingLabels[event.timingType]?`<dt>Chronométrage</dt><dd>${api.escapeHtml(timingLabels[event.timingType])}</dd>`:""}`;
   }
   function detailTypeLabel(event){return competitionTypeLabels[event.eventType]||api.TYPE_LABELS[event.eventType]||event.eventType||"Événement";}
