@@ -621,3 +621,5 @@ La barre de filtres de mise en liste utilise une disposition flexible avec retou
 ### Recette complémentaire TEST du 12 octobre 2026
 
 Les statuts DTN distinguent l’absence de calcul, un calcul précédent incompatible, un traitement en cours et une erreur, sans déclencher de reconstruction. Les grilles DTN défilables sont des régions nommées accessibles au clavier. Les fenêtres DTN reprennent leur titre comme nom accessible. Le statut TOP annonce ses mises à jour via le rôle status. Les années du sélecteur TOP respectent un format à quatre chiffres ; aucun résultat ni année source NAP n’est corrigé ou supprimé.
+
+Les petits titres de groupes de navigation du portail utilisent #60727b sur blanc (contraste supérieur à 4,5:1), sans modifier les tailles ni l’espacement.
