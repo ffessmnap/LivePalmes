@@ -162,6 +162,10 @@ def latest_run(workflow, skip=0):
     runs = [r for r in runs if r['id'] != int(skip)]
     if workflow == 'livepalmes-test-common.yml':
         runs = [r for r in runs if r.get('display_title') != 'Verification TEST sans deploiement']
+        cancelled = [r['id'] for r in runs if r.get('status') == 'completed' and r.get('conclusion') == 'cancelled']
+        if cancelled:
+            print(f'Lancements TEST annules exclus des preuves : {cancelled}; comparaison exacte des revisions conservee')
+        runs = [r for r in runs if r['id'] not in cancelled]
     require(runs, 'Aucune publication de reference')
     current = runs[0]
     require(current['status'] == 'completed' and current['conclusion'] == 'success', 'Derniere publication non terminee ou en echec : examen requis')

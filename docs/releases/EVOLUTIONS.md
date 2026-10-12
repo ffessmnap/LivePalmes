@@ -2,6 +2,12 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 12 octobre — Preuve TEST après annulation
+
+- Accord explicite d’Antoine : exclure les runs TEST annulés des preuves, puis comparer chaque révision réelle à la dernière preuve réussie. Une révision modifiée ou inconnue reste à republier ; un échec ou un run en cours reste bloquant. Le contrôle PROD reste inchangé.
+- Reprise RF/MPF : PR #251 et #252 intégrées, lecteur NAP vérifié sur TEST par le run backend `38221179280`. Le run commun annulé `38221698170` a actualisé partiellement `getCurrentAccessUser` : cette révision sans preuve doit être republiée. Hosting TEST et PROD inchangés à ce contrôle, mails désactivés. Aucune publication PROD ni correction sportive ajoutée.
+- Régressions hors ligne : annulations multiples, absence de référence, échec/en cours, annulation PROD et refus de réutiliser une révision partiellement modifiée. Publication commune et recette RF/MPF encore à attester.
+
 ### 12 octobre — Reprise RF/MPF dans NAP et raccordement TEST
 
 - Antoine confirme que seuls les droits Records existants autorisent la modification, sans obligation nationale supplémentaire, puis autorise explicitement deux compléments NAP et la reprise unique PROD après sauvegarde vérifiée ; aucune saisie/import en cours déclaré.
