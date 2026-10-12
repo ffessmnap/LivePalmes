@@ -273,6 +273,7 @@ function runUnitTests() {
     "engagement-qualification-exceptions-ui-tests.js",
     "engagement-relay-removal-tests.js",
     "public-calendar-tests.js",
+    "calendar-storage-retirement-tests.js",
     "livepalmes-public-records-data-tests.js",
     "livepalmes-console-access-tests.js",
     "livepalmes-portal-session-tests.js",

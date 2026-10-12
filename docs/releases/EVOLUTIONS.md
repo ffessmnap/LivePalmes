@@ -2,6 +2,12 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 12 octobre — Calendrier/Storage, premier lot autorisé sur TEST
+
+- Après présentation du diff local, Antoine donne son accord pour terminer les contrôles, intégrer puis publier ce premier lot sur TEST. Base `d0016ad0ee43048c8f10ae6eeaa7a689f68dd5dc` ; publication Hosting uniquement, aucune modification de données ni de fonction distante, aucun retrait d'objet Storage ni PROD. CI Linux complète, version publiée et recette à attester.
+- Retrait du lecteur Storage calendrier et de son URL personnalisée ; NAP conservé à l'identique, fixtures explicites réservées à localhost. Arrêt des quatre anciennes commandes de génération/publication/réparation avant tout accès aux fichiers ou au réseau ; sources archivées en texte avec garde d'exécution. Les trois anciennes fonctions backend, les données, documents/PDF, associations DTN, références et utilitaire Storage commun restent conservés.
+- Sept tests ciblés hors ligne réussis : retrait Storage, calendrier public, calendrier NAP, isolation des anciens traitements, contrat calendrier, détails événements et documents NAP. Routes, fraîcheur, absence de repli, échecs, fixtures locales, refus sur domaines distants, commandes et archives désactivées couverts. Vérification globale locale : syntaxe des 721 fichiers JavaScript réussie, puis arrêt dans `livepalmes-test-backend-workflow-tests.js` car `spawnSync('bash')` renvoie ENOENT sur Windows ; suite globale non entièrement validée. Diff sans erreur d'espacement, quatre sources archivées comparées au commit de base ; aucune recette d'écriture réelle ni validation utilisateur du résultat déduite.
+
 ### 12 octobre — Nettoyage TOP/nageurs, étape 2
 
 - Suppression des 10 893 exports TOP/aperçus/nageurs/recherche/identifiants (204 548 635 octets) et de quatre anciens fichiers globaux : manifeste/version, résumé et index public de nageurs. Suppressions locales Git uniquement ; NAP, Firestore, Storage et références backend distinctes conservés.
