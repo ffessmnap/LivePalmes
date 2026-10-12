@@ -7,6 +7,7 @@
 - Demande explicite : terminer les lots 2 et 3 sur TEST. PROD, droits, mails et données NAP exclus. Aucun recalcul ni test de sauvegarde réelle.
 - Diagnostic : le lecteur top-metadata renvoie 207 depuis les dates de compétitions ; le client présentait cette valeur comme une saison ordinaire. Validation de forme à quatre chiffres dans le sélecteur uniquement, sans changer les requêtes de résultats ni les données. Pas de correction arbitraire en 2007.
 - Le lecteur DTN ne reconstruit rien en lecture : il vérifie l’empreinte des paramètres et de la source. Le client distingue maintenant une vue absente d’une vue précédente incompatible via generatedAt ; les erreurs et traitements en cours restent distincts. Aucun calcul de qualification modifié.
+- Complément de contraste après mesure réelle : titres du menu #687b84 (4,42:1 sur blanc) remplacés par #60727b, présentation compacte inchangée. PR #282 intégrée, CI 38299093604 réussie ; première publication TEST en cours avant ce complément.
 - Accessibilité : statut TOP annoncé, régions des grilles DTN défilables au clavier, noms accessibles des fenêtres DTN. Présentation compacte conservée.
 - Budget avant/après identique : TOP une lecture de métadonnées puis requête bornée ; DTN catalogue puis vue à l’ouverture. Filtres locaux sans lecture par ligne ; aucune nouvelle requête ou écriture. Recette de formulaires sans soumission et tests hors ligne pour les états indisponibles. Publication et recette finale à consigner dans le bilan local, sans validation utilisateur déduite.
 
