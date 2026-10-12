@@ -177,7 +177,6 @@ Scripts et styles principaux :
 
 Donnees publiques :
 
-- `performances/public/data/records-data.js`
 - `performances/public/data/performance-public/`
 - `performances/public/data/performance-public-firestore/`
 

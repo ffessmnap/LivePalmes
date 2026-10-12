@@ -13,6 +13,12 @@ context.window=context;vm.createContext(context);vm.runInContext(fs.readFileSync
  await assert.rejects(()=>store.saveData({...data,updatedAt:"first"}),/response lost/);
  await store.saveData({...data,updatedAt:"retry",recordHistory:[{adminEmail:"private",publishedAt:"retry"}]});
  assert.equal(published.length,2);assert.equal(published[0].operationId,published[1].operationId);assert.equal(published[1].data.updatedAt,"first");assert.equal(published[1].expectedRevision,1);
+ context.fetch=async()=>{throw Error("NAP unavailable");};
+ await assert.rejects(()=>store.loadData(),/NAP unavailable/);
+ assert.equal(fetches.length,1,"failed NAP read never fetches static/Storage fallback");
+ context.LivePalmesEnvironment.sportingDataSource="legacy";
+ await assert.rejects(()=>store.loadData(),/NAP requise/);
+ await assert.rejects(()=>store.saveData(data),/NAP requise/);
  console.log("NAP browser Records: fresh read, no Firestore/static fallback, private administration and stable retry verified.");
 })().catch(e=>{console.error(e);process.exitCode=1;});
 

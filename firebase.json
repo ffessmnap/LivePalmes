@@ -324,15 +324,6 @@
         ]
       },
       {
-        "source": "/performances/public/data/records-data.js",
-        "headers": [
-          {
-            "key": "Cache-Control",
-            "value": "public, max-age=300, stale-while-revalidate=86400"
-          }
-        ]
-      },
-      {
         "source": "/performances/public/data/performance-public/version.js",
         "headers": [
           {
