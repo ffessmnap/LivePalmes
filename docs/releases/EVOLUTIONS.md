@@ -2,6 +2,13 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 12 octobre — RF/MPF publié en PROD, audit sans suppression
+
+- Accord explicite d’Antoine sur le bilan `38227733784`, puis demande de publier avec sauvegarde vérifiée et mails désactivés, et d’auditer les anciennes fonctions sans suppression. Publication réussie du seul candidat `b0020e51ebd6e686054efd3451882dd2c1d60d94` : [run 38228508477](https://github.com/ffessmnap/LivePalmes/actions/runs/38228508477), Hosting `sites/livepalmes/versions/a7a7c7342abf5f23`.
+- Sauvegarde chiffrée rouverte et comparée, conservée avant toute modification (artefact `production-code-backup` 11737276937). Cinq fonctions actualisées, 106 conservées, aucune suppression. Contrôles des exclusions et coupure des mails réussis avant Hosting ; relevé final : 111 fonctions PROD ACTIVE, 113 TEST ACTIVE, mails désactivés.
+- Runtime PROD HTTP 200, source NAP, révision 1 : 97 RF/RFJ et 397 MPF identiques à la reprise, projection privée exclue. Pages RF/MPF publiques et portail authentifié vérifiés ; 50 entrées historiques présentes. Aucun brouillon ni record publié pour la recette ; temps Anthelme inchangé. Tests des écritures/concurrence/rejeux hors ligne, pas une publication sportive réelle.
+- Audit : `syncPublicRecordsData` reste ACTIVE sur TEST/PROD et constitue le seul candidat de fonction au retrait RF/MPF. `publishPerformancePublicData` est déjà absente. Conserver les cinq fonctions NAP et `public-records-data.js` encore utilisé. Sept chargements HTML de l’ancien fichier statique, branches legacy et outils manuels Firestore restent à traiter séparément ; aucun retrait autorisé ni effectué. Résultats locaux `publication-rf-mpf-prod-20261012/bilan.html`. Fréquences d’invocation non mesurées, outils externes inconnus non garantis.
+
 ### 12 octobre — Bilan PROD RF/MPF préparé, publication non lancée
 
 - Candidat exact `b0020e51ebd6e686054efd3451882dd2c1d60d94`, preuve commune TEST `38226586972`, précédente preuve backend `38223949048`. Recette authentifiée réussie après PR #254 : lecture NAP, fiche Anthelme ouvrable et historique privé de 50 entrées. Pages RF/MPF publiques vérifiées à l’identique. Aucun brouillon ni record publié pour l’essai ; publication réelle testée hors ligne seulement.
