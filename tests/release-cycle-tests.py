@@ -253,6 +253,23 @@ class ReleaseTests(unittest.TestCase):
         current = {'functions': [one, {**two, 'revision': 'cancelled-partial-update'}]}
         self.assertEqual(m.matching_functions(proof, current), {one['name']})
 
+    def test_revision_evidence_reuses_success_without_trusting_failed_or_running_run(self):
+        runs = [{'id': 3, 'status': 'in_progress', 'conclusion': None},
+                {'id': 2, 'status': 'completed', 'conclusion': 'failure'},
+                {'id': 1, 'status': 'completed', 'conclusion': 'success'}]
+        with patch.dict(os.environ, {'GITHUB_REPOSITORY': 'owner/repo'}), patch.object(m, 'gh', return_value={'workflow_runs': runs}):
+            self.assertEqual(m.latest_run('livepalmes-test-common.yml', reuse_revisions=True), 1)
+            with self.assertRaises(ValueError):
+                m.latest_run('livepalmes-test-common.yml')
+            with self.assertRaises(ValueError):
+                m.latest_run('livepalmes-production-release.yml', reuse_revisions=True)
+        with patch.dict(os.environ, {'GITHUB_REPOSITORY': 'owner/repo'}), patch.object(m, 'gh', return_value={'workflow_runs': runs[:2]}), self.assertRaises(ValueError):
+            m.latest_run('livepalmes-test-common.yml', reuse_revisions=True)
+        one = self.function('one')
+        proof = {'state': {'functions': [one]}}
+        for field, value in [('revision', 'partial'), ('updateTime', 'later'), ('commit', 'c'*40), ('state', 'FAILED')]:
+            self.assertEqual(m.matching_functions(proof, {'functions': [{**one, field: value}]}), set())
+
     def test_unselected_test_change_blocks_hosting(self):
         with tempfile.TemporaryDirectory() as d:
             f={'name':'projects/livepalmes-test/locations/europe-west1/functions/one','revision':'old'}

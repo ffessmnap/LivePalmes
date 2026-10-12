@@ -157,7 +157,8 @@ def needs_function(function, name, candidate):
     return previous.get(name) != desired[name]
 
 
-def latest_run(workflow, skip=0):
+def latest_run(workflow, skip=0, reuse_revisions=False):
+    require(not reuse_revisions or workflow == 'livepalmes-test-common.yml', 'Reutilisation par revision reservee aux preuves TEST')
     runs = gh(f'repos/{os.environ["GITHUB_REPOSITORY"]}/actions/workflows/{workflow}/runs?branch=main&event=workflow_dispatch&per_page=20')['workflow_runs']
     runs = [r for r in runs if r['id'] != int(skip)]
     if workflow == 'livepalmes-test-common.yml':
@@ -166,6 +167,11 @@ def latest_run(workflow, skip=0):
         if cancelled:
             print(f'Lancements TEST annules exclus des preuves : {cancelled}; comparaison exacte des revisions conservee')
         runs = [r for r in runs if r['id'] not in cancelled]
+    if reuse_revisions:
+        # An unsuccessful run is never evidence. Its unchanged functions may
+        # still match an earlier successful proof exactly; changed revisions
+        # remain untrusted in matching_functions and block Hosting-only mode.
+        runs = [r for r in runs if r.get('status') == 'completed' and r.get('conclusion') == 'success']
     require(runs, 'Aucune publication de reference')
     current = runs[0]
     require(current['status'] == 'completed' and current['conclusion'] == 'success', 'Derniere publication non terminee ou en echec : examen requis')
@@ -207,7 +213,7 @@ def test_selection(directory, candidate):
     before = snapshot('livepalmes-test')
     trusted = set()
     try:
-        previous = latest_run('livepalmes-test-common.yml', os.environ['GITHUB_RUN_ID'])
+        previous = latest_run('livepalmes-test-common.yml', os.environ['GITHUB_RUN_ID'], reuse_revisions=True)
         artifact(previous, 'test-proof', root / 'previous-test', '.github/workflows/livepalmes-test-common.yml')
         trusted.update(matching_functions(read(root / 'previous-test/test-proof.json'), before))
     except (ValueError, subprocess.CalledProcessError, urllib.error.HTTPError) as error:
