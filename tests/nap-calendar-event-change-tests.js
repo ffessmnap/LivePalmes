@@ -1,7 +1,7 @@
 "use strict";
 const assert=require("node:assert/strict");
 const mod=require("../functions/nap-portal-competition-change"),{fingerprint}=require("../functions/nap-portal-workspaces");
-const competition={id:5162,libelle:"Formation",lieu:"Paris",date:"2026-11-07",enddate:"2026-11-07",comite:3,description:"",bassin:null,chrono:null,ld:2,type:2};
+const competition={id:5162,libelle:"Formation",lieu:"Paris",date:"2026-11-07",enddate:"2026-11-07",comite:3,description:"",comments:"",bassin:null,chrono:null,ld:2,type:2};
 const parameters=Object.fromEntries(mod.SPECS.compet_parametres.columns.map(key=>[key,null]));Object.assign(parameters,{id:19,compet:5162,actif:0,niveau:1});
 const options=Object.fromEntries(mod.SPECS.livepalmes_competition_options.columns.map(key=>[key,null]));Object.assign(options,{competition_id:5162,version:"1",event_type:"training"});
 const pack={source:"nap",event:{competitionType:"training",level:"regional"},nativeSnapshot:{competition,parameters},nativeParameters:{parameter_id:19},options,calendarDetails:null,committees:[],courses:[],courseOptions:[],groups:[],standards:[],fees:null,detailedProgram:null};

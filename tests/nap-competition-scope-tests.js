@@ -5,7 +5,7 @@ const change=require("../functions/nap-portal-competition-change");
 const schema=require("../functions/nap-approved-portal-schema");
 const view=require("../functions/nap-portal-workspaces");
 function fixture(fail=false,race=false,open=false) {
- const competition={id:5220,libelle:"Test",lieu:"Paris",date:"2026-11-07",enddate:"2026-11-07",comite:3,description:"",bassin:null,chrono:null,ld:0};
+ const competition={id:5220,libelle:"Test",lieu:"Paris",date:"2026-11-07",enddate:"2026-11-07",comite:3,description:"",comments:"",bassin:null,chrono:null,ld:0};
  const parameters={id:4547,compet:5220,actif:0,dateactif:null,date_limit:null,officiel:0,nb_lignes:0,mailtxt:"",mailjuges:"",tps_d:null,tps_f:null,niveau:1,saisie:1,relais:0};
  const options=Object.fromEntries(schema.tables[0].columns.map(c=>[c.name,c.name==="competition_id"?5220:c.name==="version"?"1":c.name.endsWith("_at")?"2026-10-08 12:00:00.000000":c.name.endsWith("_by")?"admin":null]));options.entry_closed=null;
  const pack={event:{id:"legacy-nap-5220",date:"2026-11-07",level:"regional",competitionType:"pool"},nativeSnapshot:{competition,parameters},nativeParameters:{parameter_id:4547,...parameters},committees:[{id:11,comite:1},{id:12,comite:2}],options};

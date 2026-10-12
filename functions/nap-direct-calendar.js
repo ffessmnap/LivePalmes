@@ -43,7 +43,7 @@ function eventFromRow(row) {
     teamLeadersWhatsAppUrl:["national","international"].includes(level) ? text(row.portal_whatsapp) : "",
     city: row.portal_city == null ? text(row.lieu) : text(row.portal_city), location: text(row.lieu), address:text(row.portal_address),
     organizer:text(row.portal_organizer), waterBodyType:text(row.portal_water_body_type), canceled:Number(row.portal_canceled)===1,
-    description: text(row.description), eventType, level,
+    description: text(row.comments), legacyDescription: text(row.description) !== text(row.comments) ? text(row.description) : "", eventType, level,
     regionId, regionLabel: rules.committeeLabel(regionId), poolLength: Number(row.bassin) > 0 ? String(row.bassin) : "",
     poolLaneCount: Number(row.nb_lignes) > 0 ? Number(row.nb_lignes) : 0,
     timingType: ({ E: "electronic", M: "manual" })[text(row.chrono)] || "",
@@ -52,7 +52,7 @@ function eventFromRow(row) {
 }
 // Optional additive fields stay server-side; eventFromRow whitelists the public response.
 // Same indexed query and row bound before/after the approved column addition.
-const SELECT_EVENT = `SELECT STRAIGHT_JOIN c.id,c.type AS native_type,c.libelle,c.lieu,c.date,c.enddate,c.comite,c.description,c.filepdf,c.affiche,c.bassin,c.chrono,c.ld,t.label AS type_label,l.label AS level_label,s.label AS scope_label,cp.nb_lignes,cp.niveau AS native_level_code,cp.actif,cp.date_limit,co.*,co.entry_closed,co.whatsapp_url AS portal_whatsapp,co.city AS portal_city,co.address AS portal_address,co.organizer_label AS portal_organizer,co.water_body_type AS portal_water_body_type,co.canceled AS portal_canceled,(EXISTS(SELECT 1 FROM perfs p FORCE INDEX (livepalmes_compet_id) WHERE ${visiblePerformanceSql()} AND p.compet=c.id LIMIT 1) OR EXISTS(SELECT 1 FROM perfs_relais r FORCE INDEX (livepalmes_compet_id) WHERE r.compet=c.id LIMIT 1) OR EXISTS(SELECT 1 FROM livepalmes_performance_imports ri FORCE INDEX (PRIMARY) WHERE ri.id=SHA2(CONCAT('["nap-results-current",',c.id,']'),256) AND ri.status='current' LIMIT 1)) AS has_results FROM competitions c`;
+const SELECT_EVENT = `SELECT STRAIGHT_JOIN c.id,c.type AS native_type,c.libelle,c.lieu,c.date,c.enddate,c.comite,c.description,c.comments,c.filepdf,c.affiche,c.bassin,c.chrono,c.ld,t.label AS type_label,l.label AS level_label,s.label AS scope_label,cp.nb_lignes,cp.niveau AS native_level_code,cp.actif,cp.date_limit,co.*,co.entry_closed,co.whatsapp_url AS portal_whatsapp,co.city AS portal_city,co.address AS portal_address,co.organizer_label AS portal_organizer,co.water_body_type AS portal_water_body_type,co.canceled AS portal_canceled,(EXISTS(SELECT 1 FROM perfs p FORCE INDEX (livepalmes_compet_id) WHERE ${visiblePerformanceSql()} AND p.compet=c.id LIMIT 1) OR EXISTS(SELECT 1 FROM perfs_relais r FORCE INDEX (livepalmes_compet_id) WHERE r.compet=c.id LIMIT 1) OR EXISTS(SELECT 1 FROM livepalmes_performance_imports ri FORCE INDEX (PRIMARY) WHERE ri.id=SHA2(CONCAT('["nap-results-current",',c.id,']'),256) AND ri.status='current' LIMIT 1)) AS has_results FROM competitions c`;
 const EVENT_JOINS = " LEFT JOIN compet_parametres cp ON cp.compet=c.id LEFT JOIN compet_level l ON l.id=cp.niveau LEFT JOIN compet_types t ON t.id=c.type LEFT JOIN compet_type s ON s.id=c.typecnc LEFT JOIN livepalmes_competition_options co ON co.competition_id=c.id";
 async function execute(pool, sql, values = []) { return (await pool.execute({ sql, timeout: 10000 }, values))[0]; }
 async function readCalendarManifest(pool) {

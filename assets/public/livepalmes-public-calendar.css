@@ -62,6 +62,7 @@ body.public-calendar-page::before { content:""; position:fixed; inset:0 0 auto; 
 .public-competition-page .calendar-header { margin-bottom:12px; }
 .calendar-detail-hero { position:relative; overflow:hidden; display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; gap:24px; color:#fff; background:linear-gradient(125deg,#075d69,#0b909c 70%,#25afb6); border:0; border-radius:20px; padding:clamp(18px,2.8vw,26px); box-shadow:0 18px 42px rgba(7,93,105,.17); }
 .calendar-detail-hero-content { min-width:0; }
+.calendar-public-description { white-space:pre-wrap; overflow-wrap:anywhere; }
 .calendar-detail-hero p,.calendar-detail-hero .calendar-event-type { color:rgba(255,255,255,.9); }
 .calendar-detail-hero .calendar-status { background:rgba(255,255,255,.92); }
 .calendar-detail-card { background:#fff; border:1px solid var(--calendar-line); border-radius:18px; padding:clamp(18px,3vw,24px); box-shadow:0 10px 30px rgba(22,61,70,.055); }
