@@ -43,6 +43,7 @@ Les mises en page passent progressivement de plusieurs colonnes à une colonne. 
 | Public compétition | `styles.css`, `public.css` | `index.html`, `resultats.html`, `series-public.html`, `medailles.html` |
 | Performances | `performances/public/styles.css` | `performances/records.html`, `performances/mpf.html`, `performances/tops.html`, `performances/nageur.html` |
 | Portail | `styles.css`, `assets/livepalmes-admin-portal.css` | `portail.html` |
+| Structure et apparence du portail | `assets/livepalmes-portal-shell.css`, `assets/livepalmes-portal-appearance.css`, `assets/livepalmes-portal-workspaces.css` | Navigation, thèmes et espaces de travail de `portail.html` |
 | Compléments ciblés | `assets/livepalmes-admin-session-badge.css`, `performances/public/import-competitions.css` | Badge de session et import de compétitions |
 
 Les consoles dédiées étant générées depuis `pilotage-livepalmes.html`, ce socle doit rester la référence pour leur structure et leurs composants partagés.
@@ -131,7 +132,7 @@ Le portail utilise une échelle plus sobre, centralisée par `--portal-font-weig
 
 - `400` pour le texte courant, les champs et les descriptions ;
 - `500` pour la navigation, les métadonnées et les liens secondaires ;
-- `600` pour les libellés, boutons, états actifs et informations mises en avant ;
+- `600` pour les libellés et informations mises en avant ; les boutons et onglets utilisent `500`, y compris à l’état actif ;
 - `700` pour les titres de page et de section.
 
 Les graisses supérieures à `700` ne doivent plus être introduites dans le portail. Un changement de couleur, de taille, de position ou de surface doit être préféré à l’accumulation de texte gras. Les valeurs métier réellement critiques peuvent conserver une emphase, mais les paragraphes, listes, filtres et sous-navigation restent en graisse normale ou moyenne.
@@ -354,6 +355,8 @@ Les champs partagent une surface blanche, une bordure claire et un rayon de `8 p
 Les formulaires complexes sont organisés en grille sur ordinateur puis en une ou deux colonnes sur les écrans étroits. L’état désactivé reste lisible, avec un fond plus terne et un curseur adapté lorsque nécessaire.
 
 ### Contrôles segmentés
+
+Dans les pages publiques Performances, les segments actifs neutres utilisent un texte blanc sur `--accent-strong` (`#0b6668`) pour garder un contraste suffisant à petite taille. Les variantes Femmes et Hommes conservent leurs couleurs propres. Les choix de course du TOP conservent leur présentation compacte de 26 px de haut ; leur focus clavier utilise un contour plein de 2 px.
 
 Le conteneur `.segmented` regroupe deux à quatre boutons `.segment`. L’option active utilise l’accent sur fond plein. Les segments liés au sexe emploient les couleurs féminin et masculin propres aux performances.
 
