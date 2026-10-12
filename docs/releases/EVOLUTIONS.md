@@ -5,7 +5,7 @@
 ### 12 octobre — Chronométrage masqué sur les mêmes événements du calendrier
 
 - Précision explicite d'Antoine : masquer aussi Chronométrage pour les compétitions eau libre, les réunions et les formations. Même règle d'affichage que Bassin et Lignes d'eau ; informations conservées en piscine. Aucun changement des données source, NAP, droits, mails ou backend ; aucune lecture supplémentaire.
-- Test public-calendar étendu avec un chronométrage importé : trois types masqués, piscine conservée. Syntaxe et contrôle du diff réussis. Publication TEST Hosting seul et recette en ligne à attester ; aucune validation utilisateur inventée.
+- Test public-calendar étendu avec un chronométrage importé : trois types masqués, piscine conservée. Syntaxe et contrôle du diff réussis. PR #265 intégrée (`242359cec770c0804b3f8736b90ddb0caefafec9`), contrôles complets réussis (`38267063882`), publication TEST Hosting seul réussie (`38267508757`, Hosting `55002eb4543225f0`). Sélection 0/103, 112 révisions prouvées ; étapes Functions ignorées et révisions conservées contrôlées. Formation Houilles et eau libre Séné sans chronométrage, piscine Solesmes avec chronométrage vérifiées en ligne ; contrôle mobile 430 px sans débordement et capture après conservée. Réunions couvertes par test de rendu ; aucune validation utilisateur inventée.
 ### 12 octobre — Informations de bassin pertinentes dans le calendrier
 
 - Demande d'Antoine : ne pas afficher le type de bassin ni le nombre de lignes pour l'eau libre, les réunions et les formations, champs obligatoires mais non pertinents dans INTRANAP.
