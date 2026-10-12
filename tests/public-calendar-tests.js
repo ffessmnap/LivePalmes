@@ -145,15 +145,16 @@ const browserCalendar = browserContext.window.LivePalmesPublicCalendar;
 assert.equal(browserCalendar.BASE, "https://storage.googleapis.com/test-public-bucket/calendar");
 assert.equal(browserCalendar.status(ongoing, "2026-08-19"), "ongoing");
 assert.equal(browserCalendar.TYPE_LABELS.training, "Formation");
-const poolFactsContext = { api: browserCalendar };
+const poolFactsContext = { api: browserCalendar, timingLabels: { manual: "Manuel", electronic: "Électronique" } };
 vm.runInNewContext(competitionPageSource.match(/  function poolFactsHtml\(event\) \{[\s\S]*?\n  \}/)[0], poolFactsContext);
-const importedPoolFacts = { poolLength: "50", poolLaneCount: 8 };
+const importedPoolFacts = { poolLength: "50", poolLaneCount: 8, timingType: "electronic" };
 for (const eventType of ["openWater", "meeting", "training"]) {
   assert.equal(poolFactsContext.poolFactsHtml({ ...importedPoolFacts, eventType }), "", eventType);
 }
 assert.match(poolFactsContext.poolFactsHtml({ ...importedPoolFacts, eventType: "pool" }), /Bassin[\s\S]*50 m[\s\S]*Lignes d’eau[\s\S]*8/);
+assert.match(poolFactsContext.poolFactsHtml({ ...importedPoolFacts, eventType: "pool" }), /Chronométrage[\s\S]*Électronique/);
 assert.equal(poolFactsContext.poolFactsHtml({ eventType: "pool" }), "");
-assert.deepEqual(importedPoolFacts, { poolLength: "50", poolLaneCount: 8 });
+assert.deepEqual(importedPoolFacts, { poolLength: "50", poolLaneCount: 8, timingType: "electronic" });
 assert.equal(browserCalendar.seasonLabel(2027), "2026-2027");
 const whatsAppQrContext = {
   window: {},
@@ -282,7 +283,7 @@ for (const file of ["calendrier.html", "competition.html"]) {
   assert.ok(html.includes("mailto:livepalmes@nap-ffessm.fr"));
 }
 const competitionHtml = fs.readFileSync(path.join(root, "competition.html"), "utf8");
-assert.ok(competitionHtml.includes("competition.js?v=20261012-calendar-pool-facts-1"));
+assert.ok(competitionHtml.includes("competition.js?v=20261012-calendar-pool-facts-2"));
 assert.ok(competitionHtml.includes("livepalmes-public-calendar.css?v=20260831-engagement-actions-1"));
 assert.ok(competitionHtml.includes("livepalmes-whatsapp-qr.css?v=20260831-whatsapp-qr-1"));
 assert.ok(competitionHtml.includes("livepalmes-whatsapp-qr.js?v=20260831-whatsapp-qr-1"));
