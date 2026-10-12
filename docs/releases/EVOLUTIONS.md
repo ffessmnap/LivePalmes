@@ -4,6 +4,8 @@
 
 ### 12 octobre — Recette portail, lot 1 autorisé sur TEST
 
+- PR #280 intégrée (`8d4a2109d0f8af1c1e3d54c40d72ebe64de50abc`), CI complète `38296257624` et TEST Hosting seul `38296636630` réussis, Hosting `7a38d47cbe4008cc`. Les 112 révisions Functions sont inchangées et les deux fichiers servis correspondent exactement au commit. La recette de session existante a identifié un cache JS/CSS ancien, invalidant cette première recette visuelle : références versionnées de `portail.html` actualisées dans le complément du même lot. Aucun contournement du cache utilisateur ni modification de configuration Firebase. Recette finale à refaire sur cette version corrigée.
+
 - Antoine autorise la correction du chargement des engagements, des actions coupées et du type des formations, avec comparatif avant/après TEST. PROD, données NAP, droits et mails exclus.
 - Diagnostic : le détail « ronde des cheires » aboutit finalement ; le blocage permanent n'est pas reproduit. Lecture `getEngagementClubEntry` bornée à 30 secondes par le helper existant, avec erreur visible et retrait de l'état occupé en cas d'échec. Pas de relance automatique ni de traitement en arrière-plan ajouté.
 - Les types NAP transmis au client (Formation, Stage, Réunion, etc.) ne sont plus ramenés à Piscine dans l'affichage ou le cache calendrier. Grilles ordinateur assouplies et défilement de secours ; contrôles compacts et vue mobile conservés.
