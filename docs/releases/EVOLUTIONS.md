@@ -2,6 +2,14 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 12 octobre — Publication des retouches autorisée, arrêt avant déploiement
+
+- Corrections intégrées par PR #284, main `c9dc7a5047e8311458cc162a0d25521a99bbffc5`. CI Linux PR `38305886098` et main `38306254409` réussies, levant la limite Bash locale. Preflight officiel `38306261031` réussi : candidat `ef96caca97f70554ee1f2c2b950cebeb5130e85e`, Hosting et 45 fonctions, douze exclusions backend revues. Artefact `release-plan` ID `11772278280`, SHA-256 `ba9e49c10a42b3be6eba081d02cf4f14f309b9ca1e1b9d92f1059bb21107ba29`, téléchargement authentifié.
+- Après présentation du bilan dans Infra, Antoine répond explicitement « oui » à la demande de publication de ce lot exact. Recalcul DTN et nettoyage Storage restent séparés ; aucun accord de suppression distante ajouté.
+- Tentative PROD `38306975865` arrêtée au contrôle de dérive, avant sauvegarde, préparation/simulation/publication Functions et Hosting. TEST relu conforme. Aucun déploiement ni écriture métier effectué par cette tentative.
+- Audit GitHub en lecture seule `38307308288` réussi : version Hosting `a7a7c7342abf5f23` inchangée ; `syncPublicRecordsData`, présente dans la preuve PROD `38228508477`, absente de l'inventaire actuel (111 fonctions attendues, 110 observées). Les 110 fonctions communes conservent leurs révisions, états et horodatages. Cet audit n'expose pas leurs labels de commit ; il ne remplace pas le contrôle intégral du workflow.
+- Publication bloquée : retrouver et vérifier l'autorisation historique, la sauvegarde et la preuve de ce retrait, puis préparer un nouveau bilan immuable contrôlé avant reprise. Ne pas prendre l'état réel comme nouvelle base, recréer la fonction ou assouplir le contrôle. Aucune suppression supplémentaire ni recalcul DTN/Storage lancé. Bilan diagnostic local `publication-blocked-38306975865.json` ; aucune validation utilisateur du résultat PROD revendiquée.
+
 ### 12 octobre — Préparation Infra des retouches, sans déploiement
 
 - Antoine valide dans Infra les nettoyages sur TEST, puis les trois corrections proposées du preflight : calcul unique des exclusions, autorisation strictement bornée des retraits statiques et preuve vérifiable des dépendances backend conservées. Demande d'implémentation et de tests hors ligne, sans déploiement. Aucun accord PROD ; recalcul DTN et nettoyage Storage restent séparés.
