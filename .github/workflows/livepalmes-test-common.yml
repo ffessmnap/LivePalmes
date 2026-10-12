@@ -42,7 +42,6 @@ jobs:
     env:
       CANDIDATE_SHA: ${{ github.sha }}
       TARGET_FIREBASE_PROJECT: livepalmes-test
-      HOSTING_ONLY: ${{ inputs.hosting_only }}
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
     - uses: actions/checkout@v7
@@ -108,6 +107,8 @@ jobs:
     - uses: google-github-actions/setup-gcloud@v3
     - name: Selectionner les Functions TEST reellement differentes
       id: selection
+      env:
+        HOSTING_ONLY: ${{ inputs.hosting_only }}
       run: python tools/release-cycle.py test-selection "$RUNNER_TEMP" .
     - name: Preparer le backend TEST
       if: steps.selection.outputs.backend == 'true' && !inputs.verification_only && !inputs.hosting_only

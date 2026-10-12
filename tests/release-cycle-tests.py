@@ -116,6 +116,10 @@ class ReleaseTests(unittest.TestCase):
                         output.assert_not_called()
         workflow=(Path(__file__).parents[1]/'.github/workflows/livepalmes-test-common.yml').read_text(encoding='utf-8')
         self.assertIn('HOSTING_ONLY: ${{ inputs.hosting_only }}', workflow)
+        selection = workflow.index('    - name: Selectionner les Functions TEST reellement differentes')
+        prepare = workflow.index('    - name: Preparer le backend TEST')
+        self.assertNotIn('HOSTING_ONLY:', workflow[:selection])
+        self.assertIn('HOSTING_ONLY: ${{ inputs.hosting_only }}', workflow[selection:prepare])
         self.assertEqual(workflow.count("steps.selection.outputs.backend == 'true' && !inputs.verification_only && !inputs.hosting_only"), 3)
 
     def test_targeted_proof_restores_only_exact_live_revision(self):
