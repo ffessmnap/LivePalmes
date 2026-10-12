@@ -208,6 +208,30 @@ class ReleaseTests(unittest.TestCase):
         with patch.dict(os.environ,{'GITHUB_REPOSITORY':'owner/repo'}),patch.object(m,'gh',return_value={'workflow_runs':[{'id':2,'display_title':'Verification TEST sans deploiement','status':'completed','conclusion':'success'},{'id':1,'status':'completed','conclusion':'success'}]}):
             self.assertEqual(m.latest_run('livepalmes-test-common.yml'),1)
 
+    def test_cancelled_test_reuses_earlier_reference_only(self):
+        runs = [{'id': 3, 'status': 'completed', 'conclusion': 'cancelled'},
+                {'id': 2, 'status': 'completed', 'conclusion': 'cancelled'},
+                {'id': 1, 'status': 'completed', 'conclusion': 'success'}]
+        with patch.dict(os.environ, {'GITHUB_REPOSITORY': 'owner/repo'}), patch.object(m, 'gh', return_value={'workflow_runs': runs}):
+            self.assertEqual(m.latest_run('livepalmes-test-common.yml'), 1)
+            with self.assertRaises(ValueError):
+                m.latest_run('livepalmes-production-release.yml')
+        with patch.dict(os.environ, {'GITHUB_REPOSITORY': 'owner/repo'}), patch.object(m, 'gh', return_value={'workflow_runs': runs[:2]}), self.assertRaises(ValueError):
+            m.latest_run('livepalmes-test-common.yml')
+
+    def test_failed_or_running_test_is_not_skipped(self):
+        for status, conclusion in [('completed', 'failure'), ('in_progress', None)]:
+            runs = [{'id': 2, 'status': status, 'conclusion': conclusion},
+                    {'id': 1, 'status': 'completed', 'conclusion': 'success'}]
+            with self.subTest(status=status), patch.dict(os.environ, {'GITHUB_REPOSITORY': 'owner/repo'}), patch.object(m, 'gh', return_value={'workflow_runs': runs}), self.assertRaises(ValueError):
+                m.latest_run('livepalmes-test-common.yml')
+
+    def test_cancelled_partial_deployment_does_not_prove_changed_revision(self):
+        one, two = self.function('one'), self.function('two')
+        proof = {'state': {'functions': [one, two]}}
+        current = {'functions': [one, {**two, 'revision': 'cancelled-partial-update'}]}
+        self.assertEqual(m.matching_functions(proof, current), {one['name']})
+
     def test_unselected_test_change_blocks_hosting(self):
         with tempfile.TemporaryDirectory() as d:
             f={'name':'projects/livepalmes-test/locations/europe-west1/functions/one','revision':'old'}
