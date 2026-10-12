@@ -8,6 +8,10 @@ Le portail et les consultations sportives publiques utilisent directement MySQL 
 
 **TEST utilise la même base NAP habituelle que PROD et IntraNAP.** Un essai d'écriture sur TEST est une opération réelle. Les changements de données et de structure exigent une autorisation spécifique ; aucune recette ne doit fabriquer de résultats, engagements ou personnes sans cet accord. IntraNAP n'a pas été modifié et son arrêt n'est pas réalisé par ce projet.
 
+## Évolution RF/MPF en préparation TEST — 12 octobre
+
+La reprise autorisée est effectuée à l'identique dans deux compléments NAP : `livepalmes_records_versions` conserve chaque contenu complet et `livepalmes_records_current` pointe la version active. Version initiale vérifiée : 97 RF/RFJ, 397 MPF et 50 entrées d'historique, aucune correction sportive. Le raccordement applicatif à ces tables est préparé sur TEST, avec les droits Records existants et sans nouvelle règle nationale. Les parcours PROD décrits ci-dessous restent applicables jusqu'à publication distincte autorisée ; les anciennes sources Firebase et fichiers sont conservés pour validation/retour arrière. Voir `releases/EVOLUTIONS.md` pour les preuves.
+
 ## Où sont les données ?
 
 | Données | Source actuelle | Référence de code |

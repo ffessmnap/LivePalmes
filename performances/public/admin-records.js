@@ -1905,6 +1905,19 @@ async function startAdmin() {
   elements.courseFilter.value = "";
   updateAuthView();
 
+  if (window.LivePalmesEnvironment?.sportingDataSource === "nap") {
+    try {
+      const current = await window.LivePalmesPerformanceStore.loadData({ administration: true });
+      applyRecordsData(current, { loaded: true });
+      applyQueuedRecordAlertDrafts();
+    } catch (error) {
+      recordsDataLoaded = false;
+      updateAuthView();
+      if (elements.tableMeta) elements.tableMeta.textContent = `Records/MPF indisponibles : ${error.message || error}`;
+    }
+    return;
+  }
+
   let firstData = {};
   if (window.LivePalmesPerformanceStore?.loadData) {
     const storeData = await withTimeout(window.LivePalmesPerformanceStore.loadData(), 5000, {});

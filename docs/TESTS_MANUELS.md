@@ -2,6 +2,10 @@
 
 <!-- description: Checklist de tests manuels à exécuter avant une publication ou après une modification sensible. -->
 
+## RF/MPF NAP — préparation TEST du 12 octobre
+
+Comparer le contenu complet RF/RFJ/MPF à la source initiale ; vérifier les pages RF, MPF, repères nageurs et l'administration. Contrôler que le lecteur public n'expose jamais l'historique, les e-mails ou l'auteur. Les droits `records.manage`, `admin.full` et équivalences existantes restent inchangés ; un droit national d'engagements seul ne suffit pas. Vérifier concurrence, double clic, reprise après réponse perdue et rollback avec des données simulées : TEST partage NAP, aucun record d'essai à publier sans accord spécifique. La correction de la MPF Anthelme doit faire l'objet d'une action réelle séparée autorisée. Aucune publication PROD ni suppression de l'ancienne source n'est incluse dans cette recette.
+
 ## Recette actuelle NAP — à lire avant les scénarios historiques
 
 TEST partage la vraie base NAP. Les scénarios d'écriture ci-dessous ne sont pas autorisés par une simple vérification : exiger accord spécifique, données ciblées et sauvegarde. Ne pas déclencher recalcul DTN, import, fusion, suppression ou mail pour un contrôle de lecture. Les scénarios Direct restent distincts et inchangés.

@@ -188,8 +188,9 @@ if (ENVIRONMENT.sportingDataSource === "nap") {
     try {
       if (!napPool) napPool = createNapPool(napPassword.value());
       const action = request.query.action || "swimmer";
-      if (!["swimmer", "search", "top", "top-years", "top-metadata", "calendar-manifest", "calendar-season", "competition", "competition-results"].includes(action)) throw new TypeError("Action invalide.");
-      response.json(action === "calendar-manifest" ? await require("./nap-direct-calendar").readCalendarManifest(napPool)
+      if (!["swimmer", "search", "top", "top-years", "top-metadata", "calendar-manifest", "calendar-season", "competition", "competition-results", "records"].includes(action)) throw new TypeError("Action invalide.");
+      response.json(action === "records" ? await require("./nap-records-store").read(napPool)
+        : action === "calendar-manifest" ? await require("./nap-direct-calendar").readCalendarManifest(napPool)
         : action === "calendar-season" ? await require("./nap-direct-calendar").readCalendarSeason(napPool, request.query.year)
         : action === "competition" ? await require("./nap-direct-calendar").readCompetition(napPool, request.query.id)
         : action === "competition-results" ? await require("./nap-direct-competition-results").readCompetitionResults(napPool, request.query.id)
@@ -16899,7 +16900,7 @@ async function saveNativeClubIndividualEntries(context,request) {
           forbidden:(code,category)=>ENGAGEMENT_EVENT_FORBIDDEN_CATEGORIES[code]?.has(category)===true,
           automatic:automaticEngagementIndividualEntry,parse:parseEngagementEntryTime,
           prepareQualifications:(connection,input)=>require("./nap-qualification-people").readEvaluations(connection,{...input,events:qualificationEvents(require("./nap-portal-workspaces").competitionItem(input.pack,ENGAGEMENT_EVENT_DEFINITION_BY_CODE)),categoryFor:ageCategoryFromDates}),
-          validateTimes:async(swimmers,competition)=>validateEngagementIndividualEntryTimes(swimmers,competition,await require("./nap-entry-static-records").loadStaticRecords(ENVIRONMENT.projectId))
+          validateTimes:async(swimmers,competition)=>validateEngagementIndividualEntryTimes(swimmers,competition,(await require("./nap-records-store").read(require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD))).data)
         });
       },
       prepareEffects:require("./nap-qualification-entry-effects").prepare,
@@ -17467,7 +17468,7 @@ async function saveNativeClubRelays(context,request) {
         validate:async(raw,competition,dossier)=>{
           const swimmers=require("./nap-portal-workspaces").entryItem(dossier,context,birthDate=>ageCategoryFromDates(competition.date,birthDate),competition).swimmers;
           const relays=cleanEngagementEntryRelays([raw],competition,swimmers);
-          return validateEngagementRelayEntryTimes(relays,competition,await require("./nap-entry-static-records").loadStaticRecords(ENVIRONMENT.projectId))[0];
+          return validateEngagementRelayEntryTimes(relays,competition,(await require("./nap-records-store").read(require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD))).data)[0];
         }
       })});
     }
@@ -22109,6 +22110,29 @@ exports.retryPerformancePublicationJob = onCall(CALLABLE_OPTIONS, async (request
   return { ok: true, publicationJob };
 });
 
+// RF/MPF: existing records capability, native versioned snapshot, no mail or TOP rebuild.
+function authorizeNapRecords(request){
+  if(!request.auth?.uid)throw new HttpsError("unauthenticated","Connexion requise.");
+  if(!ADMIN_UIDS.has(request.auth.uid) && request.auth.token?.livepalmesAccess!==true)throw new HttpsError("permission-denied","Acces LivePalmes actif requis.");
+  assertCapability(request,"records.manage");
+  if(ENVIRONMENT.sportingDataSource!=="nap")throw new HttpsError("failed-precondition","Source NAP requise.");
+  return {uid:request.auth.uid,email:request.auth.token?.email||""};
+}
+async function readNapRecordsAdministration(request){
+  authorizeNapRecords(request);
+  try{return await require("./nap-records-store").read(require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD),{administration:true});}
+  catch(error){throw nativePerformanceFailure(error);}
+}
+async function publishNativeRecords(request){
+  const actor=authorizeNapRecords(request);
+  try{
+    const result=await require("./nap-records-store").publish(require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD),request.data,actor);
+    await writeAuditLogOnce("recordsMpf.published",actor.uid,{version:String(result.revision),source:"nap",publishedAt:result.data.updatedAt||""},`nap-records-${request.data.operationId}`);
+    return result;
+  }
+  catch(error){throw nativePerformanceFailure(error);}
+}
+
 const NAP_PERFORMANCE_OPTIONS={...CALLABLE_OPTIONS,...(ENVIRONMENT.sportingDataSource === "nap"?{secrets:[defineSecret("LIVEPALMES_NAP_PASSWORD")],maxInstances:2,concurrency:4}: {})};
 function authorizeNativePerformance(request) {
   if(!request.auth?.uid)throw new HttpsError("unauthenticated","Connexion requise.");
@@ -22122,11 +22146,19 @@ function nativePerformanceFailure(error) {
     error instanceof TypeError||error instanceof RangeError?error.message:"Operation NAP interrompue. Reprenez la meme operation ; la sauvegarde est conservee.");
 }
 exports.getNapPerformanceAdministration=onCall(NAP_PERFORMANCE_OPTIONS,async request=>{
+  if(request.data?.recordsAction!==undefined){
+    if(request.data.recordsAction!=="read")throw new HttpsError("invalid-argument","Action Records invalide.");
+    return readNapRecordsAdministration(request);
+  }
   if(ENVIRONMENT.sportingDataSource !== "nap")throw new HttpsError("failed-precondition","Source NAP requise.");
   try{return await require("./nap-performance-administration").createPerformanceAdministration({authorize:authorizeNativePerformance,getPool:()=>require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD)})(request);}
   catch(error){throw nativePerformanceFailure(error);}
 });
 exports.savePerformanceCorrection = onCall(NAP_PERFORMANCE_OPTIONS, async (request) => {
+  if(request.data?.recordsAction!==undefined){
+    if(request.data.recordsAction!=="publish")throw new HttpsError("invalid-argument","Action Records invalide.");
+    return publishNativeRecords(request);
+  }
   assertCapability(request, "competitions.import");
   if(ENVIRONMENT.sportingDataSource === "nap") {
     try{return await require("./nap-performance-write").createPerformanceWriter({authorize:authorizeNativePerformance,getPool:()=>require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD)}).change(request,request.data);}

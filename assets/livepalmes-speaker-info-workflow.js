@@ -232,7 +232,7 @@
           swimmerInfoRows
         ] = await Promise.all([
           fetchSpeakerSheetRows(SPEAKER_INFO_SHEETS.france),
-          Promise.resolve([]),
+          window.LivePalmesPublicRecordsSource?.load?.().then(() => []) || Promise.resolve([]),
           fetchOptionalSpeakerSheetRows(SPEAKER_INFO_SHEETS.edf),
           fetchOptionalSpeakerSheetRows(SPEAKER_INFO_SHEETS.international),
           fetchOptionalSpeakerSheetRows(SPEAKER_INFO_SHEETS.qualifications),

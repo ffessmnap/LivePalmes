@@ -735,7 +735,13 @@
         global.LIVEPALMES_RECORDS = recordData;
         return recordData;
       })
-      .catch(() => recordData);
+      .catch((error) => {
+        if (usesNapDirectData) {
+          recordData = { records: [], franceRecords: [] };
+          console.warn("Repères Records/MPF NAP indisponibles", error);
+        }
+        return recordData;
+      });
   }
 
   function resetFilters() {

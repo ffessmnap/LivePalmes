@@ -863,9 +863,14 @@ function initPage() {
 }
 
 (async function start() {
-  if (window.LivePalmesPerformanceStore?.loadData) {
-    refreshData(await window.LivePalmesPerformanceStore.loadData());
-    window.LIVEPALMES_RECORDS = data;
+  try {
+    if (window.LivePalmesPerformanceStore?.loadData) {
+      refreshData(await window.LivePalmesPerformanceStore.loadData());
+      window.LIVEPALMES_RECORDS = data;
+    }
+    initPage();
+  } catch (error) {
+    elements.recordsBody.replaceChildren();
+    if (elements.cutoffText) elements.cutoffText.textContent = `Records/MPF indisponibles : ${error.message || error}`;
   }
-  initPage();
 })();
