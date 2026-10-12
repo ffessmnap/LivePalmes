@@ -122,6 +122,7 @@
 
   function engagementCompetitionType(competition = {}) {
     if (competition?.sourceType === "calendarEvent") return String(competition.eventType || "other");
+    if (competition?.napSource === true) return String(competition.eventType || competition.competitionType || "other");
     return competition?.competitionType === "openWater" ? "openWater" : "pool";
   }
 
@@ -10969,7 +10970,7 @@
             if (!nativeWorkspace && prefetchedWorkspace?.cachedAt && Date.now() - prefetchedWorkspace.cachedAt < ENGAGEMENT_CLUB_WORKSPACE_CACHE_TTL_MS) {
               return prefetchedWorkspace;
             }
-            return callFunction("getEngagementClubEntry", { competitionId: cleanId });
+            return callFunctionWithTimeout("getEngagementClubEntry", { competitionId: cleanId });
           })
         : callFunction("getEngagementCompetition", { competitionId: cleanId }));
       if (selectedEngagementCompetitionId !== cleanId) return;
