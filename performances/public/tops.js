@@ -1,6 +1,6 @@
 (function attachIntranapTopsPage(global) {
-  let summary = global.LIVEPALMES_INTRANAP_SUMMARY || { filters: { courses: [], categories: [], seasons: [], regions: [] }, counts: {} };
-  const publicVersion = global.LIVEPALMES_PERFORMANCE_PUBLIC_VERSION || summary.generatedAt || "20260602-intranap-4";
+  let summary = { filters: { courses: [], categories: [], seasons: [], regions: [], ...global.LivePalmesPerformanceReference }, counts: {} };
+  const publicVersion = "legacy-retired";
   const params = new URLSearchParams(global.location.search);
   const usesNapDirectData = global.LivePalmesEnvironment.sportingDataSource === "nap";
   let napRequest = 0;
