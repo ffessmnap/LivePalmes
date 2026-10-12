@@ -1914,6 +1914,12 @@ async function startAdmin() {
       recordsDataLoaded = false;
       updateAuthView();
       if (elements.tableMeta) elements.tableMeta.textContent = `Records/MPF indisponibles : ${error.message || error}`;
+      const moduleStatus = document.querySelector("#adminRecordModuleStatus");
+      if (moduleStatus) {
+        moduleStatus.hidden = false;
+        moduleStatus.dataset.tone = "error";
+        moduleStatus.textContent = `Records/MPF indisponibles : ${error.message || error}`;
+      }
     }
     return;
   }

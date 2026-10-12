@@ -2828,10 +2828,10 @@
         ["performances/public/record-placeholders.js?v=20260613-mpf-relays-mixed-1", "adminRecordPlaceholdersScript"],
         ["performances/public/data/club-reference.js?v=20260813-national-clubs-3", "adminRecordReferenceScript"],
         ["performances/public/data/performance-public/version.js", "adminRecordVersionScript"],
-        ["performances/public/store.js?v=20261012-records-nap-1", "adminRecordStoreScript"]
+        ["performances/public/store.js?v=20261012-records-nap-2", "adminRecordStoreScript"]
       ];
       await Promise.all(scripts.map(([src, id]) => loadScriptOnce(src, id)));
-      await loadScriptOnce("performances/public/admin-records.js?v=20261012-records-nap-1", "adminRecordModuleScript");
+      await loadScriptOnce("performances/public/admin-records.js?v=20261012-records-nap-2", "adminRecordModuleScript");
       watchRecordWorkbench();
     })().catch((error) => {
       recordModuleLoadPromise = null;
