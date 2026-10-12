@@ -15,3 +15,15 @@ context.window=context;vm.createContext(context);vm.runInContext(fs.readFileSync
  assert.equal(published.length,2);assert.equal(published[0].operationId,published[1].operationId);assert.equal(published[1].data.updatedAt,"first");assert.equal(published[1].expectedRevision,1);
  console.log("NAP browser Records: fresh read, no Firestore/static fallback, private administration and stable retry verified.");
 })().catch(e=>{console.error(e);process.exitCode=1;});
+
+// Pages must bootstrap without loading an obsolete snapshot before their async NAP read.
+for (const file of ["records.js", "app.js"]) {
+ const script=fs.readFileSync(`performances/public/${file}`,"utf8");
+ const bootstrap=script.slice(0,script.indexOf("const elements ="));
+ const page={window:{},normalizeMixedRelayRecords:rows=>rows};vm.createContext(page);
+ vm.runInContext(bootstrap+";globalThis.bootstrapped = data.records.length === 0 && data.franceRecords.length === 0;",page);
+ assert.equal(page.bootstrapped,true,`${file} starts without static Records`);
+}
+for (const file of ["performances/records.html","performances/mpf.html","performances/nageur.html","pilotage-livepalmes.html","speaker.html","bureau-perf.html","series-public.html"]) {
+ assert.equal(fs.readFileSync(file,"utf8").includes("data/records-data.js"),false,`${file} does not download the legacy snapshot`);
+}

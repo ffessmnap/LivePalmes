@@ -2831,7 +2831,7 @@
         ["performances/public/store.js?v=20261012-records-nap-2", "adminRecordStoreScript"]
       ];
       await Promise.all(scripts.map(([src, id]) => loadScriptOnce(src, id)));
-      await loadScriptOnce("performances/public/admin-records.js?v=20261012-records-nap-2", "adminRecordModuleScript");
+      await loadScriptOnce("performances/public/admin-records.js?v=20261012-records-cleanup-1", "adminRecordModuleScript");
       watchRecordWorkbench();
     })().catch((error) => {
       recordModuleLoadPromise = null;

@@ -1,4 +1,4 @@
-﻿let data = window.LIVEPALMES_RECORDS;
+﻿let data = window.LIVEPALMES_RECORDS || { records: [], franceRecords: [], filters: {} };
 let records = data.records;
 let franceRecords = data.franceRecords || [];
 const MASTER_RELAY_CATEGORY = window.LivePalmesRecordPlaceholders?.masterRelayCategory || "MASTER_RELAYS_MIXED";

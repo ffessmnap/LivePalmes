@@ -57,7 +57,7 @@ Il utilise principalement :
 - les modules `assets/livepalmes-admin-*.js` ;
 - Firebase Authentication ;
 - MySQL NAP via les Cloud Functions ;
-- Firestore pour les comptes, réglages et traces techniques, avec l’exception Records/MPF conservée.
+- Firestore pour les comptes, réglages et traces techniques, avec les anciennes copies Records/MPF conservées pour retour arrière.
 
 Chaque compte ne voit et ne modifie que les espaces autorises par ses capacites et son perimetre.
 
@@ -257,21 +257,9 @@ La page des archives lit en priorite `public/archivesIndex`, borne aux 50 archiv
 
 ### Records et MPF
 
-La source d'administration des Records / MPF est :
+La source officielle et l’administration sont les compléments NAP `livepalmes_records_versions` et `livepalmes_records_current`. Pages publiques, fiches nageurs et repères partagés lisent cette source via les fonctions existantes ; aucun chargement statique RF/MPF ni repli sportif Firestore n’est nécessaire en mode NAP.
 
-```text
-competitions/livepalmes-active/performanceData/records
-```
-
-Les pages publiques lisent uniquement le fichier statique genere :
-
-```text
-performances/public/data/records-data.js
-```
-
-En fonctionnement normal, chaque modification de `performanceData/records` declenche aussi `syncPublicRecordsData`. La fonction publie une version JSON immuable dans `performance-public-firestore/records/versions/`, puis remplace atomiquement le petit manifeste `performance-public-firestore/records/manifest.json`. Les pages Records, MPF et fiches nageurs lisent ce manifeste sans interroger Firestore ; le fichier Hosting ci-dessus reste leur secours local.
-
-La synchronisation du secours statique n'est pas automatique à chaque Hosting. Toute préparation par `tools/sync-records-from-firestore.js --write` ou `tools/prepare-hosting-data.js --write` nécessite une autorisation spécifique et le contrôle du diff généré. Voir [le circuit public](pipeline-performances-publiques.md).
+Les anciennes copies sont conservées temporairement pour retour arrière. La synchronisation historique Firestore ne doit pas être relancée. Voir [le circuit public](pipeline-performances-publiques.md) et [le suivi](releases/EVOLUTIONS.md).
 
 ### Performances historiques
 
