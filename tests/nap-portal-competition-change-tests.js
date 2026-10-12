@@ -5,12 +5,22 @@ const native=require("../functions/nap-portal-competitions");
 const {fingerprint}=require("../functions/nap-portal-workspaces");
 const now=Date.parse("2026-10-06T12:00:00Z");
 function fixturePack() {
-  const competition={id:5140,libelle:"Competition &amp; historique",lieu:"Antibes",date:"2026-10-11",enddate:null,comite:7,description:"Texte ancien",bassin:50,chrono:"M",ld:0};
+  const competition={id:5140,libelle:"Competition &amp; historique",lieu:"Antibes",date:"2026-10-11",enddate:null,comite:7,description:"Texte ancien",comments:"Commentaire INTRANAP",bassin:50,chrono:"M",ld:0};
   const parameters={id:5000,compet:5140,actif:1,dateactif:"2026-09-30 19:03:01",date_limit:"2026-10-07 21:59:17",officiel:1,nb_lignes:8,mailtxt:null,mailjuges:"",tps_d:null,tps_f:null,niveau:3,saisie:0,relais:0};
   return {source:"nap",readAt:"now",event:{id:"legacy-nap-5140",date:"2026-10-11",competitionType:"pool",level:"national"},nativeParameters:{parameter_id:5000,...parameters},nativeSnapshot:{competition,parameters},courses:[{id:1,course:"50AP",sexe:"F"}],options:null,fees:null,courseOptions:[],committees:[],groups:[],standards:[],detailedProgram:null};
 }
 const pack=fixturePack();
 const input=patch=>({competitionId:"legacy-nap-5140",actorUid:"admin",national:true,expectedFingerprint:fingerprint(pack),patch});
+const commentsPlan=planCompetitionChange(pack,input({publicDescription:"Nouveau commentaire\n14h"}),now);
+assert.equal(commentsPlan.operations.length,1);
+assert.equal(commentsPlan.operations[0].table,"competitions");
+assert.equal(commentsPlan.operations[0].after.comments,"Nouveau commentaire\n14h");
+assert.equal(commentsPlan.operations[0].after.description,"Texte ancien");
+const commentsSql=buildStatement(commentsPlan.operations[0],{competitions:pack.nativeSnapshot.competition,compet_parametres:pack.nativeSnapshot.parameters});
+assert.match(commentsSql.sql,/SET `comments`=\?/);
+assert.match(commentsSql.sql,/CONVERT\(`comments` USING utf8mb4\) <=>/);
+const changedComments=structuredClone(pack); changedComments.nativeSnapshot.competition.comments="Modifié depuis INTRANAP";
+assert.throws(()=>planCompetitionChange(changedComments,input({publicDescription:"Remplacement"}),now),/a change/);
 assert.throws(()=>planCompetitionChange(pack,{...input({level:"regional",regionId:"3"}),national:false},now),/reserve au national/);
 const transfer=planCompetitionChange(pack,input({level:"regional",regionId:"Ile de France"}),now);
 assert.equal(transfer.operations.find(o=>o.table==="competitions").after.comite,3);

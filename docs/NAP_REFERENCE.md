@@ -28,6 +28,10 @@ La reprise autorisée est effectuée à l'identique dans deux compléments NAP :
 
 Les noms de modules du tableau sont relatifs à `functions/`, sauf chemin explicite. Firestore conserve donc aussi des données d'administration des Records/MPF et des traces techniques : « plus aucune donnée dans Firebase » serait inexact. La présence d'un ancien module ou d'une déclaration dans le dépôt ne prouve pas qu'une fonction est déployée ou utilisée.
 
+## Commentaires de compétition
+
+Le champ natif `competitions.comments` est la source commune INTRANAP, portail et calendrier public. Les futures modifications LivePalmes ciblent ce champ ; `competitions.description` reste conservé et visible séparément lorsqu’il contient un ancien texte distinct. Aucun transfert, effacement ou fusion automatique. Les écritures restent ciblées sur une compétition, avec sauvegarde et comparaison de la valeur native avant enregistrement.
+
 ## Règles conservées dans le portail
 
 - Une compétition et ses engagements sont partagés avec IntraNAP par les tables NAP. Programme détaillé, tarifs, restrictions et dérogations propres à LivePalmes restent dans les compléments ; ne pas reproduire ces fonctions dans IntraNAP. Les restrictions supplémentaires de LivePalmes ne sont pas garanties par l'ancienne interface.

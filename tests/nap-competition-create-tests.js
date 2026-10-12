@@ -72,3 +72,7 @@ function fixture() {
   await assert.rejects(s.run(training),/network/);assert.equal(s.writes,4);await s.run(training);assert.equal(s.writes,4,"Lost calendar reply must not duplicate the event or details");assert.equal(s.options.organizer_label,"CNHC");
   console.log("NAP competition creation: validation, budget, guards and uncertain retries passed");
 })().catch(error=>{console.error(error);process.exitCode=1;});
+
+const createdComments=require("../functions/nap-competition-create").planCreation({actorUid:"admin",creationId:"12345678-1234-4123-8123-123456789abc",committeeId:3,event:{name:"Formation",city:"Paris",date:"2026-11-07",competitionType:"training",level:"regional",publicDescription:"Rendez-vous à 13h"}});
+assert.equal(createdComments.competition.comments,"Rendez-vous à 13h");
+assert.equal(createdComments.competition.description,"");
