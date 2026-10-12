@@ -16900,7 +16900,7 @@ async function saveNativeClubIndividualEntries(context,request) {
           forbidden:(code,category)=>ENGAGEMENT_EVENT_FORBIDDEN_CATEGORIES[code]?.has(category)===true,
           automatic:automaticEngagementIndividualEntry,parse:parseEngagementEntryTime,
           prepareQualifications:(connection,input)=>require("./nap-qualification-people").readEvaluations(connection,{...input,events:qualificationEvents(require("./nap-portal-workspaces").competitionItem(input.pack,ENGAGEMENT_EVENT_DEFINITION_BY_CODE)),categoryFor:ageCategoryFromDates}),
-          validateTimes:async(swimmers,competition)=>validateEngagementIndividualEntryTimes(swimmers,competition,(await require("./nap-records-store").read(require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD))).data)
+          validateTimes:async(swimmers,competition)=>validateEngagementIndividualEntryTimes(swimmers,competition,(await require("./nap-records-store").read(input.connection)).data)
         });
       },
       prepareEffects:require("./nap-qualification-entry-effects").prepare,
@@ -17468,7 +17468,7 @@ async function saveNativeClubRelays(context,request) {
         validate:async(raw,competition,dossier)=>{
           const swimmers=require("./nap-portal-workspaces").entryItem(dossier,context,birthDate=>ageCategoryFromDates(competition.date,birthDate),competition).swimmers;
           const relays=cleanEngagementEntryRelays([raw],competition,swimmers);
-          return validateEngagementRelayEntryTimes(relays,competition,(await require("./nap-records-store").read(require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD))).data)[0];
+          return validateEngagementRelayEntryTimes(relays,competition,(await require("./nap-records-store").read(input.connection)).data)[0];
         }
       })});
     }

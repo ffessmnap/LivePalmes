@@ -11,7 +11,7 @@ const context={nativeClubEntryView:async()=>({source:"nap"}),exports:{},ENVIRONM
   if(name==="./nap-qualification-entry-effects") return require("../functions/nap-qualification-entry-effects");
   if(name==="./nap-entry-course-rules") return {...require("../functions/nap-entry-course-rules"),readCategories:async c=>{assert.equal(c,connection);categoriesReads++;return [];}};
   if(name==="./nap-portal-workspaces") return {competitionItem:()=>({date:"2026-10-11"}),entryItem:()=>({source:"nap"})};
-  if(name==="./nap-records-store") return {read:async pool=>{assert.equal(pool.native,true);recordsReads++;return {source:"nap",revision:1,data:{}};}};
+  if(name==="./nap-records-store") return {read:async nativeConnection=>{assert.equal(nativeConnection,connection,"Reuse the held connection; do not wait for another pooled connection");recordsReads++;return {source:"nap",revision:1,data:{}};}};
   if(name==="./nap-individual-entry-resolution") return {resolveChanges:async(input,services)=>{
     assert.equal(input.connection,connection);assert.equal(services.age("2026-10-11","2013-01-01"),14);
     assert.equal(services.forbidden("50AP","M"),true);assert.equal(services.forbidden("50BI","M"),false);
