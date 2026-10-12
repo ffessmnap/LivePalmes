@@ -109,12 +109,12 @@ Node.js fait fonctionner les traitements techniques : tests, imports, controles,
 
 Ces outils et formats relient LivePalmes aux donnees sportives existantes :
 
-- INTRANAP fournit l'archive historique des nageurs, clubs, competitions et performances ;
-- les fichiers TXT federaux et les trames Excel permettent d'importer de nouveaux resultats ;
+- IntraNAP et LivePalmes partagent la base NAP des nageurs, clubs, compétitions et performances ;
+- les fichiers TXT WinPalme permettent d'importer de nouveaux résultats dans NAP ; les trames Excel internationales restent hors de la première validation de production ;
 - les PDF servent notamment aux documents de competition ;
 - les exports WinPalme permettent de transmettre les engagements dans un format exploitable par le logiciel de gestion de competition.
 
-L'archive INTRANAP est conservee intacte. Les corrections sont appliquees dans la base active LivePalmes en gardant une trace de leur origine.
+Les anciens exports INTRANAP restent historiques. Les corrections actuelles sont appliquées directement dans NAP avec les sauvegardes et traces prévues ; elles sont donc aussi visibles depuis IntraNAP.
 
 ### Google Sheets et la messagerie
 
