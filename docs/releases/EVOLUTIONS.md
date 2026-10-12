@@ -2,6 +2,11 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 12 octobre — Publication des retouches visuelles sans backend
+
+- Demande explicite : examiner et corriger le circuit pour publier seulement les retouches visuelles sur TEST, sans NAP, droits ni mails. Retouches intégrées par #258, commit `e9bba081` ; tests complets et aperçu isolé réussis (`38243326079`). Le contrôle sans déploiement `38243607108` a proposé 103 fonctions et refusé le backend ; aucun Hosting commun ni backend publié par ce contrôle.
+- Cause : tri initial des lignes Git par hash brut, puis normalisation du registre de retrait sans nouveau tri. L'ajout de `syncPublicRecordsData` au registre déplaçait une entrée de la signature commune et invalidait toutes les empreintes. Tri après normalisation ; aucun handler ni registre NAP modifié.
+- Mode TEST `hosting_only` : preuves/révisions et équivalence backend toujours contrôlées ; sélection non vide refusée avant toute publication et trois étapes Functions explicitement interdites. Tests du cas réel #254/#258, conservation des vrais changements et refus backend différent/non prouvé. Publication TEST et contrôle en ligne à attester ; validation utilisateur limitée au comparatif local compact.
 ### 12 octobre — Retouches progressives du design public
 
 - Audit puis accord pour les retouches locales et demande de publication TEST. Retour utilisateur sur le comparatif : conserver les quatre filtres compacts des engagements et les boutons TOP de 26 px ; version compacte acceptée. Ce retour porte sur l'aperçu local, pas encore sur la version commune TEST.
