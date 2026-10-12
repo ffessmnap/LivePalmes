@@ -108,7 +108,7 @@
   async function napCall(name, input) {
     const firebase = ensureFirebase();
     if (!firebase?.functions) throw new Error("Connexion serveur Records/MPF indisponible.");
-    const result = await firebase.functions(global.LivePalmesEnvironment.functionsRegion || "europe-west1").httpsCallable(name)(input || {});
+    const result = await firebase.app().functions(global.LivePalmesEnvironment.functionsRegion || "europe-west1").httpsCallable(name)(input || {});
     if (result.data?.source !== "nap" || !Number.isSafeInteger(result.data.revision) || !result.data.data) throw new Error("Réponse Records/MPF NAP invalide.");
     return result.data;
   }
