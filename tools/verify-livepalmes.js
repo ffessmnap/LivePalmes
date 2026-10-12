@@ -54,6 +54,7 @@ function runUnitTests() {
     "nap-direct-search-tests.js",
     "nap-direct-tops-tests.js",
     "nap-top-requests-tests.js",
+    "nap-public-reference-tests.js",
     "nap-source-inventory-tests.js",
     "nap-portal-contract-tests.js",
     "nap-club-switch-tests.js",
