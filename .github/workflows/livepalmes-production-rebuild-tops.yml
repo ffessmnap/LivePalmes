@@ -1,4 +1,4 @@
-name: Reconstruire les TOP PROD autorises
+name: Archive - Reconstruire les TOP PROD autorises
 on:
   workflow_dispatch:
     inputs:
@@ -15,7 +15,8 @@ concurrency:
   cancel-in-progress: false
 jobs:
   rebuild:
-    if: github.ref == 'refs/heads/main' && github.run_attempt == 1 && inputs.confirm_production_tops
+    # Archive : NAP direct ; aucune reconstruction sportive historique.
+    if: ${{ false }}
     runs-on: ubuntu-latest
     timeout-minutes: 180
     environment: production

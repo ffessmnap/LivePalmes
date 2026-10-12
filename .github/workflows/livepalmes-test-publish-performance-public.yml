@@ -1,4 +1,4 @@
-name: Publier performances publiques Firebase TEST
+name: Archive - Publier performances publiques Firebase TEST
 
 on:
   workflow_dispatch:
@@ -24,7 +24,8 @@ env:
 jobs:
   publier-performances-test:
     name: Générer et publier TOP et fiches nageurs TEST
-    if: github.ref == 'refs/heads/main'
+    # Archive : NAP direct ; aucune reconstruction sportive historique.
+    if: ${{ false }}
     runs-on: ubuntu-latest
     timeout-minutes: 180
     environment:

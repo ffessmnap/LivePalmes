@@ -9,3 +9,12 @@ assert.equal(reference.courses[0].label,"50 m Surface");assert.equal(reference.c
 assert.equal(reference.categories.length,24);
 for(const name of ["tops","nageur"]){const html=fs.readFileSync(`performances/${name}.html`,"utf8");assert.ok(html.includes("public/reference.js"));assert.equal(html.includes("intranap-summary.js"),false);assert.equal(html.includes("performance-public/version.js"),false);}
 console.log("Public reference: course labels/order retained without historical performance snapshot.");
+
+const {spawnSync}=require("node:child_process");
+for(const name of ["upload-public-performance-files-to-storage","publish-consolidated-performance-data","build-public-performance-files-from-firestore"]){
+ const result=spawnSync(process.execPath,[`tools/${name}.js`,"--write"],{encoding:"utf8",env:{...process.env,GOOGLE_APPLICATION_CREDENTIALS:"unavailable"}});
+ assert.notEqual(result.status,0);assert.match(result.stderr,/Circuit sportif statique archive/);
+}
+for(const name of ["livepalmes-test-publish-performance-public","livepalmes-production-rebuild-tops"]){assert.match(fs.readFileSync(`.github/workflows/${name}.yml`,"utf8"),/if: \$\{\{ false \}\}/);}
+
+for(const name of ["build-public-performance-files","build-intranap-public-data"]){const env={...process.env};delete env.LIVEPALMES_NAP_OUT_DIR;const result=spawnSync(process.execPath,[`tools/${name}.js`],{encoding:"utf8",env});assert.notEqual(result.status,0);assert.match(result.stderr,/Generation statique archivee/);}

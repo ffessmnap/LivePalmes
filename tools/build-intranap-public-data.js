@@ -1,6 +1,13 @@
 const fs = require("fs");
 const path = require("path");
 
+// Historical converter retained only for explicit offline NAP transition diagnostics.
+if (require.main === module && !process.env.LIVEPALMES_NAP_OUT_DIR) {
+  console.error("Generation statique archivee : dossier de diagnostic explicite requis.");
+  process.exit(1);
+}
+
+
 const DEFAULT_INTRANAP_DIR = path.resolve(process.cwd(), "..", "..", "BDD INTRANAP");
 const INTRANAP_DIR = process.env.INTRANAP_DIR || DEFAULT_INTRANAP_DIR;
 const IS_NAP_SOURCE = process.env.LIVEPALMES_NAP_SOURCE === "true";

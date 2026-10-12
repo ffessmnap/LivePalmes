@@ -17,6 +17,11 @@ run-name: ${{ inputs.verification_only && 'Verification TEST sans deploiement' |
         required: true
         type: boolean
         default: false
+      approved_public_export_cleanup:
+        description: Retrait TEST des seuls exports TOP/nageurs historiques inventoriés le 12 octobre
+        required: true
+        type: boolean
+        default: false
       dtn_extension:
         description: Valider hors ligne les deux dependances DTN autorisees (sans automatisme TEST)
         required: true
@@ -67,6 +72,7 @@ jobs:
         BASE_SHA: ${{ inputs.production_commit }}
         APPROVED_TOP_FILES: ${{ inputs.approved_top_files }}
         APPROVED_RECORDS_CLEANUP: ${{ inputs.approved_records_cleanup }}
+        APPROVED_PUBLIC_EXPORT_CLEANUP: ${{ inputs.approved_public_export_cleanup }}
       run: '[[ "$BASE_SHA" =~ ^[0-9a-f]{40}$ ]]
 
         test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
@@ -86,7 +92,7 @@ jobs:
 
         paths=subprocess.check_output([''git'',''diff'',''--name-only'',''--no-renames'',os.environ[''BASE_SHA''],''HEAD''],text=True).splitlines()
 
-        m.classify_test(paths, os.environ[''APPROVED_TOP_FILES''] == ''true'', os.environ[''APPROVED_RECORDS_CLEANUP''] == ''true'')
+        m.classify_test(paths, os.environ[''APPROVED_TOP_FILES''] == ''true'', os.environ[''APPROVED_RECORDS_CLEANUP''] == ''true'', os.environ[''APPROVED_PUBLIC_EXPORT_CLEANUP''] == ''true'')
 
         PYCODE'
     - name: Installer et verifier

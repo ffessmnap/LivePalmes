@@ -177,8 +177,6 @@ Scripts et styles principaux :
 
 Donnees publiques :
 
-- `performances/public/data/performance-public/`
-- `performances/public/data/performance-public-firestore/`
 
 Attention : ce dossier contient beaucoup de fichiers generes. Ce volume est normal.
 

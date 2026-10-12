@@ -423,4 +423,27 @@ class RecordsCleanupTests(unittest.TestCase):
         with patch.object(m,'git',side_effect=self.fixtures()),self.assertRaises(ValueError):
             m.classify_test(['firebase.json',m.RECORDS_STATIC_PATH,'performances/public/data/other.js'],False,True)
 
+class PublicExportCleanupTests(unittest.TestCase):
+    def fake(self, replacement=False, config=False, dependent=False, unknown=False):
+        def git(*args):
+            if args[0]=='ls-tree':
+                if args[3]==m.PUBLIC_EXPORT_CLEANUP_BASE:return 'performances/public/data/performance-public/swimmers/a.json\nperformances/public/data/intranap-summary.js'
+                return 'unexpected' if replacement else ''
+            if args[1].endswith(':firebase.json'):
+                return json.dumps({'hosting':{'public':'.','ignore':[] if config and args[1].startswith('HEAD:') else ['historical/**']}})
+            return 'intranap-summary.js' if dependent else 'public/reference.js'
+        return git
+    def test_exact_deletion_and_prod_unchanged(self):
+        paths=['performances/public/data/performance-public/swimmers/a.json','performances/public/data/intranap-summary.js']
+        with patch.object(m,'git',side_effect=self.fake()):self.assertEqual(m.classify_test(paths,False,False,True),([],False))
+        with self.assertRaises(ValueError):m.classify(paths)
+        with patch.object(m,'git',side_effect=self.fake()),self.assertRaises(ValueError):m.classify_test(paths)
+    def test_replacement_configuration_dependency_or_new_path_refused(self):
+        path='performances/public/data/performance-public/swimmers/a.json'
+        for kw in ({'replacement':True},{'config':True},{'dependent':True}):
+            with patch.object(m,'git',side_effect=self.fake(**kw)),self.assertRaises(ValueError):m.classify_test([path],False,False,True)
+        with patch.object(m,'git',side_effect=self.fake()),self.assertRaises(ValueError):m.classify_test([path.replace('a.json','new.json')],False,False,True)
+    def test_unrelated_data_still_blocked(self):
+        with patch.object(m,'git',side_effect=self.fake()),self.assertRaises(ValueError):m.classify_test(['performances/public/data/other.json'],False,False,True)
+
 if __name__=='__main__':unittest.main()

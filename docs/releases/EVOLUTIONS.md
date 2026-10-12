@@ -2,11 +2,18 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 12 octobre — Nettoyage TOP/nageurs, étape 2
+
+- Suppression des 10 893 exports TOP/aperçus/nageurs/recherche/identifiants (204 548 635 octets) et de quatre anciens fichiers globaux : manifeste/version, résumé et index public de nageurs. Suppressions locales Git uniquement ; NAP, Firestore, Storage et références backend distinctes conservés.
+- Deux workflows sportifs historiques archivés (jobs désactivés) et trois commandes de reconstruction/publication retirées du circuit actif avant tout accès distant. Générateurs nécessaires aux tests/diagnostics conservés, sortie explicite hors dossier public exigée pour le générateur principal.
+- Circuit TEST : option dédiée, désactivée par défaut, bornée à l’inventaire immuable de l’étape 1 ; seulement l’absence des fichiers, configuration Hosting inchangée et deux pages découplées acceptées. Aucune ouverture de la classification PROD ni d’autres données.
+- Tests de refus de substitution, dérive de configuration, dépendance résiduelle et fichier hors inventaire ; recette finale et publication à attester. Budget de lectures NAP inchangé ; aucun test d’écriture réelle.
+
 ### 12 octobre — Nettoyage TOP et fiches nageurs, étape 1
 
 - Antoine autorise les deux étapes : découplage/recette TEST puis suppression des anciens exports confirmés inutiles et archivage des outils historiques. Aucun effacement NAP, Firebase ou Storage, aucun droit/mail ou PROD.
 - TOP et nageurs ne chargent plus `intranap-summary.js` ni `performance-public/version.js`. Un petit référentiel d’affichage conserve à l’identique les 14 courses et 24 libellés de catégories, sans données sportives, compteurs, saisons ou chemins locaux historiques.
-- Les lecteurs NAP sont conservés, aucun nouvel appel : TOP métadonnées puis requête bornée, nageur recherche/fiche existantes et Records/MPF groupés. Anciens fichiers conservés jusqu’à recette. Contrôles/publication TEST à attester.
+- Les lecteurs NAP sont conservés, aucun nouvel appel : TOP métadonnées puis requête bornée, nageur recherche/fiche existantes et Records/MPF groupés. Anciens fichiers conservés jusqu’à recette. PR #274 intégrée (`8155fb1d83cbfcb17b9b462245165e2f1a0791de`), CI `38281347607`, TEST Hosting seul `38281687733` réussis. Recette TOP 100 SF Hommes saison 2026 (25/342 lignes) et fiche Colas ZUGMEYER (582 performances, 125 compétitions) : filtres et lignes affichées identiques, réponses NAP identiques hors readAt. Aucune donnée écrite.
 
 ### 12 octobre — Nettoyage RF/MPF, étape 2
 

@@ -324,10 +324,41 @@ def approved_records_cleanup_paths(paths, candidate):
     return relevant
 
 
-def classify_test(paths, approved_top_files=False, approved_records_cleanup=False):
+PUBLIC_EXPORT_CLEANUP_BASE = '8155fb1d83cbfcb17b9b462245165e2f1a0791de'
+PUBLIC_EXPORT_PREFIXES = tuple('performances/public/data/performance-public/' + name + '/'
+                               for name in ('tops', 'tops-preview', 'swimmers', 'search', 'ids'))
+PUBLIC_EXPORT_METADATA = {'performances/public/data/intranap-summary.js',
+                          'performances/public/data/intranap-swimmers-index.js',
+                          'performances/public/data/performance-public/manifest.json',
+                          'performances/public/data/performance-public/version.js'}
+
+
+def approved_public_export_cleanup_paths(paths, candidate):
+    """Antoine, 12 October: deletion only of the audited historical public exports."""
+    relevant = {p for p in paths if p in PUBLIC_EXPORT_METADATA or p.startswith(PUBLIC_EXPORT_PREFIXES)}
+    if not relevant:
+        return set()
+    roots = list(PUBLIC_EXPORT_PREFIXES) + sorted(PUBLIC_EXPORT_METADATA)
+    original = set(git('ls-tree', '-r', '--name-only', PUBLIC_EXPORT_CLEANUP_BASE, '--', *roots).splitlines())
+    require(relevant <= original, 'Export hors inventaire autorise')
+    require(not git('ls-tree', '-r', '--name-only', candidate, '--', *roots).strip(),
+            'Les exports doivent etre retires, jamais remplaces')
+    require(json.loads(git('show', candidate + ':firebase.json')) ==
+            json.loads(git('show', PUBLIC_EXPORT_CLEANUP_BASE + ':firebase.json')),
+            'Configuration Hosting changee pendant le retrait des exports')
+    for page in ('performances/tops.html', 'performances/nageur.html'):
+        source = git('show', candidate + ':' + page)
+        require('intranap-summary.js' not in source and 'performance-public/version.js' not in source
+                and 'public/reference.js' in source, 'Page non decouplee des anciens exports')
+    return relevant
+
+
+def classify_test(paths, approved_top_files=False, approved_records_cleanup=False, approved_public_export_cleanup=False):
     # Exact files authorized by Antoine on TEST, 5 October 2026.
     # Ordinary and production classification remain unchanged.
     allowed = set(ignored_top_paths(paths, 'HEAD'))
+    if approved_public_export_cleanup:
+        allowed |= approved_public_export_cleanup_paths(paths, 'HEAD')
     if approved_records_cleanup:
         allowed |= approved_records_cleanup_paths(paths, 'HEAD')
     explicitly_approved = set(TEST_TOP_FILES).intersection(paths) - allowed if approved_top_files else set()

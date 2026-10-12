@@ -1,3 +1,8 @@
+// Historical implementation retained for offline diagnostics; publication retired.
+if (require.main === module) {
+  console.error("Circuit sportif statique archive : les pages utilisent NAP directement.");
+  process.exit(1);
+}
 const fs = require("fs");
 const path = require("path");
 const { spawnSync, execFileSync } = require("child_process");

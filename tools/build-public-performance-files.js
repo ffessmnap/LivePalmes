@@ -1,6 +1,18 @@
 const fs = require("fs");
 const { distinctTopPreview } = require("./performance-top-preview");
 const path = require("path");
+
+// Historical generator: tests/diagnostics may write only to an explicit scratch directory.
+if (require.main === module) {
+  const option = process.argv.indexOf("--out-dir");
+  const retired = path.resolve(__dirname, "..", "performances", "public", "data");
+  const output = option >= 0 ? path.resolve(process.argv[option + 1] || retired) : retired;
+  if (output === retired || output.startsWith(retired + path.sep)) {
+    console.error("Generation statique archivee : dossier de diagnostic explicite requis hors donnees publiques.");
+    process.exit(1);
+  }
+}
+
 const crypto = require("crypto");
 const { performanceImportChrono } = require("../functions/performance-import-timing");
 const { publicPerformanceSwimmerStorageRow } = require("../functions/performance-import-publication");

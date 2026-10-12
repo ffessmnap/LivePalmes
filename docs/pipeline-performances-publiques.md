@@ -17,3 +17,9 @@ La copie statique RF/MPF et ses outils historiques ont été retirés du dépôt
 ## Ancien pipeline
 
 Les sorties historiques TOP/nageurs, imports INTRANAP et jobs de reconstruction Firestore ne doivent pas être relancés pour rafraîchir NAP. Les déclarations conservées pour retour arrière et les fichiers résiduels ne prouvent pas un usage actuel. Les traitements retirés sont exclus des sélections de déploiement ; voir `tools/firebase-test-backend-lots.js` et [le suivi](releases/EVOLUTIONS.md).
+
+## Nettoyage des exports TOP/nageurs — 12 octobre
+
+Les exports historiques suivis dans `performance-public/{tops,tops-preview,swimmers,search,ids}` et leurs anciens manifeste/version/résumé/index ont été retirés après découplage des pages et recette TEST. `performances/public/reference.js` conserve seulement les libellés d’affichage ; les résultats restent lus dans NAP. Les copies distantes Storage et les références techniques backend ne sont pas effacées.
+
+Les deux workflows de reconstruction sportive historique sont archivés avec jobs désactivés. Les commandes de reconstruction Firestore, publication consolidée et envoi Storage sont arrêtées avant toute action ; les générateurs nécessaires aux diagnostics hors ligne et tests restent conservés avec sortie de travail explicite. Aucun nettoyage d’historique Git, migration ou suppression distante.
