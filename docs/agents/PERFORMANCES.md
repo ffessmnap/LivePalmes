@@ -28,17 +28,13 @@ Cette commande lit Firestore et écrit un fichier généré : ne pas la lancer s
 
 ## Pipeline public
 
-Les pages TOP et fiches nageurs ne doivent pas effectuer de lectures Firestore massives. Elles utilisent des fichiers publics générés et optimisés.
+TOP, recherche, fiches nageurs et résultats lisent directement NAP via les endpoints bornés. Aucun fichier TOP historique ni reconstruction sportive Firestore ne doit être utilisé pour rafraîchir ces pages. Records/MPF gardent leur circuit distinct décrit ci-dessus.
 
-- `performances/public/data/performance-public/` : fichiers publics générés présents dans le dépôt ;
-- `performances/public/data/performance-public-firestore/` : sortie locale ignorée par Git destinée à Firebase Storage ;
-- `outputs/` : fichiers de travail ignorés par Git.
+Les sorties générées historiques et `outputs/` restent des artefacts de travail, pas une source courante NAP. Ne jamais les modifier à la main. Pour Records/MPF, corriger la source et obtenir la validation spécifique avant génération/publication Storage.
 
-Ne jamais modifier ces sorties manuellement. Corriger la source ou le générateur, reconstruire localement, contrôler le résultat puis demander une validation distincte avant publication Storage.
+## Lectures NAP et Firebase conservé
 
-## Firestore
-
-Les données historiques peuvent atteindre plusieurs centaines de milliers de lignes. Toute évolution doit utiliser des requêtes indexables, bornées et paginées. Mesurer ou estimer les lectures par ouverture et vérifier qu’elles ne croissent pas avec le nombre de résultats affichés. Interdiction des scans complets publics, lectures N+1, lecture par nageur ou résultat et listeners multiples inutiles.
+Les lecteurs doivent rester indexables, bornés et paginés, sans N+1 ni reconstruction silencieuse ; voir `docs/OPTIMISATION_NAP.md`. Ne pas modifier les temps natifs pour faciliter un tri : interprétation numérique obligatoire. Firestore reste utilisé pour les comptes, le technique, Direct et la source Records/MPF. TEST partage la base NAP réelle ; un test d'écriture demande un accord spécifique.
 
 ## Références
 

@@ -1,6 +1,8 @@
 # Lecture directe NAP dans LivePalmes
 
-<!-- description: Branchement direct des pages existantes sur MySQL NAP, budgets, index autorises, preuves TEST et travaux restants. -->
+<!-- description: Historique avant bascule : Journal technique des premières étapes NAP ; états et travaux restants datés. Voir NAP_REFERENCE.md pour le fonctionnement actuel. -->
+
+> **Archive historique — 12 octobre 2026.** Ce document décrit une étape antérieure, pas le fonctionnement actuel. Les affirmations « actuel », « à faire », « TEST seulement » et les commandes ci-dessous sont datées. Ne pas relancer copie Firebase, migration ou reconstruction sportive sur cette base. Voir [la référence NAP actuelle](NAP_REFERENCE.md) et [la procédure de publication](releases/PROCEDURE.md).
 
 ## Premiere correction reelle du portail — preparation du 6 octobre
 

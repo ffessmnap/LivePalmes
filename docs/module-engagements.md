@@ -2,6 +2,8 @@
 
 <!-- description: Cahier des charges fonctionnel de référence du module de gestion des engagements en compétition, actuellement en finalisation et en test. -->
 
+> **Périmètre actualisé — 12 octobre 2026.** Les descriptions de stockage sportif Firestore, de fichiers TOP comme source des calculs et les inventaires/étapes de migration ci-dessous sont historiques. Les règles fonctionnelles non remplacées restent utiles ; pour le circuit NAP et les arbitrages actuels, suivre [NAP_REFERENCE.md](NAP_REFERENCE.md). Pour les lots de publication, suivre [PROCEDURE.md](releases/PROCEDURE.md) et la sélection versionnée, sans recréer les fonctions retirées.
+
 > **Statut du document :** ce cahier des charges a guide la construction du module integre au Portail LivePalmes. Le module existe maintenant dans le code, mais le portail complet n'est pas encore considere comme operationnel : il reste en finalisation, en test et en amelioration continue. Les formulations de conception conservees plus bas servent de reference fonctionnelle et d'historique des decisions.
 
 ## Objectif

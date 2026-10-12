@@ -1,0 +1,69 @@
+# Référence actuelle après bascule NAP
+
+<!-- description: Sources de données et fonctionnement actuel du portail/public après bascule NAP ; index des références et documents historiques. -->
+
+## Périmètre et état — 12 octobre 2026
+
+Le portail et les consultations sportives publiques utilisent directement MySQL NAP via les Cloud Functions. Le navigateur ne possède ni mot de passe MySQL ni accès SQL direct. `assets/livepalmes-environment.js` et `functions/livepalmes-environment.js` sélectionnent `sportingDataSource: "nap"` pour TEST et PROD. Aucun export sportif intermédiaire ni synchronisation entre deux bases métier n'est nécessaire à la lecture.
+
+**TEST utilise la même base NAP habituelle que PROD et IntraNAP.** Un essai d'écriture sur TEST est une opération réelle. Les changements de données et de structure exigent une autorisation spécifique ; aucune recette ne doit fabriquer de résultats, engagements ou personnes sans cet accord. IntraNAP n'a pas été modifié et son arrêt n'est pas réalisé par ce projet.
+
+## Où sont les données ?
+
+| Données | Source actuelle | Référence de code |
+| --- | --- | --- |
+| Clubs, nageurs et licences | NAP : `clubs`, `nageurs`, licence `nageurs.number`, activité `nageurs.actif` | `nap-club-directory.js`, `nap-portal-swimmers.js`, `nap-license-state.js`, `nap-swimmer-activity.js` |
+| Compétitions, calendrier, courses et engagements | Tables natives NAP et compléments `livepalmes_*` pour les options supplémentaires | `nap-portal-competitions.js`, `nap-calendar-event-details.js`, `nap-portal-entries.js`, `nap-portal-workspaces.js` |
+| Officiels, chefs d'équipe, relais | NAP, avec compléments de rôles, composition et historique | `nap-club-people.js`, `nap-team-leader-change.js`, `nap-official-entry-change.js`, `nap-relay-entry-change.js` |
+| Résultats, TOP, recherche et fiches nageurs | NAP : notamment `perfs`, `perfs_relais`, compétitions associées et compléments de visibilité/statut | `nap-direct-tops.js`, `nap-direct-swimmer.js`, `nap-direct-search.js`, `nap-direct-competition-results.js` |
+| DTN : paramètres et résultats calculés | Compléments NAP, calcul explicite à partir des performances NAP | `nap-dtn-season-service.js`, `nap-dtn-calculation.js`, `nap-dtn-source.js` |
+| Documents/protocoles | Fichiers hébergés chez Google ; titres/liens et rattachements NAP | `nap-competition-documents.js` |
+| Comptes, capacités, demandes d'accès, réglages, audits et jobs techniques | Firebase Auth / Firestore ; les recherches et créations de clubs des demandes d'accès lisent/écrivent NAP | `functions/index.js`, `nap-club-access-request.js` |
+| LivePalmes Direct | Circuit Firebase distinct, consoles, séries, résultats en direct et archives conservés | `architecture-livepalmes.md`, `LIVEPALMES_DIRECT.md` |
+| Records et MPF officiels | **Exception conservée** : administration Firebase `competitions/livepalmes-active/performanceData/records`, publication statique/manifeste ; secours `records-data.js` | `performances/public/admin-records.js`, `agents/PERFORMANCES.md` |
+
+Les noms de modules du tableau sont relatifs à `functions/`, sauf chemin explicite. Firestore conserve donc aussi des données d'administration des Records/MPF et des traces techniques : « plus aucune donnée dans Firebase » serait inexact. La présence d'un ancien module ou d'une déclaration dans le dépôt ne prouve pas qu'une fonction est déployée ou utilisée.
+
+## Règles conservées dans le portail
+
+- Une compétition et ses engagements sont partagés avec IntraNAP par les tables NAP. Programme détaillé, tarifs, restrictions et dérogations propres à LivePalmes restent dans les compléments ; ne pas reproduire ces fonctions dans IntraNAP. Les restrictions supplémentaires de LivePalmes ne sont pas garanties par l'ancienne interface.
+- Le régional agit dans son périmètre jusqu'au dernier jour de l'événement ; dès le lendemain, les modifications sont réservées au national, sauf documents encore accessibles au régional. Les mêmes règles s'appliquent aux formations, stages et réunions. Suppression d'une compétition uniquement sans engagements ni résultats, avertissement et confirmation pour ses documents/programme.
+- Les temps suivent les trois modes NAP : saisie possible par le club ; aucune saisie avec meilleur temps admissible obligatoire ; aucune saisie avec choix d'un temps connu et valeur native `599999` si absent. Une période paramétrée borne les performances admissibles ; sans période, toute l'histoire admissible est considérée. Une grille de qualification active impose le calcul automatique, même en mode de saisie possible. Voir `nap-entry-time-policy.js`, `nap-entry-time-rules.js` et `nap-entry-qualification-policy.js`.
+- Les temps compacts sont interprétés depuis la droite : centièmes, secondes, minutes. `14200` vaut 1:42.00 ; ne pas normaliser les données natives ni remplacer le tri numérique par un tri lexical. Le format historique des temps de relais est traité séparément (`nap-relay-resolution.js`).
+- Les limites de naissance incluent les deux dates. Une condition de participation préalable requiert un résultat NAP dans au moins une compétition de la liste (`nap-entry-birth-policy.js`, `nap-entry-participation-rules.js`).
+- Les 25 m Surface et Apnée sont disponibles aux engagements, sans ajout aux TOP/fiches publiques. En eau libre, une course sans suffixe est Surface ; le récapitulatif club présente les inscriptions sans temps. Validation WinPalme du TXT eau libre reportée par Antoine, à ne pas annoncer comme acquise.
+
+## Licences
+
+`nageurs.number` est une chaîne : lettres et tirets sont conservés ; NULL ou vide signifie non renseigné. Posséder un numéro ne valide jamais la saison. `livepalmes_swimmer_license_seasons` conserve la validation par nageur/saison/numéro ; un numéro changé n'hérite pas automatiquement d'une validation incompatible.
+
+La création d'un nageur exige une licence ; un engagement peut être autorisé sans numéro selon le fonctionnement validé. L'administration nationale peut corriger le numéro. Le contrôle CSV propose tous les nageurs sélectionnés ou seulement ceux dont la saison n'est pas validée. La validation partielle enregistre les fiches admissibles, renvoie les fiches bloquées et ne les affiche pas comme validées (`nap-license-control.js`, `assets/livepalmes-license-administration.js`). Les doublons sont signalés ; ne pas fusionner automatiquement sur un numéro.
+
+## Résultats et DTN
+
+La première mise en production couvre l'import TXT WinPalme. Avant remplacement : aperçu des différences, lignes retirées signalées, confirmation et vérification de l'état courant ; sauvegarde durable avant écriture. Les administrateurs habilités à importer peuvent confirmer ce remplacement. Les points viennent de WinPalme. Lignes sans temps ni statut : signalement et exclusion explicite ; forfaits/abandons/disqualifications conservés sans temps sportif valable. Voir [Gestion des performances](gestion-base-performances.md).
+
+La date et le lieu sont corrigés sur la compétition entière ; le temps et le club sur le résultat. Masquage et suppression définitive sont distincts, suppression définitive réservée au national. La consultation DTN lit les résultats conservés et leur fraîcheur ; « Actualiser l'affichage » ne recalcule pas. « Recalculer » est une écriture métier explicite, pas un test de lecture.
+
+## Mails et fichiers
+
+Les notifications sont gérées par LivePalmes, avec les destinataires issus des comptes Firebase ; ne pas utiliser la messagerie IntraNAP comme moteur LivePalmes. Le réglage national `engagementConfigurations/notificationDelivery` contrôle les mails automatiques. Absent ou `enabled != true` : coupure. Les dates `enabledSince` et `discardThrough` empêchent le rattrapage des notifications antérieures à la réactivation (`engagement-mail-control.js`, `nap-mail-delivery.js`). Ne pas confondre cette coupure avec la totalité des messages de compte/sécurité ou des envois manuels.
+
+Au contrôle du 12 octobre, mails automatiques désactivés dans TEST et PROD. C'est un constat daté, à relire avant une opération ; aucune activation implicite. Si les notifications TEST sont activées ultérieurement, le contrôle les redirige uniquement vers `livepalmes@nap-ffessm.fr`.
+
+## Publication, sauvegarde et retour arrière
+
+Appliquer [la procédure de livraison](releases/PROCEDURE.md). PR courte depuis main, contrôles techniques ; pas de déploiement pour une PR exclusivement documentaire. Réutiliser les preuves TEST exactes compatibles et la sélection calculée par dépendances, jamais une liste réduite à la main. Accord PROD et bilan immuable obligatoires ; relecture des états réels, sauvegarde du code chiffrée puis rouverte/vérifiée avant modification, Hosting en dernier, contrôle final et arrêt en cas d'écart.
+
+Une sauvegarde de publication du code n'est **pas une sauvegarde de la base NAP**, et un rollback du code n'annule pas les écritures métier déjà effectuées. Les tables natives MyISAM ne permettent pas de promettre une transaction générale : les circuits d'écriture utilisent sauvegardes ciblées, comparaisons et reprise vérifiée. Ne lancer aucune restauration NAP dans un retour arrière applicatif sans accord distinct.
+
+Les 41 anciennes fonctions puis trois sans appel ont été retirées après sauvegardes vérifiées. Leurs déclarations sont conservées pour l'historique/retour arrière et exclues par `NAP_RETIRED_FUNCTIONS` / `NAP_UNUSED_FUNCTIONS` dans `tools/firebase-test-backend-lots.js`. Inventaire daté après contrôle : 111 PROD, 113 TEST ; ce n'est pas un nombre à imposer aux évolutions futures.
+
+## Documents de référence et archives
+
+- Architecture actuelle : [ARCHITECTURE.md](ARCHITECTURE.md), ce document et [intégration des engagements](module-engagements-integration-portail.md).
+- Exploitation : [procédure](releases/PROCEDURE.md), [tests manuels](TESTS_MANUELS.md), [optimisation NAP](OPTIMISATION_NAP.md), [évolutions et preuves](releases/EVOLUTIONS.md).
+- Historiques avant bascule : `base-livepalmes-unique.md`, `base-performances-consolidee.md`, `fonctionnement-base-donnees-livepalmes.md`, `reprise-performances-historiques-manquantes.md`, `NAP_TEST.md`, `NAP_PUBLIC_MIGRATION.md`, `SYNCHRONISATION_DONNEES_PROD_VERS_TEST.md`, `MISE_A_NIVEAU_FIREBASE_TEST.md`. Conservés avec avertissement ; leurs commandes de migration/copie/reconstruction ne constituent plus une procédure actuelle.
+- Documents mixtes : `AUDIT_PERFORMANCE_COUT_PORTAIL.md` garde des informations sur les comptes Firebase ; ses recommandations sportives Firestore sont historiques. `DEPLOIEMENT_BACKEND_TEST.md` décrit des lots antérieurs : la sélection versionnée et la procédure actuelle font foi. `ENGAGEMENT_QUALIFICATIONS.md` et `module-engagements.md` gardent des règles/conceptions utiles, mais leurs stockages et étapes de mise en service antérieurs sont signalés comme dépassés.
+
+Cette consolidation a été vérifiée contre le code de main `807dce65e5e9b65d42b4e1bf54488c7d75b35793`. Elle ne déclenche ni publication, accès à NAP, migration, reconstruction, suppression ou envoi.

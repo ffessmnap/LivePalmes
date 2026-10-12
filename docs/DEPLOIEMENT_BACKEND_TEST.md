@@ -2,6 +2,8 @@
 
 <!-- description: Mode opératoire du workflow manuel de déploiement progressif du backend Firebase TEST, inventaire versionné des lots et contrôles après déploiement. -->
 
+> **Périmètre actualisé — 12 octobre 2026.** Les descriptions de stockage sportif Firestore, de fichiers TOP comme source des calculs et les inventaires/étapes de migration ci-dessous sont historiques. Les règles fonctionnelles non remplacées restent utiles ; pour le circuit NAP et les arbitrages actuels, suivre [NAP_REFERENCE.md](NAP_REFERENCE.md). Pour les lots de publication, suivre [PROCEDURE.md](releases/PROCEDURE.md) et la sélection versionnée, sans recréer les fonctions retirées.
+
 ## Limites absolues
 
 Le workflow `Deploiement backend Firebase TEST par lots` cible exclusivement `livepalmes-test`. Il ne doit jamais être adapté pour PROD, ne se lance que manuellement depuis `main`, exige la confirmation `livepalmes-test` et le SHA complet affiché par GitHub. Aucun secret n'est lu ou affiché : le workflow vérifie seulement son existence dans Secret Manager TEST.

@@ -1,5 +1,9 @@
 # Synchronisation sélective des données PROD vers Firebase TEST
 
+<!-- description: Historique avant bascule : Ancienne copie sélective Firebase PROD vers TEST. Voir NAP_REFERENCE.md pour le fonctionnement actuel. -->
+
+> **Archive historique — 12 octobre 2026.** Ce document décrit une étape antérieure, pas le fonctionnement actuel. Les affirmations « actuel », « à faire », « TEST seulement » et les commandes ci-dessous sont datées. Ne pas relancer copie Firebase, migration ou reconstruction sportive sur cette base. Voir [la référence NAP actuelle](NAP_REFERENCE.md) et [la procédure de publication](releases/PROCEDURE.md).
+
 ## Frontière de sécurité
 
 La source identifiée dans `.firebaserc` et `functions/livepalmes-environment.js` est `livepalmes`. Elle est ouverte par l'outil uniquement sous l'identité nommée `prod-read-only-source`; le code source n'utilise sur cette instance que des lectures Firestore et Storage. La destination est codée en dur sur `livepalmes-test` et utilise une application Admin distincte.

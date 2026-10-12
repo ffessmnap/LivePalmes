@@ -22,13 +22,15 @@ L'interface est faite principalement avec :
 - des pages HTML ;
 - des fichiers CSS pour l'apparence ;
 - des fichiers JavaScript pour les actions ;
-- Firebase pour les comptes, les donnees, les traitements serveur, les fichiers et l'hebergement.
+- MySQL NAP pour les données métier du portail et les lectures sportives publiques ;
+- Firebase pour les comptes, traitements serveur, réglages/traces techniques, fichiers, hébergement et LivePalmes Direct ;
+- le circuit distinct Firebase/statique conservé pour Records/MPF.
 
 Il n'y a pas de framework comme React, Vue ou Angular.
 
 Les pages HTML restent a la racine du projet pour garder des adresses simples et stables.
 
-Le Portail LivePalmes est construit mais reste en cours de finalisation et de test. Il continue d'evoluer par ameliorations et petits modules complementaires lorsque le besoin est valide.
+La bascule NAP est publiée en PROD. La référence des sources et limites actuelles est [NAP_REFERENCE.md](NAP_REFERENCE.md) ; les évolutions restent soumises aux contrôles et validations du projet.
 
 ## Trois composantes a bien distinguer
 
@@ -54,8 +56,8 @@ Il utilise principalement :
 
 - les modules `assets/livepalmes-admin-*.js` ;
 - Firebase Authentication ;
-- Firestore ;
-- les Cloud Functions.
+- MySQL NAP via les Cloud Functions ;
+- Firestore pour les comptes, réglages et traces techniques, avec l’exception Records/MPF conservée.
 
 Chaque compte ne voit et ne modifie que les espaces autorises par ses capacites et son perimetre.
 
@@ -74,7 +76,7 @@ Exemples :
 - `calendrier.html` : calendrier fédéral public filtrable ;
 - `competition.html?id=...` : fiche publique d'un événement.
 
-Ces pages lisent surtout des fichiers publics prepares et optimises. Elles ne doivent pas parcourir directement la grande base interne des performances.
+TOP, fiches nageurs, recherche, calendrier et résultats de compétition lisent NAP via des endpoints bornés. Records/MPF lisent leurs fichiers publics. Aucun accès MySQL direct depuis le navigateur.
 
 ### 3. LivePalmes Direct
 
@@ -121,7 +123,7 @@ Le portail gere les donnees metier durables :
 - preparation des competitions et engagements ;
 - performances, Records et MPF.
 
-Une partie de ces donnees est transformee en fichiers rapides pour l'espace public permanent.
+Les consultations sportives publiques interrogent NAP via le serveur ; Records/MPF conservent leur publication statique distincte.
 
 Le Direct possede son propre parcours pour une competition nationale :
 
@@ -188,7 +190,7 @@ Regle importante : `app.js` doit rester un assembleur court. Il ne faut pas y re
 
 Ces fichiers doivent rester separes du pilotage autant que possible.
 
-Le calendrier public lit uniquement les fichiers JSON du bucket public sous `calendar/`. Firestore reste derrière les Cloud Functions du portail et les déclencheurs de publication.
+Le calendrier public et les fiches événements utilisent les lecteurs NAP. Les anciens fichiers `calendar/` et leurs déclencheurs Firestore ne sont plus la source courante.
 
 ### Espace performances
 
@@ -200,25 +202,11 @@ Le dossier `performances/` contient les pages liees aux performances historiques
 - fiches nageurs ;
 - import et gestion.
 
-Les visiteurs ne doivent pas lire directement une enorme base Firestore pour ces pages.
+Les lecteurs publics NAP utilisent des requêtes bornées, sans export intermédiaire, N+1 ni reconstruction silencieuse. Voir [les budgets](OPTIMISATION_NAP.md). Les consultations DTN utilisent les résultats conservés dans NAP et leur fraîcheur ; seul le recalcul explicite parcourt les sources NAP admissibles.
 
-Les pages publiques utilisent des fichiers optimises dans :
+Le portail charge les écrans à la demande. Clubs et nageurs métier viennent de NAP, y compris la recherche de club à la demande d'accès et le changement de club de session. Les comptes, capacités, annuaires privés et destinataires de notification restent techniques dans Firebase. Aucun fichier privé de licences ou de comptes n'est publié sur Hosting.
 
-```text
-performances/public/data/
-```
-
-Le portail ne charge pas le referentiel complet des nageurs a son ouverture. La liste des clubs provient de `performances/public/data/club-reference.js`, generee par `tools/build-admin-club-reference.js`. Le meme generateur produit `functions/assets/club-reference.json` afin que les fonctions serveur utilisent le code club dans les statistiques et documents destines aux humains, tout en conservant l'identifiant numerique comme cle technique. Le fichier de travail `admin-reference.js`, qui contient des donnees nageurs, est exclu de Firebase Hosting. Dans l'administration Records / MPF, les suggestions de nageurs sont chargees a la demande depuis les shards statiques `performance-public/search/`.
-
-Les ecrans couteux du portail sont charges uniquement lorsqu'ils deviennent actifs. Pour un gestionnaire autorise, le module Firestore de l'annuaire est seulement precharge pendant un temps d'inactivite, sans lecture de donnees. L'annuaire des acces lit directement le document prive `accessDirectorySnapshots/national` pour un gestionnaire national ou le document `accessDirectorySnapshots/region:<regionId>` de son perimetre regional. Le budget d'ouverture est d'un document d'annuaire, plus au maximum une lecture de profil imposee par les regles pour controler un gestionnaire national ou regional ; un compte `admin.full` valide par ses claims ne lit que le document d'annuaire. Les regles Firestore interdisent toute lecture publique, toute liste de la collection et toute ecriture cliente. La recherche, les filtres, le filtre alphabetique et la pagination sont ensuite locaux, sans lecture supplementaire. Tant que ce cache n'est pas pret, le portail conserve automatiquement la fonction paginee et bornee `listAccessUsers`. L'ouverture de l'espace DTN lit seulement son cache : un cache absent ou perime demande une action explicite « Recalculer ». Ce recalcul utilise les fichiers TOP de Storage, et non un parcours de la collection Firestore `performances`.
-
-Les destinataires des courriels d'engagements sont conserves dans 32 fragments par capacite. Ils sont mis a jour a chaque modification d'un utilisateur. L'initialisation automatique est plafonnee a 505 lectures reparties entre les trois capacites et son etat ; au-dela, une reconstruction nationale paginee de 250 utilisateurs maximum par appel est obligatoire.
-
-Les documents d'information d'une competition sont stockes dans Firebase Storage sous `competition-documents/`. Le document `engagementCompetitions` conserve au plus 20 metadonnees, ce qui permet de les retourner avec la fiche sans lecture Firestore supplementaire. Le lien de telechargement est techniquement public ; l'auteur n'est inclus que dans la reponse reservee aux administrateurs regionaux et nationaux.
-
-Les parcours interactifs des engagements n'effectuent aucune reconstruction massive automatique. Le calendrier et les effectifs clubs lisent leurs documents agreges, maintenus par les declencheurs Firestore. Le calcul d'un temps lit le cache du nageur puis, si necessaire, son unique fichier public `performance-public-firestore/swimmers/`. Un agregat ou fichier absent produit un etat d'indisponibilite explicite ; les reconstructions nationales volontaires sont paginees et plafonnees sous mille lectures par appel.
-
-Le calendrier club conserve aussi un index `engagementClubCompetitionIndexes` par club. Sa premiere lecture couvre au maximum les saisons demandees, puis les declencheurs d'engagement le maintiennent. Les statistiques detaillees d'une competition sont compressees dans `engagementCompetitionStatisticsCache` et invalidees a chaque modification de la competition ou de ses engagements. Le suivi des courriels est pagine par 100 lignes dans le portail.
+Les documents de compétition restent hébergés chez Google avec leurs métadonnées dans NAP. Les PDF/exports utilisent les dossiers NAP. Notifications et clôtures suivent le circuit LivePalmes, avec coupure nationale des mails automatiques et absence de rattrapage ; voir [NAP_REFERENCE.md](NAP_REFERENCE.md).
 
 Le cache prive de l'annuaire est maintenu par le declencheur deja attache aux modifications de `users`, avec relance automatique en cas d'echec temporaire. Sa version 3 place dans chaque fragment regional tous les comptes non nationaux de la region : comptes regionaux et administrateurs de club. La region provient du perimetre explicite, puis du club de rattachement si necessaire ; les anciens codes numeriques et les libelles regionaux sont normalises vers le libelle LivePalmes canonique afin de ne jamais scinder une meme region en plusieurs fragments. Une modification de profil lit un document d'etat et ecrit au maximum le cache national, l'ancien cache regional et le nouveau cache regional. Les ecritures etant idempotentes et indexees par utilisateur, une relance ne duplique aucune entree. La reconstruction initiale est volontaire et paginee par 100 profils maximum avec `rebuildAccessDirectorySnapshotNextPage` : le premier appel utilise `restart: true`, les suivants poursuivent jusqu'a `completed: true`. Le document `accessDirectorySnapshotState/default` ne passe a `ready` qu'apres finalisation de tous les fragments. Cette reconstruction ne doit jamais etre lancee pendant une verification locale.
 
@@ -240,9 +228,9 @@ La configuration principale est dans :
 - `assets/livepalmes-app-config.js` ;
 - `functions/index.js`.
 
-### Donnees de competition
+### Données de LivePalmes Direct (uniquement)
 
-Les donnees actives sont rattachees a une competition Firestore.
+Les données des consoles et publications en direct restent rattachées à une compétition Firestore. Les compétitions et engagements du portail sont dans NAP ; ne pas confondre les deux périmètres.
 
 La competition principale actuelle est :
 
@@ -283,28 +271,11 @@ performances/public/data/records-data.js
 
 En fonctionnement normal, chaque modification de `performanceData/records` declenche aussi `syncPublicRecordsData`. La fonction publie une version JSON immuable dans `performance-public-firestore/records/versions/`, puis remplace atomiquement le petit manifeste `performance-public-firestore/records/manifest.json`. Les pages Records, MPF et fiches nageurs lisent ce manifeste sans interroger Firestore ; le fichier Hosting ci-dessus reste leur secours local.
 
-Avant chaque déploiement Firebase Hosting, le hook `hosting.predeploy` synchronise aussi le fichier de secours depuis Firestore. La commande reste disponible pour lancer la synchronisation manuellement :
-
-```powershell
-node tools/sync-records-from-firestore.js --write
-```
-
-Le meme hook regenere le petit referentiel clubs. Les mises a jour RF / MPF restent independantes de ce fichier : elles continuent a invalider puis republier automatiquement le manifeste Records public.
+La synchronisation du secours statique n'est pas automatique à chaque Hosting. Toute préparation par `tools/sync-records-from-firestore.js --write` ou `tools/prepare-hosting-data.js --write` nécessite une autorisation spécifique et le contrôle du diff généré. Voir [le circuit public](pipeline-performances-publiques.md).
 
 ### Performances historiques
 
-Les performances historiques peuvent representer plusieurs centaines de milliers de lignes.
-
-Il ne faut donc pas brancher une page publique directement sur une grosse requete Firestore.
-
-Le principe a respecter est :
-
-```text
-Portail / import / correction
-  -> base interne ou donnees de travail
-  -> generation de fichiers publics optimises
-  -> lecture rapide par les visiteurs
-```
+Les performances natives sont consultées directement dans NAP. Imports TXT WinPalme et corrections enregistrent dans NAP après aperçu, sauvegarde et confirmation ; aucune reconstruction sportive Firestore n'est requise. Les temps compacts restent interprétés sans normalisation des lignes natives. Voir [gestion-base-performances.md](gestion-base-performances.md).
 
 ## Cloud Functions
 

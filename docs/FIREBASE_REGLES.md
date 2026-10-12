@@ -2,9 +2,11 @@
 
 <!-- description: Périmètre actuel des données Firestore et règles de sécurité Firebase utilisées par LivePalmes. -->
 
+> **Après bascule NAP :** les règles Firestore couvrent les données Firebase conservées, pas les droits SQL NAP. Les Cloud Functions contrôlent l’identité, les capacités et le périmètre avant accès MySQL avec le secret serveur. Une ancienne règle/collection dans le dépôt ne prouve pas un usage actif. Voir [NAP_REFERENCE.md](NAP_REFERENCE.md).
+
 ## À quoi servent ces règles ?
 
-Firestore est la base de données en ligne utilisée par LivePalmes. Le fichier `firestore.rules` joue le rôle de portier : il décide quelles données le navigateur peut lire ou modifier directement.
+Firestore est l'une des bases utilisées par LivePalmes, pour le périmètre Firebase conservé ; NAP est la source métier du portail. Le fichier `firestore.rules` décide quelles données Firebase le navigateur peut lire ou modifier directement, sans contrôler les requêtes MySQL exécutées par le serveur.
 
 Le principe actuel est simple :
 
@@ -36,7 +38,7 @@ Les principales zones concernées sont les données du direct, les alertes, les 
 
 ## Accès publics
 
-Le calendrier public n'ouvre aucune collection Firestore. Les pages lisent les instantanés JSON générés dans le bucket public sous `calendar/`; les écritures et la publication restent réservées aux Cloud Functions authentifiées du portail.
+Le calendrier public n’ouvre aucune collection Firestore : il consulte NAP via les lecteurs serveur bornés. Les écritures restent réservées aux fonctions authentifiées du portail.
 
 Certaines données destinées à l'affichage public peuvent être lues sans compte, notamment une partie des informations de direct, des résultats publiés et des données de performances prévues à cet effet.
 
