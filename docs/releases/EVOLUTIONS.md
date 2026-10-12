@@ -2,6 +2,15 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 12 octobre — Publication PROD du plan corrigé réussie
+
+- PR #286 intégrée sur `4072265eb7c47ceb28d4ac112fb152ec4b01f70f` ; CI Linux PR `38309173685` et main `38309459087` réussies. Preflight officiel corrigé `38309464358` réussi, artefact `release-plan` ID `11773758470`, SHA-256 `f5001b2a11b117b6a93a5b2ebecc134488b17e96a8334ec97f5974a37704bd67` vérifié.
+- Accord explicite d'Antoine dans Infra : « Oui, je valide le plan corrigé 38309464358. Reprends la publication PROD avec sauvegarde vérifiée et contrôle de dérive. Le recalcul DTN et le nettoyage Storage restent à part. »
+- [Publication PROD `38310517564`](https://github.com/ffessmnap/LivePalmes/actions/runs/38310517564) réussie : candidat applicatif exact `ef96caca97f70554ee1f2c2b950cebeb5130e85e`, Hosting `c329f0732cc7c06c`, mêmes 45 fonctions que le plan approuvé. Les 65 autres fonctions sont conservées ; inventaire final 110, zéro écart. Le retrait historique de `syncPublicRecordsData` reste attesté, aucune suppression supplémentaire.
+- Relecture TEST et contrôle de dérive PROD réussis avant écriture. Sauvegarde du code PROD chiffrée, rouverte et comparée avant publication ; artefact `production-code-backup` ID `11774517677`, SHA-256 `6edb03393f9b78510eb71e3f679747140ae6541333464e4bf73c7d3d48fba78b`. Ancienne version Hosting `a7a7c7342abf5f23` identifiée pour retour arrière du code via le circuit prévu.
+- Simulation, publication par lots, contrôle des fonctions/exclusions, maintien des mails désactivés et contrôles statiques Hosting réussis. Preuves après publication authentifiées : `production-after` ID `11775256251` et `production-hosting-after` ID `11775390970`. Cinq fichiers Hosting conformes au candidat, CSP/cache contrôlés, fichier interne et ancien analytics inaccessibles.
+- Recalcul DTN et nettoyage Storage exclus et non exécutés. Aucune migration ni recette métier avec écriture lancée ; aucune validation utilisateur du résultat PROD inventée. Bilan et reçu détaillés conservés dans le dossier Infra local `production-38310517564`.
+
 ### 12 octobre — Preuve du retrait RF/MPF retrouvée, préparation du bilan corrigé
 
 - À la demande d'Antoine dans Infra, preuve retrouvée dans la conversation « Vérifier l’accès à la base NAP » : tour `01a12f76-8eac-7831-ad9b-968717ad06e8`, accord « on peut le faire sur prod aussi? », puis retrait de la seule `syncPublicRecordsData` le 12 octobre à `09:36:18.138Z`. La fonction était donc déjà retirée avec autorisation ; cette opération historique manquait au plan regroupé, sans nouvelle suppression à réaliser.
