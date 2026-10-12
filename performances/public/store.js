@@ -102,7 +102,33 @@
     }
   }
 
-  async function loadData() {
+  let napRevision = null;
+  let pendingNapPublication = null;
+  function usesNap() { return global.LivePalmesEnvironment?.sportingDataSource === "nap"; }
+  async function napCall(name, input) {
+    const firebase = ensureFirebase();
+    if (!firebase?.functions) throw new Error("Connexion serveur Records/MPF indisponible.");
+    const result = await firebase.functions(global.LivePalmesEnvironment.functionsRegion || "europe-west1").httpsCallable(name)(input || {});
+    if (result.data?.source !== "nap" || !Number.isSafeInteger(result.data.revision) || !result.data.data) throw new Error("Réponse Records/MPF NAP invalide.");
+    return result.data;
+  }
+  async function loadNapRecords(options) {
+    let result;
+    if (options?.administration === true) result = await napCall("getNapRecordsAdministration");
+    else {
+      const url = new URL(global.LivePalmesEnvironment.napReaderUrl);
+      url.searchParams.set("action", "records");
+      const response = await fetch(url.href, { cache: "no-store" });
+      if (!response.ok) throw new Error("Consultation Records/MPF NAP indisponible.");
+      result = await response.json();
+      if (result.source !== "nap" || !Number.isSafeInteger(result.revision) || !result.data) throw new Error("Référence Records/MPF NAP invalide.");
+    }
+    if (options?.administration === true) { napRevision = result.revision; pendingNapPublication = null; }
+    return completeData(result.data);
+  }
+
+  async function loadData(options = {}) {
+    if (usesNap()) return loadNapRecords(options);
     const fallback = global.LIVEPALMES_RECORDS || {};
     const ref = documentRef();
     if (!ref) return loadPublicRecordsData(fallback);
@@ -126,6 +152,19 @@
   }
 
   async function saveData(nextData) {
+    if (usesNap()) {
+      if (!Number.isSafeInteger(napRevision)) throw new Error("Rechargez les Records/MPF avant publication.");
+      const data = cloneData(completeData(cloneData(nextData)));
+      const sportingContent = value => JSON.stringify([value.records, value.franceRecords, value.filters, value.cutoffDate, value.generatedAt]);
+      if (pendingNapPublication && sportingContent(pendingNapPublication.data) !== sportingContent(data)) throw new Error("Une publication reste à vérifier. Rechargez avant de modifier le brouillon.");
+      if (!pendingNapPublication) pendingNapPublication = { expectedRevision: napRevision, operationId: global.crypto.randomUUID(), data };
+      const result = await napCall("publishNapRecords", pendingNapPublication);
+      napRevision = result.revision;
+      pendingNapPublication = null;
+      global.LIVEPALMES_RECORDS = result.data;
+      global.dispatchEvent(new CustomEvent("livepalmes:performance-data-updated", { detail: result.data }));
+      return result.data;
+    }
     const ref = documentRef();
     if (!ref) throw new Error("Firebase Firestore n'est pas disponible.");
     const completed = completeData(cloneData(nextData));
