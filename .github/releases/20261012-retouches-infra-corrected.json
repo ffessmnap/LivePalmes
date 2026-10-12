@@ -214,10 +214,10 @@
   },
   "productionCleanupEvidence": {
     "path": ".github/releases/evidence/20261012-sync-records-prod-cleanup.json",
-    "sha256": "28ad07cbcaece39cf076e70c546042c8a074030b5c92db2c6c074dadfce74513"
+    "sha256": "de423e10d1013a80252f9195165bfcca35e8d8ac0fba8e258622b006ff0c1b2e"
   },
   "productionBlockedAttemptEvidence": {
     "path": ".github/releases/evidence/20261012-production-blocked-attempt.json",
-    "sha256": "5d7cc1af181a98053237ee86049e41357a3d22b8ee52d173bac074ae8e2047d5"
+    "sha256": "64b90e01827df06c9856de0731b26c0ddb6538132a167f32c1764043632c7ed0"
   }
 }
