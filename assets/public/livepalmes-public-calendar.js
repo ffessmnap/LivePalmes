@@ -1,7 +1,8 @@
 (function (global) {
   "use strict";
-  const LOCAL_BASE = /^(localhost|127\.0\.0\.1)$/.test(global.location?.hostname || "") ? `${global.location.origin}/tests/fixtures/public-calendar` : "";
-  const BASE = global.LIVEPALMES_PUBLIC_CALENDAR_BASE || LOCAL_BASE || global.LivePalmesEnvironment.publicStorageUrl("calendar");
+  const fixturesRequested = global.LIVEPALMES_PUBLIC_CALENDAR_FIXTURES === true;
+  const localHost = /^(localhost|127\.0\.0\.1)$/.test(global.location?.hostname || "");
+  const fixtureBase = fixturesRequested && localHost ? `${global.location.origin}/tests/fixtures/public-calendar` : "";
   const TYPE_LABELS = { pool: "Piscine", openWater: "Eau libre", training: "Formation", stage: "Stage", meeting: "Réunion", other: "Autre" };
   const LEVEL_LABELS = { departemental: "Départemental", regional: "Régional", national: "National", international: "International" };
   const STATUS_LABELS = { ongoing: "En cours", upcoming: "À venir", canceled: "Annulée", awaitingResults: "Résultats en attente", resultsPublished: "Résultats publiés" };
@@ -21,7 +22,14 @@
     return rank[status(left)] - rank[status(right)] || String(left.date).localeCompare(String(right.date)) || String(left.name).localeCompare(String(right.name), "fr");
   }
   async function json(path) {
-    if (global.LivePalmesEnvironment.sportingDataSource === "nap") {
+    if (fixturesRequested) {
+      if (!fixtureBase) throw new Error("Les fixtures calendrier sont réservées à localhost.");
+      if (!/^(manifest\.json|seasons\/[0-9]{4}\.json|(?:events|results)\/[A-Za-z0-9_-]+\.json)$/.test(path)) throw new Error("Événement introuvable.");
+      const response = await fetch(`${fixtureBase}/${path}`, { cache: "no-store" });
+      if (!response.ok) throw new Error("Fixture calendrier indisponible.");
+      return response.json();
+    }
+    if (global.LivePalmesEnvironment?.sportingDataSource === "nap") {
       const url = new URL(global.LivePalmesEnvironment.napReaderUrl);
       const season = path.match(/^seasons\/([0-9]{4})\.json$/);
       const event = path.match(/^events\/(legacy-nap-[1-9][0-9]*)\.json$/);
@@ -37,9 +45,7 @@
       if (event && !data.event) throw new Error("Événement introuvable.");
       return event ? data.event : data;
     }
-    const response = await fetch(`${BASE}/${path}`, { cache: "no-cache" });
-    if (!response.ok) throw new Error(response.status === 404 ? "Calendrier non encore publié." : "Chargement du calendrier impossible.");
-    return response.json();
+    throw new Error("Consultation momentanément indisponible.");
   }
   function formatDate(event, options = {}) {
     const start = new Date(`${event.date}T12:00:00`);
@@ -50,5 +56,5 @@
     return start.toLocaleDateString("fr-FR", { weekday: options.weekday ? "long" : undefined, day: "numeric", month: "long", year: "numeric" });
   }
   function seasonLabel(endYear) { return `${Number(endYear) - 1}-${endYear}`; }
-  global.LivePalmesPublicCalendar = { BASE, LEVEL_LABELS, STATUS_LABELS, TYPE_LABELS, compare, escapeHtml, formatDate, json, seasonEndYear, seasonLabel, status, today };
+  global.LivePalmesPublicCalendar = { LEVEL_LABELS, STATUS_LABELS, TYPE_LABELS, compare, escapeHtml, formatDate, json, seasonEndYear, seasonLabel, status, today };
 })(window);
