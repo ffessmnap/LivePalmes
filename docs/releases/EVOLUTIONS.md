@@ -2,6 +2,11 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 12 octobre — Retouches progressives du design public
+
+- Audit puis accord pour les retouches locales et demande de publication TEST. Retour utilisateur sur le comparatif : conserver les quatre filtres compacts des engagements et les boutons TOP de 26 px ; version compacte acceptée. Ce retour porte sur l'aperçu local, pas encore sur la version commune TEST.
+- Contraste des segments publics et focus clavier TOP renforcés, unités des bassins explicites, titres de rubriques d'accueil corrigés et message MPF vide précisé. Documentation alignée. Aucune modification des engagements, NAP, droits, mails, données, règles ou fonctions.
+- Réconciliation sur le dernier main en conservant la version actuelle du lecteur RF/MPF. Tests ciblés apparence, données/store publics, textes et architecture réussis ; suite globale Linux et publication TEST par le circuit commun à attester. Le contrôle global local Windows précédent était bloqué par l'absence de bash.
 ### 12 octobre — Retrait TEST du déclencheur RF/MPF historique
 
 - Antoine autorise la vérification puis la suppression de `syncPublicRecordsData` uniquement sur TEST si les contrôles sont bons ; PROD à examiner ensuite. Le déclencheur ne sert plus aux lectures/publications NAP ; aucun ancien fichier, document Firebase ou contenu NAP ne doit être supprimé.
