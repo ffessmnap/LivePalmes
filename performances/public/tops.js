@@ -103,6 +103,10 @@
     };
   }
 
+  function seasonOptions(values = []) {
+    return [...new Set(values.map(String).filter((value) => /^[1-9]\d{3}$/.test(value)))].sort((a, b) => Number(b) - Number(a));
+  }
+
   function applyPublicManifest(manifest = {}) {
     const currentFilters = summary.filters || {};
     const currentCourses = new Map((currentFilters.courses || []).map((course) => [course.code, course]));
@@ -116,7 +120,7 @@
         courses: manifestCourses.length
           ? manifestCourses.map((code) => currentCourses.get(code) || { code, label: code, shortLabel: code, style: "", length: 0 })
           : (currentFilters.courses || []),
-        seasons: Array.isArray(manifest.seasons) ? manifest.seasons : (currentFilters.seasons || []),
+        seasons: seasonOptions(Array.isArray(manifest.seasons) ? manifest.seasons : (currentFilters.seasons || [])),
         regions: Array.isArray(manifest.regions) ? manifest.regions : (currentFilters.regions || []),
         categories: manifestCategories.length
           ? manifestCategories.map(categoryMetaFromManifest).filter((category) => category.sex && category.code)
@@ -806,7 +810,7 @@
   }
 
   function init() {
-    addOptions(elements.season, summary.filters.seasons || [], "Toutes saisons", (season) => `Saison ${season}`);
+    addOptions(elements.season, seasonOptions(summary.filters.seasons || []), "Toutes saisons", (season) => `Saison ${season}`);
     refreshRegionOptions();
     renderCourseButtons();
     updateCategoryOptions("");

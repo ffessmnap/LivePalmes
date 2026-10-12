@@ -2,6 +2,14 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 12 octobre — Lots 2 et 3 : TOP, fraîcheur DTN et recette complémentaire
+
+- Demande explicite : terminer les lots 2 et 3 sur TEST. PROD, droits, mails et données NAP exclus. Aucun recalcul ni test de sauvegarde réelle.
+- Diagnostic : le lecteur top-metadata renvoie 207 depuis les dates de compétitions ; le client présentait cette valeur comme une saison ordinaire. Validation de forme à quatre chiffres dans le sélecteur uniquement, sans changer les requêtes de résultats ni les données. Pas de correction arbitraire en 2007.
+- Le lecteur DTN ne reconstruit rien en lecture : il vérifie l’empreinte des paramètres et de la source. Le client distingue maintenant une vue absente d’une vue précédente incompatible via generatedAt ; les erreurs et traitements en cours restent distincts. Aucun calcul de qualification modifié.
+- Accessibilité : statut TOP annoncé, régions des grilles DTN défilables au clavier, noms accessibles des fenêtres DTN. Présentation compacte conservée.
+- Budget avant/après identique : TOP une lecture de métadonnées puis requête bornée ; DTN catalogue puis vue à l’ouverture. Filtres locaux sans lecture par ligne ; aucune nouvelle requête ou écriture. Recette de formulaires sans soumission et tests hors ligne pour les états indisponibles. Publication et recette finale à consigner dans le bilan local, sans validation utilisateur déduite.
+
 ### 12 octobre — Recette portail, lot 1 autorisé sur TEST
 
 - PR #280 intégrée (`8d4a2109d0f8af1c1e3d54c40d72ebe64de50abc`), CI complète `38296257624` et TEST Hosting seul `38296636630` réussis, Hosting `7a38d47cbe4008cc`. Les 112 révisions Functions sont inchangées et les deux fichiers servis correspondent exactement au commit. La recette de session existante a identifié un cache JS/CSS ancien, invalidant cette première recette visuelle : références versionnées de `portail.html` actualisées dans le complément du même lot. Aucun contournement du cache utilisateur ni modification de configuration Firebase. Recette finale à refaire sur cette version corrigée.
