@@ -6,7 +6,7 @@
 
 - Après recette de l’étape 1 : retrait de `records-data.js`, du module inutilisé `nap-entry-static-records.js`, de cinq outils historiques Firestore/statique et de leurs tests obsolètes. Le store conserve uniquement les lectures/publications NAP ; tests de reprise conservés et échec NAP couvert sans recours à une copie ancienne.
 - Générateur des données Hosting limité au référentiel clubs, retrait de l’en-tête cache du seul fichier supprimé. Aucun retrait de fonction déployée, aucune suppression distante ou de donnée. `public-records-data.js`, placeholders et composants actuels conservés. Retour arrière par Git avant #270 et la présente étape ; les copies Firebase/Storage demeurent intactes.
-- Autorisation utilisateur : nettoyage en deux étapes sur TEST. Budget de lectures inchangé, pas d’écriture sportive de recette. Contrôles complets, publication et recette finale à attester ; aucune validation utilisateur inventée.
+- Autorisation utilisateur : nettoyage en deux étapes sur TEST. Budget de lectures inchangé, pas d’écriture sportive de recette. PR #271 intégrée (`9ffc50a40dd02f8330eb18ed3436323b3e7ab054`), CI complète `38278747572` réussie. Publication `38279167805` arrêtée avant déploiement : classification des deux chemins protégés. Extension TEST bornée à la suppression du seul fichier RF/MPF et de son en-tête cache, configuration comparée à la référence immuable, sept consommateurs découplés exigés. Aucun assouplissement PROD ou autre donnée/configuration. Publication et recette finale à attester ; aucune validation utilisateur inventée.
 
 ### 12 octobre — Nettoyage RF/MPF, étape 1
 
