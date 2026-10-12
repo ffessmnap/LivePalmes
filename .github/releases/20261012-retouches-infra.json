@@ -1,0 +1,215 @@
+{
+  "schema": 1,
+  "candidate": "ef96caca97f70554ee1f2c2b950cebeb5130e85e",
+  "productionCommit": "b0020e51ebd6e686054efd3451882dd2c1d60d94",
+  "productionHosting": "sites/livepalmes/versions/a7a7c7342abf5f23",
+  "testRun": 38299888314,
+  "productionStaticCleanup": {
+    "records": true,
+    "publicExports": true,
+    "approval": "Antoine, Infra, 12 octobre 2026 : « Je valide les nettoyages sur TEST », puis « Je valide les trois corrections proposées. Implémente-les, fais les tests hors ligne et prépare le bilan preflight, sans déployer. » Autorisation de préparation bornée aux suppressions historiques et au seul en-tête cache RF/MPF ; aucun accord de publication PROD."
+  },
+  "changes": [
+    {
+      "title": "Retouches interface, calendrier, engagements, TOP et états DTN",
+      "status": "validated",
+      "validation": "Antoine, 12 octobre 2026 : « Ok, je valide les retouches sur TEST. Prépare le bilan pour la discussion Infra avant passage en PROD, sans déployer pour le moment. » Source : chat 01a12f95-48ea-7900-8e0b-cba0178e3e7b, tour 01a131ad-c943-7291-afc4-a7ca32134e99.",
+      "paths": [
+        "assets/livepalmes-admin-portal.css",
+        "assets/livepalmes-admin-portal.js",
+        "assets/livepalmes-dtn-seasons.js",
+        "assets/pages/competition.js",
+        "competition.html",
+        "index.html",
+        "performances/mpf.html",
+        "performances/nageur.html",
+        "performances/public/app.js",
+        "performances/public/styles.css",
+        "performances/public/tops.js",
+        "performances/records.html",
+        "performances/tops.html",
+        "portail.html",
+        "public.css",
+        "public.html"
+      ]
+    },
+    {
+      "title": "Commentaires partagés INTRANAP / LivePalmes",
+      "status": "validated",
+      "validation": "Antoine : « parfait ça me va », tour 01a130e9-e53d-71e1-8c3f-70e786adbb20 ; résultat TEST ea3a193f, confirmé au registre. Validation TEST distincte de toute autorisation PROD.",
+      "paths": [
+        "assets/livepalmes-admin-calendar-events.js",
+        "assets/livepalmes-admin-portal.js",
+        "assets/pages/competition.js",
+        "assets/public/livepalmes-public-calendar.css",
+        "competition.html",
+        "functions/nap-competition-create.js",
+        "functions/nap-direct-calendar.js",
+        "functions/nap-portal-competition-change.js",
+        "functions/nap-portal-competitions.js",
+        "portail.html"
+      ]
+    },
+    {
+      "title": "Nettoyage Records/MPF et configuration de cache",
+      "status": "validated",
+      "validation": "Autorisation de réalisation TEST : « ok ce nettoyage en deux étapes, lance le », tour 01a130ef-00db-75a0-972d-7c78152b797d. Aucune validation finale explicite retrouvée. Configuration et suppression de sortie générée protégées en PROD. Validation finale TEST reçue dans Infra le 12 octobre 2026 : « Je valide les nettoyages sur TEST. » Aucun accord PROD. Voir validation-nettoyages.json.",
+      "paths": [
+        "assets/livepalmes-admin-portal.js",
+        "bureau-perf.html",
+        "functions/nap-entry-static-records.js",
+        "performances/mpf.html",
+        "performances/nageur.html",
+        "performances/public/admin-records.js",
+        "performances/public/app.js",
+        "performances/public/records.js",
+        "performances/public/store.js",
+        "performances/records.html",
+        "pilotage-livepalmes.html",
+        "portail.html",
+        "series-public.html",
+        "speaker.html"
+      ]
+    },
+    {
+      "title": "Nettoyage exports TOP et nageurs",
+      "status": "validated",
+      "validation": "Autorisation de réalisation TEST « ok vas y », tour 01a1310d-6a42-7090-9e84-050ccdfff94c. Recette technique attestée, pas de validation finale explicite retrouvée. Validation finale TEST reçue dans Infra le 12 octobre 2026 : « Je valide les nettoyages sur TEST. » Aucun accord PROD. Voir validation-nettoyages.json.",
+      "paths": [
+        "performances/nageur.html",
+        "performances/public/reference.js",
+        "performances/public/swimmer.js",
+        "performances/public/tops.js",
+        "performances/tops.html"
+      ]
+    },
+    {
+      "title": "Retrait du lecteur et outils historiques calendrier",
+      "status": "validated",
+      "validation": "Accord pour intégration et TEST « je donne mon accord », tour 01a1313a-92cb-7dc0-8e67-0347ecfeb069 ; recette technique attestée, pas de validation finale explicite retrouvée. Validation finale TEST reçue dans Infra le 12 octobre 2026 : « Je valide les nettoyages sur TEST. » Aucun accord PROD. Voir validation-nettoyages.json.",
+      "paths": [
+        "assets/public/livepalmes-public-calendar.js",
+        "calendrier.html",
+        "competition.html"
+      ]
+    },
+    {
+      "title": "Retrait des déclarations historiques calendrier",
+      "status": "validated",
+      "validation": "« ok je valide », tour 01a13161-8485-7d00-8afa-b64cd653ec59, approuve la proposition avant exécution TEST ; ne prouve pas une validation du résultat final. Nettoyage Storage PROD exclu. Validation finale TEST reçue dans Infra le 12 octobre 2026 : « Je valide les nettoyages sur TEST. » Aucun accord PROD. Voir validation-nettoyages.json.",
+      "paths": [
+        "functions/index.js"
+      ]
+    }
+  ],
+  "additionalPublicNapFunctions": [
+    "readNapPublicSwimmer"
+  ],
+  "additionalPublicNapApproval": "Antoine valide dans Infra le 12 octobre les trois corrections proposées, incluant la déclaration nominative du lecteur public NAP pour préparer le nouveau bilan. Préparation seulement ; aucun accord PROD et aucun mail/scheduler ajouté.",
+  "initialAutomaticMailEnabled": false,
+  "excludedBackendReview": "44 fonctions ordinaires et lecteur public NAP différents selon les origines PROD. Les sept notifications/scheduler restent sur leurs packages et révisions précédents, avec lecteurs et empreintes internes propres ; suite hors ligne pour la paire b0020e51/ef96caca. Cinq autres écarts exclus sont antérieurs au diff applicatif courant et restent conservés. Aucune réduction manuelle de la sélection ordinaire ; douze exclusions exactement liées à leurs empreintes et révisions. Les modules de notification, les callbacks et le contenu des mails restent inchangés ; refus d’une source périmée et reprise testés sur fixtures. La relecture Firebase et le contrôle des mails désactivés restent obligatoires après un futur accord PROD.",
+  "excludedBackendEvidence": {
+    "schema": 1,
+    "candidate": "ef96caca97f70554ee1f2c2b950cebeb5130e85e",
+    "productionRun": 38228508477,
+    "suite": "retained-calendar-consumers-v1",
+    "functions": [
+      {
+        "name": "closeDueEngagementCompetitions",
+        "commit": "1df545a62de67a24ff32ca4d1046cce4be6d499f",
+        "revision": "closedueengagementcompetitions-00025-wep",
+        "before": "670923738299396f564eaf738815a12e67c6c49db2ffb35025b29b0f361216fb",
+        "after": "e39bca84c06872439b901b648fd805df8669f8f73d7a4f2d64507e942edef695",
+        "reason": "Package et revision conserves ; compatibilite verifiee par la suite bornee, ou ecart deja present a b0020e51, sans nouvelle publication."
+      },
+      {
+        "name": "disableCompetitionEmailNotifications",
+        "commit": "1df545a62de67a24ff32ca4d1046cce4be6d499f",
+        "revision": "disablecompetitionemailnotifications-00004-kuf",
+        "before": "ee4c904af510b50da7bfdb99cde5dd2833d7fd75adabb03279029e067171e466",
+        "after": "048eefdcb1733f56935f28a6c54d59a41ecb2f5863add278d850b726ba661ae9",
+        "reason": "Package et revision conserves ; compatibilite verifiee par la suite bornee, ou ecart deja present a b0020e51, sans nouvelle publication."
+      },
+      {
+        "name": "listEngagementCompetitionMailJobs",
+        "commit": "1df545a62de67a24ff32ca4d1046cce4be6d499f",
+        "revision": "listengagementcompetitionmailjobs-00024-ham",
+        "before": "b85e7756458966696c1527d55d2deeca8228ef09dd5d6ccedfc54e7b2c0a65b4",
+        "after": "927fbe45ebae05e262922ceabaaa9005f7e05c395b1117c21a0bf1a239c5dca4",
+        "reason": "Package et revision conserves ; compatibilite verifiee par la suite bornee, ou ecart deja present a b0020e51, sans nouvelle publication."
+      },
+      {
+        "name": "notifyEngagementCompetitionDocuments",
+        "commit": "1df545a62de67a24ff32ca4d1046cce4be6d499f",
+        "revision": "notifyengagementcompetitiondocuments-00006-bav",
+        "before": "4fcdd38315e6ca4d86377e65f76ef82a486ad07e9f661df373aa6741e9f9b7a8",
+        "after": "52c8313cea4603efb6dbc42874227682d2ddccfe32b06728ee170c74ca16d474",
+        "reason": "Package et revision conserves ; compatibilite verifiee par la suite bornee, ou ecart deja present a b0020e51, sans nouvelle publication."
+      },
+      {
+        "name": "prepareEngagementClubRecapEmails",
+        "commit": "1df545a62de67a24ff32ca4d1046cce4be6d499f",
+        "revision": "prepareengagementclubrecapemails-00031-wal",
+        "before": "d325d62bf1ff5df996d454f4396a68380ecb08aa044301bd86f4ce5080bac4f0",
+        "after": "dcb7c337fa8d3dbc9a1f2544d618df1eb5704581bc2754f935c8270fe7889c29",
+        "reason": "Package et revision conserves ; compatibilite verifiee par la suite bornee, ou ecart deja present a b0020e51, sans nouvelle publication."
+      },
+      {
+        "name": "prepareEngagementOpeningNotificationEmails",
+        "commit": "1df545a62de67a24ff32ca4d1046cce4be6d499f",
+        "revision": "prepareengagementopeningnotificationemails-00028-xit",
+        "before": "4cbd4ce0a57fdca9e4270c99a2456bec116344b7d533a17d7062004d62b54338",
+        "after": "69f787f1028458b544803fd10822c8a4d51c553c5c16a2cd619ffd5c9ab543a8",
+        "reason": "Package et revision conserves ; compatibilite verifiee par la suite bornee, ou ecart deja present a b0020e51, sans nouvelle publication."
+      },
+      {
+        "name": "processNapCompetitionNotifications",
+        "commit": "1df545a62de67a24ff32ca4d1046cce4be6d499f",
+        "revision": "processnapcompetitionnotifications-00001-fej",
+        "before": "b73da704c8b5b3710d8f9dc2016f8a60e1a043559470c2ed0acecfb32a5dab53",
+        "after": "480a374fb555d620e0b5489618aab36321b830c0018025e64dcffbe4866abd0e",
+        "reason": "Package et revision conserves ; compatibilite verifiee par la suite bornee, ou ecart deja present a b0020e51, sans nouvelle publication."
+      },
+      {
+        "name": "resolveEngagementAccessRequest",
+        "commit": "812bad64681a232e6cc3868ba7ec112bcdac7ca2",
+        "revision": "resolveengagementaccessrequest-00040-jev",
+        "before": "6d9fbfa653896f44534bdb644a3f0691c956e96ada2ad0b7acc9555183680c30",
+        "after": "342d10e033b4239eb5c816987f6a9b2776a848060048091f27b4a47a78027bb9",
+        "reason": "Package et revision conserves ; compatibilite verifiee par la suite bornee, ou ecart deja present a b0020e51, sans nouvelle publication."
+      },
+      {
+        "name": "resolveEngagementSwimmerChangeRequest",
+        "commit": "1df545a62de67a24ff32ca4d1046cce4be6d499f",
+        "revision": "resolveengagementswimmerchangerequest-00020-mov",
+        "before": "07b8b74b334996d71ca572c7f6b1b3c2830c64859d3e84d6367058b42d25db2e",
+        "after": "27d147234b1ac270f427cfeb2de49d662ade81a8528710479831814ec3145a75",
+        "reason": "Package et revision conserves ; compatibilite verifiee par la suite bornee, ou ecart deja present a b0020e51, sans nouvelle publication."
+      },
+      {
+        "name": "sendEngagementPreparedEmails",
+        "commit": "1df545a62de67a24ff32ca4d1046cce4be6d499f",
+        "revision": "sendengagementpreparedemails-00026-zel",
+        "before": "82481aa10aa7c7cfafcf63f7f1ba470b2366b41d1135371bdf0ace65a2ad01d5",
+        "after": "a4bf58f059e449cb1ad7047c5a45a214652a1bdbb50879204bb06d1cc0b705a1",
+        "reason": "Package et revision conserves ; compatibilite verifiee par la suite bornee, ou ecart deja present a b0020e51, sans nouvelle publication."
+      },
+      {
+        "name": "submitEngagementAccessRequest",
+        "commit": "812bad64681a232e6cc3868ba7ec112bcdac7ca2",
+        "revision": "submitengagementaccessrequest-00039-rib",
+        "before": "be16dc361cdb44b67868b8bf06e9149e7b42ecc1ffef72407ba010c9295324ec",
+        "after": "ea6bbc2a9fad0d8495e039be1f041d82f3bd4e145df2b5fae1c5a3c3bd47e0f7",
+        "reason": "Package et revision conserves ; compatibilite verifiee par la suite bornee, ou ecart deja present a b0020e51, sans nouvelle publication."
+      },
+      {
+        "name": "updateCurrentEmailNotificationPreferences",
+        "commit": "1df545a62de67a24ff32ca4d1046cce4be6d499f",
+        "revision": "updatecurrentemailnotificationpreferences-00004-gev",
+        "before": "fae1fd731a5a970cee0616314f1461c1e042284edbd8048b042300c96834c7ba",
+        "after": "05e50d4ba5128bec66baf8453442c8cb672ea8daa67db5452f2c5f6d1d5bbedf",
+        "reason": "Package et revision conserves ; compatibilite verifiee par la suite bornee, ou ecart deja present a b0020e51, sans nouvelle publication."
+      }
+    ]
+  }
+}

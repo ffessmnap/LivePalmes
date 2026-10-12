@@ -78,6 +78,16 @@ Lancer `livepalmes-production-preflight.yml` depuis main avec ce chemin. Le work
 
 Le bilan est l’artefact `release-plan`, identifié par son run, son ID et son SHA-256. Présenter à Antoine le résumé GitHub, les évolutions, les exclusions, la sauvegarde et le retour arrière. L’approbation de ce bilan est requise avant la publication.
 
+### Retraits statiques bornés et fonctions conservées — 12 octobre 2026
+
+Le champ `productionStaticCleanup` autorise seulement les deux retraits historiques déjà contrôlés sur TEST, avec `records: true`, `publicExports: true` et un accord explicite dans `approval`. Les inventaires de référence restent fixes : RF/MPF `0de982df`, exports TOP/nageurs `8155fb1d`. Les sorties doivent être absentes, jamais remplacées ; les consommateurs HTML doivent être découplés. Le seul changement de `firebase.json` accepté est le retrait exact de l'en-tête cache de `records-data.js`. Les autres données, règles, index, configurations et Storage restent bloqués. Le classificateur ordinaire n'est pas élargi.
+
+Toute nouvelle demande backend comporte `excludedBackendEvidence`, en complément du résumé lisible `excludedBackendReview` : schéma 1, SHA candidat exact, run PROD de référence, suite `retained-calendar-consumers-v1` et tableau `functions`. Chaque ligne contient `name`, `commit`, `revision`, les empreintes SHA-256 `before` et `after`, et `reason`. Le preflight recalcule les empreintes depuis la provenance de chaque fonction conservée et exige une couverture exacte des différences. Une origine inconnue, un export absent, une révision différente ou une preuve incomplète bloque. Les écarts déjà présents au précédent candidat applicatif sont consignés sans republication.
+
+Les différences nouvelles des consommateurs de calendrier exclus doivent réussir la suite hors ligne liée à la paire applicative `b0020e51` / `ef96caca`. Cette suite vérifie les contrats et modules de notification conservés, les lectures bornées et l'autorisation, le contenu des mails, le rejeu des jobs et la reprise de leurs empreintes propres, avec refus des sources périmées et documents absents. Les imports réseau et Firebase sont interdits dans le bac à sable. Un nouveau candidat ou consommateur impose une nouvelle revue ; aucun simple texte d'équivalence ne suffit. Le reçu `excluded-backend-verification.json` lie le candidat, la référence PROD, les fonctions conservées, la revue et le SHA-256 de la suite.
+
+Ces corrections ne déploient rien et ne changent aucune révision distante. Le recalcul DTN et le nettoyage Storage PROD restent deux opérations séparées. L'accord sur l'outillage et la validation TEST des nettoyages ne valent pas accord de publication PROD.
+
 ## 3. Publier PROD après accord
 
 Les preuves communes TEST peuvent être complétées par `testBackendRuns`, liste explicite de runs ciblés réussis de `main`, pour le candidat exact. Chaque artefact est vérifié par son origine et son empreinte ; seules ses révisions ACTIVE, identifiées et déjà présentes dans l'inventaire commun sont remplacées. Les doublons, ajouts, retraits et autres dérives sont refusés. La comparaison de l'état TEST réel porte ensuite sur l'inventaire et le Hosting composés complets.
