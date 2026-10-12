@@ -1,9 +1,9 @@
 (function attachIntranapSwimmerPage(global) {
-  let summary = global.LIVEPALMES_INTRANAP_SUMMARY || { counts: {}, filters: { courses: [] } };
+  let summary = { filters: { courses: [], categories: [], seasons: [], regions: [], ...global.LivePalmesPerformanceReference }, counts: {} };
   let recordData = global.LIVEPALMES_RECORDS || { records: [], franceRecords: [] };
   const swimmerRowsCache = new Map();
   const swimmerSearchCache = new Map();
-  const publicVersion = global.LIVEPALMES_PERFORMANCE_PUBLIC_VERSION || summary.generatedAt || "20260602-swimmer-card-2";
+  const publicVersion = "legacy-retired";
   const params = new URLSearchParams(global.location.search);
   const usesNapDirectData = global.LivePalmesEnvironment.sportingDataSource === "nap";
   const napReaderUrl = global.LivePalmesEnvironment.napReaderUrl;
