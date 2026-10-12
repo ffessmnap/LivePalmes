@@ -1,5 +1,9 @@
 # Remise à niveau de Firebase TEST depuis PROD
 
+<!-- description: Historique avant bascule : Ancienne remise à niveau des données Firebase TEST. Voir NAP_REFERENCE.md pour le fonctionnement actuel. -->
+
+> **Archive historique — 12 octobre 2026.** Ce document décrit une étape antérieure, pas le fonctionnement actuel. Les affirmations « actuel », « à faire », « TEST seulement » et les commandes ci-dessous sont datées. Ne pas relancer copie Firebase, migration ou reconstruction sportive sur cette base. Voir [la référence NAP actuelle](NAP_REFERENCE.md) et [la procédure de publication](releases/PROCEDURE.md).
+
 Cette procédure décrit la méthode validée pour remettre `livepalmes-test` au niveau de `livepalmes` sans modifier la production.
 
 ## Règles de sécurité

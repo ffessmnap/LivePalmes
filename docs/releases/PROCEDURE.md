@@ -2,6 +2,8 @@
 
 <!-- description: Procédure réutilisable TEST commun, bilan immuable, publication du code et retour arrière. -->
 
+> **État NAP — 12 octobre 2026 :** voir [NAP_REFERENCE.md](../NAP_REFERENCE.md) pour les sources et limites. Une sauvegarde applicative chiffrée ne sauvegarde pas NAP ; un rollback de code n’annule pas les écritures métier. Les extensions datées ci-dessous sont des autorisations bornées à leurs versions, pas une autorisation permanente de republier tous les traitements mail/DTN. Les PR exclusivement documentaires ne nécessitent pas de déploiement.
+
 ## Pour Antoine
 
 Demander une évolution dans sa conversation suffit : TEST est la destination par défaut. L’assistant prépare et lance les opérations GitHub nécessaires ; « par défaut » ne signifie pas qu’une simple discussion ou analyse déclenche un déploiement.
@@ -82,7 +84,7 @@ Lancer `livepalmes-production-release.yml`, `preparation_run=<run approuvé>`, `
 
 Il sauvegarde le code et les configurations Functions concernés et la référence Hosting active, chiffre puis rouvre la sauvegarde et compare les fichiers. L’artefact doit être conservé avant toute publication. Il prépare les Functions sans secrets email, conserve App Check, simule puis publie par lots de 10. Hosting est publié en dernier, après contrôle des Functions concernées et des exclusions. Cinq fichiers du site sont comparés au commit, les en-têtes et les fichiers interdits sont contrôlés.
 
-Aucune copie TEST→PROD, lecture de documents Firestore, migration, exécution volontaire d’une Function métier, génération de données, règle ou index ne fait partie de ce workflow. Le code des déclencheurs déployés continuera naturellement à répondre aux événements de l’application.
+Aucune copie TEST→PROD, migration, exécution volontaire d’une Function métier, génération de données, règle ou index ne fait partie de ce workflow. Le contrôle de coupure des mails lit uniquement son réglage technique Firestore ; ce contrôle ne constitue pas une lecture ni une reprise des anciennes données sportives. Le code des déclencheurs déployés continuera naturellement à répondre aux événements de l’application. Les extensions notification/DTN/NAP restent limitées aux noms et accords du bilan ; elles ne sont pas incluses implicitement dans une publication ordinaire.
 
 Après réussite, reporter le commit, le run et la version Hosting dans le registre. Les évolutions ajoutées ensuite à TEST ne sont pas incluses. Ne pas utiliser « Re-run jobs » : lancer un nouveau run pour garder des artefacts sans ambiguïté.
 
@@ -116,7 +118,7 @@ PROD conserve les configurations, secrets, App Check et programmation en place ;
 
 ## Retrait progressif des anciens traitements NAP — 11 octobre 2026
 
-La liste NAP_RETIRED_FUNCTIONS de tools/firebase-test-backend-lots.js exclut 41 traitements devenus sans effet des selections ordinaires et des lots specialises. Ils restent classes, declares dans le backend et deployes : cette etape ne demande aucune suppression distante et conserve les donnees historiques. Les controles d'inventaire complet et de revisions des fonctions non selectionnees restent actifs. Une suppression distante sera preparee dans un perimetre distinct.
+La liste NAP_RETIRED_FUNCTIONS de tools/firebase-test-backend-lots.js exclut 41 traitements devenus sans effet des selections ordinaires et des lots specialises. Leurs déclarations restent conservées pour historique/retour arrière, mais les 41 fonctions ont ensuite été supprimées de PROD après sauvegarde vérifiée, puis les trois `NAP_UNUSED_FUNCTIONS` ont été retirées également. Ne pas les recréer dans une publication ordinaire. Les contrôles d’inventaire complet et de révisions des fonctions non sélectionnées restent actifs ; les preuves de nettoyage sont composées explicitement, voir les sections de preuve et `EVOLUTIONS.md`.
 
 Le service historique de qualification Firestore est cree uniquement a son premier usage et conserve ensuite la meme instance. Les callbacks et regles restent inchanges ; une retouche du contexte club n'est plus une dependance commune due a cette initialisation. Les autres initialisations partagees et les cas ambigus restent conservateurs.
 

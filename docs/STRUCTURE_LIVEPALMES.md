@@ -2,6 +2,8 @@
 
 <!-- description: Carte fonctionnelle des pages, dossiers et grandes zones du dépôt LivePalmes. -->
 
+> **Sources actuelles — 12 octobre 2026 :** NAP pour les données métier portail/public, Firebase pour les comptes et le technique, LivePalmes Direct et l’administration Records/MPF conservés. Voir [NAP_REFERENCE.md](NAP_REFERENCE.md). Les dossiers/outils historiques présents ne doivent pas être confondus avec les sources actives.
+
 Ce document sert de carte simple du projet. Il distingue les grandes parties fonctionnelles de l'ecosysteme LivePalmes sans imposer de deplacement de fichiers.
 
 Le Portail LivePalmes est le coeur fonctionnel actuel. Il est en cours de finalisation et de test. Les espaces publics permanents et le dispositif Direct national sont des composantes distinctes.

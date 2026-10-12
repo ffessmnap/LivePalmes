@@ -1,6 +1,8 @@
 # Reprise des performances historiques manquantes
 
-<!-- description: Note de reprise du diagnostic et du plan de correction des performances INTRANAP potentiellement absentes de Firestore et des fiches publiques. -->
+<!-- description: Historique avant bascule : Diagnostic historique des reprises INTRANAP vers Firestore. Voir NAP_REFERENCE.md pour le fonctionnement actuel. -->
+
+> **Archive historique — 12 octobre 2026.** Ce document décrit une étape antérieure, pas le fonctionnement actuel. Les affirmations « actuel », « à faire », « TEST seulement » et les commandes ci-dessous sont datées. Ne pas relancer copie Firebase, migration ou reconstruction sportive sur cette base. Voir [la référence NAP actuelle](NAP_REFERENCE.md) et [la procédure de publication](releases/PROCEDURE.md).
 
 ## Objet
 

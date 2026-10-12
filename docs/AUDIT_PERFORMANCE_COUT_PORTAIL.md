@@ -2,6 +2,8 @@
 
 <!-- description: Synthèse des lectures Firestore du portail LivePalmes, optimisations appliquées et procédure sûre de mise en service. -->
 
+> **Périmètre actualisé — 12 octobre 2026.** Les descriptions de stockage sportif Firestore, de fichiers TOP comme source des calculs et les inventaires/étapes de migration ci-dessous sont historiques. Les règles fonctionnelles non remplacées restent utiles ; pour le circuit NAP et les arbitrages actuels, suivre [NAP_REFERENCE.md](NAP_REFERENCE.md). Pour les lots de publication, suivre [PROCEDURE.md](releases/PROCEDURE.md) et la sélection versionnée, sans recréer les fonctions retirées.
+
 ## État après bascule NAP — 11 octobre 2026
 
 Le contenu ci-dessous décrit l’ancienne architecture Firestore et reste une archive. Ne pas exécuter son ancien ordre de mise en service : les reconstructions et déclencheurs sportifs historiques ont été retirés. Comptes, réglages techniques et LivePalmes Direct restent distincts.
