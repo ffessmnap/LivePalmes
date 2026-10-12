@@ -770,12 +770,12 @@ assert.ok(portal.includes("function renderActiveEngagementClubSwimmerConsumer"))
 assert.ok(portal.includes('if (activeEngagementsTab === "clubSwimmers")'));
 assert.equal(competitionDetailLoad.includes("clubPeoplePromise"), false);
 assert.ok(portal.includes('(nextTab === "team" || nextTab === "officials") && canUse("engagements.club.manage") && !engagementClubPeopleLoaded'));
-assert.ok(portal.includes('return callFunction("getEngagementClubEntry", { competitionId: cleanId });'));
+assert.ok(portal.includes('return callFunctionWithTimeout("getEngagementClubEntry", { competitionId: cleanId });'));
 assert.ok(competitionDetailLoad.includes("const cachedWorkspace = clubMode ? readEngagementClubWorkspaceCache(cleanId) : null"));
 assert.ok(competitionDetailLoad.includes("selectedEngagementClubEntry = cloneEngagementClubEntry(cachedWorkspace.entry)"));
 assert.ok(competitionDetailLoad.includes("const preloadRequest = pendingEngagementClubWorkspaceRequest(cleanId)"));
 assert.ok(competitionDetailLoad.includes("if (selectedEngagementCompetitionId !== cleanId) return"));
-assert.equal((competitionDetailLoad.match(/callFunction\("getEngagementClubEntry"/g) || []).length, 1);
+assert.equal((competitionDetailLoad.match(/callFunctionWithTimeout\("getEngagementClubEntry"/g) || []).length, 1);
 assert.equal(competitionDetailLoad.includes("loadEngagementClubEntry("), false);
 assert.ok(clubEntryRead.includes("const [competition, entry] = await db.getAll(competitionRef, entryRef)"));
 assert.ok(clubEntryRead.includes("competition: engagementCompetitionDetailItem(competition)"));

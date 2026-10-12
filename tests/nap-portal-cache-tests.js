@@ -26,3 +26,38 @@ assert.equal(context.readEngagementCalendarCache("empty").source, "nap", "Empty 
 storage.set("calendar.old", JSON.stringify({ version: 2, competitions: [{ id: "obsolete" }], cachedAt: 100 }));
 assert.equal(context.readEngagementCalendarCache("old"), null, "Pre-cutover sports calendar must not delay the first native read");
 console.log("NAP portal cache: native source, read-only status, empty calendars and obsolete-cache invalidation verified");
+
+// Native event types must survive both display and the session calendar cache.
+vm.runInContext(source.slice(source.indexOf("  function engagementCompetitionType("), source.indexOf("  function engagementCompetitionTypeLabel(")), context);
+for (const type of ["pool", "openWater", "training", "stage", "meeting", "other"]) {
+  const native = { ...item, eventType: type, competitionType: type };
+  assert.equal(context.engagementCompetitionType(native), type);
+  context.writeEngagementCalendarCache(type, [native], 100, "nap");
+  context.engagementCompetitionCalendarMemoryCache.clear();
+  assert.equal(context.engagementCompetitionType(context.readEngagementCalendarCache(type).competitions[0]), type);
+}
+assert.equal(context.engagementCompetitionType({ ...item, eventType: "training", competitionType: "pool" }), "training", "Native eventType repairs the display of an older cached pool label");
+assert.equal(context.engagementCompetitionType({ competitionType: "pool" }), "pool");
+assert.equal(context.engagementCompetitionType({ sourceType: "calendarEvent", eventType: "meeting" }), "meeting");
+
+// A stalled read must terminate visibly; normal responses/errors remain intact.
+const detail = source.slice(source.indexOf("  async function loadEngagementCompetitionDetail("), source.indexOf("  async function saveEngagementClubTeamLeader("));
+assert.ok(detail.includes('callFunctionWithTimeout("getEngagementClubEntry", { competitionId: cleanId })'));
+assert.ok(detail.includes('setEngagementClubEntryLoadingState(clubMode && !cachedWorkspace ? "error" : "")'));
+let timer;
+let cleared = 0;
+let read = () => Promise.resolve({ entry: { id: "saved" } });
+const timeoutContext = { callFunction: (...args) => read(...args), setTimeout: (callback, delay) => { assert.equal(delay, 30000); timer = callback; return 1; }, clearTimeout: () => { cleared++; } };
+vm.createContext(timeoutContext);
+vm.runInContext(source.slice(source.indexOf("  async function callFunctionWithTimeout("), source.indexOf("  function downloadBase64File(")), timeoutContext);
+(async () => {
+  assert.equal((await timeoutContext.callFunctionWithTimeout("getEngagementClubEntry", {})).entry.id, "saved");
+  read = () => Promise.reject(new Error("Lecture indisponible"));
+  await assert.rejects(timeoutContext.callFunctionWithTimeout("getEngagementClubEntry", {}), /Lecture indisponible/);
+  read = () => new Promise(() => {});
+  const stalled = timeoutContext.callFunctionWithTimeout("getEngagementClubEntry", {});
+  timer();
+  await assert.rejects(stalled, /Délai de lecture dépassé/);
+  assert.equal(cleared, 3, "Timers are released for success, failure and timeout");
+  console.log("Portal recipe: native event labels/cache and bounded engagement reads verified offline");
+})().catch(error => { console.error(error); process.exitCode = 1; });
