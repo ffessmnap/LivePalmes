@@ -53,7 +53,7 @@ Dans le workflow authentifié, pour la version et le périmètre déjà autoris�
 
 Le deploiement Hosting publie le contenu du dossier, pas uniquement les fichiers stages dans Git. Si le dossier principal contient d'autres modifications, il faut faire valider l'ensemble de cette release ou preparer un checkout propre contenant exactement le perimetre autorise avant de lancer Hosting.
 
-Un deploiement Hosting ordinaire ne synchronise plus automatiquement les donnees et ne lit pas Firestore. Lorsqu'une publication doit aussi actualiser le secours Records / MPF ou le referentiel clubs, obtenir la validation explicite de cette lecture et de ces ecritures generees, puis executer avant les verifications et le deploiement :
+Un deploiement Hosting ordinaire ne synchronise plus automatiquement les donnees et ne lit pas Firestore. Lorsqu'une publication doit aussi actualiser le referentiel clubs, obtenir la validation explicite de cette lecture et de ces ecritures generees, puis executer avant les verifications et le deploiement :
 
 ```powershell
 node tools/prepare-hosting-data.js --write

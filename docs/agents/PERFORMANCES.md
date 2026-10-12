@@ -8,7 +8,7 @@ Les calculs de Records, MPF, catégories, relais, classements, médailles et qua
 
 Les Records et MPF officiels utilisent les compléments NAP `livepalmes_records_versions` et `livepalmes_records_current`, via le lecteur public et les actions d'administration existantes. Aucun recalcul sportif ni nouvelle règle de droits.
 
-Les anciennes données Firebase et la copie `performances/public/data/records-data.js` sont conservées temporairement pour retour arrière, sans chargement par les pages actuelles. Ne plus synchroniser cette copie depuis Firestore. Le nettoyage autorisé se déroule en deux étapes : découplage et recette TEST, puis retrait des anciens fichiers/outils après vérification.
+Le fichier historique `records-data.js` et ses outils de synchronisation Firestore ont été retirés du dépôt après recette TEST du découplage. Les anciennes données Firebase et Storage ne sont pas effacées ; Git conserve les versions précédentes pour retour arrière. Les pages s’arrêtent explicitement si la lecture NAP échoue, sans repli sur une copie sportive périmée.
 
 ## Pipeline public
 

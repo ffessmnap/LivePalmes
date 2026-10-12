@@ -9,7 +9,6 @@ Utilisation :
   node tools/prepare-hosting-data.js --write
 
 Prépare explicitement les données statiques avant une publication Hosting complète :
-  - synchronisation du secours Records / MPF depuis Firestore ;
   - régénération du référentiel clubs du portail et des Functions.
 
 Cette commande lit Firebase de production et écrit des fichiers générés.
@@ -38,7 +37,6 @@ function main() {
     printHelp();
     throw new Error("Confirmation explicite requise : ajoutez --write.");
   }
-  run("tools/sync-records-from-firestore.js", ["--write"]);
   run("tools/build-admin-club-reference.js");
   console.log("Données Hosting préparées. Contrôlez les fichiers générés avant le déploiement.");
 }
