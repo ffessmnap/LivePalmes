@@ -2,6 +2,10 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 12 octobre — Chronométrage masqué sur les mêmes événements du calendrier
+
+- Précision explicite d'Antoine : masquer aussi Chronométrage pour les compétitions eau libre, les réunions et les formations. Même règle d'affichage que Bassin et Lignes d'eau ; informations conservées en piscine. Aucun changement des données source, NAP, droits, mails ou backend ; aucune lecture supplémentaire.
+- Test public-calendar étendu avec un chronométrage importé : trois types masqués, piscine conservée. Syntaxe et contrôle du diff réussis. Publication TEST Hosting seul et recette en ligne à attester ; aucune validation utilisateur inventée.
 ### 12 octobre — Informations de bassin pertinentes dans le calendrier
 
 - Demande d'Antoine : ne pas afficher le type de bassin ni le nombre de lignes pour l'eau libre, les réunions et les formations, champs obligatoires mais non pertinents dans INTRANAP.
