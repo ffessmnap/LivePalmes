@@ -101,6 +101,23 @@ class ReleaseTests(unittest.TestCase):
             self.assertEqual(m.read(root/'test-selection.json'), ['two'])
             comparisons.assert_called_once_with(one, 'one', 'a'*40)
 
+    def test_hosting_only_requires_proven_equivalent_backend(self):
+        one = self.function('one')
+        for proven, changed, allowed in [(True, False, True), (True, True, False), (False, False, False)]:
+            with self.subTest(proven=proven, changed=changed), tempfile.TemporaryDirectory() as d:
+                m.write(Path(d)/'previous-test/test-proof.json', {'state': {'functions': [one] if proven else []}})
+                with patch.dict(os.environ, {'CANDIDATE_SHA': 'a'*40, 'GITHUB_RUN_ID': '13', 'HOSTING_ONLY': 'true'}), patch.object(m, 'snapshot', return_value={'functions': [one]}), patch.object(m, 'latest_run', return_value=12), patch.object(m, 'artifact'), patch.object(m, 'targeted_test_evidence', return_value=set()), patch.object(m, 'safe_functions', return_value=['one']), patch.object(m, 'needs_function', return_value=changed), patch.object(m, 'output') as output:
+                    if allowed:
+                        m.test_selection(d, '.')
+                        output.assert_called_once_with(backend='false')
+                    else:
+                        with self.assertRaisesRegex(ValueError, 'Hosting seul refuse'):
+                            m.test_selection(d, '.')
+                        output.assert_not_called()
+        workflow=(Path(__file__).parents[1]/'.github/workflows/livepalmes-test-common.yml').read_text(encoding='utf-8')
+        self.assertIn('HOSTING_ONLY: ${{ inputs.hosting_only }}', workflow)
+        self.assertEqual(workflow.count("steps.selection.outputs.backend == 'true' && !inputs.verification_only && !inputs.hosting_only"), 3)
+
     def test_targeted_proof_restores_only_exact_live_revision(self):
         one, two = self.function('one'), self.function('two')
         with tempfile.TemporaryDirectory() as d:
