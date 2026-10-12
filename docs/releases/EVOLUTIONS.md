@@ -2,6 +2,12 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 12 octobre — Retrait des anciennes fonctions calendrier et objets Storage TEST
+
+- Antoine valide la proposition : nettoyage du code et sauvegarde vérifiée puis suppression de `calendar/` sur TEST ; PROD reste soumise à un accord séparé. Les trois anciennes fonctions sont déjà absentes de TEST/PROD : aucun retrait ni déploiement distant de fonction nécessaire. Retrait des trois déclarations et 344 lignes d'auxiliaires sans autre appelant ; module `public-calendar.js` partagé avec NAP et cinq fonctions actives conservés. Noms historiques conservés dans les exclusions anti-réintroduction ; le contrôle des lots accepte seulement ces noms explicitement retirés quand leur export est absent.
+- Sauvegarde locale `archive-calendar-storage-test-20261012-203401.zip`, 3 587 objets et 6 860 531 octets source, archive 3 009 150 octets, SHA-256 `08958503be3aefe716d1290f97435d582340f7ec6a7cef84b6d4c04cc63a0d48`. MD5 Storage, tailles, générations et SHA-256 des fichiers archivés vérifiés ; inventaire inchangé avant suppression. Suppression limitée au bucket public TEST et à chaque nom/génération/métagénération inventorié, 3 587 succès et aucun objet `calendar/` restant. Suppression réversible Storage 7 jours en complément de l'archive locale.
+- Tests ciblés calendrier, NAP, isolation et classement des lots réussis ; comparaison des 154 traitements conservés à dépendances identiques et sélections actives inchangées. CI complète et recette finale à attester. Aucun accès en écriture NAP/Firestore, aucune modification PROD, droits, mails, documents/PDF ou objet d'un autre préfixe. Le Hosting TEST existant est conservé ; aucune nouvelle publication requise pour ce nettoyage de sorties obsolètes.
+
 ### 12 octobre — Calendrier/Storage, premier lot autorisé sur TEST
 
 - Après présentation du diff local, Antoine donne son accord pour terminer les contrôles, intégrer puis publier ce premier lot sur TEST. Base `d0016ad0ee43048c8f10ae6eeaa7a689f68dd5dc` ; publication Hosting uniquement, aucune modification de données ni de fonction distante, aucun retrait d'objet Storage ni PROD. PR #277 intégrée (`34f7fbaab1a842d5dafdbe92928dee0bd659e63b`), CI complète Linux `38286720912` et publication TEST `38287099319` réussies, Hosting `8d650b35726c87f8`. Les 112 fonctions TEST conservent exactement leur état précédent.

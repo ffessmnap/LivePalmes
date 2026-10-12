@@ -10,14 +10,12 @@ const handler=name=>{
   return source.slice(callback.start,callback.end);
 };
 const triggers={
-  syncEngagementCompetitionToCalendar:["syncEngagementCompetitionCalendarFromChange","publishPublicCalendarChange"],
-  syncEngagementCalendarEventToCalendar:["syncEngagementCalendarEventFromChange","publishPublicCalendarChange"],
   syncEngagementClubEntryToCompetitionSummary:["syncEngagementCompetitionEntrySummaryFromChange"],
   syncEngagementClubPersonToRoster:["syncEngagementClubPeopleRosterFromChange"],
   syncPerformanceSwimmerToEngagementClubRoster:["syncEngagementClubRosterFromSwimmerChange"],
   syncEngagementClubSwimmerToRoster:["syncEngagementClubRosterFromSwimmerChange"]
 };
-const blocked=["rebuildEngagementCompetitionCalendars","rebuildEngagementClubAggregates","requestEngagementCompetitionDeletion","resolveEngagementCompetitionDeletionRequest"];
+const blocked=["rebuildEngagementClubAggregates","requestEngagementCompetitionDeletion","resolveEngagementCompetitionDeletionRequest"];
 (async()=>{
   for(const [name,helpers] of Object.entries(triggers)){
     const calls=[];
@@ -57,5 +55,5 @@ const blocked=["rebuildEngagementCompetitionCalendars","rebuildEngagementClubAgg
   });
   assert.equal(JSON.stringify(await counts()),JSON.stringify({swimmerChanges:2,dataDeletions:0,accountDeletions:3,total:5}));
   assert.equal(collections.length,2);
-  console.log("NAP legacy isolation: six dormant sporting triggers, four former mutations, empty native legacy-deletion list and two bounded technical counters verified without a database.");
+  console.log("NAP legacy isolation: four dormant sporting triggers, three former mutations, empty native legacy-deletion list and two bounded technical counters verified without a database.");
 })().catch(error=>{console.error(error);process.exitCode=1;});

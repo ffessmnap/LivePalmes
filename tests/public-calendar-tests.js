@@ -295,15 +295,13 @@ assert.ok(portalHtml.includes("livepalmes-admin-calendar-events.js"));
 assert.ok(portalHtml.includes("Ces documents sont publics"));
 
 const functionsSource = fs.readFileSync(path.join(root, "functions", "index.js"), "utf8");
-const competitionSyncStart = functionsSource.indexOf("async function syncEngagementCompetitionCalendarFromChange");
-const competitionSyncEnd = functionsSource.indexOf("exports.syncEngagementCompetitionToCalendar", competitionSyncStart);
-const competitionSyncSource = functionsSource.slice(competitionSyncStart, competitionSyncEnd);
-assert.ok(competitionSyncSource.includes("await db.runTransaction"));
-assert.ok(competitionSyncSource.includes("const currentSnapshot = await transaction.get(sourceRef)"));
-assert.ok(competitionSyncSource.includes("current && currentSeason === endYear"));
-assert.ok(functionsSource.includes('publishPublicCalendarChange(event, "competition", resolvedChange)'));
-assert.ok(functionsSource.includes("exports.rebuildEngagementCompetitionCalendars"));
-assert.ok(functionsSource.includes("variableDocumentsMax: endYears.length * 1200"));
+for (const name of ["rebuildEngagementCompetitionCalendars", "syncEngagementCompetitionToCalendar", "syncEngagementCalendarEventToCalendar"]) {
+  assert.ok(!functionsSource.includes(`exports.${name} =`));
+  assert.ok(require("../tools/firebase-test-backend-lots").NAP_RETIRED_FUNCTIONS.includes(name));
+}
+for (const helper of ["function publicCalendarFile(", "function publishPublicCalendarChange(", "function syncEngagementCompetitionCalendarFromChange(", "function syncEngagementCalendarEventFromChange("]) {
+  assert.ok(!functionsSource.includes(helper));
+}
 
 const calendarCss = fs.readFileSync(path.join(root, "assets", "public", "livepalmes-public-calendar.css"), "utf8");
 assert.ok(calendarCss.includes(".public-calendar-page .public-footer"));
