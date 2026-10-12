@@ -44,11 +44,30 @@ EXPLAIN du TOP initial : index course/relais, estimation 81 210 lignes et tri te
 
 Preuves détaillées locales : `outputs/audit-optimisation-nap-20261011/` dans la session de travail. Tests : `nap-top-requests-tests.js`, `nap-direct-tops-tests.js`, `nap-direct-calendar-tests.js` et suite globale.
 
-## Suite et validation
+## Validation et clôture du plan initial — 12 octobre 2026
 
-1. Contrôles techniques, revue et TEST commun du lot complet ; comparaison des mêmes parcours.
-2. Recette utilisateur et bilan avant toute publication PROD.
-3. Suivi des durées des prochaines publications représentatives. Le ciblage a été corrigé par PR #246 ; aucun nouveau repli manuel de sélection n’est autorisé.
-4. Ajuster uniquement sur preuve : pas de cache temporisé sans accord sur la fraîcheur, pas de nouvel index sans accord spécifique, pas de changement de concurrence NAP sans mesure de charge. DTN inchangée, aucun recalcul d’essai.
+PR #247, candidat `7036940bd1c057e4fd693bf04d42bd9efba81b5c` : suite `38175665424`, Hosting TEST commun `38175818400` et lot NAP `38176119901` réussis. Antoine a validé le bilan TEST puis autorisé la publication. La PR #248 compose les preuves ciblées TEST et les nettoyages PROD vérifiés, sans assouplir la comparaison des états réels.
+
+Publication PROD protégée [38179490926](https://github.com/ffessmnap/LivePalmes/actions/runs/38179490926) réussie après sauvegarde chiffrée rouverte et vérifiée : une fonction actualisée, 110 conservées, Hosting publié en dernier. Durée totale observée : 229 s, sauvegarde et contrôles inclus ; cette observation unique ne prédit pas les publications futures.
+
+Mesures du 12 octobre, session TEST authentifiée, latences HTTP serveur Cloud Run :
+
+| Lecture | Appels | Min / médiane / max |
+| --- | ---: | --- |
+| Calendrier des événements | 1 | 673 / 673 / 673 ms |
+| Liste des compétitions | 1 | 616 / 616 / 616 ms |
+| Nageurs du club | 1 | 873 / 873 / 873 ms |
+| Catalogue des saisons DTN | 1 | 316 / 316 / 316 ms |
+| Consultation des résultats DTN | 7 | 175 / 238 / 541 ms |
+
+Toutes les réponses sont HTTP 200. Le calendrier et la liste des compétitions peuvent être chargés en parallèle : ne pas additionner leurs durées. Effectif CNHC : 503 nageurs, dont 180 actifs et 323 inactifs. Les trois dispositifs DTN s'affichent depuis les résultats conservés ; actualiser l'affichage conserve la date du calcul `11/10/2026 20:25:49`. Aucun recalcul déclenché.
+
+Ces mesures incluent le traitement serveur et l'accès NAP, pas le temps utilisateur complet ni le SQL isolé. La navigation peut réutiliser un contenu déjà chargé ; ses chronométrages ne sont pas assimilés à une lecture fraîche. Petit échantillon, aucune charge concurrente simulée, aucun percentile représentatif.
+
+État réel relu après les mesures : 111 fonctions PROD, 113 TEST ; révisions, Hosting, déclencheurs et configuration des planifications inchangés par rapport au bilan de publication. Mails automatiques toujours désactivés dans les deux environnements. Aucune écriture NAP, aucun envoi, aucune nouvelle publication.
+
+Le plan initial est terminé. Preuves locales : `outputs/cloture-plan-optimisation-nap-20261012/` (bilan HTML/JSON, journaux de durées sans contenu métier, états relus, durées du run et empreintes SHA-256). La projection calendrier reste volontairement différée faute de gain démontré ; la surveillance en usage et lors des futures publications relève du suivi habituel.
+
+Ajuster uniquement sur preuve : pas de cache temporisé sans accord sur la fraîcheur, pas de nouvel index sans accord spécifique, pas de changement de concurrence NAP sans mesure de charge. Le ciblage a été corrigé par PR #246 ; aucun nouveau repli manuel de sélection n’est autorisé.
 
 Aucun gain permanent de coût ou de durée n’est annoncé avant observation en usage. Aucune suppression supplémentaire de fonctions justifiée par ce lot.
