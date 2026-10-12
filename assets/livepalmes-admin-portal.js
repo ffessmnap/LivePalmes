@@ -4489,7 +4489,7 @@
     if (elements.engagementsEditForm) elements.engagementsEditForm.hidden = !editing;
     if (elements.engagementsDetailList) elements.engagementsDetailList.hidden = editing;
     if (elements.engagementsPublicInfo) {
-      elements.engagementsPublicInfo.hidden = editing || !String(selectedEngagementCompetition.publicDescription || "").trim();
+      elements.engagementsPublicInfo.hidden = (editing && !selectedEngagementCompetition.legacyDescription) || !String(selectedEngagementCompetition.publicDescription || selectedEngagementCompetition.legacyDescription || "").trim();
     }
     if (elements.engagementsEditButton) elements.engagementsEditButton.hidden = editing;
     if (elements.engagementsSaveButton) elements.engagementsSaveButton.hidden = !editing;
@@ -10713,7 +10713,7 @@
     const openWater = engagementCompetitionType(competition) === "openWater";
     const nationalCompetition = ["national", "international"].includes(competition.level);
     const clubWhatsAppValue = engagementTeamLeadersWhatsAppValue(competition);
-    const publicDescription = String(competition.publicDescription || "").trim();
+    const publicDescription = [String(competition.publicDescription || "").trim(), competition.legacyDescription ? `Présentation existante\n${competition.legacyDescription}` : ""].filter(Boolean).join("\n\n");
     if (elements.engagementsPublicInfo) elements.engagementsPublicInfo.hidden = !publicDescription;
     if (elements.engagementsPublicInfoTitle) {
       elements.engagementsPublicInfoTitle.textContent = adminMode ? "Présentation publique" : "Informations de l’organisateur";

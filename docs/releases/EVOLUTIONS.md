@@ -2,6 +2,13 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 12 octobre — Commentaires de compétition partagés avec INTRANAP
+
+- Demande explicite : même champ `competitions.comments`, visible dans le portail et sur le calendrier public, publication TEST uniquement. Pas de migration ni de modification de contenu NAP pendant la recette, aucun changement de droits ou mails.
+- Contrôle préalable en lecture seule du calendrier TEST : 25 saisons, 3 926 événements, 42 descriptions non vides. Origine non attribuée. Les anciennes descriptions restent intactes et visibles séparément, sans fusion automatique.
+- Requêtes et budgets inchangés : deux colonnes natives dans les lectures déjà bornées (saison <=500, fiche <=1) ; enregistrement conditionnel par clé primaire, sauvegarde et contrôle de concurrence existants étendus à `comments`.
+- Tests ciblés hors ligne réussis : lecture calendrier/portail, modification conditionnelle des commentaires sans perte de description, création, périmètres, événements et affichage public. Vérification globale locale arrêtée sur le test du workflow shell sous Windows (bash indisponible) ; contrôle global Linux CI requis avant intégration. Publication TEST en cours ; aucune validation utilisateur déduite.
+
 ### 12 octobre — Stages sans informations de bassin dans le calendrier public
 
 - Demande explicite d'Antoine : appliquer aux stages le masquage du bassin, du nombre de lignes et du chronométrage. Ajout du seul type stage à la règle existante ; informations piscine conservées, aucun changement des données INTRANAP, NAP, droits, mails, backend ou lectures.

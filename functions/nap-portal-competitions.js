@@ -35,7 +35,7 @@ async function readNativeCompetitionSeason(connection, input) {
 async function readNativeCompetition(connection, input, authorize) {
   if (typeof authorize !== "function") throw new TypeError("Controle du perimetre requis.");
   const id = calendar.positiveId(input);
-  const rows = await bounded(connection, `${calendar.SELECT_EVENT.replace(" FROM competitions c", `,${PARAMETERS},c.organisateur,c.delegue,c.comments FROM competitions c`)}${calendar.EVENT_JOINS} WHERE c.id=? LIMIT 2`, [id], 1);
+  const rows = await bounded(connection, `${calendar.SELECT_EVENT.replace(" FROM competitions c", `,${PARAMETERS},c.organisateur,c.delegue FROM competitions c`)}${calendar.EVENT_JOINS} WHERE c.id=? LIMIT 2`, [id], 1);
   if (!rows.length) return null;
   const row = rows[0], event = portalEventFromRow(row);
   // Scope check precedes every contact, rule, or supplemental data query.
@@ -57,7 +57,7 @@ async function readNativeCompetition(connection, input, authorize) {
   const sessions = await bounded(connection, "SELECT id,label,description,session,state,`begin` FROM winpalme_sessions FORCE INDEX (livepalmes_compet_session_id) WHERE compet=? ORDER BY session,id LIMIT 13", [id], LIMITS.sessions);
   const program = sessions.length ? await bounded(connection, `SELECT id,session,course,sexe,pos,final FROM winpalme_courses FORCE INDEX (livepalmes_session_pos_id) WHERE session IN (${sessions.map(() => "?").join(",")}) ORDER BY session,pos,id LIMIT 1921`, sessions.map(session => session.id), LIMITS.program) : [];
   const nativeSnapshot = {
-    competition: {...Object.fromEntries(["id","libelle","lieu","date","enddate","comite","description","bassin","chrono","ld"].map(key => [key,row[key] ?? null])),type:row.native_type??null},
+    competition: {...Object.fromEntries(["id","libelle","lieu","date","enddate","comite","description","comments","bassin","chrono","ld"].map(key => [key,row[key] ?? null])),type:row.native_type??null},
     parameters: { id:row.parameter_id,compet:row.id,...Object.fromEntries(["actif","dateactif","date_limit","officiel","nb_lignes","mailtxt","mailjuges","tps_d","tps_f","niveau","saisie","relais","cat_d","cat_f","qualif"].map(key=>[key,row[key] ?? null])) }
   };
   return { source: "nap", readAt: new Date().toISOString(), event: {...event,...entryState({...row,entry_closed:options[0]?.entry_closed})}, nativeParameters, nativeSnapshot, nativeOrganizerId: row.organisateur, nativeDelegate: row.delegue, nativeComments: row.comments,
