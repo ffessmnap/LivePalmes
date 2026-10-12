@@ -2,6 +2,12 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 12 octobre — Retrait TEST du déclencheur RF/MPF historique
+
+- Antoine autorise la vérification puis la suppression de `syncPublicRecordsData` uniquement sur TEST si les contrôles sont bons ; PROD à examiner ensuite. Le déclencheur ne sert plus aux lectures/publications NAP ; aucun ancien fichier, document Firebase ou contenu NAP ne doit être supprimé.
+- Exclusion du registre des lots pour empêcher sa recréation, déclaration historique conservée pour retour arrière. Régressions : fonction exclue, services utiles conservés, empreintes des autres fonctions inchangées pour un ajout à la liste de retrait. Aucune republication backend requise pour cette exclusion.
+- Source/configuration et déclencheur TEST à sauvegarder et vérifier avant retrait ; comparaison complète TEST/PROD avant/après et recette RF/MPF en lecture. Le retrait distant et son bilan restent à attester ; aucune suppression PROD autorisée.
+
 ### 12 octobre — RF/MPF publié en PROD, audit sans suppression
 
 - Accord explicite d’Antoine sur le bilan `38227733784`, puis demande de publier avec sauvegarde vérifiée et mails désactivés, et d’auditer les anciennes fonctions sans suppression. Publication réussie du seul candidat `b0020e51ebd6e686054efd3451882dd2c1d60d94` : [run 38228508477](https://github.com/ffessmnap/LivePalmes/actions/runs/38228508477), Hosting `sites/livepalmes/versions/a7a7c7342abf5f23`.

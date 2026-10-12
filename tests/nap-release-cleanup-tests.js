@@ -13,13 +13,15 @@ class HttpsError extends Error { constructor(code, message) { super(message); th
   assert.equal(NAP_RETIRED_FUNCTIONS.length, 41);
   assert.equal(new Set(NAP_RETIRED_FUNCTIONS).size, 41);
   const retired = new Set([...NAP_RETIRED_FUNCTIONS, ...NAP_UNUSED_FUNCTIONS]);
-  assert.deepEqual([...NAP_UNUSED_FUNCTIONS].sort(), ["getEngagementNationalAdministrationOverview", "listEngagementCompetitionDeletionRequests", "listEngagementNationalClubSwimmers"]);
+  assert.deepEqual([...NAP_UNUSED_FUNCTIONS].sort(), ["getEngagementNationalAdministrationOverview", "listEngagementCompetitionDeletionRequests", "listEngagementNationalClubSwimmers", "syncPublicRecordsData"]);
   for (const lot of Object.keys(LOTS)) {
     assert.deepEqual(activeLotFunctions(lot), LOTS[lot].filter(n => !retired.has(n)));
   }
   assert.throws(() => activeLotFunctions("unknown"));
   const active = ALL_SAFE_LOTS.flatMap(activeLotFunctions);
-  for (const name of ["getCurrentAccessUser","syncPublicRecordsData","syncOfficialResultToPublicIndex","storeCompetitionPdf","savePerformanceCorrection","createCompetitionImport","getDtnSeasonOverview"]) assert.ok(active.includes(name), name);
+  for (const name of ["getCurrentAccessUser","syncOfficialResultToPublicIndex","storeCompetitionPdf","savePerformanceCorrection","createCompetitionImport","getDtnSeasonOverview"]) assert.ok(active.includes(name), name);
+  assert.ok(!active.includes("syncPublicRecordsData"));
+  assert.ok(handlers.has("syncPublicRecordsData"), "Declaration conservée pour le retour arrière");
   for (const name of NAP_RETIRED_FUNCTIONS) {
     assert.ok(Object.values(LOTS).flat().includes(name), "Compatibility registration retained: " + name);
     const node = handlers.get(name);

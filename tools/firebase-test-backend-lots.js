@@ -128,6 +128,7 @@ const NAP_RETIRED_FUNCTIONS = Object.freeze([
 // Audited endpoints with no current NAP caller. Keep declarations for rollback,
 // but never recreate them through an ordinary or targeted publication lot.
 const NAP_UNUSED_FUNCTIONS = Object.freeze([
+  "syncPublicRecordsData",
   "listEngagementNationalClubSwimmers",
   "getEngagementNationalAdministrationOverview",
   "listEngagementCompetitionDeletionRequests"
