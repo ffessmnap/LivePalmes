@@ -2,6 +2,10 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 12 octobre — Stages sans informations de bassin dans le calendrier public
+
+- Demande explicite d'Antoine : appliquer aux stages le masquage du bassin, du nombre de lignes et du chronométrage. Ajout du seul type stage à la règle existante ; informations piscine conservées, aucun changement des données INTRANAP, NAP, droits, mails, backend ou lectures.
+- Test de rendu existant étendu au stage avec les trois valeurs importées présentes ; syntaxe et test public-calendar réussis. Publication TEST Hosting seul et recette visuelle à attester ; aucune validation utilisateur en ligne inventée.
 ### 12 octobre — Chronométrage masqué sur les mêmes événements du calendrier
 
 - Précision explicite d'Antoine : masquer aussi Chronométrage pour les compétitions eau libre, les réunions et les formations. Même règle d'affichage que Bassin et Lignes d'eau ; informations conservées en piscine. Aucun changement des données source, NAP, droits, mails ou backend ; aucune lecture supplémentaire.

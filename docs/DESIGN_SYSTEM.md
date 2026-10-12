@@ -201,7 +201,7 @@ L’accueil emploie une grande zone de marque puis une grille statique de deux c
 
 ### Fiches du calendrier public
 
-Les informations pratiques masquent « Bassin », « Lignes d’eau » et « Chronométrage » pour les compétitions eau libre, les réunions et les formations, même si la source fournit ces valeurs. Les compétitions piscine conservent ces champs lorsqu’ils sont renseignés. Cette règle concerne uniquement la présentation, sans modification des données source.
+Les informations pratiques masquent « Bassin », « Lignes d’eau » et « Chronométrage » pour les compétitions eau libre, les réunions, les formations et les stages, même si la source fournit ces valeurs. Les compétitions piscine conservent ces champs lorsqu’ils sont renseignés. Cette règle concerne uniquement la présentation, sans modification des données source.
 
 ### Consoles
 
