@@ -2,12 +2,18 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 12 octobre — Nettoyage RF/MPF, étape 2
+
+- Après recette de l’étape 1 : retrait de `records-data.js`, du module inutilisé `nap-entry-static-records.js`, de cinq outils historiques Firestore/statique et de leurs tests obsolètes. Le store conserve uniquement les lectures/publications NAP ; tests de reprise conservés et échec NAP couvert sans recours à une copie ancienne.
+- Générateur des données Hosting limité au référentiel clubs, retrait de l’en-tête cache du seul fichier supprimé. Aucun retrait de fonction déployée, aucune suppression distante ou de donnée. `public-records-data.js`, placeholders et composants actuels conservés. Retour arrière par Git avant #270 et la présente étape ; les copies Firebase/Storage demeurent intactes.
+- Autorisation utilisateur : nettoyage en deux étapes sur TEST. Budget de lectures inchangé, pas d’écriture sportive de recette. Contrôles complets, publication et recette finale à attester ; aucune validation utilisateur inventée.
+
 ### 12 octobre — Nettoyage RF/MPF, étape 1
 
 - Antoine autorise deux étapes : découplage/recette TEST puis retrait des fichiers et outils obsolètes. Aucun effacement NAP, Firestore ou Storage, aucun droit/mail ni publication PROD.
 - Retrait des sept chargements HTML historiques, démarrage RF/MPF sans données statiques, retrait des lecteurs locaux/REST Firestore de l’administration ; générateur des consoles aligné sur cette seule dépendance commune.
 - Copie statique, outils, ancien module d’engagement et compatibilité du store conservés jusqu’à la recette. Budget inchangé : un appel NAP groupé par lecture RF/MPF, aucune lecture supplémentaire ni recette d’écriture réelle.
-- Contrôles et publication TEST à attester. Validation utilisateur des commentaires reçue le 12 octobre pour `ea3a193f3a03f6f3189b986ad19338e29b4ea993` ; elle ne vaut pas validation de ce nettoyage.
+- PR #270 intégrée (`0de982df25eb51f4957497f905d7b05dbf6c173e`), CI `38277783280` et TEST Hosting seul `38278334851` réussis. Records affichés sans copie statique, filtres MPF chargés ; projection NAP identique avant/après (révision 2, 97 RF/RFJ et 397 MPF). Validation utilisateur des commentaires reçue le 12 octobre pour `ea3a193f3a03f6f3189b986ad19338e29b4ea993` ; elle ne vaut pas validation de ce nettoyage.
 
 ### 12 octobre — Commentaires de compétition partagés avec INTRANAP
 
