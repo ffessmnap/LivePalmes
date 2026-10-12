@@ -29,7 +29,12 @@ class SourceArchiveTests(unittest.TestCase):
     def archive(self, name, value=b"secret-never-in-report"):
         buffer = io.BytesIO()
         with zipfile.ZipFile(buffer, "w") as archive:
-            archive.writestr(name, value)
+            # ZipInfo normalizes backslashes on Windows. Preserve deliberately
+            # malformed names so the negative fixture tests the same ZIP bytes
+            # on every host, instead of silently becoming a valid path.
+            info = zipfile.ZipInfo(name)
+            info.filename = name
+            archive.writestr(info, value)
         return buffer.getvalue()
 
     def test_only_hashes_are_returned(self):

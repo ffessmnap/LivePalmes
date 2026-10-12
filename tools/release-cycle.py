@@ -380,7 +380,19 @@ def validate_request(value, paths):
         require(isinstance(value.get(key), str) and SHA.fullmatch(value[key]), 'SHA complet requis: ' + key)
     require(re.fullmatch(r'sites/livepalmes/versions/[A-Za-z0-9_-]+', value.get('productionHosting', '')), 'Version Hosting PROD requise')
     require(isinstance(value.get('testRun'), int) and value['testRun'] > 0, 'Preuve TEST requise')
-    application, backend = classify([p for p in paths if p not in ignored_top_paths(paths, value['candidate'])])
+    path_set = set(paths)
+    ignored = set(ignored_top_paths(paths, value['candidate']))
+    cleanup = value.get('productionStaticCleanup')
+    if cleanup is not None:
+        require(isinstance(cleanup, dict) and set(cleanup) == {'records', 'publicExports', 'approval'}
+                and cleanup['records'] is True and cleanup['publicExports'] is True
+                and isinstance(cleanup['approval'], str) and bool(cleanup['approval'].strip()),
+                'Accord borne de nettoyage statique requis')
+        # These checks deliberately remain separate from classify(): no ordinary
+        # release acquires a general configuration/generated-data exception.
+        ignored |= approved_records_cleanup_paths(paths, value['candidate'])
+        ignored |= approved_public_export_cleanup_paths(paths, value['candidate'])
+    application, backend = classify([p for p in paths if p not in ignored])
     extra = approved_extra_functions(value)
     backend = backend or bool(approved_public_nap_functions(value))
     require(not extra or backend, 'Extension PDF sans changement backend')
@@ -388,11 +400,27 @@ def validate_request(value, paths):
     require(isinstance(value.get('changes'), list) and value['changes'], 'Bilan des evolutions requis')
     for change in value['changes']:
         require(change.get('status') == 'validated' and change.get('validation') and change.get('title'), 'Evolution non validee ou preuve utilisateur absente')
-        require(isinstance(change.get('paths'), list) and all(p in paths for p in change['paths']), 'Chemins du bilan inexacts')
+        require(isinstance(change.get('paths'), list) and all(p in path_set for p in change['paths']), 'Chemins du bilan inexacts')
         covered.update(change['paths'])
     require(set(application).issubset(covered), 'Fichiers applicatifs sans validation: ' + ', '.join(sorted(set(application) - covered)))
     if backend:
         require(value.get('excludedBackendReview'), 'Revue des impacts email/schedulers requis pour le backend partage')
+        review = value.get('excludedBackendEvidence')
+        require(isinstance(review, dict) and set(review) == {'schema', 'candidate', 'productionRun', 'suite', 'functions'}
+                and review['schema'] == 1 and review['candidate'] == value['candidate']
+                and isinstance(review['productionRun'], int) and review['productionRun'] > 0
+                and review['suite'] == 'retained-calendar-consumers-v1'
+                and isinstance(review['functions'], list), 'Preuve structuree des exclusions backend requise')
+        names = set()
+        for row in review['functions']:
+            require(isinstance(row, dict) and set(row) == {'name', 'commit', 'revision', 'before', 'after', 'reason'}
+                    and isinstance(row['name'], str) and re.fullmatch(r'[A-Za-z][A-Za-z0-9]*', row['name'])
+                    and row['name'] not in names and SHA.fullmatch(str(row['commit']))
+                    and isinstance(row['revision'], str) and bool(row['revision'])
+                    and all(re.fullmatch(r'[0-9a-f]{64}', str(row[k])) for k in ['before', 'after'])
+                    and isinstance(row['reason'], str) and bool(row['reason'].strip()),
+                    'Ligne de revue backend invalide')
+            names.add(row['name'])
     return backend
 
 
@@ -654,6 +682,12 @@ def freeze_plan(directory, evidence=False):
     selected = read(root / 'selection.json')
     selected = [n for n in selected if n in approved_extra_functions(request) or needs_function(names.get(n), n, request['candidate'])]
     require_access_request_selection(request, selected)
+    if request.get('excludedBackendEvidence') is not None:
+        verify_excluded_backend(root, state, selected)
+    else:
+        # Existing UI-only requests need no review. New backend requests are
+        # rejected earlier by validate_request without structured evidence.
+        require(not selected, 'Preuve structuree des exclusions backend absente')
     write(root / 'selection.json', selected)
     with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as summary:
         summary.write('\n## Bilan avant publication\n\n')
@@ -664,6 +698,56 @@ def freeze_plan(directory, evidence=False):
         summary.write('\nTraitements : ' + (', '.join(selected) or 'aucun') + '.\n')
         if evidence:
             summary.write('\nBilan fonde sur les preuves de publication, sans acces Google. Firebase sera relu apres votre unique approbation et avant toute ecriture ; toute derive bloquera.\n')
+
+
+def verify_excluded_backend(directory, state, selected):
+    """Verify every retained changed function, never silently expand a lot."""
+    root = Path(directory)
+    request = read(root / 'request.json')
+    review = request['excludedBackendEvidence']
+    baseline = read(root / 'baseline.json')
+    require(review['productionRun'] == baseline['productionRun']
+            and review['candidate'] == request['candidate'], 'Origine revue backend differente du bilan')
+    desired = backend_fingerprints(request['candidate'])
+    base = backend_fingerprints(request['productionCommit'])
+    retained = {}
+    for function in state['functions']:
+        name = function['name'].split('/')[-1]
+        if name in selected:
+            continue
+        require(function.get('state') == 'ACTIVE' and SHA.fullmatch(str(function.get('commit', '')))
+                and function.get('revision'), 'Provenance fonction conservee inconnue: ' + name)
+        previous = backend_fingerprints(function['commit'])
+        require(name in desired and name in previous, 'Export conserve absent: ' + name)
+        if previous[name] != desired[name]:
+            retained[name] = (function, previous[name])
+    rows = {row['name']: row for row in review['functions']}
+    require(len(rows) == len(review['functions']) and set(rows) == set(retained),
+            'Revue incomplete ou fonction exclue ajoutee')
+    changed = []
+    for name, (function, previous) in retained.items():
+        row = rows[name]
+        require(row['commit'] == function['commit'] and row['revision'] == function['revision']
+                and row['before'] == previous and row['after'] == desired[name],
+                'Empreinte ou revision exclue differente: ' + name)
+        if base.get(name) != desired[name]:
+            changed.append({'name': name, 'commit': function['commit']})
+    # Earlier divergence is recorded, not treated as a reason to upgrade a
+    # retained service. New divergence must pass the pinned offline suite.
+    result = json.loads(run(['node', str(ROOT / 'tests/release-excluded-backend-compatibility-tests.js'),
+                             str(ROOT), request['productionCommit'], request['candidate'],
+                             json.dumps(sorted(changed, key=lambda row: row['name']))])) if changed else {
+        'suite': review['suite'], 'candidate': request['candidate'], 'productionCommit': request['productionCommit'],
+        'result': 'success', 'networkCalls': 0, 'passedFunctions': []}
+    require(result.get('suite') == review['suite'] and result.get('candidate') == request['candidate']
+            and result.get('productionCommit') == request['productionCommit']
+            and result.get('result') == 'success' and result.get('networkCalls') == 0
+            and result.get('passedFunctions') == sorted(row['name'] for row in changed),
+            'Compatibilite des consommateurs exclus non demontree')
+    result['reviewSha256'] = hashlib.sha256(json.dumps(review, sort_keys=True).encode()).hexdigest()
+    result['suiteSha256'] = hashlib.sha256((ROOT / 'tests/release-excluded-backend-compatibility-tests.js').read_bytes()).hexdigest()
+    result['retainedFunctions'] = sorted(rows)
+    write(root / 'excluded-backend-verification.json', result)
 
 
 def compare_prod(directory):

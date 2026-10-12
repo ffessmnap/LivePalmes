@@ -73,6 +73,8 @@ jobs:
         run: |
           node tests/release-function-fingerprints-tests.js
           python tests/release-cycle-tests.py
+          python tests/release-preflight-review-tests.py
+          node tests/release-excluded-backend-compatibility-tests.js
           python tests/release-composed-evidence-tests.py
           python tests/production-release-state-tests.py
           python tests/production-release-source-tests.py

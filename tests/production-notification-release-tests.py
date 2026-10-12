@@ -52,6 +52,8 @@ class NotificationReleaseTests(unittest.TestCase):
                    'excludedBackendReview': 'Only public reader; no migrations or diagnostics',
                    'additionalPublicNapFunctions': ['readNapPublicSwimmer'],
                    'additionalPublicNapApproval': 'Explicit approval', 'initialAutomaticMailEnabled': False}
+        request['excludedBackendEvidence']={'schema':1,'candidate':request['candidate'],'productionRun':12,
+            'suite':'retained-calendar-consumers-v1','functions':[]}
         self.assertTrue(cycle.validate_request(request, []))
         for names in [['exportNapPublicPage'], ['getNapSwimmerPerformances'], ['readNapPublicSwimmer', 'exportNapPublicPage']]:
             with self.assertRaises(ValueError):
