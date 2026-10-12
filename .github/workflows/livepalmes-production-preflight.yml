@@ -58,6 +58,8 @@ jobs:
         npm ci --prefix tooling/tests/firestore-rules --ignore-scripts
         node tooling/tests/release-function-fingerprints-tests.js
         python tooling/tests/release-cycle-tests.py
+        python tooling/tests/release-preflight-review-tests.py
+        node tooling/tests/release-excluded-backend-compatibility-tests.js
         python tooling/tests/release-composed-evidence-tests.py
         python tooling/tests/production-pdf-functions-tests.py
         python tooling/tests/production-release-state-tests.py
