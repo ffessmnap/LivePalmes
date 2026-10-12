@@ -16,6 +16,12 @@ La copie statique RF/MPF et ses outils historiques ont été retirés du dépôt
 
 ## Ancien pipeline
 
+Le lecteur calendrier public utilise exclusivement les actions NAP `calendar-manifest`, `calendar-season`, `competition` et `competition-results`. Les chemins `results/*.json` sont des routes logiques vers NAP, pas des fichiers Storage à supprimer. En cas d'erreur NAP, aucun repli vers Storage n'est effectué.
+
+Pour une recette locale hors ligne, définir `window.LIVEPALMES_PUBLIC_CALENDAR_FIXTURES = true` avant le lecteur, uniquement sur `localhost` ou `127.0.0.1`. Les fixtures sont alors lues sous `/tests/fixtures/public-calendar/` ; aucune URL distante personnalisée n'est acceptée. Sans cette option, localhost conserve le lecteur NAP configuré. L'ancienne option `LIVEPALMES_PUBLIC_CALENDAR_BASE` n'est plus utilisée.
+
+Les quatre commandes historiques `build-public-calendar-results.js`, `publish-public-calendar-results.js`, `repair-legacy-calendar-public-season.js` et `repair-legacy-calendar-practical-public-data.js` refusent toute exécution. Leurs sources sont conservées en texte dans `tools/archives/calendar-storage/`, avec un arrêt immédiat même si ces archives sont passées directement à Node. Ce retrait ne supprime aucun objet Storage et ne change ni les fonctions distantes, ni `functions/public-calendar.js`, encore partagé avec NAP.
+
 Les sorties historiques TOP/nageurs, imports INTRANAP et jobs de reconstruction Firestore ne doivent pas être relancés pour rafraîchir NAP. Les déclarations conservées pour retour arrière et les fichiers résiduels ne prouvent pas un usage actuel. Les traitements retirés sont exclus des sélections de déploiement ; voir `tools/firebase-test-backend-lots.js` et [le suivi](releases/EVOLUTIONS.md).
 
 ## Nettoyage des exports TOP/nageurs — 12 octobre
