@@ -22,7 +22,10 @@ def archive_manifest(data):
         if len(infos) > 3000 or sum(i.file_size for i in infos) > 256 * 1024 * 1024:
             raise ValueError("Contenu archive hors limites")
         names = [i.filename for i in infos]
-        if len(set(names)) != len(names) or any(n.startswith("/") or ".." in n.split("/") or "\\" in n for n in names):
+        # ZipInfo normalizes backslashes on Windows. Validate the original ZIP
+        # names before using normalized names for the manifest and lookups.
+        originals = [i.orig_filename for i in infos]
+        if len(set(names)) != len(names) or any(n.startswith("/") or ".." in n.split("/") or "\\" in n for n in originals):
             raise ValueError("Chemin archive invalide")
         # Hashes only; no old code is executed or extracted, no file contents logged.
         return {i.filename: hashlib.sha256(archive.read(i)).hexdigest() for i in infos}

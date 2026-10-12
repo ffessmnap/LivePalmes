@@ -2,6 +2,17 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 12 octobre — Préparation Infra des retouches, sans déploiement
+
+- Antoine valide dans Infra les nettoyages sur TEST, puis les trois corrections proposées du preflight : calcul unique des exclusions, autorisation strictement bornée des retraits statiques et preuve vérifiable des dépendances backend conservées. Demande d'implémentation et de tests hors ligne, sans déploiement. Aucun accord PROD ; recalcul DTN et nettoyage Storage restent séparés.
+- Candidat applicatif conservé : `ef96caca97f70554ee1f2c2b950cebeb5130e85e`, TEST commun réussi `38299888314`, Hosting `9b13553d61351be3`. Retouches validées par Antoine le 12 octobre dans la conversation d'audit ; commentaires partagés validés séparément. Aucune validation utilisateur déduite des tests.
+- Référence PROD archivée `38228508477`, candidat applicatif `b0020e51ebd6e686054efd3451882dd2c1d60d94`, Hosting `a7a7c7342abf5f23`. Analyse locale des 111 fonctions par leurs quatre origines : 44 fonctions ordinaires différentes et lecteur public NAP à inclure explicitement ; sept consommateurs notifications/scheduler concernés, cinq écarts exclus antérieurs au diff courant. Les douze fonctions restent conservées et contrôlées ; aucune suppression distante ni extension email/DTN ajoutée.
+- Outillage : une seule lecture Git du filtre d'exports pour les 10 992 chemins ; réutilisation des inventaires historiques et du contrôle structurel du seul en-tête cache retiré ; revue exacte par révision, origine et empreinte, puis suite de compatibilité hors ligne bornée au candidat. Aucun code applicatif, donnée générée ou `firebase.json` modifié par cette correction.
+- Suite à l'accord explicite d'Antoine dans Infra : PR #284 ouverte pour intégration, CI Linux demandée et préparation du preflight GitHub officiel. Aucun accord PROD ; aperçu isolé de PR distinct du TEST commun. Les résultats finaux et l'identité de l'artefact immuable seront présentés dans Infra avant publication.
+- Vérifications finales : 88 tests Python ciblés réussis, suite de compatibilité backend et tests Node empreintes, sauvegarde chiffrée et notifications réussis. Preflight local complet réussi sur les artefacts GitHub authentifiés : Hosting et 45 fonctions sélectionnées, 66 conservées dont les douze exclusions revues. Aucun accès Google ni sauvegarde distante exécutée. Contrôle ZIP renforcé sur les noms originaux, également sous Windows.
+- Vérification globale : syntaxe de 722 scripts et suites exécutées jusque-là réussies ; arrêt sur le test existant de garde de branche qui exige Bash, absent sur ce poste Windows. CI Linux complète restant à obtenir. Aucun résultat global vert revendiqué.
+- Les preuves, tests et bilan final sont préparés dans Infra. Le checkout de préparation existant est utilisé pour préserver les travaux non committés du dossier principal. Aucun workflow de déploiement ni accès Google autorisé. L'intégration de l'outillage et le run preflight officiel restent à distinguer du bilan exécuté localement.
+
 ### 12 octobre — Lots 2 et 3 : TOP, fraîcheur DTN et recette complémentaire
 
 - Demande explicite : terminer les lots 2 et 3 sur TEST. PROD, droits, mails et données NAP exclus. Aucun recalcul ni test de sauvegarde réelle.

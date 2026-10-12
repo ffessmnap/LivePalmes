@@ -195,8 +195,10 @@ class ReleaseTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as d:
             root=Path(d);r=self.request();m.write(root/'request.json',r);m.write(root/'selection.json',['one','two'])
             state={'hosting':{'version':r['productionHosting'],'message':'LivePalmes '+r['productionCommit']+' run 12'},'functions':[{'name':'functions/one'},{'name':'functions/two'}]}
-            with patch.object(m,'production_evidence',return_value=state),patch.object(m,'needs_function',side_effect=[False,True]),patch.dict(os.environ,{'GITHUB_STEP_SUMMARY':str(root/'summary')}):
+            r['excludedBackendEvidence']={};m.write(root/'request.json',r)
+            with patch.object(m,'production_evidence',return_value=state),patch.object(m,'needs_function',side_effect=[False,True]),patch.object(m,'verify_excluded_backend') as review,patch.dict(os.environ,{'GITHUB_STEP_SUMMARY':str(root/'summary')}):
                 m.freeze_plan(root,evidence=True)
+                review.assert_called_once_with(root,state,['two'])
             self.assertEqual(m.read(root/'selection.json'),['two'])
 
     def test_unchanged_backend_can_keep_older_commit(self):
@@ -351,6 +353,9 @@ class ReleaseTests(unittest.TestCase):
         value=self.request();value['changes'][0]['paths']=['functions/index.js']
         with self.assertRaises(ValueError):m.validate_request(value,['functions/index.js'])
         value['excludedBackendReview']='Analyse des fonctions de mail et schedulers : aucun changement a publier'
+        with self.assertRaises(ValueError):m.validate_request(value,['functions/index.js'])
+        value['excludedBackendEvidence']={'schema':1,'candidate':value['candidate'],'productionRun':12,
+            'suite':'retained-calendar-consumers-v1','functions':[]}
         self.assertTrue(m.validate_request(value,['functions/index.js']))
     def test_changed_production_blocks_publication(self):
         with tempfile.TemporaryDirectory() as d:
