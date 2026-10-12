@@ -699,7 +699,10 @@ function renderRecords(filtered) {
   elements.recordsBody.innerHTML = rows.join("");
 
   if (!filtered.length) {
-    elements.recordsBody.innerHTML = `<tr class="pending-row"><td class="empty" colspan="6">Choisissez une cat&eacute;gorie.</td></tr>`;
+    const message = currentFilters().sex
+      ? "Aucune MPF ne correspond aux filtres."
+      : "Choisissez un sexe ou une cat&eacute;gorie pour afficher les MPF.";
+    elements.recordsBody.innerHTML = `<tr class="pending-row"><td class="empty" colspan="6">${message}</td></tr>`;
   }
 }
 
