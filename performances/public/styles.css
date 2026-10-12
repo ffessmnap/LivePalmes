@@ -2257,11 +2257,15 @@ button:hover {
   line-height: 1;
 }
 
-.top-course-button:hover,
-.top-course-button:focus-visible {
+.top-course-button:hover {
   color: var(--ink);
   outline: 0;
   box-shadow: 0 0 0 3px rgba(15, 139, 141, 0.12);
+}
+
+.top-course-button:focus-visible {
+  outline: 2px solid var(--accent-strong);
+  outline-offset: 2px;
 }
 
 .top-course-button.active {
@@ -2371,6 +2375,10 @@ button:hover {
 .segment.active {
   color: #ffffff;
   background: var(--accent);
+}
+
+:is(.records-page, .mpf-page, .tops-page, .swimmer-page) .segment.active:not(.sex-f):not(.sex-m) {
+  background: var(--accent-strong);
 }
 
 .segment.active:hover {
