@@ -1,0 +1,47 @@
+{
+  "schema": 1,
+  "candidate": "b0020e51ebd6e686054efd3451882dd2c1d60d94",
+  "productionCommit": "7036940bd1c057e4fd693bf04d42bd9efba81b5c",
+  "productionHosting": "sites/livepalmes/versions/cf3366dcc88d1ba9",
+  "testRun": 38226586972,
+  "changes": [
+    {
+      "title": "Raccordement des références officielles RF/RFJ et MPF à NAP",
+      "status": "validated",
+      "validation": "Le 12 octobre 2026, Antoine demande : « Ok si tout est bon sur TEST, prépare le bilan pour publier le raccordement RF et MPF en PROD, avec sauvegarde vérifiée et mails désactivés. » Recette assistée du candidat exact : pages publiques, éditeur authentifié, ouverture de la fiche Anthelme et 50 entrées historiques vérifiés sans écriture sportive. Publication réelle d’un record non exercée ; transactions, concurrence, rejeu et droits vérifiés hors ligne. Cette demande autorise la préparation du bilan uniquement ; publication après accord distinct sur ce bilan dans Infra.",
+      "paths": [
+        "assets/livepalmes-admin-portal.js",
+        "assets/livepalmes-app-lifecycle.js",
+        "assets/livepalmes-speaker-info-workflow.js",
+        "assets/pages/series-public.js",
+        "assets/public/livepalmes-public-records-source.js",
+        "bureau-perf.html",
+        "functions/index.js",
+        "functions/nap-approved-records-schema.js",
+        "functions/nap-records-store.js",
+        "ja.html",
+        "live.html",
+        "performances/mpf.html",
+        "performances/nageur.html",
+        "performances/public/admin-records.js",
+        "performances/public/app.js",
+        "performances/public/records.js",
+        "performances/public/store.js",
+        "performances/public/swimmer.js",
+        "performances/records.html",
+        "pilotage-livepalmes.html",
+        "portail.html",
+        "secretariat.html",
+        "series-public.html",
+        "speaker.html",
+        "video.html"
+      ]
+    }
+  ],
+  "additionalPublicNapFunctions": [
+    "readNapPublicSwimmer"
+  ],
+  "additionalPublicNapApproval": "Antoine demande explicitement la préparation du bilan PROD du raccordement RF/MPF validé sur TEST, qui inclut le lecteur public existant readNapPublicSwimmer, avec sauvegarde vérifiée et mails désactivés. Aucune publication autorisée par ce seul bilan.",
+  "initialAutomaticMailEnabled": false,
+  "excludedBackendReview": "Comparaison statique des dépendances 7036940 vers b0020e51 : exactement readNapPublicSwimmer, saveEngagementClubIndividualEntries, saveEngagementClubRelays, getNapPerformanceAdministration, savePerformanceCorrection. Deux validations engagements lisent désormais la référence NAP via la connexion déjà détenue. Aucun traitement email, scheduler ou DTN modifié ; diagnostics TEST exclus. Aucun nouveau service, secret, droit, suppression, règle ou index. Les deux compléments RF/MPF et leur reprise exacte ont déjà été autorisés et vérifiés : aucune migration pendant le déploiement. Révisions et liaisons existantes à recontrôler avant sauvegarde ; sauvegarde code/configuration chiffrée rouverte et vérifiée, artefact conservé avant modification. Rollback applicatif seulement : il ne restaure pas NAP. Anciennes sources Records conservées et inchangées ; aucune correction du temps Anthelme."
+}

@@ -2,6 +2,12 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 12 octobre — Bilan PROD RF/MPF préparé, publication non lancée
+
+- Candidat exact `b0020e51ebd6e686054efd3451882dd2c1d60d94`, preuve commune TEST `38226586972`, précédente preuve backend `38223949048`. Recette authentifiée réussie après PR #254 : lecture NAP, fiche Anthelme ouvrable et historique privé de 50 entrées. Pages RF/MPF publiques vérifiées à l’identique. Aucun brouillon ni record publié pour l’essai ; publication réelle testée hors ligne seulement.
+- Antoine demande de préparer le bilan PROD avec sauvegarde vérifiée et mails désactivés. Fichier `.github/releases/20261012-records-mpf-nap.json` : cinq fonctions réellement différentes, pages et repères RF/MPF concernés, aucun mail/scheduler/DTN, aucune migration ou suppression. TEST/PROD relus conformes et mails désactivés. La sauvegarde applicative chiffrée sera créée, rouverte, vérifiée et conservée avant toute modification dans le futur circuit PROD ; elle n’est pas un export NAP. La sauvegarde de la reprise initiale RF/MPF reste conservée.
+- Préparation du plan immuable uniquement ; publication PROD non lancée. Accord distinct sur le bilan requis dans Infra. Les anciennes sources restent conservées ; Anthelme reste à 15.90 tant qu’une correction métier n’est pas demandée.
+
 ### 12 octobre — Appel régional RF/MPF du navigateur
 
 - Recette authentifiée du TEST `17fab6a0`, run `38223949048` : le SDK compat refuse la région passée au namespace `firebase.functions`. Correction avec `firebase.app().functions(region)` pour lire/publier via les callables existantes ; aucun changement backend, droit ou donnée.
