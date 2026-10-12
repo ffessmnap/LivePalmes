@@ -2,6 +2,13 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 12 octobre — Clôture du plan initial d'optimisation NAP
+
+- Publication PROD du candidat `7036940bd1c057e4fd693bf04d42bd9efba81b5c` réussie dans [38179490926](https://github.com/ffessmnap/LivePalmes/actions/runs/38179490926), après sauvegarde chiffrée rouverte et vérifiée. Une fonction actualisée, 110 conservées ; durée totale observée 229 s. Preuves TEST réutilisées : `38175818400` et `38176119901`, contrôles de composition intégrés par PR #248.
+- Antoine demande les mesures restantes du portail et de la DTN sans écriture NAP ni activation de mails. Session TEST authentifiée : calendrier 616–673 ms selon endpoint, effectif CNHC 873 ms, consultations DTN 175–541 ms sur sept appels ; toutes HTTP 200. Aucun recalcul, date conservée au 11/10/2026 20:25:49. Mesures serveur ponctuelles, pas un test de charge ou une promesse de durée utilisateur.
+- TEST/PROD relus : 113/111 fonctions, Hosting, révisions, déclencheurs et configuration des planifications inchangés ; mails désactivés dans les deux environnements. Bilan local `cloture-plan-optimisation-nap-20261012`, détails dans `docs/OPTIMISATION_NAP.md`.
+- Plan initial terminé ; projection calendrier volontairement différée faute de gain démontré. Suivi futur en usage normal. Mise à jour documentaire seule : aucune nouvelle publication applicative nécessaire, aucune validation utilisateur des dernières mesures présumée.
+
 ### 11 octobre — Optimisation des consultations NAP sans cache périmé
 
 - Antoine autorise le plan de l’audit actuel : mesures, réduction des appels inutiles, SQL ciblé et validation TEST ; aucune publication PROD implicite.
@@ -9,7 +16,7 @@
 - Comparaisons NAP en lecture seule : quatre TOP identiques, calendriers de deux saisons identiques, 153 résultats compétition 2652 identiques ; historique transféré réduit de 12 426 à 8 521 lignes. Aucun changement de donnée, index, cache temporisé ou DTN. Mesures ponctuelles détaillées dans docs/OPTIMISATION_NAP.md.
 - PR #247 intégrée : candidat `7036940bd1c057e4fd693bf04d42bd9efba81b5c`. Suite complète `38175665424`, Hosting TEST commun `38175818400`, lot backend NAP `38176119901` réussis. Le lot fixe comprend deux endpoints dont le code change et un compagnon inchangé ; les autres révisions et PROD restent intactes. Recette TOP 25/50 et filtres course/saison réussie, lectures NAP déployées HTTP 200.
 - Antoine valide le bilan `bilan-optimisation-nap-test-20261011T213000Z`, puis autorise la publication PROD après sauvegarde vérifiée, mails désactivés, sans écriture NAP et arrêt en cas d'écart.
-- La préparation révèle que le circuit ne compose pas les preuves ciblées TEST pour PROD et ignore les nettoyages historiques. PR #248 : composition explicite des preuves authentifiées, reprise hashée des deux nettoyages vérifiés, comparaison réelle complète conservée. Correction et reprise explicitement autorisées ; candidat applicatif inchangé. Publication PROD en attente du bilan protégé, aucun succès présumé.
+- La préparation révèle que le circuit ne compose pas les preuves ciblées TEST pour PROD et ignore les nettoyages historiques. PR #248 : composition explicite des preuves authentifiées, reprise hashée des deux nettoyages vérifiés, comparaison réelle complète conservée. Correction et reprise explicitement autorisées ; candidat applicatif inchangé. Publication ensuite réussie dans `38179490926`, voir clôture du 12 octobre.
 
 ### 12 octobre — Preuves historiques des nettoyages PROD
 
