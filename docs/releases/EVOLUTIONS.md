@@ -2,6 +2,13 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 12 octobre — Recette portail, lot 1 autorisé sur TEST
+
+- Antoine autorise la correction du chargement des engagements, des actions coupées et du type des formations, avec comparatif avant/après TEST. PROD, données NAP, droits et mails exclus.
+- Diagnostic : le détail « ronde des cheires » aboutit finalement ; le blocage permanent n'est pas reproduit. Lecture `getEngagementClubEntry` bornée à 30 secondes par le helper existant, avec erreur visible et retrait de l'état occupé en cas d'échec. Pas de relance automatique ni de traitement en arrière-plan ajouté.
+- Les types NAP transmis au client (Formation, Stage, Réunion, etc.) ne sont plus ramenés à Piscine dans l'affichage ou le cache calendrier. Grilles ordinateur assouplies et défilement de secours ; contrôles compacts et vue mobile conservés.
+- Budget avant/après identique : un appel de détail existant par ouverture, aucun nouvel appel par ligne, mêmes caches et pagination ; zéro écriture de recette. Backend, règles, configuration et données inchangés. Tests hors ligne : réponse normale, erreur, lecture suspendue et minuterie, types natifs et passage par le cache. Publication et recette commune à attester ; accord d'exécution distinct d'une validation du résultat.
+
 ### 12 octobre — Retrait des anciennes fonctions calendrier et objets Storage TEST
 
 - Antoine valide la proposition : nettoyage du code et sauvegarde vérifiée puis suppression de `calendar/` sur TEST ; PROD reste soumise à un accord séparé. Les trois anciennes fonctions sont déjà absentes de TEST/PROD : aucun retrait ni déploiement distant de fonction nécessaire. Retrait des trois déclarations et 344 lignes d'auxiliaires sans autre appelant ; module `public-calendar.js` partagé avec NAP et cinq fonctions actives conservés. Noms historiques conservés dans les exclusions anti-réintroduction ; le contrôle des lots accepte seulement ces noms explicitement retirés quand leur export est absent.
