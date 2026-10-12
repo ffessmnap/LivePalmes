@@ -602,9 +602,79 @@ def prepare_selection(directory, candidate):
     write(directory / 'selection.json', selected)
 
 
+def reviewed_blocked_production_run(root):
+    """Recognize only the reviewed 12 October stop before any deployment."""
+    request = read(root / 'request.json') if (root / 'request.json').exists() else {}
+    reference = request.get('productionBlockedAttemptEvidence')
+    if reference is None:
+        return latest_run('livepalmes-production-release.yml')
+    require(isinstance(reference, dict) and set(reference) == {'path', 'sha256'}, 'Reference tentative invalide')
+    path = reference['path']
+    require(isinstance(path, str) and re.fullmatch(r'\.github/releases/evidence/[A-Za-z0-9_-]+\.json', path),
+            'Chemin tentative interdit')
+    raw = git('show', 'HEAD:' + path).encode() + b'\n'
+    require(hashlib.sha256(raw).hexdigest() == reference['sha256'], 'Empreinte tentative invalide')
+    proof = json.loads(raw)
+    reviewed_sources = {
+        '.github/workflows/livepalmes-production-release.yml': 'bb1aa5722abe032770d11c03e7f85d135930ea738164d0aa8ef619f1c52cb8ba',
+        'tools/release-cycle.py': 'c7359059b4a62e9b1666611b700633993dd11d4781814c8db7d1a121b0fe221c',
+    }
+    require(proof.get('schema') == 1 and proof.get('project') == 'livepalmes'
+            and proof.get('productionRun') == 38228508477 and proof.get('blockedRun') == 38306975865
+            and proof.get('preparationRun') == 38306261031
+            and proof.get('headSha') == 'c9dc7a5047e8311458cc162a0d25521a99bbffc5'
+            and proof.get('sourceSha256') == reviewed_sources and proof.get('approval'), 'Tentative non revue')
+    for filename, digest in reviewed_sources.items():
+        source = git('show', proof['headSha'] + ':' + filename).encode() + b'\n'
+        require(hashlib.sha256(source).hexdigest() == digest, 'Source tentative differente')
+    repo = os.environ['GITHUB_REPOSITORY']
+    runs = gh(f'repos/{repo}/actions/workflows/livepalmes-production-release.yml/runs?branch=main&event=workflow_dispatch&per_page=20')['workflow_runs']
+    require(runs and runs[0]['id'] == proof['blockedRun'], 'Nouvelle tentative PROD : examen requis')
+    info = gh(f'repos/{repo}/actions/runs/{proof["blockedRun"]}')
+    require(info['path'] == '.github/workflows/livepalmes-production-release.yml'
+            and info['head_branch'] == 'main' and info['head_sha'] == proof['headSha']
+            and info['status'] == 'completed' and info['conclusion'] == 'failure'
+            and info.get('run_attempt') == 1, 'Origine tentative invalide')
+    jobs = gh(f'repos/{repo}/actions/runs/{proof["blockedRun"]}/jobs?per_page=100')
+    require(jobs['total_count'] == 1 and len(jobs['jobs']) == 1, 'Jobs tentative ambigus')
+    steps = jobs['jobs'][0]['steps']
+    guards = [i for i, step in enumerate(steps) if step['name'] == 'Verifier que PROD correspond encore au bilan']
+    require(len(guards) == 1, 'Controle de derive absent ou ambigu')
+    guard = guards[0]
+    require(steps[guard]['conclusion'] == 'failure' and all(s['conclusion'] == 'success' for s in steps[:guard])
+            and any(s['name'] == 'Relire TEST avant toute ecriture PROD' for s in steps[:guard]),
+            'Echec different du controle de derive')
+    required_skipped = {
+        'Verifier les mails desactives avant la bascule NAP', 'Sauvegarder le code PROD avant publication',
+        'Chiffrer puis tester la sauvegarde', 'Ouvrir la sauvegarde initiale pour une reprise',
+        'Associer les controles au commit', 'Preparer les Functions selectionnees',
+        'Simuler les Functions par petits lots', 'Publier les Functions par petits lots',
+        'Controler toutes les Functions et les exclusions', 'Confirmer les mails desactives avant Hosting',
+        'Publier Hosting apres les controles', 'Controler les pages publiees', 'Relever Hosting apres la tentative',
+    }
+    tail = steps[guard + 1:]
+    require(required_skipped.issubset({s['name'] for s in tail if s['conclusion'] == 'skipped'})
+            and all(s['status'] == 'completed' for s in steps)
+            and all(s['conclusion'] == 'skipped' or (s['name'] == 'Conclure' and s['conclusion'] == 'failure')
+                    or ((s['name'].startswith('Post ') or s['name'] == 'Complete job') and s['conclusion'] == 'success')
+                    for s in tail), 'Publication ou etape inconnue apres le controle')
+    destination = root / 'blocked-attempt-plan'
+    artifact(proof['preparationRun'], 'release-plan', destination, '.github/workflows/livepalmes-production-preflight.yml')
+    original = read(destination / 'request.json')
+    current = read(root / 'request.json')
+    require({k: v for k, v in current.items() if k not in {'productionCleanupEvidence', 'productionBlockedAttemptEvidence'}} == original
+            and read(destination / 'baseline.json')['productionRun'] == proof['productionRun'],
+            'Perimetre different du bilan examine')
+    baseline = latest_run('livepalmes-production-release.yml', skip=proof['blockedRun'])
+    require(baseline == proof['productionRun'], 'Reference PROD differente')
+    write(root / 'production-blocked-attempt-proof.json', {**proof, 'verifiedNoDeployment': True,
+          'steps': [{'name': s['name'], 'conclusion': s['conclusion']} for s in steps]})
+    return baseline
+
+
 def production_evidence(directory):
     root = Path(directory)
-    run_id = latest_run('livepalmes-production-release.yml')
+    run_id = reviewed_blocked_production_run(root)
     path = '.github/workflows/livepalmes-production-release.yml'
     artifact(run_id, 'release-plan', root / 'production-plan', path)
     artifact(run_id, 'production-after', root / 'production-state', path)

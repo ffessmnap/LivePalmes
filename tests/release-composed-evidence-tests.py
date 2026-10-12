@@ -66,5 +66,102 @@ class EvidenceTests(unittest.TestCase):
             with self.assertRaises(ValueError):apply(wrong)
 
 
+class BlockedAttemptTests(unittest.TestCase):
+    def fixture(self, root):
+        repo = Path(__file__).parents[1]
+        proof_path = '.github/releases/evidence/20261012-production-blocked-attempt.json'
+        proof = json.loads((repo / proof_path).read_text(encoding='utf-8'))
+        original = json.loads((repo / '.github/releases/20261012-retouches-infra.json').read_text(encoding='utf-8'))
+        raw = json.dumps(proof, ensure_ascii=False) + '\n'
+        current = dict(original, productionBlockedAttemptEvidence=dict(path=proof_path, sha256=hashlib.sha256(raw.encode()).hexdigest()))
+        m.write(root / 'request.json', current)
+        m.write(root / 'blocked-attempt-plan/request.json', original)
+        m.write(root / 'blocked-attempt-plan/baseline.json', {'productionRun': 38228508477})
+        info = dict(path='.github/workflows/livepalmes-production-release.yml', head_branch='main',
+                    head_sha=proof['headSha'], status='completed', conclusion='failure', run_attempt=1)
+        skipped = ['Verifier les mails desactives avant la bascule NAP', 'Sauvegarder le code PROD avant publication',
+                   'Chiffrer puis tester la sauvegarde', 'Ouvrir la sauvegarde initiale pour une reprise',
+                   'Associer les controles au commit', 'Preparer les Functions selectionnees',
+                   'Simuler les Functions par petits lots', 'Publier les Functions par petits lots',
+                   'Controler toutes les Functions et les exclusions', 'Confirmer les mails desactives avant Hosting',
+                   'Publier Hosting apres les controles', 'Controler les pages publiees', 'Relever Hosting apres la tentative']
+        steps = [dict(name='Relire TEST avant toute ecriture PROD', status='completed', conclusion='success'),
+                 dict(name='Verifier que PROD correspond encore au bilan', status='completed', conclusion='failure')]
+        steps += [dict(name=n, status='completed', conclusion='skipped') for n in skipped]
+        steps += [dict(name='Conclure', status='completed', conclusion='failure'),
+                  dict(name='Complete job', status='completed', conclusion='success')]
+        jobs = {'total_count': 1, 'jobs': [{'steps': steps}]}
+        sources = {name: m.git('show', proof['headSha'] + ':' + name) for name in proof['sourceSha256']}
+        return dict(raw=raw, proof=proof, info=info, jobs=jobs, sources=sources, latest=38306975865)
+
+    def verify(self, root, fixture):
+        def git(*args):
+            path = args[1].split(':', 1)[1]
+            return fixture['sources'].get(path, fixture['raw']).strip()
+        def gh(path):
+            if '/workflows/' in path:
+                return {'workflow_runs': [{'id': fixture['latest']}]}
+            return fixture['jobs'] if '/jobs?' in path else fixture['info']
+        with patch.object(m, 'git', side_effect=git), patch.object(m, 'gh', side_effect=gh), \
+             patch.object(m, 'artifact'), patch.object(m, 'latest_run', return_value=38228508477) as latest, \
+             patch.dict(m.os.environ, {'GITHUB_REPOSITORY': 'ffessmnap/LivePalmes'}):
+            result = m.reviewed_blocked_production_run(root)
+            latest.assert_called_once_with('livepalmes-production-release.yml', skip=38306975865)
+            return result
+
+    def test_reviewed_stop_before_deployment_can_use_original_success(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory); fixture = self.fixture(root)
+            self.assertEqual(self.verify(root, fixture), 38228508477)
+            self.assertTrue(m.read(root / 'production-blocked-attempt-proof.json')['verifiedNoDeployment'])
+
+    def test_default_still_refuses_latest_failure(self):
+        with tempfile.TemporaryDirectory() as directory:
+            with patch.object(m, 'latest_run', side_effect=ValueError('examen requis')) as latest:
+                with self.assertRaises(ValueError): m.reviewed_blocked_production_run(Path(directory))
+                latest.assert_called_once_with('livepalmes-production-release.yml')
+
+    def test_other_run_origin_attempt_or_failure_is_refused(self):
+        cases = [('head_branch', 'other'), ('head_sha', 'a'*40), ('run_attempt', 2),
+                 ('status', 'in_progress'), ('conclusion', 'success'), ('path', 'other.yml')]
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory); original = self.fixture(root)
+            for key, value in cases:
+                fixture = copy.deepcopy(original); fixture['info'][key] = value
+                with self.subTest(key=key), self.assertRaises(ValueError): self.verify(root, fixture)
+            fixture = copy.deepcopy(original); fixture['latest'] = 999
+            with self.assertRaises(ValueError): self.verify(root, fixture)
+            fixture = copy.deepcopy(original); fixture['jobs']['total_count'] = 2
+            with self.assertRaises(ValueError): self.verify(root, fixture)
+            self.assertFalse((root / 'production-blocked-attempt-proof.json').exists())
+
+    def test_mutation_or_unknown_step_is_refused(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory); original = self.fixture(root)
+            for name in ['Sauvegarder le code PROD avant publication', 'Publier les Functions par petits lots',
+                         'Publier Hosting apres les controles', 'Simuler les Functions par petits lots']:
+                fixture = copy.deepcopy(original)
+                next(s for s in fixture['jobs']['jobs'][0]['steps'] if s['name'] == name)['conclusion'] = 'success'
+                with self.subTest(name=name), self.assertRaises(ValueError): self.verify(root, fixture)
+            fixture = copy.deepcopy(original)
+            fixture['jobs']['jobs'][0]['steps'].append(dict(name='Unexpected command', status='completed', conclusion='success'))
+            with self.assertRaises(ValueError): self.verify(root, fixture)
+            fixture = copy.deepcopy(original); fixture['jobs']['jobs'][0]['steps'][1]['conclusion'] = 'success'
+            with self.assertRaises(ValueError): self.verify(root, fixture)
+            self.assertFalse((root / 'production-blocked-attempt-proof.json').exists())
+
+    def test_modified_scope_source_or_hash_is_refused(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory); fixture = self.fixture(root)
+            current = m.read(root / 'request.json'); current['candidate'] = 'a'*40; m.write(root / 'request.json', current)
+            with self.assertRaises(ValueError): self.verify(root, fixture)
+            fixture = self.fixture(root); fixture['sources']['tools/release-cycle.py'] += '# altered'
+            with self.assertRaises(ValueError): self.verify(root, fixture)
+            fixture = self.fixture(root); current = m.read(root / 'request.json')
+            current['productionBlockedAttemptEvidence']['sha256'] = '0'*64; m.write(root / 'request.json', current)
+            with self.assertRaises(ValueError): self.verify(root, fixture)
+            self.assertFalse((root / 'production-blocked-attempt-proof.json').exists())
+
+
 if __name__ == '__main__':
     unittest.main()

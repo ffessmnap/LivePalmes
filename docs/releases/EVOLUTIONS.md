@@ -2,6 +2,14 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 12 octobre — Preuve du retrait RF/MPF retrouvée, préparation du bilan corrigé
+
+- À la demande d'Antoine dans Infra, preuve retrouvée dans la conversation « Vérifier l’accès à la base NAP » : tour `01a12f76-8eac-7831-ad9b-968717ad06e8`, accord « on peut le faire sur prod aussi? », puis retrait de la seule `syncPublicRecordsData` le 12 octobre à `09:36:18.138Z`. La fonction était donc déjà retirée avec autorisation ; cette opération historique manquait au plan regroupé, sans nouvelle suppression à réaliser.
+- Les dix empreintes des archives historiques sont intactes. Sauvegarde AES-256-GCM SHA-256 `3ebb775f62ca1d566a4928dbd056cf7d315202067df8ac6689f2b2cebbecb805`, clé protégée DPAPI, seconde copie identique. Réouverture authentifiée vérifiée à nouveau hors ligne : intégrité ZIP/source, métadonnées avant retrait, IAM, déclencheur et service présents. Aucun secret ni contenu déchiffré écrit ou ajouté à Git.
+- Preuve suivie `.github/releases/evidence/20261012-sync-records-prod-cleanup.json` : état avant normalisé exactement égal aux 111 fonctions de la preuve `38228508477`, après = les mêmes moins ce seul nom. Hosting, TEST, configuration des schedulers et autres fonctions conservés ; ordre des filtres Eventarc normalisé, horodatages d'exécution des schedulers exclus de leur comparaison de configuration. Zéro écriture NAP et zéro mail historique attestés.
+- Demande corrigée `.github/releases/20261012-retouches-infra-corrected.json`, même candidat applicatif `ef96caca`, mêmes validations et périmètre. Le circuit vérifie depuis GitHub la seule tentative `38306975865` arrêtée au contrôle de dérive : sources exactes revues, tentative unique, toutes les étapes de sauvegarde/préparation/simulation/publication ignorées, plan initial authentifié et périmètre identique. Le refus général des dernières publications en échec reste inchangé ; tout autre run, nouvelle tentative, changement de périmètre ou étape exécutée bloque.
+- Tests ciblés des preuves composées et refus réussis (7 méthodes, sous-cas adverses), 48 tests du circuit réussis. CI Linux et nouveau preflight officiel à consigner avec le bilan final dans Infra. Aucun workflow PROD ni recalcul DTN/nettoyage Storage lancé par cette préparation ; le bilan corrigé doit être présenté avant reprise.
+
 ### 12 octobre — Publication des retouches autorisée, arrêt avant déploiement
 
 - Corrections intégrées par PR #284, main `c9dc7a5047e8311458cc162a0d25521a99bbffc5`. CI Linux PR `38305886098` et main `38306254409` réussies, levant la limite Bash locale. Preflight officiel `38306261031` réussi : candidat `ef96caca97f70554ee1f2c2b950cebeb5130e85e`, Hosting et 45 fonctions, douze exclusions backend revues. Artefact `release-plan` ID `11772278280`, SHA-256 `ba9e49c10a42b3be6eba081d02cf4f14f309b9ca1e1b9d92f1059bb21107ba29`, téléchargement authentifié.

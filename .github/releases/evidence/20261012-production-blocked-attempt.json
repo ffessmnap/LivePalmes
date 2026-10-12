@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "project": "livepalmes",
+  "productionRun": 38228508477,
+  "blockedRun": 38306975865,
+  "preparationRun": 38306261031,
+  "headSha": "c9dc7a5047e8311458cc162a0d25521a99bbffc5",
+  "approval": "Antoine demande dans Infra de retrouver la preuve historique et refaire le preflight avant toute reprise PROD. Tentative arrêtée au contrôle de dérive, avant sauvegarde et déploiement.",
+  "sourceSha256": {
+    ".github/workflows/livepalmes-production-release.yml": "bb1aa5722abe032770d11c03e7f85d135930ea738164d0aa8ef619f1c52cb8ba",
+    "tools/release-cycle.py": "c7359059b4a62e9b1666611b700633993dd11d4781814c8db7d1a121b0fe221c"
+  }
+}
