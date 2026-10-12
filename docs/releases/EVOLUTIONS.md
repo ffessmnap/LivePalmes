@@ -2,6 +2,11 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 12 octobre — Appel régional RF/MPF du navigateur
+
+- Recette authentifiée du TEST `17fab6a0`, run `38223949048` : le SDK compat refuse la région passée au namespace `firebase.functions`. Correction avec `firebase.app().functions(region)` pour lire/publier via les callables existantes ; aucun changement backend, droit ou donnée.
+- Le test navigateur hors ligne refuse désormais l’ancienne signature et vérifie la région. Une erreur de chargement s’affiche dans le panneau visible plutôt que derrière le workbench masqué. Versions des scripts actualisées ; publication TEST et nouvelle recette à attester. PROD et mails inchangés.
+
 ### 12 octobre — Preuve TEST après annulation
 
 - Accord explicite d’Antoine : exclure les runs TEST annulés des preuves, puis comparer chaque révision réelle à la dernière preuve réussie. Une révision modifiée ou inconnue reste à republier ; un échec ou un run en cours reste bloquant. Le contrôle PROD reste inchangé.
