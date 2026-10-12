@@ -4,11 +4,17 @@ function fixture() {
   const trace=[],status={dataset:{},textContent:""};let resolve;
   const service={httpsCallable:(name,options)=>data=>{trace.push({name,options,data});return name==="getDtnSeasonOverview"?new Promise(r=>{resolve=r;}):Promise.resolve({data:{}});}};
   const user={uid:"test"},global={LivePalmesEnvironment:{sportingDataSource:"nap",isTest:true},firebase:{auth:()=>({currentUser:user}),app:()=>({functions:()=>service})},LivePalmesAppConfig:{},confirm:()=>true};
-  const source=fs.readFileSync("assets/livepalmes-dtn-seasons.js","utf8").replace("  global.LivePalmesDtnQualifications = { init };","  global.hooks={state,call,rebuild,sourceRowsForSelection,setup:()=>{el={status};}};");
+  const source=fs.readFileSync("assets/livepalmes-dtn-seasons.js","utf8").replace("  global.LivePalmesDtnQualifications = { init };","  global.hooks={state,call,rebuild,sourceRowsForSelection,freshnessLabel,setup:()=>{el={status};}};");
   vm.runInNewContext(source,{window:global,document:{},status});global.hooks.setup();Object.assign(global.hooks.state,{id:"2025-2026",device:"settings",dirty:false});
   return {hooks:global.hooks,trace,status,finish:data=>resolve({data})};
 }
 (async()=>{
+  const labels=fixture().hooks.freshnessLabel;
+  assert.match(labels({hit:false,pending:false,generatedAt:""},"2025–2026"),/Aucun résultat calculé/);
+  assert.match(labels({hit:false,pending:false,generatedAt:"2026-10-01"},"2025–2026"),/calcul précédent/);
+  assert.match(labels({pending:true},"2025–2026"),/Calcul en cours/);
+  assert.equal(labels({error:"Calcul interrompu"},"2025–2026"),"Calcul interrompu");
+  assert.match(labels({hit:true,generatedAt:"2026-10-01"},"2025–2026"),/Dernier calcul/);
   const f=fixture(),pending=f.hooks.rebuild();assert.match(f.status.textContent,/Calcul en cours/);assert.equal(f.trace.length,1);assert.equal(f.trace[0].options.timeout,540000);assert.equal(f.trace[0].data.id,"2025-2026");
   await f.hooks.rebuild();assert.equal(f.trace.length,1,"No duplicate request during a native calculation");
   f.hooks.state.id="2026-2027";f.finish({source:"nap",hit:true,profiles:[],generatedAt:"2026-10-07T15:00:00.000Z"});await pending;

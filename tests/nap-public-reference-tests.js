@@ -18,3 +18,10 @@ for(const name of ["upload-public-performance-files-to-storage","publish-consoli
 for(const name of ["livepalmes-test-publish-performance-public","livepalmes-production-rebuild-tops"]){assert.match(fs.readFileSync(`.github/workflows/${name}.yml`,"utf8"),/if: \$\{\{ false \}\}/);}
 
 for(const name of ["build-public-performance-files","build-intranap-public-data"]){const env={...process.env};delete env.LIVEPALMES_NAP_OUT_DIR;const result=spawnSync(process.execPath,[`tools/${name}.js`],{encoding:"utf8",env});assert.notEqual(result.status,0);assert.match(result.stderr,/Generation statique archivee/);}
+
+const topSource=fs.readFileSync("performances/public/tops.js","utf8");
+const seasonContext={};vm.createContext(seasonContext);
+vm.runInContext(topSource.slice(topSource.indexOf("  function seasonOptions("),topSource.indexOf("  function applyPublicManifest(")),seasonContext);
+assert.deepEqual(Array.from(seasonContext.seasonOptions([207,2027,"2026",2027,"2025x",null,"0000","9999",2003])),["9999","2027","2026","2003"]);
+assert.ok(topSource.includes("seasons: seasonOptions("));
+assert.match(fs.readFileSync("performances/tops.html","utf8"),/id="topStatus" role="status"/);
