@@ -43,7 +43,7 @@ try {
   const workflow=fs.readFileSync('.github/workflows/livepalmes-production-rebuild-tops.yml','utf8');
   assert.ok(workflow.indexOf('name: production-top-backup')<workflow.indexOf('rebuild-production-top-indexes.js apply'));
   assert.match(workflow,/diff -qr/);
-  assert.match(workflow,/github.run_attempt == 1/);
+  assert.match(workflow,/if: \$\{\{ false \}\}/);
   assert.doesNotMatch(workflow,/firebase deploy|gcloud firestore.*import/);
   console.log('Garde-fous reconstruction TOP PROD : OK');
 } finally {fs.rmSync(dir,{recursive:true,force:true});}
