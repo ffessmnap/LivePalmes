@@ -11,7 +11,7 @@ const context={nativeClubEntryView:async()=>({source:"nap"}),exports:{},ENVIRONM
   if(name==="./nap-qualification-entry-effects") return require("../functions/nap-qualification-entry-effects");
   if(name==="./nap-entry-course-rules") return {...require("../functions/nap-entry-course-rules"),readCategories:async c=>{assert.equal(c,connection);categoriesReads++;return [];}};
   if(name==="./nap-portal-workspaces") return {competitionItem:()=>({date:"2026-10-11"}),entryItem:()=>({source:"nap"})};
-  if(name==="./nap-entry-static-records") return {loadStaticRecords:async project=>{assert.equal(project,"livepalmes");recordsReads++;return {};}};
+  if(name==="./nap-records-store") return {read:async pool=>{assert.equal(pool.native,true);recordsReads++;return {source:"nap",revision:1,data:{}};}};
   if(name==="./nap-individual-entry-resolution") return {resolveChanges:async(input,services)=>{
     assert.equal(input.connection,connection);assert.equal(services.age("2026-10-11","2013-01-01"),14);
     assert.equal(services.forbidden("50AP","M"),true);assert.equal(services.forbidden("50BI","M"),false);
@@ -40,5 +40,5 @@ vm.createContext(context);vm.runInContext(source.slice(start,end),context);
   await context.exports.saveEngagementClubIndividualEntries(request);assert.equal(calls,3);assert.equal(categoriesReads,3);competition.nativeParameters.saisie=1;
   competition.restrictions=[{}];await assert.rejects(()=>context.exports.saveEngagementClubIndividualEntries(request),/restrictions/);assert.equal(calls,3);competition.restrictions=[];
   allowed=false;await assert.rejects(()=>context.exports.saveEngagementClubIndividualEntries(request),/Denied/);assert.equal(calls,3);
-  console.log("Individual callable: authenticated native-only path, trusted club/connection, grouped category lookup and conditional static RF/MPF validation verified");
+  console.log("Individual callable: authenticated native-only path, trusted club/connection, grouped category lookup and conditional native RF/MPF validation verified");
 })().catch(error=>{console.error(error);process.exitCode=1;});

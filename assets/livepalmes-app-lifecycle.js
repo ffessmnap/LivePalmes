@@ -217,6 +217,16 @@
 
       initializeUiEvents();
       render();
+      if (window.LivePalmesPublicRecordsSource?.load && window.LivePalmesEnvironment?.sportingDataSource === "nap") {
+        window.LivePalmesPublicRecordsSource.load().then(() => {
+          setData(normalizeData(getData()));
+          render();
+        }).catch(error => {
+          setData(normalizeData(getData()));
+          render();
+          console.warn("Référence RF/MPF NAP indisponible", error);
+        });
+      }
       initFirebaseSync();
       checkForGeneratedUpdates();
       checkFirebaseConnection();

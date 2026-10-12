@@ -807,6 +807,10 @@ function swimmerResultsAreLoading(key) {
 }
 
 async function loadPublicSeries() {
+  if (window.LivePalmesEnvironment?.sportingDataSource === "nap") {
+    try { await window.LivePalmesPublicRecordsSource?.load?.(); }
+    catch (error) { console.warn("Repères RF/MPF NAP indisponibles", error); }
+  }
   if (!window.firebase?.initializeApp || !window.firebase?.firestore) {
     setStatus("Local", "pending");
     if (app) app.innerHTML = `<section class="panel"><p class="panel-subtitle">Firebase n'est pas disponible sur cette page.</p></section>`;
