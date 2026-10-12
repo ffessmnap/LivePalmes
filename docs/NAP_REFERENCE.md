@@ -8,9 +8,9 @@ Le portail et les consultations sportives publiques utilisent directement MySQL 
 
 **TEST utilise la même base NAP habituelle que PROD et IntraNAP.** Un essai d'écriture sur TEST est une opération réelle. Les changements de données et de structure exigent une autorisation spécifique ; aucune recette ne doit fabriquer de résultats, engagements ou personnes sans cet accord. IntraNAP n'a pas été modifié et son arrêt n'est pas réalisé par ce projet.
 
-## Évolution RF/MPF en préparation TEST — 12 octobre
+## RF/MPF dans NAP — 12 octobre
 
-La reprise autorisée est effectuée à l'identique dans deux compléments NAP : `livepalmes_records_versions` conserve chaque contenu complet et `livepalmes_records_current` pointe la version active. Version initiale vérifiée : 97 RF/RFJ, 397 MPF et 50 entrées d'historique, aucune correction sportive. Le raccordement applicatif à ces tables est préparé sur TEST, avec les droits Records existants et sans nouvelle règle nationale. Les parcours PROD décrits ci-dessous restent applicables jusqu'à publication distincte autorisée ; les anciennes sources Firebase et fichiers sont conservés pour validation/retour arrière. Voir `releases/EVOLUTIONS.md` pour les preuves.
+La reprise à l'identique dans `livepalmes_records_versions` et `livepalmes_records_current` est publiée sur TEST et PROD ; les preuves figurent dans `releases/EVOLUTIONS.md`. Les lectures publiques et l'administration utilisent NAP, avec les droits Records existants. Le nettoyage autorisé retire d'abord les chargements statiques et chemins d'administration obsolètes sur TEST ; les sauvegardes et anciennes données restent conservées. Aucune correction sportive ni écriture NAP pour la recette.
 
 ## Où sont les données ?
 
@@ -24,9 +24,9 @@ La reprise autorisée est effectuée à l'identique dans deux compléments NAP :
 | Documents/protocoles | Fichiers hébergés chez Google ; titres/liens et rattachements NAP | `nap-competition-documents.js` |
 | Comptes, capacités, demandes d'accès, réglages, audits et jobs techniques | Firebase Auth / Firestore ; les recherches et créations de clubs des demandes d'accès lisent/écrivent NAP | `functions/index.js`, `nap-club-access-request.js` |
 | LivePalmes Direct | Circuit Firebase distinct, consoles, séries, résultats en direct et archives conservés | `architecture-livepalmes.md`, `LIVEPALMES_DIRECT.md` |
-| Records et MPF officiels | **Exception conservée** : administration Firebase `competitions/livepalmes-active/performanceData/records`, publication statique/manifeste ; secours `records-data.js` | `performances/public/admin-records.js`, `agents/PERFORMANCES.md` |
+| Records et MPF officiels | NAP : `livepalmes_records_versions`, `livepalmes_records_current` ; anciennes copies conservées temporairement pour retour arrière | `performances/public/admin-records.js`, `agents/PERFORMANCES.md` |
 
-Les noms de modules du tableau sont relatifs à `functions/`, sauf chemin explicite. Firestore conserve donc aussi des données d'administration des Records/MPF et des traces techniques : « plus aucune donnée dans Firebase » serait inexact. La présence d'un ancien module ou d'une déclaration dans le dépôt ne prouve pas qu'une fonction est déployée ou utilisée.
+Les noms de modules du tableau sont relatifs à `functions/`, sauf chemin explicite. Firestore conserve des anciennes données Records/MPF et des traces techniques ; il n’est plus la source officielle RF/MPF. La présence d'un ancien module ou d'une déclaration dans le dépôt ne prouve pas qu'une fonction est déployée ou utilisée.
 
 ## Commentaires de compétition
 

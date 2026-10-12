@@ -1,4 +1,4 @@
-﻿let data = window.LIVEPALMES_RECORDS;
+﻿let data = window.LIVEPALMES_RECORDS || { records: [], franceRecords: [], filters: {} };
 let records = normalizeMixedRelayRecords(data.franceRecords || []);
 
 const elements = {

@@ -2,6 +2,13 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 12 octobre — Nettoyage RF/MPF, étape 1
+
+- Antoine autorise deux étapes : découplage/recette TEST puis retrait des fichiers et outils obsolètes. Aucun effacement NAP, Firestore ou Storage, aucun droit/mail ni publication PROD.
+- Retrait des sept chargements HTML historiques, démarrage RF/MPF sans données statiques, retrait des lecteurs locaux/REST Firestore de l’administration ; générateur des consoles aligné sur cette seule dépendance commune.
+- Copie statique, outils, ancien module d’engagement et compatibilité du store conservés jusqu’à la recette. Budget inchangé : un appel NAP groupé par lecture RF/MPF, aucune lecture supplémentaire ni recette d’écriture réelle.
+- Contrôles et publication TEST à attester. Validation utilisateur des commentaires reçue le 12 octobre pour `ea3a193f3a03f6f3189b986ad19338e29b4ea993` ; elle ne vaut pas validation de ce nettoyage.
+
 ### 12 octobre — Commentaires de compétition partagés avec INTRANAP
 
 - Demande explicite : même champ `competitions.comments`, visible dans le portail et sur le calendrier public, publication TEST uniquement. Pas de migration ni de modification de contenu NAP pendant la recette, aucun changement de droits ou mails.

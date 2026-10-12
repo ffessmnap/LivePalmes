@@ -192,75 +192,6 @@ function applyRecordsData(nextData, { loaded = true } = {}) {
   updateAuthView();
 }
 
-function localRecordsDataUrl(cacheBust = "") {
-  const moduleScript = document.getElementById("adminRecordModuleScript") || [...document.scripts]
-    .find((script) => String(script.src || "").includes("/performances/public/admin-records.js"));
-  if (moduleScript?.src) {
-    return new URL(`data/records-data.js?v=records-firestore-20260803223824${cacheBust}`, moduleScript.src).href;
-  }
-  return `public/data/records-data.js?v=records-firestore-20260803223824`;
-}
-
-async function loadLocalRecordsData() {
-  if (hasRecordData(window.LIVEPALMES_RECORDS)) return window.LIVEPALMES_RECORDS;
-  await new Promise((resolve) => setTimeout(resolve, 0));
-  if (hasRecordData(window.LIVEPALMES_RECORDS)) return window.LIVEPALMES_RECORDS;
-  await new Promise((resolve) => {
-    const script = document.createElement("script");
-    script.src = localRecordsDataUrl(`&reload=${Date.now()}`);
-    script.onload = () => resolve();
-    script.onerror = () => resolve();
-    document.head.appendChild(script);
-  });
-  if (hasRecordData(window.LIVEPALMES_RECORDS)) return window.LIVEPALMES_RECORDS;
-  try {
-    const response = await fetch(localRecordsDataUrl(), { cache: "no-store" });
-    if (!response.ok) return window.LIVEPALMES_RECORDS || {};
-    const text = await response.text();
-    const match = text.match(/window\.LIVEPALMES_RECORDS\s*=\s*(\{.*\});?\s*$/s);
-    if (!match) return window.LIVEPALMES_RECORDS || {};
-    const localData = JSON.parse(match[1]);
-    window.LIVEPALMES_RECORDS = localData;
-    return localData;
-  } catch (error) {
-    console.warn("Chargement local des records impossible", error);
-    return window.LIVEPALMES_RECORDS || {};
-  }
-}
-
-function decodeFirestoreValue(value = {}) {
-  if ("stringValue" in value) return value.stringValue;
-  if ("integerValue" in value) return Number(value.integerValue);
-  if ("doubleValue" in value) return Number(value.doubleValue);
-  if ("booleanValue" in value) return Boolean(value.booleanValue);
-  if ("timestampValue" in value) return value.timestampValue;
-  if ("nullValue" in value) return null;
-  if ("arrayValue" in value) return (value.arrayValue.values || []).map(decodeFirestoreValue);
-  if ("mapValue" in value) return decodeFirestoreMap(value.mapValue.fields || {});
-  return undefined;
-}
-
-function decodeFirestoreMap(fields = {}) {
-  return Object.fromEntries(
-    Object.entries(fields).map(([key, value]) => [key, decodeFirestoreValue(value)])
-  );
-}
-
-async function loadRemoteRecordsData() {
-  const projectId = window.LivePalmesAppConfig?.firebaseConfig?.projectId || "livepalmes";
-  const competitionId = window.LivePalmesAppConfig?.firestoreCompetitionId || "livepalmes-active";
-  const url = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/competitions/${competitionId}/performanceData/records`;
-  try {
-    const response = await fetch(url, { cache: "no-store" });
-    if (!response.ok) return {};
-    const payload = await response.json();
-    return decodeFirestoreMap(payload.fields || {});
-  } catch (error) {
-    console.warn("Chargement distant des records impossible", error);
-    return {};
-  }
-}
-
 function normalizeAdminRow(row, scope) {
   return {
     ...row,
@@ -1924,16 +1855,9 @@ async function startAdmin() {
     return;
   }
 
-  let firstData = {};
-  if (window.LivePalmesPerformanceStore?.loadData) {
-    const storeData = await withTimeout(window.LivePalmesPerformanceStore.loadData(), 5000, {});
-    if (hasRecordData(storeData)) {
-      firstData = storeData;
-    }
-  }
-  if (!hasRecordData(firstData)) firstData = completeRecordsData(await withTimeout(loadLocalRecordsData(), 4000, {}));
-  applyRecordsData(firstData, { loaded: true });
-  applyQueuedRecordAlertDrafts();
+  recordsDataLoaded = false;
+  updateAuthView();
+  if (elements.tableMeta) elements.tableMeta.textContent = "Source Records/MPF NAP requise.";
 }
 
 elements.scopeFilter.querySelectorAll(".segment").forEach((button) => {

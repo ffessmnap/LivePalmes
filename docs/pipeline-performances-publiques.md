@@ -1,6 +1,6 @@
 # Consultation publique et publication des Records/MPF
 
-<!-- description: Lecture directe NAP des TOP et fiches ; exception statique Records/MPF et retrait du pipeline sportif Firestore. -->
+<!-- description: Lecture directe NAP des TOP et fiches ; Records/MPF dans NAP et retrait du pipeline sportif Firestore. -->
 
 ## TOP, nageurs, calendrier et résultats
 
@@ -8,11 +8,11 @@ Les environnements TEST et PROD sélectionnent NAP. Les pages existantes appelle
 
 Les modifications NAP sont visibles à une nouvelle consultation serveur ; une interface déjà chargée peut conserver son affichage jusqu'à actualisation. La DTN est distincte : ses résultats calculés sont conservés jusqu'au recalcul explicite. Aucun cache absent ne doit lancer silencieusement une reconstruction sportive.
 
-## Exception Records et MPF
+## Records et MPF
 
-L'administration conserve `competitions/livepalmes-active/performanceData/records` dans Firebase. La publication utilise le manifeste `performance-public-firestore/records/manifest.json` et ses versions statiques ; `performances/public/data/records-data.js` est le secours Hosting. Ce circuit validé ne doit pas être remplacé par les records NAP ni par un calcul des TOP.
+L’administration et les consultations publiques utilisent les versions RF/MPF dans NAP (`livepalmes_records_versions`, `livepalmes_records_current`). Le lecteur public retourne une projection sans historique privé. Les publications passent par les actions existantes avec version attendue et reprise idempotente, sans calcul à partir des TOP.
 
-`node tools/sync-records-from-firestore.js --write` lit la source Firebase et écrit un fichier généré : seulement après autorisation explicite de cette préparation. Hosting ordinaire ne lance pas automatiquement cette synchronisation ; consulter `firebase.json`, [agents/PERFORMANCES.md](agents/PERFORMANCES.md) et [agents/PUBLICATION.md](agents/PUBLICATION.md). Ne pas modifier les fichiers générés à la main.
+Les anciens fichiers et outils Firestore sont conservés temporairement pour retour arrière, sans chargement dans les pages actuelles. Ne pas les relancer pour actualiser NAP. Voir [la référence](NAP_REFERENCE.md) et [le suivi du nettoyage](releases/EVOLUTIONS.md).
 
 ## Ancien pipeline
 

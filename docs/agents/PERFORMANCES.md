@@ -6,25 +6,9 @@
 
 Les calculs de Records, MPF, catégories, relais, classements, médailles et qualifications sont sensibles. Ne jamais inventer une règle sportive ni modifier leur logique sans validation explicite.
 
-Les Records et MPF officiels sont stockés dans :
+Les Records et MPF officiels utilisent les compléments NAP `livepalmes_records_versions` et `livepalmes_records_current`, via le lecteur public et les actions d'administration existantes. Aucun recalcul sportif ni nouvelle règle de droits.
 
-```text
-competitions/livepalmes-active/performanceData/records
-```
-
-Le fallback statique correspondant est :
-
-```text
-performances/public/data/records-data.js
-```
-
-Après une modification publiée et validée, le fallback se synchronise avec :
-
-```powershell
-node tools/sync-records-from-firestore.js --write
-```
-
-Cette commande lit Firestore et écrit un fichier généré : ne pas la lancer sans validation de publication.
+Les anciennes données Firebase et la copie `performances/public/data/records-data.js` sont conservées temporairement pour retour arrière, sans chargement par les pages actuelles. Ne plus synchroniser cette copie depuis Firestore. Le nettoyage autorisé se déroule en deux étapes : découplage et recette TEST, puis retrait des anciens fichiers/outils après vérification.
 
 ## Pipeline public
 
