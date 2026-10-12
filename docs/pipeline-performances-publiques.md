@@ -12,7 +12,7 @@ Les modifications NAP sont visibles à une nouvelle consultation serveur ; une i
 
 L’administration et les consultations publiques utilisent les versions RF/MPF dans NAP (`livepalmes_records_versions`, `livepalmes_records_current`). Le lecteur public retourne une projection sans historique privé. Les publications passent par les actions existantes avec version attendue et reprise idempotente, sans calcul à partir des TOP.
 
-Les anciens fichiers et outils Firestore sont conservés temporairement pour retour arrière, sans chargement dans les pages actuelles. Ne pas les relancer pour actualiser NAP. Voir [la référence](NAP_REFERENCE.md) et [le suivi du nettoyage](releases/EVOLUTIONS.md).
+La copie statique RF/MPF et ses outils historiques ont été retirés du dépôt. Git conserve leurs anciennes versions ; les données Firebase et Storage restent intactes. Aucun repli vers ces copies en cas de panne NAP. Voir [la référence](NAP_REFERENCE.md) et [le suivi du nettoyage](releases/EVOLUTIONS.md).
 
 ## Ancien pipeline
 

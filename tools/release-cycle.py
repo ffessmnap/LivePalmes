@@ -296,10 +296,40 @@ def ignored_top_paths(paths, candidate):
                     for prefix in TOP_PREFIXES) for t in targets)]
 
 
-def classify_test(paths, approved_top_files=False):
+RECORDS_CLEANUP_BASE = '0de982df25eb51f4957497f905d7b05dbf6c173e'
+RECORDS_STATIC_PATH = 'performances/public/data/records-data.js'
+
+
+def approved_records_cleanup_paths(paths, candidate):
+    """Antoine, 12 October: TEST-only removal of one obsolete snapshot/header."""
+    relevant = set(paths) & {'firebase.json', RECORDS_STATIC_PATH}
+    if not relevant:
+        return set()
+    require(not git('ls-tree', candidate, '--', RECORDS_STATIC_PATH).strip(),
+            'La copie RF/MPF doit etre absente, jamais remplacee')
+    expected = json.loads(git('show', RECORDS_CLEANUP_BASE + ':firebase.json'))
+    header = {'source': '/' + RECORDS_STATIC_PATH, 'headers': [
+        {'key': 'Cache-Control', 'value': 'public, max-age=300, stale-while-revalidate=86400'}]}
+    targets = expected['hosting'] if isinstance(expected['hosting'], list) else [expected['hosting']]
+    removed = sum(t.get('headers', []).count(header) for t in targets)
+    require(removed == 1, 'En-tete historique RF/MPF inattendu')
+    for target in targets:
+        target['headers'] = [h for h in target.get('headers', []) if h != header]
+    require(json.loads(git('show', candidate + ':firebase.json')) == expected,
+            'Configuration differente du seul retrait cache RF/MPF autorise')
+    for page in ('performances/records.html', 'performances/mpf.html', 'performances/nageur.html',
+                 'pilotage-livepalmes.html', 'speaker.html', 'bureau-perf.html', 'series-public.html'):
+        require('data/records-data.js' not in git('show', candidate + ':' + page),
+                'Page encore dependante de la copie retiree: ' + page)
+    return relevant
+
+
+def classify_test(paths, approved_top_files=False, approved_records_cleanup=False):
     # Exact files authorized by Antoine on TEST, 5 October 2026.
     # Ordinary and production classification remain unchanged.
     allowed = set(ignored_top_paths(paths, 'HEAD'))
+    if approved_records_cleanup:
+        allowed |= approved_records_cleanup_paths(paths, 'HEAD')
     explicitly_approved = set(TEST_TOP_FILES).intersection(paths) - allowed if approved_top_files else set()
     for path in sorted(explicitly_approved):
         require(git('rev-parse', 'HEAD:' + path) == TEST_TOP_FILES[path], 'Fichier TOP different de la version autorisee: ' + path)

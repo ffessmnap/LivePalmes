@@ -397,4 +397,30 @@ class ReleaseTests(unittest.TestCase):
                 m.prepare_selection(d,'.');backend.assert_not_called()
             self.assertEqual(m.read(Path(d)/'selection.json'),[])
 
+class RecordsCleanupTests(unittest.TestCase):
+    def fixtures(self, exists=False, drift=False, dependent=False):
+        header={'source':'/'+m.RECORDS_STATIC_PATH,'headers':[{'key':'Cache-Control','value':'public, max-age=300, stale-while-revalidate=86400'}]}
+        before={'hosting':{'public':'.','ignore':['secret'],'headers':[header]}}
+        after={'hosting':{'public':'.','ignore':['secret'],'headers':[]}}
+        if drift: after['hosting']['ignore']=[]
+        def fake(*args):
+            if args[0]=='ls-tree':return 'blob exists' if exists else ''
+            if args[1]==m.RECORDS_CLEANUP_BASE+':firebase.json':return json.dumps(before)
+            if args[1]=='HEAD:firebase.json':return json.dumps(after)
+            return 'data/records-data.js' if dependent else '<html></html>'
+        return fake
+    def test_exact_removal_test_only(self):
+        paths=['firebase.json',m.RECORDS_STATIC_PATH]
+        with patch.object(m,'git',side_effect=self.fixtures()):
+            self.assertEqual(m.classify_test(paths,False,True),([],False))
+        with self.assertRaises(ValueError):m.classify_test(paths)
+        with self.assertRaises(ValueError):m.classify(paths)
+    def test_replaced_snapshot_other_configuration_or_dependency_refused(self):
+        for kwargs in ({'exists':True},{'drift':True},{'dependent':True}):
+            with patch.object(m,'git',side_effect=self.fixtures(**kwargs)),self.assertRaises(ValueError):
+                m.classify_test(['firebase.json',m.RECORDS_STATIC_PATH],False,True)
+    def test_other_generated_file_still_refused(self):
+        with patch.object(m,'git',side_effect=self.fixtures()),self.assertRaises(ValueError):
+            m.classify_test(['firebase.json',m.RECORDS_STATIC_PATH,'performances/public/data/other.js'],False,True)
+
 if __name__=='__main__':unittest.main()
