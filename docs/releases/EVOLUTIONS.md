@@ -2,6 +2,15 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 13 octobre — C0 documentaire publié en PROD après accord Infra
+
+- Antoine répond « ok » dans Infra à la publication du seul C0 selon le plan `38466674620`, avec contrôle de dérive et sauvegarde vérifiée. Candidat exact `ac78b50759ca209cddaa15d374eb5e01dd926268` ; nouvel accueil/bibliothèque C1, migration, données, mails/schedulers, droits/règles/index et recalcul DTN exclus.
+- Première tentative `38467920953` arrêtée dans les tests du circuit avant authentification Google/sauvegarde/publication ; correction YAML PR #296 intégrée dans `61515663`, CI Linux `38468667950` réussie, aucun aperçu Firebase. Aucun changement du candidat ou du plan approuvé, ni nouvelle base PROD prise après cet arrêt.
+- [Publication officielle `38468987195`](https://github.com/ffessmnap/LivePalmes/actions/runs/38468987195) réussie : les 44 fonctions du plan exact sont publiées et contrôlées au candidat ; les 66 autres gardent leurs révisions, états et dates de mise à jour. Inventaire final 110 ACTIVE, zéro écart ; `syncPublicRecordsData` toujours absent, aucune suppression distante. Hosting `90dbc6e6729304c3`, cinq fichiers conformes, CSP/cache présents, fichier interne et ancien analytics inaccessibles.
+- Relecture TEST et contrôle de dérive PROD réussis avant publication. Sauvegarde chiffrée rouverte et comparée, puis conservée avant déploiement : artefact `production-code-backup` ID `11851760341`, SHA-256 ZIP `dbd2ce79f1a2c2f1c75937f79346c8cd56f7a393ee0cca80b51c7acf8f5675ea`, expiration `2026-10-27T21:15:49Z`. Référence Hosting précédente `c329f0732cc7c06c` pour retour arrière explicite du code.
+- Preuves après publication téléchargées et authentifiées : `production-after` ID `11851537648`, `production-hosting-after` ID `11851013652`. Sélection identique au preflight approuvé ; comparaison locale des 66 identités conservées réussie. Pièces Infra locales regroupées sous `infra-c0-20261013/production-38468987195` : plan, états, reçu et bilan.
+- C0 est actif en PROD avant la future migration documentaire. Aucune migration, écriture NAP/Firestore/Storage, invocation métier, envoi mail ni recalcul exécuté par ce travail. Aucune recette utilisateur PROD finale inventée. La migration et C1 restent gérés séparément ; un rollback de code n’annule pas une future migration NAP.
+
 ### 13 octobre — Infra : préparation du preflight C0 sans déploiement
 
 - Après présentation du plan `38466674620`, Antoine répond « ok » dans Infra : accord explicite PROD pour ce seul C0, avec sauvegarde vérifiée et contrôle de dérive, exclusions maintenues. Tentative `38467920953` arrêtée dans les tests du circuit avant authentification Google, sauvegarde et publication (aucun artefact de sauvegarde, états/publication Hosting ignorés). Cause : deux commandes Node concaténées par le pliage d’un scalaire YAML. Correction : bloc shell littéral et garde de séparation des commandes ; aucune modification du candidat, des empreintes ou du plan immuable approuvé. Reprise via un nouveau run, sans réutilisation ambiguë de tentative ni changement de base PROD.
