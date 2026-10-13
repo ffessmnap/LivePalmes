@@ -1,11 +1,12 @@
 "use strict";
 const assert=require("node:assert/strict");
 const home=require("../functions/nap-home-events");
-const {gatherPages,BUCKET}=require("../tools/build-home-events-test");
+const {gatherPages,BUCKET,loadStorageSdk}=require("../tools/build-home-events-test");
 const fs=require("node:fs");
 const now=Date.parse("2026-10-13T10:00:00Z");
 const event=id=>({id:`legacy-nap-${id}`,name:`Event ${id}`,date:"2026-10-13",endDate:"2026-10-14",city:"Ville",location:"Lieu",eventType:"training",level:"regional",canceled:false,results:{url:"",pdfUrl:""}});
 (async()=>{
+ const sdk=loadStorageSdk();for(const name of ["initializeApp","applicationDefault","getStorage"])assert.equal(typeof sdk[name],"function");
  let calls=0;
  const reader=home.createReader(async()=>{calls++;return Buffer.from(JSON.stringify({schemaVersion:1,source:"nap",generatedAt:new Date(now).toISOString(),events:[event(1)]}));},()=>now);
  const values=await Promise.all([reader(),reader()]);assert.equal(calls,1);assert.equal(values[0].events.length,1);await reader();assert.equal(calls,1);
