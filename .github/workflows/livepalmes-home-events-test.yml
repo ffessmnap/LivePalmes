@@ -1,6 +1,8 @@
 name: Préparer les rendez-vous de l’accueil TEST
 
 on:
+  schedule:
+    - cron: '17 * * * *'
   workflow_dispatch:
     inputs:
       confirmation:
@@ -17,7 +19,7 @@ concurrency:
 
 jobs:
   prepare:
-    if: github.ref == 'refs/heads/main' && inputs.confirmation == 'publish-livepalmes-test-home-events'
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'schedule' || inputs.confirmation == 'publish-livepalmes-test-home-events')
     runs-on: ubuntu-latest
     timeout-minutes: 20
     environment: firebase-test
@@ -44,7 +46,7 @@ jobs:
       - name: Publier et vérifier le seul fichier de rendez-vous TEST
         env:
           TARGET_FIREBASE_PROJECT: livepalmes-test
-          LIVEPALMES_HOME_DATA_CONFIRMATION: ${{ inputs.confirmation }}
+          LIVEPALMES_HOME_DATA_CONFIRMATION: publish-livepalmes-test-home-events
         run: node tools/build-home-events-test.js --publish outputs/home-events.json
       - uses: actions/upload-artifact@v4
         with:
