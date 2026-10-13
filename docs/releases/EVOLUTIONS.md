@@ -2,13 +2,13 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
-### 13 octobre — Retrait source du déclencheur Records historique — préparation de PR
+### 13 octobre — Retrait source du déclencheur Records historique — PR #290
 
 - Besoin et accord : après analyse des dépendances, Antoine demande de préparer la PR du premier lot de retrait de `syncPublicRecordsData` et de ses deux helpers, avec adaptations des contrôles et tests, en conservant toutes les exclusions et sans toucher aux données.
 - Périmètre : les trois blocs et leur import inutilisé dans `functions/index.js` ; exception ciblée du vérificateur des lots ; tests d'absence, de classement et d'empreintes ; présente procédure et registre. `public-records-data.js`, le circuit Records/MPF NAP et les helpers génériques Storage/audit restent inchangés. Aucun nouvel accès aux données ni changement du budget de lecture.
 - Exclusions : nom du déclencheur conservé dans `NAP_UNUSED_FUNCTIONS`, `LOTS.publications` et `PUBLICATION_EFFECT_FUNCTIONS`. Aucune autre exclusion modifiée, aucune suppression distante, écriture NAP/Firestore/Storage, migration, publication métier ou modification des droits, mails et schedulers.
 - Vérification : neuf contrôles ciblés réussis (cinq suites Records/NAP, retrait historique avec cinq contre-exemples du vérificateur, isolation des anciens traitements, classement des lots et empreintes). Syntaxe de 755 fichiers, textes, architecture et chargement des consoles contrôlés. Le contrôle global local s'arrête au test de workflow nécessitant Bash, absent sur ce poste (`ENOENT`) ; CI Linux du commit de PR requise. Le calcul réel des empreintes avant/après sera joint à la PR. Le déclencheur était déjà absent de TEST et PROD dans l'inventaire du 13 octobre ; preuve historique PROD conservée dans `.github/releases/evidence/20261012-sync-records-prod-cleanup.json`.
-- État : PR en préparation depuis `main` ; ni fusion ni déploiement commun effectué pour ce lot. Recette en lecture de la version regroupée à prévoir après intégration ; aucun record d'essai à publier, TEST partage NAP. Aucune validation utilisateur des parcours ni autorisation PROD déduite de l'accord de préparation.
+- État : [PR #290](https://github.com/ffessmnap/LivePalmes/pull/290) préparée depuis `main`, retrait source au commit `c64afa77` ; ni fusion ni déploiement commun effectué pour ce lot. Recette en lecture de la version regroupée à prévoir après intégration ; aucun record d'essai à publier, TEST partage NAP. Aucune validation utilisateur des parcours ni autorisation PROD déduite de l'accord de préparation.
 
 ### 13 octobre — Cohérence documentaire Records/MPF, NAP et Storage — PR #289
 
