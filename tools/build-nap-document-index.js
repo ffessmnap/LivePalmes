@@ -23,7 +23,7 @@ async function buildDocumentIndex(pool){
   if(rows.length<101)break;
  }
  const facets=entries=>[...entries].map(([id,label])=>({id,label})).sort((a,b)=>a.label.localeCompare(b.label,"fr"));
- return {version:1,generatedAt:new Date().toISOString(),documents,types:facets(types),rubrics:facets(rubrics)};
+ return {version:2,generatedAt:new Date().toISOString(),documentCount:documents.length,types:facets(types),rubrics:facets(rubrics)};
 }
 async function main(){
  if(process.argv.length!==3||process.argv[2]!=="--write")throw Error("Préparation explicite --write requise.");
@@ -35,7 +35,7 @@ async function main(){
   const temporary=output+".tmp";
   fs.writeFileSync(temporary,JSON.stringify(index)+"\n","utf8");
   fs.renameSync(temporary,output);
-  console.log(`Index documentaire serveur préparé : ${index.documents.length} références publiques générales. Aucune écriture distante.`);
+  console.log(`Facettes documentaires serveur préparées depuis ${index.documentCount} références publiques générales. Aucune écriture distante.`);
  }finally{await pool.end();}
 }
 if(require.main===module)main().catch(()=>{console.error("Préparation documentaire arrêtée ; aucun détail de connexion affiché.");process.exitCode=1;});

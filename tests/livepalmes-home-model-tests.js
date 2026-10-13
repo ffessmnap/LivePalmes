@@ -35,4 +35,6 @@ for(const [age,expected] of [[0,true],[30*86400000-1,true],[30*86400000,false],[
 for(const raw of [null,"","2026-02-30T12:00:00Z","2026-10-13 12:00:00","2026-10-13","2026-10-13T25:00:00Z","2026-10-13T24:00:00Z"])assert.equal(home.isNewDocument(raw,now),false);
 assert.equal(home.publicationLabel("2026-10-12T23:00:00Z"),"Mis en ligne le 13/10/2026");
 assert.equal(home.publicationLabel("invalid"),"");
+assert.equal(home.publicationLabel("","2026-10-25"),"Mis en ligne le 25/10/2026");
+assert.equal(home.publicationLabel("","2026-02-30"),"");
 console.log("Accueil: dates de Paris, chevauchements, niveaux, ex aequo, annulations, saisons, déduplication et Nouveau strictement <30 jours OK.");

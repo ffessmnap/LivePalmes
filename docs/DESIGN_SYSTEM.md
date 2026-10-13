@@ -205,6 +205,12 @@ La carte Performances occupe une ligne, avec quatre actions de même largeur. Su
 
 Les documents utiles présentent leur date native de publication et éventuellement le badge Nouveau, sans date inventée ou remise à zéro éditoriale. Les accès EDF et Kit compétition constituent des rubriques séparées. Les états de chargement, d’indisponibilité et de liste vide gardent les liens vers calendrier/bibliothèque accessibles. Ces règles décrivent l’évolution en préparation TEST ; elles ne valent pas validation d’une publication PROD.
 
+### Bibliothèque et sélection documentaire
+
+La bibliothèque conserve les titres et classements natifs, y compris « Autres documents », et présente les dates sans filtrage d’ancienneté. Un document public sans lien conserve sa fiche textuelle avec « Lien momentanément indisponible ». Les filtres utilisent des champs étiquetés, une pagination explicite et un statut annoncé aux technologies d’assistance.
+
+Dans Administration nationale → Documents → Documents mis en avant, le catalogue et la sélection sont côte à côte sur ordinateur. Sur mobile, la sélection précède le catalogue ; les commandes Monter/Descendre/Retirer passent sous les titres longs. Les actions d’annulation, d’aperçu et d’enregistrement restent dans une barre collante au bas de la fenêtre. Le dialogue reprend les variables de surface, texte, bordure et champs du thème du portail. L’aperçu utilise la date de publication du document, sans la remplacer par une date d’édition de la sélection.
+
 ### Fiches du calendrier public
 
 Les informations pratiques masquent « Bassin », « Lignes d’eau » et « Chronométrage » pour les compétitions eau libre, les réunions, les formations et les stages, même si la source fournit ces valeurs. Les compétitions piscine conservent ces champs lorsqu’ils sont renseignés. Cette règle concerne uniquement la présentation, sans modification des données source.

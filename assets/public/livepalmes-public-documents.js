@@ -15,12 +15,12 @@
    if(select===rubric)initialRubric="";
   }
   function documentLink(item){
-   let url;try{url=new URL(item.url);if(url.protocol!=="https:"||url.username||url.password)return null;}catch{return null;}
-   const link=node("a","public-home-document");link.href=url.href;link.target="_blank";link.rel="noopener noreferrer";
+   let url;try{url=new URL(item.url);if(url.protocol!=="https:"||url.username||url.password)url=null;}catch{url=null;}
+   const link=node(url?"a":"article","public-home-document");if(url){link.href=url.href;link.target="_blank";link.rel="noopener noreferrer";}
    const title=node("strong","",item.title||"Document officiel");
    if(global.LivePalmesHomeModel.isNewDocument(item.publishedAt))title.append(node("span","public-home-new","Nouveau"));
    link.append(title,node("small","",[item.typeLabel,item.rubricLabel].filter(Boolean).join(" · ")));
-   const publication=global.LivePalmesHomeModel.publicationLabel(item.publishedAt);if(publication)link.append(node("small","",publication));return link;
+   const publication=global.LivePalmesHomeModel.publicationLabel(item.publishedAt,item.publishedOn);if(publication)link.append(node("small","",publication));if(!url)link.append(node("small","","Lien momentanément indisponible."));return link;
   }
   async function load(reset){
    clearTimeout(timer);
@@ -38,13 +38,13 @@
     const value=await response.json();if(value.source!=="nap"||!Array.isArray(value.documents))throw Error("Indisponible");if(active!==requestId)return;
     facets(type,value.types,"Tous les types");facets(rubric,value.rubrics,"Toutes les rubriques");
     const fragment=document.createDocumentFragment();for(const item of value.documents){const link=documentLink(item);if(link)fragment.append(link);}list.append(fragment);
-    after=value.nextAfterId;more.hidden=value.hasMore!==true;
+    after=value.nextAfterId;more.hidden=value.hasMore!==true;more.textContent=search.value.trim()||type.value||rubric.value?"Poursuivre la recherche":"Afficher la suite";
     status.textContent=list.childElementCount?`${list.childElementCount} document${list.childElementCount>1?"s":""} affiché${list.childElementCount>1?"s":""}${value.hasMore?" · Suite disponible":""}.`:value.hasMore?"Aucun document disponible dans cette page. Vous pouvez afficher la suite.":"Aucun document ne correspond à votre recherche.";
    }catch(error){if(active===requestId&&error.name!=="AbortError"){status.textContent="La bibliothèque est momentanément indisponible. Réessayez dans quelques instants.";more.hidden=true;}}
    finally{if(active===requestId){loading=false;more.disabled=false;list.setAttribute("aria-busy","false");}}
   }
   form.addEventListener("submit",event=>{event.preventDefault();load(true);});
-  search.addEventListener("input",()=>{clearTimeout(timer);if(controller)controller.abort();requestId++;timer=setTimeout(()=>load(true),300);});
+  search.addEventListener("input",()=>{clearTimeout(timer);if(controller)controller.abort();requestId++;after=null;more.hidden=true;more.disabled=true;timer=setTimeout(()=>load(true),300);});
   type.addEventListener("change",()=>load(true));rubric.addEventListener("change",()=>load(true));more.addEventListener("click",()=>load(false));
   load(true);
  }

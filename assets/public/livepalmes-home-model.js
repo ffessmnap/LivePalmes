@@ -49,9 +49,10 @@
     const published = publicationMillis(publishedAt);
     return Number.isFinite(published) && Number.isFinite(now) && published <= now && now - published < 30 * DAY;
   }
-  function publicationLabel(publishedAt) {
+  function publicationLabel(publishedAt, publishedOn) {
     const millis = publicationMillis(publishedAt);
-    return Number.isFinite(millis) ? `Mis en ligne le ${new Intl.DateTimeFormat("fr-FR", {timeZone:"Europe/Paris",day:"2-digit",month:"2-digit",year:"numeric"}).format(new Date(millis))}` : "";
+    if(Number.isFinite(millis))return `Mis en ligne le ${new Intl.DateTimeFormat("fr-FR", {timeZone:"Europe/Paris",day:"2-digit",month:"2-digit",year:"numeric"}).format(new Date(millis))}`;
+    return validDate(publishedOn)?`Mis en ligne le ${publishedOn.slice(8,10)}/${publishedOn.slice(5,7)}/${publishedOn.slice(0,4)}`:"";
   }
   return {validDate,parisToday,eventGroups,isNewDocument,publicationLabel};
 });

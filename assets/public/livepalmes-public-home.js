@@ -23,7 +23,7 @@
   copy.append(title,node("p","",[dates,event.city||event.location,types[event.eventType],levels[event.level]].filter(Boolean).join(" · ")));
   const resultsUrl=event.results?.url||event.results?.pdfUrl;
   if(resultsUrl){
-   try{const url=new URL(resultsUrl,global.location.href);if(url.protocol==="https:"||url.origin===global.location.origin){const link=node("a","public-home-event-results","Résultats →");link.href=url.href;copy.append(link);}}catch{ /* An invalid optional result link is omitted. */ }
+   try{const url=new URL(resultsUrl,global.location.href);if((url.protocol==="https:"||url.origin===global.location.origin)&&!url.username&&!url.password){const link=node("a","public-home-event-results","Résultats →");link.href=url.href;copy.append(link);}}catch{ /* An invalid optional result link is omitted. */ }
   }
   article.append(date,copy);return article;
  }
@@ -41,12 +41,12 @@
  function renderDocuments(host,documents){
   const fragment=document.createDocumentFragment();
   for(const item of (Array.isArray(documents)?documents:[]).slice(0,6)){
-   let url;try{url=new URL(item.url);if(url.protocol!=="https:"||url.username||url.password)continue;}catch{continue;}
-   const link=node("a","public-home-document");link.href=url.href;link.target="_blank";link.rel="noopener noreferrer";
+   let url;try{url=new URL(item.url);if(url.protocol!=="https:"||url.username||url.password)url=null;}catch{url=null;}
+   const link=node(url?"a":"article","public-home-document");if(url){link.href=url.href;link.target="_blank";link.rel="noopener noreferrer";}
    const title=node("strong","",item.title||"Document officiel");
    if(model.isNewDocument(item.publishedAt))title.append(node("span","public-home-new","Nouveau"));
    link.append(title);
-   const date=model.publicationLabel(item.publishedAt);if(date)link.append(node("small","",date));
+   const date=model.publicationLabel(item.publishedAt,item.publishedOn);if(date)link.append(node("small","",date));if(!url)link.append(node("small","","Lien momentanément indisponible."));
    fragment.append(link);
   }
   if(!fragment.childNodes.length)fragment.append(node("p","public-home-state","Retrouvez les documents dans la bibliothèque documentaire."));

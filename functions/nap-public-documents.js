@@ -7,9 +7,10 @@ const JOINS=" LEFT JOIN documents_types t FORCE INDEX (PRIMARY) ON t.id=d.type L
 const query=async(pool,sql,values=[]) => (await pool.execute({sql,timeout:10000},values))[0];
 function publicDocument(row){
  const url=publicUrl(row.location);
- if(!url)return null;
- const publishedAt=parisDeadline(row.date).iso;
- return {id:Number(row.id),title:text(row.name)||"Document officiel",url,publishedAt,
+ if(row.id==null)return null;
+ const rawDate=String(row.date||""),publication=parisDeadline(/^\d{4}-\d{2}-\d{2}$/.test(rawDate)?`${rawDate} 00:00:00`:rawDate);
+ const publishedAt=publication.iso,publishedOn=publishedAt||publication.warning==="ambiguous-native-deadline"?rawDate.slice(0,10):"";
+ return {id:Number(row.id),title:text(row.name)||"Document officiel",url,linkAvailable:Boolean(url),publishedAt,publishedOn,
   typeId:row.type_label?Number(row.type)||0:0,typeLabel:text(row.type_label)||"Autres documents",
   rubricId:row.element_label?Number(row.element)||0:0,rubricLabel:text(row.element_label)||"Autres documents"};
 }
@@ -31,18 +32,21 @@ function catalogueRequest(input={}){
 }
 const matchesFacet=(id,filter)=>!filter||id===(filter===-1?0:filter);
 async function readCatalogue(pool,index,input={}){
- // The index is prepared explicitly outside interactive requests. It remains
- // server-side, and is never an authority for current public metadata/rights.
- if(!index||!Array.isArray(index.documents))throw new TypeError("Bibliothèque momentanément indisponible.");
+ // Only facet labels come from explicit preparation. Search/list membership and
+ // metadata are read live, so newly published documents are immediately visible.
+ // Filtering a bounded keyset window avoids an unbounded LIKE scan. A sparse
+ // window has an explicit continuation, never a hidden automatic refill.
+ if(!index||!Array.isArray(index.types)||!Array.isArray(index.rubrics))throw new TypeError("Bibliothèque momentanément indisponible.");
  const request=catalogueRequest(input),tokens=fold(request.search).split(/\s+/).filter(Boolean);
- const candidates=index.documents.filter(row=>row.id< (request.after||2147483648) && matchesFacet(row.typeId,request.type) && matchesFacet(row.rubricId,request.rubric) && tokens.every(token=>fold(row.title).includes(token)))
-  .sort((a,b)=>b.id-a.id).slice(0,PAGE_SIZE+1);
- const hasMore=candidates.length>PAGE_SIZE,page=candidates.slice(0,PAGE_SIZE);
- if(!page.length)return {documents:[],hasMore:false,nextAfterId:null};
- const ids=page.map(row=>row.id);
- if(ids.some(id=>!Number.isSafeInteger(id)||id<=0))throw new TypeError("Index documentaire à vérifier.");
- const rows=await query(pool,`SELECT ${FIELDS} FROM documents d FORCE INDEX (PRIMARY)${JOINS} WHERE d.id IN (${ids.map(()=>"?").join(",")}) AND d.public='Y' AND d.competition=0 ORDER BY d.id DESC LIMIT 25`,ids);
- // Do not refill a shortened page: public withdrawal must not start a scan.
- return {documents:rows.map(publicDocument).filter(Boolean).filter(row=>matchesFacet(row.typeId,request.type)&&matchesFacet(row.rubricId,request.rubric)&&tokens.every(token=>fold(row.title).includes(token))),hasMore,nextAfterId:hasMore?page.at(-1).id:null};
+ const windowSize=tokens.length||request.type||request.rubric?100:PAGE_SIZE;
+ const rows=await query(pool,`SELECT ${FIELDS} FROM documents d FORCE INDEX (livepalmes_compet_public_id)${JOINS} WHERE d.competition=0 AND d.public='Y' AND d.id<? ORDER BY d.id DESC LIMIT ${windowSize+1}`,[request.after||2147483648]);
+ const documents=[];let consumed=0;
+ for(const row of rows.slice(0,windowSize)){
+  consumed++;const item=publicDocument(row);
+  if(item&&matchesFacet(item.typeId,request.type)&&matchesFacet(item.rubricId,request.rubric)&&tokens.every(token=>fold(item.title).includes(token)))documents.push(item);
+  if(documents.length===PAGE_SIZE)break;
+ }
+ const hasMore=consumed<rows.length;
+ return {documents,hasMore,nextAfterId:hasMore?Number(rows[consumed-1].id):null};
 }
 module.exports={PAGE_SIZE,publicDocument,readFeatured,catalogueRequest,readCatalogue};
