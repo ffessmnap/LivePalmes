@@ -11,6 +11,18 @@ spec=importlib.util.spec_from_file_location('cycle',Path(__file__).parents[1]/'t
 m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m)
 
 class ReleaseTests(unittest.TestCase):
+    def test_release_control_commands_remain_separate_shell_lines(self):
+        source = (m.ROOT / '.github/workflows/livepalmes-production-release.yml').read_text()
+        block = source.split('- name: Verifier le circuit de publication', 1)[1].split('- uses:', 1)[0]
+        self.assertIn('run: |\n', block)
+        lines = [line.strip() for line in block.split('run: |\n', 1)[1].splitlines() if line.strip()]
+        self.assertIn('node tooling/tests/release-excluded-backend-compatibility-tests.js', lines)
+        self.assertIn('node tooling/tests/release-c0-compatibility-tests.js', lines)
+        for line in lines:
+            self.assertRegex(line, r'^(node|python|npm) ')
+            self.assertNotIn(' node ', line)
+            self.assertNotIn(' python ', line)
+
     def test_candidate_historical_proofs_have_full_git_history(self):
         for name in ['livepalmes-production-preflight.yml', 'livepalmes-production-release.yml']:
             source = (m.ROOT / '.github/workflows' / name).read_text()
