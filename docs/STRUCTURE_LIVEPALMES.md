@@ -2,7 +2,7 @@
 
 <!-- description: Carte fonctionnelle des pages, dossiers et grandes zones du dépôt LivePalmes. -->
 
-> **Sources actuelles — 12 octobre 2026 :** NAP pour les données métier portail/public, Firebase pour les comptes et le technique, LivePalmes Direct et l’administration Records/MPF conservés. Voir [NAP_REFERENCE.md](NAP_REFERENCE.md). Les dossiers/outils historiques présents ne doivent pas être confondus avec les sources actives.
+> **Sources actuelles — 13 octobre 2026 :** NAP pour les données métier portail/public et les versions officielles Records/MPF ; Firebase pour les comptes, le technique et LivePalmes Direct. Voir [NAP_REFERENCE.md](NAP_REFERENCE.md). Les dossiers/outils historiques présents ne doivent pas être confondus avec les sources actives.
 
 Ce document sert de carte simple du projet. Il distingue les grandes parties fonctionnelles de l'ecosysteme LivePalmes sans imposer de deplacement de fichiers.
 
@@ -175,7 +175,7 @@ Scripts et styles principaux :
 - `performances/public/styles.css`
 - `performances/public/import-competitions.css`
 
-Les performances publiques (TOP et fiches nageurs) sont lues depuis NAP. Les anciens exports sportifs statiques ont été retirés ; `performances/public/reference.js` conserve seulement les libellés et l'ordre des courses/catégories. Les générateurs historiques utiles aux tests hors ligne sont conservés avec une sortie explicite hors publication. Aucun effacement des copies distantes n'accompagne ce nettoyage.
+Les performances publiques (TOP et fiches nageurs) et les versions officielles Records/MPF sont lues depuis NAP. Les anciens exports sportifs statiques ont été retirés du dépôt ; `performances/public/reference.js` conserve seulement les libellés et l'ordre des courses/catégories. Les générateurs historiques utiles aux tests hors ligne sont conservés avec une sortie explicite hors publication. Le retrait du code et le nettoyage Storage sont deux opérations distinctes ; voir [le circuit public et l'état du nettoyage](pipeline-performances-publiques.md).
 
 ## 5. Technique et maintenance
 

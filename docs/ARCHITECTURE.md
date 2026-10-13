@@ -24,7 +24,7 @@ L'interface est faite principalement avec :
 - des fichiers JavaScript pour les actions ;
 - MySQL NAP pour les données métier du portail et les lectures sportives publiques ;
 - Firebase pour les comptes, traitements serveur, réglages/traces techniques, fichiers, hébergement et LivePalmes Direct ;
-- le circuit distinct Firebase/statique conservé pour Records/MPF.
+- les versions officielles Records/MPF dans NAP, consultées et administrées via les fonctions serveur existantes.
 
 Il n'y a pas de framework comme React, Vue ou Angular.
 
@@ -76,7 +76,7 @@ Exemples :
 - `calendrier.html` : calendrier fédéral public filtrable ;
 - `competition.html?id=...` : fiche publique d'un événement.
 
-TOP, fiches nageurs, recherche, calendrier et résultats de compétition lisent NAP via des endpoints bornés. Records/MPF lisent leurs fichiers publics. Aucun accès MySQL direct depuis le navigateur.
+TOP, fiches nageurs, recherche, calendrier, résultats de compétition et Records/MPF lisent NAP via des endpoints bornés. Aucun accès MySQL direct depuis le navigateur ni repli Records/MPF sur un fichier statique.
 
 ### 3. LivePalmes Direct
 
@@ -123,7 +123,7 @@ Le portail gere les donnees metier durables :
 - preparation des competitions et engagements ;
 - performances, Records et MPF.
 
-Les consultations sportives publiques interrogent NAP via le serveur ; Records/MPF conservent leur publication statique distincte.
+Les consultations sportives publiques interrogent NAP via le serveur. Les Records/MPF officiels disposent de leurs versions administrées dans NAP ; ils ne sont pas recalculés automatiquement à partir des TOP.
 
 Le Direct possede son propre parcours pour une competition nationale :
 
@@ -247,7 +247,7 @@ On y trouve notamment :
 - les archives ;
 - les presences ;
 - les verrous de roles ;
-- les records et MPF.
+- d'anciennes copies Records/MPF, hors source officielle NAP.
 
 Les nouveaux PDF publics sont stockes dans le bucket public sous `competition-pdfs/`. Firestore ne conserve que leurs metadonnees, leur URL et leur chemin de stockage. Les anciens documents contenant encore un `pdfDataUrl` restent lisibles pendant la transition ; une publication bascule temporairement sur ce format historique si la fonction de stockage est indisponible.
 
@@ -259,7 +259,9 @@ La page des archives lit en priorite `public/archivesIndex`, borne aux 50 archiv
 
 La source officielle et l’administration sont les compléments NAP `livepalmes_records_versions` et `livepalmes_records_current`. Pages publiques, fiches nageurs et repères partagés lisent cette source via les fonctions existantes ; aucun chargement statique RF/MPF ni repli sportif Firestore n’est nécessaire en mode NAP.
 
-Les anciennes copies sont conservées temporairement pour retour arrière. La synchronisation historique Firestore ne doit pas être relancée. Voir [le circuit public](pipeline-performances-publiques.md) et [le suivi](releases/EVOLUTIONS.md).
+Le lecteur public utilise l'action `records` de `readNapPublicSwimmer`. L'administration utilise `getNapPerformanceAdministration` avec `recordsAction: "read"`, puis `savePerformanceCorrection` avec `recordsAction: "publish"`. Ces fonctions accèdent à `functions/nap-records-store.js` ; leur utilisation de Firebase comme serveur ne fait pas de Firestore la source RF/MPF.
+
+Le fichier historique `records-data.js` et ses outils de synchronisation ont été retirés du dépôt. Les anciennes versions restent dans Git et les sauvegardes des exports Storage retirés sont conservées ; les données Firestore historiques ne sont pas une source active. La synchronisation historique Firestore ne doit pas être relancée. Voir [le circuit public et l'état du nettoyage Storage](pipeline-performances-publiques.md) et [le suivi](releases/EVOLUTIONS.md).
 
 ### Performances historiques
 
