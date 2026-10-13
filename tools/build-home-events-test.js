@@ -6,6 +6,7 @@ const {createHash}=require("node:crypto");
 const {civilAt}=require("../functions/nap-paris-time");
 const {OBJECT_PATH,MAX_BYTES,validateSnapshot}=require("../functions/nap-home-events");
 const BUCKET="livepalmes-test-public-data-206080168534";
+const publicationError=code=>Object.assign(new Error("Publication TEST interrompue."),{code});
 async function gatherPages(fetchPage,now=Date.now()){
  const today=civilAt(now).slice(0,10),events=[];let after=0,calls=0;
  while(true){
@@ -38,8 +39,8 @@ async function prepare(output){
  console.log(JSON.stringify({prepared:true,events:result.snapshot.events.length,sqlPages:result.calls,remoteWrites:false}));
 }
 async function publish(output){
- if(process.env.LIVEPALMES_HOME_DATA_CONFIRMATION!=="publish-livepalmes-test-home-events"||process.env.TARGET_FIREBASE_PROJECT!=="livepalmes-test")throw Error("Publication TEST non confirmée.");
- const credentials=JSON.parse(fs.readFileSync(process.env.GOOGLE_APPLICATION_CREDENTIALS,"utf8"));if(credentials.project_id!=="livepalmes-test")throw Error("Compte TEST requis.");
+ if(process.env.LIVEPALMES_HOME_DATA_CONFIRMATION!=="publish-livepalmes-test-home-events"||process.env.TARGET_FIREBASE_PROJECT!=="livepalmes-test")throw publicationError("HOME_TEST_CONFIRMATION_REQUIRED");
+ const credentials=JSON.parse(fs.readFileSync(process.env.GOOGLE_APPLICATION_CREDENTIALS,"utf8"));if(credentials.project_id!=="livepalmes-test")throw publicationError("HOME_TEST_ACCOUNT_REQUIRED");
  const inputBytes=fs.readFileSync(output);if(inputBytes.length>MAX_BYTES)throw Error("Fichier trop volumineux.");
  const value={schemaVersion:1,...validateSnapshot(JSON.parse(inputBytes))},bytes=Buffer.from(JSON.stringify(value)+"\n");
  const {initializeApp,applicationDefault}=require("../functions/node_modules/firebase-admin/app");
@@ -57,5 +58,5 @@ async function main(){
  const [mode,output]=process.argv.slice(2);if(!["--prepare","--publish"].includes(mode)||!output)throw Error("Mode et fichier explicites requis.");
  if(mode==="--prepare")await prepare(path.resolve(output));else await publish(path.resolve(output));
 }
-if(require.main===module)main().catch(()=>{console.error("Préparation/publication des rendez-vous TEST interrompue ; aucun secret ni détail interne affiché.");process.exitCode=1;});
+if(require.main===module)main().catch(error=>{const code=["HOME_TEST_CONFIRMATION_REQUIRED","HOME_TEST_ACCOUNT_REQUIRED","ENOENT",401,403,404].includes(error.code)?String(error.code):"HOME_TEST_VERIFICATION_FAILED";console.error(`Préparation/publication des rendez-vous TEST interrompue (${code}) ; aucun secret ni détail interne affiché.`);process.exitCode=1;});
 module.exports={gatherPages,BUCKET};
