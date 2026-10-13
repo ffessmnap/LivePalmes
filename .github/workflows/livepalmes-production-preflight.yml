@@ -60,6 +60,7 @@ jobs:
         python tooling/tests/release-cycle-tests.py
         python tooling/tests/release-preflight-review-tests.py
         node tooling/tests/release-excluded-backend-compatibility-tests.js
+        node tooling/tests/release-c0-compatibility-tests.js
         python tooling/tests/release-composed-evidence-tests.py
         python tooling/tests/production-pdf-functions-tests.py
         python tooling/tests/production-release-state-tests.py
