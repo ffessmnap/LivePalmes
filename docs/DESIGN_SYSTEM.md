@@ -197,7 +197,13 @@ Le titre reste le point focal. Les boutons du bandeau sont translucides, bordés
 
 ### Accueil public
 
-L’accueil emploie une grande zone de marque puis une grille statique de deux cartes thématiques : performances et calendrier fédéral. Chaque carte combine une icône, un titre, une description courte et un groupe d’actions. Les descriptions utilisent une graisse moyenne afin de réserver le gras soutenu aux titres et aux actions. L’accueil ne recherche pas de compétition en direct et ne charge aucune donnée Firestore. Un bandeau secondaire placé sous cette grille oriente les clubs et responsables fédéraux vers le Portail LivePalmes sans le confondre avec les rubriques publiques. Il reste horizontal sur ordinateur et empile son texte puis son bouton pleine largeur sous `920 px`.
+L’accueil conserve la marque, les dimensions des logos et la signature « Suivre · consulter · retrouver ». Un en-tête compact place FFESSM à gauche et l’accès secondaire au portail à droite. Les logos conservent `mix-blend-mode:multiply` sur leur fond.
+
+La carte Performances occupe une ligne, avec quatre actions de même largeur. Sur mobile, la grille 2 × 2 centrée limite la largeur des boutons à 136 px et leur hauteur à 32 px. Les cartes Rendez-vous et Documents utiles suivent en deux colonnes sur ordinateur, une sur mobile, sans légende générique. Leurs fonds bleu et mauve restent subtils ; les petites icônes sont décoratives.
+
+« Tout le calendrier » et « Bibliothèque documentaire » partagent la variante compacte sur une ligne, de largeur adaptée au texte. À très petite largeur ou avec agrandissement, le groupe peut revenir à la ligne sans couper le libellé ni masquer l’action. Les événements nationaux/internationaux mis en évidence utilisent un fond léger et une bordure turquoise. Un lien Résultats séparé reste accessible au-dessus de la zone cliquable de la carte, sans liens imbriqués.
+
+Les documents utiles présentent leur date native de publication et éventuellement le badge Nouveau, sans date inventée ou remise à zéro éditoriale. Les accès EDF et Kit compétition constituent des rubriques séparées. Les états de chargement, d’indisponibilité et de liste vide gardent les liens vers calendrier/bibliothèque accessibles. Ces règles décrivent l’évolution en préparation TEST ; elles ne valent pas validation d’une publication PROD.
 
 ### Fiches du calendrier public
 
