@@ -2,12 +2,20 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 13 octobre — Retrait source du déclencheur Records historique — préparation de PR
+
+- Besoin et accord : après analyse des dépendances, Antoine demande de préparer la PR du premier lot de retrait de `syncPublicRecordsData` et de ses deux helpers, avec adaptations des contrôles et tests, en conservant toutes les exclusions et sans toucher aux données.
+- Périmètre : les trois blocs et leur import inutilisé dans `functions/index.js` ; exception ciblée du vérificateur des lots ; tests d'absence, de classement et d'empreintes ; présente procédure et registre. `public-records-data.js`, le circuit Records/MPF NAP et les helpers génériques Storage/audit restent inchangés. Aucun nouvel accès aux données ni changement du budget de lecture.
+- Exclusions : nom du déclencheur conservé dans `NAP_UNUSED_FUNCTIONS`, `LOTS.publications` et `PUBLICATION_EFFECT_FUNCTIONS`. Aucune autre exclusion modifiée, aucune suppression distante, écriture NAP/Firestore/Storage, migration, publication métier ou modification des droits, mails et schedulers.
+- Vérification : neuf contrôles ciblés réussis (cinq suites Records/NAP, retrait historique avec cinq contre-exemples du vérificateur, isolation des anciens traitements, classement des lots et empreintes). Syntaxe de 755 fichiers, textes, architecture et chargement des consoles contrôlés. Le contrôle global local s'arrête au test de workflow nécessitant Bash, absent sur ce poste (`ENOENT`) ; CI Linux du commit de PR requise. Le calcul réel des empreintes avant/après sera joint à la PR. Le déclencheur était déjà absent de TEST et PROD dans l'inventaire du 13 octobre ; preuve historique PROD conservée dans `.github/releases/evidence/20261012-sync-records-prod-cleanup.json`.
+- État : PR en préparation depuis `main` ; ni fusion ni déploiement commun effectué pour ce lot. Recette en lecture de la version regroupée à prévoir après intégration ; aucun record d'essai à publier, TEST partage NAP. Aucune validation utilisateur des parcours ni autorisation PROD déduite de l'accord de préparation.
+
 ### 13 octobre — Cohérence documentaire Records/MPF, NAP et Storage — PR #289
 
 - Besoin : corriger les documents courants décrivant encore les Records/MPF comme une source Firestore publiée en fichiers statiques. La source officielle et l'administration sont dans les versions NAP ; Firebase conserve ses rôles serveur, authentification, technique et Direct.
 - Périmètre : architecture, présentation et carte de l'écosystème, référence NAP, consignes performances, circuit public, gestion des performances et scénarios de recette RF/MPF. Les documents explicitement archivés restent historiques. Le retrait du code est distingué des nettoyages Storage autorisés séparément.
 - Vérification : rapprochement avec `performances/public/store.js`, `functions/nap-records-store.js` et les points d'entrée existants dans `functions/index.js`, puis relecture et contrôle des liens. Contrôles locaux textes, architecture et `git diff --check` réussis ; CI Linux de PR à suivre. Aucun test métier avec écriture, aucune modification de code, données, droits ou configuration.
-- État : [PR documentaire #289](https://github.com/ffessmnap/LivePalmes/pull/289) ouverte depuis `main` ; aucun déploiement TEST/PROD requis, aucun aperçu Firebase attendu. Aucune nouvelle validation utilisateur des parcours n'est déduite de cette correction documentaire.
+- État : [PR documentaire #289](https://github.com/ffessmnap/LivePalmes/pull/289) fusionnée le 13 octobre, commit `85661be01684eb892c54f50dbf3f1f8d600659ab` ; [CI Linux de main réussie](https://github.com/ffessmnap/LivePalmes/actions/runs/38432931766). Aucun déploiement TEST/PROD requis, aucun aperçu Firebase attendu. Aucune nouvelle validation utilisateur des parcours n'est déduite de cette correction documentaire.
 
 ### 13 octobre — Nettoyage des anciens exports Storage terminé
 
