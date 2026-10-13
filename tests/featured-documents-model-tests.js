@@ -1,0 +1,14 @@
+"use strict";
+const assert=require("node:assert/strict");
+const {create}=require("../assets/livepalmes-featured-documents-model");
+const state=create(),fingerprint="a".repeat(64),publishedAt="2026-10-01T12:00:00Z";
+state.load({documents:[{id:1,title:"Original",publishedAt},{id:2}],fingerprint});
+state.add({id:1,title:"Changed"});assert.equal(state.documents()[0].title,"Original");
+state.move(2,-1);assert.deepEqual(state.payload().documentIds,[2,1]);assert.equal(state.dirty(),true);
+state.cancel();assert.deepEqual(state.payload().documentIds,[1,2]);assert.equal(state.dirty(),false);
+state.remove(1);state.add({id:3,publishedAt});assert.deepEqual(state.payload().documentIds,[2,3]);assert.equal(state.documents()[1].publishedAt,publishedAt);
+for(const id of [4,5,6,7])state.add({id});assert.throws(()=>state.add({id:8}),/six/);
+const exposed=state.documents();exposed[0].id=99;assert.equal(state.documents()[0].id,2);
+assert.equal(state.payload().expectedFingerprint,fingerprint);
+assert.throws(()=>state.load({documents:[{id:1},{id:1}],fingerprint}),/invalide/);
+console.log("Featured editor model: six-document limit, stable publication date, ordering, cancellation and immutable saved selection passed offline.");

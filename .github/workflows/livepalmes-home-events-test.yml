@@ -1,0 +1,54 @@
+name: Préparer les rendez-vous de l’accueil TEST
+
+on:
+  schedule:
+    - cron: '17 * * * *'
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: Publication du seul fichier site-home/events-v1.json sur TEST
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: livepalmes-test-home-events
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'schedule' || inputs.confirmation == 'publish-livepalmes-test-home-events')
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: firebase-test
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: functions/package-lock.json
+      - run: npm ci --prefix functions
+      - run: node tests/nap-home-events-tests.js
+      - uses: google-github-actions/auth@v3
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_TEST_BACKEND }}
+          project_id: livepalmes-test
+      - uses: google-github-actions/setup-gcloud@v3
+      - name: Préparer les données publiques, sans écriture NAP
+        run: node tools/build-home-events-test.js --prepare outputs/home-events.json
+      - uses: google-github-actions/auth@v3
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_TEST }}
+          project_id: livepalmes-test
+      - name: Publier et vérifier le seul fichier de rendez-vous TEST
+        env:
+          TARGET_FIREBASE_PROJECT: livepalmes-test
+          LIVEPALMES_HOME_DATA_CONFIRMATION: publish-livepalmes-test-home-events
+        run: node tools/build-home-events-test.js --publish outputs/home-events.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: test-home-events
+          path: outputs/home-events.json
