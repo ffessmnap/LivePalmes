@@ -11,6 +11,14 @@ spec=importlib.util.spec_from_file_location('cycle',Path(__file__).parents[1]/'t
 m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m)
 
 class ReleaseTests(unittest.TestCase):
+    def test_candidate_historical_proofs_have_full_git_history(self):
+        for name in ['livepalmes-production-preflight.yml', 'livepalmes-production-release.yml']:
+            source = (m.ROOT / '.github/workflows' / name).read_text()
+            checkouts = source.split('- uses: actions/checkout@v7')[1:]
+            candidate = next(block.split('- uses:')[0] for block in checkouts if 'path: candidate' in block.split('- uses:')[0])
+            self.assertIn('fetch-depth: 0', candidate, name)
+            self.assertIn('persist-credentials: false', candidate, name)
+
     def setUp(self):
         # Offline scenarios must not inherit the release request of the CI runner.
         environment = patch.dict(os.environ)

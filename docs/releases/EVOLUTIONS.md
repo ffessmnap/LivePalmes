@@ -4,6 +4,8 @@
 
 ### 13 octobre — Infra : préparation du preflight C0 sans déploiement
 
+- PR #293 intégrée dans `ff5acb7a`, CI Linux PR `38465450273` et main `38465845333` réussies ; aperçu Firebase ignoré. Premier preflight officiel `38465854019` arrêté par le checkout peu profond du candidat : le test historique ne trouve pas `b0020e51`. Correction préparée : historique complet du checkout candidat dans preflight/publication, sans changer son SHA ni réutiliser une preuve de test inconnue. Garde de non-régression ajouté ; nouveau run requis. Aucun accès Google, sauvegarde distante ou déploiement exécuté.
+
 - Antoine autorise dans « Accueil et bibliothèque documentaire » : « OK, transmets mon accord à Infra pour préparer les corrections et les contrôles du préalable C0, sans déployer pour l’instant. » Cet accord concerne les preuves, les tests et le preflight ; aucune publication TEST/PROD, migration ou recette utilisateur finale n’en est déduite. Le checkout partagé C1 et son dossier non suivi sont préservés.
 - Candidat applicatif figé `ac78b50759ca209cddaa15d374eb5e01dd926268` (PR #291), CI Linux `38442354584` réussie, TEST commun `38442809448` réussi, Hosting `422ba6c6bfad2b9e`. Référence PROD `ef96caca`, publication `38310517564`, Hosting `c329f0732cc7c06c` ; preuves GitHub téléchargées et empreintes ZIP vérifiées, sans accès Google.
 - Diff complet : C0 documentaire, retrait source #290 du déclencheur Records déjà absent de PROD, documentation et outillage précédents. Ni nouvel accueil, ni bibliothèque C1, ni migration NAP. Déclencheur historique toujours exclu ; aucune suppression distante. C0 vérifie deux schémas complets et refuse les migrations partielles ; les upserts et empreintes fichier ne prennent pas le rang éditorial.
