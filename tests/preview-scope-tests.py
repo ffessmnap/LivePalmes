@@ -19,3 +19,11 @@ for paths, expected in [
 ]:
     assert scope.needs_preview(paths) == expected, paths
 print("Preview scope: documentary, mixed, renamed and unknown paths OK")
+
+# The explicitly authorized C0 preflight must never deploy a TEST preview.
+c0 = sorted(scope.C0_PREFLIGHT_PATHS) + ['docs/releases/EVOLUTIONS.md']
+assert scope.needs_preview(c0) is False
+for application in ['index.html', 'functions/index.js', 'functions/nap-competition-documents.js', 'firebase.json', 'assets/new-home.js', 'unknown-file']:
+    assert scope.needs_preview(c0 + [application]) is True
+assert scope.needs_preview(['tools/preview-scope.py']) is True
+print('C0 exact infrastructure scope skips preview; mixed, unknown and unanchored changes retain it')

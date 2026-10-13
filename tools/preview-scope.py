@@ -5,6 +5,20 @@ import sys
 from pathlib import PurePosixPath
 
 
+C0_PREFLIGHT_PATHS = {
+    '.github/releases/20261013-c0-document-compatibility.json',
+    '.github/workflows/livepalmes-production-preflight.yml',
+    '.github/workflows/livepalmes-production-release.yml',
+    'tests/release-excluded-backend-compatibility-tests.js',
+    'tests/release-c0-document-compatibility.js',
+    'tests/release-c0-compatibility-tests.js',
+    'tests/preview-scope-tests.py',
+    'tests/release-cycle-tests.py',
+    'tools/preview-scope.py',
+    'tools/verify-livepalmes.js',
+}
+
+
 def needs_preview(paths):
     def documentary(path):
         p = PurePosixPath(path)
@@ -12,6 +26,9 @@ def needs_preview(paths):
             path in {"AGENTS.md", "README.md", "CHANGELOG.md"}
             or (path.startswith("docs/") and p.suffix.lower() in {".md", ".txt", ".rst"})
         )
+    if '.github/releases/20261013-c0-document-compatibility.json' in paths and all(
+            documentary(p) or p in C0_PREFLIGHT_PATHS for p in paths):
+        return False
     return any(not documentary(p) for p in paths)
 
 

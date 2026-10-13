@@ -61,6 +61,7 @@ jobs:
       with:
         ref: ${{ steps.plan.outputs.candidate }}
         path: candidate
+        fetch-depth: 0
         persist-credentials: false
     - uses: actions/setup-node@v7
       with:
@@ -85,29 +86,20 @@ jobs:
           node tools/verify-livepalmes.js
         fi
     - name: Verifier le circuit de publication
-      run: 'npm ci --prefix tooling/tests/firestore-rules --ignore-scripts
-
+      run: |
+        npm ci --prefix tooling/tests/firestore-rules --ignore-scripts
         node tooling/tests/release-function-fingerprints-tests.js
-
         python tooling/tests/release-cycle-tests.py
-
         python tooling/tests/release-preflight-review-tests.py
-
         node tooling/tests/release-excluded-backend-compatibility-tests.js
-
+        node tooling/tests/release-c0-compatibility-tests.js
         python tooling/tests/release-composed-evidence-tests.py
-
         python tooling/tests/production-pdf-functions-tests.py
-
         python tooling/tests/production-release-state-tests.py
-
         python tooling/tests/production-notification-release-tests.py
-
         python tooling/tests/production-access-request-release-tests.py
-
         node tooling/tests/production-notification-preparation-tests.js
-
-        node tooling/tests/production-backup-crypto-tests.js'
+        node tooling/tests/production-backup-crypto-tests.js
     - uses: google-github-actions/auth@v3
       if: inputs.resume_run == '0'
       with:
