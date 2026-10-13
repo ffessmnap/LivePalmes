@@ -172,6 +172,7 @@ const CALLABLE_OPTIONS = { region: REGION, invoker: "public" };
 if (ENVIRONMENT.sportingDataSource === "nap") {
   const napPassword = defineSecret("LIVEPALMES_NAP_PASSWORD");
   let napPool;
+  let homeEventsReader;
   exports.readNapPublicSwimmer = onRequest({
     region: REGION, invoker: "public", secrets: [napPassword], maxInstances: 2, concurrency: 4, timeoutSeconds: 30,
     cors: ENVIRONMENT.name === "test"
@@ -183,8 +184,15 @@ if (ENVIRONMENT.sportingDataSource === "nap") {
     try {
       if (!napPool) napPool = createNapPool(napPassword.value());
       const action = request.query.action || "swimmer";
-      if (!["swimmer", "search", "top", "top-years", "top-metadata", "calendar-manifest", "calendar-season", "competition", "competition-results", "records"].includes(action)) throw new TypeError("Action invalide.");
-      response.json(action === "records" ? await require("./nap-records-store").read(napPool)
+      if (!["swimmer", "search", "top", "top-years", "top-metadata", "calendar-manifest", "calendar-season", "competition", "competition-results", "records", "documents-featured", "documents-catalogue", "home-events"].includes(action)) throw new TypeError("Action invalide.");
+      if(action==="home-events"){
+        const home=require("./nap-home-events");
+        if(!homeEventsReader)homeEventsReader=home.createReader(async()=>{const [bytes]=await storage.bucket(ENVIRONMENT.publicBucket).file(home.OBJECT_PATH).download();return bytes;});
+        response.json(await homeEventsReader());return;
+      }
+      response.json(action === "documents-featured" ? {source:"nap",documents:await require("./nap-public-documents").readFeatured(napPool)}
+        : action === "documents-catalogue" ? {source:"nap",...await require("./nap-public-documents").readCatalogue(napPool,require("./assets/nap-public-documents-index.json"),request.query),types:require("./assets/nap-public-documents-index.json").types,rubrics:require("./assets/nap-public-documents-index.json").rubrics}
+        : action === "records" ? await require("./nap-records-store").read(napPool)
         : action === "calendar-manifest" ? await require("./nap-direct-calendar").readCalendarManifest(napPool)
         : action === "calendar-season" ? await require("./nap-direct-calendar").readCalendarSeason(napPool, request.query.year)
         : action === "competition" ? await require("./nap-direct-calendar").readCompetition(napPool, request.query.id)
@@ -253,6 +261,7 @@ if (ENVIRONMENT.projectId === "livepalmes-test") {
         prepare: target => db.collection("auditLogs").doc("nap-swimmer-912-fauvau-before").create({ action: "nap.swimmer.authorizedCorrection.prepare", actorUid: "github-livepalmes-test-backend", target, createdAt: new Date().toISOString() }),
         complete: target => writeAuditLogOnce("nap.swimmer.authorizedCorrection.complete", "github-livepalmes-test-backend", target, "nap-swimmer-912-fauvau")
       }) : indexOperation ? await require("./nap-approved-index").approvedIndexOperation(napPool, request.body)
+        : request.query.action === "home-events-page" ? await require("./nap-home-events").readPage(napPool,request.query)
         : request.query.action === "direct-plan" ? await require("./nap-direct-query-checks").inspectDirectQueries(napPool)
         : request.query.action === "time-shape" ? await require("./nap-direct-query-checks").inspectTimeShape(napPool, request.query.after)
         : request.query.action === "portal-contract" ? await require("./nap-portal-contract").inspectPortalContract(napPool)
@@ -10145,6 +10154,36 @@ async function engagementCompetitionDocumentContext(request) {
   return { context, competitionId: eventId, calendarEventId, sourceType, ref, snapshot };
 }
 
+// National document selection. No client-supplied role or actor is authoritative.
+exports.getNationalFeaturedDocuments = onCall({ ...CALLABLE_OPTIONS, secrets:[defineSecret("LIVEPALMES_NAP_PASSWORD")] }, async (request) => {
+  const context=await engagementAccessContext(request);
+  if(!context.national)throw new HttpsError("permission-denied","Administration nationale requise.");
+  if(ENVIRONMENT.sportingDataSource!=="nap")throw new HttpsError("failed-precondition","Sélection documentaire indisponible.");
+  try{
+    const pool=require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD);
+    const selection=await require("./nap-featured-documents").readSelection(pool);
+    return {source:"nap",documents:selection.documents,fingerprint:selection.fingerprint};
+  }catch(error){throw new HttpsError("failed-precondition",error instanceof TypeError?error.message:"Sélection documentaire momentanément indisponible.");}
+});
+exports.saveNationalFeaturedDocuments = onCall({ ...CALLABLE_OPTIONS, secrets:[defineSecret("LIVEPALMES_NAP_PASSWORD")] }, async (request) => {
+  if(ENVIRONMENT.sportingDataSource!=="nap")throw new HttpsError("failed-precondition","Sélection documentaire indisponible.");
+  try{
+    const pool=require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD);
+    const result=await require("./nap-featured-documents").saveSelection(pool,request.data,{
+      authorize:()=>engagementAccessContext(request),
+      audit:{
+        read:async operation=>{const snapshot=await db.collection("auditLogs").doc(`nap-featured-${operation}-before`).get();return snapshot.exists?snapshot.data().target:null;},
+        prepare:(operation,target)=>db.collection("auditLogs").doc(`nap-featured-${operation}-before`).create({action:"nap.featured.prepare",actorUid:target.actorUid,target,createdAt:new Date().toISOString()}),
+        complete:(operation,target)=>writeAuditLogOnce("nap.featured.saved",request.auth.uid,target,operation)
+      }
+    });
+    return {source:"nap",...result};
+  }catch(error){
+    if(error instanceof HttpsError)throw error;
+    throw new HttpsError(error instanceof TypeError?"failed-precondition":"unavailable",error instanceof TypeError?error.message:"Enregistrement à vérifier. Rechargez la sélection ; la sauvegarde technique est conservée.");
+  }
+});
+// End national document selection.
 async function mutateNativeCompetitionDocument(request, action) {
   const context = await engagementAccessContext(request);
   const competitionId = request.data?.calendarEventId || request.data?.competitionId;

@@ -17,6 +17,7 @@
     <script src="assets/livepalmes-portal-appearance.js?v=20260920-appearance-1"></script>
     <link rel="stylesheet" href="assets/livepalmes-portal-shell.css?v=20260920-shell-2">
     <link rel="stylesheet" href="assets/livepalmes-portal-workspaces.css?v=20260921-button-weight-1">
+    <link rel="stylesheet" href="assets/livepalmes-featured-documents.css?v=20261013-documents-1">
   </head>
   <body class="admin-portal-page" data-admin-auth="loading" aria-busy="true">
     <header class="admin-portal-topbar">
@@ -334,6 +335,7 @@
                   </a>
                   <button class="admin-overview-space-toggle" type="button" aria-expanded="false" aria-controls="adminOverviewNationalTools"><span>Afficher les rubriques</span><svg class="admin-overview-space-toggle-icon" viewBox="0 0 20 20" aria-hidden="true"><path d="M4 10h12"></path><path class="admin-overview-space-toggle-icon-vertical" d="M10 4v12"></path></svg></button>
                   <div id="adminOverviewNationalTools" class="admin-overview-space-tools">
+                    <a href="#administration-documents" data-national-documents-open hidden>Documents <span aria-hidden="true">→</span></a>
                     <a href="#administration-suppressions" data-overview-tool data-engagements-home-entry="adminDeletionRequests" data-engagements-home-tab="deletionRequests" data-engagements-national-target="deletions">Demandes &agrave; traiter <span aria-hidden="true">→</span></a>
                     <a href="#administration-clubs" data-overview-tool data-engagements-home-entry="adminDeletionRequests" data-engagements-home-tab="deletionRequests" data-engagements-national-target="clubs">Clubs <span aria-hidden="true">→</span></a>
                     <a href="#administration-licences" data-overview-tool data-engagements-home-entry="adminDeletionRequests" data-engagements-home-tab="deletionRequests" data-engagements-national-target="licenses">V&eacute;rification des licences <span aria-hidden="true">→</span></a>
@@ -482,6 +484,11 @@
               </div>
 
               <div class="admin-national-home-groups">
+                <section class="admin-national-home-group" aria-labelledby="adminNationalDocumentsTitle" data-national-documents-panel hidden>
+                  <div class="admin-national-home-group-head"><h3 id="adminNationalDocumentsTitle">Documents</h3></div>
+                  <p>Choisir et ordonner les documents publics présentés sur l’accueil.</p>
+                  <button class="ghost-button" type="button" data-national-documents-open hidden>Documents →</button>
+                </section>
                 <section id="adminNationalMailControl" class="admin-national-home-group" hidden aria-labelledby="adminNationalMailControlTitle">
                   <div class="admin-national-home-group-head"><h3 id="adminNationalMailControlTitle">Mails automatiques</h3></div>
                   <p id="adminNationalMailControlStatus" role="status">Chargement du réglage…</p>
@@ -2797,6 +2804,9 @@
   <script src="assets/livepalmes-admin-portal.js?v=20261012-lots23-1"></script>
     <script src="assets/livepalmes-license-administration.js?v=20261010-license-partial-validation-4"></script>
     <script src="assets/livepalmes-admin-calendar-events.js?v=20261012-shared-comments-1"></script>
+    <script src="assets/public/livepalmes-home-model.js?v=20261013-home-1"></script>
+    <script src="assets/livepalmes-featured-documents-model.js?v=20261013-documents-1"></script>
+    <script src="assets/livepalmes-featured-documents.js?v=20261013-documents-1"></script>
     <script src="assets/livepalmes-portal-ux.js?v=20260920-ux-consistency-1"></script>
 <script src="assets/livepalmes-legal-footer.js?v=20260920-legal-1"></script>
     <script src="assets/livepalmes-portal-shell.js?v=20260920-shell-1"></script>

@@ -2,6 +2,17 @@
 
 <!-- description: Checklist de tests manuels à exécuter avant une publication ou après une modification sensible. -->
 
+## Accueil et bibliothèque documentaire — préparation du 13 octobre
+
+Ne pas exécuter d’écriture de recette sur NAP commune. La migration autorisée conserve les originaux ; les choix de documents de démonstration ne valent pas instruction d’enregistrer une sélection réelle.
+
+1. Sur clone MySQL 5.7.30 : restaurer la sauvegarde chiffrée du complément, comparer schéma/données, appliquer le DDL exact, contrôler les valeurs initiales et tester le retour arrière. Essayer permutations, conflit de sélection, verrou entre deux connexions, échec après remise à NULL, retrait d’un original devenu privé et conservation des métadonnées fichier. Preuve de restauration réelle requise avant migration commune.
+2. Accueil ordinateur/mobile : logos inchangés, boutons de performances égaux (32 px sur mobile), en-tête compact, sections sans légende générique. Tous les événements en cours, priorité visuelle nationale/internationale, masquage du prochain groupe majeur si nécessaire, ex aequo à la prochaine date et cinq prochains hors majeurs sans doublons. Aucun lien Direct supposé, liens Résultats réels seulement.
+3. Bibliothèque : documents généraux publics anciens et récents accessibles, types/rubriques natifs, Autres documents, recherche accentuée, pagination sans doublon, fenêtre de recherche vide avec continuation explicite. Documents d’événements et contrôles privés absents. Référence sans lien visible sans URL inventée. Badge Nouveau : maintenant, veille des 30 jours, exactement 30 jours, futur, date invalide et heure ambiguë au changement d’heure.
+4. Portail national : Documents → Documents mis en avant, sélection limitée à six, ajout/retrait sans suppression de l’original, ordre, aperçu, annulation, erreur/conflit et rechargement. Réservation nationale vérifiée côté serveur, refus anonyme/régional/compte désactivé. Tester les écritures sur clone ou fixture locale ; une sélection réelle sur TEST nécessite un choix assumé puisqu’elle touche NAP commune.
+5. Cache de rendez-vous TEST : fichier absent, périmé ou corrompu = état indisponible, sans reconstruction dans le parcours public. Préparation privée paginée, aucune donnée personnelle ni champ portail dans le fichier. Publication du seul objet `site-home/events-v1.json` et automatisation uniquement après accord Storage correspondant ; aucun ancien export, document original ou scheduler Firebase à modifier.
+6. Version regroupée : CI globale et parcours navigateur sur le commit exact publié sur TEST, puis retour utilisateur daté. Une recette locale ou un aperçu de PR ne prouve pas la livraison commune. Ne pas déduire de ces contrôles un accord PROD sur le nouvel accueil/la bibliothèque.
+
 ## RF/MPF NAP — préparation TEST du 12 octobre
 
 Comparer le contenu complet RF/RFJ/MPF à la source initiale ; vérifier les pages RF, MPF, repères nageurs et l'administration. Contrôler que le lecteur public n'expose jamais l'historique, les e-mails ou l'auteur. Les droits `records.manage`, `admin.full` et équivalences existantes restent inchangés ; un droit national d'engagements seul ne suffit pas. Vérifier concurrence, double clic, reprise après réponse perdue et rollback avec des données simulées : TEST partage NAP, aucun record d'essai à publier sans accord spécifique. La correction de la MPF Anthelme doit faire l'objet d'une action réelle séparée autorisée. Aucune publication PROD ni suppression de l'ancienne source n'est incluse dans cette recette.

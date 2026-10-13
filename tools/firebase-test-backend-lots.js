@@ -23,6 +23,7 @@ const LOTS = Object.freeze({
     "createEngagementCalendarEvent", "updateEngagementCalendarEvent", "deleteEngagementCalendarEvent",
     "listEngagementOpenWaterCourses", "addEngagementOpenWaterCourse", "setEngagementOpenWaterCourseStatus",
     "getEngagementCompetition", "uploadEngagementCompetitionDocument", "updateEngagementCompetitionDocument",
+    "getNationalFeaturedDocuments", "saveNationalFeaturedDocuments",
     "deleteEngagementCompetitionDocument", "previewEngagementCompetitionDocumentNotification",
     "getEngagementClubEntry", "preloadEngagementClubWorkspaces", "generateEngagementClubRecapPdf",
     "listEngagementCompetitionClubRecaps", "getEngagementCompetitionStatistics",

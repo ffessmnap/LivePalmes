@@ -1,0 +1,26 @@
+"use strict";
+const assert=require("node:assert/strict");
+const home=require("../functions/nap-home-events");
+const {gatherPages,BUCKET}=require("../tools/build-home-events-test");
+const fs=require("node:fs");
+const now=Date.parse("2026-10-13T10:00:00Z");
+const event=id=>({id:`legacy-nap-${id}`,name:`Event ${id}`,date:"2026-10-13",endDate:"2026-10-14",city:"Ville",location:"Lieu",eventType:"training",level:"regional",canceled:false,results:{url:"",pdfUrl:""}});
+(async()=>{
+ let calls=0;
+ const reader=home.createReader(async()=>{calls++;return Buffer.from(JSON.stringify({schemaVersion:1,source:"nap",generatedAt:new Date(now).toISOString(),events:[event(1)]}));},()=>now);
+ const values=await Promise.all([reader(),reader()]);assert.equal(calls,1);assert.equal(values[0].events.length,1);await reader();assert.equal(calls,1);
+ for(const [value,at]of [[{schemaVersion:1,source:"nap",generatedAt:new Date(now-home.MAX_AGE_MS-1).toISOString(),events:[]},now],[{schemaVersion:1,source:"nap",generatedAt:new Date(now+301000).toISOString(),events:[]},now],[{schemaVersion:1,source:"nap",generatedAt:new Date(now).toISOString(),events:[{...event(1),date:"2026-02-30"}]},now]])assert.throws(()=>home.validateSnapshot(value,at),/indisponibles/);
+ const missing=home.createReader(async()=>{throw Error("missing snapshot");},()=>now);await assert.rejects(missing(),/missing/);
+ let pageCalls=0;const result=await gatherPages(async input=>{pageCalls++;return {source:"nap",today:input.today,events:[event(pageCalls)],hasMore:pageCalls===1,nextAfterId:pageCalls===1?100:null};},now);
+ assert.equal(result.calls,2);assert.equal(result.snapshot.events.length,2);
+ await assert.rejects(gatherPages(async input=>({source:"nap",today:input.today,events:[],hasMore:true,nextAfterId:input.after}),now),/Curseur/);
+ await assert.rejects(gatherPages(async input=>({source:"nap",today:input.today,events:[event(1)],hasMore:input.after===0,nextAfterId:100}),now),/ambigu/);
+ const summary=home.eventSummary({...event(1),teamLeadersWhatsAppUrl:"private",portal_city:"private",results:{url:"",pdfUrl:"",dataPath:"internal"}});assert.equal(JSON.stringify(summary).includes("private"),false);assert.equal(JSON.stringify(summary).includes("internal"),false);
+ const sanitized=await gatherPages(async input=>({source:"nap",today:input.today,events:[{...event(1),privateExtra:"private"}],hasMore:false}),now);assert.equal(JSON.stringify(sanitized).includes("private"),false);
+ const pool={execute:async({sql},values)=>{assert.match(sql,/FORCE INDEX \(PRIMARY\)/);assert.match(sql,/LIMIT 101/);assert.deepEqual(values,[0,"2026-10-13","2026-10-13"]);return [[{id:1,libelle:"Formation",date:"2026-10-13",enddate:"2026-10-14",type_label:"Formation",native_level_code:1}]];}};
+ const page=await home.readPage(pool,{after:0,today:"2026-10-13"});assert.equal(page.events[0].eventType,"training");assert.equal(page.events[0].level,"regional");assert.equal(page.hasMore,false);
+ await assert.rejects(home.readPage(pool,{today:"2026-02-30"}),/invalide/);
+ assert.equal(BUCKET,"livepalmes-test-public-data-206080168534");assert.equal(home.OBJECT_PATH,"site-home/events-v1.json");
+ const workflow=fs.readFileSync(require.resolve("../.github/workflows/livepalmes-home-events-test.yml"),"utf8");assert.match(workflow,/workflow_dispatch:/);assert.match(workflow,/cron: '17 \* \* \* \*'/);assert.match(workflow,/github.ref == 'refs\/heads\/main' && \(github.event_name == 'schedule' \|\| inputs.confirmation == 'publish-livepalmes-test-home-events'\)/);assert.match(workflow,/LIVEPALMES_HOME_DATA_CONFIRMATION: publish-livepalmes-test-home-events/);assert.match(workflow,/project_id: livepalmes-test/);assert.doesNotMatch(workflow,/project_id: livepalmes\s/);
+ console.log("Home events: bounded private preparation, same-day Paris scope, safe summary, cached public reads, stale/missing refusal and isolated manual TEST publication passed offline.");
+})().catch(error=>{console.error(error);process.exitCode=1;});
