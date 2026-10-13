@@ -35,11 +35,6 @@ const {
   publicPdfStoragePath,
   publicStorageUrl
 } = require("./public-pdf-storage");
-const {
-  publicRecordsManifest,
-  publicRecordsPayload,
-  shouldPublishRecordsManifest
-} = require("./public-records-data");
 const { nextPortalAccessRateLimit } = require("./portal-access-protection");
 const { livePalmesEnvironment } = require("./livepalmes-environment");
 const {
@@ -20336,68 +20331,6 @@ async function savePublicPerformanceText(relativePath, content, cacheControl = "
   });
   return publicPerformanceFilePath(relativePath);
 }
-
-async function publishPublicRecordsManifest(manifest) {
-  const file = publicPerformanceFile("records/manifest.json");
-  for (let attempt = 0; attempt < 5; attempt += 1) {
-    let current = {};
-    let generation = 0;
-    try {
-      const [[buffer], [metadata]] = await Promise.all([file.download(), file.getMetadata()]);
-      current = JSON.parse(buffer.toString("utf8"));
-      generation = Number(metadata.generation || 0);
-    } catch (error) {
-      if (!(error?.code === 404 || /No such object|not found/i.test(error?.message || ""))) throw error;
-    }
-    if (!shouldPublishRecordsManifest(current, manifest)) return { published: false, manifest: current };
-    try {
-      await file.save(JSON.stringify(manifest), {
-        resumable: false,
-        contentType: "application/json; charset=utf-8",
-        metadata: { cacheControl: "no-store, max-age=0" },
-        preconditionOpts: { ifGenerationMatch: generation }
-      });
-      return { published: true, manifest };
-    } catch (error) {
-      if (Number(error?.code) !== 412) throw error;
-    }
-  }
-  throw new Error("Publication concurrente du manifeste RF/MPF impossible.");
-}
-
-async function publishPublicRecordsSnapshot(data, eventTime = "") {
-  const payload = publicRecordsPayload(data);
-  const manifest = publicRecordsManifest(payload, eventTime);
-  await savePublicPerformanceJson(manifest.dataPath, payload, "public, max-age=31536000, immutable");
-  const result = await publishPublicRecordsManifest(manifest);
-  return { ...result, version: manifest.version, dataPath: manifest.dataPath };
-}
-
-exports.syncPublicRecordsData = onDocumentWritten({
-  region: REGION,
-  document: "competitions/{competitionId}/performanceData/records",
-  retry: true,
-  timeoutSeconds: 120,
-  memory: "512MiB"
-}, async (event) => {
-  if (event.params?.competitionId !== "livepalmes-active" || !event.data?.after?.exists) return null;
-  const data = event.data.after.data() || {};
-  const publication = await publishPublicRecordsSnapshot(data, event.time || "");
-  const eventVersionIsCurrent = publication.published || publication.manifest?.version === publication.version;
-  if (eventVersionIsCurrent) {
-    const latestPublishedAt = cleanText(data.recordHistory?.[0]?.publishedAt).slice(0, 40);
-    const changeCount = (Array.isArray(data.recordHistory) ? data.recordHistory : [])
-      .filter((entry) => !latestPublishedAt || cleanText(entry?.publishedAt) === latestPublishedAt)
-      .length;
-    await writeAuditLogOnce("recordsMpf.published", cleanText(data.updatedBy).slice(0, 160) || "system:records-publication", {
-      changeCount,
-      publishedAt: latestPublishedAt || cleanText(data.updatedAt).slice(0, 40),
-      sourceDate: cleanText(data.sourceDate).slice(0, 20),
-      version: publication.version
-    }, event.id);
-  }
-  return publication;
-});
 
 function publicPerformanceCompactObject(object = {}) {
   return Object.fromEntries(Object.entries(object).filter(([, value]) => {
