@@ -4,7 +4,8 @@ const fs = require("node:fs");
 const path = require("node:path");
 const vm = require("node:vm");
 const acorn = require("./firestore-rules/node_modules/acorn");
-const { NAP_RETIRED_FUNCTIONS, NAP_UNUSED_FUNCTIONS, activeLotFunctions, LOTS, ALL_SAFE_LOTS } = require("../tools/firebase-test-backend-lots");
+const registry = require("../tools/firebase-test-backend-lots");
+const { NAP_RETIRED_FUNCTIONS, NAP_UNUSED_FUNCTIONS, activeLotFunctions, LOTS, ALL_SAFE_LOTS, PUBLICATION_EFFECT_FUNCTIONS } = registry;
 const source = fs.readFileSync(path.join(__dirname, "../functions/index.js"), "utf8");
 const ast = acorn.parse(source, {ecmaVersion:"latest"});
 const handlers = new Map(ast.body.filter(n => n.type === "ExpressionStatement" && n.expression.type === "AssignmentExpression" && n.expression.left.object?.name === "exports").map(n => [n.expression.left.property.name, n.expression.right.arguments.at(-1)]));
@@ -21,7 +22,52 @@ class HttpsError extends Error { constructor(code, message) { super(message); th
   const active = ALL_SAFE_LOTS.flatMap(activeLotFunctions);
   for (const name of ["getCurrentAccessUser","syncOfficialResultToPublicIndex","storeCompetitionPdf","savePerformanceCorrection","createCompetitionImport","getDtnSeasonOverview"]) assert.ok(active.includes(name), name);
   assert.ok(!active.includes("syncPublicRecordsData"));
-  assert.ok(handlers.has("syncPublicRecordsData"), "Declaration conservée pour le retour arrière");
+  assert.ok(!handlers.has("syncPublicRecordsData"), "Le déclencheur Records historique doit rester absent");
+  assert.ok(LOTS.publications.includes("syncPublicRecordsData"));
+  assert.ok(PUBLICATION_EFFECT_FUNCTIONS.includes("syncPublicRecordsData"));
+  const removedRecordsBindings = new Set(["syncPublicRecordsData", "publishPublicRecordsSnapshot",
+    "publishPublicRecordsManifest", "publicRecordsPayload", "publicRecordsManifest", "shouldPublishRecordsManifest"]);
+  function checkRecordsRemoval(node) {
+    if (!node || typeof node !== "object") return;
+    if (node.type === "Identifier") assert.ok(!removedRecordsBindings.has(node.name), "Records binding retained: " + node.name);
+    if (node.type === "CallExpression" && node.callee.name === "require")
+      assert.notEqual(node.arguments[0]?.value, "./public-records-data", "Import Records inutilisé conservé dans index.js");
+    for (const value of Object.values(node)) {
+      if (Array.isArray(value)) value.forEach(checkRecordsRemoval);
+      else if (value && typeof value === "object") checkRecordsRemoval(value);
+    }
+  }
+  checkRecordsRemoval(ast);
+  // The shared projection/hash module is still needed by the native NAP store.
+  const recordsData = require("../functions/public-records-data");
+  for (const name of ["publicRecordsPayload", "stableStringify"]) assert.equal(typeof recordsData[name], "function");
+  const recordsStore = fs.readFileSync(path.join(__dirname, "../functions/nap-records-store.js"), "utf8");
+  assert.match(recordsStore, /require\(["']\.\/public-records-data["']\)/);
+
+  // Run the real classifier against in-memory fixtures, never the backend.
+  const checker = fs.readFileSync(path.join(__dirname, "../tools/check-firebase-test-backend-lots.js"), "utf8");
+  function checkLots(backend = source, changes = {}) {
+    const fixture = {...registry, LOTS: Object.fromEntries(Object.entries(LOTS).map(([lot, names]) => [lot, [...names]])), ...changes};
+    const fixtureRequire = name => {
+      if (name === "node:assert/strict") return assert;
+      if (name === "node:path") return path;
+      if (name === "node:fs") return {readFileSync: filename => {
+        assert.equal(filename, path.join(__dirname, "../functions/index.js"));
+        return backend;
+      }};
+      if (name === "./firebase-test-backend-lots") return fixture;
+      throw new Error("Unexpected checker import: " + name);
+    };
+    new Function("require", "__dirname", "console", checker)(fixtureRequire, path.join(__dirname, "../tools"), {log: () => {}});
+  }
+  checkLots();
+  assert.ok(source.includes("exports.getCurrentAccessUser ="));
+  assert.ok(source.includes("exports.getEngagementNationalAdministrationOverview ="));
+  assert.throws(() => checkLots(source.replace("exports.getCurrentAccessUser =", "missing.getCurrentAccessUser =")), /Chaque export/);
+  assert.throws(() => checkLots(source + "\nexports.unclassified=onCall({},()=>{});"), /Chaque export/);
+  assert.throws(() => checkLots(source + "\nexports.getCurrentAccessUser=onCall({},()=>{});"), /déclaré plusieurs fois/);
+  assert.throws(() => checkLots(source, {NAP_UNUSED_FUNCTIONS: NAP_UNUSED_FUNCTIONS.filter(name => name !== "syncPublicRecordsData")}), /Chaque export/);
+  assert.throws(() => checkLots(source.replace("exports.getEngagementNationalAdministrationOverview =", "missing.getEngagementNationalAdministrationOverview =")), /Chaque export/);
   const removedCalendar = new Set(["rebuildEngagementCompetitionCalendars", "syncEngagementCompetitionToCalendar", "syncEngagementCalendarEventToCalendar"]);
   for (const name of NAP_RETIRED_FUNCTIONS) {
     assert.ok(Object.values(LOTS).flat().includes(name), "Compatibility registration retained: " + name);
@@ -66,5 +112,5 @@ class HttpsError extends Error { constructor(code, message) { super(message); th
   const ui={global:{LivePalmesEnvironment:{sportingDataSource:"nap"}},callFunction:()=>{calls++;throw Error("Legacy endpoint called");},updateEngagementDeletionRequestBadge:n=>{badge=n;},renderEngagementDeletionRequests:()=>{renders++;}};
   vm.runInNewContext("let engagementDeletionRequests,engagementDeletionRequestsLoaded;\n"+portal.slice(loader.start,loader.end)+"\nthis.load=loadEngagementDeletionRequests;",ui);
   await ui.load({force:true});assert.equal(calls,0);assert.equal(renders,1);assert.equal(badge,0);
-  console.log("NAP release cleanup: three calendar declarations absent, 38 retained handlers inert, active services and native UI zero-call path verified offline.");
+  console.log("NAP release cleanup: calendar and Records declarations absent, shared NAP module retained, classifier guards, 38 inert handlers and native UI verified offline.");
 })().catch(error=>{console.error(error);process.exitCode=1;});

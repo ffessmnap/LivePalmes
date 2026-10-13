@@ -207,3 +207,36 @@ for (const unsafe of [
   lotAfter.replace('new Set([...NAP_RETIRED_FUNCTIONS, ...NAP_UNUSED_FUNCTIONS])', 'new Set(compute())')
 ]) { assert.notEqual(unsafe, lotAfter); assert.equal(retirementRegistrySignature(unsafe), unsafe); }
 console.log("Listes de retrait : aucune republication des handlers inchanges ; metadonnees, algorithme, droits et syntaxe inconnue restent conservateurs.");
+
+// Removing the isolated Records trigger, both helpers and its unused import
+// must preserve the native reader's shared projection module and fingerprints.
+const recordsImport = 'const {publicRecordsPayload,publicRecordsManifest}=require("./public-records-data");\n';
+const recordsChain = `function publishPublicRecordsManifest(manifest){return savePublicPerformanceJson(manifest);}
+function publishPublicRecordsSnapshot(data){return publishPublicRecordsManifest(publicRecordsManifest(publicRecordsPayload(data)));}
+exports.syncPublicRecordsData=onDocumentWritten({},event=>publishPublicRecordsSnapshot(event.data));
+`;
+const nativeRecords = `const {onCall}=require("firebase-functions/v2/https");
+const {onDocumentWritten}=require("firebase-functions/v2/firestore");
+const {read}=require("./nap-records-store");
+function savePublicPerformanceJson(data){return data;}
+exports.readNapPublicSwimmer=onCall({},()=>read());
+exports.unrelated=onCall({},()=>23);
+`;
+const recordsModules = {
+  "functions/public-records-data.js": {source: 'function publicRecordsPayload(data){return data;} function publicRecordsManifest(data){return {data};} module.exports={publicRecordsPayload,publicRecordsManifest};'},
+  "functions/nap-records-store.js": {source: 'const {publicRecordsPayload}=require("./public-records-data"); function read(){return publicRecordsPayload({records:[]});} module.exports={read};'}
+};
+const recordsBefore = fingerprints(recordsImport + nativeRecords + recordsChain, "deps", recordsModules);
+const recordsAfter = fingerprints(nativeRecords, "deps", recordsModules);
+assert.equal(recordsBefore.mode, "dependency-closure");
+assert.equal(recordsAfter.mode, "dependency-closure");
+assert.deepEqual(Object.keys(recordsBefore.functions).filter(name => !(name in recordsAfter.functions)), ["syncPublicRecordsData"]);
+assert.deepEqual(Object.keys(recordsAfter.functions).filter(name => !(name in recordsBefore.functions)), []);
+assert.deepEqual(Object.keys(recordsAfter.functions).filter(name => recordsBefore.functions[name] !== recordsAfter.functions[name]), []);
+// The retained NAP reader still depends on the shared module after retirement.
+const changedRecordsModules = {...recordsModules, "functions/public-records-data.js": {
+  source: recordsModules["functions/public-records-data.js"].source.replace("return data;", "return {...data,version:2};")
+}};
+const recordsModuleAfter = fingerprints(nativeRecords, "deps", changedRecordsModules);
+assert.deepEqual(Object.keys(recordsAfter.functions).filter(name => recordsAfter.functions[name] !== recordsModuleAfter.functions[name]), ["readNapPublicSwimmer"]);
+console.log("Retrait Records seul : trois blocs et import inutilise retires, empreintes actives stables, module NAP partage toujours suivi.");
