@@ -38,7 +38,7 @@ Cet espace est accessible sans compte. Il permet de consulter toute l'annee :
 - les performances historiques ;
 - les fiches nageurs.
 
-TOP et fiches nageurs consultent directement NAP via le serveur, avec des lectures bornées. Records et MPF conservent leurs fichiers publics et leur administration Firebase distincte.
+TOP et fiches nageurs consultent directement NAP via le serveur, avec des lectures bornées. Les Records et MPF officiels sont également consultés et administrés dans NAP, via leurs versions dédiées ; ils ne sont pas recalculés automatiquement depuis les TOP.
 
 ### 3. LivePalmes Direct
 
@@ -58,7 +58,8 @@ Clubs et responsables habilites
         -> serveur LivePalmes contrôlé
         -> NAP : compétitions, engagements, résultats, TOP, nageurs, DTN
 
-Administration Records/MPF -> source Firebase conservée -> fichiers publics
+Administration Records/MPF -> fonctions serveur -> versions officielles NAP
+Pages publiques Records/MPF -> lecteur serveur -> version officielle NAP
 ```
 
 Pour une competition nationale equipee du Direct :
@@ -94,7 +95,7 @@ GitHub n'est pas la base active de LivePalmes. Une modification conservee sur Gi
 Firebase regroupe plusieurs services Google utilises par LivePalmes :
 
 - **Hosting** est la vitrine qui rend les pages accessibles sur Internet ;
-- **Firestore** conserve les comptes/réglages/traces techniques, LivePalmes Direct et la source d’administration Records/MPF ; les données métier du portail sont dans NAP ;
+- **Firestore** conserve les comptes/réglages/traces techniques et LivePalmes Direct ; les données métier du portail et les versions officielles Records/MPF sont dans NAP ;
 - **Authentication** verifie l'identite des personnes connectees ;
 - **Cloud Functions** realise les controles et traitements sensibles en coulisses ;
 - **Storage** est l'armoire a fichiers pour les PDF et les gros fichiers publics.

@@ -206,9 +206,9 @@ Cette checklist sert avant une publication importante ou apres une modification 
 - Verifier le bouton actualiser.
 - Verifier la recherche nageur.
 - Verifier qu'une fiche nageur affiche engagement, temps realise, finale, DSQ/ABD/forfait si present.
-- Verifier `performances/records.html` et `performances/mpf.html` sans connexion Firestore : les donnees statiques doivent s'afficher.
-- Publier une modification RF ou MPF depuis l'administration, puis verifier sans redeployer que `performance-public-firestore/records/manifest.json` change et que la valeur apparait sur la page publique.
-- Verifier que Records, MPF et une fiche nageur restent utilisables si le manifeste Storage est temporairement indisponible : le fichier Hosting doit servir de secours.
+- Vérifier `performances/records.html` et `performances/mpf.html` en lecture seule : la requête publique `readNapPublicSwimmer?action=records` doit fournir la version NAP, sans chargement de `records-data.js` ni de manifeste Records Storage.
+- Tester une publication RF/MPF avec les tests hors ligne existants. Une publication réelle depuis l'administration exige un accord spécifique : TEST partage NAP. Pour un jeu autorisé, vérifier la version attendue, la reprise idempotente et la visibilité à la nouvelle consultation publique, sans redéploiement ni manifeste Storage.
+- Simuler hors ligne une panne du lecteur NAP : les pages Records/MPF doivent signaler l'indisponibilité ; la fiche nageur doit rester sans repères Records périmés, avec l'avertissement prévu dans la console. Aucun repli sportif Hosting, Firestore ou Storage. Ne pas provoquer de panne réelle pour cette recette.
 
 ## Portail LivePalmes
 

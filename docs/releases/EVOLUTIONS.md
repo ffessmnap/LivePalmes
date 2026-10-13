@@ -2,6 +2,22 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 13 octobre — Cohérence documentaire Records/MPF, NAP et Storage — PR #289
+
+- Besoin : corriger les documents courants décrivant encore les Records/MPF comme une source Firestore publiée en fichiers statiques. La source officielle et l'administration sont dans les versions NAP ; Firebase conserve ses rôles serveur, authentification, technique et Direct.
+- Périmètre : architecture, présentation et carte de l'écosystème, référence NAP, consignes performances, circuit public, gestion des performances et scénarios de recette RF/MPF. Les documents explicitement archivés restent historiques. Le retrait du code est distingué des nettoyages Storage autorisés séparément.
+- Vérification : rapprochement avec `performances/public/store.js`, `functions/nap-records-store.js` et les points d'entrée existants dans `functions/index.js`, puis relecture et contrôle des liens. Contrôles locaux textes, architecture et `git diff --check` réussis ; CI Linux de PR à suivre. Aucun test métier avec écriture, aucune modification de code, données, droits ou configuration.
+- État : [PR documentaire #289](https://github.com/ffessmnap/LivePalmes/pull/289) ouverte depuis `main` ; aucun déploiement TEST/PROD requis, aucun aperçu Firebase attendu. Aucune nouvelle validation utilisateur des parcours n'est déduite de cette correction documentaire.
+
+### 13 octobre — Nettoyage des anciens exports Storage terminé
+
+- Accord spécifique d'Antoine dans la discussion de nettoyage : « Oui, je valide le lot exact de 31 693 objets. Fais la sauvegarde avec deux copies vérifiées, puis la suppression après les contrôles préalables, en t'arrêtant à la moindre dérive. Conserve toutes les exclusions. »
+- Lot exact : 10 706 générations PROD sous `performance-public-firestore/` (322 948 406 octets) ; 20 987 TEST sous `performance-public-firestore/` et `performance-public-nap/versions/` (552 609 163 octets). Manifeste revalidé SHA-256 `82ea4f95973cb6e41d14f2fb86859b8c1db7e2df40438dd24667a314491fe3ac`.
+- Deux archives identiques de 946 321 938 octets ont été relues intégralement : SHA-256 `c32b68239de6e61e29623bd0102e8b53a87163b6444b85f9c89cbda8d32374c0`. Téléchargements par génération contrôlés par taille et MD5, métadonnées et SHA-256 archivés, échantillon restauré localement. Les deux copies sont sur le même poste, dont une dans OneDrive ; synchronisation cloud non attestée. Toutes les sauvegardes préexistantes restent conservées.
+- Suppressions conditionnelles par génération, avec deux arrêts HTTP 504 suivis d'inventaires et contrôles complets avant reprise du seul solde. Les 31 693 succès journalisés correspondent exactement au manifeste, sans doublon. À `2026-10-13T14:24:59Z`, aucun objet ciblé ne reste et les 40 objets exclus conservent leurs noms, générations et métadonnées. Les versions des 222 fonctions et les empreintes des ressources servies ont été vérifiées avant les reprises, sans dérive.
+- Après retrait : 16 pages TEST/PROD et quatre lectures publiques NAP Records/métadonnées TOP répondent correctement. Ces contrôles HTTP ne constituent pas une recette visuelle exhaustive ni une validation utilisateur des parcours authentifiés. La protection soft delete de sept jours reste active.
+- Hors lot : `additional-data.json`, documents/PDF, préfixes de notification, buckets techniques Functions, sauvegardes locales/OneDrive, NAP/Firestore, droits, mails et schedulers. Aucun déploiement ni recalcul. Le calendrier, traité séparément, n'a pas été retouché ; anciens liens externes non audités. Preuves locales : `bilan-final-nettoyage-storage-20261013.json`, manifeste revalidé, trois journaux, inventaire final et vérification de sauvegarde. Toute restauration ou autre suppression exige un accord distinct.
+
 ### 13 octobre — Nettoyage Storage PROD du calendrier historique terminé
 
 - Dans Infra, Antoine approuve par « ok » le bilan exact : 4 853 générations JSON, 49 815 946 octets, uniquement `calendar/` du bucket `livepalmes-public-data-718081132564`. Manifeste SHA-256 `092612936314bceb6b4871d158572a9c8228b216ee2bfdb451061483c0ecc3e5`. Inventaire du 13 octobre identique au relevé précédent ; TEST toujours vide après sa recette du 12 octobre.

@@ -2,7 +2,7 @@
 
 <!-- description: Sources de données et fonctionnement actuel du portail/public après bascule NAP ; index des références et documents historiques. -->
 
-## Périmètre et état — 12 octobre 2026
+## Périmètre et état — 13 octobre 2026
 
 Le portail et les consultations sportives publiques utilisent directement MySQL NAP via les Cloud Functions. Le navigateur ne possède ni mot de passe MySQL ni accès SQL direct. `assets/livepalmes-environment.js` et `functions/livepalmes-environment.js` sélectionnent `sportingDataSource: "nap"` pour TEST et PROD. Aucun export sportif intermédiaire ni synchronisation entre deux bases métier n'est nécessaire à la lecture.
 
@@ -10,7 +10,7 @@ Le portail et les consultations sportives publiques utilisent directement MySQL 
 
 ## RF/MPF dans NAP — 12 octobre
 
-La reprise à l'identique dans `livepalmes_records_versions` et `livepalmes_records_current` est publiée sur TEST et PROD ; les preuves figurent dans `releases/EVOLUTIONS.md`. Les lectures publiques et l'administration utilisent NAP, avec les droits Records existants. Le nettoyage autorisé retire d'abord les chargements statiques et chemins d'administration obsolètes sur TEST ; les sauvegardes et anciennes données restent conservées. Aucune correction sportive ni écriture NAP pour la recette.
+La reprise à l'identique dans `livepalmes_records_versions` et `livepalmes_records_current` est publiée sur TEST et PROD ; les preuves figurent dans `releases/EVOLUTIONS.md`. Les lectures publiques et l'administration utilisent NAP, avec les droits Records existants. Le fichier statique RF/MPF et les anciens chargements ont été retirés du dépôt ; aucun repli sportif Firestore ou Storage n'est utilisé en mode NAP. Les anciennes versions de code restent dans Git. Les sauvegardes et le nettoyage distinct des exports Storage sont décrits dans [le circuit public](pipeline-performances-publiques.md). Aucune correction sportive n'est impliquée par ce retrait.
 
 ## Où sont les données ?
 
@@ -24,7 +24,7 @@ La reprise à l'identique dans `livepalmes_records_versions` et `livepalmes_reco
 | Documents/protocoles | Fichiers hébergés chez Google ; titres/liens et rattachements NAP | `nap-competition-documents.js` |
 | Comptes, capacités, demandes d'accès, réglages, audits et jobs techniques | Firebase Auth / Firestore ; les recherches et créations de clubs des demandes d'accès lisent/écrivent NAP | `functions/index.js`, `nap-club-access-request.js` |
 | LivePalmes Direct | Circuit Firebase distinct, consoles, séries, résultats en direct et archives conservés | `architecture-livepalmes.md`, `LIVEPALMES_DIRECT.md` |
-| Records et MPF officiels | NAP : `livepalmes_records_versions`, `livepalmes_records_current` ; anciennes copies conservées temporairement pour retour arrière | `performances/public/admin-records.js`, `agents/PERFORMANCES.md` |
+| Records et MPF officiels | NAP : `livepalmes_records_versions`, `livepalmes_records_current` ; lecture publique sans repli sur les copies historiques | `nap-records-store.js`, `performances/public/store.js`, `performances/public/admin-records.js` |
 
 Les noms de modules du tableau sont relatifs à `functions/`, sauf chemin explicite. Firestore conserve des anciennes données Records/MPF et des traces techniques ; il n’est plus la source officielle RF/MPF. La présence d'un ancien module ou d'une déclaration dans le dépôt ne prouve pas qu'une fonction est déployée ou utilisée.
 
