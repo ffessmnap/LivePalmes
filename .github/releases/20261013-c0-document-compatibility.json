@@ -1,0 +1,132 @@
+{
+  "schema": 1,
+  "candidate": "ac78b50759ca209cddaa15d374eb5e01dd926268",
+  "productionCommit": "ef96caca97f70554ee1f2c2b950cebeb5130e85e",
+  "productionHosting": "sites/livepalmes/versions/c329f0732cc7c06c",
+  "testRun": 38442809448,
+  "changes": [
+    {
+      "title": "C0 : compatibilité documentaire avant migration, et retrait source Records déjà absent de PROD",
+      "paths": [
+        "functions/index.js",
+        "functions/nap-competition-documents.js",
+        "functions/nap-document-options-contract.js"
+      ],
+      "status": "validated",
+      "validation": "Validation technique du préalable C0 : CI Linux 38442354584, TEST commun 38442809448 au candidat exact ac78b507. Antoine autorise explicitement le 13 octobre dans Accueil et bibliothèque documentaire : « OK, transmets mon accord à Infra pour préparer les corrections et les contrôles du préalable C0, sans déployer pour l’instant. » Cet accord couvre la préparation et le preflight ; aucune recette utilisateur finale ni publication PROD n’est revendiquée. Le retrait source Records reprend le lot #290 autorisé et testé, sans suppression distante."
+    }
+  ],
+  "excludedBackendReview": "44 fonctions ordinaires proposées, 66 conservées ; 13 écarts d’empreinte revus, dont 8 nouveaux (sept notifications et lecteur public), sans extension de déploiement. Preuve C0 épinglée ef96caca/ac78b507 : index inchangé hors retrait historique autorisé, adaptateurs notifications identiques, projection documentaire identique sous schémas complet actuel/futur, absence d’effet du rang, refus des migrations partielles, lecture bornée, simulation mail/reprise sans réseau. Les cinq autres écarts sont antérieurs au candidat PROD.",
+  "excludedBackendEvidence": {
+    "schema": 1,
+    "candidate": "ac78b50759ca209cddaa15d374eb5e01dd926268",
+    "productionRun": 38310517564,
+    "suite": "retained-calendar-consumers-v1",
+    "functions": [
+      {
+        "name": "closeDueEngagementCompetitions",
+        "commit": "1df545a62de67a24ff32ca4d1046cce4be6d499f",
+        "revision": "closedueengagementcompetitions-00025-wep",
+        "before": "670923738299396f564eaf738815a12e67c6c49db2ffb35025b29b0f361216fb",
+        "after": "fcb43b6caba308b18bc32b5483622288910e7d79f969f54af892e59baeae17a6",
+        "reason": "Nouvelle dépendance documentaire C0, paquet PROD conservé : preuve exacte ef96caca/ac78b507, réponses publiques et contrats notifications inchangés dans les fixtures sans réseau, deux schémas complets acceptés et migrations partielles refusées. Aucun déploiement supplémentaire."
+      },
+      {
+        "name": "disableCompetitionEmailNotifications",
+        "commit": "1df545a62de67a24ff32ca4d1046cce4be6d499f",
+        "revision": "disablecompetitionemailnotifications-00004-kuf",
+        "before": "ee4c904af510b50da7bfdb99cde5dd2833d7fd75adabb03279029e067171e466",
+        "after": "048eefdcb1733f56935f28a6c54d59a41ecb2f5863add278d850b726ba661ae9",
+        "reason": "Différence antérieure au candidat applicatif PROD, conservée sans republication ; provenance/révision/empreinte contrôlées."
+      },
+      {
+        "name": "listEngagementCompetitionMailJobs",
+        "commit": "1df545a62de67a24ff32ca4d1046cce4be6d499f",
+        "revision": "listengagementcompetitionmailjobs-00024-ham",
+        "before": "b85e7756458966696c1527d55d2deeca8228ef09dd5d6ccedfc54e7b2c0a65b4",
+        "after": "86d3cf36669e02c0f2fb35cf2a2cf15a943b7c678bd68bc2b52e91fd73644240",
+        "reason": "Nouvelle dépendance documentaire C0, paquet PROD conservé : preuve exacte ef96caca/ac78b507, réponses publiques et contrats notifications inchangés dans les fixtures sans réseau, deux schémas complets acceptés et migrations partielles refusées. Aucun déploiement supplémentaire."
+      },
+      {
+        "name": "notifyEngagementCompetitionDocuments",
+        "commit": "1df545a62de67a24ff32ca4d1046cce4be6d499f",
+        "revision": "notifyengagementcompetitiondocuments-00006-bav",
+        "before": "4fcdd38315e6ca4d86377e65f76ef82a486ad07e9f661df373aa6741e9f9b7a8",
+        "after": "d5d9862690ca77ca6b423af1f22c7673c2f8e4180e358ca5dececdb6efbda19b",
+        "reason": "Nouvelle dépendance documentaire C0, paquet PROD conservé : preuve exacte ef96caca/ac78b507, réponses publiques et contrats notifications inchangés dans les fixtures sans réseau, deux schémas complets acceptés et migrations partielles refusées. Aucun déploiement supplémentaire."
+      },
+      {
+        "name": "prepareEngagementClubRecapEmails",
+        "commit": "1df545a62de67a24ff32ca4d1046cce4be6d499f",
+        "revision": "prepareengagementclubrecapemails-00031-wal",
+        "before": "d325d62bf1ff5df996d454f4396a68380ecb08aa044301bd86f4ce5080bac4f0",
+        "after": "8a6926de3b133c198f9e980aa84dd9a783819b2d8dbfd82e0ec7c0deea14743c",
+        "reason": "Nouvelle dépendance documentaire C0, paquet PROD conservé : preuve exacte ef96caca/ac78b507, réponses publiques et contrats notifications inchangés dans les fixtures sans réseau, deux schémas complets acceptés et migrations partielles refusées. Aucun déploiement supplémentaire."
+      },
+      {
+        "name": "prepareEngagementOpeningNotificationEmails",
+        "commit": "1df545a62de67a24ff32ca4d1046cce4be6d499f",
+        "revision": "prepareengagementopeningnotificationemails-00028-xit",
+        "before": "4cbd4ce0a57fdca9e4270c99a2456bec116344b7d533a17d7062004d62b54338",
+        "after": "77bf10e0ddd95647fbfb7630c923487953fa86797b9fd694c3238a061ed633db",
+        "reason": "Nouvelle dépendance documentaire C0, paquet PROD conservé : preuve exacte ef96caca/ac78b507, réponses publiques et contrats notifications inchangés dans les fixtures sans réseau, deux schémas complets acceptés et migrations partielles refusées. Aucun déploiement supplémentaire."
+      },
+      {
+        "name": "processNapCompetitionNotifications",
+        "commit": "1df545a62de67a24ff32ca4d1046cce4be6d499f",
+        "revision": "processnapcompetitionnotifications-00001-fej",
+        "before": "b73da704c8b5b3710d8f9dc2016f8a60e1a043559470c2ed0acecfb32a5dab53",
+        "after": "352b963d285029e7652a7a8b46297d75fe884ab03af84ac9dbcf5115425c0db9",
+        "reason": "Nouvelle dépendance documentaire C0, paquet PROD conservé : preuve exacte ef96caca/ac78b507, réponses publiques et contrats notifications inchangés dans les fixtures sans réseau, deux schémas complets acceptés et migrations partielles refusées. Aucun déploiement supplémentaire."
+      },
+      {
+        "name": "readNapPublicSwimmer",
+        "commit": "ef96caca97f70554ee1f2c2b950cebeb5130e85e",
+        "revision": "readnappublicswimmer-00005-veb",
+        "before": "a39fe0404d50e1c88ba38c322836b53b8d337473800756041ee4b15c48fe65b2",
+        "after": "4d687d2dfd5a093c8fa3835ac2137bb45bb6c57469d50fdd29100b7db43b1a89",
+        "reason": "Nouvelle dépendance documentaire C0, paquet PROD conservé : preuve exacte ef96caca/ac78b507, réponses publiques et contrats notifications inchangés dans les fixtures sans réseau, deux schémas complets acceptés et migrations partielles refusées. Aucun déploiement supplémentaire."
+      },
+      {
+        "name": "resolveEngagementAccessRequest",
+        "commit": "812bad64681a232e6cc3868ba7ec112bcdac7ca2",
+        "revision": "resolveengagementaccessrequest-00040-jev",
+        "before": "6d9fbfa653896f44534bdb644a3f0691c956e96ada2ad0b7acc9555183680c30",
+        "after": "342d10e033b4239eb5c816987f6a9b2776a848060048091f27b4a47a78027bb9",
+        "reason": "Différence antérieure au candidat applicatif PROD, conservée sans republication ; provenance/révision/empreinte contrôlées."
+      },
+      {
+        "name": "resolveEngagementSwimmerChangeRequest",
+        "commit": "1df545a62de67a24ff32ca4d1046cce4be6d499f",
+        "revision": "resolveengagementswimmerchangerequest-00020-mov",
+        "before": "07b8b74b334996d71ca572c7f6b1b3c2830c64859d3e84d6367058b42d25db2e",
+        "after": "27d147234b1ac270f427cfeb2de49d662ade81a8528710479831814ec3145a75",
+        "reason": "Différence antérieure au candidat applicatif PROD, conservée sans republication ; provenance/révision/empreinte contrôlées."
+      },
+      {
+        "name": "sendEngagementPreparedEmails",
+        "commit": "1df545a62de67a24ff32ca4d1046cce4be6d499f",
+        "revision": "sendengagementpreparedemails-00026-zel",
+        "before": "82481aa10aa7c7cfafcf63f7f1ba470b2366b41d1135371bdf0ace65a2ad01d5",
+        "after": "c64dc590a520c376c9e06f315ebeea372e8513858f54533e0435d89c62599571",
+        "reason": "Nouvelle dépendance documentaire C0, paquet PROD conservé : preuve exacte ef96caca/ac78b507, réponses publiques et contrats notifications inchangés dans les fixtures sans réseau, deux schémas complets acceptés et migrations partielles refusées. Aucun déploiement supplémentaire."
+      },
+      {
+        "name": "submitEngagementAccessRequest",
+        "commit": "812bad64681a232e6cc3868ba7ec112bcdac7ca2",
+        "revision": "submitengagementaccessrequest-00039-rib",
+        "before": "be16dc361cdb44b67868b8bf06e9149e7b42ecc1ffef72407ba010c9295324ec",
+        "after": "ea6bbc2a9fad0d8495e039be1f041d82f3bd4e145df2b5fae1c5a3c3bd47e0f7",
+        "reason": "Différence antérieure au candidat applicatif PROD, conservée sans republication ; provenance/révision/empreinte contrôlées."
+      },
+      {
+        "name": "updateCurrentEmailNotificationPreferences",
+        "commit": "1df545a62de67a24ff32ca4d1046cce4be6d499f",
+        "revision": "updatecurrentemailnotificationpreferences-00004-gev",
+        "before": "fae1fd731a5a970cee0616314f1461c1e042284edbd8048b042300c96834c7ba",
+        "after": "05e50d4ba5128bec66baf8453442c8cb672ea8daa67db5452f2c5f6d1d5bbedf",
+        "reason": "Différence antérieure au candidat applicatif PROD, conservée sans republication ; provenance/révision/empreinte contrôlées."
+      }
+    ]
+  }
+}

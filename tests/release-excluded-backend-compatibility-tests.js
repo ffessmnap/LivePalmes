@@ -11,9 +11,10 @@ const root = path.resolve(process.argv[2] || path.join(__dirname, ".."));
 const BASE = "b0020e51ebd6e686054efd3451882dd2c1d60d94";
 const CANDIDATE = "ef96caca97f70554ee1f2c2b950cebeb5130e85e";
 const base = process.argv[3] || BASE, candidate = process.argv[4] || CANDIDATE;
+const c0 = base === CANDIDATE && candidate === "ac78b50759ca209cddaa15d374eb5e01dd926268";
 const names = ["closeDueEngagementCompetitions", "notifyEngagementCompetitionDocuments",
   "prepareEngagementClubRecapEmails", "listEngagementCompetitionMailJobs",
-  "prepareEngagementOpeningNotificationEmails", "sendEngagementPreparedEmails", "processNapCompetitionNotifications"].sort();
+  "prepareEngagementOpeningNotificationEmails", "sendEngagementPreparedEmails", "processNapCompetitionNotifications", ...(c0 ? ["readNapPublicSwimmer"] : [])].sort();
 const rows = process.argv[5] ? JSON.parse(process.argv[5]) : names.map(name => ({ name, commit: "1df545a62de67a24ff32ca4d1046cce4be6d499f" }));
 const sha = value => typeof value === "string" && /^[a-f0-9]{40}$/.test(value);
 const git = (...args) => cp.execFileSync("git", args, { cwd: root, encoding: "utf8", maxBuffer: 16 * 1024 * 1024 });
@@ -35,6 +36,16 @@ function definitions(commit) {
       if (left.object?.name === "exports") result.set(left.property.name, code.slice(node.start, node.end));
     }
   }
+  if (c0) {
+    function visit(node) {
+      if (!node || typeof node !== "object") return;
+      if (node.type === "ExpressionStatement" && node.expression.type === "AssignmentExpression" &&
+          node.expression.left.object?.name === "exports" && node.expression.left.property?.name === "readNapPublicSwimmer")
+        result.set("readNapPublicSwimmer", code.slice(node.start, node.end));
+      for (const value of Object.values(node)) if (Array.isArray(value)) value.forEach(visit); else if (value && typeof value === "object") visit(value);
+    }
+    visit(acorn.parse(code, { ecmaVersion: "latest" }));
+  }
   return result;
 }
 function loader(commit) {
@@ -48,6 +59,7 @@ function loader(commit) {
     const sandbox = { module, exports: module.exports, Buffer, URL, Date: FixedDate,
       require: request => {
         if (request === "node:crypto" || request === "crypto") return crypto;
+        if (request === "node:util") return require("node:util");
         assert.ok(request.startsWith("."), "External import blocked: " + request);
         let target = path.posix.normalize(path.posix.join(path.posix.dirname(filename), request));
         if (!/\.(js|json)$/.test(target)) target += ".js";
@@ -92,8 +104,13 @@ function memoryDb() {
   } };
 }
 async function prove() {
-  assert.equal(base, BASE, "Suite limited to the reviewed production baseline");
-  assert.equal(candidate, CANDIDATE, "A new application candidate requires a new review");
+  if (!c0) {
+    assert.equal(base, BASE, "Suite limited to the reviewed production baseline");
+    assert.equal(candidate, CANDIDATE, "A new application candidate requires a new review");
+  } else {
+    assert.deepEqual(rows.map(row => row.name).sort(), names, "Exact C0 retained scope required");
+    for (const row of rows) assert.equal(row.commit, row.name === "readNapPublicSwimmer" ? CANDIDATE : "1df545a62de67a24ff32ca4d1046cce4be6d499f", "Unreviewed retained origin");
+  }
   assert.ok(Array.isArray(rows) && rows.every(row => names.includes(row.name) && sha(row.commit)));
   assert.equal(new Set(rows.map(row => row.name)).size, rows.length);
   const before = definitions(base), after = definitions(candidate);
@@ -194,10 +211,12 @@ async function prove() {
       { ...competition, clubDocuments: [{ id: "doc-1", title: "Fixture", url: "https://fixture.invalid/doc" }] }, populatedServices);
     assert.equal(documentPage.jobs.length, 1); assert.equal(documentPage.jobs[0].details.documents[0].id, "doc-1");
   }
+  if (c0) await require("./release-c0-document-compatibility.js").prove({ root, base, candidate, source, loader });
   return { schema: 1, suite: "retained-calendar-consumers-v1", productionCommit: base, candidate,
+    ...(c0 ? { c0ProofSha256: crypto.createHash("sha256").update(require("node:fs").readFileSync(path.join(__dirname, "release-c0-document-compatibility.js"))).digest("hex") } : {}),
     result: "success", networkCalls: 0, passedFunctions: rows.map(row => row.name).sort(),
     checks: ["pinned-application-pair", "unchanged-notification-adapters", "bounded-reader-projection", "authorization-before-reads",
       "mail-content", "retained-job-replay", "retained-closure-resume", "fixture-attachment-manifests", "document-selection",
-      "stale-source-refused", "missing-document-refused"] };
+      "stale-source-refused", "missing-document-refused", ...(c0 ? ["c0-exact-backend-diff", "public-reader-unchanged", "original-featured-document-projection", "partial-schema-refused"] : [])] };
 }
 prove().then(result => console.log(JSON.stringify(result))).catch(error => { console.error(error.stack); process.exitCode = 1; });
