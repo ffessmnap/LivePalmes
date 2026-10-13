@@ -13,6 +13,7 @@ C0_PREFLIGHT_PATHS = {
     'tests/release-c0-document-compatibility.js',
     'tests/release-c0-compatibility-tests.js',
     'tests/preview-scope-tests.py',
+    'tests/release-cycle-tests.py',
     'tools/preview-scope.py',
     'tools/verify-livepalmes.js',
 }
