@@ -39,10 +39,6 @@ jobs:
       - uses: google-github-actions/setup-gcloud@v3
       - name: Préparer les données publiques, sans écriture NAP
         run: node tools/build-home-events-test.js --prepare outputs/home-events.json
-      - uses: google-github-actions/auth@v3
-        with:
-          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_TEST }}
-          project_id: livepalmes-test
       - name: Publier et vérifier le seul fichier de rendez-vous TEST
         env:
           TARGET_FIREBASE_PROJECT: livepalmes-test
