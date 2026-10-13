@@ -5,7 +5,7 @@ const docs=require("../functions/nap-competition-documents");
 const helpers=require("../functions/engagement-competition-documents");
 const authority={id:5162,date:"2026-11-07",enddate:null,comite:1,parameter_id:100,niveau:1};
 const legacy={id:42,name:"Protocole",type:11,location:"/documents/test.pdf",date:"2026-10-08 12:00:00",user:null,competition:5162,sent:0,comment:"",public:"Y",element:34,type_label:"Résultats"};
-function fixture(initial=[]){
+function fixture(initial=[],extended=false){
  let current=structuredClone(initial),saved=null,writes=0,queryCount=0,uploaded=false,failedWrite=false,failedFile=false;
  const history=[];
  const connection={release:()=>history.push("release"),execute:async(query,values=[])=>{
@@ -13,8 +13,17 @@ function fixture(initial=[]){
   if(sql.includes("GET_LOCK"))return [[{acquired:1}]];
   if(sql.includes("RELEASE_LOCK"))return [[{released:1}]];
   if(sql.includes("information_schema.TABLES"))return [[{TABLE_NAME:"documents",ENGINE:"MyISAM"},{TABLE_NAME:"livepalmes_document_options",ENGINE:"InnoDB",TABLE_COLLATION:"utf8mb4_unicode_ci"}]];
-  if(sql.includes("information_schema.COLUMNS"))return [docs.OPTION_SCHEMA.map(([COLUMN_NAME,COLUMN_TYPE])=>({COLUMN_NAME,COLUMN_TYPE,IS_NULLABLE:"NO",COLUMN_DEFAULT:null,EXTRA:""}))];
-  if(sql.includes("information_schema.STATISTICS"))return [[{INDEX_NAME:"PRIMARY",COLUMN_NAME:"document_id",SEQ_IN_INDEX:1,NON_UNIQUE:0,SUB_PART:null}]];
+  if(sql.includes("information_schema.COLUMNS")){
+   const nullable=require("../functions/nap-document-options-contract").NULLABLE_FILE_FIELDS;
+   const columns=docs.OPTION_SCHEMA.map(([COLUMN_NAME,COLUMN_TYPE])=>({COLUMN_NAME,COLUMN_TYPE,IS_NULLABLE:extended&&nullable.has(COLUMN_NAME)?"YES":"NO",COLUMN_DEFAULT:null,EXTRA:""}));
+   if(extended)columns.push({COLUMN_NAME:"featured_rank",COLUMN_TYPE:"tinyint unsigned",IS_NULLABLE:"YES",COLUMN_DEFAULT:null,EXTRA:""});
+   return [columns];
+  }
+  if(sql.includes("information_schema.STATISTICS")){
+   const indexes=[{INDEX_NAME:"PRIMARY",COLUMN_NAME:"document_id",SEQ_IN_INDEX:1,NON_UNIQUE:0,SUB_PART:null}];
+   if(extended)indexes.unshift({INDEX_NAME:"livepalmes_document_featured_rank",COLUMN_NAME:"featured_rank",SEQ_IN_INDEX:1,NON_UNIQUE:0,SUB_PART:null});
+   return [indexes];
+  }
   if(sql.includes("FROM documents d"))return [structuredClone(current)];
   if(sql.includes("information_schema.TRIGGERS"))return [[]];
   if(/^(INSERT|UPDATE|DELETE) /.test(sql)){assert.ok(saved,"journal precedes every write");writes++;history.push("write");if(failedWrite)return [{affectedRows:0}];}
@@ -41,6 +50,10 @@ const upload={action:"upload",competitionId:"5162",actorUid:"administrator",file
  assert.equal(docs.item(f.rows[0]).uploadedBy,undefined,"club and public reads exclude uploader identities");assert.equal(docs.item(f.rows[0],{includeUploader:true}).uploadedBy.uid,"administrator");
  const edit=fixture(f.rows);const edited=await docs.mutate(edit.pool,{...upload,action:"update",documentId:"nap-42",expectedFingerprint:created.documents[0].napFingerprint,title:"Titre corrigé",category:"access"},edit.services);
  assert.equal(edited.documents[0].title,"Titre corrigé");assert.equal(edited.documents[0].category,"access");assert.equal(edit.uploaded,false);assert.equal(edit.rows[0].location,f.rows[0].location);
+ const migrated=fixture(f.rows.map(row=>({...row,featured_rank:6})),true);
+ const migratedEdit=await docs.mutate(migrated.pool,{...upload,action:"update",documentId:"nap-42",expectedFingerprint:created.documents[0].napFingerprint,title:"Schéma enrichi",category:"access"},migrated.services);
+ assert.equal(migratedEdit.documents[0].title,"Schéma enrichi");assert.equal(migrated.rows[0].featured_rank,6,"ordinary metadata upsert preserves editorial rank");
+ const migratedUpload=fixture([],true);assert.equal((await docs.mutate(migratedUpload.pool,upload,migratedUpload.services)).ok,true);
  const replace=fixture(f.rows);const replaced=await docs.mutate(replace.pool,{...upload,documentId:"nap-42",expectedFingerprint:created.documents[0].napFingerprint,fileName:"nouvelle-version.pdf"},replace.services);assert.notEqual(replaced.documents[0].url,created.documents[0].url);assert.equal(replace.rows[0].id,42);assert.ok(replace.history.indexOf("cleanup")>replace.history.indexOf("complete"));
  const deletion=fixture(edit.rows);const deleted=await docs.mutate(deletion.pool,{action:"delete",competitionId:5162,actorUid:"administrator",documentId:"nap-42",expectedFingerprint:edited.documents[0].napFingerprint},deletion.services);
  assert.deepEqual(deleted.documents,[]);assert.equal(deleted.storageDeleted,true);assert.equal(deletion.writes,2);assert.ok(deletion.history.includes("cleanup"));
