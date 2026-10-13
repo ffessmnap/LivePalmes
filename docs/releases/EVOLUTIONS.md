@@ -2,6 +2,13 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 13 octobre — Accueil et bibliothèque : compatibilité préalable des documents
+
+- Objectif autorisé dans la discussion « Accueil et bibliothèque documentaire » : réaliser l’évolution complète jusqu’à TEST ; modification NAP commune autorisée après sauvegarde vérifiée et essais de restauration. Le nouvel accueil et la bibliothèque ne sont pas autorisés en PROD. Une éventuelle publication du préalable compatible en PROD reste soumise au bilan et à l’accord Infra.
+- Premier lot C0 : contrôle strict de deux schémas complets (actuel ou futur avec rang nullable/index unique et cinq métadonnées fichier nullables), refus des migrations partielles et des colonnes/index inconnus. Les upserts et empreintes fichier conservent leur contrat initial et n’écrivent jamais le rang éditorial. Aucun changement d’interface, de droits, de données, de mails ou de stockage.
+- Les tests hors ligne vérifient les deux contrats, les dérives, une création et une édition sur schéma enrichi, la conservation du rang et les parcours documentaires existants. Le contrôle global local passe la syntaxe, le classement backend et les suites précédant le test de workflow ; arrêt sur `livepalmes-test-backend-workflow-tests.js:40` (`main / access`), qui nécessite Bash absent du PATH Windows. CI Linux complète requise ; aucune preuve de déploiement ni recette utilisateur revendiquée. Migration SQL non exécutée ; préparation de sauvegarde et restauration encore nécessaire.
+- Nettoyage parallèle : PR #290 intégrée sur `137e203530409c8a0db8a3ea588b4845f72538b5`, TEST commun `38440629235` attesté par la discussion de nettoyage, qui confirme la reprise possible des évolutions. Développement depuis ce main, sans retoucher ce lot.
+
 ### 13 octobre — Retrait source du déclencheur Records historique — PR #290
 
 - Besoin et accord : après analyse des dépendances, Antoine demande de préparer la PR du premier lot de retrait de `syncPublicRecordsData` et de ses deux helpers, avec adaptations des contrôles et tests, en conservant toutes les exclusions et sans toucher aux données.
