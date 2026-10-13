@@ -2,6 +2,14 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 13 octobre — Nettoyage Storage PROD du calendrier historique terminé
+
+- Dans Infra, Antoine approuve par « ok » le bilan exact : 4 853 générations JSON, 49 815 946 octets, uniquement `calendar/` du bucket `livepalmes-public-data-718081132564`. Manifeste SHA-256 `092612936314bceb6b4871d158572a9c8228b216ee2bfdb451061483c0ecc3e5`. Inventaire du 13 octobre identique au relevé précédent ; TEST toujours vide après sa recette du 12 octobre.
+- Sauvegarde PROD téléchargée par génération, taille/MD5 contrôlés, métadonnées complètes archivées, chaque entrée rouverte et vérifiée SHA-256. Archive 7 123 884 octets, SHA-256 `01837d03b5330277132d1fb8dc4c7dcf8870045dfd3140f38c6190436d7418eb` ; seconde copie locale identique dans le dossier OneDrive `BDD INTRANAP/Sauvegarde nettoyage/calendar-prod-20261013`. Synchronisation cloud non attestée ; aucune restauration distante exécutée pour tester.
+- Avant suppression, archive et copie vérifiées à nouveau, inventaire/métadonnées complètes relus sans dérive. Suppressions bornées au manifeste avec préconditions génération/métagénération : 4 853 succès, zéro échec, `calendar/` vide à `2026-10-13T10:17:17Z`. Les 10 708 objets hors préfixe gardent les mêmes noms, générations et métadonnées sélectionnées ; configuration du bucket inchangée. Objets déjà soft-deleted exclus, politique de récupération de sept jours conservée.
+- Six fichiers calendrier servis PROD contrôlés conformes au candidat `ef96caca`. Lectures publiques NAP manifeste/saison/détail/résultats réussies. Recette Chrome après suppression : calendrier 70 à venir / 9 passés, détail « bi fins cup » `legacy-nap-5140`, 18 résultats 50 m Apnée Femmes puis 5 Junior ; aucune erreur console observée. Pas de recette mobile nouvelle ni de validation sportive déduite de ces contrôles.
+- Aucun déploiement, recalcul DTN, écriture NAP/Firestore, modification de droits, règle, fonction ou scheduler. Les anciens liens externes vers ces JSON ne sont pas audités. Preuves locales regroupées dans le dossier Infra `storage-preflight-20261013` : manifeste, vérification de sauvegarde, journal exact des suppressions, contrôles et bilan. Retour arrière : archive conservée, restauration uniquement des noms absents avec précondition de création et métadonnées modifiables, sur accord spécifique ; nouvelles générations serveur attendues.
+
 ### 12 octobre — Publication PROD du plan corrigé réussie
 
 - PR #286 intégrée sur `4072265eb7c47ceb28d4ac112fb152ec4b01f70f` ; CI Linux PR `38309173685` et main `38309459087` réussies. Preflight officiel corrigé `38309464358` réussi, artefact `release-plan` ID `11773758470`, SHA-256 `f5001b2a11b117b6a93a5b2ebecc134488b17e96a8334ec97f5974a37704bd67` vérifié.
