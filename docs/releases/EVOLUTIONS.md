@@ -2,12 +2,12 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
-### 13 octobre — Cohérence documentaire Records/MPF, NAP et Storage — PR en préparation
+### 13 octobre — Cohérence documentaire Records/MPF, NAP et Storage — PR #289
 
 - Besoin : corriger les documents courants décrivant encore les Records/MPF comme une source Firestore publiée en fichiers statiques. La source officielle et l'administration sont dans les versions NAP ; Firebase conserve ses rôles serveur, authentification, technique et Direct.
 - Périmètre : architecture, présentation et carte de l'écosystème, référence NAP, consignes performances, circuit public, gestion des performances et scénarios de recette RF/MPF. Les documents explicitement archivés restent historiques. Le retrait du code est distingué des nettoyages Storage autorisés séparément.
-- Vérification : rapprochement avec `performances/public/store.js`, `functions/nap-records-store.js` et les points d'entrée existants dans `functions/index.js`, puis relecture et contrôle des liens. Contrôles techniques de PR à suivre. Aucun test métier avec écriture, aucune modification de code, données, droits ou configuration.
-- État : PR documentaire en préparation ; aucun déploiement TEST/PROD requis, aucun aperçu Firebase attendu. Aucune nouvelle validation utilisateur des parcours n'est déduite de cette correction documentaire.
+- Vérification : rapprochement avec `performances/public/store.js`, `functions/nap-records-store.js` et les points d'entrée existants dans `functions/index.js`, puis relecture et contrôle des liens. Contrôles locaux textes, architecture et `git diff --check` réussis ; CI Linux de PR à suivre. Aucun test métier avec écriture, aucune modification de code, données, droits ou configuration.
+- État : [PR documentaire #289](https://github.com/ffessmnap/LivePalmes/pull/289) ouverte depuis `main` ; aucun déploiement TEST/PROD requis, aucun aperçu Firebase attendu. Aucune nouvelle validation utilisateur des parcours n'est déduite de cette correction documentaire.
 
 ### 13 octobre — Nettoyage des anciens exports Storage terminé
 
