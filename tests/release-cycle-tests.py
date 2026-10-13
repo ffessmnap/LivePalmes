@@ -24,6 +24,11 @@ class ReleaseTests(unittest.TestCase):
             self.assertNotIn(' python ', line)
 
     def test_candidate_historical_proofs_have_full_git_history(self):
+        test_source = (m.ROOT / '.github/workflows/livepalmes-test-backend.yml').read_text()
+        test_checkout = test_source.split('uses: actions/checkout@v7', 1)[1].split('- name:', 1)[0]
+        self.assertIn('ref: ${{ inputs.expected_commit }}', test_checkout)
+        self.assertIn('fetch-depth: 0', test_checkout)
+        self.assertIn('persist-credentials: false', test_checkout)
         for name in ['livepalmes-production-preflight.yml', 'livepalmes-production-release.yml']:
             source = (m.ROOT / '.github/workflows' / name).read_text()
             checkouts = source.split('- uses: actions/checkout@v7')[1:]
