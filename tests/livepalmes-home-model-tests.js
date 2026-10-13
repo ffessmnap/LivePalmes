@@ -25,6 +25,8 @@ assert.equal(home.eventGroups([tied[1]],today).majorTitle,"International");
 assert.deepEqual(home.eventGroups([],today).ongoing,[]);
 assert.equal(home.eventGroups([events[0],events[0]],today).ongoing.length,1);
 assert.equal(home.eventGroups([event("跨-season","2026-08-31","regional",{endDate:"2026-10-14"})],today).ongoing.length,1);
+assert.equal(home.eventGroups([event("malformed-source-year","0206-11-01","regional",{endDate:"2026-11-30"})],today).ongoing.length,0);
+assert.equal(home.eventGroups([event("calendar-lower-bound","1900-01-01","regional",{endDate:today})],today).ongoing.length,1);
 assert.throws(()=>home.eventGroups([],"2026-02-30"),/invalide/);
 assert.equal(home.validDate("2024-02-29"),true);assert.equal(home.validDate("2026-02-29"),false);
 assert.equal(home.parisToday(Date.parse("2026-10-12T23:00:00Z")),today);

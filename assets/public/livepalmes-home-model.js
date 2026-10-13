@@ -20,7 +20,8 @@
     const seen = new Set();
     const eligible = [];
     for (const event of Array.isArray(events) ? events : []) {
-      if (!event || typeof event.id !== "string" || !event.id || seen.has(event.id) || event.canceled || !validDate(event.date)) continue;
+      // Same lower bound as the existing NAP calendar, without correcting source data.
+      if (!event || typeof event.id !== "string" || !event.id || seen.has(event.id) || event.canceled || !validDate(event.date) || event.date < "1900-01-01") continue;
       const endDate = event.endDate || event.date;
       if (!validDate(endDate) || endDate < event.date) continue;
       seen.add(event.id);

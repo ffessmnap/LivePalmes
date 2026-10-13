@@ -34,7 +34,7 @@
   element("featuredDocumentsSearch").addEventListener("input",()=>{clearTimeout(timer);controller?.abort();catalogueGeneration++;after=null;catalogue=[];element("featuredDocumentsMore").disabled=true;timer=setTimeout(()=>loadCatalogue(true),300);});
   element("featuredDocumentsMore").addEventListener("click",()=>loadCatalogue(false));
   element("featuredDocumentsCancel").addEventListener("click",()=>{model.cancel();render();message("Changements annulés.");});
-  element("featuredDocumentsPreviewToggle").addEventListener("click",()=>{const preview=element("featuredDocumentsPreview");preview.hidden=!preview.hidden;renderPreview();if(!preview.hidden)preview.scrollIntoView({block:"nearest",behavior:"smooth"});});
+  element("featuredDocumentsPreviewToggle").addEventListener("click",()=>{const preview=element("featuredDocumentsPreview");preview.hidden=!preview.hidden;renderPreview();if(!preview.hidden)preview.scrollIntoView({block:"start",behavior:"smooth"});});
   element("featuredDocumentsSave").addEventListener("click",save);
   return dialog;
  }
