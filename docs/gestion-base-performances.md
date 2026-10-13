@@ -22,7 +22,7 @@ Sources : `functions/nap-performance-administration.js`, `nap-performance-change
 
 ## Consultation et Records/MPF
 
-TOP, recherche, fiches nageurs et résultats de compétition utilisent les lecteurs NAP bornés. Les Records et MPF officiels conservent leur circuit d'administration Firebase et de publication statique distinct ; ils ne sont pas recalculés depuis NAP. Voir [le circuit public](pipeline-performances-publiques.md).
+TOP, recherche, fiches nageurs et résultats de compétition utilisent les lecteurs NAP bornés. Les Records et MPF officiels utilisent leurs versions dédiées dans NAP (`livepalmes_records_versions`, `livepalmes_records_current`), consultées et administrées via les fonctions serveur existantes. Ils ne sont pas recalculés automatiquement depuis les performances ou les TOP. Aucun fichier statique ni copie sportive Firestore ne sert de repli en cas de panne NAP. Voir [le circuit public](pipeline-performances-publiques.md).
 
 ## Vérification
 
