@@ -12,7 +12,9 @@ Les modifications NAP sont visibles à une nouvelle consultation serveur ; une i
 
 L’administration et les consultations publiques utilisent les versions RF/MPF dans NAP (`livepalmes_records_versions`, `livepalmes_records_current`). Le lecteur public retourne une projection sans historique privé. Les publications passent par les actions existantes avec version attendue et reprise idempotente, sans calcul à partir des TOP.
 
-La copie statique RF/MPF et ses outils historiques ont été retirés du dépôt. Git conserve leurs anciennes versions ; les données Firebase et Storage restent intactes. Aucun repli vers ces copies en cas de panne NAP. Voir [la référence](NAP_REFERENCE.md) et [le suivi du nettoyage](releases/EVOLUTIONS.md).
+Le parcours public est `performances/public/store.js` → `readNapPublicSwimmer?action=records` → `functions/nap-records-store.js`. L'administration appelle `getNapPerformanceAdministration` avec `recordsAction: "read"` et `savePerformanceCorrection` avec `recordsAction: "publish"`. Firebase fournit les fonctions serveur et l'authentification ; la source RF/MPF est NAP, pas Firestore ou Storage.
+
+La copie statique RF/MPF et ses outils historiques ont été retirés du dépôt. Git conserve leurs anciennes versions ; ce retrait du code n'a pas effacé à lui seul les anciennes données Firebase ou Storage. Aucun repli vers ces copies en cas de panne NAP. Le nettoyage Storage a été autorisé et exécuté séparément ; voir son état ci-dessous, [la référence](NAP_REFERENCE.md) et [le suivi du nettoyage](releases/EVOLUTIONS.md).
 
 ## Ancien pipeline
 
@@ -28,6 +30,19 @@ Les sorties historiques TOP/nageurs, imports INTRANAP et jobs de reconstruction 
 
 ## Nettoyage des exports TOP/nageurs — 12 octobre
 
-Les exports historiques suivis dans `performance-public/{tops,tops-preview,swimmers,search,ids}` et leurs anciens manifeste/version/résumé/index ont été retirés après découplage des pages et recette TEST. `performances/public/reference.js` conserve seulement les libellés d’affichage ; les résultats restent lus dans NAP. Les copies distantes Storage et les références techniques backend ne sont pas effacées.
+Les exports historiques suivis dans `performance-public/{tops,tops-preview,swimmers,search,ids}` et leurs anciens manifeste/version/résumé/index ont été retirés après découplage des pages et recette TEST. `performances/public/reference.js` conserve seulement les libellés d’affichage ; les résultats restent lus dans NAP. Cette opération du 12 octobre n'a effacé ni les copies distantes Storage ni les références techniques backend.
 
-Les deux workflows de reconstruction sportive historique sont archivés avec jobs désactivés. Les commandes de reconstruction Firestore, publication consolidée et envoi Storage sont arrêtées avant toute action ; les générateurs nécessaires aux diagnostics hors ligne et tests restent conservés avec sortie de travail explicite. Aucun nettoyage d’historique Git, migration ou suppression distante.
+Les deux workflows de reconstruction sportive historique sont archivés avec jobs désactivés. Les commandes de reconstruction Firestore, publication consolidée et envoi Storage sont arrêtées avant toute action ; les générateurs nécessaires aux diagnostics hors ligne et tests restent conservés avec sortie de travail explicite. Le retrait du code ne constitue pas une autorisation de nettoyage d'historique Git, de migration ou de suppression distante.
+
+## Nettoyage Storage distinct — 13 octobre
+
+Après vérification des fonctions réellement déployées et des dépendances communes du Direct, un accord spécifique a autorisé le retrait de 31 693 générations d'anciens exports, soit 875 557 569 octets :
+
+| Environnement | Préfixes autorisés | Objets retirés | Octets |
+| --- | --- | ---: | ---: |
+| PROD | `performance-public-firestore/` | 10 706 | 322 948 406 |
+| TEST | `performance-public-firestore/`, `performance-public-nap/versions/` | 20 987 | 552 609 163 |
+
+Les contenus et métadonnées ont été archivés avant suppression en deux copies locales vérifiées, dont une dans le dossier OneDrive ; la synchronisation cloud OneDrive n'est pas attestée. L'inventaire final confirme l'absence des générations ciblées et la conservation exacte des 40 objets applicatifs exclus. La conservation Storage des objets supprimés pendant sept jours reste active : le volume n'est pas libéré immédiatement.
+
+`performance-public/additional-data.json` est hors lot, de même que les documents/PDF, les préfixes de notification, les buckets techniques Functions et les sauvegardes existantes. Aucune donnée NAP ou Firestore, aucun droit, mail ou scheduler n'a été modifié par cette opération. Les anciens liens externes vers les exports retirés ne sont plus garantis. Ce bilan ne donne aucune autorisation pour d'autres suppressions ou une restauration ; voir [les preuves et le suivi](releases/EVOLUTIONS.md).
