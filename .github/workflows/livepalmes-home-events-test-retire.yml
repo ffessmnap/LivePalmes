@@ -1,4 +1,4 @@
-name: Suspendre le seul ancien job rendez-vous TEST
+name: Retirer le seul ancien job rendez-vous TEST
 on:
   workflow_dispatch:
     inputs:
@@ -9,7 +9,7 @@ permissions:
   contents: read
 jobs:
   pause:
-    if: github.ref == 'refs/heads/main' && inputs.confirmation == 'pause-livepalmes-test-home-events'
+    if: github.ref == 'refs/heads/main' && (inputs.confirmation == 'pause-livepalmes-test-home-events' || inputs.confirmation == 'delete-livepalmes-test-home-events')
     runs-on: ubuntu-latest
     timeout-minutes: 10
     environment: firebase-test
@@ -26,9 +26,9 @@ jobs:
       - run: node tools/pause-home-events-test.js
         env:
           TARGET_FIREBASE_PROJECT: livepalmes-test
-          LIVEPALMES_HOME_DATA_CONFIRMATION: pause-livepalmes-test-home-events
+          LIVEPALMES_HOME_DATA_CONFIRMATION: ${{ inputs.confirmation }}
       - uses: actions/upload-artifact@v4
         with:
-          name: home-events-pause-proof
-          path: outputs/home-events-pause-proof.json
+          name: home-events-retire-proof
+          path: outputs/home-events-*-proof.json
           if-no-files-found: error
