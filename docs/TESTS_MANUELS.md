@@ -2,6 +2,12 @@
 
 <!-- description: Checklist de tests manuels à exécuter avant une publication ou après une modification sensible. -->
 
+## Cadre public Compacte — 14 octobre
+
+- Parcourir accueil/public, bibliothèque, calendrier et fiche événement, Records/MPF/TOP/recherche nageur, pages légales, résultats/séries/médailles et les trois lecteurs PDF. En-tête unique, accueil toujours accessible, rubrique active correcte, lien portail visible, logo et fil d’Ariane cohérents ; conserver les titres dynamiques et identifiants de commandes.
+- Contrôler PC 1280 px et mobile 390/320 px : navigation et accès portail sans débordement, onglets Performances accessibles, titres et boutons PDF lisibles. Accueil sans grand titre/marque/signature répétés ; grille des performances adaptée au mobile.
+- Vérifier liens accueil↔calendrier↔fiche, accueil↔Performances↔nageur et bibliothèque/recherche ; retours résultats/séries/médailles/PDF et informations légales. Aucune connexion, écriture de résultats, désactivation de notifications ou sauvegarde de document nécessaire à cette recette. Portail et consoles inchangés.
+
 ## Accueil et bibliothèque documentaire — préparation du 13 octobre
 
 Ne pas exécuter d’écriture de recette sur NAP commune. La migration autorisée conserve les originaux ; les choix de documents de démonstration ne valent pas instruction d’enregistrer une sélection réelle.

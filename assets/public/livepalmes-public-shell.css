@@ -1,0 +1,75 @@
+/* Consultation publique uniquement : aucune règle appliquée au portail/consoles. */
+body.public-shell-page{margin:0;background:#f3f9fa;color:#153c4a;font-family:Inter,"Segoe UI",Arial,sans-serif}
+.public-shell-page .public-sr-title{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap;border:0}
+.public-shell-page *{box-sizing:border-box}
+.public-site-header{background:#fff;border-bottom:1px solid #d5e4e8}
+.public-site-header-inner{width:min(1120px,calc(100% - 32px));margin:auto;display:flex;align-items:center;gap:16px;min-height:80px;padding:12px 0}
+.public-site-brand{display:flex;align-items:center;gap:8px;color:#153c4a;text-decoration:none;font-size:1.25rem;font-weight:700;white-space:nowrap}
+.public-site-brand img{width:36px;height:36px;object-fit:contain}
+.public-site-nav{display:flex;align-items:center;gap:4px;margin-left:auto}
+.public-site-nav a{display:flex;align-items:center;justify-content:center;min-height:40px;padding:9px 10px;border-radius:6px;text-decoration:none;color:#153c4a;font-size:.85rem;font-weight:600;white-space:nowrap}
+.public-site-nav a[aria-current=page]{background:#e4f3f5;color:#086f7e}
+.public-site-nav a:hover{background:#edf6f7}
+.public-site-federal{display:flex;flex:0 0 78px}
+.public-site-federal img{width:78px;height:46px;object-fit:contain}
+.public-site-portal{flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;min-height:40px;padding:8px 11px;border:1px solid #b8d4d9;border-radius:6px;color:#075d69;font-size:.78rem;font-weight:700;text-decoration:none;background:#f6fbfc;white-space:nowrap}
+.public-site-context{width:min(1120px,calc(100% - 32px));margin:16px auto 0;display:flex;flex-wrap:wrap;align-items:center;gap:8px;color:#56717d;font-size:.78rem;line-height:1.5}
+.public-site-context a{color:#086f7e;text-underline-offset:3px}
+.public-site-context .public-site-back{margin-left:auto;padding:7px 10px;background:#e4f3f5;border-radius:6px;text-decoration:none;min-height:36px;display:inline-flex;align-items:center}
+.public-shell-page a:focus-visible{outline:3px solid #174c76;outline-offset:3px}
+.public-shell-page .public-home-shell,.public-shell-page .calendar-shell,.public-shell-page .public-results-shell,.public-shell-page .legal-shell,.public-shell-page.pdf-viewer-page .pdf-viewer-shell{width:min(1120px,calc(100% - 32px));margin:0 auto;padding:20px 0 32px}
+.public-shell-page[data-public-section=home] .public-home-shell{padding-top:24px}
+.public-shell-ready .calendar-header,.public-shell-ready .legal-topbar,.public-shell-ready .public-home-utility{display:none}
+.public-shell-page .public-home-hero{margin:0 0 20px;padding:0;min-height:0;display:block;background:none;border:0;box-shadow:none}
+.public-shell-ready .public-home-logo-card,.public-shell-ready .calendar-hero-federal-logo{display:none}
+.public-shell-ready .public-home-hero p{display:none}
+.public-shell-page .public-home-hero h1,.public-shell-page .calendar-hero h1,.public-shell-page .calendar-detail-hero h1,.public-shell-page .legal-card h1,.public-shell-page .topbar h1,.public-shell-page .public-results-header h1{color:#153c4a;font-size:1.8rem;line-height:1.25;letter-spacing:-.025em;margin:0 0 8px;overflow-wrap:anywhere}
+.public-shell-page .calendar-hero,.public-shell-page .calendar-detail-hero{background:none;box-shadow:none;border:0;border-radius:0;color:#153c4a;min-height:0;padding:0;margin:0 0 20px;overflow:visible}
+.public-shell-page .calendar-hero p,.public-shell-page .calendar-detail-hero p{color:#56717d}
+.public-shell-ready .calendar-hero-eyebrow,.public-shell-ready .calendar-kicker{display:none}
+.public-shell-page .calendar-detail-hero .calendar-badge{background:#e4f3f5;color:#086f7e}
+.public-shell-page .calendar-detail-meta{color:#56717d}
+.public-shell-page .calendar-detail-meta .calendar-event-type,.public-shell-page .calendar-detail-separator{color:#086f7e}
+.public-shell-page .calendar-results-primary{background:#086f7e;color:#fff;border-color:#086f7e}
+.public-shell-page .calendar-results-secondary{background:#fff;color:#086f7e;border-color:#b8d4d9}
+.public-shell-page .calendar-detail-card h2{font-size:1.15rem;line-height:1.35;color:#153c4a}
+.public-shell-page .topbar.performance-public-topbar,.public-shell-page .topbar.simple,.public-shell-page .public-results-header{position:relative;width:min(1120px,calc(100% - 32px));margin:0 auto;padding:20px 0 0;min-height:0;height:auto;border:0;border-radius:0;background:none;color:#153c4a;box-shadow:none;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px}
+.public-shell-ready .topbar-logo,.public-shell-ready .public-topbar-logo,.public-shell-ready .topbar-home-link,.public-shell-ready .topbar-title>.eyebrow,.public-shell-ready .public-topbar-title>.eyebrow,.public-shell-ready .public-results-header .app-name{display:none}
+.public-shell-ready .public-topbar-home-link[href="./"]{display:none}
+.public-shell-page .public-topbar-home-link{color:#086f7e}
+.public-shell-page .performance-public-topbar .main-nav,.public-shell-page .topbar.simple .main-nav{position:static;display:flex;flex-wrap:wrap;justify-content:flex-start;width:100%;margin:0;padding:0 0 10px;gap:6px;border-bottom:1px solid #d5e4e8}
+.public-shell-page .main-nav a{background:#e4f3f5;border:1px solid transparent;border-radius:6px;color:#086f7e;padding:8px 11px;min-height:36px;font-size:.8rem;line-height:1.3;text-decoration:none}
+.public-shell-page .main-nav a.active{background:#086f7e;color:#fff}
+.public-shell-page .public-header-actions{position:static;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.public-shell-page .public-page-switch{background:#e4f3f5;color:#086f7e;border-color:#d5e4e8}
+.public-shell-page .firebase-header-status{color:#56717d;background:#e4f3f5}
+.public-shell-page .public-medals-title-event{color:#56717d;font-size:1rem}
+.public-shell-page[data-public-section=performances]>main{width:min(1120px,calc(100% - 32px));margin:0 auto;padding:20px 0 32px}
+.public-shell-page .legal-card{max-width:880px;padding:0;background:none;border:0;box-shadow:none}
+.public-shell-ready .legal-eyebrow{display:none}
+.public-shell-page.pdf-viewer-page .public-results-header{padding-bottom:8px}
+.public-shell-page.pdf-viewer-page{overflow:auto}
+.public-shell-page.pdf-viewer-page .public-results-header>div:first-child{display:block;flex:1;min-width:0;overflow:visible}
+.public-shell-page.pdf-viewer-page .public-results-header h1{white-space:normal;overflow:visible;text-overflow:clip}
+.public-shell-page.pdf-viewer-page .pdf-viewer-shell{min-height:0;height:auto;padding-top:12px}
+.public-shell-page.pdf-viewer-page .pdf-frame{height:70vh;min-height:320px}
+.public-shell-page .public-footer,.public-shell-page .performance-public-footer{width:min(1120px,calc(100% - 32px));margin:0 auto;padding:18px 0 24px;color:#56717d}
+@media(max-width:850px){
+ .public-site-header-inner{flex-wrap:wrap;gap:8px 12px;padding:10px 0}
+ .public-site-brand{order:1}.public-site-federal{order:2;margin-left:auto}.public-site-portal{order:3}
+ .public-site-nav{order:4;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));width:100%;margin:0;gap:3px}
+ .public-site-nav a{min-height:44px;padding:8px 3px;font-size:.8rem}
+}
+@media(max-width:520px){
+ .public-site-header-inner{width:calc(100% - 24px);gap:8px}
+ .public-site-brand{font-size:1.08rem;gap:5px}.public-site-brand img{width:28px;height:28px}
+ .public-site-federal{flex-basis:54px;margin-left:auto}.public-site-federal img{width:54px;height:36px}
+ .public-site-portal{min-height:44px;padding:6px 7px;font-size:.7rem}
+ .public-site-nav a{font-size:.74rem;white-space:normal}
+ .public-site-context{margin-top:12px}
+ .public-shell-page .public-home-hero h1,.public-shell-page .calendar-hero h1,.public-shell-page .calendar-detail-hero h1,.public-shell-page .legal-card h1,.public-shell-page .topbar h1,.public-shell-page .public-results-header h1{font-size:1.5rem}
+ .public-shell-page .main-nav a{min-height:40px;display:inline-flex;align-items:center;padding:7px 9px}
+ .public-site-context .public-site-back,.public-shell-page.pdf-viewer-page .public-results-header .ghost-button{min-height:44px}
+ .public-shell-page .calendar-shell,.public-shell-page .public-home-shell{padding-top:16px}
+}
+@media(max-width:360px){.public-site-header-inner{display:grid;grid-template-columns:minmax(0,1fr) 36px auto;column-gap:6px}.public-site-brand{font-size:.95rem;gap:4px}.public-site-brand img{width:22px;height:22px}.public-site-federal{margin-left:0}.public-site-federal img{width:36px;height:30px}.public-site-portal{font-size:.64rem;padding:6px 4px}.public-site-nav{grid-column:1/-1}}
