@@ -2,6 +2,11 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 14 octobre — Portail en bandeau et colonnes alignées
+
+- Antoine choisit la maquette Portail en bandeau et demande sa publication TEST avec vérification PC/mobile. Le portail sort de la colonne droite, occupe la largeur commune sous les deux colonnes ; grille étirable pour aligner calendrier et Documents sur PC, hauteurs naturelles et bouton sous le texte sur mobile. Dépliage mobile, sources NAP, budgets/cache, droits et backend inchangés.
+- Fichiers index/public, CSS public-home, DESIGN_SYSTEM, TESTS_MANUELS et suivi. Recette locale d’alignement à 1280 px ; publication et recette finale TEST à terminer, validation utilisateur de la version publiée attendue.
+
 ### 14 octobre — Retouches accueil après audit, points 1, 3 et 4
 
 - Antoine autorise les seuls points 1, 3 et 4 de l’audit : rendez-vous mobile limités à trois avec suite dépliable, portail allégé/bouton turquoise, espacements resserrés et meilleure lisibilité des dates documentaires/liens de rubriques. Les intitulés NAP restent inchangés (point 2 non retenu). PC conserve les cinq rendez-vous, événements en cours et nationaux toujours visibles. Dépliage local des données déjà reçues : budget de lectures, cache et backend inchangés.

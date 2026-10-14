@@ -4,6 +4,8 @@
 
 ## Cadre public Compacte — 14 octobre
 
+- Portail en bandeau : PC 1280 px, bas du calendrier et du bloc Documents alignés, bandeau de même largeur que les deux colonnes, texte à gauche/bouton à droite. Mobile 390/320 px : ordre rendez-vous, performances, documents, portail ; hauteurs naturelles, bouton portail sous le texte, dépliage des deux rendez-vous conservé, aucun débordement. Tester accueil et alias public.html, données chargées et états de repli.
+
 - Retouches accueil : sur mobile, trois prochains rendez-vous hors mise en avant, bouton Voir les N suivants puis Réduire la liste, aria-expanded et liens révélés accessibles au clavier. Sur PC, cinq rendez-vous visibles sans bouton ; passage mobile↔PC conserve l’accès à tous. Aucun rechargement NAP au dépliage. Bloc portail compact avec bouton turquoise, dates documentaires et liens calendrier/bibliothèque lisibles à 320/390 px.
 
 - Version Avec bienvenue : vérifier PC 1280 px et mobile 390/320 px, logo FFESSM NAP seul à gauche lié à l’accueil, accès portail visible, signature fédérale liée à ffessm.fr sur toutes les pages publiques et liens légaux/contact conservés. Accueil : rendez-vous à gauche, Performances/Documents/Portail à droite ; même ordre empilé sur mobile, performances 2 × 2. Date nationale « 12–13 / DÉC. », description complète, changements de mois/année sans ambiguïté. Aucun débordement horizontal, titres et commandes PDF préservés.
