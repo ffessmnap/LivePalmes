@@ -45,4 +45,4 @@ function createReader(load,clock=()=>Date.now(),{loadTimeoutMs=5000}={}){
   await pending;return current();
  };
 }
-module.exports={OBJECT_PATH,MAX_AGE_MS,MAX_BYTES,eventSummary,readPage,validateSnapshot,createReader};
+module.exports={OBJECT_PATH,MAX_AGE_MS,MAX_BYTES,validDate,eventSummary,readPage,validateSnapshot,createReader};

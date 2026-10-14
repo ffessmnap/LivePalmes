@@ -15,7 +15,7 @@ async function read(pool,now=Date.now()){
   if(rows.length>MAX_CANDIDATES)throw new RangeError("Fenêtre des rendez-vous trop volumineuse.");
   for(const row of rows){
    const event=calendar.eventFromRow(row);
-   if(event.date&&event.date>="1900-01-01"&&event.endDate>=event.date&&event.endDate>=today)events.set(event.id,home.eventSummary(event));
+   if(home.validDate(event.date)&&home.validDate(event.endDate)&&event.date>="1900-01-01"&&event.endDate>=event.date&&event.endDate>=today)events.set(event.id,home.eventSummary(event));
   }
  }
  return home.validateSnapshot({schemaVersion:1,source:"nap",generatedAt:new Date(now).toISOString(),events:[...events.values()]},now);
