@@ -34,7 +34,8 @@ async function main(){
  catch(error){if(!/NOT_FOUND/.test(String(error.stderr||"")))throw error;}
  phase="configure-hourly-job";gcloud(["scheduler","jobs",exists?"update":"create","http",JOB,...jobArgs(uri,SCHEDULE,exists)]);
  assertJob(describe(),uri);
- const object=()=>parse(["storage","objects","describe",`gs://${BUCKET}/${OBJECT_PATH}`,`--project=${PROJECT}`,"--format=json(generation,metadata)"]);
+ // gcloud exposes custom object metadata as custom_fields, unlike the SDK.
+ const object=()=>{const value=parse(["storage","objects","describe",`gs://${BUCKET}/${OBJECT_PATH}`,`--project=${PROJECT}`,"--format=json(generation,custom_fields)"]);return {generation:value.generation,metadata:value.custom_fields};};
  const before=object(),observations=[];let lastGeneration=String(before.generation);
  const started=Date.now();
  // Exercise the actual timer twice with current public data, then restore hourly.
