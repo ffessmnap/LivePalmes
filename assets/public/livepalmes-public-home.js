@@ -14,13 +14,12 @@
  }
  function eventCard(event,major){
   const article=node("article",`public-home-event${major?" public-home-event-major":""}`);
-  const start=new Date(`${event.date}T12:00:00Z`);
+  const dates=model.eventDateLabel(event.date,event.endDate||event.date);
   const date=node("div","public-home-event-date");date.setAttribute("aria-hidden","true");
-  date.append(node("strong","",new Intl.DateTimeFormat("fr-FR",{day:"2-digit",timeZone:"UTC"}).format(start)),node("span","",new Intl.DateTimeFormat("fr-FR",{month:"short",timeZone:"UTC"}).format(start).toUpperCase()));
+  date.append(node("strong","",dates.day),node("span","",dates.month));
   const copy=node("div","public-home-event-copy"),title=node("a","public-home-event-title",event.name||"Rendez-vous");
   title.href=`competition.html?id=${encodeURIComponent(event.id)}`;
-  const dates=event.endDate!==event.date?`${new Intl.DateTimeFormat("fr-FR",{day:"numeric",month:"long",timeZone:"UTC"}).format(start)} – ${new Intl.DateTimeFormat("fr-FR",{day:"numeric",month:"long",year:"numeric",timeZone:"UTC"}).format(new Date(`${event.endDate}T12:00:00Z`))}`:new Intl.DateTimeFormat("fr-FR",{day:"numeric",month:"long",year:"numeric",timeZone:"UTC"}).format(start);
-  copy.append(title,node("p","",[dates,event.city||event.location,types[event.eventType],levels[event.level]].filter(Boolean).join(" · ")));
+  copy.append(title,node("p","",[dates.label,event.city||event.location,types[event.eventType],levels[event.level]].filter(Boolean).join(" · ")));
   const resultsUrl=event.results?.url||event.results?.pdfUrl;
   if(resultsUrl){
    try{const url=new URL(resultsUrl,global.location.href);if((url.protocol==="https:"||url.origin===global.location.origin)&&!url.username&&!url.password){const link=node("a","public-home-event-results","Résultats →");link.href=url.href;copy.append(link);}}catch{ /* An invalid optional result link is omitted. */ }

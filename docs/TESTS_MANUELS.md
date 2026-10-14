@@ -4,8 +4,9 @@
 
 ## Cadre public Compacte — 14 octobre
 
+- Version Avec bienvenue : vérifier PC 1280 px et mobile 390/320 px, logo FFESSM NAP seul à gauche lié à l’accueil, accès portail visible, signature fédérale liée à ffessm.fr sur toutes les pages publiques et liens légaux/contact conservés. Accueil : rendez-vous à gauche, Performances/Documents/Portail à droite ; même ordre empilé sur mobile, performances 2 × 2. Date nationale « 12–13 / DÉC. », description complète, changements de mois/année sans ambiguïté. Aucun débordement horizontal, titres et commandes PDF préservés.
+
 - Parcourir accueil/public, bibliothèque, calendrier et fiche événement, Records/MPF/TOP/recherche nageur, pages légales, résultats/séries/médailles et les trois lecteurs PDF. En-tête unique, accueil toujours accessible, rubrique active correcte, lien portail visible, logo et fil d’Ariane cohérents ; conserver les titres dynamiques et identifiants de commandes.
-- Contrôler PC 1280 px et mobile 390/320 px : navigation et accès portail sans débordement, onglets Performances accessibles, titres et boutons PDF lisibles. Accueil sans grand titre/marque/signature répétés ; grille des performances adaptée au mobile.
 - Vérifier liens accueil↔calendrier↔fiche, accueil↔Performances↔nageur et bibliothèque/recherche ; retours résultats/séries/médailles/PDF et informations légales. Aucune connexion, écriture de résultats, désactivation de notifications ou sauvegarde de document nécessaire à cette recette. Portail et consoles inchangés.
 
 ## Accueil et bibliothèque documentaire — préparation du 13 octobre

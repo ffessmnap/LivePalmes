@@ -41,12 +41,11 @@
 .public-documents-more{justify-self:center;margin-top:10px}
 .public-home-page a:focus-visible{outline:3px solid #174c76;outline-offset:3px}
 @media(min-width:701px){
- .public-home-page .performance-card{grid-template-columns:36px max-content minmax(0,1fr);align-items:center;column-gap:12px}
- .public-home-page .performance-card h2{grid-column:2;grid-row:1;text-align:left;padding:0;white-space:nowrap;font-size:clamp(1rem,2.1vw,1.16rem)}
- .public-home-page .performance-card .public-home-card-actions{grid-column:3;grid-row:1;margin-top:0;justify-content:end;grid-template-columns:repeat(4,auto)}
+ .public-home-page .performance-card{grid-template-columns:34px minmax(0,1fr);align-items:center;column-gap:12px}
+ .public-home-page .performance-card h2{grid-column:2;grid-row:1;text-align:left;padding:0;white-space:normal;font-size:1.16rem}
+ .public-home-page .performance-card .public-home-card-actions{grid-column:1/-1;grid-row:2;margin-top:8px;justify-content:stretch;grid-template-columns:repeat(2,minmax(0,1fr))}
  .public-home-page .performance-card .public-home-card-actions .ghost-button{white-space:nowrap}
 }
-@media(min-width:960px){.public-home-page .performance-card .public-home-card-actions{grid-template-columns:repeat(4,minmax(0,160px))}}
 @media(max-width:700px){
  .public-home-page .public-home-grid{grid-template-columns:1fr}
  .public-home-page .public-home-card{padding:12px 14px;gap:8px}
@@ -62,3 +61,21 @@
  .public-document-filters button{grid-column:1/-1;justify-self:end}
 }
 @media(max-width:350px){.public-home-section-heading{flex-wrap:wrap}.public-home-section-link.ghost-button{margin-left:auto}.public-home-page .public-home-hero-copy h1{font-size:1.5rem}}
+.public-home-welcome{margin:0 0 24px}
+.public-home-welcome h1{margin:0 0 8px;font-size:1.8rem;line-height:1.25;color:#153c4a}
+.public-home-welcome p{margin:0;color:#56717d;font-size:.92rem;line-height:1.6;max-width:800px}
+.public-home-page .public-home-grid{grid-template-columns:minmax(0,1.16fr) minmax(0,1fr);gap:20px;align-items:start}
+.public-home-page .public-home-right{display:grid;gap:16px;min-width:0}
+.public-home-page .performance-card{grid-column:auto;min-height:0}
+.public-home-page .documents-card,.public-home-page .calendar-card{min-height:0}
+.public-home-page .documents-card .public-home-section-heading{flex-wrap:wrap}
+.public-home-page .public-home-event{grid-template-columns:72px minmax(0,1fr);gap:12px;padding:15px 10px}
+.public-home-page .public-home-event-date strong{font-size:1.3rem;line-height:1.25;white-space:nowrap;font-variant-numeric:tabular-nums}
+.public-home-page .public-home-event-date span{margin-top:4px}
+.public-home-page .public-home-event-copy p{font-size:.8rem;line-height:1.5}
+.public-home-page .public-home-clubs{display:flex;flex-direction:column;gap:12px;min-height:0;background:#edf7f8;border-color:#c5dfe3}
+.public-home-page .public-home-clubs h2{font-size:1rem;margin:0;align-self:flex-start;text-align:left}
+.public-home-page .public-home-clubs p{font-size:.85rem;line-height:1.5}
+.public-home-page .public-home-clubs small{font-size:.75rem;color:#56717d;line-height:1.5}
+.public-home-page .public-home-clubs .ghost-button{align-self:flex-start;min-height:40px;text-decoration:none;font-size:.8rem}
+@media(max-width:700px){.public-home-page .public-home-grid{grid-template-columns:1fr;gap:16px}.public-home-welcome h1{font-size:1.5rem}.public-home-page .performance-card .public-home-card-actions{grid-auto-rows:auto}.public-home-page .performance-card .public-home-card-actions .ghost-button{height:auto;min-height:44px;white-space:normal}.public-home-page .public-home-event{grid-template-columns:64px minmax(0,1fr);gap:8px}.public-home-page .public-home-event-date strong{font-size:1.2rem}.public-home-page .public-home-clubs .ghost-button{min-height:44px}}

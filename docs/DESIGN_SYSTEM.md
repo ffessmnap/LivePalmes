@@ -185,7 +185,7 @@ Un logo informatif possède un texte alternatif. Un logo ou pictogramme purement
 
 ### En-têtes publics
 
-Les pages de consultation partagent assets/public/livepalmes-public-shell.js et son CSS, activés explicitement par public-shell-page. Marque LivePalmes à gauche, navigation Accueil / Calendrier / Performances / Documents, logo fédéral et accès secondaire Accéder au portail en haut. Largeur maximale commune 1120 px, gouttières 16 px, fond clair et en-tête blanc. La rubrique active porte aria-current ; pas de menu caché sur mobile. Sous 850 px, les quatre destinations occupent une seconde ligne ; accès portail et marque restent directement visibles. Très petit écran : logos réduits pour garder cet accès, sans défilement horizontal.
+Les pages de consultation partagent assets/public/livepalmes-public-shell.js et son CSS, activés explicitement par public-shell-page. Logo FFESSM Nage avec palmes seul à gauche, lié à l’accueil LivePalmes, navigation Accueil / Calendrier / Performances / Documents et accès secondaire Accéder au portail en haut. Largeur maximale commune 1120 px, gouttières 16 px, fond clair et en-tête blanc. La rubrique active porte aria-current ; pas de menu caché sur mobile. Sous 850 px, les quatre destinations occupent une seconde ligne ; accès portail et logo restent directement visibles, sans défilement horizontal.
 
 Sous l’en-tête, fil d’Ariane Accueil / rubrique / page quand pertinent, puis titre principal compact (1,8 rem, 1,5 rem sur mobile), sans répéter la marque ou le logo. Les titres dynamiques, statuts et commandes des pages restent en place. Les retours contextuels Calendrier/Résultats coexistent avec l’accueil toujours visible. Les quatre onglets Performances restent secondaires, avec Recherche nageur comme libellé commun. Les lecteurs PDF gardent téléchargement et retour existants ; pages légales sur le même cadre, texte plafonné à 880 px pour la lisibilité.
 
@@ -193,9 +193,11 @@ Le cadre concerne la consultation permanente, les pages publiques du Direct, PDF
 
 ### Accueil public
 
-L’accueil commence directement par les cartes Performances, Rendez-vous et Documents sous l’en-tête commun. Aucun grand titre LivePalmes ni signature « Suivre · consulter · retrouver » répétés ; un h1 Accueil reste disponible aux lecteurs d’écran. La marque, le logo fédéral et l’accès portail sont portés une seule fois par l’en-tête.
+L’accueil commence par un court « Bienvenue sur LivePalmes » et la phrase « Les rendez-vous, les performances et les ressources de la Commission Nationale Nage avec Palmes FFESSM. » Le logo fédéral et l’accès portail sont portés par l’en-tête, sans seconde marque LivePalmes.
 
-La carte Performances occupe toute la largeur. Au-dessus de 700 px, son icône, le titre « Performances françaises » et les quatre actions sont alignés sur une seule ligne, avec les actions à droite. Entre 701 et 959 px, les boutons prennent la largeur de leur texte et le titre s’ajuste entre 1 et 1,16 rem ; à partir de 960 px, les quatre boutons ont la même largeur. Sur mobile, le titre reste au-dessus de la grille 2 × 2 centrée, avec boutons limités à 136 px de large et 32 px de haut. Les cartes Rendez-vous et Documents utiles suivent en deux colonnes sur ordinateur, une sur mobile, sans légende générique. Leurs fonds bleu et mauve restent subtils ; les petites icônes sont décoratives, avec un calendrier pour les rendez-vous et un document pour les documents utiles.
+Au-dessus de 700 px, les rendez-vous occupent la colonne gauche légèrement plus large (rapport 1,16 / 1) ; la colonne droite empile Performances françaises, Documents utiles et Portail clubs. Les quatre actions Performances forment une grille 2 × 2 sous le titre. Sur mobile, l’ordre est Rendez-vous, Performances, Documents, Portail ; boutons de performances de 44 px minimum. Le bloc portail explique la préparation des compétitions et engagements, avec mention d’accès réservé aux responsables de clubs autorisés ; simple lien, sans changement de droits. Les fonds bleu et mauve restent subtils, avec icônes calendrier et document.
+
+Le pavé de date dispose de 72 px sur PC, 64 px sur mobile. Pour plusieurs jours du même mois : « 12–13 » puis « DÉC. », et « Du 12 au 13 décembre 2026 » dans la description. En cas de changement de mois, le pavé indique la date de début, la description donne la plage complète ; en cas de changement d’année, les deux années sont indiquées. Les dates sources ne sont pas modifiées.
 
 « Tout le calendrier » et « Bibliothèque documentaire » partagent la variante compacte sur une ligne, de largeur adaptée au texte. À très petite largeur ou avec agrandissement, le groupe peut revenir à la ligne sans couper le libellé ni masquer l’action. Les événements nationaux/internationaux mis en évidence utilisent un fond léger et une bordure turquoise. Un lien Résultats séparé reste accessible au-dessus de la zone cliquable de la carte, sans liens imbriqués.
 
@@ -412,7 +414,7 @@ Les implémentations existantes incluent notamment `.decision-modal`, les fiches
 
 ### Pieds de page
 
-Les pages publiques affichent la nature bénévole du projet et un lien de contact. Cette signature doit rester discrète, lisible et cohérente entre l’accueil, le live et Performances.
+Les pages de consultation publiques affichent « Fédération Française d’Études et de Sports Sous-Marins », liée à https://ffessm.fr/ dans un nouvel onglet avec noopener/noreferrer, puis « Commission Nationale Nage avec Palmes ». Contact et navigation légale existants sont conservés. Cette signature discrète est commune à l’accueil, aux pages publiques du Direct, aux lecteurs PDF et aux pages Performances/légales ; les consoles et le portail restent hors de ce cadre.
 
 ## États interactifs
 
