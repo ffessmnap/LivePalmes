@@ -8,14 +8,14 @@ async function measure(pool){
   const checks=[];
   for(const [name,query]of Object.entries(queries)){
    const [plan]=await connection.execute({sql:`EXPLAIN ${query.sql}`,timeout:10000},query.values);
-   const fullScan=plan.some(row=>row.type==="ALL"||row.type==="index"),samples=[];
+   const fullScan=plan.some(row=>row.type==="ALL"||row.type==="index"),overBudget=name==="ongoing"&&plan.some(row=>Number(row.rows)>501),samples=[];
    // Inspect only: never execute an unbounded history scan.
-   if(!fullScan)for(let i=0;i<3;i++){
+   if(!fullScan&&!overBudget)for(let i=0;i<3;i++){
     const counters=async()=>Object.fromEntries((await connection.query("SHOW SESSION STATUS WHERE Variable_name LIKE 'Handler_read_%'"))[0].map(row=>[row.Variable_name,Number(row.Value)]));
     const before=await counters(),started=performance.now(),[rows]=await connection.execute({sql:query.sql,timeout:10000},query.values),durationMs=performance.now()-started,after=await counters();
     samples.push({returned:rows.length,durationMs:Math.round(durationMs*100)/100,handlers:Object.fromEntries(Object.keys(after).map(key=>[key,after[key]-before[key]]))});
    }
-   checks.push({name,fullScan,plan:plan.map(row=>({table:row.table,type:row.type,key:row.key,estimatedRows:row.rows,extra:row.Extra})),samples});
+   checks.push({name,fullScan,overBudget,plan:plan.map(row=>({table:row.table,type:row.type,key:row.key,estimatedRows:row.rows,extra:row.Extra})),samples});
   }
   return {measuredAt:new Date().toISOString(),today,napWrites:0,source:"nap",indexes,checks};
  }finally{connection.release();}
