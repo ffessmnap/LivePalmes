@@ -13,7 +13,7 @@ Ces règles complètent le fichier racine pour toute intervention dans `function
 - Ne pas modifier les capacités du portail ou les droits sans validation métier explicite.
 - Ne pas lancer de migration, écriture de données officielles, publication Storage ou déploiement Firebase sans demande explicite.
 
-## Firestore et montée en charge
+## Accès aux données et montée en charge
 
 Pour NAP/MySQL, préférer une requête serveur directe, indexée et bornée lorsque les mesures montrent un coût raisonnable. Estimer requêtes, lignes parcourues et fréquence avec le cache ; vérifier le plan réel avant mise en service. Un petit cache mémoire mutualisé peut remplacer une génération statique périodique pour une liste légère. Les fichiers générés restent une option pour les traitements lourds ou la disponibilité, sans préférence systématique. Ne jamais exposer la connexion NAP au navigateur. Toute création d’index ou modification de la base conserve son autorisation spécifique.
 
