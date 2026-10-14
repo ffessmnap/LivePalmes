@@ -263,7 +263,7 @@ if (ENVIRONMENT.projectId === "livepalmes-test") {
         prepare: target => db.collection("auditLogs").doc("nap-swimmer-912-fauvau-before").create({ action: "nap.swimmer.authorizedCorrection.prepare", actorUid: "github-livepalmes-test-backend", target, createdAt: new Date().toISOString() }),
         complete: target => writeAuditLogOnce("nap.swimmer.authorizedCorrection.complete", "github-livepalmes-test-backend", target, "nap-swimmer-912-fauvau")
       }) : indexOperation ? await require("./nap-approved-index").approvedIndexOperation(napPool, request.body)
-        : homeRefresh ? await require("./nap-home-events-refresh").refreshTestHomeEvents(napPool,admin.storage().bucket(ENVIRONMENT.publicBucket).file(require("./nap-home-events").OBJECT_PATH),{projectId:ENVIRONMENT.projectId,confirmation:request.body?.confirmation})
+        : homeRefresh ? await require("./nap-home-events-refresh").refreshTestHomeEvents(napPool,storage.bucket(ENVIRONMENT.publicBucket).file(require("./nap-home-events").OBJECT_PATH),{projectId:ENVIRONMENT.projectId,confirmation:request.body?.confirmation})
         : request.query.action === "home-events-page" ? await require("./nap-home-events").readPage(napPool,request.query)
         : request.query.action === "direct-plan" ? await require("./nap-direct-query-checks").inspectDirectQueries(napPool)
         : request.query.action === "time-shape" ? await require("./nap-direct-query-checks").inspectTimeShape(napPool, request.query.after)
