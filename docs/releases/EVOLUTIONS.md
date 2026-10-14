@@ -6,6 +6,8 @@
 
 - Antoine choisit la maquette Portail en bandeau et demande sa publication TEST avec vérification PC/mobile. Le portail sort de la colonne droite, occupe la largeur commune sous les deux colonnes ; grille étirable pour aligner calendrier et Documents sur PC, hauteurs naturelles et bouton sous le texte sur mobile. Dépliage mobile, sources NAP, budgets/cache, droits et backend inchangés.
 - Fichiers index/public, CSS public-home, DESIGN_SYSTEM, TESTS_MANUELS et suivi. Recette locale d’alignement à 1280 px ; publication et recette finale TEST à terminer, validation utilisateur de la version publiée attendue.
+- [PR #336](https://github.com/ffessmnap/LivePalmes/pull/336) intégrée au commit ccc89ca6eea9893a155dea53195aefeae985ec5c ; CI 38604910287 réussie. [Publication commune TEST 38605422271](https://github.com/ffessmnap/LivePalmes/actions/runs/38605422271) réussie, Hosting seul 713e67ac0554e166 ; 114 fonctions strictement identiques à la preuve précédente et vérification globale du candidat réussie.
+- Recette TEST terminée : PC 1280 px, bas calendrier/Documents identiques à 833,046875 px, portail de 1120 px comme la grille et placé en dessous. Mobile 390/320 px : portail après les documents, bouton sous le texte, aucune largeur dépassée ; Voir les 2 suivants/Réduire la liste fonctionnels et aria-expanded vérifié. Accueil et alias public contrôlés, console sans erreur. Captures test-desktop.png, test-mobile.png et qa.json dans C:/Users/ITIFP/Documents/Codex/livepalmes-portal-band-20261014, rendus relus. Dimensions réinitialisées, serveur local arrêté ; aucune donnée ni PROD modifiées. Validation utilisateur de cette disposition publiée attendue.
 
 ### 14 octobre — Retouches accueil après audit, points 1, 3 et 4
 
