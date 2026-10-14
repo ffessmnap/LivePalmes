@@ -4,9 +4,10 @@
 
 ### 14 octobre — Bandeau Performances sur une seule ligne PC
 
-- Antoine demande de retrouver la disposition de la maquette : titre « Performances françaises » et quatre boutons sur la même ligne PC, avec adaptation mobile, jusqu’à publication TEST. CSS limité à la carte d’accueil, à partir de 960 px : icône/titre/actions alignés au centre vertical, boutons de même largeur à droite. Sous ce seuil, titre au-dessus ; mobile 2 × 2 conservé.
+- Antoine demande de retrouver la disposition de la maquette : titre « Performances françaises » et quatre boutons sur la même ligne PC, avec adaptation mobile, jusqu’à publication TEST. CSS limité à la carte d’accueil : au-dessus de 700 px, icône/titre/actions alignés au centre vertical ; boutons à la largeur du texte jusqu’à 959 px, puis de même largeur. Mobile 2 × 2 conservé.
 - Fichiers : `assets/public/livepalmes-public-home.css`, version CSS dans `index.html` et `public.html`, règle dans `docs/DESIGN_SYSTEM.md`, présent registre. Aucune modification du lecteur NAP, des liens, données, droits ou backend.
 - Recette locale sur données fictives : alignement des cinq centres verticaux à 960 px, rendu PC 1280 px ; mobile 390 px, boutons 136 × 32 px en deux lignes et aucun débordement. Diff relu ; CI et publication commune TEST à effectuer. Aucune validation utilisateur de cette nouvelle disposition revendiquée.
+- PR #319 intégrée `33f03480`, CI `38537691199` et TEST commun `38538125807` réussis. Le contrôle en ligne a révélé un panneau navigateur de 752 px : le premier seuil 960 conservait le titre au-dessus dans cette largeur. Retouche préparée pour les fenêtres PC étroites, sans réduire les libellés : alignement mesuré à 752 et 702 px CSS, mobile 391 px en 2 × 2 sans débordement. Aucun changement de zoom utilisateur. CI/publication de cette retouche à effectuer.
 
 ### 14 octobre — Rendez-vous validés, ancien job horaire supprimé
 
