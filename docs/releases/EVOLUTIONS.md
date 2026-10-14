@@ -2,6 +2,11 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 14 octobre — Bibliothèque simplifiée et thèmes compacts
+
+- Antoine demande de garder les thèmes et la recherche, retirer les sélecteurs Type/Rubrique, masquer Nage Avec Palmes et réduire la place de la navigation. Cinq thèmes visibles plus Tous les documents, boutons à largeur naturelle et retour à la ligne, une seule carte pour thèmes/recherche/résultats. Ancien thème 1 renvoie à Tous les documents ; anciens liens EDF/Kit par rubrique conservés avec titre explicite, réinitialisés au choix d’un thème. Aucun changement NAP, index, cache serveur, droits ou données.
+- Fichiers : bibliotheque.html, assets/public/livepalmes-public-documents.js et livepalmes-public-library.css, DESIGN_SYSTEM et présent registre. Budget serveur inchangé ; aucun nouvel accès aux données. Contrôle local ordinateur/mobile, CI, intégration et publication TEST à terminer ; validation utilisateur attendue.
+
 ### 14 octobre — Bibliothèque par thèmes IntraNAP publiée sur TEST
 
 - Antoine valide explicitement la présentation de l’accueil sur TEST (Hosting du commit 03812fe2, PR #319 à #322), puis demande les sections natives et un accès direct par thème dans la bibliothèque, jusqu’à vérification TEST. Le 14 octobre, il autorise séparément : « Oui, ajouter cet index et terminer sur TEST », uniquement livepalmes_document_cible(document,cible) sur documents_cibles, base commune TEST/PROD.
