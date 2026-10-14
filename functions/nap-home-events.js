@@ -27,7 +27,7 @@ function validateSnapshot(value,now=Date.now(),{allowStale=false}={}){
  if(new Set(value.events.map(event=>event.id)).size!==value.events.length||value.events.some(event=>!/^legacy-nap-[1-9]\d*$/.test(event.id||"")||Number(event.id.slice(11))>2147483647||!validDate(event.date)||!validDate(event.endDate)||event.endDate<event.date||["name","city","location","eventType","level"].some(key=>typeof event[key]!=="string"||event[key].length>2000)||typeof event.canceled!=="boolean"||[event.results?.url,event.results?.pdfUrl].some(link=>link!=null&&typeof link!=="string")))throw new TypeError("Rendez-vous momentanément indisponibles.");
  return {source:"nap",generatedAt:value.generatedAt,events:value.events.map(eventSummary)};
 }
-function createReader(load,clock=()=>Date.now()){
+function createReader(load,clock=()=>Date.now(),{loadTimeoutMs=5000}={}){
  let saved=null,loadedAt=0,pending=null,loadFailed=false,lastError=null;
  const current=()=>({...validateSnapshot(saved,clock(),{allowStale:true}),stale:loadFailed||clock()-Date.parse(saved.generatedAt)>MAX_AGE_MS});
  return async()=>{
@@ -35,7 +35,10 @@ function createReader(load,clock=()=>Date.now()){
   if(saved&&now-loadedAt<60000)return current();
   if(!saved&&lastError&&now-loadedAt<60000)throw lastError;
   if(!pending)pending=(async()=>{
-   const bytes=await load();if(bytes.length>MAX_BYTES)throw new TypeError("Rendez-vous momentanément indisponibles.");
+   let timer,bytes;
+   try{bytes=await Promise.race([load(),new Promise((_,reject)=>{timer=setTimeout(()=>reject(Error("Chargement des rendez-vous interrompu.")),loadTimeoutMs);})]);}
+   finally{clearTimeout(timer);}
+   if(bytes.length>MAX_BYTES)throw new TypeError("Rendez-vous momentanément indisponibles.");
    const value=JSON.parse(bytes.toString("utf8"));validateSnapshot(value,clock(),{allowStale:true});saved=value;loadFailed=false;lastError=null;
   })().catch(error=>{loadFailed=true;lastError=error;if(!saved)throw error;validateSnapshot(saved,clock(),{allowStale:true});
   }).finally(()=>{loadedAt=clock();pending=null;});

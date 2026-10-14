@@ -21,6 +21,8 @@ const event=id=>({id:`legacy-nap-${id}`,name:`Event ${id}`,date:"2026-10-13",end
  assert.equal((await resilient()).events.length,1);assert.equal((await resilient()).stale,true);assert.equal(refreshCalls,2);
  clock+=61000;mode="corrupt";assert.equal((await resilient()).stale,true);
  clock+=61000;mode="valid";assert.equal((await resilient()).stale,false);
+ let hanging=false,timeoutClock=now;const timed=home.createReader(()=>hanging?new Promise(()=>{}):Promise.resolve(Buffer.from(JSON.stringify({schemaVersion:1,source:"nap",generatedAt:new Date(now).toISOString(),events:[event(1)]}))),()=>timeoutClock,{loadTimeoutMs:10});
+ await timed();hanging=true;timeoutClock+=61000;assert.equal((await timed()).stale,true);assert.equal((await timed()).events.length,1);
  let pageCalls=0;const result=await gatherPages(async input=>{pageCalls++;return {source:"nap",today:input.today,events:[event(pageCalls)],hasMore:pageCalls===1,nextAfterId:pageCalls===1?100:null};},now);
  assert.equal(result.calls,2);assert.equal(result.snapshot.events.length,2);
  await assert.rejects(gatherPages(async input=>({source:"nap",today:input.today,events:[],hasMore:true,nextAfterId:input.after}),now),/Curseur/);
