@@ -2,6 +2,13 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 14 octobre — Rendez-vous validés, ancien job horaire supprimé
+
+- Antoine répond « ça me va » au lecteur direct NAP avec cache cinq minutes publié sur TEST (`08a9ade46eac14d1787724c46fcb20b8045873c2`, publication commune `38532921262`). Validation utilisateur du fonctionnement des rendez-vous, sans l’étendre aux autres évolutions. Il demande explicitement de supprimer l’ancien job horaire qu’il ne souhaite pas garder.
+- PR #317 intégrée `7248d322`, CI `38536170252` réussie : confirmation de suppression distincte dans `tools/pause-home-events-test.js` et `livepalmes-home-events-test-retire.yml`. Vérification préalable du lecteur direct frais, identité/configuration exacte du seul job TEST et état PAUSED ; suppression du nom fixe, puis preuve NOT_FOUND.
+- [Suppression `38536577623`](https://github.com/ffessmnap/LivePalmes/actions/runs/38536577623) réussie : `projects/livepalmes-test/locations/europe-west1/jobs/livepalmes-test-home-events`, état DELETED et absence vérifiée à `2026-10-14T08:39:06.389Z`. Preuve téléchargée dans `travail-accueil-documents-20261013/home-job-deletion-proof/home-events-delete-proof.json`. Aucun autre job, fichier ou donnée NAP supprimé ; aucun déploiement applicatif ni intervention PROD.
+- Contrôle après suppression : lecteur public 200, source `nap-direct`, 70 résumés et `stale:false`. Ancien fichier conservé ; ne pas recréer le job sans nouvel accord explicite. Documentation de retour arrière mise à jour dans accueil-bibliotheque.md ; aucune nouvelle recette applicative requise pour ces seuls outils d’exploitation.
+
 ### 14 octobre — Lecture directe NAP cinq minutes publiée et vérifiée sur TEST
 
 - Antoine demande de mesurer puis remplacer le fichier rendez-vous par une lecture NAP avec cache cinq minutes si raisonnable, jusqu’à recette TEST, et d’adapter les consignes sur les fichiers statiques. PR #311 intégrée `1a2675ad` : consignes racine/backend adaptées à la source réelle et aux lectures NAP ciblées, indexées, bornées et mesurées ; fichiers générés conservés comme option, Firebase reste utilisé. Aucun relâchement des accords spécifiques aux index ou à la base commune.
