@@ -2,6 +2,12 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 14 octobre — Harmonisation publique Compacte demandée
+
+- Antoine valide la bibliothèque compacte (TEST 5f2364b4), puis choisit la maquette Compacte et autorise son application aux pages publiques jusqu’à TEST, avec accès portail en haut et accueil sans répétition de LivePalmes/signature. L’accord porte sur la présentation et la navigation ; aucun changement sportif, de données, de droits ou de publication PROD.
+- Cadre commun activé explicitement sur 20 pages de consultation : accueil/public, bibliothèque, calendrier/fiches, six entrées Performances dont redirection/construction, trois pages légales, résultats/séries/médailles et trois lecteurs PDF. Module/CSS public-shell, métadonnées par page, mêmes liens et rubriques actives, fil d’Ariane, largeur 1120 px et titres compacts ; libellé Recherche nageur commun. Titres dynamiques, filtres, statuts et actions existants conservés. Portail, consoles et pages transactionnelles exclus ; accès portail simple lien, zéro nouvelle lecture SQL/Firestore/Storage et zéro écriture.
+- Tests ciblés du composant : ordre du bandeau TEST, idempotence, liens absolus public/portail, texte non interprété, titres PDF préservés, couverture des pages et exclusion portail/consoles. Recette locale et globale, intégration et publication TEST à terminer ; validation utilisateur de la version regroupée attendue.
+
 ### 14 octobre — Bibliothèque simplifiée et thèmes compacts
 
 - Antoine demande de garder les thèmes et la recherche, retirer les sélecteurs Type/Rubrique, masquer Nage Avec Palmes et réduire la place de la navigation. Cinq thèmes visibles plus Tous les documents, boutons à largeur naturelle et retour à la ligne, une seule carte pour thèmes/recherche/résultats. Ancien thème 1 renvoie à Tous les documents ; anciens liens EDF/Kit par rubrique conservés avec titre explicite, réinitialisés au choix d’un thème. Aucun changement NAP, index, cache serveur, droits ou données.
