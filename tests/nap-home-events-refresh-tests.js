@@ -26,5 +26,13 @@ const now=Date.parse("2026-10-14T05:00:00Z"),snapshot={schemaVersion:1,source:"n
  assert(jobArgs(uri).includes("--max-retry-attempts=3"));assert(jobArgs(uri).includes("--project=livepalmes-test"));assert.throws(()=>jobArgs("https://example.com"),/invalide/);
  assert(jobArgs(uri).includes("--headers=Content-Type=application/json"));assert(jobArgs(uri,SCHEDULE,true).includes("--update-headers=Content-Type=application/json"));assert(!jobArgs(uri,SCHEDULE,true).some(arg=>arg.startsWith("--headers=")));
  const source=fs.readFileSync(require.resolve("../functions/index.js"),"utf8"),publicSource=source.slice(source.indexOf("exports.readNapPublicSwimmer"),source.indexOf("exports.exportNapPublicPage"));assert.equal(publicSource.includes("home-events-refresh"),false);assert.match(source,/invoker: "github-livepalmes-test-backend@livepalmes-test.iam.gserviceaccount.com"/);
+ // Execute the real registered handler with modular Storage, as in the runtime.
+ // This covers the wiring that module-only publication tests cannot exercise.
+ const handlerEnd=source.indexOf("\nconst ENGAGEMENT_MAIL_CALLABLE_OPTIONS"),registration=source.slice(source.indexOf("exports.exportNapPublicPage"),source.lastIndexOf("\n}",handlerEnd));
+ const context={exports:{},REGION:"europe-west1",napPassword:{},napPool:pool,ENVIRONMENT:{projectId:"livepalmes-test",publicBucket:BUCKET},storage:{bucket:name=>{assert.equal(name,BUCKET);return {file:path=>{assert.equal(path,OBJECT_PATH);return file;}};}},onRequest:(options,handler)=>handler,require:name=>require("../functions/"+name.slice(2))};
+ require("node:vm").runInNewContext(registration,context);
+ let status=200,data;const response={set(){},status(value){status=value;return this;},json(value){data=value;}};
+ await context.exports.exportNapPublicPage({method:"POST",query:{action:"home-events-refresh"},body:{confirmation:"publish-livepalmes-test-home-events"}},response);assert.equal(status,200);assert.equal(data.verified,true);assert.equal(data.napWrites,0);
+ await context.exports.exportNapPublicPage({method:"GET",query:{action:"home-events-refresh"}},response);assert.equal(status,405);
  console.log("Home refresh: TEST-only object, bounded preparation, generation conflicts, monotonic freshness, OIDC scheduler and retries passed offline.");
 })().catch(error=>{console.error(error);process.exitCode=1;});
