@@ -14,6 +14,10 @@ Les routes publiques restent à la racine : `index.html`, `public.html`, `biblio
 
 La recherche documentaire travaille sur une fenêtre courante indexée de NAP, et non sur une copie statique des titres. Le filtre texte et les facettes s’appliquent à cette fenêtre, puis un curseur strictement décroissant permet de poursuivre. Une fenêtre vide ne lance pas de remplissage automatique ; l’interface propose « Poursuivre la recherche ». Les nouvelles références sont immédiatement visibles, les retraits de public immédiatement exclus de chaque nouvelle réponse. Le petit fichier serveur préparé par `tools/build-nap-document-index.js` ne contient que les étiquettes de facettes. Les références sans URL restent visibles comme texte, sans lien inventé.
 
+Les thèmes sont les cibles reliées au menu natif Documents (elements.name=publications) par elements_cibles, ordonnées par cibles.pos puis id : Nage Avec Palmes, Comités/clubs, Compétitions, Entraineurs, Juges et Haut Niveau. Leurs seules étiquettes sont relues avec un cache mutualisé de cinq minutes par instance, y compris les erreurs ; trois fenêtres indexées et sentinelles (100 cibles, 200 éléments, 1000 associations de menu), sans parcours des associations documentaires historiques. La lecture du 14 octobre confirme 6 cibles, 77 éléments et 36 associations de menu.
+
+L’appartenance des documents à un thème est vérifiée à chaque requête par EXISTS dans documents_cibles via le seul index proposé livepalmes_document_cible(document,cible). Chaque probe s’arrête au premier lien, même en présence de doublons historiques. La fenêtre motrice des documents publics généraux est matérialisée avant ces probes, plafonnée à 501 candidats ; filtres et curseur conservent une pagination explicite de 25 résultats, sans remplissage automatique. Aucun rattachement n’est inféré du titre, aucune écriture ni copie de document. Une cible inconnue est refusée. Les liens historiques ?rubric=55 et ?rubric=57 restent compatibles.
+
 La date affichée vient de `documents.date`. Un timestamp civil est normalisé en Europe/Paris. Une heure ambiguë au changement d’heure conserve sa date affichable mais ne donne pas un instant de publication inventé. Nouveau exige un instant valide, non futur, âgé de strictement moins de 30 × 24 heures. La sélection ne modifie jamais la date native.
 
 ## Budgets par parcours
@@ -22,6 +26,8 @@ La date affichée vient de `documents.date`. Un timestamp civil est normalisé e
 |---|---|---|
 | Bibliothèque initiale ou page sans filtre | 1 requête, ≤26 candidats, deux jointures PK par candidat ; ≤25 fiches rendues | 0 |
 | Recherche/facette ou sa continuation | 1 requête, ≤101 candidats, deux jointures PK ; ≤25 fiches rendues ; aucun appel par ligne | 0 |
+| Thème documentaire, recherche ou continuation dans un thème | 1 requête, ≤501 candidats avant hydratation PK et ≤501 probes EXISTS de l’index document/cible ; ≤25 fiches rendues ; 0 appel par ligne | 0 |
+| Sections documentaires, première ouverture après cinq minutes ou échec | 3 requêtes mutualisées, ≤1303 lignes références avec sentinelles ; 0 requête supplémentaire sur cache ; jamais de scan des documents_cibles | 0 |
 | Documents utiles publics | 1 requête, ≤7 rangs de contrôle, ≤6 documents plus deux taxonomies en PK ; erreur si structure/rangs invalides | 0 |
 | Rendez-vous publics | 0 SQL sur cache cinq minutes ; sinon deux fenêtres indexées plafonnées à 501 candidats chacune avant jointures, demandes simultanées mutualisées ; 0 Storage | 0 |
 | Ouverture de l’éditeur national | 1 lecture sélection ≤7 + 1 page de catalogue bornée | ≤1 lecture de profil existant |

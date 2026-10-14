@@ -27,8 +27,10 @@ function catalogueRequest(input={}){
  const after=input.after==null||input.after===""?0:Number(input.after);
  const type=input.type==="other"?-1:input.type==null||input.type===""?0:Number(input.type);
  const rubric=input.rubric==="other"?-1:input.rubric==null||input.rubric===""?0:Number(input.rubric);
+ const theme=input.theme==null||input.theme===""?0:Number(input.theme);
+ if(!Number.isSafeInteger(theme)||theme<0||theme>2147483647)throw new TypeError("Thème documentaire invalide.");
  if(search.length>100||!Number.isSafeInteger(after)||after<0||after>2147483647||[type,rubric].some(value=>!Number.isSafeInteger(value)||value< -1||value>2147483647)||type===-1&&input.type!=="other"||rubric===-1&&input.rubric!=="other")throw new TypeError("Recherche documentaire invalide.");
- return {search,after,type,rubric};
+ return {search,after,type,rubric,theme};
 }
 const matchesFacet=(id,filter)=>!filter||id===(filter===-1?0:filter);
 async function readCatalogue(pool,index,input={}){
@@ -38,15 +40,24 @@ async function readCatalogue(pool,index,input={}){
  // window has an explicit continuation, never a hidden automatic refill.
  if(!index||!Array.isArray(index.types)||!Array.isArray(index.rubrics))throw new TypeError("Bibliothèque momentanément indisponible.");
  const request=catalogueRequest(input),tokens=fold(request.search).split(/\s+/).filter(Boolean);
- const windowSize=tokens.length||request.type||request.rubric?100:PAGE_SIZE;
- const rows=await query(pool,`SELECT ${FIELDS} FROM documents d FORCE INDEX (livepalmes_compet_public_id)${JOINS} WHERE d.competition=0 AND d.public='Y' AND d.id<? ORDER BY d.id DESC LIMIT ${windowSize+1}`,[request.after||2147483648]);
+ const windowSize=request.theme?500:tokens.length||request.type||request.rubric?100:PAGE_SIZE;
+ // The driving document window is bounded BEFORE theme probes and joins.
+ // EXISTS stops on the first matching association, including legacy duplicates.
+ const membership=request.theme?",EXISTS(SELECT 1 FROM documents_cibles dc FORCE INDEX (livepalmes_document_cible) WHERE dc.document=d.id AND dc.cible=?) AS theme_match":"";
+ const sql=request.theme?`SELECT ${FIELDS}${membership} FROM (SELECT id FROM documents FORCE INDEX (livepalmes_compet_public_id) WHERE competition=0 AND public='Y' AND id<? ORDER BY id DESC LIMIT ${windowSize+1}) window_ids JOIN documents d FORCE INDEX (PRIMARY) ON d.id=window_ids.id${JOINS} WHERE d.competition=0 AND d.public='Y' ORDER BY d.id DESC LIMIT ${windowSize+1}`:`SELECT ${FIELDS} FROM documents d FORCE INDEX (livepalmes_compet_public_id)${JOINS} WHERE d.competition=0 AND d.public='Y' AND d.id<? ORDER BY d.id DESC LIMIT ${windowSize+1}`;
+ const rows=await query(pool,sql,request.theme?[request.theme,request.after||2147483648]:[request.after||2147483648]);
  const documents=[];let consumed=0;
  for(const row of rows.slice(0,windowSize)){
   consumed++;const item=publicDocument(row);
-  if(item&&matchesFacet(item.typeId,request.type)&&matchesFacet(item.rubricId,request.rubric)&&tokens.every(token=>fold(item.title).includes(token)))documents.push(item);
+  if(item&&(!request.theme||Number(row.theme_match)===1)&&matchesFacet(item.typeId,request.type)&&matchesFacet(item.rubricId,request.rubric)&&tokens.every(token=>fold(item.title).includes(token)))documents.push(item);
   if(documents.length===PAGE_SIZE)break;
  }
  const hasMore=consumed<rows.length;
  return {documents,hasMore,nextAfterId:hasMore?Number(rows[consumed-1].id):null};
 }
-module.exports={PAGE_SIZE,publicDocument,readFeatured,catalogueRequest,readCatalogue};
+async function readLibrary(pool,index,input={}){
+ const themes=await require("./nap-document-themes").themesFor(pool),request=catalogueRequest(input);
+ if(request.theme&&!themes.some(item=>item.id===request.theme))throw new TypeError("Thème documentaire inconnu.");
+ return {...await readCatalogue(pool,index,input),types:index.types,rubrics:index.rubrics,themes};
+}
+module.exports={PAGE_SIZE,publicDocument,readFeatured,catalogueRequest,readCatalogue,readLibrary};
