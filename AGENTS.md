@@ -44,7 +44,7 @@ Ne jamais inventer une règle sportive ; demander validation en cas de doute mé
 
 ## Données et interface
 
-Toute lecture Firestore doit être indexable, bornée et estimée en documents lus par ouverture. Interdire les lectures N+1, lectures par ligne, scans complets non bornés et listeners nombreux ou inutiles. Pour les pages publiques fréquentes, privilégier fichiers statiques générés, agrégats, caches et pagination.
+Adapter l’accès à la source réelle : NAP/MySQL pour les données métier qui y résident, Firestore pour les données qui y restent. Toute lecture doit être indexable et bornée ; estimer les documents Firestore ou les requêtes et lignes parcourues NAP. Interdire les lectures N+1, lectures par ligne, scans complets non bornés et listeners nombreux ou inutiles. Pour une petite liste NAP, privilégier une lecture serveur directe, ciblée et mesurée, avec cache court mutualisé si utile ; ne pas imposer un fichier généré. Conserver fichiers statiques, agrégats et pagination lorsque le volume, la fréquence ou la disponibilité le justifient. Firebase reste utilisé pour les services existants : ce choix ne constitue pas une suppression de Firebase.
 
 Toute évolution qui ajoute ou modifie un accès aux données doit être conçue avec un budget de lectures avant son implémentation. Estimer séparément le coût de l’ouverture initiale, d’une action utilisateur, d’un rafraîchissement et du pire cas réaliste. Vérifier que ce coût ne croît pas avec la taille totale de la base ou le nombre de lignes affichées. Réutiliser en priorité les agrégats, index, caches, fichiers publics et appels groupés existants. Une donnée absente ou un cache périmé ne doit jamais déclencher silencieusement une reconstruction massive dans un parcours interactif.
 
