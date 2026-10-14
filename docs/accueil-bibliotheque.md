@@ -23,7 +23,7 @@ La date affichée vient de `documents.date`. Un timestamp civil est normalisé e
 | Bibliothèque initiale ou page sans filtre | 1 requête, ≤26 candidats, deux jointures PK par candidat ; ≤25 fiches rendues | 0 |
 | Recherche/facette ou sa continuation | 1 requête, ≤101 candidats, deux jointures PK ; ≤25 fiches rendues ; aucun appel par ligne | 0 |
 | Documents utiles publics | 1 requête, ≤7 rangs de contrôle, ≤6 documents plus deux taxonomies en PK ; erreur si structure/rangs invalides | 0 |
-| Rendez-vous publics | 0 SQL ; une lecture du fichier généré sur absence du cache de processus ou après une minute, demandes simultanées mutualisées | 0 |
+| Rendez-vous publics | 0 SQL sur cache cinq minutes ; sinon deux fenêtres indexées plafonnées à 501 candidats chacune avant jointures, demandes simultanées mutualisées ; 0 Storage | 0 |
 | Ouverture de l’éditeur national | 1 lecture sélection ≤7 + 1 page de catalogue bornée | ≤1 lecture de profil existant |
 | Ajouter/retirer/ordonner/aperçu/annuler | 0 lecture/écriture distante ; six éléments au maximum | 0 |
 | Enregistrer | ≤18 appels SQL préparés, plus début/fin de transaction ; ≤32 lignes métier lues avant jointures, ≤42 jointures PK, ≤20 lignes de métadonnées de schéma ; ≤12 lignes complémentaires touchées | ≤2 lectures de profil + 1 lecture de journal, 2 écritures de journal existant |
@@ -41,6 +41,8 @@ Enregistrement : identité nationale serveur, empreinte de toute la sélection, 
 Le préalable C0 de PR #291 doit être réellement actif sur TEST et PROD avant migration commune. L’ancienne version refuse une colonne ou un index supplémentaire. La publication PROD de C0 se décide dans Infra ; elle n’autorise pas les nouvelles interfaces en PROD. Le retour privilégié conserve le schéma et revient au code C0. Un retour SQL complet exige une réconciliation des compléments créés depuis, sans suppression globale des lignes NULL et sans remplissage fictif des métadonnées.
 
 ## Jeu de rendez-vous et publication TEST
+
+Le fonctionnement cible remplace le fichier périodique par `nap-home-direct.js`, lecteur NAP direct avec cache mémoire cinq minutes, activé après ajout autorisé et mesure de l’index de fin. Voir le contrat et le budget détaillés plus bas. Les paragraphes suivants décrivent le mécanisme précédent, conservé pour retour arrière ; le seul job horaire doit être suspendu après validation technique du lecteur direct. Le fichier précédent ne sera pas supprimé et n’est pas un secours silencieux du nouveau lecteur.
 
 Un parcours privé paginé de `exportNapPublicPage` prépare les seuls résumés publics actuels/futurs : chevauchements compris, sans limite de saison ni filtre de région. Préparation hors parcours interactif, pages de 100 (+sentinelle), maximum explicite de 100 pages/10 000 événements et 2 Mio ; dépassement = erreur, jamais troncature. Le 13 octobre : 71 événements, une page SQL, environ 17 Ko. Les résultats sont des liens vérifiés déjà disponibles, sans invention de Direct.
 
