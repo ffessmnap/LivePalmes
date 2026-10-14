@@ -5,7 +5,10 @@
 ### 14 octobre — Bibliothèque simplifiée et thèmes compacts
 
 - Antoine demande de garder les thèmes et la recherche, retirer les sélecteurs Type/Rubrique, masquer Nage Avec Palmes et réduire la place de la navigation. Cinq thèmes visibles plus Tous les documents, boutons à largeur naturelle et retour à la ligne, une seule carte pour thèmes/recherche/résultats. Ancien thème 1 renvoie à Tous les documents ; anciens liens EDF/Kit par rubrique conservés avec titre explicite, réinitialisés au choix d’un thème. Aucun changement NAP, index, cache serveur, droits ou données.
-- Fichiers : bibliotheque.html, assets/public/livepalmes-public-documents.js et livepalmes-public-library.css, DESIGN_SYSTEM et présent registre. Budget serveur inchangé ; aucun nouvel accès aux données. Contrôle local ordinateur/mobile, CI, intégration et publication TEST à terminer ; validation utilisateur attendue.
+- Fichiers : bibliotheque.html, assets/public/livepalmes-public-documents.js et livepalmes-public-library.css, DESIGN_SYSTEM et présent registre. Budget serveur inchangé ; aucun nouvel accès aux données. Contrôle local ordinateur/mobile réussi ; validation utilisateur de cette retouche encore attendue.
+
+- PR #328 intégrée au commit 5f2364b499edf594f58f9a5a198d977744aa95f5 ; CI finale 38562851013 réussie (premier run dépassé annulé). [Publication commune TEST 38563390200](https://github.com/ffessmnap/LivePalmes/actions/runs/38563390200) réussie, Hosting seul c54012eab2310ad4. Comparaison à la preuve précédente : 114 fonctions ACTIVE, toutes identiques, aucun backend redéployé.
+- Recette du TEST publié : cinq thèmes plus Tous les documents, aucun select ; barre de 34 px sur PC 1280 px, 132 px à 320 px, aucun débordement horizontal. Recherche formation dans Juges = quatre résultats ; pagination de 25 à 32 documents conservée. Ancien lien EDF ?rubric=55 avec titre explicite ; ancien ?theme=1 revient à Tous les documents ; anciens type/rubrique associés à un thème ignorés et retirés de l’URL. Console sans erreur ; captures C:/Users/ITIFP/Documents/Codex/livepalmes-library-compact-20261014/test-desktop.png et test-mobile.png relues. Dimensions réinitialisées et serveur/onglets locaux temporaires fermés. Validation utilisateur attendue ; la précédente validation de l’accueil reste distincte.
 
 ### 14 octobre — Bibliothèque par thèmes IntraNAP publiée sur TEST
 
