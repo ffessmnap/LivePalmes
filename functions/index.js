@@ -265,6 +265,7 @@ if (ENVIRONMENT.projectId === "livepalmes-test") {
         complete: target => writeAuditLogOnce("nap.swimmer.authorizedCorrection.complete", "github-livepalmes-test-backend", target, "nap-swimmer-912-fauvau")
       }) : indexOperation ? await require("./nap-approved-index").approvedIndexOperation(napPool, request.body)
         : homeRefresh ? await require("./nap-home-events-refresh").refreshTestHomeEvents(napPool,storage.bucket(ENVIRONMENT.publicBucket).file(require("./nap-home-events").OBJECT_PATH),{projectId:ENVIRONMENT.projectId,confirmation:request.body?.confirmation})
+        : request.query.action === "document-themes-inspect" ? await require("./nap-document-themes-inspect").inspect(napPool)
         : request.query.action === "home-events-measure" ? await require("./nap-home-measure").measure(napPool,{direct:request.query.direct==="1"})
         : request.query.action === "home-events-page" ? await require("./nap-home-events").readPage(napPool,request.query)
         : request.query.action === "direct-plan" ? await require("./nap-direct-query-checks").inspectDirectQueries(napPool)

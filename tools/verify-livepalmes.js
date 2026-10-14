@@ -65,6 +65,7 @@ function runUnitTests() {
     "nap-competition-documents-tests.js",
     "nap-document-options-contract-tests.js",
     "nap-public-documents-tests.js",
+    "nap-document-themes-inspect-tests.js",
     "nap-featured-documents-tests.js",
     "nap-featured-migration-tests.js",
     "nap-featured-documents-callable-tests.js",
