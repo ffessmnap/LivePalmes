@@ -8,6 +8,7 @@
 - Préalable : diagnostic privé TEST en lecture seule des références cibles, éléments et associations documentaires. Quatre fenêtres indexées bornées (100 / 200 / 1000 / 2000 lignes, sentinelle de dépassement) et une lecture de métadonnées ; aucune donnée privée, aucun fichier original, aucune écriture ou migration. Connexion locale refusée ; réutilisation du circuit privé GitHub TEST existant, sans nouvel accès IAM. Implémentation de la navigation après preuve des rattachements.
 - PR #324/#325, CI 38547036732/38548116560 réussies et lots NAP TEST 38547412069/38548521716 réussis. Inspection privée 38549037947 : les six cibles et leurs menus Documents sont confirmés, 6/77/36 lignes et 30–32 ms par référence. La lecture des seules 2001 premières associations documentaires a détecté le dépassement (estimation 637756 lignes pour la plage) ; cette preuve partielle ne sert pas à classer les documents. Aucun scan intégral exécuté. Index composite document/cible absent : accord spécifique demandé avant ajout, pas encore appliqué.
 - Navigation préparée avec thèmes natifs dynamiques, URL directe et filtres/pagination conservés ; lecteur limité à 501 candidats publics généraux avant probes EXISTS indexées, puis 25 résultats. Doublons d’associations sans duplication de document. Budgets détaillés dans accueil-bibliotheque.md. Tests hors ligne du cache partagé/échec/reprise, des bornes, des thèmes inconnus, de la pagination clairsemée et de la confirmation d’index réussis. Validation de la bibliothèque encore attendue après publication TEST.
+- PR #326 préparée : contrôles complets Linux 38549886506 réussis sur le code 08264e57 ; recette locale des thèmes, recherche vide, URL directe et rechargement, ordinateur 1280 px, mobile 430 px et petit écran 320 px sans débordement. Suite globale locale limitée par Bash Windows absent (test du workflow backend) ; la CI Linux lève cette limite. Index et publication finale de cette navigation non exécutés tant que l’accord spécifique reste en attente.
 
 ### 14 octobre — Icône calendrier des rendez-vous
 
@@ -318,7 +319,6 @@
 - Architecture, intégration engagements, gestion des performances, pipeline public et recette harmonisés. Anciennes reprises/copies Firestore et journaux de première connexion marqués historiques, sans suppression ; documents mixtes signalés et référencés. Aucun changement de code, configuration, droits ou donnée.
 - Relecture contre main `807dce65`, liens locaux et diff documentaire contrôlés ; validation CI et intégration suivies dans la PR regroupée. Aucune recette métier ou nouvelle validation utilisateur présumée.
 
-
 ### 12 octobre — Clôture du plan initial d'optimisation NAP
 
 - Publication PROD du candidat `7036940bd1c057e4fd693bf04d42bd9efba81b5c` réussie dans [38179490926](https://github.com/ffessmnap/LivePalmes/actions/runs/38179490926), après sauvegarde chiffrée rouverte et vérifiée. Une fonction actualisée, 110 conservées ; durée totale observée 229 s. Preuves TEST réutilisées : `38175818400` et `38176119901`, contrôles de composition intégrés par PR #248.
@@ -359,7 +359,6 @@
 - La page DTN s’ouvre mais indique des calculs absents ou périmés : aucun recalcul lancé durant ce contrôle en lecture seule.
 - Correction en préparation TEST ; validation utilisateur et publication PROD en attente. Les 41 fonctions historiques ne sont pas supprimées.
 
-
 ### 11 octobre — Promotion PROD ciblée des demandes de nouveaux clubs
 
 - Accord explicite d’Antoine : publier uniquement les deux fonctions de demande/validation, après sauvegarde vérifiée, mails désactivés et sans supprimer les données Firebase. Candidat immuable `812bad64681a232e6cc3868ba7ec112bcdac7ca2`, preuve TEST commune `38131360968`, publication ciblée TEST `38131101981`.
@@ -380,13 +379,11 @@
 - Budget ajouté : une requête indexée par recherche ; lors d'une création, une lecture de reçu technique, une recherche bornée puis le circuit natif existant (au plus sept appels SQL et un INSERT). Aucun scan sportif Firestore, aucun N+1. La limitation des demandes publiques précède la recherche NAP.
 - Tests hors ligne : numéro fédéral conservé comme chaîne, région Corse, absence, doublons, panne sans repli, création et reprise sans deuxième INSERT, reçu incertain et liaisons de secrets. Vérification globale et TEST commun en cours ; aucune validation utilisateur déclarée.
 
-
 ### 11 octobre — Sauvegarde PROD compatible avec la liaison NAP existante
 
 - Antoine autorise explicitement la correction du contrôle de sauvegarde et la reprise pour le même candidat applicatif `0efa4fe6`. Le run `38126986988` s'est arrêté avant chiffrement et avant toute publication ; PROD reste `1df545a6`.
 - Le contrôle accepte uniquement un secret `LIVEPALMES_NAP_PASSWORD`, clé et nom identiques, projet PROD `livepalmes` ou son numéro `718081132564`, version positive ou `latest`. Les autres secrets, doublons, volumes et variables non prévues restent refusés. Aucun droit ni secret n'est modifié.
 - Tests ciblés du contrat NAP, conservation des contrôles d'état et notifications réussis localement. Suite complète Linux et reprise protégée à vérifier. Preuve TEST commune applicative réutilisée : `38090360085` ; sauvegarde chiffrée vérifiée obligatoire, mails désactivés, aucun nettoyage Firebase.
-
 
 ### 11 octobre — Changement de club actif exclusivement NAP
 
@@ -565,12 +562,10 @@
 - EXPLAIN réel en lecture seule de l’insertion : club PRIMARY, licence livepalmes_license_number_id, inversion nageurs_clef ; aucune insertion exécutée. Tests création/service et routage natif des deux callables réussis.
 - Vérification globale locale : syntaxe et suites NAP réussies, arrêt sur le test de workflow Bash sous Windows (`main / access`). Vérification Linux GitHub nécessaire avant intégration.
 
-
 - Lecture seule comparée avec IntraNAP : `nageurs.actif=1` signifie actif, `0` inactif. Proposition de nouvelle table retirée ; aucun changement de structure.
 - Effectif club : statut NAP dans la requête groupée existante, plafond 801 lignes ; suppression de la lecture du roster Firebase. Rafraîchissement de même coût, cache client conservé.
 - Changement de statut : contrôle du club, sauvegarde technique préalable, empreinte du statut affiché, mise à jour conditionnelle et relecture. Maximum quatre appels SQL, une écriture native, une lecture et deux écritures du journal. Aucun scan ni lecture par nageur affiché.
 - Tests simulés : actif/inactif, concurrence, mauvais club, sauvegarde impossible, déclencheur inattendu, reprise après écriture. Aucune fiche réelle modifiée. Validation commune TEST encore à effectuer après intégration.
-
 
 ### 9 octobre 2026 — Préparation de l’activation NAP en production — en cours
 
@@ -982,7 +977,6 @@
 - Régression réelle ebcc955 → c187102 : cinq exports concernés, dont trois ordinaires (searchEngagementNationalSwimmers, updateEngagementNationalSwimmerIdentity, mergeEngagementNationalClubSwimmer). exportNapPublicPage et resolveEngagementSwimmerChangeRequest restent hors du lot ordinaire ; aucune extension implicite de publication. Aucun code métier, donnée, règle, secret ou configuration Firebase modifié.
 - Tests synthétiques locaux réussis ; vérification globale GitHub à terminer avant intégration. Aucune nouvelle publication Firebase lancée dans cette session ; aucune validation utilisateur ou PROD déduite.
 
-
 ### Portail NAP : preparation de la lecture/ecriture — 6 octobre 2026
 
 - Antoine confirme la cible de modification directe de NAP et autorise de commencer. Diagnostic prive des droits effectifs, champs obligatoires, index, moteurs et declencheurs sur huit tables fixes ; aucune donnee sportive lue ou modifiee, aucun droit ajoute. Budget de cinq requetes et plafonds documentes. Tests hors ligne passes ; diagnostic reel a effectuer apres deploiement TEST.
@@ -1106,7 +1100,6 @@ Retour utilisateur : liens Mon compte et Aide comprimés verticalement. Cause co
 - Recette connectée ordinateur : espaces Club, Compétitions (calendrier), Données sportives, DTN, Administration nationale et Gestion des accès parcourus après publication. Bandeaux affichés : fond sombre `rgb(25,38,48)`, image de fond `none`, titres clairs. Aucun dégradé résiduel sur les éléments rendus de ces six vues. Captures vérifiées pour Club, Données sportives, DTN et Administration nationale ; carte Demandes à traiter lisible sur surface sombre secondaire.
 - Tests de préférence et vérification globale locale/GitHub réussis. Le contrôle mobile reste à réaliser dans un navigateur de cette taille ; les règles compactes sont préservées dans le CSS. Pas de validation utilisateur du nouveau rendu à ce stade.
 - Comparaison finale Administration nationale : le mode clair conserve ses deux dégradés et ses textes foncés ; retour au mode sombre effectué après vérification.
-
 
 ### Harmonisation des écrans de travail — 20 septembre 2026
 
