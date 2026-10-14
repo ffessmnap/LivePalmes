@@ -8,6 +8,7 @@ const SPECS = {
   competition: { table: "perfs", name: "livepalmes_compet_id", columns: ["compet", "id"] },
   calendar: { table: "competitions", name: "livepalmes_date_id", columns: ["date", "id"] },
   homeEndDate: { table: "competitions", name: "livepalmes_enddate_id", columns: ["enddate", "id"] },
+  documentThemes: { table: "documents_cibles", name: "livepalmes_document_cible", columns: ["document", "cible"] },
   documents: { table: "documents", name: "livepalmes_compet_public_id", columns: ["competition", "public", "id"] },
   roster: { table: "nageurs", name: "livepalmes_club_id", columns: ["club", "id"] }
 };

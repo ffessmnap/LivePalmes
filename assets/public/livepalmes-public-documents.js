@@ -5,14 +5,15 @@
   if(!form||!list||!status||!more)return;
   const search=document.getElementById("publicDocumentsSearch"),type=document.getElementById("publicDocumentsType"),rubric=document.getElementById("publicDocumentsRubric");
   const params=new URLSearchParams(global.location.search);
-  let theme=params.get("theme")||"",initialRubric=params.get("rubric")||"",after=null,controller=null,requestId=0,timer=null,loading=false;
+  let theme=params.get("theme")||"",initialRubric=params.get("rubric")||"",initialType=params.get("type")||"",after=null,controller=null,requestId=0,timer=null,loading=false;
+  search.value=(params.get("search")||"").slice(0,100);
   const node=(tag,className,text)=>{const element=document.createElement(tag);if(className)element.className=className;if(text)element.textContent=text;return element;};
   function facets(select,items,label){
-   const selected=select.value||(select===rubric?initialRubric:"");
+   const selected=select.value||(select===rubric?initialRubric:initialType);
    select.replaceChildren(new Option(label,""));
    for(const item of Array.isArray(items)?items:[])select.add(new Option(item.label,item.id===0?"other":String(item.id)));
    if([...select.options].some(option=>option.value===selected))select.value=selected;
-   if(select===rubric)initialRubric="";
+   if(select===rubric)initialRubric="";else initialType="";
   }
   function themes(items){
    const nav=document.getElementById("publicDocumentsThemes");if(!nav)return;
@@ -23,7 +24,7 @@
     if(id===theme)link.setAttribute("aria-current","page");
     link.addEventListener("click",event=>{
      if(event.button!==0||event.ctrlKey||event.metaKey||event.shiftKey||event.altKey)return;
-     event.preventDefault();theme=id;initialRubric="";rubric.value="";type.value="";search.value="";load(true);
+     event.preventDefault();theme=id;initialRubric="";initialType="";rubric.value="";type.value="";search.value="";load(true);
     });fragment.append(link);
    }
    nav.replaceChildren(fragment);
@@ -46,7 +47,7 @@
     const url=new URL(global.LivePalmesEnvironment.napReaderUrl);url.searchParams.set("action","documents-catalogue");
     if(theme)url.searchParams.set("theme",theme);
     if(search.value.trim())url.searchParams.set("search",search.value.trim());
-    if(type.value)url.searchParams.set("type",type.value);
+    if(type.value||initialType)url.searchParams.set("type",type.value||initialType);
     if(rubric.value||initialRubric)url.searchParams.set("rubric",rubric.value||initialRubric);
     if(after!=null)url.searchParams.set("after",String(after));
     const response=await fetch(url,{cache:"no-store",signal:controller.signal});if(!response.ok)throw Error("Indisponible");
