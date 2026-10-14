@@ -2,6 +2,12 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 14 octobre — Bandeau Performances sur une seule ligne PC
+
+- Antoine demande de retrouver la disposition de la maquette : titre « Performances françaises » et quatre boutons sur la même ligne PC, avec adaptation mobile, jusqu’à publication TEST. CSS limité à la carte d’accueil, à partir de 960 px : icône/titre/actions alignés au centre vertical, boutons de même largeur à droite. Sous ce seuil, titre au-dessus ; mobile 2 × 2 conservé.
+- Fichiers : `assets/public/livepalmes-public-home.css`, version CSS dans `index.html` et `public.html`, règle dans `docs/DESIGN_SYSTEM.md`, présent registre. Aucune modification du lecteur NAP, des liens, données, droits ou backend.
+- Recette locale sur données fictives : alignement des cinq centres verticaux à 960 px, rendu PC 1280 px ; mobile 390 px, boutons 136 × 32 px en deux lignes et aucun débordement. Diff relu ; CI et publication commune TEST à effectuer. Aucune validation utilisateur de cette nouvelle disposition revendiquée.
+
 ### 14 octobre — Rendez-vous validés, ancien job horaire supprimé
 
 - Antoine répond « ça me va » au lecteur direct NAP avec cache cinq minutes publié sur TEST (`08a9ade46eac14d1787724c46fcb20b8045873c2`, publication commune `38532921262`). Validation utilisateur du fonctionnement des rendez-vous, sans l’étendre aux autres évolutions. Il demande explicitement de supprimer l’ancien job horaire qu’il ne souhaite pas garder.
