@@ -2,6 +2,11 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 14 octobre — Icône calendrier des rendez-vous
+
+- Antoine demande une icône calendrier pour « Les rendez-vous ». Remplacement du dossier par un calendrier SVG décoratif dans index.html et public.html, mêmes dimensions et couleur bleue ; règle précisée dans docs/DESIGN_SYSTEM.md. Aucun changement des données, liens ou actualisations.
+- Publication TEST et contrôle ordinateur/mobile à réaliser après intégration ; validation utilisateur attendue.
+
 ### 14 octobre — Bandeau Performances sur une seule ligne PC
 
 - Antoine demande de retrouver la disposition de la maquette : titre « Performances françaises » et quatre boutons sur la même ligne PC, avec adaptation mobile, jusqu’à publication TEST. CSS limité à la carte d’accueil : au-dessus de 700 px, icône/titre/actions alignés au centre vertical ; boutons à la largeur du texte jusqu’à 959 px, puis de même largeur. Mobile 2 × 2 conservé.
