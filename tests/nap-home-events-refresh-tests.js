@@ -24,6 +24,7 @@ const now=Date.parse("2026-10-14T05:00:00Z"),snapshot={schemaVersion:1,source:"n
  assert.throws(()=>assertJob({...job,httpTarget:{...job.httpTarget,body:'{"confirmation":"wrong"}'}},uri),/non conforme/);
  assert.throws(()=>assertJob({...job,httpTarget:{...job.httpTarget,uri:`${uri}/other?action=home-events-refresh`}},uri),/non conforme/);
  assert(jobArgs(uri).includes("--max-retry-attempts=3"));assert(jobArgs(uri).includes("--project=livepalmes-test"));assert.throws(()=>jobArgs("https://example.com"),/invalide/);
+ assert(jobArgs(uri).includes("--headers=Content-Type=application/json"));assert(jobArgs(uri,SCHEDULE,true).includes("--update-headers=Content-Type=application/json"));assert(!jobArgs(uri,SCHEDULE,true).some(arg=>arg.startsWith("--headers=")));
  const source=fs.readFileSync(require.resolve("../functions/index.js"),"utf8"),publicSource=source.slice(source.indexOf("exports.readNapPublicSwimmer"),source.indexOf("exports.exportNapPublicPage"));assert.equal(publicSource.includes("home-events-refresh"),false);assert.match(source,/invoker: "github-livepalmes-test-backend@livepalmes-test.iam.gserviceaccount.com"/);
  console.log("Home refresh: TEST-only object, bounded preparation, generation conflicts, monotonic freshness, OIDC scheduler and retries passed offline.");
 })().catch(error=>{console.error(error);process.exitCode=1;});

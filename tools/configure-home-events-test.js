@@ -11,9 +11,9 @@ const gcloud=args=>execFileSync("gcloud",args,{encoding:"utf8",stdio:["ignore","
 const parse=args=>JSON.parse(gcloud(args));
 const scope=[`--project=${PROJECT}`,`--location=${LOCATION}`];
 const sameUri=(actual,expected)=>{try{return new URL(actual).href===new URL(expected).href;}catch{return false;}};
-function jobArgs(uri,schedule=SCHEDULE){
+function jobArgs(uri,schedule=SCHEDULE,update=false){
  const url=new URL(uri);if(url.protocol!=="https:"||!url.hostname.endsWith(".run.app")||url.username||url.password||url.search||url.hash||url.pathname!=="/")throw Error("Service TEST invalide.");
- return [...scope,`--schedule=${schedule}`,"--time-zone=Europe/Paris",`--uri=${uri}?action=home-events-refresh`,"--http-method=POST",`--oidc-service-account-email=${ACCOUNT}`,`--oidc-token-audience=${uri}`,"--headers=Content-Type=application/json",'--message-body={"confirmation":"publish-livepalmes-test-home-events"}',"--attempt-deadline=180s","--max-retry-attempts=3","--min-backoff=30s","--max-backoff=300s","--max-doublings=3",`--description=${DESCRIPTION}`,"--quiet"];
+ return [...scope,`--schedule=${schedule}`,"--time-zone=Europe/Paris",`--uri=${uri}?action=home-events-refresh`,"--http-method=POST",`--oidc-service-account-email=${ACCOUNT}`,`--oidc-token-audience=${uri}`,`${update?"--update-headers":"--headers"}=Content-Type=application/json`,'--message-body={"confirmation":"publish-livepalmes-test-home-events"}',"--attempt-deadline=180s","--max-retry-attempts=3","--min-backoff=30s","--max-backoff=300s","--max-doublings=3",`--description=${DESCRIPTION}`,"--quiet"];
 }
 function assertJob(value,uri,schedule=SCHEDULE){
  let body;for(const text of [value.httpTarget?.body||"",Buffer.from(value.httpTarget?.body||"","base64").toString()]){try{body=JSON.parse(text);break;}catch{}}
@@ -32,7 +32,7 @@ async function main(){
  phase="inspect-job";
  try{const old=describe();if(old.description!==DESCRIPTION||old.httpTarget?.oidcToken?.serviceAccountEmail!==ACCOUNT||!sameUri(old.httpTarget?.uri,`${uri}?action=home-events-refresh`))throw Error("Job existant différent ; arrêt sans remplacement.");exists=true;}
  catch(error){if(!/NOT_FOUND/.test(String(error.stderr||"")))throw error;}
- phase="configure-hourly-job";gcloud(["scheduler","jobs",exists?"update":"create","http",JOB,...jobArgs(uri)]);
+ phase="configure-hourly-job";gcloud(["scheduler","jobs",exists?"update":"create","http",JOB,...jobArgs(uri,SCHEDULE,exists)]);
  assertJob(describe(),uri);
  const object=()=>parse(["storage","objects","describe",`gs://${BUCKET}/${OBJECT_PATH}`,`--project=${PROJECT}`,"--format=json(generation,metadata)"]);
  const before=object(),observations=[];let lastGeneration=String(before.generation);
@@ -41,7 +41,7 @@ async function main(){
  // No fake file, IAM change, database write or GitHub dispatch is involved.
  try{
   phase="automatic-verification";
-  gcloud(["scheduler","jobs","update","http",JOB,...jobArgs(uri,"* * * * *")]);assertJob(describe(),uri,"* * * * *");
+  gcloud(["scheduler","jobs","update","http",JOB,...jobArgs(uri,"* * * * *",true)]);assertJob(describe(),uri,"* * * * *");
   console.log("Vérification de deux déclenchements automatiques du seul job TEST.");
   while(observations.length<2&&Date.now()-started<210000){
    await new Promise(resolve=>setTimeout(resolve,5000));
@@ -55,7 +55,7 @@ async function main(){
   if(observations.length!==2)throw Error("Deux déclenchements automatiques non attestés dans la fenêtre.");
  }finally{
   phase="restore-hourly-job";
-  gcloud(["scheduler","jobs","update","http",JOB,...jobArgs(uri)]);assertJob(describe(),uri);
+  gcloud(["scheduler","jobs","update","http",JOB,...jobArgs(uri,SCHEDULE,true)]);assertJob(describe(),uri);
   console.log("Rythme horaire rétabli et vérifié.");
  }
  let live;
