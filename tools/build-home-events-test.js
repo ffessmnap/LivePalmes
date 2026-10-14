@@ -3,32 +3,12 @@ const fs=require("node:fs");
 const path=require("node:path");
 const {createRequire}=require("node:module");
 const {execFileSync}=require("node:child_process");
-const {createHash}=require("node:crypto");
-const {civilAt}=require("../functions/nap-paris-time");
 const {OBJECT_PATH,MAX_BYTES,validateSnapshot}=require("../functions/nap-home-events");
-const BUCKET="livepalmes-test-public-data-206080168534";
+const {BUCKET,gatherPages,publishSnapshot}=require("../functions/nap-home-events-refresh");
 const publicationError=code=>Object.assign(new Error("Publication TEST interrompue."),{code});
 function loadStorageSdk(){
  const backendRequire=createRequire(path.resolve(__dirname,"../functions/package.json"));
  return {...backendRequire("firebase-admin/app"),...backendRequire("firebase-admin/storage")};
-}
-async function gatherPages(fetchPage,now=Date.now()){
- const today=civilAt(now).slice(0,10),events=[];let after=0,calls=0;
- while(true){
-  if(++calls>100)throw Error("Bornes de préparation dépassées.");
-  const page=await fetchPage({after,today});
-  if(page.source!=="nap"||page.today!==today||!Array.isArray(page.events)||page.events.length>100||typeof page.hasMore!=="boolean")throw Error("Page calendrier invalide.");
-  events.push(...page.events);
-  if(events.length>10000)throw Error("Calendrier trop volumineux.");
-  if(!page.hasMore)break;
-  if(!Number.isSafeInteger(page.nextAfterId)||page.nextAfterId<=after)throw Error("Curseur calendrier invalide.");
-  after=page.nextAfterId;
- }
- if(new Set(events.map(event=>event.id)).size!==events.length)throw Error("Calendrier ambigu.");
- const snapshot={schemaVersion:1,source:"nap",generatedAt:new Date(now).toISOString(),events};
- const canonical={schemaVersion:1,...validateSnapshot(snapshot,now)};
- if(Buffer.byteLength(JSON.stringify(canonical))>MAX_BYTES)throw Error("Calendrier trop volumineux.");
- return {snapshot:canonical,calls};
 }
 async function prepare(output){
  const options={encoding:"utf8",stdio:["ignore","pipe","pipe"]};
@@ -47,16 +27,11 @@ async function publish(output){
  if(process.env.LIVEPALMES_HOME_DATA_CONFIRMATION!=="publish-livepalmes-test-home-events"||process.env.TARGET_FIREBASE_PROJECT!=="livepalmes-test")throw publicationError("HOME_TEST_CONFIRMATION_REQUIRED");
  const credentials=JSON.parse(fs.readFileSync(process.env.GOOGLE_APPLICATION_CREDENTIALS,"utf8"));if(credentials.project_id!=="livepalmes-test")throw publicationError("HOME_TEST_ACCOUNT_REQUIRED");
  const inputBytes=fs.readFileSync(output);if(inputBytes.length>MAX_BYTES)throw Error("Fichier trop volumineux.");
- const value={schemaVersion:1,...validateSnapshot(JSON.parse(inputBytes))},bytes=Buffer.from(JSON.stringify(value)+"\n");
  const {initializeApp,applicationDefault,getStorage}=loadStorageSdk();
  const app=initializeApp({credential:applicationDefault(),projectId:"livepalmes-test"},"test-home-events");
- const file=getStorage(app).bucket(BUCKET).file(OBJECT_PATH);let generation=0;
- try{const [metadata]=await file.getMetadata();generation=Number(metadata.generation);if(!Number.isSafeInteger(generation)||generation<1)throw Error("Génération invalide.");}
- catch(error){if(Number(error.code)!==404)throw error;}
- await file.save(bytes,{resumable:false,preconditionOpts:{ifGenerationMatch:generation},metadata:{contentType:"application/json; charset=utf-8",cacheControl:"public, max-age=60, must-revalidate",metadata:{kind:"livepalmes-test-home-events",generatedAt:value.generatedAt}}});
- const [verified]=await file.download();const hash=buffer=>createHash("sha256").update(buffer).digest("hex");
- if(hash(verified)!==hash(bytes))throw Error("Publication à vérifier.");
- console.log(JSON.stringify({published:true,bucket:BUCKET,path:OBJECT_PATH,events:value.events.length,sha256:hash(bytes),verified:true}));
+ const file=getStorage(app).bucket(BUCKET).file(OBJECT_PATH);
+ const result=await publishSnapshot(file,JSON.parse(inputBytes));
+ console.log(JSON.stringify({...result,bucket:BUCKET,path:OBJECT_PATH}));
 }
 async function main(){
  const [mode,output]=process.argv.slice(2);if(!["--prepare","--publish"].includes(mode)||!output)throw Error("Mode et fichier explicites requis.");

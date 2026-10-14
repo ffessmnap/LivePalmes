@@ -2,6 +2,13 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 14 octobre — Fiabilisation des rendez-vous TEST demandée
+
+- Antoine demande explicitement de fiabiliser l’actualisation automatique sur TEST jusqu’à vérification du fonctionnement. Diagnostic : lancement GitHub programmé réussi à 01:16 UTC, aucun suivant avant le secours manuel à 05:14 UTC ; le lecteur refusait une copie dépassant trois heures, d’où une liste indisponible malgré des données valides. Le secours manuel 38515530442 a republié 71 rendez-vous. GitHub documente les retards et lancements manqués : https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#schedule.
+- Correction préparée : seul job Cloud Scheduler TEST `livepalmes-test-home-events`, horaire minute 17 Europe/Paris, trois reprises bornées, OIDC avec le compte backend déjà autorisé vers l’action POST privée de l’export TEST existant. Aucune nouvelle Function, permission IAM, donnée NAP, fonction mail ou job sportif ; aucun job PROD. Retrait du cron GitHub, secours manuel conservé. Contrôles du projet, du chemin unique, de génération et d’empreinte ; une exécution ancienne ne remplace pas une copie plus récente.
+- Continuité d’affichage : copie ancienne valide conservée avec message de retard ; rechargement manqué/corrompu conserve la dernière copie validée en mémoire. Cache et échecs mutualisés une minute, aucune reconstruction interactive et zéro SQL/Firestore à la visite. Publication refuse toujours une préparation trop ancienne, future, corrompue ou hors bornes. Budget de préparation/Storage et reprise documenté dans accueil-bibliotheque.md.
+- Tests ciblés hors ligne : vieillissement à froid, panne/reprise, corruption sans perte, cache négatif, confirmation/projet/destination, ordre des générations, conflit 412, SDK, OIDC/reprises et requêtes paginées. Préparation d’une recette qui observe deux véritables déclenchements automatiques à une minute d’intervalle, puis rétablit le rythme horaire en finally et relit la réponse publique. Vérification globale/CI, intégration, lot NAP TEST, configuration/vérification du job et publication commune restent à effectuer. Retour arrière : suspendre uniquement ce nouveau job TEST, conserver le fichier valide et le secours manuel ; aucun retour de base nécessaire.
+
 ### 13 octobre — C0 documentaire publié en PROD après accord Infra
 
 - Antoine répond « ok » dans Infra à la publication du seul C0 selon le plan `38466674620`, avec contrôle de dérive et sauvegarde vérifiée. Candidat exact `ac78b50759ca209cddaa15d374eb5e01dd926268` ; nouvel accueil/bibliothèque C1, migration, données, mails/schedulers, droits/règles/index et recalcul DTN exclus.

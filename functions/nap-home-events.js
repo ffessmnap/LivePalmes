@@ -21,22 +21,25 @@ async function readPage(pool,input={}){
  const page=rows.slice(0,100),hasMore=rows.length>100;
  return {source:"nap",today,events:page.map(calendar.eventFromRow).filter(event=>validDate(event.date)&&validDate(event.endDate)&&event.endDate>=event.date&&event.endDate>=today).map(eventSummary),hasMore,nextAfterId:hasMore?Number(page.at(-1).id):null};
 }
-function validateSnapshot(value,now=Date.now()){
+function validateSnapshot(value,now=Date.now(),{allowStale=false}={}){
  const generatedAt=Date.parse(value?.generatedAt||"");
- if(value?.schemaVersion!==1||value.source!=="nap"||!Number.isFinite(generatedAt)||generatedAt>now+5*60*1000||now-generatedAt>MAX_AGE_MS||!Array.isArray(value.events)||value.events.length>10000)throw new TypeError("Rendez-vous momentanément indisponibles.");
+ if(value?.schemaVersion!==1||value.source!=="nap"||!Number.isFinite(generatedAt)||generatedAt>now+5*60*1000||!allowStale&&now-generatedAt>MAX_AGE_MS||!Array.isArray(value.events)||value.events.length>10000)throw new TypeError("Rendez-vous momentanément indisponibles.");
  if(new Set(value.events.map(event=>event.id)).size!==value.events.length||value.events.some(event=>!/^legacy-nap-[1-9]\d*$/.test(event.id||"")||Number(event.id.slice(11))>2147483647||!validDate(event.date)||!validDate(event.endDate)||event.endDate<event.date||["name","city","location","eventType","level"].some(key=>typeof event[key]!=="string"||event[key].length>2000)||typeof event.canceled!=="boolean"||[event.results?.url,event.results?.pdfUrl].some(link=>link!=null&&typeof link!=="string")))throw new TypeError("Rendez-vous momentanément indisponibles.");
  return {source:"nap",generatedAt:value.generatedAt,events:value.events.map(eventSummary)};
 }
 function createReader(load,clock=()=>Date.now()){
- let saved=null,loadedAt=0,pending=null;
+ let saved=null,loadedAt=0,pending=null,loadFailed=false,lastError=null;
+ const current=()=>({...validateSnapshot(saved,clock(),{allowStale:true}),stale:loadFailed||clock()-Date.parse(saved.generatedAt)>MAX_AGE_MS});
  return async()=>{
   const now=clock();
-  if(saved&&now-loadedAt<60000)return validateSnapshot(saved,now);
+  if(saved&&now-loadedAt<60000)return current();
+  if(!saved&&lastError&&now-loadedAt<60000)throw lastError;
   if(!pending)pending=(async()=>{
    const bytes=await load();if(bytes.length>MAX_BYTES)throw new TypeError("Rendez-vous momentanément indisponibles.");
-   const value=JSON.parse(bytes.toString("utf8"));validateSnapshot(value,clock());saved=value;loadedAt=clock();
-  })().finally(()=>{pending=null;});
-  await pending;return validateSnapshot(saved,clock());
+   const value=JSON.parse(bytes.toString("utf8"));validateSnapshot(value,clock(),{allowStale:true});saved=value;loadFailed=false;lastError=null;
+  })().catch(error=>{loadFailed=true;lastError=error;if(!saved)throw error;validateSnapshot(saved,clock(),{allowStale:true});
+  }).finally(()=>{loadedAt=clock();pending=null;});
+  await pending;return current();
  };
 }
 module.exports={OBJECT_PATH,MAX_AGE_MS,MAX_BYTES,eventSummary,readPage,validateSnapshot,createReader};

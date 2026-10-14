@@ -245,7 +245,9 @@ if (ENVIRONMENT.projectId === "livepalmes-test") {
     const peopleSchema = request.method === "POST" && request.query.action === "approved-people-schema";
     const dtnSchema = request.method === "POST" && request.query.action === "approved-dtn-schema";
     const dtnSettings = request.method === "POST" && request.query.action === "approved-dtn-settings";
-    if (request.method !== "GET" && !indexOperation && !swimmerCorrection && !portalSchema && !closureSchema && !peopleSchema && !dtnSchema && !dtnSettings || request.method === "GET" && ["approved-index", "approved-swimmer-correction", "approved-portal-schema", "approved-closure-schema", "approved-people-schema", "approved-dtn-schema", "approved-dtn-settings"].includes(request.query.action)) { response.status(405).json({ error: "Methode interdite." }); return; }
+    const homeRefresh = request.method === "POST" && request.query.action === "home-events-refresh";
+    if (request.method === "GET" && request.query.action === "home-events-refresh") { response.status(405).json({ error: "Methode interdite." }); return; }
+    if (request.method !== "GET" && !indexOperation && !swimmerCorrection && !portalSchema && !closureSchema && !peopleSchema && !dtnSchema && !dtnSettings && !homeRefresh || request.method === "GET" && ["approved-index", "approved-swimmer-correction", "approved-portal-schema", "approved-closure-schema", "approved-people-schema", "approved-dtn-schema", "approved-dtn-settings"].includes(request.query.action)) { response.status(405).json({ error: "Methode interdite." }); return; }
     try {
       if (!napPool) napPool = createNapPool(napPassword.value());
       const data = dtnSettings ? await require("./nap-dtn-settings-migration").migrateDtnSettings(napPool, db, request.body)
@@ -261,6 +263,7 @@ if (ENVIRONMENT.projectId === "livepalmes-test") {
         prepare: target => db.collection("auditLogs").doc("nap-swimmer-912-fauvau-before").create({ action: "nap.swimmer.authorizedCorrection.prepare", actorUid: "github-livepalmes-test-backend", target, createdAt: new Date().toISOString() }),
         complete: target => writeAuditLogOnce("nap.swimmer.authorizedCorrection.complete", "github-livepalmes-test-backend", target, "nap-swimmer-912-fauvau")
       }) : indexOperation ? await require("./nap-approved-index").approvedIndexOperation(napPool, request.body)
+        : homeRefresh ? await require("./nap-home-events-refresh").refreshTestHomeEvents(napPool,admin.storage().bucket(ENVIRONMENT.publicBucket).file(require("./nap-home-events").OBJECT_PATH),{projectId:ENVIRONMENT.projectId,confirmation:request.body?.confirmation})
         : request.query.action === "home-events-page" ? await require("./nap-home-events").readPage(napPool,request.query)
         : request.query.action === "direct-plan" ? await require("./nap-direct-query-checks").inspectDirectQueries(napPool)
         : request.query.action === "time-shape" ? await require("./nap-direct-query-checks").inspectTimeShape(napPool, request.query.after)

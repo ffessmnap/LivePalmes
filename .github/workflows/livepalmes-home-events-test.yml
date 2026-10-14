@@ -1,14 +1,17 @@
 name: Préparer les rendez-vous de l’accueil TEST
 
 on:
-  schedule:
-    - cron: '17 * * * *'
   workflow_dispatch:
     inputs:
       confirmation:
         description: Publication du seul fichier site-home/events-v1.json sur TEST
         required: true
         type: string
+      configure_scheduler:
+        description: Configurer le seul job Google TEST et vérifier deux déclenchements automatiques
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -19,7 +22,7 @@ concurrency:
 
 jobs:
   prepare:
-    if: github.ref == 'refs/heads/main' && (github.event_name == 'schedule' || inputs.confirmation == 'publish-livepalmes-test-home-events')
+    if: github.ref == 'refs/heads/main' && inputs.confirmation == 'publish-livepalmes-test-home-events'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     environment: firebase-test
@@ -37,6 +40,12 @@ jobs:
           credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_TEST_BACKEND }}
           project_id: livepalmes-test
       - uses: google-github-actions/setup-gcloud@v3
+      - name: Configurer et vérifier le planificateur Google TEST autorisé
+        if: inputs.configure_scheduler
+        env:
+          TARGET_FIREBASE_PROJECT: livepalmes-test
+          LIVEPALMES_HOME_DATA_CONFIRMATION: publish-livepalmes-test-home-events
+        run: node tools/configure-home-events-test.js
       - name: Préparer les données publiques, sans écriture NAP
         run: node tools/build-home-events-test.js --prepare outputs/home-events.json
       - name: Publier et vérifier le seul fichier de rendez-vous TEST
@@ -47,4 +56,4 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: test-home-events
-          path: outputs/home-events.json
+          path: outputs/
