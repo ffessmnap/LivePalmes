@@ -10,13 +10,15 @@ let phase="validation";
 const gcloud=args=>execFileSync("gcloud",args,{encoding:"utf8",stdio:["ignore","pipe","pipe"]}).trim();
 const parse=args=>JSON.parse(gcloud(args));
 const scope=[`--project=${PROJECT}`,`--location=${LOCATION}`];
+const sameUri=(actual,expected)=>{try{return new URL(actual).href===new URL(expected).href;}catch{return false;}};
 function jobArgs(uri,schedule=SCHEDULE){
  const url=new URL(uri);if(url.protocol!=="https:"||!url.hostname.endsWith(".run.app")||url.username||url.password||url.search||url.hash||url.pathname!=="/")throw Error("Service TEST invalide.");
  return [...scope,`--schedule=${schedule}`,"--time-zone=Europe/Paris",`--uri=${uri}?action=home-events-refresh`,"--http-method=POST",`--oidc-service-account-email=${ACCOUNT}`,`--oidc-token-audience=${uri}`,"--headers=Content-Type=application/json",'--message-body={"confirmation":"publish-livepalmes-test-home-events"}',"--attempt-deadline=180s","--max-retry-attempts=3","--min-backoff=30s","--max-backoff=300s","--max-doublings=3",`--description=${DESCRIPTION}`,"--quiet"];
 }
 function assertJob(value,uri,schedule=SCHEDULE){
- if(value.name!==`projects/${PROJECT}/locations/${LOCATION}/jobs/${JOB}`||value.state!=="ENABLED"||value.schedule!==schedule||value.timeZone!=="Europe/Paris"||value.description!==DESCRIPTION||value.httpTarget?.uri!==`${uri}?action=home-events-refresh`||value.httpTarget?.httpMethod!=="POST"||value.httpTarget?.oidcToken?.serviceAccountEmail!==ACCOUNT||value.httpTarget?.oidcToken?.audience!==uri||value.attemptDeadline!=="180s"||value.retryConfig?.retryCount!==3)throw Error("Configuration du seul job TEST non conforme.");
- if(value.retryConfig.minBackoffDuration!=="30s"||value.retryConfig.maxBackoffDuration!=="300s"||value.retryConfig.maxDoublings!==3||Buffer.from(value.httpTarget.body||"","base64").toString()!=='{"confirmation":"publish-livepalmes-test-home-events"}')throw Error("Reprises ou confirmation du job TEST non conformes.");
+ let body;for(const text of [value.httpTarget?.body||"",Buffer.from(value.httpTarget?.body||"","base64").toString()]){try{body=JSON.parse(text);break;}catch{}}
+ const checks={name:value.name===`projects/${PROJECT}/locations/${LOCATION}/jobs/${JOB}`,enabled:value.state==="ENABLED",schedule:value.schedule===schedule,timeZone:value.timeZone==="Europe/Paris",description:value.description===DESCRIPTION,uri:sameUri(value.httpTarget?.uri,`${uri}?action=home-events-refresh`),method:value.httpTarget?.httpMethod==="POST",identity:value.httpTarget?.oidcToken?.serviceAccountEmail===ACCOUNT,audience:value.httpTarget?.oidcToken?.audience===uri,deadline:value.attemptDeadline==="180s",retryCount:value.retryConfig?.retryCount===3,minBackoff:value.retryConfig?.minBackoffDuration==="30s",maxBackoff:value.retryConfig?.maxBackoffDuration==="300s",maxDoublings:value.retryConfig?.maxDoublings===3,confirmation:body?.confirmation==="publish-livepalmes-test-home-events"&&Object.keys(body).length===1};
+ if(Object.values(checks).some(ok=>!ok))throw Object.assign(Error("Configuration du seul job TEST non conforme."),{checks});
  return value;
 }
 async function main(){
@@ -28,7 +30,7 @@ async function main(){
  const describe=()=>parse(["scheduler","jobs","describe",JOB,...scope,"--format=json"]);
  let exists=false;
  phase="inspect-job";
- try{const old=describe();if(old.description!==DESCRIPTION||old.httpTarget?.oidcToken?.serviceAccountEmail!==ACCOUNT||old.httpTarget?.uri!==`${uri}?action=home-events-refresh`)throw Error("Job existant différent ; arrêt sans remplacement.");exists=true;}
+ try{const old=describe();if(old.description!==DESCRIPTION||old.httpTarget?.oidcToken?.serviceAccountEmail!==ACCOUNT||!sameUri(old.httpTarget?.uri,`${uri}?action=home-events-refresh`))throw Error("Job existant différent ; arrêt sans remplacement.");exists=true;}
  catch(error){if(!/NOT_FOUND/.test(String(error.stderr||"")))throw error;}
  phase="configure-hourly-job";gcloud(["scheduler","jobs",exists?"update":"create","http",JOB,...jobArgs(uri)]);
  assertJob(describe(),uri);
@@ -68,5 +70,5 @@ async function main(){
  fs.mkdirSync("outputs",{recursive:true});fs.writeFileSync("outputs/home-events-scheduler-proof.json",JSON.stringify(proof,null,2)+"\n");
  console.log(JSON.stringify({schedulerVerified:true,automaticExecutions:2,events:live.events.length,schedule:job.schedule}));
 }
-if(require.main===module)main().catch(error=>{const code=String(error.stderr||"").match(/PERMISSION_DENIED|INVALID_ARGUMENT|NOT_FOUND|UNAUTHENTICATED|ALREADY_EXISTS/)?.[0]||"verification";console.error(`Configuration/vérification du job TEST interrompue (${phase}, ${code}) ; aucun secret affiché.`);process.exitCode=1;});
+if(require.main===module)main().catch(error=>{const code=String(error.stderr||"").match(/PERMISSION_DENIED|INVALID_ARGUMENT|NOT_FOUND|UNAUTHENTICATED|ALREADY_EXISTS|unrecognized arguments/)?.[0]||"verification";console.error(`Configuration/vérification du job TEST interrompue (${phase}, ${code}) ; aucun secret affiché.`);if(error.checks)console.error(JSON.stringify({conformance:error.checks}));process.exitCode=1;});
 module.exports={jobArgs,assertJob,ACCOUNT,JOB,SCHEDULE,DESCRIPTION};
