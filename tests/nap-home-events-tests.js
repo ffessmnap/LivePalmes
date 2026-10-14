@@ -12,6 +12,17 @@ const event=id=>({id:`legacy-nap-${id}`,name:`Event ${id}`,date:"2026-10-13",end
  const values=await Promise.all([reader(),reader()]);assert.equal(calls,1);assert.equal(values[0].events.length,1);await reader();assert.equal(calls,1);
  for(const [value,at]of [[{schemaVersion:1,source:"nap",generatedAt:new Date(now-home.MAX_AGE_MS-1).toISOString(),events:[]},now],[{schemaVersion:1,source:"nap",generatedAt:new Date(now+301000).toISOString(),events:[]},now],[{schemaVersion:1,source:"nap",generatedAt:new Date(now).toISOString(),events:[{...event(1),date:"2026-02-30"}]},now]])assert.throws(()=>home.validateSnapshot(value,at),/indisponibles/);
  const missing=home.createReader(async()=>{throw Error("missing snapshot");},()=>now);await assert.rejects(missing(),/missing/);
+ let missingCalls=0;const unavailable=home.createReader(async()=>{missingCalls++;throw Error("absent");},()=>now);await assert.rejects(unavailable(),/absent/);await assert.rejects(unavailable(),/absent/);assert.equal(missingCalls,1);
+ const stale=home.createReader(async()=>Buffer.from(JSON.stringify({schemaVersion:1,source:"nap",generatedAt:new Date(now-home.MAX_AGE_MS-1).toISOString(),events:[event(1)]})),()=>now);
+ assert.equal((await stale()).stale,true);assert.equal((await stale()).events.length,1);
+ let clock=now,mode="valid",refreshCalls=0;
+ const resilient=home.createReader(async()=>{refreshCalls++;if(mode==="failure")throw Error("temporary");if(mode==="corrupt")return Buffer.from("broken");return Buffer.from(JSON.stringify({schemaVersion:1,source:"nap",generatedAt:new Date(clock).toISOString(),events:[event(1)]}));},()=>clock);
+ assert.equal((await resilient()).stale,false);clock+=61000;mode="failure";
+ assert.equal((await resilient()).events.length,1);assert.equal((await resilient()).stale,true);assert.equal(refreshCalls,2);
+ clock+=61000;mode="corrupt";assert.equal((await resilient()).stale,true);
+ clock+=61000;mode="valid";assert.equal((await resilient()).stale,false);
+ let hanging=false,timeoutClock=now;const timed=home.createReader(()=>hanging?new Promise(()=>{}):Promise.resolve(Buffer.from(JSON.stringify({schemaVersion:1,source:"nap",generatedAt:new Date(now).toISOString(),events:[event(1)]}))),()=>timeoutClock,{loadTimeoutMs:10});
+ await timed();hanging=true;timeoutClock+=61000;assert.equal((await timed()).stale,true);assert.equal((await timed()).events.length,1);
  let pageCalls=0;const result=await gatherPages(async input=>{pageCalls++;return {source:"nap",today:input.today,events:[event(pageCalls)],hasMore:pageCalls===1,nextAfterId:pageCalls===1?100:null};},now);
  assert.equal(result.calls,2);assert.equal(result.snapshot.events.length,2);
  await assert.rejects(gatherPages(async input=>({source:"nap",today:input.today,events:[],hasMore:true,nextAfterId:input.after}),now),/Curseur/);
@@ -22,7 +33,7 @@ const event=id=>({id:`legacy-nap-${id}`,name:`Event ${id}`,date:"2026-10-13",end
  const page=await home.readPage(pool,{after:0,today:"2026-10-13"});assert.equal(page.events[0].eventType,"training");assert.equal(page.events[0].level,"regional");assert.equal(page.hasMore,false);
  await assert.rejects(home.readPage(pool,{today:"2026-02-30"}),/invalide/);
  assert.equal(BUCKET,"livepalmes-test-public-data-206080168534");assert.equal(home.OBJECT_PATH,"site-home/events-v1.json");
- const workflow=fs.readFileSync(require.resolve("../.github/workflows/livepalmes-home-events-test.yml"),"utf8");assert.match(workflow,/workflow_dispatch:/);assert.match(workflow,/cron: '17 \* \* \* \*'/);assert.match(workflow,/github.ref == 'refs\/heads\/main' && \(github.event_name == 'schedule' \|\| inputs.confirmation == 'publish-livepalmes-test-home-events'\)/);assert.match(workflow,/LIVEPALMES_HOME_DATA_CONFIRMATION: publish-livepalmes-test-home-events/);assert.match(workflow,/project_id: livepalmes-test/);assert.doesNotMatch(workflow,/project_id: livepalmes\s/);
+ const workflow=fs.readFileSync(require.resolve("../.github/workflows/livepalmes-home-events-test.yml"),"utf8");assert.match(workflow,/workflow_dispatch:/);assert.doesNotMatch(workflow,/^  schedule:/m);assert.match(workflow,/github.ref == 'refs\/heads\/main' && inputs.confirmation == 'publish-livepalmes-test-home-events'/);assert.match(workflow,/LIVEPALMES_HOME_DATA_CONFIRMATION: publish-livepalmes-test-home-events/);assert.match(workflow,/project_id: livepalmes-test/);assert.doesNotMatch(workflow,/project_id: livepalmes\s/);
  console.log("Home events: bounded private preparation, same-day Paris scope, safe summary, cached public reads, stale/missing refusal and isolated manual TEST publication passed offline.");
  assert.equal((workflow.match(/google-github-actions\/auth@v3/g)||[]).length,1);assert.match(workflow,/credentials_json: \$\{\{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_TEST_BACKEND \}\}/);assert.doesNotMatch(workflow,/secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_TEST \}/);
 })().catch(error=>{console.error(error);process.exitCode=1;});
