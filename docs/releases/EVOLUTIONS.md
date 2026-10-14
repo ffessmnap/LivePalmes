@@ -2,6 +2,11 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 14 octobre — Retouches accueil après audit, points 1, 3 et 4
+
+- Antoine autorise les seuls points 1, 3 et 4 de l’audit : rendez-vous mobile limités à trois avec suite dépliable, portail allégé/bouton turquoise, espacements resserrés et meilleure lisibilité des dates documentaires/liens de rubriques. Les intitulés NAP restent inchangés (point 2 non retenu). PC conserve les cinq rendez-vous, événements en cours et nationaux toujours visibles. Dépliage local des données déjà reçues : budget de lectures, cache et backend inchangés.
+- Fichiers : index/public, modules public-home JS/CSS et documentation de design/recette/suivi. Vérification et publication commune TEST à terminer ; validation utilisateur de la retouche publiée attendue.
+
 ### 14 octobre — Accueil Avec bienvenue et signature fédérale
 
 - Antoine choisit explicitement la maquette Avec bienvenue, logo FFESSM NAP seul à gauche lié à l’accueil LivePalmes, rendez-vous à gauche et Performances/Documents/Portail à droite, dates multijours plus lisibles et signature fédérale sur toutes les pages publiques avec lien ffessm.fr. Autorisation de terminer sur TEST avec recette PC/mobile ; aucune demande PROD.

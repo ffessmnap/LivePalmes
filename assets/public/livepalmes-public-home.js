@@ -28,10 +28,17 @@
  }
  function renderEvents(host,events,stale){
   const groups=model.eventGroups(events),fragment=document.createDocumentFragment();
-  for(const [title,items,highlight] of [["En cours",groups.ongoing,true],[groups.majorTitle,groups.major,true],["Les cinq prochains rendez-vous",groups.upcoming,false]]){
+  for(const [title,items,highlight] of [["En cours",groups.ongoing,true],[groups.majorTitle,groups.major,true],["Les prochains rendez-vous",groups.upcoming,false]]){
    if(!items.length)continue;
    const section=node("section","public-home-group");section.append(node("h3","",title));
-   for(const event of items)section.append(eventCard(event,highlight&&["national","international"].includes(event.level)));
+   if(items===groups.upcoming&&items.length>3){
+    for(const event of items.slice(0,3))section.append(eventCard(event,false));
+    const extra=node("div","public-home-events-extra");extra.id=`${host.id}More`;section.classList.add("public-home-upcoming-collapsed");
+    for(const event of items.slice(3))extra.append(eventCard(event,false));
+    const toggle=node("button","public-home-events-toggle",`Voir les ${items.length-3} suivants`);toggle.type="button";toggle.setAttribute("aria-expanded","false");toggle.setAttribute("aria-controls",extra.id);
+    toggle.addEventListener("click",()=>{const expanded=toggle.getAttribute("aria-expanded")!=="true";toggle.setAttribute("aria-expanded",String(expanded));section.classList.toggle("public-home-upcoming-collapsed",!expanded);toggle.textContent=expanded?"Réduire la liste":`Voir les ${items.length-3} suivants`;});
+    section.append(extra,toggle);
+   }else for(const event of items)section.append(eventCard(event,highlight&&["national","international"].includes(event.level)));
    fragment.append(section);
   }
   if(!fragment.childNodes.length)fragment.append(node("p","public-home-state","Aucun rendez-vous à venir pour le moment."));
