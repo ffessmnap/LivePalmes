@@ -15,6 +15,8 @@ Ces règles complètent le fichier racine pour toute intervention dans `function
 
 ## Firestore et montée en charge
 
+Pour NAP/MySQL, préférer une requête serveur directe, indexée et bornée lorsque les mesures montrent un coût raisonnable. Estimer requêtes, lignes parcourues et fréquence avec le cache ; vérifier le plan réel avant mise en service. Un petit cache mémoire mutualisé peut remplacer une génération statique périodique pour une liste légère. Les fichiers générés restent une option pour les traitements lourds ou la disponibilité, sans préférence systématique. Ne jamais exposer la connexion NAP au navigateur. Toute création d’index ou modification de la base conserve son autorisation spécifique.
+
 Toute requête doit être indexable et bornée. Estimer le nombre de lectures et écritures par appel. Éviter les scans complets, lectures N+1, une lecture par élément retourné et les listeners multiples. Utiliser les agrégats, caches, traitements paginés et pipelines existants lorsque le volume peut croître.
 
 Avant toute nouvelle collection ou évolution de schéma, vérifier si les structures existantes couvrent le besoin et expliquer la nécessité du changement.
