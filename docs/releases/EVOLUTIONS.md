@@ -5,7 +5,7 @@
 ### 14 octobre — Icône calendrier des rendez-vous
 
 - Antoine demande une icône calendrier pour « Les rendez-vous ». Remplacement du dossier par un calendrier SVG décoratif dans index.html et public.html, mêmes dimensions et couleur bleue ; règle précisée dans docs/DESIGN_SYSTEM.md. Aucun changement des données, liens ou actualisations.
-- Publication TEST et contrôle ordinateur/mobile à réaliser après intégration ; validation utilisateur attendue.
+- PR #322 intégrée au commit 03812fe2ba26e628259f642ea59c7ebcc832c1eb ; CI 38541205134 réussie. [Publication TEST 38541539535](https://github.com/ffessmnap/LivePalmes/actions/runs/38541539535) réussie, Hosting seul. Calendrier visible sur TEST, vérifié en largeur 1280 px et mobile 430 px sans débordement horizontal. Capture : C:/Users/ITIFP/Documents/Codex/livepalmes-calendar-icon-20261014/test-desktop.png. Validation utilisateur attendue.
 
 ### 14 octobre — Bandeau Performances sur une seule ligne PC
 
