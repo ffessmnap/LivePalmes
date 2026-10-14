@@ -2,6 +2,11 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 14 octobre — Bibliothèque organisée selon les thèmes IntraNAP
+
+- Antoine valide explicitement la présentation de l’accueil sur TEST (version Hosting 03812fe2, PR #319 à #322). Il demande ensuite de vérifier les sections NAP et de reprendre leur organisation avec accès direct par thème jusqu’à vérification TEST.
+- Préalable : diagnostic privé TEST en lecture seule des références cibles, éléments et associations documentaires. Quatre fenêtres indexées bornées (100 / 200 / 1000 / 2000 lignes, sentinelle de dépassement) et une lecture de métadonnées ; aucune donnée privée, aucun fichier original, aucune écriture ou migration. Connexion locale refusée ; réutilisation du circuit privé GitHub TEST existant, sans nouvel accès IAM. Implémentation de la navigation après preuve des rattachements.
+
 ### 14 octobre — Icône calendrier des rendez-vous
 
 - Antoine demande une icône calendrier pour « Les rendez-vous ». Remplacement du dossier par un calendrier SVG décoratif dans index.html et public.html, mêmes dimensions et couleur bleue ; règle précisée dans docs/DESIGN_SYSTEM.md. Aucun changement des données, liens ou actualisations.
