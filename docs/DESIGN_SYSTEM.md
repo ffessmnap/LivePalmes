@@ -205,6 +205,8 @@ La carte Performances occupe une ligne, avec quatre actions de même largeur. Su
 
 Les documents utiles présentent leur date native de publication et éventuellement le badge Nouveau, sans date inventée ou remise à zéro éditoriale. Les accès EDF et Kit compétition constituent des rubriques séparées. Les états de chargement, d’indisponibilité et de liste vide gardent les liens vers calendrier/bibliothèque accessibles. Ces règles décrivent l’évolution en préparation TEST ; elles ne valent pas validation d’une publication PROD.
 
+Une actualisation tardive des rendez-vous conserve les cartes de la dernière copie valide. Le texte discret « Actualisation en retard. Les derniers rendez-vous disponibles restent affichés. » utilise l’état existant `public-home-state`, sans masquer les liens ni présenter une liste vide comme une actualisation réussie.
+
 ### Bibliothèque et sélection documentaire
 
 La bibliothèque conserve les titres et classements natifs, y compris « Autres documents », et présente les dates sans filtrage d’ancienneté. Un document public sans lien conserve sa fiche textuelle avec « Lien momentanément indisponible ». Les filtres utilisent des champs étiquetés, une pagination explicite et un statut annoncé aux technologies d’assistance.

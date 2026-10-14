@@ -27,7 +27,7 @@
   }
   article.append(date,copy);return article;
  }
- function renderEvents(host,events){
+ function renderEvents(host,events,stale){
   const groups=model.eventGroups(events),fragment=document.createDocumentFragment();
   for(const [title,items,highlight] of [["En cours",groups.ongoing,true],[groups.majorTitle,groups.major,true],["Les cinq prochains rendez-vous",groups.upcoming,false]]){
    if(!items.length)continue;
@@ -36,6 +36,7 @@
    fragment.append(section);
   }
   if(!fragment.childNodes.length)fragment.append(node("p","public-home-state","Aucun rendez-vous à venir pour le moment."));
+  if(stale)fragment.append(node("p","public-home-state","Actualisation en retard. Les derniers rendez-vous disponibles restent affichés."));
   host.replaceChildren(fragment);
  }
  function renderDocuments(host,documents){
@@ -56,7 +57,7 @@
   const events=document.getElementById("publicHomeEvents"),documents=document.getElementById("publicHomeDocuments");
   if(!events||!documents||!model)return;
   await Promise.allSettled([
-   read("home-events").then(value=>renderEvents(events,value.events)).catch(()=>events.replaceChildren(node("p","public-home-state","Les rendez-vous sont momentanément indisponibles. Consultez le calendrier."))),
+   read("home-events").then(value=>renderEvents(events,value.events,value.stale===true)).catch(()=>events.replaceChildren(node("p","public-home-state","Les rendez-vous sont momentanément indisponibles. Consultez le calendrier."))),
    read("documents-featured").then(value=>renderDocuments(documents,value.documents)).catch(()=>documents.replaceChildren(node("p","public-home-state","Les documents sont momentanément indisponibles. Consultez la bibliothèque.")))
   ]);
  }
