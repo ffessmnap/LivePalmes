@@ -55,5 +55,16 @@
     if(Number.isFinite(millis))return `Mis en ligne le ${new Intl.DateTimeFormat("fr-FR", {timeZone:"Europe/Paris",day:"2-digit",month:"2-digit",year:"numeric"}).format(new Date(millis))}`;
     return validDate(publishedOn)?`Mis en ligne le ${publishedOn.slice(8,10)}/${publishedOn.slice(5,7)}/${publishedOn.slice(0,4)}`:"";
   }
-  return {validDate,parisToday,eventGroups,isNewDocument,publicationLabel};
+  function eventDateLabel(date,endDate=date) {
+    if(!validDate(date)||!validDate(endDate)||endDate<date)return {day:"",month:"",label:""};
+    const start=new Date(`${date}T12:00:00Z`),end=new Date(`${endDate}T12:00:00Z`);
+    const format=(value,options)=>new Intl.DateTimeFormat("fr-FR",{timeZone:"UTC",...options}).format(value);
+    const sameMonth=date.slice(0,7)===endDate.slice(0,7),single=date===endDate;
+    const day=format(start,{day:"2-digit"})+(!single&&sameMonth?`–${format(end,{day:"2-digit"})}`:"");
+    const month=format(start,{month:"short"}).toUpperCase();
+    const full=options=>format(end,{day:"numeric",month:"long",year:"numeric",...options});
+    const label=single?full({}):sameMonth?`Du ${format(start,{day:"numeric"})} au ${full({})}`:`Du ${format(start,{day:"numeric",month:"long",...(date.slice(0,4)!==endDate.slice(0,4)?{year:"numeric"}:{})})} au ${full({})}`;
+    return {day,month,label};
+  }
+  return {validDate,parisToday,eventGroups,isNewDocument,publicationLabel,eventDateLabel};
 });

@@ -15,9 +15,9 @@
     <link rel="manifest" href="manifest-public.webmanifest?v=20260819-pwa-logo-1">
     <link rel="stylesheet" href="styles.css?v=20260529-public-home">
     <link rel="stylesheet" href="public.css?v=20261012-home-headings-1">
-    <link rel="stylesheet" href="assets/public/livepalmes-public-home.css?v=20261014-home-row-2">
-    <link rel="stylesheet" href="/assets/public/livepalmes-public-shell.css?v=20261014-compact-1">
-    <script src="/assets/public/livepalmes-public-shell.js?v=20261014-compact-1" defer></script>
+    <link rel="stylesheet" href="assets/public/livepalmes-public-home.css?v=20261014-welcome-1">
+    <link rel="stylesheet" href="/assets/public/livepalmes-public-shell.css?v=20261014-welcome-1">
+    <script src="/assets/public/livepalmes-public-shell.js?v=20261014-welcome-1" defer></script>
   </head>
   <body class="public-results-page public-home-page public-shell-page" data-public-section="home" data-public-label="Accueil">
     <main class="public-home-shell">
@@ -25,9 +25,21 @@
         <a href="https://ffessm.fr/" target="_blank" rel="noopener noreferrer">FFESSM ↗</a>
         <a class="ghost-button compact" href="portail.html">Accéder au portail →</a>
       </nav>
-      <h1 id="publicHomeTitle" class="public-sr-title">Accueil</h1>
+      <section class="public-home-welcome" aria-labelledby="publicHomeTitle"><h1 id="publicHomeTitle">Bienvenue sur LivePalmes</h1><p>Les rendez-vous, les performances et les ressources de la Commission Nationale Nage avec Palmes FFESSM.</p></section>
 
       <section class="public-home-grid" aria-label="Rubriques">
+        <article class="public-home-card calendar-card">
+          <span class="public-home-card-icon calendar-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" focusable="false">
+              <rect x="3" y="5" width="18" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="2"></rect>
+              <path d="M7 3v4M17 3v4M3 10h18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
+              <path d="M6 13h3v3H6zM11 13h3v3h-3zM16 13h3v3h-3z"></path>
+            </svg>
+          </span>
+          <div class="public-home-section-heading"><h2>Les rendez-vous</h2><a class="ghost-button compact public-home-section-link" href="calendrier.html">Tout le calendrier →</a></div>
+          <div class="public-home-section-content" id="publicHomeEvents" aria-live="polite"><p class="public-home-state">Chargement des rendez-vous…</p></div>
+        </article>
+        <div class="public-home-right">
         <article class="public-home-card performance-card">
           <span class="public-home-card-icon performance-icon" aria-hidden="true">
             <svg viewBox="0 0 24 24" focusable="false">
@@ -43,32 +55,23 @@
           </div>
         </article>
 
-        <article class="public-home-card calendar-card">
-          <span class="public-home-card-icon calendar-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" focusable="false">
-              <rect x="3" y="5" width="18" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="2"></rect>
-              <path d="M7 3v4M17 3v4M3 10h18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
-              <path d="M6 13h3v3H6zM11 13h3v3h-3zM16 13h3v3h-3z"></path>
-            </svg>
-          </span>
-          <div class="public-home-section-heading"><h2>Les rendez-vous</h2><a class="ghost-button compact public-home-section-link" href="calendrier.html">Tout le calendrier →</a></div>
-          <div class="public-home-section-content" id="publicHomeEvents" aria-live="polite"><p class="public-home-state">Chargement des rendez-vous…</p></div>
-        </article>
         <article class="public-home-card documents-card">
           <span class="public-home-card-icon documents-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M6 3h8l4 4v17H6V3zm8 2v4h4M9 12h6M9 16h6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"></path></svg></span>
           <div class="public-home-section-heading"><h2>Documents utiles</h2><a class="ghost-button compact public-home-section-link" href="bibliotheque.html">Bibliothèque documentaire →</a></div>
           <div class="public-home-section-content" id="publicHomeDocuments" aria-live="polite"><p class="public-home-state">Chargement des documents…</p></div>
           <nav class="public-home-document-rubrics public-home-section-content" aria-label="Rubriques documentaires"><a href="bibliotheque.html?rubric=55">Sélections Équipe de France →</a><a href="bibliotheque.html?rubric=57">Kit compétition →</a></nav>
         </article>
+        <article class="public-home-card public-home-clubs"><h2>Portail clubs</h2><p>Vous représentez un club ? Préparez vos compétitions et gérez vos engagements dans votre espace dédié.</p><small>Accès réservé aux responsables de clubs autorisés.</small><a class="ghost-button compact" href="portail.html">Accéder au portail →</a></article>
+        </div>
       </section>
 
     </main>
 
-    <footer class="public-footer">LivePalmes est un outil d&eacute;velopp&eacute; b&eacute;n&eacute;volement par la Commission Nationale Nage avec Palmes.<br><span>Une erreur ou un bug &agrave; signaler ? <a href="mailto:livepalmes@nap-ffessm.fr?subject=Signalement%20LivePalmes">Contactez-nous</a>.</span></footer>
+    <footer class="public-footer"><a class="public-federal-link" href="https://ffessm.fr/" target="_blank" rel="noopener noreferrer">Fédération Française d’Études et de Sports Sous-Marins</a><br>Commission Nationale Nage avec Palmes<br><span>Une erreur ou un bug &agrave; signaler ? <a href="mailto:livepalmes@nap-ffessm.fr?subject=Signalement%20LivePalmes">Contactez-nous</a>.</span></footer>
 
     <script src="assets/livepalmes-environment.js?v=20261009-nap-source-2"></script>
     <script src="assets/livepalmes-legal-footer.js?v=20260920-legal-1"></script>
-    <script src="assets/public/livepalmes-home-model.js?v=20261014-home-2"></script>
-    <script src="assets/public/livepalmes-public-home.js?v=20261014-home-3"></script>
+    <script src="assets/public/livepalmes-home-model.js?v=20261014-welcome-1"></script>
+    <script src="assets/public/livepalmes-public-home.js?v=20261014-welcome-1"></script>
   </body>
 </html>
