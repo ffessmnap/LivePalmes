@@ -34,5 +34,13 @@ const now=Date.parse("2026-10-14T05:00:00Z"),snapshot={schemaVersion:1,source:"n
  let status=200,data;const response={set(){},status(value){status=value;return this;},json(value){data=value;}};
  await context.exports.exportNapPublicPage({method:"POST",query:{action:"home-events-refresh"},body:{confirmation:"publish-livepalmes-test-home-events"}},response);assert.equal(status,200);assert.equal(data.verified,true);assert.equal(data.napWrites,0);
  await context.exports.exportNapPublicPage({method:"GET",query:{action:"home-events-refresh"}},response);assert.equal(status,405);
+ let measuredReads=0,released=false;
+ const connection={query:async()=>[[]],execute:async({sql})=>{
+  if(sql.includes("information_schema"))return [[]];
+  if(sql.startsWith("EXPLAIN"))return [[{table:"competitions",type:sql.includes("date<?")?"ALL":"range",key:"livepalmes_date_id",rows:71}]];
+  assert(!sql.includes("date<?"),"A rejected history scan must never execute");measuredReads++;return [[{id:1}]];
+ },release:()=>{released=true;}};
+ const measurement=await require("../functions/nap-home-measure").measure({getConnection:async()=>connection});
+ assert.equal(measuredReads,3);assert.equal(released,true);assert.equal(measurement.checks[1].fullScan,true);assert.equal(measurement.checks[1].samples.length,0);assert.equal(measurement.napWrites,0);assert(!JSON.stringify(measurement).includes('"id":1'));
  console.log("Home refresh: TEST-only object, bounded preparation, generation conflicts, monotonic freshness, OIDC scheduler and retries passed offline.");
 })().catch(error=>{console.error(error);process.exitCode=1;});
