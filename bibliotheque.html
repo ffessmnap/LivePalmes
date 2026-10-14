@@ -10,22 +10,18 @@
     <link rel="stylesheet" href="styles.css?v=20260529-public-home">
     <link rel="stylesheet" href="public.css?v=20261012-home-headings-1">
     <link rel="stylesheet" href="assets/public/livepalmes-public-home.css?v=20261013-home-1">
-    <link rel="stylesheet" href="assets/public/livepalmes-public-library.css?v=20261014-themes-1">
+    <link rel="stylesheet" href="assets/public/livepalmes-public-library.css?v=20261014-themes-compact-1">
   </head>
   <body class="public-results-page public-home-page public-documents-page">
     <main class="public-home-shell">
       <nav class="public-home-utility" aria-label="Accès rapides"><a href="index.html">← Accueil LivePalmes</a><a class="ghost-button compact" href="portail.html">Accéder au portail →</a></nav>
       <header class="public-home-hero"><div class="public-home-hero-copy"><h1>Bibliothèque documentaire</h1><p>LivePalmes</p></div><div class="public-home-logo-card"><img src="logo-ffessm-nage-avec-palmes.png?v=20260529-home-ffessm-1" alt="Nage avec palmes FFESSM"></div></header>
-      <section class="public-home-card documents-card" aria-labelledby="publicDocumentsThemesTitle">
-        <h2 id="publicDocumentsThemesTitle">Documents par thème</h2>
-        <nav id="publicDocumentsThemes" class="public-document-themes" aria-label="Choisir un thème"><span class="public-home-state">Chargement des thèmes…</span></nav>
-      </section>
       <section class="public-home-card documents-card" aria-labelledby="publicDocumentsTitle">
+        <nav id="publicDocumentsThemes" class="public-document-themes" aria-label="Choisir un thème"><span class="public-home-state">Chargement des thèmes…</span></nav>
+
         <h2 id="publicDocumentsTitle">Tous les documents</h2>
         <form id="publicDocumentsFilters" class="public-document-filters" role="search">
           <label class="public-document-search">Rechercher un document<input id="publicDocumentsSearch" type="search" maxlength="100" autocomplete="off" placeholder="Règlement, formation, sélection…"></label>
-          <label>Type<select id="publicDocumentsType"><option value="">Tous les types</option></select></label>
-          <label>Rubrique<select id="publicDocumentsRubric"><option value="">Toutes les rubriques</option></select></label>
           <button class="ghost-button compact" type="submit">Rechercher</button>
         </form>
         <p id="publicDocumentsStatus" class="public-home-state public-home-section-content" role="status">Chargement des documents…</p>
@@ -37,6 +33,6 @@
     <script src="assets/livepalmes-environment.js?v=20261009-nap-source-2"></script>
     <script src="assets/livepalmes-legal-footer.js?v=20260920-legal-1"></script>
     <script src="assets/public/livepalmes-home-model.js?v=20261014-home-2"></script>
-    <script src="assets/public/livepalmes-public-documents.js?v=20261014-themes-1"></script>
+    <script src="assets/public/livepalmes-public-documents.js?v=20261014-themes-compact-1"></script>
   </body>
 </html>
