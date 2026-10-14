@@ -61,7 +61,7 @@
  .public-document-filters button{grid-column:1/-1;justify-self:end}
 }
 @media(max-width:350px){.public-home-section-heading{flex-wrap:wrap}.public-home-section-link.ghost-button{margin-left:auto}.public-home-page .public-home-hero-copy h1{font-size:1.5rem}}
-.public-home-welcome{margin:0 0 24px}
+.public-home-welcome{margin:0 0 16px}
 .public-home-welcome h1{margin:0 0 8px;font-size:1.8rem;line-height:1.25;color:#153c4a}
 .public-home-welcome p{margin:0;color:#56717d;font-size:.92rem;line-height:1.6;max-width:800px}
 .public-home-page .public-home-grid{grid-template-columns:minmax(0,1.16fr) minmax(0,1fr);gap:20px;align-items:start}
@@ -73,9 +73,13 @@
 .public-home-page .public-home-event-date strong{font-size:1.3rem;line-height:1.25;white-space:nowrap;font-variant-numeric:tabular-nums}
 .public-home-page .public-home-event-date span{margin-top:4px}
 .public-home-page .public-home-event-copy p{font-size:.8rem;line-height:1.5}
-.public-home-page .public-home-clubs{display:flex;flex-direction:column;gap:12px;min-height:0;background:#edf7f8;border-color:#c5dfe3}
+.public-home-page .public-home-clubs{display:flex;flex-direction:column;gap:8px;min-height:0;background:#edf7f8;border-color:#c5dfe3;padding:14px 18px}
 .public-home-page .public-home-clubs h2{font-size:1rem;margin:0;align-self:flex-start;text-align:left}
 .public-home-page .public-home-clubs p{font-size:.85rem;line-height:1.5}
 .public-home-page .public-home-clubs small{font-size:.75rem;color:#56717d;line-height:1.5}
-.public-home-page .public-home-clubs .ghost-button{align-self:flex-start;min-height:40px;text-decoration:none;font-size:.8rem}
+.public-home-page .public-home-clubs .ghost-button{align-self:flex-start;min-height:40px;text-decoration:none;font-size:.8rem;background:#086f7e;color:#fff;border-color:#086f7e;padding:8px 12px}
+.public-home-page .public-home-document small{font-size:.8rem;color:#526873}
+.public-home-page .public-home-section-link.ghost-button{font-size:.75rem;min-height:36px;padding:7px 9px;white-space:normal;text-align:center}
+.public-home-events-toggle{display:none}
+@media(max-width:700px){.public-home-upcoming-collapsed .public-home-events-extra{display:none}.public-home-events-toggle{display:inline-flex;align-items:center;justify-content:center;min-height:44px;margin-top:10px;padding:8px 12px;border:1px solid #b8d4d9;border-radius:6px;background:#e4f3f5;color:#075d69;font:inherit;font-size:.8rem;font-weight:600}.public-home-page .public-home-section-link.ghost-button{min-height:44px}.public-home-page .public-home-section-heading{flex-wrap:wrap}.public-home-welcome{margin-bottom:12px}}
 @media(max-width:700px){.public-home-page .public-home-grid{grid-template-columns:1fr;gap:16px}.public-home-welcome h1{font-size:1.5rem}.public-home-page .performance-card .public-home-card-actions{grid-auto-rows:auto}.public-home-page .performance-card .public-home-card-actions .ghost-button{height:auto;min-height:44px;white-space:normal}.public-home-page .public-home-event{grid-template-columns:64px minmax(0,1fr);gap:8px}.public-home-page .public-home-event-date strong{font-size:1.2rem}.public-home-page .public-home-clubs .ghost-button{min-height:44px}}
