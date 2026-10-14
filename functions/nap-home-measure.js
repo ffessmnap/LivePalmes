@@ -9,7 +9,11 @@ async function measure(pool,{direct=false}={}){
   const checks=[];
   for(const [name,query]of Object.entries(queries)){
    const [plan]=await connection.execute({sql:`EXPLAIN ${query.sql}`,timeout:10000},query.values);
-   const fullScan=plan.some(row=>(row.type==="ALL"||row.type==="index")&&!(direct&&(row.table==="home_candidates"||/^<derived/.test(row.table))&&Number(row.rows)<=501)),overBudget=!direct&&name==="ongoing"&&plan.some(row=>Number(row.rows)>501),samples=[];
+   // The fixed event-type reference has five rows on NAP; MySQL deliberately
+   // scans it instead of its key. Only that alias (max 50) and bounded windows
+   // may scan; competition/performance history scans remain forbidden.
+   const boundedScan=row=>direct&&(((row.table==="home_candidates"||/^<derived/.test(row.table))&&Number(row.rows)<=501)||(row.table==="t"&&Number(row.rows)<=50));
+   const fullScan=plan.some(row=>(row.type==="ALL"||row.type==="index")&&!boundedScan(row)),overBudget=!direct&&name==="ongoing"&&plan.some(row=>Number(row.rows)>501),samples=[];
    // Inspect only: never execute an unbounded history scan.
    if(!fullScan&&!overBudget)for(let i=0;i<3;i++){
     const counters=async()=>Object.fromEntries((await connection.query("SHOW SESSION STATUS WHERE Variable_name LIKE 'Handler_read_%'"))[0].map(row=>[row.Variable_name,Number(row.Value)]));
