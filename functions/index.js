@@ -186,8 +186,9 @@ if (ENVIRONMENT.sportingDataSource === "nap") {
       const action = request.query.action || "swimmer";
       if (!["swimmer", "search", "top", "top-years", "top-metadata", "calendar-manifest", "calendar-season", "competition", "competition-results", "records", "documents-featured", "documents-catalogue", "home-events"].includes(action)) throw new TypeError("Action invalide.");
       if(action==="home-events"){
-        const home=require("./nap-home-events");
-        if(!homeEventsReader)homeEventsReader=home.createReader(async()=>{const [bytes]=await storage.bucket(ENVIRONMENT.publicBucket).file(home.OBJECT_PATH).download();return bytes;});
+        const home=require("./nap-home-direct");
+        if(!homeEventsReader)homeEventsReader=home.createReader(()=>home.read(napPool));
+        response.set("X-LivePalmes-Home-Source","nap-direct");
         response.json(await homeEventsReader());return;
       }
       response.json(action === "documents-featured" ? {source:"nap",documents:await require("./nap-public-documents").readFeatured(napPool)}
