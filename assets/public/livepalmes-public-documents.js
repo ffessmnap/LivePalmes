@@ -5,7 +5,7 @@
   if(!form||!list||!status||!more)return;
   const search=document.getElementById("publicDocumentsSearch");
   const params=new URLSearchParams(global.location.search);
-  let theme=params.get("theme")==="1"?"":params.get("theme")||"",legacyRubric=params.get("rubric")||"",after=null,controller=null,requestId=0,timer=null,loading=false;
+  let theme=params.get("theme")==="1"?"":params.get("theme")||"",legacyRubric=theme?"":params.get("rubric")||"",after=null,controller=null,requestId=0,timer=null,loading=false;
   search.value=(params.get("search")||"").slice(0,100);
   const node=(tag,className,text)=>{const element=document.createElement(tag);if(className)element.className=className;if(text)element.textContent=text;return element;};
   function themes(items){
