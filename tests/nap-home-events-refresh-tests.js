@@ -20,6 +20,8 @@ const now=Date.parse("2026-10-14T05:00:00Z"),snapshot={schemaVersion:1,source:"n
  job.httpTarget.body=Buffer.from('{"confirmation":"publish-livepalmes-test-home-events"}').toString("base64");Object.assign(job.retryConfig,{minBackoffDuration:"30s",maxBackoffDuration:"300s",maxDoublings:3});
  assertJob(job,uri);for(const changed of [{schedule:"* * * * *"},{state:"PAUSED"},{httpTarget:{...job.httpTarget,oidcToken:{serviceAccountEmail:"other",audience:uri}}}])assert.throws(()=>assertJob({...job,...changed},uri),/non conforme/);
  assertJob({...job,httpTarget:{...job.httpTarget,uri:`${uri}/?action=home-events-refresh`}},uri);
+ assertJob({...job,httpTarget:{...job.httpTarget,body:'{ "confirmation": "publish-livepalmes-test-home-events" }'}},uri);
+ assert.throws(()=>assertJob({...job,httpTarget:{...job.httpTarget,body:'{"confirmation":"wrong"}'}},uri),/non conforme/);
  assert.throws(()=>assertJob({...job,httpTarget:{...job.httpTarget,uri:`${uri}/other?action=home-events-refresh`}},uri),/non conforme/);
  assert(jobArgs(uri).includes("--max-retry-attempts=3"));assert(jobArgs(uri).includes("--project=livepalmes-test"));assert.throws(()=>jobArgs("https://example.com"),/invalide/);
  const source=fs.readFileSync(require.resolve("../functions/index.js"),"utf8"),publicSource=source.slice(source.indexOf("exports.readNapPublicSwimmer"),source.indexOf("exports.exportNapPublicPage"));assert.equal(publicSource.includes("home-events-refresh"),false);assert.match(source,/invoker: "github-livepalmes-test-backend@livepalmes-test.iam.gserviceaccount.com"/);
