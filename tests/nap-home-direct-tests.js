@@ -1,0 +1,21 @@
+"use strict";
+const assert=require("node:assert/strict"),direct=require("../functions/nap-home-direct");
+(async()=>{
+ let now=Date.parse("2026-10-14T10:00:00Z"),calls=0,fail=false;
+ const snapshot=()=>({source:"nap",generatedAt:new Date(now).toISOString(),events:[]});
+ const reader=direct.createReader(async()=>{calls++;if(fail)throw Error("NAP unavailable");return snapshot();},()=>now);
+ await Promise.all([reader(),reader(),reader()]);assert.equal(calls,1);
+ now+=direct.CACHE_MS-1;assert.equal((await reader()).stale,false);assert.equal(calls,1);
+ now++;await reader();assert.equal(calls,2);
+ now+=direct.CACHE_MS;fail=true;const last=(await reader()).generatedAt;assert.equal((await reader()).stale,true);assert.equal(calls,3);
+ now+=direct.CACHE_MS;fail=false;assert.notEqual((await reader()).generatedAt,last);assert.equal(calls,4);
+ let errors=0;const cold=direct.createReader(()=>{errors++;throw Error("cold");},()=>now);
+ await assert.rejects(cold(),/cold/);await assert.rejects(cold(),/cold/);assert.equal(errors,1);
+ now+=direct.CACHE_MS;await assert.rejects(cold(),/cold/);assert.equal(errors,2);
+ const row={id:42,libelle:"Formation",date:"2026-10-13",enddate:"2026-10-14",type_label:"Formation",native_level_code:1};
+ let pages=0;
+ const pool={execute:async({sql,timeout},values)=>{assert.match(sql,/FROM \(SELECT id FROM competitions FORCE INDEX/);assert.match(sql,/LIMIT 501\)/);assert(!sql.includes("OR c.enddate"));assert.equal(timeout,5000);assert.deepEqual(values,["2026-10-14"]);pages++;return [[row]];}};
+ const value=await direct.read(pool,Date.parse("2026-10-14T10:00:00Z"));assert.equal(pages,2);assert.equal(value.events.length,1);assert.equal(value.events[0].id,"legacy-nap-42");assert(!("comments" in value.events[0]));
+ await assert.rejects(direct.read({execute:async()=>[Array.from({length:501},()=>row)]},now),/volumineuse/);
+ console.log("Direct NAP home: bounded indexed windows, ongoing events, deduplication, five-minute shared cache, cold failure throttle and stale recovery passed.");
+})().catch(error=>{console.error(error);process.exitCode=1;});

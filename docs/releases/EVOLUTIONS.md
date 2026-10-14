@@ -2,6 +2,13 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 14 octobre — Mesure de lecture directe NAP et consignes adaptées
+
+- Antoine demande de mesurer puis remplacer le fichier rendez-vous par une lecture NAP avec cache cinq minutes si raisonnable, jusqu’à recette TEST, et d’adapter les consignes sur les fichiers statiques. PR #311 intégrée `1a2675ad` : consignes racine/backend adaptées à la source réelle et aux lectures NAP ciblées, indexées, bornées et mesurées ; fichiers générés conservés comme option, Firebase reste utilisé. Aucun relâchement des accords spécifiques aux index ou à la base commune.
+- Diagnostic initial GitHub `38527545527` arrêté avant mesure ; passage par l’export privé TEST existant via PR #312 `e775f2e443f786a04bf4e9831e82640b3d38bbd5`, CI complète `38528003850` réussie et publication du seul lot NAP TEST `38528352958` réussie. Aucun nouveau compte, permission IAM ou accès public. Test prouve qu’un scan rejeté n’est pas exécuté et que les lignes métier ne sortent pas du bilan.
+- [Mesure réelle `38528855629`](https://github.com/ffessmnap/LivePalmes/actions/runs/38528855629) réussie, preuve téléchargée `home-nap-measurement.json` : futurs via index date/id, 70 lignes, 28,68 / 14,31 / 15,34 ms, aucun parcours aléatoire. Événements en cours : plan `ALL`, 4 001 lignes estimées, aucun index fin ; recherche non exécutée. Zéro écriture NAP. Un index `(enddate,id)` est préparé et soumis à l’accord spécifique d’Antoine pour la base commune TEST/PROD ; il n’est pas appliqué.
+- Suite préparée : deux fenêtres indexées bornées avant jointures, cache mémoire mutualisé cinq minutes et conservation de la dernière réponse valide sur panne ; budget et ordre de bascule dans accueil-bibliotheque.md. Lecteur public actuel et ancien job horaire conservés jusqu’à accord index, mesure complète et activation vérifiée. Aucun déploiement de lecture directe ni validation utilisateur revendiqué à ce stade.
+
 ### 14 octobre — Fiabilisation des rendez-vous TEST demandée
 
 - Antoine demande explicitement de fiabiliser l’actualisation automatique sur TEST jusqu’à vérification du fonctionnement. Diagnostic : lancement GitHub programmé réussi à 01:16 UTC, aucun suivant avant le secours manuel à 05:14 UTC ; le lecteur refusait une copie dépassant trois heures, d’où une liste indisponible malgré des données valides. Le secours manuel 38515530442 a republié 71 rendez-vous. GitHub documente les retards et lancements manqués : https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#schedule.

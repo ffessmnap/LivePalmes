@@ -1,14 +1,15 @@
 "use strict";
 const {civilAt}=require("./nap-paris-time");
-async function measure(pool){
+async function measure(pool,{direct=false}={}){
  const connection=await pool.getConnection(),today=civilAt(Date.now()).slice(0,10);
  try{
   const [indexes]=await connection.execute({sql:"SELECT INDEX_NAME,COLUMN_NAME,SEQ_IN_INDEX FROM information_schema.STATISTICS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='competitions' ORDER BY INDEX_NAME,SEQ_IN_INDEX LIMIT 50",timeout:10000});
   const queries={future:{sql:"SELECT id,date,enddate,libelle,lieu,type,typecnc,ld FROM competitions FORCE INDEX (livepalmes_date_id) WHERE date>=? ORDER BY date,id LIMIT 101",values:[today]},ongoing:{sql:"SELECT id,date,enddate FROM competitions WHERE date<? AND enddate>=? ORDER BY enddate,id LIMIT 101",values:[today,today]}};
+  if(direct){const actual=require("./nap-home-direct").queries(today);queries.future=actual[0];queries.ongoing=actual[1];}
   const checks=[];
   for(const [name,query]of Object.entries(queries)){
    const [plan]=await connection.execute({sql:`EXPLAIN ${query.sql}`,timeout:10000},query.values);
-   const fullScan=plan.some(row=>row.type==="ALL"||row.type==="index"),overBudget=name==="ongoing"&&plan.some(row=>Number(row.rows)>501),samples=[];
+   const fullScan=plan.some(row=>(row.type==="ALL"||row.type==="index")&&!(direct&&(row.table==="home_candidates"||/^<derived/.test(row.table))&&Number(row.rows)<=501)),overBudget=!direct&&name==="ongoing"&&plan.some(row=>Number(row.rows)>501),samples=[];
    // Inspect only: never execute an unbounded history scan.
    if(!fullScan&&!overBudget)for(let i=0;i<3;i++){
     const counters=async()=>Object.fromEntries((await connection.query("SHOW SESSION STATUS WHERE Variable_name LIKE 'Handler_read_%'"))[0].map(row=>[row.Variable_name,Number(row.Value)]));
@@ -17,7 +18,7 @@ async function measure(pool){
    }
    checks.push({name,fullScan,overBudget,plan:plan.map(row=>({table:row.table,type:row.type,key:row.key,estimatedRows:row.rows,extra:row.Extra})),samples});
   }
-  return {measuredAt:new Date().toISOString(),today,napWrites:0,source:"nap",indexes,checks};
+  return {measuredAt:new Date().toISOString(),today,napWrites:0,source:"nap",direct,indexes,checks};
  }finally{connection.release();}
 }
 module.exports={measure};
