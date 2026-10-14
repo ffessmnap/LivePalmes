@@ -18,5 +18,6 @@ const assert=require("node:assert/strict"),direct=require("../functions/nap-home
  const value=await direct.read(pool,Date.parse("2026-10-14T10:00:00Z"));assert.equal(pages,2);assert.equal(value.events.length,1);assert.equal(value.events[0].id,"legacy-nap-42");assert(!("comments" in value.events[0]));
  const invalid=await direct.read({execute:async()=>[[{...row,id:43,date:"2026-02-31",enddate:"2026-12-01"},{...row,id:44,date:"0206-11-01",enddate:"2026-12-01"}]]},now);assert.equal(invalid.events.length,0);
  await assert.rejects(direct.read({execute:async()=>[Array.from({length:501},()=>row)]},now),/volumineuse/);
+ await assert.rejects(direct.read({execute:async()=>[[row,row]]},now),/ambigu/);
  console.log("Direct NAP home: bounded indexed windows, ongoing events, deduplication, five-minute shared cache, cold failure throttle and stale recovery passed.");
 })().catch(error=>{console.error(error);process.exitCode=1;});
