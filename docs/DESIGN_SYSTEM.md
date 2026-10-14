@@ -29,7 +29,7 @@ Les consoles et le portail affichent beaucoup d’informations. La densité repo
 
 ### Identité aquatique et fédérale
 
-Le turquoise constitue la couleur de marque principale. Les en-têtes publics et Performances utilisent un dégradé sombre vers turquoise, complété par un motif de vagues. L’accueil, le calendrier et les pages publiques Performances partagent une largeur maximale de 1 120 px ; les bandeaux Performances sont centrés, bordés et alignés sur leurs filtres et données. Les logos LivePalmes et FFESSM Nage avec palmes assurent l’identification institutionnelle.
+Le turquoise constitue la couleur de marque principale. Les pages de consultation publiques et Performances utilisent le cadre Compacte : en-tête blanc, fond clair, accents turquoise, titres alignés sur le contenu. L’accueil, le calendrier et les pages publiques Performances partagent une largeur maximale de 1 120 px ; les bandeaux Performances sont centrés, bordés et alignés sur leurs filtres et données. Les logos LivePalmes et FFESSM Nage avec palmes assurent l’identification institutionnelle.
 
 ### Mobile utilisable, ordinateur efficace
 
@@ -185,19 +185,15 @@ Un logo informatif possède un texte alternatif. Un logo ou pictogramme purement
 
 ### En-têtes publics
 
-Les pages publiques de compétition et Performances utilisent un bandeau sombre vers turquoise avec motif de vagues. Il contient :
+Les pages de consultation partagent assets/public/livepalmes-public-shell.js et son CSS, activés explicitement par public-shell-page. Marque LivePalmes à gauche, navigation Accueil / Calendrier / Performances / Documents, logo fédéral et accès secondaire Accéder au portail en haut. Largeur maximale commune 1120 px, gouttières 16 px, fond clair et en-tête blanc. La rubrique active porte aria-current ; pas de menu caché sur mobile. Sous 850 px, les quatre destinations occupent une seconde ligne ; accès portail et marque restent directement visibles. Très petit écran : logos réduits pour garder cet accès, sans défilement horizontal.
 
-1. un retour vers l’accueil ;
-2. un surtitre de contexte ;
-3. le titre principal et ses métadonnées ;
-4. le logo fédéral ;
-5. les actions ou la navigation.
+Sous l’en-tête, fil d’Ariane Accueil / rubrique / page quand pertinent, puis titre principal compact (1,8 rem, 1,5 rem sur mobile), sans répéter la marque ou le logo. Les titres dynamiques, statuts et commandes des pages restent en place. Les retours contextuels Calendrier/Résultats coexistent avec l’accueil toujours visible. Les quatre onglets Performances restent secondaires, avec Recherche nageur comme libellé commun. Les lecteurs PDF gardent téléchargement et retour existants ; pages légales sur le même cadre, texte plafonné à 880 px pour la lisibilité.
 
-Le titre reste le point focal. Les boutons du bandeau sont translucides, bordés de blanc, puis deviennent blancs au survol ou à la sélection.
+Le cadre concerne la consultation permanente, les pages publiques du Direct, PDF et pages légales ; il ne s’applique ni au portail, ni aux consoles, ni aux formulaires de compte ou de notifications. Aucun accès aux données n’est effectué par ce composant.
 
 ### Accueil public
 
-L’accueil conserve la marque, les dimensions des logos et la signature « Suivre · consulter · retrouver ». Un en-tête compact place FFESSM à gauche et l’accès secondaire au portail à droite. Les logos conservent `mix-blend-mode:multiply` sur leur fond.
+L’accueil commence directement par les cartes Performances, Rendez-vous et Documents sous l’en-tête commun. Aucun grand titre LivePalmes ni signature « Suivre · consulter · retrouver » répétés ; un h1 Accueil reste disponible aux lecteurs d’écran. La marque, le logo fédéral et l’accès portail sont portés une seule fois par l’en-tête.
 
 La carte Performances occupe toute la largeur. Au-dessus de 700 px, son icône, le titre « Performances françaises » et les quatre actions sont alignés sur une seule ligne, avec les actions à droite. Entre 701 et 959 px, les boutons prennent la largeur de leur texte et le titre s’ajuste entre 1 et 1,16 rem ; à partir de 960 px, les quatre boutons ont la même largeur. Sur mobile, le titre reste au-dessus de la grille 2 × 2 centrée, avec boutons limités à 136 px de large et 32 px de haut. Les cartes Rendez-vous et Documents utiles suivent en deux colonnes sur ordinateur, une sur mobile, sans légende générique. Leurs fonds bleu et mauve restent subtils ; les petites icônes sont décoratives, avec un calendrier pour les rendez-vous et un document pour les documents utiles.
 
