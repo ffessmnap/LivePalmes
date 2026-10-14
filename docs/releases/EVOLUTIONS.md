@@ -2,6 +2,11 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 14 octobre — Accueil Avec bienvenue et signature fédérale
+
+- Antoine choisit explicitement la maquette Avec bienvenue, logo FFESSM NAP seul à gauche lié à l’accueil LivePalmes, rendez-vous à gauche et Performances/Documents/Portail à droite, dates multijours plus lisibles et signature fédérale sur toutes les pages publiques avec lien ffessm.fr. Autorisation de terminer sur TEST avec recette PC/mobile ; aucune demande PROD.
+- Présentation uniquement : mêmes données NAP, cache et budgets, aucune nouvelle lecture ni écriture. Pavé de date élargi, plage du même mois 12–13/DÉC., description Du 12 au 13 décembre 2026 ; changement de mois/année explicite. Vingt entrées publiques avec pied de page fédéral ; contact et liens légaux conservés, ajout aux trois lecteurs PDF. Portail/consoles/droits et backend inchangés. Tests dates, composant/navigation/identité fédérale et légaux ; publication et recette finale TEST à terminer. Validation utilisateur de la version publiée attendue.
+
 ### 14 octobre — Harmonisation publique Compacte demandée
 
 - Antoine valide la bibliothèque compacte (TEST 5f2364b4), puis choisit la maquette Compacte et autorise son application aux pages publiques jusqu’à TEST, avec accès portail en haut et accueil sans répétition de LivePalmes/signature. L’accord porte sur la présentation et la navigation ; aucun changement sportif, de données, de droits ou de publication PROD.
