@@ -192,7 +192,7 @@ if (ENVIRONMENT.sportingDataSource === "nap") {
         response.json(await homeEventsReader());return;
       }
       response.json(action === "documents-featured" ? {source:"nap",documents:await require("./nap-public-documents").readFeatured(napPool)}
-        : action === "documents-catalogue" ? {source:"nap",...await require("./nap-public-documents").readCatalogue(napPool,require("./assets/nap-public-documents-index.json"),request.query),types:require("./assets/nap-public-documents-index.json").types,rubrics:require("./assets/nap-public-documents-index.json").rubrics}
+        : action === "documents-catalogue" ? {source:"nap",...await require("./nap-public-documents").readLibrary(napPool,require("./assets/nap-public-documents-index.json"),request.query)}
         : action === "records" ? await require("./nap-records-store").read(napPool)
         : action === "calendar-manifest" ? await require("./nap-direct-calendar").readCalendarManifest(napPool)
         : action === "calendar-season" ? await require("./nap-direct-calendar").readCalendarSeason(napPool, request.query.year)
