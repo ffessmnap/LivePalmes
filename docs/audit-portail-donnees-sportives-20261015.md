@@ -37,6 +37,20 @@ Le lecteur existant `searchDirectSwimmers` exécute un SELECT avec deux plages d
 
 Avant correctif, les trois erreurs de chargeur ont été reproduites dans la session Chrome TEST authentifiée. Les huit ressources secondaires listées dans l'inventaire répondent HTTP 200 sur TEST.
 
-Tests ciblés et syntaxe réussis. Vérification globale locale arrêtée au test de publication qui nécessite `bash`, absent sur le poste Windows ; résultat complet attendu en CI Linux. Smoke navigateur général : accueil et consoles initiaux réussis, arrêt sur « Speaker : clic record KO », parcours Direct hors périmètre du correctif ; aucune modification Direct effectuée.
+Tests ciblés et syntaxe réussis. Vérification globale locale arrêtée au test de publication qui nécessite `bash`, absent sur le poste Windows ; suites complètes réussies ensuite en CI Linux et publication commune. Smoke navigateur général : accueil et consoles initiaux réussis, arrêt sur « Speaker : clic record KO », parcours Direct hors périmètre du correctif ; aucune modification Direct effectuée.
 
-Recette TEST commune ordinateur/mobile, références exactes PR/commit/run et validation utilisateur : à compléter après publication. Toute recette reste en lecture seule ; aucun clic d'enregistrement, import, correction, publication ni recalcul.
+## Publication et recette TEST commune
+
+- [PR #341](https://github.com/ffessmnap/LivePalmes/pull/341), commit intégré af621a4b6d6fdfe8381276c8024e2c268798dbf8 ; [CI finale](https://github.com/ffessmnap/LivePalmes/actions/runs/38786076481) réussie.
+- [Publication commune 38787521124](https://github.com/ffessmnap/LivePalmes/actions/runs/38787521124) réussie pour ee96f412a8b8ed2525438b69eb8e49edbaca3633, version Hosting f9ea6e2a53bcf11f, release 1792089760598000. Preuve exacte dans l'artefact test-proof. Ce main inclut aussi accueil #340 et routage #342 ; notre correctif n'a aucun changement backend. Leurs recettes/validations restent suivies séparément.
+
+| Parcours | Ordinateur Chrome authentifié | Mobile 390 × 844 |
+| --- | --- | --- |
+| Records/MPF | Table NAP affichée, éditeur ouvert sur 50 SF femmes, aucune erreur version.js | Table adaptée, éditeur et champs accessibles, aucune erreur de chargement |
+| Suggestions Records | Maïwenn : six suggestions dont Maïwenn HAMON ; nom initial rétabli sans sauvegarde | Mêmes six suggestions ; champ visible et page sans débordement horizontal |
+| Import | Historique borné chargé, fenêtre TXT/Excel et encodage visibles ; aucun fichier choisi | Navigation et fenêtre utilisables, fermeture fonctionnelle |
+| Correction | Anthelme ROBISSON retrouvé, première page de résultats affichée, première ligne et formulaire consultés | Formulaire conservé, champs et actions accessibles sans les déclencher |
+
+Console de l'onglet sans erreur/avertissement durant cette recette. Largeur document 375 px pour viewport 390 px ; champs correction 289 px, éditeur Records 339 px. Dimensions réinitialisées après test. Captures records-pc.jpg, records-mobile.jpg, import-mobile.jpg et correction-mobile.jpg dans C:/Users/ITIFP/Documents/Codex/livepalmes-sporting-20261015.
+
+Zéro écriture métier : aucun clic d'enregistrement, brouillon, import/analyse de fichier, correction, masquage, suppression, publication ou recalcul. Aucun test réel de ces opérations ni comparaison exhaustive des référentiels sportifs ; erreurs réseau et réponses dépassées couvertes hors ligne. La recherche publique ne nécessite pas de droit d'import supplémentaire. Aucune ressource historique restaurée, aucune PROD modifiée. Validation utilisateur de la version publiée attendue.
