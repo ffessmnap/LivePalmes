@@ -54,7 +54,27 @@ async function inspectReadOnly(pool) {
     [competitionImportClubs]=await pool.execute({sql:"SELECT id,compet,club,abbr FROM txt_clubs WHERE compet IN (275,3589) ORDER BY compet,id LIMIT 1001",timeout:10000});
     if(competitionImportClubs.length>1000)throw new RangeError("Clubs d'import trop volumineux.");
   }
-  const rowProvenance={screenshotRows,previousRows,competitionImportClubs,provenanceSchema,clubReferenceColumns};
+  const secondaryErrors=[],secondaryPlans={};
+  async function secondary(name,sql,max){
+    try{
+      const [plan]=await pool.execute({sql:`EXPLAIN ${sql}`,timeout:10000});secondaryPlans[name]=plan;
+      if(plan.some(row=>row.table&&row.type==="ALL"&&Number(row.rows)>0))throw Object.assign(new Error(),{code:"NAP_NON_INDEXED"});
+      const [result]=await pool.execute({sql,timeout:10000});
+      if(result.length>max)throw new RangeError();return result;
+    }catch(error){secondaryErrors.push({source:name,code:error instanceof RangeError?"READ_BOUND_EXCEEDED":error.code||"SOURCE_UNAVAILABLE"});return [];}
+  }
+  const relaySources=await secondary("relays","SELECT id,club,distance,nageur1,nageur2,nageur3,nageur4,tps1,tps2,tps3,tps4 FROM perfs_relais FORCE INDEX (livepalmes_compet_id) WHERE compet=3589 AND (nageur1=912 OR nageur2=912 OR nageur3=912 OR nageur4=912) ORDER BY id LIMIT 1001",1000);
+  const changeSources=await secondary("changes","SELECT performance_id,action,status,created_at,COALESCE(JSON_UNQUOTE(JSON_EXTRACT(before_image,'$.row.club')),JSON_UNQUOTE(JSON_EXTRACT(before_image,'$.club'))) AS beforeClub,COALESCE(JSON_UNQUOTE(JSON_EXTRACT(after_image,'$.row.club')),JSON_UNQUOTE(JSON_EXTRACT(after_image,'$.club'))) AS afterClub FROM livepalmes_performance_changes WHERE performance_id IN (434019,434020,434021,434390,63719) ORDER BY performance_id,created_at LIMIT 101",100);
+  const importClubLines=await secondary("importClubLines","SELECT id,compet,pre,LEFT(txt,512) AS clubLine FROM txt_import WHERE compet IN (275,3589) AND pre='CLU' ORDER BY compet,id LIMIT 1001",1000);
+  const [secondarySchema]=await pool.execute({sql:"SELECT TABLE_NAME,COLUMN_NAME,COLUMN_TYPE,COLUMN_KEY FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME IN ('cnc_nageurs','cnc_items','cnc_summaries','cnc_club') ORDER BY TABLE_NAME,ORDINAL_POSITION LIMIT 201",timeout:10000});
+  if(secondarySchema.length>200)throw new RangeError("Sources championnat trop volumineuses.");
+  const cncColumns=secondarySchema.filter(row=>row.TABLE_NAME==="cnc_nageurs");
+  let championshipSources=[];
+  if(cncColumns.some(row=>row.COLUMN_NAME==="nageur"&&["PRI","MUL"].includes(row.COLUMN_KEY))){
+    const projection=["id","nageur","club","bestcompet","year","annee","saison","course","tps"].filter(name=>cncColumns.some(row=>row.COLUMN_NAME===name)).map(name=>`\`${name}\``).join(",");
+    championshipSources=await secondary("championship",`SELECT ${projection} FROM cnc_nageurs FORCE INDEX (livepalmes_nageur_id) WHERE nageur IN (912,680) ORDER BY nageur,id LIMIT 101`,100);
+  }
+  const rowProvenance={screenshotRows,previousRows,competitionImportClubs,provenanceSchema,clubReferenceColumns,relaySources,changeSources,importClubLines,secondarySchema,championshipSources,secondaryPlans,secondaryErrors};
   const top=queryFor({course:"100SF",sex:"M",limit:5000});
   let topPlan,topPlanError;
   try{[topPlan]=await pool.execute({sql:`EXPLAIN ${top.sql}`,timeout:10000},top.values);}
