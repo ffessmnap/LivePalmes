@@ -47,6 +47,7 @@ function checkSyntax() {
 
 function runUnitTests() {
   printStep("Tests automatiques");
+  run(process.execPath, ["tools/build-public-home-template.js"]);
   [
     "nap-mysql-tests.js",
     "nap-direct-query-checks-tests.js",
@@ -76,6 +77,7 @@ function runUnitTests() {
     "livepalmes-public-shell-tests.js",
     "nap-home-events-tests.js",
     "nap-home-direct-tests.js",
+    "nap-home-page-tests.js",
       "nap-home-events-refresh-tests.js",
     "nap-notification-preview-tests.js",
     "nap-notification-automation-tests.js",

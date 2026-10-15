@@ -62,6 +62,10 @@
  async function init(){
   const events=document.getElementById("publicHomeEvents"),documents=document.getElementById("publicHomeDocuments");
   if(!events||!documents||!model)return;
+  if(document.body.dataset.homePrepared==="true"){
+   for(const toggle of events.querySelectorAll(".public-home-events-toggle"))toggle.addEventListener("click",()=>{const expanded=toggle.getAttribute("aria-expanded")!=="true";toggle.setAttribute("aria-expanded",String(expanded));toggle.closest(".public-home-group").classList.toggle("public-home-upcoming-collapsed",!expanded);toggle.textContent=expanded?"Réduire la liste":`Voir les ${toggle.dataset.moreCount} suivants`;});
+   return;
+  }
   await Promise.allSettled([
    read("home-events").then(value=>renderEvents(events,value.events,value.stale===true)).catch(()=>events.replaceChildren(node("p","public-home-state","Les rendez-vous sont momentanément indisponibles. Consultez le calendrier."))),
    read("documents-featured").then(value=>renderDocuments(documents,value.documents)).catch(()=>documents.replaceChildren(node("p","public-home-state","Les documents sont momentanément indisponibles. Consultez la bibliothèque.")))

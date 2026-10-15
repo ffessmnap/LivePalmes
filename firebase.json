@@ -488,6 +488,14 @@
     ],
     "rewrites": [
       {
+        "source": "/",
+        "function": {"functionId": "readNapPublicSwimmer", "region": "europe-west1"}
+      },
+      {
+        "source": "/index.html",
+        "function": {"functionId": "readNapPublicSwimmer", "region": "europe-west1"}
+      },
+      {
         "source": "/resultats",
         "destination": "/resultats.html"
       },
@@ -497,6 +505,7 @@
       }
     ],
     "ignore": [
+      "index.html",
       "firebase.json",
       "**/.*",
       "**/AGENTS.md",

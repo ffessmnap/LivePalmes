@@ -2,6 +2,11 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 15 octobre — Accueil préparé côté serveur
+
+- Antoine autorise explicitement serveur/routage et publication TEST avec recette PC/mobile, sans job périodique. Réutilisation des lecteurs NAP existants dans readNapPublicSwimmer, HTML initial prérempli, cache mémoire cinq minutes/concurrence/jour de Paris, états indisponibles séparés sans données documentaires périmées. Trois requêtes bornées à froid, zéro à chaud ou au dépliage. Aucun framework, scheduler, index, droit ou donnée modifiés.
+- Routes / et /index.html dynamiques, source index exclue du paquet Hosting et empaquetée automatiquement avec le modèle de présentation ; synchronisation vérifiée, HTML échappé, marque data-home-prepared pour éviter les deux requêtes navigateur. Budgets et retour arrière dans accueil-bibliotheque.md. Tests hors ligne et préparation locale en cours ; publication commune et recette finale TEST à terminer. Validation utilisateur de la version publiée attendue.
+
 ### 15 octobre — Rendez-vous en région et lien Calendrier national
 
 - Antoine demande « Les prochains rendez-vous en région », les liens Tout le calendrier et Calendrier national, ce dernier présélectionnant les niveaux national/international, jusqu’à TEST avec recette PC/mobile. Libellé sans « et international » explicitement choisi. Le regroupement existant exclut déjà national/international de la liste en région, aucune règle métier changée.

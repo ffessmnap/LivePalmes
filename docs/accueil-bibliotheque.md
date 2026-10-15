@@ -10,6 +10,16 @@ Les routes publiques restent à la racine : `index.html`, `public.html`, `biblio
 
 ## Sources et recherches
 
+### Accueil HTML préparé côté serveur — 15 octobre
+
+Sur les routes `/` et `/index.html`, Hosting appelle `readNapPublicSwimmer` qui prépare le HTML avec `nap-home-page`. Le fichier index.html reste la source de présentation versionnée, mais est exclu du paquet Hosting pour laisser passer le routage ; public/public.html continuent de rediriger vers /. Les sources HTML/modèle sont empaquetées dans functions/assets par `tools/build-public-home-template.js --write`, sans aucune lecture de données, et leur synchronisation est vérifiée par la suite globale. Aucune dépendance ni framework ajoutés.
+
+Budget : cache mémoire de cinq minutes par instance stable, appels simultanés mutualisés, invalidation au changement de jour à Paris. Une préparation = deux fenêtres calendrier déjà indexées (limite 501 chacune, dépassement refusé) et une requête documentaire déjà bornée (sept rangs maximum, six documents). Zéro lecture à cache chaud, au dépliage mobile ou aux actions de présentation ; même budget pour rafraîchir après expiration qu’à froid. Un redémarrage d’instance nécessite une nouvelle préparation ; le cache n’est pas un stockage partagé entre instances. Maximum deux instances déjà configuré, sans instance maintenue chaude, tâche périodique, écriture SQL/Firestore/Storage ni reconstruction historique.
+
+Documents : le retrait public peut rester visible dans l’accueil pendant au maximum les cinq minutes du cache mémoire ; la bibliothèque et les fiches continuent leurs contrôles courants. Aucun ancien résultat documentaire expiré n’est réutilisé en cas d’erreur. Les lecteurs sont indépendants : une panne d’un bloc conserve l’autre, état indisponible explicite et HTTP 503, échec retenu seulement quinze secondes pour éviter les rafales. Cache HTTP private/no-store pour éviter d’empiler un cache CDN ou navigateur et d’allonger cette fraîcheur. La page envoyée contient les données publiques échappées, sans secret/acteur/métadonnée interne.
+
+Le navigateur reconnaît data-home-prepared, ne refait pas les appels home-events/documents-featured et initialise seulement le dépliage local. Les pages locales/non préparées gardent leur lecteur existant. Un retour arrière restaure index.html dans Hosting et retire ses deux réécritures avant de revenir au lecteur antérieur ; aucun scheduler à supprimer ni donnée à restaurer.
+
 `readNapPublicSwimmer` reçoit les actions `documents-catalogue`, `documents-featured`, `home-events`. Réponses sur liste blanche, sans uploader, acteur, chemin de stockage, coordonnées privées ou ligne SQL brute.
 
 La recherche documentaire travaille sur une fenêtre courante indexée de NAP, et non sur une copie statique des titres. Le filtre texte et les facettes s’appliquent à cette fenêtre, puis un curseur strictement décroissant permet de poursuivre. Une fenêtre vide ne lance pas de remplissage automatique ; l’interface propose « Poursuivre la recherche ». Les nouvelles références sont immédiatement visibles, les retraits de public immédiatement exclus de chaque nouvelle réponse. Le petit fichier serveur préparé par `tools/build-nap-document-index.js` ne contient que les étiquettes de facettes. Les références sans URL restent visibles comme texte, sans lien inventé.
