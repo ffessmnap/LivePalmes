@@ -3,6 +3,8 @@
 const {queryFor}=require("./nap-direct-tops");
 async function inspect(pool) {
   const [version]=await pool.execute({sql:"SELECT VERSION() AS version",timeout:10000});
+  const [tableNames]=await pool.execute({sql:"SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE() ORDER BY TABLE_NAME LIMIT 201",timeout:10000});
+  if(tableNames.length>200)throw new RangeError("Inventaire trop volumineux.");
   const sql="SELECT STRAIGHT_JOIN p.id,p.course,p.club,p.compet,c.libelle,c.date,cl.abre_club,n.club AS currentClub FROM perfs p FORCE INDEX (perf) LEFT JOIN competitions c ON c.id=p.compet LEFT JOIN clubs cl ON cl.num_club=p.club AND CAST(cl.num_club AS CHAR)=p.club JOIN nageurs n ON n.id=p.nageur WHERE p.nageur=? ORDER BY p.id LIMIT 5001";
   const [plan]=await pool.execute({sql:`EXPLAIN ${sql}`,timeout:10000},[912]);
   const [rows]=await pool.execute({sql,timeout:10000},[912]);
@@ -28,10 +30,19 @@ async function inspect(pool) {
     if(links.length>5000)throw new RangeError("References historiques trop volumineuses.");
     historicalClubReferences.push(...links.map(link=>({table,rawClub:String(link.clubID),historicalLabel:link.clubAbr,federalNumber:link.clubNum,nativeClubId:link.EnapId,resolvedClubId:link.num_club,resolvedLabel:link.abre_club,nativeRows:groups.get(String(link.clubID))?.count||0})));
   }
+  // Fixed counterexample supplied by Antoine: Quentin, 27.80, 03/02/2008.
+  // Two bounded indexed reads, independent of the size of the whole database.
+  const competitionSql="SELECT STRAIGHT_JOIN p.id,p.nageur,p.club,n.club AS currentClub,cp.abre_club AS performanceClubLabel,cn.abre_club AS currentClubLabel FROM perfs p FORCE INDEX (livepalmes_compet_id) LEFT JOIN nageurs n ON n.id=p.nageur LEFT JOIN clubs cp ON cp.num_club=p.club AND CAST(cp.num_club AS CHAR)=p.club LEFT JOIN clubs cn ON cn.num_club=n.club AND CAST(cn.num_club AS CHAR)=n.club WHERE p.compet=? ORDER BY p.id LIMIT 5001";
+  const [competitionPlan]=await pool.execute({sql:`EXPLAIN ${competitionSql}`,timeout:10000},[275]);
+  const [competitionRows]=await pool.execute({sql:competitionSql,timeout:10000},[275]);
+  if(competitionRows.length>5000)throw new RangeError("Competition trop volumineuse.");
+  const competitionGroups=new Map();
+  for(const row of competitionRows){const key=JSON.stringify([row.club,row.currentClub]);const group=competitionGroups.get(key)||{rawClub:String(row.club||""),performanceClubLabel:row.performanceClubLabel,currentClub:String(row.currentClub||""),currentClubLabel:row.currentClubLabel,count:0};group.count++;competitionGroups.set(key,group);}
+  const competitionComparison={competitionId:275,rowCount:competitionRows.length,plan:competitionPlan,groups:[...competitionGroups.values()],example:competitionRows.find(row=>String(row.id)==="63719")||null};
   const top=queryFor({course:"100SF",sex:"M",limit:5000});
   let topPlan,topPlanError;
   try{[topPlan]=await pool.execute({sql:`EXPLAIN ${top.sql}`,timeout:10000},top.values);}
   catch(error){topPlanError={code:error.code||"SQL_ERROR",errno:error.errno||null,context:String(error.sqlMessage||"").replace(/\s+/g," ").slice(0,400)};}
-  return {source:"nap",mode:"performance-clubs-readonly",writesExecuted:0,swimmerId:912,rowCount:rows.length,currentClub:rows[0]?.currentClub,version:version[0]?.version,groups:[...groups.values()],importSchema,importClubMappings,historicalClubReferences,plan,topPlan,topPlanError};
+  return {source:"nap",mode:"performance-clubs-readonly",writesExecuted:0,swimmerId:912,rowCount:rows.length,currentClub:rows[0]?.currentClub,version:version[0]?.version,tableNames,groups:[...groups.values()],importSchema,importClubMappings,historicalClubReferences,competitionComparison,plan,topPlan,topPlanError};
 }
 module.exports={inspect};
