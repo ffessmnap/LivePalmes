@@ -3,6 +3,8 @@
 const {queryFor}=require("./nap-direct-tops");
 async function inspect(pool) {
   const [version]=await pool.execute({sql:"SELECT VERSION() AS version",timeout:10000});
+  const [tableNames]=await pool.execute({sql:"SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE() ORDER BY TABLE_NAME LIMIT 201",timeout:10000});
+  if(tableNames.length>200)throw new RangeError("Inventaire trop volumineux.");
   const sql="SELECT STRAIGHT_JOIN p.id,p.course,p.club,p.compet,c.libelle,c.date,cl.abre_club,n.club AS currentClub FROM perfs p FORCE INDEX (perf) LEFT JOIN competitions c ON c.id=p.compet LEFT JOIN clubs cl ON cl.num_club=p.club AND CAST(cl.num_club AS CHAR)=p.club JOIN nageurs n ON n.id=p.nageur WHERE p.nageur=? ORDER BY p.id LIMIT 5001";
   const [plan]=await pool.execute({sql:`EXPLAIN ${sql}`,timeout:10000},[912]);
   const [rows]=await pool.execute({sql,timeout:10000},[912]);
@@ -41,6 +43,6 @@ async function inspect(pool) {
   let topPlan,topPlanError;
   try{[topPlan]=await pool.execute({sql:`EXPLAIN ${top.sql}`,timeout:10000},top.values);}
   catch(error){topPlanError={code:error.code||"SQL_ERROR",errno:error.errno||null,context:String(error.sqlMessage||"").replace(/\s+/g," ").slice(0,400)};}
-  return {source:"nap",mode:"performance-clubs-readonly",writesExecuted:0,swimmerId:912,rowCount:rows.length,currentClub:rows[0]?.currentClub,version:version[0]?.version,groups:[...groups.values()],importSchema,importClubMappings,historicalClubReferences,competitionComparison,plan,topPlan,topPlanError};
+  return {source:"nap",mode:"performance-clubs-readonly",writesExecuted:0,swimmerId:912,rowCount:rows.length,currentClub:rows[0]?.currentClub,version:version[0]?.version,tableNames,groups:[...groups.values()],importSchema,importClubMappings,historicalClubReferences,competitionComparison,plan,topPlan,topPlanError};
 }
 module.exports={inspect};
