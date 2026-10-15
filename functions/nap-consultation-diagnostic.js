@@ -1,7 +1,7 @@
 "use strict";
 // Fixed read-only investigation requested by Antoine; no arbitrary SQL or id.
 const {queryFor}=require("./nap-direct-tops");
-async function inspect(pool) {
+async function inspectReadOnly(pool) {
   const [version]=await pool.execute({sql:"SELECT VERSION() AS version",timeout:10000});
   const [tableNames]=await pool.execute({sql:"SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE() AND (TABLE_NAME LIKE '%club%' OR TABLE_NAME LIKE '%perf%' OR TABLE_NAME LIKE '%engag%' OR TABLE_NAME LIKE '%inscri%' OR TABLE_NAME LIKE 'txt_%') ORDER BY TABLE_NAME LIMIT 201",timeout:10000});
   if(tableNames.length>200)throw new RangeError("Inventaire trop volumineux.");
@@ -44,5 +44,11 @@ async function inspect(pool) {
   try{[topPlan]=await pool.execute({sql:`EXPLAIN ${top.sql}`,timeout:10000},top.values);}
   catch(error){topPlanError={code:error.code||"SQL_ERROR",errno:error.errno||null,context:String(error.sqlMessage||"").replace(/\s+/g," ").slice(0,400)};}
   return {source:"nap",mode:"performance-clubs-readonly",writesExecuted:0,swimmerId:912,rowCount:rows.length,currentClub:rows[0]?.currentClub,version:version[0]?.version,tableNames,groups:[...groups.values()],importSchema,importClubMappings,historicalClubReferences,competitionComparison,plan,topPlan,topPlanError};
+}
+async function inspect(pool){
+  let step=0;
+  const measured={execute:async(...args)=>{step++;return pool.execute(...args);}};
+  try{return {...await inspectReadOnly(measured),complete:true};}
+  catch(error){return {source:"nap",mode:"performance-clubs-readonly",writesExecuted:0,complete:false,errors:[{step,code:error instanceof RangeError?"READ_BOUND_EXCEEDED":error.code||"DIAGNOSTIC_ERROR"}]};}
 }
 module.exports={inspect};
