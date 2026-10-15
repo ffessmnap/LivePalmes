@@ -35,4 +35,8 @@ Le lecteur existant `searchDirectSwimmers` exécute un SELECT avec deux plages d
 
 `tests/nap-portal-sporting-dependencies-tests.js` exécute les chargeurs en VM et refuse un chemin manquant ou un export historique en mode NAP. Il vérifie aussi les suggestions bornées, sexe, identité, relais mixtes, mutualisation, effacement pendant requête et erreur réseau. Ajout à la suite globale.
 
+Avant correctif, les trois erreurs de chargeur ont été reproduites dans la session Chrome TEST authentifiée. Les huit ressources secondaires listées dans l'inventaire répondent HTTP 200 sur TEST.
+
+Tests ciblés et syntaxe réussis. Vérification globale locale arrêtée au test de publication qui nécessite `bash`, absent sur le poste Windows ; résultat complet attendu en CI Linux. Smoke navigateur général : accueil et consoles initiaux réussis, arrêt sur « Speaker : clic record KO », parcours Direct hors périmètre du correctif ; aucune modification Direct effectuée.
+
 Recette TEST commune ordinateur/mobile, références exactes PR/commit/run et validation utilisateur : à compléter après publication. Toute recette reste en lecture seule ; aucun clic d'enregistrement, import, correction, publication ni recalcul.
