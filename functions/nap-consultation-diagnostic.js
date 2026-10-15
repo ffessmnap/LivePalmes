@@ -21,7 +21,9 @@ async function inspect(pool) {
     importClubMappings.push(...links.map(link=>({table,id:link.id,competitionId:link.compet,clubId:link.club,label:link.abre_club,matchingPerformances:rows.filter(row=>String(row.club)===String(link.id)&&String(row.compet)===String(link.compet)).length})));
   }
   const top=queryFor({course:"100SF",sex:"M",limit:5000});
-  const [topPlan]=await pool.execute({sql:`EXPLAIN ${top.sql}`,timeout:10000},top.values);
-  return {source:"nap",mode:"performance-clubs-readonly",writesExecuted:0,swimmerId:912,rowCount:rows.length,currentClub:rows[0]?.currentClub,version:version[0]?.version,groups:[...groups.values()],importSchema,importClubMappings,plan,topPlan};
+  let topPlan,topPlanError;
+  try{[topPlan]=await pool.execute({sql:`EXPLAIN ${top.sql}`,timeout:10000},top.values);}
+  catch(error){topPlanError={code:error.code||"SQL_ERROR",errno:error.errno||null};}
+  return {source:"nap",mode:"performance-clubs-readonly",writesExecuted:0,swimmerId:912,rowCount:rows.length,currentClub:rows[0]?.currentClub,version:version[0]?.version,groups:[...groups.values()],importSchema,importClubMappings,plan,topPlan,topPlanError};
 }
 module.exports={inspect};
