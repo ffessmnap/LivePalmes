@@ -5,7 +5,7 @@ async function inspectReadOnly(pool) {
   const [version]=await pool.execute({sql:"SELECT VERSION() AS version",timeout:10000});
   const [tableNames]=await pool.execute({sql:"SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE() AND (TABLE_NAME LIKE '%club%' OR TABLE_NAME LIKE '%perf%' OR TABLE_NAME LIKE '%engag%' OR TABLE_NAME LIKE '%inscri%' OR TABLE_NAME LIKE 'txt_%') ORDER BY TABLE_NAME LIMIT 201",timeout:10000});
   if(tableNames.length>200)throw new RangeError("Inventaire trop volumineux.");
-  const sql="SELECT STRAIGHT_JOIN p.id,p.course,p.club,p.compet,c.libelle,c.date,cl.abre_club,n.club AS currentClub FROM perfs p FORCE INDEX (perf) LEFT JOIN competitions c ON c.id=p.compet LEFT JOIN clubs cl ON cl.num_club=p.club AND CAST(cl.num_club AS CHAR)=p.club JOIN nageurs n ON n.id=p.nageur WHERE p.nageur=? ORDER BY p.id LIMIT 5001";
+  const sql="SELECT STRAIGHT_JOIN p.id,p.course,p.tps,p.passage,p.relais,p.pid,p.club,p.compet,c.libelle,c.date,cl.abre_club,n.club AS currentClub FROM perfs p FORCE INDEX (perf) LEFT JOIN competitions c ON c.id=p.compet LEFT JOIN clubs cl ON cl.num_club=p.club AND CAST(cl.num_club AS CHAR)=p.club JOIN nageurs n ON n.id=p.nageur WHERE p.nageur=? ORDER BY p.id LIMIT 5001";
   const [plan]=await pool.execute({sql:`EXPLAIN ${sql}`,timeout:10000},[912]);
   const [rows]=await pool.execute({sql,timeout:10000},[912]);
   if(rows.length>5000)throw new RangeError("Historique trop volumineux.");
@@ -39,11 +39,27 @@ async function inspectReadOnly(pool) {
   const competitionGroups=new Map();
   for(const row of competitionRows){const key=JSON.stringify([row.club,row.currentClub]);const group=competitionGroups.get(key)||{rawClub:String(row.club||""),performanceClubLabel:row.performanceClubLabel,currentClub:String(row.currentClub||""),currentClubLabel:row.currentClubLabel,count:0};group.count++;competitionGroups.set(key,group);}
   const competitionComparison={competitionId:275,rowCount:competitionRows.length,plan:competitionPlan,groups:[...competitionGroups.values()],example:competitionRows.find(row=>String(row.id)==="63719")||null};
+  const screenshotRows=rows.filter(row=>String(row.compet)==="3589");
+  const [provenanceSchema]=await pool.execute({sql:"SELECT TABLE_NAME,COLUMN_NAME,COLUMN_TYPE,COLUMN_KEY,COLUMN_COMMENT FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME IN ('perfs','sauv_lp_20261006_perfs','txt_clubs','txt_nageurs','txt_import','winpalme_lignes','livepalmes_performance_changes') ORDER BY TABLE_NAME,ORDINAL_POSITION LIMIT 301",timeout:10000});
+  if(provenanceSchema.length>300)throw new RangeError("Structure de provenance trop volumineuse.");
+  const [clubReferenceColumns]=await pool.execute({sql:"SELECT TABLE_NAME,COLUMN_NAME,COLUMN_TYPE,COLUMN_KEY FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME NOT LIKE 'lp_%' AND TABLE_NAME NOT LIKE 'sauv_%' AND COLUMN_NAME IN ('club','club_id','clubID','num_club','clubId') ORDER BY TABLE_NAME,ORDINAL_POSITION LIMIT 201",timeout:10000});
+  if(clubReferenceColumns.length>200)throw new RangeError("References de club trop volumineuses.");
+  const backupColumns=provenanceSchema.filter(row=>row.TABLE_NAME==="sauv_lp_20261006_perfs");
+  let previousRows=[];
+  if(["id","nageur","compet","club","course","tps","passage","relais","pid"].every(name=>backupColumns.some(row=>row.COLUMN_NAME===name))&&backupColumns.some(row=>row.COLUMN_NAME==="id"&&row.COLUMN_KEY==="PRI")){
+    [previousRows]=await pool.execute({sql:"SELECT id,nageur,compet,club,course,tps,passage,relais,pid FROM sauv_lp_20261006_perfs FORCE INDEX (PRIMARY) WHERE id IN (434019,434020,434021,434390,63719) ORDER BY id LIMIT 6",timeout:10000});
+  }
+  let competitionImportClubs=[];
+  if(importSchema.some(row=>row.TABLE_NAME==="txt_clubs"&&row.COLUMN_NAME==="compet"&&["MUL","PRI"].includes(row.COLUMN_KEY))){
+    [competitionImportClubs]=await pool.execute({sql:"SELECT id,compet,club,abbr FROM txt_clubs WHERE compet IN (275,3589) ORDER BY compet,id LIMIT 1001",timeout:10000});
+    if(competitionImportClubs.length>1000)throw new RangeError("Clubs d'import trop volumineux.");
+  }
+  const rowProvenance={screenshotRows,previousRows,competitionImportClubs,provenanceSchema,clubReferenceColumns};
   const top=queryFor({course:"100SF",sex:"M",limit:5000});
   let topPlan,topPlanError;
   try{[topPlan]=await pool.execute({sql:`EXPLAIN ${top.sql}`,timeout:10000},top.values);}
   catch(error){topPlanError={code:error.code||"SQL_ERROR",errno:error.errno||null,context:String(error.sqlMessage||"").replace(/\s+/g," ").slice(0,400)};}
-  return {source:"nap",mode:"performance-clubs-readonly",writesExecuted:0,swimmerId:912,rowCount:rows.length,currentClub:rows[0]?.currentClub,version:version[0]?.version,tableNames,groups:[...groups.values()],importSchema,importClubMappings,historicalClubReferences,competitionComparison,plan,topPlan,topPlanError};
+  return {source:"nap",mode:"performance-clubs-readonly",writesExecuted:0,swimmerId:912,rowCount:rows.length,currentClub:rows[0]?.currentClub,version:version[0]?.version,tableNames,groups:[...groups.values()],importSchema,importClubMappings,historicalClubReferences,competitionComparison,rowProvenance,plan,topPlan,topPlanError};
 }
 async function inspect(pool){
   let step=0;
