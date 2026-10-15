@@ -3,7 +3,7 @@
 const {queryFor}=require("./nap-direct-tops");
 async function inspect(pool) {
   const [version]=await pool.execute({sql:"SELECT VERSION() AS version",timeout:10000});
-  const [tableNames]=await pool.execute({sql:"SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE() ORDER BY TABLE_NAME LIMIT 201",timeout:10000});
+  const [tableNames]=await pool.execute({sql:"SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE() AND (TABLE_NAME LIKE '%club%' OR TABLE_NAME LIKE '%perf%' OR TABLE_NAME LIKE '%engag%' OR TABLE_NAME LIKE '%inscri%' OR TABLE_NAME LIKE 'txt_%') ORDER BY TABLE_NAME LIMIT 201",timeout:10000});
   if(tableNames.length>200)throw new RangeError("Inventaire trop volumineux.");
   const sql="SELECT STRAIGHT_JOIN p.id,p.course,p.club,p.compet,c.libelle,c.date,cl.abre_club,n.club AS currentClub FROM perfs p FORCE INDEX (perf) LEFT JOIN competitions c ON c.id=p.compet LEFT JOIN clubs cl ON cl.num_club=p.club AND CAST(cl.num_club AS CHAR)=p.club JOIN nageurs n ON n.id=p.nageur WHERE p.nageur=? ORDER BY p.id LIMIT 5001";
   const [plan]=await pool.execute({sql:`EXPLAIN ${sql}`,timeout:10000},[912]);
