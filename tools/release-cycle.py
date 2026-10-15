@@ -353,10 +353,28 @@ def approved_public_export_cleanup_paths(paths, candidate):
     return relevant
 
 
-def classify_test(paths, approved_top_files=False, approved_records_cleanup=False, approved_public_export_cleanup=False):
+def server_home_routing_only(before, after):
+    expected = json.loads(json.dumps(before))
+    hosting = expected['hosting']
+    require(isinstance(hosting, dict), 'Cible Hosting unique requise pour accueil serveur')
+    routes = [{'source': source, 'function': {'functionId': 'readNapPublicSwimmer', 'region': 'europe-west1'}}
+              for source in ('/', '/index.html')]
+    hosting['rewrites'] = routes + hosting.get('rewrites', [])
+    hosting['ignore'] = ['index.html'] + hosting.get('ignore', [])
+    require(after == expected, 'Seul le routage exact accueil serveur est autorise sur TEST')
+
+
+def classify_test(paths, approved_top_files=False, approved_records_cleanup=False, approved_public_export_cleanup=False, approved_home_routing=False):
     # Exact files authorized by Antoine on TEST, 5 October 2026.
     # Ordinary and production classification remain unchanged.
     allowed = set(ignored_top_paths(paths, 'HEAD'))
+    if approved_home_routing and 'firebase.json' in paths:
+        require(os.environ.get('TARGET_FIREBASE_PROJECT') == 'livepalmes-test', 'Routage accueil reserve a TEST')
+        base = os.environ.get('BASE_SHA', '')
+        require(SHA.fullmatch(base), 'Base exacte requise pour routage accueil')
+        server_home_routing_only(json.loads(git('show', base + ':firebase.json')),
+                                 json.loads(git('show', 'HEAD:firebase.json')))
+        allowed.add('firebase.json')
     if approved_public_export_cleanup:
         allowed |= approved_public_export_cleanup_paths(paths, 'HEAD')
     if approved_records_cleanup:
