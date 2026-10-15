@@ -1,0 +1,32 @@
+"use strict";
+const assert=require("node:assert/strict"),fs=require("node:fs"),vm=require("node:vm"),page=require("../functions/nap-home-page");
+(async()=>{
+ let now=Date.parse("2026-10-15T10:00:00Z"),calls=0,fail=false;
+ const events=[{id:"national",date:"2026-12-12",endDate:"2026-12-13",level:"national",eventType:"pool",name:'<script>alert("event")</script>'},...Array.from({length:5},(_,i)=>({id:`region-${i}`,date:`2026-10-${16+i}`,level:"regional",name:`Formation ${i}`}))];
+ const documents=[{title:'<img src=x onerror="bad">',url:"javascript:alert(1)"},{title:"Document public",url:"https://nap.ffessm.fr/a.pdf",publishedAt:"2026-10-14T10:00:00Z"}];
+ const html=page.render({events,documents},now);
+ assert.match(html,/data-home-prepared="true"/);assert.doesNotMatch(html,/Chargement des (rendez-vous|documents)/);
+ assert.match(html,/12–13/);assert.match(html,/Du 12 au 13 décembre 2026/);assert.match(html,/Les prochains rendez-vous en région/);
+ assert.match(html,/data-more-count="2"/);assert.match(html,/aria-controls="publicHomeEventsMore"/);assert.match(html,/aria-expanded="false"/);
+ assert.doesNotMatch(html,/<script>alert|<img src=x|javascript:alert/);assert.match(html,/&lt;script&gt;/);assert.match(html,/https:\/\/nap.ffessm.fr\/a.pdf/);
+ assert.equal(page.publicUrl(""),"");assert.equal(page.publicUrl("https://user:secret@host.test/x"),"");
+ assert.equal((page.render({events,documents},now).match(/public-home-event-results/g)||[]).length,0);
+ const cached=page.createReader(async()=>{calls++;if(fail)throw Error("private failure details");return {events,documents};},()=>now);
+ await Promise.all([cached(),cached(),cached()]);assert.equal(calls,1);
+ now+=page.CACHE_MS-1;await cached();assert.equal(calls,1);
+ now++;fail=true;const failed=await cached();assert.equal(calls,2);assert.equal(failed.documents,null);assert.match(failed.html,/momentanément indisponibles/);assert.doesNotMatch(failed.html,/private failure|Document public/);
+ await cached();assert.equal(calls,2);now+=page.FAILURE_MS;fail=false;await cached();assert.equal(calls,3);
+ now=Date.parse("2026-10-15T21:59:00Z");let midnightCalls=0;
+ const midnight=page.createReader(async()=>{midnightCalls++;return {events:[],documents:[]};},()=>now);
+ await midnight();now+=60000;await midnight();assert.equal(midnightCalls,2,"Paris day rollover invalidates cached data");
+ let queries=0;const partial=await page.read({execute:async({sql})=>{queries++;if(sql.includes("livepalmes_document_options"))throw Error("private SQL");return [[]];}});
+ assert.equal(queries,3);assert.deepEqual(partial.events,[]);assert.equal(partial.documents,null);
+ const config=JSON.parse(fs.readFileSync("firebase.json","utf8")).hosting;
+ assert(config.ignore.includes("index.html"));for(const route of ["/","/index.html"])assert.equal(config.rewrites.find(r=>r.source===route).function.functionId,"readNapPublicSwimmer");
+ const client=fs.readFileSync("assets/public/livepalmes-public-home.js","utf8");assert(client.indexOf('document.body.dataset.homePrepared===')<client.indexOf('read("home-events")'));
+ const source=fs.readFileSync("functions/index.js","utf8"),start=source.indexOf("exports.readNapPublicSwimmer = onRequest"),end=source.indexOf("exports.getNapSwimmerPerformances",start);
+ const context={napPool:undefined,exports:{},REGION:"europe-west1",ENVIRONMENT:{name:"test"},napPassword:{value:()=>"offline"},createNapPool:()=>({}),onRequest:(_options,handler)=>handler,require:name=>{assert.equal(name,"./nap-home-page");return {...page,readPage:page.createReader(async()=>({events,documents}))};}};
+ vm.runInNewContext(source.slice(start,end),context);
+ for(const path of ["/","/index.html"]){const response={headers:{},set(name,value){this.headers[name]=value;return this;},status(value){this.code=value;return this;},type(value){this.contentType=value;return this;},send(value){this.body=value;return this;},json(){throw Error("Home must be HTML, not JSON");}};await context.exports.readNapPublicSwimmer({method:"GET",path,query:{}},response);assert.equal(response.code,200);assert.equal(response.contentType,"html");assert.equal(response.headers["X-LivePalmes-Home-Source"],"nap-server-html");assert.match(response.body,/data-home-prepared/);}
+ console.log("Server home: prefilled HTML, safe public data, local disclosure, three bounded queries, shared cache/coalescing, failure recovery and Paris rollover, exact Hosting routes passed.");
+})().catch(error=>{console.error(error);process.exitCode=1;});
