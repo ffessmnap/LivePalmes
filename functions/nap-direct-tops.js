@@ -57,7 +57,7 @@ function queryFor(input, facet = false) {
     const key="CAST(CONCAT(LPAD(CAST(TRIM(p.tps) AS UNSIGNED),6,'0'),COALESCE(DATE_FORMAT(c.date,'%Y%m%d%H%i%s'),'00000000000000'),LPAD(p.id,10,'0')) AS DECIMAL(30,0))";
     const selectionFrom=f.region?FROM:FROM.slice(0,FROM.indexOf(" LEFT JOIN clubs cp"));
     const best=`SELECT CAST(RIGHT(MIN(${key}),10) AS UNSIGNED) AS performance_id ${selectionFrom} WHERE ${where.join(" AND ")} GROUP BY n.id`;
-    const hydration=FROM.replace("FROM perfs p FORCE INDEX (livepalmes_course_relais_tps)",`FROM (${best}) best STRAIGHT_JOIN perfs p FORCE INDEX (PRIMARY) ON p.id=best.performance_id`);
+    const hydration=FROM.replace("FROM perfs p FORCE INDEX (livepalmes_course_relais_tps)",()=>`FROM (${best}) best STRAIGHT_JOIN perfs p FORCE INDEX (PRIMARY) ON p.id=best.performance_id`);
     return {sql:`SELECT ${PROJECTION} ${hydration} ORDER BY CAST(TRIM(p.tps) AS UNSIGNED),c.date,p.id LIMIT ${MAX_CANDIDATES+1}`,values};
   }
   const suffix = facet ? "GROUP BY YEAR(n.date) ORDER BY YEAR(n.date) DESC LIMIT 10001" : `ORDER BY CAST(TRIM(p.tps) AS UNSIGNED), c.date, p.id LIMIT ${MAX_CANDIDATES + 1}`;
