@@ -2828,11 +2828,10 @@
       const scripts = [
         ["performances/public/record-placeholders.js?v=20260613-mpf-relays-mixed-1", "adminRecordPlaceholdersScript"],
         ["performances/public/data/club-reference.js?v=20260813-national-clubs-3", "adminRecordReferenceScript"],
-        ["performances/public/data/performance-public/version.js", "adminRecordVersionScript"],
         ["performances/public/store.js?v=20261012-records-cleanup-2", "adminRecordStoreScript"]
       ];
       await Promise.all(scripts.map(([src, id]) => loadScriptOnce(src, id)));
-      await loadScriptOnce("performances/public/admin-records.js?v=20261012-records-cleanup-1", "adminRecordModuleScript");
+      await loadScriptOnce("performances/public/admin-records.js?v=20261015-nap-suggestions-1", "adminRecordModuleScript");
       watchRecordWorkbench();
     })().catch((error) => {
       recordModuleLoadPromise = null;
@@ -2897,7 +2896,7 @@
       elements.correctionModuleStatus.dataset.tone = "loading";
     }
     importModuleLoadPromise = (async () => {
-      const scripts = [
+      const scripts = global.LivePalmesEnvironment?.sportingDataSource === "nap" ? [] : [
         ["performances/public/data/intranap-summary.js?v=consolidated-20260603140205", "adminImportSummaryScript"],
         ["performances/public/data/performance-public/version.js", "adminImportVersionScript"]
       ];
