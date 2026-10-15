@@ -10,6 +10,7 @@
   let napSearchTimer;
   async function readNap(parameters) {
     const url = new URL(napReaderUrl);
+    url.searchParams.set("action", "swimmer");
     Object.entries(parameters).forEach(([key, value]) => url.searchParams.set(key, String(value)));
     const response = await fetch(url, { cache: "no-store", signal: AbortSignal.timeout(30000) });
     if (!response.ok) throw new Error("Consultation des performances indisponible. Réessayez dans un instant.");
