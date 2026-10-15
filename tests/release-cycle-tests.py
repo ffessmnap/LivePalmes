@@ -363,6 +363,25 @@ class ReleaseTests(unittest.TestCase):
     def test_rules_indexes_and_data_need_separate_authorization(self):
         for path in ['firestore.rules','firestore.indexes.json','firebase.json','performances/public/data/records-data.js','archives/result.json']:
             with self.subTest(path=path),self.assertRaises(ValueError):m.classify([path])
+    def test_server_home_routing_is_exact_explicit_and_test_only(self):
+        before={'hosting':{'public':'.','ignore':['docs/**'],'rewrites':[]},'functions':{'source':'functions'}}
+        after=json.loads(json.dumps(before))
+        after['hosting']['ignore'].insert(0,'index.html')
+        after['hosting']['rewrites']=[{'source':p,'function':{'functionId':'readNapPublicSwimmer','region':'europe-west1'}} for p in ('/','/index.html')]
+        m.server_home_routing_only(before,after)
+        for mutation in ('wildcard','function','ignore','rules'):
+            altered=json.loads(json.dumps(after))
+            if mutation=='wildcard':altered['hosting']['rewrites'][0]['source']='**'
+            elif mutation=='function':altered['hosting']['rewrites'][0]['function']['functionId']='other'
+            elif mutation=='ignore':altered['hosting']['ignore'].append('portail.html')
+            else:altered['firestore']={'rules':'other.rules'}
+            with self.subTest(mutation=mutation),self.assertRaises(ValueError):m.server_home_routing_only(before,altered)
+        with patch.object(m,'ignored_top_paths',return_value=[]),patch.object(m,'git',side_effect=lambda *args:json.dumps(after if args[1]=='HEAD:firebase.json' else before)),patch.dict(os.environ,{'TARGET_FIREBASE_PROJECT':'livepalmes-test','BASE_SHA':'a'*40}):
+            with self.assertRaises(ValueError):m.classify_test(['firebase.json'])
+            self.assertEqual(m.classify_test(['firebase.json'],approved_home_routing=True),([],False))
+            with self.assertRaises(ValueError):m.classify_test(['firebase.json','firestore.rules'],approved_home_routing=True)
+            with patch.dict(os.environ,{'TARGET_FIREBASE_PROJECT':'livepalmes'}),self.assertRaises(ValueError):m.classify_test(['firebase.json'],approved_home_routing=True)
+            with self.assertRaises(ValueError):m.classify(['firebase.json'])
     def test_test_top_exception_is_explicit_exact_and_test_only(self):
         with patch.object(m, 'ignored_top_paths', return_value=[]):
             paths=list(m.TEST_TOP_FILES)

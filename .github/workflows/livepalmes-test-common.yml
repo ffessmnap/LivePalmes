@@ -27,6 +27,11 @@ run-name: ${{ inputs.verification_only && 'Verification TEST sans deploiement' |
         required: true
         type: boolean
         default: false
+      approved_home_routing:
+        description: Autoriser sur TEST seulement les routes / et /index.html vers l'accueil serveur approuve le 15 octobre
+        required: false
+        type: boolean
+        default: false
       verification_only:
         description: Verifier la reutilisation du backend sans aucun deploiement
         required: true
@@ -73,6 +78,7 @@ jobs:
         APPROVED_TOP_FILES: ${{ inputs.approved_top_files }}
         APPROVED_RECORDS_CLEANUP: ${{ inputs.approved_records_cleanup }}
         APPROVED_PUBLIC_EXPORT_CLEANUP: ${{ inputs.approved_public_export_cleanup }}
+        APPROVED_HOME_ROUTING: ${{ inputs.approved_home_routing }}
       run: '[[ "$BASE_SHA" =~ ^[0-9a-f]{40}$ ]]
 
         test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
@@ -92,7 +98,7 @@ jobs:
 
         paths=subprocess.check_output([''git'',''diff'',''--name-only'',''--no-renames'',os.environ[''BASE_SHA''],''HEAD''],text=True).splitlines()
 
-        m.classify_test(paths, os.environ[''APPROVED_TOP_FILES''] == ''true'', os.environ[''APPROVED_RECORDS_CLEANUP''] == ''true'', os.environ[''APPROVED_PUBLIC_EXPORT_CLEANUP''] == ''true'')
+        m.classify_test(paths, os.environ[''APPROVED_TOP_FILES''] == ''true'', os.environ[''APPROVED_RECORDS_CLEANUP''] == ''true'', os.environ[''APPROVED_PUBLIC_EXPORT_CLEANUP''] == ''true'', os.environ[''APPROVED_HOME_ROUTING''] == ''true'')
 
         PYCODE'
     - name: Installer et verifier
