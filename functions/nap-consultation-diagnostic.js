@@ -20,10 +20,18 @@ async function inspect(pool) {
     if(links.length>5000)throw new RangeError("Correspondances d'import trop volumineuses.");
     importClubMappings.push(...links.map(link=>({table,id:link.id,competitionId:link.compet,clubId:link.club,label:link.abre_club,matchingPerformances:rows.filter(row=>String(row.club)===String(link.id)&&String(row.compet)===String(link.compet)).length})));
   }
+  const historicalClubReferences=[];
+  for(const table of ["old_club","clubs_cnnp"]){
+    const columns=importSchema.filter(row=>row.TABLE_NAME===table);
+    if(!ids.length||!["clubID","clubAbr","clubNum","EnapId"].every(name=>columns.some(row=>row.COLUMN_NAME===name))||!columns.some(row=>row.COLUMN_NAME==="clubID"&&row.COLUMN_KEY==="PRI"))continue;
+    const [links]=await pool.execute({sql:`SELECT h.clubID,h.clubAbr,h.clubNum,h.EnapId,cl.num_club,cl.abre_club FROM ${table} h FORCE INDEX (PRIMARY) LEFT JOIN clubs cl ON cl.num_club=h.EnapId WHERE h.clubID IN (${ids.map(()=>"?").join(",")}) ORDER BY h.clubID LIMIT 5001`,timeout:10000},ids);
+    if(links.length>5000)throw new RangeError("References historiques trop volumineuses.");
+    historicalClubReferences.push(...links.map(link=>({table,rawClub:String(link.clubID),historicalLabel:link.clubAbr,federalNumber:link.clubNum,nativeClubId:link.EnapId,resolvedClubId:link.num_club,resolvedLabel:link.abre_club,nativeRows:groups.get(String(link.clubID))?.count||0})));
+  }
   const top=queryFor({course:"100SF",sex:"M",limit:5000});
   let topPlan,topPlanError;
   try{[topPlan]=await pool.execute({sql:`EXPLAIN ${top.sql}`,timeout:10000},top.values);}
   catch(error){topPlanError={code:error.code||"SQL_ERROR",errno:error.errno||null,context:String(error.sqlMessage||"").replace(/\s+/g," ").slice(0,400)};}
-  return {source:"nap",mode:"performance-clubs-readonly",writesExecuted:0,swimmerId:912,rowCount:rows.length,currentClub:rows[0]?.currentClub,version:version[0]?.version,groups:[...groups.values()],importSchema,importClubMappings,plan,topPlan,topPlanError};
+  return {source:"nap",mode:"performance-clubs-readonly",writesExecuted:0,swimmerId:912,rowCount:rows.length,currentClub:rows[0]?.currentClub,version:version[0]?.version,groups:[...groups.values()],importSchema,importClubMappings,historicalClubReferences,plan,topPlan,topPlanError};
 }
 module.exports={inspect};
