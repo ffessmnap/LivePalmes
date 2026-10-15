@@ -4,6 +4,8 @@
 
 ## Cadre public Compacte — 14 octobre
 
+- Accueil serveur : contrôler / et /index.html sans cookie, HTML initial avec rendez-vous/documents, data-home-prepared et X-LivePalmes-Home-Source=nap-server-html ; aucune mention Chargement des rendez-vous/documents ni nouvelle lecture de ces blocs dans le navigateur. Tester HTTP HEAD/GET et alias public, CSS/scripts accessibles, liens/filtres, PC 1280/mobile 390/320, dépliage/repli. Tests hors ligne : cache cinq minutes/concurrence/jour de Paris, panne partielle/totale et reprise, aucune réutilisation documentaire périmée, contenus/URLs malveillants échappés. Aucun job, écriture réelle ou connexion privée nécessaire à cette recette.
+
 - Liens calendrier du 15 octobre : depuis accueil/public, Calendrier national ouvre ?level=national, Niveau = National / international et aucun événement régional/départemental ; rechargement conserve ce niveau. Réinitialiser retire level et réaffiche tous les niveaux ; Tout le calendrier ouvre sans présélection. Vérifier PC/mobile 390/320 px, les deux liens visibles et « Les prochains rendez-vous en région », dépliage mobile préservé.
 
 - Portail en bandeau : PC 1280 px, bas du calendrier et du bloc Documents alignés, bandeau de même largeur que les deux colonnes, texte à gauche/bouton à droite. Mobile 390/320 px : ordre rendez-vous, performances, documents, portail ; hauteurs naturelles, bouton portail sous le texte, dépliage des deux rendez-vous conservé, aucun débordement. Tester accueil et alias public.html, données chargées et états de repli.

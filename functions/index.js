@@ -180,10 +180,18 @@ if (ENVIRONMENT.sportingDataSource === "nap") {
       : ["https://livepalmes.web.app", "https://livepalmes.firebaseapp.com"]
   }, async (request, response) => {
     response.set("Cache-Control", "no-store");
-    if (request.method !== "GET") { response.status(405).json({ error: "Methode interdite." }); return; }
+    const homeRequest=request.query.action==="home-page"||(!request.query.action&&["/","/index.html"].includes(request.path));
+    if (request.method !== "GET" && !(request.method === "HEAD" && homeRequest)) { response.status(405).json({ error: "Methode interdite." }); return; }
     try {
       if (!napPool) napPool = createNapPool(napPassword.value());
-      const action = request.query.action || "swimmer";
+      const action = request.query.action || (["/", "/index.html"].includes(request.path) ? "home-page" : "swimmer");
+      if(action==="home-page"){
+        const homePage=require("./nap-home-page");
+        const page=await homePage.readPage(napPool);
+        response.set("X-LivePalmes-Home-Source","nap-server-html");
+        response.set("Cache-Control","private, no-store");
+        response.status(page.events&&page.documents?200:503).type("html").send(page.html);return;
+      }
       if (!["swimmer", "search", "top", "top-years", "top-metadata", "calendar-manifest", "calendar-season", "competition", "competition-results", "records", "documents-featured", "documents-catalogue", "home-events"].includes(action)) throw new TypeError("Action invalide.");
       if(action==="home-events"){
         const home=require("./nap-home-direct");
