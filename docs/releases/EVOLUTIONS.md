@@ -2,6 +2,11 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 15 octobre — Rendez-vous en région et lien Calendrier national
+
+- Antoine demande « Les prochains rendez-vous en région », les liens Tout le calendrier et Calendrier national, ce dernier présélectionnant les niveaux national/international, jusqu’à TEST avec recette PC/mobile. Libellé sans « et international » explicitement choisi. Le regroupement existant exclut déjà national/international de la liste en région, aucune règle métier changée.
+- Fichiers index/public, public-home JS/CSS, calendrier HTML/JS, tests calendrier et documentation. Paramètre level=national appliqué au filtre existant, changement de niveau reflété dans l’URL et réinitialisation le retire. Liens adaptatifs, dépliage mobile conservé. Aucun nouvel accès aux données : budget initial identique, filtre et remise à zéro purement locaux (hors changement de saison existant), cache et backend inchangés. Publication et recette finale TEST à terminer ; validation utilisateur de la version publiée attendue.
+
 ### 14 octobre — Portail en bandeau et colonnes alignées
 
 - Antoine choisit la maquette Portail en bandeau et demande sa publication TEST avec vérification PC/mobile. Le portail sort de la colonne droite, occupe la largeur commune sous les deux colonnes ; grille étirable pour aligner calendrier et Documents sur PC, hauteurs naturelles et bouton sous le texte sur mobile. Dépliage mobile, sources NAP, budgets/cache, droits et backend inchangés.
