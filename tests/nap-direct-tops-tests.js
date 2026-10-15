@@ -14,7 +14,11 @@ function raw(id, swimmer, tps, date = "2020-01-01") {
   assert.match(top.CATEGORY_SQL, /'HM0'/);
   assert.throws(() => top.filters({ ...input, course: "100SF' OR 1=1" }), TypeError);
   assert.throws(() => top.filters({ ...input, region: "1);DROP" }), TypeError);
-  assert.throws(() => top.filters({ ...input, limit: 2001 }), TypeError);
+  assert.throws(() => top.filters({ ...input, limit: 5001 }), TypeError);
+  const completeQuery=top.queryFor({...input,limit:5000});
+  assert.match(completeQuery.sql,/ROW_NUMBER\(\) OVER \(PARTITION BY n.id ORDER BY CAST\(TRIM\(p.tps\) AS UNSIGNED\), c.date, p.id\)/);
+  assert.match(completeQuery.sql,/WHERE q.swimmer_rank=1.*LIMIT 5001$/);
+  assert.match(top.queryFor({...input,limit:5000,region:"3"}).sql,/swimmer_rank=1/);
   assert.equal(top.filters({ ...input, season: "207" }).season, "207");
   assert.equal(top.filters({ ...input, birthYear: "0000" }).birthYear, "0000");
   const deferred = top.queryFor(input);
@@ -31,6 +35,8 @@ function raw(id, swimmer, tps, date = "2020-01-01") {
   assert.deepEqual(result.rows.map(row => row.swimmerId), ["169", "170"]);
   assert.equal(result.hasMore, true);
   const all = await top.readDirectTop(pool, { ...input, limit: 25 });
+  const complete = await top.readDirectTop(pool, { ...input, limit: 5000 });
+  assert.deepEqual(complete.rows,all.rows,"complete selection keeps numeric times, ties and identity ranking unchanged");
   assert.equal(all.rows[2].id, "2");
   assert.equal(all.rows[2].time, "1:42.00");
   assert.equal(all.rows[2].category, "S");

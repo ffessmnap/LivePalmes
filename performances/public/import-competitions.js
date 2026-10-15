@@ -85,6 +85,32 @@
   let correctionSelectedRow = null;
   const nativeCorrections=()=>global.LivePalmesEnvironment?.sportingDataSource === "nap";
   let nativeCorrectionCursor=0,nativeCorrectionMore=false,nativeCorrectionNational=false;
+  let correctionFilterRows=[],nativeCorrectionRequestId=0;
+
+  function nativeCorrectionFilters() {
+    return {course:elements.correctionCourse?.value||"",year:elements.correctionYear?.value||"",competitionId:elements.correctionCompetition?.value||""};
+  }
+
+  async function reloadNativeCorrectionRows({append=false}={}) {
+    if(!correctionSelectedSwimmer)return;
+    const requestId=++nativeCorrectionRequestId,swimmerId=correctionSelectedSwimmer.id;
+    const more=document.querySelector("#performanceCorrectionMore");
+    if(more)more.hidden=true;
+    if(!append){correctionRows=[];elements.correctionResults.innerHTML='<tr><td colspan="6">Chargement des performances filtrées…</td></tr>';}
+    try{
+      const result=await callFunction("getNapPerformanceAdministration",{action:"list",swimmerId,cursor:append?nativeCorrectionCursor:0,filters:nativeCorrectionFilters()});
+      if(requestId!==nativeCorrectionRequestId||swimmerId!==correctionSelectedSwimmer?.id)return;
+      nativeCorrectionCursor=result.cursor;nativeCorrectionMore=result.hasMore;
+      correctionRows=append?[...correctionRows,...result.rows]:result.rows;
+      renderCorrectionRows();
+      if(more)more.hidden=!nativeCorrectionMore;
+    }catch(error){
+      if(requestId!==nativeCorrectionRequestId)return;
+      setMessage(elements.message,error.message);
+      if(!append)elements.correctionResults.innerHTML='<tr><td colspan="6">Chargement impossible. Réessayez en modifiant un filtre.</td></tr>';
+      if(more)more.hidden=!append||!nativeCorrectionMore;
+    }
+  }
   let correctionPublicationMonitorToken = 0;
   let correctionPublicationResumeStarted = "";
   const CORRECTION_PUBLICATION_JOB_SESSION_KEY = "livepalmes.performanceCorrectionPublicationJob";
@@ -656,7 +682,10 @@
 
   async function loadCorrectionPerformanceBaseRows(swimmer) {
     if(nativeCorrections()) {
-      const result=await callFunction("getNapPerformanceAdministration",{action:"list",swimmerId:swimmer.id,cursor:0});
+      const requestId=++nativeCorrectionRequestId;
+      const result=await callFunction("getNapPerformanceAdministration",{action:"list",swimmerId:swimmer.id,cursor:0,includeFilters:true});
+      if(requestId!==nativeCorrectionRequestId||correctionSelectedSwimmer?.id!==swimmer.id)return null;
+      correctionFilterRows=result.filterOptions||[];
       nativeCorrectionCursor=result.cursor;nativeCorrectionMore=result.hasMore;nativeCorrectionNational=result.national===true;
       return result.rows||[];
     }
@@ -708,6 +737,10 @@
     const swimmer = correctionSuggestionMatches.find((item) => swimmerKnownIds(item).includes(String(swimmerId)));
     if (!swimmer) return;
     correctionSelectedSwimmer = swimmer;
+    if(nativeCorrections()){
+      correctionFilterRows=[];
+      [elements.correctionCourse,elements.correctionYear,elements.correctionCompetition].forEach(select=>{if(select)select.value="";});
+    }
     correctionSelectedRow = null;
     elements.correctionSearch.value = displayName(swimmer);
     elements.correctionSuggestions.innerHTML = "";
@@ -715,6 +748,7 @@
     setCorrectionListVisible(true);
     elements.correctionResults.innerHTML = `<tr><td colspan="6">Chargement des performances...</td></tr>`;
     const baseRows = await loadCorrectionPerformanceBaseRows(swimmer);
+    if(!baseRows)return;
     const moreButton=document.querySelector("#performanceCorrectionMore");
     if(moreButton)moreButton.hidden=!nativeCorrections()||!nativeCorrectionMore;
     correctionRows = baseRows
@@ -724,8 +758,9 @@
   }
 
   function updateCorrectionFilters() {
-    const courses = Array.from(new Set(correctionRows.map((row) => row.course).filter(Boolean))).sort();
-    const years = Array.from(new Set(correctionRows.map(yearOf).filter(Boolean))).sort((a, b) => Number(b) - Number(a));
+    const filterRows=nativeCorrections()?correctionFilterRows:correctionRows;
+    const courses = Array.from(new Set(filterRows.map((row) => row.course).filter(Boolean))).sort();
+    const years = Array.from(new Set(filterRows.map(yearOf).filter(Boolean))).sort((a, b) => Number(b) - Number(a));
     fillSelect(elements.correctionCourse, courses, "Toutes", courseLabel);
     fillSelect(elements.correctionYear, years, "Toutes");
     updateCorrectionCompetitionFilter();
@@ -734,6 +769,13 @@
   function updateCorrectionCompetitionFilter() {
     const selectedCourse = elements.correctionCourse?.value || "";
     const selectedYear = elements.correctionYear?.value || "";
+    if(nativeCorrections()){
+      const competitions=new Map(correctionFilterRows.filter(row=>(!selectedCourse||row.course===selectedCourse)&&(!selectedYear||yearOf(row)===selectedYear))
+        .map(row=>[row.competitionId,`${formatDate(row.date)} — ${row.competition||"Compétition"}${row.location?" — "+row.location:""}`]));
+      const ids=[...competitions.keys()].sort((a,b)=>competitions.get(a).localeCompare(competitions.get(b),"fr-FR"));
+      fillSelect(elements.correctionCompetition,ids,"Toutes",id=>competitions.get(id));
+      return;
+    }
     const competitions = Array.from(new Set(correctionRows
       .filter((row) =>
         (!selectedCourse || row.course === selectedCourse) &&
@@ -755,6 +797,7 @@
   }
 
   function filteredCorrectionRows() {
+    if(nativeCorrections())return correctionRows;
     return correctionRows.filter((row) =>
       (!elements.correctionCourse.value || row.course === elements.correctionCourse.value) &&
       (!elements.correctionYear.value || yearOf(row) === elements.correctionYear.value) &&
@@ -774,7 +817,7 @@
       return;
     }
     elements.correctionResults.innerHTML = rows.map((row, index) => `
-      <tr class="performance-correction-row" data-correction-row="${index}" tabindex="0">
+      <tr class="performance-correction-row" data-correction-row="${index}" data-club-id="${escapeHtml(row.clubId||"")}" data-competition-id="${escapeHtml(row.competitionId||"")}" tabindex="0">
         <td>${escapeHtml(formatDate(row.date))}</td>
         <td>${escapeHtml(courseLabel(row.course))}</td>
         <td class="time">${escapeHtml(row.time || "-")}${row.hidden?" (masqué)":""}</td>
@@ -2366,12 +2409,12 @@
       select?.addEventListener("input", () => {
         resetCorrectionEditor({ keepRows: true });
         updateCorrectionCompetitionFilter();
-        renderCorrectionRows();
+        if(nativeCorrections())void reloadNativeCorrectionRows();else renderCorrectionRows();
       });
     });
     elements.correctionCompetition?.addEventListener("input", () => {
       resetCorrectionEditor({ keepRows: true });
-      renderCorrectionRows();
+      if(nativeCorrections())void reloadNativeCorrectionRows();else renderCorrectionRows();
     });
     elements.correctionTime?.addEventListener("blur", () => normalizeTimeField(elements.correctionTime));
     elements.correctionAddSplit?.addEventListener("click", () => {
@@ -2405,9 +2448,7 @@
       if(!nativeCorrections()||!correctionSelectedSwimmer||!nativeCorrectionMore)return;
       const button=event.currentTarget;button.disabled=true;
       try {
-        const result=await callFunction("getNapPerformanceAdministration",{action:"list",swimmerId:correctionSelectedSwimmer.id,cursor:nativeCorrectionCursor});
-        nativeCorrectionCursor=result.cursor;nativeCorrectionMore=result.hasMore;
-        correctionRows.push(...result.rows);updateCorrectionFilters();renderCorrectionRows();button.hidden=!nativeCorrectionMore;
+        await reloadNativeCorrectionRows({append:true});
       }catch(error){setMessage(elements.message,error.message);}finally{button.disabled=false;}
     });
     elements.correctionRetryPublication?.addEventListener("click", async () => {

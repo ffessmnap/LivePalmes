@@ -180,11 +180,11 @@ if (ENVIRONMENT.sportingDataSource === "nap") {
       : ["https://livepalmes.web.app", "https://livepalmes.firebaseapp.com"]
   }, async (request, response) => {
     response.set("Cache-Control", "no-store");
-    const homeRequest=request.query.action==="home-page"||(!request.query.action&&["/","/index.html"].includes(request.path));
+    const homeRequest=request.query.action==="home-page"||(!request.query.action&&!request.query.id&&["/","/index.html"].includes(request.path));
     if (request.method !== "GET" && !(request.method === "HEAD" && homeRequest)) { response.status(405).json({ error: "Methode interdite." }); return; }
     try {
       if (!napPool) napPool = createNapPool(napPassword.value());
-      const action = request.query.action || (["/", "/index.html"].includes(request.path) ? "home-page" : "swimmer");
+      const action = request.query.action || (request.query.id ? "swimmer" : ["/", "/index.html"].includes(request.path) ? "home-page" : "swimmer");
       if(action==="home-page"){
         const homePage=require("./nap-home-page");
         const page=await homePage.readPage(napPool);
@@ -274,6 +274,7 @@ if (ENVIRONMENT.projectId === "livepalmes-test") {
       }) : indexOperation ? await require("./nap-approved-index").approvedIndexOperation(napPool, request.body)
         : homeRefresh ? await require("./nap-home-events-refresh").refreshTestHomeEvents(napPool,storage.bucket(ENVIRONMENT.publicBucket).file(require("./nap-home-events").OBJECT_PATH),{projectId:ENVIRONMENT.projectId,confirmation:request.body?.confirmation})
         : request.query.action === "document-themes-inspect" ? await require("./nap-document-themes-inspect").inspect(napPool)
+        : request.query.action === "performance-clubs" ? await require("./nap-consultation-diagnostic").inspect(napPool)
         : request.query.action === "home-events-measure" ? await require("./nap-home-measure").measure(napPool,{direct:request.query.direct==="1"})
         : request.query.action === "home-events-page" ? await require("./nap-home-events").readPage(napPool,request.query)
         : request.query.action === "direct-plan" ? await require("./nap-direct-query-checks").inspectDirectQueries(napPool)
