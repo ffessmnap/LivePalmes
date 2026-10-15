@@ -28,7 +28,7 @@
  }
  function renderEvents(host,events,stale){
   const groups=model.eventGroups(events),fragment=document.createDocumentFragment();
-  for(const [title,items,highlight] of [["En cours",groups.ongoing,true],[groups.majorTitle,groups.major,true],["Les prochains rendez-vous",groups.upcoming,false]]){
+  for(const [title,items,highlight] of [["En cours",groups.ongoing,true],[groups.majorTitle,groups.major,true],["Les prochains rendez-vous en région",groups.upcoming,false]]){
    if(!items.length)continue;
    const section=node("section","public-home-group");section.append(node("h3","",title));
    if(items===groups.upcoming&&items.length>3){

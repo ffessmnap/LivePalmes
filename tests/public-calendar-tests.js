@@ -129,6 +129,13 @@ assert.equal(levelFilterContext.matchesLevel("national", "national"), true);
 assert.equal(levelFilterContext.matchesLevel("international", "national"), true);
 assert.equal(levelFilterContext.matchesLevel("regional", "national"), false);
 assert.equal(levelFilterContext.matchesLevel("international", "regional"), false);
+const levelQueryContext={URLSearchParams};
+vm.runInNewContext(calendarPageSource.match(/function levelFromQuery\([^}]+\}/)[0],levelQueryContext);
+assert.equal(levelQueryContext.levelFromQuery('?level=national'),'national');
+assert.equal(levelQueryContext.levelFromQuery('?level=regional'),'regional');
+assert.equal(levelQueryContext.levelFromQuery(''),'');
+assert.equal(levelQueryContext.levelFromQuery('?level=international'),'');
+assert.equal(levelQueryContext.levelFromQuery('?level=unknown'),'');
 const browserContext = {
   window: {
     LivePalmesEnvironment: {

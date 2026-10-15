@@ -4,6 +4,8 @@
 
 ## Cadre public Compacte — 14 octobre
 
+- Liens calendrier du 15 octobre : depuis accueil/public, Calendrier national ouvre ?level=national, Niveau = National / international et aucun événement régional/départemental ; rechargement conserve ce niveau. Réinitialiser retire level et réaffiche tous les niveaux ; Tout le calendrier ouvre sans présélection. Vérifier PC/mobile 390/320 px, les deux liens visibles et « Les prochains rendez-vous en région », dépliage mobile préservé.
+
 - Portail en bandeau : PC 1280 px, bas du calendrier et du bloc Documents alignés, bandeau de même largeur que les deux colonnes, texte à gauche/bouton à droite. Mobile 390/320 px : ordre rendez-vous, performances, documents, portail ; hauteurs naturelles, bouton portail sous le texte, dépliage des deux rendez-vous conservé, aucun débordement. Tester accueil et alias public.html, données chargées et états de repli.
 
 - Retouches accueil : sur mobile, trois prochains rendez-vous hors mise en avant, bouton Voir les N suivants puis Réduire la liste, aria-expanded et liens révélés accessibles au clavier. Sur PC, cinq rendez-vous visibles sans bouton ; passage mobile↔PC conserve l’accès à tous. Aucun rechargement NAP au dépliage. Bloc portail compact avec bouton turquoise, dates documentaires et liens calendrier/bibliothèque lisibles à 320/390 px.

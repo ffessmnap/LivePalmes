@@ -11,6 +11,8 @@
 .public-home-page .documents-card{background:linear-gradient(160deg,#fff 35%,#f8f5fc);border-color:#ded3e9}
 .documents-icon{color:#715595;background:#ede7f6}
 .public-home-section-heading{display:flex;justify-content:space-between;align-items:center;gap:8px;min-width:0}
+.public-home-section-links{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:6px}
+.public-home-page .calendar-card .public-home-section-heading{flex-wrap:wrap}
 .public-home-section-heading h2{min-width:0}
 .public-home-section-link.ghost-button{flex:0 0 auto;min-height:32px;padding:5px 7px;font-size:.68rem;line-height:1.2;white-space:nowrap;text-decoration:none}
 .public-home-section-content{grid-column:1/-1;min-width:0}
