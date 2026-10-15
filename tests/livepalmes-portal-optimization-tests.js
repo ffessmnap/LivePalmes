@@ -1314,7 +1314,7 @@ assert.ok(portal.includes("engagementCompetitionsLoadedRange"));
 assert.ok(portal.includes('ENGAGEMENT_CALENDAR_SESSION_CACHE_PREFIX = "livepalmes.portal.engagementCalendar.v4."'));
 assert.ok(portal.includes('ENGAGEMENT_CLUB_WORKSPACE_SESSION_CACHE_PREFIX = "livepalmes.portal.engagementWorkspace.v2."'));
 assert.ok(portal.includes("teamLeadersWhatsAppUrl: engagementTeamLeadersWhatsAppUrl(competition.teamLeadersWhatsAppUrl)"));
-assert.ok(portalHtml.includes('livepalmes-admin-portal.js?v=20261012-lots23-1'));
+assert.ok(portalHtml.includes('livepalmes-admin-portal.js?v=20261015-nap-modules-1'));
 assert.ok(portal.includes('city: String(competition.city || "")'));
 assert.ok(portal.includes('address: String(competition.address || "")'));
 assert.ok(portalHtml.includes('livepalmes-admin-calendar-events.js?v=20261012-shared-comments-1'));
