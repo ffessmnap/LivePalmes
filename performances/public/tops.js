@@ -4,7 +4,7 @@
   const params = new URLSearchParams(global.location.search);
   const usesNapDirectData = global.LivePalmesEnvironment.sportingDataSource === "nap";
   let napRequest = 0;
-  let napLimit = 25;
+  let napLimit = 5000;
   let napFiltersKey = "";
   let napRenderTimer = null;
   const napLoads = new Map();
@@ -26,7 +26,10 @@
     if (napLoads.has(key)) return napLoads.get(key);
     const pending = (async () => {
       const response = await fetch(url, { cache: "no-store", signal: AbortSignal.timeout(30000) });
-      if (!response.ok) throw new Error("Consultation des performances indisponible.");
+      if (!response.ok) {
+        const failure=await response.json().catch(()=>({}));
+        throw new Error(/volumineus/i.test(failure.error||"") ? "Liste trop volumineuse : affinez les filtres pour afficher tous les temps correspondants." : "Consultation des performances indisponible.");
+      }
       const data = await response.json();
       if (data.source !== "nap") throw new Error("Reponse des performances invalide.");
       return data;
@@ -38,7 +41,7 @@
   async function renderNap(filters) {
     const request = ++napRequest;
     const key = JSON.stringify([filters.course, filters.sex, filters.category, filters.season, filters.region, filters.pool, filters.birthYear]);
-    if (key !== napFiltersKey) { napLimit = 25; napFiltersKey = key; }
+    if (key !== napFiltersKey) { napLimit = 5000; napFiltersKey = key; }
     elements.status.textContent = "Chargement...";
     elements.loadMore.hidden = true;
     renderRows([], filters, "loading");
@@ -54,13 +57,13 @@
         if (selected && !facet.years.includes(selected)) { render(); return; }
       }
       renderRows(data.rows, filters);
-      elements.status.textContent = `${data.rows.length}${data.total > data.rows.length ? " / " + data.total : ""} lignes - TOP ${napLimit} - ${filters.pool ? "Bassin " + filters.pool + " m" : "Tous bassins"}`;
-      elements.loadMore.hidden = !data.hasMore || napLimit >= 2000;
-      if (data.hasMore && napLimit >= 2000) elements.status.textContent += " - Affinez les filtres pour consulter la suite.";
+      elements.status.textContent = `${data.rows.length}${data.total > data.rows.length ? " / " + data.total : ""} lignes - ${data.hasMore ? "Liste partielle" : "Tous les temps"} - ${filters.pool ? "Bassin " + filters.pool + " m" : "Tous bassins"}`;
+      elements.loadMore.hidden = !data.hasMore || napLimit >= 5000;
+      if (data.hasMore && napLimit >= 5000) elements.status.textContent += " - Affinez les filtres pour consulter la suite.";
       elements.loadMoreButton.textContent = "Afficher la suite";
-    } catch {
+    } catch (error) {
       if (request !== napRequest) return;
-      elements.status.textContent = "Consultation des performances indisponible. Réessayez dans un instant.";
+      elements.status.textContent = error?.message || "Consultation des performances indisponible. Réessayez dans un instant.";
       renderRows([], filters, "error");
     }
   }
@@ -502,7 +505,7 @@
   }
 
   function resetTopLimit() {
-    napLimit = 25;
+    napLimit = 5000;
     showAllTopRows = false;
   }
 
