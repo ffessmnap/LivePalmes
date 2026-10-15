@@ -23,7 +23,7 @@ async function inspect(pool) {
   const top=queryFor({course:"100SF",sex:"M",limit:5000});
   let topPlan,topPlanError;
   try{[topPlan]=await pool.execute({sql:`EXPLAIN ${top.sql}`,timeout:10000},top.values);}
-  catch(error){topPlanError={code:error.code||"SQL_ERROR",errno:error.errno||null};}
+  catch(error){topPlanError={code:error.code||"SQL_ERROR",errno:error.errno||null,context:String(error.sqlMessage||"").replace(/\s+/g," ").slice(0,400)};}
   return {source:"nap",mode:"performance-clubs-readonly",writesExecuted:0,swimmerId:912,rowCount:rows.length,currentClub:rows[0]?.currentClub,version:version[0]?.version,groups:[...groups.values()],importSchema,importClubMappings,plan,topPlan,topPlanError};
 }
 module.exports={inspect};
