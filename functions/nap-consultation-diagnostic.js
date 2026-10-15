@@ -42,6 +42,8 @@ async function inspectReadOnly(pool) {
   const screenshotRows=rows.filter(row=>String(row.compet)==="3589");
   const [provenanceSchema]=await pool.execute({sql:"SELECT TABLE_NAME,COLUMN_NAME,COLUMN_TYPE,COLUMN_KEY,COLUMN_COMMENT FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME IN ('perfs','sauv_lp_20261006_perfs','txt_clubs','txt_nageurs','txt_import','winpalme_lignes','livepalmes_performance_changes') ORDER BY TABLE_NAME,ORDINAL_POSITION LIMIT 301",timeout:10000});
   if(provenanceSchema.length>300)throw new RangeError("Structure de provenance trop volumineuse.");
+  const [clubReferenceColumns]=await pool.execute({sql:"SELECT TABLE_NAME,COLUMN_NAME,COLUMN_TYPE,COLUMN_KEY FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME NOT LIKE 'lp_%' AND TABLE_NAME NOT LIKE 'sauv_%' AND COLUMN_NAME IN ('club','club_id','clubID','num_club','clubId') ORDER BY TABLE_NAME,ORDINAL_POSITION LIMIT 201",timeout:10000});
+  if(clubReferenceColumns.length>200)throw new RangeError("References de club trop volumineuses.");
   const backupColumns=provenanceSchema.filter(row=>row.TABLE_NAME==="sauv_lp_20261006_perfs");
   let previousRows=[];
   if(["id","nageur","compet","club","course","tps","passage","relais","pid"].every(name=>backupColumns.some(row=>row.COLUMN_NAME===name))&&backupColumns.some(row=>row.COLUMN_NAME==="id"&&row.COLUMN_KEY==="PRI")){
@@ -52,7 +54,7 @@ async function inspectReadOnly(pool) {
     [competitionImportClubs]=await pool.execute({sql:"SELECT id,compet,club,abbr FROM txt_clubs WHERE compet IN (275,3589) ORDER BY compet,id LIMIT 1001",timeout:10000});
     if(competitionImportClubs.length>1000)throw new RangeError("Clubs d'import trop volumineux.");
   }
-  const rowProvenance={screenshotRows,previousRows,competitionImportClubs,provenanceSchema};
+  const rowProvenance={screenshotRows,previousRows,competitionImportClubs,provenanceSchema,clubReferenceColumns};
   const top=queryFor({course:"100SF",sex:"M",limit:5000});
   let topPlan,topPlanError;
   try{[topPlan]=await pool.execute({sql:`EXPLAIN ${top.sql}`,timeout:10000},top.values);}
