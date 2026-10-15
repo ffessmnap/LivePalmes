@@ -18,6 +18,8 @@ La publication PROD est regroupée dans la conversation Infra. Présenter le bil
 
 Une opération sur les données, une migration, un envoi réel, les règles ou les index exigent un périmètre et une autorisation spécifiques ; ils sont exclus du circuit ordinaire.
 
+Accueil serveur autorisé le 15 octobre 2026 : l’entrée TEST `approved_home_routing` autorise uniquement l’ajout exact des réécritures `/` et `/index.html` vers `readNapPublicSwimmer` en europe-west1 et l’exclusion de `index.html` du paquet Hosting, par comparaison complète à la configuration du commit de base. Toute autre différence reste refusée ; aucune extension PROD, de règles/index ou de données. Publier le lot NAP autorisé avant Hosting et vérifier le HTML initial ; ne pas remplacer ce contrôle par une publication manuelle.
+
 ## Avant publication
 
 Réutiliser le run TEST réussi et sa preuve si le candidat et l'état déployé correspondent encore. Ne pas republier TEST uniquement pour préparer PROD. L'assistant renseigne les SHA, runs et fichiers de bilan ; Antoine reçoit un résumé compréhensible. Un accord explicite déjà donné reste valable pour son périmètre : ne pas demander une nouvelle autorisation de principe à chaque étape. Après activation du réglage du 29 septembre décrit dans `docs/releases/PROCEDURE.md`, cet accord dans Infra suffit : l'assistant lance la publication sans second clic d'Antoine sur GitHub. Consigner l'accord réel et le périmètre dans la PR de publication. Ne jamais déduire cet accord d'un test réussi ni d'une simple demande de développement. Toute approbation technique encore configurée reste obligatoire ; ne pas la contourner.
