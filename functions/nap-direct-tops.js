@@ -4,7 +4,7 @@ const rules = require("./nap-performance-normalization");
 const { performanceRow } = require("./nap-direct-swimmer");
 const MAX_COURSE_ROWS = 150000;
 const MAX_CANDIDATES = 5000;
-const MAX_LIMIT = 2000;
+const MAX_LIMIT = 5000;
 const season = "(YEAR(c.date) + IF(MONTH(c.date) >= 9, 1, 0))";
 const age = `(${season} - YEAR(n.date))`;
 function categorySql() {
@@ -49,6 +49,18 @@ function queryFor(input, facet = false) {
   if (f.pool) { where.push("c.bassin = ?"); values.push(Number(f.pool)); }
   if (f.birthYear && !facet) { where.push("YEAR(n.date) = ?"); values.push(Number(f.birthYear)); }
   if (f.region) { const regions = f.region.split(",").map(Number); where.push(`COALESCE(cp.comite_club, cn.comite_club) IN (${regions.map(() => "?").join(",")})`); values.push(...regions); }
+  if (!facet && f.limit === MAX_LIMIT) {
+    // Keep the best eligible native result per swimmer before the candidate
+    // bound; final identity deduplication and sporting normalization stay in JS.
+    const rank = "ROW_NUMBER() OVER (PARTITION BY n.id ORDER BY CAST(TRIM(p.tps) AS UNSIGNED), c.date, p.id) AS swimmer_rank";
+    if (!f.region) {
+      const baseFrom = FROM.slice(0, FROM.indexOf(" LEFT JOIN clubs cp"));
+      const clubStart = PROJECTION.indexOf(", COALESCE(cp.num_club");
+      const candidates = `SELECT ${PROJECTION.slice(0, clubStart)}, p.club AS performance_club, n.club AS swimmer_club, ${rank} ${baseFrom} WHERE ${where.join(" AND ")}`;
+      return { sql: `SELECT q.*, ${PROJECTION.slice(clubStart + 2)} FROM (${candidates}) q LEFT JOIN clubs cp ON cp.num_club=q.performance_club AND CAST(cp.num_club AS CHAR)=q.performance_club LEFT JOIN clubs cn ON cn.num_club=q.swimmer_club AND CAST(cn.num_club AS CHAR)=q.swimmer_club WHERE q.swimmer_rank=1 ORDER BY CAST(TRIM(q.tps) AS UNSIGNED), q.date, q.id LIMIT ${MAX_CANDIDATES + 1}`, values };
+    }
+    return { sql: `SELECT q.* FROM (SELECT ${PROJECTION}, ${rank} ${FROM} WHERE ${where.join(" AND ")}) q WHERE q.swimmer_rank=1 ORDER BY CAST(TRIM(q.tps) AS UNSIGNED), q.date, q.id LIMIT ${MAX_CANDIDATES + 1}`, values };
+  }
   const suffix = facet ? "GROUP BY YEAR(n.date) ORDER BY YEAR(n.date) DESC LIMIT 10001" : `ORDER BY CAST(TRIM(p.tps) AS UNSIGNED), c.date, p.id LIMIT ${MAX_CANDIDATES + 1}`;
   if (!f.region) {
     // Club labels do not affect selection without a regional filter. Resolve

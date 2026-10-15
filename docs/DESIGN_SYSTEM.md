@@ -642,4 +642,6 @@ La barre de filtres de mise en liste utilise une disposition flexible avec retou
 
 Les statuts DTN distinguent l’absence de calcul, un calcul précédent incompatible, un traitement en cours et une erreur, sans déclencher de reconstruction. Les grilles DTN défilables sont des régions nommées accessibles au clavier. Les fenêtres DTN reprennent leur titre comme nom accessible. Le statut TOP annonce ses mises à jour via le rôle status. Les années du sélecteur TOP respectent un format à quatre chiffres ; aucun résultat ni année source NAP n’est corrigé ou supprimé.
 
+La correction de performance propose les courses, années civiles et compétitions de tout l'historique borné du nageur dès sa sélection. Les compétitions se distinguent par date, nom et lieu ; un filtre interroge le serveur et remet la pagination au début. Une page charge 100 résultats correspondants, du plus récent au plus ancien. Un club sans correspondance est signalé « Club non résolu (valeur) » ; ne pas substituer silencieusement le club actuel. Les TOP affichent tous les temps renvoyés dès la première consultation, sans palier de 25 ; un dépassement des bornes du lecteur demande d'affiner les filtres.
+
 Les petits titres de groupes de navigation du portail utilisent #60727b sur blanc (contraste supérieur à 4,5:1), sans modifier les tailles ni l’espacement.

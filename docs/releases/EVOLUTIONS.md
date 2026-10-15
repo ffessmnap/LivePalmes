@@ -2,6 +2,13 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 15 octobre — Consultation des performances : filtres, clubs, fiche nageur et TOP
+
+- Antoine confirme l'accès aux modules de la version ee96f412, puis autorise les corrections de consultation jusqu'au TEST commun, y compris Cloud Function et investigation des clubs NAP en lecture seule. Aucune écriture métier ni PROD.
+- Filtres de correction étendus à tout l'historique borné du nageur ; filtrage serveur et pagination chronologique de 100 résultats, compétition identifiée par id et libellée avec date/lieu. Deux SELECT par ouverture/action, plafond nageur 5 000 résultats, aucune lecture par ligne. Clubs non résolus explicites, aucune valeur historique remplacée.
+- Fiche nageur : action swimmer explicite et compatibilité serveur des appels historiques par id, pour éviter la réponse HTML de l'accueil. TOP : liste complète dès ouverture, plafond de sortie aligné sur les 5 000 candidats déjà lus, sans modification du classement ou des plafonds SQL existants.
+- Diagnostic initial en lecture seule : 100SF d'Antoine du 13/01/2008, performance 61423, compétition 251, valeur club 598 résolue ROC dans NAP. Ce cas ne vient pas d'une confusion club/compétition dans la jointure. Autres valeurs, CI et recette TEST à compléter ; validation utilisateur de ce nouveau correctif attendue.
+
 ### 15 octobre — Dépendances NAP des données sportives du portail
 
 - Antoine autorise le correctif client Records/MPF, import/correction et suggestions jusqu'au TEST commun, recette de lecture seule ; aucune PROD ni écriture métier.
