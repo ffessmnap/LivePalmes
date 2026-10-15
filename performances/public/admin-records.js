@@ -12,6 +12,8 @@ let sourceRows = [];
 let referenceSwimmers = [];
 let swimmerSearchRequestId = 0;
 const swimmerSearchShards = new Map();
+const swimmerSearchPending = new Map();
+let swimmerSearchTimer = null;
 
 const state = {
   scope: "",
@@ -469,17 +471,26 @@ function recordSwimmerSearchShard(value) {
   return token.slice(0, 2).toLocaleLowerCase("fr-FR");
 }
 
-async function updateSwimmerOptions(row) {
-  const options = document.querySelector("#swimmerOptions");
-  if (!options) return;
-  const query = row?.swimmer || elements.fieldName?.value || "";
-  const shard = recordSwimmerSearchShard(query);
-  if (!shard) {
-    referenceSwimmers = [];
-    options.innerHTML = "";
-    return;
+function loadRecordSwimmerSuggestions(query) {
+  if (window.LivePalmesEnvironment?.sportingDataSource === "nap") {
+    const key = query.trim().replace(/\s+/g, " ");
+    if (!swimmerSearchPending.has(key)) {
+      const url = new URL(window.LivePalmesEnvironment.napReaderUrl);
+      url.searchParams.set("action", "search");
+      url.searchParams.set("q", key);
+      const promise = fetch(url.href, { cache: "no-store" })
+        .then(async (response) => {
+          if (!response.ok) throw new Error("Recherche NAP indisponible.");
+          const result = await response.json();
+          if (result.source !== "nap" || !Array.isArray(result.swimmers)) throw new Error("Réponse nageurs NAP invalide.");
+          return result.swimmers.slice(0, 20);
+        })
+        .finally(() => swimmerSearchPending.delete(key));
+      swimmerSearchPending.set(key, promise);
+    }
+    return swimmerSearchPending.get(key);
   }
-  const requestId = ++swimmerSearchRequestId;
+  const shard = recordSwimmerSearchShard(query);
   if (!swimmerSearchShards.has(shard)) {
     const version = encodeURIComponent(window.LIVEPALMES_PERFORMANCE_PUBLIC_VERSION || "performance-public");
     swimmerSearchShards.set(shard, fetch(`/performances/public/data/performance-public/search/${encodeURIComponent(shard)}.json?v=${version}`, { cache: "force-cache" })
@@ -490,8 +501,19 @@ async function updateSwimmerOptions(row) {
         throw error;
       }));
   }
+  return swimmerSearchShards.get(shard);
+}
+
+async function updateSwimmerOptions(row) {
+  const options = document.querySelector("#swimmerOptions");
+  if (!options) return;
+  const requestId = ++swimmerSearchRequestId;
+  const query = String(row?.swimmer || elements.fieldName?.value || "").trim();
+  referenceSwimmers = [];
+  options.innerHTML = "";
+  if (!recordSwimmerSearchShard(query) || query.length > 80) return;
   try {
-    const rows = await swimmerSearchShards.get(shard);
+    const rows = await loadRecordSwimmerSuggestions(query);
     if (requestId !== swimmerSearchRequestId) return;
     const allowedSexes = new Set(allowedSwimmerSexes(row));
     const queryTokens = normalizeLookup(query).split(/\s+/).filter(Boolean);
@@ -505,7 +527,11 @@ async function updateSwimmerOptions(row) {
       .join("");
     updateBirthDateField();
   } catch {
-    if (requestId === swimmerSearchRequestId) options.innerHTML = "";
+    if (requestId === swimmerSearchRequestId) {
+      referenceSwimmers = [];
+      options.innerHTML = "";
+      if (elements.fieldBirthDateHelp) elements.fieldBirthDateHelp.textContent = "Suggestions nageurs indisponibles. Réessayez la recherche.";
+    }
   }
 }
 
@@ -1913,7 +1939,12 @@ elements.fieldTime.addEventListener("blur", () => {
   updateMpfSyncAlert();
 });
 elements.fieldName.addEventListener("input", () => {
-  updateSwimmerOptions(editorPreviewRow());
+  clearTimeout(swimmerSearchTimer);
+  ++swimmerSearchRequestId;
+  referenceSwimmers = [];
+  const options = document.querySelector("#swimmerOptions");
+  if (options) options.innerHTML = "";
+  swimmerSearchTimer = setTimeout(() => updateSwimmerOptions(editorPreviewRow()), 250);
   updateBirthDateField();
 });
 elements.fieldClub.addEventListener("input", () => updateBirthDateField());

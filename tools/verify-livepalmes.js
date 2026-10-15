@@ -232,6 +232,7 @@ function runUnitTests() {
     "nap-records-browser-store-tests.js",
     "nap-records-callables-tests.js",
     "nap-records-console-source-tests.js",
+    "nap-portal-sporting-dependencies-tests.js",
     "nap-entry-course-rules-tests.js",
     "nap-open-water-entry-tests.js",
     "nap-open-water-library-tests.js",
