@@ -16,9 +16,10 @@ function raw(id, swimmer, tps, date = "2020-01-01") {
   assert.throws(() => top.filters({ ...input, region: "1);DROP" }), TypeError);
   assert.throws(() => top.filters({ ...input, limit: 5001 }), TypeError);
   const completeQuery=top.queryFor({...input,limit:5000});
-  assert.match(completeQuery.sql,/ROW_NUMBER\(\) OVER \(PARTITION BY n.id ORDER BY CAST\(TRIM\(p.tps\) AS UNSIGNED\), c.date, p.id\)/);
-  assert.match(completeQuery.sql,/WHERE q.swimmer_rank=1.*LIMIT 5001$/);
-  assert.match(top.queryFor({...input,limit:5000,region:"3"}).sql,/swimmer_rank=1/);
+  assert.match(completeQuery.sql,/RIGHT\(MIN\(CAST\(CONCAT\(LPAD\(CAST\(TRIM\(p.tps\) AS UNSIGNED\)/);
+  assert.match(completeQuery.sql,/AS DECIMAL\(30,0\)\).*GROUP BY n.id/);
+  assert.match(completeQuery.sql,/ON p.id=best.performance_id.*LIMIT 5001$/);
+  assert.match(top.queryFor({...input,limit:5000,region:"3"}).sql,/GROUP BY n.id/);
   assert.equal(top.filters({ ...input, season: "207" }).season, "207");
   assert.equal(top.filters({ ...input, birthYear: "0000" }).birthYear, "0000");
   const deferred = top.queryFor(input);

@@ -52,14 +52,13 @@ function queryFor(input, facet = false) {
   if (!facet && f.limit === MAX_LIMIT) {
     // Keep the best eligible native result per swimmer before the candidate
     // bound; final identity deduplication and sporting normalization stay in JS.
-    const rank = "ROW_NUMBER() OVER (PARTITION BY n.id ORDER BY CAST(TRIM(p.tps) AS UNSIGNED), c.date, p.id) AS swimmer_rank";
-    if (!f.region) {
-      const baseFrom = FROM.slice(0, FROM.indexOf(" LEFT JOIN clubs cp"));
-      const clubStart = PROJECTION.indexOf(", COALESCE(cp.num_club");
-      const candidates = `SELECT ${PROJECTION.slice(0, clubStart)}, p.club AS performance_club, n.club AS swimmer_club, ${rank} ${baseFrom} WHERE ${where.join(" AND ")}`;
-      return { sql: `SELECT q.*, ${PROJECTION.slice(clubStart + 2)} FROM (${candidates}) q LEFT JOIN clubs cp ON cp.num_club=q.performance_club AND CAST(cp.num_club AS CHAR)=q.performance_club LEFT JOIN clubs cn ON cn.num_club=q.swimmer_club AND CAST(cn.num_club AS CHAR)=q.swimmer_club WHERE q.swimmer_rank=1 ORDER BY CAST(TRIM(q.tps) AS UNSIGNED), q.date, q.id LIMIT ${MAX_CANDIDATES + 1}`, values };
-    }
-    return { sql: `SELECT q.* FROM (SELECT ${PROJECTION}, ${rank} ${FROM} WHERE ${where.join(" AND ")}) q WHERE q.swimmer_rank=1 ORDER BY CAST(TRIM(q.tps) AS UNSIGNED), q.date, q.id LIMIT ${MAX_CANDIDATES + 1}`, values };
+    // Exact decimal ordering key: 6 time digits, 14 date digits, 10 id digits.
+    // This avoids requiring window functions on the native MySQL server.
+    const key="CAST(CONCAT(LPAD(CAST(TRIM(p.tps) AS UNSIGNED),6,'0'),COALESCE(DATE_FORMAT(c.date,'%Y%m%d%H%i%s'),'00000000000000'),LPAD(p.id,10,'0')) AS DECIMAL(30,0))";
+    const selectionFrom=f.region?FROM:FROM.slice(0,FROM.indexOf(" LEFT JOIN clubs cp"));
+    const best=`SELECT CAST(RIGHT(MIN(${key}),10) AS UNSIGNED) AS performance_id ${selectionFrom} WHERE ${where.join(" AND ")} GROUP BY n.id`;
+    const hydration=FROM.replace("FROM perfs p FORCE INDEX (livepalmes_course_relais_tps)",`FROM (${best}) best STRAIGHT_JOIN perfs p FORCE INDEX (PRIMARY) ON p.id=best.performance_id`);
+    return {sql:`SELECT ${PROJECTION} ${hydration} ORDER BY CAST(TRIM(p.tps) AS UNSIGNED),c.date,p.id LIMIT ${MAX_CANDIDATES+1}`,values};
   }
   const suffix = facet ? "GROUP BY YEAR(n.date) ORDER BY YEAR(n.date) DESC LIMIT 10001" : `ORDER BY CAST(TRIM(p.tps) AS UNSIGNED), c.date, p.id LIMIT ${MAX_CANDIDATES + 1}`;
   if (!f.region) {
