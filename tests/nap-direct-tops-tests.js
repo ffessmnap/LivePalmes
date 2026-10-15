@@ -19,6 +19,7 @@ function raw(id, swimmer, tps, date = "2020-01-01") {
   assert.match(completeQuery.sql,/RIGHT\(MIN\(CAST\(CONCAT\(LPAD\(CAST\(TRIM\(p.tps\) AS UNSIGNED\)/);
   assert.match(completeQuery.sql,/AS DECIMAL\(30,0\)\).*GROUP BY n.id/);
   assert.match(completeQuery.sql,/ON p.id=best.performance_id.*LIMIT 5001$/);
+  assert.ok(completeQuery.sql.includes("REGEXP '^[0-9]+$'"),"SQL regexp dollar must survive JavaScript replacement text expansion");
   assert.match(top.queryFor({...input,limit:5000,region:"3"}).sql,/GROUP BY n.id/);
   assert.equal(top.filters({ ...input, season: "207" }).season, "207");
   assert.equal(top.filters({ ...input, birthYear: "0000" }).birthYear, "0000");
