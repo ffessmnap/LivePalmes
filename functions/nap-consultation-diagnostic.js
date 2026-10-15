@@ -9,8 +9,8 @@ async function inspect(pool) {
   if(rows.length>5000)throw new RangeError("Historique trop volumineux.");
   const groups=new Map();
   for(const row of rows){const key=String(row.club||"");const group=groups.get(key)||{rawClub:key,label:row.abre_club||null,count:0,matchesCompetition:0,examples:[]};group.count++;if(String(row.compet)===key)group.matchesCompetition++;if(group.examples.length<3)group.examples.push({performanceId:row.id,course:row.course,competitionId:row.compet,competition:row.libelle,date:row.date});groups.set(key,group);}
-  const [importSchema]=await pool.execute({sql:"SELECT TABLE_NAME,COLUMN_NAME,COLUMN_TYPE,COLUMN_KEY FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME IN ('txt_clubs','import_clubs') ORDER BY TABLE_NAME,ORDINAL_POSITION LIMIT 101",timeout:10000});
-  if(importSchema.length>100)throw new RangeError("Structure d'import trop volumineuse.");
+  const [importSchema]=await pool.execute({sql:"SELECT TABLE_NAME,COLUMN_NAME,COLUMN_TYPE,COLUMN_KEY FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME LIKE '%club%' ORDER BY TABLE_NAME,ORDINAL_POSITION LIMIT 201",timeout:10000});
+  if(importSchema.length>200)throw new RangeError("Structure des clubs trop volumineuse.");
   const importClubMappings=[];
   const ids=[...groups.keys()].filter(value=>/^[1-9]\d{0,9}$/.test(value)&&Number(value)<=2147483647);
   for(const table of ["txt_clubs","import_clubs"]){
