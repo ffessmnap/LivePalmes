@@ -2,6 +2,12 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 15 octobre — Dépendances NAP des données sportives du portail
+
+- Antoine autorise le correctif client Records/MPF, import/correction et suggestions jusqu'au TEST commun, recette de lecture seule ; aucune PROD ni écriture métier.
+- Prérequis historiques retirés du chemin NAP, suggestions Records raccordées au lecteur NAP existant, requêtes bornées et temporisation 250 ms ; aucun changement backend/droits/règles sportives. Inventaire et budget dans [l'audit ciblé](../audit-portail-donnees-sportives-20261015.md).
+- Tests ciblés hors ligne réussis ; vérification globale locale arrêtée au test de publication nécessitant `bash` absent sur ce poste, résultat complet attendu en CI Linux. PR, preuve TEST et recette à renseigner après publication ; validation utilisateur attendue.
+
 ### 15 octobre — Accueil préparé côté serveur
 
 - Antoine autorise explicitement serveur/routage et publication TEST avec recette PC/mobile, sans job périodique. Réutilisation des lecteurs NAP existants dans readNapPublicSwimmer, HTML initial prérempli, cache mémoire cinq minutes/concurrence/jour de Paris, états indisponibles séparés sans données documentaires périmées. Trois requêtes bornées à froid, zéro à chaud ou au dépliage. Aucun framework, scheduler, index, droit ou donnée modifiés.
