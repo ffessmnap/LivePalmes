@@ -23,7 +23,7 @@ Antoine autorise les Cloud Functions de consultation et l'investigation des club
 | Page suivante / retour / rafraîchissement | Même plafond 2 SELECT, curseur et filtres envoyés ensemble ; facettes gardées en mémoire pendant la consultation, aucune reconstruction |
 | TOP complet | 2 SELECT, 3 si années de naissance demandées : comptage indexé de la course borné à 150 001 ; fenêtre sur ce périmètre plafonné ; au plus 5 001 meilleurs résultats natifs, au plus 5 000 affichés. Aucune pagination automatique ni lecture N+1 |
 | Fiche nageur | Lecteur existant : identité et au plus 2 001 performances, refus au-delà de 2 000 ; correction du routage sans nouvelle lecture |
-| Diagnostic clubs privé | 4 lectures : VERSION, EXPLAIN historique, historique de 912 plafonné à 5 001, EXPLAIN TOP complet. Aucun SQL libre, aucune écriture, endpoint IAM TEST déjà protégé |
+| Diagnostic clubs privé | 5 à 7 lectures : VERSION, EXPLAIN historique, historique de 912 plafonné à 5 001, structure de txt_clubs/import_clubs, au plus deux correspondances par ids groupés si structure et clé primaire conformes, EXPLAIN TOP complet. Aucun SQL libre, aucune écriture, endpoint IAM TEST déjà protégé |
 
 Les LIMIT bornent les candidats/résultats, pas à eux seuls les lignes examinées par MySQL. La fenêtre TOP peut travailler sur toute la course dans la borne 150 000 déjà contrôlée. Le diagnostic doit vérifier le plan et la compatibilité SQL réels avant de conclure à la recette ; aucun nouvel index n'est prévu.
 
