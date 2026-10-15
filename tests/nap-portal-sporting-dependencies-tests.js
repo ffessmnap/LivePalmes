@@ -11,7 +11,7 @@ async function loader(name, end) {
     loadScriptOnce: async src => { assert.ok(fs.existsSync(src.split("?")[0]), src); loaded.push(src); },
     watchRecordWorkbench() {}, watchImportWorkbench() {} };
   vm.runInNewContext(portal.slice(portal.indexOf(`  function ${name}(`), portal.indexOf(`  function ${end}(`)), context);
-  await context[name]();
+  assert.notEqual(await context[name](), null, "module loading must succeed");
   assert.ok(loaded.length);
   assert.ok(!loaded.some(src => /intranap-summary|performance-public/.test(src)), "NAP must not require removed exports");
 }
