@@ -2,6 +2,11 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 16 octobre — Indicateur unique au chargement du portail
+
+- Demande d’Antoine : conserver le rond de chargement et retirer le point clignotant superposé. La règle générique des messages exclut désormais l’écran initial ; texte et annonce accessible inchangés. Aucun changement d’authentification, de données ou de backend.
+- Publication TEST demandée ; preuve et retour utilisateur à consigner après contrôle. PROD exclue.
+
 ### 15 octobre — Consultation des performances : filtres, clubs, fiche nageur et TOP
 
 - Investigation de la capture du 07/12/2019 poursuivie en lecture seule (#352/#353), CI 38806261766/38807592979 réussie. Diagnostic [38807925018](https://github.com/ffessmnap/LivePalmes/actions/runs/38807925018), lot NAP privé 38807920388 sur ca7fda09. Preuve : relais historique 7436 / 4X200SF / nageur1=912 / premier temps 1:38.17 / club 106 CNHC, concordant avec le 200SF 434390 ; 400SF et passages portent 14743. La création des lignes par des traitements distincts reste une hypothèse. Le lecteur public masque la référence absente par le club actuel ; la correction affiche la référence non résolue. Aucun remplacement global ni donnée métier modifiée.
