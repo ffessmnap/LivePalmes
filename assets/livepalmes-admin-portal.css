@@ -14688,7 +14688,7 @@
   }
 }
 
-.admin-portal-page [aria-live].is-loading::before {
+.admin-portal-page [aria-live].is-loading:not(.admin-portal-auth-loading)::before {
   display: inline-block;
   width: 7px;
   height: 7px;
