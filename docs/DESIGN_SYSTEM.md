@@ -412,6 +412,8 @@ Dans les consoles, certains en-têtes restent visibles pendant le défilement ve
 
 ### États vides, chargement et erreurs
 
+L’écran de chargement initial du portail conserve un seul indicateur visuel : le rond tournant et son libellé accessible. Le point animé des messages de chargement ordinaires ne s’ajoute pas à cet écran.
+
 Un état vide est centré dans le composant concerné, avec un texte secondaire et, si utile, une action de résolution. Le chargement est signalé par un libellé explicite et un état `pending` ou `loading`. Les erreurs utilisent un message lisible et la palette rouge ; elles ne reposent pas uniquement sur un point coloré.
 
 ### Modales et panneaux superposés
