@@ -53,5 +53,11 @@ const authorize=()=>{events.push("authorize");if(denied)throw new TypeError("Den
   const returned=planLeaderChange({...pack,leaders:[waived.after]},input);
   assert.equal(state.isWaiver(returned.after),false);assert.equal(returned.after.nom,"CORRIGE");
   assert.throws(()=>planLeaderChange({...pack,leaders:[waived.after]},{...input,patch:{...input.patch,birthDate:""}}));
+  reset();
+  await editNativeTeamLeader(pool,{...input,patch:{mode:"renounced",renunciationAccepted:true}},audit,authorize);
+  assert.equal(state.isWaiver(current),true);assert.equal(events.filter(event=>event==="update").length,1);
+  saved=null;events=[];
+  await editNativeTeamLeader(pool,{...input,expectedFingerprint:fingerprint({...pack,leaders:[current]})},audit,authorize);
+  assert.equal(current.nom,"CORRIGE");assert.equal(state.isWaiver(current),false);
   console.log("NAP team leader: no licence, same club, closed/changed/ambiguous dossier refusal, backup, atomic deadline and retry verified");
 })().catch(error=>{console.error(error);process.exitCode=1;});
