@@ -7,7 +7,7 @@
 - Antoine autorise le correctif après vérification en lecture seule du dossier Cherbourg 5193 / club 106 : la déclaration native utilise nom/prénom `-1`, naissance `0000-00-00`, club = pourclub. Aucun nouveau schéma ni drapeau parallèle.
 - Sélection du répertoire rétablie, ajout existant conservé, pages supplémentaires explicites ; recherche locale, pas de lecture par personne ni chargement exhaustif. Renonciation confirmée, retour vers une personne, protection du dossier et des échéances ; marqueurs exclus des répertoires club/national.
 - Budget : ouverture inchangée, répertoire au plus deux SELECT indexés et 202 lignes par page ; recherche zéro lecture ; rafraîchissement par cache existant ; création/correction et relecture du dossier conservent leurs budgets bornés (28 SQL maximum dans le writer de création), une écriture native avec journal technique existant. Aucun test d’écriture sur la base réelle.
-- Tests hors ligne et publication TEST en cours ; recette et retour utilisateur non acquis. PROD exclue, aucune migration ni modification des droits ou des mails.
+- PR #356, commit applicatif f2e3a1ab ; suite complète Linux 39015097514 réussie. Tests ciblés hors ligne réussis, contrôle visuel isolé ordinateur/mobile sans écriture ; suite locale arrêtée sur Bash absent. Publication TEST en cours ; recette réelle et retour utilisateur non acquis. PROD exclue, aucune migration ni modification des droits ou des mails.
 
 ### 16 octobre — Indicateur unique au chargement du portail
 
