@@ -47,7 +47,7 @@ async function readClubPeople(pool,input,authorize) {
       last=Number(row.id);
     }
     const page=rows.slice(0,PAGE_SIZE);
-    people.push(...page.map(row=>person(row,kind,row.option_person_id==null?null:Object.fromEntries(OPTION_COLUMNS.map(key=>[key,row[`option_${key}`]])))));
+    people.push(...page.filter(row=>kind!=="leaders" || row.nom!=="-1" && row.prenom!=="-1").map(row=>person(row,kind,row.option_person_id==null?null:Object.fromEntries(OPTION_COLUMNS.map(key=>[key,row[`option_${key}`]])))));
     if(rows.length>PAGE_SIZE) nextCursor[kind]=Number(page.at(-1).id);
   }
   return {source:"nap",people,nextCursor,hasMore:Object.values(nextCursor).some(id=>id!==null),nativeDirectoryReadOnly:true,
@@ -65,7 +65,7 @@ async function readNationalPeople(pool,input,authorize) {
     let last=cursor[kind];
     for(const row of rows) {if(!Number.isSafeInteger(Number(row.id)) || Number(row.id)<=last) throw new TypeError("Page nationale incoherente.");last=Number(row.id);}
     const page=rows.slice(0,PAGE_SIZE);
-    people.push(...page.map(row=>({...person(row,kind,row.option_person_id==null?null:Object.fromEntries(OPTION_COLUMNS.map(key=>[key,row[`option_${key}`]]))),clubName:String(row.nom_club||""),club:String(row.abre_club||"")})));
+    people.push(...page.filter(row=>kind!=="leaders" || row.nom!=="-1" && row.prenom!=="-1").map(row=>({...person(row,kind,row.option_person_id==null?null:Object.fromEntries(OPTION_COLUMNS.map(key=>[key,row[`option_${key}`]]))),clubName:String(row.nom_club||""),club:String(row.abre_club||"")})));
     if(rows.length>PAGE_SIZE) nextCursor[kind]=Number(page.at(-1).id);
   }
   return {ok:true,source:"nap",people,nextCursor,hasMore:Object.values(nextCursor).some(id=>id!==null),sqlBudget:{queriesMax:2,rowsMax:202}};

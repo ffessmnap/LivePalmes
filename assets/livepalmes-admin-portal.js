@@ -692,6 +692,7 @@
     engagementsClubTeamPersonSearch: document.querySelector("#adminEngagementsClubTeamPersonSearch"),
     engagementsClubTeamPersonSelect: document.querySelector("#adminEngagementsClubTeamPersonSelect"),
     engagementsClubTeamPersonResults: document.querySelector("#adminEngagementsClubTeamPersonResults"),
+    engagementsClubTeamPeopleMore: document.querySelector("#adminEngagementsClubTeamPeopleMore"),
     engagementsClubTeamPersonCreate: document.querySelector("#adminEngagementsClubTeamPersonCreate"),
     engagementsClubTeamFirstName: document.querySelector("#adminEngagementsClubTeamFirstName"),
     engagementsClubTeamFirstNameLabel: document.querySelector("#adminEngagementsClubTeamFirstNameLabel"),
@@ -4969,11 +4970,12 @@
       const licenseKey = engagementClubPersonLicenseKey(person.licenseNumber);
       if (licenseKey) peopleByLicense.set(licenseKey, person);
     });
+    const native = global.LivePalmesEnvironment?.sportingDataSource === "nap";
     const candidates = [
       ...visibleNativePeople(engagementClubPeople)
         .filter((person) => person.active)
         .map((person) => ({ ...person, selectionId: person.id, candidateType: "person" })),
-      ...engagementClubSwimmers
+      ...(native ? [] : engagementClubSwimmers)
         .filter((swimmer) => swimmer.active !== false)
         .filter((swimmer) => {
           const swimmerKey = [swimmer.source || "performances", swimmer.swimmerIndexId || swimmer.id].filter(Boolean).join(":");
@@ -5002,6 +5004,7 @@
 
   function renderEngagementClubTeamPersonOptions(selectedPersonId = "") {
     if (!elements.engagementsClubTeamPersonSelect) return;
+    if (elements.engagementsClubTeamPeopleMore) { elements.engagementsClubTeamPeopleMore.hidden = !engagementClubPeopleHasMore; elements.engagementsClubTeamPeopleMore.disabled = engagementClubPeopleLoading; }
     const query = elements.engagementsClubTeamPersonSearch?.value || "";
     const options = engagementClubTeamLeaderPeople(query);
     elements.engagementsClubTeamPersonSelect.innerHTML = [
@@ -5089,6 +5092,7 @@
 
   async function confirmEngagementClubTeamLeaderCandidate(candidate = {}) {
     if (!candidate?.selectionId) return null;
+    if (global.LivePalmesEnvironment?.sportingDataSource === "nap") return candidate;
     const conflict = engagementClubMemberRoleConflict(candidate, "teamLeader");
     if (conflict) {
       global.alert(conflict);
@@ -8605,26 +8609,39 @@
   function updateEngagementClubTeamFormMode() {
     if (selectedEngagementCompetition?.nativeReadOnly === true && selectedEngagementCompetition?.nativeTeamLeaderEditable === true) {
       const locked = Boolean(engagementClubWriteLockReason({ ...selectedEngagementCompetition, nativeReadOnly: false }));
-      setEngagementClubFormControlsLocked(elements.engagementsClubTeamForm, true);
-      if (elements.engagementsClubTeamPersonFields) elements.engagementsClubTeamPersonFields.hidden = false;
-      setEngagementClubTeamManualFieldsVisible(true);
+      const mode = elements.engagementsClubTeamForm?.querySelector('input[name="adminEngagementsClubTeamMode"]:checked')?.value || "";
+      const declaring = mode === "person";
+      const known = engagementClubPeople.find(person => person.id === elements.engagementsClubTeamPersonSelect?.value);
+      const manual = declaring && (elements.engagementsClubTeamPersonFields?.dataset.manualEntry === "true" || Boolean(known && !known.birthDate));
+      setEngagementClubFormControlsLocked(elements.engagementsClubTeamForm, locked);
+      if (elements.engagementsClubTeamPersonFields) elements.engagementsClubTeamPersonFields.hidden = !declaring;
+      setEngagementClubTeamManualFieldsVisible(manual);
       for (const field of [elements.engagementsClubTeamFirstName, elements.engagementsClubTeamLastName, elements.engagementsClubTeamBirthDate]) {
-        if (field) { field.disabled = locked; field.required = field !== elements.engagementsClubTeamBirthDate || !selectedEngagementClubEntry?.teamLeader?.nativeLeaderId; const label=field.closest("label"); if(label) label.hidden=false; }
+        if (field) {
+          field.disabled = locked || !declaring;
+          field.required = declaring && (field !== elements.engagementsClubTeamBirthDate || !selectedEngagementClubEntry?.teamLeader?.nativeLeaderId || selectedEngagementClubEntry?.teamLeader?.mode === "renounced");
+          const label = field.closest("label"); if (label) label.hidden = !manual;
+        }
       }
       for (const field of [elements.engagementsClubTeamLicense, elements.engagementsClubTeamSex, elements.engagementsClubTeamExternal]) {
-        if (field) { field.required = false; field.disabled = true; const label=field.closest("label"); if(label) label.hidden=true; }
+        if (field) { field.required = false; field.disabled = true; const label = field.closest("label"); if (label) label.hidden = true; }
       }
       if (elements.engagementsClubTeamLicense) elements.engagementsClubTeamLicense.value = "";
-      for (const control of [elements.engagementsClubTeamPersonSearch, elements.engagementsClubTeamPersonSelect]) if (control) { const label=control.closest("label"); if(label) label.hidden=true; }
-      for (const control of [elements.engagementsClubTeamPersonResults, elements.engagementsClubTeamPersonCreate, elements.engagementsClubTeamRenunciationLabel, elements.engagementsClubTeamExternalClubIdLabel, elements.engagementsClubTeamExternalClubNameLabel]) if (control) control.hidden = true;
-      if (elements.engagementsClubTeamChoices) elements.engagementsClubTeamChoices.querySelectorAll('input[type="radio"]').forEach(control=>{const label=control.closest("label"); if(label) label.hidden=true; else control.hidden=true;});
+      for (const control of [elements.engagementsClubTeamPersonSearch, elements.engagementsClubTeamPersonSelect]) {
+        const label = control?.closest("label"); if (label) label.hidden = !declaring;
+      }
+      if (elements.engagementsClubTeamPersonResults) elements.engagementsClubTeamPersonResults.hidden = !declaring || !String(elements.engagementsClubTeamPersonSearch?.value || "").trim();
+      if (elements.engagementsClubTeamPersonCreate) elements.engagementsClubTeamPersonCreate.hidden = !declaring;
+      if (elements.engagementsClubTeamPeopleMore) elements.engagementsClubTeamPeopleMore.hidden = !declaring || !engagementClubPeopleHasMore;
+      for (const control of [elements.engagementsClubTeamRenunciationLabel, elements.engagementsClubTeamExternalClubIdLabel, elements.engagementsClubTeamExternalClubNameLabel]) if (control) control.hidden = true;
+      if (elements.engagementsClubTeamRenunciation) { elements.engagementsClubTeamRenunciation.required = mode === "renounced"; elements.engagementsClubTeamRenunciation.disabled = locked; }
+      elements.engagementsClubTeamChoices?.querySelectorAll('input[type="radio"]').forEach(control => { const label = control.closest("label"); if (label) label.hidden = false; else control.hidden = true; });
       if (elements.engagementsClubTeamExternalOpen) elements.engagementsClubTeamExternalOpen.hidden = true;
-      if (elements.engagementsClubTeamRenunciationButton) elements.engagementsClubTeamRenunciationButton.hidden = true;
+      if (elements.engagementsClubTeamRenunciationButton) { elements.engagementsClubTeamRenunciationButton.hidden = false; elements.engagementsClubTeamRenunciationButton.disabled = locked; }
       if (elements.engagementsClubTeamSaveButton) {
-        elements.engagementsClubTeamSaveButton.hidden = false;
+        elements.engagementsClubTeamSaveButton.hidden = !declaring || !manual;
         elements.engagementsClubTeamSaveButton.disabled = locked;
-        const validation = elements.engagementsClubTeamSaveButton.closest(".admin-engagements-club-team-validation");
-        if (validation) validation.hidden = false;
+        const validation = elements.engagementsClubTeamSaveButton.closest(".admin-engagements-club-team-validation"); if (validation) validation.hidden = !declaring || !manual;
       }
       return;
     }
@@ -11028,7 +11045,9 @@
           competitionId: selectedEngagementCompetitionId,
           leaderId: selectedEngagementClubEntry?.teamLeader?.nativeLeaderId,
           expectedFingerprint: selectedEngagementClubEntry?.napFingerprint,
-          patch: { firstName: elements.engagementsClubTeamFirstName?.value || "", lastName: elements.engagementsClubTeamLastName?.value || "", birthDate: elements.engagementsClubTeamBirthDate?.value || "" }
+          patch: elements.engagementsClubTeamForm?.querySelector('input[name="adminEngagementsClubTeamMode"]:checked')?.value === "renounced"
+            ? { mode: "renounced", renunciationAccepted: elements.engagementsClubTeamRenunciation?.checked === true }
+            : { firstName: elements.engagementsClubTeamFirstName?.value || "", lastName: elements.engagementsClubTeamLastName?.value || "", birthDate: elements.engagementsClubTeamBirthDate?.value || "" }
         });
         selectedEngagementCompetition = result.competition;
         renderEngagementClubEntry(result.entry);
@@ -17851,8 +17870,12 @@
       engagementClubTeamEditing = true;
       updateEngagementClubTeamLeaderActions();
       if (selectedEngagementCompetition?.nativeReadOnly === true && selectedEngagementCompetition?.nativeTeamLeaderEditable === true) {
+        restoreEngagementClubTeamLeaderChoice();
+        if (selectedEngagementClubEntry?.teamLeader?.mode === "person") setEngagementClubTeamManualFieldsVisible(true);
+        await loadEngagementClubPeople({ silent: true });
+        renderEngagementClubTeamPersonOptions();
         updateEngagementClubTeamFormMode();
-        elements.engagementsClubTeamFirstName?.focus();
+        elements.engagementsClubTeamPersonSearch?.focus();
         return;
       }
       restoreEngagementClubTeamLeaderChoice();
@@ -17927,10 +17950,11 @@
       if (changedMode === "person") {
         await Promise.all([
           loadEngagementClubPeople({ silent: true }),
-          loadEngagementClubSwimmers({ silent: true })
+          global.LivePalmesEnvironment?.sportingDataSource === "nap" ? Promise.resolve() : loadEngagementClubSwimmers({ silent: true })
         ]);
         setEngagementClubTeamManualFieldsVisible(false);
         renderEngagementClubTeamPersonOptions("");
+        updateEngagementClubTeamFormMode();
         elements.engagementsClubTeamPersonSearch?.focus();
       }
       if (elements.engagementsClubTeamMessage) elements.engagementsClubTeamMessage.textContent = "";
@@ -17983,6 +18007,7 @@
         if (!saved && elements.engagementsClubTeamSaveButton) elements.engagementsClubTeamSaveButton.hidden = false;
       }
     });
+    elements.engagementsClubTeamPeopleMore?.addEventListener("click", async () => { await loadEngagementClubPeople({ silent: true, append: true }); updateEngagementClubTeamFormMode(); });
     elements.engagementsClubTeamPersonResults?.addEventListener("click", (event) => {
       const button = event.target.closest("[data-engagement-club-team-person-result]");
       const personId = button?.dataset.engagementClubTeamPersonResult || "";

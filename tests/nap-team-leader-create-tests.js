@@ -45,5 +45,11 @@ function fixture(options={}) {
   assert.equal(proposedLeader({...base,clubId:"00106"},{...input,clubId:"00106"}).club,"00106","native textual club identifiers retain leading zeros");
   assert.match(statement.sql,/NOT EXISTS.*livepalmes_compet_id/);assert.match(statement.sql,/UTC_TIMESTAMP\(\) < \?/);assert.match(statement.sql,/FROM clubs WHERE num_club=\?/);
   assert.equal(indexed([{table:"chefsdequipe",type:"ALL",key:null,rows:10000}]),false);
+  const waiverInput={...input,patch:{mode:"renounced",renunciationAccepted:true}};
+  const waiverRow=proposedLeader(base,waiverInput);
+  assert.deepEqual(waiverRow,{compet:5162,nom:"-1",prenom:"-1",date:"0000-00-00",club:"106",pourclub:"106"});
+  const waived=fixture();await waived.run(waiverInput);assert.equal(waived.count,1);
+  assert.throws(()=>proposedLeader(base,{...input,patch:{mode:"renounced",renunciationAccepted:false}}));
+  assert.throws(()=>proposedLeader(base,{...input,patch:{...input.patch,firstName:"-1",lastName:"-1"}}));
   console.log("NAP first team leader: bounded insertion, club/identity/closure guards, duplicate/race refusal and no uncertain retry verified");
 })().catch(error=>{console.error(error);process.exitCode=1;});

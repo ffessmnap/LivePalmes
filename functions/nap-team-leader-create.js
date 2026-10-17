@@ -11,7 +11,7 @@ const {readNativeClubEntry}=require("./nap-portal-entries");
 const {COLUMNS,planLeaderChange}=require("./nap-team-leader-change");
 function proposedLeader(pack,input) {
   if(pack.leaders.length) throw new TypeError("Un chef d'equipe est deja declare. Rechargez le dossier.");
-  if(!input.patch?.birthDate) throw new TypeError("Date de naissance requise pour declarer le chef d'equipe.");
+  if(input.patch?.mode!=="renounced" && !input.patch?.birthDate) throw new TypeError("Date de naissance requise pour declarer le chef d'equipe.");
   const seed={id:0,compet:input.competitionId,nom:"",prenom:"",date:"0000-00-00",club:input.clubId,pourclub:""};
   const {id,...row}=planLeaderChange({...pack,leaders:[seed]},{...input,leaderId:0}).after;
   return row;

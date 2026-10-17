@@ -28,5 +28,8 @@ const official={id:7,nom:"Chef",prenom:"Nom",date:"1980-01-02",club:"00123"};
   const inactive=person(official,"officials",options);assert.equal(inactive.active,false);assert.equal(inactive.nativeStatusEditable,true);assert.notEqual(inactive.napFingerprint,person(official,"officials").napFingerprint);
   assert.equal(inactive.napFingerprint,person(official,"officials",{...options,person_id:7,active:0,version:1,role_team_leader:1,role_official:1}).napFingerprint,"numeric driver representation does not change the fingerprint");
   for(const change of [{club_id:"999"},{active:2},{version:"9007199254740993"},{person_id:8}]) assert.throws(()=>person(official,"officials",{...options,...change}),TypeError);
+  const waiverPage=await readClubPeople({execute:async()=>[[{...leader,nom:"-1",prenom:"-1",pourclub:leader.club}]]},{clubId:"00123",cursor:{leaders:0,officials:null}},()=>{});
+  assert.equal(waiverPage.people.length,0);
+  assert.equal(waiverPage.hasMore,false);
   console.log("Native club people: authorized scope before reads, two indexed keyset pages, no merging/licences/fallback, unknown dates preserved");
 })().catch(error=>{console.error(error);process.exitCode=1;});

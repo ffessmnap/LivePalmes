@@ -68,4 +68,8 @@ assert.equal(entry.teamLeaderComplete, false);
 assert.equal(entry.officials.length, 1);
 assert.equal(entry.officials[0].licenseNumber, "");
 assert.throws(() => view.entryItem({ ...entryPack, swimmers: [] }, {}, () => ""), /sans fiche/);
+const waiver=view.entryItem({...entryPack,leaders:[{id:9,compet:5140,nom:"-1",prenom:"-1",date:"0000-00-00",club:"00123",pourclub:"00123"}]},{},()=>"");
+assert.equal(waiver.teamLeader.mode,"renounced");assert.equal(waiver.teamLeader.renunciationAccepted,true);
+assert.equal(waiver.teamLeader.firstName,"");assert.equal(waiver.teamLeaderComplete,true);
+assert.equal(view.entryItem({...entryPack,leaders:[]},{},()=>"").teamLeaderComplete,false);
 console.log("NAP portal presentation bridge tests passed");
