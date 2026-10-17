@@ -33,7 +33,9 @@ function planLeaderChange(pack,input) {
   }
   const after={...before,nom:name(patch.lastName),prenom:name(patch.firstName),date:birthDate};
   const identity=row=>[String(row.nom).trim().toLocaleUpperCase("fr"),String(row.prenom).trim().toLocaleUpperCase("fr"),date(row.date)].join("|");
-  if(date(after.date) && [...pack.swimmers.map(row=>({nom:row.lastName,prenom:row.firstName,date:row.birthDate})),...pack.officials].some(row=>identity(row)===identity(after))) throw new TypeError("Cette personne est deja nageur ou officiel sur ce dossier.");
+  const enrolled=new Set((pack.inscriptions || []).map(row=>String(row.nageur)));
+  for(const row of pack.members || []) enrolled.add(String(row.nageur));
+  if(date(after.date) && [...pack.swimmers.filter(row=>enrolled.has(String(row.id))).map(row=>({nom:row.lastName,prenom:row.firstName,date:row.birthDate})),...pack.officials].some(row=>identity(row)===identity(after))) throw new TypeError("Cette personne est deja nageur ou officiel sur ce dossier.");
   return {before,after};
 }
 function buildLeaderUpdate(plan,authority,deadline) {
