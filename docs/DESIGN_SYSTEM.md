@@ -647,3 +647,7 @@ Les statuts DTN distinguent l’absence de calcul, un calcul précédent incompa
 La correction de performance propose les courses, années civiles et compétitions de tout l'historique borné du nageur dès sa sélection. Les compétitions se distinguent par date, nom et lieu ; un filtre interroge le serveur et remet la pagination au début. Une page charge 100 résultats correspondants, du plus récent au plus ancien. Un club sans correspondance est signalé « Club non résolu (valeur) » ; ne pas substituer silencieusement le club actuel. Les TOP affichent tous les temps renvoyés dès la première consultation, sans palier de 25 ; un dépassement des bornes du lecteur demande d'affiner les filtres.
 
 Les petits titres de groupes de navigation du portail utilisent #60727b sur blanc (contraste supérieur à 4,5:1), sans modifier les tailles ni l’espacement.
+
+### Sélection du chef d’équipe dans le parcours NAP
+
+Le parcours NAP réutilise les choix et la confirmation existants. Le sélecteur « Membre du club » reste visible sans saisie préalable, avec recherche dans les pages déjà chargées et action secondaire « Afficher d’autres membres du club ». Chaque action charge au plus une page. Les anciennes déclarations d’une même personne sont regroupées à l’affichage ; les renonciations ne figurent jamais parmi les personnes. La saisie manuelle conserve uniquement nom, prénom et naissance, sans licence artificielle. Après confirmation, une renonciation s’affiche comme telle et peut être remplacée par une personne.

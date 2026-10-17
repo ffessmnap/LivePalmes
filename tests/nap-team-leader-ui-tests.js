@@ -2,7 +2,7 @@
 const assert=require("node:assert/strict"),fs=require("node:fs"),vm=require("node:vm");
 const source=fs.readFileSync(require.resolve("../assets/livepalmes-admin-portal.js"),"utf8");
 const field=value=>({value,required:true,disabled:true,label:{hidden:false},closest(){return this.label;}});
-const elements={engagementsClubTeamForm:{querySelectorAll:()=>[],checkValidity:()=>true},engagementsClubTeamPersonFields:{dataset:{}},engagementsClubTeamFirstName:field("Chef"),engagementsClubTeamLastName:field("CORRIGE"),engagementsClubTeamBirthDate:field("1980-01-02"),engagementsClubTeamLicense:field("OLD-LICENCE"),engagementsClubTeamSex:field(""),engagementsClubTeamExternal:field(""),engagementsClubTeamSaveButton:field(""),engagementsClubTeamMessage:{dataset:{}}};
+const elements={engagementsClubTeamForm:{querySelector:()=>({value:sandbox.mode}),querySelectorAll:()=>[],checkValidity:()=>true},engagementsClubTeamPersonFields:{dataset:{manualEntry:"true"}},engagementsClubTeamFirstName:field("Chef"),engagementsClubTeamLastName:field("CORRIGE"),engagementsClubTeamBirthDate:field("1980-01-02"),engagementsClubTeamLicense:field("OLD-LICENCE"),engagementsClubTeamSex:field(""),engagementsClubTeamExternal:field(""),engagementsClubTeamSaveButton:field(""),engagementsClubTeamMessage:{dataset:{}}};
 const calls=[];
 elements.engagementsClubTeamModifyButton=field("");
 elements.engagementsClubTeamNativePersonCreate=field("");
@@ -10,7 +10,7 @@ elements.engagementsClubTeamRemoveButton=field("");
 elements.engagementsClubTeamExternal.closest=()=>null;
 const hiddenRadio={closest:()=>null,hidden:true};
 elements.engagementsClubTeamChoices={querySelectorAll:()=>[hiddenRadio]};
-const sandbox={elements,global:{LivePalmesEnvironment:{sportingDataSource:"nap",isTest:true}},engagementClubPersonSaving:false,selectedEngagementCompetitionId:"legacy-nap-5140",selectedEngagementCompetition:{nativeReadOnly:true,nativeTeamLeaderEditable:true,entryStatus:"open"},selectedEngagementClubEntry:{napFingerprint:"native-fingerprint",teamLeader:{nativeLeaderId:"51"}},canUse:()=>true,
+const sandbox={mode:"person",engagementClubPeople:[],engagementClubPeopleHasMore:false,elements,global:{LivePalmesEnvironment:{sportingDataSource:"nap",isTest:true}},engagementClubPersonSaving:false,selectedEngagementCompetitionId:"legacy-nap-5140",selectedEngagementCompetition:{nativeReadOnly:true,nativeTeamLeaderEditable:true,entryStatus:"open"},selectedEngagementClubEntry:{napFingerprint:"native-fingerprint",teamLeader:{nativeLeaderId:"51"}},canUse:()=>true,
   engagementClubWriteLockReason:competition=>competition.nativeReadOnly?"Native blocked":competition.entryStatus==="open"?"":"Closed",
   engagementClubTeamComplete:()=>true,engagementClubTeamEditing:false,engagementClubEntryHasParticipants:()=>true,
   setEngagementClubFormControlsLocked:()=>{[elements.engagementsClubTeamNativePersonCreate,elements.engagementsClubTeamModifyButton,elements.engagementsClubTeamRemoveButton,elements.engagementsClubTeamSaveButton].forEach(control=>{control.disabled=true;});},setEngagementClubTeamManualFieldsVisible:()=>{},setEngagementSaveState:()=>{},
@@ -32,6 +32,11 @@ assert.equal(elements.engagementsClubTeamFirstName.disabled,false);assert.equal(
   sandbox.selectedEngagementClubEntry={napFingerprint:"empty-dossier",teamLeader:{}};
   sandbox.updateEngagementClubTeamFormMode();assert.equal(elements.engagementsClubTeamBirthDate.required,true);
   await sandbox.saveEngagementClubTeamLeader();assert.equal(calls.length,2);assert.equal(calls[1].input.leaderId,undefined);assert.equal(calls[1].input.expectedFingerprint,"empty-dossier");
-  sandbox.selectedEngagementCompetition.entryStatus="closed";sandbox.updateEngagementClubTeamLeaderActions();assert.equal(elements.engagementsClubTeamModifyButton.disabled,true);assert.equal(elements.engagementsClubTeamSaveButton.disabled,true);await sandbox.saveEngagementClubTeamLeader();assert.equal(calls.length,2);
+  sandbox.mode="renounced";elements.engagementsClubTeamRenunciation={checked:true};
+  await sandbox.saveEngagementClubTeamLeader();assert.equal(calls.length,3);
+  assert.deepEqual(JSON.parse(JSON.stringify(calls[2].input.patch)),{mode:"renounced",renunciationAccepted:true});
+  assert.equal(elements.engagementsClubTeamFirstName.required,false);
+  assert.equal(elements.engagementsClubTeamSaveButton.hidden,true);
+  sandbox.selectedEngagementCompetition.entryStatus="closed";sandbox.updateEngagementClubTeamLeaderActions();assert.equal(elements.engagementsClubTeamModifyButton.disabled,true);assert.equal(elements.engagementsClubTeamSaveButton.disabled,true);await sandbox.saveEngagementClubTeamLeader();assert.equal(calls.length,3);
   console.log("NAP leader UI: licence blank, native fields only, no old people call and closed form locked");
 })().catch(error=>{console.error(error);process.exitCode=1;});

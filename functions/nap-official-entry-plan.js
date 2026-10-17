@@ -27,7 +27,7 @@ function planOfficials(pack,values,people) {
   // Keep historical duplicates/orphans unchanged when their person remains
   // selected. Do not use this action to repair or merge native identities.
   if(!addIds.length && !removals.length) return {competitionId,clubId,before,additions:[],removals};
-  if(!Array.isArray(pack.leaders) || pack.leaders.length!==1 || !String(pack.leaders[0].nom || "").trim() || !String(pack.leaders[0].prenom || "").trim()) throw new TypeError("Chef d'equipe NAP a verifier avant l'ajout. Renonciation encore a raccorder.");
+  if(!require("./nap-team-leader-state").declarationComplete(pack.leaders)) throw new TypeError("Chef d'equipe NAP a verifier avant l'ajout.");
   const leader=pack.leaders[0];
   if(Number(leader.compet)!==competitionId || ![String(leader.club),String(leader.pourclub)].includes(clubId)) throw new TypeError("Chef hors du dossier autorise.");
   if(!addIds.length) return {competitionId,clubId,before,additions:[],removals};

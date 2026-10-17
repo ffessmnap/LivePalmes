@@ -102,8 +102,8 @@ function entryItem(pack, context, categoryForBirthDate, competition = {}) {
       individualEntries: pack.individual.filter(row => String(row.engagement) === String(inscription.id)).map(row => ({
         nativeEntryId: String(row.id), eventCode: require("./nap-open-water-courses").displayCode(row.course,competition.eventType || competition.competitionType), status: "selected", manualEntryTime: "", ...nativeTime(row.tps) })) };
   });
-  const leaders = pack.leaders.map(row => ({ nativeLeaderId: String(row.id), personId: `nap-leader-${row.id}`, mode: "person",
-    firstName: text(row.prenom), lastName: text(row.nom), birthDate: calendar.date(row.date), sex: "", licenseNumber: "",
+  const leaders = pack.leaders.map(row => ({ nativeLeaderId: String(row.id), personId: `nap-leader-${row.id}`, mode: require("./nap-team-leader-state").isWaiver(row) ? "renounced" : "person", renunciationAccepted: require("./nap-team-leader-state").isWaiver(row),
+    firstName: require("./nap-team-leader-state").isWaiver(row) ? "" : text(row.prenom), lastName: require("./nap-team-leader-state").isWaiver(row) ? "" : text(row.nom), birthDate: calendar.date(row.date), sex: "", licenseNumber: "",
     clubId: text(row.club), representedClubId: text(row.pourclub), externalClub: String(row.club) !== pack.clubId }));
   const relays = pack.relays.map(row => {
     const relayDetail = require("./nap-relay-details").detail(row, pack.options?.submission_metadata);
@@ -120,7 +120,7 @@ function entryItem(pack, context, categoryForBirthDate, competition = {}) {
     status: "active", swimmers, relays, officials: pack.officials.map(row => ({ personId: `nap-official-${row.officiel}`, nativeLinkId: String(row.id), nativeOfficialId: String(row.officiel),
       firstName: text(row.prenom), lastName: text(row.nom), birthDate: calendar.date(row.date), licenseNumber: "", sex: "" })),
     // Multiple leaders are kept explicitly, without selecting one arbitrarily.
-    teamLeader: leaders.length === 1 ? leaders[0] : {}, nativeLeaders: leaders, teamLeaderComplete: leaders.length === 1,
+    teamLeader: leaders.length === 1 ? leaders[0] : {}, nativeLeaders: leaders, teamLeaderComplete: require("./nap-team-leader-state").declarationComplete(pack.leaders),
     nativeOptions: pack.options, qualificationAlert: json(pack.options?.submission_metadata,{}).qualificationAlert||null, documents: {}, updatedAt: pack.readAt,
     nativeWarnings: [leaders.length > 1 ? "Plusieurs chefs d'equipe NAP conserves." : "", relays.length ? "Categories natives des relais conservees." : ""].filter(Boolean) };
 }
