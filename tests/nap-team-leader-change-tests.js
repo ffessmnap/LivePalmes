@@ -59,5 +59,9 @@ const authorize=()=>{events.push("authorize");if(denied)throw new TypeError("Den
   saved=null;events=[];
   await editNativeTeamLeader(pool,{...input,expectedFingerprint:fingerprint({...pack,leaders:[current]})},audit,authorize);
   assert.equal(current.nom,"CORRIGE");assert.equal(state.isWaiver(current),false);
+  const clubSwimmer={id:"9",lastName:"CORRIGE",firstName:"Chef",birthDate:row.date};
+  assert.doesNotThrow(()=>planLeaderChange({...pack,swimmers:[clubSwimmer]},input));
+  assert.throws(()=>planLeaderChange({...pack,swimmers:[clubSwimmer],inscriptions:[{nageur:9}]},input));
+  assert.throws(()=>planLeaderChange({...pack,swimmers:[clubSwimmer],members:[{nageur:9}]},input));
   console.log("NAP team leader: no licence, same club, closed/changed/ambiguous dossier refusal, backup, atomic deadline and retry verified");
 })().catch(error=>{console.error(error);process.exitCode=1;});
