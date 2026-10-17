@@ -41,5 +41,17 @@ const authorize=()=>{events.push("authorize");if(denied)throw new TypeError("Den
   assert.throws(()=>planLeaderChange(pack,{...input,patch:{...input.patch,birthDate:"1980-02-30"}}));
   assert.throws(()=>planLeaderChange({...pack,officials:[{nom:"CORRIGE",prenom:"Chef",date:row.date}]},input));
   const unknown={...pack,leaders:[{...row,date:"0000-00-00"}]};const preserved=planLeaderChange(unknown,{...input,patch:{...input.patch,birthDate:""}});assert.equal(preserved.after.date,"0000-00-00");
+  const state=require("../functions/nap-team-leader-state");
+  const waived=planLeaderChange(pack,{...input,patch:{mode:"renounced",renunciationAccepted:true}});
+  assert.equal(state.isWaiver(waived.after),true);
+  assert.equal(state.declarationComplete([]),false);
+  assert.equal(state.declarationComplete([waived.after]),true);
+  assert.equal(state.declarationComplete([{...waived.after,prenom:"Chef"}]),false);
+  assert.equal(state.declarationComplete([waived.after,waived.after]),false);
+  assert.throws(()=>planLeaderChange(pack,{...input,patch:{mode:"renounced",renunciationAccepted:false}}));
+  assert.throws(()=>planLeaderChange({...pack,leaders:[{...row,pourclub:"999"}]},{...input,patch:{mode:"renounced",renunciationAccepted:true}}));
+  const returned=planLeaderChange({...pack,leaders:[waived.after]},input);
+  assert.equal(state.isWaiver(returned.after),false);assert.equal(returned.after.nom,"CORRIGE");
+  assert.throws(()=>planLeaderChange({...pack,leaders:[waived.after]},{...input,patch:{...input.patch,birthDate:""}}));
   console.log("NAP team leader: no licence, same club, closed/changed/ambiguous dossier refusal, backup, atomic deadline and retry verified");
 })().catch(error=>{console.error(error);process.exitCode=1;});

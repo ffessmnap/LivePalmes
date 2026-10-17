@@ -64,7 +64,7 @@ async function saveNativeRelayComposition(pool,input,services) {
       if(target.competitionHash!==competitionHash(competition)) throw new TypeError("Les regles de la competition ont change.");
     } else if(fingerprint(pack)!==input.expectedFingerprint) throw new TypeError("Le dossier NAP a change. Rechargez avant d'enregistrer.");
     if(competition.event.entryStatus!=="open" || !Number.isFinite(Date.parse(competition.event.entryDeadlineAt)) || Date.now()>=Date.parse(competition.event.entryDeadlineAt)) throw new TypeError("Les engagements sont fermes.");
-    if(pack.leaders.length!==1 || !String(pack.leaders[0].nom||"").trim() || !String(pack.leaders[0].prenom||"").trim()) throw new TypeError("Chef d'equipe natif a verifier.");
+    if(!require("./nap-team-leader-state").declarationComplete(pack.leaders)) throw new TypeError("Chef d'equipe natif a verifier.");
     const authority={competitions:competition.nativeSnapshot.competition,compet_parametres:competition.nativeSnapshot.parameters,options:competition.options,nativeLeader:pack.leaders[0]};
     if(!target) {
       const resolved=await services.resolve({connection:checked,competition,pack,change:input.change});
