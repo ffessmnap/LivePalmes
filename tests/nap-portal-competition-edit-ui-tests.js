@@ -5,7 +5,7 @@ const fields={name:{value:"Ancien nom"},date:{value:"2026-10-11"},endDate:{value
 let fee={enabled:false,swimmerFee:0,individualEventFee:0,relayFee:0,helloAssoUrl:""},approved=true,program=[];
 const calls=[];
 const sandbox={nativeCompetitionEditBaseline:null,selectedEngagementCompetition:{id:"legacy-nap-5140",napFingerprint:"abc",napSource:true},elements:{engagementsSaveButton:{disabled:false},engagementsDetailStatus:{dataset:{}}},
-  editCompetitionFields:()=>fields,selectedEngagementFeesFromForm:()=>({...fee}),selectedEngagementProgramSessionsFromForm:()=>structuredClone(program),global:{confirm:()=>approved},
+  editCompetitionFields:()=>fields,selectedEngagementEventsFromForm:()=>[],selectedEngagementFeesFromForm:()=>({...fee}),selectedEngagementProgramSessionsFromForm:()=>structuredClone(program),global:{confirm:()=>approved},
   callFunction:async(name,input)=>{calls.push({name,input});return {competition:{id:input.competitionId,napSource:true}};},invalidateEngagementCalendarCaches:()=>{},loadEngagementCompetitions:async()=>{},upsertEngagementCalendarItemFromServer:()=>{},renderEngagementCompetitionDetail:()=>{},clearEngagementDetailTabDirty:()=>{},setEngagementEditMode:()=>{}};
 vm.createContext(sandbox);
 const start=source.indexOf("  function nativeCompetitionFormValues("),end=source.indexOf("\n  function ",source.indexOf("  async function saveNativeCompetitionDetail(",start)+10);
@@ -56,5 +56,22 @@ assert.equal(genderSandbox.engagementProgramGenderModesForEvent("50BI").length,3
   assert.equal(sandbox.selectedEngagementCompetition.napFingerprint,'after-review','Cancellation must not claim a new competition was saved');
   assert.equal(sandbox.elements.engagementsSaveButton.disabled,false);
   assert.ok(!source.slice(start,end).includes("updateCompetitionWithQualifications"));
+  // A native addition uses the returned fingerprint for settings; a failure
+  // does not pretend that the already-added native courses were rolled back.
+  sandbox.elements.engagementsEventsForm={};
+  sandbox.selectedEngagementEventsFromForm=()=>[];
+  sandbox.nativeCompetitionEditBaseline=sandbox.nativeCompetitionFormValues();
+  sandbox.selectedEngagementEventsFromForm=()=>[{code:'50SF',type:'individual',categoryRestrictions:[]}];
+  sandbox.selectedEngagementCompetition={id:'legacy-nap-5220',napSource:true,napFingerprint:'before',events:[]};
+  const adding=[];
+  sandbox.callFunction=async(name,input)=>{adding.push(input);if(adding.length===1)return {competition:{id:'legacy-nap-5220',napSource:true,napFingerprint:'added',events:[{code:'50SF'}]}};throw Error('Settings unavailable');};
+  assert.equal(await sandbox.saveNativeCompetitionDetail(),false);
+  assert.deepEqual(JSON.parse(JSON.stringify(adding[0].patch)),{addNativeCourses:[{code:'50SF',relayMixedMode:''}]});
+  assert.equal(adding[1].expectedFingerprint,'added');
+  assert.match(sandbox.elements.engagementsDetailStatus.textContent,/courses ont été ajoutées/);
+  const retry=[];
+  sandbox.callFunction=async(name,input)=>{retry.push(input);return {competition:{id:'legacy-nap-5220',napSource:true,napFingerprint:'saved',events:[{code:'50SF'}]}};};
+  assert.equal(await sandbox.saveNativeCompetitionDetail(),true);
+  assert.equal(retry.length,1);assert.equal(retry[0].patch.addNativeCourses,undefined);
   console.log("Formulaire NAP : champs touches seuls, delai exact, fermeture confirmee et aucun ancien controle destructif verifies.");
 })().catch(error=>{console.error(error);process.exitCode=1;});

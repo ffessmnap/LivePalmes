@@ -147,6 +147,7 @@ function runUnitTests() {
     "nap-course-options-change-tests.js",
     "nap-approved-qualification-schema-tests.js",
     "nap-course-removal-tests.js",
+    "nap-course-addition-tests.js",
     "nap-team-leader-change-tests.js",
     "nap-team-leader-create-tests.js",
     "nap-team-leader-remove-tests.js",
