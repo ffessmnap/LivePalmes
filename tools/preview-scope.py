@@ -19,6 +19,19 @@ C0_PREFLIGHT_PATHS = {
 }
 
 
+HOME_PREFLIGHT_PATHS = {
+    '.github/releases/20261019-public-home-corrections.json',
+    '.github/workflows/livepalmes-production-preflight.yml',
+    '.github/workflows/livepalmes-production-release.yml',
+    'tests/release-excluded-backend-compatibility-tests.js',
+    'tests/release-home-retained-compatibility.js',
+    'tests/release-home-compatibility-tests.js',
+    'tests/preview-scope-tests.py',
+    'tools/preview-scope.py',
+    'tools/verify-livepalmes.js',
+}
+
+
 def needs_preview(paths):
     def documentary(path):
         p = PurePosixPath(path)
@@ -28,6 +41,9 @@ def needs_preview(paths):
         )
     if '.github/releases/20261013-c0-document-compatibility.json' in paths and all(
             documentary(p) or p in C0_PREFLIGHT_PATHS for p in paths):
+        return False
+    if '.github/releases/20261019-public-home-corrections.json' in paths and all(
+            documentary(p) or p in HOME_PREFLIGHT_PATHS for p in paths):
         return False
     return any(not documentary(p) for p in paths)
 

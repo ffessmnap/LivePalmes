@@ -27,3 +27,11 @@ for application in ['index.html', 'functions/index.js', 'functions/nap-competiti
     assert scope.needs_preview(c0 + [application]) is True
 assert scope.needs_preview(['tools/preview-scope.py']) is True
 print('C0 exact infrastructure scope skips preview; mixed, unknown and unanchored changes retain it')
+
+# The 19 October proof-only PR is authorized without any TEST deployment.
+home = sorted(scope.HOME_PREFLIGHT_PATHS) + ['docs/releases/EVOLUTIONS.md']
+assert scope.needs_preview(home) is False
+for extra in ['index.html', 'firebase.json', 'functions/index.js', 'tools/other-script.js', 'unknown-file']:
+    assert scope.needs_preview(home + [extra]) is True
+assert scope.needs_preview(['tests/release-home-retained-compatibility.js']) is True
+print('Home proof-only scope skips preview; mixed application/configuration/unknown scope retains it')
