@@ -19365,3 +19365,22 @@ html[data-portal-theme="dark"] #adminDtnGrid:has(.admin-dtn-summary-list) :is(.a
 #adminEngagementsDetailTeamPanel .admin-engagements-club-official-row > span {
   min-width: 0;
 }
+
+#adminEngagementsDetail #adminEngagementsDetailTeamPanel #adminEngagementsClubTeamPersonFields[data-picker="table"] {
+  grid-template-columns: minmax(0, 1fr);
+  width: 100%;
+  max-width: none;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+#adminEngagementsDetail #adminEngagementsDetailTeamPanel #adminEngagementsClubTeamPersonFields[data-picker="table"] #adminEngagementsClubTeamPersonResults {
+  display: block;
+  max-height: none;
+  overflow: visible;
+  border: 0;
+  background: transparent;
+}
+#adminEngagementsDetail #adminEngagementsDetailTeamPanel #adminEngagementsClubTeamPersonFields[data-picker="table"] .admin-engagements-club-official-row strong {
+  font-size: 0.79rem;
+}

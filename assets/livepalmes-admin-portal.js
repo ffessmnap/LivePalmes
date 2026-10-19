@@ -8635,7 +8635,7 @@
       const known = engagementClubPeople.find(person => person.id === elements.engagementsClubTeamPersonSelect?.value);
       const manual = declaring && (elements.engagementsClubTeamPersonFields?.dataset.manualEntry === "true" || Boolean(known && !known.birthDate));
       setEngagementClubFormControlsLocked(elements.engagementsClubTeamForm, locked);
-      if (elements.engagementsClubTeamPersonFields) elements.engagementsClubTeamPersonFields.hidden = false;
+      if (elements.engagementsClubTeamPersonFields) { elements.engagementsClubTeamPersonFields.hidden = false; elements.engagementsClubTeamPersonFields.dataset.picker = "table"; }
       setEngagementClubTeamManualFieldsVisible(manual);
       for (const field of [elements.engagementsClubTeamFirstName, elements.engagementsClubTeamLastName, elements.engagementsClubTeamBirthDate]) {
         if (field) {
