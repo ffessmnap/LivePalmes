@@ -7,7 +7,7 @@
 - Accord explicite d’Antoine : afficher uniquement la date du dernier calcul réussi ; les modifications générales de NAP ne doivent ni masquer les résultats ni inviter au recalcul. Les minima/règles restent liés à la configuration ayant produit les résultats.
 - Réutilisation des trois vues JSON déjà conservées dans `livepalmes_dtn_resultats`, sans fichier statique ni nouveau schéma. La lecture compare la configuration à l’empreinte du calcul conservé, sans relire l’empreinte des tables sources. Recalcul et activation restent explicites et gardent leurs contrôles de concurrence et de source. Aucun recalcul réel ni donnée métier modifiée pendant la préparation.
 - Budget normal : trois SELECT bornés (catalogue, jusqu’à trois configurations, jusqu’à trois vues) ; un SELECT supplémentaire seulement en l’absence de résultat compatible pour lire l’état du travail. Zéro lecture des performances ou métadonnées sources à l’ouverture. Recalcul : budget sportif existant inchangé (jusqu’à 402 requêtes de performances), publication atomique des trois vues.
-- Tests ciblés en cours et publication TEST à suivre ; aucune validation utilisateur de la réalisation acquise. PROD exclue.
+- Tests ciblés hors ligne réussis. État, commit, recette et preuve de publication TEST : [bilan de la PR #362](https://github.com/ffessmnap/LivePalmes/pull/362). Aucune validation utilisateur de la réalisation acquise. PROD exclue.
 
 ### 19 octobre — Choix du chef d’équipe harmonisé avec les participants
 
