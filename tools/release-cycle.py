@@ -361,7 +361,25 @@ def server_home_routing_only(before, after):
               for source in ('/', '/index.html')]
     hosting['rewrites'] = routes + hosting.get('rewrites', [])
     hosting['ignore'] = ['index.html'] + hosting.get('ignore', [])
-    require(after == expected, 'Seul le routage exact accueil serveur est autorise sur TEST')
+    require(after == expected, 'Seul le routage exact accueil serveur est autorise')
+
+
+def approved_production_home_routing(value, paths):
+    """Preparation approved 19 October; no general configuration exception."""
+    approval = value.get('productionHomeRouting')
+    if approval is None:
+        return set()
+    require(isinstance(approval, dict) and set(approval) == {'approval'}
+            and isinstance(approval['approval'], str) and bool(approval['approval'].strip()),
+            'Accord borne accueil PROD requis')
+    require(value['productionCommit'] == 'ac78b50759ca209cddaa15d374eb5e01dd926268'
+            and value['candidate'] == '25ac21b69c8fd09c44399f1f65b3bd4e6a0e58bd',
+            'Paire accueil PROD non revue')
+    require('firebase.json' in paths and 'readNapPublicSwimmer' in approved_public_nap_functions(value),
+            'Accueil PROD : configuration et lecteur public requis')
+    server_home_routing_only(json.loads(git('show', value['productionCommit'] + ':firebase.json')),
+                             json.loads(git('show', value['candidate'] + ':firebase.json')))
+    return {'firebase.json'}
 
 
 def classify_test(paths, approved_top_files=False, approved_records_cleanup=False, approved_public_export_cleanup=False, approved_home_routing=False):
@@ -410,7 +428,10 @@ def validate_request(value, paths):
         # release acquires a general configuration/generated-data exception.
         ignored |= approved_records_cleanup_paths(paths, value['candidate'])
         ignored |= approved_public_export_cleanup_paths(paths, value['candidate'])
-    application, backend = classify([p for p in paths if p not in ignored])
+    home_routing = approved_production_home_routing(value, paths)
+    application, backend = classify([p for p in paths if p not in ignored | home_routing])
+    # The exact configuration still needs an explicitly validated change row.
+    application += sorted(home_routing)
     extra = approved_extra_functions(value)
     backend = backend or bool(approved_public_nap_functions(value))
     require(not extra or backend, 'Extension PDF sans changement backend')
