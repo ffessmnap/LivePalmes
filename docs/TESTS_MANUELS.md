@@ -4,6 +4,9 @@
 
 ## Ajout de courses piscine NAP — 19 octobre
 
+- Complément valeurs natives : tester NOT NULL sans défaut pour `cost` et `limitnageur`, Open défaut 0 ; initialisation explicite et refus d’un type/default inattendu. Exécuter `tests/nap-course-addition-mysql-tests.js` uniquement sur le clone local MySQL 5.7.30 (127.0.0.1:33317, base `lp_documents_courses_<nombre>`) avec les schémas NAP et des données synthétiques. Vérifier l’ajout réel, les réglages et le programme relus, la reprise sans doublon et les protocoles LOCK/UNLOCK compatibles. Le script refuse une base non isolée.
+- F/H ensemble individuel : deux lignes natives F/M conservées, programme détaillé groupé relu ; relais mixte : référence sexe 0 conservée. Ne pas confondre ce regroupement de présentation avec une nouvelle course native mixte. Ne pas recharger le brouillon Chrome de l’utilisateur pour tester un correctif serveur ; aucun besoin de l’annuler ou l’enregistrer pour la recette isolée.
+
 - Sur TEST, ouvrir Paris 5220 / 07-11-2026 en lecture seule, noter le programme, passer en modification et cocher/décocher une nouvelle course sans enregistrer. Annuler et recharger : aucune épreuve ne doit avoir été ajoutée. Ne pas utiliser cette compétition partagée pour une recette d’écriture.
 - Vérifier ordinateur/mobile, sélection, catégories et programme détaillé. Courses natives existantes conservées et retrait par action dédiée. Tester les écritures uniquement sur fixtures hors ligne : correspondances F/H/mixte, cas ambigus/inactifs/finales, grille de qualification, autorisation et empreinte périmées, insertion partielle MyISAM et reprise sans doublon, conservation de toutes les anciennes lignes.
 - Contrôler la séquence ajout puis réglages : nouvelle empreinte pour le second appel, échec de ce dernier explicitant que les courses ont été ajoutées, reprise possible sans doublon. Aucun import, calcul, mail ou modification PROD.
