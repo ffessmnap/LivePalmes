@@ -1,0 +1,125 @@
+{
+  "schema": 1,
+  "candidate": "6fc6417b718970fa96d6d027f017ba9e4f8fb932",
+  "productionCommit": "25ac21b69c8fd09c44399f1f65b3bd4e6a0e58bd",
+  "productionHosting": "sites/livepalmes/versions/6926b807a0db7d37",
+  "testRun": 39258999156,
+  "changes": [
+    {
+      "title": "Sélection et ajout groupé des nouvelles courses piscine dans le portail NAP",
+      "paths": [
+        "assets/livepalmes-admin-portal.js",
+        "functions/index.js",
+        "functions/nap-course-addition.js",
+        "portail.html"
+      ],
+      "status": "validated",
+      "validation": "Antoine, 19 octobre 2026, PR #368 : « Ok, je valide le correctif sur TEST. Transmets-le à Infra pour préparer sa publication en PROD, sans modifier les données de la compétition de Paris. » Candidat TEST 6fc6417b, publication commune 39258999156, Hosting 507fa7b2d25ee07b. Recette Paris 5220 ordinateur/mobile : sélection locale puis Annuler, aucun Enregistrer ni appel métier de sauvegarde. Écritures/interruption/reprise uniquement avec fixtures hors ligne. Préparation seule, aucun accord PROD."
+    }
+  ],
+  "excludedBackendReview": "La comparaison automatique des empreintes 25ac21b6/6fc6417b ne modifie que updateEngagementCompetition. Douze divergences installées héritées restent identiques au plan accueil ; aucune nouvelle divergence des consommateurs conservés. Aucun lecteur public supplémentaire, mail/scheduler, droit ou configuration ajouté au périmètre.",
+  "excludedBackendEvidence": {
+    "schema": 1,
+    "candidate": "6fc6417b718970fa96d6d027f017ba9e4f8fb932",
+    "productionRun": 39234216859,
+    "suite": "retained-calendar-consumers-v1",
+    "functions": [
+      {
+        "name": "closeDueEngagementCompetitions",
+        "commit": "1df545a62de67a24ff32ca4d1046cce4be6d499f",
+        "revision": "closedueengagementcompetitions-00025-wep",
+        "before": "670923738299396f564eaf738815a12e67c6c49db2ffb35025b29b0f361216fb",
+        "after": "ca1a473fce58084320326ae72f95c6ffefbbfb3def782a893c0fe765041a6648",
+        "reason": "Divergence installée antérieure à ce correctif, déjà revue pour le plan 39230869187 et conservée lors de la publication 39234216859. Empreinte identique entre 25ac21b6 et 6fc6417b ; aucune nouvelle divergence, aucun changement du paquet distant."
+      },
+      {
+        "name": "disableCompetitionEmailNotifications",
+        "commit": "1df545a62de67a24ff32ca4d1046cce4be6d499f",
+        "revision": "disablecompetitionemailnotifications-00004-kuf",
+        "before": "ee4c904af510b50da7bfdb99cde5dd2833d7fd75adabb03279029e067171e466",
+        "after": "b5a9f626f04f5b1d42c4090e42bfc26e238eebfb410607296a2aedd49a253814",
+        "reason": "Divergence installée antérieure à ce correctif, déjà revue pour le plan 39230869187 et conservée lors de la publication 39234216859. Empreinte identique entre 25ac21b6 et 6fc6417b ; aucune nouvelle divergence, aucun changement du paquet distant."
+      },
+      {
+        "name": "listEngagementCompetitionMailJobs",
+        "commit": "1df545a62de67a24ff32ca4d1046cce4be6d499f",
+        "revision": "listengagementcompetitionmailjobs-00024-ham",
+        "before": "b85e7756458966696c1527d55d2deeca8228ef09dd5d6ccedfc54e7b2c0a65b4",
+        "after": "1cd8f9506c32338a7d0e29814d711ac63db2981d0932d1c3410bd2e158c6cf01",
+        "reason": "Divergence installée antérieure à ce correctif, déjà revue pour le plan 39230869187 et conservée lors de la publication 39234216859. Empreinte identique entre 25ac21b6 et 6fc6417b ; aucune nouvelle divergence, aucun changement du paquet distant."
+      },
+      {
+        "name": "notifyEngagementCompetitionDocuments",
+        "commit": "1df545a62de67a24ff32ca4d1046cce4be6d499f",
+        "revision": "notifyengagementcompetitiondocuments-00006-bav",
+        "before": "4fcdd38315e6ca4d86377e65f76ef82a486ad07e9f661df373aa6741e9f9b7a8",
+        "after": "f229074faa201b7c5f85693e1ea24fa5b8c6ac35ed3fc7d2f964c2422807832f",
+        "reason": "Divergence installée antérieure à ce correctif, déjà revue pour le plan 39230869187 et conservée lors de la publication 39234216859. Empreinte identique entre 25ac21b6 et 6fc6417b ; aucune nouvelle divergence, aucun changement du paquet distant."
+      },
+      {
+        "name": "prepareEngagementClubRecapEmails",
+        "commit": "1df545a62de67a24ff32ca4d1046cce4be6d499f",
+        "revision": "prepareengagementclubrecapemails-00031-wal",
+        "before": "d325d62bf1ff5df996d454f4396a68380ecb08aa044301bd86f4ce5080bac4f0",
+        "after": "0af415025f14e58ac2c0b48c395efdb32a0b6e95ce17b775a38279f79c8d915a",
+        "reason": "Divergence installée antérieure à ce correctif, déjà revue pour le plan 39230869187 et conservée lors de la publication 39234216859. Empreinte identique entre 25ac21b6 et 6fc6417b ; aucune nouvelle divergence, aucun changement du paquet distant."
+      },
+      {
+        "name": "prepareEngagementOpeningNotificationEmails",
+        "commit": "1df545a62de67a24ff32ca4d1046cce4be6d499f",
+        "revision": "prepareengagementopeningnotificationemails-00028-xit",
+        "before": "4cbd4ce0a57fdca9e4270c99a2456bec116344b7d533a17d7062004d62b54338",
+        "after": "99af3e28d2f0b2f94be8f09905363d326486c85c9d1844e99f3abb32a792e851",
+        "reason": "Divergence installée antérieure à ce correctif, déjà revue pour le plan 39230869187 et conservée lors de la publication 39234216859. Empreinte identique entre 25ac21b6 et 6fc6417b ; aucune nouvelle divergence, aucun changement du paquet distant."
+      },
+      {
+        "name": "processNapCompetitionNotifications",
+        "commit": "1df545a62de67a24ff32ca4d1046cce4be6d499f",
+        "revision": "processnapcompetitionnotifications-00001-fej",
+        "before": "b73da704c8b5b3710d8f9dc2016f8a60e1a043559470c2ed0acecfb32a5dab53",
+        "after": "c99a608f4762bd84747e68aed4b918f2b837a22342993e6995ce7d17aa0462d1",
+        "reason": "Divergence installée antérieure à ce correctif, déjà revue pour le plan 39230869187 et conservée lors de la publication 39234216859. Empreinte identique entre 25ac21b6 et 6fc6417b ; aucune nouvelle divergence, aucun changement du paquet distant."
+      },
+      {
+        "name": "resolveEngagementAccessRequest",
+        "commit": "812bad64681a232e6cc3868ba7ec112bcdac7ca2",
+        "revision": "resolveengagementaccessrequest-00040-jev",
+        "before": "6d9fbfa653896f44534bdb644a3f0691c956e96ada2ad0b7acc9555183680c30",
+        "after": "2b395be019e680d1f1c4ca2e78376792d884e680b16c45bda04e57ddfe16e8c9",
+        "reason": "Divergence installée antérieure à ce correctif, déjà revue pour le plan 39230869187 et conservée lors de la publication 39234216859. Empreinte identique entre 25ac21b6 et 6fc6417b ; aucune nouvelle divergence, aucun changement du paquet distant."
+      },
+      {
+        "name": "resolveEngagementSwimmerChangeRequest",
+        "commit": "1df545a62de67a24ff32ca4d1046cce4be6d499f",
+        "revision": "resolveengagementswimmerchangerequest-00020-mov",
+        "before": "07b8b74b334996d71ca572c7f6b1b3c2830c64859d3e84d6367058b42d25db2e",
+        "after": "b7679a41a2b1a9151acd48ef5c91bd85b902cbc8b65dbf3e7898505eca95209e",
+        "reason": "Divergence installée antérieure à ce correctif, déjà revue pour le plan 39230869187 et conservée lors de la publication 39234216859. Empreinte identique entre 25ac21b6 et 6fc6417b ; aucune nouvelle divergence, aucun changement du paquet distant."
+      },
+      {
+        "name": "sendEngagementPreparedEmails",
+        "commit": "1df545a62de67a24ff32ca4d1046cce4be6d499f",
+        "revision": "sendengagementpreparedemails-00026-zel",
+        "before": "82481aa10aa7c7cfafcf63f7f1ba470b2366b41d1135371bdf0ace65a2ad01d5",
+        "after": "4e2a021a9e9803673e4e61f83d525f493ff95c8f8ea0c35ab9a993453d305966",
+        "reason": "Divergence installée antérieure à ce correctif, déjà revue pour le plan 39230869187 et conservée lors de la publication 39234216859. Empreinte identique entre 25ac21b6 et 6fc6417b ; aucune nouvelle divergence, aucun changement du paquet distant."
+      },
+      {
+        "name": "submitEngagementAccessRequest",
+        "commit": "812bad64681a232e6cc3868ba7ec112bcdac7ca2",
+        "revision": "submitengagementaccessrequest-00039-rib",
+        "before": "be16dc361cdb44b67868b8bf06e9149e7b42ecc1ffef72407ba010c9295324ec",
+        "after": "56168c0ef32617bfb06139908ec1bafa7ed0e340f3de32b3b1aee97682ebe21a",
+        "reason": "Divergence installée antérieure à ce correctif, déjà revue pour le plan 39230869187 et conservée lors de la publication 39234216859. Empreinte identique entre 25ac21b6 et 6fc6417b ; aucune nouvelle divergence, aucun changement du paquet distant."
+      },
+      {
+        "name": "updateCurrentEmailNotificationPreferences",
+        "commit": "1df545a62de67a24ff32ca4d1046cce4be6d499f",
+        "revision": "updatecurrentemailnotificationpreferences-00004-gev",
+        "before": "fae1fd731a5a970cee0616314f1461c1e042284edbd8048b042300c96834c7ba",
+        "after": "3c511e792f7292a2d29d506e002e2f5efadb5b42a3c381792210522de9102e61",
+        "reason": "Divergence installée antérieure à ce correctif, déjà revue pour le plan 39230869187 et conservée lors de la publication 39234216859. Empreinte identique entre 25ac21b6 et 6fc6417b ; aucune nouvelle divergence, aucun changement du paquet distant."
+      }
+    ]
+  }
+}
