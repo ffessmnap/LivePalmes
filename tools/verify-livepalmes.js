@@ -89,6 +89,7 @@ function runUnitTests() {
     "production-notification-preparation-tests.js",
     "release-excluded-backend-compatibility-tests.js",
     "release-c0-compatibility-tests.js",
+    "release-home-compatibility-tests.js",
     "test-notification-refresh-tests.js",
     "test-access-request-refresh-tests.js",
     "nap-mail-delivery-tests.js",
