@@ -6,7 +6,7 @@ const {SPECS}=require("../functions/nap-portal-competition-change");
 const {planAdditions,missingAdditions,addNativeCourses,COLUMNS}=require("../functions/nap-course-addition");
 const definitions=new Map([["50SF",{code:"50SF",type:"individual"}],["4X100SB",{code:"4X100SB",type:"relay",relayMixedRule:"required"}]]);
 const catalog=[...['M','F'].map((sexe,i)=>({id:i+1,course:'50SF',sexe,final:0,relais:0,categorie:0,ld:0,mixte:0,actif:1})),{id:285,course:'4X100SB Mixte',sexe:'0',final:0,relais:1,categorie:0,ld:0,mixte:1,actif:1}];
-const defaults=['opencourse','cost','limitnageur'].map(COLUMN_NAME=>({COLUMN_NAME,COLUMN_DEFAULT:'0',IS_NULLABLE:'YES',EXTRA:''}));
+const defaults=['opencourse','cost','limitnageur'].map(COLUMN_NAME=>({COLUMN_NAME,COLUMN_TYPE:COLUMN_NAME==='cost'?'decimal(10,0)':'int(11)',COLUMN_DEFAULT:COLUMN_NAME==='opencourse'?'0':null,IS_NULLABLE:'NO',EXTRA:''}));
 const pack={event:{id:'legacy-nap-5220',eventType:'pool'},nativeSnapshot:{competition:{...Object.fromEntries(SPECS.competitions.columns.map(key=>[key,null])),id:5220},parameters:{...Object.fromEntries(SPECS.compet_parametres.columns.map(key=>[key,null])),id:99,compet:5220}},nativeParameters:{qualif:0},groups:[],courses:[]};
 const selected=[{code:'50SF'},{code:'4X100SB'}];
 const proposed=planAdditions(pack,selected,catalog,defaults,definitions);
@@ -16,7 +16,12 @@ assert.throws(()=>planAdditions(pack,[{code:'unknown'}],catalog,defaults,definit
 assert.throws(()=>planAdditions(pack,[selected[0],selected[0]],catalog,defaults,definitions),/invalide/);
 assert.throws(()=>planAdditions(pack,selected,[...catalog,catalog[0]],defaults,definitions),/ambigue/);
 assert.throws(()=>planAdditions({...pack,groups:[{}]},selected,catalog,defaults,definitions),/qualification/);
-assert.throws(()=>planAdditions(pack,selected,catalog,[],definitions),/defaut/);
+assert.throws(()=>planAdditions(pack,selected,catalog,[],definitions),/Structure native/);
+for(const change of [{COLUMN_TYPE:'varchar(10)'},{IS_NULLABLE:'YES'},{COLUMN_DEFAULT:'5'},{EXTRA:'DEFAULT_GENERATED'}]){
+  const drift=defaults.map(row=>row.COLUMN_NAME==='cost'?{...row,...change}:row);
+  assert.throws(()=>planAdditions(pack,selected,catalog,drift,definitions),/Structure native/);
+}
+assert.equal(proposed[0].cost,'0');assert.equal(proposed[0].limitnageur,0);assert.equal(proposed[0].opencourse,0);
 const old={id:88,compet:5220,pos:7,id_course:999,opencourse:1,cost:'2.50',limitnageur:3};
 const retained=planAdditions({...pack,courses:[old]},selected,catalog,defaults,definitions);
 assert.equal(retained[0].pos,8);assert.equal(old.id_course,999);
@@ -33,8 +38,6 @@ function fixture(options={}){
     if(sql.includes('information_schema.COLUMNS'))return [structuredClone(defaults)];
     if(sql.includes('information_schema.TRIGGERS'))return [state.trigger?[{}]:[]];
     if(sql.startsWith('EXPLAIN'))return [[{table:'compet_courses',key:'compet',type:'ref'}]];
-    if(sql.startsWith('LOCK TABLES')){state.locked=true;return [{}];}
-    if(sql.startsWith('UNLOCK TABLES')){state.locked=false;return [{}];}
     if(sql.startsWith('SELECT 1 AS authorized'))return [state.denied?[]:[{authorized:1}]];
     if(sql.startsWith('SELECT id,compet'))return [structuredClone(state.rows)];
     if(sql.startsWith('INSERT INTO')){
@@ -44,6 +47,10 @@ function fixture(options={}){
     }
     throw Error('Unexpected query '+sql);
   }};
+  connection.query=async({sql})=>{
+    assert.match(sql,/^(LOCK TABLES|UNLOCK TABLES)/);state.sql.push(sql);
+    state.locked=sql.startsWith('LOCK TABLES');return [{}];
+  };
   state.pool={getConnection:async()=>connection};
   state.audit={read:async()=>state.saved,prepare:async(_op,row)=>{state.saved=structuredClone(row);},complete:async()=>state.completed++};
   native.readNativeCompetition=async(_c,_id,authorize)=>{await authorize(pack);return {...pack,courses:state.rows};};
