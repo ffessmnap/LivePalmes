@@ -9729,6 +9729,7 @@
       : ENGAGEMENT_PROGRAM_GENDER_MODES.map(([mode]) => [mode, engagementProgramGenderModeDisplayLabel(mode, eventCode, eventOption)]);
     if (!selectedEngagementCompetition?.napSource) return modes;
     const nativeEvent = selectedEngagementCompetition.events?.find(event => event.code === eventCode);
+    if (!nativeEvent && definition && engagementDetailEditing && engagementCompetitionType(selectedEngagementCompetition) === "pool") return modes;
     if (!Array.isArray(nativeEvent?.nativeCourses)) return [];
     const available = new Set(nativeEvent.nativeCourses.map(course => String(course.sexe).trim()));
     return modes.filter(([mode]) => mode === "mixed"
