@@ -2,6 +2,12 @@
 
 <!-- description: Checklist de tests manuels à exécuter avant une publication ou après une modification sensible. -->
 
+## Ajout de courses piscine NAP — 19 octobre
+
+- Sur TEST, ouvrir Paris 5220 / 07-11-2026 en lecture seule, noter le programme, passer en modification et cocher/décocher une nouvelle course sans enregistrer. Annuler et recharger : aucune épreuve ne doit avoir été ajoutée. Ne pas utiliser cette compétition partagée pour une recette d’écriture.
+- Vérifier ordinateur/mobile, sélection, catégories et programme détaillé. Courses natives existantes conservées et retrait par action dédiée. Tester les écritures uniquement sur fixtures hors ligne : correspondances F/H/mixte, cas ambigus/inactifs/finales, grille de qualification, autorisation et empreinte périmées, insertion partielle MyISAM et reprise sans doublon, conservation de toutes les anciennes lignes.
+- Contrôler la séquence ajout puis réglages : nouvelle empreinte pour le second appel, échec de ce dernier explicitant que les courses ont été ajoutées, reprise possible sans doublon. Aucun import, calcul, mail ou modification PROD.
+
 ## Cadre public Compacte — 14 octobre
 
 - Accueil serveur : contrôler / et /index.html sans cookie, HTML initial avec rendez-vous/documents, data-home-prepared et X-LivePalmes-Home-Source=nap-server-html ; aucune mention Chargement des rendez-vous/documents ni nouvelle lecture de ces blocs dans le navigateur. Tester HTTP HEAD/GET et alias public, CSS/scripts accessibles, liens/filtres, PC 1280/mobile 390/320, dépliage/repli. Tests hors ligne : cache cinq minutes/concurrence/jour de Paris, panne partielle/totale et reprise, aucune réutilisation documentaire périmée, contenus/URLs malveillants échappés. Aucun job, écriture réelle ou connexion privée nécessaire à cette recette.
