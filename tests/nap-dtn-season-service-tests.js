@@ -25,7 +25,7 @@ function fixture() {
   const service=createNativeDtnSeasonService({getPool:()=>{s.poolCalls++;return pool;},authorize:async()=>{if(s.denied) throw new Error("Denied");},canManage:()=>s.manager,fail:(message,code)=>{throw Object.assign(new Error(message),{code});},stamp:async(metadataPool)=>{s.metadataPools.push(metadataPool===pool?"shared":"held");return {fingerprint:s.version};},calculate:async(_pool,season)=>{
     s.calculations++;if(s.sourceChange) s.version="changed";if(s.configChange) s.seasons.get(season.id).revision++;
     const normalized=engine.validateSeason(season);
-    return {generatedAt:"2026-10-07T15:00:00.000Z",excludedRows:0,views:Object.fromEntries(engine.DEVICES.map(d=>[d,{source:"nap",revision:normalized.revision,profiles:engine.finish(engine.createAccumulator(normalized,d),normalized,d)}]))};
+    return {generatedAt:s.generatedAt||"2026-10-07T15:00:00.000Z",excludedRows:0,views:Object.fromEntries(engine.DEVICES.map(d=>[d,{source:"nap",revision:normalized.revision,profiles:engine.finish(engine.createAccumulator(normalized,d),normalized,d)}]))};
   }});
   const request=data=>({auth:{uid:"authorized"},data:{id:seed.id,device:"france",...data}});
   return {s,service,request};
@@ -38,6 +38,37 @@ function fixture() {
   assert.equal(f.s.lockKeys[0],"livepalmes_dtn_calc","All seasons share one calculation lock to leave the source-reading pool connection available");assert.deepEqual(f.s.metadataPools.slice(-3),["held","held","held"],"Metadata checks during a calculation reuse its held connection");
   const concurrent=fixture();concurrent.s.busy=true;assert.equal((await concurrent.service.overview(concurrent.request({rebuild:true}))).pending,true);assert.equal(concurrent.s.calculations,0);assert.equal(concurrent.s.jobs.size,0);
   assert.equal((await f.service.overview(f.request({}))).hit,true);assert.equal(f.s.calculations,1);
+  const storedBefore=structuredClone(f.s.views);
+  const checksBefore=f.s.metadataPools.length,queriesBefore=f.s.queries.length;
+  f.s.version="changed-clubs-competitions-swimmers-or-performances";
+  for(const device of engine.DEVICES) {
+    const kept=await f.service.overview(f.request({device}));
+    assert.equal(kept.hit,true);assert.equal(kept.generatedAt,result.generatedAt);
+    assert.deepEqual(kept.profiles,storedBefore.get(`${seed.id}|${device}`).value.profiles);
+  }
+  assert.equal(f.s.calculations,1,"consulting after a source change must not recalculate");
+  assert.equal(f.s.metadataPools.length,checksBefore,"consultation must not read source stamps");
+  assert.equal(f.s.queries.length-queriesBefore,9,"three bounded SELECTs per consultation");
+  assert.deepEqual(f.s.views,storedBefore);
+  f.s.jobs.set(seed.id,{saison:seed.id,statut:"failed",erreur:"Interrupted"});
+  assert.equal((await f.service.overview(f.request({}))).hit,true,"a failed job must not hide the previous result");
+  f.s.seasons.get(seed.id).revision++;
+  const incompatible=await f.service.overview(f.request({}));
+  assert.equal(incompatible.hit,false);assert.deepEqual(incompatible.profiles,[]);
+  assert.equal(f.s.calculations,1,"changed settings require an explicit calculation");
+  f.s.seasons.get(seed.id).revision--;
+  const recovery=fixture();
+  const oldResult=await recovery.service.overview(recovery.request({rebuild:true}));
+  const savedViews=structuredClone(recovery.s.views);
+  recovery.s.generatedAt="2026-10-19T12:00:00.000Z";recovery.s.failDevice="listing";
+  await assert.rejects(()=>recovery.service.overview(recovery.request({rebuild:true})),/Interrupted/);
+  assert.deepEqual(recovery.s.views,savedViews,"a failed replacement must preserve all three previous views");
+  const keptAfterFailure=await recovery.service.overview(recovery.request({}));
+  assert.equal(keptAfterFailure.hit,true);assert.equal(keptAfterFailure.generatedAt,oldResult.generatedAt);
+  recovery.s.failDevice=null;
+  const replaced=await recovery.service.overview(recovery.request({rebuild:true}));
+  assert.equal(replaced.generatedAt,recovery.s.generatedAt);
+  for(const device of engine.DEVICES) assert.equal((await recovery.service.overview(recovery.request({device}))).generatedAt,replaced.generatedAt);
   const source=(await f.service.sources(f.request({})));assert.deepEqual(source.sources,[{id:"1",name:"Native",date:"2026-01-01"}]);assert.equal(source.cursor,"");
   f.s.sourceRows=Array.from({length:51},(_,i)=>({id:i+1,libelle:`Competition ${i+1}`,date:"2026-01-01"}));
   const page=await f.service.sources(f.request({}));assert.equal(page.sources.length,50);assert.deepEqual(JSON.parse(page.cursor),{date:"2026-01-01",id:50});
