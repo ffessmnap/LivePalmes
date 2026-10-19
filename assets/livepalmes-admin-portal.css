@@ -9188,7 +9188,7 @@
 /* Acteurs de la competition integres au langage visuel du portail. */
 #adminEngagementsDetailTeamPanel .admin-engagements-club-choice,
 #adminEngagementsDetailTeamPanel .admin-engagements-club-renunciation,
-#adminEngagementsDetailOfficialsPanel .admin-engagements-club-officials-table,
+:is(#adminEngagementsDetailOfficialsPanel, #adminEngagementsDetailTeamPanel) .admin-engagements-club-officials-table,
 #adminEngagementsDetailSwimmersPanel .admin-engagements-club-new-swimmer,
 #adminEngagementsDetailSwimmersPanel .admin-engagements-club-swimmers-table {
   border-color: #dfe5e7;
@@ -9454,24 +9454,24 @@
   background: #fffae9;
 }
 
-#adminEngagementsDetailOfficialsPanel .admin-engagements-club-officials-list,
+:is(#adminEngagementsDetailOfficialsPanel, #adminEngagementsDetailTeamPanel) .admin-engagements-club-officials-list,
 #adminEngagementsDetailSwimmersPanel .admin-engagements-club-swimmers-list {
   gap: 12px;
   padding-bottom: 3px;
 }
 
-#adminEngagementsDetailOfficialsPanel .admin-engagements-club-officials-section,
+:is(#adminEngagementsDetailOfficialsPanel, #adminEngagementsDetailTeamPanel) .admin-engagements-club-officials-section,
 #adminEngagementsDetailSwimmersPanel .admin-engagements-club-swimmers-section {
   gap: 7px;
 }
 
-#adminEngagementsDetailOfficialsPanel .admin-engagements-club-officials-section h5,
+:is(#adminEngagementsDetailOfficialsPanel, #adminEngagementsDetailTeamPanel) .admin-engagements-club-officials-section h5,
 #adminEngagementsDetailSwimmersPanel .admin-engagements-club-swimmers-section h5 {
   color: #0b7285;
   letter-spacing: 0.03em;
 }
 
-#adminEngagementsDetailOfficialsPanel .admin-engagements-club-officials-head,
+:is(#adminEngagementsDetailOfficialsPanel, #adminEngagementsDetailTeamPanel) .admin-engagements-club-officials-head,
 #adminEngagementsDetailSwimmersPanel .admin-engagements-club-swimmers-head {
   min-height: 34px;
   padding: 7px 10px;
@@ -9480,23 +9480,23 @@
   color: #52636a;
 }
 
-#adminEngagementsDetailOfficialsPanel .admin-engagements-club-officials-head {
+:is(#adminEngagementsDetailOfficialsPanel, #adminEngagementsDetailTeamPanel) .admin-engagements-club-officials-head {
   min-height: 28px;
   padding: 4px 8px;
 }
 
-#adminEngagementsDetailOfficialsPanel .admin-engagements-club-official-row {
+:is(#adminEngagementsDetailOfficialsPanel, #adminEngagementsDetailTeamPanel) .admin-engagements-club-official-row {
   min-height: 25px;
   padding: 0 8px;
   border-color: #e7ecee;
 }
 
-#adminEngagementsDetailOfficialsPanel .admin-engagements-club-official-row:hover,
+:is(#adminEngagementsDetailOfficialsPanel, #adminEngagementsDetailTeamPanel) .admin-engagements-club-official-row:hover,
 #adminEngagementsDetailSwimmersPanel .admin-engagements-club-swimmer-row:hover {
   background: #f8fbfb;
 }
 
-#adminEngagementsDetailOfficialsPanel .admin-engagements-club-official-row[data-selected="true"],
+:is(#adminEngagementsDetailOfficialsPanel, #adminEngagementsDetailTeamPanel) .admin-engagements-club-official-row[data-selected="true"],
 #adminEngagementsDetailSwimmersPanel .admin-engagements-club-swimmer-row[data-selected="true"] {
   background: #f2f9fa;
   box-shadow: inset 3px 0 0 #0b7285;
@@ -9781,12 +9781,12 @@
     grid-template-columns: 1fr;
   }
 
-  #adminEngagementsDetailOfficialsPanel .admin-engagements-club-officials-section {
+  :is(#adminEngagementsDetailOfficialsPanel, #adminEngagementsDetailTeamPanel) .admin-engagements-club-officials-section {
     min-width: 0;
   }
 
-  #adminEngagementsDetailOfficialsPanel .admin-engagements-club-officials-head,
-  #adminEngagementsDetailOfficialsPanel .admin-engagements-club-official-row {
+  :is(#adminEngagementsDetailOfficialsPanel, #adminEngagementsDetailTeamPanel) .admin-engagements-club-officials-head,
+  :is(#adminEngagementsDetailOfficialsPanel, #adminEngagementsDetailTeamPanel) .admin-engagements-club-official-row {
     grid-template-columns: minmax(0, 1fr) 88px 104px;
   }
 
@@ -19345,4 +19345,23 @@ html[data-portal-theme="dark"] #adminDtnGrid:has(.admin-dtn-summary-list) :is(.a
 @media (max-width: 760px), (pointer: coarse) {
   #adminDtnView .admin-dtn-athlete-search input { min-height: 40px; }
   #adminDtnGrid[data-dtn-results] .admin-dtn-grid-actions { flex-wrap: wrap; }
+}
+
+/* The team leader uses the same compact rows as officials, with one choice. */
+#adminEngagementsDetailTeamPanel #adminEngagementsClubTeamPersonResults {
+  grid-column: 1 / -1;
+  display: block;
+  margin: 0;
+  padding: 0;
+}
+#adminEngagementsDetailTeamPanel .admin-engagements-club-official-row {
+  display: grid !important;
+  cursor: pointer;
+}
+#adminEngagementsDetailTeamPanel .admin-engagements-club-official-row:focus-within {
+  outline: 2px solid #0b7285;
+  outline-offset: -2px;
+}
+#adminEngagementsDetailTeamPanel .admin-engagements-club-official-row > span {
+  min-width: 0;
 }
