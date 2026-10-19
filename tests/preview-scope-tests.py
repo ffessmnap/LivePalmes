@@ -35,3 +35,11 @@ for extra in ['index.html', 'firebase.json', 'functions/index.js', 'tools/other-
     assert scope.needs_preview(home + [extra]) is True
 assert scope.needs_preview(['tests/release-home-retained-compatibility.js']) is True
 print('Home proof-only scope skips preview; mixed application/configuration/unknown scope retains it')
+
+# The course-selection release request is preparation only, never a TEST deployment.
+course = sorted(scope.COURSE_PREFLIGHT_PATHS) + ['docs/releases/EVOLUTIONS.md']
+assert scope.needs_preview(course) is False
+for extra in ['portail.html', 'functions/index.js', 'functions/nap-course-addition.js', 'firebase.json', 'tools/other-script.js', 'unknown-file']:
+    assert scope.needs_preview(course + [extra]) is True
+assert scope.needs_preview(['tools/preview-scope.py', 'tests/preview-scope-tests.py']) is True
+print('Course request-only scope skips preview; mixed and unanchored changes retain it')
