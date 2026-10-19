@@ -10481,7 +10481,7 @@
       return `
         <div class="admin-engagements-event-row" data-engagement-event-item data-selected="${selected ? "true" : "false"}">
           <label class="admin-engagements-event-main">
-            <input type="checkbox" data-engagement-event-code="${escapeHtml(event.code)}" ${selected ? "checked" : ""} ${canEdit && competition.napSource !== true ? "" : "disabled"}>
+            <input type="checkbox" data-engagement-event-code="${escapeHtml(event.code)}" ${selected ? "checked" : ""} ${canEdit && (competition.napSource !== true || engagementCompetitionType(competition) === "pool" && !selected) ? "" : "disabled"} ${competition.napSource === true && selected ? 'title="Course déjà enregistrée ; utilisez Retirer cette course pour la supprimer."' : ""}>
             <span>
               <strong data-engagement-event-label title="${escapeHtml(event.label)}${escapeHtml(mixedRuleLabel)}">${escapeHtml(event.shortLabel)}</strong>
             </span>
@@ -15826,8 +15826,11 @@
 
   async function saveNativeCompetitionDetail(options = {}) {
     const button = elements.engagementsSaveButton;
+    let nativeCoursesAdded = false;
     try {
       const patch = nativeCompetitionPatchFromForm();
+      const existingCodes = new Set((selectedEngagementCompetition.events || []).map(event => event.code));
+      const additions = selectedEngagementEventsFromForm().filter(event => !existingCodes.has(event.code));
       if (!Object.keys(patch).length) {
         if (elements.engagementsDetailStatus) elements.engagementsDetailStatus.textContent = "Aucune modification à enregistrer.";
         return false;
@@ -15838,7 +15841,15 @@
       const notificationOpeningRequested=patch.entryStatus==='open' && (selectedEngagementCompetition.entryStatus!=='closed'||confirmEngagementReopeningMail({...selectedEngagementCompetition,...patch}));
       if (button) button.disabled = true;
       if (elements.engagementsDetailStatus) { elements.engagementsDetailStatus.textContent = "Enregistrement dans NAP..."; elements.engagementsDetailStatus.dataset.tone = "loading"; }
-      let result = await callFunction("updateEngagementCompetition", { competitionId:selectedEngagementCompetition.id, expectedFingerprint:selectedEngagementCompetition.napFingerprint, patch,notificationOpeningRequested });
+      let result;
+      if (additions.length) {
+        result = await callFunction("updateEngagementCompetition", { competitionId:selectedEngagementCompetition.id, expectedFingerprint:selectedEngagementCompetition.napFingerprint, patch:{addNativeCourses:additions.map(event=>({code:event.code,relayMixedMode:event.relayMixedMode||""}))} });
+        selectedEngagementCompetition = result.competition;
+        nativeCoursesAdded = true;
+        // Preserve pending settings; the second save uses the new native fingerprint.
+        if (elements.engagementsDetailStatus) elements.engagementsDetailStatus.textContent = "Courses ajoutées dans NAP ; enregistrement des réglages...";
+      }
+      result = await callFunction("updateEngagementCompetition", { competitionId:selectedEngagementCompetition.id, expectedFingerprint:selectedEngagementCompetition.napFingerprint, patch,notificationOpeningRequested });
       if (result.qualificationJobId) {
         selectedEngagementCompetition.qualificationJobId = result.qualificationJobId;
         renderQualificationJobActions();
@@ -15855,7 +15866,7 @@
       if (elements.engagementsDetailStatus) { elements.engagementsDetailStatus.textContent = "Modifications enregistrées dans NAP."; elements.engagementsDetailStatus.dataset.tone = "ok"; }
       return true;
     } catch (error) {
-      if (elements.engagementsDetailStatus) { elements.engagementsDetailStatus.textContent = `Enregistrement impossible : ${error?.message || error}`; elements.engagementsDetailStatus.dataset.tone = "error"; }
+      if (elements.engagementsDetailStatus) { elements.engagementsDetailStatus.textContent = `${nativeCoursesAdded ? "Les courses ont été ajoutées dans NAP, mais les autres réglages restent à enregistrer. " : ""}Enregistrement impossible : ${error?.message || error}`; elements.engagementsDetailStatus.dataset.tone = "error"; }
       return false;
     } finally { if (button) button.disabled = false; }
   }

@@ -17350,7 +17350,8 @@ exports.updateEngagementCompetition = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONM
         }
         if(!Object.keys(patch).length)return {ok:true,unchanged:true,competition:await nativePortalCompetition(competitionId,event=>assertCanManageEngagementCompetition(context,event))};
       }
-      const applyNativeChange = Object.hasOwn(request.data?.patch || {},"removeNativeCourseId") ? require("./nap-course-removal").removeNativeCourse : nativeChange.applyCompetitionChange;
+      const applyNativeChange = Object.hasOwn(patch,"addNativeCourses") ? require("./nap-course-addition").addNativeCourses
+        : Object.hasOwn(request.data?.patch || {},"removeNativeCourseId") ? require("./nap-course-removal").removeNativeCourse : nativeChange.applyCompetitionChange;
       const result = await require("./nap-qualification-edit-lock").ordinaryEdit(pool,competitionId,()=>applyNativeChange(pool, {
         competitionId, actorUid:context.uid,national:context.national,expectedFingerprint:request.data?.expectedFingerprint,patch,
         eventDefinitions:ENGAGEMENT_EVENT_DEFINITION_BY_CODE,normalizeProgram:cleanEngagementProgramSessions,normalizeEvents:cleanEngagementCompetitionEvents
