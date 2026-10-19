@@ -20,8 +20,14 @@ function planAdditions(pack,raw,catalog,defaults,definitions){
   const fallback={};
   for(const key of ["opencourse","cost","limitnageur"]){
     const row=defaults.find(item=>item.COLUMN_NAME===key);
-    if(!row||row.COLUMN_DEFAULT==null&&row.IS_NULLABLE!=="YES"||row.EXTRA)throw new TypeError("Valeurs natives par defaut a verifier.");
-    fallback[key]=row.COLUMN_DEFAULT;
+    // Native IntraNAP courses use zero cost/limit at creation even though
+    // those two NOT NULL columns have no SQL default. Do not change the schema
+    // or infer the value of an unknown/new column from nullability alone.
+    const expectedType=key==="cost" ? "decimal(10,0)" : "int(11)";
+    if(!row||row.COLUMN_TYPE!==expectedType||row.IS_NULLABLE!=="NO"||row.EXTRA||
+        (row.COLUMN_DEFAULT!=null&&String(row.COLUMN_DEFAULT)!=="0"))throw new TypeError("Structure native des tarifs ou limites a verifier.");
+    if(key==="opencourse"&&String(row.COLUMN_DEFAULT)!=="0")throw new TypeError("Valeur native Open a verifier.");
+    fallback[key]=key==="cost"?"0":0;
   }
   let pos=Math.max(0,...pack.courses.map(row=>Number(row.pos)||0));
   if(!Number.isSafeInteger(pos)||pos>2147483300)throw new TypeError("Ordre natif des courses a verifier.");
@@ -46,14 +52,17 @@ function missingAdditions(current,before,additions){
 async function addNativeCourses(pool,input,audit,authorize){
   if(typeof authorize!=="function"||Object.keys(input.patch||{}).length!==1||!Object.hasOwn(input.patch,"addNativeCourses"))throw new TypeError("Enregistrez les nouvelles courses separement.");
   const id=positiveId(input.competitionId),operation=operationHash(input),connection=await pool.getConnection();let locked=false;
-  const query=async(sql,values=[])=>(await connection.execute({sql,timeout:10000},values))[0];
+  // MySQL 5.7 cannot prepare LOCK/UNLOCK TABLES. Only these fixed internal
+  // statements use query(); all values continue through prepared statements.
+  const query=async(sql,values=[])=>(await (/^(LOCK TABLES|UNLOCK TABLES)/.test(sql)
+    ? connection.query({sql,timeout:10000}) : connection.execute({sql,timeout:10000},values)))[0];
   try{
     const pack=await native.readNativeCompetition(connection,id,authorize);
     if(!pack)throw new TypeError("Competition introuvable.");
     let saved=await audit.read(operation);
     if(!saved&&fingerprint(pack)!==input.expectedFingerprint)throw new TypeError("La competition a change. Rechargez la fiche.");
     const catalog=await query(CATALOG);
-    const defaults=await query("SELECT COLUMN_NAME,COLUMN_DEFAULT,IS_NULLABLE,EXTRA FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='compet_courses' AND COLUMN_NAME IN ('opencourse','cost','limitnageur') ORDER BY COLUMN_NAME LIMIT 4");
+    const defaults=await query("SELECT COLUMN_NAME,COLUMN_TYPE,COLUMN_DEFAULT,IS_NULLABLE,EXTRA FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='compet_courses' AND COLUMN_NAME IN ('opencourse','cost','limitnageur') ORDER BY COLUMN_NAME LIMIT 4");
     if((await query("SELECT TRIGGER_NAME FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA=DATABASE() AND EVENT_OBJECT_TABLE='compet_courses' LIMIT 1")).length)throw new TypeError("Declencheur natif a verifier avant ajout.");
     const authority={competitions:pack.nativeSnapshot.competition,compet_parametres:pack.nativeSnapshot.parameters};
     if(saved){
