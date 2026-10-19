@@ -2,6 +2,12 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 19 octobre — Choix du chef d’équipe harmonisé avec les participants
+
+- Demande d’Antoine : même présentation et sélection que les onglets Officiels et Nageurs. Comparaison réelle sur TEST/Cherbourg : tableaux compacts pour les deux autres onglets, liste déroulante et boutons de recherche pour le chef.
+- Le chef reprend le tableau des officiels, une sélection unique et un enregistrement immédiat ; ligne persistée turquoise, liste visible sans recherche et après déclaration, création existante et renonciation conservées. Verrou pendant sauvegarde et retour au choix serveur en cas d’échec. Pas de changement backend, droits, NAP ou règle sportive.
+- Budget inchangé : aucun nouvel appel ni listener ; rendu/recherche zéro lecture, pagination existante bornée et mêmes appels d’enregistrement. Références CSS/JS actualisées pour le cache immutable. Contrôles ciblés réussis et recette isolée ordinateur/mobile sans débordement ; comparaison réelle des polices et champs avec Officiels. État, commit et preuves de publication TEST : [bilan de la PR #360](https://github.com/ffessmnap/LivePalmes/pull/360). Validation utilisateur non acquise. PROD exclue.
+
 ### 17 octobre — Chefs d’équipe et renonciation native NAP
 
 - Antoine autorise le correctif après vérification en lecture seule du dossier Cherbourg 5193 / club 106 : la déclaration native utilise nom/prénom `-1`, naissance `0000-00-00`, club = pourclub. Aucun nouveau schéma ni drapeau parallèle.

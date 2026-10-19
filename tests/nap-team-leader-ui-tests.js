@@ -10,7 +10,7 @@ elements.engagementsClubTeamRemoveButton=field("");
 elements.engagementsClubTeamExternal.closest=()=>null;
 const hiddenRadio={closest:()=>null,hidden:true};
 elements.engagementsClubTeamChoices={querySelectorAll:()=>[hiddenRadio]};
-const sandbox={mode:"person",engagementClubPeople:[],engagementClubPeopleHasMore:false,elements,global:{LivePalmesEnvironment:{sportingDataSource:"nap",isTest:true}},engagementClubPersonSaving:false,selectedEngagementCompetitionId:"legacy-nap-5140",selectedEngagementCompetition:{nativeReadOnly:true,nativeTeamLeaderEditable:true,entryStatus:"open"},selectedEngagementClubEntry:{napFingerprint:"native-fingerprint",teamLeader:{nativeLeaderId:"51"}},canUse:()=>true,
+const sandbox={engagementClubTeamSaving:false,renderEngagementClubTeamPersonOptions:()=>{},mode:"person",engagementClubPeople:[],engagementClubPeopleHasMore:false,elements,global:{LivePalmesEnvironment:{sportingDataSource:"nap",isTest:true}},engagementClubPersonSaving:false,selectedEngagementCompetitionId:"legacy-nap-5140",selectedEngagementCompetition:{nativeReadOnly:true,nativeTeamLeaderEditable:true,entryStatus:"open"},selectedEngagementClubEntry:{napFingerprint:"native-fingerprint",teamLeader:{nativeLeaderId:"51"}},canUse:()=>true,
   engagementClubWriteLockReason:competition=>competition.nativeReadOnly?"Native blocked":competition.entryStatus==="open"?"":"Closed",
   engagementClubTeamComplete:()=>true,engagementClubTeamEditing:false,engagementClubEntryHasParticipants:()=>true,
   setEngagementClubFormControlsLocked:()=>{[elements.engagementsClubTeamNativePersonCreate,elements.engagementsClubTeamModifyButton,elements.engagementsClubTeamRemoveButton,elements.engagementsClubTeamSaveButton].forEach(control=>{control.disabled=true;});},setEngagementClubTeamManualFieldsVisible:()=>{},setEngagementSaveState:()=>{},
@@ -38,5 +38,18 @@ assert.equal(elements.engagementsClubTeamFirstName.disabled,false);assert.equal(
   assert.equal(elements.engagementsClubTeamFirstName.required,false);
   assert.equal(elements.engagementsClubTeamSaveButton.hidden,true);
   sandbox.selectedEngagementCompetition.entryStatus="closed";sandbox.updateEngagementClubTeamLeaderActions();assert.equal(elements.engagementsClubTeamModifyButton.disabled,true);assert.equal(elements.engagementsClubTeamSaveButton.disabled,true);await sandbox.saveEngagementClubTeamLeader();assert.equal(calls.length,3);
+  sandbox.engagementClubTeamSaving=true;await sandbox.saveEngagementClubTeamLeader();assert.equal(calls.length,3,"a pending selection must not start a concurrent save");sandbox.engagementClubTeamSaving=false;
+  load("renderEngagementClubTeamPersonOptions");
+  elements.engagementsClubTeamPersonSelect=field("");elements.engagementsClubTeamPersonSearch=field("");elements.engagementsClubTeamPersonResults={};
+  const member={id:"nap-official-7",selectionId:"nap-official-7",firstName:"Camille",lastName:"TEST",birthDate:"1980-01-02"};
+  Object.assign(sandbox,{escapeHtml:value=>String(value).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/"/g,"&quot;"),normalizedEngagementClubSearch:value=>String(value).toLowerCase(),formatShortDate:value=>value,engagementClubTeamLeaderPeople:()=>[member],selectedEngagementClubEntry:{teamLeader:{mode:"person",firstName:"Camille",lastName:"TEST",birthDate:"1980-01-02",personId:"nap-leader-999"}}});
+  sandbox.selectedEngagementCompetition.entryStatus="open";
+  sandbox.renderEngagementClubTeamPersonOptions();
+  assert.equal(elements.engagementsClubTeamPersonResults.hidden,false,"the table is visible without a search");
+  assert.match(elements.engagementsClubTeamPersonResults.innerHTML,/role="table"/);
+  assert.match(elements.engagementsClubTeamPersonResults.innerHTML,/data-selected="true"/);
+  assert.match(elements.engagementsClubTeamPersonResults.innerHTML,/type="radio"/);
+  assert.match(elements.engagementsClubTeamPersonResults.innerHTML,/checked/);
+  sandbox.selectedEngagementCompetition.entryStatus="closed";sandbox.renderEngagementClubTeamPersonOptions();assert.match(elements.engagementsClubTeamPersonResults.innerHTML,/disabled/);
   console.log("NAP leader UI: licence blank, native fields only, no old people call and closed form locked");
 })().catch(error=>{console.error(error);process.exitCode=1;});
