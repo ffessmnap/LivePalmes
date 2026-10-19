@@ -19383,4 +19383,9 @@ html[data-portal-theme="dark"] #adminDtnGrid:has(.admin-dtn-summary-list) :is(.a
 }
 #adminEngagementsDetail #adminEngagementsDetailTeamPanel #adminEngagementsClubTeamPersonFields[data-picker="table"] .admin-engagements-club-official-row strong {
   font-size: 0.79rem;
+  font-weight: 600;
+}
+
+#adminEngagementsDetail #adminEngagementsDetailTeamPanel #adminEngagementsClubTeamPersonFields[data-picker="table"] .admin-engagements-club-team-search input {
+  min-height: 44px;
 }
