@@ -2,12 +2,19 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 19 octobre — Validation regroupée et préparation PROD, sans déploiement
+
+- Antoine valide explicitement « l’accueil, la bibliothèque et les correctifs sur TEST » et demande de préparer le circuit PROD et de transmettre le bilan dans Infra, sans déployer. Validation rattachée au candidat commun `25ac21b69c8fd09c44399f1f65b3bd4e6a0e58bd`, [TEST 39224292186](https://github.com/ffessmnap/LivePalmes/actions/runs/39224292186), Hosting `fc36af1542010a99`. Les mentions antérieures de validation en attente sont historiques et remplacées pour cette version par cet accord. Chef d’équipe déjà validé ; DTN validé par « ok c’est bon pour moi » avant cette préparation. Aucun test réel d’écriture métier supplémentaire revendiqué.
+- Accueil/bibliothèque et habillage public, ouverture des modules sportifs et suggestions, filtres/fiche nageur/TOP, indicateur de chargement et chefs d’équipe font partie du bilan regroupé. Le problème connu des clubs historiques reste explicitement à part, sans correction NAP ni promesse sur les filtres régionaux affectés.
+- Préparation du routage PROD strictement épinglée à la paire `ac78b507` / `25ac21b6` : deux routes `/` et `/index.html` vers le lecteur public existant, exclusion exacte de `index.html` du paquet. Accord explicite dans la demande, couverture validée de `firebase.json` et extension du lecteur NAP obligatoires ; toute autre configuration reste refusée. Cela prépare le circuit sans autoriser son exécution.
+- Preuve TEST existante réutilisable ; aucun nouveau TEST nécessaire pour les seuls contrôles de publication. La sélection backend, la preuve des fonctions exclues et le plan immuable doivent être établis par le preflight avant accord final dans Infra. Aucun déploiement, migration, recalcul DTN, nettoyage Storage, mail, règle/index ou modification des droits autorisé par cette préparation.
+
 ### 19 octobre — DTN : conserver le dernier calcul volontaire
 
 - Accord explicite d’Antoine : afficher uniquement la date du dernier calcul réussi ; les modifications générales de NAP ne doivent ni masquer les résultats ni inviter au recalcul. Les minima/règles restent liés à la configuration ayant produit les résultats.
 - Réutilisation des trois vues JSON déjà conservées dans `livepalmes_dtn_resultats`, sans fichier statique ni nouveau schéma. La lecture compare la configuration à l’empreinte du calcul conservé, sans relire l’empreinte des tables sources. Recalcul et activation restent explicites et gardent leurs contrôles de concurrence et de source. Aucun recalcul réel ni donnée métier modifiée pendant la préparation.
 - Budget normal : trois SELECT bornés (catalogue, jusqu’à trois configurations, jusqu’à trois vues) ; un SELECT supplémentaire seulement en l’absence de résultat compatible pour lire l’état du travail. Zéro lecture des performances ou métadonnées sources à l’ouverture. Recalcul : budget sportif existant inchangé (jusqu’à 402 requêtes de performances), publication atomique des trois vues.
-- Tests ciblés hors ligne réussis. État, commit, recette et preuve de publication TEST : [bilan de la PR #362](https://github.com/ffessmnap/LivePalmes/pull/362). Aucune validation utilisateur de la réalisation acquise. PROD exclue.
+- Tests ciblés hors ligne réussis. État, commit, recette et preuve de publication TEST : [bilan de la PR #362](https://github.com/ffessmnap/LivePalmes/pull/362). Réalisation validée par Antoine le 19 octobre sur le candidat commun `25ac21b6` ; préparation PROD demandée, déploiement non autorisé ici.
 
 ### 19 octobre — Choix du chef d’équipe harmonisé avec les participants
 

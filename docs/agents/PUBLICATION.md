@@ -22,6 +22,8 @@ Accueil serveur autorisé le 15 octobre 2026 : l’entrée TEST `approved_home_r
 
 ## Avant publication
 
+Préparation PROD autorisée le 19 octobre : exception bornée `productionHomeRouting` pour la seule paire `ac78b507` / `25ac21b6`, documentée dans `docs/releases/PROCEDURE.md`. Elle reprend exactement le routage TEST vérifié et exige sa couverture explicite dans le bilan. Aucun déploiement n’est autorisé par la préparation ; l’accord final dans Infra reste obligatoire.
+
 Réutiliser le run TEST réussi et sa preuve si le candidat et l'état déployé correspondent encore. Ne pas republier TEST uniquement pour préparer PROD. L'assistant renseigne les SHA, runs et fichiers de bilan ; Antoine reçoit un résumé compréhensible. Un accord explicite déjà donné reste valable pour son périmètre : ne pas demander une nouvelle autorisation de principe à chaque étape. Après activation du réglage du 29 septembre décrit dans `docs/releases/PROCEDURE.md`, cet accord dans Infra suffit : l'assistant lance la publication sans second clic d'Antoine sur GitHub. Consigner l'accord réel et le périmètre dans la PR de publication. Ne jamais déduire cet accord d'un test réussi ni d'une simple demande de développement. Toute approbation technique encore configurée reste obligatoire ; ne pas la contourner.
 
 1. Confirmer précisément le périmètre validé par l’utilisateur.

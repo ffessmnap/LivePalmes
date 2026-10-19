@@ -382,6 +382,39 @@ class ReleaseTests(unittest.TestCase):
             with self.assertRaises(ValueError):m.classify_test(['firebase.json','firestore.rules'],approved_home_routing=True)
             with patch.dict(os.environ,{'TARGET_FIREBASE_PROJECT':'livepalmes'}),self.assertRaises(ValueError):m.classify_test(['firebase.json'],approved_home_routing=True)
             with self.assertRaises(ValueError):m.classify(['firebase.json'])
+    def test_production_home_routing_is_pinned_and_covered(self):
+        import copy
+        value = self.request()
+        value.update(candidate='25ac21b69c8fd09c44399f1f65b3bd4e6a0e58bd',
+                     productionCommit='ac78b50759ca209cddaa15d374eb5e01dd926268',
+                     productionHomeRouting={'approval':'Antoine, preparation seulement, 19 octobre'},
+                     additionalPublicNapFunctions=['readNapPublicSwimmer'],
+                     additionalPublicNapApproval='Lecteur accueil valide sur TEST',
+                     initialAutomaticMailEnabled=False,
+                     excludedBackendReview='Revue requise',
+                     excludedBackendEvidence={'schema':1,'candidate':'25ac21b69c8fd09c44399f1f65b3bd4e6a0e58bd',
+                         'productionRun':38468987195,'suite':'retained-calendar-consumers-v1','functions':[]})
+        before={'hosting':{'public':'.','ignore':[],'rewrites':[]}}
+        after=copy.deepcopy(before)
+        after['hosting']['ignore']=['index.html']
+        after['hosting']['rewrites']=[{'source':p,'function':{'functionId':'readNapPublicSwimmer','region':'europe-west1'}} for p in ('/','/index.html')]
+        def read_config(*args):
+            return json.dumps(before if args[1].startswith(value['productionCommit']) else after)
+        with patch.object(m,'git',side_effect=read_config),patch.object(m,'ignored_top_paths',return_value=[]):
+            with self.assertRaises(ValueError):m.validate_request(value,['portail.html','firebase.json'])
+            value['changes'][0]['paths'].append('firebase.json')
+            self.assertTrue(m.validate_request(value,['portail.html','firebase.json']))
+            for mutation in ('candidate','base','approval','reader','rules','configuration'):
+                changed=copy.deepcopy(value)
+                if mutation=='candidate':changed['candidate']='c'*40
+                elif mutation=='base':changed['productionCommit']='d'*40
+                elif mutation=='approval':changed['productionHomeRouting']['approval']=''
+                elif mutation=='reader':changed['additionalPublicNapFunctions']=[]
+                elif mutation=='configuration':after['hosting']['ignore'].append('portail.html')
+                with self.subTest(mutation=mutation),self.assertRaises(ValueError):
+                    m.validate_request(changed,['portail.html','firebase.json']+(['firestore.rules'] if mutation=='rules' else []))
+        with self.assertRaises(ValueError):m.classify(['firebase.json'])
+
     def test_test_top_exception_is_explicit_exact_and_test_only(self):
         with patch.object(m, 'ignored_top_paths', return_value=[]):
             paths=list(m.TEST_TOP_FILES)
