@@ -175,7 +175,7 @@
     if (view.hit) return `Saison ${label} · Dernier calcul : ${new Date(view.generatedAt).toLocaleString("fr-FR")}`;
     if (view.pending) return "Calcul en cours. Actualisez l’affichage dans quelques instants.";
     if (view.error) return view.error;
-    if (view.generatedAt) return "Un calcul précédent existe, mais il ne correspond plus aux paramètres ou aux données actuels. Les résultats ne sont pas affichés. Recalculer reste une action volontaire.";
+    if (view.generatedAt) return "Un calcul précédent existe, mais il ne correspond plus aux paramètres DTN actuels. Les résultats ne sont pas affichés. Recalculer reste une action volontaire.";
     return "Aucun résultat calculé disponible pour cette saison. La grille présente les critères, pas les nageurs qualifiés. Aucun recalcul automatique n’est lancé.";
   }
   function results(view) {

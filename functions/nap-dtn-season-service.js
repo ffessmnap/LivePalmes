@@ -1,7 +1,7 @@
 "use strict";
 // Direct native service, activated only on TEST after private checks.
 // Budgets: catalog 2 SELECTs/3 settings max; overview 2 settings +1 views
-// +1 job +2 metadata reads; explicit recalculation <=402 performance SQL,
+// (+1 job only without a compatible result), no source metadata reads; explicit recalculation <=402 performance SQL,
 // 3 views saved atomically. No automatic rebuild on an ordinary opening.
 const {randomUUID}=require("node:crypto");
 const engine=require("./dtn-season-engine"),repo=require("./nap-dtn-season-repository");
@@ -85,8 +85,9 @@ function createNativeDtnSeasonService({getPool,authorize,canManage,fail,calculat
       return view && view.fingerprint===repo.fingerprint(season,view.sourceVersion)?{...view,hit:true,frozen:true}:{source:"nap",hit:false,pending:false,error:"Resultats historiques NAP non prepares.",revision:season.revision,profiles:[]};
     }
     if(request.data.rebuild===true) return rebuild(request,{pool,catalog,season,device});
-    const sourceVersion=(await stamp(pool)).fingerprint;
-    if(view?.fingerprint===repo.fingerprint(season,sourceVersion)) return {...view,hit:true};
+    // Results are an explicit, durable calculation for this configuration.
+    // Native data changes alone never invalidate or hide the last successful view.
+    if(view && view.fingerprint===repo.fingerprint(season,view.sourceVersion)) return {...view,hit:true};
     const [job]=await repo.query(pool,"SELECT statut,erreur,TIMESTAMPDIFF(SECOND,started_at,UTC_TIMESTAMP()) AS age_seconds FROM livepalmes_dtn_calculs WHERE saison=? LIMIT 1",[id]);
     const pending=job?.statut==="running" && Number(job.age_seconds)>=0 && Number(job.age_seconds)<600;
     return {source:"nap",hit:false,pending:Boolean(pending),error:job?.statut==="failed"?job.erreur:"",revision:season.revision,generatedAt:view?.generatedAt||"",profiles:[]};
