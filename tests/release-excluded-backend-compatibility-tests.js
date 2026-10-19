@@ -1,7 +1,7 @@
 "use strict";
-// Pinned compatibility proof for retaining the existing notification packages.
-// No application entry point, Firebase SDK, SQL server, filesystem adapter or
-// network module can be loaded by the fixture VM.
+// Pinned compatibility proof for retained packages. Only extracted handlers and
+// pure modules run with explicit fixtures; application bootstrap, Firebase/SMTP/SQL
+// clients, filesystem adapters and network imports remain blocked.
 const assert = require("node:assert/strict");
 const cp = require("node:child_process");
 const crypto = require("node:crypto");
@@ -12,9 +12,11 @@ const BASE = "b0020e51ebd6e686054efd3451882dd2c1d60d94";
 const CANDIDATE = "ef96caca97f70554ee1f2c2b950cebeb5130e85e";
 const base = process.argv[3] || BASE, candidate = process.argv[4] || CANDIDATE;
 const c0 = base === CANDIDATE && candidate === "ac78b50759ca209cddaa15d374eb5e01dd926268";
+const home = base === "ac78b50759ca209cddaa15d374eb5e01dd926268" && candidate === "25ac21b69c8fd09c44399f1f65b3bd4e6a0e58bd";
+const homeReview = home ? require("./release-home-retained-compatibility") : null;
 const names = ["closeDueEngagementCompetitions", "notifyEngagementCompetitionDocuments",
   "prepareEngagementClubRecapEmails", "listEngagementCompetitionMailJobs",
-  "prepareEngagementOpeningNotificationEmails", "sendEngagementPreparedEmails", "processNapCompetitionNotifications", ...(c0 ? ["readNapPublicSwimmer"] : [])].sort();
+  "prepareEngagementOpeningNotificationEmails", "sendEngagementPreparedEmails", "processNapCompetitionNotifications", ...(c0 ? ["readNapPublicSwimmer"] : []), ...(home ? Object.keys(homeReview.ORIGINS).filter(name => !["closeDueEngagementCompetitions", "notifyEngagementCompetitionDocuments", "prepareEngagementClubRecapEmails", "listEngagementCompetitionMailJobs", "prepareEngagementOpeningNotificationEmails", "sendEngagementPreparedEmails", "processNapCompetitionNotifications"].includes(name)) : [])].sort();
 const rows = process.argv[5] ? JSON.parse(process.argv[5]) : names.map(name => ({ name, commit: "1df545a62de67a24ff32ca4d1046cce4be6d499f" }));
 const sha = value => typeof value === "string" && /^[a-f0-9]{40}$/.test(value);
 const git = (...args) => cp.execFileSync("git", args, { cwd: root, encoding: "utf8", maxBuffer: 16 * 1024 * 1024 });
@@ -48,14 +50,14 @@ function definitions(commit) {
   }
   return result;
 }
-function loader(commit) {
+function loader(commit, readSource = source) {
   const cache = new Map();
   class FixedDate extends Date { constructor(...args) { super(...(args.length ? args : ["2026-10-12T12:00:00.000Z"])); } }
   function load(filename) {
     if (cache.has(filename)) return cache.get(filename).exports;
     assert.ok(filename.startsWith("functions/") && !filename.includes("..") && /\.(js|json)$/.test(filename));
     const module = { exports: {} }; cache.set(filename, module);
-    if (filename.endsWith(".json")) { module.exports = JSON.parse(source(commit, filename)); return module.exports; }
+    if (filename.endsWith(".json")) { module.exports = JSON.parse(readSource(commit, filename)); return module.exports; }
     const sandbox = { module, exports: module.exports, Buffer, URL, Date: FixedDate,
       require: request => {
         if (request === "node:crypto" || request === "crypto") return crypto;
@@ -65,7 +67,7 @@ function loader(commit) {
         if (!/\.(js|json)$/.test(target)) target += ".js";
         return load(target);
       } };
-    vm.runInNewContext(source(commit, filename), sandbox, { timeout: 3000, filename });
+    vm.runInNewContext(readSource(commit, filename), sandbox, { timeout: 3000, filename });
     return module.exports;
   }
   return load;
@@ -104,7 +106,11 @@ function memoryDb() {
   } };
 }
 async function prove() {
-  if (!c0) {
+  if (home) {
+    assert.ok(Array.isArray(rows) && rows.every(row => row && typeof row === "object" && Object.keys(row).sort().join(",") === "commit,name" && sha(row.commit)), "Invalid retained row");
+    assert.deepEqual(rows.map(row => row.name).sort(), Object.keys(homeReview.ORIGINS).sort(), "Exact home retained scope required");
+    for (const row of rows) assert.equal(row.commit, homeReview.ORIGINS[row.name], "Unreviewed retained origin");
+  } else if (!c0) {
     assert.equal(base, BASE, "Suite limited to the reviewed production baseline");
     assert.equal(candidate, CANDIDATE, "A new application candidate requires a new review");
   } else {
@@ -124,7 +130,8 @@ async function prove() {
   }
   for (const file of ["nap-notification-automation.js", "nap-notification-pages.js", "nap-notification-preview.js",
     "engagement-mail-control.js", "nap-portal-workspaces.js"])
-    assert.equal(source(candidate, "functions/" + file), source(base, "functions/" + file), "Unreviewed notification module change");
+    if (!(home && file === "nap-portal-workspaces.js"))
+      assert.equal(source(candidate, "functions/" + file), source(base, "functions/" + file), "Unreviewed notification module change");
   // Project actual old/new readers with different and empty native comments.
   // Only presentation and the explicit concurrency snapshot may differ.
   const currentLoad = loader(candidate);
@@ -211,12 +218,15 @@ async function prove() {
       { ...competition, clubDocuments: [{ id: "doc-1", title: "Fixture", url: "https://fixture.invalid/doc" }] }, populatedServices);
     assert.equal(documentPage.jobs.length, 1); assert.equal(documentPage.jobs[0].details.documents[0].id, "doc-1");
   }
+  if (home) await homeReview.prove({ root, base, candidate, rows, source, loader, definitions });
   if (c0) await require("./release-c0-document-compatibility.js").prove({ root, base, candidate, source, loader });
   return { schema: 1, suite: "retained-calendar-consumers-v1", productionCommit: base, candidate,
+    ...(home ? { homeProofSha256: crypto.createHash("sha256").update(require("node:fs").readFileSync(path.join(__dirname, "release-home-retained-compatibility.js"))).digest("hex") } : {}),
     ...(c0 ? { c0ProofSha256: crypto.createHash("sha256").update(require("node:fs").readFileSync(path.join(__dirname, "release-c0-document-compatibility.js"))).digest("hex") } : {}),
     result: "success", networkCalls: 0, passedFunctions: rows.map(row => row.name).sort(),
     checks: ["pinned-application-pair", "unchanged-notification-adapters", "bounded-reader-projection", "authorization-before-reads",
       "mail-content", "retained-job-replay", "retained-closure-resume", "fixture-attachment-manifests", "document-selection",
-      "stale-source-refused", "missing-document-refused", ...(c0 ? ["c0-exact-backend-diff", "public-reader-unchanged", "original-featured-document-projection", "partial-schema-refused"] : [])] };
+      "stale-source-refused", "missing-document-refused", ...(c0 ? ["c0-exact-backend-diff", "public-reader-unchanged", "original-featured-document-projection", "partial-schema-refused"] : []), ...(home ? ["home-exact-pair-and-12-origins", "unchanged-retained-handlers", "preference-and-access-guards", "native-identity-replay", "additive-index-specs", "unchanged-competition-projection"] : [])] };
 }
-prove().then(result => console.log(JSON.stringify(result))).catch(error => { console.error(error.stack); process.exitCode = 1; });
+if (require.main === module) prove().then(result => console.log(JSON.stringify(result))).catch(error => { console.error(error.stack); process.exitCode = 1; });
+module.exports = { loader };
