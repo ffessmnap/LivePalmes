@@ -9108,23 +9108,30 @@
       return;
     }
     if (!engagementMailJobs.length) {
-      mount.innerHTML = '<p class="admin-engagements-empty">Aucun courriel envoyé pour le moment.</p>';
+      mount.innerHTML = '<p class="admin-engagements-empty">Aucun courriel préparé pour le moment.</p><button class="ghost-button" type="button" data-engagement-mail-jobs-refresh>Actualiser le suivi</button>';
       return;
     }
     const sentCount = engagementMailJobs.filter((job) => job.status === "sent").length;
     const readyCount = engagementMailJobs.filter((job) => job.status === "ready").length;
     const failedCount = engagementMailJobs.filter((job) => job.status === "failed").length;
     const blockedCount = engagementMailJobs.filter((job) => job.status === "blocked_missing_config").length;
+    const uncertainCount = engagementMailJobs.filter((job) => job.status === "uncertain" ||
+      (job.status === "sending" && Date.now() - Date.parse(job.updatedAt) > 5 * 60 * 1000)).length;
+    const sendingCount = engagementMailJobs.filter((job) => job.status === "sending" &&
+      !(Date.now() - Date.parse(job.updatedAt) > 5 * 60 * 1000)).length;
     const statusParts = [
       readyCount ? `${readyCount} en attente d'envoi` : "",
           sentCount ? `${sentCount} envoyé${sentCount > 1 ? "s" : ""}` : "",
       failedCount ? `${failedCount} erreur${failedCount > 1 ? "s" : ""}` : "",
+      sendingCount ? `${sendingCount} en cours` : "",
+      uncertainCount ? `${uncertainCount} à vérifier — ne pas renvoyer` : "",
       blockedCount ? `${blockedCount} configuration manquante` : ""
     ].filter(Boolean);
     mount.innerHTML = `
       <div class="admin-engagements-mail-jobs-head">
         <strong>Courriels</strong>
-        <small>${engagementMailJobs.length}${engagementMailJobsTotalCount > engagementMailJobs.length ? ` sur ${engagementMailJobsTotalCount}` : ""} courriel${engagementMailJobsTotalCount > 1 || engagementMailJobs.length > 1 ? "s" : ""}${statusParts.length ? ` · ${statusParts.join(" · ")}` : ""}</small>
+        <button class="ghost-button" type="button" data-engagement-mail-jobs-refresh ${engagementMailJobsLoading ? "disabled" : ""}>Actualiser le suivi</button>
+        <small aria-live="polite">${engagementMailJobs.length}${engagementMailJobsTotalCount > engagementMailJobs.length ? ` sur ${engagementMailJobsTotalCount}` : ""} courriel${engagementMailJobsTotalCount > 1 || engagementMailJobs.length > 1 ? "s" : ""} affichés${statusParts.length ? ` · Sur les lignes affichées : ${statusParts.join(" · ")}` : ""}. Envoyé = accepté par le serveur mail.</small>
       </div>
       <div class="admin-engagements-mail-jobs-table" role="table" aria-label="Suivi des envois">
         <div class="admin-engagements-mail-jobs-row admin-engagements-mail-jobs-row-head" role="row">
@@ -9142,7 +9149,8 @@
             </span>
             <span role="cell">${escapeHtml(clubDisplayLabel(job, { fallback: "-" }))}</span>
             <span role="cell">
-              <span class="admin-engagements-mail-status">${escapeHtml({ ready: "En attente d'envoi", sending: "Envoi en cours — ne pas relancer", cancelled: "Annulé", disabled: "Désactivé", sent: "Envoyé", failed: "En erreur", blocked_missing_config: "Configuration manquante", cancelled_no_participants: "Annulé — aucun participant" }[job.status] || job.statusLabel || job.status || "Non envoyé")}</span>
+              <span class="admin-engagements-mail-status">${escapeHtml(job.status === "sending" && Date.now() - Date.parse(job.updatedAt) > 5 * 60 * 1000 ? "À vérifier — ne pas renvoyer" : { ready: "En attente d'envoi", sending: "Envoi en cours — ne pas relancer", uncertain: "À vérifier — ne pas renvoyer", cancelled: "Annulé", disabled: "Désactivé", sent: "Envoyé", failed: "En erreur — non renvoyé automatiquement", blocked_missing_config: "Configuration manquante", cancelled_no_participants: "Annulé — aucun participant" }[job.status] || job.statusLabel || job.status || "Non envoyé")}</span>
+              ${job.reason && ["failed", "uncertain"].includes(job.status) ? `<small>${escapeHtml(job.reason)}</small>` : ""}
               <small>${escapeHtml(job.updatedAt ? formatDeadline(job.updatedAt).replace(/^Limite /, "") : "")}</small>
             </span>
           </div>
@@ -9159,6 +9167,7 @@
       return;
     }
     engagementMailJobsLoading = true;
+    const requestedCompetitionId = selectedEngagementCompetitionId;
     if (force || engagementMailJobsCompetitionId !== selectedEngagementCompetitionId) {
       engagementMailJobs = [];
       engagementMailJobsCursor = null;
@@ -9168,12 +9177,13 @@
     renderEngagementMailJobs();
     try {
       const result = await callFunction("listEngagementCompetitionMailJobs", {
-        competitionId: selectedEngagementCompetitionId,
+        competitionId: requestedCompetitionId,
         pageSize: 100,
         ...(append && engagementMailJobsCursor ? { cursor: engagementMailJobsCursor } : {})
       });
+      if (requestedCompetitionId !== selectedEngagementCompetitionId) return;
       const nextJobs = Array.isArray(result.jobs) ? result.jobs : [];
-      engagementMailJobs = append ? [...engagementMailJobs, ...nextJobs] : nextJobs;
+      engagementMailJobs = append ? [...new Map([...engagementMailJobs, ...nextJobs].map(job => [job.id, job])).values()] : nextJobs;
       engagementMailJobsCursor = result.nextCursor || null;
       engagementMailJobsHasMore = result.hasMore === true;
       if (result.totalCount !== null && result.totalCount !== undefined && Number.isFinite(Number(result.totalCount))) {
@@ -9181,6 +9191,7 @@
       }
       engagementMailJobsCompetitionId = selectedEngagementCompetitionId;
     } catch (error) {
+      if (requestedCompetitionId !== selectedEngagementCompetitionId) return;
       if (!append) {
         engagementMailJobs = [];
         engagementMailJobsCompetitionId = selectedEngagementCompetitionId;
@@ -17345,6 +17356,7 @@
     });
     elements.signOut?.addEventListener("click", signOut);
     elements.engagementsMailJobsList?.addEventListener("click", (event) => {
+      if (event.target.closest("[data-engagement-mail-jobs-refresh]")) void loadEngagementMailJobs({ force: true });
       if (event.target.closest("[data-engagement-mail-jobs-more]")) void loadEngagementMailJobs({ append: true });
     });
     elements.engagementsDeletionRequestsRefresh?.addEventListener("click", () => loadEngagementDeletionRequests({ force: true }));
@@ -18182,7 +18194,7 @@
       if(!selectedEngagementCompetitionId||!isEngagementAdminMode())return;
       const competitionId=selectedEngagementCompetitionId;
       button.disabled=true;
-      if(status)status.textContent='Traitement des notifications TEST… Les mails autorisés partent uniquement vers livepalmes@nap-ffessm.fr.';
+      if(status)status.textContent='Traitement des notifications selon le réglage national… Sur TEST, les destinataires sont redirigés vers livepalmes@nap-ffessm.fr.';
       try{
         const result=await callFunction('processNapCompetitionNotifications',{action:'process',competitionId});
         if(selectedEngagementCompetitionId!==competitionId)return;

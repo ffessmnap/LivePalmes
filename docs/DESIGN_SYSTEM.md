@@ -580,6 +580,8 @@ Le formulaire compact place Nom puis Prénom sur une première ligne, Date de na
 
 Dans Administration nationale, le panneau « Mails automatiques » distingue le périmètre (Pilote Île-de-France ou Toutes les régions), son enregistrement et l’activation. Le statut indique le périmètre réellement enregistré et, sur TEST, la redirection des destinataires. Enregistrer un périmètre n’active pas les envois ; un périmètre modifié mais non enregistré bloque l’activation. Le bouton de désactivation reste disponible même si le périmètre est indisponible. Les champs et boutons réutilisent les composants du portail.
 
+Dans Diffusion, le suivi des courriels propose « Actualiser le suivi » avec le bouton discret existant. Les compteurs concernent explicitement les lignes affichées (100 par page), sans actualisation permanente. L’en-tête se replie sur mobile. « Envoyé » signifie accepté par le serveur mail ; « À vérifier — ne pas renvoyer » distingue un résultat SMTP incertain ou un envoi resté en cours plus de cinq minutes. Une erreur n’est jamais renvoyée automatiquement.
+
 ### Filtres du calendrier Club
 
 La règle actuelle remplace l’ancienne présentation segmentée du statut et le repli des filtres avancés : les boutons Toutes, Ouvertes, À venir et Fermées ne sont plus affichés dans le calendrier Club. Saison, Type, Région et Niveau restent toujours visibles dans quatre colonnes compactes sur une seule ligne, y compris sur mobile. Le calendrier organisateur conserve son sélecteur de statut et son comportement propre.
