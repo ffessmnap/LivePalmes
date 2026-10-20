@@ -25,8 +25,15 @@ function createNativeDtnSeasonService({getPool,authorize,canManage,fail,calculat
     return {pool,catalog,seasons:await repo.readSeasons(pool,visible)};
   }
   async function list(request) {
-    const {catalog,seasons}=await context(request);
-    return {source:"nap",catalog,seasons,canManage:canManage(request)};
+    const initialId=request.data?.initialSeasonId||null;
+    const current=await context(request,initialId),{catalog,seasons}=current;
+    const initialDevice=request.data?.initialDevice;
+    if(initialDevice && !engine.DEVICES.includes(initialDevice)) fail("Dispositif invalide.","invalid-argument");
+    // One authenticated read-only opening: never forward a rebuild flag here.
+    const id=initialId||catalog.current;
+    const initialOverview=initialDevice?{id,device:initialDevice,
+      view:await readOverview({data:{id,device:initialDevice}},current)}:null;
+    return {source:"nap",catalog,seasons,canManage:canManage(request),...(initialOverview?{initialOverview}:{})};
   }
   async function update(request) {
     await authorize(request);
@@ -78,8 +85,11 @@ function createNativeDtnSeasonService({getPool,authorize,canManage,fail,calculat
   async function overview(request) {
     const id=repo.checkId(request.data?.id),device=request.data?.device;
     if(!engine.DEVICES.includes(device)) fail("Dispositif invalide.","invalid-argument");
-    const {pool,catalog,seasons}=await context(request,id),season=seasons.find(s=>s.id===id);
-    const views=await repo.readViews(pool,[id]),view=views.find(v=>v.device===device)?.value;
+    return readOverview(request,await context(request,id));
+  }
+  async function readOverview(request,{pool,catalog,seasons}) {
+    const {id,device}=request.data,season=seasons.find(s=>s.id===id);
+    const views=await repo.readViews(pool,[id],{device}),view=views.find(v=>v.device===device)?.value;
     if(id===catalog.previous) {
       if(request.data.rebuild===true) fail("La saison precedente reste en consultation seule.","permission-denied");
       return view && view.fingerprint===repo.fingerprint(season,view.sourceVersion)?{...view,hit:true,frozen:true}:{source:"nap",hit:false,pending:false,error:"Resultats historiques NAP non prepares.",revision:season.revision,profiles:[]};

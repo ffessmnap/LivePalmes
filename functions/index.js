@@ -9765,6 +9765,11 @@ exports.listEngagementCompetitions = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONME
       .filter(item => !level || item.level === level).filter(item => !entryStatus || item.entryStatus === entryStatus);
     if (competitions.length > limit) throw new HttpsError("resource-exhausted", "Trop de competitions : reduisez la periode demandee.");
     return { ok: true, source: "nap", competitions, fromDate: ranges[0].startDate, toDate: ranges[ranges.length - 1].endDate,
+      ...(manageOnly && request.data?.includeCalendarEvents === true ? { calendarEvents: items
+        .filter(item => !["pool", "openWater"].includes(item.competitionType))
+        .filter(item => ranges.some(range => item.date >= range.startDate && item.date <= range.endDate))
+        .filter(item => managementContext.national || (!item.nationalManagementOnly && engagementRegionsMatch(item.regionId, managementContext.regionId)))
+        .map(item => ({ ...item, sourceType: "calendarEvent", eventType: item.competitionType })) } : {}),
       readStats: portalReadStats("listEngagementCompetitions", startedAt, { baseDocuments: 1, variableDocumentsMax: 0, cacheHit: false }),
       sqlBudget: { queriesMax: seasonEndYears.length, rowsMax: seasonEndYears.length * 500 } };
   }

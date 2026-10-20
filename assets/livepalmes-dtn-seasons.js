@@ -39,11 +39,27 @@
     el.definitions.hidden = false;
     el.definitions.textContent = `Saison ${season().label} · ${state.id === state.catalog.draft ? "Simulation du brouillon" : state.id === state.catalog.previous ? "Consultation seule" : "Saison active"} · Paramètres version ${season().revision}`;
   }
-  async function refreshCatalog() {
-    const result = await call("getDtnSeasons");
+  async function refreshCatalog({ initialDevice = "" } = {}) {
+    const { initialOverview, ...result } = await call("getDtnSeasons", {
+      ...(initialDevice && initialDevice !== "settings" ? { initialDevice } : {})
+    });
     Object.assign(state, result);
     if (!state.seasons.some((s) => s.id === state.id)) state.id = state.catalog.current;
+    if (initialOverview) {
+      const key = `${initialOverview.id}|${initialOverview.device}`;
+      if (initialOverview.view.hit) state.views.set(key, initialOverview.view);
+      else state.initialOverview = { key, view: initialOverview.view };
+    }
     resetEditor();
+  }
+  async function readView(id, device) {
+    if (global.LivePalmesEnvironment?.sportingDataSource === "nap") {
+      // Keep ordinary views on the same read-only service as the initial opening.
+      const result = await call("getDtnSeasons", { initialSeasonId: id, initialDevice: device });
+      if (result.initialOverview?.id === id && result.initialOverview.device === device) return result.initialOverview.view;
+    }
+    // Compatibility with a backend not yet updated, and with the legacy source.
+    return call("getDtnSeasonOverview", { id, device });
   }
   function modal(html) {
     const dialog = document.createElement("dialog"); dialog.className = "admin-dtn-dialog";
@@ -63,7 +79,9 @@
     if (state.views.has(key)) { results(state.views.get(key)); return; }
     el.grid.innerHTML = "<p>Chargement des résultats…</p>";
     try {
-      const view = await call("getDtnSeasonOverview", { id: state.id, device: state.device });
+      const initial = state.initialOverview?.key === key ? state.initialOverview.view : null;
+      state.initialOverview = null;
+      const view = initial || await readView(state.id, state.device);
       if (token !== state.token) return;
       if (view.hit) state.views.set(key, view);
       results(view);
@@ -449,8 +467,10 @@
       el = { grid: document.querySelector("#adminDtnGrid"), season: document.querySelector("#adminDtnSeason"), toolbar: document.querySelector("#adminDtnToolbar"), refreshBox: document.querySelector("#adminDtnRefreshBox"), definitions: document.querySelector("#adminDtnDefinitions"), status: document.querySelector("#adminDtnRefreshStatus") };
       if (!el.grid) return;
       el.grid.textContent = "Chargement des saisons DTN…";
-      await loadScript("assets/livepalmes-dtn-import.js?v=20260930-seasons-1", () => global.LivePalmesDtnImport); model = global.LivePalmesDtnImport;
-      await refreshCatalog();
+      await Promise.all([
+        loadScript("assets/livepalmes-dtn-import.js?v=20260930-seasons-1", () => global.LivePalmesDtnImport),
+        refreshCatalog({ initialDevice: HASHES[global.location.hash] || "france" })
+      ]); model = global.LivePalmesDtnImport;
       // Keep the shared status visible even when the former refresh box is hidden.
       el.toolbar.append(el.status); state.device = HASHES[global.location.hash] || "france"; if (state.device === "listing") state.sex = ""; state.ready = true;
       el.grid.addEventListener("click", action); el.grid.addEventListener("change", change);
