@@ -218,6 +218,8 @@ function runUnitTests() {
     "nap-club-person-create-tests.js",
     "nap-club-person-edit-ui-tests.js",
     "nap-official-entry-plan-tests.js",
+    "engagement-team-save-feedback-tests.js",
+    "engagement-swimmer-removal-ui-tests.js",
     "nap-swimmer-entry-plan-tests.js",
     "nap-swimmer-entry-change-tests.js",
     "nap-swimmer-entry-proof-tests.js",

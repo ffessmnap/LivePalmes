@@ -31,7 +31,7 @@ function fixture(options={}) {
   return {run:(change={})=>createNativeTeamLeader({getConnection:async()=>connection},{...input,...change},audit,()=>{if(options.denied) throw new TypeError("Denied");},readers),steps,get count(){return insertions;},get target(){return target;}};
 }
 (async()=>{
-  const ok=fixture();await ok.run();assert.equal(ok.count,1);assert.deepEqual(ok.steps,["backup","writing","insert","identified","complete","release"]);assert.equal(ok.target.proposed.club,"106");assert.equal(ok.target.proposed.pourclub,"");
+  const ok=fixture();await ok.run();assert.equal(ok.count,1);assert.deepEqual(ok.steps,["backup","writing","insert","identified","complete","release"]);assert.equal(ok.target.proposed.club,"106");assert.equal(ok.target.proposed.pourclub,"106");
   for(const options of [{denied:true},{trigger:true},{event:{entryStatus:"closed"}},{event:{entryDeadlineAt:"2000-01-01T00:00:00Z"}},{pack:{leaders:[{id:10}]}}]) {const f=fixture(options);await assert.rejects(f.run());assert.equal(f.count,0);}
   const stale=fixture();await assert.rejects(stale.run({expectedFingerprint:"0".repeat(64)}));assert.equal(stale.count,0);
   const race=fixture({race:true});await assert.rejects(race.run());assert.equal(race.target.phase,"prepared");

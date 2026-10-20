@@ -2,6 +2,14 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 20 octobre — Chef d’équipe et retrait depuis les courses (TEST à publier)
+
+- Besoin autorisé : corriger le rattachement natif du chef, expliciter l’attente serveur et retirer un nageur depuis Courses avec confirmation et avertissement relais.
+- Diagnostic réel autorisé Paris 5220/CNHC : déclaration 14444 existante, pourclub vide ; sélection de Stéphane dans IntraNAP, puis pourclub=106 et affichage retrouvé. Aucune autre écriture Paris/CNHC pendant le développement ou la recette.
+- Correction : créations et corrections explicites renseignent le club représenté, refus d’appropriation d’une déclaration représentant un autre club. Renonciation et répertoire conservés. Retrait via le traitement existant, relais conservés et compositions à compléter.
+- Budget : aucune lecture supplémentaire à l’ouverture/rafraîchissement, avertissement local, un appel existant par enregistrement/retrait. Plafonds NAP existants conservés (retrait : 47 opérations SQL / 5 écritures SQL maximum, audit séparé). Aucun scan, polling ni migration ajouté.
+- PR/commit et preuve TEST à renseigner après contrôles. Validation utilisateur de la version regroupée attendue ; aucune publication PROD autorisée.
+
 ### 20 octobre — Enchaînement des lots de mails et suivi (TEST, validation utilisateur attendue)
 
 - Demande explicite : conserver les mails individuels, enchaîner les lots sans doublons, avec suivi, sans vrai mail ni PROD. Les réglages d’activation et de périmètre IDF restent inchangés ; recette SMTP entièrement simulée.

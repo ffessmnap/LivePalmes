@@ -1076,6 +1076,7 @@
   let engagementClubTeamEditing = true;
   let engagementClubTeamRenunciationSaving = false;
   let engagementClubTeamSaving = false;
+  let engagementClubSwimmerRemoving = false;
   let activeEngagementProgramSessionId = "";
   let engagementClubRelaysDraft = [];
   let dirtyEngagementDetailTabs = new Set();
@@ -6597,7 +6598,7 @@
     return task;
   }
 
-  function flushEngagementClubSwimmerSelections() {
+  function flushEngagementClubSwimmerSelections({ messageElement = elements.engagementsClubSwimmersMessage, loadingMessage = "" } = {}) {
     if (engagementClubSelectionTimer) global.clearTimeout(engagementClubSelectionTimer);
     engagementClubSelectionTimer = null;
     const competitionId = engagementClubSelectionCompetitionId;
@@ -6608,8 +6609,8 @@
     if (!competitionId || !changes.length) return Promise.resolve(false);
     return queueEngagementClubEntryMutation({
       competitionId,
-      messageElement: elements.engagementsClubSwimmersMessage,
-      loadingMessage: changes.length > 1 ? `Enregistrement de ${changes.length} modifications...` : "Enregistrement du nageur...",
+      messageElement,
+      loadingMessage: loadingMessage || (changes.length > 1 ? `Enregistrement de ${changes.length} modifications...` : "Enregistrement du nageur..."),
       preserveLocalSwimmerSelections: !nativeSelection,
       execute: async () => {
         if(!nativeSelection) return callFunction("saveEngagementClubSwimmerSelections", { competitionId, changes });
@@ -6641,6 +6642,38 @@
     if (engagementClubSelectionTimer) global.clearTimeout(engagementClubSelectionTimer);
     engagementClubSelectionTimer = global.setTimeout(() => void flushEngagementClubSwimmerSelections(), 400);
     return Promise.resolve(true);
+  }
+
+  async function removeEngagementClubSwimmerFromCourses(swimmerIndexId, button) {
+    if (engagementClubSwimmerRemoving || !canUse("engagements.club.manage") || engagementClubSwimmerSelectionLockReason()) return false;
+    const competitionId = selectedEngagementCompetitionId;
+    const clubId = String(activeEngagementClubProfile().clubId || "");
+    const scopeCurrent = () => competitionId === selectedEngagementCompetitionId && clubId === String(activeEngagementClubProfile().clubId || "");
+    const pending = () => engagementClubSelectionChanges.size || engagementClubEntriesAutosaveSwimmers.size || engagementClubNativeRelayRetry || engagementClubNativeOfficialRetry || engagementClubNativeSelectionRetry || engagementClubNativeIndividualRetry;
+    const message = elements.engagementsClubEntriesMessage;
+    if (pending()) {
+      if (message) message.textContent = "Terminez ou vérifiez les enregistrements en cours avant de retirer un nageur.";
+      return false;
+    }
+    engagementClubSwimmerRemoving = true;
+    button.disabled = true;
+    try {
+      await engagementClubEntryMutationQueue;
+      if (!scopeCurrent() || pending() || engagementClubSwimmerSelectionLockReason()) return false;
+      const swimmer = (selectedEngagementClubEntry?.swimmers || []).find(item => item.swimmerIndexId === swimmerIndexId);
+      if (!swimmer) return false;
+      const name = [swimmer.firstName, swimmer.lastName].filter(Boolean).join(" ") || "ce nageur";
+      const relays = (selectedEngagementClubEntry?.relays || []).filter(relay => (relay.memberIds || []).includes(swimmerIndexId));
+      const warning = relays.length ? `\nCe nageur sera aussi retiré de la composition de ${relays.length} relais. Ces relais seront conservés et leur composition devra être complétée.` : "";
+      if (!global.confirm(`Retirer ${name} de cette compétition et supprimer tous ses engagements individuels ?${warning}\nSa fiche, sa licence, ses performances et ses engagements dans les autres compétitions seront conservés.`)) return false;
+      if (!scopeCurrent() || engagementClubSwimmerSelectionLockReason()) return false;
+      discardPendingEngagementClubIndividualEntries(swimmerIndexId);
+      await persistEngagementClubSwimmerSelection(swimmer, false);
+      return await flushEngagementClubSwimmerSelections({ messageElement: message, loadingMessage: "Retrait du nageur et de ses engagements en cours…" });
+    } finally {
+      engagementClubSwimmerRemoving = false;
+      if (scopeCurrent()) button.disabled = Boolean(engagementClubSwimmerSelectionLockReason());
+    }
   }
 
   function resetEngagementClubEntriesAutosave() {
@@ -7381,6 +7414,7 @@
                       ${openWater
                         ? `<span class="admin-engagements-club-entry-count" aria-label="${selectedCount} course${selectedCount > 1 ? "s" : ""} sélectionnée${selectedCount > 1 ? "s" : ""}">${escapeHtml(countLabel)}</span>`
                         : `<button class="ghost-button compact admin-engagements-club-times-open" type="button" data-engagement-club-times-open="${escapeHtml(selected.swimmerIndexId)}" aria-label="Voir ou modifier les temps d'engagement, ${selectedCount} course${selectedCount > 1 ? "s" : ""}"><span>${escapeHtml(countLabel)}</span><b aria-hidden="true">✎</b></button>`}
+                      <button type="button" class="ghost-button compact admin-engagements-club-swimmer-remove" data-engagement-club-swimmer-remove="${escapeHtml(selected.swimmerIndexId)}" aria-label="Retirer ${escapeHtml(`${firstName} ${lastName}`.trim())} de cette compétition" title="Retirer de cette compétition" ${!canUse("engagements.club.manage") || engagementClubSwimmerSelectionLockReason() ? "disabled" : ""}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M7 7l1 14h8l1-14"/></svg></button>
                     </td>
                   </tr>
                 `;
@@ -11106,11 +11140,14 @@
       elements.engagementsClubTeamForm.reportValidity?.();
       return false;
     }
-    if (nativeLeaderEdit) { engagementClubTeamSaving = true; setEngagementClubFormControlsLocked(elements.engagementsClubTeamForm, true); }
+    engagementClubTeamSaving = true;
+    elements.engagementsClubTeamForm?.setAttribute("aria-busy", "true");
+    if (nativeLeaderEdit) { setEngagementClubFormControlsLocked(elements.engagementsClubTeamForm, true); }
     if (elements.engagementsClubTeamSaveButton) elements.engagementsClubTeamSaveButton.disabled = true;
     setEngagementSaveState("saving");
     if (elements.engagementsClubTeamMessage) {
-      elements.engagementsClubTeamMessage.textContent = "Enregistrement du chef d'équipe...";
+      const name = [elements.engagementsClubTeamFirstName?.value, elements.engagementsClubTeamLastName?.value].filter(Boolean).join(" ");
+      elements.engagementsClubTeamMessage.textContent = `Enregistrement ${name ? `de ${name}` : "du chef d’équipe"} en cours… Attendez la confirmation avant de continuer.`;
       elements.engagementsClubTeamMessage.dataset.tone = "loading";
     }
     try {
@@ -11212,7 +11249,9 @@
       setEngagementSaveState("error");
       return false;
     } finally {
-      if (nativeLeaderEdit) { engagementClubTeamSaving = false; renderEngagementClubTeamPersonOptions(); updateEngagementClubTeamLeaderActions(); }
+      engagementClubTeamSaving = false;
+      elements.engagementsClubTeamForm?.removeAttribute("aria-busy");
+      if (nativeLeaderEdit) { renderEngagementClubTeamPersonOptions(); updateEngagementClubTeamLeaderActions(); }
       if (elements.engagementsClubTeamSaveButton) elements.engagementsClubTeamSaveButton.disabled = nativeLeaderEdit ? Boolean(engagementClubWriteLockReason({ ...selectedEngagementCompetition, nativeReadOnly: false })) : engagementClubWriteLocked();
     }
   }
@@ -18454,6 +18493,11 @@
       }
     });
     elements.engagementsClubEntriesList?.addEventListener("click", (event) => {
+      const remove = event.target.closest("[data-engagement-club-swimmer-remove]");
+      if (remove) {
+        void removeEngagementClubSwimmerFromCourses(remove.dataset.engagementClubSwimmerRemove || "", remove);
+        return;
+      }
       const button = event.target.closest("[data-engagement-club-times-open]");
       if (!button) return;
       void openEngagementClubTimesDialog(button.dataset.engagementClubTimesOpen || "", button);

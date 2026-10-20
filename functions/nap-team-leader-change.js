@@ -31,7 +31,10 @@ function planLeaderChange(pack,input) {
     if(typeof patch.birthDate!=="string" || !/^\d{4}-\d{2}-\d{2}$/.test(patch.birthDate) || !date(patch.birthDate) || new Date(`${patch.birthDate}T12:00:00Z`).toISOString().slice(0,10)!==patch.birthDate) throw new TypeError("Date de naissance invalide.");
     birthDate=patch.birthDate;
   }
-  const after={...before,nom:name(patch.lastName),prenom:name(patch.firstName),date:birthDate};
+  // IntraNAP recognises the declaration through the represented club. Never
+  // take a declaration already representing another club away from it.
+  if(String(before.club)===String(input.clubId) && !["", "0", String(input.clubId)].includes(String(before.pourclub))) throw new TypeError("Declaration pour un autre club a verifier avant modification.");
+  const after={...before,nom:name(patch.lastName),prenom:name(patch.firstName),date:birthDate,pourclub:String(input.clubId)};
   const identity=row=>[String(row.nom).trim().toLocaleUpperCase("fr"),String(row.prenom).trim().toLocaleUpperCase("fr"),date(row.date)].join("|");
   const enrolled=new Set((pack.inscriptions || []).map(row=>String(row.nageur)));
   for(const row of pack.members || []) enrolled.add(String(row.nageur));

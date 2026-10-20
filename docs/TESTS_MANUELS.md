@@ -2,6 +2,13 @@
 
 <!-- description: Checklist de tests manuels à exécuter avant une publication ou après une modification sensible. -->
 
+## Chef et retrait depuis Courses — 20 octobre
+
+- Sur fixtures isolées : création/correction du chef du club avec pourclub égal au club ; renonciation explicite inchangée ; refus de reprendre une déclaration représentant un autre club. Vérifier attente visible, double clic, erreur et succès après réponse serveur uniquement.
+- Ordinateur et mobile : poubelle nominative accessible au clavier et au toucher, cible de 44 px et défilement horizontal. Confirmer systématiquement, y compris sans course ; annuler sans appel serveur. Avec relais, annoncer le retrait du membre et la conservation des relais à compléter.
+- Vérifier fermeture, droits existants, opération en attente, changement de compétition, erreur et reprise native. Contrôler que fiche/licence/performances/autres compétitions sont conservées et qu'aucun autre relayeur n'est supprimé. Utiliser uniquement des fixtures ou un jeu d'écriture autorisé distinct de Paris 5220/CNHC ; aucune nouvelle écriture sur ce dossier pour cette recette.
+- Après publication : recette utilisateur sur la version TEST regroupée à obtenir. Les contrôles isolés ne valent pas validation utilisateur.
+
 ## Pilote mails Île-de-France — 20 octobre
 
 - Exécuter hors réseau les tests du contrôle national, du pilote NAP et du garde SMTP. Vérifier clubs IDF sur compétition extérieure, clubs extérieurs sur compétition IDF, région inconnue, comptes nationaux sans club, exports IDF/hors IDF, changement de périmètre sans rattrapage, activation sans destinataire encore connu, coupure pendant le chargement des pièces jointes et redirection TEST. Aucun SMTP réel ni écriture NAP.
