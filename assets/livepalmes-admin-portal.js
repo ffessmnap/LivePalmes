@@ -684,9 +684,12 @@
     engagementsClubTeamSummary: document.querySelector("#adminEngagementsClubTeamSummary"),
     engagementsClubTeamChoices: document.querySelector("#adminEngagementsClubTeamChoices"),
     engagementsClubTeamModifyButton: document.querySelector("#adminEngagementsClubTeamModifyButton"),
+    engagementsClubTeamEditCancel: document.querySelector("#adminEngagementsClubTeamEditCancel"),
     engagementsClubTeamNativePersonCreate: document.querySelector("#adminEngagementsClubTeamNativePersonCreate"),
     engagementsClubTeamRenunciationButton: document.querySelector("#adminEngagementsClubTeamRenunciationButton"),
     engagementsClubTeamRenunciationDialog: document.querySelector("#adminEngagementsClubTeamRenunciationDialog"),
+    engagementsClubTeamRenunciationDialogTitle: document.querySelector("#adminEngagementsClubTeamRenunciationDialogTitle"),
+    engagementsClubTeamRenunciationDialogSummary: document.querySelector("#adminEngagementsClubTeamRenunciationDialogSummary"),
     engagementsClubTeamRenunciationDialogForm: document.querySelector("#adminEngagementsClubTeamRenunciationDialogForm"),
     engagementsClubTeamRenunciationDialogClose: document.querySelector("#adminEngagementsClubTeamRenunciationDialogClose"),
     engagementsClubTeamRenunciationDialogCancel: document.querySelector("#adminEngagementsClubTeamRenunciationDialogCancel"),
@@ -1077,6 +1080,7 @@
   let activeEngagementsDetailTab = "general";
   let engagementClubTeamEditing = true;
   let engagementClubTeamRenunciationSaving = false;
+  let engagementClubTeamRenunciationContext = null;
   let engagementClubTeamSaving = false;
   let engagementClubSwimmerRemoving = false;
   let activeEngagementProgramSessionId = "";
@@ -2124,10 +2128,15 @@
     updateNativeCompetitionPersonCreationButton();
     const teamLeaderComplete = engagementClubTeamComplete(entry);
     const editorVisible = !teamLeaderComplete || engagementClubTeamEditing;
-    if (elements.engagementsClubTeamChoices) elements.engagementsClubTeamChoices.hidden = !nativeLeaderEdit && !editorVisible;
+    if (elements.engagementsClubTeamChoices) elements.engagementsClubTeamChoices.hidden = !editorVisible;
+    if (elements.engagementsClubTeamEditCancel) {
+      elements.engagementsClubTeamEditCancel.hidden = !teamLeaderComplete || !editorVisible;
+      elements.engagementsClubTeamEditCancel.disabled = engagementClubTeamSaving;
+    }
     if (elements.engagementsClubTeamModifyButton) {
       elements.engagementsClubTeamModifyButton.hidden = !teamLeaderComplete || editorVisible;
-      elements.engagementsClubTeamModifyButton.disabled = Boolean(writeLockReason);
+      elements.engagementsClubTeamModifyButton.disabled = Boolean(writeLockReason || engagementClubTeamSaving);
+      elements.engagementsClubTeamModifyButton.textContent = teamLeader.mode === "renounced" ? "Désigner un chef d’équipe" : "Remplacer";
     }
     if (elements.engagementsClubTeamExternalOpen) {
       elements.engagementsClubTeamExternalOpen.textContent = teamLeaderComplete && teamLeader.externalClub
@@ -2143,13 +2152,10 @@
     }
     if (elements.engagementsClubTeamRemoveButton) {
       const canRemoveTeamLeader = teamLeader.mode === "person" && teamLeaderComplete;
-      const hasParticipants = engagementClubEntryHasParticipants(entry);
       elements.engagementsClubTeamRemoveButton.hidden = !canRemoveTeamLeader || editorVisible;
-      elements.engagementsClubTeamRemoveButton.disabled = Boolean(writeLockReason || hasParticipants);
+      elements.engagementsClubTeamRemoveButton.disabled = Boolean(writeLockReason || engagementClubTeamSaving);
       if (nativeLeaderEdit && teamLeader.externalClub) elements.engagementsClubTeamRemoveButton.disabled = true;
-      elements.engagementsClubTeamRemoveButton.title = hasParticipants
-        ? "Le dossier contient des nageurs, des officiels ou des relais : remplacez le chef d'équipe."
-        : "Retirer le chef d'équipe et supprimer ce dossier vide.";
+      elements.engagementsClubTeamRemoveButton.title = writeLockReason || "Participer sans chef d’équipe après confirmation de la renonciation au droit de réclamation. Les engagements sont conservés.";
       if (nativeLeaderEdit && teamLeader.externalClub) elements.engagementsClubTeamRemoveButton.title = "Déclaration pour un autre club à vérifier dans IntraNAP avant retrait.";
     }
   }
@@ -5182,9 +5188,28 @@
     updateEngagementClubTeamFormMode();
   }
 
+  function cancelEngagementClubTeamEdit() {
+    if (engagementClubTeamSaving) return;
+    const leader = selectedEngagementClubEntry?.teamLeader || {};
+    for (const [key, property] of [["FirstName", "firstName"], ["LastName", "lastName"], ["BirthDate", "birthDate"], ["Sex", "sex"], ["License", "licenseNumber"]]) {
+      if (elements[`engagementsClubTeam${key}`]) elements[`engagementsClubTeam${key}`].value = leader[property] || "";
+    }
+    engagementClubTeamEditing = false;
+    if (elements.engagementsClubTeamPersonFields) delete elements.engagementsClubTeamPersonFields.dataset.manualEntry;
+    if (elements.engagementsClubTeamPersonSearch) elements.engagementsClubTeamPersonSearch.value = "";
+    renderEngagementClubTeamPersonOptions(findEngagementClubTeamPersonFromFields(leader)?.id || "");
+    restoreEngagementClubTeamLeaderChoice();
+    updateEngagementClubTeamLeaderActions();
+    elements.engagementsClubTeamModifyButton?.focus();
+  }
+
   async function selectEngagementClubTeamRenunciation(event) {
     event?.preventDefault?.();
     if (engagementClubTeamRenunciationSaving) return;
+    const context = engagementClubTeamRenunciationContext;
+    if (!context || context.competitionId !== selectedEngagementCompetitionId || context.clubId !== String(activeEngagementClubProfile().clubId || "")) return;
+    if (engagementClubTeamSaving || engagementClubTeamLeaderLockReason() || !canUse("engagements.club.manage")) return;
+    engagementClubTeamRenunciationContext = null;
     if (elements.engagementsClubTeamRenunciationDialog?.open) elements.engagementsClubTeamRenunciationDialog.close();
     const radio = elements.engagementsClubTeamForm?.querySelector('input[name="adminEngagementsClubTeamMode"][value="renounced"]');
     if (radio) radio.checked = true;
@@ -5194,19 +5219,29 @@
     engagementClubTeamRenunciationSaving = true;
     try {
       const saved = await saveEngagementClubTeamLeader();
-      if (!saved) restoreEngagementClubTeamLeaderChoice();
+      if (!saved && context.competitionId === selectedEngagementCompetitionId && context.clubId === String(activeEngagementClubProfile().clubId || "")) restoreEngagementClubTeamLeaderChoice();
     } finally {
       engagementClubTeamRenunciationSaving = false;
     }
   }
 
   function openEngagementClubTeamRenunciationDialog() {
+    if (!selectedEngagementCompetitionId || !canUse("engagements.club.manage") || engagementClubTeamSaving || engagementClubTeamRenunciationSaving || engagementClubTeamLeaderLockReason()) return false;
+    const leader = selectedEngagementClubEntry?.teamLeader || {};
+    if (selectedEngagementCompetition?.nativeReadOnly === true && leader.externalClub) return false;
+    engagementClubTeamRenunciationContext = {competitionId: selectedEngagementCompetitionId, clubId: String(activeEngagementClubProfile().clubId || "")};
+    if (elements.engagementsClubTeamRenunciationDialogTitle) elements.engagementsClubTeamRenunciationDialogTitle.textContent = leader.mode === "person" ? "Retirer le chef d’équipe ?" : "Ne déclarer aucun chef d’équipe ?";
+    if (elements.engagementsClubTeamRenunciationDialogSummary) elements.engagementsClubTeamRenunciationDialogSummary.textContent = leader.mode === "person"
+      ? `Vous allez retirer ${[leader.firstName, leader.lastName].filter(Boolean).join(" ")} et participer sans chef d’équipe.`
+      : "Vous allez participer sans chef d’équipe.";
     if (!elements.engagementsClubTeamRenunciationDialog?.open) {
       elements.engagementsClubTeamRenunciationDialog?.showModal();
     }
+    return true;
   }
 
   function closeEngagementClubTeamRenunciationDialog() {
+    engagementClubTeamRenunciationContext = null;
     if (elements.engagementsClubTeamRenunciationDialog?.open) elements.engagementsClubTeamRenunciationDialog.close();
     restoreEngagementClubTeamLeaderChoice();
   }
@@ -8505,7 +8540,7 @@
     const rows = [
       ["Chef d'équipe", engagementClubSummaryTeamLeaderLabel(entry)],
       ...(whatsAppValue ? [["Groupe WhatsApp", whatsAppValue]] : []),
-      ["Officiels", competition.officialsRequired === false ? "Non requis" : `${officialsCount} officiel${officialsCount > 1 ? "s" : ""}`, "metric"],
+      ["Officiels", competition.officialsRequired === false ? "Officiels non requis" : `${officialsCount} officiel${officialsCount > 1 ? "s" : ""}`, "metric"],
       ["Nageurs", `${swimmers.length} nageur${swimmers.length > 1 ? "s" : ""}`, "metric"],
       ["Courses individuelles", `${individualCount} course${individualCount > 1 ? "s" : ""}`, "metric"],
       ["Relais", `${relays.length} relais`, "metric"],
@@ -8822,14 +8857,14 @@
     if (elements.engagementsClubTeamSummary) {
       elements.engagementsClubTeamSummary.textContent = engagementClubTeamComplete()
         ? teamLeader.mode === "renounced"
-          ? "Renonciation au droit de réclamation confirmée."
-          : `Chef d'équipe : ${[teamLeader.firstName, teamLeader.lastName].filter(Boolean).join(" ")}${teamLeader.externalClub ? ` · ${teamLeader.clubName || "hors du club"}` : ""}.`
+          ? "Aucun chef d’équipe déclaré — renonciation au droit de réclamation confirmée."
+          : `${[teamLeader.firstName, teamLeader.lastName].filter(Boolean).join(" ")}${teamLeader.externalClub ? ` · ${teamLeader.clubName || "hors du club"}` : ""}`
         : "À renseigner avant de commencer les engagements.";
       elements.engagementsClubTeamSummary.dataset.complete = engagementClubTeamComplete() ? "true" : "false";
     }
     if (elements.engagementsClubTeamMessage) {
       const teamLockReason = engagementClubTeamLeaderLockReason();
-      elements.engagementsClubTeamMessage.textContent = teamLockReason || (engagementClubTeamComplete() ? "Étape chef d'équipe validée." : "");
+      elements.engagementsClubTeamMessage.textContent = teamLockReason || "";
       elements.engagementsClubTeamMessage.dataset.tone = teamLockReason ? "error" : "ok";
     }
     document.querySelectorAll("[data-club-step]").forEach((step) => {
@@ -11248,6 +11283,9 @@
     event?.preventDefault?.();
     if (engagementClubTeamSaving) return false;
     if (!selectedEngagementCompetitionId || !canUse("engagements.club.manage")) return false;
+    const saveCompetitionId = selectedEngagementCompetitionId;
+    const saveClubId = String(activeEngagementClubProfile().clubId || "");
+    const saveScopeCurrent = () => selectedEngagementCompetitionId === saveCompetitionId && String(activeEngagementClubProfile().clubId || "") === saveClubId;
     const nativeLeaderEdit = selectedEngagementCompetition?.nativeReadOnly === true && selectedEngagementCompetition?.nativeTeamLeaderEditable === true;
     if (nativeLeaderEdit ? Boolean(engagementClubWriteLockReason({ ...selectedEngagementCompetition, nativeReadOnly: false })) : showEngagementClubWriteLock(elements.engagementsClubTeamMessage)) return false;
     updateEngagementClubTeamFormMode();
@@ -11268,13 +11306,14 @@
     try {
       if (nativeLeaderEdit) {
         const result = await callFunction("saveEngagementClubTeamLeader", {
-          competitionId: selectedEngagementCompetitionId,
+          competitionId: saveCompetitionId,
           leaderId: selectedEngagementClubEntry?.teamLeader?.nativeLeaderId,
           expectedFingerprint: selectedEngagementClubEntry?.napFingerprint,
           patch: elements.engagementsClubTeamForm?.querySelector('input[name="adminEngagementsClubTeamMode"]:checked')?.value === "renounced"
             ? { mode: "renounced", renunciationAccepted: elements.engagementsClubTeamRenunciation?.checked === true }
             : { firstName: elements.engagementsClubTeamFirstName?.value || "", lastName: elements.engagementsClubTeamLastName?.value || "", birthDate: elements.engagementsClubTeamBirthDate?.value || "" }
         });
+        if (!saveScopeCurrent()) return true;
         selectedEngagementCompetition = result.competition;
         renderEngagementClubEntry(result.entry);
         if (elements.engagementsClubTeamMessage) { elements.engagementsClubTeamMessage.textContent = "Chef d'équipe enregistré dans NAP. Vous pouvez continuer les engagements."; elements.engagementsClubTeamMessage.dataset.tone = "ok"; }
@@ -11336,9 +11375,10 @@
         };
       }
       const result = await callFunction("saveEngagementClubTeamLeader", {
-        competitionId: selectedEngagementCompetitionId,
+        competitionId: saveCompetitionId,
         teamLeader
       });
+      if (!saveScopeCurrent()) return true;
       selectedEngagementClubEntry = result.entry || {};
       setSelectedEngagementCompetitionClubEntryExists(true);
       renderEngagementClubEntry(selectedEngagementClubEntry);
@@ -11349,6 +11389,7 @@
       setEngagementSaveState("saved");
       return true;
     } catch (error) {
+      if (!saveScopeCurrent()) return false;
       if (error?.details?.outsideClubExistingPerson === true) {
         if (elements.engagementsClubTeamMessage) {
           elements.engagementsClubTeamMessage.textContent = "Cette personne existe déjà dans un autre club. Déclarez-la comme chef d'équipe hors club.";
@@ -11366,65 +11407,19 @@
     } finally {
       engagementClubTeamSaving = false;
       elements.engagementsClubTeamForm?.removeAttribute("aria-busy");
-      if (nativeLeaderEdit) { renderEngagementClubTeamPersonOptions(); updateEngagementClubTeamLeaderActions(); }
-      if (elements.engagementsClubTeamSaveButton) elements.engagementsClubTeamSaveButton.disabled = nativeLeaderEdit ? Boolean(engagementClubWriteLockReason({ ...selectedEngagementCompetition, nativeReadOnly: false })) : engagementClubWriteLocked();
+      if (saveScopeCurrent()) {
+        if (nativeLeaderEdit) renderEngagementClubTeamPersonOptions();
+        if (elements.engagementsClubTeamSaveButton) elements.engagementsClubTeamSaveButton.disabled = nativeLeaderEdit ? Boolean(engagementClubWriteLockReason({ ...selectedEngagementCompetition, nativeReadOnly: false })) : engagementClubWriteLocked();
+      }
+      updateEngagementClubTeamLeaderActions();
     }
   }
 
   async function removeEngagementClubTeamLeader() {
-    if (!selectedEngagementCompetitionId || !canUse("engagements.club.manage")) return false;
-    const removalCompetitionId = selectedEngagementCompetitionId;
-    const removalClubId = String(activeEngagementClubProfile().clubId || "");
-    const removalScopeCurrent = () => selectedEngagementCompetitionId === removalCompetitionId && String(activeEngagementClubProfile().clubId || "") === removalClubId;
-    const nativeLeaderEdit = selectedEngagementCompetition?.nativeReadOnly === true && selectedEngagementCompetition?.nativeTeamLeaderEditable === true;
-    if (nativeLeaderEdit ? Boolean(engagementClubTeamLeaderLockReason()) : showEngagementClubWriteLock(elements.engagementsClubTeamMessage)) return false;
-    const entry = selectedEngagementClubEntry || {};
-    const teamLeader = entry.teamLeader || {};
-    if (teamLeader.mode !== "person" || !engagementClubTeamComplete(entry)) return false;
-    if (engagementClubEntryHasParticipants(entry)) {
-      if (elements.engagementsClubTeamMessage) {
-        elements.engagementsClubTeamMessage.textContent = "Ce dossier contient déjà des nageurs, des officiels ou des relais : remplacez le chef d'équipe au lieu de le retirer.";
-        elements.engagementsClubTeamMessage.dataset.tone = "warning";
-      }
-      return false;
-    }
-    const name = [teamLeader.firstName, teamLeader.lastName].filter(Boolean).join(" ") || "ce chef d'équipe";
-    if (!global.confirm(`Retirer ${name} ? Le dossier vide de ce club ne sera plus compté comme un engagement.`)) return false;
-    if (elements.engagementsClubTeamRemoveButton) elements.engagementsClubTeamRemoveButton.disabled = true;
-    setEngagementSaveState("saving");
-    if (elements.engagementsClubTeamMessage) {
-      elements.engagementsClubTeamMessage.textContent = "Retrait du chef d'équipe...";
-      elements.engagementsClubTeamMessage.dataset.tone = "loading";
-    }
-    try {
-      const result = await callFunction("removeEngagementClubTeamLeader", {
-        competitionId: removalCompetitionId,
-        ...(nativeLeaderEdit ? {leaderId:teamLeader.nativeLeaderId,expectedFingerprint:entry.napFingerprint} : {})
-      });
-      if (!removalScopeCurrent()) return true;
-      if (result.competition) selectedEngagementCompetition = {...selectedEngagementCompetition,...result.competition};
-      selectedEngagementClubEntry = result.entry || {};
-      setSelectedEngagementCompetitionClubEntryExists(false);
-      renderEngagementClubEntry(selectedEngagementClubEntry);
-      if (elements.engagementsClubTeamMessage) {
-        elements.engagementsClubTeamMessage.textContent = "Chef d'équipe retiré. Le dossier vide n'est plus compté dans les engagements.";
-        elements.engagementsClubTeamMessage.dataset.tone = "ok";
-      }
-      setEngagementSaveState("saved");
-      return true;
-    } catch (error) {
-      if (!removalScopeCurrent()) return false;
-      if (elements.engagementsClubTeamMessage) {
-        elements.engagementsClubTeamMessage.textContent = `Retrait impossible : ${error?.message || error}`;
-        elements.engagementsClubTeamMessage.dataset.tone = "error";
-      }
-      setEngagementSaveState("error");
-      return false;
-    } finally {
-      if (removalScopeCurrent() && elements.engagementsClubTeamRemoveButton && !elements.engagementsClubTeamRemoveButton.hidden) {
-        elements.engagementsClubTeamRemoveButton.disabled = Boolean(engagementClubTeamLeaderLockReason() || engagementClubEntryHasParticipants() || nativeLeaderEdit && teamLeader.externalClub);
-      }
-    }
+    if (engagementClubTeamSaving || !selectedEngagementCompetitionId || !canUse("engagements.club.manage")) return false;
+    const leader = selectedEngagementClubEntry?.teamLeader || {};
+    if (leader.mode !== "person" || !engagementClubTeamComplete()) return false;
+    return openEngagementClubTeamRenunciationDialog();
   }
 
   async function saveEngagementClubOfficials(event) {
@@ -18151,14 +18146,19 @@
     elements.engagementsClubTeamRenunciationDialogForm?.addEventListener("submit", selectEngagementClubTeamRenunciation);
     elements.engagementsClubTeamRenunciationDialogClose?.addEventListener("click", closeEngagementClubTeamRenunciationDialog);
     elements.engagementsClubTeamRenunciationDialogCancel?.addEventListener("click", closeEngagementClubTeamRenunciationDialog);
-    elements.engagementsClubTeamRenunciationDialog?.addEventListener("cancel", restoreEngagementClubTeamLeaderChoice);
+    elements.engagementsClubTeamRenunciationDialog?.addEventListener("cancel", closeEngagementClubTeamRenunciationDialog);
     elements.engagementsClubTeamModifyButton?.addEventListener("click", async () => {
+      if (engagementClubTeamSaving || engagementClubTeamLeaderLockReason() || !canUse("engagements.club.manage")) return;
+      const editCompetitionId = selectedEngagementCompetitionId;
+      const editClubId = String(activeEngagementClubProfile().clubId || "");
+      const editScopeCurrent = () => engagementClubTeamEditing && selectedEngagementCompetitionId === editCompetitionId && String(activeEngagementClubProfile().clubId || "") === editClubId;
       engagementClubTeamEditing = true;
       updateEngagementClubTeamLeaderActions();
       if (selectedEngagementCompetition?.nativeReadOnly === true && selectedEngagementCompetition?.nativeTeamLeaderEditable === true) {
         restoreEngagementClubTeamLeaderChoice();
-        if (selectedEngagementClubEntry?.teamLeader?.mode === "person") setEngagementClubTeamManualFieldsVisible(true);
+        setEngagementClubTeamManualFieldsVisible(false);
         await loadEngagementClubPeople({ silent: true });
+        if (!editScopeCurrent()) return;
         renderEngagementClubTeamPersonOptions();
         updateEngagementClubTeamFormMode();
         elements.engagementsClubTeamPersonSearch?.focus();
@@ -18171,6 +18171,7 @@
           loadEngagementClubPeople({ silent: true }),
           loadEngagementClubSwimmers({ silent: true })
         ]);
+        if (!editScopeCurrent()) return;
         renderEngagementClubTeamPersonOptions(teamLeader.personId || "");
         elements.engagementsClubTeamPersonSearch?.focus();
       } else if (teamLeader.externalClub) {
@@ -18179,6 +18180,7 @@
         elements.engagementsClubTeamForm?.querySelector('input[name="adminEngagementsClubTeamMode"]:checked')?.focus();
       }
     });
+    elements.engagementsClubTeamEditCancel?.addEventListener("click", cancelEngagementClubTeamEdit);
     elements.engagementsClubTeamRemoveButton?.addEventListener("click", removeEngagementClubTeamLeader);
     elements.engagementsClubTeamExternalOpen?.addEventListener("click", () => {
       const currentTeamLeader = selectedEngagementClubEntry?.teamLeader || {};

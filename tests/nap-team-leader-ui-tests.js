@@ -10,7 +10,7 @@ elements.engagementsClubTeamRemoveButton=field("");
 elements.engagementsClubTeamExternal.closest=()=>null;
 const hiddenRadio={closest:()=>null,hidden:true};
 elements.engagementsClubTeamChoices={querySelectorAll:()=>[hiddenRadio]};
-const sandbox={engagementClubTeamSaving:false,renderEngagementClubTeamPersonOptions:()=>{},mode:"person",engagementClubPeople:[],engagementClubPeopleHasMore:false,elements,global:{LivePalmesEnvironment:{sportingDataSource:"nap",isTest:true}},engagementClubPersonSaving:false,selectedEngagementCompetitionId:"legacy-nap-5140",selectedEngagementCompetition:{nativeReadOnly:true,nativeTeamLeaderEditable:true,entryStatus:"open"},selectedEngagementClubEntry:{napFingerprint:"native-fingerprint",teamLeader:{nativeLeaderId:"51"}},canUse:()=>true,
+const sandbox={engagementClubTeamSaving:false,renderEngagementClubTeamPersonOptions:()=>{},mode:"person",engagementClubPeople:[],engagementClubPeopleHasMore:false,elements,global:{LivePalmesEnvironment:{sportingDataSource:"nap",isTest:true}},engagementClubPersonSaving:false,selectedEngagementCompetitionId:"legacy-nap-5140",selectedEngagementCompetition:{nativeReadOnly:true,nativeTeamLeaderEditable:true,entryStatus:"open"},selectedEngagementClubEntry:{napFingerprint:"native-fingerprint",teamLeader:{nativeLeaderId:"51"}},canUse:()=>true,activeEngagementClubProfile:()=>({clubId:"106"}),
   engagementClubWriteLockReason:competition=>competition.nativeReadOnly?"Native blocked":competition.entryStatus==="open"?"":"Closed",
   engagementClubTeamComplete:()=>true,engagementClubTeamEditing:false,engagementClubEntryHasParticipants:()=>true,
   setEngagementClubFormControlsLocked:()=>{[elements.engagementsClubTeamNativePersonCreate,elements.engagementsClubTeamModifyButton,elements.engagementsClubTeamRemoveButton,elements.engagementsClubTeamSaveButton].forEach(control=>{control.disabled=true;});},setEngagementClubTeamManualFieldsVisible:()=>{},setEngagementSaveState:()=>{},
@@ -18,10 +18,22 @@ const sandbox={engagementClubTeamSaving:false,renderEngagementClubTeamPersonOpti
 vm.createContext(sandbox);
 function load(name,async=false){const start=source.indexOf(`  ${async?"async ":""}function ${name}(`);assert.ok(start>=0);const tail=source.slice(start+10);const next=tail.search(/\n  (?:async )?function /);vm.runInContext(source.slice(start,start+10+next),sandbox);}
 load("updateNativeCompetitionPersonCreationButton");load("updateEngagementClubTeamFormMode");load("updateEngagementClubTeamLeaderActions");load("saveEngagementClubTeamLeader",true);
+load("restoreEngagementClubTeamLeaderChoice");load("cancelEngagementClubTeamEdit");
+sandbox.findEngagementClubTeamPersonFromFields=()=>null;
+elements.engagementsClubTeamModifyButton.focus=()=>{};
+sandbox.selectedEngagementClubEntry.teamLeader={mode:"person",nativeLeaderId:"51",firstName:"Chef",lastName:"CORRIGE",birthDate:"1980-01-02"};
+const beforeCancel=JSON.stringify(sandbox.selectedEngagementClubEntry);
+elements.engagementsClubTeamFirstName.value="Brouillon";sandbox.engagementClubTeamEditing=true;
+sandbox.cancelEngagementClubTeamEdit();
+assert.equal(elements.engagementsClubTeamFirstName.value,"Chef");
+assert.equal(JSON.stringify(sandbox.selectedEngagementClubEntry),beforeCancel);
+assert.equal(elements.engagementsClubTeamChoices.hidden,true);
+assert.equal(calls.length,0,"cancel restores only the leader form, without saving or reloading the dossier");
 sandbox.updateEngagementClubTeamLeaderActions();
 assert.equal(elements.engagementsClubTeamNativePersonCreate.disabled,false,"creation stays enabled after locking native declaration fields");
 assert.equal(elements.engagementsClubTeamModifyButton.disabled,false,"summary modify stays enabled after locking the other form controls");
-assert.equal(elements.engagementsClubTeamRemoveButton.disabled,true);
+assert.equal(elements.engagementsClubTeamRemoveButton.disabled,false);
+assert.equal(elements.engagementsClubTeamChoices.hidden,true,"existing declaration hides the editor");
 sandbox.updateEngagementClubTeamFormMode();
 assert.equal(hiddenRadio.hidden,true);
 assert.equal(elements.engagementsClubTeamLicense.value,"");assert.equal(elements.engagementsClubTeamLicense.required,false);assert.equal(elements.engagementsClubTeamSex.required,false);
