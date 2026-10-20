@@ -2,13 +2,15 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
-### 20 octobre — Chef d’équipe et retrait depuis les courses (TEST à publier)
+### 20 octobre — Chef d’équipe et retrait depuis les courses (TEST publié, validation utilisateur attendue)
 
 - Besoin autorisé : corriger le rattachement natif du chef, expliciter l’attente serveur et retirer un nageur depuis Courses avec confirmation et avertissement relais.
 - Diagnostic réel autorisé Paris 5220/CNHC : déclaration 14444 existante, pourclub vide ; sélection de Stéphane dans IntraNAP, puis pourclub=106 et affichage retrouvé. Aucune autre écriture Paris/CNHC pendant le développement ou la recette.
 - Correction : créations et corrections explicites renseignent le club représenté, refus d’appropriation d’une déclaration représentant un autre club. Renonciation et répertoire conservés. Retrait via le traitement existant, relais conservés et compositions à compléter.
 - Budget : aucune lecture supplémentaire à l’ouverture/rafraîchissement, avertissement local, un appel existant par enregistrement/retrait. Plafonds NAP existants conservés (retrait : 47 opérations SQL / 5 écritures SQL maximum, audit séparé). Aucun scan, polling ni migration ajouté.
-- PR/commit et preuve TEST à renseigner après contrôles. Validation utilisateur de la version regroupée attendue ; aucune publication PROD autorisée.
+- PR #385 intégrée sur c53a8149114c1503638871125c02a61041ac6efb ; contrôle Linux 39415662156 réussi (suite globale et circuit de publication). Publication TEST commune [39415999454](https://github.com/ffessmnap/LivePalmes/actions/runs/39415999454) réussie ; Hosting a1402b3836afb114. Preuve test-proof téléchargée : commit exact et deux fonctions actives republiées (saveEngagementClubTeamLeader et removeEngagementClubTeamLeader, dépendance partagée). Les autres révisions sont réutilisées après contrôle ; aucun lot mails ni scheduler republié. JS/CSS du portail relus sur TEST et identiques au commit publié.
+- Recette isolée : mapping, attente/succès/erreur serveur, annulation, relais, double clic, fermeture, opérations en attente et changement de compétition vérifiés sans réseau. Contrôle visuel ordinateur/mobile sur données fictives (cible 44 px). Activation clavier du dialogue local obtenue, fermeture bloquée par l’outil navigateur : ne pas compter ce point comme validé. Vérification locale globale arrêtée sur Bash absent ; suite complète réussie sous Linux.
+- Validation utilisateur de la version TEST regroupée attendue ; aucune publication PROD autorisée.
 
 ### 20 octobre — Enchaînement des lots de mails et suivi (TEST, validation utilisateur attendue)
 
