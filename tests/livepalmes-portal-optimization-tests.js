@@ -356,7 +356,7 @@ vm.runInNewContext(`
 const openingMailStart = functions.indexOf("function engagementOpeningMailSubject");
 const openingMailEnd = functions.indexOf("function engagementMailJobItemFromData", openingMailStart);
 const openingMailFunctions = functions.slice(openingMailStart, openingMailEnd);
-const openingMailSandbox = {};
+const openingMailSandbox = { ...require("../functions/engagement-competition-mail-format") };
 vm.runInNewContext(`
   const ENVIRONMENT = { hostingOrigin: "https://livepalmes.web.app" };
   const engagementPdfMoney = (value) => value + " €";
@@ -370,7 +370,7 @@ vm.runInNewContext(`
       name: "Meeting test",
       date: "2026-09-12",
       location: "Piscine test",
-      entryDeadlineAt: "2026-09-05 23:59",
+      entryDeadlineAt: "2026-09-05T21:59:00Z",
       fees: { swimmerFee: 2, individualEventFee: 3, relayFee: 4, helloAssoUrl: "https://example.test/paiement" }
     }),
     recapText: engagementClubRecapMailText(
@@ -392,13 +392,13 @@ assert.ok(Array.isArray(sandbox.window.LIVEPALMES_CLUB_REFERENCE?.clubs));
 assert.equal(openingMailSandbox.result.subject, "Ouverture des engagements - Meeting test");
 assert.match(openingMailSandbox.result.text, /^Bonjour,/);
 assert.match(openingMailSandbox.result.text, /https:\/\/livepalmes\.web\.app\/portail\.html#club-competitions/);
-assert.match(openingMailSandbox.result.text, /Merci de finaliser et de vérifier les engagements de votre club au plus tard le 2026-09-05 23:59\./);
+assert.match(openingMailSandbox.result.text, /Merci de finaliser et de vérifier les engagements de votre club au plus tard le samedi 5 septembre 2026 à 23h59\./);
 assert.doesNotMatch(openingMailSandbox.result.text, /Vos modifications sont enregistrées progressivement|Pensez à vérifier l'ensemble/);
 assert.doesNotMatch(openingMailSandbox.result.text, /frais|HelloAsso/i);
-assert.match(openingMailSandbox.result.text, /Sportivement,\nCommission Nationale Nage avec Palmes - FFESSM$/);
+assert.match(openingMailSandbox.result.text, /Sportivement,\nNage avec Palmes FFESSM$/);
 assert.match(openingMailSandbox.result.recapFeeText, /Total indicatif des frais d'engagement : 12 €/);
-assert.match(openingMailSandbox.result.recapText, /Sportivement,\nCommission Nationale Nage avec Palmes - FFESSM$/);
-assert.match(openingMailSandbox.result.txtText, /Sportivement,\nCommission Nationale Nage avec Palmes - FFESSM$/);
+assert.match(openingMailSandbox.result.recapText, /Sportivement,\nNage avec Palmes FFESSM$/);
+assert.match(openingMailSandbox.result.txtText, /Sportivement,\nNage avec Palmes FFESSM$/);
 assert.deepEqual(evaluateEngagementRoutePolicy(["engagements.club.manage"]), {
   club: true,
   clubSwimmers: true,

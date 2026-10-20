@@ -2,6 +2,12 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 20 octobre — Contenus des cinq mails de compétition (TEST à publier)
+
+- Demande autorisée : lieu/adresse/ville dans ouverture, récapitulatif club à la fermeture, documents, export informatique et officiels ; dates françaises en toutes lettres, échéance à l'heure de Paris ; signature « Nage avec Palmes FFESSM ». Rappel de vérification du récapitulatif et contact organisateur.
+- Formatage pur partagé, informations déjà chargées : budget supplémentaire nul à l'ouverture, par action, au rafraîchissement et dans le pire cas. Aucun accès serveur ajouté, aucune modification de destinataires, déclenchements, pièces jointes ou file existante. Bloc de paiement conservé mot pour mot, dont la mention de majoration actuelle.
+- Tests isolés sans réseau : cinq modèles réels, adresse absente/complète, dates/plage de dates, été/hiver/minuit de Paris, HTML échappé et paiement inchangé. Publication par le circuit notifications TEST, mails déjà désactivés, sans envoi réel ni changement de réglage ; puis preuve commune. PR, commit et preuves à compléter ; validation utilisateur attendue, aucune PROD autorisée.
+
 ### 20 octobre — Poubelle Courses plus discrète (TEST publié, validation visuelle attendue)
 
 - Retour utilisateur : poubelle trop grande ; hauteur identique au crayon, puis précision : poubelle moins large et deux boutons bien alignés sur une même ligne.
