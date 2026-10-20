@@ -6,9 +6,10 @@ function workerRef(db){return db.collection('engagementConfigurations').doc('nap
 // A failure after DATA may hide a successful delivery. Never automatically replay it.
 function failure(error,{smtpStarted=false,smtpAccepted=false}={}){
   const code=Number(error?.responseCode||0);
+  const limited=/quota|rate.?limit|daily|too many|sending limit|5\.4\.5/i.test(String(error?.response||error?.message||''));
   if(smtpAccepted)return {status:'uncertain',stop:true};
   if(smtpStarted&&!(code>=400&&code<=599))return {status:'uncertain',stop:true};
-  return {status:'failed',stop:!smtpStarted||code<500||['EAUTH','ECONNECTION'].includes(error?.code)};
+  return {status:'failed',stop:limited||!smtpStarted||code<500||['EAUTH','ECONNECTION'].includes(error?.code)};
 }
 async function deliver(db, reference, services, now=new Date().toISOString()){
   const claimed=await db.runTransaction(async transaction=>{

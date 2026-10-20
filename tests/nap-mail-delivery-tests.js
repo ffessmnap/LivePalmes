@@ -129,6 +129,7 @@ async function batches(){
   await delivery.drain(killed.db,killed.services);assert.equal(killed.sent.size,1,'Kill switch rechecked between messages');
   assert.equal(delivery.failure({responseCode:451},{smtpStarted:true}).status,'failed');
   assert.equal(delivery.failure({responseCode:550},{smtpStarted:true}).status,'failed');
+  assert.equal(delivery.failure({responseCode:550,response:'550 5.4.5 Daily user sending quota exceeded'},{smtpStarted:true}).stop,true);
   assert.equal(delivery.failure({code:'ETIMEDOUT'},{smtpStarted:true}).status,'uncertain');
   assert.equal(delivery.failure(new Error('Firestore write'),{smtpStarted:true,smtpAccepted:true}).status,'uncertain');
   const invalid=fixture(30),validSend=invalid.services.send;
