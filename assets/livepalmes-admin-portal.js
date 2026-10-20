@@ -8825,7 +8825,7 @@
             : "Structure prete. La saisie des officiels arrive dans le lot suivant.",
         swimmers: "Sélectionnez les nageurs du club pour cette compétition.",
           entries: currentEngagementClubSwimmersForSummary().length ? "Choisissez les courses individuelles des nageurs engagés." : "",
-        relays: "Ajoutez les relais du club pour cette compétition.",
+        relays: selectedEngagementClubSwimmerRows().length ? "Ajoutez les relais du club pour cette compétition." : "",
         summary: "Vérifiez le récapitulatif du dossier et téléchargez le PDF."
         };
         firstParagraph.textContent = locked
