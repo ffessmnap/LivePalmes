@@ -1,7 +1,7 @@
 "use strict";
 const control=require('./engagement-mail-control'),automation=require('./nap-notification-automation');
 const {randomUUID}=require('node:crypto');
-const LIMITS=Object.freeze({pageSize:20,maxScanned:600,maxProcessed:300,durationMs:120000,intervalMs:1000,leaseMs:240000});
+const LIMITS={pageSize:20,maxScanned:600,maxProcessed:300,durationMs:120000,intervalMs:1000,leaseMs:240000};
 function workerRef(db){return db.collection('engagementConfigurations').doc('napMailDeliveryWorker');}
 // A failure after DATA may hide a successful delivery. Never automatically replay it.
 function failure(error,{smtpStarted=false,smtpAccepted=false}={}){
