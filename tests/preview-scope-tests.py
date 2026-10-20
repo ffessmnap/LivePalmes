@@ -60,3 +60,10 @@ for extra in ['portail.html', 'functions/index.js', 'firebase.json', 'tools/unkn
     assert scope.needs_preview(dtn_calendar + [extra]) is True
 assert scope.needs_preview(['tools/preview-scope.py', 'tests/preview-scope-tests.py']) is True
 print('DTN/calendar preparation-only scope skips preview; mixed and unanchored changes retain it')
+
+swimmer_dialog = sorted(scope.SWIMMER_DIALOG_PREFLIGHT_PATHS) + ['docs/releases/EVOLUTIONS.md']
+assert scope.needs_preview(swimmer_dialog) is False
+for extra in ['portail.html', 'functions/index.js', 'firebase.json', 'tools/unknown.py', 'unknown-file']:
+    assert scope.needs_preview(swimmer_dialog + [extra]) is True
+assert scope.needs_preview(['tools/preview-scope.py', 'tests/preview-scope-tests.py']) is True
+print('Swimmer dialog preparation skips preview; mixed and unanchored changes retain it')
