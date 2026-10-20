@@ -2,6 +2,12 @@
 
 <!-- description: Checklist de tests manuels à exécuter avant une publication ou après une modification sensible. -->
 
+## Pilote mails Île-de-France — 20 octobre
+
+- Exécuter hors réseau les tests du contrôle national, du pilote NAP et du garde SMTP. Vérifier clubs IDF sur compétition extérieure, clubs extérieurs sur compétition IDF, région inconnue, comptes nationaux sans club, exports IDF/hors IDF, changement de périmètre sans rattrapage, activation sans destinataire encore connu, coupure pendant le chargement des pièces jointes et redirection TEST. Aucun SMTP réel ni écriture NAP.
+- Sur TEST, contrôler en lecture seule Administration nationale, ordinateur/mobile : statut désactivé, périmètre enregistré distinct du choix non enregistré, champs et actions lisibles. Ne pas cliquer sur Activer ni Enregistrer pendant cette recette. Le déploiement ciblé du pilote doit refuser un réglage TEST actif, conserver le réglage et l’inventaire distant, attester les seules neuf fonctions autorisées puis fournir la preuve pour le TEST commun.
+- Avant activation PROD : bilan et accord distinct dans Infra, choix IDF vérifié sur l’annuaire natif et la compétition, simulation sans destinataires hors pilote, provenance des messages et absence de rattrapage. Ne pas confondre région du club et région de compétition ; les mails de compte ne font pas partie du pilote.
+
 ## Ajout de courses piscine NAP — 19 octobre
 
 - Complément valeurs natives : tester NOT NULL sans défaut pour `cost` et `limitnageur`, Open défaut 0 ; initialisation explicite et refus d’un type/default inattendu. Exécuter `tests/nap-course-addition-mysql-tests.js` uniquement sur le clone local MySQL 5.7.30 (127.0.0.1:33317, base `lp_documents_courses_<nombre>`) avec les schémas NAP et des données synthétiques. Vérifier l’ajout réel, les réglages et le programme relus, la reprise sans doublon et les protocoles LOCK/UNLOCK compatibles. Le script refuse une base non isolée.

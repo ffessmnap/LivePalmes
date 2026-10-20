@@ -35,6 +35,8 @@ Réutiliser le run TEST réussi et sa preuve si le candidat et l'état déployé
 
 ## Publication
 
+Pilote mails IDF autorisé sur TEST le 20 octobre 2026 : l’option `notification_pilot_idf=true` du workflow backend exige `notification_final_check=true`, le lot email et main. Elle limite la sélection aux neuf traitements listés dans `refresh-test-notifications.js` ; les autres fonctions et réglages restent inchangés, les mails doivent déjà être désactivés. Exécuter ensuite le circuit TEST commun pour intégrer Hosting et la preuve des révisions. Cette autorisation ne permet ni activation d’envoi ni publication PROD ; celles-ci gardent leur bilan spécifique dans Infra.
+
 ### Circuit réutilisable
 
 - PR : vérification technique et aperçu isolé `pr-N` sur Firebase TEST.
