@@ -68,6 +68,24 @@ NOTIFICATION_FUNCTIONS = {'updateCurrentEmailNotificationPreferences', 'disableC
     'sendEngagementPreparedEmails', 'processNapCompetitionNotifications', 'closeDueEngagementCompetitions'}
 IDF_NOTIFICATION_FUNCTIONS = NOTIFICATION_FUNCTIONS - {'updateCurrentEmailNotificationPreferences', 'disableCompetitionEmailNotifications'}
 IDF_NOTIFICATION_PAIR = ('f5e9d2067d1a73de9fad8ca29cfbfa13db97da16', '1b30062b9a68a23ac0f257a1fdc7da415d9614af')
+IDF_MAILS_PAIR = ('1b30062b9a68a23ac0f257a1fdc7da415d9614af', '32d70fc20cc60ca971e9229d706aa8269556f1af')
+
+
+def notification_maintenance(value):
+    maintenance = value.get('notificationMaintenancePlan')
+    if maintenance is None:
+        return None
+    require((value.get('productionCommit'), value.get('candidate')) == IDF_MAILS_PAIR
+            and isinstance(maintenance, dict)
+            and set(maintenance) == {'scope', 'observedRevision', 'pauseRevision', 'resumeRevision', 'noReplay', 'approval'}
+            and maintenance.get('scope') == 'idf' and maintenance.get('noReplay') is True
+            and all(type(maintenance.get(key)) is int for key in ['observedRevision', 'pauseRevision', 'resumeRevision'])
+            and maintenance['observedRevision'] >= 0
+            and maintenance.get('pauseRevision') == maintenance['observedRevision'] + 1
+            and maintenance.get('resumeRevision') == maintenance['observedRevision'] + 2
+            and isinstance(maintenance.get('approval'), str) and bool(maintenance['approval'].strip()),
+            'Maintenance IDF hors paire ou transitions approuvees')
+    return maintenance
 
 
 def approved_notification_functions(value):
@@ -77,9 +95,14 @@ def approved_notification_functions(value):
     pilot = value.get('notificationPilotIdfApproval')
     if pilot is not None:
         require(isinstance(pilot, str) and bool(pilot.strip())
-                and (value.get('productionCommit'), value.get('candidate')) == IDF_NOTIFICATION_PAIR
+                and (value.get('productionCommit'), value.get('candidate')) in {IDF_NOTIFICATION_PAIR, IDF_MAILS_PAIR}
                 and set(names) == IDF_NOTIFICATION_FUNCTIONS,
                 'Pilote IDF hors paire ou perimetre approuve')
+        if (value.get('productionCommit'), value.get('candidate')) == IDF_MAILS_PAIR:
+            require(notification_maintenance(value) is not None, 'Plan de coupure/remise IDF requis')
+    if value.get('notificationMaintenancePlan') is not None:
+        require(pilot is not None, 'Maintenance reservee au pilote IDF explicite')
+        notification_maintenance(value)
     expected = IDF_NOTIFICATION_FUNCTIONS if pilot is not None else NOTIFICATION_FUNCTIONS
     require(not names or (set(names) == expected and isinstance(value.get('additionalNotificationApproval'), str)
             and bool(value['additionalNotificationApproval'].strip()) and value.get('initialAutomaticMailEnabled') is False),

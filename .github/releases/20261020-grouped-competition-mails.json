@@ -1,0 +1,92 @@
+{
+  "schema": 1,
+  "candidate": "32d70fc20cc60ca971e9229d706aa8269556f1af",
+  "productionCommit": "1b30062b9a68a23ac0f257a1fdc7da415d9614af",
+  "productionHosting": "sites/livepalmes/versions/68d2c18ccd799e1c",
+  "testRun": 39423472104,
+  "changes": [
+    {
+      "title": "Cinq mails de compétition, lots et suivi, chef d’équipe/retour d’enregistrement, poubelle discrète alignée avec confirmation et avertissement relais",
+      "paths": [
+        "assets/livepalmes-admin-portal.css",
+        "assets/livepalmes-admin-portal.js",
+        "portail.html",
+        "functions/engagement-competition-mail-format.js",
+        "functions/index.js",
+        "functions/nap-mail-delivery.js",
+        "functions/nap-team-leader-change.js"
+      ],
+      "status": "validated",
+      "validation": "Antoine, 20 octobre 2026 : modèles des cinq mails validés par « je valide » sur le candidat TEST 32d70fc2 (PR #390/#392, TEST commun 39423472104, Hosting a9c1726480ce564a). Dans Infra, demande explicite de préparer la publication de tous les lots regroupés ; confirmation spécifique reçue : « Oui, ces trois lots sont validés sur TEST » pour lots de mails, chef/retour d’enregistrement et poubelle finale (PR #382/#383, #385, #387/#388). Validations rattachées aux fonctionnalités intégralement conservées dans le candidat exact. Aucun envoi SMTP réel ou écriture Paris/CNHC de recette. Accord final de publication et de la coupure/remise IDF encore requis sur le plan immuable."
+    }
+  ],
+  "initialAutomaticMailEnabled": false,
+  "additionalNotificationFunctions": [
+    "closeDueEngagementCompetitions",
+    "listEngagementCompetitionMailJobs",
+    "notifyEngagementCompetitionDocuments",
+    "prepareEngagementClubRecapEmails",
+    "prepareEngagementOpeningNotificationEmails",
+    "processNapCompetitionNotifications",
+    "sendEngagementPreparedEmails"
+  ],
+  "additionalNotificationApproval": "Préparation autorisée des sept traitements de compétition nécessaires aux modèles/lots/suivi, sans changement de destinataires, préférences, paiement, fréquence ou périmètre IDF. Publication obligatoirement coupée, garde-fous conservés ; aucun envoi de test ou rattrapage. Accord final du plan requis avant toute opération.",
+  "notificationPilotIdfApproval": "Mise à niveau bornée depuis 1b30062b vers 32d70fc2 ; IDF déjà actif, aucun élargissement. Coupure temporaire puis remise IDF explicitement présentées avant modification du réglage ; aucune coupure, activation ou écriture de ce réglage autorisée par la seule préparation.",
+  "notificationMaintenancePlan": {
+    "scope": "idf",
+    "observedRevision": 2,
+    "pauseRevision": 3,
+    "resumeRevision": 4,
+    "noReplay": true,
+    "approval": "Antoine demande de préparer le plan exact et de présenter explicitement toute coupure/remise IDF avant modification du réglage. Après accord final seulement : coupure IDF 2→3, publication avec état figé, contrôle puis remise IDF 3→4. Notifications exigibles pendant coupure non rattrapées ; en cas d’échec garder coupé jusqu’à bilan de reprise."
+  },
+  "excludedBackendReview": "Neuf fonctions sélectionnées par empreintes/provenances : sept notifications/clôture, saveEngagementClubTeamLeader et removeEngagementClubTeamLeader ; 103 conservées, inventaire 112. Cinq divergences héritées identiques ; aucune nouvelle divergence des exclus. exportNapPublicPage change aussi dans le code mais reste un export propre à TEST hors lots actifs PROD, jamais ajouté. Préférences/désinscription, mails de comptes/demandes et correction identité hors périmètre. Paiement et destinataires inchangés ; aucune migration/correction Paris/CNHC.",
+  "excludedBackendEvidence": {
+    "schema": 1,
+    "candidate": "32d70fc20cc60ca971e9229d706aa8269556f1af",
+    "productionRun": 39392423376,
+    "suite": "retained-calendar-consumers-v1",
+    "functions": [
+      {
+        "name": "disableCompetitionEmailNotifications",
+        "commit": "1df545a62de67a24ff32ca4d1046cce4be6d499f",
+        "revision": "disablecompetitionemailnotifications-00004-kuf",
+        "before": "ee4c904af510b50da7bfdb99cde5dd2833d7fd75adabb03279029e067171e466",
+        "after": "b5a9f626f04f5b1d42c4090e42bfc26e238eebfb410607296a2aedd49a253814",
+        "reason": "Divergence installée héritée de la publication 39392423376, empreinte du consommateur identique entre 1b30062b et 32d70fc2 ; aucun changement du paquet distant."
+      },
+      {
+        "name": "resolveEngagementAccessRequest",
+        "commit": "812bad64681a232e6cc3868ba7ec112bcdac7ca2",
+        "revision": "resolveengagementaccessrequest-00040-jev",
+        "before": "6d9fbfa653896f44534bdb644a3f0691c956e96ada2ad0b7acc9555183680c30",
+        "after": "2b395be019e680d1f1c4ca2e78376792d884e680b16c45bda04e57ddfe16e8c9",
+        "reason": "Divergence installée héritée de la publication 39392423376, empreinte du consommateur identique entre 1b30062b et 32d70fc2 ; aucun changement du paquet distant."
+      },
+      {
+        "name": "resolveEngagementSwimmerChangeRequest",
+        "commit": "1df545a62de67a24ff32ca4d1046cce4be6d499f",
+        "revision": "resolveengagementswimmerchangerequest-00020-mov",
+        "before": "07b8b74b334996d71ca572c7f6b1b3c2830c64859d3e84d6367058b42d25db2e",
+        "after": "b7679a41a2b1a9151acd48ef5c91bd85b902cbc8b65dbf3e7898505eca95209e",
+        "reason": "Divergence installée héritée de la publication 39392423376, empreinte du consommateur identique entre 1b30062b et 32d70fc2 ; aucun changement du paquet distant."
+      },
+      {
+        "name": "submitEngagementAccessRequest",
+        "commit": "812bad64681a232e6cc3868ba7ec112bcdac7ca2",
+        "revision": "submitengagementaccessrequest-00039-rib",
+        "before": "be16dc361cdb44b67868b8bf06e9149e7b42ecc1ffef72407ba010c9295324ec",
+        "after": "56168c0ef32617bfb06139908ec1bafa7ed0e340f3de32b3b1aee97682ebe21a",
+        "reason": "Divergence installée héritée de la publication 39392423376, empreinte du consommateur identique entre 1b30062b et 32d70fc2 ; aucun changement du paquet distant."
+      },
+      {
+        "name": "updateCurrentEmailNotificationPreferences",
+        "commit": "1df545a62de67a24ff32ca4d1046cce4be6d499f",
+        "revision": "updatecurrentemailnotificationpreferences-00004-gev",
+        "before": "fae1fd731a5a970cee0616314f1461c1e042284edbd8048b042300c96834c7ba",
+        "after": "3c511e792f7292a2d29d506e002e2f5efadb5b42a3c381792210522de9102e61",
+        "reason": "Divergence installée héritée de la publication 39392423376, empreinte du consommateur identique entre 1b30062b et 32d70fc2 ; aucun changement du paquet distant."
+      }
+    ]
+  }
+}

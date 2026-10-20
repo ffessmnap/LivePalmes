@@ -1,6 +1,7 @@
 """Read one technical setting; never write it or invoke a notification."""
 import json
 import hashlib
+import importlib.util
 import os
 from pathlib import Path
 import subprocess
@@ -16,6 +17,27 @@ def disabled(document):
     if set(value) != {'booleanValue'} or not isinstance(value['booleanValue'], bool):
         raise ValueError('Reglage des notifications invalide')
     return not value['booleanValue']
+
+
+def paused_idf_state(document, maintenance):
+    fields = document.get('fields', {})
+    if (fields.get('enabled') != {'booleanValue': False} or fields.get('scope') != {'stringValue': 'idf'}
+            or fields.get('revision') != {'integerValue': str(maintenance['pauseRevision'])}):
+        raise ValueError('Coupure IDF ou revision differente du bilan')
+    result = {key: fields.get(key) for key in ['enabled', 'scope', 'revision', 'enabledSince', 'discardThrough', 'updatedAt']}
+    for key in ['enabledSince', 'discardThrough', 'updatedAt']:
+        if not isinstance(fields.get(key, {}).get('stringValue'), str) or not fields[key]['stringValue']:
+            raise ValueError('Horodatage de coupure IDF absent')
+    if fields['discardThrough']['stringValue'] < fields['enabledSince']['stringValue']:
+        raise ValueError('Seuil de non-rattrapage IDF incoherent')
+    return result
+
+
+def check_pause_witness(document, maintenance, witness):
+    observed = paused_idf_state(document, maintenance)
+    if witness.exists() and json.loads(witness.read_text()) != observed:
+        raise ValueError('Reglage IDF modifie pendant publication')
+    witness.write_text(json.dumps(observed))
 
 
 def main():
@@ -41,6 +63,12 @@ def main():
         document = {}
     if not disabled(document):
         raise ValueError('Mails automatiques actifs : publication interrompue, desactivation nationale requise')
+    spec = importlib.util.spec_from_file_location('notification_cycle', Path(__file__).with_name('release-cycle.py'))
+    cycle = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(cycle)
+    maintenance = cycle.notification_maintenance(request)
+    if maintenance is not None:
+        check_pause_witness(document, maintenance, Path(os.environ['PLAN']) / 'notification-pause-before.json')
     scheduler_query = urllib.request.Request('https://cloudscheduler.googleapis.com/v1/projects/livepalmes/locations/europe-west1/jobs/firebase-schedule-closeDueEngagementCompetitions-europe-west1',
                                             headers={'Authorization': 'Bearer ' + token})
     try:
