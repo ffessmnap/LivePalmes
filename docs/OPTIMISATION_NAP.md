@@ -80,3 +80,10 @@ Le chargement DTN initial regroupe catalogue, paramètres autorisés et résulta
 Le calendrier administrateur peut recevoir les compétitions et les autres événements depuis un unique appel et un unique SELECT par saison, au lieu de deux lectures de la même saison. Le calendrier club reste inchangé côté SQL. Le cache d’affichage existant est réaffiché immédiatement, y compris pour une liste vide ; une lecture NAP fraîche reste effectuée à chaque retour. Aucun nouveau cache temporisé ni maintien d’instance active. Les appels identiques en cours restent mutualisés et les réponses dépassées ne remplacent pas le périmètre courant.
 
 Les mesures de démarrage à froid observées sur TEST avant optimisation (environ 4,8 puis 7,9 secondes pour les deux services DTN, contre 0,4 et 0,7 seconde de traitement) sont des observations ponctuelles, pas des moyennes ni une promesse de délai. Une première ouverture conserve le démarrage du service de lecture ; les éventuelles instances minimales et leur coût demanderaient une décision distincte.
+
+
+### Recette TEST du regroupement
+
+Version applicative `a26afb44`, publiée par TEST commun `39438188432` sur `f798d8fb` (complément documentaire), Hosting `44c43c76d65c4ef5`. Vérification globale et contrôles ciblés réussis ; cinq fonctions du portail publiées, autres révisions conservées. Trois dispositifs, actualisation clavier et calendriers club/admin vérifiés sur ordinateur et viewport mobile 390 px. Date de calcul et effectifs identiques avant/après ; aucune écriture ni recalcul.
+
+Observations ponctuelles après publication : rechargement complet du portail vers DTN 2,4 s, France 0,44 s, EDF 0,20 s, retour Mise en liste 0,11 s ; retours calendriers club/admin 0,13/0,20 s pendant relecture. Quatre lectures serveur DTN de la nouvelle révision réussies entre 0,064 et 0,463 s. Ces mesures incluent des conditions différentes des démarrages initiaux du diagnostic : ne pas en déduire un facteur de gain garanti, un percentile, ni un temps après longue inactivité. Téléphone physique et Safari non testés. Validation utilisateur encore attendue.
