@@ -32,13 +32,21 @@ function fixture() {
     callFunctionWithTimeout: (name, payload) => {calls.push({name, payload}); return c.response();},
     escapeHtml: value => String(value).replace(/[<>&"]/g, x => ({"<":"&lt;",">":"&gt;","&":"&amp;",'"':"&quot;"}[x])),
     engagementClubSwimmerSelectionLockReason: () => "", engagementClubTeamComplete: () => true,
+    engagementEventDefinition: code => code === "50SF" ? {label:"50 m surface"} : null,
     calls, renders,
   };
   vm.createContext(c);
-  for (const name of ["engagementClubWriteLockReason", "engagementDeadlineTone", "engagementClubContextMessage", "setEngagementSaveState", "engagementClubEmptySwimmersHtml", "renderEngagementClubNativeSummary", "engagementClubReadRetryBlocked", "retryEngagementCompetitionRead"]) vm.runInContext(block(name), c);
+  for (const name of ["engagementClubWriteLockReason", "engagementDeadlineTone", "engagementClubContextMessage", "setEngagementSaveState", "engagementClubEmptySwimmersHtml", "renderEngagementClubNativeSummary", "engagementCompetitionDocumentFileSize", "engagementClubReadRetryBlocked", "retryEngagementCompetitionRead"]) vm.runInContext(block(name), c);
   return c;
 }
 (async () => {
+  const display = {elements:{engagementsClubContext:{},engagementsClubContextName:{}},activeEngagementClubProfile:user=>user,engagementClubScope:user=>String(user.clubId),isEngagementAdminMode:()=>false,canUse:()=>true,clubDisplayCode:club=>club.clubCode||`REF-${club.clubId}`};
+  vm.createContext(display);vm.runInContext(block("renderEngagementClubContext"),display);
+  display.renderEngagementClubContext({clubId:"106",clubCode:"CNHC"});
+  assert.equal(display.elements.engagementsClubContextName.textContent,"CNHC");
+  display.activeEngagementClubProfile=user=>({...user,clubId:"107"});
+  display.renderEngagementClubContext({clubId:"106",clubCode:"CNHC"});
+  assert.equal(display.elements.engagementsClubContextName.textContent,"REF-107","a switched club must never reuse the original club code");
   const c = fixture();
   const open = {napSource: true, entryStatus: "open", nativeIndividualEntriesEditable: true, nativeRelaysEditable: true};
   assert.match(c.engagementClubContextMessage(open), /peuvent être enregistrés/);
@@ -59,7 +67,19 @@ function fixture() {
   c.renderEngagementClubNativeSummary({swimmers: [], relays: []});
   assert.doesNotMatch(c.elements.engagementsClubNativeSummary.innerHTML, /data-engagement-go-swimmers/);
   c.renderEngagementClubNativeSummary({swimmers:[{lastName:"<fictif>", individualEntries:[{eventCode:"50SF", entryTime:"00:27.87"}]}], relays:[]});
-  assert.match(c.elements.engagementsClubNativeSummary.innerHTML, /&lt;fictif&gt;.*50SF — 00:27.87/);
+  assert.match(c.elements.engagementsClubNativeSummary.innerHTML, /&lt;fictif&gt;[\s\S]*50 m surface[\s\S]*50SF[\s\S]*00:27.87/);
+  const historical = {swimmers:[{lastName:"Synthétique",individualEntries:[{eventCode:"ancien<code>",nativeTime:"14200"},{eventCode:"ancien<code>",entryTime:"014200"}]}],relays:[{eventCode:"4x100SF",entryTime:"05:01.23",members:[1,2,3,4].map(i=>({lastName:`Relayeur ${i}`}))}]};
+  const beforeSummary=JSON.stringify(historical);
+  c.renderEngagementClubNativeSummary(historical);
+  const summary=c.elements.engagementsClubNativeSummary.innerHTML;
+  assert.equal(JSON.stringify(historical),beforeSummary,"presentation never mutates saved native entries");
+  assert.equal((summary.match(/ancien&lt;code&gt;/g)||[]).length,2,"duplicate historic courses remain visible");
+  assert.match(summary,/14200[\s\S]*014200/);
+  assert.match(summary,/Relayeur 1[\s\S]*Relayeur 2[\s\S]*Relayeur 3[\s\S]*Relayeur 4/);
+  assert.match(summary,/05:01.23/);
+  for(const missing of [undefined,null,0,-1,"",NaN,Infinity]) assert.equal(c.engagementCompetitionDocumentFileSize(missing),"");
+  assert.equal(c.engagementCompetitionDocumentFileSize(512),"512 o");
+  assert.equal(c.engagementCompetitionDocumentFileSize(1024),"1 Ko");
 
   // Un échec conserve les données, une reprise n'utilise que le lecteur natif.
   for (const cached of [undefined, {entry:{swimmers:[]}}]) {

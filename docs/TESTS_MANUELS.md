@@ -2,6 +2,14 @@
 
 <!-- description: Checklist de tests manuels à exécuter avant une publication ou après une modification sensible. -->
 
+## Engagements Club, mobile et récapitulatif — suite du 20 octobre
+
+- Sur fixtures fictives, puis TEST en lecture seule : conserver compétition/date/état/limite et retour, raccourcir le club sans utiliser le code d’un autre club après changement de session. Vérifier l’espace gagné, le titre accessible, la navigation collante et les messages importants du lot 1 (fermeture, date dépassée, prérequis, erreur).
+- Contrôler les largeurs 1280/700/520/390/360/320 px : quatre filtres sur une ligne, Saison lisible et Région = « Toutes », sélecteurs de 44 px ; libellés d’étapes à 12 px et zones de toucher de 44 px. Le mode organisateur conserve son statut et le libellé « Toutes les régions ».
+- Nageur déplié au clavier/toucher : chevron et `aria-expanded` synchronisés, naissance/sexe/catégorie compacts puis licence ; aucune alerte de licence ajoutée, retirée ou changée. Ne pas cliquer une case de sélection pour la recette connectée. « Réinitialiser » explicite dans les formulaires, Annuler/Échap disponibles.
+- Récapitulatif fictif rempli (9 nageurs, 32 courses, 4 relais), vide, fermé et codes historiques inconnus : totaux compacts, courses/temps alignés, repli clavier des deux rubriques, mêmes lignes et mêmes temps bruts, doublons et ordre des relayeurs conservés. Aucune modification du calcul des frais, des états métier, du PDF ou de la source. Tailles documentaires absentes/0 masquées, tailles positives visibles sans requête réseau.
+- F12 : vérifier sur matrice fictive remplie les 14 colonnes, le défilement et le focus clavier, l’identité fixe et l’accès aux actions sans débordement de page ; conserver l’aide initiale existante. Les tests `nap-individual-entry-ui-tests.js`, `nap-relay-ui-tests.js` et de composition/temps couvrent uniquement des services simulés. Ne pas relancer automatiquement une recette d’écriture NAP partagée ; téléphone physique, concurrence et gros effectifs réels restent à vérifier séparément.
+
 ## Engagements Club, clarté et confiance — lot 1 du 20 octobre
 
 - Sur fixtures isolées et services simulés : états ouvert/fermé/à venir/date dépassée/annulé, consigne programme réservée à l’édition ; état de sauvegarde en attente puis confirmé ou non confirmé, sans succès anticipé. Dernière confirmation durable près des étapes, remise à zéro en changeant de dossier.
