@@ -46,6 +46,15 @@ IDF_PREFLIGHT_PATHS = {
     'tests/preview-scope-tests.py',
 }
 
+GROUPED_MAILS_PREFLIGHT_PATHS = {
+    '.github/releases/20261020-grouped-competition-mails.json',
+    'tools/release-cycle.py',
+    'tools/check-production-mail-disabled.py',
+    'tests/production-notification-release-tests.py',
+    'tools/preview-scope.py',
+    'tests/preview-scope-tests.py',
+}
+
 
 def needs_preview(paths):
     def documentary(path):
@@ -65,6 +74,9 @@ def needs_preview(paths):
         return False
     if '.github/releases/20261020-idf-pilot.json' in paths and all(
             documentary(p) or p in IDF_PREFLIGHT_PATHS for p in paths):
+        return False
+    if '.github/releases/20261020-grouped-competition-mails.json' in paths and all(
+            documentary(p) or p in GROUPED_MAILS_PREFLIGHT_PATHS for p in paths):
         return False
     return any(not documentary(p) for p in paths)
 
