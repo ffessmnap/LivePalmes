@@ -45,6 +45,7 @@ const {
   engagementAccessAdminNotificationRecipients
 } = require("./portal-access-mail");
 const { engagementSwimmerChangeResolutionMail } = require("./engagement-swimmer-change-mail");
+const { competitionMailLines, competitionMailDateTime } = require("./engagement-competition-mail-format");
 const { escapeMailHtml, livePalmesMailHtml } = require("./livepalmes-mail-html");
 const { cleanClubPayload } = require("./engagement-clubs");
 const {
@@ -8543,19 +8544,16 @@ function engagementCompetitionDocumentRecipients(recipients = [], competition = 
 }
 
 function engagementCompetitionDocumentMailSubject(competition = {}, documents = []) {
-  const count = documents.length;
-  return `${count > 1 ? "Nouveaux documents" : "Nouveau document"} - ${competition.name || "Compétition LivePalmes"}`;
+  return `Documents disponibles - ${competition.name || "Compétition LivePalmes"}`;
 }
 
 function engagementCompetitionDocumentMailText(competition = {}, documents = []) {
   return [
     "Bonjour,",
     "",
-    `${documents.length > 1 ? "De nouveaux documents ont été mis en ligne" : "Un nouveau document a été mis en ligne"} pour la compétition suivante :`,
+    `${documents.length > 1 ? "Des documents ont été ajoutés ou mis à jour" : "Un document a été ajouté ou mis à jour"} pour la compétition suivante :`,
     "",
-    `Compétition : ${competition.name || "-"}`,
-    `Date : ${engagementPdfFormatDate(competition.date)}${competition.endDate && competition.endDate !== competition.date ? ` au ${engagementPdfFormatDate(competition.endDate)}` : ""}`,
-    `Lieu : ${competition.location || "-"}`,
+    ...competitionMailLines(competition),
     "",
     ...documents.flatMap((document) => [
       `- ${document.title || document.fileName || "Document"}`,
@@ -8567,12 +8565,12 @@ function engagementCompetitionDocumentMailText(competition = {}, documents = [])
     `${ENVIRONMENT.hostingOrigin}/portail.html#club-competitions`,
     "",
     "Sportivement,",
-    "Commission Nationale Nage avec Palmes - FFESSM"
+    "Nage avec Palmes FFESSM"
   ].join("\n");
 }
 
 function engagementCompetitionDocumentMailHtml(competition = {}, documents = []) {
-  const date = `${engagementPdfFormatDate(competition.date)}${competition.endDate && competition.endDate !== competition.date ? ` au ${engagementPdfFormatDate(competition.endDate)}` : ""}`;
+  const detailsHtml = competitionMailLines(competition).map(escapeMailHtml).join("<br>");
   const documentItems = documents.map((document) => {
     const label = escapeMailHtml(document.title || document.fileName || "Document");
     const url = escapeMailHtml(document.url || "");
@@ -8580,13 +8578,11 @@ function engagementCompetitionDocumentMailHtml(competition = {}, documents = [])
   }).join("");
   return [
     "<p>Bonjour,</p>",
-    `<p>${documents.length > 1 ? "De nouveaux documents ont été mis en ligne" : "Un nouveau document a été mis en ligne"} pour la compétition suivante :</p>`,
-    `<p><strong>Compétition :</strong> ${escapeMailHtml(competition.name || "-")}<br>`,
-    `<strong>Date :</strong> ${escapeMailHtml(date)}<br>`,
-    `<strong>Lieu :</strong> ${escapeMailHtml(competition.location || "-")}</p>`,
+    `<p>${documents.length > 1 ? "Des documents ont été ajoutés ou mis à jour" : "Un document a été ajouté ou mis à jour"} pour la compétition suivante :</p>`,
+    `<p>${detailsHtml}</p>`,
     `<ul>${documentItems}</ul>`,
     `<p><a href="${ENVIRONMENT.hostingOrigin}/portail.html#club-competitions">Accéder à la compétition dans le portail LivePalmes</a></p>`,
-    "<p>Sportivement,<br>Commission Nationale Nage avec Palmes - FFESSM</p>"
+    "<p>Sportivement,<br>Nage avec Palmes FFESSM</p>"
   ].join("");
 }
 
@@ -8610,23 +8606,21 @@ function engagementOpeningMailText(competition = {}) {
     "",
     "Les engagements sont désormais ouverts pour la compétition suivante :",
     "",
-    `Compétition : ${competition.name || "-"}`,
-    `Date : ${engagementPdfFormatDate(competition.date)}${competition.endDate && competition.endDate !== competition.date ? ` au ${engagementPdfFormatDate(competition.endDate)}` : ""}`,
-    `Lieu : ${competition.location || "-"}`,
+    ...competitionMailLines(competition),
     "",
     "Pour saisir et suivre les engagements de votre club, connectez-vous au portail LivePalmes :",
     "",
     `${ENVIRONMENT.hostingOrigin}/portail.html#club-competitions`,
     "",
-    `Merci de finaliser et de vérifier les engagements de votre club au plus tard le ${engagementPdfFormatDateTime(competition.entryDeadlineAt)}.`,
+    `Merci de finaliser et de vérifier les engagements de votre club au plus tard le ${competitionMailDateTime(competition.entryDeadlineAt)}.`,
     "",
     "Sportivement,",
-    "Commission Nationale Nage avec Palmes - FFESSM"
+    "Nage avec Palmes FFESSM"
   ].join("\n");
 }
 
 function engagementClubRecapMailSubject(competition = {}, entry = {}) {
-  return `Recapitulatif des engagements - ${entry.clubName || entry.clubId || "Club"} - ${competition.name || "LivePalmes"}`;
+  return `Fermeture des engagements - Récapitulatif ${entry.clubName || entry.clubId || "Club"} - ${competition.name || "LivePalmes"}`;
 }
 
 function engagementClubRecapMailText(competition = {}, entry = {}) {
@@ -8643,11 +8637,20 @@ function engagementClubRecapMailText(competition = {}, entry = {}) {
   return [
     `Bonjour,`,
     "",
-    `Vous trouverez en piece jointe le recapitulatif des engagements de ${entry.clubName || entry.clubId || "votre club"} pour ${competition.name || "la competition"}.`,
+    "Les engagements sont désormais fermés pour la compétition suivante :",
+    "",
+    ...competitionMailLines(competition),
+    "",
+    `Vous trouverez en pièce jointe le récapitulatif des engagements de ${entry.clubName || entry.clubId || "votre club"}.`,
+    "Merci de vérifier les informations figurant dans ce document. Si vous constatez une anomalie, contactez l’organisateur de la compétition.",
+    "",
+    "Vous pouvez également consulter votre dossier dans le portail LivePalmes :",
+    `${ENVIRONMENT.hostingOrigin}/portail.html#club-competitions`,
+    "",
     ...feeLines,
     "",
     "Sportivement,",
-    "Commission Nationale Nage avec Palmes - FFESSM"
+    "Nage avec Palmes FFESSM"
   ].join("\n");
 }
 
@@ -8659,13 +8662,12 @@ function engagementTxtMailText(competition = {}, txt = {}) {
   return [
     "Bonjour,",
     "",
-    `Vous trouverez en piece jointe l'export WinPalme des engagements pour ${competition.name || "la competition"}.`,
-    `Date : ${engagementPdfFormatDate(competition.date)}${competition.endDate && competition.endDate !== competition.date ? ` au ${engagementPdfFormatDate(competition.endDate)}` : ""}.`,
-    `Lieu : ${competition.location || "-"}.`,
+    `Vous trouverez en pièce jointe l’export WinPalme des engagements pour ${competition.name || "la competition"}.`,
+    ...competitionMailLines(competition),
     `Fichier : ${txt.document?.fileName || txt.fileName || "export-engagements-livepalmes.txt"}.`,
     "",
     "Sportivement,",
-    "Commission Nationale Nage avec Palmes - FFESSM"
+    "Nage avec Palmes FFESSM"
   ].join("\n");
 }
 
@@ -8678,13 +8680,12 @@ function engagementOfficialsMailText(competition = {}, pdf = {}) {
     "Bonjour,",
     "",
     `Vous trouverez en pièce jointe la liste consolidée des officiels inscrits pour ${competition.name || "la compétition"}.`,
-    `Date : ${engagementPdfFormatDate(competition.date)}${competition.endDate && competition.endDate !== competition.date ? ` au ${engagementPdfFormatDate(competition.endDate)}` : ""}.`,
-    `Lieu : ${competition.location || "-"}.`,
+    ...competitionMailLines(competition),
     `Nombre d'officiels déclarés : ${Math.max(0, Math.trunc(Number(pdf.officialCount) || 0))}.`,
     "Le tableau est classé par club, puis par nom et prénom.",
     "",
     "Sportivement,",
-    "Commission Nationale Nage avec Palmes - FFESSM"
+    "Nage avec Palmes FFESSM"
   ].join("\n");
 }
 
