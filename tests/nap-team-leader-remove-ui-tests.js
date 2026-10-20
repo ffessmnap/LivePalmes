@@ -62,6 +62,12 @@ function fixture() {
     assert.equal(await denied.c.removeEngagementClubTeamLeader(),false,flag);assert.equal(denied.calls.length,0);assert.equal(denied.c.elements.engagementsClubTeamRenunciationDialog.open,false);
   }
   const stale=fixture();await stale.c.removeEngagementClubTeamLeader();stale.switchClub();await stale.c.selectEngagementClubTeamRenunciation();assert.equal(stale.calls.length,0,"stale dialog cannot affect another club");
+  for(const change of [f=>{f.entry.napFingerprint="changed";},f=>{f.entry.teamLeader.firstName="Autre chef";}]) {
+    const changed=fixture();await changed.c.removeEngagementClubTeamLeader();change(changed);await changed.c.selectEngagementClubTeamRenunciation();
+    assert.equal(changed.calls.length,0,"confirmation cannot waive a dossier or leader changed since the warning");
+    assert.equal(changed.c.elements.engagementsClubTeamRenunciationDialog.open,false);
+    assert.match(changed.c.elements.engagementsClubTeamMessage.textContent,/dossier a changé/);
+  }
   for(const switchScope of [f=>f.switchClub(),f=>{f.c.selectedEngagementCompetitionId="other";}]) {
     const switched=fixture();await switched.c.removeEngagementClubTeamLeader();const old=switched.c.selectEngagementClubTeamRenunciation();switchScope(switched);const current={other:true};switched.c.selectedEngagementClubEntry=current;switched.resolve();await old;
     assert.equal(switched.c.selectedEngagementClubEntry,current,"late response cannot replace another dossier");assert.equal(switched.renders.length,0);

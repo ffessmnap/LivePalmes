@@ -5208,6 +5208,14 @@
     if (engagementClubTeamRenunciationSaving) return;
     const context = engagementClubTeamRenunciationContext;
     if (!context || context.competitionId !== selectedEngagementCompetitionId || context.clubId !== String(activeEngagementClubProfile().clubId || "")) return;
+    if (context.fingerprint !== selectedEngagementClubEntry?.napFingerprint || context.leader !== JSON.stringify(selectedEngagementClubEntry?.teamLeader || {})) {
+      closeEngagementClubTeamRenunciationDialog();
+      if (elements.engagementsClubTeamMessage) {
+        elements.engagementsClubTeamMessage.textContent = "Le dossier a changé. Rouvrez la confirmation après avoir vérifié le chef d’équipe actuel.";
+        elements.engagementsClubTeamMessage.dataset.tone = "warning";
+      }
+      return;
+    }
     if (engagementClubTeamSaving || engagementClubTeamLeaderLockReason() || !canUse("engagements.club.manage")) return;
     engagementClubTeamRenunciationContext = null;
     if (elements.engagementsClubTeamRenunciationDialog?.open) elements.engagementsClubTeamRenunciationDialog.close();
@@ -5229,7 +5237,7 @@
     if (!selectedEngagementCompetitionId || !canUse("engagements.club.manage") || engagementClubTeamSaving || engagementClubTeamRenunciationSaving || engagementClubTeamLeaderLockReason()) return false;
     const leader = selectedEngagementClubEntry?.teamLeader || {};
     if (selectedEngagementCompetition?.nativeReadOnly === true && leader.externalClub) return false;
-    engagementClubTeamRenunciationContext = {competitionId: selectedEngagementCompetitionId, clubId: String(activeEngagementClubProfile().clubId || "")};
+    engagementClubTeamRenunciationContext = {competitionId: selectedEngagementCompetitionId, clubId: String(activeEngagementClubProfile().clubId || ""), fingerprint: selectedEngagementClubEntry?.napFingerprint, leader: JSON.stringify(leader)};
     if (elements.engagementsClubTeamRenunciationDialogTitle) elements.engagementsClubTeamRenunciationDialogTitle.textContent = leader.mode === "person" ? "Retirer le chef d’équipe ?" : "Ne déclarer aucun chef d’équipe ?";
     if (elements.engagementsClubTeamRenunciationDialogSummary) elements.engagementsClubTeamRenunciationDialogSummary.textContent = leader.mode === "person"
       ? `Vous allez retirer ${[leader.firstName, leader.lastName].filter(Boolean).join(" ")} et participer sans chef d’équipe.`
