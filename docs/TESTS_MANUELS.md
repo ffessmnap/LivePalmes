@@ -2,6 +2,11 @@
 
 <!-- description: Checklist de tests manuels à exécuter avant une publication ou après une modification sensible. -->
 
+## Ajout/récupération d’un nageur dans les engagements — 20 octobre
+
+Sur TEST, compétition ouverte et chef d’équipe déclaré ou renonciation confirmée : ouvrir Participants → Nageurs → Ajouter ou récupérer un nageur. Vérifier le formulaire, le focus, Annuler et Échap sur ordinateur/mobile. Ne pas soumettre de licence réelle ni créer ou récupérer de fiche pour la recette. Les parcours complets et les refus sont couverts hors réseau par tests/nap-swimmer-dialog-tests.js, complétés des tests natifs de création/récupération et reprise. Vérifier les verrous après fermeture/date limite sans modifier une compétition réelle.
+
+
 ## Contenus des cinq mails de compétition — 20 octobre
 
 - Utiliser uniquement des fixtures, sans SMTP ni préparation de jobs réels : vérifier ouverture, récapitulatif club, documents texte/HTML, export WinPalme et officiels.

@@ -2,6 +2,14 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 20 octobre — Ajouter ou récupérer un nageur depuis les engagements (préparation TEST)
+
+- Antoine autorise le correctif TEST et la vérification des parcours sans création/récupération réelle ni PROD. Le bouton restait désactivé pour toute compétition NAP malgré les traitements natifs existants.
+- Retrait du blocage général NAP ; ouverture et actions réutilisent les conditions de sélection des nageurs et la déclaration/renonciation du chef d’équipe. Fermeture, échéance, contrôle de qualification et lecture seule restent bloquants avec une explication sur le bouton. La correction de licence en ligne reste désactivée ; aucun backend, droit ou règle métier modifié.
+- Budget : ouverture/fermeture du formulaire = zéro lecture et écriture. Vérification par licence = un appel existant, 1–2 SELECT indexés (≤2 fiches, historique borné à 2 001 témoins). Si absent, aperçu création existant ≤4 SELECT/426 candidats supplémentaires ; aucune écriture avant validation. Création/récupération, rafraîchissement ciblé du répertoire et traces techniques inchangés ; aucun appel par ligne ni écouteur ajouté. Les tests d’écriture utilisent uniquement des doubles isolés, sans réseau.
+- Tests ciblés : bouton NAP accessible, anciennes sources compatibles, chef d’équipe absent, engagements fermés/à venir/échus, qualification en cours, lecture seule ; ajout simulé, récupération simulée avec empreinte/identifiant de reprise, licence invalide, doublon du club, récupération interdite et erreur serveur. Vérifications techniques/publication TEST et recette du formulaire à compléter ; validation utilisateur de la version corrigée attendue.
+
+
 ### 20 octobre — Réactivité DTN et calendriers (TEST validé, PROD publiée)
 
 - **Publication PROD autorisée et réussie.** Antoine approuve explicitement dans Infra le plan `39443162232` avec sauvegarde/dérive, pilote IDF actif et toutes les exclusions. CI préparation `39442649717` et preflight officiel [39443162232](https://github.com/ffessmnap/LivePalmes/actions/runs/39443162232) réussis, artefact `12274708411` authentifié. Publication [39444625759](https://github.com/ffessmnap/LivePalmes/actions/runs/39444625759) réussie sur le candidat exact `f798d8fb9da2e268f878725fe6bed3fae3fe9e10`, Hosting `375001dd35066de3`. Dérive TEST/PROD contrôlée, cinq fonctions publiées, 107 identités conservées, 112 actives sans erreur ; Hosting publié en dernier puis cinq fichiers/en-têtes vérifiés. Sauvegarde chiffrée rouverte/comparée avant écriture, artefact `12275359738`, empreinte ZIP `e1eaa9d4dc98a78cca3a628f23a670d9a579f72412f52968c6f3bd377792be2a` ; copie locale authentifiée, fichier chiffré SHA-256 `8b9ef036aa512ec7f3549bd400d8f1bd2c52f7553f067850d923f0186b94efb7`.
