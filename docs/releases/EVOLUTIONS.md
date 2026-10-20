@@ -2,6 +2,14 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 20 octobre — Préparation PROD du dialogue ajout/récupération NAP
+
+- Validation réelle d’Antoine : « Ok, je valide le correctif sur TEST. Transmets le bilan à Infra pour préparer sa publication en PROD, sans déployer pour le moment. » Attestation #402 intégrée après CI. Candidat exact `d3bf857297edb67cf66233118aa3cf7198e36c21`, TEST commun `39449195770`, Hosting `29f0b768a4db762e`, contrôle global Linux réussi. Aucune republication TEST pour les documents.
+- Diff complet depuis PROD `39444625759` / `f798d8fb` / Hosting `375001dd35066de3` : deux fichiers applicatifs (script du portail et référence de cache), reste tests/documentation/outillage du lot précédent. Backend et configuration strictement inchangés ; sélection attendue vide, 112 fonctions PROD à conserver. Provenances/empreintes des quatre traitements existants (création, aperçus création/récupération, récupération) comparées aux preuves TEST/PROD : compatibles malgré révisions distinctes ; aucun appel métier. Preuve détaillée figée dans `existingBackendCompatibility` de la demande `.github/releases/20261020-nap-swimmer-dialog.json`. Arrêter si sélection non vide, dérive ou preuve manquante, sans ajouter de fonction manuellement.
+- Recette connectée limitée à ouverture/focus/formulaire vide/Annuler/Échap/retour de focus ; aucune fiche réelle créée ou récupérée. Parcours complets, doublons, licences, droits/saison et erreurs couverts sur services simulés. Téléphone physique/Safari non testés. Ouverture/fermeture : zéro lecture/écriture ; appels natifs et leurs bornes inchangés, aucun scan/N+1/listener ajouté. Création/récupération réelle hors recette.
+- Préparation et preflight sans Google ni déploiement ; seule cette demande et les outils/tests de classement/documentation évitent un aperçu Firebase, tout changement applicatif/configuration/inconnu conserve le circuit normal. Pilote IDF actif conservé sans coupure ni réglage d’envoi. Aucun recalcul DTN, migration, mail/rattrapage, modification Paris/CNHC/NAP/Firestore/Storage, droits/règles/index/secrets ; clubs historiques et nettoyage Storage hors lot. Après accord final Infra seulement : dérive fraîche, sauvegarde vérifiée et publication Hosting ; retour arrière de la release Hosting précédente sans restauration de données. CI et preflight officiels à consigner dans le bilan de la préparation après réussite.
+
+
 ### 20 octobre — Ajouter ou récupérer un nageur depuis les engagements (TEST validé, préparation PROD demandée)
 
 - Antoine autorise le correctif TEST et la vérification des parcours sans création/récupération réelle ni PROD. Le bouton restait désactivé pour toute compétition NAP malgré les traitements natifs existants.

@@ -1,0 +1,66 @@
+{
+  "schema": 1,
+  "candidate": "d3bf857297edb67cf66233118aa3cf7198e36c21",
+  "productionCommit": "f798d8fb9da2e268f878725fe6bed3fae3fe9e10",
+  "productionHosting": "sites/livepalmes/versions/375001dd35066de3",
+  "testRun": 39449195770,
+  "changes": [
+    {
+      "title": "Débloquer Ajouter ou récupérer un nageur NAP en conservant les verrous du parcours existant",
+      "paths": [
+        "assets/livepalmes-admin-portal.js",
+        "portail.html"
+      ],
+      "status": "validated",
+      "validation": "Antoine, 20 octobre 2026 : « Ok, je valide le correctif sur TEST. Transmets le bilan à Infra pour préparer sa publication en PROD, sans déployer pour le moment. » PR #400, candidat exact d3bf8572, CI 39448672767 et TEST commun 39449195770 réussis, Hosting 29f0b768a4db762e. Recette connectée ordinateur et viewport mobile : ouverture, focus, refus formulaire vide avant appel, Annuler/Échap et retour de focus, zéro erreur/débordement. Création/récupération complètes testées sur services simulés uniquement ; aucune fiche réelle créée ou récupérée. Validation consignée PR #402. Accord final PROD requis sur le plan immuable."
+    }
+  ],
+  "excludedBackendReview": "Hosting seulement : aucune différence functions/configuration/règles/index entre base et candidat ; sélection serveur attendue vide, 112 fonctions PROD conservées. Compatibilité des quatre traitements existants createEngagementClubSwimmer, previewEngagementClubSwimmerCreation, previewEngagementClubSwimmerRecovery et recoverEngagementClubSwimmer vérifiée par leurs provenances et empreintes dans les preuves PROD 39444625759 et TEST 39449195770 ; aucune invocation réelle. Arrêter si sélection backend non vide ou preuve/dérive manquante. Pilote IDF actif/réglages inchangés, aucune coupure. Aucun envoi/test/rattrapage, changement Paris/CNHC, migration ou données NAP/Firestore/Storage. Clubs historiques, recalcul DTN, nettoyage Storage, droits/règles/index, schedulers, fonctions email, secrets et configuration exclus.",
+  "existingBackendCompatibility": {
+    "candidate": "d3bf857297edb67cf66233118aa3cf7198e36c21",
+    "productionRun": 39444625759,
+    "testRun": 39449195770,
+    "backendTreeUnchanged": true,
+    "functions": [
+      {
+        "name": "createEngagementClubSwimmer",
+        "productionRevision": "createengagementclubswimmer-00056-wem",
+        "productionCommit": "25ac21b69c8fd09c44399f1f65b3bd4e6a0e58bd",
+        "testRevision": "createengagementclubswimmer-00051-duk",
+        "testCommit": "6a7fb0bc57fd7491b0a030bb24fb4ba4e7328e6f",
+        "fingerprint": "c38327c8e43628b53199a63d0ac77553fb9f54dbe5698ed81ea786ca4a1befc4",
+        "compatible": true
+      },
+      {
+        "name": "previewEngagementClubSwimmerCreation",
+        "productionRevision": "previewengagementclubswimmercreation-00044-gix",
+        "productionCommit": "25ac21b69c8fd09c44399f1f65b3bd4e6a0e58bd",
+        "testRevision": "previewengagementclubswimmercreation-00051-kal",
+        "testCommit": "6a7fb0bc57fd7491b0a030bb24fb4ba4e7328e6f",
+        "fingerprint": "0e23b3d32e00d88608a2b5d901d8f4e4aa261615bc65780cfd5afc8d799844ab",
+        "compatible": true
+      },
+      {
+        "name": "previewEngagementClubSwimmerRecovery",
+        "productionRevision": "previewengagementclubswimmerrecovery-00011-qak",
+        "productionCommit": "25ac21b69c8fd09c44399f1f65b3bd4e6a0e58bd",
+        "testRevision": "previewengagementclubswimmerrecovery-00051-qoz",
+        "testCommit": "6a7fb0bc57fd7491b0a030bb24fb4ba4e7328e6f",
+        "fingerprint": "9a4816c20265ca7f89e86736298284e01629a2d485aeb5a0b563341478420183",
+        "compatible": true
+      },
+      {
+        "name": "recoverEngagementClubSwimmer",
+        "productionRevision": "recoverengagementclubswimmer-00011-pir",
+        "productionCommit": "25ac21b69c8fd09c44399f1f65b3bd4e6a0e58bd",
+        "testRevision": "recoverengagementclubswimmer-00051-gow",
+        "testCommit": "6a7fb0bc57fd7491b0a030bb24fb4ba4e7328e6f",
+        "fingerprint": "b1a99788dd085247f0ec20534a7c5d130807e2f3ecd4fbb36847d5886aa2c6eb",
+        "compatible": true
+      }
+    ],
+    "readOnly": true,
+    "googleAccess": false,
+    "businessInvocations": 0
+  }
+}
