@@ -2,6 +2,13 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 20 octobre — Engagements Club : mobile, détails et récapitulatif (préparation TEST)
+
+- Antoine autorise F05/F06, F07 avec les quatre filtres maintenus sur une ligne et « Toutes » pour Région, le compactage du détail nageur à la place de F08 (alertes conservées), F09/F11 et la vérification F12. En-tête réduit en gardant contexte/date/état/limite, code club fiable même après changement de club, étapes lisibles et zones tactiles de 44 px, chevrons de détail, libellés Réinitialiser et tailles documentaires inconnues masquées.
+- Récapitulatif NAP : totaux sur quatre colonnes puis deux sur mobile, rubriques Courses/Relais repliables ouvertes initialement, bloc par nageur, courses et temps alignés, codes historiques/doublons et ordre des relayeurs conservés. Paiement, frais, PDF, sauvegardes, règles sportives/licences, droits et backend inchangés. La présentation ne réécrit jamais une donnée native.
+- Budget supplémentaire avant/après : zéro appel serveur, requête NAP, lecture Firestore ou écriture à l’ouverture, par filtre, au dépliage, à la relecture et au rafraîchissement, y compris le pire cas. Les calculs d’affichage utilisent seulement le dossier et le catalogue déjà chargés ; aucun chargement par nageur, recherche documentaire de taille, nouveau cache/listener ou reconstruction. Coûts et plafonds existants des lecteurs inchangés.
+- Vérifications hors réseau : états du lot 1, code du bon club, tailles absentes/valides, récapitulatif vide/rempli, échappement, temps natifs et doublons conservés, ordre des quatre relayeurs ; régressions portail et tests de sauvegarde/temps/composition simulés. Fixtures navigateur à 1280/700/520/390/360/320 px : 9 nageurs/32 courses/4 relais, détails compacts, filtres sur une ligne, zones tactiles, matrice remplie sans débordement global et identité fixe, zéro erreur JavaScript. Preuves privées locales : `outputs/ux-club-suite/`. Aucune recette d’écriture réelle ou envoi, aucun changement PROD. PR, contrôle Linux complet, preuve TEST et retour utilisateur à compléter ; aucune validation de livraison déduite de l’accord de réalisation.
+
 ### 20 octobre — Engagements Club, lot 1 : clarté et confiance (TEST publié, validation utilisateur attendue)
 
 - Antoine autorise explicitement F01, F02, F03, F04 et F10 de l’audit UX : textes adaptés au rôle et à l’état, confirmation durable après réponse serveur, petit rond de chargement piloté explicitement, états vides avec accès direct à Participants → Nageurs, reprise des lectures en erreur. Lots 2/3, règles métier, droits, mails et backend exclus ; aucune recette d’écriture NAP partagée.

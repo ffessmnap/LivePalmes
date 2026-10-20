@@ -33,16 +33,17 @@ const nativeEntry={source:"nap",swimmers:[{firstName:"Example",lastName:"<Person
 const beforeNative=JSON.stringify(nativeEntry);
 const summaryContext={elements:{engagementsClubSummaryList:{},engagementsClubNativeSummary:{}},selectedEngagementCompetition:{napSource:true,fees:{enabled:false},officialsRequired:false},selectedEngagementClubEntry:nativeEntry,
   escapeHtml:value=>String(value).replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;"),engagementRowValueHtml:value=>String(value),currentEngagementClubSwimmersForSummary:entry=>entry.swimmers,
-  selectedEngagementClubRelayRows:()=>nativeEntry.relays,engagementClubRelayNeedsCompletion:()=>true,currentEngagementClubOfficialCount:()=>0,engagementFeeAmount:()=>0,engagementExternalHttpUrl:()=>"",engagementTeamLeadersWhatsAppValue:()=>"",engagementClubSummaryTeamLeaderLabel:()=>"Leader"};
+  selectedEngagementClubRelayRows:()=>nativeEntry.relays,engagementClubRelayNeedsCompletion:()=>true,currentEngagementClubOfficialCount:()=>0,engagementFeeAmount:()=>0,engagementExternalHttpUrl:()=>"",engagementTeamLeadersWhatsAppValue:()=>"",engagementClubSummaryTeamLeaderLabel:()=>"Leader",engagementEventDefinition:()=>null};
 vm.createContext(summaryContext);
 vm.runInContext(source.slice(source.indexOf("  function renderEngagementClubSummary("),source.indexOf("  function renderEngagementClubRelays(")),summaryContext);
 summaryContext.renderEngagementClubSummary(nativeEntry);
 assert.match(summaryContext.elements.engagementsClubSummaryList.innerHTML,/>1 relais</);
 assert.match(summaryContext.elements.engagementsClubSummaryList.innerHTML,/>4 courses</);
-assert.match(summaryContext.elements.engagementsClubNativeSummary.innerHTML,/50BI — 30.00.*200BI — 2:30.00.*400BI — 5:00.00/);
-assert.match(summaryContext.elements.engagementsClubNativeSummary.innerHTML,/OLDCOURSE — 599999/);
+const recapText=summaryContext.elements.engagementsClubNativeSummary.innerHTML.replace(/<[^>]*>/g," ").replace(/\s+/g," ");
+assert.match(recapText,/50BI 30.00.*200BI 2:30.00.*400BI 5:00.00/);
+assert.match(recapText,/OLDCOURSE 599999/);
 assert.match(summaryContext.elements.engagementsClubNativeSummary.innerHTML,/&lt;Person&gt;/);
-assert.match(summaryContext.elements.engagementsClubNativeSummary.innerHTML,/One A, Two B/);
+assert.match(recapText,/One A Two B/);
 assert.equal(JSON.stringify(nativeEntry),beforeNative,"recap never changes stored native values or incomplete composition");
 summaryContext.selectedEngagementCompetition.napSource=false;
 summaryContext.renderEngagementClubSummary({...nativeEntry,source:"legacy"});

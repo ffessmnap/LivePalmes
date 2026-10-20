@@ -1739,9 +1739,11 @@
 
   function renderEngagementClubContext(user = currentAccessProfile || {}) {
     if (!elements.engagementsClubContext) return;
+    const profileClubId = String(user.clubId || "").trim();
+    const profileClubCode = user.clubCode;
     user = activeEngagementClubProfile(user);
     const clubId = engagementClubScope(user);
-    const clubLabel = clubId ? clubDisplayCode({ clubId, clubName: user.clubName }, "") : "";
+    const clubLabel = clubId ? clubDisplayCode({ clubId, clubName: user.clubName, clubCode: clubId === profileClubId ? profileClubCode : "" }, "") : "";
     const visible = !isEngagementAdminMode() && canUse("engagements.club.manage") && Boolean(clubLabel);
     elements.engagementsClubContext.hidden = !visible;
     if (elements.engagementsClubContextName) elements.engagementsClubContextName.textContent = clubLabel || "Votre club";
@@ -1749,6 +1751,8 @@
 
   function updateEngagementsModeView() {
     const adminMode = isEngagementAdminMode();
+    const regionAllOption = elements.engagementsRegionFilter?.options?.[0];
+    if (regionAllOption) regionAllOption.textContent = adminMode ? "Toutes les régions" : "Toutes";
     const nextMode = adminMode ? "admin" : "club";
     const previousMode = elements.engagementsView?.dataset.engagementsMode || "";
     const peopleMode = activeEngagementsTab === "clubPeople";
@@ -3064,7 +3068,7 @@
     fillLivePalmesRegionSelect(elements.publicAccessRequestRegionId, "À choisir");
     fillLivePalmesRegionSelect(elements.engagementsRegionId, "À choisir");
     fillLivePalmesRegionSelect(elements.engagementsEditRegionId, "À choisir");
-    fillLivePalmesRegionSelect(elements.engagementsRegionFilter, "Toutes les régions");
+    fillLivePalmesRegionSelect(elements.engagementsRegionFilter, isEngagementAdminMode() ? "Toutes les régions" : "Toutes");
     fillLivePalmesRegionMultiSelect(elements.engagementsInvitedRegionIds);
     fillLivePalmesRegionMultiSelect(elements.engagementsEditInvitedRegionIds);
     renderInvitedRegionChoices(elements.engagementsInvitedRegionIds, elements.engagementsInvitedRegionChoices);
@@ -6861,7 +6865,6 @@
     if (button) {
       button.setAttribute("aria-expanded", open ? "true" : "false");
       button.setAttribute("aria-label", `${open ? "Masquer" : "Afficher"} le détail de ${button.dataset.engagementClubSwimmerDetailsName || "ce nageur"}`);
-      button.textContent = open ? "−" : "+";
     }
   }
 
@@ -7114,7 +7117,7 @@
                   <strong>${escapeHtml(name)}</strong>
                 </label>
                 <span class="admin-engagements-club-swimmer-mobile-meta" aria-hidden="true"><b>${escapeHtml(swimmer.sex || "-")}</b><b>${escapeHtml(category || "-")}</b></span>
-                <button class="admin-engagements-club-swimmer-details-toggle" type="button" aria-expanded="false" aria-controls="${detailsId}" aria-label="Afficher le détail de ${escapeHtml(name)}" data-engagement-club-swimmer-details-toggle data-engagement-club-swimmer-details-name="${escapeHtml(name)}">+</button>
+                <button class="admin-engagements-club-swimmer-details-toggle" type="button" aria-expanded="false" aria-controls="${detailsId}" aria-label="Afficher le détail de ${escapeHtml(name)}" data-engagement-club-swimmer-details-toggle data-engagement-club-swimmer-details-name="${escapeHtml(name)}"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="m4 6 4 4 4-4"/></svg></button>
                 <div id="${detailsId}" class="admin-engagements-club-swimmer-details">
                   <span role="cell" data-label="Naissance">${escapeHtml(swimmer.birthDate ? formatShortDate(swimmer.birthDate) : "-")}</span>
                   <span role="cell" data-label="Sexe">${escapeHtml(swimmer.sex || "-")}</span>
@@ -7227,7 +7230,7 @@
             <strong>${escapeHtml(name)}</strong>
           </label>
           <span class="admin-engagements-club-swimmer-mobile-meta" aria-hidden="true"><b>${escapeHtml(swimmer.sex || "-")}</b><b>${escapeHtml(category || "-")}</b></span>
-          <button class="admin-engagements-club-swimmer-details-toggle" type="button" aria-expanded="false" aria-controls="${detailsId}" aria-label="Afficher le détail de ${escapeHtml(name)}" data-engagement-club-swimmer-details-toggle data-engagement-club-swimmer-details-name="${escapeHtml(name)}">+</button>
+          <button class="admin-engagements-club-swimmer-details-toggle" type="button" aria-expanded="false" aria-controls="${detailsId}" aria-label="Afficher le détail de ${escapeHtml(name)}" data-engagement-club-swimmer-details-toggle data-engagement-club-swimmer-details-name="${escapeHtml(name)}"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="m4 6 4 4 4-4"/></svg></button>
           <div id="${detailsId}" class="admin-engagements-club-swimmer-details">
             <span role="cell" data-label="Naissance">${escapeHtml(swimmer.birthDate ? formatShortDate(swimmer.birthDate) : "-")}</span>
             <span role="cell" data-label="Sexe">${escapeHtml(swimmer.sex || "-")}</span>
@@ -8501,10 +8504,10 @@
     const rows = [
       ["Chef d'équipe", engagementClubSummaryTeamLeaderLabel(entry)],
       ...(whatsAppValue ? [["Groupe WhatsApp", whatsAppValue]] : []),
-      ["Officiels", competition.officialsRequired === false ? "Non requis" : `${officialsCount} officiel${officialsCount > 1 ? "s" : ""}`],
-      ["Nageurs", `${swimmers.length} nageur${swimmers.length > 1 ? "s" : ""}`],
-      ["Courses individuelles", `${individualCount} course${individualCount > 1 ? "s" : ""}`],
-      ["Relais", `${relays.length} relais`],
+      ["Officiels", competition.officialsRequired === false ? "Non requis" : `${officialsCount} officiel${officialsCount > 1 ? "s" : ""}`, "metric"],
+      ["Nageurs", `${swimmers.length} nageur${swimmers.length > 1 ? "s" : ""}`, "metric"],
+      ["Courses individuelles", `${individualCount} course${individualCount > 1 ? "s" : ""}`, "metric"],
+      ["Relais", `${relays.length} relais`, "metric"],
       ["Frais d'engagement", noFees ? "Aucun frais d'engagement" : formatEngagementFee(total)],
       ...(!noFees ? [["Paiement", helloAssoUrl
         ? { href: helloAssoUrl, label: "Payer sur HelloAsso", kind: "payment" }
@@ -8516,8 +8519,8 @@
       elements.engagementsClubSummaryStatus.hidden = true;
     }
     if (elements.engagementsClubSummaryList) {
-      elements.engagementsClubSummaryList.innerHTML = rows.map(([label, value]) => `
-        <div>
+      elements.engagementsClubSummaryList.innerHTML = rows.map(([label, value, kind]) => `
+        <div${kind ? ` data-summary-kind="${kind}"` : ""}>
           <dt>${escapeHtml(label)}</dt>
           <dd>${engagementRowValueHtml(value)}</dd>
         </div>
@@ -8544,13 +8547,29 @@
     const savedTime = row => row.entryTime || row.nativeTime || "Temps non renseigné";
     const swimmers = Array.isArray(entry.swimmers) ? entry.swimmers : [];
     const relays = Array.isArray(entry.relays) ? entry.relays : [];
-    mount.innerHTML = '<h4>Courses enregistrées</h4>' + (swimmers.length ? '<ul>' + swimmers.map(person =>
-      '<li><strong>' + escapeHtml(personName(person)) + '</strong> : ' +
-      (person.individualEntries?.length ? person.individualEntries.map(row => escapeHtml(row.eventCode) + ' — ' + escapeHtml(savedTime(row))).join(' ; ') : 'Aucune course enregistrée') + '</li>'
-    ).join('') + '</ul>' : !engagementClubSwimmerSelectionLockReason() && engagementClubTeamComplete() ? engagementClubEmptySwimmersHtml("Aucun nageur engagé. Aucune course enregistrée.") : '<p>Aucun nageur engagé. Aucune course enregistrée.</p>') + '<h4>Relais enregistrés</h4>' + (relays.length ? '<ul>' + relays.map(row =>
-      '<li><strong>' + escapeHtml(row.eventCode) + '</strong> — ' + escapeHtml(savedTime(row)) + ' : ' +
-      (row.members?.length ? row.members.map(person => escapeHtml(personName(person))).join(', ') : 'Composition non renseignée') + '</li>'
-    ).join('') + '</ul>' : '<p>Aucun relais enregistré.</p>');
+    const eventLabel = code => {
+      const event = engagementEventDefinition(code) || {};
+      const label = event.label || event.shortLabel || code || "Course non renseignée";
+      return `<span class="admin-engagements-recap-event"><strong>${escapeHtml(label)}</strong>${code && label !== code ? `<small>${escapeHtml(code)}</small>` : ""}</span>`;
+    };
+    const emptySwimmers = swimmers.length ? "" : !engagementClubSwimmerSelectionLockReason() && engagementClubTeamComplete()
+      ? engagementClubEmptySwimmersHtml("Aucun nageur engagé. Aucune course enregistrée.")
+      : '<p>Aucun nageur engagé. Aucune course enregistrée.</p>';
+    mount.innerHTML = `
+      <details class="admin-engagements-recap-section" open>
+        <summary>Courses enregistrées <span>${swimmers.length} nageur${swimmers.length > 1 ? "s" : ""}</span></summary>
+        ${swimmers.length ? swimmers.map(person => `<article class="admin-engagements-recap-person">
+          <h5>${escapeHtml(personName(person))}</h5>
+          ${person.individualEntries?.length ? `<ul class="admin-engagements-recap-courses">${person.individualEntries.map(row => `<li>${eventLabel(row.eventCode)}<span class="admin-engagements-recap-time">${escapeHtml(savedTime(row))}</span></li>`).join("")}</ul>` : '<p>Aucune course enregistrée.</p>'}
+        </article>`).join("") : emptySwimmers}
+      </details>
+      <details class="admin-engagements-recap-section" open>
+        <summary>Relais enregistrés <span>${relays.length}</span></summary>
+        ${relays.length ? relays.map(row => `<article class="admin-engagements-recap-person">
+          <div class="admin-engagements-recap-relay-head">${eventLabel(row.eventCode)}<span class="admin-engagements-recap-time">${escapeHtml(savedTime(row))}</span></div>
+          ${row.members?.length ? `<ol class="admin-engagements-recap-members">${row.members.map(person => `<li>${escapeHtml(personName(person))}</li>`).join("")}</ol>` : '<p>Composition non renseignée.</p>'}
+        </article>`).join("") : '<p>Aucun relais enregistré.</p>'}
+      </details>`;
   }
 
   function engagementClubPersistedRelayDraft(relay, native = false) {
@@ -9272,7 +9291,8 @@
   }
 
   function engagementCompetitionDocumentFileSize(size = 0) {
-    const bytes = Math.max(0, Number(size) || 0);
+    const bytes = Number(size);
+    if (!Number.isFinite(bytes) || bytes <= 0) return "";
     if (bytes < 1024) return `${bytes} o`;
     if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} Ko`;
     return `${(bytes / (1024 * 1024)).toLocaleString("fr-FR", { maximumFractionDigits: 1 })} Mo`;
@@ -9574,7 +9594,7 @@
             <div class="admin-engagements-shared-document-badges">
               <span>${escapeHtml(engagementCompetitionDocumentCategoryLabel(document.category))}</span>
               <span>${escapeHtml(engagementCompetitionDocumentTypeLabel(document.fileName))}</span>
-              <span>${escapeHtml(engagementCompetitionDocumentFileSize(document.size))}</span>
+              ${engagementCompetitionDocumentFileSize(document.size) ? `<span>${escapeHtml(engagementCompetitionDocumentFileSize(document.size))}</span>` : ""}
             </div>
             <a href="${escapeHtml(document.url || "#")}" target="_blank" rel="noopener">${escapeHtml(document.title || document.fileName || "Document")}</a>
             ${document.description ? `<p>${escapeHtml(document.description)}</p>` : ""}
@@ -10761,6 +10781,7 @@
   }
 
   function setEngagementCompetitionDetailVisible(visible) {
+    if (elements.engagementsView) elements.engagementsView.dataset.detailOpen = visible ? "true" : "false";
     if (!visible) qualificationExceptionScope = "";
     if (elements.engagementsCalendarPanel) elements.engagementsCalendarPanel.dataset.detailOpen = visible ? "true" : "false";
     if (elements.engagementsCalendarCard) elements.engagementsCalendarCard.dataset.detailOpen = visible ? "true" : "false";
@@ -10840,9 +10861,16 @@
           : competition.city || competition.location || ""
       ].filter((item) => item && item !== "-").join(" · ");
     }
-    if (elements.engagementsDetailMeta) elements.engagementsDetailMeta.innerHTML = competition.napSource === true
-      ? `<p role="status">${escapeHtml(engagementClubContextMessage(competition))}</p>${(competition.nativeWarnings || []).map(warning => `<p>${escapeHtml(warning)}</p>`).join("")}`
-      : "";
+    if (elements.engagementsDetailMeta) {
+      const routineClubMessage = !isEngagementAdminMode() && competition.entryStatus === "open"
+        && !competition.canceled && !competition.qualificationJobId && !competition.nativeTeamLeaderRequired
+        && engagementDeadlineTone(competition) !== "deadline-passed"
+        && (competition.nativeIndividualEntriesEditable || competition.nativeSwimmerSelectionEditable || competition.nativeRelaysEditable);
+      elements.engagementsDetailMeta.innerHTML = competition.napSource === true
+        ? `${routineClubMessage ? "" : `<p role="status">${escapeHtml(engagementClubContextMessage(competition))}</p>`}${(competition.nativeWarnings || []).map(warning => `<p>${escapeHtml(warning)}</p>`).join("")}`
+        : "";
+      elements.engagementsDetailMeta.hidden = !elements.engagementsDetailMeta.innerHTML;
+    }
     const adminMode = isEngagementAdminMode();
     const feedback = elements.engagementsSaveState?.closest("[data-engagement-club-feedback]");
     if (feedback) feedback.hidden = adminMode || competition.entryStatus !== "open" || Boolean(engagementClubSwimmerSelectionLockReason());
