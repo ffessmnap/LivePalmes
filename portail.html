@@ -10,7 +10,7 @@
     <link rel="stylesheet" href="styles.css?v=20260529-public-home">
     <link id="adminPerformanceStyles" rel="stylesheet" href="performances/public/styles.css?v=20260613-delete-record-draft-1" disabled>
     <link id="adminImportStyles" rel="stylesheet" href="performances/public/import-competitions.css?v=20260831-import-dialog-1" disabled>
-    <link rel="stylesheet" href="assets/livepalmes-admin-portal.css?v=20261020-recap-lignes">
+    <link rel="stylesheet" href="assets/livepalmes-admin-portal.css?v=20261020-club-flat">
     <link rel="stylesheet" href="assets/livepalmes-license-administration.css?v=20260902-license-control-1">
     <link rel="stylesheet" href="assets/livepalmes-whatsapp-qr.css?v=20260831-whatsapp-qr-1">
     <link rel="stylesheet" href="assets/livepalmes-portal-appearance.css?v=20260920-appearance-4">
@@ -1357,6 +1357,7 @@
                           <div class="admin-engagements-club-team-actions">
                             <button id="adminEngagementsClubTeamNativePersonCreate" class="ghost-button compact" type="button" hidden>Ajouter une personne au club</button>
                             <button id="adminEngagementsClubTeamModifyButton" class="ghost-button compact" type="button" hidden>Modifier le chef d&rsquo;équipe</button>
+                            <button id="adminEngagementsClubTeamEditCancel" class="ghost-button compact" type="button" hidden>Annuler</button>
                             <button id="adminEngagementsClubTeamRemoveButton" class="ghost-button compact admin-engagements-club-team-remove" type="button" hidden>Retirer</button>
                           </div>
                         </div>
@@ -1433,10 +1434,12 @@
                             </div>
                             <button id="adminEngagementsClubTeamRenunciationDialogClose" class="ghost-button compact" type="button" aria-label="Fermer la fenêtre">&times;</button>
                           </div>
-                          <p>En choisissant cette option, votre club renonce au droit de réclamation pour cette compétition.</p>
-                          <div class="admin-engagements-club-times-dialog-actions">
+                          <p id="adminEngagementsClubTeamRenunciationDialogSummary">Vous allez participer sans chef d’équipe.</p>
+                          <p><strong>Votre club renonce au droit de réclamation pour cette compétition.</strong></p>
+                          <p>Vos nageurs, courses, relais et officiels restent engagés.</p>
+                          <div class="admin-engagements-club-times-dialog-actions admin-portal-actions">
                             <button id="adminEngagementsClubTeamRenunciationDialogCancel" class="ghost-button" type="button">Annuler</button>
-                            <button type="submit">Confirmer aucun chef d&rsquo;équipe</button>
+                            <button type="submit">Confirmer la renonciation</button>
                           </div>
                         </form>
                       </dialog>
@@ -2813,7 +2816,7 @@
     <script src="assets/livepalmes-whatsapp-qr.js?v=20260831-whatsapp-qr-1"></script>
     <link rel="stylesheet" href="assets/livepalmes-engagement-qualifications.css">
     <script src="assets/livepalmes-engagement-qualifications.js?v=20260915-import-seconds"></script>
-  <script src="assets/livepalmes-admin-portal.js?v=20261020-recap-lignes"></script>
+  <script src="assets/livepalmes-admin-portal.js?v=20261020-club-flat"></script>
     <script src="assets/livepalmes-license-administration.js?v=20261010-license-partial-validation-4"></script>
     <script src="assets/livepalmes-admin-calendar-events.js?v=20261012-shared-comments-1"></script>
     <script src="assets/public/livepalmes-home-model.js?v=20261014-home-2"></script>
