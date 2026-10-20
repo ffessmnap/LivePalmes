@@ -2,6 +2,12 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 20 octobre — Retour aux compétitions dans le fil d’Ariane Club (préparation TEST)
+
+- Accord explicite d’Antoine : remplacer le bouton séparé par « ← Compétitions » dans le fil d’Ariane sur TEST, en conservant les protections des saisies en cours. Fiche club uniquement ; parcours organisateur conservé. Le lien garde le gestionnaire de fermeture existant, sans changement des confirmations ni des sauvegardes.
+- Budget avant/après : zéro appel, lecture ou écriture supplémentaire à l’ouverture, au retour, au rafraîchissement et dans le pire cas ; les traitements existants du retour sont réutilisés. Zone tactile de 44 px, titre accessible conservé, ligne du bouton supprimée. Fichiers : portail.html, assets/livepalmes-portal-ux.js, assets/livepalmes-admin-portal.js, assets/livepalmes-admin-portal.css, tests/engagement-club-ux-tests.js et les deux documents de suivi/design.
+- Contrôles ciblés réussis : syntaxe, tests UX Club et optimisations portail ; navigateur hors réseau à 1280/390/360/320 px, zéro débordement, lien de 44 px et en-tête vide sans hauteur utile. Annulation au clavier de la confirmation réelle : dossier et brouillon fictifs conservés ; retour accepté et bouton organisateur également contrôlés. Preuves privées locales outputs/ux-club-return/. CI et preuve TEST à consigner après exécution. Accord de réalisation reçu ; validation de la version livrée encore attendue. Aucune écriture métier de recette ni publication PROD autorisée.
+
 ### 20 octobre — Engagements Club : mobile, détails et récapitulatif (TEST publié, validation utilisateur attendue)
 
 - **Version publiée :** [PR #408](https://github.com/ffessmnap/LivePalmes/pull/408) intégrée après [CI 39487019778](https://github.com/ffessmnap/LivePalmes/actions/runs/39487019778) réussie, candidat 52b1f41281667b961bbbbf75e69941b3eb5775b5. [TEST commun 39487552995](https://github.com/ffessmnap/LivePalmes/actions/runs/39487552995) réussi, Hosting d2a7c94efb61fca3. Artefact test-proof téléchargé et comparé : vérification globale réussie sur le commit exact, 114 fonctions TEST strictement identiques à la preuve précédente ; aucune publication backend. Registre documentaire ultérieur sans nouvelle publication TEST ; PROD inchangée.

@@ -144,7 +144,7 @@
       const detailOpen = detail && !detail.hidden;
       const clubMode = engagementView.dataset.engagementsMode === "club";
       if (clubMode && !clubIsHome) items.push({ label: "Espace club", href: "#espace-club" });
-      items.push({ label: clubMode ? "Engagements en compétition" : "Compétitions", ...(detailOpen ? { href: clubMode ? "#club-competitions" : "#competitions-calendrier", competitionReturn: true } : {}) });
+      items.push({ label: clubMode ? (detailOpen ? "← Compétitions" : "Engagements en compétition") : "Compétitions", ...(detailOpen ? { href: clubMode ? "#club-competitions" : "#competitions-calendrier", competitionReturn: true } : {}) });
       if (detailOpen) items.push({ label: document.querySelector("#adminEngagementsDetailTitle")?.textContent?.trim() || "Compétition" });
     } else {
       if (parentLabel && parentLabel !== currentLabel && !(clubIsHome && parentLabel === "Espace club")) {
