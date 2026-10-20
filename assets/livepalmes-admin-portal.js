@@ -3891,6 +3891,7 @@
   }
 
   function renderEngagementsProfile(user = {}) {
+    const contextProfile = user;
     user = activeEngagementClubProfile(user);
     const capabilities = new Set(user.capabilities || []);
     const scopeFor = (capability) => user.accessScopes?.[capability] || {};
@@ -3900,7 +3901,7 @@
     const referencedClub = accessClubFromId(clubId);
     const clubValue = clubDisplayLabel({ clubId, clubName: user.clubName || clubScope.scopeName }, { fallback: "Club indisponible" });
     const regionValue = regionDisplayLabel(regionScope.scopeId || user.regionId || referencedClub?.regionId);
-    renderEngagementClubContext(user);
+    renderEngagementClubContext(contextProfile);
     if (elements.accountScopeSentence) {
       if (capabilities.has("engagements.national.manage")) {
         elements.accountScopeSentence.innerHTML = `Vos droits LivePalmes sont de niveau national. Votre club pour les engagements est <strong>${escapeHtml(clubValue)}</strong>.`;
