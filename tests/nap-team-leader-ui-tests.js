@@ -2,7 +2,7 @@
 const assert=require("node:assert/strict"),fs=require("node:fs"),vm=require("node:vm");
 const source=fs.readFileSync(require.resolve("../assets/livepalmes-admin-portal.js"),"utf8");
 const field=value=>({value,required:true,disabled:true,label:{hidden:false},closest(){return this.label;}});
-const elements={engagementsClubTeamForm:{querySelector:()=>({value:sandbox.mode}),querySelectorAll:()=>[],checkValidity:()=>true},engagementsClubTeamPersonFields:{dataset:{manualEntry:"true"}},engagementsClubTeamFirstName:field("Chef"),engagementsClubTeamLastName:field("CORRIGE"),engagementsClubTeamBirthDate:field("1980-01-02"),engagementsClubTeamLicense:field("OLD-LICENCE"),engagementsClubTeamSex:field(""),engagementsClubTeamExternal:field(""),engagementsClubTeamSaveButton:field(""),engagementsClubTeamMessage:{dataset:{}}};
+const elements={engagementsClubTeamForm:{setAttribute:()=>{},removeAttribute:()=>{},querySelector:()=>({value:sandbox.mode}),querySelectorAll:()=>[],checkValidity:()=>true},engagementsClubTeamPersonFields:{dataset:{manualEntry:"true"}},engagementsClubTeamFirstName:field("Chef"),engagementsClubTeamLastName:field("CORRIGE"),engagementsClubTeamBirthDate:field("1980-01-02"),engagementsClubTeamLicense:field("OLD-LICENCE"),engagementsClubTeamSex:field(""),engagementsClubTeamExternal:field(""),engagementsClubTeamSaveButton:field(""),engagementsClubTeamMessage:{dataset:{}}};
 const calls=[];
 elements.engagementsClubTeamModifyButton=field("");
 elements.engagementsClubTeamNativePersonCreate=field("");
