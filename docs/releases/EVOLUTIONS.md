@@ -2,11 +2,11 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
-### 20 octobre — Poubelle Courses plus discrète (TEST à publier)
+### 20 octobre — Poubelle Courses plus discrète (TEST publié, validation visuelle attendue)
 
 - Retour utilisateur : poubelle trop grande ; hauteur identique au crayon, puis précision : poubelle moins large et deux boutons bien alignés sur une même ligne.
 - Retouche CSS uniquement : hauteur commune de 30 px, largeur crayon 54 px / poubelle 30 px, alignement vertical au milieu et absence de retour à la ligne ; pictogramme de 12 px au trait fin. Confirmation, avertissement relais et traitement de retrait inchangés. Aucun accès aux données ajouté, aucune écriture Paris/CNHC.
-- Premier contrôle local avant la précision de largeur : deux boutons à 54 × 30 px. Contrôle final local ordinateur/mobile : crayon 54 × 30 px, poubelle 30 × 30 px, bords hauts et bas identiques ; défilement et focus conservés. Test ciblé de retrait réussi sans réseau. Nouvelle présentation à faire valider. PR #387 intégrée sur 6411d4ce6259a08ede0468a1aeec22077b1ad114 ; vérification Linux 39419222686 réussie. Première publication TEST commune 39419601197 réussie (interface seule, backend conservé), Hosting 754787609df38670. La précision de largeur/alignement est préparée dans la PR suivante, nouvelle publication et validation visuelle attendues.
+- Premier contrôle local avant la précision de largeur : deux boutons à 54 × 30 px. Contrôle final local ordinateur/mobile : crayon 54 × 30 px, poubelle 30 × 30 px, bords hauts et bas identiques ; défilement et focus conservés. Test ciblé de retrait réussi sans réseau. Nouvelle présentation à faire valider. PR #387 intégrée sur 6411d4ce6259a08ede0468a1aeec22077b1ad114 ; vérification Linux 39419222686 réussie. Première publication TEST commune 39419601197 réussie (interface seule, backend conservé), Hosting 754787609df38670. Précision finale intégrée par PR #388 sur 2f7f2426a370a1a5320fe3a97f5ea9a22e1fefbb après contrôle Linux 39419948812 réussi. Publication finale [39420266427](https://github.com/ffessmnap/LivePalmes/actions/runs/39420266427) réussie, Hosting d1eac823245d49d7 ; feuille de style relue sur TEST, identique au commit exact. Aucune fonction republiée, aucune donnée métier modifiée. Validation visuelle utilisateur de cette dernière version attendue.
 
 ### 20 octobre — Chef d’équipe et retrait depuis les courses (TEST publié, validation utilisateur attendue)
 
