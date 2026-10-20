@@ -102,7 +102,8 @@ function fixture() {
   c.renderEngagementClubNativeSummary({swimmers: [], relays: []});
   assert.doesNotMatch(c.elements.engagementsClubNativeSummary.innerHTML, /data-engagement-go-swimmers/);
   c.renderEngagementClubNativeSummary({swimmers:[{lastName:"<fictif>", individualEntries:[{eventCode:"50SF", entryTime:"00:27.87"}]}], relays:[]});
-  assert.match(c.elements.engagementsClubNativeSummary.innerHTML, /&lt;fictif&gt;[\s\S]*50 m surface[\s\S]*50SF[\s\S]*00:27.87/);
+  assert.match(c.elements.engagementsClubNativeSummary.innerHTML, /&lt;fictif&gt;[\s\S]*50 m surface[\s\S]*00:27.87/);
+  assert.doesNotMatch(c.elements.engagementsClubNativeSummary.innerHTML, /50SF|<small>/, "known course displayed once without its duplicate code");
   const historical = {swimmers:[{lastName:"Synthétique",individualEntries:[{eventCode:"ancien<code>",nativeTime:"14200"},{eventCode:"ancien<code>",entryTime:"014200"}]}],relays:[{eventCode:"4x100SF",entryTime:"05:01.23",members:[1,2,3,4].map(i=>({lastName:`Relayeur ${i}`}))}]};
   const beforeSummary=JSON.stringify(historical);
   c.renderEngagementClubNativeSummary(historical);

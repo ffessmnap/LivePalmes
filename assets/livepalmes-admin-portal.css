@@ -19560,11 +19560,13 @@ html[data-portal-theme="dark"] #adminDtnGrid:has(.admin-dtn-summary-list) :is(.a
   font-size: .85rem;
 }
 #adminEngagementsClubNativeSummary .admin-engagements-recap-courses {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
   margin: 0;
   padding: 0;
   list-style: none;
 }
-#adminEngagementsClubNativeSummary .admin-engagements-recap-courses > li,
 #adminEngagementsClubNativeSummary .admin-engagements-recap-relay-head {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
@@ -19573,16 +19575,38 @@ html[data-portal-theme="dark"] #adminDtnGrid:has(.admin-dtn-summary-list) :is(.a
   padding: 4px 0;
   font-size: .8rem;
 }
+#adminEngagementsClubNativeSummary .admin-engagements-recap-swimmer {
+  display: grid;
+  grid-template-columns: 160px minmax(0, 1fr);
+  align-items: baseline;
+  gap: 8px 16px;
+  padding: 12px 0;
+}
+#adminEngagementsClubNativeSummary .admin-engagements-recap-swimmer h5 {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+#adminEngagementsClubNativeSummary .admin-engagements-recap-swimmer > p { margin: 0; }
+#adminEngagementsClubNativeSummary .admin-engagements-recap-courses > li {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 9px;
+  max-width: 100%;
+  padding: 5px 8px;
+  border-radius: 4px;
+  background: var(--portal-color-field-background, #f8fafb);
+  font-size: .8rem;
+}
+#adminEngagementsClubNativeSummary .admin-engagements-recap-courses .admin-engagements-recap-time {
+  color: var(--portal-color-accent-strong, #087e91);
+  font-weight: 600;
+}
 #adminEngagementsClubNativeSummary .admin-engagements-recap-event {
   min-width: 0;
   overflow-wrap: anywhere;
 }
 #adminEngagementsClubNativeSummary .admin-engagements-recap-event strong { font-weight: 500; }
-#adminEngagementsClubNativeSummary .admin-engagements-recap-event small {
-  display: block;
-  color: var(--portal-color-muted, #687980);
-  font-size: .7rem;
-}
 #adminEngagementsClubNativeSummary .admin-engagements-recap-time {
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
@@ -19597,6 +19621,9 @@ html[data-portal-theme="dark"] #adminDtnGrid:has(.admin-dtn-summary-list) :is(.a
   overflow-wrap: anywhere;
 }
 @media (max-width: 700px) {
+  #adminEngagementsClubNativeSummary .admin-engagements-recap-swimmer {
+    grid-template-columns: minmax(0, 1fr);
+  }
   #adminEngagementsView[data-engagements-mode="club"] #adminEngagementsDetail .admin-engagements-detail-step-bar > button {
     flex-direction: column;
     justify-content: center;
