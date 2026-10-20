@@ -19506,35 +19506,55 @@ html[data-portal-theme="dark"] #adminDtnGrid:has(.admin-dtn-summary-list) :is(.a
 #adminEngagementsDetailSwimmersPanel .admin-engagements-club-swimmer-details-toggle[aria-expanded="true"] svg {
   transform: rotate(180deg);
 }
-#adminEngagementsClubSummaryList {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 6px;
-}
-#adminEngagementsClubSummaryList > div:not([data-summary-kind="metric"]) {
-  grid-column: 1 / -1;
-}
-#adminEngagementsDetailSummaryPanel #adminEngagementsClubSummaryList > [data-summary-kind="metric"] {
+#adminEngagementsDetailSummaryPanel #adminEngagementsClubSummaryList {
   display: flex;
-  flex-direction: column;
-  border: 1px solid var(--portal-color-border, #dce5e7);
-  border-radius: 6px;
-}
-#adminEngagementsClubSummaryList > [data-summary-kind="metric"] dt {
+  flex-wrap: wrap;
+  gap: 8px 26px;
   border: 0;
-  padding: 6px 8px 0;
+  border-radius: 0;
+  padding: 0;
+  margin: 8px 0;
   background: transparent;
-  font-size: .65rem;
+  color: var(--portal-color-text);
 }
-#adminEngagementsClubSummaryList > [data-summary-kind="metric"] dd {
+#adminEngagementsClubSummaryList::before { content: ""; flex-basis: 100%; order: 1; }
+#adminEngagementsDetailSummaryPanel #adminEngagementsClubSummaryList > div {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+  max-width: 100%;
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+  background: transparent;
+}
+#adminEngagementsDetailSummaryPanel #adminEngagementsClubSummaryList :is(dt, dd) {
+  width: auto;
   margin: 0;
-  padding: 2px 8px 6px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  text-transform: none;
+  font-size: .82rem;
+  font-weight: 400;
+  color: var(--portal-color-text);
+}
+#adminEngagementsDetailSummaryPanel #adminEngagementsClubSummaryList dt { color: var(--portal-color-muted); }
+#adminEngagementsClubSummaryList > [data-summary-kind="metric"] { order: 2; }
+#adminEngagementsClubSummaryList > [data-summary-kind="metric"] dt {
+  position: absolute;
+  width: 1px !important;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
 }
 #adminEngagementsClubNativeSummary .admin-engagements-recap-section {
   margin-top: 12px;
-  border: 1px solid var(--portal-color-border, #dce5e7);
-  border-radius: 7px;
-  padding: 0 10px;
+  border: 0;
+  border-top: 1px solid var(--portal-color-border, #dce5e7);
+  border-radius: 0;
+  padding: 0;
 }
 #adminEngagementsClubNativeSummary .admin-engagements-recap-section > summary {
   min-height: 44px;
@@ -19552,7 +19572,7 @@ html[data-portal-theme="dark"] #adminDtnGrid:has(.admin-dtn-summary-list) :is(.a
 }
 #adminEngagementsClubNativeSummary .admin-engagements-recap-person {
   padding: 8px 0;
-  border-top: 1px solid var(--portal-color-border, #dce5e7);
+  border: 0;
 }
 #adminEngagementsClubNativeSummary .admin-engagements-recap-person h5 {
   margin: 0 0 4px;
@@ -19562,7 +19582,7 @@ html[data-portal-theme="dark"] #adminDtnGrid:has(.admin-dtn-summary-list) :is(.a
 #adminEngagementsClubNativeSummary .admin-engagements-recap-courses {
   display: flex;
   flex-wrap: wrap;
-  gap: 7px;
+  gap: 8px 22px;
   margin: 0;
   padding: 0;
   list-style: none;
@@ -19593,9 +19613,8 @@ html[data-portal-theme="dark"] #adminDtnGrid:has(.admin-dtn-summary-list) :is(.a
   align-items: baseline;
   gap: 4px 9px;
   max-width: 100%;
-  padding: 5px 8px;
-  border-radius: 4px;
-  background: var(--portal-color-field-background, #f8fafb);
+  padding: 0;
+  background: transparent;
   font-size: .8rem;
 }
 #adminEngagementsClubNativeSummary .admin-engagements-recap-courses .admin-engagements-recap-time {
@@ -19641,7 +19660,6 @@ html[data-portal-theme="dark"] #adminDtnGrid:has(.admin-dtn-summary-list) :is(.a
   }
   #adminEngagementsDetailSwimmersPanel .admin-engagements-club-swimmer-row { min-height: 44px; }
   #adminEngagementsDetailSwimmersPanel .admin-engagements-club-swimmer-row > label:first-child { min-height: 44px; }
-  #adminEngagementsClubSummaryList { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 520px) {
   #adminEngagementsDetailSwimmersPanel .admin-engagements-club-swimmer-row { grid-template-columns: minmax(0, 1fr) auto 44px; gap: 4px; }
@@ -19674,4 +19692,91 @@ html[data-portal-theme="dark"] #adminDtnGrid:has(.admin-dtn-summary-list) :is(.a
     grid-column: 1 / -1;
   }
   #adminEngagementsDetailSwimmersPanel .admin-engagements-club-swimmer-license-cell input { min-width: 0; min-height: 36px; }
+}
+
+/* Club : récapitulatif et chef d’équipe à plat, sans conteneurs imbriqués. */
+#adminEngagementsDetailSummaryPanel #adminEngagementsClubNativeSummary .admin-engagements-empty {
+  min-height: 0;
+  margin: 0 0 12px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  background: transparent !important;
+}
+#adminEngagementsDetailSummaryPanel #adminEngagementsClubNativeSummary :is(.admin-engagements-empty p, .admin-engagements-recap-section > p) {
+  margin: 0 0 8px;
+  color: var(--portal-color-muted);
+  font-size: .82rem;
+  font-weight: 400;
+}
+#adminEngagementsDetailSummaryPanel :is([data-engagement-go-swimmers], #adminEngagementsClubSummaryPdfButton) {
+  min-height: 44px;
+  width: auto;
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+  background: transparent !important;
+  color: var(--portal-color-accent-strong);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  box-shadow: none;
+  font-weight: 400;
+}
+#adminEngagementsDetailSummaryPanel .admin-engagements-club-summary-actions {
+  border-top: 1px solid var(--portal-color-border);
+  padding-top: 8px;
+}
+#adminEngagementsDetailTeamPanel #adminEngagementsClubTeamForm {
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+  background: transparent;
+  box-shadow: none;
+}
+#adminEngagementsDetailTeamPanel #adminEngagementsClubTeamSummary {
+  display: block;
+  min-height: 0;
+  margin: 4px 0 0;
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--portal-color-text);
+  font-size: .85rem;
+  font-weight: 400;
+}
+#adminEngagementsDetailTeamPanel .admin-engagements-events-head {
+  margin-bottom: 0;
+  padding: 0 0 12px;
+  border: 0;
+  border-bottom: 1px solid var(--portal-color-border);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+#adminEngagementsDetailTeamPanel .admin-engagements-club-team-actions {
+  display: flex;
+  flex-wrap: wrap;
+  flex-direction: row;
+  gap: 8px;
+}
+#adminEngagementsDetailTeamPanel .admin-engagements-club-team-actions button { width: auto; }
+#adminEngagementsClubTeamRenunciationDialog form > p { margin: 12px 16px; }
+#adminEngagementsDetailTeamPanel #adminEngagementsClubTeamRenunciationButton {
+  min-height: 44px;
+  width: auto;
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+  background: transparent;
+  font-weight: 400;
+  color: var(--portal-color-accent-strong);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+#adminEngagementsDetailTeamPanel #adminEngagementsClubTeamMessage:empty { display: none; }
+@media (max-width: 700px) {
+  #adminEngagementsDetailTeamPanel .admin-engagements-club-team-actions button { min-height: 44px; }
+  #adminEngagementsDetailSummaryPanel .admin-engagements-club-summary-actions { justify-content: flex-start; }
 }

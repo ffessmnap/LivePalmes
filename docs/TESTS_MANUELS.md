@@ -2,6 +2,13 @@
 
 <!-- description: Checklist de tests manuels à exécuter avant une publication ou après une modification sensible. -->
 
+## Récapitulatif et chef d’équipe à plat — 20 octobre
+
+- Ordinateur/mobile, clair/sombre : bilan et compteurs sans cadres, rubriques séparées par un trait fin, vide sans sous-carte ni texte emphatique ; couples course/temps proches sans double libellé. Vérifier codes inconnus, temps bruts, doublons réels, relais, paiement et action PDF inchangés ; pas de génération PDF nécessaire pour cette recette.
+- Chef déclaré : seul son résumé et Remplacer/Retirer sont visibles ; recherche masquée. Remplacer ouvre le sélecteur existant ; Annuler restaure les champs persistés et le focus sans appel serveur ni rechargement du dossier. Renonciation confirmée : résumé Aucun chef d’équipe et Désigner un chef d’équipe, sans recherche permanente.
+- Retirer avec nageurs/officiels/relais : confirmation nominative, renonciation explicite et engagements conservés. Annuler/Échap n’écrivent rien. Hors réseau uniquement : confirmation envoyant le patch renounced avec empreinte native, succès après serveur, erreur conservant le chef, refus des doubles envois, compétition fermée/délai/droits, autre club natif, changement de club/compétition avant confirmation et pendant la réponse.
+- Sur TEST connecté, ouvrir puis annuler la confirmation seulement ; ne pas confirmer un retrait ni choisir un autre chef réel. Les écritures Paris/CNHC/NAP, migrations et mails restent hors recette. Retour utilisateur sur la version regroupée attendu ; téléphone physique et Safari à vérifier séparément.
+
 ## Engagements Club, mobile et récapitulatif — suite du 20 octobre
 
 - Sur fixtures fictives, puis TEST en lecture seule : conserver compétition/date/état/limite et retour, raccourcir le club sans utiliser le code d’un autre club après changement de session. Vérifier l’espace gagné, le titre accessible, la navigation collante et les messages importants du lot 1 (fermeture, date dépassée, prérequis, erreur).

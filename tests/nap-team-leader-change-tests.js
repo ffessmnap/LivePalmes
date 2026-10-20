@@ -44,6 +44,10 @@ const authorize=()=>{events.push("authorize");if(denied)throw new TypeError("Den
   const state=require("../functions/nap-team-leader-state");
   const waived=planLeaderChange(pack,{...input,patch:{mode:"renounced",renunciationAccepted:true}});
   assert.equal(state.isWaiver(waived.after),true);
+  const withParticipants={...pack,swimmers:[{id:1}],officials:[{id:2}],inscriptions:[{id:3}],relays:[{id:4}]};
+  const participantsBefore=JSON.stringify(withParticipants);
+  assert.equal(state.isWaiver(planLeaderChange(withParticipants,{...input,patch:{mode:"renounced",renunciationAccepted:true}}).after),true);
+  assert.equal(JSON.stringify(withParticipants),participantsBefore,"waiver plan never changes swimmers, officials, courses or relays");
   assert.equal(state.declarationComplete([]),false);
   assert.equal(state.declarationComplete([waived.after]),true);
   assert.equal(state.declarationComplete([{...waived.after,prenom:"Chef"}]),false);
