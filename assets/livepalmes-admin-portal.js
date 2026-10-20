@@ -11206,7 +11206,7 @@
         });
         if (elements.engagementsClubTeamMessage) {
           const writeLockReason = selectedEngagementCompetition?.nativeTeamLeaderEditable === true ? engagementClubWriteLockReason({ ...selectedEngagementCompetition, nativeReadOnly: false }) : engagementClubWriteLockReason();
-          elements.engagementsClubTeamMessage.textContent = writeLockReason || (engagementClubTeamComplete() ? "Étape chef d'équipe validée." : "");
+          elements.engagementsClubTeamMessage.textContent = writeLockReason || "";
           elements.engagementsClubTeamMessage.dataset.tone = writeLockReason ? "error" : "ok";
         }
       } else {
