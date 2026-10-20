@@ -158,6 +158,46 @@ class NotificationReleaseTests(unittest.TestCase):
             cycle.approved_extra_functions({**self.request(), 'additionalPdfFunctions': sorted(cycle.PDF_FUNCTIONS),
                                            'additionalPdfApproval': 'Accord PDF'})
 
+    def test_grouped_idf_release_requires_explicit_pause_and_restart_plan(self):
+        maintenance = {'scope': 'idf', 'observedRevision': 2, 'pauseRevision': 3,
+                       'resumeRevision': 4, 'noReplay': True, 'approval': 'Preparation du bilan, accord final requis'}
+        request = {**self.request(), 'productionCommit': cycle.IDF_MAILS_PAIR[0],
+                   'candidate': cycle.IDF_MAILS_PAIR[1], 'notificationPilotIdfApproval': 'IDF seulement',
+                   'additionalNotificationFunctions': sorted(cycle.IDF_NOTIFICATION_FUNCTIONS),
+                   'notificationMaintenancePlan': maintenance}
+        self.assertEqual(set(cycle.approved_notification_functions(request)), cycle.IDF_NOTIFICATION_FUNCTIONS)
+        for key in maintenance:
+            missing = dict(maintenance)
+            missing.pop(key)
+            with self.assertRaises(ValueError):
+                cycle.approved_notification_functions({**request, 'notificationMaintenancePlan': missing})
+        for change in [{'scope': 'all'}, {'noReplay': False}, {'pauseRevision': 4},
+                       {'resumeRevision': 3}, {'observedRevision': True}, {'approval': ''}]:
+            with self.assertRaises(ValueError):
+                cycle.approved_notification_functions({**request, 'notificationMaintenancePlan': {**maintenance, **change}})
+        for change in [{'notificationMaintenancePlan': None}, {'candidate': 'a' * 40},
+                       {'initialAutomaticMailEnabled': True}, {'additionalNotificationFunctions': sorted(cycle.NOTIFICATION_FUNCTIONS)}]:
+            with self.assertRaises(ValueError):
+                cycle.approved_notification_functions({**request, **change})
+        document = {'fields': {'enabled': {'booleanValue': False}, 'scope': {'stringValue': 'idf'},
+                    'revision': {'integerValue': '3'}, 'enabledSince': {'stringValue': '2026-10-20T08:47:02.380Z'},
+                    'discardThrough': {'stringValue': '2026-10-20T12:00:00.000Z'},
+                    'updatedAt': {'stringValue': '2026-10-20T12:00:00.000Z'}}}
+        self.assertEqual(guard.paused_idf_state(document, maintenance), document['fields'])
+        with tempfile.TemporaryDirectory() as directory:
+            witness = Path(directory) / 'pause.json'
+            guard.check_pause_witness(document, maintenance, witness)
+            guard.check_pause_witness(document, maintenance, witness)
+            with self.assertRaises(ValueError):
+                guard.check_pause_witness({'fields': {**document['fields'],
+                    'updatedAt': {'stringValue': '2026-10-20T12:01:00.000Z'}}}, maintenance, witness)
+        for key, value in [('enabled', {'booleanValue': True}), ('scope', {'stringValue': 'all'}),
+                           ('revision', {'integerValue': '4'}), ('enabled', None),
+                           ('discardThrough', {'stringValue': ''}),
+                           ('discardThrough', {'stringValue': '2026-10-19T12:00:00.000Z'})]:
+            with self.assertRaises(ValueError):
+                guard.paused_idf_state({'fields': {**document['fields'], key: value}}, maintenance)
+
     def test_idf_pilot_exact_pair_seven_treatments_and_default_off(self):
         request = {**self.request(), 'productionCommit': cycle.IDF_NOTIFICATION_PAIR[0],
                    'candidate': cycle.IDF_NOTIFICATION_PAIR[1],

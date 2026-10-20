@@ -41,6 +41,11 @@ course = sorted(scope.COURSE_PREFLIGHT_PATHS) + ['docs/releases/EVOLUTIONS.md']
 assert scope.needs_preview(course) is False
 idf = sorted(scope.IDF_PREFLIGHT_PATHS) + ['docs/releases/EVOLUTIONS.md']
 assert scope.needs_preview(idf) is False
+grouped = sorted(scope.GROUPED_MAILS_PREFLIGHT_PATHS) + ['docs/releases/EVOLUTIONS.md']
+assert scope.needs_preview(grouped) is False
+for extra in ['portail.html', 'functions/index.js', 'firebase.json', 'tools/unknown.py', 'unknown-file']:
+    assert scope.needs_preview(grouped + [extra]) is True
+assert scope.needs_preview(['tools/check-production-mail-disabled.py']) is True
 for extra in ['portail.html', 'functions/index.js', 'firebase.json', 'tools/unknown.py', 'unknown-file']:
     assert scope.needs_preview(idf + [extra]) is True
 assert scope.needs_preview(['tools/release-cycle.py']) is True
