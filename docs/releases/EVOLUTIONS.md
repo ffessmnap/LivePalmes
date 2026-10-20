@@ -2,6 +2,12 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 20 octobre — Chronologie des compétitions dans le portail
+
+- Proposition approuvée par Antoine : ordre par date dans Engagements en compétition et Compétitions, indépendamment des statuts et échéances ; compétitions passées séparées et repliées, les plus récentes en premier. Une compétition sur plusieurs jours reste en cours jusqu’au dernier jour inclus, selon le jour de Paris. Filtres, badges, échéances et actions conservés ; pagination indépendante de 24 lignes par section.
+- Modification uniquement du rendu et du tri des données déjà chargées : zéro lecture ou écriture NAP/Firestore supplémentaire à l’ouverture, au changement de filtre, au dépliage, à la pagination et au rafraîchissement. Coût réseau existant inchangé, aucune requête par ligne ni reconstruction. Aucun changement de données, droits, fonctions, mails, Storage ou PROD.
+- Tests de chronologie, fin incluse, minuit de Paris et non-mutation des données ajoutés aux contrôles du portail. PR, preuves TEST et recette ordinateur/mobile à consigner après exécution ; validation de la version regroupée par Antoine encore attendue.
+
 
 ### 20 octobre — Préparation PROD du correctif des valeurs natives et du verrouillage MySQL
 

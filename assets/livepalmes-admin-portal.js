@@ -974,6 +974,8 @@
   const engagementCompetitionCalendarMemoryCache = new Map();
   const engagementCompetitionCalendarRequests = new Map();
   let engagementCompetitionsVisibleLimit = 24;
+  let engagementPastCompetitionsVisibleLimit = 24;
+  let engagementPastCompetitionsExpanded = false;
   let newlyCreatedEngagementCompetitionId = "";
   let engagementOpenWaterCourses = ENGAGEMENT_OPEN_WATER_DEFAULT_COURSES.map((course) => ({ ...course }));
   let engagementOpenWaterCoursesLoaded = false;
@@ -1794,6 +1796,8 @@
     if (previousMode && previousMode !== nextMode && elements.engagementsStatusFilter) {
       elements.engagementsStatusFilter.value = "";
       engagementCompetitionsVisibleLimit = 24;
+      engagementPastCompetitionsVisibleLimit = 24;
+      engagementPastCompetitionsExpanded = false;
     }
     const staleInitialCalendar = !previousMode && engagementCompetitionsLoaded;
     if ((previousMode && previousMode !== nextMode) || staleInitialCalendar) {
@@ -3554,6 +3558,8 @@
     if (elements.engagementsStatusFilter) elements.engagementsStatusFilter.value = "";
     if (elements.engagementsMineFilter) elements.engagementsMineFilter.checked = false;
     engagementCompetitionsVisibleLimit = 24;
+    engagementPastCompetitionsVisibleLimit = 24;
+    engagementPastCompetitionsExpanded = false;
     syncEngagementStatusSegments();
   }
 
@@ -3750,24 +3756,24 @@
       .filter((competition) => !filters.entryStatus || competition.entryStatus === filters.entryStatus)
       .filter((competition) => !filters.mineOnly || canEditEngagementCompetition(competition))
       .sort((left, right) => {
-        const previewDifference = Number(engagementCompetitionIsInSeptemberPreview(left, filters, date)) -
-          Number(engagementCompetitionIsInSeptemberPreview(right, filters, date));
-        if (previewDifference) return previewDifference;
-        const statusRank = (competition) => competition.entryStatus === "open" ? 0 : competition.entryStatus === "upcoming" ? 1 : competition.entryStatus === "closed" ? 2 : 1;
-        const rankDifference = statusRank(left) - statusRank(right);
-        if (rankDifference) return rankDifference;
-        if (left.entryStatus === "open" && right.entryStatus === "open") {
-          const deadlineDifference = String(left.entryDeadlineAt || left.date || "9999-12-31")
-            .localeCompare(String(right.entryDeadlineAt || right.date || "9999-12-31"));
-          if (deadlineDifference) return deadlineDifference;
-        }
-        if (left.entryStatus === "closed" && right.entryStatus === "closed") {
-          const recentFirst = String(right.date || "0000-01-01").localeCompare(String(left.date || "0000-01-01"));
-          if (recentFirst) return recentFirst;
-        }
         return String(left.date || "9999-12-31").localeCompare(String(right.date || "9999-12-31")) ||
-          String(left.name || "").localeCompare(String(right.name || ""), "fr");
+          String(left.name || "").localeCompare(String(right.name || ""), "fr") ||
+          String(left.id || "").localeCompare(String(right.id || ""));
       });
+  }
+
+  function engagementCalendarSections(competitions, date = new Date()) {
+    const parts = new Intl.DateTimeFormat("en", { timeZone: "Europe/Paris", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(date);
+    const value = type => parts.find(part => part.type === type).value;
+    const today = `${value("year")}-${value("month")}-${value("day")}`;
+    const past = [], upcoming = [];
+    competitions.forEach(competition => {
+      const end = competition.endDate || competition.date;
+      (end && end < today ? past : upcoming).push(competition);
+    });
+    past.sort((left, right) => String(right.date || "").localeCompare(String(left.date || "")) ||
+      String(left.name || "").localeCompare(String(right.name || ""), "fr") || String(left.id || "").localeCompare(String(right.id || "")));
+    return { upcoming, past };
   }
 
   function renderCurrentUser(user = {}) {
@@ -10596,7 +10602,6 @@
     const mount = elements.engagementsCalendarList;
     if (!mount) return;
     const visibleCompetitions = filteredEngagementCompetitions();
-    const renderedCompetitions = visibleCompetitions.slice(0, engagementCompetitionsVisibleLimit);
     if (!visibleCompetitions.length) {
       mount.innerHTML = `
         <div class="admin-engagements-empty admin-engagements-calendar-empty">
@@ -10607,6 +10612,18 @@
       `;
       return;
     }
+    const { upcoming, past } = engagementCalendarSections(visibleCompetitions);
+    mount.innerHTML = `<h3 class="admin-engagements-period-title">En cours et à venir</h3>` +
+      (upcoming.length ? renderEngagementCompetitionTable(upcoming, "upcoming", engagementCompetitionsVisibleLimit)
+        : '<p class="admin-engagements-empty">Aucune compétition en cours ou à venir pour ces filtres.</p>') +
+      (past.length ? `<details class="admin-engagements-past" data-engagement-past ${engagementPastCompetitionsExpanded ? "open" : ""}>
+        <summary>Compétitions passées (${past.length})</summary>
+        ${renderEngagementCompetitionTable(past, "past", engagementPastCompetitionsVisibleLimit)}
+      </details>` : "");
+  }
+
+  function renderEngagementCompetitionTable(visibleCompetitions, period, limit) {
+    const renderedCompetitions = visibleCompetitions.slice(0, limit);
     const groupedCompetitions = [];
     renderedCompetitions.forEach((competition) => {
       const groupLabel = engagementCompetitionMonthLabel(competition);
@@ -10617,8 +10634,8 @@
       }
       group.competitions.push(competition);
     });
-    mount.innerHTML = `
-      <div class="admin-engagements-competitions-table" role="table" aria-label="${isEngagementAdminMode() ? "Compétitions à administrer" : "Engagements en compétition"}">
+    return `
+      <div class="admin-engagements-competitions-table" role="table" aria-label="${period === "past" ? "Compétitions passées" : isEngagementAdminMode() ? "Compétitions à administrer" : "Engagements en compétition"}">
         <div class="admin-engagements-competitions-table-head" role="row">
           <span role="columnheader">Date</span>
           <span role="columnheader">Compétition</span>
@@ -10627,8 +10644,8 @@
           <span role="columnheader">Action</span>
         </div>
         ${groupedCompetitions.map((group, groupIndex) => `
-          <section class="admin-engagements-competition-group" role="rowgroup" aria-labelledby="engagement-competition-group-${groupIndex}">
-            <h4 id="engagement-competition-group-${groupIndex}">${escapeHtml(group.label)}</h4>
+          <section class="admin-engagements-competition-group" role="rowgroup" aria-labelledby="engagement-competition-group-${period}-${groupIndex}">
+            <h4 id="engagement-competition-group-${period}-${groupIndex}">${escapeHtml(group.label)}</h4>
             ${group.competitions.map((competition) => {
               const action = engagementCompetitionAction(competition);
               const entryStatus = competition.entryStatus || "upcoming";
@@ -10672,7 +10689,7 @@
         `).join("")}
       </div>
     ` + (renderedCompetitions.length < visibleCompetitions.length
-      ? `<button class="ghost-button admin-engagements-show-more" type="button" data-engagement-show-more>Afficher plus de compétitions</button>`
+      ? `<button class="ghost-button admin-engagements-show-more" type="button" data-engagement-show-more="${period}">Afficher plus de compétitions${period === "past" ? " passées" : ""}</button>`
       : "");
   }
 
@@ -17315,18 +17332,24 @@
     [elements.engagementsRegionFilter, elements.engagementsLevelFilter, elements.engagementsTypeFilter, elements.engagementsStatusFilter, elements.engagementsMineFilter].forEach((filter) => {
       filter?.addEventListener("change", () => {
         engagementCompetitionsVisibleLimit = 24;
+        engagementPastCompetitionsVisibleLimit = 24;
+        engagementPastCompetitionsExpanded = false;
         syncEngagementStatusSegments();
         renderEngagementCompetitions();
       });
     });
     elements.engagementsSeasonFilter?.addEventListener("change", () => {
       engagementCompetitionsVisibleLimit = 24;
+      engagementPastCompetitionsVisibleLimit = 24;
+      engagementPastCompetitionsExpanded = false;
       loadEngagementCompetitions({ force: true });
     });
     elements.engagementsStatusSegmentButtons?.forEach((button) => {
       button.addEventListener("click", () => {
         if (elements.engagementsStatusFilter) elements.engagementsStatusFilter.value = button.dataset.engagementStatus || "";
         engagementCompetitionsVisibleLimit = 24;
+        engagementPastCompetitionsVisibleLimit = 24;
+        engagementPastCompetitionsExpanded = false;
         syncEngagementStatusSegments();
         renderEngagementCompetitions();
       });
@@ -17379,6 +17402,9 @@
         if (target) requestEngagementDetailTab(target);
       });
     });
+    elements.engagementsCalendarList?.addEventListener("toggle", (event) => {
+      if (event.target.isConnected && event.target.matches?.("[data-engagement-past]")) engagementPastCompetitionsExpanded = event.target.open;
+    }, true);
     elements.engagementsCalendarList?.addEventListener("click", (event) => {
       if (event.target.closest("[data-engagement-filters-reset]")) {
         resetEngagementCalendarFilters();
@@ -17389,7 +17415,10 @@
         return;
       }
       if (event.target.closest("[data-engagement-show-more]")) {
-        engagementCompetitionsVisibleLimit += 24;
+        if (event.target.closest("[data-engagement-show-more]").dataset.engagementShowMore === "past") {
+          engagementPastCompetitionsVisibleLimit += 24;
+          engagementPastCompetitionsExpanded = true;
+        } else engagementCompetitionsVisibleLimit += 24;
         renderEngagementCompetitions();
         return;
       }

@@ -186,6 +186,33 @@ vm.runInNewContext(`
     otherSeasonPreview: engagementCalendarSeptemberPreview({ ...engagementCalendarFiltersPayload(), startYear: 2024 }, new Date("2026-08-11T12:00:00"))
   };
 `, filteredEngagementCompetitionsSandbox);
+// Chronologie indépendante des statuts ; fin incluse et jour de Paris.
+const chronologySandbox = {};
+const sectionsSource = portal.slice(portal.indexOf("function engagementCalendarSections"), filteredEngagementCompetitionsEnd);
+vm.runInNewContext(sectionsSource + `
+  const competitions = [
+    { id: "past", date: "2026-10-18" },
+    { id: "ongoing", date: "2026-10-19", endDate: "2026-10-21" },
+    { id: "today", date: "2026-10-20" },
+    { id: "future", date: "2026-11-07" },
+    { id: "unknown" }
+  ];
+  const ids = sections => Object.fromEntries(Object.entries(sections).map(([key, rows]) => [key, rows.map(row => row.id)]));
+  result = {
+    day: ids(engagementCalendarSections(competitions, new Date("2026-10-20T12:00:00Z"))),
+    parisMidnight: ids(engagementCalendarSections(competitions, new Date("2026-10-20T22:30:00Z"))),
+    afterEnd: ids(engagementCalendarSections(competitions, new Date("2026-10-22T12:00:00Z"))),
+    original: competitions.map(row => row.id),
+    empty: ids(engagementCalendarSections([], new Date("2026-10-20T12:00:00Z")))
+  };
+`, chronologySandbox);
+assert.deepEqual(JSON.parse(JSON.stringify(chronologySandbox.result)), {
+  day: { upcoming: ["ongoing", "today", "future", "unknown"], past: ["past"] },
+  parisMidnight: { upcoming: ["ongoing", "future", "unknown"], past: ["today", "past"] },
+  afterEnd: { upcoming: ["future", "unknown"], past: ["today", "ongoing", "past"] },
+  original: ["past", "ongoing", "today", "future", "unknown"],
+  empty: { upcoming: [], past: [] }
+});
 const differentialEntriesStart = functions.indexOf("exports.saveEngagementClubIndividualEntries");
 const differentialEntriesEnd = functions.indexOf("exports.saveEngagementClubSwimmerSelection", differentialEntriesStart);
 const differentialEntriesFunction = functions.slice(differentialEntriesStart, differentialEntriesEnd);
@@ -1314,7 +1341,7 @@ assert.ok(portal.includes("engagementCompetitionsLoadedRange"));
 assert.ok(portal.includes('ENGAGEMENT_CALENDAR_SESSION_CACHE_PREFIX = "livepalmes.portal.engagementCalendar.v4."'));
 assert.ok(portal.includes('ENGAGEMENT_CLUB_WORKSPACE_SESSION_CACHE_PREFIX = "livepalmes.portal.engagementWorkspace.v2."'));
 assert.ok(portal.includes("teamLeadersWhatsAppUrl: engagementTeamLeadersWhatsAppUrl(competition.teamLeadersWhatsAppUrl)"));
-assert.ok(portalHtml.includes('livepalmes-admin-portal.js?v=20261019-courses-nap'));
+assert.ok(portalHtml.includes('livepalmes-admin-portal.js?v=20261020-chronologie'));
 assert.ok(portal.includes('city: String(competition.city || "")'));
 assert.ok(portal.includes('address: String(competition.address || "")'));
 assert.ok(portalHtml.includes('livepalmes-admin-calendar-events.js?v=20261012-shared-comments-1'));
@@ -1490,7 +1517,7 @@ assert.ok(portal.includes("closeEngagementCompetitionDetail({ skipConfirmation: 
 assert.ok(portal.includes('engagementCompetitionsLoadedRange = "";'));
 assert.ok(portal.includes("function closeEngagementCompetitionDetail({ skipConfirmation = false } = {})"));
 assert.deepEqual(JSON.parse(JSON.stringify(filteredEngagementCompetitionsSandbox.result)), {
-  competitions: ["open-urgent", "open-late", "upcoming", "closed-recent", "closed-old", "next-september"],
+  competitions: ["closed-old", "closed-recent", "upcoming", "open-late", "open-urgent", "next-september"],
   augustPreview: {
     startYear: 2026,
     startDate: "2026-09-01",
@@ -1524,7 +1551,7 @@ assert.ok(portalCss.includes("Le nom du portail reste lisible sur une ligne"));
 assert.ok(portalCss.includes("Calendrier organisateur mobile : mêmes lignes denses que le calendrier Club"));
 assert.ok(portalCss.includes('[data-engagements-mode="admin"][data-engagements-tab="calendar"] #adminEngagementsCalendarFilters'));
 assert.ok(portalCss.includes('[data-engagements-mode="admin"] #adminEngagementsCalendarCard .admin-engagements-competition-group'));
-assert.ok(portalHtml.includes("assets/livepalmes-admin-portal.css?v=20261019-chefs-tableau"));
+assert.ok(portalHtml.includes("assets/livepalmes-admin-portal.css?v=20261020-chronologie"));
 assert.ok(portal.includes('setFormPending(elements.form, true, "Connexion en cours…")'));
 assert.ok(portal.includes('setFormPending(elements.publicAccessRequestForm, true, "Envoi en cours…")'));
 assert.ok(portal.includes('form.setAttribute("aria-busy", "true")'));
@@ -1548,7 +1575,7 @@ assert.equal(portalHtml.includes("Paiement attendu avant la fin de la premi"), f
 assert.ok(portalCss.includes("Paramétrage général d'une compétition : grille dense et lisible"));
 assert.ok(portalCss.includes("#adminEngagementsEditForm .admin-engagements-compact-field--full"));
 assert.ok(portalHtml.includes("assets/livepalmes-portal-ux.js?v=20260920-ux-consistency-1"));
-assert.ok(portalHtml.includes("assets/livepalmes-admin-portal.js?v=20261019-courses-nap"));
+assert.ok(portalHtml.includes("assets/livepalmes-admin-portal.js?v=20261020-chronologie"));
 assert.ok(portalHtml.indexOf('id="adminEngagementsEditCity"') < portalHtml.indexOf('id="adminEngagementsEditAddress"'));
 assert.ok(portalHtml.indexOf('id="adminEngagementsEditAddress"') < portalHtml.indexOf('id="adminEngagementsEditLocation"'));
 assert.ok(portalHtml.includes("Sans répéter la ville."));
@@ -1774,7 +1801,7 @@ assert.ok(portal.includes("Administrateurs engagements"));
 assert.ok(portalCss.includes(".admin-national-club-card"));
 assert.ok(portalCss.includes(".admin-national-club-card-administrators"));
 assert.ok(portalCss.includes(".admin-national-clubs-show-more"));
-assert.ok(portalHtml.includes("assets/livepalmes-admin-portal.js?v=20261019-courses-nap"));
+assert.ok(portalHtml.includes("assets/livepalmes-admin-portal.js?v=20261020-chronologie"));
 assert.ok(portalHtml.includes('class="admin-portal-workspace-head admin-tool-workspace-head admin-dtn-workspace-head"'));
 assert.ok(portalHtml.includes('id="adminDtnSeason" class="admin-dtn-season-picker" aria-label="Saison DTN"'));
 assert.equal(portalHtml.includes('<select id="adminDtnSeason"></select>'), false);
