@@ -61,3 +61,51 @@ vm.runInContext(source.slice(source.indexOf("  async function callFunctionWithTi
   assert.equal(cleared, 3, "Timers are released for success, failure and timeout");
   console.log("Portal recipe: native event labels/cache and bounded engagement reads verified offline");
 })().catch(error => { console.error(error); process.exitCode = 1; });
+
+async function calendarOpening(){
+  function fixture({mode="admin",cached=null,legacy=false,fail=false}={}){
+    const trace=[],cache=new Map();let release;
+    if(cached)cache.set(mode,cached);
+    const pending=new Promise(resolve=>{release=resolve;});
+    const state={Date,Boolean,URLSearchParams,canCreateEngagementCompetition:()=>true,canUse:()=>true,
+      engagementNavigationMode:()=>mode,engagementCalendarFiltersPayload:()=>({startDate:"2026-09-01",endDate:"2027-08-31"}),
+      engagementCalendarSeptemberPreview:()=>null,engagementCalendarRequestedRange:()=>"season",engagementCalendarCacheKey:value=>value,
+      global:{location:{hash:mode==="club"?"#club-competitions":"#competitions-calendrier",search:""}},
+      readEngagementCalendarCache:key=>cache.get(key),engagementCompetitionsLoadedCacheKey:"",engagementCompetitionsLoaded:false,
+      engagementCompetitions:[],engagementCompetitionsCachedAt:0,ENGAGEMENT_CALENDAR_CACHE_TTL_MS:300000,
+      activateEngagementCalendarCache:(_key,_range,entry)=>{trace.push("display");state.engagementCompetitions=entry.competitions;},
+      scheduleEngagementClubWorkspacePreload:()=>{},elements:{engagementsCalendarList:{innerHTML:"cached list"},engagementsStatus:{dataset:{}}},
+      engagementCompetitionCalendarRequests:new Map(),engagementCalendarCacheRevision:0,
+      callFunction:async(name,payload)=>{trace.push(name);if(name==="listEngagementCalendarEvents")return {events:[{id:"event"}]};
+        assert.equal(payload.includeCalendarEvents,mode==="admin");await pending;if(fail)throw Error("offline");
+        return {source:legacy?"firestore":"nap",competitions:[{id:"competition",napSource:!legacy}],...(!legacy?{calendarEvents:[{id:"event",napSource:true}]}:{})};},
+      canManageEngagementCompetitionScope:()=>true,
+      writeEngagementCalendarCache:(key,competitions,cachedAt,source)=>{const entry={competitions,cachedAt,source};cache.set(key,entry);return entry;},
+      engagementPublicDeepLinkHandled:false,loadEngagementCompetitionDetail:()=>{throw Error("Unexpected detail read");}};
+    const start=source.indexOf("  async function loadEngagementCompetitions(");
+    vm.runInNewContext(source.slice(start,source.indexOf("  function engagementCompetitionPayloadFromFields",start)),state);
+    return {state,trace,release};
+  }
+  for(const competitions of [[],[{id:"previous",napSource:true}]]){
+    const f=fixture({cached:{competitions,source:"nap",cachedAt:Date.now()}});
+    const opening=f.state.loadEngagementCompetitions(),duplicate=f.state.loadEngagementCompetitions();
+    assert.equal(f.trace[0],"display","Cached lists, including empty lists, render before waiting for NAP");
+    assert.equal(f.state.elements.engagementsCalendarList.innerHTML,"cached list");
+    assert.equal(f.trace.filter(x=>x==="listEngagementCompetitions").length,1,"Concurrent reads coalesce");
+    f.release();await opening;await duplicate;
+    assert.equal(f.trace.includes("listEngagementCalendarEvents"),false,"Combined native result skips the second endpoint");
+    assert.equal(f.state.engagementCompetitions.length,2);
+    await f.state.loadEngagementCompetitions();
+    assert.equal(f.trace.filter(x=>x==="listEngagementCompetitions").length,2,"Every later NAP visit still refreshes native data");
+  }
+  const club=fixture({mode:"club"});const clubRead=club.state.loadEngagementCompetitions();club.release();await clubRead;
+  assert.equal(club.state.engagementCompetitions.length,1);assert.equal(club.trace.includes("listEngagementCalendarEvents"),false);
+  const old=fixture({legacy:true});const oldRead=old.state.loadEngagementCompetitions();old.release();await oldRead;
+  assert.equal(old.trace.filter(x=>x==="listEngagementCalendarEvents").length,1,"Older backends retain their authorized fallback");
+  const failed=fixture({fail:true,cached:{competitions:[],source:"nap",cachedAt:Date.now()}});
+  const failedRead=failed.state.loadEngagementCompetitions();failed.release();await failedRead;
+  assert.equal(failed.state.elements.engagementsStatus.dataset.tone,"error");assert.equal(failed.state.elements.engagementsCalendarList.innerHTML,"cached list");
+  assert.equal(failed.state.engagementCompetitionCalendarRequests.size,0);
+  console.log("Calendar opening: immediate cached/empty display, one native admin endpoint, grouped concurrent calls, fresh returns, club scope and error retention verified.");
+}
+calendarOpening().catch(error=>{console.error(error);process.exitCode=1;});
