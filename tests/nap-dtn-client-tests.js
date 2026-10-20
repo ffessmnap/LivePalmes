@@ -31,6 +31,8 @@ function fixture() {
   absent.setCatalog({...base,initialOverview:{id:"2025-2026",device:"listing",view:{hit:true,profiles:[]}}});
   await absent.hooks.render();assert.equal(absent.trace.length,2,"A later visit still checks for a missing calculation");
   assert.equal(absent.hooks.state.views.get("2025-2026|listing").hit,true);
+  absent.hooks.state.initialOverview={key:"old",view:{hit:false}};absent.setCatalog(base);
+  await absent.hooks.refreshCatalog();assert.equal(absent.hooks.state.initialOverview,null,"Refreshing settings clears an unused initial result");
   const old=fixture();old.setCatalog(base);const oldRead=old.hooks.readView("2025-2026","france");
   await new Promise(setImmediate);assert.equal(old.trace.at(-1).name,"getDtnSeasonOverview","Old backends retain their normal reader");old.finish({hit:true,profiles:[]});await oldRead;
   opening.setCatalog({...base,initialOverview:{id:"2025-2026",device:"edf",view:{hit:true,profiles:[]}}});

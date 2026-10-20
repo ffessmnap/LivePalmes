@@ -44,6 +44,7 @@
       ...(initialDevice && initialDevice !== "settings" ? { initialDevice } : {})
     });
     Object.assign(state, result);
+    state.initialOverview = null;
     if (!state.seasons.some((s) => s.id === state.id)) state.id = state.catalog.current;
     if (initialOverview) {
       const key = `${initialOverview.id}|${initialOverview.device}`;
