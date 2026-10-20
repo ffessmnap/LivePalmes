@@ -8031,6 +8031,8 @@ function engagementMailStatusLabel(status) {
     draft: "Brouillon",
     blocked_missing_config: "Configuration mail manquante",
     ready: "Pret a envoyer",
+    sending: "Envoi en cours — ne pas relancer",
+    uncertain: "À vérifier — ne pas renvoyer",
     sent: "Envoye",
     failed: "Erreur",
     cancelled_no_participants: "Annule - aucun participant",
@@ -8793,6 +8795,7 @@ function engagementMailWithNotificationPreferenceFooter(text = "", html = "", ui
 
 async function sendEngagementMailJob(transporter, doc, config, context) {
   const data = doc.data() || {};
+  let smtpStarted = false, smtpAccepted = false;
   const now = new Date().toISOString();
   const toEmail = normalizeEmail(data.toEmail);
   const subject = cleanText(data.subject).slice(0, 220);
@@ -8825,6 +8828,7 @@ async function sendEngagementMailJob(transporter, doc, config, context) {
       await doc.ref.set(update, { merge: true });
       return engagementMailJobItemFromData({ ...data, ...update }, doc.id);
     }
+    smtpStarted = true;
     const info = await transporter.sendMail({
       from: `LivePalmes <${config.fromEmail}>`,
       to: gate.to,
@@ -8833,6 +8837,7 @@ async function sendEngagementMailJob(transporter, doc, config, context) {
       ...(html ? { html } : {}),
       attachments
     });
+    smtpAccepted = true;
     const update = cleanFirestoreValue({
       status: "sent",
       reason: "",
@@ -8847,15 +8852,18 @@ async function sendEngagementMailJob(transporter, doc, config, context) {
     await doc.ref.set(update, { merge: true });
     return engagementMailJobItemFromData({ ...data, ...update }, doc.id);
   } catch (error) {
+    const outcome = data.source === 'nap'
+      ? require('./nap-mail-delivery').failure(error, { smtpStarted, smtpAccepted })
+      : { status: 'failed' };
     const update = cleanFirestoreValue({
-      status: "failed",
+      status: outcome.status,
       reason: cleanText(error?.message || error).slice(0, 220),
       failedAt: now,
       updatedAt: now,
       updatedBy: context.uid || ""
     });
     await doc.ref.set(update, { merge: true });
-    return engagementMailJobItemFromData({ ...data, ...update }, doc.id);
+    return { ...engagementMailJobItemFromData({ ...data, ...update }, doc.id), stopDelivery: outcome.stop === true };
   }
 }
 
@@ -10792,7 +10800,8 @@ async function deliverNativeNotificationJobs(competitionId = '') {
   if(!(await control.read(db)).enabled)return {processed:0,sent:0};
   const config=engagementMailSmtpConfig();
   if(!config.ready)throw new TypeError('Configuration des mails indisponible.');
-  const transporter=nodemailer.createTransport(config.transport);
+  const transporter=nodemailer.createTransport({...config.transport,pool:true,maxConnections:1,maxMessages:100,
+    maxRequeues:0,connectionTimeout:15000,greetingTimeout:15000,socketTimeout:30000});
   try {
     return await require('./nap-mail-delivery').drain(db,{projectId:ENVIRONMENT.projectId,competitionId,
       send:doc=>sendEngagementMailJob(transporter,doc,config,{uid:'nap-notification-automation',email:''})});
