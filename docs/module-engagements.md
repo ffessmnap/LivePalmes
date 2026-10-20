@@ -626,6 +626,8 @@ Apres reouverture puis nouvelle fermeture, les documents sont regeneres et les m
 
 ## Notifications mail
 
+Contenus harmonisés le 20 octobre 2026 : les cinq mails de compétition (ouverture, récapitulatif club à la fermeture, documents, export WinPalme et officiels) rappellent le lieu, l’adresse et la ville disponibles, sans inventer une adresse absente. Les dates sont écrites en toutes lettres et la clôture indique le jour et l’heure de Paris, par exemple « jeudi 5 novembre 2026 à 23h59 ». Signature : « Nage avec Palmes FFESSM ». Destinataires, pièces jointes, règles de paiement et déclenchements restent inchangés ; aucune réécriture des mails déjà préparés.
+
 ### Ouverture des engagements
 
 Lors de l'ouverture des engagements :

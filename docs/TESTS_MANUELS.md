@@ -2,6 +2,13 @@
 
 <!-- description: Checklist de tests manuels à exécuter avant une publication ou après une modification sensible. -->
 
+## Contenus des cinq mails de compétition — 20 octobre
+
+- Utiliser uniquement des fixtures, sans SMTP ni préparation de jobs réels : vérifier ouverture, récapitulatif club, documents texte/HTML, export WinPalme et officiels.
+- Vérifier jour/date en toutes lettres, heure de Paris en hiver/été et changement de jour ; lieu, adresse et ville séparés, ville non répétée en fin d'adresse, adresse absente non inventée ; échappement HTML des données.
+- Vérifier la signature « Nage avec Palmes FFESSM », les liens, les noms des pièces jointes et le rappel de vérification du récapitulatif. Conserver mot pour mot les mentions de paiement, montants et HelloAsso existants ; ne changer ni destinataires, ni statut d'envoi, ni file déjà préparée.
+- Publier via le circuit de notifications TEST exigeant les mails déjà coupés et un réglage identique avant/après. Aucun traitement de notification ni envoi réel invoqué pour cette recette. Validation des contenus par l'utilisateur à obtenir sur les aperçus isolés.
+
 ## Chef et retrait depuis Courses — 20 octobre
 
 - Sur fixtures isolées : création/correction du chef du club avec pourclub égal au club ; renonciation explicite inchangée ; refus de reprendre une déclaration représentant un autre club. Vérifier attente visible, double clic, erreur et succès après réponse serveur uniquement.
