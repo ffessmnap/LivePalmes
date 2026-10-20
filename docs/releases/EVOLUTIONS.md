@@ -2,11 +2,11 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
-### 20 octobre — Contenus des cinq mails de compétition (TEST à publier)
+### 20 octobre — Contenus des cinq mails de compétition (TEST publié, validation du rendu attendue)
 
 - Demande autorisée : lieu/adresse/ville dans ouverture, récapitulatif club à la fermeture, documents, export informatique et officiels ; dates françaises en toutes lettres, échéance à l'heure de Paris ; signature « Nage avec Palmes FFESSM ». Rappel de vérification du récapitulatif et contact organisateur.
 - Formatage pur partagé, informations déjà chargées : budget supplémentaire nul à l'ouverture, par action, au rafraîchissement et dans le pire cas. Aucun accès serveur ajouté, aucune modification de destinataires, déclenchements, pièces jointes ou file existante. Bloc de paiement conservé mot pour mot, dont la mention de majoration actuelle.
-- Tests isolés sans réseau : cinq modèles réels, adresse absente/complète, dates/plage de dates, été/hiver/minuit de Paris, HTML échappé et paiement inchangé. Publication par le circuit notifications TEST, mails déjà désactivés, sans envoi réel ni changement de réglage ; puis preuve commune. PR, commit et preuves à compléter ; validation utilisateur attendue, aucune PROD autorisée.
+- Tests isolés sans réseau : cinq modèles réels, adresse absente/complète, dates/plage de dates, été/hiver/minuit de Paris, HTML échappé et paiement inchangé. Publication par le circuit notifications TEST, mails déjà désactivés, sans envoi réel ni changement de réglage ; puis preuve commune. PR #390 intégrée sur 32d70fc20cc60ca971e9229d706aa8269556f1af après CI Linux 39422445167 réussie. Vérification locale : tests métier réussis puis arrêt sur Bash absent sous Windows ; suite complète attestée sous Linux. Publication notifications TEST [39422855931](https://github.com/ffessmnap/LivePalmes/actions/runs/39422855931) réussie : preuve test-notification-control avec enabled=false avant/après, réglage strictement identique et mailsSent=0. Publication commune [39423472104](https://github.com/ffessmnap/LivePalmes/actions/runs/39423472104) réussie, Hosting a9c1726480ce564a ; preuve test-proof du commit exact, suite globale réussie et neuf traitements notifications actifs au bon commit, autres traitements conservés. Aucun envoi ni préparation réelle de mail invoqué, aucune donnée Paris/CNHC modifiée. Aperçus locaux des cinq mails générés sur fixtures. Validation utilisateur du rendu final attendue, aucune PROD autorisée.
 
 ### 20 octobre — Poubelle Courses plus discrète (TEST publié, validation visuelle attendue)
 
