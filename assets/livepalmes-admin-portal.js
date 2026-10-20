@@ -7140,8 +7140,7 @@
     const locked = Boolean(writeLockReason || !engagementClubTeamComplete());
     if (elements.engagementsClubSwimmersForm) elements.engagementsClubSwimmersForm.dataset.locked = locked ? "true" : "false";
     if (elements.engagementsClubSwimmersSaveButton) elements.engagementsClubSwimmersSaveButton.disabled = locked || (engagementClubSwimmersLoading && !engagementClubSwimmersLoaded);
-    if (elements.engagementsClubNewSwimmerSaveButton) elements.engagementsClubNewSwimmerSaveButton.disabled = Boolean(engagementClubWriteLockReason());
-    if (elements.engagementsClubNewSwimmerDialogOpen) elements.engagementsClubNewSwimmerDialogOpen.disabled = Boolean(engagementClubWriteLockReason());
+    updateEngagementClubNewSwimmerControls();
     const selectedById = new Map((selectedEngagementClubEntry?.swimmers || [])
       .map((swimmer) => [swimmer.swimmerIndexId, swimmer])
       .filter(([id]) => id));
@@ -7314,9 +7313,8 @@
     setEngagementClubFormControlsLocked(elements.engagementsClubSwimmersForm, false);
     if(selectedEngagementCompetition?.napSource===true) {
       elements.engagementsClubSwimmersForm?.querySelectorAll("[data-engagement-club-swimmer-license]").forEach(control=>{control.disabled=true;control.required=false;});
-      if(elements.engagementsClubNewSwimmerSaveButton) elements.engagementsClubNewSwimmerSaveButton.disabled=true;
-      if(elements.engagementsClubNewSwimmerDialogOpen) elements.engagementsClubNewSwimmerDialogOpen.disabled=true;
     }
+    updateEngagementClubNewSwimmerControls();
     updateEngagementClubSwimmersSummary();
   }
 
@@ -12126,9 +12124,24 @@
     return Object.values(selectedEngagementClubNewSwimmerFromForm()).some(Boolean);
   }
 
+  function engagementClubNewSwimmerLockReason() {
+    return engagementClubSwimmerSelectionLockReason()
+      || (!engagementClubTeamComplete() ? "Renseignez le chef d'équipe ou confirmez la renonciation pour activer cette étape." : "");
+  }
+
+  function updateEngagementClubNewSwimmerControls() {
+    const reason = engagementClubNewSwimmerLockReason();
+    [elements.engagementsClubNewSwimmerDialogOpen, elements.engagementsClubNewSwimmerSaveButton,
+      elements.engagementsClubRecoverSwimmerButton].forEach((button) => {
+      if (!button) return;
+      button.disabled = Boolean(reason);
+      button.title = reason;
+    });
+  }
+
   function openEngagementClubNewSwimmerDialog() {
     const dialog = elements.engagementsClubNewSwimmerDialog;
-    if (!dialog || dialog.open) return;
+    if (!dialog || dialog.open || engagementClubNewSwimmerLockReason()) return;
     setEngagementClubNewSwimmerMessage();
     dialog.showModal();
     global.requestAnimationFrame?.(() => elements.engagementsClubNewSwimmerLastName?.focus?.());
@@ -12221,6 +12234,12 @@
 
   async function createEngagementClubSwimmer() {
     if (!canUse("engagements.club.manage")) return;
+    const lockReason = engagementClubNewSwimmerLockReason();
+    if (lockReason) {
+      setEngagementClubNewSwimmerMessage(lockReason, "error");
+      updateEngagementClubNewSwimmerControls();
+      return;
+    }
     const swimmer = selectedEngagementClubNewSwimmerFromForm();
     if (!swimmer.licenseNumber) {
       if (elements.engagementsClubNewSwimmerAlerts) elements.engagementsClubNewSwimmerAlerts.innerHTML = "";
@@ -12305,13 +12324,19 @@
     } catch (error) {
       setEngagementClubNewSwimmerMessage(`Création impossible : ${error?.message || error}`, "error");
     } finally {
-      if (elements.engagementsClubNewSwimmerSaveButton) elements.engagementsClubNewSwimmerSaveButton.disabled = false;
+      updateEngagementClubNewSwimmerControls();
     }
   }
 
   async function recoverEngagementClubSwimmer() {
     const recovery = engagementClubSwimmerRecovery;
     if (!recovery?.eligible || !recovery?.swimmer?.licenseNumber || !canUse("engagements.club.manage")) return;
+    const lockReason = engagementClubNewSwimmerLockReason();
+    if (lockReason) {
+      setEngagementClubNewSwimmerMessage(lockReason, "error");
+      updateEngagementClubNewSwimmerControls();
+      return;
+    }
     const name = engagementSwimmerDisplayName(recovery.swimmer, "ce nageur");
     if (!global.confirm(`Récupérer ${name} pour votre club ? Cette action est possible car aucun résultat n'est publié cette saison.`)) return;
     if (elements.engagementsClubRecoverSwimmerButton) elements.engagementsClubRecoverSwimmerButton.disabled = true;
@@ -12338,7 +12363,7 @@
     } catch (error) {
       setEngagementClubNewSwimmerMessage(`Récupération impossible : ${error?.message || error}`, "error");
     } finally {
-      if (elements.engagementsClubRecoverSwimmerButton) elements.engagementsClubRecoverSwimmerButton.disabled = false;
+      updateEngagementClubNewSwimmerControls();
     }
   }
 

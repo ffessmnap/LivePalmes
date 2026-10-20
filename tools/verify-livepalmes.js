@@ -204,6 +204,7 @@ function runUnitTests() {
     "nap-portal-cache-tests.js",
     "nap-portal-swimmer-change-tests.js",
     "nap-swimmer-recovery-tests.js",
+    "nap-swimmer-dialog-tests.js",
     "nap-swimmer-activity-tests.js",
     "nap-swimmer-creation-tests.js",
     "nap-swimmer-creation-callable-tests.js",
