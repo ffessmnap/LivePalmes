@@ -20,9 +20,11 @@ async function page(event,competition,services){
     return services.simulation===true?metadata:services.persistAttachment(event,file,metadata);
   }
   const recipients=await services.recipients();
+  const control=require('./engagement-mail-control');
+  const setting=services.mailSetting?await services.mailSetting():{scope:'all'};
   if(!Array.isArray(recipients)||recipients.length>10000)throw new RangeError('Annuaire de notifications trop volumineux.');
   if(event.kind==='opening'||event.kind==='documents'){
-    const selected=services.select(event.kind,recipients,competition,event);
+    const selected=services.select(event.kind,recipients,competition,event).filter(recipient=>control.clubAllowed(setting,recipient));
     const documents=event.kind==='documents'?(competition.clubDocuments||[]).filter(document=>event.documentIds.includes(String(document.id))):[];
     if(event.kind==='documents'&&documents.length!==new Set(event.documentIds).size)throw new TypeError('Document supprime ou inaccessible : reprenez la notification.');
     const offset=cursor(event.cursor,selected.length),batch=selected.slice(offset,offset+50);
@@ -40,7 +42,7 @@ async function page(event,competition,services){
   const jobs=[];let attachmentCount=0,skippedCount=0;
   if(event.phase==='clubs'){
     const offset=cursor(event.cursor,entries.length),batch=entries.slice(offset,offset+5);
-    const selected=services.clubRecipients(recipients);
+    const selected=services.clubRecipients(recipients).filter(recipient=>control.clubAllowed(setting,recipient));
     for(const entry of batch){
       const clubRecipients=selected.filter(recipient=>String(recipient.clubId)===String(entry.clubId));
       if(!entry.teamLeaderComplete||!clubRecipients.length){skippedCount++;continue;}
@@ -50,11 +52,11 @@ async function page(event,competition,services){
     return {jobs,attachmentCount,skippedCount,sourceHash,done:false,nextPhase:offset+batch.length>=entries.length?'exports':'clubs',
       nextCursor:offset+batch.length>=entries.length?'':String(offset+batch.length)};
   }
-  if(competition.competitionType==='pool'&&competition.computerEmail){
+  if(competition.competitionType==='pool'&&competition.computerEmail&&control.audienceAllowed(setting,{source:'nap',type:'entries_txt',competitionRegionId:competition.regionId})){
     const file=await attachment(await services.txt(competition,entries,pack.clubsById),'text/plain; charset=utf-8');attachmentCount++;
     jobs.push(services.mail('entries_txt',competition,{email:competition.computerEmail,clubId:'informatique'},{fileName:file.fileName,attachments:[file]}));
   }else skippedCount++;
-  if(competition.officialsRequired===true&&competition.officialsManagerEmail){
+  if(competition.officialsRequired===true&&competition.officialsManagerEmail&&control.audienceAllowed(setting,{source:'nap',type:'officials_pdf',competitionRegionId:competition.regionId})){
     const pdf=await services.officialsPdf(competition,entries),file=await attachment(pdf,'application/pdf');attachmentCount++;
     jobs.push(services.mail('officials_pdf',competition,{email:competition.officialsManagerEmail,clubId:'jury'},{officialCount:pdf.officialCount,attachments:[file]}));
   }else skippedCount++;

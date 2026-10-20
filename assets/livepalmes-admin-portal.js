@@ -1954,22 +1954,24 @@
     const panel = document.getElementById('adminNationalMailControl');
     const status = document.getElementById('adminNationalMailControlStatus');
     const button = document.getElementById('adminNationalMailControlToggle');
-    if (!panel || !status || !button || !canDeleteEngagementCompetitionDirectly()) return;
+    const scope = document.getElementById('adminNationalMailControlScope');
+    const save = document.getElementById('adminNationalMailControlScopeSave');
+    if (!panel || !status || !button || !scope || !save || !canDeleteEngagementCompetitionDirectly()) return;
     panel.hidden = false;
     if (nationalAutomaticMailLoading || (!force && Date.now() - nationalAutomaticMailLoadedAt < 30000)) return;
-    nationalAutomaticMailLoading = true; button.disabled = true;
+    nationalAutomaticMailLoading = true; button.disabled = true; scope.disabled = true; save.disabled = true;
     try {
       nationalAutomaticMailControl = await callFunction('getEngagementAutomaticMailControl', {});
       nationalAutomaticMailLoadedAt = Date.now();
       renderNationalAutomaticMailControl(status, button);
-    } catch (error) { status.textContent = error.message || 'Réglage indisponible.'; }
-    finally { nationalAutomaticMailLoading = false; button.disabled = !nationalAutomaticMailControl; }
-    button.onclick = async () => {
+    } catch (error) { nationalAutomaticMailControl = null; status.textContent = error.message || 'Réglage indisponible.'; }
+    finally { nationalAutomaticMailLoading = false; renderNationalAutomaticMailControls(); }
+    async function update(enabled) {
       if (nationalAutomaticMailLoading || !nationalAutomaticMailControl) return;
-      nationalAutomaticMailLoading = true; button.disabled = true;
+      nationalAutomaticMailLoading = true; renderNationalAutomaticMailControls();
       try {
         nationalAutomaticMailControl = await callFunction('updateEngagementAutomaticMailControl', {
-          enabled: !nationalAutomaticMailControl.enabled, expectedRevision: nationalAutomaticMailControl.revision
+          enabled, scope: scope.value, expectedRevision: nationalAutomaticMailControl.revision
         });
         nationalAutomaticMailLoadedAt = Date.now();
         renderNationalAutomaticMailControl(status, button);
@@ -1977,14 +1979,33 @@
         status.textContent = error.message || 'Modification impossible.';
         nationalAutomaticMailControl = null; nationalAutomaticMailLoadedAt = 0;
       } finally {
-        nationalAutomaticMailLoading = false; button.disabled = !nationalAutomaticMailControl;
+        nationalAutomaticMailLoading = false; renderNationalAutomaticMailControls();
         if (!nationalAutomaticMailControl) loadNationalAutomaticMailControl(true);
       }
-    };
+    }
+    button.onclick = () => update(!nationalAutomaticMailControl?.enabled);
+    save.onclick = () => update(nationalAutomaticMailControl?.enabled === true);
+    scope.onchange = renderNationalAutomaticMailControls;
+  }
+  function renderNationalAutomaticMailControls() {
+    const scope = document.getElementById('adminNationalMailControlScope');
+    const save = document.getElementById('adminNationalMailControlScopeSave');
+    const button = document.getElementById('adminNationalMailControlToggle');
+    if (!scope || !save || !button) return;
+    const available = !nationalAutomaticMailLoading && ['all', 'idf'].includes(nationalAutomaticMailControl?.scope);
+    scope.disabled = !available;
+    save.disabled = !available || scope.value === nationalAutomaticMailControl.scope;
+    // Always allow the emergency switch-off, even if a scope is invalid.
+    button.disabled = nationalAutomaticMailLoading || !nationalAutomaticMailControl ||
+      (!nationalAutomaticMailControl.enabled && (!available || scope.value !== nationalAutomaticMailControl.scope));
   }
   function renderNationalAutomaticMailControl(status, button) {
     const setting = nationalAutomaticMailControl;
-    status.textContent = `Mails automatiques ${setting.enabled ? 'activés' : 'désactivés'}.${setting.testRecipient ? ` TEST : tous les mails sont dirigés vers ${setting.testRecipient}.` : ''}`;
+    const label = setting.scope === 'idf' ? 'Pilote Île-de-France : clubs IDF et organisateurs des compétitions IDF'
+      : setting.scope === 'all' ? 'Toutes les régions' : 'Périmètre indisponible : activation bloquée';
+    status.textContent = `Mails automatiques ${setting.enabled ? 'activés' : 'désactivés'}. ${label}.${setting.testRecipient ? ` TEST : tous les mails sont dirigés vers ${setting.testRecipient}.` : ''}`;
+    const scope = document.getElementById('adminNationalMailControlScope');
+    if (scope && ['all', 'idf'].includes(setting.scope)) scope.value = setting.scope;
     button.textContent = setting.enabled ? 'Désactiver les mails automatiques' : 'Activer les mails automatiques';
     button.setAttribute('aria-pressed', String(setting.enabled));
   }

@@ -106,6 +106,18 @@ class NotificationReleaseTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             test_state.unchanged(before, after, candidate)
 
+    def test_idf_pilot_refresh_is_exactly_nine_functions(self):
+        candidate = 'a' * 40
+        before = {'functions': [{'name': name, 'state': 'ACTIVE', 'commit': 'b' * 40}
+                               for name in sorted(test_state.PILOT_NAMES | {'unrelated'})]}
+        after = {'functions': [{**f, 'commit': candidate} if f['name'] in test_state.PILOT_NAMES else dict(f)
+                              for f in before['functions']]}
+        with patch.dict(os.environ, {'NOTIFICATION_PILOT_IDF': 'true'}):
+            test_state.unchanged(before, after, candidate)
+            next(f for f in after['functions'] if f['name'] == 'unrelated')['revision'] = 'unexpected'
+            with self.assertRaises(ValueError):
+                test_state.unchanged(before, after, candidate)
+
     def test_native_identity_secret_requires_specific_approval(self):
         request = {'additionalDtnFunctions': sorted(cycle.DTN_FUNCTIONS), 'additionalDtnApproval': 'Accord DTN'}
         self.assertFalse(cycle.approved_native_identity_secret(request))

@@ -8088,7 +8088,7 @@ exports.updateEngagementAutomaticMailControl = onCall(CALLABLE_OPTIONS, async re
   try {
     const control = require('./engagement-mail-control');
     const result = await control.update(db, request.data, context);
-    await writeAuditLog('engagementNotifications.deliveryControlChanged', context.uid, { enabled: result.enabled, revision: result.revision });
+    await writeAuditLog('engagementNotifications.deliveryControlChanged', context.uid, { enabled: result.enabled, scope: result.scope, revision: result.revision });
     return { ...result, testRecipient: ENVIRONMENT.projectId === 'livepalmes-test' ? control.TEST_ADDRESS : '' };
   } catch (error) {
     throw new HttpsError(error instanceof TypeError ? 'failed-precondition' : 'unavailable',
@@ -10713,6 +10713,7 @@ async function nativeNotificationPreview(request, kind) {
     return await require("./nap-notification-preview").preview({ competitionId, kind,
       documentIds: kind === "documents" && Object.hasOwn(request.data || {}, "documentIds") ? request.data.documentIds : undefined }, {
       competition: id => nativePortalCompetition(id, event => assertCanManageEngagementCompetition(context, event)),
+      mailSetting: () => require('./engagement-mail-control').read(db),
       recipients: async () => {
         const state = await engagementMailRecipientIndexStateRef(db).get();
         if (state.data()?.status !== "ready") throw new HttpsError("failed-precondition", "Annuaire des destinataires indisponible. Sa reconstruction doit être demandée séparément.");
@@ -10740,11 +10741,12 @@ async function nativeNotificationPreview(request, kind) {
 function nativeNotificationAutomationServices(simulation = true) {
   if(ENVIRONMENT.sportingDataSource !== "nap")throw new HttpsError("failed-precondition","Source NAP requise.");
   const pool=require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD);
-  let recipientPromise;
+  let recipientPromise, mailSettingPromise;
   const services={simulation,deleteField:()=>FieldValue.delete(),
+    mailSetting: () => mailSettingPromise ||= require('./engagement-mail-control').read(db),
     allowEvent: simulation ? undefined : async event => {
       const control=require('./engagement-mail-control');
-      return control.decision(await control.read(db),{createdAt:event.createdAt,notificationDueAt:event.automatic?event.deadline:event.createdAt},ENVIRONMENT.projectId).allowed;
+      return control.eventDecision(await services.mailSetting(),{createdAt:event.createdAt,notificationDueAt:event.automatic?event.deadline:event.createdAt}).allowed;
     },
     persistAttachment: simulation ? undefined : async (event,file,metadata) => {
       const storagePath=`engagements/notification-mail/${event.competitionId}/${event.operation}/${metadata.sha256}`;
@@ -10770,7 +10772,8 @@ function nativeNotificationAutomationServices(simulation = true) {
       const type=kind==='opening'?'opening_notification':kind==='documents'?'competition_documents':kind==='club_recap'?'club_recap_pdf':kind;
       const subject=kind==='opening'?engagementOpeningMailSubject(competition):kind==='documents'?engagementCompetitionDocumentMailSubject(competition,details.documents):kind==='club_recap'?engagementClubRecapMailSubject(competition,details.entry):kind==='entries_txt'?engagementTxtMailSubject(competition):engagementOfficialsMailSubject(competition);
       const text=kind==='opening'?engagementOpeningMailText(competition):kind==='documents'?engagementCompetitionDocumentMailText(competition,details.documents):kind==='club_recap'?engagementClubRecapMailText(competition,details.entry):kind==='entries_txt'?engagementTxtMailText(competition,details):engagementOfficialsMailText(competition,details);
-      return {type,competitionId:competition.id,competitionName:competition.name,clubId:String(recipient.clubId||''),toEmail:email,recipientUid:String(recipient.uid||''),subject,textBody:text,attachments:details.attachments||[]};
+      return {type,competitionId:competition.id,competitionName:competition.name,competitionRegionId:String(competition.regionId||''),
+        recipientRegionId:String(recipient.napClubRegionId||''),clubId:String(recipient.clubId||''),toEmail:email,recipientUid:String(recipient.uid||''),subject,textBody:text,attachments:details.attachments||[]};
     },
     job:(event,competition,payload,now)=>{
       const data={...payload,notificationId:`${event.operation}:${Number(event.generation||0)}`,source:'nap',simulation,

@@ -44,6 +44,11 @@ on:
         required: false
         type: boolean
         default: false
+      notification_pilot_idf:
+        description: Avec notification_final_check, publier les neuf traitements du pilote IDF sans activer les mails
+        required: false
+        type: boolean
+        default: false
   workflow_call:
     inputs:
       lot:
@@ -77,6 +82,10 @@ on:
         required: false
         type: boolean
         default: false
+      notification_pilot_idf:
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -95,6 +104,7 @@ env:
   CANDIDATE_SHA: ${{ github.sha }}
   ACCESS_REQUESTS_ONLY: ${{ inputs.access_requests_only || false }}
   NOTIFICATION_FINAL_CHECK: ${{ inputs.notification_final_check || false }}
+  NOTIFICATION_PILOT_IDF: ${{ inputs.notification_pilot_idf || false }}
   NAP_NOTIFICATION_SCHEDULER_ONLY: ${{ inputs.nap_notifications_only || false }}
 
 jobs:
@@ -143,6 +153,10 @@ jobs:
             test "$GITHUB_REF" = "refs/heads/main"
             test "$SELECTED_LOT" = "email"
             test "$NAP_NOTIFICATION_SCHEDULER_ONLY" = "false"
+          fi
+          if [ "$NOTIFICATION_PILOT_IDF" = "true" ]; then
+            test "$NOTIFICATION_FINAL_CHECK" = "true"
+            test "$ACCESS_REQUESTS_ONLY" = "false"
           fi
           if [ "$SELECTED_LOT" = "schedulers" ]; then
             test "$SCHEDULER_CONFIRMATION" = "livepalmes-test-schedulers-empty"
@@ -312,7 +326,7 @@ jobs:
           node tools/prepare-firebase-test-functions.js "$SELECTED_LOT" > "$RUNNER_TEMP/function-selector.txt"
           npm ci --prefix .firebase-test-functions/functions
 
-      - name: Couper les mails TEST et limiter la publication aux quatre traitements autorisés
+      - name: Verifier les mails TEST coupes et limiter la publication au perimetre autorise
         if: inputs.notification_final_check
         run: |
           python tools/test-notification-state.py before "$RUNNER_TEMP/notification-before.json"
@@ -378,7 +392,7 @@ jobs:
       - name: Vérifier que les mails TEST restent désactivés
         if: inputs.notification_final_check
         run: |
-          node tools/refresh-test-notifications.js verify
+          node tools/refresh-test-notifications.js verify "$RUNNER_TEMP/notification-control.json"
           python tools/test-notification-state.py after "$RUNNER_TEMP/notification-before.json"
 
       - uses: actions/upload-artifact@v4
