@@ -2830,7 +2830,7 @@
   function loadDtnModule() {
     if (dtnModuleLoadPromise) return dtnModuleLoadPromise;
     dtnModuleLoadPromise = loadScriptOnce(
-      "assets/livepalmes-dtn-seasons.js?v=20261019-calcul-conserve",
+      "assets/livepalmes-dtn-seasons.js?v=20261020-lecture-groupee",
       "livepalmes-dtn-qualifications-script"
     ).then(() => global.LivePalmesDtnQualifications?.init?.()).catch((error) => {
       dtnModuleLoadPromise = null;
@@ -15634,7 +15634,7 @@
     const cachedEntry = readEngagementCalendarCache(cacheKey) || (engagementCompetitionsLoadedCacheKey === cacheKey && engagementCompetitionsLoaded
       ? { competitions: engagementCompetitions, cachedAt: engagementCompetitionsCachedAt }
       : null);
-    if (cachedEntry && shouldActivate && engagementCompetitionsLoadedCacheKey !== cacheKey) {
+    if (cachedEntry && shouldActivate) {
       activateEngagementCalendarCache(cacheKey, requestedRange, cachedEntry);
     }
     const nativeCalendar = cachedEntry?.source === "nap" || cachedEntry?.competitions?.some(competition => competition.napSource === true);
@@ -15643,7 +15643,7 @@
       if (requestedMode === "club") scheduleEngagementClubWorkspacePreload(cachedEntry.competitions);
       return cachedEntry;
     }
-    const cachedListVisible = Boolean(cachedEntry?.competitions?.length && shouldActivate);
+    const cachedListVisible = Boolean(cachedEntry && shouldActivate);
     if (!cachedListVisible && shouldActivate && elements.engagementsCalendarList) {
       elements.engagementsCalendarList.innerHTML = `
         <div class="admin-engagements-calendar-loading" role="status">
@@ -15686,20 +15686,20 @@
           { startDate: filters.startDate, endDate: filters.endDate },
           ...(septemberPreview ? [septemberPreview] : [])
         ];
-        const competitionRequest = callFunction("listEngagementCompetitions", {
+        const result = await callFunction("listEngagementCompetitions", {
           ranges: ranges.map((range) => ({ fromDate: range.startDate, toDate: range.endDate })),
           manageOnly: requestedMode === "admin",
+          includeCalendarEvents: requestedMode === "admin",
           limit: 250
         });
-        const [result, calendarEventResult] = await Promise.all([
-          competitionRequest,
-          requestedMode === "admin"
-            ? callFunction("listEngagementCalendarEvents", {
+        // Older/Firestore backends retain their existing second endpoint.
+        const calendarEventResult = requestedMode === "admin"
+          ? Array.isArray(result.calendarEvents) ? { events: result.calendarEvents }
+            : await callFunction("listEngagementCalendarEvents", {
                 ranges: ranges.map((range) => ({ fromDate: range.startDate, toDate: range.endDate })),
                 limit: 250
               })
-            : Promise.resolve({ events: [] })
-        ]);
+          : { events: [] };
         if (cacheRevision !== engagementCalendarCacheRevision) return null;
         let competitions = [
           ...(Array.isArray(result.competitions) ? result.competitions.map((item) => ({ ...item, sourceType: "competition" })) : []),

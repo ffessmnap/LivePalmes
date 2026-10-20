@@ -2,6 +2,14 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 20 octobre — Réactivité DTN et calendriers (préparation TEST)
+
+- Antoine autorise les optimisations sur TEST uniquement, sans règle métier, recalcul volontaire, donnée, droit, mail, instance maintenue active ni PROD. Point de départ : main `bcaae204`.
+- DTN : ouverture groupée catalogue + résultat dans `getDtnSeasons` ; les lectures ordinaires des autres dispositifs réutilisent ce même service, avec saison explicitement autorisée. Seul le résultat du dispositif demandé est sélectionné via la clé primaire existante `(saison, dispositif)`. L’ancien lecteur reste compatible ; recalcul, empreintes, gel historique et date du dernier calcul sont conservés. Aucun nouveau service, index ou stockage.
+- Calendrier administrateur : réponse optionnelle groupée compétitions/événements depuis la même lecture native, avec les projections et filtres de périmètre existants. Le client ne sollicite plus le second endpoint quand la réponse groupée existe ; compatibilité des anciens backends conservée. Clubs : même lecture native et aucune donnée administrative supplémentaire.
+- Budget avant/après, hors contrôles d’accès : première ouverture DTN avec résultat = 5 → 3 SELECT (catalogue 1 ligne, paramètres ≤3 lignes, résultat 1 ligne au lieu des trois dispositifs). Sans résultat compatible : 4 SELECT avec l’état technique de calcul ; aucun recalcul. Paramètres seuls : 2 SELECT. Dispositif non encore chargé ou actualisation volontaire : 3 SELECT ; filtres/retour sur résultat compatible en mémoire : zéro. Calendrier administrateur = 2 → 1 SELECT par saison ; club = 1 inchangé ; au plus 2 saisons et 500 événements/saison, aucune lecture par ligne. Les retours affichent immédiatement le cache existant, même vide, puis relisent NAP ; aucune durée de cache nouvelle ni perte de fraîcheur. Aucun listener ou lecture Firestore supplémentaire ; droits inchangés, moins d’appels de contrôle doublés.
+- Tests ciblés hors réseau : budget initial DTN, dispositif sélectionné, saisons historiques/autorisations, absence de recalcul implicite même avec un drapeau rebuild fourni au catalogue, lectures ordinaires via le même service, compatibilité ancienne réponse, affichage immédiat des caches vides/remplis, regroupement des demandes, relecture NAP à chaque retour, conservation en cas d’erreur, égalité des projections administratives et absence de fuite vers les clubs. Références JS de cache mises à jour. Vérification globale/PR/preuves et recette TEST à compléter ; aucune validation utilisateur de cette version déduite.
+
 
 ### 20 octobre — Préparation PROD regroupée : cinq mails, lots, chef d’équipe et retrait
 

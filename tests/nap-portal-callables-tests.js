@@ -74,6 +74,16 @@ for (const name of ["listEngagementCompetitions", "listEngagementCalendarEvents"
   const list = await sandbox.exports.listEngagementCompetitions({ data: { manageOnly: true, fromDate: "2026-09-01", toDate: "2027-08-31" } });
   assert.equal(list.source, "nap"); assert.equal(list.competitions.length, 1); assert.equal(list.competitions[0].id, event.id);
   const calendar = await sandbox.exports.listEngagementCalendarEvents({ data: { fromDate: "2026-09-01", toDate: "2027-08-31" } });
+  calls.length=0;
+  const combined=await sandbox.exports.listEngagementCompetitions({data:{manageOnly:true,includeCalendarEvents:true,fromDate:"2026-09-01",toDate:"2027-08-31"}});
+  assert.deepEqual(combined.calendarEvents,calendar.events,"Combined events keep the separate endpoint projection");
+  assert.deepEqual(combined.competitions,list.competitions);assert.equal(calls.filter(c=>c==="season").length,1,"One native season read supplies both lists");
+  const clubList=await sandbox.exports.listEngagementCompetitions({data:{includeCalendarEvents:true,fromDate:"2026-09-01",toDate:"2027-08-31"}});
+  assert.equal(Object.hasOwn(clubList,"calendarEvents"),false,"A club request does not receive admin calendar data");
+  management={national:false,region:true,regionId:"AURA"};
+  const scoped=await sandbox.exports.listEngagementCompetitions({data:{manageOnly:true,includeCalendarEvents:true,fromDate:"2026-09-01",toDate:"2027-08-31"}});
+  assert.equal(scoped.competitions.length,0);assert.equal(scoped.calendarEvents.length,0);
+  management={national:true,uid:"admin"};
   assert.equal(calendar.events.length, 1); assert.equal(calendar.events[0].competitionType, "training");
   calls.length = 0;
   await sandbox.exports.getEngagementCompetition({ data: { competitionId: event.id } });

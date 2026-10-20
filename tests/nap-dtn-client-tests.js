@@ -1,12 +1,12 @@
 "use strict";
 const assert=require("node:assert/strict"),fs=require("node:fs"),vm=require("node:vm");
 function fixture() {
-  const trace=[],status={dataset:{},textContent:""};let resolve;
-  const service={httpsCallable:(name,options)=>data=>{trace.push({name,options,data});return name==="getDtnSeasonOverview"?new Promise(r=>{resolve=r;}):Promise.resolve({data:{}});}};
+  const trace=[],status={dataset:{},textContent:""};let resolve,catalog={};
+  const service={httpsCallable:(name,options)=>data=>{trace.push({name,options,data});return name==="getDtnSeasonOverview"?new Promise(r=>{resolve=r;}):Promise.resolve({data:catalog});}};
   const user={uid:"test"},global={LivePalmesEnvironment:{sportingDataSource:"nap",isTest:true},firebase:{auth:()=>({currentUser:user}),app:()=>({functions:()=>service})},LivePalmesAppConfig:{},confirm:()=>true};
-  const source=fs.readFileSync("assets/livepalmes-dtn-seasons.js","utf8").replace("  global.LivePalmesDtnQualifications = { init };","  global.hooks={state,call,rebuild,sourceRowsForSelection,freshnessLabel,setup:()=>{el={status};}};");
+  const source=fs.readFileSync("assets/livepalmes-dtn-seasons.js","utf8").replace("  global.LivePalmesDtnQualifications = { init };","  global.hooks={state,call,rebuild,render,refreshCatalog,readView,sourceRowsForSelection,freshnessLabel,setup:()=>{el={status};},setupRender:()=>{el={grid:{innerHTML:''}};header=()=>{};results=view=>{global.lastView=view;};state.ready=true;}};");
   vm.runInNewContext(source,{window:global,document:{},status});global.hooks.setup();Object.assign(global.hooks.state,{id:"2025-2026",device:"settings",dirty:false});
-  return {hooks:global.hooks,trace,status,finish:data=>resolve({data})};
+  return {hooks:global.hooks,trace,status,finish:data=>resolve({data}),setCatalog:value=>{catalog=value;},lastView:()=>global.lastView};
 }
 (async()=>{
   const labels=fixture().hooks.freshnessLabel;
@@ -20,6 +20,25 @@ function fixture() {
   f.hooks.state.id="2026-2027";f.finish({source:"nap",hit:true,profiles:[],generatedAt:"2026-10-07T15:00:00.000Z"});await pending;
   assert.ok(f.hooks.state.views.has("2025-2026|france"));assert.ok(!f.hooks.state.views.has("2026-2027|france"));assert.equal(f.status.textContent,"Calcul terminé.");
   await f.hooks.call("getDtnSeasons");assert.equal(f.trace.at(-1).options,undefined,"Normal reads keep the normal timeout");
+  const opening=fixture(),base={seasons:[{id:"2025-2026",label:"2025–2026"}],catalog:{current:"2025-2026"}};
+  opening.setCatalog({...base,initialOverview:{id:"2025-2026",device:"listing",view:{hit:true,profiles:[]}}});
+  await opening.hooks.refreshCatalog({initialDevice:"listing"});assert.equal(opening.trace.length,1);
+  assert.equal(opening.trace[0].data.initialDevice,"listing");assert.equal(opening.hooks.state.views.get("2025-2026|listing").hit,true);
+  opening.hooks.setupRender();opening.hooks.state.device="listing";await opening.hooks.render();assert.equal(opening.trace.length,1,"Cached opening skips the second callable");
+  const absent=fixture();absent.setCatalog({...base,initialOverview:{id:"2025-2026",device:"listing",view:{hit:false,pending:false,profiles:[]}}});
+  await absent.hooks.refreshCatalog({initialDevice:"listing"});absent.hooks.setupRender();absent.hooks.state.device="listing";
+  await absent.hooks.render();assert.equal(absent.trace.length,1,"An empty initial result is rendered without a duplicate request");
+  absent.setCatalog({...base,initialOverview:{id:"2025-2026",device:"listing",view:{hit:true,profiles:[]}}});
+  await absent.hooks.render();assert.equal(absent.trace.length,2,"A later visit still checks for a missing calculation");
+  assert.equal(absent.hooks.state.views.get("2025-2026|listing").hit,true);
+  absent.hooks.state.initialOverview={key:"old",view:{hit:false}};absent.setCatalog(base);
+  await absent.hooks.refreshCatalog();assert.equal(absent.hooks.state.initialOverview,null,"Refreshing settings clears an unused initial result");
+  const old=fixture();old.setCatalog(base);const oldRead=old.hooks.readView("2025-2026","france");
+  await new Promise(setImmediate);assert.equal(old.trace.at(-1).name,"getDtnSeasonOverview","Old backends retain their normal reader");old.finish({hit:true,profiles:[]});await oldRead;
+  opening.setCatalog({...base,initialOverview:{id:"2025-2026",device:"edf",view:{hit:true,profiles:[]}}});
+  assert.equal((await opening.hooks.readView("2025-2026","edf")).hit,true);
+  assert.equal(opening.trace.at(-1).name,"getDtnSeasons");assert.equal(opening.trace.at(-1).data.initialSeasonId,"2025-2026");
+  assert.equal(opening.trace.some(t=>t.name==="getDtnSeasonOverview"),false,"All normal native views reuse the same service");
   const dirty=fixture();dirty.hooks.state.dirty=true;await assert.rejects(()=>dirty.hooks.rebuild(),/Enregistrez/);assert.equal(dirty.trace.length,0);
   const chosen=new Map([["old-import",{id:"old-import",name:"Chosen"}]]),native=[{id:"4980",name:"Native",aliases:["old-import"]},{id:"4981",name:"Other"}];
   const picker=f.hooks.sourceRowsForSelection(native,chosen);

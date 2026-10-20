@@ -71,3 +71,12 @@ Le plan initial est terminé. Preuves locales : `outputs/cloture-plan-optimisati
 Ajuster uniquement sur preuve : pas de cache temporisé sans accord sur la fraîcheur, pas de nouvel index sans accord spécifique, pas de changement de concurrence NAP sans mesure de charge. Le ciblage a été corrigé par PR #246 ; aucun nouveau repli manuel de sélection n’est autorisé.
 
 Aucun gain permanent de coût ou de durée n’est annoncé avant observation en usage. Aucune suppression supplémentaire de fonctions justifiée par ce lot.
+
+
+## Réactivité DTN et calendriers — 20 octobre 2026
+
+Le chargement DTN initial regroupe catalogue, paramètres autorisés et résultat demandé dans un seul appel de lecture (`getDtnSeasons`), soit trois SELECT au lieu de cinq lorsque le résultat est compatible. Les consultations suivantes utilisent le même service ; seules les vues demandées sont lues, par la clé existante saison/dispositif. Sans résultat, une lecture technique du calcul peut s’ajouter, sans reconstruction. Le recalcul explicite et la date du calcul ne changent pas.
+
+Le calendrier administrateur peut recevoir les compétitions et les autres événements depuis un unique appel et un unique SELECT par saison, au lieu de deux lectures de la même saison. Le calendrier club reste inchangé côté SQL. Le cache d’affichage existant est réaffiché immédiatement, y compris pour une liste vide ; une lecture NAP fraîche reste effectuée à chaque retour. Aucun nouveau cache temporisé ni maintien d’instance active. Les appels identiques en cours restent mutualisés et les réponses dépassées ne remplacent pas le périmètre courant.
+
+Les mesures de démarrage à froid observées sur TEST avant optimisation (environ 4,8 puis 7,9 secondes pour les deux services DTN, contre 0,4 et 0,7 seconde de traitement) sont des observations ponctuelles, pas des moyennes ni une promesse de délai. Une première ouverture conserve le démarrage du service de lecture ; les éventuelles instances minimales et leur coût demanderaient une décision distincte.

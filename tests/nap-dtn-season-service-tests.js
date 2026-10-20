@@ -10,7 +10,7 @@ function fixture() {
     if(sql.includes("RELEASE_LOCK")) {assert.equal(values[0],s.lockKeys.at(-1));return [[{}]];}
     if(sql.startsWith("SELECT") && sql.includes("FROM livepalmes_dtn_catalogue")) return [[{revision:s.catalog.revision,saison_active:s.catalog.current,saison_precedente:s.catalog.previous,saison_brouillon:s.catalog.draft}]];
     if(sql.startsWith("SELECT") && sql.includes("FROM livepalmes_dtn_saisons")) return [[...s.seasons.values()].filter(v=>values.includes(v.id)).map(v=>({id:v.id,revision:v.revision,configuration:JSON.stringify(v)}))];
-    if(sql.startsWith("SELECT") && sql.includes("FROM livepalmes_dtn_resultats")) return [[...s.views.values()].filter(v=>values.includes(v.id)).map(v=>({saison:v.id,dispositif:v.device,revision:v.value.revision,empreinte:v.value.fingerprint,contenu:JSON.stringify(v.value)}))];
+    if(sql.startsWith("SELECT") && sql.includes("FROM livepalmes_dtn_resultats")) return [[...s.views.values()].filter(v=>values.includes(v.id)&&(!sql.includes("AND dispositif=?")||v.device===values.at(-1))).map(v=>({saison:v.id,dispositif:v.device,revision:v.value.revision,empreinte:v.value.fingerprint,contenu:JSON.stringify(v.value)}))];
     if(sql.startsWith("SELECT") && sql.includes("FROM livepalmes_dtn_calculs")) return [[...s.jobs.values()].filter(v=>values.includes(v.saison)).map(v=>({statut:v.statut,erreur:v.erreur,age_seconds:10}))];
     if(sql.startsWith("SELECT") && sql.includes("FROM competitions")) return [s.sourceRows || [{id:1,libelle:"Native",date:"2026-01-01"}]];
     if(sql.startsWith("INSERT INTO livepalmes_dtn_saisons")) {if(s.seasons.has(values[0])) throw new Error("duplicate");s.seasons.set(values[0],JSON.parse(values[2]));return [{affectedRows:1}];}
@@ -35,6 +35,16 @@ function fixture() {
   assert.equal((await f.service.list(f.request({}))).source,"nap");
   const empty=await f.service.overview(f.request({}));assert.equal(empty.hit,false);assert.equal(f.s.calculations,0);assert.ok(f.s.queries.every(q=>q.startsWith("SELECT")));
   const result=await f.service.overview(f.request({rebuild:true}));assert.equal(result.hit,true);assert.equal(result.source,"nap");assert.equal(f.s.views.size,3);assert.equal(f.s.calculations,1);
+  const beforeOpening=f.s.queries.length;
+  const opening=await f.service.list(f.request({initialDevice:"listing",rebuild:true}));
+  assert.equal(opening.initialOverview.id,seed.id);assert.equal(opening.initialOverview.device,"listing");
+  assert.deepEqual(opening.initialOverview.view.profiles,f.s.views.get(`${seed.id}|listing`).value.profiles);
+  assert.equal(f.s.queries.length-beforeOpening,3,"Opening shares its catalog/settings and reads one result");
+  assert.match(f.s.queries.at(-1),/AND dispositif=\? LIMIT 1$/);
+  assert.equal(f.s.calculations,1,"Catalog opening never forwards rebuild even if requested");
+  await assert.rejects(()=>f.service.list(f.request({initialDevice:"unknown"})),/Dispositif invalide/);
+  const noResult=fixture();assert.equal((await noResult.service.list(noResult.request({initialDevice:"edf"}))).initialOverview.view.hit,false);
+  assert.equal(noResult.s.queries.length,4,"Missing results add only the existing calculation-status read");assert.equal(noResult.s.calculations,0);
   assert.equal(f.s.lockKeys[0],"livepalmes_dtn_calc","All seasons share one calculation lock to leave the source-reading pool connection available");assert.deepEqual(f.s.metadataPools.slice(-3),["held","held","held"],"Metadata checks during a calculation reuse its held connection");
   const concurrent=fixture();concurrent.s.busy=true;assert.equal((await concurrent.service.overview(concurrent.request({rebuild:true}))).pending,true);assert.equal(concurrent.s.calculations,0);assert.equal(concurrent.s.jobs.size,0);
   assert.equal((await f.service.overview(f.request({}))).hit,true);assert.equal(f.s.calculations,1);
@@ -90,6 +100,9 @@ function fixture() {
   const historical=fixture(),next=repo.nextDraft(seed);historical.s.catalog={revision:1,current:next.id,previous:seed.id,draft:""};historical.s.seasons.set(next.id,next);
   for(const d of engine.DEVICES) historical.s.views.set(`${seed.id}|${d}`,{id:seed.id,device:d,value:{source:"nap",revision:seed.revision,sourceVersion:"old-source",fingerprint:repo.fingerprint(seed,"old-source"),profiles:[]}});
   assert.equal((await historical.service.overview(historical.request({}))).frozen,true);assert.equal(historical.s.calculations,0);
+  const oldOpening=await historical.service.list(historical.request({initialSeasonId:seed.id,initialDevice:"listing"}));
+  assert.equal(oldOpening.initialOverview.id,seed.id);assert.equal(oldOpening.initialOverview.view.frozen,true);
+  await assert.rejects(()=>historical.service.list(historical.request({initialSeasonId:"2000-2001",initialDevice:"france"})),/Saison non accessible/);
   await assert.rejects(()=>historical.service.overview(historical.request({rebuild:true})),/consultation seule/);
   console.log("Native DTN service: auth before pool, no silent rebuild, all-three atomic views, source/settings conflicts, rollback, existing rights, draft and frozen history verified offline.");
 })().catch(e=>{console.error(e);process.exitCode=1;});
