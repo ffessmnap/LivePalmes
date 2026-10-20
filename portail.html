@@ -493,6 +493,13 @@
                   <div class="admin-national-home-group-head"><h3 id="adminNationalMailControlTitle">Mails automatiques</h3></div>
                   <p id="adminNationalMailControlStatus" role="status">Chargement du réglage…</p>
                   <p>Notifications des compétitions. Une coupure annule les mails en attente, sans rattrapage à la réactivation.</p>
+                  <label for="adminNationalMailControlScope">Périmètre des notifications</label>
+                  <select id="adminNationalMailControlScope" disabled aria-describedby="adminNationalMailControlScopeHelp">
+                    <option value="idf">Pilote Île-de-France</option>
+                    <option value="all">Toutes les régions</option>
+                  </select>
+                  <p id="adminNationalMailControlScopeHelp">Le pilote concerne les clubs IDF et les organisateurs des compétitions IDF. Enregistrer un périmètre n’active pas les mails ; aucun ancien message n’est rattrapé lors d’un changement.</p>
+                  <button id="adminNationalMailControlScopeSave" class="ghost-button" type="button" disabled>Enregistrer le périmètre</button>
                   <button id="adminNationalMailControlToggle" class="ghost-button" type="button" disabled>Chargement…</button>
                 </section>
                 <section class="admin-national-home-group admin-national-home-priority" aria-labelledby="adminNationalPendingTitle">
@@ -2802,7 +2809,7 @@
     <script src="assets/livepalmes-whatsapp-qr.js?v=20260831-whatsapp-qr-1"></script>
     <link rel="stylesheet" href="assets/livepalmes-engagement-qualifications.css">
     <script src="assets/livepalmes-engagement-qualifications.js?v=20260915-import-seconds"></script>
-  <script src="assets/livepalmes-admin-portal.js?v=20261020-chronologie"></script>
+  <script src="assets/livepalmes-admin-portal.js?v=20261020-mail-idf"></script>
     <script src="assets/livepalmes-license-administration.js?v=20261010-license-partial-validation-4"></script>
     <script src="assets/livepalmes-admin-calendar-events.js?v=20261012-shared-comments-1"></script>
     <script src="assets/public/livepalmes-home-model.js?v=20261014-home-2"></script>
