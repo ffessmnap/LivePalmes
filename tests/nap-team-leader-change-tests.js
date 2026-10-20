@@ -28,7 +28,7 @@ const input={competitionId:5140,clubId:"123",actorUid:"authenticated",leaderId:5
 function reset(){current={...row};competition={event:{entryStatus:"open",entryDeadlineAt:"2099-10-07T19:59:00.000Z"},nativeSnapshot:authority};saved=null;events=[];failComplete=race=trigger=denied=multiple=false;}
 const authorize=()=>{events.push("authorize");if(denied)throw new TypeError("Denied");};
 (async()=>{
-  reset();await editNativeTeamLeader(pool,input,audit,authorize);assert.deepEqual(events,["authorize","backup","update","complete","release"]);assert.equal(current.club,"123");assert.equal(current.pourclub,"0");assert.equal(current.id,51);
+  reset();await editNativeTeamLeader(pool,input,audit,authorize);assert.deepEqual(events,["authorize","backup","update","complete","release"]);assert.equal(current.club,"123");assert.equal(current.pourclub,"123");assert.equal(current.id,51);
   reset();denied=true;await assert.rejects(editNativeTeamLeader(pool,input,audit,authorize));assert.deepEqual(events,["authorize","release"]);
   reset();competition.event.entryStatus="closed";await assert.rejects(editNativeTeamLeader(pool,input,audit,authorize));assert.ok(!events.includes("backup"));
   reset();competition.event.entryDeadlineAt="2000-01-01T00:00:00.000Z";await assert.rejects(editNativeTeamLeader(pool,input,audit,authorize));
@@ -50,6 +50,11 @@ const authorize=()=>{events.push("authorize");if(denied)throw new TypeError("Den
   assert.equal(state.declarationComplete([waived.after,waived.after]),false);
   assert.throws(()=>planLeaderChange(pack,{...input,patch:{mode:"renounced",renunciationAccepted:false}}));
   assert.throws(()=>planLeaderChange({...pack,leaders:[{...row,pourclub:"999"}]},{...input,patch:{mode:"renounced",renunciationAccepted:true}}));
+  assert.throws(()=>planLeaderChange({...pack,leaders:[{...row,pourclub:"999"}]},input),/autre club/);
+  const external=planLeaderChange({...pack,leaders:[{...row,club:"999",pourclub:"123"}]},input);
+  assert.equal(external.after.club,"999");assert.equal(external.after.pourclub,"123");
+  const same=planLeaderChange(pack,{...input,patch:{firstName:row.prenom,lastName:row.nom,birthDate:row.date}});
+  assert.equal(same.after.pourclub,"123","same identity repairs represented club explicitly");
   const returned=planLeaderChange({...pack,leaders:[waived.after]},input);
   assert.equal(state.isWaiver(returned.after),false);assert.equal(returned.after.nom,"CORRIGE");
   assert.throws(()=>planLeaderChange({...pack,leaders:[waived.after]},{...input,patch:{...input.patch,birthDate:""}}));

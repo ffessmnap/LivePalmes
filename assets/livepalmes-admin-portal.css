@@ -12885,6 +12885,30 @@
   background: #f5f8f9;
 }
 
+#adminEngagementsDetailEntriesPanel .admin-engagements-club-swimmer-remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  margin-top: 4px;
+  padding: 0;
+}
+
+#adminEngagementsDetailEntriesPanel .admin-engagements-club-swimmer-remove svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+#adminEngagementsClubTeamForm[aria-busy="true"] #adminEngagementsClubTeamMessage {
+  font-weight: 700;
+}
+
 #adminEngagementsDetailEntriesPanel .admin-engagements-club-entry-row[data-sex="F"] > .admin-engagements-club-entry-last-name,
 #adminEngagementsDetailEntriesPanel .admin-engagements-club-entry-row[data-sex="F"] > .admin-engagements-club-entry-action {
   background: #fff8fb;
