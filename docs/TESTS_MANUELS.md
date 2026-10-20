@@ -5,7 +5,7 @@
 ## Chef et retrait depuis Courses — 20 octobre
 
 - Sur fixtures isolées : création/correction du chef du club avec pourclub égal au club ; renonciation explicite inchangée ; refus de reprendre une déclaration représentant un autre club. Vérifier attente visible, double clic, erreur et succès après réponse serveur uniquement.
-- Ordinateur et mobile : poubelle nominative accessible au clavier et au toucher, mêmes dimensions compactes que le crayon et défilement horizontal. Confirmer systématiquement, y compris sans course ; annuler sans appel serveur. Avec relais, annoncer le retrait du membre et la conservation des relais à compléter.
+- Ordinateur et mobile : poubelle nominative accessible au clavier et au toucher, même hauteur que le crayon, poubelle moins large, alignement sur une même ligne et défilement horizontal. Confirmer systématiquement, y compris sans course ; annuler sans appel serveur. Avec relais, annoncer le retrait du membre et la conservation des relais à compléter.
 - Vérifier fermeture, droits existants, opération en attente, changement de compétition, erreur et reprise native. Contrôler que fiche/licence/performances/autres compétitions sont conservées et qu'aucun autre relayeur n'est supprimé. Utiliser uniquement des fixtures ou un jeu d'écriture autorisé distinct de Paris 5220/CNHC ; aucune nouvelle écriture sur ce dossier pour cette recette.
 - Après publication : recette utilisateur sur la version TEST regroupée à obtenir. Les contrôles isolés ne valent pas validation utilisateur.
 

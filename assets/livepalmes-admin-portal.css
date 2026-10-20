@@ -12877,6 +12877,7 @@
   min-width: 74px;
   background: #ffffff;
   text-align: center;
+  white-space: nowrap;
   box-shadow: -5px 0 8px -8px rgba(24, 55, 64, 0.55);
 }
 
@@ -12983,6 +12984,12 @@
   border-radius: 7px;
   padding: 3px 7px;
   font-weight: 500;
+  vertical-align: middle;
+}
+
+#adminEngagementsDetailEntriesPanel .admin-engagements-club-swimmer-remove {
+  width: 30px;
+  min-width: 30px;
 }
 
 #adminEngagementsDetailEntriesPanel .admin-engagements-club-times-open :is(span, b) {

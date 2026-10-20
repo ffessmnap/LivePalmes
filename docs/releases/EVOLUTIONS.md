@@ -4,9 +4,9 @@
 
 ### 20 octobre — Poubelle Courses plus discrète (TEST à publier)
 
-- Retour utilisateur : poubelle trop grande ; mêmes dimensions que le bouton crayon demandées.
-- Retouche CSS uniquement : règle de dimensions partagée avec le crayon (54 × 30 px minimum), suppression du décalage vertical et pictogramme réduit à 12 px au trait plus fin. Confirmation, avertissement relais et traitement de retrait inchangés. Aucun accès aux données ajouté, aucune écriture Paris/CNHC.
-- Contrôle local sur données fictives : crayon et poubelle mesurés tous deux à 54 × 30 px sur ordinateur et mobile, sans marge haute ; défilement et focus clavier conservés. Test ciblé de retrait réussi sans réseau. Nouvelle présentation à faire valider ; preuve TEST et PR à renseigner après publication.
+- Retour utilisateur : poubelle trop grande ; hauteur identique au crayon, puis précision : poubelle moins large et deux boutons bien alignés sur une même ligne.
+- Retouche CSS uniquement : hauteur commune de 30 px, largeur crayon 54 px / poubelle 30 px, alignement vertical au milieu et absence de retour à la ligne ; pictogramme de 12 px au trait fin. Confirmation, avertissement relais et traitement de retrait inchangés. Aucun accès aux données ajouté, aucune écriture Paris/CNHC.
+- Premier contrôle local avant la précision de largeur : deux boutons à 54 × 30 px. Contrôle final local ordinateur/mobile : crayon 54 × 30 px, poubelle 30 × 30 px, bords hauts et bas identiques ; défilement et focus conservés. Test ciblé de retrait réussi sans réseau. Nouvelle présentation à faire valider. PR #387 intégrée sur 6411d4ce6259a08ede0468a1aeec22077b1ad114 ; vérification Linux 39419222686 réussie. Première publication TEST commune 39419601197 réussie (interface seule, backend conservé), Hosting 754787609df38670. La précision de largeur/alignement est préparée dans la PR suivante, nouvelle publication et validation visuelle attendues.
 
 ### 20 octobre — Chef d’équipe et retrait depuis les courses (TEST publié, validation utilisateur attendue)
 
@@ -16,6 +16,7 @@
 - Budget : aucune lecture supplémentaire à l’ouverture/rafraîchissement, avertissement local, un appel existant par enregistrement/retrait. Plafonds NAP existants conservés (retrait : 47 opérations SQL / 5 écritures SQL maximum, audit séparé). Aucun scan, polling ni migration ajouté.
 - PR #385 intégrée sur c53a8149114c1503638871125c02a61041ac6efb ; contrôle Linux 39415662156 réussi (suite globale et circuit de publication). Publication TEST commune [39415999454](https://github.com/ffessmnap/LivePalmes/actions/runs/39415999454) réussie ; Hosting a1402b3836afb114. Preuve test-proof téléchargée : commit exact et deux fonctions actives republiées (saveEngagementClubTeamLeader et removeEngagementClubTeamLeader, dépendance partagée). Les autres révisions sont réutilisées après contrôle ; aucun lot mails ni scheduler republié. JS/CSS du portail relus sur TEST et identiques au commit publié.
 - Recette isolée : mapping, attente/succès/erreur serveur, annulation, relais, double clic, fermeture, opérations en attente et changement de compétition vérifiés sans réseau. Contrôle visuel ordinateur/mobile sur données fictives (cible 44 px). Activation clavier du dialogue local obtenue, fermeture bloquée par l’outil navigateur : ne pas compter ce point comme validé. Vérification locale globale arrêtée sur Bash absent ; suite complète réussie sous Linux.
+- Recette TEST réelle partielle du 20 octobre, avant la retouche visuelle suivante : chef Stéphane BULTEL relu, poubelle nominative active, Tab et focus visible vérifiés sur ordinateur ; une nageuse/une course et aucun relais dans Paris/CNHC. Entrée a déclenché la confirmation mais le contrôle Windows a été interrompu par la vérification de l’URL. Aucun retrait confirmé ni enregistrement de chef ; annulation réelle, mobile réel et avertissement relais réel restent non attestés.
 - Validation utilisateur de la version TEST regroupée attendue ; aucune publication PROD autorisée.
 
 ### 20 octobre — Enchaînement des lots de mails et suivi (TEST, validation utilisateur attendue)
