@@ -39,6 +39,11 @@ print('Home proof-only scope skips preview; mixed application/configuration/unkn
 # The course-selection release request is preparation only, never a TEST deployment.
 course = sorted(scope.COURSE_PREFLIGHT_PATHS) + ['docs/releases/EVOLUTIONS.md']
 assert scope.needs_preview(course) is False
+idf = sorted(scope.IDF_PREFLIGHT_PATHS) + ['docs/releases/EVOLUTIONS.md']
+assert scope.needs_preview(idf) is False
+for extra in ['portail.html', 'functions/index.js', 'firebase.json', 'tools/unknown.py', 'unknown-file']:
+    assert scope.needs_preview(idf + [extra]) is True
+assert scope.needs_preview(['tools/release-cycle.py']) is True
 for extra in ['portail.html', 'functions/index.js', 'functions/nap-course-addition.js', 'firebase.json', 'tools/other-script.js', 'unknown-file']:
     assert scope.needs_preview(course + [extra]) is True
 assert scope.needs_preview(['tools/preview-scope.py', 'tests/preview-scope-tests.py']) is True
