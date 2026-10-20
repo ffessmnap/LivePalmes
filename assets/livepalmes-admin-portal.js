@@ -11154,14 +11154,23 @@
     }
   }
 
+  function engagementClubReadRetryBlocked() {
+    return elements.engagementsSaveState?.dataset.state === "saving"
+      || engagementClubTeamSaving || engagementClubEntriesDirty || dirtyEngagementDetailTabs.size
+      || engagementClubRelaysDraft.some(relay => relay.draftPending)
+      || engagementClubSelectionChanges.size || engagementClubEntriesAutosaveSwimmers.size
+      || engagementClubNativeSelectionRetry || engagementClubNativeIndividualRetry
+      || engagementClubNativeOfficialRetry || engagementClubNativeRelayRetry;
+  }
+
   async function retryEngagementCompetitionRead() {
     if (engagementDetailRetryPending || !selectedEngagementCompetitionId) return false;
     if (isEngagementAdminMode() || !canUse("engagements.club.manage")) return false;
     // Relire seulement : ne pas appeler le chargeur de navigation qui peut vider
     // une file d'autosauvegarde. Les reprises NAP incertaines restent inchangées.
-    if (elements.engagementsSaveState?.dataset.state === "saving" || engagementClubTeamSaving || engagementClubEntriesDirty || engagementClubSelectionChanges.size || engagementClubEntriesAutosaveSwimmers.size || engagementClubNativeSelectionRetry || engagementClubNativeIndividualRetry || engagementClubNativeOfficialRetry || engagementClubNativeRelayRetry) {
+    if (engagementClubReadRetryBlocked()) {
       if (elements.engagementsDetailStatus) {
-        elements.engagementsDetailStatus.textContent = "Un enregistrement est en cours ou reste à vérifier. Consultez le message dans l’étape concernée avant de recharger.";
+        elements.engagementsDetailStatus.textContent = "Des modifications sont en cours ou restent à vérifier. Consultez l’étape concernée avant de recharger.";
         elements.engagementsDetailStatus.dataset.tone = "error";
       }
       return false;
@@ -11180,7 +11189,7 @@
       await engagementClubEntryMutationQueue;
       const result = await callFunctionWithTimeout("getEngagementClubEntry", { competitionId });
       if (competitionId !== selectedEngagementCompetitionId) return false;
-      if (revision !== engagementClubEntryMutationRevision) throw new Error("Dossier modifié pendant la lecture");
+      if (revision !== engagementClubEntryMutationRevision || engagementClubReadRetryBlocked()) throw new Error("Dossier modifié pendant la lecture");
       selectedEngagementCompetition = result.competition || {};
       setEngagementClubEntryLoadingState("");
       renderEngagementCompetitionDetail(selectedEngagementCompetition);

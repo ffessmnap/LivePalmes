@@ -17,6 +17,7 @@ function fixture() {
     selectedEngagementCompetitionId: "legacy-nap-fixture", selectedEngagementCompetition: {}, selectedEngagementClubEntry: {swimmers: []},
     engagementDetailRetryPending: false, engagementClubEntryMutationRevision: 1,
     engagementClubTeamSaving: false, engagementClubEntriesDirty: false,
+    dirtyEngagementDetailTabs: new Set(), engagementClubRelaysDraft: [],
     engagementClubSelectionChanges: new Map(), engagementClubEntriesAutosaveSwimmers: new Set(),
     engagementClubNativeSelectionRetry: null, engagementClubNativeIndividualRetry: null,
     engagementClubNativeOfficialRetry: null, engagementClubNativeRelayRetry: null,
@@ -34,7 +35,7 @@ function fixture() {
     calls, renders,
   };
   vm.createContext(c);
-  for (const name of ["engagementClubWriteLockReason", "engagementDeadlineTone", "engagementClubContextMessage", "setEngagementSaveState", "engagementClubEmptySwimmersHtml", "renderEngagementClubNativeSummary", "retryEngagementCompetitionRead"]) vm.runInContext(block(name), c);
+  for (const name of ["engagementClubWriteLockReason", "engagementDeadlineTone", "engagementClubContextMessage", "setEngagementSaveState", "engagementClubEmptySwimmersHtml", "renderEngagementClubNativeSummary", "engagementClubReadRetryBlocked", "retryEngagementCompetitionRead"]) vm.runInContext(block(name), c);
   return c;
 }
 (async () => {
@@ -88,10 +89,12 @@ function fixture() {
     const r=fixture(); r[key]=true;
     assert.equal(await r.retryEngagementCompetitionRead(), false); assert.equal(r.calls.length, 0, key);
   }
-  for (const key of ["engagementClubSelectionChanges", "engagementClubEntriesAutosaveSwimmers"]) {
+  for (const key of ["engagementClubSelectionChanges", "engagementClubEntriesAutosaveSwimmers", "dirtyEngagementDetailTabs"]) {
     const r=fixture(); r[key] = new Set(["pending"]);
     assert.equal(await r.retryEngagementCompetitionRead(), false); assert.equal(r.calls.length, 0, key);
   }
+  const relay=fixture(); relay.engagementClubRelaysDraft=[{draftPending:true}];
+  assert.equal(await relay.retryEngagementCompetitionRead(), false); assert.equal(relay.calls.length, 0);
   const saving=fixture(); saving.setEngagementSaveState("saving");
   assert.equal(await saving.retryEngagementCompetitionRead(), false); assert.equal(saving.calls.length, 0);
   const changed=fixture(); let complete;
