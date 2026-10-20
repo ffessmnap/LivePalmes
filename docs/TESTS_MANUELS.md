@@ -2,6 +2,13 @@
 
 <!-- description: Checklist de tests manuels à exécuter avant une publication ou après une modification sensible. -->
 
+## Engagements Club, clarté et confiance — lot 1 du 20 octobre
+
+- Sur fixtures isolées et services simulés : états ouvert/fermé/à venir/date dépassée/annulé, consigne programme réservée à l’édition ; état de sauvegarde en attente puis confirmé ou non confirmé, sans succès anticipé. Dernière confirmation durable près des étapes, remise à zéro en changeant de dossier.
+- Dossier vide : Courses et Relais orientent vers Participants → Nageurs ; activation clavier/tactile et focus sur l’onglet actif. Récapitulatif sans liste vide ambiguë ; aucun raccourci de saisie après fermeture. Ne pas modifier les conditions d’accès aux étapes.
+- Simuler une panne de lecture avec et sans cache : dernière version conservée, erreur compréhensible, reprise par un seul appel de lecture, double clic bloqué, aucune écriture renvoyée. Sauvegarde incertaine/en attente et réponse devenue obsolète : reprise ou affichage refusés, protections NAP préservées. Les erreurs ne doivent pas exposer de détail interne du serveur.
+- Contrôler ordinateur/mobile 390 et 360 px, défilement, navigation collante, clavier, absence de débordement et réduction des animations. Aucun besoin d’écrire dans NAP partagé, d’envoyer un mail ni de tester une vraie panne réseau connectée.
+
 ## Ajout/récupération d’un nageur dans les engagements — 20 octobre
 
 Sur TEST, compétition ouverte et chef d’équipe déclaré ou renonciation confirmée : ouvrir Participants → Nageurs → Ajouter ou récupérer un nageur. Vérifier le formulaire, le focus, Annuler et Échap sur ordinateur/mobile. Ne pas soumettre de licence réelle ni créer ou récupérer de fiche pour la recette. Les parcours complets et les refus sont couverts hors réseau par tests/nap-swimmer-dialog-tests.js, complétés des tests natifs de création/récupération et reprise. Vérifier les verrous après fermeture/date limite sans modifier une compétition réelle.

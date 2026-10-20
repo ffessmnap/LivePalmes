@@ -11365,14 +11365,7 @@
 }
 
 #adminEngagementsDetail[data-club-entry-loading="loading"] #adminEngagementsDetailStatus::after {
-  width: min(100%, 620px);
-  height: 42px;
-  border-radius: 6px;
-  background:
-    linear-gradient(#e5edef 0 0) 0 0 / 78% 8px no-repeat,
-    linear-gradient(#edf2f3 0 0) 0 17px / 100% 8px no-repeat,
-    linear-gradient(#edf2f3 0 0) 0 34px / 62% 8px no-repeat;
-  content: "";
+  content: none;
 }
 
 @media (max-width: 1120px) {
@@ -17130,6 +17123,25 @@
 }
 
 /* Parcours compact des engagements club */
+#adminEngagementsDetail .admin-engagements-save-feedback {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+  grid-column: 1 / -1;
+  min-width: 0;
+  padding: 4px 0;
+}
+
+#adminEngagementsDetail .admin-engagements-save-feedback > small {
+  color: var(--portal-text-muted, #51646b);
+  font-size: 0.75rem;
+}
+
+#adminEngagementsDetailRetry {
+  margin: 0 var(--portal-panel-gutter) 12px;
+}
+
 #adminEngagementsDetail .admin-engagements-save-state {
   display: inline-flex;
   align-items: center;
@@ -17142,14 +17154,19 @@
   font-weight: 700;
 }
 
-#adminEngagementsDetail .admin-engagements-save-state[data-state="saving"]::before {
+#adminEngagementsDetail .admin-engagements-save-state[data-state="saving"]::before,
+#adminEngagementsDetail [aria-live].is-loading::before {
   content: "";
-  width: 7px;
-  height: 7px;
+  display: inline-block;
+  flex: 0 0 auto;
+  width: 12px;
+  height: 12px;
   margin-right: 6px;
   border-radius: 50%;
-  background: #0b7285;
-  animation: admin-engagement-save-pulse 0.9s ease-in-out infinite alternate;
+  border: 2px solid #c3dce0;
+  border-top-color: #0b7285;
+  background: transparent;
+  animation: admin-portal-auth-spin 0.8s linear infinite;
 }
 
 #adminEngagementsDetail .admin-engagements-save-state[data-state="saved"] {
@@ -17162,8 +17179,11 @@
   color: #b42318;
 }
 
-@keyframes admin-engagement-save-pulse {
-  to { opacity: 0.3; transform: scale(0.78); }
+@media (prefers-reduced-motion: reduce) {
+  #adminEngagementsDetail .admin-engagements-save-state[data-state="saving"]::before,
+  #adminEngagementsDetail [aria-live].is-loading::before {
+    animation: none;
+  }
 }
 
 #adminEngagementsDetailEntriesPanel .admin-engagements-club-entries-scroll-hint {

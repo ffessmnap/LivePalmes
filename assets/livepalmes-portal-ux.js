@@ -198,6 +198,12 @@
 
   function enhanceLoadingStates() {
     document.querySelectorAll("[aria-live]").forEach((status) => {
+      if (status.closest("#adminEngagementsDetail")) {
+        // Le dossier pilote ses attentes explicitement, jamais par ses libellés.
+        const saving = document.querySelector("#adminEngagementsSaveState")?.dataset.state === "saving";
+        status.classList.toggle("is-loading", status.dataset.tone === "loading" && !saving);
+        return;
+      }
       const loadingSource = status.matches("#adminDtnGrid")
         ? status.querySelector(".admin-dtn-summary-loading,.admin-record-module-status")
         : status;
