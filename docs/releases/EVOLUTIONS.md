@@ -2,6 +2,12 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 20 octobre — Poubelle Courses plus discrète (TEST à publier)
+
+- Retour utilisateur : poubelle trop grande ; mêmes dimensions que le bouton crayon demandées.
+- Retouche CSS uniquement : règle de dimensions partagée avec le crayon (54 × 30 px minimum), suppression du décalage vertical et pictogramme réduit à 12 px au trait plus fin. Confirmation, avertissement relais et traitement de retrait inchangés. Aucun accès aux données ajouté, aucune écriture Paris/CNHC.
+- Contrôle local sur données fictives : crayon et poubelle mesurés tous deux à 54 × 30 px sur ordinateur et mobile, sans marge haute ; défilement et focus clavier conservés. Test ciblé de retrait réussi sans réseau. Nouvelle présentation à faire valider ; preuve TEST et PR à renseigner après publication.
+
 ### 20 octobre — Chef d’équipe et retrait depuis les courses (TEST publié, validation utilisateur attendue)
 
 - Besoin autorisé : corriger le rattachement natif du chef, expliciter l’attente serveur et retirer un nageur depuis Courses avec confirmation et avertissement relais.
