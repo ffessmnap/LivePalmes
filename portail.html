@@ -10,7 +10,7 @@
     <link rel="stylesheet" href="styles.css?v=20260529-public-home">
     <link id="adminPerformanceStyles" rel="stylesheet" href="performances/public/styles.css?v=20260613-delete-record-draft-1" disabled>
     <link id="adminImportStyles" rel="stylesheet" href="performances/public/import-competitions.css?v=20260831-import-dialog-1" disabled>
-    <link rel="stylesheet" href="assets/livepalmes-admin-portal.css?v=20261020-mail-lots">
+    <link rel="stylesheet" href="assets/livepalmes-admin-portal.css?v=20261020-club-ux-lot1">
     <link rel="stylesheet" href="assets/livepalmes-license-administration.css?v=20260902-license-control-1">
     <link rel="stylesheet" href="assets/livepalmes-whatsapp-qr.css?v=20260831-whatsapp-qr-1">
     <link rel="stylesheet" href="assets/livepalmes-portal-appearance.css?v=20260920-appearance-4">
@@ -978,7 +978,6 @@
                           <span id="adminEngagementsDetailLevel" class="admin-engagements-level-badge" hidden></span>
                           <span id="adminEngagementsDetailEntryStatus" class="admin-engagements-entry-status" hidden>Statut des engagements</span>
                           <span id="adminEngagementsDetailDeadline" class="admin-engagements-detail-deadline" hidden></span>
-                          <span id="adminEngagementsSaveState" class="admin-engagements-save-state" aria-live="polite" hidden></span>
                         </div>
                       </div>
                       <div class="admin-engagements-detail-actions">
@@ -995,6 +994,10 @@
                     <div id="adminQualificationJobActions" class="qualification-job-actions" role="status" hidden></div>
                     <div id="adminEngagementsDetailMeta" class="admin-engagements-detail-meta" aria-label="Resume de la competition"></div>
                     <nav class="admin-engagements-detail-tabs" aria-label="Parcours d'engagement">
+                      <div class="admin-engagements-save-feedback" data-engagement-club-feedback hidden>
+                        <small>Vos choix sont enregistrés automatiquement.</small>
+                        <span id="adminEngagementsSaveState" class="admin-engagements-save-state" role="status" aria-live="polite" aria-atomic="true" hidden></span>
+                      </div>
                       <div class="admin-engagements-detail-step-bar" aria-label="Étapes">
                         <button type="button" data-engagement-step-button="information" aria-pressed="true"><span>1</span><strong data-engagement-step-label="information">Informations</strong></button>
                         <button type="button" data-engagement-step-button="participants" aria-pressed="false"><span>2</span><strong data-engagement-step-label="participants">Participants</strong></button>
@@ -1335,7 +1338,7 @@
                           <div class="admin-engagements-program-head">
                             <div>
                               <strong>D&eacute;roulement des courses</strong>
-                              <small>Choisissez le format sur le premier passage, puis placez le second dans la session concern&eacute;e.</small>
+                              <small id="adminEngagementsProgramEditHint" hidden>Choisissez le format sur le premier passage, puis placez le second dans la session concern&eacute;e.</small>
                             </div>
                             <button id="adminEngagementsProgramAddSession" class="ghost-button" type="button">Ajouter une session</button>
                           </div>
@@ -1743,6 +1746,7 @@
                       </div>
                     </div>
                     <p id="adminEngagementsDetailStatus" class="admin-portal-message" aria-live="polite"></p>
+                    <button id="adminEngagementsDetailRetry" class="ghost-button admin-button-compact" type="button" hidden>Réessayer le chargement</button>
                   </section>
                 </section>
               </div>
@@ -2809,13 +2813,13 @@
     <script src="assets/livepalmes-whatsapp-qr.js?v=20260831-whatsapp-qr-1"></script>
     <link rel="stylesheet" href="assets/livepalmes-engagement-qualifications.css">
     <script src="assets/livepalmes-engagement-qualifications.js?v=20260915-import-seconds"></script>
-  <script src="assets/livepalmes-admin-portal.js?v=20261020-ajout-nageur-nap"></script>
+  <script src="assets/livepalmes-admin-portal.js?v=20261020-club-ux-lot1"></script>
     <script src="assets/livepalmes-license-administration.js?v=20261010-license-partial-validation-4"></script>
     <script src="assets/livepalmes-admin-calendar-events.js?v=20261012-shared-comments-1"></script>
     <script src="assets/public/livepalmes-home-model.js?v=20261014-home-2"></script>
     <script src="assets/livepalmes-featured-documents-model.js?v=20261013-documents-1"></script>
     <script src="assets/livepalmes-featured-documents.js?v=20261014-documents-2"></script>
-    <script src="assets/livepalmes-portal-ux.js?v=20260920-ux-consistency-1"></script>
+    <script src="assets/livepalmes-portal-ux.js?v=20261020-club-ux-lot1"></script>
 <script src="assets/livepalmes-legal-footer.js?v=20260920-legal-1"></script>
     <script src="assets/livepalmes-portal-shell.js?v=20260920-shell-1"></script>
   </body>
