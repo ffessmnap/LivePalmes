@@ -8551,7 +8551,7 @@
     const eventLabel = code => {
       const event = engagementEventDefinition(code) || {};
       const label = event.label || event.shortLabel || code || "Course non renseignée";
-      return `<span class="admin-engagements-recap-event"><strong>${escapeHtml(label)}</strong>${code && label !== code ? `<small>${escapeHtml(code)}</small>` : ""}</span>`;
+      return `<span class="admin-engagements-recap-event"><strong>${escapeHtml(label)}</strong></span>`;
     };
     const emptySwimmers = swimmers.length ? "" : !engagementClubSwimmerSelectionLockReason() && engagementClubTeamComplete()
       ? engagementClubEmptySwimmersHtml("Aucun nageur engagé. Aucune course enregistrée.")
@@ -8559,7 +8559,7 @@
     mount.innerHTML = `
       <details class="admin-engagements-recap-section" open>
         <summary>Courses enregistrées <span>${swimmers.length} nageur${swimmers.length > 1 ? "s" : ""}</span></summary>
-        ${swimmers.length ? swimmers.map(person => `<article class="admin-engagements-recap-person">
+        ${swimmers.length ? swimmers.map(person => `<article class="admin-engagements-recap-person admin-engagements-recap-swimmer">
           <h5>${escapeHtml(personName(person))}</h5>
           ${person.individualEntries?.length ? `<ul class="admin-engagements-recap-courses">${person.individualEntries.map(row => `<li>${eventLabel(row.eventCode)}<span class="admin-engagements-recap-time">${escapeHtml(savedTime(row))}</span></li>`).join("")}</ul>` : '<p>Aucune course enregistrée.</p>'}
         </article>`).join("") : emptySwimmers}

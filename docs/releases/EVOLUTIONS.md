@@ -2,6 +2,12 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 20 octobre — Récapitulatif Club en lignes synthétiques (préparation TEST)
+
+- Antoine valide explicitement la troisième proposition présentée : « Lignes synthétiques ». Nom du nageur puis couples course/temps proches, blocs neutres avec retour à la ligne ; sous 700 px, les courses passent sous le nom. Suppression du second libellé technique lorsqu’un nom de course est connu ; code inconnu conservé comme libellé unique. Temps, doublons réellement enregistrés, ordre des relayeurs, PDF et données inchangés.
+- Budget supplémentaire avant/après : zéro appel serveur, requête NAP, lecture/écriture Firestore à l’ouverture, par action, au rafraîchissement et dans le pire cas. Rendu sur le dossier et le catalogue déjà chargés, aucun appel par ligne ni reconstruction distante.
+- Fichiers : assets/livepalmes-admin-portal.js, assets/livepalmes-admin-portal.css, portail.html, tests/engagement-club-ux-tests.js, tests/livepalmes-portal-optimization-tests.js, docs/DESIGN_SYSTEM.md et ce registre. Syntaxe, tests UX, optimisations portail et préservation des sélections natives réussis. Recette navigateur hors réseau : 1280/700/390/360/320 px, deux thèmes, temps à 9 px de leur course, aucun débordement, noms longs/codes inconnus/temps bruts conservés, relais, vide et repli clavier contrôlés. Preuves privées locales outputs/ux-club-recap-lines/. CI et preuve TEST à consigner. Validation de la maquette reçue ; validation de la version regroupée livrée encore attendue. La nouvelle demande sur le chef d’équipe fait seulement l’objet d’une proposition séparée ; aucun changement de retrait, renonciation, droit ou sauvegarde dans ce lot.
+
 ### 20 octobre — Retour aux compétitions dans le fil d’Ariane Club (TEST publié, validation utilisateur attendue)
 
 - Accord explicite d’Antoine : remplacer le bouton séparé par « ← Compétitions » dans le fil d’Ariane sur TEST, en conservant les protections des saisies en cours. Fiche club uniquement ; parcours organisateur conservé. Le lien garde le gestionnaire de fermeture existant, sans changement des confirmations ni des sauvegardes.
