@@ -1,0 +1,84 @@
+{
+  "schema": 1,
+  "candidate": "1b30062b9a68a23ac0f257a1fdc7da415d9614af",
+  "productionCommit": "f5e9d2067d1a73de9fad8ca29cfbfa13db97da16",
+  "productionHosting": "sites/livepalmes/versions/a4362e98a9c6a081",
+  "testRun": 39388664168,
+  "changes": [
+    {
+      "title": "Classement chronologique des compétitions et pilote mails Île-de-France, publication avec mails coupés",
+      "paths": [
+        "assets/livepalmes-admin-portal.css",
+        "assets/livepalmes-admin-portal.js",
+        "portail.html",
+        "functions/engagement-mail-control.js",
+        "functions/index.js",
+        "functions/nap-notification-pages.js",
+        "functions/nap-notification-preview.js"
+      ],
+      "status": "validated",
+      "validation": "Antoine, 20 octobre 2026, Suivi LivePalmes : classement PR #377 « parfait ça me va. Je souhaite mettre en prod » ; pilote PR #378 « ok je valide », sur le candidat 1b30062b, TEST commun 39388664168 / Hosting 61c6096c09616602. Puis « ok je te donne l’autorisation pousser àa en prod dans la conversation infra ». Préparation du plan exact pour accord final dans Infra ; aucune activation ni sauvegarde de réglage pendant la recette TEST. Publication code uniquement avec mails désactivés, activation IDF séparée après contrôles et plan spécifique, aucun envoi national."
+    }
+  ],
+  "initialAutomaticMailEnabled": false,
+  "additionalNotificationFunctions": [
+    "closeDueEngagementCompetitions",
+    "listEngagementCompetitionMailJobs",
+    "notifyEngagementCompetitionDocuments",
+    "prepareEngagementClubRecapEmails",
+    "prepareEngagementOpeningNotificationEmails",
+    "processNapCompetitionNotifications",
+    "sendEngagementPreparedEmails"
+  ],
+  "additionalNotificationApproval": "Antoine autorise le pilote IDF validé et sa prise en charge PROD dans Infra. Cette préparation concerne les sept traitements mail/clôture nécessaires, avec arrêt global conservé et mails coupés avant/après publication ; aucun envoi ni modification de fréquence. Accord du plan immuable requis avant publication.",
+  "notificationPilotIdfApproval": "Pilote IDF strictement limité au candidat 1b30062b depuis PROD f5e9d206 : notifications aux responsables des clubs IDF selon préférences, exports engagements/officiels aux organisateurs des compétitions IDF. Publier coupé ; activation et enregistrement scope=idf séparés après contrôles frais, simulation sans envoi et bilan spécifique. Aucune activation nationale.",
+  "excludedBackendReview": "Empreintes complètes recalculées depuis la provenance PROD 39381543607 : dix fonctions changent (sept notifications/clôture explicites et trois ordinaires contrôle/aperçu), 102 conservées. Cinq divergences installées héritées identiques restent conservées ; aucune nouvelle divergence. Préférences/désinscription, comptes/demandes et correction identité hors publication. TEST a 114 fonctions, PROD 112 : les deux lecteurs TEST supplémentaires exportNapPublicPage/getNapSwimmerPerformances sont hors lots actifs PROD, non ajoutés. Mails coupés pendant publication ; scheduler de clôture inchangé et contrôlé avant/après.",
+  "excludedBackendEvidence": {
+    "schema": 1,
+    "candidate": "1b30062b9a68a23ac0f257a1fdc7da415d9614af",
+    "productionRun": 39381543607,
+    "suite": "retained-calendar-consumers-v1",
+    "functions": [
+      {
+        "name": "disableCompetitionEmailNotifications",
+        "commit": "1df545a62de67a24ff32ca4d1046cce4be6d499f",
+        "revision": "disablecompetitionemailnotifications-00004-kuf",
+        "before": "ee4c904af510b50da7bfdb99cde5dd2833d7fd75adabb03279029e067171e466",
+        "after": "b5a9f626f04f5b1d42c4090e42bfc26e238eebfb410607296a2aedd49a253814",
+        "reason": "Divergence installée héritée de la publication 39381543607. Empreinte du consommateur identique entre f5e9d206 et 1b30062b ; aucune nouvelle divergence et aucun changement du paquet distant."
+      },
+      {
+        "name": "resolveEngagementAccessRequest",
+        "commit": "812bad64681a232e6cc3868ba7ec112bcdac7ca2",
+        "revision": "resolveengagementaccessrequest-00040-jev",
+        "before": "6d9fbfa653896f44534bdb644a3f0691c956e96ada2ad0b7acc9555183680c30",
+        "after": "2b395be019e680d1f1c4ca2e78376792d884e680b16c45bda04e57ddfe16e8c9",
+        "reason": "Divergence installée héritée de la publication 39381543607. Empreinte du consommateur identique entre f5e9d206 et 1b30062b ; aucune nouvelle divergence et aucun changement du paquet distant."
+      },
+      {
+        "name": "resolveEngagementSwimmerChangeRequest",
+        "commit": "1df545a62de67a24ff32ca4d1046cce4be6d499f",
+        "revision": "resolveengagementswimmerchangerequest-00020-mov",
+        "before": "07b8b74b334996d71ca572c7f6b1b3c2830c64859d3e84d6367058b42d25db2e",
+        "after": "b7679a41a2b1a9151acd48ef5c91bd85b902cbc8b65dbf3e7898505eca95209e",
+        "reason": "Divergence installée héritée de la publication 39381543607. Empreinte du consommateur identique entre f5e9d206 et 1b30062b ; aucune nouvelle divergence et aucun changement du paquet distant."
+      },
+      {
+        "name": "submitEngagementAccessRequest",
+        "commit": "812bad64681a232e6cc3868ba7ec112bcdac7ca2",
+        "revision": "submitengagementaccessrequest-00039-rib",
+        "before": "be16dc361cdb44b67868b8bf06e9149e7b42ecc1ffef72407ba010c9295324ec",
+        "after": "56168c0ef32617bfb06139908ec1bafa7ed0e340f3de32b3b1aee97682ebe21a",
+        "reason": "Divergence installée héritée de la publication 39381543607. Empreinte du consommateur identique entre f5e9d206 et 1b30062b ; aucune nouvelle divergence et aucun changement du paquet distant."
+      },
+      {
+        "name": "updateCurrentEmailNotificationPreferences",
+        "commit": "1df545a62de67a24ff32ca4d1046cce4be6d499f",
+        "revision": "updatecurrentemailnotificationpreferences-00004-gev",
+        "before": "fae1fd731a5a970cee0616314f1461c1e042284edbd8048b042300c96834c7ba",
+        "after": "3c511e792f7292a2d29d506e002e2f5efadb5b42a3c381792210522de9102e61",
+        "reason": "Divergence installée héritée de la publication 39381543607. Empreinte du consommateur identique entre f5e9d206 et 1b30062b ; aucune nouvelle divergence et aucun changement du paquet distant."
+      }
+    ]
+  }
+}
