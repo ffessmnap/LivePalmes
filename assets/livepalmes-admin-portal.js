@@ -638,6 +638,7 @@
     engagementsPublicInfoText: document.querySelector("#adminEngagementsPublicInfoText"),
     engagementsDetailList: document.querySelector("#adminEngagementsDetailList"),
     engagementsDetailStatus: document.querySelector("#adminEngagementsDetailStatus"),
+    engagementsDetailRetry: document.querySelector("#adminEngagementsDetailRetry"),
     engagementsDetailClose: document.querySelector("#adminEngagementsDetailClose"),
     engagementsUnsavedDialog: document.querySelector("#adminEngagementsUnsavedDialog"),
     engagementsUnsavedSave: document.querySelector("#adminEngagementsUnsavedSave"),
@@ -659,6 +660,7 @@
     engagementsOpenWaterCourseList: document.querySelector("#adminEngagementsOpenWaterCourseList"),
     engagementsOpenWaterCourseMessage: document.querySelector("#adminEngagementsOpenWaterCourseMessage"),
     engagementsProgramSummary: document.querySelector("#adminEngagementsProgramSummary"),
+    engagementsProgramEditHint: document.querySelector("#adminEngagementsProgramEditHint"),
     engagementsProgramAddSession: document.querySelector("#adminEngagementsProgramAddSession"),
     engagementsProgramSessions: document.querySelector("#adminEngagementsProgramSessions"),
     engagementsEventsSaveButton: document.querySelector("#adminEngagementsEventsSaveButton"),
@@ -1117,7 +1119,7 @@
   let engagementClubSelectionCompetitionId = "";
   let engagementClubEntriesAutosaveTimer = null;
   let engagementClubEntriesAutosaveCompetitionId = "";
-  let engagementSaveStateTimer = null;
+  let engagementDetailRetryPending = false;
   const engagementCourseScrollHintSeen = new Set();
   let engagementClubTimesDialogSwimmerId = "";
   let engagementClubTimesDialogLoading = false;
@@ -2307,18 +2309,15 @@
   }
 
   function setEngagementSaveState(state = "", message = "") {
-    if (engagementSaveStateTimer) global.clearTimeout(engagementSaveStateTimer);
-    engagementSaveStateTimer = null;
     const node = elements.engagementsSaveState;
     if (!node) return;
     node.hidden = !state;
     node.dataset.state = state;
-    node.textContent = message || (state === "saving" ? "Enregistrement…" : state === "saved" ? "Enregistré ✓" : state === "error" ? "Échec de l’enregistrement" : "");
-    if (state === "saved") {
-      engagementSaveStateTimer = global.setTimeout(() => {
-        if (node.dataset.state === "saved") node.hidden = true;
-      }, 1800);
-    }
+    node.textContent = message || (state === "saving" ? "Enregistrement en cours…" : state === "saved" ? "Dernier enregistrement confirmé ✓" : state === "error" ? "Enregistrement non confirmé : consultez le message dans l’étape concernée." : "");
+  }
+
+  function engagementClubEmptySwimmersHtml(message = "Aucun nageur sélectionné pour cette compétition.") {
+    return `<div class="admin-engagements-empty"><p>${escapeHtml(message)}</p><button type="button" class="ghost-button admin-button-compact" data-engagement-go-swimmers>Choisir les nageurs</button></div>`;
   }
 
   function engagementDetailTabGroup(tab = "") {
@@ -7453,6 +7452,7 @@
   function renderEngagementClubEntries() {
     const mount = elements.engagementsClubEntriesList;
     if (!mount) return;
+    mount.dataset.tone = engagementClubSwimmersLoading && !engagementClubSwimmersLoaded ? "loading" : "";
     engagementClubEntriesRenderedCompetitionId = selectedEngagementCompetitionId;
     const writeLockReason = engagementClubIndividualEntriesLockReason();
     const locked = Boolean(writeLockReason || !engagementClubTeamComplete());
@@ -7469,13 +7469,13 @@
       return;
     }
     if (!engagementClubSwimmersLoaded) {
-      mount.innerHTML = '<p class="admin-engagements-empty">Ouvrez l\'onglet Nageurs pour charger la base du club.</p>';
+      mount.innerHTML = engagementClubEmptySwimmersHtml("Choisissez les nageurs dans Participants pour commencer.");
       updateEngagementClubEntriesSummary();
       return;
     }
     const selectedRows = currentEngagementClubSwimmersForSummary();
     if (!selectedRows.length) {
-        mount.innerHTML = '<p class="admin-engagements-empty">Sélectionnez d\'abord les nageurs dans l\'onglet Nageurs.</p>';
+      mount.innerHTML = engagementClubEmptySwimmersHtml();
       updateEngagementClubEntriesSummary();
       return;
     }
@@ -8544,10 +8544,10 @@
     const savedTime = row => row.entryTime || row.nativeTime || "Temps non renseigné";
     const swimmers = Array.isArray(entry.swimmers) ? entry.swimmers : [];
     const relays = Array.isArray(entry.relays) ? entry.relays : [];
-    mount.innerHTML = '<h4>Courses enregistrées</h4><ul>' + swimmers.map(person =>
+    mount.innerHTML = '<h4>Courses enregistrées</h4>' + (swimmers.length ? '<ul>' + swimmers.map(person =>
       '<li><strong>' + escapeHtml(personName(person)) + '</strong> : ' +
       (person.individualEntries?.length ? person.individualEntries.map(row => escapeHtml(row.eventCode) + ' — ' + escapeHtml(savedTime(row))).join(' ; ') : 'Aucune course enregistrée') + '</li>'
-    ).join('') + '</ul><h4>Relais enregistrés</h4>' + (relays.length ? '<ul>' + relays.map(row =>
+    ).join('') + '</ul>' : !engagementClubSwimmerSelectionLockReason() && engagementClubTeamComplete() ? engagementClubEmptySwimmersHtml("Aucun nageur engagé. Aucune course enregistrée.") : '<p>Aucun nageur engagé. Aucune course enregistrée.</p>') + '<h4>Relais enregistrés</h4>' + (relays.length ? '<ul>' + relays.map(row =>
       '<li><strong>' + escapeHtml(row.eventCode) + '</strong> — ' + escapeHtml(savedTime(row)) + ' : ' +
       (row.members?.length ? row.members.map(person => escapeHtml(personName(person))).join(', ') : 'Composition non renseignée') + '</li>'
     ).join('') + '</ul>' : '<p>Aucun relais enregistré.</p>');
@@ -8586,7 +8586,9 @@
     }
     const rows = engagementClubRelaysDraft;
     if (!rows.length) {
-      mount.innerHTML = '<p class="admin-engagements-empty">Ajoutez un relais pour commencer.</p>';
+      mount.innerHTML = selectedEngagementClubSwimmerRows().length
+        ? '<p class="admin-engagements-empty">Aucun relais enregistré. Utilisez « Ajouter un relais » pour commencer.</p>'
+        : engagementClubEmptySwimmersHtml("Sélectionnez les nageurs dans Participants avant de composer un relais.");
       updateEngagementClubRelaysSummary();
       return;
     }
@@ -8822,7 +8824,7 @@
         ? "Les officiels ne sont pas requis pour cette compétition."
             : "Structure prete. La saisie des officiels arrive dans le lot suivant.",
         swimmers: "Sélectionnez les nageurs du club pour cette compétition.",
-          entries: "Choisissez les courses individuelles des nageurs engagés.",
+          entries: currentEngagementClubSwimmersForSummary().length ? "Choisissez les courses individuelles des nageurs engagés." : "",
         relays: "Ajoutez les relais du club pour cette compétition.",
         summary: "Vérifiez le récapitulatif du dossier et téléchargez le PDF."
         };
@@ -10601,6 +10603,7 @@
     }
     if (elements.engagementsEventsChoiceSection) elements.engagementsEventsChoiceSection.hidden = !adminMode;
     if (elements.engagementsProgramSection) elements.engagementsProgramSection.hidden = false;
+    if (elements.engagementsProgramEditHint) elements.engagementsProgramEditHint.hidden = !adminMode || !engagementDetailEditing || !canEdit;
     renderEngagementEventGroup(elements.engagementsIndividualEvents, "individual", selectedCodes, canEdit, competition);
     renderEngagementEventGroup(elements.engagementsRelayEvents, "relay", selectedCodes, canEdit, competition);
     if (openWater && adminMode) {
@@ -10626,7 +10629,7 @@
         : canEditEngagementCompetition(competition)
         ? ""
       : "Programme consultable uniquement avec un droit de gestion sur cette compétition.";
-      elements.engagementsEventsMessage.dataset.tone = canEdit ? "ok" : "loading";
+      elements.engagementsEventsMessage.dataset.tone = canEdit ? "ok" : "";
     }
   }
 
@@ -10783,7 +10786,26 @@
     elements.engagementsDetail.removeAttribute("aria-busy");
   }
 
+  function engagementClubContextMessage(competition = {}) {
+    if (isEngagementAdminMode()) return "Les paramètres et le programme de cette compétition sont disponibles.";
+    if (competition.canceled) return "Compétition annulée — votre récapitulatif reste consultable.";
+    if (competition.entryStatus === "closed") return "Engagements fermés — votre récapitulatif reste consultable.";
+    if (engagementDeadlineTone(competition) === "deadline-passed") return "Date limite dépassée — votre récapitulatif reste consultable.";
+    if (competition.entryStatus !== "open") return "Les engagements ne sont pas encore ouverts. Les informations et documents restent consultables.";
+    const lockReason = engagementClubWriteLockReason({ ...competition, nativeReadOnly: false });
+    if (lockReason) return lockReason;
+    if (global.LivePalmesEnvironment?.sportingDataSource !== "nap") return "Les paramètres et le programme de cette compétition sont disponibles.";
+    if (competition.nativeTeamLeaderRequired) return "Déclarez votre chef d’équipe pour commencer les engagements.";
+    if (competition.nativeIndividualEntriesEditable) return competition.nativeRelaysEditable
+      ? "Les nageurs, leurs courses, les officiels et les relais peuvent être enregistrés."
+      : "Les nageurs, leurs courses et les officiels peuvent être enregistrés. Les relais restent consultables.";
+    if (competition.nativeRelaysEditable) return "La sélection des nageurs et les relais peuvent être enregistrés.";
+    if (competition.nativeSwimmerSelectionEditable) return "La sélection des nageurs est disponible. Les autres engagements restent consultables.";
+    return "Ce dossier est consultable. Contactez l’organisateur pour toute question sur les engagements.";
+  }
+
   function renderEngagementCompetitionDetail(competition = {}) {
+    if (elements.engagementsDetailRetry) elements.engagementsDetailRetry.hidden = true;
     renderQualificationJobActions(competition);
     setEngagementCompetitionDetailVisible(true);
     engagementDetailEditing = false;
@@ -10819,9 +10841,11 @@
       ].filter((item) => item && item !== "-").join(" · ");
     }
     if (elements.engagementsDetailMeta) elements.engagementsDetailMeta.innerHTML = competition.napSource === true
-      ? `<p role="status">${escapeHtml(global.LivePalmesEnvironment?.sportingDataSource === "nap" && competition.nativeTeamLeaderRequired ? "Déclarez votre chef d’équipe pour commencer les engagements." : global.LivePalmesEnvironment?.sportingDataSource === "nap" && competition.nativeRelaysEditable && !competition.nativeIndividualEntriesEditable ? "La sélection des nageurs et les relais peuvent être enregistrés." : global.LivePalmesEnvironment?.sportingDataSource === "nap" && competition.nativeIndividualEntriesEditable ? (competition.nativeRelaysEditable ? "Les nageurs, leurs courses, les officiels et les relais peuvent être enregistrés." : "Les nageurs, leurs courses et les officiels peuvent être enregistrés. Les relais restent consultables.") : global.LivePalmesEnvironment?.sportingDataSource === "nap" && competition.nativeSwimmerSelectionEditable ? "La sélection des nageurs est disponible. La saisie des courses, des officiels et des relais sera disponible prochainement." : "Les paramètres et le programme de cette compétition sont disponibles.")}</p>${(competition.nativeWarnings || []).map(warning => `<p>${escapeHtml(warning)}</p>`).join("")}`
+      ? `<p role="status">${escapeHtml(engagementClubContextMessage(competition))}</p>${(competition.nativeWarnings || []).map(warning => `<p>${escapeHtml(warning)}</p>`).join("")}`
       : "";
     const adminMode = isEngagementAdminMode();
+    const feedback = elements.engagementsSaveState?.closest("[data-engagement-club-feedback]");
+    if (feedback) feedback.hidden = adminMode || competition.entryStatus !== "open" || Boolean(engagementClubSwimmerSelectionLockReason());
     if (elements.engagementsDetailLevel) {
       elements.engagementsDetailLevel.textContent = engagementLevelLabel(competition.level);
       elements.engagementsDetailLevel.dataset.level = competition.level || "";
@@ -11015,6 +11039,7 @@
   async function loadEngagementCompetitionDetail(competitionId, initialTab = "general") {
     const cleanId = String(competitionId || "").trim();
     if (!cleanId) return;
+    if (elements.engagementsDetailRetry) elements.engagementsDetailRetry.hidden = true;
     if (selectedEngagementCompetitionId && selectedEngagementCompetitionId !== cleanId && !confirmLeaveDirtyEngagementTab()) return;
     closeEngagementCompetitionDocumentForm();
     if (engagementClubSelectionChanges.size) void flushEngagementClubSwimmerSelections();
@@ -11024,6 +11049,7 @@
     const cachedWorkspaceFresh = Boolean(!nativeWorkspace && cachedWorkspace?.cachedAt && Date.now() - cachedWorkspace.cachedAt < ENGAGEMENT_CLUB_WORKSPACE_CACHE_TTL_MS);
     clearEngagementDetailTabDirty();
     if (selectedEngagementCompetitionId !== cleanId) qualificationExceptionScope = "";
+    setEngagementSaveState("");
     selectedEngagementCompetitionId = cleanId;
     engagementClubEntryMutationRevision += 1;
     engagementClubLastPersistedEntry = null;
@@ -11120,10 +11146,63 @@
       setEngagementClubEntryLoadingState(clubMode && !cachedWorkspace ? "error" : "");
       if (elements.engagementsDetailStatus) {
         elements.engagementsDetailStatus.textContent = cachedWorkspace
-          ? `Actualisation impossible, derniere version affichee : ${error?.message || error}`
-          : `Fiche indisponible : ${error?.message || error}`;
+          ? "Actualisation impossible. La dernière version chargée reste affichée. Vous pouvez réessayer le chargement."
+          : "Impossible de charger ce dossier. Vérifiez votre connexion puis réessayez le chargement.";
         elements.engagementsDetailStatus.dataset.tone = "error";
       }
+      if (elements.engagementsDetailRetry) elements.engagementsDetailRetry.hidden = !clubMode;
+    }
+  }
+
+  async function retryEngagementCompetitionRead() {
+    if (engagementDetailRetryPending || !selectedEngagementCompetitionId) return false;
+    if (isEngagementAdminMode() || !canUse("engagements.club.manage")) return false;
+    // Relire seulement : ne pas appeler le chargeur de navigation qui peut vider
+    // une file d'autosauvegarde. Les reprises NAP incertaines restent inchangées.
+    if (elements.engagementsSaveState?.dataset.state === "saving" || engagementClubTeamSaving || engagementClubEntriesDirty || engagementClubSelectionChanges.size || engagementClubEntriesAutosaveSwimmers.size || engagementClubNativeSelectionRetry || engagementClubNativeIndividualRetry || engagementClubNativeOfficialRetry || engagementClubNativeRelayRetry) {
+      if (elements.engagementsDetailStatus) {
+        elements.engagementsDetailStatus.textContent = "Un enregistrement est en cours ou reste à vérifier. Consultez le message dans l’étape concernée avant de recharger.";
+        elements.engagementsDetailStatus.dataset.tone = "error";
+      }
+      return false;
+    }
+    const competitionId = selectedEngagementCompetitionId;
+    const revision = engagementClubEntryMutationRevision;
+    const cachedWorkspace = readEngagementClubWorkspaceCache(competitionId);
+    engagementDetailRetryPending = true;
+    if (elements.engagementsDetailRetry) elements.engagementsDetailRetry.disabled = true;
+    if (!cachedWorkspace) setEngagementClubEntryLoadingState("loading");
+    if (elements.engagementsDetailStatus) {
+      elements.engagementsDetailStatus.textContent = "Chargement du dossier… Vos enregistrements ne sont pas renvoyés.";
+      elements.engagementsDetailStatus.dataset.tone = "loading";
+    }
+    try {
+      await engagementClubEntryMutationQueue;
+      const result = await callFunctionWithTimeout("getEngagementClubEntry", { competitionId });
+      if (competitionId !== selectedEngagementCompetitionId) return false;
+      if (revision !== engagementClubEntryMutationRevision) throw new Error("Dossier modifié pendant la lecture");
+      selectedEngagementCompetition = result.competition || {};
+      setEngagementClubEntryLoadingState("");
+      renderEngagementCompetitionDetail(selectedEngagementCompetition);
+      selectedEngagementClubEntry = result.entry || {};
+      setEngagementClubPersistedSwimmers(selectedEngagementClubEntry);
+      renderEngagementClubEntry(selectedEngagementClubEntry);
+      writeEngagementClubWorkspaceCache(competitionId, { competition: cloneEngagementClubEntry(selectedEngagementCompetition), entry: cloneEngagementClubEntry(selectedEngagementClubEntry) });
+      Array.from(elements.engagementsDetailTabButtons || []).find(button => button.getAttribute("aria-selected") === "true" && !button.hidden)?.focus();
+      return true;
+    } catch (_) {
+      if (competitionId !== selectedEngagementCompetitionId) return false;
+      setEngagementClubEntryLoadingState(!cachedWorkspace ? "error" : "");
+      if (elements.engagementsDetailStatus) {
+        elements.engagementsDetailStatus.textContent = cachedWorkspace
+          ? "Actualisation impossible. La dernière version chargée reste affichée. Réessayez lorsque la connexion est rétablie."
+          : "Le dossier reste indisponible. Vérifiez votre connexion puis réessayez.";
+        elements.engagementsDetailStatus.dataset.tone = "error";
+      }
+      return false;
+    } finally {
+      engagementDetailRetryPending = false;
+      if (elements.engagementsDetailRetry) elements.engagementsDetailRetry.disabled = false;
     }
   }
 
@@ -17474,6 +17553,12 @@
     });
     elements.engagementsDetailTabButtons?.forEach((button) => {
       button.addEventListener("click", () => requestEngagementDetailTab(button.dataset.engagementsDetailTabButton));
+    });
+    elements.engagementsDetailRetry?.addEventListener("click", retryEngagementCompetitionRead);
+    elements.engagementsDetail?.addEventListener("click", async (event) => {
+      if (!event.target.closest?.("[data-engagement-go-swimmers]")) return;
+      await requestEngagementDetailTab("swimmers");
+      Array.from(elements.engagementsDetailTabButtons || []).find(button => button.dataset.engagementsDetailTabButton === activeEngagementsDetailTab)?.focus();
     });
     elements.engagementsUnsavedSave?.addEventListener("click", () => resolveEngagementUnsavedDecision("save"));
     elements.engagementsUnsavedDiscard?.addEventListener("click", () => resolveEngagementUnsavedDecision("discard"));
