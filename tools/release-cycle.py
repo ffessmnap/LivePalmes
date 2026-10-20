@@ -66,13 +66,22 @@ NOTIFICATION_FUNCTIONS = {'updateCurrentEmailNotificationPreferences', 'disableC
     'notifyEngagementCompetitionDocuments', 'listEngagementCompetitionMailJobs',
     'prepareEngagementOpeningNotificationEmails', 'prepareEngagementClubRecapEmails',
     'sendEngagementPreparedEmails', 'processNapCompetitionNotifications', 'closeDueEngagementCompetitions'}
+IDF_NOTIFICATION_FUNCTIONS = NOTIFICATION_FUNCTIONS - {'updateCurrentEmailNotificationPreferences', 'disableCompetitionEmailNotifications'}
+IDF_NOTIFICATION_PAIR = ('f5e9d2067d1a73de9fad8ca29cfbfa13db97da16', '1b30062b9a68a23ac0f257a1fdc7da415d9614af')
 
 
 def approved_notification_functions(value):
     names = value.get('additionalNotificationFunctions', [])
     require(isinstance(names, list) and all(isinstance(n, str) for n in names) and len(names) == len(set(names))
             and set(names).issubset(NOTIFICATION_FUNCTIONS), 'Extension notifications interdite')
-    require(not names or (set(names) == NOTIFICATION_FUNCTIONS and isinstance(value.get('additionalNotificationApproval'), str)
+    pilot = value.get('notificationPilotIdfApproval')
+    if pilot is not None:
+        require(isinstance(pilot, str) and bool(pilot.strip())
+                and (value.get('productionCommit'), value.get('candidate')) == IDF_NOTIFICATION_PAIR
+                and set(names) == IDF_NOTIFICATION_FUNCTIONS,
+                'Pilote IDF hors paire ou perimetre approuve')
+    expected = IDF_NOTIFICATION_FUNCTIONS if pilot is not None else NOTIFICATION_FUNCTIONS
+    require(not names or (set(names) == expected and isinstance(value.get('additionalNotificationApproval'), str)
             and bool(value['additionalNotificationApproval'].strip()) and value.get('initialAutomaticMailEnabled') is False),
             'Accord specifique notifications avec mails desactives requis')
     return names

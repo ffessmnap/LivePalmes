@@ -158,6 +158,38 @@ class NotificationReleaseTests(unittest.TestCase):
             cycle.approved_extra_functions({**self.request(), 'additionalPdfFunctions': sorted(cycle.PDF_FUNCTIONS),
                                            'additionalPdfApproval': 'Accord PDF'})
 
+    def test_idf_pilot_exact_pair_seven_treatments_and_default_off(self):
+        request = {**self.request(), 'productionCommit': cycle.IDF_NOTIFICATION_PAIR[0],
+                   'candidate': cycle.IDF_NOTIFICATION_PAIR[1],
+                   'notificationPilotIdfApproval': 'Pilote IDF seulement, activation separee',
+                   'additionalNotificationFunctions': sorted(cycle.IDF_NOTIFICATION_FUNCTIONS)}
+        self.assertEqual(set(cycle.approved_extra_functions(request)), cycle.IDF_NOTIFICATION_FUNCTIONS)
+        for altered in [{'candidate': 'a' * 40}, {'productionCommit': 'b' * 40},
+                        {'notificationPilotIdfApproval': ''}, {'initialAutomaticMailEnabled': True},
+                        {'additionalNotificationApproval': ''},
+                        {'additionalNotificationFunctions': sorted(cycle.NOTIFICATION_FUNCTIONS)},
+                        {'additionalNotificationFunctions': sorted(cycle.IDF_NOTIFICATION_FUNCTIONS)[:-1]},
+                        {'additionalNotificationFunctions': []}]:
+            with self.assertRaises(ValueError):
+                cycle.approved_notification_functions({**request, **altered})
+        without_pilot = dict(request)
+        without_pilot.pop('notificationPilotIdfApproval')
+        with self.assertRaises(ValueError):
+            cycle.approved_notification_functions(without_pilot)
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / 'request.json').write_text(json.dumps(request))
+            (root / 'credentials.json').write_text(json.dumps({'project_id': 'livepalmes'}))
+            (root / 'selection.json').write_text(json.dumps(request['additionalNotificationFunctions']))
+            with patch.dict(os.environ, {'PLAN': str(root), 'GOOGLE_APPLICATION_CREDENTIALS': str(root / 'credentials.json'),
+                                        'CANDIDATE_SHA': request['candidate']}), \
+                    patch.object(cycle, 'safe_functions', return_value=[]), patch.object(cycle, 'deploy_command') as deploy:
+                cycle.deploy_batches('livepalmes', '.', root, root / 'selection.json', True)
+                command = deploy.call_args.args[0]
+                self.assertIn('--dry-run', command)
+                self.assertEqual(set(command[command.index('--only') + 1].split(',')),
+                                 {'functions:' + name for name in cycle.IDF_NOTIFICATION_FUNCTIONS})
+
     def test_missing_disabled_enabled_and_corrupted_settings(self):
         self.assertTrue(guard.disabled({}))
         self.assertTrue(guard.disabled({'fields': {'enabled': {'booleanValue': False}}}))
