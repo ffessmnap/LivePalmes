@@ -620,6 +620,8 @@ Les titres nomment la page active (Clubs, Championnats de France, Équipe de Fra
 
 L’entrée Compétitions mène directement à la liste, sans sous-menu Calendrier. Le fil d’Ariane affiche « Vue d’ensemble › Compétitions », puis le nom de la compétition lorsqu’une fiche est ouverte. Le retour par le fil réutilise la fermeture de fiche et sa protection des modifications non enregistrées.
 
+Dans une fiche ouverte côté club, le retour devient « ← Compétitions » dans le fil d’Ariane, sans cadre et avec une zone tactile de 44 px. Le bouton séparé et sa ligne disparaissent ; le titre générique reste accessible. La liste conserve son libellé « Engagements en compétition » et le parcours organisateur conserve son bouton. Le lien utilise la fermeture existante, y compris la confirmation des saisies en cours et les traitements de sauvegarde déjà prévus.
+
 ### Repères des espaces et états — septembre 2026
 
 - Compétitions reprend le bandeau des accueils de modules : surtitre, titre identique au menu, description et action à droite, repli vertical sous 760 px. Gestion des accès conserve le même nom dans le menu et le titre.

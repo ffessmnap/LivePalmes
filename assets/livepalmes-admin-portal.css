@@ -14677,6 +14677,12 @@
   text-decoration: underline;
 }
 
+.admin-portal-breadcrumb a[data-competition-list-return][href="#club-competitions"] {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+}
+
 .admin-portal-breadcrumb [aria-current="page"] {
   color: #263940;
   font-weight: var(--portal-font-weight-medium);
@@ -19468,7 +19474,8 @@ html[data-portal-theme="dark"] #adminDtnGrid:has(.admin-dtn-summary-list) :is(.a
   justify-content: flex-start;
   min-height: 0;
   margin: 0;
-  padding: 0;
+  padding: 0 !important;
+  border: 0;
 }
 #adminEngagementsView[data-engagements-mode="club"][data-detail-open="true"] #adminEngagementsViewTitle {
   position: absolute;
@@ -19477,11 +19484,6 @@ html[data-portal-theme="dark"] #adminDtnGrid:has(.admin-dtn-summary-list) :is(.a
   overflow: hidden;
   clip-path: inset(50%);
   white-space: nowrap;
-}
-#adminEngagementsView[data-engagements-mode="club"][data-detail-open="true"] .admin-engagements-workspace-back {
-  grid-row: auto;
-  min-height: 40px;
-  margin: 0;
 }
 #adminEngagementsView[data-engagements-mode="club"] #adminEngagementsClubContext {
   display: flex;

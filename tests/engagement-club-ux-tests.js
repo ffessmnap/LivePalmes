@@ -40,6 +40,41 @@ function fixture() {
   return c;
 }
 (async () => {
+  // Exercise the real breadcrumb return listener against the real dirty-tab guard.
+  const breadcrumb = {addEventListener: (type, listener) => {breadcrumb.click = listener;}};
+  const navigation = {
+    document: {querySelector: () => breadcrumb},
+    global: {confirm: () => false}, activeEngagementsDetailTab: "team",
+    dirtyEngagementDetailTabs: new Set(["team"]),
+    selectedEngagementCompetitionId: "fixture", selectedEngagementClubEntry: {draft: "kept"},
+    updateNavigationView: () => {navigation.updated = true;}
+  };
+  vm.createContext(navigation);
+  vm.runInContext(block("confirmLeaveDirtyEngagementTab"), navigation);
+  vm.runInContext(block("closeEngagementCompetitionDetail"), navigation);
+  const listenerStart = source.indexOf('    document.querySelector("#adminPortalBreadcrumb")?.addEventListener("click",');
+  const listenerEnd = source.indexOf('\n    elements.navigation?.addEventListener', listenerStart);
+  vm.runInContext(source.slice(listenerStart, listenerEnd), navigation);
+  let prevented = false;
+  breadcrumb.click({target: {closest: () => ({})}, preventDefault: () => {prevented = true;}});
+  assert.equal(prevented, true, "breadcrumb must intercept hash navigation before confirmation");
+  assert.equal(navigation.selectedEngagementCompetitionId, "fixture");
+  assert.equal(navigation.selectedEngagementClubEntry.draft, "kept");
+  assert.equal(navigation.updated, undefined, "cancelled return must keep the current dossier");
+  navigation.closeEngagementCompetitionDetail = () => true;
+  breadcrumb.click({target: {closest: () => ({})}, preventDefault() {}});
+  assert.equal(navigation.updated, true, "accepted return uses the existing navigation refresh");
+  const visibility = {elements: {engagementsView: {dataset:{}}, engagementsDetail: {}, engagementsDetailClose: {}},
+    isEngagementAdminMode: () => false, setEngagementSaveState() {}};
+  vm.createContext(visibility);
+  vm.runInContext(block("setEngagementCompetitionDetailVisible"), visibility);
+  visibility.setEngagementCompetitionDetailVisible(true);
+  assert.equal(visibility.elements.engagementsDetailClose.hidden, true, "club uses only the breadcrumb return");
+  visibility.isEngagementAdminMode = () => true;
+  visibility.setEngagementCompetitionDetailVisible(true);
+  assert.equal(visibility.elements.engagementsDetailClose.hidden, false, "organizer keeps the existing button");
+  visibility.setEngagementCompetitionDetailVisible(false);
+  assert.equal(visibility.elements.engagementsDetailClose.hidden, true);
   const display = {elements:{engagementsClubContext:{},engagementsClubContextName:{}},activeEngagementClubProfile:user=>user,engagementClubScope:user=>String(user.clubId),isEngagementAdminMode:()=>false,canUse:()=>true,clubDisplayCode:club=>club.clubCode||`REF-${club.clubId}`};
   vm.createContext(display);vm.runInContext(block("renderEngagementClubContext"),display);
   display.renderEngagementClubContext({clubId:"106",clubCode:"CNHC"});

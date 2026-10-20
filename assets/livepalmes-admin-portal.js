@@ -10793,7 +10793,7 @@
       elements.engagementsCalendarActions.hidden = !calendarActionsVisible;
     }
     if (elements.engagementsDetail) elements.engagementsDetail.hidden = !visible;
-    if (elements.engagementsDetailClose) elements.engagementsDetailClose.hidden = !visible;
+    if (elements.engagementsDetailClose) elements.engagementsDetailClose.hidden = !visible || !isEngagementAdminMode();
     if (!visible) setEngagementSaveState("");
   }
 
