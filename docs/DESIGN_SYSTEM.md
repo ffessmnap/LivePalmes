@@ -2,6 +2,14 @@
 
 <!-- description: Référence du langage visuel, des composants d’interface et des règles responsive déjà présents dans LivePalmes. -->
 
+## Continuité du bandeau public/portail — 21 octobre 2026
+
+Le cadre du bandeau est identique sur le public et le portail : largeur maximale 1 720 px, marges communes aux mêmes seuils et gouttière de défilement stable pour éviter le décalage entre pages courtes et longues. La largeur du contenu reste propre à chaque espace. Le bandeau utilise une palette claire commune, même lorsque le contenu du portail utilise le thème sombre ; les états actifs restent signalés sans changer les dimensions.
+
+L’accès Portail/Mon espace a une largeur stable. Le compte utilise la même icône et le même emplacement : menu réel conservé dans le portail ; lien Mon compte vers /portail.html#mon-compte sur les pages publiques après ouverture de session. Le nom et le code club ne sont plus affichés dans le bouton du bandeau. Aucun nom, profil ou droit n’est copié dans le témoin local. L’emplacement du compte est réservé avant connexion, avec l’action masquée, afin de préserver les alignements.
+
+Performances est présenté sans chevron. Sur pointeur précis, le sous-menu apparaît au survol ; il reste disponible au clic, au clavier et au toucher. Échap le ferme, sans réouverture automatique tant que le pointeur ne rentre pas de nouveau. Le passage vers les liens ne doit pas fermer le menu ; un clic sur le libellé déjà ouvert par survol le conserve ouvert. Calendrier et Documents restent des accès directs ; leurs sous-menus ne font l’objet que d’une proposition locale à ce stade.
+
 ## Bandeau commun public et portail — octobre 2026
 
 Le bandeau partagé reprend le logo fédéral, LivePalmes et la seule sous-mention FFESSM. Accueil, Calendrier, Performances (Records, MPF, TOP et recherche nageur) et Documents donnent accès à la consultation. L’accès direct affiche « Portail » avant connexion et « Mon espace » après ouverture de session ; aucun cadenas. Le menu personnel existant reste distinct et conserve ses contrôles.
