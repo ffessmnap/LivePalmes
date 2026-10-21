@@ -2,6 +2,12 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 21 octobre — Fond bleuté commun public et titres discrets du portail (préparation TEST)
+
+- Demande explicite d’Antoine : teinte et hauteur communes en haut des pages publiques, accent plus discret sur les titres du portail, TEST uniquement. Dégradé décoratif de 260 px sous le bandeau mesuré, fond neutre ensuite ; ancien halo fixe du calendrier neutralisé. Titres principaux du portail marqués légèrement, variantes clair/sombre et impression sans décor. Aucun agrandissement des zones de contenu.
+- CSS partagé uniquement et versions CSS des 20 pages statiques consommatrices ; accueil serveur et modèle généré inchangés. Budget supplémentaire nul à l’ouverture, par action, au rafraîchissement et au pire cas : aucun JS, appel NAP/Firestore, SDK, donnée, droit, configuration ou fonction distante modifié. Consoles exclues.
+- Tests ciblés bandeau/calendrier et synchronisation du modèle accueil réussis ; aucune sortie générée modifiée. Recette Chrome isolée sans services à 1280 px : fond et hauteur identiques sur accueil, calendrier, bibliothèque, Records/MPF/TOP/nageur, détail événement et mentions légales ; accueil/calendrier/bibliothèque/TOP à 390 et 320 px sans débordement. Titre principal du portail et contraste du thème sombre contrôlés sur fixture. Captures privées outputs/fond-commun-20261021/. CI complète, PR et preuve TEST à compléter. Accord de réalisation reçu ; validation de la livraison encore attendue.
+
 ### 21 octobre — Sous-menus Calendrier/Documents et libellé Portail (TEST publié, validation de livraison attendue)
 
 - Proposition approuvée puis intégration TEST explicitement demandée : mêmes interactions que Performances, liens vers le calendrier complet, national/international et régional/départemental regroupés, et les cinq catégories existantes de la bibliothèque. « Portail » reste identique avant/après connexion ; l’accès au compte reste distinct. Un seul sous-menu ouvert à la fois, fermeture Échap/clavier/toucher et protection du dossier conservées.
