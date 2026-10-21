@@ -9612,7 +9612,8 @@
         ? adminMode
           ? `${documents.length} document${documents.length > 1 ? "s" : ""} disponible${documents.length > 1 ? "s" : ""} · maximum ${ENGAGEMENT_COMPETITION_DOCUMENT_MAX_COUNT}`
           : `${documents.length} document${documents.length > 1 ? "s" : ""}`
-        : "Affiches, circulaires, règlements et informations utiles.";
+        : adminMode ? "Affiches, circulaires, règlements et informations utiles." : "";
+      elements.engagementsSharedDocumentsCount.hidden = !adminMode && !documents.length;
     }
     if (elements.engagementsDocumentAddButton) {
       elements.engagementsDocumentAddButton.disabled = documents.length >= ENGAGEMENT_COMPETITION_DOCUMENT_MAX_COUNT;
