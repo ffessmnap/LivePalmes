@@ -1,0 +1,52 @@
+{
+  "schema": 1,
+  "candidate": "9ccb634065d0d4ff335ee4e7e9891bdde401113f",
+  "productionCommit": "d3bf857297edb67cf66233118aa3cf7198e36c21",
+  "productionHosting": "sites/livepalmes/versions/baae3e5f7f16b3f2",
+  "testRun": 39574716045,
+  "changes": [
+    {
+      "title": "Lot 1 Club : chargement, confirmation après réponse serveur, raccourcis des états vides et reprise des lectures en erreur",
+      "paths": ["assets/livepalmes-admin-portal.js", "assets/livepalmes-admin-portal.css", "assets/livepalmes-portal-ux.js", "portail.html"],
+      "status": "validated",
+      "validation": "Antoine, 21 octobre 2026, conversation Ergonomie des engagements club : « tu peux mettre en prod », en réponse au récapitulatif regroupé numéroté 1 à 10 et à ses limites de vérification. Accord de publication du périmètre présenté, sans inventer une recette utilisateur détaillée. F01/F02/F03/F04/F10 autorisés initialement ; PR #405/#406, tests hors réseau et consultation connectée. Version regroupée exacte 9ccb6340, TEST commun 39574716045 réussi. Accord final dans Infra encore requis sur le bilan immuable."
+    },
+    {
+      "title": "Filtres sur une ligne, en-tête et détail nageur compacts, commandes tactiles, documents et récapitulatif responsive",
+      "paths": ["assets/livepalmes-admin-portal.js", "assets/livepalmes-admin-portal.css", "portail.html"],
+      "status": "validated",
+      "validation": "Antoine, 21 octobre 2026 : « tu peux mettre en prod » après le récapitulatif complet, points 1, 2, 5, 8 et 10. F05/F06/F07/F09/F11 autorisés, détail compact demandé pour F08 et contrôle F12 ; PR #408. Recette fictive multi-largeurs/deux thèmes et consultation TEST documentées ; téléphone physique, Safari et gros effectifs réels non vérifiés. Preuve regroupée TEST 39574716045 sur 9ccb6340."
+    },
+    {
+      "title": "Retour « ← Compétitions » dans le fil d’Ariane Club avec protections des saisies conservées",
+      "paths": ["assets/livepalmes-admin-portal.js", "assets/livepalmes-admin-portal.css", "assets/livepalmes-portal-ux.js", "portail.html"],
+      "status": "validated",
+      "validation": "Antoine, 21 octobre 2026 : « tu peux mettre en prod » après le point 2 du récapitulatif ; réalisation explicitement autorisée auparavant avec conservation des protections. PR #410, retour connecté et filtres conservés ; annulation du départ avec brouillon vérifiée sur fixture. Gestionnaire de fermeture et sauvegardes existants réutilisés. Preuve regroupée TEST 39574716045 sur 9ccb6340."
+    },
+    {
+      "title": "Récapitulatif à plat en lignes synthétiques, course et temps rapprochés, nageuses puis nageurs par nom/prénom et liste des officiels engagés",
+      "paths": ["assets/livepalmes-admin-portal.js", "assets/livepalmes-admin-portal.css", "portail.html"],
+      "status": "validated",
+      "validation": "Antoine, 21 octobre 2026 : « tu peux mettre en prod » après les points 8 et 9 du récapitulatif. Option 3 Lignes synthétiques puis présentation à plat explicitement retenues ; ordre femmes/hommes et officiels demandés. PR #412/#414/#417. Consultation connectée Masters : 9 nageurs/32 courses/4 relais conservés ; tri fictif et officiels connectés contrôlés. Temps, doublons réels, ordre des relayeurs et PDF inchangés. Preuve regroupée TEST 39574716045 sur 9ccb6340."
+    },
+    {
+      "title": "Chef d’équipe : situation actuelle à plat, remplacement annulable, retrait confirmé vers la renonciation malgré des engagements existants",
+      "paths": ["assets/livepalmes-admin-portal.js", "assets/livepalmes-admin-portal.css", "portail.html"],
+      "status": "validated",
+      "validation": "Antoine, 21 octobre 2026 : « tu peux mettre en prod » après le point 7 et les limites du récapitulatif. Présentation et retrait explicitement autorisés auparavant ; PR #414/#415. Retirer réutilise la sauvegarde de renonciation existante, avec confirmation nominative/réclamation, empreinte et protections de périmètre, sans retirer les engagements. Ouverture/annulation connectées contrôlées ; confirmation, échec, concurrence et double clic uniquement sur services simulés. Aucune nouvelle autorisation d’écriture de recette sur NAP partagée. Preuve regroupée TEST 39574716045 sur 9ccb6340."
+    },
+    {
+      "title": "Retrait d’un nageur depuis Engagements : disparition de sa ligne et actualisation du récapitulatif dès la confirmation serveur",
+      "paths": ["assets/livepalmes-admin-portal.js", "portail.html"],
+      "status": "validated",
+      "validation": "Antoine, 21 octobre 2026 : « tu peux mettre en prod » après le point 6 du récapitulatif. PR #421 : régression reproduite avec les fonctions réelles hors réseau puis corrigée, suppression parmi plusieurs/du dernier, autres temps conservés, échec et annulation testés sans écriture réelle. Aucun appel ni rechargement supplémentaire ; ancienne sélection de formulaire invalidé ignorée. Consultation connectée seulement, aucun retrait réel autorisé pour la recette. Preuve regroupée TEST 39574716045 sur 9ccb6340."
+    },
+    {
+      "title": "Allègement des textes Club et déplacement des deux avertissements historiques dans les seuls formulaires de modification organisateur",
+      "paths": ["assets/livepalmes-admin-portal.js", "assets/livepalmes-admin-portal.css", "portail.html"],
+      "status": "validated",
+      "validation": "Antoine, 21 octobre 2026 : « tu peux mettre en prod » après le point 10 du récapitulatif. PR #419/#423/#425/#426 : rappels redondants d’ouverture/fermeture/consultation, introductions évidentes et zones de statut vides retirés ; documents, pastilles, échéances, alertes utiles et confirmations conservés. Deux avertissements NAP seulement déplacés près de Programme/Régions en modification organisateur, libellés clarifiés, verrous inchangés. Recette connectée ouvert/fermé/à venir et modification annulée ; cas annulé/délai et erreurs sur services simulés. Preuve TEST finale 39574716045 sur 9ccb6340."
+    }
+  ],
+  "excludedBackendReview": "Diff applicatif complet depuis la dernière PROD d3bf8572 limité à quatre fichiers d’interface : assets/livepalmes-admin-portal.js, assets/livepalmes-admin-portal.css, assets/livepalmes-portal-ux.js, portail.html. Aucun diff functions/, configuration Firebase, règles ou index. Sélection backend attendue vide ; arrêter si une fonction est sélectionnée ou si une preuve/dérive manque. Conserver les 112 fonctions PROD et le pilote IDF actif, sans coupure, modification de réglage/scheduler, invocation métier, test SMTP ou rattrapage. Recalcul DTN, migration, données NAP/Firestore/Storage, fichiers générés, clubs historiques, destinataires/préférences/paiement, droits, secrets et configuration exclus. Aucun nouvel accès aux données pour les changements d’affichage ; essais d’écriture uniquement simulés. La preuve TEST exacte et la dernière preuve PROD 39453007595 sont réutilisées sans republier TEST. Préparation sans accès Google ; accord final dans Infra sur le plan immuable avant sauvegarde et publication Hosting."
+}
