@@ -8548,7 +8548,7 @@
     const rows = [
       ["Chef d'équipe", engagementClubSummaryTeamLeaderLabel(entry)],
       ...(whatsAppValue ? [["Groupe WhatsApp", whatsAppValue]] : []),
-      ["Officiels", competition.officialsRequired === false ? "Officiels non requis" : `${officialsCount} officiel${officialsCount > 1 ? "s" : ""}`, "metric"],
+      ["Officiels", competition.officialsRequired === false && !officialsCount ? "Officiels non requis" : `${officialsCount} officiel${officialsCount > 1 ? "s" : ""}`, "metric"],
       ["Nageurs", `${swimmers.length} nageur${swimmers.length > 1 ? "s" : ""}`, "metric"],
       ["Courses individuelles", `${individualCount} course${individualCount > 1 ? "s" : ""}`, "metric"],
       ["Relais", `${relays.length} relais`, "metric"],
@@ -8589,7 +8589,8 @@
     if (!entry) { mount.innerHTML = ""; return; }
     const personName = person => [person.lastName, person.firstName].filter(Boolean).join(" ");
     const savedTime = row => row.entryTime || row.nativeTime || "Temps non renseigné";
-    const swimmers = Array.isArray(entry.swimmers) ? entry.swimmers : [];
+    const swimmers = Array.isArray(entry.swimmers) ? [...entry.swimmers].sort(compareEngagementSwimmersBySexAndName) : [];
+    const officials = Array.isArray(entry.officials) ? [...entry.officials].sort(compareEngagementSwimmersByName) : [];
     const relays = Array.isArray(entry.relays) ? entry.relays : [];
     const eventLabel = code => {
       const event = engagementEventDefinition(code) || {};
@@ -8606,6 +8607,10 @@
           <h5>${escapeHtml(personName(person))}</h5>
           ${person.individualEntries?.length ? `<ul class="admin-engagements-recap-courses">${person.individualEntries.map(row => `<li>${eventLabel(row.eventCode)}<span class="admin-engagements-recap-time">${escapeHtml(savedTime(row))}</span></li>`).join("")}</ul>` : '<p>Aucune course enregistrée.</p>'}
         </article>`).join("") : emptySwimmers}
+      </details>
+      <details class="admin-engagements-recap-section" open>
+        <summary>Officiels engagés <span>${officials.length}</span></summary>
+        ${officials.length ? `<ul class="admin-engagements-recap-courses admin-engagements-recap-officials">${officials.map(person => `<li><span class="admin-engagements-recap-event">${escapeHtml(personName(person))}</span></li>`).join("")}</ul>` : `<p>${selectedEngagementCompetition?.officialsRequired === false ? "Officiels non requis." : "Aucun officiel engagé."}</p>`}
       </details>
       <details class="admin-engagements-recap-section" open>
         <summary>Relais enregistrés <span>${relays.length}</span></summary>
