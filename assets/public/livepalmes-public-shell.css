@@ -72,30 +72,60 @@ body.public-shell-page{margin:0;background:#f3f9fa;color:#153c4a;font-family:Int
 @media(max-width:360px){.public-site-portal{font-size:.7rem}.public-site-brand img{width:84px;height:44px}}
 .public-shell-page .public-federal-link{color:inherit;text-underline-offset:3px}
 
-/* Common public/portal header — presentation only, no access policy. */
-.public-site-header{position:sticky;top:var(--site-banner-height,0px);z-index:45;color:var(--portal-color-text,#153c4a);background:var(--portal-color-surface,#fff);font-family:Inter,"Segoe UI",Arial,sans-serif}
+html.livepalmes-site-shell{scrollbar-gutter:stable}
+
+/* Common public/portal frame: stable geometry and palette, independent of content width. */
+.public-site-header {
+ --portal-color-text:#153c4a;--portal-color-brand:#153c4a;--portal-color-muted:#56717d;
+ --portal-color-surface:#fff;--portal-color-field-background:#e4f3f5;
+ --portal-color-accent:#086f7e;--portal-color-accent-strong:#086f7e;
+ --portal-color-border:#d5e4e8;--portal-color-field-border:#b8d4d9;--portal-color-hover-border:#086f7e;
+ position:sticky;top:var(--site-banner-height,0px);z-index:45;
+ color:#153c4a;background:#fff;font-family:Inter,"Segoe UI",Arial,sans-serif;
+ border-bottom:1px solid #d5e4e8;
+}
 .public-site-header *{box-sizing:border-box}
-.public-site-header-inner{min-height:74px;padding:10px 0;gap:16px}
-.public-site-brand{gap:12px;color:inherit}.public-site-brand img{width:94px;height:50px}
-.public-site-wordmark{font-size:21px;font-weight:800;letter-spacing:-.6px}.public-site-wordmark small{display:block;font-size:10px;font-weight:600;letter-spacing:.2px;color:var(--portal-color-muted,#56717d);margin-top:3px}
-.public-site-nav details{position:relative}.public-site-nav summary{list-style:none;cursor:pointer;display:flex;align-items:center;min-height:44px;padding:9px 10px;border-radius:6px;font-size:.85rem;font-weight:600;color:inherit;white-space:nowrap}.public-site-nav summary::-webkit-details-marker{display:none}.public-site-nav summary:hover,.public-site-nav summary.is-current{background:var(--portal-color-field-background,#e4f3f5);color:var(--portal-color-accent-strong,#086f7e)}
-.public-site-dropdown{position:absolute;top:100%;left:0;min-width:210px;padding:6px;background:var(--portal-color-surface,#fff);border:1px solid var(--portal-color-border,#d5e4e8);border-radius:7px;box-shadow:0 8px 24px #173e4a20;z-index:50}.public-site-dropdown a{justify-content:flex-start;min-height:44px}
-.public-site-header a{color:inherit}.public-site-portal{min-height:44px}.public-site-portal[aria-current=page]{background:var(--portal-color-field-background,#e4f3f5);box-shadow:inset 0 -2px var(--portal-color-accent,#086f7e);color:var(--portal-color-accent-strong,#086f7e)}
-.public-site-menu-toggle{display:none}.public-site-header :is(a,button,summary):focus-visible{outline:3px solid var(--portal-color-accent,#174c76);outline-offset:3px}
-#publicSiteAccount:empty{display:none}#publicSiteAccount .admin-portal-account-menu{position:relative}#publicSiteAccount #adminPortalAccountToggle{min-height:44px;max-width:200px}#publicSiteAccount .admin-portal-account-actions{top:calc(100% + 8px);bottom:auto;right:0;left:auto;max-height:65dvh;overflow:auto}
-.admin-portal-page.public-shell-ready .public-site-header-inner{width:calc(100% - 40px);max-width:1720px}
+.public-site-header-inner{width:min(1720px,calc(100% - 40px));min-height:74px;padding:10px 0;gap:16px}
+.public-site-brand{gap:12px;color:#153c4a}.public-site-brand img{width:94px;height:50px}
+.public-site-wordmark{font-size:21px;font-weight:800;letter-spacing:-.6px}
+.public-site-wordmark small{display:block;font-size:10px;font-weight:600;letter-spacing:.2px;color:#56717d;margin-top:3px}
+.public-site-nav details{position:relative}
+.public-site-nav a,.public-site-nav summary{font-family:inherit;font-size:13px;font-weight:600;line-height:20px;color:#153c4a}
+.public-site-nav summary{list-style:none;cursor:pointer;display:flex;align-items:center;min-height:44px;padding:9px 10px;border-radius:6px;white-space:nowrap}
+.public-site-nav summary::-webkit-details-marker{display:none}.public-site-nav summary::after{content:none}
+.public-site-nav summary:hover,.public-site-nav summary.is-current,.public-site-header .public-site-nav a:hover,.public-site-nav a[aria-current=page]{background:#e4f3f5;color:#086f7e}
+.public-site-dropdown{position:absolute;top:100%;left:0;min-width:210px;padding:6px;background:#fff;border:1px solid #d5e4e8;border-radius:7px;box-shadow:0 8px 24px #173e4a20;z-index:50}
+.public-site-dropdown a{justify-content:flex-start;min-height:44px}
+.public-site-header .public-site-portal{width:94px;min-height:44px;flex-shrink:0;padding:8px 10px;background:#e4f3f5;border:1px solid #b8d4d9;color:#086f7e;line-height:20px;font-size:12.48px}
+.public-site-header .public-site-portal[aria-current=page]{background:#e4f3f5;box-shadow:inset 0 -2px #086f7e;color:#086f7e}
+.public-site-menu-toggle{display:none}
+.public-site-header :is(a,button,summary):focus-visible{outline:3px solid #174c76;outline-offset:3px}
+/* Reserve the same account slot even before sign-in; no identity is copied to public pages. */
+#publicSiteAccount{display:block;width:44px;min-width:44px;flex:0 0 44px}
+#publicSiteAccount .admin-portal-account-menu{position:relative}
+#publicSiteAccount #adminPortalAccountToggle,.public-site-account-link{display:inline-flex;align-items:center;justify-content:center;width:44px;min-width:44px;height:44px;min-height:44px;padding:8px;margin:0;border:1px solid #b8d4d9;border-radius:6px;background:#fff;color:#153c4a;box-shadow:none;cursor:pointer}
+#publicSiteAccount #adminPortalAccountToggle:hover,.public-site-account-link:hover{background:#e4f3f5;border-color:#086f7e}
+#publicSiteAccount #adminPortalSessionLabel,#publicSiteAccount #adminPortalAccountClubCode{display:none}
+#publicSiteAccount .admin-portal-account-icon,.public-site-account-link svg{display:block;width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+#publicSiteAccount .admin-portal-account-actions{top:calc(100% + 8px);bottom:auto;right:0;left:auto;max-height:65dvh;overflow:auto}
+#publicSiteAccount .public-site-account-link[hidden]{display:none}
 .admin-portal-page.public-shell-ready .admin-portal-topbar{top:var(--site-header-bottom,74px);z-index:40;min-height:0}
 .admin-portal-page.public-shell-ready .admin-portal-topbar>.admin-portal-federal-logo,.admin-portal-page.public-shell-ready .admin-portal-topbar>.admin-portal-brand,.admin-portal-page.public-shell-ready .admin-portal-sidebar-brand>.admin-portal-federal-logo,.admin-portal-page.public-shell-ready .admin-portal-sidebar-brand>.admin-portal-brand{display:none}
 .admin-portal-page.public-shell-ready .admin-portal-sidebar{top:var(--site-workspace-top,74px)}
 .admin-portal-page.public-shell-ready .admin-long-operation{top:calc(var(--site-workspace-top,74px) + 12px)}
 @media(min-width:1081px){.admin-portal-page.public-shell-ready .admin-portal-sidebar-brand:not([hidden]){display:block;padding:0 8px 12px}.admin-portal-page.public-shell-ready .admin-portal-topbar{display:none}}
 @media(min-width:821px){.admin-portal-page.public-shell-ready :is(#adminEngagementsCalendarCard .admin-engagements-calendar-filters,#adminDtnView .admin-dtn-toolbar,#adminImportView .competition-import-history-filters){top:var(--site-workspace-top,74px)}}
-@media(max-width:1080px){#publicSiteAccount #adminPortalSessionLabel{display:none}#publicSiteAccount #adminPortalAccountToggle{padding:7px;min-width:36px}.public-site-header-inner{gap:10px}.public-site-wordmark{font-size:19px}}
-@media(max-width:850px){.public-site-header-inner{flex-wrap:wrap;gap:6px;min-height:66px;padding:8px 0}.public-site-brand{order:1;margin-right:auto;gap:7px}.public-site-brand img{width:74px;height:44px}.public-site-wordmark{font-size:17px}.public-site-header-inner .public-site-portal{order:2;margin-left:0;padding:7px;font-size:.76rem}#publicSiteAccount{order:3}.public-site-menu-toggle{order:4;display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:7px;border:1px solid #b8d4d9;border-radius:6px;background:var(--portal-color-surface,#fff);color:inherit;font:600 12px Inter,"Segoe UI",Arial,sans-serif;cursor:pointer}.public-site-header-inner .public-site-nav{order:5;display:none;grid-template-columns:1fr 1fr;width:100%;margin:6px 0 0;border-top:1px solid #d5e4e8;padding-top:6px;gap:3px}.is-site-menu-open .public-site-nav{display:grid}.public-site-nav>a,.public-site-nav summary{justify-content:flex-start;min-height:44px;padding:9px 10px;font-size:.8rem}.public-site-dropdown{position:static;min-width:0;box-shadow:none;border:0;padding:0}.public-site-nav details[open]{grid-column:1/-1}.public-site-dropdown{display:grid;grid-template-columns:1fr 1fr}.admin-portal-page.public-shell-ready .public-site-header-inner{width:calc(100% - 24px)}}
-@media(max-width:380px){.public-site-header-inner{width:calc(100% - 20px);gap:4px}.public-site-brand{gap:5px}.public-site-brand img{width:66px}.public-site-wordmark{font-size:16px}.public-site-header-inner .public-site-portal{padding:6px;font-size:.72rem}.public-site-menu-toggle{padding:6px;font-size:11px}#publicSiteAccount #adminPortalAccountToggle{padding:5px;min-width:30px}#publicSiteAccount #adminPortalAccountClubCode{display:none}}
-
-.public-site-header .public-site-nav a:hover{background:var(--portal-color-field-background,#edf6f7)}
-
-@media(max-width:850px){#publicSiteAccount #adminPortalAccountClubCode{display:none}}
-
-@media(max-width:850px){#publicSiteAccount #adminPortalAccountToggle{min-width:30px;padding:4px}.public-site-header-inner .public-site-portal{padding:6px;font-size:.74rem}.public-site-menu-toggle{padding:7px 4px;min-width:44px}}
+@media(max-width:1080px){.public-site-header-inner{gap:10px}.public-site-wordmark{font-size:19px}}
+@media(max-width:850px){
+ .public-site-header-inner{width:calc(100% - 24px);flex-wrap:wrap;gap:6px;min-height:66px;padding:8px 0}
+ .public-site-brand{order:1;margin-right:auto;gap:7px}.public-site-brand img{width:74px;height:44px}.public-site-wordmark{font-size:17px}
+ .public-site-header .public-site-portal{order:2;margin-left:0;width:80px;padding:6px;font-size:11.84px}
+ #publicSiteAccount{order:3;width:30px;min-width:30px;flex-basis:30px}
+ #publicSiteAccount #adminPortalAccountToggle,.public-site-account-link{width:30px;min-width:30px;padding:4px}
+ .public-site-menu-toggle{order:4;display:inline-flex;align-items:center;justify-content:center;min-height:44px;min-width:44px;padding:7px 4px;border:1px solid #b8d4d9;border-radius:6px;background:#fff;color:#153c4a;font:600 12px Inter,"Segoe UI",Arial,sans-serif;cursor:pointer}
+ .public-site-header-inner .public-site-nav{order:5;display:none;grid-template-columns:1fr 1fr;width:100%;margin:6px 0 0;border-top:1px solid #d5e4e8;padding-top:6px;gap:3px}
+ .is-site-menu-open .public-site-nav{display:grid}
+ .public-site-nav>a,.public-site-nav summary{justify-content:flex-start;min-height:44px;padding:9px 10px;font-size:12.8px}
+ .public-site-nav details[open]{grid-column:1/-1}.public-site-dropdown{position:static;display:grid;grid-template-columns:1fr 1fr;min-width:0;box-shadow:none;border:0;padding:0}
+}
+@media(max-width:380px){.public-site-header-inner{width:calc(100% - 20px);gap:4px}.public-site-brand{gap:5px}.public-site-brand img{width:66px}.public-site-wordmark{font-size:16px}.public-site-menu-toggle{font-size:11px}}
