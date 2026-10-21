@@ -6092,9 +6092,7 @@
     return [
       selectedEngagementCompetitionId,
       selectedEngagementCompetition?.qualificationVersion || 0,
-      // NAP exposes the read time as updatedAt; only its stable fingerprint
-      // identifies a business change. Other sources retain their stored date.
-      selectedEngagementCompetition?.napFingerprint || selectedEngagementCompetition?.updatedAt || "",
+      selectedEngagementCompetition?.updatedAt || "",
       swimmer.source || "performances",
       swimmer.swimmerIndexId || swimmer.id || ""
     ].join(":");
@@ -6822,7 +6820,8 @@
   function engagementNavigationBaseline() {
     return JSON.stringify([
       selectedEngagementClubEntry?.napFingerprint || engagementClubLastPersistedEntry,
-      selectedEngagementCompetition?.updatedAt || "",
+      // NAP updatedAt is the read time, not a stored modification date.
+      selectedEngagementCompetition?.napFingerprint || selectedEngagementCompetition?.updatedAt || "",
       selectedEngagementCompetition?.entryStatus || ""
     ]);
   }
