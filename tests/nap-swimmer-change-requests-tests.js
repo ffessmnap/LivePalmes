@@ -123,6 +123,7 @@ function fixture(options = {}) {
     assert.equal(elements.engagementsSwimmerCorrectionReason.required, mode !== "review");
   }
   const selectedUi = {
+    selectedEngagementCompetitionId: "fixture", engagementClubSwimmersRenderedCompetitionId: "fixture",
     selectedEngagementCompetition: {napSource:true}, selectedEngagementClubEntry: {swimmers:[]},
     selectedEngagementClubEntryRowsBySwimmerId:()=>new Map(), elements:{engagementsClubSwimmersForm:{querySelectorAll:()=>[{
       querySelector: selector => selector.includes("-id]") ? {checked:true,dataset:{engagementClubSwimmerId:"42"}} : {value:"a-11-001234"}
