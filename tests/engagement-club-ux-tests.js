@@ -36,7 +36,7 @@ function fixture() {
     calls, renders,
   };
   vm.createContext(c);
-  for (const name of ["engagementClubWriteLockReason", "engagementDeadlineTone", "engagementClubContextMessage", "setEngagementSaveState", "engagementClubEmptySwimmersHtml", "renderEngagementClubNativeSummary", "engagementCompetitionDocumentFileSize", "engagementClubReadRetryBlocked", "retryEngagementCompetitionRead"]) vm.runInContext(block(name), c);
+  for (const name of ["compareEngagementSwimmersByName", "compareEngagementSwimmersBySexAndName", "engagementClubWriteLockReason", "engagementDeadlineTone", "engagementClubContextMessage", "setEngagementSaveState", "engagementClubEmptySwimmersHtml", "renderEngagementClubNativeSummary", "engagementCompetitionDocumentFileSize", "engagementClubReadRetryBlocked", "retryEngagementCompetitionRead"]) vm.runInContext(block(name), c);
   return c;
 }
 (async () => {
@@ -113,6 +113,31 @@ function fixture() {
   assert.match(summary,/14200[\s\S]*014200/);
   assert.match(summary,/Relayeur 1[\s\S]*Relayeur 2[\s\S]*Relayeur 3[\s\S]*Relayeur 4/);
   assert.match(summary,/05:01.23/);
+  const ordered = {swimmers: [
+    {sex:"M",lastName:"Albert",firstName:"Zacharie"},
+    {sex:"F",lastName:"Zola",firstName:"Alice"},
+    {sex:"F",lastName:"Émile",firstName:"Zoé"},
+    {sex:"F",lastName:"emile",firstName:"Anne"},
+    {sex:"M",lastName:"Albert",firstName:"Benoît"},
+    {lastName:"Absent",firstName:"Sexe"}
+  ], officials:[{lastName:"Zèbre",firstName:"Luc"},{lastName:"Alpha",firstName:"Zoé"},{lastName:"Alpha",firstName:"Anne"},{lastName:"<officiel>",firstName:"&"}], relays:historical.relays};
+  const savedOrder = JSON.stringify(ordered);
+  c.renderEngagementClubNativeSummary(ordered);
+  const sortedSummary = c.elements.engagementsClubNativeSummary.innerHTML;
+  assert.match(sortedSummary,/emile Anne[\s\S]*Émile Zoé[\s\S]*Zola Alice[\s\S]*Albert Benoît[\s\S]*Albert Zacharie[\s\S]*Absent Sexe/,"women then men, alphabetical last name and first name; missing sex last");
+  assert.match(sortedSummary,/Officiels engagés <span>4<\/span>[\s\S]*Alpha Anne[\s\S]*Alpha Zoé[\s\S]*Zèbre Luc/);
+  assert.match(sortedSummary,/&lt;officiel&gt; &amp;/,"official names are escaped");
+  assert.equal(JSON.stringify(ordered),savedOrder,"sorting must not reorder the saved roster, officials or relay members");
+  c.renderEngagementClubNativeSummary({swimmers:[],officials:[],relays:[]});
+  assert.match(c.elements.engagementsClubNativeSummary.innerHTML,/Aucun officiel engagé/);
+  c.selectedEngagementCompetition.officialsRequired=false;
+  c.renderEngagementClubNativeSummary({});
+  assert.match(c.elements.engagementsClubNativeSummary.innerHTML,/Officiels non requis/);
+  c.renderEngagementClubNativeSummary(ordered);
+  assert.match(c.elements.engagementsClubNativeSummary.innerHTML,/Alpha Anne/,"saved officials remain visible even when not required");
+  c.renderEngagementClubNativeSummary(null);
+  assert.equal(c.elements.engagementsClubNativeSummary.hidden,true);
+  assert.equal(c.elements.engagementsClubNativeSummary.innerHTML,"");
   for(const missing of [undefined,null,0,-1,"",NaN,Infinity]) assert.equal(c.engagementCompetitionDocumentFileSize(missing),"");
   assert.equal(c.engagementCompetitionDocumentFileSize(512),"512 o");
   assert.equal(c.engagementCompetitionDocumentFileSize(1024),"1 Ko");

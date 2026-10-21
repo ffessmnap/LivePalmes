@@ -35,6 +35,7 @@ const summaryContext={elements:{engagementsClubSummaryList:{},engagementsClubNat
   escapeHtml:value=>String(value).replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;"),engagementRowValueHtml:value=>String(value),currentEngagementClubSwimmersForSummary:entry=>entry.swimmers,
   selectedEngagementClubRelayRows:()=>nativeEntry.relays,engagementClubRelayNeedsCompletion:()=>true,currentEngagementClubOfficialCount:()=>0,engagementFeeAmount:()=>0,engagementExternalHttpUrl:()=>"",engagementTeamLeadersWhatsAppValue:()=>"",engagementClubSummaryTeamLeaderLabel:()=>"Leader",engagementEventDefinition:()=>null};
 vm.createContext(summaryContext);
+vm.runInContext(source.slice(source.indexOf("  function compareEngagementSwimmersByName("),source.indexOf("  function engagementPublicSwimmerProfileUrl(")),summaryContext);
 vm.runInContext(source.slice(source.indexOf("  function renderEngagementClubSummary("),source.indexOf("  function renderEngagementClubRelays(")),summaryContext);
 summaryContext.renderEngagementClubSummary(nativeEntry);
 assert.match(summaryContext.elements.engagementsClubSummaryList.innerHTML,/>1 relais</);
@@ -45,6 +46,11 @@ assert.match(recapText,/OLDCOURSE 599999/);
 assert.match(summaryContext.elements.engagementsClubNativeSummary.innerHTML,/&lt;Person&gt;/);
 assert.match(recapText,/One A Two B/);
 assert.equal(JSON.stringify(nativeEntry),beforeNative,"recap never changes stored native values or incomplete composition");
+assert.match(summaryContext.elements.engagementsClubSummaryList.innerHTML,/>Officiels non requis</);
+summaryContext.currentEngagementClubOfficialCount=()=>1;
+summaryContext.renderEngagementClubSummary({...nativeEntry,officials:[{lastName:"Officiel",firstName:"Fictif"}]});
+assert.match(summaryContext.elements.engagementsClubSummaryList.innerHTML,/>1 officiel</,"saved officials count remains visible even when not required");
+assert.match(summaryContext.elements.engagementsClubNativeSummary.innerHTML,/Officiel Fictif/);
 summaryContext.selectedEngagementCompetition.napSource=false;
 summaryContext.renderEngagementClubSummary({...nativeEntry,source:"legacy"});
 assert.match(summaryContext.elements.engagementsClubSummaryList.innerHTML,/>0 relais</,"legacy completion rule remains unchanged");
