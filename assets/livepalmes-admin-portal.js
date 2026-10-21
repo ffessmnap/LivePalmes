@@ -8888,22 +8888,6 @@
       const stepLockReason = engagementClubStepLockReason(step.dataset.clubStep);
       const locked = Boolean(stepLockReason || !engagementClubTeamComplete());
       step.dataset.locked = locked ? "true" : "false";
-      if (step.dataset.clubStep === "officials") return;
-      const firstParagraph = step.querySelector("p");
-      if (firstParagraph) {
-        const unlockedTexts = {
-          officials: selectedEngagementCompetition?.officialsRequired === false
-        ? "Les officiels ne sont pas requis pour cette compétition."
-            : "Structure prete. La saisie des officiels arrive dans le lot suivant.",
-        swimmers: "Sélectionnez les nageurs du club pour cette compétition.",
-          entries: currentEngagementClubSwimmersForSummary().length ? "Choisissez les courses individuelles des nageurs engagés." : "",
-        relays: selectedEngagementClubSwimmerRows().length ? "Ajoutez les relais du club pour cette compétition." : "",
-        summary: "Vérifiez le récapitulatif du dossier et téléchargez le PDF."
-        };
-        firstParagraph.textContent = locked
-        ? stepLockReason || "Renseignez le chef d'équipe ou confirmez la renonciation pour activer cette étape."
-          : unlockedTexts[step.dataset.clubStep] || "";
-      }
     });
     if (!isEngagementAdminMode() && isClubEngagementWorkflowTab(activeEngagementsDetailTab) && !canOpenClubEngagementTab(activeEngagementsDetailTab)) {
       setEngagementsDetailTab("team");
@@ -10885,20 +10869,11 @@
 
   function engagementClubContextMessage(competition = {}) {
     if (isEngagementAdminMode()) return "Les paramètres et le programme de cette compétition sont disponibles.";
-    if (competition.canceled) return "Compétition annulée — votre récapitulatif reste consultable.";
-    if (competition.entryStatus === "closed") return "";
-    if (engagementDeadlineTone(competition) === "deadline-passed") return "Date limite dépassée — votre récapitulatif reste consultable.";
-    if (competition.entryStatus !== "open") return "Les engagements ne sont pas encore ouverts. Les informations et documents restent consultables.";
+    if (competition.canceled || competition.entryStatus !== "open" || engagementDeadlineTone(competition) === "deadline-passed") return "";
     const lockReason = engagementClubWriteLockReason({ ...competition, nativeReadOnly: false });
     if (lockReason) return lockReason;
-    if (global.LivePalmesEnvironment?.sportingDataSource !== "nap") return "Les paramètres et le programme de cette compétition sont disponibles.";
-    if (competition.nativeTeamLeaderRequired) return "Déclarez votre chef d’équipe pour commencer les engagements.";
-    if (competition.nativeIndividualEntriesEditable) return competition.nativeRelaysEditable
-      ? "Les nageurs, leurs courses, les officiels et les relais peuvent être enregistrés."
-      : "Les nageurs, leurs courses et les officiels peuvent être enregistrés. Les relais restent consultables.";
-    if (competition.nativeRelaysEditable) return "La sélection des nageurs et les relais peuvent être enregistrés.";
-    if (competition.nativeSwimmerSelectionEditable) return "La sélection des nageurs est disponible. Les autres engagements restent consultables.";
-    return "Ce dossier est consultable. Contactez l’organisateur pour toute question sur les engagements.";
+    if (global.LivePalmesEnvironment?.sportingDataSource === "nap" && competition.nativeTeamLeaderRequired) return "Déclarez votre chef d’équipe pour commencer les engagements.";
+    return "";
   }
 
   function renderEngagementCompetitionDetail(competition = {}) {
@@ -10938,11 +10913,7 @@
       ].filter((item) => item && item !== "-").join(" · ");
     }
     if (elements.engagementsDetailMeta) {
-      const routineClubMessage = !isEngagementAdminMode() && competition.entryStatus === "open"
-        && !competition.canceled && !competition.qualificationJobId && !competition.nativeTeamLeaderRequired
-        && engagementDeadlineTone(competition) !== "deadline-passed"
-        && (competition.nativeIndividualEntriesEditable || competition.nativeSwimmerSelectionEditable || competition.nativeRelaysEditable);
-      const contextMessage = routineClubMessage ? "" : engagementClubContextMessage(competition);
+      const contextMessage = engagementClubContextMessage(competition);
       const warnings = (competition.nativeWarnings || []).filter(warning => !engagementNativeEditWarningKind(warning));
       elements.engagementsDetailMeta.innerHTML = competition.napSource === true
         ? `${contextMessage ? `<p role="status">${escapeHtml(contextMessage)}</p>` : ""}${warnings.map(warning => `<p>${escapeHtml(warning)}</p>`).join("")}`

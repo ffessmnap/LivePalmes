@@ -2,6 +2,12 @@
 
 <!-- description: Checklist de tests manuels à exécuter avant une publication ou après une modification sensible. -->
 
+## Textes de consultation et introductions Club — 21 octobre
+
+- Parcourir un dossier à venir, ouvert, fermé, annulé et avec délai dépassé : les pastilles et la date limite portent toujours l’état ; aucune phrase générique ne répète la consultation possible ou les saisies disponibles. L’alerte dédiée d’annulation reste visible. Vérifier qu’un contrôle des qualifications en cours ou un chef requis conserve son indication utile.
+- Dans Nageurs, Engagements et Relais, aucune introduction « Sélectionnez/Choisissez/Ajoutez… » n’est réinjectée à l’ouverture ou après une réponse serveur. Le récapitulatif ne reçoit plus de phrase « Vérifiez… ». Les états vides utiles et leurs raccourcis restent présents. Le dialogue Ajouter/récupérer un nageur conserve son explication sur la première compétition de la saison.
+- Les messages de chargement, erreurs et confirmations restent visibles lorsqu’ils sont renseignés ; leur zone vide n’occupe plus d’espace dans les onglets Club. Les protections de saisie, désactivation des actions et confirmation serveur restent inchangées. Contrôler ordinateur/mobile sans modifier les données réelles.
+
 ## Avertissements NAP réservés à la modification organisateur — 21 octobre
 
 - Sur un dossier comportant les deux avertissements de correspondance, consulter Informations et Récapitulatif côté club : aucune phrase « Courses anciennes » ou « admission régionale ancienne », aucun espace réservé vide. Les autres alertes utiles restent visibles.
