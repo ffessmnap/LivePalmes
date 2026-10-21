@@ -646,6 +646,8 @@
     engagementsUnsavedStay: document.querySelector("#adminEngagementsUnsavedStay"),
     engagementsEventsForm: document.querySelector("#adminEngagementsEventsForm"),
     engagementsEventsSummary: document.querySelector("#adminEngagementsEventsSummary"),
+    engagementsNativeCoursesWarning: document.querySelector("#adminEngagementsNativeCoursesWarning"),
+    engagementsNativeRegionsWarning: document.querySelector("#adminEngagementsNativeRegionsWarning"),
     engagementsEventsChoiceSection: document.querySelector("#adminEngagementsEventsChoiceSection"),
     engagementsEventsChoiceSummary: document.querySelector("#adminEngagementsEventsChoiceSummary"),
     engagementsProgramSection: document.querySelector("#adminEngagementsProgramSection"),
@@ -10664,6 +10666,7 @@
     const events = Array.isArray(competition.events) ? competition.events : [];
     const selectedCodes = new Map(events.map((event) => [event.code, event]).filter(([code]) => Boolean(code)));
     const adminMode = isEngagementAdminMode();
+    renderEngagementNativeEditWarnings(competition);
     renderNativeCourseRemoval(competition, adminMode && engagementDetailEditing && canEditEngagementCompetition(competition));
     const canEdit = adminMode && engagementDetailEditing && canEditEngagementCompetition(competition) && !competition.qualificationJobId && (competition.napSource !== true || !competition.qualifications?.enabled || canUse("engagements.national.manage"));
     const clubProgramView = !adminMode;
@@ -10858,6 +10861,28 @@
     elements.engagementsDetail.removeAttribute("aria-busy");
   }
 
+  function engagementNativeEditWarningKind(warning) {
+    switch (String(warning || "").trim()) {
+      case "Courses anciennes conservees.": return "courses";
+      case "Une admission regionale ancienne reste conservee ; sa correspondance doit etre verifiee avant modification.": return "regions";
+      default: return "";
+    }
+  }
+
+  function renderEngagementNativeEditWarnings(competition = {}) {
+    const editing = isEngagementAdminMode() && engagementDetailEditing && competition.napSource === true && canEditEngagementCompetition(competition);
+    const kinds = new Set((competition.nativeWarnings || []).map(engagementNativeEditWarningKind));
+    [
+      [elements.engagementsNativeCoursesWarning, "courses", "Une ou plusieurs courses NAP ne correspondent pas au catalogue LivePalmes. Elles sont conservées ; faites vérifier leur correspondance avant de modifier le programme."],
+      [elements.engagementsNativeRegionsWarning, "regions", "Un code de région NAP n’est pas reconnu. Les régions invitées sont conservées ; leur modification est bloquée jusqu’à vérification de la correspondance."]
+    ].forEach(([element, kind, label]) => {
+      if (!element) return;
+      const visible = editing && kinds.has(kind);
+      element.textContent = visible ? label : "";
+      element.hidden = !visible;
+    });
+  }
+
   function engagementClubContextMessage(competition = {}) {
     if (isEngagementAdminMode()) return "Les paramètres et le programme de cette compétition sont disponibles.";
     if (competition.canceled) return "Compétition annulée — votre récapitulatif reste consultable.";
@@ -10918,8 +10943,9 @@
         && engagementDeadlineTone(competition) !== "deadline-passed"
         && (competition.nativeIndividualEntriesEditable || competition.nativeSwimmerSelectionEditable || competition.nativeRelaysEditable);
       const contextMessage = routineClubMessage ? "" : engagementClubContextMessage(competition);
+      const warnings = (competition.nativeWarnings || []).filter(warning => !engagementNativeEditWarningKind(warning));
       elements.engagementsDetailMeta.innerHTML = competition.napSource === true
-        ? `${contextMessage ? `<p role="status">${escapeHtml(contextMessage)}</p>` : ""}${(competition.nativeWarnings || []).map(warning => `<p>${escapeHtml(warning)}</p>`).join("")}`
+        ? `${contextMessage ? `<p role="status">${escapeHtml(contextMessage)}</p>` : ""}${warnings.map(warning => `<p>${escapeHtml(warning)}</p>`).join("")}`
         : "";
       elements.engagementsDetailMeta.hidden = !elements.engagementsDetailMeta.innerHTML;
     }

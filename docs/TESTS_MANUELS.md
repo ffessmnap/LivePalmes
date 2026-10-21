@@ -2,6 +2,12 @@
 
 <!-- description: Checklist de tests manuels à exécuter avant une publication ou après une modification sensible. -->
 
+## Avertissements NAP réservés à la modification organisateur — 21 octobre
+
+- Sur un dossier comportant les deux avertissements de correspondance, consulter Informations et Récapitulatif côté club : aucune phrase « Courses anciennes » ou « admission régionale ancienne », aucun espace réservé vide. Les autres alertes utiles restent visibles.
+- Côté organisateur en consultation : ces deux avertissements restent absents de l’en-tête. Ouvrir Modifier, sans changer ni enregistrer de données : Informations explique le code de région inconnu et le blocage des régions invitées ; Programme explique les courses sans correspondance au catalogue, conservées en attendant vérification.
+- Annuler la modification : les deux messages disparaissent. Changer pour un dossier sans ces avertissements ne doit pas laisser un ancien message. Contrôler ordinateur/mobile, retour à la consultation et verrous existants ; aucune écriture réelle nécessaire.
+
 ## Récapitulatif et chef d’équipe à plat — 20 octobre
 
 - Ordinateur/mobile, clair/sombre : bilan et compteurs sans cadres, rubriques séparées par un trait fin, vide sans sous-carte ni texte emphatique ; couples course/temps proches sans double libellé. Vérifier codes inconnus, temps bruts, doublons réels, relais, paiement et action PDF inchangés ; pas de génération PDF nécessaire pour cette recette.
