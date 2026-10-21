@@ -6923,9 +6923,12 @@
       selectedEngagementClubEntry = snapshot.entry;
       engagementClubSwimmersRenderedCompetitionId = "";
       engagementClubEntriesRenderedCompetitionId = "";
+      // Selection readers can consult the old course DOM. Rebuild from the
+      // checkpoint model first, otherwise that DOM could replace unsaved choices.
+      if (elements.engagementsClubEntriesList) elements.engagementsClubEntriesList.innerHTML = "";
       engagementClubRelaysDraft = snapshot.relays || [];
       renderEngagementClubSwimmers();
-      renderEngagementClubEntries();
+      if (snapshot.tab === "entries") renderEngagementClubEntries();
       renderEngagementClubRelays();
       engagementClubTeamEditing = snapshot.teamEditing === true;
       if (elements.engagementsClubTeamPersonFields) elements.engagementsClubTeamPersonFields.dataset.manualEntry = String(snapshot.teamManual === true);

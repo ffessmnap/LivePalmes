@@ -25,7 +25,7 @@ function fixture() {
     engagementClubSwimmersLoadPromise:null, engagementClubSwimmersLoaded:true, isEngagementAdminMode:()=>false, canUse:()=>true, engagementClubWorkspaceScopeKey:()=>"u.club",
     cloneEngagementClubEntry:v=>JSON.parse(JSON.stringify(v)), selectedEngagementClubSwimmerRows:()=>[{swimmerIndexId:"s",individualEntries:[{eventCode:"50SF",manualEntryTime:"00:33.12"}]}],
     selectedEngagementClubRelayRows:()=>c.engagementClubRelaysDraft,
-    elements:{engagementsClubTeamForm:form,engagementsDetailRetry:{hidden:true},engagementsDetailStatus:{},engagementsClubEntriesForm:form},
+    elements:{engagementsClubTeamForm:form,engagementsDetailRetry:{hidden:true},engagementsDetailStatus:{},engagementsClubEntriesForm:form,engagementsClubEntriesList:{innerHTML:"old server choices"}},
     engagementClubHasPendingWrites:()=>false, renderEngagementClubSwimmers:()=>{},renderEngagementClubOfficials:()=>{},renderEngagementClubEntries:()=>{},renderEngagementClubRelays:()=>{},
     updateEngagementClubTeamLeaderActions:()=>{},updateEngagementClubTeamFormMode:()=>{},updateEngagementDirtyTabIndicators:()=>{},renderEngagementClubSummary:()=>{},
     setEngagementClubEntriesDirty:value=>{c.engagementClubEntriesDirty=value;c.engagementClubEntriesDirtySwimmerIds.clear();},setEngagementsDetailTab:tab=>c.activeEngagementsDetailTab=tab,
@@ -46,12 +46,16 @@ function fixture() {
   const serialized=[...c.data.values()][0];assert.doesNotMatch(serialized,/never-copy/);
   // New portal document, after an actual unload: only the session checkpoint survives.
   const back=fixture();back.api.save("u.club",JSON.parse(serialized));back.fields.set("manual",{id:"manual",type:"text",value:""});
+  back.renderEngagementClubEntries=()=>{assert.equal(back.elements.engagementsClubEntriesList.innerHTML,"","old DOM must not override the checkpoint course choices");};
   back.selectedEngagementCompetitionId="";await back.restoreEngagementNavigation();
   assert.equal(back.fields.get("manual").value,"BROUILLON NON ENREGISTRÉ");
   assert.equal(back.selectedEngagementClubEntry.swimmers[0].individualEntries[0].manualEntryTime,"00:33.12");
   assert.equal(back.engagementClubRelaysDraft[0].draftPending,true);assert.equal(back.activeEngagementsDetailTab,"entries");
   assert.equal(back.engagementClubEntriesDirty,true);assert.ok(back.engagementClubEntriesDirtySwimmerIds.has("s"));
   assert.deepEqual(back.writes,[]);assert.equal(back.api.read("u.club"),null,"consume after successful restore only");
+  const team=fixture();const teamSnapshot=JSON.parse(serialized);teamSnapshot.tab="team";team.api.save("u.club",teamSnapshot);team.selectedEngagementCompetitionId="";
+  team.renderEngagementClubEntries=()=>{throw Error("Do not render/fetch hidden course qualifications from the team step");};
+  await team.restoreEngagementNavigation();assert.equal(team.api.read("u.club"),null);assert.equal(team.selectedEngagementClubEntry.swimmers[0].individualEntries[0].manualEntryTime,"00:33.12");
   // Quota/denial and in-flight or uncertain writes keep the portal alive.
   c.engagementClubHasPendingWrites=()=>true;assert.throws(c.preserveEngagementNavigation,/enregistrement/);
   c.engagementClubHasPendingWrites=()=>false;c.global.sessionStorage.setItem=()=>{throw Error("quota")};assert.throws(c.preserveEngagementNavigation,/quota/);
