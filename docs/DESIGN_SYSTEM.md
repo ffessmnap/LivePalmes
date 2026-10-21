@@ -45,7 +45,7 @@ Les consoles et le portail affichent beaucoup d’informations. La densité repo
 
 ### Identité aquatique et fédérale
 
-Le turquoise constitue la couleur de marque principale. Les pages de consultation publiques et Performances utilisent le cadre Compacte : en-tête blanc, fond clair, accents turquoise, titres alignés sur le contenu. L’accueil, le calendrier et les pages publiques Performances partagent une largeur maximale de 1 120 px ; les bandeaux Performances sont centrés, bordés et alignés sur leurs filtres et données. Les logos LivePalmes et FFESSM Nage avec palmes assurent l’identification institutionnelle.
+Le turquoise constitue la couleur de marque principale. Les pages de consultation publiques et Performances utilisent le cadre Compacte : en-tête blanc, fond clair, accents turquoise, titres alignés sur le contenu. Le contenu de l’accueil, du calendrier et des pages publiques Performances partage une largeur maximale de 1 120 px ; les bandeaux Performances sont centrés, bordés et alignés sur leurs filtres et données. Les logos LivePalmes et FFESSM Nage avec palmes assurent l’identification institutionnelle.
 
 ### Mobile utilisable, ordinateur efficace
 
