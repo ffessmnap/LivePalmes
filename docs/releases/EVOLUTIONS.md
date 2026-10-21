@@ -2,6 +2,12 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 21 octobre — Rail mobile connecté et retour aux engagements (préparation TEST)
+
+- Demande explicite d’Antoine après maquette : Accueil / Engagements / Site public, sans Plus ; accès Accueil adapté au profil existant, accès club seulement s’il existe déjà, rail conservé pendant la consultation publique connectée. Ordinateur inchangé. Suppression du bandeau hamburger et du doublon Portail mobile, compte conservé, cibles tactiles et zone sûre, état actif, clavier virtuel et variante sombre.
+- Module de présentation partagé, sans modification d’authentification, droits, règles métier, configuration, fonctions, données ou PROD. Budget supplémentaire NAP/Firestore : zéro à l’ouverture, par action de rail, au rafraîchissement et au pire cas. Les routes ouvertes réutilisent leurs consultations/caches existants ; deux ressources statiques partagées, aucun SDK, listener serveur, requête par ligne ou reconstruction. Témoin local anonyme : booléen du raccourci club et route d’accueil seulement, aucune identité ni autorité. Retour au document portail vivant via la seule consultation de même origine ; aucun brouillon sérialisé ni sauvegardé implicitement.
+- Références JS/CSS actualisées sur les pages statiques ; index.html et modèle serveur accueil restent inchangés, aucune publication de lecteur NAP requise. L’accueil charge les mêmes fichiers partagés à son URL historique : un cache navigateur antérieur peut durer jusqu’à une heure, sans changement de politique de cache. Tests ciblés module/bandeau réussis ; recette navigateur, CI et preuve TEST à compléter avant de revendiquer la livraison. Accord de réalisation reçu, aucune validation utilisateur de la livraison déduite.
+
 ### 21 octobre — Accueil : date unique et métadonnées compactes (TEST publié, validation utilisateur attendue)
 
 - Demande explicite d’Antoine : conserver la date à gauche seulement ; sous le titre, ville disponible, type et niveau. Rendus serveur et navigateur harmonisés, date accessible conservée, périodes entre deux mois/années complètes dans le repère. Aucune écriture NAP, aucune lecture supplémentaire, aucun changement PROD, droits, mails ou règles métier. La ville utilise la donnée déjà reçue ; aucune ville déduite d’une adresse ni correction de fiche.

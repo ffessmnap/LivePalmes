@@ -2,6 +2,12 @@
 
 <!-- description: Checklist de tests manuels à exécuter avant une publication ou après une modification sensible. -->
 
+## Navigation mobile connectée — 21 octobre
+
+- Club : Accueil / Engagements / Site public, accueil club existant, retour au dossier ouvert ; admin/DTN sans club : deux accès et vue d’ensemble des seuls modules autorisés. Aucun Plus, ligne hamburger ou doublon Portail dans le portail mobile. Compte, changement de club autorisé et déconnexion toujours accessibles. Ordinateur : bandeau/sidebar habituels, aucun rail.
+- Sans écrire de données réelles : saisir un brouillon sur fixture isolée, ouvrir l’accueil public, visiter une autre page publique, revenir aux engagements ; conserver valeur, dossier et document d’origine. Sur TEST connecté, vérifier les filtres et recherches locales du parcours club, sans sélectionner/désélectionner de participants ni déclencher une autosauvegarde. Distinguer profil club seul et administrateur utilisant le périmètre club.
+- 320/360/390 px : aucun débordement, actions de fin de page accessibles, zone sûre, focus clavier, menus et dialogues au-dessus. Clavier virtuel physique et gestion mémoire iOS à vérifier sur téléphone réel. Déconnexion propagée aux pages publiques, session expirée et onglet portail fermé : retour normal vers le portail protégé, aucune autorisation locale.
+
 ## Fond commun public et titres du portail — 21 octobre
 
 - À largeur égale, comparer accueil, calendrier, bibliothèque, Records/MPF/TOP/nageur, détail événement et pages légales : même dégradé, 260 px de fond après le bandeau ; neutralité des zones plus bas. Vérifier page courte, page longue, grand titre, ouverture du menu mobile et défilement ; aucun halo fixe propre au calendrier.
