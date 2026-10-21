@@ -2,11 +2,11 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
-### 21 octobre — Rappel de fermeture redondant dans le récapitulatif Club (préparation TEST)
+### 21 octobre — Rappel de fermeture redondant dans le récapitulatif Club (TEST publié, validation de livraison attendue)
 
 - Antoine demande de retirer la phrase « Engagements fermés — votre récapitulatif reste consultable », l’état étant déjà annoncé dans l’en-tête. Ce rappel provenait de l’en-tête commun : il disparaît de cet emplacement dans les onglets Club. La pastille de statut est conservée et aucun paragraphe vide ne prend sa place ; les avertissements natifs, annulations, prérequis et erreurs restent affichés selon les règles existantes.
 - Budget inchangé : zéro lecture, appel, écriture ou listener supplémentaire à l’ouverture, lors d’une action, d’un retour ou d’un rafraîchissement ; aucun changement des données ou verrous. Fichiers : assets/livepalmes-admin-portal.js, portail.html (cache du script), tests/engagement-club-ux-tests.js, tests/livepalmes-portal-optimization-tests.js, docs/DESIGN_SYSTEM.md et ce registre.
-- Syntaxe et tests UX, optimisations et sélection native réussis hors réseau. Vérification complète Linux et recette de fermeture ordinateur/mobile à consigner avec la preuve du déploiement TEST. Validation utilisateur de la livraison attendue ; aucune publication PROD demandée.
+- Syntaxe et tests UX, optimisations et sélection native réussis hors réseau. [PR #419](https://github.com/ffessmnap/LivePalmes/pull/419), [vérification complète Linux 39564948138](https://github.com/ffessmnap/LivePalmes/actions/runs/39564948138) réussie ; candidat intégré 5db7b4231d3f9a0ce46e03d491352976e13ae7af. [TEST commun 39565368242](https://github.com/ffessmnap/LivePalmes/actions/runs/39565368242) réussi, Hosting 81069903925a85d3 ; artefact test-proof vérifié sur ce candidat exact, suite globale réussie et 114 fonctions strictement conservées, aucun déploiement backend. Recette connectée du dossier Masters/CNHC fermé à 1920/360 px : phrase absente, aucun paragraphe de statut vide, pastille de fermeture et deux avertissements natifs conservés, neuf nageurs toujours affichés ; aucun débordement ni erreur console. Captures et preuve privées locales dans outputs/ux-club-closed-reminder/, aucune écriture métier réelle ni envoi. Téléphone physique et Safari non vérifiés. Suivi documentaire ultérieur sans nouveau déploiement applicatif. Validation utilisateur de la livraison attendue ; aucune publication PROD demandée.
 
 ### 21 octobre — Ordre des nageurs et officiels dans le récapitulatif Club (TEST publié, validation de livraison attendue)
 
