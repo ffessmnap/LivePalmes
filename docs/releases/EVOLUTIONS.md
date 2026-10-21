@@ -2,6 +2,13 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 21 octobre — Sous-menus Calendrier/Documents et libellé Portail (préparation TEST)
+
+- Proposition approuvée puis intégration TEST explicitement demandée : mêmes interactions que Performances, liens vers le calendrier complet, national/international et régional/départemental regroupés, et les cinq catégories existantes de la bibliothèque. « Portail » reste identique avant/après connexion ; l’accès au compte reste distinct. Un seul sous-menu ouvert à la fois, fermeture Échap/clavier/toucher et protection du dossier conservées.
+- Budget supplémentaire : zéro lecture NAP/Firestore à l’ouverture, au survol, par fermeture ou rafraîchissement du bandeau, y compris au pire cas. Aucun SDK, profil ou nouveau service. Les raccourcis lancent seulement les consultations existantes ; le groupe régions est un filtre client sur les événements déjà chargés. Les URL regional/departemental restent strictes. Aucun droit, donnée, mail, fonction distante, configuration ou PROD modifié.
+- Versions des scripts actualisées dans les pages statiques consommatrices ; accueil serveur et son modèle généré inchangés. Le script partagé livré est aussi utilisé par l’accueil ; sa ressource déjà en cache peut nécessiter une actualisation jusqu’à expiration du cache existant (une heure). Aucun changement de politique de cache ni déploiement serveur.
+- Syntaxe et tests ciblés bandeau/calendrier réussis. Recette Chrome isolée sans services : 1280 px et 320/360 px, Entrée/Espace/Échap, changement de menu au clic sans déplacement du libellé avant activation, absence de débordement et cibles de liens de 44 px. Portail identique connecté/déconnecté sur fixtures, liens publics en nouvel onglet conservés. Captures privées outputs/sous-menus-bandeau-20261021/. Suite globale locale arrêtée sur le test de workflow backend nécessitant Bash indisponible sous Windows ; CI Linux, PR et preuve TEST à compléter. La validation de la proposition ne vaut pas validation de la livraison regroupée.
+
 ### 21 octobre — Continuité du bandeau public/portail (TEST publié, validation de livraison attendue)
 
 - Demande explicite d’Antoine : mêmes positions, couleurs et accès au compte entre public et portail sur TEST, PROD et droits exclus. Cadre 1 720 px et gouttière de défilement communs, palette claire indépendante du contenu, accès Portail/Mon espace et emplacement du compte de largeur stable. Même icône de compte : menu réel dans le portail, lien direct Mon compte vers le portail dans le public ; nom/code club masqués dans le bouton, aucune identité copiée. Contenus et autorisations conservés.
