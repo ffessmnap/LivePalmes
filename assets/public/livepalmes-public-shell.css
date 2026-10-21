@@ -174,7 +174,7 @@ html[data-portal-theme="dark"] .admin-portal-page{--site-heading-wash:#203640;--
  .livepalmes-mobile-navigation a:hover{background:#edf6f7}
  .livepalmes-mobile-navigation a:focus-visible{outline:3px solid #174c76;outline-offset:-3px}
  .livepalmes-mobile-navigation svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
- .admin-portal-page.has-mobile-portal-navigation .admin-portal-topbar,.admin-portal-page.has-mobile-portal-navigation .admin-portal-sidebar,.admin-portal-page.has-mobile-portal-navigation .public-site-portal{display:none!important}
+ .admin-portal-page.has-mobile-portal-navigation .admin-portal-topbar,.admin-portal-page.has-mobile-portal-navigation .admin-portal-sidebar,.admin-portal-page.has-mobile-portal-navigation .public-site-portal,.admin-portal-page.has-mobile-portal-navigation .public-site-menu-toggle,.admin-portal-page.has-mobile-portal-navigation .public-site-nav{display:none!important}
  .admin-portal-page.has-mobile-portal-navigation .admin-portal-layout{grid-template-columns:minmax(0,1fr)}
  .has-mobile-portal-navigation .admin-mobile-overview-shortcut:not([hidden]){display:block}
  .admin-portal-page.has-mobile-portal-navigation #adminAccessView .admin-access-pagination{bottom:var(--mobile-portal-rail-height)}

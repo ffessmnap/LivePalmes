@@ -4,6 +4,9 @@
   const header = document.getElementById("publicSiteHeader");
   if (!header || document.getElementById("livepalmesMobileNavigation")) return;
   const isPortal = body.classList.contains("admin-portal-page");
+  // Retire the previous named-tab bridge, including a portal opened by that version.
+  // A cached public script must not send the user back to a different portal tab.
+  if (isPortal) { global.opener = null; global.name = ""; }
   const sessionKey = "livepalmes:portal-session-display:v1";
   const contextKey = "livepalmes:mobile-navigation-display:v1";
   const mobile = global.matchMedia("(max-width: 1080px)");
@@ -75,42 +78,18 @@
     }
     syncConsultationLinks();
   }
-  // A same-origin consultation keeps the original portal document alive. Returning
-  // focuses that document and changes only its hash, through its existing route guards.
-  // External links retain noopener; no draft is serialized or silently saved.
-  const contextId = global.crypto?.randomUUID?.() || String(Date.now());
-  if (isPortal) global.name = "livepalmes-portal-" + contextId;
-  const publicTarget = "livepalmes-public-" + contextId;
+  // Mobile consultation uses this tab. The portal owns the checkpoint and can
+  // refuse departure; public presentation code never reads or restores a draft.
   function syncConsultationLinks() {
     if (!isPortal) return;
     const connected = body.dataset.adminAuth === "unlocked";
     for (const link of [links.public, ...header.querySelectorAll(".public-site-brand,.public-site-nav a")]) {
       const enabled = mobile.matches && connected;
-      link.target = enabled ? publicTarget : "livepalmes-public";
-      link.rel = enabled ? "opener" : "noopener";
+      link.target = enabled ? "_self" : "livepalmes-public";
+      link.rel = "noopener";
+      const label = link === links.public ? "Accueil du site public" : link === header.querySelector(".public-site-brand") ? "Accueil LivePalmes" : link.textContent.trim();
+      link.setAttribute("aria-label", label + (enabled ? "" : " (nouvel onglet)"));
     }
-    links.public.setAttribute("aria-label", "Accueil du site public (nouvel onglet, dossier conservé)");
-  }
-  function returnToPortal(event, hash) {
-    if (isPortal || event.button > 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
-    try {
-      const source = global.opener;
-      if (!source || source.closed || source.location.origin !== global.location.origin || source.location.pathname !== "/portail.html") return;
-      // Do not return to an expired session or infer access from the public display hint.
-      if (source.document.body.dataset.adminAuth !== "unlocked") return;
-      if (!/^livepalmes-portal-[\w-]+$/.test(source.name)) return;
-      // Native named-tab navigation also activates the original tab in browsers
-      // which ignore window.focus(). Same-document hash navigation keeps drafts.
-      event.currentTarget.href = source.location.pathname + (source.location.search || "") + hash;
-      event.currentTarget.target = source.name;
-      event.currentTarget.rel = "opener";
-    } catch (_) { /* Unrelated/closed tab: normal authenticated portal navigation. */ }
-  }
-  links.home.addEventListener("click", event => returnToPortal(event, readContext()?.home || "#accueil"));
-  links.entries.addEventListener("click", event => returnToPortal(event, "#club-competitions"));
-  if (!isPortal) {
-    header.querySelector(".public-site-portal")?.addEventListener("click", event => returnToPortal(event, readContext()?.home || "#accueil"));
-    header.querySelector(".public-site-account-link")?.addEventListener("click", event => returnToPortal(event, "#mon-compte"));
   }
   // Avoid obscuring fields when a virtual keyboard reduces the visual viewport.
   function updateKeyboard() {

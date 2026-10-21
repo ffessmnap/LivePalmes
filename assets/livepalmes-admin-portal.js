@@ -1108,6 +1108,7 @@
   let activeEngagementClubId = "";
   let activeAuthUid = "";
   let engagementClubEntriesDirty = false;
+  let engagementNavigationRestoring = false;
   const engagementClubEntriesDirtySwimmerIds = new Set();
   let engagementClubPersistedSwimmerIds = new Set();
   let engagementClubEntryMutationQueue = Promise.resolve();
@@ -2773,6 +2774,7 @@
     if (dtnSpaceActive && activeView === "dtn") loadDtnModule();
     if (activeView === "nationalHome") loadEngagementNationalOverview();
     if (engagementsActive && activeEngagementsTab === "calendar") loadEngagementCompetitions();
+    if (engagementsActive && global.location.hash === "#club-competitions") void restoreEngagementNavigation();
     if (engagementsActive && activeEngagementsTab === "accessRequests") loadEngagementAccessRequests();
     if (engagementsActive && activeEngagementsTab === "deletionRequests") loadActiveEngagementNationalTab();
     if (engagementsActive && activeEngagementsTab === "clubPeople") {
@@ -3856,6 +3858,7 @@
       void loadEngagementCompetitions({ mode: "club", activate: false, silent: true });
       void loadEngagementClubSwimmers({ silent: true });
     }
+    void restoreEngagementNavigation();
   }
 
   function renderPortalScopeContext(user = {}) {
@@ -6403,6 +6406,7 @@
   }
 
   function clearEngagementClubWorkspaceSessionCaches() {
+    global.LivePalmesEngagementNavigation?.clear();
     engagementClubWorkspaceCache.clear();
     engagementClubWorkspaceRequests.clear();
     try {
@@ -6811,6 +6815,138 @@
   function flushPendingEngagementClubWrites() {
     if (engagementClubSelectionChanges.size) void flushEngagementClubSwimmerSelections();
     if (engagementClubEntriesAutosaveSwimmers.size) void flushEngagementClubIndividualEntriesAutosave();
+  }
+
+  function engagementNavigationBaseline() {
+    return JSON.stringify([
+      selectedEngagementClubEntry?.napFingerprint || engagementClubLastPersistedEntry,
+      selectedEngagementCompetition?.updatedAt || "",
+      selectedEngagementCompetition?.entryStatus || ""
+    ]);
+  }
+
+  function preserveEngagementNavigation() {
+    const checkpoint = global.LivePalmesEngagementNavigation;
+    if (!checkpoint) throw new Error("Le brouillon ne peut pas encore être conservé. Réessayez dans un instant.");
+    if (!selectedEngagementCompetitionId) return;
+    if (isEngagementAdminMode()) {
+      if (dirtyEngagementDetailTabs.size) throw new Error("Enregistrez ou annulez vos modifications avant de consulter le site public.");
+      return;
+    }
+    if (!canUse("engagements.club.manage") || !selectedEngagementClubEntry) return;
+    if (engagementClubHasPendingWrites() || engagementClubTeamSaving || engagementClubTeamRenunciationSaving
+      || engagementClubSwimmerRemoving || engagementClubNativeSelectionRetry || engagementClubNativeIndividualRetry
+      || engagementClubNativeOfficialRetry || engagementClubNativeRelayRetry || engagementNavigationRestoring) {
+      throw new Error("Un enregistrement est en cours ou reste à vérifier. Terminez-le avant de consulter le site public.");
+    }
+    if (document.querySelector("dialog[open]")) throw new Error("Terminez ou fermez la fenêtre ouverte avant de consulter le site public.");
+    if (document.getElementById("engagementNavigationRecovery")) throw new Error("Conservez le brouillon proposé au téléchargement avant de poursuivre.");
+    const forms = [elements.engagementsClubTeamForm, elements.engagementsClubOfficialsForm,
+      elements.engagementsClubSwimmersForm, elements.engagementsClubEntriesForm, elements.engagementsClubRelaysForm];
+    const entry = cloneEngagementClubEntry(selectedEngagementClubEntry);
+    entry.swimmers = selectedEngagementClubSwimmerRows();
+    checkpoint.save(engagementClubWorkspaceScopeKey(), {
+      competitionId: selectedEngagementCompetitionId, tab: activeEngagementsDetailTab,
+      baseline: engagementNavigationBaseline(), entry,
+      fields: checkpoint.captureFields(forms),
+      relays: selectedEngagementClubRelayRows(),
+      dirtyTabs: [...dirtyEngagementDetailTabs], entriesDirty: engagementClubEntriesDirty,
+      dirtySwimmers: [...engagementClubEntriesDirtySwimmerIds],
+      teamEditing: engagementClubTeamEditing,
+      teamManual: elements.engagementsClubTeamPersonFields?.dataset.manualEntry === "true",
+      teamMode: elements.engagementsClubTeamForm?.querySelector('input[name="adminEngagementsClubTeamMode"]:checked')?.value || ""
+    });
+  }
+
+  function showEngagementNavigationRecovery(snapshot, message = "Le dossier a évolué depuis votre départ.") {
+    if (document.getElementById("engagementNavigationRecovery")) return;
+    const note = document.createElement("p");
+    note.id = "engagementNavigationRecovery";
+    note.setAttribute("role", "status");
+    note.textContent = message + " Votre brouillon est conservé sans remplacer les données actuelles. ";
+    const download = document.createElement("a");
+    download.textContent = "Télécharger mon brouillon";
+    download.download = "brouillon-engagements.json";
+    download.href = "data:application/json;charset=utf-8," + encodeURIComponent(JSON.stringify(snapshot, null, 2));
+    note.append(download);
+    const retry = document.createElement("button");
+    retry.type = "button";
+    retry.textContent = "Réessayer la reprise";
+    retry.addEventListener("click", () => {
+      if (engagementClubReadRetryBlocked()) {
+        global.alert("Terminez les modifications ou enregistrements en cours avant de reprendre le brouillon.");
+        return;
+      }
+      note.remove();
+      selectedEngagementCompetitionId = "";
+      void restoreEngagementNavigation();
+    });
+    note.append(" ", retry);
+    const dismiss = document.createElement("button");
+    dismiss.type = "button";
+    dismiss.textContent = "Fermer ce rappel";
+    dismiss.addEventListener("click", () => {
+      if (!global.confirm("Avez-vous conservé votre brouillon ? Fermer ce rappel abandonne sa restauration automatique.")) return;
+      global.LivePalmesEngagementNavigation.clear();
+      note.remove();
+    });
+    note.append(" ", dismiss);
+    elements.engagementsDetail?.prepend(note);
+  }
+
+  async function restoreEngagementNavigation() {
+    const checkpoint = global.LivePalmesEngagementNavigation;
+    if (!checkpoint || engagementNavigationRestoring || !currentAccessProfile || !canUse("engagements.club.manage")
+      || global.location.hash !== "#club-competitions" || isEngagementAdminMode()) return;
+    const scope = engagementClubWorkspaceScopeKey();
+    const snapshot = checkpoint.read(scope);
+    if (!snapshot) return;
+    // A native Back restoration may have retained the live document already.
+    if (selectedEngagementCompetitionId) {
+      return;
+    }
+    engagementNavigationRestoring = true;
+    try {
+      await loadEngagementCompetitionDetail(snapshot.competitionId, snapshot.tab);
+      if (scope !== engagementClubWorkspaceScopeKey() || global.location.hash !== "#club-competitions"
+        || selectedEngagementCompetitionId !== snapshot.competitionId) return;
+      if (!selectedEngagementClubEntry || elements.engagementsDetailRetry?.hidden === false) throw new Error("Dossier indisponible.");
+      if (snapshot.baseline !== engagementNavigationBaseline()) {
+        showEngagementNavigationRecovery(snapshot);
+        return;
+      }
+      // Await only the existing grouped directory read, never a request per swimmer.
+      if (engagementClubSwimmersLoadPromise) await engagementClubSwimmersLoadPromise;
+      if (!engagementClubSwimmersLoaded) throw new Error("Annuaire momentanément indisponible.");
+      if (scope !== engagementClubWorkspaceScopeKey() || global.location.hash !== "#club-competitions"
+        || selectedEngagementCompetitionId !== snapshot.competitionId) return;
+      selectedEngagementClubEntry = snapshot.entry;
+      engagementClubSwimmersRenderedCompetitionId = "";
+      engagementClubEntriesRenderedCompetitionId = "";
+      engagementClubRelaysDraft = snapshot.relays || [];
+      renderEngagementClubSwimmers();
+      renderEngagementClubEntries();
+      renderEngagementClubRelays();
+      engagementClubTeamEditing = snapshot.teamEditing === true;
+      if (elements.engagementsClubTeamPersonFields) elements.engagementsClubTeamPersonFields.dataset.manualEntry = String(snapshot.teamManual === true);
+      elements.engagementsClubTeamForm?.querySelectorAll('input[name="adminEngagementsClubTeamMode"]')
+        .forEach(radio => { radio.checked = radio.value === snapshot.teamMode; });
+      updateEngagementClubTeamLeaderActions();
+      updateEngagementClubTeamFormMode();
+      checkpoint.restoreFields(document, snapshot.fields);
+      renderEngagementClubSwimmers();
+      renderEngagementClubOfficials();
+      dirtyEngagementDetailTabs = new Set(snapshot.dirtyTabs || []);
+      setEngagementClubEntriesDirty(snapshot.entriesDirty === true);
+      for (const id of snapshot.dirtySwimmers || []) engagementClubEntriesDirtySwimmerIds.add(id);
+      updateEngagementDirtyTabIndicators();
+      setEngagementsDetailTab(snapshot.tab);
+      renderEngagementClubSummary();
+      checkpoint.clear();
+    } catch (_) {
+      if (elements.engagementsDetailStatus) elements.engagementsDetailStatus.textContent = "Le retour au dossier a échoué. Le brouillon reste conservé dans cet onglet ; réessayez depuis Engagements.";
+      showEngagementNavigationRecovery(snapshot, "Le chargement du dossier n’a pas abouti.");
+    } finally { engagementNavigationRestoring = false; }
   }
 
   function updateEngagementClubEntriesSummary() {
@@ -11013,6 +11149,7 @@
 
   function closeEngagementCompetitionDetail({ skipConfirmation = false } = {}) {
     if (!skipConfirmation && !confirmLeaveDirtyEngagementTab()) return false;
+    if (!engagementNavigationRestoring) global.LivePalmesEngagementNavigation?.clear();
     if (engagementClubEntriesAutosaveSwimmers.size) {
       void flushEngagementClubIndividualEntriesAutosave();
     }
@@ -19104,6 +19241,22 @@
     elements.accessPreviousPage?.addEventListener("click", showPreviousAccessPage);
     elements.accessNextPage?.addEventListener("click", showNextAccessPage);
     global.addEventListener("hashchange", updateNavigationView);
+    document.addEventListener("click", event => {
+      if (!global.matchMedia("(max-width: 1080px)").matches || document.body.dataset.adminAuth !== "unlocked"
+        || event.button > 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
+      const link = event.target.closest("#livepalmesMobileNavigation a, #publicSiteHeader a");
+      if (!link) return;
+      const destination = new URL(link.href, global.location.href);
+      if (destination.origin !== global.location.origin || destination.pathname === "/portail.html") return;
+      try {
+        preserveEngagementNavigation();
+        link.target = "_self";
+        link.rel = "noopener";
+      } catch (error) {
+        event.preventDefault();
+        global.alert(error.message);
+      }
+    }, true);
     elements.accessList?.addEventListener("click", (event) => {
       const directoryToggle = event.target.closest("[data-access-directory-toggle]");
       if (directoryToggle) {
