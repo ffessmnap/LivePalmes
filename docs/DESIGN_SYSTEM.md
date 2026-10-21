@@ -2,6 +2,12 @@
 
 <!-- description: Référence du langage visuel, des composants d’interface et des règles responsive déjà présents dans LivePalmes. -->
 
+## Fond d’introduction commun — 21 octobre 2026
+
+Le fond des pages publiques partage un dégradé vertical de #e4f4f7 vers #edf7f9 puis le neutre #f5f8fa. Sa hauteur décorative est de 260 px, sur ordinateur comme sur mobile, à partir du bas du bandeau réellement mesuré (repère TEST compris). Il défile avec la page, sans modifier la hauteur des titres, tableaux, cartes ou formulaires. Le halo fixe propre au calendrier est neutralisé dans le cadre public. Le bandeau de navigation reste blanc.
+
+Dans le portail, seuls les h2 directement contenus dans admin-portal-workspace-head reçoivent un léger dégradé et un trait de 3 px : aucune grande zone d’introduction ajoutée, aucune hauteur imposée. Le thème sombre emploie #203640 et #427984 ; les couleurs du texte existantes restent conservées. Ces décors sont retirés à l’impression. Consoles et données inchangées.
+
 ## Continuité du bandeau public/portail — 21 octobre 2026
 
 Le cadre du bandeau est identique sur le public et le portail : largeur maximale 1 720 px, marges communes aux mêmes seuils et gouttière de défilement stable pour éviter le décalage entre pages courtes et longues. La largeur du contenu reste propre à chaque espace. Le bandeau utilise une palette claire commune, même lorsque le contenu du portail utilise le thème sombre ; les états actifs restent signalés sans changer les dimensions.
