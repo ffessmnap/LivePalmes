@@ -2,6 +2,12 @@
 
 <!-- description: Checklist de tests manuels à exécuter avant une publication ou après une modification sensible. -->
 
+## Fond commun public et titres du portail — 21 octobre
+
+- À largeur égale, comparer accueil, calendrier, bibliothèque, Records/MPF/TOP/nageur, détail événement et pages légales : même dégradé, 260 px de fond après le bandeau ; neutralité des zones plus bas. Vérifier page courte, page longue, grand titre, ouverture du menu mobile et défilement ; aucun halo fixe propre au calendrier.
+- Contrôler 1280/390/360/320 px sans débordement, filtres et focus conservés. Portail clair/sombre : léger repère sur les titres principaux, pas sur les titres de navigation ou dialogues, ni hauteur de bandeau supplémentaire. Vérifier l’impression sans décor.
+- Recette locale avec scripts métier retirés, puis TEST en lecture seule. Aucune écriture, mail ou donnée réelle nécessaire. L’accueil serveur garde ses références : distinguer fichier CSS livré et rendu éventuellement ancien en cache.
+
 ## Sous-menus publics et libellé Portail — 21 octobre
 
 - Sur TEST, ordinateur et 360/390 px : Calendrier → Tout le calendrier, Événements nationaux et Événements en région ; vérifier les URL et le filtre Niveau sélectionné. Le groupe regions inclut régional et départemental, jamais national/international ; les anciennes URL regional et departemental restent strictes. Réinitialiser restaure Tous et retire level de l’URL.
