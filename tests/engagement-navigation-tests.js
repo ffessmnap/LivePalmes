@@ -62,6 +62,9 @@ function fixture() {
   c.engagementClubHasPendingWrites=()=>false;c.global.sessionStorage.setItem=()=>{throw Error("quota")};assert.throws(c.preserveEngagementNavigation,/quota/);
   const conflict=fixture();conflict.api.save("u.club",JSON.parse(serialized));conflict.selectedEngagementCompetitionId="";conflict.serverFingerprint="changed";
   await conflict.restoreEngagementNavigation();assert.ok(conflict.recovery);assert.equal(conflict.selectedEngagementClubEntry.napFingerprint,"changed");assert.ok(conflict.api.read("u.club"));
+  const programChange=fixture();programChange.api.save("u.club",JSON.parse(serialized));programChange.selectedEngagementCompetitionId="";
+  programChange.selectedEngagementCompetition.napFingerprint="new-program";
+  await programChange.restoreEngagementNavigation();assert.ok(programChange.recovery);assert.ok(programChange.api.read("u.club"));
   const failed=fixture();failed.api.save("u.club",JSON.parse(serialized));failed.selectedEngagementCompetitionId="";failed.loadEngagementCompetitionDetail=async()=>{throw Error("offline")};
   await failed.restoreEngagementNavigation();assert.ok(failed.api.read("u.club"));assert.match(failed.elements.engagementsDetailStatus.textContent,/reste conservé/);
   assert.doesNotMatch(source,/localStorage|fetch\(|firebase|XMLHttpRequest/);
