@@ -152,6 +152,18 @@ function fixture() {
   assert.equal(intro.textContent,"Règle métier à conserver","rendering a dossier must not overwrite an arbitrary paragraph inside a dialog or warning");
   assert.equal(steps[1].dataset.locked,"true");
   assert.equal(steps[0].dataset.locked,"false");
+  const documentNotes={elements:{engagementsSharedDocumentsCount:{},engagementsSharedDocumentsTitle:{}},isEngagementAdminMode:()=>false,isRegionalPastEngagementReadOnly:()=>false,ENGAGEMENT_COMPETITION_DOCUMENT_MAX_COUNT:20};
+  vm.createContext(documentNotes);vm.runInContext(block("renderEngagementSharedDocuments"),documentNotes);
+  documentNotes.renderEngagementSharedDocuments({clubDocuments:[]});
+  assert.equal(documentNotes.elements.engagementsSharedDocumentsCount.hidden,true);
+  assert.equal(documentNotes.elements.engagementsSharedDocumentsCount.textContent,"");
+  documentNotes.renderEngagementSharedDocuments({clubDocuments:[{},{}]});
+  assert.equal(documentNotes.elements.engagementsSharedDocumentsCount.hidden,false);
+  assert.equal(documentNotes.elements.engagementsSharedDocumentsCount.textContent,"2 documents");
+  documentNotes.isEngagementAdminMode=()=>true;
+  documentNotes.renderEngagementSharedDocuments({clubDocuments:[]});
+  assert.match(documentNotes.elements.engagementsSharedDocumentsCount.textContent,/Affiches, circulaires/);
+  assert.equal(documentNotes.elements.engagementsSharedDocumentsCount.hidden,false);
   c.setEngagementSaveState("saving"); assert.match(c.elements.engagementsSaveState.textContent, /en cours/);
   c.setEngagementSaveState("saved"); assert.equal(c.elements.engagementsSaveState.hidden, false);
   assert.match(c.elements.engagementsSaveState.textContent, /confirmé/);
