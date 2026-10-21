@@ -2,6 +2,14 @@
 
 <!-- description: Référence du langage visuel, des composants d’interface et des règles responsive déjà présents dans LivePalmes. -->
 
+## Navigation mobile connectée — 21 octobre 2026
+
+Sous 1081 px, le portail connecté propose un rail inférieur Accueil / Engagements / Site public, sans Plus. Accueil rejoint l’accueil club ou la vue d’ensemble existante selon le profil ; Engagements apparaît seulement si le menu club existant est autorisé. Sans espace club, les deux autres accès se répartissent la largeur. Aucun rail sur ordinateur ou hors connexion. Le bandeau commun et le compte restent présents ; la ligne du menu portail mobile et son doublon Portail disparaissent. Le sélecteur de club existant reste accessible dans le menu du compte.
+
+Icônes de 21 px, libellés de 11 px, cibles d’au moins 52 px, état actif souligné par le fond turquoise et `aria-current`. La hauteur réservée de 62 px inclut en supplément la zone sûre du téléphone ; les dernières actions restent accessibles. Le rail s’efface si un clavier virtuel réduit fortement la zone visible pendant une saisie. Les dialogues natifs restent au-dessus. Variante sombre dans le portail et absence de rail à l’impression.
+
+Site public ouvre directement l’accueil dans un onglet de consultation interne, afin de garder le document du portail et ses saisies en mémoire. Les liens du rail public reviennent à cet onglet s’il est encore ouvert et connecté, par changement de route existante seulement. Les liens externes conservent `noopener` ; seule cette consultation de même origine garde la référence de retour. Aucun brouillon, identité ou jeton stocké pour la navigation : le témoin local anonyme de présentation contient seulement les raccourcis disponibles et l’accueil à afficher. Il ne confère aucun droit. Une fermeture volontaire du portail ou sa destruction par le navigateur ne constitue pas une sauvegarde du brouillon.
+
 ## Fond d’introduction commun — 21 octobre 2026
 
 Le fond des pages publiques partage un dégradé vertical de #e4f4f7 vers #edf7f9 puis le neutre #f5f8fa. Sa hauteur décorative est de 260 px, sur ordinateur comme sur mobile, à partir du bas du bandeau réellement mesuré (repère TEST compris). Il défile avec la page, sans modifier la hauteur des titres, tableaux, cartes ou formulaires. Le halo fixe propre au calendrier est neutralisé dans le cadre public. Le bandeau de navigation reste blanc.
