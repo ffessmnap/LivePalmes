@@ -2,6 +2,13 @@
 
 <!-- description: Checklist de tests manuels à exécuter avant une publication ou après une modification sensible. -->
 
+## Continuité public/portail — 21 octobre
+
+- À largeur égale, comparer public et portail connectés : mêmes coordonnées du logo, de la navigation, de Mon espace et du compte, mêmes couleurs. Vérifier une page courte et une page longue avec barre de défilement, puis 320/360/390/850/1280/1920 px. Le contenu public reste centré, le portail conserve sa largeur de travail.
+- Public connecté : l’icône Mon compte conduit au compte du portail ; avant connexion elle reste masquée et sa place réservée. Dans le portail, le bouton ouvre le menu existant avec ses autorisations habituelles, sans copier de nom ou droit dans le public. Stockage indisponible : Portail et icône masquée, connexion normale inchangée.
+- Performances sans chevron : survol à la souris, passage vers les liens, sortie, clic lorsque le menu est déjà ouvert au survol ; clavier Entrée/Espace et Échap, focus hors menu, puis toucher. Une fermeture par Échap ne doit pas être annulée par le seul maintien du pointeur. Les menus Calendrier/Documents restent proposés hors site.
+- Vérifier le thème sombre du portail : le bandeau garde sa palette commune claire avec le public, le contenu sombre est conservé. Aucun test d’écriture métier ni déconnexion réelle nécessaire.
+
 ## Bandeau commun public/portail — 21 octobre
 
 - Sur TEST, avant connexion : Portail reste directement visible sur ordinateur et mobile ; clic vers le formulaire existant, sans cadenas. Sous LivePalmes, seulement FFESSM.
