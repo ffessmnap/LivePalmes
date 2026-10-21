@@ -4,6 +4,8 @@
 
 ## Navigation mobile connectée — 21 octobre 2026
 
+Le repère TEST conserve son apparence et sa position sticky via la feuille CSS commune autorisée, même lorsque la CSP refuse le style injecté par le helper d’environnement. Le bandeau opaque commence immédiatement sous ce repère, sans fente laissant réapparaître le contenu. Aucune protection CSP ou configuration d’environnement n’est modifiée.
+
 Sous 1081 px, le portail connecté propose un rail inférieur Accueil / Engagements / Site public, sans Plus. Accueil rejoint l’accueil club ou la vue d’ensemble existante selon le profil ; Engagements apparaît seulement si le menu club existant est autorisé. Sans espace club, les deux autres accès se répartissent la largeur. Aucun rail sur ordinateur ou hors connexion. Le bandeau commun et le compte restent présents ; la ligne du menu portail mobile et son doublon Portail disparaissent. Le sélecteur de club existant reste accessible dans le menu du compte.
 
 Icônes de 21 px, libellés de 11 px, cibles d’au moins 52 px, état actif souligné par le fond turquoise et `aria-current`. La hauteur réservée de 62 px inclut en supplément la zone sûre du téléphone ; les dernières actions restent accessibles. Le rail s’efface si un clavier virtuel réduit fortement la zone visible pendant une saisie. Les dialogues natifs restent au-dessus. Variante sombre dans le portail et absence de rail à l’impression.
