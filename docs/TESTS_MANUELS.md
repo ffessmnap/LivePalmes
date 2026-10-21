@@ -2,18 +2,25 @@
 
 <!-- description: Checklist de tests manuels à exécuter avant une publication ou après une modification sensible. -->
 
+## Sous-menus publics et libellé Portail — 21 octobre
+
+- Sur TEST, ordinateur et 360/390 px : Calendrier → Tout le calendrier, Événements nationaux et Événements en région ; vérifier les URL et le filtre Niveau sélectionné. Le groupe regions inclut régional et départemental, jamais national/international ; les anciennes URL regional et departemental restent strictes. Réinitialiser restaure Tous et retire level de l’URL.
+- Documents → Tous les documents puis Comités/clubs, Compétitions, Entraîneurs, Juges et Haut Niveau ; chaque lien ouvre le filtre existant correspondant. Aucun nouvel appel de catalogue au simple survol/ouverture ; seul le parcours normal de consultation charge les données existantes.
+- Trois sous-menus : clic/toucher, Entrée et Espace natifs, tabulation, un seul ouvert, sortie de focus, clic extérieur et Échap avec focus rendu. Depuis le portail les liens publics gardent leur nouvel onglet annoncé et ne ferment pas le dossier.
+- Portail reste le même libellé dans les états connecté/déconnecté et stockage bloqué ; l’icône Mon compte conserve son comportement antérieur. Aucune écriture métier nécessaire. Distinguer fixtures sans service, navigateur TEST et téléphone physique non vérifié.
+
 ## Continuité public/portail — 21 octobre
 
-- À largeur égale, comparer public et portail connectés : mêmes coordonnées du logo, de la navigation, de Mon espace et du compte, mêmes couleurs. Vérifier une page courte et une page longue avec barre de défilement, puis 320/360/390/850/1280/1920 px. Le contenu public reste centré, le portail conserve sa largeur de travail.
+- À largeur égale, comparer public et portail connectés : mêmes coordonnées du logo, de la navigation, de Portail et du compte, mêmes couleurs. Vérifier une page courte et une page longue avec barre de défilement, puis 320/360/390/850/1280/1920 px. Le contenu public reste centré, le portail conserve sa largeur de travail.
 - Public connecté : l’icône Mon compte conduit au compte du portail ; avant connexion elle reste masquée et sa place réservée. Dans le portail, le bouton ouvre le menu existant avec ses autorisations habituelles, sans copier de nom ou droit dans le public. Stockage indisponible : Portail et icône masquée, connexion normale inchangée.
-- Performances sans chevron : survol à la souris, passage vers les liens, sortie, clic lorsque le menu est déjà ouvert au survol ; clavier Entrée/Espace et Échap, focus hors menu, puis toucher. Une fermeture par Échap ne doit pas être annulée par le seul maintien du pointeur. Les menus Calendrier/Documents restent proposés hors site.
+- Performances sans chevron : survol à la souris, passage vers les liens, sortie, clic lorsque le menu est déjà ouvert au survol ; clavier Entrée/Espace et Échap, focus hors menu, puis toucher. Une fermeture par Échap ne doit pas être annulée par le seul maintien du pointeur. Calendrier et Documents suivent les mêmes interactions ; un seul menu ouvert, fermeture hors bandeau et Échap rendent le focus au bon libellé.
 - Vérifier le thème sombre du portail : le bandeau garde sa palette commune claire avec le public, le contenu sombre est conservé. Aucun test d’écriture métier ni déconnexion réelle nécessaire.
 
 ## Bandeau commun public/portail — 21 octobre
 
 - Sur TEST, avant connexion : Portail reste directement visible sur ordinateur et mobile ; clic vers le formulaire existant, sans cadenas. Sous LivePalmes, seulement FFESSM.
-- Après connexion : Mon espace actif dans le portail, menu personnel et navigation métier inchangés. Consulter Calendrier/Records/MPF/TOP/nageur/Documents depuis le bandeau : nouvel onglet annoncé et dossier initial conservé, aucune sauvegarde réelle requise pour cette recette.
-- Sur les pages publiques du même domaine, Mon espace revient au portail. Après déconnexion dans le portail, les onglets publics actualisent le libellé ; stockage bloqué ou témoin absent : Portail, sans empêcher la connexion existante. Un témoin périmé ne doit jamais autoriser un accès.
+- Après connexion : Portail actif dans le portail, menu personnel et navigation métier inchangés. Consulter Calendrier/Records/MPF/TOP/nageur/Documents depuis le bandeau : nouvel onglet annoncé et dossier initial conservé, aucune sauvegarde réelle requise pour cette recette.
+- Sur les pages publiques du même domaine, Portail revient au portail. Après déconnexion dans le portail, les onglets publics masquent l’icône Mon compte ; le libellé Portail reste identique ; stockage bloqué ou témoin absent : Portail, sans empêcher la connexion existante. Un témoin périmé ne doit jamais autoriser un accès.
 - Vérifier 1280, 850, 390, 360 et 320 px, thème clair/sombre, clavier/Échap, compte accessible même lorsque son nom est masqué, menus sans débordement et repère TEST au-dessus du bandeau. Ne pas écrire dans la NAP partagée, envoyer de mail ou recalculer pour cette recette.
 
 ## Textes de consultation et introductions Club — 21 octobre
