@@ -15,11 +15,11 @@
  function eventCard(event,major){
   const article=node("article",`public-home-event${major?" public-home-event-major":""}`);
   const dates=model.eventDateLabel(event.date,event.endDate||event.date);
-  const date=node("div","public-home-event-date");date.setAttribute("aria-hidden","true");
+  const date=node("time","public-home-event-date");date.setAttribute("datetime",event.date);date.setAttribute("aria-label",dates.label);
   date.append(node("strong","",dates.day),node("span","",dates.month));
   const copy=node("div","public-home-event-copy"),title=node("a","public-home-event-title",event.name||"Rendez-vous");
   title.href=`competition.html?id=${encodeURIComponent(event.id)}`;
-  copy.append(title,node("p","",[dates.label,event.city||event.location,types[event.eventType],levels[event.level]].filter(Boolean).join(" · ")));
+  copy.append(title,node("p","",[String(event.city||"").trim(),types[event.eventType],levels[event.level]].filter(Boolean).join(" · ")));
   const resultsUrl=event.results?.url||event.results?.pdfUrl;
   if(resultsUrl){
    try{const url=new URL(resultsUrl,global.location.href);if((url.protocol==="https:"||url.origin===global.location.origin)&&!url.username&&!url.password){const link=node("a","public-home-event-results","Résultats →");link.href=url.href;copy.append(link);}}catch{ /* An invalid optional result link is omitted. */ }

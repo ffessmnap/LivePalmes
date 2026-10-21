@@ -2,14 +2,16 @@
 const assert=require("node:assert/strict"),fs=require("node:fs"),vm=require("node:vm"),page=require("../functions/nap-home-page");
 (async()=>{
  let now=Date.parse("2026-10-15T10:00:00Z"),calls=0,fail=false;
- const events=[{id:"national",date:"2026-12-12",endDate:"2026-12-13",level:"national",eventType:"pool",name:'<script>alert("event")</script>'},...Array.from({length:5},(_,i)=>({id:`region-${i}`,date:`2026-10-${16+i}`,level:"regional",name:`Formation ${i}`}))];
+ const events=[{id:"national",date:"2026-12-12",endDate:"2026-12-13",level:"national",eventType:"pool",city:"Dijon",name:'<script>alert("event")</script>'},...Array.from({length:5},(_,i)=>({id:`region-${i}`,date:`2026-10-${16+i}`,level:"regional",name:`Formation ${i}`}))];
  const documents=[{title:'<img src=x onerror="bad">',url:"javascript:alert(1)"},{title:"Document public",url:"https://nap.ffessm.fr/a.pdf",publishedAt:"2026-10-14T10:00:00Z"}];
  const html=page.render({events,documents},now);
  assert.match(html,/data-home-prepared="true"/);assert.doesNotMatch(html,/Chargement des (rendez-vous|documents)/);
- assert.match(html,/12–13/);assert.match(html,/Du 12 au 13 décembre 2026/);assert.match(html,/Les prochains rendez-vous en région/);
+ assert.match(html,/12–13/);assert.match(html,/aria-label="Du 12 au 13 décembre 2026"/);assert.ok(html.includes('<p>Dijon · Piscine · National</p>'));assert.doesNotMatch(html,/<p>Du 12 au 13 décembre/);assert.match(html,/Les prochains rendez-vous en région/);
  assert.match(html,/data-more-count="2"/);assert.match(html,/aria-controls="publicHomeEventsMore"/);assert.match(html,/aria-expanded="false"/);
  assert.doesNotMatch(html,/<script>alert|<img src=x|javascript:alert/);assert.match(html,/&lt;script&gt;/);assert.match(html,/https:\/\/nap.ffessm.fr\/a.pdf/);
  assert.equal(page.publicUrl(""),"");assert.equal(page.publicUrl("https://user:secret@host.test/x"),"");
+ const missingCity=page.render({events:[{...events[0],city:" ",location:"Lieu distinct de la ville"}],documents:[]},now);
+ assert.ok(missingCity.includes('<p>Piscine · National</p>'));assert.doesNotMatch(missingCity,/Lieu distinct de la ville/);
  assert.equal((page.render({events,documents},now).match(/public-home-event-results/g)||[]).length,0);
  const cached=page.createReader(async()=>{calls++;if(fail)throw Error("private failure details");return {events,documents};},()=>now);
  await Promise.all([cached(),cached(),cached()]);assert.equal(calls,1);

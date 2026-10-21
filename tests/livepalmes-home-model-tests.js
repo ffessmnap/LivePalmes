@@ -44,5 +44,7 @@ assert.deepEqual(home.eventDateLabel('2026-12-12','2026-12-13'),{day:'12–13',m
 assert.deepEqual(home.eventDateLabel('2026-10-17'),{day:'17',month:'OCT.',label:'17 octobre 2026'});
 assert.equal(home.eventDateLabel('2026-10-30','2026-11-02').label,'Du 30 octobre au 2 novembre 2026');
 assert.equal(home.eventDateLabel('2026-12-30','2027-01-02').label,'Du 30 décembre 2026 au 2 janvier 2027');
-assert.equal(home.eventDateLabel('2026-10-30','2026-11-02').day,'30');
+assert.equal(home.eventDateLabel('2026-10-30','2026-11-02').day,'30–02');
+assert.equal(home.eventDateLabel('2026-10-30','2026-11-02').month,'OCT.–NOV.');
+assert.equal(home.eventDateLabel('2026-12-30','2027-01-02').month,'DÉC. 2026–JANV. 2027');
 assert.equal(home.eventDateLabel('2026-02-30').label,'');

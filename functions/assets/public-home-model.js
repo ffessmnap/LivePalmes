@@ -60,8 +60,10 @@
     const start=new Date(`${date}T12:00:00Z`),end=new Date(`${endDate}T12:00:00Z`);
     const format=(value,options)=>new Intl.DateTimeFormat("fr-FR",{timeZone:"UTC",...options}).format(value);
     const sameMonth=date.slice(0,7)===endDate.slice(0,7),single=date===endDate;
-    const day=format(start,{day:"2-digit"})+(!single&&sameMonth?`–${format(end,{day:"2-digit"})}`:"");
-    const month=format(start,{month:"short"}).toUpperCase();
+    const day=format(start,{day:"2-digit"})+(!single?`–${format(end,{day:"2-digit"})}`:"");
+    const sameYear=date.slice(0,4)===endDate.slice(0,4);
+    const monthOptions={month:"short",...(!sameYear?{year:"numeric"}:{})};
+    const month=(format(start,monthOptions)+(!sameMonth?`–${format(end,monthOptions)}`:"")).toUpperCase();
     const full=options=>format(end,{day:"numeric",month:"long",year:"numeric",...options});
     const label=single?full({}):sameMonth?`Du ${format(start,{day:"numeric"})} au ${full({})}`:`Du ${format(start,{day:"numeric",month:"long",...(date.slice(0,4)!==endDate.slice(0,4)?{year:"numeric"}:{})})} au ${full({})}`;
     return {day,month,label};
