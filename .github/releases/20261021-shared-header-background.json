@@ -1,0 +1,41 @@
+{
+  "schema": 1,
+  "candidate": "21d0fb8541d70c16cda397f2238820ec64cfc636",
+  "productionCommit": "9ccb634065d0d4ff335ee4e7e9891bdde401113f",
+  "productionHosting": "sites/livepalmes/versions/684723c0a354ba3a",
+  "testRun": 39606714977,
+  "changes": [
+    {
+      "title": "Bandeau commun public/portail, sous-menus Performances/Calendrier/Documents, fond public harmonisé et accent léger des titres du portail",
+      "paths": [
+        "assets/livepalmes-portal-shell.js",
+        "assets/pages/calendrier.js",
+        "assets/public/livepalmes-public-shell.css",
+        "assets/public/livepalmes-public-shell.js",
+        "bibliotheque.html",
+        "calendrier.html",
+        "competition.html",
+        "conditions-utilisation.html",
+        "confidentialite.html",
+        "medailles.html",
+        "mentions-legales.html",
+        "pdf.html",
+        "performances/construction.html",
+        "performances/index.html",
+        "performances/mpf.html",
+        "performances/nageur.html",
+        "performances/records.html",
+        "performances/tops.html",
+        "portail.html",
+        "public.html",
+        "resultat-pdf.html",
+        "resultats.html",
+        "series-pdf.html",
+        "series-public.html"
+      ],
+      "status": "validated",
+      "validation": "Antoine, 21 octobre 2026, message humain relu dans Suivi LivePalmes (01a12f95-48ea-7900-8e0b-cba0178e3e7b) : « Ok, le rendu me va. Je valide le bandeau, les sous-menus et le fond sur TEST. Transmets le bilan à Infra pour préparer la mise en PROD, et tu peux déployer. » Accord explicite de publication de ce périmètre, traité dans Infra sans redemander un accord de principe. PR #431/#433/#435/#437/#438, candidat TEST exact 21d0fb85, TEST commun 39606714977, Hosting 3e594e583dcaa0d8 ; CI et vérification globale Linux réussies. Recettes ordinateur/mobile simulé, clavier, filtres, documents, compte connecté et fond décrites au bilan. Téléphone physique, Safari et impression réelle non vérifiés ; aucune conformité globale revendiquée."
+    }
+  ],
+  "excludedBackendReview": "Hosting uniquement, sélection serveur attendue vide et 112 fonctions PROD conservées ; 114 TEST sans chercher à aligner les inventaires. Diff complet couvert, backend/configuration/règles/index identiques, index.html et modèle accueil serveur inchangés. Sur les pages publiques de résultats/séries/médailles, seules les références du bandeau partagé changent ; aucun métier Direct ni console. Aucun nouvel appel NAP, SDK, profil, lecture/écriture Firestore, listener ou génération de données. Le témoin local anonyme ne change aucune authentification/droit ; compte réel déplacé avec contrôles existants. IDF actif conservé sans coupure ni réglage/scheduler, envoi de test ou rattrapage. Clubs historiques, recalcul DTN, nettoyage Storage, données NAP/Firestore/Storage/Paris/CNHC, migrations, droits/authentification/règles/index/secrets/configuration et fonctions email exclus. Accord réel vérifié à la source ; après preflight conforme, publication autorisée avec dérive fraîche, sauvegarde chiffrée rouverte/comparée avant Hosting et contrôles finaux. Arrêt si preuve manquante, dérive, sélection backend non vide ou périmètre élargi. Retour arrière Hosting officiel vers la release sauvegardée, sans restauration des données."
+}
