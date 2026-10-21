@@ -2,6 +2,13 @@
 
 <!-- description: Checklist de tests manuels à exécuter avant une publication ou après une modification sensible. -->
 
+## Bandeau commun public/portail — 21 octobre
+
+- Sur TEST, avant connexion : Portail reste directement visible sur ordinateur et mobile ; clic vers le formulaire existant, sans cadenas. Sous LivePalmes, seulement FFESSM.
+- Après connexion : Mon espace actif dans le portail, menu personnel et navigation métier inchangés. Consulter Calendrier/Records/MPF/TOP/nageur/Documents depuis le bandeau : nouvel onglet annoncé et dossier initial conservé, aucune sauvegarde réelle requise pour cette recette.
+- Sur les pages publiques du même domaine, Mon espace revient au portail. Après déconnexion dans le portail, les onglets publics actualisent le libellé ; stockage bloqué ou témoin absent : Portail, sans empêcher la connexion existante. Un témoin périmé ne doit jamais autoriser un accès.
+- Vérifier 1280, 850, 390, 360 et 320 px, thème clair/sombre, clavier/Échap, compte accessible même lorsque son nom est masqué, menus sans débordement et repère TEST au-dessus du bandeau. Ne pas écrire dans la NAP partagée, envoyer de mail ou recalculer pour cette recette.
+
 ## Textes de consultation et introductions Club — 21 octobre
 
 - Parcourir un dossier à venir, ouvert, fermé, annulé et avec délai dépassé : les pastilles et la date limite portent toujours l’état ; aucune phrase générique ne répète la consultation possible ou les saisies disponibles. L’alerte dédiée d’annulation reste visible. Vérifier qu’un contrôle des qualifications en cours ou un chef requis conserve son indication utile.
