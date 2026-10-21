@@ -6820,7 +6820,8 @@
   function engagementNavigationBaseline() {
     return JSON.stringify([
       selectedEngagementClubEntry?.napFingerprint || engagementClubLastPersistedEntry,
-      selectedEngagementCompetition?.updatedAt || "",
+      // NAP updatedAt is the read time, not a stored modification date.
+      selectedEngagementCompetition?.napFingerprint || selectedEngagementCompetition?.updatedAt || "",
       selectedEngagementCompetition?.entryStatus || ""
     ]);
   }
@@ -6923,9 +6924,12 @@
       selectedEngagementClubEntry = snapshot.entry;
       engagementClubSwimmersRenderedCompetitionId = "";
       engagementClubEntriesRenderedCompetitionId = "";
+      // Selection readers can consult the old course DOM. Rebuild from the
+      // checkpoint model first, otherwise that DOM could replace unsaved choices.
+      if (elements.engagementsClubEntriesList) elements.engagementsClubEntriesList.innerHTML = "";
       engagementClubRelaysDraft = snapshot.relays || [];
       renderEngagementClubSwimmers();
-      renderEngagementClubEntries();
+      if (snapshot.tab === "entries") renderEngagementClubEntries();
       renderEngagementClubRelays();
       engagementClubTeamEditing = snapshot.teamEditing === true;
       if (elements.engagementsClubTeamPersonFields) elements.engagementsClubTeamPersonFields.dataset.manualEntry = String(snapshot.teamManual === true);
