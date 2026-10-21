@@ -72,7 +72,8 @@
    new MutationObserver(publishHint).observe(body,{attributes:true,attributeFilter:["data-admin-auth"]});publishHint();
   }
   refreshLabel();global.addEventListener("storage",event=>{if(event.key===sessionKey||event.key===null)refreshLabel();});global.addEventListener("pageshow",refreshLabel);
-  function measureHeader(){const bannerHeight=banner?.getBoundingClientRect().height||0;const height=header.getBoundingClientRect().height;body.style.setProperty("--site-banner-height",bannerHeight+"px");body.style.setProperty("--site-header-bottom",(bannerHeight+height)+"px");const topbar=document.querySelector(".admin-portal-topbar");const toolbarHeight=topbar?.getBoundingClientRect().height||0;body.style.setProperty("--site-workspace-top",(bannerHeight+height+toolbarHeight)+"px");global.dispatchEvent(new Event("resize"));}
+  function measureHeader(){const currentBanner=body.querySelector("[data-livepalmes-test-banner]");const bannerHeight=currentBanner?.getBoundingClientRect().height||0;const height=header.getBoundingClientRect().height;body.style.setProperty("--site-banner-height",bannerHeight+"px");body.style.setProperty("--site-header-bottom",(bannerHeight+height)+"px");const topbar=document.querySelector(".admin-portal-topbar");const toolbarHeight=topbar?.getBoundingClientRect().height||0;body.style.setProperty("--site-workspace-top",(bannerHeight+height+toolbarHeight)+"px");global.dispatchEvent(new Event("resize"));}
+  if(document.readyState!=="complete")global.addEventListener("load",measureHeader,{once:true});
   if(global.ResizeObserver){const observer=new global.ResizeObserver(measureHeader);observer.observe(header);if(banner)observer.observe(banner);const topbar=document.querySelector(".admin-portal-topbar");if(topbar)observer.observe(topbar);}measureHeader();
  }
  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",init,{once:true});else init();
