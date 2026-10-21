@@ -2,6 +2,12 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 21 octobre — Rappel de fermeture redondant dans le récapitulatif Club (préparation TEST)
+
+- Antoine demande de retirer la phrase « Engagements fermés — votre récapitulatif reste consultable », l’état étant déjà annoncé dans l’en-tête. Ce rappel provenait de l’en-tête commun : il disparaît de cet emplacement dans les onglets Club. La pastille de statut est conservée et aucun paragraphe vide ne prend sa place ; les avertissements natifs, annulations, prérequis et erreurs restent affichés selon les règles existantes.
+- Budget inchangé : zéro lecture, appel, écriture ou listener supplémentaire à l’ouverture, lors d’une action, d’un retour ou d’un rafraîchissement ; aucun changement des données ou verrous. Fichiers : assets/livepalmes-admin-portal.js, portail.html (cache du script), tests/engagement-club-ux-tests.js, tests/livepalmes-portal-optimization-tests.js, docs/DESIGN_SYSTEM.md et ce registre.
+- Syntaxe et tests UX, optimisations et sélection native réussis hors réseau. Vérification complète Linux et recette de fermeture ordinateur/mobile à consigner avec la preuve du déploiement TEST. Validation utilisateur de la livraison attendue ; aucune publication PROD demandée.
+
 ### 21 octobre — Ordre des nageurs et officiels dans le récapitulatif Club (TEST publié, validation de livraison attendue)
 
 - Demande explicite d’Antoine : nageurs femmes puis hommes, tri alphabétique par nom puis prénom ; afficher également les officiels engagés par le club dans le récapitulatif à plat. Un sexe absent reste à la fin. Les officiels sont présentés par nom puis prénom, dans une rubrique repliable ouverte initialement ; les historiques restent visibles même lorsque les officiels ne sont pas requis.

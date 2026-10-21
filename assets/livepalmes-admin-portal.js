@@ -10859,7 +10859,7 @@
   function engagementClubContextMessage(competition = {}) {
     if (isEngagementAdminMode()) return "Les paramètres et le programme de cette compétition sont disponibles.";
     if (competition.canceled) return "Compétition annulée — votre récapitulatif reste consultable.";
-    if (competition.entryStatus === "closed") return "Engagements fermés — votre récapitulatif reste consultable.";
+    if (competition.entryStatus === "closed") return "";
     if (engagementDeadlineTone(competition) === "deadline-passed") return "Date limite dépassée — votre récapitulatif reste consultable.";
     if (competition.entryStatus !== "open") return "Les engagements ne sont pas encore ouverts. Les informations et documents restent consultables.";
     const lockReason = engagementClubWriteLockReason({ ...competition, nativeReadOnly: false });
@@ -10915,8 +10915,9 @@
         && !competition.canceled && !competition.qualificationJobId && !competition.nativeTeamLeaderRequired
         && engagementDeadlineTone(competition) !== "deadline-passed"
         && (competition.nativeIndividualEntriesEditable || competition.nativeSwimmerSelectionEditable || competition.nativeRelaysEditable);
+      const contextMessage = routineClubMessage ? "" : engagementClubContextMessage(competition);
       elements.engagementsDetailMeta.innerHTML = competition.napSource === true
-        ? `${routineClubMessage ? "" : `<p role="status">${escapeHtml(engagementClubContextMessage(competition))}</p>`}${(competition.nativeWarnings || []).map(warning => `<p>${escapeHtml(warning)}</p>`).join("")}`
+        ? `${contextMessage ? `<p role="status">${escapeHtml(contextMessage)}</p>` : ""}${(competition.nativeWarnings || []).map(warning => `<p>${escapeHtml(warning)}</p>`).join("")}`
         : "";
       elements.engagementsDetailMeta.hidden = !elements.engagementsDetailMeta.innerHTML;
     }
