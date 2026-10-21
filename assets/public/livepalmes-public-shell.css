@@ -97,3 +97,5 @@ body.public-shell-page{margin:0;background:#f3f9fa;color:#153c4a;font-family:Int
 .public-site-header .public-site-nav a:hover{background:var(--portal-color-field-background,#edf6f7)}
 
 @media(max-width:850px){#publicSiteAccount #adminPortalAccountClubCode{display:none}}
+
+@media(max-width:850px){#publicSiteAccount #adminPortalAccountToggle{min-width:30px;padding:4px}.public-site-header-inner .public-site-portal{padding:6px;font-size:.74rem}.public-site-menu-toggle{padding:7px 4px;min-width:44px}}
