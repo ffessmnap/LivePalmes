@@ -3,6 +3,10 @@ body.public-shell-page{margin:0;background:#f3f9fa;color:#153c4a;font-family:Int
 .public-shell-page .public-sr-title{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap;border:0}
 .public-shell-page *{box-sizing:border-box}
 .public-site-header{background:#fff;border-bottom:1px solid #d5e4e8}
+/* The portal CSP rejects the environment helper's inline style. Keep its
+   existing TEST marker opaque and sticky through this permitted stylesheet. */
+:is(body.public-shell-page,body.admin-portal-page)>[data-livepalmes-test-banner]{position:sticky;top:0;z-index:100000;padding:7px 16px;background:#7f1d1d;color:#fff;font:700 12px/1.2 system-ui,sans-serif;letter-spacing:.1em;text-align:center;box-shadow:0 2px 6px #0004}
+:is(body.public-shell-page,body.admin-portal-page)>[data-livepalmes-test-banner][data-variant=sensitive]{padding:10px 16px;background:#b91c1c;font-size:14px;font-weight:800;letter-spacing:.12em;box-shadow:0 2px 8px #0005}
 .public-site-header-inner{width:min(1120px,calc(100% - 32px));margin:auto;display:flex;align-items:center;gap:16px;min-height:80px;padding:12px 0}
 .public-site-brand{display:flex;align-items:center;gap:8px;color:#153c4a;text-decoration:none;font-size:1.25rem;font-weight:700;white-space:nowrap}
 .public-site-brand img{width:108px;height:56px;object-fit:contain}
@@ -163,7 +167,7 @@ html[data-portal-theme="dark"] .admin-portal-page{--site-heading-wash:#203640;--
 @media(max-width:1080px){
  body.has-mobile-portal-navigation{--mobile-portal-rail-height:calc(62px + env(safe-area-inset-bottom,0px));padding-bottom:var(--mobile-portal-rail-height);scroll-padding-bottom:calc(var(--mobile-portal-rail-height) + 16px)}
  html:has(body.has-mobile-portal-navigation){scroll-padding-bottom:calc(78px + env(safe-area-inset-bottom,0px))}
- .has-mobile-portal-navigation .livepalmes-mobile-navigation:not([hidden]){position:fixed;inset:auto 0 0;z-index:70;display:flex;align-items:stretch;min-height:62px;padding:5px max(12px,env(safe-area-inset-left,0px)) calc(5px + env(safe-area-inset-bottom,0px));gap:8px;border-top:1px solid #c9dfe4;background:#fff;box-shadow:0 -3px 14px #153c4a0a;box-sizing:border-box}
+ .has-mobile-portal-navigation .livepalmes-mobile-navigation:not([hidden]){position:fixed;inset:auto 0 0;z-index:70;display:flex;align-items:stretch;min-height:62px;padding:4px max(12px,env(safe-area-inset-left,0px)) calc(5px + env(safe-area-inset-bottom,0px));gap:8px;border-top:1px solid #c9dfe4;background:#fff;box-shadow:0 -3px 14px #153c4a0a;box-sizing:border-box}
  .livepalmes-mobile-navigation a{flex:1 1 0;min-width:0;min-height:52px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:5px 3px;border-radius:7px;color:#56717d;font:600 11px/1.2 Inter,"Segoe UI",Arial,sans-serif;text-decoration:none;box-sizing:border-box}
  .livepalmes-mobile-navigation a[hidden]{display:none}
  .livepalmes-mobile-navigation a[aria-current=page]{color:#086f7e;background:#e4f3f5}
