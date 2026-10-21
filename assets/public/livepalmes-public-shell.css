@@ -129,3 +129,31 @@ html.livepalmes-site-shell{scrollbar-gutter:stable}
  .public-site-nav details[open]{grid-column:1/-1}.public-site-dropdown{position:static;display:grid;grid-template-columns:1fr 1fr;min-width:0;box-shadow:none;border:0;padding:0}
 }
 @media(max-width:380px){.public-site-header-inner{width:calc(100% - 20px);gap:4px}.public-site-brand{gap:5px}.public-site-brand img{width:66px}.public-site-wordmark{font-size:16px}.public-site-menu-toggle{font-size:11px}}
+
+/* Same decorative wash on every public page; it scrolls with the document. */
+body.public-shell-page{
+ --public-intro-height:260px;
+ --public-intro-blue:#e4f4f7;
+ --public-intro-fade:#edf7f9;
+ --public-page-neutral:#f5f8fa;
+ background-color:var(--public-page-neutral);
+ background-image:linear-gradient(180deg,var(--public-intro-blue),var(--public-intro-fade) 55%,var(--public-page-neutral));
+ background-size:100% var(--public-intro-height);
+ background-position:center var(--site-header-bottom,74px);
+ background-repeat:no-repeat;
+ background-attachment:scroll;
+}
+/* Retire the calendar-only fixed glow behind the shared public shell. */
+body.public-shell-page::before{content:none}
+/* Workspace titles only: no new hero, card or fixed height in the portal. */
+.admin-portal-page{--site-heading-wash:#edf7f9;--site-heading-edge:#b8dce3}
+.admin-portal-page .admin-portal-workspace-head>h2{
+ background-image:linear-gradient(90deg,var(--site-heading-wash),transparent);
+ border-inline-start:3px solid var(--site-heading-edge);
+ padding-inline-start:10px;
+}
+html[data-portal-theme="dark"] .admin-portal-page{--site-heading-wash:#203640;--site-heading-edge:#427984}
+@media print{
+ body.public-shell-page{background:#fff}
+ .admin-portal-page .admin-portal-workspace-head>h2{background:none;border-inline-start:0;padding-inline-start:0}
+}
