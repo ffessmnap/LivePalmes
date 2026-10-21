@@ -10,17 +10,26 @@
   const brand=document.createElement("a");brand.className="public-site-brand";brand.href="/";brand.setAttribute("aria-label","Accueil LivePalmes");
   const icon=document.createElement("img");icon.src="/logo-ffessm-nage-avec-palmes.png?v=20260529-home-ffessm-1";icon.alt="FFESSM Nage avec palmes";brand.append(icon);const wordmark=document.createElement("span");wordmark.className="public-site-wordmark";wordmark.textContent="LivePalmes";const federal=document.createElement("small");federal.textContent="FFESSM";wordmark.append(federal);brand.append(wordmark);
   const nav=document.createElement("nav");nav.className="public-site-nav";nav.setAttribute("aria-label","Navigation publique");
+  const menus=[];
+  function closeDropdowns(except){for(const menu of menus)if(menu.details!==except){menu.details.open=false;menu.hoverOpened=false;}}
+  const shortcuts={
+   calendar:[["Tout le calendrier","/calendrier.html"],["Événements nationaux","/calendrier.html?level=national"],["Événements en région","/calendrier.html?level=regions"]],
+   performances:[["Records de France","/performances/records.html"],["MPF","/performances/mpf.html"],["TOP","/performances/tops.html"],["Recherche nageur","/performances/nageur.html"]],
+   // Existing library theme routes: no extra catalogue request when opening a menu.
+   documents:[["Tous les documents","/bibliotheque.html"],["Comités/clubs","/bibliotheque.html?theme=2"],["Compétitions","/bibliotheque.html?theme=3"],["Entraîneurs","/bibliotheque.html?theme=4"],["Juges","/bibliotheque.html?theme=5"],["Haut Niveau","/bibliotheque.html?theme=6"]]
+  };
   for(const [key,title,href]of [["home","Accueil","/"],["calendar","Calendrier","/calendrier.html"],["performances","Performances","/performances/records.html"],["documents","Documents","/bibliotheque.html"]]){
-   if(key==="performances"){
-    const details=document.createElement("details"),summary=document.createElement("summary"),links=document.createElement("div");details.className="public-site-performances";summary.textContent="Performances";links.className="public-site-dropdown";
+   if(shortcuts[key]){
+    const details=document.createElement("details"),summary=document.createElement("summary"),links=document.createElement("div");details.className="public-site-"+key;summary.textContent=title;links.className="public-site-dropdown";
     if(section===key)summary.className="is-current";
-    for(const [text,url]of [["Records de France","/performances/records.html"],["MPF","/performances/mpf.html"],["TOP","/performances/tops.html"],["Recherche nageur","/performances/nageur.html"]]){const a=document.createElement("a");a.textContent=text;a.href=url;links.append(a);}
+    for(const [text,url]of shortcuts[key]){const a=document.createElement("a");a.textContent=text;a.href=url;links.append(a);}
     details.append(summary,links);nav.append(details);
-    let hoverOpened=false;
-    details.addEventListener("pointerenter",()=>{if(global.matchMedia?.("(hover: hover) and (pointer: fine)").matches){hoverOpened=!details.open;details.open=true;}});
-    summary.addEventListener("click",event=>{if(hoverOpened&&details.open){event.preventDefault();hoverOpened=false;}});
-    details.addEventListener("pointerleave",()=>{if(hoverOpened&&!details.contains(document.activeElement)){details.open=false;hoverOpened=false;}});
-    details.addEventListener("focusout",event=>{if(!details.contains(event.relatedTarget)){details.open=false;hoverOpened=false;}});
+    const menu={details,hoverOpened:false};menus.push(menu);
+    details.addEventListener("pointerenter",()=>{if(global.matchMedia?.("(min-width: 851px) and (hover: hover) and (pointer: fine)").matches){closeDropdowns(details);menu.hoverOpened=!details.open;details.open=true;}});
+    summary.addEventListener("click",event=>{closeDropdowns(details);if(menu.hoverOpened&&details.open){event.preventDefault();menu.hoverOpened=false;}});
+    details.addEventListener("pointerleave",()=>{if(menu.hoverOpened&&!details.contains(document.activeElement)){details.open=false;menu.hoverOpened=false;}});
+    // Keep layout stable while focus moves to another summary before its click.
+    details.addEventListener("focusout",event=>{if(!nav.contains(event.relatedTarget)){details.open=false;menu.hoverOpened=false;}});
    }else{const link=document.createElement("a");link.href=href;link.textContent=title;if(section===key)link.setAttribute("aria-current","page");nav.append(link);}
   }
   const portal=document.createElement("a");portal.className="public-site-portal";portal.href="/portail.html";portal.textContent="Portail";if(isPortal)portal.setAttribute("aria-current","page");
@@ -48,14 +57,14 @@
   const sessionKey="livepalmes:portal-session-display:v1";
   // Anonymous presentation hint only. The portal remains the sole access authority.
   function readHint(){try{return global.localStorage.getItem(sessionKey)==="connected";}catch{return false;}}
-  function refreshLabel(){const connected=isPortal?body.dataset.adminAuth==="unlocked":readHint();portal.textContent=connected?"Mon espace":"Portail";if(publicAccount)publicAccount.hidden=!connected;}
+  function refreshLabel(){const connected=isPortal?body.dataset.adminAuth==="unlocked":readHint();portal.textContent="Portail";if(publicAccount)publicAccount.hidden=!connected;}
   function publishHint(){const state=body.dataset.adminAuth;if(state!=="unlocked"&&state!=="locked")return;try{if(state==="unlocked")global.localStorage.setItem(sessionKey,"connected");else global.localStorage.removeItem(sessionKey);}catch{}refreshLabel();}
   // The active portal link must never reload and discard its current dossier.
   if(isPortal)portal.addEventListener("click",event=>{if(body.dataset.adminAuth==="unlocked")event.preventDefault();});
-  function closeMenu(){header.classList.remove("is-site-menu-open");toggle.setAttribute("aria-expanded","false");}
-  toggle.addEventListener("click",()=>{const open=toggle.getAttribute("aria-expanded")!=="true";header.classList.toggle("is-site-menu-open",open);toggle.setAttribute("aria-expanded",String(open));});
-  document.addEventListener("keydown",event=>{if(event.key!=="Escape")return;const details=nav.querySelector("details[open]");if(details){details.open=false;details.querySelector("summary").focus();}else if(toggle.getAttribute("aria-expanded")==="true"){closeMenu();toggle.focus();}});
-  document.addEventListener("click",event=>{if(!header.contains(event.target)){closeMenu();const details=nav.querySelector("details[open]");if(details)details.open=false;}});
+  function closeMenu(){closeDropdowns();header.classList.remove("is-site-menu-open");toggle.setAttribute("aria-expanded","false");}
+  toggle.addEventListener("click",()=>{const open=toggle.getAttribute("aria-expanded")!=="true";if(!open)closeDropdowns();header.classList.toggle("is-site-menu-open",open);toggle.setAttribute("aria-expanded",String(open));});
+  document.addEventListener("keydown",event=>{if(event.key!=="Escape")return;const details=nav.querySelector("details[open]");if(details){closeDropdowns();details.querySelector("summary").focus();}else if(toggle.getAttribute("aria-expanded")==="true"){closeMenu();toggle.focus();}});
+  document.addEventListener("click",event=>{if(!header.contains(event.target)){closeMenu();}});
   if(isPortal){
    const account=document.getElementById("adminPortalAccount");if(account){accountHost.append(account);const button=document.getElementById("adminPortalAccountToggle");if(button)button.setAttribute("aria-label","Mon compte");}
    // Public consultation must not unload the current dossier or pending saves.
