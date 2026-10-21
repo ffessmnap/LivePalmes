@@ -38,6 +38,8 @@
   function readHint(){try{return global.localStorage.getItem(sessionKey)==="connected";}catch{return false;}}
   function refreshLabel(){portal.textContent=(isPortal?body.dataset.adminAuth==="unlocked":readHint())?"Mon espace":"Portail";}
   function publishHint(){const state=body.dataset.adminAuth;if(state!=="unlocked"&&state!=="locked")return;try{if(state==="unlocked")global.localStorage.setItem(sessionKey,"connected");else global.localStorage.removeItem(sessionKey);}catch{}refreshLabel();}
+  // The active portal link must never reload and discard its current dossier.
+  if(isPortal)portal.addEventListener("click",event=>{if(body.dataset.adminAuth==="unlocked")event.preventDefault();});
   function closeMenu(){header.classList.remove("is-site-menu-open");toggle.setAttribute("aria-expanded","false");}
   toggle.addEventListener("click",()=>{const open=toggle.getAttribute("aria-expanded")!=="true";header.classList.toggle("is-site-menu-open",open);toggle.setAttribute("aria-expanded",String(open));});
   document.addEventListener("keydown",event=>{if(event.key!=="Escape")return;const details=nav.querySelector("details[open]");if(details){details.open=false;details.querySelector("summary").focus();}else if(toggle.getAttribute("aria-expanded")==="true"){closeMenu();toggle.focus();}});
