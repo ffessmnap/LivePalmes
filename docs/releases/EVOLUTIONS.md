@@ -2,6 +2,11 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 21 octobre — Accueil : date unique et métadonnées compactes (préparation TEST)
+
+- Demande explicite d’Antoine : conserver la date à gauche seulement ; sous le titre, ville disponible, type et niveau. Rendus serveur et navigateur harmonisés, date accessible conservée, périodes entre deux mois/années complètes dans le repère. Aucune écriture NAP, aucune lecture supplémentaire, aucun changement PROD, droits, mails ou règles métier. La ville utilise la donnée déjà reçue ; aucune ville déduite d’une adresse ni correction de fiche.
+- Contrôles ciblés et recette ordinateur/mobile à consigner avec la PR et la preuve TEST. Accord de réalisation reçu ; validation de la livraison attendue.
+
 ### 21 octobre — Bandeau, sous-menus et fond commun (PROD publiée)
 
 - **Publication autorisée exécutée dans Infra.** Préparation #440, CI Linux `39609288468` réussie, [preflight 39609744529](https://github.com/ffessmnap/LivePalmes/actions/runs/39609744529) conforme ; artefact `12350555062`, empreinte ZIP `cdd914633795910a8646fb05d8b2a461899051a53047bed78378b529ae51d117` vérifiée. Accord humain relu à la source et lié au candidat exact, aucune seconde validation de principe demandée. Publication [39610286011](https://github.com/ffessmnap/LivePalmes/actions/runs/39610286011) réussie sur `21d0fb8541d70c16cda397f2238820ec64cfc636`, Hosting `ee455ea695461928` ; sélection backend vide et 112 identités conservées, actives sans erreur. Contrôles frais TEST/PROD et sauvegarde chiffrée rouverte/comparée avant écriture réussis ; copie locale authentifiée, artefact `12349619012`, SHA-256 ZIP `840698f078a83739a085f56d41918760bab52f3c73c3449e8f82a664b9f8e85a`, fichier chiffré `18f67b70b8ff548548e4aa8bfbca8ab63b1787b6750252edf052e4a29d335412`.

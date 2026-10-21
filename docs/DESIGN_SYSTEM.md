@@ -217,6 +217,8 @@ Le cadre concerne la consultation permanente, les pages publiques du Direct, PDF
 
 L’accueil publié est fourni en HTML préparé côté serveur, avec rendez-vous/documents présents dès la réponse initiale. La présentation et le dépliage mobile restent identiques ; aucune demande de données supplémentaire n’est lancée par le navigateur sur une page préparée. Les états vides/indisponibles sont aussi rendus côté serveur.
 
+Dans les cartes de rendez-vous de l’accueil, la date figure uniquement dans le repère de gauche, sous forme de `time` avec une date complète accessible. Les périodes affichent leurs deux jours et, si nécessaire, leurs deux mois/années. Sous le titre, la ligne secondaire contient la ville lorsqu’elle est renseignée, puis le type et le niveau ; aucune date répétée ni remplacement local de la ville absente par le lieu.
+
 L’accueil commence par un court « Bienvenue sur LivePalmes » et la phrase « Les rendez-vous, les performances et les ressources de la Commission Nationale Nage avec Palmes FFESSM. » Le logo fédéral et l’accès portail sont portés par l’en-tête, sans seconde marque LivePalmes.
 
 Au-dessus de 700 px, les rendez-vous occupent la colonne gauche légèrement plus large (rapport 1,16 / 1) ; la colonne droite empile Performances françaises, Documents utiles et Portail clubs. Les quatre actions Performances forment une grille 2 × 2 sous le titre. Sur mobile, l’ordre est Rendez-vous, Performances, Documents, Portail ; boutons de performances de 44 px minimum. Le bloc portail explique la préparation des compétitions et engagements, avec mention d’accès réservé aux responsables de clubs autorisés ; simple lien, sans changement de droits. Les fonds bleu et mauve restent subtils, avec icônes calendrier et document.
