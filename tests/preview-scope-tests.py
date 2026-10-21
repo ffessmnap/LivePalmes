@@ -67,3 +67,10 @@ for extra in ['portail.html', 'functions/index.js', 'firebase.json', 'tools/unkn
     assert scope.needs_preview(swimmer_dialog + [extra]) is True
 assert scope.needs_preview(['tools/preview-scope.py', 'tests/preview-scope-tests.py']) is True
 print('Swimmer dialog preparation skips preview; mixed and unanchored changes retain it')
+
+shared_header = sorted(scope.SHARED_HEADER_PREFLIGHT_PATHS) + ['docs/releases/EVOLUTIONS.md']
+assert scope.needs_preview(shared_header) is False
+for extra in ['portail.html', 'functions/index.js', 'firebase.json', 'tools/unknown.py', 'unknown-file']:
+    assert scope.needs_preview(shared_header + [extra]) is True
+assert scope.needs_preview(['tools/preview-scope.py', 'tests/preview-scope-tests.py']) is True
+print('Shared header preparation skips preview; mixed and unanchored changes retain it')
