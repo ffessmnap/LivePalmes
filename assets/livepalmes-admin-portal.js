@@ -5956,7 +5956,9 @@
   }
 
   function selectedEngagementClubSwimmerRows() {
-    const swimmerFormRows = Array.from(elements.engagementsClubSwimmersForm?.querySelectorAll("[data-engagement-club-swimmer-row]") || []);
+    const swimmerFormRows = engagementClubSwimmersRenderedCompetitionId === selectedEngagementCompetitionId
+      ? Array.from(elements.engagementsClubSwimmersForm?.querySelectorAll("[data-engagement-club-swimmer-row]") || [])
+      : [];
     if (!swimmerFormRows.length) {
       const entriesBySwimmer = selectedEngagementClubEntryRowsBySwimmerId();
       return (Array.isArray(selectedEngagementClubEntry?.swimmers) ? selectedEngagementClubEntry.swimmers : [])
