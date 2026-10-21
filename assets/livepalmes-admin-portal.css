@@ -19776,6 +19776,7 @@ html[data-portal-theme="dark"] #adminDtnGrid:has(.admin-dtn-summary-list) :is(.a
   text-underline-offset: 3px;
 }
 #adminEngagementsDetailTeamPanel #adminEngagementsClubTeamMessage:empty { display: none; }
+#adminEngagementsView[data-engagements-mode="club"] :is(#adminEngagementsClubOfficialsMessage, #adminEngagementsClubSwimmersMessage, #adminEngagementsClubEntriesMessage, #adminEngagementsClubRelaysMessage):empty { display: none; }
 @media (max-width: 700px) {
   #adminEngagementsDetailTeamPanel .admin-engagements-club-team-actions button { min-height: 44px; }
   #adminEngagementsDetailSummaryPanel .admin-engagements-club-summary-actions { justify-content: flex-start; }

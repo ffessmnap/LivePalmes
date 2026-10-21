@@ -130,12 +130,28 @@ function fixture() {
   c.isEngagementAdminMode = () => false;
   c.engagementDetailEditing = false;
   const open = {napSource: true, entryStatus: "open", nativeIndividualEntriesEditable: true, nativeRelaysEditable: true};
-  assert.match(c.engagementClubContextMessage(open), /peuvent être enregistrés/);
-  assert.equal(c.engagementClubContextMessage({...open,entryStatus:"closed"}), "", "closure is already shown by the header status");
-  for (const [patch, expected] of [[{entryStatus:"upcoming"}, /pas encore ouverts/], [{canceled:true}, /annulée/], [{entryDeadlineAt:"2000-01-01"}, /Date limite dépassée/], [{qualificationJobId:"pending"}, /qualifications en cours/]]) {
-    const message = c.engagementClubContextMessage({...open, ...patch});
-    assert.match(message, expected); assert.doesNotMatch(message, /peuvent être enregistrés/);
+  for (const patch of [{}, {entryStatus:"closed"}, {entryStatus:"upcoming"}, {canceled:true}, {entryDeadlineAt:"2000-01-01"}, {nativeIndividualEntriesEditable:false,nativeRelaysEditable:false}, {nativeIndividualEntriesEditable:false,nativeRelaysEditable:false,nativeSwimmerSelectionEditable:true}]) {
+    const competition = {...open,...patch};
+    assert.equal(c.engagementClubContextMessage(competition), "", "routine status and availability notices are redundant");
+    c.competition = {...competition,nativeWarnings:[]};
+    vm.runInContext(source.slice(metaStart,metaEnd),c);
+    assert.equal(c.elements.engagementsDetailMeta.hidden,true,"no empty header row replaces removed notices");
   }
+  assert.match(c.engagementClubContextMessage({...open,qualificationJobId:"pending"}),/qualifications en cours/);
+  assert.match(c.engagementClubContextMessage({...open,nativeTeamLeaderRequired:true}),/Déclarez votre chef/);
+  c.isEngagementAdminMode=()=>true;
+  assert.match(c.engagementClubContextMessage(open),/paramètres et le programme/);
+  c.isEngagementAdminMode=()=>false;
+  const intro = {textContent:"Règle métier à conserver"};
+  const steps = ["swimmers","entries","relays","summary"].map(clubStep=>({dataset:{clubStep},querySelector:()=>intro}));
+  c.document={querySelectorAll:()=>steps};
+  c.engagementClubStepLockReason=step=>step==="entries"?"Blocage utile":"";
+  const stepsStart=source.indexOf('    document.querySelectorAll("[data-club-step]").forEach((step) => {',source.indexOf("  function renderEngagementClubEntry("));
+  const stepsEnd=source.indexOf("\n    if (!isEngagementAdminMode()",stepsStart);
+  vm.runInContext(source.slice(stepsStart,stepsEnd),c);
+  assert.equal(intro.textContent,"Règle métier à conserver","rendering a dossier must not overwrite an arbitrary paragraph inside a dialog or warning");
+  assert.equal(steps[1].dataset.locked,"true");
+  assert.equal(steps[0].dataset.locked,"false");
   c.setEngagementSaveState("saving"); assert.match(c.elements.engagementsSaveState.textContent, /en cours/);
   c.setEngagementSaveState("saved"); assert.equal(c.elements.engagementsSaveState.hidden, false);
   assert.match(c.elements.engagementsSaveState.textContent, /confirmé/);
