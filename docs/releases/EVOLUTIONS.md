@@ -2,6 +2,13 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 21 octobre — Continuité du bandeau public/portail (TEST en préparation)
+
+- Demande explicite d’Antoine : mêmes positions, couleurs et accès au compte entre public et portail sur TEST, PROD et droits exclus. Cadre 1 720 px et gouttière de défilement communs, palette claire indépendante du contenu, accès Portail/Mon espace et emplacement du compte de largeur stable. Même icône de compte : menu réel dans le portail, lien direct Mon compte vers le portail dans le public ; nom/code club masqués dans le bouton, aucune identité copiée. Contenus et autorisations conservés.
+- Performances sans chevron, sous-menu au survol sur pointeur précis, clic/toucher/clavier et Échap conservés. Les sous-menus Calendrier/Documents restent une proposition locale : catégories actuellement visibles dans la bibliothèque ; Antoine confirme que « en région » doit inclure régional et départemental. Aucun filtre groupé, requête de catégories ou modification documentaire introduit par ce lot.
+- Budget : zéro requête NAP, lecture/écriture Firestore, SDK, profil, listener réseau ou appel backend supplémentaire à l’ouverture, par action, au rafraîchissement ou dans le pire cas. Réutilisation du témoin local anonyme de présentation ; le portail reste seul à contrôler l’accès. Le lien Mon compte lance le parcours existant du portail, sans raccourci d’autorisation.
+- Tests ciblés du bandeau et des optimisations réussis. Recette locale sans services : coordonnées et palette public/portail identiques à 1920 et 360 px, petit mobile 320 px sans débordement, palette claire du bandeau conservée sur contenu portail sombre à 1280 px. CI complète, PR, preuve TEST et recette connectée à compléter. Livraison utilisateur non validée à ce stade. Aucun changement serveur, configuration, donnée, mail ou PROD.
+
 ### 21 octobre — Bandeau commun public/portail (TEST publié, validation de livraison attendue)
 
 - Maquette validée puis intégration TEST demandée explicitement par Antoine : Portail avant connexion, Mon espace connecté, sans cadenas, mention FFESSM seule. Identité, menus publics et accès direct communs ; menu Performances pour Records/MPF/TOP/nageur. Compte réel déplacé sans duplication de ses contrôles ni modification de droits. Navigation métier conservée, liens publics du bandeau en nouvel onglet annoncé pour préserver les saisies.
