@@ -85,7 +85,8 @@ function fixture() {
   const c = fixture();
   const open = {napSource: true, entryStatus: "open", nativeIndividualEntriesEditable: true, nativeRelaysEditable: true};
   assert.match(c.engagementClubContextMessage(open), /peuvent être enregistrés/);
-  for (const [patch, expected] of [[{entryStatus:"closed"}, /fermés.*consultable/], [{entryStatus:"upcoming"}, /pas encore ouverts/], [{canceled:true}, /annulée/], [{entryDeadlineAt:"2000-01-01"}, /Date limite dépassée/], [{qualificationJobId:"pending"}, /qualifications en cours/]]) {
+  assert.equal(c.engagementClubContextMessage({...open,entryStatus:"closed"}), "", "closure is already shown by the header status");
+  for (const [patch, expected] of [[{entryStatus:"upcoming"}, /pas encore ouverts/], [{canceled:true}, /annulée/], [{entryDeadlineAt:"2000-01-01"}, /Date limite dépassée/], [{qualificationJobId:"pending"}, /qualifications en cours/]]) {
     const message = c.engagementClubContextMessage({...open, ...patch});
     assert.match(message, expected); assert.doesNotMatch(message, /peuvent être enregistrés/);
   }
