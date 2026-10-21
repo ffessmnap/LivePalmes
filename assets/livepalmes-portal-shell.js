@@ -11,7 +11,7 @@
   head.className = 'admin-portal-sidebar-brand';
   head.hidden = true;
   sidebar.insertBefore(head, nav);
-  const controls = ['.admin-portal-federal-logo', '.admin-portal-brand', '#adminPortalScopeContext', '#adminPortalAccount'].map(selector => {
+  const controls = ['.admin-portal-federal-logo', '.admin-portal-brand', '#adminPortalScopeContext'].map(selector => {
     const element = document.querySelector(selector);
     const marker = document.createComment('portal control home');
     element.before(marker);

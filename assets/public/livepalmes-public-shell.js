@@ -1,21 +1,29 @@
-(function(document){
+(function(document,global){
  "use strict";
  function init(){
   const body=document.body;
-  if(!body?.classList.contains("public-shell-page")||document.getElementById("publicSiteHeader"))return;
-  const section=body.dataset.publicSection||"home",label=body.dataset.publicLabel||"";
+  const isPortal=body?.classList.contains("admin-portal-page");
+  if((!body?.classList.contains("public-shell-page")&&!isPortal)||document.getElementById("publicSiteHeader"))return;
+  const section=isPortal?"portal":body.dataset.publicSection||"home",label=body.dataset.publicLabel||"";
   const header=document.createElement("header");header.id="publicSiteHeader";header.className="public-site-header";
   const inner=document.createElement("div");inner.className="public-site-header-inner";
   const brand=document.createElement("a");brand.className="public-site-brand";brand.href="/";brand.setAttribute("aria-label","Accueil LivePalmes");
-  const icon=document.createElement("img");icon.src="/logo-ffessm-nage-avec-palmes.png?v=20260529-home-ffessm-1";icon.alt="FFESSM Nage avec palmes";brand.append(icon);
+  const icon=document.createElement("img");icon.src="/logo-ffessm-nage-avec-palmes.png?v=20260529-home-ffessm-1";icon.alt="FFESSM Nage avec palmes";brand.append(icon);const wordmark=document.createElement("span");wordmark.className="public-site-wordmark";wordmark.textContent="LivePalmes";const federal=document.createElement("small");federal.textContent="FFESSM";wordmark.append(federal);brand.append(wordmark);
   const nav=document.createElement("nav");nav.className="public-site-nav";nav.setAttribute("aria-label","Navigation publique");
   for(const [key,title,href]of [["home","Accueil","/"],["calendar","Calendrier","/calendrier.html"],["performances","Performances","/performances/records.html"],["documents","Documents","/bibliotheque.html"]]){
-   const link=document.createElement("a");link.href=href;link.textContent=title;if(section===key)link.setAttribute("aria-current","page");nav.append(link);
+   if(key==="performances"){
+    const details=document.createElement("details"),summary=document.createElement("summary"),links=document.createElement("div");details.className="public-site-performances";summary.textContent="Performances ⌄";links.className="public-site-dropdown";
+    if(section===key)summary.className="is-current";
+    for(const [text,url]of [["Records de France","/performances/records.html"],["MPF","/performances/mpf.html"],["TOP","/performances/tops.html"],["Recherche nageur","/performances/nageur.html"]]){const a=document.createElement("a");a.textContent=text;a.href=url;links.append(a);}
+    details.append(summary,links);nav.append(details);
+   }else{const link=document.createElement("a");link.href=href;link.textContent=title;if(section===key)link.setAttribute("aria-current","page");nav.append(link);}
   }
-  const portal=document.createElement("a");portal.className="public-site-portal";portal.href="/portail.html";portal.textContent="Accéder au portail →";
-  inner.append(brand,nav,portal);header.append(inner);
+  const portal=document.createElement("a");portal.className="public-site-portal";portal.href="/portail.html";portal.textContent="Portail";if(isPortal)portal.setAttribute("aria-current","page");
+  const toggle=document.createElement("button");toggle.type="button";toggle.className="public-site-menu-toggle";toggle.textContent="☰ Site";toggle.setAttribute("aria-expanded","false");toggle.setAttribute("aria-controls","livepalmesSiteNavigation");nav.id="livepalmesSiteNavigation";
+  const accountHost=document.createElement("div");accountHost.id="publicSiteAccount";
+  inner.append(brand,nav,portal,accountHost,toggle);header.append(inner);
   const banner=body.querySelector("[data-livepalmes-test-banner]");if(banner)banner.after(header);else body.prepend(header);
-  if(section!=="home"){
+  if(section!=="home"&&!isPortal){
    const breadcrumb=document.createElement("nav");breadcrumb.className="public-site-context";breadcrumb.setAttribute("aria-label","Fil d’Ariane");
    const home=document.createElement("a");home.href="/";home.textContent="Accueil";breadcrumb.append(home);
    const addSeparator=()=>{const sep=document.createElement("span");sep.textContent="›";sep.setAttribute("aria-hidden","true");breadcrumb.append(sep);};
@@ -25,6 +33,26 @@
    header.after(breadcrumb);
   }
   body.classList.add("public-shell-ready");
+  const sessionKey="livepalmes:portal-session-display:v1";
+  // Anonymous presentation hint only. The portal remains the sole access authority.
+  function readHint(){try{return global.localStorage.getItem(sessionKey)==="connected";}catch{return false;}}
+  function refreshLabel(){portal.textContent=(isPortal?body.dataset.adminAuth==="unlocked":readHint())?"Mon espace":"Portail";}
+  function publishHint(){const state=body.dataset.adminAuth;if(state!=="unlocked"&&state!=="locked")return;try{if(state==="unlocked")global.localStorage.setItem(sessionKey,"connected");else global.localStorage.removeItem(sessionKey);}catch{}refreshLabel();}
+  // The active portal link must never reload and discard its current dossier.
+  if(isPortal)portal.addEventListener("click",event=>{if(body.dataset.adminAuth==="unlocked")event.preventDefault();});
+  function closeMenu(){header.classList.remove("is-site-menu-open");toggle.setAttribute("aria-expanded","false");}
+  toggle.addEventListener("click",()=>{const open=toggle.getAttribute("aria-expanded")!=="true";header.classList.toggle("is-site-menu-open",open);toggle.setAttribute("aria-expanded",String(open));});
+  document.addEventListener("keydown",event=>{if(event.key!=="Escape")return;const details=nav.querySelector("details[open]");if(details){details.open=false;details.querySelector("summary").focus();}else if(toggle.getAttribute("aria-expanded")==="true"){closeMenu();toggle.focus();}});
+  document.addEventListener("click",event=>{if(!header.contains(event.target)){closeMenu();const details=nav.querySelector("details[open]");if(details)details.open=false;}});
+  if(isPortal){
+   const account=document.getElementById("adminPortalAccount");if(account){accountHost.append(account);const button=document.getElementById("adminPortalAccountToggle");if(button)button.setAttribute("aria-label","Mon compte");}
+   // Public consultation must not unload the current dossier or pending saves.
+   for(const link of [brand,...nav.querySelectorAll("a")]){link.target="livepalmes-public";link.rel="noopener";link.setAttribute("aria-label",link===brand?"Accueil LivePalmes (nouvel onglet)":link.textContent.trim()+" (nouvel onglet)");}
+   new MutationObserver(publishHint).observe(body,{attributes:true,attributeFilter:["data-admin-auth"]});publishHint();
+  }
+  refreshLabel();global.addEventListener("storage",event=>{if(event.key===sessionKey||event.key===null)refreshLabel();});global.addEventListener("pageshow",refreshLabel);
+  function measureHeader(){const bannerHeight=banner?.getBoundingClientRect().height||0;const height=header.getBoundingClientRect().height;body.style.setProperty("--site-banner-height",bannerHeight+"px");body.style.setProperty("--site-header-bottom",(bannerHeight+height)+"px");const topbar=document.querySelector(".admin-portal-topbar");const toolbarHeight=topbar?.getBoundingClientRect().height||0;body.style.setProperty("--site-workspace-top",(bannerHeight+height+toolbarHeight)+"px");global.dispatchEvent(new Event("resize"));}
+  if(global.ResizeObserver){const observer=new global.ResizeObserver(measureHeader);observer.observe(header);if(banner)observer.observe(banner);const topbar=document.querySelector(".admin-portal-topbar");if(topbar)observer.observe(topbar);}measureHeader();
  }
  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",init,{once:true});else init();
-})(document);
+})(document,window);

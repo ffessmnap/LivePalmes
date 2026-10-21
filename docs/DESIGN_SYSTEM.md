@@ -2,6 +2,14 @@
 
 <!-- description: Référence du langage visuel, des composants d’interface et des règles responsive déjà présents dans LivePalmes. -->
 
+## Bandeau commun public et portail — octobre 2026
+
+Le bandeau partagé reprend le logo fédéral, LivePalmes et la seule sous-mention FFESSM. Accueil, Calendrier, Performances (Records, MPF, TOP et recherche nageur) et Documents donnent accès à la consultation. L’accès direct affiche « Portail » avant connexion et « Mon espace » après ouverture de session ; aucun cadenas. Le menu personnel existant reste distinct et conserve ses contrôles.
+
+Sur mobile, « Mon espace »/« Portail » reste visible sans ouvrir le menu « Site ». La navigation métier reste dans le portail. Les liens publics du bandeau ouverts depuis le portail utilisent un nouvel onglet annoncé pour conserver le dossier et ses sauvegardes ; le lien vers le portail lui-même reste dans le même onglet. Les hauteurs réelles du bandeau et du repère TEST décalent les éléments persistants. Les menus fonctionnent au toucher et au clavier, avec fermeture Échap et focus visible.
+
+Sur les pages publiques, le libellé utilise uniquement un témoin local anonyme de session, synchronisé par le portail et entre onglets. Ce témoin ne prouve aucun accès : en cas de session expirée ou de stockage indisponible, le contrôle normal du portail reste obligatoire. Aucun SDK, profil, droit, donnée NAP ou lecture Firestore supplémentaire n’est chargé pour ce libellé.
+
 ## Objet du document
 
 L'ecran NAP TEST (`nap-test.html`) utilise un formulaire avec champs et boutons d'au moins 44 px, un statut accessible et un tableau a defilement horizontal sur mobile. Il affiche les temps NAP bruts, avec des styles isoles dans `assets/livepalmes-nap-test.css`.
