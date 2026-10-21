@@ -75,6 +75,7 @@ function runUnitTests() {
     "nap-document-index-tests.js",
     "livepalmes-home-model-tests.js",
     "livepalmes-public-shell-tests.js",
+    "livepalmes-mobile-navigation-tests.js",
     "nap-home-events-tests.js",
     "nap-home-direct-tests.js",
     "nap-home-page-tests.js",

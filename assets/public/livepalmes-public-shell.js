@@ -75,6 +75,7 @@
   function measureHeader(){const currentBanner=body.querySelector("[data-livepalmes-test-banner]");const bannerHeight=currentBanner?.getBoundingClientRect().height||0;const height=header.getBoundingClientRect().height;body.style.setProperty("--site-banner-height",bannerHeight+"px");body.style.setProperty("--site-header-bottom",(bannerHeight+height)+"px");const topbar=document.querySelector(".admin-portal-topbar");const toolbarHeight=topbar?.getBoundingClientRect().height||0;body.style.setProperty("--site-workspace-top",(bannerHeight+height+toolbarHeight)+"px");global.dispatchEvent(new Event("resize"));}
   if(document.readyState!=="complete")global.addEventListener("load",measureHeader,{once:true});
   if(global.ResizeObserver){const observer=new global.ResizeObserver(measureHeader);observer.observe(header);if(banner)observer.observe(banner);const topbar=document.querySelector(".admin-portal-topbar");if(topbar)observer.observe(topbar);}measureHeader();
+  const mobileNavigation=document.createElement("script");mobileNavigation.src="/assets/public/livepalmes-mobile-navigation.js?v=20261021-connected-rail-1";mobileNavigation.defer=true;body.append(mobileNavigation);
  }
  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",init,{once:true});else init();
 })(document,window);
