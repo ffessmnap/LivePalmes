@@ -159,7 +159,7 @@ html[data-portal-theme="dark"] .admin-portal-page{--site-heading-wash:#203640;--
 }
 
 /* Connected mobile navigation; public visitors and desktop keep their existing frame. */
-.livepalmes-mobile-navigation{display:none}
+.livepalmes-mobile-navigation,.admin-mobile-overview-shortcut{display:none}
 @media(max-width:1080px){
  body.has-mobile-portal-navigation{--mobile-portal-rail-height:calc(62px + env(safe-area-inset-bottom,0px));padding-bottom:var(--mobile-portal-rail-height);scroll-padding-bottom:calc(var(--mobile-portal-rail-height) + 16px)}
  html:has(body.has-mobile-portal-navigation){scroll-padding-bottom:calc(78px + env(safe-area-inset-bottom,0px))}
@@ -172,6 +172,7 @@ html[data-portal-theme="dark"] .admin-portal-page{--site-heading-wash:#203640;--
  .livepalmes-mobile-navigation svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
  .admin-portal-page.has-mobile-portal-navigation .admin-portal-topbar,.admin-portal-page.has-mobile-portal-navigation .admin-portal-sidebar,.admin-portal-page.has-mobile-portal-navigation .public-site-portal{display:none!important}
  .admin-portal-page.has-mobile-portal-navigation .admin-portal-layout{grid-template-columns:minmax(0,1fr)}
+ .has-mobile-portal-navigation .admin-mobile-overview-shortcut:not([hidden]){display:block}
  .admin-portal-page.has-mobile-portal-navigation #adminAccessView .admin-access-pagination{bottom:var(--mobile-portal-rail-height)}
  .has-mobile-portal-navigation.mobile-portal-keyboard .livepalmes-mobile-navigation{display:none}
  html[data-portal-theme=dark] .admin-portal-page .livepalmes-mobile-navigation{background:var(--portal-color-surface,#172a33);border-color:var(--portal-color-border,#36515b)}
