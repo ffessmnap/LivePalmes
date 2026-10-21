@@ -16,7 +16,7 @@ function fixture() {
   const form = { querySelectorAll: selector => selector.includes("input[id]") ? [...fields.values()] : [], querySelector: () => null };
   const c = { global: { ...window, location: {hash:"#club-competitions"} }, document: {querySelector:()=>null,getElementById:id=>fields.get(id)},
     currentAccessProfile: {uid:"u"}, engagementNavigationRestoring:false, selectedEngagementCompetitionId:"fixture",
-    selectedEngagementCompetition:{updatedAt:"date",entryStatus:"open"}, selectedEngagementClubEntry:{napFingerprint:"base",swimmers:[]},
+    selectedEngagementCompetition:{napFingerprint:"competition-base",updatedAt:"read-date",entryStatus:"open"}, selectedEngagementClubEntry:{napFingerprint:"base",swimmers:[]},
     engagementClubLastPersistedEntry:{napFingerprint:"base",swimmers:[]}, engagementClubTeamEditing:true,
     engagementClubTeamSaving:false, engagementClubTeamRenunciationSaving:false, engagementClubSwimmerRemoving:false,
     engagementClubNativeSelectionRetry:null, engagementClubNativeIndividualRetry:null, engagementClubNativeOfficialRetry:null, engagementClubNativeRelayRetry:null,
@@ -46,6 +46,7 @@ function fixture() {
   const serialized=[...c.data.values()][0];assert.doesNotMatch(serialized,/never-copy/);
   // New portal document, after an actual unload: only the session checkpoint survives.
   const back=fixture();back.api.save("u.club",JSON.parse(serialized));back.fields.set("manual",{id:"manual",type:"text",value:""});
+  back.selectedEngagementCompetition.updatedAt="new-read-date";
   back.renderEngagementClubEntries=()=>{assert.equal(back.elements.engagementsClubEntriesList.innerHTML,"","old DOM must not override the checkpoint course choices");};
   back.selectedEngagementCompetitionId="";await back.restoreEngagementNavigation();
   assert.equal(back.fields.get("manual").value,"BROUILLON NON ENREGISTRÉ");

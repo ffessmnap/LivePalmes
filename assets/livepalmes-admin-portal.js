@@ -6092,7 +6092,9 @@
     return [
       selectedEngagementCompetitionId,
       selectedEngagementCompetition?.qualificationVersion || 0,
-      selectedEngagementCompetition?.updatedAt || "",
+      // NAP exposes the read time as updatedAt; only its stable fingerprint
+      // identifies a business change. Other sources retain their stored date.
+      selectedEngagementCompetition?.napFingerprint || selectedEngagementCompetition?.updatedAt || "",
       swimmer.source || "performances",
       swimmer.swimmerIndexId || swimmer.id || ""
     ].join(":");
