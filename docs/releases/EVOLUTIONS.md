@@ -2,10 +2,12 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
-### 21 octobre — Accueil : date unique et métadonnées compactes (préparation TEST)
+### 21 octobre — Accueil : date unique et métadonnées compactes (TEST publié, validation utilisateur attendue)
 
 - Demande explicite d’Antoine : conserver la date à gauche seulement ; sous le titre, ville disponible, type et niveau. Rendus serveur et navigateur harmonisés, date accessible conservée, périodes entre deux mois/années complètes dans le repère. Aucune écriture NAP, aucune lecture supplémentaire, aucun changement PROD, droits, mails ou règles métier. La ville utilise la donnée déjà reçue ; aucune ville déduite d’une adresse ni correction de fiche.
-- Contrôles ciblés et recette ordinateur/mobile à consigner avec la PR et la preuve TEST. Accord de réalisation reçu ; validation de la livraison attendue.
+- [PR #442](https://github.com/ffessmnap/LivePalmes/pull/442) intégrée en `918b5fe520d8b38693ed7e7fb0c52d4b1d4a773c`, [CI Linux 39623303229](https://github.com/ffessmnap/LivePalmes/actions/runs/39623303229) réussie. Tests ciblés serveur/modèle réussis ; suite locale Windows arrêtée sur le contrôle Bash du workflow, suite globale Linux réussie. Sources de présentation serveur régénérées par leur générateur, aucun fichier de données sportives généré.
+- La première publication commune [39623771660](https://github.com/ffessmnap/LivePalmes/actions/runs/39623771660), Hosting `a91073fbad46e677`, conservait le lecteur public hors lot ordinaire : l'ancien HTML était encore servi, donc cette étape ne constituait pas une livraison visuelle. Antoine autorise ensuite explicitement les trois lecteurs publics Firebase sur TEST, sans données NAP ni PROD. [Lot NAP 39655374938](https://github.com/ffessmnap/LivePalmes/actions/runs/39655374938) réussi sur le candidat exact : `exportNapPublicPage`, `getNapSwimmerPerformances`, `readNapPublicSwimmer` actifs et attestés ; lecteur accueil `readnappublicswimmer-00066-yel`. Aucun envoi, recalcul, migration ou écriture NAP lancé. Rafraîchissement de la preuve commune : [39655974093](https://github.com/ffessmnap/LivePalmes/actions/runs/39655974093).
+- Recette réelle dans le navigateur intégré : 1280 × 900, 360 × 800 et 320 × 800, date complète accessible dans le seul repère de gauche, ligne secondaire sans date, villes reçues conservées, aucun débordement horizontal ; dépliage des deux rendez-vous supplémentaires vérifié sur mobile. Captures avant/après privées dans `outputs/accueil-date-unique-20261021/`. Téléphone physique et Safari non vérifiés. La valeur reçue pour Paris reste « Piscine Georges Hermant » : aucune ville inventée ni donnée corrigée. Accord de réalisation reçu ; aucune validation utilisateur de la nouvelle livraison ni autorisation PROD déduite.
 
 ### 21 octobre — Bandeau, sous-menus et fond commun (PROD publiée)
 
