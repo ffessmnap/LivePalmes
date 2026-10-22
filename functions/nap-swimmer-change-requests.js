@@ -18,6 +18,14 @@ async function prepareRequest(connection, input, context) {
   const [rows] = await connection.execute({ sql: "SELECT id,nom,prenom,date,sexe,number,club FROM nageurs WHERE id=? LIMIT 1", timeout: 10000 }, [id]);
   if (rows.length !== 1 || String(rows[0].club) !== String(context.clubId)) throw new TypeError("Nageur absent du club actif.");
   const before = Object.fromEntries(["id", "nom", "prenom", "date", "sexe", "number", "club"].map(key => [key, rows[0][key]]));
+  if (input.reportType !== undefined && !["correction", "duplicate"].includes(input.reportType)) throw new TypeError("Type de demande invalide.");
+  if (input.reportType === "duplicate") {
+    if (fingerprint(before) !== input.expectedFingerprint) throw new TypeError("La fiche a change. Rechargez avant de signaler le doublon.");
+    if (Object.keys(fields).length) throw new TypeError("Un signalement ne modifie pas l'identite.");
+    return { napSource: true, reportType: "duplicate", nativeBefore: before, expectedFingerprint: fingerprint(before),
+      requestedSource: "reference", requestedSwimmerId: String(id), targetSource: "reference", targetSwimmerId: String(id),
+      current: person(before), proposed: person(before), reason };
+  }
   const plan = planIdentityChange(before, fields, input.expectedFingerprint);
   return { napSource: true, nativeBefore: before, expectedFingerprint: fingerprint(before),
     requestedSource: "reference", requestedSwimmerId: String(id), targetSource: "reference", targetSwimmerId: String(id),

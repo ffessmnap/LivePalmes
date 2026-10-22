@@ -7687,6 +7687,14 @@
   display: contents;
 }
 
+#adminEngagementsClubPeoplePanel .admin-engagements-historical-person-note {
+  display: block;
+  max-width: 24rem;
+  margin: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
 #adminEngagementsClubPeoplePanel .admin-engagements-club-person-toggle {
   display: none;
 }

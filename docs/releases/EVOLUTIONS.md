@@ -2,6 +2,13 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 22 octobre — Répertoire club : Modifier et signaler un doublon (préparation TEST)
+
+- Antoine autorise le correctif TEST du bouton Modifier et des signalements, avec lecture seule des quatre fiches de Basile et exclusion de PROD. Diagnostic TEST en contexte USP : quatre déclarations `nap-leader-6372`, `nap-leader-6530`, `nap-leader-7626`, `nap-leader-8688`, toutes historiques et non éditables depuis le répertoire. Aucune fiche réutilisable d’officiel déduite du seul nom ; aucune fusion, normalisation d’identité ou désactivation.
+- Les fiches réutilisables ouvrent le dialogue existant pour l’ajout et la modification, avec focus et retour au déclencheur. Les déclarations historiques affichent la compétition et une explication permanente à la place des boutons désactivés. Droits et conditions d’édition inchangés.
+- Signalement nageur distinct, réutilisant `engagementSwimmerChangeRequests` et ses contrôles club/national ; aucun nouveau schéma ni collection. Le type facultatif `reportType=duplicate` conserve l’identité, les liens et les performances. La clôture nationale enregistre seulement un commentaire et une décision sur le signalement, sans correction, fusion, accès NAP ni courriel. Demande déjà en attente bloquée comme auparavant.
+- Budget hors contrôles d’accès : ouvrir les dialogues n’ajoute aucune lecture ; envoi d’un signalement = un SELECT PK borné à une ligne, une transaction de demande (trois lectures maximum, une écriture) et audit existant. Liste nationale inchangée, 50 demandes (plafond 100) ; clôture = lecture initiale, transaction bornée à trois lectures et une écriture, relecture d’un document et audit existant. Aucun scan de performances, N+1 ou reconstruction ; aucun mail ajouté. Les tests d’envoi/clôture utilisent uniquement des données et services simulés. Recette navigateur, CI, preuve TEST et validation utilisateur à consigner ; aucune validation finale inventée.
+
 ### 22 octobre — Adaptation bornée du lecteur public, IDF actif conservé (PROD publiée, IDF inchangé)
 
 

@@ -7163,6 +7163,8 @@
       const correctionAction = changePending
         ? '<span class="admin-engagements-club-swimmers-directory-change-pending" aria-label="Correction en attente"><span class="admin-engagements-club-swimmers-directory-change-pending-long">Correction en attente</span><span class="admin-engagements-club-swimmers-directory-change-pending-short" aria-hidden="true">En attente</span></span>'
         : `<button class="admin-engagements-club-swimmers-directory-edit-button" type="button" title="Demander une correction pour ${escapeHtml(name)}" aria-label="Demander une correction pour ${escapeHtml(name)}" data-engagement-club-swimmer-change="${escapeHtml(swimmer.id || swimmer.swimmerIndexId || "")}" data-engagement-club-swimmer-change-source="${escapeHtml(swimmer.source || "performances")}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4l11-11-4-4L4 16v4zM13.5 6.5l4 4"></path></svg></button>`;
+      const duplicateAction = swimmer.napSource && !changePending
+        ? `<button class="admin-engagements-club-swimmers-directory-edit-button" type="button" title="Signaler un doublon pour ${escapeHtml(name)}" aria-label="Signaler un doublon pour ${escapeHtml(name)}" data-engagement-club-swimmer-duplicate="${escapeHtml(swimmer.id || swimmer.swimmerIndexId || "")}" data-engagement-club-swimmer-change-source="${escapeHtml(swimmer.source || "reference")}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 9h11v11H9zM4 15V4h11"/></svg></button>` : "";
       const deletionAction = swimmer.source === "engagement"
         ? `<button class="admin-engagements-club-swimmers-directory-delete-button" type="button" title="Demander la suppression de ${escapeHtml(name)}" aria-label="Demander la suppression de ${escapeHtml(name)}" data-engagement-club-swimmer-delete="${escapeHtml(swimmer.id || swimmer.swimmerIndexId || "")}" data-engagement-club-swimmer-delete-name="${escapeHtml(name)}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M7 7l1 14h8l1-14"></path></svg></button>`
         : "";
@@ -7181,7 +7183,7 @@
             ${profileButton}
             <span class="admin-engagements-club-swimmers-directory-toggle-meta">
               <span class="admin-engagements-club-swimmers-directory-sex-category" aria-label="${escapeHtml(sexLabel)}, catégorie ${escapeHtml(category || "non renseignée")}"><span class="admin-engagements-club-swimmers-directory-sex">${escapeHtml(sexDisplay)}</span><span aria-hidden="true">·</span><span class="admin-engagements-club-swimmers-directory-category">${escapeHtml(category || "-")}</span></span>
-              <span class="admin-engagements-club-swimmers-directory-mobile-actions">${activityAction}${correctionAction}${deletionAction}</span>
+              <span class="admin-engagements-club-swimmers-directory-mobile-actions">${activityAction}${correctionAction}${duplicateAction}${deletionAction}</span>
               <button class="admin-engagements-club-swimmers-directory-details-button" type="button" aria-expanded="false" aria-controls="${detailsId}" aria-label="Afficher le détail de ${escapeHtml(name)}" data-engagement-club-swimmer-directory-toggle>
                 <span class="admin-engagements-club-swimmers-directory-chevron" aria-hidden="true">›</span>
               </button>
@@ -7196,7 +7198,7 @@
               ? `<span class="admin-engagements-club-swimmers-directory-license-content"><span class="admin-engagements-club-swimmer-license-value">${escapeHtml(swimmer.licenseNumber)}</span>${licenseStatusIndicator}</span>`
               : '<span class="admin-engagements-club-swimmers-directory-license-missing">Licence à renseigner</span>'}</span>
             <span role="cell" class="admin-engagements-club-swimmers-directory-actions">
-              ${activityAction}${correctionAction}${deletionAction}
+              ${activityAction}${correctionAction}${duplicateAction}${deletionAction}
             </span>
           </div>
         </div>
@@ -13386,18 +13388,19 @@
       const proposed = item.proposed || {};
       const name = engagementSwimmerDisplayName(current, "Nageur");
       const changes = engagementSwimmerChangeSummary(current, proposed);
+      const duplicate = item.reportType === "duplicate";
       const requesterName = [item.requestedByFirstName, item.requestedByLastName].filter(Boolean).join(" ");
       const requesterIdentity = [requesterName, item.requestedByEmail].filter(Boolean).join(" · ") || "Non renseigné";
       return `
         <article class="admin-engagements-swimmer-change-request" data-engagement-swimmer-change-request="${escapeHtml(item.id || "")}">
           <div class="admin-engagements-swimmer-change-request-head">
             <div>
-              <strong>${escapeHtml(name)}</strong>
+              <strong>${escapeHtml(name)}${duplicate ? " · Doublon à examiner" : ""}</strong>
               <span>${escapeHtml(clubDisplayLabel(item, { fallback: "Club non renseigné" }))} · ${escapeHtml(formatAccessDateTime(item.requestedAt) || "Date inconnue")}</span>
             </div>
             <span class="admin-engagements-request-status" data-status="pending">En attente</span>
           </div>
-          <div class="admin-engagements-swimmer-change-diff">
+          ${duplicate ? '<p class="admin-engagements-request-note">Signalement uniquement. Vérifiez les fiches dans la gestion des nageurs ; une fusion reste une opération nationale distincte. Clore ce signalement ne modifie aucune fiche.</p>' : '<div class="admin-engagements-swimmer-change-diff">'}
             ${changes.map((change) => `
               <div>
                 <span>${escapeHtml(change.label)}</span>
@@ -13405,17 +13408,17 @@
                 <strong>${escapeHtml(change.after)}</strong>
               </div>
             `).join("")}
-          </div>
+          ${duplicate ? "" : "</div>"}
           <p class="admin-engagements-request-note"><strong>Demandée par :</strong> ${escapeHtml(requesterIdentity)}</p>
           <p class="admin-engagements-request-note"><strong>Motif du club :</strong> ${escapeHtml(item.reason || "Non précisé")}</p>
           <label class="admin-engagements-swimmer-change-resolution-note">
-            <span>Commentaire national <small>(facultatif)</small></span>
+            <span>Commentaire national <small>(${duplicate ? "obligatoire" : "facultatif"})</small></span>
             <input type="text" maxlength="500" placeholder="Précision pour le club" data-engagement-swimmer-change-resolution-note>
           </label>
           <div class="admin-engagements-request-actions">
-            <button class="ghost-button" type="button" data-engagement-swimmer-change-decision="rejected" data-engagement-swimmer-change-request-id="${escapeHtml(item.id || "")}">Refuser</button>
+            ${duplicate ? `<button type="button" data-engagement-swimmer-change-decision="approved" data-engagement-swimmer-change-request-id="${escapeHtml(item.id || "")}">Clore le signalement</button>` : `<button class="ghost-button" type="button" data-engagement-swimmer-change-decision="rejected" data-engagement-swimmer-change-request-id="${escapeHtml(item.id || "")}">Refuser</button>
             <button class="ghost-button" type="button" data-engagement-swimmer-change-edit="${escapeHtml(item.id || "")}">Modifier et valider</button>
-            <button type="button" data-engagement-swimmer-change-decision="approved" data-engagement-swimmer-change-request-id="${escapeHtml(item.id || "")}">Valider telle quelle</button>
+            <button type="button" data-engagement-swimmer-change-decision="approved" data-engagement-swimmer-change-request-id="${escapeHtml(item.id || "")}">Valider telle quelle</button>`}
           </div>
         </article>
       `;
@@ -13478,8 +13481,9 @@
 
   async function resolveEngagementSwimmerChangeRequest(requestId = "", decision = "", card = null, options = {}) {
     if (!requestId || !["approved", "rejected"].includes(decision) || !canDeleteEngagementCompetitionDirectly()) return;
+    const duplicate=engagementSwimmerChangeRequests.find(item=>item.id===requestId)?.reportType==="duplicate";
     const verb = decision === "approved" ? "Valider" : "Refuser";
-    if (options.confirm !== false && !global.confirm(`${verb} cette demande de correction ?`)) return;
+    if (options.confirm !== false && !global.confirm(duplicate ? "Clore ce signalement sans modifier ni fusionner de fiche ?" : `${verb} cette demande de correction ?`)) return;
     const resolutionNote = String(options.resolutionNote ?? card?.querySelector("[data-engagement-swimmer-change-resolution-note]")?.value ?? "").trim();
     const buttons = card?.querySelectorAll("button") || [];
     buttons.forEach((button) => { button.disabled = true; });
@@ -13509,10 +13513,10 @@
           : "";
         const notificationStatus = result?.request?.resolutionNotification?.status || "";
         const testMailDisabled = global.LivePalmesEnvironment?.isTest === true && result?.request?.resolutionNotification?.reason === "test-emails-disabled";
-        const mailWarning = notificationStatus && notificationStatus !== "sent" && !testMailDisabled
+        const mailWarning = notificationStatus && notificationStatus !== "sent" && !testMailDisabled && !duplicate
           ? " La demande a bien été traitée, mais l’e-mail au demandeur n’a pas été envoyé."
           : "";
-        elements.engagementsSwimmerChangeRequestsStatus.textContent = `${decision === "approved" ? "Correction validée." : "Demande refusée."}${publicWarning}${mailWarning}`;
+        elements.engagementsSwimmerChangeRequestsStatus.textContent = duplicate ? "Signalement clos. Aucune fiche n’a été modifiée ou fusionnée." : `${decision === "approved" ? "Correction validée." : "Demande refusée."}${publicWarning}${mailWarning}`;
         elements.engagementsSwimmerChangeRequestsStatus.dataset.tone = publicWarning || mailWarning ? "warning" : "ok";
       }
       return result;
@@ -13572,6 +13576,7 @@
       delete elements.engagementsSwimmerCorrectionForm.dataset.expectedFingerprint;
     }
     if (elements.engagementsSwimmerCorrectionLicense) elements.engagementsSwimmerCorrectionLicense.readOnly = false;
+    for(const field of [elements.engagementsSwimmerCorrectionLastName,elements.engagementsSwimmerCorrectionFirstName,elements.engagementsSwimmerCorrectionBirthDate,elements.engagementsSwimmerCorrectionSex,elements.engagementsSwimmerCorrectionLicense]) if(field) field.disabled=false;
     setFormPending(elements.engagementsSwimmerCorrectionForm, false);
     if (elements.engagementsSwimmerCorrectionReason) elements.engagementsSwimmerCorrectionReason.required = false;
     if (elements.engagementsSwimmerCorrectionMessage) {
@@ -13588,6 +13593,7 @@
     engagementSwimmerCorrectionOpener = opener instanceof HTMLElement ? opener : null;
     const direct = mode === "direct";
     const review = mode === "review";
+    const duplicate = mode === "duplicate" && swimmer.napSource === true;
     engagementSwimmerCorrectionReview = review ? {
       requestId: String(options.requestId || "").trim(),
       card: options.card || null
@@ -13598,7 +13604,7 @@
       elements.engagementsSwimmerCorrectionForm.dataset.expectedFingerprint = swimmer.napFingerprint || "";
       if (elements.engagementsSwimmerCorrectionLicense) elements.engagementsSwimmerCorrectionLicense.readOnly = true;
     }
-    if (elements.engagementsSwimmerCorrectionMode) elements.engagementsSwimmerCorrectionMode.value = review ? "review" : direct ? "direct" : "request";
+    if (elements.engagementsSwimmerCorrectionMode) elements.engagementsSwimmerCorrectionMode.value = duplicate ? "duplicate" : review ? "review" : direct ? "direct" : "request";
     if (elements.engagementsSwimmerCorrectionSource) elements.engagementsSwimmerCorrectionSource.value = swimmer.source || "performances";
     if (elements.engagementsSwimmerCorrectionId) elements.engagementsSwimmerCorrectionId.value = swimmer.id || swimmer.swimmerIndexId || "";
     if (elements.engagementsSwimmerCorrectionIdentityKey) elements.engagementsSwimmerCorrectionIdentityKey.value = swimmer.identityKey || "";
@@ -13609,20 +13615,23 @@
     if (elements.engagementsSwimmerCorrectionBirthDate) elements.engagementsSwimmerCorrectionBirthDate.value = swimmer.birthDate || "";
     if (elements.engagementsSwimmerCorrectionSex) elements.engagementsSwimmerCorrectionSex.value = swimmer.sex || "";
     if (elements.engagementsSwimmerCorrectionLicense) elements.engagementsSwimmerCorrectionLicense.value = String(swimmer.licenseNumber ?? "");
-    if (elements.engagementsSwimmerCorrectionTitle) elements.engagementsSwimmerCorrectionTitle.textContent = review ? "Modifier et valider la demande" : direct ? "Modifier le nageur" : "Demander une correction";
+    if (elements.engagementsSwimmerCorrectionTitle) elements.engagementsSwimmerCorrectionTitle.textContent = duplicate ? "Signaler un doublon" : review ? "Modifier et valider la demande" : direct ? "Modifier le nageur" : "Demander une correction";
     if (elements.engagementsSwimmerCorrectionContext) elements.engagementsSwimmerCorrectionContext.textContent = `${name} · ${clubDisplayLabel(swimmer, { fallback: "Club non renseigné" })}`;
-    if (elements.engagementsSwimmerCorrectionReasonLabel) elements.engagementsSwimmerCorrectionReasonLabel.textContent = review ? "Commentaire national (facultatif)" : direct ? "Motif de la correction" : swimmer.napSource ? "Motif de la demande" : "Motif de la demande (facultatif)";
+    if (elements.engagementsSwimmerCorrectionReasonLabel) elements.engagementsSwimmerCorrectionReasonLabel.textContent = duplicate ? "Précisez les fiches qui semblent en double" : review ? "Commentaire national (facultatif)" : direct ? "Motif de la correction" : swimmer.napSource ? "Motif de la demande" : "Motif de la demande (facultatif)";
+    for(const field of [elements.engagementsSwimmerCorrectionLastName,elements.engagementsSwimmerCorrectionFirstName,elements.engagementsSwimmerCorrectionBirthDate,elements.engagementsSwimmerCorrectionSex,elements.engagementsSwimmerCorrectionLicense]) if(field) field.disabled=duplicate;
+    const warning=elements.engagementsSwimmerCorrectionForm?.querySelector?.(".admin-engagements-swimmer-correction-warning");
+    if(warning) warning.textContent=duplicate ? "Le signalement est transmis à l’administration nationale. Aucune identité, performance ni inscription n’est modifiée. Aucune fiche n’est fusionnée ou supprimée automatiquement." : "Une modification du nom, du prénom ou de la date de naissance peut changer le rattachement des performances. Pour une fiche en double, utilisez l’action « Signaler un doublon » dans la liste.";
     if (elements.engagementsSwimmerCorrectionReason) {
       elements.engagementsSwimmerCorrectionReason.required = direct || (!review && swimmer.napSource === true);
       elements.engagementsSwimmerCorrectionReason.value = review ? String(options.resolutionNote || "") : "";
     }
     if (elements.engagementsSwimmerCorrectionSubmit) {
-      elements.engagementsSwimmerCorrectionSubmit.textContent = review ? "Valider la demande" : direct ? "Enregistrer la correction" : "Envoyer la demande";
+      elements.engagementsSwimmerCorrectionSubmit.textContent = duplicate ? "Envoyer le signalement" : review ? "Valider la demande" : direct ? "Enregistrer la correction" : "Envoyer la demande";
       delete elements.engagementsSwimmerCorrectionSubmit.dataset.idleLabel;
     }
     if (typeof dialog.showModal === "function") dialog.showModal();
     else dialog.setAttribute("open", "");
-    elements.engagementsSwimmerCorrectionLastName?.focus();
+    (duplicate ? elements.engagementsSwimmerCorrectionReason : elements.engagementsSwimmerCorrectionLastName)?.focus();
   }
 
   async function submitEngagementSwimmerCorrection() {
@@ -13630,6 +13639,7 @@
     const mode = elements.engagementsSwimmerCorrectionMode?.value || "request";
     const direct = mode === "direct";
     const review = mode === "review";
+    const duplicate = mode === "duplicate";
     if (direct && !global.confirm("Enregistrer cette correction nationale ?")) return;
     if (review && !global.confirm("Valider cette demande avec les valeurs affichées ?")) return;
     const payload = {
@@ -13648,6 +13658,7 @@
       reason: elements.engagementsSwimmerCorrectionReason?.value || ""
     };
     if (payload.napSource) delete payload.proposed.licenseNumber;
+    if (duplicate) { payload.reportType="duplicate"; payload.proposed={}; }
     setFormPending(
       elements.engagementsSwimmerCorrectionForm,
       true,
@@ -13694,7 +13705,7 @@
       } else {
         await loadEngagementClubSwimmers({ force: true, silent: true });
         if (elements.engagementsClubSwimmersDirectoryStatus) {
-          elements.engagementsClubSwimmersDirectoryStatus.textContent = "Demande envoyée au niveau national.";
+          elements.engagementsClubSwimmersDirectoryStatus.textContent = duplicate ? "Signalement transmis au niveau national. Aucune fiche n’a été modifiée." : "Demande envoyée au niveau national.";
           elements.engagementsClubSwimmersDirectoryStatus.dataset.tone = "ok";
         }
       }
@@ -15571,6 +15582,7 @@
     if(!engagementClubPersonFormHome || !form) return;
     elements.engagementsClubPersonDialog?.close();
     engagementClubPersonFormHome.parent.insertBefore(form,engagementClubPersonFormHome.next);
+    engagementClubPersonFormHome.opener?.focus?.();
     engagementClubPersonFormHome=null;
     form.hidden=true;
   }
@@ -15582,9 +15594,7 @@
     openEngagementClubPersonForm();
     if(elements.engagementsClubPersonRoleTeamLeader) elements.engagementsClubPersonRoleTeamLeader.checked=true;
     if(elements.engagementsClubPersonRoleOfficial) elements.engagementsClubPersonRoleOfficial.checked=false;
-    engagementClubPersonFormHome={parent:form.parentNode,next:form.nextSibling};
-    dialog.append(form);
-    dialog.showModal();
+    if(engagementClubPersonFormHome) engagementClubPersonFormHome.fromCompetition=true;
     elements.engagementsClubPersonFirstName?.focus();
   }
 
@@ -15649,6 +15659,14 @@
       }
     }
     if (elements.engagementsClubPersonForm) elements.engagementsClubPersonForm.hidden = false;
+    if(native && elements.engagementsClubPersonDialog && !engagementClubPersonFormHome) {
+      const form=elements.engagementsClubPersonForm,dialog=elements.engagementsClubPersonDialog;
+      engagementClubPersonFormHome={parent:form.parentNode,next:form.nextSibling,opener:global.document?.activeElement,fromCompetition:false};
+      const title=global.document?.querySelector?.("#adminEngagementsClubPersonDialogTitle");
+      if(title) title.textContent=person ? "Modifier la personne" : "Ajouter une personne au club";
+      dialog.append(form);
+      dialog.showModal();
+    }
     (person || native ? elements.engagementsClubPersonFirstName : elements.engagementsClubPersonSwimmerSearch)?.focus?.();
   }
 
@@ -15713,8 +15731,10 @@
             <span role="cell"><span class="admin-engagements-club-person-status" data-active="${active ? "true" : "false"}">${active ? "Actif" : "Inactif"}</span></span>
             <span role="cell">
               <span class="admin-engagements-request-actions">
-                <button class="ghost-button" type="button" data-engagement-club-person-action="edit" data-engagement-club-person-id="${escapeHtml(person.id)}" ${nativeReadOnly && !person.nativeIdentityEditable ? 'disabled title="Cette déclaration se corrige dans sa compétition"' : nativeReadOnly && engagementClubPersonSaving ? 'disabled' : ""}>Modifier</button>
-                <button class="ghost-button" type="button" data-engagement-club-person-action="${active ? "disable" : "enable"}" data-engagement-club-person-id="${escapeHtml(person.id)}" ${person.statusSaving || nativeReadOnly && !person.nativeStatusEditable ? 'disabled title="Modification momentanément indisponible"' : ""}>${active ? "Désactiver" : "Réactiver"}</button>
+                ${nativeReadOnly && !person.nativeIdentityEditable
+                  ? `<span class="admin-engagements-request-note admin-engagements-historical-person-note">Déclaration historique de chef d’équipe · compétition n° ${escapeHtml(person.nativeCompetitionId || "non renseignée")}. À modifier depuis le dossier de cette compétition.</span>`
+                  : `<button class="ghost-button" type="button" data-engagement-club-person-action="edit" data-engagement-club-person-id="${escapeHtml(person.id)}" ${nativeReadOnly && engagementClubPersonSaving ? 'disabled' : ""}>Modifier</button>`}
+                ${nativeReadOnly && !person.nativeStatusEditable ? "" : `<button class="ghost-button" type="button" data-engagement-club-person-action="${active ? "disable" : "enable"}" data-engagement-club-person-id="${escapeHtml(person.id)}" ${person.statusSaving ? 'disabled title="Modification momentanément indisponible"' : ""}>${active ? "Désactiver" : "Réactiver"}</button>`}
               </span>
             </span>
           </div>
@@ -15815,7 +15835,7 @@
         if(requestVersion!==engagementClubPeopleRequestVersion) return;
         if(result.source!=="nap" || !/^nap-official-\d+$/.test(result.person?.id || "") || !creating && result.person.id!==personId) throw new Error("Réponse NAP à vérifier avant de poursuivre.");
         engagementClubPeople=engagementClubPeople.filter(item=>item.id!==result.person.id).concat(result.person);
-        const fromCompetition=Boolean(engagementClubPersonFormHome);
+        const fromCompetition=engagementClubPersonFormHome?.fromCompetition===true;
         closeEngagementClubPersonDialog();
         resetEngagementClubPersonForm();
         if(elements.engagementsClubPersonForm) elements.engagementsClubPersonForm.hidden=true;
@@ -18081,14 +18101,14 @@
         );
         return;
       }
-      const changeButton = event.target.closest("[data-engagement-club-swimmer-change]");
+      const changeButton = event.target.closest("[data-engagement-club-swimmer-change], [data-engagement-club-swimmer-duplicate]");
       if (changeButton) {
-        const swimmerId = changeButton.dataset.engagementClubSwimmerChange || "";
+        const swimmerId = changeButton.dataset.engagementClubSwimmerChange || changeButton.dataset.engagementClubSwimmerDuplicate || "";
         const source = changeButton.dataset.engagementClubSwimmerChangeSource || "performances";
         const swimmer = engagementClubSwimmers.find((item) =>
           (item.source || "performances") === source && (item.id === swimmerId || item.swimmerIndexId === swimmerId)
         );
-        if (swimmer) openEngagementSwimmerCorrectionDialog(swimmer, "request", changeButton);
+        if (swimmer) openEngagementSwimmerCorrectionDialog(swimmer, changeButton.dataset.engagementClubSwimmerDuplicate ? "duplicate" : "request", changeButton);
         return;
       }
       const deleteButton = event.target.closest("[data-engagement-club-swimmer-delete]");
