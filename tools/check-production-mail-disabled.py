@@ -5,6 +5,7 @@ import importlib.util
 import os
 from pathlib import Path
 import subprocess
+import sys
 import urllib.error
 import urllib.request
 
@@ -40,12 +41,43 @@ def check_pause_witness(document, maintenance, witness):
     witness.write_text(json.dumps(observed))
 
 
+def check_idf_preservation(document, preservation, directory, after=False):
+    fields = document.get('fields', {})
+    if (fields.get('enabled') != {'booleanValue': True} or fields.get('scope') != {'stringValue': 'idf'}
+            or fields.get('revision') != {'integerValue': str(preservation['revision'])}):
+        raise ValueError('Etat IDF actif different du bilan approuve')
+    for key in ['enabledSince', 'discardThrough', 'updatedAt']:
+        if not isinstance(fields.get(key, {}).get('stringValue'), str) or not fields[key]['stringValue']:
+            raise ValueError('Horodatage IDF absent')
+    observed = {'schema': 1, 'sha256': hashlib.sha256(json.dumps(document, sort_keys=True).encode()).hexdigest()}
+    witness = directory / 'public-reader-idf-before.json'
+    if witness.exists():
+        if json.loads(witness.read_text()) != observed:
+            raise ValueError('Reglage IDF complet modifie pendant publication')
+    elif after:
+        raise ValueError('Temoin IDF initial absent')
+    else:
+        witness.write_text(json.dumps(observed))
+    if after:
+        (directory / 'public-reader-idf-after.json').write_text(json.dumps(observed))
+
+
 def main():
     request = json.loads((Path(os.environ['PLAN']) / 'request.json').read_text())
     if not request.get('additionalNotificationFunctions') and not request.get('additionalPublicNapFunctions') and not request.get('additionalAccessRequestFunctions'):
         print('Aucune extension notifications ; aucun acces Firestore.')
         return
-    if request.get('initialAutomaticMailEnabled') is not False:
+    spec = importlib.util.spec_from_file_location('notification_cycle', Path(__file__).with_name('release-cycle.py'))
+    cycle = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(cycle)
+    preservation = cycle.public_reader_idf_preservation(request)
+    after = sys.argv[1:] == ['--after']
+    if sys.argv[1:] not in ([], ['--after']) or (after and preservation is None):
+        raise ValueError('Controle final IDF hors perimetre')
+    if preservation is not None:
+        cycle.approved_public_nap_functions(request)
+        cycle.require_access_request_selection(request, json.loads((Path(os.environ['PLAN']) / 'selection.json').read_text()))
+    if request.get('initialAutomaticMailEnabled') is not False and preservation is None:
         raise ValueError('Mails desactives requis pour la bascule')
     credentials = json.loads(Path(os.environ['GOOGLE_APPLICATION_CREDENTIALS']).read_text())
     if credentials.get('project_id') != 'livepalmes':
@@ -61,11 +93,10 @@ def main():
         if error.code != 404:
             raise ValueError('Controle du reglage indisponible') from None
         document = {}
-    if not disabled(document):
+    if preservation is not None:
+        check_idf_preservation(document, preservation, Path(os.environ['PLAN']), after=after)
+    elif not disabled(document):
         raise ValueError('Mails automatiques actifs : publication interrompue, desactivation nationale requise')
-    spec = importlib.util.spec_from_file_location('notification_cycle', Path(__file__).with_name('release-cycle.py'))
-    cycle = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(cycle)
     maintenance = cycle.notification_maintenance(request)
     if maintenance is not None:
         check_pause_witness(document, maintenance, Path(os.environ['PLAN']) / 'notification-pause-before.json')
@@ -78,14 +109,19 @@ def main():
         raise ValueError('Controle de la planification indisponible') from None
     if scheduler.get('schedule') != '*/5 * * * *' or scheduler.get('timeZone') != 'Europe/Paris':
         raise ValueError('Planification de cloture differente du perimetre approuve')
+    if preservation is not None and scheduler.get('state') != 'ENABLED':
+        raise ValueError('Scheduler IDF non actif')
     fingerprint = scheduler_fingerprint(scheduler)
     witness = Path(os.environ['PLAN']) / 'notification-scheduler-before.json'
     if witness.exists():
         if json.loads(witness.read_text()) != fingerprint:
             raise ValueError('Planification modifiee depuis la sauvegarde : publication interrompue')
     else:
+        if after:
+            raise ValueError('Temoin scheduler initial absent')
         witness.write_text(json.dumps(fingerprint))
-    print('Mails automatiques desactives ; une lecture technique, aucune ecriture.')
+    print('IDF actif inchange ; aucune ecriture.' if preservation is not None else
+          'Mails automatiques desactives ; une lecture technique, aucune ecriture.')
 
 
 def scheduler_fingerprint(value):

@@ -282,5 +282,111 @@ class NotificationReleaseTests(unittest.TestCase):
                                  {'functions:' + name for name in cycle.NOTIFICATION_FUNCTIONS})
 
 
+class PublicReaderIdfPreservationTests(unittest.TestCase):
+    def request(self):
+        return {'productionCommit': cycle.PUBLIC_READER_IDF_PAIR[0], 'candidate': cycle.PUBLIC_READER_IDF_PAIR[1],
+                'additionalPublicNapFunctions': ['readNapPublicSwimmer'], 'additionalPublicNapApproval': 'Accord lecteur',
+                'initialAutomaticMailEnabled': True,
+                'publicReaderIdfPreservation': {'scope': 'idf', 'revision': 4, 'approval': 'Adaptation validee'}}
+
+    def document(self):
+        return {'name': 'technical-setting', 'updateTime': 'stable', 'fields': {
+            'enabled': {'booleanValue': True}, 'scope': {'stringValue': 'idf'}, 'revision': {'integerValue': '4'},
+            'enabledSince': {'stringValue': 'activation'}, 'discardThrough': {'stringValue': 'cutoff'},
+            'updatedAt': {'stringValue': 'activation'}, 'updatedBy': {'stringValue': 'existing-user'}}}
+
+    def test_exact_pair_and_single_reader_only(self):
+        request = self.request()
+        self.assertEqual(cycle.approved_extra_functions(request), ['readNapPublicSwimmer'])
+        cycle.require_access_request_selection(request, ['readNapPublicSwimmer'])
+        mutations = [{'candidate': 'c' * 40}, {'productionCommit': 'c' * 40},
+                     {'initialAutomaticMailEnabled': False}, {'additionalPublicNapApproval': ''},
+                     {'additionalPublicNapFunctions': []}, {'additionalPublicNapFunctions': ['exportNapPublicPage']},
+                     {'publicReaderIdfPreservation': {'scope': 'idf', 'revision': True, 'approval': 'yes'}},
+                     {'publicReaderIdfPreservation': {'scope': 'all', 'revision': 4, 'approval': 'yes'}},
+                     {'publicReaderIdfPreservation': {'scope': 'idf', 'revision': 4, 'approval': ''}}]
+        for key in ['additionalNotificationFunctions', 'additionalAccessRequestFunctions', 'additionalPdfFunctions',
+                    'additionalDtnFunctions', 'notificationMaintenancePlan', 'testEquivalentCandidate', 'productionHomeRouting']:
+            mutations.append({key: ['unexpected']})
+        for mutation in mutations:
+            with self.subTest(mutation=mutation), self.assertRaises(ValueError):
+                cycle.approved_public_nap_functions({**request, **mutation})
+        for selected in [[], ['readNapPublicSwimmer', 'other'], ['other']]:
+            with self.assertRaises(ValueError):
+                cycle.require_access_request_selection(request, selected)
+        with self.assertRaises(ValueError):
+            cycle.approved_public_nap_functions({**request, 'publicReaderIdfPreservation': None})
+
+    def test_full_setting_witness_including_metadata_and_unknown_fields(self):
+        import copy
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory); document = self.document(); preservation = self.request()['publicReaderIdfPreservation']
+            with self.assertRaises(ValueError):
+                guard.check_idf_preservation(document, preservation, root, after=True)
+            guard.check_idf_preservation(document, preservation, root)
+            guard.check_idf_preservation(document, preservation, root, after=True)
+            self.assertEqual(json.loads((root/'public-reader-idf-before.json').read_text()),
+                             json.loads((root/'public-reader-idf-after.json').read_text()))
+            for key in document['fields']:
+                changed = copy.deepcopy(document); changed['fields'][key] = {'stringValue': 'drift'}
+                with self.subTest(key=key), self.assertRaises(ValueError):
+                    guard.check_idf_preservation(changed, preservation, root, after=True)
+            for changed in [{**document, 'updateTime': 'drift'}, {**document, 'extra': 'drift'}, {}]:
+                with self.assertRaises(ValueError):
+                    guard.check_idf_preservation(changed, preservation, root, after=True)
+
+    def test_guard_reads_only_and_refuses_scheduler_drift(self):
+        import io
+        request=self.request(); scheduler={'name':'job','schedule':'*/5 * * * *','timeZone':'Europe/Paris','state':'ENABLED'}
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory)
+            (root/'request.json').write_text(json.dumps(request)); (root/'selection.json').write_text(json.dumps(['readNapPublicSwimmer']))
+            (root/'credentials.json').write_text(json.dumps({'project_id':'livepalmes'}))
+            def run(after=False, job=None):
+                responses=[io.BytesIO(json.dumps(x).encode()) for x in [self.document(), job or scheduler]]
+                with patch.dict(os.environ, {'PLAN':str(root),'GOOGLE_APPLICATION_CREDENTIALS':str(root/'credentials.json')}), \
+                     patch.object(guard.sys,'argv',['guard']+(['--after'] if after else [])), \
+                     patch.object(guard.subprocess,'check_output',return_value='offline-token'), \
+                     patch.object(guard.urllib.request,'urlopen',side_effect=responses) as fetch:
+                    guard.main()
+                    self.assertEqual(fetch.call_count,2)
+                    self.assertTrue(all(call.args[0].get_method()=='GET' for call in fetch.call_args_list))
+            run(); run(); run(after=True)
+            for mutation in [{'state':'PAUSED'}, {'schedule':'*/10 * * * *'}, {'timeZone':'UTC'}, {'retryConfig':{'retryCount':2}}]:
+                with self.subTest(mutation=mutation), self.assertRaises(ValueError):
+                    run(after=True,job={**scheduler,**mutation})
+            (root/'notification-scheduler-before.json').unlink()
+            with self.assertRaises(ValueError):
+                run(after=True)
+
+    def test_workflow_final_guard_is_required_and_attested(self):
+        workflow=(ROOT/'.github/workflows/livepalmes-production-release.yml').read_text()
+        self.assertIn('check-production-mail-disabled.py --after',workflow)
+        self.assertIn('name: production-idf-preservation',workflow)
+        self.assertIn('if [ "$IDF_PRESERVATION" = true ]; then test "$IDF_AFTER" = success; fi',workflow)
+        self.assertLess(workflow.index('id: hosting'),workflow.index('id: idf_after'))
+
+    def test_frozen_proof_refuses_other_dependency_or_missing_reader(self):
+        request={**self.request(), 'productionHosting':'sites/livepalmes/versions/existing',
+                 'excludedBackendEvidence':{}, 'changes':[]}
+        before={'readNapPublicSwimmer':cycle.PUBLIC_READER_IDF_HASHES[0], 'mail':'unchanged'}
+        after={**before,'readNapPublicSwimmer':cycle.PUBLIC_READER_IDF_HASHES[1]}
+        state={'hosting':{'version':request['productionHosting'],'message':'LivePalmes '+request['productionCommit']+' run 1'},
+               'functions':[{'name':'readNapPublicSwimmer','state':'ACTIVE','revision':'existing','commit':request['productionCommit']}]}
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory);(root/'request.json').write_text(json.dumps(request));(root/'selection.json').write_text(json.dumps(['readNapPublicSwimmer']))
+            def run(desired, observed=state):
+                with patch.object(cycle,'production_evidence',return_value=observed), \
+                     patch.object(cycle,'verify_excluded_backend'), \
+                     patch.object(cycle,'backend_fingerprints',side_effect=lambda sha: before if sha==request['productionCommit'] else desired), \
+                     patch.dict(os.environ,{'GITHUB_STEP_SUMMARY':str(root/'summary.txt')}):
+                    cycle.freeze_plan(root,evidence=True)
+            run(after)
+            self.assertTrue((root/'public-reader-idf-proof.json').exists())
+            for desired in [{**after,'mail':'changed'}, {**after,'new':'export'}, {**after,'readNapPublicSwimmer':'wrong'}]:
+                with self.assertRaises(ValueError):run(desired)
+            with self.assertRaises(ValueError):run(after,{**state,'functions':[]})
+
+
 if __name__ == '__main__':
     unittest.main()

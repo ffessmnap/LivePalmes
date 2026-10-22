@@ -229,13 +229,35 @@ jobs:
         if-no-files-found: error
         retention-days: 14
       if: always() && (steps.hosting.outcome == 'success' || steps.hosting.outcome == 'failure')
+    - uses: google-github-actions/auth@v3
+      if: always() && steps.plan.outputs.idf_preservation == 'true' && (steps.state.outcome == 'success' || steps.state.outcome == 'failure')
+      with:
+        credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_BACKEND }}
+        project_id: livepalmes
+    - name: Confirmer IDF inchange apres Hosting
+      id: idf_after
+      if: always() && steps.plan.outputs.idf_preservation == 'true' && (steps.state.outcome == 'success' || steps.state.outcome == 'failure')
+      run: python tooling/tools/check-production-mail-disabled.py --after
+    - uses: actions/upload-artifact@v4
+      if: always() && steps.plan.outputs.idf_preservation == 'true' && (steps.state.outcome == 'success' || steps.state.outcome == 'failure')
+      with:
+        name: production-idf-preservation
+        path: |
+          ${{ runner.temp }}/release-plan/public-reader-idf-*.json
+          ${{ runner.temp }}/release-plan/notification-scheduler-before.json
+        if-no-files-found: error
+        retention-days: 14
     - name: Conclure
       env:
         STATE: ${{ steps.state.outcome }}
         HOSTING: ${{ steps.hosting.outcome }}
+        IDF_PRESERVATION: ${{ steps.plan.outputs.idf_preservation }}
+        IDF_AFTER: ${{ steps.idf_after.outcome }}
       if: always()
       run: 'test "$STATE" = success
 
         test "$HOSTING" = success
+
+        if [ "$IDF_PRESERVATION" = true ]; then test "$IDF_AFTER" = success; fi
 
         echo "Publication du commit $CANDIDATE_SHA terminee, code uniquement." >> "$GITHUB_STEP_SUMMARY"'
