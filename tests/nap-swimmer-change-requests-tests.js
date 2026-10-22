@@ -97,6 +97,25 @@ function fixture(options = {}) {
   assert.equal(stale.records.get(s.request.id).nativeResolution, null, "a failed first decision before SQL must not prevent rejecting the request");
   await stale.resolve({ requestId: s.request.id, decision: "rejected" }); assert.equal(stale.count().sqlWrites, 0);
   const denied = fixture({ national: false }); await assert.rejects(denied.resolve({ requestId: "x", decision: "approved" }), error => error.code === "permission-denied"); assert.equal(denied.count().queries, 0);
+  const report=fixture();
+  const reportInput={napSource:true,swimmerId:"42",expectedFingerprint:fingerprint(before),reportType:"duplicate",proposed:{},reason:"Deux fiches de la meme personne, accents differents"};
+  const reported=await report.submit(reportInput);
+  assert.equal(reported.request.reportType,"duplicate");assert.equal(report.count().queries,1);assert.equal(report.count().sqlWrites,0);
+  assert.equal(reported.request.current.firstName,reported.request.proposed.firstName);
+  await assert.rejects(report.submit(reportInput),e=>e.code==="already-exists");
+  await assert.rejects(report.resolve({requestId:reported.request.id,decision:"approved"}),e=>e.code==="invalid-argument");
+  await assert.rejects(report.resolve({requestId:reported.request.id,decision:"approved",resolutionNote:"Verifie",proposed:{lastName:"CHANGE"}}),e=>e.code==="invalid-argument");
+  const beforeClose=report.count().queries;
+  const closing={requestId:reported.request.id,decision:"approved",resolutionNote:"Verifie : aucune fusion automatique. Intervention separee si necessaire."};
+  const closed=await report.resolve(closing);await report.resolve(closing);
+  assert.equal(closed.result.reportOnly,true);assert.equal(report.count().queries,beforeClose,"report closure never opens NAP");
+  assert.equal(report.count().sqlWrites,0);assert.equal(report.count().notifications,0);
+  const badReport=fixture();
+  for(const patch of [{reason:""},{expectedFingerprint:"a".repeat(64)},{proposed:{lastName:"CHANGE"}},{reportType:"unknown"}]) {
+    await assert.rejects(badReport.submit({...reportInput,...patch}));
+  }
+  const wrongClub={execute:async()=>[[{...before,club:"999"}]]};
+  await assert.rejects(prepareRequest(wrongClub,reportInput,context),/club/);
   const clubDenied = fixture({ clubDenied: true }); await assert.rejects(clubDenied.submit(), error => error.code === "permission-denied"); assert.equal(clubDenied.count().queries, 0);
   const browser = fs.readFileSync("assets/livepalmes-admin-portal.js", "utf8");
   assert.ok(browser.includes("if (swimmer.napSource && elements.engagementsSwimmerCorrectionForm)"));
@@ -122,6 +141,26 @@ function fixture(options = {}) {
     assert.equal(elements.engagementsSwimmerCorrectionLastName.maxLength, 64);
     assert.equal(elements.engagementsSwimmerCorrectionReason.required, mode !== "review");
   }
+  ui.openEngagementSwimmerCorrectionDialog({...prepared.current,napSource:true,napFingerprint:fingerprint(before)},"duplicate");
+  assert.equal(elements.engagementsSwimmerCorrectionMode.value,"duplicate");
+  assert.equal(elements.engagementsSwimmerCorrectionTitle.textContent,"Signaler un doublon");
+  assert.equal(elements.engagementsSwimmerCorrectionSubmit.textContent,"Envoyer le signalement");
+  assert.equal(elements.engagementsSwimmerCorrectionReason.required,true);
+  assert.equal(elements.engagementsSwimmerCorrectionLastName.disabled,true);
+  const uiCalls=[];
+  Object.assign(ui,{global:{confirm:()=>true},formatEngagementSwimmerLicense:()=>"",setFormPending:()=>{},
+    callFunction:async(name,payload)=>{uiCalls.push({name,payload});return {ok:true};},
+    invalidateEngagementClubSwimmersCache:()=>{},closeEngagementSwimmerCorrectionDialog:()=>{},loadEngagementClubSwimmers:async()=>{}});
+  elements.engagementsSwimmerCorrectionForm.reportValidity=()=>true;
+  elements.engagementsSwimmerCorrectionReason.value="Deux fiches a verifier";
+  vm.runInNewContext(browser.slice(browser.indexOf("  async function submitEngagementSwimmerCorrection("),browser.indexOf("  function normalizeEngagementNationalClub(")),ui);
+  await ui.submitEngagementSwimmerCorrection();
+  assert.equal(uiCalls.length,1);assert.equal(uiCalls[0].name,"requestEngagementClubSwimmerChange");
+  assert.equal(uiCalls[0].payload.reportType,"duplicate");assert.deepEqual(Object.keys(uiCalls[0].payload.proposed),[]);
+  elements.engagementsSwimmerCorrectionForm.reportValidity=()=>false;
+  await ui.submitEngagementSwimmerCorrection();assert.equal(uiCalls.length,1,"invalid form does not submit");
+  ui.openEngagementSwimmerCorrectionDialog({...prepared.current,napSource:true,napFingerprint:fingerprint(before)},"request");
+  assert.equal(elements.engagementsSwimmerCorrectionLastName.disabled,false,"correction stays editable after a report");
   const selectedUi = {
     selectedEngagementCompetitionId: "fixture", engagementClubSwimmersRenderedCompetitionId: "fixture",
     selectedEngagementCompetition: {napSource:true}, selectedEngagementClubEntry: {swimmers:[]},

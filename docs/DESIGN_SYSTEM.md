@@ -472,6 +472,8 @@ Les modales utilisent un fond d’occultation sombre, une carte blanche centrée
 
 Les implémentations existantes incluent notamment `.decision-modal`, les fiches nageurs publiques et la modale d’administration des performances.
 
+Dans « Mes officiels », l’ajout et la correction d’une fiche réutilisable ouvrent le dialogue natif existant, avec titre explicite, focus dans le formulaire et retour au déclencheur à la fermeture. Une déclaration historique non modifiable ici présente directement sa compétition et l’explication, plutôt que deux boutons désactivés dont l’aide dépend du survol. Dans « Mes nageurs », « Signaler un doublon » est une action distincte de la correction : identité non modifiable, motif obligatoire et absence de fusion automatique annoncée.
+
 ### Pieds de page
 
 Les pages de consultation publiques affichent « Fédération Française d’Études et de Sports Sous-Marins », liée à https://ffessm.fr/ dans un nouvel onglet avec noopener/noreferrer, puis « Commission Nationale Nage avec Palmes ». Contact et navigation légale existants sont conservés. Cette signature discrète est commune à l’accueil, aux pages publiques du Direct, aux lecteurs PDF et aux pages Performances/légales ; les consoles et le portail restent hors de ce cadre.
