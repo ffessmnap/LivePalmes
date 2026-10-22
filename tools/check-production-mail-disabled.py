@@ -64,13 +64,13 @@ def check_idf_preservation(document, preservation, directory, after=False):
 
 def main():
     request = json.loads((Path(os.environ['PLAN']) / 'request.json').read_text())
-    if not request.get('additionalNotificationFunctions') and not request.get('additionalPublicNapFunctions') and not request.get('additionalAccessRequestFunctions'):
+    if not request.get('additionalNotificationFunctions') and not request.get('additionalPublicNapFunctions') and not request.get('additionalAccessRequestFunctions') and not request.get('additionalClubDirectoryFunctions'):
         print('Aucune extension notifications ; aucun acces Firestore.')
         return
     spec = importlib.util.spec_from_file_location('notification_cycle', Path(__file__).with_name('release-cycle.py'))
     cycle = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(cycle)
-    preservation = cycle.public_reader_idf_preservation(request)
+    preservation = cycle.idf_preservation(request)
     after = sys.argv[1:] == ['--after']
     if sys.argv[1:] not in ([], ['--after']) or (after and preservation is None):
         raise ValueError('Controle final IDF hors perimetre')

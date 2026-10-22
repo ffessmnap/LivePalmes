@@ -320,7 +320,7 @@ class PublicReaderIdfPreservationTests(unittest.TestCase):
     def test_full_setting_witness_including_metadata_and_unknown_fields(self):
         import copy
         with tempfile.TemporaryDirectory() as directory:
-            root = Path(directory); document = self.document(); preservation = self.request()['publicReaderIdfPreservation']
+            root = Path(directory); document = self.document(); preservation = cycle.idf_preservation(self.request())
             with self.assertRaises(ValueError):
                 guard.check_idf_preservation(document, preservation, root, after=True)
             guard.check_idf_preservation(document, preservation, root)
@@ -340,7 +340,7 @@ class PublicReaderIdfPreservationTests(unittest.TestCase):
         request=self.request(); scheduler={'name':'job','schedule':'*/5 * * * *','timeZone':'Europe/Paris','state':'ENABLED'}
         with tempfile.TemporaryDirectory() as directory:
             root=Path(directory)
-            (root/'request.json').write_text(json.dumps(request)); (root/'selection.json').write_text(json.dumps(['readNapPublicSwimmer']))
+            (root/'request.json').write_text(json.dumps(request)); (root/'selection.json').write_text(json.dumps(cycle.approved_extra_functions(request)))
             (root/'credentials.json').write_text(json.dumps({'project_id':'livepalmes'}))
             def run(after=False, job=None):
                 responses=[io.BytesIO(json.dumps(x).encode()) for x in [self.document(), job or scheduler]]
@@ -386,6 +386,106 @@ class PublicReaderIdfPreservationTests(unittest.TestCase):
             for desired in [{**after,'mail':'changed'}, {**after,'new':'export'}, {**after,'readNapPublicSwimmer':'wrong'}]:
                 with self.assertRaises(ValueError):run(desired)
             with self.assertRaises(ValueError):run(after,{**state,'functions':[]})
+
+
+class ClubDirectoryIdfPreservationTests(PublicReaderIdfPreservationTests):
+    def request(self):
+        return json.loads((ROOT/'.github/releases/20261022-club-directory-idf.json').read_text(encoding='utf-8'))
+
+    def test_exact_pair_and_single_reader_only(self):
+        request = self.request(); names = list(cycle.CLUB_DIRECTORY_HASHES)
+        self.assertEqual(cycle.approved_extra_functions(request), names)
+        cycle.require_access_request_selection(request, names)
+        for selected in [[], names[:-1], names+['readNapPublicSwimmer'], names+[names[0]]]:
+            with self.assertRaises(ValueError): cycle.require_access_request_selection(request, selected)
+        for altered in [{'candidate':'a'*40}, {'productionCommit':'b'*40},
+                        {'initialAutomaticMailEnabled':False}, {'additionalClubDirectoryFunctions':names[:-1]},
+                        {'clubDirectoryIdfPreservation':None},
+                        {'clubDirectoryIdfPreservation':{'scope':'idf','revision':4,'approval':''}}]:
+            with self.assertRaises(ValueError):cycle.approved_extra_functions({**request,**altered})
+        for key in ['additionalDtnFunctions','additionalPdfFunctions','additionalNotificationFunctions',
+                    'additionalPublicNapFunctions','additionalAccessRequestFunctions','notificationMaintenancePlan',
+                    'publicReaderIdfPreservation','nativeIdentityNapSecretApproval','testEquivalentCandidate']:
+            with self.subTest(key=key),self.assertRaises(ValueError):
+                cycle.approved_extra_functions({**request,key:['forbidden']})
+
+    def test_frozen_proof_refuses_other_dependency_or_missing_reader(self):
+        request=self.request(); names=list(cycle.CLUB_DIRECTORY_HASHES)
+        before={n:h[0] for n,h in cycle.CLUB_DIRECTORY_HASHES.items()}; before['mail']='unchanged'
+        after={n:h[1] for n,h in cycle.CLUB_DIRECTORY_HASHES.items()}; after['mail']='unchanged'
+        observed={'hosting':{'version':request['productionHosting'],'message':'LivePalmes '+request['productionCommit']+' run 1'},
+                  'functions':[{'name':n,'state':'ACTIVE','revision':'existing','commit':request['productionCommit']} for n in names]}
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory);(root/'request.json').write_text(json.dumps(request));(root/'selection.json').write_text(json.dumps(names))
+            def run(desired, state=observed):
+                with patch.object(cycle,'production_evidence',return_value=state),patch.object(cycle,'verify_excluded_backend'), \
+                     patch.object(cycle,'backend_fingerprints',side_effect=lambda sha:before if sha==request['productionCommit'] else desired), \
+                     patch.dict(os.environ,{'GITHUB_STEP_SUMMARY':str(root/'summary.txt')}):
+                    cycle.freeze_plan(root,evidence=True)
+            run(after);self.assertTrue((root/'club-directory-idf-proof.json').exists())
+            for desired in [{**after,'mail':'changed'},{**after,names[0]:'wrong'},{**after,'new':'export'}]:
+                with self.assertRaises(ValueError):run(desired)
+            with self.assertRaises(ValueError):run(after,{**observed,'functions':observed['functions'][:-1]})
+
+    def test_bindings_are_existing_nap_only_and_missing_is_not_repaired(self):
+        preflight=load('club_preflight','preflight-production-release.py')
+        secret={'key':'LIVEPALMES_NAP_PASSWORD','secret':'LIVEPALMES_NAP_PASSWORD','projectId':'livepalmes','version':'1'}
+        for name in cycle.CLUB_DIRECTORY_HASHES:
+            service={'secretEnvironmentVariables':[] if name.startswith('list') else [secret]}
+            self.assertTrue(preflight.club_directory_runtime_allowed(name,service))
+            for changed in [{'secretEnvironmentVariables':[{'key':'SMTP'}]}, {'secretVolumes':[{}]},
+                            {'environmentVariables':{'CUSTOM':'unexpected'}}]:
+                self.assertFalse(preflight.club_directory_runtime_allowed(name,{**service,**changed}))
+            if not name.startswith('list'):
+                self.assertFalse(preflight.club_directory_runtime_allowed(name,{}))
+
+    def test_source_only_path_never_calls_cli_or_changes_secrets(self):
+        publisher=load('club_publisher','publish-approved-pdf-functions.py'); request=self.request()
+        for name in cycle.CLUB_DIRECTORY_HASHES:
+            body=publisher.source_patch({'name':name}, {}, request['candidate'])
+            self.assertEqual(set(body),{'name','buildConfig','labels'})
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory);(root/'request.json').write_text(json.dumps(request));(root/'selection.json').write_text(json.dumps(list(cycle.CLUB_DIRECTORY_HASHES)))
+            (root/'credentials.json').write_text(json.dumps({'project_id':'livepalmes'}))
+            with patch.dict(os.environ,{'PLAN':str(root),'GOOGLE_APPLICATION_CREDENTIALS':str(root/'credentials.json'),'CANDIDATE_SHA':request['candidate']}), \
+                 patch.object(cycle,'safe_functions',return_value=[]),patch.object(cycle,'deploy_command') as deploy:
+                cycle.deploy_batches('livepalmes','.',root,root/'selection.json',True)
+                deploy.assert_not_called()
+
+    def test_configuration_and_retained_revision_changes_block_hosting(self):
+        import copy
+        request=self.request();names=list(cycle.CLUB_DIRECTORY_HASHES)
+        old=[{'name':state.PREFIX+n,'state':'ACTIVE','updateTime':'before','buildConfig':{'runtime':'nodejs22'},
+              'serviceConfig':{'revision':'before','timeoutSeconds':60,'secretEnvironmentVariables':[]}} for n in names+['retainedMail']]
+        new=copy.deepcopy(old)
+        for f in new[:-1]:
+            f.update(updateTime='after',labels={'livepalmes-commit':request['candidate']});f['serviceConfig']['revision']='after'
+        report={'candidate':request['candidate'],'commitLabel':True,'functions':[{'name':f['name']} for f in old[:-1]],
+                'newFunctions':[],'appCheck':'false','additionalClubDirectoryFunctions':names}
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory);(root/'functions.json').write_text(json.dumps(old));(root/'report.json').write_text(json.dumps(report))
+            def check(data):
+                with patch.object(state,'inventory',return_value=data),patch.dict(os.environ,{'GITHUB_STEP_SUMMARY':str(root/'summary')}):
+                    state.check_after(root,root/'after.json',True)
+            check(new)
+            for key,value in [('timeoutSeconds',120),('secretEnvironmentVariables',[{'key':'SMTP'}]),('environmentVariables',{'CUSTOM':'1'})]:
+                changed=copy.deepcopy(new);changed[0]['serviceConfig'][key]=value
+                with self.subTest(key=key),self.assertRaises(ValueError):check(changed)
+            changed=copy.deepcopy(new);changed[-1]['serviceConfig']['revision']='drift'
+            with self.assertRaises(ValueError):check(changed)
+
+    def test_resume_only_skips_attested_candidate_with_identical_configuration(self):
+        import copy
+        publisher=load('club_resume','publish-approved-pdf-functions.py');name=list(cycle.CLUB_DIRECTORY_HASHES)[0];full=state.PREFIX+name
+        old={'name':full,'state':'ACTIVE','updateTime':'before','buildConfig':{'runtime':'nodejs22'},'serviceConfig':{'revision':'old'}}
+        new={**old,'updateTime':'after','labels':{'livepalmes-commit':self.request()['candidate']},'serviceConfig':{'revision':'new'}}
+        def run(current, previous):
+            return publisher.pending_club_sources([name],{full:old},{full:current},previous,self.request()['candidate'],state)
+        self.assertEqual(run(old,{}),[name]);self.assertEqual(run(new,{full:state.identity(new)}),[])
+        with self.assertRaises(ValueError):run(new,{})
+        drift=copy.deepcopy(new);drift['serviceConfig']['timeoutSeconds']=120
+        with self.assertRaises(ValueError):run(drift,{full:state.identity(drift)})
+        with self.assertRaises(ValueError):run({**new,'labels':{'livepalmes-commit':'other'}},{full:state.identity(new)})
 
 
 if __name__ == '__main__':
