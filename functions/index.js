@@ -10213,6 +10213,78 @@ exports.saveNationalFeaturedDocuments = onCall({ ...CALLABLE_OPTIONS, secrets:[d
   }
 });
 // End national document selection.
+async function nationalLibraryContext(request) {
+  const context=await engagementAccessContext(request);
+  if(!context.national)throw new HttpsError('permission-denied','Administration nationale requise.');
+  if(ENVIRONMENT.sportingDataSource!=='nap')throw new HttpsError('failed-precondition','Bibliothèque NAP indisponible.');
+  return context;
+}
+exports.manageNationalLibraryDocuments = onCall({...ENGAGEMENT_DOCUMENT_UPLOAD_OPTIONS,secrets:[defineSecret('LIVEPALMES_NAP_PASSWORD')]},async request=>{
+  const context=await nationalLibraryContext(request);
+  const library=require('./nap-national-documents');
+  const pool=require('./nap-portal-swimmers').portalPool(process.env.LIVEPALMES_NAP_PASSWORD);
+  try{
+    const input=request.data||{};
+    if(input.action==='list')return await library.list(pool,input);
+    if(input.action==='detail')return {document:library.view(await library.record(pool,input.documentId))};
+    return await library.mutate(pool,input,{
+      authorize:()=>nationalLibraryContext(request),
+      downloadUrl:(path,token)=>competitionDocumentDownloadUrl(LIVEPALMES_STORAGE_BUCKET,path,token),
+      saveFile:(upload,decoded)=>storage.bucket(LIVEPALMES_STORAGE_BUCKET).file(upload.path).save(decoded.buffer,{resumable:false,metadata:{contentType:decoded.contentType,cacheControl:'public, max-age=300, must-revalidate',metadata:{firebaseStorageDownloadTokens:upload.token}}}),
+      audit:{
+        read:async operation=>(await db.collection('auditLogs').doc(`national-document-${operation}-before`).get()).exists,
+        prepare:(operation,target)=>db.collection('auditLogs').doc(`national-document-${operation}-before`).create({action:'nap.nationalDocument.prepare',actorUid:context.uid,target,createdAt:new Date().toISOString()}),
+        complete:(operation,target)=>writeAuditLogOnce('nap.nationalDocument.saved',context.uid,target,operation)
+      }
+    });
+  }catch(error){
+    if(error instanceof HttpsError)throw error;
+    throw new HttpsError(error instanceof TypeError?'failed-precondition':error instanceof RangeError?'resource-exhausted':'unavailable',error instanceof TypeError||error instanceof RangeError?error.message:'Opération à vérifier. La sauvegarde technique est conservée ; rechargez avant de reprendre.');
+  }
+});
+exports.notifyNationalLibraryDocument = onCall({...ENGAGEMENT_DOCUMENT_UPLOAD_OPTIONS,timeoutSeconds:300,secrets:[defineSecret('LIVEPALMES_NAP_PASSWORD'),...(ENVIRONMENT.projectId==='livepalmes-test'?[]:ENGAGEMENT_NOTIFICATION_MAIL_SECRETS)]},async request=>{
+  const context=await nationalLibraryContext(request);
+  try{
+    const input=request.data||{},library=require('./nap-national-documents');
+    if(!['preview','send'].includes(input.action))throw new TypeError('Action de notification invalide.');
+    const pool=require('./nap-portal-swimmers').portalPool(process.env.LIVEPALMES_NAP_PASSWORD);
+    const document=library.view(await library.record(pool,input.documentId));
+    const setting=await require('./engagement-mail-control').read(db);
+    if((await engagementMailRecipientIndexStateRef(db).get()).data()?.status!=='ready')throw new TypeError('Annuaire des destinataires indisponible ; aucune reconstruction automatique.');
+    const scoped=await require('./nap-notification-preview').nativeClubScopes(pool,await engagementMailRecipientsFromIndex(db,['engagements.club.manage']));
+    if(scoped.length>10000)throw new RangeError('Annuaire des destinataires trop volumineux.');
+    const control=require('./engagement-mail-control');
+    const recipients=engagementCompetitionNotificationRecipients(engagementDedupMailRecipients(scoped))
+      .filter(x=>x.clubId&&engagementRecipientHasCapability(x,'engagements.club.manage')&&control.clubAllowed(setting,x))
+      .sort((a,b)=>String(a.uid).localeCompare(String(b.uid))||String(a.email).localeCompare(String(b.email)));
+    const fingerprint=crypto.createHash('sha256').update(JSON.stringify([document.fingerprint,setting,recipients])).digest('hex');
+    const disabled=ENVIRONMENT.projectId==='livepalmes-test'||!setting.enabled;
+    const result={recipientCount:recipients.length,clubCount:new Set(recipients.map(x=>x.clubId)).size,scope:setting.scope,fingerprint,disabled,sentCount:0,errorCount:0,test:ENVIRONMENT.projectId==='livepalmes-test'};
+    if(input.action==='preview')return result;
+    if(input.expectedFingerprint!==fingerprint)throw new TypeError('Le document, les destinataires ou le réglage ont changé. Actualisez l’aperçu.');
+    // No SMTP configuration, transporter, outbox or delayed event is created on TEST.
+    if(disabled)return {...result,done:true};
+    const offset=input.offset??0;
+    if(!Number.isSafeInteger(offset)||offset<0||offset>recipients.length||offset%20!==0)throw new TypeError('Page de notification invalide.');
+    const config=engagementMailSmtpConfig();if(!config.ready)throw new TypeError('Configuration des mails indisponible.');
+    const transporter=nodemailer.createTransport({...config.transport,pool:true,maxConnections:1,connectionTimeout:15000,greetingTimeout:15000,socketTimeout:30000});
+    try{
+      for(const recipient of recipients.slice(offset,offset+20)){
+        const now=new Date().toISOString();
+        const jobId=crypto.createHash('sha256').update(JSON.stringify(['national-document',document.id,document.fingerprint,recipient.uid,recipient.email])).digest('hex');
+        const ref=db.collection(ENGAGEMENT_MAIL_JOBS_COLLECTION).doc(jobId);
+        const job={source:'nap',type:'competition_documents',status:'sending',competitionId:'national-library',notificationId:`national-document-${document.id}`,recipientUid:recipient.uid,toEmail:recipient.email,clubId:String(recipient.clubId),recipientRegionId:recipient.napClubRegionId,subject:`LivePalmes — ${document.title}`,textBody:`Un document est disponible dans la bibliothèque LivePalmes.\n\n${document.title}\n${document.description||''}\n${document.url}\n\n${ENVIRONMENT.hostingOrigin}/bibliotheque.html`,createdAt:now,notificationDueAt:now,updatedAt:now,attemptedAt:now};
+        const claimed=await db.runTransaction(async transaction=>{if((await transaction.get(ref)).exists)return false;transaction.create(ref,job);return true;});
+        if(!claimed)continue;
+        const sent=await sendEngagementMailJob(transporter,{id:jobId,ref,data:()=>job},config,context);
+        if(sent.status==='sent')result.sentCount++;else result.errorCount++;
+        if(sent.stopDelivery)return {...result,done:true,interrupted:true};
+      }
+    }finally{transporter.close();}
+    await writeAuditLog('nap.nationalDocument.notified',context.uid,{documentId:document.id,offset,sentCount:result.sentCount,errorCount:result.errorCount});
+    return {...result,done:offset+20>=recipients.length,nextOffset:offset+20};
+  }catch(error){if(error instanceof HttpsError)throw error;throw new HttpsError(error instanceof TypeError?'failed-precondition':'unavailable',error instanceof TypeError?error.message:'Notification interrompue. Les envois déjà tentés ne seront pas renvoyés automatiquement.');}
+});
 async function mutateNativeCompetitionDocument(request, action) {
   const context = await engagementAccessContext(request);
   const competitionId = request.data?.calendarEventId || request.data?.competitionId;

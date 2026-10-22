@@ -71,6 +71,8 @@ function runUnitTests() {
     "nap-featured-documents-tests.js",
     "nap-featured-migration-tests.js",
     "nap-featured-documents-callable-tests.js",
+    "nap-national-documents-tests.js",
+    "nap-national-documents-callable-tests.js",
     "featured-documents-model-tests.js",
     "nap-document-index-tests.js",
     "livepalmes-home-model-tests.js",
