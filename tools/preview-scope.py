@@ -98,6 +98,12 @@ CLUB_DIRECTORY_PREFLIGHT_PATHS = {
 }
 
 
+LOGIN_MESSAGE_PREFLIGHT_PATHS = {
+    '.github/releases/20261022-login-message.json',
+    'tools/preview-scope.py', 'tests/preview-scope-tests.py',
+}
+
+
 def needs_preview(paths):
     def documentary(path):
         p = PurePosixPath(path)
@@ -134,6 +140,9 @@ def needs_preview(paths):
         return False
     if '.github/releases/20261022-club-directory-idf.json' in paths and all(
             documentary(p) or p in CLUB_DIRECTORY_PREFLIGHT_PATHS for p in paths):
+        return False
+    if '.github/releases/20261022-login-message.json' in paths and all(
+            documentary(p) or p in LOGIN_MESSAGE_PREFLIGHT_PATHS for p in paths):
         return False
     return any(not documentary(p) for p in paths)
 

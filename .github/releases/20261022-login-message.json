@@ -1,0 +1,18 @@
+{
+  "schema": 1,
+  "candidate": "fbd3c2868fcb3690e1fa5a7ddeca9f45e6fb4511",
+  "productionCommit": "a15be36778cf62f1936f1e0b35bf873733997d5a",
+  "productionHosting": "sites/livepalmes/versions/46c5e4f102777b1a",
+  "testRun": 39845293611,
+  "changes": [
+    {
+      "title": "Message informatif de connexion : portail en service et évolution progressive",
+      "paths": [
+        "portail.html"
+      ],
+      "status": "validated",
+      "validation": "Antoine le22octobre, texte approuvé explicitement : « Oui c’est bien, remplace le texte sur la page de connexion PROD et TEST et mets à jour le guide PDF avec la nouvelle capture. » Puis « Oui, transmets le bilan à Infra ». Candidat exact fbd3c286, TEST commun39845293611 Hosting0d7c64588163b69f réussi ; contrôle technique Linux39844490921 réussi. Captures locales sans réseau externe 1440/390px sans débordement ; HTTP TEST200, nouveau texte présent et ancien absent. Pas de changement de fonctionnement de connexion. Demande de préparation PROD, accord final du bilan Infra encore requis."
+    }
+  ],
+  "excludedBackendReview": "Hosting uniquement : sélection backend vide attendue et112 fonctions PROD conservées ;114 TEST sans alignement. Diff applicatif exact : seul paragraphe informatif de portail.html, deux assertions de texte existantes actualisées. Autres différences uniquement documentation et outillage déjà intégré ; functions/, configuration et dépendances backend inchangés entre les commits applicatifs. Aucune nouvelle lecture ou écriture ni appel métier. Guide PDF séparé, aucun PDF à publier sur Hosting. IDF actif conservé sans coupure, intervention sur son réglage, scheduler, destinataires/préférences, test mail ou rattrapage. Exclusions : fiches de Basile, Paris/CNHC, clubs historiques, migrations et données NAP/Firestore/Storage, authentification/droits/règles/index/secrets/configuration, fonctions mail/schedulers, Tout recalcul DTN, Tout nettoyage Storage. Après accord final du plan seulement : contrôle frais de dérive, sauvegarde chiffrée rouverte/comparée avant Hosting, vérifications du fichier servi et112 fonctions conservées. Retour arrière Hosting officiel vers la référence sauvegardée ; aucune donnée à restaurer."
+}

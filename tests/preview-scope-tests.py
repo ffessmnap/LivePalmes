@@ -88,3 +88,10 @@ for extra in ['functions/index.js', 'portail.html', 'firebase.json', 'tools/unkn
     assert scope.needs_preview(club + [extra]) is True
 assert scope.needs_preview(['tools/publish-approved-pdf-functions.py']) is True
 print('Club directory preparation skips preview; application and unknown paths retain it')
+
+login = sorted(scope.LOGIN_MESSAGE_PREFLIGHT_PATHS) + ['docs/releases/EVOLUTIONS.md']
+assert scope.needs_preview(login) is False
+for extra in ['portail.html', 'functions/index.js', 'firebase.json', 'tools/unknown.py']:
+    assert scope.needs_preview(login + [extra]) is True
+assert scope.needs_preview(['tools/preview-scope.py']) is True
+print('Login message preparation skips preview; application and unknown files retain it')
