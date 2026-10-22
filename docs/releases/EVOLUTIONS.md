@@ -7,6 +7,7 @@
 - Texte explicitement approuvé par Antoine : portail en service, fonctionnalités et améliorations progressives, contact pour les questions et difficultés. Suppression de la mention d’expérimentation Île-de-France et du renvoi des autres régions vers IntraNAP.
 - Périmètre : seul paragraphe informatif de `portail.html`, composants et styles existants. Aucun changement d’authentification, droits, configuration, backend ou données ; budget de lectures supplémentaire nul à l’ouverture, par action, au rafraîchissement et au pire cas.
 - Guide PDF club mis à jour séparément avec la nouvelle capture de connexion et suppression de l’ancien encadré expérimental. Demande explicite TEST et PROD reçue ; publication PROD à préparer selon le circuit Infra. Contrôles, PR et preuve TEST à compléter ; aucune validation utilisateur de la livraison déduite.
+- [PR #459](https://github.com/ffessmnap/LivePalmes/pull/459) : captures locales réseau externe bloqué à 1440 px et 390 px, sans débordement ; nouvelle page PDF rendue et contrôlée, huit pages conservées, ancien encadré retiré. Test ciblé `livepalmes-portal-optimization-tests.js` réussi après actualisation des deux assertions de texte existantes. Styles et composants inchangés ; aucune évolution du Design System nécessaire. CI finale et preuve de publication TEST encore attendues.
 
 ### 22 octobre — Répertoire club : Modifier et signaler un doublon (TEST publié, validation utilisateur attendue)
 
