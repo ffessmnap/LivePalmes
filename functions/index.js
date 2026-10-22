@@ -10185,6 +10185,7 @@ async function engagementCompetitionDocumentContext(request) {
 
 // National document selection. No client-supplied role or actor is authoritative.
 exports.getNationalFeaturedDocuments = onCall({ ...CALLABLE_OPTIONS, secrets:[defineSecret("LIVEPALMES_NAP_PASSWORD")] }, async (request) => {
+  if(request.data?.library===true)return manageNationalLibraryDocuments(request);
   const context=await engagementAccessContext(request);
   if(!context.national)throw new HttpsError("permission-denied","Administration nationale requise.");
   if(ENVIRONMENT.sportingDataSource!=="nap")throw new HttpsError("failed-precondition","Sélection documentaire indisponible.");
@@ -10194,7 +10195,8 @@ exports.getNationalFeaturedDocuments = onCall({ ...CALLABLE_OPTIONS, secrets:[de
     return {source:"nap",documents:selection.documents,fingerprint:selection.fingerprint};
   }catch(error){throw new HttpsError("failed-precondition",error instanceof TypeError?error.message:"Sélection documentaire momentanément indisponible.");}
 });
-exports.saveNationalFeaturedDocuments = onCall({ ...CALLABLE_OPTIONS, secrets:[defineSecret("LIVEPALMES_NAP_PASSWORD")] }, async (request) => {
+exports.saveNationalFeaturedDocuments = onCall({ ...ENGAGEMENT_DOCUMENT_UPLOAD_OPTIONS, secrets:[defineSecret("LIVEPALMES_NAP_PASSWORD")] }, async (request) => {
+  if(request.data?.library===true)return manageNationalLibraryDocuments(request);
   if(ENVIRONMENT.sportingDataSource!=="nap")throw new HttpsError("failed-precondition","Sélection documentaire indisponible.");
   try{
     const pool=require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD);
@@ -10219,7 +10221,7 @@ async function nationalLibraryContext(request) {
   if(ENVIRONMENT.sportingDataSource!=='nap')throw new HttpsError('failed-precondition','Bibliothèque NAP indisponible.');
   return context;
 }
-exports.manageNationalLibraryDocuments = onCall({...ENGAGEMENT_DOCUMENT_UPLOAD_OPTIONS,secrets:[defineSecret('LIVEPALMES_NAP_PASSWORD')]},async request=>{
+async function manageNationalLibraryDocuments(request) {
   const context=await nationalLibraryContext(request);
   const library=require('./nap-national-documents');
   const pool=require('./nap-portal-swimmers').portalPool(process.env.LIVEPALMES_NAP_PASSWORD);
@@ -10241,8 +10243,8 @@ exports.manageNationalLibraryDocuments = onCall({...ENGAGEMENT_DOCUMENT_UPLOAD_O
     if(error instanceof HttpsError)throw error;
     throw new HttpsError(error instanceof TypeError?'failed-precondition':error instanceof RangeError?'resource-exhausted':'unavailable',error instanceof TypeError||error instanceof RangeError?error.message:'Opération à vérifier. La sauvegarde technique est conservée ; rechargez avant de reprendre.');
   }
-});
-exports.notifyNationalLibraryDocument = onCall({...ENGAGEMENT_DOCUMENT_UPLOAD_OPTIONS,timeoutSeconds:300,secrets:[defineSecret('LIVEPALMES_NAP_PASSWORD'),...(ENVIRONMENT.projectId==='livepalmes-test'?[]:ENGAGEMENT_NOTIFICATION_MAIL_SECRETS)]},async request=>{
+}
+async function notifyNationalLibraryDocument(request) {
   const context=await nationalLibraryContext(request);
   try{
     const input=request.data||{},library=require('./nap-national-documents');
@@ -10284,7 +10286,7 @@ exports.notifyNationalLibraryDocument = onCall({...ENGAGEMENT_DOCUMENT_UPLOAD_OP
     await writeAuditLog('nap.nationalDocument.notified',context.uid,{documentId:document.id,offset,sentCount:result.sentCount,errorCount:result.errorCount});
     return {...result,done:offset+20>=recipients.length,nextOffset:offset+20};
   }catch(error){if(error instanceof HttpsError)throw error;throw new HttpsError(error instanceof TypeError?'failed-precondition':'unavailable',error instanceof TypeError?error.message:'Notification interrompue. Les envois déjà tentés ne seront pas renvoyés automatiquement.');}
-});
+}
 async function mutateNativeCompetitionDocument(request, action) {
   const context = await engagementAccessContext(request);
   const competitionId = request.data?.calendarEventId || request.data?.competitionId;
@@ -10517,7 +10519,8 @@ exports.previewEngagementCompetitionDocumentNotification = onCall(ENGAGEMENT_NOT
   };
 });
 
-exports.notifyEngagementCompetitionDocuments = onCall(ENVIRONMENT.sportingDataSource === "nap" ? ENGAGEMENT_NOTIFICATION_PREVIEW_OPTIONS : ENGAGEMENT_MAIL_CALLABLE_OPTIONS, async (request) => {
+exports.notifyEngagementCompetitionDocuments = onCall(ENVIRONMENT.sportingDataSource === "nap" ? (ENVIRONMENT.projectId === "livepalmes-test" ? ENGAGEMENT_NOTIFICATION_PREVIEW_OPTIONS : { ...ENGAGEMENT_NOTIFICATION_PREVIEW_OPTIONS, timeoutSeconds:300, secrets:[defineSecret("LIVEPALMES_NAP_PASSWORD"),...ENGAGEMENT_NOTIFICATION_MAIL_SECRETS] }) : ENGAGEMENT_MAIL_CALLABLE_OPTIONS, async (request) => {
+  if(request.data?.library===true)return notifyNationalLibraryDocument(request);
   if (ENVIRONMENT.sportingDataSource === "nap") return queueNativeDocumentNotification(request);
   const { context, competitionId, snapshot } = await engagementCompetitionDocumentContext(request);
   const competition = engagementCompetitionDetailItem(snapshot);

@@ -5,7 +5,7 @@ const vm=require("node:vm");
 const source=fs.readFileSync(require.resolve("../functions/index.js"),"utf8");
 let national=true,reads=0,saves=0,audits=0;
 class HttpsError extends Error{constructor(code,message){super(message);this.code=code;}}
-const context={exports:{},CALLABLE_OPTIONS:{region:"europe-west1"},ENVIRONMENT:{sportingDataSource:"nap"},process:{env:{}},Date,HttpsError,
+const context={exports:{},ENGAGEMENT_DOCUMENT_UPLOAD_OPTIONS:{},CALLABLE_OPTIONS:{region:"europe-west1"},ENVIRONMENT:{sportingDataSource:"nap"},process:{env:{}},Date,HttpsError,
  defineSecret:name=>name,onCall:(options,fn)=>Object.assign(fn,{options}),
  engagementAccessContext:async request=>{if(!request.auth)throw new HttpsError("unauthenticated","Connexion requise");return {uid:"trusted",national};},
  writeAuditLogOnce:async(action,uid)=>{assert.equal(action,"nap.featured.saved");assert.equal(uid,"trusted");},

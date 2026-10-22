@@ -5,7 +5,7 @@
  const node=(tag,text,className)=>{const e=document.createElement(tag);if(text)e.textContent=text;if(className)e.className=className;return e;};
  const el=id=>dialog.querySelector(`#nationalLibrary${id}`);
  async function call(name,input){const f=global.firebase.app().functions(global.LivePalmesAppConfig?.firebaseFunctionsRegion||'europe-west1');return (await (global.LivePalmesAppConfig?.configureFunctionsService?.(f)||f).httpsCallable(name)(input)).data;}
- const manage=input=>call('manageNationalLibraryDocuments',input);
+ const manage=input=>call(['list','detail'].includes(input.action)?'getNationalFeaturedDocuments':'saveNationalFeaturedDocuments',{...input,library:true});
  function status(text){el('Status').textContent=text;}
  function setBusy(value){busy=value;dialog.querySelectorAll('button,input,select,textarea').forEach(e=>{e.disabled=value;});}
  function ensure(){
@@ -59,13 +59,13 @@
  }
  function readFile(file){return new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=()=>reject(new Error('Lecture du fichier impossible.'));reader.readAsDataURL(file);});}
  async function notify(documentId){
-  const preview=await call('notifyNationalLibraryDocument',{action:'preview',documentId});
+  const preview=await call('notifyEngagementCompetitionDocuments',{library:true,action:'preview',documentId});
   if(preview.disabled)return preview.test?'Document enregistré. TEST : aucun mail envoyé.':'Document enregistré. Le réglage national désactive les mails ; aucun envoi.';
   if(!preview.recipientCount)return 'Document enregistré. Aucun destinataire éligible aux notifications.';
   const scope=preview.scope==='idf'?'Le pilote national limite les destinataires à l’Île-de-France. ':'Tous les clubs disposant de destinataires éligibles sont concernés. ';
   if(!global.confirm(`${scope}Envoyer un mail à ${preview.recipientCount} responsable(s) de ${preview.clubCount} club(s) pour ce document ?`))return 'Document enregistré. Notification annulée.';
   let offset=0,sent=0,errors=0,result;
-  do{status(`Document enregistré. Envoi des notifications… ${sent} envoyé(s).`);result=await call('notifyNationalLibraryDocument',{action:'send',documentId,expectedFingerprint:preview.fingerprint,offset});sent+=result.sentCount;errors+=result.errorCount;offset=result.nextOffset;}while(!result.done);
+  do{status(`Document enregistré. Envoi des notifications… ${sent} envoyé(s).`);result=await call('notifyEngagementCompetitionDocuments',{library:true,action:'send',documentId,expectedFingerprint:preview.fingerprint,offset});sent+=result.sentCount;errors+=result.errorCount;offset=result.nextOffset;}while(!result.done);
   return `Document enregistré. ${sent} mail(s) envoyé(s), ${errors} en erreur.${result.interrupted?' Envoi interrompu : consultez le suivi des mails.':''}`;
  }
  async function save(){

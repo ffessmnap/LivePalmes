@@ -23,7 +23,7 @@ const LOTS = Object.freeze({
     "createEngagementCalendarEvent", "updateEngagementCalendarEvent", "deleteEngagementCalendarEvent",
     "listEngagementOpenWaterCourses", "addEngagementOpenWaterCourse", "setEngagementOpenWaterCourseStatus",
     "getEngagementCompetition", "uploadEngagementCompetitionDocument", "updateEngagementCompetitionDocument",
-    "getNationalFeaturedDocuments", "saveNationalFeaturedDocuments", "manageNationalLibraryDocuments",
+    "getNationalFeaturedDocuments", "saveNationalFeaturedDocuments",
     "deleteEngagementCompetitionDocument", "previewEngagementCompetitionDocumentNotification",
     "getEngagementClubEntry", "preloadEngagementClubWorkspaces", "generateEngagementClubRecapPdf",
     "listEngagementCompetitionClubRecaps", "getEngagementCompetitionStatistics",
@@ -74,7 +74,7 @@ const LOTS = Object.freeze({
   email: [
     "submitEngagementAccessRequest", "resolveEngagementAccessRequest",
     "updateCurrentEmailNotificationPreferences", "disableCompetitionEmailNotifications",
-    "notifyNationalLibraryDocument", "notifyEngagementCompetitionDocuments", "listEngagementCompetitionMailJobs",
+    "notifyEngagementCompetitionDocuments", "listEngagementCompetitionMailJobs",
     "prepareEngagementOpeningNotificationEmails", "prepareEngagementClubRecapEmails",
     "sendEngagementPreparedEmails", "resolveEngagementSwimmerChangeRequest", "processNapCompetitionNotifications"
   ],
@@ -195,7 +195,7 @@ const ALL_SAFE_LOTS = Object.freeze(["access", "engagement-core", "performance",
 // Exact TEST-only exceptions: NAP resolution and notification previews have
 // neither SMTP bindings nor sends. PROD remains email and outside ordinary PROD.
 const TEST_NON_MAIL_FUNCTIONS = Object.freeze(["resolveEngagementSwimmerChangeRequest",
-  "notifyNationalLibraryDocument", "notifyEngagementCompetitionDocuments", "listEngagementCompetitionMailJobs",
+  "notifyEngagementCompetitionDocuments", "listEngagementCompetitionMailJobs",
   "prepareEngagementOpeningNotificationEmails", "prepareEngagementClubRecapEmails", "sendEngagementPreparedEmails"]);
 
 // Toute Function susceptible d'écrire dans le bucket public, ou de créer/rejouer

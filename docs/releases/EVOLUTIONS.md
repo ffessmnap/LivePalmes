@@ -5,7 +5,7 @@
 ### 22 octobre — Gestion de la bibliothèque documentaire nationale (en préparation TEST)
 
 - Besoin : rétablir le dépôt et le retrait des documents généraux, avec choix des rubriques Comité, Compétitions, Entraîneurs, Juges, Haut niveau et notification facultative aux clubs. Approche explicitement validée puis implémentation/déploiement TEST autorisés dans cette discussion, sans mail réel aux clubs.
-- Périmètre : nouveau module de gestion natif NAP, interface Administration nationale → Documents, tests et classification des deux nouveaux callables. Source NAP, droits nationaux, fichiers historiques, réglage national/pilote IDF et schedulers conservés ; aucune migration ou donnée de recette commune. Retrait de publication avec conservation de l’original.
+- Périmètre : nouveau module de gestion natif NAP, interface Administration nationale → Documents, tests ; trois callables documentaires existants réutilisés, aucun nouveau registre de déploiement. Source NAP, droits nationaux, fichiers historiques, réglage national/pilote IDF et schedulers conservés ; aucune migration ou donnée de recette commune. Retrait de publication avec conservation de l’original.
 - Vérifications ciblées hors réseau réussies : mutations/journal/versions/droits/fichier, callables et blocage total SMTP/outbox TEST ; navigateur local 1440/390/320 px : dépôt multi-rubriques, modification, retrait, notification décochée, aperçu TEST sans envoi, aucun débordement. Vérification globale et CI Linux à consigner. Les plans SQL réels et l’écriture sur clone MySQL ne sont pas encore mesurés pour ce parcours.
 - PR/commit et preuve du déploiement TEST à compléter après réussite. Aucune publication PROD ni validation utilisateur de la livraison déduite.
 
