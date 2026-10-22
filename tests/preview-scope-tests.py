@@ -74,3 +74,10 @@ for extra in ['portail.html', 'functions/index.js', 'firebase.json', 'tools/unkn
     assert scope.needs_preview(shared_header + [extra]) is True
 assert scope.needs_preview(['tools/preview-scope.py', 'tests/preview-scope-tests.py']) is True
 print('Shared header preparation skips preview; mixed and unanchored changes retain it')
+
+reader_idf = sorted(scope.PUBLIC_READER_IDF_PREFLIGHT_PATHS) + ['docs/releases/EVOLUTIONS.md']
+assert scope.needs_preview(reader_idf) is False
+for extra in ['functions/index.js', 'portail.html', 'firebase.json', 'tools/unknown.py', 'unknown-file']:
+    assert scope.needs_preview(reader_idf + [extra]) is True
+assert scope.needs_preview(['tools/check-production-mail-disabled.py']) is True
+print('Reader IDF preparation skips preview; application/configuration/unknown scope retains it')

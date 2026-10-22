@@ -1,0 +1,106 @@
+{
+  "schema": 1,
+  "candidate": "63652ce4b8588fb1906245fbd5f6ac4c0d8c4389",
+  "productionCommit": "21d0fb8541d70c16cda397f2238820ec64cfc636",
+  "productionHosting": "sites/livepalmes/versions/ee455ea695461928",
+  "testRun": 39677825052,
+  "changes": [
+    {
+      "title": "Présentation accueil et rail/navigation mobile même onglet avec reprise du brouillon",
+      "paths": [
+        "assets/livepalmes-admin-portal.js",
+        "assets/livepalmes-engagement-navigation.js",
+        "assets/public/livepalmes-home-model.js",
+        "assets/public/livepalmes-mobile-navigation.js",
+        "assets/public/livepalmes-public-home.js",
+        "assets/public/livepalmes-public-shell.css",
+        "assets/public/livepalmes-public-shell.js",
+        "bibliotheque.html",
+        "calendrier.html",
+        "competition.html",
+        "conditions-utilisation.html",
+        "confidentialite.html",
+        "functions/assets/public-home-model.js",
+        "functions/assets/public-home-template.json",
+        "functions/nap-home-page.js",
+        "index.html",
+        "medailles.html",
+        "mentions-legales.html",
+        "pdf.html",
+        "performances/construction.html",
+        "performances/index.html",
+        "performances/mpf.html",
+        "performances/nageur.html",
+        "performances/records.html",
+        "performances/tops.html",
+        "portail.html",
+        "public.html",
+        "resultat-pdf.html",
+        "resultats.html",
+        "series-pdf.html",
+        "series-public.html"
+      ],
+      "status": "validated",
+      "validation": "Antoine, 21 octobre dans Suivi : « mets en prod tout ça », puis « Oui, transmets à Infra ; mails IDF inchangés ». Livraison exacte TEST63652ce4, TEST commun39677825052/Hosting daf5255c3fb4a201, suite globale Linux réussie. Recette lecture seule IAB390px Paris vers public/calendrier puis dossier/recherche conservés ; 320/390/1280px, fixtures brouillons/courses/relais/dirty. iPhone physique, Safari et compte exclusivement Club non testés, aucune écriture métier réelle. Dans Infra le22 octobre : adaptation limitée du circuit explicitement validée, tests/CI/preflight demandés ; plan immuable à présenter avant tout déploiement."
+    }
+  ],
+  "initialAutomaticMailEnabled": true,
+  "additionalPublicNapFunctions": [
+    "readNapPublicSwimmer"
+  ],
+  "additionalPublicNapApproval": "Mise à niveau de présentation du seul lecteur public existant, sans accès/mutation métier ajouté. Adaptation strictement limitée approuvée dans Infra le22 octobre ; ne pas désactiver IDF. Accord final sur le plan immuable requis avant PROD.",
+  "publicReaderIdfPreservation": {
+    "scope": "idf",
+    "revision": 4,
+    "approval": "Antoine, Infra le22 octobre : « Je valide cette adaptation limitée du circuit. Implémente-la, fais les tests et la CI, puis lance le preflight officiel. Présente-moi le plan avant déploiement, en gardant les mails IDF inchangés et toutes les exclusions. »"
+  },
+  "excludedBackendReview": "Préparer dans Infra une exception strictement bornée à cette paire et au seul lecteur public NAP, avec preuve des empreintes, garde sur le réglage IDF complet et scheduler avant/après, simulation et sauvegarde vérifiée. Ne pas modifier ni désactiver les notifications. Présenter le bilan immuable issu du preflight avant publication. Seul readNapPublicSwimmer sélectionné ; 111 fonctions conservées, cinq divergences héritées inchangées, aucun export TEST ajouté. Rendu et métadonnées seuls dans trois modules ; aucune lecture ou écriture supplémentaire. Garde IDF complet/scheduler avant sauvegarde, avant Hosting et après Hosting. Aucune coupure. Toutes les exclusions : Tout recalcul DTN, Tout nettoyage Storage, Clubs historiques, Données NAP/Firestore/Storage/Paris/CNHC, migrations, règles/index, droits/authentification, Fonctions email/schedulers et réglage IDF ; aucun envoi/test/rattrapage",
+  "excludedBackendEvidence": {
+    "schema": 1,
+    "candidate": "63652ce4b8588fb1906245fbd5f6ac4c0d8c4389",
+    "productionRun": 39610286011,
+    "suite": "retained-calendar-consumers-v1",
+    "functions": [
+      {
+        "name": "disableCompetitionEmailNotifications",
+        "commit": "1df545a62de67a24ff32ca4d1046cce4be6d499f",
+        "revision": "disablecompetitionemailnotifications-00004-kuf",
+        "before": "ee4c904af510b50da7bfdb99cde5dd2833d7fd75adabb03279029e067171e466",
+        "after": "b5a9f626f04f5b1d42c4090e42bfc26e238eebfb410607296a2aedd49a253814",
+        "reason": "Divergence héritée inchangée depuis la base PROD 39610286011 ; aucune différence nouvelle du consommateur entre 21d0fb85 et 63652ce4."
+      },
+      {
+        "name": "resolveEngagementAccessRequest",
+        "commit": "812bad64681a232e6cc3868ba7ec112bcdac7ca2",
+        "revision": "resolveengagementaccessrequest-00040-jev",
+        "before": "6d9fbfa653896f44534bdb644a3f0691c956e96ada2ad0b7acc9555183680c30",
+        "after": "2b395be019e680d1f1c4ca2e78376792d884e680b16c45bda04e57ddfe16e8c9",
+        "reason": "Divergence héritée inchangée depuis la base PROD 39610286011 ; aucune différence nouvelle du consommateur entre 21d0fb85 et 63652ce4."
+      },
+      {
+        "name": "resolveEngagementSwimmerChangeRequest",
+        "commit": "1df545a62de67a24ff32ca4d1046cce4be6d499f",
+        "revision": "resolveengagementswimmerchangerequest-00020-mov",
+        "before": "07b8b74b334996d71ca572c7f6b1b3c2830c64859d3e84d6367058b42d25db2e",
+        "after": "b7679a41a2b1a9151acd48ef5c91bd85b902cbc8b65dbf3e7898505eca95209e",
+        "reason": "Divergence héritée inchangée depuis la base PROD 39610286011 ; aucune différence nouvelle du consommateur entre 21d0fb85 et 63652ce4."
+      },
+      {
+        "name": "submitEngagementAccessRequest",
+        "commit": "812bad64681a232e6cc3868ba7ec112bcdac7ca2",
+        "revision": "submitengagementaccessrequest-00039-rib",
+        "before": "be16dc361cdb44b67868b8bf06e9149e7b42ecc1ffef72407ba010c9295324ec",
+        "after": "56168c0ef32617bfb06139908ec1bafa7ed0e340f3de32b3b1aee97682ebe21a",
+        "reason": "Divergence héritée inchangée depuis la base PROD 39610286011 ; aucune différence nouvelle du consommateur entre 21d0fb85 et 63652ce4."
+      },
+      {
+        "name": "updateCurrentEmailNotificationPreferences",
+        "commit": "1df545a62de67a24ff32ca4d1046cce4be6d499f",
+        "revision": "updatecurrentemailnotificationpreferences-00004-gev",
+        "before": "fae1fd731a5a970cee0616314f1461c1e042284edbd8048b042300c96834c7ba",
+        "after": "3c511e792f7292a2d29d506e002e2f5efadb5b42a3c381792210522de9102e61",
+        "reason": "Divergence héritée inchangée depuis la base PROD 39610286011 ; aucune différence nouvelle du consommateur entre 21d0fb85 et 63652ce4."
+      }
+    ]
+  }
+}

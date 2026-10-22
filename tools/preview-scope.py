@@ -77,6 +77,17 @@ SHARED_HEADER_PREFLIGHT_PATHS = {
 }
 
 
+PUBLIC_READER_IDF_PREFLIGHT_PATHS = {
+    '.github/releases/20261022-mobile-navigation-idf.json',
+    '.github/workflows/livepalmes-production-release.yml',
+    'tools/release-cycle.py',
+    'tools/check-production-mail-disabled.py',
+    'tests/production-notification-release-tests.py',
+    'tools/preview-scope.py',
+    'tests/preview-scope-tests.py',
+}
+
+
 def needs_preview(paths):
     def documentary(path):
         p = PurePosixPath(path)
@@ -107,6 +118,9 @@ def needs_preview(paths):
         return False
     if '.github/releases/20261021-shared-header-background.json' in paths and all(
             documentary(p) or p in SHARED_HEADER_PREFLIGHT_PATHS for p in paths):
+        return False
+    if '.github/releases/20261022-mobile-navigation-idf.json' in paths and all(
+            documentary(p) or p in PUBLIC_READER_IDF_PREFLIGHT_PATHS for p in paths):
         return False
     return any(not documentary(p) for p in paths)
 
