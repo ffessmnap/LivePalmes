@@ -13998,6 +13998,7 @@ function engagementSwimmerChangeRequestItem(doc) {
   return cleanFirestoreValue({
     id: doc.id,
     requestType: "swimmer-change",
+    reportType: data.reportType === "duplicate" ? "duplicate" : "correction",
     status: cleanText(data.status).slice(0, 40),
     napSource: data.napSource === true,
     requestedSource: cleanText(data.requestedSource).slice(0, 40),
@@ -14530,6 +14531,26 @@ exports.resolveEngagementSwimmerChangeRequest = onCall(ENVIRONMENT.sportingDataS
   if (!snapshot.exists) throw new HttpsError("not-found", "Demande de correction introuvable.");
   const data = snapshot.data() || {};
   if (ENVIRONMENT.sportingDataSource === "nap") {
+    if (data.reportType === "duplicate") {
+      // Close the report only. Merging remains a separate national operation.
+      if (request.data?.proposed !== undefined) throw new HttpsError("invalid-argument", "Un signalement ne corrige pas l'identite.");
+      if (!resolutionNote) throw new HttpsError("invalid-argument", "Expliquez le traitement du signalement avant de le clore.");
+      const now = new Date().toISOString();
+      const result = { reportOnly: true, identityChanged: false, merged: false };
+      await db.runTransaction(async transaction => {
+        const latest = await transaction.get(ref), current = latest.data() || {};
+        if (!latest.exists || current.reportType !== "duplicate" || current.requestedAt !== data.requestedAt || current.expectedFingerprint !== data.expectedFingerprint) throw new HttpsError("failed-precondition", "Le signalement a change. Rechargez les demandes.");
+        if (current.status !== "pending") {
+          if (current.status === decision && current.resolvedBy === context.uid && current.resolutionNote === resolutionNote) return;
+          throw new HttpsError("failed-precondition", "Signalement deja traite.");
+        }
+        transaction.set(ref, { status: decision, resolutionNote, resolvedAt: now, resolvedBy: context.uid,
+          updatedAt: now, updatedBy: context.uid, result,
+          resolutionNotification: { status: "skipped", reason: "report-only-no-email" } }, { merge: true });
+      }, { maxAttempts: 3 });
+      await writeAuditLogOnce("nap.swimmer.duplicateReportClosed", context.uid, { requestId, swimmerId: data.targetSwimmerId, clubId: data.clubId, decision }, stableHash([requestId, data.requestedAt, decision, context.uid, resolutionNote].join("|")));
+      return { ok: true, request: engagementSwimmerChangeRequestItem(await ref.get()), result };
+    }
     let nativeConnection, nativeLock, resolution, claimed = false, claimWasExisting = false, writeAttempted = false;
     try {
       const helper = require("./nap-swimmer-change-requests");

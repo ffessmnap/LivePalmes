@@ -2,6 +2,13 @@
 
 <!-- description: Checklist de tests manuels à exécuter avant une publication ou après une modification sensible. -->
 
+## Répertoires club : modification et signalement — 22 octobre
+
+- Sur TEST, ouvrir « Modifier » pour un officiel réutilisable : dialogue immédiatement visible, identité chargée, titre adapté, focus clavier ; Annuler et Échap ferment sans écriture et rendent le focus. Vérifier ordinateur, 390 et 320 px. Ajouter depuis « Mes officiels » et depuis une compétition réutilise ce dialogue ; ne pas valider une fiche réelle pour cette recette.
+- Pour une déclaration historique de chef, afficher l’explication et le numéro de compétition sans faux bouton Modifier/Désactiver. Lire les quatre déclarations de Basile, sans fusion ni correction, et vérifier la conservation de leurs identifiants.
+- « Signaler un doublon » nageur : identité verrouillée, motif obligatoire, Annuler/Échap sans envoi. Tester l’envoi et la clôture nationale avec les vrais handlers et un stockage simulé hors réseau : aucune écriture NAP, aucun mail, refus hors club, empreinte périmée, double demande et double clôture. Clore un signalement demande un commentaire et ne fusionne rien. La correction d’identité habituelle reste distincte et disponible après fermeture du dialogue de signalement.
+- Ne créer aucun signalement réel ni corriger de fiche de Basile pour cette recette. L’enregistrement métier réel et le compte exclusivement club restent à distinguer des tests simulés et de la recette avec compte national en contexte club.
+
 ## Navigation mobile connectée — 21 octobre
 
 - Club : Accueil / Engagements / Site public, accueil club existant, retour au dossier ouvert ; admin/DTN sans club : deux accès et vue d’ensemble des seuls modules autorisés. Aucun Plus, ligne hamburger ou doublon Portail dans le portail mobile. Compte, changement de club autorisé et déconnexion toujours accessibles. Ordinateur : bandeau/sidebar habituels, aucun rail.
