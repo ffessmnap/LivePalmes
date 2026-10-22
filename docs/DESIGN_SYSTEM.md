@@ -2,6 +2,10 @@
 
 <!-- description: Référence du langage visuel, des composants d’interface et des règles responsive déjà présents dans LivePalmes. -->
 
+## Gestion documentaire nationale — 22 octobre 2026
+
+Le dialogue Bibliothèque documentaire reprend le dialogue natif et les lignes de documents existants : largeur maximale 880 px, hauteur limitée à la fenêtre et défilement interne. Le formulaire conserve l’ordre fichier, titre, description, rubriques multiples, type, classement détaillé, notification facultative et actions. Type/classement sont sur deux colonnes, puis une sous 600 px. Les rubriques ont des cibles tactiles de 44 px ; les cases restent à 18 px sans étirement. Les titres longs se replient. Le bouton de sauvegarde et l’annulation restent accessibles par défilement, y compris à 320 px. Les messages utilisent un statut annoncé ; les actions sont désactivées pendant l’enregistrement.
+
 ## Navigation mobile connectée — 21 octobre 2026
 
 Le repère TEST conserve son apparence et sa position sticky via la feuille CSS commune autorisée, même lorsque la CSP refuse le style injecté par le helper d’environnement. Le bandeau opaque commence immédiatement sous ce repère, sans fente laissant réapparaître le contenu. Aucune protection CSP ou configuration d’environnement n’est modifiée.
