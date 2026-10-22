@@ -14,7 +14,7 @@ import urllib.parse
 import urllib.request
 import zipfile
 
-ALLOWED = {'prepareEngagementClubRecapEmails', 'closeDueEngagementCompetitions', 'resumePerformancePublicationJobs', 'resolveEngagementSwimmerChangeRequest'}
+ALLOWED = {'prepareEngagementClubRecapEmails', 'closeDueEngagementCompetitions', 'resumePerformancePublicationJobs', 'resolveEngagementSwimmerChangeRequest', 'requestEngagementClubSwimmerChange', 'listEngagementSwimmerChangeRequests'}
 
 
 def source_patch(before, source, sha, native_identity=False):
@@ -51,34 +51,67 @@ def archive(candidate, sha):
     return data.getvalue()
 
 
+def pending_club_sources(names, before, current, previous, candidate, state):
+    """Resume only an attested deployment of this candidate, never an unknown revision."""
+    pending = []
+    for name in names:
+        full = state.PREFIX + name
+        if full not in before or full not in current or before[full].get('state') != 'ACTIVE':
+            raise ValueError('Traitement club existant indisponible')
+        if state.identity(current[full]) == state.identity(before[full]):
+            pending.append(name)
+            continue
+        if (previous.get(full) != state.identity(current[full])
+                or current[full].get('state') != 'ACTIVE'
+                or current[full].get('labels', {}).get('livepalmes-commit') != candidate):
+            raise ValueError('Revision club sans preuve de reprise')
+        old = state.rollback_patch(before[full], {})
+        new = state.rollback_patch(current[full], {})
+        if any(old.get(k) != new.get(k) for k in ['serviceConfig', 'buildConfig', 'eventTrigger']):
+            raise ValueError('Configuration club modifiee pendant reprise')
+    return pending
+
+
 def main(candidate, plan, backup):
     project = "livepalmes"
     request = json.loads((plan / 'request.json').read_text())
     spec = importlib.util.spec_from_file_location('cycle', Path(__file__).with_name('release-cycle.py'))
     cycle = importlib.util.module_from_spec(spec); spec.loader.exec_module(cycle)
     native_identity = cycle.approved_native_identity_secret(request)
-    names = cycle.approved_pdf_functions(request) + cycle.approved_dtn_functions(request)
+    names = cycle.approved_pdf_functions(request) + cycle.approved_dtn_functions(request) + cycle.approved_club_directory_functions(request)
     if not names:
         print('Aucun traitement PDF supplementaire demande.')
         return
     credentials = json.loads(Path(os.environ['GOOGLE_APPLICATION_CREDENTIALS']).read_text())
     if credentials.get('project_id') != project:
         raise ValueError('Compte PROD requis')
+    cycle.require_access_request_selection(request, json.loads((plan / 'selection.json').read_text()))
     report = json.loads((backup / 'report.json').read_text())
-    if report['candidate'] != request['candidate'] or set(report.get('additionalPdfFunctions', []) + report.get('additionalDtnFunctions', [])) != set(names):
+    if report['candidate'] != request['candidate'] or set(report.get('additionalPdfFunctions', []) + report.get('additionalDtnFunctions', []) + report.get('additionalClubDirectoryFunctions', [])) != set(names):
         raise ValueError('Sauvegarde hors bilan')
     spec = importlib.util.spec_from_file_location('release_state', Path(__file__).with_name('production-release-state.py'))
     state = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(state)
     before = {f['name']: f for f in json.loads((backup / 'functions.json').read_text())}
     current = {f['name']: f for f in state.inventory()}
-    for name in names:
-        full = state.PREFIX + name
-        if full not in before or full not in current or before[full]['state'] != 'ACTIVE':
-            raise ValueError('Traitement existant indisponible')
-        # A partial attempt requires its own reviewed resume; never overwrite a drift.
-        if state.identity(current[full]) != state.identity(before[full]):
-            raise ValueError('Traitement PDF modifie depuis la sauvegarde')
+    if cycle.approved_club_directory_functions(request):
+        previous_path = plan / 'previous/production-after.json'
+        previous = json.loads(previous_path.read_text()) if previous_path.exists() else {}
+        if previous and previous.get('candidate') != request['candidate']:
+            raise ValueError('Reprise club hors candidat')
+        names = pending_club_sources(names, before, current,
+            {f['name']: f for f in previous.get('functions', [])}, request['candidate'], state)
+        if not names:
+            state.check_after(backup, backup / 'after.json', True)
+            return
+    else:
+        for name in names:
+            full = state.PREFIX + name
+            if full not in before or full not in current or before[full]['state'] != 'ACTIVE':
+                raise ValueError('Traitement existant indisponible')
+            # A partial attempt requires its own reviewed resume; never overwrite a drift.
+            if state.identity(current[full]) != state.identity(before[full]):
+                raise ValueError('Traitement PDF modifie depuis la sauvegarde')
     data = archive(candidate, request['candidate'])
     upload = state.request(state.API + 'projects/' + project + '/locations/europe-west1/functions:generateUploadUrl', 'POST', {})
     url = urllib.parse.urlsplit(upload['uploadUrl'])

@@ -48,7 +48,7 @@ def approved_native_identity_secret(value):
 
 def approved_extra_functions(value):
     approved_native_identity_secret(value)
-    names = approved_pdf_functions(value) + approved_dtn_functions(value) + approved_notification_functions(value) + approved_public_nap_functions(value) + approved_access_request_functions(value)
+    names = approved_pdf_functions(value) + approved_dtn_functions(value) + approved_notification_functions(value) + approved_public_nap_functions(value) + approved_access_request_functions(value) + approved_club_directory_functions(value)
     require(len(names) == len(set(names)), 'Extensions de publication superposees')
     return names
 
@@ -71,9 +71,47 @@ def public_reader_idf_preservation(value):
             and not any(value.get(key) for key in ['additionalPdfFunctions', 'additionalDtnFunctions',
                 'additionalNotificationFunctions', 'additionalAccessRequestFunctions', 'notificationMaintenancePlan',
                 'notificationPilotIdfApproval', 'nativeIdentityNapSecretApproval', 'productionHomeRouting',
-                'productionStaticCleanup', 'testEquivalentCandidate']),
+                'productionStaticCleanup', 'testEquivalentCandidate', 'clubDirectoryIdfPreservation',
+                'additionalClubDirectoryFunctions']),
             'Conservation IDF reservee a la paire et au seul lecteur public approuves')
     return preservation
+
+
+CLUB_DIRECTORY_PAIR = ('63652ce4b8588fb1906245fbd5f6ac4c0d8c4389', 'a15be36778cf62f1936f1e0b35bf873733997d5a')
+CLUB_DIRECTORY_HASHES = {
+    'requestEngagementClubSwimmerChange': ('0612e97ddf6e18d3f8096a9704691aaf823a4502440281f10074d56d17d82469', '92cecdba73d393139932abb17693d2e7829149211f52b40dd7d1c92b067ebc03'),
+    'listEngagementSwimmerChangeRequests': ('d4a41566804def3749db04d5871a3cff2463feea35f7608ab243c75c6e43b4a0', 'd42c6ecbd319a5924b7281aa80c03e84e2ff02415561f404b13aea114cf4dac8'),
+    'resolveEngagementSwimmerChangeRequest': ('b7679a41a2b1a9151acd48ef5c91bd85b902cbc8b65dbf3e7898505eca95209e', 'ed8ef83ba164424f40977286604c3c52ca421b19e62df5b92dbf88bfc732fc8f'),
+}
+
+
+def club_directory_idf_preservation(value):
+    preservation = value.get('clubDirectoryIdfPreservation')
+    names = value.get('additionalClubDirectoryFunctions', [])
+    if preservation is None and not names:
+        return None
+    require((value.get('productionCommit'), value.get('candidate')) == CLUB_DIRECTORY_PAIR
+            and isinstance(names, list) and len(names) == 3 and set(names) == set(CLUB_DIRECTORY_HASHES)
+            and value.get('initialAutomaticMailEnabled') is True
+            and isinstance(preservation, dict) and set(preservation) == {'scope', 'revision', 'approval'}
+            and preservation.get('scope') == 'idf' and type(preservation.get('revision')) is int
+            and preservation['revision'] == 4
+            and isinstance(preservation.get('approval'), str) and bool(preservation['approval'].strip())
+            and not any(value.get(key) for key in ['additionalPdfFunctions', 'additionalDtnFunctions',
+                'additionalNotificationFunctions', 'additionalAccessRequestFunctions', 'additionalPublicNapFunctions',
+                'publicReaderIdfPreservation', 'notificationMaintenancePlan', 'notificationPilotIdfApproval',
+                'nativeIdentityNapSecretApproval', 'productionHomeRouting', 'productionStaticCleanup', 'testEquivalentCandidate']),
+            'Repertoires club reserves a la paire, aux trois fonctions et a IDF actif approuves')
+    return preservation
+
+
+def approved_club_directory_functions(value):
+    return list(CLUB_DIRECTORY_HASHES) if club_directory_idf_preservation(value) is not None else []
+
+
+def idf_preservation(value):
+    # Existing reader authorization stays closed; this is a second, separately approved pair.
+    return club_directory_idf_preservation(value) or public_reader_idf_preservation(value)
 
 
 def approved_public_nap_functions(value):
@@ -155,6 +193,9 @@ def approved_access_request_functions(value):
 
 
 def require_access_request_selection(request, selected):
+    club = approved_club_directory_functions(request)
+    require(not club or (len(selected) == 3 and set(selected) == set(club)),
+            'Repertoires club : seules les trois fonctions sont autorisees')
     names = approved_access_request_functions(request)
     require(not names or set(selected) == set(names), 'Publication demandes : seules les deux fonctions sont autorisees')
     if public_reader_idf_preservation(request) is not None:
@@ -692,11 +733,11 @@ def prepare_selection(directory, candidate):
         require(all(not needs_function(names.get(n), n, request['candidate']) for n in selected), 'Backend TEST incomplet ou pas au code valide')
         extra = approved_extra_functions(request)
         notification = approved_notification_functions(request)
-        require(all(not needs_function(names.get(n), n, request['candidate']) for n in notification + approved_public_nap_functions(request) + approved_access_request_functions(request)),
+        require(all(not needs_function(names.get(n), n, request['candidate']) for n in notification + approved_public_nap_functions(request) + approved_access_request_functions(request) + approved_club_directory_functions(request)),
                 'Notifications TEST absentes ou pas au code valide')
         if approved_dtn_functions(request):
             require(read(directory / 'test-proof.json').get('dtnExtensionVerification') == {'schema': 1, 'candidate': request['candidate'], 'suite': 'dtn-shared-invalidation', 'mode': 'offline-no-invocation', 'result': 'success', 'functions': sorted(DTN_FUNCTIONS)}, 'Preuve des dependances DTN absente ou incompatible')
-        selected += extra
+        selected += [n for n in extra if n not in selected]
     write(directory / 'selection.json', selected)
 
 
@@ -861,6 +902,17 @@ def freeze_plan(directory, evidence=False):
         write(root / 'public-reader-idf-proof.json', {'pair': list(PUBLIC_READER_IDF_PAIR),
             'fingerprints': list(PUBLIC_READER_IDF_HASHES), 'onlyChangedFunction': 'readNapPublicSwimmer',
             'existingReader': True, 'networkCalls': 0})
+    if club_directory_idf_preservation(request) is not None:
+        before = backend_fingerprints(request['productionCommit'])
+        after = backend_fingerprints(request['candidate'])
+        require(set(before) == set(after)
+                and {n for n in after if before[n] != after[n]} == set(CLUB_DIRECTORY_HASHES)
+                and all((before[n], after[n]) == hashes for n, hashes in CLUB_DIRECTORY_HASHES.items())
+                and all(names.get(n, {}).get('state') == 'ACTIVE' for n in CLUB_DIRECTORY_HASHES),
+                'Dependances ou inventaire repertoires club hors perimetre approuve')
+        write(root / 'club-directory-idf-proof.json', {'pair': list(CLUB_DIRECTORY_PAIR),
+            'fingerprints': CLUB_DIRECTORY_HASHES, 'selected': selected, 'existingFunctions': True,
+            'sourceOnly': True, 'configurationChanges': False, 'networkCalls': 0})
     if request.get('excludedBackendEvidence') is not None:
         verify_excluded_backend(root, state, selected)
     else:
@@ -1020,7 +1072,7 @@ def fetch_plan(preparation, resume, directory):
     evidence_path = root / 'test-proof.json'
     verified = reusable_verification(read(evidence_path), value['candidate']) if evidence_path.exists() else False
     output(candidate=value['candidate'], backend=str(bool(read(root / 'selection.json'))).lower(), verified=str(verified).lower(),
-           idf_preservation=str(public_reader_idf_preservation(value) is not None).lower())
+           idf_preservation=str(idf_preservation(value) is not None).lower())
 
 
 def verify_resume(directory, backup):

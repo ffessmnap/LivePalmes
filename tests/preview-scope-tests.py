@@ -81,3 +81,10 @@ for extra in ['functions/index.js', 'portail.html', 'firebase.json', 'tools/unkn
     assert scope.needs_preview(reader_idf + [extra]) is True
 assert scope.needs_preview(['tools/check-production-mail-disabled.py']) is True
 print('Reader IDF preparation skips preview; application/configuration/unknown scope retains it')
+
+club = sorted(scope.CLUB_DIRECTORY_PREFLIGHT_PATHS) + ['docs/releases/EVOLUTIONS.md']
+assert scope.needs_preview(club) is False
+for extra in ['functions/index.js', 'portail.html', 'firebase.json', 'tools/unknown.py']:
+    assert scope.needs_preview(club + [extra]) is True
+assert scope.needs_preview(['tools/publish-approved-pdf-functions.py']) is True
+print('Club directory preparation skips preview; application and unknown paths retain it')

@@ -88,6 +88,16 @@ PUBLIC_READER_IDF_PREFLIGHT_PATHS = {
 }
 
 
+CLUB_DIRECTORY_PREFLIGHT_PATHS = {
+    '.github/releases/20261022-club-directory-idf.json',
+    'tools/release-cycle.py', 'tools/check-production-mail-disabled.py',
+    'tools/preflight-production-release.py', 'tools/production-release-state.py',
+    'tools/publish-approved-pdf-functions.py',
+    'tests/production-notification-release-tests.py', 'tests/production-pdf-functions-tests.py',
+    'tools/preview-scope.py', 'tests/preview-scope-tests.py',
+}
+
+
 def needs_preview(paths):
     def documentary(path):
         p = PurePosixPath(path)
@@ -121,6 +131,9 @@ def needs_preview(paths):
         return False
     if '.github/releases/20261022-mobile-navigation-idf.json' in paths and all(
             documentary(p) or p in PUBLIC_READER_IDF_PREFLIGHT_PATHS for p in paths):
+        return False
+    if '.github/releases/20261022-club-directory-idf.json' in paths and all(
+            documentary(p) or p in CLUB_DIRECTORY_PREFLIGHT_PATHS for p in paths):
         return False
     return any(not documentary(p) for p in paths)
 

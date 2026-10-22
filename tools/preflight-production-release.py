@@ -61,6 +61,14 @@ def ordinary_runtime_allowed(service):
             and re.fullmatch(r"latest|[1-9][0-9]*", str(secret["version"])) is not None)
 
 
+def club_directory_runtime_allowed(name, service):
+    expected = [] if name == 'listEngagementSwimmerChangeRequests' else ['LIVEPALMES_NAP_PASSWORD']
+    return (name in {'requestEngagementClubSwimmerChange', 'listEngagementSwimmerChangeRequests',
+                     'resolveEngagementSwimmerChangeRequest'}
+            and ordinary_runtime_allowed(service)
+            and sorted(s.get('key', '') for s in service.get('secretEnvironmentVariables', [])) == expected)
+
+
 def main():
     credentials = json.loads(Path(os.environ["GOOGLE_APPLICATION_CREDENTIALS"]).read_text())
     if credentials["project_id"] != "livepalmes":
@@ -142,6 +150,7 @@ def main():
         if not source_only.issubset({f['name'].split('/')[-1] for f in selected_functions}):
             raise ValueError('Traitement PDF existant absent')
         report['additionalPdfFunctions'] = plan.get('additionalPdfFunctions', []) if os.environ.get('PLAN') else []
+        report['additionalClubDirectoryFunctions'] = cycle.approved_club_directory_functions(plan) if os.environ.get('PLAN') else []
         report['additionalDtnFunctions'] = plan.get('additionalDtnFunctions', []) if os.environ.get('PLAN') else []
         report['nativeIdentityNapSecret'] = cycle.approved_native_identity_secret(plan) if os.environ.get('PLAN') else False
         report['additionalNotificationFunctions'] = notification
@@ -153,7 +162,7 @@ def main():
                 str(Path(__file__).with_name('prepare-production-notifications.js')), report['candidate']], text=True))
             report['notificationExpectedSecrets'] = contract['expectedSecrets']
         app_checks = set(f.get("serviceConfig", {}).get("environmentVariables", {}).get("LIVEPALMES_ENFORCE_APP_CHECK", "false") for f in selected_functions if f['name'].split('/')[-1] not in source_only)
-        if not app_checks and set(selected).issubset(set(public_nap)):
+        if not app_checks and set(selected).issubset(set(public_nap) | source_only):
             app_checks = {'false'}  # New public HTTP reader; no callable App Check setting.
         if selected and (len(app_checks) != 1 or not app_checks.issubset({"true", "false"})):
             raise ValueError("App Check heterogene ou invalide")
@@ -162,6 +171,8 @@ def main():
         if backup:
             for f in selected_functions:
                 service = f.get("serviceConfig", {})
+                if f['name'].split('/')[-1] in report['additionalClubDirectoryFunctions'] and not club_directory_runtime_allowed(f['name'].split('/')[-1], service):
+                    raise ValueError('Configuration ou binding NAP repertoires club inattendu')
                 if f['name'].split('/')[-1] in access_requests and not access_request_runtime_allowed(service):
                     raise ValueError('Configuration demandes acces inattendue')
                 if f['name'].split('/')[-1] not in extra and not ordinary_runtime_allowed(service):
