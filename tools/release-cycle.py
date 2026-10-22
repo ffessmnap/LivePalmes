@@ -53,12 +53,37 @@ def approved_extra_functions(value):
     return names
 
 
+PUBLIC_READER_IDF_PAIR = ('21d0fb8541d70c16cda397f2238820ec64cfc636', '63652ce4b8588fb1906245fbd5f6ac4c0d8c4389')
+PUBLIC_READER_IDF_HASHES = ('9d936ce26b0f14b55cb2b2818e752cfd23b66da3fb6e41c53b3da8566ac01552', '161ad9f1b8cf4faa7df14427e3ee47f88edbe7b62263d34ee8b336742ba53e59')
+
+
+def public_reader_idf_preservation(value):
+    preservation = value.get('publicReaderIdfPreservation')
+    if preservation is None:
+        return None
+    require((value.get('productionCommit'), value.get('candidate')) == PUBLIC_READER_IDF_PAIR
+            and value.get('additionalPublicNapFunctions') == ['readNapPublicSwimmer']
+            and value.get('initialAutomaticMailEnabled') is True
+            and isinstance(preservation, dict) and set(preservation) == {'scope', 'revision', 'approval'}
+            and preservation.get('scope') == 'idf' and type(preservation.get('revision')) is int
+            and preservation['revision'] == 4
+            and isinstance(preservation.get('approval'), str) and bool(preservation['approval'].strip())
+            and not any(value.get(key) for key in ['additionalPdfFunctions', 'additionalDtnFunctions',
+                'additionalNotificationFunctions', 'additionalAccessRequestFunctions', 'notificationMaintenancePlan',
+                'notificationPilotIdfApproval', 'nativeIdentityNapSecretApproval', 'productionHomeRouting',
+                'productionStaticCleanup', 'testEquivalentCandidate']),
+            'Conservation IDF reservee a la paire et au seul lecteur public approuves')
+    return preservation
+
+
 def approved_public_nap_functions(value):
     names = value.get('additionalPublicNapFunctions', [])
     require(isinstance(names, list) and (names == [] or names == ['readNapPublicSwimmer']), 'Extension publique NAP interdite')
     require(not names or (isinstance(value.get('additionalPublicNapApproval'), str)
-            and bool(value['additionalPublicNapApproval'].strip()) and value.get('initialAutomaticMailEnabled') is False),
+            and bool(value['additionalPublicNapApproval'].strip())
+            and (value.get('initialAutomaticMailEnabled') is False or public_reader_idf_preservation(value) is not None)),
             'Accord lecteur public NAP avec mails desactives requis')
+    public_reader_idf_preservation(value)
     return names
 
 
@@ -132,6 +157,8 @@ def approved_access_request_functions(value):
 def require_access_request_selection(request, selected):
     names = approved_access_request_functions(request)
     require(not names or set(selected) == set(names), 'Publication demandes : seules les deux fonctions sont autorisees')
+    if public_reader_idf_preservation(request) is not None:
+        require(selected == ['readNapPublicSwimmer'], 'Conservation IDF : seul le lecteur public existant est autorise')
 
 
 def require(value, message):
@@ -823,6 +850,17 @@ def freeze_plan(directory, evidence=False):
     selected = read(root / 'selection.json')
     selected = [n for n in selected if n in approved_extra_functions(request) or needs_function(names.get(n), n, request['candidate'])]
     require_access_request_selection(request, selected)
+    if public_reader_idf_preservation(request) is not None:
+        before = backend_fingerprints(request['productionCommit'])
+        after = backend_fingerprints(request['candidate'])
+        require(set(before) == set(after)
+                and {n for n in after if before[n] != after[n]} == {'readNapPublicSwimmer'}
+                and (before['readNapPublicSwimmer'], after['readNapPublicSwimmer']) == PUBLIC_READER_IDF_HASHES
+                and names.get('readNapPublicSwimmer', {}).get('state') == 'ACTIVE',
+                'Dependances du lecteur public ou inventaire different du perimetre approuve')
+        write(root / 'public-reader-idf-proof.json', {'pair': list(PUBLIC_READER_IDF_PAIR),
+            'fingerprints': list(PUBLIC_READER_IDF_HASHES), 'onlyChangedFunction': 'readNapPublicSwimmer',
+            'existingReader': True, 'networkCalls': 0})
     if request.get('excludedBackendEvidence') is not None:
         verify_excluded_backend(root, state, selected)
     else:
@@ -981,7 +1019,8 @@ def fetch_plan(preparation, resume, directory):
     require(SHA.fullmatch(value['candidate']), 'Commit invalide')
     evidence_path = root / 'test-proof.json'
     verified = reusable_verification(read(evidence_path), value['candidate']) if evidence_path.exists() else False
-    output(candidate=value['candidate'], backend=str(bool(read(root / 'selection.json'))).lower(), verified=str(verified).lower())
+    output(candidate=value['candidate'], backend=str(bool(read(root / 'selection.json'))).lower(), verified=str(verified).lower(),
+           idf_preservation=str(public_reader_idf_preservation(value) is not None).lower())
 
 
 def verify_resume(directory, backup):
