@@ -10261,7 +10261,7 @@ async function notifyNationalLibraryDocument(request) {
       .sort((a,b)=>String(a.uid).localeCompare(String(b.uid))||String(a.email).localeCompare(String(b.email)));
     const fingerprint=crypto.createHash('sha256').update(JSON.stringify([document.fingerprint,setting,recipients])).digest('hex');
     const disabled=ENVIRONMENT.projectId==='livepalmes-test'||!setting.enabled;
-    const result={recipientCount:recipients.length,clubCount:new Set(recipients.map(x=>x.clubId)).size,scope:setting.scope,fingerprint,disabled,sentCount:0,errorCount:0,test:ENVIRONMENT.projectId==='livepalmes-test'};
+    const result={recipientCount:recipients.length,clubCount:new Set(recipients.map(x=>x.clubId)).size,scope:setting.scope,fingerprint,disabled,sentCount:0,errorCount:0,skippedCount:0,test:ENVIRONMENT.projectId==='livepalmes-test'};
     if(input.action==='preview')return result;
     if(input.expectedFingerprint!==fingerprint)throw new TypeError('Le document, les destinataires ou le réglage ont changé. Actualisez l’aperçu.');
     // No SMTP configuration, transporter, outbox or delayed event is created on TEST.
@@ -10277,7 +10277,7 @@ async function notifyNationalLibraryDocument(request) {
         const ref=db.collection(ENGAGEMENT_MAIL_JOBS_COLLECTION).doc(jobId);
         const job={source:'nap',type:'competition_documents',status:'sending',competitionId:'national-library',notificationId:`national-document-${document.id}`,recipientUid:recipient.uid,toEmail:recipient.email,clubId:String(recipient.clubId),recipientRegionId:recipient.napClubRegionId,subject:`LivePalmes — ${document.title}`,textBody:`Un document est disponible dans la bibliothèque LivePalmes.\n\n${document.title}\n${document.description||''}\n${document.url}\n\n${ENVIRONMENT.hostingOrigin}/bibliotheque.html`,createdAt:now,notificationDueAt:now,updatedAt:now,attemptedAt:now};
         const claimed=await db.runTransaction(async transaction=>{if((await transaction.get(ref)).exists)return false;transaction.create(ref,job);return true;});
-        if(!claimed)continue;
+        if(!claimed){result.skippedCount++;continue;}
         const sent=await sendEngagementMailJob(transporter,{id:jobId,ref,data:()=>job},config,context);
         if(sent.status==='sent')result.sentCount++;else result.errorCount++;
         if(sent.stopDelivery)return {...result,done:true,interrupted:true};

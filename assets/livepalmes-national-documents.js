@@ -64,9 +64,9 @@
   if(!preview.recipientCount)return 'Document enregistré. Aucun destinataire éligible aux notifications.';
   const scope=preview.scope==='idf'?'Le pilote national limite les destinataires à l’Île-de-France. ':'Tous les clubs disposant de destinataires éligibles sont concernés. ';
   if(!global.confirm(`${scope}Envoyer un mail à ${preview.recipientCount} responsable(s) de ${preview.clubCount} club(s) pour ce document ?`))return 'Document enregistré. Notification annulée.';
-  let offset=0,sent=0,errors=0,result;
-  do{status(`Document enregistré. Envoi des notifications… ${sent} envoyé(s).`);result=await call('notifyEngagementCompetitionDocuments',{library:true,action:'send',documentId,expectedFingerprint:preview.fingerprint,offset});sent+=result.sentCount;errors+=result.errorCount;offset=result.nextOffset;}while(!result.done);
-  return `Document enregistré. ${sent} mail(s) envoyé(s), ${errors} en erreur.${result.interrupted?' Envoi interrompu : consultez le suivi des mails.':''}`;
+  let offset=0,sent=0,errors=0,skipped=0,result;
+  do{status(`Document enregistré. Envoi des notifications… ${sent} envoyé(s).`);result=await call('notifyEngagementCompetitionDocuments',{library:true,action:'send',documentId,expectedFingerprint:preview.fingerprint,offset});sent+=result.sentCount;errors+=result.errorCount;skipped+=result.skippedCount||0;offset=result.nextOffset;}while(!result.done);
+  return `Document enregistré. ${sent} mail(s) envoyé(s), ${errors} en erreur.${skipped?` ${skipped} tentative(s) antérieure(s) conservée(s), à consulter dans le suivi des mails.`:""}${result.interrupted?' Envoi interrompu : consultez le suivi des mails.':''}`;
  }
  async function save(){
   if(busy||!allowed())return;

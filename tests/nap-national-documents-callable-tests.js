@@ -42,7 +42,7 @@ vm.runInContext(source.slice(notifyStart,source.indexOf('\n});',notifyStart)+4),
  const prod=await context.exports.notifyEngagementCompetitionDocuments(request);assert.equal(prod.disabled,false);assert.equal(prod.recipientCount,45);
  const send=offset=>context.exports.notifyEngagementCompetitionDocuments({...request,data:{library:true,action:'send',documentId:42,expectedFingerprint:prod.fingerprint,offset}});
  const first=await send(0);assert.equal(first.sentCount,20);assert.equal(first.done,false);assert.equal(first.nextOffset,20);
- assert.equal((await send(0)).sentCount,0,'Duplicate batch must never resend');assert.equal(sentCount,20);
+ const duplicate=await send(0);assert.equal(duplicate.sentCount,0,'Duplicate batch must never resend');assert.equal(duplicate.skippedCount,20);assert.equal(sentCount,20);
  await send(20);assert.equal((await send(40)).sentCount,5);assert.equal(sentCount,45);assert.equal(jobs.size,45);
  await assert.rejects(send(1),/Page de notification invalide/);
  enabled=false;const stopped=await context.exports.notifyEngagementCompetitionDocuments(request);assert.equal(stopped.disabled,true);
