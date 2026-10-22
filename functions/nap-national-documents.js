@@ -15,8 +15,9 @@ const fields=native.FIELDS.map(k=>`d.\`${k}\``).join(",");
 async function record(c,documentId){
  const rows=await q(c,`SELECT ${fields},${native.OPTIONS.map(k=>`o.\`${k}\``).join(",")},o.featured_rank FROM documents d FORCE INDEX (PRIMARY) LEFT JOIN livepalmes_document_options o FORCE INDEX (PRIMARY) ON o.document_id=d.id WHERE d.id=? AND d.competition=0 AND d.public='Y' LIMIT 1`,[id(documentId)]);
  if(!rows.length)throw new TypeError("Document général public introuvable.");
- const targets=await q(c,"SELECT id,cible FROM documents_cibles FORCE INDEX (livepalmes_document_cible) WHERE document=? ORDER BY cible,id LIMIT 101",[documentId]);
+ const targets=await q(c,"SELECT id,cible FROM documents_cibles FORCE INDEX (livepalmes_document_cible) WHERE document=? ORDER BY cible LIMIT 101",[documentId]);
  if(targets.length>100)throw new RangeError("Trop de rattachements : maintenance nécessaire.");
+ targets.sort((a,b)=>Number(a.cible)-Number(b.cible)||Number(a.id)-Number(b.id));
  const row=rows[0],document=Object.fromEntries(native.FIELDS.map(k=>[k,row[k]]));
  const option=row.document_id==null?null:Object.fromEntries([...native.OPTIONS,"featured_rank"].map(k=>[k,row[k]==null?null:['document_id','size','version','featured_rank'].includes(k)?Number(row[k]):row[k]]));
  return {document,option,targets,fingerprint:hash([document,option,targets])};

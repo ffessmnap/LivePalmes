@@ -18,7 +18,7 @@ function fixture(settings={}){
   if(sql.startsWith('SELECT id,name FROM elements'))return [[{id:34,name:'publications'}]];
   if(sql.startsWith('SELECT id,cible,element FROM elements_cibles'))return [[{id:1,cible:2,element:34},{id:2,cible:3,element:34}]];
   if(sql.startsWith('SELECT d.'))return [[...(row.public==='Y'&&row.id===values[0]?[{...row,...extra}]:[])]];
-  if(sql.startsWith('SELECT id,cible FROM documents_cibles'))return [structuredClone(targets)];
+  if(sql.startsWith('SELECT id,cible FROM documents_cibles')){assert.match(sql,/WHERE document=\? ORDER BY cible LIMIT 101$/);return [structuredClone(targets).reverse()];}
   if(sql.startsWith('SELECT public FROM documents'))return [[{public:row.public}]];
   if(/^(INSERT|UPDATE|DELETE)/.test(sql)){
    assert.ok(audit,'Before journal required before every write');writes++;
