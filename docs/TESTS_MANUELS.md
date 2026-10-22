@@ -2,6 +2,13 @@
 
 <!-- description: Checklist de tests manuels à exécuter avant une publication ou après une modification sensible. -->
 
+## Gestion documentaire nationale — 22 octobre
+
+- Sur fixtures ou clone isolé : ouvrir Administration nationale → Documents → Gérer la bibliothèque documentaire, déposer un PDF valide, choisir plusieurs rubriques, vérifier le titre et le lien, puis modifier et retirer. Vérifier les cinq rubriques publiques et l’exclusion après retrait, y compris sur l’accueil. Aucun dépôt de recette sur NAP commune : TEST utilise la source réelle.
+- Vérifier compte national autorisé, club/régional/anonyme refusés côté serveur, fermeture à la perte de session, double clic bloqué, fichier vide/supérieur à 10 Mo/invalide rejeté, ancienne version refusée. Vérifier panne Storage avant SQL et journal conservé après interruption MyISAM, sans répétition automatique ; ancien fichier/date conservés.
+- Notification décochée par défaut ; aucun appel de notification si elle reste décochée. Sur TEST : cocher, enregistrer, vérifier le retour explicite « aucun mail envoyé », aucun SMTP, aucun message en attente. Ne jamais tester un envoi aux clubs réels. Sur fixtures PROD seulement : aperçu exact, refus si audience/réglage/document évolue, préférences et pilote IDF, envoi par 20 maximum, reprise sans doublon, panne SMTP incertaine arrêtée.
+- Ordinateur 1440 px et mobile 390/320 px : cases tactiles, titre long replié, aucun débordement, actions accessibles en bas du dialogue et focus rétabli à la fermeture.
+
 ## Répertoires club : modification et signalement — 22 octobre
 
 - Sur TEST, ouvrir « Modifier » pour un officiel réutilisable : dialogue immédiatement visible, identité chargée, titre adapté, focus clavier ; Annuler et Échap ferment sans écriture et rendent le focus. Vérifier ordinateur, 390 et 320 px. Ajouter depuis « Mes officiels » et depuis une compétition réutilise ce dialogue ; ne pas valider une fiche réelle pour cette recette.
