@@ -4,6 +4,8 @@
 
 ### 22 octobre — Message de connexion : portail en service et en évolution (TEST publié, PROD à préparer dans Infra)
 
+- Préparation Infra reçue à la demande humaine « Oui, transmets le bilan à Infra ». Demande `.github/releases/20261022-login-message.json`, candidat exact `fbd3c2868fcb3690e1fa5a7ddeca9f45e6fb4511` / TEST39845293611, base PROD39806260316 / `a15be367` / Hosting46c5e4f102777b1a. Diff complet rapproché : seul paragraphe applicatif, aucun backend ou configuration modifié. Sélection attendue vide,112 fonctions conservées. Guide PDF séparé, hors Hosting. Aucune adaptation des gardes PROD ; simple classement fermé de cette préparation pour éviter un aperçu Firebase inutile, tout fichier applicatif/configuration/inconnu conservant son aperçu. CI puis preflight officiel sans Google à consigner ; accord final du plan requis avant tout déploiement. IDF, Basile et toutes exclusions intacts.
+
 - Texte explicitement approuvé par Antoine : portail en service, fonctionnalités et améliorations progressives, contact pour les questions et difficultés. Suppression de la mention d’expérimentation Île-de-France et du renvoi des autres régions vers IntraNAP.
 - Périmètre : seul paragraphe informatif de `portail.html`, composants et styles existants. Aucun changement d’authentification, droits, configuration, backend ou données ; budget de lectures supplémentaire nul à l’ouverture, par action, au rafraîchissement et au pire cas.
 - Guide PDF club mis à jour séparément avec la nouvelle capture de connexion et suppression de l’ancien encadré expérimental. Demande explicite TEST et PROD reçue ; publication PROD à préparer selon le circuit Infra. Contrôles, PR et preuve TEST à compléter ; aucune validation utilisateur de la livraison déduite.
