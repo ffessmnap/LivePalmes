@@ -18,7 +18,7 @@ const {chromium}=require('playwright');
     window.LivePalmesPortalAuth={isAdminAuthenticated:()=>true,hasCapability:()=>window.testNational,onChange:fn=>window.testAuthChange=fn};
     window.firebase={auth:()=>({currentUser:{uid:'national'}}),app:()=>({functions:()=>({httpsCallable:name=>async input=>{
      window.testCalls.push({name,input});
-     if(name==='notifyNationalLibraryDocument')return {data:{disabled:true,test:true,recipientCount:10}};
+     if(name==='notifyEngagementCompetitionDocuments')return {data:{disabled:true,test:true,recipientCount:10}};
      if(input.action==='list')return {data:{documents:window.testDeleted?[]:[fixture],nextAfterId:null,themes:[{id:2,label:'Comité'},{id:3,label:'Compétitions'},{id:4,label:'Entraîneurs'},{id:5,label:'Juges'},{id:6,label:'Haut niveau'}],types:[{id:3,label:'Divers'}],rubrics:[{id:47,label:'Actualités'}]}};
      if(input.action==='detail')return {data:{document:fixture}};
      if(input.action==='delete'){window.testDeleted=true;return {data:{ok:true,withdrawn:true}};}
@@ -38,11 +38,11 @@ const {chromium}=require('playwright');
    assert.ok(sizes.page<=sizes.viewport,JSON.stringify(sizes));assert.equal(sizes.overflow,0,JSON.stringify(sizes));
    await page.getByRole('button',{name:'Mettre en ligne',exact:true}).click();
    await page.getByText('Document enregistré. Aucun mail demandé.',{exact:true}).waitFor();
-   assert.equal((await page.evaluate(()=>window.testCalls.filter(x=>x.name==='notifyNationalLibraryDocument'))).length,0);
+   assert.equal((await page.evaluate(()=>window.testCalls.filter(x=>x.name==='notifyEngagementCompetitionDocuments'))).length,0);
    const uploaded=await page.evaluate(()=>window.testCalls.find(x=>x.input.action==='upload').input);assert.deepEqual(uploaded.themeIds,[2,5]);assert.ok(uploaded.fileDataUrl.startsWith('data:application/pdf;base64,'));
    await page.getByRole('button',{name:'Modifier',exact:true}).click();await page.locator('#nationalLibraryName').fill('Titre corrigé');await page.locator('#nationalLibraryNotify').check();
    await page.getByRole('button',{name:'Enregistrer',exact:true}).click();await page.getByText('Document enregistré. TEST : aucun mail envoyé.',{exact:true}).waitFor();
-   assert.equal((await page.evaluate(()=>window.testCalls.filter(x=>x.name==='notifyNationalLibraryDocument'&&x.input.action==='send'))).length,0);
+   assert.equal((await page.evaluate(()=>window.testCalls.filter(x=>x.name==='notifyEngagementCompetitionDocuments'&&x.input.action==='send'))).length,0);
    page.on('dialog',d=>d.accept());await page.getByRole('button',{name:'Supprimer',exact:true}).click();await page.getByText('Document retiré de la publication. Aucun mail envoyé.',{exact:true}).waitFor();
    await page.getByRole('button',{name:'Fermer',exact:true}).click();
    await page.evaluate(()=>window.testNational=false);await page.getByRole('button',{name:'Gérer la bibliothèque documentaire',exact:true}).click();assert.equal(await page.locator('dialog[open]').count(),0);
