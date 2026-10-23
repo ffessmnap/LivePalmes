@@ -17,8 +17,8 @@
     <script src="assets/livepalmes-portal-appearance.js?v=20260920-appearance-1"></script>
     <link rel="stylesheet" href="assets/livepalmes-portal-shell.css?v=20261021-common-header">
     <link rel="stylesheet" href="assets/livepalmes-portal-workspaces.css?v=20260921-button-weight-1">
-    <link rel="stylesheet" href="assets/livepalmes-featured-documents.css?v=20261013-documents-1">
-    <link rel="stylesheet" href="assets/livepalmes-national-documents.css?v=20261022-library-1">
+    <link rel="stylesheet" href="assets/livepalmes-featured-documents.css?v=20261023-documents-page-1">
+    <link rel="stylesheet" href="assets/livepalmes-national-documents.css?v=20261023-documents-page-1">
     <link rel="stylesheet" href="/assets/public/livepalmes-public-shell.css?v=20261021-same-tab-1">
     <script src="/assets/public/livepalmes-public-shell.js?v=20261021-same-tab-1" defer></script>
   </head>
@@ -237,6 +237,7 @@
                     <span>Administration nationale</span><span id="adminPortalNationalPendingBadge" class="admin-pending-badge admin-pending-badge-nav" hidden>0</span><span aria-hidden="true"><svg class="admin-portal-chevron" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"></path></svg></span>
                   </button>
                   <div id="adminPortalNationalSubmenu" class="admin-portal-nav-submenu" aria-label="Pages de l’administration nationale" hidden>
+                    <a href="#administration-documents" data-admin-view-link="nationalDocuments" data-national-documents-open hidden>Documents</a>
                     <a id="adminEngagementsDeletionRequestsNav" href="#administration-suppressions" data-admin-view-link="engagements" data-engagements-nav-entry="adminDeletionRequests" data-engagements-nav-tab="deletionRequests" data-engagements-national-target="deletions" data-engagements-national-nav hidden>Demandes &agrave; traiter <span id="adminEngagementsDeletionRequestsBadge" class="admin-portal-nav-badge" hidden>0</span></a>
                     <a href="#administration-clubs" data-admin-view-link="engagements" data-engagements-nav-entry="adminDeletionRequests" data-engagements-nav-tab="deletionRequests" data-engagements-national-target="clubs" data-engagements-national-nav hidden>Clubs</a>
                     <a href="#administration-licences" data-admin-view-link="engagements" data-engagements-nav-entry="adminDeletionRequests" data-engagements-nav-tab="deletionRequests" data-engagements-national-target="licenses" data-engagements-national-nav hidden>V&eacute;rification des licences</a>
@@ -499,7 +500,7 @@
                 <section class="admin-national-home-group" aria-labelledby="adminNationalDocumentsTitle" data-national-documents-panel hidden>
                   <div class="admin-national-home-group-head"><h3 id="adminNationalDocumentsTitle">Documents</h3></div>
                   <p>Déposer, classer et retirer des documents ; choisir les documents présentés sur l’accueil.</p>
-                  <button class="ghost-button" type="button" data-national-documents-open hidden>Documents →</button>
+                  <a href="#administration-documents" data-national-documents-open hidden>Documents →</a>
                 </section>
                 <section id="adminNationalMailControl" class="admin-national-home-group" hidden aria-labelledby="adminNationalMailControlTitle">
                   <div class="admin-national-home-group-head"><h3 id="adminNationalMailControlTitle">Mails automatiques</h3></div>
@@ -583,6 +584,21 @@
                   </a>
                 </section>
               </div>
+            </section>
+
+            <section id="adminNationalDocumentsView" class="admin-portal-space-home admin-national-documents-view" data-admin-view="nationalDocuments" aria-labelledby="adminNationalDocumentsViewTitle" hidden>
+              <div class="admin-portal-workspace-head">
+                <span>Administration nationale</span>
+                <h2 id="adminNationalDocumentsViewTitle" tabindex="-1">Documents</h2>
+                <p>Gérez les documents de la bibliothèque et la sélection présentée sur l’accueil.</p>
+              </div>
+              <nav class="national-documents-navigation" aria-label="Gestion des documents">
+                <a href="#administration-documents" data-national-documents-section="library">Bibliothèque documentaire</a>
+                <a href="#administration-documents-accueil" data-national-documents-section="featured">Documents mis en avant</a>
+                <a href="bibliotheque.html" target="_blank" rel="noopener">Consulter la bibliothèque publique ↗</a>
+              </nav>
+              <section id="nationalLibraryPanel" class="national-documents-panel" aria-labelledby="nationalLibraryTitle" hidden></section>
+              <section id="featuredDocumentsPanel" class="national-documents-panel admin-featured-documents-panel" aria-labelledby="featuredDocumentsTitle" hidden></section>
             </section>
 
             <section id="adminAccountView" class="admin-portal-account-view" data-admin-view="account" aria-labelledby="adminAccountViewTitle" hidden>
@@ -2831,13 +2847,13 @@
     <link rel="stylesheet" href="assets/livepalmes-engagement-qualifications.css">
     <script src="assets/livepalmes-engagement-qualifications.js?v=20260915-import-seconds"></script>
   <script src="assets/livepalmes-engagement-navigation.js?v=20261021-same-tab-1"></script>
-  <script src="assets/livepalmes-admin-portal.js?v=20261022-club-directory-1"></script>
+  <script src="assets/livepalmes-admin-portal.js?v=20261023-documents-page-1"></script>
     <script src="assets/livepalmes-license-administration.js?v=20261010-license-partial-validation-4"></script>
     <script src="assets/livepalmes-admin-calendar-events.js?v=20261012-shared-comments-1"></script>
     <script src="assets/public/livepalmes-home-model.js?v=20261014-home-2"></script>
     <script src="assets/livepalmes-featured-documents-model.js?v=20261013-documents-1"></script>
-    <script src="assets/livepalmes-featured-documents.js?v=20261022-library-1"></script>
-    <script src="assets/livepalmes-national-documents.js?v=20261022-library-1"></script>
+    <script src="assets/livepalmes-featured-documents.js?v=20261023-documents-page-1"></script>
+    <script src="assets/livepalmes-national-documents.js?v=20261023-documents-page-1"></script>
     <script src="assets/livepalmes-portal-ux.js?v=20261020-club-retour"></script>
 <script src="assets/livepalmes-legal-footer.js?v=20260920-legal-1"></script>
     <script src="assets/livepalmes-portal-shell.js?v=20261021-common-header"></script>

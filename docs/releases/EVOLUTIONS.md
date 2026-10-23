@@ -2,6 +2,12 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 23 octobre — Documents comme rubrique nationale (en préparation TEST)
+
+- Retour utilisateur : remplacer les fenêtres documentaires superposées par une rubrique à part entière dans Administration nationale. Accès Documents dans le menu, bibliothèque et documents mis en avant dans la zone de travail du portail ; dépôt/modification/retrait intégrés à la page. Serveur, droits et blocage des mails TEST inchangés.
+- Budget : aucun appel au démarrage ; bibliothèque chargée à l’ouverture, retour dans la minute sans lecture supplémentaire pour le même compte. Recherche/pagination/actualisation conservent leurs bornes. Sélection d’accueil : ses deux appels existants seulement à l’ouverture de sa sous-page, sans charger la gestion générale en parallèle. Aucun listener ni appel par ligne.
+- Recette navigateur sur fixtures réussie en 1440/390/320 px avec le routeur réel ciblé : aucun dialogue documentaire, menu et liens actifs, saisie conservée après refus de départ, départ bloqué pendant enregistrement, cache au retour, changement de compte et accès direct à la sélection. Dépôt/modification/retrait et notification TEST sans envoi conservés ; captures privées `outputs/national-library/`. Tests d’optimisation du portail et syntaxe réussis ; CI Linux, intégration et preuve TEST à consigner. Aucun document réel modifié, aucun mail réel ni publication PROD ; validation utilisateur de cette nouvelle présentation attendue.
+
 ### 23 octobre — Gestion de la bibliothèque documentaire nationale (TEST déployé, validation utilisateur attendue)
 
 - Besoin : rétablir le dépôt et le retrait des documents généraux, avec choix des rubriques Comité, Compétitions, Entraîneurs, Juges, Haut niveau et notification facultative aux clubs. Approche explicitement validée puis implémentation/déploiement TEST autorisés dans cette discussion, sans mail réel aux clubs.
