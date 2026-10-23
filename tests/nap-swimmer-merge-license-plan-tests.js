@@ -16,4 +16,9 @@ assert.equal(planLicenseTransfer({...source,number:null},target,[]).adopted,fals
 assert.throws(()=>planLicenseTransfer(source,target,[validation,validation]),TypeError);
 assert.throws(()=>planLicenseTransfer(source,target,[{...validation,swimmer_id:99}]),TypeError);
 assert.throws(()=>planLicenseTransfer(source,target,Array(101).fill(validation)),RangeError);
+const permanent=planLicenseTransfer(source,{...target,number:"B-OTHER"},[validation],true);
+assert.equal(permanent.licenseNumber,"B-OTHER");
+assert.deepEqual(permanent.after,[{...validation,swimmer_id:13}]);
+assert.deepEqual(planLicenseTransfer(source,target,[otherNumber],true).after,[{...otherNumber,swimmer_id:13}]);
+assert.throws(()=>planLicenseTransfer(source,target,[validation,oldTarget],true),/meme saison/);
 console.log("Swimmer merge licences: string adopted only into blank target, original season validation/provenance preserved, stale target backed up and no invented validation passed.");

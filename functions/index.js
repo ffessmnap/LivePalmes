@@ -211,8 +211,8 @@ if (ENVIRONMENT.sportingDataSource === "nap") {
         : action === "top-years" ? await require("./nap-direct-tops").readTopBirthYears(napPool, request.query)
         : action === "top-metadata" ? await require("./nap-direct-tops").readTopMetadata(napPool)
         : action === "search"
-        ? await require("./nap-direct-search").searchDirectSwimmers(napPool, request.query.q)
-        : await require("./nap-direct-swimmer").readDirectSwimmer(napPool, request.query.id));
+        ? await require("./nap-public-swimmer-redirect").searchSwimmers(napPool, request.query.q)
+        : await require("./nap-public-swimmer-redirect").readSwimmer(napPool, request.query.id));
     } catch (error) {
       response.status(error instanceof TypeError ? 400 : 503).json({ error: error instanceof RangeError
         ? "Donnees trop volumineuses pour cette consultation."
