@@ -172,6 +172,8 @@ function runUnitTests() {
     "nap-swimmer-merge-schema-tests.js",
     "nap-swimmer-merge-license-plan-tests.js",
     "nap-swimmer-merge-plan-tests.js",
+    "nap-swimmer-merge-clubs-tests.js",
+    "nap-nora-performance-clubs-tests.js",
     "nap-swimmer-merge-tests.js",
     "nap-swimmer-merge-callable-tests.js",
     "nap-swimmer-merge-audit-tests.js",

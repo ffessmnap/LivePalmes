@@ -73,7 +73,10 @@ async function mergeSwimmers(pool,input,audit,authorize){
     }
     const snapshots=await readReferences(saved?.snapshots.nageursengager.map(row=>row.id)),seasons=await readSeasons();
     if(seasons.length>100)throw new RangeError("Historique des licences trop volumineux.");
-    const plan=saved||plans.planMerge({...input,priorMarker:markers[0],timestamp:new Date().toISOString().replace("T"," ").replace("Z","000")},people.source,people.target,snapshots,seasons);
+    if(saved&&!saved.performanceClubPolicy&&people.source)throw new TypeError("Ancienne preparation de fusion sans clubs historiques ; reprise specifique requise avant suppression.");
+    const clubConnection={execute:async({sql},values)=>[await query(sql,values)]};
+    const clubPolicy=saved?.performanceClubPolicy||(!saved?await require("./nap-swimmer-merge-clubs").preparePolicy(clubConnection,people.source,people.target,snapshots):undefined);
+    const plan=saved||plans.planMerge({...input,priorMarker:markers[0],timestamp:new Date().toISOString().replace("T"," ").replace("Z","000")},people.source,people.target,snapshots,seasons,clubPolicy);
     if((people.source?![plan.source,plan.sourceAfter].some(row=>equal(row,people.source)):!saved?.permanentDelete)||![plan.target,plan.targetAfter].some(row=>equal(row,people.target)))throw new TypeError("Une fiche a change depuis la preparation.");
     if(plan.licensePlan.adopted&&(await query("SELECT id FROM nageurs FORCE INDEX (livepalmes_license_number_id) WHERE number=? AND id NOT IN (?,?) AND NOT EXISTS (SELECT 1 FROM livepalmes_swimmer_merges WHERE swimmer_id=nageurs.id) LIMIT 1",[plan.licensePlan.licenseNumber,a,b])).length)throw new TypeError("Cette licence appartient aussi a une autre fiche NAP. Verification nationale requise.");
     const competitions=[...new Set(plan.snapshots.nageursengager.map(row=>row.compet))];
@@ -107,6 +110,7 @@ async function mergeSwimmers(pool,input,audit,authorize){
     const result={ok:true,source:"nap",operation,sourceSwimmerId:String(a),targetSwimmerId:String(b),performanceUpdateCount:plan.changes.find(change=>change.table==="perfs").updates.length,entrySwimmerUpdateCount:plan.changes.find(change=>change.table==="nageursengager").updates.length+plan.changes.find(change=>change.table==="nageursengager").removals.length,relayUpdateCount:plan.changes.filter(change=>["engagements_relayeurs","perfs_relais"].includes(change.table)).reduce((sum,change)=>sum+change.updates.length,0),licenseSeasonTransferCount:plan.licensePlan.transfers.length,publicSnapshot:{ok:true,skipped:true,reason:"Lecture NAP directe"}};
     result.sourceDeleted=true;
     result.finalClubId=String(plan.targetAfter.club);
+    result.historicalClubUpdateCount=plan.changes.filter(change=>["perfs","perfs_relais"].includes(change.table)).reduce((sum,change)=>sum+change.updates.filter(item=>!equal(item.before.club,item.after.club)).length,0);
     await audit.complete(operation,{...result,verified:true});
     const season=plan.licensePlan.after.find(row=>Number(row.swimmer_id)===b&&row.season===require("./nap-license-state").currentSeason());
     const validation=season?{license_validation_season:season.season,license_validated_number:season.license_number,license_validation_status:season.status,license_validation_source:season.source,license_validated_at:season.validated_at,license_validated_by:season.validated_by,license_validity_end_date:season.federal_validity_end_date}:{};
