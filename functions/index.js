@@ -17831,10 +17831,15 @@ exports.resolveEngagementCompetitionDeletionRequest = onCall(CALLABLE_OPTIONS, a
 
 exports.previewCompetitionImport = onCall(COMPETITION_IMPORT_CALLABLE_OPTIONS, async (request) => {
   assertCapability(request, "competitions.import");
+  if(request.data?.sourceType==="winpalme-zip-preview" && !authorizeNativePerformance(request).national)throw new HttpsError("permission-denied","Le contrôle des alertes ZIP est réservé à l’administration nationale.");
+  if(request.data?.sourceType==="winpalme-zip-preview" && ENVIRONMENT.sportingDataSource !== "nap")throw new HttpsError("failed-precondition","L’aperçu ZIP nécessite la source NAP.");
   if(ENVIRONMENT.sportingDataSource === "nap") {
     authorizeNativePerformance(request);
     if(request.data?.sourceType==="international-xlsx"||request.data?.workbook)throw new HttpsError("failed-precondition","Le raccordement de l'import Excel international reste a terminer ; aucune ancienne base ne sera utilisee.");
-    try{return require("./nap-import-response").importPreviewResponse(await require("./nap-import-preview").previewNativeImport(require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD),request.data||{}));}
+    try{
+      const result=require("./nap-import-response").importPreviewResponse(await require("./nap-import-preview").previewNativeImport(require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD),request.data||{}));
+      return request.data?.sourceType==="winpalme-zip-preview"?{...result,previewOnly:true,reviewReady:result.canConfirm===true,canConfirm:false}:result;
+    }
     catch(error){throw nativePerformanceFailure(error);}
   }
   const parsed = parseCompetitionImportPayload(request.data || {});
@@ -18089,6 +18094,7 @@ async function stageCompetitionImportReplacement(options = {}) {
 
 exports.createCompetitionImport = onCall(COMPETITION_IMPORT_CALLABLE_OPTIONS, async (request) => {
   assertCapability(request, "competitions.import");
+  if(request.data?.sourceType==="winpalme-zip-preview")throw new HttpsError("failed-precondition","Le dépôt ZIP est en aperçu uniquement : aucun résultat ni PDF ne peut être enregistré.");
   if(ENVIRONMENT.sportingDataSource === "nap") {
     if(request.data?.sourceType==="international-xlsx"||request.data?.workbook)throw new HttpsError("failed-precondition","Import Excel NAP non disponible pour le moment.");
     try{return await require("./nap-import-write").createNativeImportWriter({authorize:authorizeNativePerformance,getPool:()=>require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD)})(request);}

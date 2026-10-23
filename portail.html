@@ -9,7 +9,7 @@
     <link rel="icon" type="image/png" href="favicon.png?v=20260819-hosting-2">
     <link rel="stylesheet" href="styles.css?v=20260529-public-home">
     <link id="adminPerformanceStyles" rel="stylesheet" href="performances/public/styles.css?v=20260613-delete-record-draft-1" disabled>
-    <link id="adminImportStyles" rel="stylesheet" href="performances/public/import-competitions.css?v=20260831-import-dialog-1" disabled>
+    <link id="adminImportStyles" rel="stylesheet" href="performances/public/import-competitions.css?v=20261023-zip-preview-1" disabled>
     <link rel="stylesheet" href="assets/livepalmes-admin-portal.css?v=20261022-club-directory-1">
     <link rel="stylesheet" href="assets/livepalmes-license-administration.css?v=20260902-license-control-1">
     <link rel="stylesheet" href="assets/livepalmes-whatsapp-qr.css?v=20260831-whatsapp-qr-1">
@@ -2371,7 +2371,7 @@
                       <div>
                         <span>Import de résultats</span>
                         <h3 id="competitionImportDialogTitle">Charger et vérifier un fichier</h3>
-                        <p>TXT fédéral ou trame Excel internationale</p>
+                        <p>ZIP WinPalme en aperçu, TXT fédéral ou trame Excel internationale</p>
                       </div>
                       <button id="competitionImportDialogClose" class="ghost-button competition-import-dialog-close" type="button" aria-label="Fermer la fenêtre">×</button>
                     </header>
@@ -2385,8 +2385,8 @@
                         </div>
                         <form id="competitionImportForm" class="competition-import-form">
                           <label>
-                            Fichier TXT ou Excel
-                            <input id="competitionImportFile" type="file" accept=".txt,text/plain,.xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" required>
+                            Fichier ZIP WinPalme, TXT ou Excel
+                            <input id="competitionImportFile" type="file" accept=".zip,application/zip,.txt,text/plain,.xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" required>
                           </label>
                           <label>
                             Encodage TXT
@@ -2402,6 +2402,7 @@
                         <p id="competitionImportMessage" class="admin-portal-message" aria-live="polite"></p>
                       </section>
 
+                      <section id="competitionZipPreview" class="import-card competition-zip-preview" aria-label="Fichiers retenus dans le ZIP" hidden></section>
                       <aside id="competitionImportProgress" class="admin-long-operation" hidden></aside>
 
                       <section id="competitionImportPreview" class="import-card" hidden>
@@ -2847,7 +2848,7 @@
     <link rel="stylesheet" href="assets/livepalmes-engagement-qualifications.css">
     <script src="assets/livepalmes-engagement-qualifications.js?v=20260915-import-seconds"></script>
   <script src="assets/livepalmes-engagement-navigation.js?v=20261021-same-tab-1"></script>
-  <script src="assets/livepalmes-admin-portal.js?v=20261023-documents-page-1"></script>
+  <script src="assets/livepalmes-admin-portal.js?v=20261023-zip-preview-1"></script>
     <script src="assets/livepalmes-license-administration.js?v=20261010-license-partial-validation-4"></script>
     <script src="assets/livepalmes-admin-calendar-events.js?v=20261012-shared-comments-1"></script>
     <script src="assets/public/livepalmes-home-model.js?v=20261014-home-2"></script>
