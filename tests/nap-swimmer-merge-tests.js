@@ -27,6 +27,7 @@ function fixture(failAfter=0,historic=false){
     if(sql.includes("GET_LOCK"))return [[{acquired:1}]];
     if(sql.includes("RELEASE_LOCK"))return [[{released:1}]];
     if(sql.includes("information_schema.TRIGGERS")||sql.startsWith("SELECT id FROM forfait"))return [[]];
+    if(sql.startsWith("SELECT num_club"))return [[{num_club:107,abre_club:"FIC",nom_club:"Club fictif"}]];
     if(sql.startsWith("SELECT id FROM nageurs"))return [[]];
     if(sql.startsWith("SELECT")&&sql.includes("FROM nageurs FORCE INDEX"))return [structuredClone(state.nageurs)];
     if(sql.startsWith("SELECT swimmer_id,target_id"))return [structuredClone(state.livepalmes_swimmer_merges.filter(row=>values.includes(row.swimmer_id)))];
@@ -67,6 +68,15 @@ function fixture(failAfter=0,historic=false){
     const f=fixture(stop);await assert.rejects(service.mergeSwimmers(f.pool,f.input,f.audit,async()=>{}));
     await service.mergeSwimmers(f.pool,f.input,f.audit,async()=>{});assert.equal(f.state.perfs[0].nageur,13);assert.equal(f.state.livepalmes_swimmer_license_seasons[0].swimmer_id,13);assert.equal(f.state.nageurs.some(row=>row.id===12),false);assert.equal(f.stats().writes,total);
   }
+  for(let stop=1;stop<=total;stop++){
+    const f=fixture(stop);f.input.finalClubId="107";f.state.perfs[0].club="999";
+    await assert.rejects(service.mergeSwimmers(f.pool,f.input,f.audit,async()=>{}));
+    await service.mergeSwimmers(f.pool,f.input,f.audit,async()=>{});assert.equal(f.state.nageurs[0].club,"107");assert.equal(f.state.perfs[0].club,"999");
+  }
+  const selected=fixture();selected.input.finalClubId="107";selected.state.perfs[0].club="999";
+  await service.mergeSwimmers(selected.pool,selected.input,selected.audit,async()=>{});assert.equal(selected.state.nageurs[0].club,"107");assert.equal(selected.state.perfs[0].club,"999");
+  await service.mergeSwimmers(selected.pool,selected.input,selected.audit,async()=>{});
+  await assert.rejects(service.mergeSwimmers(selected.pool,{...selected.input,finalClubId:"0"},selected.audit,async()=>{}));
   const denied=fixture();await assert.rejects(service.mergeSwimmers(denied.pool,denied.input,denied.audit,async()=>{throw Error("Denied");}));assert.equal(denied.stats().connections,0);
   const lostAudit=fixture(),complete=lostAudit.audit.complete;let fail=true;
   lostAudit.audit.complete=async(...args)=>{if(fail){fail=false;throw Error("Audit unavailable");}return complete(...args);};

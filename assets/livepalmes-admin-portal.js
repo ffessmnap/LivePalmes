@@ -590,6 +590,7 @@
     engagementsSwimmerCorrectionFirstName: document.querySelector("#adminEngagementsSwimmerCorrectionFirstName"),
     engagementsSwimmerCorrectionBirthDate: document.querySelector("#adminEngagementsSwimmerCorrectionBirthDate"),
     engagementsSwimmerCorrectionSex: document.querySelector("#adminEngagementsSwimmerCorrectionSex"),
+    engagementsSwimmerCorrectionClub: document.querySelector("#adminEngagementsSwimmerCorrectionClub"),
     engagementsSwimmerCorrectionLicense: document.querySelector("#adminEngagementsSwimmerCorrectionLicense"),
     engagementsSwimmerCorrectionReasonLabel: document.querySelector("#adminEngagementsSwimmerCorrectionReasonLabel"),
     engagementsSwimmerCorrectionReason: document.querySelector("#adminEngagementsSwimmerCorrectionReason"),
@@ -13576,6 +13577,7 @@
 
   function resetEngagementSwimmerCorrectionDialog() {
     elements.engagementsSwimmerCorrectionForm?.reset();
+    if(elements.engagementsSwimmerCorrectionClub){elements.engagementsSwimmerCorrectionClub.hidden=true;elements.engagementsSwimmerCorrectionClub.replaceChildren();}
     if (elements.engagementsSwimmerCorrectionForm) {
       delete elements.engagementsSwimmerCorrectionForm.dataset.napSource;
       delete elements.engagementsSwimmerCorrectionForm.dataset.expectedFingerprint;
@@ -13604,6 +13606,7 @@
       card: options.card || null
     } : null;
     const name = engagementSwimmerDisplayName(swimmer, "Nageur");
+    if(direct&&swimmer.napSource&&elements.engagementsSwimmerCorrectionClub&&global.LivePalmesSwimmerClubs){elements.engagementsSwimmerCorrectionClub.hidden=false;global.LivePalmesSwimmerClubs.getTools(callFunction).mount(elements.engagementsSwimmerCorrectionClub,swimmer.clubId);}
     if (swimmer.napSource && elements.engagementsSwimmerCorrectionForm) {
       elements.engagementsSwimmerCorrectionForm.dataset.napSource = "true";
       elements.engagementsSwimmerCorrectionForm.dataset.expectedFingerprint = swimmer.napFingerprint || "";
@@ -13663,6 +13666,7 @@
       reason: elements.engagementsSwimmerCorrectionReason?.value || ""
     };
     if (payload.napSource) delete payload.proposed.licenseNumber;
+    if(direct&&payload.napSource&&elements.engagementsSwimmerCorrectionClub){const club=elements.engagementsSwimmerCorrectionClub.querySelector("select");if(!club?.value||!club.reportValidity())return;payload.proposed.clubId=club.value;}
     if (duplicate) { payload.reportType="duplicate"; payload.proposed={}; }
     setFormPending(
       elements.engagementsSwimmerCorrectionForm,
@@ -14283,7 +14287,9 @@
     ) || {};
     const sourceName = [source.firstName, source.lastName].filter(Boolean).join(" ") || source.name || "cette fiche";
     const targetName = [target.firstName, target.lastName].filter(Boolean).join(" ") || target.name || "la fiche cible";
-    if (!global.confirm(`Fusionner ${sourceName} vers ${targetName} ? ${source.napSource ? "Les performances et les liens seront transférés, puis la fiche source sera supprimée définitivement. Le journal d’audit sera conservé." : "La fiche source sera marquée comme fusionnée et retirée des listes club."}`)) return;
+    const finalClub=source.napSource?await global.LivePalmesSwimmerClubs.getTools(callFunction).chooseFinalClub({target,sources:[source]}):null;
+    if(source.napSource&&!finalClub)return;
+    if (!global.confirm(`Fusionner ${sourceName} vers ${targetName} ?${finalClub ? ` Club final : ${finalClub.label}.` : ""} ${source.napSource ? "Les performances et les liens seront transférés, puis la fiche source sera supprimée définitivement. Le journal d’audit sera conservé." : "La fiche source sera marquée comme fusionnée et retirée des listes club."}`)) return;
     const licenseMismatch = Boolean(source.licenseNumber && target.licenseNumber && source.licenseNumber !== target.licenseNumber);
     if (licenseMismatch && !global.confirm(`Attention : les numéros de licence sont différents (${source.licenseNumber} / ${target.licenseNumber}). Confirmer quand même la fusion ?`)) return;
     const clubMismatch = Boolean(source.clubId && target.clubId && source.clubId !== target.clubId);
@@ -14294,6 +14300,7 @@
     }
     try {
       const result = await callFunction("mergeEngagementNationalClubSwimmer", {
+        ...(finalClub?{finalClubId:finalClub.clubId}:{}),
         sourceSwimmerId: sourceId,
         sourceSource: sourceType,
         sourceIdentityKey: source.identityKey || "",
@@ -14306,7 +14313,7 @@
         targetLicenseNumber: String(target.licenseNumber || "").trim(),
         confirmMerge: true,
         confirmLicenseMismatch: licenseMismatch,
-        confirmClubMismatch: clubMismatch
+        confirmClubMismatch: Boolean(finalClub) || clubMismatch
       });
       resetEngagementNationalSwimmerMergeState();
       engagementNationalSwimmersLoaded = false;
@@ -14342,7 +14349,9 @@
       licenseMismatch ? "numéros de licence différents" : "",
       clubMismatch ? "clubs différents" : ""
     ].filter(Boolean).join(", ");
-    const message = `Fusionner ${sources.length} fiche${sources.length > 1 ? "s" : ""} vers ${targetName} ? ${target.napSource ? "Les performances et les liens seront transférés à la fiche conservée, puis les fiches sources seront supprimées définitivement. Le journal d’audit sera conservé." : "Les performances, engagements et relais seront rattaches a la fiche conservee."}${warning ? ` Attention : ${warning}.` : ""}`;
+    const finalClub=target.napSource?await global.LivePalmesSwimmerClubs.getTools(callFunction).chooseFinalClub({target,sources}):null;
+    if(target.napSource&&!finalClub)return;
+    const message = `Fusionner ${sources.length} fiche${sources.length > 1 ? "s" : ""} vers ${targetName} ?${finalClub ? ` Club final : ${finalClub.label}.` : ""} ${target.napSource ? "Les performances et les liens seront transférés à la fiche conservée, puis les fiches sources seront supprimées définitivement. Le journal d’audit sera conservé." : "Les performances, engagements et relais seront rattaches a la fiche conservee."}${warning ? ` Attention : ${warning}.` : ""}`;
     if (!global.confirm(message)) return;
     engagementNationalSwimmerMergeLoading = true;
     updateEngagementNationalSwimmerSelectionState();
@@ -14358,6 +14367,7 @@
       const [sourceSourceRaw, sourceIdRaw] = sourceKey.split(":");
       try {
         const result = await callFunction("mergeEngagementNationalClubSwimmer", {
+          ...(finalClub?{finalClubId:finalClub.clubId}:{}),
           sourceSwimmerId: sourceIdRaw,
           sourceSource: sourceSourceRaw || "engagement",
           sourceIdentityKey: source.identityKey || "",
@@ -14397,12 +14407,14 @@
       (item.source || "performances") === swimmerSource && (item.id === swimmerId || item.swimmerIndexId === swimmerId)
     ) || {};
     if(swimmer.napSource) {
-      if(!global.confirm("Finaliser cette fusion ? Les liens restants seront transférés à la fiche conservée, puis la fiche doublon sera supprimée définitivement. Le journal d’audit sera conservé."))return;
+
       try {
         const found=await callFunction("searchEngagementNationalSwimmerMergeTargets",{sourceSwimmerId:swimmerId,query:String(swimmer.mergedIntoId||"")});
         const target=found.swimmers?.find(item=>String(item.id)===String(swimmer.mergedIntoId));
         if(!target)throw new Error("La fiche conservée est introuvable.");
-        await callFunction("mergeEngagementNationalClubSwimmer",{sourceSwimmerId:swimmerId,targetSwimmerId:target.id,sourceFingerprint:swimmer.napFingerprint,targetFingerprint:target.napFingerprint,sourceLicenseNumber:String(swimmer.licenseNumber||"").trim(),targetLicenseNumber:String(target.licenseNumber||"").trim(),confirmMerge:true,confirmClubMismatch:true,confirmLicenseMismatch:true});
+        const finalClub=await global.LivePalmesSwimmerClubs.getTools(callFunction).chooseFinalClub({target,sources:[swimmer]});
+        if(!finalClub||!global.confirm(`Finaliser la fusion vers ${engagementSwimmerDisplayName(target)} ? Club final : ${finalClub.label}. La fiche doublon sera supprimée définitivement ; le journal sera conservé.`))return;
+        await callFunction("mergeEngagementNationalClubSwimmer",{sourceSwimmerId:swimmerId,targetSwimmerId:target.id,finalClubId:finalClub.clubId,sourceFingerprint:swimmer.napFingerprint,targetFingerprint:target.napFingerprint,sourceLicenseNumber:String(swimmer.licenseNumber||"").trim(),targetLicenseNumber:String(target.licenseNumber||"").trim(),confirmMerge:true,confirmClubMismatch:true,confirmLicenseMismatch:true});
         await loadEngagementNationalSwimmers({force:true,silent:true});
         if(elements.engagementsNationalSwimmersStatus)elements.engagementsNationalSwimmersStatus.textContent="Fusion NAP vérifiée et finalisée.";
       }catch(error){if(elements.engagementsNationalSwimmersStatus)elements.engagementsNationalSwimmersStatus.textContent=`Finalisation impossible : ${error?.message||error}`;}

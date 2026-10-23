@@ -217,6 +217,7 @@ function runUnitTests() {
     "nap-swimmer-recovery-write-tests.js",
     "nap-approved-swimmer-correction-tests.js",
     "nap-portal-swimmers-tests.js",
+    "nap-national-swimmer-club-tests.js",
     "nap-license-state-tests.js",
     "nap-license-control-tests.js",
     "nap-license-partial-validation-tests.js",

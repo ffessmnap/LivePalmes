@@ -2,6 +2,13 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 24 octobre — Club final de fusion et affectation nationale (préparation TEST)
+
+- Périmètre sensible explicitement approuvé : choisir le club final à la fusion, modifier le club dans la fiche nationale, rendre toutes les actions visibles même avec un seul nageur. Exclusion explicite : aucune modification de Delphine ni des clubs des performances historiques, aucune opération métier réelle pendant les essais, aucune PROD.
+- Sélecteur commun borné aux clubs NAP existants, recherche locale et cache mutualisé d'une minute ; conflit de fusion exigeant un choix explicite, récapitulatif avant confirmation, club lié au plan et à sa reprise. Correction nationale dédiée avec motif/empreinte, une seule écriture native pour identité+club, journal existant avant/après. Ni nouvelle collection, ni droit, index, schéma ou configuration Firebase modifié. Les clubs explicites des performances restent inchangés ; l'accès aux engagements peut suivre la nouvelle affectation native, sans réécriture des courses.
+- Budget : annuaire existant au premier sélecteur seulement, une requête SQL/1 001 lignes maximum avec refus au-delà de 1 000 ; cache une minute et zéro appel par frappe. Correction quatre requêtes, cinq avec contrôle d'identité, trois lectures à la reprise ; audit existant. Fusion : une lecture club par clé primaire ajoutée, plafonds 160 appels/4 000 liens/100 saisons conservés, aucune lecture par performance.
+- Menu des nageurs déplié dans le flux d'une vraie cellule de hauteur automatique, sans découpe par le défilement du tableau. Fixtures ordinateur/mobile 1440/390/320 px : quatre actions entièrement visibles avec une ligne, correction et troisième club de fusion, annulation et cache ; réseau externe et appels métier bloqués. Tests natifs ciblés : club seul/identité+club, conflits, clubs inexistants, absence d'écriture historique et reprises après chaque réponse perdue réussis. Captures privées `outputs/nageurs-clubs-20261024/`. Vérification globale locale : syntaxe et suites NAP réussies, arrêt sur le test Bash du workflow backend sous Windows (`main / access`), sans modification du test. CI Linux, PR et preuve TEST à compléter ; validation utilisateur de cette nouvelle version attendue.
+
 ### 23 octobre — Dépôt ZIP WinPalme en aperçu national (TEST déployé, validation utilisateur attendue)
 
 - Besoin explicitement approuvé : dépôt manuel du ZIP dans le portail, aperçu et contrôle national des alertes, préparation sur TEST sans importer de résultats dans la vraie base. [PR #472](https://github.com/ffessmnap/LivePalmes/pull/472) intégrée en `f0ca9cd3311afad0c9d671069fd83b537a5a48cc` ; aucune publication PROD autorisée.
