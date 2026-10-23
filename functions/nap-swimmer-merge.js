@@ -23,6 +23,7 @@ async function mergeSwimmers(pool,input,audit,authorize){
   const a=Number(input?.sourceSwimmerId),b=Number(input?.targetSwimmerId);
   if(!Number.isSafeInteger(a)||!Number.isSafeInteger(b)||a<=0||b<=0||a===b||a>2147483647||b>2147483647||input.confirmMerge!==true||typeof input.actorUid!=="string"||!input.actorUid||input.actorUid.length>128||![input.sourceFingerprint,input.targetFingerprint].every(value=>/^[a-f0-9]{64}$/.test(value||""))||typeof input.sourceLicenseNumber!=="string"||typeof input.targetLicenseNumber!=="string"||typeof authorize!=="function")throw new TypeError("Confirmation nationale et fiches affichees requises.");
   await authorize();const operation=plans.operation(input),saved=await audit.read(operation);if(saved)plans.validateSaved(saved,input);
+  if(saved&&!saved.permanentDelete)throw new TypeError("Ancienne fusion conservee dans le journal. Sa conversion en suppression definitive exige une reprise specifique ; aucune donnee modifiee.");
   const connection=await pool.getConnection(),locks=[];let locked=false,safe=true,queries=0;
   const query=async(sql,values=[])=>{if(++queries>160)throw new RangeError("Budget de fusion depasse.");return (await connection.execute({sql,timeout:10000},values))[0];};
   const apply=async(statement)=>{
@@ -31,9 +32,9 @@ async function mergeSwimmers(pool,input,audit,authorize){
     if(!proof.length||proof.some(row=>row.table&&!String(row.table).startsWith("<")&&!['const','system'].includes(row.type)&&row.select_type!=="INSERT"&&(row.type==="ALL"||!row.key)))throw new TypeError("Plan de fusion non indexe.");
     const result=await query(statement.sql,statement.values);if(result.affectedRows!==statement.count)throw new Error("Fusion interrompue : sauvegarde conservee.");
   };
-  const readPeople=async()=>{
+  const readPeople=async(allowDeleted=false)=>{
     const rows=await query(`SELECT ${COLUMNS.map(column=>`\`${column}\``).join(",")} FROM nageurs FORCE INDEX (PRIMARY) WHERE id IN (?,?) ORDER BY id`,[a,b]);
-    if(rows.length!==2)throw new TypeError("Une fiche nageur est absente.");
+    if(!rows.some(row=>Number(row.id)===b)||(!rows.some(row=>Number(row.id)===a)&&!saved?.permanentDelete&&!allowDeleted))throw new TypeError("Une fiche nageur est absente.");
     return {source:rows.find(row=>Number(row.id)===a),target:rows.find(row=>Number(row.id)===b)};
   };
   const readSeasons=()=>query(`SELECT ${licenses.COLUMNS.map(column=>`\`${column}\``).join(",")} FROM livepalmes_swimmer_license_seasons FORCE INDEX (PRIMARY) WHERE swimmer_id IN (?,?) ORDER BY swimmer_id,season LIMIT 101`,[a,b]);
@@ -62,11 +63,11 @@ async function mergeSwimmers(pool,input,audit,authorize){
     if((await query(`SELECT TRIGGER_NAME FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA=DATABASE() AND EVENT_OBJECT_TABLE IN (${tables.map(()=>"?").join(",")}) LIMIT 1`,tables)).length)throw new TypeError("Declencheur natif a verifier avant fusion.");
     await connection.query({sql:`LOCK TABLES ${tables.map(name=>`\`${name}\` WRITE`).join(",")},forfait READ`,timeout:10000});locked=true;
     const people=await readPeople(),markers=await query("SELECT swimmer_id,target_id,merged_at,merged_by FROM livepalmes_swimmer_merges FORCE INDEX (PRIMARY) WHERE swimmer_id IN (?,?) ORDER BY swimmer_id",[a,b]);
-    if(markers.length&&(!saved||markers.length!==1||!equal(markers[0],saved.marker)))throw new TypeError("Une fiche est deja fusionnee. Rechargez les listes.");
+    if(markers.length&&(markers.length!==1||(saved?!equal(markers[0],saved.marker):Number(markers[0].swimmer_id)!==a||Number(markers[0].target_id)!==b||Number(people.source?.actif)!==0)))throw new TypeError("Une fiche est deja fusionnee. Rechargez les listes.");
     const snapshots=await readReferences(saved?.snapshots.nageursengager.map(row=>row.id)),seasons=await readSeasons();
     if(seasons.length>100)throw new RangeError("Historique des licences trop volumineux.");
-    const plan=saved||plans.planMerge({...input,timestamp:new Date().toISOString().replace("T"," ").replace("Z","000")},people.source,people.target,snapshots,seasons);
-    if(![plan.source,plan.sourceAfter].some(row=>equal(row,people.source))||![plan.target,plan.targetAfter].some(row=>equal(row,people.target)))throw new TypeError("Une fiche a change depuis la preparation.");
+    const plan=saved||plans.planMerge({...input,priorMarker:markers[0],timestamp:new Date().toISOString().replace("T"," ").replace("Z","000")},people.source,people.target,snapshots,seasons);
+    if((people.source?![plan.source,plan.sourceAfter].some(row=>equal(row,people.source)):!saved?.permanentDelete)||![plan.target,plan.targetAfter].some(row=>equal(row,people.target)))throw new TypeError("Une fiche a change depuis la preparation.");
     if(plan.licensePlan.adopted&&(await query("SELECT id FROM nageurs FORCE INDEX (livepalmes_license_number_id) WHERE number=? AND id NOT IN (?,?) AND NOT EXISTS (SELECT 1 FROM livepalmes_swimmer_merges WHERE swimmer_id=nageurs.id) LIMIT 1",[plan.licensePlan.licenseNumber,a,b])).length)throw new TypeError("Cette licence appartient aussi a une autre fiche NAP. Verification nationale requise.");
     const competitions=[...new Set(plan.snapshots.nageursengager.map(row=>row.compet))];
     if(competitions.length&&(await query(`SELECT id FROM forfait FORCE INDEX (livepalmes_compet_engagement_id) WHERE compet IN (${competitions.map(()=>"?").join(",")}) LIMIT 1`,competitions)).length)throw new TypeError("Un forfait historique doit etre verifie avant cette fusion.");
@@ -83,14 +84,21 @@ async function mergeSwimmers(pool,input,audit,authorize){
     await apply(plans.statement("livepalmes_swimmer_license_seasons",["swimmer_id","season"],licenseWork.removals,true));
     await apply(plans.statement("livepalmes_swimmer_license_seasons",["swimmer_id","season"],licenseWork.updates));
     if(!equal(people.target,plan.targetAfter))await apply(plans.statement("nageurs",["id"],[{before:plan.target,after:plan.targetAfter}]));
-    if(!equal(people.source,plan.sourceAfter))await apply(plans.statement("nageurs",["id"],[{before:plan.source,after:plan.sourceAfter}]));
+    if(people.source&&!equal(people.source,plan.sourceAfter))await apply(plans.statement("nageurs",["id"],[{before:plan.source,after:plan.sourceAfter}]));
     if(!markers.length)await apply({sql:"INSERT INTO livepalmes_swimmer_merges (swimmer_id,target_id,merged_at,merged_by) VALUES (?,?,?,?)",values:[a,b,plan.timestamp,input.actorUid],count:1});
     const verified=await readReferences(plan.snapshots.nageursengager.map(row=>row.id));
     if(work.some(change=>!sameRows(verified[change.table],change.expected))||!sameRows(await readSeasons(),plan.licensePlan.after))throw new Error("Liens fusionnes a verifier ; sauvegarde conservee.");
     const identities=await readPeople(),marker=await query("SELECT swimmer_id,target_id,merged_at,merged_by FROM livepalmes_swimmer_merges FORCE INDEX (PRIMARY) WHERE swimmer_id=? LIMIT 1",[a]);
-    if(!equal(identities.source,plan.sourceAfter)||!equal(identities.target,plan.targetAfter)||marker.length!==1||!equal(marker[0],plan.marker))throw new Error("Fusion NAP a verifier.");
+    if((identities.source&&!equal(identities.source,plan.sourceAfter))||!equal(identities.target,plan.targetAfter)||marker.length!==1||!equal(marker[0],plan.marker))throw new Error("Fusion NAP a verifier.");
+    // Identity deletion is last: every captured native reference and season has
+    // been reread under the same table locks. Keep only the technical redirect.
+    if(plans.TABLES.filter(spec=>spec.table!=="engagements").some(spec=>verified[spec.table].some(row=>spec.fields.some(field=>Number(row[field])===a)))||(await readSeasons()).some(row=>Number(row.swimmer_id)===a))throw new Error("La fiche source possede encore des liens ; suppression refusee.");
+    if(identities.source)await apply(plans.statement("nageurs",["id"],[plan.sourceAfter],true));
+    const finalPeople=await readPeople(true);
+    if(finalPeople.source||!equal(finalPeople.target,plan.targetAfter))throw new Error("Suppression de la fiche source a verifier ; sauvegarde conservee.");
     await connection.query({sql:"UNLOCK TABLES",timeout:10000});locked=false;
     const result={ok:true,source:"nap",operation,sourceSwimmerId:String(a),targetSwimmerId:String(b),performanceUpdateCount:plan.changes.find(change=>change.table==="perfs").updates.length,entrySwimmerUpdateCount:plan.changes.find(change=>change.table==="nageursengager").updates.length+plan.changes.find(change=>change.table==="nageursengager").removals.length,relayUpdateCount:plan.changes.filter(change=>["engagements_relayeurs","perfs_relais"].includes(change.table)).reduce((sum,change)=>sum+change.updates.length,0),licenseSeasonTransferCount:plan.licensePlan.transfers.length,publicSnapshot:{ok:true,skipped:true,reason:"Lecture NAP directe"}};
+    result.sourceDeleted=true;
     await audit.complete(operation,{...result,verified:true});
     const season=plan.licensePlan.after.find(row=>Number(row.swimmer_id)===b&&row.season===require("./nap-license-state").currentSeason());
     const validation=season?{license_validation_season:season.season,license_validated_number:season.license_number,license_validation_status:season.status,license_validation_source:season.source,license_validated_at:season.validated_at,license_validated_by:season.validated_by,license_validity_end_date:season.federal_validity_end_date}:{};

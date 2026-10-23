@@ -2,6 +2,13 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 23 octobre — Fusion nageurs avec suppression définitive (préparation TEST)
+
+- Besoin et évolution sensible explicitement approuvés dans la discussion : transférer toutes les performances et les liens sur la fiche conservée, supprimer définitivement le doublon et conserver l'audit. Aucune fusion réelle ni migration automatique des anciens doublons n'est autorisée par la recette technique.
+- Transferts et relecture sous les verrous existants, suppression de `nageurs` en dernier, reprise après réponse perdue/suppression déjà appliquée et panne du journal final. Toutes les saisons de licence sont transférées ; collision de saison refusée avant écriture. Les anciennes fusions terminées disposent d'une finalisation explicite, avec provenance du marqueur conservée ; les anciens journaux préparés incompatibles restent protégés pour reprise spécifique.
+- La correspondance technique d'identifiants reste pour les anciens liens publics, même si la fiche source n'existe plus. Les versions officielles Records/MPF et les sauvegardes ne sont pas réécrites. Aucune modification de droits, schéma/index, configuration Firebase ou collection ; aucun mail. Confirmations simple/groupée/finalisation actualisées, sans nouveau composant visuel.
+- Budget inchangé à l'ouverture et au rafraîchissement ; fusion bornée à 4 000 liens, 100 saisons, journal 500 Ko et plafond de 160 appels SQL service, plus trois lectures fixes de structure. Deux relectures fixes ajoutées ; résolution publique dédiée : trois requêtes bornées par fiche et deux par recherche numérique, recherche par nom inchangée. Tests hors réseau : toutes références natives prévues, temps conservés, fusions successives/redirections, chaque réponse d'écriture perdue, panne audit, conflit licences, recherche, droits, suppression et portail réussis. Vérification globale locale : 1 055 fichiers JS valides et suites NAP réussies, arrêt sur le test Bash du workflow backend sous Windows (`main / access`), sans modification de ce test. CI Linux et preuve TEST à compléter ; aucune validation utilisateur de la livraison déduite.
+
 ### 23 octobre — Documents comme rubrique nationale (validé sur TEST)
 
 - Retour utilisateur : remplacer les fenêtres documentaires superposées par une rubrique à part entière dans Administration nationale. Accès Documents dans le menu, bibliothèque et documents mis en avant dans la zone de travail du portail ; dépôt/modification/retrait intégrés à la page. Serveur, droits et blocage des mails TEST inchangés.
