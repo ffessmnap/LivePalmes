@@ -37,7 +37,7 @@ const router=portalCode.slice(portalCode.indexOf('  function requestedNavigation
      if(!input?.library)return {data:{documents:name==='getNationalFeaturedDocuments'?[fixture]:[],fingerprint:'a'.repeat(64)}};
      if(name==='notifyEngagementCompetitionDocuments')return {data:{disabled:true,test:true,recipientCount:10}};
      if(input.action==='list')return {data:{documents:window.testDeleted?[]:[fixture],nextAfterId:null,themes:[{id:2,label:'Comité'},{id:3,label:'Compétitions'},{id:4,label:'Entraîneurs'},{id:5,label:'Juges'},{id:6,label:'Haut niveau'}],types:[{id:3,label:'Divers'}],rubrics:[{id:47,label:'Actualités'}]}};
-     if(input.action==='detail')return {data:{document:fixture}};
+     if(input.action==='detail'){if(window.testHoldDetail)await new Promise(resolve=>window.testReleaseDetail=resolve);return {data:{document:fixture}};}
      if(input.action==='delete'){window.testDeleted=true;return {data:{ok:true,withdrawn:true}};}
      if(window.testHoldSave)await new Promise(resolve=>window.testReleaseSave=resolve);
      return {data:{ok:true,document:{...fixture,title:input.title}}};
@@ -99,8 +99,19 @@ const router=portalCode.slice(portalCode.indexOf('  function requestedNavigation
    await page.getByRole('link',{name:'Bibliothèque documentaire',exact:true}).click();
    await page.locator('#nationalLibraryAdd').waitFor({state:'visible'});
    assert.equal(await page.evaluate(()=>window.testCalls.filter(x=>x.input?.library).length),reads,'Returning to the cached library adds no reads');
-   await page.evaluate(()=>{window.testUid='other';window.testDeleted=false;window.testAuthChange();window.testUpdateNavigation();});
+   await page.evaluate(()=>{window.testHoldDetail=true;window.testDeleted=false;});
+   await page.getByRole('button',{name:'Actualiser',exact:true}).click();
+   await page.getByRole('button',{name:'Modifier',exact:true}).click();
+   await page.waitForFunction(()=>Boolean(window.testReleaseDetail));
+   await page.evaluate(()=>{window.testUid='other';window.testAuthChange();window.testUpdateNavigation();});
    await page.getByRole('button',{name:'Modifier',exact:true}).waitFor();
+   await page.getByRole('button',{name:'Ajouter un document',exact:true}).click();
+   await page.evaluate(()=>{window.testHoldDetail=false;window.testReleaseDetail();});
+   await page.locator('#nationalLibraryFile').setInputFiles({name:'autre.pdf',mimeType:'application/pdf',buffer:Buffer.from('%PDF-1.4\nFixture')});
+   await page.locator('#nationalLibraryName').fill('Document du nouveau compte');await page.getByLabel('Comité',{exact:true}).check();
+   await page.getByRole('button',{name:'Mettre en ligne',exact:true}).click();
+   await page.getByText('Document enregistré. Aucun mail demandé.',{exact:true}).waitFor();
+   assert.equal(await page.evaluate(()=>window.testCalls.filter(x=>x.name==='saveNationalFeaturedDocuments').at(-1).input.action),'upload','A stale detail response cannot change the new account’s upload into an update');
    await page.getByRole('button',{name:'Ajouter un document',exact:true}).click();
    await page.evaluate(()=>{window.testNational=false;window.testAuthChange();window.testUpdateNavigation();});
    assert.equal(await page.locator('#nationalLibraryPanel').isVisible(),false);
