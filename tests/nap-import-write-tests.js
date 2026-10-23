@@ -47,6 +47,7 @@ function fixture({denied=false,lock=true,triggers=false,lost="",withRelay=false}
  return {state,writer};
 }
 (async()=>{
+ const zip=fixture();await assert.rejects(()=>zip.writer({data:{...input,sourceType:"winpalme-zip-preview"}}),/aperçu/);assert.equal(zip.state.pools,0);assert.equal(zip.state.writes,0);
  let f=fixture();const result=await f.writer({data:input});assert.equal(result.source,"nap");assert.equal(f.state.writes,2);assert.equal(f.state.rows[0].id,1000);assert.equal(f.state.rows[0].tps,"014100");assert.equal(f.state.lines.length,3);assert.equal(f.state.journal.status,"completed");assert.equal(f.state.locked,false);assert.equal(f.state.released,1);assert.ok(f.state.pointer.currentImportId);
  await f.writer({data:input});assert.equal(f.state.writes,2,"completed retry does not duplicate results");assert.equal(f.state.previews,1);
  await assert.rejects(()=>f.writer({data:{...input,fileName:"changed.txt"}}),/autre contenu/);assert.equal(f.state.writes,2);

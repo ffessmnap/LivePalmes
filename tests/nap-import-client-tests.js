@@ -11,6 +11,7 @@ function fixture({replacement=false,checked=false,lost=false}={}) {
  vm.runInNewContext(section,context);return {context,calls,button,messages};
 }
 (async()=>{
+ let zip=fixture();zip.context.currentPayload.sourceType="winpalme-zip-preview";await zip.context.saveNativeImport();assert.equal(zip.calls.length,0);
  let f=fixture({replacement:true});await f.context.saveNativeImport();assert.equal(f.calls.length,0);assert.match(f.messages[0],/retraits/);
  f=fixture({replacement:true,checked:true,lost:true});await f.context.saveNativeImport();assert.equal(f.button.disabled,false);await f.context.saveNativeImport();assert.equal(f.calls.length,2);assert.deepEqual(f.calls[0],f.calls[1]);assert.equal(f.calls[1].confirmReplacement,true);assert.equal(f.context.currentPreview.canConfirm,false);
  f=fixture();await f.context.saveNativeImport();assert.equal(f.calls[0].expectedFingerprint,"before");assert.equal(f.calls[0].previewFingerprint,"preview");assert.equal(f.calls[0].fileName,"results.txt");assert.equal(f.calls.length,1,"no legacy publication worker request");
