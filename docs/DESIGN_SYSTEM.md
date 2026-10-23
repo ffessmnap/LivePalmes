@@ -2,6 +2,10 @@
 
 <!-- description: Référence du langage visuel, des composants d’interface et des règles responsive déjà présents dans LivePalmes. -->
 
+## Aperçu ZIP des résultats — 23 octobre 2026
+
+Dans la fenêtre d’import du portail, une carte existante présente la compétition, les compteurs TXT, les chemins des deux fichiers retenus et la date du dernier protocole. Les chemins longs reviennent à la ligne ; les actions de consultation PDF locale et de téléchargement du rapport utilisent les boutons existants avec retour à la ligne sur mobile. Le mode « aperçu uniquement » reste visible dans la carte et le bilan national, avec action d’enregistrement désactivée même lorsque les rapprochements sont contrôlés. Les choix temporaires et l’absence de publication sont indiqués dans le parcours.
+
 ## Gestion documentaire nationale — 22 octobre 2026
 
 Le dialogue Bibliothèque documentaire reprend le dialogue natif et les lignes de documents existants : largeur maximale 880 px, hauteur limitée à la fenêtre et défilement interne. Le formulaire conserve l’ordre fichier, titre, description, rubriques multiples, type, classement détaillé, notification facultative et actions. Type/classement sont sur deux colonnes, puis une sous 600 px. Les rubriques ont des cibles tactiles de 44 px ; les cases restent à 18 px sans étirement. Les titres longs se replient. Le bouton de sauvegarde et l’annulation restent accessibles par défilement, y compris à 320 px. Les messages utilisent un statut annoncé ; les actions sont désactivées pendant l’enregistrement.

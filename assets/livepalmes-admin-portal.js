@@ -2946,7 +2946,8 @@
         ["performances/public/data/performance-public/version.js", "adminImportVersionScript"]
       ];
       await Promise.all(scripts.map(([src, id]) => loadScriptOnce(src, id)));
-      await loadScriptOnce("performances/public/import-competitions.js?v=20261015-server-filters-1", "adminImportModuleScript");
+      await loadScriptOnce("performances/public/winpalme-zip.js?v=20261023-zip-preview-1", "adminImportZipScript");
+      await loadScriptOnce("performances/public/import-competitions.js?v=20261023-zip-preview-1", "adminImportModuleScript");
       if (includeSpreadsheet) await loadImportSpreadsheet();
       watchImportWorkbench();
     })().catch((error) => {

@@ -15,6 +15,7 @@
     dialogCancel: document.querySelector("#competitionImportDialogCancel"),
     form: document.querySelector("#competitionImportForm"),
     file: document.querySelector("#competitionImportFile"),
+    zipPreview: document.querySelector("#competitionZipPreview"),
     encoding: document.querySelector("#competitionImportEncoding"),
     encodingLabel: document.querySelector("label:has(#competitionImportEncoding)"),
     message: document.querySelector("#competitionImportMessage"),
@@ -118,6 +119,9 @@
   let importsCache = [];
   let importsLoadPromise = null;
   let spreadsheetLoadPromise = null;
+  let currentZipSelection = null;
+  let currentZipPdfUrl = "";
+  let previewRequestId = 0;
   let importsVisibleCount = 5;
   const importProgressControllers = new Map();
   let importControlsLocked = false;
@@ -1133,6 +1137,10 @@
 
   function updateView(status = {}) {
     const signedIn = Boolean(status.signedIn);
+    if (!signedIn && currentZipSelection) {
+      previewRequestId++; clearZipSelection(); currentPreview = null; currentPayload = null;
+      if (elements.preview) elements.preview.hidden = true;
+    }
     const superAdmin = signedIn && isSuperAdmin(status);
     const authView = elements.loginPanel ? document.body : document.querySelector("#adminImportView");
     if (authView) authView.dataset.adminAuth = signedIn ? "unlocked" : "locked";
@@ -1244,6 +1252,11 @@
   }
 
   async function buildPreviewPayload(file) {
+    if (/\.zip$/i.test(file.name)) {
+      if (!global.LivePalmesWinPalmeZip) throw new Error("Lecteur ZIP indisponible. Rechargez le portail.");
+      const zipSelection = await global.LivePalmesWinPalmeZip.read(file, elements.encoding?.value || "utf-8");
+      return { sourceType: "winpalme-zip-preview", fileName: zipSelection.manifest.textPath.split('/').pop(), rawText: zipSelection.rawText, zipSelection };
+    }
     if (isExcelFile(file)) {
       return {
         sourceType: "international-xlsx",
@@ -1286,7 +1299,13 @@
     return "Non renseigne";
   }
 
-  function updateFileMode() {
+  function updateFileMode(invalidate = false) {
+    if (invalidate === true) {
+      previewRequestId++;
+      clearZipSelection();
+      currentPreview = null; currentPayload = null; nativeImportOperation = null;
+      if (elements.preview) elements.preview.hidden = true;
+    }
     const file = elements.file?.files?.[0];
     const excel = isExcelFile(file);
     if (elements.encoding) elements.encoding.disabled = excel;
@@ -1294,7 +1313,36 @@
     if (excel) void ensureSpreadsheetReader().catch(() => {});
   }
 
+  function clearZipSelection() {
+    if (currentZipPdfUrl) global.URL.revokeObjectURL(currentZipPdfUrl);
+    currentZipPdfUrl = ""; currentZipSelection = null;
+    if (elements.zipPreview) { elements.zipPreview.hidden = true; elements.zipPreview.innerHTML = ""; }
+  }
+
+  function renderZipSelection() {
+    if (!currentZipSelection || !elements.zipPreview) return;
+    const m = currentZipSelection.manifest, c = m.counts;
+    currentZipPdfUrl = global.URL.createObjectURL(currentZipSelection.pdf);
+    elements.zipPreview.hidden = false;
+    elements.zipPreview.innerHTML = `<h4>ZIP WinPalme — aperçu uniquement</h4>
+      <p><strong>${escapeHtml(m.name)}</strong> — ${escapeHtml(m.date)} — ${escapeHtml(m.wid)}</p>
+      <p>${c.swimmers} nageurs, ${c.clubs} clubs, ${c.individual} résultats individuels et ${c.relays} relais. ${c.timed} lignes avec statut nagé, ${c.statuses} autres statuts à contrôler.</p>
+      <p>TXT retenu : <span>${escapeHtml(m.textPath)}</span><br>Dernier protocole : <span>${escapeHtml(m.pdfPath)}</span><br>${escapeHtml(m.pdfDate)} — ${m.protocolVersions} version(s) disponible(s).</p>
+      <p>Le ZIP et le PDF restent dans cette fenêtre. Seul le TXT est transmis pour le rapprochement en lecture seule avec NAP. Les choix sont temporaires ; téléchargez le rapport avant de fermer.</p>
+      <div class="admin-portal-actions"><a class="ghost-button" href="${escapeHtml(currentZipPdfUrl)}" target="_blank" rel="noopener">Consulter le protocole PDF</a><button type="button" class="ghost-button" data-zip-report>Télécharger le rapport de contrôle</button></div>`;
+    elements.zipPreview.querySelector('[data-zip-report]').onclick = () => {
+      if (currentPreview?.source === 'nap') collectNativeImportChoices();
+      downloadJson('controle-import-winpalme.json', {
+        format: 'livepalmes-zip-review-v1', generatedAt: new Date().toISOString(), previewOnly: true,
+        manifest: m, choices: currentPayload ? Object.fromEntries(['competitionId','swimmerBindings','memberBindings','clubBindings','excludedSourceLines'].map(k => [k, currentPayload[k] ?? null])) : null,
+        review: currentPreview, reviewReady: currentPreview?.reviewReady === true
+      });
+    };
+  }
+
   function resetImportDialog() {
+    previewRequestId++;
+    clearZipSelection();
     currentFile = null;
     currentRawText = "";
     currentPayload = null;
@@ -1320,6 +1368,7 @@
   function closeImportDialog() {
     if (importControlsLocked || !elements.dialog?.open) return;
     elements.dialog.close();
+    resetImportDialog();
   }
 
   function previewPerformances(result = currentPreview) {
@@ -1435,7 +1484,7 @@
       if (input.checked) excluded.add(line); else excluded.delete(line);
     });
     currentPayload.excludedSourceLines = [...excluded];
-    if (previous !== JSON.stringify(currentPayload)) currentPreview.canConfirm = false;
+    if (previous !== JSON.stringify(currentPayload)) { previewRequestId++; currentPreview.canConfirm = false; currentPreview.reviewReady = false; }
   }
   function renderNativeImportPreview(result, page = 0) {
     currentPreview = result;
@@ -1448,7 +1497,7 @@
     if (elements.sample) elements.sample.closest('.import-table-wrap').hidden = true;
     elements.sample.innerHTML = '';
     const metadata = result.metadata || {};
-    elements.summary.textContent = `${metadata.competitionName || 'Résultats WinPalme'} — ${metadata.date || ''} — ${result.rows.length} lignes à contrôler`;
+    elements.summary.textContent = `${metadata.competitionName || 'Résultats WinPalme'} — ${metadata.date || ''} — ${result.rows.length} lignes à contrôler${result.previewOnly ? ' — contrôle national sans enregistrement' : ''}`;
     const input = (attribute, parts, value = '') => `<input type="text" inputmode="numeric" ${attribute}="${escapeHtml(JSON.stringify(parts))}" value="${escapeHtml(value)}" aria-label="Identifiant NAP" placeholder="Identifiant NAP">`;
     const unresolved = new Map((result.unresolved || []).map(r => [r.sourceLine, r]));
     const members = result.unresolvedMembers || [];
@@ -1460,39 +1509,46 @@
         const saved = (currentPayload.memberBindings || []).find(b => b.sourceLine === m.sourceLine && b.position === m.position);
         return `<label>Relayeur ${m.position} ${input('data-nap-member', [m.sourceLine, m.position], saved?.swimmerId)}</label>`;
       }).join(' ');
-      return `<p class="nap-import-review-row"><strong>Ligne ${row.sourceLine} : ${escapeHtml([row.lastName, row.firstName, row.course, row.clubCode, row.time || row.status].filter(Boolean).join(' — '))}</strong>
+      return `<p class="nap-import-review-row"><strong>Ligne ${row.sourceLine} : ${escapeHtml([row.lastName, row.firstName, row.course, row.clubCode, row.status === 'NAG' ? row.time : row.status || 'Sans résultat'].filter(Boolean).join(' — '))}</strong>
         ${person ? `<label>Fiche nageur ${input('data-nap-swimmer', [row.sourceLine], binding?.swimmerId)}</label><small>Fiches possibles : ${escapeHtml(person.candidateIds?.join(', ') || 'aucune ; créer la fiche dans Mes nageurs si nécessaire')}</small>` : ''}${memberControls}
         ${!row.status && !row.time ? `<label><input type="checkbox" data-nap-exclude="${row.sourceLine}" ${(currentPayload.excludedSourceLines || []).includes(row.sourceLine) ? 'checked' : ''}> Écarter explicitement cette ligne sans résultat</label>` : ''}</p>`;
     }).join('');
     const diff = result.diff;
     const removals = diff?.removals || [];
     const issues = result.issues || [], clubs = result.unresolvedClubs || [];
-    const issueLabels = {'competition-date-mismatch':'La date du fichier diffère de celle de la compétition.', 'competition-pool-mismatch':'La longueur de bassin diffère de celle de la compétition.', 'competition-timing-mismatch':'Le chronométrage du fichier manque ou diffère de celui de la compétition.', 'invalid-points-or-rank':'Les points ou le classement sont invalides.', 'duplicate-relay-member':'Un nageur apparaît deux fois dans le même relais.', 'unsupported-course':'Cette course n’est pas reconnue.', 'multiple-competitions':'Le fichier contient plusieurs compétitions.', 'unsupported-record':'Cette ligne du fichier n’est pas reconnue.', 'incomplete-result':'La ligne de résultat est incomplète.', 'unknown-status':'Le statut du résultat manque ou n’est pas reconnu.', 'missing-or-invalid-final-time':'Le temps final manque ou est invalide.', 'missing-result-reference':'Le club, la course ou la catégorie manque.', 'incomplete-swimmer-identity':'L’identité du nageur est incomplète.', 'missing-competition':'La date ou le nom de la compétition manque.'};
+    const issueLabels = {'competition-date-mismatch':'La date du fichier diffère de celle de la compétition.', 'competition-pool-mismatch':'La longueur de bassin diffère de celle de la compétition.', 'competition-timing-mismatch':'Le chronométrage du fichier manque ou diffère de celui de la compétition.', 'invalid-points-or-rank':'Les points ou le classement sont invalides.', 'duplicate-relay-member':'Un nageur apparaît deux fois dans le même relais.', 'unsupported-course':'La correspondance de cette épreuve avec NAP doit être vérifiée (notamment les codes LD en eau libre).', 'native-duration-review-required':'Le temps avec heures est lisible dans le fichier ; son encodage NAP doit être vérifié avant tout import.', 'multiple-competitions':'Le fichier contient plusieurs compétitions.', 'unsupported-record':'Cette ligne du fichier n’est pas reconnue.', 'incomplete-result':'La ligne de résultat est incomplète.', 'unknown-status':'Le statut du résultat manque ou n’est pas reconnu.', 'missing-or-invalid-final-time':'Le temps final manque ou est invalide.', 'missing-result-reference':'Le club, la course ou la catégorie manque.', 'incomplete-swimmer-identity':'L’identité du nageur est incomplète.', 'missing-competition':'La date ou le nom de la compétition manque.'};
     const totalPages = Math.max(1, Math.ceil(Math.max(result.rows.length, removals.length, issues.length, clubs.length) / 100));
     elements.warnings.innerHTML = `
       ${result.requiresCompetitionChoice ? `<label>Compétition existante <select data-nap-competition><option value="">Choisir la compétition</option>${result.competitions.map(c => `<option value="${Number(c.id)}">${escapeHtml(`${c.id} — ${c.libelle} — ${c.lieu}`)}</option>`).join('')}</select></label><p>Si la compétition manque, créez-la dans le calendrier avant l’import.</p>` : `<p>Compétition NAP : ${escapeHtml(result.competition?.libelle || '')} (${Number(result.competition?.id)})</p>`}
       ${issues.slice(page * 100, (page + 1) * 100).map(i => `<p>${i.sourceLine ? `Ligne ${Number(i.sourceLine)} : ` : ''}${escapeHtml(issueLabels[i.code] || i.code)}</p>`).join('')}
-      ${clubs.slice(page * 100, (page + 1) * 100).map(c => `<label>Club ${escapeHtml(c.code)} : ${input('data-nap-club', [c.code], (currentPayload.clubBindings || []).find(b => b.code === c.code)?.clubId)}</label>`).join('')}
+      ${clubs.slice(page * 100, (page + 1) * 100).map(c => {
+        const source = (result.sourceClubs || []).find(s => s.code === c.code);
+        const candidates = (result.clubs || []).filter(s => s.code?.trim().toUpperCase() === c.code.toUpperCase());
+        return `<label>Club ${escapeHtml(c.code)} : ${input('data-nap-club', [c.code], (currentPayload.clubBindings || []).find(b => b.code === c.code)?.clubId)}</label><p>Source : ${escapeHtml(source?.name || '')} — numéro fédéral ${escapeHtml(source?.federalNumber || 'absent')}. Correspondances par abréviation : ${escapeHtml(candidates.map(s => `${s.id} : ${s.name} (${s.federalNumber || 'numéro absent'})`).join(' ; ') || 'aucune')}. Vérifiez le club représenté à la compétition.</p>`;
+      }).join('')}
       ${controls}
       ${diff ? `<p>Individuels : ${diff.summary.individual.additions} ajout(s), ${diff.summary.individual.removals} retrait(s), ${diff.summary.individual.unchanged} conservé(s). Relais : ${diff.summary.relays.additions} ajout(s), ${diff.summary.relays.removals} retrait(s), ${diff.summary.relays.unchanged} conservé(s). Statuts sans temps valable : ${diff.summary.statuses}. Lignes écartées : ${diff.summary.excluded}.</p>` : ''}
       ${removals.slice(page * 100, (page + 1) * 100).map(r => `<p>Retrait : ${escapeHtml(`${r.kind} #${r.id} — nageur ${r.swimmerId || 'relais'} — ${r.course} — ${r.time} — club ${r.clubId}`)}</p>`).join('')}
       <p>Page ${page + 1} / ${totalPages}</p><div class="admin-portal-actions"><button type="button" class="ghost-button" data-nap-previous ${page === 0 ? 'disabled' : ''}>Précédent</button> <button type="button" class="ghost-button" data-nap-next ${page + 1 >= totalPages ? 'disabled' : ''}>Suivant</button>
       <button type="button" class="ghost-button" data-nap-refresh>Actualiser l’aperçu avec mes choix</button></div>
       ${diff?.requiresReplacementConfirmation ? '<label><input type="checkbox" data-nap-replacement> Je confirme les retraits affichés et le remplacement. L’ancienne version sera sauvegardée.</label>' : ''}
-      <button type="button" class="primary-button" data-nap-save ${result.canConfirm ? '' : 'disabled'}>Enregistrer les résultats dans NAP</button>`;
+      ${result.previewOnly ? `<p role="status">${result.reviewReady ? 'Rapprochements contrôlés pour cet aperçu. Aucun résultat ni PDF enregistré.' : 'Contrôle national en cours : les alertes doivent être résolues puis l’aperçu actualisé.'} L’enregistrement du ZIP reste désactivé.</p>` : ''}
+      <button type="button" class="primary-button" data-nap-save ${result.canConfirm && !result.previewOnly ? '' : 'disabled'}>${result.previewOnly ? 'Aperçu uniquement — enregistrement désactivé' : 'Enregistrer les résultats dans NAP'}</button>`;
     elements.warnings.querySelector('[data-nap-previous]').onclick = () => { collectNativeImportChoices(); renderNativeImportPreview(result, page - 1); };
     elements.warnings.querySelector('[data-nap-next]').onclick = () => { collectNativeImportChoices(); renderNativeImportPreview(result, page + 1); };
     elements.warnings.querySelector('[data-nap-refresh]').onclick = async () => {
       collectNativeImportChoices(); nativeImportOperation = null;
-      try { renderNativeImportPreview(await callFunction('previewCompetitionImport', currentPayload)); }
-      catch (error) { setMessage(elements.message, error.message || String(error)); }
+      const requestId = ++previewRequestId;
+      try { const response = await callFunction('previewCompetitionImport', currentPayload); if (requestId === previewRequestId) renderNativeImportPreview(response); }
+      catch (error) { if (requestId === previewRequestId) setMessage(elements.message, error.message || String(error)); }
     };
     elements.warnings.querySelector('[data-nap-save]').onclick = saveNativeImport;
     elements.warnings.querySelectorAll('input, select').forEach(control => control.addEventListener('change', () => {
-      if (!control.hasAttribute('data-nap-replacement')) elements.warnings.querySelector('[data-nap-save]').disabled = true;
+      if (!control.hasAttribute('data-nap-replacement')) { collectNativeImportChoices(); elements.warnings.querySelector('[data-nap-save]').disabled = true; }
     }));
   }
   async function saveNativeImport() {
+    if (currentPayload?.sourceType === 'winpalme-zip-preview' || currentPreview?.previewOnly) return;
     if (!currentPreview?.canConfirm || !currentPayload) return;
     const replace = Boolean(elements.warnings.querySelector('[data-nap-replacement]')?.checked);
     if (currentPreview.diff?.requiresReplacementConfirmation && !replace) { setMessage(elements.message, 'Confirmez explicitement les retraits avant de continuer.'); return; }
@@ -1624,10 +1680,12 @@
     event?.preventDefault?.();
     const file = elements.file?.files?.[0];
     if (!file) {
-      setMessage(elements.message, "Choisis un fichier TXT ou XLSX.");
+      setMessage(elements.message, "Choisis un ZIP WinPalme, un TXT ou un XLSX.");
       return;
     }
     currentFile = file;
+    const requestId = ++previewRequestId;
+    clearZipSelection();
     startImportProgress(
       "Analyse du fichier en cours...",
       "Lecture du fichier et contrôle des performances. Cette étape peut prendre quelques instants.",
@@ -1635,17 +1693,23 @@
     );
     elements.preview.hidden = true;
     try {
-      currentPayload = await buildPreviewPayload(file);
+      const { zipSelection, ...payload } = await buildPreviewPayload(file);
+      if (requestId !== previewRequestId) return;
+      currentPayload = payload;
+      currentZipSelection = zipSelection || null;
+      renderZipSelection();
       nativeImportOperation = null;
       currentRawText = currentPayload.rawText || "";
       const result = await callFunction("previewCompetitionImport", currentPayload);
+      if (requestId !== previewRequestId) return;
       renderPreview(result);
       finishImportProgress(
         "success",
         "Prévisualisation prête",
-        `${result.summary?.importedPerformances || 0} performances importables. Contrôlez les informations avant de valider l'import.`
+        result.previewOnly ? `${result.rows?.length || 0} lignes à contrôler par l’administration nationale. Aucun résultat ni PDF enregistré.` : `${result.summary?.importedPerformances || 0} performances importables. Contrôlez les informations avant de valider l'import.`
       );
     } catch (error) {
+      if (requestId !== previewRequestId) return;
       currentPreview = null;
       currentPayload = null;
       finishImportProgress("error", "Analyse impossible", error?.message || String(error));
@@ -2315,7 +2379,8 @@
     updateView(auth?.status?.() || {});
     elements.loginForm?.addEventListener("submit", signIn);
     elements.signOut?.addEventListener("click", signOut);
-    elements.file?.addEventListener("change", updateFileMode);
+    elements.file?.addEventListener("change", () => updateFileMode(true));
+    elements.encoding?.addEventListener("change", () => updateFileMode(true));
     elements.dialogOpen?.addEventListener("click", openImportDialog);
     elements.dialogClose?.addEventListener("click", closeImportDialog);
     elements.dialogCancel?.addEventListener("click", closeImportDialog);

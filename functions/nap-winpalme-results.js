@@ -19,6 +19,12 @@ function date(value) {
   const parsed = new Date(`${iso}T00:00:00Z`);
   return Number.isFinite(parsed.getTime()) && parsed.toISOString().slice(0,10) === iso ? iso : "";
 }
+function hourDuration(value) {
+  const match=/^(\d{1,2}) (\d{2}):(\d{2})[.,](\d{2})$/.exec(value);
+  if(!match || Number(match[2])>59 || Number(match[3])>59)return null;
+  const result=((Number(match[1])*60+Number(match[2]))*60+Number(match[3]))*100+Number(match[4]);
+  return result>0?result:null;
+}
 function decodeWinPalmeResults(raw) {
   if (typeof raw !== "string" || Buffer.byteLength(raw,"utf8") > MAX_BYTES || raw.includes("\0")) throw new TypeError("Fichier WinPalme invalide ou trop volumineux.");
   const text = raw.replace(/^\uFEFF/,""), lines = text.split(/\r?\n/);
@@ -53,7 +59,7 @@ function decodeWinPalmeResults(raw) {
     rows.push(row);
     if (cells.length < (relay?20:21)) issue(sourceLine,"incomplete-result");
     if (!STATUSES.has(status)) issue(sourceLine,"unknown-status");
-    if (status === "NAG" && !time) issue(sourceLine,"missing-or-invalid-final-time");
+    if (status === "NAG" && !time) issue(sourceLine,hourDuration(rawFinalTime)!==null?"native-duration-review-required":"missing-or-invalid-final-time");
     if (!row.clubCode || !row.course || !row.category) issue(sourceLine,"missing-result-reference");
     if (!relay && (!row.lastName || !row.firstName || !row.birthDate || !["M","F"].includes(row.sex))) issue(sourceLine,"incomplete-swimmer-identity");
   }

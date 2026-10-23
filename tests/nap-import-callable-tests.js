@@ -5,7 +5,7 @@ const endings={previewCompetitionImport:"  const parsed = parseCompetitionImport
 class HttpsError extends Error {constructor(code,message){super(message);this.code=code;}}
 function fixture() {
  const trace=[],exports={};
- const authorize=request=>{trace.push("auth");if(!request.auth?.uid)throw new HttpsError("permission-denied","denied");return{uid:request.auth.uid};};
+ const authorize=request=>{trace.push("auth");if(!request.auth?.uid)throw new HttpsError("permission-denied","denied");return{uid:request.auth.uid,national:request.auth.uid==="national"};};
  const context={exports,COMPETITION_IMPORT_CALLABLE_OPTIONS:{},onCall:(_,handler)=>handler,ENVIRONMENT:{sportingDataSource:"nap",projectId:"livepalmes"},assertCapability:authorize,authorizeNativePerformance:authorize,HttpsError,process:{env:{LIVEPALMES_NAP_PASSWORD:"fixture"}},nativePerformanceFailure:error=>new HttpsError("unavailable","Native operation interrupted"),
  db:new Proxy({},{get(){throw Error("Legacy sporting Firebase accessed");}}),require:name=>{
   if(name==="./nap-portal-swimmers")return{portalPool:()=>{trace.push("pool");return{};}};
@@ -27,5 +27,8 @@ function fixture() {
   f=fixture();await assert.rejects(()=>f.exports[name]({data:{}}),error=>error.code==="permission-denied");assert.ok(!f.trace.includes("pool"));
  }
  const f=fixture();await assert.rejects(()=>f.exports.previewCompetitionImport({auth:{uid:"importer"},data:{sourceType:"international-xlsx"}}),error=>error.code==="failed-precondition");assert.ok(!f.trace.includes("pool"));
+ const denied=fixture();await assert.rejects(()=>denied.exports.previewCompetitionImport({auth:{uid:"importer"},data:{sourceType:"winpalme-zip-preview"}}),error=>error.code==="permission-denied");assert.ok(!denied.trace.includes("pool"));
+ const national=fixture(),zipPreview=await national.exports.previewCompetitionImport({auth:{uid:"national"},data:{sourceType:"winpalme-zip-preview"}});assert.equal(zipPreview.previewOnly,true);assert.equal(zipPreview.canConfirm,false);assert.ok(!national.trace.includes("write"));
+ const zipWrite=fixture();await assert.rejects(()=>zipWrite.exports.createCompetitionImport({auth:{uid:"national"},data:{sourceType:"winpalme-zip-preview"}}),error=>error.code==="failed-precondition");assert.ok(!zipWrite.trace.includes("pool"));
  console.log("NAP import callables: native-only TEST preview/write/history, authorization before pool and deferred Excel refusal verified.");
 })().catch(error=>{console.error(error);process.exitCode=1;});
