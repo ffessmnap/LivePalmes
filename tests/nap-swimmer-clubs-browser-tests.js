@@ -38,6 +38,7 @@ const submit=source.slice(source.indexOf("  async function submitEngagementSwimm
   await page.evaluate(()=>openEngagementSwimmerCorrectionDialog(window.fixtureSwimmer,"request"));assert.equal(await licence.evaluate(el=>el.readOnly),true);await page.keyboard.press("Escape");
   await page.evaluate(()=>{window.choicePromise=LivePalmesSwimmerClubs.getTools(callFunction).chooseFinalClub({target:fixtureSwimmer,sources:[{...fixtureSwimmer,clubId:"107"}]});});
   const select=page.getByRole("combobox",{name:"Club du nageur",exact:true});assert.equal(await select.inputValue(),"");
+  await page.getByText("Les clubs historiques reconnus sont conservés. Si le club d’une performance est inconnu, celui de sa fiche d’origine sera enregistré avant la fusion.",{exact:true}).waitFor();
   await select.selectOption("108");await page.screenshot({path:path.join(out,`merge-${width}.png`)});await page.getByRole("button",{name:"Continuer",exact:true}).click();
   assert.equal((await page.evaluate(()=>window.choicePromise)).clubId,"108");assert.deepEqual(await page.evaluate(()=>testCalls),["listEngagementNationalClubs"]);
   await page.evaluate(()=>{window.cancelChoice=LivePalmesSwimmerClubs.getTools(callFunction).chooseFinalClub({target:fixtureSwimmer,sources:[]});});await page.getByRole("button",{name:"Annuler",exact:true}).click();assert.equal(await page.evaluate(()=>window.cancelChoice),null);

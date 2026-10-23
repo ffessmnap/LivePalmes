@@ -250,6 +250,7 @@ if (ENVIRONMENT.projectId === "livepalmes-test") {
     response.set("Cache-Control", "no-store");
     const indexOperation = request.method === "POST" && request.query.action === "approved-index";
     const swimmerCorrection = request.method === "POST" && request.query.action === "approved-swimmer-correction";
+    const noraClubs = request.method === "POST" && request.query.action === "approved-nora-performance-clubs";
     const portalSchema = request.method === "POST" && request.query.action === "approved-portal-schema";
     const closureSchema = request.method === "POST" && request.query.action === "approved-closure-schema";
     const peopleSchema = request.method === "POST" && request.query.action === "approved-people-schema";
@@ -257,10 +258,15 @@ if (ENVIRONMENT.projectId === "livepalmes-test") {
     const dtnSettings = request.method === "POST" && request.query.action === "approved-dtn-settings";
     const homeRefresh = request.method === "POST" && request.query.action === "home-events-refresh";
     if (request.method === "GET" && request.query.action === "home-events-refresh") { response.status(405).json({ error: "Methode interdite." }); return; }
-    if (request.method !== "GET" && !indexOperation && !swimmerCorrection && !portalSchema && !closureSchema && !peopleSchema && !dtnSchema && !dtnSettings && !homeRefresh || request.method === "GET" && ["approved-index", "approved-swimmer-correction", "approved-portal-schema", "approved-closure-schema", "approved-people-schema", "approved-dtn-schema", "approved-dtn-settings"].includes(request.query.action)) { response.status(405).json({ error: "Methode interdite." }); return; }
+    if (request.method !== "GET" && !indexOperation && !swimmerCorrection && !noraClubs && !portalSchema && !closureSchema && !peopleSchema && !dtnSchema && !dtnSettings && !homeRefresh || request.method === "GET" && ["approved-index", "approved-swimmer-correction", "approved-nora-performance-clubs", "approved-portal-schema", "approved-closure-schema", "approved-people-schema", "approved-dtn-schema", "approved-dtn-settings"].includes(request.query.action)) { response.status(405).json({ error: "Methode interdite." }); return; }
     try {
       if (!napPool) napPool = createNapPool(napPassword.value());
-      const data = dtnSettings ? await require("./nap-dtn-settings-migration").migrateDtnSettings(napPool, db, request.body)
+      const data = noraClubs ? await require("./nap-nora-performance-clubs").repair(napPool, request.body, {
+        readDocument: async id => { const doc = await db.collection("auditLogs").doc(id).get(); return doc.exists ? doc.data() : null; },
+        read: async () => { const doc = await db.collection("auditLogs").doc("nap-nora-13787-performance-clubs-20261024-before").get(); return doc.exists ? doc.data().target : null; },
+        prepare: target => db.collection("auditLogs").doc("nap-nora-13787-performance-clubs-20261024-before").create({ action: "nap.performanceClubs.authorizedRepair.prepare", actorUid: "github-livepalmes-test-backend", target, createdAt: new Date().toISOString() }),
+        complete: target => writeAuditLogOnce("nap.performanceClubs.authorizedRepair.complete", "github-livepalmes-test-backend", target, "nap-nora-13787-performance-clubs-20261024")
+      }) : dtnSettings ? await require("./nap-dtn-settings-migration").migrateDtnSettings(napPool, db, request.body)
         : dtnSchema ? await require("./nap-approved-dtn-schema").approvedDtnSchema(napPool, request.body)
         : peopleSchema ? await require("./nap-approved-people-schema").approvedPeopleSchema(napPool, request.body)
         : closureSchema ? await require("./nap-approved-closure-schema").approvedClosureSchema(napPool, request.body)
@@ -297,7 +303,7 @@ if (ENVIRONMENT.projectId === "livepalmes-test") {
           : await readExportPage(napPool, request.query);
       response.json(data);
     } catch (error) {
-      response.status(error instanceof TypeError ? 400 : 503).json({ error: "Export NAP indisponible." });
+      response.status(error instanceof TypeError ? 400 : 503).json({ error: noraClubs && (error instanceof TypeError || error instanceof RangeError) ? error.message : "Export NAP indisponible." });
     }
   });
 }

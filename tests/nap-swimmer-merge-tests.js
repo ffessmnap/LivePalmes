@@ -27,7 +27,7 @@ function fixture(failAfter=0,historic=false){
     if(sql.includes("GET_LOCK"))return [[{acquired:1}]];
     if(sql.includes("RELEASE_LOCK"))return [[{released:1}]];
     if(sql.includes("information_schema.TRIGGERS")||sql.startsWith("SELECT id FROM forfait"))return [[]];
-    if(sql.startsWith("SELECT num_club"))return [[{num_club:107,abre_club:"FIC",nom_club:"Club fictif"}]];
+    if(sql.startsWith("SELECT num_club"))return [sql.includes(" IN (")?[106,107,999].filter(id=>values.includes(id)).map(num_club=>({num_club,abre_club:"FIC",nom_club:"Club fictif"})):[{num_club:107,abre_club:"FIC",nom_club:"Club fictif"}]];
     if(sql.startsWith("SELECT id FROM nageurs"))return [[]];
     if(sql.startsWith("SELECT")&&sql.includes("FROM nageurs FORCE INDEX"))return [structuredClone(state.nageurs)];
     if(sql.startsWith("SELECT swimmer_id,target_id"))return [structuredClone(state.livepalmes_swimmer_merges.filter(row=>values.includes(row.swimmer_id)))];
@@ -60,6 +60,7 @@ function fixture(failAfter=0,historic=false){
   const normal=fixture();const result=await service.mergeSwimmers(normal.pool,normal.input,normal.audit,async()=>{});
   assert.equal(result.sourceDeleted,true);assert.equal(normal.state.nageurs.some(row=>row.id===12),false);assert.equal(result.licenseSeasonTransferCount,1);assert.equal(normal.state.nageurs.find(row=>row.id===13).number,"A-05-222647");assert.equal(normal.state.livepalmes_swimmer_license_seasons[0].swimmer_id,13);assert.equal(normal.state.livepalmes_swimmer_license_seasons[0].status,"valid");
   assert.equal(normal.state.perfs[0].tps,"14200");assert.equal(normal.state.perfs[0].nageur,13);assert.equal(normal.state.engagements.length,2);assert.equal(normal.state.engagements.find(row=>row.id===6).engagement,3);assert.equal(normal.state.nageursengager.length,1);
+  assert.equal(normal.state.perfs[0].club,"106");assert.equal(normal.state.perfs_relais[0].club,"106");assert.equal(result.historicalClubUpdateCount,2);
   const total=normal.stats().writes;await service.mergeSwimmers(normal.pool,normal.input,normal.audit,async()=>{});assert.equal(normal.stats().writes,total);
   for(const spec of plans.TABLES.filter(spec=>spec.table!=="engagements"))assert.ok(normal.state[spec.table].every(row=>spec.fields.every(field=>Number(row[field])!==12)),spec.table);
   assert.equal(normal.state.livepalmes_swimmer_merges.find(row=>row.swimmer_id===11).target_id,13);
