@@ -4,11 +4,17 @@ const service=require("../functions/nap-swimmer-merge"),plans=require("../functi
 // The fixed schema has separate exhaustive tests; this executor test never
 // creates a connection or performs a real database operation.
 schema.inspect=async()=>({});schema.validate=()=>({table:true,indexes:Array(14).fill(true)});
-function fixture(failAfter=0){
+function fixture(failAfter=0,historic=false){
   const source={id:12,nom:"TEST",prenom:"Source",date:"1980-01-01",sexe:"M",club:"106",actif:1,wc:0,edf:0,creation:"2020-01-01",number:"A-05-222647"},target={...source,id:13,prenom:"Cible",number:null};
   const input={sourceSwimmerId:"12",targetSwimmerId:"13",sourceFingerprint:fingerprint(source),targetFingerprint:fingerprint(target),sourceLicenseNumber:source.number,targetLicenseNumber:"",actorUid:"national",confirmMerge:true};
+  if(historic)source.actif=0;
   const state=Object.fromEntries(plans.TABLES.map(spec=>[spec.table,[]]));
   state.perfs=[{id:1,nageur:12,tps:"14200",points:"123"}];
+  for(const table of ["cnc_edf","cnc_medailles","cnc_nageurs","documents_controles","engagements_relayeurs","nageurs_derogations","nageurs_enf","nageurs_verifications","txt_nageurs"])state[table]=[{id:40,nageur:12,relais:20}];
+  state.perfs_relais=[{id:41,nageur1:12,nageur2:20,nageur3:21,nageur4:22,tps1:"12345"}];
+  state.livepalmes_qualification_grants=[{competition_id:10,swimmer_id:12,event_code:"50BI"}];
+  state.livepalmes_swimmer_merges=[{swimmer_id:11,target_id:12,merged_at:"2026-01-01",merged_by:"national"}];
+  if(historic)state.livepalmes_swimmer_merges.push({swimmer_id:12,target_id:13,merged_at:"2026-01-02",merged_by:"previous-admin"});
   state.nageursengager=[{id:2,nageur:12,compet:10},{id:3,nageur:13,compet:10}];
   state.engagements=[{id:4,engagement:2,course:"50BI",tps:"1234"},{id:5,engagement:3,course:"50BI",tps:"1250"},{id:6,engagement:2,course:"100BI",tps:"4567"}];
   state.nageurs=[structuredClone(source),structuredClone(target)];
@@ -36,8 +42,8 @@ function fixture(failAfter=0){
     else{
       const table=sql.match(/^(?:UPDATE|DELETE FROM) `([a-z_]+)`/)[1],remove=sql.startsWith("DELETE");
       if(table==="nageurs"){
-        const id=values[values.length-COLUMNS.length],before=id===12?saved.source:saved.target,after=id===12?saved.sourceAfter:saved.targetAfter;
-        const index=state.nageurs.findIndex(row=>equal(row,before));assert.ok(index>=0);state.nageurs[index]=structuredClone(after);count=1;
+        const id=values[values.length-COLUMNS.length],before=id===12?(remove?saved.sourceAfter:saved.source):saved.target,after=id===12?saved.sourceAfter:saved.targetAfter;
+        const index=state.nageurs.findIndex(row=>equal(row,before));assert.ok(index>=0);if(remove)state.nageurs.splice(index,1);else state.nageurs[index]=structuredClone(after);count=1;
       }else{
         const change=table==="livepalmes_swimmer_license_seasons"?{updates:saved.licensePlan.transfers,removals:saved.licensePlan.replacements}:saved.changes.find(item=>item.table===table);
         if(remove){const candidates=change.removals.filter(row=>state[table].some(actual=>equal(actual,row)));count=candidates.length;state[table]=state[table].filter(row=>!candidates.some(item=>equal(item,row)));}
@@ -51,14 +57,29 @@ function fixture(failAfter=0){
 }
 (async()=>{
   const normal=fixture();const result=await service.mergeSwimmers(normal.pool,normal.input,normal.audit,async()=>{});
-  assert.equal(result.licenseSeasonTransferCount,1);assert.equal(normal.state.nageurs[1].number,"A-05-222647");assert.equal(normal.state.livepalmes_swimmer_license_seasons[0].swimmer_id,13);assert.equal(normal.state.livepalmes_swimmer_license_seasons[0].status,"valid");
+  assert.equal(result.sourceDeleted,true);assert.equal(normal.state.nageurs.some(row=>row.id===12),false);assert.equal(result.licenseSeasonTransferCount,1);assert.equal(normal.state.nageurs.find(row=>row.id===13).number,"A-05-222647");assert.equal(normal.state.livepalmes_swimmer_license_seasons[0].swimmer_id,13);assert.equal(normal.state.livepalmes_swimmer_license_seasons[0].status,"valid");
   assert.equal(normal.state.perfs[0].tps,"14200");assert.equal(normal.state.perfs[0].nageur,13);assert.equal(normal.state.engagements.length,2);assert.equal(normal.state.engagements.find(row=>row.id===6).engagement,3);assert.equal(normal.state.nageursengager.length,1);
   const total=normal.stats().writes;await service.mergeSwimmers(normal.pool,normal.input,normal.audit,async()=>{});assert.equal(normal.stats().writes,total);
+  for(const spec of plans.TABLES.filter(spec=>spec.table!=="engagements"))assert.ok(normal.state[spec.table].every(row=>spec.fields.every(field=>Number(row[field])!==12)),spec.table);
+  assert.equal(normal.state.livepalmes_swimmer_merges.find(row=>row.swimmer_id===11).target_id,13);
   const refreshed=await service.mergeSwimmers(normal.pool,{...normal.input,targetLicenseNumber:"A-05-222647"},normal.audit,async()=>{});assert.equal(refreshed.target.licenseSeasonStatus,"valid");assert.equal(normal.stats().writes,total);
   for(let stop=1;stop<=total;stop++){
     const f=fixture(stop);await assert.rejects(service.mergeSwimmers(f.pool,f.input,f.audit,async()=>{}));
-    await service.mergeSwimmers(f.pool,f.input,f.audit,async()=>{});assert.equal(f.state.perfs[0].nageur,13);assert.equal(f.state.livepalmes_swimmer_license_seasons[0].swimmer_id,13);assert.equal(f.stats().writes,total);
+    await service.mergeSwimmers(f.pool,f.input,f.audit,async()=>{});assert.equal(f.state.perfs[0].nageur,13);assert.equal(f.state.livepalmes_swimmer_license_seasons[0].swimmer_id,13);assert.equal(f.state.nageurs.some(row=>row.id===12),false);assert.equal(f.stats().writes,total);
   }
   const denied=fixture();await assert.rejects(service.mergeSwimmers(denied.pool,denied.input,denied.audit,async()=>{throw Error("Denied");}));assert.equal(denied.stats().connections,0);
+  const lostAudit=fixture(),complete=lostAudit.audit.complete;let fail=true;
+  lostAudit.audit.complete=async(...args)=>{if(fail){fail=false;throw Error("Audit unavailable");}return complete(...args);};
+  await assert.rejects(service.mergeSwimmers(lostAudit.pool,lostAudit.input,lostAudit.audit,async()=>{}),/Audit unavailable/);
+  assert.equal(lostAudit.state.nageurs.some(row=>row.id===12),false);
+  const writes=lostAudit.stats().writes;
+  assert.equal((await service.mergeSwimmers(lostAudit.pool,lostAudit.input,lostAudit.audit,async()=>{})).sourceDeleted,true);
+  assert.equal(lostAudit.stats().writes,writes);
+  const historic=fixture(0,true);
+  assert.equal((await service.mergeSwimmers(historic.pool,historic.input,historic.audit,async()=>{})).sourceDeleted,true);
+  assert.equal(historic.state.nageurs.some(row=>row.id===12),false);
+  assert.equal(historic.state.livepalmes_swimmer_merges.find(row=>row.swimmer_id===12).merged_by,"previous-admin");
+  const conflict=fixture();conflict.state.livepalmes_swimmer_license_seasons.push({...conflict.state.livepalmes_swimmer_license_seasons[0],swimmer_id:13,license_number:"B-OTHER"});
+  await assert.rejects(service.mergeSwimmers(conflict.pool,conflict.input,conflict.audit,async()=>{}),/meme saison/);assert.equal(conflict.stats().writes,0);
   console.log("Native swimmer merge executor: licence season retained, raw result times unchanged, entries joined, authorization, no-op retries and every lost-write-response stage passed without network.");
 })().catch(error=>{console.error(error);process.exitCode=1;});

@@ -2,6 +2,14 @@
 
 <!-- description: Checklist de tests manuels à exécuter avant une publication ou après une modification sensible. -->
 
+## Fusion définitive des nageurs — 23 octobre
+
+TEST partage NAP réelle : aucune fusion réelle de recette sans accord spécifique sur les fiches. Sur fixtures hors réseau : choisir la fiche conservée, confirmer la suppression annoncée, transférer performances individuelles/relais, inscriptions/courses, références natives, dérogations et toutes les saisons de licence ; vérifier les temps/points inchangés et l'absence de la source dans `nageurs`. Le journal avant/après et la correspondance technique ancien identifiant → fiche conservée restent présents. Contrôler les anciens liens publics et les fusions successives.
+
+Simuler une réponse perdue après chaque écriture, y compris la suppression, et un journal final indisponible : reprendre exactement la demande, sans nouvelle écriture ni perte. Refuser avant écriture les conflits de saison de licence, les collisions de relais et les empreintes périmées. Finaliser explicitement une ancienne fiche fusionnée inactive vers sa cible existante ; conserver l'auteur/date de sa correspondance. Un ancien journal préparé avant cette évolution reste protégé et exige une reprise spécifique, sans conversion silencieuse.
+
+Ordinateur/mobile : vérifier les confirmations de fusion simple, groupée et de finalisation ; Annuler n'appelle pas le serveur. Après succès la source disparaît de l'annuaire et la cible reste disponible. Aucune nouvelle règle de style ou composant.
+
 ## Gestion documentaire nationale — 22 octobre
 
 - Sur fixtures ou clone isolé : ouvrir Administration nationale → Documents → Gérer la bibliothèque documentaire, déposer un PDF valide, choisir plusieurs rubriques, vérifier le titre et le lien, puis modifier et retirer. Vérifier les cinq rubriques publiques et l’exclusion après retrait, y compris sur l’accueil. Aucun dépôt de recette sur NAP commune : TEST utilise la source réelle.

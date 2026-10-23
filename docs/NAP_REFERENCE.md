@@ -2,6 +2,14 @@
 
 <!-- description: Sources de données et fonctionnement actuel du portail/public après bascule NAP ; index des références et documents historiques. -->
 
+## Fusion définitive des nageurs
+
+La fusion nationale transfère les références natives prévues par `nap-swimmer-merge-plan.js` et toutes les validations de licence par saison, vérifie leurs valeurs sous verrou, puis supprime définitivement la fiche source de `nageurs`. Une collision de validations sur une même saison bloque l'opération avant écriture, sans arbitrage automatique. Les performances conservent leurs identifiants, temps et points. Les versions officielles Records/MPF et les sauvegardes historiques ne sont pas réécrites ; leurs anciens liens restent résolus par la correspondance technique vers la fiche conservée.
+
+`livepalmes_swimmer_merges` conserve seulement la correspondance d'identifiants et sa provenance, pas une seconde fiche nageur. Les lecteurs publics résolvent celle-ci même après suppression de la source. Le journal technique Firestore avant/après est conservé ; après interruption, la même demande peut vérifier les transferts puis reprendre, y compris si la suppression a déjà abouti. Les anciennes fusions terminées peuvent être finalisées explicitement depuis leur fiche inactive. Un ancien journal de préparation non compatible reste bloqué pour reprise spécifique.
+
+Budget : ouverture/rafraîchissement de l'écran inchangés, annuaire paginé à 101 lignes ; recherche explicite inchangée, trois requêtes au maximum. Fusion : plafond existant de 160 appels SQL exécutés par le service (plus les trois lectures fixes de structure), 4 000 liens et 100 saisons, sauvegarde de 500 Ko au maximum ; deux relectures fixes supplémentaires pour contrôler l'absence de liens et la suppression. Aucun scan global, lecture par performance ou reconstruction publique. Le lecteur public dédié ajoute une résolution indexée fixe : trois requêtes bornées par fiche, deux par recherche numérique ; recherche par nom et lecteurs partagés inchangés. Aucun changement de schéma/index, de droits ou de collection.
+
 ## Périmètre et état — 13 octobre 2026
 
 Le portail et les consultations sportives publiques utilisent directement MySQL NAP via les Cloud Functions. Le navigateur ne possède ni mot de passe MySQL ni accès SQL direct. `assets/livepalmes-environment.js` et `functions/livepalmes-environment.js` sélectionnent `sportingDataSource: "nap"` pour TEST et PROD. Aucun export sportif intermédiaire ni synchronisation entre deux bases métier n'est nécessaire à la lecture.

@@ -64,14 +64,19 @@ function planMerge(input,source,target,snapshots,seasonRows){
       if(remove)change.removals.push({...row});else if(!equal(row,after))change.updates.push({before:{...row},after});
     }
   }
-  const licensePlan=licenses.planLicenseTransfer(source,target,seasonRows);
+  const permanentDelete=input.permanentDelete!==false;
+  const priorMarker=input.priorMarker;
+  if(priorMarker&&(!permanentDelete||Object.keys(priorMarker).sort().join(",")!=="merged_at,merged_by,swimmer_id,target_id"||Number(priorMarker.swimmer_id)!==a||Number(priorMarker.target_id)!==b||Number(source.actif)!==0||!priorMarker.merged_at||!priorMarker.merged_by))throw new TypeError("Ancienne fusion incompatible avec cette finalisation.");
+  const licensePlan=licenses.planLicenseTransfer(source,target,seasonRows,permanentDelete);
   const plan={kind:"native-swimmer-merge",operation:operation(input),actorUid:input.actorUid,sourceSwimmerId:String(a),targetSwimmerId:String(b),sourceFingerprint:input.sourceFingerprint,targetFingerprint:input.targetFingerprint,sourceLicenseNumber:input.sourceLicenseNumber,targetLicenseNumber:input.targetLicenseNumber,confirmClubMismatch:input.confirmClubMismatch===true,confirmLicenseMismatch:input.confirmLicenseMismatch===true,timestamp:input.timestamp,source:{...source},target:{...target},sourceAfter:{...source,actif:0},targetAfter:{...target,actif:1,number:licensePlan.licenseNumber},snapshots,licensePlan,changes,marker:{swimmer_id:a,target_id:b,merged_at:input.timestamp,merged_by:input.actorUid}};
+  if(permanentDelete)plan.permanentDelete=true;
+  if(priorMarker){plan.priorMarker={...priorMarker};plan.marker={...priorMarker};}
   if(Buffer.byteLength(JSON.stringify(plan))>500000)throw new RangeError("Sauvegarde de fusion superieure a 500 Ko.");
   return plan;
 }
 function validateSaved(plan,input){
   if(![number(plan.source.number),number(plan.sourceAfter.number)].includes(input.sourceLicenseNumber)||![number(plan.target.number),number(plan.targetAfter.number)].includes(input.targetLicenseNumber))throw new TypeError("La licence differe de la fusion sauvegardee.");
-  if(!equal(plan,planMerge({...input,sourceLicenseNumber:plan.sourceLicenseNumber,targetLicenseNumber:plan.targetLicenseNumber,confirmClubMismatch:plan.confirmClubMismatch,confirmLicenseMismatch:plan.confirmLicenseMismatch,timestamp:plan.timestamp},plan.source,plan.target,plan.snapshots,plan.licensePlan.before)))throw new TypeError("Sauvegarde de fusion incompatible.");
+  if(!equal(plan,planMerge({...input,priorMarker:plan.priorMarker,permanentDelete:plan.permanentDelete===true,sourceLicenseNumber:plan.sourceLicenseNumber,targetLicenseNumber:plan.targetLicenseNumber,confirmClubMismatch:plan.confirmClubMismatch,confirmLicenseMismatch:plan.confirmLicenseMismatch,timestamp:plan.timestamp},plan.source,plan.target,plan.snapshots,plan.licensePlan.before)))throw new TypeError("Sauvegarde de fusion incompatible.");
 }
 function statement(table,key,rows,remove=false){
   if(!rows.length)return null;
