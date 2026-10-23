@@ -24,3 +24,8 @@ assert.match(plans.statement("engagements",["id"],entries.removals,true).sql,/^D
 assert.equal(plans.statement("perfs",["id"],[]),null);
 assert.throws(()=>plans.statement("arbitrary",["id"],[{id:1}],true),TypeError);
 console.log("Native swimmer merge plan: chosen identity, exact raw times/points, entry deduplication, relay collision refusal, source/target fingerprints and saved-plan integrity passed.");
+
+const selected=plans.planMerge({...input,finalClubId:"107"},source,target,snapshots,[]);assert.equal(selected.targetAfter.club,"107");plans.validateSaved(selected,{...input,finalClubId:"107"});assert.throws(()=>plans.validateSaved(selected,{...input,finalClubId:"108"}));
+assert.throws(()=>plans.planMerge({...input,confirmClubMismatch:true}, {...source,club:"999"},target,snapshots,[]));
+
+const otherSource={...source,club:"999"};const otherInput={...input,sourceFingerprint:fingerprint(otherSource),confirmClubMismatch:true};assert.throws(()=>plans.planMerge(otherInput,otherSource,target,snapshots,[]),/club final/);assert.equal(plans.planMerge({...otherInput,finalClubId:"999"},otherSource,target,snapshots,[]).targetAfter.club,"999");

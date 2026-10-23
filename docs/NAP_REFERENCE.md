@@ -2,6 +2,14 @@
 
 <!-- description: Sources de données et fonctionnement actuel du portail/public après bascule NAP ; index des références et documents historiques. -->
 
+## Affectation nationale du nageur — 24 octobre 2026
+
+Le national peut modifier `nageurs.club` avec un motif, une empreinte native et un journal avant/après. Le service dédié `nap-national-swimmer-correction.js` peut corriger identité et club dans une seule écriture conditionnelle. Les demandes club et les droits restent inchangés. Les courses/inscriptions et les lignes `perfs` ne sont pas réécrites : leurs clubs historiques explicites sont conservés. Les lecteurs qui n'ont pas de club historique continuent leur repli existant sur la fiche actuelle ; aucune valeur historique n'est inventée. Les vues d'engagements dépendant de `nageurs.club` peuvent changer de périmètre après réaffectation.
+
+La fusion accepte un `finalClubId` vérifié par clé primaire et conservé dans le plan d'audit. En cas de clubs différents, ce choix est obligatoire pour une nouvelle opération. Il participe à l'identifiant de l'opération et doit rester identique à la reprise. Le club final peut être celui de la source, de la cible ou un autre club existant ; les anciennes sauvegardes sans ce choix conservent leur interprétation. La fiche conservée reçoit ce club avant la suppression vérifiée de la source, sans changer les clubs des performances transférées.
+
+Budget supplémentaire : aucun chargement au démarrage/à l'ouverture de l'annuaire ; à l'ouverture du sélecteur seulement, un appel mutualisé à l'annuaire existant (une requête NAP, 1 001 lignes au maximum, refus au-delà de 1 000), cache une minute et filtrage client sans nouvel appel par frappe. Une correction nationale utilise quatre requêtes SQL, cinq avec changement d'identité et contrôle de doublon ; reprise déjà appliquée : trois lectures. Audit existant : un document lu, une sauvegarde créée et un reçu final écrit. Une fusion ajoute une lecture de club par clé primaire sous les verrous existants ; plafond global inchangé de 160 appels, 4 000 liens et 100 saisons. Aucune reconstruction, lecture par performance, nouvelle collection, migration ou index.
+
 ## Fusion définitive des nageurs
 
 La fusion nationale transfère les références natives prévues par `nap-swimmer-merge-plan.js` et toutes les validations de licence par saison, vérifie leurs valeurs sous verrou, puis supprime définitivement la fiche source de `nageurs`. Une collision de validations sur une même saison bloque l'opération avant écriture, sans arbitrage automatique. Les performances conservent leurs identifiants, temps et points. Les versions officielles Records/MPF et les sauvegardes historiques ne sont pas réécrites ; leurs anciens liens restent résolus par la correspondance technique vers la fiche conservée.

@@ -2,6 +2,12 @@
 
 <!-- description: Checklist de tests manuels à exécuter avant une publication ou après une modification sensible. -->
 
+## Clubs des nageurs nationaux — 24 octobre
+
+Sur données synthétiques uniquement : fusion entre clubs différents exigeant un choix vide initial, conservation du club source/cible ou troisième club, annulation/Échap sans écriture, confirmation finale du club, fusion groupée et ancienne fusion ; club absent et choix différent à la reprise refusés, chaque réponse SQL perdue reprise sans doublon. Les temps, points et clubs natifs des performances restent identiques. Correction nationale : club seul ou identité+club, motif obligatoire, refus hors national/empreinte périmée/club inexistant, journal conservé et reprise après panne. Les formulaires club ordinaires n'exposent pas cette affectation.
+
+Contrôler en 1440/390/320 px : une seule ligne dans l'annuaire, menu d'actions entièrement visible après défilement horizontal jusqu'à sa colonne, tous les boutons au toucher/clavier ; correction et choix de club final sans débordement de page. Tests `nap-national-swimmer-club-tests.js`, `nap-swimmer-merge-tests.js`, `nap-swimmer-merge-plan-tests.js`, `nap-swimmer-merge-callable-tests.js` et fixtures navigateur `nap-swimmer-clubs-browser-tests.js` hors réseau. Ne pas modifier Delphine ni effectuer une fusion réelle pour cette recette : TEST partage NAP réelle.
+
 ## Fusion définitive des nageurs — 23 octobre
 
 TEST partage NAP réelle : aucune fusion réelle de recette sans accord spécifique sur les fiches. Sur fixtures hors réseau : choisir la fiche conservée, confirmer la suppression annoncée, transférer performances individuelles/relais, inscriptions/courses, références natives, dérogations et toutes les saisons de licence ; vérifier les temps/points inchangés et l'absence de la source dans `nageurs`. Le journal avant/après et la correspondance technique ancien identifiant → fiche conservée restent présents. Contrôler les anciens liens publics et les fusions successives.
