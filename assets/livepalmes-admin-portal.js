@@ -2693,6 +2693,7 @@
     if (global.location.hash === "#correction-performance") return "correction";
     if (["#organisation-competitions", "#administration-competitions"].includes(global.location.hash)) return "engagementsAdminHome";
     if (global.location.hash === "#administration-nationale") return "nationalHome";
+    if (["#administration-documents", "#administration-documents-accueil"].includes(global.location.hash)) return "nationalDocuments";
     if (global.location.hash === "#engagements" || ENGAGEMENT_ROUTE_BY_HASH[global.location.hash]) return "engagements";
     if (global.location.hash === "#espace-dtn") return "dtnHome";
     if (["#espace-dtn-france", "#espace-dtn-edf", "#espace-dtn-listes", "#espace-dtn-parametres"].includes(global.location.hash)) return "dtn";
@@ -2700,6 +2701,7 @@
   }
 
   function updateNavigationView() {
+    if (global.LivePalmesNationalDocuments?.beforeNavigate() === false) return;
     syncEngagementRouteFromHash();
     const requestedView = requestedNavigationView();
     const accessDenied = (requestedView === "access" || requestedView === "accessHome") && !canManageAccessDirectory();
@@ -2711,8 +2713,9 @@
     const dtnDenied = (requestedView === "dtn" || requestedView === "dtnHome") && !canUse("dtn.view");
     const engagementsAdminHomeDenied = requestedView === "engagementsAdminHome" && !canCreateEngagementCompetition();
     const nationalHomeDenied = requestedView === "nationalHome" && !canDeleteEngagementCompetitionDirectly() && !canViewActivityLog();
+    const nationalDocumentsDenied = requestedView === "nationalDocuments" && !canUse("engagements.national.manage");
     const engagementsDenied = requestedView === "engagements" && !canAccessEngagementsView();
-    const activeView = accessDenied || recordsDenied || importDenied || correctionDenied || performanceHomeDenied || clubHomeDenied || dtnDenied || engagementsAdminHomeDenied || nationalHomeDenied || engagementsDenied
+    const activeView = accessDenied || recordsDenied || importDenied || correctionDenied || performanceHomeDenied || clubHomeDenied || dtnDenied || engagementsAdminHomeDenied || nationalHomeDenied || nationalDocumentsDenied || engagementsDenied
       ? "dashboard"
       : requestedView;
     document.querySelectorAll("[data-admin-view]").forEach((section) => {
@@ -2738,7 +2741,7 @@
     const performanceSpaceActive = ["performanceHome", "records", "import", "correction"].includes(activeView);
     const dtnSpaceActive = ["dtnHome", "dtn"].includes(activeView);
     const clubSpaceActive = activeView === "clubHome" || (activeView === "engagements" && ["club", "clubSwimmers", "clubPeople"].includes(activeEngagementsNavEntry));
-    const nationalSpaceActive = activeView === "nationalHome" || (activeView === "engagements" && ["adminDeletionRequests", "adminAudit"].includes(activeEngagementsNavEntry));
+    const nationalSpaceActive = ["nationalHome", "nationalDocuments"].includes(activeView) || (activeView === "engagements" && ["adminDeletionRequests", "adminAudit"].includes(activeEngagementsNavEntry));
     const accessSpaceActive = activeView === "accessHome" || activeView === "access" || (activeView === "engagements" && activeEngagementsNavEntry === "adminAccessRequests");
     const engagementsAdminSpaceActive = activeView === "engagementsAdminHome" || (activeView === "engagements" && activeEngagementsNavEntry.startsWith("admin") && !["adminAccessRequests", "adminDeletionRequests", "adminAudit"].includes(activeEngagementsNavEntry));
     const activeMenu = clubSpaceActive ? "club" : performanceSpaceActive ? "performance" : dtnSpaceActive ? "dtn" : nationalSpaceActive ? "national" : accessSpaceActive ? "access" : engagementsAdminSpaceActive ? "engagementsAdmin" : "";
@@ -2773,6 +2776,7 @@
     if (importModuleActive) loadImportModule();
     if (dtnSpaceActive && activeView === "dtn") loadDtnModule();
     if (activeView === "nationalHome") loadEngagementNationalOverview();
+    global.LivePalmesNationalDocuments?.setActive(activeView === "nationalDocuments");
     if (engagementsActive && activeEngagementsTab === "calendar") loadEngagementCompetitions();
     if (engagementsActive && global.location.hash === "#club-competitions") void restoreEngagementNavigation();
     if (engagementsActive && activeEngagementsTab === "accessRequests") loadEngagementAccessRequests();
