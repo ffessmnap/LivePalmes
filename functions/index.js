@@ -14785,10 +14785,9 @@ exports.updateEngagementNationalSwimmerIdentity = onCall({ ...ENGAGEMENT_SWIMMER
   if (ENVIRONMENT.sportingDataSource === "nap" && request.data?.napSource === true) {
     const nap = require("./nap-portal-swimmers");
     try {
-      if (cleanText(request.data.proposed?.licenseNumber)) throw new TypeError("Le numero de licence NAP est en lecture seule.");
-      const { licenseNumber, ...proposed } = request.data.proposed || {};
-      return await (proposed.clubId !== undefined ? require("./nap-national-swimmer-correction").correctNationalSwimmer : nap.correctPortalIdentity)(nap.portalPool(process.env.LIVEPALMES_NAP_PASSWORD), {
-        id: request.data.swimmerId, expectedFingerprint: request.data.expectedFingerprint, proposed,
+      const proposed = request.data.proposed || {};
+      return await (proposed.clubId !== undefined || proposed.licenseNumber !== undefined ? require("./nap-national-swimmer-correction").correctNationalSwimmer : nap.correctPortalIdentity)(nap.portalPool(process.env.LIVEPALMES_NAP_PASSWORD), {
+        id: request.data.swimmerId, expectedFingerprint: request.data.expectedFingerprint, expectedLicenseNumber: request.data.expectedLicenseNumber, proposed,
         actorUid: context.uid, reason: cleanText(request.data.reason)
       }, {
         read: async operation => {

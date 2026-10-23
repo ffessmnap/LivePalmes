@@ -13581,6 +13581,7 @@
     if (elements.engagementsSwimmerCorrectionForm) {
       delete elements.engagementsSwimmerCorrectionForm.dataset.napSource;
       delete elements.engagementsSwimmerCorrectionForm.dataset.expectedFingerprint;
+      delete elements.engagementsSwimmerCorrectionForm.dataset.expectedLicenseNumber;
     }
     if (elements.engagementsSwimmerCorrectionLicense) elements.engagementsSwimmerCorrectionLicense.readOnly = false;
     for(const field of [elements.engagementsSwimmerCorrectionLastName,elements.engagementsSwimmerCorrectionFirstName,elements.engagementsSwimmerCorrectionBirthDate,elements.engagementsSwimmerCorrectionSex,elements.engagementsSwimmerCorrectionLicense]) if(field) field.disabled=false;
@@ -13610,7 +13611,8 @@
     if (swimmer.napSource && elements.engagementsSwimmerCorrectionForm) {
       elements.engagementsSwimmerCorrectionForm.dataset.napSource = "true";
       elements.engagementsSwimmerCorrectionForm.dataset.expectedFingerprint = swimmer.napFingerprint || "";
-      if (elements.engagementsSwimmerCorrectionLicense) elements.engagementsSwimmerCorrectionLicense.readOnly = true;
+      elements.engagementsSwimmerCorrectionForm.dataset.expectedLicenseNumber = String(swimmer.licenseNumber ?? "");
+      if (elements.engagementsSwimmerCorrectionLicense) elements.engagementsSwimmerCorrectionLicense.readOnly = !direct;
     }
     if (elements.engagementsSwimmerCorrectionMode) elements.engagementsSwimmerCorrectionMode.value = duplicate ? "duplicate" : review ? "review" : direct ? "direct" : "request";
     if (elements.engagementsSwimmerCorrectionSource) elements.engagementsSwimmerCorrectionSource.value = swimmer.source || "performances";
@@ -13623,6 +13625,11 @@
     if (elements.engagementsSwimmerCorrectionBirthDate) elements.engagementsSwimmerCorrectionBirthDate.value = swimmer.birthDate || "";
     if (elements.engagementsSwimmerCorrectionSex) elements.engagementsSwimmerCorrectionSex.value = swimmer.sex || "";
     if (elements.engagementsSwimmerCorrectionLicense) elements.engagementsSwimmerCorrectionLicense.value = String(swimmer.licenseNumber ?? "");
+    if (elements.engagementsSwimmerCorrectionLicense) {
+      elements.engagementsSwimmerCorrectionLicense.pattern = swimmer.napSource ? ".*" : "[A-Za-z]-[0-9]{2}-[0-9]+";
+      elements.engagementsSwimmerCorrectionLicense.maxLength = swimmer.napSource ? 100 : 60;
+      elements.engagementsSwimmerCorrectionLicense.title = swimmer.napSource ? "Numéro de licence NAP ; une autre fiche ne peut pas utiliser ce numéro." : "Format attendu : A-12-34567";
+    }
     if (elements.engagementsSwimmerCorrectionTitle) elements.engagementsSwimmerCorrectionTitle.textContent = duplicate ? "Signaler un doublon" : review ? "Modifier et valider la demande" : direct ? "Modifier le nageur" : "Demander une correction";
     if (elements.engagementsSwimmerCorrectionContext) elements.engagementsSwimmerCorrectionContext.textContent = `${name} · ${clubDisplayLabel(swimmer, { fallback: "Club non renseigné" })}`;
     if (elements.engagementsSwimmerCorrectionReasonLabel) elements.engagementsSwimmerCorrectionReasonLabel.textContent = duplicate ? "Précisez les fiches qui semblent en double" : review ? "Commentaire national (facultatif)" : direct ? "Motif de la correction" : swimmer.napSource ? "Motif de la demande" : "Motif de la demande (facultatif)";
@@ -13653,6 +13660,7 @@
     const payload = {
       napSource: elements.engagementsSwimmerCorrectionForm?.dataset.napSource === "true",
       expectedFingerprint: elements.engagementsSwimmerCorrectionForm?.dataset.expectedFingerprint || "",
+      expectedLicenseNumber: elements.engagementsSwimmerCorrectionForm?.dataset.expectedLicenseNumber || "",
       source: elements.engagementsSwimmerCorrectionSource?.value || "performances",
       swimmerId: elements.engagementsSwimmerCorrectionId?.value || "",
       identityKey: elements.engagementsSwimmerCorrectionIdentityKey?.value || "",
@@ -13661,11 +13669,11 @@
         firstName: elements.engagementsSwimmerCorrectionFirstName?.value || "",
         birthDate: elements.engagementsSwimmerCorrectionBirthDate?.value || "",
         sex: elements.engagementsSwimmerCorrectionSex?.value || "",
-        licenseNumber: formatEngagementSwimmerLicense(elements.engagementsSwimmerCorrectionLicense?.value || "")
+        licenseNumber: elements.engagementsSwimmerCorrectionForm?.dataset.napSource === "true" ? String(elements.engagementsSwimmerCorrectionLicense?.value || "").trim() : formatEngagementSwimmerLicense(elements.engagementsSwimmerCorrectionLicense?.value || "")
       },
       reason: elements.engagementsSwimmerCorrectionReason?.value || ""
     };
-    if (payload.napSource) delete payload.proposed.licenseNumber;
+    if (payload.napSource && !direct) delete payload.proposed.licenseNumber;
     if(direct&&payload.napSource&&elements.engagementsSwimmerCorrectionClub){const club=elements.engagementsSwimmerCorrectionClub.querySelector("select");if(!club?.value||!club.reportValidity())return;payload.proposed.clubId=club.value;}
     if (duplicate) { payload.reportType="duplicate"; payload.proposed={}; }
     setFormPending(
@@ -18184,6 +18192,7 @@
       if (Number.isInteger(start) && Number.isInteger(end)) event.target.setSelectionRange(start, end);
     });
     elements.engagementsSwimmerCorrectionLicense?.addEventListener("input", (event) => {
+      if (elements.engagementsSwimmerCorrectionForm?.dataset.napSource === "true") return;
       event.currentTarget.value = formatEngagementSwimmerLicense(event.currentTarget.value);
     });
     elements.engagementsClubPeopleAddButton?.addEventListener("click", () => openEngagementClubPersonForm());
