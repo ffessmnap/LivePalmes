@@ -63,6 +63,11 @@ function fixture(options = {}) {
   vm.runInNewContext(update,nativeSandbox);
   await assert.rejects(nativeSandbox.exports.updateEngagementNationalSwimmerIdentity({data:{source:"engagement",proposed:{}}}),error=>error.code==="failed-precondition");assert.equal(nativeCalls,0);
   await nativeSandbox.exports.updateEngagementNationalSwimmerIdentity({data:{napSource:true,swimmerId:"42",actorUid:"spoof",proposed:{lastName:"CORRIGE"},reason:"Correction"}});assert.equal(nativeCalls,1);assert.equal(auditWrites,2);
+  const identityRequire=nativeSandbox.require;let nationalCorrectionCalls=0;
+  nativeSandbox.require=name=>name==="./nap-national-swimmer-correction"?{correctNationalSwimmer:async(pool,input,audit)=>{
+    nationalCorrectionCalls++;assert.equal(pool,"native-pool");assert.equal(input.actorUid,"trusted-national");assert.equal(input.proposed.licenseNumber,"A-03-999999");assert.equal(input.expectedLicenseNumber,"A-03-111111");assert.equal(input.proposed.clubId,"106");await audit.prepare("national-license",{});await audit.complete("national-license",{});return {ok:true,source:"nap"};
+  }}:identityRequire(name);
+  await nativeSandbox.exports.updateEngagementNationalSwimmerIdentity({data:{napSource:true,swimmerId:"42",actorUid:"spoof",expectedLicenseNumber:"A-03-111111",proposed:{clubId:"106",licenseNumber:"A-03-999999"},reason:"Correction licence"}});assert.equal(nationalCorrectionCalls,1);assert.equal(auditWrites,4);
   assert.ok(update.includes('ENVIRONMENT.sportingDataSource === "nap"'));
   const browser = fs.readFileSync("assets/livepalmes-admin-portal.js", "utf8");
   assert.ok(browser.includes("(global.LivePalmesEnvironment.sportingDataSource === \"nap\") ? Promise.resolve([]) : searchEngagementAdminPublicSwimmers"));
