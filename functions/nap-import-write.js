@@ -12,6 +12,7 @@ const sameContext=(a,b,columns)=>hash(normalized(a,columns))===hash(normalized(b
 function createNativeImportWriter({getPool,authorize,preview=previewNativeImport}) {
   return async function write(request) {
     const actor=await authorize(request);let input=request.data||{},resumeReceipt=null,resumePool=null;
+    if(input.sourceType==="winpalme-zip-preview")throw new TypeError("Le dépôt ZIP est limité à l’aperçu, sans écriture de résultats.");
     if(!actor?.uid||actor.uid.length>128)throw new TypeError("Auteur autorise requis.");
     if(input.resumeImportId!==undefined) {
       if(typeof input.resumeImportId!=="string"||!/^\w{64}$/.test(input.resumeImportId))throw new TypeError("Import a reprendre invalide.");

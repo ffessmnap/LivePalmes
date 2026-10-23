@@ -1075,3 +1075,27 @@
     width: 100%;
   }
 }
+.competition-zip-preview {
+  overflow-wrap: anywhere;
+}
+
+.competition-zip-preview .admin-portal-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+}
+
+.competition-import-dialog [data-nap-save] {
+  max-width: 100%;
+  white-space: normal;
+}
+
+.competition-import-dialog [data-nap-save]:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.competition-import-preview-tools[hidden],
+.import-table-wrap[hidden] {
+  display: none;
+}

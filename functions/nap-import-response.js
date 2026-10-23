@@ -2,12 +2,12 @@
 const {previewImportDifferences}=require("./nap-import-operation-plan");
 function importPreviewResponse(pack) {
   const rows=pack.decoded.rows.map(r=>({sourceLine:r.sourceLine,kind:r.kind,firstName:r.firstName||"",lastName:r.lastName||"",birthDate:r.birthDate||"",sex:r.sex||"",course:r.course,category:r.category,clubCode:r.clubCode,status:r.status,time:r.rawFinalTime,eligible:r.eligible}));
-  const base={ok:true,source:"nap",metadata:pack.decoded.metadata,rows,excludedSourceLines:pack.decoded.excluded.map(r=>r.sourceLine),summary:pack.decoded.summary,canConfirm:false};
-  if(pack.requiresCompetitionChoice)return {...base,requiresCompetitionChoice:true,competitions:pack.competitions};
+  const base={ok:true,source:"nap",metadata:pack.decoded.metadata,rows,sourceClubs:pack.decoded.clubs.map(c=>({code:c.cells[1]||"",name:c.cells[2]||"",federalNumber:c.cells[3]||""})),excludedSourceLines:pack.decoded.excluded.map(r=>r.sourceLine),summary:pack.decoded.summary,canConfirm:false};
+  if(pack.requiresCompetitionChoice)return {...base,issues:pack.decoded.issues,requiresCompetitionChoice:true,competitions:pack.competitions};
   const unresolved=pack.resolution.unresolved.map(r=>({...r,sourceLine:pack.decoded.rows.filter(r=>r.kind==="NAG")[r.rowIndex].sourceLine}));
   const resolved=pack.resolution.resolved.map(r=>({...r,sourceLine:pack.decoded.rows.filter(r=>r.kind==="NAG")[r.rowIndex].sourceLine}));
   const result={...base,competition:pack.competition,canConfirm:pack.canConfirm,issues:pack.issues,resolved,unresolved,unresolvedClubs:pack.unresolvedClubs,unresolvedMembers:pack.unresolvedMembers,
-    clubs:pack.clubs.map(c=>({id:String(c.num_club),code:c.abre_club,name:c.nom_club})),expectedFingerprint:pack.expectedFingerprint,previewFingerprint:pack.previewFingerprint};
+    clubs:pack.clubs.map(c=>({id:String(c.num_club),code:c.abre_club,name:c.nom_club,federalNumber:c.federal_club||""})),expectedFingerprint:pack.expectedFingerprint,previewFingerprint:pack.previewFingerprint};
   if(pack.canConfirm) {
     try {
       const diff=previewImportDifferences(pack);

@@ -41,7 +41,7 @@ async function previewNativeImport(pool,input) {
   for(const row of individual)if(row.swimmerHint&&swimmerByLine.has(row.sourceLine)) {
     const ids=hints.get(row.swimmerHint)||new Set();ids.add(swimmerByLine.get(row.sourceLine));hints.set(row.swimmerHint,ids);
   }
-  const clubs=await q(pool,"SELECT num_club,abre_club,nom_club FROM clubs FORCE INDEX (PRIMARY) ORDER BY num_club LIMIT 1001");
+  const clubs=await q(pool,"SELECT num_club,abre_club,nom_club,federal_club FROM clubs FORCE INDEX (PRIMARY) ORDER BY num_club LIMIT 1001");
   if(clubs.length>1000)throw new RangeError("Referentiel clubs trop volumineux : recherche ciblee requise.");
   const clubChoices=new Map();
   for(const b of clubBindings){if(typeof b.code!=="string"||!decoded.rows.some(r=>r.clubCode===b.code)||clubChoices.has(b.code)||!clubs.some(c=>String(c.num_club)===String(b.clubId)))throw new TypeError("Choix de club invalide.");clubChoices.set(b.code,String(b.clubId));}
@@ -49,7 +49,11 @@ async function previewNativeImport(pool,input) {
   for(const code of new Set(decoded.rows.map(r=>r.clubCode))) {
     const matches=clubs.filter(c=>String(c.abre_club||"").trim().toUpperCase()===code.toUpperCase());
     if(clubChoices.has(code))clubByCode.set(code,clubChoices.get(code));
-    else if(matches.length===1)clubByCode.set(code,String(matches[0].num_club));
+    else if(matches.length===1 && (input.sourceType!=="winpalme-zip-preview" || (()=>{
+      const declarations=decoded.clubs.filter(c=>c.cells[1]===code);
+      const number=declarations[0]?.cells[3]||"";
+      return declarations.length===1 && /^\d{8}$/.test(number) && String(matches[0].federal_club||"").trim()===number;
+    })()))clubByCode.set(code,String(matches[0].num_club));
     else unresolvedClubs.push({code,candidateIds:matches.map(c=>String(c.num_club))});
   }
   const memberChoices=new Map();
