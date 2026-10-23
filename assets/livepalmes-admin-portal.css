@@ -16647,6 +16647,43 @@
   white-space: nowrap;
 }
 
+/* Keep every swimmer action inside the row's layout, including a one-row table. */
+#adminEngagementsNationalSwimmersList td.admin-engagements-national-table-actions {
+  display: table-cell;
+  height: auto;
+  vertical-align: top;
+}
+#adminEngagementsNationalSwimmersList .admin-national-row-menu > div {
+  position: static;
+  min-width: 180px;
+  box-shadow: none;
+}
+
+.admin-swimmer-club-field {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.admin-swimmer-club-field[hidden] { display: none; }
+.admin-swimmer-club-field input,
+.admin-swimmer-club-field select { width: 100%; min-width: 0; }
+.admin-swimmer-club-field small { color: var(--muted, #526772); }
+.admin-swimmer-club-dialog {
+  width: min(560px, calc(100vw - 32px));
+  max-height: calc(100dvh - 32px);
+  overflow: auto;
+  padding: 20px;
+  border: 1px solid #bfd8dc;
+  border-radius: 12px;
+  color: inherit;
+  background: var(--surface, #fff);
+}
+.admin-swimmer-club-dialog::backdrop { background: rgba(18, 42, 52, .45); }
+.admin-swimmer-club-dialog form { display: grid; gap: 14px; }
+.admin-swimmer-club-dialog h2,
+.admin-swimmer-club-dialog p { margin: 0; }
+
 .admin-national-row-no-action {
   color: #9aa7aa;
 }

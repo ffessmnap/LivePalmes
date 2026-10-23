@@ -2,6 +2,11 @@
 
 <!-- description: Référence du langage visuel, des composants d’interface et des règles responsive déjà présents dans LivePalmes. -->
 
+## Club des nageurs et actions nationales — 24 octobre 2026
+
+- Le menu `⋮` des nageurs nationaux se déplie dans le flux de la cellule de tableau, qui reste une vraie cellule de hauteur automatique. Les actions ne sont pas superposées hors du conteneur défilant ; une seule ligne doit suffire à toutes les afficher. Le tableau garde son défilement horizontal sur mobile, sans débordement de page.
+- Le sélecteur de club combine une recherche locale et une liste obligatoire dans les clubs NAP existants. La correction nationale l'intègre au formulaire ; la fusion utilise un dialogue natif « Club après la fusion », borné au viewport et défilant verticalement. Un conflit de club laisse le choix vide jusqu'à une décision explicite. Continuer ne réalise aucune fusion : la confirmation finale récapitule le club retenu.
+
 ## Aperçu ZIP des résultats — 23 octobre 2026
 
 Dans la fenêtre d’import du portail, une carte existante présente la compétition, les compteurs TXT, les chemins des deux fichiers retenus et la date du dernier protocole. Les chemins longs reviennent à la ligne ; les actions de consultation PDF locale et de téléchargement du rapport utilisent les boutons existants avec retour à la ligne sur mobile. Le mode « aperçu uniquement » reste visible dans la carte et le bilan national, avec action d’enregistrement désactivée même lorsque les rapprochements sont contrôlés. Les choix temporaires et l’absence de publication sont indiqués dans le parcours.

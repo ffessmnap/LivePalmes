@@ -14787,7 +14787,7 @@ exports.updateEngagementNationalSwimmerIdentity = onCall({ ...ENGAGEMENT_SWIMMER
     try {
       if (cleanText(request.data.proposed?.licenseNumber)) throw new TypeError("Le numero de licence NAP est en lecture seule.");
       const { licenseNumber, ...proposed } = request.data.proposed || {};
-      return await nap.correctPortalIdentity(nap.portalPool(process.env.LIVEPALMES_NAP_PASSWORD), {
+      return await (proposed.clubId !== undefined ? require("./nap-national-swimmer-correction").correctNationalSwimmer : nap.correctPortalIdentity)(nap.portalPool(process.env.LIVEPALMES_NAP_PASSWORD), {
         id: request.data.swimmerId, expectedFingerprint: request.data.expectedFingerprint, proposed,
         actorUid: context.uid, reason: cleanText(request.data.reason)
       }, {
@@ -15524,6 +15524,7 @@ exports.mergeEngagementNationalClubSwimmer = onCall({ ...ENGAGEMENT_SWIMMER_CORR
     try {
       return await require("./nap-swimmer-merge").mergeSwimmers(require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD),{
         sourceSwimmerId:request.data?.sourceSwimmerId,targetSwimmerId:request.data?.targetSwimmerId,
+        ...(request.data?.finalClubId!==undefined?{finalClubId:request.data.finalClubId}:{}),
         sourceFingerprint:request.data?.sourceFingerprint,targetFingerprint:request.data?.targetFingerprint,
         sourceLicenseNumber:request.data?.sourceLicenseNumber,targetLicenseNumber:request.data?.targetLicenseNumber,
         actorUid:context.uid,confirmMerge:true,confirmClubMismatch:request.data?.confirmClubMismatch===true,confirmLicenseMismatch:request.data?.confirmLicenseMismatch===true

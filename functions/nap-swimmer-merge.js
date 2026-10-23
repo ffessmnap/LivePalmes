@@ -61,9 +61,16 @@ async function mergeSwimmers(pool,input,audit,authorize){
     const structure=schema.validate(await schema.inspect(connection));if(!structure.table||structure.indexes.some(value=>!value))throw new TypeError("Complement de fusion incomplet.");
     const tables=["nageurs",...plans.TABLES.map(spec=>spec.table),"livepalmes_swimmer_license_seasons"];
     if((await query(`SELECT TRIGGER_NAME FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA=DATABASE() AND EVENT_OBJECT_TABLE IN (${tables.map(()=>"?").join(",")}) LIMIT 1`,tables)).length)throw new TypeError("Declencheur natif a verifier avant fusion.");
-    await connection.query({sql:`LOCK TABLES ${tables.map(name=>`\`${name}\` WRITE`).join(",")},forfait READ`,timeout:10000});locked=true;
+    await connection.query({sql:`LOCK TABLES ${tables.map(name=>`\`${name}\` WRITE`).join(",")},forfait READ,clubs READ`,timeout:10000});locked=true;
     const people=await readPeople(),markers=await query("SELECT swimmer_id,target_id,merged_at,merged_by FROM livepalmes_swimmer_merges FORCE INDEX (PRIMARY) WHERE swimmer_id IN (?,?) ORDER BY swimmer_id",[a,b]);
     if(markers.length&&(markers.length!==1||(saved?!equal(markers[0],saved.marker):Number(markers[0].swimmer_id)!==a||Number(markers[0].target_id)!==b||Number(people.source?.actif)!==0)))throw new TypeError("Une fiche est deja fusionnee. Rechargez les listes.");
+    if(!saved&&String(people.source?.club)!==String(people.target.club)&&input.finalClubId===undefined)throw new TypeError("Choisissez explicitement le club final avant de fusionner.");
+    let finalClub=null;
+    if(input.finalClubId!==undefined){
+      if(!/^[1-9]\d{0,15}$/.test(String(input.finalClubId))||!Number.isSafeInteger(Number(input.finalClubId)))throw new TypeError("Club final invalide.");
+      finalClub=(await query("SELECT num_club,abre_club,nom_club FROM clubs FORCE INDEX (PRIMARY) WHERE num_club=? LIMIT 1",[Number(input.finalClubId)]))[0];
+      if(!finalClub)throw new TypeError("Club final NAP introuvable.");
+    }
     const snapshots=await readReferences(saved?.snapshots.nageursengager.map(row=>row.id)),seasons=await readSeasons();
     if(seasons.length>100)throw new RangeError("Historique des licences trop volumineux.");
     const plan=saved||plans.planMerge({...input,priorMarker:markers[0],timestamp:new Date().toISOString().replace("T"," ").replace("Z","000")},people.source,people.target,snapshots,seasons);
@@ -99,10 +106,11 @@ async function mergeSwimmers(pool,input,audit,authorize){
     await connection.query({sql:"UNLOCK TABLES",timeout:10000});locked=false;
     const result={ok:true,source:"nap",operation,sourceSwimmerId:String(a),targetSwimmerId:String(b),performanceUpdateCount:plan.changes.find(change=>change.table==="perfs").updates.length,entrySwimmerUpdateCount:plan.changes.find(change=>change.table==="nageursengager").updates.length+plan.changes.find(change=>change.table==="nageursengager").removals.length,relayUpdateCount:plan.changes.filter(change=>["engagements_relayeurs","perfs_relais"].includes(change.table)).reduce((sum,change)=>sum+change.updates.length,0),licenseSeasonTransferCount:plan.licensePlan.transfers.length,publicSnapshot:{ok:true,skipped:true,reason:"Lecture NAP directe"}};
     result.sourceDeleted=true;
+    result.finalClubId=String(plan.targetAfter.club);
     await audit.complete(operation,{...result,verified:true});
     const season=plan.licensePlan.after.find(row=>Number(row.swimmer_id)===b&&row.season===require("./nap-license-state").currentSeason());
     const validation=season?{license_validation_season:season.season,license_validated_number:season.license_number,license_validation_status:season.status,license_validation_source:season.source,license_validated_at:season.validated_at,license_validated_by:season.validated_by,license_validity_end_date:season.federal_validity_end_date}:{};
-    return {...result,target:require("./nap-portal-swimmers").person({...plan.targetAfter,...validation})};
+    return {...result,target:require("./nap-portal-swimmers").person({...plan.targetAfter,...validation,...(finalClub?{abre_club:finalClub.abre_club,nom_club:finalClub.nom_club}:{})})};
   }finally{
     try{if(locked)await connection.query({sql:"UNLOCK TABLES",timeout:10000});}catch{safe=false;}
     try{for(const lock of locks.reverse())if(Number((await query("SELECT RELEASE_LOCK(?) AS released",[lock]))[0]?.released)!==1)safe=false;}catch{safe=false;}
