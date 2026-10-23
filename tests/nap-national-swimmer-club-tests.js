@@ -14,7 +14,7 @@ function fixture(options={}){
   const columns=[...query.sql.matchAll(/`(nom|prenom|date|sexe|club)`=\?/g)].map(x=>x[1]);
   for(let i=0;i<saved.changedColumns.length;i++)row[saved.changedColumns[i]]=values[i];
   writes++;if(options.lostResponse&&fail){fail=false;throw Error("Lost response");}return [{affectedRows:1}];
- },query:async query=>{calls.push(query.sql);locked=query.sql.startsWith("LOCK TABLES");},release:()=>assert.equal(locked,false),destroy:()=>{}};
+ },query:async query=>{calls.push(query.sql);locked=query.sql.startsWith("LOCK TABLES");if(options.lockFailure&&locked)throw Error("Uncertain lock");if(options.unlockFailure&&!locked)throw Error("Uncertain unlock");},release:()=>{assert.equal(locked,false);assert.ok(!options.lockFailure&&!options.unlockFailure);},destroy:()=>{assert.ok(options.lockFailure||options.unlockFailure);}};
  const pool={...connection,getConnection:async()=>connection};
  const audit={read:async()=>saved,prepare:async(_,plan)=>{if(options.backupFailure)throw Error("Backup failed");saved=structuredClone(plan);},complete:async(_,result)=>{if(options.auditFailure&&fail){fail=false;throw Error("Audit failed");}completed=result;}};
  return {run:extra=>correctNationalSwimmer(pool,{...input,...extra},audit),row:()=>row,writes:()=>writes,calls,saved:()=>saved,completed:()=>completed};
@@ -34,6 +34,8 @@ function fixture(options={}){
  const staleLicense=fixture();staleLicense.row().number="A-00-888888";await assert.rejects(staleLicense.run({proposed}),/licence a change/);assert.equal(staleLicense.writes(),0);
  for(const options of [{missing:true},{race:true},{backupFailure:true}]){const f=fixture(options);await assert.rejects(f.run({proposed}));assert.equal(f.writes(),0);assert.equal(f.calls.at(-1),"UNLOCK TABLES");}
  const noExpected=fixture();await assert.rejects(noExpected.run({proposed,expectedLicenseNumber:undefined}),/Rechargez la licence/);assert.equal(noExpected.writes(),0);
+ const lockFailure=fixture({lockFailure:true});await assert.rejects(lockFailure.run({proposed}),/Uncertain lock/);assert.equal(lockFailure.writes(),0);
+ const unlockFailure=fixture({unlockFailure:true});await unlockFailure.run({proposed});assert.equal(unlockFailure.writes(),1);
  const empty=fixture();empty.row().number="";await empty.run({expectedLicenseNumber:"",proposed});assert.equal(empty.row().number,proposed.licenseNumber);
  const all=fixture();await all.run({proposed:{...proposed,clubId:"107",lastName:"CORRIGE"}});assert.deepEqual(all.row(),{...original,number:proposed.licenseNumber,club:"107",nom:"CORRIGE"});assert.equal(all.writes(),1);
  console.log("National swimmer correction: club/identity/license atomic update, duplicate owner, stale license, empty initial license, locks, durable audit and retry; no history writes, offline.");

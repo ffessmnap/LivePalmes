@@ -7,9 +7,9 @@ const {notMerged}=require("./nap-swimmer-merge-state"),{nativeEqual}=require("./
 // National caller only. Existing identity journal; no performance/entry writes.
 async function correctNationalSwimmer(pool,input,audit){
  if(input?.proposed?.licenseNumber===undefined)return correctLockedSwimmer(pool,input,audit);
- const connection=await pool.getConnection();let locked=false,safe=true;
+ const connection=await pool.getConnection();let locked=false,safe=false;
  try{
-  await connection.query({sql:"LOCK TABLES nageurs WRITE,clubs READ,livepalmes_swimmer_merges READ",timeout:10000});locked=true;
+  await connection.query({sql:"LOCK TABLES nageurs WRITE,clubs READ,livepalmes_swimmer_merges READ",timeout:10000});locked=true;safe=true;
   return await correctLockedSwimmer(connection,input,audit);
  }finally{
   try{if(locked)await connection.query({sql:"UNLOCK TABLES",timeout:10000});}catch{safe=false;}
