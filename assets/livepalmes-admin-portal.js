@@ -14282,7 +14282,7 @@
     ) || {};
     const sourceName = [source.firstName, source.lastName].filter(Boolean).join(" ") || source.name || "cette fiche";
     const targetName = [target.firstName, target.lastName].filter(Boolean).join(" ") || target.name || "la fiche cible";
-    if (!global.confirm(`Fusionner ${sourceName} vers ${targetName} ? La fiche source sera marquée comme fusionnée et retirée des listes club.`)) return;
+    if (!global.confirm(`Fusionner ${sourceName} vers ${targetName} ? ${source.napSource ? "Les performances et les liens seront transférés, puis la fiche source sera supprimée définitivement. Le journal d’audit sera conservé." : "La fiche source sera marquée comme fusionnée et retirée des listes club."}`)) return;
     const licenseMismatch = Boolean(source.licenseNumber && target.licenseNumber && source.licenseNumber !== target.licenseNumber);
     if (licenseMismatch && !global.confirm(`Attention : les numéros de licence sont différents (${source.licenseNumber} / ${target.licenseNumber}). Confirmer quand même la fusion ?`)) return;
     const clubMismatch = Boolean(source.clubId && target.clubId && source.clubId !== target.clubId);
@@ -14313,7 +14313,7 @@
       await loadEngagementNationalSwimmers({ force: true });
       if (elements.engagementsNationalSwimmersStatus) {
         const totalUpdates = Number(result.entrySwimmerUpdateCount || 0) + Number(result.relayUpdateCount || 0) + Number(result.performanceUpdateCount || 0);
-        elements.engagementsNationalSwimmersStatus.textContent = `Fusion terminée. ${totalUpdates} élément${totalUpdates > 1 ? "s" : ""} mis à jour.`;
+        elements.engagementsNationalSwimmersStatus.textContent = `Fusion terminée.${result.sourceDeleted ? " Fiche doublon supprimée définitivement ; journal d’audit conservé." : ""} ${totalUpdates} élément${totalUpdates > 1 ? "s" : ""} mis à jour.`;
         elements.engagementsNationalSwimmersStatus.dataset.tone = "ok";
       }
     } catch (error) {
@@ -14341,7 +14341,7 @@
       licenseMismatch ? "numéros de licence différents" : "",
       clubMismatch ? "clubs différents" : ""
     ].filter(Boolean).join(", ");
-    const message = `Fusionner ${sources.length} fiche${sources.length > 1 ? "s" : ""} vers ${targetName} ? Les performances, engagements et relais seront rattaches a la fiche conservee.${warning ? ` Attention : ${warning}.` : ""}`;
+    const message = `Fusionner ${sources.length} fiche${sources.length > 1 ? "s" : ""} vers ${targetName} ? ${target.napSource ? "Les performances et les liens seront transférés à la fiche conservée, puis les fiches sources seront supprimées définitivement. Le journal d’audit sera conservé." : "Les performances, engagements et relais seront rattaches a la fiche conservee."}${warning ? ` Attention : ${warning}.` : ""}`;
     if (!global.confirm(message)) return;
     engagementNationalSwimmerMergeLoading = true;
     updateEngagementNationalSwimmerSelectionState();
@@ -14396,6 +14396,7 @@
       (item.source || "performances") === swimmerSource && (item.id === swimmerId || item.swimmerIndexId === swimmerId)
     ) || {};
     if(swimmer.napSource) {
+      if(!global.confirm("Finaliser cette fusion ? Les liens restants seront transférés à la fiche conservée, puis la fiche doublon sera supprimée définitivement. Le journal d’audit sera conservé."))return;
       try {
         const found=await callFunction("searchEngagementNationalSwimmerMergeTargets",{sourceSwimmerId:swimmerId,query:String(swimmer.mergedIntoId||"")});
         const target=found.swimmers?.find(item=>String(item.id)===String(swimmer.mergedIntoId));

@@ -53,6 +53,7 @@ function runUnitTests() {
     "nap-direct-query-checks-tests.js",
     "nap-direct-swimmer-tests.js",
     "nap-direct-search-tests.js",
+    "nap-public-swimmer-redirect-tests.js",
     "nap-direct-tops-tests.js",
     "nap-top-requests-tests.js",
     "nap-public-reference-tests.js",
