@@ -4,9 +4,10 @@ const fs=require("node:fs"),path=require("node:path"),assert=require("node:asser
 const portal=fs.readFileSync("portail.html","utf8"),source=fs.readFileSync("assets/livepalmes-admin-portal.js","utf8");
 const render=source.slice(source.indexOf("  function renderEngagementNationalSwimmers()"),source.indexOf("  function updateEngagementNationalSwimmersStatus("));
 const open=source.slice(source.indexOf("  function closeEngagementSwimmerCorrectionDialog()"),source.indexOf("  async function submitEngagementSwimmerCorrection()"));
+const submit=source.slice(source.indexOf("  async function submitEngagementSwimmerCorrection()"),source.indexOf("  function normalizeEngagementNationalClub("));
 (async()=>{
  const browser=await chromium.launch({headless:true,executablePath:process.env.LIVEPALMES_BROWSER_EXECUTABLE||"C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe"});
- const out=path.resolve("outputs/nageurs-clubs-20261024");fs.mkdirSync(out,{recursive:true});
+ const out=path.resolve("outputs/nageurs-licence-20261024");fs.mkdirSync(out,{recursive:true});
  try{for(const width of [1440,390,320]){
   const page=await browser.newPage({viewport:{width,height:900}});page.setDefaultTimeout(10000);console.log("Viewport",width);await page.route("**/*",route=>route.abort());
   await page.setContent('<!doctype html><html lang="fr"><meta charset="utf-8"><body class="admin-portal-page" data-admin-auth="unlocked"><main class="admin-portal"><section class="admin-national-page-card"><h2>Nageurs</h2><div id="adminEngagementsNationalSwimmersList"></div></section></main></body></html>');
@@ -29,7 +30,12 @@ const open=source.slice(source.indexOf("  function closeEngagementSwimmerCorrect
   await page.screenshot({path:path.join(out,`menu-${width}.png`)});
   console.log("Menu checked");await page.evaluate(()=>openEngagementSwimmerCorrectionDialog(window.fixtureSwimmer,"direct"));
   console.log("Editor opened");await page.getByRole("combobox",{name:"Club du nageur",exact:true}).selectOption("107");assert.equal(await page.getByRole("combobox",{name:"Club du nageur",exact:true}).inputValue(),"107");
+  const licence=page.getByLabel("Numéro de licence",{exact:true});assert.equal(await licence.evaluate(el=>el.readOnly),false);await licence.fill("A-03-999999");await page.getByLabel("Motif de la correction",{exact:true}).fill("Correction fictive de licence");
+  await page.addScriptTag({content:submit});
+  await page.evaluate(()=>{window.confirm=()=>true;window.callFunction=async(name,payload)=>{window.submitted={name,payload};throw Error("Refus de doublon fictif");};});
+  await page.evaluate(()=>submitEngagementSwimmerCorrection());assert.equal((await page.evaluate(()=>window.submitted)).payload.proposed.licenseNumber,"A-03-999999");assert.equal((await page.evaluate(()=>window.submitted)).payload.expectedLicenseNumber,"A-00-123456");assert.equal((await page.evaluate(()=>window.submitted)).name,"updateEngagementNationalSwimmerIdentity");await page.getByText("Correction impossible : Refus de doublon fictif",{exact:true}).waitFor();assert.equal(await licence.inputValue(),"A-03-999999");
   await page.screenshot({path:path.join(out,`edit-${width}.png`)});await page.keyboard.press("Escape");
+  await page.evaluate(()=>openEngagementSwimmerCorrectionDialog(window.fixtureSwimmer,"request"));assert.equal(await licence.evaluate(el=>el.readOnly),true);await page.keyboard.press("Escape");
   await page.evaluate(()=>{window.choicePromise=LivePalmesSwimmerClubs.getTools(callFunction).chooseFinalClub({target:fixtureSwimmer,sources:[{...fixtureSwimmer,clubId:"107"}]});});
   const select=page.getByRole("combobox",{name:"Club du nageur",exact:true});assert.equal(await select.inputValue(),"");
   await select.selectOption("108");await page.screenshot({path:path.join(out,`merge-${width}.png`)});await page.getByRole("button",{name:"Continuer",exact:true}).click();

@@ -2,6 +2,10 @@
 
 <!-- description: Checklist de tests manuels à exécuter avant une publication ou après une modification sensible. -->
 
+## Licence depuis la fiche nationale — 24 octobre
+
+Sur fixtures uniquement : saisir une licence depuis « Modifier la fiche », contrôler son envoi avec ancien numéro et motif, refus de doublon conservant la saisie, fiche/licence périmée, numéro vide initial, licence seule ou identité+club+licence en une écriture, journal avant/après, panne d'audit et réponse SQL perdue avec reprise sans double écriture. Refus avant écriture si propriétaire existant, ancien numéro absent, club absent ou audit indisponible ; verrous toujours libérés. Ne pas modifier les validations de saison ni l'historique. Les modes club/doublon restent verrouillés et les profils non nationaux refusés côté serveur. Tests `nap-national-swimmer-club-tests.js`, `nap-portal-swimmers-tests.js` et `nap-swimmer-clubs-browser-tests.js` hors réseau aux largeurs 1440/390/320 px. Après TEST, fermer puis rouvrir la fiche avec la nouvelle page ; aucune correction réelle de Jacques Labastie pour la recette technique.
+
 ## Clubs des nageurs nationaux — 24 octobre
 
 Sur données synthétiques uniquement : fusion entre clubs différents exigeant un choix vide initial, conservation du club source/cible ou troisième club, annulation/Échap sans écriture, confirmation finale du club, fusion groupée et ancienne fusion ; club absent et choix différent à la reprise refusés, chaque réponse SQL perdue reprise sans doublon. Les temps, points et clubs natifs des performances restent identiques. Correction nationale : club seul ou identité+club, motif obligatoire, refus hors national/empreinte périmée/club inexistant, journal conservé et reprise après panne. Les formulaires club ordinaires n'exposent pas cette affectation.
