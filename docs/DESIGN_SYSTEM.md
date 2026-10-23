@@ -5,7 +5,7 @@
 ## Club des nageurs et actions nationales — 24 octobre 2026
 
 - Le menu `⋮` des nageurs nationaux se déplie dans le flux de la cellule de tableau, qui reste une vraie cellule de hauteur automatique. Les actions ne sont pas superposées hors du conteneur défilant ; une seule ligne doit suffire à toutes les afficher. Le tableau garde son défilement horizontal sur mobile, sans débordement de page.
-- Le sélecteur de club combine une recherche locale et une liste obligatoire dans les clubs NAP existants. La correction nationale l'intègre au formulaire ; la fusion utilise un dialogue natif « Club après la fusion », borné au viewport et défilant verticalement. Un conflit de club laisse le choix vide jusqu'à une décision explicite. Continuer ne réalise aucune fusion : la confirmation finale récapitule le club retenu.
+- Le sélecteur de club combine une recherche locale et une liste obligatoire dans les clubs NAP existants. La correction nationale l'intègre au formulaire ; la fusion utilise un dialogue natif « Club après la fusion », borné au viewport et défilant verticalement. Un conflit de club laisse le choix vide jusqu'à une décision explicite. Continuer ne réalise aucune fusion : la confirmation finale récapitule le club retenu. Le texte distingue le club actuel choisi des clubs historiques : clubs reconnus conservés ; club non reconnu d'une performance remplacé par celui de sa fiche d'origine avant fusion. La correction simple du club garde son message d'historique inchangé.
 
 ## Aperçu ZIP des résultats — 23 octobre 2026
 

@@ -2,6 +2,13 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 24 octobre — Clubs historiques de fusion et reprise certaine de Nora (préparation TEST)
+
+- Accord explicite Antoine : conserver chaque club historique reconnu ; si absent/non reconnu, enregistrer avant suppression le club de la fiche d'origine de la performance, indépendamment du club actuel choisi. Corriger Nora seulement quand ses audits prouvent son ancienne fiche et son club, conserver un audit. TEST partage la vraie base NAP : visibilité publique de ces seules corrections annoncée ; aucun code PROD ni autre correction de nageur autorisé.
+- Fusion : reconnaissance groupée par clé primaire, valeur d'origine source/cible fixée avant mutation ; performances individuelles et relais, journal versionné, temps/points/autres champs préservés, refus avant suppression si origine inconnue. Ancien audit complet inchangé ; préparation ancienne sans cette règle protégée. Une lecture groupée ajoutée, plafond 160 appels/4 000 liens/500 Ko inchangé, aucune lecture par performance.
+- Nora : opération privée TEST fixée à 13787 et deux audits complets, sauvegarde native avant et reçu après. Provenance la plus ancienne retenue malgré les fusions successives ; lignes connues préservées, lignes ambiguës ou modifiées écartées et listées. Seul `club` modifiable, mises à jour groupées indexées et conditionnelles, relecture sous verrou, reprise après panne sans doublon. Préparation sans écriture sportive puis sauvegarde en artefact privé avant application. Sept lectures d'audit à la préparation, pas de scan ; neuf lectures SQL de préparation et jusqu'à dix-sept appels à l'application, 4 000 lignes/500 Ko maximum.
+- Tests synthétiques ciblés réussis : sources/cible/troisième club, clubs reconnus et inconnus, relais, intégrité des anciens plans, deux audits successifs, exclusions de provenance, conflit natif, panne d'audit et réponse SQL perdue. Vérification globale, publication TEST et résultat réel de Nora à consigner après contrôles. Aucune validation utilisateur de la future version déduite des tests techniques.
+
 ### 24 octobre — Licence modifiable sur la fiche nationale (TEST déployé, validation utilisateur attendue)
 
 - Périmètre sensible explicitement validé par Antoine : modifier le numéro depuis la fiche nationale sur TEST, avec contrôle des doublons et audit ; aucune modification par l'assistant de Jacques Labastie. Aucune PROD ni écriture métier de recette autorisée.
