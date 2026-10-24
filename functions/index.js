@@ -14794,6 +14794,7 @@ exports.updateEngagementNationalSwimmerIdentity = onCall({ ...ENGAGEMENT_SWIMMER
       const proposed = request.data.proposed || {};
       return await (proposed.clubId !== undefined || proposed.licenseNumber !== undefined ? require("./nap-national-swimmer-correction").correctNationalSwimmer : nap.correctPortalIdentity)(nap.portalPool(process.env.LIVEPALMES_NAP_PASSWORD), {
         id: request.data.swimmerId, expectedFingerprint: request.data.expectedFingerprint, expectedLicenseNumber: request.data.expectedLicenseNumber, proposed,
+        previewOnly: request.data.previewOnly===true, historicalClubConfirmation: request.data.historicalClubConfirmation,
         actorUid: context.uid, reason: cleanText(request.data.reason)
       }, {
         read: async operation => {
