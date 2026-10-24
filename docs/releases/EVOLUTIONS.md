@@ -2,6 +2,14 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 24 octobre — Publication PROD du lot regroupé, mails tous clubs conservés
+
+- Candidat applicatif exact `0619f1dce9439afd5dd4719ee035ff0fc3b99b83`, déjà validé sur TEST40101909214. Préparation corrigée [PR #505](https://github.com/ffessmnap/LivePalmes/pull/505) intégrée dans `4a58809c`, CI Linux40113965809 et preflight officiel40114917523 réussis. Accord final explicite Infra : après la question visant le plan40114917523, Antoine répond « Oui je valide ».
+- Publication officielle [40115523198](https://github.com/ffessmnap/LivePalmes/actions/runs/40115523198) : réussie.47 sources prévues actualisées,65 fonctions conservées et112 ACTIVE ; aucune fonction ajoutée/supprimée. Hosting `sites/livepalmes/versions/810eb65df3233f3a`. Preuves GitHub téléchargées/authentifiées et reçu privé `outputs/infra-regroupe-20261024/production-success-receipt.json`.
+- Contrôle de dérive TEST/PROD avant sauvegarde, sauvegarde code/configurations/Hosting chiffrée puis rouverte et comparée avant publication. Archive chiffrée copiée localement et empreinte vérifiée : `ce928022383c9baa43c2b721a5eed65debe65b3afdcf944112796466b15ce653`. Métadonnées et configuration des fonctions contrôlées ; seule la notification documentaire reçoit300s et sept liaisons de secrets existants en plus de NAP, dont la version est conservée ; aucune valeur ni IAM modifié.
+- Réglage mail déjà actif tous clubs/révision5 conservé sans écriture, coupure ou activation. Empreintes du document complet avant/après identiques ; configuration du scheduler actif inchangée. Aucun envoi de test, rattrapage, destinataire/préférence/paiement modifié ni invocation métier par l’opération.
+- Lot logiciel : bibliothèque documentaire nationale, répertoires/fusions et licence/club final, conservation prospective des clubs historiques, export TXT manuel eau libre, journal, contrôles ZIP en aperçu seulement. Aucune réussite d’import réel supplémentaire inventée. Réparations rétroactives clubs/Nora, Paris/CNHC/Basile, migrations, recalcul DTN, nettoyage Storage, droits/règles/index et import ZIP réel restent exclus.
+
 ### 24 octobre — Correction du bilan regroupé : conservation du réglage tous clubs
 
 - [PR #504](https://github.com/ffessmnap/LivePalmes/pull/504) intégrée dans `59b479c4`, CI Linux finale [40112260340](https://github.com/ffessmnap/LivePalmes/actions/runs/40112260340) et preflight officiel [40112486278](https://github.com/ffessmnap/LivePalmes/actions/runs/40112486278) réussis. Accord final Infra réel : « Ok je donne mon accord ». Publication [40112920934](https://github.com/ffessmnap/LivePalmes/actions/runs/40112920934) arrêtée au garde mail après vérification TEST et révisions PROD, avant sauvegarde et tout déploiement Functions/Hosting ; aucune écriture du réglage ni envoi.
