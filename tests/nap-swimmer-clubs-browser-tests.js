@@ -7,7 +7,7 @@ const open=source.slice(source.indexOf("  function closeEngagementSwimmerCorrect
 const submit=source.slice(source.indexOf("  async function submitEngagementSwimmerCorrection()"),source.indexOf("  function normalizeEngagementNationalClub("));
 (async()=>{
  const browser=await chromium.launch({headless:true,executablePath:process.env.LIVEPALMES_BROWSER_EXECUTABLE||"C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe"});
- const out=path.resolve("outputs/nageurs-licence-20261024");fs.mkdirSync(out,{recursive:true});
+ const out=path.resolve("outputs/national-club-history-20261024");fs.mkdirSync(out,{recursive:true});
  try{for(const width of [1440,390,320]){
   const page=await browser.newPage({viewport:{width,height:900}});page.setDefaultTimeout(10000);console.log("Viewport",width);await page.route("**/*",route=>route.abort());
   await page.setContent('<!doctype html><html lang="fr"><meta charset="utf-8"><body class="admin-portal-page" data-admin-auth="unlocked"><main class="admin-portal"><section class="admin-national-page-card"><h2>Nageurs</h2><div id="adminEngagementsNationalSwimmersList"></div></section></main></body></html>');
@@ -32,10 +32,24 @@ const submit=source.slice(source.indexOf("  async function submitEngagementSwimm
   console.log("Editor opened");await page.getByRole("combobox",{name:"Club du nageur",exact:true}).selectOption("107");assert.equal(await page.getByRole("combobox",{name:"Club du nageur",exact:true}).inputValue(),"107");
   const licence=page.getByLabel("Numéro de licence",{exact:true});assert.equal(await licence.evaluate(el=>el.readOnly),false);await licence.fill("A-03-999999");await page.getByLabel("Motif de la correction",{exact:true}).fill("Correction fictive de licence");
   await page.addScriptTag({content:submit});
-  await page.evaluate(()=>{window.confirm=()=>true;window.callFunction=async(name,payload)=>{window.submitted={name,payload};throw Error("Refus de doublon fictif");};});
-  await page.evaluate(()=>submitEngagementSwimmerCorrection());assert.equal((await page.evaluate(()=>window.submitted)).payload.proposed.licenseNumber,"A-03-999999");assert.equal((await page.evaluate(()=>window.submitted)).payload.expectedLicenseNumber,"A-00-123456");assert.equal((await page.evaluate(()=>window.submitted)).name,"updateEngagementNationalSwimmerIdentity");await page.getByText("Correction impossible : Refus de doublon fictif",{exact:true}).waitFor();assert.equal(await licence.inputValue(),"A-03-999999");
+  await page.evaluate(()=>{window.confirm=()=>true;window.historyCalls=[];window.historySummary={token:"b".repeat(64),oldClubRecognized:true,oldClubName:"AAA",newClubName:"BBB",count:42,firstDate:"2015-03-12",lastDate:"2024-06-08",unknownDateCount:2};window.callFunction=async(name,payload)=>{window.historyCalls.push({name,payload});if(payload.previewOnly)return {historicalClubPreview:historySummary};window.submitted={name,payload};throw Error("Refus de doublon fictif");};});
+  await page.evaluate(()=>{window.submitPromise=submitEngagementSwimmerCorrection();});
+  const historyDialog=page.getByRole("dialog",{name:"Confirmer le changement de club",exact:true});await historyDialog.waitFor();
+  assert.match(await historyDialog.textContent(),/42 performances.*12\/03\/2015 au 08\/06\/2024/);assert.match(await historyDialog.textContent(),/2 performances concernées n’ont pas de date fiable/);
+  await page.screenshot({path:path.join(out,`history-${width}.png`)});
+  assert.ok(await historyDialog.evaluate(el=>el.scrollWidth<=el.clientWidth));
+  await historyDialog.getByRole("button",{name:"Annuler",exact:true}).click();await page.evaluate(()=>window.submitPromise);assert.equal((await page.evaluate(()=>historyCalls)).length,1);assert.equal(await page.evaluate(()=>window.submitted),undefined);
+  await page.evaluate(()=>{window.submitPromise=submitEngagementSwimmerCorrection();});await historyDialog.waitFor();await historyDialog.getByRole("button",{name:"Confirmer le changement",exact:true}).click();await page.evaluate(()=>window.submitPromise);
+  assert.equal((await page.evaluate(()=>window.submitted)).payload.historicalClubConfirmation,"b".repeat(64));assert.equal((await page.evaluate(()=>window.submitted)).payload.proposed.licenseNumber,"A-03-999999");assert.equal((await page.evaluate(()=>window.submitted)).payload.expectedLicenseNumber,"A-00-123456");assert.equal((await page.evaluate(()=>window.submitted)).name,"updateEngagementNationalSwimmerIdentity");await page.getByText("Correction impossible : Refus de doublon fictif",{exact:true}).waitFor();assert.equal(await licence.inputValue(),"A-03-999999");
+  const callsBeforeRetry=(await page.evaluate(()=>historyCalls)).length;await page.evaluate(()=>submitEngagementSwimmerCorrection());assert.equal((await page.evaluate(()=>historyCalls)).length,callsBeforeRetry+1,"same confirmed payload reused after uncertain error");
   await page.screenshot({path:path.join(out,`edit-${width}.png`)});await page.keyboard.press("Escape");
   await page.evaluate(()=>openEngagementSwimmerCorrectionDialog(window.fixtureSwimmer,"request"));assert.equal(await licence.evaluate(el=>el.readOnly),true);await page.keyboard.press("Escape");
+  for(const summary of [{...await page.evaluate(()=>historySummary),oldClubRecognized:false,unresolvedCount:7},{...await page.evaluate(()=>historySummary),count:0,firstDate:null,lastDate:null}]){
+    await page.evaluate(summary=>{window.historyChoice=LivePalmesSwimmerClubs.getTools(callFunction).confirmClubChange(summary);},summary);await historyDialog.waitFor();assert.match(await historyDialog.textContent(),summary.oldClubRecognized?/Aucune performance/:/ancien club est inconnu/);await page.keyboard.press("Escape");assert.equal(await page.evaluate(()=>historyChoice),false);
+  }
+  await page.evaluate(()=>openEngagementSwimmerCorrectionDialog(window.fixtureSwimmer,"direct"));await page.getByRole("combobox",{name:"Club du nageur",exact:true}).selectOption("107");await page.getByLabel("Motif de la correction",{exact:true}).fill("Test réponse tardive");
+  await page.evaluate(()=>{window.lateCalls=0;window.callFunction=()=>{lateCalls++;return new Promise(resolve=>{window.resolveLatePreview=resolve;});};window.lateSubmission=submitEngagementSwimmerCorrection();});
+  await page.evaluate(()=>{closeEngagementSwimmerCorrectionDialog();openEngagementSwimmerCorrectionDialog(fixtureSwimmer,"direct");resolveLatePreview({historicalClubPreview:historySummary});});await page.evaluate(()=>lateSubmission);assert.equal(await historyDialog.count(),0);assert.equal(await page.evaluate(()=>lateCalls),1);await page.keyboard.press("Escape");
   await page.evaluate(()=>{window.choicePromise=LivePalmesSwimmerClubs.getTools(callFunction).chooseFinalClub({target:fixtureSwimmer,sources:[{...fixtureSwimmer,clubId:"107"}]});});
   const select=page.getByRole("combobox",{name:"Club du nageur",exact:true});assert.equal(await select.inputValue(),"");
   await page.getByText("Les clubs historiques reconnus sont conservés. Si le club d’une performance est inconnu, celui de sa fiche d’origine sera enregistré avant la fusion.",{exact:true}).waitFor();

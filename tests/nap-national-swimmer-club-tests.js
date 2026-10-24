@@ -2,11 +2,17 @@
 const assert=require("node:assert/strict"),{correctNationalSwimmer}=require("../functions/nap-national-swimmer-correction"),{fingerprint}=require("../functions/nap-portal-swimmer-change"),{COLUMNS}=require("../functions/nap-approved-swimmer-correction");
 const original={id:12,nom:"FICTIF",prenom:"Test",date:"1980-01-01",sexe:"F",club:"106",actif:1,wc:0,edf:0,creation:"2020-01-01",number:"A-00-123456"};
 function fixture(options={}){
- let row={...original},saved,writes=0,fail=true,locked=false,completed;const calls=[];
+ let row={...original},saved,writes=0,historyWrites=0,fail=true,locked=false,completed;const calls=[],rows=options.rows||{perfs:[],perfs_relais:[]};
  const input={id:12,actorUid:"national",reason:"Correction club",expectedFingerprint:fingerprint(original),expectedLicenseNumber:original.number,proposed:{clubId:"107"}};
  const connection={execute:async(query,values=[])=>{
-  calls.push(query.sql);assert.ok(!/FROM perfs|UPDATE perfs|UPDATE engagements|DELETE /i.test(query.sql));
-  if(query.sql.startsWith("SELECT")&&query.sql.includes("FROM clubs"))return [options.missing?[]:[{num_club:107,nom_club:"Club fictif",abre_club:"FIC",comite_club:1,actif_club:1}]];
+  values=query.values||values;
+  calls.push(query.sql);assert.ok(!/UPDATE engagements|DELETE /i.test(query.sql));
+  if(query.sql.includes("information_schema.TRIGGERS"))return [[]];
+  if(query.sql.startsWith("SELECT * FROM")){const table=query.sql.includes('`perfs_relais`')?'perfs_relais':'perfs',field=query.sql.match(/WHERE `([^`]+)`/)[1];return [rows[table].filter(r=>Number(r[field])===12).map(r=>({...r}))];}
+  if(query.sql.includes("FROM competitions"))return [[{id:1,date:"2015-03-12"},{id:2,date:"2024-06-08"}]];
+  if(query.sql.startsWith("EXPLAIN"))return [[{table:"perfs",type:"range",key:"PRIMARY"}]];
+  if(query.sql.startsWith("UPDATE `perfs")){assert.ok(saved);assert.equal(locked,true);const table=query.sql.includes('`perfs_relais`')?'perfs_relais':'perfs';const updates=saved.performanceClubs.changes.find(c=>c.table===table).updates;for(const item of updates)Object.assign(rows[table].find(r=>r.id===item.before.id),item.after);historyWrites+=updates.length;if(options.lostHistory&&fail){fail=false;throw Error("Lost historical response");}return [{affectedRows:updates.length}];}
+  if(query.sql.startsWith("SELECT")&&query.sql.includes("FROM clubs"))return [options.missing?[]:[106,107,108].filter(id=>values.map(Number).includes(id)&&!(options.unknownOld&&id===106)).map(num_club=>({num_club,nom_club:"Club fictif",abre_club:num_club===106?"OLD":"FIC",comite_club:1,actif_club:1}))];
   if(query.sql.startsWith("SELECT id FROM nageurs"))return [(query.sql.includes("livepalmes_license_number_id")?options.licenseDuplicate:options.duplicate)?[{id:13}]:[]];
   if(query.sql.startsWith("SELECT"))return [[{...row}]];
   assert.ok(saved);assert.match(query.sql,/^UPDATE nageurs SET/);assert.ok(query.sql.includes("WHERE id=? AND EXISTS (SELECT 1 FROM clubs FORCE INDEX (PRIMARY) WHERE num_club=?)"));
@@ -17,7 +23,8 @@ function fixture(options={}){
  },query:async query=>{calls.push(query.sql);locked=query.sql.startsWith("LOCK TABLES");if(options.lockFailure&&locked)throw Error("Uncertain lock");if(options.unlockFailure&&!locked)throw Error("Uncertain unlock");},release:()=>{assert.equal(locked,false);assert.ok(!options.lockFailure&&!options.unlockFailure);},destroy:()=>{assert.ok(options.lockFailure||options.unlockFailure);}};
  const pool={...connection,getConnection:async()=>connection};
  const audit={read:async()=>saved,prepare:async(_,plan)=>{if(options.backupFailure)throw Error("Backup failed");saved=structuredClone(plan);},complete:async(_,result)=>{if(options.auditFailure&&fail){fail=false;throw Error("Audit failed");}completed=result;}};
- return {run:extra=>correctNationalSwimmer(pool,{...input,...extra},audit),row:()=>row,writes:()=>writes,calls,saved:()=>saved,completed:()=>completed};
+ const raw=extra=>correctNationalSwimmer(pool,{...input,...extra},audit);
+ return {raw,run:async(extra={})=>{if(String(extra.proposed?.clubId||input.proposed.clubId)!==original.club){const preview=await raw({...extra,previewOnly:true});return raw({...extra,historicalClubConfirmation:preview.historicalClubPreview.token});}return raw(extra);},row:()=>row,writes:()=>writes,historyWrites:()=>historyWrites,rows,calls,saved:()=>saved,completed:()=>completed};
 }
 (async()=>{
  const f=fixture(),result=await f.run();assert.equal(result.swimmer.clubId,"107");assert.equal(result.swimmer.club,"FIC");assert.deepEqual(f.row(),{...original,club:"107"});assert.equal(f.writes(),1);await f.run();assert.equal(f.writes(),1);assert.equal(f.saved().before.club,"106");
@@ -38,5 +45,13 @@ function fixture(options={}){
  const unlockFailure=fixture({unlockFailure:true});await unlockFailure.run({proposed});assert.equal(unlockFailure.writes(),1);
  const empty=fixture();empty.row().number="";await empty.run({expectedLicenseNumber:"",proposed});assert.equal(empty.row().number,proposed.licenseNumber);
  const all=fixture();await all.run({proposed:{...proposed,clubId:"107",lastName:"CORRIGE"}});assert.deepEqual(all.row(),{...original,number:proposed.licenseNumber,club:"107",nom:"CORRIGE"});assert.equal(all.writes(),1);
- console.log("National swimmer correction: club/identity/license atomic update, duplicate owner, stale license, empty initial license, locks, durable audit and retry; no history writes, offline.");
+ const sample=()=>({perfs:[{id:1,nageur:12,club:null,compet:1,temps:123},{id:2,nageur:12,club:"999",compet:2,temps:456},{id:3,nageur:12,club:"108",compet:1,temps:789}],perfs_relais:[{id:4,nageur1:12,nageur2:12,nageur3:13,nageur4:14,club:"0",compet:99,temps:111}]});
+ const h=fixture({rows:sample()}),p=await h.raw({previewOnly:true});assert.equal(h.writes(),0);assert.equal(h.saved(),undefined);assert.equal(p.historicalClubPreview.count,3);assert.equal(p.historicalClubPreview.firstDate,"2015-03-12");assert.equal(p.historicalClubPreview.lastDate,"2024-06-08");assert.equal(p.historicalClubPreview.unknownDateCount,1);
+ await assert.rejects(h.raw(),/confirmez/);await assert.rejects(h.raw({historicalClubConfirmation:"a".repeat(64)}),/historique a change/);assert.equal(h.saved(),undefined);
+ await h.raw({historicalClubConfirmation:p.historicalClubPreview.token});assert.equal(h.historyWrites(),3);assert.equal(h.rows.perfs[2].club,"108");assert.equal(h.rows.perfs[0].temps,123);assert.equal(h.completed().historicalClubPreview.count,3);
+ await h.raw({historicalClubConfirmation:p.historicalClubPreview.token});assert.equal(h.historyWrites(),3);assert.equal(h.writes(),1);
+ const unknown=fixture({rows:sample(),unknownOld:true});const u=await unknown.raw({previewOnly:true});assert.equal(u.historicalClubPreview.oldClubRecognized,false);assert.equal(u.historicalClubPreview.count,0);await unknown.run();assert.equal(unknown.historyWrites(),0);
+ const changed=fixture({rows:sample()}),c=await changed.raw({previewOnly:true});changed.rows.perfs[0].temps=99;await assert.rejects(changed.raw({historicalClubConfirmation:c.historicalClubPreview.token}),/historique a change/);assert.equal(changed.writes(),0);
+ const interrupted=fixture({rows:sample(),lostHistory:true}),i=await interrupted.raw({previewOnly:true});await assert.rejects(interrupted.raw({historicalClubConfirmation:i.historicalClubPreview.token}));assert.equal(interrupted.writes(),0);await interrupted.raw({historicalClubConfirmation:i.historicalClubPreview.token});assert.equal(interrupted.writes(),1);assert.equal(interrupted.historyWrites(),3);
+ console.log("National swimmer correction: confirmed historical range, unknown dates/clubs, preserved known clubs/times, server guard, stale preview, durable audit and interrupted retry; license/identity checks retained, offline.");
 })().catch(error=>{console.error(error);process.exitCode=1;});

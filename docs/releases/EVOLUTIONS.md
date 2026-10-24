@@ -2,6 +2,13 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 24 octobre — Alerte et clubs historiques du changement national (préparation TEST)
+
+- Accord explicite Antoine : avant changement de club par l'admin national, afficher le nombre et la période des seules performances au club absent/non reconnu attribuées à l'ancien club, puis Annuler/Confirmer. Les clubs reconnus restent conservés, les dates ne sélectionnent pas toutes les performances d'une période ; ancien club inconnu explicitement signalé et inchangé.
+- Service national et helper dédié réutilisant les captures de récupération ; aperçu sans écriture, empreinte du récapitulatif et des images natives, confirmation revérifiée sous verrou, sauvegarde existante avant mutation, club des performances puis fiche en dernier. Identité/licence et leurs contrôles conservés, reprise sur images sauvegardées et reçu idempotent. Aucun nageur réel de recette, correction rétroactive, droits, schéma ou configuration modifiés.
+- Budget : zéro ajout à l'ouverture/rafraîchissement, un aperçu puis une confirmation bornés à 50 appels SQL chacun, 4 000 lignes distinctes/500 Ko ; lectures par index et groupées par PK, aucune requête par performance. Une lecture d'audit par appel, aucune écriture à l'aperçu, sauvegarde avant et reçu après à la confirmation. Documentation détaillée dans NAP_REFERENCE.
+- Tests synthétiques natifs et visuels, PR et preuve TEST à compléter. Retour utilisateur sur la future version attendu, aucune validation déduite.
+
 ### 24 octobre — Clubs historiques pendant une récupération (TEST déployé, retour utilisateur attendu)
 
 - Accord explicite Antoine dans cette discussion : appliquer aux prochaines récupérations les clubs historiques de la fiche avant rattachement au nouveau club, sans corriger les récupérations anciennes. Conserver les clubs reconnus ; ancien club inconnu : performances inchangées.
