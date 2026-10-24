@@ -19,6 +19,10 @@ async function main(){
  const futureReceipt={...receipt,target:{...receipt.target,auditPreparationId:prep.id}};
  const future=await backend.projectPage([futureReceipt],async ids=>{assert.deepEqual(ids,[prep.id]);return [prep];});assert.equal(future.logs[0].target.lastName,"MARTIN");
  const pending=await backend.projectPage([prep],async()=>[]);assert.equal(pending.logs[0].outcome,"unconfirmed");
+ const creation={...prep,id:`nap-swimmer-create-${operation}-before`,action:"nap.swimmerCreate.prepare",target:{native:{prenom:"Alex",nom:"DURAND",date:"1990-01-01",number:"A-00-123",sexe:"F"}}};
+ const created=await backend.projectPage([creation],async()=>[]);assert.equal(created.logs[0].target.firstName,"Alex");assert.equal(created.logs[0].target.licenseNumber,"A-00-123");assert.equal(created.logs[0].target.birthDate,"1990-01-01");
+ const merger={...prep,id:`nap-swimmer-merge-${operation}-before`,action:"nap.swimmerMerge.prepare",target:{source:{nom:"SOURCE",prenom:"Camille"},target:{nom:"CIBLE",prenom:"Alex"},targetAfter:{nom:"CIBLE",prenom:"Alex",club:75}}};
+ const merged=await backend.projectPage([merger],async()=>[]);assert.equal(merged.logs[0].target.sourcePersonName,"Camille SOURCE");assert.equal(merged.logs[0].target.targetPersonName,"Alex CIBLE");assert.ok(ui.changes(merged.logs[0].target).some(row=>row.label.includes("Fiche conservée")));
  const wrong=await backend.projectPage([prep],async()=>[{...receipt,actorUid:"other"}]);assert.equal(wrong.logs[0].outcome,"unconfirmed");
  const unrelated={...receipt,id:"unrelated",createdAt:"2026-10-24T10:00:00Z"};assert.equal(ui.merge([receipt],[unrelated]).length,2);
  const large=Array.from({length:50},(_,i)=>({...prep,id:`nap-swimmer-activity-${i.toString(16).padStart(64,"0")}-before`}));
