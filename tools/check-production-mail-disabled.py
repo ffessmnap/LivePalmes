@@ -43,13 +43,16 @@ def check_pause_witness(document, maintenance, witness):
 
 def check_idf_preservation(document, preservation, directory, after=False):
     fields = document.get('fields', {})
-    if (fields.get('enabled') != {'booleanValue': True} or fields.get('scope') != {'stringValue': 'idf'}
+    expected_scope = 'all' if preservation.get('scope') == 'all' and preservation.get('documentSha256') else 'idf'
+    if (fields.get('enabled') != {'booleanValue': True} or fields.get('scope') != {'stringValue': expected_scope}
             or fields.get('revision') != {'integerValue': str(preservation['revision'])}):
         raise ValueError('Etat IDF actif different du bilan approuve')
     for key in ['enabledSince', 'discardThrough', 'updatedAt']:
         if not isinstance(fields.get(key, {}).get('stringValue'), str) or not fields[key]['stringValue']:
             raise ValueError('Horodatage IDF absent')
     observed = {'schema': 1, 'sha256': hashlib.sha256(json.dumps(document, sort_keys=True).encode()).hexdigest()}
+    if expected_scope == 'all' and observed['sha256'] != preservation['documentSha256']:
+        raise ValueError('Reglage tous clubs complet different du bilan corrige')
     witness = directory / 'public-reader-idf-before.json'
     if witness.exists():
         if json.loads(witness.read_text()) != observed:
@@ -112,6 +115,8 @@ def main():
     if preservation is not None and scheduler.get('state') != 'ENABLED':
         raise ValueError('Scheduler IDF non actif')
     fingerprint = scheduler_fingerprint(scheduler)
+    if preservation is not None and preservation.get('schedulerSha256') and fingerprint['sha256'] != preservation['schedulerSha256']:
+        raise ValueError('Scheduler complet different du bilan tous clubs')
     witness = Path(os.environ['PLAN']) / 'notification-scheduler-before.json'
     if witness.exists():
         if json.loads(witness.read_text()) != fingerprint:
@@ -120,7 +125,7 @@ def main():
         if after:
             raise ValueError('Temoin scheduler initial absent')
         witness.write_text(json.dumps(fingerprint))
-    print('IDF actif inchange ; aucune ecriture.' if preservation is not None else
+    print(('Tous clubs actifs inchanges ; aucune ecriture.' if preservation.get('scope') == 'all' else 'IDF actif inchange ; aucune ecriture.') if preservation is not None else
           'Mails automatiques desactives ; une lecture technique, aucune ecriture.')
 
 
