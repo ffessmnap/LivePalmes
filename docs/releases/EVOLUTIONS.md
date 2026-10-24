@@ -2,6 +2,13 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 24 octobre — Export manuel eau libre depuis le catalogue NAP (TEST en préparation)
+
+- Accord Antoine : utiliser les champs natifs du catalogue, bloquer les ambiguïtés, générer Beaumont 2025 (4903) et comparer au TXT IntraNAP, sans envoi automatique.
+- Codes, longueurs, style, composition et mixité lus en une requête groupée par PK sur les seules références du programme (300 maximum). Budget téléchargement : au plus 26 SELECT au lieu de 25, zéro écriture ; ouverture et rafraîchissement de fiche inchangés. Aucun catalogue complet lu dans le parcours interactif.
+- Ordre natif F/M conservé ; identifiants vides conservés pour les deux éliminations et le relais Jumièges vérifiés. Collisions LD11KM/WPRELAISLD3500, variante LD4X2KMM, individuel mixte, autres relais, sources absentes/inactives/incohérentes et doublons refusés explicitement. Aucun changement de catégorie sportive, de club fédéral, de WID, de données NAP/Storage ou de PROD.
+- Tests ciblés : Beaumont 6 km/support, régression Jumièges et piscine, sources incohérentes/périmées, références dupliquées, collisions et absence de mutation. Déploiement TEST, comparaison réelle et validation WinPalme à compléter ; aucune validation utilisateur déduite.
+
 ### 24 octobre — WID e-NAP et catégories par saison de l’export eau libre
 
 - Accord Antoine : reprendre le WID e-NAP sur TEST et calculer les catégories individuelles depuis date de naissance et saison. Calcul existant conservé : année de fin de saison moins année de naissance, bascule au 1er septembre ; aucun nouveau choix Seniors/Masters ni modification sportive native.
