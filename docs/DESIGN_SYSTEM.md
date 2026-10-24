@@ -2,6 +2,12 @@
 
 <!-- description: Référence du langage visuel, des composants d’interface et des règles responsive déjà présents dans LivePalmes. -->
 
+## Contrôle des imports par nageur — 24 octobre 2026
+
+- Les groupes d’identités utilisent des `details/summary` natifs : vert « Rapprochés » replié par défaut, orange « À rapprocher » et rouge « Inconnus » ouverts, avec compteurs et intitulés explicites indépendants de la couleur. Une fiche dépliable par identité présente source et profil NAP côte à côte à partir de 700 px, empilés sur mobile. Les candidats sont des cartes avec bouton « Choisir ce nageur » ; la recherche est déclenchée volontairement.
+- Les différences de club restent des encarts orange dans une fiche dont l’identité peut être verte. Leur case de confirmation rappelle club importé et club actuel ; les choix non revérifiés portent un message d’actualisation. Les performances distinguent course individuelle, passage et premier relayeur. Pagination locale de 100 nageurs, 50 relais et 100 différences ; groupes et fiches conservent leur état ouvert pendant la navigation.
+- Le bilan de remplacement dépliable montre ajouts/retraits/modifications appariées/statuts, avec approbation explicite. Le bouton d’enregistrement demeure désactivé et identifié « aperçu uniquement », y compris après approbation. La carte ZIP et son PDF local sont conservés.
+
 ## Club des nageurs et actions nationales — 24 octobre 2026
 
 - Le menu `⋮` des nageurs nationaux se déplie dans le flux de la cellule de tableau, qui reste une vraie cellule de hauteur automatique. Les actions ne sont pas superposées hors du conteneur défilant ; une seule ligne doit suffire à toutes les afficher. Le tableau garde son défilement horizontal sur mobile, sans débordement de page.
