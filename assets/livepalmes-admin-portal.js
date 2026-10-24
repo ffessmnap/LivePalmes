@@ -9806,16 +9806,16 @@
     const documentsHead = elements.engagementsDocumentsTitle?.closest(".admin-engagements-documents-head");
     if (documentsHead) documentsHead.hidden = !adminMode;
     if (elements.engagementsGenerateTxtExportButton) {
-      elements.engagementsGenerateTxtExportButton.disabled = openWater;
+      elements.engagementsGenerateTxtExportButton.disabled = openWater && !global.LivePalmesEnvironment?.isTest;
       elements.engagementsGenerateTxtExportButton.title = openWater
-        ? "Export eau libre en attente de validation du format TXT."
+        ? (global.LivePalmesEnvironment?.isTest ? "Export manuel expérimental à vérifier dans WinPalme." : "Export eau libre en attente de validation du format TXT.")
         : "";
     }
     if (elements.engagementsDocumentsTitle) elements.engagementsDocumentsTitle.textContent = adminMode ? "GED" : "Documents";
     if (elements.engagementsDocumentsSummary) {
       elements.engagementsDocumentsSummary.textContent = adminMode
         ? openWater
-          ? "Gérez les documents destinés aux clubs. L’export TXT eau libre sera ajouté après validation de son format."
+          ? (global.LivePalmesEnvironment?.isTest ? "Export TXT eau libre expérimental : vérifiez le fichier dans WinPalme. Aucun envoi automatique." : "Gérez les documents destinés aux clubs. L’export TXT eau libre sera ajouté après validation de son format.")
           : "Gérez les documents destinés aux clubs et téléchargez les fichiers techniques."
         : "Consultez et téléchargez les documents utiles de la compétition.";
       elements.engagementsDocumentsSummary.dataset.tone = "";
@@ -12118,7 +12118,7 @@
 
   async function generateEngagementAdminTxtExport() {
     if (!selectedEngagementCompetitionId || !isEngagementAdminMode()) return;
-    if (engagementCompetitionType(selectedEngagementCompetition) === "openWater") {
+    if (engagementCompetitionType(selectedEngagementCompetition) === "openWater" && !global.LivePalmesEnvironment?.isTest) {
       if (elements.engagementsDocumentsSummary) {
         elements.engagementsDocumentsSummary.textContent = "L’export TXT eau libre sera disponible après validation de son format.";
       }

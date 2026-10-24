@@ -133,15 +133,60 @@ function swimmerWinPalmeId(swimmer = {}) {
   return String(suffix).padStart(9, "0");
 }
 
+// Only mappings evidenced by the supplied e-NAP open-water exports.
+const OPEN_WATER_CODES = Object.freeze({
+  "1000": "LD1000", "1000BI": "LD1000BI", "3000": "LD03KM",
+  "3000BI": "LD03KMBI", "5000": "LD05KM", "150BIEL": "LD150BIE",
+  "150SFEL": "LD150SFE", "4X1000SB MIXTE": "LD4X1KMMM"
+});
+function openWaterExportProgram(competition) {
+  const events = competition.events || [];
+  if (!events.length) throw new Error("Programme eau libre absent : export impossible.");
+  const byCode = new Map();
+  const definitions = events.map(event => {
+    const rows = event.nativeCourses || [];
+    const first = rows[0];
+    const nativeCode = text(first?.course).toUpperCase();
+    const code = OPEN_WATER_CODES[nativeCode];
+    if (!code || rows.some(row => text(row.course).toUpperCase() !== nativeCode)
+        || byCode.has(event.code) || [...byCode.values()].some(item => item.code === code)) {
+      throw new Error(`Course eau libre sans correspondance WinPalme validee : ${event.label || event.code}.`);
+    }
+    const relay = nativeCode === "4X1000SB MIXTE";
+    if ((event.type === "relay") !== relay || rows.some(row => Boolean(Number(row.relais)) !== relay)) {
+      throw new Error(`Type de course eau libre incoherent : ${event.code}.`);
+    }
+    const elimination = nativeCode === "150BIEL" || nativeCode === "150SFEL";
+    const distance = relay ? 4000 : elimination ? 150 : Number(nativeCode.replace("BI", ""));
+    if (!relay && !elimination && !/^\d+$/.test(String(first.id_course || ""))) {
+      throw new Error(`Reference native eau libre absente : ${event.code}.`);
+    }
+    const item = { code, fields: ["DIS", code, first.course, distance, "SF", relay ? 2 : 1,
+      relay ? 4 : 1, relay || elimination ? "" : first.id_course, relay ? 1 : 0] };
+    byCode.set(event.code, item);
+    return item;
+  });
+  return { byCode, definitions };
+}
+
 function buildWinPalmeCompetitionTxt(competition = {}, entries = [], clubsById = new Map(), options = {}) {
+  const openWater = competition.competitionType === "openWater";
+  const waterProgram = openWater ? openWaterExportProgram(competition) : null;
+  const exportCode = code => {
+    if (!openWater) return code;
+    const item = waterProgram.byCode.get(code);
+    if (!item) throw new Error(`Engagement eau libre hors programme : ${code}.`);
+    return item.code;
+  };
   const generatedAt = options.generatedAt ? new Date(options.generatedAt) : new Date();
   const lines = [
     `XXX;GENERER PAR LIVEPALMES le ${formatGeneratedAt(generatedAt)}`,
     "",
-    line(["XXX", "RENCONTRE", competition.location || competition.name, formatDate(competition.date), "Piscine"]),
+    line(["XXX", "RENCONTRE", competition.location || competition.name, formatDate(competition.date), openWater ? "Longue distance" : "Piscine"]),
     "",
     line(["WID", stableMeetingId(competition)])
   ];
+  if (waterProgram) waterProgram.definitions.forEach(item => lines.push(item.fields.map(value => text(String(value))).join(";")));
   const warnings = [];
   entries.forEach((entry) => {
     const club = clubsById.get(text(entry.clubId)) || {};
@@ -162,8 +207,8 @@ function buildWinPalmeCompetitionTxt(competition = {}, entries = [], clubsById =
           swimmer.sex,
           entry.clubCode || club.clubCode,
           "",
-          individual.eventCode,
-          formatTime(individual.entryTime || individual.manualEntryTime),
+          exportCode(individual.eventCode),
+          openWater ? "000001" : formatTime(individual.entryTime || individual.manualEntryTime),
           categoryCode(swimmer.category, swimmer.sex),
           swimmerWinPalmeId(swimmer),
           ""
@@ -175,8 +220,8 @@ function buildWinPalmeCompetitionTxt(competition = {}, entries = [], clubsById =
         "REL",
         entry.clubCode || club.clubCode,
         relayCategoryCode(relay.category, relay.genderMode),
-        relay.eventCode,
-        formatTime(relay.entryTime || relay.manualEntryTime),
+        exportCode(relay.eventCode),
+        openWater ? "595999" : formatTime(relay.entryTime || relay.manualEntryTime),
         ...relayMemberIds(relay)
       ]));
     });
