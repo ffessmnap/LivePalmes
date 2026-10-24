@@ -58,6 +58,8 @@ async function saveNativeIndividualEntries(pool,input,services) {
       if(pack.individual.length+plan.plans.reduce((sum,row)=>sum+row.additions.length-row.removals.length,0)>5000) throw new RangeError("Dossier NAP trop volumineux : pagination requise.");
       target={kind:"native-individual-entry-change",operation,actorUid:input.actorUid,competitionId:input.competitionId,clubId:input.clubId,payloadHash,expectedFingerprint:input.expectedFingerprint,dossierHash:unchangedDossier(pack),competitionHash:unchangedCompetition(competition),plan,planHash:hash(plan)};
       if(services.prepareEffects){target.effects=await services.prepareEffects(connection,{plan,competition,dossier:pack});target.effectsHash=hash(target.effects);}
+      target.competitionName=competition.event?.name||competition.event?.title||"";
+      target.journalPeople=(pack.swimmers||[]).filter(person=>input.changes.some(change=>Number(change.swimmerId)===Number(person.id))).map(person=>({id:person.id,firstName:person.firstName,lastName:person.lastName}));
       if(Buffer.byteLength(JSON.stringify(target))>500000) throw new RangeError("Sauvegarde trop volumineuse pour ce lot. Selectionnez moins de nageurs.");
       if(remaining(plan,pack.individual).complete) return {ok:true,source:"nap",operation,writesExecuted:0,competition,nativeEntry:pack};
     }

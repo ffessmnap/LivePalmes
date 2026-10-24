@@ -1377,7 +1377,7 @@
     if (!value) return "";
     const date = new Date(value);
     if (Number.isNaN(date.getTime())) return "";
-    return date.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+    return date.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Paris" });
   }
 
   function lastRefreshSuffix(element) {
@@ -14992,7 +14992,7 @@
   });
 
   const AUDIT_DETAIL_LABELS = Object.freeze({
-    active: "Statut", capabilities: "Habilitations", changedCount: "Modifications appliquées",
+    birthDate: "Date de naissance", sex: "Sexe", active: "Statut", capabilities: "Habilitations", changedCount: "Modifications appliquées",
     changedSwimmerCount: "Nageurs modifiés", chrono: "Chronométrage", clubCode: "Sigle du club",
     clubId: "Identifiant du club", clubName: "Club", competitionId: "Identifiant de la compétition",
     competitionName: "Compétition", date: "Date", decision: "Décision", email: "Adresse électronique",
@@ -15008,10 +15008,11 @@
   });
 
   function auditActionLabel(action = "") {
-    return AUDIT_ACTION_METADATA[action]?.[0] || String(action || "Action non reconnue").replaceAll(".", " · ");
+    return global.LivePalmesActivityJournal.metadata[action]?.[0] || AUDIT_ACTION_METADATA[action]?.[0] || String(action || "Action non reconnue").replaceAll(".", " · ");
   }
 
   function auditActionCategory(action = "") {
+    if (global.LivePalmesActivityJournal.metadata[action]?.[1]) return global.LivePalmesActivityJournal.metadata[action][1];
     if (AUDIT_ACTION_METADATA[action]?.[1]) return AUDIT_ACTION_METADATA[action][1];
     const value = String(action || "");
     if (/request|deletion/i.test(value)) return "requests";
@@ -15147,8 +15148,8 @@
     const personName = [target.firstName || target.targetFirstName, target.lastName || target.targetLastName]
       .filter(Boolean).join(" ");
     const competition = auditCompetitionLabel(target);
-    if (competition) return competition;
     if (personName) return personName;
+    if (competition) return competition;
     if (target.personId) return auditPersonLabel(target);
     if (target.swimmerName || target.personName) return target.swimmerName || target.personName;
     if (target.clubName) return target.clubName;
@@ -15230,12 +15231,13 @@
     const target = log.target && typeof log.target === "object" ? log.target : {};
     if (key === "roles") return auditEnabledLabels(value, AUDIT_ROLE_LABELS);
     if (key === "capabilities") return auditEnabledLabels(value, AUDIT_CAPABILITY_LABELS);
+    if (key === "status") return global.LivePalmesActivityJournal.value(value);
     if (key === "active") return value === true ? "Actif" : value === false ? "Inactif" : auditDetailValue(value);
     if (key === "hidden") return value === true ? "Masquée" : value === false ? "Visible" : auditDetailValue(value);
     if (key === "personId") return auditPersonLabel(target);
     if (["clubId", "sourceClubId", "targetClubId"].includes(key)) {
-      return target.clubName || engagementNationalAuditClubs.get(String(value))
-        || clubDisplayLabel({ clubId: value }, { fallback: "Club concerné" });
+      return (String(value) === String(target.clubId) ? target.clubName : "") || engagementNationalAuditClubs.get(String(value))
+        || clubDisplayLabel({ clubId: value }, { fallback: value ? `Club réf. ${value}` : "Non renseigné" });
     }
     if (key === "competitionId") return auditCompetitionLabel(target) || "Compétition concernée";
     if (["swimmerId", "swimmerIndexId"].includes(key)) return target.swimmerName || target.personName || "Nageur concerné";
@@ -15276,7 +15278,7 @@
       if (auditValuesEqual(before, after)) return;
       const beforeValue = auditReadableValue(key, before, { target });
       const afterValue = auditReadableValue(key, after, { target });
-      rows.push(`<div class="admin-national-audit-change"><dt>${escapeHtml(auditDetailLabel(key))}</dt><dd><span>${escapeHtml(beforeValue.length > 240 ? `${beforeValue.slice(0, 237)}…` : beforeValue)}</span><span class="admin-national-audit-change-arrow" aria-hidden="true">→</span><strong>${escapeHtml(afterValue.length > 240 ? `${afterValue.slice(0, 237)}…` : afterValue)}</strong></dd></div>`);
+      rows.push(`<div class="admin-national-audit-change"><dt>${escapeHtml(auditDetailLabel(key))}</dt><dd><span>${escapeHtml(beforeValue)}</span><span class="admin-national-audit-change-arrow" aria-hidden="true">→</span><strong>${escapeHtml(afterValue)}</strong></dd></div>`);
     };
     const objectPairs = [
       ["current", "proposed"],
@@ -15289,7 +15291,7 @@
       const after = target[afterKey];
       if (!before || !after || typeof before !== "object" || typeof after !== "object" || Array.isArray(before) || Array.isArray(after)) return;
       const keys = new Set([...Object.keys(before), ...Object.keys(after)]);
-      const comparableKeys = [...keys].filter((key) => Object.hasOwn(before, key) && Object.hasOwn(after, key));
+      const comparableKeys = [...keys];
       const changedKeys = comparableKeys.filter((key) => !auditValuesEqual(before[key], after[key]));
       if (!changedKeys.length) return;
       consumedKeys.add(beforeKey);
@@ -15365,20 +15367,6 @@
     return `<details class="admin-national-audit-technical-disclosure"><summary>Détails complémentaires</summary><dl>${rows.join("")}</dl></details>`;
   }
 
-  function auditActionIsCritical(action = "") {
-    return /deleted|deletion|Merged|identityCorrected|accessUser\.(created|updated|activated|deactivated)|performanceCorrection\.(hidden|updated)/i.test(action);
-  }
-
-  function auditActionIsGroupable(action = "") {
-    return [
-      "engagementClubEntry.teamLeaderSaved", "engagementClubEntry.teamLeaderRemoved",
-      "engagementClubEntry.officialsSaved", "engagementClubEntry.swimmerAdded",
-      "engagementClubEntry.swimmerRemoved", "engagementClubEntry.swimmerSelectionsSaved",
-      "engagementClubEntry.swimmersSaved", "engagementClubEntry.individualEntriesSaved",
-      "engagementClubEntry.relaysSaved"
-    ].includes(action);
-  }
-
   function filteredEngagementNationalAuditLogs() {
     const query = normalizedEngagementClubSearch(elements.engagementsNationalAuditSearch?.value || "");
     const type = elements.engagementsNationalAuditType?.value || "";
@@ -15395,72 +15383,31 @@
     });
   }
 
-  function groupedEngagementNationalAuditLogs(logs = []) {
-    const groups = [];
-    const latestGroupByKey = new Map();
-    logs.forEach((log) => {
-      const groupable = auditActionIsGroupable(log.action) && !auditActionIsCritical(log.action);
-      const key = groupable
-        ? [log.actorUid || "system", auditClubId(log), log.target?.competitionId || ""].join("|")
-        : "";
-      const previous = key ? latestGroupByKey.get(key) : null;
-      const previousOldestAt = Date.parse(previous?.logs?.at(-1)?.createdAt || "");
-      const currentAt = Date.parse(log.createdAt || "");
-      const withinTenMinutes = Number.isFinite(previousOldestAt) && Number.isFinite(currentAt) && previousOldestAt - currentAt <= 10 * 60 * 1000;
-      if (key && previous?.groupKey === key && withinTenMinutes) {
-        previous.logs.push(log);
-      } else {
-        const group = { groupKey: key, logs: [log] };
-        groups.push(group);
-        if (key) latestGroupByKey.set(key, group);
-      }
-    });
-    return groups;
-  }
-
-  function auditGroupedActionsHtml(logs = []) {
-    const first = logs[0] || {};
-    const actor = auditActorLabel(first);
-    const club = auditClubLabel(first);
-    const competition = auditCompetitionLabel(first.target || {});
-    const sentence = `${actor} a modifié les engagements${club ? ` de ${club}` : ""}${competition ? ` pour ${competition}` : ""}.`;
-    const actions = new Map();
-    logs.forEach((log) => {
-      if (!actions.has(log.action)) actions.set(log.action, []);
-      actions.get(log.action).push(log);
-    });
-    const summaries = [...actions.entries()].map(([action, actionLogs]) => {
-      const newest = actionLogs[0] || {};
-      const oldest = actionLogs.at(-1) || newest;
-      const newestTime = auditDateLabel(newest.createdAt).split(" ").at(-1);
-      const oldestTime = auditDateLabel(oldest.createdAt).split(" ").at(-1);
-      const period = newestTime === oldestTime ? `à ${newestTime}` : `de ${oldestTime} à ${newestTime}`;
-      const details = auditDetailRows(newest);
-      return `<li><div><strong>${escapeHtml(auditActionLabel(action))}</strong><span>${actionLogs.length} mise${actionLogs.length > 1 ? "s" : ""} à jour regroupée${actionLogs.length > 1 ? "s" : ""} · ${escapeHtml(period)}</span></div>${details ? `<small>Dernier état enregistré</small><dl>${details}</dl>` : ""}</li>`;
-    }).join("");
-    return `<p class="admin-national-audit-summary-sentence">${escapeHtml(sentence)}</p><ul class="admin-national-audit-action-summary">${summaries}</ul>${auditTechnicalDetailsHtml(logs)}`;
-  }
-
   function auditEntryHtml(group = {}) {
     const logs = group.logs || [];
     const first = logs[0] || {};
-    const grouped = logs.length > 1;
-    const actionLabel = grouped ? "Engagements mis à jour" : auditActionLabel(first.action);
+    let actionLabel = auditActionLabel(first.action);
+    if (first.action === "nap.swimmerActivity.complete") {
+      const active = first.target?.after?.active ?? (first.target?.status === "active" ? true : first.target?.status === "inactive" ? false : null);
+      if (active !== null) actionLabel = first.outcome === "completed"
+        ? (active ? "Nageur réactivé" : "Nageur désactivé")
+        : (active ? "Réactivation du nageur" : "Désactivation du nageur");
+    }
     const targetLabel = auditTargetSummary(first.target, first.action);
     const clubLabel = auditClubLabel(first);
     const category = auditActionCategory(first.action);
+    const status = first.outcome === "unconfirmed" ? "Résultat non confirmé" : first.outcome === "completed" ? "Terminé" : "Trace enregistrée";
     const humanDetails = auditDetailRows(first);
-    const detailHtml = grouped
-      ? auditGroupedActionsHtml(logs)
-      : `${humanDetails ? `<dl class="admin-national-audit-detail-grid">${humanDetails}</dl>` : ""}${auditTechnicalDetailsHtml(logs)}`;
+    const planChanges = global.LivePalmesActivityJournal.changes(first.target || {});
+    const operationDetails = planChanges.length ? `<dl class="admin-national-audit-detail-grid">${planChanges.map((row) => `<div><dt>${escapeHtml(row.label)}</dt><dd>${escapeHtml(row.before)} → <strong>${escapeHtml(row.after)}</strong></dd></div>`).join("")}</dl>` : "";
+    const detailHtml = `<p class="admin-national-audit-outcome">${status}${first.outcome === "unconfirmed" ? " : une préparation existe, aucun reçu de fin n’a été retrouvé. Les changements ci-dessous sont ceux préparés ; leur application n’est pas confirmée." : ""}${first.action.startsWith("nap.") && !first.historyComplete ? ". Détails historiques partiels : ils peuvent être complétés en chargeant les traces précédentes." : ""}</p>${humanDetails ? `<dl class="admin-national-audit-detail-grid">${humanDetails}</dl>` : ""}${operationDetails}${auditTechnicalDetailsHtml(logs)}`;
     return `
       <details class="admin-national-audit-entry" data-audit-category="${escapeHtml(category)}">
         <summary>
           <time datetime="${escapeHtml(first.createdAt || "")}">${escapeHtml(auditDateLabel(first.createdAt))}</time>
-          <span class="admin-national-audit-entry-main"><strong>${escapeHtml(actionLabel)}</strong><small>${escapeHtml(targetLabel)}</small></span>
+          <span class="admin-national-audit-entry-main"><strong>${escapeHtml(actionLabel)}</strong><small>${escapeHtml(targetLabel)} · ${status}</small></span>
           <span class="admin-national-audit-actor">${escapeHtml(auditActorLabel(first))}</span>
           ${clubLabel ? `<span class="admin-national-audit-club">${escapeHtml(clubLabel)}</span>` : ""}
-          ${grouped ? `<span class="admin-national-audit-count">${logs.length} actions</span>` : ""}
           <span class="admin-national-audit-chevron" aria-hidden="true">⌄</span>
         </summary>
         <div class="admin-national-audit-entry-details">
@@ -15533,19 +15480,19 @@
     }
     updateEngagementNationalAuditFilterOptions();
     const filteredLogs = filteredEngagementNationalAuditLogs();
-    const groups = groupedEngagementNationalAuditLogs(filteredLogs);
+    const groups = global.LivePalmesActivityJournal.byDayAndActor(filteredLogs);
     if (!engagementNationalAuditLogs.length) {
       elements.engagementsNationalAuditList.innerHTML = '<p class="admin-engagements-empty">Aucune action enregistrée sur cette période.</p>';
     } else if (!groups.length) {
       elements.engagementsNationalAuditList.innerHTML = '<p class="admin-engagements-empty">Aucune action ne correspond aux filtres.</p>';
     } else {
-      elements.engagementsNationalAuditList.innerHTML = `<div class="admin-national-audit-list">${groups.map(auditEntryHtml).join("")}</div>`;
+      elements.engagementsNationalAuditList.innerHTML = `<div class="admin-national-audit-list">${groups.map((group) => `<section class="admin-national-audit-day"><h3>${escapeHtml(auditDateLabel(group.logs[0].createdAt).split(" ")[0])} · ${escapeHtml(auditActorLabel(group.logs[0]))}<small>${group.logs.length} opération${group.logs.length > 1 ? "s" : ""}</small></h3>${group.logs.map((log) => auditEntryHtml({ logs: [log] })).join("")}</section>`).join("")}</div>`;
     }
     if (elements.engagementsNationalAuditStatus && !engagementNationalAuditLogsLoading) {
       const loaded = engagementNationalAuditLogs.length;
-      const groupedCount = groups.length;
+      const groupedCount = filteredLogs.length;
       const visibleFromLabel = engagementNationalAuditVisibleFrom ? auditDateLabel(engagementNationalAuditVisibleFrom).split(" ")[0] : "";
-      elements.engagementsNationalAuditStatus.textContent = `${groupedCount} ligne${groupedCount > 1 ? "s" : ""} affichée${groupedCount > 1 ? "s" : ""} · ${loaded} trace${loaded > 1 ? "s" : ""} chargée${loaded > 1 ? "s" : ""}${visibleFromLabel ? ` depuis le ${visibleFromLabel}` : ""}.`;
+      elements.engagementsNationalAuditStatus.textContent = `${groupedCount} opération${groupedCount > 1 ? "s" : ""} affichée${groupedCount > 1 ? "s" : ""} parmi ${loaded} chargée${loaded > 1 ? "s" : ""}${visibleFromLabel ? ` depuis le ${visibleFromLabel}` : ""}. ${engagementNationalAuditHasMore ? "Historique partiel : charger la suite pour poursuivre la recherche." : "Fin de la période atteinte."} Recherche, catégorie et origine portent sur les opérations chargées.`;
       elements.engagementsNationalAuditStatus.dataset.tone = "ok";
     }
     if (elements.engagementsNationalAuditLoadMore) elements.engagementsNationalAuditLoadMore.hidden = !engagementNationalAuditHasMore;
@@ -15604,10 +15551,7 @@
           engagementNationalAuditActors.set(uid, { uid, name: "", email: "" });
         }
       });
-      const previousIds = new Set(engagementNationalAuditLogs.map((log) => log.id));
-      engagementNationalAuditLogs = append
-        ? [...engagementNationalAuditLogs, ...returnedLogs.filter((log) => !previousIds.has(log.id))]
-        : returnedLogs;
+      engagementNationalAuditLogs = global.LivePalmesActivityJournal.merge(append ? engagementNationalAuditLogs : [], returnedLogs);
       engagementNationalAuditNextCursor = result.nextCursor || null;
       engagementNationalAuditHasMore = result.hasMore === true;
       engagementNationalAuditVisibleFrom = result.visibleFrom || "";
