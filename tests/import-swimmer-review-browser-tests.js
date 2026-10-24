@@ -1,0 +1,43 @@
+"use strict";
+const assert=require("node:assert/strict"),fs=require("node:fs"),path=require("node:path"),{chromium}=require("playwright");
+const {archive}=require("./winpalme-zip-tests"),{fixture,text,people}=require("./fixtures/nap-import-review-fixture"),{previewNativeImport}=require("../functions/nap-import-preview"),{importPreviewResponse}=require("../functions/nap-import-response");
+const portal=fs.readFileSync("portail.html","utf8"),zip=archive([{name:"ExportTxt/27TEST_Export.txt",data:text},{name:"Protocoles/27TEST_ProtocoleComplet_20261014_06553360.pdf",data:"%PDF-1.4\nfixture\n%%EOF"}]);
+(async()=>{
+ const browser=await chromium.launch({headless:true,...(process.env.LIVEPALMES_BROWSER_EXECUTABLE?{executablePath:process.env.LIVEPALMES_BROWSER_EXECUTABLE}:{})});
+ try{for(const width of [1440,390,320]){
+  const page=await browser.newPage({viewport:{width,height:1000},acceptDownloads:true});page.setDefaultTimeout(12000);
+  const f=fixture(),calls=[],errors=[];page.on('pageerror',e=>errors.push(e.message));
+  await page.exposeFunction('fixtureCall',async(name,payload)=>{
+   calls.push({name,payload:structuredClone(payload)});if(name==='listCompetitionImports')return{imports:[]};
+   if(name==='getNapPerformanceAdministration'){assert.equal(payload.action,'search');const p=people.find(p=>p.id===171);return{swimmers:[{id:'171',lastName:p.nom,firstName:p.prenom,birthDate:p.date,sex:p.sexe,clubId:p.club,club:'ABC',clubName:'Club source'}]};}
+   assert.equal(name,'previewCompetitionImport');assert.equal('zipSelection' in payload,false);assert.equal('pdf' in payload,false);
+   const r=importPreviewResponse(await previewNativeImport(f.pool,payload));return{...r,previewOnly:true,reviewReady:r.canConfirm,canConfirm:false};
+  });
+  await page.route('**/*',r=>r.abort());await page.route('https://fixture.test/**',r=>r.fulfill({contentType:'text/html',body:'<!doctype html><html lang="fr"><head><meta charset="utf-8"></head><body class="admin-portal-page"></body></html>'}));await page.goto('https://fixture.test/portail.html#import-competitions');
+  await page.evaluate(html=>{
+   const doc=new DOMParser().parseFromString(html,'text/html');document.body.append(doc.querySelector('#adminImportView'));document.querySelector('#adminImportView').hidden=false;
+   window.LivePalmesEnvironment={sportingDataSource:'nap'};window.LivePalmesAppConfig={firebaseConfig:{}};window.LivePalmesPortalAuth={onChange:()=>{},status:()=>({signedIn:true,available:true}),isAdminAuthenticated:()=>true};
+   const service={httpsCallable:name=>async payload=>({data:await fixtureCall(name,payload)})};window.firebase={apps:[{}],initializeApp:()=>{},app:()=>({functions:()=>service}),functions:()=>service};
+   const original=URL.createObjectURL.bind(URL);URL.createObjectURL=blob=>{if(blob.type==='application/json')blob.text().then(text=>{window.exportedReport=JSON.parse(text);});return original(blob);};
+  },portal);
+  for(const file of ['styles.css','assets/livepalmes-admin-portal.css','performances/public/import-competitions.css'])await page.addStyleTag({path:file});
+  for(const file of ['performances/public/winpalme-zip.js','performances/public/import-swimmer-review.js','performances/public/import-competitions.js'])await page.addScriptTag({path:file});
+  await page.locator('#competitionImportOpenButton').click();await page.locator('#competitionImportFile').setInputFiles({name:'fixture.zip',mimeType:'application/zip',buffer:zip});await page.locator('#competitionImportForm button[type="submit"]').click();await page.locator('[data-review-competition]').selectOption('5172');await page.locator('[data-review-refresh]').click();
+  await page.locator('details.import-swimmer').first().waitFor({state:'attached'});assert.equal(await page.locator('details.import-swimmer').count(),5);
+  for(const [state,count] of [['matched',3],['review',1],['unknown',1]])assert.match(await page.locator(`[data-review-open="group:${state}"] > summary`).innerText(),new RegExp('\\('+count+'\\)'));
+  await page.locator('[data-review-open="group:matched"] > summary').click();
+  const card=name=>page.locator('details.import-swimmer').filter({has:page.locator('summary').filter({hasText:new RegExp('^'+name+' ')})});
+  const choose=async(name,id)=>{const c=card(name);await c.locator(':scope > summary').click();await c.getByText('Choisir ou rechercher un profil NAP',{exact:true}).click();await c.locator('article.import-profile-option').filter({hasText:'Identifiant NAP : '+id}).getByRole('button',{name:'Choisir ce nageur'}).click();};
+  await choose('TEST',168);await choose('DUP',169);
+  const unknown=card('UNKNOWN');await unknown.locator(':scope > summary').click();await unknown.getByText('Choisir ou rechercher un profil NAP',{exact:true}).click();await unknown.locator('[data-review-query]').fill('KNOWN');await unknown.locator('[data-review-search]').click();await unknown.locator('[data-review-pick]').click();
+  await page.locator('[data-review-refresh]').click();await page.locator('[data-review-ack]').first().waitFor();assert.match(await card('TEST').innerText(),/Club actuel : CUR/);assert.match(await card('TEST').innerText(),/Club différent : ABC/);
+  await page.locator('[data-review-ack]').check();await page.locator('[data-review-refresh]').click();await page.getByText('Rapprochements contrôlés pour cet aperçu.',{exact:false}).waitFor();assert.equal(await page.locator('[data-nap-save]').isDisabled(),true);
+  await card('TEST').getByText(/Performances et passages/).click();assert.match(await card('TEST').innerText(),/Premier relayeur/);assert.match(await card('TEST').innerText(),/Temps de passage/);await page.locator('[data-review-replacement]').check();assert.equal(await page.locator('[data-nap-save]').isDisabled(),true);
+  const [download]=await Promise.all([page.waitForEvent('download'),page.locator('[data-zip-report]').click()]);assert.equal(download.suggestedFilename(),'controle-import-winpalme.json');await page.waitForFunction(()=>window.exportedReport);const report=await page.evaluate(()=>exportedReport);assert.equal(report.choices.confirmReplacement,true);assert.equal(report.reviewReady,true);assert.equal(report.review.review.groups.length,5);
+  const last=calls.filter(c=>c.name==='previewCompetitionImport').at(-1).payload;assert.equal(last.swimmerBindings.filter(b=>b.swimmerId===168).length,2);assert.ok(last.clubAcknowledgements.length);assert.equal(calls.filter(c=>c.name==='getNapPerformanceAdministration').length,1);
+  assert.equal(await page.locator('#competitionImportDialog').evaluate(e=>e.scrollWidth>e.clientWidth+1),false);
+  if(process.env.LIVEPALMES_ZIP_SCREENSHOTS){fs.mkdirSync('outputs/zip-review',{recursive:true});await card('TEST').scrollIntoViewIfNeeded();await page.screenshot({path:path.resolve(`outputs/zip-review/preview-${width}.png`)});}
+  await page.locator('[data-review-ack]').uncheck();assert.equal(await page.locator('[data-review-replacement]').isDisabled(),true);assert.equal(await page.locator('[data-review-replacement]').isChecked(),false);
+  await page.locator('#competitionImportDialogClose').click();await page.locator('#competitionImportOpenButton').click();assert.equal(await page.locator('#competitionImportFile').inputValue(),'');assert.equal(await page.locator('#competitionImportWarnings').evaluate(e=>e.classList.contains('import-grouped-review')),false);assert.deepEqual(errors,[]);await page.close();
+ }console.log('Grouped ZIP review: real preview, 3 states, profile choice/search, clubs, relay/passages, replacement report, no writes; 1440/390/320 px passed offline.');}finally{await browser.close();}
+})().catch(e=>{console.error(e);process.exitCode=1;});
