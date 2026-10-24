@@ -54,6 +54,7 @@ async function saveNativeRelayChanges(pool,input,services) {
       if(!Array.isArray(changes) || changes.length!==input.changes.length || changes.some((row,index)=>Number(row.relayId)!==Number(input.changes[index]?.relayId) || row.action!==input.changes[index]?.action)) throw new TypeError("Resolution des relais incomplete.");
       const plan=planRelayChanges(pack,changes);
       target={kind:"native-relay-change",operation,actorUid:input.actorUid,competitionId:input.competitionId,clubId:input.clubId,payloadHash,expectedFingerprint:input.expectedFingerprint,dossierHash:dossierHash(pack),competitionHash:competitionHash(competition),plan,planHash:hash(plan)};
+      target.competitionName=competition.event?.name||competition.event?.title||"";
       if(Buffer.byteLength(JSON.stringify(target))>500000) throw new RangeError("Sauvegarde trop volumineuse pour ce lot.");
       if(remainingRelays(plan,pack.relays,pack.members).complete) return {ok:true,source:"nap",operation,writesExecuted:0,competition,nativeEntry:pack};
     }

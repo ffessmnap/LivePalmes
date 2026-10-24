@@ -21,7 +21,7 @@ function createAudit(db,input,writeOnce){
       for(const ref of pointerRefs)transaction.set(ref,{action:"nap.swimmerMerge.reservation",actorUid:input.actorUid,operation,state:"pending",updatedAt:new Date().toISOString()});
     }),
     complete:async(operation,target)=>{
-      await writeOnce("nap.swimmerMerge.complete",input.actorUid,target,`nap-swimmer-merge-${operation}-complete`);
+      await writeOnce("nap.swimmerMerge.complete",input.actorUid,{...target,auditPreparationId:`nap-swimmer-merge-${operation}-before`},`nap-swimmer-merge-${operation}-complete`);
       await db.runTransaction(async transaction=>{
         const pointers=await transaction.getAll(...pointerRefs);check(pointers,operation);
         if(pointers.some(doc=>!doc.exists||doc.data().operation!==operation))throw new TypeError("Reservation de fusion a verifier.");

@@ -16762,6 +16762,31 @@
   gap: 5px;
 }
 
+.admin-national-audit-day {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.admin-national-audit-day h3 {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  align-items: baseline;
+  margin: 12px 0 4px;
+  font-size: 0.95rem;
+}
+
+.admin-national-audit-day h3 small {
+  font-size: 0.8rem;
+  font-weight: 400;
+}
+
+.admin-national-audit-outcome,
+.admin-national-audit-detail-grid dd {
+  overflow-wrap: anywhere;
+}
+
 .admin-national-audit-entry {
   border: 1px solid #dfe6e8;
   border-left: 3px solid #8ba4aa;

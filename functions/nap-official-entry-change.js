@@ -55,6 +55,7 @@ async function saveNativeOfficials(pool,input,services) {
       const plan=planOfficials(pack,input.officialPersonIds,people);
       if(remainingOfficials(plan,pack.officials).complete) return {ok:true,source:"nap",operation,writesExecuted:0,competition,nativeEntry:pack};
       target={kind:"native-official-entry-change",operation,actorUid:input.actorUid,competitionId:input.competitionId,clubId:input.clubId,expectedFingerprint:input.expectedFingerprint,payloadHash,plan,planHash:hash(plan),people,peopleHash:hash(people),untouchedHash:untouched(pack),competitionHash:competitionHash(competition)};
+      target.competitionName=competition.event?.name||competition.event?.title||"";
       if(Buffer.byteLength(JSON.stringify(target))>500000) throw new RangeError("Sauvegarde trop volumineuse.");
     }
     if((await query("SELECT TRIGGER_NAME FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA=DATABASE() AND EVENT_OBJECT_TABLE='officielsengager' LIMIT 1")).length) throw new TypeError("Declencheur natif a verifier avant enregistrement.");

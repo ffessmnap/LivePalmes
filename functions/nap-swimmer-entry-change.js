@@ -82,6 +82,8 @@ async function saveNativeSwimmerSelection(pool,input,services) {
     if(!target) {
       target={kind:"native-swimmer-selection",operation,actorUid:input.actorUid,competitionId:input.competitionId,clubId:input.clubId,expectedFingerprint:input.expectedFingerprint,payloadHash,plan,planHash:hash(plan),untouchedHash:untouched(pack,plan),competitionHash:hash(competitionRows)};
       if(services.prepareEffects){target.effects=await services.prepareEffects(connection,{plan,competition,dossier:pack});target.effectsHash=hash(target.effects);}
+      target.competitionName=competition.event?.name||competition.event?.title||"";
+      target.journalPeople=(pack.swimmers||[]).filter(person=>input.changes.some(change=>Number(change.swimmerId)===Number(person.id))).map(person=>({id:person.id,firstName:person.firstName,lastName:person.lastName}));
       if(Buffer.byteLength(JSON.stringify(target))>500000) throw new RangeError("Sauvegarde trop volumineuse : selectionnez moins de nageurs.");
       await services.audit.prepare(operation,target);
     }

@@ -3068,7 +3068,7 @@ async function createClubFromEngagementAccessRequest(payload = {}, actorUid = ""
       read: async operation => { const doc = await db.collection("auditLogs").doc(`nap-club-create-${operation}-before`).get(); return doc.exists ? doc.data().target : null; },
       prepare: (operation, target) => db.collection("auditLogs").doc(`nap-club-create-${operation}-before`).create({action:"nap.clubCreate.prepare",actorUid,target,createdAt:new Date().toISOString()}),
       checkpoint: (operation, target) => db.collection("auditLogs").doc(`nap-club-create-${operation}-before`).update({target}),
-      complete: async (operation, target) => { await writeAuditLogOnce("nap.clubCreate.complete",actorUid,target,`nap-club-create-${operation}-complete`); await require("./nap-club-provenance").record(db,operation,target,actorUid); }
+      complete: async (operation, target) => { await writeAuditLogOnce("nap.clubCreate.complete",actorUid,{...target,auditPreparationId:`nap-club-create-${operation}-before`},`nap-club-create-${operation}-complete`); await require("./nap-club-provenance").record(db,operation,target,actorUid); }
     });
   const existingClub = await findEngagementClubByFederalNumber(payload.newClub?.federalNumber);
   if (existingClub) return { club: existingClub, created: false };
@@ -5437,7 +5437,7 @@ function nativeQualificationServices(context) {
       {
         read:async operation=>{const snapshot=await db.collection("auditLogs").doc(`nap-competition-${operation}-before`).get();return snapshot.exists?snapshot.data().target:null;},
         prepare:(operation,target)=>db.collection("auditLogs").doc(`nap-competition-${operation}-before`).create({action:"nap.competition.change.prepare",actorUid:input.actorUid,target:{...target,notificationOpeningRequested:input.notificationOpeningRequested===true},createdAt:new Date().toISOString()}),
-        complete:async(operation,target)=>{await armNativeCompetitionNotification(context,input,operation);await writeAuditLogOnce("nap.competition.changed",input.actorUid,target,operation);}
+        complete:async(operation,target)=>{await armNativeCompetitionNotification(context,input,operation);await writeAuditLogOnce("nap.competition.changed",input.actorUid,{...target,auditPreparationId:`nap-competition-${operation}-before`},operation);}
       },event=>assertCanModifyEngagementEvent(context,event))
   };
 }
@@ -9715,7 +9715,7 @@ async function createNativePortalCalendarRecord(raw,context,kind) {
       read:async operation=>{const snapshot=await db.collection("auditLogs").doc(`nap-competition-create-${operation}-before`).get();return snapshot.exists?snapshot.data().target:null;},
       prepare:(operation,target)=>db.collection("auditLogs").doc(`nap-competition-create-${operation}-before`).create({action:"nap.competition.create.prepare",actorUid:context.uid,target,createdAt:new Date().toISOString()}),
       checkpoint:(operation,target)=>db.collection("auditLogs").doc(`nap-competition-create-${operation}-before`).update({target}),
-      complete:(operation,target)=>writeAuditLogOnce("engagementCompetition.created",context.uid,target,operation)
+      complete:(operation,target)=>writeAuditLogOnce("engagementCompetition.created",context.uid,{...target,auditPreparationId:`nap-competition-create-${operation}-before`},operation)
     },proposed=>assertCanModifyEngagementEvent(context,proposed));
     const competition=await nativePortalCompetition(result.competitionId,proposed=>assertCanManageEngagementCompetition(context,proposed));
     return {...result,competition};
@@ -9968,7 +9968,7 @@ exports.updateEngagementCalendarEvent = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRO
       const result=await require("./nap-qualification-edit-lock").ordinaryEdit(pool,calendarEventId,()=>require("./nap-portal-competition-change").applyCompetitionChange(pool,{competitionId:calendarEventId,actorUid:context.uid,national:context.national,expectedFingerprint:request.data?.expectedFingerprint,patch},{
         read:async operation=>{const saved=await db.collection("auditLogs").doc(`nap-calendar-event-${operation}-before`).get();return saved.exists?saved.data().target:null;},
         prepare:(operation,target)=>db.collection("auditLogs").doc(`nap-calendar-event-${operation}-before`).create({action:"nap.calendarEvent.change.prepare",actorUid:context.uid,target,createdAt:new Date().toISOString()}),
-        complete:(operation,target)=>writeAuditLogOnce("nap.calendarEvent.changed",context.uid,target,operation)
+        complete:(operation,target)=>writeAuditLogOnce("nap.calendarEvent.changed",context.uid,{...target,auditPreparationId:`nap-calendar-event-${operation}-before`},operation)
       },authorize),{authorize});
       const event=await nativePortalCompetition(calendarEventId,item=>assertCanManageEngagementCompetition(context,item),true);
       return {...result,event:{...event,sourceType:"calendarEvent",eventType:event.competitionType,regionalPastReadOnly:!context.national&&engagementEventIsPast(event)}};
@@ -10012,7 +10012,7 @@ exports.deleteEngagementCalendarEvent = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRO
     try {
       const result=await require("./nap-competition-deletion").competitionDeletion(pool,{competitionId:calendarEventId,actorUid:context.uid,previewOnly:request.data?.previewOnly===true,confirmPermanent:request.data?.confirmPermanent===true,expectedFingerprint:request.data?.expectedFingerprint},{
         prepare:(id,target)=>db.collection("auditLogs").doc(`nap-competition-delete-${id}-before`).create({action:"nap.calendarEventDelete.prepare",actorUid:context.uid,target,createdAt:new Date().toISOString()}),
-        complete:(id,target)=>writeAuditLogOnce("nap.calendarEventDelete.complete",context.uid,target,`nap-competition-delete-${id}-complete`)
+        complete:(id,target)=>writeAuditLogOnce("nap.calendarEventDelete.complete",context.uid,{...target,auditPreparationId:`nap-competition-delete-${id}-before`},`nap-competition-delete-${id}-complete`)
       },async id=>{
         const pack=await require("./nap-portal-competitions").readNativeCompetition(pool,id,event=>assertCanModifyEngagementEvent(context,event));
         if(!pack||!require("./nap-calendar-event-details").KINDS.has(pack.event.competitionType))throw new HttpsError("failed-precondition","Formation, stage ou reunion requis.");
@@ -10211,7 +10211,7 @@ exports.saveNationalFeaturedDocuments = onCall({ ...ENGAGEMENT_DOCUMENT_UPLOAD_O
       audit:{
         read:async operation=>{const snapshot=await db.collection("auditLogs").doc(`nap-featured-${operation}-before`).get();return snapshot.exists?snapshot.data().target:null;},
         prepare:(operation,target)=>db.collection("auditLogs").doc(`nap-featured-${operation}-before`).create({action:"nap.featured.prepare",actorUid:target.actorUid,target,createdAt:new Date().toISOString()}),
-        complete:(operation,target)=>writeAuditLogOnce("nap.featured.saved",request.auth.uid,target,operation)
+        complete:(operation,target)=>writeAuditLogOnce("nap.featured.saved",request.auth.uid,{...target,auditPreparationId:`nap-featured-${operation}-before`},operation)
       }
     });
     return {source:"nap",...result};
@@ -10242,7 +10242,7 @@ async function manageNationalLibraryDocuments(request) {
       audit:{
         read:async operation=>(await db.collection('auditLogs').doc(`national-document-${operation}-before`).get()).exists,
         prepare:(operation,target)=>db.collection('auditLogs').doc(`national-document-${operation}-before`).create({action:'nap.nationalDocument.prepare',actorUid:context.uid,target,createdAt:new Date().toISOString()}),
-        complete:(operation,target)=>writeAuditLogOnce('nap.nationalDocument.saved',context.uid,target,operation)
+        complete:(operation,target)=>writeAuditLogOnce('nap.nationalDocument.saved',context.uid,{...target,auditPreparationId:`national-document-${operation}-before`},operation)
       }
     });
   }catch(error){
@@ -10314,7 +10314,7 @@ async function mutateNativeCompetitionDocument(request, action) {
       audit:{
         read:async operation=>{const saved=await db.collection("auditLogs").doc(`nap-document-${operation}-before`).get();return saved.exists?saved.data().target:null;},
         prepare:(operation,target)=>db.collection("auditLogs").doc(`nap-document-${operation}-before`).create({action:"nap.document.prepare",actorUid:context.uid,target,createdAt:new Date().toISOString()}),
-        complete:(operation,target)=>writeAuditLogOnce("nap.document.saved",context.uid,target,operation)
+        complete:(operation,target)=>writeAuditLogOnce("nap.document.saved",context.uid,{...target,auditPreparationId:`nap-document-${operation}-before`},operation)
       }
     });
     result.documents=await nativeDocumentAuthors(result.documents);
@@ -12207,7 +12207,7 @@ exports.saveEngagementClubTeamLeader = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRON
         read: async operation => { const snapshot = await db.collection("auditLogs").doc(`nap-team-leader-${operation}-before`).get(); return snapshot.exists ? snapshot.data().target : null; },
         prepare: (operation, target) => db.collection("auditLogs").doc(`nap-team-leader-${operation}-before`).create({ action: "nap.teamLeader.change.prepare", actorUid: context.uid, target, createdAt: new Date().toISOString() }),
         checkpoint: (operation, target) => db.collection("auditLogs").doc(`nap-team-leader-${operation}-before`).update({ target, updatedAt: new Date().toISOString() }),
-        complete: (operation, target) => writeAuditLogOnce("engagementClubEntry.teamLeaderSaved", context.uid, target, operation)
+        complete: (operation, target) => writeAuditLogOnce("engagementClubEntry.teamLeaderSaved", context.uid,{...target,auditPreparationId:`nap-team-leader-${operation}-before`}, operation)
       }, event => assertEngagementClubWriteOpen(event));
       const competition = await nativePortalCompetition(competitionId, () => {});
       const pack = await require("./nap-portal-entries").readNativeClubEntry(pool, { competitionId, clubId: context.clubId }, () => {});
@@ -12329,7 +12329,7 @@ exports.removeEngagementClubTeamLeader = onCall({ ...CALLABLE_OPTIONS, ...(ENVIR
         read: async operation => { const snapshot = await db.collection("auditLogs").doc(`nap-team-leader-remove-${operation}-before`).get(); return snapshot.exists ? snapshot.data().target : null; },
         prepare: (operation,target) => db.collection("auditLogs").doc(`nap-team-leader-remove-${operation}-before`).create({action:"nap.teamLeader.remove.prepare",actorUid:context.uid,target,createdAt:new Date().toISOString()}),
         checkpoint: (operation,target) => db.collection("auditLogs").doc(`nap-team-leader-remove-${operation}-before`).update({target,updatedAt:new Date().toISOString()}),
-        complete: (operation,target) => writeAuditLogOnce("engagementClubEntry.teamLeaderRemoved",context.uid,target,operation)
+        complete: (operation,target) => writeAuditLogOnce("engagementClubEntry.teamLeaderRemoved",context.uid,{...target,auditPreparationId:`nap-team-leader-remove-${operation}-before`},operation)
       }, event => assertEngagementClubWriteOpen(event));
       const competition = await nativePortalCompetition(competitionId, () => {});
       const pack = await require("./nap-portal-entries").readNativeClubEntry(pool,{competitionId,clubId:context.clubId},()=>{});
@@ -12450,7 +12450,7 @@ exports.saveEngagementClubPerson = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT
           read:async operation=>{const snapshot=await db.collection("auditLogs").doc(`nap-person-create-${operation}-before`).get();return snapshot.exists?snapshot.data().target:null;},
           prepare:(operation,target)=>db.collection("auditLogs").doc(`nap-person-create-${operation}-before`).create({action:"nap.person.create.prepare",actorUid:context.uid,target,createdAt:new Date().toISOString()}),
           checkpoint:(operation,target)=>db.collection("auditLogs").doc(`nap-person-create-${operation}-before`).update({target}),
-          complete:(operation,target)=>writeAuditLogOnce("engagementClubPerson.created",context.uid,target,operation)
+          complete:(operation,target)=>writeAuditLogOnce("engagementClubPerson.created",context.uid,{...target,auditPreparationId:`nap-person-create-${operation}-before`},operation)
         },scope=>{if(scope.clubId!==String(context.clubId)) throw new HttpsError("permission-denied","Personne hors club.");});
       }
       return await require("./nap-club-person-edit").editNativePerson(require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD),{
@@ -12459,7 +12459,7 @@ exports.saveEngagementClubPerson = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT
       },{
         read:async operation=>{const snapshot=await db.collection("auditLogs").doc(`nap-person-identity-${operation}-before`).get();return snapshot.exists?snapshot.data().target:null;},
         prepare:(operation,target)=>db.collection("auditLogs").doc(`nap-person-identity-${operation}-before`).create({action:"nap.person.identity.prepare",actorUid:context.uid,target,createdAt:new Date().toISOString()}),
-        complete:(operation,target)=>writeAuditLogOnce("engagementClubPerson.saved",context.uid,target,operation)
+        complete:(operation,target)=>writeAuditLogOnce("engagementClubPerson.saved",context.uid,{...target,auditPreparationId:`nap-person-identity-${operation}-before`},operation)
       },scope=>{if(scope.clubId!==String(context.clubId)) throw new HttpsError("permission-denied","Personne hors club.");});
     } catch(error) {
       if(error instanceof HttpsError) throw error;
@@ -12541,7 +12541,7 @@ exports.setEngagementClubPersonStatus = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRO
       },{
         read:async operation=>{const snapshot=await db.collection("auditLogs").doc(`nap-person-status-${operation}-before`).get();return snapshot.exists?snapshot.data().target:null;},
         prepare:(operation,target)=>db.collection("auditLogs").doc(`nap-person-status-${operation}-before`).create({action:"nap.person.status.prepare",actorUid:context.uid,target,createdAt:new Date().toISOString()}),
-        complete:(operation,target)=>writeAuditLogOnce("engagementClubPerson.statusChanged",context.uid,target,operation)
+        complete:(operation,target)=>writeAuditLogOnce("engagementClubPerson.statusChanged",context.uid,{...target,auditPreparationId:`nap-person-status-${operation}-before`},operation)
       },scope=>{if(scope.clubId!==String(context.clubId)) throw new HttpsError("permission-denied","Personne hors club.");});
     } catch(error) {
       if(error instanceof HttpsError) throw error;
@@ -12597,7 +12597,7 @@ async function saveNativeClubOfficials(context,request) {
       audit:{
         read:async operation=>{const doc=await db.collection("auditLogs").doc(`nap-official-${operation}-before`).get();return doc.exists?doc.data().target:null;},
         prepare:(operation,target)=>db.collection("auditLogs").doc(`nap-official-${operation}-before`).create({action:"nap.officialEntry.prepare",actorUid:context.uid,target,createdAt:new Date().toISOString()}),
-        complete:(operation,target)=>writeAuditLogOnce("engagementClubEntry.officialsSaved",context.uid,target,operation)
+        complete:(operation,target)=>writeAuditLogOnce("engagementClubEntry.officialsSaved",context.uid,{...target,auditPreparationId:`nap-official-${operation}-before`},operation)
       }
     });
     const competition=require("./nap-portal-workspaces").competitionItem(result.competition,ENGAGEMENT_EVENT_DEFINITION_BY_CODE);
@@ -12735,7 +12735,7 @@ exports.setEngagementClubSwimmerActivityStatus = onCall({ ...CALLABLE_OPTIONS, .
       }, {
         read:async operation=>{const doc=await db.collection("auditLogs").doc(`nap-swimmer-activity-${operation}-before`).get();return doc.exists?doc.data().target:null;},
         prepare:(operation,target)=>db.collection("auditLogs").doc(`nap-swimmer-activity-${operation}-before`).create({action:"nap.swimmerActivity.prepare",actorUid:context.uid,target,createdAt:new Date().toISOString()}),
-        complete:(operation,target)=>writeAuditLogOnce("nap.swimmerActivity.complete",context.uid,target,`nap-swimmer-activity-${operation}-complete`)
+        complete:(operation,target)=>writeAuditLogOnce("nap.swimmerActivity.complete",context.uid,{...target,auditPreparationId:`nap-swimmer-activity-${operation}-before`},`nap-swimmer-activity-${operation}-complete`)
       });
       return result;
     } catch(error) { throw new HttpsError(error instanceof TypeError?"failed-precondition":"unavailable",error instanceof TypeError?error.message:"Statut NAP a verifier. Rechargez la fiche avant de reessayer."); }
@@ -12884,7 +12884,7 @@ exports.recoverEngagementClubSwimmer = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRON
       },{
         read:async operation=>{const snapshot=await db.collection("auditLogs").doc(`nap-swimmer-recovery-${operation}-before`).get();return snapshot.exists?snapshot.data().target:null;},
         prepare:(operation,target)=>db.collection("auditLogs").doc(`nap-swimmer-recovery-${operation}-before`).create({action:"nap.swimmer.recovery.prepare",actorUid:context.uid,target,createdAt:new Date().toISOString()}),
-        complete:(operation,target)=>writeAuditLogOnce("engagementClubSwimmer.recovered",context.uid,target,operation)
+        complete:(operation,target)=>writeAuditLogOnce("engagementClubSwimmer.recovered",context.uid,{...target,auditPreparationId:`nap-swimmer-recovery-${operation}-before`},operation)
       },scope=>{if(scope.clubId!==String(context.clubId)) throw new HttpsError("permission-denied","Nageur hors club.");});
     } catch(error) {
       if(error instanceof HttpsError) throw error;
@@ -13008,7 +13008,7 @@ exports.createEngagementClubSwimmer = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONM
         read:async operation=>{const doc=await db.collection("auditLogs").doc(`nap-swimmer-create-${operation}-before`).get();return doc.exists?doc.data().target:null;},
         prepare:(operation,target)=>db.collection("auditLogs").doc(`nap-swimmer-create-${operation}-before`).create({action:"nap.swimmerCreate.prepare",actorUid:context.uid,target,createdAt:new Date().toISOString()}),
         checkpoint:(operation,target)=>db.collection("auditLogs").doc(`nap-swimmer-create-${operation}-before`).update({target}),
-        complete:(operation,target)=>writeAuditLogOnce("nap.swimmerCreate.complete",context.uid,target,`nap-swimmer-create-${operation}-complete`)
+        complete:(operation,target)=>writeAuditLogOnce("nap.swimmerCreate.complete",context.uid,{...target,auditPreparationId:`nap-swimmer-create-${operation}-before`},`nap-swimmer-create-${operation}-complete`)
       },authorize,formatAlert);
     } catch(error) {
       if(error instanceof HttpsError) throw error;
@@ -13401,7 +13401,7 @@ exports.validateEngagementSwimmerLicenses = onCall({ ...CALLABLE_OPTIONS, ...(EN
       return await require("./nap-license-control").validateBatch(connection,request.data || {},context.uid,{
         read:async operation=>{const snapshot=await db.collection("auditLogs").doc(`nap-licenses-${operation}-before`).get();return snapshot.exists?snapshot.data().target:null;},
         prepare:(operation,target)=>db.collection("auditLogs").doc(`nap-licenses-${operation}-before`).create({action:"nap.licenses.correction.prepare",actorUid:context.uid,target,createdAt:new Date().toISOString()}),
-        complete:(operation,target)=>writeAuditLogOnce("nap.licenses.corrected",context.uid,target,operation)
+        complete:(operation,target)=>writeAuditLogOnce("nap.licenses.corrected",context.uid,{...target,auditPreparationId:`nap-licenses-${operation}-before`},operation)
       });
     } catch(error) {throw new HttpsError(error instanceof TypeError ? "failed-precondition" : error instanceof RangeError ? "resource-exhausted" : "unavailable",error instanceof TypeError || error instanceof RangeError ? error.message : "Validation a verifier. La sauvegarde est conservee : reprenez le meme lot.");}
     finally {try{if(locked)await connection.execute({sql:"SELECT RELEASE_LOCK('livepalmes_license_control')",timeout:10000});}finally{connection.release();}}
@@ -14425,14 +14425,14 @@ exports.saveEngagementNationalClub = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONME
         read:async operation=>{const doc=await db.collection("auditLogs").doc(`nap-club-create-${operation}-before`).get();return doc.exists?doc.data().target:null;},
         prepare:(operation,target)=>db.collection("auditLogs").doc(`nap-club-create-${operation}-before`).create({action:"nap.clubCreate.prepare",actorUid:context.uid,target,createdAt:new Date().toISOString()}),
         checkpoint:(operation,target)=>db.collection("auditLogs").doc(`nap-club-create-${operation}-before`).update({target}),
-        complete:async(operation,target)=>{await writeAuditLogOnce("nap.clubCreate.complete",context.uid,target,`nap-club-create-${operation}-complete`);await require("./nap-club-provenance").record(db,operation,target,context.uid);}
+        complete:async(operation,target)=>{await writeAuditLogOnce("nap.clubCreate.complete",context.uid,{...target,auditPreparationId:`nap-club-create-${operation}-before`},`nap-club-create-${operation}-complete`);await require("./nap-club-provenance").record(db,operation,target,context.uid);}
       },()=>{if(!context.national)throw new HttpsError("permission-denied","Action nationale requise.");});}
       catch(error) {if(error instanceof HttpsError)throw error;throw new HttpsError(error instanceof TypeError?"failed-precondition":"unavailable",error instanceof TypeError?error.message:"Creation club NAP a verifier. Reprenez la meme action ; sauvegarde conservee.");}
     }
     try {return await require("./nap-club-change").edit(require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD),{clubId:requestedClubId,actorUid:context.uid,club:request.data?.club,expectedFingerprint:request.data?.expectedFingerprint,confirmFederalNumberChange:request.data?.confirmFederalNumberChange},{
       read:async operation=>{const doc=await db.collection("auditLogs").doc(`nap-club-edit-${operation}-before`).get();return doc.exists?doc.data().target:null;},
       prepare:(operation,target)=>db.collection("auditLogs").doc(`nap-club-edit-${operation}-before`).create({action:"nap.clubEdit.prepare",actorUid:context.uid,target,createdAt:new Date().toISOString()}),
-      complete:(operation,target)=>writeAuditLogOnce("nap.clubEdit.complete",context.uid,target,`nap-club-edit-${operation}-complete`)
+      complete:(operation,target)=>writeAuditLogOnce("nap.clubEdit.complete",context.uid,{...target,auditPreparationId:`nap-club-edit-${operation}-before`},`nap-club-edit-${operation}-complete`)
     },()=>{if(!context.national)throw new HttpsError("permission-denied","Action nationale requise.");});}
     catch(error) {if(error instanceof HttpsError)throw error;throw new HttpsError(error instanceof TypeError?"failed-precondition":"unavailable",error instanceof TypeError?error.message:"Modification club NAP a verifier. Rechargez la fiche.");}
   }
@@ -14523,7 +14523,7 @@ exports.deleteEngagementNationalClub = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRON
       assertNoAccounts:async clubId=>{const [users,requests]=await Promise.all([db.collection("users").where("clubId","==",clubId).limit(1).get(),db.collection("engagementAccessRequests").where("clubId","==",clubId).where("status","==","pending").limit(1).get()]);if(!users.empty||!requests.empty)throw new TypeError("Ce club possede un compte ou une demande d'acces. Desactivez-le plutot que de le supprimer.");},
       read:async operation=>{const doc=await db.collection("auditLogs").doc(`nap-club-delete-${operation}-before`).get();return doc.exists?doc.data().target:null;},
       prepare:(operation,target)=>db.collection("auditLogs").doc(`nap-club-delete-${operation}-before`).create({action:"nap.clubDelete.prepare",actorUid:context.uid,target,createdAt:new Date().toISOString()}),
-      complete:(operation,target)=>writeAuditLogOnce("nap.clubDelete.complete",context.uid,target,`nap-club-delete-${operation}-complete`)
+      complete:(operation,target)=>writeAuditLogOnce("nap.clubDelete.complete",context.uid,{...target,auditPreparationId:`nap-club-delete-${operation}-before`},`nap-club-delete-${operation}-complete`)
     },()=>{if(!context.national)throw new HttpsError("permission-denied","Suppression nationale requise.");});}
     catch(error){if(error instanceof HttpsError)throw error;throw new HttpsError(error instanceof TypeError||error instanceof RangeError?"failed-precondition":"unavailable",error instanceof TypeError||error instanceof RangeError?error.message:"Suppression club NAP a verifier. Reprenez la meme action ; sauvegarde conservee.");}
   }
@@ -14687,7 +14687,7 @@ exports.resolveEngagementSwimmerChangeRequest = onCall(ENVIRONMENT.sportingDataS
         }, {
           read: async operation => { const before = await db.collection("auditLogs").doc(`nap-identity-${operation}-before`).get(); return before.exists ? before.data().target : null; },
           prepare: (operation, target) => db.collection("auditLogs").doc(`nap-identity-${operation}-before`).create({ action: "nap.swimmer.identityCorrection.prepare", actorUid: context.uid, target, createdAt: new Date().toISOString() }),
-          complete: (operation, target) => writeAuditLogOnce("nap.swimmer.identityCorrected", context.uid, target, operation)
+          complete: (operation, target) => writeAuditLogOnce("nap.swimmer.identityCorrected", context.uid,{...target,auditPreparationId:`nap-identity-${operation}-before`}, operation)
         }, { prepare: async () => [], apply: async () => ({ entryUpdateCount: 0, relayUpdateCount: 0, oldLivepalmesLinksIgnored: true }) });
       }
       const now = new Date().toISOString();
@@ -14820,7 +14820,7 @@ exports.updateEngagementNationalSwimmerIdentity = onCall({ ...ENGAGEMENT_SWIMMER
           return snapshot.exists ? snapshot.data().target : null;
         },
         prepare: (operation, target) => db.collection("auditLogs").doc(`nap-identity-${operation}-before`).create({ action: "nap.swimmer.identityCorrection.prepare", actorUid: context.uid, target, createdAt: new Date().toISOString() }),
-        complete: (operation, target) => writeAuditLogOnce("nap.swimmer.identityCorrected", context.uid, target, operation)
+        complete: (operation, target) => writeAuditLogOnce("nap.swimmer.identityCorrected", context.uid,{...target,auditPreparationId:`nap-identity-${operation}-before`}, operation)
       }, {
         prepare: async () => [],
         apply: async () => ({ entryUpdateCount: 0, relayUpdateCount: 0, oldLivepalmesLinksIgnored: true })
@@ -14873,7 +14873,7 @@ exports.setEngagementNationalClubSwimmerStatus = onCall({ ...CALLABLE_OPTIONS, .
       return await require("./nap-swimmer-activity").change(pool,{id,clubId:String(rows[0].club),actorUid:context.uid,status:active?"active":"inactive",expectedFingerprint:request.data?.expectedFingerprint},{
         read:async operation=>{const doc=await db.collection("auditLogs").doc(`nap-swimmer-activity-${operation}-before`).get();return doc.exists?doc.data().target:null;},
         prepare:(operation,target)=>db.collection("auditLogs").doc(`nap-swimmer-activity-${operation}-before`).create({action:"nap.swimmerActivity.prepare",actorUid:context.uid,target,createdAt:new Date().toISOString()}),
-        complete:(operation,target)=>writeAuditLogOnce("nap.swimmerActivity.complete",context.uid,target,`nap-swimmer-activity-${operation}-complete`)
+        complete:(operation,target)=>writeAuditLogOnce("nap.swimmerActivity.complete",context.uid,{...target,auditPreparationId:`nap-swimmer-activity-${operation}-before`},`nap-swimmer-activity-${operation}-complete`)
       });
     } catch(error) {throw new HttpsError(error instanceof TypeError?"failed-precondition":"unavailable",error instanceof TypeError?error.message:"Statut NAP a verifier. Rechargez la fiche.");}
   }
@@ -15050,7 +15050,7 @@ exports.deleteEngagementNationalClubSwimmer = onCall({ ...CALLABLE_OPTIONS, ...(
       },{
         read:async operation=>{const [saved,reservation]=await Promise.all([db.collection("auditLogs").doc(`nap-swimmer-delete-${operation}-before`).get(),db.collection("auditLogs").doc(`nap-swimmer-merge-person-${swimmerId}`).get()]);if(reservation.exists&&reservation.data().state==="pending")throw new TypeError("Une fusion de cette fiche doit etre terminee avant sa suppression.");return saved.exists?saved.data().target:null;},
         prepare:(operation,target)=>db.collection("auditLogs").doc(`nap-swimmer-delete-${operation}-before`).create({action:"nap.swimmerDelete.prepare",actorUid:context.uid,target,createdAt:new Date().toISOString()}),
-        complete:(operation,target)=>writeAuditLogOnce("nap.swimmerDelete.complete",context.uid,target,`nap-swimmer-delete-${operation}-complete`)
+        complete:(operation,target)=>writeAuditLogOnce("nap.swimmerDelete.complete",context.uid,{...target,auditPreparationId:`nap-swimmer-delete-${operation}-before`},`nap-swimmer-delete-${operation}-complete`)
       },()=>{if(!context.national)throw new HttpsError("permission-denied","Suppression nationale requise.");});
     }catch(error){if(error instanceof HttpsError)throw error;throw new HttpsError(error instanceof TypeError||error instanceof RangeError?"failed-precondition":"unavailable",error instanceof TypeError||error instanceof RangeError?error.message:"Suppression NAP a verifier. Reprenez la meme action ; sauvegarde conservee.");}
   }
@@ -15856,7 +15856,7 @@ exports.setEngagementNationalClubPersonStatus = onCall({ ...CALLABLE_OPTIONS, ..
       const result=await statusService.changeNativePersonStatus(pool,{personId,clubId,actorUid:context.uid,active,expectedFingerprint:request.data?.expectedFingerprint},{
         read:async operation=>{const doc=await db.collection("auditLogs").doc(`nap-person-status-${operation}-before`).get();return doc.exists?doc.data().target:null;},
         prepare:(operation,target)=>db.collection("auditLogs").doc(`nap-person-status-${operation}-before`).create({action:"nap.personStatus.prepare",actorUid:context.uid,target,createdAt:new Date().toISOString()}),
-        complete:(operation,target)=>writeAuditLogOnce("nap.personStatus.complete",context.uid,target,`nap-person-status-${operation}-complete`)
+        complete:(operation,target)=>writeAuditLogOnce("nap.personStatus.complete",context.uid,{...target,auditPreparationId:`nap-person-status-${operation}-before`},`nap-person-status-${operation}-complete`)
       },scope=>{if(!context.national || scope.clubId!==clubId) throw new HttpsError("permission-denied","Personne hors perimetre.");});
       return result;
     } catch(error) {if(error instanceof HttpsError) throw error;throw new HttpsError(error instanceof TypeError?"failed-precondition":"unavailable",error instanceof TypeError?error.message:"Statut NAP a verifier. Rechargez la fiche.");}
@@ -15914,7 +15914,7 @@ exports.deleteEngagementNationalClubPerson = onCall({ ...CALLABLE_OPTIONS, ...(E
       return await require("./nap-person-deletion").deletePerson(require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD),{personId,actorUid:context.uid,confirmPermanent:true,expectedFingerprint:request.data?.expectedFingerprint},{
         read:async operation=>{const doc=await db.collection("auditLogs").doc(`nap-person-delete-${operation}-before`).get();return doc.exists?doc.data().target:null;},
         prepare:(operation,target)=>db.collection("auditLogs").doc(`nap-person-delete-${operation}-before`).create({action:"nap.personDelete.prepare",actorUid:context.uid,target,createdAt:new Date().toISOString()}),
-        complete:(operation,target)=>writeAuditLogOnce("nap.personDelete.complete",context.uid,target,`nap-person-delete-${operation}-complete`)
+        complete:(operation,target)=>writeAuditLogOnce("nap.personDelete.complete",context.uid,{...target,auditPreparationId:`nap-person-delete-${operation}-before`},`nap-person-delete-${operation}-complete`)
       },()=>{if(!context.national) throw new HttpsError("permission-denied","Suppression nationale requise.");});
     } catch(error) {if(error instanceof HttpsError) throw error;throw new HttpsError(error instanceof TypeError?"failed-precondition":"unavailable",error instanceof TypeError?error.message:"Suppression NAP a verifier. Rechargez la fiche ; sauvegarde conservee.");}
   }
@@ -15962,7 +15962,7 @@ exports.listEngagementNationalAuditLogs = onCall(CALLABLE_OPTIONS, async (reques
   const snapshot = await query.limit(limit + 1).get();
   const pageDocuments = snapshot.docs.slice(0, limit);
   const hasMore = snapshot.docs.length > limit;
-  const logs = pageDocuments.map((doc) => {
+  const rawLogs = pageDocuments.map((doc) => {
     const data = doc.data() || {};
     return cleanFirestoreValue({
       id: doc.id,
@@ -15972,6 +15972,11 @@ exports.listEngagementNationalAuditLogs = onCall(CALLABLE_OPTIONS, async (reques
       target: typeof data.target === "object" && data.target ? data.target : {}
     });
   });
+  const journal = await require("./activity-journal").projectPage(rawLogs, async (ids) => {
+    const documents = await db.getAll(...ids.map((id) => db.collection("auditLogs").doc(id)));
+    return documents.filter((doc) => doc.exists).map((doc) => ({ id: doc.id, ...doc.data() }));
+  });
+  const logs = journal.logs;
   const knownActorUids = new Set((Array.isArray(request.data?.knownActorUids) ? request.data.knownActorUids : [])
     .slice(0, 100)
     .map((value) => cleanText(value).slice(0, 160))
@@ -16054,11 +16059,12 @@ exports.listEngagementNationalAuditLogs = onCall(CALLABLE_OPTIONS, async (reques
     visibleFrom,
     readBudget: {
       auditDocuments: snapshot.docs.length,
+      counterpartDocuments: journal.counterpartDocuments,
       actorDocuments: actorSnapshots.length,
       competitionDocuments: competitionSnapshots.length,
       personDocuments: personSnapshots.length,
       profileDocuments: context.profileReadCount,
-      maximumDocuments: limit + 1 + AUDIT_ACTOR_RESOLUTION_LIMIT + AUDIT_COMPETITION_RESOLUTION_LIMIT + AUDIT_PERSON_RESOLUTION_LIMIT + 1
+      maximumDocuments: 2 * limit + 1 + AUDIT_ACTOR_RESOLUTION_LIMIT + AUDIT_COMPETITION_RESOLUTION_LIMIT + AUDIT_PERSON_RESOLUTION_LIMIT + 1
     }
   };
 });
@@ -16122,7 +16128,7 @@ exports.mergeEngagementNationalClubPerson = onCall({ ...CALLABLE_OPTIONS, ...(EN
       return await require("./nap-person-merge").mergePeople(require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD),{sourcePersonId,targetPersonId,actorUid:context.uid,confirmMerge:true,confirmClubMismatch:request.data?.confirmClubMismatch===true,sourceFingerprint:request.data?.sourceFingerprint,targetFingerprint:request.data?.targetFingerprint},{
         read:async operation=>{const doc=await db.collection("auditLogs").doc(`nap-person-merge-${operation}-before`).get();return doc.exists?doc.data().target:null;},
         prepare:(operation,target)=>db.collection("auditLogs").doc(`nap-person-merge-${operation}-before`).create({action:"nap.personMerge.prepare",actorUid:context.uid,target,createdAt:new Date().toISOString()}),
-        complete:(operation,target)=>writeAuditLogOnce("nap.personMerge.complete",context.uid,target,`nap-person-merge-${operation}-complete`)
+        complete:(operation,target)=>writeAuditLogOnce("nap.personMerge.complete",context.uid,{...target,auditPreparationId:`nap-person-merge-${operation}-before`},`nap-person-merge-${operation}-complete`)
       },()=>{if(!context.national)throw new HttpsError("permission-denied","Fusion nationale requise.");});
     }catch(error){if(error instanceof HttpsError)throw error;throw new HttpsError(error instanceof TypeError?"failed-precondition":"unavailable",error instanceof TypeError?error.message:"Fusion NAP a verifier. Rechargez les fiches ; sauvegarde conservee.");}
   }
@@ -16752,7 +16758,7 @@ async function saveNativeClubIndividualEntries(context,request) {
       audit:{
         read:async operation=>{const doc=await db.collection("auditLogs").doc(`nap-individual-${operation}-before`).get();return doc.exists?doc.data().target:null;},
         prepare:(operation,target)=>db.collection("auditLogs").doc(`nap-individual-${operation}-before`).create({action:"nap.individualEntry.prepare",actorUid:context.uid,target,createdAt:new Date().toISOString()}),
-        complete:(operation,target)=>writeAuditLogOnce("engagementClubEntry.individualEntriesSaved",context.uid,target,operation)
+        complete:(operation,target)=>writeAuditLogOnce("engagementClubEntry.individualEntriesSaved",context.uid,{...target,auditPreparationId:`nap-individual-${operation}-before`},operation)
       }
     });
     const competition=require("./nap-portal-workspaces").competitionItem(result.competition,ENGAGEMENT_EVENT_DEFINITION_BY_CODE);
@@ -16942,7 +16948,7 @@ async function saveNativeClubSwimmerSelections(context,request,rawChanges) {
       audit:{
         read:async operation=>{const doc=await db.collection("auditLogs").doc(`nap-swimmer-selection-${operation}-before`).get();return doc.exists?doc.data().target:null;},
         prepare:(operation,target)=>db.collection("auditLogs").doc(`nap-swimmer-selection-${operation}-before`).create({action:"nap.swimmerSelection.prepare",actorUid:context.uid,target,createdAt:new Date().toISOString()}),
-        complete:(operation,target)=>writeAuditLogOnce("engagementClubEntry.swimmerSelectionsSaved",context.uid,target,operation)
+        complete:(operation,target)=>writeAuditLogOnce("engagementClubEntry.swimmerSelectionsSaved",context.uid,{...target,auditPreparationId:`nap-swimmer-selection-${operation}-before`},operation)
       }
     });
     const competition=require("./nap-portal-workspaces").competitionItem(result.competition,ENGAGEMENT_EVENT_DEFINITION_BY_CODE);
@@ -17296,7 +17302,7 @@ async function saveNativeClubRelays(context,request) {
       read:async operation=>{const doc=await db.collection("auditLogs").doc(`nap-relay-${operation}-before`).get();return doc.exists?doc.data().target:null;},
       prepare:(operation,target)=>db.collection("auditLogs").doc(`nap-relay-${operation}-before`).create({action:"nap.relay.prepare",actorUid:context.uid,target,createdAt:new Date().toISOString()}),
       checkpoint:(operation,target)=>db.collection("auditLogs").doc(`nap-relay-${operation}-before`).update({target}),
-      complete:(operation,target)=>writeAuditLogOnce("engagementClubEntry.relaysSaved",context.uid,target,operation)
+      complete:(operation,target)=>writeAuditLogOnce("engagementClubEntry.relaysSaved",context.uid,{...target,auditPreparationId:`nap-relay-${operation}-before`},operation)
     };
     let result;
     if(request.data?.removeRelayId) {
@@ -17497,7 +17503,7 @@ exports.updateEngagementCompetition = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONM
       }, {
         read:async operation => { const snapshot=await db.collection("auditLogs").doc(`nap-competition-${operation}-before`).get(); return snapshot.exists ? snapshot.data().target : null; },
         prepare:(operation,target) => db.collection("auditLogs").doc(`nap-competition-${operation}-before`).create({action:"nap.competition.change.prepare",actorUid:context.uid,target:{...target,notificationOpeningRequested:request.data?.notificationOpeningRequested===true},createdAt:new Date().toISOString()}),
-        complete:async(operation,target) => {await armNativeCompetitionNotification(context,{competitionId,patch},operation);await writeAuditLogOnce("nap.competition.changed",context.uid,target,operation);}
+        complete:async(operation,target) => {await armNativeCompetitionNotification(context,{competitionId,patch},operation);await writeAuditLogOnce("nap.competition.changed",context.uid,{...target,auditPreparationId:`nap-competition-${operation}-before`},operation);}
       },authorize),{authorize});
       const competition=await nativePortalCompetition(competitionId,event=>assertCanManageEngagementCompetition(context,event));
       return {...result,competition:{...competition,regionalPastReadOnly:!context.national && engagementEventIsPast(competition)}};
@@ -17586,7 +17592,7 @@ exports.deleteEngagementCompetition = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONM
         expectedFingerprint: request.data?.expectedFingerprint
       }, {
         prepare: (id, target) => db.collection("auditLogs").doc(`nap-competition-delete-${id}-before`).create({action:"nap.competitionDelete.prepare",actorUid:context.uid,target,createdAt:new Date().toISOString()}),
-        complete: (id, target) => writeAuditLogOnce("nap.competitionDelete.complete",context.uid,target,`nap-competition-delete-${id}-complete`)
+        complete: (id, target) => writeAuditLogOnce("nap.competitionDelete.complete",context.uid,{...target,auditPreparationId:`nap-competition-delete-${id}-before`},`nap-competition-delete-${id}-complete`)
       }, async id => {
         const pack = await require("./nap-portal-competitions").readNativeCompetition(pool,id,event=>assertCanModifyEngagementEvent(context,event));
         if (!pack) throw new HttpsError("not-found", "Competition NAP introuvable.");
