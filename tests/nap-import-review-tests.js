@@ -1,0 +1,22 @@
+"use strict";
+const assert=require("node:assert/strict"),{fixture,old}=require("./fixtures/nap-import-review-fixture");
+const {previewNativeImport}=require("../functions/nap-import-preview"),{importPreviewResponse}=require("../functions/nap-import-response");
+(async()=>{
+ let f=fixture(),pack=await previewNativeImport(f.pool,f.input),r=importPreviewResponse(pack);
+ assert.equal(r.review.groups.length,5);const test=r.review.groups.find(g=>g.source.lastName==="TEST");
+ assert.equal(test.sourceLines.length,2);assert.equal(test.state,"matched");assert.equal(test.profile.clubCode,"CUR");assert.equal(test.profile.performanceCount,2);assert.equal(test.clubAlerts.length,1);assert.equal(test.clubAlerts[0].confirmed,false);
+ assert.equal(r.review.groups.find(g=>g.source.lastName==="DUP").state,"review");assert.equal(r.review.groups.find(g=>g.source.lastName==="UNKNOWN").state,"unknown");
+ const leg=pack.incoming.find(i=>i.origin==="first-relay");assert.equal(leg.row.nageur,168);assert.equal(leg.row.course,"100SF");assert.equal(leg.row.tps,"010234");assert.equal(leg.row.club,"106");assert.equal(leg.row.cat,"HSE");assert.equal(leg.row.points,0);assert.equal(leg.row.relais,0);assert.equal(pack.incoming.filter(i=>i.origin==="first-relay").length,1,"Only the first leg becomes an individual performance");
+ assert.ok(test.performances.some(p=>p.origin==="passage"));assert.ok(test.performances.some(p=>p.origin==="first-relay"));assert.equal(pack.canConfirm,false);
+ const bindings=r.review.groups.filter(g=>g.state!=="matched").flatMap(g=>g.sourceLines.map(sourceLine=>({sourceLine,swimmerId:g.source.lastName==="DUP"?169:171})));
+ const input={...f.input,swimmerBindings:bindings,clubAcknowledgements:[test.clubAlerts[0].key]};
+ pack=await previewNativeImport(f.pool,input);r=importPreviewResponse(pack);assert.equal(r.canConfirm,true);assert.equal(r.diff.hasExisting,true);assert.equal(r.diff.requiresReplacementConfirmation,true);assert.ok(r.diff.changes.some(c=>c.before.id===old.id&&c.after.time==="021500"));assert.equal(r.diff.removals.length,1);assert.equal(r.diff.additions.length,pack.incoming.length+pack.incomingRelays.length);assert.equal(r.review.groups.find(g=>g.source.lastName==="UNKNOWN").profile.id,171);
+ assert.equal(r.review.groups.find(g=>g.source.lastName==="TEST").clubAlerts[0].confirmed,true);assert.ok(pack.incoming.every(i=>i.row.club==="106"),"Current club never replaces source competition club");
+ const changedClub={...input,clubBindings:[{code:"ABC",clubId:"107"}]};pack=await previewNativeImport(f.pool,changedClub);assert.equal(pack.canConfirm,false,"Acknowledgements are bound to current selected profile and club");
+ f=fixture({capped:true});r=importPreviewResponse(await previewNativeImport(f.pool,f.input));assert.equal(r.review.countsCapped,true);assert.ok(r.review.profiles.every(p=>p.performanceCount===null));assert.equal(f.calls.filter(c=>c.sql.startsWith("SELECT nageur FROM perfs")).length,1);assert.equal(f.calls.length,7);
+ f=fixture();const missing={...f.input,rawText:f.input.rawText.replace("1:02.34","00.00")};pack=await previewNativeImport(f.pool,missing);assert.ok(pack.issues.some(i=>i.code==="first-relay-incomplete"));assert.equal(pack.incoming.some(i=>i.origin==="first-relay"),false);
+ pack=await previewNativeImport(f.pool,{...f.input,rawText:f.input.rawText.replace("1:02.34","5:00.00")});assert.ok(pack.issues.some(i=>i.code==="first-relay-incomplete"),"First leg cannot exceed the team's final time");
+ const ambiguousCategory=f.input.rawText.split('\n').map(line=>{const c=line.split(';');if(c[0]==='NAG'&&c[1]==='TEST'&&c[7]==='200SF'){c[9]='HJU';c[20]='HJU';}return c.join(';');}).join('\n');
+ pack=await previewNativeImport(f.pool,{...f.input,rawText:ambiguousCategory});assert.ok(pack.issues.some(i=>i.code==="first-relay-incomplete"));assert.equal(pack.incoming.some(i=>i.origin==="first-relay"),false,"Never substitute the mixed relay category for an ambiguous individual category");
+ console.log("Import swimmer review: grouped identities, bounded candidate counts, club confirmation witnesses, first relay leg, passages and replacement inventory verified without writes.");
+})().catch(error=>{console.error(error);process.exitCode=1;});

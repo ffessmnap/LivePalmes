@@ -1314,6 +1314,8 @@
   }
 
   function clearZipSelection() {
+    global.LivePalmesImportReview?.reset();
+    elements.warnings?.classList.remove('import-grouped-review');
     if (currentZipPdfUrl) global.URL.revokeObjectURL(currentZipPdfUrl);
     currentZipPdfUrl = ""; currentZipSelection = null;
     if (elements.zipPreview) { elements.zipPreview.hidden = true; elements.zipPreview.innerHTML = ""; }
@@ -1334,7 +1336,7 @@
       if (currentPreview?.source === 'nap') collectNativeImportChoices();
       downloadJson('controle-import-winpalme.json', {
         format: 'livepalmes-zip-review-v1', generatedAt: new Date().toISOString(), previewOnly: true,
-        manifest: m, choices: currentPayload ? Object.fromEntries(['competitionId','swimmerBindings','memberBindings','clubBindings','excludedSourceLines'].map(k => [k, currentPayload[k] ?? null])) : null,
+        manifest: m, choices: currentPayload ? Object.fromEntries(['competitionId','swimmerBindings','memberBindings','clubBindings','clubAcknowledgements','excludedSourceLines','confirmReplacement','replacementReviewFingerprint'].map(k => [k, currentPayload[k] ?? null])) : null,
         review: currentPreview, reviewReady: currentPreview?.reviewReady === true
       });
     };
@@ -1496,6 +1498,20 @@
     if (elements.previewFilter) elements.previewFilter.closest('.competition-import-preview-tools').hidden = true;
     if (elements.sample) elements.sample.closest('.import-table-wrap').hidden = true;
     elements.sample.innerHTML = '';
+    if (result.previewOnly && global.LivePalmesImportReview) {
+      global.LivePalmesImportReview.render({result,payload:currentPayload,host:elements.warnings,summary:elements.summary,
+        onChange:()=>{previewRequestId++;currentPreview.reviewReady=false;currentPreview.reviewStale=true;currentPreview.canConfirm=false;},
+        onRefresh:async()=>{
+          const requestId=++previewRequestId;
+          try{const response=await callFunction('previewCompetitionImport',currentPayload);if(requestId!==previewRequestId)return;global.LivePalmesImportReview.settled();renderNativeImportPreview(response);}
+          catch(error){if(requestId===previewRequestId)setMessage(elements.message,error.message||String(error));}
+        },
+        onSearch:async query=>{
+          const response=await callFunction('getNapPerformanceAdministration',{action:'search',query});
+          return (response.swimmers||[]).map(p=>({...p,id:Number(p.id),clubCode:p.club,performanceCount:null}));
+        }});
+      return;
+    }
     const metadata = result.metadata || {};
     elements.summary.textContent = `${metadata.competitionName || 'Résultats WinPalme'} — ${metadata.date || ''} — ${result.rows.length} lignes à contrôler${result.previewOnly ? ' — contrôle national sans enregistrement' : ''}`;
     const input = (attribute, parts, value = '') => `<input type="text" inputmode="numeric" ${attribute}="${escapeHtml(JSON.stringify(parts))}" value="${escapeHtml(value)}" aria-label="Identifiant NAP" placeholder="Identifiant NAP">`;
@@ -2234,7 +2250,7 @@
     document.body.append(link);
     link.click();
     link.remove();
-    URL.revokeObjectURL(url);
+    global.setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
 
   async function exportAdditionalPerformanceData() {
