@@ -2,12 +2,15 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
-### 24 octobre — Export manuel eau libre depuis le catalogue NAP (TEST en préparation)
+### 24 octobre — Export manuel eau libre depuis le catalogue NAP (TEST déployé, WinPalme à valider)
 
 - Accord Antoine : utiliser les champs natifs du catalogue, bloquer les ambiguïtés, générer Beaumont 2025 (4903) et comparer au TXT IntraNAP, sans envoi automatique.
 - Codes, longueurs, style, composition et mixité lus en une requête groupée par PK sur les seules références du programme (300 maximum). Budget téléchargement : au plus 26 SELECT au lieu de 25, zéro écriture ; ouverture et rafraîchissement de fiche inchangés. Aucun catalogue complet lu dans le parcours interactif.
 - Ordre natif F/M conservé ; identifiants vides conservés pour les deux éliminations et le relais Jumièges vérifiés. Collisions LD11KM/WPRELAISLD3500, variante LD4X2KMM, individuel mixte, autres relais, sources absentes/inactives/incohérentes et doublons refusés explicitement. Aucun changement de catégorie sportive, de club fédéral, de WID, de données NAP/Storage ou de PROD.
-- Tests ciblés : Beaumont 6 km/support, régression Jumièges et piscine, sources incohérentes/périmées, références dupliquées, collisions et absence de mutation. Déploiement TEST, comparaison réelle et validation WinPalme à compléter ; aucune validation utilisateur déduite.
+- Tests ciblés réussis : Beaumont 6 km/support, régression Jumièges strictement identique, piscine inchangée, sources incohérentes/périmées, références dupliquées, collisions, budget du callable et absence de mutation. Vérification technique Linux réussie. [PR #491](https://github.com/ffessmnap/LivePalmes/pull/491) intégrée au candidat f1f4a6ee07c54dae6c58cc93a0bb88baa1fc6ef7.
+- [TEST commun 40092545159](https://github.com/ffessmnap/LivePalmes/actions/runs/40092545159) réussi : Hosting 2ccae6b64dd9850a ; seule generateEngagementCompetitionTxtExport actualisée, révision ACTIVE generateengagementcompetitiontxtexport-00070-ruh ; 113 autres révisions strictement conservées, 114 ACTIVE. Preuve privée outputs/water-catalogue-20261024/test-proof/test-proof.json. Le lancement prématuré 40092348717 a été annulé pendant checkout, avant toute authentification ou publication Firebase.
+- Téléchargement réel GED Beaumont 4903 vérifié (5 756 octets, SHA-256 f3801d93b1894b129ddf9658604964556be5bf10257f7d0b444d6289484f2c36) : WID IDF202505014903 ; 54 engagements retrouvés (45 LD06KM, 9 LD06KMSUP), mêmes identités/naissances/sexes/épreuves/temps et rattachements fédéraux, 11 clubs, dix chefs, aucun relais, UTF-8 sans BOM et CRLF. Comparatif privé outputs/water-catalogue-20261024/comparison-local.json ; téléchargement publié identique au résultat local hors date de génération.
+- Écarts IntraNAP explicités : DIS 6 km 74/M contre 75/F (première référence du programme conservée), support 218 identique ; 49 catégories recalculées selon saison et grille existante, six identifiants actuels NAP différents ; un nom de club, deux prénoms et trois dates de chefs différents. Neuf lignes OFF du TXT historique sont absentes du générateur existant : écart non corrigé dans ce périmètre. Aucun envoi ni écriture sportive ; import WinPalme et validation utilisateur encore attendus.
 
 ### 24 octobre — WID e-NAP et catégories par saison de l’export eau libre
 
