@@ -197,14 +197,18 @@ assert.deepEqual(cleanClubPayload({
 
 console.log("Tests export WinPalme et référentiel clubs OK.");
 
-// Synthetic open-water programme mirrors Jumièges without personal data.
+// Synthetic native catalogue projection, without personal data.
+function catalogueRow(course,id_course,relais=0,sexe="M") {
+ const map={"5000":["LD05KM",5000],"3000BI":["LD03KMBI",3000],"4X1000SB Mixte":["LD4X1KMMM",4000],"1000BI":["LD1000BI",1000],"3000":["LD03KM",3000],"1000":["LD1000",1000],"150BIEL":["LD150BIE",150],"150SFEL":["LD150SFE",150],"6000":["LD06KM",6000],"6KMSUPPORT":["LD06KMSUP",6000]};
+ return {course,id_course,relais,sexe:relais?"0":sexe,wplabel:map[course][0],longueur:map[course][1],style:"SF",type_:relais?0:1,nbnageur:relais?4:1,mixte:relais?1:0,ld:1,actif:1,validation:1};
+}
 const waterEvents = [
   ["OW5000SF", "5000", 99, "individual"], ["OW3000BI", "3000BI", 229, "individual"],
   ["4X1000SBMIXTE", "4X1000SB Mixte", 413, "relay"],
   ["OW1000BI", "1000BI", 269, "individual"], ["OW3000SF", "3000", 73, "individual"],
   ["OW1000SF", "1000", 117, "individual"], ["150BIEL", "150BIEL", 454, "individual"],
   ["150SFEL", "150SFEL", 456, "individual"]
-].map(([code, course, id_course, type]) => ({ code, type, nativeCourses: [{ course, id_course, relais: type === "relay" ? 1 : 0 }] }));
+].map(([code, course, id_course, type]) => ({ code, type, nativeCourses: [catalogueRow(course,id_course,type === "relay" ? 1 : 0)] }));
 const waterCompetition = { ...competition, competitionType: "openWater", events: waterEvents };
 const waterEntries = [{ clubId: "106", clubCode: "CNHC", swimmers: [{ swimmerIndexId: "1", sex: "F", category: "S", individualEntries: [{eventCode: "OW3000BI", entryTime: "12:00.00"}] }], relays: [{eventCode: "4X1000SBMIXTE", genderMode: "mixed", category: "S", members: [{swimmerIndexId:"1"},{swimmerIndexId:"2"},{swimmerIndexId:"3"},{swimmerIndexId:"4"}]}] }];
 const clubsMap = new Map(clubs.map(club => [club.clubId, club]));
@@ -219,13 +223,25 @@ assert.ok(waterTxt.includes("DIS;LD4X1KMMM;4X1000SB Mixte;4000;SF;2;4;;1\r\n"));
 assert.ok(waterTxt.includes(";;LD03KMBI;000001;FSE;1;;"));
 assert.ok(waterTxt.includes("REL;CNHC;XSE;LD4X1KMMM;595999;1;2;3;4;"));
 assert.equal(JSON.stringify([waterCompetition, waterEntries]), waterBefore);
-const femaleFirst = { ...waterCompetition, events: [{ code: "OW3000SF", type: "individual", nativeCourses: [{course:"3000",id_course:72,relais:0},{course:"3000",id_course:73,relais:0}] }] };
+const femaleFirst = { ...waterCompetition, events: [{ code: "OW3000SF", type: "individual", nativeCourses: [catalogueRow("3000",72,0,"F"),catalogueRow("3000",73)] }] };
 assert.ok(buildWinPalmeCompetitionTxt(femaleFirst).buffer.toString().includes("DIS;LD03KM;3000;3000;SF;1;1;72;0"));
 assert.throws(() => buildWinPalmeCompetitionTxt({...waterCompetition,events:[]}), /Programme eau libre absent/);
 assert.throws(() => buildWinPalmeCompetitionTxt({...waterCompetition,events:[{code:"OW2000SUP",nativeCourses:[{course:"2KMSUPPORT"}]}]}), /sans correspondance/);
 assert.throws(() => buildWinPalmeCompetitionTxt({...waterCompetition,events:waterEvents.filter(event => event.code !== "OW3000BI")},waterEntries,clubsMap), /hors programme|correspondance/);
-assert.throws(() => buildWinPalmeCompetitionTxt({...waterCompetition,events:[{code:"OW1000SF",type:"individual",nativeCourses:[{course:"1000",relais:0}]}]}), /Reference native/);
+assert.throws(() => buildWinPalmeCompetitionTxt({...waterCompetition,events:[{code:"OW1000SF",type:"individual",nativeCourses:[catalogueRow("1000",null)]}]}), /Reference native/);
 console.log("Open-water experimental TXT: full programme, first native reference, empty elimination/relay IDs, fixed times and strict unknown-course refusal verified.");
+
+const beaumontEvents = [catalogueRow("6000",74),catalogueRow("6KMSUPPORT",218)].map((row,i)=>({code:`BEAUMONT${i}`,type:"individual",nativeCourses:[row]}));
+const beaumontTxt=buildWinPalmeCompetitionTxt({...waterCompetition,events:beaumontEvents}).buffer.toString();
+assert.ok(beaumontTxt.includes("DIS;LD06KM;6000;6000;SF;1;1;74;0"));
+assert.ok(beaumontTxt.includes("DIS;LD06KMSUP;6KMSUPPORT;6000;SF;1;1;218;0"));
+const refuseRow = (row,pattern=/ambigue|incoherent|Reference native/)=>assert.throws(()=>buildWinPalmeCompetitionTxt({...waterCompetition,events:[{code:"TEST",type:"individual",nativeCourses:[row]}]}),pattern);
+for(const patch of [{wplabel:""},{wplabel:"LD11KM"},{wplabel:"WPRELAISLD3500"},{longueur:0},{style:"BI"},{actif:0},{validation:0},{ld:0},{mixte:1},{nbnageur:3},{type_:0},{sexe:"0"}]) refuseRow({...catalogueRow("6000",74),...patch});
+assert.throws(()=>buildWinPalmeCompetitionTxt({...waterCompetition,events:[{code:"BAD",type:"individual",nativeCourses:[catalogueRow("6000",74),{...catalogueRow("6000",75,0,"F"),longueur:9000}]}]}),/ambigue/);
+assert.throws(()=>buildWinPalmeCompetitionTxt({...waterCompetition,events:[{code:"BAD",type:"individual",nativeCourses:[catalogueRow("6000",74),catalogueRow("6000",75)]}]}),/Reference native/);
+assert.throws(()=>buildWinPalmeCompetitionTxt({...waterCompetition,events:[beaumontEvents[0],{...beaumontEvents[0],code:"SECOND"}]}),/ambigue/);
+assert.throws(()=>buildWinPalmeCompetitionTxt({...waterCompetition,events:[{code:"RELAY",type:"relay",nativeCourses:[{...catalogueRow("4X1000SB Mixte",413,1),course:"4X500",wplabel:"LD4X500SFM",longueur:2000}]}]}),/incoherent/);
+console.log("Native catalogue: Beaumont surface/support, missing/inactive/inconsistent fields, collisions, duplicate references and unverified relays tested.");
 
 // Federal numbers distinguish clubs even when their abbreviation is shared.
 const { prepareManualOpenWaterEntries } = require("../functions/winpalme-open-water-manual");
@@ -273,13 +289,22 @@ assert.equal(JSON.stringify(bornEntry),birthBefore);
 (async()=>{
   const {readManualOpenWaterCompetition}=require("../functions/winpalme-open-water-manual");
   for(const [id,date,comite,wid] of [[4982,"2026-06-27",4,"CNNP202606274982"],[4760,"2024-05-18",3,"IDF202405184760"]]) {
-    let reads=0;const competition={id:"legacy-nap-"+id,date};const before=JSON.stringify(competition);
-    const result=await readManualOpenWaterCompetition({execute:async(query,args)=>{reads++;assert.match(query.sql,/FORCE INDEX.*WHERE id=\? LIMIT 2/);assert.deepEqual(args,[id]);return [[{id,date,comite}]];}},competition);
-    assert.equal(result.winPalmeId,wid);assert.equal(reads,1);assert.equal(JSON.stringify(competition),before);
+    let reads=0;const competition={id:"legacy-nap-"+id,date,events:[waterEvents[0]]};const before=JSON.stringify(competition);
+    const result=await readManualOpenWaterCompetition({execute:async(query,args)=>{reads++;if(reads===1){assert.match(query.sql,/FORCE INDEX.*WHERE id=\? LIMIT 2/);assert.deepEqual(args,[id]);return [[{id,date,comite}]];}assert.match(query.sql,/course_dispo FORCE INDEX.*WHERE id IN.*LIMIT 301/);assert.deepEqual(args,[99]);return [[{...catalogueRow("5000",99),id:99}]];}},competition);
+    assert.equal(result.winPalmeId,wid);assert.equal(reads,2);assert.equal(JSON.stringify(competition),before);
   }
   for(const rows of [[],[{id:4982,date:"2026-06-28",comite:4}],[{id:4982,date:"2026-06-27",comite:14}]]) {
     await assert.rejects(readManualOpenWaterCompetition({execute:async()=>[rows]},{id:"4982",date:"2026-06-27"}),/Reference e-NAP|Code du comite/);
   }
   await assert.rejects(readManualOpenWaterCompetition({execute:async()=>{throw new Error("private SQL");}},{id:"4982",date:"2026-06-27"}),e=>e.message==="Lecture de la reference e-NAP indisponible.");
-  console.log("Native e-NAP WIDs, one primary-key read, stale/unknown refusal, season/year category boundaries and no mutation passed.");
+  const input={id:"4903",date:"2025-05-01",events:beaumontEvents};
+  for(const mode of ["missing","changed","error"]){
+    let count=0;
+    await assert.rejects(readManualOpenWaterCompetition({execute:async()=>{
+      if(++count===1)return [[{id:4903,date:input.date,comite:3}]];
+      if(mode==="error")throw Error("private SQL");
+      return [mode==="missing"?[]:[{...catalogueRow("6000",74),id:74,course:"changed"},{...catalogueRow("6KMSUPPORT",218),id:218}]];
+    }},input),/Catalogue eau libre|Programme eau libre modifie|Lecture du catalogue/);
+  }
+  console.log("Native e-NAP WIDs, two grouped primary-key reads, incomplete/stale catalogue refusal, season boundaries and no mutation passed.");
 })().catch(error=>{console.error(error);process.exitCode=1;});
