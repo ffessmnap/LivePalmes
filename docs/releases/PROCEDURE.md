@@ -126,6 +126,16 @@ IDF doit rester enabled=true/scope=idf/révision4 : témoin intégral du documen
 
 Le preflight utilise les preuves GitHub sans Google. Son plan doit encore être présenté et approuvé dans Infra ; cette préparation ne vaut jamais autorisation de déployer.
 
+### Correction du 24 octobre — conserver tous les clubs sans modifier le réglage
+
+Le plan40112486278 a été approuvé, mais la publication40112920934 s’est arrêtée au garde mail après contrôle TEST et des révisions PROD, avant sauvegarde et tout déploiement. Le réglage réel est actif/scope=all/révision5 depuis le22octobre23h02 Paris. Antoine décide « On conserve tous les clubs ». La requête corrigée `.github/releases/20261024-grouped-all-clubs.json` conserve les47 fonctions, le candidat et l’exception documentaire du plan initial ; aucune écriture du réglage, nouvelle activation, coupure ou préférence modifiée.
+
+`groupedAllMailPreservation` est fermé à all/révision5, à cet accord et aux empreintes initiales intégrales du document et du scheduler. L’ancienne autorisation IDF/révision4 ne change pas. Le garde lit le document complet et le scheduler avant sauvegarde, avant Hosting et après tentative ; toute variation, y compris métadonnées/champs inconnus, bloque. Les noms internes d’artefacts IDF sont conservés pour compatibilité du circuit, sans limiter le contrôle du périmètre all approuvé. Deux GET techniques par contrôle, aucune donnée sportive.
+
+`groupedMailScopeCorrectionEvidence` référence une preuve épinglée de l’arrêt40112920934 : sources exactes de la tentative, origine main, run_attempt1, échec uniquement au garde mail, succès des contrôles précédents et toutes les étapes de sauvegarde/déploiement ignorées. La preuve GitHub du plan initial est authentifiée ; seule la correction du périmètre mail et de son explication est acceptée. Une nouvelle tentative, un autre candidat, une étape exécutée après le garde ou une autre validation bloquent. La référence demeure la PROD39849436121, pas le run interrompu.
+
+Préparer et présenter un nouveau preflight officiel ; aucune reprise automatique après correction de ce bilan. Après accord sur ce plan corrigé seulement, les mêmes contrôles frais de dérive et sauvegarde chiffrée rouverte restent obligatoires. Aucun envoi de test, rattrapage, opération Paris/CNHC/Basile ou réparation rétroactive ; toutes les autres exclusions sont conservées.
+
 ## 3. Publier PROD après accord
 
 Exception bornée du 22 octobre 2026, approuvée dans Infra : pour la seule paire PROD `21d0fb8541d70c16cda397f2238820ec64cfc636` / candidat `63652ce4b8588fb1906245fbd5f6ac4c0d8c4389`, `publicReaderIdfPreservation` contient exactement scope=idf, revision=4 et approval explicite. Elle exige `initialAutomaticMailEnabled: true`, le seul `additionalPublicNapFunctions: [readNapPublicSwimmer]` et son accord spécifique ; aucune autre extension, maintenance ou équivalence TEST admise. L’ancien circuit avec mails désactivés reste inchangé pour les autres demandes.
