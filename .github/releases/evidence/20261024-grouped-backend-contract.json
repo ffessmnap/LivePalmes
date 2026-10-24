@@ -1,0 +1,324 @@
+{
+  "schema": 1,
+  "productionCommit": "fbd3c2868fcb3690e1fa5a7ddeca9f45e6fb4511",
+  "candidate": "0619f1dce9439afd5dd4719ee035ff0fc3b99b83",
+  "productionRun": 39849436121,
+  "testRun": 40101909214,
+  "selected": [
+    "createCompetitionImport",
+    "createEngagementCalendarEvent",
+    "createEngagementClubSwimmer",
+    "createEngagementCompetition",
+    "deleteEngagementCalendarEvent",
+    "deleteEngagementCompetition",
+    "deleteEngagementCompetitionDocument",
+    "deleteEngagementNationalClub",
+    "deleteEngagementNationalClubPerson",
+    "deleteEngagementNationalClubSwimmer",
+    "generateEngagementClubRecapPdf",
+    "generateEngagementCompetitionTxtExport",
+    "getEngagementClubEntry",
+    "getEngagementClubEntryTimeHistory",
+    "getNationalFeaturedDocuments",
+    "grantEngagementQualificationException",
+    "listEngagementNationalAuditLogs",
+    "mergeEngagementNationalClubPerson",
+    "mergeEngagementNationalClubSwimmer",
+    "notifyEngagementCompetitionDocuments",
+    "previewCompetitionImport",
+    "previewEngagementClubSwimmerEventTimes",
+    "previewEngagementClubSwimmerEventTimesBatch",
+    "previewEngagementClubSwimmerRecovery",
+    "processEngagementQualificationJob",
+    "readNapPublicSwimmer",
+    "recoverEngagementClubSwimmer",
+    "removeEngagementClubTeamLeader",
+    "saveEngagementClubIndividualEntries",
+    "saveEngagementClubOfficials",
+    "saveEngagementClubPerson",
+    "saveEngagementClubRelays",
+    "saveEngagementClubSwimmerSelection",
+    "saveEngagementClubSwimmerSelections",
+    "saveEngagementClubTeamLeader",
+    "saveEngagementNationalClub",
+    "saveNationalFeaturedDocuments",
+    "setEngagementClubPersonStatus",
+    "setEngagementClubSwimmerActivityStatus",
+    "setEngagementNationalClubPersonStatus",
+    "setEngagementNationalClubSwimmerStatus",
+    "updateEngagementCalendarEvent",
+    "updateEngagementCompetition",
+    "updateEngagementCompetitionDocument",
+    "updateEngagementNationalSwimmerIdentity",
+    "uploadEngagementCompetitionDocument",
+    "validateEngagementSwimmerLicenses"
+  ],
+  "changedExportHashes": {
+    "closeDueEngagementCompetitions": [
+      "f337b9503783f96292381d3b7c8618dc6302d37fbb82bad65fd43b146e04bcd0",
+      "6a60f820b07d0bdaf3955bd0074604c5ee89280380f68094520f843397440450"
+    ],
+    "createCompetitionImport": [
+      "14c3986b0d854c8991fdacaf4d925e944f7bde93a61b88b9eafaef7b1b000ffa",
+      "c353977bc5e41b52f8abf485e70922171fc47d32fc5721fef82f583491332c44"
+    ],
+    "createEngagementCalendarEvent": [
+      "71b46a2ff6e267078d742c316d5a8f41ac8745fcaaaa794c4b3125ec3567cd70",
+      "3848f3756913eafedc2210a59b0ceee921f0e603ed3bb4cfa92ba10e41b7db0d"
+    ],
+    "createEngagementClubSwimmer": [
+      "c38327c8e43628b53199a63d0ac77553fb9f54dbe5698ed81ea786ca4a1befc4",
+      "feaa54a93d65aac9d5d1387b8574db2df378ca3d92bb0753f47761885c918d8c"
+    ],
+    "createEngagementCompetition": [
+      "129f34cc470bf10bf1843352739aa8c34bec5d2d4f5d7869fd27260533da5b55",
+      "38f0fe18ceab56a3d4828cfff0ef5cf800e21cd00452242b74cefb41a2104673"
+    ],
+    "deleteEngagementCalendarEvent": [
+      "e0a986763c1559c7776bb1727926af34c2cbb5bb811271057960621a6a431af9",
+      "985d493a925b59693f29500a75a9e86e04555ba24d9292c72930832a96ea45c0"
+    ],
+    "deleteEngagementCompetition": [
+      "5cf38a6866b1dc3b3e3e9e040b8ace321adb82bf1ea96e4129ead58f5ec27ce5",
+      "07e27feed3d5cbd216ac5c000448ac1f623c1272273bf45aa5f1f7ee9b36cfa0"
+    ],
+    "deleteEngagementCompetitionDocument": [
+      "54bbc54b16a0afbe41abd83021da537d73952a1508f455f3f7c72b5d1c97acf0",
+      "cf38bc01f2c5214e1d240455a2db94048475c8f42e61af728a83558425b33a8a"
+    ],
+    "deleteEngagementNationalClub": [
+      "ca69ec7c91d31d78348bd8aaca9157e10e89773d289c0dc5edee22a13081f5d1",
+      "1c438bbed43bd65f049ed6a22febaaccfcc216478c8abb5c88267baa0fae7ae2"
+    ],
+    "deleteEngagementNationalClubPerson": [
+      "8c6b3fdc34dfa80f691883d9054e334131df2bf35a6297af25bca499044f8101",
+      "3586cd149220597939220887e4334460e68131018669bb078e4752ce90179dba"
+    ],
+    "deleteEngagementNationalClubSwimmer": [
+      "e93e24ddc3bb80180ab5892728de84c1ea860eadaa0b2e4e412135c166681e20",
+      "e7afee9df3f69ebde38ae283295606d753b3480df83508d85183c64d97401ba1"
+    ],
+    "exportNapPublicPage": [
+      "5f50ec600b8bd4eb8cbb8efe9e3857fb8ffe7e1cda942654731aaa0857000083",
+      "7ceaee42e04ebc906c1c43879b0839619b2c7af303a956b98f7a3388034de8d2"
+    ],
+    "generateEngagementClubRecapPdf": [
+      "620b987b4e2f5ad4081e991b118423ab6331e1a3ce60272a5974576ad36b6c8c",
+      "a9f609e42ef5672d67c2238b4421a067aa16aa96de405c81e1b8e38e00bd366c"
+    ],
+    "generateEngagementCompetitionTxtExport": [
+      "2ca733f33ca3da32c4c3f552c8aa552bc008acc680a7ee820966452b9ebe0d13",
+      "07cca88046ede33a73a86ebc7d298c583048bde9d92af7e9d6aa0c5277ea6f98"
+    ],
+    "getEngagementClubEntry": [
+      "283b14caa5362359b2a2a598c6d264b337a4ebab1abe742761098b8dec07491f",
+      "388b1dbfe559fbf5d86cfc318bde06162054e52ee212194941b0dc48160f104f"
+    ],
+    "getEngagementClubEntryTimeHistory": [
+      "4caf61691c9dff7c7e9c9d8120095fe090be4eac4a73cec016c2416de89e96da",
+      "fc9bd3861d40fd0d04ccdde9fa44435ea2f2730647b971c1373f975a3e36f46a"
+    ],
+    "getNationalFeaturedDocuments": [
+      "3a9f5e013f81fb1f9ccf721091d516c44c640e186a12be85cb97297ebc80b8b2",
+      "2eabc04accd9e4c81e030096cb49c0d41002146454d4cc8ee64659ad50dbf597"
+    ],
+    "grantEngagementQualificationException": [
+      "f00291cec9ece8a92aac9f75a92271af1264b90ae4e663db993e4177fa323ecb",
+      "bd70f83d1779ba226a1bf19b4a8d1656236898a17fd2552141ff21beb0775fc4"
+    ],
+    "listEngagementNationalAuditLogs": [
+      "fc2912f376b7839857f82de55174da3526c262ca36db48907701279f0ed25a94",
+      "cce098b67154c5b71a1dd1f0c8de4d4488b80aece6c12cf2db979f559e43364c"
+    ],
+    "mergeEngagementNationalClubPerson": [
+      "3bff6b36f4e68b7ef6e49f10f8e3e4f4721379c3e1609a6d6cb4fd45591253eb",
+      "bb88f90261c3453cbd4501f11ca6acc45b1cf4b2cdb5577ae65b8e1bffd796cc"
+    ],
+    "mergeEngagementNationalClubSwimmer": [
+      "1ca6a8f84a116c6fc6bd133a60870e3d5e677266caf1a29c0084d3d23f279882",
+      "1725c7b1f8073ff013c344403a8aacdaeb3498065a22b95485f63e89f7ad06bc"
+    ],
+    "notifyEngagementCompetitionDocuments": [
+      "5096b99d693e92d4c5e37afaef9fe1ab94236c6bb8db0d33ad1a34f755416190",
+      "c7354ddb53d40d20ea3443821cb322c1735b4df3937f9f93e2af0e98b4744399"
+    ],
+    "previewCompetitionImport": [
+      "5e8f1bd280ca8efc89eba21d0d18ea9e4bed6eedbfd8d0c9fdf356d5024f0979",
+      "e7d0222604f08d66927ee5e67d804b7720bef004793d83c34779c6e202f8e137"
+    ],
+    "previewEngagementClubSwimmerEventTimes": [
+      "06fab50cb3e1ff84b643472126ad562fd1e90e9d0b944d8c667369fff6b7ff8b",
+      "74cd4b2aefef06ed20c75dccaaf974857b82c96ec03d4bb7b304aae207607745"
+    ],
+    "previewEngagementClubSwimmerEventTimesBatch": [
+      "349c87ee58c411cbe498392142eff2b3e0c38a3fe8569ab109cad803b501021a",
+      "378ad1d91c16af16126017f693c004e51c979f781bcaac2e07ef060b5636b691"
+    ],
+    "previewEngagementClubSwimmerRecovery": [
+      "9a4816c20265ca7f89e86736298284e01629a2d485aeb5a0b563341478420183",
+      "a08108e469bc1ac39977f7ccaec8a363771644156ac47baa4c541fe03273665b"
+    ],
+    "processEngagementQualificationJob": [
+      "fe71c06b1390ee19348d936bb91da2a43278b62e6ba3537c94fc01b8ed9a2063",
+      "bb47f82773bde24fedee91203d622ad24de0438a72e0d34216aa6488e63c33b1"
+    ],
+    "processNapCompetitionNotifications": [
+      "fda57a2d8e560f9bcba8aef9652a16703f427aecfc8ac72e3031ba8657dce38c",
+      "d5d0077190f7d08b76f1351c3eeb93e0609c8f881907fc2085203626edb6594e"
+    ],
+    "readNapPublicSwimmer": [
+      "161ad9f1b8cf4faa7df14427e3ee47f88edbe7b62263d34ee8b336742ba53e59",
+      "787046aeadc1864853e6a624082b23e965d20b23b8ce044683134993aafd6550"
+    ],
+    "recoverEngagementClubSwimmer": [
+      "b1a99788dd085247f0ec20534a7c5d130807e2f3ecd4fbb36847d5886aa2c6eb",
+      "5ab43ed885d4cfc283ecb0dc9a5612a87254f37927c976928ef88a64e9d20694"
+    ],
+    "removeEngagementClubTeamLeader": [
+      "af07a135d1d304bef49b98b36f0cc9f512f6f578da241acbf0c3b834fa084e62",
+      "b1675674750d309d0e2c97853eb97e7fb16a61d9a91a8f34551d69e7389b0f97"
+    ],
+    "resolveEngagementAccessRequest": [
+      "2b395be019e680d1f1c4ca2e78376792d884e680b16c45bda04e57ddfe16e8c9",
+      "55d75dff9d799450ad5c52a1dd46bbdc2162b456b11198c2a5a02e6aff5657fd"
+    ],
+    "resolveEngagementSwimmerChangeRequest": [
+      "ed8ef83ba164424f40977286604c3c52ca421b19e62df5b92dbf88bfc732fc8f",
+      "76a841a60538a8ae62d2d8aad276ad87fe63c78cc726a53e6660418928c587ff"
+    ],
+    "saveEngagementClubIndividualEntries": [
+      "989b0e81099805e0ef16294690ac4dd00963368498511c5371ac08896cddfcba",
+      "b813c3ba71fe348b78355eb802b44d684867bd5b51fc6d7f944a2f10a3552cb1"
+    ],
+    "saveEngagementClubOfficials": [
+      "8cbc7691b63f7cb4943e395660f0fddcab1acb4de5ea2bda9bba8bfc9a436d31",
+      "870624b4d79d65223f55d55727237523dd644e78f3b56edc5c5955c12d5b52f6"
+    ],
+    "saveEngagementClubPerson": [
+      "6534ed8454fd92cd2e3b94588c08ecfd1de92c590bb564d650bc384f1405d75b",
+      "01f1ae61958049689c26f0df114167242f6d0df46e682eafce301e7e67acd355"
+    ],
+    "saveEngagementClubRelays": [
+      "91b63e34723b4e76ff8bc211bc52cab706929cc6cf3f8e5b5839574b4f5f0ddb",
+      "f55ec7887b0c986b9bfb224d668181cd0fdfec96ecc58e88a60ed1735d3cf8ff"
+    ],
+    "saveEngagementClubSwimmerSelection": [
+      "b9c0a8d56fbc0e0f1ff204c7480790d54fee3adce1e8ca198346013622d09cd3",
+      "515333a9a7311b3ae1320eac16c6c7e8bfbf480d8d17d1a71ef76e36adacc829"
+    ],
+    "saveEngagementClubSwimmerSelections": [
+      "de629f54a2c6a276e5b09ee3b60199d02af80fcebe62798913b112f63a934d27",
+      "47432b590f929614287dd92f746847a6bf0a30dc2073bbb1627ea471c49de146"
+    ],
+    "saveEngagementClubTeamLeader": [
+      "1070d1353c0b0c296dc0a9f27d1c6deda2071d17499b42c695dad6154f0012d5",
+      "623782a0f28813d11425ac63c596c661fda672d18b69fa18c18faaf5bcdbb9eb"
+    ],
+    "saveEngagementNationalClub": [
+      "b40d819ab6f976507e55c6f43bb8a1eb256333d56887c4439552abe039264146",
+      "5c749367012874f437325590a79131d7e3d3c2acf6ec49b5cc77d5d86ff3d5d2"
+    ],
+    "saveNationalFeaturedDocuments": [
+      "e19533b56d77c5dc20b1d8f36c54aeb8c224f901b2fd9481ac179132f55abd96",
+      "8bd56a27d602cb8f8c2fd24edbaa24e8fe618d5cc6d14fb2bd73424a4cccf147"
+    ],
+    "setEngagementClubPersonStatus": [
+      "d8fd77215161b047d3c78b067b7f077f19e0b041aa264f116f867649a758bd6e",
+      "86a9facdec3a1e461fac84e2ec9acc74bf4863947e89f3afc0203c44cedcdca1"
+    ],
+    "setEngagementClubSwimmerActivityStatus": [
+      "86fa0b90b2107a3f6aae936e4de5063466a425226db70f0d79dfe4c7f622585c",
+      "0e323c85b7ff5251fe2c2642963dba8e62e5f3f00ce66db105aa2b2618f4a610"
+    ],
+    "setEngagementNationalClubPersonStatus": [
+      "5665037a6a8ef6bc0a09174d0642be33cf76d4398eaff75b168c22d2c50904ba",
+      "faf1b20b1343574c3fefec26b247bdd72b1271eb2d873e4aa9e89762c720320f"
+    ],
+    "setEngagementNationalClubSwimmerStatus": [
+      "b1fc90465d06f1c4e6c1b41ec1dfe9ebe7ad4c9aab2af3a1bbac6f1b4ff9b6ac",
+      "ca483beae2b8fca69e530926f11bfc84f218aa34a26839399c059e337d6cc470"
+    ],
+    "updateEngagementCalendarEvent": [
+      "2fabba849c5c8d096f055ecea2676db455d578ac2c468a59cd2cc2bbaa61553f",
+      "972374050ae5b9efc40463dc00b7f2e5e24f1f9f705ae896e6ca5abf0578380a"
+    ],
+    "updateEngagementCompetition": [
+      "f9fafab8c45c8dbeb4468e43f03888baa613e44e2c985c801654ba5d197ef8e5",
+      "67e85e76d6f828a91b7315a54b4e2b7d69fa0a0bc63dd30c5f06966160d5ccd5"
+    ],
+    "updateEngagementCompetitionDocument": [
+      "901411ffde8e85dbe8719270acb140073813ac21b29d5a9cb2d5a8cc69464d28",
+      "0505f31443251b22cc542bedb67383592faeba98812d849300f970430f7c5c53"
+    ],
+    "updateEngagementNationalSwimmerIdentity": [
+      "de3786be8ce34f11816b37fa24b1c88365e1236b656a8e370c2942aa7bb98538",
+      "0c52e38e7f07c3d056471a9a66a3732a22cda4c460b1070995fbace0af8153d8"
+    ],
+    "uploadEngagementCompetitionDocument": [
+      "518afe8e58d31b56212dc6e3a0aa84461f36d94b80ddb88170f18862998de6f3",
+      "6a81a4bdb3821ef2bb2481f0818099ebdabaafcc711f6dada30a48ff7b67c9c0"
+    ],
+    "validateEngagementSwimmerLicenses": [
+      "a4911b93a6bd4f52e706092bdf4a6eab348c3f74f02a5c82b5ca48aff1588b18",
+      "d8d441d43bb21b86b61c066aab46d5e44d65b7f2b45659440c26dad9f5aabd06"
+    ]
+  },
+  "retained": [
+    {
+      "name": "closeDueEngagementCompetitions",
+      "commit": "32d70fc20cc60ca971e9229d706aa8269556f1af",
+      "revision": "closedueengagementcompetitions-00028-des",
+      "before": "f337b9503783f96292381d3b7c8618dc6302d37fbb82bad65fd43b146e04bcd0",
+      "after": "6a60f820b07d0bdaf3955bd0074604c5ee89280380f68094520f843397440450",
+      "newVsApplicationBase": true
+    },
+    {
+      "name": "disableCompetitionEmailNotifications",
+      "commit": "1df545a62de67a24ff32ca4d1046cce4be6d499f",
+      "revision": "disablecompetitionemailnotifications-00004-kuf",
+      "before": "ee4c904af510b50da7bfdb99cde5dd2833d7fd75adabb03279029e067171e466",
+      "after": "b5a9f626f04f5b1d42c4090e42bfc26e238eebfb410607296a2aedd49a253814",
+      "newVsApplicationBase": false
+    },
+    {
+      "name": "processNapCompetitionNotifications",
+      "commit": "32d70fc20cc60ca971e9229d706aa8269556f1af",
+      "revision": "processnapcompetitionnotifications-00004-cus",
+      "before": "fda57a2d8e560f9bcba8aef9652a16703f427aecfc8ac72e3031ba8657dce38c",
+      "after": "d5d0077190f7d08b76f1351c3eeb93e0609c8f881907fc2085203626edb6594e",
+      "newVsApplicationBase": true
+    },
+    {
+      "name": "resolveEngagementAccessRequest",
+      "commit": "812bad64681a232e6cc3868ba7ec112bcdac7ca2",
+      "revision": "resolveengagementaccessrequest-00040-jev",
+      "before": "6d9fbfa653896f44534bdb644a3f0691c956e96ada2ad0b7acc9555183680c30",
+      "after": "55d75dff9d799450ad5c52a1dd46bbdc2162b456b11198c2a5a02e6aff5657fd",
+      "newVsApplicationBase": true
+    },
+    {
+      "name": "resolveEngagementSwimmerChangeRequest",
+      "commit": "a15be36778cf62f1936f1e0b35bf873733997d5a",
+      "revision": "resolveengagementswimmerchangerequest-00021-cop",
+      "before": "ed8ef83ba164424f40977286604c3c52ca421b19e62df5b92dbf88bfc732fc8f",
+      "after": "76a841a60538a8ae62d2d8aad276ad87fe63c78cc726a53e6660418928c587ff",
+      "newVsApplicationBase": true
+    },
+    {
+      "name": "submitEngagementAccessRequest",
+      "commit": "812bad64681a232e6cc3868ba7ec112bcdac7ca2",
+      "revision": "submitengagementaccessrequest-00039-rib",
+      "before": "be16dc361cdb44b67868b8bf06e9149e7b42ecc1ffef72407ba010c9295324ec",
+      "after": "56168c0ef32617bfb06139908ec1bafa7ed0e340f3de32b3b1aee97682ebe21a",
+      "newVsApplicationBase": false
+    },
+    {
+      "name": "updateCurrentEmailNotificationPreferences",
+      "commit": "1df545a62de67a24ff32ca4d1046cce4be6d499f",
+      "revision": "updatecurrentemailnotificationpreferences-00004-gev",
+      "before": "fae1fd731a5a970cee0616314f1461c1e042284edbd8048b042300c96834c7ba",
+      "after": "3c511e792f7292a2d29d506e002e2f5efadb5b42a3c381792210522de9102e61",
+      "newVsApplicationBase": false
+    }
+  ]
+}

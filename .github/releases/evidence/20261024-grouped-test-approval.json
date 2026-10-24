@@ -1,0 +1,17 @@
+{
+  "schema": 1,
+  "candidate": "0619f1dce9439afd5dd4719ee035ff0fc3b99b83",
+  "testRun": 40101909214,
+  "date": "2026-10-24",
+  "userValidation": {
+    "initial": "On va mettre en prod tout ce qu’on a modifié sur test normalement tout est validé",
+    "historicalClubCode": "Oui ça je valide bien",
+    "remainingValidationAndDependencyFix": "Oui on pour les 2 ponts",
+    "scope": "Validation des parcours regroupés TEST, inclusion du code de conservation des clubs historiques pour les prochaines opérations et correction/test du calcul des dépendances. Aucun traitement rétroactif ni opération de données autorisé."
+  },
+  "productionDeploymentAuthorized": false,
+  "limitedPreparationApproval": {
+    "question": "Liaison des sept secrets existants SMTP et preferences, en plus de NAP, delai300s pour notifyEngagementCompetitionDocuments ; gardes, tests, CI et preflight, sans deployer ni envoyer de mail, IDF actif et inchange.",
+    "answer": "Oui, préparer cette exception limitée"
+  }
+}

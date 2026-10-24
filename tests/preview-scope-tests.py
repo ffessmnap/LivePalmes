@@ -95,3 +95,10 @@ for extra in ['portail.html', 'functions/index.js', 'firebase.json', 'tools/unkn
     assert scope.needs_preview(login + [extra]) is True
 assert scope.needs_preview(['tools/preview-scope.py']) is True
 print('Login message preparation skips preview; application and unknown files retain it')
+
+grouped = sorted(scope.GROUPED_DEPENDENCY_PATHS) + ['docs/releases/EVOLUTIONS.md']
+assert scope.needs_preview(grouped) is False
+for extra in ['functions/index.js','portail.html','firebase.json','tools/unknown.py']:
+    assert scope.needs_preview(grouped+[extra]) is True
+assert scope.needs_preview(['tools/release-function-fingerprints.js']) is True
+print('Grouped dependency-only proof skips preview; application/configuration/unknown scope retains it')
