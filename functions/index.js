@@ -11342,7 +11342,11 @@ exports.generateEngagementCompetitionTxtExport = onCall({ ...CALLABLE_OPTIONS, .
     try {
       const exportEntries=result.competition.competitionType==="openWater"
         ? require("./winpalme-open-water-manual").prepareManualOpenWaterEntries(entries) : entries;
-      txt=buildEngagementCompetitionTxt(result.competition,exportEntries,result.clubsById);
+      const exportCompetition=result.competition.competitionType==="openWater"
+        ? await require("./winpalme-open-water-manual").readManualOpenWaterCompetition(
+          require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD),result.competition)
+        : result.competition;
+      txt=buildEngagementCompetitionTxt(exportCompetition,exportEntries,result.clubsById);
     }
     catch (error) {
       if(result.competition.competitionType==="openWater") throw new HttpsError("failed-precondition", error.message || "Export eau libre indisponible.");
@@ -11351,7 +11355,7 @@ exports.generateEngagementCompetitionTxtExport = onCall({ ...CALLABLE_OPTIONS, .
     const buffer=txt.buffer;
     if (!Buffer.isBuffer(buffer)) throw new HttpsError("internal", "Export TXT indisponible.");
     if(buffer.length>10000000) throw new HttpsError("resource-exhausted","Export trop volumineux.");
-    return {ok:true,source:"nap",competitionId,entryCount:entries.length,fileName:txt.fileName,contentType:"text/plain; charset=utf-8",generatedAt:result.generatedAt,fromStorage:false,txtBase64:buffer.toString("base64"),sqlBudget:result.sqlBudget};
+    return {ok:true,source:"nap",competitionId,entryCount:entries.length,fileName:txt.fileName,contentType:"text/plain; charset=utf-8",generatedAt:result.generatedAt,fromStorage:false,txtBase64:buffer.toString("base64"),sqlBudget:result.competition.competitionType==="openWater" ? {...result.sqlBudget,queriesMax:result.sqlBudget.queriesMax+1,widRowsMax:1} : result.sqlBudget};
   }
   const competition = await db.collection("engagementCompetitions").doc(competitionId).get();
   if (!competition.exists) {
