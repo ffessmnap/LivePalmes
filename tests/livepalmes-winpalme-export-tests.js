@@ -272,6 +272,23 @@ assert.throws(()=>prepareManualOpenWaterEntries([{relays:[{category:"NAP-0",nati
 assert.equal(prepareManualOpenWaterEntries([{relays:[{category:"J"}]}])[0].relays[0].category,"J");
 console.log("Manual water export: XSE sentinel mapping, explicit categories, separate same-code/federal-number clubs, unchanged individual categories/WID and no mutation passed.");
 
+// IntraNAP OFF records belong to their federal club block, before CEQ.
+const officialEntries=sameCodeEntries.map((entry,i)=>({...entry,relays:[],officials:[{lastName:i?"Deuxième":"Épreuve;\nNom",firstName:"Zoé",birthDate:i?"":"1980-02-29",nativeOfficialId:"private-id",licenseNumber:"never-export"}]}));
+const officialBefore=JSON.stringify(officialEntries);
+const officialTxt=buildWaterTxt(waterCompetition,officialEntries,sameCodeClubs,{generatedAt:"2026-10-24T12:00:00Z"}).buffer.toString();
+const officialLines=officialTxt.split("\r\n");
+assert.deepEqual(officialLines.filter(l=>l.startsWith("OFF;")),["OFF;Épreuve Nom;Zoé;CPC;29/02/1980;","OFF;Deuxième;Zoé;CPC;;"]);
+let federal="";const owners=[];for(const line of officialLines){const fields=line.split(";");if(fields[0]==="CLU")federal=fields[3];if(fields[0]==="OFF"){owners.push(federal);assert.equal(fields.length,6);}}
+assert.deepEqual(owners,["03290021","09620013"]);
+assert.ok(officialTxt.indexOf("OFF;Épreuve")<officialTxt.indexOf("CEQ;Responsable"));
+assert.equal(officialTxt.includes("private-id"),false);assert.equal(officialTxt.includes("never-export"),false);
+assert.equal(JSON.stringify(officialEntries),officialBefore);
+const noLeader=buildWaterTxt(waterCompetition,[{...officialEntries[0],teamLeader:{},swimmers:[]}],sameCodeClubs).buffer.toString();
+assert.equal(noLeader.split("\r\n").filter(l=>l.startsWith("OFF;")).length,1,"Officials-only club without CEQ is preserved");
+assert.equal(officialTxt.split("\r\n").filter(l=>!l.startsWith("OFF;")).join("\r\n"),buildWaterTxt(waterCompetition,officialEntries.map(e=>({...e,officials:[]})),sameCodeClubs,{generatedAt:"2026-10-24T12:00:00Z"}).buffer.toString());
+assert.throws(()=>buildWaterTxt(waterCompetition,[{...officialEntries[0],officials:[{lastName:"",firstName:""}]}],sameCodeClubs),/officiel.*incomplete/);
+console.log("IntraNAP OFF: six fields, accents/escaping, empty date, separate federal blocks, officials-only club, CEQ order, no private IDs or mutation verified.");
+
 // Execute the real season/category normalisation used by the callable.
 const vm=require("node:vm"),fs=require("node:fs"),source=fs.readFileSync("functions/index.js","utf8");
 const seasonalContext={buildWinPalmeCompetitionTxt:buildWaterTxt,engagementPdfFileName:value=>String(value),Date};

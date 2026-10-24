@@ -2,6 +2,12 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 24 octobre — Officiels dans le TXT eau libre manuel (TEST en préparation)
+
+- Accord Antoine : reprendre le format IntraNAP OFF et régénérer Andernos 5136 pour essai WinPalme, sans envoi automatique. Projection limitée au téléchargement manuel TEST ; générateur piscine et automatismes inchangés.
+- OFF;nom;prénom;code club;date; : six champs, date JJ/MM/AAAA ou vide, aucun identifiant/licence ajouté. Officiels déjà présents dans le dossier natif, y compris les identités historiques déjà résolues par le lecteur ; aucune lecture supplémentaire à l’ouverture, à l’action, au rafraîchissement ou au pire cas. Budget conservé : 26 SELECT maximum par téléchargement, officiels limités à 2 000 au total, aucune écriture.
+- Insertion après les nageurs/relais et avant CEQ, ou avant fin de bloc si aucun chef ; blocs conservés par position/numéro fédéral même avec abréviation commune. Identité absente refusée explicitement. Tests ciblés OFF, caractères séparateurs, dates vides, clubs homonymes, club avec officiels seuls et régression du reste du TXT. Déploiement TEST et nouveau fichier Andernos à vérifier ; import WinPalme attendu, aucune validation utilisateur déduite.
+
 ### 24 octobre — Export manuel eau libre depuis le catalogue NAP (TEST déployé, WinPalme à valider)
 
 - Accord Antoine : utiliser les champs natifs du catalogue, bloquer les ambiguïtés, générer Beaumont 2025 (4903) et comparer au TXT IntraNAP, sans envoi automatique.

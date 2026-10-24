@@ -110,11 +110,27 @@ function openWaterExportProgram(competition) {
 // The shared pool generator and all automatic export callers stay unchanged.
 function buildNativeManualOpenWaterTxt(competition, entries = [], clubsById = new Map(), options = {}) {
   const program = openWaterExportProgram(competition);
-  const result = require("./winpalme-export").buildWinPalmeCompetitionTxt(
+  const { buildWinPalmeCompetitionTxt, formatDate } = require("./winpalme-export");
+  const result = buildWinPalmeCompetitionTxt(
     {...competition, competitionType:"pool"}, entries, clubsById, options);
+  const field = value => String(value ?? "").trim().replace(/[;\r\n]+/g, " ");
+  const officials = entries.map(entry => {
+    const club = clubsById.get(text(entry.clubId)) || {};
+    return (entry.officials || []).map(person => {
+      if (!text(person.lastName) || !text(person.firstName)) throw new Error("Identite d'un officiel eau libre incomplete : verification requise.");
+      return ["OFF", person.lastName, person.firstName, entry.clubCode || club.clubCode, formatDate(person.birthDate), ""].map(field).join(";");
+    });
+  });
   const lines = [];
+  let clubIndex = -1, officialsWritten = false;
   for (const line of result.buffer.toString("utf8").split("\r\n")) {
     const fields = line.split(";");
+    if (fields[0] === "CLU") { clubIndex++; officialsWritten = false; }
+    // Use the block position, never the potentially shared club abbreviation.
+    if (!officialsWritten && clubIndex >= 0 && (fields[0] === "CEQ" || line === "XXX;XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXx")) {
+      lines.push(...officials[clubIndex]);
+      officialsWritten = true;
+    }
     if (fields[0] === "XXX" && fields[1] === "RENCONTRE") fields[4] = "Longue distance";
     if (fields[0] === "NAG" || fields[0] === "REL") {
       const index = fields[0] === "NAG" ? 7 : 3;
