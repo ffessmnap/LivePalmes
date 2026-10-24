@@ -1,7 +1,7 @@
 "use strict";
 const {notMerged}=require("./nap-swimmer-merge-state");
 // Preview: two indexed reads, two licence matches and 2,001 history witnesses.
-// Transfer: ten SQL calls maximum; durable backup, only club changes, safe retry.
+// Transfer: bounded historical snapshots, durable backup, only club changes.
 // No old sporting directory, result-time inference or silent truncation.
 const licenses = require("./nap-license-state");
 const {person} = require("./nap-portal-swimmers");
@@ -11,6 +11,9 @@ const {COLUMNS,hash}=require("./nap-approved-swimmer-correction");
 const {fingerprint}=require("./nap-portal-swimmer-change");
 const {nativeEqual}=require("./nap-native-compare");
 const {isDeepStrictEqual}=require("node:util");
+const historical=require("./nap-swimmer-recovery-clubs");
+const mergePlans=require("./nap-swimmer-merge-plan");
+const {pending,sameRows}=require("./nap-swimmer-merge");
 async function previewRecovery(connection, input, authorize) {
   if (typeof authorize !== "function" || typeof input?.clubId !== "string" || !/^\d{1,16}$/.test(input.clubId)) throw new TypeError("Club autorise requis.");
   if (typeof input.licenseNumber !== "string" || !/^[A-Z]-\d{2}-\d+$/.test(input.licenseNumber) || input.licenseNumber.length > 100) throw new TypeError("Numero de licence invalide.");
@@ -44,42 +47,76 @@ async function recoverSwimmer(pool,input,audit,authorize) {
   await authorize({clubId:input.clubId});
   const season=licenses.seasonInfo(licenses.currentSeason());
   const operation=createHash("sha256").update(JSON.stringify(["swimmer-recovery",input.actorUid,input.clubId,input.mutationId])).digest("hex");
-  const connection=await pool.getConnection();let locked=false;
+  const connection=await pool.getConnection();let locked=false,tablesLocked=false,safe=true,queries=0;
   const lock=`lp-swimmer-${createHash("sha256").update(input.licenseNumber).digest("hex").slice(0,40)}`;
-  const query=async(sql,values=[]) => (await connection.execute({sql,timeout:10000},values))[0];
+  const query=async(sql,values=[]) => {if(++queries>50)throw new RangeError("Budget de recuperation depasse.");return (await connection.execute({sql,timeout:10000},values))[0];};
   try {
     if(Number((await query("SELECT GET_LOCK(?,0) AS acquired",[lock]))[0]?.acquired)!==1) throw new TypeError("Nageur en cours de modification. Reessayez.");
     locked=true;
-    let plan=await audit.read(operation);
+    let plan=await audit.read(operation);const saved=Boolean(plan);
     if(plan && (plan.kind!=="native-swimmer-recovery" || plan.operation!==operation || plan.actorUid!==input.actorUid || plan.clubId!==input.clubId || plan.mutationId!==input.mutationId || plan.licenseNumber!==input.licenseNumber || plan.expectedFingerprint!==input.expectedFingerprint || hash(plan.before)!==plan.beforeHash || hash(plan.after)!==plan.afterHash || plan.after.club!==input.clubId || fingerprint(plan.before)!==input.expectedFingerprint || COLUMNS.some(key=>key!=="club" && plan.before[key]!==plan.after[key]))) throw new TypeError("Sauvegarde de recuperation incompatible.");
     if(plan && !isDeepStrictEqual(plan.season,licenses.seasonInfo(plan.season?.label))) throw new TypeError("Saison sauvegardee incompatible.");
+    // Old completed receipts remain retryable. Never reinterpret an unfinished
+    // transfer that did not capture its historical clubs before mutation.
+    if(plan&&!plan.performanceClubs){
+      const [current]=await query(`SELECT ${COLUMNS.map(key=>`\`${key}\``).join(",")} FROM nageurs WHERE id=? AND ${notMerged()} LIMIT 1`,[plan.before.id]);
+      if(!current||hash(current)!==plan.afterHash)throw new TypeError("Ancienne recuperation sans historique sauvegarde : verification nationale requise.");
+      await audit.complete(operation,{swimmerId:String(current.id),fromClubId:String(plan.before.club),clubId:input.clubId,seasonLabel:plan.season.label,verified:true,changedColumns:["club"]});
+      return {ok:true,source:"nap",operation,alreadyApplied:true,swimmer:person(current)};
+    }
+    let preview;
     if(!plan) {
-      const preview=await previewRecovery(connection,{clubId:input.clubId,licenseNumber:input.licenseNumber,season:season.label},authorize);
+      preview=await previewRecovery({execute:async({sql},values)=>[await query(sql,values)]},{clubId:input.clubId,licenseNumber:input.licenseNumber,season:season.label},authorize);
       if(!preview.found || preview.sameClub || !preview.eligible) throw new TypeError("Recuperation impossible : fiche deja rattachee ou resultat publie cette saison. Verification nationale requise.");
+    }
+    if((await query("SELECT TRIGGER_NAME FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA=DATABASE() AND EVENT_OBJECT_TABLE IN ('nageurs','perfs','perfs_relais') LIMIT 1")).length)throw new TypeError("Declencheur NAP a verifier avant recuperation.");
+    // MyISAM: grouped CAS alone cannot protect a concurrent import. Hold the
+    // same native table locks from snapshot through final identity change.
+    safe=false;
+    await connection.query({sql:"LOCK TABLES nageurs WRITE,perfs WRITE,perfs_relais WRITE,clubs READ,competitions AS c READ,livepalmes_performance_visibility AS lpv READ,livepalmes_swimmer_merges READ",timeout:10000});tablesLocked=true;safe=true;
+    if(!plan){
       const [before]=await query(`SELECT ${COLUMNS.map(key=>`\`${key}\``).join(",")} FROM nageurs WHERE id=? AND ${notMerged()} LIMIT 1`,[Number(preview.swimmer.id)]);
       if(!before || fingerprint(before)!==input.expectedFingerprint || before.club===input.clubId || licenses.number(before.number).toUpperCase()!==input.licenseNumber) throw new TypeError("La fiche a change. Recherchez de nouveau le nageur.");
       const after={...before,club:input.clubId};
-      plan={kind:"native-swimmer-recovery",operation,actorUid:input.actorUid,clubId:input.clubId,mutationId:input.mutationId,licenseNumber:input.licenseNumber,expectedFingerprint:input.expectedFingerprint,season,before,after,beforeHash:hash(before),afterHash:hash(after)};
-      await audit.prepare(operation,plan);
+      const snapshots=await historical.readRows(query,before.id);
+      plan={kind:"native-swimmer-recovery",operation,actorUid:input.actorUid,clubId:input.clubId,mutationId:input.mutationId,licenseNumber:input.licenseNumber,expectedFingerprint:input.expectedFingerprint,season,before,after,beforeHash:hash(before),afterHash:hash(after),performanceClubs:await historical.prepare(query,before,snapshots)};
+      historical.validate(plan);
     }
+    historical.validate(plan);
     const [current]=await query(`SELECT ${COLUMNS.map(key=>`\`${key}\``).join(",")} FROM nageurs WHERE id=? AND ${notMerged()} LIMIT 1`,[plan.before.id]);
     const alreadyApplied=current && hash(current)===plan.afterHash;
     if(!alreadyApplied) {
       if(!current || hash(current)!==plan.beforeHash) throw new TypeError("La fiche a change. Recuperation a verifier.");
       if(plan.season.label!==season.label) throw new TypeError("La saison a change. Recherchez de nouveau le nageur.");
-      if((await query("SELECT TRIGGER_NAME FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA=DATABASE() AND EVENT_OBJECT_TABLE='nageurs' LIMIT 1")).length) throw new TypeError("Declencheur NAP a verifier avant recuperation.");
-      const statement=transferStatement(plan.before,plan.after,plan.season);
-      const explain=await query(`EXPLAIN ${statement.sql}`,statement.values);
-      if(!explain.some(row=>row.table==="n" && row.key==="PRIMARY") || explain.filter(row=>row.table==="perfs" && row.key==="nageur").length!==2) throw new TypeError("Plan de recuperation NAP non indexe. Aucune fiche modifiee.");
-      const result=await query(statement.sql,statement.values);
-      if(result.affectedRows!==1) throw new TypeError("Fiche, club ou resultats modifies. Recuperation non appliquee.");
+      const history=await query(`SELECT perfs.id,c.date,${visiblePerformanceSql("perfs")} AS published FROM perfs FORCE INDEX (nageur) LEFT JOIN competitions c FORCE INDEX (PRIMARY) ON c.id=perfs.compet WHERE perfs.nageur=? ORDER BY perfs.id LIMIT 2001`,[plan.before.id]);
+      if(history.length>2000||history.some(row=>Number(row.published)&&(!/^\d{4}-\d{2}-\d{2}$/.test(row.date||"")||!Number.isFinite(Date.parse(`${row.date}T00:00:00Z`))||new Date(`${row.date}T00:00:00Z`).toISOString().slice(0,10)!==row.date||(row.date>=season.startDate&&row.date<=season.endDate))))throw new TypeError("Resultats modifies : verification nationale requise avant recuperation.");
     }
+    const rows=await historical.readRows(query,plan.before.id);
+    const work=plan.performanceClubs.changes.map(change=>({...change,...pending(rows[change.table],plan.performanceClubs.snapshots[change.table],change)}));
+    if(alreadyApplied&&work.some(change=>change.updates.length))throw new TypeError("Clubs historiques incomplets apres recuperation. Verification nationale requise.");
+    const destination=await query("SELECT num_club FROM clubs FORCE INDEX (PRIMARY) WHERE num_club=? LIMIT 1",[Number(input.clubId)]);
+    const oldClub=String(plan.before.club??"");
+    if(!destination.length)throw new TypeError("Club de destination introuvable.");
+    if(plan.performanceClubs.changes.some(change=>change.updates.length)&&!(await query("SELECT num_club FROM clubs FORCE INDEX (PRIMARY) WHERE num_club=? LIMIT 1",[Number(oldClub)])).length)throw new TypeError("Ancien club disparu. Recuperation a verifier.");
+    if(!saved)await audit.prepare(operation,plan);
+    const apply=async statement=>{
+      if(!statement)return;
+      const proof=await query(`EXPLAIN ${statement.sql}`,statement.values);
+      if(!proof.length||proof.some(row=>row.table&&!String(row.table).startsWith("<")&&(!row.key||row.type==="ALL")))throw new TypeError("Plan de recuperation NAP non indexe.");
+      if((await query(statement.sql,statement.values)).affectedRows!==statement.count)throw new Error("Recuperation interrompue ; sauvegarde conservee.");
+    };
+    for(const change of work)await apply(mergePlans.statement(change.table,change.key,change.updates));
+    const checked=await historical.readRows(query,plan.before.id);
+    if(work.some(change=>!sameRows(checked[change.table],change.expected)))throw new Error("Verification des clubs historiques incomplete.");
+    if(!alreadyApplied)await apply(mergePlans.statement("nageurs",["id"],[{before:plan.before,after:plan.after}]));
     const [verified]=await query(`SELECT ${COLUMNS.map(key=>`\`${key}\``).join(",")} FROM nageurs WHERE id=? AND ${notMerged()} LIMIT 1`,[plan.before.id]);
     if(!verified || hash(verified)!==plan.afterHash) throw new Error("Verification de recuperation incomplete.");
-    await audit.complete(operation,{swimmerId:String(verified.id),fromClubId:String(plan.before.club),clubId:input.clubId,seasonLabel:plan.season.label,verified:true,changedColumns:["club"]});
-    return {ok:true,source:"nap",operation,alreadyApplied,swimmer:person(verified)};
+    const historicalClubUpdateCount=plan.performanceClubs.changes.reduce((sum,change)=>sum+change.updates.length,0);
+    safe=false;await connection.query({sql:"UNLOCK TABLES",timeout:10000});tablesLocked=false;safe=true;
+    await audit.complete(operation,{swimmerId:String(verified.id),fromClubId:String(plan.before.club),clubId:input.clubId,seasonLabel:plan.season.label,verified:true,changedColumns:["club"],historicalClubUpdateCount,historicalClubPlanHash:plan.performanceClubs.hash});
+    return {ok:true,source:"nap",operation,alreadyApplied,historicalClubUpdateCount,swimmer:person(verified)};
   } finally {
-    let safe=true;
+    try{if(tablesLocked)await connection.query({sql:"UNLOCK TABLES",timeout:10000});}catch{safe=false;}
     try {if(locked && Number((await query("SELECT RELEASE_LOCK(?) AS released",[lock]))[0]?.released)!==1) safe=false;}catch{safe=false;}
     finally{if(safe) connection.release();else connection.destroy();}
   }
