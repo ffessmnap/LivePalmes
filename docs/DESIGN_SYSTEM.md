@@ -637,9 +637,11 @@ L’onglet présente sa situation actuelle à plat, sans carte ni badge dans une
 
 Tant que les membres et nageurs nécessaires à la liste ne sont pas tous chargés, un état de préparation remplace les tableaux de l’onglet Officiels. Une sélection enregistrée ne doit jamais apparaître temporairement décochée.
 
-### Rapprochement lors de la création d’un nageur
+### Confirmation du changement national de club
 
 Changement de club national : le dialogue de club existant affiche un récapitulatif avant écriture (ancien/nouveau club, nombre de performances au club inconnu, dates minimale/maximale et dates absentes). Il précise que les dates résument les lignes concernées, sans sélectionner toutes les performances de la période. Deux actions : « Annuler », focalisée à l'ouverture, et « Confirmer le changement ». Échap annule. Si l'ancien club est inconnu, expliciter l'absence d'attribution fiable ; si aucune performance n'est concernée, l'indiquer. Réutiliser la largeur, le défilement et les actions responsives du dialogue existant, sans nouveau style.
+
+### Rapprochement lors de la création d’un nageur
 
 Chaque alerte affiche le nom de la fiche existante proposée. Une ressemblance ordinaire reste confirmable. Une correspondance avec le nom et le prénom exactement inversés et la même date de naissance bloque la création, sans fusion ni correction automatique.
 
