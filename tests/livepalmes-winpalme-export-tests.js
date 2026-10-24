@@ -226,3 +226,29 @@ assert.throws(() => buildWinPalmeCompetitionTxt({...waterCompetition,events:[{co
 assert.throws(() => buildWinPalmeCompetitionTxt({...waterCompetition,events:waterEvents.filter(event => event.code !== "OW3000BI")},waterEntries,clubsMap), /hors programme|correspondance/);
 assert.throws(() => buildWinPalmeCompetitionTxt({...waterCompetition,events:[{code:"OW1000SF",type:"individual",nativeCourses:[{course:"1000",relais:0}]}]}), /Reference native/);
 console.log("Open-water experimental TXT: full programme, first native reference, empty elimination/relay IDs, fixed times and strict unknown-course refusal verified.");
+
+// Federal numbers distinguish clubs even when their abbreviation is shared.
+const { prepareManualOpenWaterEntries } = require("../functions/winpalme-open-water-manual");
+const sameCodeClubs=new Map([
+  ["101",{clubCode:"CPC",clubName:"Cornouaille",federalNumber:"03290021",regionId:"6"}],
+  ["102",{clubCode:"CPC",clubName:"Calais",federalNumber:"09620013",regionId:"13"}]
+]);
+const sameCodeEntries=["101","102"].map((clubId,i)=>({clubId,clubCode:"CPC",swimmers:[{swimmerIndexId:String(i+1),firstName:"Test",lastName:"Nageur",sex:"F",category:"M30+",individualEntries:[{eventCode:"OW1000SF"}]}],relays:[{eventCode:"4X1000SBMIXTE",nativeCategory:0,category:"NAP-0",genderMode:"mixed",members:[]}],teamLeader:{mode:"person",lastName:"Responsable",firstName:clubId}}));
+const sameCodeBefore=JSON.stringify(sameCodeEntries);
+const prepared=prepareManualOpenWaterEntries(sameCodeEntries);
+const corrected=buildWinPalmeCompetitionTxt({...waterCompetition,winPalmeId:"CNNP202606279229"},prepared,sameCodeClubs,{generatedAt:"2026-10-24T12:00:00Z"}).buffer.toString("utf8");
+const uncorrected=buildWinPalmeCompetitionTxt({...waterCompetition,winPalmeId:"CNNP202606279229"},sameCodeEntries,sameCodeClubs,{generatedAt:"2026-10-24T12:00:00Z"}).buffer.toString("utf8");
+assert.equal(corrected,uncorrected.replaceAll(";XNAP-0;",";XSE;"),"Only the agreed relay category changes");
+assert.equal(JSON.stringify(sameCodeEntries),sameCodeBefore,"No native category, identity or club mutation");
+assert.equal(corrected.split("\r\n").filter(row=>row.startsWith("CLU;CPC;")).length,2);
+assert.ok(corrected.includes("CLU;CPC;Cornouaille;03290021;BPL;;"));
+assert.ok(corrected.includes("CLU;CPC;Calais;09620013;HDF;;"));
+assert.equal(corrected.split("\r\n").filter(row=>row.startsWith("REL;CPC;XSE;")).length,2);
+assert.equal(corrected.includes("XNAP-0"),false);
+assert.ok(corrected.includes(";LD1000;000001;F30+;"),"Individual categories retained");
+assert.ok(corrected.includes("WID;CNNP202606279229;"),"WID retained");
+assert.equal(corrected.split("\r\n").filter(row=>row.startsWith("CEQ;")).every(row=>row.split(";")[3]==="CPC"),true);
+assert.throws(()=>prepareManualOpenWaterEntries([{relays:[{category:"NAP-9",eventCode:"4X1000SBMIXTE"}]}]),/non raccordee/);
+assert.throws(()=>prepareManualOpenWaterEntries([{relays:[{category:"NAP-0",nativeCategory:0,genderMode:"mixed",eventCode:"UNKNOWN"}]}]),/non raccordee/);
+assert.equal(prepareManualOpenWaterEntries([{relays:[{category:"J"}]}])[0].relays[0].category,"J");
+console.log("Manual water export: XSE sentinel mapping, explicit categories, separate same-code/federal-number clubs, unchanged individual categories/WID and no mutation passed.");
