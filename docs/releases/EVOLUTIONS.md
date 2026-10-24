@@ -2,6 +2,14 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 24 octobre — Export eau libre : relais et identité fédérale des clubs
+
+- Accord Antoine : corriger les relais et vérifier les clubs homonymes sur TEST ; catégories individuelles et WID réservés à une proposition avant modification. Le numéro fédéral distingue les clubs, pas leur seule abréviation.
+- Projection limitée au téléchargement manuel TEST : relais natif NAP-0/mixte/4X1000SBMIXTE exporté XSE, autres marqueurs non raccordés refusés. Aucun alias de club, fusion de blocs ou changement de numéro fédéral. Les CPC Cornouaille 03290021 et Calais 09620013 restent deux blocs ; le précédent comparatif par abréviation seule était incorrect.
+- Budget inchangé : aucune requête supplémentaire, aucun accès aux performances, aucune écriture sportive/Storage ; parcours manuel existant plafonné à 24 requêtes SQL. Helpers piscine, notifications et clôture inchangés. Adaptation locale au callable pour préserver la sélection par dépendances.
+- Tests ciblés réussis : XSE, catégories explicites conservées, catégorie inconnue refusée, deux CPC/fédéraux distincts et références NAG/REL/CEQ, catégories individuelles et WID inchangés, absence de mutation. CI et preuve TEST attendues ; import WinPalme/retour utilisateur non validés.
+
+
 ### 24 octobre — Alerte et clubs historiques du changement national (TEST déployé, retour utilisateur attendu)
 
 - Accord explicite Antoine : avant changement de club par l'admin national, afficher le nombre et la période des seules performances au club absent/non reconnu attribuées à l'ancien club, puis Annuler/Confirmer. Les clubs reconnus restent conservés, les dates ne sélectionnent pas toutes les performances d'une période ; ancien club inconnu explicitement signalé et inchangé.
