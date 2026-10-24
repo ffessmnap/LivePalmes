@@ -55,9 +55,16 @@ function project(prep,receipt,info){
   const saved=prep.target||{}, target={...saved,...receipt?.target};
   if(saved.before)target.before=readable(saved.before);
   if(saved.after)target.after=readable(saved.after);
-  const person=saved.native||saved.after||saved.before||{};
+  const person=saved.native||saved.after||saved.before||saved.target||{};
   target.firstName=target.firstName||person.prenom||person.firstName||"";
   target.lastName=target.lastName||person.nom||person.lastName||"";
+  for(const [key,native] of [["birthDate","date"],["sex","sexe"],["licenseNumber","number"]]){
+    if(!Object.hasOwn(target,key)&&Object.hasOwn(person,native))target[key]=person[native];
+  }
+  if(!target.clubName&&saved.native?.nom_club)target.clubName=saved.native.nom_club;
+  const name=row=>[row?.prenom||row?.firstName,row?.nom||row?.lastName].filter(Boolean).join(" ");
+  if(saved.source)target.sourcePersonName=name(saved.source);
+  if(saved.target)target.targetPersonName=name(saved.target);
   target.operation=info.operation;
   return {...prep,id:info.receiptId,action:info.rule[2],target,
     createdAt:prep.createdAt,completedAt:receipt?.createdAt||"",startedAt:prep.createdAt,
