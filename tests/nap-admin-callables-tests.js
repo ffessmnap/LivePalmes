@@ -24,6 +24,10 @@ vm.createContext(context);vm.runInContext(chunks.join("\n"),context);
   openWater=true;await assert.rejects(context.exports.generateEngagementCompetitionTxtExport(request),/eau libre/);
   context.ENVIRONMENT.projectId="livepalmes-test";
   assert.equal((await context.exports.generateEngagementCompetitionTxtExport(request)).source,"nap");
+  const originalBuilder=context.buildEngagementCompetitionTxt;
+  context.buildEngagementCompetitionTxt=()=>{throw new Error("Course eau libre sans correspondance WinPalme validee : Support.");};
+  await assert.rejects(context.exports.generateEngagementCompetitionTxtExport(request),e=>e.code==="failed-precondition" && /Support/.test(e.message));
+  context.buildEngagementCompetitionTxt=originalBuilder;
   const portalSource=fs.readFileSync("assets/livepalmes-admin-portal.js","utf8");
   const uiCode=portalSource.slice(portalSource.indexOf("  async function generateEngagementAdminTxtExport()"),portalSource.indexOf("  async function prepareEngagementOpeningEmails()"));
   for(const isTest of [true,false]) {
