@@ -15178,7 +15178,7 @@
     const date = new Date(value);
     if (!Number.isFinite(date.getTime())) return "Date inconnue";
     return new Intl.DateTimeFormat("fr-FR", {
-      day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit"
+      day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit", timeZone: "Europe/Paris"
     }).format(date);
   }
 
