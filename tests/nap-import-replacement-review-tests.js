@@ -1,0 +1,10 @@
+"use strict";
+const assert=require("node:assert/strict"),{replacementReview}=require("../functions/nap-import-replacement-review"),{old}=require("./fixtures/nap-import-review-fixture");
+const empty={unchanged:[],additions:[],removals:[]},summary={individual:{additions:0,removals:0,unchanged:1},relays:{additions:0,removals:0,unchanged:0},statuses:0,excluded:0};
+const pack={existing:[old],existingRelays:[],existingStatuses:[],statusRows:[]};
+let r=replacementReview(pack,{individual:{...empty,unchanged:[old]},relays:empty,summary});assert.equal(r.identical,true);assert.equal(r.requiresReplacementConfirmation,false);
+const addition={sourceLine:2,row:{...old,id:undefined,tps:"020000"}};
+r=replacementReview(pack,{individual:{...empty,additions:[addition]},relays:empty,summary});assert.equal(r.requiresReplacementConfirmation,true,"Even an additions-only replacement requires approval when old results exist");
+r=replacementReview(pack,{individual:{...empty,additions:[addition,{...addition,sourceLine:3}],removals:[old]},relays:empty,summary});assert.equal(r.changes.length,0,"Two possible heat/relay results must not be paired by guess");assert.equal(r.additions.length,2);assert.equal(r.removals.length,1);
+r=replacementReview({...pack,existingStatuses:[{swimmerId:"168",course:"100SF",club:"ABC",category:"HSE",status:"FRT"}],statusRows:[{swimmerId:168,course:"100SF",clubCode:"ABC",category:"HSE",status:"ABD"}]},{individual:empty,relays:empty,summary});assert.equal(r.statusAdditions[0].status,"ABD");assert.equal(r.statusRemovals[0].status,"FRT");assert.equal(r.requiresReplacementConfirmation,true);assert.equal(r.identical,false);
+console.log("Replacement review: unchanged results, additions-only approval, no ambiguous pairing and explicit sporting status changes verified offline.");

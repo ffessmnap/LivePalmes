@@ -104,6 +104,8 @@ function runUnitTests() {
     "nap-import-swimmer-resolution-tests.js",
     "nap-import-diff-tests.js",
     "nap-import-preview-tests.js",
+    "nap-import-review-tests.js",
+    "nap-import-replacement-review-tests.js",
     "nap-import-operation-plan-tests.js",
     "nap-import-write-tests.js",
     "nap-import-client-tests.js",
