@@ -104,6 +104,13 @@ LOGIN_MESSAGE_PREFLIGHT_PATHS = {
 }
 
 
+GROUPED_DEPENDENCY_PATHS = {
+    '.github/releases/evidence/20261024-grouped-test-approval.json',
+    'tools/release-function-fingerprints.js', 'tests/release-function-fingerprints-tests.js',
+    'tools/preview-scope.py', 'tests/preview-scope-tests.py',
+}
+
+
 def needs_preview(paths):
     def documentary(path):
         p = PurePosixPath(path)
@@ -143,6 +150,9 @@ def needs_preview(paths):
         return False
     if '.github/releases/20261022-login-message.json' in paths and all(
             documentary(p) or p in LOGIN_MESSAGE_PREFLIGHT_PATHS for p in paths):
+        return False
+    if '.github/releases/evidence/20261024-grouped-test-approval.json' in paths and all(
+            documentary(p) or p in GROUPED_DEPENDENCY_PATHS for p in paths):
         return False
     return any(not documentary(p) for p in paths)
 

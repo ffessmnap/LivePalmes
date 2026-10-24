@@ -240,3 +240,42 @@ const changedRecordsModules = {...recordsModules, "functions/public-records-data
 const recordsModuleAfter = fingerprints(nativeRecords, "deps", changedRecordsModules);
 assert.deepEqual(Object.keys(recordsAfter.functions).filter(name => recordsAfter.functions[name] !== recordsModuleAfter.functions[name]), ["readNapPublicSwimmer"]);
 console.log("Retrait Records seul : trois blocs et import inutilise retires, empreintes actives stables, module NAP partage toujours suivi.");
+
+// A frozen fresh literal must not make a pure helper common to unrelated handlers.
+const frozenOwner = `const {onCall}=require("firebase-functions/v2/https");
+const {read}=require("./frozen-data");
+exports.target=onCall({},()=>read()); exports.other=onCall({},()=>42);`;
+const frozenSource = value => `const CODES=Object.freeze({code:"${value}",nested:[1,{value:-2}]}); function read(){return CODES;} module.exports={read};`;
+const frozenPrint = source => fingerprints(frozenOwner,"same",{"functions/frozen-data.js":{source}}).functions;
+const frozenBefore=frozenPrint(frozenSource("before")), frozenAfter=frozenPrint(frozenSource("after"));
+assert.notEqual(frozenBefore.target,frozenAfter.target);
+assert.equal(frozenBefore.other,frozenAfter.other);
+for(const unsafe of [
+  'const CODES=Object.freeze({get value(){return sideEffect();}});',
+  'const CODES=Object.freeze({...source});',
+  'const CODES=Object.freeze({[compute()]:1});',
+  'const CODES=Object.freeze({value:compute()});',
+  'const CODES=Object.freeze({value:external});',
+  'const CODES=Object.freeze({__proto__:{value:1}});',
+  'const CODES=Object["freeze"]({value:1});',
+  'const CODES=Object.freeze(new Proxy({},{ownKeys(){return [];}}));',
+  'const Object={freeze:value=>value}; const CODES=Object.freeze({value:1});',
+  'function Object(){} const CODES=Object.freeze({value:1});',
+  'function shadow(Object){} const CODES=Object.freeze({value:1});',
+  'function change(){Object.freeze=custom;} const CODES=Object.freeze({value:1});'
+]) {
+  const a=frozenPrint(unsafe+' function read(){return CODES;} module.exports={read};');
+  const b=frozenPrint(unsafe+' function read(){return CODES;} module.exports={read}; const extra=1;');
+  assert.notEqual(a.other,b.other,"Unknown/shadowed freeze remains common: "+unsafe);
+}
+console.log("Constantes gelees : donnees litterales seules isolees ; masquages, accesseurs, appels et effets inconnus restent communs.");
+
+const groupedOld=fromGit(root,"fbd3c2868fcb3690e1fa5a7ddeca9f45e6fb4511").functions;
+const groupedNew=fromGit(root,"0619f1dce9439afd5dd4719ee035ff0fc3b99b83").functions;
+const groupedChanges=Object.keys(groupedOld).filter(n=>groupedOld[n]!==groupedNew[n]);
+assert.equal(groupedChanges.length,52); // Includes the TEST-only export, not present in PROD.
+for(const name of ["verifyPin","setRolePins","getCurrentAccessUser","updateEngagementAutomaticMailControl"])
+  assert.equal(groupedOld[name],groupedNew[name],"Unrelated handler remains unchanged: "+name);
+for(const name of ["generateEngagementCompetitionTxtExport","readNapPublicSwimmer","notifyEngagementCompetitionDocuments","listEngagementNationalAuditLogs"])
+  assert.notEqual(groupedOld[name],groupedNew[name],"Real dependency must still change: "+name);
+console.log("Version regroupee reelle : dependances utiles suivies et fonctions sans rapport conservees.");

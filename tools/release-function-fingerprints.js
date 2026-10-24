@@ -59,12 +59,28 @@ function moduleGraph(files = {}) {
     });
     return [...names].sort();
   };
+  // Freeze is inert only on a fresh data literal and the unshadowed builtin.
+  // Never accept a getter, spread, computed key, identifier or application call.
+  let builtinObject = true;
+  const literalData = node => {
+    if (!node) return false;
+    if (node.type === "Literal") return true;
+    if (node.type === "ArrayExpression") return node.elements.every(n => !n || literalData(n));
+    if (node.type === "UnaryExpression") return ["-", "+", "!", "~", "void"].includes(node.operator) && literalData(node.argument);
+    return node.type === "ObjectExpression" && node.properties.every(p => p.type === "Property" &&
+      !p.computed && !p.method && p.kind === "init" && (p.key.name || p.key.value) !== "__proto__" && literalData(p.value));
+  };
+  const bindsObject = node => { let found = false; walk(node, n => { if (n.type === "Identifier" && n.name === "Object") found = true; }); return found; };
   const declarative = node => {
     if (!node) return true;
     if (inert(node) || node.type === "Identifier") return true;
     if (node.type === "ArrayExpression") return node.elements.every(declarative);
     if (node.type === "ObjectExpression") return node.properties.every(p =>
       p.type === "Property" && !p.computed && p.kind === "init" && declarative(p.value));
+    if (builtinObject && node.type === "CallExpression" && node.callee.type === "MemberExpression" &&
+        !node.callee.computed && node.callee.object.name === "Object" && node.callee.property.name === "freeze" &&
+        node.arguments.length === 1 && ["ObjectExpression", "ArrayExpression"].includes(node.arguments[0].type) &&
+        literalData(node.arguments[0])) return true;
     if (node.type === "CallExpression" && node.callee.name === "require") return (
       node.arguments.length === 1 && node.arguments[0].type === "Literal" && typeof node.arguments[0].value === "string");
     if (node.type === "NewExpression" && ["Set", "Map"].includes(node.callee.name))
@@ -79,6 +95,16 @@ function moduleGraph(files = {}) {
       const result = { pure: true, files: [name], externals: [] }; cache.set(name, result); return result;
     }
     const ast = acorn.parse(file.source, { ecmaVersion: "latest", sourceType: "script" });
+    builtinObject = true;
+    walk(ast, node => {
+      if (node.type === "VariableDeclarator" && bindsObject(node.id) ||
+          ["FunctionDeclaration", "FunctionExpression", "ArrowFunctionExpression"].includes(node.type) &&
+            (bindsObject(node.id) || node.params.some(bindsObject)) ||
+          ["ClassDeclaration", "ClassExpression"].includes(node.type) && bindsObject(node.id) ||
+          node.type === "CatchClause" && bindsObject(node.param) ||
+          node.type === "AssignmentExpression" && bindsObject(node.left) ||
+          node.type === "UpdateExpression" && bindsObject(node.argument)) builtinObject = false;
+    });
     let pure = ast.body.every(node =>
       node.type === "FunctionDeclaration" ||
       node.type === "ExpressionStatement" && node.directive ||
