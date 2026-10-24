@@ -119,7 +119,7 @@ def approved_club_directory_functions(value):
 
 def idf_preservation(value):
     # Existing reader authorization stays closed; this is a second, separately approved pair.
-    return (value['groupedIdfPreservation'] if approved_grouped_functions(value) else None) or club_directory_idf_preservation(value) or public_reader_idf_preservation(value)
+    return grouped.preservation(value) or club_directory_idf_preservation(value) or public_reader_idf_preservation(value)
 
 
 def approved_public_nap_functions(value):
@@ -753,6 +753,9 @@ def prepare_selection(directory, candidate):
 def reviewed_blocked_production_run(root):
     """Recognize only the reviewed 12 October stop before any deployment."""
     request = read(root / 'request.json') if (root / 'request.json').exists() else {}
+    if grouped.all_mail_preservation(request) is not None:
+        approved_grouped_functions(request)
+        return grouped.review_blocked_attempt(root, git, gh, artifact, latest_run)
     reference = request.get('productionBlockedAttemptEvidence')
     if reference is None:
         return latest_run('livepalmes-production-release.yml')
@@ -927,6 +930,9 @@ def freeze_plan(directory, evidence=False):
             backend_fingerprints(request['candidate']), names)
         require(read(root / 'baseline.json')['productionRun'] == grouped.contract()['productionRun'],
                 'Reference PROD groupee differente')
+        if grouped.all_mail_preservation(request) is not None:
+            proof.pop('idfUnchanged')
+            proof['mailPreservation'] = grouped.all_mail_preservation(request)
         write(root / 'grouped-idf-proof.json', proof)
     if request.get('excludedBackendEvidence') is not None:
         verify_excluded_backend(root, state, selected)

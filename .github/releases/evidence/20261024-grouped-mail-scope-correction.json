@@ -1,0 +1,24 @@
+{
+  "schema": 1,
+  "project": "livepalmes",
+  "productionRun": 39849436121,
+  "blockedRun": 40112920934,
+  "preparationRun": 40112486278,
+  "headSha": "59b479c4d6957c2a91d2b62e8ceeb7cdbde6c297",
+  "sourceSha256": {
+    ".github/workflows/livepalmes-production-release.yml": "0208f6afe28978800a7772911bfc69e394b397f8822d5cc67727df5aa3657cba",
+    "tools/release-cycle.py": "f14d6ca418c7a5c83911ec08e81332c5e8005f042ecb95001c2bc943210c2b03",
+    "tools/check-production-mail-disabled.py": "ebca6f589ad0e7a5f2932deb7527ab5205e4f9a506c3acdb819a126cb401c557",
+    "tools/grouped-publication-policy.py": "bba1ed941481687a2781bc5c151ee6faeca77cbfdc3f15c1bc1ec68bd4d0ca98"
+  },
+  "observed": {
+    "enabled": true,
+    "scope": "all",
+    "revision": 5,
+    "updatedAt": "2026-10-22T21:02:17.469Z",
+    "documentSha256": "c3805725e3e8770dfeabe545d49e0e8c381cde7fd59dd022799f660f796dceca",
+    "schedulerSha256": "bbed05ccbb831deadaf517571fb1e7594786cb4d705ab711c91a20121b7150c3"
+  },
+  "approval": "On conserve tous les clubs",
+  "scope": "Conserver le reglage tous clubs deja actif, sans l’ecrire, sans envoi/test/rattrapage ni operation de donnees. Preparation du bilan corrige puis accord final avant PROD."
+}

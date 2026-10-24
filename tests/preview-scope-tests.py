@@ -102,3 +102,10 @@ for extra in ['functions/index.js','portail.html','firebase.json','tools/unknown
     assert scope.needs_preview(grouped+[extra]) is True
 assert scope.needs_preview(['tools/release-function-fingerprints.js']) is True
 print('Grouped dependency-only proof skips preview; application/configuration/unknown scope retains it')
+
+all_clubs = sorted(scope.GROUPED_ALL_CLUBS_PATHS) + ['docs/releases/EVOLUTIONS.md']
+assert scope.needs_preview(all_clubs) is False
+for extra in ['functions/index.js','portail.html','firebase.json','tools/unknown.py']:
+    assert scope.needs_preview(all_clubs+[extra]) is True
+assert scope.needs_preview(['tools/grouped-publication-policy.py']) is True
+print('All-club correction preparation skips preview; application/configuration and unknown scope retain it')

@@ -67,5 +67,13 @@ vm.runInContext(source.slice(notifyStart,source.indexOf('\n});',notifyStart)+4),
  assert.equal(stoppedBatch.interrupted,true);assert.equal(stoppedBatch.done,true);assert.equal(sentCount,sentBefore+1);
  const replay=await context.exports.notifyEngagementCompetitionDocuments({...request,data:{...request.data,action:'send',expectedFingerprint:scoped.fingerprint}});assert.equal(replay.skippedCount,1);assert.equal(sentCount,sentBefore+1);
  setting={...setting,enabled:false};const off=await context.exports.notifyEngagementCompetitionDocuments(request);assert.equal(off.disabled,true);
- console.log('National library: authority, TEST zero SMTP/outbox, PROD runtime, IDF/preferences, 20-item batches, replay, stale preview and delivery stop passed offline.');
+ // Current PROD setting retained by the corrected plan: all clubs, revision5.
+ // Re-evaluate recipients without changing preferences or replaying earlier jobs.
+ setting={...setting,enabled:true,scope:'all',revision:5};
+ const all=await context.exports.notifyEngagementCompetitionDocuments(request);assert.equal(all.scope,'all');assert.equal(all.recipientCount,2);
+ const allDelivered=[];context.sendEngagementMailJob=async(_transport,snapshot)=>{allDelivered.push(snapshot.data().recipientUid);return {status:'sent'};};
+ const allBatch=await context.exports.notifyEngagementCompetitionDocuments({...request,data:{...request.data,action:'send',expectedFingerprint:all.fingerprint}});
+ assert.equal(allBatch.sentCount,1);assert.equal(allBatch.skippedCount,1);assert.deepEqual(allDelivered,['outside']);
+ assert.equal((await context.exports.notifyEngagementCompetitionDocuments({...request,data:{...request.data,action:'send',expectedFingerprint:all.fingerprint}})).sentCount,0);
+ console.log('National library: authority, TEST zero SMTP/outbox, PROD runtime, IDF/all-club preferences, 20-item batches, replay, stale preview and delivery stop passed offline.');
 })().catch(error=>{console.error(error);process.exitCode=1;});
