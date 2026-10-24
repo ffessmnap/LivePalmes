@@ -289,6 +289,22 @@ assert.equal(officialTxt.split("\r\n").filter(l=>!l.startsWith("OFF;")).join("\r
 assert.throws(()=>buildWaterTxt(waterCompetition,[{...officialEntries[0],officials:[{lastName:"",firstName:""}]}],sameCodeClubs),/officiel.*incomplete/);
 console.log("IntraNAP OFF: six fields, accents/escaping, empty date, separate federal blocks, officials-only club, CEQ order, no private IDs or mutation verified.");
 
+// Registered-only swimmers use the observed IntraNAP NAG/REL convention.
+const registeredEntries=[{...officialEntries[0],swimmers:[...officialEntries[0].swimmers,{swimmerIndexId:"14207",firstName:"Sans",lastName:"Course",birthDate:"1980-02-29",sex:"F",category:"M40+",individualEntries:[]},{swimmerIndexId:"14208",firstName:"Sans",lastName:"Épreuve",birthDate:"1970-01-01",sex:"M"}],relays:[{eventCode:"4X1000SBMIXTE",genderMode:"mixed",category:"S",members:[]}]}];
+const registeredBefore=JSON.stringify(registeredEntries);
+const registeredTxt=buildWaterTxt(waterCompetition,registeredEntries,sameCodeClubs,{generatedAt:"2026-10-24T12:00:00Z"}).buffer.toString();
+const registeredLines=registeredTxt.split("\r\n").filter(l=>l.startsWith("NAG;")&&l.split(";")[7]==="REL");
+assert.deepEqual(registeredLines,["NAG;Course;Sans;29/02/1980;F;CPC;;REL;000000;;14207;;","NAG;Épreuve;Sans;01/01/1970;M;CPC;;REL;000000;;14208;;"]);
+assert.ok(registeredLines.every(l=>l.split(";").length===13));
+assert.equal(registeredTxt.includes("DIS;REL;"),false);
+assert.ok(registeredTxt.indexOf(registeredLines[0])<registeredTxt.indexOf("REL;CPC;"));
+assert.equal(JSON.stringify(registeredEntries),registeredBefore);
+const registeredOnlyTxt=buildWaterTxt(waterCompetition,[{...registeredEntries[0],swimmers:registeredEntries[0].swimmers.slice(1),relays:[],officials:[],teamLeader:{}}],sameCodeClubs).buffer.toString();
+assert.equal(registeredOnlyTxt.split("\r\n").filter(l=>l.startsWith("NAG;")).length,2,"A club with only registered swimmers stays in the TXT");
+const ordinary=buildWaterTxt(waterCompetition,[{...registeredEntries[0],swimmers:registeredEntries[0].swimmers.slice(0,1)}],sameCodeClubs,{generatedAt:"2026-10-24T12:00:00Z"}).buffer.toString();
+assert.equal(registeredTxt.split("\r\n").filter(l=>!registeredLines.includes(l)).join("\r\n"),ordinary,"Only missing NAG records are added");
+console.log("Registered-only water swimmers: IntraNAP REL/000000/empty-category, 13 fields, no fictitious DIS, relay order, no duplicates or mutation tested.");
+
 // Execute the real season/category normalisation used by the callable.
 const vm=require("node:vm"),fs=require("node:fs"),source=fs.readFileSync("functions/index.js","utf8");
 const seasonalContext={buildWinPalmeCompetitionTxt:buildWaterTxt,engagementPdfFileName:value=>String(value),Date};

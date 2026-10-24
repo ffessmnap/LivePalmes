@@ -110,10 +110,18 @@ function openWaterExportProgram(competition) {
 // The shared pool generator and all automatic export callers stay unchanged.
 function buildNativeManualOpenWaterTxt(competition, entries = [], clubsById = new Map(), options = {}) {
   const program = openWaterExportProgram(competition);
-  const { buildWinPalmeCompetitionTxt, formatDate } = require("./winpalme-export");
+  const { buildWinPalmeCompetitionTxt, formatDate, swimmerWinPalmeId } = require("./winpalme-export");
   const result = buildWinPalmeCompetitionTxt(
     {...competition, competitionType:"pool"}, entries, clubsById, options);
   const field = value => String(value ?? "").trim().replace(/[;\r\n]+/g, " ");
+  // IntraNAP preserves registered swimmers without individual courses as NAG
+  // records with the REL marker, zero time and no sporting category or DIS.
+  const registeredOnly = entries.map(entry => {
+    const club = clubsById.get(text(entry.clubId)) || {};
+    return (entry.swimmers || []).filter(person => !(person.individualEntries || []).length).map(person =>
+      ["NAG", person.lastName, person.firstName, formatDate(person.birthDate), person.sex,
+        entry.clubCode || club.clubCode, "", "REL", "000000", "", swimmerWinPalmeId(person), "", ""].map(field).join(";"));
+  });
   const officials = entries.map(entry => {
     const club = clubsById.get(text(entry.clubId)) || {};
     return (entry.officials || []).map(person => {
@@ -122,10 +130,14 @@ function buildNativeManualOpenWaterTxt(competition, entries = [], clubsById = ne
     });
   });
   const lines = [];
-  let clubIndex = -1, officialsWritten = false;
+  let clubIndex = -1, officialsWritten = false, registeredWritten = false;
   for (const line of result.buffer.toString("utf8").split("\r\n")) {
     const fields = line.split(";");
-    if (fields[0] === "CLU") { clubIndex++; officialsWritten = false; }
+    if (fields[0] === "CLU") { clubIndex++; officialsWritten = false; registeredWritten = false; }
+    if (!registeredWritten && clubIndex >= 0 && (fields[0] === "REL" || fields[0] === "CEQ" || line === "XXX;XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXx")) {
+      lines.push(...registeredOnly[clubIndex]);
+      registeredWritten = true;
+    }
     // Use the block position, never the potentially shared club abbreviation.
     if (!officialsWritten && clubIndex >= 0 && (fields[0] === "CEQ" || line === "XXX;XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXx")) {
       lines.push(...officials[clubIndex]);
