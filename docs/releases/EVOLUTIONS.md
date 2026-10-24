@@ -2,6 +2,14 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 24 octobre — WID e-NAP et catégories par saison de l’export eau libre
+
+- Accord Antoine : reprendre le WID e-NAP sur TEST et calculer les catégories individuelles depuis date de naissance et saison. Calcul existant conservé : année de fin de saison moins année de naissance, bascule au 1er septembre ; aucun nouveau choix Seniors/Masters ni modification sportive native.
+- WID manuel TEST : code comité natif + date AAAAMMJJ + identifiant natif, validé par les deux TXT source (Jumièges CNNP202606274982, Beaumont IDF202405184760). Les champs wc vérifiés sont absents/null ; le WID est donc reconstruit depuis les valeurs natives, sans suffixe haché. Date modifiée ou comité non raccordé : refus explicite.
+- Budget : ouverture inchangée ; téléchargement/rafraîchissement manuel ajoute un SELECT par PK limité à une compétition (LIMIT 2 pour détecter une anomalie), au plus 25 requêtes SQL au lieu de 24 ; aucune requête par nageur, écriture sportive/Storage, migration, envoi ou modification PROD. Relais XSE et blocs de clubs par numéro fédéral conservés.
+- Tests ciblés réussis : deux WID source, lecture unique indexée, source absente/modifiée/comité inconnu refusés, toutes les bornes d’âge et passage août/septembre sur les fonctions réelles, date de naissance tardive dans l’année, absence de mutation. CI globale et preuve TEST attendues ; import WinPalme non validé.
+
+
 ### 24 octobre — Export eau libre : relais et identité fédérale des clubs
 
 - Accord Antoine : corriger les relais et vérifier les clubs homonymes sur TEST ; catégories individuelles et WID réservés à une proposition avant modification. Le numéro fédéral distingue les clubs, pas leur seule abréviation.
