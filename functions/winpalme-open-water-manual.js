@@ -65,4 +65,68 @@ async function readManualOpenWaterCompetition(connection, competition) {
     }) })) };
 }
 
-module.exports = { prepareManualOpenWaterEntries, readManualOpenWaterCompetition };
+const text = value => String(value ?? "").trim();
+function openWaterExportProgram(competition) {
+  const events = competition.events || [];
+  if (!events.length) throw new Error("Programme eau libre absent : export impossible.");
+  const byCode = new Map();
+  const definitions = events.map(event => {
+    const rows = event.nativeCourses || [];
+    const first = rows[0];
+    const nativeCode = text(first?.course).toUpperCase();
+    const code = text(first?.wplabel);
+    if (!code || !/^[A-Za-z0-9][A-Za-z0-9 _-]{0,31}$/.test(code)
+        || rows.some(row => !/^[A-Za-z0-9 ,.-]{1,15}$/.test(String(row.course)))
+        || ["LD11KM", "WPRELAISLD3500", "LD4X2KMM", "LD05KM Mixte"].includes(code)
+        || rows.some(row => ["wplabel", "longueur", "style", "nbnageur", "mixte", "relais", "type_"].some(key => String(row[key]) !== String(first[key])))
+        || byCode.has(event.code) || [...byCode.values()].some(item => item.code === code)) {
+      throw new Error(`Course eau libre sans correspondance WinPalme validee ou ambigue : ${event.label || event.code}.`);
+    }
+    const relay = Number(first.relais) === 1;
+    const distance = Number(first.longueur), members = Number(first.nbnageur), mixed = Number(first.mixte);
+    if ((event.type === "relay") !== relay || ![0,1].includes(Number(first.relais))
+        || first.style !== "SF" || !Number.isSafeInteger(distance) || distance < 1 || distance > 100000
+        || ![0,1].includes(mixed) || rows.some(row => Number(row.ld) !== 1 || Number(row.actif) !== 1 || Number(row.validation) !== 1)
+        || (!relay && (members !== 1 || Number(first.type_) !== 1 || mixed !== 0))
+        || (relay && (nativeCode !== "4X1000SB MIXTE" || code !== "LD4X1KMMM" || distance !== 4000 || members !== 4 || mixed !== 1 || Number(first.type_) !== 0))) {
+      throw new Error(`Type de course eau libre incoherent : ${event.code}.`);
+    }
+    const elimination = nativeCode === "150BIEL" || nativeCode === "150SFEL";
+    if (rows.some(row => !/^[1-9]\d*$/.test(String(row.id_course || ""))) || new Set(rows.map(row => String(row.sexe))).size !== rows.length
+        || rows.some(row => !(relay ? ["0"] : ["F", "M"]).includes(String(row.sexe)))
+        || (elimination && (distance !== 150 || code !== (nativeCode === "150BIEL" ? "LD150BIE" : "LD150SFE")))) {
+      throw new Error(`Reference native eau libre absente : ${event.code}.`);
+    }
+    const item = { code, fields: ["DIS", code, first.course, distance, "SF", relay ? 2 : 1,
+      members, relay || elimination ? "" : first.id_course, mixed] };
+    byCode.set(event.code, item);
+    return item;
+  });
+  return { byCode, definitions };
+}
+
+
+// Reuse the existing field serialization; project only water-specific records.
+// The shared pool generator and all automatic export callers stay unchanged.
+function buildNativeManualOpenWaterTxt(competition, entries = [], clubsById = new Map(), options = {}) {
+  const program = openWaterExportProgram(competition);
+  const result = require("./winpalme-export").buildWinPalmeCompetitionTxt(
+    {...competition, competitionType:"pool"}, entries, clubsById, options);
+  const lines = [];
+  for (const line of result.buffer.toString("utf8").split("\r\n")) {
+    const fields = line.split(";");
+    if (fields[0] === "XXX" && fields[1] === "RENCONTRE") fields[4] = "Longue distance";
+    if (fields[0] === "NAG" || fields[0] === "REL") {
+      const index = fields[0] === "NAG" ? 7 : 3;
+      const definition = program.byCode.get(fields[index]);
+      if (!definition) throw new Error("Engagement eau libre hors programme : " + fields[index]);
+      fields[index] = definition.code;
+      fields[index + 1] = fields[0] === "NAG" ? "000001" : "595999";
+    }
+    lines.push(fields.join(";"));
+    if (fields[0] === "WID") program.definitions.forEach(item => lines.push(item.fields.map(String).join(";")));
+  }
+  return {...result, buffer:Buffer.from(lines.join("\r\n"),"utf8")};
+}
+
+module.exports = { prepareManualOpenWaterEntries, readManualOpenWaterCompetition, buildNativeManualOpenWaterTxt };

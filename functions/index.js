@@ -11346,7 +11346,11 @@ exports.generateEngagementCompetitionTxtExport = onCall({ ...CALLABLE_OPTIONS, .
         ? await require("./winpalme-open-water-manual").readManualOpenWaterCompetition(
           require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD),result.competition)
         : result.competition;
-      txt=buildEngagementCompetitionTxt(exportCompetition,exportEntries,result.clubsById);
+      txt=result.competition.competitionType==="openWater"
+        ? {...require("./winpalme-open-water-manual").buildNativeManualOpenWaterTxt(exportCompetition,
+          exportEntries.map(entry=>({...entry,swimmers:(entry.swimmers||[]).map(swimmer=>({...swimmer,category:engagementTxtSwimmerCategory(swimmer,exportCompetition)}))})),result.clubsById),
+          fileName:`engagements-winpalme-${engagementPdfFileName(exportCompetition.name || exportCompetition.id)}.txt`}
+        : buildEngagementCompetitionTxt(exportCompetition,exportEntries,result.clubsById);
     }
     catch (error) {
       if(result.competition.competitionType==="openWater") throw new HttpsError("failed-precondition", error.message || "Export eau libre indisponible.");

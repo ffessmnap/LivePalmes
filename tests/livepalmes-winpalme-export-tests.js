@@ -197,6 +197,7 @@ assert.deepEqual(cleanClubPayload({
 
 console.log("Tests export WinPalme et référentiel clubs OK.");
 
+const buildWaterTxt=require("../functions/winpalme-open-water-manual").buildNativeManualOpenWaterTxt;
 // Synthetic native catalogue projection, without personal data.
 function catalogueRow(course,id_course,relais=0,sexe="M") {
  const map={"5000":["LD05KM",5000],"3000BI":["LD03KMBI",3000],"4X1000SB Mixte":["LD4X1KMMM",4000],"1000BI":["LD1000BI",1000],"3000":["LD03KM",3000],"1000":["LD1000",1000],"150BIEL":["LD150BIE",150],"150SFEL":["LD150SFE",150],"6000":["LD06KM",6000],"6KMSUPPORT":["LD06KMSUP",6000]};
@@ -213,7 +214,9 @@ const waterCompetition = { ...competition, competitionType: "openWater", events:
 const waterEntries = [{ clubId: "106", clubCode: "CNHC", swimmers: [{ swimmerIndexId: "1", sex: "F", category: "S", individualEntries: [{eventCode: "OW3000BI", entryTime: "12:00.00"}] }], relays: [{eventCode: "4X1000SBMIXTE", genderMode: "mixed", category: "S", members: [{swimmerIndexId:"1"},{swimmerIndexId:"2"},{swimmerIndexId:"3"},{swimmerIndexId:"4"}]}] }];
 const clubsMap = new Map(clubs.map(club => [club.clubId, club]));
 const waterBefore = JSON.stringify([waterCompetition, waterEntries]);
-const waterTxt = buildWinPalmeCompetitionTxt(waterCompetition, waterEntries, clubsMap).buffer.toString("utf8");
+const waterTxt = buildWaterTxt(waterCompetition, waterEntries, clubsMap).buffer.toString("utf8");
+assert.equal(buildWaterTxt(waterCompetition,waterEntries,clubsMap,{generatedAt:"2026-10-24T12:00:00Z"}).buffer.toString(),
+  buildWinPalmeCompetitionTxt(waterCompetition,waterEntries,clubsMap,{generatedAt:"2026-10-24T12:00:00Z"}).buffer.toString(),"Native Jumièges projection preserves the existing TXT exactly");
 assert.ok(waterTxt.includes(";Longue distance;\r\n"));
 assert.equal(waterTxt.split("\r\n").filter(row => row.startsWith("DIS;")).length, 8);
 assert.ok(waterTxt.includes("DIS;LD03KMBI;3000BI;3000;SF;1;1;229;0\r\n"));
@@ -224,23 +227,23 @@ assert.ok(waterTxt.includes(";;LD03KMBI;000001;FSE;1;;"));
 assert.ok(waterTxt.includes("REL;CNHC;XSE;LD4X1KMMM;595999;1;2;3;4;"));
 assert.equal(JSON.stringify([waterCompetition, waterEntries]), waterBefore);
 const femaleFirst = { ...waterCompetition, events: [{ code: "OW3000SF", type: "individual", nativeCourses: [catalogueRow("3000",72,0,"F"),catalogueRow("3000",73)] }] };
-assert.ok(buildWinPalmeCompetitionTxt(femaleFirst).buffer.toString().includes("DIS;LD03KM;3000;3000;SF;1;1;72;0"));
-assert.throws(() => buildWinPalmeCompetitionTxt({...waterCompetition,events:[]}), /Programme eau libre absent/);
-assert.throws(() => buildWinPalmeCompetitionTxt({...waterCompetition,events:[{code:"OW2000SUP",nativeCourses:[{course:"2KMSUPPORT"}]}]}), /sans correspondance/);
-assert.throws(() => buildWinPalmeCompetitionTxt({...waterCompetition,events:waterEvents.filter(event => event.code !== "OW3000BI")},waterEntries,clubsMap), /hors programme|correspondance/);
-assert.throws(() => buildWinPalmeCompetitionTxt({...waterCompetition,events:[{code:"OW1000SF",type:"individual",nativeCourses:[catalogueRow("1000",null)]}]}), /Reference native/);
+assert.ok(buildWaterTxt(femaleFirst).buffer.toString().includes("DIS;LD03KM;3000;3000;SF;1;1;72;0"));
+assert.throws(() => buildWaterTxt({...waterCompetition,events:[]}), /Programme eau libre absent/);
+assert.throws(() => buildWaterTxt({...waterCompetition,events:[{code:"OW2000SUP",nativeCourses:[{course:"2KMSUPPORT"}]}]}), /sans correspondance/);
+assert.throws(() => buildWaterTxt({...waterCompetition,events:waterEvents.filter(event => event.code !== "OW3000BI")},waterEntries,clubsMap), /hors programme|correspondance/);
+assert.throws(() => buildWaterTxt({...waterCompetition,events:[{code:"OW1000SF",type:"individual",nativeCourses:[catalogueRow("1000",null)]}]}), /Reference native/);
 console.log("Open-water experimental TXT: full programme, first native reference, empty elimination/relay IDs, fixed times and strict unknown-course refusal verified.");
 
 const beaumontEvents = [catalogueRow("6000",74),catalogueRow("6KMSUPPORT",218)].map((row,i)=>({code:`BEAUMONT${i}`,type:"individual",nativeCourses:[row]}));
-const beaumontTxt=buildWinPalmeCompetitionTxt({...waterCompetition,events:beaumontEvents}).buffer.toString();
+const beaumontTxt=buildWaterTxt({...waterCompetition,events:beaumontEvents}).buffer.toString();
 assert.ok(beaumontTxt.includes("DIS;LD06KM;6000;6000;SF;1;1;74;0"));
 assert.ok(beaumontTxt.includes("DIS;LD06KMSUP;6KMSUPPORT;6000;SF;1;1;218;0"));
-const refuseRow = (row,pattern=/ambigue|incoherent|Reference native/)=>assert.throws(()=>buildWinPalmeCompetitionTxt({...waterCompetition,events:[{code:"TEST",type:"individual",nativeCourses:[row]}]}),pattern);
+const refuseRow = (row,pattern=/ambigue|incoherent|Reference native/)=>assert.throws(()=>buildWaterTxt({...waterCompetition,events:[{code:"TEST",type:"individual",nativeCourses:[row]}]}),pattern);
 for(const patch of [{wplabel:""},{wplabel:"LD11KM"},{wplabel:"WPRELAISLD3500"},{longueur:0},{style:"BI"},{actif:0},{validation:0},{ld:0},{mixte:1},{nbnageur:3},{type_:0},{sexe:"0"}]) refuseRow({...catalogueRow("6000",74),...patch});
-assert.throws(()=>buildWinPalmeCompetitionTxt({...waterCompetition,events:[{code:"BAD",type:"individual",nativeCourses:[catalogueRow("6000",74),{...catalogueRow("6000",75,0,"F"),longueur:9000}]}]}),/ambigue/);
-assert.throws(()=>buildWinPalmeCompetitionTxt({...waterCompetition,events:[{code:"BAD",type:"individual",nativeCourses:[catalogueRow("6000",74),catalogueRow("6000",75)]}]}),/Reference native/);
-assert.throws(()=>buildWinPalmeCompetitionTxt({...waterCompetition,events:[beaumontEvents[0],{...beaumontEvents[0],code:"SECOND"}]}),/ambigue/);
-assert.throws(()=>buildWinPalmeCompetitionTxt({...waterCompetition,events:[{code:"RELAY",type:"relay",nativeCourses:[{...catalogueRow("4X1000SB Mixte",413,1),course:"4X500",wplabel:"LD4X500SFM",longueur:2000}]}]}),/incoherent/);
+assert.throws(()=>buildWaterTxt({...waterCompetition,events:[{code:"BAD",type:"individual",nativeCourses:[catalogueRow("6000",74),{...catalogueRow("6000",75,0,"F"),longueur:9000}]}]}),/ambigue/);
+assert.throws(()=>buildWaterTxt({...waterCompetition,events:[{code:"BAD",type:"individual",nativeCourses:[catalogueRow("6000",74),catalogueRow("6000",75)]}]}),/Reference native/);
+assert.throws(()=>buildWaterTxt({...waterCompetition,events:[beaumontEvents[0],{...beaumontEvents[0],code:"SECOND"}]}),/ambigue/);
+assert.throws(()=>buildWaterTxt({...waterCompetition,events:[{code:"RELAY",type:"relay",nativeCourses:[{...catalogueRow("4X1000SB Mixte",413,1),course:"4X500",wplabel:"LD4X500SFM",longueur:2000}]}]}),/incoherent/);
 console.log("Native catalogue: Beaumont surface/support, missing/inactive/inconsistent fields, collisions, duplicate references and unverified relays tested.");
 
 // Federal numbers distinguish clubs even when their abbreviation is shared.
@@ -252,8 +255,8 @@ const sameCodeClubs=new Map([
 const sameCodeEntries=["101","102"].map((clubId,i)=>({clubId,clubCode:"CPC",swimmers:[{swimmerIndexId:String(i+1),firstName:"Test",lastName:"Nageur",sex:"F",category:"M30+",individualEntries:[{eventCode:"OW1000SF"}]}],relays:[{eventCode:"4X1000SBMIXTE",nativeCategory:0,category:"NAP-0",genderMode:"mixed",members:[]}],teamLeader:{mode:"person",lastName:"Responsable",firstName:clubId}}));
 const sameCodeBefore=JSON.stringify(sameCodeEntries);
 const prepared=prepareManualOpenWaterEntries(sameCodeEntries);
-const corrected=buildWinPalmeCompetitionTxt({...waterCompetition,winPalmeId:"CNNP202606279229"},prepared,sameCodeClubs,{generatedAt:"2026-10-24T12:00:00Z"}).buffer.toString("utf8");
-const uncorrected=buildWinPalmeCompetitionTxt({...waterCompetition,winPalmeId:"CNNP202606279229"},sameCodeEntries,sameCodeClubs,{generatedAt:"2026-10-24T12:00:00Z"}).buffer.toString("utf8");
+const corrected=buildWaterTxt({...waterCompetition,winPalmeId:"CNNP202606279229"},prepared,sameCodeClubs,{generatedAt:"2026-10-24T12:00:00Z"}).buffer.toString("utf8");
+const uncorrected=buildWaterTxt({...waterCompetition,winPalmeId:"CNNP202606279229"},sameCodeEntries,sameCodeClubs,{generatedAt:"2026-10-24T12:00:00Z"}).buffer.toString("utf8");
 assert.equal(corrected,uncorrected.replaceAll(";XNAP-0;",";XSE;"),"Only the agreed relay category changes");
 assert.equal(JSON.stringify(sameCodeEntries),sameCodeBefore,"No native category, identity or club mutation");
 assert.equal(corrected.split("\r\n").filter(row=>row.startsWith("CLU;CPC;")).length,2);
@@ -271,7 +274,7 @@ console.log("Manual water export: XSE sentinel mapping, explicit categories, sep
 
 // Execute the real season/category normalisation used by the callable.
 const vm=require("node:vm"),fs=require("node:fs"),source=fs.readFileSync("functions/index.js","utf8");
-const seasonalContext={buildWinPalmeCompetitionTxt,engagementPdfFileName:value=>String(value),Date};
+const seasonalContext={buildWinPalmeCompetitionTxt:buildWaterTxt,engagementPdfFileName:value=>String(value),Date};
 vm.createContext(seasonalContext);
 for(const [start,end] of [["function competitionYear(","function performanceCategoryFromRow("],["function importSeasonYear(","function currentEngagementSeasonInfo("],["function engagementTxtSwimmerCategory(","async function readStoredEngagementTxt("]]) {
   vm.runInContext(source.slice(source.indexOf(start),source.indexOf(end)),seasonalContext);

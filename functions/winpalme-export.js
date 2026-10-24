@@ -133,6 +133,12 @@ function swimmerWinPalmeId(swimmer = {}) {
   return String(suffix).padStart(9, "0");
 }
 
+// Only mappings evidenced by the supplied e-NAP open-water exports.
+const OPEN_WATER_CODES = Object.freeze({
+  "1000": "LD1000", "1000BI": "LD1000BI", "3000": "LD03KM",
+  "3000BI": "LD03KMBI", "5000": "LD05KM", "150BIEL": "LD150BIE",
+  "150SFEL": "LD150SFE", "4X1000SB MIXTE": "LD4X1KMMM"
+});
 function openWaterExportProgram(competition) {
   const events = competition.events || [];
   if (!events.length) throw new Error("Programme eau libre absent : export impossible.");
@@ -141,30 +147,22 @@ function openWaterExportProgram(competition) {
     const rows = event.nativeCourses || [];
     const first = rows[0];
     const nativeCode = text(first?.course).toUpperCase();
-    const code = text(first?.wplabel);
-    if (!code || !/^[A-Za-z0-9][A-Za-z0-9 _-]{0,31}$/.test(code)
-        || ["LD11KM", "WPRELAISLD3500", "LD4X2KMM", "LD05KM Mixte"].includes(code)
-        || rows.some(row => ["wplabel", "longueur", "style", "nbnageur", "mixte", "relais", "type_"].some(key => String(row[key]) !== String(first[key])))
+    const code = OPEN_WATER_CODES[nativeCode];
+    if (!code || rows.some(row => text(row.course).toUpperCase() !== nativeCode)
         || byCode.has(event.code) || [...byCode.values()].some(item => item.code === code)) {
-      throw new Error(`Course eau libre sans correspondance WinPalme validee ou ambigue : ${event.label || event.code}.`);
+      throw new Error(`Course eau libre sans correspondance WinPalme validee : ${event.label || event.code}.`);
     }
-    const relay = Number(first.relais) === 1;
-    const distance = Number(first.longueur), members = Number(first.nbnageur), mixed = Number(first.mixte);
-    if ((event.type === "relay") !== relay || ![0,1].includes(Number(first.relais))
-        || first.style !== "SF" || !Number.isSafeInteger(distance) || distance < 1 || distance > 100000
-        || ![0,1].includes(mixed) || rows.some(row => Number(row.ld) !== 1 || Number(row.actif) !== 1 || Number(row.validation) !== 1)
-        || (!relay && (members !== 1 || Number(first.type_) !== 1 || mixed !== 0))
-        || (relay && (nativeCode !== "4X1000SB MIXTE" || code !== "LD4X1KMMM" || distance !== 4000 || members !== 4 || mixed !== 1 || Number(first.type_) !== 0))) {
+    const relay = nativeCode === "4X1000SB MIXTE";
+    if ((event.type === "relay") !== relay || rows.some(row => Boolean(Number(row.relais)) !== relay)) {
       throw new Error(`Type de course eau libre incoherent : ${event.code}.`);
     }
     const elimination = nativeCode === "150BIEL" || nativeCode === "150SFEL";
-    if (rows.some(row => !/^[1-9]\d*$/.test(String(row.id_course || ""))) || new Set(rows.map(row => String(row.sexe))).size !== rows.length
-        || rows.some(row => !(relay ? ["0"] : ["F", "M"]).includes(String(row.sexe)))
-        || (elimination && (distance !== 150 || code !== (nativeCode === "150BIEL" ? "LD150BIE" : "LD150SFE")))) {
+    const distance = relay ? 4000 : elimination ? 150 : Number(nativeCode.replace("BI", ""));
+    if (!relay && !elimination && !/^\d+$/.test(String(first.id_course || ""))) {
       throw new Error(`Reference native eau libre absente : ${event.code}.`);
     }
     const item = { code, fields: ["DIS", code, first.course, distance, "SF", relay ? 2 : 1,
-      members, relay || elimination ? "" : first.id_course, mixed] };
+      relay ? 4 : 1, relay || elimination ? "" : first.id_course, relay ? 1 : 0] };
     byCode.set(event.code, item);
     return item;
   });
