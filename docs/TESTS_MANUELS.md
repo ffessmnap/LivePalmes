@@ -2,6 +2,11 @@
 
 <!-- description: Checklist de tests manuels à exécuter avant une publication ou après une modification sensible. -->
 
+## Export manuel eau libre WinPalme — 24 octobre 2026
+
+Sur TEST, ouvrir Jumièges (4982), puis GED et télécharger le TXT. Vérifier huit lignes DIS, catégories/sexe, effectifs par épreuve et quatre membres de chaque relais dans une compétition de test WinPalme. Contrôler notamment les deux sexes malgré une référence DIS unique, les éliminations et le relais avec identifiant vide. Les courses inconnues doivent bloquer le fichier explicitement ; la piscine conserve son format. Sur PROD, l’export eau libre reste indisponible. La clôture et les notifications ne doivent générer ni envoyer de TXT eau libre. Ne pas déclencher de clôture ou d’envoi réel pour cette recette. Aucun engagement NAP à créer ou modifier ; validation WinPalme attendue de l’utilisateur.
+
+
 ## Clubs historiques de fusion et reprise Nora — 24 octobre
 
 Sur fixtures hors réseau : club reconnu inchangé ; club absent/non reconnu d'une performance source remplacé par le club source initial, celui d'une performance cible par le club cible initial, même si un troisième club final est choisi ; relais couverts, temps/points/catégories et identité préservés, origine inconnue bloquante avant suppression. Sauvegarde versionnée, reprise après chaque réponse perdue, ancien journal complet conservé et ancienne préparation inachevée refusée sans reprise spécifique. Tests `nap-swimmer-merge-clubs-tests.js`, `nap-swimmer-merge-tests.js` et fixtures navigateur 1440/390/320 px pour le texte de confirmation.
