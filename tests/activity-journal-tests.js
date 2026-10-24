@@ -34,7 +34,8 @@ async function main(){
  const sandbox={global:{LivePalmesActivityJournal:ui},Object,Set,Map,Date,JSON,Intl,engagementNationalAuditActors:new Map(),engagementNationalAuditClubs:new Map(),engagementNationalAuditCompetitions:new Map(),engagementNationalAuditPeople:new Map(),engagementCompetitions:[],currentAccessProfile:{},escapeHtml:v=>String(v).replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;"),clubDisplayLabel:()=>"Club test"};
  vm.createContext(sandbox);
  const start=source.indexOf("  const AUDIT_ACTION_METADATA"),end=source.indexOf("  function updateEngagementNationalAuditFilterOptions",start);
- vm.runInContext(source.slice(start,end)+";this.render=auditEntryHtml;",sandbox);
+ vm.runInContext(source.slice(start,end)+";this.render=auditEntryHtml;this.formatDate=auditDateLabel;",sandbox);
+ assert.ok(sandbox.formatDate("2026-10-24T22:30:00Z").startsWith("25/10/2026"));
  const html=sandbox.render({logs:[{...olderPage.logs[0],target:{...olderPage.logs[0].target,firstName:"<script>"}}]});
  assert.ok(html.includes("Nageur désactivé"));assert.ok(html.includes("&lt;script&gt;"));assert.ok(!html.includes("<script>"));assert.ok(html.includes("Actif"));assert.ok(html.includes("Inactif"));assert.ok(!html.includes("prepare"));
  if(process.env.JOURNAL_UI_FIXTURE){
