@@ -11339,7 +11339,11 @@ exports.generateEngagementCompetitionTxtExport = onCall({ ...CALLABLE_OPTIONS, .
     if(result.competition.competitionType!=="pool" && !(result.competition.competitionType==="openWater" && ENVIRONMENT.projectId==="livepalmes-test")) throw new HttpsError("failed-precondition","L'export TXT eau libre sera disponible apres validation de son format.");
     const entries=result.entries.filter(engagementClubEntryHasParticipants).map(entry=>({...entry,swimmers:entry.swimmers.map(person=>({...person,individualEntries:person.individualEntries.map(course=>course.nativeTime==="599999"?{...course,entryTime:"",manualEntryTime:"",entryTimeValue:0,entryTimeMode:"default595999"}:course)}))}));
     let txt;
-    try { txt=buildEngagementCompetitionTxt(result.competition,entries,result.clubsById); }
+    try {
+      const exportEntries=result.competition.competitionType==="openWater"
+        ? require("./winpalme-open-water-manual").prepareManualOpenWaterEntries(entries) : entries;
+      txt=buildEngagementCompetitionTxt(result.competition,exportEntries,result.clubsById);
+    }
     catch (error) {
       if(result.competition.competitionType==="openWater") throw new HttpsError("failed-precondition", error.message || "Export eau libre indisponible.");
       throw error;
