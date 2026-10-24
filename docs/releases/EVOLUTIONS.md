@@ -2,6 +2,15 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 24 octobre — Journal d’activité par opération, auteur et jour (préparation TEST)
+
+- Accord explicite Antoine : backend, une ligne par opération, avant/après et regroupement par personne/jour, déploiement TEST. Aucun accord PROD ni migration de données.
+- Projection en lecture seule des préparations NAP et reçus reliés par identifiants exacts ; références explicites ajoutées aux nouveaux reçus, préparations et reprise métier conservées. Noms disponibles dans les captures historiques, noms des compétitions et nageurs concernés mémorisés dans les prochains plans d’engagements sans requête supplémentaire.
+- Interface : libellés français, toutes les opérations dans des sections auteur/jour Europe/Paris, détails avant/après et ajouts/retraits d’épreuves, état non confirmé si reçu absent. Fusion par identifiant entre pages ; anciens reçus isolés complétés à la lecture de leur préparation, historique partiel et portée des filtres annoncés.
+- Budget : ouverture/action de pagination/rafraîchissement au plus 177 documents Firestore pour l’appel du journal (51 traces, 50 contreparties dans un seul getAll, 75 résolutions existantes et un profil), référentiel clubs séparé inchangé. Zéro requête SQL supplémentaire, aucune lecture par ligne, aucun listener, scan historique, index, collection ou écriture de données sportives. Écriture d’audit : même nombre, champ de liaison supplémentaire.
+- Tests hors réseau : rapprochement exact et entre pages, reçus absents/acteur incompatible, 50 contreparties maximum, fuseau Paris, détails complets et échappement HTML. Recette du véritable rendu en 1440/390/320 px, dépliage clavier et absence de débordement. Vérification locale : 1 085 JS valides, suites NAP et journal réussies ; arrêt sur le test Bash connu `main / access` incompatible Windows, contrôle global Linux attendu. Smoke générique : accueil/consoles réussis, arrêt sur clic record Speaker (Direct hors périmètre). Recette navigateur du journal réussie. [PR #499](https://github.com/ffessmnap/LivePalmes/pull/499), preuve TEST à renseigner ; retour utilisateur attendu.
+
+
 ### 24 octobre — Nageurs inscrits sans épreuve dans le TXT eau libre (TEST validé sur Andernos)
 
 - Validation explicite d’Antoine le 24 octobre 2026 dans cette discussion : « ok je valide », après remise du TXT Andernos version (2), candidat TEST 926d020f7a370978495efc9e98e56b329e99399b / run 40095680627. Périmètre accepté : export manuel Andernos avec 52 NAG (50 engagements et deux inscrits sans épreuve) et sept OFF. Le détail d’un essai d’import WinPalme n’est pas précisé dans ce retour ; aucune réussite d’import ni validation des autres formats de compétition n’est déduite. Aucun accord PROD ni activation d’envoi automatique.
