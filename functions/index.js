@@ -11336,7 +11336,7 @@ exports.generateEngagementCompetitionTxtExport = onCall({ ...CALLABLE_OPTIONS, .
   }
   if(ENVIRONMENT.sportingDataSource === "nap") {
     const result=await nativeAdminCompetitionEntries(context,competitionId);
-    if(result.competition.competitionType!=="pool") throw new HttpsError("failed-precondition","L'export TXT eau libre sera disponible apres validation de son format.");
+    if(result.competition.competitionType!=="pool" && !(result.competition.competitionType==="openWater" && ENVIRONMENT.projectId==="livepalmes-test")) throw new HttpsError("failed-precondition","L'export TXT eau libre sera disponible apres validation de son format.");
     const entries=result.entries.filter(engagementClubEntryHasParticipants).map(entry=>({...entry,swimmers:entry.swimmers.map(person=>({...person,individualEntries:person.individualEntries.map(course=>course.nativeTime==="599999"?{...course,entryTime:"",manualEntryTime:"",entryTimeValue:0,entryTimeMode:"default595999"}:course)}))}));
     const txt=buildEngagementCompetitionTxt(result.competition,entries,result.clubsById),buffer=txt.buffer;
     if (!Buffer.isBuffer(buffer)) throw new HttpsError("internal", "Export TXT indisponible.");

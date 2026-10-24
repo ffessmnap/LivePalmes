@@ -589,7 +589,7 @@ L'export TXT global contient les engagements de la competition.
 
 Le format exact sera fourni plus tard.
 
-L'export piscine conserve le format WinPalme existant. L'export eau libre reste indisponible tant que son exemple TXT n'a pas ete valide ; sa fermeture automatique ne doit donc ni generer ni envoyer de TXT.
+L'export piscine conserve le format WinPalme existant. Sur TEST uniquement, le téléchargement manuel NAP propose un export eau libre expérimental : codes attestés par les exemples Jumièges/Beaumont, première référence native du programme pour les courses classiques, référence vide pour les 150 m élimination et le relais 4 × 1 000 SB mixte. Les temps exportés sont 000001 en individuel et 595999 en relais ; les données natives restent inchangées. Toute course hors correspondances validées bloque le fichier. L'import dans WinPalme reste à valider. La fermeture automatique ne génère ni n'envoie de TXT eau libre ; la PROD reste bloquée.
 
 Il doit etre :
 
