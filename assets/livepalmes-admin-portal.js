@@ -14992,6 +14992,7 @@
   });
 
   const AUDIT_DETAIL_LABELS = Object.freeze({
+    sourcePersonName: "Personne source", targetPersonName: "Personne conservée",
     birthDate: "Date de naissance", sex: "Sexe", active: "Statut", capabilities: "Habilitations", changedCount: "Modifications appliquées",
     changedSwimmerCount: "Nageurs modifiés", chrono: "Chronométrage", clubCode: "Sigle du club",
     clubId: "Identifiant du club", clubName: "Club", competitionId: "Identifiant de la compétition",

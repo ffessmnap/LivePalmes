@@ -47,6 +47,8 @@
         rows.push({label:`${prefix}${labels[key]||key}`,before:value(a[key]),after:value(b[key])});
       }
     }
+    if(target.targetAfter)pair(target.target,target.targetAfter,"Fiche conservée · ");
+    if(target.sourceAfter)pair(target.source,target.sourceAfter,"Fiche source · ");
     for(const operation of target.operations||[])pair(operation.before,operation.after,`${operation.table||"Modification"} · `);
     const plans=target.plan?.plans;
     if(Array.isArray(plans))for(const plan of plans){
