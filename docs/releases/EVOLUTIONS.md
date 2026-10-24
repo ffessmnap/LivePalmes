@@ -2,6 +2,12 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 24 octobre — Nageurs inscrits sans épreuve dans le TXT eau libre (TEST en préparation)
+
+- Accord Antoine : tous les nageurs inscrits doivent rester dans le TXT, même sans engagement individuel. Convention observée dans le TXT IntraNAP Jumièges : NAG avec marqueur REL, temps 000000, catégorie vide, identité/date/sexe/club/identifiant conservés ; 13 champs, aucune ligne DIS ni engagement fictif créé. Lecture ciblée de Jumièges : inscription 129283/16756 sans course confirmée.
+- Projection limitée au téléchargement manuel TEST, avant relais/OFF/CEQ, dans le bloc fédéral existant. Les inscrits sont déjà chargés : aucune lecture supplémentaire ; budget conservé à 26 SELECT maximum, aucune écriture NAP/Storage ni modification piscine, automatismes ou PROD. Cas Andernos : deux fiches sans épreuve attendues en plus des 50 engagements et des sept OFF.
+- Tests ciblés : zéro ou plusieurs courses, entrée sans tableau, club avec seuls inscrits, marqueur REL sans DIS, conservation des autres lignes et absence de mutation. Publication TEST et nouveau téléchargement Andernos à contrôler ; import WinPalme et retour utilisateur attendus.
+
 ### 24 octobre — Officiels dans le TXT eau libre manuel (TEST déployé, import WinPalme attendu)
 
 - Accord Antoine : reprendre le format IntraNAP OFF et régénérer Andernos 5136 pour essai WinPalme, sans envoi automatique. Projection limitée au téléchargement manuel TEST ; générateur piscine et automatismes inchangés.
