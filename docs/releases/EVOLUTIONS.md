@@ -1963,3 +1963,11 @@ Antoine precise une lecture directe NAP, sans export a relancer. Run de publicat
 - Service de qualification Firestore historique initialise a la demande, avec instance reutilisee et callbacks inchanges, pour reduire les dependances communes au demarrage.
 - Ecran historique des demandes de suppression : aucun appel aux anciens endpoints en mode NAP (zero lecture/ecriture supplementaire a l'ouverture et au rafraichissement). Parcours hors NAP conserve.
 - Tests hors ligne : gardes des 41 fonctions, conservation des services actifs, initialisation differee, absence d'appel UI et regression des empreintes. CI et TEST commun a confirmer ; aucune validation utilisateur ni publication PROD revendiquee.
+## Export manuel eau libre expérimental — 24 octobre 2026
+
+- Besoin autorisé : télécharger sur TEST un premier TXT compatible WinPalme, recette initiale Jumièges. Activation NAP manuelle limitée à TEST ; aucun envoi automatique, donnée sportive, migration ou Storage modifié.
+- Conventions : première référence native programmée F/M, identifiants vides pour éliminations et relais, temps 000001/595999 ; huit correspondances attestées, refus des courses inconnues. Générateur partagé piscine conservé.
+- Budget : aucune requête supplémentaire ; parcours existant plafonné à 24 requêtes SQL dont neuf groupées pour les engagements (39 200 lignes maximum), zéro écriture sportive ; ouverture inchangée, action/rafraîchissement identiques au parcours manuel.
+- Vérifications ciblées réussies : générateur piscine/eau libre, refus des courses inconnues, première référence F/M, champs vides, absence de mutation, callable TEST autorisé/PROD bloqué, optimisations portail et notifications. Téléchargement Chrome hors réseau vérifié en 1440/390 px sur réponse synthétique. Vérification globale Windows lancée ; CI Linux requise avant intégration.
+- Lecture NAP de contrôle Jumièges (4982) : 470 engagements individuels, sept codes attendus et aucun marqueur REL ; une requête indexée bornée, sans identité ni écriture.
+- [PR #484](https://github.com/ffessmnap/LivePalmes/pull/484) : contrôles avant intégration en cours ; preuve TEST à renseigner. Import WinPalme et validation utilisateur attendus, aucune validation déduite.

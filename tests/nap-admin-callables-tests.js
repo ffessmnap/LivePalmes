@@ -22,5 +22,19 @@ vm.createContext(context);vm.runInContext(chunks.join("\n"),context);
   scopeDenied=true;await assert.rejects(context.exports.getEngagementCompetitionStatistics(request),/Scope denied/);assert.equal(read,5);scopeDenied=false;
   await assert.rejects(context.exports.generateEngagementClubRecapPdfForAdmin({data:{...request.data,clubId:"999"}}),e=>e.code==="not-found");assert.equal(built,2);
   openWater=true;await assert.rejects(context.exports.generateEngagementCompetitionTxtExport(request),/eau libre/);
+  context.ENVIRONMENT.projectId="livepalmes-test";
+  assert.equal((await context.exports.generateEngagementCompetitionTxtExport(request)).source,"nap");
+  const originalBuilder=context.buildEngagementCompetitionTxt;
+  context.buildEngagementCompetitionTxt=()=>{throw new Error("Course eau libre sans correspondance WinPalme validee : Support.");};
+  await assert.rejects(context.exports.generateEngagementCompetitionTxtExport(request),e=>e.code==="failed-precondition" && /Support/.test(e.message));
+  context.buildEngagementCompetitionTxt=originalBuilder;
+  const portalSource=fs.readFileSync("assets/livepalmes-admin-portal.js","utf8");
+  const uiCode=portalSource.slice(portalSource.indexOf("  async function generateEngagementAdminTxtExport()"),portalSource.indexOf("  async function prepareEngagementOpeningEmails()"));
+  for(const isTest of [true,false]) {
+    let downloads=0,calls=0;
+    const ui={global:{LivePalmesEnvironment:{isTest}},selectedEngagementCompetitionId:"4982",selectedEngagementCompetition:{competitionType:"openWater"},isEngagementAdminMode:()=>true,engagementCompetitionType:c=>c.competitionType,elements:{engagementsGenerateTxtExportButton:{disabled:false},engagementsDocumentsSummary:{}},callFunction:async()=>{calls++;return {txtBase64:"VEVTVA==",entryCount:1};},downloadBase64File:()=>downloads++,renderEngagementDocuments:()=>{}};
+    vm.createContext(ui);vm.runInContext(uiCode,ui);await ui.generateEngagementAdminTxtExport();
+    assert.equal(calls,isTest?1:0);assert.equal(downloads,isTest?1:0);assert.equal(ui.elements.engagementsGenerateTxtExportButton.disabled,false);
+  }
   console.log("Admin callables: scoped native reads, no old sports/Storage fallback, PDF, missing-time export and water-format lock verified.");
 })().catch(error=>{console.error(error);process.exitCode=1;});
