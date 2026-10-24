@@ -2,6 +2,13 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 24 octobre — Clubs historiques pendant une récupération (préparation TEST)
+
+- Accord explicite Antoine dans cette discussion : appliquer aux prochaines récupérations les clubs historiques de la fiche avant rattachement au nouveau club, sans corriger les récupérations anciennes. Conserver les clubs reconnus ; ancien club inconnu : performances inchangées.
+- `nap-swimmer-recovery.js` et helper `nap-swimmer-recovery-clubs.js` : capture bornée des performances individuelles et relais, reconnaissance groupée des clubs, sauvegarde existante versionnée avant écriture, mises à jour du seul club et vérification sous verrou, fiche modifiée en dernier. Reprise après interruption sans doubler les écritures ; anciennes préparations non exécutées automatiquement. Droits, éligibilité de saison, schéma et configuration conservés.
+- Budget : aucune lecture supplémentaire à l'ouverture/rafraîchissement/aperçu ; confirmation plafonnée à 50 appels SQL et deux commandes fixes de tables, 4 000 lignes distinctes/500 Ko, contrôles antérieurs de 2 000 performances pour l'éligibilité. Une lecture d'audit, sauvegarde avant et reçu après, aucune requête par performance.
+- Tests synthétiques ciblés : clubs reconnus/inconnus, relais présent plusieurs fois, panne de sauvegarde, réponse perdue sur performances/fiche, reçu indisponible, historique modifié, ancien journal, bornes et connexion détruite en cas de verrou incertain. Aucun nageur réel modifié. PR, preuve de déploiement et retour utilisateur à compléter ; aucune validation de la future version déduite.
+
 ### 24 octobre — Clubs historiques de fusion et reprise certaine de Nora (TEST déployé, Nora corrigée et vérifiée)
 
 - Accord explicite Antoine : conserver chaque club historique reconnu ; si absent/non reconnu, enregistrer avant suppression le club de la fiche d'origine de la performance, indépendamment du club actuel choisi. Corriger Nora seulement quand ses audits prouvent son ancienne fiche et son club, conserver un audit. TEST partage la vraie base NAP : visibilité publique de ces seules corrections annoncée ; aucun code PROD ni autre correction de nageur autorisé.

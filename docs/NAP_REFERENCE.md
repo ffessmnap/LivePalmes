@@ -2,6 +2,14 @@
 
 <!-- description: Sources de données et fonctionnement actuel du portail/public après bascule NAP ; index des références et documents historiques. -->
 
+## Clubs historiques pendant une récupération — 24 octobre 2026
+
+Règle validée par Antoine pour les prochaines récupérations : avant de rattacher une fiche à son nouveau club, conserver les clubs reconnus de `perfs` et `perfs_relais` et remplacer uniquement leurs références absentes/non reconnues par le club initial de la fiche. Si ce club initial n'est pas reconnu, laisser ces performances inchangées. Aucun temps, point, membre de relais ou autre champ sportif n'est modifié. Les récupérations anciennes ne sont pas corrigées rétroactivement.
+
+La sauvegarde d'audit existante contient les images avant/après et une empreinte du plan ; le reçu final contient le nombre de clubs fixés. Verrous natifs de tables, mises à jour groupées conditionnelles, relecture puis changement de la fiche en dernier. Les reprises acceptent uniquement les images sauvegardées avant/après, sans doubler les changements. Une ancienne préparation sans historique ne peut plus être exécutée ; une ancienne récupération déjà appliquée reste acquittable sans correction rétroactive.
+
+Budget : ouverture/rafraîchissement et aperçu inchangés (deux lectures SQL bornées pour l'aperçu). Confirmation : plafond de 50 appels SQL, plus deux commandes fixes de verrouillage de tables ; cinq lectures indexées par capture des performances, reconnaissance groupée des clubs par clés primaires, aucune requête par ligne. Au maximum 4 000 performances/relais distincts, avec le contrôle antérieur de 2 000 lignes individuelles pour l'éligibilité, et sauvegarde totale de 500 Ko. Une lecture d'audit, une création avant mutation et un reçu final idempotent ; aucune nouvelle collection, aucun index ni migration. Les contrôles de saison et les droits restent en vigueur.
+
 ## Clubs historiques pendant une fusion — 24 octobre 2026
 
 Règle explicitement validée par Antoine : dans `perfs` et `perfs_relais`, un club reconnu par l'annuaire NAP reste inchangé. Une référence absente ou non reconnue reçoit le club de la fiche qui possédait cette ligne avant la fusion ; les performances déjà sur la cible utilisent son club initial, jamais le nouveau club final choisi. Si la provenance ou le club initial sont inconnus, aucune fusion destructrice n'est effectuée. Temps, points, catégories, compétitions et autres champs restent identiques. Le plan avant/après conserve la politique versionnée et chaque valeur de club modifiée. Les anciens journaux complets restent lisibles sans réinterprétation ; une préparation ancienne encore inachevée sans cette politique exige une reprise spécifique.
