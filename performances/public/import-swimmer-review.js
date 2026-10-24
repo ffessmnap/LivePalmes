@@ -2,6 +2,26 @@
   "use strict";
   const escape=value=>String(value??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
   const states={matched:["Rapprochés","Identité rapprochée"],review:["À rapprocher","À vérifier"],unknown:["Inconnus","Aucun profil retrouvé"]};
+  const issueLabels={
+    'club-difference-unconfirmed':'Club différent à confirmer dans la fiche du nageur.',
+    'first-relay-incomplete':'Premier relayeur : identité, catégorie individuelle ou temps initial manquant, ambigu ou incohérent.',
+    'native-duration-review-required':'Temps avec heures : encodage NAP à vérifier.',
+    'unsupported-course':'Correspondance de l’épreuve avec NAP à vérifier.',
+    'conflicting-swimmer-bindings':'Des profils différents ont été choisis pour une même identité.',
+    'competition-date-mismatch':'La date du fichier diffère de celle de la compétition NAP.',
+    'competition-pool-mismatch':'Le champ bassin du fichier diffère de NAP ; en eau libre, vérifier la fiche et les épreuves.',
+    'competition-timing-mismatch':'Le chronométrage manque ou diffère de celui de la compétition.',
+    'invalid-points-or-rank':'Points ou classement invalides.',
+    'duplicate-relay-member':'Un même nageur apparaît plusieurs fois dans ce relais.',
+    'multiple-competitions':'Le fichier contient plusieurs compétitions.',
+    'unsupported-record':'Cette ligne du fichier n’est pas reconnue.',
+    'incomplete-result':'La ligne de résultat est incomplète.',
+    'unknown-status':'Le statut manque ou n’est pas reconnu.',
+    'missing-or-invalid-final-time':'Le temps final manque ou est invalide.',
+    'missing-result-reference':'Le club, la course ou la catégorie manque.',
+    'incomplete-swimmer-identity':'L’identité du nageur est incomplète.',
+    'missing-competition':'La date ou le nom de la compétition manque.'
+  };
   let open=new Map(),searches=new Map(),pending=new Map(),page=0,diffPage=0,relayPage=0;
   function time(value) { const s=String(value??'');if(!/^\d{5,6}$/.test(s))return s;return `${Number(s.slice(0,-4))}:${s.slice(-4,-2)}.${s.slice(-2)}`; }
   function birth(value) { return /^\d{4}-\d{2}-\d{2}$/.test(value||'')?value.split('-').reverse().join('/'):value; }
@@ -49,7 +69,7 @@
     host.classList.add('import-grouped-review');
     host.innerHTML=`<p role="status" data-review-status>${pending.size||result.reviewStale?'Choix modifiés : actualiser l’aperçu pour les vérifier.':result.reviewReady?'Rapprochements contrôlés pour cet aperçu. Aucun résultat ni PDF enregistré.':'Contrôle national en cours : résoudre les rapprochements et les alertes.'}</p>
       ${result.requiresCompetitionChoice?`<label>Compétition existante<select data-review-competition><option value="">Choisir la compétition</option>${result.competitions.map(c=>`<option value="${c.id}">${escape(c.libelle)} — ${escape(c.lieu)} (${c.id})</option>`).join('')}</select></label>`:`<p>Compétition NAP : ${escape(result.competition?.libelle)} (${Number(result.competition?.id)})</p>`}
-      ${(result.issues||[]).slice(0,100).map(i=>`<p class="import-club-alert">${i.sourceLine?'Ligne '+i.sourceLine+' : ':''}${escape(({ 'club-difference-unconfirmed':'Club différent à confirmer dans la fiche du nageur.', 'first-relay-incomplete':'Premier relayeur : identité, temps initial ou catégorie individuelle manquants/ambigus.', 'native-duration-review-required':'Temps avec heures : encodage NAP à vérifier.', 'unsupported-course':'Correspondance de l’épreuve avec NAP à vérifier.', 'conflicting-swimmer-bindings':'Des profils différents ont été choisis pour une même identité.' })[i.code]||i.code)}</p>`).join('')}
+      ${(result.issues||[]).slice(0,100).map(i=>`<p class="import-club-alert">${i.sourceLine?'Ligne '+i.sourceLine+' : ':''}${escape(issueLabels[i.code]||i.code)}</p>`).join('')}
       ${Object.entries(states).map(([state,[label]])=>`<details class="import-swimmer-group" data-state="${state}" data-review-open="group:${state}" ${(open.get('group:'+state)??state!=='matched')?'open':''}><summary>${label} (${groups.filter(g=>g.state===state).length})</summary>${visible.filter(g=>g.state===state).map(person).join('')||'<p>Aucun nageur de ce groupe sur cette page.</p>'}</details>`).join('')}
       <p>Nageurs : page ${page+1}/${total}</p><button type="button" class="ghost-button" data-review-page="-1" ${page===0?'disabled':''}>Nageurs précédents</button> <button type="button" class="ghost-button" data-review-page="1" ${page+1===total?'disabled':''}>Nageurs suivants</button>
       <details><summary>Clubs à rattacher (${result.unresolvedClubs?.length||0})</summary>${(result.unresolvedClubs||[]).slice(0,20).map(c=>`<label>Club importé ${escape(c.code)}<select data-review-club="${escape(c.code)}"><option value="">Choisir un club NAP</option>${(result.clubs||[]).map(p=>`<option value="${p.id}" ${(payload.clubBindings||[]).some(b=>b.code===c.code&&b.clubId===p.id)?'selected':''}>${escape(p.code)} — ${escape(p.name)} — ${escape(p.federalNumber)}</option>`).join('')}</select></label>`).join('')} ${(result.unresolvedClubs?.length||0)>20?'<p>Résoudre ces vingt clubs puis actualiser pour afficher la suite.</p>':''}</details>
