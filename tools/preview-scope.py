@@ -106,7 +106,20 @@ LOGIN_MESSAGE_PREFLIGHT_PATHS = {
 
 GROUPED_DEPENDENCY_PATHS = {
     '.github/releases/evidence/20261024-grouped-test-approval.json',
+    '.github/releases/evidence/20261024-grouped-backend-contract.json',
+    '.github/releases/20261024-grouped-test.json',
+    '.github/workflows/livepalmes-verification-preview.yml',
+    '.github/workflows/livepalmes-production-preflight.yml',
+    '.github/workflows/livepalmes-production-release.yml',
     'tools/release-function-fingerprints.js', 'tests/release-function-fingerprints-tests.js',
+    'tools/grouped-publication-policy.py', 'tools/publish-approved-grouped-functions.py',
+    'tools/release-cycle.py', 'tools/check-production-mail-disabled.py',
+    'tools/preflight-production-release.py', 'tools/production-release-state.py',
+    'tools/publish-approved-pdf-functions.py',
+    'tests/production-grouped-release-tests.py',
+    'tests/release-excluded-backend-compatibility-tests.js',
+    'tests/release-grouped-retained-compatibility.js', 'tests/release-home-retained-compatibility.js',
+    'tests/nap-national-documents-callable-tests.js',
     'tools/preview-scope.py', 'tests/preview-scope-tests.py',
 }
 

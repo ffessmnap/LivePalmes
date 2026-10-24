@@ -124,4 +124,4 @@ async function prove({base,candidate,rows,source,loader,definitions}){
   for(const result of results)assert.deepEqual(result,results[0]);
  }
 }
-module.exports={ORIGINS,prove};
+module.exports={ORIGINS,prove,guardFixtures};

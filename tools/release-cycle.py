@@ -17,6 +17,14 @@ ROOT = Path(__file__).resolve().parents[1]
 SHA = re.compile(r"[0-9a-f]{40}\Z")
 PROJECTS = {'livepalmes', 'livepalmes-test'}
 PDF_FUNCTIONS = {'prepareEngagementClubRecapEmails', 'closeDueEngagementCompetitions'}
+_group_spec = importlib.util.spec_from_file_location('grouped_policy', ROOT / 'tools/grouped-publication-policy.py')
+grouped = importlib.util.module_from_spec(_group_spec)
+_group_spec.loader.exec_module(grouped)
+
+
+def approved_grouped_functions(value):
+    return grouped.approved(value)
+
 
 
 def approved_pdf_functions(value):
@@ -48,7 +56,7 @@ def approved_native_identity_secret(value):
 
 def approved_extra_functions(value):
     approved_native_identity_secret(value)
-    names = approved_pdf_functions(value) + approved_dtn_functions(value) + approved_notification_functions(value) + approved_public_nap_functions(value) + approved_access_request_functions(value) + approved_club_directory_functions(value)
+    names = approved_pdf_functions(value) + approved_dtn_functions(value) + approved_notification_functions(value) + approved_public_nap_functions(value) + approved_access_request_functions(value) + approved_club_directory_functions(value) + approved_grouped_functions(value)
     require(len(names) == len(set(names)), 'Extensions de publication superposees')
     return names
 
@@ -111,7 +119,7 @@ def approved_club_directory_functions(value):
 
 def idf_preservation(value):
     # Existing reader authorization stays closed; this is a second, separately approved pair.
-    return club_directory_idf_preservation(value) or public_reader_idf_preservation(value)
+    return (value['groupedIdfPreservation'] if approved_grouped_functions(value) else None) or club_directory_idf_preservation(value) or public_reader_idf_preservation(value)
 
 
 def approved_public_nap_functions(value):
@@ -193,6 +201,7 @@ def approved_access_request_functions(value):
 
 
 def require_access_request_selection(request, selected):
+    grouped.selection(request, selected)
     club = approved_club_directory_functions(request)
     require(not club or (len(selected) == 3 and set(selected) == set(club)),
             'Repertoires club : seules les trois fonctions sont autorisees')
@@ -733,7 +742,7 @@ def prepare_selection(directory, candidate):
         require(all(not needs_function(names.get(n), n, request['candidate']) for n in selected), 'Backend TEST incomplet ou pas au code valide')
         extra = approved_extra_functions(request)
         notification = approved_notification_functions(request)
-        require(all(not needs_function(names.get(n), n, request['candidate']) for n in notification + approved_public_nap_functions(request) + approved_access_request_functions(request) + approved_club_directory_functions(request)),
+        require(all(not needs_function(names.get(n), n, request['candidate']) for n in notification + approved_public_nap_functions(request) + approved_access_request_functions(request) + approved_club_directory_functions(request) + approved_grouped_functions(request)),
                 'Notifications TEST absentes ou pas au code valide')
         if approved_dtn_functions(request):
             require(read(directory / 'test-proof.json').get('dtnExtensionVerification') == {'schema': 1, 'candidate': request['candidate'], 'suite': 'dtn-shared-invalidation', 'mode': 'offline-no-invocation', 'result': 'success', 'functions': sorted(DTN_FUNCTIONS)}, 'Preuve des dependances DTN absente ou incompatible')
@@ -913,6 +922,12 @@ def freeze_plan(directory, evidence=False):
         write(root / 'club-directory-idf-proof.json', {'pair': list(CLUB_DIRECTORY_PAIR),
             'fingerprints': CLUB_DIRECTORY_HASHES, 'selected': selected, 'existingFunctions': True,
             'sourceOnly': True, 'configurationChanges': False, 'networkCalls': 0})
+    if approved_grouped_functions(request):
+        proof = grouped.verify_fingerprints(backend_fingerprints(request['productionCommit']),
+            backend_fingerprints(request['candidate']), names)
+        require(read(root / 'baseline.json')['productionRun'] == grouped.contract()['productionRun'],
+                'Reference PROD groupee differente')
+        write(root / 'grouped-idf-proof.json', proof)
     if request.get('excludedBackendEvidence') is not None:
         verify_excluded_backend(root, state, selected)
     else:

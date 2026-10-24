@@ -64,7 +64,7 @@ def check_idf_preservation(document, preservation, directory, after=False):
 
 def main():
     request = json.loads((Path(os.environ['PLAN']) / 'request.json').read_text())
-    if not request.get('additionalNotificationFunctions') and not request.get('additionalPublicNapFunctions') and not request.get('additionalAccessRequestFunctions') and not request.get('additionalClubDirectoryFunctions'):
+    if not request.get('additionalNotificationFunctions') and not request.get('additionalPublicNapFunctions') and not request.get('additionalAccessRequestFunctions') and not request.get('additionalClubDirectoryFunctions') and not request.get('additionalGroupedFunctions'):
         print('Aucune extension notifications ; aucun acces Firestore.')
         return
     spec = importlib.util.spec_from_file_location('notification_cycle', Path(__file__).with_name('release-cycle.py'))
