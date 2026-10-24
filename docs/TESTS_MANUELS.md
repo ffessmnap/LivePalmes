@@ -111,6 +111,8 @@ Ordinateur/mobile : vérifier les confirmations de fusion simple, groupée et de
 
 ## Ajout/récupération d’un nageur dans les engagements — 20 octobre
 
+Extension du 24 octobre : sur fixtures hors réseau, vérifier qu'une récupération fige avant transfert le club des performances individuelles/relais absent ou non reconnu avec l'ancien club de la fiche. Un club reconnu reste identique ; ancien club inconnu : aucune attribution inventée. Vérifier sauvegarde avant toute écriture, refus en cas d'échec de sauvegarde, relecture avant changement de fiche, reprise après réponse perdue pendant les performances puis pendant la fiche, panne du reçu, historique modifié et ancien journal sans politique. Tests dans `tests/nap-swimmer-recovery-write-tests.js`. Ne pas effectuer de récupération réelle pour la recette : TEST partage NAP avec la lecture publique.
+
 Sur TEST, compétition ouverte et chef d’équipe déclaré ou renonciation confirmée : ouvrir Participants → Nageurs → Ajouter ou récupérer un nageur. Vérifier le formulaire, le focus, Annuler et Échap sur ordinateur/mobile. Ne pas soumettre de licence réelle ni créer ou récupérer de fiche pour la recette. Les parcours complets et les refus sont couverts hors réseau par tests/nap-swimmer-dialog-tests.js, complétés des tests natifs de création/récupération et reprise. Vérifier les verrous après fermeture/date limite sans modifier une compétition réelle.
 
 
