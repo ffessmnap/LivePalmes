@@ -2,11 +2,13 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
-### 24 octobre — Officiels dans le TXT eau libre manuel (TEST en préparation)
+### 24 octobre — Officiels dans le TXT eau libre manuel (TEST déployé, import WinPalme attendu)
 
 - Accord Antoine : reprendre le format IntraNAP OFF et régénérer Andernos 5136 pour essai WinPalme, sans envoi automatique. Projection limitée au téléchargement manuel TEST ; générateur piscine et automatismes inchangés.
 - OFF;nom;prénom;code club;date; : six champs, date JJ/MM/AAAA ou vide, aucun identifiant/licence ajouté. Officiels déjà présents dans le dossier natif, y compris les identités historiques déjà résolues par le lecteur ; aucune lecture supplémentaire à l’ouverture, à l’action, au rafraîchissement ou au pire cas. Budget conservé : 26 SELECT maximum par téléchargement, officiels limités à 2 000 au total, aucune écriture.
-- Insertion après les nageurs/relais et avant CEQ, ou avant fin de bloc si aucun chef ; blocs conservés par position/numéro fédéral même avec abréviation commune. Identité absente refusée explicitement. Tests ciblés OFF, caractères séparateurs, dates vides, clubs homonymes, club avec officiels seuls et régression du reste du TXT. Déploiement TEST et nouveau fichier Andernos à vérifier ; import WinPalme attendu, aucune validation utilisateur déduite.
+- Insertion après les nageurs/relais et avant CEQ, ou avant fin de bloc si aucun chef ; blocs conservés par position/numéro fédéral même avec abréviation commune. Identité absente refusée explicitement. Tests ciblés OFF, caractères séparateurs, dates vides, clubs homonymes, club avec officiels seuls et régression du reste du TXT. [PR #494](https://github.com/ffessmnap/LivePalmes/pull/494) intégrée au candidat 5773ea26ec6763c2ca5d1fa89867318312ffaa62. Vérification technique Linux et tests ciblés réussis ; local Windows : 1 072 JS valides et suites exécutées réussies, arrêt sur le test Bash connu main/access.
+- [TEST commun 40094474253](https://github.com/ffessmnap/LivePalmes/actions/runs/40094474253) réussi : Hosting 1945940da3ce61b8 ; seule generateEngagementCompetitionTxtExport actualisée, révision ACTIVE generateengagementcompetitiontxtexport-00071-buz ; 113 autres révisions strictement conservées, 114 ACTIVE. Preuve privée outputs/water-officials-20261024/test-proof/test-proof.json.
+- Nouveau téléchargement réel GED Andernos 5136 vérifié : 5 943 octets, SHA-256 32444859ab3e547e647b0a55f464bf68ea8580ac9c41eef64d9cc2a67a7d4a88 ; sept OFF conformes aux identités/dates/clubs fédéraux de NAP, quatre clubs concernés. Quatre DIS, 12 CLU, 50 NAG et neuf CEQ ; reste du TXT strictement identique au téléchargement précédent hors OFF/date de génération, UTF-8 sans BOM et CRLF. Comparatif privé outputs/water-officials-20261024/andernos-comparison.json. Aucun envoi ni écriture sportive ; import WinPalme et retour utilisateur encore attendus, aucune validation déduite.
 
 ### 24 octobre — Export manuel eau libre depuis le catalogue NAP (TEST déployé, WinPalme à valider)
 
