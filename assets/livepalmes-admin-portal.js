@@ -13615,6 +13615,7 @@
       elements.engagementsSwimmerCorrectionForm.dataset.expectedFingerprint = swimmer.napFingerprint || "";
       elements.engagementsSwimmerCorrectionForm.dataset.expectedLicenseNumber = String(swimmer.licenseNumber ?? "");
       elements.engagementsSwimmerCorrectionForm.dataset.initialClubId = String(swimmer.clubId ?? "");
+      elements.engagementsSwimmerCorrectionForm.dataset.correctionSession=String(Number(elements.engagementsSwimmerCorrectionForm.dataset.correctionSession||0)+1);
       if (elements.engagementsSwimmerCorrectionLicense) elements.engagementsSwimmerCorrectionLicense.readOnly = !direct;
     }
     if (elements.engagementsSwimmerCorrectionMode) elements.engagementsSwimmerCorrectionMode.value = duplicate ? "duplicate" : review ? "review" : direct ? "direct" : "request";
@@ -13654,6 +13655,7 @@
 
   async function submitEngagementSwimmerCorrection() {
     if (!elements.engagementsSwimmerCorrectionForm?.reportValidity()) return;
+    const correctionSession=elements.engagementsSwimmerCorrectionForm.dataset.correctionSession;
     const mode = elements.engagementsSwimmerCorrectionMode?.value || "request";
     const direct = mode === "direct";
     const review = mode === "review";
@@ -13698,9 +13700,12 @@
           if(retry?.serialized===serialized)payload.historicalClubConfirmation=retry.token;
           else{
             const preview=await callFunction("updateEngagementNationalSwimmerIdentity",{...payload,previewOnly:true});
+            if(!elements.engagementsSwimmerCorrectionDialog?.open||elements.engagementsSwimmerCorrectionForm.dataset.correctionSession!==correctionSession)return;
             const summary=preview?.historicalClubPreview;
             if(!summary?.token)throw Error("Récapitulatif des clubs historiques indisponible. Rechargez la fiche.");
-            if(!await global.LivePalmesSwimmerClubs.getTools(callFunction).confirmClubChange(summary)){
+            const confirmed=await global.LivePalmesSwimmerClubs.getTools(callFunction).confirmClubChange(summary);
+            if(!elements.engagementsSwimmerCorrectionDialog?.open||elements.engagementsSwimmerCorrectionForm.dataset.correctionSession!==correctionSession)return;
+            if(!confirmed){
               setFormPending(elements.engagementsSwimmerCorrectionForm,false);
               if(elements.engagementsSwimmerCorrectionMessage){elements.engagementsSwimmerCorrectionMessage.textContent="Changement de club annulé. Aucune donnée modifiée.";elements.engagementsSwimmerCorrectionMessage.dataset.tone="neutral";elements.engagementsSwimmerCorrectionMessage.classList.remove("is-loading");}
               return;
@@ -13709,6 +13714,7 @@
             elements.engagementsSwimmerCorrectionForm.dataset.historicalClubPayload=JSON.stringify({serialized,token:summary.token});
           }
         }else if(!global.confirm("Enregistrer cette correction nationale ?")){setFormPending(elements.engagementsSwimmerCorrectionForm,false);return;}
+        if(!elements.engagementsSwimmerCorrectionDialog?.open||elements.engagementsSwimmerCorrectionForm.dataset.correctionSession!==correctionSession)return;
       }
       const result = review
         ? await resolveEngagementSwimmerChangeRequest(
