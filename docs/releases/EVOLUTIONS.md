@@ -2,11 +2,13 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
-### 24 octobre — Nageurs inscrits sans épreuve dans le TXT eau libre (TEST en préparation)
+### 24 octobre — Nageurs inscrits sans épreuve dans le TXT eau libre (TEST déployé, WinPalme attendu)
 
 - Accord Antoine : tous les nageurs inscrits doivent rester dans le TXT, même sans engagement individuel. Convention observée dans le TXT IntraNAP Jumièges : NAG avec marqueur REL, temps 000000, catégorie vide, identité/date/sexe/club/identifiant conservés ; 13 champs, aucune ligne DIS ni engagement fictif créé. Lecture ciblée de Jumièges : inscription 129283/16756 sans course confirmée.
 - Projection limitée au téléchargement manuel TEST, avant relais/OFF/CEQ, dans le bloc fédéral existant. Les inscrits sont déjà chargés : aucune lecture supplémentaire ; budget conservé à 26 SELECT maximum, aucune écriture NAP/Storage ni modification piscine, automatismes ou PROD. Cas Andernos : deux fiches sans épreuve attendues en plus des 50 engagements et des sept OFF.
-- Tests ciblés : zéro ou plusieurs courses, entrée sans tableau, club avec seuls inscrits, marqueur REL sans DIS, conservation des autres lignes et absence de mutation. Publication TEST et nouveau téléchargement Andernos à contrôler ; import WinPalme et retour utilisateur attendus.
+- Tests ciblés : zéro ou plusieurs courses, entrée sans tableau, club avec seuls inscrits, marqueur REL sans DIS, conservation des autres lignes et absence de mutation. [PR #496](https://github.com/ffessmnap/LivePalmes/pull/496) intégrée au candidat 926d020f7a370978495efc9e98e56b329e99399b. Tests ciblés et vérification globale Linux réussis ; local Windows : 1 072 JS valides, arrêt sur le test Bash main/access connu.
+- [TEST commun 40095680627](https://github.com/ffessmnap/LivePalmes/actions/runs/40095680627) réussi : Hosting 3d9a3945bc5f1b2c ; seule generateEngagementCompetitionTxtExport actualisée, révision ACTIVE generateengagementcompetitiontxtexport-00072-duw ; 113 autres révisions strictement conservées, 114 ACTIVE. Preuve privée outputs/water-registered-20261024/test-proof/test-proof.json.
+- Nouveau téléchargement GED Andernos 5136 vérifié : 6 061 octets, SHA-256 1d2f5c202579dd44b773214c3011f4bf291117356bfcaaa245e09c1cfaaa76ce. Les 52 inscrits NAP sont présents : 52 NAG, dont 50 engagements et deux marqueurs REL/000000/catégorie vide conformes aux identités/naissances/sexes/clubs/identifiants natifs ; quatre DIS, 12 CLU, sept OFF et neuf CEQ. Seules les deux NAG et la date de génération diffèrent du fichier précédent, UTF-8 sans BOM et CRLF conservés. Comparatif privé outputs/water-registered-20261024/andernos-comparison.json. Aucun envoi ni écriture sportive ; import WinPalme et retour utilisateur attendus, aucune validation déduite.
 
 ### 24 octobre — Officiels dans le TXT eau libre manuel (TEST déployé, import WinPalme attendu)
 
