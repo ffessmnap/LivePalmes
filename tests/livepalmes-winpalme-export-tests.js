@@ -280,5 +280,6 @@ assert.equal(JSON.stringify(bornEntry),birthBefore);
   for(const rows of [[],[{id:4982,date:"2026-06-28",comite:4}],[{id:4982,date:"2026-06-27",comite:14}]]) {
     await assert.rejects(readManualOpenWaterCompetition({execute:async()=>[rows]},{id:"4982",date:"2026-06-27"}),/Reference e-NAP|Code du comite/);
   }
+  await assert.rejects(readManualOpenWaterCompetition({execute:async()=>{throw new Error("private SQL");}},{id:"4982",date:"2026-06-27"}),e=>e.message==="Lecture de la reference e-NAP indisponible.");
   console.log("Native e-NAP WIDs, one primary-key read, stale/unknown refusal, season/year category boundaries and no mutation passed.");
 })().catch(error=>{console.error(error);process.exitCode=1;});
