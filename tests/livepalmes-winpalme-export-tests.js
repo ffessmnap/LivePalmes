@@ -252,3 +252,34 @@ assert.throws(()=>prepareManualOpenWaterEntries([{relays:[{category:"NAP-9",even
 assert.throws(()=>prepareManualOpenWaterEntries([{relays:[{category:"NAP-0",nativeCategory:0,genderMode:"mixed",eventCode:"UNKNOWN"}]}]),/non raccordee/);
 assert.equal(prepareManualOpenWaterEntries([{relays:[{category:"J"}]}])[0].relays[0].category,"J");
 console.log("Manual water export: XSE sentinel mapping, explicit categories, separate same-code/federal-number clubs, unchanged individual categories/WID and no mutation passed.");
+
+// Execute the real season/category normalisation used by the callable.
+const vm=require("node:vm"),fs=require("node:fs"),source=fs.readFileSync("functions/index.js","utf8");
+const seasonalContext={buildWinPalmeCompetitionTxt,engagementPdfFileName:value=>String(value),Date};
+vm.createContext(seasonalContext);
+for(const [start,end] of [["function competitionYear(","function performanceCategoryFromRow("],["function importSeasonYear(","function currentEngagementSeasonInfo("],["function engagementTxtSwimmerCategory(","async function readStoredEngagementTxt("]]) {
+  vm.runInContext(source.slice(source.indexOf(start),source.indexOf(end)),seasonalContext);
+}
+for(const [age,category] of [[9,"P"],[10,"B"],[11,"B"],[12,"M"],[13,"M"],[14,"C"],[15,"C"],[16,"J"],[17,"J"],[18,"S"],[29,"S"],[30,"M30+"],[39,"M30+"],[40,"M40+"],[49,"M40+"],[50,"M50+"],[59,"M50+"],[60,"M60+"],[69,"M60+"],[70,"M70+"],[79,"M70+"],[80,"M80+"]]) {
+  assert.equal(seasonalContext.ageCategoryFromDates("2026-06-27",String(2026-age)+"-12-31"),category);
+}
+assert.equal(seasonalContext.ageCategoryFromDates("2026-08-31","1997-12-31"),"S");
+assert.equal(seasonalContext.ageCategoryFromDates("2026-09-01","1997-12-31"),"M30+");
+const bornEntry=[{clubId:"106",clubCode:"CNHC",swimmers:[{lastName:"Test",firstName:"Saison",sex:"F",birthDate:"1996-12-31",category:"S",individualEntries:[{eventCode:"OW1000SF"}]}],relays:[]}];
+const birthBefore=JSON.stringify(bornEntry);
+const seasonalTxt=seasonalContext.buildEngagementCompetitionTxt({...waterCompetition,date:"2026-06-27",winPalmeId:"CNNP202606274982"},bornEntry,clubsMap).buffer.toString("utf8");
+assert.ok(seasonalTxt.includes(";LD1000;000001;F30+;"));
+assert.equal(JSON.stringify(bornEntry),birthBefore);
+(async()=>{
+  const {readManualOpenWaterCompetition}=require("../functions/winpalme-open-water-manual");
+  for(const [id,date,comite,wid] of [[4982,"2026-06-27",4,"CNNP202606274982"],[4760,"2024-05-18",3,"IDF202405184760"]]) {
+    let reads=0;const competition={id:"legacy-nap-"+id,date};const before=JSON.stringify(competition);
+    const result=await readManualOpenWaterCompetition({execute:async(query,args)=>{reads++;assert.match(query.sql,/FORCE INDEX.*WHERE id=\? LIMIT 2/);assert.deepEqual(args,[id]);return [[{id,date,comite}]];}},competition);
+    assert.equal(result.winPalmeId,wid);assert.equal(reads,1);assert.equal(JSON.stringify(competition),before);
+  }
+  for(const rows of [[],[{id:4982,date:"2026-06-28",comite:4}],[{id:4982,date:"2026-06-27",comite:14}]]) {
+    await assert.rejects(readManualOpenWaterCompetition({execute:async()=>[rows]},{id:"4982",date:"2026-06-27"}),/Reference e-NAP|Code du comite/);
+  }
+  await assert.rejects(readManualOpenWaterCompetition({execute:async()=>{throw new Error("private SQL");}},{id:"4982",date:"2026-06-27"}),e=>e.message==="Lecture de la reference e-NAP indisponible.");
+  console.log("Native e-NAP WIDs, one primary-key read, stale/unknown refusal, season/year category boundaries and no mutation passed.");
+})().catch(error=>{console.error(error);process.exitCode=1;});
