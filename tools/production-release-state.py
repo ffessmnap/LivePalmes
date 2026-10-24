@@ -1,5 +1,6 @@
 """Deployment metadata and code rollback only; no business data API calls."""
 from concurrent.futures import ThreadPoolExecutor
+import importlib.util
 import hashlib
 import json
 import os
@@ -8,6 +9,7 @@ from pathlib import Path
 import subprocess
 import sys
 import time
+from types import SimpleNamespace
 import urllib.parse
 import urllib.request
 
@@ -55,7 +57,7 @@ def check_after(backup, destination, require_success):
         f = after.get(name)
         if not f or f.get("state") != "ACTIVE":
             errors.append("Function non active: " + name.split("/")[-1])
-        elif f.get("serviceConfig", {}).get("environmentVariables", {}).get("LIVEPALMES_ENFORCE_APP_CHECK", "false") != (before[name].get('serviceConfig', {}).get('environmentVariables', {}).get('LIVEPALMES_ENFORCE_APP_CHECK', 'false') if name.split('/')[-1] in (report.get('additionalPdfFunctions', []) + report.get('additionalDtnFunctions', []) + report.get('additionalClubDirectoryFunctions', [])) else report["appCheck"]):
+        elif f.get("serviceConfig", {}).get("environmentVariables", {}).get("LIVEPALMES_ENFORCE_APP_CHECK", "false") != (before[name].get('serviceConfig', {}).get('environmentVariables', {}).get('LIVEPALMES_ENFORCE_APP_CHECK', 'false') if name.split('/')[-1] in (report.get('additionalPdfFunctions', []) + report.get('additionalDtnFunctions', []) + report.get('additionalClubDirectoryFunctions', []) + report.get('additionalGroupedFunctions', [])) else report["appCheck"]):
             errors.append("App Check different: " + name.split("/")[-1])
         elif report.get("commitLabel") and f.get("labels", {}).get("livepalmes-commit") != report["candidate"]:
             errors.append("Commit Function different: " + name.split("/")[-1])
@@ -75,6 +77,15 @@ def check_after(backup, destination, require_success):
                 new['serviceConfig'].pop('secretEnvironmentVariables', None)
             if any(old.get(k) != new.get(k) for k in ['serviceConfig', 'eventTrigger', 'buildConfig']):
                 errors.append('Configuration PDF modifiee: ' + name.split('/')[-1])
+        if f and name.split('/')[-1] in report.get('additionalGroupedFunctions', []):
+            spec = importlib.util.spec_from_file_location('grouped_policy', Path(__file__).with_name('grouped-publication-policy.py'))
+            policy = importlib.util.module_from_spec(spec); spec.loader.exec_module(policy)
+            if sorted(report['additionalGroupedFunctions']) != policy.contract()['selected']:
+                errors.append('Selection groupee differente')
+            try:
+                policy.assert_config(before[name], f, SimpleNamespace(rollback_patch=rollback_patch))
+            except ValueError as error:
+                errors.append(str(error) + ': ' + name.split('/')[-1])
         short = name.split('/')[-1]
         if f and short in report.get('additionalAccessRequestFunctions', []):
             secrets = f.get('serviceConfig', {}).get('secretEnvironmentVariables', [])

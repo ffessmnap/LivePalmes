@@ -228,5 +228,7 @@ async function prove() {
       "mail-content", "retained-job-replay", "retained-closure-resume", "fixture-attachment-manifests", "document-selection",
       "stale-source-refused", "missing-document-refused", ...(c0 ? ["c0-exact-backend-diff", "public-reader-unchanged", "original-featured-document-projection", "partial-schema-refused"] : []), ...(home ? ["home-exact-pair-and-12-origins", "unchanged-retained-handlers", "preference-and-access-guards", "native-identity-replay", "additive-index-specs", "unchanged-competition-projection"] : [])] };
 }
-if (require.main === module) prove().then(result => console.log(JSON.stringify(result))).catch(error => { console.error(error.stack); process.exitCode = 1; });
-module.exports = { loader };
+const groupedPair = base === "fbd3c2868fcb3690e1fa5a7ddeca9f45e6fb4511" && candidate === "0619f1dce9439afd5dd4719ee035ff0fc3b99b83";
+if (require.main === module) (groupedPair ? require('./release-grouped-retained-compatibility').prove({root,base,candidate,rows,source,definitions,loader}) : prove())
+  .then(result => console.log(JSON.stringify(result))).catch(error => { console.error(error.stack); process.exitCode = 1; });
+module.exports = { loader,source,definitions };

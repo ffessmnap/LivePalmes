@@ -151,6 +151,7 @@ def main():
             raise ValueError('Traitement PDF existant absent')
         report['additionalPdfFunctions'] = plan.get('additionalPdfFunctions', []) if os.environ.get('PLAN') else []
         report['additionalClubDirectoryFunctions'] = cycle.approved_club_directory_functions(plan) if os.environ.get('PLAN') else []
+        report['additionalGroupedFunctions'] = cycle.approved_grouped_functions(plan) if os.environ.get('PLAN') else []
         report['additionalDtnFunctions'] = plan.get('additionalDtnFunctions', []) if os.environ.get('PLAN') else []
         report['nativeIdentityNapSecret'] = cycle.approved_native_identity_secret(plan) if os.environ.get('PLAN') else False
         report['additionalNotificationFunctions'] = notification
@@ -173,6 +174,11 @@ def main():
                 service = f.get("serviceConfig", {})
                 if f['name'].split('/')[-1] in report['additionalClubDirectoryFunctions'] and not club_directory_runtime_allowed(f['name'].split('/')[-1], service):
                     raise ValueError('Configuration ou binding NAP repertoires club inattendu')
+                if f['name'].split('/')[-1] in report['additionalGroupedFunctions']:
+                    if not ordinary_runtime_allowed(service):
+                        raise ValueError('Configuration groupee initiale inattendue')
+                    if f['name'].split('/')[-1] == cycle.grouped.NOTIFY:
+                        cycle.grouped.notification_service(service)
                 if f['name'].split('/')[-1] in access_requests and not access_request_runtime_allowed(service):
                     raise ValueError('Configuration demandes acces inattendue')
                 if f['name'].split('/')[-1] not in extra and not ordinary_runtime_allowed(service):
