@@ -1113,3 +1113,6 @@
 .import-grouped-review input:not([type="checkbox"]), .import-grouped-review select { width: 100%; min-width: 0; max-width: 100%; }
 .import-grouped-review button { max-width: 100%; white-space: normal; margin: .2rem; }
 @media (min-width: 700px) { .import-profile-comparison { grid-template-columns: 1fr 1fr; } }
+
+.import-confirmation-message { margin: .8rem 0; padding: .8rem; border: 1px solid #0b7285; border-radius: .6rem; background: #fff; }
+.import-confirmation-message textarea { width: 100%; max-width: 100%; min-height: 20rem; resize: vertical; font: inherit; line-height: 1.5; }
