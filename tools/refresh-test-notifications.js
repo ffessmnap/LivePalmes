@@ -9,8 +9,16 @@ const PILOT_NAMES = Object.freeze(['getEngagementAutomaticMailControl', 'updateE
   'notifyEngagementCompetitionDocuments', 'listEngagementCompetitionMailJobs',
   'prepareEngagementOpeningNotificationEmails', 'prepareEngagementClubRecapEmails',
   'sendEngagementPreparedEmails', 'processNapCompetitionNotifications', 'closeDueEngagementCompetitions']);
+const BCC_NAMES = Object.freeze(['notifyEngagementCompetitionDocuments','listEngagementCompetitionMailJobs',
+  'processNapCompetitionNotifications','closeDueEngagementCompetitions','processNapNotificationTask',
+  'updateEngagementCalendarEvent','updateEngagementCompetition']);
 function selected(env) {
   if (!['true', 'false', undefined].includes(env.NOTIFICATION_PILOT_IDF)) throw new Error('Périmètre pilote TEST invalide.');
+  if (!['true', 'false', undefined].includes(env.NOTIFICATION_BCC_TASKS)) throw new Error('Périmètre CCI TEST invalide.');
+  if(env.NOTIFICATION_BCC_TASKS==='true'){
+    if(env.NOTIFICATION_PILOT_IDF==='true')throw new Error('Sélections TEST incompatibles.');
+    return BCC_NAMES;
+  }
   return env.NOTIFICATION_PILOT_IDF === 'true' ? PILOT_NAMES : NAMES;
 }
 function guard(env) {
@@ -53,7 +61,7 @@ async function main() {
     const wrapper = narrow(fs.readFileSync(file, 'utf8'), process.env);
     if (!selector || !receipt) throw new Error('Sorties requises.');
     let result;
-    if (process.env.NOTIFICATION_PILOT_IDF === 'true') {
+    if (process.env.NOTIFICATION_PILOT_IDF === 'true' || process.env.NOTIFICATION_BCC_TASKS === 'true') {
       result = await requireDisabled(db);
     } else result = await disable(db, credentials.client_email);
     fs.writeFileSync(receipt, JSON.stringify({ ...result, candidate: process.env.CANDIDATE_SHA }, null, 2));
@@ -62,7 +70,7 @@ async function main() {
   } else {
     const current = await control.read(db);
     if (current.enabled) throw new Error('Mails TEST réactivés pendant le contrôle.');
-    if (process.env.NOTIFICATION_PILOT_IDF === 'true') {
+    if (process.env.NOTIFICATION_PILOT_IDF === 'true' || process.env.NOTIFICATION_BCC_TASKS === 'true') {
       if (!selector || JSON.stringify(current) !== JSON.stringify(JSON.parse(fs.readFileSync(selector, 'utf8')).after))
         throw new Error('Le réglage TEST a changé pendant la publication du pilote.');
     }
@@ -70,4 +78,4 @@ async function main() {
   console.log(`Mails TEST désactivés ; sélection limitée à ${selected(process.env).length} traitements autorisés.`);
 }
 if (require.main === module) main().catch(error => { console.error(error.message); process.exitCode = 1; });
-module.exports = { NAMES, PILOT_NAMES, selected, guard, narrow, disable, requireDisabled };
+module.exports = { NAMES, PILOT_NAMES, BCC_NAMES, selected, guard, narrow, disable, requireDisabled };

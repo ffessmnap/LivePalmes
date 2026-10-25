@@ -49,6 +49,11 @@ on:
         required: false
         type: boolean
         default: false
+      notification_bcc_tasks:
+        description: Avec notification_final_check, publier les sept traitements CCI/tâches, sans mail ni changement de réglage
+        required: false
+        type: boolean
+        default: false
   workflow_call:
     inputs:
       lot:
@@ -86,6 +91,10 @@ on:
         required: false
         type: boolean
         default: false
+      notification_bcc_tasks:
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -105,6 +114,7 @@ env:
   ACCESS_REQUESTS_ONLY: ${{ inputs.access_requests_only || false }}
   NOTIFICATION_FINAL_CHECK: ${{ inputs.notification_final_check || false }}
   NOTIFICATION_PILOT_IDF: ${{ inputs.notification_pilot_idf || false }}
+  NOTIFICATION_BCC_TASKS: ${{ inputs.notification_bcc_tasks || false }}
   NAP_NOTIFICATION_SCHEDULER_ONLY: ${{ inputs.nap_notifications_only || false }}
 
 jobs:
@@ -156,6 +166,11 @@ jobs:
           fi
           if [ "$NOTIFICATION_PILOT_IDF" = "true" ]; then
             test "$NOTIFICATION_FINAL_CHECK" = "true"
+            test "$ACCESS_REQUESTS_ONLY" = "false"
+          fi
+          if [ "$NOTIFICATION_BCC_TASKS" = "true" ]; then
+            test "$NOTIFICATION_FINAL_CHECK" = "true"
+            test "$NOTIFICATION_PILOT_IDF" = "false"
             test "$ACCESS_REQUESTS_ONLY" = "false"
           fi
           if [ "$SELECTED_LOT" = "schedulers" ]; then
@@ -263,6 +278,9 @@ jobs:
           NODE
           if [ "$NOTIFICATION_FINAL_CHECK" = "true" ]; then
             echo cloudscheduler.googleapis.com >> "$RUNNER_TEMP/required-apis.txt"
+          fi
+          if [ "$NOTIFICATION_BCC_TASKS" = "true" ]; then
+            echo cloudtasks.googleapis.com >> "$RUNNER_TEMP/required-apis.txt"
           fi
           gcloud services list --project=livepalmes-test --enabled --format='value(config.name)' > "$RUNNER_TEMP/enabled-apis.txt"
           while IFS= read -r api; do

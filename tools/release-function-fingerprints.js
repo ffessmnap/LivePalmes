@@ -6,7 +6,7 @@ const { isBuiltin } = require("node:module");
 const path = require("node:path");
 const acorn = require(path.join(__dirname, "../tests/firestore-rules/node_modules/acorn"));
 const hash = value => crypto.createHash("sha256").update(value).digest("hex");
-const registrations = new Set(["onCall", "onRequest", "onSchedule", "onDocumentCreated", "onDocumentUpdated", "onDocumentWritten", "onDocumentDeleted"]);
+const registrations = new Set(["onCall", "onRequest", "onSchedule", "onTaskDispatched", "onDocumentCreated", "onDocumentUpdated", "onDocumentWritten", "onDocumentDeleted"]);
 
 function walk(node, visit) {
   if (!node || typeof node !== "object") return;
@@ -207,7 +207,7 @@ function fingerprints(source, common, files = {}) {
       }
       if (declaration.id.type !== "ObjectPattern" || init?.type !== "CallExpression" ||
         init.callee.name !== "require" || init.arguments.length !== 1 ||
-        !/^firebase-functions\/v2\/(https|firestore|scheduler)$/.test(init.arguments[0].value || "")) continue;
+        !/^firebase-functions\/v2\/(https|firestore|scheduler|tasks)$/.test(init.arguments[0].value || "")) continue;
       for (const prop of declaration.id.properties) {
         if (prop.type === "Property" && !prop.computed && registrations.has(prop.key.name) && prop.value.type === "Identifier") factories.add(prop.value.name);
       }

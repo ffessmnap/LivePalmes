@@ -79,7 +79,7 @@ async function main() {
     engagementClubEntryHasParticipants: () => true, buildEngagementClubRecapPdf: () => {},
     normalizeEmail: value => value, engagementOpeningMailSubject: () => 'Opening', engagementOpeningMailText: () => 'Text',
     require: name => name === './engagement-mail-control' ? control : name === './nap-portal-swimmers' ? { portalPool: () => ({}) } : require('../functions/' + name.slice(2)) };
-  const start = source.indexOf('function nativeNotificationAutomationServices('), end = source.indexOf('async function deliverNativeNotificationJobs(', start);
+  const start = source.indexOf('function nativeNotificationAutomationServices('), end = source.indexOf('function nativeNotificationTaskServices(', start);
   vm.runInNewContext(source.slice(start, end), sandbox);
   const wired = sandbox.nativeNotificationAutomationServices(false);
   assert.equal(await wired.allowEvent({ createdAt: job.createdAt, automatic: false }), true);

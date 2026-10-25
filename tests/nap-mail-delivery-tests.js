@@ -40,6 +40,7 @@ function trackingUI(){
   const mount={innerHTML:''},now=new Date().toISOString();
   const jobs=['ready','sending','sent','failed','uncertain'].map((status,i)=>({id:String(i),status,type:'opening_notification',
     toEmail:'simulation@example.org',subject:'Ouverture des engagements — simulation',clubName:'Club de simulation',updatedAt:now}));
+  Object.assign(jobs[2],{deliveryMode:'bcc-v1',recipientCount:50,sentCount:49,failedCount:1,cancelledCount:0,status:'partial'});
   const sandbox={Date,elements:{engagementsMailJobsList:mount},isEngagementAdminMode:()=>true,
     engagementMailJobs:jobs,engagementMailJobsLoading:false,selectedEngagementCompetitionId:'5162',engagementMailJobsCompetitionId:'5162',
     engagementMailJobsTotalCount:320,engagementMailJobsHasMore:true,engagementMailJobTypeLabel:()=> 'Ouverture',
@@ -50,6 +51,8 @@ function trackingUI(){
   assert.match(mount.innerHTML,/1 en cours/);assert.match(mount.innerHTML,/1 à vérifier/);
   assert.match(mount.innerHTML,/data-engagement-mail-jobs-refresh/);
   assert.match(mount.innerHTML,/Afficher plus/);
+  assert.match(mount.innerHTML,/50 destinataires · CCI/);assert.match(mount.innerHTML,/49 accepté\(s\)/);
+  assert.match(mount.innerHTML,/Partiellement accepté/);
   if(process.env.NAP_MAIL_UI_FIXTURE){
     fs.mkdirSync(require('node:path').dirname(process.env.NAP_MAIL_UI_FIXTURE),{recursive:true});
     fs.writeFileSync(process.env.NAP_MAIL_UI_FIXTURE,'<!doctype html><html lang="fr"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Suivi des envois — simulation sans mail</title><style>'+fs.readFileSync('assets/livepalmes-admin-portal.css','utf8')+'</style><body style="padding:16px;margin:0"><main class="admin-portal"><h1>Diffusion — simulation sans envoi</h1><div class="admin-engagements-mail-jobs">'+mount.innerHTML+'</div></main></body></html>');
@@ -107,6 +110,12 @@ function fixture(count=320){
   return {db,store,services,sent,advance:ms=>{now+=ms;}};
 }
 async function batches(){
+  const wrap=fixture(2);
+  wrap.store.set('engagementConfigurations/napMailDeliveryWorker',{cursorId:'0000'});
+  await delivery.drain(wrap.db,wrap.services);
+  assert.equal(wrap.sent.size,2,'Reaching the end wraps immediately, without losing a five-minute cycle');
+  const grouped=fixture(1);grouped.store.get('engagementMailJobs/0000').deliveryMode='bcc-v1';
+  await delivery.drain(grouped.db,grouped.services);assert.equal(grouped.sent.size,0,'Legacy sender must never claim a CCI group');
   const f=fixture();
   const runs=await Promise.all([delivery.drain(f.db,f.services),delivery.drain(f.db,f.services)]);
   assert(runs.some(r=>r.reason==='worker-busy-or-paused'),'Only one worker runs');
