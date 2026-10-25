@@ -12892,7 +12892,25 @@ exports.rebuildEngagementClubAggregates = onCall(MIGRATION_CALLABLE_OPTIONS, asy
   };
 });
 
+async function importSwimmerCreation(request,write) {
+  if(ENVIRONMENT.sportingDataSource!=="nap")throw new HttpsError("failed-precondition","Source NAP requise.");
+  try{return await require("./nap-import-swimmer-creation").service({
+    authorize:authorizeNativePerformance,
+    getPool:()=>require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD),
+    formatAlert:(match,type,clubId)=>{
+      const {validationStatus,...alert}=engagementNewSwimmerAlertFromMatch(match,{clubId},type);
+      return alert;
+    },
+    audit:context=>({
+      read:async operation=>{const doc=await db.collection("auditLogs").doc(`nap-swimmer-create-${operation}-before`).get();return doc.exists?doc.data().target:null;},
+      prepare:(operation,target)=>db.collection("auditLogs").doc(`nap-swimmer-create-${operation}-before`).create({action:"nap.swimmerCreate.prepare",actorUid:context.uid,target,createdAt:new Date().toISOString()}),
+      checkpoint:(operation,target)=>db.collection("auditLogs").doc(`nap-swimmer-create-${operation}-before`).update({target}),
+      complete:(operation,target)=>writeAuditLogOnce("nap.swimmerCreate.complete",context.uid,{...target,validationScope:"national-import",auditPreparationId:`nap-swimmer-create-${operation}-before`},`nap-swimmer-create-${operation}-complete`)
+    })
+  })(request,write);}catch(error){throw nativePerformanceFailure(error);}
+}
 exports.previewEngagementClubSwimmerCreation = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")], maxInstances:2, concurrency:4 } : {}) }, async (request) => {
+  if(request.data?.importReview===true)return importSwimmerCreation(request,false);
   const context = await engagementClubAccessContext(request);
   if (ENVIRONMENT.sportingDataSource === "nap") {
     try {
@@ -13068,6 +13086,7 @@ exports.recoverEngagementClubSwimmer = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRON
 });
 
 exports.createEngagementClubSwimmer = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")], maxInstances:2, concurrency:4 } : {}) }, async (request) => {
+  if(request.data?.importReview===true)return importSwimmerCreation(request,true);
   const context = await engagementClubAccessContext(request);
   if (ENVIRONMENT.sportingDataSource === "nap") {
     try {

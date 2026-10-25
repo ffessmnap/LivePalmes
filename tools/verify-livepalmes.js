@@ -220,6 +220,7 @@ function runUnitTests() {
     "nap-swimmer-dialog-tests.js",
     "nap-swimmer-activity-tests.js",
     "nap-swimmer-creation-tests.js",
+      "nap-import-swimmer-creation-tests.js",
     "nap-swimmer-creation-callable-tests.js",
     "nap-swimmer-recovery-write-tests.js",
     "nap-approved-swimmer-correction-tests.js",
