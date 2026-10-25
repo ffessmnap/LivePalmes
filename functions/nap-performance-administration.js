@@ -1,6 +1,6 @@
 "use strict";
 const {COLUMNS,positiveId,fingerprint,nativeRow}=require("./nap-performance-change-plan");
-const {formatTime,parseCompactTime}=require("./nap-performance-normalization");
+const {formatTime,parseCompactTime}=require("./nap-duration");
 // Search uses the existing indexed person search. A page reads 101 native rows,
 // joined by primary keys (no network request per performance, hidden included).
 function createPerformanceAdministration({getPool,authorize}) {
