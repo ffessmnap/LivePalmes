@@ -2,6 +2,12 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 25 octobre — Création des compétitions : référence de structure NAP
+
+- Accord explicite : vérifier la structure en lecture seule, corriger le blocage signalé par Sarah et publier sur TEST, sans modification des données ni des droits. Lecture privée `approved-index`, phase `prepare` uniquement : index `livepalmes_enddate_id` présent ; définition actuelle de `competitions` identique au contrat après le seul ajout de cet index et neutralisation du compteur AUTO_INCREMENT. Empreinte de lecture `4134e7e475949841484b14ecd62e6be70bd41b5f6e7fdbc1c0a655ad49bbe524`. Le diagnostic générique GitHub 40229774956 a échoué ; la lecture locale authentifiée a ensuite réussi.
+- Référence de création alignée sur l’index déjà autorisé par #313 ; comparaison stricte inchangée. Tests : compteur AUTO_INCREMENT variable accepté, index altéré ou inconnu refusé avant toute écriture simulée. Budget inchangé : au plus 17 appels SQL pour une compétition, 26 pour un événement générique, puis lecteur de détail borné ; aucun accès supplémentaire à l’ouverture, à l’action ou au rafraîchissement. Aucun schéma/index, donnée, droit ou mail modifié.
+- Vérification globale, PR et déploiement TEST en cours. Aucun essai de création réelle : TEST partage NAP ; validation utilisateur de la version regroupée attendue. Aucune publication PROD autorisée.
+
 ### 25 octobre — Clubs ZIP rapprochés par numéro fédéral puis libellé
 
 - Accord explicite utilisateur : corriger sur TEST le rapprochement Auray/CSL, numéro fédéral prioritaire et libellé en complément, sans résultat réel importé. Dans le seul aperçu ZIP, le numéro est recherché dans tout le référentiel déjà lu ; le sigle n’est plus un prérequis d’unicité. Contrôle exact du numéro sur huit chiffres et du nom après neutralisation casse/accents/ponctuation ; ambiguïtés, contradictions et numéros incomplets restent à confirmer. Aucun zéro fabriqué, aucune substitution par le club du nageur. TXT et gardes ZIP conservés.
