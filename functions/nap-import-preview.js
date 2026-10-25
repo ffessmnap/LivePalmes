@@ -20,6 +20,7 @@ async function previewNativeImport(pool,input) {
   const competitions=await q(pool,"SELECT id,libelle,date,lieu,bassin,chrono FROM competitions WHERE id=? LIMIT 1",[competitionId]);
   if(competitions.length!==1)throw new TypeError("Competition NAP introuvable.");
   const competition=competitions[0];
+  const courseReview=await require("./nap-import-courses").prepareCourses(pool,decoded,input);
   const individual=decoded.rows.filter(r=>r.kind==="NAG");
   const swimmerBindings=choices(input.swimmerBindings||[],5000),memberBindings=choices(input.memberBindings||[],2000),clubBindings=choices(input.clubBindings||[],1000);
   const selectedIds=[...new Set([...swimmerBindings,...memberBindings].map(b=>positiveId(b.swimmerId)))];
@@ -92,8 +93,8 @@ async function previewNativeImport(pool,input) {
     const native={nageur:swimmerByLine.get(row.sourceLine),compet:competitionId,course:row.course,cat:row.category,tps:row.time,points,newpoints:0,passage:0,club,relais:0,pid:null,classement:rank};
     incoming.push({sourceLine:row.sourceLine,origin:"individual",row:native});
     const course=/^(\d+)(SF|BI|IS|AP)$/.exec(row.course);
-    if(!course)issues.push({sourceLine:row.sourceLine,code:"unsupported-course"});
-    else row.splits.forEach((value,index)=>{
+    if(!course&&!courseReview)issues.push({sourceLine:row.sourceLine,code:"unsupported-course"});
+    else if(course&&!row.courseMapping?.longDistance&&(!row.sourceCourse||/^(\d+)(SF|BI|IS|AP)$/.test(row.sourceCourse)))row.splits.forEach((value,index)=>{
       const time=compactTime(value),distance=[100,200,400,800][index];
       if(time&&distance<Number(course[1]))incoming.push({sourceLine:row.sourceLine,origin:"passage",row:{...native,course:`${distance}${course[2]}`,tps:time,points:0,passage:1,classement:0}});
     });
@@ -117,13 +118,13 @@ async function previewNativeImport(pool,input) {
   }
   if(incoming.length>5000)throw new RangeError("Plus de 5 000 performances avec passages et premiers relayeurs : reduisez le lot.");
   const canConfirm=decoded.confirmable&&issues.length===0&&resolution.canConfirm&&unresolvedClubs.length===0&&unresolvedMembers.length===0;
-  const pack={source:"nap",competition,decoded,resolution,candidates,clubs,clubByCode,relayMembers,unresolvedClubs,unresolvedMembers,incoming,incomingRelays,statusRows,existing,existingRelays,issues,canConfirm,
+  const pack={source:"nap",competition,decoded,courseReview,resolution,candidates,clubs,clubByCode,relayMembers,unresolvedClubs,unresolvedMembers,incoming,incomingRelays,statusRows,existing,existingRelays,issues,canConfirm,
     expectedFingerprint:hash({competition,existing,existingRelays}),previewFingerprint:hash({fileHash:decoded.fileHash,excluded:decoded.excluded.map(r=>r.sourceLine),competition,existing,existingRelays,incoming,incomingRelays,statusRows})};
   if(input.sourceType==="winpalme-zip-preview") {
     pack.review=await require("./nap-import-review").prepareReview(pool,pack,input);
     pack.existingStatuses=await require("./nap-import-status-results").readImportStatusResults(pool,competitionId);
     pack.expectedFingerprint=hash({competition,existing,existingRelays,statuses:pack.existingStatuses});
-    pack.previewFingerprint=hash([pack.previewFingerprint,pack.expectedFingerprint,pack.review.groups.map(g=>g.clubAlerts)]);
+    pack.previewFingerprint=hash([pack.previewFingerprint,pack.expectedFingerprint,pack.review.groups.map(g=>g.clubAlerts),courseReview?.sources]);
     pack.canConfirm=canConfirm&&issues.length===0;
   }
   return pack;

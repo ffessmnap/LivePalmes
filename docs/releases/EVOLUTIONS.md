@@ -2,6 +2,12 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 25 octobre — Choix des épreuves non reconnues dans les ZIP
+
+- Demande utilisateur après essai de Séné : choisir une épreuve non reconnue comme un club. Ajout national au seul aperçu ZIP ; aucun résultat, PDF ou épreuve créé en base. Une correspondance s’applique à toutes les lignes du code source, avec source et choix conservés ; recherche/tri locaux, type et sexe contrôlés côté serveur, retrait et actualisation, rapport et empreinte mis à jour. Aucun alias LD automatique ou passage piscine déduit.
+- Budget : une lecture catalogue par clé primaire limitée à 301 lignes/refus au-delà de 300 sur les aperçus concernés seulement ; aucun appel par ligne, épreuve ou frappe, pagination locale vingt codes. Parcours piscine déjà reconnu et TXT inchangés. Aucun droit, collection, index ou schéma ajouté.
+- Contrôles ciblés hors réseau et navigateur avec vrai contrôleur/aperçu sur pool simulé réussis en 1440/390/320 px : choix groupé, filtres, sélection hors filtre, changement/retrait, rapport complet et aucune écriture. Lecture locale du ZIP Séné : 51 résultats, six codes LD ; 16 temps avec heures conservés comme alertes indépendantes. Captures et reçu privés dans outputs/import-courses. Vérification globale et livraison TEST en cours ; retour utilisateur attendu, aucune validation PROD déduite.
+
 ### 25 octobre — Préparation PROD CCI et documents : validations consignées, aucun déploiement
 
 - Antoine confirme dans Infra « Oui, les deux lots sont validés » pour les notifications CCI/tâches et la limite documentaire de 2 Mo avec exception nationale sur TEST `c93c5016` / run40181456388. Les régions invitées étaient déjà validées sur `7b02a9ef`. L'accord suivant « ok » autorise la préparation limitée du circuit, ses tests et le preflight ; il ne constitue pas l'accord final du futur plan PROD.
