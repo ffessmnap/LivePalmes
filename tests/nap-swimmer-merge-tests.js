@@ -9,6 +9,7 @@ function fixture(failAfter=0,historic=false){
   const input={sourceSwimmerId:"12",targetSwimmerId:"13",sourceFingerprint:fingerprint(source),targetFingerprint:fingerprint(target),sourceLicenseNumber:source.number,targetLicenseNumber:"",actorUid:"national",confirmMerge:true};
   if(historic)source.actif=0;
   const state=Object.fromEntries(plans.TABLES.map(spec=>[spec.table,[]]));
+  state.forfait=[];
   state.perfs=[{id:1,nageur:12,tps:"14200",points:"123"}];
   for(const table of ["cnc_edf","cnc_medailles","cnc_nageurs","documents_controles","engagements_relayeurs","nageurs_derogations","nageurs_enf","nageurs_verifications","txt_nageurs"])state[table]=[{id:40,nageur:12,relais:20}];
   state.perfs_relais=[{id:41,nageur1:12,nageur2:20,nageur3:21,nageur4:22,tps1:"12345"}];
@@ -27,6 +28,7 @@ function fixture(failAfter=0,historic=false){
     if(sql.includes("GET_LOCK"))return [[{acquired:1}]];
     if(sql.includes("RELEASE_LOCK"))return [[{released:1}]];
     if(sql.includes("information_schema.TRIGGERS")||sql.startsWith("SELECT id FROM forfait"))return [[]];
+    if(sql===require("../functions/nap-swimmer-merge-forfeits").SQL)return [structuredClone(state.forfait)];
     if(sql.startsWith("SELECT num_club"))return [sql.includes(" IN (")?[106,107,999].filter(id=>values.includes(id)).map(num_club=>({num_club,abre_club:"FIC",nom_club:"Club fictif"})):[{num_club:107,abre_club:"FIC",nom_club:"Club fictif"}]];
     if(sql.startsWith("SELECT id FROM nageurs"))return [[]];
     if(sql.startsWith("SELECT")&&sql.includes("FROM nageurs FORCE INDEX"))return [structuredClone(state.nageurs)];
@@ -51,7 +53,8 @@ function fixture(failAfter=0,historic=false){
         else for(const item of change.updates){const index=state[table].findIndex(row=>equal(row,item.before));if(index>=0){state[table][index]=structuredClone(item.after);count++;}}
       }
     }
-    writes++;if(writes===failAfter&&!failed){failed=true;throw Error("Simulated lost response");}
+    writes++;if(state.changeForfeitAfterWrite&&state.forfait.length)state.forfait[0].forfait=0;
+    if(writes===failAfter&&!failed){failed=true;throw Error("Simulated lost response");}
     return [{affectedRows:count}];
   },query:async({sql})=>{assert.match(sql,/^(LOCK TABLES|UNLOCK TABLES)/);return [{}];},release(){},destroy(){throw Error("Unsafe connection");}};
   return {input,state,audit,pool:{getConnection:async()=>{connections++;return connection;}},stats:()=>({writes,completed,connections})};
@@ -92,5 +95,34 @@ function fixture(failAfter=0,historic=false){
   assert.equal(historic.state.livepalmes_swimmer_merges.find(row=>row.swimmer_id===12).merged_by,"previous-admin");
   const conflict=fixture();conflict.state.livepalmes_swimmer_license_seasons.push({...conflict.state.livepalmes_swimmer_license_seasons[0],swimmer_id:13,license_number:"B-OTHER"});
   await assert.rejects(service.mergeSwimmers(conflict.pool,conflict.input,conflict.audit,async()=>{}),/meme saison/);assert.equal(conflict.stats().writes,0);
+  const unrelated=fixture();unrelated.state.forfait=[{id:86,compet:10,engagement:919,forfait:1}];
+  const originalForfaits=structuredClone(unrelated.state.forfait);
+  await service.mergeSwimmers(unrelated.pool,unrelated.input,unrelated.audit,async()=>{});
+  assert.deepEqual(unrelated.state.forfait,originalForfaits);
+  assert.deepEqual((await unrelated.audit.read()).forfeitPolicy.rows,originalForfaits);
+  for(const engagement of [2,3,4,5,6])for(const compet of [10,199]){
+    const linked=fixture();linked.state.forfait=[{id:86,compet,engagement,forfait:1}];
+    await assert.rejects(service.mergeSwimmers(linked.pool,linked.input,linked.audit,async()=>{}),/forfait historique reference/);
+    assert.equal(linked.stats().writes,0);assert.equal(await linked.audit.read(),undefined);
+  }
+  const overflow=fixture();overflow.state.forfait=Array.from({length:501},(_,i)=>({id:i+1,compet:10,engagement:919,forfait:1}));
+  await assert.rejects(service.mergeSwimmers(overflow.pool,overflow.input,overflow.audit,async()=>{}),/Trop de forfaits/);assert.equal(overflow.stats().writes,0);
+  const staleForfeit=fixture(1);staleForfeit.state.forfait=[{id:86,compet:10,engagement:919,forfait:1}];
+  await assert.rejects(service.mergeSwimmers(staleForfeit.pool,staleForfeit.input,staleForfeit.audit,async()=>{}),/lost response/);
+  staleForfeit.state.forfait[0].forfait=0;const previousWrites=staleForfeit.stats().writes;
+  await assert.rejects(service.mergeSwimmers(staleForfeit.pool,staleForfeit.input,staleForfeit.audit,async()=>{}),/forfaits historiques ont change/);assert.equal(staleForfeit.stats().writes,previousWrites);
+  const legacyAudit=fixture();await service.mergeSwimmers(legacyAudit.pool,legacyAudit.input,legacyAudit.audit,async()=>{});
+  delete (await legacyAudit.audit.read()).forfeitPolicy;
+  await service.mergeSwimmers(legacyAudit.pool,legacyAudit.input,legacyAudit.audit,async()=>{});
+  const during=fixture();during.state.forfait=[{id:86,compet:10,engagement:919,forfait:1}];during.state.changeForfeitAfterWrite=true;
+  await assert.rejects(service.mergeSwimmers(during.pool,during.input,during.audit,async()=>{}),/forfaits historiques ont change pendant/);
+  assert(during.state.nageurs.some(row=>row.id===12));assert.equal(during.stats().completed,0);
+  // Every uncertain write can still resume with unrelated forfaits intact.
+  for(let stop=1;stop<=total;stop++){
+    const f=fixture(stop);f.state.forfait=[{id:86,compet:10,engagement:919,forfait:1}];
+    await assert.rejects(service.mergeSwimmers(f.pool,f.input,f.audit,async()=>{}));
+    await service.mergeSwimmers(f.pool,f.input,f.audit,async()=>{});
+    assert.equal(f.state.nageurs.some(row=>row.id===12),false);assert.equal(f.state.forfait[0].forfait,1);
+  }
   console.log("Native swimmer merge executor: licence season retained, raw result times unchanged, entries joined, authorization, no-op retries and every lost-write-response stage passed without network.");
 })().catch(error=>{console.error(error);process.exitCode=1;});
