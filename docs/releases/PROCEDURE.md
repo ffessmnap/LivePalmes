@@ -144,6 +144,12 @@ Préparer et présenter un nouveau preflight officiel ; aucune reprise automatiq
 
 ## 3. Publier PROD après accord
 
+### Version regroupée validée le25octobre — préparation suivante
+
+La demande `20261025-all-validated.json` vise uniquement `8b868c7c` / TEST40231918857. Accord Infra sur les cinq lots import : « Oui je valide tout ». Le nouveau contrat est épinglé séparément ; il ne réécrit ni l'ancien contrat C93 ni le plan40209504269. Le choix de politique dépend de l'un de ces deux candidats exacts, puis toutes les références, empreintes, sélections et transitions sont contrôlées. Aucune référence libre ou simple indicateur de réussite ne crée une exception.
+
+La sélection108 ajoute la lecture publique des heures :107 sources existantes, un worker privé et cinq services conservés. La preuve TEST commune courante suffit, avec équivalence calculée des révisions conservées ; aucune réconciliation ni republication TEST. Le contrôle live compare exactement l'état de cette preuve. Les configurations existantes, sauvegardes, identité du worker, lots de trois, reprise attestée et transition mail5→6→7 restent protégés comme ci-dessous. L'accord final du nouveau numéro de plan est obligatoire avant toute écriture PROD. Les opérations métier réelles, notamment import ZIP, restent exclues.
+
 ### Préparation CCI du 25 octobre — accord final du plan encore requis
 
 La requête `20261025-bcc-documents.json` et son contrat fermé distinguent le candidat applicatif validé et l'outillage. Le workflow de réconciliation TEST refuse toute dérive de la preuve commune : ne jamais revenir à une ancienne version de TEST pour rendre le preflight vert. L’évolution import14 est explicitement exclue par Antoine (« Non, garder ce lot hors PROD »). La preuve applicative40181456388/C93 reste la recette approuvée ; la source TEST courante40206084404/14 conserve les deux exports import. Leurs différences exactes et l’équivalence des sept exports de notification sont calculées sur les empreintes complètes, sans réduction du candidat ni changement silencieux de fichiers. La réconciliation publie uniquement ces sept exports avec la source14 et produit deux témoins : preuve des sources équivalentes àC93 et état complet du TEST courant. La relecture live compare ce second témoin ; la sélection PROD continue à utiliser la recette historiqueC93 complétée par les sept sources équivalentes. Toute autre évolution TEST bloque, et aucun lot import nouveau ne part en PROD.

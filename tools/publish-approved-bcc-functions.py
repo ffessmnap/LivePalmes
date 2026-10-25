@@ -43,14 +43,14 @@ def pending(names, before, current, attested, candidate, state, policy, expected
 
 
 def publish(candidate, plan, backup, cycle, archive):
-    request = cycle.read(plan / 'request.json'); policy = cycle.bcc
+    request = cycle.read(plan / 'request.json'); policy = cycle.bcc.for_request(request)
     names = cycle.approved_bcc_functions(request)
     policy.selection(request, cycle.read(plan / 'selection.json'))
     policy.require(cycle.read(os.environ['GOOGLE_APPLICATION_CREDENTIALS'])['project_id'] == 'livepalmes', 'Compte PROD requis')
     report = cycle.read(backup / 'report.json')
     worker = policy.contract()['worker']
     policy.require(report.get('additionalBccFunctions') == names and report['candidate'] == request['candidate']
-        and report['newFunctions'] == [worker] and len(report['functions']) == 106, 'Sauvegarde CCI hors bilan')
+        and report['newFunctions'] == [worker] and len(report['functions']) == len(names) - 1, 'Sauvegarde CCI hors bilan')
     state = load('bcc_publish_state', Path(__file__).with_name('production-release-state.py'))
     guard = load('bcc_publish_guard', Path(__file__).with_name('check-production-bcc.py'))
     guard.main('paused', plan)
