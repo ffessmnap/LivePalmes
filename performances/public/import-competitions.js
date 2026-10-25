@@ -1506,6 +1506,8 @@
           try{const response=await callFunction('previewCompetitionImport',currentPayload);if(requestId!==previewRequestId)return;global.LivePalmesImportReview.settled();renderNativeImportPreview(response);}
           catch(error){if(requestId===previewRequestId)setMessage(elements.message,error.message||String(error));}
         },
+        onPreviewCreation:data=>callFunction('previewEngagementClubSwimmerCreation',data),
+        onCreateSwimmer:data=>callFunction('createEngagementClubSwimmer',data),
         onSearch:async query=>{
           const response=await callFunction('getNapPerformanceAdministration',{action:'search',query});
           return (response.swimmers||[]).map(p=>({...p,id:Number(p.id),clubCode:p.club,performanceCount:null}));

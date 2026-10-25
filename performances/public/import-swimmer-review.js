@@ -27,7 +27,7 @@
   let open=new Map(),searches=new Map(),pending=new Map(),clubSearches=new Map(),page=0,diffPage=0,relayPage=0;
   function time(value) { const s=String(value??'');if(!/^\d{5,6}$/.test(s))return s;return `${Number(s.slice(0,-4))}:${s.slice(-4,-2)}.${s.slice(-2)}`; }
   function birth(value) { return /^\d{4}-\d{2}-\d{2}$/.test(value||'')?value.split('-').reverse().join('/'):value; }
-  function reset(){open=new Map();searches=new Map();pending=new Map();clubSearches=new Map();page=0;diffPage=0;relayPage=0;}
+  function reset(){open=new Map();searches=new Map();pending=new Map();clubSearches=new Map();page=0;diffPage=0;relayPage=0;global.LivePalmesImportSwimmerCreation?.reset();}
   const fold=value=>String(value||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase();
   function clubOptions(result,payload,code,query='') {
     const source=(result.sourceClubs||[]).find(c=>c.code===code),chosen=(payload.clubBindings||[]).find(c=>c.code===code)?.clubId;
@@ -63,18 +63,20 @@
       <p>Inventaire : page ${diffPage+1}/${pages}. Le rapport contient la totalité des différences.</p><button type="button" class="ghost-button" data-diff-page="-1" ${diffPage===0?'disabled':''}>Différences précédentes</button> <button type="button" class="ghost-button" data-diff-page="1" ${diffPage+1===pages?'disabled':''}>Différences suivantes</button>
       ${diff.requiresReplacementConfirmation?`<label class="import-club-alert"><input type="checkbox" data-review-replacement ${!result.reviewReady?'disabled':''} ${payload.confirmReplacement&&payload.replacementReviewFingerprint===result.previewFingerprint?'checked':''}> J’approuve les ajouts, modifications et retraits affichés pour cet aperçu de remplacement.</label>`:''}</details>`;
   }
-  function render({result,payload,host,summary,onChange,onRefresh,onSearch}) {
+  function render({result,payload,host,summary,onChange,onRefresh,onSearch,onPreviewCreation,onCreateSwimmer}) {
+    const renderAgain=()=>render({result,payload,host,summary,onChange,onRefresh,onSearch,onPreviewCreation,onCreateSwimmer});
     const remember=()=>host.querySelectorAll('details[data-review-open]').forEach(el=>open.set(el.dataset.reviewOpen,el.open));
     const review=result.review,profiles=new Map((review?.profiles||[]).map(p=>[p.id,p]));
     const groups=(review?.groups||[]).map(g=>({...g,candidates:(g.candidateIds||[]).map(id=>profiles.get(id)).filter(Boolean)})),total=Math.max(1,Math.ceil(groups.length/100));page=Math.min(page,total-1);
     const visible=groups.slice(page*100,(page+1)*100);
-    summary.textContent=`${result.metadata?.competitionName||'Résultats WinPalme'} — ${review?groups.length+' nageurs':'choisir une compétition pour rapprocher les nageurs'} — contrôle national, sans écriture`;
+    summary.textContent=`${result.metadata?.competitionName||'Résultats WinPalme'} — ${review?groups.length+' nageurs':'choisir une compétition pour rapprocher les nageurs'} — contrôle national, résultats en aperçu`;
     const person=g=>{
       const selected=pending.get(g.id)||g.profile;
       const status=pending.has(g.id)?'review':g.state;
       return `<details class="import-swimmer" data-state="${status}" data-review-open="${g.id}" ${open.get(g.id)?'open':''}><summary>${escape(g.source.lastName)} ${escape(g.source.firstName)} — ${g.performances.length} résultat(s) — ${states[status][1]}${g.manual?' (choix national)':''}${g.clubAlerts.length?' — alerte de club':''}</summary>
         <div class="import-profile-comparison"><article><h4>Dans le fichier</h4><strong>${escape(g.source.lastName)} ${escape(g.source.firstName)}</strong><p>Né(e) le ${escape(birth(g.source.birthDate))} — ${escape(g.source.sex)}<br>Club(s) représenté(s) : ${escape(g.clubs.map(c=>`${c.code} ${c.name}`).join(' ; '))}</p></article><article><h4>Profil NAP ${pending.has(g.id)?'à vérifier':'retenu'}</h4>${profile(selected)}</article></div>
         ${search(g.id,g.candidates)}
+        ${g.state==='unknown'&&!selected?`<button type="button" class="ghost-button" data-review-create="${g.id}">Créer un nageur après vérification</button><div data-review-creation="${g.id}"></div>`:''}
         ${g.clubAlerts.map(a=>`<label class="import-club-alert"><input type="checkbox" data-review-ack="${a.key}" ${a.confirmed?'checked':''} ${!a.id?'disabled':''}> Club différent : ${escape(a.code)} dans le fichier, ${escape(g.profile?.clubCode||g.profile?.clubId)} actuellement dans NAP. Je confirme le club représenté pour cette compétition.${!a.id?' Rattacher d’abord le club importé.':''}</label>`).join('')}
         <details><summary>Performances et passages (${g.performances.length})</summary><ul>${g.performances.map(r=>`<li>${escape(r.course)} — ${escape(time(r.time))} — ${escape(r.status)} — club ${escape(r.clubCode)} — ${r.origin==='first-relay'?'Premier relayeur':r.origin==='passage'?'Temps de passage':'Course individuelle'}</li>`).join('')}</ul></details></details>`;
     };
@@ -82,7 +84,7 @@
     host.innerHTML=`<p role="status" data-review-status>${pending.size||result.reviewStale?'Choix modifiés : actualiser l’aperçu pour les vérifier.':result.reviewReady?'Rapprochements contrôlés pour cet aperçu. Aucun résultat ni PDF enregistré.':'Contrôle national en cours : résoudre les rapprochements et les alertes.'}</p>
       ${result.requiresCompetitionChoice?`<label>Compétition existante<select data-review-competition><option value="">Choisir la compétition</option>${result.competitions.map(c=>`<option value="${c.id}">${escape(c.libelle)} — ${escape(c.lieu)} (${c.id})</option>`).join('')}</select></label>`:`<p>Compétition NAP : ${escape(result.competition?.libelle)} (${Number(result.competition?.id)})</p>`}
       ${review?'<button type="button" class="ghost-button" data-prepare-confirmation '+(result.reviewStale?'disabled':'')+'>Préparer un message pour l’informatique</button><div data-confirmation-host></div>':''}
-      ${(result.issues||[]).slice(0,100).map((i,index)=>{
+      ${(result.issues||[]).map(i=>global.LivePalmesImportConfirmation?.visibleIssue(result,i)??(global.LivePalmesImportConfirmation?null:i)).filter(Boolean).slice(0,100).map((i,index)=>{
         const label=global.LivePalmesImportConfirmation?.describeIssue(result,i)||issueLabels[i.code]||i.code;
         const group=groups.find(g=>g.id===i.groupId||(i.context?.relatedSourceLines||[]).some(line=>g.sourceLines.includes(line)));
         return `<div class="import-club-alert"><p>${escape(label)}</p><small>Repère dans le fichier TXT : ${i.sourceLine?'ligne '+i.sourceLine:'en-tête'}</small>${group?` <button type="button" class="ghost-button" data-issue-person="${group.id}">Voir le nageur</button>`:''}${i.code==='source-club-unresolved'?` <button type="button" class="ghost-button" data-issue-club="${escape(i.context?.clubCode||'')}">Choisir le club</button>`:''}${i.code==='first-relay-incomplete'?` <button type="button" class="ghost-button" data-issue-relay="${i.sourceLine}">Voir le relais</button>`:''}</div>`;
@@ -94,7 +96,7 @@
       <details><summary>Lignes explicitement sans résultat</summary>${result.rows.filter(r=>!r.status&&!r.time).map(r=>`<label><input type="checkbox" data-review-exclude="${r.sourceLine}" ${(payload.excludedSourceLines||[]).includes(r.sourceLine)?'checked':''}> Écarter la ligne ${r.sourceLine} sans statut ni temps</label>`).join('')}</details>
       ${review?diffHtml(result.diff,payload,result):''}
       <button type="button" class="ghost-button" data-review-refresh>Actualiser l’aperçu avec mes choix</button><button type="button" class="primary-button" data-nap-save disabled>Aperçu uniquement — enregistrement désactivé</button>`;
-    const redraw=()=>{remember();render({result,payload,host,summary,onChange,onRefresh,onSearch});};
+    const redraw=()=>{remember();renderAgain();};
     const invalidate=()=>{payload.confirmReplacement=false;payload.replacementReviewFingerprint='';onChange();const checkbox=host.querySelector('[data-review-replacement]');if(checkbox){checkbox.checked=false;checkbox.disabled=true;}const prepare=host.querySelector('[data-prepare-confirmation]');if(prepare)prepare.disabled=true;const message=host.querySelector('[data-confirmation-host]');if(message)message.replaceChildren();host.querySelector('[data-review-status]').textContent='Choix modifiés : actualiser l’aperçu pour les vérifier.';};
     host.querySelector('[data-prepare-confirmation]')?.addEventListener('click',()=>{
       const target=host.querySelector('[data-confirmation-host]');
@@ -107,16 +109,24 @@
       target.querySelector('[data-confirmation-copy]').onclick=async()=>{try{if(!global.navigator?.clipboard?.writeText)throw Error('clipboard unavailable');await global.navigator.clipboard.writeText(text.value);status.textContent='Message copié. Relisez-le dans votre messagerie avant l’envoi.';}catch{text.focus();text.select();status.textContent='Sélectionnez Copier dans le menu de votre appareil ou utilisez Ctrl+C. Vous pouvez aussi télécharger le message.';}};
       target.querySelector('[data-confirmation-download]').onclick=()=>{const url=global.URL.createObjectURL(new Blob([text.value],{type:'text/plain;charset=utf-8'})),link=document.createElement('a');link.href=url;link.download='demande-confirmation-import.txt';document.body.append(link);link.click();link.remove();global.setTimeout(()=>global.URL.revokeObjectURL(url),1000);};
     });
-    host.querySelectorAll('[data-issue-person]').forEach(button=>button.onclick=()=>{const index=groups.findIndex(g=>g.id===button.dataset.issuePerson);if(index<0)return;remember();const g=groups[index];page=Math.floor(index/100);open.set('group:'+g.state,true);open.set(g.id,true);render({result,payload,host,summary,onChange,onRefresh,onSearch});host.querySelector(`[data-review-open="${g.id}"] > summary`)?.focus();host.querySelector(`[data-review-open="${g.id}"]`)?.scrollIntoView({block:'center'});});
-    host.querySelectorAll('[data-issue-relay]').forEach(button=>button.onclick=()=>{const line=Number(button.dataset.issueRelay),index=(review?.relays||[]).findIndex(r=>r.sourceLine===line);if(index<0)return;remember();relayPage=Math.floor(index/50);open.set('relays',true);open.set('relay:'+line,true);render({result,payload,host,summary,onChange,onRefresh,onSearch});host.querySelector(`[data-review-open="relay:${line}"] > summary`)?.focus();host.querySelector(`[data-review-open="relay:${line}"]`)?.scrollIntoView({block:'center'});});
-    host.querySelectorAll('[data-issue-club]').forEach(button=>button.onclick=()=>{const code=button.dataset.issueClub;remember();open.set('clubs',true);render({result,payload,host,summary,onChange,onRefresh,onSearch});const input=[...host.querySelectorAll('[data-review-club-search]')].find(el=>el.dataset.reviewClubSearch===code);input?.focus();input?.scrollIntoView({block:'center'});});
-    const wirePicks=()=>host.querySelectorAll('[data-review-pick]').forEach(button=>button.onclick=()=>{
-      const [key,id]=JSON.parse(button.dataset.reviewPick);
+    host.querySelectorAll('[data-issue-person]').forEach(button=>button.onclick=()=>{const index=groups.findIndex(g=>g.id===button.dataset.issuePerson);if(index<0)return;remember();const g=groups[index];page=Math.floor(index/100);open.set('group:'+g.state,true);open.set(g.id,true);renderAgain();host.querySelector(`[data-review-open="${g.id}"] > summary`)?.focus();host.querySelector(`[data-review-open="${g.id}"]`)?.scrollIntoView({block:'center'});});
+    host.querySelectorAll('[data-issue-relay]').forEach(button=>button.onclick=()=>{const line=Number(button.dataset.issueRelay),index=(review?.relays||[]).findIndex(r=>r.sourceLine===line);if(index<0)return;remember();relayPage=Math.floor(index/50);open.set('relays',true);open.set('relay:'+line,true);renderAgain();host.querySelector(`[data-review-open="relay:${line}"] > summary`)?.focus();host.querySelector(`[data-review-open="relay:${line}"]`)?.scrollIntoView({block:'center'});});
+    host.querySelectorAll('[data-issue-club]').forEach(button=>button.onclick=()=>{const code=button.dataset.issueClub;remember();open.set('clubs',true);renderAgain();const input=[...host.querySelectorAll('[data-review-club-search]')].find(el=>el.dataset.reviewClubSearch===code);input?.focus();input?.scrollIntoView({block:'center'});});
+    const pick=(key,id)=>{
       if(key.startsWith('member:')) { const [,line,position]=key.split(':').map(Number);payload.memberBindings=(payload.memberBindings||[]).filter(b=>b.sourceLine!==line||b.position!==position);payload.memberBindings.push({sourceLine:line,position,swimmerId:id}); }
       else {const g=groups.find(g=>g.id===key);payload.swimmerBindings=(payload.swimmerBindings||[]).filter(b=>!g.sourceLines.includes(b.sourceLine));payload.swimmerBindings.push(...g.sourceLines.map(sourceLine=>({sourceLine,swimmerId:id})));const linked=new Set((review.relays||[]).flatMap(r=>r.members.filter(m=>m.sourceGroupId===g.id).map(m=>`${r.sourceLine}:${m.position}`)));payload.memberBindings=(payload.memberBindings||[]).filter(b=>!linked.has(`${b.sourceLine}:${b.position}`));pending.set(key,[...g.candidates,...(searches.get(key)||[])].find(p=>Number(p.id)===id));}
       payload.clubAcknowledgements=[];invalidate();redraw();
-    });
+    };
+    const wirePicks=()=>host.querySelectorAll('[data-review-pick]').forEach(button=>button.onclick=()=>pick(...JSON.parse(button.dataset.reviewPick)));
     wirePicks();
+    host.querySelectorAll('[data-review-create]').forEach(button=>button.onclick=()=>{
+      const key=button.dataset.reviewCreate,g=groups.find(g=>g.id===key),target=host.querySelector(`[data-review-creation="${key}"]`);
+      if(!searches.has(key)){target.textContent='Recherchez d’abord le nageur dans NAP, puis vérifiez les profils proposés avant d’ouvrir la création.';return;}
+      if(!global.LivePalmesImportSwimmerCreation){target.textContent='Rechargez le portail pour ouvrir la création.';return;}
+      const ids=[...new Set(g.clubs.map(c=>(payload.clubBindings||[]).find(b=>b.code===c.code)?.clubId||c.id).filter(Boolean).map(String))];
+      global.LivePalmesImportSwimmerCreation.mount({host:target,group:g,clubs:result.clubs||[],selectedClubId:ids.length===1?ids[0]:'',onPreview:onPreviewCreation,onCreate:onCreateSwimmer,
+        onPick:async p=>{searches.set(key,[...(searches.get(key)||[]).filter(c=>c.id!==p.id),p]);pick(key,p.id);await onRefresh();}});
+    });
     host.querySelectorAll('[data-review-search]').forEach(button=>button.onclick=async()=>{
       const key=button.dataset.reviewSearch,input=[...host.querySelectorAll('[data-review-query]')].find(el=>el.dataset.reviewQuery===key),target=[...host.querySelectorAll('[data-review-search-results]')].find(el=>el.dataset.reviewSearchResults===key);
       button.disabled=true;

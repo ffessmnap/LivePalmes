@@ -2948,9 +2948,10 @@
       ];
       await Promise.all(scripts.map(([src, id]) => loadScriptOnce(src, id)));
       await loadScriptOnce("performances/public/winpalme-zip.js?v=20261023-zip-preview-1", "adminImportZipScript");
-      await loadScriptOnce("performances/public/import-confirmation-message.js?v=20261025-confirmation-1", "adminImportConfirmationScript");
-      await loadScriptOnce("performances/public/import-swimmer-review.js?v=20261025-confirmation-1", "adminImportReviewScript");
-      await loadScriptOnce("performances/public/import-competitions.js?v=20261024-swimmer-review-1", "adminImportModuleScript");
+      await loadScriptOnce("performances/public/import-confirmation-message.js?v=20261025-import-creation-1", "adminImportConfirmationScript");
+      await loadScriptOnce("performances/public/import-swimmer-creation.js?v=20261025-import-creation-1", "adminImportSwimmerCreationScript");
+      await loadScriptOnce("performances/public/import-swimmer-review.js?v=20261025-import-creation-1", "adminImportReviewScript");
+      await loadScriptOnce("performances/public/import-competitions.js?v=20261025-import-creation-1", "adminImportModuleScript");
       if (includeSpreadsheet) await loadImportSpreadsheet();
       watchImportWorkbench();
     })().catch((error) => {

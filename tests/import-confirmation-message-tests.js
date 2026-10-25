@@ -1,6 +1,6 @@
 "use strict";
 const assert=require('node:assert/strict'),{fixture}=require('./fixtures/nap-import-review-fixture');
-const {previewNativeImport}=require('../functions/nap-import-preview'),{importPreviewResponse}=require('../functions/nap-import-response'),{build,describeIssue}=require('../performances/public/import-confirmation-message');
+const {previewNativeImport}=require('../functions/nap-import-preview'),{importPreviewResponse}=require('../functions/nap-import-response'),{build,describeIssue,visibleIssue}=require('../performances/public/import-confirmation-message');
 (async()=>{
  const f=fixture(),pack=await previewNativeImport(f.pool,f.input),result=importPreviewResponse(pack),before=f.calls.length;
  let message=build(result);assert.ok(message.text.startsWith('Objet : Vérifications avant import'));assert.match(message.text,/DUP Homonyme/);assert.match(message.text,/UNKNOWN Inconnu/);assert.match(message.text,/NAP 169/);assert.match(message.text,/NAP 170/);assert.match(message.text,/01\/02\/2000/);assert.match(message.text,/club actuel/);assert.equal(f.calls.length,before,'Generating a message adds zero reads');assert.equal((message.text.match(/- UNKNOWN Inconnu/g)||[]).length,1);assert.doesNotMatch(message.text,/THREE Trois/,'Matched profiles without an alert are not exported');
@@ -11,6 +11,12 @@ const {previewNativeImport}=require('../functions/nap-import-preview'),{importPr
  const other=fixture(),execute=other.pool.execute;other.pool.execute=async(query,values)=>{const rows=await execute(query,values);return query.sql.includes('FROM nageurs')?[rows[0].filter(p=>p.id!==168)]:rows;};
  const missing=await previewNativeImport(other.pool,other.input),issue=missing.issues.find(i=>i.code==='first-relay-incomplete');assert.deepEqual(issue.reasons,['first-member-unresolved'],'Do not claim that the category is missing merely because identity resolution is pending');assert.equal(issue.context.firstPerson.lastName,'TEST');assert.equal(issue.context.relatedSourceLines.length,2);assert.match(describeIssue({},issue),/profil NAP/);assert.doesNotMatch(describeIssue({},issue),/catégorie.*manqu/);
  const conflict=await previewNativeImport(f.pool,{...f.input,memberBindings:[{sourceLine:pack.decoded.rows.find(r=>r.kind==='REL').sourceLine,position:1,swimmerId:172}]});assert.ok(conflict.issues.some(i=>i.code==='relay-binding-conflict'));assert.equal(conflict.canConfirm,false);
+ const missingResult=importPreviewResponse(missing);assert.equal(visibleIssue(missingResult,issue),null,'Identity already requested on swimmer card, no extra first-leg reminder');
+ assert.doesNotMatch(build(missingResult).text,/RELAIS À COMPLÉTER/,'All unresolved relay identities are already covered by swimmer requests');
+ assert.equal(missing.canConfirm,false,'Only display is deduplicated; native confirmation remains blocked');
+ const mixed={...issue,reasons:['first-member-unresolved','missing-first-leg-time']};assert.deepEqual(visibleIssue(missingResult,mixed).reasons,['missing-first-leg-time']);
+ missingResult.issues.push(mixed);assert.match(build(missingResult).text,/temps du premier relayeur n’est pas renseigné/,'Independent relay-time issue remains visible');
+ assert.ok(visibleIssue({...missingResult,review:{...missingResult.review,groups:[]}},issue),'Unlinked identity still requires a relay request');
  const stale=build({...result,reviewStale:true});assert.match(stale.text,/BROUILLON À ACTUALISER/);
  const safe=build({...result,metadata:{competitionName:'Meeting\r\nBcc: personne@example.test',date:'2026-10-11'}});assert.doesNotMatch(safe.subject,/[\r\n]/);
  const allDone=structuredClone(result);allDone.review.groups.forEach(g=>{g.state='matched';g.clubAlerts=[];});allDone.review.relays=[];assert.equal(build(allDone).count,0);
