@@ -1,11 +1,13 @@
 """Offline regression: independently pinned grouped scope, no TEST republication."""
 import copy
+import itertools
 import importlib.util
 import json
 from pathlib import Path
 import tempfile
 import unittest
 from unittest.mock import patch
+from types import SimpleNamespace
 
 ROOT = Path(__file__).resolve().parents[1]
 spec = importlib.util.spec_from_file_location('all_cycle', ROOT/'tools/release-cycle.py')
@@ -16,6 +18,34 @@ C = policy.contract()
 
 
 class GroupedTests(unittest.TestCase):
+    def test_eventarc_order_only_is_not_configuration_drift(self):
+        filters=[{'attribute':'document','value':'users/{uid}','operator':'match-path-pattern'},
+            {'attribute':'database','value':'(default)'},{'attribute':'namespace','value':'(default)'}]
+        before={'name':'syncEngagementMailRecipientIndex','buildConfig':{'runtime':'nodejs22'},
+            'serviceConfig':{'timeoutSeconds':60},'eventTrigger':{'triggerRegion':'eur3',
+                'eventType':'google.cloud.firestore.document.v1.written','eventFilters':filters,
+                'pubsubTopic':'projects/livepalmes/topics/fixture','serviceAccountEmail':'fixture@example.invalid',
+                'retryPolicy':'RETRY_POLICY_RETRY'}}
+        original=copy.deepcopy(before)
+        state=SimpleNamespace(rollback_patch=lambda f,_:copy.deepcopy(f))
+        for ordering in itertools.permutations(filters):
+            after=copy.deepcopy(before);after['eventTrigger']['eventFilters']=list(ordering)
+            policy.assert_config(before,after,state)
+            cycle.bcc.assert_config(before,after,state)
+        self.assertEqual(before,original)
+        for key,value in [('triggerRegion','other'),('eventType','other'),('pubsubTopic','other'),
+            ('serviceAccountEmail','other'),('retryPolicy','other')]:
+            after=copy.deepcopy(before);after['eventTrigger'][key]=value
+            with self.subTest(key=key),self.assertRaises(ValueError):policy.assert_config(before,after,state)
+        for changed in [filters[:-1],filters+[filters[0]],filters+[{'attribute':'unknown','value':'new'}],
+            [{**filters[0],'operator':'different'}]+filters[1:],
+            [{**filters[0],'value':'other/{uid}'}]+filters[1:],
+            [{**filters[0],'unknown':'new'}]+filters[1:],None]:
+            after=copy.deepcopy(before);after['eventTrigger']['eventFilters']=changed
+            with self.assertRaises(ValueError):policy.assert_config(before,after,state)
+        after=copy.deepcopy(before);after['serviceConfig']['timeoutSeconds']=61
+        with self.assertRaises(ValueError):policy.assert_config(before,after,state)
+
     def test_both_contracts_remain_independent(self):
         old = cycle.bcc.contract()
         self.assertNotEqual(old['candidate'], C['candidate'])

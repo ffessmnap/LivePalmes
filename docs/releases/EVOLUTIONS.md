@@ -2,6 +2,14 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 25 octobre — Reprise PROD du plan40233566184 : comparaison des filtres Eventarc
+
+- Accord explicite Infra reçu pour le plan40233566184, Cloud Tasks et pause/remise en service des mails, sauvegarde vérifiée et contrôle de dérive, sans rattrapage ni retrait des exclusions. Run40234866232 arrêté avant Hosting après97 sources actives au candidat ; reprise40238443773 arrêtée après100. Le code candidat8b868c7c, la sélection108, les cinq exclusions et les paramètres d'infrastructure ne changent pas. Sauvegarde initiale chiffrée/rouverte/comparée conservée, empreinte4a3b3fb915706bcd03e116ba4cdc07b8eaeb46fdcc510232d319dfad2e3a548c ; aucune nouvelle base partielle créée.
+- Contrôle opérateur en lecture seule :100 fiches détaillées comparées à l'inventaire. Seule divergence constatée : les trois mêmes filtres Eventarc de `syncEngagementMailRecipientIndex` sont retournés dans un ordre différent par LIST et GET, avec mêmes révision, type, région, compte, sujet Pub/Sub, opérateurs et valeurs. Les filtres sont une conjonction, l'ordre n'a pas de sens fonctionnel. Les relevés officiels après arrêt ne signalent aucun changement de configuration, seulement les commits non encore publiés ; aucune reprise aveugle supplémentaire.
+- Correction limitée au comparateur : trier pour comparaison uniquement le tableau des filtres en conservant toutes les propriétés et les doublons, sans muter les snapshots. Tout ajout/retrait, valeur/opérateur inconnu, changement de type/région/compte/sujet/retry ou de configuration service reste refusé. Tests des six permutations et mutations adverses réussis, avec régression des contrats CCI et de l'état final. CI avant reprise du même plan avec sa sauvegarde d'origine ; aucun nouveau candidat ni déploiement TEST requis.
+- Mails toujours en pause révision6/all, empreinte complète inchangée ; file/scheduler et IAM worker conformes, cinq exclusions conservées, Hosting précédent encore actif. Aucun rattrapage, test SMTP ou opération métier. La pause sera levée seulement après réussite complète et contrôles publics.
+
+
 ### 25 octobre — Validation Infra de toute la version TEST regroupée, nouveau bilan PROD à préparer
 
 - Après revue détaillée des cinq lots encore sans validation après livraison (#512 message/contrôle ZIP, #515 identités de relais/création des inconnus, #517 choix des épreuves, #519 heures eau libre, #521 rapprochement fédéral des clubs), Antoine confirme dans Infra : « Oui je valide tout ». Cette validation remplace l'exclusion précédente du lot import et complète les validations CCI/tâches, documents2Mo, régions invitées, création des compétitions et fusion Xavier PETIT. Aucun essai réel supplémentaire de création, d'import ou d'envoi n'est déduit.
