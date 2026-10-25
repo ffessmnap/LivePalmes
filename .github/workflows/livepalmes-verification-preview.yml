@@ -2,6 +2,7 @@ name: Verification et apercu LivePalmes
 
 on:
   pull_request:
+    types: [opened, synchronize, reopened, labeled]
     branches:
       - main
   push:
@@ -13,11 +14,12 @@ permissions:
 
 concurrency:
   group: livepalmes-verification-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event.action != 'labeled' || github.event.label.name == 'apercu-test' }}
 
 jobs:
   verification:
     name: Verification technique
+    if: github.event.action != 'labeled' || github.event.label.name == 'apercu-test'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     outputs:
@@ -88,6 +90,7 @@ jobs:
     name: Creer un apercu isole
     if: >-
       github.event_name == 'pull_request' &&
+      contains(github.event.pull_request.labels.*.name, 'apercu-test') &&
       github.event.pull_request.head.repo.full_name == github.repository &&
       needs.verification.outputs.preview == 'true' &&
       vars.FIREBASE_TEST_ENABLED == 'true'
