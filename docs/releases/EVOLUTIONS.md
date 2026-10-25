@@ -2,6 +2,13 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 25 octobre — Circuit simplifié et aperçus de PR sur demande
+
+- Besoin et fonctionnement approuvés dans cette discussion : « Ok alors je valide ce fonctionnement ». Cet accord concerne le processus, pas une nouvelle publication applicative PROD.
+- Contrôles techniques de PR maintenus ; aperçu Firebase uniquement avec l'étiquette `apercu-test`, ajoutée à la demande explicite de l'utilisateur. Regroupement des retouches et réutilisation des preuves TEST en PROD inscrits dans les consignes communes ; contrôles avant écriture, sauvegardes et retour arrière conservés.
+- Périmètre : workflow de vérification/aperçu et documentation du circuit. Aucun changement applicatif, accès aux données, droit Google ou configuration Firebase. Le défaut de permission des aperçus demandés reste distinct.
+- Livraison : PR et contrôles GitHub à renseigner après création. Aucun déploiement Hosting TEST nécessaire pour ce changement d'automatisation ; validation du fonctionnement réel attendue sur la PR puis sur main.
+
 ### 25 octobre — Documents limités à 2 Mo, exception nationale confirmée (suivi TEST : PR #510)
 
 - Besoin demandé : limiter les nouveaux dépôts et remplacements à 2 Mo ; autoriser un dépassement avec alerte pour l’administration nationale. Le plafond technique national actuel de 10 Mo est conservé, avec confirmation explicite au-delà de 2 Mo. Périmètre : GED compétition, documents du calendrier et bibliothèque nationale.

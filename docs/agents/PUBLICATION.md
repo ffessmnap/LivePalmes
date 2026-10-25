@@ -10,7 +10,7 @@ Toutes les évolutions sont réunies sur `main`. Le site TEST commun reçoit seu
 
 Regrouper les retouches d'un même besoin dans la PR tant qu'elle est ouverte. Ne pas créer une PR par petite retouche ni une PR documentaire après chaque contrôle : inclure le suivi dans la PR ouverte lorsque possible, ou regrouper les mises à jour documentaires ultérieures sans perdre les références de version et les validations réelles. Une PR déjà fusionnée n'est pas réutilisée.
 
-Les PR exclusivement documentaires conservent les contrôles techniques mais ne créent pas d'aperçu Firebase. Les aperçus applicatifs ne publient plus de commentaire automatique ; leur lien reste dans les résultats GitHub Actions. Les notifications personnelles et les alertes d'échec ne sont pas désactivées.
+Fonctionnement approuvé le 25 octobre 2026 : contrôles techniques obligatoires sur les PR ; aperçu Firebase uniquement sur demande explicite, matérialisée par l'étiquette `apercu-test`. L'ajout de cette étiquette déclenche la vérification puis l'aperçu ; les mises à jour suivantes de la PR le renouvellent tant que l'étiquette est présente. Retirer l'étiquette arrête les prochains renouvellements ; le canal existant expire après trois jours ou est nettoyé à la fermeture. Les PR exclusivement documentaires ne créent toujours aucun aperçu. Le lien reste dans les résultats GitHub Actions, sans commentaire automatique. Les notifications personnelles et les alertes d'échec restent actives.
 
 Le registre `docs/releases/EVOLUTIONS.md` est tenu par l’assistant. Une validation utilisateur est associée à une version testée et un retour daté. Un changement de code nécessite de revérifier les parcours affectés. Aucun bot ne peut déduire un accord d’un simple test automatique réussi.
 
@@ -41,7 +41,7 @@ Pilote mails IDF autorisé sur TEST le 20 octobre 2026 : l’option `notificatio
 
 ### Circuit réutilisable
 
-- PR : vérification technique et aperçu isolé `pr-N` sur Firebase TEST.
+- PR : vérification technique obligatoire ; aperçu isolé `pr-N` sur Firebase TEST seulement avec l'étiquette `apercu-test` demandée explicitement.
 - `livepalmes-test-common.yml` : publication du commit main regroupé sur TEST, traitements nécessaires puis Hosting, preuve de version conservée.
 - `livepalmes-production-preflight.yml` : bilan sans accès Google, fondé sur les preuves vérifiées des versions publiées ; relecture Firebase après l’approbation PROD.
 - `livepalmes-production-release.yml` : publication du bilan approuvé, sauvegarde vérifiée, lots bornés, contrôles puis Hosting ; `resume_run` conserve la sauvegarde initiale si une reprise est nécessaire.
