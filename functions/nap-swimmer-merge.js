@@ -4,6 +4,7 @@
 const {isDeepStrictEqual:equal}=require("node:util");
 const plans=require("./nap-swimmer-merge-plan"),schema=require("./nap-approved-swimmer-merge-schema");
 const {COLUMNS}=require("./nap-approved-swimmer-correction"),licenses=require("./nap-swimmer-merge-license-plan");
+const forfeits=require("./nap-swimmer-merge-forfeits");
 const signature=row=>JSON.stringify(Object.keys(row).sort().map(key=>[key,row[key]]));
 function pending(rows,before,change){
   const actual=new Set(rows.map(signature)),allowed=new Set(before.map(signature));
@@ -76,11 +77,12 @@ async function mergeSwimmers(pool,input,audit,authorize){
     if(saved&&!saved.performanceClubPolicy&&people.source)throw new TypeError("Ancienne preparation de fusion sans clubs historiques ; reprise specifique requise avant suppression.");
     const clubConnection={execute:async({sql},values)=>[await query(sql,values)]};
     const clubPolicy=saved?.performanceClubPolicy||(!saved?await require("./nap-swimmer-merge-clubs").preparePolicy(clubConnection,people.source,people.target,snapshots):undefined);
-    const plan=saved||plans.planMerge({...input,priorMarker:markers[0],timestamp:new Date().toISOString().replace("T"," ").replace("Z","000")},people.source,people.target,snapshots,seasons,clubPolicy);
+    const forfeitScope=saved?{nageursengager:[...snapshots.nageursengager,...saved.snapshots.nageursengager],engagements:[...snapshots.engagements,...saved.snapshots.engagements]}:snapshots;
+    const forfeitPolicy=forfeits.policy(await query(forfeits.SQL),forfeitScope);
+    if(saved?.forfeitPolicy&&!sameRows(forfeitPolicy.rows,saved.forfeitPolicy.rows))throw new TypeError("Les forfaits historiques ont change depuis la preparation. Verification nationale requise.");
+    const plan=saved||plans.planMerge({...input,priorMarker:markers[0],timestamp:new Date().toISOString().replace("T"," ").replace("Z","000")},people.source,people.target,snapshots,seasons,clubPolicy,forfeitPolicy);
     if((people.source?![plan.source,plan.sourceAfter].some(row=>equal(row,people.source)):!saved?.permanentDelete)||![plan.target,plan.targetAfter].some(row=>equal(row,people.target)))throw new TypeError("Une fiche a change depuis la preparation.");
     if(plan.licensePlan.adopted&&(await query("SELECT id FROM nageurs FORCE INDEX (livepalmes_license_number_id) WHERE number=? AND id NOT IN (?,?) AND NOT EXISTS (SELECT 1 FROM livepalmes_swimmer_merges WHERE swimmer_id=nageurs.id) LIMIT 1",[plan.licensePlan.licenseNumber,a,b])).length)throw new TypeError("Cette licence appartient aussi a une autre fiche NAP. Verification nationale requise.");
-    const competitions=[...new Set(plan.snapshots.nageursengager.map(row=>row.compet))];
-    if(competitions.length&&(await query(`SELECT id FROM forfait FORCE INDEX (livepalmes_compet_engagement_id) WHERE compet IN (${competitions.map(()=>"?").join(",")}) LIMIT 1`,competitions)).length)throw new TypeError("Un forfait historique doit etre verifie avant cette fusion.");
     const work=plan.changes.map(change=>({...change,...pending(snapshots[change.table],plan.snapshots[change.table],change)}));
     const licenseWork=pending(seasons,plan.licensePlan.before,{updates:plan.licensePlan.transfers,removals:plan.licensePlan.replacements});
     if(!saved)await audit.prepare(operation,plan);
@@ -103,6 +105,7 @@ async function mergeSwimmers(pool,input,audit,authorize){
     // Identity deletion is last: every captured native reference and season has
     // been reread under the same table locks. Keep only the technical redirect.
     if(plans.TABLES.filter(spec=>spec.table!=="engagements").some(spec=>verified[spec.table].some(row=>spec.fields.some(field=>Number(row[field])===a)))||(await readSeasons()).some(row=>Number(row.swimmer_id)===a))throw new Error("La fiche source possede encore des liens ; suppression refusee.");
+    if(!sameRows(await query(forfeits.SQL),forfeitPolicy.rows))throw new Error("Les forfaits historiques ont change pendant la fusion ; sauvegarde conservee et suppression refusee.");
     if(identities.source)await apply(plans.statement("nageurs",["id"],[plan.sourceAfter],true));
     const finalPeople=await readPeople(true);
     if(finalPeople.source||!equal(finalPeople.target,plan.targetAfter))throw new Error("Suppression de la fiche source a verifier ; sauvegarde conservee.");
