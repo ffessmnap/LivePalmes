@@ -2,6 +2,13 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 25 octobre — Coordination des travaux TEST simultanés et diagnostic NAP explicite
+
+- Accord : « corrige ces deux points sur TEST en conservant les protections ». Publication engagée terminée sur son commit exact ; lancement ancien dans la file ignoré ; suivi main après réussite uniquement, mêmes restrictions, trois suivis maximum. Aucun suivi en mode lecture seule ; les preuves restent liées au SHA du run et aux révisions observées. Aucun changement PROD.
+- Diagnostic NAP : étape en échec, catégorie fermée d'erreur et statut HTTP éventuel, sans réponse brute, URL privée, identifiant ou jeton ; délais des commandes bornés. Garde TEST et contrats conservés. Aucun changement IAM, schéma, index, donnée ou envoi réel.
+- Budget : aucune nouvelle lecture métier NAP/Firestore, aucune relance de diagnostic automatique ; coordination via GitHub seulement (lecture main, comparaison d'ascendance si nécessaire et au plus un déclenchement par run). Recherche des preuves toujours bornée aux vingt runs récents ; au plus une lecture des jobs par succès examiné pour exclure une coordination sans publication.
+- Contrôles ciblés hors réseau et contrôle global CI avant intégration ; PR et preuves TEST à consigner dans la PR de livraison. Accord sur le processus uniquement ; validation utilisateur de la livraison non présumée.
+
 ### 25 octobre — Création des compétitions : référence de structure NAP
 
 - Accord explicite : vérifier la structure en lecture seule, corriger le blocage signalé par Sarah et publier sur TEST, sans modification des données ni des droits. Lecture privée `approved-index`, phase `prepare` uniquement : index `livepalmes_enddate_id` présent ; définition actuelle de `competitions` identique au contrat après le seul ajout de cet index et neutralisation du compteur AUTO_INCREMENT. Empreinte de lecture `4134e7e475949841484b14ecd62e6be70bd41b5f6e7fdbc1c0a655ad49bbe524`. Le diagnostic générique GitHub 40229774956 a échoué ; la lecture locale authentifiée a ensuite réussi.

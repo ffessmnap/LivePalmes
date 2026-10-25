@@ -42,6 +42,11 @@ run-name: ${{ inputs.verification_only && 'Verification TEST sans deploiement' |
         required: true
         type: boolean
         default: false
+      followup_depth:
+        description: Compteur technique de suivi main (laisser 0 au lancement manuel)
+        required: false
+        type: number
+        default: 0
 permissions:
   contents: read
   actions: read
@@ -49,8 +54,24 @@ concurrency:
   group: livepalmes-test-backend
   cancel-in-progress: false
 jobs:
-  test:
+  coordinate:
     if: github.ref == 'refs/heads/main' && github.run_attempt == 1
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      publish: ${{ steps.decision.outputs.publish }}
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        persist-credentials: false
+    - id: decision
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        TEST_INPUTS: ${{ toJSON(inputs) }}
+      run: python tools/coordinate-test-publication.py prepare
+  test:
+    needs: coordinate
+    if: needs.coordinate.outputs.publish == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 120
     environment: firebase-test
@@ -83,7 +104,7 @@ jobs:
 
         test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
 
-        test "$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq .object.sha)" = "$GITHUB_SHA"
+        git merge-base --is-ancestor "$GITHUB_SHA" origin/main
 
         python - <<''PYCODE''
 
@@ -117,7 +138,11 @@ jobs:
 
         python tests/release-composed-evidence-tests.py
 
-        node tests/release-function-fingerprints-tests.js'
+        node tests/release-function-fingerprints-tests.js
+
+        python tests/test-publication-coordination-tests.py
+
+        node tests/nap-source-diagnostic-tests.js'
     - uses: google-github-actions/auth@v3
       with:
         credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_TEST_BACKEND }}
@@ -152,11 +177,11 @@ jobs:
       with:
         credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_TEST }}
         project_id: livepalmes-test
-    - name: Verifier main puis publier TEST commun
+    - name: Publier TEST commun pour le commit exact verifie
       if: '!inputs.verification_only'
       run: 'node tools/check-hosting-payload.js .
 
-        test "$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq .object.sha)" = "$GITHUB_SHA"
+        test "$(git rev-parse HEAD)" = "$CANDIDATE_SHA"
 
         tests/firestore-rules/node_modules/.bin/firebase deploy --project livepalmes-test --only hosting --non-interactive
         --message "LivePalmes $CANDIDATE_SHA run $GITHUB_RUN_ID"'
@@ -180,3 +205,22 @@ jobs:
     defaults:
       run:
         working-directory: candidate
+  followup:
+    needs: [coordinate, test]
+    if: >-
+      always() && !cancelled() && needs.coordinate.result == 'success' &&
+      (needs.test.result == 'success' || needs.test.result == 'skipped') &&
+      !inputs.verification_only
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      actions: write
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        persist-credentials: false
+    - env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        TEST_INPUTS: ${{ toJSON(inputs) }}
+      run: python tools/coordinate-test-publication.py followup
