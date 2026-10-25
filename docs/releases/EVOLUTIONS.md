@@ -2,11 +2,11 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
-### 25 octobre — Régions invitées : région organisatrice verrouillée et aide compacte (en préparation TEST)
+### 25 octobre — Régions invitées : région organisatrice verrouillée et aide compacte (suivi TEST : PR #509)
 
 - Demande validée : région organisatrice cochée d’office et non décochable ; autres régions facultatives ; recommandation compacte de limiter les invitations aux régions voisines pour les compétitions régionales/départementales, rappel de l’accès aux inscriptions pour tous les clubs ; avertissement non bloquant lorsque toutes les régions sont sélectionnées.
 - Interface uniquement : le stockage distinct de la région organisatrice et des invitations reste inchangé. Aucune sélection existante effacée à l’ouverture, aucun changement des règles d’accès. Budget supplémentaire initial/action/rafraîchissement/pire cas : zéro lecture Firestore ou NAP et zéro écriture distante ; calcul local borné à la liste des régions déjà chargée.
-- Vérifications : syntaxe JavaScript et suite des optimisations du portail réussies, dont verrouillage, conservation des invitations, changement de région organisatrice, avertissement et masquage au niveau national. Contrôle navigateur hors réseau en 1440/390/320 px réussi, sans débordement horizontal. La vérification globale et sa preuve Linux restent requises avant intégration. Publication prévue par le circuit commun, avec réutilisation du backend inchangé ; la preuve du run sera accessible dans cette rubrique après publication. Recette utilisateur attendue sur la version déployée ; aucun mail réel ni changement PROD.
+- Vérifications : syntaxe JavaScript et suite des optimisations du portail réussies, dont verrouillage, conservation des invitations, changement de région organisatrice, avertissement et masquage au niveau national. Contrôle navigateur hors réseau en 1440/390/320 px réussi, sans débordement horizontal. La [PR #509](https://github.com/ffessmnap/LivePalmes/pull/509) conserve le statut de livraison, le résultat du contrôle global Linux et la preuve du déploiement TEST commun, avec réutilisation du backend inchangé. Recette utilisateur attendue sur la version déployée ; aucun mail réel ni changement PROD.
 
 ### 25 octobre — Notifications des compétitions : CCI, fenêtre documentaire et tâches (TEST déployé, recette utilisateur attendue)
 
