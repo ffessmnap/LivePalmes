@@ -6,7 +6,7 @@ function importPreviewResponse(pack) {
   if(pack.requiresCompetitionChoice)return {...base,issues:pack.decoded.issues,requiresCompetitionChoice:true,competitions:pack.competitions};
   const unresolved=pack.resolution.unresolved.map(r=>({...r,sourceLine:pack.decoded.rows.filter(r=>r.kind==="NAG")[r.rowIndex].sourceLine}));
   const resolved=pack.resolution.resolved.map(r=>({...r,sourceLine:pack.decoded.rows.filter(r=>r.kind==="NAG")[r.rowIndex].sourceLine}));
-  const result={...base,...(pack.courseReview?{courseReview:pack.courseReview}:{}),...(pack.review?{review:pack.review,existingCounts:{individual:pack.existing.length,relays:pack.existingRelays.length,statuses:pack.existingStatuses.length}}:{}),competition:pack.competition,canConfirm:pack.canConfirm,issues:pack.issues,resolved,unresolved,unresolvedClubs:pack.unresolvedClubs,unresolvedMembers:pack.unresolvedMembers,
+  const result={...base,...(pack.courseReview?{courseReview:pack.courseReview}:{}),...(pack.review?{review:pack.review,clubMatches:pack.clubMatches,existingCounts:{individual:pack.existing.length,relays:pack.existingRelays.length,statuses:pack.existingStatuses.length}}:{}),competition:pack.competition,canConfirm:pack.canConfirm,issues:pack.issues,resolved,unresolved,unresolvedClubs:pack.unresolvedClubs,unresolvedMembers:pack.unresolvedMembers,
     clubs:pack.clubs.map(c=>({id:String(c.num_club),code:c.abre_club,name:c.nom_club,federalNumber:c.federal_club||""})),expectedFingerprint:pack.expectedFingerprint,previewFingerprint:pack.previewFingerprint};
   if(pack.canConfirm) {
     try {

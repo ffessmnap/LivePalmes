@@ -4,6 +4,8 @@
 
 ## Aide au contrôle des imports — 25 octobre 2026
 
+- Les clubs non rattachés affichent libellé et numéro du TXT, puis une cause lisible (numéro absent/invalide/inconnu/dupliqué, en-tête ambigu ou libellé contradictoire). Les propositions restent alphabétiques à niveau égal, avec priorité au numéro fédéral, puis au libellé et au sigle ; l’identifiant NAP distingue les fiches homonymes. Recherche et sélection gardent les composants existants.
+
 - À partir d’une heure, les durées s’affichent en `H:MM:SS.CC` dans les performances et différences d’import, l’administration et les résultats publics de compétition. Sous une heure, les libellés existants sont conservés. Le rapport garde les valeurs sources et natives ; la conversion d’affichage ne déclenche aucune écriture.
 
 - « Épreuves à rattacher » reprend le sélecteur recherché des clubs, avec un encart par code source, nombre de résultats, liste triée, filtre local nom/distance/code, choix hors filtre conservé et correspondance source → NAP après actualisation. Une alerte ouvre directement le bon code et sa page (vingt par page). La fiche du nageur conserve aussi le code source devant le code choisi. Les contrôles et boutons restent dans le flux, accessibles au toucher.

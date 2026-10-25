@@ -47,15 +47,13 @@ async function previewNativeImport(pool,input) {
   if(clubs.length>1000)throw new RangeError("Referentiel clubs trop volumineux : recherche ciblee requise.");
   const clubChoices=new Map();
   for(const b of clubBindings){if(typeof b.code!=="string"||!decoded.rows.some(r=>r.clubCode===b.code)||clubChoices.has(b.code)||!clubs.some(c=>String(c.num_club)===String(b.clubId)))throw new TypeError("Choix de club invalide.");clubChoices.set(b.code,String(b.clubId));}
-  const clubByCode=new Map(),unresolvedClubs=[];
+  const clubByCode=new Map(),unresolvedClubs=[],clubMatches=[];
+  const matchClub=input.sourceType==="winpalme-zip-preview"?require("./nap-import-clubs").createClubMatcher(clubs,decoded.clubs):null;
   for(const code of new Set(decoded.rows.map(r=>r.clubCode))) {
-    const matches=clubs.filter(c=>String(c.abre_club||"").trim().toUpperCase()===code.toUpperCase());
-    if(clubChoices.has(code))clubByCode.set(code,clubChoices.get(code));
-    else if(matches.length===1 && (input.sourceType!=="winpalme-zip-preview" || (()=>{
-      const declarations=decoded.clubs.filter(c=>c.cells[1]===code);
-      const number=declarations[0]?.cells[3]||"";
-      return declarations.length===1 && /^\d{8}$/.test(number) && String(matches[0].federal_club||"").trim()===number;
-    })()))clubByCode.set(code,String(matches[0].num_club));
+    const matches=matchClub?[]:clubs.filter(c=>String(c.abre_club||"").trim().toUpperCase()===code.toUpperCase());
+    if(clubChoices.has(code)){clubByCode.set(code,clubChoices.get(code));clubMatches.push({code,id:clubChoices.get(code),method:"national-choice"});}
+    else if(matchClub){const match=matchClub(code);if(match.id){clubByCode.set(code,match.id);clubMatches.push(match);}else unresolvedClubs.push(match);}
+    else if(matches.length===1)clubByCode.set(code,String(matches[0].num_club));
     else unresolvedClubs.push({code,candidateIds:matches.map(c=>String(c.num_club))});
   }
   const memberChoices=new Map();
@@ -119,7 +117,7 @@ async function previewNativeImport(pool,input) {
   }
   if(incoming.length>5000)throw new RangeError("Plus de 5 000 performances avec passages et premiers relayeurs : reduisez le lot.");
   const canConfirm=decoded.confirmable&&issues.length===0&&resolution.canConfirm&&unresolvedClubs.length===0&&unresolvedMembers.length===0;
-  const pack={source:"nap",competition,decoded,courseReview,resolution,candidates,clubs,clubByCode,relayMembers,unresolvedClubs,unresolvedMembers,incoming,incomingRelays,statusRows,existing,existingRelays,issues,canConfirm,
+  const pack={source:"nap",competition,decoded,courseReview,resolution,candidates,clubs,clubByCode,clubMatches,relayMembers,unresolvedClubs,unresolvedMembers,incoming,incomingRelays,statusRows,existing,existingRelays,issues,canConfirm,
     expectedFingerprint:hash({competition,existing,existingRelays}),previewFingerprint:hash({fileHash:decoded.fileHash,excluded:decoded.excluded.map(r=>r.sourceLine),competition,existing,existingRelays,incoming,incomingRelays,statusRows})};
   if(input.sourceType==="winpalme-zip-preview") {
     pack.review=await require("./nap-import-review").prepareReview(pool,pack,input);
