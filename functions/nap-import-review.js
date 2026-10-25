@@ -42,11 +42,16 @@ async function prepareReview(pool,pack,input) {
       const key=createHash("sha256").update(JSON.stringify([g.id,g.profile.id,club.code,club.id,g.profile.clubId])).digest("hex");
       g.clubAlerts.push({...club,key,confirmed:Boolean(club.id&&ack.has(key))});
     }
-    if(g.clubAlerts.some(a=>!a.confirmed))pack.issues.push({sourceLine:g.sourceLines[0],code:"club-difference-unconfirmed"});
+    for(const alert of g.clubAlerts.filter(a=>!a.confirmed))pack.issues.push({sourceLine:g.sourceLines[0],code:alert.id?"club-difference-unconfirmed":"source-club-unresolved",groupId:g.id,
+      context:{person:g.source,clubCode:alert.code,sourceClubName:alert.name,sourceClubId:alert.id,napClubId:g.profile.clubId,napClubCode:g.profile.clubCode,napClubName:g.profile.clubName}});
     for(const item of pack.incoming.filter(i=>g.sourceLines.includes(i.sourceLine)&&i.origin==="passage"))g.performances.push({sourceLine:item.sourceLine,course:item.row.course,time:item.row.tps,status:"NAG",clubCode:pack.decoded.rows.find(r=>r.sourceLine===item.sourceLine)?.clubCode||"",origin:"passage"});
     for(const item of pack.incoming.filter(i=>i.origin==="first-relay"&&i.row.nageur===g.profile?.id))g.performances.push({sourceLine:item.sourceLine,course:item.row.course,time:item.row.tps,status:"NAG",clubCode:pack.decoded.rows.find(r=>r.sourceLine===item.sourceLine)?.clubCode||"",origin:"first-relay"});
   }
-  const relays=pack.decoded.rows.filter(r=>r.kind==="REL").map(r=>({sourceLine:r.sourceLine,course:r.course,clubCode:r.clubCode,status:r.status,time:r.rawFinalTime,members:(pack.relayMembers.get(r.sourceLine)||[]).map((id,index)=>({position:index+1,profile:byId.get(id)||null,hint:r.memberHints[index]||""}))}));
+  const relays=pack.decoded.rows.filter(r=>r.kind==="REL").map(r=>({sourceLine:r.sourceLine,course:r.course,clubCode:r.clubCode,status:r.status,time:r.rawFinalTime,members:(pack.relayMembers.get(r.sourceLine)||[]).map((id,index)=>{
+    const sources=individual.filter(p=>r.memberHints[index]&&p.swimmerHint===r.memberHints[index]);
+    const source=new Set(sources.map(p=>identity(p)||`line:${p.sourceLine}`)).size===1?sources[0]:null;
+    return {position:index+1,profile:byId.get(id)||null,hint:r.memberHints[index]||"",sourceGroupId:source?groupId(source):null,source:source?{lastName:source.lastName,firstName:source.firstName,birthDate:source.birthDate,clubCode:source.clubCode}:null};
+  })}));
   return {groups:[...groups.values()].map(({candidates,...group})=>({...group,candidateIds:candidates.map(p=>p.id)})),profiles,relays,countsCapped:capped};
 }
 module.exports={prepareReview,groupId};
