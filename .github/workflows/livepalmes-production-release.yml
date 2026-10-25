@@ -98,6 +98,7 @@ jobs:
         python tooling/tests/production-pdf-functions-tests.py
         python tooling/tests/production-release-state-tests.py
         python tooling/tests/production-grouped-release-tests.py
+        python tooling/tests/bcc-publication-tests.py
         node tooling/tests/nap-national-documents-callable-tests.js
         python tooling/tests/production-notification-release-tests.py
         python tooling/tests/production-access-request-release-tests.py
@@ -169,12 +170,12 @@ jobs:
         if-no-files-found: error
         retention-days: 14
     - name: Preparer les Functions selectionnees
-      if: steps.plan.outputs.backend == 'true'
+      if: steps.plan.outputs.backend == 'true' && steps.plan.outputs.bcc_preservation != 'true'
       run: 'python tooling/tools/release-cycle.py stage candidate livepalmes "$RUNNER_TEMP/production-functions" "$CANDIDATE_SHA"
 
         npm ci --prefix "$RUNNER_TEMP/production-functions/functions"'
     - name: Simuler les Functions par petits lots
-      if: steps.plan.outputs.backend == 'true'
+      if: steps.plan.outputs.backend == 'true' && steps.plan.outputs.bcc_preservation != 'true'
       run: python tooling/tools/release-cycle.py batches livepalmes candidate "$RUNNER_TEMP/production-functions" "$RELEASE_SELECTION"
         dry-run
     - name: Publier les Functions par petits lots
@@ -249,17 +250,37 @@ jobs:
           ${{ runner.temp }}/release-plan/notification-scheduler-before.json
         if-no-files-found: error
         retention-days: 14
+    - uses: google-github-actions/auth@v3
+      if: always() && steps.plan.outputs.bcc_preservation == 'true' && (steps.state.outcome == 'success' || steps.state.outcome == 'failure')
+      with:
+        credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_BACKEND }}
+        project_id: livepalmes
+    - name: Confirmer la coupure CCI et les ressources inchangees
+      id: bcc_after
+      if: always() && steps.plan.outputs.bcc_preservation == 'true' && (steps.state.outcome == 'success' || steps.state.outcome == 'failure')
+      run: python tooling/tools/check-production-bcc.py after "$PLAN"
+    - uses: actions/upload-artifact@v4
+      if: always() && steps.plan.outputs.bcc_preservation == 'true' && (steps.state.outcome == 'success' || steps.state.outcome == 'failure')
+      with:
+        name: production-bcc-guards
+        path: ${{ runner.temp }}/release-plan/bcc-*-witness.json
+        if-no-files-found: error
+        retention-days: 14
     - name: Conclure
       env:
         STATE: ${{ steps.state.outcome }}
         HOSTING: ${{ steps.hosting.outcome }}
         IDF_PRESERVATION: ${{ steps.plan.outputs.idf_preservation }}
         IDF_AFTER: ${{ steps.idf_after.outcome }}
+        BCC_PRESERVATION: ${{ steps.plan.outputs.bcc_preservation }}
+        BCC_AFTER: ${{ steps.bcc_after.outcome }}
       if: always()
       run: 'test "$STATE" = success
 
         test "$HOSTING" = success
 
         if [ "$IDF_PRESERVATION" = true ]; then test "$IDF_AFTER" = success; fi
+
+         if [ "$BCC_PRESERVATION" = true ]; then test "$BCC_AFTER" = success; fi
 
         echo "Publication du commit $CANDIDATE_SHA terminee, code uniquement." >> "$GITHUB_STEP_SUMMARY"'

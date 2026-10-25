@@ -20,6 +20,14 @@ PDF_FUNCTIONS = {'prepareEngagementClubRecapEmails', 'closeDueEngagementCompetit
 _group_spec = importlib.util.spec_from_file_location('grouped_policy', ROOT / 'tools/grouped-publication-policy.py')
 grouped = importlib.util.module_from_spec(_group_spec)
 _group_spec.loader.exec_module(grouped)
+_bcc_spec = importlib.util.spec_from_file_location('bcc_policy', ROOT / 'tools/bcc-publication-policy.py')
+bcc = importlib.util.module_from_spec(_bcc_spec)
+_bcc_spec.loader.exec_module(bcc)
+
+
+def approved_bcc_functions(value):
+    return bcc.approved(value)
+
 
 
 def approved_grouped_functions(value):
@@ -56,7 +64,7 @@ def approved_native_identity_secret(value):
 
 def approved_extra_functions(value):
     approved_native_identity_secret(value)
-    names = approved_pdf_functions(value) + approved_dtn_functions(value) + approved_notification_functions(value) + approved_public_nap_functions(value) + approved_access_request_functions(value) + approved_club_directory_functions(value) + approved_grouped_functions(value)
+    names = approved_pdf_functions(value) + approved_dtn_functions(value) + approved_notification_functions(value) + approved_public_nap_functions(value) + approved_access_request_functions(value) + approved_club_directory_functions(value) + approved_grouped_functions(value) + approved_bcc_functions(value)
     require(len(names) == len(set(names)), 'Extensions de publication superposees')
     return names
 
@@ -201,6 +209,7 @@ def approved_access_request_functions(value):
 
 
 def require_access_request_selection(request, selected):
+    bcc.selection(request, selected)
     grouped.selection(request, selected)
     club = approved_club_directory_functions(request)
     require(not club or (len(selected) == 3 and set(selected) == set(club)),
@@ -581,6 +590,12 @@ def prepare_request(request_path, directory):
     subprocess.run(['git', 'merge-base', '--is-ancestor', value['candidate'], 'HEAD'], cwd=ROOT, check=True)
     paths = git('diff', '--name-only', '--no-renames', value['productionCommit'], value['candidate']).splitlines()
     backend = validate_request(value, paths)
+    if approved_bcc_functions(value) and value.get('resolveBccProof') is True and value.get('testBackendRuns') == []:
+        run_id = latest_run('livepalmes-test-notifications-reconcile.yml')
+        proof_dir = Path(directory) / 'resolved-bcc-proof'
+        info = artifact(run_id, 'test-backend-proof', proof_dir, '.github/workflows/livepalmes-test-notifications-reconcile.yml')
+        bcc.reconciled_proof(value, read(proof_dir / 'test-backend-proof.json'), info)
+        value['testBackendRuns'] = [run_id]
     write(Path(directory) / 'request.json', value)
     write(Path(directory) / 'paths.json', paths)
     output(candidate=value['candidate'], backend=str(backend).lower())
@@ -709,10 +724,15 @@ def verify_test(directory, live=True):
     updated = set()
     for run_id in runs:
         destination = root / ('test-targeted-' + str(run_id))
-        source = artifact(run_id, 'test-backend-proof', destination, '.github/workflows/livepalmes-test-backend.yml')
+        bcc_reconciled = bool(approved_bcc_functions(request))
+        expected_workflow = '.github/workflows/livepalmes-test-notifications-reconcile.yml' if bcc_reconciled else '.github/workflows/livepalmes-test-backend.yml'
+        source = artifact(run_id, 'test-backend-proof', destination, expected_workflow)
         targeted = read(destination / 'test-backend-proof.json')
-        require(targeted.get('schema') == 1 and targeted.get('candidate') == source['head_sha']
-                and targeted['candidate'] == request['candidate'], 'Commit preuve ciblee TEST incompatible')
+        if bcc_reconciled:
+            bcc.reconciled_proof(request, targeted, source)
+        else:
+            require(targeted.get('schema') == 1 and targeted.get('candidate') == source['head_sha']
+                    and targeted['candidate'] == request['candidate'], 'Commit preuve ciblee TEST incompatible')
         rows = targeted.get('state', {}).get('functions', [])
         require(rows and len({f['name'] for f in rows}) == len(rows), 'Preuve ciblee vide ou dupliquee')
         for f in rows:
@@ -742,7 +762,7 @@ def prepare_selection(directory, candidate):
         require(all(not needs_function(names.get(n), n, request['candidate']) for n in selected), 'Backend TEST incomplet ou pas au code valide')
         extra = approved_extra_functions(request)
         notification = approved_notification_functions(request)
-        require(all(not needs_function(names.get(n), n, request['candidate']) for n in notification + approved_public_nap_functions(request) + approved_access_request_functions(request) + approved_club_directory_functions(request) + approved_grouped_functions(request)),
+        require(all(not needs_function(names.get(n), n, request['candidate']) for n in notification + approved_public_nap_functions(request) + approved_access_request_functions(request) + approved_club_directory_functions(request) + approved_grouped_functions(request) + approved_bcc_functions(request)),
                 'Notifications TEST absentes ou pas au code valide')
         if approved_dtn_functions(request):
             require(read(directory / 'test-proof.json').get('dtnExtensionVerification') == {'schema': 1, 'candidate': request['candidate'], 'suite': 'dtn-shared-invalidation', 'mode': 'offline-no-invocation', 'result': 'success', 'functions': sorted(DTN_FUNCTIONS)}, 'Preuve des dependances DTN absente ou incompatible')
@@ -934,6 +954,10 @@ def freeze_plan(directory, evidence=False):
             proof.pop('idfUnchanged')
             proof['mailPreservation'] = grouped.all_mail_preservation(request)
         write(root / 'grouped-idf-proof.json', proof)
+    if approved_bcc_functions(request):
+        require(read(root / 'baseline.json')['productionRun'] == bcc.contract()['productionRun'], 'Reference PROD CCI differente')
+        write(root / 'bcc-proof.json', bcc.verify_fingerprints(backend_fingerprints(request['productionCommit']),
+            backend_fingerprints(request['candidate']), names))
     if request.get('excludedBackendEvidence') is not None:
         verify_excluded_backend(root, state, selected)
     else:
@@ -1085,6 +1109,8 @@ def fetch_plan(preparation, resume, directory):
         items = gh(f'repos/{os.environ["GITHUB_REPOSITORY"]}/actions/runs/{resume}/artifacts?per_page=100')['artifacts']
         if any(a['name'] == 'production-hosting-after' for a in items):
             artifact(resume, 'production-hosting-after', root / 'previous')
+        if approved_bcc_functions(read(root / 'request.json')):
+            artifact(resume, 'production-bcc-guards', root)
     else:
         artifact(preparation, 'release-plan', root, '.github/workflows/livepalmes-production-preflight.yml')
     value = read(root / 'request.json')
@@ -1093,7 +1119,8 @@ def fetch_plan(preparation, resume, directory):
     evidence_path = root / 'test-proof.json'
     verified = reusable_verification(read(evidence_path), value['candidate']) if evidence_path.exists() else False
     output(candidate=value['candidate'], backend=str(bool(read(root / 'selection.json'))).lower(), verified=str(verified).lower(),
-           idf_preservation=str(idf_preservation(value) is not None).lower())
+           idf_preservation=str(idf_preservation(value) is not None).lower(),
+           bcc_preservation=str(bool(approved_bcc_functions(value))).lower())
 
 
 def verify_resume(directory, backup):
