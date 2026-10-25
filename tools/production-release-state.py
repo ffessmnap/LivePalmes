@@ -49,6 +49,12 @@ def check_after(backup, destination, require_success):
     before = {f["name"]: f for f in json.loads((backup / "functions.json").read_text())}
     after = {f["name"]: f for f in inventory()}
     selected = {f["name"] for f in report["functions"]} | {PREFIX + name for name in report["newFunctions"]}
+    bcc_policy = None
+    if report.get('additionalBccFunctions'):
+        spec = importlib.util.spec_from_file_location('bcc_state_policy', Path(__file__).with_name('bcc-publication-policy.py'))
+        bcc_policy = importlib.util.module_from_spec(spec); spec.loader.exec_module(bcc_policy)
+        if sorted(report['additionalBccFunctions']) != bcc_policy.contract()['selected']:
+            raise ValueError('Selection CCI du rapport differente')
     errors = []
     for name in set(before) - selected:
         if name not in after or identity(before[name]) != identity(after[name]):
@@ -57,6 +63,16 @@ def check_after(backup, destination, require_success):
         f = after.get(name)
         if not f or f.get("state") != "ACTIVE":
             errors.append("Function non active: " + name.split("/")[-1])
+        elif bcc_policy is not None and name.split('/')[-1] in report['additionalBccFunctions']:
+            try:
+                if name.split('/')[-1] == bcc_policy.contract()['worker']:
+                    bcc_policy.assert_worker(f, report['bccWorkerService'], SimpleNamespace(rollback_patch=rollback_patch))
+                else:
+                    bcc_policy.assert_config(before[name], f, SimpleNamespace(rollback_patch=rollback_patch))
+                if f.get('labels', {}).get('livepalmes-commit') != report['candidate']:
+                    raise ValueError('Commit CCI different')
+            except ValueError as error:
+                errors.append(str(error) + ': ' + name.split('/')[-1])
         elif f.get("serviceConfig", {}).get("environmentVariables", {}).get("LIVEPALMES_ENFORCE_APP_CHECK", "false") != (before[name].get('serviceConfig', {}).get('environmentVariables', {}).get('LIVEPALMES_ENFORCE_APP_CHECK', 'false') if name.split('/')[-1] in (report.get('additionalPdfFunctions', []) + report.get('additionalDtnFunctions', []) + report.get('additionalClubDirectoryFunctions', []) + report.get('additionalGroupedFunctions', [])) else report["appCheck"]):
             errors.append("App Check different: " + name.split("/")[-1])
         elif report.get("commitLabel") and f.get("labels", {}).get("livepalmes-commit") != report["candidate"]:

@@ -38,7 +38,7 @@ function definitions(commit) {
       if (left.object?.name === "exports") result.set(left.property.name, code.slice(node.start, node.end));
     }
   }
-  if (c0) {
+  if (c0 || (base === "0619f1dce9439afd5dd4719ee035ff0fc3b99b83" && candidate === "c93c5016682bf67ddee589b8fb0d4008e68b3196")) {
     function visit(node) {
       if (!node || typeof node !== "object") return;
       if (node.type === "ExpressionStatement" && node.expression.type === "AssignmentExpression" &&
@@ -229,6 +229,7 @@ async function prove() {
       "stale-source-refused", "missing-document-refused", ...(c0 ? ["c0-exact-backend-diff", "public-reader-unchanged", "original-featured-document-projection", "partial-schema-refused"] : []), ...(home ? ["home-exact-pair-and-12-origins", "unchanged-retained-handlers", "preference-and-access-guards", "native-identity-replay", "additive-index-specs", "unchanged-competition-projection"] : [])] };
 }
 const groupedPair = base === "fbd3c2868fcb3690e1fa5a7ddeca9f45e6fb4511" && candidate === "0619f1dce9439afd5dd4719ee035ff0fc3b99b83";
-if (require.main === module) (groupedPair ? require('./release-grouped-retained-compatibility').prove({root,base,candidate,rows,source,definitions,loader}) : prove())
+const bccPair = base === "0619f1dce9439afd5dd4719ee035ff0fc3b99b83" && candidate === "c93c5016682bf67ddee589b8fb0d4008e68b3196";
+if (require.main === module) (bccPair ? require("./release-bcc-retained-compatibility").prove({root,base,candidate,rows,source,definitions,loader}) : groupedPair ? require('./release-grouped-retained-compatibility').prove({root,base,candidate,rows,source,definitions,loader}) : prove())
   .then(result => console.log(JSON.stringify(result))).catch(error => { console.error(error.stack); process.exitCode = 1; });
 module.exports = { loader,source,definitions };
