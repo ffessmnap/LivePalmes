@@ -99,8 +99,17 @@ def worker_service(reference):
 
 
 def assert_config(before, after, state):
-    old = state.rollback_patch(before, {})
-    new = state.rollback_patch(after, {})
+    old = copy.deepcopy(state.rollback_patch(before, {}))
+    new = copy.deepcopy(state.rollback_patch(after, {}))
+    # Eventarc filters form a conjunction. LIST and GET can return that same
+    # repeated field in different orders. Preserve every field and duplicate;
+    # canonicalize only order, never values/operators or trigger settings.
+    for projection in [old, new]:
+        event = projection.get('eventTrigger')
+        if event is not None and 'eventFilters' in event:
+            require(isinstance(event['eventFilters'], list)
+                and all(isinstance(f, dict) for f in event['eventFilters']), 'Filtres Eventarc invalides')
+            event['eventFilters'] = sorted(event['eventFilters'], key=lambda f: json.dumps(f, sort_keys=True))
     require(before['name'] == after['name'] and all(old.get(k) == new.get(k)
             for k in ['buildConfig', 'serviceConfig', 'eventTrigger']), 'Configuration CCI existante modifiee')
 
