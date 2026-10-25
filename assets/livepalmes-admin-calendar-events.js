@@ -218,7 +218,7 @@
       </form>
       <section class="admin-engagements-card admin-calendar-documents"><h3>Documents publics</h3><p>Tous les fichiers ajoutés ici sont accessibles sans connexion. Un remplacement met à jour le document proposé dans la fiche de la compétition.</p>
         <div data-calendar-document-list>${renderDocuments(event.clubDocuments || [])}</div>
-        <details class="admin-calendar-document-editor" data-calendar-document-editor><summary>Ajouter un document</summary><form class="admin-engagements-form" data-calendar-document-form><div class="admin-engagements-form-section-grid"><label>Fichier<input name="file" type="file" required></label><label>Titre<input name="title" maxlength="160" required></label><label>Catégorie<select name="category">${Object.entries(CATEGORIES).map(([value, label]) => `<option value="${value}">${label}</option>`).join("")}</select></label><label>Description<input name="description" maxlength="500"></label></div><div class="admin-portal-actions"><button type="submit" data-calendar-document-submit>Mettre en ligne</button><button class="ghost-button" type="button" data-calendar-document-cancel hidden>Annuler la modification</button></div><p class="admin-portal-message" data-calendar-document-message aria-live="polite"></p></form></details>
+        <details class="admin-calendar-document-editor" data-calendar-document-editor><summary>Ajouter un document</summary><form class="admin-engagements-form" data-calendar-document-form><div class="admin-engagements-form-section-grid"><label>Fichier<input name="file" type="file" required><small>2 Mo maximum. National : jusqu’à 10 Mo après confirmation.</small></label><label>Titre<input name="title" maxlength="160" required></label><label>Catégorie<select name="category">${Object.entries(CATEGORIES).map(([value, label]) => `<option value="${value}">${label}</option>`).join("")}</select></label><label>Description<input name="description" maxlength="500"></label></div><div class="admin-portal-actions"><button type="submit" data-calendar-document-submit>Mettre en ligne</button><button class="ghost-button" type="button" data-calendar-document-cancel hidden>Annuler la modification</button></div><p class="admin-portal-message" data-calendar-document-message aria-live="polite"></p></form></details>
       </section>`;
   }
 
@@ -302,7 +302,10 @@
     const form = event.target;
     const message = form.querySelector("[data-calendar-document-message]");
     const file = form.elements.file.files[0];
-    if ((!file && !editingDocumentId) || (file && file.size > 10 * 1024 * 1024)) { message.textContent = "Choisissez un fichier de 10 Mo maximum."; return; }
+    const national = global.LivePalmesPortalAuth?.hasCapability("engagements.national.manage") || global.LivePalmesPortalAuth?.hasCapability("admin.full");
+    const maximum = (national ? 10 : 2) * 1024 * 1024;
+    if ((!file && !editingDocumentId) || (file && (!file.size || file.size > maximum))) { message.textContent = `Choisissez un fichier non vide de ${national ? 10 : 2} Mo maximum.`; return; }
+    if (file && file.size > 2 * 1024 * 1024 && !global.confirm("Ce fichier dépasse 2 Mo. Votre droit national autorise un dépassement jusqu’à 10 Mo. Continuer la mise en ligne ?")) { message.textContent = "Mise en ligne annulée."; return; }
     message.textContent = "Mise en ligne…";
     try {
       const values = { calendarEventId: current.id, documentId: editingDocumentId, expectedFingerprint:(current.clubDocuments || []).find(item=>item.id===editingDocumentId)?.napFingerprint, title: form.elements.title.value, category: form.elements.category.value, description: form.elements.description.value };

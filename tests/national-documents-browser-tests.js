@@ -67,6 +67,17 @@ const router=portalCode.slice(portalCode.indexOf('  function requestedNavigation
    await page.locator('#nationalLibraryName').fill('Nouveau document national');
    await page.getByLabel('Comité',{exact:true}).check();await page.getByLabel('Juges',{exact:true}).check();
    assert.equal(await page.locator('#nationalLibraryNotify').isChecked(),false);
+   const callsBeforeLarge=await page.evaluate(()=>window.testCalls.length);
+   await page.locator('#nationalLibraryFile').setInputFiles({name:'volumineux.pdf',mimeType:'application/pdf',buffer:Buffer.alloc(2*1024*1024+1,32)});
+   await page.evaluate(()=>window.testConfirm=false);
+   await page.getByRole('button',{name:'Mettre en ligne',exact:true}).click();
+   await page.getByText('Mise en ligne annulée.',{exact:true}).waitFor();
+   assert.equal(await page.evaluate(()=>window.testCalls.length),callsBeforeLarge,'Cancellation precedes every upload or notification');
+   await page.locator('#nationalLibraryFile').setInputFiles({name:'trop-lourd.pdf',mimeType:'application/pdf',buffer:Buffer.alloc(10*1024*1024+1,32)});
+   await page.getByRole('button',{name:'Mettre en ligne',exact:true}).click();
+   await page.getByText('Choisissez un fichier non vide de 10 Mo maximum.',{exact:true}).waitFor();
+   assert.equal(await page.evaluate(()=>window.testCalls.length),callsBeforeLarge);
+   await page.locator('#nationalLibraryFile').setInputFiles({name:'essai.pdf',mimeType:'application/pdf',buffer:Buffer.from('%PDF-1.4\nSynthetic test')});
    await page.screenshot({path:path.join(out,`form-${width}.png`),fullPage:true});
    const sizes=await page.evaluate(()=>({page:document.documentElement.scrollWidth,viewport:innerWidth,overflow:[...document.querySelectorAll('#nationalLibraryPanel input,#nationalLibraryPanel select,#nationalLibraryPanel textarea,#nationalLibraryPanel button')].filter(e=>e.getClientRects().length&&e.getBoundingClientRect().right>innerWidth).length}));
    assert.ok(sizes.page<=sizes.viewport,JSON.stringify(sizes));assert.equal(sizes.overflow,0,JSON.stringify(sizes));

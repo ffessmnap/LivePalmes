@@ -575,7 +575,7 @@ Chaque club peut telecharger uniquement son propre PDF.
 
 Tous les documents d'information d'une compétition publiée sont publics et accessibles sans connexion, quelle que soit la région du visiteur. Un administrateur régional peut mettre en ligne ces documents pour une compétition de sa région ; un administrateur national peut le faire pour toutes les compétitions. Les exports TXT et les PDF récapitulatifs des clubs restent privés.
 
-Un depot peut contenir plusieurs fichiers. Les formats PDF, bureautiques, images et ZIP sont acceptes dans la limite de 10 Mo par fichier et de 20 documents actifs par competition. Le titre est obligatoire ; la categorie et une description facultative facilitent la consultation. L'identite de l'auteur est visible uniquement par les administrateurs regionaux et nationaux.
+Un depot peut contenir plusieurs fichiers. Les formats PDF, bureautiques, images et ZIP sont acceptes dans la limite de 2 Mo par fichier et de 20 documents actifs par competition. Un administrateur national peut dépasser 2 Mo après confirmation explicite, jusqu’au plafond technique de 10 Mo. La limite est vérifiée côté serveur à partir du droit national authentifié, pour les ajouts et remplacements. Les documents déjà publiés ne sont ni retirés ni tronqués par ce changement. Le titre est obligatoire ; la categorie et une description facultative facilitent la consultation. L'identite de l'auteur est visible uniquement par les administrateurs regionaux et nationaux.
 
 Le remplacement du fichier d'un document conserve son chemin et son jeton de téléchargement : son URL publique reste donc stable.
 

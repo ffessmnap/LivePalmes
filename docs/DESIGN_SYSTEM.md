@@ -2,6 +2,10 @@
 
 <!-- description: Référence du langage visuel, des composants d’interface et des règles responsive déjà présents dans LivePalmes. -->
 
+## Dépôt documentaire et taille — 25 octobre 2026
+
+Les formulaires de compétition, du calendrier et de la bibliothèque nationale affichent la limite habituelle de 2 Mo. Le droit national autorise jusqu’à 10 Mo, après une confirmation native avant toute lecture du fichier, transfert ou préparation de notification. Un dépôt multiple demande une seule confirmation pour le lot. Annuler conserve la saisie ; dépasser le plafond du profil affiche l’erreur dans la zone de statut existante. Une modification de titre sans nouveau fichier ne demande pas de confirmation de taille. Aucun nouveau panneau ni composant n’est ajouté.
+
 ## Régions invitées des compétitions — 25 octobre 2026
 
 Dans Paramétrage, la région organisatrice apparaît cochée et verrouillée dans la liste des régions invitées, avec sa mention explicite. Les autres régions restent facultatives et leurs sélections existantes sont conservées. Une note compacte recommande les régions voisines et rappelle que tous les clubs de France peuvent s’inscrire indépendamment des invitations. Si toutes les régions disponibles sont sélectionnées, une seconde note discrète annonce la portée nationale des notifications ; elle ne bloque pas l’enregistrement. Ces notes reprennent le composant existant `admin-engagements-field-note`, sans encadré supplémentaire. Les changements de cases conservent le focus et le défilement.

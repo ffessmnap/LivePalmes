@@ -304,6 +304,7 @@ function runUnitTests() {
     "livepalmes-public-pdf-storage-tests.js",
     "engagement-competition-mail-content-tests.js",
     "engagement-competition-documents-tests.js",
+    "document-upload-policy-tests.js",
     "engagement-program-phases-tests.js",
     "engagement-qualification-tests.js",
     "engagement-qualification-import-tests.js",

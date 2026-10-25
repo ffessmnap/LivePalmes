@@ -39,6 +39,8 @@ function fixture(settings={}){
 }
 const input={action:'upload',title:'Document national',description:'Informations',typeId:3,rubricId:47,themeIds:[2,3],fileName:'document.pdf',fileDataUrl:'data:application/pdf;base64,'+Buffer.from('%PDF-1.4\nSynthetic test').toString('base64')};
 (async()=>{
+ const large=Buffer.alloc(2*1024*1024+1,32);large.write('%PDF-1.4\n');
+ const national=fixture();const largeSaved=await library.mutate(national.pool,{...input,fileDataUrl:'data:application/pdf;base64,'+large.toString('base64')},national.services);assert.equal(largeSaved.document.size,large.length);
  const f=fixture();const result=await library.mutate(f.pool,input,f.services);
  assert.equal(result.document.id,99);assert.deepEqual(result.document.themeIds,[2,3]);assert.equal(f.row.competition,0);assert.match(result.document.storagePath,/^national-documents\/nap\//);assert.ok(f.history.indexOf('before')<f.history.indexOf('storage'));
  const old=fixture(),before=await library.record(old.c,42);

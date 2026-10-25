@@ -9461,7 +9461,8 @@
     renderEngagementMailJobs();
   }
 
-  const ENGAGEMENT_COMPETITION_DOCUMENT_MAX_BYTES = 10 * 1024 * 1024;
+  const ENGAGEMENT_COMPETITION_DOCUMENT_MAX_BYTES = 2 * 1024 * 1024;
+  const ENGAGEMENT_COMPETITION_DOCUMENT_NATIONAL_MAX_BYTES = 10 * 1024 * 1024;
   const ENGAGEMENT_COMPETITION_DOCUMENT_MAX_COUNT = 20;
   const ENGAGEMENT_COMPETITION_DOCUMENT_EXTENSION_PATTERN = /\.(pdf|doc|docx|xls|xlsx|ppt|pptx|odt|ods|odp|jpe?g|png|zip)$/i;
 
@@ -9588,7 +9589,8 @@
 
   function handleEngagementCompetitionDocumentFiles() {
     const files = Array.from(elements.engagementsDocumentFiles?.files || []);
-    const invalid = files.find((file) => !ENGAGEMENT_COMPETITION_DOCUMENT_EXTENSION_PATTERN.test(file.name) || file.size <= 0 || file.size > ENGAGEMENT_COMPETITION_DOCUMENT_MAX_BYTES);
+    const maximum = canUse("engagements.national.manage") ? ENGAGEMENT_COMPETITION_DOCUMENT_NATIONAL_MAX_BYTES : ENGAGEMENT_COMPETITION_DOCUMENT_MAX_BYTES;
+    const invalid = files.find((file) => !ENGAGEMENT_COMPETITION_DOCUMENT_EXTENSION_PATTERN.test(file.name) || file.size <= 0 || file.size > maximum);
     const currentCount = Array.isArray(selectedEngagementCompetition?.clubDocuments) ? selectedEngagementCompetition.clubDocuments.length : 0;
     const tooMany = !engagementCompetitionDocumentEditingId && currentCount + files.length > ENGAGEMENT_COMPETITION_DOCUMENT_MAX_COUNT;
     if (invalid || tooMany) {
@@ -9597,7 +9599,7 @@
       if (elements.engagementsDocumentFormMessage) {
         elements.engagementsDocumentFormMessage.textContent = tooMany
           ? `La compétition est limitée à ${ENGAGEMENT_COMPETITION_DOCUMENT_MAX_COUNT} documents actifs.`
-          : `${invalid?.name || "Ce fichier"} est vide, dépasse 10 Mo ou utilise un format non autorisé.`;
+          : `${invalid?.name || "Ce fichier"} est vide, dépasse ${maximum / (1024 * 1024)} Mo ou utilise un format non autorisé.`;
         elements.engagementsDocumentFormMessage.dataset.tone = "error";
       }
       renderEngagementCompetitionDocumentDrafts();
@@ -9632,6 +9634,18 @@
       return;
     }
     const publishesFile = engagementCompetitionDocumentFiles.length > 0;
+    if (publishesFile) {
+      const national = canUse("engagements.national.manage");
+      const maximum = national ? ENGAGEMENT_COMPETITION_DOCUMENT_NATIONAL_MAX_BYTES : ENGAGEMENT_COMPETITION_DOCUMENT_MAX_BYTES;
+      if (engagementCompetitionDocumentFiles.some((file) => file.size > maximum)) {
+        if (elements.engagementsDocumentFormMessage) elements.engagementsDocumentFormMessage.textContent = `Chaque fichier est limité à ${maximum / (1024 * 1024)} Mo.`;
+        return;
+      }
+      if (national && engagementCompetitionDocumentFiles.some((file) => file.size > ENGAGEMENT_COMPETITION_DOCUMENT_MAX_BYTES) && !global.confirm("Ce dépôt contient un ou plusieurs fichiers de plus de 2 Mo. Votre droit national autorise un dépassement jusqu’à 10 Mo par fichier. Continuer la mise en ligne ?")) {
+        if (elements.engagementsDocumentFormMessage) elements.engagementsDocumentFormMessage.textContent = "Mise en ligne annulée.";
+        return;
+      }
+    }
     const notify = publishesFile && elements.engagementsDocumentNotify?.checked === true;
     if (notify) {
       try {
