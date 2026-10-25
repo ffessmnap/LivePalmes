@@ -2,6 +2,12 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 25 octobre — Clubs ZIP rapprochés par numéro fédéral puis libellé
+
+- Accord explicite utilisateur : corriger sur TEST le rapprochement Auray/CSL, numéro fédéral prioritaire et libellé en complément, sans résultat réel importé. Dans le seul aperçu ZIP, le numéro est recherché dans tout le référentiel déjà lu ; le sigle n’est plus un prérequis d’unicité. Contrôle exact du numéro sur huit chiffres et du nom après neutralisation casse/accents/ponctuation ; ambiguïtés, contradictions et numéros incomplets restent à confirmer. Aucun zéro fabriqué, aucune substitution par le club du nageur. TXT et gardes ZIP conservés.
+- Motifs lisibles, propositions numéro/nom/sigle, identifiants NAP dans le sélecteur et méthode de rapprochement dans le rapport. Budget supplémentaire zéro lecture/écriture ; index mémoire sur les clubs déjà lus, vingt propositions maximum par code, recherche locale sur la liste bornée existante. Aucun droit, collection, schéma, index, migration ou envoi.
+- Contrôles ciblés hors réseau et navigateur avec vrai contrôleur/aperçu et pool simulé réussis à1440/390/320px : trois CSL, numéro prioritaire malgré sigle différent, anomalies retenues, recherche et choix manuel/rapport, différence réelle du club nageur conservée. Lecture locale du ZIP Auray et de la référence NAP du 15 mai : huit clubs sur huit rapprochés, CSL→110 via03560008 et Club Subaquatique Lorientais. Aucun accès NAP ni écriture pendant ces essais ; preuves/captures privées dans outputs/import-clubs. Vérification globale et livraison TEST en cours, retour utilisateur sur la version publiée attendu ; aucune autorisation PROD déduite.
+
 ### 25 octobre — Heures des résultats eau libre au format NAP
 
 - Accord explicite utilisateur sur le format historique avec heures, après lecture locale de l’export du 15 mai : 837 temps LD avec heures, aucun temps LD en minutes cumulées au-delà de 59. Ajout d’un lecteur ciblé, conversion WinPalme vers `H MMSSCC` pour les nouvelles performances, affichage `H:MM:SS.CC`, comparaison numérique et conservation des valeurs anciennes brutes. Le lecteur piscine commun et les règles Records/MPF/DTN restent inchangés.
