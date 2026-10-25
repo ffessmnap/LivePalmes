@@ -504,5 +504,13 @@
     "approval": "ok"
   },
   "schedulerSha256": "898481dba37369a0bdad706ea47a000b695bc4f336db8e21abfce80fd9ea9a97",
-  "preparedAfter": "2026-10-25T15:20:03.121628+00:00"
+  "preparedAfter": "2026-10-25T15:20:03.121628+00:00",
+  "currentTestRun": 40206084404,
+  "currentTestCandidate": "14c8d793f1ee2f5fe52b831f73518a26b2edd67d",
+  "currentTestHosting": "sites/livepalmes-test/versions/bf8ab2be655a953d",
+  "testOnlyChangedExports": [
+    "createCompetitionImport",
+    "previewCompetitionImport"
+  ],
+  "testOnlyExclusionApproval": "Non, garder ce lot hors PROD"
 }

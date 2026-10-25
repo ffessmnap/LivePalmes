@@ -7,7 +7,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 CONTRACT = ROOT / '.github/releases/evidence/20261025-bcc-contract.json'
-DIGEST = '8e2cfbe810e97327f68b0ff2a84d43670f5137ffe9d8d1ce42d04a49b19022d7'
+DIGEST = '45d4cd03741ce66c81322c1bf9f972dc933cb1e1b6ee124f99ec19e78d65f5df'
 REFERENCE = 'processNapCompetitionNotifications'
 QUEUE = 'projects/livepalmes/locations/europe-west1/queues/processNapNotificationTask'
 CI = 'serviceAccount:github-actions-livepalmes-back@livepalmes.iam.gserviceaccount.com'
@@ -120,13 +120,30 @@ def source_patch(before, source, sha):
             'labels': {**before.get('labels', {}), 'livepalmes-commit': sha}}
 
 
+def current_test_compatibility(hashes):
+    c = contract()
+    require(set(hashes) == set(c['afterHashes'])
+        and sorted(n for n in hashes if hashes[n] != c['afterHashes'][n]) == c['testOnlyChangedExports'],
+        'Dependances TEST hors exclusion import approuvee')
+    require(all(hashes[n] == c['afterHashes'][n] for n in c['testReconciliationFunctions']),
+        'Notification TEST differente du candidat valide')
+    return {n: hashes[n] for n in c['testReconciliationFunctions']}
+
+
 def reconciled_proof(request, proof, source):
     require(approved(request), 'Preuve ciblee CCI sans extension approuvee')
     c = contract()
     require(source.get('path') == '.github/workflows/livepalmes-test-notifications-reconcile.yml'
-            and proof.get('schema') == 1 and proof.get('candidate') == c['candidate']
+            and proof.get('schema') == 1 and proof.get('candidate') == c['currentTestCandidate']
             and proof.get('reconciliation') == {'schema': 1, 'suite': 'bcc-current-test-v1',
-                'testRun': c['testRun'], 'toolingCommit': source['head_sha'],
+                'testRun': c['currentTestRun'], 'approvedCandidate': c['candidate'], 'toolingCommit': source['head_sha'],
                 'hostingUnchanged': True, 'mailSettingUnchanged': True, 'otherFunctionsUnchanged': True}
+            and proof.get('compatibility') == {n: c['afterHashes'][n] for n in c['testReconciliationFunctions']}
             and sorted(f['name'].split('/')[-1] for f in proof.get('state', {}).get('functions', []))
                 == sorted(c['testReconciliationFunctions']), 'Preuve ciblee CCI non attestee')
+    current = proof.get('currentTestState', {})
+    rows = current.get('functions', [])
+    require(len(rows) == len({f['name'] for f in rows}) == 115
+        and all(f.get('state') == 'ACTIVE' for f in rows)
+        and current.get('hosting', {}).get('version') == c['currentTestHosting']
+        and all(f in rows for f in proof['state']['functions']), 'Etat TEST courant non atteste')
