@@ -95,6 +95,13 @@ async function smtp(){
   assert.equal(db.rows.get(ref.path).status,'partial');assert.equal(db.rows.get(ref.path).sentCount,1);assert.equal(db.rows.get(ref.path).failedCount,1);
   const before=sends;await delivery.deliver(db,ref,services);assert.equal(sends,before,'partial group is never replayed');
   db.rows.set(ref.path,structuredClone(base));
+  const limited=await delivery.deliver(db,ref,{...services,send:async()=>({accepted:['first@example.org'],rejected:['second@example.org'],rejectedErrors:[{responseCode:451}]})});
+  assert.equal(limited.stopDelivery,true,'temporary refusal in a partially accepted group pauses subsequent groups');
+  db.rows.set(ref.path,structuredClone(base));
+  const set=ref.set;ref.set=async(value,options)=>{if(value.status==='sent')throw Error('write interrupted');return set(value,options);};
+  await delivery.deliver(db,ref,{...services,send:async()=>({accepted:['first@example.org','second@example.org']})});
+  assert.equal(db.rows.get(ref.path).status,'uncertain','SMTP acceptance followed by a failed status write must never be retryable');ref.set=set;
+  db.rows.set(ref.path,structuredClone(base));
   await delivery.deliver(db,ref,{...services,send:async()=>{throw Error('SMTP timeout');}});
   assert.equal(db.rows.get(ref.path).status,'uncertain');await delivery.deliver(db,ref,services);assert.equal(sends,before);
   db.rows.set(ref.path,structuredClone(base));db.rows.get('engagementConfigurations/notificationDelivery').enabled=false;

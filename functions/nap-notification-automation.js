@@ -54,6 +54,7 @@ async function arm(db, input, now = new Date().toISOString()) {
 // All reads precede writes; concurrent deposits serialize on the window pointer.
 async function armDocuments(db,input,now=new Date().toISOString()) {
   const competitionId=id(input.competitionId),operation=String(input.operation||'');
+  if(!Array.isArray(input.documentIds))throw new TypeError('Depot documentaire invalide.');
   const documentIds=[...new Set(input.documentIds||[])].map(String);
   if(!/^[a-f0-9]{40,64}$/.test(operation)||!documentIds.length||documentIds.length>20)throw new TypeError('Depot documentaire invalide.');
   const receipt=eventRef(db,competitionId,operation,'documents');
