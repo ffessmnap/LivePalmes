@@ -19,7 +19,6 @@ concurrency:
 jobs:
   verification:
     name: Verification technique
-    if: github.event.action != 'labeled' || github.event.label.name == 'apercu-test'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     outputs:
