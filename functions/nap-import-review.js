@@ -20,7 +20,7 @@ async function prepareReview(pool,pack,input) {
     const id=groupId(row);
     if(!groups.has(id))groups.set(id,{id,source:{lastName:row.lastName,firstName:row.firstName,birthDate:row.birthDate,sex:row.sex},sourceLines:[],clubCodes:[],performances:[],profile:null,candidates:[],state:"unknown",clubAlerts:[]});
     const g=groups.get(id);g.sourceLines.push(row.sourceLine);if(!g.clubCodes.includes(row.clubCode))g.clubCodes.push(row.clubCode);
-    g.performances.push({sourceLine:row.sourceLine,course:row.course,time:row.rawFinalTime,status:row.status,clubCode:row.clubCode,origin:"individual"});
+    g.performances.push({sourceLine:row.sourceLine,course:row.course,...(row.sourceCourse?{sourceCourse:row.sourceCourse}:{}),time:row.rawFinalTime,status:row.status,clubCode:row.clubCode,origin:"individual"});
   }
   const individual=pack.decoded.rows.filter(r=>r.kind==="NAG");
   for(const g of groups.values()) {
