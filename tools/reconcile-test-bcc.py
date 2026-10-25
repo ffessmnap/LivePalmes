@@ -29,7 +29,7 @@ def guard(env, application_sha, tooling_sha):
     cycle.require(env.get('GITHUB_REF') == 'refs/heads/main' and env.get('GITHUB_RUN_ATTEMPT') == '1'
         and env.get('CONFIRMATION') == 'livepalmes-test'
         and all(env.get(k) == 'livepalmes-test' for k in ['TARGET_FIREBASE_PROJECT', 'GCLOUD_PROJECT', 'GOOGLE_CLOUD_PROJECT'])
-        and application_sha == policy.contract()['candidate'] and tooling_sha == env.get('GITHUB_SHA')
+        and application_sha == policy.contract()['currentTestCandidate'] and tooling_sha == env.get('GITHUB_SHA')
         and cycle.SHA.fullmatch(tooling_sha), 'Reconciliation TEST hors version/cible/confimation')
 
 
@@ -67,16 +67,18 @@ def main(mode, directory, candidate):
     subprocess.run(['git', 'merge-base', '--is-ancestor', application_sha, tooling_sha], cwd=ROOT, check=True)
     cycle.require(not cycle.run(['git', 'status', '--porcelain'], candidate), 'Source TEST modifiee')
     names = c['testReconciliationFunctions']
+    current_hashes = cycle.backend_fingerprints(application_sha)
+    compatibility = policy.current_test_compatibility(current_hashes)
     stage = Path(os.environ['RUNNER_TEMP']).resolve() / '.firebase-test-functions'
     cycle.require(stage.resolve().parent == Path(os.environ['RUNNER_TEMP']).resolve()
         and stage.name == '.firebase-test-functions', 'Dossier temporaire TEST hors cible')
     if mode == 'prepare':
-        info = cycle.artifact(c['testRun'], 'test-proof', directory / 'published', '.github/workflows/livepalmes-test-common.yml')
+        info = cycle.artifact(c['currentTestRun'], 'test-proof', directory / 'published', '.github/workflows/livepalmes-test-common.yml')
         evidence = cycle.read(directory / 'published/test-proof.json')
         cycle.require(info['head_sha'] == application_sha and evidence['candidate'] == application_sha
             and cycle.reusable_verification(evidence, application_sha), 'Preuve applicative TEST incompatible')
         before = cycle.snapshot('livepalmes-test')
-        cycle.require(before == evidence['state'] and before['hosting']['version'] == c['testHosting'],
+        cycle.require(before == evidence['state'] and before['hosting']['version'] == c['currentTestHosting'],
             'TEST a evolue : ne pas remplacer la version commune')
         cycle.require(all(any(f['name'].split('/')[-1] == name and f['state'] == 'ACTIVE'
             for f in before['functions']) for name in names), 'Export TEST existant absent')
@@ -104,7 +106,10 @@ def main(mode, directory, candidate):
         cycle.require(read_control() == cycle.read(directory / 'mail-witness.json')['sha256'], 'Reglage TEST modifie apres publication')
         cycle.write(directory / 'test-backend-proof.json', {'schema': 1, 'candidate': application_sha,
             'state': {'functions': [f for f in after['functions'] if f['name'].split('/')[-1] in names]},
-            'reconciliation': {'schema': 1, 'suite': 'bcc-current-test-v1', 'testRun': c['testRun'],
+            'currentTestState': after,
+            'compatibility': compatibility,
+            'reconciliation': {'schema': 1, 'suite': 'bcc-current-test-v1', 'testRun': c['currentTestRun'],
+                'approvedCandidate': c['candidate'],
                 'toolingCommit': tooling_sha, 'hostingUnchanged': True, 'mailSettingUnchanged': True,
                 'otherFunctionsUnchanged': True}})
     else:

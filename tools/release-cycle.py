@@ -730,6 +730,8 @@ def verify_test(directory, live=True):
         targeted = read(destination / 'test-backend-proof.json')
         if bcc_reconciled:
             bcc.reconciled_proof(request, targeted, source)
+            require(len(runs) == 1, 'Une seule reconciliation TEST CCI attendue')
+            evidence['currentTestState'] = targeted['currentTestState']
         else:
             require(targeted.get('schema') == 1 and targeted.get('candidate') == source['head_sha']
                     and targeted['candidate'] == request['candidate'], 'Commit preuve ciblee TEST incompatible')
@@ -745,7 +747,8 @@ def verify_test(directory, live=True):
     if runs:
         evidence['state']['functions'] = sorted(functions.values(), key=lambda f: f['name'])
     if live:
-        require(snapshot('livepalmes-test') == evidence['state'], 'TEST a change depuis sa publication : refaire le bilan')
+        expected_live = evidence['currentTestState'] if approved_bcc_functions(request) else evidence['state']
+        require(snapshot('livepalmes-test') == expected_live, 'TEST a change depuis sa publication : refaire le bilan')
     if os.environ.get('DTN_EXTENSION_CHECKS') == 'success':
         evidence['dtnExtensionVerification'] = {'schema': 1, 'candidate': candidate, 'suite': 'dtn-shared-invalidation', 'mode': 'offline-no-invocation', 'result': 'success', 'functions': sorted(DTN_FUNCTIONS)}
     write(root / 'test-proof.json', evidence)

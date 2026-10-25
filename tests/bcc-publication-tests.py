@@ -2,6 +2,8 @@
 import copy
 import importlib.util
 import unittest
+import tempfile
+from unittest.mock import patch
 from types import SimpleNamespace
 from pathlib import Path
 
@@ -72,16 +74,63 @@ class PolicyTests(unittest.TestCase):
 
     def test_reconciled_attestation(self):
         source = {'path': '.github/workflows/livepalmes-test-notifications-reconcile.yml', 'head_sha': 'a' * 40}
-        proof = {'schema': 1, 'candidate': C['candidate'], 'reconciliation': {'schema': 1,
-            'suite': 'bcc-current-test-v1', 'testRun': C['testRun'], 'toolingCommit': source['head_sha'],
+        proof = {'schema': 1, 'candidate': C['currentTestCandidate'], 'reconciliation': {'schema': 1,
+            'suite': 'bcc-current-test-v1', 'testRun': C['currentTestRun'], 'approvedCandidate': C['candidate'], 'toolingCommit': source['head_sha'],
             'hostingUnchanged': True, 'mailSettingUnchanged': True, 'otherFunctionsUnchanged': True},
-            'state': {'functions': [{'name': n} for n in C['testReconciliationFunctions']]}}
+            'compatibility': {n: C['afterHashes'][n] for n in C['testReconciliationFunctions']},
+            'state': {'functions': [{'name': n, 'state': 'ACTIVE'} for n in C['testReconciliationFunctions']]}}
+        proof['currentTestState'] = {'hosting': {'version': C['currentTestHosting']},
+            'functions': proof['state']['functions'] + [{'name': 'other' + str(i), 'state': 'ACTIVE'} for i in range(108)]}
         policy.reconciled_proof(request(), proof, source)
         for key in ['hostingUnchanged', 'mailSettingUnchanged', 'otherFunctionsUnchanged', 'toolingCommit']:
             changed = copy.deepcopy(proof); changed['reconciliation'][key] = False
             with self.subTest(key=key), self.assertRaises(ValueError): policy.reconciled_proof(request(), changed, source)
         source['path'] = '.github/workflows/other.yml'
         with self.assertRaises(ValueError): policy.reconciled_proof(request(), proof, source)
+
+    def test_import_scope_remains_test_only(self):
+        self.assertNotEqual(C['candidate'], C['currentTestCandidate'])
+        self.assertEqual(C['testOnlyChangedExports'], ['createCompetitionImport', 'previewCompetitionImport'])
+        self.assertEqual(C['testOnlyExclusionApproval'], 'Non, garder ce lot hors PROD')
+        hashes = {**C['afterHashes'], **{n: 'different' for n in C['testOnlyChangedExports']}}
+        self.assertEqual(policy.current_test_compatibility(hashes), {n:C['afterHashes'][n] for n in C['testReconciliationFunctions']})
+        hashes[C['testReconciliationFunctions'][0]] = 'unexpected'
+        with self.assertRaises(ValueError): policy.current_test_compatibility(hashes)
+        with self.assertRaises(ValueError): policy.current_test_compatibility(C['afterHashes'])
+
+    def test_historical_recipe_and_current_drift_witness_are_separate(self):
+        cycle = reconcile.cycle
+        names = C['testReconciliationFunctions'] + C['testOnlyChangedExports'] + ['other' + str(i) for i in range(106)]
+        prefix = 'projects/livepalmes-test/locations/europe-west1/functions/'
+        old = {'hosting': {'version': C['testHosting']}, 'functions': [dict(name=prefix+n,
+            state='ACTIVE', commit=C['candidate'], revision='old', updateTime='old') for n in names]}
+        current = copy.deepcopy(old); current['hosting']['version'] = C['currentTestHosting']
+        for row in current['functions']:
+            if row['name'].split('/')[-1] in C['testReconciliationFunctions'] + C['testOnlyChangedExports']:
+                row.update(commit=C['currentTestCandidate'], revision='new', updateTime='new')
+        source = {'path': '.github/workflows/livepalmes-test-notifications-reconcile.yml', 'head_sha': 'a' * 40}
+        targeted = {'schema': 1, 'candidate': C['currentTestCandidate'], 'currentTestState': current,
+            'state': {'functions': [r for r in current['functions'] if r['name'].split('/')[-1] in C['testReconciliationFunctions']]},
+            'compatibility': {n:C['afterHashes'][n] for n in C['testReconciliationFunctions']},
+            'reconciliation': {'schema':1,'suite':'bcc-current-test-v1','testRun':C['currentTestRun'],
+                'approvedCandidate':C['candidate'],'toolingCommit':source['head_sha'],
+                'hostingUnchanged':True,'mailSettingUnchanged':True,'otherFunctionsUnchanged':True}}
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            cycle.write(root/'request.json', {**request(), 'testBackendRuns':[123]})
+            cycle.write(root/'test/test-proof.json', {'candidate':C['candidate'],'state':old})
+            cycle.write(root/'test-targeted-123/test-backend-proof.json', targeted)
+            def artifact(run, *args): return {'head_sha':C['candidate']} if run == C['testRun'] else source
+            with patch.object(cycle,'artifact',side_effect=artifact), patch.object(cycle,'snapshot',return_value=current):
+                cycle.verify_test(root)
+            result = cycle.read(root/'test-proof.json')
+            self.assertEqual(result['candidate'], C['candidate'])
+            self.assertEqual(result['state']['hosting'], old['hosting'])
+            imports = [r for r in result['state']['functions'] if r['name'].split('/')[-1] in C['testOnlyChangedExports']]
+            self.assertTrue(all(r['commit'] == C['candidate'] for r in imports))
+            self.assertEqual(result['currentTestState'], current)
+            with patch.object(cycle,'artifact',side_effect=artifact), patch.object(cycle,'snapshot',return_value=old), self.assertRaises(ValueError):
+                cycle.verify_test(root)
 
 
 class ReconciliationTests(unittest.TestCase):
@@ -90,10 +139,11 @@ class ReconciliationTests(unittest.TestCase):
         env = {'GITHUB_REF': 'refs/heads/main', 'GITHUB_RUN_ATTEMPT': '1', 'GITHUB_SHA': sha,
             'CONFIRMATION': 'livepalmes-test', 'TARGET_FIREBASE_PROJECT': 'livepalmes-test',
             'GCLOUD_PROJECT': 'livepalmes-test', 'GOOGLE_CLOUD_PROJECT': 'livepalmes-test'}
-        reconcile.guard(env, C['candidate'], sha)
+        reconcile.guard(env, C['currentTestCandidate'], sha)
         for key in env:
             changed = {**env, key: 'livepalmes'}
-            with self.subTest(key=key), self.assertRaises(ValueError): reconcile.guard(changed, C['candidate'], sha)
+            with self.subTest(key=key), self.assertRaises(ValueError): reconcile.guard(changed, C['currentTestCandidate'], sha)
+        with self.assertRaises(ValueError): reconcile.guard(env, C['candidate'], sha)
 
     def test_no_other_export_or_hosting_change(self):
         selected = C['testReconciliationFunctions']
