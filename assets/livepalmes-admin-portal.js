@@ -3056,12 +3056,23 @@
     });
   }
 
+  function updateInvitedRegionWarning(select) {
+    const warning = select.closest("[data-engagements-conditional-region]")?.querySelector("[data-engagements-all-regions-warning]");
+    const available = Array.from(select.options).filter((option) => option.value && !option.disabled);
+    if (warning) warning.hidden = select.disabled || !available.length || !available.every((option) => option.selected);
+  }
+
   function renderInvitedRegionChoices(select, container) {
     if (!select || !container) return;
-    container.innerHTML = Array.from(select.options).map((option) => `
-      <label><input type="checkbox" value="${escapeHtml(option.value)}" ${option.selected ? "checked" : ""} ${option.disabled ? "disabled" : ""}><span>${escapeHtml(option.textContent)}</span></label>
-    `).join("");
+    const primaryRegion = select === elements.engagementsEditInvitedRegionIds
+      ? elements.engagementsEditRegionId?.value : elements.engagementsRegionId?.value;
+    const isPrimary = (option) => Boolean(primaryRegion) && normalizedRegionKey(option.value) === normalizedRegionKey(primaryRegion);
+    container.innerHTML = Array.from(select.options).map((option) => {
+      const primary = isPrimary(option);
+      return `<label><input type="checkbox" value="${escapeHtml(option.value)}" ${option.selected || primary ? "checked" : ""} ${option.disabled || primary ? "disabled" : ""}><span>${escapeHtml(option.textContent)}${primary ? " (région organisatrice)" : ""}</span></label>`;
+    }).join("");
     container.hidden = select.disabled;
+    updateInvitedRegionWarning(select);
     if (select === elements.engagementsInvitedRegionIds && elements.engagementsInvitedRegionSummary) {
       const selected = selectedRegionMultiSelectValues(select).map(regionDisplayLabel);
       elements.engagementsInvitedRegionSummary.textContent = selected.length
@@ -4147,9 +4158,10 @@
 
   function syncInvitedRegionChoice(event, select) {
     const input = event.target.closest("input[type='checkbox']");
-    if (!input || !select) return;
+    if (!input || input.disabled || !select || select.disabled) return;
     const option = Array.from(select.options).find((item) => item.value === input.value);
-    if (option) option.selected = input.checked;
+    if (option && !option.disabled) option.selected = input.checked;
+    updateInvitedRegionWarning(select);
   }
 
   function openInvitedRegionsDialog() {
@@ -16240,7 +16252,7 @@
         return false;
       }
       if (patch.entryStatus === "closed" && !global.confirm("Fermer les engagements dans LivePalmes et IntraNAP ? Les engagements existants et la date limite seront conservés.")) return false;
-      if (["level","regionId","invitedRegionIds"].some(key=>Object.hasOwn(patch,key)) && !global.confirm("Modifier le niveau ou les régions admises dans LivePalmes et IntraNAP ? L’accès des clubs aux nouvelles inscriptions peut changer. Les engagements déjà enregistrés seront conservés.")) return false;
+      if (["level","regionId","invitedRegionIds"].some(key=>Object.hasOwn(patch,key)) && !global.confirm("Modifier le niveau, la région organisatrice ou les régions invitées dans LivePalmes et IntraNAP ? Les engagements déjà enregistrés seront conservés.")) return false;
       if (patch.entryStatus === "open" && !global.confirm("Ouvrir les engagements dans LivePalmes et IntraNAP ? Les notifications autorisées par le réglage national partiront uniquement vers livepalmes@nap-ffessm.fr sur TEST.")) return false;
       const notificationOpeningRequested=patch.entryStatus==='open' && (selectedEngagementCompetition.entryStatus!=='closed'||confirmEngagementReopeningMail({...selectedEngagementCompetition,...patch}));
       if (button) button.disabled = true;
