@@ -3,7 +3,7 @@
 // against the current competition results again under the import write lock.
 const { createHash } = require("node:crypto");
 const { COLUMNS, positiveId, nativeRow } = require("./nap-performance-change-plan");
-const { parseCompactTime } = require("./nap-performance-normalization");
+const { parseCompactTime } = require("./nap-duration");
 const hash = value => createHash("sha256").update(JSON.stringify(value)).digest("hex");
 const fields = COLUMNS.filter(key => key !== "id");
 function signature(row) {

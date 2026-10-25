@@ -2,6 +2,7 @@
 const {notMerged}=require("./nap-swimmer-merge-state");
 const {createHash}=require("node:crypto");
 const {reviewWinPalmeResults,compactTime}=require("./nap-winpalme-results");
+const {parseCompactTime}=require("./nap-duration");
 const {resolveSwimmers,identity}=require("./nap-import-swimmer-resolution");
 const {COLUMNS,positiveId}=require("./nap-performance-change-plan");
 const hash=x=>createHash("sha256").update(JSON.stringify(x)).digest("hex");
@@ -102,12 +103,12 @@ async function previewNativeImport(pool,input) {
   if(input.sourceType==="winpalme-zip-preview")for(const row of decoded.rows.filter(r=>r.kind==="REL"&&r.eligible)) {
     const match=/^4X(\d+)(SF|BI|IS|AP)$/.exec(row.course),time=compactTime(row.splits[0]),swimmerId=relayMembers.get(row.sourceLine)?.[0];
     const own=individual.filter(r=>swimmerByLine.get(r.sourceLine)===swimmerId),categories=[...new Set(own.map(r=>r.category))];
-    if(!match||!time||Number(time)>=Number(row.time)||!swimmerId||categories.length!==1){
+    if(!match||!time||parseCompactTime(time)>=parseCompactTime(row.time)||!swimmerId||categories.length!==1){
       const sourcePeople=individual.filter(r=>row.memberHints[0]&&r.swimmerHint===row.memberHints[0]);
       const reasons=[];
       if(!match)reasons.push("unsupported-relay-course");
       if(!time)reasons.push(!row.splits[0]||/^0+(?:[.:,]0+)*$/.test(row.splits[0])?"missing-first-leg-time":"invalid-first-leg-time");
-      else if(Number(time)>=Number(row.time))reasons.push("first-leg-time-exceeds-final");
+      else if(parseCompactTime(time)>=parseCompactTime(row.time))reasons.push("first-leg-time-exceeds-final");
       if(!swimmerId)reasons.push(!row.memberHints[0]||/non pr[ée]cis[ée]/i.test(row.memberHints[0])?"first-member-not-specified":"first-member-unresolved");
       else if(categories.length!==1)reasons.push(categories.length?"first-member-category-ambiguous":"first-member-category-missing");
       const person=new Set(sourcePeople.map(r=>identity(r)||`line:${r.sourceLine}`)).size===1?sourcePeople[0]:null;

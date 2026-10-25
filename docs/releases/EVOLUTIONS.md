@@ -2,6 +2,12 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 25 octobre — Heures des résultats eau libre au format NAP
+
+- Accord explicite utilisateur sur le format historique avec heures, après lecture locale de l’export du 15 mai : 837 temps LD avec heures, aucun temps LD en minutes cumulées au-delà de 59. Ajout d’un lecteur ciblé, conversion WinPalme vers `H MMSSCC` pour les nouvelles performances, affichage `H:MM:SS.CC`, comparaison numérique et conservation des valeurs anciennes brutes. Le lecteur piscine commun et les règles Records/MPF/DTN restent inchangés.
+- Correction liée au choix des épreuves déjà demandé : le code résultat provient du `wplabel` NAP déclaré, distinct du code programme (ex. 2000 / LD02KM). Aucun alias sportif fabriqué ni épreuve créée ; référence non déclarée non proposée. Colonne existante dans la même lecture bornée du catalogue. Aucun ajout de lecture/écriture métier, schéma, index ou collection.
+- Tests hors réseau : seuils, variantes natives complétées/non complétées, durées invalides, valeur brute/identifiant/points secondaires conservés au remplacement identique, tri public et affichage administratif ; budgets inchangés. ZIP Séné local : 51 lignes, 48 performances chronométrées dont les 16 heures, trois statuts sans performance, durée exacte conservée pour les 16 ; les 837 heures historiques sont lues sans réécriture. Navigateur avec vrai contrôleur/aperçu et pool simulé : heures, choix/retrait d’épreuves, profils/clubs et gardes d’écriture vérifiés à1440/390/320 px. Preuves privées dans outputs/import-hours. Vérification globale et TEST en cours ; recette utilisateur sur la version publiée attendue, aucun résultat réel importé ni autorisation PROD.
+
 ### 25 octobre — Choix des épreuves non reconnues dans les ZIP
 
 - Demande utilisateur après essai de Séné : choisir une épreuve non reconnue comme un club. Ajout national au seul aperçu ZIP ; aucun résultat, PDF ou épreuve créé en base. Une correspondance s’applique à toutes les lignes du code source, avec source et choix conservés ; recherche/tri locaux, type et sexe contrôlés côté serveur, retrait et actualisation, rapport et empreinte mis à jour. Aucun alias LD automatique ou passage piscine déduit.
