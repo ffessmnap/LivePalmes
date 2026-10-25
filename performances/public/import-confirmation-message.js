@@ -26,6 +26,7 @@
   }
   function describeIssue(result,issue) {
     const c=issue.context;
+    if(issue.code==='unmapped-course'&&c)return `Épreuve du fichier ${clean(c.sourceCode)} : choisir la correspondance NAP pour ${Number(c.count)} résultat(s), puis actualiser l’aperçu. Aucune équivalence n’a été déduite automatiquement.`;
     if(issue.code==='first-relay-incomplete'&&c) {
       const reasons=(issue.reasons||[]).map(r=>firstReasons[r]||clean(r)).join(' ; ');
       return `Relais ${clean(c.course)} du club ${clean(c.clubCode)}${c.firstPerson?' — premier relayeur '+name(c.firstPerson):''} : ${reasons||'informations du premier relayeur à vérifier'}.${c.firstTime?' Temps initial du fichier : '+clean(c.firstTime)+'.':''}${issue.reasons?.includes('first-member-unresolved')?' Choisir le bon profil NAP, puis actualiser l’aperçu. Le temps du fichier n’est pas remis en cause par cette seule alerte.':''}${issue.reasons?.includes('first-member-not-specified')?' Demander la composition du relais à l’informatique de la compétition.':''}`;

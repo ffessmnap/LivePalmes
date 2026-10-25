@@ -1336,7 +1336,7 @@
       if (currentPreview?.source === 'nap') collectNativeImportChoices();
       downloadJson('controle-import-winpalme.json', {
         format: 'livepalmes-zip-review-v1', generatedAt: new Date().toISOString(), previewOnly: true,
-        manifest: m, choices: currentPayload ? Object.fromEntries(['competitionId','swimmerBindings','memberBindings','clubBindings','clubAcknowledgements','excludedSourceLines','confirmReplacement','replacementReviewFingerprint'].map(k => [k, currentPayload[k] ?? null])) : null,
+        manifest: m, choices: currentPayload ? Object.fromEntries(['competitionId','swimmerBindings','memberBindings','clubBindings','courseBindings','clubAcknowledgements','excludedSourceLines','confirmReplacement','replacementReviewFingerprint'].map(k => [k, currentPayload[k] ?? null])) : null,
         review: currentPreview, reviewReady: currentPreview?.reviewReady === true
       });
     };

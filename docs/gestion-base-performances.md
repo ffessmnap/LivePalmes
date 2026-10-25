@@ -8,6 +8,14 @@ Les performances sont lues et écrites dans NAP via les fonctions authentifiées
 
 ## Import TXT WinPalme
 
+### Choix des épreuves non reconnues — 25 octobre 2026
+
+Pour le ZIP seulement, un code source non reconnu ouvre « Épreuves à rattacher ». Une ligne par code indique le nombre de résultats concernés et permet de rechercher localement parmi les épreuves `course_dispo` NAP compatibles avec le type individuel/relais et les sexes sources. Les variantes du même code natif, type et indicateur LD sont regroupées ; un choix garde son affichage hors filtre. Aucun alias sportif WinPalme LD → NAP n’est inventé et aucune épreuve n’est créée. Le code natif exact choisi est appliqué à toutes les lignes du code source, y compris abandons/forfaits/disqualifications et temps avec heures ; source et choix restent visibles dans les performances et le rapport.
+
+Le changement invalide aperçu, message préparé et approbation de remplacement. Une actualisation serveur revalide les choix dans le catalogue ; un code absent, doublonné dans les choix, de mauvais type/sexe ou une référence inconnue est refusé. Le rapport JSON conserve `courseBindings` et le bilan des correspondances ; leur état entre dans l’empreinte. Le rattachement ne modifie ni le TXT ni les temps : les alertes d’encodage des heures restent bloquantes, et aucun passage piscine n’est déduit d’un code source LD ou d’une cible LD. Le parcours TXT ordinaire est isolé et les trois gardes d’écriture des ZIP restent actives.
+
+Budget : aucun ajout à l’ouverture avant choix de compétition, ni pour un ZIP dont toutes les épreuves sont déjà reconnues et sans choix manuel. Un aperçu ZIP concerné ajoute une requête `course_dispo` par clé primaire, ordonnée et limitée à 301 lignes, avec refus au-delà de 300 ; soit huit à dix lectures groupées au lieu de sept à neuf. Aucun appel par épreuve ou résultat ; filtre, choix et pagination de vingt codes sont locaux, sans écriture. Actualiser relit le même lot borné. Maximum 300 codes sources/choix. Aucun schéma, index, collection, cache public ou publication de résultats ajouté.
+
 ### Identité unique et création des inconnus — 25 octobre 2026
 
 Une identité déjà demandée dans une fiche nageur ne produit plus de rappel de premier relayeur dans les alertes et le message. Seule cette raison redondante est retirée de la présentation ; temps, catégorie et composition absente restent signalés, et les contrôles serveur restent bloquants. Le choix individuel est repris dans les relais après actualisation.
