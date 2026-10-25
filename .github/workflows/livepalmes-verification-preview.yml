@@ -81,6 +81,7 @@ jobs:
           python tests/production-grouped-release-tests.py
           python tests/bcc-publication-tests.py
           python tests/all-validated-publication-tests.py
+          python tests/production-resumed-audit-tests.py
           node tests/nap-national-documents-callable-tests.js
           python tests/production-release-source-tests.py
           node tests/production-backup-crypto-tests.js
