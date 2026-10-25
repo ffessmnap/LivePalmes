@@ -76,7 +76,7 @@ const LOTS = Object.freeze({
     "updateCurrentEmailNotificationPreferences", "disableCompetitionEmailNotifications",
     "notifyEngagementCompetitionDocuments", "listEngagementCompetitionMailJobs",
     "prepareEngagementOpeningNotificationEmails", "prepareEngagementClubRecapEmails",
-    "sendEngagementPreparedEmails", "resolveEngagementSwimmerChangeRequest", "processNapCompetitionNotifications"
+    "sendEngagementPreparedEmails", "resolveEngagementSwimmerChangeRequest", "processNapCompetitionNotifications", "processNapNotificationTask"
   ],
   schedulers: ["resumePerformancePublicationJobs", "closeDueEngagementCompetitions"]
 });
@@ -179,8 +179,8 @@ const METADATA = Object.freeze({
   },
   email: {
     secrets: ["LIVEPALMES_NAP_PASSWORD", "LIVEPALMES_SMTP_HOST", "LIVEPALMES_SMTP_PORT", "LIVEPALMES_SMTP_USER", "LIVEPALMES_SMTP_PASS", "LIVEPALMES_SMTP_SECURE", "LIVEPALMES_MAIL_FROM", "LIVEPALMES_NOTIFICATION_LINK_SECRET"],
-    apis: ["cloudfunctions.googleapis.com", "run.googleapis.com", "cloudbuild.googleapis.com", "artifactregistry.googleapis.com", "firestore.googleapis.com", "secretmanager.googleapis.com"],
-    iam: ["roles/cloudfunctions.developer", "roles/iam.serviceAccountUser", "runtime: roles/datastore.user + roles/secretmanager.secretAccessor limité aux secrets TEST"],
+    apis: ["cloudfunctions.googleapis.com", "run.googleapis.com", "cloudbuild.googleapis.com", "artifactregistry.googleapis.com", "firestore.googleapis.com", "secretmanager.googleapis.com", "cloudtasks.googleapis.com"],
+    iam: ["roles/cloudfunctions.developer", "roles/iam.serviceAccountUser", "roles/cloudtasks.queueAdmin limité à la file TEST", "runtime: roles/datastore.user + roles/secretmanager.secretAccessor limité aux secrets TEST ; cloudtasks.enqueuer sur la file, run.invoker sur le worker et actAs sur son propre compte"],
     dependencies: ["Firestore TEST: users, demandes, shards et engagementMailJobs", "Auth TEST", "Notifications TEST redirigees uniquement vers livepalmes@nap-ffessm.fr", "Hosting TEST pour les liens de préférences"]
   },
   schedulers: {

@@ -35,6 +35,8 @@ Réutiliser le run TEST réussi et sa preuve si le candidat et l'état déployé
 
 ## Publication
 
+Notifications CCI/tâches approuvées le 25 octobre 2026 sur TEST sans mail réel : le workflow backend accepte `notification_bcc_tasks=true` avec `notification_final_check=true`, lot email, `main` et réglage déjà désactivé inchangé. Sélection fermée de sept fonctions dans `refresh-test-notifications.js`, avec un seul nouvel export autorisé dans l'inventaire (`processNapNotificationTask`). Cette voie conserve les autres fonctions ; le circuit commun suit pour Hosting et sa preuve. Activation Cloud Tasks et IAM strictement nécessaires sur TEST seulement ; aucune fréquence du scheduler ni règle/index modifié. Voir `docs/NOTIFICATIONS_COMPETITIONS.md`. Cette autorisation ne couvre ni activation SMTP ni PROD.
+
 Pilote mails IDF autorisé sur TEST le 20 octobre 2026 : l’option `notification_pilot_idf=true` du workflow backend exige `notification_final_check=true`, le lot email et main. Elle limite la sélection aux neuf traitements listés dans `refresh-test-notifications.js` ; les autres fonctions et réglages restent inchangés, les mails doivent déjà être désactivés. Exécuter ensuite le circuit TEST commun pour intégrer Hosting et la preuve des révisions. Cette autorisation ne permet ni activation d’envoi ni publication PROD ; celles-ci gardent leur bilan spécifique dans Infra.
 
 ### Circuit réutilisable

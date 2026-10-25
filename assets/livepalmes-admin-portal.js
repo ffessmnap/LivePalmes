@@ -9352,7 +9352,7 @@
     }
     const sentCount = engagementMailJobs.filter((job) => job.status === "sent").length;
     const readyCount = engagementMailJobs.filter((job) => job.status === "ready").length;
-    const failedCount = engagementMailJobs.filter((job) => job.status === "failed").length;
+    const failedCount = engagementMailJobs.filter((job) => job.status === "failed" || job.status === "partial").length;
     const blockedCount = engagementMailJobs.filter((job) => job.status === "blocked_missing_config").length;
     const uncertainCount = engagementMailJobs.filter((job) => job.status === "uncertain" ||
       (job.status === "sending" && Date.now() - Date.parse(job.updatedAt) > 5 * 60 * 1000)).length;
@@ -9370,7 +9370,7 @@
       <div class="admin-engagements-mail-jobs-head">
         <strong>Courriels</strong>
         <button class="ghost-button" type="button" data-engagement-mail-jobs-refresh ${engagementMailJobsLoading ? "disabled" : ""}>Actualiser le suivi</button>
-        <small aria-live="polite">${engagementMailJobs.length}${engagementMailJobsTotalCount > engagementMailJobs.length ? ` sur ${engagementMailJobsTotalCount}` : ""} courriel${engagementMailJobsTotalCount > 1 || engagementMailJobs.length > 1 ? "s" : ""} affichés${statusParts.length ? ` · Sur les lignes affichées : ${statusParts.join(" · ")}` : ""}. Envoyé = accepté par le serveur mail.</small>
+        <small aria-live="polite">${engagementMailJobs.length}${engagementMailJobsTotalCount > engagementMailJobs.length ? ` sur ${engagementMailJobsTotalCount}` : ""} envois affichés${statusParts.length ? ` · Sur les lignes affichées : ${statusParts.join(" · ")}` : ""}. Un envoi peut regrouper plusieurs destinataires en CCI. Envoyé = accepté par le serveur mail.</small>
       </div>
       <div class="admin-engagements-mail-jobs-table" role="table" aria-label="Suivi des envois">
         <div class="admin-engagements-mail-jobs-row admin-engagements-mail-jobs-row-head" role="row">
@@ -9383,12 +9383,13 @@
           <div class="admin-engagements-mail-jobs-row" role="row" data-mail-status="${escapeHtml(job.status || "")}">
             <span role="cell">${escapeHtml(engagementMailJobTypeLabel(job.type))}</span>
             <span role="cell">
-              <strong>${escapeHtml(job.toEmail || "-")}</strong>
+              <strong>${escapeHtml(job.deliveryMode === "bcc-v1" ? `${job.recipientCount} destinataire${job.recipientCount > 1 ? "s" : ""} · CCI` : job.toEmail || "-")}</strong>
               <small>${escapeHtml(job.subject || "-")}</small>
             </span>
             <span role="cell">${escapeHtml(clubDisplayLabel(job, { fallback: "-" }))}</span>
             <span role="cell">
-              <span class="admin-engagements-mail-status">${escapeHtml(job.status === "sending" && Date.now() - Date.parse(job.updatedAt) > 5 * 60 * 1000 ? "À vérifier — ne pas renvoyer" : { ready: "En attente d'envoi", sending: "Envoi en cours — ne pas relancer", uncertain: "À vérifier — ne pas renvoyer", cancelled: "Annulé", disabled: "Désactivé", sent: "Envoyé", failed: "En erreur — non renvoyé automatiquement", blocked_missing_config: "Configuration manquante", cancelled_no_participants: "Annulé — aucun participant" }[job.status] || job.statusLabel || job.status || "Non envoyé")}</span>
+              <span class="admin-engagements-mail-status">${escapeHtml(job.status === "sending" && Date.now() - Date.parse(job.updatedAt) > 5 * 60 * 1000 ? "À vérifier — ne pas renvoyer" : { ready: "En attente d'envoi", sending: "Envoi en cours — ne pas relancer", uncertain: "À vérifier — ne pas renvoyer", cancelled: "Annulé", disabled: "Désactivé", sent: "Envoyé", partial: "Partiellement accepté — ne pas renvoyer le groupe", failed: "En erreur — non renvoyé automatiquement", blocked_missing_config: "Configuration manquante", cancelled_no_participants: "Annulé — aucun participant" }[job.status] || job.statusLabel || job.status || "Non envoyé")}</span>
+              ${job.deliveryMode === "bcc-v1" ? `<small>${Number(job.sentCount || 0)} accepté(s) · ${Number(job.failedCount || 0)} rejeté(s) · ${Number(job.uncertainCount || 0)} à vérifier · ${Number(job.cancelledCount || 0)} annulé(s)</small>` : ""}
               ${job.reason && ["failed", "uncertain"].includes(job.status) ? `<small>${escapeHtml(job.reason)}</small>` : ""}
               <small>${escapeHtml(job.updatedAt ? formatDeadline(job.updatedAt).replace(/^Limite /, "") : "")}</small>
             </span>
@@ -9706,7 +9707,7 @@
         elements.engagementsDocumentsSummary.textContent = errors.length
           ? `${publishedIds.length} document${publishedIds.length > 1 ? "s" : ""} mis en ligne. ${errors.join(" · ")}`
           : notification
-            ? notification.queued ? `${publishedIds.length} document(s) mis en ligne. Notifications programmées selon le réglage national ; sur TEST, uniquement vers livepalmes@nap-ffessm.fr.` : notification.disabled ? `${publishedIds.length} document(s) mis en ligne. TEST : aucun mail envoyé.`
+            ? notification.queued ? `${publishedIds.length} document(s) mis en ligne. Notification regroupée cinq minutes après le premier dépôt, selon le réglage national. Sur TEST, aucun mail envoyé.` : notification.disabled ? `${publishedIds.length} document(s) mis en ligne. TEST : aucun mail envoyé.`
               : `${publishedIds.length} document${publishedIds.length > 1 ? "s" : ""} mis en ligne · ${Number(notification.sentCount || 0)} e-mail${Number(notification.sentCount || 0) > 1 ? "s" : ""} envoyé${Number(notification.sentCount || 0) > 1 ? "s" : ""}${notification.configurationMissing ? " · configuration e-mail manquante" : Number(notification.errorCount || 0) ? ` · ${notification.errorCount} en erreur` : ""}.`
             : editingDocument && !publishesFile
               ? "Informations du document enregistrées."

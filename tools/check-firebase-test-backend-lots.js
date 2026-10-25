@@ -9,7 +9,7 @@ const {
 
 const root = path.join(__dirname, "..");
 const backend = fs.readFileSync(path.join(root, "functions", "index.js"), "utf8");
-const exported = [...backend.matchAll(/^\s*exports\.([A-Za-z0-9_]+)\s*=\s*on(?:Call|Schedule|DocumentCreated|DocumentUpdated|DocumentWritten|Request)\s*\(/gm)]
+const exported = [...backend.matchAll(/^\s*exports\.([A-Za-z0-9_]+)\s*=\s*on(?:Call|Schedule|TaskDispatched|DocumentCreated|DocumentUpdated|DocumentWritten|Request)\s*\(/gm)]
   .map((match) => match[1]);
 // Keep retirement tombstones to prevent reintroduction. Only absent, explicitly
 // retired exports may remain in the historical lot inventory. The removed

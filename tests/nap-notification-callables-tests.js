@@ -43,9 +43,9 @@ async function run(){
   }
   assert.match(source.slice(source.indexOf('exports.closeDueEngagementCompetitions ='),source.indexOf('exports.saveEngagementClubTeamLeader =')),/if\(ENVIRONMENT.sportingDataSource === "nap"\)[\s\S]*return null;[\s\S]*engagementCompetitions/);
   let armed=0;
-  const armSandbox={nativePortalCompetition:async(_id,authorize)=>{authorize({});return {id:'legacy-nap-5162',entryStatus:'open',entryDeadlineAt:'2026-11-06T18:00:00.000Z'};},
+  const armSandbox={enqueueNativeNotificationTask:async()=>{},nativePortalCompetition:async(_id,authorize)=>{authorize({});return {id:'legacy-nap-5162',entryStatus:'open',entryDeadlineAt:'2026-11-06T18:00:00.000Z'};},
     assertCanManageEngagementCompetition:()=>{},db:{collection:name=>{assert.equal(name,'auditLogs');return {doc:()=>({get:async()=>({exists:true,data:()=>({target:{notificationOpeningRequested:true}})})})};}},
-    require:name=>name==='./nap-direct-calendar'?require('../functions/nap-direct-calendar'):{arm:async(_db,input)=>{armed++;assert.equal(input.competitionId,'5162');assert.equal(input.openingRequested,true,'saved choice wins over later retry payload');}}};
+    require:name=>name==='./nap-direct-calendar'?require('../functions/nap-direct-calendar'):{eventRef:()=>({id:'event'}),arm:async(_db,input)=>{armed++;assert.equal(input.deliveryMode,'bcc-v1');assert.equal(input.competitionId,'5162');assert.equal(input.openingRequested,true,'saved choice wins over later retry payload');}}};
   vm.runInNewContext(source.slice(source.indexOf('async function armNativeCompetitionNotification('),source.indexOf('async function queueNativeDocumentNotification(')),armSandbox);
   await armSandbox.armNativeCompetitionNotification({uid:'admin'},{competitionId:'legacy-nap-5162',patch:{name:'renamed'}},'operation');
   assert.equal(armed,0);

@@ -41,11 +41,41 @@ async function arm(db, input, now = new Date().toISOString()) {
       if(events[index].exists)return;
       const automatic = kind==='closure' && input.action==='open';
       transaction.create(refs[index],{source:'nap',kind,competitionId,operation,cycleKey,closureKey:kind==='closure'?operation:'',
+        ...(input.deliveryMode==='bcc-v1'?{deliveryMode:'bcc-v1',jobIds:[]}:{}),
         deadline,automatic,documentIds:kind==='documents'?[...new Set(input.documentIds)]:[],actorUid:String(input.actorUid||''),
         runAt:automatic?deadline:now,status:'pending',phase:kind==='closure'?'clubs':kind,cursor:'',
         preparedCount:0,attachmentCount:0,skippedCount:0,createdAt:now,updatedAt:now});
     });
     return {queued:!!kinds.length,competitionId,cycleKey,eventCount:kinds.length};
+  });
+}
+
+// A receipt per deposit makes retries idempotent even after the window moves.
+// All reads precede writes; concurrent deposits serialize on the window pointer.
+async function armDocuments(db,input,now=new Date().toISOString()) {
+  const competitionId=id(input.competitionId),operation=String(input.operation||'');
+  const documentIds=[...new Set(input.documentIds||[])].map(String);
+  if(!/^[a-f0-9]{40,64}$/.test(operation)||!documentIds.length||documentIds.length>20)throw new TypeError('Depot documentaire invalide.');
+  const receipt=eventRef(db,competitionId,operation,'documents');
+  const window=db.collection(COLLECTION).doc(`nap-documents-window-${competitionId}`);
+  return db.runTransaction(async tx=>{
+    const [saved,pointer]=await tx.getAll(receipt,window);
+    if(saved.exists)return {eventId:saved.data().eventId||receipt.id,runAt:saved.data().windowDeadline||saved.data().runAt,reused:true};
+    const previous=pointer.data()||{};
+    const target=previous.eventId?db.collection(COLLECTION).doc(previous.eventId):receipt;
+    const snapshot=previous.eventId?await tx.get(target):null,event=snapshot?.data();
+    const merged=[...new Set([...(event?.documentIds||[]),...documentIds])];
+    if(event?.status==='pending'&&!event.lease&&event.runAt>now&&merged.length<=20&&Number(event.controlRevision||0)===Number(input.controlRevision||0)){
+      tx.update(target,{documentIds:merged,updatedAt:now});
+      tx.create(receipt,{source:'nap',kind:'documents-receipt',competitionId,eventId:target.id,windowDeadline:event.runAt,createdAt:now});
+      return {eventId:target.id,runAt:event.runAt,reused:false};
+    }
+    const runAt=new Date(new Date(now).getTime()+300000).toISOString();
+    tx.create(receipt,{source:'nap',kind:'documents',competitionId,operation,cycleKey:'',closureKey:'',automatic:false,
+      deliveryMode:'bcc-v1',jobIds:[],documentIds,controlRevision:Number(input.controlRevision||0),actorUid:String(input.actorUid||''),
+      runAt,windowDeadline:runAt,status:'pending',phase:'documents',cursor:'',preparedCount:0,attachmentCount:0,skippedCount:0,createdAt:now,updatedAt:now});
+    tx.set(window,{source:'nap',kind:'documents-window',competitionId,eventId:receipt.id,updatedAt:now});
+    return {eventId:receipt.id,runAt,reused:false};
   });
 }
 
@@ -87,7 +117,7 @@ async function processEvent(db, ref, services, now = new Date().toISOString()) {
     }
     const competition=await services.competition(claimed.competitionId);
     const result=eligible(claimed,competition,now)?await services.page(claimed,competition):{cancelled:true,jobs:[],done:true};
-    if(!Array.isArray(result.jobs)||result.jobs.length>100 || Number(result.attachmentCount||0)>7)throw new RangeError("Lot de notification trop volumineux.");
+    if(!Array.isArray(result.jobs)||result.jobs.length>(claimed.deliveryMode==='bcc-v1'?250:100) || Number(result.attachmentCount||0)>7)throw new RangeError("Lot de notification trop volumineux.");
     if(result.sourceHash && claimed.sourceHash && result.sourceHash!==claimed.sourceHash)throw new TypeError("Les donnees NAP ont change pendant la preparation. Reprenez la preparation depuis la fiche.");
     // One grouped read/write transaction: retry preserves jobs already prepared
     // or sent, and a later reopen/closure cannot commit an obsolete lot.
@@ -98,6 +128,8 @@ async function processEvent(db, ref, services, now = new Date().toISOString()) {
       if(new Set(jobs.map(job=>job.id)).size!==jobs.length)throw new TypeError("Destinataire de notification duplique.");
       const jobRefs=jobs.map(job=>db.collection('engagementMailJobs').doc(job.id));
       const existing=jobRefs.length?await transaction.getAll(...jobRefs):[];
+      const jobIds=claimed.deliveryMode==='bcc-v1'?[...new Set([...(claimed.jobIds||[]),...jobs.map(job=>job.id)])]:[];
+      if(jobIds.length>1000)throw new RangeError('Trop de groupes de notification.');
       jobs.forEach((job,index)=>{if(!existing[index].exists)transaction.create(jobRefs[index],job);});
       const completed=result.done===true||result.cancelled===true;
       const update={status:result.cancelled?'cancelled':completed?'completed':'pending',phase:result.nextPhase||claimed.phase,
@@ -106,6 +138,7 @@ async function processEvent(db, ref, services, now = new Date().toISOString()) {
         skippedCount:Number(claimed.skippedCount||0)+Number(result.skippedCount||0),
         lease:services.deleteField(),leaseUntil:services.deleteField(),runAt:completed?services.deleteField():now,updatedAt:now};
       if(completed)update.completedAt=now;
+      if(claimed.deliveryMode==='bcc-v1')Object.assign(update,{jobIds,deliveryPending:!result.cancelled,runAt:result.cancelled?services.deleteField():now});
       transaction.update(ref,update);
       return {ok:true,source:'nap',eventId:ref.id,done:completed,jobCount:jobs.length,attachmentCount:Number(result.attachmentCount||0),disabled:services.simulation===true,sentCount:0};
     });
@@ -153,4 +186,4 @@ async function resumeBlocked(db,ref,services,now=new Date().toISOString()) {
     return {resumed:true};
   });
 }
-module.exports={arm,processEvent,adoptOpenCompetitions,resumeBlocked,eligible,currentEvent,stateRef,eventRef,COLLECTION,hash};
+module.exports={arm,armDocuments,processEvent,adoptOpenCompetitions,resumeBlocked,eligible,currentEvent,stateRef,eventRef,COLLECTION,hash};
