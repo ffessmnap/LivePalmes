@@ -10,7 +10,12 @@ function fixture() {
     s.queries++;
     if(sql.includes("GET_LOCK"))return [[{acquired:s.busy?0:1}]];
     if(sql.includes("RELEASE_LOCK"))return [[{released:1}]];
-    if(sql.startsWith("SHOW CREATE")){const table=sql.match(/`([^`]+)`/)[1];return [[{"Create Table":contract[table]+(s.drift?" altered":"")}]];}
+    if(sql.startsWith("SHOW CREATE")){
+      const table=sql.match(/`([^`]+)`/)[1];
+      let definition=contract[table].replace("AUTO_INCREMENT=0","AUTO_INCREMENT=5233");
+      if(table==="competitions" && s.indexDrift) definition=definition.replace("KEY `livepalmes_enddate_id` (`enddate`,`id`)",s.indexDrift);
+      return [[{"Create Table":definition+(s.drift?" altered":"")}]];
+    }
     const calendarSpec=require("../functions/nap-approved-calendar-schema").specs.find(spec=>spec.table===values[0]);
     if(calendarSpec && sql.includes("information_schema.")) {
       if(sql.includes("TABLES"))return [[{ENGINE:"InnoDB",TABLE_COLLATION:"utf8mb4_unicode_ci"}]];
@@ -61,6 +66,10 @@ function fixture() {
     s=fixture();s.eventType=true;await s.run(data);assert.equal(s.competition.ld,kind);assert.equal(s.competition.type,kind);assert.equal(s.competition.typecnc,0);assert.equal(s.options.event_type,competitionType);assert.equal(s.parameters.actif,0);assert.ok(s.queries<=26);assert.equal(s.calendarDetails.competition_id,99);
   }
   s=fixture();await s.run();assert.equal(s.writes,3);assert.ok(s.queries<=17);assert.ok(s.done&&s.released);await s.run();assert.equal(s.writes,3,"completed retry does not duplicate");
+  assert.ok(contract.competitions.includes("KEY `livepalmes_enddate_id` (`enddate`,`id`)"),"approved home end-date index is part of the creation contract");
+  for(const indexDrift of ["KEY `livepalmes_enddate_id` (`date`,`id`)","KEY `unexpected_index` (`enddate`,`id`)"]){
+    s=fixture();s.indexDrift=indexDrift;await assert.rejects(s.run(),/Structure NAP modifiee/);assert.equal(s.writes,0);assert.equal(s.saved,null);
+  }
   for(const flag of ["drift","trigger","wrongType","busy","noClosure"]){s=fixture();s[flag]=true;await assert.rejects(s.run());assert.equal(s.writes,0);assert.equal(s.saved,null);}
   s=fixture();await assert.rejects(s.run(input,()=>{throw Error("denied");}));assert.equal(s.queries,0);
   for(const flag of ["lostReply","lostParameterReply","failCheckpoint"]){s=fixture();s[flag]=true;await assert.rejects(s.run());const writes=s.writes;s[flag]=false;await assert.rejects(s.run(),/identifiant non confirme/);assert.equal(s.writes,writes,"uncertain native id cannot be retried");}
