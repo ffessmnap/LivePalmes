@@ -12,6 +12,10 @@ Tester la version commune, puis dire ce qui est validé. Quand le regroupement c
 
 ## Coordination entre conversations
 
+Fonctionnement simplifié approuvé le 25 octobre 2026 : regrouper les retouches d'un même besoin dans la PR ouverte, puis publier une version commune sur TEST après intégration et contrôles. Les vérifications techniques de PR restent obligatoires ; l'aperçu isolé devient facultatif. À la demande explicite d'un aperçu, l'assistant ajoute l'étiquette `apercu-test` à la PR : son ajout lance le workflow et les nouveaux commits renouvellent l'aperçu tant qu'elle est présente. Une PR documentaire reste sans aperçu. Retirer l'étiquette empêche les prochains renouvellements ; le canal expire après trois jours ou est nettoyé à la fermeture. Les aperçus partagent les services TEST et leur publication reste susceptible d'échouer si les droits Google nécessaires manquent ; le passage aux aperçus facultatifs ne corrige pas ces droits.
+
+Pour PROD, réutiliser la preuve TEST du commit exact et les tests attestés, présenter le bilan court puis appliquer l'accord explicite dans Infra au périmètre présenté. Conserver les contrôles préalables avant écriture, la sauvegarde vérifiée et le retour arrière. Ne relancer TEST que si la version, les preuves ou l'état déployé le nécessitent. Ne pas désactiver les alertes d'échec ni masquer un aperçu demandé en échec.
+
 `main` est la version réunie. Chaque conversation relit les consignes actuelles, récupère main, crée une PR et attend la vérification technique. Réconcilier les conflits et les modifications concurrentes avant intégration ; aucune conversation ne remplace main par sa branche. Les aperçus `pr-N` sont isolés. Ils partagent encore les services TEST et ne sont pas des environnements backend complets.
 
 Tenir `EVOLUTIONS.md` à jour. Une validation concerne un commit et les parcours réellement vérifiés. Les tests automatiques ne remplacent pas le retour d’Antoine. Une évolution inachevée déjà intégrée bloque le lot ; ne pas la masquer dans le bilan. Un changement ultérieur nécessite une nouvelle vérification des parcours concernés.
