@@ -59,9 +59,11 @@ async function deliver(db,reference,services,now=new Date().toISOString()) {
     const sentCount=recipients.filter(item=>item.status==='sent').length,failedCount=recipients.filter(item=>item.status==='failed').length;
     const uncertainCount=recipients.filter(item=>item.status==='uncertain').length;
     const status=uncertainCount?'uncertain':failedCount?(sentCount?'partial':'failed'):'sent';
-    await reference.set({status,recipients,sentCount,failedCount,uncertainCount,sentAt:new Date().toISOString(),
+    const rejectionStop=(info.rejectedErrors||[]).some(error=>legacy.failure(error,{smtpStarted:true}).stop);
+    await reference.set({status,recipients,sentCount,failedCount,uncertainCount,sentAt:sentCount?new Date().toISOString():'',
+      failedAt:failedCount?new Date().toISOString():'',
       providerMessageId:String(info.messageId||'').slice(0,180),updatedAt:new Date().toISOString()},{merge:true});
-    return {status,sentCount,stopDelivery:uncertainCount>0};
+    return {status,sentCount,stopDelivery:uncertainCount>0||rejectionStop};
   } catch(error){
     const outcome=legacy.failure(error,{smtpStarted,smtpAccepted});
     await reference.set({status:outcome.status,recipients:claimed.recipients.map(item=>({...item,
