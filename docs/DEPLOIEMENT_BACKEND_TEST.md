@@ -224,7 +224,7 @@ La source normative lisible par le workflow est `tools/firebase-test-backend-lot
 
 **Dépendances :** Firestore TEST: résultats, calendrier, records et performances ; Storage TEST: livepalmes-test-public-data-206080168534.
 
-### email (10 Functions)
+### email (12 Functions)
 
 **Functions exactes :**
 
@@ -238,12 +238,16 @@ La source normative lisible par le workflow est `tools/firebase-test-backend-lot
 - `prepareEngagementClubRecapEmails`
 - `sendEngagementPreparedEmails`
 - `resolveEngagementSwimmerChangeRequest`
+- `processNapCompetitionNotifications`
+- `processNapNotificationTask`
 
 **Secrets :** `LIVEPALMES_SMTP_HOST`, `LIVEPALMES_SMTP_PORT`, `LIVEPALMES_SMTP_USER`, `LIVEPALMES_SMTP_PASS`, `LIVEPALMES_SMTP_SECURE`, `LIVEPALMES_MAIL_FROM`, `LIVEPALMES_NOTIFICATION_LINK_SECRET`.
 
-**APIs requises :** `cloudfunctions.googleapis.com`, `run.googleapis.com`, `cloudbuild.googleapis.com`, `artifactregistry.googleapis.com`, `firestore.googleapis.com`, `secretmanager.googleapis.com`.
+**APIs requises :** `cloudfunctions.googleapis.com`, `run.googleapis.com`, `cloudbuild.googleapis.com`, `artifactregistry.googleapis.com`, `firestore.googleapis.com`, `secretmanager.googleapis.com`, `cloudtasks.googleapis.com`.
 
 **IAM :** roles/cloudfunctions.developer ; roles/iam.serviceAccountUser ; runtime: roles/datastore.user + roles/secretmanager.secretAccessor limité aux secrets TEST.
+
+Pour le worker de tâches : gestion de la seule file `processNapNotificationTask` pour le déployeur, création de tâches sur cette file et invocation du worker pour le runtime, avec `actAs` sur son propre compte. Vérifier les droits déjà présents avant tout ajout. Le worker CCI refuse tout SMTP sur TEST ; la voie ciblée approuvée `notification_bcc_tasks=true` est décrite dans `NOTIFICATIONS_COMPETITIONS.md` et exige un réglage mail déjà désactivé inchangé.
 
 **Dépendances :** Firestore TEST: users, demandes, shards et engagementMailJobs ; Auth TEST ; SMTP de capture exclusivement TEST ; Hosting TEST pour les liens de préférences.
 

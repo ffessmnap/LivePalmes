@@ -16,6 +16,7 @@ const QRCode = require("qrcode");
 const { HttpsError, onCall, onRequest } = require("firebase-functions/v2/https");
 const { onDocumentCreated, onDocumentUpdated, onDocumentWritten } = require("firebase-functions/v2/firestore");
 const { onSchedule } = require("firebase-functions/v2/scheduler");
+const { onTaskDispatched } = require("firebase-functions/v2/tasks");
 const {
   PERFORMANCE_PUBLICATION_LEASE_MS,
   PERFORMANCE_PUBLICATION_MAX_ATTEMPTS,
@@ -8708,6 +8709,12 @@ function engagementMailJobItemFromData(data = {}, id = "") {
     clubName: cleanText(data.clubName).slice(0, 140),
     toEmail: normalizeEmail(data.toEmail).slice(0, 180),
     toName: cleanText(data.toName).slice(0, 180),
+    deliveryMode: data.deliveryMode === 'bcc-v1' ? 'bcc-v1' : '',
+    recipientCount: Number(data.recipientCount || data.recipients?.length || 1),
+    sentCount: Number(data.sentCount || 0),
+    failedCount: Number(data.failedCount || 0),
+    uncertainCount: Number(data.uncertainCount || 0),
+    cancelledCount: Number(data.cancelledCount || 0),
     subject: cleanText(data.subject).slice(0, 220),
     attachmentCount: Array.isArray(data.attachments) ? data.attachments.length : 0,
     reason: cleanText(data.reason).slice(0, 220),
@@ -8802,6 +8809,7 @@ function engagementMailWithNotificationPreferenceFooter(text = "", html = "", ui
 
 async function sendEngagementMailJob(transporter, doc, config, context) {
   const data = doc.data() || {};
+  if(data.deliveryMode==='bcc-v1')return {skipped:true,reason:'task-worker-required'};
   let smtpStarted = false, smtpAccepted = false;
   const now = new Date().toISOString();
   const toEmail = normalizeEmail(data.toEmail);
@@ -10837,6 +10845,7 @@ function nativeNotificationAutomationServices(simulation = true) {
   if(ENVIRONMENT.sportingDataSource !== "nap")throw new HttpsError("failed-precondition","Source NAP requise.");
   const pool=require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD);
   let recipientPromise, mailSettingPromise;
+  const competitionPromises=new Map(),entryPromises=new Map();
   const services={simulation,deleteField:()=>FieldValue.delete(),
     mailSetting: () => mailSettingPromise ||= require('./engagement-mail-control').read(db),
     allowEvent: simulation ? undefined : async event => {
@@ -10849,7 +10858,10 @@ function nativeNotificationAutomationServices(simulation = true) {
         metadata:{contentType:metadata.contentType,cacheControl:'private, no-store'}});
       return {...metadata,storagePath};
     },
-    competition:async id=>({...await nativePortalCompetition(id,()=>{}),id:String(require('./nap-direct-calendar').positiveId(id))}),
+    competition:id=>{
+      if(!competitionPromises.has(id))competitionPromises.set(id,(async()=>({...await nativePortalCompetition(id,()=>{}),id:String(require('./nap-direct-calendar').positiveId(id))}))());
+      return competitionPromises.get(id);
+    },
     recipients:()=>recipientPromise||=(async()=>{
       const state=await engagementMailRecipientIndexStateRef(db).get();
       if(state.data()?.status!=="ready")throw new TypeError("Annuaire des destinataires indisponible.");
@@ -10857,7 +10869,10 @@ function nativeNotificationAutomationServices(simulation = true) {
     })(),
     select:(kind,recipients,competition,event)=>kind==='opening'?engagementCompetitionOpeningRecipients(recipients,competition,recipients.filter(recipient=>recipient.uid===event.actorUid)):engagementCompetitionDocumentRecipients(recipients,competition),
     clubRecipients:recipients=>engagementCompetitionNotificationRecipients(engagementDedupMailRecipients(recipients)).filter(recipient=>recipient.clubId&&engagementRecipientHasCapability(recipient,"engagements.club.manage")),
-    entries:competition=>require("./nap-admin-entries").readAdminEntries(pool,{competitionId:competition.id,competition},()=>{},{category:ageCategoryFromDates}),
+    entries:competition=>{
+      if(!entryPromises.has(competition.id))entryPromises.set(competition.id,require("./nap-admin-entries").readAdminEntries(pool,{competitionId:competition.id,competition},()=>{},{category:ageCategoryFromDates}));
+      return entryPromises.get(competition.id);
+    },
     hasParticipants:engagementClubEntryHasParticipants,clubPdf:buildEngagementClubRecapPdf,
     txt:(competition,entries,clubs)=>buildEngagementCompetitionTxt(competition,entries.map(entry=>({...entry,swimmers:entry.swimmers.map(person=>({...person,individualEntries:person.individualEntries.map(course=>course.nativeTime==='599999'?{...course,entryTime:'',manualEntryTime:'',entryTimeValue:0,entryTimeMode:'default595999'}:course)}))})),clubs),
     officialsPdf:(competition,entries)=>buildEngagementOfficialsPdf(competition,engagementOfficialsPdfRows(entries)),
@@ -10876,12 +10891,61 @@ function nativeNotificationAutomationServices(simulation = true) {
         notificationDueAt:event.automatic?event.deadline:event.createdAt,
         notificationEvent:{kind:event.kind,cycleKey:event.cycleKey,closureKey:event.closureKey,automatic:event.automatic},
         createdAt:now,updatedAt:now,sentAt:''};
-      return {...data,id:engagementMailJobId(data)};
+      return {...data,id:payload.deliveryMode==='bcc-v1'?require('./nap-notification-automation').hash([
+        'bcc-v1',data.type,data.competitionId,data.notificationId,data.clubId,payload.recipients.map(item=>item.email)
+      ]).slice(0,40):engagementMailJobId(data)};
     }
   };
   services.page=(event,competition)=>require("./nap-notification-pages").page(event,competition,services);
   return services;
 }
+function nativeNotificationTaskServices() {
+  const services=nativeNotificationAutomationServices(false);
+  services.projectId=ENVIRONMENT.projectId;
+  services.enqueue=(data,options)=>require('firebase-admin/functions').getFunctions().taskQueue(`locations/${REGION}/functions/processNapNotificationTask`).enqueue(data,options);
+  services.warn=message=>console.warn(message);
+  services.deliver=async ref=>{
+    // No transport is created on TEST, regardless of the national switch.
+    if(ENVIRONMENT.projectId!=='livepalmes')return {done:true,sent:0};
+    const config=engagementMailSmtpConfig();
+    if(!config.ready)throw new TypeError('Configuration des mails indisponible.');
+    const event=(await ref.get()).data(),competition=await services.competition(event.competitionId);
+    const transporter=nodemailer.createTransport({...config.transport,pool:true,maxConnections:1,maxMessages:100,maxRequeues:0,
+      connectionTimeout:15000,greetingTimeout:15000,socketTimeout:30000});
+    try{return await require('./nap-bcc-delivery').drain(db,ref,{
+      projectId:ENVIRONMENT.projectId,fromEmail:config.fromEmail,send:mail=>transporter.sendMail(mail),attachments:engagementMailAttachments,
+      content:job=>{
+        const footer=`\n\nVous pouvez gérer les notifications email dans la rubrique Mon compte :\n${ENVIRONMENT.hostingOrigin}/portail.html#mon-compte`;
+        const text=String(job.textBody||'').slice(0,5000)+(['opening_notification','competition_documents','club_recap_pdf'].includes(job.type)?footer:'');
+        return {text,html:livePalmesMailHtml(text)};
+      },
+      eligible:(job,item,snapshot)=>{
+        if(['entries_txt','officials_pdf'].includes(job.type))return !item.uid&&normalizeEmail(item.email)===normalizeEmail(job.type==='entries_txt'?competition.computerEmail:competition.officialsManagerEmail);
+        const user=snapshot?.data();
+        if(!user||user.status!=='active')return false;
+        const recipient={...engagementMailRecipientFromUserDoc(snapshot),napClubRegionId:item.recipientRegionId};
+        if(recipient.email!==item.email||String(recipient.clubId)!==item.clubId||!recipient.competitionNotificationsEnabled)return false;
+        if(job.type==='club_recap_pdf')return item.clubId===job.clubId&&engagementRecipientHasCapability(recipient,'engagements.club.manage');
+        return services.select(job.type==='opening_notification'?'opening':'documents',[recipient],competition,event).length===1;
+      }
+    });}finally{transporter.close();}
+  };
+  return services;
+}
+async function enqueueNativeNotificationTask(eventId) {
+  return require('./nap-notification-task').enqueue(db,eventId,nativeNotificationTaskServices());
+}
+exports.processNapNotificationTask = onTaskDispatched({region:REGION,
+  timeoutSeconds:540,memory:'1GiB',concurrency:1,maxInstances:1,
+  retryConfig:{maxAttempts:3,minBackoffSeconds:60,maxBackoffSeconds:300},
+  rateLimits:{maxConcurrentDispatches:1,maxDispatchesPerSecond:1},
+  secrets:[defineSecret('LIVEPALMES_NAP_PASSWORD'),...ENGAGEMENT_NOTIFICATION_MAIL_SECRETS]
+},async request=>{
+  if(request.data?.probe===true&&ENVIRONMENT.projectId==='livepalmes-test'){
+    console.info('notification-task-test-probe',{requestedAt:request.data.requestedAt,handledAt:new Date().toISOString(),mailsSent:0});return;
+  }
+  await require('./nap-notification-task').run(db,String(request.data?.eventId||''),nativeNotificationTaskServices());
+});
 async function deliverNativeNotificationJobs(competitionId = '') {
   const control=require('./engagement-mail-control');
   if(!(await control.read(db)).enabled)return {processed:0,sent:0};
@@ -10901,8 +10965,11 @@ async function armNativeCompetitionNotification(context,input,operation) {
   const journal=await db.collection('auditLogs').doc(`nap-competition-${operation}-before`).get();
   if(!journal.exists)throw new TypeError('Sauvegarde de notification introuvable.');
   const requested=journal.data()?.target?.notificationOpeningRequested===true;
-  await require('./nap-notification-automation').arm(db,{competitionId:String(require('./nap-direct-calendar').positiveId(competition.id)),operation,
+  const automation=require('./nap-notification-automation'),id=String(require('./nap-direct-calendar').positiveId(competition.id));
+  await automation.arm(db,{competitionId:id,operation,deliveryMode:'bcc-v1',
     action:competition.entryStatus,deadline:competition.entryDeadlineAt,openingRequested:requested,actorUid:context.uid,newCycle:requested});
+  for(const kind of competition.entryStatus==='open'?['opening','closure']:competition.entryStatus==='closed'?['closure']:[])
+    await enqueueNativeNotificationTask(automation.eventRef(db,id,operation,kind).id);
 }
 async function queueNativeDocumentNotification(request) {
   const preview=await nativeNotificationPreview(request,'documents');
@@ -10913,9 +10980,11 @@ async function queueNativeDocumentNotification(request) {
   const documents=competition.clubDocuments.filter(document=>ids.includes(document.id));
   if(documents.length!==new Set(ids).size)throw new HttpsError('failed-precondition','Les documents ont change. Rechargez la fiche.');
   const automation=require('./nap-notification-automation');
-  await automation.arm(db,{competitionId:String(require('./nap-direct-calendar').positiveId(competition.id)),
-    action:'documents',documentIds:ids,actorUid:context.uid,operation:automation.hash(['documents-v1',competition.id,context.uid,documents])});
-  return {...preview,previewOnly:false,queued:true};
+  const mailState=await require('./engagement-mail-control').read(db);
+  const queued=await automation.armDocuments(db,{competitionId:String(require('./nap-direct-calendar').positiveId(competition.id)),
+    action:'documents',documentIds:ids,controlRevision:mailState.revision,actorUid:context.uid,operation:automation.hash(['documents-v1',competition.id,context.uid,documents])});
+  await enqueueNativeNotificationTask(queued.eventId);
+  return {...preview,previewOnly:false,queued:true,notificationAt:queued.runAt,groupingMinutes:5};
 }
 exports.processNapCompetitionNotifications = onCall({ ...ENGAGEMENT_NOTIFICATION_PREVIEW_OPTIONS,secrets:[defineSecret('LIVEPALMES_NAP_PASSWORD'),...ENGAGEMENT_NOTIFICATION_MAIL_SECRETS],timeoutSeconds:300,memory:'1GiB' },async request=>{
   if(ENVIRONMENT.sportingDataSource !== "nap")throw new HttpsError('failed-precondition','Source NAP requise.');
@@ -10942,7 +11011,7 @@ exports.processNapCompetitionNotifications = onCall({ ...ENGAGEMENT_NOTIFICATION
     }
     if(blocked.length)throw new TypeError('Preparation interrompue apres une modification NAP. Une reprise explicite est necessaire.');
     const due=events.filter(doc=>doc.data().runAt&&doc.data().runAt<=now&&!['completed','cancelled'].includes(doc.data().status)).sort((a,b)=>a.data().runAt.localeCompare(b.data().runAt));
-    for(const doc of due.slice(0,2))results.push(await automation.processEvent(db,doc.ref,services,now));
+    for(const doc of due.slice(0,2))results.push(doc.data().deliveryMode==='bcc-v1'?await enqueueNativeNotificationTask(doc.id):await automation.processEvent(db,doc.ref,services,now));
     const delivery=await deliverNativeNotificationJobs(competitionId);
     return {ok:true,source:'nap',disabled:false,sentCount:delivery.sent,processedCount:results.length,jobCount:results.reduce((sum,result)=>sum+(result.jobCount||0),0),attachmentCount:results.reduce((sum,result)=>sum+(result.attachmentCount||0),0),remaining:Math.max(0,due.length-results.filter(result=>result.done||result.skipped).length)};
   }catch(error){if(error instanceof HttpsError)throw error;throw new HttpsError(error instanceof TypeError?'failed-precondition':error instanceof RangeError?'resource-exhausted':'unavailable',error instanceof TypeError||error instanceof RangeError?error.message:'Preparation NAP interrompue : vous pouvez reprendre le traitement.');}
@@ -12146,7 +12215,7 @@ exports.closeDueEngagementCompetitions = onSchedule(ENGAGEMENT_CLOSURE_SCHEDULER
     for(const event of snapshot.docs){
       // Old technical events are retained, never interpreted as native data.
       if(event.data()?.source!=='nap')continue;
-      try{results.push(await automation.processEvent(db,event.ref,services,now));}
+      try{results.push(event.data().deliveryMode==='bcc-v1'?await enqueueNativeNotificationTask(event.id):await automation.processEvent(db,event.ref,services,now));}
       catch{results.push({status:'failed'});}
     }
     await deliverNativeNotificationJobs();
