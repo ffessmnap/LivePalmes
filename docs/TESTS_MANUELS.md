@@ -2,6 +2,10 @@
 
 <!-- description: Checklist de tests manuels à exécuter avant une publication ou après une modification sensible. -->
 
+## Fusion et forfaits historiques — 25 octobre 2026
+
+Sur fixtures uniquement : un forfait de la même compétition sans référence à une inscription ou course des deux fiches ne bloque plus. Une référence à une inscription ou à une course source/cible bloque avant audit et écriture, même si la compétition du forfait est incohérente ou son indicateur vaut zéro. Ne pas deviner l'interprétation historique de `forfait.engagement`. Les forfaits sans lien et orphelins sont sauvegardés dans le plan, restent strictement inchangés et sont relus avant suppression de la source. Couvrir le plafond de 500 lignes, un historique tronqué/malformé, une modification après préparation, chaque réponse SQL perdue et les anciens audits sans ce complément. Budget : ouverture/rafraîchissement inchangés ; fusion, deux lectures par clé primaire de 501 lignes maximum, sans N+1 ni index nouveau. La limite de 500 Ko du journal reste applicable. Tests `nap-swimmer-merge-forfeits-tests.js` et `nap-swimmer-merge-tests.js` hors réseau. Après TEST, vérifier le contrôle par lectures ciblées uniquement ; ne pas fusionner Xavier PETIT pour la recette technique.
+
 ## Aide au contrôle des ZIP — 25 octobre 2026
 
 - Sans import réel : vérifier qu’un message reprend les groupes non résolus même repliés/hors page, les clubs et les relayeurs sans identité, avec noms/naissances/clubs et propositions non validées. Aucun profil vert sans alerte, contact privé, licence ou compteur inutile n’est ajouté. Copier le texte, tester le repli si le presse-papiers est indisponible et télécharger le TXT ; zéro envoi ou requête métier supplémentaire. Modifier un choix retire le texte et impose une actualisation.

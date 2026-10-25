@@ -2,6 +2,12 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 25 octobre — Fusion indépendante des forfaits sans lien
+
+- Accord utilisateur : corriger sur TEST le contrôle des forfaits historiques sans fusionner Xavier PETIT. Le blocage à l'échelle de toute une compétition est remplacé par une vérification des références brutes aux inscriptions et courses des deux fiches, sans deviner le sens de `forfait.engagement`. Toute référence potentiellement affectée reste bloquante, même avec une compétition incohérente ; aucun forfait n'est corrigé, déplacé ni supprimé.
+- Inventaire par clé primaire plafonné à 501 lignes, refus au-delà de 500 ; deux lectures par fusion (avant préparation et avant suppression), aucun ajout d'ouverture/rafraîchissement, aucun N+1, nouvel index ou schéma. Sauvegarde des lignes vérifiées dans le plan d'audit existant, comparaison à la reprise et relecture avant suppression ; limite de 500 Ko et compatibilité des anciens journaux conservées. Licences, clubs historiques et règles sportives inchangés.
+- Tests hors réseau réussis : forfait sans lien dans la même compétition, orphelin, références inscription/course source/cible avec compétition correcte ou incohérente, plafond, lignes invalides, mutation pendant la fusion, audit périmé et reprise après chaque réponse perdue. Lecture ciblée réelle du seul contrôle : 135 inscriptions, 268 courses et neuf forfaits ; le contrôle corrigé passe, les deux fiches sont inchangées et aucune fusion n'est appelée. Vérification globale et livraison TEST en cours ; recette utilisateur attendue après publication. Aucune fusion réelle de recette ni autorisation PROD.
+
 ### 25 octobre — Clubs ZIP rapprochés par numéro fédéral puis libellé
 
 - Accord explicite utilisateur : corriger sur TEST le rapprochement Auray/CSL, numéro fédéral prioritaire et libellé en complément, sans résultat réel importé. Dans le seul aperçu ZIP, le numéro est recherché dans tout le référentiel déjà lu ; le sigle n’est plus un prérequis d’unicité. Contrôle exact du numéro sur huit chiffres et du nom après neutralisation casse/accents/ponctuation ; ambiguïtés, contradictions et numéros incomplets restent à confirmer. Aucun zéro fabriqué, aucune substitution par le club du nageur. TXT et gardes ZIP conservés.
