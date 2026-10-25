@@ -1,6 +1,7 @@
 "use strict";
 const {visiblePerformanceSql}=require("./nap-performance-visibility");
 const rules = require("./nap-performance-normalization");
+const duration = require("./nap-duration");
 const { performanceRow } = require("./nap-direct-swimmer");
 const { MAX_RESULTS, positiveId, text, execute } = require("./nap-direct-calendar");
 const MAX_HISTORY_ROWS = 100000;
@@ -49,7 +50,7 @@ async function readCompetitionResults(pool, input) {
     if (normalized?.isIntermediate || Number(row.passage) > 0) continue;
     const relay = Number(row.relais) !== 0;
     if (!relay && Number(row.ld) !== 1 && !normalized) continue;
-    const course = text(row.course), timeValue = normalized?.timeValue || rules.parseCompactTime(row.tps);
+    const course = text(row.course), timeValue = normalized?.timeValue || duration.parseCompactTime(row.tps);
     const details = rules.CURRENT_POOL_COURSES.includes(course) ? rules.coursePayload(course) : null;
     const sex = person.sex || (/^F/.test(text(row.cat)) ? "F" : /^H/.test(text(row.cat)) ? "M" : "X");
     const groupKey = `${course}|${sex}|${relay ? "relay" : "individual"}`;
@@ -57,14 +58,14 @@ async function readCompetitionResults(pool, input) {
     const key = `${person.id}|${course}`, seasonKey = `${key}|${rules.competitionSeasonYear(row.date)}`;
     groups.get(groupKey).performances.push({ id: String(row.id), swimmer: relay ? text(row.nom_club || row.abre_club) || "Équipe non renseignée" : person.name || "Nageur non renseigné", swimmerId: relay || !person.name ? "" : person.id, isRelay: relay,
       club: text(row.abre_club || row.nom_club), category: normalized?.category || text(row.cat), categoryLabel: normalized?.categoryLabel || text(row.cat),
-      time: timeValue ? rules.formatTime(timeValue) : text(row.tps), timeValue: timeValue || Infinity,
+      time: timeValue ? duration.formatTime(timeValue) : text(row.tps), timeValue: timeValue || Infinity,
       personalBest: markersAvailable && !relay && Boolean(timeValue) && personal.get(key) === timeValue,
       seasonBest: markersAvailable && !relay && Boolean(timeValue) && seasonal.get(seasonKey) === timeValue });
   }
   for(const row of relays) {
-    const course=text(row.distance),sex=/^F/.test(row.categorie)?"F":/^H/.test(row.categorie)?"M":"X",key=`${course}|${sex}|relay`,timeValue=rules.parseCompactTime(row.tps4);
+    const course=text(row.distance),sex=/^F/.test(row.categorie)?"F":/^H/.test(row.categorie)?"M":"X",key=`${course}|${sex}|relay`,timeValue=duration.parseCompactTime(row.tps4);
     if(!groups.has(key))groups.set(key,{eventLabel:`${course} · Relais`,sexLabel:({F:"Femmes",M:"Hommes"})[sex]||"Mixte",performances:[]});
-    groups.get(key).performances.push({id:`relay:${row.id}`,swimmer:text(row.nom_club||row.abre_club)||"Équipe non renseignée",swimmerId:"",isRelay:true,club:text(row.abre_club||row.nom_club),category:text(row.categorie),categoryLabel:text(row.categorie),time:timeValue?rules.formatTime(timeValue):text(row.tps4),timeValue:timeValue||Infinity,personalBest:false,seasonBest:false});
+    groups.get(key).performances.push({id:`relay:${row.id}`,swimmer:text(row.nom_club||row.abre_club)||"Équipe non renseignée",swimmerId:"",isRelay:true,club:text(row.abre_club||row.nom_club),category:text(row.categorie),categoryLabel:text(row.categorie),time:timeValue?duration.formatTime(timeValue):text(row.tps4),timeValue:timeValue||Infinity,personalBest:false,seasonBest:false});
   }
   const statuses=await require("./nap-import-status-results").readImportStatusResults(pool,id);
   for(const row of statuses) {

@@ -1,0 +1,22 @@
+"use strict";
+const assert=require('node:assert/strict'),duration=require('../functions/nap-duration'),poolTime=require('../functions/nap-performance-normalization');
+const {compactTime}=require('../functions/nap-winpalme-results'),{planImportDiff}=require('../functions/nap-import-diff'),{previewImportDifferences}=require('../functions/nap-import-operation-plan');
+const {old}=require('./fixtures/nap-import-review-fixture'),{readCompetitionResults}=require('../functions/nap-direct-competition-results'),{createPerformanceAdministration}=require('../functions/nap-performance-administration');
+(async()=>{
+ for(const [raw,total,display] of [['483800',291800,'48:38.00'],['595999',359999,'59:59.99'],['1 000000',360000,'1:00:00.00'],['1 33500',381500,'1:03:35.00'],['1 033500',381500,'1:03:35.00'],['1 170700',462700,'1:17:07.00'],['1 444600',628600,'1:44:46.00'],['2 1',720001,'2:00:00.01'],['23 10100',8286100,'23:01:01.00']]){
+  assert.equal(duration.parseCompactTime(raw),total);assert.equal(duration.formatTime(total),display);assert.equal(duration.parseCompactTime(duration.storedTime(total)),total);
+ }
+ for(const raw of ['1 600000','1 006000','1 999999','1 03:20.00','1  33500','-1 33500','1 -33500','1033500','100 000000','NaN','Infinity','0 000000'])assert.equal(duration.parseCompactTime(raw),null,raw);
+ for(let value=1;value<360000;value+=37){const raw=duration.storedTime(value);assert.equal(duration.parseCompactTime(raw),poolTime.parseCompactTime(raw));assert.equal(duration.formatTime(value),poolTime.formatTime(value),'Under-hour display remains unchanged');}
+ assert.equal(compactTime('59:59.99'),'595999');assert.equal(compactTime('1 00:00.00'),'1 000000');assert.equal(compactTime('1:03:20,00'),'1 032000');assert.equal(compactTime('1 44:46.00'),'1 444600');assert.equal(compactTime('63:20.00'),'1 032000');assert.equal(compactTime('2 00:00.01'),'2 000001');
+ for(const raw of ['1 60:00.00','1 00:60.00','1:3:20.00','100 00:00.00'])assert.equal(compactTime(raw),null);
+ const before={...old,course:'LD03KM',tps:'1 33500',newpoints:77,pid:12},after={...before,tps:'1 033500',newpoints:0,pid:null};delete after.id;
+ const direct=planImportDiff({competitionId:5172,existing:[before],incoming:[{...after,newpoints:77,pid:12}]});assert.equal(direct.unchanged.length,1);assert.equal(direct.removals.length,0);
+ const diff=previewImportDifferences({canConfirm:true,competition:{id:5172},existing:[before],existingRelays:[],incoming:[{sourceLine:4,row:after}],incomingRelays:[],statusRows:[],decoded:{excluded:[]}});assert.equal(diff.individual.unchanged[0].row.id,old.id);assert.equal(diff.individual.unchanged[0].row.tps,'1 33500');assert.equal(diff.individual.unchanged[0].row.newpoints,77);assert.equal(diff.individual.additions.length,0);assert.equal(diff.individual.removals.length,0);
+ const rawTimes=['1 170700','595999','1 33500'],reads=[];
+ const publicPool={execute:async query=>{assert.match(query.sql,/^SELECT /);reads.push(query.sql);if(query.sql.includes('FROM perfs_relais')||query.sql.includes('FROM livepalmes_performance_imports'))return [[]];if(query.sql.includes('COUNT(*)'))return [[{count:100001}]];return [rawTimes.map((tps,i)=>({id:i+1,nageur:i+1,nom:'TEST',prenom:String(i),birth_date:'2000-02-01',sexe:'M',competition_id:5172,libelle:'Test',date:'2026-10-11',bassin:0,chrono:'M',ld:1,course:'LD03KM',cat:'HSE',tps,passage:0,relais:0}))];}};
+ const result=await readCompetitionResults(publicPool,5172);assert.deepEqual(result.groups[0].performances.map(p=>p.time),['59:59.99','1:03:35.00','1:17:07.00']);assert.equal(reads.length,4,'No additional database reads for long durations');
+ let adminReads=0;const admin=createPerformanceAdministration({authorize:async()=>({national:true}),getPool:()=>({execute:async query=>{adminReads++;return [query.sql.includes('COUNT(*)')?[{count:1}]:[{...before,nom:'TEST',prenom:'Nageur',date:'2026-10-11'}]];}})});
+ const page=await admin({data:{action:'list',swimmerId:168}});assert.equal(page.rows[0].time,'1:03:35.00');assert.equal(page.rows[0].native.tps,'1 33500');assert.equal(page.rows[0].timeValue,381500);assert.equal(adminReads,2);
+ console.log('NAP long durations: historical padded/unpadded hours, threshold/round trips, unchanged pool times, raw native preservation, import equivalence, public numeric sorting and administration; no writes or additional reads.');
+})().catch(e=>{console.error(e);process.exitCode=1;});

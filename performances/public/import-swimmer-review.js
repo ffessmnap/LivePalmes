@@ -25,7 +25,12 @@
     'missing-competition':'La date ou le nom de la compétition manque.'
   };
   let open=new Map(),searches=new Map(),pending=new Map(),clubSearches=new Map(),courseSearches=new Map(),page=0,diffPage=0,relayPage=0,coursePage=0;
-  function time(value) { const s=String(value??'');if(!/^\d{5,6}$/.test(s))return s;return `${Number(s.slice(0,-4))}:${s.slice(-4,-2)}.${s.slice(-2)}`; }
+  function time(value) {
+    const s=String(value??''),source=/^(\d{1,2})[ :](\d{2}):(\d{2})[.,](\d{2})$/.exec(s),native=/^(\d{1,2}) (\d{1,6})$/.exec(s);
+    if(source&&Number(source[2])<60&&Number(source[3])<60)return `${Number(source[1])}:${source[2]}:${source[3]}.${source[4]}`;
+    if(native){const tail=native[2].padStart(6,'0');if(Number(tail.slice(0,2))<60&&Number(tail.slice(2,4))<60)return `${Number(native[1])}:${tail.slice(0,2)}:${tail.slice(2,4)}.${tail.slice(4)}`;}
+    if(!/^\d{5,6}$/.test(s))return s;return `${Number(s.slice(0,-4))}:${s.slice(-4,-2)}.${s.slice(-2)}`;
+  }
   function birth(value) { return /^\d{4}-\d{2}-\d{2}$/.test(value||'')?value.split('-').reverse().join('/'):value; }
   function reset(){open=new Map();searches=new Map();pending=new Map();clubSearches=new Map();courseSearches=new Map();page=0;diffPage=0;relayPage=0;coursePage=0;global.LivePalmesImportSwimmerCreation?.reset();}
   const fold=value=>String(value||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase();

@@ -1,6 +1,6 @@
 "use strict";
 const {COLUMNS,positiveId,nativeRow}=require("./nap-performance-change-plan");
-const {parseCompactTime}=require("./nap-performance-normalization");
+const {parseCompactTime}=require("./nap-duration");
 const {hash}=require("./nap-import-preview");
 const {planImportDiff}=require("./nap-import-diff");
 const RELAY_COLUMNS=["id","club","distance","nageur1","nageur2","nageur3","nageur4","tps1","tps2","tps3","tps4","categorie","pts","compet"];
@@ -33,7 +33,7 @@ function previewImportDifferences(pack) {
     for(const key of ["nageur1","nageur2","nageur3","nageur4","compet"])positiveId(row[key]);
     if(new Set([row.nageur1,row.nageur2,row.nageur3,row.nageur4]).size!==4||row.compet!==pack.competition.id)throw new TypeError("Composition de relais invalide.");
     if(typeof row.club!=="string"||!/^\d{1,16}$/.test(row.club)||typeof row.distance!=="string"||!/^4X\d{2,4}(SF|BI|IS|AP)$/.test(row.distance)||row.distance.length>10||typeof row.categorie!=="string"||!row.categorie||row.categorie.length>6||!Number.isSafeInteger(row.pts)||row.pts<0||row.pts>2147483647)throw new TypeError("Resultat de relais natif invalide.");
-    for(const key of ["tps1","tps2","tps3","tps4"])if(typeof row[key]!=="string"||!/^\d{6}$/.test(row[key])||row[key]!=="000000"&&!parseCompactTime(row[key]))throw new TypeError("Temps de relais invalide.");
+    for(const key of ["tps1","tps2","tps3","tps4"])if(typeof row[key]!=="string"||!/^\d{6}$|^\d{1,2} \d{1,6}$/.test(row[key])||row[key]!=="000000"&&!parseCompactTime(row[key]))throw new TypeError("Temps de relais invalide.");
     if(!parseCompactTime(row.tps4))throw new TypeError("Temps final de relais requis.");
   }
   const individual=tableDiff(pack.existing,pack.incoming,COLUMNS),relays=tableDiff(pack.existingRelays,pack.incomingRelays,RELAY_COLUMNS);

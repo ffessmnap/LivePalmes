@@ -11,16 +11,19 @@ async function prepareCourses(pool,decoded,input) {
   }
   if(!bindings.length&&decoded.rows.every(supported))return null;
   if(new Set(decoded.rows.map(r=>r.course)).size>300)throw new RangeError("Plus de 300 epreuves sources : reduisez le lot avant rapprochement.");
-  const [rows]=await pool.execute({sql:"SELECT id,course,sexe,relais,ld,actif FROM course_dispo FORCE INDEX (PRIMARY) WHERE id>0 ORDER BY id LIMIT 301",timeout:10000});
+  const [rows]=await pool.execute({sql:"SELECT id,course,wplabel,sexe,relais,ld,actif FROM course_dispo FORCE INDEX (PRIMARY) WHERE id>0 ORDER BY id LIMIT 301",timeout:10000});
   if(rows.length>300)throw new RangeError("Catalogue NAP trop volumineux : choix d’epreuves refuse.");
   const groups=new Map();
   for(const r of rows){
     if(!Number.isSafeInteger(Number(r.id))||Number(r.id)<1||typeof r.course!=="string"||!r.course.trim()||r.course.length>80)throw new TypeError("Catalogue d’epreuves NAP incoherent.");
-    const code=r.course,kind=Number(r.relais)?"REL":"NAG",longDistance=Number(r.ld)!==0,key=JSON.stringify([code,kind,longDistance]);
+    const kind=Number(r.relais)?"REL":"NAG",longDistance=Number(r.ld)!==0;
+    // The programme uses e.g. 2000; perfs.course uses its declared WinPalme
+    // result code, e.g. LD02KM. Never manufacture an LD alias from a distance.
+    const code=longDistance&&kind==="NAG"?String(r.wplabel||"").trim():r.course,key=JSON.stringify([code,kind,longDistance]);
     // Existing performance columns/plans accept ten characters; mixed relay
     // catalog suffixes are not native result codes and must not be guessed.
-    if(code.length>10||kind==="REL"&&!/^4X\d{2,4}(SF|BI|IS|AP)$/.test(code))continue;
-    if(!groups.has(key))groups.set(key,{id:String(r.id),code,kind,longDistance,sexes:[],active:false,label:longDistance?require("./nap-open-water-courses").definition(code)?.label||code:code});
+    if(!code||code.length>10||kind==="REL"&&!/^4X\d{2,4}(SF|BI|IS|AP)$/.test(code))continue;
+    if(!groups.has(key))groups.set(key,{id:String(r.id),code,catalogCode:r.course,kind,longDistance,sexes:[],active:false,label:longDistance?require("./nap-open-water-courses").definition(r.course)?.label||r.course:code});
     const g=groups.get(key);if(!g.sexes.includes(String(r.sexe)))g.sexes.push(String(r.sexe));g.active=g.active||Number(r.actif)===1;
   }
   const courses=[...groups.values()],chosen=new Map();
