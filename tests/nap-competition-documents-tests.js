@@ -42,6 +42,12 @@ function fixture(initial=[],extended=false){
 }
 const upload={action:"upload",competitionId:"5162",actorUid:"administrator",fileName:"test.pdf",title:"Règlement",category:"rules",description:"Document d'essai",fileDataUrl:`data:application/pdf;base64,${Buffer.from("%PDF-1.4\nDocument").toString("base64")}`};
 (async()=>{
+ const large=Buffer.alloc(2*1024*1024+1,32);large.write('%PDF-1.4\n');
+ const largeUpload={...upload,national:true,fileDataUrl:`data:application/pdf;base64,${large.toString('base64')}`};
+ const tooLarge=fixture();await assert.rejects(docs.mutate(tooLarge.pool,largeUpload,tooLarge.services),/2 Mo/);assert.equal(tooLarge.writes,0);assert.equal(tooLarge.uploaded,false);assert.equal(tooLarge.saved,null);
+ const nationalUpload=fixture();nationalUpload.services.national=true;const nationalSaved=await docs.mutate(nationalUpload.pool,largeUpload,nationalUpload.services);assert.equal(nationalSaved.documents[0].size,large.length);
+ const regionalMetadata=fixture(nationalUpload.rows);await docs.mutate(regionalMetadata.pool,{...upload,action:'update',documentId:'nap-42',expectedFingerprint:nationalSaved.documents[0].napFingerprint},regionalMetadata.services);assert.equal(regionalMetadata.rows[0].size,large.length);assert.equal(regionalMetadata.uploaded,false);
+ const regionalReplace=fixture(nationalUpload.rows);await assert.rejects(docs.mutate(regionalReplace.pool,{...largeUpload,documentId:'nap-42',expectedFingerprint:nationalSaved.documents[0].napFingerprint},regionalReplace.services),/2 Mo/);assert.equal(regionalReplace.uploaded,false);assert.equal(regionalReplace.writes,0);
  const f=fixture();const created=await docs.mutate(f.pool,upload,f.services);
  assert.equal(created.source,"nap");assert.equal(created.documentId,"nap-42");assert.equal(created.documents[0].category,"rules");assert.equal(f.rows[0].element,34);assert.equal(f.rows[0].type,7);
  assert.equal(f.writes,2);assert.ok(f.queries<=12);assert.ok(f.rows[0].location.length<=255);assert.ok(f.rows[0].storage_path.length<=160);

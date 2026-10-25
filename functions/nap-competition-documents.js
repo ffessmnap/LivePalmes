@@ -68,7 +68,7 @@ async function mutate(pool,input,services){
   let decoded,clean;
   if(action!=="delete"){
    const fileName=action==="upload"?input.fileName:item(existing).fileName;
-   try{clean=helpers.cleanCompetitionDocumentInput({...input,fileName:action==="update"&&!helpers.canonicalDocumentContentType(fileName)?"document.pdf":fileName});if(action==="update")clean.fileName=fileName;if(action==="upload")decoded=helpers.decodeCompetitionDocumentDataUrl(input.fileDataUrl,clean.fileName);}catch(error){throw new TypeError(error.message);}
+   try{clean=helpers.cleanCompetitionDocumentInput({...input,fileName:action==="update"&&!helpers.canonicalDocumentContentType(fileName)?"document.pdf":fileName});if(action==="update")clean.fileName=fileName;if(action==="upload")decoded=helpers.decodeCompetitionDocumentDataUrl(input.fileDataUrl,clean.fileName,{national:services.national === true});}catch(error){throw new TypeError(error.message);}
   }
   const operation=digest([id,input.actorUid,requested,action,input.expectedFingerprint||"",clean||null,decoded?createHash("sha256").update(decoded.buffer).digest("hex"):null]);
   // A previous incomplete operation must be reconciled explicitly, never replayed

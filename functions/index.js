@@ -10307,6 +10307,7 @@ async function mutateNativeCompetitionDocument(request, action) {
   const pool = require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD);
   try {
     const result=await require("./nap-competition-documents").mutate(pool, {...request.data, competitionId, action, actorUid:context.uid}, {
+      national:context.national === true,
       authorize:async (connection,id,kind) => {
         const calendar=require("./nap-direct-calendar");
         const rows=await require("./nap-portal-competitions").bounded(connection,`${calendar.SELECT_EVENT.replace(" FROM competitions c",",cp.id AS parameter_id,cp.niveau FROM competitions c")}${calendar.EVENT_JOINS} WHERE c.id=? LIMIT 2`,[id],1);
@@ -10350,7 +10351,7 @@ exports.uploadEngagementCompetitionDocument = onCall({ ...ENGAGEMENT_DOCUMENT_UP
   let decoded;
   try {
     input = cleanCompetitionDocumentInput(request.data || {});
-    decoded = decodeCompetitionDocumentDataUrl(request.data?.fileDataUrl, input.fileName);
+    decoded = decodeCompetitionDocumentDataUrl(request.data?.fileDataUrl, input.fileName, { national: context.national === true });
   } catch (error) {
     throw new HttpsError("invalid-argument", cleanText(error?.message || error).slice(0, 220));
   }

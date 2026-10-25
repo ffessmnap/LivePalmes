@@ -2,9 +2,17 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 25 octobre — Documents limités à 2 Mo, exception nationale confirmée (préparation TEST)
+
+- Besoin demandé : limiter les nouveaux dépôts et remplacements à 2 Mo ; autoriser un dépassement avec alerte pour l’administration nationale. Le plafond technique national actuel de 10 Mo est conservé, avec confirmation explicite au-delà de 2 Mo. Périmètre : GED compétition, documents du calendrier et bibliothèque nationale.
+- Vérification serveur sur le droit national authentifié, sans utiliser un indicateur envoyé par le client. Les fichiers déjà publiés restent accessibles et conservent leur taille ; leur renommage sans nouveau fichier reste possible. Aucun changement de rôle, règle, schéma ou donnée métier.
+- Budget supplémentaire ouverture/action/rafraîchissement/pire cas : zéro lecture ou écriture Firestore/NAP ; réutilisation du contexte d’autorisation existant et des circuits de dépôt. Validation locale en mémoire et décodage déjà existant, plafonné à 10 Mo ; aucune lecture par document supplémentaire. Aucun mail réel, aucune écriture de recette sur la base commune.
+- Contrôles ciblés : seuils exacts 2/10 Mo, droits, remplacement et faux indicateur national, annulation avant lecture/transfert, dépôt groupé, anciens fichiers et bibliothèque nationale. Contrôle navigateur bibliothèque en 1440/390/320 px réussi ; contrôle global Linux et livraison TEST commune à attester avant validation utilisateur de cette évolution.
+
 ### 25 octobre — Régions invitées : région organisatrice verrouillée et aide compacte (suivi TEST : PR #509)
 
 - Demande validée : région organisatrice cochée d’office et non décochable ; autres régions facultatives ; recommandation compacte de limiter les invitations aux régions voisines pour les compétitions régionales/départementales, rappel de l’accès aux inscriptions pour tous les clubs ; avertissement non bloquant lorsque toutes les régions sont sélectionnées.
+- Retour utilisateur du 25 octobre : « Ok ça je valide », sur TEST `7b02a9eff2657c92e82b833cb6f90c6ed230b04d`, publié par le [run 40179481879](https://github.com/ffessmnap/LivePalmes/actions/runs/40179481879). Validation du paramétrage des régions uniquement ; la nouvelle limite documentaire reste à vérifier sur sa propre version TEST.
 - Interface uniquement : le stockage distinct de la région organisatrice et des invitations reste inchangé. Aucune sélection existante effacée à l’ouverture, aucun changement des règles d’accès. Budget supplémentaire initial/action/rafraîchissement/pire cas : zéro lecture Firestore ou NAP et zéro écriture distante ; calcul local borné à la liste des régions déjà chargée.
 - Vérifications : syntaxe JavaScript et suite des optimisations du portail réussies, dont verrouillage, conservation des invitations, changement de région organisatrice, avertissement et masquage au niveau national. Contrôle navigateur hors réseau en 1440/390/320 px réussi, sans débordement horizontal. La [PR #509](https://github.com/ffessmnap/LivePalmes/pull/509) conserve le statut de livraison, le résultat du contrôle global Linux et la preuve du déploiement TEST commun, avec réutilisation du backend inchangé. Recette utilisateur attendue sur la version déployée ; aucun mail réel ni changement PROD.
 
