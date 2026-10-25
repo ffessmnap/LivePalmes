@@ -1,0 +1,35 @@
+name: Verifier la remise en service du plan40233566184 sans ecriture
+'on':
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  audit:
+    if: github.ref == 'refs/heads/main' && github.run_attempt == 1
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: production
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        persist-credentials: false
+    - name: Tester les refus de derive hors reseau
+      run: python tests/production-resumed-audit-tests.py
+    - uses: google-github-actions/auth@v3
+      with:
+        credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_BACKEND }}
+        project_id: livepalmes
+    - uses: google-github-actions/setup-gcloud@v3
+    - name: Verifier les preuves les revisions et le reglage reactive
+      run: python tools/verify-production-resumed.py "$RUNNER_TEMP/final-audit"
+    - uses: actions/upload-artifact@v4
+      with:
+        name: production-resumed-verification
+        path: |
+          ${{ runner.temp }}/final-audit/final-resumed-receipt.json
+          ${{ runner.temp }}/final-audit/bcc-resumed-witness.json
+        if-no-files-found: error
+        retention-days: 14
