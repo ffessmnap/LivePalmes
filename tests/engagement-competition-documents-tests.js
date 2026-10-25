@@ -1,6 +1,7 @@
 const assert = require("node:assert/strict");
 const {
   MAX_COMPETITION_DOCUMENT_BYTES,
+  STANDARD_COMPETITION_DOCUMENT_BYTES,
   canonicalDocumentContentType,
   cleanCompetitionDocuments,
   competitionDocumentDownloadUrl,
@@ -38,10 +39,23 @@ assert.throws(
 assert.throws(
   () => decodeCompetitionDocumentDataUrl(
     `data:application/pdf;base64,${Buffer.alloc(MAX_COMPETITION_DOCUMENT_BYTES + 1).toString("base64")}`,
-    "trop-lourd.pdf"
+    "trop-lourd.pdf", { national: true }
   ),
   /10 Mo/
 );
+function pdfOfSize(size) {
+  const buffer = Buffer.alloc(size, 32);
+  buffer.write("%PDF-1.4\n");
+  return `data:application/pdf;base64,${buffer.toString("base64")}`;
+}
+assert.equal(STANDARD_COMPETITION_DOCUMENT_BYTES, 2 * 1024 * 1024);
+assert.equal(decodeCompetitionDocumentDataUrl(pdfOfSize(STANDARD_COMPETITION_DOCUMENT_BYTES), "limite.pdf").buffer.length, STANDARD_COMPETITION_DOCUMENT_BYTES);
+const aboveStandard = pdfOfSize(STANDARD_COMPETITION_DOCUMENT_BYTES + 1);
+for (const options of [{}, { national: false }, { national: "true" }, { national: 1 }]) {
+  assert.throws(() => decodeCompetitionDocumentDataUrl(aboveStandard, "trop-lourd.pdf", options), /2 Mo/);
+}
+assert.equal(decodeCompetitionDocumentDataUrl(aboveStandard, "national.pdf", { national: true }).buffer.length, STANDARD_COMPETITION_DOCUMENT_BYTES + 1);
+assert.equal(decodeCompetitionDocumentDataUrl(pdfOfSize(MAX_COMPETITION_DOCUMENT_BYTES), "national-limite.pdf", { national: true }).buffer.length, MAX_COMPETITION_DOCUMENT_BYTES);
 
 const storagePath = competitionDocumentStoragePath({
   competitionId: "Championnat régional 2026",
@@ -68,6 +82,7 @@ const documents = cleanCompetitionDocuments([{
   uploadedBy: uploader
 }]);
 assert.equal(Object.hasOwn(documents[0], "uploadedBy"), false);
+assert.equal(cleanCompetitionDocuments([{ ...documents[0], size: 5 * 1024 * 1024 }])[0].size, 5 * 1024 * 1024, "Already published files retain their size");
 const adminDocuments = cleanCompetitionDocuments([{ ...documents[0], uploadedBy: uploader }], { includeUploader: true });
 assert.deepEqual(adminDocuments[0].uploadedBy, uploader);
 

@@ -2,6 +2,7 @@ const crypto = require("node:crypto");
 
 const MAX_COMPETITION_DOCUMENTS = 20;
 const MAX_COMPETITION_DOCUMENT_BYTES = 10 * 1024 * 1024;
+const STANDARD_COMPETITION_DOCUMENT_BYTES = 2 * 1024 * 1024;
 
 const DOCUMENT_CATEGORIES = new Set([
   "poster",
@@ -56,15 +57,16 @@ function canonicalDocumentContentType(fileName = "") {
   return DOCUMENT_TYPES[documentExtension(fileName)] || "";
 }
 
-function decodeCompetitionDocumentDataUrl(value, fileName = "") {
+function decodeCompetitionDocumentDataUrl(value, fileName = "", { national = false } = {}) {
   const contentType = canonicalDocumentContentType(fileName);
   if (!contentType) throw new Error("Format de document non autorisé.");
   const match = String(value || "").match(/^data:([^;,]+)?(?:;[^,]*)?;base64,([a-z0-9+/=\r\n]+)$/i);
   if (!match) throw new Error("Contenu du document invalide.");
   const buffer = Buffer.from(match[2].replace(/\s+/g, ""), "base64");
   if (!buffer.length) throw new Error("Le document est vide.");
-  if (buffer.length > MAX_COMPETITION_DOCUMENT_BYTES) {
-    throw new Error("Le document dépasse la limite de 10 Mo.");
+  const maximum = national === true ? MAX_COMPETITION_DOCUMENT_BYTES : STANDARD_COMPETITION_DOCUMENT_BYTES;
+  if (buffer.length > maximum) {
+    throw new Error(`Le document dépasse la limite de ${maximum / (1024 * 1024)} Mo.`);
   }
   const extension = documentExtension(fileName);
   if (extension === "pdf" && buffer.subarray(0, 5).toString("ascii") !== "%PDF-") {
@@ -171,6 +173,7 @@ module.exports = {
   EXTERNAL_DOCUMENT_SOURCES,
   MAX_COMPETITION_DOCUMENT_BYTES,
   MAX_COMPETITION_DOCUMENTS,
+  STANDARD_COMPETITION_DOCUMENT_BYTES,
   canonicalDocumentContentType,
   cleanCompetitionDocument,
   cleanCompetitionDocumentInput,

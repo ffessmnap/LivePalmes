@@ -43,7 +43,7 @@ async function mutate(pool,input,services){
  let decoded;
  if(input.action==='upload'){
   if(typeof input.fileName!=='string'||!input.fileName.trim()||input.fileName.length>180)throw new TypeError("Nom de fichier invalide.");
-  try{decoded=files.decodeCompetitionDocumentDataUrl(input.fileDataUrl,input.fileName);}catch(error){throw new TypeError(error.message);}
+  try{decoded=files.decodeCompetitionDocumentDataUrl(input.fileDataUrl,input.fileName,{national:actor.national === true});}catch(error){throw new TypeError(error.message);}
  }
  const c=await pool.getConnection();let locked=false;
  try{
