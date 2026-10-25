@@ -2,6 +2,10 @@
 
 <!-- description: Référence du langage visuel, des composants d’interface et des règles responsive déjà présents dans LivePalmes. -->
 
+## Régions invitées des compétitions — 25 octobre 2026
+
+Dans Paramétrage, la région organisatrice apparaît cochée et verrouillée dans la liste des régions invitées, avec sa mention explicite. Les autres régions restent facultatives et leurs sélections existantes sont conservées. Une note compacte recommande les régions voisines et rappelle que tous les clubs de France peuvent s’inscrire indépendamment des invitations. Si toutes les régions disponibles sont sélectionnées, une seconde note discrète annonce la portée nationale des notifications ; elle ne bloque pas l’enregistrement. Ces notes reprennent le composant existant `admin-engagements-field-note`, sans encadré supplémentaire. Les changements de cases conservent le focus et le défilement.
+
 ## Contrôle des imports par nageur — 24 octobre 2026
 
 - Les groupes d’identités utilisent des `details/summary` natifs : vert « Rapprochés » replié par défaut, orange « À rapprocher » et rouge « Inconnus » ouverts, avec compteurs et intitulés explicites indépendants de la couleur. Une fiche dépliable par identité présente source et profil NAP côte à côte à partir de 700 px, empilés sur mobile. Les candidats sont des cartes avec bouton « Choisir ce nageur » ; la recherche est déclenchée volontairement.
