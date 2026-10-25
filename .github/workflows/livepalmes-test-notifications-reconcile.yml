@@ -1,0 +1,65 @@
+name: Reconcilier uniquement le backend CCI de TEST valide
+'on':
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        required: true
+        type: string
+        description: Saisir livepalmes-test ; sept exports existants, Hosting inchange
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: livepalmes-test-backend
+  cancel-in-progress: false
+jobs:
+  reconcile:
+    if: github.ref == 'refs/heads/main' && github.run_attempt == 1 && inputs.confirmation == 'livepalmes-test'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: firebase-test
+    env:
+      TARGET_FIREBASE_PROJECT: livepalmes-test
+      GCLOUD_PROJECT: livepalmes-test
+      GOOGLE_CLOUD_PROJECT: livepalmes-test
+      CONFIRMATION: ${{ inputs.confirmation }}
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        path: tooling
+        fetch-depth: 0
+        persist-credentials: false
+    - uses: actions/checkout@v7
+      with:
+        ref: 14c8d793f1ee2f5fe52b831f73518a26b2edd67d
+        path: candidate
+        fetch-depth: 0
+        persist-credentials: false
+    - uses: actions/setup-node@v7
+      with:
+        node-version: '22'
+    - uses: google-github-actions/auth@v3
+      with:
+        credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_TEST_BACKEND }}
+        project_id: livepalmes-test
+    - uses: google-github-actions/setup-gcloud@v3
+    - name: Verifier le circuit et preparer les seules sources CCI
+      run: |
+        npm ci --prefix tooling/tests/firestore-rules --ignore-scripts
+        npm ci --prefix candidate/functions --ignore-scripts
+        python tooling/tests/bcc-publication-tests.py
+        python tooling/tools/reconcile-test-bcc.py prepare "$RUNNER_TEMP/reconciliation" candidate
+        ln -s "$GITHUB_WORKSPACE/candidate/functions/node_modules" "$RUNNER_TEMP/.firebase-test-functions/functions/node_modules"
+    - name: Simuler les sept exports existants
+      run: python tooling/tools/reconcile-test-bcc.py dry-run "$RUNNER_TEMP/reconciliation" candidate
+    - name: Actualiser les sept exports sans changer Hosting ou les mails
+      run: python tooling/tools/reconcile-test-bcc.py deploy "$RUNNER_TEMP/reconciliation" candidate
+    - name: Verifier les sept revisions et toutes les exclusions
+      run: python tooling/tools/reconcile-test-bcc.py verify "$RUNNER_TEMP/reconciliation" candidate
+    - uses: actions/upload-artifact@v4
+      with:
+        name: test-backend-proof
+        path: ${{ runner.temp }}/reconciliation/test-backend-proof.json
+        if-no-files-found: error
+        retention-days: 14

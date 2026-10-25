@@ -147,8 +147,17 @@ def main():
         if os.environ.get('PLAN'):
             cycle.require_access_request_selection(plan, selected)
         source_only = set(extra) - set(notification) - set(public_nap) - set(access_requests)
-        if not source_only.issubset({f['name'].split('/')[-1] for f in selected_functions}):
+        bcc_names = cycle.approved_bcc_functions(plan) if os.environ.get('PLAN') else []
+        allowed_new = {cycle.bcc.contract()['worker']} if bcc_names else set()
+        if not (source_only - allowed_new).issubset({f['name'].split('/')[-1] for f in selected_functions}):
             raise ValueError('Traitement PDF existant absent')
+        report['additionalBccFunctions'] = bcc_names
+        if bcc_names:
+            cycle.require(len(functions) == 112 and not any(f['name'].split('/')[-1] in allowed_new for f in functions), 'Worker CCI deja present avant sauvegarde')
+            ref = next(f for f in functions if f['name'].split('/')[-1] == cycle.bcc.REFERENCE)
+            state_spec = importlib.util.spec_from_file_location('bcc_backup_state', Path(__file__).with_name('production-release-state.py'))
+            state = importlib.util.module_from_spec(state_spec); state_spec.loader.exec_module(state)
+            report['bccWorkerService'] = cycle.bcc.worker_service(state.rollback_patch(ref, {}))
         report['additionalPdfFunctions'] = plan.get('additionalPdfFunctions', []) if os.environ.get('PLAN') else []
         report['additionalClubDirectoryFunctions'] = cycle.approved_club_directory_functions(plan) if os.environ.get('PLAN') else []
         report['additionalGroupedFunctions'] = cycle.approved_grouped_functions(plan) if os.environ.get('PLAN') else []
@@ -179,6 +188,14 @@ def main():
                         raise ValueError('Configuration groupee initiale inattendue')
                     if f['name'].split('/')[-1] == cycle.grouped.NOTIFY:
                         cycle.grouped.notification_service(service)
+                if f['name'].split('/')[-1] in bcc_names:
+                    keys = {s.get('key') for s in service.get('secretEnvironmentVariables', [])}
+                    mail_names = {'notifyEngagementCompetitionDocuments', 'processNapCompetitionNotifications', 'closeDueEngagementCompetitions'}
+                    if f['name'].split('/')[-1] in mail_names:
+                        if keys != cycle.bcc.MAIL_KEYS or len(service.get('secretEnvironmentVariables', [])) != 8 or not ordinary_runtime_allowed({**service, 'secretEnvironmentVariables': []}):
+                            raise ValueError('Configuration mail CCI initiale inattendue')
+                    elif not ordinary_runtime_allowed(service):
+                        raise ValueError('Configuration CCI initiale inattendue')
                 if f['name'].split('/')[-1] in access_requests and not access_request_runtime_allowed(service):
                     raise ValueError('Configuration demandes acces inattendue')
                 if f['name'].split('/')[-1] not in extra and not ordinary_runtime_allowed(service):
