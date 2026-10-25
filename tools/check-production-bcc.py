@@ -93,7 +93,8 @@ def get(url, token):
 def main(mode, directory):
     directory = Path(directory)
     request = json.loads((directory / 'request.json').read_text())
-    policy.require(policy.approved(request), 'Garde CCI sans plan')
+    scope = policy.for_request(request)
+    policy.require(scope.approved(request), 'Garde CCI sans plan')
     credentials = json.loads(Path(os.environ['GOOGLE_APPLICATION_CREDENTIALS']).read_text())
     policy.require(credentials.get('project_id') == 'livepalmes', 'Compte PROD requis')
     token = subprocess.check_output(['gcloud', 'auth', 'application-default', 'print-access-token'], text=True).strip()
@@ -104,7 +105,7 @@ def main(mode, directory):
     actual_mode = 'paused' if mode in ['paused', 'after'] else mode
     witness = check_mail(get(MAIL_URL, token), request['bccMailTransition'], actual_mode, previous)
     witness['schedulerSha256'] = scheduler_digest(get(SCHEDULER_URL, token))
-    policy.require(witness['schedulerSha256'] == policy.contract()['schedulerSha256'], 'Scheduler different du bilan initial')
+    policy.require(witness['schedulerSha256'] == scope.contract()['schedulerSha256'], 'Scheduler different du bilan initial')
     if mode != 'initial':
         witness['queueSha256'] = check_queue(get(QUEUE_URL, token))
     if previous:

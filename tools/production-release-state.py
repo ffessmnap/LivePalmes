@@ -53,6 +53,7 @@ def check_after(backup, destination, require_success):
     if report.get('additionalBccFunctions'):
         spec = importlib.util.spec_from_file_location('bcc_state_policy', Path(__file__).with_name('bcc-publication-policy.py'))
         bcc_policy = importlib.util.module_from_spec(spec); spec.loader.exec_module(bcc_policy)
+        bcc_policy = bcc_policy.for_request(report)
         if sorted(report['additionalBccFunctions']) != bcc_policy.contract()['selected']:
             raise ValueError('Selection CCI du rapport differente')
     errors = []

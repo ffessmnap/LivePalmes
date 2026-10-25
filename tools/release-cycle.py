@@ -26,7 +26,7 @@ _bcc_spec.loader.exec_module(bcc)
 
 
 def approved_bcc_functions(value):
-    return bcc.approved(value)
+    return bcc.for_request(value).approved(value)
 
 
 
@@ -209,7 +209,7 @@ def approved_access_request_functions(value):
 
 
 def require_access_request_selection(request, selected):
-    bcc.selection(request, selected)
+    bcc.for_request(request).selection(request, selected)
     grouped.selection(request, selected)
     club = approved_club_directory_functions(request)
     require(not club or (len(selected) == 3 and set(selected) == set(club)),
@@ -602,7 +602,7 @@ def prepare_request(request_path, directory):
         run_id = latest_run('livepalmes-test-notifications-reconcile.yml')
         proof_dir = Path(directory) / 'resolved-bcc-proof'
         info = artifact(run_id, 'test-backend-proof', proof_dir, '.github/workflows/livepalmes-test-notifications-reconcile.yml')
-        bcc.reconciled_proof(value, read(proof_dir / 'test-backend-proof.json'), info)
+        bcc.for_request(value).reconciled_proof(value, read(proof_dir / 'test-backend-proof.json'), info)
         value['testBackendRuns'] = [run_id]
     write(Path(directory) / 'request.json', value)
     write(Path(directory) / 'paths.json', paths)
@@ -737,7 +737,7 @@ def verify_test(directory, live=True):
         source = artifact(run_id, 'test-backend-proof', destination, expected_workflow)
         targeted = read(destination / 'test-backend-proof.json')
         if bcc_reconciled:
-            bcc.reconciled_proof(request, targeted, source)
+            bcc.for_request(request).reconciled_proof(request, targeted, source)
             require(len(runs) == 1, 'Une seule reconciliation TEST CCI attendue')
             evidence['currentTestState'] = targeted['currentTestState']
         else:
@@ -755,7 +755,9 @@ def verify_test(directory, live=True):
     if runs:
         evidence['state']['functions'] = sorted(functions.values(), key=lambda f: f['name'])
     if live:
-        expected_live = evidence['currentTestState'] if approved_bcc_functions(request) else evidence['state']
+        common_bcc = bool(approved_bcc_functions(request)) and bcc.for_request(request).contract().get('testProofMode') == 'common-exact'
+        require(not common_bcc or not runs, 'Preuve commune exacte CCI sans ajout cible attendu')
+        expected_live = evidence['state'] if common_bcc or not approved_bcc_functions(request) else evidence['currentTestState']
         require(snapshot('livepalmes-test') == expected_live, 'TEST a change depuis sa publication : refaire le bilan')
     if os.environ.get('DTN_EXTENSION_CHECKS') == 'success':
         evidence['dtnExtensionVerification'] = {'schema': 1, 'candidate': candidate, 'suite': 'dtn-shared-invalidation', 'mode': 'offline-no-invocation', 'result': 'success', 'functions': sorted(DTN_FUNCTIONS)}
@@ -966,8 +968,8 @@ def freeze_plan(directory, evidence=False):
             proof['mailPreservation'] = grouped.all_mail_preservation(request)
         write(root / 'grouped-idf-proof.json', proof)
     if approved_bcc_functions(request):
-        require(read(root / 'baseline.json')['productionRun'] == bcc.contract()['productionRun'], 'Reference PROD CCI differente')
-        write(root / 'bcc-proof.json', bcc.verify_fingerprints(backend_fingerprints(request['productionCommit']),
+        require(read(root / 'baseline.json')['productionRun'] == bcc.for_request(request).contract()['productionRun'], 'Reference PROD CCI differente')
+        write(root / 'bcc-proof.json', bcc.for_request(request).verify_fingerprints(backend_fingerprints(request['productionCommit']),
             backend_fingerprints(request['candidate']), names))
     if request.get('excludedBackendEvidence') is not None:
         verify_excluded_backend(root, state, selected)
