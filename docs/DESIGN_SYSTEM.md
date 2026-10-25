@@ -2,6 +2,12 @@
 
 <!-- description: Référence du langage visuel, des composants d’interface et des règles responsive déjà présents dans LivePalmes. -->
 
+## Aide au contrôle des imports — 25 octobre 2026
+
+- Avant les groupes de nageurs, les alertes nomment le nageur ou le relais et proposent une action directe vers le contexte ; le numéro de ligne TXT devient un repère secondaire. Une identité de premier relayeur non rapprochée reste distincte d’une donnée de temps ou de catégorie manquante. Une alerte de club distingue rattachement du club source et différence réelle de clubs.
+- Le message de confirmation utilise une carte existante, une zone de texte brut en lecture seule et les actions Copier/Télécharger ; aucun bouton d’envoi. Une modification des choix retire le texte et désactive sa préparation jusqu’au nouvel aperçu. La zone de texte prend la largeur disponible, reste redimensionnable verticalement et les actions reviennent à la ligne sur mobile.
+- Le choix de club combine une recherche locale et des groupes d’options « Correspondances proposées » puis « Autres clubs — ordre alphabétique ». Le choix hors recherche reste visible. Les profils déjà identifiés dans un relais ne proposent plus une sélection répétée ; un lien mène à la fiche individuelle et distingue un choix local à actualiser d’un profil vérifié.
+
 ## Dépôt documentaire et taille — 25 octobre 2026
 
 Les formulaires de compétition, du calendrier et de la bibliothèque nationale affichent la limite habituelle de 2 Mo. Le droit national autorise jusqu’à 10 Mo, après une confirmation native avant toute lecture du fichier, transfert ou préparation de notification. Un dépôt multiple demande une seule confirmation pour le lot. Annuler conserve la saisie ; dépasser le plafond du profil affiche l’erreur dans la zone de statut existante. Une modification de titre sans nouveau fichier ne demande pas de confirmation de taille. Aucun nouveau panneau ni composant n’est ajouté.
