@@ -13,9 +13,9 @@ function documentTree(code,mutationModule=false){
   if(object?.type==='ObjectExpression')object.properties=object.properties.filter(p=>p.key?.name!=='STANDARD_COMPETITION_DOCUMENT_BYTES');}
  return tree(ast);
 }
-async function prove({base,candidate,rows,source,definitions,loader}){
- assert.equal(base,contract.productionCommit);assert.equal(candidate,contract.candidate);
- const expected=contract.retained.map(({name,commit})=>({name,commit}));
+async function prove({base,candidate,rows,source,definitions,loader,contract:review=contract}){
+ assert.equal(base,review.productionCommit);assert.equal(candidate,review.candidate);
+ const expected=review.retained.map(({name,commit})=>({name,commit}));
  assert.deepEqual(rows,expected,'Six retained services with exact actual provenance');
  const before=definitions(base),after=definitions(candidate);
  for(const row of rows){assert.ok(before.has(row.name)&&after.has(row.name));assert.equal(tree(before.get(row.name)),tree(after.get(row.name)),row.name);}
