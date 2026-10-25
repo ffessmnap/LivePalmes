@@ -1,5 +1,7 @@
 """Closed CCI/task preparation. No API calls, data mutation or mail invocation."""
 import copy
+import importlib.util
+from functools import lru_cache
 import hashlib
 import json
 import re
@@ -62,7 +64,7 @@ def approved(value):
 def selection(value, selected):
     expected = approved(value)
     require(not expected or (len(selected) == len(expected) and set(selected) == set(expected)),
-            'Selection CCI differente des107 fonctions bornees')
+            'Selection CCI differente du contrat borne')
 
 
 def verify_fingerprints(before, after, functions):
@@ -72,7 +74,7 @@ def verify_fingerprints(before, after, functions):
             'Inventaire ou empreintes CCI differents de la preuve')
     require(set(after) - set(before) == {c['worker']} and not set(before) - set(after), 'Nouvel export CCI inattendu')
     return {'pair': [c['productionCommit'], c['candidate']], 'contractSha256': DIGEST,
-        'selected': c['selected'], 'existingSelected': 106, 'retainedCount': 6,
+        'selected': c['selected'], 'existingSelected': len(c['selected']) - 1, 'retainedCount': len(c['retained']),
         'newFunctions': [c['worker']], 'configurationChangesToExistingFunctions': False,
         'sourceOnly': True, 'networkCalls': 0}
 
@@ -147,3 +149,18 @@ def reconciled_proof(request, proof, source):
         and all(f.get('state') == 'ACTIVE' for f in rows)
         and current.get('hosting', {}).get('version') == c['currentTestHosting']
         and all(f in rows for f in proof['state']['functions']), 'Etat TEST courant non atteste')
+
+
+@lru_cache(maxsize=2)
+def _scope(all_validated):
+    spec = importlib.util.spec_from_file_location('closed_bcc_scope_' + str(all_validated), Path(__file__))
+    result = importlib.util.module_from_spec(spec); spec.loader.exec_module(result)
+    if all_validated:
+        result.CONTRACT = ROOT / '.github/releases/evidence/20261025-all-validated-contract.json'
+        result.DIGEST = '2ada19c3267aa6efa741215d0da0f3b422f7415a0e04b950744afe3898051c14'
+    return result
+
+
+def for_request(value):
+    # Two immutable, independently pinned scopes. Never overwrite the old plan.
+    return _scope(value.get('candidate') == '8b868c7c1382698ee1d04274fcc5b9a56a95d274')

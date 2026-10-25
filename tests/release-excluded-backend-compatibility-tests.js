@@ -230,6 +230,8 @@ async function prove() {
 }
 const groupedPair = base === "fbd3c2868fcb3690e1fa5a7ddeca9f45e6fb4511" && candidate === "0619f1dce9439afd5dd4719ee035ff0fc3b99b83";
 const bccPair = base === "0619f1dce9439afd5dd4719ee035ff0fc3b99b83" && candidate === "c93c5016682bf67ddee589b8fb0d4008e68b3196";
-if (require.main === module) (bccPair ? require("./release-bcc-retained-compatibility").prove({root,base,candidate,rows,source,definitions,loader}) : groupedPair ? require('./release-grouped-retained-compatibility').prove({root,base,candidate,rows,source,definitions,loader}) : prove())
+const allContract = require('../.github/releases/evidence/20261025-all-validated-contract.json');
+const allPair = base === allContract.productionCommit && candidate === allContract.candidate;
+if (require.main === module) (allPair ? require('./release-bcc-retained-compatibility').prove({root,base,candidate,rows,source,definitions,loader,contract:allContract}) : bccPair ? require("./release-bcc-retained-compatibility").prove({root,base,candidate,rows,source,definitions,loader}) : groupedPair ? require('./release-grouped-retained-compatibility').prove({root,base,candidate,rows,source,definitions,loader}) : prove())
   .then(result => console.log(JSON.stringify(result))).catch(error => { console.error(error.stack); process.exitCode = 1; });
 module.exports = { loader,source,definitions };

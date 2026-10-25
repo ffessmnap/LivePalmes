@@ -148,7 +148,7 @@ def main():
             cycle.require_access_request_selection(plan, selected)
         source_only = set(extra) - set(notification) - set(public_nap) - set(access_requests)
         bcc_names = cycle.approved_bcc_functions(plan) if os.environ.get('PLAN') else []
-        allowed_new = {cycle.bcc.contract()['worker']} if bcc_names else set()
+        allowed_new = {cycle.bcc.for_request(plan).contract()['worker']} if bcc_names else set()
         if not (source_only - allowed_new).issubset({f['name'].split('/')[-1] for f in selected_functions}):
             raise ValueError('Traitement PDF existant absent')
         report['additionalBccFunctions'] = bcc_names
@@ -157,7 +157,7 @@ def main():
             ref = next(f for f in functions if f['name'].split('/')[-1] == cycle.bcc.REFERENCE)
             state_spec = importlib.util.spec_from_file_location('bcc_backup_state', Path(__file__).with_name('production-release-state.py'))
             state = importlib.util.module_from_spec(state_spec); state_spec.loader.exec_module(state)
-            report['bccWorkerService'] = cycle.bcc.worker_service(state.rollback_patch(ref, {}))
+            report['bccWorkerService'] = cycle.bcc.for_request(plan).worker_service(state.rollback_patch(ref, {}))
         report['additionalPdfFunctions'] = plan.get('additionalPdfFunctions', []) if os.environ.get('PLAN') else []
         report['additionalClubDirectoryFunctions'] = cycle.approved_club_directory_functions(plan) if os.environ.get('PLAN') else []
         report['additionalGroupedFunctions'] = cycle.approved_grouped_functions(plan) if os.environ.get('PLAN') else []
