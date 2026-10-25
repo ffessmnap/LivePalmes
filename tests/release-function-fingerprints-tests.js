@@ -4,6 +4,9 @@ const { fingerprints, fromGit } = require("../tools/release-function-fingerprint
 const path = require("node:path");
 const source = 'const {onCall}=require("firebase-functions/v2/https");\nfunction helper(){return 1;}\nexports.one=onCall({},()=>helper()+1);\nexports.two=onCall({},()=>helper()+2);';
 const original = fingerprints(source, "dependencies");
+const taskSource=source.replace('const {onCall}', 'const {onTaskDispatched}=require("firebase-functions/v2/tasks");\nconst {onCall}')+'\nexports.task=onTaskDispatched({rateLimits:{maxConcurrentDispatches:1}},()=>helper());';
+assert.equal(fingerprints(taskSource,'dependencies').mode,'dependency-closure');
+assert.notEqual(fingerprints(taskSource,'dependencies').functions.task,fingerprints(taskSource.replace('return 1','return 7'),'dependencies').functions.task);
 assert.equal(original.mode, "dependency-closure");
 const local = fingerprints(source.replace('helper()+1', 'helper()+3'), "dependencies");
 assert.notEqual(original.functions.one, local.functions.one);

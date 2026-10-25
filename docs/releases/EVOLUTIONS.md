@@ -2,6 +2,13 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 25 octobre — Notifications des compétitions : CCI, fenêtre documentaire et tâches (en préparation TEST)
+
+- Besoin et approche approuvés dans la discussion : ouverture/documents identiques par lots CCI de 50 ; récapitulatif de clôture par club avec ses administrateurs en CCI et son seul PDF ; lien commun Mon compte. Documents regroupés pendant cinq minutes fixes à partir du premier dépôt. Déclenchement serveur à l'action, contrôle périodique existant conservé pour clôtures automatiques et reprise.
+- Audit en lecture seule de `legacy-nap-5135` : deux dépôts le 24 octobre à 23:21:50 et 23:22:36 (Paris), 246 destinataires pour 129 clubs invités, 492 acceptations SMTP jusqu'au 25 octobre à 00:10:41, soit 48 min 50. Audience toutes régions confirmée par Antoine. Causes : préparation/envoi individuels par passages de cinq minutes ; fin de curseur qui abandonnait du temps disponible. Aucun réglage ni donnée PROD modifié.
+- Implémentation : nouveaux événements versionnés dans les collections techniques existantes, reçus idempotents et tâches persistantes, suivi par destinataire, contrôle frais des préférences/statut/adresse/club avant SMTP, aucun renvoi automatique d'une tentative commencée. Traitement historique conservé, curseur corrigé. Budget et circuit TEST borné dans `docs/NOTIFICATIONS_COMPETITIONS.md` ; aucun paquet npm, collection, index ou règle ajouté. Bibliothèque nationale hors de ce lot.
+- Vérifications et références PR/déploiement : à compléter après les contrôles. Aucun envoi réel ; transport groupé bloqué sur TEST, réglage national inchangé requis. Aucune publication PROD. Validation utilisateur de la nouvelle version regroupée attendue.
+
 ### 24 octobre — Publication PROD du lot regroupé, mails tous clubs conservés
 
 - Candidat applicatif exact `0619f1dce9439afd5dd4719ee035ff0fc3b99b83`, déjà validé sur TEST40101909214. Préparation corrigée [PR #505](https://github.com/ffessmnap/LivePalmes/pull/505) intégrée dans `4a58809c`, CI Linux40113965809 et preflight officiel40114917523 réussis. Accord final explicite Infra : après la question visant le plan40114917523, Antoine répond « Oui je valide ».

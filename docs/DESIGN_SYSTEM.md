@@ -659,6 +659,8 @@ Dans Administration nationale, le panneau « Mails automatiques » distingue le 
 
 Dans Diffusion, le suivi des courriels propose « Actualiser le suivi » avec le bouton discret existant. Les compteurs concernent explicitement les lignes affichées (100 par page), sans actualisation permanente. L’en-tête se replie sur mobile. « Envoyé » signifie accepté par le serveur mail ; « À vérifier — ne pas renvoyer » distingue un résultat SMTP incertain ou un envoi resté en cours plus de cinq minutes. Une erreur n’est jamais renvoyée automatiquement.
 
+Pour un envoi groupé, la cellule Destinataire indique l'effectif et « CCI », sans publier les adresses du groupe. La cellule Statut détaille acceptés, rejetés, à vérifier et annulés. Le libellé « Partiellement accepté — ne pas renvoyer le groupe » distingue les rejets partiels. Les compteurs d'en-tête comptent les envois techniques, avec une mention explicite du regroupement ; les lignes historiques individuelles restent lisibles. Cette variante réutilise les cellules et styles existants.
+
 ### Filtres du calendrier Club
 
 La règle actuelle remplace l’ancienne présentation segmentée du statut et le repli des filtres avancés : les boutons Toutes, Ouvertes, À venir et Fermées ne sont plus affichés dans le calendrier Club. Saison, Type, Région et Niveau restent toujours visibles dans quatre colonnes compactes sur une seule ligne, y compris sur mobile. Le choix sans restriction du filtre Région est abrégé en « Toutes » ; son libellé Région reste visible. La colonne Saison reçoit davantage de largeur, prise sur Région : aucun filtre ne passe sur une deuxième ligne. Les sélecteurs conservent une zone tactile de 44 px sur mobile. Le calendrier organisateur conserve son sélecteur de statut et son comportement propre.

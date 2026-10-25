@@ -15,7 +15,7 @@ async function deliver(db, reference, services, now=new Date().toISOString()){
   const claimed=await db.runTransaction(async transaction=>{
     const [snapshot,settingSnapshot]=await transaction.getAll(reference,control.ref(db));
     const job=snapshot.data();
-    if(!job||job.source!=='nap'||job.status!=='ready')return null;
+    if(!job||job.source!=='nap'||job.deliveryMode==='bcc-v1'||job.status!=='ready')return null;
     const pointer=await transaction.get(automation.stateRef(db,job.competitionId));
     const gate=control.decision(control.state(settingSnapshot.data()),job,services.projectId);
     if(!gate.allowed||!automation.currentEvent(job.notificationEvent,pointer.data()||{})){
@@ -32,7 +32,7 @@ async function deliver(db, reference, services, now=new Date().toISOString()){
 async function drain(db,services){
   const clock=services.clock||Date.now,sleep=services.sleep||(ms=>new Promise(resolve=>setTimeout(resolve,ms)));
   const started=clock(),owner=randomUUID(),reference=workerRef(db);
-  let cursorId='';
+  let cursorId='',wrapped=false;
   const acquired=await db.runTransaction(async transaction=>{
     const state=(await transaction.get(reference)).data()||{};
     if(Number(state.leaseUntil||0)>started||Number(state.pauseUntil||0)>started)return false;
@@ -47,7 +47,7 @@ async function drain(db,services){
       let query=db.collection('engagementMailJobs').where('status','==','ready').orderBy('__name__').limit(LIMITS.pageSize);
       if(cursorId)query=query.startAfter(cursorId);
       const snapshot=await query.get();
-      if(!snapshot.docs.length){cursorId='';break;}
+      if(!snapshot.docs.length){if(cursorId&&!wrapped){cursorId='';wrapped=true;continue;}cursorId='';break;}
       // One shared lease read per page, never an additional read per displayed recipient.
       const lease=(await reference.get()).data()||{};
       if(lease.owner!==owner||Number(lease.leaseUntil||0)<=clock()){result.reason='lease-lost';return result;}
@@ -56,7 +56,7 @@ async function drain(db,services){
         result.scanned++;
         cursorId=doc.id;
         const job=doc.data();
-        if(job.source!=='nap'||(services.competitionId&&job.competitionId!==services.competitionId))continue;
+        if(job.source!=='nap'||job.deliveryMode==='bcc-v1'||(services.competitionId&&job.competitionId!==services.competitionId))continue;
         const outcome=await deliver(db,doc.ref,services,new Date(clock()).toISOString());
         if(outcome.skipped)continue;
         result.processed++;if(outcome.status==='sent')result.sent++;
@@ -66,7 +66,7 @@ async function drain(db,services){
         }
         await sleep(LIMITS.intervalMs);
       }
-      if(snapshot.docs.length<LIMITS.pageSize){cursorId='';break;}
+      if(snapshot.docs.length<LIMITS.pageSize){cursorId='';if(!wrapped){wrapped=true;continue;}break;}
       result.reason='budget';
     }
     return result;
@@ -77,4 +77,4 @@ async function drain(db,services){
     });
   }
 }
-module.exports={deliver,drain,failure,LIMITS};
+module.exports={deliver,drain,failure,workerRef,LIMITS};

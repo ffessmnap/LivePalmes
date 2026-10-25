@@ -126,6 +126,18 @@ class NotificationReleaseTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 cycle.approved_native_identity_secret(value)
 
+    def test_bcc_task_refresh_allows_only_the_exact_new_worker(self):
+        candidate = 'a' * 40
+        before = {'functions': [{'name': name, 'state': 'ACTIVE', 'commit': 'b' * 40}
+                               for name in sorted((test_state.BCC_NAMES - {'processNapNotificationTask'}) | {'unrelated'})]}
+        after = {'functions': [{**f, 'commit': candidate} if f['name'] in test_state.BCC_NAMES else dict(f)
+                              for f in before['functions']] + [{'name': 'processNapNotificationTask', 'state': 'ACTIVE', 'commit': candidate}]}
+        with patch.dict(os.environ, {'NOTIFICATION_BCC_TASKS': 'true', 'NOTIFICATION_PILOT_IDF': 'false'}):
+            test_state.unchanged(before, after, candidate)
+            for invalid in [after['functions'] + [{'name': 'unexpected'}], after['functions'][1:]]:
+                with self.assertRaises(ValueError):
+                    test_state.unchanged(before, {'functions': invalid}, candidate)
+
     def request(self):
         return {'additionalNotificationFunctions': sorted(cycle.NOTIFICATION_FUNCTIONS),
                 'additionalNotificationApproval': 'Accord specifique Infra du bilan exact',
