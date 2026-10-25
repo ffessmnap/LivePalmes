@@ -2,7 +2,7 @@
 const {notMerged}=require("./nap-swimmer-merge-state");
 const {createHash}=require("node:crypto");
 const {reviewWinPalmeResults,compactTime}=require("./nap-winpalme-results");
-const {resolveSwimmers}=require("./nap-import-swimmer-resolution");
+const {resolveSwimmers,identity}=require("./nap-import-swimmer-resolution");
 const {COLUMNS,positiveId}=require("./nap-performance-change-plan");
 const hash=x=>createHash("sha256").update(JSON.stringify(x)).digest("hex");
 const q=async(pool,sql,values=[])=>(await pool.execute({sql,timeout:10000},values))[0];
@@ -58,12 +58,14 @@ async function previewNativeImport(pool,input) {
   }
   const memberChoices=new Map();
   for(const b of memberBindings){const key=`${b.sourceLine}:${b.position}`;if(!decoded.rows.some(r=>r.kind==="REL"&&r.sourceLine===b.sourceLine)||!Number.isInteger(b.position)||b.position<1||b.position>4||memberChoices.has(key)||!candidates.some(c=>c.id===b.swimmerId))throw new TypeError("Choix de relayeur invalide.");memberChoices.set(key,b.swimmerId);}
-  const relayMembers=new Map(),unresolvedMembers=[];
+  const relayMembers=new Map(),unresolvedMembers=[],relayBindingIssues=[];
   for(const row of decoded.rows.filter(r=>r.kind==="REL")) {
     const members=[];
     for(let position=1;position<=4;position++) {
       const key=`${row.sourceLine}:${position}`,matches=hints.get(row.memberHints[position-1]);
-      const id=memberChoices.get(key)||(matches?.size===1?[...matches][0]:null);
+      const autoId=matches?.size===1?[...matches][0]:null,chosen=memberChoices.get(key);
+      if(input.sourceType==="winpalme-zip-preview"&&autoId&&chosen&&autoId!==chosen)relayBindingIssues.push({sourceLine:row.sourceLine,code:"relay-binding-conflict",context:{course:row.course,clubCode:row.clubCode,position,relatedSourceLines:individual.filter(r=>r.swimmerHint===row.memberHints[position-1]).map(r=>r.sourceLine)}});
+      const id=chosen||autoId;
       members.push(id);if(!id)unresolvedMembers.push({sourceLine:row.sourceLine,position,hint:row.memberHints[position-1]||""});
     }
     relayMembers.set(row.sourceLine,members);
@@ -71,7 +73,7 @@ async function previewNativeImport(pool,input) {
   const existing=await q(pool,`SELECT ${COLUMNS.map(c=>`\`${c}\``).join(",")} FROM perfs FORCE INDEX (livepalmes_compet_id) WHERE compet=? ORDER BY id LIMIT 5001`,[competitionId]);
   const existingRelays=await q(pool,"SELECT id,club,distance,nageur1,nageur2,nageur3,nageur4,tps1,tps2,tps3,tps4,categorie,pts,compet FROM perfs_relais FORCE INDEX (livepalmes_compet_id) WHERE compet=? ORDER BY id LIMIT 1001",[competitionId]);
   if(existing.length>5000||existingRelays.length>1000)throw new RangeError("Resultats existants hors limite de remplacement.");
-  const issues=[...decoded.issues];
+  const issues=[...decoded.issues,...relayBindingIssues];
   if(competition.date!==decoded.metadata.date)issues.push({sourceLine:0,code:"competition-date-mismatch"});
   if(String(competition.bassin)!==decoded.metadata.pool)issues.push({sourceLine:0,code:"competition-pool-mismatch"});
   if(!["E","M"].includes(decoded.metadata.timing)||competition.chrono!==decoded.metadata.timing)issues.push({sourceLine:0,code:"competition-timing-mismatch"});
@@ -99,7 +101,18 @@ async function previewNativeImport(pool,input) {
   if(input.sourceType==="winpalme-zip-preview")for(const row of decoded.rows.filter(r=>r.kind==="REL"&&r.eligible)) {
     const match=/^4X(\d+)(SF|BI|IS|AP)$/.exec(row.course),time=compactTime(row.splits[0]),swimmerId=relayMembers.get(row.sourceLine)?.[0];
     const own=individual.filter(r=>swimmerByLine.get(r.sourceLine)===swimmerId),categories=[...new Set(own.map(r=>r.category))];
-    if(!match||!time||Number(time)>=Number(row.time)||!swimmerId||categories.length!==1){issues.push({sourceLine:row.sourceLine,code:"first-relay-incomplete"});continue;}
+    if(!match||!time||Number(time)>=Number(row.time)||!swimmerId||categories.length!==1){
+      const sourcePeople=individual.filter(r=>row.memberHints[0]&&r.swimmerHint===row.memberHints[0]);
+      const reasons=[];
+      if(!match)reasons.push("unsupported-relay-course");
+      if(!time)reasons.push(!row.splits[0]||/^0+(?:[.:,]0+)*$/.test(row.splits[0])?"missing-first-leg-time":"invalid-first-leg-time");
+      else if(Number(time)>=Number(row.time))reasons.push("first-leg-time-exceeds-final");
+      if(!swimmerId)reasons.push(!row.memberHints[0]||/non pr[ée]cis[ée]/i.test(row.memberHints[0])?"first-member-not-specified":"first-member-unresolved");
+      else if(categories.length!==1)reasons.push(categories.length?"first-member-category-ambiguous":"first-member-category-missing");
+      const person=new Set(sourcePeople.map(r=>identity(r)||`line:${r.sourceLine}`)).size===1?sourcePeople[0]:null;
+      issues.push({sourceLine:row.sourceLine,code:"first-relay-incomplete",reasons,context:{course:row.course,clubCode:row.clubCode,firstTime:row.splits[0]||"",finalTime:row.rawFinalTime,
+        firstPerson:person?{lastName:person.lastName,firstName:person.firstName,birthDate:person.birthDate}:null,relatedSourceLines:sourcePeople.map(r=>r.sourceLine)}});continue;
+    }
     incoming.push({sourceLine:row.sourceLine,origin:"first-relay",row:{nageur:swimmerId,compet:competitionId,course:`${match[1]}${match[2]}`,cat:categories[0],tps:time,points:0,newpoints:0,passage:0,club:clubByCode.get(row.clubCode),relais:0,pid:null,classement:0}});
   }
   if(incoming.length>5000)throw new RangeError("Plus de 5 000 performances avec passages et premiers relayeurs : reduisez le lot.");

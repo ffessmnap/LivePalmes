@@ -2,6 +2,14 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 25 octobre — Message de confirmation des imports, alertes contextualisées et choix des clubs (préparation TEST)
+
+- Demande Antoine : préparer un texte de mail à copier-coller pour les identités à confirmer avant import ; comprendre les alertes d’Auray ; clubs proposés/recherchables et triés ; ne pas redemander le profil d’un premier relayeur déjà retrouvé. Extension du seul contrôle ZIP, sans import réel, nouveau droit, collection, migration ou envoi de mail.
+- Message local sur toute l’analyse, sans dépendance aux groupes ouverts/pages : nageurs à rapprocher/inconnus, propositions NAP non validées, confirmations de clubs non résolues et compositions de relais manquantes. Objet/corps prêts à copier, sélection si le presse-papiers est indisponible et téléchargement TXT. Les choix périmés interdisent le message jusqu’à actualisation ; aucun brouillon distant ni SMTP.
+- Alertes nominatives avec causes et accès direct au nageur/relais/club. Club source non rattaché distinct de club différent ; identité du premier relayeur à résoudre distincte d’un temps ou d’une catégorie manquant. Choix de club avec correspondances proposées et tri français, recherche locale nom/code/numéro fédéral et choix hors filtre conservé. Profil identifié dans le relais affiché sans nouvelle demande ; choix individuels réutilisés et anciens choix de relais liés retirés lors d’un nouveau choix individuel, contradictions signalées.
+- Budget : aucune lecture ou écriture supplémentaire, aucun envoi ; diagnostics calculés sur les données déjà lues et filtrage/texte/copie/téléchargement entièrement locaux. Sept à neuf lectures NAP groupées par aperçu et recherche volontaire existante inchangés. Gardes client/callable/writer des ZIP conservées. Tests, PR et preuve TEST à renseigner ; recette utilisateur attendue, aucune autorisation PROD.
+- Vérifications locales réussies : message et minimisation des cas exportés, cas hors page, contrôle d’aperçu périmé, causes précises (sans faux défaut de catégorie pendant un rapprochement), clubs non rattachés/différents et conflit de choix individuel/relais. Navigateur avec service réel d’aperçu et pool simulé SELECT-only, réseau externe bloqué : texte/copie et repli sans presse-papiers, tri/propositions/filtre des clubs sans nouvelle requête, profil de relais réutilisé, garde d’écriture et remplacement, 1440/390/320 px. Vérification globale locale : 1 100 JS valides et suites métier réussies jusqu’au blocage Bash Windows préexistant `main / access` ; contrôle Linux final attendu avant intégration. Aucun accès métier réel ni envoi exécuté.
+
 ### 25 octobre — Circuit simplifié et aperçus de PR sur demande
 
 - Besoin et fonctionnement approuvés dans cette discussion : « Ok alors je valide ce fonctionnement ». Cet accord concerne le processus, pas une nouvelle publication applicative PROD.

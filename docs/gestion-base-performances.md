@@ -8,6 +8,18 @@ Les performances sont lues et écrites dans NAP via les fonctions authentifiées
 
 ## Import TXT WinPalme
 
+### Demande de confirmation et explications des alertes — 25 octobre 2026
+
+Le bouton « Préparer un message pour l’informatique » produit localement un objet et un corps de mail en texte brut, à relire puis copier-coller ou télécharger en TXT. Il rassemble les identités à rapprocher/inconnues, leurs propositions NAP non validées (cinq par identité au maximum, autres candidats signalés), les clubs non rattachés ou différences de club encore non confirmées et les compositions de relais manquantes. Il porte sur tout l’aperçu, indépendamment des pages et groupes repliés ; les rapprochements confirmés sans alerte ne sont pas exportés. Un club source non rattaché est distingué d’un changement de club éventuel. Les contrôles d’encodage technique côté national ne sont pas présentés comme des erreurs de l’organisateur. Aucun destinataire n’est inféré, aucun brouillon distant ou envoi SMTP n’est créé.
+
+Un aperçu modifié doit être actualisé avant cette préparation ; un message déjà affiché est retiré dès qu’un choix change. La copie utilise le presse-papiers au clic, avec sélection du texte et téléchargement local en repli. Aucun mail n’est envoyé automatiquement et le message n’accorde aucune validation persistée. Les gardes d’écriture ZIP restent actives.
+
+Les alertes affichent le nom du nageur ou le relais/club concerné, la cause précise et un lien vers la fiche, le relais ou le sélecteur de club. Les numéros de lignes sont conservés comme repères secondaires du TXT. Un premier relayeur encore non rapproché n’entraîne plus un diagnostic affirmant à tort que sa catégorie manque : les raisons séparent identité non renseignée/non rapprochée, temps absent/invalide/incohérent et catégorie absente/ambiguë une fois l’identité résolue. Les informations sportives et conditions d’importabilité sont conservées. Un choix individuel et un choix de relais contradictoires sont signalés ; reprendre le choix dans la fiche du nageur retire les anciens choix individuels de relais liés à cette identité.
+
+Le sélecteur des clubs place les correspondances d’abréviation/numéro fédéral en premier, puis les autres clubs par ordre alphabétique français. Un filtre local recherche nom, abréviation, numéro fédéral ou identifiant, sans requête ; un choix déjà fait reste visible même hors filtre. Dans les relais, un profil identifié est simplement affiché sans nouvelle sélection ; s’il existe une identité individuelle source, le lien ouvre sa fiche et le choix y est commun à toutes ses épreuves. Un choix local pas encore vérifié y est annoncé comme tel jusqu’à l’actualisation.
+
+Budget supplémentaire : zéro lecture/écriture SQL ou Firestore, zéro appel SMTP, aucun accès distant pour générer/copier/télécharger le texte, filtrer les clubs ou ouvrir les fiches reliées. Les diagnostics enrichissent seulement les données déjà lues ; le budget existant de sept à neuf lectures groupées par aperçu choisi et deux requêtes par recherche NAP volontaire reste inchangé.
+
 ### Aperçu par nageur et remplacement contrôlé — 24 octobre 2026
 
 Le parcours ZIP reste sans écriture. Trois groupes repliables distinguent les identités rapprochées (vert), à rapprocher (orange) et sans candidat (rouge), avec une fiche par identité source complète (nom, prénom, date de naissance, sexe). Les performances restent dépliables ; le choix d’un profil porte sur toutes les lignes de cette identité. Les profils candidats présentent nom, prénom, naissance, club actuel NAP et nombre de lignes de performances (passages inclus). Une recherche explicite réutilise le service NAP existant. Le compteur n’est pas un critère de rapprochement automatique.
