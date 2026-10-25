@@ -252,6 +252,14 @@ class ReleaseTests(unittest.TestCase):
         with patch.dict(os.environ,{'GITHUB_REPOSITORY':'owner/repo'}),patch.object(m,'gh',return_value={'workflow_runs':[{'id':2,'status':'completed','conclusion':'failure'},{'id':1,'status':'completed','conclusion':'success'}]}),self.assertRaises(ValueError):
             m.latest_run('livepalmes-production-release.yml')
 
+    def test_coordination_without_deployment_does_not_hide_previous_exact_proof(self):
+        runs = [{'id': 2, 'status': 'completed', 'conclusion': 'success'},
+                {'id': 1, 'status': 'completed', 'conclusion': 'success'}]
+        responses = [{'workflow_runs': runs}, {'jobs': [{'name': 'test', 'conclusion': 'skipped'}]},
+                     {'jobs': [{'name': 'test', 'conclusion': 'success'}]}]
+        with patch.dict(os.environ, {'GITHUB_REPOSITORY': 'owner/repo'}), patch.object(m, 'gh', side_effect=responses):
+            self.assertEqual(m.latest_run('livepalmes-test-common.yml', reuse_revisions=True), 1)
+
     def test_test_diagnostic_does_not_replace_deployment_proof(self):
         with patch.dict(os.environ,{'GITHUB_REPOSITORY':'owner/repo'}),patch.object(m,'gh',return_value={'workflow_runs':[{'id':2,'display_title':'Verification TEST sans deploiement','status':'completed','conclusion':'success'},{'id':1,'status':'completed','conclusion':'success'}]}):
             self.assertEqual(m.latest_run('livepalmes-test-common.yml'),1)

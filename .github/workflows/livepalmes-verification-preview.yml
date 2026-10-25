@@ -85,6 +85,8 @@ jobs:
           node tests/production-backup-crypto-tests.js
           node tests/hosting-payload-tests.js
           python tests/preview-scope-tests.py
+          python tests/test-publication-coordination-tests.py
+          node tests/nap-source-diagnostic-tests.js
 
   apercu:
     name: Creer un apercu isole

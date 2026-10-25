@@ -290,6 +290,14 @@ def latest_run(workflow, skip=0, reuse_revisions=False):
         # still match an earlier successful proof exactly; changed revisions
         # remain untrusted in matching_functions and block Hosting-only mode.
         runs = [r for r in runs if r.get('status') == 'completed' and r.get('conclusion') == 'success']
+        # A queued obsolete run may only coordinate a successor, without publishing.
+        # Skip only an explicitly skipped deployment job; never treat it as proof.
+        while runs:
+            jobs = gh(f'repos/{os.environ["GITHUB_REPOSITORY"]}/actions/runs/{runs[0]["id"]}/jobs?per_page=100').get('jobs', [])
+            if not any(j.get('name') == 'test' and j.get('conclusion') == 'skipped' for j in jobs):
+                break
+            print(f'Lancement TEST {runs[0]["id"]} de coordination sans publication exclu des preuves')
+            runs.pop(0)
     require(runs, 'Aucune publication de reference')
     current = runs[0]
     require(current['status'] == 'completed' and current['conclusion'] == 'success', 'Derniere publication non terminee ou en echec : examen requis')
