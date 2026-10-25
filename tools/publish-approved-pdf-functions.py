@@ -77,6 +77,11 @@ def main(candidate, plan, backup):
     request = json.loads((plan / 'request.json').read_text())
     spec = importlib.util.spec_from_file_location('cycle', Path(__file__).with_name('release-cycle.py'))
     cycle = importlib.util.module_from_spec(spec); spec.loader.exec_module(cycle)
+    if cycle.approved_bcc_functions(request):
+        spec = importlib.util.spec_from_file_location('bcc_publisher', Path(__file__).with_name('publish-approved-bcc-functions.py'))
+        publisher = importlib.util.module_from_spec(spec); spec.loader.exec_module(publisher)
+        publisher.publish(candidate, plan, backup, cycle, archive)
+        return
     if cycle.approved_grouped_functions(request):
         spec = importlib.util.spec_from_file_location('grouped_publisher', Path(__file__).with_name('publish-approved-grouped-functions.py'))
         publisher = importlib.util.module_from_spec(spec); spec.loader.exec_module(publisher)
