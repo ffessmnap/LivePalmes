@@ -23,7 +23,7 @@ const portal=fs.readFileSync("portail.html","utf8"),zip=archive([{name:"ExportTx
    Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async text=>{window.copiedConfirmation=text;}}});
   },portal);
   for(const file of ['styles.css','assets/livepalmes-admin-portal.css','performances/public/import-competitions.css'])await page.addStyleTag({path:file});
-  for(const file of ['performances/public/winpalme-zip.js','performances/public/import-confirmation-message.js','performances/public/import-swimmer-review.js','performances/public/import-competitions.js'])await page.addScriptTag({path:file});
+  for(const file of ['performances/public/winpalme-zip.js','performances/public/import-confirmation-message.js','performances/public/import-swimmer-creation.js','performances/public/import-swimmer-review.js','performances/public/import-competitions.js'])await page.addScriptTag({path:file});
   await page.locator('#competitionImportOpenButton').click();await page.locator('#competitionImportFile').setInputFiles({name:'fixture.zip',mimeType:'application/zip',buffer:zip});await page.locator('#competitionImportForm button[type="submit"]').click();await page.locator('[data-review-competition]').selectOption('5172');await page.locator('[data-review-refresh]').click();
   await page.locator('details.import-swimmer').first().waitFor({state:'attached'});assert.equal(await page.locator('details.import-swimmer').count(),5);
   for(const [state,count] of [['matched',3],['review',1],['unknown',1]])assert.match(await page.locator(`[data-review-open="group:${state}"] > summary`).innerText(),new RegExp('\\('+count+'\\)'));
