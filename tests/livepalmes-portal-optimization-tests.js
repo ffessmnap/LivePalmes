@@ -29,6 +29,65 @@ const functionsClubReference = JSON.parse(read("functions/assets/club-reference.
 const clubReferenceGenerator = read("tools/build-admin-club-reference.js");
 const publicPerformanceGenerator = read("tools/build-public-performance-files.js");
 const clubReferenceSource = read("performances/public/data/club-reference.js");
+const invitedWarning = { hidden: true };
+const invitedChoices = { innerHTML: "", hidden: false };
+const invitedFieldContainer = { hidden: false, querySelector: () => invitedWarning };
+const invitedSelect = {
+  disabled: false,
+  options: ["Grand Est", "Sud", "Ile de France"].map(value => ({ value, textContent: value, selected: false, disabled: false })),
+  get selectedOptions() { return this.options.filter(option => option.selected); },
+  closest: () => invitedFieldContainer
+};
+const invitedHost = { value: "Grand Est" };
+const invitedLevel = { value: "regional" };
+const invitedSandbox = {
+  elements: { engagementsEditInvitedRegionIds: invitedSelect, engagementsEditRegionId: invitedHost, engagementsEditInvitedRegionChoices: invitedChoices },
+  normalizedRegionKey: value => String(value || "").toLowerCase(),
+  canonicalLivePalmesRegion: value => value,
+  escapeHtml: value => value,
+  canCreateEngagementCompetition: () => true
+};
+vm.runInNewContext(`
+  ${portal.slice(portal.indexOf("  function selectedRegionMultiSelectValues("), portal.indexOf("  function fillLivePalmesRegionMultiSelect("))}
+  ${portal.slice(portal.indexOf("  function updateEngagementInvitedRegionField("), portal.indexOf("  function updateEngagementCreateFormAccess("))}
+  ${portal.slice(portal.indexOf("  function syncInvitedRegionChoice("), portal.indexOf("  function openInvitedRegionsDialog("))}
+  this.update = updateEngagementInvitedRegionField;
+  this.selectValues = selectedRegionMultiSelectValues;
+  this.setValues = setRegionMultiSelectValues;
+  this.sync = syncInvitedRegionChoice;
+`, invitedSandbox);
+const updateInvited = () => invitedSandbox.update({ field: invitedSelect, levelInput: invitedLevel, primaryRegionField: invitedHost });
+updateInvited();
+assert.match(invitedChoices.innerHTML, /value="Grand Est" checked disabled/);
+assert.ok(invitedChoices.innerHTML.includes("Grand Est (région organisatrice)"));
+assert.equal(invitedSandbox.selectValues(invitedSelect).length, 0, "The host is already stored separately, not added to invitations");
+assert.equal(invitedWarning.hidden, true);
+const changeInvited = (value, checked, disabled = false) => invitedSandbox.sync({ target: { closest: () => ({ value, checked, disabled }) } }, invitedSelect);
+changeInvited("Grand Est", true, true);
+assert.equal(invitedSelect.options[0].selected, false, "A disabled host cannot change the invitation payload");
+const choicesBeforeChange = invitedChoices.innerHTML;
+changeInvited("Sud", true);
+assert.equal(invitedWarning.hidden, true);
+changeInvited("Ile de France", true);
+assert.equal(invitedWarning.hidden, false, "Selecting every other region warns without blocking");
+assert.equal(invitedChoices.innerHTML, choicesBeforeChange, "Checkbox changes preserve DOM, focus and scroll");
+changeInvited("Sud", false);
+assert.equal(invitedWarning.hidden, true);
+invitedSandbox.setValues(invitedSelect, ["Sud"], invitedHost.value);
+updateInvited();
+assert.equal(invitedSelect.options[1].selected, true, "Reopening preserves existing invitations");
+invitedHost.value = "Sud";
+updateInvited();
+assert.match(invitedChoices.innerHTML, /value="Sud" checked disabled/);
+assert.equal(invitedSelect.options[0].disabled, false, "The previous host becomes optional");
+assert.equal(invitedSelect.options[0].selected, false, "The previous host is not silently invited");
+assert.equal(invitedSelect.options[1].selected, false);
+invitedLevel.value = "national";
+updateInvited();
+assert.equal(invitedFieldContainer.hidden, true);
+assert.equal(invitedChoices.hidden, true);
+assert.equal(invitedWarning.hidden, true);
+assert.equal(invitedSandbox.selectValues(invitedSelect).length, 0);
 const calendarEventTypeSandbox = {};
 vm.runInNewContext(`${calendarEvents.slice(0, calendarEvents.indexOf("  function renderProgram"))}
   global.result = {
@@ -1335,7 +1394,7 @@ assert.ok(portal.includes("engagementCompetitionsLoadedRange"));
 assert.ok(portal.includes('ENGAGEMENT_CALENDAR_SESSION_CACHE_PREFIX = "livepalmes.portal.engagementCalendar.v4."'));
 assert.ok(portal.includes('ENGAGEMENT_CLUB_WORKSPACE_SESSION_CACHE_PREFIX = "livepalmes.portal.engagementWorkspace.v2."'));
 assert.ok(portal.includes("teamLeadersWhatsAppUrl: engagementTeamLeadersWhatsAppUrl(competition.teamLeadersWhatsAppUrl)"));
-assert.ok(portalHtml.includes('livepalmes-admin-portal.js?v=20261025-mail-bcc-1'));
+assert.ok(portalHtml.includes('livepalmes-admin-portal.js?v=20261025-invited-regions-1'));
 assert.ok(portal.includes('city: String(competition.city || "")'));
 assert.ok(portal.includes('address: String(competition.address || "")'));
 assert.ok(portalHtml.includes('livepalmes-admin-calendar-events.js?v=20261012-shared-comments-1'));
@@ -1569,7 +1628,7 @@ assert.equal(portalHtml.includes("Paiement attendu avant la fin de la premi"), f
 assert.ok(portalCss.includes("Paramétrage général d'une compétition : grille dense et lisible"));
 assert.ok(portalCss.includes("#adminEngagementsEditForm .admin-engagements-compact-field--full"));
 assert.ok(portalHtml.includes("assets/livepalmes-portal-ux.js?v=20261020-club-retour"));
-assert.ok(portalHtml.includes("assets/livepalmes-admin-portal.js?v=20261025-mail-bcc-1"));
+assert.ok(portalHtml.includes("assets/livepalmes-admin-portal.js?v=20261025-invited-regions-1"));
 assert.ok(portalHtml.indexOf('id="adminEngagementsEditCity"') < portalHtml.indexOf('id="adminEngagementsEditAddress"'));
 assert.ok(portalHtml.indexOf('id="adminEngagementsEditAddress"') < portalHtml.indexOf('id="adminEngagementsEditLocation"'));
 assert.ok(portalHtml.includes("Sans répéter la ville."));
@@ -1795,7 +1854,7 @@ assert.ok(portal.includes("Administrateurs engagements"));
 assert.ok(portalCss.includes(".admin-national-club-card"));
 assert.ok(portalCss.includes(".admin-national-club-card-administrators"));
 assert.ok(portalCss.includes(".admin-national-clubs-show-more"));
-assert.ok(portalHtml.includes("assets/livepalmes-admin-portal.js?v=20261025-mail-bcc-1"));
+assert.ok(portalHtml.includes("assets/livepalmes-admin-portal.js?v=20261025-invited-regions-1"));
 assert.ok(portalHtml.includes('class="admin-portal-workspace-head admin-tool-workspace-head admin-dtn-workspace-head"'));
 assert.ok(portalHtml.includes('id="adminDtnSeason" class="admin-dtn-season-picker" aria-label="Saison DTN"'));
 assert.equal(portalHtml.includes('<select id="adminDtnSeason"></select>'), false);

@@ -2,6 +2,12 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 25 octobre — Régions invitées : région organisatrice verrouillée et aide compacte (en préparation TEST)
+
+- Demande validée : région organisatrice cochée d’office et non décochable ; autres régions facultatives ; recommandation compacte de limiter les invitations aux régions voisines pour les compétitions régionales/départementales, rappel de l’accès aux inscriptions pour tous les clubs ; avertissement non bloquant lorsque toutes les régions sont sélectionnées.
+- Interface uniquement : le stockage distinct de la région organisatrice et des invitations reste inchangé. Aucune sélection existante effacée à l’ouverture, aucun changement des règles d’accès. Budget supplémentaire initial/action/rafraîchissement/pire cas : zéro lecture Firestore ou NAP et zéro écriture distante ; calcul local borné à la liste des régions déjà chargée.
+- Vérifications : syntaxe JavaScript et suite des optimisations du portail réussies, dont verrouillage, conservation des invitations, changement de région organisatrice, avertissement et masquage au niveau national. Contrôle navigateur hors réseau en 1440/390/320 px réussi, sans débordement horizontal. La vérification globale et sa preuve Linux restent requises avant intégration. Publication prévue par le circuit commun, avec réutilisation du backend inchangé ; la preuve du run sera accessible dans cette rubrique après publication. Recette utilisateur attendue sur la version déployée ; aucun mail réel ni changement PROD.
+
 ### 25 octobre — Notifications des compétitions : CCI, fenêtre documentaire et tâches (TEST déployé, recette utilisateur attendue)
 
 - Besoin et approche approuvés dans la discussion : ouverture/documents identiques par lots CCI de 50 ; récapitulatif de clôture par club avec ses administrateurs en CCI et son seul PDF ; lien commun Mon compte. Documents regroupés pendant cinq minutes fixes à partir du premier dépôt. Déclenchement serveur à l'action, contrôle périodique existant conservé pour clôtures automatiques et reprise.
