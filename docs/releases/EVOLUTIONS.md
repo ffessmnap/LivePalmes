@@ -4,6 +4,8 @@
 
 ### 26 octobre — Réutilisation CI sur TEST et tests Firestore ciblés
 
+- Premier essai TEST `40338117642` : preuve exacte reconnue (`MAIN_VERIFIED=true`), puis erreur shell avant toute publication. Correction du bloc YAML en littéral et ajout d'un contrôle `bash -n` de tous les scripts rendus du workflow ; aucune version partielle publiée par cet essai. Nouvelle preuve de livraison à conserver dans la PR de correction.
+
 - Accord de fonctionnement dans la discussion sur les délais TEST/PROD : réutiliser les contrôles attestés, cibler les suites et mesurer les lots backend avant toute modification de leur cadence. Cette optimisation ne vaut pas accord de publication applicative PROD.
 - Preuve CI limitée au push main réussi et au commit exact, contrôlée par le mécanisme d'intégrité existant ; absence/erreur/expiration/ambiguïté = suite complète. Aucun contrôle de publication backend, Hosting ou de preuve finale supprimé. Aucun délai d'attente ajouté pour une CI en cours.
 - Retouches d'interface racine reconnues et documentation Markdown seules : émulateur Firestore évité, contrôle applicatif global maintenu. Tout chemin partagé/inconnu ou toute modification de règles/configuration/backend/tests/dépendances conserve l'émulateur. Mesure des durées par lot ajoutée aux résumés ; sélection, lots et pauses inchangés.

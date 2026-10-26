@@ -129,7 +129,8 @@ jobs:
       id: application-checks
       env:
         MAIN_VERIFIED: ${{ steps.verified-main.outputs.verified }}
-      run: 'npm ci --prefix functions
+      run: |
+        npm ci --prefix functions
 
         npm ci --prefix tests/firestore-rules
 
@@ -153,7 +154,7 @@ jobs:
 
         node tests/nap-source-diagnostic-tests.js
 
-        python tests/test-verification-evidence-tests.py'
+        python tests/test-verification-evidence-tests.py
     - uses: google-github-actions/auth@v3
       with:
         credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_TEST_BACKEND }}
