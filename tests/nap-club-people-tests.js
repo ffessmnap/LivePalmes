@@ -2,7 +2,7 @@
 const assert=require("node:assert/strict");
 const {readClubPeople,cursors,person}=require("../functions/nap-club-people");
 const leader={id:7,compet:5140,nom:"Chef",prenom:"Nom",date:"0000-00-00",club:"00123",pourclub:"0"};
-const official={id:7,nom:"Chef",prenom:"Nom",date:"1980-01-02",club:"00123"};
+const official={id:7,nom:"Chef",prenom:"Nom",date:"1980-01-02",club:"00123",sexe:null,number:null};
 (async()=>{
   let allowed=false,queries=[];
   const pool={execute:async({sql},values)=>{assert.equal(allowed,true);assert.match(sql,/FORCE INDEX \(livepalmes_club_id\).*n.club=\? AND n.id>\? ORDER BY n.id LIMIT 101$/);assert.deepEqual(values,[sql.includes("chefsdequipe")?"chefsdequipe":"officiels","00123",0]);queries.push(sql);return [[sql.includes("chefsdequipe")?leader:official]];}};

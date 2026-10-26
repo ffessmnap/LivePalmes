@@ -120,7 +120,7 @@ function fixture(options = {}) {
   const browser = fs.readFileSync("assets/livepalmes-admin-portal.js", "utf8");
   assert.ok(browser.includes("if (swimmer.napSource && elements.engagementsSwimmerCorrectionForm)"));
   assert.ok(browser.includes('String(swimmer.licenseNumber ?? "")'));
-  assert.ok(browser.includes('if (payload.napSource && !direct) delete payload.proposed.licenseNumber;'));
+  assert.ok(browser.includes('else if(payload.napSource&&!direct)delete payload.proposed.licenseNumber;'));
   const snapshotCode = source.slice(source.indexOf("function engagementSwimmerIdentitySnapshot("), source.indexOf("function cleanEngagementSwimmerIdentityCorrection("));
   const dtoCode = source.slice(source.indexOf("function engagementSwimmerChangeRequestItem("), source.indexOf("async function sendEngagementSwimmerChangeResolutionNotification("));
   const dto = { cleanText: value => String(value || ""), cleanIsoDate: value => value || "", cleanFirestoreValue: value => value };
@@ -130,7 +130,7 @@ function fixture(options = {}) {
   assert.ok(!visible.nativeBefore); assert.ok(!visible.expectedFingerprint); assert.ok(!visible.nativeResolution);
   const elements = { engagementsSwimmerCorrectionDialog: { showModal: () => {} } };
   for (const key of ["Form", "License", "Mode", "Source", "Id", "IdentityKey", "LastName", "FirstName", "BirthDate", "Sex", "Title", "Context", "ReasonLabel", "Reason", "Submit"]) elements[`engagementsSwimmerCorrection${key}`] = { dataset: {}, focus: () => {} };
-  const ui = { elements, HTMLElement: class {}, engagementSwimmerCorrectionOpener: null, engagementSwimmerCorrectionReview: null,
+  const ui = { elements, HTMLElement: class {}, engagementClubPeopleRequestVersion:0, engagementSwimmerCorrectionOpener: null, engagementSwimmerCorrectionReview: null,
     resetEngagementSwimmerCorrectionDialog: () => { elements.engagementsSwimmerCorrectionForm.dataset = {}; elements.engagementsSwimmerCorrectionLicense.readOnly = false; },
     engagementSwimmerDisplayName: () => "Test", clubDisplayLabel: () => "Club" };
   vm.runInNewContext(browser.slice(browser.indexOf("  function openEngagementSwimmerCorrectionDialog("), browser.indexOf("  async function submitEngagementSwimmerCorrection(")), ui);

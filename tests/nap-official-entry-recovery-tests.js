@@ -3,7 +3,7 @@ const assert=require("node:assert/strict");
 const {remainingOfficials}=require("../functions/nap-official-entry-recovery");
 const retained={id:1,compet:5140,officiel:7,club:"106"};
 const removed={id:2,compet:5140,officiel:8,club:"106"};
-const added={id:9,nom:"EXEMPLE",prenom:"Personne",date:"1980-01-03",club:"106"};
+const added={id:9,nom:"EXEMPLE",prenom:"Personne",date:"1980-01-03",club:"106",sexe:null,number:null};
 const plan={competitionId:5140,clubId:"106",before:[retained,removed],removals:[removed],additions:[added]};
 const newLink={id:3,compet:5140,officiel:9,club:"106"};
 assert.deepEqual(remainingOfficials(plan,[retained,removed]),{removals:[removed],additions:[added],complete:false});

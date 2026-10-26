@@ -3,7 +3,7 @@ const assert=require("node:assert/strict");
 const {columns}=require("../functions/nap-approved-people-schema");
 const {person}=require("../functions/nap-club-people");
 const {reference,buildStatusStatement,changeNativePersonStatus,inspectStatusWritePlans}=require("../functions/nap-club-person-status");
-const native={id:7,nom:"Ancien",prenom:"Officiel",date:"0000-00-00",club:"00123"};
+const native={id:7,nom:"Ancien",prenom:"Officiel",date:"0000-00-00",club:"00123",sexe:null,number:null};
 for(const id of ["", "7", "nap-official-0", "nap-official-2147483648", "nap-official-7 OR 1=1"]) assert.throws(()=>reference(id),TypeError);
 function fixture() {
   const state={native:{...native},options:null,writes:0,queries:[],allowed:false,busy:false,triggers:false,cas:false,release:0,audit:null,auditDone:false};
@@ -31,6 +31,8 @@ function fixture() {
   return state;
 }
 (async()=>{
+  const roleChange=fixture();roleChange.input.active=true;roleChange.input.roles={teamLeader:false,official:true};const rolesResult=await roleChange.run();assert.equal(rolesResult.person.roles.teamLeader,false);assert.equal(rolesResult.person.roles.official,true);assert.equal(roleChange.native.nom,native.nom);await roleChange.run();assert.equal(roleChange.writes,1);
+  const noRole=fixture();noRole.input.roles={teamLeader:false,official:false};await assert.rejects(noRole.run(),/au moins un rôle/);assert.equal(noRole.writes,0);
   const denied=fixture();await assert.rejects(denied.run(denied.input,()=>{throw Error("denied");}),/denied/);assert.equal(denied.queries.length,0);
   const historical=fixture();await assert.rejects(historical.run({...historical.input,personId:"nap-leader-7"}),/anciennes declarations/);assert.equal(historical.queries.length,0);
   const s=fixture();const result=await s.run();assert.equal(result.person.active,false);assert.equal(result.person.licenseNumber,"");assert.equal(s.writes,1);assert.equal(s.auditDone,true);assert.ok(s.queries.length<=12);assert.deepEqual(s.native,native);

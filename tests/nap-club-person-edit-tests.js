@@ -2,7 +2,7 @@
 const assert=require("node:assert/strict");
 const {editNativePerson,planIdentity,statement}=require("../functions/nap-club-person-edit");
 const {person}=require("../functions/nap-club-people");
-const original={id:7,nom:"Ancien",prenom:"Arnaud",date:"1980-01-03",club:"106"};
+const original={id:7,nom:"Ancien",prenom:"Arnaud",date:"1980-01-03",club:"106",sexe:null,number:null};
 function fixture() {
   const state={native:{...original},options:null,audit:null,writes:0,queries:[],peers:[],allowed:false,released:0};
   const connection={execute:async({sql},values=[])=>{
@@ -20,16 +20,18 @@ function fixture() {
     state.native={...state.audit.after};state.writes++;return [{affectedRows:1}];
   },release:()=>state.released++};
   state.input={clubId:"106",actorUid:"club-admin",personId:"nap-official-7",expectedFingerprint:person(original,"officials").napFingerprint,patch:{firstName:"Arnaud",lastName:"Correct",birthDate:original.date}};
-  state.run=(input=state.input,authorize=()=>{state.allowed=true;})=>editNativePerson({getConnection:async()=>connection},input,{
+  state.run=(input=state.input,authorize=()=>{state.allowed=true;},options={fillOnly:false})=>editNativePerson({getConnection:async()=>connection},input,{
     read:async()=>state.audit,
     prepare:async(_,plan)=>{state.audit=JSON.parse(JSON.stringify(plan));},
     complete:async()=>{if(state.interrupted) throw Error("audit interrupted");state.done=true;}
-  },authorize);
+  },authorize,options);
   return state;
 }
 (async()=>{
   const denied=fixture();await assert.rejects(denied.run(denied.input,()=>{throw Error("denied");}),/denied/);assert.equal(denied.queries.length,0);
   const historical=fixture();await assert.rejects(historical.run({...historical.input,personId:"nap-leader-7"}),/ancienne declaration/);assert.equal(historical.queries.length,0);
+  const club=fixture();await assert.rejects(club.run(club.input,()=>{club.allowed=true;},{fillOnly:true}),/visa national/);assert.equal(club.writes,0);
+  const fill=fixture();fill.input.patch={sex:"F",licenseNumber:"A-12-34567"};const filled=await fill.run(fill.input,()=>{fill.allowed=true;},{fillOnly:true});assert.equal(filled.person.sex,"F");assert.equal(filled.person.licenseNumber,"A-12-34567");await fill.run(fill.input,()=>{fill.allowed=true;},{fillOnly:true});assert.equal(fill.writes,1);
   const s=fixture(),result=await s.run();assert.equal(s.writes,1);assert.equal(s.done,true);assert.equal(result.person.lastName,"Correct");assert.equal(result.person.licenseNumber,"");assert.equal(result.person.napSource,true);assert.equal(s.options,null);assert.ok(s.queries.length<=13);
   await s.run();assert.equal(s.writes,1,"same correction retry does not write twice");
   const interrupted=fixture();interrupted.interrupted=true;await assert.rejects(interrupted.run(),/interrupted/);assert.equal(interrupted.writes,1);interrupted.interrupted=false;await interrupted.run();assert.equal(interrupted.writes,1);assert.equal(interrupted.done,true);
