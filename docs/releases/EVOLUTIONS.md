@@ -6,7 +6,7 @@
 
 - Demande explicite d’Antoine : exclure les chefs d’équipe déclarés pour une compétition et reprendre le format compact de Mes nageurs. Filtrage limité au rendu du club, sans modifier les données partagées avec les dossiers de compétition ; colonnes stables, hauteur adaptée au contenu, inactifs sans opacité globale.
 - Budget inchangé : aucun appel supplémentaire ; chargement existant au plus deux requêtes NAP, 202 lignes retournées maximum, cache de session et pagination conservés. Aucune écriture réelle, aucun changement backend ou droit.
-- État : préparation locale ; contrôles, PR, preuve TEST et retour utilisateur à compléter. Aucune validation utilisateur du rendu final ni publication PROD.
+- [PR #553](https://github.com/ffessmnap/LivePalmes/pull/553). Syntaxe, régression annuaire mixte/vide/inactifs, modification/statut, conservation des déclarations et optimisation portail réussies. Captures hors réseau 1920/1280/1024/390 px contrôlées. Vérification globale locale : 1 143 syntaxes et suites métier réussies jusqu’au test Bash Windows connu `main / access` ; contrôle Linux obligatoire avant intégration. Versions JS/CSS actualisées pour le cache navigateur. Preuve TEST et retour utilisateur à compléter ; aucune validation utilisateur du rendu final ni publication PROD.
 
 ### 26 octobre — Historique régional des validations de comptes
 
