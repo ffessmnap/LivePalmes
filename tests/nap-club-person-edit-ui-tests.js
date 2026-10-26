@@ -5,8 +5,8 @@ const source=fs.readFileSync(require.resolve("../assets/livepalmes-admin-portal.
 // namesakes cannot be deduplicated. Keep the shared source array untouched.
 {
   const people = [
-    {id:"nap-official-1",nativePersonKind:"officials",nativeIdentityEditable:true,firstName:"Actif",lastName:"Annuaire",active:true},
     {id:"nap-official-2",nativePersonKind:"officials",nativeIdentityEditable:true,firstName:"Inactif",lastName:"Annuaire",active:false},
+    {id:"nap-official-1",nativePersonKind:"officials",nativeIdentityEditable:true,firstName:"Actif",lastName:"Zannuaire",active:true},
     {id:"nap-leader-3",nativePersonKind:"leaders",firstName:"Competition",lastName:"Declaration",active:true},
     {id:"nap-official-4",nativePersonKind:"officials",nativeIdentityEditable:false,firstName:"Bloque",lastName:"Lecture"}
   ];
@@ -17,8 +17,9 @@ const source=fs.readFileSync(require.resolve("../assets/livepalmes-admin-portal.
   const renderStart=source.indexOf("  function renderEngagementClubPeople()");
   vm.runInContext(source.slice(renderStart,source.indexOf("\n  async function loadEngagementClubPeople(",renderStart)),context);
   context.renderEngagementClubPeople();
-  assert.match(list.innerHTML,/Annuaire Actif/);
+  assert.match(list.innerHTML,/Zannuaire Actif/);
   assert.match(list.innerHTML,/Annuaire Inactif/);
+  assert.ok(list.innerHTML.indexOf("Zannuaire Actif") < list.innerHTML.indexOf("Annuaire Inactif"),"active officials precede inactive officials even when alphabetic and input order differ");
   assert.doesNotMatch(list.innerHTML,/Declaration Competition|Lecture Bloque|Déclaration historique/);
   assert.equal(people.length,4,"competition selectors retain their source declarations");
   context.engagementClubPeople=[people[2]];
