@@ -85,9 +85,16 @@ jobs:
           npm ci --prefix functions
           node tools/verify-livepalmes.js
         fi
+    - name: Installer les dependances du lecteur d empreintes
+      run: npm ci --prefix tooling/tests/firestore-rules --ignore-scripts --prefer-offline --no-audit --no-fund
+    - name: Reutiliser la CI du circuit exact
+      id: tooling-ci
+      env:
+        GITHUB_SHA: ${{ github.sha }}
+      run: python tooling/tools/test-verification-evidence.py reuse-publication "$RUNNER_TEMP/tooling-ci-proof"
     - name: Verifier le circuit de publication
+      if: steps.tooling-ci.outputs.verified != 'true'
       run: |
-        npm ci --prefix tooling/tests/firestore-rules --ignore-scripts
         node tooling/tests/release-function-fingerprints-tests.js
         python tooling/tests/release-cycle-tests.py
         python tooling/tests/release-preflight-review-tests.py
@@ -107,6 +114,7 @@ jobs:
         python tooling/tests/production-access-request-release-tests.py
         node tooling/tests/production-notification-preparation-tests.js
         node tooling/tests/production-backup-crypto-tests.js
+        python tooling/tests/publication-fast-paths-tests.py
     - uses: google-github-actions/auth@v3
       if: inputs.resume_run == '0'
       with:
@@ -224,6 +232,8 @@ jobs:
         "LivePalmes $CANDIDATE_SHA run $GITHUB_RUN_ID"'
     - name: Controler les pages publiees
       if: steps.hosting.outcome == 'success'
+      env:
+        HOSTING_CHECK_RECEIPT: ${{ runner.temp }}/production-hosting-check.json
       run: python tooling/tools/check-production-hosting.py candidate
     - name: Relever Hosting apres la tentative
       if: always() && (steps.hosting.outcome == 'success' || steps.hosting.outcome == 'failure')
@@ -231,7 +241,9 @@ jobs:
     - uses: actions/upload-artifact@v4
       with:
         name: production-hosting-after
-        path: ${{ runner.temp }}/production-hosting-after.json
+        path: |
+          ${{ runner.temp }}/production-hosting-after.json
+          ${{ runner.temp }}/production-hosting-check.json
         if-no-files-found: error
         retention-days: 14
       if: always() && (steps.hosting.outcome == 'success' || steps.hosting.outcome == 'failure')

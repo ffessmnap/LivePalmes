@@ -44,12 +44,14 @@ jobs:
         run: python tools/test-verification-evidence.py scope
 
       - name: Lire la version Node.js du projet
+        if: steps.test-scope.outputs.documentation != 'true'
         id: node-version
         shell: bash
         run: |
           node -p '"version=" + require("./functions/package.json").engines.node' >> "$GITHUB_OUTPUT"
 
       - name: Installer Node.js
+        if: steps.test-scope.outputs.documentation != 'true'
         uses: actions/setup-node@v7
         with:
           node-version: ${{ steps.node-version.outputs.version }}
@@ -66,9 +68,11 @@ jobs:
           java-version: '21'
 
       - name: Installer les dependances des Functions
+        if: steps.test-scope.outputs.documentation != 'true'
         run: npm ci --prefix functions
 
       - name: Installer les dependances des tests Firestore
+        if: steps.test-scope.outputs.documentation != 'true'
         run: npm ci --prefix tests/firestore-rules
 
       - name: Tester les regles Firestore
@@ -76,9 +80,11 @@ jobs:
         run: npm --prefix tests/firestore-rules test
 
       - name: Verifier LivePalmes
+        if: steps.test-scope.outputs.documentation != 'true'
         run: node tools/verify-livepalmes.js
 
       - name: Tester le circuit de publication sans acces Firebase
+        if: steps.test-scope.outputs.documentation != 'true'
         run: |
           node tests/release-function-fingerprints-tests.js
           python tests/release-cycle-tests.py
@@ -100,13 +106,32 @@ jobs:
           python tests/test-publication-coordination-tests.py
           node tests/nap-source-diagnostic-tests.js
           python tests/test-verification-evidence-tests.py
+          node tests/release-c0-compatibility-tests.js
+          node tests/release-home-compatibility-tests.js
+          python tests/production-pdf-functions-tests.py
+          python tests/production-notification-release-tests.py
+          python tests/production-access-request-release-tests.py
+          node tests/production-notification-preparation-tests.js
+          python tests/publication-fast-paths-tests.py
+
+      - name: Enregistrer la verification du circuit main exact
+        if: github.event_name == 'push' && steps.test-scope.outputs.documentation != 'true'
+        run: python tools/test-verification-evidence.py record-publication "$RUNNER_TEMP/publication-verification"
+
+      - uses: actions/upload-artifact@v4
+        if: github.event_name == 'push' && steps.test-scope.outputs.documentation != 'true'
+        with:
+          name: publication-verification
+          path: ${{ runner.temp }}/publication-verification/verification.json
+          if-no-files-found: error
+          retention-days: 14
 
       - name: Enregistrer la verification du commit main exact
-        if: github.event_name == 'push'
+        if: github.event_name == 'push' && steps.test-scope.outputs.documentation != 'true'
         run: python tools/test-verification-evidence.py record "$RUNNER_TEMP/application-verification"
 
       - uses: actions/upload-artifact@v4
-        if: github.event_name == 'push'
+        if: github.event_name == 'push' && steps.test-scope.outputs.documentation != 'true'
         with:
           name: application-verification
           path: ${{ runner.temp }}/application-verification/verification.json

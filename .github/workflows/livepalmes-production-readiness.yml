@@ -1,0 +1,52 @@
+name: Controler les prerequis PROD sans ecriture
+'on':
+  workflow_dispatch:
+    inputs:
+      preparation_run:
+        description: Run du plan a verifier avant accord final, aucune publication
+        required: true
+        type: string
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: livepalmes-production
+  cancel-in-progress: false
+jobs:
+  prerequisites:
+    if: github.ref == 'refs/heads/main' && github.run_attempt == 1
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: production
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - kind: backend
+            secret: FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_BACKEND
+          - kind: hosting
+            secret: FIREBASE_SERVICE_ACCOUNT_LIVEPALMES
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: google-github-actions/auth@v3
+        with:
+          credentials_json: ${{ secrets[matrix.secret] }}
+          project_id: livepalmes
+      - uses: google-github-actions/setup-gcloud@v3
+      - name: Lire les permissions, quotas et la derive du plan
+        env:
+          PLAN_RUN: ${{ inputs.preparation_run }}
+          KIND: ${{ matrix.kind }}
+        run: python tools/check-release-prerequisites.py "$RUNNER_TEMP/prerequisites" "$PLAN_RUN" "$KIND"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: production-prerequisites-${{ matrix.kind }}
+          path: ${{ runner.temp }}/prerequisites/prerequisites-*.json
+          if-no-files-found: warn
+          retention-days: 14
