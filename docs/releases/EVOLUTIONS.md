@@ -2,6 +2,13 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 26 octobre — Téléchargement manuel WinPalme Andernos prêt pour la prochaine PROD
+
+- Demande explicite d’Antoine dans cette discussion : reprendre sa validation du TXT Andernos et régler le téléchargement pour la prochaine mise en production. Validation du contenu du 24 octobre conservée (export manuel de La Marée andernosienne, 5136, 1er novembre 2026) ; accord du 26 octobre pour retirer les blocages portail et serveur de cette seule compétition. Aucun élargissement aux autres formats eau libre ni aux envois automatiques ; accord final du bilan PROD regroupé dans Infra conservé.
+- Modification bornée : Andernos NAP téléchargeable manuellement en TEST et PROD, autres compétitions eau libre conservées sur TEST seulement ; contrôles des droits, références natives, programme et correspondances inconnues inchangés. Générateur du TXT validé inchangé ; génération et envoi automatiques eau libre toujours exclus.
+- Budget avant/après inchangé : aucune lecture supplémentaire à l’ouverture ou au rafraîchissement ; au plus 26 SELECT par téléchargement (24 dossier, une référence compétition, un catalogue groupé de 300 lignes maximum), aucune écriture NAP/Storage, aucun scan global ni lecture par nageur. Absence de programme ou source invalide : refus explicite, aucune reconstruction.
+- Vérifications ciblées réussies hors réseau : génération TXT piscine/eau libre, bouton/réponse serveur Andernos en TEST/PROD, refus des autres identifiants en PROD, droits, programme absent, erreurs visibles et absence d’envoi automatique pour 5136. Vraie GED testée à 1440/390/320 px : téléchargement du TXT exact en environnement PROD simulé, zéro lecture initiale ni débordement. Vérification globale en cours ; PR et preuve TEST à consigner avant inclusion au bilan PROD. Aucun déploiement PROD effectué.
+
 ### 26 octobre — Complétion des officiels et licences manquantes du club
 
 - Accord d’Antoine sur TEST : crayon commun nageurs/officiels ; seuls les champs vides sont complétables sans notification, toute correction d’une valeur connue est soumise au national. Nouvelle fiche complète obligatoire ; numéro à vie verrouillé dès sa saisie. Licence nageur manquante saisissable sans demande ; contrôle saisonnier conservé, confirmé explicitement dans la discussion. Rôles gérables séparément, compétitions conservées.
