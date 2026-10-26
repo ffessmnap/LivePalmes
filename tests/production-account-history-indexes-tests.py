@@ -5,6 +5,7 @@ from pathlib import Path
 import unittest
 import tempfile
 import json
+import io
 from unittest.mock import patch
 
 spec=importlib.util.spec_from_file_location('indexes',Path(__file__).resolve().parents[1]/'tools/production-account-history-indexes.py')
@@ -51,5 +52,11 @@ class IndexTests(unittest.TestCase):
                 network.reset_mock()
                 with self.assertRaises(ValueError):m.main('apply',str(Path(temporary)/'refused'))
                 network.assert_not_called()
+                error=m.urllib.error.HTTPError(m.URL,400,'Bad Request',{'Authorization':'must-not-appear'},
+                    io.BytesIO(b'{"error":{"status":"INVALID_ARGUMENT","message":"metadata diagnostic"}}'))
+                network.side_effect=error
+                with self.assertRaisesRegex(ValueError,'HTTP 400: INVALID_ARGUMENT metadata diagnostic') as failure:
+                    m.main('inspect',str(Path(temporary)/'metadata-error'))
+                self.assertNotIn('must-not-appear',str(failure.exception))
 
 if __name__=='__main__':unittest.main()

@@ -7,6 +7,7 @@ import subprocess
 import sys
 import time
 import urllib.request
+import urllib.error
 
 PROJECT = "livepalmes"
 PREFIX = "projects/livepalmes/databases/(default)/collectionGroups/engagementAccessRequests/indexes"
@@ -52,7 +53,18 @@ def main(mode, directory, plan_run=""):
         require(url==URL or url.startswith(URL+"?pageSize=100"), "URL interdite")
         require(body is None or (mode=="apply" and body in DEFINITIONS), "Ecriture hors contrat")
         req=urllib.request.Request(url,data=None if body is None else json.dumps(body).encode(),headers={"Authorization":"Bearer "+token,"Content-Type":"application/json"})
-        with urllib.request.urlopen(req,timeout=60) as response: return json.load(response)
+        try:
+            with urllib.request.urlopen(req,timeout=60) as response: return json.load(response)
+        except urllib.error.HTTPError as error:
+            # This endpoint returns index metadata only. Do not print request
+            # headers, credentials or arbitrary transport/debug objects.
+            try:
+                detail=json.loads(error.read(8192)).get('error',{})
+                status=str(detail.get('status',''))[:80]
+                message=str(detail.get('message',''))[:600]
+            except (ValueError, TypeError):
+                status=message=''
+            raise ValueError(f'Index metadata HTTP {error.code}: {status} {message}') from None
     def listing():
         from urllib.parse import quote
         rows=[];page=""
