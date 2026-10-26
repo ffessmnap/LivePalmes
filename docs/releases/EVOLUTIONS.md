@@ -6,7 +6,7 @@
 
 - Accord d’Antoine sur la maquette ordinateur : navigation par groupes et dossier sélectionné, profils en tableau, actions compactes, création également pour les profils orange après recherche/doublons. Complément demandé : ignorer une course, un nageur avec ses relais liés ou un relais incomplet ; recherche des membres conservée.
 - Exclusions explicites par ligne source, réintégrables, sans passages ou temps initial dérivés. Confirmation nationale liée à l’aperçu avant import partiel ; retraits existants soumis au bilan de remplacement, PDF/TXT originaux complets, journal et gardes de concurrence conservés. Aucune lecture supplémentaire pour l’ergonomie ou les exclusions, aucun nouveau schéma/droit, aucun test d’écriture réelle.
-- Préparation et contrôles simulés en cours ; livraison TEST et références à renseigner après réussite. Validation utilisateur de la version regroupée en attente, PROD exclue.
+- Contrôles simulés des exclusions, empreintes, journal, remplacement, reprises PDF/TXT et lecteurs publics réussis. Navigateur hors réseau à 1440/1280 px pour le parcours compact, et parcours ordinateur profils/création/licence/doublons/clubs/épreuves/message/enregistrement simulé réussis. [PR #546](https://github.com/ffessmnap/LivePalmes/pull/546), contrôle Linux initial réussi ; contrôle final et livraison TEST à renseigner après réussite. Validation utilisateur de la version regroupée en attente, PROD exclue.
 
 ### 26 octobre — Réutilisation CI sur TEST et tests Firestore ciblés
 
