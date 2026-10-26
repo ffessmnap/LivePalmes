@@ -22,7 +22,7 @@ function tableDiff(before,incoming,columns) {
   for(const item of incoming) {
     if(fields.some(c=>!Object.hasOwn(item.row,c))||Object.keys(item.row).length!==fields.length)throw new TypeError("Resultat propose incomplet.");
     const key=canonical(item.row,matchingFields,{equivalentTimes:true}),match=queues.get(key)?.shift();
-    if(match)unchanged.push({sourceLine:item.sourceLine,row:match});else additions.push(item);
+    if(match)unchanged.push({sourceLine:item.sourceLine,row:match,...(item.origin?{origin:item.origin}:{})});else additions.push(item);
   }
   return {unchanged,additions,removals:[...queues.values()].flat().sort((a,b)=>a.id-b.id)};
 }
@@ -53,7 +53,7 @@ function prepareImportOperation(pack,next,input) {
     if(first+change.additions.length>2147483647)throw new RangeError("Identifiants natifs hors limite.");
     if(before.some(r=>r.id>=first))throw new TypeError("Allocation native incoherente.");
     const additions=change.additions.map((item,index)=>({...item,row:Object.fromEntries(columns.map(key=>[key,key==="id"?first+index:item.row[key]]))}));
-    return {before,after:[...change.unchanged.map(i=>i.row),...additions.map(i=>i.row)].sort((a,b)=>a.id-b.id),additions,removals:change.removals};
+    return {before,after:[...change.unchanged.map(i=>i.row),...additions.map(i=>i.row)].sort((a,b)=>a.id-b.id),additions,removals:change.removals,...(columns===COLUMNS&&input.sourceType==="winpalme-zip-preview"?{firstRelayIds:[...change.unchanged,...additions].filter(i=>i.origin==="first-relay").map(i=>i.row.id)}:{})};
   };
   return {competitionId:positiveId(pack.competition.id),expectedFingerprint:pack.expectedFingerprint,previewFingerprint:pack.previewFingerprint,
     perfs:assemble(pack.existing,diff.individual,next.perfs,COLUMNS),relays:assemble(pack.existingRelays,diff.relays,next.relays,RELAY_COLUMNS),

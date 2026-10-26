@@ -284,8 +284,8 @@ for (const file of ["calendrier.html", "competition.html"]) {
   assert.ok(html.includes("mailto:livepalmes@nap-ffessm.fr"));
 }
 const competitionHtml = fs.readFileSync(path.join(root, "competition.html"), "utf8");
-assert.ok(competitionHtml.includes("competition.js?v=20261012-shared-comments-1"));
-assert.ok(competitionHtml.includes("livepalmes-public-calendar.css?v=20261012-shared-comments-1"));
+assert.ok(competitionHtml.includes("competition.js?v=20261026-relay-details-1"));
+assert.ok(competitionHtml.includes("livepalmes-public-calendar.css?v=20261026-relay-details-1"));
 assert.ok(competitionHtml.includes("livepalmes-whatsapp-qr.css?v=20260831-whatsapp-qr-1"));
 assert.ok(competitionHtml.includes("livepalmes-whatsapp-qr.js?v=20260831-whatsapp-qr-1"));
 assert.ok(competitionHtml.includes("LivePalmes – Calendrier fédéral"));
