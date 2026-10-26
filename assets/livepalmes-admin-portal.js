@@ -2947,11 +2947,11 @@
         ["performances/public/data/performance-public/version.js", "adminImportVersionScript"]
       ];
       await Promise.all(scripts.map(([src, id]) => loadScriptOnce(src, id)));
-      await loadScriptOnce("performances/public/winpalme-zip.js?v=20261023-zip-preview-1", "adminImportZipScript");
+      await loadScriptOnce("performances/public/winpalme-zip.js?v=20261026-import-text-1", "adminImportZipScript");
       await loadScriptOnce("performances/public/import-confirmation-message.js?v=20261025-import-courses-1", "adminImportConfirmationScript");
       await loadScriptOnce("performances/public/import-swimmer-creation.js?v=20261025-import-creation-1", "adminImportSwimmerCreationScript");
-      await loadScriptOnce("performances/public/import-swimmer-review.js?v=20261026-import-write-1", "adminImportReviewScript");
-      await loadScriptOnce("performances/public/import-competitions.js?v=20261026-import-write-1", "adminImportModuleScript");
+      await loadScriptOnce("performances/public/import-swimmer-review.js?v=20261026-import-text-1", "adminImportReviewScript");
+      await loadScriptOnce("performances/public/import-competitions.js?v=20261026-import-text-1", "adminImportModuleScript");
       if (includeSpreadsheet) await loadImportSpreadsheet();
       watchImportWorkbench();
     })().catch((error) => {
@@ -9824,6 +9824,10 @@
             </div>` : ""}
         </article>`;
     }).join("") : '<p class="admin-engagements-empty">Aucun document mis en ligne pour cette compétition.</p>';
+    if(adminMode&&competition.napSource===true&&global.LivePalmesImportSource){
+      const host=document.createElement('div');elements.engagementsSharedDocumentsList.append(host);
+      global.LivePalmesImportSource.mount({host,competitionId:competition.id,onRead:payload=>callFunction('getEngagementCompetition',payload)});
+    }
   }
 
   function renderEngagementDocuments(competition = selectedEngagementCompetition || {}) {

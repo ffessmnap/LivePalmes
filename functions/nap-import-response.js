@@ -20,6 +20,10 @@ function importPreviewResponse(pack) {
           result.protocolReview={...result.protocolReview,incoming:pack.protocolManifest,changed:Boolean(pack.existingProtocol&&pack.existingProtocol.hash!==pack.protocolManifest.hash)};
           if(result.protocolReview.changed){result.diff.requiresReplacementConfirmation=true;result.diff.identical=false;}
         }
+        if(pack.textManifest){
+          result.textReview={incoming:pack.textManifest,previous:pack.existingText,changed:Boolean(pack.existingText&&pack.existingText.hash!==pack.textManifest.hash)};
+          if(result.textReview.changed){result.diff.requiresReplacementConfirmation=true;result.diff.identical=false;}
+        }
       }
     }catch(error){if(!(error instanceof TypeError||error instanceof RangeError))throw error;result.canConfirm=false;result.issues=[...result.issues,{sourceLine:0,code:error.message}];}
   }

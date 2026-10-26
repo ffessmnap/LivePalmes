@@ -122,10 +122,12 @@ async function previewNativeImport(pool,input) {
   if(input.sourceType==="winpalme-zip-preview") {
     pack.review=await require("./nap-import-review").prepareReview(pool,pack,input);
     pack.existingStatuses=await require("./nap-import-status-results").readImportStatusResults(pool,competitionId);
-    pack.existingProtocol=input.protocolManifest?await require("./nap-import-protocol").current(pool,competitionId):null;
+    const documents=input.protocolManifest||input.textManifest?await require("./nap-import-protocol").current(pool,competitionId,{withText:true}):{protocol:null,text:null};
+    pack.existingProtocol=documents.protocol;pack.existingText=documents.text;
+    pack.textManifest=input.textManifest?require("./nap-import-private-text").manifest(input.textManifest):null;
     pack.protocolManifest=input.protocolManifest?require("./nap-import-protocol").manifest(input.protocolManifest):null;
     pack.expectedFingerprint=hash({competition,existing,existingRelays,statuses:pack.existingStatuses});
-    pack.previewFingerprint=hash([pack.previewFingerprint,pack.expectedFingerprint,pack.review.groups.map(g=>g.clubAlerts),courseReview?.sources,input.protocolManifest?require("./nap-import-protocol").manifest(input.protocolManifest):null,pack.existingProtocol]);
+    pack.previewFingerprint=hash([pack.previewFingerprint,pack.expectedFingerprint,pack.review.groups.map(g=>g.clubAlerts),courseReview?.sources,input.protocolManifest?require("./nap-import-protocol").manifest(input.protocolManifest):null,pack.existingProtocol,pack.textManifest,pack.existingText]);
     pack.canConfirm=canConfirm&&issues.length===0;
   }
   return pack;

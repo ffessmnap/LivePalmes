@@ -4,6 +4,8 @@
 
 ## Aide au contrôle des imports — 25 octobre 2026
 
+Complément du 26 octobre : en mode administration d’une compétition NAP, la GED affiche une carte « TXT source du dernier import — privé », avec un bouton de téléchargement et un statut local. Aucun lien public, champ de modification ou bouton de suppression. Le mode club ne monte pas cette carte ; le serveur vérifie les droits au clic. Carte documentaire et bouton existants réutilisés, lisibles sur 320 px. Le bilan de remplacement distingue le TXT privé du PDF public et indique si son contenu change.
+
 Évolution du 26 octobre : le bouton principal du contrôle ZIP devient « Enregistrer les résultats et le PDF dans NAP ». Il reste désactivé tant que l’aperçu est périmé ou incomplet et, pour un remplacement, tant que le bilan actualisé n’est pas approuvé. Le bilan indique ajout/remplacement/contenu identique du PDF ; la confirmation rappelle l’écriture réelle depuis TEST. Pendant une réponse incertaine, les choix restent verrouillés et le même bouton permet la reprise. L’historique d’un ZIP interrompu propose le PDF/ZIP original en complément facultatif si le transfert doit être repris. Les composants, couleurs et empilement mobile existants sont réutilisés.
 
 - Les clubs non rattachés affichent libellé et numéro du TXT, puis une cause lisible (numéro absent/invalide/inconnu/dupliqué, en-tête ambigu ou libellé contradictoire). Les propositions restent alphabétiques à niveau égal, avec priorité au numéro fédéral, puis au libellé et au sigle ; l’identifiant NAP distingue les fiches homonymes. Recherche et sélection gardent les composants existants.

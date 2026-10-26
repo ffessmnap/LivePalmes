@@ -22,11 +22,11 @@ function decode(input){
   if(decoded.buffer.length!==expected.size||digest(decoded.buffer)!==expected.hash)throw new TypeError("Le PDF ne correspond plus à l’aperçu.");
   return decoded;
 }
-async function current(pool,competitionId){
+async function current(pool,competitionId,{withText=false}={}){
   const [rows]=await pool.execute({sql:"SELECT metadata FROM livepalmes_performance_imports WHERE id=? LIMIT 1",timeout:10000},[hash(["nap-results-current",competitionId])]);
   const pointer=typeof rows[0]?.metadata==="string"?JSON.parse(rows[0].metadata):rows[0]?.metadata;
   if(pointer?.activeImportId)throw new TypeError("Import de résultats en cours : réessayez après sa fin.");
-  return pointer?.protocol||null;
+  return withText?{protocol:pointer?.protocol||null,text:pointer?.textManifest||null}:pointer?.protocol||null;
 }
 async function prepare(connection,{competitionId,nextId,previous,manifest:source,uid,downloadUrl}){
   source=manifest(source);

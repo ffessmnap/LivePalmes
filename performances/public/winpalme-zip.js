@@ -114,10 +114,10 @@
       if (c[0] === "REL") counts.relays++;
       if (["NAG","REL"].includes(c[0])) { if (c[c[0] === "NAG" ? 10 : 6] === "NAG") counts.timed++; else counts.statuses++; }
     }
-    return { rawText, pdf: new Blob([pdfBytes], { type: "application/pdf" }), manifest: {
+    return { rawText, text: new Blob([textBytes], { type: "text/plain" }), pdf: new Blob([pdfBytes], { type: "application/pdf" }), manifest: {
       zipName: file.name, textPath: selected.text.name, pdfPath: selected.pdf.name,
       pdfDate: selected.pdf.displayDate, protocolVersions: selected.versions,
-      textHash: await digest(textBytes), pdfHash: await digest(pdfBytes), name, date, wid,
+      textHash: await digest(textBytes), textEncoding:new TextDecoder(encoding).encoding, pdfHash: await digest(pdfBytes), name, date, wid,
       counts: { ...counts, swimmers: identities.size }
     } };
   }

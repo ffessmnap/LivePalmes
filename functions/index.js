@@ -10136,6 +10136,12 @@ exports.setEngagementOpenWaterCourseStatus = onCall({ ...CALLABLE_OPTIONS, ...(E
 
 exports.getEngagementCompetition = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
   const context = await engagementAccessContext(request);
+  if(request.data?.action!==undefined){
+    if(request.data.action!=="import-source"||ENVIRONMENT.sportingDataSource!=="nap")throw new HttpsError("invalid-argument","Action de consultation invalide.");
+    if(!context.national&&(!context.region||!context.regionId))throw new HttpsError("permission-denied","TXT réservé aux administrations régionale et nationale.");
+    try{return await require("./nap-import-private-text").readCurrent(require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD),request.data.competitionId,event=>assertCanManageEngagementCompetition(context,event));}
+    catch(error){throw nativePerformanceFailure(error);}
+  }
   const competitionId = cleanText(request.data?.competitionId).slice(0, 128);
   if (!competitionId) {
     throw new HttpsError("invalid-argument", "Competition requise.");

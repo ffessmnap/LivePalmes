@@ -35,6 +35,8 @@ function createNativeImportWriter({getPool,authorize,preview=previewNativeImport
       excludedSourceLines:input.excludedSourceLines||[],swimmerBindings:input.swimmerBindings||[],memberBindings:input.memberBindings||[],clubBindings:input.clubBindings||[]};
     if(zip&&!resumeReceipt)Object.assign(immutable,{sourceType:input.sourceType,courseBindings:input.courseBindings||[],clubAcknowledgements:input.clubAcknowledgements||[],replacementReviewFingerprint:input.replacementReviewFingerprint||"",protocolManifest:protocol.manifest(input.protocolManifest)});
     if(typeof immutable.rawText!=="string"||Buffer.byteLength(immutable.rawText,"utf8")>5*1024*1024)throw new TypeError("Fichier hors limite.");
+    const sourceText=resumeReceipt?null:require("./nap-import-private-text").create(input);
+    if(input.textArchive||input.textManifest)Object.assign(immutable,{textManifest:require("./nap-import-private-text").manifest(sourceText)});
     const requestHash=resumeReceipt?parse(resumeReceipt.metadata).requestHash:hash(immutable),id=hash([actor.uid,input.operationId]),pointerId=hash(["nap-results-current",competitionId]);
     if(input.resumeImportId&&input.resumeImportId!==id)throw new TypeError("Reprise d'import incoherente.");
     const pool=resumePool||await getPool();
@@ -76,8 +78,10 @@ function createNativeImportWriter({getPool,authorize,preview=previewNativeImport
         const clubIds=[...new Set([...pack.incoming.map(i=>i.row.club),...pack.incomingRelays.map(i=>i.row.club),...pack.statusRows.map(r=>r.clubId)].filter(Boolean).map(String))];
         saved={requestHash,operationId:input.operationId,fileName:input.fileName,plan,competition,fileHash:pack.decoded.fileHash,people:pack.candidates.filter(r=>personIds.includes(r.id)),clubs:pack.clubs.filter(r=>clubIds.includes(String(r.num_club))),
           display:{metadata:{competitionName:competition.libelle,date:competition.date,location:competition.lieu,poolSize:String(competition.bassin),timingType:competition.chrono},summary:plan.summary},visibilityBefore:[]};
+        saved.sourceText=sourceText;
         if(zip){
           if(hash(pack.existingProtocol||null)!==hash(currentPointer.protocol||null))throw new TypeError("Le protocole de l’import précédent a changé. Actualisez l’aperçu.");
+          if(hash(pack.existingText||null)!==hash(currentPointer.textManifest||null))throw new TypeError("Le TXT du précédent import a changé. Actualisez l’aperçu.");
           saved.sourceType=immutable.sourceType;
           saved.display.sourceType="winpalme-zip";
           saved.protocol=await protocol.prepare(conn,{competitionId,nextId:next.documents,previous:currentPointer.protocol,manifest:immutable.protocolManifest,uid:actor.uid,downloadUrl:protocolStorage.downloadUrl});
@@ -86,7 +90,9 @@ function createNativeImportWriter({getPool,authorize,preview=previewNativeImport
         const removed=plan.perfs.removals.map(r=>r.id);
         if(removed.length)saved.visibilityBefore=await q(`SELECT performance_id,hidden,version,updated_at,updated_by FROM livepalmes_performance_visibility WHERE performance_id IN (${removed.map(()=>"?").join(",")}) LIMIT 5001`,removed);
         // Full before images include the native relay table and deleted visibility.
-        await q("INSERT INTO livepalmes_performance_imports (id,competition_id,file_hash,file_name,source_type,status,row_count,metadata,created_at,created_by,updated_at) VALUES (?,?,?,?,'ffessm-txt','prepared',?,?,UTC_TIMESTAMP(6),?,UTC_TIMESTAMP(6))",[id,competitionId,saved.fileHash,input.fileName,plan.perfs.after.length+plan.relays.after.length+plan.statusRows.length,JSON.stringify(saved),actor.uid]);
+        const metadata=JSON.stringify(saved);
+        if(Buffer.byteLength(metadata,"utf8")>14*1024*1024)throw new RangeError("Journal d’import trop volumineux avec le TXT : réduisez le lot.");
+        await q("INSERT INTO livepalmes_performance_imports (id,competition_id,file_hash,file_name,source_type,status,row_count,metadata,created_at,created_by,updated_at) VALUES (?,?,?,?,'ffessm-txt','prepared',?,?,UTC_TIMESTAMP(6),?,UTC_TIMESTAMP(6))",[id,competitionId,saved.fileHash,input.fileName,plan.perfs.after.length+plan.relays.after.length+plan.statusRows.length,metadata,actor.uid]);
       }
       const ids=saved.people.map(r=>r.id),clubIds=saved.clubs.map(r=>r.num_club);
       const people=ids.length?await q(`SELECT id,nom,prenom,date,sexe,club FROM nageurs WHERE id IN (${ids.map(()=>"?").join(",")}) AND ${notMerged()} ORDER BY id LIMIT 10001`,ids):[];
@@ -131,7 +137,7 @@ function createNativeImportWriter({getPool,authorize,preview=previewNativeImport
       if(currentPointer.currentImportId&&currentPointer.currentImportId!==id)await q("UPDATE livepalmes_performance_imports SET status='replaced',updated_at=UTC_TIMESTAMP(6) WHERE id=? AND status='completed' LIMIT 1",[currentPointer.currentImportId]);
       const publishedProtocol=saved.protocol?await protocol.publish(conn,saved.protocol):null;
       await q("UPDATE livepalmes_performance_imports SET status='completed',updated_at=UTC_TIMESTAMP(6) WHERE id=? LIMIT 1",[id]);
-      await writePointer({currentImportId:id,...(publishedProtocol?{protocol:publishedProtocol}:currentPointer.protocol?{protocol:currentPointer.protocol}:{})},"current");
+      await writePointer({currentImportId:id,...(saved.sourceText?{textManifest:require("./nap-import-private-text").manifest(saved.sourceText)}:{}),...(publishedProtocol?{protocol:publishedProtocol}:currentPointer.protocol?{protocol:currentPointer.protocol}:{})},"current");
       return {ok:true,source:"nap",importId:id,replayed:Boolean(initial),summary:saved.plan.summary};
     }finally {
       try{if(locked)await conn.query({sql:"UNLOCK TABLES",timeout:10000});}finally{try{if(documentLocked)await q("SELECT RELEASE_LOCK(?)",[`lp-documents-${competitionId}`]);}finally{try{if(named)await q("SELECT RELEASE_LOCK(?)",[`livepalmes_result_import_${competitionId}`]);}finally{conn.release();}}}
