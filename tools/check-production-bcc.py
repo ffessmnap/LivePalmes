@@ -143,7 +143,7 @@ def check_active_oct26(mode, directory, scope, token):
         and not any(m in {'allUsers', 'allAuthenticatedUsers'} for b in iam.get('bindings', []) for m in b.get('members', [])), 'IAM prive worker modifie')
     index_spec = importlib.util.spec_from_file_location('active_indexes', ROOT / 'tools/production-account-history-indexes.py')
     indexes = importlib.util.module_from_spec(index_spec); index_spec.loader.exec_module(indexes)
-    url = indexes.URL + '?pageSize=100'
+    url = indexes.URL + '?pageSize=0'
     with urllib.request.urlopen(urllib.request.Request(url, headers={'Authorization': 'Bearer ' + token}), timeout=30) as response:
         result = json.load(response)
     policy.require(not result.get('nextPageToken'), 'Index tronques : arret')
