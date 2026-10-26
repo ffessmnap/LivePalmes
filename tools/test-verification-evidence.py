@@ -20,12 +20,12 @@ def node_version():
     return subprocess.check_output(['node', '--version'], text=True).strip()
 
 
-def evidence(candidate):
-    return {'schema': 1, 'candidate': candidate, 'suite': 'verify-livepalmes',
+def evidence(candidate, suite='verify-livepalmes'):
+    return {'schema': 1, 'candidate': candidate, 'suite': suite,
             'result': 'success', 'node': node_version(), 'platform': sys.platform}
 
 
-def reusable(candidate, directory):
+def reusable(candidate, directory, suite='verify-livepalmes'):
     if not re.fullmatch('[0-9a-f]{40}', candidate):
         return False
     repo = os.environ['GITHUB_REPOSITORY']
@@ -36,10 +36,11 @@ def reusable(candidate, directory):
                 and run.get('status') == 'completed' and run.get('conclusion') == 'success'
                 and run.get('run_attempt', 1) == 1):
             continue
-        info = cycle.artifact(run['id'], 'application-verification', directory, WORKFLOW)
+        name = 'application-verification' if suite == 'verify-livepalmes' else 'publication-verification'
+        info = cycle.artifact(run['id'], name, directory, WORKFLOW)
         if info.get('head_sha') != candidate or info.get('event') != 'push':
             return False
-        return cycle.read(Path(directory)/'verification.json') == evidence(candidate)
+        return cycle.read(Path(directory)/'verification.json') == evidence(candidate, suite)
     return False
 
 
@@ -53,18 +54,38 @@ def firestore_required(paths):
     return not paths or any(not isolated(path) for path in paths)
 
 
+def documentation_only(paths):
+    # Policy files, tools, workflows and unknown extensions always keep full CI.
+    return bool(paths) and all(path.startswith('docs/') and path.endswith('.md') for path in paths)
+
+
+def check_documentation(paths):
+    for path in paths:
+        file = ROOT / path
+        if not file.exists():  # Deleted documentation still belongs to this scope.
+            continue
+        content = file.read_text(encoding='utf-8', errors='strict')
+        if '\x00' in content or re.search(r'^(<<<<<<< |=======\s*$|>>>>>>> )', content, re.M):
+            raise ValueError('Documentation invalide : ' + path)
+        if '<!-- description:' not in content:
+            raise ValueError('Description documentaire absente : ' + path)
+    print(f'Documentation : {len(paths)} fichiers relus (UTF-8, description, conflits).')
+
+
 def main():
     phase = sys.argv[1]
     candidate = os.environ['GITHUB_SHA']
+    suite = 'publication-offline-v1' if phase.endswith('-publication') else 'verify-livepalmes'
+    phase = phase.removesuffix('-publication')
     if phase == 'record':
         if os.environ.get('GITHUB_EVENT_NAME') != 'push' or os.environ.get('GITHUB_REF') != 'refs/heads/main':
             raise ValueError('Preuve reservee au push main')
         if not re.fullmatch('[0-9a-f]{40}', candidate):
             raise ValueError('Commit invalide')
-        cycle.write(Path(sys.argv[2])/'verification.json', evidence(candidate))
+        cycle.write(Path(sys.argv[2])/'verification.json', evidence(candidate, suite))
     elif phase == 'reuse':
         try:
-            verified = reusable(candidate, sys.argv[2])
+            verified = reusable(candidate, sys.argv[2], suite) if suite != 'verify-livepalmes' else reusable(candidate, sys.argv[2])
         except Exception:
             # Missing, expired, unavailable or invalid evidence never skips a test.
             verified = False
@@ -72,14 +93,17 @@ def main():
         print('Verification applicative : ' + ('preuve main exacte reutilisee' if verified else 'suite complete requise'))
     elif phase == 'scope':
         base = os.environ.get('BASE_SHA', '')
-        required = True
+        required, docs = True, False
         if re.fullmatch('[0-9a-f]{40}', base) and base != '0'*40:
             try:
                 paths = subprocess.check_output(['git', 'diff', '--name-only', '--no-renames', base, candidate], text=True).splitlines()
                 required = firestore_required(paths)
+                docs = documentation_only(paths)
+                if docs:
+                    check_documentation(paths)
             except subprocess.CalledProcessError:
                 pass
-        cycle.output(firestore=str(required).lower())
+        cycle.output(firestore=str(required).lower(), documentation=str(docs).lower())
         print('Emulateur Firestore : ' + ('controle complet' if required else 'interface/documentation seules, regles inchangees'))
     else:
         raise ValueError('Phase inconnue')

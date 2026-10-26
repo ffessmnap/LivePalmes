@@ -46,6 +46,7 @@ Pilote mails IDF autorisé sur TEST le 20 octobre 2026 : l’option `notificatio
 - `livepalmes-test-common.yml` : publication du commit main regroupé sur TEST, traitements nécessaires puis Hosting, preuve de version conservée.
 - Travaux simultanés TEST (accord du 25 octobre) : terminer le commit exact déjà engagé, puis suivre main après réussite en conservant toutes les restrictions et preuves ; ignorer les candidats déjà dépassés dans la file. Aucun rattrapage après échec/annulation, aucun suivi en mode lecture seule, trois suivis maximum. Voir `docs/releases/PROCEDURE.md`.
 - `livepalmes-production-preflight.yml` : bilan sans accès Google, fondé sur les preuves vérifiées des versions publiées ; relecture Firebase après l’approbation PROD.
+- `livepalmes-production-readiness.yml` : avant accord final, contrôle séparé des prérequis avec les comptes existants, en lecture seule (dérive, permissions nécessaires, quotas si backend) ; aucun droit accordé ni déploiement. Le manifeste inline évite une PR par plan ordinaire ; les exceptions sensibles restent spécifiques. Voir les conditions de réutilisation CI, mesure trois/six et relectures Hosting dans `docs/releases/PROCEDURE.md`.
 - `livepalmes-production-release.yml` : publication du bilan approuvé, sauvegarde vérifiée, lots bornés, contrôles puis Hosting ; `resume_run` conserve la sauvegarde initiale si une reprise est nécessaire.
 - `livepalmes-production-rollback.yml` : restauration explicite du code sauvegardé et de la release Hosting précédente.
 

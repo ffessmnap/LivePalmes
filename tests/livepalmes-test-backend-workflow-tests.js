@@ -20,7 +20,11 @@ assert.equal((qualificationAutoWorkflow.match(/expected_commit: \$\{\{ github\.s
 assert.equal((qualificationAutoWorkflow.match(/secrets: inherit/g) || []).length, 3);
 assert.doesNotMatch(qualificationAutoWorkflow, /lot: (email|schedulers|all-safe)/);
 assert.doesNotMatch(qualificationAutoWorkflow, /livepalmes-production|project: livepalmes(?:\s|$)/);
-assert.match(workflow, /if: github\.ref == 'refs\/heads\/main'/);
+const parsedWorkflow = require('./firestore-rules/node_modules/js-yaml').load(workflow);
+assert.equal(parsedWorkflow.jobs['deployer-backend-test'].if, "(!inputs.benchmark_sources) && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/feature/qualification-engagements')");
+assert.equal(parsedWorkflow.jobs['benchmark-sources-test'].if, "inputs.benchmark_sources && github.ref == 'refs/heads/main' && github.run_attempt == 1");
+assert.equal(parsedWorkflow.on.workflow_dispatch.inputs.benchmark_sources.default, false);
+assert.equal(parsedWorkflow.on.workflow_call.inputs.benchmark_sources.default, false);
 assert.ok(workflow.includes("|| github.ref == 'refs/heads/feature/qualification-engagements'"));
 const branchGuard = workflow.slice(workflow.indexOf('          case "$GITHUB_REF" in'), workflow.indexOf('          case "$SELECTED_LOT" in', workflow.indexOf('Branche non autorisée en TEST.')));
 assert.ok(branchGuard.includes('bootstrap|engagement-core|publications)'));
