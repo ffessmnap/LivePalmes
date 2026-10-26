@@ -15,6 +15,21 @@ spec.loader.exec_module(m)
 
 
 class EvidenceTests(unittest.TestCase):
+    def test_parallel_installs_wait_for_both_and_fail_closed(self):
+        bash = shutil.which('bash')
+        if not bash:
+            self.skipTest('bash absent ; controle obligatoire sur CI Linux')
+        script = "const y=require('./tests/firestore-rules/node_modules/js-yaml'),f=require('fs'); const w=y.load(f.readFileSync('.github/workflows/livepalmes-test-common.yml','utf8')); console.log(JSON.stringify(w.jobs.test.steps.find(s=>s.name==='Installer les dependances verrouillees en parallele').run));"
+        install = json.loads(subprocess.check_output(['node', '-e', script], cwd=ROOT, text=True))
+        mocked = 'npm() { echo "SIMULATED $*"; if [[ "$*" == *"--prefix functions "* ]]; then return "$FUNCTIONS_EXIT"; else return "$RULES_EXIT"; fi; }\n'
+        for functions, rules in [(0, 0), (1, 0), (0, 1), (1, 1)]:
+            result = subprocess.run([bash, '-e'], input=mocked + install, text=True, capture_output=True,
+                                    env={**os.environ, 'FUNCTIONS_EXIT': str(functions), 'RULES_EXIT': str(rules)})
+            self.assertEqual(result.returncode == 0, functions == rules == 0)
+            self.assertEqual(result.stdout.count('SIMULATED'), 2)
+        self.assertEqual(install.count('npm ci '), 2)
+        self.assertEqual(install.count('--prefer-offline --no-audit --no-fund'), 2)
+
     def test_rendered_workflow_shell_is_valid(self):
         bash = shutil.which('bash')
         if os.name == 'nt' and Path('C:/Program Files/Git/bin/bash.exe').exists():

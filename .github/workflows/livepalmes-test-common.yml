@@ -125,15 +125,21 @@ jobs:
     - name: Rechercher la verification du commit main exact
       id: verified-main
       run: python tools/test-verification-evidence.py reuse "$RUNNER_TEMP/application-verification"
-    - name: Installer et verifier
+    - name: Installer les dependances verrouillees en parallele
+      run: |
+        npm ci --prefix functions --prefer-offline --no-audit --no-fund &
+        functions_pid=$!
+        npm ci --prefix tests/firestore-rules --prefer-offline --no-audit --no-fund &
+        rules_pid=$!
+        result=0
+        wait "$functions_pid" || result=1
+        wait "$rules_pid" || result=1
+        exit "$result"
+    - name: Verifier la version ou reutiliser la preuve exacte
       id: application-checks
       env:
         MAIN_VERIFIED: ${{ steps.verified-main.outputs.verified }}
       run: |
-        npm ci --prefix functions
-
-        npm ci --prefix tests/firestore-rules
-
         if [ "$MAIN_VERIFIED" = true ]; then
           echo "Verification applicative du commit exact reutilisee depuis la preuve CI main."
         else
