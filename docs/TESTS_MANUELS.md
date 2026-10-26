@@ -2,6 +2,12 @@
 
 <!-- description: Checklist de tests manuels à exécuter avant une publication ou après une modification sensible. -->
 
+## Premiers relayeurs et détail public — 26 octobre 2026
+
+Simulation seule : un temps dérivé du premier relayeur ne figure plus dans le classement individuel de compétition mais reste renvoyé par les vrais lecteurs TOP et fiche nageur. Vérifier un temps identique lors d’une vraie course individuelle : conserver cette course. Tester provenance explicite, ancien journal ZIP complet, réimport sans ajout conservant les identifiants, plusieurs premiers relayeurs identiques et refus d’un journal ambigu/corrompu. Aucun changement des drapeaux natifs `relais`/`passage`, ni suppression/correction de résultat réel.
+
+Dans la page compétition, ouvrir le groupe relais puis les détails : quatre positions, noms/liens, total et passages/fractions cohérents ; tester passage absent/non croissant/dépassant le total, identité manquante et relais sans temps admissible. Une seule lecture groupée des noms, aucun appel au repli ; plafond de membres et repli vers protocole. Contrôler le contenu résultats à 1440/390/320 px et la confirmation de fiche. Vérifier caches et version serveur après livraison TEST. Le ZIP local d’Auray comporte 20 relais avec trois passages et un total croissants : contrôle de format local uniquement, sans SQL, publication de données ni import réel.
+
 ## TXT source privé des imports — 26 octobre 2026
 
 En simulation hors réseau uniquement : vérifier octets d’origine, CRLF et accents Windows-1252, empreinte et limite de 5 Mo ; refus d’un TXT différent de l’analyse, archive invalide ou journal surdimensionné avant mutation sportive. Contrôler conservation après interruption/reprise et remplacement du pointeur au nouvel import. Un changement du TXT seul impose l’approbation du nouveau bilan ZIP. Aucune ancienne version n’est téléchargeable en fournissant un identifiant au client.
