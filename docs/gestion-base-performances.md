@@ -8,6 +8,16 @@ Les performances sont lues et écrites dans NAP via les fonctions authentifiées
 
 ## Import TXT WinPalme
 
+### Revue compacte et exclusions ZIP — 26 octobre 2026
+
+Accord explicite d’Antoine sur la maquette à deux colonnes pour ordinateur : liste de nageurs par groupes repliables, un dossier affiché, candidats en tableau, création proposée en orange comme en rouge après recherche et vérification des doublons. Le formulaire ouvert ne crée rien ; la confirmation dédiée conserve l’écriture réelle NAP existante, avec licence obligatoire.
+
+En ZIP uniquement, une ligne NAG ou REL peut être explicitement écartée, même chronométrée ou avec statut. La course et ses passages partagent la ligne source ; le relais et son premier temps aussi. L’action globale d’un nageur annonce et sélectionne toutes ses courses ainsi que les relais source liés, sans écarter les courses individuelles des autres membres. Les relais incomplets conservent leur recherche de profils par position, ou peuvent être ignorés. Aucun autre défaut ou ligne d’en-tête n’est escamoté. Un aperçu sans aucune ligne conservée ne peut pas être enregistré.
+
+Les exclusions restent réintégrables dans leur dossier ; après actualisation, elles ne génèrent plus de demandes de rapprochement ni de mail de confirmation. Les lignes complètes écartées sont conservées dans le plan du journal existant, avec le résumé d’import partiel. L’enregistrement exige une confirmation dédiée liée à l’empreinte exacte d’aperçu ; tout changement l’invalide, comme l’accord de remplacement. Si des anciens résultats sont désormais exclus, ils apparaissent dans les retraits du bilan de remplacement à approuver. Les fichiers PDF et TXT sont conservés dans leur intégralité d’origine : l’import partiel concerne les résultats NAP, pas ces documents. Le parcours TXT ordinaire garde sa restriction aux lignes sans statut ni temps.
+
+Budget : zéro lecture ou écriture supplémentaire pour naviguer, choisir, exclure/réintégrer, ouvrir les dossiers ou préparer le message. Actualisation groupée existante conservée (sept à neuf lectures bornées, éventuellement une lecture des profils choisis déjà prévue), sans requête par ligne ; création et recherche gardent leurs plafonds existants. Aucun schéma, index, collection ou droit modifié. Les tests utilisent exclusivement des fixtures sans import ni création réels.
+
 ### Premiers relayeurs et résultats publics — 26 octobre 2026
 
 Le temps du premier relayeur reste une performance individuelle admissible pour les TOP et la fiche nageur, avec les valeurs natives inchangées. Il est exclu uniquement du classement individuel affiché sur la page publique de la compétition. Aucun passage, temps, club, catégorie ou résultat réel n’est corrigé ou supprimé.

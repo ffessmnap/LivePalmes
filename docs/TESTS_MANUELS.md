@@ -2,6 +2,10 @@
 
 <!-- description: Checklist de tests manuels à exécuter avant une publication ou après une modification sensible. -->
 
+## Import ZIP compact et exclusions — 26 octobre 2026
+
+Ordinateur uniquement à la demande d’Antoine, fixtures hors réseau : navigation des groupes, un dossier visible, profils en tableau, ouverture de création en orange/rouge après recherche sans écrire, licence et doublons toujours contrôlés. Ignorer une course avec passages, un nageur avec ses relais liés (courses des autres membres conservées), ou un relais incomplet avec son premier temps ; réintégrer puis actualiser. Vérifier que les alertes/messages ne contiennent plus les lignes ignorées, mais que les défauts indépendants continuent de bloquer. Confirmer séparément les exclusions et le remplacement ; toute modification invalide ces deux accords, le mail et le bouton d’écriture. Ancien résultat exclu visible dans les retraits ; import totalement vide refusé. Journal simulé conservant exclusions et sources, PDF/TXT originaux complets signalés dans la confirmation. Recherche des membres d’un relais par position conservée. Aucune création de nageur, import réel ou écriture Storage pendant la recette.
+
 ## Premiers relayeurs et détail public — 26 octobre 2026
 
 Présentation compacte validée : vérifier `Prénom NOM [split] temps cumulé`, sans anciens libellés ni phrase explicative, avec trois colonnes alignées. Tester noms longs et sans espace à 1440/390/320 px ; comparer l’abscisse des deux colonnes de temps entre les quatre lignes, conserver liens et confirmation de fiche. Aucun changement des valeurs, des calculs ou des lectures serveur.
