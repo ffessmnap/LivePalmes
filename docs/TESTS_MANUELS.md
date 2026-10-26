@@ -4,6 +4,8 @@
 
 ## Premiers relayeurs et détail public — 26 octobre 2026
 
+Présentation compacte validée : vérifier `Prénom NOM [split] temps cumulé`, sans anciens libellés ni phrase explicative, avec trois colonnes alignées. Tester noms longs et sans espace à 1440/390/320 px ; comparer l’abscisse des deux colonnes de temps entre les quatre lignes, conserver liens et confirmation de fiche. Aucun changement des valeurs, des calculs ou des lectures serveur.
+
 Simulation seule : un temps dérivé du premier relayeur ne figure plus dans le classement individuel de compétition mais reste renvoyé par les vrais lecteurs TOP et fiche nageur. Vérifier un temps identique lors d’une vraie course individuelle : conserver cette course. Tester provenance explicite, ancien journal ZIP complet, réimport sans ajout conservant les identifiants, plusieurs premiers relayeurs identiques et refus d’un journal ambigu/corrompu. Aucun changement des drapeaux natifs `relais`/`passage`, ni suppression/correction de résultat réel.
 
 Dans la page compétition, ouvrir le groupe relais puis les détails : quatre positions, noms/liens, total et passages/fractions cohérents ; tester passage absent/non croissant/dépassant le total, identité manquante et relais sans temps admissible. Une seule lecture groupée des noms, aucun appel au repli ; plafond de membres et repli vers protocole. Contrôler le contenu résultats à 1440/390/320 px et la confirmation de fiche. Vérifier caches et version serveur après livraison TEST. Le ZIP local d’Auray comporte 20 relais avec trois passages et un total croissants : contrôle de format local uniquement, sans SQL, publication de données ni import réel.

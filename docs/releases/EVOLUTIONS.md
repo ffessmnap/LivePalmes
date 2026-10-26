@@ -2,6 +2,11 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 26 octobre — Présentation compacte des temps des relayeurs
+
+- Accord explicite d’Antoine sur `Prénom NOM [split] temps cumulé`, les temps alignés même avec un nom long. Suppression des libellés visibles et de la phrase explicative. Présentation seule sur TEST ; aucun calcul, lecteur serveur ou résultat modifié, zéro lecture supplémentaire à l’ouverture ou aux actions.
+- Détails du relais sur une ligne pleine sous l’équipe, liste en trois colonnes communes (noms souples et temps alignés), liens existants conservés et libellés accessibles. Contrôles navigateur hors réseau à 1440/390/320 px avec noms longs, tests calendrier et syntaxe ciblée. PR et preuve TEST à renseigner après livraison ; validation utilisateur de la version regroupée en attente, PROD exclue.
+
 ### 26 octobre — Premiers relayeurs hors classement individuel et détail des relais publics
 
 - Retour utilisateur : l’import fonctionne mais les temps des premiers relayeurs apparaissent à tort parmi les courses individuelles de la compétition. Accord explicite pour vérification et préparation TEST : conserver TOP/fiches nageurs et afficher composition et fractions des relais. Aucune modification de résultat réel autorisée pendant les essais.
