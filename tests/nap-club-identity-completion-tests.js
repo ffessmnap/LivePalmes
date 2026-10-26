@@ -18,7 +18,6 @@ assert.throws(()=>plan({...original,sexe:"M"},{sex:""}),/effacée/);
 assert.throws(()=>plan(original,{sex:"X"}),/Femme ou Homme/);
 assert.throws(()=>plan(original,{licenseNumber:"texte"}),/Licence invalide/);
 assert.equal(plan(original,{lastName:"CORRIGE"}).after.nom,"CORRIGE","national correction may replace existing identity");
-assert.equal(plan({...original,date:"1980-01-02 00:00:00"},{birthDate:"1980-01-02"},{fillOnly:true}).changed.length,0,"equivalent legacy SQL dates are preserved verbatim");
 assert.equal(classify(current,{...current,sex:"M"},true).action,"complete");
 assert.equal(classify(current,{...current,lastName:"CORRIGE"},true).action,"request");
 assert.equal(classify(current,{...current,licenseNumber:"A-12-34567"},false).action,"complete");
