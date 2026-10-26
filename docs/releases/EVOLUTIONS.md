@@ -5,6 +5,7 @@
 ### 26 octobre — Réutilisation CI sur TEST et tests Firestore ciblés
 
 - Premier essai TEST `40338117642` : preuve exacte reconnue (`MAIN_VERIFIED=true`), puis erreur shell avant toute publication. Correction du bloc YAML en littéral et ajout d'un contrôle `bash -n` de tous les scripts rendus du workflow ; aucune version partielle publiée par cet essai. Nouvelle preuve de livraison à conserver dans la PR de correction.
+- Correctif [PR #544](https://github.com/ffessmnap/LivePalmes/pull/544) intégré ; [TEST 40340411921](https://github.com/ffessmnap/LivePalmes/actions/runs/40340411921) réussi avec preuve CI exacte, zéro fonction republiée, durée 2 min 35 s contre 2 min 42 s pour le run 40333389556 (mesures ponctuelles, gain non garanti). Complément : installations indépendantes en parallèle, cache préféré, audit conservé en CI et non répété sur TEST, attente des deux statuts et arrêt si l'un échoue. Nouvelle mesure dans la PR de complément, sans changement PROD.
 
 - Accord de fonctionnement dans la discussion sur les délais TEST/PROD : réutiliser les contrôles attestés, cibler les suites et mesurer les lots backend avant toute modification de leur cadence. Cette optimisation ne vaut pas accord de publication applicative PROD.
 - Preuve CI limitée au push main réussi et au commit exact, contrôlée par le mécanisme d'intégrité existant ; absence/erreur/expiration/ambiguïté = suite complète. Aucun contrôle de publication backend, Hosting ou de preuve finale supprimé. Aucun délai d'attente ajouté pour une CI en cours.
