@@ -7686,7 +7686,7 @@
 
 #adminEngagementsClubPeoplePanel .admin-engagements-club-person-row {
   display: grid;
-  grid-template-columns: minmax(210px, 1.4fr) minmax(110px, 0.7fr) minmax(150px, 0.85fr) 78px 166px;
+  grid-template-columns: minmax(210px, 1.4fr) minmax(110px, 0.7fr) minmax(150px, 0.85fr) 78px 188px;
   gap: 8px;
   align-items: center;
   min-width: 790px;
@@ -7771,6 +7771,36 @@
   min-height: 32px;
   padding: 6px 9px;
   font-size: 0.78rem;
+}
+
+#adminEngagementsClubPeoplePanel .admin-engagements-request-actions .admin-engagements-club-person-edit-button {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  flex: 0 0 32px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  padding: 0;
+  background: transparent;
+  color: var(--portal-color-accent-strong, #0b7285);
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+#adminEngagementsClubPeoplePanel .admin-engagements-club-person-edit-button:hover {
+  border-color: var(--portal-color-accent, #a9d7dd);
+  background: var(--portal-color-field-background, #eaf8fa);
+}
+
+#adminEngagementsClubPeoplePanel .admin-engagements-club-person-edit-button svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 #adminEngagementsClubPeoplePanel .admin-engagements-club-person-row:not(.admin-engagements-club-person-head):hover {

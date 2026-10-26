@@ -15,7 +15,7 @@ async function mergePeople(pool,input,audit,authorize) {
   const connection=await pool.getConnection(),locks=[];let tableLocked=false,safe=true;
   const query=async(sql,values=[])=>(await connection.execute({sql,timeout:10000},values))[0];
   const readPeople=async()=>{
-    const natives=await query("SELECT id,nom,prenom,date,club FROM officiels FORCE INDEX (PRIMARY) WHERE id IN (?,?) ORDER BY id",[a.id,b.id]);
+    const natives=await query("SELECT id,nom,prenom,date,club,sexe,number FROM officiels FORCE INDEX (PRIMARY) WHERE id IN (?,?) ORDER BY id",[a.id,b.id]);
     const options=await query(`SELECT ${OPTION_COLUMNS.map(c=>`\`${c}\``).join(",")} FROM livepalmes_club_people_options FORCE INDEX (PRIMARY) WHERE source=? AND person_id IN (?,?) ORDER BY person_id`,["officiels",a.id,b.id]);
     return {source:natives.find(r=>Number(r.id)===a.id),target:natives.find(r=>Number(r.id)===b.id),sourceOptions:normalizeOptions(options.find(r=>Number(r.person_id)===a.id)),targetOptions:normalizeOptions(options.find(r=>Number(r.person_id)===b.id))};
   };

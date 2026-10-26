@@ -1,11 +1,11 @@
 "use strict";
 const fs = require("node:fs");
 const { execFileSync } = require("node:child_process");
-const { planHash, table } = require("../functions/nap-approved-people-schema");
 async function main() {
   const phase = process.env.NAP_PEOPLE_SCHEMA_PHASE;
   const confirmation = process.env.NAP_PEOPLE_SCHEMA_CONFIRMATION;
-  if (!["prepare", "apply"].includes(phase) || confirmation !== "nap-create-club-people-options" || process.env.TARGET_FIREBASE_PROJECT !== "livepalmes-test") throw new Error("Confirmation incorrecte.");
+  if (!["prepare", "apply"].includes(phase) || !["nap-create-club-people-options","nap-add-official-identity-fields"].includes(confirmation) || process.env.TARGET_FIREBASE_PROJECT !== "livepalmes-test") throw new Error("Confirmation incorrecte.");
+  const {planHash,table}=confirmation==="nap-add-official-identity-fields"?require("../functions/nap-approved-official-identity-schema"):require("../functions/nap-approved-people-schema");
   const credentials = JSON.parse(fs.readFileSync(process.env.GOOGLE_APPLICATION_CREDENTIALS, "utf8"));
   if (credentials.project_id !== "livepalmes-test" || credentials.client_email !== "github-livepalmes-test-backend@livepalmes-test.iam.gserviceaccount.com") throw new Error("Compte incorrect.");
   const options = { encoding:"utf8", stdio:["ignore","pipe","pipe"] };

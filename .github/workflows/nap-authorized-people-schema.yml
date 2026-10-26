@@ -6,7 +6,7 @@ on:
         required: true
         type: string
       confirmation:
-        description: nap-create-club-people-options, apres accord specifique
+        description: nap-create-club-people-options ou nap-add-official-identity-fields, apres accord specifique
         required: true
         type: string
 permissions:
@@ -32,7 +32,7 @@ jobs:
           EXPECTED_COMMIT: ${{ inputs.expected_commit }}
         run: |
           test "$EXPECTED_COMMIT" = "$GITHUB_SHA"
-          test "$NAP_PEOPLE_SCHEMA_CONFIRMATION" = "nap-create-club-people-options"
+          case "$NAP_PEOPLE_SCHEMA_CONFIRMATION" in nap-create-club-people-options|nap-add-official-identity-fields) ;; *) exit 1 ;; esac
       - uses: actions/setup-node@v7
         with:
           node-version: '22'

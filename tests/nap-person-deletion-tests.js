@@ -8,7 +8,7 @@ const service=require("../functions/nap-person-deletion");
 const oldInspect=schema.inspect,oldValidate=schema.validate;
 schema.inspect=async()=>({});schema.validate=()=>({history:true,index:true});
 function fixture() {
-  const native={id:7,nom:"NOM",prenom:"Prenom",date:"1980-01-01",club:"106"};
+  const native={id:7,nom:"NOM",prenom:"Prenom",date:"1980-01-01",club:"106",sexe:null,number:null};
   const state={native,options:null,entries:[{id:1,compet:10,officiel:7,club:"106"}],history:[],saved:null,locked:false,mutations:0,fail:"",released:false};
   const input={personId:"nap-official-7",actorUid:"national",confirmPermanent:true,expectedFingerprint:person(native,"officials").napFingerprint};
   const connection={execute:async({sql},values=[])=>{

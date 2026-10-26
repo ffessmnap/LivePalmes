@@ -5,7 +5,7 @@ const {fingerprint}=require("../functions/nap-portal-workspaces");
 const {SPECS}=require("../functions/nap-portal-competition-change");
 function fixture(options={}) {
   let allowed=false,saved=null,writes=0,complete=0,peopleReads=0,failAfter=0,failComplete=false,failPrepare=false;
-  const calls=[],native={id:8,nom:"NOUVEAU",prenom:"Exemple",date:"1980-01-03",club:"106"};
+  const calls=[],native={id:8,nom:"NOUVEAU",prenom:"Exemple",date:"1980-01-03",club:"106",sexe:null,number:null};
   let officials=[{id:20,compet:5140,officiel:9,club:"106",nom:"EXISTANT",prenom:"Autre",date:"1980-01-04"}];
   const pack={source:"nap",competitionId:"5140",clubId:"106",swimmers:[],inscriptions:[],individual:[],relays:[],members:[],officials,leaders:[{id:30,compet:5140,nom:"CHEF",prenom:"Autre",date:"1970-01-01",club:"106",pourclub:""}],options:null};
   const competition={event:{entryStatus:"open",entryDeadlineAt:"2099-10-07T19:59:00.000Z"},nativeSnapshot:{competition:Object.fromEntries(SPECS.competitions.columns.map(key=>[key,key==="id"?5140:null])),parameters:Object.fromEntries(SPECS.compet_parametres.columns.map(key=>[key,key==="id"||key==="compet"?5140:key==="actif"?1:null]))},options:null};

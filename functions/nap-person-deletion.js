@@ -25,7 +25,7 @@ async function deletePerson(pool,input,audit,authorize) {
     if((await query("SELECT TRIGGER_NAME FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA=DATABASE() AND EVENT_OBJECT_TABLE IN ('officiels','officielsengager','livepalmes_club_people_options','livepalmes_deleted_people_history') LIMIT 1")).length) throw new TypeError("Declencheur natif a verifier.");
     // Table locks also protect against IntraNAP, which does not use our advisory lock.
     await connection.query({sql:"LOCK TABLES officiels WRITE,officielsengager WRITE,livepalmes_club_people_options WRITE,livepalmes_deleted_people_history WRITE",timeout:10000});tableLocked=true;
-    const natives=await query("SELECT id,nom,prenom,date,club FROM officiels WHERE id=? LIMIT 1",[ref.id]);
+    const natives=await query("SELECT id,nom,prenom,date,club,sexe,number FROM officiels WHERE id=? LIMIT 1",[ref.id]);
     const [rawOptions]=await query(`SELECT ${OPTION_COLUMNS.map(c=>`\`${c}\``).join(",")} FROM livepalmes_club_people_options WHERE source=? AND person_id=? LIMIT 1`,["officiels",ref.id]);
     const options=normalizeOptions(rawOptions);
     const entries=await query("SELECT id,compet,officiel,club FROM officielsengager FORCE INDEX (livepalmes_officiel_id) WHERE officiel=? ORDER BY id LIMIT 2001",[ref.id]);

@@ -13,7 +13,7 @@ const clubs=require("../functions/nap-club-directory"),people=require("../functi
  const nativePeople={execute:async({sql},values)=>{
    assert.equal(allowed,true);calls++;assert.match(sql,/FORCE INDEX \(PRIMARY\)/);assert.match(sql,/WHERE n.id>\? ORDER BY n.id LIMIT 101/);
    if(values[0]==="chefsdequipe")return [Array.from({length:101},(_,i)=>({id:i+1,compet:10,nom:"A",prenom:"B",date:"1980-01-01",club:"106",pourclub:"106",nom_club:"Club"}))];
-   return [[{id:4,nom:"C",prenom:"D",date:"1980-01-01",club:"106",option_person_id:null,nom_club:"Club"}]];
+   return [[{id:4,nom:"C",prenom:"D",date:"1980-01-01",club:"106",sexe:null,number:null,option_person_id:null,nom_club:"Club"}]];
  }};
  const first=await people.readNationalPeople(nativePeople,{},()=>{allowed=true;});assert.equal(calls,2);assert.equal(first.people.length,101);assert.equal(first.hasMore,true);assert.deepEqual(first.nextCursor,{leaders:100,officials:null});assert.equal(first.people[0].nativeIdentityEditable,false);assert.equal(first.people.at(-1).nativeIdentityEditable,true);
  const before=calls;await assert.rejects(people.readNationalPeople(nativePeople,{},()=>{throw Error("denied");}));assert.equal(calls,before);

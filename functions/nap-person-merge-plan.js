@@ -15,6 +15,7 @@ function planMerge(input,source,target,sourceOptions,targetOptions,links) {
   const beforeSourceOptions=normalizeOptions(sourceOptions),beforeTargetOptions=normalizeOptions(targetOptions);
   const sourcePerson=person(source,"officials",beforeSourceOptions),targetPerson=person(target,"officials",beforeTargetOptions);
   if(sourcePerson.napFingerprint!==input.sourceFingerprint || targetPerson.napFingerprint!==input.targetFingerprint)throw new TypeError("Une fiche a change. Rechargez avant de fusionner.");
+  if(sourcePerson.licenseNumber&&sourcePerson.licenseNumber!==targetPerson.licenseNumber||sourcePerson.sex&&sourcePerson.sex!==targetPerson.sex)throw new TypeError("Les licences ou sexes diffèrent. Faites corriger la fiche cible au niveau national avant fusion pour conserver ces informations.");
   if(sourcePerson.clubId!==targetPerson.clubId && input.confirmClubMismatch!==true)throw new TypeError("Les clubs sont differents. Confirmation speciale requise.");
   if(!Array.isArray(links) || links.length>4000)throw new RangeError("Historique trop volumineux pour cette fusion bornee.");
   const ids=new Set();

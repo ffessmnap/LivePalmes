@@ -7,10 +7,14 @@ const {isDeepStrictEqual}=require("node:util");
 const {SOURCES,OPTION_COLUMNS,normalizeOptions,person}=require("./nap-club-people");
 const {inspectPeopleSchema,validate}=require("./nap-approved-people-schema");
 const table="livepalmes_club_people_options";
-function changedOptions(kind,native,previous,active,now,actorUid) {
+function changedOptions(kind,native,previous,active,now,actorUid,roles=null) {
   if(typeof now!=="string" || !/^\d{4}-\d\d-\d\d \d\d:\d\d:\d\d\.\d{6}$/.test(now)) throw new TypeError("Horodatage de statut invalide.");
   const after=previous?{...previous,active:active?1:0,version:Number(previous.version)+1,updated_at:now,updated_by:actorUid}:{source:SOURCES[kind].table,person_id:Number(native.id),club_id:String(native.club),role_team_leader:1,role_official:kind==="officials"?1:0,active:active?1:0,version:1,created_at:now,updated_at:now,created_by:actorUid,updated_by:actorUid};
   if(!Number.isSafeInteger(after.version)) throw new TypeError("Version de personne a verifier.");
+  if(roles) {
+    if(Object.keys(roles).length!==2||typeof roles.teamLeader!=="boolean"||typeof roles.official!=="boolean"||!roles.teamLeader&&!roles.official) throw new TypeError("Conservez au moins un rôle, ou désactivez la fiche.");
+    after.role_team_leader=Number(roles.teamLeader);after.role_official=Number(roles.official);
+  }
   return after;
 }
 function reference(value) {
@@ -23,8 +27,8 @@ function buildStatusStatement(kind,before,previous,after) {
   const nativeGuard=spec.columns.map(key=>nativeEqual(`n.\`${key}\``)).join(" AND ");
   const nativeValues=spec.columns.map(key=>before[key]);
   if(previous) return {
-    sql:`UPDATE ${table} o JOIN \`${spec.table}\` n ON n.id=? SET o.active=?,o.version=?,o.updated_at=?,o.updated_by=? WHERE o.source=? AND o.person_id=? AND ${OPTION_COLUMNS.map(key=>`BINARY o.\`${key}\` <=> BINARY ?`).join(" AND ")} AND ${nativeGuard}`,
-    values:[before.id,after.active,after.version,after.updated_at,after.updated_by,spec.table,before.id,...OPTION_COLUMNS.map(key=>previous[key]),...nativeValues]
+    sql:`UPDATE ${table} o JOIN \`${spec.table}\` n ON n.id=? SET o.active=?,o.role_team_leader=?,o.role_official=?,o.version=?,o.updated_at=?,o.updated_by=? WHERE o.source=? AND o.person_id=? AND ${OPTION_COLUMNS.map(key=>`BINARY o.\`${key}\` <=> BINARY ?`).join(" AND ")} AND ${nativeGuard}`,
+    values:[before.id,after.active,after.role_team_leader,after.role_official,after.version,after.updated_at,after.updated_by,spec.table,before.id,...OPTION_COLUMNS.map(key=>previous[key]),...nativeValues]
   };
   return {
     sql:`INSERT INTO ${table} (${OPTION_COLUMNS.map(key=>`\`${key}\``).join(",")}) SELECT ${OPTION_COLUMNS.map(()=>"?").join(",")} FROM \`${spec.table}\` n WHERE n.id=? AND ${nativeGuard}`,
@@ -36,7 +40,7 @@ async function changeNativePersonStatus(pool,input,audit,authorize) {
   const {kind,id}=reference(input.personId),spec=SOURCES[kind];
   if(kind!=="officials") throw new TypeError("Les anciennes declarations de chef d'equipe sont conservees ; leur statut d'annuaire reste a raccorder.");
   await authorize({clubId:input.clubId});
-  const operation=createHash("sha256").update(JSON.stringify([input.clubId,input.actorUid,input.personId,input.active,input.expectedFingerprint])).digest("hex");
+  const operation=createHash("sha256").update(JSON.stringify([input.clubId,input.actorUid,input.personId,input.active,input.expectedFingerprint,...(input.roles?[input.roles]:[])])).digest("hex");
   const connection=await pool.getConnection();let locked=false;
   const query=async(sql,values=[]) => (await connection.execute({sql,timeout:10000},values))[0];
   const read=async()=>{
@@ -57,14 +61,14 @@ async function changeNativePersonStatus(pool,input,audit,authorize) {
     let plan;
     if(saved) {
       if(saved.kind!=="native-person-status" || saved.operation!==operation || saved.actorUid!==input.actorUid || saved.clubId!==input.clubId || saved.personId!==input.personId || saved.expectedFingerprint!==input.expectedFingerprint || saved.after?.active!==(input.active?1:0) || !isDeepStrictEqual(saved.native,current.native)) throw new TypeError("Sauvegarde de personne incompatible.");
-      if(person(saved.native,kind,saved.before).napFingerprint!==input.expectedFingerprint || !isDeepStrictEqual(changedOptions(kind,saved.native,saved.before,input.active,saved.after.updated_at,input.actorUid),saved.after)) throw new TypeError("Plan de statut sauvegarde incompatible.");
+      if(person(saved.native,kind,saved.before).napFingerprint!==input.expectedFingerprint || !isDeepStrictEqual(changedOptions(kind,saved.native,saved.before,input.active,saved.after.updated_at,input.actorUid,input.roles),saved.after)) throw new TypeError("Plan de statut sauvegarde incompatible.");
       plan=saved;
     } else {
       if(current.item.napFingerprint!==input.expectedFingerprint) throw new TypeError("La fiche NAP a change. Rechargez avant d'enregistrer.");
-      if(current.item.active===input.active) return {ok:true,source:"nap",person:current.item,unchanged:true};
+      if(current.item.active===input.active&&!input.roles) return {ok:true,source:"nap",person:current.item,unchanged:true};
       const now=new Date().toISOString().replace("T"," ").replace("Z","000");
       const previous=current.options;
-      const after=changedOptions(kind,current.native,previous,input.active,now,input.actorUid);
+      const after=changedOptions(kind,current.native,previous,input.active,now,input.actorUid,input.roles);
       plan={kind:"native-person-status",operation,actorUid:input.actorUid,clubId:input.clubId,personId:input.personId,expectedFingerprint:input.expectedFingerprint,native:current.native,before:previous,after};
     }
     if(!isDeepStrictEqual(current.options,plan.before) && !isDeepStrictEqual(current.options,plan.after)) throw new TypeError("Les options NAP ont change. Rechargez la fiche.");
