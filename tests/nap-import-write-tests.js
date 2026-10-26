@@ -6,14 +6,15 @@ const person={id:168,nom:"TEST",prenom:"PERSON",date:"2000-01-01",sexe:"M",club:
 const pack={canConfirm:true,competition,existing:[old],existingRelays:[],incoming:[{sourceLine:4,row:{...proposed,tps:"014100"}}],incomingRelays:[],statusRows:[{sourceLine:5,status:"DSQ",swimmerId:168,clubId:"106"}],decoded:{fileHash:"f".repeat(64),excluded:[{sourceLine:6,status:"",rawFinalTime:""}]},resolution:{resolved:[{swimmerId:168}]},candidates:[person],clubs:[club],previewFingerprint:"a".repeat(64)};
 pack.expectedFingerprint=hash({competition,existing:pack.existing,existingRelays:[]});
 const input={operationId:"11111111-1111-4111-8111-111111111111",competitionId:5162,fileName:"test.txt",rawText:"test",expectedFingerprint:pack.expectedFingerprint,previewFingerprint:pack.previewFingerprint,confirmReplacement:true};
-function fixture({denied=false,lock=true,triggers=false,lost="",withRelay=false}={}) {
+function fixture({denied=false,lock=true,triggers=false,lost="",withRelay=false,zip=false,protocolStorage,executeExtra,packOverride}={}) {
  const {RELAY_COLUMNS}=require("../functions/nap-import-operation-plan");
  const people=withRelay?[person,...[169,170,171].map(id=>({...person,id}))]:[person];
- const previewPack=withRelay?{...pack,candidates:people,incomingRelays:[{sourceLine:7,row:{club:"106",distance:"4X100SF",nageur1:168,nageur2:169,nageur3:170,nageur4:171,tps1:"010000",tps2:"020000",tps3:"030000",tps4:"040000",categorie:"HSE",pts:500,compet:5162}}]}:pack;
+ const previewPack=packOverride||(withRelay?{...pack,candidates:people,incomingRelays:[{sourceLine:7,row:{club:"106",distance:"4X100SF",nageur1:168,nageur2:169,nageur3:170,nageur4:171,tps1:"010000",tps2:"020000",tps3:"030000",tps4:"040000",categorie:"HSE",pts:500,compet:5162}}]}:pack);
  const state={authorized:false,pools:0,connections:0,locked:false,released:0,writes:0,journal:null,pointer:null,rows:[{...old}],lines:[],previews:0,lost};
  state.relayRows=[];
  const execute=async({sql},values=[])=>{
   assert.equal(state.authorized,true);
+  if(executeExtra){const extra=await executeExtra(sql,values,state);if(extra!==undefined)return extra;}
   if(sql.startsWith("SELECT GET_LOCK"))return [[{acquired:lock?1:0}]];
   if(sql.startsWith("SELECT RELEASE_LOCK"))return [[{released:1}]];
   if(sql.includes("FROM information_schema.TRIGGERS"))return [triggers?[{TRIGGER_NAME:"unexpected"}]:[]];
@@ -43,11 +44,11 @@ function fixture({denied=false,lock=true,triggers=false,lost="",withRelay=false}
   throw Error("Unexpected statement: "+sql);
  };
  const conn={execute,query:async({sql})=>{if(sql.startsWith("LOCK TABLES")){state.locked=true;return[{}];}assert.equal(sql,"UNLOCK TABLES");state.locked=false;return[{}];},release:()=>state.released++};
- const writer=createNativeImportWriter({authorize:async()=>{if(denied)throw Error("denied");state.authorized=true;return{uid:"importer",national:false};},getPool:async()=>{state.pools++;return{execute,getConnection:async()=>{state.connections++;return conn;}};},preview:async()=>{assert.equal(state.connections,0,"no held pool connection while preview borrows one");state.previews++;return previewPack;}});
+ const writer=createNativeImportWriter({authorize:async()=>{if(denied)throw Error("denied");state.authorized=true;return{uid:"importer",national:zip};},protocolStorage,getPool:async()=>{state.pools++;return{execute,getConnection:async()=>{state.connections++;return conn;}};},preview:async(_pool,data)=>{assert.equal(state.connections,0,"no held pool connection while preview borrows one");state.previews++;state.previewInput=data;return previewPack;}});
  return {state,writer};
 }
-(async()=>{
- const zip=fixture();await assert.rejects(()=>zip.writer({data:{...input,sourceType:"winpalme-zip-preview"}}),/aperçu/);assert.equal(zip.state.pools,0);assert.equal(zip.state.writes,0);
+if(require.main===module)(async()=>{
+ const zip=fixture();await assert.rejects(()=>zip.writer({data:{...input,sourceType:"winpalme-zip-preview"}}),/nationale/);assert.equal(zip.state.pools,0);assert.equal(zip.state.writes,0);
  let f=fixture();const result=await f.writer({data:input});assert.equal(result.source,"nap");assert.equal(f.state.writes,2);assert.equal(f.state.rows[0].id,1000);assert.equal(f.state.rows[0].tps,"014100");assert.equal(f.state.lines.length,3);assert.equal(f.state.journal.status,"completed");assert.equal(f.state.locked,false);assert.equal(f.state.released,1);assert.ok(f.state.pointer.currentImportId);
  await f.writer({data:input});assert.equal(f.state.writes,2,"completed retry does not duplicate results");assert.equal(f.state.previews,1);
  await assert.rejects(()=>f.writer({data:{...input,fileName:"changed.txt"}}),/autre contenu/);assert.equal(f.state.writes,2);
@@ -60,3 +61,4 @@ function fixture({denied=false,lock=true,triggers=false,lost="",withRelay=false}
  f=fixture();await assert.rejects(()=>f.writer({data:{...input,confirmReplacement:false}}),/explicitement/);assert.equal(f.state.journal,null);assert.equal(f.state.writes,0);
  console.log("NAP native import writer: authorization, before-image journal, bulk replacement, status/exclusion retention, lost-response recovery, id collision refusal and lock cleanup passed without live writes.");
 })().catch(e=>{console.error(e);process.exitCode=1;});
+module.exports={fixture,pack,input,old,competition,person,club};

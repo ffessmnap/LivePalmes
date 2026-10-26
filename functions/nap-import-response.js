@@ -13,7 +13,14 @@ function importPreviewResponse(pack) {
       const diff=previewImportDifferences(pack);
       result.diff={summary:diff.summary,requiresReplacementConfirmation:diff.requiresReplacementConfirmation,
         removals:[...diff.individual.removals.map(row=>({kind:"NAG",id:row.id,swimmerId:row.nageur,course:row.course,time:row.tps,clubId:row.club})),...diff.relays.removals.map(row=>({kind:"REL",id:row.id,course:row.distance,time:row.tps4,clubId:row.club}))]};
-      if(pack.review)result.diff=require("./nap-import-replacement-review").replacementReview(pack,diff);
+      if(pack.review){
+        result.diff=require("./nap-import-replacement-review").replacementReview(pack,diff);
+        if(pack.existingProtocol)result.protocolReview={previous:{fileName:pack.existingProtocol.fileName,hash:pack.existingProtocol.hash},managed:true};
+        if(pack.protocolManifest){
+          result.protocolReview={...result.protocolReview,incoming:pack.protocolManifest,changed:Boolean(pack.existingProtocol&&pack.existingProtocol.hash!==pack.protocolManifest.hash)};
+          if(result.protocolReview.changed){result.diff.requiresReplacementConfirmation=true;result.diff.identical=false;}
+        }
+      }
     }catch(error){if(!(error instanceof TypeError||error instanceof RangeError))throw error;result.canConfirm=false;result.issues=[...result.issues,{sourceLine:0,code:error.message}];}
   }
   return result;

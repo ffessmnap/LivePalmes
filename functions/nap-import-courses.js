@@ -11,6 +11,10 @@ async function prepareCourses(pool,decoded,input) {
   }
   if(!bindings.length&&decoded.rows.every(supported))return null;
   if(new Set(decoded.rows.map(r=>r.course)).size>300)throw new RangeError("Plus de 300 epreuves sources : reduisez le lot avant rapprochement.");
+  const courses=await readCourseCatalog(pool),chosen=new Map();
+  return applyCourses(decoded,bindings,courses,chosen);
+}
+async function readCourseCatalog(pool){
   const [rows]=await pool.execute({sql:"SELECT id,course,wplabel,sexe,relais,ld,actif FROM course_dispo FORCE INDEX (PRIMARY) WHERE id>0 ORDER BY id LIMIT 301",timeout:10000});
   if(rows.length>300)throw new RangeError("Catalogue NAP trop volumineux : choix d’epreuves refuse.");
   const groups=new Map();
@@ -26,7 +30,9 @@ async function prepareCourses(pool,decoded,input) {
     if(!groups.has(key))groups.set(key,{id:String(r.id),code,catalogCode:r.course,kind,longDistance,sexes:[],active:false,label:longDistance?require("./nap-open-water-courses").definition(r.course)?.label||r.course:code});
     const g=groups.get(key);if(!g.sexes.includes(String(r.sexe)))g.sexes.push(String(r.sexe));g.active=g.active||Number(r.actif)===1;
   }
-  const courses=[...groups.values()],chosen=new Map();
+  return [...groups.values()];
+}
+function applyCourses(decoded,bindings,courses,chosen){
   for(const b of bindings){
     if(typeof b?.sourceCode!=="string"||chosen.has(b.sourceCode)||!decoded.rows.some(r=>r.course===b.sourceCode))throw new TypeError("Epreuve source choisie invalide.");
     const target=courses.find(c=>c.id===b.courseId),source=decoded.rows.filter(r=>r.course===b.sourceCode);
@@ -47,4 +53,4 @@ async function prepareCourses(pool,decoded,input) {
   decoded.summary.issues=decoded.issues.length;
   return {courses,sources};
 }
-module.exports={prepareCourses};
+module.exports={prepareCourses,readCourseCatalog};

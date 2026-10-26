@@ -2,6 +2,12 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 26 octobre — Enregistrement des ZIP WinPalme dans NAP avec protocole
+
+- Demande et accord explicite d’Antoine dans le chat import : activer sur TEST après analyse, sans importer de résultats réels pendant la préparation. Autorisation de développement distincte de la recette métier et d’un futur premier import réel.
+- Raccordement du contrôle par nageur au moteur NAP existant : choix et confirmations conservés, premier relayeur/passages/heures LD/statuts, bilan de remplacement actualisé obligatoire, journal et reprise du même identifiant. PDF seul contrôlé par empreinte, documents/options/Storage existants, avant/après sauvegardés, remplacement du document lié et conservation des documents hors import. Aucune nouvelle collection, migration, règle, donnée générée ou règle sportive.
+- Vérifications en cours : simulations serveur et navigateur hors réseau, ordinateur/390/320 px ; aucune écriture réelle. PR, contrôle Linux et preuve TEST à renseigner après livraison. Validation utilisateur de la version regroupée en attente ; PROD hors périmètre.
+
 ### 25 octobre — Publication PROD regroupée réussie, mails remis en service
 
 - Accord explicite d’Antoine dans Infra sur le plan40233566184, Cloud Tasks et coupure/remise en service des mails, sauvegarde vérifiée, contrôle de dérive et exclusions conservées. Candidat exact `8b868c7c1382698ee1d04274fcc5b9a56a95d274`, déjà validé sur TEST40231918857 ; aucune republication TEST. Préparation #530 /2b93385d, CI40233296351 et preflight40233566184 réussis.

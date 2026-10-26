@@ -1255,7 +1255,7 @@
     if (/\.zip$/i.test(file.name)) {
       if (!global.LivePalmesWinPalmeZip) throw new Error("Lecteur ZIP indisponible. Rechargez le portail.");
       const zipSelection = await global.LivePalmesWinPalmeZip.read(file, elements.encoding?.value || "utf-8");
-      return { sourceType: "winpalme-zip-preview", fileName: zipSelection.manifest.textPath.split('/').pop(), rawText: zipSelection.rawText, zipSelection };
+      return { sourceType: "winpalme-zip-preview", fileName: zipSelection.manifest.textPath.split('/').pop(), rawText: zipSelection.rawText, protocolManifest:{fileName:zipSelection.manifest.pdfPath.split('/').pop(),size:zipSelection.pdf.size,hash:zipSelection.manifest.pdfHash}, zipSelection };
     }
     if (isExcelFile(file)) {
       return {
@@ -1326,11 +1326,11 @@
     const m = currentZipSelection.manifest, c = m.counts;
     currentZipPdfUrl = global.URL.createObjectURL(currentZipSelection.pdf);
     elements.zipPreview.hidden = false;
-    elements.zipPreview.innerHTML = `<h4>ZIP WinPalme — aperçu uniquement</h4>
+    elements.zipPreview.innerHTML = `<h4>ZIP WinPalme — contrôle avant enregistrement</h4>
       <p><strong>${escapeHtml(m.name)}</strong> — ${escapeHtml(m.date)} — ${escapeHtml(m.wid)}</p>
       <p>${c.swimmers} nageurs, ${c.clubs} clubs, ${c.individual} résultats individuels et ${c.relays} relais. ${c.timed} lignes avec statut nagé, ${c.statuses} autres statuts à contrôler.</p>
       <p>TXT retenu : <span>${escapeHtml(m.textPath)}</span><br>Dernier protocole : <span>${escapeHtml(m.pdfPath)}</span><br>${escapeHtml(m.pdfDate)} — ${m.protocolVersions} version(s) disponible(s).</p>
-      <p>Le ZIP et le PDF restent dans cette fenêtre. Seul le TXT est transmis pour le rapprochement en lecture seule avec NAP. Les choix sont temporaires ; téléchargez le rapport avant de fermer.</p>
+      <p>L’analyse transmet seulement le TXT et l’empreinte du PDF. Après validation nationale, les résultats seront enregistrés dans NAP et le PDF rattaché à la compétition. Le ZIP n’est jamais stocké. Les choix restent temporaires avant enregistrement ; téléchargez le rapport avant de fermer.</p>
       <div class="admin-portal-actions"><a class="ghost-button" href="${escapeHtml(currentZipPdfUrl)}" target="_blank" rel="noopener">Consulter le protocole PDF</a><button type="button" class="ghost-button" data-zip-report>Télécharger le rapport de contrôle</button></div>`;
     elements.zipPreview.querySelector('[data-zip-report]').onclick = () => {
       if (currentPreview?.source === 'nap') collectNativeImportChoices();
@@ -1498,9 +1498,10 @@
     if (elements.previewFilter) elements.previewFilter.closest('.competition-import-preview-tools').hidden = true;
     if (elements.sample) elements.sample.closest('.import-table-wrap').hidden = true;
     elements.sample.innerHTML = '';
-    if (result.previewOnly && global.LivePalmesImportReview) {
+    if ((result.review || currentPayload?.sourceType==='winpalme-zip-preview') && global.LivePalmesImportReview) {
       global.LivePalmesImportReview.render({result,payload:currentPayload,host:elements.warnings,summary:elements.summary,
-        onChange:()=>{previewRequestId++;currentPreview.reviewReady=false;currentPreview.reviewStale=true;currentPreview.canConfirm=false;},
+        onChange:()=>{previewRequestId++;nativeImportOperation=null;currentPreview.reviewReady=false;currentPreview.reviewStale=true;currentPreview.canConfirm=false;},
+        onSave:saveNativeImport,
         onRefresh:async()=>{
           const requestId=++previewRequestId;
           try{const response=await callFunction('previewCompetitionImport',currentPayload);if(requestId!==previewRequestId)return;global.LivePalmesImportReview.settled();renderNativeImportPreview(response);}
@@ -1566,22 +1567,29 @@
     }));
   }
   async function saveNativeImport() {
-    if (currentPayload?.sourceType === 'winpalme-zip-preview' || currentPreview?.previewOnly) return;
+    if (currentPreview?.previewOnly || currentPreview?.reviewStale) return;
     if (!currentPreview?.canConfirm || !currentPayload) return;
-    const replace = Boolean(elements.warnings.querySelector('[data-nap-replacement]')?.checked);
+    const zip=currentPayload.sourceType==='winpalme-zip-preview';
+    const replace = zip?currentPayload.confirmReplacement===true:Boolean(elements.warnings.querySelector('[data-nap-replacement]')?.checked);
     if (currentPreview.diff?.requiresReplacementConfirmation && !replace) { setMessage(elements.message, 'Confirmez explicitement les retraits avant de continuer.'); return; }
-    if (!global.confirm('Enregistrer ces résultats dans NAP ? Les résultats seront visibles immédiatement.')) return;
-    nativeImportOperation ||= { ...currentPayload, fileName: currentFile.name, operationId: global.crypto.randomUUID(), expectedFingerprint: currentPreview.expectedFingerprint, previewFingerprint: currentPreview.previewFingerprint, confirmReplacement: replace };
+    if (!global.confirm(zip?'Enregistrer ces résultats dans la vraie base NAP et publier le protocole PDF ? Les résultats seront visibles immédiatement, y compris depuis TEST.':'Enregistrer ces résultats dans NAP ? Les résultats seront visibles immédiatement.')) return;
     const button = elements.warnings.querySelector('[data-nap-save]');
     button.disabled = true;
+    const controls=[...elements.warnings.querySelectorAll('button,input,select')];controls.forEach(el=>el.disabled=true);
     startImportProgress('Enregistrement dans NAP…', 'Sauvegarde de l’ancienne version et vérification des résultats.', 'import');
     try {
+      if(!nativeImportOperation){
+        const operation={ ...currentPayload, fileName: currentFile.name, operationId: global.crypto.randomUUID(), expectedFingerprint: currentPreview.expectedFingerprint, previewFingerprint: currentPreview.previewFingerprint, confirmReplacement: replace };
+        if(zip){if(!currentZipSelection?.pdf)throw new Error('Protocole PDF indisponible : redéposez le ZIP.');operation.protocolDataUrl=await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=()=>reject(new Error('Lecture du PDF impossible.'));reader.readAsDataURL(currentZipSelection.pdf);});}
+        nativeImportOperation=operation;
+      }
       const result = await callFunction('createCompetitionImport', nativeImportOperation);
-      finishImportProgress('success', 'Résultats enregistrés dans NAP', `Import ${result.importId}. Les données sont disponibles directement.`);
+      finishImportProgress('success', 'Résultats enregistrés dans NAP', `Import ${result.importId}. ${zip?'Le protocole PDF est rattaché à la compétition. ':''}Les données sont disponibles directement.`);
       currentPreview.canConfirm = false;
+      nativeImportOperation=null;
       await loadImports();
     } catch (error) {
-      finishImportProgress('error', 'Enregistrement à vérifier', `${error.message || error} Vous pouvez réessayer le même enregistrement sans créer de doublons.`);
+      finishImportProgress('error', 'Enregistrement à vérifier', `${error.message || error} Conservez cette fenêtre et réessayez le même enregistrement sans créer de doublons. Les choix restent verrouillés pendant la reprise.`);
       button.disabled = false;
     }
   }
@@ -2010,13 +2018,25 @@
       elements.importsList.innerHTML = importsCache.length ? importsCache.map(item => `<article><h3>${escapeHtml(item.metadata?.competitionName || `Compétition ${item.competitionId}`)}</h3><p>${escapeHtml(item.fileName)} — ${escapeHtml(item.status === 'completed' ? 'Enregistré dans NAP' : item.status === 'replaced' ? 'Ancienne version conservée' : 'Enregistrement interrompu : reprendre avec le même fichier et les mêmes choix')}</p><small>${escapeHtml(item.importedAt || '')} — ${escapeHtml(item.importId)}</small></article>`).join('') : '<p>Aucun import NAP enregistré.</p>';
       if (elements.importsFilterSummary) elements.importsFilterSummary.textContent = 'Derniers imports NAP (50 entrées maximum).';
       importsCache.filter(item => item.status === 'prepared').forEach(item => {
+        let protocolInput=null;
+        if(item.sourceType==='winpalme-zip'){
+          const label=document.createElement('label');label.textContent=`PDF ou ZIP original de ${item.fileName}, seulement si la sauvegarde du PDF doit être reprise`;
+          protocolInput=document.createElement('input');protocolInput.type='file';protocolInput.accept='.pdf,.zip';label.append(protocolInput);elements.importsList.append(label);
+        }
         const button = document.createElement('button');
         button.type = 'button'; button.textContent = `Reprendre ${item.fileName}`;
         button.addEventListener('click', async () => {
           if (!global.confirm('Reprendre cet enregistrement avec les choix déjà confirmés ?')) return;
           button.disabled = true;
           try {
-            await callFunction('createCompetitionImport', {resumeImportId:item.importId});
+            const payload={resumeImportId:item.importId};
+            if(protocolInput?.files?.[0]){
+              const file=protocolInput.files[0];
+              const pdf=/\.zip$/i.test(file.name)?(await global.LivePalmesWinPalmeZip.read(file,elements.encoding?.value||'utf-8')).pdf:file;
+              if(pdf.size>10*1024*1024)throw new Error('Le PDF dépasse 10 Mo.');
+              payload.protocolDataUrl=await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=()=>reject(new Error('Lecture du PDF impossible.'));reader.readAsDataURL(pdf);});
+            }
+            await callFunction('createCompetitionImport', payload);
             await loadImports();
           } catch(error) { setMessage(elements.message, error.message || String(error)); button.disabled = false; }
         });

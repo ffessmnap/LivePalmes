@@ -2950,8 +2950,8 @@
       await loadScriptOnce("performances/public/winpalme-zip.js?v=20261023-zip-preview-1", "adminImportZipScript");
       await loadScriptOnce("performances/public/import-confirmation-message.js?v=20261025-import-courses-1", "adminImportConfirmationScript");
       await loadScriptOnce("performances/public/import-swimmer-creation.js?v=20261025-import-creation-1", "adminImportSwimmerCreationScript");
-      await loadScriptOnce("performances/public/import-swimmer-review.js?v=20261025-import-clubs-1", "adminImportReviewScript");
-      await loadScriptOnce("performances/public/import-competitions.js?v=20261025-import-courses-1", "adminImportModuleScript");
+      await loadScriptOnce("performances/public/import-swimmer-review.js?v=20261026-import-write-1", "adminImportReviewScript");
+      await loadScriptOnce("performances/public/import-competitions.js?v=20261026-import-write-1", "adminImportModuleScript");
       if (includeSpreadsheet) await loadImportSpreadsheet();
       watchImportWorkbench();
     })().catch((error) => {
