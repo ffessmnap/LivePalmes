@@ -15739,8 +15739,13 @@
       elements.engagementsClubPeopleLoadMore.hidden = !engagementClubPeopleHasMore;
       elements.engagementsClubPeopleLoadMore.disabled = engagementClubPeopleLoading;
     }
-    if (!engagementClubPeople.length) {
-      elements.engagementsClubPeopleList.innerHTML = '<p class="admin-engagements-empty">Aucun officiel ou chef d\'équipe enregistré pour ce club.</p>';
+    // This directory contains reusable, editable officials only. Competition
+    // declarations remain available to the shared competition selectors.
+    const directoryPeople = engagementClubPeople.filter(person => !nativeReadOnly || (
+      person.nativePersonKind === "officials" && person.nativeIdentityEditable === true
+    ));
+    if (!directoryPeople.length) {
+      elements.engagementsClubPeopleList.innerHTML = '<p class="admin-engagements-empty">Aucun officiel enregistré dans l’annuaire de ce club.</p>';
       return;
     }
     elements.engagementsClubPeopleList.innerHTML = `
@@ -15752,7 +15757,7 @@
           <span role="columnheader">Statut</span>
           <span role="columnheader">Actions</span>
         </div>
-        ${visibleNativePeople(engagementClubPeople)
+        ${directoryPeople
           .sort((left, right) => `${left.lastName || ""} ${left.firstName || ""}`.localeCompare(`${right.lastName || ""} ${right.firstName || ""}`, "fr", { sensitivity: "base" }))
           .map((person, index) => {
       const name = [person.lastName, person.firstName].filter(Boolean).join(" ") || "Personne sans nom";

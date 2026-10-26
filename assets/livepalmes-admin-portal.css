@@ -7675,6 +7675,7 @@
 
 #adminEngagementsClubPeoplePanel .admin-engagements-club-people-table {
   display: grid;
+  grid-auto-rows: max-content;
   gap: 0;
   max-height: 70vh;
   border: 1px solid #dfe5e7;
@@ -7685,7 +7686,7 @@
 
 #adminEngagementsClubPeoplePanel .admin-engagements-club-person-row {
   display: grid;
-  grid-template-columns: minmax(210px, 1.25fr) minmax(125px, 0.65fr) minmax(150px, 0.85fr) 78px auto;
+  grid-template-columns: minmax(210px, 1.4fr) minmax(110px, 0.7fr) minmax(150px, 0.85fr) 78px 166px;
   gap: 8px;
   align-items: center;
   min-width: 790px;
@@ -7777,8 +7778,7 @@
 }
 
 #adminEngagementsClubPeoplePanel .admin-engagements-club-person-row[data-active="false"] {
-  background: #f3f5f6;
-  opacity: 0.76;
+  background: #f7f8f8;
 }
 
 #adminEngagementsClubSwimmersPanel .admin-engagements-club-swimmers-directory-tools {

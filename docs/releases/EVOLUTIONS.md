@@ -2,6 +2,12 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 26 octobre — Mes officiels : annuaire modifiable et tableau compact
+
+- Demande explicite d’Antoine : exclure les chefs d’équipe déclarés pour une compétition et reprendre le format compact de Mes nageurs. Filtrage limité au rendu du club, sans modifier les données partagées avec les dossiers de compétition ; colonnes stables, hauteur adaptée au contenu, inactifs sans opacité globale.
+- Budget inchangé : aucun appel supplémentaire ; chargement existant au plus deux requêtes NAP, 202 lignes retournées maximum, cache de session et pagination conservés. Aucune écriture réelle, aucun changement backend ou droit.
+- [PR #553](https://github.com/ffessmnap/LivePalmes/pull/553). Syntaxe, régression annuaire mixte/vide/inactifs, modification/statut, conservation des déclarations et optimisation portail réussies. Captures hors réseau 1920/1280/1024/390 px contrôlées. Vérification globale locale : 1 143 syntaxes et suites métier réussies jusqu’au test Bash Windows connu `main / access` ; contrôle Linux obligatoire avant intégration. Versions JS/CSS actualisées pour le cache navigateur. Preuve TEST et retour utilisateur à compléter ; aucune validation utilisateur du rendu final ni publication PROD.
+
 ### 26 octobre — Historique régional des validations de comptes
 
 - PR #551 intégrée au commit `8fd50fa0399b77763cab9c96964ea1aab90474b3`, CI Linux PR [40356369105](https://github.com/ffessmnap/LivePalmes/actions/runs/40356369105) et main [40356902788](https://github.com/ffessmnap/LivePalmes/actions/runs/40356902788) réussies. Ajout des seuls index TEST en cours [40356950808](https://github.com/ffessmnap/LivePalmes/actions/runs/40356950808). Retouche avant publication : alignement constant des trois colonnes ordinateur, y compris avec motif de refus, conservant une colonne mobile ; contrôle navigateur renforcé. Preuve TEST finale à compléter, aucune validation utilisateur déduite.

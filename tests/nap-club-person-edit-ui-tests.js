@@ -1,6 +1,30 @@
 "use strict";
 const assert=require("node:assert/strict"),fs=require("node:fs"),vm=require("node:vm");
 const source=fs.readFileSync(require.resolve("../assets/livepalmes-admin-portal.js"),"utf8");
+// The club directory must not expose competition declarations, even when
+// namesakes cannot be deduplicated. Keep the shared source array untouched.
+{
+  const people = [
+    {id:"nap-official-1",nativePersonKind:"officials",nativeIdentityEditable:true,firstName:"Actif",lastName:"Annuaire",active:true},
+    {id:"nap-official-2",nativePersonKind:"officials",nativeIdentityEditable:true,firstName:"Inactif",lastName:"Annuaire",active:false},
+    {id:"nap-leader-3",nativePersonKind:"leaders",firstName:"Competition",lastName:"Declaration",active:true},
+    {id:"nap-official-4",nativePersonKind:"officials",nativeIdentityEditable:false,firstName:"Bloque",lastName:"Lecture"}
+  ];
+  const list = {innerHTML:""};
+  const context = {global:{LivePalmesEnvironment:{sportingDataSource:"nap"}},elements:{engagementsClubPeopleList:list},engagementClubPeople:people,engagementClubPersonSaving:false,
+    updateNativeCompetitionPersonCreationButton:()=>{},escapeHtml:String,engagementClubPersonRoleLabel:()=>"Officiel"};
+  vm.createContext(context);
+  const renderStart=source.indexOf("  function renderEngagementClubPeople()");
+  vm.runInContext(source.slice(renderStart,source.indexOf("\n  async function loadEngagementClubPeople(",renderStart)),context);
+  context.renderEngagementClubPeople();
+  assert.match(list.innerHTML,/Annuaire Actif/);
+  assert.match(list.innerHTML,/Annuaire Inactif/);
+  assert.doesNotMatch(list.innerHTML,/Declaration Competition|Lecture Bloque|Déclaration historique/);
+  assert.equal(people.length,4,"competition selectors retain their source declarations");
+  context.engagementClubPeople=[people[2]];
+  context.renderEngagementClubPeople();
+  assert.match(list.innerHTML,/Aucun officiel/);
+}
 const field=(value="")=>({value,required:true,matches:()=>false,focus:()=>{}});
 const item={id:"nap-official-7",napSource:true,nativeIdentityEditable:true,napFingerprint:"before",firstName:"Arnaud",lastName:"Ancien",birthDate:"1980-01-03",licenseNumber:"must-not-copy",roles:{teamLeader:true,official:true}};
 let calls=[],reply;
