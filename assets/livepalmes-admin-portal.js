@@ -15758,7 +15758,11 @@
           <span role="columnheader">Actions</span>
         </div>
         ${directoryPeople
-          .sort((left, right) => `${left.lastName || ""} ${left.firstName || ""}`.localeCompare(`${right.lastName || ""} ${right.firstName || ""}`, "fr", { sensitivity: "base" }))
+          .sort((left, right) =>
+            Number(right.active === true) - Number(left.active === true) ||
+            String(left.lastName || "").localeCompare(String(right.lastName || ""), "fr", { sensitivity: "base" }) ||
+            String(left.firstName || "").localeCompare(String(right.firstName || ""), "fr", { sensitivity: "base" })
+          )
           .map((person, index) => {
       const name = [person.lastName, person.firstName].filter(Boolean).join(" ") || "Personne sans nom";
       const role = engagementClubPersonRoleLabel(person);

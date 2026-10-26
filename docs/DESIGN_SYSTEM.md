@@ -4,7 +4,7 @@
 
 ## Annuaire des officiels du club — 26 octobre 2026
 
-« Mes officiels » reprend le tableau compact de « Mes nageurs » : lignes de 42 px minimum, en-tête fixe, colonnes partagées de largeur constante et détails dépliables sur mobile. Les lignes grandissent avec leur contenu sans superposition ; les inactifs gardent un texte et des actions opaques. En NAP, cette vue présente uniquement les fiches modifiables de l’annuaire `officiels`, sans les déclarations de chefs d’équipe propres aux compétitions. Les sélecteurs des dossiers de compétition conservent leurs sources.
+« Mes officiels » reprend le tableau compact de « Mes nageurs » : lignes de 42 px minimum, en-tête fixe, colonnes partagées de largeur constante et détails dépliables sur mobile. Les actifs précèdent les inactifs, chaque groupe étant trié par nom puis prénom. Les lignes grandissent avec leur contenu sans superposition ; les inactifs gardent un texte et des actions opaques. En NAP, cette vue présente uniquement les fiches modifiables de l’annuaire `officiels`, sans les déclarations de chefs d’équipe propres aux compétitions. Les sélecteurs des dossiers de compétition conservent leurs sources.
 
 ## Historique des demandes de comptes — 26 octobre 2026
 
