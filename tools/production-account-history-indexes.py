@@ -50,7 +50,7 @@ def main(mode, directory, plan_run=""):
         check_plan(cycle.read(directory/"request.json"))
     token=subprocess.check_output(["gcloud","auth","application-default","print-access-token"],text=True).strip()
     def api(url, body=None):
-        require(url==URL or url.startswith(URL+"?pageSize=100"), "URL interdite")
+        require(url==URL or url.startswith(URL+"?pageSize=0"), "URL interdite")
         require(body is None or (mode=="apply" and body in DEFINITIONS), "Ecriture hors contrat")
         req=urllib.request.Request(url,data=None if body is None else json.dumps(body).encode(),headers={"Authorization":"Bearer "+token,"Content-Type":"application/json"})
         try:
@@ -69,7 +69,8 @@ def main(mode, directory, plan_run=""):
         from urllib.parse import quote
         rows=[];page=""
         for _ in range(20):
-            result=api(URL+"?pageSize=100"+("&pageToken="+quote(page,safe="") if page else ""));rows.extend(result.get("indexes",[]));page=result.get("nextPageToken","")
+            # This admin endpoint explicitly accepts only pageSize=0.
+            result=api(URL+"?pageSize=0"+("&pageToken="+quote(page,safe="") if page else ""));rows.extend(result.get("indexes",[]));page=result.get("nextPageToken","")
             if not page:return rows
         raise ValueError("Inventaire tronque : arret")
     before=listing();create=missing(before)
