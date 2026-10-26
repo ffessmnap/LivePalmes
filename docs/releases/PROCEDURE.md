@@ -58,6 +58,12 @@ Cette suppression retire une barrière humaine : GitHub ne lit pas la conversati
 
 ## 1. Publier TEST commun
 
+Optimisation du 26 octobre : la CI conserve `application-verification` après réussite sur un push main. TEST peut réutiliser uniquement la preuve du commit exact, depuis ce workflow réussi, première tentative, artefact unique non expiré et empreinte ZIP SHA-256 contrôlée. Une preuve PR, un autre SHA, une erreur réseau, une expiration ou une ambiguïté impose le contrôle applicatif complet. Pas d'attente de la CI en cours : repli immédiat sur la suite habituelle. Installations verrouillées, tests du circuit, sélection et relecture backend, contrôles Hosting et preuve TEST restent exécutés.
+
+La CI conserve le contrôle applicatif global pour toutes les PR et tous les push main. L'émulateur Firestore seul est évité si tous les chemins modifiés sont limités aux fichiers d'interface racine reconnus ou à la documentation Markdown ; règles, configuration Firebase/Firestore, backend, dépendances, tests, chemins partagés/inconnus, diff absent ou illisible gardent l'émulateur. Les tests de règles lisent directement `firestore.rules`, sans import des fichiers d'interface. Les installations `npm ci` restent obligatoires et le cache npm existant est conservé.
+
+Les publications de fonctions ajoutent au résumé GitHub la durée, le projet, le mode et les noms de chaque lot contrôlé. Les lots de dix, pauses de cadence et contrôles de révision sont inchangés. Cette mesure ne constitue ni une accélération PROD démontrée ni une autorisation de déploiement PROD.
+
 Pour préparer PROD, réutiliser la publication TEST existante si sa preuve est valide et correspond au candidat et à l'état réellement observé. Ne relancer TEST que si nécessaire : nouvelle version, publication incomplète, preuve périmée ou état modifié.
 
 L’assistant lance `livepalmes-test-common.yml` depuis main, avec `production_commit` égal au SHA applicatif actuellement publié. Workflow sérialisé avec le backend TEST ; aucune annulation forcée d’un déploiement en cours. Depuis la correction approuvée le 25 octobre, un lancement devenu ancien dans la file attendue ne publie rien et prépare un suivi sur main. Une publication déjà engagée termine son commit exact, backend puis Hosting et preuve, même si une autre PR rejoint main entre-temps. Le candidat reste celui du run, intégré à main et contrôlé ; aucun remplacement de code en cours de publication.
