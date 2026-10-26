@@ -5,7 +5,8 @@
 ### 26 octobre — Sous-texte du protocole public réduit à Résultats
 
 - Demande explicite d’Antoine : sous le PDF des résultats, afficher seulement « Résultats », sans la description technique de validation WinPalme. Changement de présentation ciblé sur les documents de catégorie résultats ; titre, PDF, descriptions des autres documents et données inchangés, zéro lecture supplémentaire.
-- Contrôles ciblés syntaxe/calendrier et navigateur ordinateur/mobile avec document résultats et règlement. Livraison TEST en interface seule à renseigner ; recette utilisateur de la version regroupée en attente, PROD exclue.
+- [PR #541](https://github.com/ffessmnap/LivePalmes/pull/541), commit intégré `d78593209f741ae854d112d5e685dd4ac459076d`. Syntaxe, tests calendrier et navigateur hors réseau à 1440/390/320 px réussis, avec vérification du sous-texte résultats et de la description du règlement. Suite globale locale arrêtée au test Bash Windows connu `main / access` ; contrôle Linux [40332890793](https://github.com/ffessmnap/LivePalmes/actions/runs/40332890793) réussi.
+- TEST commun [40333389556](https://github.com/ffessmnap/LivePalmes/actions/runs/40333389556) réussi sur ce commit exact en `hosting_only`, Hosting `11d8563333575d4b` : zéro fonction republiée, 115 révisions conservées à l’identique. HTML, JavaScript et CSS HTTP 200 conformes aux sources, caches conservés ; référence administrative privée 404. Preuves locales privées : `outputs/result-pdf-label/test-proof/test-proof.json`, `test-receipt.json` et `http-checks.json`. Aucun import réel, PDF et données inchangés ; recette utilisateur de la version regroupée en attente, PROD exclue.
 
 ### 26 octobre — Présentation compacte des temps des relayeurs
 
