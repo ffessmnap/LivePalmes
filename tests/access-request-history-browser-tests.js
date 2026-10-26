@@ -32,6 +32,10 @@ async function main() {
     await page.locator("[data-access-requests-next]").click(); await page.waitForFunction(() => document.querySelectorAll(".admin-access-history-card").length === 2);
     assert.equal(await page.locator("[data-access-requests-next]").isHidden(), true);
     await page.locator("details > summary").click(); assert.match(await page.locator("details[open]").innerText(), /Demande en double <script>/);
+    if (width > 700) {
+      const positions = await page.locator(".admin-access-history-card .admin-engagements-request-scope").evaluateAll(nodes => nodes.map(node => node.getBoundingClientRect().x));
+      assert.equal(positions[0], positions[1], "Colonnes alignées avec ou sans motif de refus");
+    }
     assert.equal(await page.locator("[data-access-requests-history-list] script").count(), 0);
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true, `Débordement ${width}`);
     await page.screenshot({ path: path.join(out, `historique-${width}.png`), fullPage: true });
