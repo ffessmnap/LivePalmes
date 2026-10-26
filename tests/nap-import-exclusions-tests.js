@@ -23,5 +23,12 @@ const {reviewWinPalmeResults}=require('../functions/nap-winpalme-results');
  const changed=await previewNativeImport(f.pool,{...input,excludedSourceLines:[6,7,10]});assert.notEqual(changed.previewFingerprint,pack.previewFingerprint);
  const empty=await previewNativeImport(f.pool,{...input,excludedSourceLines:[4,5,6,7,8,9,10],clubBindings:[{code:'ABC',clubId:'106'}]});assert.equal(empty.canConfirm,false,'Cannot silently clear a competition with an empty retained import');
  assert.ok(f.calls.every(c=>c.sql.startsWith('SELECT ')));
+ const lines=f.input.rawText.split('\n'),emptyRelay=lines[9].split(';');emptyRelay[11]='00:00.00';for(let i=12;i<=15;i++)emptyRelay[i]=i%2?'Non précisé':'';
+ const emptyInput={...f.input,rawText:lines.slice(0,9).concat(emptyRelay.join(';')).join('\n'),excludedSourceLines:[6,7],clubAcknowledgements:[person.clubAlerts[0].key]};
+ const emptyPack=await previewNativeImport(f.pool,emptyInput),emptyResponse=importPreviewResponse(emptyPack);
+ assert.equal(emptyPack.canConfirm,true);assert.deepEqual(emptyResponse.automaticExcludedSourceLines,[10]);assert.equal(emptyPack.issues.some(i=>i.sourceLine===10),false);assert.equal(emptyPack.unresolvedMembers.length,0);assert.equal(emptyPack.incoming.some(i=>i.origin==='first-relay'),false);assert.equal(emptyPack.decoded.excluded.find(r=>r.sourceLine===10).exclusionReason,'empty-relay');
+ const onlyAuto=await previewNativeImport(f.pool,{...emptyInput,rawText:lines.slice(0,5).concat(emptyRelay.join(';')).join('\n'),excludedSourceLines:[]});
+ assert.equal(onlyAuto.canConfirm,true);prepareImportOperation(onlyAuto,{perfs:1000,relays:2000},{...emptyInput,expectedFingerprint:onlyAuto.expectedFingerprint,previewFingerprint:onlyAuto.previewFingerprint,confirmReplacement:true,replacementReviewFingerprint:onlyAuto.previewFingerprint});
+ for(const [time,hints,expected]of [['00:00.00',['','','',''],1],['0:00:00.00',['','','',''],1],['',['','','',''],0],['00:00.01',['','','',''],0],['00:00.00',['912','','',''],0]]){const row=[...emptyRelay];row[11]=time;row.splice(12,4,...hints);const d=reviewWinPalmeResults(lines.slice(0,5).concat(row.join(';')).join('\n'),[],{allowResults:true});assert.equal(d.summary.automaticExcluded,expected);}
  console.log('ZIP exclusions: explicit source rows, dependent passages/first leg, ignored identities, restoration, replacement removals, fingerprint consent, unchanged TXT guard; no writes.');
 })().catch(e=>{console.error(e);process.exitCode=1;});

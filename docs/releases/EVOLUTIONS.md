@@ -2,6 +2,11 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 26 octobre — Alertes relais visibles et relais vides ignorés
+
+- Demande explicite d’Antoine : signaler immédiatement les relais problématiques, sans devoir les chercher ; ignorer sans alerte ceux à temps nul sans aucun relayeur. Compteur de navigation, récapitulatif orange avec liens directs et diagnostics par relais. Règle ZIP bornée aux temps explicitement nuls et quatre membres absents/« Non précisé », trace automatique dans le journal/bilan sans accord manuel supplémentaire ; autres contrôles et confirmations de remplacement conservés.
+- Tests simulés et publication TEST en préparation. Aucun résultat réel, PDF ou profil modifié. Aucun coût de lecture supplémentaire, aucun schéma ni droit modifié. Références de livraison à renseigner ; validation utilisateur de la version regroupée en attente, PROD exclue.
+
 ### 26 octobre — Import ZIP compact et exclusions contrôlées
 
 - Accord d’Antoine sur la maquette ordinateur : navigation par groupes et dossier sélectionné, profils en tableau, actions compactes, création également pour les profils orange après recherche/doublons. Complément demandé : ignorer une course, un nageur avec ses relais liés ou un relais incomplet ; recherche des membres conservée.

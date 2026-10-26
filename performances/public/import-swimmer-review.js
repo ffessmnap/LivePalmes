@@ -87,6 +87,17 @@
       <p>Inventaire : page ${diffPage+1}/${pages}. Le rapport contient la totalité des différences.</p><button type="button" class="ghost-button" data-diff-page="-1" ${diffPage===0?'disabled':''}>Différences précédentes</button> <button type="button" class="ghost-button" data-diff-page="1" ${diffPage+1===pages?'disabled':''}>Différences suivantes</button>
       ${diff.requiresReplacementConfirmation?`<label class="import-club-alert"><input type="checkbox" data-review-replacement ${!result.reviewReady?'disabled':''} ${payload.confirmReplacement&&payload.replacementReviewFingerprint===result.previewFingerprint?'checked':''}> J’approuve les ajouts, modifications, retraits et le protocole PDF affichés pour cet aperçu de remplacement.</label>`:''}</details>`;
   }
+  function relayProblems(result){
+    return (result.review?.relays||[]).map(r=>{
+      const messages=[],missing=r.members.filter(m=>!m.profile).map(m=>m.position);
+      if(missing.length)messages.push(`Identités à renseigner ou rapprocher : relayeur(s) ${missing.join(', ')}.`);
+      for(const i of (result.issues||[]).filter(i=>i.sourceLine===r.sourceLine)){
+        const label=global.LivePalmesImportConfirmation?.describeIssue(result,i)||issueLabels[i.code]||i.code;if(!messages.includes(label))messages.push(label);
+      }
+      if((result.unresolvedClubs||[]).some(c=>c.code===r.clubCode))messages.push('Club du relais à rattacher.');
+      return {...r,messages};
+    }).filter(r=>r.messages.length);
+  }
   function compactLayout(host,groups,visible,result,redraw){
     host.classList.add('import-review-compact');
     const workspace=document.createElement('div'),nav=document.createElement('nav'),pane=document.createElement('div'),footer=document.createElement('div');
@@ -99,7 +110,7 @@
       for(const g of visible.filter(g=>g.state===state)){const el=group.querySelector(`[data-review-open="${g.id}"]`);if(!el)continue;el.open=true;panels.set(g.id,el);pane.append(el);button(g.id,`${g.source.lastName} ${g.source.firstName} · ${g.performances.length}${g.clubAlerts.some(a=>!a.confirmed)?' · club à vérifier':''}`,group);}
       nav.append(group);
     }
-    for(const [key,label]of [['issues',`Alertes (${result.issues?.length||0})`],['clubs',`Clubs (${result.unresolvedClubs?.length||0})`],['courses','Épreuves'],['relays',`Relais (${result.review?.relays?.length||0})`],['excluded',`Exclusions (${result.excludedSourceLines?.length||0})`],['bilan','Bilan et fichiers']]){
+    for(const [key,label]of [['issues',`Alertes (${result.issues?.length||0})`],['clubs',`Clubs (${result.unresolvedClubs?.length||0})`],['courses','Épreuves'],['relays',`Relais (${result.review?.relays?.length||0})${relayProblems(result).length?' · '+relayProblems(result).length+' à contrôler':''}`],['excluded',`Exclusions (${result.excludedSourceLines?.length||0})`],['bilan','Bilan et fichiers']]){
       const el=host.querySelector(`[data-review-open="${key}"]`);if(!el)continue;panels.set(key,el);el.open=true;pane.append(el);button(key,label,nav);
     }
     for(const b of host.querySelectorAll('[data-review-page]')){b.hidden=groups.length<=100;nav.append(b);}
@@ -116,7 +127,8 @@
     const review=result.review,profiles=new Map((review?.profiles||[]).map(p=>[p.id,p]));
     const groups=(review?.groups||[]).map(g=>({...g,candidates:(g.candidateIds||[]).map(id=>profiles.get(id)).filter(Boolean)})),total=Math.max(1,Math.ceil(groups.length/100));page=Math.min(page,total-1);
     const visible=groups.slice(page*100,(page+1)*100);
-    const excluded=new Set(payload.excludedSourceLines||[]);
+    const excluded=new Set((payload.excludedSourceLines||[]).filter(line=>!(result.automaticExcludedSourceLines||[]).includes(line)));
+    const automatic=result.excludedRows?.filter(r=>r.exclusionReason==='empty-relay')||[],problematic=relayProblems(result);
     const excludeControl=(line,label)=>`<label class="import-exclude-choice"><input type="checkbox" data-review-exclude="${line}" ${excluded.has(line)?'checked':''}> ${label}</label>`;
     summary.textContent=`${result.metadata?.competitionName||'Résultats WinPalme'} — ${review?groups.length+' nageurs':'choisir une compétition pour rapprocher les nageurs'} — contrôle national avant enregistrement`;
     const person=g=>{
@@ -134,6 +146,7 @@
     host.innerHTML=`<p role="status" data-review-status>${pending.size||result.reviewStale?'Choix modifiés : actualiser l’aperçu pour les vérifier.':result.reviewReady?'Rapprochements contrôlés pour cet aperçu. Aucun résultat ni PDF enregistré.':'Contrôle national en cours : résoudre les rapprochements et les alertes.'}</p>
       ${result.requiresCompetitionChoice?`<label>Compétition existante<select data-review-competition><option value="">Choisir la compétition</option>${result.competitions.map(c=>`<option value="${c.id}">${escape(c.libelle)} — ${escape(c.lieu)} (${c.id})</option>`).join('')}</select></label>`:`<p>Compétition NAP : ${escape(result.competition?.libelle)} (${Number(result.competition?.id)})</p>`}
       ${review?'<button type="button" class="ghost-button" data-prepare-confirmation '+(result.reviewStale?'disabled':'')+'>Préparer un message pour l’informatique</button><div data-confirmation-host></div>':''}
+      ${problematic.length?`<details class="import-relay-problems"><summary>${problematic.length} relais à contrôler — identités ou résultat incomplets</summary>${problematic.slice(0,20).map(r=>`<button type="button" class="ghost-button" data-issue-relay="${r.sourceLine}">${escape(r.course)} · ${escape(r.clubCode)} · ${escape(time(r.time))} — voir le problème</button>`).join('')}${problematic.length>20?'<p>La suite est accessible dans le dossier Relais.</p>':''}</details>`:''}
       <details data-review-open="issues" ${open.get('issues')?'open':''}><summary>Alertes de l’analyse (${result.issues?.length||0})</summary>${(result.issues||[]).map(i=>global.LivePalmesImportConfirmation?.visibleIssue(result,i)??(global.LivePalmesImportConfirmation?null:i)).filter(Boolean).slice(0,100).map((i,index)=>{
         const label=global.LivePalmesImportConfirmation?.describeIssue(result,i)||issueLabels[i.code]||i.code;
         const group=groups.find(g=>g.id===i.groupId||(i.context?.relatedSourceLines||[]).some(line=>g.sourceLines.includes(line)));
@@ -148,7 +161,10 @@
       ${review?`<details data-review-open="bilan"><summary>Bilan et fichiers</summary>${diffHtml(result.diff,payload,result)}</details>`:''}
       ${!result.previewOnly?'<p data-review-write-notice>Après confirmation, les résultats seront visibles dans la vraie base NAP, y compris depuis TEST. Le protocole PDF sera rattaché à la compétition et le TXT source archivé en accès réservé aux administrations habilitées, sans suppression manuelle. Le ZIP ne sera pas stocké. Les autres documents de la compétition sont conservés.</p>':''}
       <button type="button" class="ghost-button" data-review-refresh>Actualiser l’aperçu avec mes choix</button><button type="button" class="primary-button" data-nap-save disabled>${result.previewOnly?'Aperçu uniquement — enregistrement désactivé':'Enregistrer les résultats et le PDF dans NAP'}</button>`;
-    for(const r of review?.relays||[]){const target=host.querySelector(`[data-review-open="relay:${r.sourceLine}"]`);target?.insertAdjacentHTML('beforeend',excludeControl(r.sourceLine,'Ignorer ce relais entier et le temps de son premier relayeur'));}
+    for(const r of review?.relays||[]){const target=host.querySelector(`[data-review-open="relay:${r.sourceLine}"]`),problem=problematic.find(p=>p.sourceLine===r.sourceLine);if(problem&&target){target.classList.add('import-relay-problems');const title=target.querySelector(':scope > summary');title.textContent+=' — À CONTRÔLER';title.insertAdjacentHTML('afterend',`<div class="import-club-alert">${problem.messages.map(m=>`<p>${escape(m)}</p>`).join('')}<p>Renseigner les profils NAP ci-dessous ou ignorer ce relais.</p></div>`);}target?.insertAdjacentHTML('beforeend',excludeControl(r.sourceLine,'Ignorer ce relais entier et le temps de son premier relayeur'));}
+    const exclusionPanel=host.querySelector('[data-review-open="excluded"]');
+    host.querySelector('[data-review-exclusions-confirm]').closest('label').hidden=!excluded.size;
+    if(automatic.length)exclusionPanel?.insertAdjacentHTML('beforeend',`<details><summary>Relais vides ignorés automatiquement (${automatic.length})</summary>${automatic.map(r=>`<p>${escape(r.course)} · ${escape(r.clubCode)} · ligne ${r.sourceLine} : temps nul, aucun relayeur.</p>`).join('')}</details>`);
     const updateSave=()=>{host.querySelector('[data-nap-save]').disabled=!onSave||result.previewOnly||!result.canConfirm||result.reviewStale||Boolean(excluded.size&&(!payload.confirmExclusions||payload.exclusionReviewFingerprint!==result.previewFingerprint))||Boolean(result.diff?.requiresReplacementConfirmation&&(!payload.confirmReplacement||payload.replacementReviewFingerprint!==result.previewFingerprint));};
     updateSave();host.querySelector('[data-nap-save]').onclick=()=>onSave?.();
     const redraw=()=>{remember();renderAgain();};

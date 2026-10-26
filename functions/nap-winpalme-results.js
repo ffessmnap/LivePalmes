@@ -81,8 +81,14 @@ function reviewWinPalmeResults(raw, excludedSourceLines=[], {allowResults=false}
     if (!row || !allowResults&&(row.status || row.rawFinalTime)) throw new TypeError("Seules les lignes sans statut ni temps final peuvent etre ecartees.");
     excluded.push(row);
   }
+  // Explicitly approved ZIP rule: a zero-time relay with no named member is
+  // an empty source entry, not a composition requiring national resolution.
+  if(allowResults)for(const row of decoded.rows){
+    const noMember=(row.memberHints||[]).every(value=>!String(value||'').trim()||/^non precisee?$/i.test(String(value).normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim()));
+    if(row.kind==='REL'&&/^0+$/.test(row.rawFinalTime.replace(/[\s:.,]/g,''))&&noMember){row.exclusionReason='empty-relay';if(!selected.has(row.sourceLine)){selected.add(row.sourceLine);excluded.push(row);}}
+  }
   const rows=decoded.rows.filter(r=>!selected.has(r.sourceLine)), issues=decoded.issues.filter(i=>!selected.has(i.sourceLine));
   return {...decoded,rows,issues,excluded,confirmable:rows.length>0&&issues.length===0,
-    summary:{...decoded.summary,retained:rows.length,excluded:excluded.length,issues:issues.length}};
+    summary:{...decoded.summary,retained:rows.length,excluded:excluded.length,automaticExcluded:excluded.filter(r=>r.exclusionReason==='empty-relay').length,issues:issues.length}};
 }
 module.exports={compactTime,date,decodeWinPalmeResults,reviewWinPalmeResults,MAX_ROWS,MAX_BYTES};
