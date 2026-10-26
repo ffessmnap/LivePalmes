@@ -2,6 +2,13 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 26 octobre — Consignes courantes simplifiées
+
+- Accord explicite d’Antoine dans Infra : « vas-y, améliore les consignes ». Clarification des accords déjà acquis, des contrôles proportionnés et de la réutilisation des preuves ; trois parcours (documentation/interface, backend existant autorisé, opération sensible) et une procédure courante unique.
+- `AGENTS.md`, `docs/agents/PUBLICATION.md` et `docs/releases/PROCEDURE.md` alignés ; versions antérieures intégralement conservées dans les deux fichiers `*_HISTORIQUE_20261026.md`, avec avertissement d’archive. Les contrats exécutables et autorisations datées gardent leurs limites.
+- Une PR regroupée, suivi documentaire par lot, résultat court et mesure du délai total. Aucun benchmark, audit général, rapport HTML, nouvelle recette ou redéploiement ajouté par défaut à une livraison ordinaire. Sauvegarde vérifiée, dérive, validations réelles, contrôles CI/workflows et accord final PROD conservés.
+- Documentation seulement : relecture de cohérence, UTF-8, liens, archives et diff ; CI obligatoire avant intégration. Le changement racine `AGENTS.md` conserve la CI complète actuellement imposée, sans duplication locale ni changement de workflow. Aucune modification applicative, donnée métier, mail, autorisation technique, publication TEST/PROD ou preflight requis pour cette seule mise à jour.
+
 ### 26 octobre — Circuit accéléré contrôlé sur TEST, aucun déploiement PROD
 
 - Accord Infra d’Antoine : « Ok » sur les cinq améliorations proposées (circuit ordinaire stable, réutilisation CI, mesure du parallélisme, prérequis et documentation ciblée). Préparation #568 intégrée en `ebfd21d3`, correction de mesure #569 intégrée en `ef41dddf1894194e70b30445bc98cf21e92b8645`. CI Linux PR40402506298 / main40402983009, puis PR40404003976 / [main40404357496](https://github.com/ffessmnap/LivePalmes/actions/runs/40404357496) réussies. Aucun fichier applicatif modifié par ce chantier.

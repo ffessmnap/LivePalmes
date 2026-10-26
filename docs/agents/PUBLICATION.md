@@ -1,77 +1,40 @@
-# Publication et déploiement LivePalmes
+# Publication LivePalmes — choisir le parcours
 
-<!-- description: Procédure et autorisations requises pour Git, GitHub, Firebase, Storage, migrations et mise en ligne. -->
+<!-- description: Consignes courantes et proportionnées pour préparer, vérifier et publier TEST/PROD ; orientation vers la procédure unique. -->
 
-## Principe commun aux conversations
+## Commencer par le besoin
 
-Une demande de développement autorise par défaut le travail et sa mise à disposition sur TEST, avec commit/PR et intégration après contrôles. Antoine n’a pas à répéter « sur TEST ». Une demande d’analyse ne vaut pas demande de développement. Les validations sensibles restent applicables : une demande explicite précise peut déjà constituer cette validation ; ne pas la redemander inutilement.
+Lire les consignes de `main`, préserver les changements des autres conversations et choisir le parcours ci-dessous. Une demande de développement autorise la préparation, la PR, son intégration après contrôles et TEST pour le périmètre demandé. Une analyse seule ne déclenche aucun développement. Une demande explicite peut déjà contenir l’accord nécessaire à une opération sensible ; ne pas redemander un accord acquis.
 
-Toutes les évolutions sont réunies sur `main`. Le site TEST commun reçoit seulement un commit exact intégré sur `main`, par le workflow `livepalmes-test-common.yml`. Les PR utilisent des canaux d’aperçu distincts ; elles ne remplacent jamais le site TEST commun.
+| Parcours | Contrôles et publication |
+| --- | --- |
+| Documentation ou interface | Documentation seule : relecture et CI requise, aucun déploiement. Interface : syntaxe/tests ciblés et contrôle ordinateur/mobile pertinent ; CI requise puis TEST commun. Pour une interface seule, `hosting_only=true` conserve le contrôle de sélection backend et refuse toute fonction différente ou non attestée. |
+| Backend existant, périmètre déjà autorisé | Examiner la sélection par dépendances, tester les comportements concernés, utiliser la CI et les preuves compatibles. Publier les seules fonctions sélectionnées avec les garde-fous existants ; Hosting en dernier. Une dépendance sensible ou ambiguë conduit au parcours spécifique. |
+| Données, droits, mails ou infrastructure nouvelle | Accord explicite sur l’opération et ses limites avant exécution. Inclut règles/index, migrations, écritures métier réelles, envois et rattrapage, changement de destinataires/préférences/paiements, secrets/configurations/services/déclencheurs nouveaux, suppressions et changements de règles sportives. Préparation spécifique proportionnée au changement. |
 
-Regrouper les retouches d'un même besoin dans la PR tant qu'elle est ouverte. Ne pas créer une PR par petite retouche ni une PR documentaire après chaque contrôle : inclure le suivi dans la PR ouverte lorsque possible, ou regrouper les mises à jour documentaires ultérieures sans perdre les références de version et les validations réelles. Une PR déjà fusionnée n'est pas réutilisée.
+Un changement de code d’authentification, de PDF/import/résultats, de DTN ou de Function reste soumis aux accords sensibles d’`AGENTS.md`, même s’il ne modifie aucune infrastructure. Un accord de préparation ne vaut jamais accord d’écriture métier ou de publication PROD.
 
-Fonctionnement approuvé le 25 octobre 2026 : contrôles techniques obligatoires sur les PR ; aperçu Firebase uniquement sur demande explicite, matérialisée par l'étiquette `apercu-test`. L'ajout de cette étiquette déclenche la vérification puis l'aperçu ; les mises à jour suivantes de la PR le renouvellent tant que l'étiquette est présente. Retirer l'étiquette arrête les prochains renouvellements ; le canal existant expire après trois jours ou est nettoyé à la fermeture. Les PR exclusivement documentaires ne créent toujours aucun aperçu. Le lien reste dans les résultats GitHub Actions, sans commentaire automatique. Les notifications personnelles et les alertes d'échec restent actives.
+## Chemin courant
 
-Le registre `docs/releases/EVOLUTIONS.md` est tenu par l’assistant. Une validation utilisateur est associée à une version testée et un retour daté. Un changement de code nécessite de revérifier les parcours affectés. Aucun bot ne peut déduire un accord d’un simple test automatique réussi.
+1. Regrouper le besoin dans une PR courte depuis `main`, avec tests et documentation utiles. Attendre les contrôles obligatoires. L’aperçu `pr-N` est facultatif, uniquement avec l’étiquette `apercu-test` demandée ; il ne remplace pas TEST commun.
+2. Publier TEST commun seulement lorsqu’il est nécessaire et conserver sa preuve. Réutiliser les suites attestées du commit exact ; ne pas les répéter manuellement pour préparer PROD.
+3. Recueillir le retour utilisateur sur les parcours concernés de la version commune. Une modification de ces parcours invalide leur validation ; les autres validations ne sont pas annulées par principe. Ne jamais déduire un accord utilisateur d’une CI verte.
+4. Pour PROD, préparer le bilan complet depuis les preuves, vérifier les prérequis nécessaires, présenter un résumé court et appliquer l’accord explicite d’Antoine dans Infra au seul périmètre présenté. Les modalités techniques sont dans la [procédure actuelle](../releases/PROCEDURE.md).
 
-La publication PROD est regroupée dans la conversation Infra. Présenter le bilan, les travaux inachevés, la version exacte et le retour arrière avant l’accord. Exécuter ensuite uniquement cette version, même si TEST évolue. Voir `docs/releases/PROCEDURE.md` pour les workflows réutilisables.
+L’assistant gère commits, runs et manifeste. La demande ordinaire n’exige ni PR de manifeste ni adaptation du circuit. Si un contrat existant refuse le candidat, présenter le motif et le périmètre réellement bloqué avant toute écriture ; une consigne simplifiée n’autorise pas à contourner le refus.
 
-Une opération sur les données, une migration, un envoi réel, les règles ou les index exigent un périmètre et une autorisation spécifiques ; ils sont exclus du circuit ordinaire.
+## Garde-fous conservés
 
-Accueil serveur autorisé le 15 octobre 2026 : l’entrée TEST `approved_home_routing` autorise uniquement l’ajout exact des réécritures `/` et `/index.html` vers `readNapPublicSwimmer` en europe-west1 et l’exclusion de `index.html` du paquet Hosting, par comparaison complète à la configuration du commit de base. Toute autre différence reste refusée ; aucune extension PROD, de règles/index ou de données. Publier le lot NAP autorisé avant Hosting et vérifier le HTML initial ; ne pas remplacer ce contrôle par une publication manuelle.
+- Version exacte, diff applicatif entièrement couvert, validations authentiques et preuves GitHub vérifiées. Une évolution incluse et non validée bloque ; aucune sélection silencieuse de fichiers pour la masquer.
+- En PROD : accord final sur le bilan précis, environnement `production` limité à `main`, contrôle frais de dérive, sauvegarde chiffrée rouverte et comparée avant écriture, retour arrière disponible et vérifications après publication. Une approbation GitHub encore exigée reste obligatoire.
+- Aucune copie TEST→PROD, génération de données d’accueil, migration, règle/index, suppression, invocation métier ou envoi de test implicite. Les Functions email/schedulers restent hors circuit ordinaire et nécessitent leur autorisation spécifique.
+- Préserver les réglages courants et les exclusions du lot. Un ancien plan IDF n’est pas la preuve du périmètre des mails actuel. Ne couper/réactiver les mails ou élargir les envois que dans un plan explicitement autorisé.
+- Utiliser la sélection calculée, expliquer les replis larges et conserver les contrôles rapides. Source inconnue, preuve incompatible, dérive ou nouveau risque : arrêter l’écriture, diagnostiquer le point en cause et présenter la suite utile.
 
-## Avant publication
+## Éviter le travail ajouté
 
-Préparation PROD autorisée le 19 octobre : exception bornée `productionHomeRouting` pour la seule paire `ac78b507` / `25ac21b6`, documentée dans `docs/releases/PROCEDURE.md`. Elle reprend exactement le routage TEST vérifié et exige sa couverture explicite dans le bilan. Aucun déploiement n’est autorisé par la préparation ; l’accord final dans Infra reste obligatoire.
+Un correctif ordinaire n’entraîne pas un nouveau benchmark, un audit général, une refonte d’outillage ou un rapport HTML. Réutiliser les outils et preuves existants ; relancer un contrôle seulement si le code concerné change, qu’il échoue ou que sa preuve n’est plus compatible. Conserver toutes les étapes imposées par les workflows ; cette règle évite les doublons manuels.
 
-Réutiliser le run TEST réussi et sa preuve si le candidat et l'état déployé correspondent encore. Ne pas republier TEST uniquement pour préparer PROD. L'assistant renseigne les SHA, runs et fichiers de bilan ; Antoine reçoit un résumé compréhensible. Un accord explicite déjà donné reste valable pour son périmètre : ne pas demander une nouvelle autorisation de principe à chaque étape. Après activation du réglage du 29 septembre décrit dans `docs/releases/PROCEDURE.md`, cet accord dans Infra suffit : l'assistant lance la publication sans second clic d'Antoine sur GitHub. Consigner l'accord réel et le périmètre dans la PR de publication. Ne jamais déduire cet accord d'un test réussi ni d'une simple demande de développement. Toute approbation technique encore configurée reste obligatoire ; ne pas la contourner.
+Tenir `docs/releases/EVOLUTIONS.md` à jour sans PR documentaire par contrôle. Inclure le suivi dans la PR ouverte ; après fusion, lier les nouvelles preuves dans GitHub et regrouper le prochain suivi du registre. Donner un résultat court avec les vérifications, le blocage éventuel et les liens utiles. Mesurer le délai total de la demande au résultat, en distinguant les attentes externes.
 
-1. Confirmer précisément le périmètre validé par l’utilisateur.
-2. Préserver et distinguer les autres changements déjà présents dans le dossier partagé.
-3. Exécuter `node tools/verify-livepalmes.js` et les tests ciblés nécessaires pour le nouveau code. À la promotion PROD du commit exact déjà vérifié sur TEST, réutiliser le résultat attesté par le workflow ; sans preuve compatible, refaire le contrôle. Ne pas répéter manuellement une même suite sur une version inchangée après sa réussite.
-   Depuis le 26 octobre, TEST peut aussi réutiliser la preuve CI main du commit exact, après vérification de l'origine, de la réussite et du SHA-256 de l'artefact. Sinon, conserver la suite complète. Ne jamais accepter une simple étiquette, une preuve PR ou un indicateur utilisateur comme dispense. Voir `docs/releases/PROCEDURE.md`.
-4. Pour un parcours navigateur pertinent, exécuter `node tools/verify-livepalmes.js --browser`.
-5. Effectuer les contrôles manuels applicables décrits dans `docs/TESTS_MANUELS.md`.
-6. Signaler toute commande susceptible de contacter la production ou d’écrire des données réelles avant son lancement.
-
-## Publication
-
-Notifications CCI/tâches approuvées le 25 octobre 2026 sur TEST sans mail réel : le workflow backend accepte `notification_bcc_tasks=true` avec `notification_final_check=true`, lot email, `main` et réglage déjà désactivé inchangé. Sélection fermée de sept fonctions dans `refresh-test-notifications.js`, avec un seul nouvel export autorisé dans l'inventaire (`processNapNotificationTask`). Cette voie conserve les autres fonctions ; le circuit commun suit pour Hosting et sa preuve. Activation Cloud Tasks et IAM strictement nécessaires sur TEST seulement ; aucune fréquence du scheduler ni règle/index modifié. Voir `docs/NOTIFICATIONS_COMPETITIONS.md`. Cette autorisation ne couvre ni activation SMTP ni PROD.
-
-Pilote mails IDF autorisé sur TEST le 20 octobre 2026 : l’option `notification_pilot_idf=true` du workflow backend exige `notification_final_check=true`, le lot email et main. Elle limite la sélection aux neuf traitements listés dans `refresh-test-notifications.js` ; les autres fonctions et réglages restent inchangés, les mails doivent déjà être désactivés. Exécuter ensuite le circuit TEST commun pour intégrer Hosting et la preuve des révisions. Cette autorisation ne permet ni activation d’envoi ni publication PROD ; celles-ci gardent leur bilan spécifique dans Infra.
-
-### Circuit réutilisable
-
-- PR : vérification technique obligatoire ; aperçu isolé `pr-N` sur Firebase TEST seulement avec l'étiquette `apercu-test` demandée explicitement.
-- `livepalmes-test-common.yml` : publication du commit main regroupé sur TEST, traitements nécessaires puis Hosting, preuve de version conservée.
-- Travaux simultanés TEST (accord du 25 octobre) : terminer le commit exact déjà engagé, puis suivre main après réussite en conservant toutes les restrictions et preuves ; ignorer les candidats déjà dépassés dans la file. Aucun rattrapage après échec/annulation, aucun suivi en mode lecture seule, trois suivis maximum. Voir `docs/releases/PROCEDURE.md`.
-- `livepalmes-production-preflight.yml` : bilan sans accès Google, fondé sur les preuves vérifiées des versions publiées ; relecture Firebase après l’approbation PROD.
-- `livepalmes-production-readiness.yml` : avant accord final, contrôle séparé des prérequis avec les comptes existants, en lecture seule (dérive, permissions nécessaires, quotas si backend) ; aucun droit accordé ni déploiement. Le manifeste inline évite une PR par plan ordinaire ; les exceptions sensibles restent spécifiques. Voir les conditions de réutilisation CI, mesure trois/six et relectures Hosting dans `docs/releases/PROCEDURE.md`.
-- `livepalmes-production-release.yml` : publication du bilan approuvé, sauvegarde vérifiée, lots bornés, contrôles puis Hosting ; `resume_run` conserve la sauvegarde initiale si une reprise est nécessaire.
-- `livepalmes-production-rollback.yml` : restauration explicite du code sauvegardé et de la release Hosting précédente.
-
-Les anciens workflows `livepalmes-production.yml` et `livepalmes-production-resume.yml` sont archivés et ne publient plus. Les consignes et champs exacts sont dans `docs/releases/PROCEDURE.md`.
-
-### Ordre Firebase pour le portail
-
-Dans le workflow authentifié, pour la version et le périmètre déjà autorisés, sans nouvelle authentification manuelle ni nouvelle autorisation de principe à chaque étape :
-
-1. simuler les Functions sélectionnées seulement si le backend change ; aucune simulation d'index dans le circuit ordinaire ;
-2. si des index sont nécessaires, arrêter le circuit ordinaire et préparer leur déploiement séparé explicitement autorisé ;
-3. déployer la sélection du bilan ; les empreintes suivent aussi les dépendances auxiliaires directes et indirectes pour tous les modules ; les effets globaux et les cas non démontrables conservent le périmètre large, selon `docs/releases/PROCEDURE.md` ;
-4. executer les tests manuels avec les index actifs ;
-5. deployer Hosting en dernier, puis controler les en-tetes CSP/cache et l'absence de `performances/public/data/admin-reference.js` en ligne.
-
-Le deploiement Hosting publie le contenu du dossier, pas uniquement les fichiers stages dans Git. Si le dossier principal contient d'autres modifications, il faut faire valider l'ensemble de cette release ou preparer un checkout propre contenant exactement le perimetre autorise avant de lancer Hosting.
-
-Un deploiement Hosting ordinaire ne synchronise plus automatiquement les donnees et ne lit pas Firestore. Lorsqu'une publication doit aussi actualiser le referentiel clubs, obtenir la validation explicite de cette lecture et de ces ecritures generees, puis executer avant les verifications et le deploiement :
-
-```powershell
-node tools/prepare-hosting-data.js --write
-```
-
-Controler ensuite le diff des fichiers generes. Ne pas utiliser cette preparation pour une simple correction HTML, CSS ou JavaScript sans changement de donnees.
-
-Sécuriser dans Git uniquement les fichiers du périmètre validé, puis pousser et déployer uniquement ce périmètre. Ne pas mélanger les changements utilisateur sans rapport. Après publication, vérifier le résultat en ligne et remettre le dossier principal sur le dernier `main` seulement si cela ne détruit aucun changement local ; nettoyer les worktrees temporaires devenus inutiles.
-
-Préserver les paramètres de cache et les rewrites de `firebase.json` sauf validation explicite d’une modification de configuration.
+Les [anciennes consignes](PUBLICATION_HISTORIQUE_20261026.md) et les [contrats et décisions datés](../releases/PROCEDURE_HISTORIQUE_20261026.md) servent uniquement à une reprise ancienne ou à une exception identifiée. Les contrats exécutables, leurs empreintes et leurs autorisations restent inchangés.
