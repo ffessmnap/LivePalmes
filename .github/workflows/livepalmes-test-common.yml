@@ -122,13 +122,22 @@ jobs:
         m.classify_test(paths, os.environ[''APPROVED_TOP_FILES''] == ''true'', os.environ[''APPROVED_RECORDS_CLEANUP''] == ''true'', os.environ[''APPROVED_PUBLIC_EXPORT_CLEANUP''] == ''true'', os.environ[''APPROVED_HOME_ROUTING''] == ''true'')
 
         PYCODE'
+    - name: Rechercher la verification du commit main exact
+      id: verified-main
+      run: python tools/test-verification-evidence.py reuse "$RUNNER_TEMP/application-verification"
     - name: Installer et verifier
       id: application-checks
+      env:
+        MAIN_VERIFIED: ${{ steps.verified-main.outputs.verified }}
       run: 'npm ci --prefix functions
 
         npm ci --prefix tests/firestore-rules
 
-        node tools/verify-livepalmes.js
+        if [ "$MAIN_VERIFIED" = true ]; then
+          echo "Verification applicative du commit exact reutilisee depuis la preuve CI main."
+        else
+          node tools/verify-livepalmes.js
+        fi
 
         python tests/production-pdf-functions-tests.py
 
@@ -142,7 +151,9 @@ jobs:
 
         python tests/test-publication-coordination-tests.py
 
-        node tests/nap-source-diagnostic-tests.js'
+        node tests/nap-source-diagnostic-tests.js
+
+        python tests/test-verification-evidence-tests.py'
     - uses: google-github-actions/auth@v3
       with:
         credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_TEST_BACKEND }}

@@ -137,6 +137,27 @@ def check_after(backup, destination, require_success):
 
 
 def wait_operation(operation):
+    started = time.monotonic()
+    name = str(operation.get('metadata', {}).get('target', '')).split('/')[-1]
+    name = name if re.fullmatch(r'[A-Za-z][A-Za-z0-9_]{0,100}', name) else 'fonction-non-renseignee'
+    result = 'interrompue'
+    try:
+        value = _wait_operation(operation)
+        result = 'terminee'
+        return value
+    finally:
+        seconds = round(time.monotonic() - started, 1)
+        message = f'Operation source {name} : {result}, {seconds} s'
+        print(message, flush=True)
+        if os.environ.get('GITHUB_STEP_SUMMARY'):
+            try:
+                with open(os.environ['GITHUB_STEP_SUMMARY'], 'a', encoding='utf-8') as stream:
+                    stream.write('\n' + message + '\n')
+            except OSError:
+                print('Resume de duree indisponible ; resultat de publication conserve.', flush=True)
+
+
+def _wait_operation(operation):
     for _ in range(180):
         if operation.get("done"):
             if operation.get("error"):
