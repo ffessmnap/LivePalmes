@@ -2,6 +2,10 @@
 
 <!-- description: Référence du langage visuel, des composants d’interface et des règles responsive déjà présents dans LivePalmes. -->
 
+## Historique des demandes de comptes — 26 octobre 2026
+
+Dans Demandes d’accès, les boutons « À traiter » et « Historique » forment un groupe avec état `aria-pressed` ; « Actualiser » agit sur la vue ouverte. L’historique réutilise les cartes de demandes en lecture seule : identité, club/région, décision, date/heure de Paris et auteur. Le motif du refus est dépliable. Les colonnes se replient sur mobile et les noms/adresses longs reviennent à la ligne ; la suite se charge par bouton explicite.
+
 Dans les documents d’une compétition publique, le sous-texte d’un document de catégorie résultats affiche seulement « Résultats ». Sa description technique n’est pas rendue ; titre et lien de téléchargement sont conservés. Les descriptions des autres catégories restent affichées.
 
 ## Détail des relais publics — 26 octobre 2026

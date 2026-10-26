@@ -2,6 +2,11 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 26 octobre — Historique régional des validations de comptes
+
+- Accord explicite d’Antoine sur les vues À traiter/Historique, les validations et refus avec auteur/date/heure, puis accord séparé pour l’ajout des deux index sur TEST uniquement. Demandes déjà enregistrées réutilisées sans migration ; droits et envois actuels conservés. Consultation régionale bornée côté serveur, pagination de 25, auteurs groupés et cache privé d’une minute. L’adresse historique remplace le nom si le profil de l’auteur manque.
+- [PR #551](https://github.com/ffessmnap/LivePalmes/pull/551). Contrôles ciblés serveur et navigateur hors réseau réussis à 1440/390/320 px : pagination stable, filtre régional, profils absents, échappement, cache, actualisation, erreurs et réponse obsolète après changement de compte. Aucun compte, mail ni document métier réel créé pour les tests. Vérification globale locale : 1 140 syntaxes et suites métier réussies, arrêt au test Bash Windows connu `main / access`. Premier contrôle Linux arrêté sur les attentes des anciennes versions JS/CSS, mises à jour puis test d’optimisation du portail réussi ; CI finale et preuves index/TEST commun à compléter après réussite. Validation utilisateur de la version regroupée attendue ; PROD exclue, index PROD non autorisés.
+
 ### 26 octobre — Alertes relais visibles et relais vides ignorés
 
 - Demande explicite d’Antoine : signaler immédiatement les relais problématiques, sans devoir les chercher ; ignorer sans alerte ceux à temps nul sans aucun relayeur. Compteur de navigation, récapitulatif orange avec liens directs et diagnostics par relais. Règle ZIP bornée aux temps explicitement nuls et quatre membres absents/« Non précisé », trace automatique dans le journal/bilan sans accord manuel supplémentaire ; autres contrôles et confirmations de remplacement conservés.
