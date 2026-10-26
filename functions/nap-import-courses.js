@@ -3,12 +3,15 @@
 // derive a sporting equivalence from a WinPalme LD code or alter source times.
 const supported=row=>row.kind==="REL"?/^4X\d+(SF|BI|IS|AP)$/.test(row.course):/^\d+(SF|BI|IS|AP)$/.test(row.course);
 async function prepareCourses(pool,decoded,input) {
-  const bindings=input.courseBindings||[];
+  let bindings=input.courseBindings||[];
   if(!Array.isArray(bindings)||bindings.length>300)throw new TypeError("Choix d’epreuves hors limite.");
   if(input.sourceType!=="winpalme-zip-preview"){
     if(bindings.length)throw new TypeError("Le choix d’epreuves est reserve a l’aperçu ZIP.");
     return null;
   }
+  // A retained choice may refer to a course whose last source row was just
+  // excluded. Keep it in the request for restoration, not in this active plan.
+  bindings=bindings.filter(b=>!decoded.excluded?.some(r=>r.course===b?.sourceCode)||decoded.rows.some(r=>r.course===b?.sourceCode));
   if(!bindings.length&&decoded.rows.every(supported))return null;
   if(new Set(decoded.rows.map(r=>r.course)).size>300)throw new RangeError("Plus de 300 epreuves sources : reduisez le lot avant rapprochement.");
   const courses=await readCourseCatalog(pool),chosen=new Map();

@@ -1316,6 +1316,10 @@
   function clearZipSelection() {
     global.LivePalmesImportReview?.reset();
     elements.warnings?.classList.remove('import-grouped-review');
+    elements.warnings?.classList.remove('import-review-compact');
+    elements.dialog?.classList.remove('competition-import-compact');
+    const source=elements.dialog?.querySelector('[data-import-source-fold]');
+    if(source){for(const child of [...source.children])if(child.tagName!=='SUMMARY')source.before(child);source.remove();}
     if (currentZipPdfUrl) global.URL.revokeObjectURL(currentZipPdfUrl);
     currentZipPdfUrl = ""; currentZipSelection = null;
     if (elements.zipPreview) { elements.zipPreview.hidden = true; elements.zipPreview.innerHTML = ""; }
@@ -1336,7 +1340,7 @@
       if (currentPreview?.source === 'nap') collectNativeImportChoices();
       downloadJson('controle-import-winpalme.json', {
         format: 'livepalmes-zip-review-v1', generatedAt: new Date().toISOString(), previewOnly: true,
-        manifest: m, choices: currentPayload ? Object.fromEntries(['competitionId','swimmerBindings','memberBindings','clubBindings','courseBindings','clubAcknowledgements','excludedSourceLines','confirmReplacement','replacementReviewFingerprint'].map(k => [k, currentPayload[k] ?? null])) : null,
+        manifest: m, choices: currentPayload ? Object.fromEntries(['competitionId','swimmerBindings','memberBindings','clubBindings','courseBindings','clubAcknowledgements','excludedSourceLines','confirmExclusions','exclusionReviewFingerprint','confirmReplacement','replacementReviewFingerprint'].map(k => [k, currentPayload[k] ?? null])) : null,
         review: currentPreview, reviewReady: currentPreview?.reviewReady === true
       });
     };
@@ -1499,6 +1503,14 @@
     if (elements.sample) elements.sample.closest('.import-table-wrap').hidden = true;
     elements.sample.innerHTML = '';
     if ((result.review || currentPayload?.sourceType==='winpalme-zip-preview') && global.LivePalmesImportReview) {
+      elements.dialog.classList.add('competition-import-compact');
+      let source=elements.dialog.querySelector('[data-import-source-fold]');
+      if(!source){
+        source=document.createElement('details');source.dataset.importSourceFold='';
+        const title=document.createElement('summary');title.textContent='Fichier analysé et protocole — modifier / consulter';source.append(title);
+        const card=elements.form.closest('.import-card');card.before(source);source.append(card,elements.zipPreview);
+        source.before(elements.message);
+      }
       global.LivePalmesImportReview.render({result,payload:currentPayload,host:elements.warnings,summary:elements.summary,
         onChange:()=>{previewRequestId++;nativeImportOperation=null;currentPreview.reviewReady=false;currentPreview.reviewStale=true;currentPreview.canConfirm=false;},
         onSave:saveNativeImport,
@@ -1571,8 +1583,10 @@
     if (!currentPreview?.canConfirm || !currentPayload) return;
     const zip=currentPayload.sourceType==='winpalme-zip-preview';
     const replace = zip?currentPayload.confirmReplacement===true:Boolean(elements.warnings.querySelector('[data-nap-replacement]')?.checked);
+    const exclusions=zip?(currentPreview.excludedSourceLines||[]).length:0;
+    if(exclusions&&(!currentPayload.confirmExclusions||currentPayload.exclusionReviewFingerprint!==currentPreview.previewFingerprint)){setMessage(elements.message,'Confirmez les exclusions de l’aperçu actualisé avant cet import partiel.');return;}
     if (currentPreview.diff?.requiresReplacementConfirmation && !replace) { setMessage(elements.message, 'Confirmez explicitement les retraits avant de continuer.'); return; }
-    if (!global.confirm(zip?'Enregistrer ces résultats dans la vraie base NAP, publier le protocole PDF et archiver le TXT privé ? Les résultats seront visibles immédiatement, y compris depuis TEST.':'Enregistrer ces résultats dans NAP et archiver le TXT privé ? Les résultats seront visibles immédiatement.')) return;
+    if (!global.confirm(zip?`${exclusions?'Import partiel : '+exclusions+' ligne(s) exclue(s). Le PDF et le TXT restent les fichiers originaux complets. ':''}Enregistrer ces résultats dans la vraie base NAP, publier le protocole PDF et archiver le TXT privé ? Les résultats seront visibles immédiatement, y compris depuis TEST.`:'Enregistrer ces résultats dans NAP et archiver le TXT privé ? Les résultats seront visibles immédiatement.')) return;
     const button = elements.warnings.querySelector('[data-nap-save]');
     button.disabled = true;
     const controls=[...elements.warnings.querySelectorAll('button,input,select')];controls.forEach(el=>el.disabled=true);

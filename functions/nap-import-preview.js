@@ -12,7 +12,7 @@ function choices(input,limit) {
   return input;
 }
 async function previewNativeImport(pool,input) {
-  const decoded=reviewWinPalmeResults(input.rawText,input.excludedSourceLines||[]);
+  const decoded=reviewWinPalmeResults(input.rawText,input.excludedSourceLines||[],{allowResults:input.sourceType==="winpalme-zip-preview"});
   if(input.competitionId===undefined || input.competitionId==="") {
     const competitions=await q(pool,"SELECT id,libelle,date,lieu,bassin,chrono FROM competitions FORCE INDEX (livepalmes_date_id) WHERE date=? ORDER BY id LIMIT 21",[decoded.metadata.date]);
     return {source:"nap",decoded,competitions,requiresCompetitionChoice:true,canConfirm:false};
@@ -23,7 +23,8 @@ async function previewNativeImport(pool,input) {
   const competition=competitions[0];
   const courseReview=await require("./nap-import-courses").prepareCourses(pool,decoded,input);
   const individual=decoded.rows.filter(r=>r.kind==="NAG");
-  const swimmerBindings=choices(input.swimmerBindings||[],5000),memberBindings=choices(input.memberBindings||[],2000),clubBindings=choices(input.clubBindings||[],1000);
+  const excluded=new Set(decoded.excluded.map(r=>r.sourceLine));
+  const swimmerBindings=choices(input.swimmerBindings||[],5000).filter(b=>!excluded.has(b.sourceLine)),memberBindings=choices(input.memberBindings||[],2000).filter(b=>!excluded.has(b.sourceLine)),clubBindings=choices(input.clubBindings||[],1000).filter(b=>!decoded.excluded.some(r=>r.clubCode===b.code)||decoded.rows.some(r=>r.clubCode===b.code));
   const selectedIds=[...new Set([...swimmerBindings,...memberBindings].map(b=>positiveId(b.swimmerId)))];
   const names=[...new Set(individual.map(r=>r.lastName))];
   const named=names.length?await q(pool,`SELECT id,nom,prenom,date,sexe,club FROM nageurs FORCE INDEX (nageurs_clef) WHERE nom IN (${names.map(()=>"?").join(",")}) AND ${notMerged()} ORDER BY nom,prenom,date LIMIT 10001`,names):[];

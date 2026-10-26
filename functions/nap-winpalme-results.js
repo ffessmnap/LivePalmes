@@ -69,16 +69,16 @@ function decodeWinPalmeResults(raw) {
     confirmable:issues.length===0,summary:{rows:rows.length,individual:rows.filter(r=>r.kind==="NAG").length,relays:rows.filter(r=>r.kind==="REL").length,
       eligible:rows.filter(r=>r.eligible).length,statusOnly:rows.filter(r=>STATUSES.has(r.status)&&r.status!=="NAG").length,issues:issues.length}};
 }
-function reviewWinPalmeResults(raw, excludedSourceLines=[]) {
+function reviewWinPalmeResults(raw, excludedSourceLines=[], {allowResults=false}={}) {
   const decoded=decodeWinPalmeResults(raw);
   if (!Array.isArray(excludedSourceLines) || excludedSourceLines.length>MAX_ROWS || new Set(excludedSourceLines).size!==excludedSourceLines.length) throw new TypeError("Liste explicite de lignes ecartees invalide.");
   const selected=new Set(excludedSourceLines), excluded=[];
   for (const sourceLine of selected) {
     if (!Number.isSafeInteger(sourceLine)) throw new TypeError("Ligne ecartee invalide.");
     const row=decoded.rows.find(r=>r.sourceLine===sourceLine);
-    // User-approved exception only: both status and final time are absent.
-    // It cannot dismiss valid/DQ/withdrawn results or unknown non-empty statuses.
-    if (!row || row.status || row.rawFinalTime) throw new TypeError("Seules les lignes sans statut ni temps final peuvent etre ecartees.");
+    // Ordinary TXT keeps its blank-result exception. National ZIP review can
+    // explicitly exclude a sporting row; the writer requires fresh consent.
+    if (!row || !allowResults&&(row.status || row.rawFinalTime)) throw new TypeError("Seules les lignes sans statut ni temps final peuvent etre ecartees.");
     excluded.push(row);
   }
   const rows=decoded.rows.filter(r=>!selected.has(r.sourceLine)), issues=decoded.issues.filter(i=>!selected.has(i.sourceLine));
