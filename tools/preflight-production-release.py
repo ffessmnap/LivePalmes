@@ -148,16 +148,21 @@ def main():
             cycle.require_access_request_selection(plan, selected)
         source_only = set(extra) - set(notification) - set(public_nap) - set(access_requests)
         bcc_names = cycle.approved_bcc_functions(plan) if os.environ.get('PLAN') else []
-        allowed_new = {cycle.bcc.for_request(plan).contract()['worker']} if bcc_names else set()
+        bcc_contract = cycle.bcc.for_request(plan).contract() if bcc_names else {}
+        allowed_new = {bcc_contract['worker']} if bcc_names and not bcc_contract.get('existingWorker') else set()
         if not (source_only - allowed_new).issubset({f['name'].split('/')[-1] for f in selected_functions}):
             raise ValueError('Traitement PDF existant absent')
         report['additionalBccFunctions'] = bcc_names
         if bcc_names:
-            cycle.require(len(functions) == 112 and not any(f['name'].split('/')[-1] in allowed_new for f in functions), 'Worker CCI deja present avant sauvegarde')
+            cycle.require(len(functions) == bcc_contract.get('inventoryCount', 112) and not any(f['name'].split('/')[-1] in allowed_new for f in functions), 'Inventaire CCI avant sauvegarde different')
             ref = next(f for f in functions if f['name'].split('/')[-1] == cycle.bcc.REFERENCE)
             state_spec = importlib.util.spec_from_file_location('bcc_backup_state', Path(__file__).with_name('production-release-state.py'))
             state = importlib.util.module_from_spec(state_spec); state_spec.loader.exec_module(state)
-            report['bccWorkerService'] = cycle.bcc.for_request(plan).worker_service(state.rollback_patch(ref, {}))
+            if bcc_contract.get('existingWorker'):
+                worker_ref = next(f for f in functions if f['name'].split('/')[-1] == bcc_contract['worker'])
+                report['bccWorkerService'] = state.rollback_patch(worker_ref, {})['serviceConfig']
+            else:
+                report['bccWorkerService'] = cycle.bcc.for_request(plan).worker_service(state.rollback_patch(ref, {}))
         report['additionalPdfFunctions'] = plan.get('additionalPdfFunctions', []) if os.environ.get('PLAN') else []
         report['additionalClubDirectoryFunctions'] = cycle.approved_club_directory_functions(plan) if os.environ.get('PLAN') else []
         report['additionalGroupedFunctions'] = cycle.approved_grouped_functions(plan) if os.environ.get('PLAN') else []
