@@ -45,7 +45,7 @@ function prepareImportOperation(pack,next,input) {
   const diff=previewImportDifferences(pack);
   if(input.sourceType==="winpalme-zip-preview"){
     const review=require("./nap-import-replacement-review").replacementReview(pack,diff);
-    if((review.requiresReplacementConfirmation||pack.existingProtocol&&input.protocolManifest?.hash!==pack.existingProtocol.hash)&&(input.confirmReplacement!==true||input.replacementReviewFingerprint!==pack.previewFingerprint))throw new TypeError("Confirmez le bilan de remplacement actualisé avant enregistrement.");
+    if((review.requiresReplacementConfirmation||pack.existingProtocol&&input.protocolManifest?.hash!==pack.existingProtocol.hash||pack.existingText&&input.textManifest?.hash!==pack.existingText.hash)&&(input.confirmReplacement!==true||input.replacementReviewFingerprint!==pack.previewFingerprint))throw new TypeError("Confirmez le bilan de remplacement actualisé avant enregistrement.");
   }
   if(diff.requiresReplacementConfirmation&&input.confirmReplacement!==true)throw new TypeError("Confirmez explicitement les resultats retires avant remplacement.");
   const assemble=(before,change,first,columns)=>{
