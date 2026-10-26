@@ -25,7 +25,7 @@ Identifier avant toute lecture si la demande concerne le portail, l’espace pub
 
 ## Travail et sécurité
 
-Analyser le code existant avant modification, préserver la compatibilité et les changements utilisateur, éviter les refactorings massifs et conserver l’UTF-8. Agir directement pour une modification simple et localisée. Pour une intervention importante ou sensible : analyser, présenter l’approche et attendre la validation.
+Analyser le code existant avant modification, préserver la compatibilité et les changements utilisateur, éviter les refactorings massifs et conserver l’UTF-8. Agir directement pour une modification simple et localisée. Pour une intervention importante ou sensible, présenter l’approche et obtenir un accord sur le périmètre. Une demande explicite peut déjà apporter cet accord : continuer alors sans le redemander à chaque étape. Un nouveau risque ou un élargissement du périmètre demande un nouvel examen.
 
 Travailler dans le dossier principal partagé. Ne pas créer de worktree sauf nécessité expliquée. Pour une demande de développement LivePalmes, la destination par défaut autorisée est TEST : préparation, commit, PR, intégration après contrôles et déploiement TEST du périmètre demandé sont inclus, sans demander de répéter « sur TEST ». Une demande d’analyse seule ne déclenche aucun développement. La PROD exige une demande explicite et un bilan approuvé dans la discussion Infra. Les opérations sur les données, migrations et envois réels restent soumis à un accord spécifique. Prévenir avant tout test susceptible d’utiliser Firebase de production ou d’écrire des données réelles.
 
@@ -40,6 +40,8 @@ Validation explicite obligatoire avant toute modification concernant :
 - migration, correction, génération ou publication des données de performances ;
 - fichiers générés de `performances/public/data/` ou publication Firebase Storage.
 
+L’accord peut figurer dans la demande si l’opération sensible et son périmètre y sont explicites. Une autorisation de préparation ne vaut pas autorisation de déployer en PROD, de modifier des données ou d’envoyer des messages réels.
+
 Ne jamais inventer une règle sportive ; demander validation en cas de doute métier. Ne jamais modifier directement une sortie générée : corriger sa source ou son générateur.
 
 ## Données et interface
@@ -52,19 +54,28 @@ Concevoir mobile first sans rendre une action essentielle inaccessible. Les acti
 
 ## Vérifications et réponse
 
-- Documentation : relecture ciblée.
-- Modification localisée : syntaxe et test ciblé.
-- Interface : contrôle ordinateur/mobile et smoke test si utile.
-- Architecture, consoles ou plusieurs modules : `node tools/verify-livepalmes.js`.
-- Firebase, droits, PDF, données métier, migration ou publication : validation explicite, vérification globale et tests manuels ciblés.
+- Documentation seule : relecture ciblée (cohérence, UTF-8, liens et descriptions). Aucun déploiement TEST/PROD ni test applicatif manuel pour cette seule retouche.
+- Modification localisée : syntaxe et test du comportement modifié ; interface : contrôle ordinateur/mobile et smoke test lorsque pertinent.
+- Architecture, consoles, plusieurs modules ou code sensible (Firebase, droits, PDF, données métier, migration) : faire exécuter la vérification globale `node tools/verify-livepalmes.js`, en priorité par la CI obligatoire, et les contrôles ciblés nécessaires. Ne pas doubler localement une suite déjà exécutée avec succès par la CI du commit exact ; une relance se justifie par un changement, un échec ou une preuve incompatible.
+- Promotion du commit exact déjà testé : réutiliser les preuves compatibles avec les outils existants. Le seul mot « publication » n’impose pas une nouvelle suite globale manuelle ni une nouvelle recette des parcours inchangés.
+- Conserver les contrôles CI et de publication imposés par les workflows. Une consigne de rapidité n’autorise ni à les contourner ni à modifier leurs sélections manuellement.
 
 Smoke test navigateur : `node tools/verify-livepalmes.js --browser`.
 
 Après chaque modification, indiquer les fichiers touchés, le résumé des changements, les vérifications effectuées et celles restant à faire. Répondre en français, directement et pédagogiquement ; expliquer les choix non évidents, incertitudes et risques.
 
+## Conduite du travail
+
+- Choisir le parcours adapté dans `docs/agents/PUBLICATION.md` et rester dans le besoin demandé. Lire uniquement les sections nécessaires ; les archives de publication servent à une ancienne reprise ou à une exception identifiée.
+- Regrouper code, tests et documentation utile dans une PR par besoin. Une correction nécessaire reste dans la PR ouverte ; après fusion, regrouper le suivi documentaire au lieu de créer une PR par résultat de contrôle.
+- Utiliser les outils en place. Une livraison ordinaire ne déclenche pas un chantier d’amélioration du circuit, un nouveau benchmark, un audit supplémentaire ou un nouveau rapport HTML sans nécessité pour le périmètre demandé.
+- Fournir par défaut un bilan court : résultat, périmètre, preuves de contrôle et éventuel blocage. Garder les détails techniques consultables dans GitHub et le registre ; ne pas demander à Antoine de gérer SHA, fichiers de manifeste ou numéros de runs.
+- Suivre le délai entre la demande et le résultat terminé. Distinguer les attentes externes et le temps d’une étape ; ne pas présenter le temps d’un sous-job comme celui de toute la livraison.
+
 ## Circuit commun aux conversations
 
 - Lire `docs/agents/PUBLICATION.md` avant toute intégration ou publication et récupérer les dernières consignes de `main`. Une ancienne copie locale ne fait pas autorité.
+- `docs/agents/PUBLICATION.md` indique le parcours ; `docs/releases/PROCEDURE.md` décrit son exécution actuelle. Les autorisations historiques restent bornées à leurs versions et n’ajoutent aucune étape par défaut à une livraison courante.
 - Travailler par PR courte depuis le dernier `main`, préserver les autres évolutions, ne jamais remplacer TEST par une branche isolée.
 - TEST commun = commit intégré sur `main`, publié par `livepalmes-test-common.yml`. Les aperçus de PR sont séparés et ne constituent pas une validation de la version regroupée.
 - Tenir `docs/releases/EVOLUTIONS.md` à jour : besoin, PR/commit, état, preuve du déploiement TEST, retour utilisateur. « Déployé sur TEST » ne signifie pas « validé ». Ne jamais inventer une validation utilisateur.
