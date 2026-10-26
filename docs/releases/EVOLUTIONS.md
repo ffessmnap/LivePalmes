@@ -2,6 +2,12 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 26 octobre — Accélération bornée du circuit TEST/PROD
+
+- Besoin et accord Infra : réduire les vérifications répétées, préparer les plans ordinaires sans PR technique par candidat, contrôler les prérequis avant l’accord final et mesurer six builds sur TEST avant adoption. Accord utilisateur « Ok » après proposition des cinq améliorations ; aucun déploiement PROD ni changement des mails autorisé pour ce chantier.
+- Préparation : manifeste inline soumis au validateur existant, preuves CI exactes séparées application/circuit, contrôle documentaire ciblé sans fausse attestation, audit préalable permissions/quotas/dérive en lecture seule et relectures Hosting bornées. Le publisher conserve trois builds pour les anciens plans et n’accepte six qu’avec une mesure positive authentifiée figée dans un nouveau plan.
+- Benchmark TEST fermé aux six lecteurs existants, sources identiques sauvegardées et relues, comparaison trois/six ; aucune invocation, écriture métier, publication Hosting, modification de configuration, IAM ou mails. Les références PR/CI et mesures seront consignées après exécution. Statut : en préparation, aucune validation TEST fonctionnelle inventée ; exclusions habituelles et tous les clubs conservés.
+
 ### 26 octobre — Publication PROD du plan40392319716 réussie, mails actifs conservés
 
 - Publication terminée du candidat applicatif `cbe39bff1d5bb465c29da5c99f5c3b6c740b9432` : [reprise officielle40397517021](https://github.com/ffessmnap/LivePalmes/actions/runs/40397517021) réussie après la première tentative40394740950. Les onze lots validés sont publiés ;31 sources actualisées,82 fonctions conservées strictement et113 ACTIVE, zéro écart. Hosting final `sites/livepalmes/versions/475e3219595049bb`, release `sites/livepalmes/releases/1793047295823000`. Artefacts finaux authentifiés ; les113 révisions sont identiques entre fin de première tentative et fin de reprise, aucune fonction republiée pendant cette reprise.

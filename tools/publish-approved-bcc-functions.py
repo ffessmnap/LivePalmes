@@ -1,7 +1,7 @@
 """Publish the pinned CCI sources after pause, backup and infrastructure checks.
 
 One new private worker; existing configurations are preserved. Three updates
-maximum per batch, then an inventory check before the next batch. No data call,
+per batch by default, six only with measured evidence frozen in the plan. No data call,
 queue change, IAM write or mail invocation is performed by this publisher.
 """
 from concurrent.futures import ThreadPoolExecutor
@@ -46,6 +46,7 @@ def publish(candidate, plan, backup, cycle, archive):
     request = cycle.read(plan / 'request.json'); policy = cycle.bcc.for_request(request)
     names = cycle.approved_bcc_functions(request)
     policy.selection(request, cycle.read(plan / 'selection.json'))
+    parallelism = load('bcc_source_parallelism', Path(__file__).with_name('release-source-parallelism.py')).selected(plan)
     policy.require(cycle.read(os.environ['GOOGLE_APPLICATION_CREDENTIALS'])['project_id'] == 'livepalmes', 'Compte PROD requis')
     report = cycle.read(backup / 'report.json')
     worker = policy.contract()['worker']
@@ -99,12 +100,12 @@ def publish(candidate, plan, backup, cycle, archive):
             policy.require(actual.get('state') == 'ACTIVE' and actual.get('labels', {}).get('livepalmes-commit') == request['candidate'], 'Source CCI non active')
             policy.assert_config(before[full], actual, state)
             return state.identity(actual)
-        for offset in range(0, len(todo), 3):
-            batch = todo[offset:offset + 3]
+        for offset in range(0, len(todo), parallelism):
+            batch = todo[offset:offset + parallelism]
             # Waiting for this batch also prevents later batches after a failure.
-            with ThreadPoolExecutor(max_workers=3) as executor:
+            with ThreadPoolExecutor(max_workers=parallelism) as executor:
                 for identity in executor.map(update, batch): attested[identity['name']] = identity
             current = {f['name']: f for f in state.inventory()}
             pending(names, before, current, attested, request['candidate'], state, policy, expected_worker)
-            print(f'Lot CCI {offset // 3 + 1} actif ({len(batch)} sources) ; exclusions controlees.', flush=True)
+            print(f'Lot CCI {offset // parallelism + 1} actif ({len(batch)} sources) ; exclusions controlees.', flush=True)
     state.check_after(backup, backup / 'after.json', True)
