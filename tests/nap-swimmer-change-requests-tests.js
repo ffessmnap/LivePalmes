@@ -130,7 +130,7 @@ function fixture(options = {}) {
   assert.ok(!visible.nativeBefore); assert.ok(!visible.expectedFingerprint); assert.ok(!visible.nativeResolution);
   const elements = { engagementsSwimmerCorrectionDialog: { showModal: () => {} } };
   for (const key of ["Form", "License", "Mode", "Source", "Id", "IdentityKey", "LastName", "FirstName", "BirthDate", "Sex", "Title", "Context", "ReasonLabel", "Reason", "Submit"]) elements[`engagementsSwimmerCorrection${key}`] = { dataset: {}, focus: () => {} };
-  const ui = { elements, HTMLElement: class {}, engagementSwimmerCorrectionOpener: null, engagementSwimmerCorrectionReview: null,
+  const ui = { elements, HTMLElement: class {}, engagementClubPeopleRequestVersion:0, engagementSwimmerCorrectionOpener: null, engagementSwimmerCorrectionReview: null,
     resetEngagementSwimmerCorrectionDialog: () => { elements.engagementsSwimmerCorrectionForm.dataset = {}; elements.engagementsSwimmerCorrectionLicense.readOnly = false; },
     engagementSwimmerDisplayName: () => "Test", clubDisplayLabel: () => "Club" };
   vm.runInNewContext(browser.slice(browser.indexOf("  function openEngagementSwimmerCorrectionDialog("), browser.indexOf("  async function submitEngagementSwimmerCorrection(")), ui);

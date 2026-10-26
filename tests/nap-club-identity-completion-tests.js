@@ -31,7 +31,7 @@ function licenseFixture(){
     if(sql.includes("GET_LOCK"))return [[{acquired:1}]];
     if(sql.includes("RELEASE_LOCK"))return [[{released:1}]];
     if(sql.includes("FORCE INDEX (livepalmes_license_number_id)"))return [state.owners];
-    if(sql.startsWith("SELECT"))return [[{...state.row}]];
+    if(sql.startsWith("SELECT")){state.nativeReads=(state.nativeReads||0)+1;if(state.transferOnRead&&state.nativeReads===2)state.row.club="107";return [[{...state.row}]];}
     assert.ok(sql.startsWith("UPDATE nageurs SET number=?"),"no season validation, identity or engagement write");
     assert.ok(state.saved,"durable backup before write");
     assert.equal(hash(state.row),state.saved.beforeHash,"raw complete CAS witness");
@@ -82,6 +82,7 @@ async function schemaTests(){
   s=licenseFixture();s.lostResponse=true;await assert.rejects(s.run(),/lost/);await s.run();assert.equal(s.writes,1);
   s=licenseFixture();s.row.number="A-12-76543";await assert.rejects(s.run(),/verrouillée/);assert.equal(s.writes,0);
   s=licenseFixture();await assert.rejects(s.run(s.input,{uid:"club",clubId:"107"}),/club/);assert.equal(s.writes,0);
+  s=licenseFixture();s.transferOnRead=true;await assert.rejects(s.run(),/changé de club/);assert.equal(s.writes,0,"membership is rechecked on the helper's own read before any write");
   s=licenseFixture();s.owners=[{id:9}];await assert.rejects(s.run(),/autre fiche/);assert.equal(s.writes,0);
   s=licenseFixture();await assert.rejects(s.run({...s.input,proposed:{licenseNumber:"A-12-34567",lastName:"CORRIGE"}}),/séparément/);assert.equal(s.writes,0);
   await schemaTests();

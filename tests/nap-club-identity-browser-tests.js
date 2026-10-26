@@ -17,7 +17,7 @@ const events=source.slice(source.indexOf('    elements.engagementsClubPeopleList
    window.global=window;window.LivePalmesEnvironment={sportingDataSource:"nap"};
    window.engagementClubPeople=[{id:"nap-official-7",nativePersonKind:"officials",nativeIdentityEditable:true,nativeStatusEditable:true,napSource:true,napFingerprint:"a".repeat(64),firstName:"Personne",lastName:"FICTIVE",birthDate:"1980-01-01",sex:"",licenseNumber:"",active:true,roles:{teamLeader:true,official:true}}];
    window.elements={};for(const el of document.querySelectorAll('[id^="adminEngagementsSwimmerCorrection"],#adminEngagementsClubPeopleList,#adminEngagementsClubPeopleStatus')){const key=el.id.replace(/^admin/,'');window.elements[key[0].toLowerCase()+key.slice(1)]=el;}
-   window.engagementClubSwimmers=[];window.engagementClubPersonSaving=false;window.engagementSwimmerCorrectionOpener=null;window.engagementSwimmerCorrectionReview=null;window.engagementSwimmerChangeRequestsLoaded=false;
+   window.engagementClubSwimmers=[];window.engagementClubPeopleRequestVersion=0;window.engagementClubPersonSaving=false;window.engagementSwimmerCorrectionOpener=null;window.engagementSwimmerCorrectionReview=null;window.engagementSwimmerChangeRequestsLoaded=false;
    window.updateNativeCompetitionPersonCreationButton=()=>{};window.engagementClubPersonRoleLabel=()=>"Chef d’équipe · Officiel";window.escapeHtml=s=>String(s).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('"','&quot;');
    window.engagementSwimmerDisplayName=s=>[s.firstName,s.lastName].join(" ");window.clubDisplayLabel=()=>"Club fictif";window.setFormPending=()=>{};window.renderEngagementClubSwimmersDirectory=()=>{};
    window.testCalls=[];window.callFunction=async(name,payload)=>{
@@ -54,6 +54,16 @@ const events=source.slice(source.indexOf('    elements.engagementsClubPeopleList
   await page.locator('#adminEngagementsSwimmerCorrectionSubmit').click();
   await page.waitForFunction(()=>window.testCalls.length===3&&!document.querySelector('#adminEngagementsSwimmerCorrectionDialog').open&&!document.querySelector('#adminEngagementsSwimmerCorrectionForm').dataset.initialIdentity);
   calls=await page.evaluate(()=>window.testCalls);assert.equal(calls[2].payload.completeLicense,true);assert.deepEqual(calls[2].payload.proposed,{licenseNumber:'A-12-76543'});
+  if(width===1440){
+   await page.evaluate(()=>{window.callFunction=async(name,payload)=>new Promise(resolve=>{window.lateReply=resolve;});openEngagementSwimmerCorrectionDialog({...window.engagementClubPeople[0],source:'officials'},'request');});
+   await page.locator('#adminEngagementsSwimmerCorrectionSex').selectOption('F');
+   await page.locator('#adminEngagementsSwimmerCorrectionSubmit').click();
+   await page.waitForFunction(()=>!!window.lateReply);
+   await page.evaluate(()=>{window.engagementClubPeopleRequestVersion++;const old=window.engagementClubPeople[0];window.engagementClubPeople=[];window.lateReply({person:{...old,sex:'F'}});});
+   await page.evaluate(()=>new Promise(resolve=>setTimeout(resolve,0)));
+   assert.equal(await page.evaluate(()=>window.engagementClubPeople.length),0,'late completion cannot repopulate another club');
+   await page.evaluate(()=>closeEngagementSwimmerCorrectionDialog());
+  }
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,'no horizontal page overflow');
   await page.close();console.log(`Club identity ${width}px: real pencil, missing licence completion without request, locked number, national request and swimmer licence-only passed offline.`);
  }}finally{await browser.close();}

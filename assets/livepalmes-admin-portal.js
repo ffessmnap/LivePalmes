@@ -13728,6 +13728,7 @@
   async function submitEngagementSwimmerCorrection() {
     if (!elements.engagementsSwimmerCorrectionForm?.reportValidity()) return;
     const correctionSession=elements.engagementsSwimmerCorrectionForm.dataset.correctionSession;
+    const clubScopeVersion=engagementClubPeopleRequestVersion;
     const mode = elements.engagementsSwimmerCorrectionMode?.value || "request";
     const direct = mode === "direct";
     const review = mode === "review";
@@ -13817,6 +13818,7 @@
           ? await callFunction("saveEngagementClubPerson",{personId:payload.personId,expectedFingerprint:payload.expectedFingerprint,patch:payload.proposed})
           : await callFunction(direct ? "updateEngagementNationalSwimmerIdentity" : "requestEngagementClubSwimmerChange", payload);
       if(payload.personId) {
+        if(clubScopeVersion!==engagementClubPeopleRequestVersion||elements.engagementsSwimmerCorrectionForm.dataset.correctionSession!==correctionSession||!elements.engagementsSwimmerCorrectionDialog?.open)return;
         const changedPerson=result.person||result.result?.person;
         if(changedPerson)engagementClubPeople=engagementClubPeople.filter(person=>person.id!==changedPerson.id).concat(changedPerson);
         renderEngagementClubPeople();engagementSwimmerChangeRequestsLoaded=false;closeEngagementSwimmerCorrectionDialog();
@@ -13824,6 +13826,7 @@
         return;
       }
       if(payload.completeLicense) {
+        if(clubScopeVersion!==engagementClubPeopleRequestVersion||elements.engagementsSwimmerCorrectionForm.dataset.correctionSession!==correctionSession||!elements.engagementsSwimmerCorrectionDialog?.open)return;
         const index=engagementClubSwimmers.findIndex(swimmer=>String(swimmer.id||swimmer.swimmerIndexId)===String(payload.swimmerId));
         if(index>=0)engagementClubSwimmers[index]={...engagementClubSwimmers[index],...result.swimmer};
         renderEngagementClubSwimmersDirectory();closeEngagementSwimmerCorrectionDialog();
@@ -13857,6 +13860,7 @@
         }
       }
     } catch (error) {
+      if((payload.personId||payload.completeLicense)&&(clubScopeVersion!==engagementClubPeopleRequestVersion||elements.engagementsSwimmerCorrectionForm.dataset.correctionSession!==correctionSession||!elements.engagementsSwimmerCorrectionDialog?.open))return;
       if(String(error?.code||"").endsWith("failed-precondition")||String(error?.code||"").endsWith("resource-exhausted"))delete elements.engagementsSwimmerCorrectionForm.dataset.historicalClubPayload;
       setFormPending(elements.engagementsSwimmerCorrectionForm, false);
       if (elements.engagementsSwimmerCorrectionMessage) {
