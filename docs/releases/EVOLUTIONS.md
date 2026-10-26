@@ -2,6 +2,11 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 26 octobre — Sous-texte du protocole public réduit à Résultats
+
+- Demande explicite d’Antoine : sous le PDF des résultats, afficher seulement « Résultats », sans la description technique de validation WinPalme. Changement de présentation ciblé sur les documents de catégorie résultats ; titre, PDF, descriptions des autres documents et données inchangés, zéro lecture supplémentaire.
+- Contrôles ciblés syntaxe/calendrier et navigateur ordinateur/mobile avec document résultats et règlement. Livraison TEST en interface seule à renseigner ; recette utilisateur de la version regroupée en attente, PROD exclue.
+
 ### 26 octobre — Présentation compacte des temps des relayeurs
 
 - Accord explicite d’Antoine sur `Prénom NOM [split] temps cumulé`, les temps alignés même avec un nom long. Suppression des libellés visibles et de la phrase explicative. Présentation seule sur TEST ; aucun calcul, lecteur serveur ou résultat modifié, zéro lecture supplémentaire à l’ouverture ou aux actions.
