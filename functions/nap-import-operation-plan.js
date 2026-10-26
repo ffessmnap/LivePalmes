@@ -43,6 +43,10 @@ function previewImportDifferences(pack) {
 function prepareImportOperation(pack,next,input) {
   if(!input||input.expectedFingerprint!==pack.expectedFingerprint||input.previewFingerprint!==pack.previewFingerprint)throw new TypeError("L'aperçu a change. Recommencez avant confirmation.");
   const diff=previewImportDifferences(pack);
+  if(input.sourceType==="winpalme-zip-preview"){
+    const review=require("./nap-import-replacement-review").replacementReview(pack,diff);
+    if((review.requiresReplacementConfirmation||pack.existingProtocol&&input.protocolManifest?.hash!==pack.existingProtocol.hash)&&(input.confirmReplacement!==true||input.replacementReviewFingerprint!==pack.previewFingerprint))throw new TypeError("Confirmez le bilan de remplacement actualisé avant enregistrement.");
+  }
   if(diff.requiresReplacementConfirmation&&input.confirmReplacement!==true)throw new TypeError("Confirmez explicitement les resultats retires avant remplacement.");
   const assemble=(before,change,first,columns)=>{
     positiveId(first);

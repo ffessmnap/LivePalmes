@@ -113,6 +113,7 @@ function runUnitTests() {
     "nap-import-replacement-review-tests.js",
     "nap-import-operation-plan-tests.js",
     "nap-import-write-tests.js",
+    "nap-import-zip-write-tests.js",
     "nap-import-client-tests.js",
     "nap-import-callable-tests.js",
     "nap-import-history-tests.js",
