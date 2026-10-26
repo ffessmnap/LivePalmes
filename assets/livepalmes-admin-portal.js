@@ -9837,6 +9837,11 @@
     }
   }
 
+  function canDownloadEngagementOpenWaterTxt(competition) {
+    return competition?.napSource === true && (global.LivePalmesEnvironment?.isTest === true
+      || String(competition.id).replace(/^legacy-nap-/, "") === "5136");
+  }
+
   function renderEngagementDocuments(competition = selectedEngagementCompetition || {}) {
     const adminMode = isEngagementAdminMode();
     if (elements.engagementsNotificationPreviewActions) elements.engagementsNotificationPreviewActions.hidden =
@@ -9847,16 +9852,16 @@
     const documentsHead = elements.engagementsDocumentsTitle?.closest(".admin-engagements-documents-head");
     if (documentsHead) documentsHead.hidden = !adminMode;
     if (elements.engagementsGenerateTxtExportButton) {
-      elements.engagementsGenerateTxtExportButton.disabled = openWater && !global.LivePalmesEnvironment?.isTest;
+      elements.engagementsGenerateTxtExportButton.disabled = openWater && !canDownloadEngagementOpenWaterTxt(competition);
       elements.engagementsGenerateTxtExportButton.title = openWater
-        ? (global.LivePalmesEnvironment?.isTest ? "Export manuel expérimental à vérifier dans WinPalme." : "Export eau libre en attente de validation du format TXT.")
+        ? (canDownloadEngagementOpenWaterTxt(competition) ? "Téléchargement manuel de l’export eau libre. Aucun envoi automatique." : "Export eau libre en attente de validation pour cette compétition.")
         : "";
     }
     if (elements.engagementsDocumentsTitle) elements.engagementsDocumentsTitle.textContent = adminMode ? "GED" : "Documents";
     if (elements.engagementsDocumentsSummary) {
       elements.engagementsDocumentsSummary.textContent = adminMode
         ? openWater
-          ? (global.LivePalmesEnvironment?.isTest ? "Export TXT eau libre expérimental : vérifiez le fichier dans WinPalme. Aucun envoi automatique." : "Gérez les documents destinés aux clubs. L’export TXT eau libre sera ajouté après validation de son format.")
+          ? (canDownloadEngagementOpenWaterTxt(competition) ? "Gérez les documents destinés aux clubs et téléchargez l’export TXT eau libre. Aucun envoi automatique." : "Gérez les documents destinés aux clubs. L’export TXT eau libre de cette compétition reste en attente de validation.")
           : "Gérez les documents destinés aux clubs et téléchargez les fichiers techniques."
         : "Consultez et téléchargez les documents utiles de la compétition.";
       elements.engagementsDocumentsSummary.dataset.tone = "";
@@ -12159,9 +12164,9 @@
 
   async function generateEngagementAdminTxtExport() {
     if (!selectedEngagementCompetitionId || !isEngagementAdminMode()) return;
-    if (engagementCompetitionType(selectedEngagementCompetition) === "openWater" && !global.LivePalmesEnvironment?.isTest) {
+    if (engagementCompetitionType(selectedEngagementCompetition) === "openWater" && !canDownloadEngagementOpenWaterTxt(selectedEngagementCompetition)) {
       if (elements.engagementsDocumentsSummary) {
-        elements.engagementsDocumentsSummary.textContent = "L’export TXT eau libre sera disponible après validation de son format.";
+        elements.engagementsDocumentsSummary.textContent = "L’export TXT eau libre de cette compétition reste en attente de validation.";
       }
       return;
     }

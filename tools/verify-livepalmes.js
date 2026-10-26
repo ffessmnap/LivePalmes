@@ -122,6 +122,7 @@ function runUnitTests() {
     "nap-import-history-tests.js",
     "nap-import-status-results-tests.js",
     "nap-winpalme-results-tests.js",
+    "winpalme-manual-download-tests.js",
     "winpalme-zip-tests.js",
     "nap-performance-administration-tests.js",
     "nap-performance-callable-tests.js",

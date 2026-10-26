@@ -32,10 +32,10 @@ vm.createContext(context);vm.runInContext(chunks.join("\n"),context);
   await assert.rejects(context.exports.generateEngagementCompetitionTxtExport(request),e=>e.code==="failed-precondition" && /correspondance/.test(e.message));
   waterError=false;
   const portalSource=fs.readFileSync("assets/livepalmes-admin-portal.js","utf8");
-  const uiCode=portalSource.slice(portalSource.indexOf("  async function generateEngagementAdminTxtExport()"),portalSource.indexOf("  async function prepareEngagementOpeningEmails()"));
+  const uiCode=portalSource.match(/^  function canDownloadEngagementOpenWaterTxt\([^]*?^  \}/m)[0]+"\n"+portalSource.slice(portalSource.indexOf("  async function generateEngagementAdminTxtExport()"),portalSource.indexOf("  async function prepareEngagementOpeningEmails()"));
   for(const isTest of [true,false]) {
     let downloads=0,calls=0;
-    const ui={global:{LivePalmesEnvironment:{isTest}},selectedEngagementCompetitionId:"4982",selectedEngagementCompetition:{competitionType:"openWater"},isEngagementAdminMode:()=>true,engagementCompetitionType:c=>c.competitionType,elements:{engagementsGenerateTxtExportButton:{disabled:false},engagementsDocumentsSummary:{}},callFunction:async()=>{calls++;return {txtBase64:"VEVTVA==",entryCount:1};},downloadBase64File:()=>downloads++,renderEngagementDocuments:()=>{}};
+    const ui={global:{LivePalmesEnvironment:{isTest}},selectedEngagementCompetitionId:"4982",selectedEngagementCompetition:{id:"4982",napSource:true,competitionType:"openWater"},isEngagementAdminMode:()=>true,engagementCompetitionType:c=>c.competitionType,elements:{engagementsGenerateTxtExportButton:{disabled:false},engagementsDocumentsSummary:{}},callFunction:async()=>{calls++;return {txtBase64:"VEVTVA==",entryCount:1};},downloadBase64File:()=>downloads++,renderEngagementDocuments:()=>{}};
     vm.createContext(ui);vm.runInContext(uiCode,ui);await ui.generateEngagementAdminTxtExport();
     assert.equal(calls,isTest?1:0);assert.equal(downloads,isTest?1:0);assert.equal(ui.elements.engagementsGenerateTxtExportButton.disabled,false);
   }
