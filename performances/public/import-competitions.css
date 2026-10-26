@@ -1126,6 +1126,8 @@
 .competition-import-compact .competition-import-dialog-actions { position: static; padding: .3rem; margin: 0; }
 .competition-import-compact .competition-import-dialog-actions button { width: auto; padding: .3rem .7rem; min-height: 0; }
 .import-review-compact { font-size: .9rem; }
+.import-review-compact [hidden] { display: none !important; }
+.import-review-compact .import-relay-problems { border-color: #b87900; background: #fff4d6; color: #684700; }
 .import-review-workspace { display: grid; grid-template-columns: 260px minmax(0, 1fr); border: 1px solid #d6dfda; border-radius: .4rem; }
 .import-review-nav { padding: .5rem; border-right: 1px solid #d6dfda; background: #f3f6f5; min-width: 0; }
 .import-review-pane { padding: .5rem .9rem; min-width: 0; }

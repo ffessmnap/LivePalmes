@@ -4,6 +4,8 @@
 
 ## Import ZIP compact et exclusions — 26 octobre 2026
 
+Complément relais : repérer le compteur et le récapitulatif orange dès l’ouverture, ouvrir directement le bon relais, vérifier les positions manquantes et les diagnostics indépendants. Sur fixtures : temps 00:00.00 / 0:00:00.00, quatre emplacements vides/Non précisé → exclusion automatique tracée sans alerte ni accord manuel ; temps absent, 00:00.01 ou un membre nommé → contrôles conservés. Vérifier le journal et le refus d’un import entièrement vide, ainsi que les gardes TXT ordinaires. Aucun import réel pendant la recette.
+
 Ordinateur uniquement à la demande d’Antoine, fixtures hors réseau : navigation des groupes, un dossier visible, profils en tableau, ouverture de création en orange/rouge après recherche sans écrire, licence et doublons toujours contrôlés. Ignorer une course avec passages, un nageur avec ses relais liés (courses des autres membres conservées), ou un relais incomplet avec son premier temps ; réintégrer puis actualiser. Vérifier que les alertes/messages ne contiennent plus les lignes ignorées, mais que les défauts indépendants continuent de bloquer. Confirmer séparément les exclusions et le remplacement ; toute modification invalide ces deux accords, le mail et le bouton d’écriture. Ancien résultat exclu visible dans les retraits ; import totalement vide refusé. Journal simulé conservant exclusions et sources, PDF/TXT originaux complets signalés dans la confirmation. Recherche des membres d’un relais par position conservée. Aucune création de nageur, import réel ou écriture Storage pendant la recette.
 
 ## Premiers relayeurs et détail public — 26 octobre 2026
