@@ -2,6 +2,10 @@
 
 <!-- description: Checklist de tests manuels à exécuter avant une publication ou après une modification sensible. -->
 
+## Historique régional des demandes de comptes — 26 octobre 2026
+
+Sur fixtures hors réseau : À traiter ne charge pas l’historique ; Historique affiche validations/refus avec date/heure de Paris et auteur, y compris profil supprimé (adresse conservée), motif de refus échappé, aucune action de modification. Vérifier le curseur date+identifiant pour deux traitements à la même heure, 25 lignes/page, un seul appel groupé d’auteurs, filtre régional imposé côté serveur et refus club/anonyme/région sans périmètre avant toute lecture de demandes. Tester retour sous une minute, actualisation, double clic, erreur réseau/index, déconnexion et réponse ancienne après changement de compte. Contrôler 1440/390/320 px, noms et adresses longs, usage clavier et tactile. Tests : `tests/access-request-history-tests.js`, `tests/access-request-history-browser-tests.js` et `tests/account-history-test-indexes-tests.js` ; aucune création/validation réelle de compte ni mail de recette. Sur TEST, vérifier en lecture seule les anciennes demandes régionales depuis le lien mail habituel et la version regroupée ; retour utilisateur attendu avant validation.
+
 ## Import ZIP compact et exclusions — 26 octobre 2026
 
 Complément relais : repérer le compteur et le récapitulatif orange dès l’ouverture, ouvrir directement le bon relais, vérifier les positions manquantes et les diagnostics indépendants. Sur fixtures : temps 00:00.00 / 0:00:00.00, quatre emplacements vides/Non précisé → exclusion automatique tracée sans alerte ni accord manuel ; temps absent, 00:00.01 ou un membre nommé → contrôles conservés. Vérifier le journal et le refus d’un import entièrement vide, ainsi que les gardes TXT ordinaires. Aucun import réel pendant la recette.

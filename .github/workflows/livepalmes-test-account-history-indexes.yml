@@ -1,0 +1,59 @@
+name: Ajouter les deux index TEST de l’historique des comptes
+on:
+  workflow_dispatch:
+    inputs:
+      expected_commit:
+        description: Commit main exact autorisé
+        required: true
+        type: string
+      confirmation:
+        description: Saisir account-history-indexes-test
+        required: true
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: livepalmes-test-backend
+  cancel-in-progress: false
+jobs:
+  indexes:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: firebase-test
+    steps:
+      - name: Vérifier le périmètre autorisé
+        env:
+          CONFIRMATION: ${{ inputs.confirmation }}
+          EXPECTED_COMMIT: ${{ inputs.expected_commit }}
+        run: |
+          test "$CONFIRMATION" = "account-history-indexes-test"
+          test "$EXPECTED_COMMIT" = "$GITHUB_SHA"
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.expected_commit }}
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+      - uses: google-github-actions/setup-gcloud@v3
+      - name: Tester la sélection fermée des index
+        run: node tests/account-history-test-indexes-tests.js
+      - name: Utiliser uniquement le compte de service TEST
+        env:
+          TEST_CREDENTIALS: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_TEST_BACKEND }}
+        run: |
+          umask 077
+          credentials_file="$RUNNER_TEMP/account-history-indexes-test.json"
+          printf '%s' "$TEST_CREDENTIALS" > "$credentials_file"
+          export GOOGLE_APPLICATION_CREDENTIALS="$credentials_file"
+          echo "GOOGLE_APPLICATION_CREDENTIALS=$credentials_file" >> "$GITHUB_ENV"
+          node -e 'if(JSON.parse(require("fs").readFileSync(process.env.GOOGLE_APPLICATION_CREDENTIALS)).project_id!=="livepalmes-test")throw Error("Compte TEST requis")'
+          gcloud auth activate-service-account --key-file="$credentials_file" --project=livepalmes-test >/dev/null
+      - name: Ajouter les deux index sans suppression ni écriture métier
+        run: node tools/account-history-test-indexes.js --apply-test
+      - uses: actions/upload-artifact@v7
+        with:
+          name: account-history-index-proof
+          path: account-history-index-proof.json
+          if-no-files-found: error

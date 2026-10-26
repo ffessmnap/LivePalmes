@@ -10,7 +10,7 @@
     <link rel="stylesheet" href="styles.css?v=20260529-public-home">
     <link id="adminPerformanceStyles" rel="stylesheet" href="performances/public/styles.css?v=20260613-delete-record-draft-1" disabled>
     <link id="adminImportStyles" rel="stylesheet" href="performances/public/import-competitions.css?v=20261026-import-relay-alerts-1" disabled>
-    <link rel="stylesheet" href="assets/livepalmes-admin-portal.css?v=20261024-journal-1">
+    <link rel="stylesheet" href="assets/livepalmes-admin-portal.css?v=20261026-access-history-1">
     <link rel="stylesheet" href="assets/livepalmes-license-administration.css?v=20260902-license-control-1">
     <link rel="stylesheet" href="assets/livepalmes-whatsapp-qr.css?v=20260831-whatsapp-qr-1">
     <link rel="stylesheet" href="assets/livepalmes-portal-appearance.css?v=20260920-appearance-4">
@@ -1954,8 +1954,20 @@
 
               <div id="adminEngagementsAccessRequestsPanel" class="admin-engagements-tab-panel admin-engagements-grid" data-engagements-tab-panel="accessRequests" hidden>
                 <section class="admin-engagements-card" aria-label="Demandes d'acc&egrave;s">
+                  <div class="admin-portal-actions admin-access-requests-views" role="group" aria-label="Afficher les demandes">
+                    <button type="button" class="ghost-button" data-access-requests-show-pending aria-pressed="true">À traiter</button>
+                    <button type="button" class="ghost-button" data-access-requests-show-history aria-pressed="false">Historique</button>
+                    <button type="button" class="ghost-button" data-access-requests-refresh>Actualiser</button>
+                  </div>
+                  <div data-access-requests-pending>
                   <p id="adminEngagementsAccessRequestsStatus" class="admin-portal-message" data-tone="loading">Demandes en attente.</p>
                   <div id="adminEngagementsAccessRequestsList" class="admin-engagements-request-list" aria-live="polite"></div>
+                  </div>
+                  <section data-access-requests-history aria-label="Historique des demandes d’accès" hidden>
+                    <p data-access-requests-history-status class="admin-portal-message" role="status"></p>
+                    <div data-access-requests-history-list class="admin-engagements-request-list"></div>
+                    <button type="button" class="ghost-button" data-access-requests-next hidden>Voir les traitements précédents</button>
+                  </section>
                   <dialog id="adminEngagementsAccessRequestEditDialog" class="admin-engagements-create-dialog admin-access-request-review-dialog" aria-labelledby="adminEngagementsAccessRequestEditTitle">
                   <form id="adminEngagementsAccessRequestEditForm" class="admin-engagements-access-request-edit admin-access-form">
                     <header class="admin-access-request-review-head">
@@ -2853,7 +2865,8 @@
   <script src="assets/livepalmes-swimmer-clubs.js?v=20261024-national-history-1"></script>
   <script src="assets/livepalmes-activity-journal.js?v=20261024-journal-1"></script>
   <script src="assets/livepalmes-import-source.js?v=20261026-import-text-1"></script>
-  <script src="assets/livepalmes-admin-portal.js?v=20261026-import-relay-alerts-1"></script>
+  <script src="assets/livepalmes-access-request-history.js?v=20261026-1"></script>
+  <script src="assets/livepalmes-admin-portal.js?v=20261026-access-history-1"></script>
     <script src="assets/livepalmes-license-administration.js?v=20261010-license-partial-validation-4"></script>
     <script src="assets/livepalmes-admin-calendar-events.js?v=20261025-documents-2mo-1"></script>
     <script src="assets/public/livepalmes-home-model.js?v=20261014-home-2"></script>
