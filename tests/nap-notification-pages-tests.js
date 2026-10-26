@@ -20,7 +20,7 @@ async function run(){
   assert.equal(exports.jobs.length,2);assert.equal(txt,1);assert.equal(officials,1);assert.equal(exports.done,true);
   assert.equal(exports.jobs[0].attachments[0].size,9);assert.equal(exports.jobs[0].attachments[0].sha256.length,64);
   assert.ok(!Object.hasOwn(exports.jobs[0].attachments[0],'buffer'),'no file bytes retained in Firestore');
-  await page({kind:'closure',phase:'exports',cursor:''},{...competition,competitionType:'openWater'},services);
+  await page({kind:'closure',phase:'exports',cursor:''},{...competition,id:'legacy-nap-5136',competitionType:'openWater'},services);
   assert.equal(txt,1,'water TXT stays deferred');assert.equal(officials,2);
   entries[0].swimmers.push({});
   await assert.rejects(page({kind:'closure',phase:'clubs',cursor:'5',sourceHash:first.sourceHash},competition,services),/change/);
