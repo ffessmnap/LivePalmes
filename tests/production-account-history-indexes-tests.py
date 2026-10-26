@@ -47,6 +47,7 @@ class IndexTests(unittest.TestCase):
                 m.main('inspect',str(Path(temporary)/'receipt'))
                 self.assertEqual(network.call_count,1)
                 self.assertEqual(network.call_args.args[0].get_method(),'GET')
+                self.assertEqual(network.call_args.args[0].full_url,m.URL+'?pageSize=0')
                 receipt=json.loads((Path(temporary)/'receipt/index-receipt.json').read_text())
                 self.assertEqual(receipt['created'],0)
                 network.reset_mock()
