@@ -91,6 +91,7 @@ jobs:
           python tests/all-validated-publication-tests.py
           python tests/production-resumed-audit-tests.py
           python tests/production-account-history-indexes-tests.py
+          python tests/validated-20261026-publication-tests.py
           node tests/nap-national-documents-callable-tests.js
           python tests/production-release-source-tests.py
           node tests/production-backup-crypto-tests.js

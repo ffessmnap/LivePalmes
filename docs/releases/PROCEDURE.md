@@ -152,6 +152,12 @@ Préparer et présenter un nouveau preflight officiel ; aucune reprise automatiq
 
 ## 3. Publier PROD après accord
 
+### Préparation fermée du 26 octobre — mails actifs conservés
+
+La demande `.github/releases/20261026-validated.json` est limitée à la paire PROD `8b868c7c1382698ee1d04274fcc5b9a56a95d274` / candidat TEST `cbe39bff1d5bb465c29da5c99f5c3b6c740b9432`, preuve TEST40382239447 et base PROD40239558546. Son contrat indépendant épinglé conserve les anciens plans. Sélection31 par dépendances et82 fonctions conservées ; quatre divergences antérieures sont consignées sans nouvelle dépendance modifiée. Le visa national des identités est inclus, sources seules, configurations complètes préservées, lots de trois, inventaire113 sans création/suppression de service. Aucun traitement mail, scheduler ou worker actualisé : pas de coupure prévue, réglage actif all/révision7 contrôlé par empreinte intégrale, file/scheduler/IAM privé inchangés. Toute dérive bloque.
+
+L'historique des comptes exige séparément deux index `engagementAccessRequests`, scope COLLECTION : status ASC/resolvedAt DESC/__name__ DESC et regionId ASC/status ASC/resolvedAt DESC/__name__ DESC. Le workflow dédié est en inspection par défaut. Après accord explicite du plan final seulement, mode apply avec confirmation `approved-production-account-history-two-indexes`, artefact preflight réussi/main/tentative1 authentifié et contrat exact des deux définitions. Ajouter seulement les manquants, conserver les existants, attendre READY ; aucun DELETE, document/règle/IAM ou réglage mail modifié. Le garde de publication exige READY avant sauvegarde/publication et conserve l'empreinte des deux index. Le rollback de code ne supprime pas ces index additifs. La préparation et le preflight ne créent aucun index et ne valent pas accord de déploiement ou d'import réel.
+
 ### Version regroupée validée le25octobre — préparation suivante
 
 La demande `20261025-all-validated.json` vise uniquement `8b868c7c` / TEST40231918857. Accord Infra sur les cinq lots import : « Oui je valide tout ». Le nouveau contrat est épinglé séparément ; il ne réécrit ni l'ancien contrat C93 ni le plan40209504269. Le choix de politique dépend de l'un de ces deux candidats exacts, puis toutes les références, empreintes, sélections et transitions sont contrôlées. Aucune référence libre ou simple indicateur de réussite ne crée une exception.
