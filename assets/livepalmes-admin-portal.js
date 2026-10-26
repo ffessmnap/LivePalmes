@@ -13547,6 +13547,14 @@
         resolutionNote,
         ...(options.proposed && typeof options.proposed === "object" ? { proposed: options.proposed } : {})
       });
+      const correctedPerson=result?.result?.person;
+      if(correctedPerson){
+        engagementNationalPeopleLoaded=false;
+        if(engagementClubPeople.some(person=>person.id===correctedPerson.id&&String(person.clubId)===String(correctedPerson.clubId))){
+          engagementClubPeople=engagementClubPeople.map(person=>person.id===correctedPerson.id?correctedPerson:person);
+          renderEngagementClubPeople();
+        }
+      }
       portalPendingOverviewLoaded = false;
       engagementSwimmerChangeRequestsLoaded = false;
       engagementNationalSwimmersLoaded = false;

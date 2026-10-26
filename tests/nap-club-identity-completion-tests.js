@@ -1,6 +1,7 @@
 "use strict";
 const assert=require("node:assert/strict");
 const fs=require("node:fs");
+const vm=require("node:vm");
 const {plan}=require("../functions/nap-club-identity-fields");
 const {classify}=require("../assets/livepalmes-club-identity");
 const {person}=require("../functions/nap-club-people");
@@ -70,6 +71,16 @@ async function schemaTests(){
   const second=await schema.approvedOfficialIdentitySchema(pool,{confirmation,phase:"prepare"});await schema.approvedOfficialIdentitySchema(pool,{confirmation,phase:"apply",planHash:second.planHash,schemaHash:second.schemaHash});assert.equal(writes,1,"idempotent, no row rewrite");
 }
 (async()=>{
+  const browser=fs.readFileSync("assets/livepalmes-admin-portal.js","utf8");
+  const start=browser.indexOf("  async function resolveEngagementSwimmerChangeRequest(");
+  const resolver=browser.slice(start,browser.indexOf("  function openEngagementAccessRequestRejectDialog(",start));
+  for(const clubId of ["106","107"]){
+    let rendered=0;const corrected={id:"nap-official-7",clubId:"106",lastName:"CORRIGE"};
+    const ui={elements:{},engagementSwimmerChangeRequests:[],engagementClubPeople:[{id:corrected.id,clubId,lastName:"AVANT"}],engagementNationalPeopleLoaded:true,
+      canDeleteEngagementCompetitionDirectly:()=>true,global:{confirm:()=>true},callFunction:async()=>({result:{person:corrected}}),renderEngagementClubPeople:()=>rendered++,invalidateEngagementClubSwimmersCache:()=>{},loadEngagementSwimmerChangeRequests:async()=>{},loadPortalPendingOverview:async()=>{}};
+    vm.createContext(ui);vm.runInContext(resolver,ui);await ui.resolveEngagementSwimmerChangeRequest("request","approved");
+    assert.equal(ui.engagementNationalPeopleLoaded,false);assert.equal(ui.engagementClubPeople[0].lastName,clubId==="106"?"CORRIGE":"AVANT");assert.equal(rendered,clubId==="106"?1:0);
+  }
   const conn={execute:async({sql})=>sql.includes("FROM officiels")?[[original]]:[[]]};
   const proposal=await requests.prepareRequest(conn,{personId:current.id,expectedFingerprint:current.napFingerprint,proposed:{lastName:"CORRIGE"},reason:"Erreur de saisie"},{uid:"club",clubId:"106"});
   assert.equal(proposal.requestType,"person-change");
