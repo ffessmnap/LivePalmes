@@ -997,6 +997,12 @@
   let engagementAccessRequests = [];
   let engagementAccessRequestsLoaded = false;
   let engagementAccessRequestsLoading = false;
+  const accessRequestHistory = global.LivePalmesAccessRequestHistory?.create({
+    root: document.querySelector("#adminEngagementsAccessRequestsPanel"), callFunction,
+    canReview: canReviewEngagementAccessRequests,
+    scopeKey: () => JSON.stringify([activeAuthUid, currentAccessProfile?.regionId, currentAccessProfile?.capabilities, currentAccessProfile?.accessScopes]),
+    loadPending: loadEngagementAccessRequests, closeEditor: closeEngagementAccessRequestEditForm
+  });
   let activeEngagementNationalTab = "deletions";
   let engagementNationalClubs = [];
   let engagementNationalClubsLoaded = false;
@@ -3838,6 +3844,7 @@
       resetEngagementClubData();
     }
     currentAccessProfile = user;
+    accessRequestHistory?.onProfileChange();
     void loadPortalClubCodeReference();
     preloadAccessDirectoryFirestore();
     applyPortalHomeForProfile();
@@ -12794,7 +12801,7 @@
       return;
     }
     if (!engagementAccessRequests.length) {
-      elements.engagementsAccessRequestsList.innerHTML = '<p class="admin-engagements-empty">Aucune demande d\'accès en attente.</p>';
+      elements.engagementsAccessRequestsList.innerHTML = '<p class="admin-engagements-empty">Aucune demande d\'accès en attente. Consultez l’Historique pour retrouver les demandes déjà traitées.</p>';
       closeEngagementAccessRequestEditForm();
       return;
     }
@@ -12836,6 +12843,7 @@
   }
 
   async function loadEngagementAccessRequests({ force = false, silent = false } = {}) {
+    accessRequestHistory?.onOpen();
     if (!canReviewEngagementAccessRequests() || engagementAccessRequestsLoading) return;
     if (engagementAccessRequestsLoaded && !force) return;
     engagementAccessRequestsLoading = true;
@@ -12962,6 +12970,7 @@
         ...(approve && correctedRequest ? { correctedRequest } : {}),
         ...(!approve ? { resolutionReason: String(resolutionReason || "").trim() } : {})
       });
+      accessRequestHistory?.invalidate();
       if (approve && result.access?.email) {
         await global.firebase?.auth?.().sendPasswordResetEmail(result.access.email, {
           url: `${global.LivePalmesEnvironment.authOrigin}/portail.html`,
@@ -16836,9 +16845,11 @@
 
   function updateView(status = {}) {
     const signedIn = Boolean(status.signedIn);
+    if (!signedIn) accessRequestHistory?.reset();
     const authReady = status.ready === true;
     const authUid = global.firebase?.auth?.().currentUser?.uid || "";
     if (activeAuthUid && activeAuthUid !== authUid) {
+      accessRequestHistory?.reset();
       clearEngagementClubWorkspaceSessionCaches();
       clearEngagementClubSwimmersSessionCaches();
       clearActiveEngagementClub();
