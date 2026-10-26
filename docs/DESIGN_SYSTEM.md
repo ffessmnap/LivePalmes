@@ -2,6 +2,8 @@
 
 <!-- description: Référence du langage visuel, des composants d’interface et des règles responsive déjà présents dans LivePalmes. -->
 
+Dans les documents d’une compétition publique, le sous-texte d’un document de catégorie résultats affiche seulement « Résultats ». Sa description technique n’est pas rendue ; titre et lien de téléchargement sont conservés. Les descriptions des autres catégories restent affichées.
+
 ## Détail des relais publics — 26 octobre 2026
 
 Dans les résultats de compétition, un `details/summary` natif « Relayeurs et temps » occupe une ligne pleine sous l’équipe. La liste présente `1. Prénom NOM [split] temps cumulé`, sans libellés visibles ni phrase explicative. Les trois colonnes partagent leurs largeurs : noms souples, deux colonnes de temps sans retour à la ligne, alignées à droite en chiffres tabulaires ; largeur maximale de 620 px. Un nom long se replie sans déplacer les temps des autres lignes. Les libellés accessibles distinguent les deux temps ; une valeur absente devient `—`. Les liens et confirmations de fiche nageur existants sont conservés. Détails repliés par défaut, accessibles au clavier et au toucher ; total du relais en haut de sa ligne. Aucune nouvelle couleur ou navigation globale.
