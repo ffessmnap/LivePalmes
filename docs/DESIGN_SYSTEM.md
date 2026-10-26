@@ -4,6 +4,8 @@
 
 ## Aide au contrôle des imports — 25 octobre 2026
 
+Évolution du 26 octobre : le bouton principal du contrôle ZIP devient « Enregistrer les résultats et le PDF dans NAP ». Il reste désactivé tant que l’aperçu est périmé ou incomplet et, pour un remplacement, tant que le bilan actualisé n’est pas approuvé. Le bilan indique ajout/remplacement/contenu identique du PDF ; la confirmation rappelle l’écriture réelle depuis TEST. Pendant une réponse incertaine, les choix restent verrouillés et le même bouton permet la reprise. L’historique d’un ZIP interrompu propose le PDF/ZIP original en complément facultatif si le transfert doit être repris. Les composants, couleurs et empilement mobile existants sont réutilisés.
+
 - Les clubs non rattachés affichent libellé et numéro du TXT, puis une cause lisible (numéro absent/invalide/inconnu/dupliqué, en-tête ambigu ou libellé contradictoire). Les propositions restent alphabétiques à niveau égal, avec priorité au numéro fédéral, puis au libellé et au sigle ; l’identifiant NAP distingue les fiches homonymes. Recherche et sélection gardent les composants existants.
 
 - À partir d’une heure, les durées s’affichent en `H:MM:SS.CC` dans les performances et différences d’import, l’administration et les résultats publics de compétition. Sous une heure, les libellés existants sont conservés. Le rapport garde les valeurs sources et natives ; la conversion d’affichage ne déclenche aucune écriture.
@@ -28,7 +30,7 @@ Dans Paramétrage, la région organisatrice apparaît cochée et verrouillée da
 
 - Les groupes d’identités utilisent des `details/summary` natifs : vert « Rapprochés » replié par défaut, orange « À rapprocher » et rouge « Inconnus » ouverts, avec compteurs et intitulés explicites indépendants de la couleur. Une fiche dépliable par identité présente source et profil NAP côte à côte à partir de 700 px, empilés sur mobile. Les candidats sont des cartes avec bouton « Choisir ce nageur » ; la recherche est déclenchée volontairement.
 - Les différences de club restent des encarts orange dans une fiche dont l’identité peut être verte. Leur case de confirmation rappelle club importé et club actuel ; les choix non revérifiés portent un message d’actualisation. Les performances distinguent course individuelle, passage et premier relayeur. Pagination locale de 100 nageurs, 50 relais et 100 différences ; groupes et fiches conservent leur état ouvert pendant la navigation.
-- Le bilan de remplacement dépliable montre ajouts/retraits/modifications appariées/statuts, avec approbation explicite. Le bouton d’enregistrement demeure désactivé et identifié « aperçu uniquement », y compris après approbation. La carte ZIP et son PDF local sont conservés.
+- Le bilan de remplacement dépliable montre ajouts/retraits/modifications appariées/statuts, avec approbation explicite. La carte ZIP et son PDF local sont conservés ; l’activation du bouton suit les conditions du 26 octobre ci-dessus.
 
 ## Club des nageurs et actions nationales — 24 octobre 2026
 

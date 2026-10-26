@@ -5,7 +5,7 @@ const section=source.slice(source.indexOf("  async function saveNativeImport()")
 function fixture({replacement=false,checked=false,lost=false}={}) {
  const calls=[],button={disabled:false},messages=[];let ids=0;
  const context={nativeImportOperation:null,currentPreview:{canConfirm:true,expectedFingerprint:"before",previewFingerprint:"preview",diff:{requiresReplacementConfirmation:replacement}},currentPayload:{rawText:"TXT",competitionId:5162},currentFile:{name:"results.txt"},
- elements:{message:{},warnings:{querySelector:s=>s==='[data-nap-replacement]'?{checked}:button}},global:{confirm:()=>true,crypto:{randomUUID:()=>`id-${++ids}`}},
+ elements:{message:{},warnings:{querySelectorAll:()=>[button],querySelector:s=>s==='[data-nap-replacement]'?{checked}:button}},global:{confirm:()=>true,crypto:{randomUUID:()=>`id-${++ids}`}},currentZipSelection:null,
  setMessage:(_,message)=>messages.push(message),startImportProgress:()=>{},finishImportProgress:()=>{},loadImports:async()=>{},
  callFunction:async(name,input)=>{assert.equal(name,"createCompetitionImport");calls.push(JSON.parse(JSON.stringify(input)));if(lost){lost=false;throw Error("lost reply");}return {importId:"saved",source:"nap"};}};
  vm.runInNewContext(section,context);return {context,calls,button,messages};
