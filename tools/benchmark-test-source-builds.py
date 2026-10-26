@@ -135,6 +135,9 @@ def run(destination):
     try:
         before = inventory()
         mail, hosting = api(MAIL), api(HOSTING)['releases'][0]
+        receipt['before'] = [state.identity(before[PREFIX+n]) for n in NAMES if PREFIX+n in before]
+        receipt['stage'] = 'read-only-checks'
+        cycle.write(destination / 'benchmark.json', receipt)
         if not 6 <= len(before) <= 200 or any(PREFIX + n not in before for n in NAMES):
             raise ValueError('Six fonctions existantes requises')
         # A label alone is never evidence of a deployed revision.
@@ -157,7 +160,6 @@ def run(destination):
         receipt['cloudBuildQuotas'] = quotas  # Quota metadata only; no credentials or signed URLs.
         if quotas.get('nextPageToken') or not quotas.get('metrics'):
             raise ValueError('Quotas Cloud Build non verifies')
-        sources = {}
         for name in NAMES:
             url = api(API + PREFIX + name + ':generateDownloadUrl', 'POST', {})['downloadUrl']
             with urllib.request.urlopen(storage_url(url), timeout=120) as response:
@@ -171,12 +173,9 @@ def run(destination):
             if hashlib.sha256(backup.read_bytes()).hexdigest() != digest:
                 raise ValueError('Sauvegarde source TEST invalide')
             receipt.setdefault('sourceSha256', {})[name] = digest
-            upload = api(API + 'projects/livepalmes-test/locations/europe-west1/functions:generateUploadUrl', 'POST', {})
-            req = urllib.request.Request(storage_url(upload['uploadUrl']), method='PUT', data=data, headers={'Content-Type': 'application/zip'})
-            with urllib.request.urlopen(req, timeout=120):
-                pass
-            sources[name] = upload['storageSource']
         attested = {}
+        sources = {}
+        builds = {n: before[PREFIX+n].get('buildConfig', {}).get('build') for n in NAMES}
         def update(name):
             full = PREFIX + name
             started = time.monotonic()
@@ -193,11 +192,30 @@ def run(destination):
             actual = api(API + full)
             if config(before[full]) != config(actual) or actual.get('state') != 'ACTIVE':
                 raise ValueError('Configuration TEST differente : ' + name)
-            return state.identity(actual), {'name': name, 'seconds': round(time.monotonic() - started, 2)}
+            build = actual.get('buildConfig', {}).get('build')
+            if not build or build == builds[name]:
+                raise ValueError('Nouveau build non confirme : ' + name)
+            builds[name] = build
+            return state.identity(actual), {'name': name, 'seconds': round(time.monotonic() - started, 2), 'buildId': build}
         for workers in (3, 6):
             check(before, inventory(), attested, sha)
             if api(MAIL) != mail or api(HOSTING)['releases'][0] != hosting:
                 raise ValueError('Derive mails/Hosting avant benchmark')
+            # Different immutable objects, identical bytes: the second series
+            # cannot become a no-op from reusing the first storageSource.
+            for name in NAMES:
+                data = (destination / (name+'.zip')).read_bytes()
+                if hashlib.sha256(data).hexdigest() != receipt['sourceSha256'][name]:
+                    raise ValueError('Sauvegarde source TEST alteree')
+                upload = api(API + 'projects/livepalmes-test/locations/europe-west1/functions:generateUploadUrl', 'POST', {})
+                if upload['storageSource'] == sources.get(name):
+                    raise ValueError('Reference source deja utilisee')
+                req = urllib.request.Request(storage_url(upload['uploadUrl']), method='PUT', data=data, headers={'Content-Type': 'application/zip'})
+                with urllib.request.urlopen(req, timeout=120):
+                    pass
+                sources[name] = upload['storageSource']
+            receipt['stage'] = 'building-'+str(workers)
+            cycle.write(destination / 'benchmark.json', receipt)
             round_result = {'parallelism': workers, 'operations': []}
             started = time.monotonic()
             for offset in range(0, len(NAMES), workers):
@@ -208,7 +226,10 @@ def run(destination):
                 check(before, inventory(), attested, sha)
             round_result['seconds'] = round(time.monotonic() - started, 2)
             receipt['rounds'].append(round_result)
+            cycle.write(destination / 'benchmark.json', receipt)
             print(json.dumps(round_result), flush=True)
+        if len(set(builds.values())) != len(NAMES):
+            raise ValueError('Build partage entre plusieurs lecteurs')
         if api(MAIL) != mail or api(HOSTING)['releases'][0] != hosting:
             raise ValueError('Derive mails/Hosting apres benchmark')
         receipt['inventoryCount'] = len(before)
@@ -216,6 +237,7 @@ def run(destination):
         selector = destination / 'selector.txt'; selector.write_text(','.join(NAMES), encoding='utf-8')
         cycle.backend_proof(destination, selector)
         receipt['success'] = True
+        receipt['stage'] = 'complete'
     finally:
         # Upload only these receipts, never local ZIPs or signed URLs.
         cycle.write(destination / 'benchmark.json', receipt)

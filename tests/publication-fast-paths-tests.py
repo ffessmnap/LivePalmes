@@ -154,12 +154,14 @@ class FastPathsTests(unittest.TestCase):
             self.assertEqual(parallel.selected(directory), 3)
             proof = {'schema': 1, 'project': 'livepalmes-test', 'candidate': 'a'*40, 'success': True,
                      'mailUnchanged': True, 'hostingUnchanged': True, 'functions': list(benchmark.NAMES),
-                     'rounds': [{'parallelism': n, 'seconds': seconds, 'operations': [{'name': name} for name in benchmark.NAMES]}
+                     'rounds': [{'parallelism': n, 'seconds': seconds, 'operations': [{'name': name, 'buildId': str(n)+name} for name in benchmark.NAMES]}
                                 for n, seconds in [(3, 120), (6, 70)]]}
             parallel.validate(proof)
             for key, value in [('success', False), ('mailUnchanged', False), ('project', 'livepalmes')]:
                 with self.assertRaises(ValueError): parallel.validate({**proof, key: value})
             bad = copy.deepcopy(proof); bad['rounds'][1]['seconds'] = 130
+            with self.assertRaises(ValueError): parallel.validate(bad)
+            bad = copy.deepcopy(proof); bad['rounds'][1]['operations'] = copy.deepcopy(bad['rounds'][0]['operations'])
             with self.assertRaises(ValueError): parallel.validate(bad)
             # A user-supplied concurrency value cannot stand in for a sealed proof.
             Path(directory, 'source-build-concurrency.json').write_text('{"schema":1,"parallelism":6}')
@@ -182,17 +184,21 @@ class FastPathsTests(unittest.TestCase):
                     'labels': {'livepalmes-commit': 'a'*40}, 'buildConfig': {'runtime': 'nodejs22'},
                     'serviceConfig': {'timeoutSeconds': 60}} for n in benchmark.NAMES}
             calls = []
+            uploads = []
             def api(url, method='GET', body=None):
                 if url == benchmark.MAIL: return {}
                 if url == benchmark.HOSTING: return {'releases': [{}]}
                 if url == benchmark.QUOTAS: return {'metrics': [{'name': 'quota'}]}
                 if url.endswith(':generateDownloadUrl'): return {'downloadUrl': 'https://storage.googleapis.com/source'}
-                if url.endswith(':generateUploadUrl'): return {'uploadUrl': 'https://storage.googleapis.com/upload', 'storageSource': {'bucket':'test'}}
+                if url.endswith(':generateUploadUrl'):
+                    uploads.append(1)
+                    return {'uploadUrl': 'https://storage.googleapis.com/upload', 'storageSource': {'bucket':'test', 'object':str(len(uploads))}}
                 if method == 'PATCH':
                     calls.append(body)
                     if failing: return {'done': True, 'error': {'message': 'simulated'}}
                     rows[body['name']]['updateTime'] = str(len(calls))
                     rows[body['name']]['labels'] = body['labels']
+                    rows[body['name']]['buildConfig']['build'] = 'build-'+str(len(calls))
                     return {'done': True}
                 if url.startswith(benchmark.API+benchmark.PREFIX): return copy.deepcopy(rows[url[len(benchmark.API):]])
                 raise AssertionError('Unexpected API')

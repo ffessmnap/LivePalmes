@@ -27,6 +27,9 @@ def validate(value):
         cycle.require(type(row.get('seconds')) in (int, float) and math.isfinite(row['seconds']) and row['seconds'] > 0
                       and len(row.get('operations', [])) == 6
                       and {op.get('name') for op in row['operations']} == set(names), 'Mesure de duree invalide')
+    builds = [op.get('buildId') for row in rounds for op in row['operations']]
+    cycle.require(all(isinstance(build, str) and build for build in builds) and len(set(builds)) == 12,
+                  'Douze builds distincts requis, aucun no-op admis')
     cycle.require(rounds[1]['seconds'] < rounds[0]['seconds'], 'Aucun gain mesure : conserver trois builds')
 
 
