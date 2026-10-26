@@ -29,6 +29,7 @@ Réutiliser le run TEST réussi et sa preuve si le candidat et l'état déployé
 1. Confirmer précisément le périmètre validé par l’utilisateur.
 2. Préserver et distinguer les autres changements déjà présents dans le dossier partagé.
 3. Exécuter `node tools/verify-livepalmes.js` et les tests ciblés nécessaires pour le nouveau code. À la promotion PROD du commit exact déjà vérifié sur TEST, réutiliser le résultat attesté par le workflow ; sans preuve compatible, refaire le contrôle. Ne pas répéter manuellement une même suite sur une version inchangée après sa réussite.
+   Depuis le 26 octobre, TEST peut aussi réutiliser la preuve CI main du commit exact, après vérification de l'origine, de la réussite et du SHA-256 de l'artefact. Sinon, conserver la suite complète. Ne jamais accepter une simple étiquette, une preuve PR ou un indicateur utilisateur comme dispense. Voir `docs/releases/PROCEDURE.md`.
 4. Pour un parcours navigateur pertinent, exécuter `node tools/verify-livepalmes.js --browser`.
 5. Effectuer les contrôles manuels applicables décrits dans `docs/TESTS_MANUELS.md`.
 6. Signaler toute commande susceptible de contacter la production ou d’écrire des données réelles avant son lancement.

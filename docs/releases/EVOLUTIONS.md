@@ -2,6 +2,13 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 26 octobre — Réutilisation CI sur TEST et tests Firestore ciblés
+
+- Accord de fonctionnement dans la discussion sur les délais TEST/PROD : réutiliser les contrôles attestés, cibler les suites et mesurer les lots backend avant toute modification de leur cadence. Cette optimisation ne vaut pas accord de publication applicative PROD.
+- Preuve CI limitée au push main réussi et au commit exact, contrôlée par le mécanisme d'intégrité existant ; absence/erreur/expiration/ambiguïté = suite complète. Aucun contrôle de publication backend, Hosting ou de preuve finale supprimé. Aucun délai d'attente ajouté pour une CI en cours.
+- Retouches d'interface racine reconnues et documentation Markdown seules : émulateur Firestore évité, contrôle applicatif global maintenu. Tout chemin partagé/inconnu ou toute modification de règles/configuration/backend/tests/dépendances conserve l'émulateur. Mesure des durées par lot ajoutée aux résumés ; sélection, lots et pauses inchangés.
+- Budget : aucune nouvelle lecture métier NAP/Firestore. Recherche CI bornée à dix runs du SHA exact, puis lecture d'un artefact vérifié ; repli complet sur erreur. Aucun mail, changement IAM, règle/index ou donnée. Tests hors réseau de provenance/intégrité/repli/périmètre et régressions du circuit avant intégration. Preuves de livraison et mesures réelles à conserver dans la PR ; validation utilisateur non présumée.
+
 ### 26 octobre — Sous-texte du protocole public réduit à Résultats
 
 - Demande explicite d’Antoine : sous le PDF des résultats, afficher seulement « Résultats », sans la description technique de validation WinPalme. Changement de présentation ciblé sur les documents de catégorie résultats ; titre, PDF, descriptions des autres documents et données inchangés, zéro lecture supplémentaire.
