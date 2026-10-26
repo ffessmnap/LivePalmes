@@ -13828,7 +13828,11 @@
       if(payload.completeLicense) {
         if(clubScopeVersion!==engagementClubPeopleRequestVersion||elements.engagementsSwimmerCorrectionForm.dataset.correctionSession!==correctionSession||!elements.engagementsSwimmerCorrectionDialog?.open)return;
         const index=engagementClubSwimmers.findIndex(swimmer=>String(swimmer.id||swimmer.swimmerIndexId)===String(payload.swimmerId));
-        if(index>=0)engagementClubSwimmers[index]={...engagementClubSwimmers[index],...result.swimmer};
+        if(index>=0){
+          const saved=result.swimmer||{};
+          engagementClubSwimmers[index]={...engagementClubSwimmers[index],licenseNumber:saved.licenseNumber,napFingerprint:saved.napFingerprint||engagementClubSwimmers[index].napFingerprint,...Object.fromEntries(["licenseVerificationStatus","licenseSeasonLabel","licenseSeasonStatus"].filter(key=>saved[key]!==undefined).map(key=>[key,saved[key]]))};
+          writeEngagementClubSwimmersCache();
+        }
         renderEngagementClubSwimmersDirectory();closeEngagementSwimmerCorrectionDialog();
         if(elements.engagementsClubSwimmersDirectoryStatus){elements.engagementsClubSwimmersDirectoryStatus.textContent="Licence enregistrée et numéro verrouillé. Le contrôle saisonnier est conservé.";elements.engagementsClubSwimmersDirectoryStatus.dataset.tone="ok";}
         return;

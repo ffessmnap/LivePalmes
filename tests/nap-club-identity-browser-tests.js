@@ -19,11 +19,11 @@ const events=source.slice(source.indexOf('    elements.engagementsClubPeopleList
    window.elements={};for(const el of document.querySelectorAll('[id^="adminEngagementsSwimmerCorrection"],#adminEngagementsClubPeopleList,#adminEngagementsClubPeopleStatus')){const key=el.id.replace(/^admin/,'');window.elements[key[0].toLowerCase()+key.slice(1)]=el;}
    window.engagementClubSwimmers=[];window.engagementClubPeopleRequestVersion=0;window.engagementClubPersonSaving=false;window.engagementSwimmerCorrectionOpener=null;window.engagementSwimmerCorrectionReview=null;window.engagementSwimmerChangeRequestsLoaded=false;
    window.updateNativeCompetitionPersonCreationButton=()=>{};window.engagementClubPersonRoleLabel=()=>"Chef d’équipe · Officiel";window.escapeHtml=s=>String(s).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('"','&quot;');
-   window.engagementSwimmerDisplayName=s=>[s.firstName,s.lastName].join(" ");window.clubDisplayLabel=()=>"Club fictif";window.setFormPending=()=>{};window.renderEngagementClubSwimmersDirectory=()=>{};
+   window.engagementSwimmerDisplayName=s=>[s.firstName,s.lastName].join(" ");window.clubDisplayLabel=()=>"Club fictif";window.setFormPending=()=>{};window.renderEngagementClubSwimmersDirectory=()=>{};window.writeEngagementClubSwimmersCache=()=>{window.savedRoster=structuredClone(window.engagementClubSwimmers);};
    window.testCalls=[];window.callFunction=async(name,payload)=>{
     window.testCalls.push({name,payload});
     if(name==="saveEngagementClubPerson")return {source:"nap",person:{...window.engagementClubPeople[0],...payload.patch,napFingerprint:"b".repeat(64)}};
-    if(payload.completeLicense)return {completedWithoutRequest:true,swimmer:{id:payload.swimmerId,licenseNumber:payload.proposed.licenseNumber,licenseVerificationStatus:"pending"}};
+    if(payload.completeLicense)return {completedWithoutRequest:true,swimmer:{id:payload.swimmerId,licenseNumber:payload.proposed.licenseNumber,licenseVerificationStatus:"pending",club:"",clubName:"",performanceCount:0}};
     return {request:{id:"synthetic-request"}};
    };
   });
@@ -49,11 +49,12 @@ const events=source.slice(source.indexOf('    elements.engagementsClubPeopleList
   await page.locator('#adminEngagementsSwimmerCorrectionSubmit').click();
   await page.waitForFunction(()=>window.testCalls.length===2&&!document.querySelector('#adminEngagementsSwimmerCorrectionDialog').open&&!document.querySelector('#adminEngagementsSwimmerCorrectionForm').dataset.initialIdentity);
   calls=await page.evaluate(()=>window.testCalls);assert.equal(calls[1].name,'requestEngagementClubSwimmerChange');assert.equal(calls[1].payload.personId,'nap-official-7');assert.deepEqual(calls[1].payload.proposed,{lastName:'CORRECTION'});
-  await page.evaluate(()=>openEngagementSwimmerCorrectionDialog({id:'42',napSource:true,napFingerprint:'c'.repeat(64),firstName:'Nageur',lastName:'FICTIF',birthDate:'',sex:'',licenseNumber:'',clubId:'106'},'request'));
+  await page.evaluate(()=>{const swimmer={id:'42',napSource:true,napFingerprint:'c'.repeat(64),firstName:'Nageur',lastName:'FICTIF',birthDate:'',sex:'',licenseNumber:'',clubId:'106',clubName:'Club connu',performanceCount:13};window.engagementClubSwimmers=[swimmer];openEngagementSwimmerCorrectionDialog(swimmer,'request');});
   await page.locator('#adminEngagementsSwimmerCorrectionLicense').fill('A-12-76543');
   await page.locator('#adminEngagementsSwimmerCorrectionSubmit').click();
   await page.waitForFunction(()=>window.testCalls.length===3&&!document.querySelector('#adminEngagementsSwimmerCorrectionDialog').open&&!document.querySelector('#adminEngagementsSwimmerCorrectionForm').dataset.initialIdentity);
   calls=await page.evaluate(()=>window.testCalls);assert.equal(calls[2].payload.completeLicense,true);assert.deepEqual(calls[2].payload.proposed,{licenseNumber:'A-12-76543'});
+  const cached=await page.evaluate(()=>window.savedRoster[0]);assert.equal(cached.licenseNumber,'A-12-76543');assert.equal(cached.clubName,'Club connu');assert.equal(cached.performanceCount,13);
   if(width===1440){
    await page.evaluate(()=>{window.callFunction=async(name,payload)=>new Promise(resolve=>{window.lateReply=resolve;});openEngagementSwimmerCorrectionDialog({...window.engagementClubPeople[0],source:'officials'},'request');});
    await page.locator('#adminEngagementsSwimmerCorrectionSex').selectOption('F');
