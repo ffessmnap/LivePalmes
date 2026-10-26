@@ -2,6 +2,12 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 26 octobre — Premiers relayeurs hors classement individuel et détail des relais publics
+
+- Retour utilisateur : l’import fonctionne mais les temps des premiers relayeurs apparaissent à tort parmi les courses individuelles de la compétition. Accord explicite pour vérification et préparation TEST : conserver TOP/fiches nageurs et afficher composition et fractions des relais. Aucune modification de résultat réel autorisée pendant les essais.
+- Filtre limité à la page compétition, fondé sur l’origine du journal d’import ; origine conservée pour les lignes inchangées aux prochains imports, lecture compatible des anciens journaux ZIP complets sans réimport ni migration. Une vraie course individuelle au même temps est préservée. Quatre membres et passages/fractions par relais via une lecture groupée des noms, détails natifs repliables sur ordinateur/mobile. Lecteurs TOP/nageur et données natives inchangés.
+- Contrôles locaux en cours : provenance, réimports, temps identiques, lecteurs TOP/nageur, fractions et page réelle hors réseau à 1440/390/320 px. Format cumulé confirmé sur les 20 relais du ZIP local d’Auray, sans lecture SQL ni écriture réelle. PR, contrôle Linux et preuve TEST à renseigner après livraison. Recette utilisateur de la version regroupée en attente ; PROD exclue.
+
 ### 26 octobre — TXT source privé des résultats importés
 
 - Accord explicite d’Antoine dans le chat import : conserver le TXT, public et clubs exclus, lecture régionale dans son périmètre et nationale, aucune suppression manuelle ; PDF et TXT courants remplacés au nouvel import. TEST seulement, sans import réel pendant la préparation.
