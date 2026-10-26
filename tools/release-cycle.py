@@ -1100,6 +1100,7 @@ def deploy_batches(project, candidate, stage_path, selection_path, dry_run):
         if not dry_run:
             time.sleep(max(0, 61 - (time.monotonic() - last_start)))
         last_start = time.monotonic()
+        batch_started = last_start
         command = [cli, 'deploy', '--project', project, '--config', str(Path(stage_path).resolve() / 'firebase.json'), '--only', ','.join('functions:' + n for n in batch), '--non-interactive', '--force']
         if dry_run:
             command.append('--dry-run')
@@ -1108,6 +1109,14 @@ def deploy_batches(project, candidate, stage_path, selection_path, dry_run):
             functions = {f['name'].split('/')[-1]: f for f in snapshot(project)['functions']}
             require(all(n in functions and functions[n]['state'] == 'ACTIVE' and functions[n]['commit'] == sha for n in batch), 'Lot incomplet : publication interrompue avant Hosting')
         print(f'Lot {offset // 10 + 1} controle ({len(batch)} Functions).', flush=True)
+        elapsed = round(time.monotonic() - batch_started, 1)
+        timing = {'project': project, 'mode': 'simulation' if dry_run else 'deploy',
+                  'batch': offset // 10 + 1, 'functions': batch, 'seconds': elapsed}
+        print('Duree lot : ' + json.dumps(timing), flush=True)
+        summary = os.environ.get('GITHUB_STEP_SUMMARY')
+        if summary:
+            with open(summary, 'a', encoding='utf-8') as stream:
+                stream.write(f'\nLot {timing["batch"]} {project} ({timing["mode"]}) : {len(batch)} fonctions, {elapsed} s — ' + ', '.join(batch) + '\n')
 
 
 def fetch_plan(preparation, resume, directory):

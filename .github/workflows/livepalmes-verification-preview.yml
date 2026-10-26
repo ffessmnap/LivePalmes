@@ -37,6 +37,12 @@ jobs:
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: python tools/preview-scope.py "$BASE_SHA" "$HEAD_SHA" >> "$GITHUB_OUTPUT"
 
+      - name: Determiner les tests Firestore necessaires
+        id: test-scope
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: python tools/test-verification-evidence.py scope
+
       - name: Lire la version Node.js du projet
         id: node-version
         shell: bash
@@ -53,6 +59,7 @@ jobs:
             tests/firestore-rules/package-lock.json
 
       - name: Installer Java 21
+        if: steps.test-scope.outputs.firestore == 'true'
         uses: actions/setup-java@v5
         with:
           distribution: temurin
@@ -65,6 +72,7 @@ jobs:
         run: npm ci --prefix tests/firestore-rules
 
       - name: Tester les regles Firestore
+        if: steps.test-scope.outputs.firestore == 'true'
         run: npm --prefix tests/firestore-rules test
 
       - name: Verifier LivePalmes
@@ -89,6 +97,19 @@ jobs:
           python tests/preview-scope-tests.py
           python tests/test-publication-coordination-tests.py
           node tests/nap-source-diagnostic-tests.js
+          python tests/test-verification-evidence-tests.py
+
+      - name: Enregistrer la verification du commit main exact
+        if: github.event_name == 'push'
+        run: python tools/test-verification-evidence.py record "$RUNNER_TEMP/application-verification"
+
+      - uses: actions/upload-artifact@v4
+        if: github.event_name == 'push'
+        with:
+          name: application-verification
+          path: ${{ runner.temp }}/application-verification/verification.json
+          if-no-files-found: error
+          retention-days: 14
 
   apercu:
     name: Creer un apercu isole
