@@ -1,5 +1,6 @@
 "use strict";
 const FIELDS={firstName:"prenom",lastName:"nom",birthDate:"date",sex:"sexe",licenseNumber:"number"};
+const {date}=require("./nap-direct-calendar");
 function empty(value,key) {
   const text=String(value??"").trim();
   return !text || key==="birthDate" && /^(0000-00-00|00\/00\/0000)/.test(text);
@@ -23,7 +24,7 @@ function plan(row,patch,{fillOnly=false,requireComplete=false}={}) {
   if(!patch||typeof patch!=="object"||Array.isArray(patch)||Object.keys(patch).some(key=>!Object.hasOwn(FIELDS,key))) throw new TypeError("Champs d’identité invalides.");
   const after={...row},changed=[];
   for(const [key,column] of Object.entries(FIELDS)) {
-    const before=empty(row[column],key)?"":String(row[column]).trim();
+    const before=empty(row[column],key)?"":key==="birthDate"?date(row[column]):String(row[column]).trim();
     const raw=Object.hasOwn(patch,key)?patch[key]:before;
     // Preserve legacy values verbatim until a deliberate correction.
     if(String(raw??"").trim()===before) {
