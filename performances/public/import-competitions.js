@@ -1583,7 +1583,7 @@
     if (!currentPreview?.canConfirm || !currentPayload) return;
     const zip=currentPayload.sourceType==='winpalme-zip-preview';
     const replace = zip?currentPayload.confirmReplacement===true:Boolean(elements.warnings.querySelector('[data-nap-replacement]')?.checked);
-    const exclusions=zip?(currentPreview.excludedSourceLines||[]).length:0;
+    const exclusions=zip?(currentPreview.excludedSourceLines||[]).filter(line=>!(currentPreview.automaticExcludedSourceLines||[]).includes(line)).length:0;
     if(exclusions&&(!currentPayload.confirmExclusions||currentPayload.exclusionReviewFingerprint!==currentPreview.previewFingerprint)){setMessage(elements.message,'Confirmez les exclusions de l’aperçu actualisé avant cet import partiel.');return;}
     if (currentPreview.diff?.requiresReplacementConfirmation && !replace) { setMessage(elements.message, 'Confirmez explicitement les retraits avant de continuer.'); return; }
     if (!global.confirm(zip?`${exclusions?'Import partiel : '+exclusions+' ligne(s) exclue(s). Le PDF et le TXT restent les fichiers originaux complets. ':''}Enregistrer ces résultats dans la vraie base NAP, publier le protocole PDF et archiver le TXT privé ? Les résultats seront visibles immédiatement, y compris depuis TEST.`:'Enregistrer ces résultats dans NAP et archiver le TXT privé ? Les résultats seront visibles immédiatement.')) return;

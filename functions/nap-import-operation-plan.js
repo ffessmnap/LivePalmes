@@ -44,7 +44,7 @@ function prepareImportOperation(pack,next,input) {
   if(!input||input.expectedFingerprint!==pack.expectedFingerprint||input.previewFingerprint!==pack.previewFingerprint)throw new TypeError("L'aperçu a change. Recommencez avant confirmation.");
   const diff=previewImportDifferences(pack);
   if(input.sourceType==="winpalme-zip-preview"){
-    if(pack.decoded.excluded.length&&(input.confirmExclusions!==true||input.exclusionReviewFingerprint!==pack.previewFingerprint))throw new TypeError("Confirmez les exclusions de cet aperçu avant enregistrement de l’import partiel.");
+    if(pack.decoded.excluded.some(r=>r.exclusionReason!=='empty-relay')&&(input.confirmExclusions!==true||input.exclusionReviewFingerprint!==pack.previewFingerprint))throw new TypeError("Confirmez les exclusions de cet aperçu avant enregistrement de l’import partiel.");
     const review=require("./nap-import-replacement-review").replacementReview(pack,diff);
     if((review.requiresReplacementConfirmation||pack.existingProtocol&&input.protocolManifest?.hash!==pack.existingProtocol.hash||pack.existingText&&input.textManifest?.hash!==pack.existingText.hash)&&(input.confirmReplacement!==true||input.replacementReviewFingerprint!==pack.previewFingerprint))throw new TypeError("Confirmez le bilan de remplacement actualisé avant enregistrement.");
   }

@@ -3,7 +3,8 @@ const {previewImportDifferences}=require("./nap-import-operation-plan");
 function importPreviewResponse(pack) {
   const rows=pack.decoded.rows.map(r=>({sourceLine:r.sourceLine,kind:r.kind,firstName:r.firstName||"",lastName:r.lastName||"",birthDate:r.birthDate||"",sex:r.sex||"",course:r.course,...(r.sourceCourse?{sourceCourse:r.sourceCourse}:{}),category:r.category,clubCode:r.clubCode,status:r.status,time:r.rawFinalTime,eligible:r.eligible,memberHints:r.memberHints||[]}));
   const base={ok:true,source:"nap",metadata:pack.decoded.metadata,rows,sourceClubs:pack.decoded.clubs.map(c=>({code:c.cells[1]||"",name:c.cells[2]||"",federalNumber:c.cells[3]||""})),excludedSourceLines:pack.decoded.excluded.map(r=>r.sourceLine),summary:pack.decoded.summary,canConfirm:false};
-  base.excludedRows=pack.decoded.excluded.map(r=>({sourceLine:r.sourceLine,kind:r.kind,lastName:r.lastName||"",firstName:r.firstName||"",birthDate:r.birthDate||"",course:r.course,clubCode:r.clubCode,time:r.rawFinalTime,status:r.status}));
+  base.automaticExcludedSourceLines=pack.decoded.excluded.filter(r=>r.exclusionReason==='empty-relay').map(r=>r.sourceLine);
+  base.excludedRows=pack.decoded.excluded.map(r=>({sourceLine:r.sourceLine,kind:r.kind,lastName:r.lastName||"",firstName:r.firstName||"",birthDate:r.birthDate||"",course:r.course,clubCode:r.clubCode,time:r.rawFinalTime,status:r.status,exclusionReason:r.exclusionReason||'manual'}));
   if(pack.requiresCompetitionChoice)return {...base,issues:pack.decoded.issues,requiresCompetitionChoice:true,competitions:pack.competitions};
   const unresolved=pack.resolution.unresolved.map(r=>({...r,sourceLine:pack.decoded.rows.filter(r=>r.kind==="NAG")[r.rowIndex].sourceLine}));
   const resolved=pack.resolution.resolved.map(r=>({...r,sourceLine:pack.decoded.rows.filter(r=>r.kind==="NAG")[r.rowIndex].sourceLine}));
