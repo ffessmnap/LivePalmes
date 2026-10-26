@@ -3397,6 +3397,11 @@ exports.listEngagementAccessRequests = onCall(CALLABLE_OPTIONS, async (request) 
   if (!context.region && !context.national) {
     throw new HttpsError("permission-denied", "Lecture reservee aux responsables engagements region ou national.");
   }
+  if (request.data?.status === "history") {
+    return require("./access-request-history").listHistory({
+      db, FieldPath, context, input: request.data, item: engagementAccessRequestItem, HttpsError
+    });
+  }
   const status = ["pending", "approved", "rejected"].includes(cleanText(request.data?.status))
     ? cleanText(request.data.status)
     : "pending";

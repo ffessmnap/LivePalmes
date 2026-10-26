@@ -190,6 +190,8 @@ function runUnitTests() {
     "nap-swimmer-merge-callable-tests.js",
     "nap-swimmer-merge-audit-tests.js",
     "activity-journal-tests.js",
+    "access-request-history-tests.js",
+    "account-history-test-indexes-tests.js",
     "nap-swimmer-merge-state-tests.js",
     "nap-swimmer-deletion-tests.js",
     "nap-club-deletion-tests.js",

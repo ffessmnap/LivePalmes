@@ -6970,6 +6970,20 @@
   padding: 9px 10px;
 }
 
+.admin-access-requests-views {
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.admin-access-requests-views [aria-pressed="true"] {
+  background: #e8f1f5;
+  border-color: #357a99;
+}
+
+#adminEngagementsAccessRequestsPanel .admin-access-history-card {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 210px), 1fr));
+}
+
 #adminEngagementsAccessRequestsPanel .admin-engagements-request-main,
 #adminEngagementsAccessRequestsPanel .admin-engagements-request-scope {
   display: grid;
@@ -6984,6 +6998,12 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+#adminEngagementsAccessRequestsPanel .admin-access-history-card strong,
+#adminEngagementsAccessRequestsPanel .admin-access-history-card small {
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 #adminEngagementsAccessRequestsPanel .admin-engagements-request-scope strong {
