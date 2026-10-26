@@ -3,7 +3,7 @@ const assert=require("node:assert/strict");
 const {creation,createNativePerson}=require("../functions/nap-club-person-create");
 const {columns}=require("../functions/nap-approved-people-schema");
 const {OPTION_COLUMNS}=require("../functions/nap-club-people");
-const input={clubId:"106",actorUid:"club-admin",creationId:"11111111-1111-4111-8111-111111111111",person:{firstName:"Test",lastName:"EXEMPLE",birthDate:"1980-01-03",roles:{teamLeader:true,official:false}}};
+const input={clubId:"106",actorUid:"club-admin",creationId:"11111111-1111-4111-8111-111111111111",person:{firstName:"Test",lastName:"EXEMPLE",birthDate:"1980-01-03",sex:"M",licenseNumber:"A-12-34567",roles:{teamLeader:true,official:false}}};
 function fixture() {
   const s={allowed:false,audit:null,native:null,options:null,nativeWrites:0,optionsWrites:0,queries:[],peers:[],checkpoints:0};
   const conn={execute:async({sql},values=[])=>{
@@ -17,7 +17,7 @@ function fixture() {
     if(sql.startsWith("SELECT num_club")) return [s.noClub?[]:[{num_club:106}]];
     if(sql.includes("FORCE INDEX")) return [s.peers];
     if(sql.startsWith("INSERT INTO officiels")) {
-      assert.equal(s.audit.phase,"writing","intent persisted before insertion");assert.deepEqual(values,["EXEMPLE","Test","1980-01-03","106","106"]);
+      assert.equal(s.audit.phase,"writing","intent persisted before insertion");assert.deepEqual(values,["EXEMPLE","Test","1980-01-03","106","M","A-12-34567","106"]);
       if(s.zeroRows) return [{affectedRows:0,insertId:0}];
       s.native={id:99,...s.audit.proposed.native};s.nativeWrites++;
       if(s.lostInsertResponse) throw Error("network uncertain");
@@ -43,7 +43,7 @@ function fixture() {
 }
 (async()=>{
   const denied=fixture();await assert.rejects(denied.run(input,()=>{throw Error("denied");}),/denied/);assert.equal(denied.queries.length,0);
-  const s=fixture(),result=await s.run();assert.equal(s.nativeWrites,1);assert.equal(s.optionsWrites,1);assert.equal(s.done,true);assert.ok(s.queries.length<=12);assert.equal(result.person.licenseNumber,"");assert.deepEqual(result.person.roles,{teamLeader:true,official:false});assert.equal(result.person.active,true);assert.equal(result.person.nativePersonId,"99");
+  const s=fixture(),result=await s.run();assert.equal(s.nativeWrites,1);assert.equal(s.optionsWrites,1);assert.equal(s.done,true);assert.ok(s.queries.length<=12);assert.equal(result.person.licenseNumber,"A-12-34567");assert.deepEqual(result.person.roles,{teamLeader:true,official:false});assert.equal(result.person.active,true);assert.equal(result.person.nativePersonId,"99");
   await s.run();assert.equal(s.nativeWrites,1);assert.equal(s.optionsWrites,1,"retry never creates another identity or replaces roles");
   for(const tweak of [s=>s.noClub=true,s=>s.busy=true,s=>s.trigger=true,s=>s.peers=[{id:7,...creation(input).native}],s=>s.peers=Array(801).fill({})]) {const bad=fixture();tweak(bad);await assert.rejects(bad.run());assert.equal(bad.nativeWrites,0);}
   for(const tweak of [s=>s.lostInsertResponse=true,s=>s.failIdCheckpoint=true]) {const uncertain=fixture();tweak(uncertain);await assert.rejects(uncertain.run());assert.equal(uncertain.nativeWrites,1);await assert.rejects(uncertain.run(),/identifiant non confirme/);assert.equal(uncertain.nativeWrites,1);}
@@ -51,6 +51,6 @@ function fixture() {
   const completed=fixture();completed.failComplete=true;await assert.rejects(completed.run(),/interrupted/);completed.failComplete=false;await completed.run();assert.equal(completed.nativeWrites,1);assert.equal(completed.optionsWrites,1);
   const changed=fixture();changed.failOptions=true;await assert.rejects(changed.run());changed.native.nom="Correction IntraNAP";await assert.rejects(changed.run(),/fiche creee a change/);assert.equal(changed.optionsWrites,0);
   const zero=fixture();zero.zeroRows=true;await assert.rejects(zero.run(),/aucune personne creee/);assert.equal(zero.nativeWrites,0);assert.equal(zero.audit.phase,"prepared");
-  for(const data of [{...input,creationId:"invalid"},{...input,person:{...input.person,licenseNumber:"A-12-123"}},{...input,person:{...input.person,birthDate:""}},{...input,person:{...input.person,birthDate:"2026-02-30"}},{...input,person:{...input.person,roles:{teamLeader:false,official:false}}}]) assert.throws(()=>creation(data),TypeError);
+  for(const data of [{...input,creationId:"invalid"},{...input,person:{...input.person,licenseNumber:""}},{...input,person:{...input.person,birthDate:""}},{...input,person:{...input.person,birthDate:"2026-02-30"}},{...input,person:{...input.person,roles:{teamLeader:false,official:false}}}]) assert.throws(()=>creation(data),TypeError);
   console.log("Creation personne NAP : chef sans role officiel, droits, sauvegarde, doublon, insertion incertaine non repetee, reprise des roles et aucun engagement cree verifies.");
 })().catch(error=>{console.error(error);process.exitCode=1;});

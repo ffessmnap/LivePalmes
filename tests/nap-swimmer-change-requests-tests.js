@@ -120,7 +120,7 @@ function fixture(options = {}) {
   const browser = fs.readFileSync("assets/livepalmes-admin-portal.js", "utf8");
   assert.ok(browser.includes("if (swimmer.napSource && elements.engagementsSwimmerCorrectionForm)"));
   assert.ok(browser.includes('String(swimmer.licenseNumber ?? "")'));
-  assert.ok(browser.includes('if (payload.napSource && !direct) delete payload.proposed.licenseNumber;'));
+  assert.ok(browser.includes('else if(payload.napSource&&!direct)delete payload.proposed.licenseNumber;'));
   const snapshotCode = source.slice(source.indexOf("function engagementSwimmerIdentitySnapshot("), source.indexOf("function cleanEngagementSwimmerIdentityCorrection("));
   const dtoCode = source.slice(source.indexOf("function engagementSwimmerChangeRequestItem("), source.indexOf("async function sendEngagementSwimmerChangeResolutionNotification("));
   const dto = { cleanText: value => String(value || ""), cleanIsoDate: value => value || "", cleanFirestoreValue: value => value };

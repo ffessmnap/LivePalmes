@@ -7,7 +7,7 @@ const PAGE_SIZE=100;
 const OPTION_COLUMNS=require("./nap-approved-people-schema").columns.map(([name])=>name);
 const SOURCES={
   leaders:{table:"chefsdequipe",columns:["id","compet","nom","prenom","date","club","pourclub"],prefix:"nap-leader"},
-  officials:{table:"officiels",columns:["id","nom","prenom","date","club"],prefix:"nap-official"}
+  officials:{table:"officiels",columns:["id","nom","prenom","date","club","sexe","number"],prefix:"nap-official"}
 };
 function normalizeOptions(row) {
   if(!row) return null;
@@ -27,7 +27,7 @@ function person(row,kind,options=null) {
   return {id:`${spec.prefix}-${row.id}`,nativePersonId:String(row.id),nativePersonKind:kind,napSource:true,nativeDirectoryReadOnly:true,nativeIdentityEditable:kind==="officials",nativeStatusEditable:kind==="officials",
     napFingerprint:createHash("sha256").update(JSON.stringify([spec.columns.map(key=>[key,row[key]]),options?OPTION_COLUMNS.map(key=>[key,options[key]]):null])).digest("hex"),
     firstName:String(row.prenom || "").trim(),lastName:String(row.nom || "").trim(),birthDate:date(row.date),clubId:String(row.club),
-    licenseNumber:"",sex:"",active:options?Number(options.active)===1:true,roles:options?{teamLeader:Number(options.role_team_leader)===1,official:Number(options.role_official)===1}:{teamLeader:true,official:kind==="officials"},
+    licenseNumber:String(row.number||"").trim(),sex:["F","M"].includes(row.sexe)?row.sexe:"",active:options?Number(options.active)===1:true,roles:options?{teamLeader:Number(options.role_team_leader)===1,official:Number(options.role_official)===1}:{teamLeader:true,official:kind==="officials"},
     ...(kind==="leaders"?{nativeCompetitionId:String(row.compet),representedClubId:String(row.pourclub)}:{})};
 }
 async function readClubPeople(pool,input,authorize) {

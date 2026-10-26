@@ -5,7 +5,7 @@ const {SPECS}=require("../functions/nap-portal-competition-change");
 const authority=Object.fromEntries(["competitions","compet_parametres"].map(table=>[table,Object.fromEntries(SPECS[table].columns.map(key=>[key,key==="id"?5140:null]))]));
 authority.options=null;
 authority.nativeLeader={id:30,compet:5140,nom:"CHEF",prenom:"Exemple",date:"1980-01-01",club:"106",pourclub:""};
-const native={id:7,nom:"D'EXEMPLE",prenom:"Exemple",date:"1980-01-03",club:"106"};
+const native={id:7,nom:"D'EXEMPLE",prenom:"Exemple",date:"1980-01-03",club:"106",sexe:null,number:null};
 const before={id:20,compet:5140,officiel:8,club:"106"};
 const plan={competitionId:5140,clubId:"106",additions:[native],removals:[before]};
 const end="2026-10-07T19:59:00.000Z";

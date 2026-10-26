@@ -2,7 +2,7 @@
 const assert=require("node:assert/strict");
 const {person}=require("../functions/nap-club-people");
 const service=require("../functions/nap-person-deletion-plan");
-const native={id:7,nom:"NOM",prenom:"Prenom",date:"1980-01-01",club:"106"};
+const native={id:7,nom:"NOM",prenom:"Prenom",date:"1980-01-01",club:"106",sexe:null,number:null};
 const input={personId:"nap-official-7",actorUid:"national",confirmPermanent:true,expectedFingerprint:person(native,"officials").napFingerprint,timestamp:"2026-10-09 20:00:00.000000"};
 const entries=[{id:1,compet:10,officiel:7,club:"106"},{id:9,compet:11,officiel:7,club:"107"}];
 const original=JSON.stringify({native,entries});

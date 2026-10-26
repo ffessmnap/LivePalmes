@@ -2,7 +2,7 @@
 const assert=require("node:assert/strict");
 const {officialIds,planOfficials}=require("../functions/nap-official-entry-plan");
 const {changedOptions}=require("../functions/nap-club-person-status");
-const native={id:7,nom:"OFFICIEL",prenom:"Exemple",date:"1980-01-03",club:"106"};
+const native={id:7,nom:"OFFICIEL",prenom:"Exemple",date:"1980-01-03",club:"106",sexe:null,number:null};
 const pack={competitionId:"5140",clubId:"106",officials:[],leaders:[{id:1,compet:5140,nom:"CHEF",prenom:"Autre",date:"1970-01-02",club:"106",pourclub:""}],inscriptions:[],members:[],swimmers:[]};
 const run=(p=pack,ids=["nap-official-7"],people=[{native,options:null}])=>planOfficials(p,ids,people);
 assert.deepEqual(officialIds(["nap-official-7","nap-official-7"]),[7]);

@@ -241,6 +241,8 @@ function runUnitTests() {
     "nap-license-partial-validation-tests.js",
     "nap-swimmer-change-requests-tests.js",
     "nap-club-person-edit-tests.js",
+    "nap-club-identity-completion-tests.js",
+    "nap-person-change-callable-tests.js",
     "nap-club-person-create-tests.js",
     "nap-club-person-edit-ui-tests.js",
     "nap-official-entry-plan-tests.js",

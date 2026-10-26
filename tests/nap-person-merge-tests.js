@@ -4,7 +4,7 @@ const {person,OPTION_COLUMNS}=require("../functions/nap-club-people");
 const plans=require("../functions/nap-person-merge-plan"),service=require("../functions/nap-person-merge");
 const oldInspect=schema.inspect,oldValidate=schema.validate;schema.inspect=async()=>({});schema.validate=()=>({history:true,index:true});
 function fixture() {
- const source={id:7,nom:"SOURCE",prenom:"Personne",date:"1980-01-01",club:"106"},target={id:8,nom:"CIBLE",prenom:"Personne",date:"1980-01-01",club:"106"};
+ const source={id:7,nom:"SOURCE",prenom:"Personne",date:"1980-01-01",club:"106",sexe:null,number:null},target={id:8,nom:"CIBLE",prenom:"Personne",date:"1980-01-01",club:"106",sexe:null,number:null};
  const state={people:[source,target],options:[],links:[{id:1,compet:10,officiel:7,club:"106"},{id:2,compet:11,officiel:7,club:"106"},{id:3,compet:10,officiel:8,club:"106"}],saved:null,fail:"",locked:false,writes:0,sql:0};
  const input={sourcePersonId:"nap-official-7",targetPersonId:"nap-official-8",actorUid:"national",confirmMerge:true,sourceFingerprint:person(source,"officials").napFingerprint,targetFingerprint:person(target,"officials").napFingerprint};
  const interrupt=stage=>{if(state.fail===stage)throw Error("interrupted "+stage);};

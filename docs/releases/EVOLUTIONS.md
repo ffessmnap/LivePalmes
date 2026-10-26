@@ -2,6 +2,12 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 26 octobre — Complétion des officiels et licences manquantes du club
+
+- Accord d’Antoine sur TEST : crayon commun nageurs/officiels ; seuls les champs vides sont complétables sans notification, toute correction d’une valeur connue est soumise au national. Nouvelle fiche complète obligatoire ; numéro à vie verrouillé dès sa saisie. Licence nageur manquante saisissable sans demande ; contrôle saisonnier conservé, confirmé explicitement dans la discussion. Rôles gérables séparément, compétitions conservées.
+- Préparation de deux colonnes nullable `officiels.sexe` et `officiels.number` : aucun remplissage automatique, aucun index ni nouvelle collection. Circuit de demandes existant réutilisé ; budgets bornés détaillés dans `module-engagements.md`. TEST et PROD partagent NAP ; les recettes d’écriture utilisent uniquement des fixtures hors réseau.
+- État : préparation locale, tests serveur et parcours du vrai formulaire 1440/390/320 px réussis. Vérification globale locale reprise après adaptation des fixtures aux deux colonnes ; CI Linux, preuve de structure, PR et publication TEST à compléter. Aucun visa utilisateur du rendu final ni publication PROD.
+
 ### 26 octobre — Mes officiels : annuaire modifiable et tableau compact
 
 - Demande explicite d’Antoine : exclure les chefs d’équipe déclarés pour une compétition et reprendre le format compact de Mes nageurs. Filtrage limité au rendu du club, sans modifier les données partagées avec les dossiers de compétition ; colonnes stables, hauteur adaptée au contenu, inactifs sans opacité globale.

@@ -269,7 +269,9 @@ if (ENVIRONMENT.projectId === "livepalmes-test") {
         complete: target => writeAuditLogOnce("nap.performanceClubs.authorizedRepair.complete", "github-livepalmes-test-backend", target, "nap-nora-13787-performance-clubs-20261024")
       }) : dtnSettings ? await require("./nap-dtn-settings-migration").migrateDtnSettings(napPool, db, request.body)
         : dtnSchema ? await require("./nap-approved-dtn-schema").approvedDtnSchema(napPool, request.body)
-        : peopleSchema ? await require("./nap-approved-people-schema").approvedPeopleSchema(napPool, request.body)
+        : peopleSchema ? request.body?.confirmation === "nap-add-official-identity-fields"
+          ? await require("./nap-approved-official-identity-schema").approvedOfficialIdentitySchema(napPool,request.body)
+          : await require("./nap-approved-people-schema").approvedPeopleSchema(napPool, request.body)
         : closureSchema ? await require("./nap-approved-closure-schema").approvedClosureSchema(napPool, request.body)
         : portalSchema ? await require("./nap-approved-portal-schema").approvedPortalSchema(napPool, request.body)
         : swimmerCorrection ? await require("./nap-approved-swimmer-correction").approvedSwimmerCorrection(napPool, request.body, {
@@ -12524,6 +12526,15 @@ exports.saveEngagementClubPerson = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT
   const context = await engagementClubAccessContext(request);
   if(ENVIRONMENT.sportingDataSource === "nap") {
     try {
+      if(request.data?.roles) {
+        return await require("./nap-club-person-status").changeNativePersonStatus(require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD),{
+          clubId:String(context.clubId),actorUid:context.uid,personId:request.data.personId,expectedFingerprint:request.data.expectedFingerprint,active:request.data.active,roles:request.data.roles
+        },{
+          read:async operation=>{const snapshot=await db.collection("auditLogs").doc(`nap-person-roles-${operation}-before`).get();return snapshot.exists?snapshot.data().target:null;},
+          prepare:(operation,target)=>db.collection("auditLogs").doc(`nap-person-roles-${operation}-before`).create({action:"nap.person.roles.prepare",actorUid:context.uid,target,createdAt:new Date().toISOString()}),
+          complete:(operation,target)=>writeAuditLogOnce("nap.person.roles.changed",context.uid,target,operation)
+        },scope=>{if(scope.clubId!==String(context.clubId)) throw new HttpsError("permission-denied","Personne hors club.");});
+      }
       if (!cleanText(request.data?.personId)) {
         return await require("./nap-club-person-create").createNativePerson(require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD), {
           clubId:String(context.clubId), actorUid:context.uid, creationId:request.data?.creationId, person:request.data?.person
@@ -14196,7 +14207,7 @@ function engagementSwimmerChangeRequestItem(doc) {
   const data = doc.data() || {};
   return cleanFirestoreValue({
     id: doc.id,
-    requestType: "swimmer-change",
+    requestType: data.requestType === "person-change" ? "person-change" : "swimmer-change",
     reportType: data.reportType === "duplicate" ? "duplicate" : "correction",
     status: cleanText(data.status).slice(0, 40),
     napSource: data.napSource === true,
@@ -14280,11 +14291,17 @@ exports.requestEngagementClubSwimmerChange = onCall({ ...ENGAGEMENT_SWIMMER_CORR
   if (ENVIRONMENT.sportingDataSource === "nap") {
     try {
       const nap = require("./nap-portal-swimmers");
-      const proposal = await require("./nap-swimmer-change-requests").prepareRequest(nap.portalPool(process.env.LIVEPALMES_NAP_PASSWORD), request.data, context);
-      const requestId = stableHash(["nap", proposal.targetSwimmerId, context.clubId].join("|")).slice(0, 40);
+      if(request.data?.completeLicense===true) return await require("./nap-club-license-fill").fillClubLicense(nap.portalPool(process.env.LIVEPALMES_NAP_PASSWORD),request.data,context,{
+        read:async operation=>{const snapshot=await db.collection("auditLogs").doc(`nap-club-license-${operation}-before`).get();return snapshot.exists?snapshot.data().target:null;},
+        prepare:(operation,target)=>db.collection("auditLogs").doc(`nap-club-license-${operation}-before`).create({action:"nap.club.license.fill.prepare",actorUid:context.uid,target,createdAt:new Date().toISOString()}),
+        complete:(operation,target)=>writeAuditLogOnce("nap.club.license.filled",context.uid,{...target,auditPreparationId:`nap-club-license-${operation}-before`},operation)
+      });
+      const requestHelper=request.data?.personId ? require("./nap-person-change-requests") : require("./nap-swimmer-change-requests");
+      const proposal = await requestHelper.prepareRequest(nap.portalPool(process.env.LIVEPALMES_NAP_PASSWORD), request.data, context);
+      const requestId = stableHash([proposal.requestType === "person-change" ? "nap-person" : "nap", proposal.targetSwimmerId, context.clubId].join("|")).slice(0, 40);
       const ref = db.collection(ENGAGEMENT_SWIMMER_CHANGE_REQUESTS_COLLECTION).doc(requestId);
       const now = new Date().toISOString();
-      const payload = { ...proposal, id: requestId, requestType: "swimmer-change", status: "pending",
+      const payload = { ...proposal, id: requestId, requestType: proposal.requestType || "swimmer-change", status: "pending",
         clubId: context.clubId, clubName: context.clubName, regionId: context.regionId,
         requestedAt: now, requestedBy: context.uid, requestedByEmail: context.email || "",
         requestedByFirstName: context.firstName || "", requestedByLastName: context.lastName || "",
@@ -14752,7 +14769,7 @@ exports.resolveEngagementSwimmerChangeRequest = onCall(ENVIRONMENT.sportingDataS
     }
     let nativeConnection, nativeLock, resolution, claimed = false, claimWasExisting = false, writeAttempted = false;
     try {
-      const helper = require("./nap-swimmer-change-requests");
+      const helper = data.requestType === "person-change" ? require("./nap-person-change-requests") : require("./nap-swimmer-change-requests");
       resolution = helper.prepareResolution(data, { ...request.data, decision, resolutionNote }, context.uid);
       if (data.status !== "pending") {
         if (data.status === decision && data.nativeResolution?.key === resolution.key) return { ok: true, request: engagementSwimmerChangeRequestItem(snapshot), result: data.result || {} };
@@ -14781,7 +14798,15 @@ exports.resolveEngagementSwimmerChangeRequest = onCall(ENVIRONMENT.sportingDataS
           if (mutation && response[0]?.affectedRows === 0) writeAttempted = false;
           return response;
         } };
-        result = await nap.correctPortalIdentity(correctionConnection, {
+        if(data.requestType === "person-change") {
+          result=await require("./nap-club-person-edit").editNativePerson(nap.portalPool(process.env.LIVEPALMES_NAP_PASSWORD),{
+            clubId:String(data.clubId),actorUid:context.uid,personId:data.targetSwimmerId,expectedFingerprint:resolution.expectedFingerprint,patch:resolution.proposed
+          },{
+            read:async operation=>{const before=await db.collection("auditLogs").doc(`nap-person-identity-${operation}-before`).get();return before.exists?before.data().target:null;},
+            prepare:(operation,target)=>db.collection("auditLogs").doc(`nap-person-identity-${operation}-before`).create({action:"nap.person.identity.prepare",actorUid:context.uid,target,createdAt:new Date().toISOString()}),
+            complete:(operation,target)=>writeAuditLogOnce("nap.person.identityCorrected",context.uid,{...target,auditPreparationId:`nap-person-identity-${operation}-before`},operation)
+          },()=>{if(!context.national)throw new HttpsError("permission-denied","Visa national requis.");},{fillOnly:false,onWrite:value=>{writeAttempted=value;}});
+        } else result = await nap.correctPortalIdentity(correctionConnection, {
           id: resolution.id, expectedFingerprint: resolution.expectedFingerprint, proposed: resolution.proposed,
           actorUid: context.uid, reason: resolution.reason
         }, {
