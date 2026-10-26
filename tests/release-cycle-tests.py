@@ -11,6 +11,12 @@ spec=importlib.util.spec_from_file_location('cycle',Path(__file__).parents[1]/'t
 m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m)
 
 class ReleaseTests(unittest.TestCase):
+    def setUp(self):
+        # Mock deployments must not append fictitious lots to a real Actions summary.
+        summary = patch.dict(os.environ, {'GITHUB_STEP_SUMMARY': ''})
+        summary.start()
+        self.addCleanup(summary.stop)
+
     def test_release_control_commands_remain_separate_shell_lines(self):
         source = (m.ROOT / '.github/workflows/livepalmes-production-release.yml').read_text()
         block = source.split('- name: Verifier le circuit de publication', 1)[1].split('- uses:', 1)[0]
