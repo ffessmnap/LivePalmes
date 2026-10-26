@@ -69,6 +69,8 @@ jobs:
         python tooling/tests/production-grouped-release-tests.py
         python tooling/tests/bcc-publication-tests.py
         python tooling/tests/all-validated-publication-tests.py
+        python tooling/tests/validated-20261026-publication-tests.py
+        python tooling/tests/production-account-history-indexes-tests.py
         node tooling/tests/nap-national-documents-callable-tests.js
         python tooling/tests/production-notification-release-tests.py
         python tooling/tests/production-access-request-release-tests.py

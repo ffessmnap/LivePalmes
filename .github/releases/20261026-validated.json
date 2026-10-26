@@ -1,0 +1,186 @@
+{
+  "schema": 1,
+  "candidate": "cbe39bff1d5bb465c29da5c99f5c3b6c740b9432",
+  "productionCommit": "8b868c7c1382698ee1d04274fcc5b9a56a95d274",
+  "productionHosting": "sites/livepalmes/versions/8e61d94582e91f00",
+  "testRun": 40382239447,
+  "initialAutomaticMailEnabled": true,
+  "testBackendRuns": [],
+  "resolveBccProof": false,
+  "additionalBccFunctions": [
+    "createCompetitionImport",
+    "deleteEngagementNationalClubPerson",
+    "generateEngagementClubRecapPdf",
+    "generateEngagementCompetitionTxtExport",
+    "getEngagementClubEntry",
+    "getEngagementClubEntryTimeHistory",
+    "getEngagementCompetition",
+    "grantEngagementQualificationException",
+    "listCompetitionImports",
+    "listEngagementAccessRequests",
+    "listEngagementClubPeople",
+    "listEngagementNationalClubPeople",
+    "listEngagementSwimmerChangeRequests",
+    "mergeEngagementNationalClubPerson",
+    "previewCompetitionImport",
+    "previewEngagementClubSwimmerEventTimes",
+    "previewEngagementClubSwimmerEventTimesBatch",
+    "processEngagementQualificationJob",
+    "readNapPublicSwimmer",
+    "removeEngagementClubTeamLeader",
+    "requestEngagementClubSwimmerChange",
+    "resolveEngagementSwimmerChangeRequest",
+    "saveEngagementClubIndividualEntries",
+    "saveEngagementClubOfficials",
+    "saveEngagementClubPerson",
+    "saveEngagementClubRelays",
+    "saveEngagementClubSwimmerSelection",
+    "saveEngagementClubSwimmerSelections",
+    "saveEngagementClubTeamLeader",
+    "setEngagementClubPersonStatus",
+    "setEngagementNationalClubPersonStatus"
+  ],
+  "productionAccountHistoryIndexes": {
+    "candidate": "cbe39bff1d5bb465c29da5c99f5c3b6c740b9432",
+    "collection": "engagementAccessRequests",
+    "definitions": [
+      {
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "status",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "resolvedAt",
+            "order": "DESCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "DESCENDING"
+          }
+        ]
+      },
+      {
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "regionId",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "status",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "resolvedAt",
+            "order": "DESCENDING"
+          },
+          {
+            "fieldPath": "__name__",
+            "order": "DESCENDING"
+          }
+        ]
+      }
+    ],
+    "addOnly": true,
+    "delete": false,
+    "documents": false
+  },
+  "activeMailPreservation": {
+    "scope": "all",
+    "revision": 7,
+    "documentSha256": "67f7e1848de939a6b4f67d69951742fccaf9f2f585a46b3f410ac1c2fafb3e79",
+    "approval": "Oui, préparer cette adaptation limitée"
+  },
+  "changes": [
+    {
+      "title": "Onze lots validés : import ZIP NAP/PDF, TXT privé, relais publics/temps alignés, sous-texte Résultats, import compact/exclusions, alertes relais, historique comptes, annuaire/tri officiels, identités/licences, TXT manuel Andernos",
+      "paths": [
+        "assets/livepalmes-access-request-history.js",
+        "assets/livepalmes-admin-portal.css",
+        "assets/livepalmes-admin-portal.js",
+        "assets/livepalmes-club-identity.js",
+        "assets/livepalmes-import-source.js",
+        "assets/pages/competition.js",
+        "assets/public/livepalmes-public-calendar.css",
+        "competition.html",
+        "functions/access-request-history.js",
+        "functions/index.js",
+        "functions/nap-approved-official-identity-schema.js",
+        "functions/nap-club-identity-fields.js",
+        "functions/nap-club-license-fill.js",
+        "functions/nap-club-people.js",
+        "functions/nap-club-person-create.js",
+        "functions/nap-club-person-edit.js",
+        "functions/nap-club-person-status.js",
+        "functions/nap-direct-competition-results.js",
+        "functions/nap-import-courses.js",
+        "functions/nap-import-first-relays.js",
+        "functions/nap-import-history.js",
+        "functions/nap-import-operation-plan.js",
+        "functions/nap-import-preview.js",
+        "functions/nap-import-private-text.js",
+        "functions/nap-import-protocol-storage.js",
+        "functions/nap-import-protocol.js",
+        "functions/nap-import-response.js",
+        "functions/nap-import-status-results.js",
+        "functions/nap-import-write.js",
+        "functions/nap-person-change-requests.js",
+        "functions/nap-person-deletion.js",
+        "functions/nap-person-merge-plan.js",
+        "functions/nap-person-merge.js",
+        "functions/nap-public-relay-members.js",
+        "functions/nap-winpalme-results.js",
+        "performances/public/import-competitions.css",
+        "performances/public/import-competitions.js",
+        "performances/public/import-swimmer-review.js",
+        "performances/public/winpalme-zip.js",
+        "portail.html"
+      ],
+      "status": "validated",
+      "validation": "Infra26octobre : Oui, les six lots sont validés (ZIP/PDF, TXT privé, relais publics, temps alignés, sous-texte Résultats, import compact). Autres validations explicites consignées dans EVOLUTIONS : alertes relais9a8d9801, historique398f2376, annuaire/tri f876e9a5, identités/licences cbe39bff, contenu TXT Andernos24octobre et ouverture26octobre. Version regroupée cbe39bff / TEST40382239447. Aucun essai métier supplémentaire déduit."
+    }
+  ],
+  "excludedBackendReview": "31 sources sélectionnées par dépendances,82 conservées. Quatre divergences sensibles antérieures documentées sans changement de dépendance8b→cbe. Traitements email/schedulers/worker identiques et conservés ; mails actifs all/révision7, empreinte intégrale contrôlée, sans coupure ni rattrapage. Visa national identité seul ancien exclu actualisé, sans changement de configuration. Deux index Firestore à traiter séparément après accord final et READY avant toute publication. Aucun changement destinataire/préférence/paiement, donnéesParis/CNHC/Basile, migration, DTN, Storage ou import réel.",
+  "excludedBackendEvidence": {
+    "schema": 1,
+    "candidate": "cbe39bff1d5bb465c29da5c99f5c3b6c740b9432",
+    "productionRun": 40239558546,
+    "suite": "retained-calendar-consumers-v1",
+    "functions": [
+      {
+        "name": "disableCompetitionEmailNotifications",
+        "commit": "1df545a62de67a24ff32ca4d1046cce4be6d499f",
+        "revision": "disablecompetitionemailnotifications-00004-kuf",
+        "before": "ee4c904af510b50da7bfdb99cde5dd2833d7fd75adabb03279029e067171e466",
+        "after": "9a0fa3b26e83e7af7ee7d6ad9c3bdde49e23e900847c0115ca8e66a6d62e0eb5",
+        "reason": "Divergence antérieure déjà documentée ; aucune dépendance nouvelle entre 8b868c7c et cbe39bff."
+      },
+      {
+        "name": "resolveEngagementAccessRequest",
+        "commit": "812bad64681a232e6cc3868ba7ec112bcdac7ca2",
+        "revision": "resolveengagementaccessrequest-00040-jev",
+        "before": "6d9fbfa653896f44534bdb644a3f0691c956e96ada2ad0b7acc9555183680c30",
+        "after": "64f2cef4c3950405b45bed61c2ff5aeed23b2ff531853285a9460a3786316663",
+        "reason": "Divergence antérieure déjà documentée ; aucune dépendance nouvelle entre 8b868c7c et cbe39bff."
+      },
+      {
+        "name": "submitEngagementAccessRequest",
+        "commit": "812bad64681a232e6cc3868ba7ec112bcdac7ca2",
+        "revision": "submitengagementaccessrequest-00039-rib",
+        "before": "be16dc361cdb44b67868b8bf06e9149e7b42ecc1ffef72407ba010c9295324ec",
+        "after": "30c0dcbba18ac159df7894e8e47a40dc39488cfaf0af63c11c6f67440298f544",
+        "reason": "Divergence antérieure déjà documentée ; aucune dépendance nouvelle entre 8b868c7c et cbe39bff."
+      },
+      {
+        "name": "updateCurrentEmailNotificationPreferences",
+        "commit": "1df545a62de67a24ff32ca4d1046cce4be6d499f",
+        "revision": "updatecurrentemailnotificationpreferences-00004-gev",
+        "before": "fae1fd731a5a970cee0616314f1461c1e042284edbd8048b042300c96834c7ba",
+        "after": "961a5aadd0a180346322dbd9399034cc00d6f97d0c0230e97d79c2b43daedc91",
+        "reason": "Divergence antérieure déjà documentée ; aucune dépendance nouvelle entre 8b868c7c et cbe39bff."
+      }
+    ]
+  }
+}

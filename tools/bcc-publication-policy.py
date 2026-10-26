@@ -171,5 +171,14 @@ def _scope(all_validated):
 
 
 def for_request(value):
+    if value.get('candidate') == 'cbe39bff1d5bb465c29da5c99f5c3b6c740b9432':
+        return _validated_oct26()
     # Two immutable, independently pinned scopes. Never overwrite the old plan.
     return _scope(value.get('candidate') == '8b868c7c1382698ee1d04274fcc5b9a56a95d274')
+
+
+@lru_cache(maxsize=1)
+def _validated_oct26():
+    spec = importlib.util.spec_from_file_location('validated_oct26', ROOT / 'tools/validated-20261026-policy.py')
+    result = importlib.util.module_from_spec(spec); spec.loader.exec_module(result)
+    return result

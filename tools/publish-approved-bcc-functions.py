@@ -21,7 +21,7 @@ def load(name, path):
 
 def pending(names, before, current, attested, candidate, state, policy, expected_worker):
     worker = state.PREFIX + policy.contract()['worker']
-    policy.require(set(current) in (set(before), set(before) | {worker}), 'Inventaire CCI inattendu')
+    policy.require(set(current) in ((set(before),) if policy.contract().get('existingWorker') else (set(before), set(before) | {worker})), 'Inventaire CCI inattendu')
     result = []
     for full in set(before) - {state.PREFIX + n for n in names}:
         policy.require(state.identity(before[full]) == state.identity(current[full]), 'Exclusion CCI modifiee')
@@ -49,8 +49,9 @@ def publish(candidate, plan, backup, cycle, archive):
     policy.require(cycle.read(os.environ['GOOGLE_APPLICATION_CREDENTIALS'])['project_id'] == 'livepalmes', 'Compte PROD requis')
     report = cycle.read(backup / 'report.json')
     worker = policy.contract()['worker']
+    new_functions = [] if policy.contract().get('existingWorker') else [worker]
     policy.require(report.get('additionalBccFunctions') == names and report['candidate'] == request['candidate']
-        and report['newFunctions'] == [worker] and len(report['functions']) == len(names) - 1, 'Sauvegarde CCI hors bilan')
+        and report['newFunctions'] == new_functions and len(report['functions']) == len(names) - len(new_functions), 'Sauvegarde CCI hors bilan')
     state = load('bcc_publish_state', Path(__file__).with_name('production-release-state.py'))
     guard = load('bcc_publish_guard', Path(__file__).with_name('check-production-bcc.py'))
     guard.main('paused', plan)
@@ -73,7 +74,7 @@ def publish(candidate, plan, backup, cycle, archive):
         req = urllib.request.Request(upload['uploadUrl'], method='PUT', data=data, headers={'Content-Type': 'application/zip'})
         with urllib.request.urlopen(req, timeout=120): pass
         source = upload['storageSource']
-        if worker in todo:
+        if worker in todo and not policy.contract().get('existingWorker'):
             body = {'name': state.PREFIX + worker, 'environment': 'GEN_2',
                 'buildConfig': {'runtime': 'nodejs22', 'entryPoint': worker, 'source': {'storageSource': source}},
                 'serviceConfig': expected_worker, 'labels': {'livepalmes-commit': request['candidate']}}

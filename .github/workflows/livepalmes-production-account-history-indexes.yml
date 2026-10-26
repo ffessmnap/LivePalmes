@@ -1,0 +1,49 @@
+name: Preparer les deux index PROD de historique des comptes
+'on':
+  workflow_dispatch:
+    inputs:
+      mode:
+        type: choice
+        options: [inspect, apply]
+        default: inspect
+        required: true
+      approved_plan:
+        type: string
+        default: ''
+      confirmation:
+        type: string
+        default: ''
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: livepalmes-production
+  cancel-in-progress: false
+jobs:
+  indexes:
+    if: github.ref == 'refs/heads/main' && github.run_attempt == 1
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: production
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      MODE: ${{ inputs.mode }}
+      APPROVED_PLAN: ${{ inputs.approved_plan }}
+      INDEX_CONFIRMATION: ${{ inputs.confirmation }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - run: python tests/production-account-history-indexes-tests.py
+      - uses: google-github-actions/auth@v3
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_BACKEND }}
+          project_id: livepalmes
+      - uses: google-github-actions/setup-gcloud@v3
+      - run: python tools/production-account-history-indexes.py "$MODE" "$RUNNER_TEMP/account-indexes" "$APPROVED_PLAN"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: production-account-history-indexes
+          path: ${{ runner.temp }}/account-indexes/*.json
+          if-no-files-found: error
+          retention-days: 14

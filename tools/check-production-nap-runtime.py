@@ -20,7 +20,9 @@ def check(fetch):
 
 def main():
     request = json.loads((Path(os.environ['PLAN']) / 'request.json').read_text())
-    if not request.get('additionalPublicNapFunctions'):
+    if not request.get('additionalPublicNapFunctions') and not (
+        request.get('candidate') == 'cbe39bff1d5bb465c29da5c99f5c3b6c740b9432'
+        and 'readNapPublicSwimmer' in request.get('additionalBccFunctions', [])):
         return
     def fetch(url):
         with urllib.request.urlopen(url, timeout=45) as response:
