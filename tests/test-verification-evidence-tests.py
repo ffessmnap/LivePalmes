@@ -69,6 +69,27 @@ class EvidenceTests(unittest.TestCase):
         self.assertLess(ci.index('node tools/verify-livepalmes.js'), ci.index('application-verification/verification.json'))
         self.assertIn("if: github.event_name == 'push'", ci)
 
+    def test_source_operation_timings_preserve_errors_and_do_not_expose_metadata(self):
+        spec = importlib.util.spec_from_file_location('state', ROOT/'tools/production-release-state.py')
+        state = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(state)
+        for failing in [False, True]:
+            with tempfile.TemporaryDirectory() as directory:
+                summary = Path(directory)/'summary.txt'
+                operation = {'done': True, 'metadata': {'target': 'PRIVATE\nCONTENT'}}
+                if failing:
+                    operation['error'] = {'message': 'PRIVATE'}
+                with patch.dict(os.environ, {'GITHUB_STEP_SUMMARY': str(summary)}), patch.object(state.time, 'sleep') as pause:
+                    if failing:
+                        with self.assertRaisesRegex(ValueError, 'Operation Firebase en echec'):
+                            state.wait_operation(operation)
+                    else:
+                        state.wait_operation(operation)
+                    pause.assert_not_called()
+                content = summary.read_text(encoding='utf-8')
+                self.assertNotIn('PRIVATE', content)
+                self.assertIn('interrompue' if failing else 'terminee', content)
+
 
 if __name__ == '__main__':
     unittest.main()
