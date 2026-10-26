@@ -1,5 +1,8 @@
 import importlib.util
 import os
+import json
+import shutil
+import subprocess
 from pathlib import Path
 import tempfile
 import unittest
@@ -12,6 +15,18 @@ spec.loader.exec_module(m)
 
 
 class EvidenceTests(unittest.TestCase):
+    def test_rendered_workflow_shell_is_valid(self):
+        bash = shutil.which('bash')
+        if os.name == 'nt' and Path('C:/Program Files/Git/bin/bash.exe').exists():
+            bash = 'C:/Program Files/Git/bin/bash.exe'
+        if not bash:
+            self.skipTest('bash absent ; controle obligatoire sur CI Linux')
+        script = "const y=require('./tests/firestore-rules/node_modules/js-yaml'),f=require('fs'); const w=y.load(f.readFileSync('.github/workflows/livepalmes-test-common.yml','utf8')); console.log(JSON.stringify(Object.values(w.jobs).flatMap(j=>(j.steps||[]).filter(s=>s.run).map(s=>s.run))));"
+        scripts = json.loads(subprocess.check_output(['node', '-e', script], cwd=ROOT, text=True))
+        for script in scripts:
+            result = subprocess.run([bash, '-n'], input=script, text=True, capture_output=True)
+            self.assertEqual(result.returncode, 0, result.stderr)
+
     def info(self, **values):
         return {'id': 12, 'head_sha': 'a'*40, 'head_branch': 'main', 'event': 'push',
                 'path': m.WORKFLOW, 'status': 'completed', 'conclusion': 'success',
