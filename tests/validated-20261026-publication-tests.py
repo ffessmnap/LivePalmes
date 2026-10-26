@@ -61,6 +61,7 @@ class PublicationTests(unittest.TestCase):
             guard.check_active_oct26("paused",Path(directory),fake,"offline")
             guard.check_active_oct26("after",Path(directory),fake,"offline")
             self.assertTrue(all(call.args[0].get_method()=="GET" for call in network.call_args_list))
+            self.assertTrue(all(call.args[0].full_url==indexes.URL+'?pageSize=0' for call in network.call_args_list))
             document["fields"]["revision"]={"integerValue":"8"}
             with self.assertRaises(ValueError):guard.check_active_oct26("after",Path(directory),fake,"offline")
             document["fields"]["revision"]={"integerValue":"7"};selected[0]["state"]="CREATING"
