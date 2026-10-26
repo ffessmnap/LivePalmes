@@ -98,6 +98,9 @@ def main(mode, directory):
     credentials = json.loads(Path(os.environ['GOOGLE_APPLICATION_CREDENTIALS']).read_text())
     policy.require(credentials.get('project_id') == 'livepalmes', 'Compte PROD requis')
     token = subprocess.check_output(['gcloud', 'auth', 'application-default', 'print-access-token'], text=True).strip()
+    if scope.contract().get('preserveActive'):
+        check_active_oct26(mode, directory, scope, token)
+        return
     path = directory / 'bcc-paused-witness.json'
     previous = json.loads(path.read_text()) if path.exists() else None
     if mode == 'after':
@@ -123,6 +126,42 @@ def main(mode, directory):
     elif mode == 'initial':
         (directory / 'bcc-initial-witness.json').write_text(json.dumps(witness, indent=2))
     print('Garde CCI ' + mode + ' reussi ; lectures techniques uniquement.')
+
+
+def check_active_oct26(mode, directory, scope, token):
+    policy.require(mode in ['initial', 'paused', 'after', 'resumed'], 'Mode de garde interdit')
+    c = scope.contract()
+    document = get(MAIL_URL, token)
+    policy.require(digest(document) == c['mailSha256']
+        and document.get('fields', {}).get('enabled') == {'booleanValue': True}
+        and document.get('fields', {}).get('scope') == {'stringValue': 'all'}
+        and document.get('fields', {}).get('revision') == {'integerValue': '7'}, 'Reglage actif complet modifie')
+    policy.require(scheduler_digest(get(SCHEDULER_URL, token)) == c['schedulerSha256'], 'Scheduler modifie')
+    policy.require(check_queue(get(QUEUE_URL, token)) == c['queueSha256'], 'File modifiee')
+    iam = get('https://run.googleapis.com/v2/projects/livepalmes/locations/europe-west1/services/processnapnotificationtask:getIamPolicy', token)
+    policy.require(digest(iam) == c['workerIamSha256']
+        and not any(m in {'allUsers', 'allAuthenticatedUsers'} for b in iam.get('bindings', []) for m in b.get('members', [])), 'IAM prive worker modifie')
+    index_spec = importlib.util.spec_from_file_location('active_indexes', ROOT / 'tools/production-account-history-indexes.py')
+    indexes = importlib.util.module_from_spec(index_spec); index_spec.loader.exec_module(indexes)
+    url = indexes.URL + '?pageSize=100'
+    with urllib.request.urlopen(urllib.request.Request(url, headers={'Authorization': 'Bearer ' + token}), timeout=30) as response:
+        result = json.load(response)
+    policy.require(not result.get('nextPageToken'), 'Index tronques : arret')
+    rows = result.get('indexes', [])
+    indexes.missing(rows)
+    selected = [next((r for r in rows if indexes.matching(r, d)), None) for d in indexes.DEFINITIONS]
+    policy.require(all(r and r.get('state') == 'READY' for r in selected), 'Deux index PROD READY requis avant publication')
+    witness = {'mailSha256': c['mailSha256'], 'schedulerSha256': c['schedulerSha256'],
+        'queueSha256': c['queueSha256'], 'indexSha256': digest(selected), 'activeUnchanged': True}
+    path = directory / 'bcc-active-before-witness.json'
+    if path.exists():
+        policy.require(json.loads(path.read_text()) == witness, 'Etat actif ou index modifies pendant publication')
+    else:
+        policy.require(mode not in ['after', 'resumed'], 'Temoin actif initial requis')
+        path.write_text(json.dumps(witness, indent=2))
+    (directory / 'bcc-worker-iam-witness.json').write_text(json.dumps({'sha256': c['workerIamSha256']}))
+    (directory / ('bcc-' + mode + '-witness.json')).write_text(json.dumps(witness, indent=2))
+    print('Mails actifs tous clubs et deux index READY verifies ; aucune ecriture cloud.')
 
 
 if __name__ == '__main__':
