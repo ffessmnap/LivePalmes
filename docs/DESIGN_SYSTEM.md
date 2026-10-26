@@ -2,6 +2,10 @@
 
 <!-- description: Référence du langage visuel, des composants d’interface et des règles responsive déjà présents dans LivePalmes. -->
 
+## Annuaire des officiels du club — 26 octobre 2026
+
+« Mes officiels » reprend le tableau compact de « Mes nageurs » : lignes de 42 px minimum, en-tête fixe, colonnes partagées de largeur constante et détails dépliables sur mobile. Les lignes grandissent avec leur contenu sans superposition ; les inactifs gardent un texte et des actions opaques. En NAP, cette vue présente uniquement les fiches modifiables de l’annuaire `officiels`, sans les déclarations de chefs d’équipe propres aux compétitions. Les sélecteurs des dossiers de compétition conservent leurs sources.
+
 ## Historique des demandes de comptes — 26 octobre 2026
 
 Dans Demandes d’accès, les boutons « À traiter » et « Historique » forment un groupe avec état `aria-pressed` ; « Actualiser » agit sur la vue ouverte. L’historique réutilise les cartes de demandes en lecture seule : identité, club/région, décision, date/heure de Paris et auteur. Le motif du refus est dépliable. Les colonnes se replient sur mobile et les noms/adresses longs reviennent à la ligne ; la suite se charge par bouton explicite.
