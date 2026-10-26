@@ -15,10 +15,14 @@ function personFor(row) {
 }
 async function readCompetitionResults(pool, input) {
   const id = positiveId(input);
-  const rows = await execute(pool, `SELECT STRAIGHT_JOIN ${PROJECTION},COALESCE(cp.abre_club,cn.abre_club) AS abre_club,COALESCE(cp.nom_club,cn.nom_club) AS nom_club FROM perfs p FORCE INDEX (livepalmes_compet_id) JOIN competitions c ON c.id=p.compet LEFT JOIN nageurs n ON n.id=p.nageur LEFT JOIN clubs cp ON cp.num_club=p.club AND CAST(cp.num_club AS CHAR)=p.club LEFT JOIN clubs cn ON cn.num_club=n.club AND CAST(cn.num_club AS CHAR)=n.club WHERE ${visiblePerformanceSql()} AND p.compet=? ORDER BY p.id LIMIT ${MAX_RESULTS + 1}`, [id]);
+  let rows = await execute(pool, `SELECT STRAIGHT_JOIN ${PROJECTION},COALESCE(cp.abre_club,cn.abre_club) AS abre_club,COALESCE(cp.nom_club,cn.nom_club) AS nom_club FROM perfs p FORCE INDEX (livepalmes_compet_id) JOIN competitions c ON c.id=p.compet LEFT JOIN nageurs n ON n.id=p.nageur LEFT JOIN clubs cp ON cp.num_club=p.club AND CAST(cp.num_club AS CHAR)=p.club LEFT JOIN clubs cn ON cn.num_club=n.club AND CAST(cn.num_club AS CHAR)=n.club WHERE ${visiblePerformanceSql()} AND p.compet=? ORDER BY p.id LIMIT ${MAX_RESULTS + 1}`, [id]);
   if (rows.length > MAX_RESULTS) throw new RangeError("Resultats trop volumineux.");
-  const relays=await execute(pool,"SELECT STRAIGHT_JOIN r.id,r.distance,r.categorie,r.tps4,cl.abre_club,cl.nom_club FROM perfs_relais r FORCE INDEX (livepalmes_compet_id) LEFT JOIN clubs cl ON cl.num_club=r.club AND CAST(cl.num_club AS CHAR)=r.club WHERE r.compet=? ORDER BY r.id LIMIT 1001",[id]);
+  const relays=await execute(pool,"SELECT STRAIGHT_JOIN r.id,r.distance,r.categorie,r.nageur1,r.nageur2,r.nageur3,r.nageur4,r.tps1,r.tps2,r.tps3,r.tps4,cl.abre_club,cl.nom_club FROM perfs_relais r FORCE INDEX (livepalmes_compet_id) LEFT JOIN clubs cl ON cl.num_club=r.club AND CAST(cl.num_club AS CHAR)=r.club WHERE r.compet=? ORDER BY r.id LIMIT 1001",[id]);
   if(relays.length>1000)throw new RangeError("Resultats de relais trop volumineux.");
+  const imported=await require("./nap-import-status-results").readImportStatusResults(pool,id,{withFirstRelays:true});
+  const firstRelayIds=new Set(imported.firstRelayIds);
+  rows=rows.filter(row=>!firstRelayIds.has(Number(row.id)));
+  const relayDetails=require("./nap-public-relay-members"),members=await relayDetails.readMembers(pool,[...relays,...imported.statuses.filter(row=>row.isRelay)]);
   const participants = [...new Set(rows.filter(row => !Number(row.relais)).map(row => Number(row.nageur)).filter(value => value > 0))];
   const personal = new Map(), seasonal = new Map();
   let markersAvailable = participants.length <= MAX_PARTICIPANTS;
@@ -65,16 +69,16 @@ async function readCompetitionResults(pool, input) {
   for(const row of relays) {
     const course=text(row.distance),sex=/^F/.test(row.categorie)?"F":/^H/.test(row.categorie)?"M":"X",key=`${course}|${sex}|relay`,timeValue=duration.parseCompactTime(row.tps4);
     if(!groups.has(key))groups.set(key,{eventLabel:`${course} · Relais`,sexLabel:({F:"Femmes",M:"Hommes"})[sex]||"Mixte",performances:[]});
-    groups.get(key).performances.push({id:`relay:${row.id}`,swimmer:text(row.nom_club||row.abre_club)||"Équipe non renseignée",swimmerId:"",isRelay:true,club:text(row.abre_club||row.nom_club),category:text(row.categorie),categoryLabel:text(row.categorie),time:timeValue?duration.formatTime(timeValue):text(row.tps4),timeValue:timeValue||Infinity,personalBest:false,seasonBest:false});
+    groups.get(key).performances.push({id:`relay:${row.id}`,swimmer:text(row.nom_club||row.abre_club)||"Équipe non renseignée",swimmerId:"",isRelay:true,members:relayDetails.membersFor(row,members.profiles),club:text(row.abre_club||row.nom_club),category:text(row.categorie),categoryLabel:text(row.categorie),time:timeValue?duration.formatTime(timeValue):text(row.tps4),timeValue:timeValue||Infinity,personalBest:false,seasonBest:false});
   }
-  const statuses=await require("./nap-import-status-results").readImportStatusResults(pool,id);
+  const statuses=imported.statuses;
   for(const row of statuses) {
     const key=`${row.course}|${row.sex}|${row.isRelay?"relay":"individual"}`;
     if(!groups.has(key))groups.set(key,{eventLabel:`${row.course}${row.isRelay?" · Relais":""}`,sexLabel:({F:"Femmes",M:"Hommes"})[row.sex]||"Mixte",performances:[]});
-    const {course,sex,...performance}=row;
-    groups.get(key).performances.push({...performance,timeValue:Infinity});
+    const {course,sex,memberIds,...performance}=row;
+    groups.get(key).performances.push({...performance,...(row.isRelay?{members:relayDetails.membersFor(row,members.profiles)}:{}),timeValue:Infinity});
   }
-  return { source: "nap", readAt: new Date().toISOString(), competitionId: String(id), markersAvailable,
+  return { source: "nap", readAt: new Date().toISOString(), competitionId: String(id), markersAvailable,relayMembersAvailable:members.available,
     groups: [...groups.values()].map(group => ({ ...group, markersAvailable, performances: group.performances.sort((a, b) => a.timeValue - b.timeValue || a.swimmer.localeCompare(b.swimmer, "fr")).map(({ timeValue, ...performance }) => performance) })) };
 }
 module.exports = { MAX_HISTORY_ROWS, MAX_PARTICIPANTS, personFor, readCompetitionResults };

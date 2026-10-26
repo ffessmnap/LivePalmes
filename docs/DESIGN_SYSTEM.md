@@ -2,6 +2,10 @@
 
 <!-- description: Référence du langage visuel, des composants d’interface et des règles responsive déjà présents dans LivePalmes. -->
 
+## Détail des relais publics — 26 octobre 2026
+
+Dans les résultats de compétition, la cellule de l’équipe contient un `details/summary` natif « Relayeurs et temps ». Sa liste ordonnée présente les quatre nageurs, leur fraction et leur passage cumulé explicitement nommés ; les noms identifiables reprennent le lien et la confirmation de fiche nageur existants. Un temps absent est signalé, sans valeur calculée par estimation. Le total du relais reste aligné en haut de la ligne. La cellule autorise les retours à la ligne sur mobile ; détails repliés par défaut, accessibles au clavier et au toucher. Aucune nouvelle couleur ou navigation globale.
+
 ## Aide au contrôle des imports — 25 octobre 2026
 
 Complément du 26 octobre : en mode administration d’une compétition NAP, la GED affiche une carte « TXT source du dernier import — privé », avec un bouton de téléchargement et un statut local. Aucun lien public, champ de modification ou bouton de suppression. Le mode club ne monte pas cette carte ; le serveur vérifie les droits au clic. Carte documentaire et bouton existants réutilisés, lisibles sur 320 px. Le bilan de remplacement distingue le TXT privé du PDF public et indique si son contenu change.

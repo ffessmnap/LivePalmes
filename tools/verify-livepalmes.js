@@ -115,6 +115,7 @@ function runUnitTests() {
     "nap-import-write-tests.js",
     "nap-import-zip-write-tests.js",
     "nap-import-private-text-tests.js",
+    "nap-public-relay-results-tests.js",
     "nap-import-client-tests.js",
     "nap-import-callable-tests.js",
     "nap-import-history-tests.js",
