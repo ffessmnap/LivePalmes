@@ -11419,7 +11419,10 @@ exports.generateEngagementCompetitionTxtExport = onCall({ ...CALLABLE_OPTIONS, .
   }
   if(ENVIRONMENT.sportingDataSource === "nap") {
     const result=await nativeAdminCompetitionEntries(context,competitionId);
-    if(result.competition.competitionType!=="pool" && !(result.competition.competitionType==="openWater" && ENVIRONMENT.projectId==="livepalmes-test")) throw new HttpsError("failed-precondition","L'export TXT eau libre sera disponible apres validation de son format.");
+    // Andernos 5136 is the manual TXT approved for production; other water events stay on TEST.
+    const approvedManualWaterExport = result.competition.competitionType === "openWater"
+      && (ENVIRONMENT.projectId === "livepalmes-test" || String(result.competition.id).replace(/^legacy-nap-/, "") === "5136");
+    if(result.competition.competitionType!=="pool" && !approvedManualWaterExport) throw new HttpsError("failed-precondition","L'export TXT eau libre de cette competition n'est pas encore valide pour la production.");
     const entries=result.entries.filter(engagementClubEntryHasParticipants).map(entry=>({...entry,swimmers:entry.swimmers.map(person=>({...person,individualEntries:person.individualEntries.map(course=>course.nativeTime==="599999"?{...course,entryTime:"",manualEntryTime:"",entryTimeValue:0,entryTimeMode:"default595999"}:course)}))}));
     let txt;
     try {
