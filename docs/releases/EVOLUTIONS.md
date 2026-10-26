@@ -2,6 +2,13 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 26 octobre — Exécution du plan PROD40392319716 approuvée dans Infra
+
+- Accord explicite d'Antoine dans Infra : « Je valide le plan 40392319716, y compris les deux index. Lance la PROD avec sauvegarde vérifiée et contrôle de dérive. Garde les mails actifs et inchangés, sans rattrapage, et conserve toutes les exclusions. »
+- Candidat applicatif figé `cbe39bff1d5bb465c29da5c99f5c3b6c740b9432`, preuve TEST40382239447 réutilisée ; plan officiel40392319716 réussi, artefact12684647738 / SHA-256 `e7d1475c42a962778ab304f5fb15e0be413c1d36e7524401ba621ef45398dbc0` authentifié. Sélection31 sources,82 conservées, inventaire113 ; pas de nouvelle publication TEST.
+- Étapes autorisées : contrôle frais de dérive, ajout séparé des seuls deux index d'historique manquants et attente READY, sauvegarde code/configurations/Hosting chiffrée, rouverte et comparée avant publication, sources seules par lots de trois puis Hosting après contrôles. Mails actifs all/révision7, document complet/scheduler/file/IAM privé conservés, sans coupure ni reprise historique. Exclusions intégrales maintenues, notamment Paris/CNHC/Basile, clubs historiques, données métier/import réel, recalcul DTN et nettoyage Storage. Exécution et preuves finales à consigner dans cette entrée ; aucun succès déduit de l'accord.
+- Contrôle frais avant index40393185193 réussi :113 révisions et Hosting conformes à la référence, mails actifs all/révision7, seuil de non-rattrapage et infrastructure inchangés. Tentative d'ajout CI40393361617 arrêtée sur403 ; inspection40393622256 authentifiée : deux index toujours absents et11 index existants inchangés. Aucun rôle IAM ajouté. Même opération approuvée effectuée dans la console Firebase via la session administrateur déjà ouverte : deux créations seulement, définitions relues avant validation, identifiants `CICAgNjpgYIK` et `CICAgJiHgokK`. Disponibilité et comparaison API finale à consigner avant publication du code.
+
 ### 26 octobre — Validation Infra des six nouveaux lots import et résultats
 
 - Préparation #564 intégrée en `b94504c4`, CI Linux40389670247 et [preflight officiel40390122355](https://github.com/ffessmnap/LivePalmes/actions/runs/40390122355) réussis. Artefact release-plan authentifié :31 sources et82 fonctions conservées, sans accès Google pendant le preflight. Inspection séparée des index40390127730 en mode lecture seule arrêtée sur HTTP400 ; aucun index créé, aucune permission ou donnée modifiée. Diagnostic borné du motif API en cours avant de présenter le plan comme exécutable ; cette erreur ne constitue pas une preuve d'index absent ou de droit manquant.
