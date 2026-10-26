@@ -4,7 +4,7 @@
 
 ## Détail des relais publics — 26 octobre 2026
 
-Dans les résultats de compétition, la cellule de l’équipe contient un `details/summary` natif « Relayeurs et temps ». Sa liste ordonnée présente les quatre nageurs, leur fraction et leur passage cumulé explicitement nommés ; les noms identifiables reprennent le lien et la confirmation de fiche nageur existants. Un temps absent est signalé, sans valeur calculée par estimation. Le total du relais reste aligné en haut de la ligne. La cellule autorise les retours à la ligne sur mobile ; détails repliés par défaut, accessibles au clavier et au toucher. Aucune nouvelle couleur ou navigation globale.
+Dans les résultats de compétition, un `details/summary` natif « Relayeurs et temps » occupe une ligne pleine sous l’équipe. La liste présente `1. Prénom NOM [split] temps cumulé`, sans libellés visibles ni phrase explicative. Les trois colonnes partagent leurs largeurs : noms souples, deux colonnes de temps sans retour à la ligne, alignées à droite en chiffres tabulaires ; largeur maximale de 620 px. Un nom long se replie sans déplacer les temps des autres lignes. Les libellés accessibles distinguent les deux temps ; une valeur absente devient `—`. Les liens et confirmations de fiche nageur existants sont conservés. Détails repliés par défaut, accessibles au clavier et au toucher ; total du relais en haut de sa ligne. Aucune nouvelle couleur ou navigation globale.
 
 ## Aide au contrôle des imports — 25 octobre 2026
 
