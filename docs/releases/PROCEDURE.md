@@ -64,6 +64,8 @@ La CI conserve le contrôle applicatif global pour toutes les PR et tous les pus
 
 Les publications de fonctions ajoutent au résumé GitHub la durée, le projet, le mode et les noms de chaque lot contrôlé. Les lots de dix, pauses de cadence et contrôles de révision sont inchangés. Cette mesure ne constitue ni une accélération PROD démontrée ni une autorisation de déploiement PROD.
 
+Installations TEST : les deux `npm ci` indépendants (`functions` et `tests/firestore-rules`) s'exécutent en parallèle avec leurs verrouillages inchangés et le cache npm existant. TEST préfère les paquets en cache et évite le second audit ainsi que les messages de financement ; la CI conserve ses audits. Les deux codes de sortie sont attendus et tout échec arrête le job avant publication. L'étape d'installation est séparée de celle de vérification pour en mesurer le coût.
+
 Pour préparer PROD, réutiliser la publication TEST existante si sa preuve est valide et correspond au candidat et à l'état réellement observé. Ne relancer TEST que si nécessaire : nouvelle version, publication incomplète, preuve périmée ou état modifié.
 
 L’assistant lance `livepalmes-test-common.yml` depuis main, avec `production_commit` égal au SHA applicatif actuellement publié. Workflow sérialisé avec le backend TEST ; aucune annulation forcée d’un déploiement en cours. Depuis la correction approuvée le 25 octobre, un lancement devenu ancien dans la file attendue ne publie rien et prépare un suivi sur main. Une publication déjà engagée termine son commit exact, backend puis Hosting et preuve, même si une autre PR rejoint main entre-temps. Le candidat reste celui du run, intégré à main et contrôlé ; aucun remplacement de code en cours de publication.
