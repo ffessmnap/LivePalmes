@@ -2,6 +2,12 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 26 octobre — TXT source privé des résultats importés
+
+- Accord explicite d’Antoine dans le chat import : conserver le TXT, public et clubs exclus, lecture régionale dans son périmètre et nationale, aucune suppression manuelle ; PDF et TXT courants remplacés au nouvel import. TEST seulement, sans import réel pendant la préparation.
+- Archivage compressé dans le journal NAP existant, octets et encodage d’origine pour les ZIP, limite 5 Mo et contrôle d’empreinte ; pas de nouveau document public ou objet Storage, règle, secret, schéma ni collection. Téléchargement authentifié dans la GED, périmètre natif revérifié avant pointeur/contenu. Remplacement du TXT courant lié au même journal ; archives précédentes conservées en sauvegarde, aucun rattrapage historique.
+- Préparation et contrôles en cours : simulations serveur, droits national/régional/club, interruption et navigateur ordinateur/mobile ; aucune écriture réelle. PR, contrôle Linux et preuve TEST à renseigner après livraison. Recette utilisateur de la version regroupée en attente ; aucune publication PROD.
+
 ### 26 octobre — Enregistrement des ZIP WinPalme dans NAP avec protocole
 
 - Demande et accord explicite d’Antoine dans le chat import : activer sur TEST après analyse, sans importer de résultats réels pendant la préparation. Autorisation de développement distincte de la recette métier et d’un futur premier import réel.

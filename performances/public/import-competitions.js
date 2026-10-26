@@ -1255,7 +1255,7 @@
     if (/\.zip$/i.test(file.name)) {
       if (!global.LivePalmesWinPalmeZip) throw new Error("Lecteur ZIP indisponible. Rechargez le portail.");
       const zipSelection = await global.LivePalmesWinPalmeZip.read(file, elements.encoding?.value || "utf-8");
-      return { sourceType: "winpalme-zip-preview", fileName: zipSelection.manifest.textPath.split('/').pop(), rawText: zipSelection.rawText, protocolManifest:{fileName:zipSelection.manifest.pdfPath.split('/').pop(),size:zipSelection.pdf.size,hash:zipSelection.manifest.pdfHash}, zipSelection };
+      return { sourceType: "winpalme-zip-preview", fileName: zipSelection.manifest.textPath.split('/').pop(), rawText: zipSelection.rawText, textManifest:{fileName:zipSelection.manifest.textPath.split('/').pop(),size:zipSelection.text.size,hash:zipSelection.manifest.textHash,encoding:zipSelection.manifest.textEncoding}, protocolManifest:{fileName:zipSelection.manifest.pdfPath.split('/').pop(),size:zipSelection.pdf.size,hash:zipSelection.manifest.pdfHash}, zipSelection };
     }
     if (isExcelFile(file)) {
       return {
@@ -1330,7 +1330,7 @@
       <p><strong>${escapeHtml(m.name)}</strong> — ${escapeHtml(m.date)} — ${escapeHtml(m.wid)}</p>
       <p>${c.swimmers} nageurs, ${c.clubs} clubs, ${c.individual} résultats individuels et ${c.relays} relais. ${c.timed} lignes avec statut nagé, ${c.statuses} autres statuts à contrôler.</p>
       <p>TXT retenu : <span>${escapeHtml(m.textPath)}</span><br>Dernier protocole : <span>${escapeHtml(m.pdfPath)}</span><br>${escapeHtml(m.pdfDate)} — ${m.protocolVersions} version(s) disponible(s).</p>
-      <p>L’analyse transmet seulement le TXT et l’empreinte du PDF. Après validation nationale, les résultats seront enregistrés dans NAP et le PDF rattaché à la compétition. Le ZIP n’est jamais stocké. Les choix restent temporaires avant enregistrement ; téléchargez le rapport avant de fermer.</p>
+      <p>L’analyse transmet le texte des résultats et les empreintes des fichiers. Après validation nationale, les résultats seront enregistrés dans NAP, le PDF rattaché à la compétition et le TXT archivé en accès réservé aux administrations habilitées. Le ZIP n’est jamais stocké. Les choix restent temporaires avant enregistrement ; téléchargez le rapport avant de fermer.</p>
       <div class="admin-portal-actions"><a class="ghost-button" href="${escapeHtml(currentZipPdfUrl)}" target="_blank" rel="noopener">Consulter le protocole PDF</a><button type="button" class="ghost-button" data-zip-report>Télécharger le rapport de contrôle</button></div>`;
     elements.zipPreview.querySelector('[data-zip-report]').onclick = () => {
       if (currentPreview?.source === 'nap') collectNativeImportChoices();
@@ -1572,7 +1572,7 @@
     const zip=currentPayload.sourceType==='winpalme-zip-preview';
     const replace = zip?currentPayload.confirmReplacement===true:Boolean(elements.warnings.querySelector('[data-nap-replacement]')?.checked);
     if (currentPreview.diff?.requiresReplacementConfirmation && !replace) { setMessage(elements.message, 'Confirmez explicitement les retraits avant de continuer.'); return; }
-    if (!global.confirm(zip?'Enregistrer ces résultats dans la vraie base NAP et publier le protocole PDF ? Les résultats seront visibles immédiatement, y compris depuis TEST.':'Enregistrer ces résultats dans NAP ? Les résultats seront visibles immédiatement.')) return;
+    if (!global.confirm(zip?'Enregistrer ces résultats dans la vraie base NAP, publier le protocole PDF et archiver le TXT privé ? Les résultats seront visibles immédiatement, y compris depuis TEST.':'Enregistrer ces résultats dans NAP et archiver le TXT privé ? Les résultats seront visibles immédiatement.')) return;
     const button = elements.warnings.querySelector('[data-nap-save]');
     button.disabled = true;
     const controls=[...elements.warnings.querySelectorAll('button,input,select')];controls.forEach(el=>el.disabled=true);
@@ -1581,6 +1581,7 @@
       if(!nativeImportOperation){
         const operation={ ...currentPayload, fileName: currentFile.name, operationId: global.crypto.randomUUID(), expectedFingerprint: currentPreview.expectedFingerprint, previewFingerprint: currentPreview.previewFingerprint, confirmReplacement: replace };
         if(zip){if(!currentZipSelection?.pdf)throw new Error('Protocole PDF indisponible : redéposez le ZIP.');operation.protocolDataUrl=await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=()=>reject(new Error('Lecture du PDF impossible.'));reader.readAsDataURL(currentZipSelection.pdf);});}
+        if(zip){const source=await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=()=>reject(new Error('Lecture du TXT source impossible.'));reader.readAsDataURL(currentZipSelection.text);});operation.textArchive={fileName:operation.textManifest.fileName,encoding:operation.textManifest.encoding,dataBase64:String(source).split(',')[1]};}
         nativeImportOperation=operation;
       }
       const result = await callFunction('createCompetitionImport', nativeImportOperation);

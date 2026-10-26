@@ -2,6 +2,12 @@
 
 <!-- description: Checklist de tests manuels à exécuter avant une publication ou après une modification sensible. -->
 
+## TXT source privé des imports — 26 octobre 2026
+
+En simulation hors réseau uniquement : vérifier octets d’origine, CRLF et accents Windows-1252, empreinte et limite de 5 Mo ; refus d’un TXT différent de l’analyse, archive invalide ou journal surdimensionné avant mutation sportive. Contrôler conservation après interruption/reprise et remplacement du pointeur au nouvel import. Un changement du TXT seul impose l’approbation du nouveau bilan ZIP. Aucune ancienne version n’est téléchargeable en fournissant un identifiant au client.
+
+Dans la GED, national et région autorisée téléchargent le TXT ; région étrangère, région sans périmètre, compte désactivé, club et anonyme sont refusés avant accès au contenu. Les compétitions nationales gardent leur périmètre existant. Carte absente en mode club ; aucun lien public/signé, aucune commande de suppression, aucune lecture distante avant clic. Ancien import sans archive : message explicite. Contrôler 1440/390/320 px, nom du téléchargement et octets remis au navigateur. Tester erreurs de droit et import en cours. Pas d’import, de transfert Storage, de création de fiche ou d’écriture réelle pendant ces essais.
+
 ## Enregistrement ZIP NAP — 26 octobre 2026
 
 Recette exclusivement simulée avec réseau bloqué : après analyse, l’enregistrement reste bloqué avant choix de compétition, résolution des alertes, actualisation et approbation d’un remplacement. Vérifier annulation sans appel, première confirmation avec rappel de la vraie base NAP, PDF transmis uniquement à cet instant, absence de ZIP envoyé, club et épreuve choisis conservés, passages et premier relayeur individuels persistés, heures LD et statuts conservés. Après réponse perdue, choix verrouillés, même UUID/requête/PDF au nouvel essai. Contrôler ordinateur, 390 et 320 px et l’absence de débordement.
