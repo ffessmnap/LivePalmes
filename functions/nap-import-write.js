@@ -34,6 +34,8 @@ function createNativeImportWriter({getPool,authorize,preview=previewNativeImport
     const immutable={rawText:input.rawText,competitionId,fileName:input.fileName,expectedFingerprint:input.expectedFingerprint,previewFingerprint:input.previewFingerprint,confirmReplacement:input.confirmReplacement===true,
       excludedSourceLines:input.excludedSourceLines||[],swimmerBindings:input.swimmerBindings||[],memberBindings:input.memberBindings||[],clubBindings:input.clubBindings||[]};
     if(zip&&!resumeReceipt)Object.assign(immutable,{sourceType:input.sourceType,courseBindings:input.courseBindings||[],clubAcknowledgements:input.clubAcknowledgements||[],replacementReviewFingerprint:input.replacementReviewFingerprint||"",protocolManifest:protocol.manifest(input.protocolManifest)});
+    // Keep the request hash of already journalled clients that predate this consent.
+    if(zip&&!resumeReceipt&&(input.confirmExclusions!==undefined||input.exclusionReviewFingerprint!==undefined))Object.assign(immutable,{confirmExclusions:input.confirmExclusions===true,exclusionReviewFingerprint:input.exclusionReviewFingerprint||""});
     if(typeof immutable.rawText!=="string"||Buffer.byteLength(immutable.rawText,"utf8")>5*1024*1024)throw new TypeError("Fichier hors limite.");
     const sourceText=resumeReceipt?null:require("./nap-import-private-text").create(input);
     if(input.textArchive||input.textManifest)Object.assign(immutable,{textManifest:require("./nap-import-private-text").manifest(sourceText)});

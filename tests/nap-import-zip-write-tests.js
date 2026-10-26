@@ -5,7 +5,7 @@ const protocol=require("../functions/nap-import-protocol"),{hash}=require("../fu
 const {FIELDS,OPTIONS}=require("../functions/nap-competition-documents"),{FILE_SCHEMA}=require("../functions/nap-document-options-contract");
 const {prepareImportOperation}=require("../functions/nap-import-operation-plan");
 const pdf=Buffer.from("%PDF-1.4\nSynthetic protocol only\n%%EOF"),manifest={fileName:"ProtocoleComplet.pdf",size:pdf.length,hash:protocol.digest(pdf)};
-const zipInput={...input,sourceType:"winpalme-zip-preview",protocolManifest:manifest,protocolDataUrl:`data:application/pdf;base64,${pdf.toString("base64")}`,courseBindings:[],clubAcknowledgements:[],replacementReviewFingerprint:pack.previewFingerprint};
+const zipInput={...input,sourceType:"winpalme-zip-preview",protocolManifest:manifest,protocolDataUrl:`data:application/pdf;base64,${pdf.toString("base64")}`,courseBindings:[],clubAcknowledgements:[],replacementReviewFingerprint:pack.previewFingerprint,confirmExclusions:true,exclusionReviewFingerprint:pack.previewFingerprint};
 const zipPack=()=>{const result=structuredClone(pack);result.review={};result.existingStatuses=[];result.expectedFingerprint=hash({competition:result.competition,existing:result.existing,existingRelays:[],statuses:[]});return result;};
 function zipFixture({lost="",storageLost=false,storageAbsent=false,override,invalidOptions=false}={}){
  const proposed=override||zipPack(),state={documents:[],options:[],staged:false,uploads:0,pdfChecks:0,documentWrites:0,lost,statements:[]};
@@ -26,6 +26,7 @@ function zipFixture({lost="",storageLost=false,storageAbsent=false,override,inva
  return {...f,pdfState:state,pack:proposed,data:{...zipInput,expectedFingerprint:proposed.expectedFingerprint}};
 }
 if(require.main===module)(async()=>{
+ for(const consent of [{confirmExclusions:false},{exclusionReviewFingerprint:'stale'}]){const f=zipFixture();await assert.rejects(()=>f.writer({data:{...f.data,...consent}}),/exclusions/);assert.equal(f.state.writes,0);assert.equal(f.state.journal,null);assert.equal(f.pdfState.uploads,0);}
  let f=zipFixture();await f.writer({data:f.data});assert.equal(f.state.writes,2);assert.equal(f.pdfState.documentWrites,1);assert.equal(f.pdfState.uploads,1);assert.equal(f.state.pointer.protocol.hash,manifest.hash);assert.equal(f.state.pointer.protocol.documentId,2000);assert.equal(f.state.journal.status,"completed");
  assert.equal(f.state.previewInput.sourceType,"winpalme-zip-preview");assert.deepEqual(f.state.previewInput.clubAcknowledgements,[]);assert.deepEqual(f.state.previewInput.courseBindings,[]);assert.equal(f.state.journal.metadata.includes("base64"),false,"SQL stores no PDF bytes");assert.equal(JSON.parse(f.state.journal.metadata).sourceType,"winpalme-zip-preview");
  await f.writer({data:f.data});assert.equal(f.pdfState.documentWrites,1);assert.equal(f.pdfState.pdfChecks,1,"Completed retries do not mutate or reload PDF");assert.equal(f.state.writes,2);

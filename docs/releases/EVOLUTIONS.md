@@ -2,6 +2,12 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 26 octobre — Import ZIP compact et exclusions contrôlées
+
+- Accord d’Antoine sur la maquette ordinateur : navigation par groupes et dossier sélectionné, profils en tableau, actions compactes, création également pour les profils orange après recherche/doublons. Complément demandé : ignorer une course, un nageur avec ses relais liés ou un relais incomplet ; recherche des membres conservée.
+- Exclusions explicites par ligne source, réintégrables, sans passages ou temps initial dérivés. Confirmation nationale liée à l’aperçu avant import partiel ; retraits existants soumis au bilan de remplacement, PDF/TXT originaux complets, journal et gardes de concurrence conservés. Aucune lecture supplémentaire pour l’ergonomie ou les exclusions, aucun nouveau schéma/droit, aucun test d’écriture réelle.
+- Préparation et contrôles simulés en cours ; livraison TEST et références à renseigner après réussite. Validation utilisateur de la version regroupée en attente, PROD exclue.
+
 ### 26 octobre — Réutilisation CI sur TEST et tests Firestore ciblés
 
 - Premier essai TEST `40338117642` : preuve exacte reconnue (`MAIN_VERIFIED=true`), puis erreur shell avant toute publication. Correction du bloc YAML en littéral et ajout d'un contrôle `bash -n` de tous les scripts rendus du workflow ; aucune version partielle publiée par cet essai. Nouvelle preuve de livraison à conserver dans la PR de correction.

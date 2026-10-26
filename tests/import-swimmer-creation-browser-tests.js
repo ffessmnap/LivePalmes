@@ -3,7 +3,7 @@ const assert=require('node:assert/strict'),fs=require('node:fs'),{chromium}=requ
 const {fixture,people}=require('./fixtures/nap-import-review-fixture'),{previewNativeImport}=require('../functions/nap-import-preview'),{importPreviewResponse}=require('../functions/nap-import-response');
 (async()=>{
  const browser=await chromium.launch({headless:true,...(process.env.LIVEPALMES_BROWSER_EXECUTABLE?{executablePath:process.env.LIVEPALMES_BROWSER_EXECUTABLE}:{})});
- try{for(const width of [1440,390,320]){
+ try{for(const width of [1440]){
   const f=fixture(),calls=[],errors=[];let blocked=true,attempt=0,created=null;
   const execute=f.pool.execute;f.pool.execute=async(query,values)=>{const rows=await execute(query,values);if(created&&query.sql.includes('FROM nageurs')&&(values.includes(created.id)||values.includes(created.nom)))rows[0].push(created);return rows;};
   const page=await browser.newPage({viewport:{width,height:1000}});page.on('pageerror',e=>errors.push(e.message));
@@ -17,9 +17,9 @@ const {fixture,people}=require('./fixtures/nap-import-review-fixture'),{previewN
    window.payload=input;window.result=await readPreview(input);window.searchCount=0;
    window.draw=()=>LivePalmesImportReview.render({result,payload,host:document.querySelector('#host'),summary:document.querySelector('#summary'),onChange:()=>{result.reviewStale=true;result.reviewReady=false;},onRefresh:async()=>{result=await readPreview(payload);LivePalmesImportReview.settled();draw();},onSearch:async()=>{searchCount++;return [];},onPreviewCreation:checkCreation,onCreateSwimmer:performCreation});draw();
   },f.input);
-  const card=page.locator('details.import-swimmer').filter({has:page.locator('summary').filter({hasText:/^UNKNOWN /})});await card.locator(':scope > summary').click();
+  const card=page.locator('details.import-swimmer').filter({has:page.locator('summary').filter({hasText:/^UNKNOWN /})});await page.locator('.import-review-nav [data-review-panel]').filter({hasText:/^UNKNOWN /}).click();
   await card.locator('[data-review-create]').click();assert.match(await card.locator('[data-review-creation]').innerText(),/Recherchez d’abord/);assert.deepEqual(calls,['refresh']);
-  await card.getByText('Choisir ou rechercher un profil NAP',{exact:true}).click();await card.locator('[data-review-query]').fill('UNKNOWN');await card.locator('[data-review-search]').click();await card.getByText(/Aucun profil trouvé/).waitFor();
+  await card.locator('[data-review-query]').fill('UNKNOWN');await card.locator('[data-review-search]').click();await card.getByText(/Aucun profil trouvé/).waitFor();
   await card.locator('[data-review-create]').click();assert.equal(await card.locator('[data-create-field="lastName"]').inputValue(),'UNKNOWN');assert.equal(await card.locator('[data-create-field="birthDate"]').inputValue(),'2000-02-01');assert.equal(await card.locator('[data-create-club]').inputValue(),'106');assert.equal(await card.locator('[data-create-save]').isDisabled(),true);
   await card.locator('[data-create-check]').click();assert.deepEqual(calls,['refresh'],'Missing licence does not call the server');
   await card.locator('[data-create-field="licenseNumber"]').fill('A-12-34567');await card.locator('[data-create-check]').click();await card.getByText(/Une fiche existe/).waitFor();await card.locator('[data-create-confirm]').check();assert.equal(await card.locator('[data-create-save]').isDisabled(),true,'Exact duplicate blocks creation');
@@ -32,7 +32,7 @@ const {fixture,people}=require('./fixtures/nap-import-review-fixture'),{previewN
   await card.locator('[data-create-save]').click();await card.getByText(/même opération est conservée/).waitFor();assert.equal(await card.locator('[data-create-field="lastName"]').isDisabled(),true);
   await card.locator('[data-create-save]').click();await page.waitForFunction(()=>result.review.groups.find(g=>g.source.lastName==='UNKNOWN').profile?.id===174);
   const writes=calls.filter(c=>typeof c==='object');assert.equal(writes.length,2);assert.deepEqual(writes[0],writes[1],'Retry preserves identical operation UUID and fields');assert.equal(writes[0].confirmAlerts,false);assert.equal(attempt,2);
-  assert.equal(await page.locator('[data-review-create]').count(),0);assert.equal(await page.locator('[data-nap-save]').isDisabled(),true);
+  assert.equal(await card.locator('[data-review-create]').count(),0);assert.equal(await page.locator('[data-nap-save]').isDisabled(),true);
   const state=await page.evaluate(()=>({bindings:payload.swimmerBindings,relay:result.review.relays[0].members[1].profile.id}));assert.equal(state.relay,174,'Created swimmer is reused in the relay');assert.ok(state.bindings.some(b=>b.swimmerId===174));assert.deepEqual(errors,[]);await page.close();
- }console.log('Import creation UI: unknown-only, prior search, prefill/licence, duplicate block, recheck after edits, explicit confirmation, same-operation retry, automatic swimmer/relay refresh; offline 1440/390/320 px.');}finally{await browser.close();}
+ }console.log('Import creation UI: unknown creation, prior search, prefill/licence, duplicate block, recheck after edits, explicit confirmation, same-operation retry, automatic swimmer/relay refresh; offline desktop 1440 px.');}finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});

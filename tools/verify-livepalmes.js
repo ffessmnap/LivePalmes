@@ -106,6 +106,7 @@ function runUnitTests() {
     "nap-import-diff-tests.js",
     "nap-import-preview-tests.js",
     "nap-import-review-tests.js",
+    "nap-import-exclusions-tests.js",
       "nap-import-courses-tests.js",
       "nap-import-clubs-tests.js",
       "nap-duration-tests.js",

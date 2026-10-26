@@ -1,0 +1,27 @@
+"use strict";
+const assert=require('node:assert/strict');
+const {fixture}=require('./fixtures/nap-import-review-fixture');
+const {previewNativeImport}=require('../functions/nap-import-preview');
+const {importPreviewResponse}=require('../functions/nap-import-response');
+const {prepareImportOperation}=require('../functions/nap-import-operation-plan');
+const {reviewWinPalmeResults}=require('../functions/nap-winpalme-results');
+(async()=>{
+ const f=fixture(),initial=await previewNativeImport(f.pool,f.input),person=initial.review.groups.find(g=>g.source.lastName==='TEST');
+ const input={...f.input,excludedSourceLines:[5,6,7,10],swimmerBindings:[{sourceLine:6,swimmerId:169}],memberBindings:[{sourceLine:10,position:2,swimmerId:171}],clubAcknowledgements:[person.clubAlerts[0].key]};
+ const start=f.calls.length,pack=await previewNativeImport(f.pool,input),r=importPreviewResponse(pack);
+ assert.equal(pack.canConfirm,true);assert.equal(f.calls.length-start,7,'Exclusions add no queries');
+ assert.equal(pack.incomingRelays.length,0);assert.equal(pack.incoming.some(i=>i.origin==='first-relay'),false);assert.equal(pack.incoming.some(i=>i.sourceLine===5),false,'Course exclusion also removes its passage');
+ assert.equal(pack.review.groups.some(g=>['DUP','UNKNOWN'].includes(g.source.lastName)),false);assert.deepEqual(r.excludedRows.map(x=>x.sourceLine),[5,6,7,10]);
+ assert.equal(r.diff.removals.some(x=>x.id===900),true,'Old excluded performance remains in replacement removals');
+ const consent={...input,expectedFingerprint:pack.expectedFingerprint,previewFingerprint:pack.previewFingerprint,confirmReplacement:true,replacementReviewFingerprint:pack.previewFingerprint};
+ assert.throws(()=>prepareImportOperation(pack,{perfs:1000,relays:2000},consent),/exclusions/);
+ assert.throws(()=>prepareImportOperation(pack,{perfs:1000,relays:2000},{...consent,confirmExclusions:true,exclusionReviewFingerprint:'stale'}),/exclusions/);
+ const plan=prepareImportOperation(pack,{perfs:1000,relays:2000},{...consent,confirmExclusions:true,exclusionReviewFingerprint:pack.previewFingerprint});
+ assert.equal(plan.excluded.length,4);assert.equal(plan.summary.excluded,4);assert.equal(plan.perfs.after.some(x=>x.id===900),false);assert.equal(plan.relays.after.length,0);
+ assert.throws(()=>reviewWinPalmeResults(input.rawText,[4]),/sans statut/,'Ordinary TXT keeps its old guard');
+ for(const lines of [[0],[2],[999],[4,4],['4']])assert.throws(()=>reviewWinPalmeResults(input.rawText,lines,{allowResults:true}));
+ const changed=await previewNativeImport(f.pool,{...input,excludedSourceLines:[6,7,10]});assert.notEqual(changed.previewFingerprint,pack.previewFingerprint);
+ const empty=await previewNativeImport(f.pool,{...f.input,excludedSourceLines:[4,5,6,7,8,9,10]});assert.equal(empty.canConfirm,false,'Cannot silently clear a competition with an empty retained import');
+ assert.ok(f.calls.every(c=>c.sql.startsWith('SELECT ')));
+ console.log('ZIP exclusions: explicit source rows, dependent passages/first leg, ignored identities, restoration, replacement removals, fingerprint consent, unchanged TXT guard; no writes.');
+})().catch(e=>{console.error(e);process.exitCode=1;});
