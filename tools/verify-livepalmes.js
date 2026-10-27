@@ -241,6 +241,7 @@ function runUnitTests() {
     "nap-national-swimmer-club-tests.js",
     "nap-license-state-tests.js",
     "nap-license-control-tests.js",
+    "engagement-license-reports-tests.js",
     "nap-license-partial-validation-tests.js",
     "nap-swimmer-change-requests-tests.js",
     "nap-club-person-edit-tests.js",
@@ -397,6 +398,7 @@ function runBrowserSmokeIfRequested() {
   const requested = process.argv.includes("--browser") || process.env.LIVEPALMES_BROWSER_SMOKE === "1";
   if (!requested) return;
   printStep("Smoke test navigateur");
+  run(process.execPath, [path.join(rootDir, "tests", "license-workspace-browser-tests.js")]);
   run(process.execPath, [path.join(rootDir, "tools", "livepalmes-browser-smoke.js")]);
 }
 

@@ -2,6 +2,12 @@
 
 <!-- description: Référence du langage visuel, des composants d’interface et des règles responsive déjà présents dans LivePalmes. -->
 
+## Vérification des licences — 27 octobre 2026
+
+Sur ordinateur, le contrôle utilise une colonne de compétitions de 250 px à gauche et le lot à droite. La colonne reste accessible pendant le défilement ; les noms se lisent entièrement, la recherche porte sur le nom et la ville et le filtre sur les trois états : Non contrôlé, Fait · tout est bon, Fait · incohérences. Le statut est celui du bilan daté, dont la fraîcheur est vérifiée à l’ouverture du bilan et du lot. Un bilan périmé redevient Non contrôlé pour les engagés actuels. Les compteurs distinguent licence expirée, non retrouvée et autres incohérences.
+
+Les outils CSV et la sélection manuelle sont réunis dans une barre compacte, les explications dans une aide dépliable. Tous les nageurs du lot borné sont affichés sans pagination ; les filtres et recherches sont locaux. Un changement de sélection conserve le tableau précédent mais bloque ses actions jusqu’à la création du nouveau lot. Le bilan et le mail sont consultés dans un dialogue natif : contenu nominatif limité aux incohérences de la compétition, destinataires visibles et envoi volontaire. TEST affiche un aperçu et bloque les envois. Sous 680 px, les colonnes s’empilent et le tableau reste défilant horizontalement.
+
 ## Annuaire des officiels du club — 26 octobre 2026
 
 Le crayon de « Mes officiels » reprend le composant de correction de « Mes nageurs » : identité sur deux colonnes ordinateur, une colonne mobile, licence en lecture seule après saisie et motif requis uniquement pour une correction nationale. La complétion de champs vides porte le titre « Compléter la fiche », masque le motif et utilise « Enregistrer les champs manquants » ; un changement d’une valeur connue conserve « Demander une correction » et « Envoyer la demande ». Un bouton séparé « Rôles » ouvre les cases Chef d’équipe/Officiel sans correction d’identité. Les actions essentielles restent accessibles dans la ligne dépliée sur mobile.

@@ -34,7 +34,7 @@ const LOTS = Object.freeze({
     "rebuildEngagementClubAggregates", "previewEngagementClubSwimmerCreation",
     "previewEngagementClubSwimmerRecovery", "recoverEngagementClubSwimmer", "createEngagementClubSwimmer",
     "listEngagementNationalClubSwimmers", "searchEngagementNationalSwimmers",
-    "prepareEngagementLicenseControlBatch", "validateEngagementSwimmerLicenses",
+    "validateEngagementSwimmerLicenses",
     "requestEngagementClubSwimmerChange", "listEngagementSwimmerChangeRequests",
     "getEngagementNationalAdministrationOverview", "listEngagementNationalClubs",
     "getPublicEngagementClubDirectory", "saveEngagementNationalClub", "deleteEngagementNationalClub",
@@ -72,6 +72,7 @@ const LOTS = Object.freeze({
     "repairEngagementNationalSwimmerMergePublication"
   ],
   email: [
+    "prepareEngagementLicenseControlBatch",
     "submitEngagementAccessRequest", "resolveEngagementAccessRequest",
     "updateCurrentEmailNotificationPreferences", "disableCompetitionEmailNotifications",
     "notifyEngagementCompetitionDocuments", "listEngagementCompetitionMailJobs",
@@ -194,7 +195,7 @@ const METADATA = Object.freeze({
 const ALL_SAFE_LOTS = Object.freeze(["access", "engagement-core", "performance", "publications"]);
 // Exact TEST-only exceptions: NAP resolution and notification previews have
 // neither SMTP bindings nor sends. PROD remains email and outside ordinary PROD.
-const TEST_NON_MAIL_FUNCTIONS = Object.freeze(["resolveEngagementSwimmerChangeRequest",
+const TEST_NON_MAIL_FUNCTIONS = Object.freeze(["prepareEngagementLicenseControlBatch", "resolveEngagementSwimmerChangeRequest",
   "notifyEngagementCompetitionDocuments", "listEngagementCompetitionMailJobs",
   "prepareEngagementOpeningNotificationEmails", "prepareEngagementClubRecapEmails", "sendEngagementPreparedEmails"]);
 
