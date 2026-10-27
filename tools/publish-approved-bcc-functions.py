@@ -57,6 +57,7 @@ def publish(candidate, plan, backup, cycle, archive):
     guard = load('bcc_publish_guard', Path(__file__).with_name('check-production-bcc.py'))
     guard.main('paused', plan)
     before = {f['name']: f for f in cycle.read(backup / 'functions.json')}
+    state.bcc_runtime_reference = before.get(state.PREFIX + cycle.bcc.REFERENCE)
     previous_path = plan / 'previous/production-after.json'
     previous = cycle.read(previous_path) if previous_path.exists() else {}
     policy.require(not previous or previous.get('candidate') == request['candidate'], 'Reprise CCI hors candidat')
@@ -94,7 +95,7 @@ def publish(candidate, plan, backup, cycle, archive):
         cycle.write(witness_path, witness)
         def update(name):
             full = state.PREFIX + name
-            body = policy.source_patch(before[full], source, request['candidate'])
+            body = policy.source_patch(before[full], source, request['candidate'], state.bcc_runtime_reference) if policy.contract().get('limitedOct27') else policy.source_patch(before[full], source, request['candidate'])
             mask = policy.update_mask(body) if policy.contract().get('limitedOct27') else 'build_config.source,labels'
             state.wait_operation(state.request(state.API + full + '?updateMask='+mask, 'PATCH', body))
             actual = state.request(state.API + full)

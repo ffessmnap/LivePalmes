@@ -26,6 +26,12 @@ def function(name=p.LICENSE):
             'secretEnvironmentVariables':[{'key':'LIVEPALMES_NAP_PASSWORD','secret':'LIVEPALMES_NAP_PASSWORD',
                 'projectId':'718081132564','version':'latest'}]}}
 
+def reference():
+    value=function(p.base.REFERENCE)
+    value['serviceConfig']['secretEnvironmentVariables']=[{'key':n,'secret':n,'projectId':'718081132564','version':str(i+1)}
+        for i,n in enumerate(sorted(p.base.MAIL_KEYS))]
+    return value
+
 class PublicationTests(unittest.TestCase):
     def test_exact_scope_and_rejects_extensions(self):
         self.assertEqual(len(p.approved(request)),16); self.assertEqual(len(c['retained']),97)
@@ -42,7 +48,8 @@ class PublicationTests(unittest.TestCase):
         with self.assertRaises(ValueError): p.verify_fingerprints(c['beforeHashes'],{},functions)
 
     def test_only_licensed_callable_gets_seven_bindings_and_timeout(self):
-        before=function(); body=p.source_patch(before,{'bucket':'fixture'},c['candidate'])
+        before=function(); state.bcc_runtime_reference=reference()
+        body=p.source_patch(before,{'bucket':'fixture'},c['candidate'],reference())
         self.assertEqual(set(body['serviceConfig']),{'timeoutSeconds','secretEnvironmentVariables'})
         self.assertEqual(body['serviceConfig']['timeoutSeconds'],300)
         self.assertEqual({s['key'] for s in body['serviceConfig']['secretEnvironmentVariables']},p.base.MAIL_KEYS)
@@ -60,10 +67,22 @@ class PublicationTests(unittest.TestCase):
         with self.assertRaises(ValueError): p.source_patch(function(c['retained'][0]),{},c['candidate'])
 
     def test_initial_runtime_accepts_worker_but_rejects_wrong_bindings(self):
-        worker=function(c['worker'])['serviceConfig']; worker['secretEnvironmentVariables']=p.license_service(function())['secretEnvironmentVariables']
+        worker=function(c['worker'])['serviceConfig']; worker['secretEnvironmentVariables']=reference()['serviceConfig']['secretEnvironmentVariables']
         p.initial_runtime(c['worker'],worker,lambda s:not s.get('secretEnvironmentVariables'))
         worker['secretEnvironmentVariables'][0]['projectId']='another-project'
         with self.assertRaises(ValueError): p.initial_runtime(c['worker'],worker,lambda s:True)
+
+    def test_numeric_versions_are_preserved_from_authenticated_reference(self):
+        before=function();before['serviceConfig']['secretEnvironmentVariables'][0]['version']='27'
+        ref=reference();body=p.source_patch(before,{},c['candidate'],ref)
+        bindings={v['key']:v for v in body['serviceConfig']['secretEnvironmentVariables']}
+        self.assertEqual(bindings['LIVEPALMES_NAP_PASSWORD']['version'],'27')
+        for value in ref['serviceConfig']['secretEnvironmentVariables']:
+            if value['key']!='LIVEPALMES_NAP_PASSWORD':self.assertEqual(bindings[value['key']],value)
+        self.assertTrue(all(v['version']!='latest' for v in bindings.values()))
+        with self.assertRaises(ValueError):p.source_patch(before,{},c['candidate'])
+        ref['serviceConfig']['secretEnvironmentVariables'][0]['version']='-1'
+        with self.assertRaises(ValueError):p.source_patch(before,{},c['candidate'],ref)
 
     def test_pause_and_fresh_resume_never_expand_scope_or_replay(self):
         doc={'fields':{'scope':{'stringValue':'all'},'enabled':{'booleanValue':False},'revision':{'integerValue':'8'},
