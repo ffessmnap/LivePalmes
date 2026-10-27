@@ -13423,15 +13423,17 @@ function engagementLicenseControlPerson(swimmer = {}, entry = {}, competitions =
 }
 
 async function engagementLicenseReportRequest(input, context, pool) {
-  const reports = require("./engagement-license-reports");
-  if (input.action === "summaries") return reports.summaries(db, input.season);
+  const reports = require("./engagement-license-reports"), store = require("./nap-license-reports").store(pool);
+  if (input.action === "summaries") return reports.summaries(db, input.season, store);
+  if (input.action === "reportHistory") return store.history(input.season, input.competitionId, input.before);
+  if (input.action === "reportVersion") { const report=await store.readVersion(input.season,input.competitionId,input.version); return {report, text:report?reports.message(report).text:""}; }
   if (!["readReport", "completeReport", "previewReport", "sendReport"].includes(input.action)) throw new TypeError("Action de contrôle inconnue.");
   const batch = await require("./nap-license-control").prepareBatch(pool, { season: input.season, competitionIds: [input.competitionId] });
   if (input.action === "readReport") {
-    await reports.attach(db, batch);
-    return { report: batch.controlReports[String(require("./nap-direct-calendar").positiveId(input.competitionId))], participantCount: batch.people.length };
+    await reports.attach(db, batch, store);
+    return { report: batch.controlReports[String(require("./nap-direct-calendar").positiveId(input.competitionId))], participantCount: batch.people.length, history: await store.history(input.season,input.competitionId) };
   }
-  if (input.action === "completeReport") return reports.complete(db, batch, input, context.uid);
+  if (input.action === "completeReport") return reports.complete(db, batch, input, context.uid, store);
   let transporter;
   try {
     return await reports.notify(db, batch, input, {
@@ -13468,7 +13470,7 @@ async function engagementLicenseReportRequest(input, context, pool) {
           throw new TypeError("Envoi non confirmé. Vérifiez le journal avant de reprendre.");
         }
       }
-    });
+    }, store);
   } finally { if (transporter) transporter.close(); }
 }
 
@@ -13480,7 +13482,7 @@ exports.prepareEngagementLicenseControlBatch = onCall(ENVIRONMENT.projectId === 
     try {
       const pool = require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD);
       if (request.data?.action) return await engagementLicenseReportRequest(request.data, context, pool);
-      return await require("./engagement-license-reports").attach(db, await require("./nap-license-control").prepareBatch(pool, request.data || {}));
+      return await require("./engagement-license-reports").attach(db, await require("./nap-license-control").prepareBatch(pool, request.data || {}), require("./nap-license-reports").store(pool));
     }
     catch(error) { throw new HttpsError(error instanceof TypeError ? "failed-precondition" : error instanceof RangeError ? "resource-exhausted" : "unavailable",error instanceof TypeError || error instanceof RangeError ? error.message : "Controle NAP indisponible."); }
   }
