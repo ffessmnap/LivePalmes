@@ -116,6 +116,7 @@ jobs:
         node tooling/tests/production-notification-preparation-tests.js
         node tooling/tests/production-backup-crypto-tests.js
         python tooling/tests/publication-fast-paths-tests.py
+        python tooling/tests/release-simplification-tests.py
     - uses: google-github-actions/auth@v3
       if: inputs.resume_run == '0'
       with:

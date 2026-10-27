@@ -17,8 +17,8 @@ concurrency:
   cancel-in-progress: ${{ github.event.action != 'labeled' || github.event.label.name == 'apercu-test' }}
 
 jobs:
-  verification:
-    name: Verification technique
+  application:
+    name: Verification applicative
     runs-on: ubuntu-latest
     timeout-minutes: 15
     outputs:
@@ -83,13 +83,85 @@ jobs:
         if: steps.test-scope.outputs.documentation != 'true'
         run: node tools/verify-livepalmes.js
 
+      - name: Enregistrer la verification du commit main exact
+        if: github.event_name == 'push' && steps.test-scope.outputs.documentation != 'true'
+        run: python tools/test-verification-evidence.py record "$RUNNER_TEMP/application-verification"
+
+      - uses: actions/upload-artifact@v4
+        if: github.event_name == 'push' && steps.test-scope.outputs.documentation != 'true'
+        with:
+          name: application-verification
+          path: ${{ runner.temp }}/application-verification/verification.json
+          if-no-files-found: error
+          retention-days: 14
+
+  publication:
+    name: Verification du circuit de publication
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Recuperer la version a verifier
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Determiner si un apercu est utile
+        id: preview-scope
+        if: github.event_name == 'pull_request'
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: python tools/preview-scope.py "$BASE_SHA" "$HEAD_SHA" >> "$GITHUB_OUTPUT"
+
+      - name: Determiner les tests Firestore necessaires
+        id: test-scope
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: python tools/test-verification-evidence.py scope
+
+      - name: Lire la version Node.js du projet
+        if: steps.test-scope.outputs.documentation != 'true'
+        id: node-version
+        shell: bash
+        run: |
+          node -p '"version=" + require("./functions/package.json").engines.node' >> "$GITHUB_OUTPUT"
+
+      - name: Installer Node.js
+        if: steps.test-scope.outputs.documentation != 'true'
+        uses: actions/setup-node@v7
+        with:
+          node-version: ${{ steps.node-version.outputs.version }}
+          cache: npm
+          cache-dependency-path: |
+            functions/package-lock.json
+            tests/firestore-rules/package-lock.json
+
+      - name: Installer Java 21
+        if: steps.test-scope.outputs.firestore == 'true'
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Installer les dependances des Functions
+        if: steps.test-scope.outputs.documentation != 'true'
+        run: npm ci --prefix functions
+
+      - name: Installer les dependances des tests Firestore
+        if: steps.test-scope.outputs.documentation != 'true'
+        run: npm ci --prefix tests/firestore-rules
+
       - name: Tester le circuit de publication sans acces Firebase
         if: steps.test-scope.outputs.documentation != 'true'
         run: |
+          # Covered by required application job: node tests/release-excluded-backend-compatibility-tests.js
+          # Covered by required application job: node tests/nap-national-documents-callable-tests.js
+          # Covered by required application job: node tests/release-c0-compatibility-tests.js
+          # Covered by required application job: node tests/release-home-compatibility-tests.js
+          # Covered by required application job: node tests/production-notification-preparation-tests.js
           node tests/release-function-fingerprints-tests.js
           python tests/release-cycle-tests.py
           python tests/release-preflight-review-tests.py
-          node tests/release-excluded-backend-compatibility-tests.js
           python tests/release-composed-evidence-tests.py
           python tests/production-release-state-tests.py
           python tests/production-grouped-release-tests.py
@@ -100,7 +172,6 @@ jobs:
           python tests/validated-20261026-publication-tests.py
           python tests/validated-20261027-publication-tests.py
           python tests/scheduler-iam-preparation-tests.py
-          node tests/nap-national-documents-callable-tests.js
           python tests/production-release-source-tests.py
           node tests/production-backup-crypto-tests.js
           node tests/hosting-payload-tests.js
@@ -108,13 +179,11 @@ jobs:
           python tests/test-publication-coordination-tests.py
           node tests/nap-source-diagnostic-tests.js
           python tests/test-verification-evidence-tests.py
-          node tests/release-c0-compatibility-tests.js
-          node tests/release-home-compatibility-tests.js
           python tests/production-pdf-functions-tests.py
           python tests/production-notification-release-tests.py
           python tests/production-access-request-release-tests.py
-          node tests/production-notification-preparation-tests.js
           python tests/publication-fast-paths-tests.py
+          python tests/release-simplification-tests.py
 
       - name: Enregistrer la verification du circuit main exact
         if: github.event_name == 'push' && steps.test-scope.outputs.documentation != 'true'
@@ -128,17 +197,20 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
-      - name: Enregistrer la verification du commit main exact
-        if: github.event_name == 'push' && steps.test-scope.outputs.documentation != 'true'
-        run: python tools/test-verification-evidence.py record "$RUNNER_TEMP/application-verification"
 
-      - uses: actions/upload-artifact@v4
-        if: github.event_name == 'push' && steps.test-scope.outputs.documentation != 'true'
-        with:
-          name: application-verification
-          path: ${{ runner.temp }}/application-verification/verification.json
-          if-no-files-found: error
-          retention-days: 14
+  verification:
+    name: Verification technique
+    needs: [application, publication]
+    if: always()
+    runs-on: ubuntu-latest
+    outputs:
+      preview: ${{ needs.application.outputs.preview }}
+    steps:
+      - name: Exiger toutes les verifications
+        env:
+          APPLICATION: ${{ needs.application.result }}
+          PUBLICATION: ${{ needs.publication.result }}
+        run: test "$APPLICATION" = success && test "$PUBLICATION" = success
 
   apercu:
     name: Creer un apercu isole

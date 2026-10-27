@@ -557,6 +557,12 @@ def validate_request(value, paths):
         require(isinstance(value.get(key), str) and SHA.fullmatch(value[key]), 'SHA complet requis: ' + key)
     require(re.fullmatch(r'sites/livepalmes/versions/[A-Za-z0-9_-]+', value.get('productionHosting', '')), 'Version Hosting PROD requise')
     require(isinstance(value.get('testRun'), int) and value['testRun'] > 0, 'Preuve TEST requise')
+    if 'freezeTestCandidate' in value:
+        require(type(value['freezeTestCandidate']) is bool, 'Gel TEST invalide')
+        if value['freezeTestCandidate']:
+            ordinary = {'schema', 'candidate', 'productionCommit', 'productionHosting', 'testRun',
+                        'changes', 'excludedBackendReview', 'excludedBackendEvidence', 'freezeTestCandidate'}
+            require(set(value).issubset(ordinary), 'Gel reserve au parcours ordinaire, sans contrat exceptionnel')
     path_set = set(paths)
     ignored = set(ignored_top_paths(paths, value['candidate']))
     cleanup = value.get('productionStaticCleanup')
@@ -776,10 +782,34 @@ def verify_test(directory, live=True):
         common_bcc = bool(approved_bcc_functions(request)) and bcc.for_request(request).contract().get('testProofMode') in ['common-exact','common-plus-targeted-sources']
         require(not common_bcc or not runs or limited_oct27, 'Preuve commune exacte CCI sans ajout cible attendu')
         expected_live = evidence['state'] if common_bcc or not approved_bcc_functions(request) else evidence['currentTestState']
-        require(snapshot('livepalmes-test') == expected_live, 'TEST a change depuis sa publication : refaire le bilan')
+        observed = snapshot('livepalmes-test')
+        if observed != expected_live and request.get('freezeTestCandidate') is True:
+            verify_later_test(root, request, observed)
+        else:
+            require(observed == expected_live, 'TEST a change depuis sa publication : refaire le bilan')
     if os.environ.get('DTN_EXTENSION_CHECKS') == 'success':
         evidence['dtnExtensionVerification'] = {'schema': 1, 'candidate': candidate, 'suite': 'dtn-shared-invalidation', 'mode': 'offline-no-invocation', 'result': 'success', 'functions': sorted(DTN_FUNCTIONS)}
     write(root / 'test-proof.json', evidence)
+
+
+def verify_later_test(root, request, observed):
+    # Never substitute the approved candidate or infer a revision from live labels.
+    ordinary = {'schema', 'candidate', 'productionCommit', 'productionHosting', 'testRun',
+                'changes', 'excludedBackendReview', 'excludedBackendEvidence', 'freezeTestCandidate'}
+    require(set(request).issubset(ordinary), 'Contrat exceptionnel incompatible avec le gel ordinaire')
+    run_id = latest_run('livepalmes-test-common.yml')
+    require(run_id != request['testRun'], 'Derive du meme run TEST')
+    destination = Path(root) / 'later-test'
+    info = artifact(run_id, 'test-proof', destination, '.github/workflows/livepalmes-test-common.yml')
+    later = read(destination / 'test-proof.json')
+    candidate = later.get('candidate', '')
+    require(SHA.fullmatch(str(candidate)) and candidate == info.get('head_sha')
+            and candidate != request['candidate'] and reusable_verification(later, candidate),
+            'Nouvelle preuve TEST incomplete ou incompatible')
+    subprocess.run(['git', 'merge-base', '--is-ancestor', request['candidate'], candidate], cwd=ROOT, check=True)
+    require(later.get('state') == observed, 'Derive TEST non expliquee par une publication reussie')
+    write(Path(root) / 'later-test-observation.json', {'run': run_id, 'candidate': candidate,
+          'approvedCandidateUnchanged': request['candidate']})
 
 
 def prepare_selection(directory, candidate):

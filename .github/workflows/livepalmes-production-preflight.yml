@@ -107,6 +107,7 @@ jobs:
         node tooling/tests/production-notification-preparation-tests.js
         node tooling/tests/production-backup-crypto-tests.js
         python tooling/tests/publication-fast-paths-tests.py
+        python tooling/tests/release-simplification-tests.py
     - name: Verifier la preuve de publication TEST
       run: |-
         python tooling/tools/release-cycle.py verify-test-evidence "$PLAN"
