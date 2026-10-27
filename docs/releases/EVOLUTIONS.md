@@ -2,6 +2,13 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 27 octobre — Titre de compétition accessible en modification
+
+- Demande d’Antoine : permettre aux administrateurs régionaux de modifier le titre depuis « Administrer → Modifier ». Le champ existant était masqué par la gestion du chef d’équipe : son identifiant de label était placé sur le nom de la compétition. Identifiant replacé sur le véritable nom du chef d’équipe dans `portail.html` ; droits et enregistrement existants conservés, aucun backend modifié.
+- Budget inchangé : zéro lecture ou écriture ajoutée à l’ouverture, à la saisie, à l’enregistrement ou au rafraîchissement, y compris au pire cas. Aucun accès aux données réelles lors des contrôles.
+- Tests ciblés hors réseau réussis : formulaire NAP (patch du nom seul), modification NAP et retour d’enregistrement du chef d’équipe. Navigateur local avec données simulées : titre visible, saisissable et accessible au clic en 1280 et 390 px, même lorsque le nom du chef d’équipe est masqué, sans débordement horizontal. Capture standard ordinateur réussie ; capture standard mobile arrêtée sur un recouvrement du champ Date de fin, hors du champ corrigé. Contrôle ciblé mobile du titre réussi. Aucun composant ni règle du design system modifié.
+- CI obligatoire, intégration et preuve TEST à attester après réussite ; validation utilisateur encore attendue.
+
 ### 27 octobre — Clôture volontaire du contrôle des licences
 
 - Accord explicite d’Antoine sur quatre états : À faire, À traiter, Conforme, Clôturé. La clôture est commune aux bilans conformes et à ceux avec réserves, sans effacement du résultat. Quatre filtres symbole/compteur sur une ligne, libellés accessibles, retour à toutes les compétitions par second clic.
