@@ -2,6 +2,13 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 27 octobre — Sélection ciblée des fonctions PROD
+
+- Accord explicite d’Antoine dans Infra : adapter la sélection PROD pour accélérer les publications, avec tests/CI, sans déployer et en conservant sauvegardes, dérive et exclusions. Outillage uniquement ; aucune fonction métier, donnée, configuration ou autorisation de publication modifiée.
+- Comparateur de sélection PROD dédié utilisant l’analyse statique éprouvée sur TEST, le préparateur PROD connu, les exports ordinaires et le classement par fonction. Les exceptions TEST restent hors du circuit ordinaire PROD. Préparateur inconnu, secrets, effets partagés ou sources inconnues conservent les replis prudents. La preuve TEST est comparée avec le sélecteur TEST.
+- Tests hors réseau : 57 scénarios Python, périmètres sensibles, retraits, préparateur inconnu, versions réelles et non-régression TEST. Sur les différences récentes `25ac3bb6→af818728` et `af818728→3ddc0a3c`, le calcul retient respectivement 3 et 6 fonctions ordinaires PROD ; aucun déploiement de mesure ni promesse de durée. Les empreintes historiques restent identiques, vérifiées sur deux jeux complets ; CI globale Linux requise avant intégration.
+- Les contrats datés, lots supplémentaires imposés, revue des exclusions, sauvegarde chiffrée vérifiée, contrôle frais de dérive et contrôles après publication restent en vigueur. Une revue ou un contrat incompatible bloque toujours le preflight. Aucun ancien plan approuvé n’est réécrit, aucun lancement TEST/PROD ni interruption des déploiements en cours par ce chantier. Le prochain candidat nécessitera son bilan et son accord exact.
+
 ### 27 octobre — Sélection ciblée des fonctions TEST
 
 - Accord explicite d’Antoine dans Infra : « corrige la sélection des fonctions pour éviter ces déploiements massifs sur TEST. Fais les tests et la CI, sans interrompre les déploiements en cours ni toucher à la PROD ». Outillage/test/documentation uniquement ; aucune fonction métier, configuration de déploiement, règle, donnée ou autorisation modifiée.
