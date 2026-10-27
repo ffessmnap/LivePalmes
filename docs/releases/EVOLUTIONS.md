@@ -2,6 +2,13 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 27 octobre — Exception de publication du contrôleur des bilans licences
+
+- Infra : validations eau libre et nettoyage des libellés retrouvées, interface compacte confirmée dans le chat licences ; Antoine confirme ici : « Oui, les bilans et leur historique NAP sont validés », puis « Je valide la mise en prod ». La clôture #596, validée séparément, et le titre #597 restent hors du candidat figé `0421f490` / TEST40585218771. Aucun accord ancien n'est étendu à ces versions ultérieures.
+- Revue des113fonctions :11ordinaires sélectionnées,102conservées dont90divergences héritées inchangées et le contrôleur licences nouvellement différent. Preflight40590650599 arrêté au garde historique : le contrôleur classé mail ne peut pas être conservé pour le nouveau portail NAP. Préparation d'une exception fermée à cette fonction, en source seule ; sélection finale12/113,101identités conservées. Aucune réduction manuelle de la sélection ordinaire, aucun changement de configuration ou de sélecteur de secret.
+- Mails tous clubs actifs/révision9 et Scheduler horaire strictement conservés. Source des10bilans officiels Firestore comparée à la reprise NAP vérifiée40571339337 ; toute modification bloque sans migration ni écrasement. Après actualisation du contrôleur, observation de305secondes pour laisser finir les anciens appels de300secondes, puis comparaison avant Hosting. Pas de coupure générale des mails. Tests négatifs ciblés et CI requise, puis nouveau preflight officiel et bilan exact avant toute publication.
+- Préparation uniquement : aucun déploiement, invocation métier, envoi réel/rattrapage, écriture NAP, IAM, règle/index, Paris/CNHC/Basile, club historique, recalcul DTN ou nettoyage Storage.
+
 ### 27 octobre — Titre de compétition accessible en modification
 
 - Demande d’Antoine : permettre aux administrateurs régionaux de modifier le titre depuis « Administrer → Modifier ». Le champ existant était masqué par la gestion du chef d’équipe : son identifiant de label était placé sur le nom de la compétition. Identifiant replacé sur le véritable nom du chef d’équipe dans `portail.html` ; droits et enregistrement existants conservés, aucun backend modifié.

@@ -67,6 +67,13 @@ def check_idf_preservation(document, preservation, directory, after=False):
 
 def main():
     request = json.loads((Path(os.environ['PLAN']) / 'request.json').read_text())
+    if request.get('licenseReportRelease'):
+        spec = importlib.util.spec_from_file_location('license_mail_guard', Path(__file__).with_name('check-license-report-release.py'))
+        guard = importlib.util.module_from_spec(spec); spec.loader.exec_module(guard)
+        if sys.argv[1:] not in ([], ['--after']):
+            raise ValueError('Mode licences invalide')
+        guard.main(Path(os.environ['PLAN']), sys.argv[1:] == ['--after'])
+        return
     if request.get('additionalBccFunctions'):
         spec = importlib.util.spec_from_file_location('bcc_mail_guard', Path(__file__).with_name('check-production-bcc.py'))
         guard = importlib.util.module_from_spec(spec); spec.loader.exec_module(guard)

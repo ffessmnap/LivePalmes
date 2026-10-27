@@ -108,6 +108,8 @@ jobs:
         node tooling/tests/production-backup-crypto-tests.js
         python tooling/tests/publication-fast-paths-tests.py
         python tooling/tests/release-simplification-tests.py
+        python tooling/tests/license-report-release-tests.py
+        node tooling/tests/license-report-source-guard-tests.js
     - name: Verifier la preuve de publication TEST
       run: |-
         python tooling/tools/release-cycle.py verify-test-evidence "$PLAN"
