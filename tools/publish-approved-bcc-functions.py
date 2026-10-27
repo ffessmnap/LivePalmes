@@ -95,7 +95,8 @@ def publish(candidate, plan, backup, cycle, archive):
         def update(name):
             full = state.PREFIX + name
             body = policy.source_patch(before[full], source, request['candidate'])
-            state.wait_operation(state.request(state.API + full + '?updateMask=build_config.source,labels', 'PATCH', body))
+            mask = policy.update_mask(body) if policy.contract().get('limitedOct27') else 'build_config.source,labels'
+            state.wait_operation(state.request(state.API + full + '?updateMask='+mask, 'PATCH', body))
             actual = state.request(state.API + full)
             policy.require(actual.get('state') == 'ACTIVE' and actual.get('labels', {}).get('livepalmes-commit') == request['candidate'], 'Source CCI non active')
             policy.assert_config(before[full], actual, state)
@@ -108,4 +109,8 @@ def publish(candidate, plan, backup, cycle, archive):
             current = {f['name']: f for f in state.inventory()}
             pending(names, before, current, attested, request['candidate'], state, policy, expected_worker)
             print(f'Lot CCI {offset // parallelism + 1} actif ({len(batch)} sources) ; exclusions controlees.', flush=True)
+    if policy.contract().get('limitedOct27'):
+        scheduler = load('oct27_scheduler', Path(__file__).with_name('validated-20261027-guard.py'))
+        token = cycle.run(['gcloud', 'auth', 'application-default', 'print-access-token'])
+        scheduler.finish_scheduler(plan, backup, policy, token, guard)
     state.check_after(backup, backup / 'after.json', True)

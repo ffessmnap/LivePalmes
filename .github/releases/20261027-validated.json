@@ -1,0 +1,855 @@
+{
+  "schema": 1,
+  "candidate": "365c8396b5da9d05715b3da7b482214666248c0a",
+  "productionCommit": "cbe39bff1d5bb465c29da5c99f5c3b6c740b9432",
+  "productionHosting": "sites/livepalmes/versions/475e3219595049bb",
+  "testRun": 40478003271,
+  "initialAutomaticMailEnabled": true,
+  "additionalBccFunctions": [
+    "closeDueEngagementCompetitions",
+    "generateEngagementCompetitionTxtExport",
+    "getEngagementAutomaticMailControl",
+    "grantEngagementQualificationException",
+    "listEngagementCompetitionMailJobs",
+    "notifyEngagementCompetitionDocuments",
+    "prepareEngagementClubRecapEmails",
+    "prepareEngagementLicenseControlBatch",
+    "prepareEngagementOpeningNotificationEmails",
+    "previewEngagementCompetitionDocumentNotification",
+    "processEngagementQualificationJob",
+    "processNapCompetitionNotifications",
+    "processNapNotificationTask",
+    "sendEngagementPreparedEmails",
+    "updateEngagementAutomaticMailControl",
+    "updateEngagementCompetition"
+  ],
+  "changes": [
+    {
+      "title": "TXT informatique des prochaines clôtures dont Andernos",
+      "paths": [
+        "functions/index.js",
+        "functions/nap-notification-pages.js",
+        "functions/nap-notification-txt.js",
+        "functions/winpalme-open-water-manual.js"
+      ],
+      "status": "validated",
+      "validation": "Antoine, Infra 27 octobre : « Oui, les trois lots sont validés », réponse à la question nominative sur les trois parcours de la version TEST actuelle 365c8396 / run 40478003271."
+    },
+    {
+      "title": "Clôtures programmées et reprogrammées, secours horaire",
+      "paths": [
+        "functions/index.js",
+        "functions/nap-notification-automation.js",
+        "functions/nap-notification-task.js"
+      ],
+      "status": "validated",
+      "validation": "Antoine, Infra 27 octobre : « Oui, les trois lots sont validés », réponse à la question nominative sur les trois parcours de la version TEST actuelle 365c8396 / run 40478003271."
+    },
+    {
+      "title": "Vérification des licences compacte, bilans et mail nominatif volontaire",
+      "paths": [
+        "assets/livepalmes-license-administration.css",
+        "assets/livepalmes-license-administration.js",
+        "functions/engagement-license-reports.js",
+        "functions/engagement-mail-control.js",
+        "functions/index.js",
+        "portail.html"
+      ],
+      "status": "validated",
+      "validation": "Antoine, Infra 27 octobre : « Oui, les trois lots sont validés », réponse à la question nominative sur les trois parcours de la version TEST actuelle 365c8396 / run 40478003271."
+    }
+  ],
+  "excludedBackendReview": "16 dépendances calculées ; 97 révisions conservées, dont les quatre divergences héritées déjà revues. Comparaison statique complète des sources et provenances authentifiées. Coupure 7→8, reprise fraîche 8→9 sans rattrapage. Aucun élargissement, données Paris/CNHC/Basile, clubs historiques, règles/index, migration, recalcul DTN ou nettoyage Storage.",
+  "excludedBackendEvidence": {
+    "schema": 1,
+    "candidate": "365c8396b5da9d05715b3da7b482214666248c0a",
+    "productionRun": 40397517021,
+    "suite": "retained-calendar-consumers-v1",
+    "functions": [
+      {
+        "name": "acknowledgeEngagementQualificationAlert",
+        "commit": "8b868c7c1382698ee1d04274fcc5b9a56a95d274",
+        "revision": "acknowledgeengagementqualificationalert-00011-tov",
+        "before": "180b0dc9dcc35d3a2ae7fcbf384dd5764c015279c4ce7bc34c8d0ab3fbbd80f8",
+        "after": "fc67eaf8de02fd4969b90d4aac5e579a7f705390f53c5ea40adbab22a066a2b4",
+        "reason": "Empreinte historique revue ; source du consommateur conservé équivalente entre base PROD et candidat selon le comparateur statique dédié ; divergence héritée conservée si présente."
+      },
+      {
+        "name": "addEngagementOpenWaterCourse",
+        "commit": "8b868c7c1382698ee1d04274fcc5b9a56a95d274",
+        "revision": "addengagementopenwatercourse-00010-sox",
+        "before": "caf0b6019f3f5ab6d026c455c547065d3a808734e9af17cb761709ad6e11f8cd",
+        "after": "0380c93149af252d89ae06cdd255305aee116bfc92ebaa608fd4f0d37a73f89a",
+        "reason": "Empreinte historique revue ; source du consommateur conservé équivalente entre base PROD et candidat selon le comparateur statique dédié ; divergence héritée conservée si présente."
+      },
+      {
+        "name": "createCompetitionImport",
+        "commit": "cbe39bff1d5bb465c29da5c99f5c3b6c740b9432",
+        "revision": "createcompetitionimport-00112-may",
+        "before": "e123be7bcdcfbc7902619b27584c67ed2447ea8671bf1d82500c61887f1f6720",
+        "after": "659c6b92b3d6c1ee3496f3f0f7ef5766a48963efb1f74d7082b4a65bcfd1b858",
+        "reason": "Empreinte historique revue ; source du consommateur conservé équivalente entre base PROD et candidat selon le comparateur statique dédié ; divergence héritée conservée si présente."
+      },
+      {
+        "name": "createEngagementCalendarEvent",
+        "commit": "8b868c7c1382698ee1d04274fcc5b9a56a95d274",
+        "revision": "createengagementcalendarevent-00016-rum",
+        "before": "b869a41e0a0b5caf6dbd40c4e4ec5a20cc1751a6ad6f2c46e895809ec7e93459",
+        "after": "32cdad4f6b9ee81f578ccb25772f2d362c8f72b8e2f2525e14fdd667633605c2",
+        "reason": "Empreinte historique revue ; source du consommateur conservé équivalente entre base PROD et candidat selon le comparateur statique dédié ; divergence héritée conservée si présente."
+      },
+      {
+        "name": "createEngagementClubSwimmer",
+        "commit": "8b868c7c1382698ee1d04274fcc5b9a56a95d274",
+        "revision": "createengagementclubswimmer-00058-nin",
+        "before": "6e5538c1548b90728eda76a6f873b081a883350e60e01df9b33e6e59f2612642",
+        "after": "4b0caa20a40c35a1a2703b2c3e982890386c3050d185a41c0a799b8dd3d90b60",
+        "reason": "Empreinte historique revue ; source du consommateur conservé équivalente entre base PROD et candidat selon le comparateur statique dédié ; divergence héritée conservée si présente."
+      },
+      {
+        "name": "createEngagementCompetition",
+        "commit": "8b868c7c1382698ee1d04274fcc5b9a56a95d274",
+        "revision": "createengagementcompetition-00071-jip",
+        "before": "bbf88c98148eaa7743391bb94e22281d77064b19cbd7a61218d5cac9a858d221",
+        "after": "3a076f8cf61334e479d464ebef61933757392ce0207b074ddc51bb75685bf433",
+        "reason": "Empreinte historique revue ; source du consommateur conservé équivalente entre base PROD et candidat selon le comparateur statique dédié ; divergence héritée conservée si présente."
+      },
+      {
+        "name": "createOrUpdateAccessUser",
+        "commit": "8b868c7c1382698ee1d04274fcc5b9a56a95d274",
+        "revision": "createorupdateaccessuser-00105-moz",
+        "before": "8f24f0e2740b82087ee5a6aa916317e251b02e5aac71c1c279ca31b7ed33fd59",
+        "after": "d03f10cced04e3a838840130d12bb7d2498c62f0e70bb70aa594a88cdeb04c0c",
+        "reason": "Empreinte historique revue ; source du consommateur conservé équivalente entre base PROD et candidat selon le comparateur statique dédié ; divergence héritée conservée si présente."
+      },
+      {
+        "name": "deleteAccessUser",
+        "commit": "8b868c7c1382698ee1d04274fcc5b9a56a95d274",
+        "revision": "deleteaccessuser-00039-mox",
+        "before": "fc1b042923f64f5cb9962b97fa60f91acf7a62a537f75fcd6cc00223bbc59feb",
+        "after": "7bf10ead6ccc3c03cfe804100bf9de69fa34626289fd7b0ea1a1d8a4dd2793f8",
+        "reason": "Empreinte historique revue ; source du consommateur conservé équivalente entre base PROD et candidat selon le comparateur statique dédié ; divergence héritée conservée si présente."
+      },
+      {
+        "name": "deleteCompetitionPdf",
+        "commit": "8b868c7c1382698ee1d04274fcc5b9a56a95d274",
+        "revision": "deletecompetitionpdf-00015-din",
+        "before": "6e878929330319790b4547cecff6a30040cc6a37f586f03928435b8d4a92aba6",
+        "after": "4de3086f96539a9a178df2a3e59ca2b0fc4e0f6227fb709ff30a2a337a18420b",
+        "reason": "Empreinte historique revue ; source du consommateur conservé équivalente entre base PROD et candidat selon le comparateur statique dédié ; divergence héritée conservée si présente."
+      },
+      {
+        "name": "deleteEngagementCalendarEvent",
+        "commit": "8b868c7c1382698ee1d04274fcc5b9a56a95d274",
+        "revision": "deleteengagementcalendarevent-00016-tex",
+        "before": "54d218586d94e014b76bc0de9fbc0395b069da18902a400e99286e74a7bc43d9",
+        "after": "a1be3e232ff2a06b86a396f99ca3afeb128cb2aacf7c6f97c0d6b1fe3182cd20",
+        "reason": "Empreinte historique revue ; source du consommateur conservé équivalente entre base PROD et candidat selon le comparateur statique dédié ; divergence héritée conservée si présente."
+      },
+      {
+        "name": "deleteEngagementCompetition",
+        "commit": "8b868c7c1382698ee1d04274fcc5b9a56a95d274",
+        "revision": "deleteengagementcompetition-00057-wuw",
+        "before": "6a193e2442fc7ce51d932ee9551d63eac3a218f54638ce0e064e8221d4b6e4ce",
+        "after": "62beeeeda34e787fc7793f9580642a05cb9099dc8fd603a003d35a46a2d8aa18",
+        "reason": "Empreinte historique revue ; source du consommateur conservé équivalente entre base PROD et candidat selon le comparateur statique dédié ; divergence héritée conservée si présente."
+      },
+      {
+        "name": "deleteEngagementCompetitionDocument",
+        "commit": "8b868c7c1382698ee1d04274fcc5b9a56a95d274",
+        "revision": "deleteengagementcompetitiondocument-00017-has",
+        "before": "031da57f1603b0a41ae0b935cb23b6b609d5369c8718b93ef691aa181815735f",
+        "after": "c91858a025d137a6e7940a494ebdfee90cfe79cdc3defa92182e3397020f44b2",
+        "reason": "Empreinte historique revue ; source du consommateur conservé équivalente entre base PROD et candidat selon le comparateur statique dédié ; divergence héritée conservée si présente."
+      },
+      {
+        "name": "deleteEngagementNationalClub",
+        "commit": "8b868c7c1382698ee1d04274fcc5b9a56a95d274",
+        "revision": "deleteengagementnationalclub-00013-xoh",
+        "before": "a47b688e0855b7a55ffde23514fae6a0359735286655ed1fc200e58380a19492",
+        "after": "0d5233f9a9e1bc09b7f40e07ba8eda6ef96370f111c11bb50696c8d510838a5e",
+        "reason": "Empreinte historique revue ; source du consommateur conservé équivalente entre base PROD et candidat selon le comparateur statique dédié ; divergence héritée conservée si présente."
+      },
+      {
+        "name": "deleteEngagementNationalClubPerson",
+        "commit": "cbe39bff1d5bb465c29da5c99f5c3b6c740b9432",
+        "revision": "deleteengagementnationalclubperson-00024-yuq",
+        "before": "3a3c40d91b7800eaf380910276fafda453e16ac7db3c49bb9a3840358ae2322b",
+        "after": "d54bfe5c32efee4b226162b19a51d4d1ec3e4fe41c43a7d1d7a744586eb95082",
+        "reason": "Empreinte historique revue ; source du consommateur conservé équivalente entre base PROD et candidat selon le comparateur statique dédié ; divergence héritée conservée si présente."
+      },
+      {
+        "name": "deleteEngagementNationalClubSwimmer",
+        "commit": "8b868c7c1382698ee1d04274fcc5b9a56a95d274",
+        "revision": "deleteengagementnationalclubswimmer-00043-cej",
+        "before": "6a379a01de467fef12392a39115b2bb406a22de18986af2c34f9de056ebfd16e",
+        "after": "78f00473d4f7259288299c50d7db69660213e1798c303a97e533339b5873c7c9",
+        "reason": "Empreinte historique revue ; source du consommateur conservé équivalente entre base PROD et candidat selon le comparateur statique dédié ; divergence héritée conservée si présente."
+      },
+      {
+        "name": "disableCompetitionEmailNotifications",
+        "commit": "1df545a62de67a24ff32ca4d1046cce4be6d499f",
+        "revision": "disablecompetitionemailnotifications-00004-kuf",
+        "before": "ee4c904af510b50da7bfdb99cde5dd2833d7fd75adabb03279029e067171e466",
+        "after": "328894f85448efe7cd7345fd94d524bd3300dfc014db153027c770fee0f75e62",
+        "reason": "Empreinte historique revue ; source du consommateur conservé équivalente entre base PROD et candidat selon le comparateur statique dédié ; divergence héritée conservée si présente."
+      },
+      {
+        "name": "generateEngagementClubRecapPdf",
+        "commit": "cbe39bff1d5bb465c29da5c99f5c3b6c740b9432",
+        "revision": "generateengagementclubrecappdf-00056-dok",
+        "before": "16f7825e5551afa16038c4a46fd1ecb864f42ee7c722a5882ba623f14b0893de",
+        "after": "d6b4f6ec0538d5125627e0be7ed53ff1fa7f8c71a62cb3a535a2054d613cc1ef",
+        "reason": "Empreinte historique revue ; source du consommateur conservé équivalente entre base PROD et candidat selon le comparateur statique dédié ; divergence héritée conservée si présente."
+      },
+      {
+        "name": "generateEngagementClubRecapPdfForAdmin",
+        "commit": "8b868c7c1382698ee1d04274fcc5b9a56a95d274",
+        "revision": "generateengagementclubrecappdfforadmin-00052-cev",
+        "before": "d115a2fe60bfedc996adaba88a73143ebdd5a37bae533677176f212b87d18420",
+        "after": "72b2a8089e46f86423e8fbe0e2c7d20cb4072d7204e715c1a038e7ed00677a30",
+        "reason": "Empreinte historique revue ; source du consommateur conservé équivalente entre base PROD et candidat selon le comparateur statique dédié ; divergence héritée conservée si présente."
+      },
+      {
+        "name": "generateEngagementCompetitionClubRecapPdfs",
+        "commit": "8b868c7c1382698ee1d04274fcc5b9a56a95d274",
+        "revision": "generateengagementcompetitionclubrecappdfs-00039-tub",
+        "before": "743fbfaaeb17975ae9e1efe5a3585f50a7285337038ed322e2ff2f12db8a704e",
+        "after": "1f4b6ff3e2ebc289f90bcd7c09d7a62a708ccef4595502732d296747cea04a64",
+        "reason": "Empreinte historique revue ; source du consommateur conservé équivalente entre base PROD et candidat selon le comparateur statique dédié ; divergence héritée conservée si présente."
+      },
+      {
+        "name": "getCurrentAccessUser",
+        "commit": "8b868c7c1382698ee1d04274fcc5b9a56a95d274",
+        "revision": "getcurrentaccessuser-00102-nec",
+        "before": "ca7ec5979374dbe9eafc056673a50455b1151067a009d0f5fcce3fb686607670",
+        "after": "ba8ba833e5ff21a83077c9d8175c38324b4042c960f35c8ee1137cd9997a65c4",
+        "reason": "Empreinte historique revue ; source du consommateur conservé équivalente entre base PROD et candidat selon le comparateur statique dédié ; divergence héritée conservée si présente."
+      },
+      {
+        "name": "getDtnSeasonOverview",
+        "commit": "8b868c7c1382698ee1d04274fcc5b9a56a95d274",
+        "revision": "getdtnseasonoverview-00007-zec",
+        "before": "ef9691d22cd96c464ef6a371634ae51c975b3172442bb9d029f9b6fecd809912",
+        "after": "8169767fc225904cfc9685309319d4e790e0f0456937fa8558eb024b332f066a",
+        "reason": "Empreinte historique revue ; source du consommateur conservé équivalente entre base PROD et candidat selon le comparateur statique dédié ; divergence héritée conservée si présente."
+      },
+      {
+        "name": "getDtnSeasons",
+        "commit": "8b868c7c1382698ee1d04274fcc5b9a56a95d274",
+        "revision": "getdtnseasons-00007-vut",
+        "before": "d04ce6afa6ae369021f93015783b883b779a93680e95d41947603e4a065a05c7",
+        "after": "e885e4f7058e619b6330f9d8cae69c1951155c6b3c66773e85092f8fb6df082a",
+        "reason": "Empreinte historique revue ; source du consommateur conservé équivalente entre base PROD et candidat selon le comparateur statique dédié ; divergence héritée conservée si présente."
+      },
+      {
+        "name": "getEngagementCalendarEvent",
+        "commit": "8b868c7c1382698ee1d04274fcc5b9a56a95d274",
+        "revision": "getengagementcalendarevent-00016-laq",
+        "before": "1ec709286a37bdecd6270c671d072d1252007ca357c78c0a1688d204b6a170f1",
+        "after": "162c2b92f9233efe9620264799c3e6b67b8e8cea792e4326f7acc31a637574a9",
+        "reason": "Empreinte historique revue ; source du consommateur conservé équivalente entre base PROD et candidat selon le comparateur statique dédié ; divergence héritée conservée si présente."
+      },
+      {
+        "name": "getEngagementClubEntry",
+        "commit": "cbe39bff1d5bb465c29da5c99f5c3b6c740b9432",
+        "revision": "getengagementclubentry-00066-vis",
+        "before": "1df736093873c6a2c278ad4eb6adb06d3ba7ba4afc5bffe61d071d49fccf8351",
+        "after": "da1f08731688dd8c294220bcc7277bad9b5c75d9e5adac7d1a1872c0249a5969",
+        "reason": "Empreinte historique revue ; source du consommateur conservé équivalente entre base PROD et candidat selon le comparateur statique dédié ; divergence héritée conservée si présente."
+      },
+      {
+        "name": "getEngagementClubEntryTimeHistory",
+        "commit": "cbe39bff1d5bb465c29da5c99f5c3b6c740b9432",
+        "revision": "getengagementclubentrytimehistory-00019-hac",
+        "before": "19de87ba706029e438e21bd35508e4c08202afd93c8428b86ce215f1645b9fa6",
+        "after": "9dfb738eac9a69b6b04f550554d500883ac283d11d73ddf6f4a50f187d861803",
+        "reason": "Empreinte historique revue ; source du consommateur conservé équivalente entre base PROD et candidat selon le comparateur statique dédié ; divergence héritée conservée si présente."
+      },
+      {
+        "name": "getEngagementCompetition",
+        "commit": "cbe39bff1d5bb465c29da5c99f5c3b6c740b9432",
+        "revision": "getengagementcompetition-00070-ros",
+        "before": "05abb80daf49cf27177dfa4a9651dd42fd74414405ae42d4bf6adde1950e9c74",
+        "after": "21386d17a15e1ace11e78b7b9f702a64ae0ee4f15f2ec3c043bb5c098838bf8d",
+        "reason": "Empreinte historique revue ; source du consommateur conservé équivalente entre base PROD et candidat selon le comparateur statique dédié ; divergence héritée conservée si présente."
+      },
+      {
+        "name": "getEngagementCompetitionStatistics",
+        "commit": "8b868c7c1382698ee1d04274fcc5b9a56a95d274",
+        "revision": "getengagementcompetitionstatistics-00020-dim",
+        "before": "01fbf8e656e016d6ea3258ea0c655084f88954bad6cf19327e031f7e168a3815",
+        "after": "6eb7752e6ada48b8af026a6849eb37e5276136dca1014e1fc26999f1c293cab1",
+        "reason": "Empreinte historique revue ; source du consommateur conservé équivalente entre base PROD et candidat selon le comparateur statique dédié ; divergence héritée conservée si présente."
+      },
+      {
+        "name": "getNapPerformanceAdministration",
+        "commit": "8b868c7c1382698ee1d04274fcc5b9a56a95d274",
+        "revision": "getnapperformanceadministration-00006-beb",
+        "before": "0a947135af42df9ea49823ff2ec4ad14c1d4e474c6245b69febd725c3d1c8206",
+        "after": "ff0f7cc9e1fa3c5b8ecaf0f5591fc92db2efb7d3ebf812140a39d31356848051",
+        "reason": "Empreinte historique revue ; source du consommateur conservé équivalente entre base PROD et candidat selon le comparateur statique dédié ; divergence héritée conservée si présente."
+      },
+      {
+        "name": "getNationalFeaturedDocuments",
+        "commit": "8b868c7c1382698ee1d04274fcc5b9a56a95d274",
+        "revision": "getnationalfeatureddocuments-00004-zur",
+        "before": "9bf47fff397e725f228047d5446f2509aaabdb1c4f206b8c976c62b18e836603",
+        "after": "29e62bfc00fb377b65a355a3c89d85de93b3cabe7eedc12b06663d66b27965f4",
+        "reason": "Empreinte historique revue ; source du consommateur conservé équivalente entre base PROD et candidat selon le comparateur statique dédié ; divergence héritée conservée si présente."
+      },
+      {
+        "name": "getPortalPendingRequestOverview",
+        "commit": "8b868c7c1382698ee1d04274fcc5b9a56a95d274",
+        "revision": "getportalpendingrequestoverview-00015-vex",
+        "before": "0af299a351285e41922d698afa46a26364892917c975473966fa103de3ddf6da",
+        "after": "66d41f1f69ebe4ddb3768d8256d3d88679e9a315de765fd81a973e0aec4dffef",
+        "reason": "Empreinte historique revue ; source du consommateur conservé équivalente entre base PROD et candidat selon le comparateur statique dédié ; divergence héritée conservée si présente."
+      },
+      {
+        "name": "getPublicEngagementClubDirectory",
+        "commit": "8b868c7c1382698ee1d04274fcc5b9a56a95d274",
+        "revision": "getpublicengagementclubdirectory-00010-lep",
+        "before": "1bb25b943287c86e5555a364e0ac08cf427546f6ddc86a077b391adddab499fa",
+        "after": "60bbcec44843959c8ae8feda5bda99d675b0a66d320725deec79269c5399db95",
+        "reason": "Empreinte historique revue ; source du consommateur conservé équivalente entre base PROD et candidat selon le comparateur statique dédié ; divergence héritée conservée si présente."
+      },
+      {
+        "name": "listAccessUserDeletionRequests",
+        "commit": "8b868c7c1382698ee1d04274fcc5b9a56a95d274",
+        "revision": "listaccessuserdeletionrequests-00039-qud",
+        "before": "92d676a30cd2c23d539d8f331a92380a20bc04e8467c61bd90bc05ff1403df27",
+        "after": "31678366536cf0812d6de8fd2393302f7d7c35dc5d28ea222ccab0640d68ace1",
+        "reason": "Empreinte historique revue ; source du consommateur conservé équivalente entre base PROD et candidat selon le comparateur statique dédié ; divergence héritée conservée si présente."
+      },
+      {
+        "name": "listAccessUsers",
+        "commit": "8b868c7c1382698ee1d04274fcc5b9a56a95d274",
+        "revision": "listaccessusers-00103-wuk",
+        "before": "01f9c889013ba2ec4183b8f2390c9eb4ed0403175e2d83c1293226500ac66a9a",
+        "after": "ed4c31121d43068282d78e6e7d5d10be3a2c3e9c820399ab1a8148885558d654",
+        "reason": "Empreinte historique revue ; source du consommateur conservé équivalente entre base PROD et candidat selon le comparateur statique dédié ; divergence héritée conservée si présente."
+      },
+      {
+        "name": "listCompetitionImports",
+        "commit": "cbe39bff1d5bb465c29da5c99f5c3b6c740b9432",
+        "revision": "listcompetitionimports-00092-jaz",
+        "before": "80bc86609d1ec750c1729a5209386d9301f618e25e98ea55e11ec0d76e86922d",
+        "after": "d0f6f4de5e74900281be7616472d6e9d07b11cdbe0869d060cecf0997da6ecc1",
+        "reason": "Empreinte historique revue ; source du consommateur conservé équivalente entre base PROD et candidat selon le comparateur statique dédié ; divergence héritée conservée si présente."
+      },
+      {
+        "name": "listDtnSeasonSources",
+        "commit": "8b868c7c1382698ee1d04274fcc5b9a56a95d274",
+        "revision": "listdtnseasonsources-00007-tey",
+        "before": "38281a757d93bab52bec406f5db3cb15c377da31dae6f5e344beffdbd1d3c8e8",
+        "after": "4a4233a2377dff46215b1f9a783c06792bccbbb62da8d367f5e6b99531fd7cc7",
+        "reason": "Empreinte historique revue ; source du consommateur conservé équivalente entre base PROD et candidat selon le comparateur statique dédié ; divergence héritée conservée si présente."
+      },
+      {
+        "name": "listEngagementAccessRequests",
+        "commit": "cbe39bff1d5bb465c29da5c99f5c3b6c740b9432",
+        "revision": "listengagementaccessrequests-00041-lup",
+        "before": "e3b76557ba0f652c0e4673be5c959fa9650058d9db5a62d688112479e8181f8f",
+        "after": "fae69f24f695dd9424428e3262bdfcca760731dddf0ace15cbd9b1779562a511",
+        "reason": "Empreinte historique revue ; source du consommateur conservé équivalente entre base PROD et candidat selon le comparateur statique dédié ; divergence héritée conservée si présente."
+      },
+      {
+        "name": "listEngagementCalendarEvents",
+        "commit": "8b868c7c1382698ee1d04274fcc5b9a56a95d274",
+        "revision": "listengagementcalendarevents-00016-zin",
+        "before": "d9dd70ce946c3b24a22431edcc633016a35c9e7622bd5977e9daa8fa6587a36a",
+        "after": "0cb87a281018bf7f416d144e5a913c22ecdc41c415e6aff2642c73d05d3f62cb",
+        "reason": "Empreinte historique revue ; source du consommateur conservé équivalente entre base PROD et candidat selon le comparateur statique dédié ; divergence héritée conservée si présente."
+      },
+      {
+        "name": "listEngagementClubPeople",
+        "commit": "cbe39bff1d5bb465c29da5c99f5c3b6c740b9432",
+        "revision": "listengagementclubpeople-00058-juc",
+        "before": "dea339c20da4558b28eb10ca054d2ce620059c6e46598b3e26be22fbb634972e",
+        "after": "50cec3903a1cd5c6ad9f297a09651747c24c01d39e7fd4aeef46de8003b1e518",
+        "reason": "Empreinte historique revue ; source du consommateur conservé équivalente entre base PROD et candidat selon le comparateur statique dédié ; divergence héritée conservée si présente."
+      },
+      {
+        "name": "listEngagementClubSwimmers",
+        "commit": "8b868c7c1382698ee1d04274fcc5b9a56a95d274",
+        "revision": "listengagementclubswimmers-00057-wux",
+        "before": "558d97db5541cfae6fcdef58057d4b1652169c7f61d1f831129ded96fc158ab0",
+        "after": "34586059a52706624fa8f90c3fbfb84598ebde19031bd88a4ca88310eb511a34",
+        "reason": "Empreinte historique revue ; source du consommateur conservé équivalente entre base PROD et candidat selon le comparateur statique dédié ; divergence héritée conservée si présente."
+      },
+      {
+        "name": "listEngagementCompetitionClubRecaps",
+        "commit": "8b868c7c1382698ee1d04274fcc5b9a56a95d274",
+        "revision": "listengagementcompetitionclubrecaps-00050-huq",
+        "before": "004936965956f38680ff96969ebce1efdfa943e2ae71fb033c0000515aa95b86",
+        "after": "9eb2056ebc605e903c0642299264d3b1d0983034a6b8aeed9e20784f4dc4154d",
+        "reason": "Empreinte historique revue ; source du consommateur conservé équivalente entre base PROD et candidat selon le comparateur statique dédié ; divergence héritée conservée si présente."
+      },
+      {
+        "name": "listEngagementCompetitions",
+        "commit": "8b868c7c1382698ee1d04274fcc5b9a56a95d274",
+        "revision": "listengagementcompetitions-00075-zel",
+        "before": "34eb573ded2b9b59416622d18d1bcd9c1b1d9e6dd3f9253464f42ccf41f24c7c",
+        "after": "9e9ee75796c9536bc0ce59ba14756cc0f534bfeac53b528d7b69825931695453",
+        "reason": "Empreinte historique revue ; source du consommateur conservé équivalente entre base PROD et candidat selon le comparateur statique dédié ; divergence héritée conservée si présente."
+      },
+      {
+        "name": "listEngagementNationalAuditLogs",
+        "commit": "8b868c7c1382698ee1d04274fcc5b9a56a95d274",
+        "revision": "listengagementnationalauditlogs-00019-rar",
+        "before": "51710833958f480c8724c818b7adfd5c557546d094691370bb29f67aa3e7d979",
+        "after": "04ef338a6433c5f5c882764777562e975f84164575169f808400341edaa211fe",
+        "reason": "Empreinte historique revue ; source du consommateur conservé équivalente entre base PROD et candidat selon le comparateur statique dédié ; divergence héritée conservée si présente."
+      },
+      {
+        "name": "listEngagementNationalClubPeople",
+        "commit": "cbe39bff1d5bb465c29da5c99f5c3b6c740b9432",
+        "revision": "listengagementnationalclubpeople-00023-ves",
+        "before": "5ab406daaf877c1a97a58095432130ea5ced3d5d74aa84e09c0ffbdb3ccaab74",
+        "after": "595bd2ab1b309d96480938d7a926c5bfd2d53a4451f1ebcfc9b7e9ee908a30ee",
+        "reason": "Empreinte historique revue ; source du consommateur conservé équivalente entre base PROD et candidat selon le comparateur statique dédié ; divergence héritée conservée si présente."
+      },
+      {
+        "name": "listEngagementNationalClubs",
+        "commit": "8b868c7c1382698ee1d04274fcc5b9a56a95d274",
+        "revision": "listengagementnationalclubs-00014-guz",
+        "before": "1f58cafcff5755bdb7ecebb35e81282b0877c93a1fb6ada2fe1035aebb4ddd50",
+        "after": "bc872560ada1fc7b4da07f9efe282584b2e5be3e026741f7931d17af51cfade4",
+        "reason": "Empreinte historique revue ; source du consommateur conservé équivalente entre base PROD et candidat selon le comparateur statique dédié ; divergence héritée conservée si présente."
+      },
+      {
+        "name": "listEngagementOpenWaterCourses",
+        "commit": "8b868c7c1382698ee1d04274fcc5b9a56a95d274",
+        "revision": "listengagementopenwatercourses-00010-xup",
+        "before": "9a91e1261d57a6a635bf58ad93148be7ab6e7047efb132fc981c8ebad6d6b722",
+        "after": "ded138e959594926269c3680fb8938e3f18ad6e3f5a923fa352875c0fb614699",
+        "reason": "Empreinte historique revue ; source du consommateur conservé équivalente entre base PROD et candidat selon le comparateur statique dédié ; divergence héritée conservée si présente."
+      },
+      {
+        "name": "listEngagementQualificationSources",
+        "commit": "8b868c7c1382698ee1d04274fcc5b9a56a95d274",
+        "revision": "listengagementqualificationsources-00011-lak",
+        "before": "ce3cb0a6d7125c2e3a4c3ece26caf9806352cfddd682f80116486c7cea5a5ac9",
+        "after": "f0b88183fb0bee1ac0a074ea88fe0c8f862a4b0e19e3c7501b646b4691b2d01a",
+        "reason": "Empreinte historique revue ; source du consommateur conservé équivalente entre base PROD et candidat selon le comparateur statique dédié ; divergence héritée conservée si présente."
+      },
+      {
+        "name": "listEngagementSwimmerChangeRequests",
+        "commit": "cbe39bff1d5bb465c29da5c99f5c3b6c740b9432",
+        "revision": "listengagementswimmerchangerequests-00017-tob",
+        "before": "0016c0542e2a4d16e70e2285082891cac395ed6a7395fce8ab05c628cac9658c",
+        "after": "f662d86c3f519d11b7c3a3a0768b331bd135f40b3f5a67d07950a97b54ecdfa9",
+        "reason": "Empreinte historique revue ; source du consommateur conservé équivalente entre base PROD et candidat selon le comparateur statique dédié ; divergence héritée conservée si présente."
+      },
+      {
+        "name": "mergeEngagementNationalClubPerson",
+        "commit": "cbe39bff1d5bb465c29da5c99f5c3b6c740b9432",
+        "revision": "mergeengagementnationalclubperson-00025-voh",
+        "before": "220d2ae98c9e51787853c30530c6e641157cecee5a50cefe75c219ba90f7d264",
+        "after": "333f0d21756f15fdfdb67a97249cf70141c3b21eb016feb0d67501bec9aee8c1",
+        "reason": "Empreinte historique revue ; source du consommateur conservé équivalente entre base PROD et candidat selon le comparateur statique dédié ; divergence héritée conservée si présente."
+      },
+      {
+        "name": "mergeEngagementNationalClubSwimmer",
+        "commit": "8b868c7c1382698ee1d04274fcc5b9a56a95d274",
+        "revision": "mergeengagementnationalclubswimmer-00028-vos",
+        "before": "a3405273ada3456ea6dceb5ea206de23ae26ecdbb84dd92d66b6bfb4da18a05f",
+        "after": "1a7a914a4760b89954d4ba8ce2c1e0073353cfcd1296ecf1c3698647720420f0",
+        "reason": "Empreinte historique revue ; source du consommateur conservé équivalente entre base PROD et candidat selon le comparateur statique dédié ; divergence héritée conservée si présente."
+      },
+      {
+        "name": "previewCompetitionImport",
+        "commit": "cbe39bff1d5bb465c29da5c99f5c3b6c740b9432",
+        "revision": "previewcompetitionimport-00101-til",
+        "before": "1319310ecab38f09d1e82455325cc3cc7bddaf09287c8dadcf7184e2cb16cf0f",
+        "after": "9b01fcec75ac1d3926815c4befe7b5d81076d185c2647c26a8ef67fcb6e1a465",
+        "reason": "Empreinte historique revue ; source du consommateur conservé équivalente entre base PROD et candidat selon le comparateur statique dédié ; divergence héritée conservée si présente."
+      },
+      {
+        "name": "previewEngagementClubSwimmerCreation",
+        "commit": "8b868c7c1382698ee1d04274fcc5b9a56a95d274",
+        "revision": "previewengagementclubswimmercreation-00045-pip",
+        "before": "ce8b849e93cae91502fabd9e547ecefab0767b40b84787e60444d5b00e451f65",
+        "after": "89190943f33d2d1bcc2d1393c28f96617fea90bb5783311a67c22b9f8e334a53",
+        "reason": "Empreinte historique revue ; source du consommateur conservé équivalente entre base PROD et candidat selon le comparateur statique dédié ; divergence héritée conservée si présente."
+      },
+      {
+        "name": "previewEngagementClubSwimmerEventTimes",
+        "commit": "cbe39bff1d5bb465c29da5c99f5c3b6c740b9432",
+        "revision": "previewengagementclubswimmereventtimes-00023-ful",
+        "before": "ff78ca3ccabf4627808a425fc40d0401bc0d8f0c9649d326a74d4308fee80423",
+        "after": "350beaff007f1a2d04a50d17456930c18b40ebc8b1d62d17d3cd6dfd03cce89b",
+        "reason": "Empreinte historique revue ; source du consommateur conservé équivalente entre base PROD et candidat selon le comparateur statique dédié ; divergence héritée conservée si présente."
+      },
+      {
+        "name": "previewEngagementClubSwimmerEventTimesBatch",
+        "commit": "cbe39bff1d5bb465c29da5c99f5c3b6c740b9432",
+        "revision": "previewengagementclubswimmereventtimesbatch-00021-kal",
+        "before": "ffe256193cc12e697559002366d18c11ce33cb007be45ccf22388f98bb5eb0df",
+        "after": "98b47377cad774a3e6dea2e37f61666b033b0816d7a787a34d838e4ff454c0f8",
+        "reason": "Empreinte historique revue ; source du consommateur conservé équivalente entre base PROD et candidat selon le comparateur statique dédié ; divergence héritée conservée si présente."
+      },
+      {
+        "name": "previewEngagementClubSwimmerRecovery",
+        "commit": "8b868c7c1382698ee1d04274fcc5b9a56a95d274",
+        "revision": "previewengagementclubswimmerrecovery-00013-muh",
+        "before": "a915e57eff16a86660db693df3b987e4ed060be07d60c1675408e23e97015030",
+        "after": "65b5b73edf2ad6fd800d0555da5740965f6d1197acce46deae76ce0bc9ae65f4",
+        "reason": "Empreinte historique revue ; source du consommateur conservé équivalente entre base PROD et candidat selon le comparateur statique dédié ; divergence héritée conservée si présente."
+      },
+      {
+        "name": "readNapPublicSwimmer",
+        "commit": "cbe39bff1d5bb465c29da5c99f5c3b6c740b9432",
+        "revision": "readnappublicswimmer-00011-wex",
+        "before": "42ebfbc14a3048430f0cb9a3652b20cfc51debf4c91a377b9356d96738eb6247",
+        "after": "e33b5e7ca3399aa8092ef4587bfba667ca63e10c3b65e786bec513423eeff9a4",
+        "reason": "Empreinte historique revue ; source du consommateur conservé équivalente entre base PROD et candidat selon le comparateur statique dédié ; divergence héritée conservée si présente."
+      },
+      {
+        "name": "rebuildAccessDirectoryIndexNextPage",
+        "commit": "8b868c7c1382698ee1d04274fcc5b9a56a95d274",
+        "revision": "rebuildaccessdirectoryindexnextpage-00014-quk",
+        "before": "5d8bb3188fbfd34ad65a9e6caece2678326e4a5a37f24899c4832398cd6e9f99",
+        "after": "2dfe9c96b378c21bed6101632aabbac2b67383c099367a43b3c3e4db35329c4f",
+        "reason": "Empreinte historique revue ; source du consommateur conservé équivalente entre base PROD et candidat selon le comparateur statique dédié ; divergence héritée conservée si présente."
+      },
+      {
+        "name": "rebuildAccessDirectorySnapshotNextPage",
+        "commit": "8b868c7c1382698ee1d04274fcc5b9a56a95d274",
+        "revision": "rebuildaccessdirectorysnapshotnextpage-00014-pil",
+        "before": "7436877475ffd93f645907c9aff171896d242934a61ad212e8e40b6a9a337cee",
+        "after": "0f41d7ae3a03512a6c6347075824c0a85dbb7b8c47bc530583f68706ef02553f",
+        "reason": "Empreinte historique revue ; source du consommateur conservé équivalente entre base PROD et candidat selon le comparateur statique dédié ; divergence héritée conservée si présente."
+      },
+      {
+        "name": "rebuildEngagementMailRecipientIndexNextPage",
+        "commit": "8b868c7c1382698ee1d04274fcc5b9a56a95d274",
+        "revision": "rebuildengagementmailrecipientindexnextpage-00017-fil",
+        "before": "ed9de734ac736dea74cf3b9266de3be4fc80c4cb48a49609e878921fbaf97151",
+        "after": "c888e7726e66c101dab0fb0d2a10985ad14b1573c9016d92d08cb8d9a8941989",
+        "reason": "Empreinte historique revue ; source du consommateur conservé équivalente entre base PROD et candidat selon le comparateur statique dédié ; divergence héritée conservée si présente."
+      },
+      {
+        "name": "recoverEngagementClubSwimmer",
+        "commit": "8b868c7c1382698ee1d04274fcc5b9a56a95d274",
+        "revision": "recoverengagementclubswimmer-00013-vez",
+        "before": "b0b815a604131cd96c9c025e5c096dece94a0257cd924877a636a4400b4264b5",
+        "after": "5d01185f53c091f5c3d9d3a84b3bb517441cfecadba1a0f7ea1e72e2330d5a3e",
+        "reason": "Empreinte historique revue ; source du consommateur conservé équivalente entre base PROD et candidat selon le comparateur statique dédié ; divergence héritée conservée si présente."
+      },
+      {
+        "name": "removeEngagementClubTeamLeader",
+        "commit": "cbe39bff1d5bb465c29da5c99f5c3b6c740b9432",
+        "revision": "removeengagementclubteamleader-00017-kaj",
+        "before": "ce268ccf99f5da78449513376f0fc02523a8c6359b2b35104491927a8aa4dcaf",
+        "after": "c5321921706cf0bc4281dfca255cef3fc149b837936fd47f349643e7a019809f",
+        "reason": "Empreinte historique revue ; source du consommateur conservé équivalente entre base PROD et candidat selon le comparateur statique dédié ; divergence héritée conservée si présente."
+      },
+      {
+        "name": "requestAccessUserDeletion",
+        "commit": "8b868c7c1382698ee1d04274fcc5b9a56a95d274",
+        "revision": "requestaccessuserdeletion-00039-kuw",
+        "before": "1906acc382cb0d3e85822eaf92416cf9f1c88a1d635a8bbd953f7da3dab5c5b1",
+        "after": "9907ee43609b703924b469ba2c57c9344b43974b5f44d3910e9c5d6f36952c10",
+        "reason": "Empreinte historique revue ; source du consommateur conservé équivalente entre base PROD et candidat selon le comparateur statique dédié ; divergence héritée conservée si présente."
+      },
+      {
+        "name": "requestEngagementClubSwimmerChange",
+        "commit": "cbe39bff1d5bb465c29da5c99f5c3b6c740b9432",
+        "revision": "requestengagementclubswimmerchange-00019-ney",
+        "before": "5fe2921d278bdcfaf7f971a57e5510ec986c9c47b7803afbe78f92d93fa52d31",
+        "after": "2ee145cb4f042900b5229573a426f7fcd8b9ccd7677382b22604c1d39b3f25d0",
+        "reason": "Empreinte historique revue ; source du consommateur conservé équivalente entre base PROD et candidat selon le comparateur statique dédié ; divergence héritée conservée si présente."
+      },
+      {
+        "name": "resolveAccessUserDeletionRequest",
+        "commit": "8b868c7c1382698ee1d04274fcc5b9a56a95d274",
+        "revision": "resolveaccessuserdeletionrequest-00039-wec",
+        "before": "699ada9998ed4b5f8de8c627586982b078a7df156df628e15eaddc25062478fb",
+        "after": "964c0546613d8f46ec835a7bc0a56416ced1e49efc3e9604c388a2fe138399b4",
+        "reason": "Empreinte historique revue ; source du consommateur conservé équivalente entre base PROD et candidat selon le comparateur statique dédié ; divergence héritée conservée si présente."
+      },
+      {
+        "name": "resolveEngagementAccessRequest",
+        "commit": "812bad64681a232e6cc3868ba7ec112bcdac7ca2",
+        "revision": "resolveengagementaccessrequest-00040-jev",
+        "before": "6d9fbfa653896f44534bdb644a3f0691c956e96ada2ad0b7acc9555183680c30",
+        "after": "9362f95f6cc6899434c6169fec5285b72ddf0191f61387ef355cf63b76711f56",
+        "reason": "Empreinte historique revue ; source du consommateur conservé équivalente entre base PROD et candidat selon le comparateur statique dédié ; divergence héritée conservée si présente."
+      },
+      {
+        "name": "resolveEngagementSwimmerChangeRequest",
+        "commit": "cbe39bff1d5bb465c29da5c99f5c3b6c740b9432",
+        "revision": "resolveengagementswimmerchangerequest-00022-jeg",
+        "before": "a3903c82e5d7bfbfb0d4d9cd0f446964fef9a71319532ee46b8cbe112c60cd1c",
+        "after": "a2b2b13bd63dfa9fbdd85b9e2b5349ae33927f7af372fcb98f0cefb0c6f26108",
+        "reason": "Empreinte historique revue ; source du consommateur conservé équivalente entre base PROD et candidat selon le comparateur statique dédié ; divergence héritée conservée si présente."
+      },
+      {
+        "name": "saveEngagementClubIndividualEntries",
+        "commit": "cbe39bff1d5bb465c29da5c99f5c3b6c740b9432",
+        "revision": "saveengagementclubindividualentries-00024-res",
+        "before": "d8c60b58f45e15a37557b7faf21d50379b53b77f30d84e51d235ac22a735ffb1",
+        "after": "433091d1e3509f94346baccfdfb82772f71154df79ff2be53d064df3a14a2e82",
+        "reason": "Empreinte historique revue ; source du consommateur conservé équivalente entre base PROD et candidat selon le comparateur statique dédié ; divergence héritée conservée si présente."
+      },
+      {
+        "name": "saveEngagementClubOfficials",
+        "commit": "cbe39bff1d5bb465c29da5c99f5c3b6c740b9432",
+        "revision": "saveengagementclubofficials-00062-del",
+        "before": "415ab9b518ea08f7bcbf3ffc692873352e8b15499c4df2d95d9be9fc6ff10d60",
+        "after": "a5b35c1eab0aae87f8aaa372745e689e6750728850808925f8aef8fd5a5c72ae",
+        "reason": "Empreinte historique revue ; source du consommateur conservé équivalente entre base PROD et candidat selon le comparateur statique dédié ; divergence héritée conservée si présente."
+      },
+      {
+        "name": "saveEngagementClubPerson",
+        "commit": "cbe39bff1d5bb465c29da5c99f5c3b6c740b9432",
+        "revision": "saveengagementclubperson-00063-fof",
+        "before": "917d684a51b9b7c120ba5caecc170516b6de035de1f669ba2636362fd32f38b9",
+        "after": "a146a892450c5e75ed305bc355d7ad405b5ad68bc7be809ba57dcd4d956bcdf6",
+        "reason": "Empreinte historique revue ; source du consommateur conservé équivalente entre base PROD et candidat selon le comparateur statique dédié ; divergence héritée conservée si présente."
+      },
+      {
+        "name": "saveEngagementClubRelays",
+        "commit": "cbe39bff1d5bb465c29da5c99f5c3b6c740b9432",
+        "revision": "saveengagementclubrelays-00056-jok",
+        "before": "c9a90486689eeb43b052fb1bfdb913e150bb3303d0b89f263b38450481df57f6",
+        "after": "d91f78957d5c1754b473452e0739886aa01b153959d1bbcac696c2ba60eccae0",
+        "reason": "Empreinte historique revue ; source du consommateur conservé équivalente entre base PROD et candidat selon le comparateur statique dédié ; divergence héritée conservée si présente."
+      },
+      {
+        "name": "saveEngagementClubSwimmerSelection",
+        "commit": "cbe39bff1d5bb465c29da5c99f5c3b6c740b9432",
+        "revision": "saveengagementclubswimmerselection-00024-rum",
+        "before": "3cd85ccf8d703de039bf3227206f3f972a3e34e82a8856de6cb3a89bcf9e2dcd",
+        "after": "eb64187821a8143ac62d97302c9053cad04e83a116718dcb7d5261d67927965f",
+        "reason": "Empreinte historique revue ; source du consommateur conservé équivalente entre base PROD et candidat selon le comparateur statique dédié ; divergence héritée conservée si présente."
+      },
+      {
+        "name": "saveEngagementClubSwimmerSelections",
+        "commit": "cbe39bff1d5bb465c29da5c99f5c3b6c740b9432",
+        "revision": "saveengagementclubswimmerselections-00024-nej",
+        "before": "0e88e147c3c7b6361a1fb3a0605fa6976635fb586c98b30eab56eed23ae73968",
+        "after": "1405d95421c12a0ffdb21ad40cd00c9d544ff616ca564b55dfb43ed1b0928d33",
+        "reason": "Empreinte historique revue ; source du consommateur conservé équivalente entre base PROD et candidat selon le comparateur statique dédié ; divergence héritée conservée si présente."
+      },
+      {
+        "name": "saveEngagementClubTeamLeader",
+        "commit": "cbe39bff1d5bb465c29da5c99f5c3b6c740b9432",
+        "revision": "saveengagementclubteamleader-00063-vuy",
+        "before": "934061b7c5864c6e1c3537bf34c590df375910e26936e90164ba1094dc70a8a4",
+        "after": "f87f5f57d4517ca573b0875642793c871a5c3a0e70829c148c0eec1ea6d859d5",
+        "reason": "Empreinte historique revue ; source du consommateur conservé équivalente entre base PROD et candidat selon le comparateur statique dédié ; divergence héritée conservée si présente."
+      },
+      {
+        "name": "saveEngagementNationalClub",
+        "commit": "8b868c7c1382698ee1d04274fcc5b9a56a95d274",
+        "revision": "saveengagementnationalclub-00013-jak",
+        "before": "d9cc5593a1ae34c06a270b9503b62d0f1e285ac28d44480271bacfdfd9ef508e",
+        "after": "51959d65a845d239744506f70e1c83395e74fab7497232f58b6c3b71a139a876",
+        "reason": "Empreinte historique revue ; source du consommateur conservé équivalente entre base PROD et candidat selon le comparateur statique dédié ; divergence héritée conservée si présente."
+      },
+      {
+        "name": "saveNationalFeaturedDocuments",
+        "commit": "8b868c7c1382698ee1d04274fcc5b9a56a95d274",
+        "revision": "savenationalfeatureddocuments-00004-kog",
+        "before": "f34cec91d3e19c623f4351651ebc13602ff402964573e3407d90587fa0d2fd70",
+        "after": "b89dfa08f0e3f158a68a9a8656c0c1c800eacd5e8fe969c9ba7fb1a7bd12fdea",
+        "reason": "Empreinte historique revue ; source du consommateur conservé équivalente entre base PROD et candidat selon le comparateur statique dédié ; divergence héritée conservée si présente."
+      },
+      {
+        "name": "savePerformanceCorrection",
+        "commit": "8b868c7c1382698ee1d04274fcc5b9a56a95d274",
+        "revision": "saveperformancecorrection-00093-jix",
+        "before": "2b4a3c309848f7dfab6572ff20a5778694af667f9167e596645ccab71b17cc8c",
+        "after": "2635c47f39421be9a98a3df54376576499a8412333c490d6799a2cae4738166e",
+        "reason": "Empreinte historique revue ; source du consommateur conservé équivalente entre base PROD et candidat selon le comparateur statique dédié ; divergence héritée conservée si présente."
+      },
+      {
+        "name": "searchEngagementNationalSwimmerMergeTargets",
+        "commit": "8b868c7c1382698ee1d04274fcc5b9a56a95d274",
+        "revision": "searchengagementnationalswimmermergetargets-00021-wic",
+        "before": "2c4c975b3ff17c5e98dee9ca9174ef2b1d3981f02ae2cb23a5efc57c3690c247",
+        "after": "80aaa7fe59442b96442775be5a962d0eb9914f12e354f4df0539445deefe7424",
+        "reason": "Empreinte historique revue ; source du consommateur conservé équivalente entre base PROD et candidat selon le comparateur statique dédié ; divergence héritée conservée si présente."
+      },
+      {
+        "name": "searchEngagementNationalSwimmers",
+        "commit": "8b868c7c1382698ee1d04274fcc5b9a56a95d274",
+        "revision": "searchengagementnationalswimmers-00021-yox",
+        "before": "bf893e78552fac4d8e6f176cd28978b5fa1df9af17ba0455716dcc8a87f853a9",
+        "after": "4cb607bd08fe2d40ccc1bcbee46f0bfdce2dc632bde611979b5acd330d367200",
+        "reason": "Empreinte historique revue ; source du consommateur conservé équivalente entre base PROD et candidat selon le comparateur statique dédié ; divergence héritée conservée si présente."
+      },
+      {
+        "name": "setAccessUserStatus",
+        "commit": "8b868c7c1382698ee1d04274fcc5b9a56a95d274",
+        "revision": "setaccessuserstatus-00104-zex",
+        "before": "33c3115c4a31b2521fb5dc077bfcc2dae2a752cf8a68f339eeb62cc9dff689e6",
+        "after": "2ef6bb9ccd841dc8dabe8b01d88117dc20924b40ab2fc953165f83497e7459a5",
+        "reason": "Empreinte historique revue ; source du consommateur conservé équivalente entre base PROD et candidat selon le comparateur statique dédié ; divergence héritée conservée si présente."
+      },
+      {
+        "name": "setEngagementClubPersonStatus",
+        "commit": "cbe39bff1d5bb465c29da5c99f5c3b6c740b9432",
+        "revision": "setengagementclubpersonstatus-00060-zed",
+        "before": "ef044c3e0281f74ac08c7e935bdd119f0f0a98ed20974186afbfba5d5825bdcd",
+        "after": "6af7f8f1d19750cb4add50b9beb9ad332997b63938c94dc48a884b0b9519e76c",
+        "reason": "Empreinte historique revue ; source du consommateur conservé équivalente entre base PROD et candidat selon le comparateur statique dédié ; divergence héritée conservée si présente."
+      },
+      {
+        "name": "setEngagementClubSwimmerActivityStatus",
+        "commit": "8b868c7c1382698ee1d04274fcc5b9a56a95d274",
+        "revision": "setengagementclubswimmeractivitystatus-00014-den",
+        "before": "2586295ab044c301310d82b4e8712263095a8f1177aef54f92163d49bcc75da6",
+        "after": "8a8522d0154694d5b7e9d41870de5bea70e8dbdea731e329a1ef6df4ebbf6139",
+        "reason": "Empreinte historique revue ; source du consommateur conservé équivalente entre base PROD et candidat selon le comparateur statique dédié ; divergence héritée conservée si présente."
+      },
+      {
+        "name": "setEngagementNationalClubPersonStatus",
+        "commit": "cbe39bff1d5bb465c29da5c99f5c3b6c740b9432",
+        "revision": "setengagementnationalclubpersonstatus-00025-xaz",
+        "before": "f7e938013f95cc94a484ee58a7eb203a43a20b32cfa22af648a45805a12beee5",
+        "after": "e21fab84d1c1a4236df1664cd78c7362cff86d671cd2b98b242d5f17ff699d65",
+        "reason": "Empreinte historique revue ; source du consommateur conservé équivalente entre base PROD et candidat selon le comparateur statique dédié ; divergence héritée conservée si présente."
+      },
+      {
+        "name": "setEngagementNationalClubSwimmerStatus",
+        "commit": "8b868c7c1382698ee1d04274fcc5b9a56a95d274",
+        "revision": "setengagementnationalclubswimmerstatus-00043-bux",
+        "before": "11384b5003cff4c702e6013a1530c3dec92850fc7ca16d1e4a728089ef8608bb",
+        "after": "ecfe4089c6bc45affce60a1370182e43b1e864d220664a0cf618afe803fcb380",
+        "reason": "Empreinte historique revue ; source du consommateur conservé équivalente entre base PROD et candidat selon le comparateur statique dédié ; divergence héritée conservée si présente."
+      },
+      {
+        "name": "setEngagementOpenWaterCourseStatus",
+        "commit": "8b868c7c1382698ee1d04274fcc5b9a56a95d274",
+        "revision": "setengagementopenwatercoursestatus-00010-vov",
+        "before": "725bc6914835158a4bbec51195f75908ebe7327a20abbd77a2c7e2661a761f4a",
+        "after": "1bfabaeb593107b66559d57db5f2acae035560f5a29844e0f40b73664e1ff272",
+        "reason": "Empreinte historique revue ; source du consommateur conservé équivalente entre base PROD et candidat selon le comparateur statique dédié ; divergence héritée conservée si présente."
+      },
+      {
+        "name": "setRolePins",
+        "commit": "8b868c7c1382698ee1d04274fcc5b9a56a95d274",
+        "revision": "setrolepins-00101-bec",
+        "before": "fe0933af32762a4fb68bc669e4c68f915a1c33616469e2692307254b4eff80d3",
+        "after": "07535c0ec179adae240021a86ede7a33346d66333ac9151bab279dc2883435fa",
+        "reason": "Empreinte historique revue ; source du consommateur conservé équivalente entre base PROD et candidat selon le comparateur statique dédié ; divergence héritée conservée si présente."
+      },
+      {
+        "name": "storeCompetitionPdf",
+        "commit": "8b868c7c1382698ee1d04274fcc5b9a56a95d274",
+        "revision": "storecompetitionpdf-00015-bit",
+        "before": "23103e3840d78a8fb3a4e30dc5dd9f52b235a302875cb881a3f28552676b7450",
+        "after": "461c33cf7851db467a608011861e1f970b7e7235b636db5bf2dc0d63de5322c1",
+        "reason": "Empreinte historique revue ; source du consommateur conservé équivalente entre base PROD et candidat selon le comparateur statique dédié ; divergence héritée conservée si présente."
+      },
+      {
+        "name": "submitEngagementAccessRequest",
+        "commit": "812bad64681a232e6cc3868ba7ec112bcdac7ca2",
+        "revision": "submitengagementaccessrequest-00039-rib",
+        "before": "be16dc361cdb44b67868b8bf06e9149e7b42ecc1ffef72407ba010c9295324ec",
+        "after": "66e6835d6403b0d7e1bfa189ea0da1ee58fd241a15e978b8f58016ac75aa8147",
+        "reason": "Empreinte historique revue ; source du consommateur conservé équivalente entre base PROD et candidat selon le comparateur statique dédié ; divergence héritée conservée si présente."
+      },
+      {
+        "name": "syncEngagementMailRecipientIndex",
+        "commit": "8b868c7c1382698ee1d04274fcc5b9a56a95d274",
+        "revision": "syncengagementmailrecipientindex-00022-dey",
+        "before": "f9dbeb89925505001572ee26248530c07f8935751e0777690c903f0ebb7e7769",
+        "after": "6dbbe1d19cf939aef0101e0ee8b77bc824d3a997b80199f62efa2f0ff643a0eb",
+        "reason": "Empreinte historique revue ; source du consommateur conservé équivalente entre base PROD et candidat selon le comparateur statique dédié ; divergence héritée conservée si présente."
+      },
+      {
+        "name": "syncOfficialResultToPublicIndex",
+        "commit": "8b868c7c1382698ee1d04274fcc5b9a56a95d274",
+        "revision": "syncofficialresulttopublicindex-00051-tom",
+        "before": "a4d04afdc29675179ab9f64e73852b99e9516b28da654d0033d6caa1bbc85570",
+        "after": "7763a8c3d1b8e50e678ff1c8cda6b97944765cc1858eaac5a4864ca0dee897ea",
+        "reason": "Empreinte historique revue ; source du consommateur conservé équivalente entre base PROD et candidat selon le comparateur statique dédié ; divergence héritée conservée si présente."
+      },
+      {
+        "name": "updateCurrentAccountEmail",
+        "commit": "8b868c7c1382698ee1d04274fcc5b9a56a95d274",
+        "revision": "updatecurrentaccountemail-00055-vep",
+        "before": "6b37cea38a062d7a70464f22cbd17f010ab4c5b0224f246cf7d2095d5bcca281",
+        "after": "ea789758ff34e39d6e9a693166f233cece143565db7b761b9fa42c10787ab913",
+        "reason": "Empreinte historique revue ; source du consommateur conservé équivalente entre base PROD et candidat selon le comparateur statique dédié ; divergence héritée conservée si présente."
+      },
+      {
+        "name": "updateCurrentEmailNotificationPreferences",
+        "commit": "1df545a62de67a24ff32ca4d1046cce4be6d499f",
+        "revision": "updatecurrentemailnotificationpreferences-00004-gev",
+        "before": "fae1fd731a5a970cee0616314f1461c1e042284edbd8048b042300c96834c7ba",
+        "after": "b404016965b898a329627184b7f44c0f4e54f3ff96fe7745036c857845234871",
+        "reason": "Empreinte historique revue ; source du consommateur conservé équivalente entre base PROD et candidat selon le comparateur statique dédié ; divergence héritée conservée si présente."
+      },
+      {
+        "name": "updateDtnSeason",
+        "commit": "8b868c7c1382698ee1d04274fcc5b9a56a95d274",
+        "revision": "updatedtnseason-00007-qer",
+        "before": "5975096d4e4570d573d32d87723081fea9db8b371799414a178fd5d3c639a7ef",
+        "after": "6b5cec7a473cb1cd11afc8dffe5d5a0bdc28912077e95bf943419208075a565d",
+        "reason": "Empreinte historique revue ; source du consommateur conservé équivalente entre base PROD et candidat selon le comparateur statique dédié ; divergence héritée conservée si présente."
+      },
+      {
+        "name": "updateEngagementCalendarEvent",
+        "commit": "8b868c7c1382698ee1d04274fcc5b9a56a95d274",
+        "revision": "updateengagementcalendarevent-00017-qot",
+        "before": "1324473d4fa4295f42e545a3838ecd442740b6886ecc5a903356241293146713",
+        "after": "97f5cde05069945207bf145d7292106322ba175177ef6c0568a1e101f9fd46b9",
+        "reason": "Empreinte historique revue ; source du consommateur conservé équivalente entre base PROD et candidat selon le comparateur statique dédié ; divergence héritée conservée si présente."
+      },
+      {
+        "name": "updateEngagementCompetitionDocument",
+        "commit": "8b868c7c1382698ee1d04274fcc5b9a56a95d274",
+        "revision": "updateengagementcompetitiondocument-00016-xej",
+        "before": "a61f6c5fe0fa0e608c4315500489575d958674ad3f4dac3be6a6f31e8d4ef2a5",
+        "after": "566ed1864d345ae4f3ce6051f373824b040503edd020c19c05d38adf19a7960b",
+        "reason": "Empreinte historique revue ; source du consommateur conservé équivalente entre base PROD et candidat selon le comparateur statique dédié ; divergence héritée conservée si présente."
+      },
+      {
+        "name": "updateEngagementNationalSwimmerIdentity",
+        "commit": "8b868c7c1382698ee1d04274fcc5b9a56a95d274",
+        "revision": "updateengagementnationalswimmeridentity-00024-cus",
+        "before": "581ca53f55ccffd27f04b79a942f305b7bef9fb8f716dfcaf04d828849aa3239",
+        "after": "383a4584c5e3799c12d2500e46e6feb2edcad74b4aabc7bb52b7eeba3594b700",
+        "reason": "Empreinte historique revue ; source du consommateur conservé équivalente entre base PROD et candidat selon le comparateur statique dédié ; divergence héritée conservée si présente."
+      },
+      {
+        "name": "uploadEngagementCompetitionDocument",
+        "commit": "8b868c7c1382698ee1d04274fcc5b9a56a95d274",
+        "revision": "uploadengagementcompetitiondocument-00016-qec",
+        "before": "2a4cb0e3f741f25996ee85858aea78df6740a0a54854d43c5e2bc2d6e46273e9",
+        "after": "759ca56e4cdea3d9419274111ea4287102d5e59d394d3fa49133a371f404ba6a",
+        "reason": "Empreinte historique revue ; source du consommateur conservé équivalente entre base PROD et candidat selon le comparateur statique dédié ; divergence héritée conservée si présente."
+      },
+      {
+        "name": "validateEngagementSwimmerLicenses",
+        "commit": "8b868c7c1382698ee1d04274fcc5b9a56a95d274",
+        "revision": "validateengagementswimmerlicenses-00013-wux",
+        "before": "f8109cde9009308cb8a6f371c188d69d33960f06a1373e4f30fb102bcfe57b51",
+        "after": "af3336553b7b0479e6144a37e28dada0c6a22ca6b8129b254edec89063e2f723",
+        "reason": "Empreinte historique revue ; source du consommateur conservé équivalente entre base PROD et candidat selon le comparateur statique dédié ; divergence héritée conservée si présente."
+      },
+      {
+        "name": "verifyPin",
+        "commit": "8b868c7c1382698ee1d04274fcc5b9a56a95d274",
+        "revision": "verifypin-00104-tif",
+        "before": "74ea1955b563cbfa062e87eb4492f013bf280b394dc42208dc54ff31b302ab86",
+        "after": "a987e2918ec748f68296641d215c5f04c9610360a144c73d043fd5c9e42db66d",
+        "reason": "Empreinte historique revue ; source du consommateur conservé équivalente entre base PROD et candidat selon le comparateur statique dédié ; divergence héritée conservée si présente."
+      }
+    ]
+  },
+  "limitedMailMaintenance": {
+    "scope": "all",
+    "observedRevision": 7,
+    "pauseRevision": 8,
+    "resumeRevision": 9,
+    "noReplay": true,
+    "approval": "Oui, je valide cette préparation limitée"
+  }
+}

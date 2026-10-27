@@ -85,11 +85,27 @@ def main(directory, run_id, kind):
             cycle.require({'name': live['name'], 'version': live['version']['name'], 'message': live.get('message', '')}
                           == expected_hosting, 'Hosting a derive depuis le plan')
         expected = permissions(kind, bool(selected), bool(missing_indexes))
+        scope = cycle.bcc.for_request(request)
+        limited_oct27 = scope.contract().get('limitedOct27')
+        if kind == 'backend' and limited_oct27:
+            expected += ['cloudscheduler.jobs.get','cloudscheduler.jobs.update']
         granted = read(IAM, {'permissions': expected}).get('permissions', [])
         report['missingPermissions'] = sorted(set(expected) - set(granted))
         if kind == 'backend' and selected:
             state = load('readiness_state', 'production-release-state.py')
             functions = state.inventory()
+            if limited_oct27:
+                initial = load('oct27_initial_runtime','preflight-production-release.py')
+                for f in functions:
+                    name = f['name'].split('/')[-1]
+                    if name in selected: scope.initial_runtime(name,f.get('serviceConfig',{}),initial.ordinary_runtime_allowed)
+                target = next(f for f in functions if f['name'].split('/')[-1] == scope.LICENSE)
+                reference = next(f for f in functions if f['name'].split('/')[-1] == cycle.bcc.REFERENCE)
+                cycle.require(target['serviceConfig']['serviceAccountEmail'] == reference['serviceConfig']['serviceAccountEmail'], 'Acces mail du compte licences non prouve')
+                guard = load('oct27_readiness_guard','check-production-bcc.py')
+                guard.main('initial',directory)
+                report['limitedOct27'] = {'runtimeAccountAlreadyUsedForMail':True,'initialMailSchedulerQueueIamVerified':True,
+                    'mailPauseRequired':True,'smtpInvocation':False,'secretValuesRead':False}
             accounts = {f.get('serviceConfig', {}).get('serviceAccountEmail') for f in functions
                         if f['name'].split('/')[-1] in selected}
             cycle.require(None not in accounts and 0 < len(accounts) <= 10, 'Comptes runtime inconnus')

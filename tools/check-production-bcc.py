@@ -7,6 +7,7 @@ import os
 from pathlib import Path
 import subprocess
 import sys
+from types import SimpleNamespace
 import urllib.request
 from datetime import datetime, timezone
 
@@ -98,6 +99,11 @@ def main(mode, directory):
     credentials = json.loads(Path(os.environ['GOOGLE_APPLICATION_CREDENTIALS']).read_text())
     policy.require(credentials.get('project_id') == 'livepalmes', 'Compte PROD requis')
     token = subprocess.check_output(['gcloud', 'auth', 'application-default', 'print-access-token'], text=True).strip()
+    if scope.contract().get('limitedOct27'):
+        spec = importlib.util.spec_from_file_location('oct27_guard', ROOT/'tools/validated-20261027-guard.py')
+        module = importlib.util.module_from_spec(spec); spec.loader.exec_module(module)
+        module.check(mode, directory, scope, token, SimpleNamespace(**globals()))
+        return
     if scope.contract().get('preserveActive'):
         check_active_oct26(mode, directory, scope, token)
         return
