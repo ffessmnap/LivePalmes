@@ -619,6 +619,10 @@
 .admin-portal-page .admin-license-admin input:not([type="checkbox"]):not([type="file"]),
 .admin-portal-page .admin-license-admin select { min-height: 32px; height: 32px; }
 .admin-portal-page .admin-license-admin .admin-license-admin-table input[type="text"] { min-height: 28px; height: 28px; }
+.admin-portal-page .admin-license-admin input[type="checkbox"] { min-height: 16px; min-width: 16px; height: 16px; width: 16px; margin: 0; }
+.admin-license-admin .admin-license-admin-person { line-height: 1.25; }
+.admin-license-admin .admin-license-admin-person strong { font-size: .76rem; line-height: 1.25; }
+.admin-license-admin .admin-license-admin-person small { font-size: .68rem; line-height: 1.25; }
 .admin-portal-page .admin-license-admin .admin-license-admin-table button { min-height: 28px; padding: 4px 6px; line-height: 1.25; }
 .admin-license-admin [data-control-state="ok"] { color: var(--license-accent); background: color-mix(in srgb, var(--license-accent) 10%, var(--license-surface)); }
 .admin-license-admin [data-control-state="issues"] { color: #9a5b12; background: #fff1d9; }
