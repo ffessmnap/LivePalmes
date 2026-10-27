@@ -2,6 +2,13 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 27 octobre — Bilans et historique des contrôles licences dans NAP
+
+- Accord explicite d’Antoine : déplacement des bilans et de leur historique vers NAP ; partage de la base TEST/PROD connu et accepté. Aucun accord de publication PROD ni d’envoi réel. Réutilisation du contrôleur national et de ses droits existants.
+- Deux tables complémentaires : dernier bilan indexé par saison/compétition et historique versionné, sans modification des nageurs, engagements ou règles sportives. Consultation de l’historique dans le dialogue existant, pages de 20 bilans ; aucun envoi depuis une version archivée. Suppression de compétition bloquée si un historique de contrôle existe. Jobs mails conservés dans Firebase, blocage TEST conservé.
+- Reprise dédiée des bilans officiels PROD seulement, sauvegarde avant création/écriture, contrôle de structure, refus de conflit, relecture et contrôle de stabilité de la source. Aucune reprise des essais TEST, aucune suppression des documents sources, aucun historique ancien inventé. Pendant la transition, les nouveaux contrôles faits dans l’ancien code PROD restent dans Firestore ; comparaison obligatoire avant bascule PROD.
+- Budgets et limites : voir la section Licences de `NAP_REFERENCE.md`. Tests hors réseau : stockage versionné, conflits, pagination, destinataires et absence de mails TEST, conservation des historiques à la suppression, régression et consultation navigateur. CI, reprise réelle et publication TEST à consigner après réussite ; validation utilisateur non acquise.
+
 ### 27 octobre — Ergonomie du contrôle licences et licences non confirmées
 
 - Retour d’Antoine sur la version précédente : création du lot après une liste de 79 compétitions, validation trop basse, cartes et filtres peu pratiques. Périmètre explicitement autorisé : compétitions compactes et clôturées par défaut, boutons/compteurs de filtres, actions toujours visibles et revue terminable malgré les licences non confirmées ; TEST uniquement.

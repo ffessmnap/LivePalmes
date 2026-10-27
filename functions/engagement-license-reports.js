@@ -1,5 +1,5 @@
 "use strict";
-// Authorized technical snapshots in existing configuration/mail collections.
+// Business report builders; NAP store plus legacy migration compatibility.
 // Sporting identities and season validations remain in NAP. TEST never sends.
 const {createHash}=require("node:crypto");
 const {seasonInfo}=require("./nap-license-state");
@@ -14,8 +14,9 @@ function participants(batch,competition){return batch.people.filter(p=>p.competi
 function membership(batch,competition){return hash([batch.season.label,participants(batch,competition).map(p=>[p.livePalmesId,p.firstName,p.lastName,p.birthDate,p.clubId,p.licenseNumber]).sort((a,b)=>String(a[0]).localeCompare(String(b[0])))]);}
 function fingerprint(batch,competition){return hash([membership(batch,competition),participants(batch,competition).map(p=>[p.livePalmesId,p.seasonStatus,p.validatedAt||""]).sort((a,b)=>String(a[0]).localeCompare(String(b[0])))]);}
 function view(report){return report?{competitionId:report.competitionId,status:report.status,completedAt:report.completedAt,counts:report.counts,revision:report.revision,mail:report.mail||null}:null;}
-async function summaries(db,season){return {reports:(await summaryRef(db,season).get()).data()?.reports||{},readStats:{firestoreDocuments:1}};}
-async function attach(db,batch){
+async function summaries(db,season,store){if(store)return store.summaries(season);return {reports:(await summaryRef(db,season).get()).data()?.reports||{},readStats:{firestoreDocuments:1}};}
+async function attach(db,batch,store){
+  if(store){const reports=await store.readMany(batch.season.label,batch.competitions.map(c=>c.id));batch.controlReports={};batch.controlMemberships={};for(const c of batch.competitions){const report=reports.get(id(c.id));batch.controlMemberships[id(c.id)]=membership(batch,c.id);batch.controlReports[id(c.id)]=report?{...view(report),current:report.fingerprint===fingerprint(batch,c.id)}:null;}return batch;}
   const snapshots=await db.getAll(...batch.competitions.map(c=>reportRef(db,batch.season.label,c.id)));
   batch.controlReports={};batch.controlMemberships={};
   batch.competitions.forEach((c,i)=>{const report=snapshots[i].data();batch.controlMemberships[id(c.id)]=membership(batch,c.id);batch.controlReports[id(c.id)]=report?{...view(report),current:report.fingerprint===fingerprint(batch,c.id)}:null;});
@@ -44,9 +45,10 @@ function build(batch,input,actor,now=new Date().toISOString()){
   checked.forEach(p=>counts[p.status==="valid"?"valid":p.status==="licence_expiree"?"expired":p.status==="introuvable"?"notFound":"unconfirmed"]++);
   return {version:1,competitionId:competition,competitionName:String(source.name||"").slice(0,160),season:batch.season.label,status:counts.valid===counts.total?"ok":"issues",completedAt:now,completedBy:actor,fingerprint:fingerprint(batch,competition),counts,people:checked,revision:hash([now,actor,checked]),mail:null};
 }
-async function complete(db,batch,input,actor){
+async function complete(db,batch,input,actor,store){
   const report=build(batch,input,actor);
   if(Buffer.byteLength(JSON.stringify(report))>700000)throw new RangeError("Bilan trop volumineux.");
+  if(store){await store.save(report,input.expectedRevision||"");return {ok:true,report:{...view(report),current:true}};}
   await db.runTransaction(async tx=>{
     const ref=summaryRef(db,report.season),record=reportRef(db,report.season,report.competitionId);
     const [index,previous]=await tx.getAll(ref,record),summary=index.data()||{reports:{}};
@@ -57,8 +59,8 @@ async function complete(db,batch,input,actor){
   });
   return {ok:true,report:{...view(report),current:true}};
 }
-async function readCurrent(db,batch,competition){
-  const report=(await reportRef(db,batch.season.label,competition).get()).data();
+async function readCurrent(db,batch,competition,store){
+  const report=store?await store.read(batch.season.label,competition):(await reportRef(db,batch.season.label,competition).get()).data();
   if(!report||report.fingerprint!==fingerprint(batch,competition))throw new TypeError("Aucun bilan à jour. Contrôlez les engagés actuels et terminez le contrôle avant de notifier.");
   return report;
 }
@@ -76,9 +78,9 @@ function message(report){
   const c=report.counts,date=new Intl.DateTimeFormat("fr-FR",{timeZone:"Europe/Paris",dateStyle:"short",timeStyle:"short"}).format(new Date(report.completedAt)),issues=report.people.filter(p=>p.status!=="valid");
   return {subject:`LivePalmes — Contrôle des licences — ${report.competitionName}`.slice(0,220),text:["Bonjour,","",`La revue des licences de ${report.competitionName} a été terminée le ${date} (saison ${report.season}).`,"",`Compétiteurs concernés : ${c.total}`,`Licences valides : ${c.valid}`,`Licences expirées : ${c.expired}`,`Licences non retrouvées dans la base fédérale : ${c.notFound}`,`Licences non confirmées : ${c.unconfirmed??c.other??0}`,"",issues.length?"Points à vérifier avant la compétition :":"Aucune incohérence relevée au moment du contrôle.",...issues.map(p=>`${p.lastName} ${p.firstName} · ${p.clubName} · ${p.licenseNumber||"Licence non renseignée"} — ${LABELS[p.status]}${p.validity?` (${p.validity})`:""}`),"","Une erreur technique ou un contrôle non effectué ne démontre pas l’absence d’une licence dans la base fédérale.","Ce bilan correspond aux engagés et aux résultats connus à la date de la revue. Un nouveau contrôle est nécessaire en cas de modification.","","Portail LivePalmes"].join("\n")};
 }
-async function notify(db,batch,input,services){
+async function notify(db,batch,input,services,store){
   const competition=await services.competition(id(input.competitionId));
-  const report=await readCurrent(db,batch,input.competitionId),selected=recipients(competition,await services.directory());
+  const report=await readCurrent(db,batch,input.competitionId,store),selected=recipients(competition,await services.directory());
   const setting=await services.setting(),mail=message(report),fingerprint=hash([report.revision,selected,setting]);
   const disabled=services.projectId==="livepalmes-test"||!setting.enabled;
   const result={ok:true,report:view(report),recipients:selected,missingComputer:!competition.computerEmail,missingRegion:!competition.regionId,...mail,fingerprint,disabled,previewOnly:services.projectId==="livepalmes-test",sentCount:0};
@@ -99,7 +101,8 @@ async function notify(db,batch,input,services){
     if(claimed){const sent=await services.send(ref,job);if(sent.status!=="sent")throw new TypeError("Envoi non confirmé. Vérifiez le journal avant de reprendre.");}sentCount++;
   }
   const done=offset+20>=selected.length;
-  if(done)await db.runTransaction(async tx=>{
+  if(done&&store)await store.markMail(report,{sentAt:new Date().toISOString(),recipientCount:selected.length});
+  if(done&&!store)await db.runTransaction(async tx=>{
     const ref=reportRef(db,report.season,report.competitionId),summary=summaryRef(db,report.season),[snapshot,index]=await tx.getAll(ref,summary),current=snapshot.data();
     if(current?.revision!==report.revision)throw new TypeError("Le bilan a changé pendant l’envoi.");
     const mail=current.mail?.sentAt?current.mail:{sentAt:new Date().toISOString(),recipientCount:selected.length};tx.set(ref,{mail},{merge:true});tx.set(summary,{reports:{...(index.data()?.reports||{}),[report.competitionId]:view({...report,mail})}},{merge:true});

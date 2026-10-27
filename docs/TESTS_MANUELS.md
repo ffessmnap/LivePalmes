@@ -592,3 +592,7 @@ Sur TEST uniquement, ouvrir TSP puis TRP, femmes et hommes : case désactivée e
 - Modifier deux fois depuis des sessions concurrentes : conflit explicite, jamais d’écrasement silencieux. Modifier une configuration pendant un recalcul : aucune publication de résultats périmés ou partiels. Une erreur de calcul doit être visible et permettre une relance.
 - L’activation exige les calculs à jour des trois dispositifs du brouillon et de la saison active. La précédente devient consultable avec ses résultats figés datés ; une troisième activation retire la plus ancienne du sélecteur sans suppression de configuration, performances ou résultats.
 - Vérifier 390 px et ordinateur, thèmes clair/sombre, clavier, tableaux et fenêtres défilables. La préparation de paramètres TEST et les recalculs sur données réelles restent des actions explicites.
+
+### Historique NAP des bilans licences
+
+Avec des fixtures hors réseau : enregistrer deux bilans, vérifier que le second devient courant et que le premier garde son détail et son reçu de notification ; refuser une révision concurrente sans nouvelle version. Consulter plus de vingt versions par pages sans doublon, ouvrir un détail ancien sans permettre son envoi et vérifier que les actions courantes restent utilisables. Refuser la suppression d’une compétition ayant un historique. Tester TEST sans transport ni écriture mail. La reprise réelle possède son workflow dédié et sa sauvegarde ; aucun test synthétique ne doit écrire dans NAP partagée.
