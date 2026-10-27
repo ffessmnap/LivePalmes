@@ -61,6 +61,10 @@ async function migrate(pool,db,phase,backup){
  if(hash(await source(db))!==plan.sourceHash)throw Error("La source PROD a changé pendant la reprise : vérifier avant bascule");
  return {verified:true,imported,alreadyPresent:reports.length-imported,sourceHash:plan.sourceHash,tables,plans,realEmailsSent:0,nativeRowsChanged:0};
 }
+function officialDatabase(credentials,load=require("node:module").createRequire(path.join(root,"functions/package.json"))) {
+ const {initializeApp,cert}=load("firebase-admin/app"),{getFirestore}=load("firebase-admin/firestore");
+ return getFirestore(initializeApp({credential:cert(credentials),projectId:"livepalmes"}));
+}
 async function main(){
  const phase=process.env.NAP_LICENSE_PHASE;
  if(!["export","prepare","apply"].includes(phase)||process.env.NAP_LICENSE_CONFIRMATION!=="nap-license-reports-history")throw Error("Confirmation requise");
@@ -83,4 +87,4 @@ async function main(){
  try{const result=await migrate(pool,db,phase,phase==="apply"?JSON.parse(fs.readFileSync("outputs/nap-license-reports/before.json","utf8")):null);fs.writeFileSync(`outputs/nap-license-reports/${phase==="prepare"?"before":"result"}.json`,JSON.stringify(result));if(phase==="prepare")sealedBackup("outputs/nap-license-reports/before.enc",result,credentials.private_key);}finally{await pool.end();}
 }
 if(require.main===module)main().catch(error=>{console.error("Diagnostic technique :",error.name,/^[A-Z_0-9-]{1,60}$/.test(String(error.code))?error.code:"operation-refused");console.error("Reprise des bilans arrêtée ; conserver les preuves et examiner le conflit. Aucun secret affiché.");process.exitCode=1;});
-module.exports={inspect,validate,source,migrate,columns};
+module.exports={inspect,validate,source,migrate,columns,officialDatabase};
