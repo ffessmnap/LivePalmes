@@ -11,7 +11,7 @@
     <link id="adminPerformanceStyles" rel="stylesheet" href="performances/public/styles.css?v=20260613-delete-record-draft-1" disabled>
     <link id="adminImportStyles" rel="stylesheet" href="performances/public/import-competitions.css?v=20261026-import-relay-alerts-1" disabled>
     <link rel="stylesheet" href="assets/livepalmes-admin-portal.css?v=20261026-club-identity-1">
-    <link rel="stylesheet" href="assets/livepalmes-license-administration.css?v=20261027-license-compact-table">
+    <link rel="stylesheet" href="assets/livepalmes-license-administration.css?v=20261027-license-closure">
     <link rel="stylesheet" href="assets/livepalmes-whatsapp-qr.css?v=20260831-whatsapp-qr-1">
     <link rel="stylesheet" href="assets/livepalmes-portal-appearance.css?v=20260920-appearance-4">
     <script src="assets/livepalmes-portal-appearance.js?v=20260920-appearance-1"></script>
@@ -2137,8 +2137,8 @@
                     <div class="admin-license-admin-step-title"><strong>Comp&eacute;titions</strong><span class="admin-license-admin-limit">5 max. / lot</span></div>
                     <label class="admin-license-admin-search"><span class="sr-only">Rechercher une compétition par nom ou ville</span><input id="adminLicenseControlCompetitionSearch" type="search" placeholder="Nom ou ville…"></label>
                     <label class="admin-license-admin-closed-toggle"><input id="adminLicenseControlClosedOnly" type="checkbox" checked> Cl&ocirc;ture des engagements pass&eacute;e</label>
-                    <div id="adminLicenseControlCompetitionFilter" class="admin-license-admin-segments admin-license-admin-competition-filters" role="group" aria-label="État du contrôle des compétitions">
-                      <button type="button" data-competition-filter="all" aria-pressed="true">Toutes</button><button type="button" data-competition-filter="none" aria-pressed="false">À contr&ocirc;ler</button><button type="button" data-competition-filter="ok" aria-pressed="false">Sans anomalie</button><button type="button" data-competition-filter="issues" aria-pressed="false">Avec incoh&eacute;rences</button>
+                    <div id="adminLicenseControlCompetitionFilter" class="admin-license-admin-segments admin-license-admin-competition-filters" role="group" aria-label="État du contrôle : cliquer sur le filtre actif pour afficher toutes les compétitions">
+                      <button type="button" data-competition-filter="none" aria-pressed="false" aria-label="À faire">○</button><button type="button" data-competition-filter="issues" aria-pressed="false" aria-label="À traiter">⚠</button><button type="button" data-competition-filter="ok" aria-pressed="false" aria-label="Conforme">✓</button><button type="button" data-competition-filter="closed" aria-pressed="false" aria-label="Clôturé">🔒</button>
                     </div>
                     </div>
                     <div id="adminLicenseControlCompetitions" class="admin-license-admin-competitions" aria-live="polite"></div>
@@ -2865,7 +2865,7 @@
   <script src="assets/livepalmes-access-request-history.js?v=20261026-1"></script>
   <script src="assets/livepalmes-club-identity.js?v=20261026-identity-1"></script>
   <script src="assets/livepalmes-admin-portal.js?v=20261027-competition-labels-1"></script>
-    <script src="assets/livepalmes-license-administration.js?v=20261027-license-compact-table"></script>
+    <script src="assets/livepalmes-license-administration.js?v=20261027-license-closure"></script>
     <script src="assets/livepalmes-admin-calendar-events.js?v=20261027-competition-labels-1"></script>
     <script src="assets/public/livepalmes-home-model.js?v=20261014-home-2"></script>
     <script src="assets/livepalmes-featured-documents-model.js?v=20261013-documents-1"></script>

@@ -40,6 +40,27 @@ const report={version:1,competitionId:"1",competitionName:"Coupe fictive",season
  assert.equal(migration.officialDatabase(credential,name=>name==="firebase-admin/app"?{cert:c=>{assert.equal(c,credential);return "credential";},initializeApp:options=>{assert.deepEqual(options,{credential:"credential",projectId:"livepalmes"});initialized=true;return app;}}:{getFirestore:a=>{assert.equal(a,app);assert.equal(initialized,true);return database;}}),database);
  const deleted=fixture(),executeDeleted=deleted.execute.bind(deleted);deleted.execute=async(o,a)=>o.sql.startsWith("INSERT INTO livepalmes_license_control_history")?[{affectedRows:0}]:executeDeleted(o,a);await assert.rejects(native.store(deleted).save(report),/n’existe plus/);assert.equal(deleted.latest,null);
  const pool=fixture(),store=native.store(pool);assert.equal(await store.read(report.season,"1"),null);
+ // Closing is independent of email and of the browser's prepared selection.
+ const closurePool=fixture(),closureStore=native.store(closurePool),season=require("../functions/nap-license-state").seasonInfo(report.season);
+ const batchForClosure={season,competitions:[{id:"1",name:"Coupe fictive"}],people:[{livePalmesId:"10",firstName:"Camille",lastName:"EXEMPLE",birthDate:"2000-01-01",clubId:"6",licenseNumber:"EXEMPLE",seasonStatus:"to_check",competitionIds:["1"]}]};
+ const buildInput={competitionId:"1",expectedMembership:reports.membership(batchForClosure,"1"),results:[]},original=reports.build(batchForClosure,buildInput,"national","2026-10-27T10:00:00Z");
+ await closureStore.save(original);
+ const closeInput={competitionId:"1",expectedRevision:original.revision},noFirestore={collection(){throw Error("Closing must not touch Firestore or mail jobs");}};
+ await assert.rejects(reports.close(noFirestore,batchForClosure,closeInput,"national",closureStore),/commentaire est obligatoire/);
+ await assert.rejects(reports.close(noFirestore,batchForClosure,{...closeInput,note:"x".repeat(1001)},"national",closureStore),/1 000/);
+ await assert.rejects(reports.close(noFirestore,batchForClosure,{...closeInput,expectedRevision:"stale",note:"Forfait"},"national",closureStore),/a changé/);
+ assert.equal(closurePool.rows.length,1);
+ const finished=await reports.close(noFirestore,batchForClosure,{...closeInput,note:" Nageuse forfait, n’a pas participé. "},"national",closureStore,"2026-10-27T11:00:00Z");
+ assert.equal(finished.report.status,"issues");assert.deepEqual(finished.report.counts,original.counts);assert.equal(finished.report.closure.note,"Nageuse forfait, n’a pas participé.");assert.equal(finished.report.closure.closedBy,"national");assert.equal(finished.history.reports.length,2);assert.equal(finished.history.reports[1].closure,null);assert.equal(batchForClosure.people[0].seasonStatus,"to_check");
+ const closed=await closureStore.read(season.label,"1");assert.deepEqual(closed.people,original.people);assert.equal(closed.closure.reportRevision,original.revision);assert.match(reports.message(closed).text,/avec réserves/);assert.match(reports.message(closed).text,/Nageuse forfait/);assert.equal(closed.mail,null);
+ await assert.rejects(reports.close(noFirestore,batchForClosure,{...closeInput,expectedRevision:closed.revision,note:"Forfait"},"national",closureStore),/déjà clôturé/);
+ const changedBatch=structuredClone(batchForClosure);changedBatch.people[0].licenseNumber="CHANGED";
+ await assert.rejects(reports.close(noFirestore,changedBatch,{...closeInput,note:"Forfait"},"national",closureStore),/Aucun bilan à jour/);assert.equal(closurePool.rows.length,2);
+ // A new review appends a version and resets closure, without changing the archive.
+ batchForClosure.people[0].seasonStatus="valid";
+ const conform=reports.build(batchForClosure,{...buildInput,expectedMembership:reports.membership(batchForClosure,"1")},"national","2026-10-27T12:00:00Z");
+ await closureStore.save(conform,closed.revision);assert.equal((await closureStore.read(season.label,"1")).closure,undefined);assert.equal((await closureStore.readVersion(season.label,"1",2)).closure.note,closed.closure.note);
+ const cleanFinished=await reports.close(noFirestore,batchForClosure,{competitionId:"1",expectedRevision:conform.revision},"national",closureStore,"2026-10-27T13:00:00Z");assert.equal(cleanFinished.report.status,"ok");assert.equal(cleanFinished.report.closure.note,"");assert.equal(closurePool.rows.length,4);
  assert.equal((await store.save(report)).version,1);assert.deepEqual(await store.read(report.season,"1"),report);
  await assert.rejects(store.save({...report,revision:"b".repeat(64)},"stale"),/modifié/);assert.equal(pool.rows.length,1);
  await store.markMail(report,{sentAt:"2026-10-27T11:00:00Z",recipientCount:2});assert.equal((await store.read(report.season,"1")).mail.recipientCount,2);
