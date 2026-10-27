@@ -52,7 +52,7 @@ Budget : ouverture/rafraîchissement de l'écran inchangés, annuaire paginé à
 
 Le portail et les consultations sportives publiques utilisent directement MySQL NAP via les Cloud Functions. Le navigateur ne possède ni mot de passe MySQL ni accès SQL direct. `assets/livepalmes-environment.js` et `functions/livepalmes-environment.js` sélectionnent `sportingDataSource: "nap"` pour TEST et PROD. Aucun export sportif intermédiaire ni synchronisation entre deux bases métier n'est nécessaire à la lecture.
 
-**TEST utilise la même base NAP habituelle que PROD et IntraNAP.** Un essai d'écriture sur TEST est une opération réelle. Les changements de données et de structure exigent une autorisation spécifique ; aucune recette ne doit fabriquer de résultats, engagements ou personnes sans cet accord. IntraNAP n'a pas été modifié et son arrêt n'est pas réalisé par ce projet.
+**TEST utilise la même base NAP habituelle que PROD.** Un essai d'écriture sur TEST est une opération réelle. Les changements de données et de structure exigent une autorisation spécifique ; aucune recette ne doit fabriquer de résultats, engagements ou personnes sans cet accord.
 
 ## RF/MPF dans NAP — 12 octobre
 
@@ -76,11 +76,11 @@ Les noms de modules du tableau sont relatifs à `functions/`, sauf chemin explic
 
 ## Commentaires de compétition
 
-Le champ natif `competitions.comments` est la source commune INTRANAP, portail et calendrier public. Les futures modifications LivePalmes ciblent ce champ ; `competitions.description` reste conservé et visible séparément lorsqu’il contient un ancien texte distinct. Aucun transfert, effacement ou fusion automatique. Les écritures restent ciblées sur une compétition, avec sauvegarde et comparaison de la valeur native avant enregistrement.
+Le champ natif `competitions.comments` est la source commune au portail et au calendrier public. Les futures modifications LivePalmes ciblent ce champ ; `competitions.description` reste conservé et visible séparément lorsqu’il contient un ancien texte distinct. Aucun transfert, effacement ou fusion automatique. Les écritures restent ciblées sur une compétition, avec sauvegarde et comparaison de la valeur native avant enregistrement.
 
 ## Règles conservées dans le portail
 
-- Une compétition et ses engagements sont partagés avec IntraNAP par les tables NAP. Programme détaillé, tarifs, restrictions et dérogations propres à LivePalmes restent dans les compléments ; ne pas reproduire ces fonctions dans IntraNAP. Les restrictions supplémentaires de LivePalmes ne sont pas garanties par l'ancienne interface.
+- Une compétition et ses engagements utilisent les tables NAP. Programme détaillé, tarifs, restrictions et dérogations propres à LivePalmes restent dans les compléments.
 - Le régional agit dans son périmètre jusqu'au dernier jour de l'événement ; dès le lendemain, les modifications sont réservées au national, sauf documents encore accessibles au régional. Les mêmes règles s'appliquent aux formations, stages et réunions. Suppression d'une compétition uniquement sans engagements ni résultats, avertissement et confirmation pour ses documents/programme.
 - Les temps suivent les trois modes NAP : saisie possible par le club ; aucune saisie avec meilleur temps admissible obligatoire ; aucune saisie avec choix d'un temps connu et valeur native `599999` si absent. Une période paramétrée borne les performances admissibles ; sans période, toute l'histoire admissible est considérée. Une grille de qualification active impose le calcul automatique, même en mode de saisie possible. Voir `nap-entry-time-policy.js`, `nap-entry-time-rules.js` et `nap-entry-qualification-policy.js`.
 - Les temps compacts sont interprétés depuis la droite : centièmes, secondes, minutes. `14200` vaut 1:42.00 ; ne pas normaliser les données natives ni remplacer le tri numérique par un tri lexical. Les durées longues des imports, résultats publics de compétition et de leur administration utilisent le format historique `H MMSSCC` (`1 33500` = 1 h 03 min 35 s), avec `nap-duration.js` ; les valeurs brutes existantes restent conservées et les comparaisons sont numériques. Le lecteur piscine commun des Records/DTN est inchangé. Le format historique des temps de relais est traité séparément (`nap-relay-resolution.js`).
@@ -111,7 +111,7 @@ La date et le lieu sont corrigés sur la compétition entière ; le temps et le 
 
 ## Mails et fichiers
 
-Les notifications sont gérées par LivePalmes, avec les destinataires issus des comptes Firebase ; ne pas utiliser la messagerie IntraNAP comme moteur LivePalmes. Le réglage national `engagementConfigurations/notificationDelivery` contrôle les mails automatiques. Absent ou `enabled != true` : coupure. Les dates `enabledSince` et `discardThrough` empêchent le rattrapage des notifications antérieures à la réactivation (`engagement-mail-control.js`, `nap-mail-delivery.js`). Ne pas confondre cette coupure avec la totalité des messages de compte/sécurité ou des envois manuels.
+Les notifications sont gérées par LivePalmes, avec les destinataires issus des comptes Firebase. Le réglage national `engagementConfigurations/notificationDelivery` contrôle les mails automatiques. Absent ou `enabled != true` : coupure. Les dates `enabledSince` et `discardThrough` empêchent le rattrapage des notifications antérieures à la réactivation (`engagement-mail-control.js`, `nap-mail-delivery.js`). Ne pas confondre cette coupure avec la totalité des messages de compte/sécurité ou des envois manuels.
 
 Au contrôle du 12 octobre, mails automatiques désactivés dans TEST et PROD. C'est un constat daté, à relire avant une opération ; aucune activation implicite. Si les notifications TEST sont activées ultérieurement, le contrôle les redirige uniquement vers `livepalmes@nap-ffessm.fr`.
 

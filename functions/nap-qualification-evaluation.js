@@ -6,7 +6,7 @@ const {fromPack}=require("./nap-qualification-rules");
 const {positiveId}=require("./nap-direct-calendar");
 function evaluatePerson({pack,person,events,rows,grants=[],categoryFor}) {
   if(typeof categoryFor!=="function"||!Array.isArray(rows)||rows.length>2000||!Array.isArray(grants)||grants.length>64) throw new TypeError("Controle de qualification NAP borne requis.");
-  if(![0,29].includes(Number(pack.nativeParameters?.qualif||0))) throw new TypeError("Ancienne grille IntraNAP non raccordee.");
+  if(![0,29].includes(Number(pack.nativeParameters?.qualif||0))) throw new TypeError("Ancienne grille de qualifications non raccordee.");
   if(!/^[0-9]{1,16}$/.test(String(person.clubId))) throw new TypeError("Club NAP invalide.");
   const competitionId=positiveId(pack.event.id),swimmerId=positiveId(person.id),clubId=String(person.clubId),seen=new Set();
   for(const grant of grants) {
