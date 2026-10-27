@@ -1,0 +1,54 @@
+"use strict";
+// Long synthetic lists reproduce the real page; network and real sends blocked.
+const fs=require("node:fs"),path=require("node:path"),assert=require("node:assert/strict");
+const {chromium}=require("playwright"),reports=require("../functions/engagement-license-reports");
+const season=require("../functions/nap-license-state").seasonInfo("2026-2027");
+async function main(){
+  const portal=fs.readFileSync("portail.html","utf8"),start=portal.indexOf('<section class="admin-engagements-card admin-national-page-card admin-license-admin"'),end=portal.indexOf('<section class="admin-engagements-card admin-national-page-card" aria-label="Nageurs"',start);
+  const markup=portal.slice(start,end).replace('data-engagements-national-panel="licenses" hidden','data-engagements-national-panel="licenses"');
+  const css=["styles.css","assets/livepalmes-admin-portal.css","assets/livepalmes-portal-appearance.css","assets/livepalmes-license-administration.css"].map(f=>fs.readFileSync(f,"utf8")).join("\n");
+  const browser=await chromium.launch({headless:true,...(process.env.LIVEPALMES_BROWSER_EXECUTABLE?{executablePath:process.env.LIVEPALMES_BROWSER_EXECUTABLE}:{})});
+  try{for(const [width,height] of[[1920,900],[1280,720],[390,900]]){
+    const page=await browser.newPage({viewport:{width,height}}),errors=[],calls=[],saved=new Map();let acceptReview=false;
+    page.on("pageerror",e=>errors.push(e.message));page.on("dialog",d=>acceptReview?d.accept():d.dismiss());await page.route("**/*",r=>r.abort());
+    const competitions=Array.from({length:79},(_,i)=>({id:`legacy-nap-${i+1}`,name:i===0?"Coupe d’automne":i===1?"Meeting régional des palmes":`Rencontre de nage avec palmes ${i+1}`,date:"2026-11-08",city:i===1?"Angers":"Tours",entryDeadlineAt:i===2?"2099-10-01T12:00:00Z":"2000-10-01T12:00:00Z"}));
+    const makeBatch=ids=>({source:"nap",season,batchId:"fixture",competitions:competitions.filter(c=>ids.includes(c.id)).map(c=>({...c,id:c.id.replace("legacy-nap-","")})),people:Array.from({length:65},(_,i)=>({livePalmesId:String(i+1),firstName:"Camille",lastName:"NAGEUR "+String(i+1).padStart(2,"0"),birthDate:"2000-01-01",clubName:"Club A",clubId:"6",licenseNumber:`A-26-${i+1}`,seasonStatus:i<62?"valid":"to_check",competitionIds:["1"],competitions:["Coupe d’automne"]}))});
+    const base=makeBatch([competitions[0].id]),meta={competitionId:"2",status:"ok",completedAt:"2026-10-27T12:00:00Z",counts:{total:1,valid:1,expired:0,notFound:0,unconfirmed:0},revision:"sample",current:true};
+    await page.exposeFunction("fixtureCall",async(name,input)=>{
+      calls.push({name,input});
+      if(name==="listEngagementCompetitions")return{competitions};
+      if(input.action==="summaries")return{reports:{2:meta,4:{...meta,competitionId:"4",status:"issues"}}};
+      if(input.action==="readReport")return{report:saved.get(input.competitionId.replace("legacy-nap-",""))||null};
+      if(input.action==="completeReport"){const report=reports.build(base,input,"fixture-national");saved.set(report.competitionId,{...reports.view(report),current:true});return{report:{...reports.view(report),current:true}};}
+      if(input.action==="previewReport"){const report=saved.get(input.competitionId.replace("legacy-nap-",""));assert.equal(report.status,"issues");return{report,recipients:[{email:"regional@example.invalid",name:"Admin régional"}],...reports.message(reports.build(base,{competitionId:"1",expectedMembership:reports.membership(base,"1"),results:calls.findLast(c=>c.input.action==="completeReport").input.results},"fixture-national")),disabled:true,previewOnly:true,fingerprint:"preview"};}
+      if(input.action==="sendReport")throw Error("Real send forbidden in fixture");
+      const batch=makeBatch(input.competitionIds);batch.controlMemberships={1:reports.membership(batch,"1")};batch.controlReports={};return batch;
+    });
+    await page.setContent(`<!doctype html><html lang="fr"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>${css}body{margin:0}.fixture-header{height:76px;padding:20px;background:#fff}.fixture-main{margin-left:240px;padding:12px}.fixture-breadcrumb{height:22px;font-size:12px}.fixture-title{font-size:20px;margin:6px 0 16px}@media(max-width:900px){.fixture-main{margin-left:0}}</style><body class="admin-portal-page"><header class="fixture-header">Portail LivePalmes — données fictives</header><main class="fixture-main"><div class="fixture-breadcrumb">Accueil › Administration nationale › Vérification des licences</div><h2 class="fixture-title">Vérification des licences</h2>${markup}</main></body></html>`);
+    await page.evaluate(()=>{window.LivePalmesLicenseAdministration={canManage:()=>true,licensesChanged(){},openSwimmer(){},callFunction:(name,input)=>window.fixtureCall(name,input)};});
+    await page.addScriptTag({path:"assets/livepalmes-license-administration.js"});assert.equal(calls.length,0);
+    await page.evaluate(()=>document.dispatchEvent(new Event("livepalmes:license-admin-open")));
+    await page.locator('[data-license-report="legacy-nap-1"]').waitFor();assert.equal(await page.locator('[data-license-report="legacy-nap-3"]').count(),0,"Future closure hidden by default");
+    assert.equal(await page.locator('#adminLicenseControlClosedOnly').isChecked(),true);
+    const reads=calls.length;await page.locator('#adminLicenseControlClosedOnly').uncheck();assert.equal(await page.locator('[data-license-report="legacy-nap-3"]').count(),1);await page.locator('#adminLicenseControlClosedOnly').check();assert.equal(calls.length,reads);
+    await page.locator('[data-competition-filter="ok"]').click();assert.equal(await page.locator('#adminLicenseControlCompetitions input').count(),1);await page.locator('[data-competition-filter="all"]').click();
+    await page.locator('#adminLicenseControlCompetitions input[value="legacy-nap-1"]').check();
+    await page.locator('#adminLicenseControlCompetitionSearch').fill("Angers");await page.locator('#adminLicenseControlCompetitionSearch').fill("");assert.equal(await page.locator('#adminLicenseControlCompetitions input[value="legacy-nap-1"]').isChecked(),true);assert.equal(calls.length,reads);
+    const assertInView=async selector=>{const r=await page.locator(selector).boundingBox();assert.ok(r&&r.y>=0&&r.y+r.height<=height,`${selector} must stay in the viewport: ${JSON.stringify(r)}`);};
+    if(width>900){await assertInView('#adminLicenseControlPrepare');const y=(await page.locator('#adminLicenseControlPrepare').boundingBox()).y;await page.locator('#adminLicenseControlCompetitions').evaluate(e=>e.scrollTop=e.scrollHeight);await assertInView('#adminLicenseControlPrepare');assert.equal((await page.locator('#adminLicenseControlPrepare').boundingBox()).y,y);assert.ok(await page.locator('.admin-license-admin-competition-entry').first().evaluate(e=>e.getBoundingClientRect().height<85));}
+    await page.locator('#adminLicenseControlPrepare').click();await page.locator('[data-license-person-id="65"]').waitFor();assert.equal(await page.locator('[data-license-person-id]').count(),65);
+    const batchReads=calls.length;await page.locator('[data-license-filter="to_check"]').click();assert.equal(await page.locator('[data-license-person-id]').count(),3);await page.locator('[data-license-filter="all"]').click();
+    await page.locator('#adminLicenseControlSearch').fill("NAGEUR 65");assert.equal(await page.locator('[data-license-person-id]').count(),1);await page.locator('#adminLicenseControlSearch').fill("");assert.equal(calls.length,batchReads);
+    if(width>900){await assertInView('#adminLicenseControlValidate');await assertInView('#adminLicenseControlReport');await page.locator('#adminLicenseControlResults').evaluate(e=>e.scrollTop=e.scrollHeight);await assertInView('#adminLicenseControlValidate');await assertInView('#adminLicenseControlReport');}
+    const csv='lot_id;saison;livepalmes_id;statut;licence_ffessm;validite_ffessm;details\nfixture;2026-2027;64;erreur;A-26-64;;Erreur technique\nfixture;2026-2027;65;timeout;A-26-65;;Délai dépassé';
+    await page.locator('#adminLicenseControlImport').setInputFiles({name:"retour.csv",mimeType:"text/csv",buffer:Buffer.from(csv)});await page.locator('[data-state="erreur"]').waitFor();await page.locator('[data-license-filter="issues"]').click();assert.equal(await page.locator('[data-license-person-id]').count(),2);assert.equal(calls.length,batchReads);
+    await page.locator('#adminLicenseControlReport').click();await page.locator('[data-report-complete]:enabled').waitFor();await page.locator('[data-report-complete]').click();assert.equal(calls.some(c=>c.input.action==="completeReport"),false,"Cancelling the review writes no report");acceptReview=true;await page.locator('[data-report-complete]').click();await page.locator('[data-report-preview]:enabled').waitFor();
+    const completed=calls.find(c=>c.input.action==="completeReport");assert.deepEqual(completed.input.results.map(r=>r.status),["non_controle","erreur","timeout"]);assert.equal(saved.get("1").counts.unconfirmed,3);assert.equal(base.people[62].seasonStatus,"to_check");
+    await page.locator('[data-report-preview]').click();await page.locator('#adminLicenseControlDialog pre').waitFor();const mail=await page.locator('#adminLicenseControlDialog pre').innerText();assert.match(mail,/Licences non confirmées : 3/);assert.match(mail,/erreur technique/);assert.match(mail,/délai dépassé/);assert.match(mail,/contrôle non effectué/);assert.match(mail,/Licences non retrouvées dans la base fédérale : 0/);assert.equal(await page.locator('[data-report-send]').isDisabled(),true);await page.locator('[data-report-close]').click();
+    await page.locator('[data-license-filter="all"]').click();
+    if(process.env.LIVEPALMES_LICENSE_SCREENSHOTS){const out=path.resolve("outputs/license-workspace");fs.mkdirSync(out,{recursive:true});await page.evaluate(()=>scrollTo(0,0));await page.screenshot({path:path.join(out,`usability-${width}.png`),fullPage:false});}
+    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1),false);assert.deepEqual(errors,[]);await page.close();
+  }}finally{await browser.close();}
+  console.log("Licences : 79 compétitions, clôture par défaut, boutons/compteurs locaux, actions visibles, 65 lignes et bilan avec 3 non confirmées : OK.");
+}
+main().catch(error=>{console.error(error);process.exitCode=1;});

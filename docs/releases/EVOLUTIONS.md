@@ -2,6 +2,13 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 27 octobre — Ergonomie du contrôle licences et licences non confirmées
+
+- Retour d’Antoine sur la version précédente : création du lot après une liste de 79 compétitions, validation trop basse, cartes et filtres peu pratiques. Périmètre explicitement autorisé : compétitions compactes et clôturées par défaut, boutons/compteurs de filtres, actions toujours visibles et revue terminable malgré les licences non confirmées ; TEST uniquement.
+- L’en-tête et le pied de chaque panneau restent hors du défilement des listes ; recherche, sélection et filtres sont locaux. La clôture s’appuie sur l’horodatage Paris déjà fourni par le calendrier, sans requête supplémentaire. Les erreurs/délais dépassés et contrôles non effectués n’empêchent plus de terminer la revue après confirmation : statut avec incohérences, aucune validation individuelle, mail nominatif avec motifs exacts et compte des non confirmées. Les anciens bilans restent lisibles sans migration ; statuts inconnus, empreintes périmées et conflits de versions restent refusés.
+- Budget inchangé : zéro lecture supplémentaire à l’ouverture, aux filtres, aux compteurs, au redimensionnement ou au défilement ; mêmes bornes existantes pour préparer, terminer et consulter un bilan. Aucun nouvel accès NAP/Firestore, collection, règle/index, préférence ou destinataire. Aucun envoi réel ni modification de données pendant les tests.
+- Code [c6f6abf7](https://github.com/ffessmnap/LivePalmes/commit/c6f6abf78031f60a211d3922d131b25f11fc2e93) : tests ciblés réussis hors réseau (bilans, validations natives conservées, anciens bilans, licences/CSV), régressions navigateur existantes conservées et contrôles supplémentaires à 1920×900, 1280×720 et 390×900 avec 79 compétitions, 65 nageurs, filtres sans appels réseau et actions dans le viewport après défilement. L’annulation de la confirmation ne crée aucun bilan. CI globale, intégration et preuve TEST à consigner après réussite ; recette utilisateur de la version regroupée encore attendue.
+
 ### 27 octobre — Publication du plan40493465281 et reprise du témoin Scheduler
 
 - Accord final Infra : « lance la prod », après attribution explicitement autorisée du seul droit Scheduler temporaire, sauvegarde IAM vérifiée et prérequis40496918449 réussis. Droit expirant le27octobre à13:25:13UTC (14:25Paris), sans renouvellement ni autre liaison IAM modifiée. Trois lots fonctionnels validés ; tous les périmètres exclus conservés.
