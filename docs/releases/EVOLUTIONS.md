@@ -2,6 +2,13 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 27 octobre — Circuit de livraison simplifié
+
+- Demande explicite : mettre en œuvre les améliorations de délai sans perdre les contrôles importants. Deux suites CI indépendantes en parallèle, synthèse « Verification technique » obligatoire et cinq tests communs exécutés une seule fois ; aucune réduction de couverture. Artefacts réutilisables seulement après réussite du run complet.
+- TEST automatique après CI main réussie pour les interfaces ordinaires connues, avec SHA exact et Hosting seul : le contrôle des révisions backend reste bloquant. Pas de suivi automatique vers un autre commit, aucun flag historique activé. Backend, chemins inconnus et changements sensibles restent au parcours explicite. Documentation/outillage seuls ne déclenchent pas de publication.
+- Assemblage du brouillon PROD depuis les preuves authentifiées et les retours utilisateur explicites, chemins calculés depuis les commits. Validations manquantes et revue des exclusions backend affichées comme blocages ; aucun accord inventé. Preflight et accord final Infra inchangés.
+- Gel opt-in du candidat ordinaire : la preuve TEST originale reste attachée au candidat ; une nouvelle version TEST n'est admise qu'avec preuve réussie authentifiée, filiation Git et comparaison exacte de son état frais. Dérive manuelle ou preuve manquante bloquantes ; contrats exceptionnels exclus du gel générique. Sauvegardes, dérive PROD, exclusions et contrôles après publication conservés.
+- Cas historiques et détails de sélection déplacés dans PROCEDURE_CAS_PARTICULIERS.md sans modifier les contrats exécutables. Tests négatifs hors réseau et CI globale requis avant intégration ; aucun déploiement PROD ni validation métier déduite de ce chantier.
 ### 27 octobre — Bilans et historique des contrôles licences dans NAP
 
 - Accord explicite d’Antoine : déplacement des bilans et de leur historique vers NAP ; partage de la base TEST/PROD connu et accepté. Aucun accord de publication PROD ni d’envoi réel. Réutilisation du contrôleur national et de ses droits existants.

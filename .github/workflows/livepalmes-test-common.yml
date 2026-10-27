@@ -3,6 +3,11 @@ run-name: ${{ inputs.verification_only && 'Verification TEST sans deploiement' |
 'on':
   workflow_dispatch:
     inputs:
+      automatic_candidate:
+        description: SHA exact de la CI automatique (laisser vide au lancement manuel)
+        required: false
+        type: string
+        default: ''
       production_commit:
         description: SHA applicatif actuellement en PROD pour detecter les changements backend
         required: true
