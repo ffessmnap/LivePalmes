@@ -55,6 +55,6 @@ vm.runInNewContext(definitions + "\nthis.preview = ENGAGEMENT_NOTIFICATION_PREVI
 assert.deepEqual([...box.preview.secrets], plan.expectedSecrets.prepareEngagementClubRecapEmails);
 assert.deepEqual([...box.preference.secrets], plan.expectedSecrets.disableCompetitionEmailNotifications);
 assert.deepEqual([...box.closure.secrets], plan.expectedSecrets.closeDueEngagementCompetitions);
-assert.equal(box.closure.schedule, "*/5 * * * *");
+assert.equal(box.closure.schedule, "0 * * * *");
 assert.equal(box.closure.timeZone, "Europe/Paris");
-console.log("Notification preparation: exact scope, default-off, actual NAP bindings and unchanged scheduler verified offline.");
+console.log("Notification preparation: exact scope, default-off, actual NAP bindings and hourly NAP recovery verified offline.");

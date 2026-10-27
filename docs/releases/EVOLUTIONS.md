@@ -2,6 +2,13 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 27 octobre — Déclenchement programmé des clôtures
+
+- Demande explicite d'Antoine : une tâche à la date de clôture, reprogrammée si cette date change ; INTRANAP n'est plus utilisé. Préparation, intégration et TEST autorisés, sans publication PROD ni mail réel.
+- Worker Cloud Tasks existant réutilisé ; contrôles de cycle avant programmation et avant exécution, anciennes tâches rendues inopérantes, points intermédiaires stables à 28 jours pour les échéances lointaines. Le contrôle NAP devient un secours horaire ; ancienne source Firestore conservée. Budget constant : événement et état courant, zéro lecture supplémentaire des écrans, aucun scan métier, nouvelle collection, dépendance ou droit.
+- Tests hors réseau : date exacte, déplacement avant/après, annulation, doublons, chaîne au-delà de 30 jours, échec de programmation, arrêt SMTP TEST et reprise explicite des événements futurs existants. CI globale, PR/intégration et déploiement TEST à consigner après réussite. Aucune validation utilisateur de la version livrée déduite de l'autorisation de développement.
+- Les événements PROD 5141, 5230 et 5153 ont été créés et relus auparavant dans cette conversation, aux dates natives inchangées. Le planificateur PROD cinq minutes a été confirmé actif (dernière réussite observée le 27 octobre à 8 h 50 Paris), mails nationaux activés/tous clubs/révision 7. À la future activation Infra, leurs tâches seront programmées explicitement et contrôlées ; aucun rejeu d'ouverture. Sète reste sans mail informatique faute de contact, conformément au choix d'Antoine.
+
 ### 27 octobre — Clôture Andernos et TXT informatique des prochaines clôtures
 
 - Demande explicite d'Antoine : envoyer les mails de clôture d'Andernos (5136, 1er novembre, limite au 26 octobre 23 h 59) et le TXT informatique ; précision reçue : « Andernos et les prochaines clôtures ». Diagnostic PROD en lecture seule : aucun état/événement pour 5136 dans la file et aucun mail préparé ; réglage tous clubs actif, révision 7. Aperçu : 37 destinataires éligibles dans 13 clubs. Le rattrapage réel est autorisé séparément du déploiement du correctif.

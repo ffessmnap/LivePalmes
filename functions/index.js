@@ -329,7 +329,7 @@ const PORTAL_ACCESS_REQUEST_OPTIONS = {
 };
 const ENGAGEMENT_CLOSURE_SCHEDULER_OPTIONS = {
   region: REGION,
-  schedule: "*/5 * * * *",
+  schedule: ENVIRONMENT.sportingDataSource === "nap" ? "0 * * * *" : "*/5 * * * *",
   timeZone: "Europe/Paris",
   timeoutSeconds: 540,
   memory: "1GiB",
@@ -10950,7 +10950,9 @@ function nativeNotificationTaskServices() {
   return services;
 }
 async function enqueueNativeNotificationTask(eventId) {
-  return require('./nap-notification-task').enqueue(db,eventId,nativeNotificationTaskServices());
+  const result=await require('./nap-notification-task').enqueue(db,eventId,nativeNotificationTaskServices());
+  if(result.queued===false)throw new Error('Programmation de la notification a reprendre.');
+  return result;
 }
 exports.processNapNotificationTask = onTaskDispatched({region:REGION,
   timeoutSeconds:540,memory:'1GiB',concurrency:1,maxInstances:1,
@@ -11010,7 +11012,7 @@ exports.processNapCompetitionNotifications = onCall({ ...ENGAGEMENT_NOTIFICATION
     if(request.data?.action==='adopt-open-season'){
       if(!context.national)throw new HttpsError('permission-denied','Reprise reservee au niveau national.');
       return await automation.adoptOpenCompetitions(db,{season:request.data.season,offset:request.data.offset},{
-        authorize:async()=>{},season:async year=>{const pack=await require('./nap-portal-competitions').readNativeCompetitionSeason(require('./nap-portal-swimmers').portalPool(process.env.LIVEPALMES_NAP_PASSWORD),year);return {...pack,events:pack.events.map(event=>({...event,id:String(require('./nap-direct-calendar').positiveId(event.id))}))};}});
+        authorize:async()=>{},schedule:enqueueNativeNotificationTask,season:async year=>{const pack=await require('./nap-portal-competitions').readNativeCompetitionSeason(require('./nap-portal-swimmers').portalPool(process.env.LIVEPALMES_NAP_PASSWORD),year);return {...pack,events:pack.events.map(event=>({...event,id:String(require('./nap-direct-calendar').positiveId(event.id))}))};}});
     }
     if(!['process','restart'].includes(request.data?.action))throw new TypeError('Action de notification inconnue.');
     const competitionId=String(require('./nap-direct-calendar').positiveId(request.data.competitionId));
@@ -11027,10 +11029,14 @@ exports.processNapCompetitionNotifications = onCall({ ...ENGAGEMENT_NOTIFICATION
       return {ok:true,disabled:true,sentCount:0,resumedCount:results.filter(result=>result.resumed).length,remaining:Math.max(0,blocked.length-results.length)};
     }
     if(blocked.length)throw new TypeError('Preparation interrompue apres une modification NAP. Une reprise explicite est necessaire.');
+    // Explicit maintenance of an already managed competition also arms its
+    // future closure. It neither replays an opening nor prepares mail early.
+    const future=events.filter(doc=>doc.data().kind==='closure'&&doc.data().automatic&&doc.data().deliveryMode==='bcc-v1'&&doc.data().status==='pending'&&doc.data().runAt>now),schedules=[];
+    for(const doc of future.slice(0,2))schedules.push(await enqueueNativeNotificationTask(doc.id));
     const due=events.filter(doc=>doc.data().runAt&&doc.data().runAt<=now&&!['completed','cancelled'].includes(doc.data().status)).sort((a,b)=>a.data().runAt.localeCompare(b.data().runAt));
     for(const doc of due.slice(0,2))results.push(doc.data().deliveryMode==='bcc-v1'?await enqueueNativeNotificationTask(doc.id):await automation.processEvent(db,doc.ref,services,now));
     const delivery=await deliverNativeNotificationJobs(competitionId);
-    return {ok:true,source:'nap',disabled:false,sentCount:delivery.sent,processedCount:results.length,jobCount:results.reduce((sum,result)=>sum+(result.jobCount||0),0),attachmentCount:results.reduce((sum,result)=>sum+(result.attachmentCount||0),0),remaining:Math.max(0,due.length-results.filter(result=>result.done||result.skipped).length)};
+    return {ok:true,source:'nap',disabled:false,scheduledCount:schedules.filter(result=>result.queued).length,schedulingPending:future.length-schedules.filter(result=>result.queued).length,sentCount:delivery.sent,processedCount:results.length,jobCount:results.reduce((sum,result)=>sum+(result.jobCount||0),0),attachmentCount:results.reduce((sum,result)=>sum+(result.attachmentCount||0),0),remaining:Math.max(0,due.length-results.filter(result=>result.done||result.skipped).length)};
   }catch(error){if(error instanceof HttpsError)throw error;throw new HttpsError(error instanceof TypeError?'failed-precondition':error instanceof RangeError?'resource-exhausted':'unavailable',error instanceof TypeError||error instanceof RangeError?error.message:'Preparation NAP interrompue : vous pouvez reprendre le traitement.');}
 });
 exports.listEngagementCompetitionClubRecaps = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {

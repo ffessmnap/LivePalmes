@@ -2,6 +2,20 @@
 
 <!-- description: Regroupement CCI, temporisation documentaire et tâches persistantes des notifications NAP ; budgets de lecture et limites de recette TEST. -->
 
+## Clôtures programmées — préparation du 27 octobre 2026
+
+Antoine autorise le passage à une tâche programmée par clôture et sa reprogrammation lors d'un changement de date dans LivePalmes. INTRANAP n'est plus utilisé : aucune synchronisation avec l'ancien outil n'est ajoutée. Les trois compétitions historiquement ouvertes ont déjà leurs événements techniques en PROD ; cette préparation ne les réécrit pas et ne change pas la PROD.
+
+L'ouverture ou la modification de la date limite programme le worker existant à l'échéance. Une nouvelle opération invalide l'ancienne clôture : la tâche obsolète peut encore être appelée par Cloud Tasks, mais elle est annulée sans préparation ni envoi après lecture de l'état courant. Une annulation métier reste également contrôlée par le lecteur de compétition avant préparation. Les préférences, réglages nationaux, PDF, TXT et protections contre les doublons restent dans le circuit existant. Sans contact informatique, aucun mail TXT n'est préparé.
+
+[Cloud Tasks limite les programmations à 30 jours](https://docs.cloud.google.com/tasks/docs/quotas). Pour une échéance lointaine, le worker programme un point intermédiaire au plus à 28 jours, ancré à la date limite pour conserver le même identifiant lors d'une relance. Ce point ne prépare ni n'envoie de mail ; il programme le point suivant ou l'échéance finale. L'échec de cette continuation déclenche les reprises Cloud Tasks. Une programmation impossible depuis l'action de modification est signalée comme incomplète ; le journal permet de reprendre la même opération.
+
+Le contrôle périodique NAP devient un secours horaire (`0 * * * *`, Europe/Paris), toujours limité à cinq événements échus. La cadence de l'ancienne source Firestore reste inchangée. Une exécution réussie du planificateur ou une tâche programmée n'est pas une preuve de réception SMTP. Le secours peut introduire un retard jusqu'au passage horaire si toutes les reprises immédiates ont échoué.
+
+Budget avant implémentation : ouverture/rafraîchissement d'écran, zéro lecture ajoutée ; programmation d'un événement, une transaction lisant l'événement et son état courant (deux documents, un seul pour un événement documentaire), sans SQL ; worker, même contrôle borné puis budget de préparation existant uniquement à l'échéance. Un point intermédiaire ajoute deux contrôles bornés et une création de tâche, sans lecture métier. Le secours passe de 288 à 24 invocations par jour ; sa requête indexée reste limitée à cinq événements, sans balayage des compétitions. Aucune collection, dépendance, permission ni infrastructure supplémentaire.
+
+Activation spécifique après validation TEST et accord Infra : publier les consommateurs concernés et le secours horaire ; programmer explicitement les événements futurs déjà présents via `processNapCompetitionNotifications` / `action: process` (sans recréer d'ouverture), puis vérifier les tâches Cloud Tasks et leurs dates. Le retour `scheduledCount` distingue une tâche confirmée de `schedulingPending`. Le contrôle doit inclure les compétitions 5141 (11 novembre 21 h 59 Paris), 5230 (13 novembre 22 h) et 5153 (19 novembre 23 h 59), ainsi que toute autre clôture déjà gérée découverte par le contrôle borné préalable. Aucun ancien contrat de publication ne vaut autorisation de modifier la cadence. Le lot reste en préparation TEST tant qu'une preuve de publication n'est pas consignée.
+
 ## TXT eau libre à la clôture — préparation du 27 octobre 2026
 
 Antoine demande le rattrapage de la clôture d'Andernos et l'envoi du TXT informatique pour cette compétition et les prochaines clôtures. Le correctif inclut le TXT eau libre au contact informatique déclaré, avec les mêmes contrôles du réglage national, de l'audience et des doublons que pour la piscine. Il réutilise le sérialiseur du téléchargement manuel validé ; une référence native absente, périmée ou non reconnue bloque la préparation du TXT. Aucun format sportif supplémentaire n'est déduit.
