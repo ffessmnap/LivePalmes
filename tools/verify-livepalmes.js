@@ -95,6 +95,7 @@ function runUnitTests() {
     "engagement-mail-send-guard-tests.js",
     "production-notification-preparation-tests.js",
     "release-excluded-backend-compatibility-tests.js",
+    "release-test-function-fingerprints-tests.js",
     "release-c0-compatibility-tests.js",
     "release-home-compatibility-tests.js",
     "test-notification-refresh-tests.js",

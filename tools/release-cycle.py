@@ -260,17 +260,25 @@ def backend_fingerprints(sha):
     return json.loads(run(['node', str(ROOT / 'tools/release-function-fingerprints.js'), str(ROOT), sha]))['functions']
 
 
-def needs_function(function, name, candidate):
+@lru_cache(maxsize=64)
+def test_backend_fingerprints(sha):
+    require(isinstance(sha, str) and SHA.fullmatch(sha), 'Commit backend TEST absent')
+    return json.loads(run(['node', str(ROOT / 'tools/release-test-function-fingerprints.js'), str(ROOT), sha]))['functions']
+
+
+def needs_function(function, name, candidate, *, project='livepalmes'):
+    require(project in PROJECTS, 'Projet de comparaison interdit')
+    fingerprints = test_backend_fingerprints if project == 'livepalmes-test' else backend_fingerprints
     if not function or function.get('state') != 'ACTIVE':
         return True
     old = function.get('commit')
     if not old or not SHA.fullmatch(old):
         return True
     try:
-        previous = backend_fingerprints(old)
+        previous = fingerprints(old)
     except (ValueError, subprocess.CalledProcessError):
         return True  # Unknown provenance: republish; never guess equivalence.
-    desired = backend_fingerprints(candidate)
+    desired = fingerprints(candidate)
     require(name in desired, 'Export candidat absent: ' + name)
     return previous.get(name) != desired[name]
 
@@ -355,7 +363,7 @@ def test_selection(directory, candidate):
         function = names.get(name)
         if not function or function['name'] not in trusted:
             reasons[name] = 'revision sans preuve concordante'
-        elif needs_function(function, name, sha):
+        elif needs_function(function, name, sha, project='livepalmes-test'):
             reasons[name] = 'code ou dependances differents'
         else:
             reasons[name] = 'revision prouvee, code et dependances equivalents'
@@ -395,7 +403,7 @@ def check_test(directory, candidate):
     require(set(after) == set(before) | full_selected, 'Inventaire TEST inattendu')
     require(all(after.get(n) == f for n, f in before.items() if n not in full_selected), 'Function TEST non selectionnee modifiee')
     names = {n.split('/')[-1]: f for n, f in after.items()}
-    require(all(not needs_function(names.get(n), n, os.environ['CANDIDATE_SHA']) for n in safe_functions(candidate, 'livepalmes-test')), 'Backend TEST incomplet')
+    require(all(not needs_function(names.get(n), n, os.environ['CANDIDATE_SHA'], project='livepalmes-test') for n in safe_functions(candidate, 'livepalmes-test')), 'Backend TEST incomplet')
 
 
 TEST_TOP_FILES = {
