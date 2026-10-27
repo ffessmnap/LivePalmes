@@ -1,0 +1,43 @@
+name: Preparer le droit Scheduler minimal sans l attribuer
+on:
+  workflow_dispatch:
+    inputs:
+      preparation_run:
+        description: Plan PROD existant a verifier en lecture seule
+        required: true
+        type: string
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: livepalmes-production
+  cancel-in-progress: false
+jobs:
+  prepare:
+    if: github.ref == 'refs/heads/main' && github.run_attempt == 1
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: production
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Tester les limites IAM hors reseau
+        run: python tests/scheduler-iam-preparation-tests.py
+      - uses: google-github-actions/auth@v3
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_BACKEND }}
+          project_id: livepalmes
+      - uses: google-github-actions/setup-gcloud@v3
+      - name: Relire le plan et preparer le seul delta IAM propose
+        env:
+          PLAN_RUN: ${{ inputs.preparation_run }}
+        run: python tools/prepare-scheduler-iam.py "$RUNNER_TEMP/scheduler-iam" "$PLAN_RUN"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: scheduler-iam-proposal
+          path: ${{ runner.temp }}/scheduler-iam/scheduler-iam-proposal.json
+          if-no-files-found: error
+          retention-days: 14
