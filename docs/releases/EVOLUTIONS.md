@@ -2,6 +2,13 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 27 octobre — Téléchargement TXT de toutes les compétitions eau libre NAP
+
+- Demande explicite d’Antoine : retirer les restrictions TEST/Andernos côté portail et callable, conserver les contrôles et publier sur TEST. Toutes les compétitions eau libre NAP utilisent le générateur manuel existant ; libellés hors NAP précisés. Authentification, périmètre régional/national, programme/catalogue natifs, refus des sources absentes/inconnues/périmées et limite de 10 Mo conservés. Aucun changement de format sportif, mail, destinataire, donnée, migration, Storage ou configuration. PROD non autorisée par ce chantier.
+- Budget inchangé : ouverture et rafraîchissement, zéro lecture ajoutée ; un téléchargement, un appel existant, au plus 26 requêtes NAP groupées (24 existantes + WID par clé primaire, une ligne + catalogue par clés, 300 lignes). Dossiers bornés à 39 200 lignes au total, sans requête par club/nageur ni reconstruction ; mêmes limites au pire cas. Aucune écriture métier et aucune lecture de performance.
+- Vérifications ciblées réussies hors réseau : téléchargement manuel, callables administrateurs, export WinPalme et dossiers NAP bornés ; fixtures positives TEST/PROD pour plusieurs identifiants, refus authentification/périmètre/source/identifiant/type/format, piscine et octets du TXT conservés. Chrome en 1440/390/320 px : bouton GED, téléchargement exact, refus visible et absence de débordement. Syntaxe et diff contrôlés. CI globale du candidat exact avant intégration et publication TEST commune ; preuves à lier après réussite, recette utilisateur encore attendue.
+
+
 ### 27 octobre — Archives GitHub et diagnostics des bilans licences
 
 - Demande explicite d’Antoine : nettoyer les workflows remplacés, renforcer les tests des opérations ponctuelles et clarifier les échecs. Trois archives déjà bloquées par `if:false`, sans exécution en cours, désactivées via GitHub : ancienne mise en ligne, reconstruction TOP, publication performances TEST. Fichiers et artefacts conservés ; reprise historique référencée par rollback et workflows courants conservés.
