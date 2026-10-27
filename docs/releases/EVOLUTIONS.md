@@ -2,6 +2,14 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 27 octobre — Préparation du droit Scheduler minimal, sans attribution
+
+- Demande Infra : « prépare la correction du droit cloudscheduler.jobs.update avec le minimum de permissions nécessaire, puis refais les contrôles et présente-moi le bilan avant de déployer ». La préparation ne vaut pas attribution IAM ni publication PROD.
+- Rôle personnalisé proposé `projects/livepalmes/roles/livepalmesSchedulerUpdate`, contenant uniquement `cloudscheduler.jobs.update`, pour la seule identité CI backend existante. Liaison conditionnelle limitée à deux heures, sans renouvellement automatique ; proposition à rafraîchir si expirée. Aucun rôle administrateur Scheduler, droit de création/suppression/exécution, nouvelle identité ou accès aux secrets ajouté.
+- Portée IAM annoncée explicitement : tous les jobs Scheduler du projet pendant la fenêtre. Cloud Scheduler n’est pas documenté parmi les services reconnaissant les conditions de nom de ressource ; ne pas prétendre limiter IAM au seul job ou au champ `schedule`. L’outillage du plan demeure limité à ce job et ce champ. Les conditions temporelles héritées s’appliquent à tous les services selon la [référence IAM officielle](https://docs.cloud.google.com/iam/docs/conditions-attribute-reference#date-time). Le [droit est pris en charge dans les rôles personnalisés](https://docs.cloud.google.com/iam/docs/custom-roles-permissions-support).
+- Inspecteur et workflow uniquement en lecture : relire le plan, la dérive et les témoins, obtenir la politique IAM version3/etag et le rôle existant, produire le delta et ses empreintes sans exporter les autres membres de la politique. Refuser rôle plus large, liaison préexistante ambiguë ou preuve absente. Avant une attribution ultérieure : accord explicite, sauvegarde vérifiée et relecture d’etag ; aucune écriture IAM n’est implémentée par ce chantier.
+- Budget : preuves GitHub et ressources techniques bornées, aucune donnée métier, valeur de secret, modification du scheduler ou des mails. Sauvegardes, exclusions, absence de rattrapage, Paris/CNHC/Basile, clubs historiques, DTN et Storage conservés. Tests ciblés, CI et inspection en lecture seule à relier au bilan ; le droit manquant restera bloquant tant que la proposition n’est pas appliquée avec autorisation.
+
 ### 27 octobre — Préparation PROD des trois lots validés sur TEST
 
 - Préparation #580 intégrée en `1fd97a1f`, CI Linux40491496588 / main40491990644 réussies. Lot TEST ciblé40491560692 autorisé séparément puis réussi, réglage mail coupé inchangé ; trois sources sensibles auparavant anciennes désormais attestées. Preflight40492236967 réussi, artefact12727589882 / SHA-256 `c2cc790aa283d637aa7ec90b7e1dad105df70d9952d9e7b23f801acd5ec4ebba` authentifié :16 sélectionnées,97 conservées, trois builds simultanés par défaut.
