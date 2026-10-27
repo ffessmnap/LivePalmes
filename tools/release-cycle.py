@@ -266,9 +266,15 @@ def test_backend_fingerprints(sha):
     return json.loads(run(['node', str(ROOT / 'tools/release-test-function-fingerprints.js'), str(ROOT), sha]))['functions']
 
 
+@lru_cache(maxsize=64)
+def production_selection_fingerprints(sha):
+    require(isinstance(sha, str) and SHA.fullmatch(sha), 'Commit backend PROD absent')
+    return json.loads(run(['node', str(ROOT / 'tools/release-production-function-fingerprints.js'), str(ROOT), sha]))['functions']
+
+
 def needs_function(function, name, candidate, *, project='livepalmes'):
     require(project in PROJECTS, 'Projet de comparaison interdit')
-    fingerprints = test_backend_fingerprints if project == 'livepalmes-test' else backend_fingerprints
+    fingerprints = test_backend_fingerprints if project == 'livepalmes-test' else production_selection_fingerprints
     if not function or function.get('state') != 'ACTIVE':
         return True
     old = function.get('commit')
@@ -780,10 +786,10 @@ def prepare_selection(directory, candidate):
     if backend:
         state = read(directory / 'test-proof.json')['state']
         names = {f['name'].split('/')[-1]: f for f in state['functions']}
-        require(all(not needs_function(names.get(n), n, request['candidate']) for n in selected), 'Backend TEST incomplet ou pas au code valide')
+        require(all(not needs_function(names.get(n), n, request['candidate'], project='livepalmes-test') for n in selected), 'Backend TEST incomplet ou pas au code valide')
         extra = approved_extra_functions(request)
         notification = approved_notification_functions(request)
-        require(all(not needs_function(names.get(n), n, request['candidate']) for n in notification + approved_public_nap_functions(request) + approved_access_request_functions(request) + approved_club_directory_functions(request) + approved_grouped_functions(request) + approved_bcc_functions(request)),
+        require(all(not needs_function(names.get(n), n, request['candidate'], project='livepalmes-test') for n in notification + approved_public_nap_functions(request) + approved_access_request_functions(request) + approved_club_directory_functions(request) + approved_grouped_functions(request) + approved_bcc_functions(request)),
                 'Notifications TEST absentes ou pas au code valide')
         if approved_dtn_functions(request):
             require(read(directory / 'test-proof.json').get('dtnExtensionVerification') == {'schema': 1, 'candidate': request['candidate'], 'suite': 'dtn-shared-invalidation', 'mode': 'offline-no-invocation', 'result': 'success', 'functions': sorted(DTN_FUNCTIONS)}, 'Preuve des dependances DTN absente ou incompatible')
