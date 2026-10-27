@@ -57,7 +57,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: nap-license-reports-before
-          path: outputs/nap-license-reports/
+          path: outputs/nap-license-reports/*.enc
           if-no-files-found: error
           retention-days: 90
       - name: Ajouter les tables absentes et reprendre les bilans
@@ -79,6 +79,8 @@ jobs:
         if: always()
         with:
           name: nap-license-reports-result
-          path: outputs/nap-license-reports/
+          path: |
+            outputs/nap-license-reports/*.enc
+            outputs/nap-license-reports/result.json
           if-no-files-found: ignore
           retention-days: 90

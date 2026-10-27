@@ -1,6 +1,8 @@
 "use strict";
 // Explicit, bounded migration. Only PROD reports are official source records.
 const fs=require("node:fs"),path=require("node:path"),{execFileSync}=require("node:child_process");
+const cryptoBackup=require("./production-backup-crypto");
+function sealedBackup(file,data,key){const bytes=Buffer.from(JSON.stringify(data));const encrypted=cryptoBackup.seal(bytes,key);fs.writeFileSync(file,encrypted,{mode:0o600});if(!cryptoBackup.open(fs.readFileSync(file),key).equals(bytes))throw Error("Sauvegarde chiffrée non vérifiée");}
 const root=path.resolve(__dirname,".."),{store,ddl,tables,hash,query}=require("../functions/nap-license-reports");
 const columns=[[["season","varchar(9)","NO"],["competition_id","int","NO"],["version","int unsigned","NO"],["revision","char(64)","NO"],["summary","text","NO"]],[["season","varchar(9)","NO"],["competition_id","int","NO"],["version","int unsigned","NO"],["revision","char(64)","NO"],["report","mediumtext","NO"],["summary","text","NO"],["mail","text","YES"]]];
 async function inspect(pool){
@@ -68,7 +70,7 @@ async function main(){
   if(credentials.project_id!=="livepalmes")throw Error("Source PROD requise");
   admin.initializeApp({credential:admin.credential.cert(credentials),projectId:"livepalmes"});
   const reports=await source(admin.firestore());fs.mkdirSync("outputs/nap-license-reports",{recursive:true});
-  fs.writeFileSync("outputs/nap-license-reports/source.json",JSON.stringify({sourceProject:"livepalmes",reports,hash:hash(reports)}));return;
+  const exported={sourceProject:"livepalmes",reports,hash:hash(reports)};fs.writeFileSync("outputs/nap-license-reports/source.json",JSON.stringify(exported));sealedBackup("outputs/nap-license-reports/source.enc",exported,credentials.private_key);return;
  }
  if(credentials.project_id!=="livepalmes-test")throw Error("Compte TEST requis pour NAP");
  const exported=JSON.parse(fs.readFileSync("outputs/nap-license-reports/source.json","utf8"));
@@ -77,7 +79,7 @@ async function main(){
  const db={collection:()=>({orderBy:()=>({startAt:()=>({endBefore:()=>({limit:()=>({get:async()=>({size:exported.reports.length,docs:exported.reports.map(r=>({id:`license-control-${r.season}-${r.competitionId}`,data:()=>r}))})})})})})})};
  const password=execFileSync("gcloud",["secrets","versions","access","latest","--secret=LIVEPALMES_NAP_PASSWORD","--project=livepalmes-test"],{encoding:"utf8",stdio:["ignore","pipe","pipe"]}).trim();
  const pool=require("../functions/nap-mysql").createNapPool(password);
- try{const result=await migrate(pool,db,phase,phase==="apply"?JSON.parse(fs.readFileSync("outputs/nap-license-reports/before.json","utf8")):null);fs.writeFileSync(`outputs/nap-license-reports/${phase==="prepare"?"before":"result"}.json`,JSON.stringify(result));}finally{await pool.end();}
+ try{const result=await migrate(pool,db,phase,phase==="apply"?JSON.parse(fs.readFileSync("outputs/nap-license-reports/before.json","utf8")):null);fs.writeFileSync(`outputs/nap-license-reports/${phase==="prepare"?"before":"result"}.json`,JSON.stringify(result));if(phase==="prepare")sealedBackup("outputs/nap-license-reports/before.enc",result,credentials.private_key);}finally{await pool.end();}
 }
 if(require.main===module)main().catch(()=>{console.error("Reprise des bilans arrêtée ; conserver les preuves et examiner le conflit. Aucun secret affiché.");process.exitCode=1;});
 module.exports={inspect,validate,source,migrate,columns};
