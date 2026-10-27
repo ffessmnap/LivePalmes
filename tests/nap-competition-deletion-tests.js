@@ -35,9 +35,10 @@ function fixture(){
  return {state,log,options,pool,scope,audit,authorize,input,run:changes=>mod.competitionDeletion(pool,{...input,...changes},audit,authorize)};
 }
 (async()=>{
- assert.equal(refs.length,47);assert.ok(refs.every(r=>/^[a-z_]+$/.test(r.table)&&r.index));
+ assert.equal(refs.length,48);assert.ok(refs.every(r=>/^[a-z_]+$/.test(r.table)&&r.index));
  assert.deepEqual(refs.find(r=>r.table==="livepalmes_calendar_event_details"),{table:"livepalmes_calendar_event_details",field:"competition_id",index:"PRIMARY",cleanup:true});
  for(const id of ["5162","legacy-nap-0","legacy-nap-2147483648","legacy-nap-1 OR 1=1",null])assert.throws(()=>mod.idOf(id));
+ let held=fixture();held.state.livepalmes_license_control_history=[{competition_id:5162}];await assert.rejects(held.run(),/historique rattache/);assert.ok(!held.log.some(x=>x.sql?.startsWith("DELETE")));
  let f=fixture(),preview=await f.run();
  assert.equal(preview.documents,1);assert.equal(preview.courses,1);assert.equal(preview.detailedProgram,true);assert.match(preview.expectedFingerprint,/^[a-f0-9]{64}$/);
  assert.ok(!f.log.some(x=>x.backup||x.sql?.startsWith("DELETE")),"Preview never saves or deletes");

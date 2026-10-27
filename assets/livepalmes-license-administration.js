@@ -459,6 +459,7 @@
       ${data ? `<p>${inBatch ? `${pending} licence(s) non confirmée(s). Vous pouvez terminer la revue : elles resteront signalées dans le bilan, sans validation individuelle.` : "Préparez un lot contenant cette compétition pour terminer son contrôle."}</p>` : ""}
       <div class="admin-license-admin-actions"><button type="button" data-report-complete ${disabled || !data || !inBatch || !members.length ? "disabled" : ""}>${current ? "Actualiser le bilan" : "Marquer comme contrôlée"}</button><button type="button" class="ghost-button" data-report-preview ${disabled || !current ? "disabled" : ""}>Prévisualiser le mail</button></div>
       <p>${report?.mail?.sentAt ? `Mail envoyé le ${escapeHtml(new Date(report.mail.sentAt).toLocaleString("fr-FR"))} à ${report.mail.recipientCount} destinataires.` : "Mail non envoyé."}</p>
+      ${data?.history ? `<details><summary>Historique des contrôles (${data.history.reports.length}${data.history.nextBefore ? "+" : ""})</summary><ul>${data.history.reports.map(r => `<li><button type="button" class="ghost-button" data-report-version="${r.version}">Bilan du ${escapeHtml(new Date(r.completedAt).toLocaleString("fr-FR"))} · ${r.status === "ok" ? "tout est bon" : "incohérences"}</button></li>`).join("")}</ul>${data.history.nextBefore ? `<button type="button" class="ghost-button" data-report-older="${data.history.nextBefore}">Voir les contrôles précédents</button>` : ""}${data.archiveText ? `<pre>${escapeHtml(data.archiveText)}</pre>` : ""}</details>` : ""}
       ${preview ? `<h3>Destinataires (${preview.recipients.length})</h3><ul>${preview.recipients.map(r => `<li>${escapeHtml(r.name || r.role)} · ${escapeHtml(r.email)}</li>`).join("")}</ul>${preview.missingRegion ? "<p>Région organisatrice non renseignée : aucun administrateur régional ne peut être ciblé.</p>" : ""}${preview.missingComputer ? "<p>Adresse de l’informatique de la compétition non renseignée.</p>" : ""}<p><strong>${escapeHtml(preview.subject)}</strong></p><pre>${escapeHtml(preview.text)}</pre><div class="admin-license-admin-actions"><button type="button" data-report-send ${disabled || preview.disabled || !preview.recipients.length ? "disabled" : ""}>Envoyer le mail</button></div>${preview.disabled ? `<p>${preview.previewOnly ? "TEST : aperçu uniquement, aucun mail réel envoyé." : "Envois désactivés dans le réglage des notifications."}</p>` : "<p>Envoi volontaire aux destinataires affichés, sans doublon.</p>"}` : ""}`;
     if (report?.mail?.sentAt) {
       const sentButton = elements.dialogContent.querySelector("[data-report-send]");
@@ -482,6 +483,23 @@
       if (request !== state.dialogRequest || !elements.dialog.open) return;
       elements.dialogContent.insertAdjacentHTML("beforeend", `<p role="alert">${escapeHtml(error?.message || error)}</p>`);
     }
+  }
+
+  async function readHistory(version, before) {
+    if (state.reportBusy || !state.reportData) return;
+    const request = state.dialogRequest;
+    state.reportBusy = true;
+    try {
+      const result = await bridge.callFunction("prepareEngagementLicenseControlBatch", {action: version ? "reportVersion" : "reportHistory", season: elements.season.value, competitionId: state.reportId, ...(version ? {version} : {before})});
+      if (request !== state.dialogRequest || !elements.dialog.open) return;
+      if (version) state.reportData.archiveText = result.text;
+      else state.reportData.history = {reports: [...state.reportData.history.reports, ...result.reports], nextBefore: result.nextBefore};
+      state.reportBusy = false;
+      renderReport();
+      const details = elements.dialogContent.querySelector("details");
+      if (details) details.open = true;
+    } catch (error) { elements.dialogContent.insertAdjacentHTML("beforeend", `<p role="alert">${escapeHtml(error?.message || error)}</p>`); }
+    finally { state.reportBusy = false; }
   }
 
   async function reportAction(action) {
@@ -537,6 +555,8 @@
   elements.dialogContent.addEventListener("click", event => {
     const button = event.target.closest("button");
     if (!button) return;
+    if (button.matches("[data-report-version]")) void readHistory(Number(button.dataset.reportVersion));
+    if (button.matches("[data-report-older]")) void readHistory(null, Number(button.dataset.reportOlder));
     if (button.matches("[data-report-close]")) elements.dialog.close();
     if (button.matches("[data-report-complete]")) void reportAction("completeReport");
     if (button.matches("[data-report-preview]")) void reportAction("previewReport");
