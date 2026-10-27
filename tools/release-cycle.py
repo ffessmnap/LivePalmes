@@ -1,6 +1,7 @@
 """Reusable code releases. No Firestore, business Function or data migration calls."""
 import hashlib
 from functools import lru_cache
+from types import SimpleNamespace
 import importlib.util
 import io
 import json
@@ -743,14 +744,17 @@ def verify_test(directory, live=True):
     require(isinstance(runs, list) and len(runs) <= 20 and all(type(r) is int and r > 0 for r in runs)
             and len(runs) == len(set(runs)), 'Runs backend TEST invalides')
     functions = {f['name']: f for f in evidence['state'].get('functions', [])}
+    limited_oct27 = bcc.for_request(request).contract().get('limitedOct27')
     updated = set()
     for run_id in runs:
         destination = root / ('test-targeted-' + str(run_id))
-        bcc_reconciled = bool(approved_bcc_functions(request))
+        bcc_reconciled = bool(approved_bcc_functions(request)) and not limited_oct27
         expected_workflow = '.github/workflows/livepalmes-test-notifications-reconcile.yml' if bcc_reconciled else '.github/workflows/livepalmes-test-backend.yml'
         source = artifact(run_id, 'test-backend-proof', destination, expected_workflow)
         targeted = read(destination / 'test-backend-proof.json')
-        if bcc_reconciled:
+        if limited_oct27:
+            bcc.for_request(request).verify_targeted(request, targeted, source, root, SimpleNamespace(**globals()))
+        elif bcc_reconciled:
             bcc.for_request(request).reconciled_proof(request, targeted, source)
             require(len(runs) == 1, 'Une seule reconciliation TEST CCI attendue')
             evidence['currentTestState'] = targeted['currentTestState']
@@ -769,8 +773,8 @@ def verify_test(directory, live=True):
     if runs:
         evidence['state']['functions'] = sorted(functions.values(), key=lambda f: f['name'])
     if live:
-        common_bcc = bool(approved_bcc_functions(request)) and bcc.for_request(request).contract().get('testProofMode') == 'common-exact'
-        require(not common_bcc or not runs, 'Preuve commune exacte CCI sans ajout cible attendu')
+        common_bcc = bool(approved_bcc_functions(request)) and bcc.for_request(request).contract().get('testProofMode') in ['common-exact','common-plus-targeted-sources']
+        require(not common_bcc or not runs or limited_oct27, 'Preuve commune exacte CCI sans ajout cible attendu')
         expected_live = evidence['state'] if common_bcc or not approved_bcc_functions(request) else evidence['currentTestState']
         require(snapshot('livepalmes-test') == expected_live, 'TEST a change depuis sa publication : refaire le bilan')
     if os.environ.get('DTN_EXTENSION_CHECKS') == 'success':
@@ -1007,6 +1011,10 @@ def verify_excluded_backend(directory, state, selected):
     """Verify every retained changed function, never silently expand a lot."""
     root = Path(directory)
     request = read(root / 'request.json')
+    scope = bcc.for_request(request)
+    if scope.contract().get('limitedOct27'):
+        scope.verify_retained(root, state, selected, SimpleNamespace(**globals()))
+        return
     review = request['excludedBackendEvidence']
     baseline = read(root / 'baseline.json')
     require(review['productionRun'] == baseline['productionRun']
