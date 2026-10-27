@@ -69,7 +69,8 @@ def check_after(backup, destination, require_success):
                 if name.split('/')[-1] == bcc_policy.contract()['worker']:
                     bcc_policy.assert_worker(f, report['bccWorkerService'], SimpleNamespace(rollback_patch=rollback_patch))
                 else:
-                    bcc_policy.assert_config(before[name], f, SimpleNamespace(rollback_patch=rollback_patch))
+                    bcc_policy.assert_config(before[name], f, SimpleNamespace(rollback_patch=rollback_patch,
+                        bcc_runtime_reference=before.get(PREFIX+'processNapCompetitionNotifications')))
                 if f.get('labels', {}).get('livepalmes-commit') != report['candidate']:
                     raise ValueError('Commit CCI different')
             except ValueError as error:

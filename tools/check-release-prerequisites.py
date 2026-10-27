@@ -95,6 +95,10 @@ def main(directory, run_id, kind):
             state = load('readiness_state', 'production-release-state.py')
             functions = state.inventory()
             if limited_oct27:
+                report['runtimeBindings'] = [{'name':f['name'].split('/')[-1],
+                    'timeoutSeconds':f.get('serviceConfig',{}).get('timeoutSeconds'),
+                    'secretVersionSelectors':{v.get('key'):v.get('version') for v in f.get('serviceConfig',{}).get('secretEnvironmentVariables',[])}}
+                    for f in functions if f['name'].split('/')[-1] in selected]
                 initial = load('oct27_initial_runtime','preflight-production-release.py')
                 for f in functions:
                     name = f['name'].split('/')[-1]
