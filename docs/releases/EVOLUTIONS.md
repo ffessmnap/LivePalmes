@@ -2,6 +2,11 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 27 octobre — Archives GitHub et diagnostics des bilans licences
+
+- Demande explicite d’Antoine : nettoyer les workflows remplacés, renforcer les tests des opérations ponctuelles et clarifier les échecs. Trois archives déjà bloquées par `if:false`, sans exécution en cours, désactivées via GitHub : ancienne mise en ligne, reconstruction TOP, publication performances TEST. Fichiers et artefacts conservés ; reprise historique référencée par rollback et workflows courants conservés.
+- Le migrateur vérifie le runtime Firebase et les trois phases simulées avant les credentials. Tests hors réseau : export officiel ciblé, préparation sans application, sauvegardes chiffrées, chemin privé exact, application vérifiée, confirmations, endpoint/HTTP refusés, source altérée et absence de fuite des diagnostics. Nouveau test également inclus dans la CI globale.
+- Messages et résumé distinguent lecture/préparation sans écriture et application interrompue avec écritures possibles. Codes bornés sans message brut ni stack/données/secrets. Contrôles et notifications importantes conservés ; aucune relance de migration, déploiement, suppression de ressource ou écriture métier par ce chantier. Contrôles ciblés réussis ; CI obligatoire avant intégration. Détails : docs/agents/WORKFLOWS_HISTORIQUES.md.
 ### 27 octobre — Circuit de livraison simplifié
 
 - Demande explicite : mettre en œuvre les améliorations de délai sans perdre les contrôles importants. Deux suites CI indépendantes en parallèle, synthèse « Verification technique » obligatoire et cinq tests communs exécutés une seule fois ; aucune réduction de couverture. Artefacts réutilisables seulement après réussite du run complet.
