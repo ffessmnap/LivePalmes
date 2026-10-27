@@ -22,6 +22,7 @@ function fixture(){
 }
 const report={version:1,competitionId:"1",competitionName:"Coupe fictive",season:"2026-2027",status:"issues",completedAt:"2026-10-27T10:00:00Z",completedBy:"national",fingerprint:"f".repeat(64),revision:"a".repeat(64),counts:{total:1,valid:0,expired:0,notFound:0,unconfirmed:1},people:[{id:"10",firstName:"Camille",lastName:"EXEMPLE",clubName:"Club fictif",licenseNumber:"EXEMPLE",status:"erreur",validity:""}],mail:null};
 (async()=>{
+ const deleted=fixture(),executeDeleted=deleted.execute.bind(deleted);deleted.execute=async(o,a)=>o.sql.startsWith("INSERT INTO livepalmes_license_control_history")?[{affectedRows:0}]:executeDeleted(o,a);await assert.rejects(native.store(deleted).save(report),/n’existe plus/);assert.equal(deleted.latest,null);
  const pool=fixture(),store=native.store(pool);assert.equal(await store.read(report.season,"1"),null);
  assert.equal((await store.save(report)).version,1);assert.deepEqual(await store.read(report.season,"1"),report);
  await assert.rejects(store.save({...report,revision:"b".repeat(64)},"stale"),/modifié/);assert.equal(pool.rows.length,1);
