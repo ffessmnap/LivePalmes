@@ -3,9 +3,33 @@ import copy
 import json
 from pathlib import Path
 import urllib.request
+from datetime import datetime, timedelta, timezone
 
 def scheduler_view(value):
     return {k:v for k,v in value.items() if k not in ['lastAttemptTime','scheduleTime','status']}
+
+def hourly_view(before, value, c, guard, now=None):
+    expected = copy.deepcopy(before); expected['schedule'] = '0 * * * *'
+    # The API changed this output-only timestamp during the approved PATCH.
+    # Keep it pinned in the after-witness; never ignore it for later drift.
+    if 'userUpdateTime' in before or 'userUpdateTime' in value:
+        guard.policy.require('userUpdateTime' in before and 'userUpdateTime' in value, 'Horodatage Scheduler absent ou ajoute')
+        old = guard.instant(before['userUpdateTime']); new = guard.instant(value['userUpdateTime'])
+        guard.policy.require(old <= new <= (now or datetime.now(timezone.utc))+timedelta(seconds=60), 'Horodatage Scheduler invalide')
+        if new != old:
+            guard.policy.require(new >= guard.instant(c['preparedAfter']), 'Horodatage Scheduler anterieur au plan')
+        expected['userUpdateTime'] = value['userUpdateTime']
+    guard.policy.require(value == expected, 'Autre champ Scheduler modifie')
+    return expected
+
+def verified_resume(directory, c):
+    path = directory/'previous/production-after.json'
+    if not path.exists(): return False
+    result = json.loads(path.read_text()); rows = result.get('functions',[])
+    names = [f.get('name','').split('/')[-1] for f in rows]
+    return (result.get('candidate') == c['candidate'] and result.get('errors') == []
+        and len(names) == len(set(names)) == c['inventoryCount']
+        and set(names) == set(c['selected']+c['retained']) and all(f.get('state') == 'ACTIVE' for f in rows))
 
 def mail(document, mode, c, guard, previous=None):
     fields = document.get('fields',{})
@@ -46,17 +70,21 @@ def check(mode, directory, scope, token, guard):
         require(mode in ['initial','paused'] and guard.scheduler_digest(scheduler) == c['schedulerSha256'], 'Scheduler initial27octobre modifie')
         before = view; before_path.write_text(json.dumps(before))
     require(guard.digest(before) == c['schedulerSha256'], 'Temoin scheduler initial altere')
-    expected = copy.deepcopy(before)
-    if (directory/'bcc-scheduler-after-witness.json').exists() or mode in ['after','resumed']:
-        expected['schedule'] = '0 * * * *'
-    require(view == expected, 'Scheduler27octobre hors etape ou autre champ modifie')
-    if mode in ['after','resumed']:
-        (directory/'bcc-scheduler-after-witness.json').write_text(json.dumps({'sha256':guard.digest(view)}))
+    after_path = directory/'bcc-scheduler-after-witness.json'
+    hourly = after_path.exists() or mode in ['after','resumed'] or mode == 'paused' and verified_resume(directory,c)
+    if hourly:
+        hourly_view(before,view,c,guard)
+        if after_path.exists():
+            require(json.loads(after_path.read_text()) == {'sha256':guard.digest(view)}, 'Scheduler modifie apres son temoin horaire')
+    else:
+        require(view == before, 'Scheduler27octobre hors etape ou autre champ modifie')
     witness['schedulerSha256'] = guard.digest(view)
     require(guard.check_queue(guard.get(guard.QUEUE_URL,token)) == c['queueSha256'], 'File27octobre modifiee')
     iam = guard.get('https://run.googleapis.com/v2/projects/livepalmes/locations/europe-west1/services/processnapnotificationtask:getIamPolicy',token)
     require(guard.digest(iam) == c['workerIamSha256'] and not any(m in {'allUsers','allAuthenticatedUsers'}
         for b in iam.get('bindings',[]) for m in b.get('members',[])), 'IAM worker27octobre modifie')
+    if hourly and not after_path.exists():
+        after_path.write_text(json.dumps({'sha256':guard.digest(view)}))
     (directory/'bcc-worker-iam-witness.json').write_text(json.dumps({'sha256':c['workerIamSha256']}))
     if mode == 'paused' and previous is None: path.write_text(json.dumps(witness))
     (directory/('bcc-'+mode+'-witness.json')).write_text(json.dumps(witness))
@@ -71,11 +99,12 @@ def finish_scheduler(directory, backup, scope, token, guard):
     guard.main('paused',directory)
     desired = scheduler_view(saved); desired['schedule'] = '0 * * * *'
     actual = guard.get(guard.SCHEDULER_URL,token)
-    if scheduler_view(actual) != desired:
+    if actual.get('schedule') != '0 * * * *':
         require(guard.digest(scheduler_view(actual)) == c['schedulerSha256'], 'Derive scheduler avant modification')
         req = urllib.request.Request(guard.SCHEDULER_URL+'?updateMask=schedule', method='PATCH',
             data=json.dumps({'name':saved['name'],'schedule':'0 * * * *'}).encode(),
             headers={'Authorization':'Bearer '+token,'Content-Type':'application/json'})
         with urllib.request.urlopen(req,timeout=30) as response: json.load(response)
-    require(scheduler_view(guard.get(guard.SCHEDULER_URL,token)) == desired, 'Scheduler horaire non conforme')
-    (directory/'bcc-scheduler-after-witness.json').write_text(json.dumps({'sha256':guard.digest(desired)}))
+    actual_view = scheduler_view(guard.get(guard.SCHEDULER_URL,token))
+    hourly_view(scheduler_view(saved),actual_view,c,guard)
+    (directory/'bcc-scheduler-after-witness.json').write_text(json.dumps({'sha256':guard.digest(actual_view)}))
