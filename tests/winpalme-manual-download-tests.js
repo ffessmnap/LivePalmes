@@ -16,7 +16,7 @@ const clientCode = ["canDownloadEngagementOpenWaterTxt", "renderEngagementDocume
 class HttpsError extends Error { constructor(code, message) { super(message); this.code = code; } }
 const course = { id_course: 120, course: "1500", sexe: "M", relais: 0, wplabel: "LD1500", longueur: 1500,
   style: "SF", type_: 1, nbnageur: 1, mixte: 0, ld: 1, actif: 1, validation: 1 };
-const competition = { id: "legacy-nap-5136", napSource: true, name: "Compétition fictive", date: "2026-11-01", regionId: "2",
+const competition = { id: "legacy-nap-4982", napSource: true, name: "Compétition fictive", date: "2026-11-01", regionId: "2",
   competitionType: "openWater", events: [{ code: "OW1500SF", type: "individual", nativeCourses: [course] }] };
 const entries = [{ clubId: "1", clubCode: "TEST", swimmers: [{ firstName: "Test", lastName: "Nageur", birthDate: "2000-01-01",
   sex: "M", swimmerIndexId: "1", individualEntries: [{ eventCode: "OW1500SF" }] }], officials: [], relays: [] }];
@@ -54,17 +54,18 @@ function frontend(event = competition, isTest = false, result) {
 }
 async function main() {
   const before = JSON.stringify([competition, entries]);
-  let reference;
+  const references = new Map();
   for (const project of ["livepalmes", "livepalmes-test"]) {
-    for (const id of ["5136", "legacy-nap-5136"]) {
+    for (const id of ["5136", "legacy-nap-5136", "4982", "legacy-nap-4982", "4903", "15136"]) {
       const event = { ...competition, id }, serverFixture = backend(project, event), result = await serverFixture.invoke();
       assert.equal(serverFixture.queries.length, 2); assert.equal(result.sqlBudget.queriesMax, 26);
       assert.equal(result.fromStorage, false);
       const text = Buffer.from(result.txtBase64, "base64").toString("utf8");
-      assert.match(text, /WID;CSNA202611015136;/); assert.match(text, /DIS;LD1500;/);
+      assert.ok(text.includes(`WID;CSNA20261101${id.replace(/^legacy-nap-/, "")};`)); assert.match(text, /DIS;LD1500;/);
       // The only variable field is the generator timestamp.
       const stableText = text.split("\r\n").slice(1).join("\r\n");
-      reference ??= stableText; assert.equal(stableText, reference, "Same generator and bytes on TEST and PROD");
+      if (references.has(id)) assert.equal(stableText, references.get(id), "Same generator and bytes on TEST and PROD");
+      else references.set(id, stableText);
       const ui = frontend(event, project.endsWith("-test"), result);
       assert.equal(ui.context.elements.engagementsGenerateTxtExportButton.disabled, false);
       await ui.context.generateEngagementAdminTxtExport();
@@ -73,17 +74,18 @@ async function main() {
       assert.match(ui.context.elements.engagementsDocumentsSummary.textContent, /téléchargé pour 1 club/);
     }
   }
-  for (const id of ["4982", "4903", "15136", "5136x"]) {
-    const event = { ...competition, id }, blocked = backend("livepalmes", event);
-    await assert.rejects(blocked.invoke(), e => e.code === "failed-precondition");
-    assert.equal(blocked.queries.length, 0);
-    const ui = frontend(event); assert.equal(ui.context.elements.engagementsGenerateTxtExportButton.disabled, true);
-    await ui.context.generateEngagementAdminTxtExport(); assert.equal(ui.calls.length, 0);
-    assert.equal(frontend(event, true).context.elements.engagementsGenerateTxtExportButton.disabled, false, "TEST experiments retained");
-    if (/^\d+$/.test(id)) assert.ok((await backend("livepalmes-test", event).invoke()).txtBase64, "Other native competitions still work on TEST");
+  for (const project of ["livepalmes", "livepalmes-test"]) {
+    const malformed = backend(project, { ...competition, id: "5136x" });
+    await assert.rejects(malformed.invoke(), e => e.code === "failed-precondition");
+    assert.equal(malformed.queries.length, 0, "Invalid native ID rejected before SQL");
+    const unsupported = backend(project, { ...competition, competitionType: "unknown" });
+    await assert.rejects(unsupported.invoke(), e => e.code === "failed-precondition");
+    assert.equal(unsupported.queries.length, 0);
   }
   const legacy = frontend({ ...competition, napSource: false });
   await legacy.context.generateEngagementAdminTxtExport(); assert.equal(legacy.calls.length, 0);
+  assert.equal(legacy.context.elements.engagementsGenerateTxtExportButton.disabled, true);
+  assert.match(legacy.context.elements.engagementsDocumentsSummary.textContent, /issue de NAP/);
   const legacyServer = backend("livepalmes"); legacyServer.context.ENVIRONMENT.sportingDataSource = "firestore";
   legacyServer.context.db = { collection: () => ({ doc: () => ({ get: async () => ({ exists: true, data: () => competition }) }) }) };
   legacyServer.context.cleanEngagementCompetitionType = x => x;
@@ -92,6 +94,9 @@ async function main() {
   await club.context.generateEngagementAdminTxtExport(); assert.equal(club.calls.length, 0);
   const denied = backend("livepalmes", competition, true);
   await assert.rejects(denied.invoke(), e => e.code === "permission-denied"); assert.equal(denied.queries.length, 0);
+  const anonymous = backend("livepalmes");
+  anonymous.context.engagementAccessContext = async () => { throw new HttpsError("unauthenticated", "Session requise."); };
+  await assert.rejects(anonymous.invoke(), e => e.code === "unauthenticated"); assert.equal(anonymous.queries.length, 0);
   const pool = backend("livepalmes", { ...competition, id: "999", competitionType: "pool" });
   assert.equal(Buffer.from((await pool.invoke()).txtBase64, "base64").toString(), "pool fixture"); assert.equal(pool.queries.length, 0);
   const invalid = backend("livepalmes", { ...competition, events: [] });
@@ -102,7 +107,7 @@ async function main() {
     assert.match(ui.context.elements.engagementsDocumentsSummary.textContent, /Téléchargement TXT impossible/);
   }
   assert.equal(JSON.stringify([competition, entries]), before, "No mutation of sporting data");
-  console.log("Manual WinPalme: Andernos TEST/PROD, exact IDs, unchanged bytes, permissions, pool, unknown courses and visible errors; no network or writes.");
+  console.log("Manual WinPalme: all native water competitions TEST/PROD, unchanged bytes, invalid IDs/types, authentication, permissions, pool, unknown courses and visible errors; no network or writes.");
   if (process.argv.includes("--browser")) await browserTest();
 }
 async function browserTest() {
