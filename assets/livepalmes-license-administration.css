@@ -1,6 +1,6 @@
 .admin-license-admin {
   display: grid;
-  gap: 16px;
+  gap: 5px;
   color: #172033;
 }
 
@@ -642,7 +642,7 @@
 .admin-license-admin .admin-license-admin-table input[type="text"] { width: 112px; padding: 5px 6px; }
 .admin-license-admin .admin-license-admin-table tbody tr:hover { background: var(--license-soft); }
 .admin-license-admin .admin-license-admin-source { max-width: 145px; font-size: .69rem; }
-.admin-license-admin .admin-license-admin-row-actions { flex-direction: column; align-items: stretch; gap: 4px; }
+.admin-license-admin .admin-license-admin-row-actions { flex-direction: row; align-items: center; flex-wrap: nowrap; gap: 4px; }
 .admin-license-admin .admin-license-admin-validation-bar { padding: 9px 10px; gap: 8px; border-color: var(--license-border); background: color-mix(in srgb, var(--license-accent) 7%, var(--license-surface)); }
 .admin-license-admin .admin-license-admin-validation-bar strong { font-weight: 500; font-size: .8rem; }
 .admin-license-admin .admin-license-admin-report-actions { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
@@ -713,4 +713,51 @@
   .admin-license-admin .admin-license-admin-layout { grid-template-columns: minmax(0, 1fr); }
   .admin-license-admin .admin-license-admin-sources { position: static; max-height: none; overflow: visible; }
   .admin-license-admin .admin-license-admin-competitions { max-height: 320px; overflow: auto; }
+}
+
+/* Dense desktop review: reserve height for people, keep corrections in their form. */
+.admin-portal-page .admin-license-admin { padding: 8px; gap: 5px; }
+#adminEngagementsView:has([data-engagements-national-panel="licenses"]:not([hidden])) > .admin-portal-workspace-head { display: none; }
+.admin-license-admin .admin-license-admin-head { padding: 5px 10px; gap: 10px; background: var(--license-surface); border: 0; }
+.admin-license-admin #adminLicenseControlTitle { margin: 0; font-size: 1rem; line-height: 1.3; }
+.admin-license-admin .admin-license-admin-season { display: flex; flex-direction: row; flex-wrap: wrap; width: auto; gap: 6px; }
+.admin-license-admin .admin-license-admin-season > span,
+.admin-license-admin .admin-license-admin-season > small { width: auto; white-space: nowrap; }
+.admin-license-admin .admin-license-admin-season select { padding: 4px 26px 4px 8px; min-width: 125px; width: 125px; min-height: 28px; height: 28px; }
+.admin-license-admin .admin-license-admin-status { margin: 0; padding: 3px 10px; line-height: 1.25; }
+.admin-license-admin .admin-license-admin-step { padding: 8px; gap: 6px; }
+.admin-license-admin #adminLicenseControlWorkspace { gap: 5px; }
+.admin-license-admin .admin-license-admin-sources-head { gap: 5px; }
+.admin-license-admin .admin-license-admin-methods { padding-bottom: 5px; gap: 5px; }
+.admin-license-admin .admin-license-admin-methods > label:first-child { flex: 0 1 190px; }
+.admin-license-admin .admin-license-admin-competition small { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.admin-portal-page .admin-license-admin .admin-license-admin-competition-filters button { white-space: nowrap; min-height: 26px; padding: 3px; font-size: .68rem; }
+.admin-license-admin .admin-license-admin-table { table-layout: fixed; width: 100%; min-width: 800px; }
+.admin-license-admin .admin-license-admin-table th:first-child { width: 26px; }
+.admin-license-admin .admin-license-admin-table th:nth-child(2) { width: 18%; }
+.admin-license-admin .admin-license-admin-table th:nth-child(3) { width: 17%; }
+.admin-license-admin .admin-license-admin-table th:nth-child(4) { width: 110px; }
+.admin-license-admin .admin-license-admin-table th:nth-child(6) { width: 120px; }
+.admin-license-admin .admin-license-admin-table th:last-child { width: 98px; }
+.admin-license-admin .admin-license-admin-table td { padding: 2px 6px; height: 32px; vertical-align: middle; }
+.admin-license-admin .admin-license-admin-table .admin-license-admin-person,
+.admin-license-admin .admin-license-admin-table .admin-license-admin-club,
+.admin-license-admin .admin-license-admin-table .admin-license-admin-source { display: table-cell; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.admin-license-admin .admin-license-admin-number { white-space: nowrap; }
+.admin-license-admin .admin-license-admin-row-details summary { cursor: pointer; white-space: nowrap; }
+.admin-license-admin .admin-license-admin-row-details > div { min-width: 110px; white-space: normal; font-size: .73rem; padding: 5px 0; }
+.admin-license-admin .admin-license-admin-edit { display: inline-grid; place-items: center; width: 28px; flex: 0 0 28px; }
+.admin-license-admin .admin-license-admin-edit svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.admin-license-admin .admin-license-admin-workspace-actions { padding-top: 5px; gap: 5px; }
+.admin-license-admin .admin-license-admin-validation-bar { padding: 4px 6px; }
+.admin-license-admin #adminLicenseControlRowCount { font-size: .7rem; line-height: 1.2; }
+@media (min-width: 901px) {
+  .admin-portal-page .admin-license-admin .admin-license-admin-workspace-actions button { min-height: 32px; height: 32px; padding-top: 4px; padding-bottom: 4px; }
+  .admin-license-admin .admin-license-admin-step-title > div { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+  .admin-license-admin .admin-license-admin-validation-bar small { display: none; }
+  .admin-license-admin .admin-license-admin-methods { flex-wrap: nowrap; }
+  .admin-license-admin .admin-license-admin-validation-bar > div { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+}
+@media (max-width: 900px) {
+  .admin-license-admin .admin-license-admin-head { flex-wrap: wrap; }
 }
