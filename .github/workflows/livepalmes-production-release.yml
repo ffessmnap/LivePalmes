@@ -117,6 +117,8 @@ jobs:
         node tooling/tests/production-backup-crypto-tests.js
         python tooling/tests/publication-fast-paths-tests.py
         python tooling/tests/release-simplification-tests.py
+        python tooling/tests/license-report-release-tests.py
+        node tooling/tests/license-report-source-guard-tests.js
     - uses: google-github-actions/auth@v3
       if: inputs.resume_run == '0'
       with:
@@ -135,7 +137,11 @@ jobs:
     - name: Verifier que PROD correspond encore au bilan
       if: inputs.resume_run == '0'
       run: python tooling/tools/release-cycle.py compare-prod "$PLAN"
+    - name: Installer le lecteur borne des bilans licences
+      if: steps.plan.outputs.license_reports == 'true'
+      run: npm ci --prefix tooling/functions --ignore-scripts --prefer-offline --no-audit --no-fund
     - name: Verifier les mails desactives avant la bascule NAP
+      # The closed licence scope keeps mail active and reads the official source only.
       run: python tooling/tools/check-production-mail-disabled.py
     - name: Sauvegarder le code PROD avant publication
       id: backup
@@ -265,6 +271,7 @@ jobs:
         path: |
           ${{ runner.temp }}/release-plan/public-reader-idf-*.json
           ${{ runner.temp }}/release-plan/notification-scheduler-before.json
+          ${{ runner.temp }}/release-plan/license-report-*.json
         if-no-files-found: error
         retention-days: 14
     - uses: google-github-actions/auth@v3

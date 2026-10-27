@@ -184,6 +184,8 @@ jobs:
           python tests/production-access-request-release-tests.py
           python tests/publication-fast-paths-tests.py
           python tests/release-simplification-tests.py
+          python tests/license-report-release-tests.py
+          node tests/license-report-source-guard-tests.js
 
       - name: Enregistrer la verification du circuit main exact
         if: github.event_name == 'push' && steps.test-scope.outputs.documentation != 'true'

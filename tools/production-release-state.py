@@ -75,13 +75,13 @@ def check_after(backup, destination, require_success):
                     raise ValueError('Commit CCI different')
             except ValueError as error:
                 errors.append(str(error) + ': ' + name.split('/')[-1])
-        elif f.get("serviceConfig", {}).get("environmentVariables", {}).get("LIVEPALMES_ENFORCE_APP_CHECK", "false") != (before[name].get('serviceConfig', {}).get('environmentVariables', {}).get('LIVEPALMES_ENFORCE_APP_CHECK', 'false') if name.split('/')[-1] in (report.get('additionalPdfFunctions', []) + report.get('additionalDtnFunctions', []) + report.get('additionalClubDirectoryFunctions', []) + report.get('additionalGroupedFunctions', [])) else report["appCheck"]):
+        elif f.get("serviceConfig", {}).get("environmentVariables", {}).get("LIVEPALMES_ENFORCE_APP_CHECK", "false") != (before[name].get('serviceConfig', {}).get('environmentVariables', {}).get('LIVEPALMES_ENFORCE_APP_CHECK', 'false') if name.split('/')[-1] in (report.get('additionalPdfFunctions', []) + report.get('additionalDtnFunctions', []) + report.get('additionalClubDirectoryFunctions', []) + report.get('additionalGroupedFunctions', []) + report.get('additionalLicenseReportFunctions', [])) else report["appCheck"]):
             errors.append("App Check different: " + name.split("/")[-1])
         elif report.get("commitLabel") and f.get("labels", {}).get("livepalmes-commit") != report["candidate"]:
             errors.append("Commit Function different: " + name.split("/")[-1])
         elif not report.get("commitLabel") and name in before and f.get("updateTime") == before[name].get("updateTime"):
             errors.append("Function non actualisee: " + name.split("/")[-1])
-        if f and name.split('/')[-1] in (report.get('additionalPdfFunctions', []) + report.get('additionalDtnFunctions', []) + report.get('additionalClubDirectoryFunctions', [])):
+        if f and name.split('/')[-1] in (report.get('additionalPdfFunctions', []) + report.get('additionalDtnFunctions', []) + report.get('additionalClubDirectoryFunctions', []) + report.get('additionalLicenseReportFunctions', [])):
             old = rollback_patch(before[name], {})
             new = rollback_patch(f, {})
             if name.split('/')[-1] == 'resolveEngagementSwimmerChangeRequest' and report.get('nativeIdentityNapSecret'):
@@ -95,6 +95,15 @@ def check_after(backup, destination, require_success):
                 new['serviceConfig'].pop('secretEnvironmentVariables', None)
             if any(old.get(k) != new.get(k) for k in ['serviceConfig', 'eventTrigger', 'buildConfig']):
                 errors.append('Configuration PDF modifiee: ' + name.split('/')[-1])
+            if name.split('/')[-1] in report.get('additionalLicenseReportFunctions', []):
+                spec = importlib.util.spec_from_file_location('license_state_policy', Path(__file__).with_name('license-report-release-policy.py'))
+                policy = importlib.util.module_from_spec(spec); spec.loader.exec_module(policy)
+                try:
+                    if report['additionalLicenseReportFunctions'] != [policy.NAME] or report['candidate'] != policy.contract()['candidate']:
+                        raise ValueError('Rapport licences hors contrat')
+                    policy.assert_config(before[name], f, SimpleNamespace(rollback_patch=rollback_patch))
+                except ValueError as error:
+                    errors.append(str(error))
         if f and name.split('/')[-1] in report.get('additionalGroupedFunctions', []):
             spec = importlib.util.spec_from_file_location('grouped_policy', Path(__file__).with_name('grouped-publication-policy.py'))
             policy = importlib.util.module_from_spec(spec); spec.loader.exec_module(policy)

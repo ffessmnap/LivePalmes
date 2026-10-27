@@ -57,6 +57,10 @@ def read(url, body=None):
 def main(directory, run_id, kind):
     cycle.require(os.environ.get('GITHUB_REF') == 'refs/heads/main' and os.environ.get('GITHUB_RUN_ATTEMPT') == '1',
                   'Lecture main/tentative1 requise')
+    if kind == 'prepare':
+        cycle.artifact(run_id, 'release-plan', Path(directory), '.github/workflows/livepalmes-production-preflight.yml')
+        cycle.output(license_reports=str(bool(cycle.approved_license_report_functions(cycle.read(Path(directory)/'request.json')))).lower())
+        return
     credentials = cycle.read(os.environ['GOOGLE_APPLICATION_CREDENTIALS'])
     cycle.require(credentials.get('project_id') == PROJECT, 'Compte PROD existant requis')
     directory = Path(directory); directory.mkdir(parents=True, exist_ok=True)
@@ -94,6 +98,12 @@ def main(directory, run_id, kind):
         if kind == 'backend' and selected:
             state = load('readiness_state', 'production-release-state.py')
             functions = state.inventory()
+            if cycle.approved_license_report_functions(request):
+                for function in functions:
+                    if function['name'].split('/')[-1] == cycle.license_release.NAME:
+                        cycle.license_release.runtime(function)
+                load('license_readiness_guard','check-license-report-release.py').main(directory)
+                report['licenseReports'] = {'sourceOnly':True,'mailPause':False,'smtpInvocation':False,'sourceUnchangedSinceNapMigration':True}
             if limited_oct27:
                 report['runtimeBindings'] = [{'name':f['name'].split('/')[-1],
                     'timeoutSeconds':f.get('serviceConfig',{}).get('timeoutSeconds'),
