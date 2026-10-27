@@ -245,6 +245,7 @@ function runUnitTests() {
     "nap-license-control-tests.js",
     "engagement-license-reports-tests.js",
     "nap-license-reports-tests.js",
+    "nap-license-report-runner-tests.js",
     "livepalmes-license-administration-tests.js",
     "nap-license-partial-validation-tests.js",
     "nap-swimmer-change-requests-tests.js",
