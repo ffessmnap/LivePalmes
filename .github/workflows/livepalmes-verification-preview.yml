@@ -99,6 +99,7 @@ jobs:
           python tests/production-account-history-indexes-tests.py
           python tests/validated-20261026-publication-tests.py
           python tests/validated-20261027-publication-tests.py
+          python tests/scheduler-iam-preparation-tests.py
           node tests/nap-national-documents-callable-tests.js
           python tests/production-release-source-tests.py
           node tests/production-backup-crypto-tests.js
