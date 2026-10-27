@@ -234,16 +234,16 @@ class ReleaseTests(unittest.TestCase):
 
     def test_unchanged_backend_can_keep_older_commit(self):
         fn={'state':'ACTIVE','commit':'b'*40}
-        with patch.object(m,'backend_fingerprints',return_value={'one':'same'}):
+        with patch.object(m,'production_selection_fingerprints',return_value={'one':'same'}):
             self.assertFalse(m.needs_function(fn,'one','a'*40))
-        with patch.object(m,'backend_fingerprints',side_effect=[{'one':'old'},{'one':'new'}]):
+        with patch.object(m,'production_selection_fingerprints',side_effect=[{'one':'old'},{'one':'new'}]):
             self.assertTrue(m.needs_function(fn,'one','a'*40))
         self.assertTrue(m.needs_function({'state':'FAILED'},'one','a'*40))
         self.assertTrue(m.needs_function({'state':'ACTIVE','commit':None},'one','a'*40))
 
-    def test_test_comparison_is_explicit_and_does_not_change_production(self):
+    def test_selection_comparison_is_separate_for_test_and_production(self):
         fn = {'state': 'ACTIVE', 'commit': 'b'*40}
-        with patch.object(m, 'backend_fingerprints', side_effect=[{'one':'old'}, {'one':'new'}]) as prod, patch.object(m, 'test_backend_fingerprints', return_value={'one':'same'}) as test:
+        with patch.object(m, 'production_selection_fingerprints', side_effect=[{'one':'old'}, {'one':'new'}]) as prod, patch.object(m, 'test_backend_fingerprints', return_value={'one':'same'}) as test:
             self.assertTrue(m.needs_function(fn, 'one', 'a'*40))
             self.assertFalse(m.needs_function(fn, 'one', 'a'*40, project='livepalmes-test'))
             self.assertEqual(prod.call_count, 2)
@@ -252,6 +252,33 @@ class ReleaseTests(unittest.TestCase):
             self.assertTrue(m.needs_function(fn, 'one', 'a'*40, project='livepalmes-test'))
         with self.assertRaises(ValueError):
             m.needs_function(fn, 'one', 'a'*40, project='other')
+
+    def test_production_selection_never_guesses_unknown_or_missing_sources(self):
+        fn = {'state': 'ACTIVE', 'commit': 'b'*40}
+        with patch.object(m, 'production_selection_fingerprints', side_effect=ValueError('Unknown origin')):
+            self.assertTrue(m.needs_function(fn, 'one', 'a'*40))
+        with patch.object(m, 'production_selection_fingerprints', side_effect=[{'one':'same'}, {}]), self.assertRaisesRegex(ValueError, 'Export candidat absent'):
+            m.needs_function(fn, 'one', 'a'*40)
+        with patch.object(m, 'production_selection_fingerprints', side_effect=[{'one':'same'}, ValueError('Bad candidate')]), self.assertRaisesRegex(ValueError, 'Bad candidate'):
+            m.needs_function(fn, 'one', 'a'*40)
+
+    def test_legacy_authorization_fingerprints_are_not_selection_hashes(self):
+        m.backend_fingerprints.cache_clear()
+        with patch.object(m, 'run', return_value='{"functions":{"one":"legacy"}}') as command, patch.object(m, 'production_selection_fingerprints') as selection:
+            self.assertEqual(m.backend_fingerprints('a'*40), {'one':'legacy'})
+            self.assertIn('release-function-fingerprints.js', command.call_args.args[0][1])
+            selection.assert_not_called()
+        m.backend_fingerprints.cache_clear()
+
+    def test_preflight_validates_test_revision_with_test_comparator(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d); request = self.request()
+            m.write(root/'request.json', request); m.write(root/'paths.json', ['functions/index.js'])
+            m.write(root/'test-proof.json', {'state': {'functions': [{'name':'functions/one'}]}})
+            with patch.object(m, 'validate_request', return_value=True), patch.object(m, 'safe_functions', return_value=['one']), patch.object(m, 'needs_function', return_value=False) as compare:
+                m.prepare_selection(root, '.')
+                compare.assert_called_once_with({'name':'functions/one'}, 'one', request['candidate'], project='livepalmes-test')
+                self.assertEqual(m.read(root/'selection.json'), ['one'])
 
     def test_readonly_plan_never_calls_google(self):
         with tempfile.TemporaryDirectory() as d:
