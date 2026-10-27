@@ -87,6 +87,7 @@ function runUnitTests() {
     "nap-notification-preview-tests.js",
     "nap-notification-automation-tests.js",
     "nap-notification-pages-tests.js",
+    "nap-notification-txt-tests.js",
     "nap-notification-pilot-tests.js",
     "nap-notification-callables-tests.js",
     "engagement-mail-control-tests.js",

@@ -2,6 +2,14 @@
 
 <!-- description: Regroupement CCI, temporisation documentaire et tâches persistantes des notifications NAP ; budgets de lecture et limites de recette TEST. -->
 
+## TXT eau libre à la clôture — préparation du 27 octobre 2026
+
+Antoine demande le rattrapage de la clôture d'Andernos et l'envoi du TXT informatique pour cette compétition et les prochaines clôtures. Le correctif inclut le TXT eau libre au contact informatique déclaré, avec les mêmes contrôles du réglage national, de l'audience et des doublons que pour la piscine. Il réutilise le sérialiseur du téléchargement manuel validé ; une référence native absente, périmée ou non reconnue bloque la préparation du TXT. Aucun format sportif supplémentaire n'est déduit.
+
+Le supplément de coût est nul à l'ouverture, à l'actualisation et pour les PDF clubs. La phase d'export ajoute exactement deux SELECT groupés par TXT eau libre : une compétition par clé primaire (limite 2, exactement une ligne requise), puis les références du programme par leurs clés primaires (300 identifiants maximum, limite 301). Ce budget reste identique avec 1 ou 5 000 nageurs et s'ajoute au lecteur borné des dossiers existant. Aucun document Firestore supplémentaire par nageur, nouvelle collection ou reconstruction globale. Les nouvelles notifications utilisent ce comportement après publication spécifique des consommateurs mail ; aucun événement ancien n'est réinitialisé. Le rattrapage réel d'Andernos est une opération distincte explicitement autorisée.
+
+Tests hors réseau : sortie identique au téléchargement manuel, inscrits sans épreuve, catégories et WID existants, absence de mutation, budget fixe à 200 nageurs, catalogue incomplet et référence absente refusés, contact informatique absent, contrôles CCI et arrêt SMTP TEST. Publication TEST et mise en production à consigner après réussite ; cette préparation n'active pas le correctif en PROD.
+
 ## Périmètre approuvé le 25 octobre 2026
 
 Les nouvelles ouvertures et notifications documentaires utilisent des lots de 50 adresses en CCI. Les récapitulatifs de clôture regroupent les administrateurs éligibles d'un même club avec son seul PDF (division de sécurité au-delà de 50 adresses). Le pied de mail commun renvoie vers `/portail.html#mon-compte`. Les préférences restent individuelles.

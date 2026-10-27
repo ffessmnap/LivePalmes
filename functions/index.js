@@ -10888,7 +10888,10 @@ function nativeNotificationAutomationServices(simulation = true) {
       return entryPromises.get(competition.id);
     },
     hasParticipants:engagementClubEntryHasParticipants,clubPdf:buildEngagementClubRecapPdf,
-    txt:(competition,entries,clubs)=>buildEngagementCompetitionTxt(competition,entries.map(entry=>({...entry,swimmers:entry.swimmers.map(person=>({...person,individualEntries:person.individualEntries.map(course=>course.nativeTime==='599999'?{...course,entryTime:'',manualEntryTime:'',entryTimeValue:0,entryTimeMode:'default595999'}:course)}))})),clubs),
+    txt:(competition,entries,clubs)=>require('./nap-notification-txt').build(competition,entries,clubs,{
+      pool,poolTxt:buildEngagementCompetitionTxt,category:engagementTxtSwimmerCategory,
+      fileName:event=>`engagements-winpalme-${engagementPdfFileName(event.name || event.id)}.txt`
+    }),
     officialsPdf:(competition,entries)=>buildEngagementOfficialsPdf(competition,engagementOfficialsPdfRows(entries)),
     mail:(kind,competition,recipient,details)=>{
       const email=normalizeEmail(recipient.email);
