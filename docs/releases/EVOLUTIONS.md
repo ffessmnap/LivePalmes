@@ -2,6 +2,13 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 27 octobre — Publication du plan40493465281 et reprise du témoin Scheduler
+
+- Accord final Infra : « lance la prod », après attribution explicitement autorisée du seul droit Scheduler temporaire, sauvegarde IAM vérifiée et prérequis40496918449 réussis. Droit expirant le27octobre à13:25:13UTC (14:25Paris), sans renouvellement ni autre liaison IAM modifiée. Trois lots fonctionnels validés ; tous les périmètres exclus conservés.
+- Contrôles frais PROD/TEST/IAM et témoins conformes, deux sauvegardes du réglage mail relues, aucun envoi/bail actif. Coupure CAS7→8 puis publication officielle40497804084. Sauvegarde code/configurations/Hosting/scheduler chiffrée, rouverte et comparée, artefact durable avant mise à jour. Les16fonctions sont actives au candidat et les97autres identités sont conservées, `production-after.errors=[]`, inventaire113.
+- Arrêt avant Hosting : le PATCH du seul champ `schedule` a aussi actualisé l’horodatage serveur `userUpdateTime` (constaté de2026-08-10T14:02:34.480343Z à2026-10-27T11:50:19.684696Z). La comparaison du garde était trop stricte. Correction bornée : seule cette métadonnée documentée output-only peut accompagner le passage horaire ; date valide/monotone/postérieure à la préparation, autres champs exacts, puis empreinte complète figée pour détecter toute dérive ultérieure.
+- Reprise du même plan et de la sauvegarde initiale : un scheduler déjà horaire sans témoin final n’est accepté qu’avec le reçu authentifié des113fonctions actives, sans erreur, pour le candidat exact. Les révisions actuelles sont encore vérifiées par le circuit de reprise ; aucune republication des16sources conformes ni second PATCH Scheduler. Tests négatifs sur cible/fuseau/état/champs inconnus/horodatage et reçus manquants ou altérés ; CI requise avant reprise. Mails conservés coupés tant que la publication et ses contrôles finaux ne sont pas réussis ; aucune restauration ou réactivation implicite après échec.
+
 ### 27 octobre — Préparation du droit Scheduler minimal, sans attribution
 
 - Demande Infra : « prépare la correction du droit cloudscheduler.jobs.update avec le minimum de permissions nécessaire, puis refais les contrôles et présente-moi le bilan avant de déployer ». La préparation ne vaut pas attribution IAM ni publication PROD.
