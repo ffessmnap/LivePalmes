@@ -2166,7 +2166,7 @@
       elements.engagementsClubTeamRemoveButton.disabled = Boolean(writeLockReason || engagementClubTeamSaving);
       if (nativeLeaderEdit && teamLeader.externalClub) elements.engagementsClubTeamRemoveButton.disabled = true;
       elements.engagementsClubTeamRemoveButton.title = writeLockReason || "Participer sans chef d’équipe après confirmation de la renonciation au droit de réclamation. Les engagements sont conservés.";
-      if (nativeLeaderEdit && teamLeader.externalClub) elements.engagementsClubTeamRemoveButton.title = "Déclaration pour un autre club à vérifier dans IntraNAP avant retrait.";
+      if (nativeLeaderEdit && teamLeader.externalClub) elements.engagementsClubTeamRemoveButton.title = "Déclaration pour un autre club à faire vérifier par le gestionnaire avant retrait.";
     }
   }
 
@@ -10895,11 +10895,11 @@
     }
     mount.hidden = competition.napSource !== true || !canEdit;
     if (mount.hidden) { mount.textContent = ""; return; }
-    mount.innerHTML = `<p>Courses partagées avec IntraNAP. Si des engagements existent, seul le National peut retirer une course après confirmation. Les engagements sont conservés.</p><ul>${(competition.nativeRules?.courses || []).map(course => `<li>${escapeHtml(course.course || "Course ancienne")} ${escapeHtml(course.sexe === "F" ? "Femmes" : course.sexe === "M" ? "Hommes" : "Mixte")} <button type="button" class="ghost-button" data-native-course-remove="${escapeHtml(String(course.id))}">Retirer cette course</button></li>`).join("")}</ul>`;
+    mount.innerHTML = `<p>Courses de la compétition. Si des engagements existent, seul le National peut retirer une course après confirmation. Les engagements sont conservés.</p><ul>${(competition.nativeRules?.courses || []).map(course => `<li>${escapeHtml(course.course || "Course ancienne")} ${escapeHtml(course.sexe === "F" ? "Femmes" : course.sexe === "M" ? "Hommes" : "Mixte")} <button type="button" class="ghost-button" data-native-course-remove="${escapeHtml(String(course.id))}">Retirer cette course</button></li>`).join("")}</ul>`;
     mount.querySelectorAll("[data-native-course-remove]").forEach(button => button.addEventListener("click", async () => {
       try {
         if (Object.keys(nativeCompetitionPatchFromForm()).length) throw new Error("Enregistrez ou annulez vos autres modifications avant de retirer une course.");
-        if (!global.confirm("Retirer cette course de la liste partagée avec IntraNAP ?\n\nAttention : les engagements déjà saisis seront conservés et devront être vérifiés manuellement. Le programme détaillé sera conservé. Si des engagements existent, ce retrait est réservé au National.")) return;
+        if (!global.confirm("Retirer cette course de la compétition ?\n\nAttention : les engagements déjà saisis seront conservés et devront être vérifiés manuellement. Le programme détaillé sera conservé. Si des engagements existent, ce retrait est réservé au National.")) return;
         mount.querySelectorAll("button").forEach(item => { item.disabled = true; });
         const result = await callFunction("updateEngagementCompetition", { competitionId:competition.id, expectedFingerprint:competition.napFingerprint, patch:{removeNativeCourseId:button.dataset.nativeCourseRemove,confirmCourseRemoval:true} });
         selectedEngagementCompetition = result.competition;
@@ -16370,9 +16370,9 @@
         if (elements.engagementsDetailStatus) elements.engagementsDetailStatus.textContent = "Aucune modification à enregistrer.";
         return false;
       }
-      if (patch.entryStatus === "closed" && !global.confirm("Fermer les engagements dans LivePalmes et IntraNAP ? Les engagements existants et la date limite seront conservés.")) return false;
-      if (["level","regionId","invitedRegionIds"].some(key=>Object.hasOwn(patch,key)) && !global.confirm("Modifier le niveau, la région organisatrice ou les régions invitées dans LivePalmes et IntraNAP ? Les engagements déjà enregistrés seront conservés.")) return false;
-      if (patch.entryStatus === "open" && !global.confirm("Ouvrir les engagements dans LivePalmes et IntraNAP ? Les notifications autorisées par le réglage national partiront uniquement vers livepalmes@nap-ffessm.fr sur TEST.")) return false;
+      if (patch.entryStatus === "closed" && !global.confirm("Fermer les engagements dans LivePalmes ? Les engagements existants et la date limite seront conservés.")) return false;
+      if (["level","regionId","invitedRegionIds"].some(key=>Object.hasOwn(patch,key)) && !global.confirm("Modifier le niveau, la région organisatrice ou les régions invitées dans LivePalmes ? Les engagements déjà enregistrés seront conservés.")) return false;
+      if (patch.entryStatus === "open" && !global.confirm("Ouvrir les engagements dans LivePalmes ? Les notifications autorisées par le réglage national partiront uniquement vers livepalmes@nap-ffessm.fr sur TEST.")) return false;
       const notificationOpeningRequested=patch.entryStatus==='open' && (selectedEngagementCompetition.entryStatus!=='closed'||confirmEngagementReopeningMail({...selectedEngagementCompetition,...patch}));
       if (button) button.disabled = true;
       if (elements.engagementsDetailStatus) { elements.engagementsDetailStatus.textContent = "Enregistrement dans NAP..."; elements.engagementsDetailStatus.dataset.tone = "loading"; }

@@ -16,7 +16,7 @@ function plan(pack,input) {
   const before=fromPack(pack,input.events);
   // Retain the already verified native-level qualifier until its own minimum
   // semantics have been mapped, rather than silently turning it off.
-  if(![0,29].includes(Number(pack.nativeParameters?.qualif||0))) throw new TypeError("L'ancienne grille IntraNAP doit etre verifiee avant cette modification.");
+  if(![0,29].includes(Number(pack.nativeParameters?.qualif||0))) throw new TypeError("L'ancienne grille de qualifications doit etre verifiee avant cette modification.");
   let rules;
   try{rules=engine.validateRules(input.rules,input.events,true);}catch(error){throw new TypeError(error.message);}
   const plannedGroups=rules.groups.map((group,position)=>({
