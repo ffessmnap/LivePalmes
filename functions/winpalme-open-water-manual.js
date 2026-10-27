@@ -107,7 +107,7 @@ function openWaterExportProgram(competition) {
 
 
 // Reuse the existing field serialization; project only water-specific records.
-// The shared pool generator and all automatic export callers stay unchanged.
+// Shared by the manual download and closure notifications; pool output is preserved.
 function buildNativeManualOpenWaterTxt(competition, entries = [], clubsById = new Map(), options = {}) {
   const program = openWaterExportProgram(competition);
   const { buildWinPalmeCompetitionTxt, formatDate, swimmerWinPalmeId } = require("./winpalme-export");

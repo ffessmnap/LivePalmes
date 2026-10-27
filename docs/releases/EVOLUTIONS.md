@@ -2,6 +2,12 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 27 octobre — Clôture Andernos et TXT informatique des prochaines clôtures
+
+- Demande explicite d'Antoine : envoyer les mails de clôture d'Andernos (5136, 1er novembre, limite au 26 octobre 23 h 59) et le TXT informatique ; précision reçue : « Andernos et les prochaines clôtures ». Diagnostic PROD en lecture seule : aucun état/événement pour 5136 dans la file et aucun mail préparé ; réglage tous clubs actif, révision 7. Aperçu : 37 destinataires éligibles dans 13 clubs. Le rattrapage réel est autorisé séparément du déploiement du correctif.
+- Correctif préparé : phase exports eau libre, sérialiseur manuel validé réutilisé, contact informatique existant et protections mail conservés. Budget supplémentaire fixe de deux SELECT par export, aucune lecture par nageur, nouvelle collection ou règle sportive. Les références inconnues ou périmées bloquent le TXT. Téléchargement manuel PROD des autres compétitions et événements historiques inchangés.
+- [PR #572](https://github.com/ffessmnap/LivePalmes/pull/572), code `ad9bd0de` : tests ciblés hors réseau réussis (pages, sérialisation TXT, callables, téléchargement manuel, export WinPalme, pilote et CCI), [CI globale 40455454551](https://github.com/ffessmnap/LivePalmes/actions/runs/40455454551) réussie. Intégration et TEST commun à consigner après réussite ; aucune validation utilisateur du code ni publication PROD déduite de la demande. Après confirmation manuelle d'Antoine, fiche PROD fraîche relue fermée, date limite conservée, mise à jour à 06 h 32 Paris ; le formulaire précédent avait été refusé pour empreinte périmée. Rattrapage des notifications en cours, aucun envoi confirmé à ce stade.
+
 ### 26 octobre — Consignes courantes simplifiées
 
 - Accord explicite d’Antoine dans Infra : « vas-y, améliore les consignes ». Clarification des accords déjà acquis, des contrôles proportionnés et de la réutilisation des preuves ; trois parcours (documentation/interface, backend existant autorisé, opération sensible) et une procédure courante unique.

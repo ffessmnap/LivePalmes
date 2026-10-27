@@ -67,7 +67,7 @@ async function page(event,competition,services){
     return {jobs,attachmentCount,skippedCount,sourceHash,done:false,nextPhase:offset+batch.length>=entries.length?'exports':'clubs',
       nextCursor:offset+batch.length>=entries.length?'':String(offset+batch.length)};
   }
-  if(competition.competitionType==='pool'&&competition.computerEmail&&control.audienceAllowed(setting,{source:'nap',type:'entries_txt',competitionRegionId:competition.regionId})){
+  if(['pool','openWater'].includes(competition.competitionType)&&competition.computerEmail&&control.audienceAllowed(setting,{source:'nap',type:'entries_txt',competitionRegionId:competition.regionId})){
     const file=await attachment(await services.txt(competition,entries,pack.clubsById),'text/plain; charset=utf-8');attachmentCount++;
     jobs.push(...mails('entries_txt',[{email:competition.computerEmail,clubId:'informatique'}],{fileName:file.fileName,attachments:[file]}));
   }else skippedCount++;
