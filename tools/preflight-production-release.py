@@ -196,7 +196,9 @@ def main():
                 if f['name'].split('/')[-1] in bcc_names:
                     keys = {s.get('key') for s in service.get('secretEnvironmentVariables', [])}
                     mail_names = {'notifyEngagementCompetitionDocuments', 'processNapCompetitionNotifications', 'closeDueEngagementCompetitions'}
-                    if f['name'].split('/')[-1] in mail_names:
+                    if bcc_contract.get('limitedOct27'):
+                        cycle.bcc.for_request(plan).initial_runtime(f['name'].split('/')[-1], service, ordinary_runtime_allowed)
+                    elif f['name'].split('/')[-1] in mail_names:
                         if keys != cycle.bcc.MAIL_KEYS or len(service.get('secretEnvironmentVariables', [])) != 8 or not ordinary_runtime_allowed({**service, 'secretEnvironmentVariables': []}):
                             raise ValueError('Configuration mail CCI initiale inattendue')
                     elif not ordinary_runtime_allowed(service):
@@ -208,6 +210,12 @@ def main():
                 if f.get("environment") != "GEN_2" or f.get("buildConfig", {}).get("runtime") != "nodejs22" or f.get("state") != "ACTIVE":
                     raise ValueError("Function PROD incompatible")
             (backup / "functions.json").write_text(json.dumps(functions))
+            if bcc_contract.get('limitedOct27'):
+                guard_spec = importlib.util.spec_from_file_location('oct27_backup_guard', Path(__file__).with_name('check-production-bcc.py'))
+                guard = importlib.util.module_from_spec(guard_spec); guard_spec.loader.exec_module(guard)
+                scheduler = guard.get(guard.SCHEDULER_URL, token)
+                cycle.require(guard.scheduler_digest(scheduler) == bcc_contract['schedulerSha256'], 'Scheduler different avant sauvegarde')
+                (backup/'scheduler.json').write_text(json.dumps(scheduler))
         sources = {}
         for f in selected_functions:
             source = f.get("buildConfig", {}).get("source", {}).get("storageSource")
