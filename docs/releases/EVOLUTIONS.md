@@ -2,6 +2,12 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 27 octobre — Clôture volontaire du contrôle des licences
+
+- Accord explicite d’Antoine sur quatre états : À faire, À traiter, Conforme, Clôturé. La clôture est commune aux bilans conformes et à ceux avec réserves, sans effacement du résultat. Quatre filtres symbole/compteur sur une ligne, libellés accessibles, retour à toutes les compétitions par second clic.
+- Action de clôture accessible depuis un bilan à jour sans lot sélectionné. Commentaire obligatoire avec réserves, facultatif si conforme ; confirmation explicite et trace NAP datée/auteur/révision/commentaire dans une nouvelle version. Aucun changement de schéma, migration, droit, validation individuelle ou envoi implicite. Nouveau contrôle possible avec confirmation, archive conservée. TEST et PROD partagent NAP selon l’accord déjà acquis ; aucune clôture réelle effectuée pendant les essais.
+- Tests hors réseau : commentaire manquant/long, bilan périmé/concurrent/déjà clôturé refusés ; conservation des détails et compteurs, clôture conforme, nouveau contrôle sans perte d’archives ; parcours navigateur desktop/mobile, clôture sans lot, motifs et quatre filtres alignés. Budgets bornés : voir NAP_REFERENCE. CI et publication TEST à consigner après réussite ; validation utilisateur de cette nouvelle clôture non acquise.
+
 ### 27 octobre — Téléchargement TXT de toutes les compétitions eau libre NAP
 
 - Demande explicite d’Antoine : retirer les restrictions TEST/Andernos côté portail et callable, conserver les contrôles et publier sur TEST. Toutes les compétitions eau libre NAP utilisent le générateur manuel existant ; libellés hors NAP précisés. Authentification, périmètre régional/national, programme/catalogue natifs, refus des sources absentes/inconnues/périmées et limite de 10 Mo conservés. Aucun changement de format sportif, mail, destinataire, donnée, migration, Storage ou configuration. PROD non autorisée par ce chantier.

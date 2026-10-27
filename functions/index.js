@@ -13426,13 +13426,14 @@ async function engagementLicenseReportRequest(input, context, pool) {
   if (input.action === "summaries") return reports.summaries(db, input.season, store);
   if (input.action === "reportHistory") return store.history(input.season, input.competitionId, input.before);
   if (input.action === "reportVersion") { const report=await store.readVersion(input.season,input.competitionId,input.version); return {report, text:report?reports.message(report).text:""}; }
-  if (!["readReport", "completeReport", "previewReport", "sendReport"].includes(input.action)) throw new TypeError("Action de contrôle inconnue.");
+  if (!["readReport", "completeReport", "closeReport", "previewReport", "sendReport"].includes(input.action)) throw new TypeError("Action de contrôle inconnue.");
   const batch = await require("./nap-license-control").prepareBatch(pool, { season: input.season, competitionIds: [input.competitionId] });
   if (input.action === "readReport") {
     await reports.attach(db, batch, store);
     return { report: batch.controlReports[String(require("./nap-direct-calendar").positiveId(input.competitionId))], participantCount: batch.people.length, history: await store.history(input.season,input.competitionId) };
   }
   if (input.action === "completeReport") return reports.complete(db, batch, input, context.uid, store);
+  if (input.action === "closeReport") return reports.close(db, batch, input, context.uid, store);
   let transporter;
   try {
     return await reports.notify(db, batch, input, {
