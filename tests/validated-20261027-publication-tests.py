@@ -6,6 +6,7 @@ from pathlib import Path
 import tempfile
 from types import SimpleNamespace
 import unittest
+from datetime import datetime, timezone
 from unittest.mock import patch, MagicMock
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -173,5 +174,50 @@ class PublicationTests(unittest.TestCase):
                 with self.assertRaises(ValueError):p.verify_targeted(request,targeted,source,root,cycle)
             with patch.object(cycle.subprocess,'run'),patch.object(cycle,'git',return_value='docs/only.md'),patch.object(cycle,'test_backend_fingerprints',side_effect=[hashes,{**hashes,names[0]:'changed'}]):
                 with self.assertRaises(ValueError):p.verify_targeted(request,targeted,source,root,cycle)
+
+    def test_scheduler_server_timestamp_is_only_allowed_during_approved_transition(self):
+        before={'name':'fixture','schedule':'*/5 * * * *','timeZone':'Europe/Paris','state':'ENABLED',
+            'userUpdateTime':'2026-08-10T14:02:34.480343Z','httpTarget':{'uri':'unchanged'}}
+        after={**before,'schedule':'0 * * * *','userUpdateTime':'2026-10-27T11:50:19.684696Z'}
+        now=datetime(2026,10,27,12,0,tzinfo=timezone.utc)
+        self.assertEqual(g.hourly_view(before,after,c,guard,now),after)
+        for key,value in [('timeZone','UTC'),('httpTarget',{'uri':'other'}),('state','PAUSED'),
+            ('userUpdateTime','2026-10-28T00:00:00Z'),('userUpdateTime','2026-08-09T00:00:00Z'),
+            ('userUpdateTime','2026-10-26T00:00:00Z')]:
+            with self.subTest(key=key,value=value),self.assertRaises(ValueError):g.hourly_view(before,{**after,key:value},c,guard,now)
+        removed=copy.deepcopy(after);removed.pop('userUpdateTime')
+        with self.assertRaises(ValueError):g.hourly_view(before,removed,c,guard,now)
+
+    def test_resume_requires_complete_successful_source_identity_receipt(self):
+        report={'candidate':c['candidate'],'errors':[],'functions':[{'name':'functions/'+n,'state':'ACTIVE'} for n in c['selected']+c['retained']]}
+        with tempfile.TemporaryDirectory() as d:
+            root=Path(d);self.assertFalse(g.verified_resume(root,c))
+            cycle.write(root/'previous/production-after.json',report);self.assertTrue(g.verified_resume(root,c))
+            for altered in [{**report,'candidate':'0'*40},{**report,'errors':['failure']},{**report,'functions':report['functions'][:-1]},
+                {**report,'functions':report['functions'][:-1]+[report['functions'][0]]}]:
+                cycle.write(root/'previous/production-after.json',altered);self.assertFalse(g.verified_resume(root,c))
+
+    def test_resume_attests_existing_hourly_job_without_repatch_or_ignoring_later_drift(self):
+        doc={'fields':{'scope':{'stringValue':'all'},'enabled':{'booleanValue':False},'revision':{'integerValue':'8'},
+            'enabledSince':{'stringValue':c['enabledSince']},'discardThrough':{'stringValue':'2026-10-27T11:30:00Z'},
+            'updatedAt':{'stringValue':'2026-10-27T11:30:00Z'}}}
+        old={'name':'fixture','schedule':'*/5 * * * *','timeZone':'Europe/Paris','state':'ENABLED',
+            'userUpdateTime':'2026-08-10T14:02:34.480343Z'}
+        hourly={**old,'schedule':'0 * * * *','userUpdateTime':'2026-10-27T11:50:19.684696Z'}
+        cfg={**c,'immutableMailSha256':guard.immutable_mail(doc),'schedulerSha256':guard.scheduler_digest(old),'workerIamSha256':guard.digest({})}
+        scope=SimpleNamespace(contract=lambda:cfg)
+        def get(url,token):return doc if url==guard.MAIL_URL else hourly if url==guard.SCHEDULER_URL else {}
+        report={'candidate':c['candidate'],'errors':[],'functions':[{'name':'functions/'+n,'state':'ACTIVE'} for n in c['selected']+c['retained']]}
+        with tempfile.TemporaryDirectory() as d,patch.object(guard,'get',side_effect=get),patch.object(guard,'check_queue',return_value=c['queueSha256']),patch.object(g.urllib.request,'urlopen') as network:
+            root=Path(d);cycle.write(root/'bcc-scheduler-before-witness.json',old)
+            with self.assertRaises(ValueError):g.check('paused',root,scope,'offline',guard)
+            cycle.write(root/'previous/production-after.json',report)
+            g.check('paused',root,scope,'offline',guard)
+            cycle.write(root/'scheduler.json',old)
+            with patch.object(guard,'main',side_effect=lambda mode,path:g.check(mode,path,scope,'offline',guard)):
+                g.finish_scheduler(root,root,scope,'offline',guard)
+            network.assert_not_called()
+            hourly['userUpdateTime']='2026-10-27T11:50:20Z'
+            with self.assertRaises(ValueError):g.check('paused',root,scope,'offline',guard)
 
 if __name__=='__main__':unittest.main()
