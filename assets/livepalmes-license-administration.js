@@ -420,6 +420,10 @@
       <div class="admin-license-admin-actions"><button type="button" data-report-complete ${disabled || !data || !inBatch || !members.length || pending ? "disabled" : ""}>${current ? "Actualiser le bilan" : "Terminer le contrôle"}</button><button type="button" class="ghost-button" data-report-preview ${disabled || !current ? "disabled" : ""}>Prévisualiser le mail</button></div>
       <p>${report?.mail?.sentAt ? `Mail envoyé le ${escapeHtml(new Date(report.mail.sentAt).toLocaleString("fr-FR"))} à ${report.mail.recipientCount} destinataires.` : "Mail non envoyé."}</p>
       ${preview ? `<h3>Destinataires (${preview.recipients.length})</h3><ul>${preview.recipients.map(r => `<li>${escapeHtml(r.name || r.role)} · ${escapeHtml(r.email)}</li>`).join("")}</ul>${preview.missingRegion ? "<p>Région organisatrice non renseignée : aucun administrateur régional ne peut être ciblé.</p>" : ""}${preview.missingComputer ? "<p>Adresse de l’informatique de la compétition non renseignée.</p>" : ""}<p><strong>${escapeHtml(preview.subject)}</strong></p><pre>${escapeHtml(preview.text)}</pre><div class="admin-license-admin-actions"><button type="button" data-report-send ${disabled || preview.disabled || !preview.recipients.length ? "disabled" : ""}>Envoyer le mail</button></div>${preview.disabled ? `<p>${preview.previewOnly ? "TEST : aperçu uniquement, aucun mail réel envoyé." : "Envois désactivés dans le réglage des notifications."}</p>` : "<p>Envoi volontaire aux destinataires affichés, sans doublon.</p>"}` : ""}`;
+    if (report?.mail?.sentAt) {
+      const sentButton = elements.dialogContent.querySelector("[data-report-send]");
+      if (sentButton) { sentButton.disabled = true; sentButton.textContent = "Mail déjà envoyé"; }
+    }
   }
 
   async function openReport(id) {
@@ -455,6 +459,7 @@
       });
     }
     if (action === "sendReport") {
+      if (state.reportData.report?.mail?.sentAt) return;
       if (!state.preview || state.preview.disabled || !window.confirm(`Envoyer le bilan de cette compétition à ${state.preview.recipients.length} destinataires ?`)) return;
       payload.expectedFingerprint = state.preview.fingerprint;
     }
