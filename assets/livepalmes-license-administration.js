@@ -19,10 +19,33 @@
     selectPending: document.querySelector("#adminLicenseControlSelectPending"),
     validate: document.querySelector("#adminLicenseControlValidate"),
     results: document.querySelector("#adminLicenseControlResults"),
-    status: document.querySelector("#adminLicenseControlStatus")
+    status: document.querySelector("#adminLicenseControlStatus"),
+    competitionSearch: document.querySelector("#adminLicenseControlCompetitionSearch"),
+    competitionFilter: document.querySelector("#adminLicenseControlCompetitionFilter"),
+    selectionCount: document.querySelector("#adminLicenseControlSelectionCount"),
+    search: document.querySelector("#adminLicenseControlSearch"),
+    filter: document.querySelector("#adminLicenseControlFilter"),
+    rowCount: document.querySelector("#adminLicenseControlRowCount"),
+    empty: document.querySelector("#adminLicenseControlEmpty"),
+    report: document.querySelector("#adminLicenseControlReport"),
+    dialog: document.querySelector("#adminLicenseControlDialog"),
+    dialogContent: document.querySelector("#adminLicenseControlDialogContent")
   };
-  const state = { competitions: [], batch: null, imported: new Map(), loadingCompetitions: false, validating: false };
+  const state = { competitions: [], selectedCompetitions: new Set(), reports: {}, reportsAvailable: false, batch: null, imported: new Map(), loadingCompetitions: false, validating: false, reportBusy: false, reportId: "", reportData: null, preview: null, dialogRequest: 0 };
   const LICENSE_PATTERN = /^[A-Z]-\d{2}-\d+$/;
+  const competitionKey = value => String(value || "").replace(/^legacy-nap-/, "");
+  const searchText = value => String(value || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("fr");
+  const controlLabels = { none: "Non contrôlé", ok: "Fait · tout est bon", issues: "Fait · incohérences" };
+  const finalStatuses = new Set(["validable", "licence_expiree", "introuvable", "anomalie_licence", "anomalie_identite", "ambigu"]);
+
+  function batchCurrent() {
+    return Boolean(state.batch && state.batch.season.label === elements.season.value &&
+      state.batch.competitions.map(c => competitionKey(c.id)).sort().join("|") === [...state.selectedCompetitions].map(competitionKey).sort().join("|"));
+  }
+  function controlReport(id) {
+    const report = state.reports[competitionKey(id)];
+    return report?.current === false ? null : report;
+  }
 
   function escapeHtml(value) {
     return String(value ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
@@ -75,12 +98,13 @@
   }
 
   function selectedCompetitionIds() {
-    return Array.from(elements.competitions.querySelectorAll('input[type="checkbox"]:checked')).map((input) => input.value);
+    return [...state.selectedCompetitions];
   }
 
   function syncPrepareButton() {
     const count = selectedCompetitionIds().length;
-    elements.prepare.disabled = state.loadingCompetitions || count < 1 || count > 5;
+    elements.prepare.disabled = state.loadingCompetitions || state.validating || state.reportBusy || count < 1 || count > 5;
+    elements.selectionCount.textContent = `${count} compétition${count > 1 ? "s" : ""} sélectionnée${count > 1 ? "s" : ""} sur 5`;
   }
 
   function renderCompetitions() {
@@ -89,14 +113,15 @@
       syncPrepareButton();
       return;
     }
-    const statusLabels = { open: "Engagements ouverts", upcoming: "À venir", closed: "Engagements fermés" };
-    elements.competitions.innerHTML = state.competitions.map((competition) => `
-      <label class="admin-license-admin-competition">
-        <input type="checkbox" value="${escapeHtml(competition.id)}">
+    const query = searchText(elements.competitionSearch.value);
+    const filtered = state.competitions.filter(c => searchText(`${c.name || c.title} ${c.location || ""} ${c.city || ""}`).includes(query) &&
+      (elements.competitionFilter.value === "all" || (controlReport(c.id)?.status || "none") === elements.competitionFilter.value));
+    elements.competitions.innerHTML = filtered.map((competition) => `
+      <div class="admin-license-admin-competition-entry"><label class="admin-license-admin-competition">
+        <input type="checkbox" value="${escapeHtml(competition.id)}" ${state.selectedCompetitions.has(competition.id) ? "checked" : ""} ${state.validating || state.reportBusy || (!state.selectedCompetitions.has(competition.id) && state.selectedCompetitions.size >= 5) ? "disabled" : ""}>
         <strong>${escapeHtml(competition.name || competition.title || "Compétition")}</strong>
-        <span class="admin-license-admin-competition-state">${escapeHtml(statusLabels[competition.entryStatus] || "Compétition")}</span>
         <small>${escapeHtml(displayDate(competition.date))} · ${escapeHtml(competition.location || competition.city || "Lieu non renseigné")}</small>
-      </label>`).join("");
+      </label><button class="admin-license-admin-competition-state" type="button" data-license-report="${escapeHtml(competition.id)}" data-control-state="${escapeHtml(controlReport(competition.id)?.status || "none")}">${escapeHtml(state.reportsAvailable ? controlLabels[controlReport(competition.id)?.status || "none"] : "Statut indisponible")} ↗</button>${controlReport(competition.id)?.completedAt ? `<small class="admin-license-admin-control-date">Bilan du ${escapeHtml(new Date(controlReport(competition.id).completedAt).toLocaleDateString("fr-FR"))}</small>` : ""}</div>`).join("") || '<p class="admin-engagements-empty">Aucune compétition pour ce filtre.</p>';
     syncPrepareButton();
   }
 
@@ -108,16 +133,22 @@
     elements.reload.disabled = true;
     elements.prepare.disabled = true;
     setStatus("Chargement des compétitions de la saison…", "loading");
+    const season = elements.season.value;
     try {
-      const result = await bridge.callFunction("listEngagementCompetitions", {
+      const [result, reports] = await Promise.all([bridge.callFunction("listEngagementCompetitions", {
         manageOnly: true,
         ranges: [{ fromDate: bounds.start, toDate: bounds.end }],
         limit: 250
-      });
-      state.competitions = Array.isArray(result.competitions) ? result.competitions : [];
+      }), bridge.callFunction("prepareEngagementLicenseControlBatch", {action: "summaries", season})]);
+      if (season !== elements.season.value) return;
+      state.competitions = Array.isArray(result.competitions) ? result.competitions.map(c => ({...c, id: String(c.id)})) : [];
+      state.reports = reports.reports || {};
+      state.reportsAvailable = true;
       renderCompetitions();
       setStatus(`${state.competitions.length} compétition${state.competitions.length > 1 ? "s" : ""} disponible${state.competitions.length > 1 ? "s" : ""}.`, "ok");
     } catch (error) {
+      if (season !== elements.season.value) return;
+      state.reportsAvailable = false;
       state.competitions = [];
       renderCompetitions();
       setStatus(`Chargement impossible : ${error?.message || error}`, "error");
@@ -125,6 +156,7 @@
       state.loadingCompetitions = false;
       elements.reload.disabled = false;
       syncPrepareButton();
+      if (season !== elements.season.value) void loadCompetitions();
     }
   }
 
@@ -232,25 +264,36 @@
 
   function syncValidateButton() {
     const selected = selectedPeople();
-    elements.validate.disabled = state.validating || !selected.length;
+    elements.validate.disabled = state.validating || state.reportBusy || !batchCurrent() || !selected.length;
     elements.validate.textContent = selected.length ? `Valider la sélection (${selected.length})` : "Valider la sélection";
   }
 
   function renderBatch() {
+    elements.empty.hidden = Boolean(state.batch);
     if (!state.batch) { elements.workspace.hidden = true; return; }
     elements.workspace.hidden = false;
     const validCount = state.batch.people.filter((person) => person.seasonStatus === "valid").length;
-    elements.summary.textContent = `${state.batch.people.length} nageurs · ${validCount} déjà validés · validité requise ${displayDate(state.batch.season.requiredValidityDate)}`;
-    elements.results.innerHTML = `<table class="admin-license-admin-table"><thead><tr><th></th><th>Nageur</th><th>Licence</th><th>Compétitions</th><th>Contrôle</th><th>Actions</th></tr></thead><tbody>${state.batch.people.map((person) => {
+    const current = batchCurrent();
+    const blocked = state.validating || state.reportBusy || !current;
+    [elements.exportButton, elements.importInput, elements.selectPending].forEach(element => { element.disabled = blocked; });
+    elements.summary.textContent = current ? `${state.batch.people.length} nageurs · ${validCount} déjà validés · validité requise ${displayDate(state.batch.season.requiredValidityDate)}` : "Sélection modifiée : créez le nouveau lot. Le tableau affiche encore le lot précédent.";
+    const query = searchText(elements.search.value), filter = elements.filter.value;
+    const visible = state.batch.people.filter(p => {
+      const code = rowState(p).code;
+      return searchText(`${p.lastName} ${p.firstName} ${p.clubName || p.clubId} ${p.licenseNumber}`).includes(query) &&
+        (filter === "all" || filter === code || (filter === "issues" && !["valid", "validable", "to_check"].includes(code)));
+    });
+    elements.rowCount.textContent = `${visible.length} nageurs affichés sur ${state.batch.people.length} · tous les résultats du filtre, sans pagination`;
+    elements.results.innerHTML = `<table class="admin-license-admin-table"><thead><tr><th></th><th>Nageur</th><th>Licence</th><th>Compétitions</th><th>Contrôle</th><th>Actions</th></tr></thead><tbody>${visible.map((person) => {
       const status = rowState(person);
       const imported = state.imported.get(person.livePalmesId);
       return `<tr data-license-person-id="${escapeHtml(person.livePalmesId)}">
-        <td><input type="checkbox" data-license-select ${person.selected ? "checked" : ""} ${person.seasonStatus === "valid" || state.validating ? "disabled" : ""} aria-label="Sélectionner ${escapeHtml(`${person.firstName} ${person.lastName}`)}"></td>
+        <td><input type="checkbox" data-license-select ${person.selected ? "checked" : ""} ${person.seasonStatus === "valid" || blocked ? "disabled" : ""} aria-label="Sélectionner ${escapeHtml(`${person.firstName} ${person.lastName}`)}"></td>
         <td><span class="admin-license-admin-person"><strong>${escapeHtml(`${person.lastName} ${person.firstName}`)}</strong><small>${escapeHtml(displayDate(person.birthDate))} · ${escapeHtml(person.clubName || person.clubId || "Club non renseigné")}</small></span></td>
-        <td><input type="text" value="${escapeHtml(person.licenseNumber)}" data-license-number ${state.validating ? "disabled" : ""} aria-label="Licence de ${escapeHtml(`${person.firstName} ${person.lastName}`)}"><small>${acceptableLicense(person.licenseNumber) ? "" : "Format attendu : A-12-34567"}</small></td>
+        <td><input type="text" value="${escapeHtml(person.licenseNumber)}" data-license-number ${blocked ? "disabled" : ""} aria-label="Licence de ${escapeHtml(`${person.firstName} ${person.lastName}`)}"><small>${acceptableLicense(person.licenseNumber) ? "" : "Format attendu : A-12-34567"}</small></td>
         <td><span class="admin-license-admin-source">${person.competitions.map((name) => `<span>${escapeHtml(name)}</span>`).join("")}</span></td>
         <td><span class="admin-license-admin-state" data-state="${escapeHtml(status.code)}">${escapeHtml(status.label)}</span>${imported?.validity ? `<small> jusqu’au ${escapeHtml(imported.validity)}</small>` : ""}${imported?.details ? `<small>${escapeHtml(imported.details)}</small>` : ""}${person.validationError ? `<small role="alert">Enregistrement bloqué : ${escapeHtml(person.validationError)}</small>` : ""}</td>
-        <td><span class="admin-license-admin-row-actions"><button class="ghost-button" type="button" data-license-edit ${state.validating ? "disabled" : ""}>Modifier la fiche</button>${person.seasonStatus === "valid" ? "" : `<button type="button" data-license-validate-one ${acceptableLicense(person.licenseNumber) && !state.validating ? "" : "disabled"}>Valider</button>`}</span></td>
+        <td><span class="admin-license-admin-row-actions"><button class="ghost-button" type="button" data-license-edit ${blocked ? "disabled" : ""}>Modifier la fiche</button>${person.seasonStatus === "valid" ? "" : `<button type="button" data-license-validate-one ${acceptableLicense(person.licenseNumber) && !blocked ? "" : "disabled"}>Valider</button>`}</span></td>
       </tr>`;
     }).join("")}</tbody></table>`;
     syncValidateButton();
@@ -263,10 +306,17 @@
     setStatus("Préparation et dédoublonnage du lot…", "loading");
     try {
       const result = await bridge.callFunction("prepareEngagementLicenseControlBatch", { season: elements.season.value, competitionIds });
+      const previous = state.batch, imported = new Map(state.imported);
       state.batch = result;
+      Object.assign(state.reports, result.controlReports || {});
       state.imported.clear();
+      if (previous?.season.label === result.season.label) for (const person of result.people) {
+        const old = previous.people.find(p => p.livePalmesId === person.livePalmesId);
+        if (old && old.licenseNumber === person.licenseNumber && old.firstName === person.firstName && old.lastName === person.lastName && old.birthDate === person.birthDate && old.clubId === person.clubId && imported.has(person.livePalmesId)) state.imported.set(person.livePalmesId, imported.get(person.livePalmesId));
+      }
       state.batch.people.forEach((person) => { person.selected = false; });
       renderBatch();
+      renderCompetitions();
       setStatus(`Lot ${result.batchId} prêt. Les nageurs déjà validés pour ${result.season.label} sont conservés dans l’historique.`, "ok");
     } catch (error) {
       setStatus(`Préparation impossible : ${error?.message || error}`, "error");
@@ -287,7 +337,7 @@
   }
 
   async function validatePeople(people) {
-    if (!people.length || state.validating) return;
+    if (!people.length || state.validating || state.reportBusy || !batchCurrent()) return;
     if (!window.confirm(`Valider ${people.length} licence${people.length > 1 ? "s" : ""} pour la saison ${state.batch.season.label} ?`)) return;
     state.validating = true;
     [elements.season, elements.prepare, elements.reload, elements.importInput, elements.selectPending].forEach(element => { element.disabled = true; });
@@ -329,6 +379,7 @@
       }
       renderBatch();
       setStatus(`${validatedCount} fiche(s) validée(s), ${blockedCount} fiche(s) bloquée(s) pour ${state.batch.season.label}. Les motifs sont indiqués sur les lignes concernées.`, blockedCount ? "warning" : "ok");
+      if (validatedCount) people.forEach(markReportsStale);
     } catch (error) {
       setStatus(`Validation impossible : ${error?.message || error}`, "error");
     } finally {
@@ -336,28 +387,142 @@
       [elements.season, elements.reload, elements.importInput, elements.selectPending].forEach(element => { element.disabled = false; });
       syncPrepareButton();
       renderBatch();
+      renderCompetitions();
     }
   }
 
+  function markReportsStale(person) {
+    for (const id of person.competitionIds || []) {
+      const key = competitionKey(id);
+      if (state.reports[key]) state.reports[key] = {...state.reports[key], current: false};
+    }
+    state.preview = null;
+  }
+
+  function reportPeople(id) {
+    return state.batch?.people.filter(p => p.competitionIds.some(value => competitionKey(value) === competitionKey(id))) || [];
+  }
+
+  function renderReport() {
+    const id = state.reportId, data = state.reportData, report = data?.report;
+    const current = report?.current !== false && Boolean(report);
+    const members = reportPeople(id);
+    const inBatch = batchCurrent() && state.batch?.competitions.some(c => competitionKey(c.id) === competitionKey(id));
+    const pending = members.filter(p => p.seasonStatus !== "valid" && !finalStatuses.has(state.imported.get(p.livePalmesId)?.status)).length;
+    const counts = report?.counts;
+    const preview = state.preview;
+    const disabled = state.reportBusy || state.validating;
+    elements.dialogContent.innerHTML = `<header><h3>Bilan de la compétition</h3><button type="button" class="ghost-button" data-report-close>Fermer</button></header>
+      <label>Compétition<select data-report-competition ${disabled ? "disabled" : ""}>${state.competitions.map(c => `<option value="${escapeHtml(c.id)}" ${c.id === id ? "selected" : ""}>${escapeHtml(c.name || c.title)} · ${escapeHtml(displayDate(c.date))}</option>`).join("")}</select></label>
+      <p aria-live="polite">${state.reportBusy ? "Traitement en cours…" : !data ? "Chargement du bilan…" : escapeHtml(current ? `Contrôle fait · ${report.status === "ok" ? "tout est bon" : "incohérences"}` : "Non contrôlé")}</p>
+      ${report ? `<p>${report.current === false ? "Le dernier bilan ne correspond plus aux engagés ou aux licences actuels. Nouveau contrôle nécessaire. " : ""}Bilan du ${escapeHtml(new Date(report.completedAt).toLocaleString("fr-FR"))} · ${counts.total} compétiteurs contrôlés.</p><p>Valides : ${counts.valid} · expirées : ${counts.expired} · non retrouvées : ${counts.notFound} · autres incohérences : ${counts.other}</p>` : ""}
+      ${data && !current ? `<p>${inBatch ? `${pending} licence(s) encore sans résultat exploitable. Les erreurs techniques restent à contrôler.` : "Préparez un lot contenant cette compétition pour terminer son contrôle."}</p>` : ""}
+      <div class="admin-license-admin-actions"><button type="button" data-report-complete ${disabled || !data || !inBatch || !members.length || pending ? "disabled" : ""}>${current ? "Actualiser le bilan" : "Terminer le contrôle"}</button><button type="button" class="ghost-button" data-report-preview ${disabled || !current ? "disabled" : ""}>Prévisualiser le mail</button></div>
+      <p>${report?.mail?.sentAt ? `Mail envoyé le ${escapeHtml(new Date(report.mail.sentAt).toLocaleString("fr-FR"))} à ${report.mail.recipientCount} destinataires.` : "Mail non envoyé."}</p>
+      ${preview ? `<h3>Destinataires (${preview.recipients.length})</h3><ul>${preview.recipients.map(r => `<li>${escapeHtml(r.name || r.role)} · ${escapeHtml(r.email)}</li>`).join("")}</ul>${preview.missingRegion ? "<p>Région organisatrice non renseignée : aucun administrateur régional ne peut être ciblé.</p>" : ""}${preview.missingComputer ? "<p>Adresse de l’informatique de la compétition non renseignée.</p>" : ""}<p><strong>${escapeHtml(preview.subject)}</strong></p><pre>${escapeHtml(preview.text)}</pre><div class="admin-license-admin-actions"><button type="button" data-report-send ${disabled || preview.disabled || !preview.recipients.length ? "disabled" : ""}>Envoyer le mail</button></div>${preview.disabled ? `<p>${preview.previewOnly ? "TEST : aperçu uniquement, aucun mail réel envoyé." : "Envois désactivés dans le réglage des notifications."}</p>` : "<p>Envoi volontaire aux destinataires affichés, sans doublon.</p>"}` : ""}`;
+  }
+
+  async function openReport(id) {
+    if (state.validating || state.reportBusy) return;
+    state.reportId = id; state.reportData = null; state.preview = null;
+    const request = ++state.dialogRequest;
+    renderReport();
+    if (!elements.dialog.open) elements.dialog.showModal();
+    try {
+      const result = await bridge.callFunction("prepareEngagementLicenseControlBatch", {action: "readReport", season: elements.season.value, competitionId: id});
+      if (request !== state.dialogRequest || !elements.dialog.open) return;
+      state.reportData = result;
+      if (result.report) state.reports[competitionKey(id)] = result.report;
+      renderReport(); renderCompetitions();
+    } catch (error) {
+      if (request !== state.dialogRequest || !elements.dialog.open) return;
+      elements.dialogContent.insertAdjacentHTML("beforeend", `<p role="alert">${escapeHtml(error?.message || error)}</p>`);
+    }
+  }
+
+  async function reportAction(action) {
+    if (state.reportBusy || state.validating || !state.reportData) return;
+    const id = state.reportId, season = elements.season.value, request = state.dialogRequest;
+    const payload = {action, season, competitionId: id};
+    if (action === "completeReport") {
+      if (!batchCurrent()) return;
+      const nativeId = competitionKey(id);
+      payload.expectedMembership = state.batch.controlMemberships?.[nativeId];
+      payload.expectedRevision = state.reportData.report?.revision || "";
+      payload.results = reportPeople(id).filter(p => p.seasonStatus !== "valid").map(p => {
+        const r = state.imported.get(p.livePalmesId), match = String(r?.validity || "").match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+        return {id: p.livePalmesId, status: r?.status || "to_check", licenseNumber: p.licenseNumber, validity: match ? `${match[3]}-${match[2]}-${match[1]}` : r?.validity || ""};
+      });
+    }
+    if (action === "sendReport") {
+      if (!state.preview || state.preview.disabled || !window.confirm(`Envoyer le bilan de cette compétition à ${state.preview.recipients.length} destinataires ?`)) return;
+      payload.expectedFingerprint = state.preview.fingerprint;
+    }
+    state.reportBusy = true; renderReport(); renderBatch(); renderCompetitions();
+    try {
+      let result;
+      do {
+        result = await bridge.callFunction("prepareEngagementLicenseControlBatch", payload);
+        payload.offset = result.nextOffset;
+      } while (action === "sendReport" && !result.done);
+      if (request !== state.dialogRequest || !elements.dialog.open) return;
+      if (action === "previewReport") state.preview = result;
+      if (action === "completeReport") { state.reportData.report = result.report; state.reports[competitionKey(id)] = result.report; state.preview = null; }
+      if (action === "sendReport") {
+        state.preview = null;
+        const fresh = await bridge.callFunction("prepareEngagementLicenseControlBatch", {action: "readReport", season, competitionId: id});
+        if (request !== state.dialogRequest || !elements.dialog.open) return;
+        state.reportData = fresh;
+        if (fresh.report) state.reports[competitionKey(id)] = fresh.report;
+      }
+    } catch (error) {
+      if (request === state.dialogRequest && elements.dialog.open) {
+        state.reportBusy = false; renderReport();
+        elements.dialogContent.insertAdjacentHTML("beforeend", `<p role="alert">${escapeHtml(error?.message || error)}</p>`);
+        return;
+      }
+    } finally {
+      state.reportBusy = false; renderBatch(); renderCompetitions();
+    }
+    if (request === state.dialogRequest && elements.dialog.open) renderReport();
+  }
+
+  elements.dialogContent.addEventListener("click", event => {
+    const button = event.target.closest("button");
+    if (!button) return;
+    if (button.matches("[data-report-close]")) elements.dialog.close();
+    if (button.matches("[data-report-complete]")) void reportAction("completeReport");
+    if (button.matches("[data-report-preview]")) void reportAction("previewReport");
+    if (button.matches("[data-report-send]")) void reportAction("sendReport");
+  });
+  elements.dialogContent.addEventListener("change", event => { if (event.target.matches("[data-report-competition]")) void openReport(event.target.value); });
+  elements.dialog.addEventListener("close", () => { state.dialogRequest++; });
+  elements.competitions.addEventListener("click", event => { const button = event.target.closest("[data-license-report]"); if (button) void openReport(button.dataset.licenseReport); });
+  elements.report.addEventListener("click", () => { if (state.batch?.competitions.length) void openReport(state.competitions.find(c => competitionKey(c.id) === competitionKey(state.batch.competitions[0].id))?.id || state.batch.competitions[0].id); });
+  elements.competitionSearch.addEventListener("input", renderCompetitions);
+  elements.competitionFilter.addEventListener("change", renderCompetitions);
+  elements.search.addEventListener("input", renderBatch);
+  elements.filter.addEventListener("change", renderBatch);
+
   elements.competitions.addEventListener("change", (event) => {
     if (!event.target.matches('input[type="checkbox"]')) return;
-    const checked = selectedCompetitionIds();
-    if (checked.length > 5) { event.target.checked = false; setStatus("Un lot peut contenir au maximum 5 compétitions.", "warning"); }
-    syncPrepareButton();
+    if (event.target.checked) state.selectedCompetitions.add(event.target.value); else state.selectedCompetitions.delete(event.target.value);
+    if (state.selectedCompetitions.size > 5) { state.selectedCompetitions.delete(event.target.value); setStatus("Un lot peut contenir au maximum 5 compétitions.", "warning"); }
+    renderCompetitions(); renderBatch();
   });
   elements.results.addEventListener("change", (event) => {
     const row = event.target.closest("[data-license-person-id]");
     const person = state.batch?.people.find((item) => item.livePalmesId === row?.dataset.licensePersonId);
     if (!person) return;
     if (event.target.matches("[data-license-select]")) person.selected = event.target.checked;
-    if (event.target.matches("[data-license-number]")) { person.licenseNumber = normalizeLicense(event.target.value); person.seasonStatus = "to_check"; state.imported.delete(person.livePalmesId); event.target.value = person.licenseNumber; }
+    if (event.target.matches("[data-license-number]")) { person.licenseNumber = normalizeLicense(event.target.value); person.seasonStatus = "to_check"; state.imported.delete(person.livePalmesId); event.target.value = person.licenseNumber; markReportsStale(person); renderCompetitions(); }
     renderBatch();
   });
   elements.results.addEventListener("input", (event) => {
     if (!event.target.matches("[data-license-number]")) return;
     const row = event.target.closest("[data-license-person-id]");
     const person = state.batch?.people.find((item) => item.livePalmesId === row?.dataset.licensePersonId);
-    if (person) { person.licenseNumber = normalizeLicense(event.target.value); person.seasonStatus = "to_check"; state.imported.delete(person.livePalmesId); syncValidateButton(); }
+    if (person) { person.licenseNumber = normalizeLicense(event.target.value); person.seasonStatus = "to_check"; state.imported.delete(person.livePalmesId); markReportsStale(person); syncValidateButton(); }
   });
   elements.results.addEventListener("click", (event) => {
     const button = event.target.closest("button");
@@ -368,7 +533,7 @@
     if (button.matches("[data-license-validate-one]")) void validatePeople([person]);
   });
   elements.reload.addEventListener("click", loadCompetitions);
-  elements.season.addEventListener("change", () => { updateSeasonPresentation(); state.batch = null; state.imported.clear(); renderBatch(); void loadCompetitions(); });
+  elements.season.addEventListener("change", () => { updateSeasonPresentation(); state.batch = null; state.selectedCompetitions.clear(); state.reports = {}; state.reportsAvailable = false; state.imported.clear(); elements.dialog.close(); renderBatch(); void loadCompetitions(); });
   elements.prepare.addEventListener("click", prepareBatch);
   elements.exportButton.addEventListener("click", exportBatch);
   elements.importInput.addEventListener("change", async (event) => {
