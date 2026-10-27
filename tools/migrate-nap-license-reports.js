@@ -32,6 +32,8 @@ async function source(db){
 }
 async function migrate(pool,db,phase,backup){
  const reports=await source(db),metadata=await inspect(pool),target=store(pool);
+ const ids=[...new Set(reports.map(r=>Number(r.competitionId)))];
+ if(ids.length){const competitions=await query(pool,`SELECT id FROM competitions FORCE INDEX(PRIMARY) WHERE id IN (${ids.map(()=>"?").join(",")}) LIMIT 1001`,ids);if(competitions.length!==ids.length)throw Error("Bilan rattaché à une compétition absente de NAP");}
  const before=[];
  for(const report of reports)before.push(metadata.every(m=>m.present)?await target.read(report.season,report.competitionId):null);
  const plan={sourceProject:"livepalmes",sourceHash:hash(reports),schemaHash:hash(metadata),targetHash:hash(before),reports,before,metadata,ddl};
@@ -40,6 +42,13 @@ async function migrate(pool,db,phase,backup){
  // DDL is additive and separately verified; never alters native tables.
  for(let i=0;i<metadata.length;i++)if(!metadata[i].present)await pool.query({sql:ddl[i],timeout:30000});
  if(!(await inspect(pool)).every(m=>m.present))throw Error("Structure incomplète");
+ const sample=reports[0]||{season:"2026-2027",competitionId:"1"};
+ const plans=[];
+ for(const [sql,args] of [
+  ["SELECT competition_id,summary FROM livepalmes_license_control_current WHERE season=? ORDER BY competition_id LIMIT 1001",[sample.season]],
+  ["SELECT version,summary FROM livepalmes_license_control_history WHERE season=? AND competition_id=? AND version<? ORDER BY version DESC LIMIT 21",[sample.season,Number(sample.competitionId),2147483647]],
+  ["SELECT 1 FROM livepalmes_license_control_history FORCE INDEX(competition_history) WHERE competition_id=? LIMIT 1",[Number(sample.competitionId)]]
+ ]){const plan=await query(pool,"EXPLAIN "+sql,args);if(plan.some(r=>r.table&&!r.key&&!(Number(r.rows)<=2)))throw Error("Lecture NAP non indexée");plans.push(plan);}
  let imported=0;
  for(const report of reports){
   const current=await target.read(report.season,report.competitionId);
@@ -48,7 +57,7 @@ async function migrate(pool,db,phase,backup){
   if(hash(await target.read(report.season,report.competitionId))!==hash(report))throw Error("Relecture différente");
  }
  if(hash(await source(db))!==plan.sourceHash)throw Error("La source PROD a changé pendant la reprise : vérifier avant bascule");
- return {verified:true,imported,alreadyPresent:reports.length-imported,sourceHash:plan.sourceHash,tables,realEmailsSent:0,nativeRowsChanged:0};
+ return {verified:true,imported,alreadyPresent:reports.length-imported,sourceHash:plan.sourceHash,tables,plans,realEmailsSent:0,nativeRowsChanged:0};
 }
 async function main(){
  const phase=process.env.NAP_LICENSE_PHASE;

@@ -51,6 +51,8 @@ const report={version:1,competitionId:"1",competitionName:"Coupe fictive",season
  target.query=async({sql})=>{assert(native.ddl.includes(sql));present=true;return [[]];};
  target.execute=async(options,args)=>{
    const sql=options.sql;
+   if(sql.startsWith("SELECT id FROM competitions"))return [[{id:1}]];
+   if(sql.startsWith("EXPLAIN"))return [[{table:"fixture",key:"PRIMARY",rows:1,type:"ref"}]];
    if(!sql.includes("information_schema"))return originalExecute(options,args);
    const table=args[0],i=native.tables.indexOf(table);
    if(sql.includes("TRIGGERS"))return [[]];
