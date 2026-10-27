@@ -166,6 +166,7 @@ def main():
         report['additionalPdfFunctions'] = plan.get('additionalPdfFunctions', []) if os.environ.get('PLAN') else []
         report['additionalClubDirectoryFunctions'] = cycle.approved_club_directory_functions(plan) if os.environ.get('PLAN') else []
         report['additionalGroupedFunctions'] = cycle.approved_grouped_functions(plan) if os.environ.get('PLAN') else []
+        report['additionalLicenseReportFunctions'] = cycle.approved_license_report_functions(plan) if os.environ.get('PLAN') else []
         report['additionalDtnFunctions'] = plan.get('additionalDtnFunctions', []) if os.environ.get('PLAN') else []
         report['nativeIdentityNapSecret'] = cycle.approved_native_identity_secret(plan) if os.environ.get('PLAN') else False
         report['additionalNotificationFunctions'] = notification
@@ -186,6 +187,8 @@ def main():
         if backup:
             for f in selected_functions:
                 service = f.get("serviceConfig", {})
+                if f['name'].split('/')[-1] in report['additionalLicenseReportFunctions']:
+                    cycle.license_release.runtime(f)
                 if f['name'].split('/')[-1] in report['additionalClubDirectoryFunctions'] and not club_directory_runtime_allowed(f['name'].split('/')[-1], service):
                     raise ValueError('Configuration ou binding NAP repertoires club inattendu')
                 if f['name'].split('/')[-1] in report['additionalGroupedFunctions']:

@@ -1,0 +1,38 @@
+{
+  "candidate": "0421f4903b59bf03975fadfad4ea781dc9af1e84",
+  "productionCommit": "365c8396b5da9d05715b3da7b482214666248c0a",
+  "productionHosting": "sites/livepalmes/versions/ba949e0329d4a303",
+  "testRun": 40585218771,
+  "schema": 1,
+  "productionRun": 40500735555,
+  "selected": [
+    "deleteEngagementCalendarEvent",
+    "deleteEngagementCompetition",
+    "generateEngagementCompetitionTxtExport",
+    "grantEngagementQualificationException",
+    "prepareEngagementLicenseControlBatch",
+    "previewEngagementClubSwimmerEventTimes",
+    "previewEngagementClubSwimmerEventTimesBatch",
+    "processEngagementQualificationJob",
+    "removeEngagementClubTeamLeader",
+    "saveEngagementClubIndividualEntries",
+    "updateEngagementCalendarEvent",
+    "updateEngagementCompetition"
+  ],
+  "name": "prepareEngagementLicenseControlBatch",
+  "revision": "prepareengagementlicensecontrolbatch-00013-qok",
+  "beforeHash": "63999cc383ea2afdb7c23dfabedc89df79aa184ef1e5e4346138c72cd675d9e1",
+  "afterHash": "cea7c8e12b387d88b3204063c30af245fb9d203065b940478509978f0f6bdd1a",
+  "migrationRun": 40571339337,
+  "sourceHash": "fb8a6e2d2229ea7f958aaea13abfd98a9c382a8ebceb4c3134f739fa2582ff64",
+  "mailPreservation": {
+    "scope": "all",
+    "revision": 9,
+    "documentSha256": "0518eceb90a30cdd79d5babd93732d9f9e57e8060a469d5c8ce6363b75d94fef",
+    "schedulerSha256": "8253d3bee91efe5b8496c01a76ae8cb0adadaff8087da4771769a55d048c806a"
+  },
+  "sourceOnly": true,
+  "configurationChanges": false,
+  "mailPause": false,
+  "oldRequestsSettleSeconds": 305
+}
