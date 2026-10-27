@@ -13422,12 +13422,66 @@ function engagementLicenseControlPerson(swimmer = {}, entry = {}, competitions =
   };
 }
 
-exports.prepareEngagementLicenseControlBatch = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
+async function engagementLicenseReportRequest(input, context, pool) {
+  const reports = require("./engagement-license-reports");
+  if (input.action === "summaries") return reports.summaries(db, input.season);
+  if (!["readReport", "completeReport", "previewReport", "sendReport"].includes(input.action)) throw new TypeError("Action de contrôle inconnue.");
+  const batch = await require("./nap-license-control").prepareBatch(pool, { season: input.season, competitionIds: [input.competitionId] });
+  if (input.action === "readReport") {
+    await reports.attach(db, batch);
+    return { report: batch.controlReports[String(require("./nap-direct-calendar").positiveId(input.competitionId))], participantCount: batch.people.length };
+  }
+  if (input.action === "completeReport") return reports.complete(db, batch, input, context.uid);
+  let transporter;
+  try {
+    return await reports.notify(db, batch, input, {
+      projectId: ENVIRONMENT.projectId,
+      competition: async competitionId => {
+        const rows = await require("./nap-portal-competitions").bounded(pool,
+          "SELECT c.id,c.comite,cp.mailtxt FROM competitions c FORCE INDEX (PRIMARY) LEFT JOIN compet_parametres cp ON cp.compet=c.id WHERE c.id=? LIMIT 2", [Number(competitionId)], 1);
+        if (!rows.length) throw new TypeError("Compétition introuvable.");
+        return { regionId: require("./nap-competition-scope").REGIONS[rows[0].comite] || "", computerEmail: cleanText(rows[0].mailtxt) };
+      },
+      directory: async () => {
+        if ((await engagementMailRecipientIndexStateRef(db).get()).data()?.status !== "ready") throw new TypeError("Annuaire des destinataires indisponible ; aucune reconstruction automatique.");
+        return engagementMailRecipientsFromIndex(db, ["engagements.region.manage"]);
+      },
+      setting: () => require("./engagement-mail-control").read(db),
+      send: async (ref, job) => {
+        // TEST is blocked both here and before any outbox write in the report module.
+        if (ENVIRONMENT.projectId === "livepalmes-test") throw new TypeError("Envois réels désactivés sur TEST.");
+        let started = false;
+        try {
+          const gate = require("./engagement-mail-control").decision(await require("./engagement-mail-control").read(db), job, ENVIRONMENT.projectId);
+          if (!gate.allowed) throw new TypeError("Envoi bloqué par le réglage des notifications.");
+          const config = engagementMailSmtpConfig();
+          if (!config.ready) throw new TypeError("Configuration des mails indisponible.");
+          if (!transporter) transporter = nodemailer.createTransport({ ...config.transport, pool: true, maxConnections: 1, connectionTimeout: 15000, greetingTimeout: 15000, socketTimeout: 30000 });
+          started = true;
+          await transporter.sendMail({ from: `LivePalmes <${config.fromEmail}>`, to: gate.to, subject: job.subject, text: job.textBody, html: livePalmesMailHtml(job.textBody) });
+          const sentAt = new Date().toISOString();
+          await ref.set({ status: "sent", sentAt, sentBy: context.uid, updatedAt: sentAt }, { merge: true });
+          return { status: "sent" };
+        } catch (error) {
+          const status = started ? "uncertain" : "failed";
+          await ref.set({ status, updatedAt: new Date().toISOString(), reason: "Envoi non confirmé ; aucun renvoi automatique." }, { merge: true });
+          throw new TypeError("Envoi non confirmé. Vérifiez le journal avant de reprendre.");
+        }
+      }
+    });
+  } finally { if (transporter) transporter.close(); }
+}
+
+exports.prepareEngagementLicenseControlBatch = onCall(ENVIRONMENT.projectId === "livepalmes-test" ? ENGAGEMENT_NOTIFICATION_PREVIEW_OPTIONS : { ...ENGAGEMENT_NOTIFICATION_PREVIEW_OPTIONS, timeoutSeconds: 300, secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD"), ...ENGAGEMENT_NOTIFICATION_MAIL_SECRETS] }, async (request) => {
   const startedAt = Date.now();
   const context = await engagementAccessContext(request);
   if (!context.national) throw new HttpsError("permission-denied", "Controle des licences reserve au niveau national.");
   if (ENVIRONMENT.sportingDataSource === "nap") {
-    try { return await require("./nap-license-control").prepareBatch(require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD),request.data || {}); }
+    try {
+      const pool = require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD);
+      if (request.data?.action) return await engagementLicenseReportRequest(request.data, context, pool);
+      return await require("./engagement-license-reports").attach(db, await require("./nap-license-control").prepareBatch(pool, request.data || {}));
+    }
     catch(error) { throw new HttpsError(error instanceof TypeError ? "failed-precondition" : error instanceof RangeError ? "resource-exhausted" : "unavailable",error instanceof TypeError || error instanceof RangeError ? error.message : "Controle NAP indisponible."); }
   }
   const season = engagementLicenseControlSeason(request.data?.season);

@@ -45,7 +45,7 @@ function audienceAllowed(setting, item) {
   const selected = scope(setting.scope);
   if (selected === 'all') return true;
   if (selected !== 'idf' || item.source !== 'nap') return false;
-  if (['entries_txt', 'officials_pdf'].includes(item.type)) return item.competitionRegionId === IDF_REGION;
+  if (['entries_txt', 'officials_pdf', 'license_control_report'].includes(item.type)) return item.competitionRegionId === IDF_REGION;
   return ['opening_notification', 'competition_documents', 'club_recap_pdf'].includes(item.type) &&
     /^[1-9]\d{0,15}$/.test(String(item.clubId || '')) && item.recipientRegionId === IDF_REGION;
 }
