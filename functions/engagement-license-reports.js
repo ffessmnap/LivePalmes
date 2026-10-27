@@ -32,13 +32,13 @@ function build(batch,input,actor,now=new Date().toISOString()){
   if([...results.keys()].some(key=>!nativeIds.has(key)))throw new TypeError("Un résultat n’appartient pas à cette compétition.");
   const checked=people.map(p=>{
     const r=results.get(String(p.livePalmesId));let status="valid";
-    if(p.seasonStatus!=="valid"){
+    if(r||p.seasonStatus!=="valid"){
       if(!r||!FINAL_STATUSES.has(r.status)||String(r.licenseNumber||"").trim()!==String(p.licenseNumber||"").trim())throw new TypeError("Chaque licence doit avoir un résultat exploitable. Les erreurs techniques et délais dépassés restent à contrôler.");
       status=r.status==="validable"?"valid":r.status;
       if(status==="valid"&&(!require("./nap-license-control").validDate(r.validity)||r.validity<batch.season.requiredValidityDate))throw new TypeError("La validité fédérale ne couvre pas la saison.");
       if(status==="licence_expiree"&&(!require("./nap-license-control").validDate(r.validity)||r.validity>=batch.season.requiredValidityDate))throw new TypeError("Date d’expiration incohérente.");
     }
-    return {id:String(p.livePalmesId),firstName:String(p.firstName||"").slice(0,80),lastName:String(p.lastName||"").slice(0,80),clubName:String(p.clubName||p.clubId||"").slice(0,140),licenseNumber:String(p.licenseNumber||"").slice(0,100),status,validity:String(p.federalValidityEndDate||r?.validity||"").slice(0,10)};
+    return {id:String(p.livePalmesId),firstName:String(p.firstName||"").slice(0,80),lastName:String(p.lastName||"").slice(0,80),clubName:String(p.clubName||p.clubId||"").slice(0,140),licenseNumber:String(p.licenseNumber||"").slice(0,100),status,validity:String(r?r.validity||"":p.federalValidityEndDate||"").slice(0,10)};
   });
   const counts={total:checked.length,valid:0,expired:0,notFound:0,other:0};
   checked.forEach(p=>counts[p.status==="valid"?"valid":p.status==="licence_expiree"?"expired":p.status==="introuvable"?"notFound":"other"]++);
@@ -92,7 +92,7 @@ async function notify(db,batch,input,services){
   for(const r of selected.slice(offset,offset+20)){
     const gate=require("./engagement-mail-control").decision(await services.setting(),{source:"nap",type:"license_control_report",competitionRegionId:competition.regionId,toEmail:r.email,createdAt:new Date().toISOString()},services.projectId);
     if(!gate.allowed)throw new TypeError("Envoi bloqué par le réglage des notifications.");
-    const key=hash(["license-control",report.revision,r.email]),ref=db.collection("engagementMailJobs").doc(key),now=new Date().toISOString();
+    const key=hash(["license-control",report.competitionId,report.revision,r.email]),ref=db.collection("engagementMailJobs").doc(key),now=new Date().toISOString();
     const job={source:"nap",type:"license_control_report",status:"sending",competitionId:report.competitionId,competitionRegionId:competition.regionId,recipientUid:r.uid,toEmail:r.email,subject:mail.subject,textBody:mail.text,createdAt:now,notificationDueAt:now};
     let claimed=false;
     await db.runTransaction(async tx=>{const current=(await tx.get(ref)).data();if(current){if(current.status!=="sent")throw new TypeError("Un envoi précédent reste à vérifier. Aucun renvoi automatique.");return;}tx.set(ref,job);claimed=true;});
