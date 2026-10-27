@@ -101,6 +101,7 @@ function runUnitTests() {
     "test-access-request-refresh-tests.js",
     "nap-mail-delivery-tests.js",
     "nap-bcc-notification-tests.js",
+    "nap-scheduled-closure-tests.js",
     "nap-competition-create-tests.js",
     "nap-competition-deletion-tests.js",
     "nap-import-swimmer-resolution-tests.js",
