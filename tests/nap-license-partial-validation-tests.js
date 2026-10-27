@@ -23,7 +23,7 @@ const {validateBatch}=require("../functions/nap-license-control");
   const duplicates=await validateBatch({execute(){throw Error("No reads for duplicate proposed licences");}},{partialValidation:true,season:"2026-2027",source:"national_manual",items:[1,2].map(id=>({swimmerIndexId:id,licenseNumber:"A-01-9",expectedLicenseNumber:""}))},"admin",audit);
   assert.equal(duplicates.validatedCount,0);assert.equal(duplicates.blockedCount,2);
   const source=fs.readFileSync("assets/livepalmes-license-administration.js","utf8");
-  const validateSource=source.slice(source.indexOf("  async function validatePeople("),source.indexOf('  elements.competitions.addEventListener'));
+  const validateSource="const batchCurrent=()=>true,markReportsStale=()=>{},renderCompetitions=()=>{};\n"+source.slice(source.indexOf("  async function validatePeople("),source.indexOf('  function markReportsStale('));
   const records=[{livePalmesId:"1",seasonStatus:"to_check",selected:true,licenseNumber:"A-01-1"},{livePalmesId:"2",seasonStatus:"to_check",selected:true,licenseNumber:"A-01-2"}];let message="";
   await vm.runInNewContext(validateSource+"\nvalidatePeople(state.batch.people)",{state:{batch:{season:{label:"2026-2027"},people:records},imported:new Map()},window:{confirm:()=>true},elements:{season:{},prepare:{},reload:{},importInput:{},selectPending:{}},syncPrepareButton(){},syncValidateButton(){},setStatus(s){message=s;},renderBatch(){},validationPayload:p=>p,bridge:{callFunction:async()=>result,licensesChanged(){}}});
   assert.equal(records[0].seasonStatus,"valid");assert.equal(records[1].seasonStatus,"to_check");assert.equal(records[1].selected,true);assert.match(records[1].validationError,/98/);assert.match(message,/1 fiche.*1 fiche/);
