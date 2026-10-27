@@ -8,8 +8,10 @@ async function run(){
   const calls=[];
   const automation={COLLECTION:'engagementClosureQueue',currentEvent:()=>true,processEvent:async()=>{calls.push('process');return {done:true,jobCount:1,attachmentCount:1};},adoptOpenCompetitions:async(_db,input)=>{calls.push('adopt');assert.equal(input.season,2027);return {openingCount:0};}};
   let national=true,allowed=true;
+  let eventData={source:'nap',kind:'opening',runAt:'2000-01-01T00:00:00.000Z',status:'pending'};
   const sandbox={exports:{},ENVIRONMENT:{sportingDataSource:"nap",projectId:'livepalmes-test'},ENGAGEMENT_NOTIFICATION_PREVIEW_OPTIONS:{},ENGAGEMENT_NOTIFICATION_MAIL_SECRETS:['smtp'],defineSecret:name=>name,onCall:(_options,handler)=>handler,
-    deliverNativeNotificationJobs:async id=>{assert.equal(id,'5162');return {sent:1};},
+    enqueueNativeNotificationTask:async id=>{assert.equal(id,'event');calls.push('schedule');return {queued:true};},
+    deliverNativeNotificationJobs:async id=>{assert.equal(id,'5162');return {sent:eventData.kind==='opening'?1:0};},
     HttpsError:class extends Error{constructor(code,message){super(message);this.code=code;}},
     engagementAccessContext:async()=>({national}),assertCanManageEngagementCompetition:()=>{if(!allowed)throw Error('denied');},
     nativePortalCompetition:async(id,authorize)=>{calls.push('competition');await authorize({id});},
@@ -18,7 +20,7 @@ async function run(){
       if(name==='./nap-direct-calendar')return require('../functions/nap-direct-calendar');
       throw Error('Unexpected dependency '+name);
     },db:{collection:name=>{calls.push(name);assert.equal(name,'engagementClosureQueue');return {where:(key,_op,value)=>{
-      assert.equal(key,'competitionId');assert.equal(value,'5162');return {limit:maximum=>{assert.equal(maximum,101);return {get:async()=>({size:1,docs:[{id:'event',ref:{},data:()=>({source:'nap',kind:'opening',runAt:'2000-01-01T00:00:00.000Z',status:'pending'})}]})};}};
+      assert.equal(key,'competitionId');assert.equal(value,'5162');return {limit:maximum=>{assert.equal(maximum,101);return {get:async()=>({size:1,docs:[{id:'event',ref:{},data:()=>eventData}]})};}};
     }}}}};
   vm.runInNewContext(code,sandbox);
   await sandbox.exports.processNapCompetitionNotifications({data:{action:'process',competitionId:'legacy-nap-5162'}});
@@ -35,12 +37,23 @@ async function run(){
   calls.length=0;sandbox.ENVIRONMENT.projectId='livepalmes';
   allowed=true; await sandbox.exports.processNapCompetitionNotifications({data:{action:'process',competitionId:'5162'}});
   assert.deepEqual(calls,['competition','engagementClosureQueue','process'],'PROD uses the same NAP processing with authorization');
+  calls.length=0;eventData={source:'nap',kind:'closure',automatic:true,deliveryMode:'bcc-v1',runAt:'2100-11-05T22:59:00.000Z',status:'pending'};
+  const future=await sandbox.exports.processNapCompetitionNotifications({data:{action:'process',competitionId:'5162'}});
+  assert.deepEqual(calls,['competition','engagementClosureQueue','schedule']);
+  assert.equal(future.scheduledCount,1);assert.equal(future.schedulingPending,0);assert.equal(future.jobCount,0);assert.equal(future.sentCount,0);
+  sandbox.enqueueNativeNotificationTask=async()=>({queued:false});
+  const unqueued=await sandbox.exports.processNapCompetitionNotifications({data:{action:'process',competitionId:'5162'}});
+  assert.equal(unqueued.scheduledCount,0);assert.equal(unqueued.schedulingPending,1,'a failed schedule is never reported as scheduled');
   const schedulerStart=source.indexOf('const ENGAGEMENT_CLOSURE_SCHEDULER_OPTIONS ='),schedulerEnd=source.indexOf('\n};',schedulerStart)+3;
   for(const projectId of ['livepalmes-test','livepalmes']){
     const options={ENVIRONMENT:{sportingDataSource:"nap",projectId},REGION:'europe-west1',defineSecret:name=>name,ENGAGEMENT_NOTIFICATION_MAIL_SECRETS:['smtp']};
     vm.runInNewContext(source.slice(schedulerStart,schedulerEnd)+'\nthis.options=ENGAGEMENT_CLOSURE_SCHEDULER_OPTIONS;',options);
     assert.deepEqual(Array.from(options.options.secrets),['LIVEPALMES_NAP_PASSWORD','smtp']);
+    assert.equal(options.options.schedule,'0 * * * *','NAP sweep is recovery only');
   }
+  const legacyOptions={ENVIRONMENT:{sportingDataSource:'firestore'},REGION:'europe-west1',ENGAGEMENT_NOTIFICATION_MAIL_SECRETS:[]};
+  vm.runInNewContext(source.slice(schedulerStart,schedulerEnd)+'\nthis.options=ENGAGEMENT_CLOSURE_SCHEDULER_OPTIONS;',legacyOptions);
+  assert.equal(legacyOptions.options.schedule,'*/5 * * * *','legacy source keeps its scheduler');
   assert.match(source.slice(source.indexOf('exports.closeDueEngagementCompetitions ='),source.indexOf('exports.saveEngagementClubTeamLeader =')),/if\(ENVIRONMENT.sportingDataSource === "nap"\)[\s\S]*return null;[\s\S]*engagementCompetitions/);
   let armed=0;
   const armSandbox={enqueueNativeNotificationTask:async()=>{},nativePortalCompetition:async(_id,authorize)=>{authorize({});return {id:'legacy-nap-5162',entryStatus:'open',entryDeadlineAt:'2026-11-06T18:00:00.000Z'};},

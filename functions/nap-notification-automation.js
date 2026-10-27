@@ -169,8 +169,11 @@ async function adoptOpenCompetitions(db,input,services,now=new Date().toISOStrin
   let adopted=0;
   for(const event of candidates){
     const result=await arm(db,{competitionId:event.id,operation:hash(['adopt-open-season-v1',year,String(event.id)]),
-      action:'open',deadline:event.entryDeadlineAt,openingRequested:false,newCycle:false,onlyIfUnmanaged:true},now);
-    if(!result.reused)adopted++;
+      action:'open',deadline:event.entryDeadlineAt,openingRequested:false,newCycle:false,onlyIfUnmanaged:true,deliveryMode:'bcc-v1'},now);
+    if(!result.reused){
+      adopted++;
+      if(services.schedule)await services.schedule(eventRef(db,event.id,hash(['adopt-open-season-v1',year,String(event.id)]),'closure').id);
+    }
   }
   return {source:'nap',adopted,openingCount:0,nextOffset:offset+events.length,done:offset+events.length>=pack.events.length};
 }
