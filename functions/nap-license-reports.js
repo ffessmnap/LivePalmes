@@ -41,7 +41,8 @@ function store(pool){return {
    const rows=await query(c,`SELECT version,revision FROM ${tables[0]} WHERE season=? AND competition_id=? LIMIT 1 FOR UPDATE`,args),previous=rows[0];
    if((previous?.revision||"")!==expectedRevision)throw new TypeError("Le bilan a été modifié par une autre personne. Rechargez avant de le remplacer.");
    const version=Number(previous?.version||0)+1;
-   await query(c,`INSERT INTO ${tables[1]} (season,competition_id,version,revision,report,summary,mail) VALUES (?,?,?,?,?,?,?)`,[...args,version,report.revision,JSON.stringify({...report,mail:null}),JSON.stringify(summary(report)),report.mail?JSON.stringify(report.mail):null]);
+   const inserted=await query(c,`INSERT INTO ${tables[1]} (season,competition_id,version,revision,report,summary,mail) SELECT ?,?,?,?,?,?,? FROM competitions WHERE id=?`,[...args,version,report.revision,JSON.stringify({...report,mail:null}),JSON.stringify(summary(report)),report.mail?JSON.stringify(report.mail):null,args[1]]);
+   if(inserted.affectedRows!==1)throw new TypeError("La compétition n’existe plus. Aucun bilan enregistré.");
    await query(c,`INSERT INTO ${tables[0]} (season,competition_id,version,revision,summary) VALUES (?,?,?,?,?) ON DUPLICATE KEY UPDATE version=VALUES(version),revision=VALUES(revision),summary=VALUES(summary)`,[...args,version,report.revision,JSON.stringify(summary(report))]);
    return {version};
   });
