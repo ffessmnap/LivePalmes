@@ -21,7 +21,11 @@ async function run(){
   assert.equal(exports.jobs[0].attachments[0].size,9);assert.equal(exports.jobs[0].attachments[0].sha256.length,64);
   assert.ok(!Object.hasOwn(exports.jobs[0].attachments[0],'buffer'),'no file bytes retained in Firestore');
   await page({kind:'closure',phase:'exports',cursor:''},{...competition,id:'legacy-nap-5136',competitionType:'openWater'},services);
-  assert.equal(txt,1,'water TXT stays deferred');assert.equal(officials,2);
+  assert.equal(txt,2,'water closure includes the validated TXT');assert.equal(officials,2);
+  const noComputer=await page({kind:'closure',phase:'exports',cursor:''},{...competition,competitionType:'openWater',computerEmail:''},services);
+  assert.equal(noComputer.jobs.length,1);assert.equal(txt,2,'no TXT without a declared computer contact');
+  await assert.rejects(page({kind:'closure',phase:'exports',cursor:''},{...competition,competitionType:'openWater'},
+    {...services,txt:async()=>{throw new TypeError('Reference native eau libre absente');}}),/Reference native/);
   entries[0].swimmers.push({});
   await assert.rejects(page({kind:'closure',phase:'clubs',cursor:'5',sourceHash:first.sourceHash},competition,services),/change/);
   assert.equal(pdf,6,'changed data stop before building more PDFs');
