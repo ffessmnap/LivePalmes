@@ -181,10 +181,10 @@ function registry(source, preparer = PREPARER) {
   }
 }
 
-function snapshot(root, sha) {
+function snapshot(root, sha, { production = false } = {}) {
   if (!/^[a-f0-9]{40}$/.test(sha)) throw new Error("SHA complet requis");
   const git = (args, options = {}) => execFileSync("git", args, { cwd: root, maxBuffer: 64 * 1024 * 1024, ...options });
-  const rows = git(["ls-tree", "-r", sha, "--", "functions", "tools/prepare-firebase-test-functions.js", "tools/firebase-test-backend-lots.js"], { encoding: "utf8" })
+  const rows = git(["ls-tree", "-r", sha, "--", "functions", "tools/prepare-firebase-test-functions.js", "tools/firebase-test-backend-lots.js", ...(production ? ["tools/prepare-production-functions.js"] : [])], { encoding: "utf8" })
     .split("\n").filter(row => row && !row.endsWith("/AGENTS.md")).sort();
   if (rows.some(row => !/^(100644|100755) blob [a-f0-9]{40}\t/.test(row))) throw new Error("Type de source Git non reconnu");
   const paths = rows.map(row => row.split("\t")[1]);
@@ -211,7 +211,9 @@ function snapshot(root, sha) {
     } else common.push(row);
   }
   const value = registry(contents["tools/firebase-test-backend-lots.js"] || "", metadata["tools/prepare-firebase-test-functions.js"] || "");
-  return { source: contents["functions/index.js"], files, common: common.sort(), registry: value };
+  return { source: contents["functions/index.js"], files, common: common.sort(), registry: value,
+    registrySource: contents["tools/firebase-test-backend-lots.js"] || "",
+    productionPreparer: metadata["tools/prepare-production-functions.js"] || "" };
 }
 
 function analyse(input) {
@@ -231,5 +233,5 @@ function analyse(input) {
 
 function fromGit(root, sha) { return analyse(snapshot(root, sha)); }
 
-module.exports = { fromGit, registry, snapshot, configuration, analyse };
+module.exports = { fromGit, registry, snapshot, configuration, analyse, literal };
 if (require.main === module) console.log(JSON.stringify(fromGit(process.argv[2], process.argv[3])));
