@@ -2,6 +2,14 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 27 octobre — Sélection ciblée des fonctions TEST
+
+- Accord explicite d’Antoine dans Infra : « corrige la sélection des fonctions pour éviter ces déploiements massifs sur TEST. Fais les tests et la CI, sans interrompre les déploiements en cours ni toucher à la PROD ». Outillage/test/documentation uniquement ; aucune fonction métier, configuration de déploiement, règle, donnée ou autorisation modifiée.
+- Comparateur TEST dédié, opt-in explicite dans la sélection et le contrôle après TEST. Classements entre lots analysés statiquement par présence effective dans le wrapper et union des secrets ; les autres métadonnées et préparateurs restent communs. Constantes numériques littérales et champs primitifs d’options à consommateur Firebase unique isolés avec replis stricts pour les effets inconnus. Les modules Git sont lus en un lot borné, sans exécuter de code historique.
+- Cas réels calculés hors ligne : `25ac3bb6→af818728` retient 5 fonctions TEST au lieu des 101 republiées dans 40472691148 ; `af818728→3ddc0a3c` en retient 12 au lieu de la sélection presque générale ; `3ddc0a3c→8a29dc08` en retient 1, puis `8a29dc08→3912febc` aucune. Ce sont des sélections calculées, sans promesse de durée ni nouveau déploiement de mesure.
+- Tests ciblés : 54 scénarios Python, cas réels, changements de secrets/préparateurs, getters, mutations, code dynamique, sources inconnues et conservation de deux jeux complets d’empreintes PROD. Vérification globale portée par la CI obligatoire, sans doublon local. Les preuves de révision, le refus de `hosting_only` si nécessaire et les contrôles d’inventaire/exclusions sont conservés.
+- Les déploiements déjà engagés conservent leur commit et leur circuit ; aucune annulation, relance ou écriture Firebase par ce chantier. Les prochains runs intégrés pourront utiliser le nouveau sélecteur. Les contrats et le comparateur par défaut PROD restent inchangés, y compris leurs éventuels refus d’équivalence lors d’un futur preflight ; aucun accord de publication PROD ni validation utilisateur fonctionnelle n’est déduit de ces tests.
+
 ### 27 octobre — Vérification des licences compacte et bilans par compétition
 
 - Demande et périmètre explicitement autorisés par Antoine : compétitions à gauche, aucun découpage en pages, trois statuts, bilans persistants dans la configuration existante et notification nominative volontaire aux administrateurs de la région organisatrice et à l’informatique. TEST uniquement ; aucun envoi réel pendant ce travail, aucune migration, règle, collection ou validation saisonnière nouvelle. Le contrôle terminé avec incohérences reste distinct de la validation d’une licence.
