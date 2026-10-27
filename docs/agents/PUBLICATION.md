@@ -17,9 +17,9 @@ Un changement de code d’authentification, de PDF/import/résultats, de DTN ou 
 ## Chemin courant
 
 1. Regrouper le besoin dans une PR courte depuis `main`, avec tests et documentation utiles. Attendre les contrôles obligatoires. L’aperçu `pr-N` est facultatif, uniquement avec l’étiquette `apercu-test` demandée ; il ne remplace pas TEST commun.
-2. Publier TEST commun seulement lorsqu’il est nécessaire et conserver sa preuve. Réutiliser les suites attestées du commit exact ; ne pas les répéter manuellement pour préparer PROD.
+2. Après CI main réussie, laisser l’automatisme publier les interfaces ordinaires connues sur TEST commun, avec contrôle backend et candidat exact. Fonctions serveur, chemins inconnus et cas sensibles restent au parcours explicite. Documentation seule : aucun déploiement. Conserver la preuve TEST. Réutiliser les suites attestées du commit exact ; ne pas les répéter manuellement pour préparer PROD.
 3. Recueillir le retour utilisateur sur les parcours concernés de la version commune. Une modification de ces parcours invalide leur validation ; les autres validations ne sont pas annulées par principe. Ne jamais déduire un accord utilisateur d’une CI verte.
-4. Pour PROD, préparer le bilan complet depuis les preuves, vérifier les prérequis nécessaires, présenter un résumé court et appliquer l’accord explicite d’Antoine dans Infra au seul périmètre présenté. Les modalités techniques sont dans la [procédure actuelle](../releases/PROCEDURE.md).
+4. Pour PROD, assembler le brouillon avec `livepalmes-release-draft.yml` depuis les preuves et retours utilisateur authentiques ; compléter les points bloquants puis utiliser le preflight existant. Figer la version ordinaire validée pour que les développements suivants ne changent pas le candidat approuvé. Préparer le bilan complet depuis les preuves, vérifier les prérequis nécessaires, présenter un résumé court et appliquer l’accord explicite d’Antoine dans Infra au seul périmètre présenté. Les modalités techniques sont dans la [procédure actuelle](../releases/PROCEDURE.md).
 
 L’assistant gère commits, runs et manifeste. La demande ordinaire n’exige ni PR de manifeste ni adaptation du circuit. Si un contrat existant refuse le candidat, présenter le motif et le périmètre réellement bloqué avant toute écriture ; une consigne simplifiée n’autorise pas à contourner le refus.
 
