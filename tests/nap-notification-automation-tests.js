@@ -53,7 +53,8 @@ async function run(){
   const adoptedResult=await automation.adoptOpenCompetitions(adopted,{season:2027},adopter,now);
   assert.equal(adoptedResult.adopted,1);assert.equal(adoptedResult.openingCount,0);assert.equal(adopted.rows.size,2);
   assert.equal((await automation.adoptOpenCompetitions(adopted,{season:2027},adopter,now)).adopted,0);
-  assert.equal(adoptedSchedules.length,1,'adoption schedules the new BCC closure without replaying openings');
+  assert.equal(adoptedSchedules.length,2,'retries reschedule the same BCC closure without replaying openings');
+  assert.equal(adoptedSchedules[0],adoptedSchedules[1],'queue retry preserves the event identifier');
   assert.equal(adopted.rows.get(`engagementClosureQueue/${adoptedSchedules[0]}`).deliveryMode,'bcc-v1');
   assert.equal(seasonReads,2);assert.equal(auth,2);
   assert.ok([...adopted.rows.values()].every(event=>event.kind!=='opening'));

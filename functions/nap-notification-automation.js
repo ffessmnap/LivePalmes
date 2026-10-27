@@ -170,10 +170,10 @@ async function adoptOpenCompetitions(db,input,services,now=new Date().toISOStrin
   for(const event of candidates){
     const result=await arm(db,{competitionId:event.id,operation:hash(['adopt-open-season-v1',year,String(event.id)]),
       action:'open',deadline:event.entryDeadlineAt,openingRequested:false,newCycle:false,onlyIfUnmanaged:true,deliveryMode:'bcc-v1'},now);
-    if(!result.reused){
-      adopted++;
-      if(services.schedule)await services.schedule(eventRef(db,event.id,hash(['adopt-open-season-v1',year,String(event.id)]),'closure').id);
-    }
+    if(!result.reused)adopted++;
+    // Retry scheduling even if adoption committed before a queue failure.
+    // A different managed cycle is left alone by the task's current-state guard.
+    if(services.schedule)await services.schedule(eventRef(db,event.id,hash(['adopt-open-season-v1',year,String(event.id)]),'closure').id);
   }
   return {source:'nap',adopted,openingCount:0,nextOffset:offset+events.length,done:offset+events.length>=pack.events.length};
 }
