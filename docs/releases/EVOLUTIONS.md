@@ -8,6 +8,11 @@
 - Budget inchangé : ouverture et rafraîchissement, zéro lecture ajoutée ; un téléchargement, un appel existant, au plus 26 requêtes NAP groupées (24 existantes + WID par clé primaire, une ligne + catalogue par clés, 300 lignes). Dossiers bornés à 39 200 lignes au total, sans requête par club/nageur ni reconstruction ; mêmes limites au pire cas. Aucune écriture métier et aucune lecture de performance.
 - Vérifications ciblées réussies hors réseau : téléchargement manuel, callables administrateurs, export WinPalme et dossiers NAP bornés ; fixtures positives TEST/PROD pour plusieurs identifiants, refus authentification/périmètre/source/identifiant/type/format, piscine et octets du TXT conservés. Chrome en 1440/390/320 px : bouton GED, téléchargement exact, refus visible et absence de débordement. Syntaxe et diff contrôlés. CI globale du candidat exact avant intégration et publication TEST commune ; preuves à lier après réussite, recette utilisateur encore attendue.
 
+### 27 octobre — Tableau de contrôle des licences plus dense
+
+- Demande explicite d’Antoine après inspection de TEST : un seul titre, filtres/commandes compacts, une ligne fine par nageur, licences non modifiables dans le lot, crayon d’ouverture de fiche, suppression de la recherche nageur. Périmètre interface uniquement ; aucun backend ni accès aux données ajouté, aucune modification des bilans NAP ou des règles de validation.
+- Tableau à sept colonnes, lignes uniformes d’environ 33 px, actions horizontales ; détails de contrôle dépliables et blocages toujours signalés. Un seul titre visible dans cette page, sans effet sur les autres destinations du portail. Recherche des compétitions conservée, recherche des nageurs et écouteurs de modification des licences supprimés. Budget réseau inchangé : filtres, sélection et défilement locaux, zéro lecture supplémentaire.
+- Tests hors réseau : 65 nageurs, 79 compétitions, titre unique, absence de saisie de licence, ouverture par crayon, hauteur identique Tous/À contrôler, au moins 13 lignes visibles en 1920×900 et 8 en 1280×720 ; parcours mobile, CSV, bilans et absence d’envoi TEST conservés. CI et publication TEST à attester après réussite ; validation utilisateur non acquise.
 
 ### 27 octobre — Archives GitHub et diagnostics des bilans licences
 

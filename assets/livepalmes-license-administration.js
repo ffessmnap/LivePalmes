@@ -24,7 +24,6 @@
     competitionFilter: document.querySelector("#adminLicenseControlCompetitionFilter"),
     closedOnly: document.querySelector("#adminLicenseControlClosedOnly"),
     selectionCount: document.querySelector("#adminLicenseControlSelectionCount"),
-    search: document.querySelector("#adminLicenseControlSearch"),
     filter: document.querySelector("#adminLicenseControlFilter"),
     rowCount: document.querySelector("#adminLicenseControlRowCount"),
     validationSummary: document.querySelector("#adminLicenseControlValidationSummary"),
@@ -138,7 +137,7 @@
     const query = searchText(elements.competitionSearch.value);
     const eligible = state.competitions.filter(c => (!elements.closedOnly.checked || isClosed(c)) && searchText(`${c.name || c.title} ${c.location || ""} ${c.city || ""}`).includes(query));
     const filtered = eligible.filter(c => state.competitionFilter === "all" || (controlReport(c.id)?.status || "none") === state.competitionFilter);
-    const labels = {all: "Toutes", none: "À contrôler", ok: "Sans anomalie", issues: "Avec incohérences"};
+    const labels = {all: "Toutes", none: "À contrôler", ok: "Conformes", issues: "Incohérences"};
     elements.competitionFilter.querySelectorAll("[data-competition-filter]").forEach(button => {
       const key = button.dataset.competitionFilter, count = eligible.filter(c => key === "all" || (controlReport(c.id)?.status || "none") === key).length;
       button.textContent = `${labels[key]} (${count})`; button.setAttribute("aria-pressed", String(state.competitionFilter === key));
@@ -309,7 +308,7 @@
     const blocked = state.validating || state.reportBusy || !current;
     [elements.exportButton, elements.importInput, elements.selectPending].forEach(element => { element.disabled = blocked; });
     elements.summary.textContent = current ? `${state.batch.people.length} nageurs · ${validCount} déjà validés · validité requise ${displayDate(state.batch.season.requiredValidityDate)}` : "Sélection modifiée : créez le nouveau lot. Le tableau affiche encore le lot précédent.";
-    const query = searchText(elements.search.value), filter = state.filter;
+    const filter = state.filter;
     const filterLabels = {all: "Tous", to_check: "À contrôler", validable: "Validables", issues: "Anomalies", valid: "Validées"};
     elements.filter.querySelectorAll("[data-license-filter]").forEach(button => {
       const key = button.dataset.licenseFilter, count = state.batch.people.filter(p => {
@@ -319,20 +318,20 @@
     });
     const visible = state.batch.people.filter(p => {
       const code = rowState(p).code;
-      return searchText(`${p.lastName} ${p.firstName} ${p.clubName || p.clubId} ${p.licenseNumber}`).includes(query) &&
-        (filter === "all" || filter === code || (filter === "issues" && !["valid", "validable", "to_check"].includes(code)));
+      return filter === "all" || filter === code || (filter === "issues" && !["valid", "validable", "to_check"].includes(code));
     });
-    elements.rowCount.textContent = `${visible.length} nageurs affichés sur ${state.batch.people.length} · tous les résultats du filtre, sans pagination`;
-    elements.results.innerHTML = `<table class="admin-license-admin-table"><thead><tr><th></th><th>Nageur</th><th>Licence</th><th>Compétitions</th><th>Contrôle</th><th>Actions</th></tr></thead><tbody>${visible.map((person) => {
+    elements.rowCount.textContent = `${visible.length} / ${state.batch.people.length} nageurs`;
+    elements.results.innerHTML = `<table class="admin-license-admin-table"><thead><tr><th></th><th>Nageur</th><th>Club</th><th>Licence</th><th>Compétitions</th><th>Contrôle</th><th>Actions</th></tr></thead><tbody>${visible.map((person) => {
       const status = rowState(person);
       const imported = state.imported.get(person.livePalmesId);
       return `<tr data-license-person-id="${escapeHtml(person.livePalmesId)}">
         <td><input type="checkbox" data-license-select ${person.selected ? "checked" : ""} ${person.seasonStatus === "valid" || blocked ? "disabled" : ""} aria-label="Sélectionner ${escapeHtml(`${person.firstName} ${person.lastName}`)}"></td>
-        <td><span class="admin-license-admin-person"><strong>${escapeHtml(`${person.lastName} ${person.firstName}`)}</strong><small>${escapeHtml(displayDate(person.birthDate))} · ${escapeHtml(person.clubName || person.clubId || "Club non renseigné")}</small></span></td>
-        <td><input type="text" value="${escapeHtml(person.licenseNumber)}" data-license-number ${blocked ? "disabled" : ""} aria-label="Licence de ${escapeHtml(`${person.firstName} ${person.lastName}`)}"><small>${acceptableLicense(person.licenseNumber) ? "" : "Format attendu : A-12-34567"}</small></td>
-        <td><span class="admin-license-admin-source">${person.competitions.map((name) => `<span>${escapeHtml(name)}</span>`).join("")}</span></td>
-        <td><span class="admin-license-admin-state" data-state="${escapeHtml(status.code)}">${escapeHtml(status.label)}</span>${imported?.validity ? `<small> jusqu’au ${escapeHtml(imported.validity)}</small>` : ""}${imported?.details ? `<small>${escapeHtml(imported.details)}</small>` : ""}${person.validationError ? `<small role="alert">Enregistrement bloqué : ${escapeHtml(person.validationError)}</small>` : ""}</td>
-        <td><span class="admin-license-admin-row-actions"><button class="ghost-button" type="button" data-license-edit ${blocked ? "disabled" : ""}>Modifier la fiche</button>${person.seasonStatus === "valid" ? "" : `<button type="button" data-license-validate-one ${acceptableLicense(person.licenseNumber) && !blocked ? "" : "disabled"}>Valider</button>`}</span></td>
+        <td class="admin-license-admin-person" title="${escapeHtml(displayDate(person.birthDate))}"><strong>${escapeHtml(`${person.lastName} ${person.firstName}`)}</strong><span class="sr-only"> · ${escapeHtml(displayDate(person.birthDate))}</span></td>
+        <td class="admin-license-admin-club" title="${escapeHtml(person.clubName || person.clubId || "Club non renseigné")}">${escapeHtml(person.clubName || person.clubId || "—")}</td>
+        <td class="admin-license-admin-number">${escapeHtml(person.licenseNumber || "Non renseignée")}</td>
+        <td class="admin-license-admin-source" title="${escapeHtml(person.competitions.join(", "))}">${escapeHtml(person.competitions.join(", "))}</td>
+        <td>${imported?.validity || imported?.details || person.validationError ? `<details class="admin-license-admin-row-details"><summary title="Afficher le détail du contrôle"><span class="admin-license-admin-state" data-state="${escapeHtml(person.validationError ? "erreur" : status.code)}">${escapeHtml(person.validationError ? "Bloquée" : status.label)}</span></summary><div>${imported?.validity ? `Validité : ${escapeHtml(imported.validity)}. ` : ""}${escapeHtml(imported?.details || "")}${person.validationError ? `<span role="alert">Enregistrement bloqué : ${escapeHtml(person.validationError)}</span>` : ""}</div></details>` : `<span class="admin-license-admin-state" data-state="${escapeHtml(status.code)}">${escapeHtml(status.label)}</span>`}</td>
+        <td><span class="admin-license-admin-row-actions"><button class="ghost-button admin-license-admin-edit" type="button" data-license-edit aria-label="Modifier la fiche de ${escapeHtml(`${person.firstName} ${person.lastName}`)}" title="Ouvrir la fiche" ${blocked ? "disabled" : ""}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m16 3 5 5-12 12-6 1 1-6Z M13 6l5 5"/></svg></button>${person.seasonStatus === "valid" ? "" : `<button type="button" data-license-validate-one ${acceptableLicense(person.licenseNumber) && !blocked ? "" : "disabled"}>Valider</button>`}</span></td>
       </tr>`;
     }).join("")}</tbody></table>`;
     syncValidateButton();
@@ -357,7 +356,7 @@
       state.batch.people.forEach((person) => { person.selected = false; });
       renderBatch();
       renderCompetitions();
-      setStatus(`Lot ${result.batchId} prêt. Les nageurs déjà validés pour ${result.season.label} sont conservés dans l’historique.`, "ok");
+      setStatus(`Lot prêt · ${result.people.length} nageurs.`, "ok");
     } catch (error) {
       setStatus(`Préparation impossible : ${error?.message || error}`, "error");
     } finally {
@@ -569,7 +568,6 @@
   elements.competitionSearch.addEventListener("input", renderCompetitions);
   elements.competitionFilter.addEventListener("click", event => { const button = event.target.closest("[data-competition-filter]"); if (button) { state.competitionFilter = button.dataset.competitionFilter; renderCompetitions(); } });
   elements.closedOnly.addEventListener("change", renderCompetitions);
-  elements.search.addEventListener("input", renderBatch);
   elements.filter.addEventListener("click", event => { const button = event.target.closest("[data-license-filter]"); if (button) { state.filter = button.dataset.licenseFilter; renderBatch(); } });
 
   elements.competitions.addEventListener("change", (event) => {
@@ -583,14 +581,7 @@
     const person = state.batch?.people.find((item) => item.livePalmesId === row?.dataset.licensePersonId);
     if (!person) return;
     if (event.target.matches("[data-license-select]")) person.selected = event.target.checked;
-    if (event.target.matches("[data-license-number]")) { person.licenseNumber = normalizeLicense(event.target.value); person.seasonStatus = "to_check"; state.imported.delete(person.livePalmesId); event.target.value = person.licenseNumber; markReportsStale(person); renderCompetitions(); }
     renderBatch();
-  });
-  elements.results.addEventListener("input", (event) => {
-    if (!event.target.matches("[data-license-number]")) return;
-    const row = event.target.closest("[data-license-person-id]");
-    const person = state.batch?.people.find((item) => item.livePalmesId === row?.dataset.licensePersonId);
-    if (person) { person.licenseNumber = normalizeLicense(event.target.value); person.seasonStatus = "to_check"; state.imported.delete(person.livePalmesId); markReportsStale(person); syncValidateButton(); }
   });
   elements.results.addEventListener("click", (event) => {
     const button = event.target.closest("button");
