@@ -676,7 +676,7 @@
 .admin-license-admin .admin-license-admin-segments { display: flex; flex-wrap: wrap; gap: 4px; }
 .admin-portal-page .admin-license-admin .admin-license-admin-segments button { min-height: 29px; padding: 5px 8px; border: 1px solid transparent; border-radius: 5px; background: transparent; color: var(--license-muted); font-size: .74rem; font-weight: 400; line-height: 1.2; }
 .admin-portal-page .admin-license-admin .admin-license-admin-segments button[aria-pressed="true"] { color: var(--license-accent); background: color-mix(in srgb, var(--license-accent) 10%, var(--license-surface)); border-color: var(--license-border); font-weight: 500; }
-.admin-license-admin .admin-license-admin-competition-filters { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 3px; }
+.admin-license-admin .admin-license-admin-competition-filters { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 3px; }
 .admin-portal-page .admin-license-admin .admin-license-admin-competition-filters button { text-align: left; padding: 5px; font-size: .7rem; }
 .admin-license-admin .admin-license-admin-competition-entry { padding: 6px 3px; border-radius: 0; }
 .admin-license-admin .admin-license-admin-competition { padding: 0; border: 0; border-radius: 0; gap: 2px 7px; background: transparent; }
@@ -751,6 +751,9 @@
 .admin-license-admin .admin-license-admin-workspace-actions { padding-top: 5px; gap: 5px; }
 .admin-license-admin .admin-license-admin-validation-bar { padding: 4px 6px; }
 .admin-license-admin #adminLicenseControlRowCount { font-size: .7rem; line-height: 1.2; }
+.admin-license-admin-dialog textarea { width: 100%; box-sizing: border-box; font: inherit; padding: 8px; border: 1px solid var(--license-border); border-radius: 6px; resize: vertical; }
+.admin-license-admin .admin-license-admin-competition-state[data-control-state="closed"] { background: var(--license-soft); color: var(--license-text); }
+.admin-portal-page .admin-license-admin .admin-license-admin-competition-filters button { text-align: center; }
 @media (min-width: 901px) {
   .admin-portal-page .admin-license-admin .admin-license-admin-workspace-actions button { min-height: 32px; height: 32px; padding-top: 4px; padding-bottom: 4px; }
   .admin-license-admin .admin-license-admin-step-title > div { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }

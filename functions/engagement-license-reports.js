@@ -13,7 +13,7 @@ const LABELS={valid:"Licence valide",licence_expiree:"Licence expirée",introuva
 function participants(batch,competition){return batch.people.filter(p=>p.competitionIds.map(id).includes(id(competition)));}
 function membership(batch,competition){return hash([batch.season.label,participants(batch,competition).map(p=>[p.livePalmesId,p.firstName,p.lastName,p.birthDate,p.clubId,p.licenseNumber]).sort((a,b)=>String(a[0]).localeCompare(String(b[0])))]);}
 function fingerprint(batch,competition){return hash([membership(batch,competition),participants(batch,competition).map(p=>[p.livePalmesId,p.seasonStatus,p.validatedAt||""]).sort((a,b)=>String(a[0]).localeCompare(String(b[0])))]);}
-function view(report){return report?{competitionId:report.competitionId,status:report.status,completedAt:report.completedAt,counts:report.counts,revision:report.revision,mail:report.mail||null}:null;}
+function view(report){return report?{competitionId:report.competitionId,status:report.status,completedAt:report.completedAt,counts:report.counts,revision:report.revision,mail:report.mail||null,closure:report.closure||null}:null;}
 async function summaries(db,season,store){if(store)return store.summaries(season);return {reports:(await summaryRef(db,season).get()).data()?.reports||{},readStats:{firestoreDocuments:1}};}
 async function attach(db,batch,store){
   if(store){const reports=await store.readMany(batch.season.label,batch.competitions.map(c=>c.id));batch.controlReports={};batch.controlMemberships={};for(const c of batch.competitions){const report=reports.get(id(c.id));batch.controlMemberships[id(c.id)]=membership(batch,c.id);batch.controlReports[id(c.id)]=report?{...view(report),current:report.fingerprint===fingerprint(batch,c.id)}:null;}return batch;}
@@ -64,6 +64,18 @@ async function readCurrent(db,batch,competition,store){
   if(!report||report.fingerprint!==fingerprint(batch,competition))throw new TypeError("Aucun bilan à jour. Contrôlez les engagés actuels et terminez le contrôle avant de notifier.");
   return report;
 }
+async function close(db,batch,input,actor,store,now=new Date().toISOString()){
+  if(!store)throw new TypeError("Stockage NAP requis pour clôturer.");
+  const report=await readCurrent(db,batch,input.competitionId,store);
+  if(!input.expectedRevision||input.expectedRevision!==report.revision)throw new TypeError("Le bilan a changé. Rechargez avant de clôturer.");
+  if(report.closure)throw new TypeError("Ce contrôle est déjà clôturé.");
+  const note=typeof input.note==="string"?input.note.normalize("NFC").trim():"";
+  if(note.length>1000)throw new TypeError("Le commentaire est limité à 1 000 caractères.");
+  if(report.status!=="ok"&&!note)throw new TypeError("Un commentaire est obligatoire pour clôturer avec réserves.");
+  const closed={...report,closure:{closedAt:now,closedBy:actor,note,reportRevision:report.revision},revision:hash(["closure",report.revision,now,actor,note])};
+  await store.save(closed,report.revision);
+  return {ok:true,report:{...view(closed),current:true},history:await store.history(closed.season,closed.competitionId)};
+}
 function recipients(competition,directory){
   if(!Array.isArray(directory)||directory.length>10000)throw new RangeError("Annuaire des destinataires trop volumineux.");
   const region=String(competition.regionId||"");const map=new Map();
@@ -76,7 +88,7 @@ function recipients(competition,directory){
 }
 function message(report){
   const c=report.counts,date=new Intl.DateTimeFormat("fr-FR",{timeZone:"Europe/Paris",dateStyle:"short",timeStyle:"short"}).format(new Date(report.completedAt)),issues=report.people.filter(p=>p.status!=="valid");
-  return {subject:`LivePalmes — Contrôle des licences — ${report.competitionName}`.slice(0,220),text:["Bonjour,","",`La revue des licences de ${report.competitionName} a été terminée le ${date} (saison ${report.season}).`,"",`Compétiteurs concernés : ${c.total}`,`Licences valides : ${c.valid}`,`Licences expirées : ${c.expired}`,`Licences non retrouvées dans la base fédérale : ${c.notFound}`,`Licences non confirmées : ${c.unconfirmed??c.other??0}`,"",issues.length?"Points à vérifier avant la compétition :":"Aucune incohérence relevée au moment du contrôle.",...issues.map(p=>`${p.lastName} ${p.firstName} · ${p.clubName} · ${p.licenseNumber||"Licence non renseignée"} — ${LABELS[p.status]}${p.validity?` (${p.validity})`:""}`),"","Une erreur technique ou un contrôle non effectué ne démontre pas l’absence d’une licence dans la base fédérale.","Ce bilan correspond aux engagés et aux résultats connus à la date de la revue. Un nouveau contrôle est nécessaire en cas de modification.","","Portail LivePalmes"].join("\n")};
+  return {subject:`LivePalmes — Contrôle des licences — ${report.competitionName}`.slice(0,220),text:["Bonjour,","",`La revue des licences de ${report.competitionName} a été terminée le ${date} (saison ${report.season}).`,"",...(report.closure?[`Dossier clôturé le ${new Intl.DateTimeFormat("fr-FR",{timeZone:"Europe/Paris",dateStyle:"short",timeStyle:"short"}).format(new Date(report.closure.closedAt))} — ${report.status === "ok" ? "sans anomalie" : "avec réserves"}.`,...(report.closure.note?[`Commentaire de clôture : ${report.closure.note}`]:[]),""]:[]),`Compétiteurs concernés : ${c.total}`,`Licences valides : ${c.valid}`,`Licences expirées : ${c.expired}`,`Licences non retrouvées dans la base fédérale : ${c.notFound}`,`Licences non confirmées : ${c.unconfirmed??c.other??0}`,"",issues.length?"Points à vérifier avant la compétition :":"Aucune incohérence relevée au moment du contrôle.",...issues.map(p=>`${p.lastName} ${p.firstName} · ${p.clubName} · ${p.licenseNumber||"Licence non renseignée"} — ${LABELS[p.status]}${p.validity?` (${p.validity})`:""}`),"","Une erreur technique ou un contrôle non effectué ne démontre pas l’absence d’une licence dans la base fédérale.","Ce bilan correspond aux engagés et aux résultats connus à la date de la revue. Un nouveau contrôle est nécessaire en cas de modification.","","Portail LivePalmes"].join("\n")};
 }
 async function notify(db,batch,input,services,store){
   const competition=await services.competition(id(input.competitionId));
@@ -109,4 +121,4 @@ async function notify(db,batch,input,services,store){
   });
   return {...result,sentCount,done,nextOffset:offset+20};
 }
-module.exports={membership,fingerprint,build,view,summaries,attach,complete,readCurrent,recipients,message,notify,reportRef,summaryRef};
+module.exports={membership,fingerprint,build,view,summaries,attach,complete,close,readCurrent,recipients,message,notify,reportRef,summaryRef};
