@@ -85,6 +85,10 @@ const report={version:1,competitionId:"1",competitionName:"Coupe fictive",season
  const resumed=await migration.migrate(target,sourceDb,"prepare");assert.equal((await migration.migrate(target,sourceDb,"apply",resumed)).alreadyPresent,1);
  await native.store(target).save({...report,revision:"b".repeat(64)},report.revision);
  const conflict=await migration.migrate(target,sourceDb,"prepare");await assert.rejects(migration.migrate(target,sourceDb,"apply",conflict),/différent/);assert.equal(target.rows.length,2);
+ const maintenance=require("../functions/nap-license-report-migration");
+ assert.throws(()=>maintenance.request(target,{phase:"prepare",reports:[report]}),/invalide/);
+ assert.throws(()=>maintenance.request(target,{confirmation:"nap-license-reports-history",phase:"prepare",reports:Array(1001).fill(report)}),/volumineuse/);
+ assert.equal((await maintenance.request(target,{confirmation:"nap-license-reports-history",phase:"prepare",reports:[report]})).sourceHash,native.hash([report]));
  // TEST has no mail side effects even when reports come from NAP.
  let sends=0,writes=0;
  const batch={season:require("../functions/nap-license-state").seasonInfo(report.season),competitions:[{id:"1"}],people:[]};
