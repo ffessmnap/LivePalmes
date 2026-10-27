@@ -106,16 +106,16 @@ Les regles Firebase jouent le role de portes et de serrures : elles empechent un
 
 Node.js fait fonctionner les traitements techniques : tests, imports, controles, generation des fichiers publics, PDF et operations executees sur les serveurs Firebase.
 
-### INTRANAP, WinPalme, PDF, TXT et Excel
+### Base NAP, WinPalme, PDF, TXT et Excel
 
 Ces outils et formats relient LivePalmes aux donnees sportives existantes :
 
-- IntraNAP et LivePalmes partagent la base NAP des nageurs, clubs, compétitions et performances ;
+- LivePalmes utilise la base NAP des nageurs, clubs, compétitions et performances ;
 - les fichiers TXT WinPalme permettent d'importer de nouveaux résultats dans NAP ; les trames Excel internationales restent hors de la première validation de production ;
 - les PDF servent notamment aux documents de competition ;
 - les exports WinPalme permettent de transmettre les engagements dans un format exploitable par le logiciel de gestion de competition.
 
-Les anciens exports INTRANAP restent historiques. Les corrections actuelles sont appliquées directement dans NAP avec les sauvegardes et traces prévues ; elles sont donc aussi visibles depuis IntraNAP.
+Les anciens exports restent historiques. Les corrections actuelles sont appliquées directement dans NAP avec les sauvegardes et traces prévues.
 
 ### Google Sheets et la messagerie
 

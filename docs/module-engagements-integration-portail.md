@@ -8,7 +8,7 @@
 
 ## Sources et écritures
 
-Compétitions, courses, dossiers clubs, nageurs, chefs d'équipe, officiels et relais utilisent les tables natives NAP et les compléments `livepalmes_*`. IntraNAP partage les tables existantes, sans modification de son logiciel. Les compléments conservent les options supplémentaires LivePalmes : programme détaillé, tarifs, qualifications, statuts et historique. Les anciennes collections sportives `engagementCompetitions`, `engagementClubEntries` et leurs agrégats Firestore ne sont plus la source des parcours NAP.
+Compétitions, courses, dossiers clubs, nageurs, chefs d'équipe, officiels et relais utilisent les tables natives NAP et les compléments `livepalmes_*`. Les compléments conservent les options supplémentaires LivePalmes : programme détaillé, tarifs, qualifications, statuts et historique. Les anciennes collections sportives `engagementCompetitions`, `engagementClubEntries` et leurs agrégats Firestore ne sont plus la source des parcours NAP.
 
 Le calendrier public, les formations, stages et réunions utilisent aussi NAP. La bibliothèque eau libre repart des courses par défaut validées, sans reprise de l'ancienne bibliothèque Firebase. Les règles de dates, périmètres, temps et suppression sont précisées dans [NAP_REFERENCE.md](NAP_REFERENCE.md).
 
