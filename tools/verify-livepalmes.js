@@ -402,6 +402,7 @@ function runBrowserSmokeIfRequested() {
   if (!requested) return;
   printStep("Smoke test navigateur");
   run(process.execPath, [path.join(rootDir, "tests", "license-workspace-browser-tests.js")]);
+  run(process.execPath, [path.join(rootDir, "tests", "license-workspace-usability-browser-tests.js")]);
   run(process.execPath, [path.join(rootDir, "tools", "livepalmes-browser-smoke.js")]);
 }
 

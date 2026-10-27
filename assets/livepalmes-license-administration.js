@@ -22,21 +22,43 @@
     status: document.querySelector("#adminLicenseControlStatus"),
     competitionSearch: document.querySelector("#adminLicenseControlCompetitionSearch"),
     competitionFilter: document.querySelector("#adminLicenseControlCompetitionFilter"),
+    closedOnly: document.querySelector("#adminLicenseControlClosedOnly"),
     selectionCount: document.querySelector("#adminLicenseControlSelectionCount"),
     search: document.querySelector("#adminLicenseControlSearch"),
     filter: document.querySelector("#adminLicenseControlFilter"),
     rowCount: document.querySelector("#adminLicenseControlRowCount"),
+    validationSummary: document.querySelector("#adminLicenseControlValidationSummary"),
     empty: document.querySelector("#adminLicenseControlEmpty"),
     report: document.querySelector("#adminLicenseControlReport"),
     dialog: document.querySelector("#adminLicenseControlDialog"),
     dialogContent: document.querySelector("#adminLicenseControlDialogContent")
   };
-  const state = { competitions: [], selectedCompetitions: new Set(), reports: {}, reportsAvailable: false, batch: null, imported: new Map(), loadingCompetitions: false, validating: false, reportBusy: false, reportId: "", reportData: null, preview: null, dialogRequest: 0 };
+  const state = { competitions: [], selectedCompetitions: new Set(), competitionFilter: "all", filter: "all", reports: {}, reportsAvailable: false, batch: null, imported: new Map(), loadingCompetitions: false, validating: false, reportBusy: false, reportId: "", reportData: null, preview: null, dialogRequest: 0 };
   const LICENSE_PATTERN = /^[A-Z]-\d{2}-\d+$/;
   const competitionKey = value => String(value || "").replace(/^legacy-nap-/, "");
   const searchText = value => String(value || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("fr");
   const controlLabels = { none: "Non contrôlé", ok: "Fait · tout est bon", issues: "Fait · incohérences" };
-  const finalStatuses = new Set(["validable", "licence_expiree", "introuvable", "anomalie_licence", "anomalie_identite", "ambigu"]);
+  const confirmedStatuses = new Set(["validable", "licence_expiree", "introuvable"]);
+  let sizeFrame = 0;
+  function syncWorkspaceHeight() {
+    cancelAnimationFrame(sizeFrame);
+    sizeFrame = requestAnimationFrame(() => {
+      const layout = panel.querySelector(".admin-license-admin-layout"), rect = layout.getBoundingClientRect();
+      if (!rect.width) return;
+      const height = `${Math.max(320, window.innerHeight - Math.max(76, rect.top) - 12)}px`;
+      if (panel.style.getPropertyValue("--license-workspace-height") !== height) panel.style.setProperty("--license-workspace-height", height);
+    });
+  }
+  function isClosed(competition) {
+    const deadline = Date.parse(competition.entryDeadlineAt || "");
+    return Number.isFinite(deadline) && deadline <= Date.now();
+  }
+  function unconfirmedPeople(id) {
+    return reportPeople(id).filter(p => {
+      const result = state.imported.get(p.livePalmesId);
+      return result ? !confirmedStatuses.has(result.status) : p.seasonStatus !== "valid";
+    });
+  }
 
   function batchCurrent() {
     return Boolean(state.batch && state.batch.season.label === elements.season.value &&
@@ -114,15 +136,21 @@
       return;
     }
     const query = searchText(elements.competitionSearch.value);
-    const filtered = state.competitions.filter(c => searchText(`${c.name || c.title} ${c.location || ""} ${c.city || ""}`).includes(query) &&
-      (elements.competitionFilter.value === "all" || (controlReport(c.id)?.status || "none") === elements.competitionFilter.value));
+    const eligible = state.competitions.filter(c => (!elements.closedOnly.checked || isClosed(c)) && searchText(`${c.name || c.title} ${c.location || ""} ${c.city || ""}`).includes(query));
+    const filtered = eligible.filter(c => state.competitionFilter === "all" || (controlReport(c.id)?.status || "none") === state.competitionFilter);
+    const labels = {all: "Toutes", none: "À contrôler", ok: "Sans anomalie", issues: "Avec incohérences"};
+    elements.competitionFilter.querySelectorAll("[data-competition-filter]").forEach(button => {
+      const key = button.dataset.competitionFilter, count = eligible.filter(c => key === "all" || (controlReport(c.id)?.status || "none") === key).length;
+      button.textContent = `${labels[key]} (${count})`; button.setAttribute("aria-pressed", String(state.competitionFilter === key));
+    });
     elements.competitions.innerHTML = filtered.map((competition) => `
       <div class="admin-license-admin-competition-entry"><label class="admin-license-admin-competition">
         <input type="checkbox" value="${escapeHtml(competition.id)}" ${state.selectedCompetitions.has(competition.id) ? "checked" : ""} ${state.validating || state.reportBusy || (!state.selectedCompetitions.has(competition.id) && state.selectedCompetitions.size >= 5) ? "disabled" : ""}>
         <strong>${escapeHtml(competition.name || competition.title || "Compétition")}</strong>
         <small>${escapeHtml(displayDate(competition.date))} · ${escapeHtml(competition.location || competition.city || "Lieu non renseigné")}</small>
-      </label><button class="admin-license-admin-competition-state" type="button" data-license-report="${escapeHtml(competition.id)}" data-control-state="${escapeHtml(controlReport(competition.id)?.status || "none")}">${escapeHtml(state.reportsAvailable ? controlLabels[controlReport(competition.id)?.status || "none"] : "Statut indisponible")} ↗</button>${controlReport(competition.id)?.completedAt ? `<small class="admin-license-admin-control-date">Bilan du ${escapeHtml(new Date(controlReport(competition.id).completedAt).toLocaleDateString("fr-FR"))}</small>` : ""}</div>`).join("") || '<p class="admin-engagements-empty">Aucune compétition pour ce filtre.</p>';
+      </label><button class="admin-license-admin-competition-state" type="button" data-license-report="${escapeHtml(competition.id)}" data-control-state="${escapeHtml(controlReport(competition.id)?.status || "none")}" aria-label="${escapeHtml(`Bilan de ${competition.name || competition.title} : ${state.reportsAvailable ? controlLabels[controlReport(competition.id)?.status || "none"] : "statut indisponible"}`)}">${escapeHtml(state.reportsAvailable ? controlLabels[controlReport(competition.id)?.status || "none"] : "Statut indisponible")} ↗</button></div>`).join("") || '<p class="admin-engagements-empty">Aucune compétition pour ces filtres. Décochez « Clôture passée » pour voir les autres.</p>';
     syncPrepareButton();
+    syncWorkspaceHeight();
   }
 
   async function loadCompetitions() {
@@ -267,6 +295,7 @@
 
   function syncValidateButton() {
     const selected = selectedPeople();
+    elements.validationSummary.textContent = `${selected.length} licence${selected.length > 1 ? "s" : ""} sélectionnée${selected.length > 1 ? "s" : ""}`;
     elements.validate.disabled = state.validating || state.reportBusy || !batchCurrent() || !selected.length;
     elements.validate.textContent = selected.length ? `Valider la sélection (${selected.length})` : "Valider la sélection";
   }
@@ -280,7 +309,14 @@
     const blocked = state.validating || state.reportBusy || !current;
     [elements.exportButton, elements.importInput, elements.selectPending].forEach(element => { element.disabled = blocked; });
     elements.summary.textContent = current ? `${state.batch.people.length} nageurs · ${validCount} déjà validés · validité requise ${displayDate(state.batch.season.requiredValidityDate)}` : "Sélection modifiée : créez le nouveau lot. Le tableau affiche encore le lot précédent.";
-    const query = searchText(elements.search.value), filter = elements.filter.value;
+    const query = searchText(elements.search.value), filter = state.filter;
+    const filterLabels = {all: "Tous", to_check: "À contrôler", validable: "Validables", issues: "Anomalies", valid: "Validées"};
+    elements.filter.querySelectorAll("[data-license-filter]").forEach(button => {
+      const key = button.dataset.licenseFilter, count = state.batch.people.filter(p => {
+        const code = rowState(p).code; return key === "all" || key === code || (key === "issues" && !["valid", "validable", "to_check"].includes(code));
+      }).length;
+      button.textContent = `${filterLabels[key]} (${count})`; button.setAttribute("aria-pressed", String(filter === key));
+    });
     const visible = state.batch.people.filter(p => {
       const code = rowState(p).code;
       return searchText(`${p.lastName} ${p.firstName} ${p.clubName || p.clubId} ${p.licenseNumber}`).includes(query) &&
@@ -300,6 +336,7 @@
       </tr>`;
     }).join("")}</tbody></table>`;
     syncValidateButton();
+    syncWorkspaceHeight();
   }
 
   async function prepareBatch() {
@@ -411,16 +448,16 @@
     const current = report?.current !== false && Boolean(report);
     const members = reportPeople(id);
     const inBatch = batchCurrent() && state.batch?.competitions.some(c => competitionKey(c.id) === competitionKey(id));
-    const pending = members.filter(p => { const imported = state.imported.get(p.livePalmesId); return imported ? !finalStatuses.has(imported.status) : p.seasonStatus !== "valid"; }).length;
+    const pending = unconfirmedPeople(id).length;
     const counts = report?.counts;
     const preview = state.preview;
     const disabled = state.reportBusy || state.validating;
     elements.dialogContent.innerHTML = `<header><h3>Bilan de la compétition</h3><button type="button" class="ghost-button" data-report-close>Fermer</button></header>
       <label>Compétition<select data-report-competition ${disabled ? "disabled" : ""}>${state.competitions.map(c => `<option value="${escapeHtml(c.id)}" ${c.id === id ? "selected" : ""}>${escapeHtml(c.name || c.title)} · ${escapeHtml(displayDate(c.date))}</option>`).join("")}</select></label>
       <p aria-live="polite">${state.reportBusy ? "Traitement en cours…" : !data ? "Chargement du bilan…" : escapeHtml(current ? `Contrôle fait · ${report.status === "ok" ? "tout est bon" : "incohérences"}` : "Non contrôlé")}</p>
-      ${report ? `<p>${report.current === false ? "Le dernier bilan ne correspond plus aux engagés ou aux licences actuels. Nouveau contrôle nécessaire. " : ""}Bilan du ${escapeHtml(new Date(report.completedAt).toLocaleString("fr-FR"))} · ${counts.total} compétiteurs contrôlés.</p><p>Valides : ${counts.valid} · expirées : ${counts.expired} · non retrouvées : ${counts.notFound} · autres incohérences : ${counts.other}</p>` : ""}
-      ${data && !current ? `<p>${inBatch ? `${pending} licence(s) encore sans résultat exploitable. Les erreurs techniques restent à contrôler.` : "Préparez un lot contenant cette compétition pour terminer son contrôle."}</p>` : ""}
-      <div class="admin-license-admin-actions"><button type="button" data-report-complete ${disabled || !data || !inBatch || !members.length || pending ? "disabled" : ""}>${current ? "Actualiser le bilan" : "Terminer le contrôle"}</button><button type="button" class="ghost-button" data-report-preview ${disabled || !current ? "disabled" : ""}>Prévisualiser le mail</button></div>
+      ${report ? `<p>${report.current === false ? "Le dernier bilan ne correspond plus aux engagés ou aux licences actuels. Nouveau contrôle nécessaire. " : ""}Bilan du ${escapeHtml(new Date(report.completedAt).toLocaleString("fr-FR"))} · ${counts.total} compétiteurs concernés.</p><p>Valides : ${counts.valid} · expirées : ${counts.expired} · non retrouvées : ${counts.notFound} · non confirmées : ${counts.unconfirmed ?? counts.other ?? 0}</p>` : ""}
+      ${data ? `<p>${inBatch ? `${pending} licence(s) non confirmée(s). Vous pouvez terminer la revue : elles resteront signalées dans le bilan, sans validation individuelle.` : "Préparez un lot contenant cette compétition pour terminer son contrôle."}</p>` : ""}
+      <div class="admin-license-admin-actions"><button type="button" data-report-complete ${disabled || !data || !inBatch || !members.length ? "disabled" : ""}>${current ? "Actualiser le bilan" : "Marquer comme contrôlée"}</button><button type="button" class="ghost-button" data-report-preview ${disabled || !current ? "disabled" : ""}>Prévisualiser le mail</button></div>
       <p>${report?.mail?.sentAt ? `Mail envoyé le ${escapeHtml(new Date(report.mail.sentAt).toLocaleString("fr-FR"))} à ${report.mail.recipientCount} destinataires.` : "Mail non envoyé."}</p>
       ${preview ? `<h3>Destinataires (${preview.recipients.length})</h3><ul>${preview.recipients.map(r => `<li>${escapeHtml(r.name || r.role)} · ${escapeHtml(r.email)}</li>`).join("")}</ul>${preview.missingRegion ? "<p>Région organisatrice non renseignée : aucun administrateur régional ne peut être ciblé.</p>" : ""}${preview.missingComputer ? "<p>Adresse de l’informatique de la compétition non renseignée.</p>" : ""}<p><strong>${escapeHtml(preview.subject)}</strong></p><pre>${escapeHtml(preview.text)}</pre><div class="admin-license-admin-actions"><button type="button" data-report-send ${disabled || preview.disabled || !preview.recipients.length ? "disabled" : ""}>Envoyer le mail</button></div>${preview.disabled ? `<p>${preview.previewOnly ? "TEST : aperçu uniquement, aucun mail réel envoyé." : "Envois désactivés dans le réglage des notifications."}</p>` : "<p>Envoi volontaire aux destinataires affichés, sans doublon.</p>"}` : ""}`;
     if (report?.mail?.sentAt) {
@@ -453,12 +490,14 @@
     const payload = {action, season, competitionId: id};
     if (action === "completeReport") {
       if (!batchCurrent()) return;
+      const unconfirmed = unconfirmedPeople(id).length;
+      if (unconfirmed && !window.confirm(`Terminer le contrôle avec ${unconfirmed} licence(s) non confirmée(s) ? Elles seront signalées dans le bilan et le mail, sans être validées individuellement.`)) return;
       const nativeId = competitionKey(id);
       payload.expectedMembership = state.batch.controlMemberships?.[nativeId];
       payload.expectedRevision = state.reportData.report?.revision || "";
       payload.results = reportPeople(id).filter(p => p.seasonStatus !== "valid" || state.imported.has(p.livePalmesId)).map(p => {
         const r = state.imported.get(p.livePalmesId), match = String(r?.validity || "").match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
-        return {id: p.livePalmesId, status: r?.status || "to_check", licenseNumber: p.licenseNumber, validity: match ? `${match[3]}-${match[2]}-${match[1]}` : r?.validity || ""};
+        return {id: p.livePalmesId, status: r?.status || "non_controle", licenseNumber: p.licenseNumber, validity: match ? `${match[3]}-${match[2]}-${match[1]}` : r?.validity || ""};
       });
     }
     if (action === "sendReport") {
@@ -508,9 +547,10 @@
   elements.competitions.addEventListener("click", event => { const button = event.target.closest("[data-license-report]"); if (button) void openReport(button.dataset.licenseReport); });
   elements.report.addEventListener("click", () => { if (state.batch?.competitions.length) void openReport(state.competitions.find(c => competitionKey(c.id) === competitionKey(state.batch.competitions[0].id))?.id || state.batch.competitions[0].id); });
   elements.competitionSearch.addEventListener("input", renderCompetitions);
-  elements.competitionFilter.addEventListener("change", renderCompetitions);
+  elements.competitionFilter.addEventListener("click", event => { const button = event.target.closest("[data-competition-filter]"); if (button) { state.competitionFilter = button.dataset.competitionFilter; renderCompetitions(); } });
+  elements.closedOnly.addEventListener("change", renderCompetitions);
   elements.search.addEventListener("input", renderBatch);
-  elements.filter.addEventListener("change", renderBatch);
+  elements.filter.addEventListener("click", event => { const button = event.target.closest("[data-license-filter]"); if (button) { state.filter = button.dataset.licenseFilter; renderBatch(); } });
 
   elements.competitions.addEventListener("change", (event) => {
     if (!event.target.matches('input[type="checkbox"]')) return;
@@ -557,6 +597,8 @@
   document.addEventListener("livepalmes:license-admin-open", () => { if (!state.competitions.length) void loadCompetitions(); });
 
   initializeSeasons();
+  window.addEventListener("resize", syncWorkspaceHeight, {passive: true});
+  if (window.ResizeObserver) new ResizeObserver(syncWorkspaceHeight).observe(panel);
   renderBatch();
   if (window.location.hash === "#administration-licences") void loadCompetitions();
 })();

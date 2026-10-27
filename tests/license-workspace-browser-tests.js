@@ -12,7 +12,7 @@ async function main(){
     await page.setContent(`<!doctype html><html lang="fr"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>${css}</style><body class="admin-portal-page"><main style="padding:12px">${markup}</main></body></html>`);
     await page.evaluate(()=>{
       window.calls=[];window.fail=false;
-      const competitions=[{id:"legacy-nap-1",name:"Coupe d’automne",date:"2026-11-08",city:"Tours"},{id:"legacy-nap-2",name:"Meeting régional des palmes",date:"2026-11-22",city:"Angers"},{id:"legacy-nap-3",name:"Rencontre interclubs",date:"2026-12-06",city:"Rennes"}];
+      const competitions=[{id:"legacy-nap-1",name:"Coupe d’automne",date:"2026-11-08",city:"Tours"},{id:"legacy-nap-2",name:"Meeting régional des palmes",date:"2026-11-22",city:"Angers"},{id:"legacy-nap-3",name:"Rencontre interclubs",date:"2026-12-06",city:"Rennes"}].map(c=>({...c,entryDeadlineAt:"2000-10-01T12:00:00Z"}));
       const report={competitionId:"1",status:"issues",completedAt:"2026-10-27T12:00:00Z",counts:{total:65,valid:64,expired:1,notFound:0,other:0},revision:"report-1",current:true};
       window.LivePalmesLicenseAdministration={canManage:()=>true,licensesChanged(){},openSwimmer(){},callFunction:async(name,input)=>{
         calls.push({name,input});if(fail)throw Error("Service momentanément indisponible");
