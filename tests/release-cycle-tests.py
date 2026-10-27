@@ -130,7 +130,7 @@ class ReleaseTests(unittest.TestCase):
             with patch.dict(os.environ, {'CANDIDATE_SHA': 'a'*40, 'GITHUB_RUN_ID': '13'}), patch.object(m, 'snapshot', return_value=state), patch.object(m, 'latest_run', return_value=12), patch.object(m, 'artifact'), patch.object(m, 'targeted_test_evidence', return_value=set()), patch.object(m, 'safe_functions', return_value=['one', 'two']), patch.object(m, 'needs_function', return_value=False) as comparisons, patch.object(m, 'output'):
                 m.test_selection(d, '.')
             self.assertEqual(m.read(root/'test-selection.json'), ['two'])
-            comparisons.assert_called_once_with(one, 'one', 'a'*40)
+            comparisons.assert_called_once_with(one, 'one', 'a'*40, project='livepalmes-test')
 
     def test_hosting_only_requires_proven_equivalent_backend(self):
         one = self.function('one')
@@ -240,6 +240,18 @@ class ReleaseTests(unittest.TestCase):
             self.assertTrue(m.needs_function(fn,'one','a'*40))
         self.assertTrue(m.needs_function({'state':'FAILED'},'one','a'*40))
         self.assertTrue(m.needs_function({'state':'ACTIVE','commit':None},'one','a'*40))
+
+    def test_test_comparison_is_explicit_and_does_not_change_production(self):
+        fn = {'state': 'ACTIVE', 'commit': 'b'*40}
+        with patch.object(m, 'backend_fingerprints', side_effect=[{'one':'old'}, {'one':'new'}]) as prod, patch.object(m, 'test_backend_fingerprints', return_value={'one':'same'}) as test:
+            self.assertTrue(m.needs_function(fn, 'one', 'a'*40))
+            self.assertFalse(m.needs_function(fn, 'one', 'a'*40, project='livepalmes-test'))
+            self.assertEqual(prod.call_count, 2)
+            self.assertEqual(test.call_count, 2)
+        with patch.object(m, 'test_backend_fingerprints', side_effect=ValueError('Unknown origin')):
+            self.assertTrue(m.needs_function(fn, 'one', 'a'*40, project='livepalmes-test'))
+        with self.assertRaises(ValueError):
+            m.needs_function(fn, 'one', 'a'*40, project='other')
 
     def test_readonly_plan_never_calls_google(self):
         with tempfile.TemporaryDirectory() as d:

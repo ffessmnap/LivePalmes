@@ -37,9 +37,18 @@ function identifiers(node) {
   return names;
 }
 
+// TEST opt-in only. Numeric primitives cannot invoke getters/coercion or throw
+// BigInt arithmetic errors. Identifiers, calls, strings and objects stay broad.
+function numericConstant(node) {
+  if (node?.type === "Literal") return typeof node.value === "number" && Number.isFinite(node.value);
+  if (node?.type === "UnaryExpression") return ["+", "-", "~"].includes(node.operator) && numericConstant(node.argument);
+  return node?.type === "BinaryExpression" && ["+", "-", "*", "/", "%", "**", "<<", ">>", ">>>", "&", "|", "^"].includes(node.operator)
+    && numericConstant(node.left) && numericConstant(node.right);
+}
+
 // Only static local imports with declarative initialization can be isolated.
 // Unknown top-level calls, mutations and dynamic imports remain shared.
-function moduleGraph(files = {}) {
+function moduleGraph(files = {}, options = {}) {
   const cache = new Map();
   const resolve = (owner, request) => {
     if (!request.startsWith(".")) return null;
@@ -73,6 +82,7 @@ function moduleGraph(files = {}) {
   const bindsObject = node => { let found = false; walk(node, n => { if (n.type === "Identifier" && n.name === "Object") found = true; }); return found; };
   const declarative = node => {
     if (!node) return true;
+    if (options.testNumericConstants && numericConstant(node)) return true;
     if (inert(node) || node.type === "Identifier") return true;
     if (node.type === "ArrayExpression") return node.elements.every(declarative);
     if (node.type === "ObjectExpression") return node.properties.every(p =>
@@ -168,9 +178,9 @@ function registrationBranch(node) {
   return null;
 }
 
-function fingerprints(source, common, files = {}) {
+function fingerprints(source, common, files = {}, options = {}) {
   const ast = acorn.parse(source, { ecmaVersion: "latest", sourceType: "script" });
-  const graph = moduleGraph(files);
+  const graph = moduleGraph(files, options);
   const owner = "functions/index.js";
   const groups = new Map();
   // Recognize declarations inside the two literal environment guards without
@@ -213,7 +223,7 @@ function fingerprints(source, common, files = {}) {
       }
     }
   }
-  let conservative = false;
+  let conservative = Boolean(options.testConservative);
   for (const { node, group } of entries) {
     if (group !== "nap") continue;
     const safeInitializer = init => !init || inert(init) ||
@@ -409,5 +419,5 @@ function fromGit(root, sha) {
   }).sort(); // Normalize before sorting: a selection-only blob hash must not reorder the common signature.
   return fingerprints(source, tree, files);
 }
-module.exports = { fingerprints, fromGit, retirementRegistrySignature };
+module.exports = { fingerprints, fromGit, retirementRegistrySignature, numericConstant };
 if (require.main === module) console.log(JSON.stringify(fromGit(process.argv[2], process.argv[3])));
