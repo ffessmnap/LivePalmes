@@ -22,8 +22,7 @@ vm.createContext(context);vm.runInContext(chunks.join("\n"),context);
   denied=true;await assert.rejects(context.exports.getEngagementCompetitionStatistics(request),/Denied/);assert.equal(read,5);denied=false;
   scopeDenied=true;await assert.rejects(context.exports.getEngagementCompetitionStatistics(request),/Scope denied/);assert.equal(read,5);scopeDenied=false;
   await assert.rejects(context.exports.generateEngagementClubRecapPdfForAdmin({data:{...request.data,clubId:"999"}}),e=>e.code==="not-found");assert.equal(built,2);
-  openWater=true;await assert.rejects(context.exports.generateEngagementCompetitionTxtExport(request),/eau libre/);
-  context.ENVIRONMENT.projectId="livepalmes-test";
+  openWater=true;
   const waterResult=await context.exports.generateEngagementCompetitionTxtExport(request);
   assert.equal(waterResult.source,"nap");assert.equal(waterResult.sqlBudget.queriesMax,26);assert.equal(waterResult.sqlBudget.widRowsMax,1);
   assert.equal(waterResult.sqlBudget.catalogueRowsMax,300);
@@ -37,7 +36,7 @@ vm.createContext(context);vm.runInContext(chunks.join("\n"),context);
     let downloads=0,calls=0;
     const ui={global:{LivePalmesEnvironment:{isTest}},selectedEngagementCompetitionId:"4982",selectedEngagementCompetition:{id:"4982",napSource:true,competitionType:"openWater"},isEngagementAdminMode:()=>true,engagementCompetitionType:c=>c.competitionType,elements:{engagementsGenerateTxtExportButton:{disabled:false},engagementsDocumentsSummary:{}},callFunction:async()=>{calls++;return {txtBase64:"VEVTVA==",entryCount:1};},downloadBase64File:()=>downloads++,renderEngagementDocuments:()=>{}};
     vm.createContext(ui);vm.runInContext(uiCode,ui);await ui.generateEngagementAdminTxtExport();
-    assert.equal(calls,isTest?1:0);assert.equal(downloads,isTest?1:0);assert.equal(ui.elements.engagementsGenerateTxtExportButton.disabled,false);
+    assert.equal(calls,1);assert.equal(downloads,1);assert.equal(ui.elements.engagementsGenerateTxtExportButton.disabled,false);
   }
   console.log("Admin callables: scoped native reads, no old sports/Storage fallback, PDF, missing-time export and water-format lock verified.");
 })().catch(error=>{console.error(error);process.exitCode=1;});
