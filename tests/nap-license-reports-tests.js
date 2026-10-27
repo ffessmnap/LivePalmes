@@ -22,6 +22,20 @@ function fixture(){
 }
 const report={version:1,competitionId:"1",competitionName:"Coupe fictive",season:"2026-2027",status:"issues",completedAt:"2026-10-27T10:00:00Z",completedBy:"national",fingerprint:"f".repeat(64),revision:"a".repeat(64),counts:{total:1,valid:0,expired:0,notFound:0,unconfirmed:1},people:[{id:"10",firstName:"Camille",lastName:"EXEMPLE",clubName:"Club fictif",licenseNumber:"EXEMPLE",status:"erreur",validity:""}],mail:null};
 (async()=>{
+ const fs=require("node:fs"),os=require("node:os"),path=require("node:path"),crypto=require("node:crypto"),originalCwd=process.cwd(),directory=fs.mkdtempSync(path.join(os.tmpdir(),"lp-license-export-"));
+ const originalEnvironment={phase:process.env.NAP_LICENSE_PHASE,confirmation:process.env.NAP_LICENSE_CONFIRMATION,credentials:process.env.GOOGLE_APPLICATION_CREDENTIALS};
+ try{
+  const fake={project_id:"livepalmes",private_key:crypto.generateKeyPairSync("rsa",{modulusLength:2048}).privateKey.export({format:"pem",type:"pkcs8"})};
+  const credentialFile=path.join(directory,"fake.json");fs.writeFileSync(credentialFile,JSON.stringify(fake));
+  process.chdir(directory);process.env.NAP_LICENSE_PHASE="export";process.env.NAP_LICENSE_CONFIRMATION="nap-license-reports-history";process.env.GOOGLE_APPLICATION_CREDENTIALS=credentialFile;
+  const db={collection:()=>({orderBy:()=>({startAt:()=>({endBefore:()=>({limit:()=>({get:async()=>({size:0,docs:[]})})})})})})};let connected=false;
+  await migration.main({officialDatabase:credentials=>{assert.deepEqual(credentials,fake);connected=true;return db;}});assert.equal(connected,true);
+  assert.deepEqual(JSON.parse(fs.readFileSync("outputs/nap-license-reports/source.json")).reports,[]);
+  const sealed=fs.readFileSync("outputs/nap-license-reports/source.enc"),opened=require("../tools/production-backup-crypto").open(sealed,fake.private_key);assert.deepEqual(JSON.parse(opened).reports,[]);
+ }finally{
+  process.chdir(originalCwd);
+  for(const [key,value]of [["NAP_LICENSE_PHASE",originalEnvironment.phase],["NAP_LICENSE_CONFIRMATION",originalEnvironment.confirmation],["GOOGLE_APPLICATION_CREDENTIALS",originalEnvironment.credentials]]){if(value===undefined)delete process.env[key];else process.env[key]=value;}
+ }
  const credential={project_id:"livepalmes"},app={name:"fixture"},database={};let initialized=false;
  assert.equal(migration.officialDatabase(credential,name=>name==="firebase-admin/app"?{cert:c=>{assert.equal(c,credential);return "credential";},initializeApp:options=>{assert.deepEqual(options,{credential:"credential",projectId:"livepalmes"});initialized=true;return app;}}:{getFirestore:a=>{assert.equal(a,app);assert.equal(initialized,true);return database;}}),database);
  const deleted=fixture(),executeDeleted=deleted.execute.bind(deleted);deleted.execute=async(o,a)=>o.sql.startsWith("INSERT INTO livepalmes_license_control_history")?[{affectedRows:0}]:executeDeleted(o,a);await assert.rejects(native.store(deleted).save(report),/n’existe plus/);assert.equal(deleted.latest,null);
