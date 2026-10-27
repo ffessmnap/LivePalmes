@@ -22,6 +22,8 @@ function fixture(){
 }
 const report={version:1,competitionId:"1",competitionName:"Coupe fictive",season:"2026-2027",status:"issues",completedAt:"2026-10-27T10:00:00Z",completedBy:"national",fingerprint:"f".repeat(64),revision:"a".repeat(64),counts:{total:1,valid:0,expired:0,notFound:0,unconfirmed:1},people:[{id:"10",firstName:"Camille",lastName:"EXEMPLE",clubName:"Club fictif",licenseNumber:"EXEMPLE",status:"erreur",validity:""}],mail:null};
 (async()=>{
+ const credential={project_id:"livepalmes"},app={name:"fixture"},database={};let initialized=false;
+ assert.equal(migration.officialDatabase(credential,name=>name==="firebase-admin/app"?{cert:c=>{assert.equal(c,credential);return "credential";},initializeApp:options=>{assert.deepEqual(options,{credential:"credential",projectId:"livepalmes"});initialized=true;return app;}}:{getFirestore:a=>{assert.equal(a,app);assert.equal(initialized,true);return database;}}),database);
  const deleted=fixture(),executeDeleted=deleted.execute.bind(deleted);deleted.execute=async(o,a)=>o.sql.startsWith("INSERT INTO livepalmes_license_control_history")?[{affectedRows:0}]:executeDeleted(o,a);await assert.rejects(native.store(deleted).save(report),/n’existe plus/);assert.equal(deleted.latest,null);
  const pool=fixture(),store=native.store(pool);assert.equal(await store.read(report.season,"1"),null);
  assert.equal((await store.save(report)).version,1);assert.deepEqual(await store.read(report.season,"1"),report);
