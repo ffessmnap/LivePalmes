@@ -64,12 +64,13 @@ async function migrate(pool,db,phase,backup){
 async function main(){
  const phase=process.env.NAP_LICENSE_PHASE;
  if(!["export","prepare","apply"].includes(phase)||process.env.NAP_LICENSE_CONFIRMATION!=="nap-license-reports-history")throw Error("Confirmation requise");
- const admin=require(path.join(root,"functions/node_modules/firebase-admin"));
+ const functionRequire=require("node:module").createRequire(path.join(root,"functions/package.json"));
+ const admin=functionRequire("firebase-admin/app"),{getFirestore}=functionRequire("firebase-admin/firestore");
  const credentials=JSON.parse(fs.readFileSync(process.env.GOOGLE_APPLICATION_CREDENTIALS,"utf8"));
  if(phase==="export"){
   if(credentials.project_id!=="livepalmes")throw Error("Source PROD requise");
   admin.initializeApp({credential:admin.credential.cert(credentials),projectId:"livepalmes"});
-  const reports=await source(admin.firestore());fs.mkdirSync("outputs/nap-license-reports",{recursive:true});
+  const reports=await source(getFirestore());fs.mkdirSync("outputs/nap-license-reports",{recursive:true});
   const exported={sourceProject:"livepalmes",reports,hash:hash(reports)};fs.writeFileSync("outputs/nap-license-reports/source.json",JSON.stringify(exported));sealedBackup("outputs/nap-license-reports/source.enc",exported,credentials.private_key);return;
  }
  if(credentials.project_id!=="livepalmes-test")throw Error("Compte TEST requis pour NAP");
@@ -81,5 +82,5 @@ async function main(){
  const pool=require("../functions/nap-mysql").createNapPool(password);
  try{const result=await migrate(pool,db,phase,phase==="apply"?JSON.parse(fs.readFileSync("outputs/nap-license-reports/before.json","utf8")):null);fs.writeFileSync(`outputs/nap-license-reports/${phase==="prepare"?"before":"result"}.json`,JSON.stringify(result));if(phase==="prepare")sealedBackup("outputs/nap-license-reports/before.enc",result,credentials.private_key);}finally{await pool.end();}
 }
-if(require.main===module)main().catch(()=>{console.error("Reprise des bilans arrêtée ; conserver les preuves et examiner le conflit. Aucun secret affiché.");process.exitCode=1;});
+if(require.main===module)main().catch(error=>{console.error("Diagnostic technique :",error.name,/^[A-Z_0-9-]{1,60}$/.test(String(error.code))?error.code:"operation-refused");console.error("Reprise des bilans arrêtée ; conserver les preuves et examiner le conflit. Aucun secret affiché.");process.exitCode=1;});
 module.exports={inspect,validate,source,migrate,columns};
