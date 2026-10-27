@@ -72,6 +72,17 @@ Après chaque modification, indiquer les fichiers touchés, le résumé des chan
 - Fournir par défaut un bilan court : résultat, périmètre, preuves de contrôle et éventuel blocage. Garder les détails techniques consultables dans GitHub et le registre ; ne pas demander à Antoine de gérer SHA, fichiers de manifeste ou numéros de runs.
 - Suivre le délai entre la demande et le résultat terminé. Distinguer les attentes externes et le temps d’une étape ; ne pas présenter le temps d’un sous-job comme celui de toute la livraison.
 
+## Économie de contexte et d’exécution
+
+Réduire les lectures et étapes redondantes, jamais la qualité ni les contrôles obligatoires. Ces règles s’appliquent à toutes les conversations LivePalmes ; elles ne modifient aucune autorisation, exclusion ou exigence de preuve.
+
+- Chercher d’abord les fichiers et sections pertinents ; borner les sorties des outils. Regrouper les lectures et commandes indépendantes, examiner chaque résultat et garder séquentielles les opérations dépendantes ou susceptibles de modifier le même état. Ne pas relire un contenu inchangé déjà disponible ; revérifier l’état partagé avant toute écriture ou publication.
+- Pendant les corrections, exécuter les tests ciblés utiles ; conserver la validation finale requise sur le candidat exact. Réutiliser seulement les preuves compatibles et traçables. Relancer si le code concerné change, si un contrôle échoue ou si une incertitude invalide la preuve.
+- Pour la CI et les traitements longs, préférer une attente bornée ou une notification de fin aux interrogations rapprochées. Espacer les vérifications inchangées, examiner les échecs et confirmer le résultat final ; rester disponible pour les messages utilisateur.
+- Conserver le chat tant que son contexte reste utile. À la fin d’un chantier ou avant une reprise encombrée, préparer un résumé court : besoin, version, décisions, fichiers, preuves, autorisations et points ouverts. Ne pas recréer systématiquement un chat ni recopier les historiques et journaux complets.
+- Adapter l’effort de raisonnement à la difficulté lorsque le réglage est disponible, sans changer silencieusement le modèle choisi par l’utilisateur. Réserver l’effort élevé aux dépendances complexes et risques réels ; une économie ne justifie jamais une analyse sensible insuffisante.
+- Maintenir les instructions communes concises et la documentation spécialisée à la demande. Ne jamais supprimer pour économiser les contrôles CI, sécurité, droits, données, migrations, sauvegarde, dérive, retour arrière ou publication imposés. Signaler un blocage au lieu de contourner un contrôle.
+
 ## Circuit commun aux conversations
 
 - Lire `docs/agents/PUBLICATION.md` avant toute intégration ou publication et récupérer les dernières consignes de `main`. Une ancienne copie locale ne fait pas autorité.
