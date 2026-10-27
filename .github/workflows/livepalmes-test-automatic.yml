@@ -1,0 +1,32 @@
+name: Preparer automatiquement TEST apres la CI
+on:
+  workflow_run:
+    workflows: [Verification et apercu LivePalmes]
+    types: [completed]
+    branches: [main]
+permissions:
+  contents: read
+  actions: write
+concurrency:
+  group: livepalmes-test-automatic
+  cancel-in-progress: false
+jobs:
+  ordinary:
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_branch == 'main' &&
+      github.event.workflow_run.head_repository.full_name == github.repository &&
+      github.event.workflow_run.run_attempt == 1
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Lancer seulement le parcours TEST ordinaire autorise
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python tools/automatic-test-publication.py

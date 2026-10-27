@@ -1,0 +1,40 @@
+name: Assembler le bilan de la version validee
+on:
+  workflow_dispatch:
+    inputs:
+      test_run:
+        description: Run TEST reussi de la version a figer
+        required: true
+        type: string
+      validations_json:
+        description: Retours utilisateur explicites avec titre, commits, status validated et validation exacte
+        required: true
+        type: string
+permissions:
+  contents: read
+  actions: read
+jobs:
+  draft:
+    if: github.ref == 'refs/heads/main' && github.run_attempt == 1
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Assembler les preuves sans acces Firebase ni publication
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TEST_RUN: ${{ inputs.test_run }}
+          VALIDATIONS_JSON: ${{ inputs.validations_json }}
+        run: python tools/prepare-release-draft.py "$RUNNER_TEMP/release-draft"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-draft
+          path: |
+            ${{ runner.temp }}/release-draft/request-draft.json
+            ${{ runner.temp }}/release-draft/draft-status.json
+            ${{ runner.temp }}/release-draft/SUMMARY.md
+          if-no-files-found: error
+          retention-days: 14
