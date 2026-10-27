@@ -18,11 +18,13 @@ function database(){
 const input={competitionId:"1",expectedMembership:reports.membership(batch,"1"),results:[{id:"11",status:"licence_expiree",licenseNumber:"A-26-11",validity:"2026-12-31"},{id:"12",status:"introuvable",licenseNumber:"A-26-12",validity:""}]};
 (async()=>{
   const result=reports.build(batch,input,"national","2026-10-27T10:00:00Z");
-  assert.equal(result.status,"issues");assert.deepEqual(result.counts,{total:3,valid:1,expired:1,notFound:1,other:0});
+  assert.equal(result.status,"issues");assert.deepEqual(result.counts,{total:3,valid:1,expired:1,notFound:1,unconfirmed:0});
   const good=reports.build(batch,{competitionId:"2",expectedMembership:reports.membership(batch,"2"),results:[]},"national");assert.equal(good.status,"ok");assert.equal(good.people.length,1);
   const refreshed=reports.build(batch,{...input,results:[...input.results,{id:"10",status:"introuvable",licenseNumber:"A-26-10",validity:""}]},"national");assert.equal(refreshed.counts.valid,0);assert.equal(refreshed.counts.notFound,2,"Fresh federal findings stay visible despite a previous seasonal validation");assert.equal(batch.people[0].seasonStatus,"valid","The control snapshot does not revoke the native seasonal validation");
-  for(const status of["timeout","erreur","to_check","valid","unknown"]){assert.throws(()=>reports.build(batch,{...input,results:[{...input.results[0],status},input.results[1]]},"national"),/résultat exploitable/);}
-  assert.throws(()=>reports.build(batch,{...input,results:[input.results[0]]},"national"),/résultat exploitable/);
+  for(const status of["timeout","erreur","non_controle","anomalie_licence","anomalie_identite","ambigu"]){const uncertain=reports.build(batch,{...input,results:[{...input.results[0],status},input.results[1]]},"national");assert.equal(uncertain.status,"issues");assert.equal(uncertain.counts.unconfirmed,1);assert.equal(uncertain.counts.notFound,1);assert.match(reports.message(uncertain).text,/Licences non confirmées : 1/);assert.equal(batch.people[1].seasonStatus,"to_check");}
+  for(const status of["to_check","valid","unknown"]){assert.throws(()=>reports.build(batch,{...input,results:[{...input.results[0],status},input.results[1]]},"national"),/inconnu/);}
+  const partial=reports.build(batch,{...input,results:[input.results[0]]},"national");assert.equal(partial.counts.unconfirmed,1);assert.equal(partial.people.find(p=>p.id==="12").status,"non_controle");assert.match(reports.message(partial).text,/contrôle non effectué/);
+  const unchecked=reports.build(batch,{...input,results:[]},"national");assert.equal(unchecked.status,"issues");assert.equal(unchecked.counts.unconfirmed,2);assert.equal(unchecked.counts.valid,1);
   assert.throws(()=>reports.build(batch,{...input,expectedMembership:"stale"},"national"),/changé/);
   assert.throws(()=>reports.build(batch,{...input,results:[...input.results,input.results[0]]},"national"),/dupliqué/);
   assert.throws(()=>reports.build(batch,{...input,results:[...input.results,{id:"99"}]},"national"),/appartient/);
@@ -31,7 +33,8 @@ const input={competitionId:"1",expectedMembership:reports.membership(batch,"1"),
   assert.equal(reports.recipients({regionId:"Centre",computerEmail:"one@example.org"},directory).length,2);
   assert.equal(reports.recipients({regionId:"Centre",computerEmail:"computer@example.org"},directory).length,3);
   assert.equal(reports.recipients({regionId:"",computerEmail:"computer@example.org"},directory).length,1);
-  const body=reports.message(result);assert.match(body.text,/EXPIREE Léa/);assert.match(body.text,/ABSENT Hugo/);assert.doesNotMatch(body.text,/EXEMPLE Camille/);assert.match(body.text,/Compétiteurs contrôlés : 3/);
+  const body=reports.message(result);assert.match(body.text,/EXPIREE Léa/);assert.match(body.text,/ABSENT Hugo/);assert.doesNotMatch(body.text,/EXEMPLE Camille/);assert.match(body.text,/Compétiteurs concernés : 3/);
+  assert.match(reports.message({...result,counts:{...result.counts,unconfirmed:undefined,other:2}}).text,/Licences non confirmées : 2/,"Existing snapshots remain readable without migration");
   const db=database();await reports.complete(db,batch,input,"national");assert.equal(db.writes,2);assert.equal(Object.keys((await reports.summaries(db,season.label)).reports).length,1);
   await assert.rejects(reports.complete(db,batch,input,"other"),/autre personne/);
   const attached=await reports.attach(db,structuredClone(batch));assert.equal(attached.controlReports[1].current,true);assert.equal(attached.controlReports[2],null);

@@ -8,8 +8,8 @@ const hash=value=>createHash("sha256").update(JSON.stringify(value)).digest("hex
 const id=value=>String(positiveId(value));
 const summaryRef=(db,season)=>db.collection("engagementConfigurations").doc(`license-controls-${seasonInfo(season).label}`);
 const reportRef=(db,season,competition)=>db.collection("engagementConfigurations").doc(`license-control-${seasonInfo(season).label}-${id(competition)}`);
-const FINAL_STATUSES=new Set(["validable","licence_expiree","introuvable","anomalie_licence","anomalie_identite","ambigu"]);
-const LABELS={valid:"Licence valide",licence_expiree:"Licence expirée",introuvable:"Licence non retrouvée dans la base fédérale",anomalie_licence:"Numéro de licence différent",anomalie_identite:"Identité à vérifier",ambigu:"Correspondance ambiguë"};
+const FINAL_STATUSES=new Set(["validable","licence_expiree","introuvable","anomalie_licence","anomalie_identite","ambigu","erreur","timeout","non_controle"]);
+const LABELS={valid:"Licence valide",licence_expiree:"Licence expirée",introuvable:"Licence non retrouvée dans la base fédérale",anomalie_licence:"Licence non confirmée — numéro de licence différent",anomalie_identite:"Licence non confirmée — identité à vérifier",ambigu:"Licence non confirmée — correspondance ambiguë",erreur:"Licence non confirmée — erreur technique du contrôle",timeout:"Licence non confirmée — délai dépassé",non_controle:"Licence non confirmée — contrôle non effectué"};
 function participants(batch,competition){return batch.people.filter(p=>p.competitionIds.map(id).includes(id(competition)));}
 function membership(batch,competition){return hash([batch.season.label,participants(batch,competition).map(p=>[p.livePalmesId,p.firstName,p.lastName,p.birthDate,p.clubId,p.licenseNumber]).sort((a,b)=>String(a[0]).localeCompare(String(b[0])))]);}
 function fingerprint(batch,competition){return hash([membership(batch,competition),participants(batch,competition).map(p=>[p.livePalmesId,p.seasonStatus,p.validatedAt||""]).sort((a,b)=>String(a[0]).localeCompare(String(b[0])))]);}
@@ -31,17 +31,17 @@ function build(batch,input,actor,now=new Date().toISOString()){
   const nativeIds=new Set(people.map(p=>String(p.livePalmesId)));
   if([...results.keys()].some(key=>!nativeIds.has(key)))throw new TypeError("Un résultat n’appartient pas à cette compétition.");
   const checked=people.map(p=>{
-    const r=results.get(String(p.livePalmesId));let status="valid";
+    const r=results.get(String(p.livePalmesId));let status=p.seasonStatus==="valid"?"valid":"non_controle";
     if(r||p.seasonStatus!=="valid"){
-      if(!r||!FINAL_STATUSES.has(r.status)||String(r.licenseNumber||"").trim()!==String(p.licenseNumber||"").trim())throw new TypeError("Chaque licence doit avoir un résultat exploitable. Les erreurs techniques et délais dépassés restent à contrôler.");
-      status=r.status==="validable"?"valid":r.status;
+      if(r&&(!FINAL_STATUSES.has(r.status)||String(r.licenseNumber||"").trim()!==String(p.licenseNumber||"").trim()))throw new TypeError("Résultat de contrôle inconnu ou licence modifiée. Rechargez le lot.");
+      status=r?(r.status==="validable"?"valid":r.status):"non_controle";
       if(status==="valid"&&(!require("./nap-license-control").validDate(r.validity)||r.validity<batch.season.requiredValidityDate))throw new TypeError("La validité fédérale ne couvre pas la saison.");
       if(status==="licence_expiree"&&(!require("./nap-license-control").validDate(r.validity)||r.validity>=batch.season.requiredValidityDate))throw new TypeError("Date d’expiration incohérente.");
     }
     return {id:String(p.livePalmesId),firstName:String(p.firstName||"").slice(0,80),lastName:String(p.lastName||"").slice(0,80),clubName:String(p.clubName||p.clubId||"").slice(0,140),licenseNumber:String(p.licenseNumber||"").slice(0,100),status,validity:String(r?r.validity||"":p.federalValidityEndDate||"").slice(0,10)};
   });
-  const counts={total:checked.length,valid:0,expired:0,notFound:0,other:0};
-  checked.forEach(p=>counts[p.status==="valid"?"valid":p.status==="licence_expiree"?"expired":p.status==="introuvable"?"notFound":"other"]++);
+  const counts={total:checked.length,valid:0,expired:0,notFound:0,unconfirmed:0};
+  checked.forEach(p=>counts[p.status==="valid"?"valid":p.status==="licence_expiree"?"expired":p.status==="introuvable"?"notFound":"unconfirmed"]++);
   return {version:1,competitionId:competition,competitionName:String(source.name||"").slice(0,160),season:batch.season.label,status:counts.valid===counts.total?"ok":"issues",completedAt:now,completedBy:actor,fingerprint:fingerprint(batch,competition),counts,people:checked,revision:hash([now,actor,checked]),mail:null};
 }
 async function complete(db,batch,input,actor){
@@ -74,7 +74,7 @@ function recipients(competition,directory){
 }
 function message(report){
   const c=report.counts,date=new Intl.DateTimeFormat("fr-FR",{timeZone:"Europe/Paris",dateStyle:"short",timeStyle:"short"}).format(new Date(report.completedAt)),issues=report.people.filter(p=>p.status!=="valid");
-  return {subject:`LivePalmes — Contrôle des licences — ${report.competitionName}`.slice(0,220),text:["Bonjour,","",`Le contrôle des licences de ${report.competitionName} a été effectué le ${date} (saison ${report.season}).`,"",`Compétiteurs contrôlés : ${c.total}`,`Licences valides : ${c.valid}`,`Licences expirées : ${c.expired}`,`Licences non retrouvées dans la base fédérale : ${c.notFound}`,`Autres incohérences : ${c.other}`,"",issues.length?"Points à vérifier avant la compétition :":"Aucune incohérence relevée au moment du contrôle.",...issues.map(p=>`${p.lastName} ${p.firstName} · ${p.clubName} · ${p.licenseNumber||"Licence non renseignée"} — ${LABELS[p.status]}${p.validity?` (${p.validity})`:""}`),"","Ce bilan correspond aux engagés et aux résultats connus à la date du contrôle. Un nouveau contrôle est nécessaire en cas de modification.","","Portail LivePalmes"].join("\n")};
+  return {subject:`LivePalmes — Contrôle des licences — ${report.competitionName}`.slice(0,220),text:["Bonjour,","",`La revue des licences de ${report.competitionName} a été terminée le ${date} (saison ${report.season}).`,"",`Compétiteurs concernés : ${c.total}`,`Licences valides : ${c.valid}`,`Licences expirées : ${c.expired}`,`Licences non retrouvées dans la base fédérale : ${c.notFound}`,`Licences non confirmées : ${c.unconfirmed??c.other??0}`,"",issues.length?"Points à vérifier avant la compétition :":"Aucune incohérence relevée au moment du contrôle.",...issues.map(p=>`${p.lastName} ${p.firstName} · ${p.clubName} · ${p.licenseNumber||"Licence non renseignée"} — ${LABELS[p.status]}${p.validity?` (${p.validity})`:""}`),"","Une erreur technique ou un contrôle non effectué ne démontre pas l’absence d’une licence dans la base fédérale.","Ce bilan correspond aux engagés et aux résultats connus à la date de la revue. Un nouveau contrôle est nécessaire en cas de modification.","","Portail LivePalmes"].join("\n")};
 }
 async function notify(db,batch,input,services){
   const competition=await services.competition(id(input.competitionId));
