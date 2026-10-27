@@ -45,7 +45,9 @@ const input={competitionId:"1",expectedMembership:reports.membership(batch,"1"),
   let sends=0;const live={...services,projectId:"livepalmes",send:async(ref,job)=>{sends++;db.data.set(ref.path,{...job,status:"sent"});return {status:"sent"};}};
   const livePreview=await reports.notify(db,batch,{action:"previewReport",competitionId:"1"},live);
   const sendInput={action:"sendReport",competitionId:"1",expectedFingerprint:livePreview.fingerprint};
-  await reports.notify(db,batch,sendInput,live);assert.equal(sends,3);await reports.notify(db,batch,sendInput,live);assert.equal(sends,3,"No duplicate SMTP after successful retry");
+  await reports.notify(db,batch,sendInput,live);assert.equal(sends,3);
+  const stored=db.data.get(reports.reportRef(db,season.label,"1").path);stored.mail.sentAt="2026-10-20T10:00:00Z";
+  await reports.notify(db,batch,sendInput,live);assert.equal(sends,3,"No duplicate SMTP after successful retry");assert.equal(db.data.get(reports.reportRef(db,season.label,"1").path).mail.sentAt,"2026-10-20T10:00:00Z","Keep the first confirmed send timestamp");
   const uncertainDb=database();await reports.complete(uncertainDb,batch,input,"national");let attempts=0;
   const uncertain={...live,send:async()=>{attempts++;throw Error("Acknowledgement missing");}};
   const uncertainPreview=await reports.notify(uncertainDb,batch,{action:"previewReport",competitionId:"1"},uncertain);
