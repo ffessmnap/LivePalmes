@@ -3,6 +3,7 @@ import copy
 import hashlib
 import importlib.util
 import json
+import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -87,25 +88,40 @@ def verify_retained(root, state, selected, cycle):
         'retainedFunctions':c['retained'],'contractSha256':DIGEST,
         'method':'authenticated-origins-and-static-production-equivalence','inheritedDivergencesPreserved':True})
 
-def license_service(before):
-    service = copy.deepcopy(before['serviceConfig'])
+def initial_license_service(service):
     require(service.get('timeoutSeconds',60) == 60 and not service.get('secretVolumes'), 'Configuration initiale licences inattendue')
     require(service.get('serviceAccountEmail') == '718081132564-compute@developer.gserviceaccount.com', 'Compte licences non couvert par les liaisons mail existantes')
     secrets = service.get('secretEnvironmentVariables',[])
     require(len(secrets) == 1 and secrets[0].get('key') == secrets[0].get('secret') == 'LIVEPALMES_NAP_PASSWORD'
-        and str(secrets[0].get('projectId')) in {'livepalmes','718081132564'} and secrets[0].get('version') == 'latest',
+        and str(secrets[0].get('projectId')) in {'livepalmes','718081132564'}
+        and re.fullmatch(r'latest|[1-9][0-9]*',str(secrets[0].get('version',''))),
         'Liaison initiale licences inattendue')
-    service['timeoutSeconds'] = 300
-    service['secretEnvironmentVariables'] = [{'key':n,'secret':n,'projectId':secrets[0]['projectId'],'version':'latest'} for n in sorted(base.MAIL_KEYS)]
     return service
 
-def source_patch(before, source, sha):
+def license_service(before, reference):
+    service = copy.deepcopy(initial_license_service(before['serviceConfig']))
+    require(reference is not None and reference.get('name','').split('/')[-1] == base.REFERENCE,
+        'Reference mail existante requise')
+    ref = reference.get('serviceConfig',{})
+    require(ref.get('serviceAccountEmail') == service['serviceAccountEmail'] and not ref.get('secretVolumes'),
+        'Compte ou volumes de la reference mail differents')
+    keys = ref.get('secretEnvironmentVariables',[])
+    require(len(keys) == 8 and {v.get('key') for v in keys} == base.MAIL_KEYS
+        and all(set(v) == {'key','secret','projectId','version'} and v['key'] == v['secret']
+            and str(v['projectId']) in {'livepalmes','718081132564'}
+            and re.fullmatch(r'latest|[1-9][0-9]*',str(v['version'])) for v in keys), 'Reference des liaisons mail invalide')
+    nap = service['secretEnvironmentVariables'][0]
+    service['timeoutSeconds'] = 300
+    service['secretEnvironmentVariables'] = sorted([copy.deepcopy(v) for v in keys if v['key'] != nap['key']] + [nap],key=lambda v:v['key'])
+    return service
+
+def source_patch(before, source, sha, reference=None):
     c = contract(); name = before['name'].split('/')[-1]
     require(sha == c['candidate'] and name in c['selected'], 'Source hors contrat27octobre')
     body = {'name':before['name'],'buildConfig':{'source':{'storageSource':source}},
         'labels':{**before.get('labels',{}),'livepalmes-commit':sha}}
     if name == LICENSE:
-        service = license_service(before)
+        service = license_service(before, reference)
         body['serviceConfig'] = {k:service[k] for k in ['timeoutSeconds','secretEnvironmentVariables']}
     return body
 
@@ -114,7 +130,10 @@ def update_mask(body):
 
 def assert_config(before, after, state):
     expected = copy.deepcopy(before)
-    if before['name'].split('/')[-1] == LICENSE: expected['serviceConfig'] = license_service(before)
+    if before['name'].split('/')[-1] == LICENSE:
+        expected['serviceConfig'] = license_service(before, getattr(state,'bcc_runtime_reference',None))
+        after = copy.deepcopy(after)
+        after['serviceConfig']['secretEnvironmentVariables'] = sorted(after['serviceConfig'].get('secretEnvironmentVariables',[]),key=lambda v:v.get('key',''))
     base.assert_config(expected, after, state)
 
 def assert_worker(function, expected, state):
@@ -126,10 +145,10 @@ def assert_worker(function, expected, state):
 def initial_runtime(name, service, ordinary):
     keys = service.get('secretEnvironmentVariables',[])
     mail = name in {'notifyEngagementCompetitionDocuments','processNapCompetitionNotifications','closeDueEngagementCompetitions','processNapNotificationTask'}
-    if name == LICENSE: license_service({'serviceConfig':service})
+    if name == LICENSE: initial_license_service(service)
     if mail:
         require(len(keys) == 8 and {v.get('key') for v in keys} == base.MAIL_KEYS
             and all(v.get('key') == v.get('secret') and str(v.get('projectId')) in {'livepalmes','718081132564'}
-                and v.get('version') == 'latest' for v in keys)
+                and re.fullmatch(r'latest|[1-9][0-9]*',str(v.get('version',''))) for v in keys)
             and ordinary({**service,'secretEnvironmentVariables':[]}), 'Configuration mail initiale27octobre inattendue')
     else: require(ordinary(service), 'Configuration initiale27octobre inattendue')
