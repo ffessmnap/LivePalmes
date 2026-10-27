@@ -2,6 +2,12 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 27 octobre — Tableau de contrôle des licences plus dense
+
+- Demande explicite d’Antoine après inspection de TEST : un seul titre, filtres/commandes compacts, une ligne fine par nageur, licences non modifiables dans le lot, crayon d’ouverture de fiche, suppression de la recherche nageur. Périmètre interface uniquement ; aucun backend ni accès aux données ajouté, aucune modification des bilans NAP ou des règles de validation.
+- Tableau à sept colonnes, lignes uniformes d’environ 33 px, actions horizontales ; détails de contrôle dépliables et blocages toujours signalés. Un seul titre visible dans cette page, sans effet sur les autres destinations du portail. Recherche des compétitions conservée, recherche des nageurs et écouteurs de modification des licences supprimés. Budget réseau inchangé : filtres, sélection et défilement locaux, zéro lecture supplémentaire.
+- Tests hors réseau : 65 nageurs, 79 compétitions, titre unique, absence de saisie de licence, ouverture par crayon, hauteur identique Tous/À contrôler, au moins 13 lignes visibles en 1920×900 et 8 en 1280×720 ; parcours mobile, CSV, bilans et absence d’envoi TEST conservés. CI et publication TEST à attester après réussite ; validation utilisateur non acquise.
+
 ### 27 octobre — Archives GitHub et diagnostics des bilans licences
 
 - Demande explicite d’Antoine : nettoyer les workflows remplacés, renforcer les tests des opérations ponctuelles et clarifier les échecs. Trois archives déjà bloquées par `if:false`, sans exécution en cours, désactivées via GitHub : ancienne mise en ligne, reconstruction TOP, publication performances TEST. Fichiers et artefacts conservés ; reprise historique référencée par rollback et workflows courants conservés.
