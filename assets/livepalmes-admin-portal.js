@@ -9838,8 +9838,7 @@
   }
 
   function canDownloadEngagementOpenWaterTxt(competition) {
-    return competition?.napSource === true && (global.LivePalmesEnvironment?.isTest === true
-      || String(competition.id).replace(/^legacy-nap-/, "") === "5136");
+    return competition?.napSource === true;
   }
 
   function renderEngagementDocuments(competition = selectedEngagementCompetition || {}) {
@@ -9854,14 +9853,14 @@
     if (elements.engagementsGenerateTxtExportButton) {
       elements.engagementsGenerateTxtExportButton.disabled = openWater && !canDownloadEngagementOpenWaterTxt(competition);
       elements.engagementsGenerateTxtExportButton.title = openWater
-        ? (canDownloadEngagementOpenWaterTxt(competition) ? "Téléchargement manuel de l’export eau libre. Aucun envoi automatique." : "Export eau libre en attente de validation pour cette compétition.")
+        ? (canDownloadEngagementOpenWaterTxt(competition) ? "Téléchargement manuel de l’export eau libre. Aucun envoi automatique." : "L’export TXT eau libre nécessite une compétition issue de NAP.")
         : "";
     }
     if (elements.engagementsDocumentsTitle) elements.engagementsDocumentsTitle.textContent = adminMode ? "GED" : "Documents";
     if (elements.engagementsDocumentsSummary) {
       elements.engagementsDocumentsSummary.textContent = adminMode
         ? openWater
-          ? (canDownloadEngagementOpenWaterTxt(competition) ? "Gérez les documents destinés aux clubs et téléchargez l’export TXT eau libre. Aucun envoi automatique." : "Gérez les documents destinés aux clubs. L’export TXT eau libre de cette compétition reste en attente de validation.")
+          ? (canDownloadEngagementOpenWaterTxt(competition) ? "Gérez les documents destinés aux clubs et téléchargez l’export TXT eau libre. Aucun envoi automatique." : "Gérez les documents destinés aux clubs. L’export TXT eau libre nécessite une compétition issue de NAP.")
           : "Gérez les documents destinés aux clubs et téléchargez les fichiers techniques."
         : "Consultez et téléchargez les documents utiles de la compétition.";
       elements.engagementsDocumentsSummary.dataset.tone = "";
@@ -12166,7 +12165,7 @@
     if (!selectedEngagementCompetitionId || !isEngagementAdminMode()) return;
     if (engagementCompetitionType(selectedEngagementCompetition) === "openWater" && !canDownloadEngagementOpenWaterTxt(selectedEngagementCompetition)) {
       if (elements.engagementsDocumentsSummary) {
-        elements.engagementsDocumentsSummary.textContent = "L’export TXT eau libre de cette compétition reste en attente de validation.";
+        elements.engagementsDocumentsSummary.textContent = "L’export TXT eau libre nécessite une compétition issue de NAP.";
       }
       return;
     }
