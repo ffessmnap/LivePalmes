@@ -23,7 +23,7 @@ function beforeLeader(pack, input) {
   if (pack.leaders?.length !== 1 || Number(pack.leaders[0].id) !== input.leaderId) throw new TypeError("Chef d'equipe absent ou ambigu.");
   const row = pack.leaders[0];
   if (COLUMNS.some(key => !Object.hasOwn(row, key)) || Number(row.compet) !== input.competitionId || ![String(row.club), String(row.pourclub)].includes(input.clubId)) throw new TypeError("Chef d'equipe hors du dossier.");
-  if (String(row.club) !== input.clubId || !["", "0", input.clubId].includes(String(row.pourclub ?? ""))) throw new TypeError("Declaration de chef d'equipe pour un autre club : verification IntraNAP requise avant retrait.");
+  if (String(row.club) !== input.clubId || !["", "0", input.clubId].includes(String(row.pourclub ?? ""))) throw new TypeError("Declaration de chef d'equipe pour un autre club : verification par le gestionnaire requise avant retrait.");
   return Object.fromEntries(COLUMNS.map(key => [key, row[key]]));
 }
 function removalStatement(before, authority, deadline, clubId) {

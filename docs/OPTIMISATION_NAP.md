@@ -4,7 +4,7 @@
 
 ## Objectif
 
-Lire NAP directement, conserver les règles sportives et les données fraîches, réduire le travail répété. Aucun export sportif parallèle, aucun nouveau stockage et aucun cache temporisé ajouté. Les modifications IntraNAP restent visibles à la consultation suivante.
+Lire NAP directement, conserver les règles sportives et les données fraîches, réduire le travail répété. Aucun export sportif parallèle, aucun nouveau stockage et aucun cache temporisé ajouté. Les modifications de la base NAP restent visibles à la consultation suivante.
 
 ## Budgets et protections
 
