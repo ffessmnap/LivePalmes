@@ -102,7 +102,7 @@ async function notify(db,batch,input,services){
   if(done)await db.runTransaction(async tx=>{
     const ref=reportRef(db,report.season,report.competitionId),summary=summaryRef(db,report.season),[snapshot,index]=await tx.getAll(ref,summary),current=snapshot.data();
     if(current?.revision!==report.revision)throw new TypeError("Le bilan a changé pendant l’envoi.");
-    const mail={sentAt:new Date().toISOString(),recipientCount:selected.length};tx.set(ref,{mail},{merge:true});tx.set(summary,{reports:{...(index.data()?.reports||{}),[report.competitionId]:view({...report,mail})}},{merge:true});
+    const mail=current.mail?.sentAt?current.mail:{sentAt:new Date().toISOString(),recipientCount:selected.length};tx.set(ref,{mail},{merge:true});tx.set(summary,{reports:{...(index.data()?.reports||{}),[report.competitionId]:view({...report,mail})}},{merge:true});
   });
   return {...result,sentCount,done,nextOffset:offset+20};
 }
