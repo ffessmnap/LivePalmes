@@ -38,6 +38,21 @@ jobs:
           credentials_json: ${{ secrets[matrix.secret] }}
           project_id: livepalmes
       - uses: google-github-actions/setup-gcloud@v3
+      - name: Identifier le lecteur licences du plan authentifie
+        id: scope
+        if: matrix.kind == 'backend'
+        env:
+          PLAN_RUN: ${{ inputs.preparation_run }}
+        run: python tools/check-release-prerequisites.py "$RUNNER_TEMP/prerequisites" "$PLAN_RUN" prepare
+      - uses: actions/setup-node@v7
+        if: steps.scope.outputs.license_reports == 'true'
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: functions/package-lock.json
+      - name: Installer le lecteur borne des bilans licences
+        if: steps.scope.outputs.license_reports == 'true'
+        run: npm ci --prefix functions --ignore-scripts --prefer-offline --no-audit --no-fund
       - name: Lire les permissions, quotas et la derive du plan
         env:
           PLAN_RUN: ${{ inputs.preparation_run }}

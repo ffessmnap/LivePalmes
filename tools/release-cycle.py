@@ -24,6 +24,13 @@ _group_spec.loader.exec_module(grouped)
 _bcc_spec = importlib.util.spec_from_file_location('bcc_policy', ROOT / 'tools/bcc-publication-policy.py')
 bcc = importlib.util.module_from_spec(_bcc_spec)
 _bcc_spec.loader.exec_module(bcc)
+_license_spec = importlib.util.spec_from_file_location('license_release_policy', ROOT / 'tools/license-report-release-policy.py')
+license_release = importlib.util.module_from_spec(_license_spec)
+_license_spec.loader.exec_module(license_release)
+
+
+def approved_license_report_functions(value):
+    return license_release.approved(value)
 
 
 def approved_bcc_functions(value):
@@ -65,7 +72,7 @@ def approved_native_identity_secret(value):
 
 def approved_extra_functions(value):
     approved_native_identity_secret(value)
-    names = approved_pdf_functions(value) + approved_dtn_functions(value) + approved_notification_functions(value) + approved_public_nap_functions(value) + approved_access_request_functions(value) + approved_club_directory_functions(value) + approved_grouped_functions(value) + approved_bcc_functions(value)
+    names = approved_pdf_functions(value) + approved_dtn_functions(value) + approved_notification_functions(value) + approved_public_nap_functions(value) + approved_access_request_functions(value) + approved_club_directory_functions(value) + approved_grouped_functions(value) + approved_bcc_functions(value) + approved_license_report_functions(value)
     require(len(names) == len(set(names)), 'Extensions de publication superposees')
     return names
 
@@ -128,7 +135,7 @@ def approved_club_directory_functions(value):
 
 def idf_preservation(value):
     # Existing reader authorization stays closed; this is a second, separately approved pair.
-    return grouped.preservation(value) or club_directory_idf_preservation(value) or public_reader_idf_preservation(value)
+    return license_release.preservation(value) or grouped.preservation(value) or club_directory_idf_preservation(value) or public_reader_idf_preservation(value)
 
 
 def approved_public_nap_functions(value):
@@ -210,6 +217,7 @@ def approved_access_request_functions(value):
 
 
 def require_access_request_selection(request, selected):
+    license_release.selection(request, selected)
     bcc.for_request(request).selection(request, selected)
     grouped.selection(request, selected)
     club = approved_club_directory_functions(request)
@@ -562,6 +570,8 @@ def validate_request(value, paths):
         if value['freezeTestCandidate']:
             ordinary = {'schema', 'candidate', 'productionCommit', 'productionHosting', 'testRun',
                         'changes', 'excludedBackendReview', 'excludedBackendEvidence', 'freezeTestCandidate'}
+            if approved_license_report_functions(value):
+                ordinary.add('licenseReportRelease')
             require(set(value).issubset(ordinary), 'Gel reserve au parcours ordinaire, sans contrat exceptionnel')
     path_set = set(paths)
     ignored = set(ignored_top_paths(paths, value['candidate']))
@@ -796,6 +806,8 @@ def verify_later_test(root, request, observed):
     # Never substitute the approved candidate or infer a revision from live labels.
     ordinary = {'schema', 'candidate', 'productionCommit', 'productionHosting', 'testRun',
                 'changes', 'excludedBackendReview', 'excludedBackendEvidence', 'freezeTestCandidate'}
+    if approved_license_report_functions(request):
+        ordinary.add('licenseReportRelease')
     require(set(request).issubset(ordinary), 'Contrat exceptionnel incompatible avec le gel ordinaire')
     run_id = latest_run('livepalmes-test-common.yml')
     require(run_id != request['testRun'], 'Derive du meme run TEST')
@@ -823,7 +835,7 @@ def prepare_selection(directory, candidate):
         require(all(not needs_function(names.get(n), n, request['candidate'], project='livepalmes-test') for n in selected), 'Backend TEST incomplet ou pas au code valide')
         extra = approved_extra_functions(request)
         notification = approved_notification_functions(request)
-        require(all(not needs_function(names.get(n), n, request['candidate'], project='livepalmes-test') for n in notification + approved_public_nap_functions(request) + approved_access_request_functions(request) + approved_club_directory_functions(request) + approved_grouped_functions(request) + approved_bcc_functions(request)),
+        require(all(not needs_function(names.get(n), n, request['candidate'], project='livepalmes-test') for n in notification + approved_public_nap_functions(request) + approved_access_request_functions(request) + approved_club_directory_functions(request) + approved_grouped_functions(request) + approved_bcc_functions(request) + approved_license_report_functions(request)),
                 'Notifications TEST absentes ou pas au code valide')
         if approved_dtn_functions(request):
             require(read(directory / 'test-proof.json').get('dtnExtensionVerification') == {'schema': 1, 'candidate': request['candidate'], 'suite': 'dtn-shared-invalidation', 'mode': 'offline-no-invocation', 'result': 'success', 'functions': sorted(DTN_FUNCTIONS)}, 'Preuve des dependances DTN absente ou incompatible')
@@ -984,6 +996,19 @@ def freeze_plan(directory, evidence=False):
     selected = read(root / 'selection.json')
     selected = [n for n in selected if n in approved_extra_functions(request) or needs_function(names.get(n), n, request['candidate'])]
     require_access_request_selection(request, selected)
+    if approved_license_report_functions(request):
+        proof = license_release.verify(request, read(root/'baseline.json'),
+            backend_fingerprints(request['productionCommit']), backend_fingerprints(request['candidate']), names)
+        c = license_release.contract()
+        artifact(c['migrationRun'], 'nap-license-reports-result', root/'license-migration', '.github/workflows/nap-authorized-license-reports.yml')
+        migrated = read(root/'license-migration/result.json')
+        require(migrated.get('verified') is True and migrated.get('sourceHash') == c['sourceHash']
+                and migrated.get('imported') == 10 and migrated.get('alreadyPresent') == 0
+                and migrated.get('realEmailsSent') == 0 and migrated.get('nativeRowsChanged') == 0,
+                'Reprise NAP initiale non prouvee')
+        proof['migrationRun'] = c['migrationRun']
+        proof['officialSourceHash'] = c['sourceHash']
+        write(root / 'license-report-proof.json', proof)
     if public_reader_idf_preservation(request) is not None:
         before = backend_fingerprints(request['productionCommit'])
         after = backend_fingerprints(request['candidate'])
@@ -1193,6 +1218,7 @@ def fetch_plan(preparation, resume, directory):
     evidence_path = root / 'test-proof.json'
     verified = reusable_verification(read(evidence_path), value['candidate']) if evidence_path.exists() else False
     output(candidate=value['candidate'], backend=str(bool(read(root / 'selection.json'))).lower(), verified=str(verified).lower(),
+           license_reports=str(bool(approved_license_report_functions(value))).lower(),
            idf_preservation=str(idf_preservation(value) is not None).lower(),
            bcc_preservation=str(bool(approved_bcc_functions(value))).lower())
 
