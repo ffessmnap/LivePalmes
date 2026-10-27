@@ -239,7 +239,10 @@
     state.imported = imported;
     state.batch.people.forEach((person) => {
       const result = imported.get(person.livePalmesId);
-      if (result?.status === "validable" && result.licenseNumber) person.licenseNumber = result.licenseNumber;
+      if (result?.status === "validable" && result.licenseNumber) {
+        if (person.licenseNumber !== result.licenseNumber) { person.seasonStatus = "to_check"; markReportsStale(person); }
+        person.licenseNumber = result.licenseNumber;
+      }
       person.selected = person.seasonStatus !== "valid" && result?.status === "validable";
     });
     renderBatch();
@@ -248,8 +251,8 @@
   }
 
   function rowState(person) {
-    if (person.seasonStatus === "valid") return { code: "valid", label: "Validée" };
     const imported = state.imported.get(person.livePalmesId);
+    if (person.seasonStatus === "valid" && (!imported || imported.status === "validable")) return { code: "valid", label: "Validée" };
     if (imported) return { code: imported.status, label: {
       validable: "Validable", licence_expiree: "Expirée", anomalie_licence: "Licence différente",
       anomalie_identite: "Identité à vérifier", ambigu: "Ambigu", introuvable: "Introuvable",
@@ -408,7 +411,7 @@
     const current = report?.current !== false && Boolean(report);
     const members = reportPeople(id);
     const inBatch = batchCurrent() && state.batch?.competitions.some(c => competitionKey(c.id) === competitionKey(id));
-    const pending = members.filter(p => p.seasonStatus !== "valid" && !finalStatuses.has(state.imported.get(p.livePalmesId)?.status)).length;
+    const pending = members.filter(p => { const imported = state.imported.get(p.livePalmesId); return imported ? !finalStatuses.has(imported.status) : p.seasonStatus !== "valid"; }).length;
     const counts = report?.counts;
     const preview = state.preview;
     const disabled = state.reportBusy || state.validating;
@@ -453,7 +456,7 @@
       const nativeId = competitionKey(id);
       payload.expectedMembership = state.batch.controlMemberships?.[nativeId];
       payload.expectedRevision = state.reportData.report?.revision || "";
-      payload.results = reportPeople(id).filter(p => p.seasonStatus !== "valid").map(p => {
+      payload.results = reportPeople(id).filter(p => p.seasonStatus !== "valid" || state.imported.has(p.livePalmesId)).map(p => {
         const r = state.imported.get(p.livePalmesId), match = String(r?.validity || "").match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
         return {id: p.livePalmesId, status: r?.status || "to_check", licenseNumber: p.licenseNumber, validity: match ? `${match[3]}-${match[2]}-${match[1]}` : r?.validity || ""};
       });

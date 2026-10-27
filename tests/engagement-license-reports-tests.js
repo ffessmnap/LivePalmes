@@ -20,6 +20,7 @@ const input={competitionId:"1",expectedMembership:reports.membership(batch,"1"),
   const result=reports.build(batch,input,"national","2026-10-27T10:00:00Z");
   assert.equal(result.status,"issues");assert.deepEqual(result.counts,{total:3,valid:1,expired:1,notFound:1,other:0});
   const good=reports.build(batch,{competitionId:"2",expectedMembership:reports.membership(batch,"2"),results:[]},"national");assert.equal(good.status,"ok");assert.equal(good.people.length,1);
+  const refreshed=reports.build(batch,{...input,results:[...input.results,{id:"10",status:"introuvable",licenseNumber:"A-26-10",validity:""}]},"national");assert.equal(refreshed.counts.valid,0);assert.equal(refreshed.counts.notFound,2,"Fresh federal findings stay visible despite a previous seasonal validation");assert.equal(batch.people[0].seasonStatus,"valid","The control snapshot does not revoke the native seasonal validation");
   for(const status of["timeout","erreur","to_check","valid","unknown"]){assert.throws(()=>reports.build(batch,{...input,results:[{...input.results[0],status},input.results[1]]},"national"),/résultat exploitable/);}
   assert.throws(()=>reports.build(batch,{...input,results:[input.results[0]]},"national"),/résultat exploitable/);
   assert.throws(()=>reports.build(batch,{...input,expectedMembership:"stale"},"national"),/changé/);
@@ -48,6 +49,10 @@ const input={competitionId:"1",expectedMembership:reports.membership(batch,"1"),
   await reports.notify(db,batch,sendInput,live);assert.equal(sends,3);
   const stored=db.data.get(reports.reportRef(db,season.label,"1").path);stored.mail.sentAt="2026-10-20T10:00:00Z";
   await reports.notify(db,batch,sendInput,live);assert.equal(sends,3,"No duplicate SMTP after successful retry");assert.equal(db.data.get(reports.reportRef(db,season.label,"1").path).mail.sentAt,"2026-10-20T10:00:00Z","Keep the first confirmed send timestamp");
+  // Two competitions may share a report revision and recipients; their sends stay independent.
+  db.data.set(reports.reportRef(db,season.label,"2").path,{...good,revision:stored.revision,fingerprint:reports.fingerprint(batch,"2"),mail:null});
+  const secondPreview=await reports.notify(db,batch,{action:"previewReport",competitionId:"2"},live);
+  await reports.notify(db,batch,{action:"sendReport",competitionId:"2",expectedFingerprint:secondPreview.fingerprint},live);assert.equal(sends,6,"Deduplicate per competition, never across competitions");
   const uncertainDb=database();await reports.complete(uncertainDb,batch,input,"national");let attempts=0;
   const uncertain={...live,send:async()=>{attempts++;throw Error("Acknowledgement missing");}};
   const uncertainPreview=await reports.notify(uncertainDb,batch,{action:"previewReport",competitionId:"1"},uncertain);

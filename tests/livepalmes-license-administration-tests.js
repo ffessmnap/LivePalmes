@@ -40,3 +40,10 @@ assert.match(functionsSource, /engagementSwimmerLicenses\.validated/);
 assert.match(functionsSource, /source === "admin_import"[\s\S]*federalValidityEndDate < season\.requiredValidityDate/);
 
 console.log("Administration nationale des licences : OK");
+
+const vm = require("node:vm");
+const rowStateSource = moduleSource.slice(moduleSource.indexOf("  function rowState("), moduleSource.indexOf("  function selectedPeople("));
+for (const [status, expected] of [["introuvable", "introuvable"], ["licence_expiree", "licence_expiree"], ["timeout", "timeout"], ["validable", "valid"]]) {
+  const actual = vm.runInNewContext(rowStateSource + '\nrowState({livePalmesId:"1",seasonStatus:"valid"}).code', {state: {imported: new Map([["1", {status}]])}});
+  assert.equal(actual, expected, "A current federal finding must not be hidden by a previous seasonal validation");
+}
