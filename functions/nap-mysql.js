@@ -6,7 +6,8 @@ function napPoolOptions(password) {
     throw new Error("Configuration NAP incomplete : mot de passe requis.");
   }
   return {
-    host: "nap.ffessm.fr", port: 3372, user: "nage-palmes", database: "nage-palmes",
+    // Cible MySQL confirmee par le prestataire ; independante de la redirection web NAP.
+    host: "57.128.101.89", port: 3372, user: "nage-palmes", database: "nage-palmes",
     // TLS obligatoire ; verification du certificat desactivee selon le choix valide.
     password, ssl: { rejectUnauthorized: false },
     connectionLimit: 2, waitForConnections: true, queueLimit: 8,

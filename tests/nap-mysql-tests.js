@@ -4,6 +4,8 @@ const { napPoolOptions, performanceRequest, readSwimmerPerformances } = require(
 async function main() {
   assert.throws(() => napPoolOptions(""));
   const options = napPoolOptions("dummy");
+  assert.equal(options.host, "57.128.101.89");
+  assert.equal(options.port, 3372);
   assert.deepEqual(options.ssl, { rejectUnauthorized: false });
   assert.equal(options.password, "dummy");
   assert.equal(options.multipleStatements, false);
