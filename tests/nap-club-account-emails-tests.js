@@ -3,7 +3,7 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const { enabled, project, syncBatch, createSynchronizer, PAGE_SIZE } = require("../functions/nap-club-account-emails");
 const { CREATE_SQL, ensure } = require("../functions/nap-club-account-emails-schema");
-const { scan, MAX_ACCOUNTS } = require("../tools/rebuild-nap-club-account-emails");
+const { scan, MAX_ACCOUNTS, loadFirebaseSdk } = require("../tools/rebuild-nap-club-account-emails");
 
 const snapshot = (id, data) => ({ id, exists: data !== null, data: () => data });
 
@@ -31,6 +31,9 @@ function fixture() {
 }
 
 async function main() {
+  // Resolve package exports from functions/, without initializing an app or contacting Firebase.
+  const sdk = loadFirebaseSdk();
+  for (const name of ["initializeApp", "applicationDefault", "getFirestore"]) assert.equal(typeof sdk[name], "function");
   assert.equal(enabled("livepalmes"), true);
   for (const projectId of ["livepalmes-test", "", undefined, "other"]) {
     const result = await createSynchronizer({ projectId, createPool() { throw Error("TEST opened NAP"); }, db: null })("u");
