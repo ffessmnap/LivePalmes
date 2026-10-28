@@ -5,10 +5,8 @@ const { execFileSync } = require("node:child_process");
 const html = fs.readFileSync("portail.html", "utf8");
 const entry = fs.readFileSync("assets/livepalmes-admin-portal.css", "utf8");
 const config = JSON.parse(fs.readFileSync("firebase.json", "utf8"));
-for (const source of ["/assets/portal/*.js", "/assets/portal/styles/*.css"]) {
-  assert.equal(config.hosting.headers.find(h => h.source === source)?.headers.find(h => h.key === "Cache-Control")?.value,
-    "public, max-age=31536000, immutable");
-}
+// New modules use the existing Hosting policy. Only the two historical entry
+// points have an explicit immutable header; all resources keep versioned URLs.
 for (const source of ["/assets/livepalmes-admin-portal.js", "/assets/livepalmes-admin-portal.css"]) {
   assert.equal(config.hosting.headers.find(h => h.source === source)?.headers.find(h => h.key === "Cache-Control")?.value,
     "public, max-age=31536000, immutable");
