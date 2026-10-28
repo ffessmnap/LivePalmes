@@ -1082,6 +1082,7 @@
 
   const portalEvents = global.LivePalmesPortalEvents.create(portalContext);
   const {
+    bindEngagementClubPeopleRetry,
     init
   } = portalEvents;
   Object.assign(portalActions, portalEvents);
@@ -1482,6 +1483,7 @@
     engagementsClubPeopleAddButton: document.querySelector("#adminEngagementsClubPeopleAddButton"),
     engagementsClubPeopleLoadMore: document.querySelector("#adminEngagementsClubPeopleLoadMore"),
     engagementsClubPeopleStatus: document.querySelector("#adminEngagementsClubPeopleStatus"),
+    engagementsClubPeopleRetry: document.querySelector("#adminEngagementsClubPeopleRetry"),
     engagementsClubPersonForm: document.querySelector("#adminEngagementsClubPersonForm"),
     engagementsClubPersonId: document.querySelector("#adminEngagementsClubPersonId"),
     engagementsClubPersonSwimmerId: document.querySelector("#adminEngagementsClubPersonSwimmerId"),
@@ -3832,6 +3834,7 @@
 
   /* extracted-function: assets/portal/account-and-access.js#saveAccessUser */
 
+    /* extracted-function: assets/portal/events.js#bindEngagementClubPeopleRetry */
     /* extracted-function: assets/portal/events.js#init */
 
   if (document.readyState === "loading") {

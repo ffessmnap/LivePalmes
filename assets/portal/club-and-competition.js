@@ -96,7 +96,9 @@
           person.nativePersonKind === "officials" && person.nativeIdentityEditable === true
         ));
         if (!directoryPeople.length) {
-          portalContext.elements.engagementsClubPeopleList.innerHTML = '<p class="admin-engagements-empty">Aucun officiel enregistré dans l’annuaire de ce club.</p>';
+          portalContext.elements.engagementsClubPeopleList.innerHTML = portalState.engagementClubPeopleLoaded
+            ? '<p class="admin-engagements-empty">Aucun officiel enregistré dans l’annuaire de ce club.</p>'
+            : '<p class="admin-engagements-empty">Les officiels s’afficheront après le chargement de l’annuaire.</p>';
           return;
         }
         portalContext.elements.engagementsClubPeopleList.innerHTML = `
@@ -161,6 +163,10 @@
         }
         portalState.engagementClubPeopleLoading = true;
         const requestVersion = portalState.engagementClubPeopleRequestVersion;
+        if (portalContext.elements.engagementsClubPeopleRetry) {
+          portalContext.elements.engagementsClubPeopleRetry.hidden = true;
+          portalContext.elements.engagementsClubPeopleRetry.disabled = true;
+        }
         if(portalContext.elements.engagementsClubPeopleAddButton && global.LivePalmesEnvironment?.sportingDataSource === "nap") portalContext.elements.engagementsClubPeopleAddButton.disabled = true;
         if(portalContext.elements.engagementsClubPeopleLoadMore) portalContext.elements.engagementsClubPeopleLoadMore.disabled = true;
         if (portalContext.elements.engagementsClubPeopleStatus && !silent) {
@@ -185,6 +191,7 @@
           }
         } catch (error) {
           if(requestVersion!==portalState.engagementClubPeopleRequestVersion) return;
+          if (portalContext.elements.engagementsClubPeopleRetry) portalContext.elements.engagementsClubPeopleRetry.hidden = false;
           if (portalContext.elements.engagementsClubPeopleStatus && !silent) {
             portalContext.elements.engagementsClubPeopleStatus.textContent = `Lecture impossible : ${error?.message || error}`;
             portalContext.elements.engagementsClubPeopleStatus.dataset.tone = "error";
@@ -192,6 +199,7 @@
         } finally {
           if(requestVersion===portalState.engagementClubPeopleRequestVersion) {
             portalState.engagementClubPeopleLoading = false;
+            if (portalContext.elements.engagementsClubPeopleRetry) portalContext.elements.engagementsClubPeopleRetry.disabled = false;
             renderEngagementClubPeople();
             if(portalContext.elements.engagementsClubPeopleLoadMore) portalContext.elements.engagementsClubPeopleLoadMore.disabled = false;
             if (portalState.activeEngagementsDetailTab === "officials") portalActions.renderEngagementClubOfficials();

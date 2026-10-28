@@ -167,20 +167,27 @@
 
     function normalizePortalFrenchError(error) {
         const source = String(error?.message || "");
+        const code = String(error?.code || "").replace(/^functions\//, "");
+        const technicalMessage = !source || /^(?:(?:Firebase|Error)\s*:\s*|Error\s*\(\s*)*(?:functions\/)?(?:internal|unavailable|deadline[-_ ]exceeded)[).\s]*$/i.test(source) ||
+          /^(?:Failed to fetch|Network request failed)$/i.test(source) || /\b(?:ECONNREFUSED|ECONNRESET|ETIMEDOUT|ENOTFOUND)\b/.test(source);
+        const serviceMessage = technicalMessage && ({
+          unavailable: "Le service LivePalmes est temporairement indisponible. Réessayez le chargement dans quelques instants.",
+          "deadline-exceeded": "Le serveur n'a pas répondu à temps. Si vous venez d'enregistrer une modification, vérifiez son état avant de recommencer.",
+          internal: "Le service LivePalmes a rencontré une erreur. Vérifiez l'état de votre demande avant de recommencer."
+        })[code];
         const message = portalConfig.PORTAL_FRENCH_ERROR_REPLACEMENTS.reduce(
           (value, [pattern, replacement]) => value.replace(pattern, replacement),
-          source
+          serviceMessage || source
         );
         if (!message || message === source) return error;
         try {
           error.message = message;
-          return error;
-        } catch {
-          const normalizedError = new Error(message);
-          normalizedError.code = error?.code;
-          normalizedError.details = error?.details;
-          return normalizedError;
-        }
+          if (error.message === message) return error;
+        } catch {}
+        const normalizedError = new Error(message);
+        normalizedError.code = error?.code;
+        normalizedError.details = error?.details;
+        return normalizedError;
       }
 
     function recordPortalCall(name, startedAt, data, ok) {
