@@ -62,6 +62,16 @@ async function main() {
   await missingCursor.module.loadEngagementNationalClubs(); assert.equal(missingCursor.calls.length, 1);
   assert.equal(missingCursor.writes.length, 0, "A missing continuation cannot be saved as a complete empty directory");
   assert.equal(missingCursor.status.dataset.tone, "error");
+  const refresh = nationalFixture();
+  refresh.state.engagementNationalClubs = [{ clubId: "last-complete-directory" }]; refresh.state.engagementNationalClubsLoaded = true;
+  refresh.setReply(async () => { throw new Error("Panne pendant l’actualisation."); });
+  await refresh.module.loadEngagementNationalClubs({ force: true });
+  assert.equal(refresh.state.engagementNationalClubs[0]?.clubId, "last-complete-directory", "A failed forced refresh must preserve the last complete directory");
+  assert.equal(refresh.writes.length, 0); assert.equal(refresh.state.engagementNationalClubsLoading, false); assert.equal(refresh.status.dataset.tone, "error");
+  refresh.setReply(async () => ({ clubs: [{ clubId: "fresh-directory" }], hasMore: false }));
+  await refresh.module.loadEngagementNationalClubs({ force: true });
+  assert.equal(refresh.calls.length, 2); assert.equal(refresh.writes.length, 1);
+  assert.equal(refresh.state.engagementNationalClubs.length, 1); assert.equal(refresh.state.engagementNationalClubs[0].clubId, "fresh-directory", "A successful forced refresh still replaces the previous directory");
 
   const referenceState = { accessClubReference: [], accessClubReferenceLoadPromise: null }, referenceMessages = [];
   let referenceReply = deferred(), referenceCalls = 0;

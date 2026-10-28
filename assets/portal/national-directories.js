@@ -25,7 +25,9 @@
           const referenceRows = global.LivePalmesEnvironment?.sportingDataSource === "nap" ? [] : global.LIVEPALMES_CLUB_REFERENCE?.clubs || [];
           const cached = force ? { clubs: [], syncedThrough: "" } : portalActions.readEngagementNationalClubCache();
           const storedById = new Map(cached.clubs.map((club) => [club.clubId, club]));
-          portalState.engagementNationalClubs = portalActions.mergeEngagementNationalClubDirectory(referenceRows, cached.clubs);
+          if (!force || !portalState.engagementNationalClubsLoaded) {
+            portalState.engagementNationalClubs = portalActions.mergeEngagementNationalClubDirectory(referenceRows, cached.clubs);
+          }
           portalActions.mergeNationalClubsIntoAccessReference(cached.clubs);
           portalActions.renderEngagementNationalClubs();
           const updatedAfter = force ? "" : portalActions.engagementNationalClubSyncStart(cached.syncedThrough);
