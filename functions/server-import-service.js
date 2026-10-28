@@ -30,15 +30,9 @@ function createImportService(backendContext) {
       : `${seconds}.${String(hundredths).padStart(2, "0")}`;
   }
 
-  function courseStyleFromCode(course) {
-    const match = backendContext.cleanText(course).toUpperCase().match(/(?:SF|AP|IS|BI)$/);
-    return match ? match[0] : "";
-  }
 
-  function courseLengthFromCode(course) {
-    const match = backendContext.cleanText(course).toUpperCase().match(/^(\d+)/);
-    return match ? Number(match[1]) : null;
-  }
+
+
 
   function normalizeCourseCode(value) {
     return backendContext.cleanText(value).replace(/\s+/g, "").toUpperCase();
@@ -48,29 +42,11 @@ function createImportService(backendContext) {
     return backendContext.cleanText(value).replace(/\s+/g, "").toUpperCase();
   }
 
-  function normalizeIdentityText(value) {
-    return backendContext.cleanText(value)
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .replace(/[^A-Za-z0-9]+/g, " ")
-      .toUpperCase()
-      .trim();
-  }
 
-  function swimmerIdentityKey(firstName, lastName, birthDate) {
-    const first = normalizeIdentityText(firstName);
-    const last = normalizeIdentityText(lastName);
-    const birth = backendContext.cleanText(birthDate);
-    if (!first || !last || !birth) return "";
-    return `${last}|${first}|${birth}`;
-  }
 
-  function canonicalSwimmerId(ids) {
-    return ids
-      .map((id) => backendContext.cleanText(id))
-      .filter(Boolean)
-      .sort((a, b) => Number(a) - Number(b) || a.localeCompare(b, "fr-FR", { numeric: true }))[0] || "";
-  }
+
+
+
 
   function competitionYear(date) {
     const match = String(date || "").match(/^(\d{4})-/);
@@ -249,14 +225,14 @@ function createImportService(backendContext) {
   }
 
   function normalizedRecordAlertName(value) {
-    const normalized = normalizeIdentityText(value);
+    const normalized = backendContext.normalizeIdentityText(value);
     if (!normalized) return "";
     return normalized.split(/\s+/).filter(Boolean).sort().join(" ");
   }
 
   function sameRecordAlertSwimmer(left, right) {
-    const leftRaw = normalizeIdentityText(left);
-    const rightRaw = normalizeIdentityText(right);
+    const leftRaw = backendContext.normalizeIdentityText(left);
+    const rightRaw = backendContext.normalizeIdentityText(right);
     if (!leftRaw || !rightRaw) return false;
     return leftRaw === rightRaw || normalizedRecordAlertName(leftRaw) === normalizedRecordAlertName(rightRaw);
   }
@@ -351,34 +327,7 @@ function createImportService(backendContext) {
     );
   }
 
-  function buildIntranapSwimmerReference() {
-    const byId = new Map();
-    const byIdentity = new Map();
-    const groupedByIdentity = new Map();
-    backendContext.intranapSwimmersReference.forEach((swimmer) => {
-      const key = swimmerIdentityKey(swimmer.firstName, swimmer.lastName, swimmer.birthDate);
-      if (!key) return;
-      if (!groupedByIdentity.has(key)) groupedByIdentity.set(key, []);
-      groupedByIdentity.get(key).push(swimmer);
-    });
-    groupedByIdentity.forEach((group, key) => {
-      const canonicalId = canonicalSwimmerId(group.map((swimmer) => swimmer.id));
-      const canonical = group.find((swimmer) => String(swimmer.id) === String(canonicalId)) || group[0];
-      const merged = {
-        ...canonical,
-        id: String(canonicalId || canonical.id),
-        identityKey: key,
-        aliases: group.map((swimmer) => String(swimmer.id)).filter((id) => id && id !== String(canonicalId)),
-        sourceIds: group.map((swimmer) => String(swimmer.id)).filter(Boolean)
-      };
-      byIdentity.set(key, merged);
-      group.forEach((swimmer) => byId.set(String(swimmer.id), merged));
-    });
-    backendContext.intranapSwimmersReference.forEach((swimmer) => {
-      if (!byId.has(String(swimmer.id))) byId.set(String(swimmer.id), swimmer);
-    });
-    return { byId, byIdentity };
-  }
+
 
   function resolveIntranapSwimmer(perf, sex) {
     const expectedSex = normalizeCategoryCode(sex || perf.sex);
@@ -392,7 +341,7 @@ function createImportService(backendContext) {
     const byIdMatch = allowSourceIdMatch && rawId ? backendContext.intranapSwimmerLookup.byId.get(rawId) : null;
     if (isCompatible(byIdMatch)) return { swimmer: byIdMatch, method: "id" };
 
-    const key = swimmerIdentityKey(perf.firstName, perf.lastName, perf.birthDate);
+    const key = backendContext.swimmerIdentityKey(perf.firstName, perf.lastName, perf.birthDate);
     if (!key) return { swimmer: null, method: "none" };
     const identityMatch = backendContext.intranapSwimmerLookup.byIdentity.get(key) || null;
     return isCompatible(identityMatch)
@@ -457,7 +406,7 @@ function createImportService(backendContext) {
   }
 
   function coursePayload(course) {
-    const meta = backendContext.COURSE_META[course] || [course, course, courseStyleFromCode(course), courseLengthFromCode(course)];
+    const meta = backendContext.COURSE_META[course] || [course, course, backendContext.courseStyleFromCode(course), backendContext.courseLengthFromCode(course)];
     return {
       code: course,
       label: meta[0],
@@ -665,13 +614,8 @@ function createImportService(backendContext) {
     normalizeImportToken,
     parseTimeValue,
     formatTimeValue,
-    courseStyleFromCode,
-    courseLengthFromCode,
     normalizeCourseCode,
     normalizeCategoryCode,
-    normalizeIdentityText,
-    swimmerIdentityKey,
-    canonicalSwimmerId,
     competitionYear,
     birthYear,
     ageCategoryFromDates,
@@ -694,7 +638,6 @@ function createImportService(backendContext) {
     isAlreadyPublishedRecordAlert,
     buildRecordAlert,
     detectRecordAlerts,
-    buildIntranapSwimmerReference,
     resolveIntranapSwimmer,
     competitionImportPreviewPerformance,
     categoryCodeFromCategory,

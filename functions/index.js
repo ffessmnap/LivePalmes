@@ -898,6 +898,7 @@ const POOL_COURSES = ["50SF", "100SF", "200SF", "400SF", "800SF", "1500SF", "50A
 
 function serverAccessService() {
   if (!serverAccessService.instance) serverAccessService.instance = require("./server-access-service").createAccessService({
+    get cleanText() { return cleanText; },
     get ACCESS_CAPABILITIES() { return ACCESS_CAPABILITIES; },
     get ACCESS_CAPABILITY_SET() { return ACCESS_CAPABILITY_SET; },
     get ACCESS_DIRECTORY_INDEX_STATE_COLLECTION() { return ACCESS_DIRECTORY_INDEX_STATE_COLLECTION; },
@@ -1052,9 +1053,8 @@ const CATEGORY_LABELS = {
   }
 };
 
-/* extracted-function: functions/server-access-service.js#cleanText */
-function cleanText(input0) {
-  return serverAccessService().cleanText(...arguments);
+function cleanText(value) {
+  return String(value || "").trim();
 }
 
 /* extracted-function: functions/server-access-service.js#competitionEmailNotificationsEnabled */
@@ -1413,6 +1413,10 @@ function cleanImportText(input0) {
 
 function serverImportService() {
   if (!serverImportService.instance) serverImportService.instance = require("./server-import-service").createImportService({
+    get courseLengthFromCode() { return courseLengthFromCode; },
+    get courseStyleFromCode() { return courseStyleFromCode; },
+    get swimmerIdentityKey() { return swimmerIdentityKey; },
+    get normalizeIdentityText() { return normalizeIdentityText; },
     get COURSE_META() { return COURSE_META; },
     get ENGAGEMENT_LICENSE_SEASON_STATUSES() { return ENGAGEMENT_LICENSE_SEASON_STATUSES; },
     get ENGAGEMENT_LICENSE_VERIFICATION_STATUSES() { return ENGAGEMENT_LICENSE_VERIFICATION_STATUSES; },
@@ -1463,14 +1467,14 @@ function parseIntermediateTimes() {
   return competitionImportParser().parseIntermediateTimes(...arguments);
 }
 
-/* extracted-function: functions/server-import-service.js#courseStyleFromCode */
-function courseStyleFromCode(input0) {
-  return serverImportService().courseStyleFromCode(...arguments);
+function courseStyleFromCode(course) {
+  const match = cleanText(course).toUpperCase().match(/(?:SF|AP|IS|BI)$/);
+  return match ? match[0] : "";
 }
 
-/* extracted-function: functions/server-import-service.js#courseLengthFromCode */
-function courseLengthFromCode(input0) {
-  return serverImportService().courseLengthFromCode(...arguments);
+function courseLengthFromCode(course) {
+  const match = cleanText(course).toUpperCase().match(/^(\d+)/);
+  return match ? Number(match[1]) : null;
 }
 
 /* extracted-function: functions/server-import-service.js#normalizeCourseCode */
@@ -1483,19 +1487,28 @@ function normalizeCategoryCode(input0) {
   return serverImportService().normalizeCategoryCode(...arguments);
 }
 
-/* extracted-function: functions/server-import-service.js#normalizeIdentityText */
-function normalizeIdentityText(input0) {
-  return serverImportService().normalizeIdentityText(...arguments);
+function normalizeIdentityText(value) {
+  return cleanText(value)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^A-Za-z0-9]+/g, " ")
+    .toUpperCase()
+    .trim();
 }
 
-/* extracted-function: functions/server-import-service.js#swimmerIdentityKey */
-function swimmerIdentityKey(input0, input1, input2) {
-  return serverImportService().swimmerIdentityKey(...arguments);
+function swimmerIdentityKey(firstName, lastName, birthDate) {
+  const first = normalizeIdentityText(firstName);
+  const last = normalizeIdentityText(lastName);
+  const birth = cleanText(birthDate);
+  if (!first || !last || !birth) return "";
+  return `${last}|${first}|${birth}`;
 }
 
-/* extracted-function: functions/server-import-service.js#canonicalSwimmerId */
-function canonicalSwimmerId(input0) {
-  return serverImportService().canonicalSwimmerId(...arguments);
+function canonicalSwimmerId(ids) {
+  return ids
+    .map((id) => cleanText(id))
+    .filter(Boolean)
+    .sort((a, b) => Number(a) - Number(b) || a.localeCompare(b, "fr-FR", { numeric: true }))[0] || "";
 }
 
 /* extracted-function: functions/server-import-service.js#competitionYear */
@@ -1608,9 +1621,33 @@ function detectRecordAlerts() {
   return serverImportService().detectRecordAlerts(...arguments);
 }
 
-/* extracted-function: functions/server-import-service.js#buildIntranapSwimmerReference */
 function buildIntranapSwimmerReference() {
-  return serverImportService().buildIntranapSwimmerReference(...arguments);
+  const byId = new Map();
+  const byIdentity = new Map();
+  const groupedByIdentity = new Map();
+  intranapSwimmersReference.forEach((swimmer) => {
+    const key = swimmerIdentityKey(swimmer.firstName, swimmer.lastName, swimmer.birthDate);
+    if (!key) return;
+    if (!groupedByIdentity.has(key)) groupedByIdentity.set(key, []);
+    groupedByIdentity.get(key).push(swimmer);
+  });
+  groupedByIdentity.forEach((group, key) => {
+    const canonicalId = canonicalSwimmerId(group.map((swimmer) => swimmer.id));
+    const canonical = group.find((swimmer) => String(swimmer.id) === String(canonicalId)) || group[0];
+    const merged = {
+      ...canonical,
+      id: String(canonicalId || canonical.id),
+      identityKey: key,
+      aliases: group.map((swimmer) => String(swimmer.id)).filter((id) => id && id !== String(canonicalId)),
+      sourceIds: group.map((swimmer) => String(swimmer.id)).filter(Boolean)
+    };
+    byIdentity.set(key, merged);
+    group.forEach((swimmer) => byId.set(String(swimmer.id), merged));
+  });
+  intranapSwimmersReference.forEach((swimmer) => {
+    if (!byId.has(String(swimmer.id))) byId.set(String(swimmer.id), swimmer);
+  });
+  return { byId, byIdentity };
 }
 
 const intranapSwimmerLookup = buildIntranapSwimmerReference();

@@ -38,15 +38,13 @@ function createAccessService(backendContext) {
     if (definition.type !== "relay") return "";
     if (definition.relayMixedRule === "required") return "required";
     if (definition.relayMixedRule === "mastersOnly") {
-      const mode = cleanText(rawEvent.relayMixedMode).trim();
+      const mode = backendContext.cleanText(rawEvent.relayMixedMode).trim();
       return backendContext.ENGAGEMENT_RELAY_MIXED_MODES.has(mode) && mode === "masters" ? "masters" : "none";
     }
     return "";
   }
 
-  function cleanText(value) {
-    return String(value || "").trim();
-  }
+
 
   function competitionEmailNotificationsEnabled(value = {}) {
     return value?.emailPreferences?.competitionNotifications !== false && value?.competitionNotificationsEnabled !== false;
@@ -61,7 +59,7 @@ function createAccessService(backendContext) {
   }
 
   function competitionNotificationPreferenceToken(uid = "") {
-    const cleanUid = cleanText(uid).slice(0, 128);
+    const cleanUid = backendContext.cleanText(uid).slice(0, 128);
     const secret = notificationPreferenceSecretValue();
     if (!cleanUid || !secret) return "";
     return backendContext.crypto.createHmac("sha256", secret)
@@ -71,7 +69,7 @@ function createAccessService(backendContext) {
 
   function validCompetitionNotificationPreferenceToken(uid = "", token = "") {
     const expected = competitionNotificationPreferenceToken(uid);
-    const provided = cleanText(token);
+    const provided = backendContext.cleanText(token);
     if (!expected || !provided || expected.length !== provided.length) return false;
     return backendContext.crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(provided));
   }
@@ -79,53 +77,53 @@ function createAccessService(backendContext) {
   function competitionNotificationPreferenceUrl(uid = "") {
     const token = competitionNotificationPreferenceToken(uid);
     if (!token) return "";
-    return `${backendContext.ENVIRONMENT.hostingOrigin}/notifications.html?uid=${encodeURIComponent(cleanText(uid))}&token=${encodeURIComponent(token)}`;
+    return `${backendContext.ENVIRONMENT.hostingOrigin}/notifications.html?uid=${encodeURIComponent(backendContext.cleanText(uid))}&token=${encodeURIComponent(token)}`;
   }
 
   function engagementClubRegionId(club = {}, fallback = "") {
-    return backendContext.CLUB_REFERENCE_REGION_LABELS[cleanText(club.regionId)] || cleanText(fallback).slice(0, 80);
+    return backendContext.CLUB_REFERENCE_REGION_LABELS[backendContext.cleanText(club.regionId)] || backendContext.cleanText(fallback).slice(0, 80);
   }
 
   function engagementClubCode(clubId, fallback = "") {
-    return backendContext.CLUB_REFERENCE_BY_ID.get(cleanText(clubId))?.clubCode || cleanText(fallback);
+    return backendContext.CLUB_REFERENCE_BY_ID.get(backendContext.cleanText(clubId))?.clubCode || backendContext.cleanText(fallback);
   }
 
   function engagementClubName(clubId, fallback = "") {
-    return backendContext.CLUB_REFERENCE_BY_ID.get(cleanText(clubId))?.clubName || cleanText(fallback);
+    return backendContext.CLUB_REFERENCE_BY_ID.get(backendContext.cleanText(clubId))?.clubName || backendContext.cleanText(fallback);
   }
 
   function engagementStoredClubItem(doc) {
     const data = doc?.data ? doc.data() || {} : doc || {};
     return cleanFirestoreValue({
-      id: cleanText(doc?.id || data.id || data.clubId).slice(0, 40),
-      clubId: cleanText(data.clubId || doc?.id).slice(0, 40),
-      clubCode: cleanText(data.clubCode).slice(0, 40),
-      clubName: cleanText(data.clubName).slice(0, 140),
-      regionId: cleanText(data.regionId).slice(0, 80),
-      federalNumber: cleanText(data.federalNumber).slice(0, 24),
-      city: cleanText(data.city).slice(0, 100),
-      postalCode: cleanText(data.postalCode).slice(0, 16),
+      id: backendContext.cleanText(doc?.id || data.id || data.clubId).slice(0, 40),
+      clubId: backendContext.cleanText(data.clubId || doc?.id).slice(0, 40),
+      clubCode: backendContext.cleanText(data.clubCode).slice(0, 40),
+      clubName: backendContext.cleanText(data.clubName).slice(0, 140),
+      regionId: backendContext.cleanText(data.regionId).slice(0, 80),
+      federalNumber: backendContext.cleanText(data.federalNumber).slice(0, 24),
+      city: backendContext.cleanText(data.city).slice(0, 100),
+      postalCode: backendContext.cleanText(data.postalCode).slice(0, 16),
       active: data.active !== false,
       deleted: data.deleted === true,
-      source: cleanText(data.source || "national").slice(0, 40),
-      createdAt: cleanText(data.createdAt).slice(0, 40),
-      createdBy: cleanText(data.createdBy).slice(0, 128),
-      updatedAt: cleanText(data.updatedAt).slice(0, 40),
-      updatedBy: cleanText(data.updatedBy).slice(0, 128)
+      source: backendContext.cleanText(data.source || "national").slice(0, 40),
+      createdAt: backendContext.cleanText(data.createdAt).slice(0, 40),
+      createdBy: backendContext.cleanText(data.createdBy).slice(0, 128),
+      updatedAt: backendContext.cleanText(data.updatedAt).slice(0, 40),
+      updatedBy: backendContext.cleanText(data.updatedBy).slice(0, 128)
     });
   }
 
   function publicEngagementClubItem(club = {}) {
     return cleanFirestoreValue({
-      clubId: cleanText(club.clubId || club.id).slice(0, 40),
-      clubCode: cleanText(club.clubCode).slice(0, 40),
-      clubName: cleanText(club.clubName).slice(0, 140),
-      regionId: cleanText(club.regionId).slice(0, 80),
-      federalNumber: cleanText(club.federalNumber).slice(0, 24),
-      city: cleanText(club.city).slice(0, 100),
-      postalCode: cleanText(club.postalCode).slice(0, 16),
+      clubId: backendContext.cleanText(club.clubId || club.id).slice(0, 40),
+      clubCode: backendContext.cleanText(club.clubCode).slice(0, 40),
+      clubName: backendContext.cleanText(club.clubName).slice(0, 140),
+      regionId: backendContext.cleanText(club.regionId).slice(0, 80),
+      federalNumber: backendContext.cleanText(club.federalNumber).slice(0, 24),
+      city: backendContext.cleanText(club.city).slice(0, 100),
+      postalCode: backendContext.cleanText(club.postalCode).slice(0, 16),
       active: club.active !== false,
-      source: cleanText(club.source || "national").slice(0, 40)
+      source: backendContext.cleanText(club.source || "national").slice(0, 40)
     });
   }
 
@@ -134,7 +132,7 @@ function createAccessService(backendContext) {
   }
 
   async function engagementClubsByIds(clubIds = []) {
-    const ids = Array.from(new Set(clubIds.map((clubId) => cleanText(clubId).slice(0, 40)).filter(Boolean)));
+    const ids = Array.from(new Set(clubIds.map((clubId) => backendContext.cleanText(clubId).slice(0, 40)).filter(Boolean)));
     const byId = new Map(ids.map((clubId) => [clubId, backendContext.CLUB_REFERENCE_BY_ID.get(clubId) || { clubId }]));
     if (!ids.length) return byId;
     const snapshots = await backendContext.db.getAll(...ids.map((clubId) => backendContext.db.collection(backendContext.ENGAGEMENT_CLUBS_COLLECTION).doc(clubId)));
@@ -146,7 +144,7 @@ function createAccessService(backendContext) {
   }
 
   async function engagementClubById(clubId) {
-    return (await engagementClubsByIds([clubId])).get(cleanText(clubId)) || null;
+    return (await engagementClubsByIds([clubId])).get(backendContext.cleanText(clubId)) || null;
   }
 
   function cleanFirestoreValue(value) {
@@ -168,7 +166,7 @@ function createAccessService(backendContext) {
   }
 
   function competitionIdFrom(data = {}) {
-    const competitionId = cleanText(data.competitionId || "livepalmes-active");
+    const competitionId = backendContext.cleanText(data.competitionId || "livepalmes-active");
     if (!backendContext.COMPETITION_IDS.has(competitionId)) {
       throw new backendContext.HttpsError("invalid-argument", "Competition LivePalmes inconnue.");
     }
@@ -211,12 +209,12 @@ function createAccessService(backendContext) {
   }
 
   function normalizeEmail(value) {
-    return cleanText(value).toLowerCase();
+    return backendContext.cleanText(value).toLowerCase();
   }
 
   function normalizedEngagementRegionKey(value) {
-    const cleanValue = cleanText(value);
-    return cleanText(backendContext.CLUB_REFERENCE_REGION_LABELS[cleanValue] || cleanValue)
+    const cleanValue = backendContext.cleanText(value);
+    return backendContext.cleanText(backendContext.CLUB_REFERENCE_REGION_LABELS[cleanValue] || cleanValue)
       .normalize("NFD")
       .replace(/[\u0300-\u036f]/g, "")
       .replace(/[^a-z0-9]+/gi, "")
@@ -229,7 +227,7 @@ function createAccessService(backendContext) {
   }
 
   function canonicalAccessDirectoryRegionId(value) {
-    const cleanValue = cleanText(value).slice(0, 80);
+    const cleanValue = backendContext.cleanText(value).slice(0, 80);
     if (!cleanValue) return "";
     if (backendContext.CLUB_REFERENCE_REGION_LABELS[cleanValue]) return backendContext.CLUB_REFERENCE_REGION_LABELS[cleanValue];
     const normalizedValue = normalizedEngagementRegionKey(cleanValue);
@@ -245,17 +243,17 @@ function createAccessService(backendContext) {
   }
 
   function cleanAccessProfile(raw = {}) {
-    const uid = cleanText(raw.uid).slice(0, 128);
+    const uid = backendContext.cleanText(raw.uid).slice(0, 128);
     const email = normalizeEmail(raw.email);
     assertEmail(email);
-    const firstName = cleanText(raw.firstName).slice(0, 80);
-    const lastName = cleanText(raw.lastName).slice(0, 80);
-    const clubId = cleanText(raw.clubId).slice(0, 40);
-    const clubName = cleanText(raw.clubName).slice(0, 140);
+    const firstName = backendContext.cleanText(raw.firstName).slice(0, 80);
+    const lastName = backendContext.cleanText(raw.lastName).slice(0, 80);
+    const clubId = backendContext.cleanText(raw.clubId).slice(0, 40);
+    const clubName = backendContext.cleanText(raw.clubName).slice(0, 140);
     const regionId = canonicalAccessDirectoryRegionId(raw.regionId);
-    const licenseNumber = cleanText(raw.licenseNumber).slice(0, 60);
+    const licenseNumber = backendContext.cleanText(raw.licenseNumber).slice(0, 60);
     const capabilities = Array.isArray(raw.capabilities)
-      ? raw.capabilities.map(cleanText).filter((item) => backendContext.ACCESS_CAPABILITY_SET.has(item))
+      ? raw.capabilities.map(backendContext.cleanText).filter((item) => backendContext.ACCESS_CAPABILITY_SET.has(item))
       : [];
     if (!firstName || !lastName) {
       throw new backendContext.HttpsError("invalid-argument", "Nom et prenom obligatoires.");
@@ -334,7 +332,7 @@ function createAccessService(backendContext) {
 
   function accessDirectorySnapshotDocumentId(scopeType = "national", scopeId = "") {
     return scopeType === "region"
-      ? `region:${encodeURIComponent(cleanText(scopeId).slice(0, 80))}`
+      ? `region:${encodeURIComponent(backendContext.cleanText(scopeId).slice(0, 80))}`
       : "national";
   }
 
@@ -344,16 +342,16 @@ function createAccessService(backendContext) {
   }
 
   function accessDirectorySnapshotEntryKey(uid = "") {
-    return backendContext.crypto.createHash("sha256").update(cleanText(uid)).digest("hex").slice(0, 32);
+    return backendContext.crypto.createHash("sha256").update(backendContext.cleanText(uid)).digest("hex").slice(0, 32);
   }
 
   function normalizedAccessScope(scope = {}) {
-    const scopeType = ["club", "region", "national"].includes(cleanText(scope.scopeType))
-      ? cleanText(scope.scopeType)
+    const scopeType = ["club", "region", "national"].includes(backendContext.cleanText(scope.scopeType))
+      ? backendContext.cleanText(scope.scopeType)
       : "national";
     return {
       scopeType,
-      scopeId: scopeType === "national" ? "" : cleanText(scope.scopeId).slice(0, 80)
+      scopeId: scopeType === "national" ? "" : backendContext.cleanText(scope.scopeId).slice(0, 80)
     };
   }
 
@@ -388,7 +386,7 @@ function createAccessService(backendContext) {
     if (backendContext.ADMIN_UIDS.has(uid) || backendContext.FUNCTIONS_EMULATOR_ACTIVE) {
       return {
         uid,
-        email: cleanText(request.auth?.token?.email).slice(0, 180),
+        email: backendContext.cleanText(request.auth?.token?.email).slice(0, 180),
         national: true,
         region: true,
         regionId: "",
@@ -407,10 +405,10 @@ function createAccessService(backendContext) {
     const regionScope = normalizedAccessScope(accessScopes["engagements.region.manage"]);
     return {
       uid,
-      email: cleanText(request.auth?.token?.email || data.email).slice(0, 180),
+      email: backendContext.cleanText(request.auth?.token?.email || data.email).slice(0, 180),
       national,
       region,
-      regionId: regionScope.scopeId || cleanText(data.regionId).slice(0, 80),
+      regionId: regionScope.scopeId || backendContext.cleanText(data.regionId).slice(0, 80),
       competitionNotificationsEnabled: competitionEmailNotificationsEnabled(data)
     };
   }
@@ -424,7 +422,7 @@ function createAccessService(backendContext) {
     if (backendContext.ADMIN_UIDS.has(uid) || backendContext.FUNCTIONS_EMULATOR_ACTIVE || tokenCapabilities["admin.full"] === true) {
       return {
         uid,
-        email: cleanText(request.auth?.token?.email).slice(0, 180),
+        email: backendContext.cleanText(request.auth?.token?.email).slice(0, 180),
         adminFull: true,
         national: true,
         region: true,
@@ -446,7 +444,7 @@ function createAccessService(backendContext) {
     const regionScope = normalizedAccessScope(accessScopes["engagements.region.manage"]);
     return {
       uid,
-      email: cleanText(request.auth?.token?.email || data.email).slice(0, 180),
+      email: backendContext.cleanText(request.auth?.token?.email || data.email).slice(0, 180),
       adminFull: false,
       national,
       region,
@@ -473,10 +471,10 @@ function createAccessService(backendContext) {
 
   function accessUserRegionIdFromData(data = {}) {
     const regionScope = normalizedAccessScope(data.accessScopes?.["engagements.region.manage"]);
-    const directRegionId = regionScope.scopeId || cleanText(data.regionId).slice(0, 80);
+    const directRegionId = regionScope.scopeId || backendContext.cleanText(data.regionId).slice(0, 80);
     if (directRegionId) return canonicalAccessDirectoryRegionId(directRegionId);
     const clubScope = normalizedAccessScope(data.accessScopes?.["engagements.club.manage"]);
-    const clubId = clubScope.scopeId || cleanText(data.clubId).slice(0, 40);
+    const clubId = clubScope.scopeId || backendContext.cleanText(data.clubId).slice(0, 40);
     return canonicalAccessDirectoryRegionId(backendContext.CLUB_REFERENCE_BY_ID.get(clubId)?.regionId);
   }
 
@@ -525,11 +523,11 @@ function createAccessService(backendContext) {
     }
     const accessScopes = data.accessScopes || {};
     const clubScope = normalizedAccessScope(accessScopes["engagements.club.manage"]);
-    const homeClubId = cleanText(clubScope.scopeId || data.clubId).slice(0, 40);
+    const homeClubId = backendContext.cleanText(clubScope.scopeId || data.clubId).slice(0, 40);
     if (!homeClubId) {
       throw new backendContext.HttpsError("failed-precondition", "Numero de club requis pour les engagements club.");
     }
-    const requestedClubId = cleanText(request.data?.activeClubId).slice(0, 40);
+    const requestedClubId = backendContext.cleanText(request.data?.activeClubId).slice(0, 40);
     const isSwitchingClub = Boolean(requestedClubId && requestedClubId !== homeClubId);
     if (isSwitchingClub && capabilities["engagements.club.switch"] !== true) {
       throw new backendContext.HttpsError("permission-denied", "Droit de changement de club requis.");
@@ -552,12 +550,12 @@ function createAccessService(backendContext) {
     const clubId = activeClub?.clubId || homeClubId;
     return {
       uid,
-      email: cleanText(request.auth?.token?.email || data.email).slice(0, 180),
-      firstName: cleanText(data.firstName || request.auth?.token?.given_name).slice(0, 80),
-      lastName: cleanText(data.lastName || request.auth?.token?.family_name).slice(0, 80),
+      email: backendContext.cleanText(request.auth?.token?.email || data.email).slice(0, 180),
+      firstName: backendContext.cleanText(data.firstName || request.auth?.token?.given_name).slice(0, 80),
+      lastName: backendContext.cleanText(data.lastName || request.auth?.token?.family_name).slice(0, 80),
       clubId,
-      clubName: activeClub?.clubName || cleanText(data.clubName).slice(0, 140),
-      regionId: activeClub ? engagementClubRegionId(activeClub, data.regionId) : cleanText(data.regionId).slice(0, 80),
+      clubName: activeClub?.clubName || backendContext.cleanText(data.clubName).slice(0, 140),
+      regionId: activeClub ? engagementClubRegionId(activeClub, data.regionId) : backendContext.cleanText(data.regionId).slice(0, 80),
       homeClubId,
       switchedClub: isSwitchingClub
     };
@@ -580,15 +578,15 @@ function createAccessService(backendContext) {
   }
 
   function displayNameFromProfile(profile = {}) {
-    return [cleanText(profile.firstName), cleanText(profile.lastName)].filter(Boolean).join(" ");
+    return [backendContext.cleanText(profile.firstName), backendContext.cleanText(profile.lastName)].filter(Boolean).join(" ");
   }
 
   async function accessUserDisplayName(uid, fallbackToken = {}) {
-    const cleanUid = cleanText(uid);
+    const cleanUid = backendContext.cleanText(uid);
     if (!cleanUid) return "";
     const snapshot = await backendContext.db.collection("users").doc(cleanUid).get().catch(() => null);
     const data = snapshot?.exists ? snapshot.data() || {} : {};
-    return displayNameFromProfile(data) || cleanText(fallbackToken.name);
+    return displayNameFromProfile(data) || backendContext.cleanText(fallbackToken.name);
   }
 
   async function userByEmailOrCreate(profile) {
@@ -729,7 +727,6 @@ function createAccessService(backendContext) {
     engagementCategoryCodesForEvent,
     normalizeEngagementEventCategoryRestrictions,
     cleanEngagementRelayMixedMode,
-    cleanText,
     competitionEmailNotificationsEnabled,
     notificationPreferenceSecretValue,
     competitionNotificationPreferenceToken,
