@@ -2,6 +2,13 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 28 octobre — Fiabilité du portail pendant une panne NAP
+
+- Antoine accepte les tests complémentaires du code réorganisé et la gestion des pannes, sans connexion à la base réelle. Nouveaux tests exécutant les modules réels du portail et les handlers serveur avec services fictifs : erreurs, annuaires vides, délai/réponse tardive, lectures concurrentes et reprise. Aucun code serveur, droit, configuration Firebase ou donnée modifié.
+- Messages techniques temporaires reformulés, explications métier et codes/détails d'erreur conservés, y compris si l'erreur originale est non modifiable. Mes officiels distingue annuaire non lu et annuaire vide ; bouton de reprise manuel, ajout bloqué avant chargement réussi. Pagination nationale arrêtée si le pointeur se répète ou manque, sans enregistrer un cache partiel. Versions des cinq ressources JavaScript modifiées renouvelées.
+- Coût inchangé sur les parcours normaux ; reprise Mes officiels = un appel de lecture existant, aucune requête par ligne ni écriture. Clics simultanés protégés ; aucun réessai automatique d'écriture, secours Firestore ou reconstruction. Cas de pagination défaillante interrompus plus tôt. Budget et recette : [tests hors connexion](../TESTS_MANUELS.md#pannes-nap-et-reprise-hors-connexion--28-octobre-2026).
+- Tests ciblés réussis hors réseau, dont serveur avec faux pool, et navigateur 1280/390/320 px avec souris/toucher. Reprise en deux tentatives manuelles au total, affichage lisible, contrôles restaurés. CI complète, intégration et preuve TEST à consigner dans la PR du chantier après réussite ; validation utilisateur non acquise. PROD et données réelles exclues.
+
 ### 28 octobre — Maintenance de l'architecture, jusqu'à TEST uniquement
 
 - Accord d'Antoine : réaliser tout le plan d'amélioration, y compris le découpage du portail et du serveur, jusqu'à TEST ; conserver fonctionnement et affichage, sans opération PROD ni données réelles. [PR #600](https://github.com/ffessmnap/LivePalmes/pull/600) et [correction #601](https://github.com/ffessmnap/LivePalmes/pull/601) intégrées. Livraison TEST réussie ; validation utilisateur encore attendue.

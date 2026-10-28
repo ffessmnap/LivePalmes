@@ -24,6 +24,8 @@ Le découpage conserve les fonctions et les données partagées dans des interfa
 
 Si la correction touche `functions/`, lire aussi `functions/AGENTS.md`. Ne rechercher ensuite que les fonctions appelées par l'écran concerné et leurs utilitaires directs.
 
+Fiabilité sans NAP : les tests `portal-rpc-failure-tests.js`, `portal-directory-recovery-tests.js` et `backend-directory-outage-tests.js` exercent les fabriques réelles, avec services fictifs et réseau externe bloqué, sans l'adaptateur des anciens contrats de source. `portal-outage-browser-tests.js` vérifie le message et le bouton de reprise sur ordinateur/mobile. Une erreur de chargement ne doit pas être présentée comme un annuaire vide ; aucun réessai d'écriture ou repli vers Firestore n'est implicite. Les pointeurs de pagination répétés ou manquants interrompent la lecture sans remplacer le cache complet.
+
 ## Documentation métier à charger seulement si nécessaire
 
 - engagements et préparation des compétitions : `docs/module-engagements.md` et, si l'architecture est utile, `docs/module-engagements-integration-portail.md` ;
