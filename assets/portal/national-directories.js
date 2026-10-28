@@ -34,6 +34,7 @@
           let syncedThrough = cached.syncedThrough;
           let hasMore = true;
           let includeAdministrators = true;
+          const seenCursors = new Set();
           while (hasMore) {
             const result = await portalActions.callFunction("listEngagementNationalClubs", {
               limit: 250,
@@ -58,8 +59,12 @@
                 if (club.deleted === true) storedById.delete(club.clubId);
                 else storedById.set(club.clubId, club);
               });
-            hasMore = result.hasMore === true && Boolean(result.cursor?.updatedAt && result.cursor?.clubId);
+            hasMore = result.hasMore === true;
             if (hasMore) {
+              if (!result.cursor?.updatedAt || !result.cursor?.clubId) throw new Error("La suite de l’annuaire est indisponible. Réessayez le chargement dans quelques instants.");
+              const cursorKey = JSON.stringify([String(result.cursor.updatedAt), String(result.cursor.clubId)]);
+              if (seenCursors.has(cursorKey)) throw new Error("La lecture des clubs n'a pas progressé. Réessayez le chargement dans quelques instants.");
+              seenCursors.add(cursorKey);
               pageUpdatedAfter = String(result.cursor.updatedAt);
               afterClubId = String(result.cursor.clubId);
             }

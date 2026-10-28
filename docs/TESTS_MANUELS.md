@@ -2,6 +2,15 @@
 
 <!-- description: Checklist de tests manuels à exécuter avant une publication ou après une modification sensible. -->
 
+## Pannes NAP et reprise hors connexion — 28 octobre 2026
+
+Autorisation : renforcer les tests du code réorganisé et la gestion des pannes pendant l'indisponibilité NAP. Tous les scénarios ci-dessous utilisent des services en mémoire ; ils n'autorisent aucune connexion à NAP, écriture réelle ou modification des droits. Aucun code serveur, configuration Firebase, schéma ou règle sportive modifié.
+
+- Exécuter les trois suites avec le préchargement `node --require ./tests/helpers/offline-network.js tests/<suite>.js` : `portal-rpc-failure-tests`, `portal-directory-recovery-tests`, `backend-directory-outage-tests`. Modules réels chargés directement ; erreurs temporaires et métier, erreur non modifiable, délai de lecture et réponse tardive, échec partiel de pagination, pointeur répété/manquant, changement de club pendant la requête, annuaire vide valide et reprise manuelle. Vérifier l'absence de réessai automatique, de repli Firestore ou de reconstruction.
+- `node tests/portal-outage-browser-tests.js` : profil navigateur isolé, HTTPS externe bloqué, vrais modules/HTML/styles et RPC fictifs. En 1280/390/320 px : panne avec message lisible, absence du faux « Aucun officiel », ajout bloqué et bouton « Réessayer le chargement » visible. Reprise par souris/toucher : un seul nouvel appel, disparition de l'erreur, annuaire vide validé et ajout déverrouillé. Captures/preuve dans `tmp/portal-outage-browser/`.
+- Budget inchangé à l'ouverture, au rafraîchissement et pour les parcours normaux. Dans Mes officiels, un clic de reprise effectue un seul appel de lecture existant, avec les mêmes limites et la même pagination ; les clics simultanés ne créent pas de requête supplémentaire. Aucun appel par ligne, aucune écriture et aucune relance automatique. Un pointeur identique répété est arrêté après sa deuxième réception ; une continuation manquante est refusée immédiatement, sans écraser le cache complet.
+- Aucun composant, style ou variante visuelle nouveau : bouton `ghost-button` et message existants réutilisés. Contrôles métiers avec la vraie base et validation utilisateur encore à réaliser après rétablissement, sur un périmètre de lecture explicitement autorisé.
+
 ## Vérification des licences — 27 octobre 2026
 
 - Ordinateur : vérifier que seules les dates de clôture des engagements déjà passées apparaissent par défaut ; afficher aussi les autres avec la case, rechercher une compétition et utiliser les boutons de filtre sans perdre les cinq sources sélectionnables. Avec 79 compétitions et 65 nageurs, faire défiler chaque liste : création du lot, validation et bilan restent visibles. Tous les nageurs sont conservés sans pagination ; boutons/compteurs et recherche ne déclenchent aucun appel supplémentaire. Une modification de sélection bloque l’ancien lot jusqu’à sa préparation.
