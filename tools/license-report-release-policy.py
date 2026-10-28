@@ -10,43 +10,51 @@ NAME = 'prepareEngagementLicenseControlBatch'
 MAIL_KEYS = {'LIVEPALMES_NAP_PASSWORD', 'LIVEPALMES_SMTP_HOST', 'LIVEPALMES_SMTP_PORT',
              'LIVEPALMES_SMTP_USER', 'LIVEPALMES_SMTP_PASS', 'LIVEPALMES_SMTP_SECURE',
              'LIVEPALMES_MAIL_FROM', 'LIVEPALMES_NOTIFICATION_LINK_SECRET'}
+NEXT_CANDIDATE = '25b9a6fa6763b8c1cfba5382ca2228ece8220fae'
+NEXT_DIGEST = '4184c390613b9267b81bc4471e66a8cebf0d7b25d85e0587e107b52992724cd3'
+
+def scope(value=None):
+    if value and value.get('candidate') == NEXT_CANDIDATE:
+        return ROOT / '.github/releases/evidence/20261028-license-closure-contract.json', NEXT_DIGEST
+    return CONTRACT, DIGEST
 
 def require(value, message):
     if not value:
         raise ValueError(message)
 
-def contract():
-    raw = CONTRACT.read_bytes().replace(b'\r\n', b'\n')
-    require(hashlib.sha256(raw).hexdigest() == DIGEST, 'Contrat licences modifie')
+def contract(value=None):
+    path, digest = scope(value)
+    raw = path.read_bytes().replace(b'\r\n', b'\n')
+    require(hashlib.sha256(raw).hexdigest() == digest, 'Contrat licences modifie')
     return json.loads(raw)
 
 def approved(value):
     option = value.get('licenseReportRelease')
     if option is None:
         return []
-    c = contract()
+    c = contract(value)
     allowed = {'schema','candidate','productionCommit','productionHosting','testRun','changes',
                'excludedBackendReview','excludedBackendEvidence','freezeTestCandidate','licenseReportRelease'}
-    require(set(value) <= allowed and option == {'approval':'ok','contractSha256':DIGEST}
+    require(set(value) <= allowed and option == {'approval':'ok','contractSha256':scope(value)[1]}
             and all(value.get(k) == c[k] for k in ['candidate','productionCommit','productionHosting','testRun'])
             and value.get('freezeTestCandidate') is True, 'Exception licences hors version ou perimetre')
     return [NAME]
 
 def preservation(value):
-    return contract()['mailPreservation'] if approved(value) else None
+    return contract(value)['mailPreservation'] if approved(value) else None
 
 def selection(value, selected):
     if approved(value):
-        require(sorted(selected) == contract()['selected'], 'Selection licences differente du contrat')
+        require(sorted(selected) == contract(value)['selected'], 'Selection licences differente du contrat')
 
 def verify(value, baseline, before, after, functions):
-    approved(value); c = contract()
+    approved(value); c = contract(value)
     require(baseline['productionRun'] == c['productionRun'] and len(functions) == 113
             and functions[NAME]['commit'] == c['productionCommit']
             and functions[NAME]['revision'] == c['revision']
             and before[NAME] == c['beforeHash'] and after[NAME] == c['afterHash'],
             'Origine du controleur licences differente de la revue')
-    return {'schema':1,'candidate':c['candidate'],'contractSha256':DIGEST,
+    return {'schema':1,'candidate':c['candidate'],'contractSha256':scope(value)[1],
             'sourceOnly':[NAME],'configurationChanges':False,'mailPause':False,'networkCalls':0}
 
 def runtime(function):

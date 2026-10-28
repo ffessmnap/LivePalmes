@@ -2,6 +2,13 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 28 octobre — Promotion de la clôture licences et du titre des compétitions
+
+- Demande PROD explicite d’Antoine : « ok alors mets en prod tout ça », pour les deux évolutions restées hors du candidat précédent. Clôture #596 validée dans le chat licences (« OK, ça fonctionne, je valide la clôture des contrôles de licences sur TEST. ») ; titre #597 également validé dans son chat (« Je valide »). Preuve commune TEST40588600834, candidat25b9a6fa ; aucune nouvelle recette ni publication TEST requise.
+- Référence PROD40594107635 / candidat0421f490. Diff applicatif limité aux deux parcours : interface licences, ajout de closeReport et présentation du bilan clôturé, correction du label du titre. Sélection calculée : aucune fonction ordinaire, seul prepareEngagementLicenseControlBatch en source seule ;112identités conservées et90divergences héritées inchangées. Nouveau contrat indépendant20261028, ancien contrat20261027 intact.
+- Stockage déjà NAP : aucun nouveau déplacement, schéma ou migration ; contrôle CAS/historique existant. L’observation de305secondes de l’ancienne bascule Firestore→NAP ne s’applique pas à ce contrat, sans transition de stockage. Mails tous clubs actifs/révision9, Scheduler horaire, configuration et8sélecteurs de secrets conservés, gardes frais avant/après. Aucun envoi de test, rattrapage, IAM, écriture métier ou modification Paris/CNHC/Basile ; clubs historiques, DTN et nettoyage Storage exclus.
+- Tests ciblés et CI requis pour cette seule extension de contrat ; preflight puis publication avec sauvegarde chiffrée rouverte/comparée et contrôle de dérive, conformément à l’accord Infra actuel. Preuves finales à lier dans la PR après exécution.
+
 ### 27 octobre — Exception de publication du contrôleur des bilans licences
 
 - Infra : validations eau libre et nettoyage des libellés retrouvées, interface compacte confirmée dans le chat licences ; Antoine confirme ici : « Oui, les bilans et leur historique NAP sont validés », puis « Je valide la mise en prod ». La clôture #596, validée séparément, et le titre #597 restent hors du candidat figé `0421f490` / TEST40585218771. Aucun accord ancien n'est étendu à ces versions ultérieures.
