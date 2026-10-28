@@ -1,4 +1,5 @@
 "use strict";
+const {assertRetained}=require("./helpers/nap-archived-tables");
 const assert=require("node:assert/strict"),fs=require("node:fs"),vm=require("node:vm");
 const {createPerformanceAdministration}=require("../functions/nap-performance-administration");
 const native={id:973,nageur:912,compet:2426,course:"100SF",cat:"HSE",tps:"14200",points:"0",newpoints:"0",passage:0,club:"2426",relais:0,pid:null,classement:1};
@@ -38,19 +39,18 @@ const native={id:973,nageur:912,compet:2426,course:"100SF",cat:"HSE",tps:"14200"
  pending[2].resolve({rows:[{id:"next"}],cursor:0,hasMore:false});await next;assert.equal(listContext.correctionRows.length,2);
  const diagnosticQueries=[];
  const proof=await require("../functions/nap-consultation-diagnostic").inspect({execute:async(query,values)=>{
-   diagnosticQueries.push({query,values});assert.match(query.sql,/^(SELECT|EXPLAIN SELECT) /);
+   diagnosticQueries.push({query,values});assertRetained(query.sql,values);assert.match(query.sql,/^(SELECT|EXPLAIN SELECT) /);
    if(query.sql.includes("information_schema.TABLES"))return [[{TABLE_NAME:"perfs"}]];
    if(query.sql.includes("VERSION()"))return [[{version:"8.0"}]];
-   if(query.sql.includes("information_schema.COLUMNS"))return [[...['id','compet','club'].map(name=>({TABLE_NAME:'txt_clubs',COLUMN_NAME:name,COLUMN_KEY:name==='id'?'PRI':''})),...['clubID','clubAbr','clubNum','EnapId'].map(name=>({TABLE_NAME:'old_club',COLUMN_NAME:name,COLUMN_KEY:name==='clubID'?'PRI':''}))]];
+   if(query.sql.includes("information_schema.COLUMNS"))return [[...['id','compet','club'].map(name=>({TABLE_NAME:'txt_clubs',COLUMN_NAME:name,COLUMN_KEY:name==='id'?'PRI':''}))]];
    if(query.sql.includes("FROM txt_clubs"))return [[{id:598,compet:251,club:"106",abre_club:"CNHC"}]];
-   if(query.sql.includes("FROM old_club"))return [[{clubID:598,clubAbr:"HISTORICAL",clubNum:"ABC",EnapId:106,num_club:106,abre_club:"CNHC"}]];
    if(query.sql.includes("FROM perfs_relais")||query.sql.includes("FROM livepalmes_performance_changes")||query.sql.includes("FROM txt_import"))return [[]];
    if(query.sql.startsWith("EXPLAIN"))return [[{key:"perf",rows:10}]];
    if(query.sql.includes("WHERE p.compet=?")){assert.deepEqual(values,[275]);return [[{id:63719,nageur:680,club:"659",currentClub:"106",performanceClubLabel:"NDCAS",currentClubLabel:"CNHC"}]];}
    assert.deepEqual(values,[912]);assert.match(query.sql,/LIMIT 5001$/);
    return [[{id:1,course:"100SF",club:"598",compet:251,abre_club:"ROC",currentClub:"106"},{id:2,course:"100SF",club:"2426",compet:3000,abre_club:null,currentClub:"106"}]];
  }});
- assert.equal(diagnosticQueries.length,19);assert.equal(proof.competitionComparison.example.id,63719);assert.equal(proof.competitionComparison.groups[0].currentClubLabel,"CNHC");assert.equal(proof.writesExecuted,0);assert.deepEqual(proof.rowProvenance.screenshotRows,[]);assert.equal(proof.complete,true);assert.equal(proof.groups[1].label,null);assert.equal(proof.groups[0].rawClub,"598");assert.equal(proof.importClubMappings[0].matchingPerformances,1);assert.equal(proof.importClubMappings[0].label,"CNHC");assert.equal(proof.historicalClubReferences[0].nativeRows,1);assert.equal(proof.historicalClubReferences[0].resolvedLabel,"CNHC");
+ assert.equal(diagnosticQueries.length,17);assert.equal(proof.competitionComparison.example.id,63719);assert.equal(proof.competitionComparison.groups[0].currentClubLabel,"CNHC");assert.equal(proof.writesExecuted,0);assert.deepEqual(proof.rowProvenance.screenshotRows,[]);assert.equal(proof.complete,true);assert.equal(proof.groups[1].label,null);assert.equal(proof.groups[0].rawClub,"598");assert.equal(proof.importClubMappings[0].matchingPerformances,1);assert.equal(proof.importClubMappings[0].label,"CNHC");assert.deepEqual(proof.historicalClubReferences,[]);assert.deepEqual(proof.rowProvenance.secondarySchema,[]);assert.deepEqual(proof.rowProvenance.championshipSources,[]);
  const top=fs.readFileSync("performances/public/tops.js","utf8");
  const rendered=[];const topContext={napRequest:0,napLimit:25,napFiltersKey:"",elements:{status:{},loadMore:{},loadMoreButton:{}},readNap:async()=>({rows:Array.from({length:40},(_,id)=>({id})),total:40,hasMore:false}),renderRows:rows=>rendered.push(rows),birthYearFilterOpen:false};
  vm.runInNewContext(top.slice(top.indexOf("  async function renderNap("),top.indexOf("  const usesLegacyPublicData")),topContext);
