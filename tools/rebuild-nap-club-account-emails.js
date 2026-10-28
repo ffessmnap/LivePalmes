@@ -2,10 +2,17 @@
 const fs = require("node:fs");
 const path = require("node:path");
 const { execFileSync } = require("node:child_process");
+const { createRequire } = require("node:module");
 const { TABLE, PAGE_SIZE, syncBatch } = require("../functions/nap-club-account-emails");
 const schema = require("../functions/nap-club-account-emails-schema");
 
 const MAX_ACCOUNTS = 10000;
+let stage = "guard";
+
+function loadFirebaseSdk() {
+  const functionsRequire = createRequire(path.join(__dirname, "../functions/package.json"));
+  return { ...functionsRequire("firebase-admin/app"), ...functionsRequire("firebase-admin/firestore") };
+}
 
 async function scan(db, documentId, visit) {
   let cursor = "", count = 0;
@@ -31,21 +38,25 @@ async function main() {
       mode === "apply" && process.env.ACCOUNT_EMAILS_CONFIRMATION !== "nap-shared-prod-account-emails") {
     throw new Error("Cible, commit ou confirmation incorrects.");
   }
+  stage = "identity";
   const credentials = JSON.parse(fs.readFileSync(process.env.GOOGLE_APPLICATION_CREDENTIALS, "utf8"));
   if (credentials.project_id !== "livepalmes" || credentials.client_email !== "github-actions-livepalmes-back@livepalmes.iam.gserviceaccount.com") {
     throw new Error("Lecture des profils PROD uniquement avec le compte backend PROD existant.");
   }
-  const { initializeApp, applicationDefault } = require("../functions/node_modules/firebase-admin/app");
-  const { getFirestore, FieldPath } = require("../functions/node_modules/firebase-admin/firestore");
+  stage = "sdk";
+  const { initializeApp, applicationDefault, getFirestore, FieldPath } = loadFirebaseSdk();
   const app = initializeApp({ projectId: "livepalmes", credential: applicationDefault() });
   const db = getFirestore(app);
+  stage = "nap-secret";
   const password = execFileSync("gcloud", ["secrets", "versions", "access", "latest", "--secret=LIVEPALMES_NAP_PASSWORD", "--project=livepalmes"],
     { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] }).trim();
   const pool = require("../functions/nap-mysql").createNapPool(password);
   try {
     // Inventory is an explicit, bounded maintenance operation, never an interactive fallback.
+    stage = "inventory";
     const sourceIds = new Set();
     const count = await scan(db, FieldPath.documentId(), async uids => { uids.forEach(uid => sourceIds.add(uid)); });
+    stage = "schema";
     const before = await schema.inspect(pool);
     // Include existing SQL keys so rerunning also clears profiles deleted since a previous run.
     if (before.exists) {
@@ -55,6 +66,7 @@ async function main() {
     }
     let created = false, synchronized = 0;
     if (mode === "apply") {
+      stage = "apply";
       ({ created } = await schema.ensure(pool));
       const ids = [...sourceIds].sort();
       for (let offset = 0; offset < ids.length; offset += PAGE_SIZE) {
@@ -75,7 +87,7 @@ async function main() {
 }
 
 if (require.main === module) main().catch(() => {
-  console.error("Reprise des comptes NAP arretee. Aucun detail personnel ou secret affiche. Les pages deja validees peuvent etre reprises.");
+  console.error(`Reprise des comptes NAP arretee (etape ${stage}). Aucun detail personnel ou secret affiche. Les pages deja validees peuvent etre reprises.`);
   process.exitCode = 1;
 });
-module.exports = { scan, MAX_ACCOUNTS };
+module.exports = { scan, MAX_ACCOUNTS, loadFirebaseSdk };
