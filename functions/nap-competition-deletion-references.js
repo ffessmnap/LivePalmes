@@ -10,18 +10,6 @@ module.exports=[
     "cleanup": false
   },
   {
-    "table": "cnc_nageurs",
-    "field": "bestcompet",
-    "index": "livepalmes_delete_bestcompet",
-    "cleanup": false
-  },
-  {
-    "table": "compet_access",
-    "field": "compet",
-    "index": "livepalmes_delete_compet",
-    "cleanup": true
-  },
-  {
     "table": "compet_comites",
     "field": "compet",
     "index": "livepalmes_compet_comite_id",
@@ -31,24 +19,6 @@ module.exports=[
     "table": "compet_courses",
     "field": "compet",
     "index": "compet",
-    "cleanup": true
-  },
-  {
-    "table": "compet_enf",
-    "field": "compet",
-    "index": "livepalmes_delete_compet",
-    "cleanup": true
-  },
-  {
-    "table": "compet_file",
-    "field": "compet",
-    "index": "livepalmes_delete_compet",
-    "cleanup": true
-  },
-  {
-    "table": "compet_open",
-    "field": "compet",
-    "index": "livepalmes_delete_compet",
     "cleanup": true
   },
   {
@@ -178,63 +148,9 @@ module.exports=[
     "cleanup": false
   },
   {
-    "table": "nageurs_derogations",
-    "field": "compet",
-    "index": "livepalmes_delete_compet",
-    "cleanup": false
-  },
-  {
-    "table": "nageurs_verifications",
-    "field": "licence_compet",
-    "index": "livepalmes_delete_licence_compet",
-    "cleanup": false
-  },
-  {
-    "table": "nageurs_verifications",
-    "field": "certificat_compet",
-    "index": "livepalmes_delete_certificat_compet",
-    "cleanup": false
-  },
-  {
-    "table": "nageurs_verifications",
-    "field": "photo_compet",
-    "index": "livepalmes_delete_photo_compet",
-    "cleanup": false
-  },
-  {
-    "table": "nageurs_verifications",
-    "field": "autorisation_parentale_compet",
-    "index": "livepalmes_delete_autorisation_parentale_compet",
-    "cleanup": false
-  },
-  {
-    "table": "nageurs_verifications",
-    "field": "assurance_compet",
-    "index": "livepalmes_delete_assurance_compet",
-    "cleanup": false
-  },
-  {
-    "table": "nbconnect",
-    "field": "compet",
-    "index": "livepalmes_delete_compet",
-    "cleanup": true
-  },
-  {
     "table": "officielsengager",
     "field": "compet",
     "index": "livepalmes_compet_club_id",
-    "cleanup": false
-  },
-  {
-    "table": "open_nageurs",
-    "field": "compet",
-    "index": "livepalmes_delete_compet",
-    "cleanup": false
-  },
-  {
-    "table": "outclassing",
-    "field": "compet",
-    "index": "livepalmes_delete_compet",
     "cleanup": false
   },
   {

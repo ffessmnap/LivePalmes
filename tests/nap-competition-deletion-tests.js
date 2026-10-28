@@ -1,4 +1,5 @@
 "use strict";
+const {assertRetained}=require("./helpers/nap-archived-tables");
 const assert=require("node:assert/strict"),fs=require("./helpers/source-files");
 const mod=require("../functions/nap-competition-deletion"),refs=require("../functions/nap-competition-deletion-references");
 function fixture(){
@@ -8,7 +9,7 @@ function fixture(){
  const log=[],options={};let prepared=false,reserved=false;
  const connection={
   async execute({sql},values){
-   log.push({sql,values});
+   log.push({sql,values});assertRetained(sql,values);
    if(sql.includes("information_schema"))return [options.triggers?[{TRIGGER_NAME:"unexpected"}]:[]];
    if(sql.includes("WHERE participation="))return [options.externalParticipation?[{present:1}]:[]];
    const table=/FROM `?([a-z_]+)`?/.exec(sql)?.[1];
@@ -24,7 +25,7 @@ function fixture(){
    }
    throw Error(sql);
   },
-  async query({sql}){log.push({sql});if(options.unlockFailure&&sql==="UNLOCK TABLES")throw Error("Unlock failed");return [[]];},
+  async query({sql}){assertRetained(sql);log.push({sql});if(options.unlockFailure&&sql==="UNLOCK TABLES")throw Error("Unlock failed");return [[]];},
   release(){log.push({release:true});},destroy(){log.push({destroy:true});}
  };
  const pool={async getConnection(){log.push({connection:true});return connection;}};
@@ -35,7 +36,7 @@ function fixture(){
  return {state,log,options,pool,scope,audit,authorize,input,run:changes=>mod.competitionDeletion(pool,{...input,...changes},audit,authorize)};
 }
 (async()=>{
- assert.equal(refs.length,48);assert.ok(refs.every(r=>/^[a-z_]+$/.test(r.table)&&r.index));
+ assert.equal(refs.length,34);assert.ok(refs.every(r=>/^[a-z_]+$/.test(r.table)&&r.index));
  assert.deepEqual(refs.find(r=>r.table==="livepalmes_calendar_event_details"),{table:"livepalmes_calendar_event_details",field:"competition_id",index:"PRIMARY",cleanup:true});
  for(const id of ["5162","legacy-nap-0","legacy-nap-2147483648","legacy-nap-1 OR 1=1",null])assert.throws(()=>mod.idOf(id));
  let held=fixture();held.state.livepalmes_license_control_history=[{competition_id:5162}];await assert.rejects(held.run(),/historique rattache/);assert.ok(!held.log.some(x=>x.sql?.startsWith("DELETE")));
@@ -52,7 +53,7 @@ function fixture(){
  assert.ok(f.log.some(x=>x.sql==="UNLOCK TABLES"));
  f=fixture();f.state.livepalmes_club_entry_options=[{competition_id:5162,club_id:"1"}];f.state.livepalmes_qualification_jobs=[{id:"old",competition_id:5162,state:"done"}];f.state.winpalme_sessions=[{id:7,compet:5162}];f.state.winpalme_courses=[{id:8,session:7}];preview=await f.run();assert.equal(preview.programCourses,1);await f.run({previewOnly:false,confirmPermanent:true,expectedFingerprint:preview.expectedFingerprint});const childDelete=f.log.findIndex(x=>x.sql?.startsWith("DELETE FROM `winpalme_courses`"));const parentDelete=f.log.findIndex(x=>x.sql?.startsWith("DELETE FROM `winpalme_sessions`"));assert.ok(childDelete>=0&&childDelete<parentDelete);assert.deepEqual(f.log[childDelete].values,[7]);
  for(const state of ["preview","ready","apply","unknown"]){f=fixture();f.state.livepalmes_qualification_jobs=[{state}];await assert.rejects(f.run(),/controle de qualification/);assert.ok(!f.log.some(x=>x.backup));}
- for(const table of ["nageursengager","engagements_relais","perfs","perfs_relais","officielsengager","chefsdequipe","import_relais"]){f=fixture();f.state[table]=[{id:1}];await assert.rejects(f.run(),/engagements, resultats ou un historique/);assert.ok(!f.log.some(x=>x.backup||x.sql?.startsWith("DELETE")));}
+ for(const table of ["nageursengager","engagements_relais","perfs","perfs_relais","officielsengager","chefsdequipe","import_relais","txt_clubs","txt_import","txt_nageurs"]){f=fixture();f.state[table]=[{id:1}];await assert.rejects(f.run(),/engagements, resultats ou un historique/);assert.ok(!f.log.some(x=>x.backup||x.sql?.startsWith("DELETE")));}
  for(const flag of ["externalParticipation","externalQualification","triggers"]){f=fixture();f.options[flag]=true;await assert.rejects(f.run());assert.ok(!f.log.some(x=>x.backup));}
  f=fixture();f.options.denied=true;await assert.rejects(f.run(),/Denied/);assert.equal(f.log.length,0);
  f=fixture();await assert.rejects(f.run({previewOnly:false}),/confirmation/);assert.equal(f.log.length,0);

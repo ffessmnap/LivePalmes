@@ -4,7 +4,7 @@ const {COLUMNS}=require("./nap-approved-swimmer-correction"),{fingerprint}=requi
 const {number}=require("./nap-license-state"),licenses=require("./nap-swimmer-merge-license-plan");
 const {nativeEqual}=require("./nap-native-compare");
 const TABLES=[
-  ...["cnc_edf","cnc_medailles","cnc_nageurs","documents_controles","engagements_relayeurs","nageurs_derogations","nageurs_enf","nageurs_verifications","txt_nageurs"].map(table=>({table,fields:["nageur"],key:["id"],index:"livepalmes_nageur_id"})),
+  ...["engagements_relayeurs","txt_nageurs"].map(table=>({table,fields:["nageur"],key:["id"],index:"livepalmes_nageur_id"})),
   {table:"perfs",fields:["nageur"],key:["id"],index:"nageur"},
   {table:"perfs_relais",fields:["nageur1","nageur2","nageur3","nageur4"],key:["id"],index:"livepalmes_nageur"},
   {table:"nageursengager",fields:["nageur"],key:["id"],index:"nageursengager_clef"},
@@ -81,6 +81,7 @@ function planMerge(input,source,target,snapshots,seasonRows,performanceClubPolic
   return plan;
 }
 function validateSaved(plan,input){
+  if(!plan.snapshots||Object.keys(plan.snapshots).some(name=>!TABLES.some(spec=>spec.table===name)))throw new TypeError("Ancien plan de fusion hors perimetre courant. Reprise manuelle du journal requise avant toute ecriture.");
   if(plan.finalClubId!==undefined&&String(input.finalClubId)!==plan.finalClubId)throw new TypeError("Le club final differe de la fusion sauvegardee.");
   if(![number(plan.source.number),number(plan.sourceAfter.number)].includes(input.sourceLicenseNumber)||![number(plan.target.number),number(plan.targetAfter.number)].includes(input.targetLicenseNumber))throw new TypeError("La licence differe de la fusion sauvegardee.");
   if(!equal(plan,planMerge({...input,allowLegacyClub:true,finalClubId:plan.finalClubId,priorMarker:plan.priorMarker,permanentDelete:plan.permanentDelete===true,sourceLicenseNumber:plan.sourceLicenseNumber,targetLicenseNumber:plan.targetLicenseNumber,confirmClubMismatch:plan.confirmClubMismatch,confirmLicenseMismatch:plan.confirmLicenseMismatch,timestamp:plan.timestamp},plan.source,plan.target,plan.snapshots,plan.licensePlan.before,plan.performanceClubPolicy,plan.forfeitPolicy)))throw new TypeError("Sauvegarde de fusion incompatible.");
