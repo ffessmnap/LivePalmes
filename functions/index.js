@@ -3663,8 +3663,8 @@ const syncNapClubAccountEmail = require("./nap-club-account-emails").createSynch
 
 exports.syncEngagementMailRecipientIndex = onDocumentWritten({
   region: REGION,
-  document: "users/{uid}",
   ...(ENVIRONMENT.projectId === "livepalmes" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}),
+  document: "users/{uid}",
   retry: true
 }, async (event) => {
   const uid = cleanText(event.params.uid);
