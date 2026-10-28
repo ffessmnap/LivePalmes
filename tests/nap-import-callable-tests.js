@@ -1,5 +1,5 @@
 "use strict";
-const assert=require("node:assert/strict"),fs=require("node:fs"),vm=require("node:vm");
+const assert=require("node:assert/strict"),fs=require("./helpers/source-files"),vm=require("node:vm");
 const source=fs.readFileSync("functions/index.js","utf8");
 const endings={previewCompetitionImport:"  const parsed = parseCompetitionImportPayload",createCompetitionImport:"  const fileName = cleanText",listCompetitionImports:"  const snapshot = await db"};
 class HttpsError extends Error {constructor(code,message){super(message);this.code=code;}}

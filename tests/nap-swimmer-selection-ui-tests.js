@@ -1,5 +1,5 @@
 "use strict";
-const assert=require("node:assert/strict"),fs=require("node:fs"),vm=require("node:vm");
+const assert=require("node:assert/strict"),fs=require("./helpers/source-files"),vm=require("node:vm");
 const source=fs.readFileSync("assets/livepalmes-admin-portal.js","utf8");
 const start=source.indexOf("  function engagementClubWriteLockReason("),end=source.indexOf("  const ENGAGEMENT_DETAIL_TAB_LABELS",start);
 const context={selectedEngagementCompetition:{napSource:true,nativeReadOnly:true,nativeSwimmerSelectionEditable:true,entryStatus:"open",entryDeadlineAt:"2099-10-07T19:59:00.000Z"},global:{LivePalmesEnvironment:{sportingDataSource:"nap",isTest:true}},engagementClubTeamComplete:()=>true,isEngagementAdminMode:()=>false};

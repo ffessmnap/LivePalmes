@@ -1,6 +1,6 @@
 "use strict";
 const assert = require("node:assert/strict");
-const fs = require("node:fs");
+const fs = require("./helpers/source-files");
 const vm = require("node:vm");
 const source = fs.readFileSync(require.resolve("../functions/index.js"), "utf8");
 const calls = [];

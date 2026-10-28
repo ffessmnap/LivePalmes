@@ -1,6 +1,6 @@
 "use strict";
 const assert=require("node:assert/strict");
-const fs=require("node:fs"),vm=require("node:vm");
+const fs=require("./helpers/source-files"),vm=require("node:vm");
 const {previewRecovery}=require("../functions/nap-swimmer-recovery");
 const input={clubId:"106",licenseNumber:"A-05-222647",season:"2026-2027"};
 const native={id:912,nom:"FAUVEAU",prenom:"Antoine",date:"1980-01-02",sexe:"M",number:input.licenseNumber,club:"107"};

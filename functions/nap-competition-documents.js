@@ -4,7 +4,7 @@
 // Firestore is used only for the durable technical before/after journal.
 const {createHash,randomUUID}=require("node:crypto");
 const {isDeepStrictEqual}=require("node:util");
-const calendar=require("./nap-direct-calendar");
+const calendar=require("./nap-calendar-values");
 const helpers=require("./engagement-competition-documents");
 const {nativeEqual}=require("./nap-native-compare");
 const FIELDS=["id","name","type","location","date","user","competition","sent","comment","public","element"];

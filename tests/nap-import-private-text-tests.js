@@ -1,5 +1,5 @@
 "use strict";
-const assert=require("node:assert/strict"),fs=require("node:fs"),vm=require("node:vm"),{createHash}=require("node:crypto");
+const assert=require("node:assert/strict"),fs=require("./helpers/source-files"),vm=require("node:vm"),{createHash}=require("node:crypto");
 const archive=require("../functions/nap-import-private-text");
 const {fixture:writerFixture,input}=require("./nap-import-write-tests");
 const {zipFixture}=require("./nap-import-zip-write-tests");

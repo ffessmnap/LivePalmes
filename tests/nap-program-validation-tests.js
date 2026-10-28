@@ -1,5 +1,5 @@
 "use strict";
-const assert=require("node:assert/strict"),fs=require("node:fs"),vm=require("node:vm");
+const assert=require("node:assert/strict"),fs=require("./helpers/source-files"),vm=require("node:vm");
 const {validateProgram}=require("../functions/nap-program-validation");
 const source=fs.readFileSync(require.resolve("../functions/index.js"),"utf8");
 const context={cleanText:value=>String(value??"").trim(),cleanIsoDate:value=>value||"",HttpsError:Error,

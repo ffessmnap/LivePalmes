@@ -1,5 +1,5 @@
 "use strict";
-const assert=require("node:assert/strict"),fs=require("node:fs"),vm=require("node:vm");
+const assert=require("node:assert/strict"),fs=require("./helpers/source-files"),vm=require("node:vm");
 const source=fs.readFileSync(require.resolve("../functions/index.js"),"utf8");
 const start=source.indexOf("const nativeQualificationOptions="),end=source.indexOf("// Retired endpoints",start);
 let legacyWrites=0,nativeWrites=0,national=true,pools=0;

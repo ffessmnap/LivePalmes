@@ -1,5 +1,5 @@
 "use strict";
-const assert=require("node:assert/strict"),fs=require("node:fs");
+const assert=require("node:assert/strict"),fs=require("./helpers/source-files");
 const service=require("../functions/nap-club-access-request");
 async function run(){
  const row={num_club:720,federal_club:"001234",nom_club:"Club",abre_club:"CN",comite_club:23,actif_club:1,ville:"Paris",postalcode:"75001"};

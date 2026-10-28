@@ -1,6 +1,6 @@
 "use strict";
 // Long synthetic lists reproduce the real page; network and real sends blocked.
-const fs=require("node:fs"),path=require("node:path"),assert=require("node:assert/strict");
+const fs=require("./helpers/source-files"),path=require("node:path"),assert=require("node:assert/strict");
 const {chromium}=require("playwright"),reports=require("../functions/engagement-license-reports");
 const season=require("../functions/nap-license-state").seasonInfo("2026-2027");
 async function main(){

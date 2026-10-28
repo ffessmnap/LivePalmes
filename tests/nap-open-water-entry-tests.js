@@ -2,7 +2,7 @@
 const assert=require("node:assert/strict");
 const {definition,displayCode}=require("../functions/nap-open-water-courses");
 const {entryWithCourseRules}=require("../functions/nap-portal-workspaces");
-const fs=require("node:fs"),vm=require("node:vm");
+const fs=require("./helpers/source-files"),vm=require("node:vm");
 assert.equal(definition("500").code,"OW500SF");
 assert.equal(definition("3000BI").code,"OW3000BI");
 assert.equal(definition("2KMSUPPORT").code,"OW2000SUP");

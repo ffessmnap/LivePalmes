@@ -1,6 +1,6 @@
 "use strict";
 const assert=require("node:assert/strict");
-const fs=require("node:fs");
+const fs=require("./helpers/source-files");
 const docs=require("../functions/nap-competition-documents");
 const helpers=require("../functions/engagement-competition-documents");
 const authority={id:5162,date:"2026-11-07",enddate:null,comite:1,parameter_id:100,niveau:1};

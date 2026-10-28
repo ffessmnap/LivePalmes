@@ -1,6 +1,6 @@
 "use strict";
 const assert = require("node:assert/strict");
-const fs = require("node:fs");
+const fs = require("./helpers/source-files");
 const path = require("node:path");
 const vm = require("node:vm");
 const server = fs.readFileSync(path.join(__dirname, "../functions/index.js"), "utf8");

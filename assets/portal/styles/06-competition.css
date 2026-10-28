@@ -1,0 +1,1447 @@
+
+
+#adminEngagementsDetail .admin-engagements-detail-list dt {
+  border-color: #e3e9eb;
+  background: #f5f8f9;
+  color: #64747a;
+}
+
+#adminEngagementsDetail .admin-engagements-detail-list dd {
+  color: #263940;
+}
+
+#adminEngagementsDetailGeneralPanel .admin-engagements-detail-list dt {
+  font-weight: 650;
+  letter-spacing: 0.01em;
+  text-transform: none;
+}
+
+#adminEngagementsDetailGeneralPanel .admin-engagements-detail-list dd {
+  font-size: 0.82rem;
+  font-weight: 500;
+}
+
+.admin-engagements-cancellation-alert {
+  display: flex;
+  gap: 6px 12px;
+  align-items: baseline;
+  margin: 0 var(--portal-panel-gutter) 10px;
+  border: 1px solid #f0b7ad;
+  border-radius: 9px;
+  padding: 9px 11px;
+  color: #7f1d1d;
+  background: #fff1ee;
+}
+
+.admin-engagements-cancellation-alert[hidden] {
+  display: none;
+}
+
+.admin-engagements-cancellation-alert strong {
+  flex: 0 0 auto;
+  font-weight: var(--portal-font-weight-semibold);
+}
+
+.admin-engagements-cancellation-alert span {
+  font-size: 0.82rem;
+}
+
+.admin-engagements-public-info {
+  margin: 0 0 10px;
+  border: 1px solid #b9dde2;
+  border-left: 3px solid #0b8192;
+  border-radius: 9px;
+  padding: 10px 12px;
+  color: #263940;
+  background: #f1fafb;
+}
+
+.admin-engagements-public-info[hidden] {
+  display: none;
+}
+
+.admin-engagements-public-info strong {
+  color: #075f6b;
+  font-size: 0.82rem;
+  font-weight: var(--portal-font-weight-semibold);
+}
+
+.admin-engagements-public-info p {
+  margin: 5px 0 0;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  white-space: pre-line;
+}
+
+.admin-engagements-payment-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  border: 1px solid #75c5ba;
+  border-radius: 7px;
+  padding: 2px 10px;
+  color: #075f6b;
+  background: #eefaf7;
+  font-weight: var(--portal-font-weight-semibold);
+  text-decoration: none;
+}
+
+.admin-engagements-payment-link:hover,
+.admin-engagements-payment-link:focus-visible {
+  border-color: #0b8192;
+  background: #dff5f1;
+}
+
+.admin-engagements-contact-link {
+  color: #075f6b;
+  font-weight: var(--portal-font-weight-medium);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}
+
+@media (max-width: 520px) {
+  .admin-engagements-cancellation-alert {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
+#adminEngagementsEditForm .admin-engagements-entry-status-field {
+  border-left: 3px solid #0b7285;
+  background: #eef8fa;
+  color: #174f59;
+}
+
+.admin-engagements-max-events-unlimited {
+  background: #f8fafb;
+}
+
+.admin-engagements-invited-regions-field {
+  display: grid;
+  gap: 8px;
+  min-height: 50px;
+  border-top: 1px solid #e7ecee;
+  padding: 8px 12px;
+  color: #52636a;
+  font-size: 0.78rem;
+  font-weight: 850;
+}
+
+.admin-engagements-invited-regions-field small {
+  color: #5f746f;
+  font-size: 0.74rem;
+}
+
+.admin-engagements-region-choices {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 6px 12px;
+  max-height: 168px;
+  overflow: auto;
+  padding: 8px;
+  border: 1px solid #d8e0e3;
+  border-radius: 7px;
+  background: #f8fafb;
+}
+
+.admin-engagements-region-choices label,
+.admin-engagements-inline-control-values {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.admin-engagements-region-choices input {
+  min-height: 18px;
+  width: 18px;
+}
+
+.admin-engagements-inline-control {
+  grid-template-columns: minmax(150px, 0.34fr) minmax(0, 1fr) !important;
+  align-items: center;
+}
+
+.admin-engagements-inline-control-values input[type="number"] {
+  width: 76px;
+  min-height: 36px;
+}
+
+
+/* Création : une fiche compacte limitée aux informations du calendrier. */
+.admin-engagements-create-form {
+  gap: 12px;
+}
+
+.admin-engagements-create-header {
+  padding: 2px 2px 12px;
+  border-bottom: 1px solid #dce7e8;
+}
+
+.admin-engagements-create-header h2 {
+  margin: 0;
+  color: #12312d;
+  font-size: 1.12rem;
+  line-height: 1.25;
+}
+
+.admin-engagements-create-form .admin-engagements-form-section {
+  overflow: hidden;
+}
+
+.admin-engagements-create-form .admin-engagements-form-section-grid {
+  gap: 0;
+}
+
+.admin-engagements-create-form .admin-engagements-form-section-grid > label,
+.admin-engagements-create-form .admin-engagements-invited-regions-field {
+  min-height: 58px;
+}
+
+.admin-engagements-create-more {
+  border: 1px solid #d8e0e3;
+  border-radius: 9px;
+  background: #fbfcfc;
+}
+
+.admin-engagements-create-more > summary {
+  cursor: pointer;
+  padding: 12px;
+  color: #174f59;
+  font-size: 0.82rem;
+  font-weight: 850;
+}
+
+.admin-engagements-create-more[open] > summary {
+  border-bottom: 1px solid #e7ecee;
+}
+
+.admin-engagements-create-more .admin-engagements-form-section {
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+}
+
+.admin-engagements-create-form > .admin-portal-actions {
+  justify-content: flex-end;
+}
+
+.admin-engagements-create-form > #adminEngagementsCreateMessage:empty {
+  display: none;
+}
+
+.admin-engagements-invited-regions-summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.admin-engagements-invited-regions-summary small {
+  color: #5f746f;
+  font-weight: 700;
+}
+
+.admin-engagements-region-dialog {
+  width: min(620px, calc(100vw - 24px));
+  border: 1px solid #cfe1e3;
+  border-radius: 12px;
+  padding: 0;
+  color: #12312d;
+  box-shadow: 0 20px 60px rgba(18, 49, 45, 0.24);
+}
+
+.admin-engagements-region-dialog::backdrop {
+  background: rgba(12, 35, 32, 0.45);
+}
+
+.admin-engagements-region-dialog form {
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+}
+
+.admin-engagements-region-dialog-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.admin-engagements-region-dialog h3,
+.admin-engagements-region-dialog p {
+  margin: 0;
+}
+
+.admin-engagements-create-checklist {
+  width: min(460px, calc(100vw - 24px));
+  border: 1px solid #cfe1e3;
+  border-radius: 12px;
+  padding: 0;
+  color: #12312d;
+  box-shadow: 0 20px 60px rgba(18, 49, 45, 0.24);
+}
+
+.admin-engagements-create-checklist::backdrop {
+  background: rgba(12, 35, 32, 0.45);
+}
+
+.admin-engagements-create-checklist form {
+  display: grid;
+  gap: 12px;
+  padding: 18px;
+}
+
+.admin-engagements-create-checklist h3,
+.admin-engagements-create-checklist p {
+  margin: 0;
+}
+
+.admin-engagements-create-checklist p,
+.admin-engagements-create-checklist li {
+  color: #52636a;
+}
+
+.admin-engagements-create-checklist ul {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding-left: 22px;
+}
+
+.admin-engagements-create-dialog {
+  width: min(680px, calc(100vw - 24px));
+  max-height: calc(100vh - 24px);
+  overflow: auto;
+  border: 1px solid #cfe1e3;
+  border-radius: 12px;
+  padding: 16px;
+  background: #ffffff;
+  box-shadow: 0 20px 60px rgba(18, 49, 45, 0.24);
+}
+
+.admin-engagements-create-dialog::backdrop {
+  background: rgba(12, 35, 32, 0.45);
+}
+
+.admin-engagements-unsaved-dialog {
+  width: min(520px, calc(100vw - 24px));
+  border: 1px solid #d7e1df;
+  border-radius: 12px;
+  padding: 0;
+  background: #ffffff;
+  box-shadow: 0 20px 60px rgba(18, 49, 45, 0.24);
+}
+
+.admin-engagements-unsaved-dialog::backdrop {
+  background: rgba(12, 35, 32, 0.45);
+}
+
+.admin-engagements-unsaved-dialog > div {
+  display: grid;
+  gap: 12px;
+  padding: 20px;
+}
+
+.admin-engagements-unsaved-dialog h3,
+.admin-engagements-unsaved-dialog p {
+  margin: 0;
+}
+
+.admin-engagements-unsaved-dialog p {
+  color: #52636a;
+}
+
+.admin-engagements-unsaved-dialog-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+@media (max-width: 560px) {
+  .admin-engagements-unsaved-dialog-actions button {
+    width: 100%;
+  }
+}
+
+.admin-engagements-create-optional {
+  margin-top: 8px;
+  border: 1px solid #d8e0e3;
+  border-radius: 8px;
+}
+
+.admin-engagements-create-optional > summary {
+  cursor: pointer;
+  padding: 10px 12px;
+  color: #174f59;
+  font-size: 0.82rem;
+  font-weight: 850;
+}
+
+.admin-engagements-region-dialog p {
+  margin-top: 4px;
+  color: #5f746f;
+  font-size: 0.82rem;
+}
+
+@media (max-width: 560px) {
+  .admin-engagements-invited-regions-summary {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
+#adminEngagementsDetail .admin-engagements-form {
+  gap: 14px;
+}
+
+#adminEngagementsDetail .admin-engagements-form-section {
+  background: #ffffff;
+}
+
+#adminEngagementsDetail .admin-engagements-form-section legend,
+#adminEngagementsDetail .admin-engagements-events-form legend {
+  color: #0b7285;
+}
+
+#adminEngagementsDetail .admin-engagements-form-section-grid > label {
+  min-height: 50px;
+  border-color: #e7ecee;
+  padding: 8px 12px;
+  color: #52636a;
+}
+
+#adminEngagementsDetail .admin-engagements-form-section-grid > label:nth-child(even) {
+  background: #fbfcfc;
+}
+
+#adminEngagementsDetail .admin-engagements-form input,
+#adminEngagementsDetail .admin-engagements-form select,
+#adminEngagementsDetail .admin-engagements-fees-grid input,
+#adminEngagementsDetail .admin-engagements-program-session input,
+#adminEngagementsDetail .admin-engagements-program-row select {
+  border-color: #d8e0e3;
+  background: #f8fafb;
+}
+
+#adminEngagementsDetail .admin-engagements-form input:focus,
+#adminEngagementsDetail .admin-engagements-form select:focus,
+#adminEngagementsDetail .admin-engagements-fees-grid input:focus,
+#adminEngagementsDetail .admin-engagements-program-session input:focus,
+#adminEngagementsDetail .admin-engagements-program-row select:focus {
+  border-color: #0b7285;
+  outline: 3px solid rgba(11, 114, 133, 0.16);
+  outline-offset: 1px;
+}
+
+#adminEngagementsDetail .admin-engagements-form input:disabled,
+#adminEngagementsDetail .admin-engagements-form select:disabled,
+#adminEngagementsDetail .admin-engagements-fees-grid input:disabled,
+#adminEngagementsDetail .admin-engagements-program-session input:disabled,
+#adminEngagementsDetail .admin-engagements-program-row select:disabled {
+  background: #eef2f3;
+  color: #68787e;
+}
+
+#adminEngagementsDetail .admin-engagements-inline-save-actions {
+  justify-content: flex-end;
+  padding-top: 2px;
+}
+
+#adminEngagementsDetail .admin-engagements-events-head,
+#adminEngagementsDetail .admin-engagements-documents-head {
+  min-height: 58px;
+  border: 1px solid #dfe5e7;
+  border-radius: 9px;
+  padding: 11px 12px;
+  background: #f8fafb;
+}
+
+#adminEngagementsDetail .admin-engagements-events-head strong,
+#adminEngagementsDetail .admin-engagements-documents-head strong {
+  color: #263940;
+}
+
+#adminEngagementsDetail .admin-engagements-events-section {
+  gap: 10px;
+  overflow: hidden;
+}
+
+#adminEngagementsDetail .admin-engagements-events-section summary {
+  min-height: 50px;
+  padding: 10px 12px;
+  background: #f8fafb;
+}
+
+#adminEngagementsDetail .admin-engagements-events-section[open] > summary {
+  border-bottom: 1px solid #e3e9eb;
+  background: #f1f7f8;
+}
+
+#adminEngagementsDetail .admin-engagements-events-section[open] {
+  padding-bottom: 10px;
+}
+
+#adminEngagementsDetail .admin-engagements-program-head,
+#adminEngagementsDetail .admin-engagements-program-sessions,
+#adminEngagementsDetail .admin-engagements-events-section > fieldset {
+  margin-right: 10px;
+  margin-left: 10px;
+}
+
+#adminEngagementsDetail .admin-engagements-program-available {
+  padding: 8px;
+  background: #f6f9fa;
+}
+
+#adminEngagementsDetail .admin-engagements-program-session {
+  gap: 6px;
+  padding: 8px;
+}
+
+#adminEngagementsDetail .admin-engagements-program-session[data-active="true"] {
+  border-color: #77b6be;
+  background: #f4fafb;
+  box-shadow: inset 3px 0 0 #0b7285;
+}
+
+#adminEngagementsDetail .admin-engagements-program-row {
+  border-color: #e4eaec;
+  border-radius: 7px;
+  padding: 5px 6px;
+}
+
+#adminEngagementsDetail .admin-engagements-fees-grid {
+  gap: 10px;
+}
+
+#adminEngagementsDetail .admin-engagements-fees-grid label {
+  border: 1px solid #dfe5e7;
+  border-radius: 9px;
+  padding: 11px 12px;
+  background: #ffffff;
+  color: #52636a;
+}
+
+#adminEngagementsDetail .admin-engagements-fees-form[data-readonly="true"] .admin-engagements-fees-grid label {
+  border-bottom: 1px solid #dfe5e7;
+  padding: 11px 12px;
+  background: #f8fafb;
+}
+
+#adminEngagementsDetail .admin-engagements-payment-note {
+  border-color: #eadcae;
+  border-radius: 9px;
+  background: #fffae9;
+}
+
+#adminEngagementsDetail .admin-engagements-documents-section {
+  gap: 10px;
+  border-color: #e3e9eb;
+  padding-top: 14px;
+}
+
+#adminEngagementsView[data-engagements-mode="admin"] #adminEngagementsDetail .admin-engagements-detail-step-bar > button span {
+  display: none;
+}
+
+#adminEngagementsView[data-engagements-mode="admin"] #adminEngagementsDetail [data-engagement-step-button="participants"],
+#adminEngagementsView[data-engagements-mode="admin"] #adminEngagementsDetail [data-engagement-step-button="entries"],
+#adminEngagementsView[data-engagements-mode="admin"] #adminEngagementsDetail [data-engagement-step-button="summary"],
+#adminEngagementsView[data-engagements-mode="club"] #adminEngagementsDetail [data-engagement-step-button="statistics"],
+#adminEngagementsView[data-engagements-mode="club"] #adminEngagementsDetail [data-engagement-step-button="delivery"] {
+  display: none !important;
+}
+
+#adminEngagementsView[data-engagements-mode="club"] .admin-engagements-shared-documents-admin,
+#adminEngagementsView[data-engagements-mode="club"] .admin-engagements-generated-documents-admin {
+  display: none !important;
+}
+
+#adminEngagementsView[data-engagements-mode="admin"] #adminEngagementsDetail .admin-engagements-detail-step-bar > button {
+  min-height: 38px;
+  font-size: 0.76rem;
+}
+
+#adminEngagementsView:not([data-engagements-tab="calendar"]) #adminEngagementsCalendarActions {
+  display: none !important;
+}
+
+.admin-engagements-statistics,
+.admin-engagements-documents {
+  display: grid;
+  gap: 14px;
+}
+
+.admin-engagements-statistics-head,
+.admin-engagements-statistics-section-head {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.admin-engagements-statistics-head > div,
+.admin-engagements-statistics-section-head > div,
+.admin-engagements-ged-card > div {
+  display: grid;
+  gap: 3px;
+}
+
+.admin-engagements-statistics-head small,
+.admin-engagements-statistics-section-head small,
+.admin-engagements-ged-card small {
+  color: #64767c;
+  font-size: 0.75rem;
+}
+
+.admin-engagements-statistics-summary {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.admin-engagements-statistics-summary article {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  border: 1px solid #dfe7e9;
+  border-radius: 9px;
+  padding: 10px 11px;
+  background: #f8fafb;
+}
+
+.admin-engagements-statistics-summary article small,
+.admin-engagements-statistics-summary article span {
+  overflow: hidden;
+  color: #607278;
+  font-size: 0.7rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-engagements-statistics-summary article strong {
+  color: #12312d;
+  font-size: 1.3rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.admin-engagements-statistics-warning,
+.admin-engagements-statistics-ok {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  border: 1px solid #eadcae;
+  border-radius: 8px;
+  padding: 8px 10px;
+  background: #fffae9;
+  color: #70590b;
+  font-size: 0.75rem;
+}
+
+.admin-engagements-statistics-ok {
+  border-color: #b9dfd2;
+  background: #f1faf7;
+  color: #15624c;
+}
+
+.admin-engagements-statistics-section {
+  display: grid;
+  gap: 10px;
+  border-top: 1px solid #e2e8ea;
+  padding-top: 13px;
+}
+
+.admin-engagements-statistics-section-head label,
+.admin-engagements-ged-club-choice label {
+  display: grid;
+  gap: 4px;
+  min-width: min(330px, 100%);
+  color: #53666c;
+  font-size: 0.7rem;
+}
+
+.admin-engagements-statistics-section-head select,
+.admin-engagements-ged-club-choice select {
+  min-height: 36px;
+}
+
+.admin-engagements-statistics-table {
+  overflow-x: auto;
+  border: 1px solid #dfe6e8;
+  border-radius: 8px;
+}
+
+.admin-engagements-statistics-row,
+.admin-engagements-statistics-club-row {
+  display: grid;
+  grid-template-columns: 54px minmax(170px, 1.4fr) minmax(90px, 0.65fr) minmax(140px, 1fr) minmax(105px, 0.7fr);
+  min-width: 720px;
+  border-top: 1px solid #e7ecee;
+  background: #ffffff;
+}
+
+.admin-engagements-statistics-club-row {
+  grid-template-columns: minmax(180px, 1.4fr) minmax(130px, 0.9fr) 75px 65px 75px minmax(145px, 1fr);
+  min-width: 800px;
+}
+
+.admin-engagements-statistics-row:first-child,
+.admin-engagements-statistics-club-row:first-child {
+  border-top: 0;
+}
+
+.admin-engagements-statistics-individual-row {
+  grid-template-columns: 42px minmax(190px, 1.65fr) minmax(80px, 0.55fr) minmax(90px, 0.65fr) minmax(90px, 0.55fr);
+  min-width: 620px;
+}
+
+.admin-engagements-statistics-gender-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 620px;
+  border-top: 2px solid currentColor;
+  padding: 5px 8px;
+  font-size: 0.72rem;
+}
+
+.admin-engagements-statistics-gender-heading span {
+  font-size: 0.66rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.admin-engagements-statistics-gender-heading.is-female {
+  color: #9a315d;
+  background: #fff1f6;
+}
+
+.admin-engagements-statistics-gender-heading.is-male {
+  color: #245c9a;
+  background: #f1f7ff;
+}
+
+.admin-engagements-statistics-gender-heading.is-unknown {
+  color: #775711;
+  background: #fff8df;
+}
+
+.admin-engagements-statistics-individual-row[data-sex="F"] {
+  background: #fff7fb;
+}
+
+.admin-engagements-statistics-individual-row[data-sex="M"] {
+  background: #f5fbff;
+}
+
+.admin-engagements-statistics-row > span,
+.admin-engagements-statistics-club-row > span {
+  display: grid;
+  align-content: center;
+  min-width: 0;
+  min-height: 38px;
+  padding: 6px 8px;
+  color: #354b52;
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.admin-engagements-statistics-row > span + span,
+.admin-engagements-statistics-club-row > span + span {
+  border-left: 1px solid #edf1f2;
+}
+
+.admin-engagements-statistics-row small,
+.admin-engagements-statistics-club-row small {
+  overflow: hidden;
+  color: #6c7d82;
+  font-size: 0.66rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-engagements-statistics-row-head {
+  background: #f1f6f7;
+}
+
+.admin-engagements-statistics-row-head > span {
+  min-height: 32px;
+  color: #4f6268;
+  font-size: 0.68rem;
+  font-weight: 500;
+}
+
+.admin-engagements-statistics-individual-row > span {
+  min-height: 30px;
+  padding-block: 4px;
+}
+
+.admin-engagements-ged-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.admin-engagements-ged-card {
+  display: grid;
+  gap: 13px;
+  align-content: start;
+  border: 1px solid #dfe6e8;
+  border-radius: 9px;
+  padding: 13px;
+  background: #ffffff;
+}
+
+.admin-engagements-ged-card > button {
+  justify-self: start;
+}
+
+.admin-engagements-ged-club-choice {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: end;
+}
+
+.admin-engagements-ged-card #adminEngagementsClubRecapFiles small {
+  display: block;
+}
+
+.admin-engagements-shared-documents {
+  display: grid;
+  gap: 10px;
+  border: 1px solid #dfe6e8;
+  border-radius: 9px;
+  padding: 13px;
+  background: #ffffff;
+}
+
+.admin-engagements-document-form {
+  display: grid;
+  gap: 12px;
+  border: 1px solid #bcd9dd;
+  border-radius: 9px;
+  padding: 12px;
+  background: #f5fafb;
+}
+
+.admin-engagements-document-form[hidden] {
+  display: none;
+}
+
+.admin-engagements-document-file-field,
+.admin-engagements-document-file-field label {
+  display: grid;
+  gap: 5px;
+}
+
+.admin-engagements-document-file-field label {
+  color: #425b62;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.admin-engagements-document-file-field input[type="file"] {
+  min-height: 42px;
+  border: 1px solid #ccdadd;
+  border-radius: 8px;
+  padding: 7px;
+  background: #ffffff;
+}
+
+.admin-engagements-document-file-field small,
+.admin-engagements-document-draft-file,
+.admin-engagements-shared-document-meta {
+  color: #64767c;
+  font-size: 0.72rem;
+}
+
+.admin-engagements-document-drafts,
+.admin-engagements-shared-documents-list {
+  display: grid;
+  gap: 8px;
+}
+
+.admin-engagements-document-draft {
+  display: grid;
+  grid-template-columns: minmax(180px, 1.2fr) minmax(150px, 0.75fr) minmax(220px, 1.5fr);
+  gap: 8px;
+  border-top: 1px solid #dce7e8;
+  padding-top: 10px;
+}
+
+.admin-engagements-document-draft:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.admin-engagements-document-draft > label {
+  display: grid;
+  gap: 4px;
+  color: #53666c;
+  font-size: 0.7rem;
+}
+
+.admin-engagements-document-draft-file {
+  grid-column: 1 / -1;
+  overflow-wrap: anywhere;
+}
+
+.admin-engagements-document-draft textarea {
+  min-height: 38px;
+  resize: vertical;
+}
+
+.admin-engagements-document-notify {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  color: #304a50;
+  font-size: 0.78rem;
+}
+
+.admin-engagements-document-notify input[type="checkbox"] {
+  flex: 0 0 18px;
+  width: 18px;
+  min-height: 18px;
+  height: 18px;
+  margin: 0;
+}
+
+.admin-engagements-document-form-actions,
+.admin-engagements-shared-document-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  justify-content: flex-end;
+}
+
+.admin-engagements-shared-document-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  border: 1px solid #e0e7e9;
+  border-radius: 8px;
+  padding: 11px 12px;
+  background: #ffffff;
+}
+
+.admin-engagements-shared-document-card:hover {
+  border-color: #b7d8dc;
+  background: #fbfdfd;
+}
+
+.admin-engagements-shared-document-main {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.admin-engagements-shared-document-main > a {
+  color: #075f70;
+  font-size: 0.88rem;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.admin-engagements-shared-document-main p {
+  margin: 0;
+  color: #52666c;
+  font-size: 0.76rem;
+  line-height: 1.4;
+}
+
+.admin-engagements-shared-document-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.admin-engagements-shared-document-badges span {
+  border-radius: 999px;
+  padding: 3px 7px;
+  background: #edf5f4;
+  color: #31524c;
+  font-size: 0.65rem;
+  font-weight: 500;
+}
+
+.admin-engagements-shared-document-actions a,
+.admin-engagements-shared-document-actions button {
+  min-height: 34px;
+}
+
+#adminEngagementsDetail .admin-engagements-document-card {
+  padding: 11px 12px;
+  background: #ffffff;
+}
+
+#adminEngagementsDetail .admin-engagements-document-card:hover {
+  border-color: #b7d8dc;
+  background: #fbfdfd;
+}
+
+@media (max-width: 700px) {
+  #adminEngagementsDetail #adminEngagementsDetailTeamPanel .admin-engagements-form-section-grid {
+    grid-template-columns: 1fr;
+  }
+
+  #adminEngagementsDetail #adminEngagementsDetailTeamPanel .admin-engagements-club-team-picker {
+    grid-column: 1;
+  }
+
+  #adminEngagementsDetail #adminEngagementsDetailTeamPanel .admin-engagements-club-team-search {
+    grid-column: 1;
+  }
+
+  #adminEngagementsDetail .admin-engagements-form-section-grid > label {
+    grid-template-columns: 1fr;
+    gap: 6px;
+    align-items: stretch;
+  }
+
+  #adminEngagementsDetail .admin-engagements-form-section-grid > label > input,
+  #adminEngagementsDetail .admin-engagements-form-section-grid > label > select,
+  #adminEngagementsDetail .admin-engagements-field-note {
+    grid-column: 1;
+  }
+
+  #adminEngagementsDetail .admin-engagements-events-head,
+  #adminEngagementsDetail .admin-engagements-documents-head,
+  #adminEngagementsDetail .admin-engagements-documents-actions,
+  #adminEngagementsDetail .admin-engagements-inline-save-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  #adminEngagementsDetail .admin-engagements-events-head button,
+  #adminEngagementsDetail .admin-engagements-documents-actions button,
+  #adminEngagementsDetail .admin-engagements-inline-save-actions button {
+    width: 100%;
+  }
+
+  #adminEngagementsDetail .admin-engagements-events-section summary {
+    grid-template-columns: 1fr;
+  }
+
+  #adminEngagementsDetail .admin-engagements-section-toggle {
+    width: 100%;
+  }
+
+  #adminEngagementsDetail .admin-engagements-document-card {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-engagements-statistics-head,
+  .admin-engagements-statistics-section-head {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .admin-engagements-statistics-head button,
+  .admin-engagements-statistics-section-head label,
+  .admin-engagements-ged-card > button,
+  .admin-engagements-ged-club-choice button {
+    width: 100%;
+  }
+
+  .admin-engagements-statistics-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .admin-engagements-statistics-warning {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .admin-engagements-ged-grid,
+  .admin-engagements-ged-club-choice {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-engagements-document-draft,
+  .admin-engagements-shared-document-card {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-engagements-document-form-actions,
+  .admin-engagements-shared-document-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .admin-engagements-document-form-actions button,
+  .admin-engagements-shared-document-actions a,
+  .admin-engagements-shared-document-actions button {
+    width: 100%;
+  }
+}
+
+/* Calendrier des engagements integre au langage visuel du portail. */
+#adminEngagementsView {
+  gap: 14px;
+  padding: 0;
+}
+
+#adminEngagementsView > .admin-portal-workspace-head,
+#adminEngagementsCalendarCard {
+  border: 1px solid #dfe5e7;
+  border-radius: 10px;
+  background: #ffffff;
+  box-shadow: none;
+}
+
+#adminEngagementsView > .admin-portal-workspace-head {
+  padding: 16px 18px;
+}
+
+#adminEngagementsCalendarCard {
+  gap: 16px;
+  padding: 0 0 16px;
+  overflow: hidden;
+}
+
+.admin-engagements-calendar-head-actions {
+  display: flex;
+  gap: 9px;
+  align-items: center;
+}
+
+.admin-engagements-refresh-meta {
+  color: #77878d;
+  font-size: 0.7rem;
+  font-weight: var(--portal-font-weight-regular);
+  white-space: nowrap;
+}
+
+#adminEngagementsDetail .admin-engagements-detail-head > div > span {
+  color: #0b7285;
+}
+
+#adminEngagementsDetail .admin-engagements-detail-head h4 {
+  color: #263940;
+}
+
+#adminEngagementsCalendarCard .admin-engagements-calendar-filters {
+  margin: 0 var(--portal-card-gutter);
+  border-color: #dfe6e8;
+  border-radius: 9px;
+  background: #f7f9fa;
+}
+
+#adminEngagementsCalendarCard .admin-engagements-calendar-filters label {
+  color: #52636a;
+}
+
+#adminEngagementsCalendarCard .admin-engagements-calendar-filters select {
+  border-color: #d8e0e3;
+  background: #ffffff;
+}
+
+#adminEngagementsCalendarCard .admin-engagements-calendar-filters select:focus,
+#adminEngagementsCalendarCard .admin-engagements-filter-check:focus-within {
+  border-color: #0b7285;
+  outline: 3px solid rgba(11, 114, 133, 0.16);
+  outline-offset: 1px;
+}
+
+#adminEngagementsCalendarCard .admin-engagements-filter-check {
+  border-color: #d8e0e3;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+#adminEngagementsCalendarCard .admin-engagements-filter-check input {
+  accent-color: #0b7285;
+}
+
+#adminEngagementsCalendarCard > .admin-portal-message,
+#adminEngagementsCalendarCard > .admin-engagements-calendar-list {
+  margin-right: var(--portal-card-gutter);
+  margin-left: var(--portal-card-gutter);
+}
+
+#adminEngagementsCalendarCard .admin-engagements-calendar-list {
+  gap: 8px;
+}
+
+#adminEngagementsCalendarCard .admin-engagements-calendar-loading {
+  display: grid;
+  gap: 9px;
+  border: 1px solid #dfe5e7;
+  border-radius: 9px;
+  padding: 15px;
+  background: #f8fbfb;
+  color: #52666c;
+}
+
+#adminEngagementsCalendarCard .admin-engagements-calendar-loading > span {
+  height: 34px;
+  border-radius: 7px;
+  background: linear-gradient(90deg, #edf2f3, #e3ebed 50%, #edf2f3);
+}
+
+#adminEngagementsCalendarCard .admin-engagements-competition {
+  grid-template-columns: 104px minmax(220px, 1fr) 104px 112px minmax(190px, auto);
+  border-color: #dfe5e7;
+  border-radius: 9px;
+  padding: 12px 14px;
+  transition: border-color 150ms ease, background-color 150ms ease;
+}
+
+
+
+#adminEngagementsCalendarCard .admin-engagements-competition.selected {
+  border-color: #77b6be;
+  background: #f2f9fa;
+  box-shadow: inset 3px 0 0 #0b7285;
+}
+
+#adminEngagementsCalendarCard .admin-engagements-competition time {
+  color: #0b7285;
+}
+
+#adminEngagementsCalendarCard .admin-engagements-competition [data-entry-status] {
+  font-size: 0.75rem;
+}
+
+#adminEngagementsCalendarCard .admin-engagements-competition-actions small {
+  color: #68787e;
+  font-size: 0.73rem;
+}
+
+#adminEngagementsDetail {
+  margin: 0 var(--portal-card-gutter);
+  border-color: #dfe5e7;
+  border-radius: 9px;
+  padding: 0;
+  overflow: clip;
+}
+
+#adminEngagementsDetail .admin-engagements-detail-head {
+  padding: var(--portal-panel-gutter);
+  border-bottom: 1px solid #e3e9eb;
+}
+
+#adminEngagementsDetail .admin-engagements-detail-meta {
+  padding: 0 var(--portal-panel-gutter);
+}
+
+#adminEngagementsDetail .admin-engagements-detail-tabs {
+  position: sticky;
+  top: 52px;
+  z-index: 20;
+  display: grid;
+  gap: 0;
+  padding: 0;
+  border-top: 1px solid #e7ecee;
+  border-bottom: 1px solid #e3e9eb;
+  background: #f7f9fa;
+  box-shadow: 0 4px 9px rgba(18, 49, 45, 0.06);
+}
+
+#adminEngagementsDetail .admin-engagements-detail-step-bar {
+  display: flex;
+  min-width: 0;
+  border-bottom: 1px solid #dce5e7;
+  background: #eef3f4;
+}
+
+#adminEngagementsDetail .admin-engagements-detail-step-bar > button {
+  display: flex;
+  flex: 1 1 0;
+  gap: 5px;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  min-height: 32px;
+  border: 0;
+  border-right: 1px solid #dce5e7;
+  border-radius: 0;
+  padding: 4px 7px;
+  background: transparent;
+  color: #586b72;
+  font-size: 0.69rem;
+  cursor: pointer;
+}
+
+#adminEngagementsDetail .admin-engagements-detail-step-bar > button:last-child {
+  border-right: 0;
+}
+
+#adminEngagementsDetail .admin-engagements-detail-step-bar > button span {
+  display: grid;
+  flex: 0 0 18px;
+  width: 18px;
+  height: 18px;
+  place-items: center;
+  border-radius: 50%;
+  background: #dce7e9;
+  font-size: 0.62rem;
+  font-weight: 800;
+}
+
+#adminEngagementsDetail .admin-engagements-detail-step-bar > button strong {
+  min-width: 0;
+  overflow: hidden;
+  font-size: inherit;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#adminEngagementsDetail .admin-engagements-detail-step-bar > button:hover,
+#adminEngagementsDetail .admin-engagements-detail-step-bar > button:focus-visible,
+#adminEngagementsDetail .admin-engagements-detail-step-bar > button[aria-pressed="true"] {
+  background: #e4f2f4;
+  color: #075f70;
+}
+
+#adminEngagementsDetail .admin-engagements-detail-step-bar > button[aria-pressed="true"] {
+  box-shadow: inset 0 -2px 0 #0b7285;
+}
+
+#adminEngagementsDetail .admin-engagements-detail-step-bar > button[aria-pressed="true"] span {
+  background: #0b7285;
+  color: #ffffff;
+}
+
+#adminEngagementsDetail .admin-engagements-detail-tab-group {
+  padding: 5px var(--portal-panel-gutter);
+  background: #ffffff;
+}
+
+#adminEngagementsDetail .admin-engagements-detail-tab-group[hidden],
+#adminEngagementsDetail .admin-engagements-detail-tab-group:not(:has(button:not([hidden]))) {
+  display: none;
+}
+
+#adminEngagementsDetail .admin-engagements-detail-tab-group-items {
+  display: flex;
+  gap: 5px;
+}
+
+#adminEngagementsDetail .admin-engagements-detail-tab-group-items button {
+  flex: 0 0 auto;
+  min-height: 34px;
+  border: 1px solid #d8e0e3;
+  border-radius: 7px;
+  padding: 5px 10px;
+  background: #ffffff;
+  color: #50636a;
+}
+
+#adminEngagementsDetail .admin-engagements-detail-tab-group-items button:hover,
+#adminEngagementsDetail .admin-engagements-detail-tab-group-items button:focus-visible,
+#adminEngagementsDetail .admin-engagements-detail-tab-group-items button[aria-selected="true"] {
+  border-color: #0b7285;
+  background: #0b7285;
+  color: #ffffff;
+}
+
+#adminEngagementsDetail .admin-engagements-detail-panel {
+  padding: 0 var(--portal-panel-gutter) var(--portal-panel-gutter);
+}
+
+#adminEngagementsDetail[data-club-entry-loading] .admin-engagements-detail-tabs,
+#adminEngagementsDetail[data-club-entry-loading] .admin-engagements-detail-panel {
+  display: none !important;
+}
+
+#adminEngagementsDetail[data-club-entry-loading] #adminEngagementsDetailStatus {
+  display: grid;
+  gap: 12px;
+  min-height: 116px;
+  margin: 12px var(--portal-panel-gutter) var(--portal-panel-gutter);
+  border: 1px solid #dfe8ea;
+  border-radius: 9px;
+  padding: 16px;
+  background: #f8fbfb;
+  align-content: center;
+}
+
+#adminEngagementsDetail[data-club-entry-loading="loading"] #adminEngagementsDetailStatus::after {
+  content: none;
+}
+
+@media (max-width: 1120px) {
+  #adminEngagementsCalendarCard .admin-engagements-calendar-filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  #adminEngagementsCalendarCard .admin-engagements-competition {
+    grid-template-areas:
+      "date title title status"
+      "level level actions actions";
+    grid-template-columns: 104px minmax(0, 1fr) minmax(0, 1fr) 120px;
+  }
+
+  #adminEngagementsCalendarCard .admin-engagements-competition time {
+    grid-area: date;
+  }
+
+  #adminEngagementsCalendarCard .admin-engagements-competition > div:first-of-type {
+    grid-area: title;
+  }
+
+  #adminEngagementsCalendarCard .admin-engagements-competition > span:not([data-entry-status]) {
+    grid-area: level;
+  }
+
+  #adminEngagementsCalendarCard .admin-engagements-competition [data-entry-status] {
+    grid-area: status;
+  }
+
+  #adminEngagementsCalendarCard .admin-engagements-competition-actions {
+    grid-area: actions;
+  }
+}
+
+@media (max-width: 700px) {
+  #adminEngagementsView > .admin-portal-workspace-head {
+    padding: 13px;
+  }
+
+  #adminEngagementsCalendarCard .admin-engagements-calendar-filters button {
+    width: 100%;
+  }
+
+  #adminEngagementsCalendarCard .admin-engagements-calendar-filters {
+    grid-template-columns: 1fr;
+  }
+
+  #adminEngagementsCalendarCard .admin-engagements-competition {
+    grid-template-areas:
+      "date status"
+      "title title"
+      "level level"
+      "actions actions";
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 9px;
+  }
+
+  #adminEngagementsCalendarCard .admin-engagements-competition-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  #adminEngagementsCalendarCard .admin-engagements-competition-actions button {
+    width: 100%;
+  }
+
+  #adminEngagementsDetail .admin-engagements-detail-head,
+  #adminEngagementsDetail .admin-engagements-detail-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  #adminEngagementsDetail .admin-engagements-detail-actions button {
+    width: 100%;
+  }
+}
+
+/* Gestion des acces integree au langage visuel du portail. */
+#adminAccessView {
+  gap: 14px;
+  padding: 0;
+}

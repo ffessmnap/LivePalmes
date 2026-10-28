@@ -1,6 +1,6 @@
 "use strict";
 const assert = require("node:assert/strict");
-const fs = require("node:fs");
+const fs = require("./helpers/source-files");
 const { OPERATION, COLUMNS, hash, approvedSwimmerCorrection } = require("../functions/nap-approved-swimmer-correction");
 const original = { id: 912, nom: "FAUVEAU", prenom: "Antoine", date: "2000-01-01", sexe: "M", club: "106", actif: 1, wc: null, edf: 0, creation: "2001-01-01 00:00:00", number: "unchanged" };
 function fixture(options = {}) {

@@ -1,5 +1,5 @@
 "use strict";
-const assert=require("node:assert/strict"),fs=require("node:fs"),vm=require("node:vm");
+const assert=require("node:assert/strict"),fs=require("./helpers/source-files"),vm=require("node:vm");
 const source=fs.readFileSync(require.resolve("../assets/livepalmes-admin-portal.js"),"utf8");
 const a=source.indexOf("  function visibleNativePeople("),b=source.indexOf("  function filteredEngagementNationalPeople(",a);
 const context={};vm.createContext(context);vm.runInContext(source.slice(a,b),context);

@@ -1,5 +1,5 @@
 "use strict";
-const assert=require("node:assert/strict"),fs=require("node:fs"),path=require("node:path"),{chromium}=require("playwright");
+const assert=require("node:assert/strict"),fs=require("./helpers/source-files"),path=require("node:path"),{chromium}=require("playwright");
 const {archive}=require("./winpalme-zip-tests"),{fixture,text,people}=require("./fixtures/nap-import-review-fixture"),{previewNativeImport}=require("../functions/nap-import-preview"),{importPreviewResponse}=require("../functions/nap-import-response");
 const portal=fs.readFileSync("portail.html","utf8"),zip=archive([{name:"ExportTxt/27TEST_Export.txt",data:text},{name:"Protocoles/27TEST_ProtocoleComplet_20261014_06553360.pdf",data:"%PDF-1.4\nfixture\n%%EOF"}]);
 (async()=>{
@@ -22,7 +22,7 @@ const portal=fs.readFileSync("portail.html","utf8"),zip=archive([{name:"ExportTx
    const original=URL.createObjectURL.bind(URL);URL.createObjectURL=blob=>{if(blob.type==='application/json')blob.text().then(text=>{window.exportedReport=JSON.parse(text);});return original(blob);};
    Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async text=>{window.copiedConfirmation=text;}}});
   },portal);
-  for(const file of ['styles.css','assets/livepalmes-admin-portal.css','performances/public/import-competitions.css'])await page.addStyleTag({path:file});
+  for(const file of ['styles.css','assets/livepalmes-admin-portal.css','performances/public/import-competitions.css'])await page.addStyleTag({content:fs.readFileSync(file,"utf8")});
   for(const file of ['performances/public/winpalme-zip.js','performances/public/import-confirmation-message.js','performances/public/import-swimmer-creation.js','performances/public/import-swimmer-review.js','performances/public/import-competitions.js'])await page.addScriptTag({path:file});
   await page.locator('#competitionImportOpenButton').click();await page.locator('#competitionImportFile').setInputFiles({name:'fixture.zip',mimeType:'application/zip',buffer:zip});await page.locator('#competitionImportForm button[type="submit"]').click();await page.locator('[data-review-competition]').selectOption('5172');await page.locator('[data-review-refresh]').click();
   await page.locator('details.import-swimmer').first().waitFor({state:'attached'});assert.equal(await page.locator('details.import-swimmer').count(),5);

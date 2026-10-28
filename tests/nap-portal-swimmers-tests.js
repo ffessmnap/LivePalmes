@@ -1,6 +1,6 @@
 "use strict";
 const assert = require("node:assert/strict");
-const fs = require("node:fs");
+const fs = require("./helpers/source-files");
 const vm = require("node:vm");
 const { person, searchPortalSwimmers, listPortalClubSwimmers, correctPortalIdentity } = require("../functions/nap-portal-swimmers");
 const { fingerprint } = require("../functions/nap-portal-swimmer-change");

@@ -2,6 +2,14 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 28 octobre — Maintenance de l'architecture, jusqu'à TEST uniquement
+
+- Accord d'Antoine : réaliser tout le plan d'amélioration, y compris le découpage du portail et du serveur, jusqu'à TEST ; conserver fonctionnement et affichage, sans opération PROD ni données réelles. [PR #600](https://github.com/ffessmnap/LivePalmes/pull/600), preuves CI/TEST finales à lier dans cette PR après exécution.
+- Portail réparti dans quatorze modules avec interfaces privées d'état/configuration/actions ; entrée CSS découpée en seize fragments à cascade conservée. Cache immuable existant conservé, étendu aux modules versionnés, avec contrôle de renouvellement des URL modifiées. Le gain vise les mises à jour ciblées, sans promesse de baisse du premier chargement.
+- Serveur : corps de 96 callables ordinaires et fonctions privées répartis par domaine ; déclarations Firebase, options, secrets, exports et règles métier conservés. Lecture d'import, PDF, statistiques et ancien pipeline isolés. Dépendances circulaires NAP supprimées via des outils partagés indépendants, anciens exports conservés. Correction de la reprise du chargement d'un module après échec réseau.
+- Budget : zéro accès SQL/Firestore ajouté à l'ouverture, à une action, au rafraîchissement ou au pire cas. Tests sur fixtures, blocage des connexions externes dans la suite unitaire, vérification des modules réels, droits avant données et graphe d'imports. Comparaisons syntaxiques des corps et 80 comparaisons visuelles ordinateur/mobile réussies (dimensions et exceptions identiques, tolérance bornée d'anticrénelage). Première CI : suite applicative réussie, contrôle de publication ayant révélé un couplage excessif des outils de démarrage, corrigé avant nouvelle CI. CI obligatoire du candidat exact et preuve TEST encore attendues à la préparation de cette entrée. Aucune validation utilisateur déduite de ces tests.
+- Limites : certificat NAP et infrastructure inchangés ; aucun clone/migration/écriture de base ni envoi connecté, aucun déploiement mail/scheduler implicite. Code historique isolé mais retraits déployés non exécutés. Détails, preuves locales et contrôles : [maintenance de l'architecture](../MAINTENANCE_ARCHITECTURE.md).
+
 ### 28 octobre — Promotion de la clôture licences et du titre des compétitions
 
 - Demande PROD explicite d’Antoine : « ok alors mets en prod tout ça », pour les deux évolutions restées hors du candidat précédent. Clôture #596 validée dans le chat licences (« OK, ça fonctionne, je valide la clôture des contrôles de licences sur TEST. ») ; titre #597 également validé dans son chat (« Je valide »). Preuve commune TEST40588600834, candidat25b9a6fa ; aucune nouvelle recette ni publication TEST requise.

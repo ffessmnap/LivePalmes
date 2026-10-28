@@ -1,5 +1,5 @@
 "use strict";
-const assert=require("node:assert/strict"),fs=require("node:fs"),vm=require("node:vm");
+const assert=require("node:assert/strict"),fs=require("./helpers/source-files"),vm=require("node:vm");
 const acorn=require("./firestore-rules/node_modules/acorn");
 const source=fs.readFileSync(require.resolve("../functions/index.js"),"utf8");
 const ast=acorn.parse(source,{ecmaVersion:"latest"});
