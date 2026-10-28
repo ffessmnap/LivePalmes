@@ -6,6 +6,8 @@ La [procedure courante](PROCEDURE.md) reste le point d’entree. Ces details ne 
 
 ## Contrôleur des bilans licences — candidat figé du 27 octobre
 
+Le contrat indépendant du28octobre (`20261028-license-closure-contract.json`) promeut ensuite25b9a6fa depuis0421f490 : seule la source du même contrôleur est sélectionnée, avec112identités conservées. Il réutilise les gardes de configuration et de mails actifs, sans modifier le contrat précédent. Le stockage est déjà NAP et l’adaptateur SQL est inchangé ; aucune attente de transition Firestore n’est ajoutée. Les validations de clôture #596 et du titre #597, la preuve TEST40588600834 et l’accord PROD Infra du28octobre bornent ce lot.
+
 L'exception `licenseReportRelease` ne concerne que le candidat `0421f490`, la base PROD `365c8396`, TEST40585218771 et les12sources du contrat indépendant `20261027-license-reports-contract.json`. Elle ajoute uniquement `prepareEngagementLicenseControlBatch` aux11fonctions ordinaires calculées. Le préparateur ordinaire n'exporte toujours aucun mail ; cette fonction existante reçoit un PATCH source/labels après sauvegarde chiffrée vérifiée. Configuration complète et sélecteurs des8secrets restent identiques ;101identités de fonctions sont conservées. Les90divergences héritées ne sont pas actualisées. Les anciens contrats et la suite de compatibilité historique restent inchangés.
 
 Le gel reste borné à cette paire et à la preuve TEST initiale ; une version TEST descendante doit toujours être attestée exactement en lecture fraîche, sans inclure ses changements. La clôture des bilans #596 et le titre #597 restent hors de ce candidat. Le preflight authentifie aussi le reçu40571339337 des10bilans déjà repris dans NAP. Il n'accède pas à Google.

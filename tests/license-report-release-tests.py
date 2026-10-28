@@ -29,6 +29,22 @@ def function():
             'secretEnvironmentVariables':[{'key':k,'secret':k,'projectId':'livepalmes','version':'2'} for k in sorted(p.MAIL_KEYS)]}}
 
 class ClosedLicenceTests(unittest.TestCase):
+    def test_closure_promotion_is_independent_and_has_no_storage_transition(self):
+        contract=p.contract({'candidate':p.NEXT_CANDIDATE})
+        value={k:contract[k] for k in ['candidate','productionCommit','productionHosting','testRun']}
+        value.update(schema=1,freezeTestCandidate=True,licenseReportRelease={'approval':'ok','contractSha256':p.NEXT_DIGEST})
+        self.assertEqual(p.approved(value),[p.NAME]);p.selection(value,[p.NAME])
+        self.assertEqual(len(p.contract()['selected']),12)
+        self.assertTrue(contract['noStorageTransition']);self.assertEqual(contract['oldRequestsSettleSeconds'],0)
+        self.assertEqual(p.contract()['oldRequestsSettleSeconds'],305)
+        with self.assertRaises(ValueError):p.approved({**value,'licenseReportRelease':request()['licenseReportRelease']})
+        with self.assertRaises(ValueError):p.approved({**request(),'licenseReportRelease':value['licenseReportRelease']})
+        with self.assertRaises(ValueError):p.selection(value,[p.NAME,'sendEngagementPreparedEmails'])
+        now=datetime.now(timezone.utc)
+        self.assertEqual(g.settle({'candidate':contract['candidate'],'updatedAt':now.isoformat()},now,contract),0)
+        patch_body=p.source_patch(function(),{'bucket':'fixture','object':'closure.zip'},value)
+        self.assertEqual(patch_body['labels']['livepalmes-commit'],contract['candidate'])
+        self.assertNotIn('serviceConfig',patch_body)
     def test_closed_candidate_and_no_other_exception(self):
         self.assertEqual(p.approved({}),[])
         self.assertEqual(p.approved(request()),[p.NAME])

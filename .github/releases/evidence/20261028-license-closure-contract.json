@@ -1,0 +1,28 @@
+{
+  "candidate": "25b9a6fa6763b8c1cfba5382ca2228ece8220fae",
+  "productionCommit": "0421f4903b59bf03975fadfad4ea781dc9af1e84",
+  "productionHosting": "sites/livepalmes/versions/0fc109c1dbe6b2fc",
+  "testRun": 40588600834,
+  "schema": 1,
+  "productionRun": 40594107635,
+  "selected": [
+    "prepareEngagementLicenseControlBatch"
+  ],
+  "name": "prepareEngagementLicenseControlBatch",
+  "revision": "prepareengagementlicensecontrolbatch-00014-fon",
+  "beforeHash": "cea7c8e12b387d88b3204063c30af245fb9d203065b940478509978f0f6bdd1a",
+  "afterHash": "a23a82db5368c0c0eb4cfa6ef0f2463dc6bc0202e2bf55227f9b321225224b88",
+  "migrationRun": 40571339337,
+  "sourceHash": "fb8a6e2d2229ea7f958aaea13abfd98a9c382a8ebceb4c3134f739fa2582ff64",
+  "mailPreservation": {
+    "scope": "all",
+    "revision": 9,
+    "documentSha256": "0518eceb90a30cdd79d5babd93732d9f9e57e8060a469d5c8ce6363b75d94fef",
+    "schedulerSha256": "8253d3bee91efe5b8496c01a76ae8cb0adadaff8087da4771769a55d048c806a"
+  },
+  "sourceOnly": true,
+  "configurationChanges": false,
+  "mailPause": false,
+  "oldRequestsSettleSeconds": 0,
+  "noStorageTransition": true
+}

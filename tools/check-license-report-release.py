@@ -36,28 +36,30 @@ def validate(mail,scheduler,c):
         'Scheduler licences modifie')
     return {'mailSha256':digest(mail),'schedulerSha256':digest(view)}
 
-def settle(receipt,now):
+def settle(receipt,now,c=None):
+    c = c or policy.contract()
     stamp=datetime.fromisoformat(receipt['updatedAt'].replace('Z','+00:00'))
-    policy.require(stamp.tzinfo is not None and receipt.get('candidate') == policy.contract()['candidate'], 'Temoin source licences invalide')
+    policy.require(stamp.tzinfo is not None and receipt.get('candidate') == c['candidate'], 'Temoin source licences invalide')
     elapsed=(now-stamp).total_seconds()
     policy.require(elapsed >= -60, 'Horodatage source licences futur')
-    return max(0,305-elapsed)
+    return max(0,c['oldRequestsSettleSeconds']-elapsed)
 
 def main(directory,after=False):
     directory=Path(directory); request=json.loads((directory/'request.json').read_text())
     policy.require(policy.approved(request), 'Garde licences sans accord')
+    c=policy.contract(request)
     credentials=json.loads(Path(os.environ['GOOGLE_APPLICATION_CREDENTIALS']).read_text())
     policy.require(credentials.get('project_id') == 'livepalmes', 'Compte PROD requis')
     receipt=directory/'license-report-source-update.json'
     if receipt.exists():
-        delay=settle(json.loads(receipt.read_text()),datetime.now(timezone.utc))
+        delay=settle(json.loads(receipt.read_text()),datetime.now(timezone.utc),c)
         if delay:
             print('Observation du delai maximal des anciens appels licences avant bascule, sans coupure des mails.',flush=True)
             time.sleep(delay)
     elif after:
         raise ValueError('Temoin de publication du controleur licences absent')
     token=subprocess.check_output(['gcloud','auth','application-default','print-access-token'],text=True,stderr=subprocess.DEVNULL).strip()
-    c=policy.contract(); observed=validate(get(MAIL,token),get(SCHEDULER,token),c)
+    observed=validate(get(MAIL,token),get(SCHEDULER,token),c)
     source=json.loads(subprocess.check_output(['node',str(ROOT/'tools/check-license-report-source.js'),c['sourceHash']],text=True))
     policy.require(source == {'schema':1,'sourceHash':c['sourceHash'],'count':10,'readOnly':True}, 'Preuve source licences invalide')
     observed['sourceHash']=source['sourceHash']

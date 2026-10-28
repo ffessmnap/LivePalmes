@@ -99,7 +99,7 @@ def check_after(backup, destination, require_success):
                 spec = importlib.util.spec_from_file_location('license_state_policy', Path(__file__).with_name('license-report-release-policy.py'))
                 policy = importlib.util.module_from_spec(spec); spec.loader.exec_module(policy)
                 try:
-                    if report['additionalLicenseReportFunctions'] != [policy.NAME] or report['candidate'] != policy.contract()['candidate']:
+                    if report['additionalLicenseReportFunctions'] != [policy.NAME] or report['candidate'] != policy.contract(report)['candidate']:
                         raise ValueError('Rapport licences hors contrat')
                     policy.assert_config(before[name], f, SimpleNamespace(rollback_patch=rollback_patch))
                 except ValueError as error:

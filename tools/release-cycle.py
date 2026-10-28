@@ -999,7 +999,7 @@ def freeze_plan(directory, evidence=False):
     if approved_license_report_functions(request):
         proof = license_release.verify(request, read(root/'baseline.json'),
             backend_fingerprints(request['productionCommit']), backend_fingerprints(request['candidate']), names)
-        c = license_release.contract()
+        c = license_release.contract(request)
         artifact(c['migrationRun'], 'nap-license-reports-result', root/'license-migration', '.github/workflows/nap-authorized-license-reports.yml')
         migrated = read(root/'license-migration/result.json')
         require(migrated.get('verified') is True and migrated.get('sourceHash') == c['sourceHash']
