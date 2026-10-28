@@ -6,7 +6,9 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 PATH = ROOT / '.github/releases/evidence/20261028-nap-retained-sources-contract.json'
-DIGEST = 'd066f574ad118e7a79d9b2abc5720f96ec056d3c5e85e801c964e0007ec07db2'
+BASE_DIGEST = 'd066f574ad118e7a79d9b2abc5720f96ec056d3c5e85e801c964e0007ec07db2'
+FENCES = ROOT / '.github/releases/evidence/20261028-nap-retained-fences-contract.json'
+DIGEST = 'c0dd686d959db5f0a1394dfb6f4b586c18a568af37afd0a069edc1b389bf48a6'
 TEST_WORKFLOW = '.github/workflows/livepalmes-test-nap-retained-sources.yml'
 
 
@@ -17,8 +19,13 @@ def require(value, message):
 
 def contract():
     raw = PATH.read_bytes().replace(b'\r\n', b'\n')
-    require(hashlib.sha256(raw).hexdigest() == DIGEST, 'Contrat complement NAP modifie')
-    return json.loads(raw)
+    require(hashlib.sha256(raw).hexdigest() == BASE_DIGEST, 'Contrat complement NAP modifie')
+    fences = FENCES.read_bytes().replace(b'\r\n', b'\n')
+    require(hashlib.sha256(fences).hexdigest() == DIGEST, 'Protection des files TEST modifiee')
+    fences = json.loads(fences)
+    require(fences.get('schema') == 1 and fences.get('baseContractSha256') == BASE_DIGEST,
+            'Protection TEST hors contrat source')
+    return {**json.loads(raw), 'testProtection': fences['testProtection']}
 
 
 def approved(value):
@@ -101,6 +108,7 @@ def targeted(value, proof, info, cycle):
             and proof.get('queueUnchanged') is True and proof.get('configurationsUnchanged') is True,
             'Preuve ciblee complement NAP incompatible')
     require(proof.get('testWrapperPreserved') is True
+            and proof.get('pendingMessagesPreserved') is True and proof.get('taskContentsRead') is False
             and re.fullmatch(r'[0-9a-f]{64}', str(proof.get('sourceArchiveSha256', ''))),
             'Protection de source TEST absente')
     cycle.run(['git', 'merge-base', '--is-ancestor', c['candidate'], info['head_sha']], cycle.ROOT)
@@ -122,11 +130,10 @@ def targeted(value, proof, info, cycle):
             require(f == old[name], 'Fonction TEST hors selection modifiee')
 
 
-def test_controls(mail, scheduler, queue, tasks, closures):
+def test_controls(mail, scheduler, queue, closures):
     require(mail.get('fields', {}).get('enabled') == {'booleanValue': False}, 'Mails TEST deja coupes requis')
     require(scheduler.get('state') in {'PAUSED', 'DISABLED'}, 'Scheduler TEST deja suspendu requis')
-    require(queue.get('state') == 'PAUSED' and not tasks.get('tasks') and not tasks.get('nextPageToken'),
-            'File TEST deja suspendue et vide requise')
-    require(not closures.get('documents') and not closures.get('nextPageToken'),
-            'File technique de cloture TEST vide requise')
+    require(queue.get('state') == 'PAUSED', 'File TEST deja suspendue requise')
+    require(len(closures.get('documents', [])) <= contract()['testProtection']['closureLimit']
+            and not closures.get('nextPageToken'), 'Inventaire borne des clotures TEST incomplet')
 

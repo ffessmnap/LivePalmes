@@ -41,8 +41,7 @@ def controls(project):
         'scheduler': f'https://cloudscheduler.googleapis.com/v1/projects/{project}/locations/europe-west1/jobs/firebase-schedule-closeDueEngagementCompetitions-europe-west1',
         'queue': f'https://cloudtasks.googleapis.com/v2/projects/{project}/locations/europe-west1/queues/processNapNotificationTask'}
     if project == 'livepalmes-test':
-        urls['tasks'] = urls['queue'] + '/tasks?pageSize=1'
-        urls['closures'] = 'https://firestore.googleapis.com/v1/projects/livepalmes-test/databases/(default)/documents/engagementClosureQueue?pageSize=1'
+        urls['closures'] = 'https://firestore.googleapis.com/v1/projects/livepalmes-test/databases/(default)/documents/engagementClosureQueue?pageSize=101'
     values, errors = {}, {}
     for name, url in urls.items():
         req = urllib.request.Request(url, headers={'Authorization': 'Bearer ' + token})
@@ -57,8 +56,8 @@ def controls(project):
                    'mailEnabled': values.get('mail', {}).get('fields', {}).get('enabled', {}).get('booleanValue'),
                    'schedulerState': values.get('scheduler', {}).get('state'),
                    'queueState': values.get('queue', {}).get('state')}
-        for name, key in [('tasks', 'tasks'), ('closures', 'documents')]:
-            summary[name + 'Empty'] = not values[name].get(key) and not values[name].get('nextPageToken') if name in values else None
+        summary['closureDocumentsObserved'] = len(values['closures'].get('documents', [])) if 'closures' in values else None
+        summary['closuresComplete'] = not bool(values.get('closures', {}).get('nextPageToken')) if 'closures' in values else False
         print('Prerequis NAP TEST : ' + json.dumps(summary), flush=True)
     policy.require(not errors, 'Lectures techniques indisponibles : ' + ', '.join(k + '=' + v for k, v in errors.items()))
     if project == 'livepalmes-test':
@@ -69,10 +68,13 @@ def controls(project):
         policy.require(values['queue'].get('state') == 'RUNNING', 'File PROD non active')
     scheduler = {k: v for k, v in values['scheduler'].items()
                  if k not in {'lastAttemptTime', 'scheduleTime', 'status'}}
-    queue = {k: values['queue'][k] for k in ['name', 'state', 'rateLimits', 'retryConfig',
+    queue = {k: values['queue'][k] for k in ['name', 'state', 'purgeTime', 'rateLimits', 'retryConfig',
              'stackdriverLoggingConfig', 'httpTarget', 'appEngineRoutingOverride'] if k in values['queue']}
-    return {'mailSha256': digest(values['mail']), 'schedulerSha256': digest(scheduler),
-            'queueSha256': digest(queue)}
+    result = {'mailSha256': digest(values['mail']), 'schedulerSha256': digest(scheduler),
+              'queueSha256': digest(queue)}
+    if project == 'livepalmes-test':
+        result['closureSha256'] = digest(sorted(values['closures'].get('documents', []), key=lambda d: d['name']))
+    return result
 
 
 def guard(directory, after=False):
@@ -234,6 +236,7 @@ def test(mode, directory, candidate):
                  'state': {'functions': [f for f in after['functions'] if f['name'].split('/')[-1] in c['testSelected']]},
                  'mailSettingUnchanged': True, 'schedulerUnchanged': True,
                  'queueUnchanged': True, 'configurationsUnchanged': True, 'testWrapperPreserved': True,
+                 'pendingMessagesPreserved': True, 'taskContentsRead': False,
                  **cycle.read(directory / 'source-receipt.json')}
         # Validate the same receipt rules that PROD preflight will enforce.
         value = {k: c[k] for k in ['candidate', 'productionCommit', 'productionHosting', 'testRun']}

@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "baseContractSha256": "d066f574ad118e7a79d9b2abc5720f96ec056d3c5e85e801c964e0007ec07db2",
+  "testProtection": {
+    "mailEnabled": false,
+    "schedulerState": "PAUSED",
+    "queueState": "PAUSED",
+    "closureLimit": 100,
+    "taskContentsRead": false,
+    "pendingMessagesPreserved": true,
+    "automaticResume": false
+  }
+}
