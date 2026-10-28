@@ -132,6 +132,20 @@ async function prove() {
     "engagement-mail-control.js", "nap-portal-workspaces.js"])
     if (!(home && file === "nap-portal-workspaces.js"))
       assert.equal(source(candidate, "functions/" + file), source(base, "functions/" + file), "Unreviewed notification module change");
+  await consumerFixtures({ base, candidate, rows, source, loader, definitions });
+  if (home) await homeReview.prove({ root, base, candidate, rows, source, loader, definitions });
+  if (c0) await require("./release-c0-document-compatibility.js").prove({ root, base, candidate, source, loader });
+  return { schema: 1, suite: "retained-calendar-consumers-v1", productionCommit: base, candidate,
+    ...(home ? { homeProofSha256: crypto.createHash("sha256").update(require("node:fs").readFileSync(path.join(__dirname, "release-home-retained-compatibility.js"))).digest("hex") } : {}),
+    ...(c0 ? { c0ProofSha256: crypto.createHash("sha256").update(require("node:fs").readFileSync(path.join(__dirname, "release-c0-document-compatibility.js"))).digest("hex") } : {}),
+    result: "success", networkCalls: 0, passedFunctions: rows.map(row => row.name).sort(),
+    checks: ["pinned-application-pair", "unchanged-notification-adapters", "bounded-reader-projection", "authorization-before-reads",
+      "mail-content", "retained-job-replay", "retained-closure-resume", "fixture-attachment-manifests", "document-selection",
+      "stale-source-refused", "missing-document-refused", ...(c0 ? ["c0-exact-backend-diff", "public-reader-unchanged", "original-featured-document-projection", "partial-schema-refused"] : []), ...(home ? ["home-exact-pair-and-12-origins", "unchanged-retained-handlers", "preference-and-access-guards", "native-identity-replay", "additive-index-specs", "unchanged-competition-projection"] : [])] };
+}
+
+async function consumerFixtures({ base, candidate, rows, source, loader, definitions, same = assert.equal, mailSetup = () => {} }) {
+  const before = definitions(base);
   // Project actual old/new readers with different and empty native comments.
   // Only presentation and the explicit concurrency snapshot may differ.
   const currentLoad = loader(candidate);
@@ -163,7 +177,8 @@ async function prove() {
     const defs = definitions(commit), sandbox = { ENVIRONMENT: { hostingOrigin: "https://fixture.invalid" },
       engagementPdfFormatDate: x => x, engagementPdfFormatDateTime: x => x, engagementPdfMoney: x => String(x),
       engagementPdfFeeTotal: () => 0, cleanText: x => String(x || "") };
-    for (const name of builders) { assert.equal(defs.get(name), before.get(name)); vm.runInNewContext(defs.get(name), sandbox); }
+    mailSetup({ defs, sandbox, commit, builders });
+    for (const name of builders) { same(defs.get(name), before.get(name), name); vm.runInNewContext(defs.get(name), sandbox); }
     return sandbox;
   }
   for (const capture of captures) {
@@ -218,20 +233,13 @@ async function prove() {
       { ...competition, clubDocuments: [{ id: "doc-1", title: "Fixture", url: "https://fixture.invalid/doc" }] }, populatedServices);
     assert.equal(documentPage.jobs.length, 1); assert.equal(documentPage.jobs[0].details.documents[0].id, "doc-1");
   }
-  if (home) await homeReview.prove({ root, base, candidate, rows, source, loader, definitions });
-  if (c0) await require("./release-c0-document-compatibility.js").prove({ root, base, candidate, source, loader });
-  return { schema: 1, suite: "retained-calendar-consumers-v1", productionCommit: base, candidate,
-    ...(home ? { homeProofSha256: crypto.createHash("sha256").update(require("node:fs").readFileSync(path.join(__dirname, "release-home-retained-compatibility.js"))).digest("hex") } : {}),
-    ...(c0 ? { c0ProofSha256: crypto.createHash("sha256").update(require("node:fs").readFileSync(path.join(__dirname, "release-c0-document-compatibility.js"))).digest("hex") } : {}),
-    result: "success", networkCalls: 0, passedFunctions: rows.map(row => row.name).sort(),
-    checks: ["pinned-application-pair", "unchanged-notification-adapters", "bounded-reader-projection", "authorization-before-reads",
-      "mail-content", "retained-job-replay", "retained-closure-resume", "fixture-attachment-manifests", "document-selection",
-      "stale-source-refused", "missing-document-refused", ...(c0 ? ["c0-exact-backend-diff", "public-reader-unchanged", "original-featured-document-projection", "partial-schema-refused"] : []), ...(home ? ["home-exact-pair-and-12-origins", "unchanged-retained-handlers", "preference-and-access-guards", "native-identity-replay", "additive-index-specs", "unchanged-competition-projection"] : [])] };
 }
 const groupedPair = base === "fbd3c2868fcb3690e1fa5a7ddeca9f45e6fb4511" && candidate === "0619f1dce9439afd5dd4719ee035ff0fc3b99b83";
 const bccPair = base === "0619f1dce9439afd5dd4719ee035ff0fc3b99b83" && candidate === "c93c5016682bf67ddee589b8fb0d4008e68b3196";
 const allContract = require('../.github/releases/evidence/20261025-all-validated-contract.json');
 const allPair = base === allContract.productionCommit && candidate === allContract.candidate;
-if (require.main === module) (allPair ? require('./release-bcc-retained-compatibility').prove({root,base,candidate,rows,source,definitions,loader,contract:allContract}) : bccPair ? require("./release-bcc-retained-compatibility").prove({root,base,candidate,rows,source,definitions,loader}) : groupedPair ? require('./release-grouped-retained-compatibility').prove({root,base,candidate,rows,source,definitions,loader}) : prove())
+const architecture = require('./release-architecture-retained-compatibility');
+const architecturePair = architecture.matches(base, candidate);
+if (require.main === module) (architecturePair ? architecture.prove({ root, base, candidate, rows, source, loader, consumerFixtures }) : allPair ? require('./release-bcc-retained-compatibility').prove({root,base,candidate,rows,source,definitions,loader,contract:allContract}) : bccPair ? require("./release-bcc-retained-compatibility").prove({root,base,candidate,rows,source,definitions,loader}) : groupedPair ? require('./release-grouped-retained-compatibility').prove({root,base,candidate,rows,source,definitions,loader}) : prove())
   .then(result => console.log(JSON.stringify(result))).catch(error => { console.error(error.stack); process.exitCode = 1; });
-module.exports = { loader,source,definitions };
+module.exports = { loader,source,definitions,consumerFixtures };
