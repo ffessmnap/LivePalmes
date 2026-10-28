@@ -2,6 +2,12 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 28 octobre — Rétablissement de la cible MySQL NAP
+
+- Antoine autorise le remplacement du serveur MySQL par l'IP `57.128.101.89`, port `3372`, après confirmation de cette cible par son interlocuteur. Réponse TCP et protocole MySQL 5.7.30 vérifiés sans authentification. La cible précédente `nap.ffessm.fr` a été affectée par la redirection web ; sa résolution suivante vers `40.66.56.49` ne répondait pas sur le port MySQL.
+- Seule la cible réseau du pool partagé change ; base, compte, secret, TLS, limites et requêtes conservés. Budget inchangé : aucune lecture ou écriture supplémentaire à l'ouverture, à une action, au rafraîchissement ou au pire cas. Aucune migration, restauration ou invocation d'écriture métier.
+- Préparation et tests ciblés en cours ; aucune preuve de déploiement TEST, de connexion authentifiée ou de rétablissement PROD acquise à ce stade. La promotion PROD doit rester distincte du chantier d'architecture et des évolutions non validées sur main ; bilan précis et accord Infra requis avant publication.
+
 ### 28 octobre — Fiabilité du portail pendant une panne NAP
 
 - Antoine accepte les tests complémentaires du code réorganisé et la gestion des pannes, sans connexion à la base réelle. [PR #603](https://github.com/ffessmnap/LivePalmes/pull/603) et [complément #604](https://github.com/ffessmnap/LivePalmes/pull/604) intégrés et livrés sur TEST. Nouveaux tests exécutant les modules réels du portail et les handlers serveur avec services fictifs : erreurs, annuaires vides, délai/réponse tardive, lectures concurrentes et reprise. Aucun code serveur, droit, configuration Firebase ou donnée modifié.
