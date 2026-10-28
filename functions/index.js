@@ -696,8 +696,9 @@ if (ENVIRONMENT.projectId === "livepalmes-test") {
     const accountEmails = request.method === "POST" && request.query.action === "approved-club-account-emails";
     const dtnSettings = request.method === "POST" && request.query.action === "approved-dtn-settings";
     const homeRefresh = request.method === "POST" && request.query.action === "home-events-refresh";
+    if (request.method === "GET" && request.query.action === "approved-club-account-emails") { response.status(405).json({ error: "Methode interdite." }); return; }
     if (request.method === "GET" && request.query.action === "home-events-refresh") { response.status(405).json({ error: "Methode interdite." }); return; }
-    if (request.method !== "GET" && !indexOperation && !swimmerCorrection && !noraClubs && !portalSchema && !closureSchema && !peopleSchema && !dtnSchema && !dtnSettings && !licenseReports && !accountEmails && !homeRefresh || request.method === "GET" && ["approved-index", "approved-swimmer-correction", "approved-nora-performance-clubs", "approved-portal-schema", "approved-closure-schema", "approved-people-schema", "approved-dtn-schema", "approved-dtn-settings", "approved-license-reports", "approved-club-account-emails"].includes(request.query.action)) { response.status(405).json({ error: "Methode interdite." }); return; }
+    if (request.method !== "GET" && !indexOperation && !swimmerCorrection && !noraClubs && !portalSchema && !closureSchema && !peopleSchema && !dtnSchema && !dtnSettings && !licenseReports && !accountEmails && !homeRefresh || request.method === "GET" && ["approved-index", "approved-swimmer-correction", "approved-nora-performance-clubs", "approved-portal-schema", "approved-closure-schema", "approved-people-schema", "approved-dtn-schema", "approved-dtn-settings", "approved-license-reports"].includes(request.query.action)) { response.status(405).json({ error: "Methode interdite." }); return; }
     try {
       if (!napPool) napPool = createNapPool(napPassword.value());
       const data = noraClubs ? await require("./nap-nora-performance-clubs").repair(napPool, request.body, {
