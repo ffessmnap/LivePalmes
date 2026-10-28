@@ -2,6 +2,13 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 28 octobre — Préparation de la publication du chantier d'architecture
+
+- Antoine demande « Fais le nécessaire » après présentation du bilan et du blocage de compatibilité : compléter les preuves et le preflight, sans déploiement PROD, opération métier réelle ou envoi. Le candidat applicatif reste `67d40e84cf9713403614f77bb53067cd449510a7`, déjà contrôlé et publié sur TEST ; aucune modification applicative ajoutée par cette préparation.
+- Revue spécifique de la paire PROD `25b9a6fa6763b8c1cfba5382ca2228ece8220fae` / candidat : quinze consommateurs conservés, origines et empreintes bornées dans le contrat du 28 octobre. Comparaison syntaxique des déclarations, constantes et inscriptions Firebase originales ; contrôle des délégations et dépendances réellement fournies ; essais fictifs des lecteurs bornés, contenus mail, reprise des tâches, pièces jointes, autorisations, préférences et résolution d'identité. Clients Firebase/MySQL/SMTP et réseau interdits dans ces essais. Les anciens contrats et leurs contrôles restent inchangés.
+- Sélection préparatoire : 98 fonctions ordinaires, preuves TEST compatibles pour chacune ; treize fonctions mail, une tâche automatique et le lecteur public NAP existant restent à leurs révisions PROD. Les deux autres exports publics NAP absents de PROD ne sont pas créés implicitement. L'adresse IP directe fait partie du code ordinaire ; les paquets conservés gardent leur configuration existante et leur accès par DNS. Aucune migration, modification de droit, secret, règle/index ou donnée.
+- Preuves TEST à composer sans nouvelle publication : [TEST commun](https://github.com/ffessmnap/LivePalmes/actions/runs/40720254183) et [complément NAP](https://github.com/ffessmnap/LivePalmes/actions/runs/40720490400), même candidat. CI de la préparation et preflight final encore attendus à cette étape. L'accord final sur le plan exact reste requis dans Infra ; la demande de préparation n'est pas un accord PROD.
+
 ### 28 octobre — Rétablissement de la cible MySQL NAP
 
 - Antoine autorise le remplacement du serveur MySQL par l'IP `57.128.101.89`, port `3372`, après confirmation de cette cible par son interlocuteur. Réponse TCP et protocole MySQL 5.7.30 vérifiés sans authentification. La cible précédente `nap.ffessm.fr` a été affectée par la redirection web ; sa résolution suivante vers `40.66.56.49` ne répondait pas sur le port MySQL.
