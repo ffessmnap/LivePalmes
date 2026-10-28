@@ -11,7 +11,7 @@ const source=fs.readFileSync(require.resolve("../assets/livepalmes-admin-portal.
     {id:"nap-official-4",nativePersonKind:"officials",nativeIdentityEditable:false,firstName:"Bloque",lastName:"Lecture"}
   ];
   const list = {innerHTML:""};
-  const context = {global:{LivePalmesEnvironment:{sportingDataSource:"nap"}},elements:{engagementsClubPeopleList:list},engagementClubPeople:people,engagementClubPersonSaving:false,
+  const context = {global:{LivePalmesEnvironment:{sportingDataSource:"nap"}},elements:{engagementsClubPeopleList:list},engagementClubPeople:people,engagementClubPeopleLoaded:true,engagementClubPersonSaving:false,
     updateNativeCompetitionPersonCreationButton:()=>{},escapeHtml:String,engagementClubPersonRoleLabel:()=>"Officiel"};
   vm.createContext(context);
   const renderStart=source.indexOf("  function renderEngagementClubPeople()");
