@@ -1,5 +1,5 @@
 "use strict";
-const assert=require("node:assert/strict"),fs=require("node:fs"),vm=require("node:vm");
+const assert=require("node:assert/strict"),fs=require("./helpers/source-files"),vm=require("node:vm");
 const directory=require("../functions/nap-club-directory");
 const source=fs.readFileSync("functions/index.js","utf8");
 const body=source.slice(source.indexOf("async function engagementClubAccessContext(request)"),source.indexOf("async function assertEngagementsAccess(request)"));

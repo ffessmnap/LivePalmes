@@ -1,4 +1,5 @@
 "use strict";
+const { SCOPE_SPECS, selectRow, authorityGuard } = require("./nap-competition-authority");
 // Explicit patches only: untouched native fields, courses and entries stay intact.
 // MyISAM operations are journaled separately; never claim a cross-table rollback.
 const { createHash } = require("node:crypto");
@@ -10,8 +11,7 @@ const { parisDeadline } = require("./nap-paris-time");
 const { fingerprint } = require("./nap-portal-workspaces");
 const schema = require("./nap-approved-portal-schema");
 const SPECS = Object.freeze({
-  competitions: { key: "id", columns: ["id","libelle","lieu","date","enddate","comite","description","comments","bassin","chrono","ld","type"] },
-  compet_parametres: { key: "id", columns: ["id","compet","actif","dateactif","date_limit","officiel","nb_lignes","mailtxt","mailjuges","tps_d","tps_f","niveau","saisie","relais"] },
+  ...SCOPE_SPECS,
   livepalmes_competition_options: { key: "competition_id", columns: [...schema.tables[0].columns.map(c => c.name), "entry_closed", "event_type"] },
   livepalmes_competition_fees: { key: "competition_id", columns: schema.tables[2].columns.map(c => c.name) },
   livepalmes_competition_programs: { key: "competition_id", columns: schema.tables[7].columns.map(c=>c.name) },
@@ -57,10 +57,7 @@ function canonical(value) {
   return value && typeof value === "object" ? Object.fromEntries(Object.keys(value).sort().map(key=>[key,canonical(value[key])])) : value;
 }
 function rowHash(row) { return createHash("sha256").update(JSON.stringify(canonical(normalizedRow(row)))).digest("hex"); }
-function selectRow(row, spec) {
-  if (!row || spec.columns.some(key => !Object.hasOwn(row,key) && !["type","event_type"].includes(key))) throw new TypeError("Sauvegarde native incomplete.");
-  return Object.fromEntries(spec.columns.map(key=>[key,row[key]??null]));
-}
+
 function emptyRow(table, id, actorUid, now) {
   return Object.fromEntries(SPECS[table].columns.map(key => [key, key === "competition_id" ? id : key === "version" ? "0" : key === "created_by" ? actorUid : key === "created_at" ? now : null]));
 }
@@ -186,16 +183,7 @@ function operationHash(input) {
   if (!/^[a-f0-9]{64}$/.test(input.expectedFingerprint || "") || !input.actorUid || typeof input.patch !== "object" || !input.patch || Array.isArray(input.patch)) throw new TypeError("Fiche actuelle requise.");
   return createHash("sha256").update(JSON.stringify(canonical([calendar.positiveId(input.competitionId), input.actorUid,input.expectedFingerprint,input.patch]))).digest("hex");
 }
-function authorityGuard(target, snapshot) {
-  const clauses=[],values=[];
-  for(const table of ["competitions","compet_parametres"]) {
-    if(table===target) continue;
-    const spec=SPECS[table], row=selectRow(snapshot[table],spec),alias=table==="competitions" ? "scope_c" : "scope_p";
-    clauses.push(`EXISTS (SELECT 1 FROM \`${table}\` ${alias} WHERE ${alias}.\`${spec.key}\`=? AND ${spec.columns.map(key=>nativeEqual(`${alias}.\`${key}\``)).join(" AND ")})`);
-    values.push(row[spec.key],...spec.columns.map(key=>row[key]));
-  }
-  return {sql:clauses.join(" AND "),values};
-}
+
 function buildStatement(item, authority) {
   const spec=SPECS[item.table];
   if(!spec || item.key!==spec.key) throw new TypeError("Table de correction invalide.");

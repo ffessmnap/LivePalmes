@@ -1,5 +1,5 @@
 "use strict";
-const assert=require("node:assert/strict"),fs=require("node:fs"),vm=require("node:vm");
+const assert=require("node:assert/strict"),fs=require("./helpers/source-files"),vm=require("node:vm");
 const source=fs.readFileSync(require.resolve("../assets/livepalmes-admin-portal.js"),"utf8");
 const fields={name:{value:"Ancien nom"},date:{value:"2026-10-11"},endDate:{value:"2026-10-11"},location:{value:"Antibes"},deadline:{value:"2026-10-07T21:59:17"},poolLaneCount:{value:"8"},poolLength:{value:"50"},timingType:{value:"manual"},entryStatus:{value:"open"},officialsRequired:{value:"true"},maxEvents:{value:"0"}};
 let fee={enabled:false,swimmerFee:0,individualEventFee:0,relayFee:0,helloAssoUrl:""},approved=true,program=[];

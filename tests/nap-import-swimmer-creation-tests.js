@@ -1,5 +1,5 @@
 "use strict";
-const assert=require('node:assert/strict'),fs=require('node:fs');
+const assert=require('node:assert/strict'),fs=require("./helpers/source-files");
 const {service}=require('../functions/nap-import-swimmer-creation');
 const input={importReview:true,clubId:'106',creationId:'11111111-1111-4111-8111-111111111111',confirmNewSwimmer:true,swimmer:{firstName:'Test',lastName:'EXEMPLE',birthDate:'1980-01-02',sex:'M',licenseNumber:'A-05-000001'}};
 function fixture(){

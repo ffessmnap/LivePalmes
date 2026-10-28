@@ -1,5 +1,5 @@
 "use strict";
-const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),control=require('../functions/engagement-mail-control');
+const assert=require('node:assert/strict'),fs=require("./helpers/source-files"),vm=require('node:vm'),control=require('../functions/engagement-mail-control');
 const source=fs.readFileSync(require.resolve('../functions/index.js'),'utf8');
 const start=source.indexOf('async function sendEngagementMailJob('),end=source.indexOf('\nfunction cleanEngagementClubPerson(',start);
 assert.ok(start>0&&end>start);

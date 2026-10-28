@@ -3,7 +3,7 @@
 const {readNativeCompetition}=require("./nap-portal-competitions");
 const {planSelection}=require("./nap-swimmer-entry-plan");
 const {statements}=require("./nap-swimmer-entry-statements");
-const {indexed}=require("./nap-swimmer-entry-change");
+const {indexed}=require("./nap-swimmer-entry-query-plan");
 async function inspectSelection(connection,pack,readCompetition=readNativeCompetition) {
   if(pack.leaders.length!==1 || !pack.inscriptions.length) return {available:false,writesExecuted:false};
   const link=pack.inscriptions.find(row=>pack.inscriptions.filter(peer=>Number(peer.nageur)===Number(row.nageur)).length===1 && pack.members.some(member=>Number(member.nageur)===Number(row.nageur))) || pack.inscriptions.find(row=>pack.inscriptions.filter(peer=>Number(peer.nageur)===Number(row.nageur)).length===1);

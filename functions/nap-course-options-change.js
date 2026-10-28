@@ -35,7 +35,7 @@ async function apply(connection,item,id,authority){
     const current=await read(true);
     if(isDeepStrictEqual(current,normalize(item.after))){await connection.commit();started=false;return {resumed:true};}
     if(!isDeepStrictEqual(current,normalize(item.before)))throw new TypeError('Les reglages de courses ont change. Rechargez la fiche.');
-    const guard=require('./nap-portal-competition-change').authorityGuard(item.table,authority);
+    const guard=require('./nap-competition-authority').authorityGuard(item.table,authority);
     const result=await query(`DELETE FROM livepalmes_course_options WHERE competition_id=? AND ${guard.sql} LIMIT 300`,[id,...guard.values]);
     if(Number(result.affectedRows)!==current.length)throw new TypeError('Perimetre de competition modifie.');
     if(item.after.length){

@@ -1,7 +1,7 @@
 'use strict';
 // Execute the changed helpers with an in-memory database; never load Firebase.
 const assert = require('node:assert/strict');
-const fs = require('node:fs');
+const fs = require("./helpers/source-files");
 const vm = require('node:vm');
 const path = require('node:path');
 const source = fs.readFileSync(path.join(__dirname, '../functions/index.js'), 'utf8');

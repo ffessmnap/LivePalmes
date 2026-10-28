@@ -3,7 +3,7 @@
 // parameters in its result. Existing dossier/directory are reused.
 const {positiveId}=require("./nap-direct-calendar");
 const {readNativeCompetition}=require("./nap-portal-competitions");
-const {readPeople,indexed}=require("./nap-official-entry-change");
+const {readPeople,indexed}=require("./nap-official-entry-reads");
 const {selectedStatement,insertion,deletion}=require("./nap-official-entry-statements");
 async function inspectOfficialStatements(connection,pack,directory,reader=readNativeCompetition) {
   const candidate=directory?.people?.find(person=>person.nativePersonKind==="officials" && person.active && person.roles?.official && String(person.clubId)===String(pack.clubId));

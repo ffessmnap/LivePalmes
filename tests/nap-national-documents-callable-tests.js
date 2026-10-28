@@ -1,5 +1,5 @@
 'use strict';
-const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),crypto=require('node:crypto');
+const assert=require('node:assert/strict'),fs=require("./helpers/source-files"),vm=require('node:vm'),crypto=require('node:crypto');
 const source=fs.readFileSync(require.resolve('../functions/index.js'),'utf8');
 let national=true,reads=0,smtp=0,writes=0,enabled=true;
 class HttpsError extends Error{constructor(code,message){super(message);this.code=code;}}

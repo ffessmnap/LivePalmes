@@ -1,5 +1,5 @@
 "use strict";
-const assert = require("node:assert/strict"), fs = require("node:fs"), vm = require("node:vm");
+const assert = require("node:assert/strict"), fs = require("./helpers/source-files"), vm = require("node:vm");
 const source = fs.readFileSync("assets/livepalmes-admin-portal.js", "utf8").replace(/\r\n/g, "\n");
 function block(name) {
   const start = source.search(new RegExp(`  (?:async )?function ${name}\\(`));

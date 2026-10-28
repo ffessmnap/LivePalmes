@@ -1,6 +1,6 @@
 "use strict";
 const assert = require("node:assert/strict");
-const fs = require("node:fs");
+const fs = require("./helpers/source-files");
 const vm = require("node:vm");
 const source = fs.readFileSync(require("node:path").join(__dirname, "../assets/livepalmes-admin-portal.js"), "utf8");
 function section(start, end) { return source.slice(source.indexOf(start), source.indexOf(end, source.indexOf(start))); }

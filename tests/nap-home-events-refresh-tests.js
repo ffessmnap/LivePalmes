@@ -1,5 +1,5 @@
 "use strict";
-const assert=require("node:assert/strict"),fs=require("node:fs"),{createHash}=require("node:crypto");
+const assert=require("node:assert/strict"),fs=require("./helpers/source-files"),{createHash}=require("node:crypto");
 const {publishSnapshot,refreshTestHomeEvents,BUCKET}=require("../functions/nap-home-events-refresh");
 const {OBJECT_PATH,MAX_AGE_MS}=require("../functions/nap-home-events");
 const {jobArgs,assertJob,ACCOUNT,JOB,SCHEDULE,DESCRIPTION}=require("../tools/configure-home-events-test");

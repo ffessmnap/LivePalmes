@@ -1,6 +1,6 @@
 "use strict";
 const assert=require("node:assert/strict");
-const fs=require("node:fs");
+const fs=require("./helpers/source-files");
 const vm=require("node:vm");
 const source=fs.readFileSync("assets/livepalmes-admin-portal.js","utf8");
 const button={hidden:true,disabled:true};

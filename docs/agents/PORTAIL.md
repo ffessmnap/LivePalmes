@@ -11,13 +11,16 @@ LivePalmes Direct est un autre dispositif, réservé aux compétitions nationale
 ## Fichiers à examiner en premier
 
 - `portail.html` : structure et écrans du portail ;
-- `assets/livepalmes-admin-portal.js` : assemblage principal et interactions ;
-- `assets/livepalmes-admin-portal.css` : styles propres au portail ;
+- `assets/livepalmes-admin-portal.js` : assemblage de l'état privé et des interfaces `state`, `config`, `actions` ;
+- `assets/portal/*.js` : fonctions privées réparties par domaine (navigation, clubs, engagements, documents/programme, administration, comptes et événements) ;
+- `assets/livepalmes-admin-portal.css` : entrée de cascade, puis le seul fragment utile de `assets/portal/styles/` ;
 - `assets/livepalmes-admin-auth.js` : session et capacités ;
 - `assets/livepalmes-portal-ux.js` : comportements transverses du portail ;
 - `assets/livepalmes-admin-*.js` et `performances/public/admin*.js` : modules ciblés selon la fonction.
 
 Commencer par une recherche ciblée du libellé, de l'identifiant HTML, de la fonction ou de la collection concernés. Ne pas lire entièrement les gros fichiers lorsque quelques blocs suffisent.
+
+Le découpage conserve les fonctions et les données partagées dans des interfaces explicites. Ne pas ajouter de logique métier à l'assembleur, ni déplacer les styles hors de leur ordre de cascade. Les modules et styles sont versionnés et mis en cache : modifier leur version d'URL lorsqu'un contenu change ; `portal-cache-version-tests.js` le contrôle. Voir les limites et contrôles dans `docs/MAINTENANCE_ARCHITECTURE.md`.
 
 Si la correction touche `functions/`, lire aussi `functions/AGENTS.md`. Ne rechercher ensuite que les fonctions appelées par l'écran concerné et leurs utilitaires directs.
 

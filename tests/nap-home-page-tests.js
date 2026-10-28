@@ -1,5 +1,5 @@
 "use strict";
-const assert=require("node:assert/strict"),fs=require("node:fs"),vm=require("node:vm"),page=require("../functions/nap-home-page");
+const assert=require("node:assert/strict"),fs=require("./helpers/source-files"),vm=require("node:vm"),page=require("../functions/nap-home-page");
 (async()=>{
  let now=Date.parse("2026-10-15T10:00:00Z"),calls=0,fail=false;
  const events=[{id:"national",date:"2026-12-12",endDate:"2026-12-13",level:"national",eventType:"pool",city:"Dijon",name:'<script>alert("event")</script>'},...Array.from({length:5},(_,i)=>({id:`region-${i}`,date:`2026-10-${16+i}`,level:"regional",name:`Formation ${i}`}))];

@@ -49,6 +49,12 @@ function runUnitTests() {
   printStep("Tests automatiques");
   run(process.execPath, ["tools/build-public-home-template.js"]);
   [
+    "offline-network-tests.js",
+    "source-files-tests.js",
+    "portal-module-loader-tests.js",
+    "portal-module-boundaries-tests.js",
+    "portal-cache-version-tests.js",
+    "backend-module-boundaries-tests.js",
     "nap-mysql-tests.js",
     "nap-direct-query-checks-tests.js",
     "nap-direct-swimmer-tests.js",
@@ -374,7 +380,11 @@ function runUnitTests() {
     "nap-dtn-client-tests.js",
     "dtn-season-service-tests.js"
   ].forEach((fileName) => {
-    run(process.execPath, [path.join(rootDir, "tests", fileName)]);
+    const guard = path.join(rootDir, "tests/helpers/offline-network.js").replace(/\\/g, "/");
+    const nodeOptions = [process.env.NODE_OPTIONS, "--require=" + JSON.stringify(guard)].filter(Boolean).join(" ");
+    run(process.execPath, [path.join(rootDir, "tests", fileName)], {
+      env: { ...process.env, NODE_OPTIONS: nodeOptions }
+    });
   });
 }
 

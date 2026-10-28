@@ -1,6 +1,6 @@
 "use strict";
 // Synthetic files and mocked callables only; every external request is aborted.
-const assert=require("node:assert/strict"),fs=require("node:fs"),path=require("node:path");
+const assert=require("node:assert/strict"),fs=require("./helpers/source-files"),path=require("node:path");
 const {chromium}=require("playwright"),{archive}=require("./winpalme-zip-tests");
 const portal=fs.readFileSync("portail.html","utf8");
 const row=["NAG","TEST","Personne","01/01/2000","F","ABC","","50SF","","FSE","NAG","00.00","00.00","00.00","00.00","32.45","","10","1","1","FSE","","123"].join(";");
@@ -32,7 +32,7 @@ const zip=archive([{name:"ExportTxt/27TEST_Export.txt",data:"REN;11/10/2026;Comp
     }};
     window.firebase={apps:[{}],initializeApp:()=>{},app:()=>({functions:()=>service}),functions:()=>service};
    },portal);
-   for(const file of ["styles.css","assets/livepalmes-admin-portal.css","performances/public/import-competitions.css"])await page.addStyleTag({path:file});
+   for(const file of ["styles.css","assets/livepalmes-admin-portal.css","performances/public/import-competitions.css"])await page.addStyleTag({content:fs.readFileSync(file,"utf8")});
    for(const file of ["performances/public/winpalme-zip.js","performances/public/import-competitions.js"])await page.addScriptTag({path:file});
    await page.locator("#competitionImportOpenButton").click();
    await page.locator("#competitionImportFile").setInputFiles({name:"fixture.zip",mimeType:"application/zip",buffer:zip});

@@ -1,0 +1,781 @@
+
+
+#adminAccountView > .admin-portal-workspace-head,
+#adminAccessRequestView > .admin-portal-workspace-head {
+  border: 1px solid #dfe5e7;
+  border-radius: 10px;
+  background: #ffffff;
+}
+
+#adminAccountView .admin-account-grid {
+  gap: 14px;
+}
+
+#adminAccountView .admin-account-card,
+#adminAccessRequestView .admin-access-preview {
+  border-color: #dfe5e7;
+  border-radius: 9px;
+  background: #ffffff;
+  box-shadow: none;
+}
+
+#adminAccountView .admin-account-card {
+  gap: 16px;
+  padding: 17px;
+}
+
+.admin-simple-card-head {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+}
+
+.admin-simple-card-head > div {
+  min-width: 0;
+}
+
+.admin-simple-card-head > div > span {
+  display: block;
+  color: #718087;
+  font-size: 0.72rem;
+  font-weight: 850;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.admin-simple-card-head h3,
+.admin-simple-card-head strong {
+  display: block;
+  margin: 4px 0 5px;
+  color: #263940;
+}
+
+.admin-simple-card-head p {
+  margin: 0;
+  color: #66777e;
+  line-height: 1.45;
+}
+
+.admin-simple-card-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 8px;
+}
+
+.admin-simple-card-icon svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.admin-simple-card-icon.tone-profile {
+  color: #0b7285;
+  background: #e4f3f5;
+}
+
+.admin-simple-card-icon.tone-email {
+  color: #1769aa;
+  background: #e9f3fb;
+}
+
+.admin-simple-card-icon.tone-security {
+  color: #6741d9;
+  background: #f0edff;
+}
+
+.admin-simple-card-icon.tone-request {
+  color: #2f7d6d;
+  background: #e8f5f1;
+}
+
+#adminAccountView .admin-account-scope-list > div {
+  border-color: #e2e7e9;
+  background: #f8fafb;
+}
+
+#adminAccountView .admin-account-capabilities span {
+  border-color: #cfe1e4;
+  color: #315b64;
+  background: #f0f8f9;
+}
+
+#adminAccountView .admin-account-form label,
+#adminAccessRequestView .admin-access-form label {
+  color: #51636a;
+}
+
+#adminAccountView .admin-account-form input,
+#adminAccessRequestView .admin-access-form input,
+#adminAccessRequestView .admin-access-form select,
+#adminAccessRequestView .admin-access-form textarea {
+  border-color: #d5dde0;
+  background: #fbfcfd;
+}
+
+.admin-account-notification-setting {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 16px;
+  align-items: center;
+  border: 1px solid #dce5e7;
+  border-radius: 10px;
+  padding: 14px;
+  background: #f8fafb;
+}
+
+.admin-account-notification-setting > div {
+  display: grid;
+  gap: 4px;
+}
+
+.admin-account-notification-setting strong {
+  color: #183f47;
+  font-size: 0.9rem;
+}
+
+.admin-account-notification-setting span {
+  color: #607279;
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.admin-account-notification-switch {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  min-width: 82px;
+  min-height: 42px;
+  border: 1px solid #b8c7ca;
+  border-radius: 999px;
+  padding: 5px 9px 5px 6px;
+  background: #e7ecee;
+  color: #53666c;
+  font: inherit;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.admin-account-notification-switch-track {
+  position: relative;
+  width: 40px;
+  height: 24px;
+  border-radius: 999px;
+  background: #a8b5b8;
+  transition: background 160ms ease;
+}
+
+.admin-account-notification-switch-track > span {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgb(21 54 61 / 24%);
+  transition: transform 160ms ease;
+}
+
+.admin-account-notification-switch[aria-checked="true"] {
+  border-color: #69aa9d;
+  background: #e7f5f1;
+  color: #196556;
+}
+
+.admin-account-notification-switch[aria-checked="true"] .admin-account-notification-switch-track {
+  background: #238b78;
+}
+
+.admin-account-notification-switch[aria-checked="true"] .admin-account-notification-switch-track > span {
+  transform: translateX(16px);
+}
+
+.admin-account-notification-switch:focus-visible {
+  outline: 3px solid rgb(11 114 133 / 24%);
+  outline-offset: 2px;
+}
+
+.admin-account-notification-switch:disabled {
+  cursor: wait;
+  opacity: 0.62;
+}
+
+.admin-account-notification-switch-state {
+  min-width: 24px;
+  color: inherit !important;
+  font-size: 0.72rem !important;
+}
+
+#adminAccessRequestView .admin-access-preview {
+  gap: 18px;
+  padding: 17px;
+}
+
+#adminAccessRequestView .admin-access-preview-head {
+  align-items: center;
+}
+
+#adminAccessRequestView .admin-access-identity-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+#adminAccessRequestView .admin-access-section {
+  border-color: #e0e6e8;
+  background: #f8fafb;
+}
+
+#adminAccessRequestView .admin-access-section legend {
+  color: #617178;
+}
+
+@media (max-width: 720px) {
+  #adminAccountView .admin-account-grid,
+  #adminAccountView .admin-account-scope-list,
+  #adminAccessRequestView .admin-access-identity-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 420px) {
+  .admin-simple-card-head {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Module Records / MPF integre au langage visuel du portail. */
+#adminRecordsView > .admin-records-workspace-head {
+  min-height: 0;
+  border: 1px solid #dfe5e7;
+  border-radius: 10px;
+  background: #ffffff;
+}
+
+#adminRecordsView .admin-records-workspace-head > div > span {
+  display: block;
+  color: #0b7285;
+  font-size: 0.74rem;
+  font-weight: 850;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+#adminRecordsView .admin-records-workspace-head h2 {
+  margin-top: 4px;
+  color: #263940;
+}
+
+#adminRecordsView .admin-records-workspace-head p {
+  margin: 4px 0 0;
+  color: #687980;
+  font-size: 0.86rem;
+  line-height: 1.4;
+}
+
+#adminRecordsView .admin-record-module-status,
+#adminRecordsView .admin-finder-card,
+#adminRecordsView .admin-table-card,
+#adminRecordsView .admin-edit-card,
+#adminRecordsView .admin-history-panel-global {
+  border-color: #dfe5e7;
+  border-radius: 9px;
+  background: #ffffff;
+  box-shadow: none;
+}
+
+#adminRecordsView .admin-record-module-status {
+  padding: 14px 16px;
+  color: #66777e;
+}
+
+#adminRecordsView .admin-workbench {
+  gap: 14px;
+}
+
+#adminRecordsView .admin-finder-card {
+  gap: 16px;
+  padding: 16px;
+}
+
+.admin-records-section-head {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+  padding-bottom: 13px;
+  border-bottom: 1px solid #e6eaec;
+}
+
+.admin-records-section-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 8px;
+  color: #0b7285;
+  background: #e4f3f5;
+}
+
+.admin-records-section-icon svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.admin-records-section-head span,
+.admin-records-section-head strong,
+.admin-records-section-head p {
+  display: block;
+}
+
+.admin-records-section-head span {
+  color: #718087;
+  font-size: 0.72rem;
+  font-weight: 850;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.admin-records-section-head strong {
+  margin-top: 3px;
+  color: #263940;
+}
+
+.admin-records-section-head p {
+  margin: 3px 0 0;
+  color: #687980;
+  font-size: 0.84rem;
+}
+
+#adminRecordsView .admin-filter-grid {
+  grid-template-columns: repeat(4, minmax(160px, 1fr));
+  gap: 12px;
+}
+
+#adminRecordsView .admin-filter-grid label,
+#adminRecordsView .admin-filter-scope {
+  color: #52646b;
+}
+
+#adminRecordsView .admin-filter-grid select,
+#adminRecordsView .admin-filter-grid input {
+  min-height: 40px;
+  border-color: #d5dde0;
+  border-radius: 7px;
+  color: #263940;
+  background: #fbfcfd;
+}
+
+#adminRecordsView .segmented {
+  min-height: 40px;
+  border-color: #d5dde0;
+  border-radius: 7px;
+}
+
+#adminRecordsView .segment.active:not(.sex-f):not(.sex-m) {
+  background: #0b7285;
+}
+
+#adminRecordsView .admin-table-card {
+  overflow: hidden;
+}
+
+#adminRecordsView .table-head {
+  padding: 15px 16px;
+  border-color: #e4e9eb;
+  background: #fbfcfd;
+}
+
+#adminRecordsView .table-head .admin-label,
+#adminRecordsView .admin-edit-head .admin-label {
+  color: #0b7285;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+#adminRecordsView .table-head h2 {
+  margin-top: 3px;
+  color: #263940;
+}
+
+#adminRecordsView .admin-record-table thead th {
+  border-color: #e5eaec;
+  color: #66777e;
+  background: #f6f8f9;
+}
+
+#adminRecordsView .admin-record-table td {
+  border-color: #e8ecee;
+}
+
+#adminRecordsView .admin-table-row:hover,
+#adminRecordsView .admin-table-row.active {
+  outline-color: rgba(11, 114, 133, 0.28);
+  background: #f3f9fa;
+}
+
+#adminRecordsView .admin-inline-edit-row > td {
+  background: #f7f9fa;
+}
+
+#adminRecordsView .admin-edit-head {
+  padding: 15px 16px;
+  border-color: #e4e9eb;
+  background: #fbfcfd;
+}
+
+#adminRecordsView .admin-edit-head h2 {
+  color: #263940;
+}
+
+#adminRecordsView .admin-edit-head > span {
+  color: #075866;
+  background: #e4f3f5;
+}
+
+#adminRecordsView .admin-form-stacked {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  padding: 16px;
+}
+
+#adminRecordsView .admin-form-stacked label {
+  color: #52646b;
+}
+
+#adminRecordsView .admin-form-stacked input,
+#adminRecordsView .admin-form-stacked select {
+  border-color: #d5dde0;
+  background: #fbfcfd;
+}
+
+#adminRecordsView .admin-actions {
+  padding: 0 16px 16px;
+}
+
+#adminRecordsView .admin-drafts-panel {
+  border-color: #8cc8c0;
+  border-left-color: #0b7285;
+  border-radius: 9px;
+  background: #f2f9f8;
+}
+
+#adminRecordsView .admin-drafts-head {
+  border-color: #cee4e1;
+}
+
+#adminRecordsView .admin-global-alert {
+  border-radius: 9px;
+}
+
+#adminRecordsView .admin-history-head {
+  border-color: #e4e9eb;
+  background: #fbfcfd;
+}
+
+#adminRecordsView .status-pill {
+  min-height: 24px;
+  align-items: center;
+  padding-inline: 8px;
+}
+
+@media (max-width: 1180px) {
+  #adminRecordsView .admin-filter-grid,
+  #adminRecordsView .admin-form-stacked {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 680px) {
+  #adminRecordsView .admin-records-workspace-head,
+  #adminRecordsView .admin-drafts-head,
+  #adminRecordsView .table-head,
+  #adminRecordsView .admin-edit-head {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  #adminRecordsView .admin-records-workspace-head .ghost-button {
+    width: 100%;
+    min-width: 0;
+  }
+
+  #adminRecordsView .admin-filter-grid,
+  #adminRecordsView .admin-form-stacked {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-records-section-head {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Modules Import et Correction integres au langage visuel du portail. */
+#adminImportView > .admin-module-workspace-head,
+#adminCorrectionView > .admin-module-workspace-head {
+  min-height: 0;
+  border: 1px solid #dfe5e7;
+  border-radius: 10px;
+  background: #ffffff;
+}
+
+#adminImportView .admin-module-workspace-head > span,
+#adminCorrectionView .admin-module-workspace-head > span {
+  display: block;
+  color: #0b7285;
+  font-size: 0.74rem;
+  font-weight: 850;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+#adminImportView .admin-module-workspace-head h2,
+#adminCorrectionView .admin-module-workspace-head h2 {
+  margin-top: 4px;
+  color: #263940;
+}
+
+#adminImportView .admin-module-workspace-head p,
+#adminCorrectionView .admin-module-workspace-head p {
+  margin: 4px 0 0;
+  color: #687980;
+  font-size: 0.86rem;
+  line-height: 1.4;
+}
+
+#adminImportView .admin-record-module-status,
+#adminCorrectionView .admin-record-module-status,
+#adminImportView .import-card,
+#adminCorrectionView .import-card {
+  border-color: #dfe5e7;
+  border-radius: 9px;
+  background: #ffffff;
+  box-shadow: none;
+}
+
+#adminImportView .admin-record-module-status,
+#adminCorrectionView .admin-record-module-status {
+  padding: 14px 16px;
+  color: #66777e;
+}
+
+#adminImportView .import-workbench,
+#adminCorrectionView .import-workbench {
+  gap: 14px;
+}
+
+#adminImportView .import-card,
+#adminCorrectionView .import-card {
+  gap: 16px;
+  padding: 17px;
+}
+
+#adminImportView .import-card-head > span,
+#adminImportView .import-card-head > div > span,
+#adminCorrectionView .import-card-head > span,
+#adminCorrectionView .import-card-head > div > span {
+  color: #0b7285;
+  letter-spacing: 0.05em;
+}
+
+#adminImportView .import-card-head strong,
+#adminCorrectionView .import-card-head strong {
+  color: #263940;
+}
+
+#adminImportView .import-card-head p,
+#adminCorrectionView .import-card-head p {
+  color: #687980;
+  line-height: 1.45;
+}
+
+#adminImportView .competition-import-form label,
+#adminImportView .competition-import-history-filters label,
+#adminCorrectionView .performance-correction-search label,
+#adminCorrectionView .performance-correction-grid label,
+#adminCorrectionView .performance-correction-reason {
+  color: #52646b;
+}
+
+#adminImportView .competition-import-form input,
+#adminImportView .competition-import-form select,
+#adminImportView .competition-import-history-filters input,
+#adminImportView .competition-import-history-filters select,
+#adminCorrectionView .performance-correction-search input,
+#adminCorrectionView .performance-correction-search select,
+#adminCorrectionView .performance-correction-grid input,
+#adminCorrectionView .performance-correction-reason textarea,
+#adminCorrectionView .performance-correction-split input {
+  min-height: 40px;
+  border-color: #d5dde0;
+  border-radius: 7px;
+  color: #263940;
+  background: #fbfcfd;
+}
+
+#adminImportView .competition-import-form input:focus,
+#adminImportView .competition-import-form select:focus,
+#adminImportView .competition-import-history-filters input:focus,
+#adminImportView .competition-import-history-filters select:focus,
+#adminCorrectionView .performance-correction-search input:focus,
+#adminCorrectionView .performance-correction-search select:focus,
+#adminCorrectionView .performance-correction-grid input:focus,
+#adminCorrectionView .performance-correction-reason textarea:focus,
+#adminCorrectionView .performance-correction-split input:focus {
+  border-color: #6eb4bc;
+  box-shadow: 0 0 0 3px rgba(11, 114, 133, 0.1);
+}
+
+#adminImportView .nap-import-review-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--admin-border, #dce5e9);
+  overflow-wrap: anywhere;
+}
+
+#adminImportView .nap-import-review-row input[type="text"] {
+  width: min(100%, 220px);
+  box-sizing: border-box;
+}
+
+#adminImportView .import-summary-grid div {
+  border-color: #e0e6e8;
+  border-radius: 8px;
+  background: #f8fafb;
+}
+
+#adminImportView .import-table-wrap,
+#adminCorrectionView .import-table-wrap {
+  border-color: #e0e6e8;
+  border-radius: 8px;
+}
+
+#adminImportView .import-preview-table th,
+#adminCorrectionView .import-preview-table th {
+  border-color: #e5eaec;
+  color: #66777e;
+  background: #f6f8f9;
+}
+
+#adminImportView .import-preview-table td,
+#adminCorrectionView .import-preview-table td {
+  border-color: #e8ecee;
+}
+
+#adminImportView .competition-import-history-filters {
+  padding: 13px;
+  border: 1px solid #e2e7e9;
+  border-radius: 8px;
+  background: #f8fafb;
+}
+
+#adminImportView .competition-import-row {
+  border-color: #e0e6e8;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+#adminImportView .competition-import-row summary:hover,
+#adminImportView .competition-import-row summary:focus-visible {
+  background: #f1f7f8;
+}
+
+#adminImportView .super-admin-maintenance {
+  border-color: #c9e0dc;
+  background: #f5faf9;
+}
+
+#adminImportView .advanced-tools-summary::after {
+  color: #075866;
+  background: #e4f3f5;
+}
+
+#adminCorrectionView .performance-correction-suggestions button,
+#adminCorrectionView .performance-correction-results-button {
+  border-color: #dfe5e7;
+  border-radius: 8px;
+  color: #263940;
+}
+
+#adminCorrectionView .performance-correction-suggestions button:hover,
+#adminCorrectionView .performance-correction-results-button:hover,
+#adminCorrectionView .performance-correction-row:hover,
+#adminCorrectionView .performance-correction-row:focus-visible {
+  border-color: #86c0c7;
+  background: #f1f7f8;
+}
+
+#adminCorrectionView .performance-correction-form {
+  margin-top: 2px;
+  padding: 16px;
+  border: 1px solid #dfe5e7;
+  border-radius: 8px;
+  background: #f8fafb;
+}
+
+#adminCorrectionView .performance-correction-form > .import-card-head-inline {
+  padding-bottom: 13px;
+  border-bottom: 1px solid #e2e7e9;
+}
+
+#adminCorrectionView .performance-correction-split {
+  border-color: #e0e6e8;
+  background: #ffffff;
+}
+
+#adminCorrectionView .danger-button {
+  border-color: #e2aaa5 !important;
+  color: #9f1d16 !important;
+  background: #fff4f3 !important;
+}
+
+@media (max-width: 1120px) {
+  #adminImportView .competition-import-form,
+  #adminCorrectionView .performance-correction-search,
+  #adminCorrectionView .performance-correction-grid,
+  #adminImportView .competition-import-history-filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 680px) {
+  #adminImportView .competition-import-form,
+  #adminCorrectionView .performance-correction-search,
+  #adminCorrectionView .performance-correction-grid,
+  #adminImportView .competition-import-history-filters {
+    grid-template-columns: 1fr;
+  }
+
+  #adminImportView .import-card-head-inline,
+  #adminCorrectionView .import-card-head-inline {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  #adminImportView .import-card-actions,
+  #adminCorrectionView .admin-portal-actions {
+    justify-content: flex-start;
+  }
+}
+
+/* Vues d'accueil du portail et de ses espaces. */
+.admin-portal-overview-view,
+.admin-portal-space-home {
+  display: grid;
+  gap: 16px;
+}

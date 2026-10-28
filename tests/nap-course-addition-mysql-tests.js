@@ -1,6 +1,6 @@
 "use strict";
 // Explicit isolated integration test, never part of an online business recipe.
-const assert=require("node:assert/strict"),fs=require("node:fs"),vm=require("node:vm");
+const assert=require("node:assert/strict"),fs=require("./helpers/source-files"),vm=require("node:vm");
 const mysql=require("../functions/node_modules/mysql2/promise");
 const native=require("../functions/nap-portal-competitions");
 const workspaces=require("../functions/nap-portal-workspaces");

@@ -1,6 +1,6 @@
 "use strict";
 const assert = require("node:assert/strict");
-const fs = require("node:fs");
+const fs = require("./helpers/source-files");
 const { listHistory } = require("../functions/access-request-history");
 const ui = require("../assets/livepalmes-access-request-history");
 class HttpsError extends Error { constructor(code, message) { super(message); this.code = code; } }

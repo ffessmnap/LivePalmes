@@ -1,4 +1,5 @@
 "use strict";
+const { positiveId, date, text, publicUrl } = require("./nap-calendar-values");
 const {visiblePerformanceSql}=require("./nap-performance-visibility");
 const rules = require("./nap-performance-normalization");
 const MAX_EVENTS = 500;
@@ -6,25 +7,10 @@ const MAX_DOCUMENTS = 100;
 const MAX_PROGRAM = 300;
 const MAX_RESULTS = 5000;
 const nativeLevel = value => ({0:"departemental",1:"regional",2:"national",3:"national",4:"national",5:"national",6:"regional",7:"national",8:"international"})[value == null ? "" : String(value)] || "";
-function positiveId(input) {
-  const value = String(input ?? "").replace(/^legacy-nap-/, "");
-  if (!/^[1-9][0-9]{0,9}$/.test(value) || Number(value) > 2147483647) throw new TypeError("Competition invalide.");
-  return Number(value);
-}
-function date(value) { return /^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$/.test(String(value || "")) ? String(value) : ""; }
-function text(value) {
-  const entities = { amp: "&", apos: "'", quot: '"', eacute: "é", egrave: "è", ecirc: "ê", agrave: "à", ccedil: "ç", nbsp: " " };
-  return String(value ?? "").replace(/&([a-z]+);/gi, (match, name) => entities[name.toLowerCase()] || match).trim();
-}
-function publicUrl(value) {
-  const input = text(value);
-  if (!input || /^\/\//.test(input) || /[\u0000-\u001f]/.test(input)) return "";
-  try {
-    const url = new URL(input, "https://nap.ffessm.fr/");
-    if (url.protocol === "http:" && url.hostname === "nap.ffessm.fr") url.protocol = "https:";
-    return url.protocol === "https:" && !url.username && !url.password ? url.href : "";
-  } catch (_) { return ""; }
-}
+
+
+
+
 function eventFromRow(row) {
   const name = text(row.libelle), kind = text(row.type_label);
   // Preserve the existing calendar classification for legacy default pool codes.

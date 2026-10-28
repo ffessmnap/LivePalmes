@@ -1,6 +1,6 @@
 'use strict';
 // Local fixtures only: all requests outside the synthetic origin are blocked.
-const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
+const assert=require('node:assert/strict'),fs=require("./helpers/source-files"),path=require('node:path');
 const {chromium}=require('playwright');
 const portal=fs.readFileSync('portail.html','utf8');
 const portalCode=fs.readFileSync('assets/livepalmes-admin-portal.js','utf8');

@@ -1,6 +1,6 @@
 "use strict";
 // Real module and portal markup, synthetic accounts; all network is blocked.
-const fs = require("node:fs"), path = require("node:path"), assert = require("node:assert/strict");
+const fs = require("./helpers/source-files"), path = require("node:path"), assert = require("node:assert/strict");
 const { chromium } = require("playwright");
 async function main() {
   const out = path.resolve("outputs/access-request-history"); fs.mkdirSync(out, { recursive: true });
