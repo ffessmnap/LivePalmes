@@ -17,6 +17,7 @@ on:
         default: ''
 permissions:
   contents: read
+  actions: read
 concurrency:
   group: livepalmes-production
   cancel-in-progress: false
@@ -35,8 +36,11 @@ jobs:
         with:
           persist-credentials: false
       - name: Verifier le candidat et les tests hors reseau
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           test "$EXPECTED_COMMIT" = "$GITHUB_SHA"
+          gh run list --workflow livepalmes-verification-preview.yml --commit "$GITHUB_SHA" --event push --status success --limit 10 --json headSha,conclusion --jq '.[] | select(.conclusion == "success") | .headSha' | grep -Fx "$GITHUB_SHA"
           node tests/nap-club-account-emails-tests.js
       - uses: actions/setup-node@v7
         with:
