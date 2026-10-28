@@ -3,6 +3,10 @@
   // Creating this module performs no reads, writes, listener registration or rendering.
   function create(portalContext) {
     const { state: portalState, actions: portalActions, config: portalConfig } = portalContext;
+    function bindEngagementClubPeopleRetry() {
+        portalContext.elements.engagementsClubPeopleRetry?.addEventListener("click", () => portalActions.loadEngagementClubPeople({ force: true }));
+      }
+
     function init() {
         portalActions.initializePortalNavigationLabels();
         if (!portalState.engagementDeadlineCountdownTimer) {
@@ -15,6 +19,7 @@
         portalActions.populateEngagementSeasonFilter();
         const auth = portalActions.ensureAdminAuth();
         portalActions.updateView(auth?.status?.() || {});
+        bindEngagementClubPeopleRetry();
         portalContext.elements.form?.addEventListener("submit", portalActions.signIn);
         portalContext.elements.passwordToggle?.addEventListener("click", portalActions.toggleLoginPasswordVisibility);
         portalContext.elements.scopeClubButton?.addEventListener("click", portalActions.openClubSwitchDialog);
@@ -1696,6 +1701,7 @@
       }
 
     return {
+      bindEngagementClubPeopleRetry,
       init
     };
   }
