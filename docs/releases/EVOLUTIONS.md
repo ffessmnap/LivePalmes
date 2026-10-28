@@ -2,6 +2,12 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 28 octobre — Archivage des 25 tables historiques IntraNAP
+
+- Antoine autorise l'archive vérifiée, l'adaptation et les tests avant suppression ; les cinq tables d'import restent dans NAP. [ZIP Drive vérifié](https://drive.google.com/file/d/1TNOF0KLC2IaBj2IWAXGXTmjySMoQYERW/view) et [rapport JSON](https://drive.google.com/file/d/18vxKCUBPlUcUYKR-LEdKey4ahOgEOu8P/view) : 25 structures, 65 930 lignes, comptages/empreintes concordants, copie Drive téléchargée identique. Pas de restauration MySQL isolée testée ni de copie des fichiers externes désignés par les lignes.
+- Adaptation des fusions, contrôles de suppression des clubs/compétitions et diagnostics ; données courantes, cinq imports et protections conservés. Aucun accès ajouté ; sept anciennes références club et quatorze références compétition retirées, sept tables de moins dans la fusion. Anciens plans incompatibles refusés avant écriture.
+- Tests ciblés hors réseau réussis avec absence des tables simulée ; CI globale et livraison TEST à attester. Aucune suppression des 25 tables, migration ou publication PROD effectuée. NAP étant partagé, vérifier le code PROD adapté avant retrait ; bilan et accord Infra restent nécessaires. [Périmètre, budgets et procédure](../NAP_ARCHIVES_HISTORIQUES.md).
+
 ### 28 octobre — Annuaire NAP des adresses des comptes par club
 
 - Demande d'Antoine : copie automatique compte/club/adresse/état dans NAP et reprise des comptes existants de PROD. Périmètre corrigé explicitement : NAP est commun à TEST et PROD, la synchronisation TEST doit rester désactivée et ne doit jamais alimenter l'annuaire avec des comptes TEST.

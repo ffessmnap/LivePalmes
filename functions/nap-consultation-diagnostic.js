@@ -23,13 +23,7 @@ async function inspectReadOnly(pool) {
     importClubMappings.push(...links.map(link=>({table,id:link.id,competitionId:link.compet,clubId:link.club,label:link.abre_club,matchingPerformances:rows.filter(row=>String(row.club)===String(link.id)&&String(row.compet)===String(link.compet)).length})));
   }
   const historicalClubReferences=[];
-  for(const table of ["old_club","clubs_cnnp"]){
-    const columns=importSchema.filter(row=>row.TABLE_NAME===table);
-    if(!ids.length||!["clubID","clubAbr","clubNum","EnapId"].every(name=>columns.some(row=>row.COLUMN_NAME===name))||!columns.some(row=>row.COLUMN_NAME==="clubID"&&row.COLUMN_KEY==="PRI"))continue;
-    const [links]=await pool.execute({sql:`SELECT h.clubID,h.clubAbr,h.clubNum,h.EnapId,cl.num_club,cl.abre_club FROM ${table} h FORCE INDEX (PRIMARY) LEFT JOIN clubs cl ON cl.num_club=h.EnapId WHERE h.clubID IN (${ids.map(()=>"?").join(",")}) ORDER BY h.clubID LIMIT 5001`,timeout:10000},ids);
-    if(links.length>5000)throw new RangeError("References historiques trop volumineuses.");
-    historicalClubReferences.push(...links.map(link=>({table,rawClub:String(link.clubID),historicalLabel:link.clubAbr,federalNumber:link.clubNum,nativeClubId:link.EnapId,resolvedClubId:link.num_club,resolvedLabel:link.abre_club,nativeRows:groups.get(String(link.clubID))?.count||0})));
-  }
+  // Historical club sources are archived; preserve the diagnostic response shape.
   // Fixed counterexample supplied by Antoine: Quentin, 27.80, 03/02/2008.
   // Two bounded indexed reads, independent of the size of the whole database.
   const competitionSql="SELECT STRAIGHT_JOIN p.id,p.nageur,p.club,n.club AS currentClub,cp.abre_club AS performanceClubLabel,cn.abre_club AS currentClubLabel FROM perfs p FORCE INDEX (livepalmes_compet_id) LEFT JOIN nageurs n ON n.id=p.nageur LEFT JOIN clubs cp ON cp.num_club=p.club AND CAST(cp.num_club AS CHAR)=p.club LEFT JOIN clubs cn ON cn.num_club=n.club AND CAST(cn.num_club AS CHAR)=n.club WHERE p.compet=? ORDER BY p.id LIMIT 5001";
@@ -66,14 +60,8 @@ async function inspectReadOnly(pool) {
   const relaySources=await secondary("relays","SELECT id,club,distance,nageur1,nageur2,nageur3,nageur4,tps1,tps2,tps3,tps4 FROM perfs_relais FORCE INDEX (livepalmes_compet_id) WHERE compet=3589 AND (nageur1=912 OR nageur2=912 OR nageur3=912 OR nageur4=912) ORDER BY id LIMIT 1001",1000);
   const changeSources=await secondary("changes","SELECT performance_id,action,status,created_at,COALESCE(JSON_UNQUOTE(JSON_EXTRACT(before_image,'$.row.club')),JSON_UNQUOTE(JSON_EXTRACT(before_image,'$.club'))) AS beforeClub,COALESCE(JSON_UNQUOTE(JSON_EXTRACT(after_image,'$.row.club')),JSON_UNQUOTE(JSON_EXTRACT(after_image,'$.club'))) AS afterClub FROM livepalmes_performance_changes WHERE performance_id IN (434019,434020,434021,434390,63719) ORDER BY performance_id,created_at LIMIT 101",100);
   const importClubLines=await secondary("importClubLines","SELECT id,compet,pre,LEFT(txt,512) AS clubLine FROM txt_import WHERE compet IN (275,3589) AND pre='CLU' ORDER BY compet,id LIMIT 1001",1000);
-  const [secondarySchema]=await pool.execute({sql:"SELECT TABLE_NAME,COLUMN_NAME,COLUMN_TYPE,COLUMN_KEY FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME IN ('cnc_nageurs','cnc_items','cnc_summaries','cnc_club') ORDER BY TABLE_NAME,ORDINAL_POSITION LIMIT 201",timeout:10000});
-  if(secondarySchema.length>200)throw new RangeError("Sources championnat trop volumineuses.");
-  const cncColumns=secondarySchema.filter(row=>row.TABLE_NAME==="cnc_nageurs");
-  let championshipSources=[];
-  if(cncColumns.some(row=>row.COLUMN_NAME==="nageur"&&["PRI","MUL"].includes(row.COLUMN_KEY))){
-    const projection=["id","nageur","club","bestcompet","year","annee","saison","course","tps"].filter(name=>cncColumns.some(row=>row.COLUMN_NAME===name)).map(name=>`\`${name}\``).join(",");
-    championshipSources=await secondary("championship",`SELECT ${projection} FROM cnc_nageurs FORCE INDEX (livepalmes_nageur_id) WHERE nageur IN (912,680) ORDER BY nageur,id LIMIT 101`,100);
-  }
+  // Archived CNC sources are no longer queried; retained import sources remain available.
+  const secondarySchema=[],championshipSources=[];
   const rowProvenance={screenshotRows,previousRows,competitionImportClubs,provenanceSchema,clubReferenceColumns,relaySources,changeSources,importClubLines,secondarySchema,championshipSources,secondaryPlans,secondaryErrors};
   const top=queryFor({course:"100SF",sex:"M",limit:5000});
   let topPlan,topPlanError;

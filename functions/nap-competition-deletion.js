@@ -46,7 +46,7 @@ function summary(plan){
  const count=table=>plan.cleanup.find(r=>r.table===table)?.rows.length||0;
  const detailed=plan.cleanup.find(r=>r.table==="livepalmes_competition_programs")?.rows[0] || plan.cleanup.find(r=>r.table==="livepalmes_calendar_event_details")?.rows[0];
  return {ok:true,source:"nap",competitionId:`legacy-nap-${plan.competitionId}`,expectedFingerprint:digest(plan),name:plan.competition.libelle,
-  documents:count("documents")+count("compet_file")+Number(Boolean(plan.competition.filepdf))+Number(Boolean(plan.competition.filetxt)),
+  documents:count("documents")+Number(Boolean(plan.competition.filepdf))+Number(Boolean(plan.competition.filetxt)),
   courses:count("compet_courses"),programSessions:count("winpalme_sessions"),programCourses:count("winpalme_courses"),detailedProgram:Boolean(detailed),
   warning:"La competition, ses documents rattaches, son programme et ses parametres seront retires. Cette action est irreversible."};
 }
