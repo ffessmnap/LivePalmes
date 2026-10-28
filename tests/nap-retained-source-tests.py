@@ -59,6 +59,7 @@ def target_proof():
              'toolingCommit': 'a' * 40, 'mailSettingUnchanged': True, 'schedulerUnchanged': True,
              'queueUnchanged': True, 'configurationsUnchanged': True,
              'testWrapperPreserved': True, 'sourceArchiveSha256': 'a' * 64,
+             'pendingMessagesPreserved': True, 'taskContentsRead': False,
              'currentTestState': copy.deepcopy(p.contract()['testBefore'])}
     rows = []
     for f in value['currentTestState']['functions']:
@@ -73,12 +74,11 @@ class Complement(unittest.TestCase):
     def test_forbidden_read_is_named_without_token_or_payload(self):
         from unittest.mock import MagicMock
         import contextlib
-        values = [{'fields': {'enabled': {'booleanValue': False}}}, {'state': 'PAUSED'},
-                  {'state': 'PAUSED'}, None, {}]
+        values = [{'fields': {'enabled': {'booleanValue': False}}}, {'state': 'PAUSED'}, None, {}]
         calls = []
         def fetch(req, **kwargs):
             calls.append((req.full_url, req.get_method()))
-            if '/tasks?' in req.full_url:
+            if '/queues/' in req.full_url:
                 raise urllib.error.HTTPError(req.full_url, 403, 'private-response', {}, None)
             value = values[len(calls) - 1]
             response = MagicMock()
@@ -91,11 +91,12 @@ class Complement(unittest.TestCase):
             with patch.dict(os.environ, {'GOOGLE_APPLICATION_CREDENTIALS': str(credential)}), \
                     patch.object(publisher.subprocess, 'check_output', return_value='private-token'), \
                     patch.object(publisher.urllib.request, 'urlopen', side_effect=fetch), contextlib.redirect_stdout(output):
-                with self.assertRaisesRegex(ValueError, 'tasks=HTTP 403'):
+                with self.assertRaisesRegex(ValueError, 'queue=HTTP 403'):
                     publisher.controls('livepalmes-test')
-        self.assertEqual(len(calls), 5)
+        self.assertEqual(len(calls), 4)
         self.assertTrue(all(method == 'GET' for _, method in calls))
-        self.assertIn('"tasks": "HTTP 403"', output.getvalue())
+        self.assertFalse(any('/tasks?' in url for url, _ in calls))
+        self.assertIn('"queue": "HTTP 403"', output.getvalue())
         self.assertNotIn('private-token', output.getvalue())
         self.assertNotIn('private-response', output.getvalue())
 
@@ -177,14 +178,37 @@ class Complement(unittest.TestCase):
         with self.assertRaises(ValueError): p.runtime(function(p.contract()['selected'][0]), 'other-project')
 
     def test_test_fences_never_enable_or_pause_anything(self):
-        args = [{'fields': {'enabled': {'booleanValue': False}}}, {'state': 'PAUSED'}, {'state': 'PAUSED'}, {}, {}]
+        args = [{'fields': {'enabled': {'booleanValue': False}}}, {'state': 'PAUSED'}, {'state': 'PAUSED'},
+                {'documents': [{'name': 'old-closure', 'fields': {'status': {'stringValue': 'pending'}}}]}]
+        original = copy.deepcopy(args)
         p.test_controls(*args)
+        self.assertEqual(args, original)  # Pending messages are preserved, never purged or processed.
         for i, bad in [(0, {'fields': {'enabled': {'booleanValue': True}}}),
                        (1, {'state': 'ENABLED'}), (2, {'state': 'RUNNING'}),
-                       (3, {'tasks': [{'name': 'old-message'}]}), (3, {'nextPageToken': 'more'}),
-                       (4, {'documents': [{'name': 'old-closure'}]})]:
+                       (3, {'documents': [{}] * 101}), (3, {'nextPageToken': 'more'})]:
             changed = copy.deepcopy(args); changed[i] = bad
             with self.subTest(i=i), self.assertRaises(ValueError): p.test_controls(*changed)
+
+    def test_changed_pending_closure_prevents_test_receipt(self):
+        names = p.contract()['testSelected']
+        before = [function(name, 'livepalmes-test') for name in names]
+        after = copy.deepcopy(before)
+        for f in after:
+            f['labels']['livepalmes-commit'] = p.contract()['candidate']
+            f['serviceConfig']['revision'] = 'new-revision'
+        writes = []
+        cycle = SimpleNamespace(require=p.require, run=lambda args, *rest: p.contract()['candidate'] if 'rev-parse' in args else '',
+            read=lambda path: before if path.name == 'before.json' else {'closureSha256': 'old'},
+            api=lambda *a: {'functions': after}, write=lambda *a: writes.append(a))
+        def module(name, file):
+            return cycle if name == 'nap_retained_test_cycle' else s
+        with tempfile.TemporaryDirectory() as directory, patch.object(publisher, 'load', side_effect=module), \
+                patch.object(publisher, 'controls', return_value={'closureSha256': 'changed'}), \
+                patch.dict(os.environ, {'GITHUB_REF': 'refs/heads/main', 'GITHUB_RUN_ATTEMPT': '1',
+                    'CONFIRMATION': 'livepalmes-test', 'TARGET_FIREBASE_PROJECT': 'livepalmes-test'}):
+            with self.assertRaisesRegex(ValueError, 'Reglages TEST modifies'):
+                publisher.test('verify', directory, ROOT)
+        self.assertEqual(writes, [])
 
     def test_targeted_receipt_rejects_unrelated_drift(self):
         info = {'path': p.TEST_WORKFLOW, 'head_sha': 'a' * 40}
