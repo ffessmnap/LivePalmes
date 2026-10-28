@@ -4,7 +4,7 @@ const {createHash}=require("node:crypto");
 const table="livepalmes_swimmer_merges";
 const columns=[["swimmer_id","int"],["target_id","int"],["merged_at","datetime(6)"],["merged_by","varchar(128)"]];
 const indexes=[
-  ...["cnc_edf","cnc_medailles","cnc_nageurs","documents_controles","engagements_relayeurs","nageurs_derogations","nageurs_enf","nageurs_verifications","txt_nageurs"].map(table=>({table,name:"livepalmes_nageur_id",columns:["nageur","id"]})),
+  ...["engagements_relayeurs","txt_nageurs"].map(table=>({table,name:"livepalmes_nageur_id",columns:["nageur","id"]})),
   {table:"livepalmes_qualification_grants",name:"livepalmes_swimmer_compet_event",columns:["swimmer_id","competition_id","event_code"]},
   ...[1,2,3,4].map(n=>({table:"perfs_relais",name:`livepalmes_nageur${n}_id`,columns:[`nageur${n}`,"id"]}))
 ];
@@ -52,7 +52,7 @@ function statements(state){
   return result;
 }
 async function applyApproved(pool,input,backup){
-  if(input?.confirmation!=="approved-swimmer-merge-table-and-14-indexes" || typeof backup!=="function")throw new TypeError("Accord specifique et sauvegarde requis.");
+  if(input?.confirmation!=="approved-swimmer-merge-table-and-7-retained-indexes" || typeof backup!=="function")throw new TypeError("Accord specifique et sauvegarde requis.");
   const connection=await pool.getConnection();let locked=false,safe=true;
   const read=async(sql)=>(await connection.execute({sql,timeout:10000}))[0];
   const idle=async()=>{if((await read("SELECT ID FROM information_schema.PROCESSLIST WHERE COMMAND='Query' AND INFO REGEXP '^[[:space:]]*(INSERT|UPDATE|DELETE|REPLACE|LOAD|ALTER|DROP|CREATE|TRUNCATE)[[:space:]]' LIMIT 1")).length)throw new TypeError("Ecriture active : ajout differe.");};
