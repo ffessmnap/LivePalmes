@@ -1,0 +1,58 @@
+name: Completer les sept sources NAP TEST sans envoi
+on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: Saisir livepalmes-test ; mails coupes, scheduler et file deja suspendus
+        required: true
+        type: string
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: livepalmes-test-backend
+  cancel-in-progress: false
+jobs:
+  sources:
+    if: github.ref == 'refs/heads/main' && github.run_attempt == 1 && inputs.confirmation == 'livepalmes-test'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    environment: firebase-test
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      TARGET_FIREBASE_PROJECT: livepalmes-test
+      CONFIRMATION: ${{ inputs.confirmation }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          path: tooling
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/checkout@v7
+        with:
+          path: candidate
+          ref: 67d40e84cf9713403614f77bb53067cd449510a7
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+      - name: Verifier les gardes du complement
+        run: python tooling/tests/nap-retained-source-tests.py
+      - uses: google-github-actions/auth@v3
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_TEST_BACKEND }}
+          project_id: livepalmes-test
+      - uses: google-github-actions/setup-gcloud@v3
+      - name: Authentifier TEST et refuser toute execution automatique
+        run: python tooling/tools/nap-retained-sources.py prepare "$RUNNER_TEMP/nap-sources" candidate
+      - name: Actualiser seulement les sept sources existantes
+        run: python tooling/tools/nap-retained-sources.py deploy "$RUNNER_TEMP/nap-sources" candidate
+      - name: Verifier les sources et toutes les exclusions
+        run: python tooling/tools/nap-retained-sources.py verify "$RUNNER_TEMP/nap-sources" candidate
+      - uses: actions/upload-artifact@v4
+        with:
+          name: test-backend-proof
+          path: ${{ runner.temp }}/nap-sources/test-backend-proof.json
+          if-no-files-found: error
+          retention-days: 14

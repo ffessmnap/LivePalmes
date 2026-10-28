@@ -98,6 +98,12 @@ def main(directory, run_id, kind):
         if kind == 'backend' and selected:
             state = load('readiness_state', 'production-release-state.py')
             functions = state.inventory()
+            if cycle.nap_retained.approved(request):
+                for function in functions:
+                    if function['name'].split('/')[-1] in selected:
+                        cycle.nap_retained.runtime(function)
+                load('nap_retained_readiness', 'nap-retained-sources.py').guard(directory)
+                report['napRetainedSources'] = {'sourceOnly': True, 'mailPause': False, 'configurationChanges': False}
             if cycle.approved_license_report_functions(request):
                 for function in functions:
                     if function['name'].split('/')[-1] == cycle.license_release.NAME:
