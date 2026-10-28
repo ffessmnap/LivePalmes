@@ -6,6 +6,7 @@ const CREATE_SQL = `CREATE TABLE ${TABLE} (
   email VARCHAR(254) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL,
   status ENUM('active','inactive','deleted') NOT NULL,
   competition_notifications TINYINT UNSIGNED NOT NULL DEFAULT 0,
+  source_version BIGINT UNSIGNED NOT NULL DEFAULT 0,
   synchronized_at TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
   PRIMARY KEY (firebase_uid),
   KEY club_status (club_id, status)
@@ -21,9 +22,10 @@ async function inspect(pool) {
     ["email", "varchar(254)", "YES", "utf8mb4_bin"],
     ["status", "enum('active','inactive','deleted')", "NO", "utf8mb4_bin"],
     ["competition_notifications", "tinyint(3) unsigned", "NO", null],
+    ["source_version", "bigint(20) unsigned", "NO", null],
     ["synchronized_at", "timestamp(6)", "NO", null]
   ];
-  const normalize = type => String(type).replace(/^tinyint(?:\(\d+\))? unsigned$/, "tinyint unsigned");
+  const normalize = type => String(type).replace(/^(tinyint|bigint)(?:\(\d+\))? unsigned$/, "$1 unsigned");
   if (columns.length !== expected.length || columns.some((column, i) =>
     column.COLUMN_NAME !== expected[i][0] || normalize(column.COLUMN_TYPE) !== normalize(expected[i][1]) ||
     column.IS_NULLABLE !== expected[i][2] || column.COLLATION_NAME !== expected[i][3])) {

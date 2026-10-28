@@ -26,7 +26,7 @@ jobs:
     if: github.ref == 'refs/heads/main' && github.run_attempt == 1
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    environment: production
+    environment: firebase-test
     env:
       EXPECTED_COMMIT: ${{ inputs.expected_commit }}
       ACCOUNT_EMAILS_MODE: ${{ inputs.mode }}
@@ -48,15 +48,49 @@ jobs:
           node tests/nap-club-account-emails-tests.js
       - uses: google-github-actions/auth@v3
         with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_TEST_BACKEND }}
+          project_id: livepalmes-test
+      - uses: google-github-actions/setup-gcloud@v3
+      - name: Inspecter NAP via la maintenance privee existante sans ecriture
+        env:
+          ACCOUNT_EMAILS_PHASE: inspect
+        run: node tools/rebuild-nap-club-account-emails.js
+      - uses: google-github-actions/auth@v3
+        with:
           credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_BACKEND }}
           project_id: livepalmes
-      - uses: google-github-actions/setup-gcloud@v3
-      - name: Inventorier ou reprendre uniquement les profils PROD sans envoi
+      - name: Lire uniquement les profils PROD et verifier leur sauvegarde chiffree
+        env:
+          ACCOUNT_EMAILS_PHASE: export
+        run: node tools/rebuild-nap-club-account-emails.js
+      - uses: google-github-actions/auth@v3
+        if: inputs.mode == 'apply'
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_TEST_BACKEND }}
+          project_id: livepalmes-test
+      - name: Sauvegarder la projection existante sans ecriture
+        if: inputs.mode == 'apply'
+        env:
+          ACCOUNT_EMAILS_PHASE: prepare
+        run: node tools/rebuild-nap-club-account-emails.js
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nap-club-account-emails-before
+          path: outputs/nap-club-account-emails/*.enc
+          if-no-files-found: error
+          retention-days: 90
+      - name: Creer et reprendre la projection PROD par pages sans envoi
+        if: inputs.mode == 'apply'
+        env:
+          ACCOUNT_EMAILS_PHASE: apply
         run: node tools/rebuild-nap-club-account-emails.js
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: nap-club-account-emails-receipt
-          path: outputs/nap-club-account-emails-*.json
+          path: outputs/nap-club-account-emails/*-receipt.json
           if-no-files-found: ignore
           retention-days: 90
+      - name: Effacer les seuls fichiers locaux non chiffres
+        if: always()
+        run: node -e 'const fs=require("fs");for(const name of ["source.json","target.json","before.json"])fs.rmSync("outputs/nap-club-account-emails/"+name,{force:true})'
