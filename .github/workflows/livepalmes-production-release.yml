@@ -118,6 +118,7 @@ jobs:
         python tooling/tests/publication-fast-paths-tests.py
         python tooling/tests/release-simplification-tests.py
         python tooling/tests/license-report-release-tests.py
+        python tooling/tests/nap-retained-source-tests.py
         node tooling/tests/license-report-source-guard-tests.js
     - uses: google-github-actions/auth@v3
       if: inputs.resume_run == '0'
@@ -272,6 +273,7 @@ jobs:
           ${{ runner.temp }}/release-plan/public-reader-idf-*.json
           ${{ runner.temp }}/release-plan/notification-scheduler-before.json
           ${{ runner.temp }}/release-plan/license-report-*.json
+          ${{ runner.temp }}/release-plan/nap-retained-*.json
         if-no-files-found: error
         retention-days: 14
     - uses: google-github-actions/auth@v3
