@@ -57,6 +57,15 @@ def check_after(backup, destination, require_success):
         if sorted(report['additionalBccFunctions']) != bcc_policy.contract()['selected']:
             raise ValueError('Selection CCI du rapport differente')
     errors = []
+    nap_policy = None
+    if report.get('additionalNapRetainedFunctions'):
+        spec = importlib.util.spec_from_file_location('nap_retained_state_policy', Path(__file__).with_name('nap-retained-source-policy.py'))
+        nap_policy = importlib.util.module_from_spec(spec); spec.loader.exec_module(nap_policy)
+        c = nap_policy.contract()
+        nap_policy.require(report['additionalNapRetainedFunctions'] == c['selected']
+            and report['candidate'] == c['candidate'] and len(before) == c['inventoryCount']
+            and selected == {PREFIX + n for n in c['selected']} and not report['newFunctions'],
+            'Rapport complement NAP hors contrat')
     for name in set(before) - selected:
         if name not in after or identity(before[name]) != identity(after[name]):
             errors.append("Function exclue modifiee: " + name.split("/")[-1])
@@ -64,6 +73,11 @@ def check_after(backup, destination, require_success):
         f = after.get(name)
         if not f or f.get("state") != "ACTIVE":
             errors.append("Function non active: " + name.split("/")[-1])
+        elif nap_policy is not None:
+            try:
+                nap_policy.assert_config(before[name], f, SimpleNamespace(rollback_patch=rollback_patch))
+            except ValueError as error:
+                errors.append(str(error) + ': ' + name.split('/')[-1])
         elif bcc_policy is not None and name.split('/')[-1] in report['additionalBccFunctions']:
             try:
                 if name.split('/')[-1] == bcc_policy.contract()['worker']:

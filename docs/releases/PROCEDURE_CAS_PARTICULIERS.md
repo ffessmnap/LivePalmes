@@ -4,6 +4,14 @@
 
 La [procedure courante](PROCEDURE.md) reste le point d’entree. Ces details ne donnent aucune autorisation nouvelle ; les contrats executables et leurs controles restent inchanges.
 
+## Complément des quinze sources NAP — 28 octobre
+
+L'exception indépendante `napRetainedSourceRelease` reste limitée au candidat déjà publié `67d40e84`, à PROD40737157891, aux quinze origines du contrat `20261028-nap-retained-sources-contract.json` et aux preuves TEST commune40720254183, NAP40720490400 et sept sources complémentaires authentifiées. Elle n'ajoute aucune fonction publique absente et n'étend pas le circuit ordinaire. Le diff applicatif Hosting reste vide ; l'écart porte sur les révisions serveur conservées lors de la publication précédente.
+
+Le lot TEST exige des protections déjà en place : mails coupés, scheduler et file Cloud Tasks suspendus, absence de tâche et de clôture en attente. Il ne modifie aucun réglage ni message. La source TEST conserve un point d'entrée réservé au projet TEST et l'enregistrement limité aux secrets déjà liés. Tout défaut de preuve ou changement d'état bloque avant écriture ; une reprise partielle TEST exige un nouvel examen.
+
+En PROD, seuls source et label du candidat changent ; configuration complète et déclencheurs restent strictement identiques. Mails tous clubs actifs, scheduler horaire et configuration de file sont relus avant/après, sans rattrapage ni invocation. Les 98 autres révisions restent inchangées. Sauvegarde chiffrée rouverte et comparée, contrôle frais, parallélisme trois et reprise attestée du circuit existant conservés. Le plan final précis et l'accord Infra restent requis avant publication.
+
 ## Contrôleur des bilans licences — candidat figé du 27 octobre
 
 Le contrat indépendant du28octobre (`20261028-license-closure-contract.json`) promeut ensuite25b9a6fa depuis0421f490 : seule la source du même contrôleur est sélectionnée, avec112identités conservées. Il réutilise les gardes de configuration et de mails actifs, sans modifier le contrat précédent. Le stockage est déjà NAP et l’adaptateur SQL est inchangé ; aucune attente de transition Firestore n’est ajoutée. Les validations de clôture #596 et du titre #597, la preuve TEST40588600834 et l’accord PROD Infra du28octobre bornent ce lot.
