@@ -3654,6 +3654,23 @@ async function engagementActiveMailRecipients(input0) {
   return serverMailService().engagementActiveMailRecipients(...arguments);
 }
 
+// Isolate NAP retries from existing recipient indexes; TEST never opens shared NAP.
+const syncNapClubAccountEmail = require("./nap-club-account-emails").createSynchronizer({
+  projectId: ENVIRONMENT.projectId,
+  createPool: () => createNapPool(defineSecret("LIVEPALMES_NAP_PASSWORD").value()),
+  db
+});
+
+exports.syncNapClubAccountEmails = onDocumentWritten({
+  region: REGION,
+  ...(ENVIRONMENT.projectId === "livepalmes" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}),
+  document: "users/{uid}",
+  retry: true
+}, async (event) => {
+  if (!event.params?.uid) return;
+  await syncNapClubAccountEmail(event.params.uid);
+});
+
 exports.syncEngagementMailRecipientIndex = onDocumentWritten({
   region: REGION,
   document: "users/{uid}",
