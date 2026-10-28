@@ -109,6 +109,7 @@ jobs:
         python tooling/tests/publication-fast-paths-tests.py
         python tooling/tests/release-simplification-tests.py
         python tooling/tests/license-report-release-tests.py
+        python tooling/tests/nap-retained-source-tests.py
         node tooling/tests/license-report-source-guard-tests.js
     - name: Verifier la preuve de publication TEST
       run: |-

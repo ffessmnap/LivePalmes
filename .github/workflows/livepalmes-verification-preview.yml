@@ -185,6 +185,7 @@ jobs:
           python tests/publication-fast-paths-tests.py
           python tests/release-simplification-tests.py
           python tests/license-report-release-tests.py
+          python tests/nap-retained-source-tests.py
           node tests/license-report-source-guard-tests.js
 
       - name: Enregistrer la verification du circuit main exact
