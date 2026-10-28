@@ -7,6 +7,7 @@ from pathlib import Path
 import tempfile
 import io
 import zipfile
+import urllib.error
 from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
@@ -69,6 +70,35 @@ def target_proof():
 
 
 class Complement(unittest.TestCase):
+    def test_forbidden_read_is_named_without_token_or_payload(self):
+        from unittest.mock import MagicMock
+        import contextlib
+        values = [{'fields': {'enabled': {'booleanValue': False}}}, {'state': 'PAUSED'},
+                  {'state': 'PAUSED'}, None, {}]
+        calls = []
+        def fetch(req, **kwargs):
+            calls.append((req.full_url, req.get_method()))
+            if '/tasks?' in req.full_url:
+                raise urllib.error.HTTPError(req.full_url, 403, 'private-response', {}, None)
+            value = values[len(calls) - 1]
+            response = MagicMock()
+            response.__enter__.return_value.read.return_value = json.dumps(value).encode()
+            return response
+        output = io.StringIO()
+        with tempfile.TemporaryDirectory() as directory:
+            credential = Path(directory) / 'credentials.json'
+            credential.write_text('{"project_id":"livepalmes-test"}')
+            with patch.dict(os.environ, {'GOOGLE_APPLICATION_CREDENTIALS': str(credential)}), \
+                    patch.object(publisher.subprocess, 'check_output', return_value='private-token'), \
+                    patch.object(publisher.urllib.request, 'urlopen', side_effect=fetch), contextlib.redirect_stdout(output):
+                with self.assertRaisesRegex(ValueError, 'tasks=HTTP 403'):
+                    publisher.controls('livepalmes-test')
+        self.assertEqual(len(calls), 5)
+        self.assertTrue(all(method == 'GET' for _, method in calls))
+        self.assertIn('"tasks": "HTTP 403"', output.getvalue())
+        self.assertNotIn('private-token', output.getvalue())
+        self.assertNotIn('private-response', output.getvalue())
+
     def test_test_archive_keeps_project_fence_and_limited_exports(self):
         raw = io.BytesIO()
         with zipfile.ZipFile(raw, 'w') as archive:
