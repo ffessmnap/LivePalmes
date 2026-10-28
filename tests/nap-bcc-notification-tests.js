@@ -142,7 +142,7 @@ async function batches(){
   assert.equal((await delivery.drain(db,ref,services)).reason,'worker-busy-or-paused','one shared SMTP lease across formats');
 }
 async function adapter(){
-  const fs=require('node:fs'),vm=require('node:vm'),source=fs.readFileSync('functions/index.js','utf8');
+  const fs=require("./helpers/source-files"),vm=require('node:vm'),source=fs.readFileSync('functions/index.js','utf8');
   const start=source.indexOf('function nativeNotificationTaskServices('),end=source.indexOf('async function enqueueNativeNotificationTask(',start);
   let captured,transports=0;
   const sandbox={ENVIRONMENT:{projectId:'livepalmes',hostingOrigin:'https://example.org'},db:{},

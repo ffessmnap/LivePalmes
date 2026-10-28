@@ -1,5 +1,5 @@
 "use strict";
-const assert=require("node:assert/strict"),fs=require("node:fs"),{chromium}=require("playwright"),{archive}=require("./winpalme-zip-tests");
+const assert=require("node:assert/strict"),fs=require("./helpers/source-files"),{chromium}=require("playwright"),{archive}=require("./winpalme-zip-tests");
 const {clubFixture}=require("./fixtures/nap-import-clubs-fixture"),{previewNativeImport}=require("../functions/nap-import-preview"),{importPreviewResponse}=require("../functions/nap-import-response");
 const portal=fs.readFileSync("portail.html","utf8");
 (async()=>{
@@ -15,7 +15,7 @@ const portal=fs.readFileSync("portail.html","utf8");
   });
   await page.route("**/*",r=>r.abort());await page.route("https://fixture.test/**",r=>r.fulfill({contentType:"text/html",body:'<!doctype html><html lang="fr"><head><meta charset="utf-8"></head><body class="admin-portal-page"></body></html>'}));await page.goto("https://fixture.test/portail.html#import-competitions");
   await page.evaluate(html=>{const doc=new DOMParser().parseFromString(html,"text/html");document.body.append(doc.querySelector("#adminImportView"));document.querySelector("#adminImportView").hidden=false;window.LivePalmesEnvironment={sportingDataSource:"nap"};window.LivePalmesAppConfig={firebaseConfig:{}};window.LivePalmesPortalAuth={onChange:()=>{},status:()=>({signedIn:true,available:true}),isAdminAuthenticated:()=>true};const service={httpsCallable:name=>async payload=>({data:await fixtureCall(name,payload)})};window.firebase={initializeApp:()=>{},apps:[{}],app:()=>({functions:()=>service}),functions:()=>service};},portal);
-  for(const file of ["styles.css","assets/livepalmes-admin-portal.css","performances/public/import-competitions.css"])await page.addStyleTag({path:file});
+  for(const file of ["styles.css","assets/livepalmes-admin-portal.css","performances/public/import-competitions.css"])await page.addStyleTag({content:fs.readFileSync(file,"utf8")});
   await page.addScriptTag({path:"assets/livepalmes-portal-ux.js"});
   for(const file of ["winpalme-zip","import-confirmation-message","import-swimmer-creation","import-swimmer-review","import-competitions"])await page.addScriptTag({path:`performances/public/${file}.js`});
   const raw=f.input.rawText.split("\n").filter(line=>!/^NAG;|^REL;/.test(line)||line.startsWith("NAG;TEST;")).join("\n");

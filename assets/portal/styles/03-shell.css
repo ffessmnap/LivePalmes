@@ -1,0 +1,1008 @@
+
+
+.admin-portal-page .admin-portal-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  gap: 14px;
+  padding: 6px max(var(--portal-page-gutter), calc((100vw - var(--portal-shell-max)) / 2));
+  border-color: var(--portal-color-header-border);
+  background: rgba(255, 255, 255, 0.97);
+  box-shadow: 0 1px 0 rgba(18, 49, 45, 0.03);
+  backdrop-filter: blur(10px);
+}
+
+.admin-portal-page .admin-portal-topbar h1 {
+  color: var(--portal-color-brand);
+  font-size: clamp(1.18rem, 2vw, 1.45rem);
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.admin-portal-page .admin-portal-brand {
+  gap: 4px;
+}
+
+.admin-portal-page .admin-portal-federal-logo {
+  width: 72px;
+}
+
+.admin-portal-page .admin-portal-livepalmes-logo {
+  width: 42px;
+}
+
+.admin-portal-page .admin-portal-account-menu > button {
+  min-height: 40px;
+  border-color: var(--portal-color-field-border);
+  color: #31454c;
+}
+
+.admin-portal-page .admin-portal-account-menu > button:hover,
+.admin-portal-page .admin-portal-account-menu > button[aria-expanded="true"] {
+  border-color: var(--portal-color-hover-border);
+  background: #eef7f8;
+}
+
+.admin-portal-page .admin-portal-shell,
+.admin-portal-page.performance-admin-page .admin-portal-shell {
+  width: min(var(--portal-shell-max), calc(100% - var(--portal-page-gutter) - var(--portal-page-gutter)));
+  margin: 18px auto 40px;
+  padding: 0;
+}
+
+.admin-portal-page .admin-portal-layout {
+  grid-template-columns: 232px minmax(0, 1fr);
+  gap: 20px;
+}
+
+.admin-portal-page .admin-portal-login,
+.admin-portal-page .admin-portal-session,
+.admin-portal-page .admin-portal-card,
+.admin-portal-page .admin-access-preview,
+.admin-portal-page .admin-access-list-panel,
+.admin-portal-page .admin-portal-account-view,
+.admin-portal-page .admin-portal-access-view,
+.admin-portal-page .admin-portal-engagements-view,
+.admin-portal-page .admin-portal-dtn-view,
+.admin-portal-page .admin-portal-records-view > .admin-portal-workspace-head,
+.admin-portal-page .admin-portal-import-view > .admin-portal-workspace-head {
+  border-color: #dfe5e7;
+  border-radius: 10px;
+  box-shadow: none;
+}
+
+.admin-portal-page .admin-portal-login {
+  box-shadow: 0 12px 32px rgba(20, 48, 58, 0.08);
+}
+
+.admin-portal-page .admin-portal-sidebar {
+  top: 62px;
+  padding: 12px 10px;
+  border: 0;
+  border-right: 1px solid var(--portal-color-border);
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.admin-portal-page .admin-portal-nav,
+.admin-portal-page .admin-portal-sidebar.is-open .admin-portal-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.admin-portal-page .admin-portal-nav-group {
+  flex: 0 0 auto;
+}
+
+.admin-portal-page .admin-portal-nav-group[hidden] {
+  display: none;
+}
+
+.admin-portal-page .admin-portal-nav-group.admin-portal-nav-footer {
+  margin-top: auto;
+  padding-top: 12px;
+  border-top: 1px solid var(--portal-color-border);
+}
+
+.admin-portal-page .admin-portal-nav-title {
+  padding: 7px 10px 5px;
+  color: #7a888d;
+}
+
+.admin-portal-page .admin-portal-nav-group {
+  gap: 3px;
+  padding-block: 6px;
+}
+
+.admin-portal-page .admin-portal-nav-group + .admin-portal-nav-group:not(.admin-portal-nav-footer) {
+  border-top: 0;
+}
+
+.admin-portal-page .admin-portal-nav-group h2 {
+  padding: 5px 10px 3px;
+  color: #60727b;
+  font-size: 0.67rem;
+  letter-spacing: 0.07em;
+}
+
+.admin-portal-page .admin-portal-nav a,
+.admin-portal-page .admin-portal-nav-parent {
+  box-sizing: border-box;
+  min-height: 44px;
+  border-radius: 7px;
+  padding: 10px;
+  color: #4f6067;
+  font-size: 0.86rem;
+  letter-spacing: normal;
+}
+
+.admin-portal-page .admin-portal-nav a:has(.admin-portal-nav-icon),
+.admin-portal-page .admin-portal-nav-parent {
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  gap: 9px;
+  align-items: center;
+}
+
+.admin-portal-page .admin-portal-nav a:hover,
+.admin-portal-page .admin-portal-nav-parent:hover {
+  background: #f0f6f7;
+}
+
+.admin-portal-page .admin-portal-nav a.active,
+.admin-portal-page .admin-portal-nav a[aria-current="page"] {
+  color: #075866;
+  background: #e8f4f5;
+  box-shadow: none;
+}
+
+.admin-portal-page .admin-portal-nav-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  color: #607780;
+  background: transparent;
+}
+
+.admin-portal-page .admin-portal-nav-icon svg {
+  width: 19px;
+  height: 19px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.admin-portal-page .admin-portal-nav a.active .admin-portal-nav-icon,
+.admin-portal-page .admin-portal-nav a[aria-current="page"] .admin-portal-nav-icon {
+  color: var(--portal-color-accent);
+  background: transparent;
+}
+
+.admin-portal-page .admin-portal-nav-parent > span:last-child {
+  display: inline;
+  color: #87969b;
+  font-size: 1rem;
+  transition: transform 150ms ease;
+}
+
+.admin-portal-page .admin-portal-nav-parent {
+  position: relative;
+  cursor: pointer;
+}
+
+.admin-portal-page .admin-portal-nav-parent[aria-expanded="true"] > span:last-child {
+  transform: rotate(180deg);
+}
+
+.admin-portal-page .admin-portal-nav-parent.active,
+.admin-portal-page .admin-portal-nav-parent[aria-current="page"] {
+  color: var(--portal-color-accent-strong);
+  background: #e8f4f5;
+  box-shadow: none;
+}
+
+.admin-portal-page .admin-portal-nav-parent.active .admin-portal-nav-icon,
+.admin-portal-page .admin-portal-nav-parent[aria-current="page"] .admin-portal-nav-icon {
+  color: var(--portal-color-accent);
+  background: transparent;
+}
+
+.admin-portal-page .admin-portal-nav-submenu {
+  margin-left: 20px;
+  padding-left: 14px;
+  border-left: 1px solid #dce6e8;
+}
+
+.admin-portal-page .admin-portal-nav-submenu > a {
+  min-height: 34px;
+  padding: 6px 9px;
+  color: #607077;
+}
+
+/* Navigation persistante sur ordinateur, défilante sur les petits écrans. */
+@media (min-width: 1081px) {
+  .admin-portal-page .admin-portal-layout {
+    grid-template-columns: 256px minmax(0, 1fr);
+  }
+
+  .admin-portal-page .admin-portal-sidebar {
+    box-sizing: border-box;
+    height: calc(100dvh - var(--portal-sidebar-top, 160px) - 12px);
+    max-height: calc(100dvh - var(--portal-sidebar-top, 160px) - 12px);
+    overflow: hidden;
+  }
+
+  .admin-portal-page .admin-portal-nav {
+    height: 100%;
+    min-height: 0;
+  }
+
+  .admin-portal-page .admin-portal-nav-scroll {
+    flex: 1 1 0;
+    min-height: 0;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    overscroll-behavior-y: contain;
+  }
+
+  .admin-portal-page .admin-portal-nav-group.admin-portal-nav-footer {
+    flex: 0 0 auto;
+    margin-top: 0;
+    background: #fff;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-portal-page .admin-portal-sidebar,
+  .admin-portal-page .admin-portal-nav-pin {
+    transition: none;
+  }
+}
+
+.admin-portal-page .admin-portal-nav-club-link {
+  border-bottom-color: #edf0f1;
+}
+
+.admin-portal-page .admin-portal-workspace {
+  min-width: 0;
+}
+
+.admin-portal-page .admin-portal-workspace-head {
+  padding: 14px 16px;
+}
+
+.admin-portal-page .admin-portal-workspace-head > span {
+  color: #0b7285;
+  letter-spacing: 0.06em;
+}
+
+.admin-portal-page .admin-portal-workspace-head h2 {
+  margin: 4px 0 5px;
+  color: #263940;
+  font-size: clamp(1.25rem, 2.5vw, 1.7rem);
+}
+
+.admin-portal-page .admin-portal-workspace-head p {
+  color: #6b7b81;
+  line-height: 1.45;
+}
+
+.admin-portal-page .admin-records-workspace-head,
+.admin-portal-page .admin-module-workspace-head {
+  min-height: 66px;
+  padding: 14px 16px;
+}
+
+.admin-portal-page .admin-records-workspace-head h2,
+.admin-portal-page .admin-module-workspace-head h2 {
+  margin: 0;
+  font-size: clamp(1.18rem, 2vw, 1.45rem);
+}
+
+.admin-portal-page .admin-account-card,
+.admin-portal-page .admin-engagements-card,
+.admin-portal-page .admin-dtn-toolbar,
+.admin-portal-page .admin-dtn-grid,
+.admin-portal-page .admin-dtn-qualifiers,
+.admin-portal-page .admin-record-module-status,
+.admin-portal-page .import-card {
+  border-color: var(--portal-color-border);
+  border-radius: var(--portal-radius-card);
+  box-shadow: none;
+}
+
+.admin-portal-page .admin-portal-actions button[type="submit"],
+.admin-portal-page .admin-primary-button {
+  background: var(--portal-color-accent);
+}
+
+.admin-portal-page .ghost-button {
+  border-color: #d5dde0;
+  color: #3f535b;
+  background: #ffffff;
+}
+
+.admin-portal-page .ghost-button:hover {
+  border-color: var(--portal-color-hover-border);
+  color: var(--portal-color-accent-strong);
+  background: #eef7f8;
+}
+
+.admin-portal-page button:focus-visible,
+.admin-portal-page a:focus-visible,
+.admin-portal-page input:focus-visible,
+.admin-portal-page select:focus-visible,
+.admin-portal-page textarea:focus-visible {
+  outline: 2px solid var(--portal-color-accent);
+  outline-offset: 2px;
+}
+
+.admin-portal-page :is(a[href], button, summary, [role="tab"]) {
+  touch-action: manipulation;
+}
+
+.admin-portal-page .admin-portal-form input:focus,
+.admin-portal-page .admin-access-form input:focus,
+.admin-portal-page .admin-access-form select:focus,
+.admin-portal-page .admin-account-form input:focus,
+.admin-portal-page .admin-engagements-form input:focus,
+.admin-portal-page .admin-engagements-form select:focus {
+  border-color: #6eb4bc;
+  box-shadow: 0 0 0 3px rgba(11, 114, 133, 0.1);
+}
+
+@media (max-width: 1080px) {
+  .admin-portal-page .admin-portal-layout {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .admin-portal-page .admin-portal-sidebar {
+    position: static;
+  }
+
+  .admin-portal-page .admin-portal-nav-toggle {
+    border: 1px solid #dfe5e7;
+    background: #f4f8f8;
+  }
+
+  .admin-portal-page .admin-portal-nav-parent > span:last-child {
+    display: inline;
+  }
+}
+
+/* Finition des vues administratives et des etats transversaux du portail. */
+#adminEngagementsCreatePanel .admin-engagements-card,
+#adminEngagementsAccessRequestsPanel .admin-engagements-card,
+#adminEngagementsDeletionRequestsPanel .admin-engagements-card {
+  gap: 16px;
+  border-color: #dfe5e7;
+  border-radius: 10px;
+  padding: 0 0 16px;
+  overflow: hidden;
+  background: #ffffff;
+  box-shadow: none;
+}
+
+#adminEngagementsCreatePanel .admin-engagements-card > div:first-child,
+#adminEngagementsAccessRequestsPanel .admin-engagements-card-head,
+#adminEngagementsDeletionRequestsPanel .admin-engagements-card-head {
+  min-height: 68px;
+  padding: 14px 16px;
+  border-bottom: 1px solid #e3e9eb;
+}
+
+#adminEngagementsCreatePanel .admin-engagements-card > div:first-child > span,
+#adminEngagementsAccessRequestsPanel .admin-engagements-card-head span,
+#adminEngagementsDeletionRequestsPanel .admin-engagements-card-head span {
+  color: #0b7285;
+}
+
+#adminEngagementsCreatePanel .admin-engagements-card h3,
+#adminEngagementsAccessRequestsPanel .admin-engagements-card h3,
+#adminEngagementsDeletionRequestsPanel .admin-engagements-card h3 {
+  color: #263940;
+}
+
+#adminEngagementsCreatePanel .admin-engagements-form,
+#adminEngagementsAccessRequestsPanel .admin-engagements-card > .admin-portal-message,
+#adminEngagementsAccessRequestsPanel .admin-engagements-request-list,
+#adminEngagementsAccessRequestsPanel .admin-engagements-access-request-edit,
+#adminEngagementsDeletionRequestsPanel .admin-engagements-card > .admin-portal-message,
+#adminEngagementsDeletionRequestsPanel .admin-engagements-card > .admin-engagements-request-list,
+#adminEngagementsDeletionRequestsPanel .admin-engagements-card > .admin-engagements-national-filters,
+#adminEngagementsDeletionRequestsPanel .admin-engagements-card > .admin-engagements-national-bulk-actions {
+  margin-right: var(--portal-card-gutter);
+  margin-left: var(--portal-card-gutter);
+}
+
+#adminEngagementsCreatePanel .admin-engagements-form-section {
+  border-color: #dfe5e7;
+  border-radius: 9px;
+}
+
+#adminEngagementsCreatePanel .admin-engagements-form-section legend {
+  color: #0b7285;
+}
+
+#adminEngagementsCreatePanel .admin-engagements-form-section-grid > label {
+  min-height: 50px;
+  border-color: #e7ecee;
+  padding: 8px 12px;
+  color: #52636a;
+}
+
+#adminEngagementsCreatePanel .admin-engagements-form-section-grid > label:nth-child(even) {
+  background: #fbfcfc;
+}
+
+#adminEngagementsCreatePanel .admin-engagements-form input,
+#adminEngagementsCreatePanel .admin-engagements-form select,
+#adminEngagementsAccessRequestsPanel .admin-access-form input,
+#adminEngagementsAccessRequestsPanel .admin-access-form select,
+#adminEngagementsDeletionRequestsPanel .admin-engagements-national-filters input,
+#adminEngagementsDeletionRequestsPanel .admin-engagements-national-filters select {
+  border-color: #d8e0e3;
+  background: #f8fafb;
+}
+
+#adminEngagementsCreatePanel .admin-engagements-form input:focus,
+#adminEngagementsCreatePanel .admin-engagements-form select:focus,
+#adminEngagementsAccessRequestsPanel .admin-access-form input:focus,
+#adminEngagementsAccessRequestsPanel .admin-access-form select:focus,
+#adminEngagementsDeletionRequestsPanel .admin-engagements-national-filters input:focus,
+#adminEngagementsDeletionRequestsPanel .admin-engagements-national-filters select:focus {
+  border-color: #0b7285;
+  outline: 3px solid rgba(11, 114, 133, 0.16);
+  outline-offset: 1px;
+}
+
+#adminEngagementsCreatePanel .admin-engagements-form > .admin-portal-actions {
+  justify-content: flex-end;
+}
+
+#adminEngagementsAccessRequestsPanel .admin-engagements-request-list,
+#adminEngagementsDeletionRequestsPanel .admin-engagements-request-list {
+  gap: 8px;
+}
+
+#adminEngagementsAccessRequestsPanel > .admin-engagements-card {
+  border: 0;
+  padding: 0;
+  overflow: visible;
+  background: transparent;
+  box-shadow: none;
+}
+
+#adminEngagementsAccessRequestsPanel .admin-engagements-card > .admin-portal-message,
+#adminEngagementsAccessRequestsPanel .admin-engagements-request-list {
+  margin-right: 0;
+  margin-left: 0;
+}
+
+#adminEngagementsAccessRequestsPanel .admin-engagements-card > .admin-portal-message {
+  min-height: 0;
+  margin-bottom: 8px;
+  color: #607279;
+  font-size: 0.8rem;
+  font-weight: 650;
+}
+
+#adminEngagementsAccessRequestsPanel .admin-engagements-request-card,
+#adminEngagementsDeletionRequestsPanel .admin-engagements-request-card {
+  border-color: #dfe5e7;
+  border-radius: 9px;
+  padding: 12px;
+}
+
+#adminEngagementsAccessRequestsPanel .admin-engagements-request-card {
+  grid-template-columns: minmax(220px, 1.15fr) minmax(220px, 1fr) auto auto;
+  gap: 8px 14px;
+  min-height: 58px;
+  padding: 9px 10px;
+}
+
+.admin-access-requests-views {
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.admin-access-requests-views [aria-pressed="true"] {
+  background: #e8f1f5;
+  border-color: #357a99;
+}
+
+#adminEngagementsAccessRequestsPanel .admin-access-history-card {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+@media (max-width: 700px) {
+  #adminEngagementsAccessRequestsPanel .admin-access-history-card {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+#adminEngagementsAccessRequestsPanel .admin-engagements-request-main,
+#adminEngagementsAccessRequestsPanel .admin-engagements-request-scope {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+#adminEngagementsAccessRequestsPanel .admin-engagements-request-main strong,
+#adminEngagementsAccessRequestsPanel .admin-engagements-request-scope strong,
+#adminEngagementsAccessRequestsPanel .admin-engagements-request-main small,
+#adminEngagementsAccessRequestsPanel .admin-engagements-request-scope small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#adminEngagementsAccessRequestsPanel .admin-access-history-card strong,
+#adminEngagementsAccessRequestsPanel .admin-access-history-card small {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+#adminEngagementsAccessRequestsPanel .admin-engagements-request-scope strong {
+  color: #334c53;
+  font-size: 0.84rem;
+}
+
+#adminEngagementsAccessRequestsPanel .admin-engagements-request-scope small {
+  color: #6c7d83;
+  font-size: 0.75rem;
+}
+
+.admin-engagements-request-badges {
+  display: flex;
+  align-items: center;
+}
+
+.admin-access-request-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  border: 1px solid #e5c873;
+  border-radius: 999px;
+  padding: 2px 8px;
+  color: #765509;
+  background: #fff8df;
+  font-size: 0.7rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+#adminEngagementsAccessRequestsPanel .admin-engagements-request-actions {
+  flex-wrap: nowrap;
+}
+
+#adminEngagementsAccessRequestsPanel .admin-engagements-request-actions button {
+  min-height: 34px;
+  padding: 0 10px;
+  font-size: 0.78rem;
+  white-space: nowrap;
+}
+
+.admin-engagements-request-details {
+  grid-column: 1 / -1;
+  border-top: 1px solid #e8edef;
+  padding-top: 7px;
+  color: #617279;
+  font-size: 0.77rem;
+}
+
+.admin-engagements-request-details summary {
+  width: fit-content;
+  cursor: pointer;
+  color: #315f69;
+  font-weight: 750;
+}
+
+.admin-engagements-request-details p {
+  margin: 7px 0 0;
+  line-height: 1.4;
+}
+
+#adminEngagementsAccessRequestsPanel .admin-engagements-request-card:hover,
+#adminEngagementsDeletionRequestsPanel .admin-engagements-request-card:hover {
+  border-color: #b7d8dc;
+  background: #fbfdfd;
+}
+
+#adminEngagementsAccessRequestsPanel .admin-engagements-access-request-edit {
+  border: 1px solid #dfe5e7;
+  border-radius: 9px;
+  padding: 14px;
+  background: #f8fafb;
+}
+
+.admin-access-request-review-dialog {
+  width: min(760px, calc(100vw - 24px));
+  padding: 0;
+}
+
+#adminEngagementsAccessRequestsPanel .admin-access-request-review-dialog .admin-engagements-access-request-edit {
+  gap: 14px;
+  margin: 0;
+  border: 0;
+  padding: 18px;
+  background: #ffffff;
+}
+
+.admin-access-request-review-head {
+  display: grid;
+  gap: 4px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e2e8ea;
+}
+
+.admin-access-request-review-head span {
+  color: #0b7285;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.admin-access-request-review-head h3,
+.admin-access-request-review-head p {
+  margin: 0;
+}
+
+.admin-access-request-review-head p {
+  color: #687980;
+  font-size: 0.82rem;
+}
+
+#adminEngagementsAccessRequestsPanel .admin-access-request-review-dialog .admin-access-identity-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+#adminEngagementsAccessRequestsPanel .admin-access-request-review-dialog .admin-portal-actions {
+  justify-content: flex-end;
+}
+
+#adminEngagementsAccessRequestsPanel .admin-engagements-access-request-edit .admin-access-identity-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+#adminEngagementsDeletionRequestsPanel .admin-engagements-national-tabs {
+  flex-wrap: nowrap;
+  gap: 6px;
+  border: 1px solid #dfe5e7;
+  border-radius: 10px;
+  padding: 9px;
+  overflow-x: auto;
+  background: #f7f9fa;
+}
+
+#adminEngagementsDeletionRequestsPanel .admin-engagements-national-tabs button {
+  flex: 0 0 auto;
+  min-height: 38px;
+  border-color: #d8e0e3;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #50636a;
+}
+
+#adminEngagementsDeletionRequestsPanel .admin-engagements-national-tabs button[aria-selected="true"] {
+  border-color: #0b7285;
+  background: #0b7285;
+  color: #ffffff;
+}
+
+#adminEngagementsDeletionRequestsPanel .admin-engagements-national-filters {
+  border: 1px solid #dfe5e7;
+  border-radius: 9px;
+  padding: 11px 12px;
+  background: #f8fafb;
+}
+
+#adminEngagementsDeletionRequestsPanel .admin-engagements-national-bulk-actions {
+  min-height: 48px;
+  border: 1px solid #cfe3e6;
+  border-radius: 9px;
+  padding: 10px 12px;
+  background: #f0f8f9;
+}
+
+#adminEngagementsDeletionRequestsPanel .admin-engagements-national-choice input {
+  accent-color: #0b7285;
+}
+
+#adminEngagementsDeletionRequestsPanel .admin-engagements-national-table-wrap,
+#adminEngagementsDeletionRequestsPanel .admin-engagements-national-table,
+#adminEngagementsDeletionRequestsPanel .admin-engagements-national-merge {
+  border-color: #dfe5e7;
+}
+
+#adminEngagementsDeletionRequestsPanel .admin-engagements-national-table th {
+  background: #eef3f4;
+  color: #52636a;
+}
+
+#adminEngagementsDeletionRequestsPanel .admin-engagements-national-table th,
+#adminEngagementsDeletionRequestsPanel .admin-engagements-national-table td {
+  border-color: #e4eaec;
+  padding: 7px 9px;
+}
+
+#adminEngagementsDetailDocumentsPanel .admin-engagements-advanced-actions,
+#adminEngagementsDetailDocumentsPanel .admin-engagements-closure-card,
+#adminEngagementsDetailDocumentsPanel .admin-engagements-club-recap-table,
+#adminEngagementsDetailDocumentsPanel .admin-engagements-mail-jobs-table {
+  border-color: #dfe5e7;
+  border-radius: 9px;
+  box-shadow: none;
+}
+
+#adminEngagementsDetailDocumentsPanel .admin-engagements-advanced-actions {
+  overflow: hidden;
+  background: #f8fafb;
+}
+
+#adminEngagementsDetailDocumentsPanel .admin-engagements-advanced-actions summary {
+  min-height: 46px;
+  padding: 12px;
+  color: #40545c;
+}
+
+#adminEngagementsDetailDocumentsPanel .admin-engagements-advanced-actions[open] summary {
+  border-color: #e3e9eb;
+  background: #f1f7f8;
+}
+
+#adminEngagementsDetailDocumentsPanel .admin-engagements-closure-card {
+  padding: 12px;
+  background: #f8fafb;
+}
+
+#adminEngagementsDetailDocumentsPanel .admin-engagements-club-recap-row-head,
+#adminEngagementsDetailDocumentsPanel .admin-engagements-mail-jobs-row-head {
+  background: #eef3f4;
+  color: #52636a;
+}
+
+.admin-portal-page .admin-portal-message[data-tone="loading"] {
+  color: #52636a;
+}
+
+.admin-portal-page .admin-portal-message[data-tone="ok"] {
+  color: #17603e;
+}
+
+.admin-portal-page .admin-portal-message[data-tone="warning"] {
+  color: #79590d;
+}
+
+.admin-portal-page .admin-portal-message[data-tone="error"] {
+  color: #a4371b;
+}
+
+.admin-portal-page .admin-engagements-empty,
+.admin-portal-page .admin-access-empty {
+  border-color: #d8e0e3;
+  border-radius: 9px;
+  background: #f8fafb;
+  color: #64747a;
+}
+
+.admin-portal-page #adminPortalLoginPanel {
+  width: min(680px, 100%);
+  border-color: #dfe5e7;
+  border-radius: 12px;
+  padding: clamp(20px, 4vw, 30px);
+  box-shadow: 0 16px 42px rgba(31, 55, 62, 0.08);
+}
+
+.admin-portal-page #adminPortalLoginPanel > div:first-child {
+  padding-bottom: 4px;
+  border-bottom: 1px solid #e7ecee;
+}
+
+.admin-portal-page #adminPortalLoginPanel .admin-portal-login-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.admin-portal-page #adminPortalLoginPanel .admin-portal-public-link {
+  flex: 0 0 auto;
+  padding: 3px 0;
+  color: #0b7285;
+  font-size: 0.82rem;
+  font-weight: 750;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+
+.admin-portal-page #adminPortalLoginPanel .admin-portal-public-link:hover {
+  color: #075b6a;
+}
+
+.admin-portal-page #adminPortalLoginPanel .admin-portal-experiment-notice {
+  margin-top: -4px;
+  border: 1px solid #cce3e6;
+  border-radius: 9px;
+  padding: 11px 13px;
+  background: #f1f8f9;
+  color: #40575d;
+  font-size: 0.84rem;
+  line-height: 1.5;
+}
+
+.admin-portal-page #adminPortalLoginPanel .admin-portal-experiment-notice p {
+  margin: 0;
+}
+
+.admin-portal-page #adminPortalLoginPanel .admin-portal-experiment-notice a {
+  color: #0b7285;
+  font-weight: 750;
+}
+
+.admin-portal-page #adminPortalLoginPanel > div:first-child span,
+.admin-portal-page #adminPortalLoginPanel > div:first-child strong,
+.admin-portal-page #adminPortalLoginPanel > div:first-child h2 {
+  color: #0b7285;
+}
+
+.admin-portal-page #adminPortalLoginPanel > div:first-child strong,
+.admin-portal-page #adminPortalLoginPanel > div:first-child h2 {
+  margin-top: 5px;
+  color: #263940;
+  font-size: 1.25rem;
+}
+
+.admin-portal-page #adminPortalLoginPanel .admin-portal-form input,
+.admin-portal-page #adminPortalLoginPanel .admin-access-form input,
+.admin-portal-page #adminPortalLoginPanel .admin-access-form select,
+.admin-portal-page #adminPortalLoginPanel .admin-access-form textarea {
+  border-color: #d8e0e3;
+  background: #f8fafb;
+}
+
+.admin-portal-page #adminPortalLoginPanel .admin-portal-login-access {
+  border-color: #e3e9eb;
+  border-radius: 9px;
+  padding: 0;
+  overflow: hidden;
+}
+
+.admin-portal-page #adminPortalLoginPanel .admin-portal-login-access summary {
+  min-height: 46px;
+  padding: 12px;
+  background: #f8fafb;
+  color: #0b7285;
+}
+
+.admin-portal-page #adminPortalLoginPanel .admin-portal-login-access[open] summary {
+  border-bottom: 1px solid #e3e9eb;
+  background: #f1f7f8;
+}
+
+.admin-portal-page #adminPortalLoginPanel .admin-portal-login-access .admin-access-form {
+  margin: 0;
+  padding: 12px;
+}
+
+@media (max-width: 1080px) {
+  #adminEngagementsAccessRequestsPanel .admin-engagements-access-request-edit .admin-access-identity-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  #adminEngagementsDeletionRequestsPanel .admin-engagements-national-filters {
+    grid-template-columns: minmax(180px, 1fr) minmax(130px, 0.5fr);
+  }
+}
+
+@media (max-width: 700px) {
+  .admin-portal-page #adminPortalLoginPanel .admin-portal-login-heading {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  #adminEngagementsCreatePanel .admin-engagements-card > div:first-child,
+  #adminEngagementsAccessRequestsPanel .admin-engagements-card-head,
+  #adminEngagementsDeletionRequestsPanel .admin-engagements-card-head,
+  #adminEngagementsAccessRequestsPanel .admin-engagements-request-card,
+  #adminEngagementsDeletionRequestsPanel .admin-engagements-request-card,
+  #adminEngagementsAccessRequestsPanel .admin-engagements-request-actions,
+  #adminEngagementsDeletionRequestsPanel .admin-engagements-request-actions,
+  #adminEngagementsCreatePanel .admin-engagements-form > .admin-portal-actions,
+  #adminEngagementsAccessRequestsPanel .admin-engagements-access-request-edit .admin-portal-actions,
+  #adminEngagementsDeletionRequestsPanel .admin-engagements-national-bulk-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  #adminEngagementsAccessRequestsPanel .admin-engagements-request-card,
+  #adminEngagementsDeletionRequestsPanel .admin-engagements-request-card,
+  #adminEngagementsAccessRequestsPanel .admin-engagements-access-request-edit .admin-access-identity-grid,
+  #adminEngagementsDeletionRequestsPanel .admin-engagements-national-filters {
+    grid-template-columns: 1fr;
+  }
+
+  #adminEngagementsAccessRequestsPanel .admin-engagements-request-card {
+    gap: 8px;
+    padding: 11px;
+  }
+
+  #adminEngagementsAccessRequestsPanel .admin-engagements-request-badges {
+    min-height: 0;
+  }
+
+  #adminEngagementsAccessRequestsPanel .admin-engagements-request-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  #adminEngagementsAccessRequestsPanel .admin-engagements-request-actions button {
+    width: 100%;
+  }
+
+  #adminEngagementsAccessRequestsPanel .admin-access-request-review-dialog .admin-access-identity-grid {
+    grid-template-columns: 1fr;
+  }
+
+  #adminEngagementsCreatePanel .admin-engagements-form-section-grid > label {
+    grid-template-columns: 1fr;
+    gap: 6px;
+    align-items: stretch;
+  }
+
+  #adminEngagementsCreatePanel .admin-engagements-form-section-grid > label > input,
+  #adminEngagementsCreatePanel .admin-engagements-form-section-grid > label > select,
+  #adminEngagementsCreatePanel .admin-engagements-field-note {
+    grid-column: 1;
+  }
+
+  #adminEngagementsAccessRequestsPanel .admin-engagements-card-head button,
+  #adminEngagementsDeletionRequestsPanel .admin-engagements-card-head button,
+  #adminEngagementsAccessRequestsPanel .admin-engagements-request-actions button,
+  #adminEngagementsDeletionRequestsPanel .admin-engagements-request-actions button,
+  #adminEngagementsCreatePanel .admin-engagements-form > .admin-portal-actions button,
+  #adminEngagementsAccessRequestsPanel .admin-engagements-access-request-edit .admin-portal-actions button,
+  #adminEngagementsDeletionRequestsPanel .admin-engagements-national-filters button,
+  #adminEngagementsDeletionRequestsPanel .admin-engagements-national-bulk-actions button,
+  #adminEngagementsDetailDocumentsPanel .admin-engagements-advanced-actions .admin-engagements-documents-actions button {
+    width: 100%;
+  }
+
+  #adminEngagementsDetailDocumentsPanel .admin-engagements-closure-card dl {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-portal-page #adminPortalLoginPanel .admin-portal-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .admin-portal-page #adminPortalLoginPanel .admin-portal-actions button,
+  .admin-portal-page #adminPortalLoginPanel .admin-portal-login-access .admin-access-identity-grid {
+    width: 100%;
+  }
+
+  .admin-portal-page #adminPortalLoginPanel .admin-portal-login-access .admin-access-identity-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Annuaires club integres au langage visuel du portail. */
+#adminEngagementsClubPeoplePanel .admin-engagements-card,
+#adminEngagementsClubSwimmersPanel .admin-engagements-card {
+  gap: 16px;
+  border-color: #dfe5e7;
+  border-radius: 10px;
+  padding: 0 0 16px;
+  overflow: hidden;
+  background: #ffffff;
+  box-shadow: none;
+}

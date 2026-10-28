@@ -1,14 +1,12 @@
 "use strict";
+const { fingerprint, status } = require("./nap-swimmer-activity-state");
 const {notMerged}=require("./nap-swimmer-merge-state");
 // Fixed budget: two PK reads, trigger check, one guarded UPDATE; audit read/two writes.
 const {createHash}=require("node:crypto");
 const {COLUMNS,hash}=require("./nap-approved-swimmer-correction");
 const {nativeEqual}=require("./nap-native-compare");
-function fingerprint(row) { return createHash("sha256").update(JSON.stringify([String(row.id),String(row.club),Number(row.actif)])).digest("hex"); }
-function status(row) {
-  if(![0,1].includes(Number(row.actif))) throw new TypeError("Statut NAP a verifier.");
-  return Number(row.actif)===1?"active":"inactive";
-}
+
+
 async function change(connection,input,audit) {
   const id=require("./nap-direct-swimmer").swimmerId(input.id);
   if(!/^\d{1,16}$/.test(input.clubId||"") || !input.actorUid || !["active","inactive"].includes(input.status) || !/^[a-f0-9]{64}$/.test(input.expectedFingerprint||"")) throw new TypeError("Fiche et statut requis.");

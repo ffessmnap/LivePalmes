@@ -1,5 +1,5 @@
 "use strict";
-const assert = require("node:assert/strict"), fs = require("node:fs"), vm = require("node:vm");
+const assert = require("node:assert/strict"), fs = require("./helpers/source-files"), vm = require("node:vm");
 const source = fs.readFileSync(require.resolve("../functions/index"), "utf8");
 const historyHelpers={cleanText:value=>String(value||""),engagementQualificationRowAllowed:()=>true,cleanFirestoreValue:value=>value,formatTimeValue:value=>String(value),cleanIsoDate:value=>value};
 vm.createContext(historyHelpers);

@@ -34,7 +34,7 @@ async function main(){
   trackingUI();
 }
 function trackingUI(){
-  const fs=require('node:fs'),vm=require('node:vm');
+  const fs=require("./helpers/source-files"),vm=require('node:vm');
   const source=fs.readFileSync('assets/livepalmes-admin-portal.js','utf8');
   const start=source.indexOf('  function renderEngagementMailJobs()'),end=source.indexOf('\n  async function loadEngagementMailJobs',start);
   const mount={innerHTML:''},now=new Date().toISOString();
@@ -62,7 +62,7 @@ function trackingUI(){
   console.log('Tracking UI: page-local counts, refresh, uncertain/stale sends, empty state and pagination verified.');
 }
 async function senderOutcomes(){
-  const fs=require('node:fs'),vm=require('node:vm');
+  const fs=require("./helpers/source-files"),vm=require('node:vm');
   const source=fs.readFileSync('functions/index.js','utf8');
   const start=source.indexOf('async function sendEngagementMailJob('),end=source.indexOf('\nfunction cleanEngagementClubPerson',start);
   const updates=[],sandbox={Date,normalizeEmail:x=>x,cleanText:x=>String(x||''),cleanFirestoreValue:x=>x,

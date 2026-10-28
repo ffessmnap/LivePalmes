@@ -1,5 +1,5 @@
 "use strict";
-const assert=require("node:assert/strict"),fs=require("node:fs"),vm=require("node:vm");
+const assert=require("node:assert/strict"),fs=require("./helpers/source-files"),vm=require("node:vm");
 const source=fs.readFileSync(require.resolve("../functions/index.js"),"utf8");
 const ast=require("./firestore-rules/node_modules/acorn").parse(source,{ecmaVersion:"latest"});
 function handler(name){const n=ast.body.find(n=>n.expression?.left?.object?.name==="exports"&&n.expression.left.property?.name===name).expression.right.arguments.at(-1);return source.slice(n.start,n.end);}

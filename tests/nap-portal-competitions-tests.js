@@ -73,7 +73,7 @@ const { SPECS, approvedIndexOperation } = require("../functions/nap-approved-ind
     }
     assert.equal((await approvedIndexOperation(indexPool,{...input,phase:"apply",schemaHash:prepared.schemaHash})).verified,true);
   }
-  const workflow=require("node:fs").readFileSync(".github/workflows/nap-authorized-portal-indexes.yml","utf8");
+  const workflow=require("./helpers/source-files").readFileSync(".github/workflows/nap-authorized-portal-indexes.yml","utf8");
   assert.ok(workflow.indexOf("name: Conserver la sauvegarde avant ajout") < workflow.indexOf("name: Ajouter et verifier les index hors saisie"));
   assert.ok(workflow.includes("club-people:nap-add-club-people-indexes"));
   console.log("Competition NAP : perimetre avant lectures dependantes, limites, formats natifs preserves, complements absents non inventes, index fixes verifies.");

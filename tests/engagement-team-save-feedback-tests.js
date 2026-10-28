@@ -1,5 +1,5 @@
 "use strict";
-const assert=require("node:assert/strict"),fs=require("node:fs"),vm=require("node:vm");
+const assert=require("node:assert/strict"),fs=require("./helpers/source-files"),vm=require("node:vm");
 const s=fs.readFileSync(require.resolve("../assets/livepalmes-admin-portal.js"),"utf8"),start=s.indexOf("  async function saveEngagementClubTeamLeader(");
 const code=s.slice(start,s.indexOf("  async function removeEngagementClubTeamLeader(",start));
 (async()=>{

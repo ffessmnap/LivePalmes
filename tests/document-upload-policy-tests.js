@@ -1,6 +1,6 @@
 "use strict";
 const assert = require("node:assert/strict");
-const fs = require("node:fs");
+const fs = require("./helpers/source-files");
 const vm = require("node:vm");
 const portal = fs.readFileSync(require.resolve("../assets/livepalmes-admin-portal.js"), "utf8");
 const calendar = fs.readFileSync(require.resolve("../assets/livepalmes-admin-calendar-events.js"), "utf8");

@@ -5,7 +5,7 @@
 const {createHash}=require("node:crypto");
 const {isDeepStrictEqual}=require("node:util");
 const {planIdentity,identity}=require("./nap-club-person-edit");
-const {changedOptions,buildStatusStatement}=require("./nap-club-person-status");
+const {changedOptions,buildStatusStatement}=require("./nap-club-person-options");
 const {person,OPTION_COLUMNS,normalizeOptions,SOURCES}=require("./nap-club-people");
 const {inspectPeopleSchema,validate}=require("./nap-approved-people-schema");
 const spec=SOURCES.officials;

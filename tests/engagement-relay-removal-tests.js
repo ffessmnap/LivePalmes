@@ -1,6 +1,6 @@
 "use strict";
 const assert = require("node:assert/strict");
-const fs = require("node:fs");
+const fs = require("./helpers/source-files");
 const vm = require("node:vm");
 const source = fs.readFileSync(require("node:path").join(__dirname, "../functions/index.js"), "utf8");
 function section(text, start, end) { const i = text.indexOf(start); assert.ok(i >= 0); return text.slice(i, text.indexOf(end, i)); }

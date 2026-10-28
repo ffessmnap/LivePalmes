@@ -1,5 +1,5 @@
 "use strict";
-const assert=require("node:assert/strict"),fs=require("node:fs"),vm=require("node:vm"),{createHash}=require("node:crypto");
+const assert=require("node:assert/strict"),fs=require("./helpers/source-files"),vm=require("node:vm"),{createHash}=require("node:crypto");
 const helpers=require("../functions/nap-person-change-requests"),editor=require("../functions/nap-club-person-edit"),{person}=require("../functions/nap-club-people");
 const source=fs.readFileSync("functions/index.js","utf8");
 const requestCode=source.slice(source.indexOf("exports.requestEngagementClubSwimmerChange ="),source.indexOf("exports.listEngagementSwimmerChangeRequests ="));

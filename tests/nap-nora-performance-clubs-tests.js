@@ -45,7 +45,7 @@ function fixture(options={}){
  const stale=fixture();await stale.run("prepare");stale.d.current.perfs[0].tps="changed";await assert.rejects(stale.run("apply"),/change/);assert.equal(stale.writes(),0);
  const unindexed=fixture({unindexed:true});await unindexed.run("prepare");await assert.rejects(unindexed.run("apply"),/indexee/);assert.equal(unindexed.writes(),0);
  const lock=fixture({lockFailure:true});await assert.rejects(lock.run("prepare"));assert.ok(lock.destroyed());assert.equal(lock.writes(),0);
- const fs=require("node:fs"),vm=require("node:vm"),source=fs.readFileSync("functions/index.js","utf8");
+ const fs=require("./helpers/source-files"),vm=require("node:vm"),source=fs.readFileSync("functions/index.js","utf8");
  const handler=source.slice(source.indexOf("exports.exportNapPublicPage ="),source.indexOf("\nconst ENGAGEMENT_MAIL_CALLABLE_OPTIONS")).replace(/\n\}\s*$/,"");
  let poolCalls=0,repairCalls=0,status,payload;
  const response={set(){return this;},status(value){status=value;return this;},json(value){payload=value;}};

@@ -53,7 +53,7 @@ const period=planCompetitionChange(pack,input({qualificationStartDate:"2025-09-0
 assert.equal(period.operations[0].after.tps_d,"2025-09-01");assert.equal(period.operations[0].after.tps_f,"2026-08-31");assert.equal(period.operations[0].after.saisie,0);assert.equal(period.operations[0].after.actif,1);
 assert.throws(()=>planCompetitionChange(pack,input({qualificationStartDate:"2026-09-01",qualificationEndDate:"2025-08-31"}),now),/Periode/);
 // Client patches must preserve untouched native settings and express an explicit switch to all times.
-const portalSource=require("node:fs").readFileSync(require.resolve("../assets/livepalmes-admin-portal.js"),"utf8");
+const portalSource=require("./helpers/source-files").readFileSync(require.resolve("../assets/livepalmes-admin-portal.js"),"utf8");
 const clientStart=portalSource.indexOf("  function nativeCompetitionFormValues()");
 const clientSource=portalSource.slice(clientStart,portalSource.indexOf("  async function saveNativeCompetitionDetail",clientStart));
 const clientFields={qualificationMode:{value:"period"},qualificationStart:{value:"2025-09-01"},qualificationEnd:{value:"2026-08-31"}};

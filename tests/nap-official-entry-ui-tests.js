@@ -1,5 +1,5 @@
 "use strict";
-const assert=require("node:assert/strict"),fs=require("node:fs"),vm=require("node:vm");
+const assert=require("node:assert/strict"),fs=require("./helpers/source-files"),vm=require("node:vm");
 const source=fs.readFileSync(require.resolve("../assets/livepalmes-admin-portal.js"),"utf8");
 const start=source.indexOf("  async function saveEngagementClubOfficials(event)"),end=source.indexOf("  function renderActiveEngagementClubSwimmerConsumer",start);
 let calls=0,fail=true,ids=["nap-official-1"],seen=[];

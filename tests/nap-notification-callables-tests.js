@@ -1,5 +1,5 @@
 "use strict";
-const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
+const assert=require('node:assert/strict'),fs=require("./helpers/source-files"),vm=require('node:vm');
 const source=fs.readFileSync('functions/index.js','utf8');
 const start=source.indexOf('exports.processNapCompetitionNotifications ='),end=source.indexOf('\n});',start)+4;
 assert.ok(start>0&&end>start);

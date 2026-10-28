@@ -1,6 +1,6 @@
 "use strict";
 // Real renderer/dialog on synthetic data. Every external request is blocked.
-const fs=require("node:fs"),path=require("node:path"),assert=require("node:assert/strict"),{chromium}=require("playwright");
+const fs=require("./helpers/source-files"),path=require("node:path"),assert=require("node:assert/strict"),{chromium}=require("playwright");
 const portal=fs.readFileSync("portail.html","utf8"),source=fs.readFileSync("assets/livepalmes-admin-portal.js","utf8");
 const render=source.slice(source.indexOf("  function renderEngagementNationalSwimmers()"),source.indexOf("  function updateEngagementNationalSwimmersStatus("));
 const open=source.slice(source.indexOf("  function closeEngagementSwimmerCorrectionDialog()"),source.indexOf("  async function submitEngagementSwimmerCorrection()"));
