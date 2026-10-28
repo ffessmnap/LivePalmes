@@ -120,7 +120,9 @@ async function main() {
   await assert.rejects(scan(pagedDb(MAX_ACCOUNTS + 1), "id"), /budget/);
   const index = fs.readFileSync("functions/index.js", "utf8");
   assert.match(index, /ENVIRONMENT.projectId === "livepalmes" \? \{ secrets: \[defineSecret\("LIVEPALMES_NAP_PASSWORD"\)\]/);
-  assert.match(index, /await snapshotSync;\r?\n  await syncNapClubAccountEmail\(uid\);/);
+  assert.match(index, /exports.syncNapClubAccountEmails = onDocumentWritten\(/);
+  const mailTrigger = index.slice(index.indexOf("exports.syncEngagementMailRecipientIndex ="), index.indexOf("exports.rebuildEngagementMailRecipientIndexNextPage ="));
+  assert.doesNotMatch(mailTrigger, /syncNapClubAccountEmail|LIVEPALMES_NAP_PASSWORD/);
   console.log("NAP account emails: PROD-only guard, lifecycle, current reads under SQL locks, preferences, rollback/privacy and bounded pages passed offline.");
 }
 main().catch(error => { console.error(error); process.exitCode = 1; });
