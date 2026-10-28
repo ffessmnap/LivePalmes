@@ -20,7 +20,7 @@ LivePalmes Direct est un autre dispositif, réservé aux compétitions nationale
 
 Commencer par une recherche ciblée du libellé, de l'identifiant HTML, de la fonction ou de la collection concernés. Ne pas lire entièrement les gros fichiers lorsque quelques blocs suffisent.
 
-Le découpage conserve les fonctions et les données partagées dans des interfaces explicites. Ne pas ajouter de logique métier à l'assembleur, ni déplacer les styles hors de leur ordre de cascade. Les modules et styles sont versionnés et mis en cache : modifier leur version d'URL lorsqu'un contenu change ; `portal-cache-version-tests.js` le contrôle. Voir les limites et contrôles dans `docs/MAINTENANCE_ARCHITECTURE.md`.
+Le découpage conserve les fonctions et les données partagées dans des interfaces explicites. Ne pas ajouter de logique métier à l'assembleur, ni déplacer les styles hors de leur ordre de cascade. Les modules et styles sont versionnés : modifier leur version d'URL lorsqu'un contenu change ; `portal-cache-version-tests.js` le contrôle. La configuration de cache Hosting reste inchangée ; les deux entrées principales gardent leur cache immuable explicite. Voir les limites et contrôles dans `docs/MAINTENANCE_ARCHITECTURE.md`.
 
 Si la correction touche `functions/`, lire aussi `functions/AGENTS.md`. Ne rechercher ensuite que les fonctions appelées par l'écran concerné et leurs utilitaires directs.
 
