@@ -129,6 +129,19 @@ async function main() {
   assert.match(index, /exports.syncNapClubAccountEmails = onDocumentWritten\(/);
   const mailTrigger = index.slice(index.indexOf("exports.syncEngagementMailRecipientIndex ="), index.indexOf("exports.rebuildEngagementMailRecipientIndexNextPage ="));
   assert.doesNotMatch(mailTrigger, /syncNapClubAccountEmail|LIVEPALMES_NAP_PASSWORD/);
+  const routeContext = {
+    ENVIRONMENT: require("../functions/livepalmes-environment").livePalmesEnvironment({ GCLOUD_PROJECT: "livepalmes-test" }),
+    exports: {}, REGION: "europe-west1", CALLABLE_OPTIONS: {},
+    defineSecret: name => ({ name, value() { throw Error("GET must not read secret"); } }),
+    onRequest: (options, handler) => ({ options, handler }), onCall: () => ({}),
+    createNapPool() { throw Error("GET must not open NAP"); },
+    require(name) { assert.equal(name, "./nap-public-export"); return {}; }
+  };
+  require("node:vm").runInNewContext(index.slice(index.indexOf("// Public sporting reads use NAP;"), index.indexOf("const ENGAGEMENT_MAIL_CALLABLE_OPTIONS")), routeContext);
+  let methodStatus;
+  await routeContext.exports.exportNapPublicPage.handler({ method: "GET", query: { action: "approved-club-account-emails" } },
+    { set() {}, status(code) { methodStatus = code; return this; }, json() {} });
+  assert.equal(methodStatus, 405);
   // The private maintenance identity invokes the runtime; it never obtains a MySQL password.
   const commands = [];
   const result = await privateRequest({ phase: "inspect" }, (command, args) => {
