@@ -1,5 +1,5 @@
 "use strict";
-const assert=require("node:assert/strict"),fs=require("node:fs");
+const assert=require("node:assert/strict"),fs=require("./helpers/source-files");
 const mod=require("../functions/nap-competition-deletion"),refs=require("../functions/nap-competition-deletion-references");
 function fixture(){
  const competition={id:5162,libelle:"Test",date:"2026-11-07",enddate:null,comite:1,ld:0,filepdf:null,filetxt:null};

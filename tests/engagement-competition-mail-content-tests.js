@@ -1,5 +1,5 @@
 "use strict";
-const assert=require("node:assert/strict"),fs=require("node:fs"),vm=require("node:vm");
+const assert=require("node:assert/strict"),fs=require("./helpers/source-files"),vm=require("node:vm");
 const format=require("../functions/engagement-competition-mail-format");
 const source=fs.readFileSync(require.resolve("../functions/index.js"),"utf8");
 const context={...format,ENVIRONMENT:{hostingOrigin:"https://livepalmes-test.web.app"},engagementPdfFeeTotal:()=>12,engagementPdfMoney:x=>x+" €",escapeMailHtml:require("../functions/livepalmes-mail-html").escapeMailHtml};

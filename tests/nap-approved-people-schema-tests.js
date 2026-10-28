@@ -1,6 +1,6 @@
 "use strict";
 const assert=require("node:assert/strict");
-const fs=require("node:fs");
+const fs=require("./helpers/source-files");
 const {columns,sql,planHash,validate,approvedPeopleSchema}=require("../functions/nap-approved-people-schema");
 function metadata(present) {
   return present?{

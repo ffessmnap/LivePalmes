@@ -1,6 +1,6 @@
 "use strict";
 // Actual renderer and dialog, synthetic identities only, no external requests.
-const fs=require("node:fs"),path=require("node:path"),assert=require("node:assert/strict"),{chromium}=require("playwright");
+const fs=require("./helpers/source-files"),path=require("node:path"),assert=require("node:assert/strict"),{chromium}=require("playwright");
 const portal=fs.readFileSync("portail.html","utf8"),source=fs.readFileSync("assets/livepalmes-admin-portal.js","utf8");
 const renderer=source.slice(source.indexOf("  function renderEngagementClubPeople()"),source.indexOf("  async function loadEngagementClubPeople("));
 const dialog=source.slice(source.indexOf("  function closeEngagementSwimmerCorrectionDialog()"),source.indexOf("  function normalizeEngagementNationalClub("));

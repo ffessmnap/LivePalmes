@@ -1,5 +1,5 @@
 "use strict";
-const assert=require("node:assert/strict"),fs=require("node:fs"),vm=require("node:vm");
+const assert=require("node:assert/strict"),fs=require("./helpers/source-files"),vm=require("node:vm");
 const source=fs.readFileSync(require.resolve("../functions/index.js"),"utf8"),a=source.indexOf("exports.mergeEngagementNationalClubPerson ="),b=source.indexOf("\nexports.",a+1);
 (async()=>{
  let national=true,calls=0;

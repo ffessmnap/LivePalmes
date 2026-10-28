@@ -1,6 +1,6 @@
 "use strict";
 const assert = require("node:assert/strict");
-const fs = require("node:fs");
+const fs = require("./helpers/source-files");
 const path = require("node:path");
 const vm = require("node:vm");
 const acorn = require("./firestore-rules/node_modules/acorn");

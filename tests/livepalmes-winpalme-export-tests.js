@@ -306,7 +306,7 @@ assert.equal(registeredTxt.split("\r\n").filter(l=>!registeredLines.includes(l))
 console.log("Registered-only water swimmers: IntraNAP REL/000000/empty-category, 13 fields, no fictitious DIS, relay order, no duplicates or mutation tested.");
 
 // Execute the real season/category normalisation used by the callable.
-const vm=require("node:vm"),fs=require("node:fs"),source=fs.readFileSync("functions/index.js","utf8");
+const vm=require("node:vm"),fs=require("./helpers/source-files"),source=fs.readFileSync("functions/index.js","utf8");
 const seasonalContext={buildWinPalmeCompetitionTxt:buildWaterTxt,engagementPdfFileName:value=>String(value),Date};
 vm.createContext(seasonalContext);
 for(const [start,end] of [["function competitionYear(","function performanceCategoryFromRow("],["function importSeasonYear(","function currentEngagementSeasonInfo("],["function engagementTxtSwimmerCategory(","async function readStoredEngagementTxt("]]) {

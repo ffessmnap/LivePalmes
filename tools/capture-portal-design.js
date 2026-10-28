@@ -67,10 +67,15 @@ function mimeType(filePath) {
   }[extension] || "application/octet-stream";
 }
 
-function startStaticServer() {
+function startStaticServer(overrides = new Map()) {
   const server = http.createServer((request, response) => {
     const url = new URL(request.url, "http://127.0.0.1");
     const cleanPath = decodeURIComponent(url.pathname === "/" ? "/portail.html" : url.pathname);
+    if (overrides.has(cleanPath)) {
+      response.writeHead(200, { "content-type": mimeType(cleanPath) });
+      response.end(overrides.get(cleanPath));
+      return;
+    }
     const filePath = path.resolve(rootDir, `.${cleanPath}`);
     if (!filePath.startsWith(rootDir)) {
       response.writeHead(403);
@@ -120,8 +125,10 @@ function createCdpClient(webSocketUrl) {
   return new Promise((resolve, reject) => {
     const socket = new WebSocket(webSocketUrl);
     let id = 0;
+    const events = [];
     const pending = new Map();
     socket.onopen = () => resolve({
+      events,
       close() {
         socket.close();
       },
@@ -134,6 +141,7 @@ function createCdpClient(webSocketUrl) {
     socket.onerror = reject;
     socket.onmessage = (event) => {
       const message = JSON.parse(event.data);
+      if (message.method) events.push(message);
       if (!message.id || !pending.has(message.id)) return;
       const { res, rej, method } = pending.get(message.id);
       pending.delete(message.id);
@@ -1283,7 +1291,8 @@ async function main() {
   }
 }
 
-main().catch((error) => {
+module.exports = { startStaticServer, launchBrowser, evaluate, waitFor, presentationScript, views, viewports };
+if (require.main === module) main().catch((error) => {
   console.error(`\nCapture du portail KO : ${error.message}`);
   process.exit(1);
 });

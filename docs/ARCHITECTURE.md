@@ -173,6 +173,8 @@ Regle importante : `app.js` doit rester un assembleur court. Il ne faut pas y re
 ### JavaScript du portail
 
 - `assets/livepalmes-admin-portal.js` : assembleur principal du portail ;
+- `assets/portal/*.js` : fonctions privées par domaine, avec interfaces communes d'état, configuration et actions ;
+- `assets/livepalmes-admin-portal.css` : cascade ordonnée vers `assets/portal/styles/`, sans changement de présentation ;
 - `assets/livepalmes-admin-auth.js` : connexion et session ;
 - `assets/livepalmes-admin-*.js` : vues et operations administratives ;
 - `performances/public/admin*.js` et `performances/public/import-competitions.js` : gestion des donnees sportives integree au portail.
@@ -288,6 +290,10 @@ Elles gerent notamment :
 - certaines operations longues ou sensibles.
 
 Ces fonctions font partie des zones sensibles.
+
+Depuis le découpage du 28 octobre, `functions/index.js` conserve les déclarations Firebase, leurs options et les points d'entrée. Les corps des callables ordinaires sont dans `portal-*-handlers.js` ; les fonctions privées sont dans `server-*-service.js`. Les imports, le rendu PDF, les statistiques et l'ancien circuit public disposent de modules dédiés. Les fabriques sont initialisées à la première utilisation, sans opération externe à leur création. Les services, constantes et états partagés passent par des accesseurs explicites ; aucun chemin Firestore, SQL, secret, droit ou déclencheur n'est remplacé par ce découpage. Les exports existants sont conservés.
+
+Les valeurs de calendrier, l'état d'activité, les références de personnes et les témoins de périmètre NAP sont des modules indépendants des lecteurs/écrivains qui les utilisent. Le graphe des imports serveur est contrôlé sans dépendance circulaire. Voir [la maintenance et ses contrôles](MAINTENANCE_ARCHITECTURE.md).
 
 ## Pages consoles generees
 

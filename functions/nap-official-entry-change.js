@@ -1,4 +1,5 @@
 "use strict";
+const { indexed, readPeople } = require("./nap-official-entry-reads");
 // Prepared native official selection. No callable is registered by this module.
 // Reuse the dossier lock/journal used by swimmer and individual selections.
 const {createHash}=require("node:crypto");
@@ -13,15 +14,8 @@ const {selectedStatement,insertion,deletion}=require("./nap-official-entry-state
 const hash=value=>createHash("sha256").update(JSON.stringify(value)).digest("hex");
 function untouched(pack) {const {readAt,officials,...other}=pack;return hash(other);}
 function competitionHash(pack) {const {readAt,event,...other}=pack;return hash(other);}
-function indexed(statement,rows) {
-  return Array.isArray(rows) && rows.length>0 && rows.every(row=>statement.kind==="insert" && row.select_type==="INSERT" && row.table==="officielsengager" || String(row.table).startsWith("<") || ["const","system"].includes(row.type) || row.rows!=null && Number(row.rows)===0 || row.table==null && row.type==null && /^(?:Impossible WHERE(?: noticed after reading const tables)?|no matching row in const table|No tables used)$/i.test(String(row.Extra||"")) || row.type!=="ALL" && Boolean(row.key));
-}
-async function readPeople(connection,ids,clubId) {
-  if(!ids.length) return [];
-  const statement=selectedStatement(ids,clubId),[rows]=await connection.execute({sql:statement.sql,timeout:10000},statement.values);
-  if(rows.length>80) throw new RangeError("Selection de personnes trop volumineuse.");
-  return rows.map(row=>({native:Object.fromEntries(SOURCES.officials.columns.map(key=>[key,row[key]])),options:row.option_person_id==null?null:normalizeOptions(Object.fromEntries(OPTION_COLUMNS.map(key=>[key,row[`option_${key}`]])))}));
-}
+
+
 async function saveNativeOfficials(pool,input,services) {
   if(typeof services?.authorize!=="function" || !services.audit || !/^\d{1,16}$/.test(String(input?.clubId)) || !/^[a-f0-9]{64}$/.test(input?.expectedFingerprint||"") || typeof input?.actorUid!=="string" || !input.actorUid || input.actorUid.length>128 || !/^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(input?.mutationId||"")) throw new TypeError("Selection native explicite requise.");
   const ids=officialIds(input.officialPersonIds);

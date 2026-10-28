@@ -1,5 +1,5 @@
 "use strict";
-const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
+const fs=require("./helpers/source-files"),vm=require('node:vm'),assert=require('node:assert/strict');
 const source=fs.readFileSync(require.resolve('../functions/index.js'),'utf8');
 function endpoint(name){const start=source.indexOf(`exports.${name} =`),end=source.indexOf('\n});',start)+4;assert.ok(start>0&&end>start);return source.slice(start,end);}
 async function main(){

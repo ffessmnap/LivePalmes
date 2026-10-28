@@ -1,0 +1,2063 @@
+
+
+#adminEngagementsCalendarCard .admin-engagements-competitions-table-head,
+#adminEngagementsCalendarCard .admin-engagements-competition {
+  display: grid;
+  grid-template-columns: 86px minmax(0, 1.6fr) minmax(90px, 0.65fr) minmax(110px, 0.85fr) minmax(140px, 1fr);
+  gap: 10px;
+  align-items: center;
+}
+
+#adminEngagementsCalendarCard .admin-engagements-competitions-table-head {
+  position: sticky;
+  z-index: 2;
+  top: 0;
+  min-height: 34px;
+  border-bottom: 1px solid #d8e0e3;
+  padding: 6px 10px;
+  background: #edf2f3;
+  color: #53666d;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.035em;
+  text-transform: uppercase;
+}
+
+#adminEngagementsCalendarCard .admin-engagements-competitions-table-head > :nth-child(n + 3) {
+  text-align: center;
+}
+
+#adminEngagementsCalendarCard .admin-engagements-competition-group {
+  display: grid;
+  gap: 0;
+}
+
+#adminEngagementsCalendarCard .admin-engagements-competition-group > h4,
+#adminEngagementsCalendarCard .admin-engagements-competition-group:first-child > h4 {
+  margin: 0;
+  border-bottom: 1px solid #dfe5e7;
+  padding: 6px 10px;
+  background: #f8fafb;
+  color: #0b7285;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.045em;
+  text-transform: uppercase;
+}
+
+#adminEngagementsCalendarCard .admin-engagements-competition {
+  min-height: 56px;
+  border: 0;
+  border-bottom: 1px solid #e5eaec;
+  border-radius: 0;
+  padding: 7px 10px;
+  background: #ffffff;
+  transition: background-color 150ms ease, box-shadow 150ms ease;
+}
+
+#adminEngagementsCalendarCard .admin-engagements-competition-group:last-child .admin-engagements-competition:last-child {
+  border-bottom: 0;
+}
+
+#adminEngagementsCalendarCard .admin-engagements-competition:hover {
+  border-color: transparent;
+  background: #f8fbfb;
+}
+
+#adminEngagementsCalendarCard .admin-engagements-competition.selected {
+  border-color: transparent;
+  border-radius: 0;
+  background: #eef8f9;
+  box-shadow: inset 3px 0 0 #0b7285;
+}
+
+#adminEngagementsCalendarCard .admin-engagements-competition-date {
+  color: #23434c;
+  font-size: 0.78rem;
+  font-weight: 650;
+  line-height: 1.25;
+}
+
+#adminEngagementsCalendarCard .admin-engagements-competition-main,
+#adminEngagementsCalendarCard .admin-engagements-competition-scope,
+#adminEngagementsCalendarCard .admin-engagements-competition-status {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+#adminEngagementsCalendarCard .admin-engagements-competition-scope {
+  justify-items: center;
+  text-align: center;
+}
+
+#adminEngagementsCalendarCard .admin-engagements-competition-main strong {
+  overflow: hidden;
+  color: #263940;
+  font-size: 0.83rem;
+  font-weight: 650;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+}
+
+#adminEngagementsCalendarCard .admin-engagements-competition-location,
+#adminEngagementsCalendarCard .admin-engagements-competition-scope small,
+#adminEngagementsCalendarCard .admin-engagements-competition-status small {
+  color: #62747a;
+  font-size: 0.72rem;
+  font-weight: 400;
+  line-height: 1.25;
+}
+
+#adminEngagementsCalendarCard .admin-engagements-competition-scope > span,
+#adminEngagementsCalendarCard .admin-engagements-competition-entry-badge {
+  width: fit-content;
+  border-radius: 999px;
+  padding: 2px 7px;
+  background: #eef3f4;
+  color: #4e6269;
+  font-size: 0.67rem;
+  font-weight: 650;
+  line-height: 1.35;
+}
+
+#adminEngagementsCalendarCard .admin-engagements-competition-entry-badge[data-entry-state="open"] {
+  background: #dff4ed;
+  color: #17634f;
+}
+
+#adminEngagementsCalendarCard .admin-engagements-competition-entry-badge[data-entry-state="closed"] {
+  background: #edf0f1;
+  color: #5f6d72;
+}
+
+#adminEngagementsCalendarCard .admin-engagements-competition-entry-badge[data-entry-state="upcoming"] {
+  background: #e5f2f7;
+  color: #245d70;
+}
+
+#adminEngagementsCalendarCard .admin-engagements-competition-status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+}
+
+#adminEngagementsCalendarCard .admin-engagements-competition-status small[data-entry-status] {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  margin: 0;
+  border-radius: 999px;
+  padding: 2px 7px;
+  font-size: 0.67rem;
+  font-weight: 650;
+  line-height: 1.35;
+}
+
+#adminEngagementsCalendarCard .admin-engagements-competition-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+#adminEngagementsCalendarCard .admin-engagements-competition-actions button {
+  width: auto;
+  min-height: 34px;
+  padding: 6px 10px;
+  white-space: nowrap;
+}
+
+@media (max-width: 1120px) and (min-width: 761px) {
+  #adminEngagementsCalendarCard .admin-engagements-competitions-table-head,
+  #adminEngagementsCalendarCard .admin-engagements-competition {
+    grid-template-columns: 80px minmax(0, 1.6fr) minmax(80px, 0.65fr) minmax(100px, 0.85fr) minmax(130px, 1fr);
+  }
+
+  #adminEngagementsCalendarCard .admin-engagements-competition {
+    grid-template-areas: none;
+  }
+}
+
+@media (max-width: 760px) {
+  #adminEngagementsCalendarCard .admin-engagements-competitions-table {
+    border: 0;
+    border-radius: 0;
+    overflow: visible;
+    background: transparent;
+  }
+
+  #adminEngagementsCalendarCard .admin-engagements-competitions-table-head {
+    display: none;
+  }
+
+  #adminEngagementsCalendarCard .admin-engagements-competition-group {
+    gap: 7px;
+    margin-bottom: 12px;
+  }
+
+  #adminEngagementsCalendarCard .admin-engagements-competition-group > h4,
+  #adminEngagementsCalendarCard .admin-engagements-competition-group:first-child > h4 {
+    border: 0;
+    padding: 4px 2px 0;
+    background: transparent;
+  }
+
+  #adminEngagementsCalendarCard .admin-engagements-competition {
+    grid-template-areas:
+      "date scope"
+      "name name"
+      "status status"
+      "action action";
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 5px 10px;
+    min-height: 0;
+    border: 1px solid #dfe5e7;
+    border-radius: 9px;
+    padding: 9px 10px;
+  }
+
+  #adminEngagementsCalendarCard .admin-engagements-competition-group:last-child .admin-engagements-competition:last-child {
+    border-bottom: 1px solid #dfe5e7;
+  }
+
+  #adminEngagementsCalendarCard .admin-engagements-competition.selected {
+    border-color: #77b6be;
+    border-radius: 9px;
+  }
+
+  #adminEngagementsCalendarCard .admin-engagements-competition-date { grid-area: date; }
+  #adminEngagementsCalendarCard .admin-engagements-competition-main { grid-area: name; }
+  #adminEngagementsCalendarCard .admin-engagements-competition-scope { grid-area: scope; justify-items: center; text-align: center; }
+  #adminEngagementsCalendarCard .admin-engagements-competition-status {
+    grid-area: status;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px 8px;
+    align-items: center;
+  }
+  #adminEngagementsCalendarCard .admin-engagements-competition-actions { grid-area: action; }
+
+  #adminEngagementsCalendarCard .admin-engagements-competition-actions,
+  #adminEngagementsCalendarCard .admin-engagements-competition-actions button {
+    width: 100%;
+  }
+}
+
+.admin-engagements-tab-panel {
+  min-width: 0;
+}
+
+.admin-engagements-tab-panel[hidden] {
+  display: none;
+}
+
+.admin-engagements-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+
+.admin-engagements-scope-list {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+}
+
+.admin-engagements-scope-list > div {
+  display: grid;
+  grid-template-columns: minmax(90px, 0.45fr) minmax(0, 1fr);
+  gap: 12px;
+  align-items: baseline;
+  border-top: 1px solid #dce7e4;
+  padding-top: 10px;
+}
+
+.admin-engagements-scope-list dt {
+  color: #5f746f;
+  font-size: 0.76rem;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.admin-engagements-scope-list dd {
+  margin: 0;
+  color: #173b35;
+  font-weight: 850;
+}
+
+.admin-engagements-card-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: start;
+  justify-content: space-between;
+}
+
+.admin-engagements-card-head button {
+  min-height: 38px;
+}
+
+.admin-engagements-calendar-list {
+  display: grid;
+  gap: 10px;
+}
+
+.admin-engagements-calendar-filters {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(130px, 1fr)) minmax(150px, auto) auto;
+  gap: 10px;
+  align-items: end;
+  border: 1px solid #dce7e4;
+  border-radius: 8px;
+  padding: 12px;
+  background: #ffffff;
+}
+
+.admin-engagements-calendar-filters label {
+  display: grid;
+  gap: 6px;
+  color: #455d58;
+  font-size: 0.76rem;
+  font-weight: 850;
+}
+
+.admin-engagements-calendar-filters select {
+  min-height: 40px;
+  border: 1px solid #cddbd8;
+  border-radius: 7px;
+  padding: 8px 10px;
+  background: #ffffff;
+  color: #12312d;
+  font: inherit;
+}
+
+.admin-engagements-calendar-filters button {
+  min-height: 40px;
+}
+
+.admin-engagements-filter-check {
+  display: flex;
+  min-height: 40px;
+  gap: 8px;
+  align-items: center;
+  align-self: end;
+  border: 1px solid #dce7e4;
+  border-radius: 7px;
+  padding: 8px 10px;
+  background: #f8fbfa;
+}
+
+.admin-engagements-filter-check[hidden] {
+  display: none;
+}
+
+.admin-engagements-filter-check input {
+  width: 18px;
+  height: 18px;
+}
+
+.admin-engagements-request-list {
+  display: grid;
+  gap: 10px;
+}
+
+.admin-engagements-national-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  border-bottom: 1px solid #dce7e4;
+  padding-bottom: 8px;
+}
+
+.admin-engagements-national-tabs button {
+  min-height: 34px;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  padding: 0 12px;
+  background: transparent;
+  color: #43615c;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.admin-engagements-national-tabs button[aria-selected="true"] {
+  border-color: #0b7285;
+  background: #e9f8fb;
+  color: #075d6d;
+}
+
+.admin-engagements-national-tabs button:focus-visible {
+  outline: 2px solid #0b7285;
+  outline-offset: 2px;
+}
+
+.admin-engagements-national-filters {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) minmax(130px, 0.35fr) auto;
+  gap: 8px;
+  align-items: end;
+  margin: 8px 0 10px;
+}
+
+.admin-engagements-national-filters label {
+  display: grid;
+  gap: 4px;
+  color: #5f746f;
+  font-size: 0.76rem;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.admin-engagements-national-filters input,
+.admin-engagements-national-filters select {
+  min-height: 34px;
+  border: 1px solid #cddbd8;
+  border-radius: 7px;
+  padding: 7px 9px;
+  background: #ffffff;
+  color: #12312d;
+  font: inherit;
+  text-transform: none;
+}
+
+.admin-engagements-national-filters button {
+  min-height: 34px;
+  padding: 0 10px;
+}
+
+.admin-engagements-national-bulk-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  align-items: center;
+  margin: 6px 0 10px;
+}
+
+.admin-engagements-national-bulk-actions button {
+  min-height: 34px;
+  padding: 0 12px;
+}
+
+.admin-engagements-national-bulk-actions span {
+  color: #5f746f;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.admin-engagements-national-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid #dce7e4;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.admin-engagements-national-table {
+  width: 100%;
+  min-width: 980px;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+}
+
+.admin-engagements-national-table th,
+.admin-engagements-national-table td {
+  border-bottom: 1px solid #e2ece9;
+  padding: 5px 8px;
+  text-align: left;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.admin-engagements-national-table th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: #f4f8f7;
+  color: #5f746f;
+  font-size: 0.72rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.admin-engagements-national-table tbody tr:hover {
+  background: #f7fbfb;
+}
+
+.admin-engagements-national-swimmer-row[data-active="false"] {
+  background: #fff8f2;
+}
+
+.admin-engagements-national-swimmer-row[data-merged="true"] {
+  color: #6d7f7a;
+  background: #f6f7f7;
+}
+
+.admin-engagements-national-choice {
+  width: 74px;
+  text-align: center;
+}
+
+.admin-engagements-national-choice input {
+  width: 16px;
+  height: 16px;
+}
+
+.admin-engagements-duplicate-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  border-radius: 999px;
+  padding: 1px 8px;
+  background: #eef6f5;
+  color: #43615c;
+  font-size: 0.72rem;
+  font-weight: 850;
+}
+
+.admin-engagements-duplicate-badge[data-score="high"] {
+  background: #ffe9df;
+  color: #9b2c10;
+}
+
+.admin-engagements-duplicate-badge[data-score="medium"] {
+  background: #fff5d6;
+  color: #75540c;
+}
+
+.admin-engagements-national-table-actions {
+  display: flex;
+  gap: 5px;
+}
+
+.admin-engagements-national-table-actions button {
+  min-height: 28px;
+  padding: 0 8px;
+  font-size: 0.76rem;
+}
+
+.admin-engagements-national-audit-table {
+  min-width: 760px;
+}
+
+.admin-engagements-national-audit-table td {
+  white-space: normal;
+}
+
+.admin-engagements-national-audit-table small {
+  display: block;
+  color: #6d827d;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.admin-engagements-national-merge-row > td {
+  padding: 8px;
+  background: #f8fbfa;
+}
+
+.admin-engagements-request-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(180px, 0.85fr) auto;
+  gap: 12px;
+  align-items: center;
+  border: 1px solid #dce7e4;
+  border-radius: 8px;
+  padding: 10px;
+  background: #ffffff;
+}
+
+.admin-engagements-request-card.admin-engagements-national-swimmer-card,
+.admin-engagements-request-card.admin-engagements-national-person-card {
+  grid-template-columns: minmax(180px, 1.25fr) minmax(180px, 0.9fr) auto;
+  padding: 8px 10px;
+}
+
+.admin-engagements-request-main,
+.admin-engagements-request-meta {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.admin-engagements-request-main strong {
+  color: #12312d;
+}
+
+.admin-engagements-request-main small,
+.admin-engagements-request-meta span {
+  color: #5f746f;
+  font-size: 0.78rem;
+}
+
+.admin-engagements-request-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.admin-engagements-request-note {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding-top: 4px;
+  color: #5f746f;
+  font-size: 0.82rem;
+}
+
+.admin-engagements-access-request-edit {
+  margin-top: 12px;
+  border-top: 1px solid #dce7e4;
+  padding-top: 12px;
+}
+
+.admin-access-wide-field {
+  grid-column: 1 / -1;
+}
+
+.admin-portal-login-access {
+  width: 100%;
+  margin-top: 2px;
+  border-top: 1px solid #dce7e4;
+  padding-top: 8px;
+}
+
+.admin-portal-login-access summary {
+  cursor: pointer;
+  color: #0b7285;
+  font-weight: 700;
+  font-size: 0.88rem;
+}
+
+.admin-portal-login-access .admin-access-form {
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.admin-portal-login-access .admin-access-identity-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px 8px;
+}
+
+.admin-portal-login-access .admin-access-form label {
+  gap: 3px;
+  font-size: 0.76rem;
+}
+
+.admin-portal-login-access .admin-access-form input,
+.admin-portal-login-access .admin-access-form select,
+.admin-portal-login-access .admin-access-form textarea {
+  min-height: 34px;
+  border-radius: 7px;
+  padding: 0 9px;
+  font-size: 0.82rem;
+}
+
+.admin-portal-login-access .admin-access-form textarea {
+  min-height: 52px;
+  padding-top: 7px;
+  resize: vertical;
+}
+
+.admin-portal-login-access .admin-access-wide-field {
+  grid-column: 1 / -1;
+}
+
+#adminEngagementsCalendarCard .admin-engagements-competition[data-competition-type="pool"] {
+  border-left: 3px solid #91bcc5;
+}
+
+#adminEngagementsCalendarCard .admin-engagements-competition[data-competition-type="openWater"] {
+  border-left: 3px solid #8dbb9d;
+}
+
+#adminEngagementsCalendarCard .admin-engagements-competition-type {
+  width: fit-content;
+  color: #537078;
+  font-size: 0.72rem;
+  font-weight: 750;
+}
+
+#adminEngagementsCalendarCard .admin-engagements-competition[data-competition-type="openWater"] .admin-engagements-competition-type {
+  color: #47745a;
+}
+
+.admin-engagements-open-water-library {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 14px;
+  border: 1px solid #dbe7df;
+  border-radius: 9px;
+  padding: 12px;
+  background: #f8fbf9;
+}
+
+.admin-engagements-open-water-library[hidden] {
+  display: none;
+}
+
+.admin-engagements-open-water-library-head {
+  display: grid;
+  grid-template-columns: minmax(190px, 1fr) auto;
+  align-items: end;
+  gap: 16px;
+}
+
+.admin-engagements-open-water-library-head > div,
+.admin-engagements-open-water-course-creator label {
+  display: grid;
+  gap: 3px;
+}
+
+.admin-engagements-open-water-library-head small {
+  color: #607169;
+}
+
+.admin-engagements-open-water-course-creator {
+  display: grid;
+  grid-template-columns: 125px 145px auto;
+  align-items: end;
+  gap: 8px;
+}
+
+.admin-engagements-open-water-course-creator label > span {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.admin-engagements-open-water-course-creator input {
+  width: 100%;
+}
+
+.admin-engagements-open-water-course-list {
+  overflow-x: auto;
+}
+
+.admin-engagements-open-water-course-list table {
+  width: 100%;
+  min-width: 410px;
+  border-spacing: 0;
+  border: 1px solid #d5e2d9;
+  border-radius: 7px;
+  background: #ffffff;
+  overflow: hidden;
+}
+
+.admin-engagements-open-water-course-list th,
+.admin-engagements-open-water-course-list td {
+  border-right: 1px solid #e2ebe5;
+  border-bottom: 1px solid #e2ebe5;
+  padding: 4px 7px;
+  text-align: center;
+}
+
+.admin-engagements-open-water-course-list tr:last-child > * {
+  border-bottom: 0;
+}
+
+.admin-engagements-open-water-course-list tr > *:last-child {
+  border-right: 0;
+}
+
+.admin-engagements-open-water-course-list thead th {
+  background: #eef5f1;
+  color: #456159;
+  font-size: 0.75rem;
+}
+
+.admin-engagements-open-water-course-list tbody th {
+  color: #12312d;
+  font-size: 0.78rem;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.admin-engagements-open-water-course-actions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+}
+
+.admin-engagements-open-water-course-actions[data-open-water-course-active="false"] {
+  opacity: 0.68;
+}
+
+.admin-engagements-open-water-course-add,
+.admin-engagements-open-water-course-status {
+  display: inline-grid;
+  width: 26px;
+  min-width: 26px;
+  min-height: 26px;
+  padding: 0;
+  place-items: center;
+  border-radius: 6px;
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.admin-engagements-open-water-course-status {
+  width: 20px;
+  min-width: 20px;
+  min-height: 20px;
+  border: 0;
+  background: transparent;
+  color: #61766f;
+  font-size: 0.85rem;
+  opacity: 0.3;
+}
+
+.admin-engagements-open-water-course-actions:hover .admin-engagements-open-water-course-status,
+.admin-engagements-open-water-course-status:focus-visible {
+  opacity: 1;
+}
+
+.admin-engagements-open-water-course-add[data-open-water-course-selected="true"] {
+  border-color: #b9d7c6;
+  background: #e8f3ec;
+  color: #3f7157;
+}
+
+.admin-engagements-open-water-course-add:disabled,
+.admin-engagements-open-water-course-status:disabled {
+  cursor: default;
+}
+
+.admin-engagements-open-water-unavailable {
+  color: #a3b0ab;
+}
+
+.admin-engagements-open-water-label-short {
+  display: none;
+}
+
+.admin-engagements-open-water-action-short {
+  display: none;
+}
+
+.admin-engagements-open-water-empty {
+  margin: 0;
+  padding: 12px;
+  color: #607169;
+}
+
+.admin-engagements-club-entry-count {
+  display: inline-grid;
+  min-width: 30px;
+  min-height: 30px;
+  place-items: center;
+  color: #385158;
+  font-weight: 800;
+}
+
+@media (max-width: 720px) {
+  .admin-engagements-open-water-library-head {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-engagements-open-water-course-creator {
+    grid-template-columns: minmax(105px, 0.8fr) minmax(130px, 1fr) auto;
+  }
+}
+
+@media (max-width: 520px) {
+  .admin-engagements-open-water-library {
+    padding: 8px;
+  }
+
+  .admin-engagements-open-water-course-creator {
+    gap: 5px;
+  }
+
+  .admin-engagements-open-water-course-creator label {
+    font-size: 0.72rem;
+  }
+
+  .admin-engagements-open-water-course-creator button {
+    padding-inline: 8px;
+    font-size: 0.75rem;
+  }
+
+  .admin-engagements-open-water-course-status {
+    opacity: 0.6;
+  }
+
+  .admin-engagements-open-water-course-list table {
+    min-width: 330px;
+  }
+
+  .admin-engagements-open-water-course-list th,
+  .admin-engagements-open-water-course-list td {
+    padding: 3px 5px;
+  }
+
+  .admin-engagements-open-water-label-full {
+    display: none;
+  }
+
+  .admin-engagements-open-water-label-short {
+    display: inline;
+  }
+
+  .admin-engagements-open-water-action-full {
+    display: none;
+  }
+
+  .admin-engagements-open-water-action-short {
+    display: inline;
+  }
+}
+
+.admin-access-new-club-toggle > span:last-child {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  color: #12312d;
+  font-weight: 700;
+}
+
+.admin-portal-login-access .admin-access-form .admin-access-new-club-toggle input {
+  width: 18px;
+  min-height: 18px;
+  height: 18px;
+  padding: 0;
+}
+
+.admin-access-new-club-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+  border: 1px solid #dce7e4;
+  border-radius: 8px;
+  padding: 10px;
+}
+
+.admin-access-new-club-fields[hidden] {
+  display: none;
+}
+
+.admin-access-new-club-fields legend {
+  padding: 0 5px;
+  color: #0b7285;
+  font-weight: 800;
+}
+
+.admin-access-new-club-fields > small,
+.admin-access-new-club-fields > .admin-access-wide-field {
+  grid-column: 1 / -1;
+}
+
+.admin-portal-login-access .admin-portal-actions {
+  gap: 8px;
+}
+
+.admin-portal-login-access .admin-portal-actions button {
+  min-height: 34px;
+  padding: 0 12px;
+  font-size: 0.82rem;
+}
+
+.admin-portal-login-access .admin-portal-message {
+  min-height: 16px;
+  font-size: 0.78rem;
+}
+
+.admin-engagements-national-swimmer-card[data-active="false"] {
+  background: #f7f9f8;
+  border-color: #c7d7d3;
+}
+
+.admin-engagements-national-person-card[data-active="false"] {
+  background: #f7f9f8;
+  border-color: #c7d7d3;
+}
+
+.admin-engagements-national-swimmer-card[data-merged="true"],
+.admin-engagements-national-person-card[data-merged="true"] {
+  background: #fbfaf7;
+  border-color: #d9cdb5;
+}
+
+.admin-engagements-national-swimmer-card[data-active="false"] .admin-engagements-request-main strong,
+.admin-engagements-national-person-card[data-active="false"] .admin-engagements-request-main strong {
+  color: #5f746f;
+}
+
+.admin-engagements-national-merge {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: minmax(220px, 1fr) auto;
+  gap: 8px;
+  align-items: end;
+  border-top: 1px solid #dce7e4;
+  padding-top: 8px;
+}
+
+.admin-engagements-national-merge label {
+  display: grid;
+  gap: 4px;
+  color: #5f746f;
+  font-size: 0.76rem;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.admin-engagements-national-merge input,
+.admin-engagements-national-merge select {
+  min-height: 34px;
+  border: 1px solid #cddbd8;
+  border-radius: 7px;
+  padding: 7px 9px;
+  background: #ffffff;
+  color: #12312d;
+  font: inherit;
+  text-transform: none;
+}
+
+.admin-engagements-national-merge-target {
+  grid-column: 1 / -1;
+}
+
+.admin-engagements-empty {
+  margin: 0;
+  color: #5f746f;
+}
+
+.admin-engagements-form {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
+.admin-engagements-form-section {
+  display: grid;
+  grid-column: 1 / -1;
+  gap: 0;
+  min-width: 0;
+  margin: 0;
+  border: 1px solid #dce7e4;
+  border-radius: 8px;
+  padding: 0;
+  background: #ffffff;
+  overflow: hidden;
+}
+
+.admin-engagements-form-section legend {
+  margin-left: 8px;
+  padding: 0 6px;
+  color: #173b35;
+  font-size: 0.82rem;
+  font-weight: 900;
+}
+
+.admin-engagements-form-section-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0;
+}
+
+.admin-engagements-form-section-grid > label:only-child {
+  max-width: none;
+}
+
+.admin-engagements-form label {
+  display: grid;
+  gap: 6px;
+  color: #455d58;
+  font-size: 0.78rem;
+  font-weight: 850;
+}
+
+.admin-engagements-form-section-grid > label {
+  grid-template-columns: minmax(150px, 0.34fr) minmax(0, 1fr);
+  gap: 0;
+  align-items: center;
+  min-height: 46px;
+  border-top: 1px solid #e7efed;
+  padding: 7px 10px;
+}
+
+.admin-engagements-form-section-grid > label:first-child {
+  border-top: 0;
+}
+
+.admin-engagements-form-section-grid > label > input,
+.admin-engagements-form-section-grid > label > select {
+  grid-column: 2;
+  width: 100%;
+}
+
+.admin-engagements-form input,
+.admin-engagements-form select {
+  min-height: 40px;
+  border: 1px solid #cddbd8;
+  border-radius: 7px;
+  padding: 8px 10px;
+  background: #ffffff;
+  color: #12312d;
+  font: inherit;
+}
+
+.admin-engagements-form input:disabled,
+.admin-engagements-form select:disabled {
+  background: #eef5f3;
+  color: #5f746f;
+}
+
+.admin-engagements-field-note {
+  grid-column: 2;
+  margin-top: 4px;
+  color: #5f746f;
+  font-size: 0.74rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.admin-engagements-check {
+  display: grid !important;
+  grid-template-columns: minmax(150px, 0.34fr) minmax(0, 1fr);
+  gap: 0;
+  align-items: center;
+  min-height: 40px;
+}
+
+.admin-engagements-check input {
+  grid-column: 2;
+  grid-row: 1;
+  justify-self: start;
+  min-height: 0;
+  width: 18px;
+  height: 18px;
+}
+
+.admin-engagements-check span {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.admin-engagements-form .admin-portal-actions,
+.admin-engagements-form .admin-portal-message {
+  grid-column: 1 / -1;
+}
+
+.admin-engagements-empty,
+.admin-engagements-competition {
+  margin: 0;
+  border: 1px solid #dce7e4;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.admin-engagements-empty {
+  padding: 14px;
+  color: #5f746f;
+  font-weight: 760;
+}
+
+.admin-engagements-competition {
+  display: grid;
+  grid-template-columns: 92px minmax(0, 1fr) 120px 96px minmax(190px, auto);
+  gap: 12px;
+  align-items: center;
+  padding: 12px;
+}
+
+.admin-engagements-competition.selected {
+  border-color: #6aa89a;
+  box-shadow: inset 3px 0 0 #2f7d6d;
+}
+
+.admin-engagements-competition time,
+.admin-engagements-competition > span {
+  color: #31524c;
+  font-size: 0.82rem;
+  font-weight: 850;
+}
+
+.admin-engagements-competition strong,
+.admin-engagements-competition small {
+  display: block;
+}
+
+.admin-engagements-competition small {
+  color: #5f746f;
+  line-height: 1.35;
+}
+
+.admin-engagements-competition [data-entry-status] {
+  justify-self: start;
+  border-radius: 999px;
+  padding: 4px 8px;
+  background: #eef5f3;
+}
+
+.admin-engagements-competition [data-entry-status="open"] {
+  background: #e4f7ec;
+  color: #1d6b3f;
+}
+
+.admin-engagements-competition [data-entry-status="closing-soon"] {
+  background: #fff4cf;
+  color: #775711;
+}
+
+.admin-engagements-competition [data-entry-status="deadline-passed"] {
+  background: #fbe7e7;
+  color: #8a3030;
+}
+
+.admin-engagements-competition [data-entry-status="closed"] {
+  background: #f3eeee;
+  color: #7c3f3f;
+}
+
+.admin-engagements-competition-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.admin-engagements-competition-actions button {
+  min-height: 34px;
+}
+
+.admin-engagements-detail {
+  display: grid;
+  gap: 12px;
+  border: 1px solid #cddbd8;
+  border-radius: 8px;
+  padding: 14px;
+  background: #ffffff;
+}
+
+.admin-engagements-detail[hidden] {
+  display: none;
+}
+
+.admin-engagements-detail-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: start;
+  justify-content: space-between;
+}
+
+.admin-engagements-detail-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.admin-engagements-detail-actions > button:not(.ghost-button) {
+  min-height: 34px;
+  border: 0;
+  border-radius: 8px;
+  padding: 0 12px;
+  background: #0b7285;
+  color: #ffffff;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.admin-engagements-detail-actions > button:disabled {
+  opacity: 0.62;
+  cursor: not-allowed;
+}
+
+.admin-engagements-detail-actions .admin-engagements-danger-button {
+  border-color: #e1b2b2;
+  color: #9d2f2f;
+  background: #fff4f2;
+}
+
+.admin-engagements-detail-actions .admin-engagements-danger-button:hover,
+.admin-engagements-detail-actions .admin-engagements-danger-button:focus-visible {
+  border-color: #c95c5c;
+  color: #7f1d1d;
+  background: #ffe6e1;
+}
+
+.admin-engagements-detail-head span {
+  color: #5f746f;
+  font-size: 0.72rem;
+  font-weight: 850;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.admin-engagements-detail-head h4 {
+  margin: 4px 0 0;
+  font-size: 1rem;
+}
+
+.admin-engagements-detail-subtitle {
+  margin: 4px 0 0;
+  color: #5f746f;
+  font-size: 0.84rem;
+  font-weight: 760;
+  line-height: 1.35;
+}
+
+.admin-engagements-edit-state {
+  display: inline-flex;
+  width: fit-content;
+  margin-top: 7px;
+  border: 1px solid #dce7e4;
+  border-radius: 999px;
+  padding: 4px 8px;
+  background: #f8fbfa;
+  color: #455d58;
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.admin-engagements-edit-state[hidden] {
+  display: none;
+}
+
+.admin-engagements-edit-state[data-state="editing"] {
+  border-color: #b9dce5;
+  background: #eef9fb;
+  color: #0b6373;
+}
+
+.admin-engagements-edit-state[data-state="dirty"] {
+  border-color: #eadb9d;
+  background: #fff8df;
+  color: #8a5a00;
+}
+
+.admin-engagements-edit-state[data-state="deletion-pending"] {
+  border-color: #e1b2b2;
+  background: #fff4f2;
+  color: #9d2f2f;
+}
+
+.admin-engagements-detail-state-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.admin-engagements-entry-status {
+  display: inline-flex;
+  width: fit-content;
+  min-height: 28px;
+  margin-top: 7px;
+  border: 1px solid #cfdadd;
+  border-radius: 999px;
+  padding: 4px 9px;
+  background: #f7fafb;
+  color: #52636a;
+  font-size: 0.69rem;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.admin-engagements-entry-status[data-entry-status="open"] {
+  border-color: #9ccfc0;
+  background: #edf8f3;
+  color: #176447;
+}
+
+.admin-engagements-entry-status[data-entry-status="closed"] {
+  border-color: #d8c8a1;
+  background: #fff8e8;
+  color: #76570f;
+}
+
+.admin-engagements-entry-status:disabled {
+  opacity: 1;
+  cursor: default;
+}
+
+.admin-engagements-entry-status:not(:disabled):hover,
+.admin-engagements-entry-status:not(:disabled):focus-visible {
+  border-color: #0b7285;
+  outline: 3px solid rgba(11, 114, 133, 0.14);
+  outline-offset: 1px;
+}
+
+.admin-engagements-detail-meta {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.admin-engagements-detail-meta:empty {
+  display: none;
+}
+
+.admin-engagements-detail-meta-item {
+  min-width: 0;
+  border: 1px solid #dce7e4;
+  border-radius: 8px;
+  padding: 9px 10px;
+  background: #f8fbfa;
+}
+
+.admin-engagements-card[data-detail-open="true"] {
+  gap: 0;
+  border: 0;
+  padding: 0;
+  background: transparent;
+}
+
+.admin-engagements-card[data-detail-open="true"] > .admin-engagements-card-head {
+  display: none;
+}
+
+.admin-engagements-detail-meta-item span,
+.admin-engagements-detail-meta-item strong {
+  display: block;
+}
+
+.admin-engagements-detail-meta-item span {
+  color: #5f746f;
+  font-size: 0.68rem;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.admin-engagements-detail-meta-item strong {
+  margin-top: 3px;
+  color: #173b35;
+  font-size: 0.83rem;
+  font-weight: 850;
+  line-height: 1.25;
+}
+
+.admin-engagements-detail-meta-item[data-meta-tone="open"] {
+  border-color: #bfe6ca;
+  background: #effaf3;
+}
+
+.admin-engagements-detail-meta-item[data-meta-tone="closing-soon"] {
+  border-color: #eadb9d;
+  background: #fff8df;
+}
+
+.admin-engagements-detail-meta-item[data-meta-tone="deadline-passed"] {
+  border-color: #e8baba;
+  background: #fff0f0;
+}
+
+.admin-engagements-detail-meta-item[data-meta-tone="closed"] {
+  border-color: #ead0d0;
+  background: #fbf1f1;
+}
+
+.admin-engagements-detail-meta-item[data-meta-tone="national"] {
+  border-color: #cbd9ff;
+  background: #f2f6ff;
+}
+
+.admin-engagements-detail-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  border-bottom: 1px solid #dce7e4;
+  overflow-x: auto;
+}
+
+.admin-engagements-detail-tabs button {
+  min-height: 36px;
+  border: 1px solid transparent;
+  border-bottom: 0;
+  border-radius: 8px 8px 0 0;
+  padding: 7px 10px;
+  background: transparent;
+  color: #455d58;
+  font: inherit;
+  font-size: 0.86rem;
+  font-weight: 850;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.admin-engagements-detail-tabs button:hover,
+.admin-engagements-detail-tabs button:focus-visible,
+.admin-engagements-detail-tabs button[aria-selected="true"] {
+  border-color: #dce7e4;
+  background: #f8fbfa;
+  color: #12312d;
+}
+
+.admin-engagements-detail-tabs button[data-dirty="true"]::after {
+  content: " *";
+  color: #9a5b00;
+  font-weight: 900;
+}
+
+.admin-engagements-detail-tabs button[data-warning="true"] {
+  border-color: #eadb9d;
+  background: #fff8df;
+}
+
+.admin-engagements-detail-tabs button[data-locked="true"] {
+  color: #8a9996;
+  background: #f6f8f7;
+}
+
+.admin-engagements-detail-tabs button[data-locked="true"]::after {
+  content: " verrouille";
+  color: #8a9996;
+  font-size: 0.68rem;
+  font-weight: 800;
+}
+
+.admin-engagements-detail-panel {
+  min-width: 0;
+}
+
+.admin-engagements-detail-panel[hidden] {
+  display: none;
+}
+
+.admin-engagements-events-form {
+  display: grid;
+  gap: 12px;
+}
+
+.admin-engagements-club-step-form {
+  display: grid;
+  gap: 12px;
+}
+
+.admin-engagements-club-step-form[data-locked="true"] {
+  border: 1px dashed #dce7e4;
+  border-radius: 8px;
+  padding: 12px;
+  background: #f8fbfa;
+}
+
+.admin-engagements-club-choice-list {
+  display: grid;
+  gap: 10px;
+}
+
+.admin-engagements-club-choice-list[hidden] {
+  display: none;
+}
+
+.admin-engagements-club-team-primary-choices {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.admin-engagements-club-choice {
+  display: flex;
+  width: 100%;
+  gap: 8px;
+  align-items: center;
+  border: 1px solid #dce7e4;
+  border-radius: 8px;
+  padding: 10px;
+  background: #f8fbfa;
+  color: #12312d;
+  font: inherit;
+  font-weight: 850;
+  text-align: left;
+}
+
+.admin-engagements-club-choice input,
+.admin-engagements-club-renunciation input {
+  width: 18px;
+  height: 18px;
+}
+
+.admin-engagements-club-team-picker {
+  grid-column: 1 / -1;
+}
+
+.admin-engagements-club-renunciation {
+  border: 1px solid #eadb9d;
+  border-radius: 8px;
+  padding: 10px;
+  background: #fff8df;
+}
+
+.admin-engagements-club-team-validation {
+  justify-content: flex-end;
+}
+
+.admin-engagements-club-team-validation[hidden] {
+  display: none;
+}
+
+.admin-engagements-club-team-validation:has(button[hidden]) {
+  display: none;
+}
+
+.admin-engagements-club-step {
+  display: grid;
+  gap: 6px;
+  border: 1px solid #dce7e4;
+  border-radius: 8px;
+  padding: 12px;
+  background: #ffffff;
+}
+
+.admin-engagements-club-step strong {
+  color: #12312d;
+}
+
+.admin-engagements-club-step p {
+  margin: 0;
+  color: #5f746f;
+}
+
+.admin-engagements-club-step[data-locked="true"] {
+  border-style: dashed;
+  background: #f8fbfa;
+}
+
+.admin-engagements-club-officials-list {
+  display: grid;
+  gap: 8px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.admin-engagements-club-officials-section {
+  display: grid;
+  gap: 4px;
+  min-width: 420px;
+}
+
+.admin-engagements-club-officials-section h5 {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  margin: 0;
+  color: #5f746f;
+  font-size: 0.72rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.admin-engagements-club-officials-section h5 span {
+  display: inline-grid;
+  place-items: center;
+  min-width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background: #e6f3f0;
+  color: #0f5f57;
+  font-size: 0.65rem;
+}
+
+.admin-engagements-club-officials-table {
+  display: grid;
+  gap: 2px;
+  border: 1px solid #dce7e4;
+  border-radius: 6px;
+  overflow: hidden;
+  background: #ffffff;
+}
+
+.admin-engagements-club-officials-head,
+.admin-engagements-club-official-row {
+  display: grid;
+  grid-template-columns: minmax(190px, 1fr) 105px 120px;
+  gap: 5px;
+  align-items: center;
+}
+
+.admin-engagements-club-officials-head {
+  padding: 5px 8px;
+  background: #f5faf9;
+  border-bottom: 1px solid #dce7e4;
+  color: #5f746f;
+  font-size: 0.68rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.admin-engagements-club-official-row {
+  border-bottom: 1px solid #edf3f1;
+  padding: 0 8px;
+  background: #ffffff;
+  min-height: 25px;
+}
+
+.admin-engagements-club-official-row[data-selected="true"] {
+  background: #f1fbf9;
+  box-shadow: inset 3px 0 0 #0b7285;
+}
+
+.admin-engagements-club-official-row > span:first-child {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  min-width: 0;
+}
+
+.admin-engagements-club-official-row input {
+  width: 13px;
+  height: 13px;
+  min-height: 13px;
+  margin: 0;
+  padding: 0;
+  flex: 0 0 auto;
+}
+
+.admin-engagements-club-official-row strong {
+  color: #12312d;
+  font-size: 0.79rem;
+  line-height: 1.1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-engagements-club-search {
+  display: grid;
+  gap: 6px;
+  color: #5f746f;
+  font-weight: 850;
+}
+
+.admin-engagements-club-new-swimmer {
+  border: 1px solid #dce7e4;
+  border-radius: 8px;
+  padding: 10px;
+  background: #f8fbfa;
+}
+
+.admin-engagements-club-new-swimmer summary {
+  color: #12312d;
+  cursor: pointer;
+  font-weight: 900;
+}
+
+.admin-engagements-club-new-swimmer[open] {
+  display: grid;
+  gap: 10px;
+}
+
+.admin-engagements-club-swimmer-alerts {
+  display: grid;
+  gap: 8px;
+}
+
+.admin-engagements-club-swimmer-alert-list {
+  display: grid;
+  gap: 6px;
+}
+
+.admin-engagements-club-swimmer-alert-list article {
+  border: 1px solid #eadb9d;
+  border-radius: 8px;
+  padding: 8px;
+  background: #fff8df;
+}
+
+.admin-engagements-club-swimmer-alert-list strong,
+.admin-engagements-club-swimmer-alert-list small {
+  display: block;
+}
+
+.admin-engagements-club-swimmer-alert-list small {
+  color: #5f746f;
+  font-size: 0.78rem;
+}
+
+.admin-engagements-club-swimmers-list {
+  display: grid;
+  gap: 8px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.admin-engagements-club-swimmers-section {
+  display: grid;
+  gap: 3px;
+  min-width: 520px;
+}
+
+.admin-engagements-club-swimmers-section h5 {
+  margin: 0;
+  color: #5f746f;
+  font-size: 0.72rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.admin-engagements-club-swimmers-section h5 span {
+  color: #0b7285;
+  font-weight: 900;
+}
+
+.admin-engagements-club-swimmers-section-head {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.admin-engagements-club-swimmers-sex-filter {
+  display: inline-flex;
+  flex: 0 0 auto;
+  border: 1px solid #d8e0e3;
+  border-radius: 7px;
+  overflow: hidden;
+  background: #ffffff;
+}
+
+.admin-engagements-club-swimmers-sex-filter button {
+  min-height: 28px;
+  border: 0;
+  border-left: 1px solid #e1e7e9;
+  padding: 3px 9px;
+  background: transparent;
+  color: #52636a;
+  font: inherit;
+  font-size: 0.7rem;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.admin-engagements-club-swimmers-sex-filter button:first-child {
+  border-left: 0;
+}
+
+.admin-engagements-club-swimmers-sex-filter button:hover {
+  background: #f2f7f7;
+  color: #0b7285;
+}
+
+.admin-engagements-club-swimmers-sex-filter button[aria-pressed="true"] {
+  background: #0b7285;
+  color: #ffffff;
+}
+
+.admin-engagements-club-swimmers-sex-filter button:focus-visible {
+  position: relative;
+  z-index: 1;
+  outline: 3px solid rgba(11, 114, 133, 0.24);
+  outline-offset: -3px;
+}
+
+.admin-engagements-club-swimmers-section-empty {
+  min-width: 0;
+}
+
+.admin-engagements-club-swimmers-inactive {
+  display: grid;
+  gap: 7px;
+  min-width: 520px;
+}
+
+.admin-engagements-club-inactive-toggle {
+  display: inline-flex;
+  width: fit-content;
+  gap: 6px;
+  align-items: center;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: #0b7285;
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.03em;
+  text-align: left;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.admin-engagements-club-inactive-toggle:hover,
+.admin-engagements-club-inactive-toggle:focus-visible {
+  color: #075c6c;
+}
+
+.admin-engagements-club-inactive-toggle span {
+  padding: 0;
+  background: transparent;
+  color: #0b7285;
+  font-size: inherit;
+}
+
+.admin-engagements-club-inactive-toggle strong {
+  font-weight: 900;
+}
+
+.admin-engagements-club-inactive-toggle i {
+  width: 8px;
+  height: 8px;
+  margin: 0 2px 3px 4px;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(45deg);
+  transition: transform 120ms ease;
+}
+
+.admin-engagements-club-inactive-toggle[aria-expanded="true"] i {
+  transform: rotate(225deg);
+}
+
+@media (max-width: 520px) {
+  #adminEngagementsDetailSwimmersPanel .admin-engagements-club-swimmers-section-head {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  #adminEngagementsDetailSwimmersPanel .admin-engagements-club-swimmers-sex-filter {
+    display: flex;
+    width: 100%;
+  }
+
+  #adminEngagementsDetailSwimmersPanel .admin-engagements-club-swimmers-sex-filter button {
+    flex: 1 1 0;
+  }
+}
+
+.admin-engagements-club-swimmers-directory-tools {
+  margin: 0;
+}
+
+.admin-engagements-club-swimmers-directory-tools label {
+  display: grid;
+  gap: 5px;
+  color: #5f746f;
+  font-size: 0.78rem;
+  font-weight: 850;
+}
+
+.admin-engagements-club-swimmers-directory-tools input {
+  min-height: 34px;
+  border: 1px solid #ccdcd8;
+  border-radius: 6px;
+  padding: 6px 9px;
+  color: #12312d;
+  font: inherit;
+  font-size: 0.88rem;
+}
+
+.admin-engagements-club-swimmers-directory-list {
+  display: grid;
+  gap: 6px;
+}
+
+.admin-engagements-club-swimmers-directory-table {
+  display: grid;
+  gap: 3px;
+  overflow-x: auto;
+}
+
+.admin-engagements-club-swimmers-directory-row {
+  display: grid;
+  grid-template-columns: minmax(210px, 1.4fr) 92px 48px 54px minmax(110px, 0.7fr) minmax(88px, auto);
+  gap: 8px;
+  align-items: center;
+  min-width: 720px;
+  border: 1px solid #dce7e4;
+  border-radius: 6px;
+  padding: 5px 8px;
+  background: #ffffff;
+  font-size: 0.82rem;
+}
+
+.admin-engagements-club-swimmers-directory-head {
+  border-color: transparent;
+  background: transparent;
+  color: #5f746f;
+  font-size: 0.7rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.admin-engagements-club-swimmers-directory-row strong,
+.admin-engagements-club-swimmers-directory-row small {
+  display: block;
+}
+
+.admin-engagements-club-swimmers-directory-row strong {
+  overflow: hidden;
+  color: #12312d;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-engagements-club-swimmers-directory-row small {
+  overflow: hidden;
+  color: #5f746f;
+  font-size: 0.7rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-engagements-club-entries-list {
+  display: grid;
+  gap: 6px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.admin-engagements-club-relays-list {
+  display: grid;
+  gap: 6px;
+  container-type: inline-size;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.admin-engagements-club-relays-add {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 2px;
+}
+
+.admin-engagements-club-swimmers-table,
+.admin-engagements-club-entries-table {
+  display: grid;
+  gap: 3px;
+  min-width: 760px;
+}
+
+.admin-engagements-club-swimmers-table {
+  border: 1px solid #dce7e4;
+  border-radius: 6px;
+  overflow: hidden;
+  background: #ffffff;
+}
+
+.admin-engagements-club-swimmers-head,
+.admin-engagements-club-swimmer-row {
+  display: grid;
+  grid-template-columns: minmax(190px, 1fr) 82px 34px 42px minmax(155px, 0.4fr);
+  gap: 5px;
+  align-items: center;
+}
+
+.admin-engagements-club-swimmers-head {
+  padding: 5px 8px;
+  background: #f5faf9;
+  border-bottom: 1px solid #dce7e4;
+  color: #5f746f;
+  font-size: 0.68rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.admin-engagements-club-entry-row {
+  display: grid;
+  grid-template-columns: minmax(170px, 0.22fr) minmax(0, 1fr);
+  gap: 6px;
+  align-items: center;
+  border: 1px solid #edf3f1;
+  border-radius: 5px;
+  padding: 3px 6px;
+  background: #ffffff;
+}

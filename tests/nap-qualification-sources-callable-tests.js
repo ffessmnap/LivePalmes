@@ -1,5 +1,5 @@
 "use strict";
-const assert=require("node:assert/strict"),fs=require("node:fs"),vm=require("node:vm");
+const assert=require("node:assert/strict"),fs=require("./helpers/source-files"),vm=require("node:vm");
 const source=fs.readFileSync(require.resolve("../functions/index.js"),"utf8");
 const start=source.indexOf("exports.listEngagementQualificationSources ="),end=source.indexOf("exports.processEngagementQualificationJob =",start);
 assert.ok(start>=0&&end>start);

@@ -1,6 +1,6 @@
 "use strict";
 // Real portal markup/module, isolated synthetic services and no network.
-const fs=require("node:fs"),path=require("node:path"),assert=require("node:assert/strict");
+const fs=require("./helpers/source-files"),path=require("node:path"),assert=require("node:assert/strict");
 const {chromium}=require("playwright");
 async function main(){
   const portal=fs.readFileSync("portail.html","utf8"),start=portal.indexOf('<section class="admin-engagements-card admin-national-page-card admin-license-admin"'),end=portal.indexOf('<section class="admin-engagements-card admin-national-page-card" aria-label="Nageurs"',start);

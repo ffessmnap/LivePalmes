@@ -1,7 +1,7 @@
 "use strict";
 // Prepared additive details for non-sporting calendar events only.
 // No DDL, no migration, no write, no Firebase fallback.
-const {positiveId}=require("./nap-direct-calendar");
+const {positiveId}=require("./nap-calendar-values");
 const {cleanPublicCalendarProgram,cleanPublicCalendarUrl}=require("./public-calendar");
 const KINDS=new Set(["training","stage","meeting"]);
 function normalize(raw={}) {

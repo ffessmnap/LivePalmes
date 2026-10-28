@@ -1,0 +1,1145 @@
+
+
+.admin-portal-page .admin-portal-federal-logo {
+  grid-column: 1;
+  width: 46px;
+}
+
+.admin-portal-page .admin-portal-brand {
+  grid-column: 2;
+  justify-self: start;
+  gap: 0;
+}
+
+.admin-portal-page .admin-portal-brand h1 {
+  font-size: 1.12rem;
+}
+
+.admin-portal-page .admin-portal-livepalmes-logo {
+  display: none;
+}
+
+.admin-portal-page .admin-portal-topbar-actions {
+  display: flex;
+  grid-column: 3;
+  gap: 8px;
+  justify-self: end;
+}
+
+.admin-portal-page .admin-portal-scope-context {
+  display: flex;
+  min-height: 34px;
+  align-items: center;
+  gap: 5px;
+  border-color: #cfe1e3;
+  border-radius: 999px;
+  padding: 3px 9px;
+  background: #f3fafb;
+  color: #31454c;
+  font-size: 0.76rem;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.admin-portal-page .admin-portal-scope-context[hidden] {
+  display: none;
+}
+
+.admin-portal-page .admin-portal-scope-prefix {
+  color: #61757c;
+}
+
+.admin-portal-page .admin-portal-scope-club-button {
+  display: inline-flex;
+  min-height: 28px;
+  align-items: center;
+  gap: 5px;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+}
+
+.admin-portal-page .admin-portal-scope-club-button:not(:disabled) {
+  cursor: pointer;
+}
+
+.admin-portal-page .admin-portal-scope-club-button:not(:disabled):hover strong {
+  text-decoration: underline;
+}
+
+.admin-portal-page .admin-portal-scope-club-button:focus-visible {
+  outline: 3px solid var(--portal-focus-ring);
+  outline-offset: 2px;
+}
+
+.admin-portal-page .admin-portal-scope-club-button:disabled {
+  cursor: default;
+}
+
+.admin-portal-page .admin-portal-scope-club-button > strong {
+  color: var(--portal-color-accent-strong);
+  font-weight: var(--portal-font-weight-semibold);
+}
+
+.admin-portal-club-switch-dialog {
+  width: min(620px, calc(100vw - 24px));
+  max-height: calc(100vh - 24px);
+  overflow: auto;
+  border: 1px solid #cfe1e3;
+  border-radius: 12px;
+  padding: 0;
+  color: #12312d;
+  box-shadow: 0 20px 60px rgba(12, 35, 32, 0.24);
+}
+
+.admin-portal-club-switch-dialog::backdrop {
+  background: rgba(12, 35, 32, 0.45);
+}
+
+.admin-portal-club-switch-dialog form {
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+}
+
+.admin-portal-club-switch-dialog h2,
+.admin-portal-club-switch-dialog p {
+  margin: 0;
+}
+
+.admin-portal-club-switch-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.admin-portal-club-switch-head > div > span {
+  color: #5f746f;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.admin-portal-club-switch-dialog label {
+  display: grid;
+  gap: 6px;
+  color: #36544f;
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+.admin-portal-club-switch-dialog input {
+  width: 100%;
+  min-height: 42px;
+  box-sizing: border-box;
+}
+
+.admin-portal-club-switch-results {
+  display: grid;
+  max-height: min(48vh, 380px);
+  overflow: auto;
+  border: 1px solid #d9e5e3;
+  border-radius: 8px;
+}
+
+.admin-portal-club-switch-result {
+  display: grid;
+  grid-template-columns: minmax(90px, auto) minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  border: 0;
+  border-bottom: 1px solid #e3ebea;
+  padding: 10px 12px;
+  background: #ffffff;
+  color: #243b42;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+}
+
+.admin-portal-club-switch-result:last-child {
+  border-bottom: 0;
+}
+
+.admin-portal-club-switch-result:hover,
+.admin-portal-club-switch-result[aria-pressed="true"] {
+  background: #f0f8f7;
+}
+
+.admin-portal-club-switch-result:focus-visible {
+  position: relative;
+  z-index: 1;
+  outline: 3px solid var(--portal-focus-ring);
+  outline-offset: -3px;
+}
+
+.admin-portal-club-switch-result strong {
+  color: var(--portal-color-accent-strong);
+}
+
+.admin-portal-club-switch-result span {
+  min-width: 0;
+}
+
+.admin-portal-club-switch-result small {
+  color: #176454;
+  font-size: 0.72rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+@media (max-width: 520px) {
+  .admin-portal-club-switch-dialog form {
+    padding: 14px;
+  }
+
+  .admin-portal-club-switch-result {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .admin-portal-club-switch-result span {
+    grid-column: 1 / -1;
+    font-size: 0.84rem;
+  }
+}
+
+.admin-portal-page .admin-portal-scope-role {
+  display: none;
+}
+
+.admin-portal-page .admin-portal-account-menu > button strong {
+  max-width: min(22vw, 220px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 860px) {
+  .admin-portal-page .admin-portal-topbar {
+    min-height: 54px;
+    gap: 8px;
+    padding-block: 6px;
+  }
+
+  .admin-portal-page .admin-portal-federal-logo {
+    width: 40px;
+  }
+
+  .admin-portal-page .admin-portal-brand h1 {
+    font-size: 1rem;
+  }
+
+  .admin-portal-page .admin-portal-scope-prefix {
+    display: none;
+  }
+
+  .admin-portal-page .admin-portal-scope-context {
+    min-width: 0;
+    padding-inline: 8px;
+  }
+
+  .admin-portal-page .admin-portal-account-menu > button strong {
+    max-width: 150px;
+  }
+}
+
+@media (max-width: 680px) {
+  .admin-portal-page .admin-portal-topbar {
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    min-height: 48px;
+    gap: 6px;
+    padding: 4px 8px;
+  }
+
+  .admin-portal-page .admin-portal-federal-logo {
+    grid-column: 1;
+    grid-row: 1;
+    width: 36px;
+  }
+
+  .admin-portal-page .admin-portal-brand {
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: center;
+  }
+
+  .admin-portal-page .admin-portal-brand h1 {
+    font-size: 0.92rem;
+  }
+
+  .admin-portal-page .admin-portal-topbar-actions {
+    grid-column: 3;
+    grid-row: 1;
+    gap: 4px;
+  }
+
+  .admin-portal-page .admin-portal-scope-context {
+    display: none;
+  }
+
+  .admin-portal-page .admin-portal-account-menu > button {
+    min-height: 36px;
+    border-color: transparent;
+    padding-inline: 7px;
+    background: transparent;
+  }
+
+  .admin-portal-page .admin-portal-account-menu > button strong {
+    display: none;
+  }
+
+  .admin-portal-page .admin-portal-account-short {
+    display: inline-block;
+    max-width: 72px;
+    overflow: hidden;
+    color: var(--portal-color-accent-strong);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+@media (max-width: 420px) {
+  .admin-portal-page .admin-portal-title-prefix {
+    display: none;
+  }
+}
+
+/* Les deux informations d'engagement restent visuellement équivalentes. */
+#adminEngagementsCalendarCard .admin-engagements-competition-status small[data-entry-status] {
+  padding: 2px 7px;
+  font-size: 0.67rem;
+  font-weight: 650;
+  line-height: 1.35;
+}
+
+/* Espace Club : les quatre filtres du calendrier restent visibles sur une ligne compacte. */
+#adminEngagementsView[data-engagements-mode="club"][data-engagements-tab="calendar"] #adminEngagementsCalendarFilters {
+  padding-block: 6px;
+}
+
+#adminEngagementsView[data-engagements-mode="club"][data-engagements-tab="calendar"] #adminEngagementsCalendarFilters .admin-engagements-filter-primary {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 0.8fr) minmax(0, 0.8fr) minmax(0, 0.9fr);
+  flex: 1 1 100%;
+  gap: 6px;
+  min-width: 0;
+}
+
+#adminEngagementsView[data-engagements-mode="club"][data-engagements-tab="calendar"] #adminEngagementsCalendarFilters .admin-engagements-filter-primary > label {
+  min-width: 0;
+  max-width: none;
+  gap: 3px;
+  font-size: 0.68rem;
+}
+
+#adminEngagementsView[data-engagements-mode="club"][data-engagements-tab="calendar"] #adminEngagementsCalendarFilters .admin-engagements-filter-primary select {
+  width: 100%;
+  min-width: 0;
+  min-height: 32px;
+  padding: 5px 6px;
+  font-size: 0.75rem;
+}
+
+#adminEngagementsView[data-engagements-mode="club"][data-engagements-tab="calendar"] #adminEngagementsCalendarFilters .admin-engagements-advanced-filters {
+  display: none;
+}
+
+@media (max-width: 420px) {
+  #adminEngagementsView[data-engagements-mode="club"][data-engagements-tab="calendar"] #adminEngagementsCalendarFilters .admin-engagements-filter-primary {
+    gap: 4px;
+  }
+
+  #adminEngagementsView[data-engagements-mode="club"][data-engagements-tab="calendar"] #adminEngagementsCalendarFilters .admin-engagements-filter-primary > label {
+    font-size: 0.62rem;
+  }
+
+  #adminEngagementsView[data-engagements-mode="club"][data-engagements-tab="calendar"] #adminEngagementsCalendarFilters .admin-engagements-filter-primary select {
+    padding-inline: 3px;
+    font-size: 0.68rem;
+  }
+}
+
+/* Journal d'activité : filtres sur une ligne, actions sur la ligne suivante. */
+@media (min-width: 621px) {
+  #adminEngagementsView .admin-national-audit-filters {
+    grid-template-columns: minmax(140px, 1.6fr) repeat(5, minmax(72px, 1fr)) auto;
+  }
+
+  #adminEngagementsView .admin-national-audit-filters > label:first-child {
+    grid-column: auto;
+  }
+}
+
+@media (max-width: 620px) {
+  #adminEngagementsView .admin-national-audit-filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  #adminEngagementsView .admin-national-audit-filters > label:first-child {
+    grid-column: 1 / -1;
+  }
+
+  #adminEngagementsView .admin-national-audit-filter-actions {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 440px) {
+  #adminEngagementsView .admin-national-audit-filters {
+    grid-template-columns: 1fr;
+  }
+
+  #adminEngagementsView .admin-national-audit-filters > label:first-child,
+  #adminEngagementsView .admin-national-audit-filter-actions {
+    grid-column: auto;
+  }
+
+  .admin-national-audit-filter-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .admin-national-audit-filter-actions button {
+    width: 100%;
+  }
+}
+/* Fiche des événements du calendrier public. */
+.admin-calendar-event-dialog { width:min(680px, calc(100% - 24px)); max-height:calc(100dvh - 24px); overflow:auto; }
+.admin-calendar-event-dialog .admin-engagements-form { margin:0; }
+.admin-calendar-event-dialog > .admin-engagements-form { gap:8px; }
+.admin-calendar-event-dialog [data-calendar-event-message]:empty { display:none; }
+.admin-calendar-event-header { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; padding:0 0 8px; }
+.admin-calendar-event-header > div { min-width:0; }
+.admin-calendar-event-header h2 { overflow-wrap:anywhere; }
+.admin-calendar-event-close { display:grid; flex:0 0 36px; place-items:center; width:36px; min-height:36px; padding:0; }
+.admin-calendar-event-close svg { width:18px; height:18px; fill:none; stroke:currentColor; stroke-linecap:round; stroke-width:2; }
+.admin-calendar-readonly { display:grid; gap:6px; }
+.admin-calendar-readonly h3 { margin:0; color:#173b35; font-size:.86rem; }
+.admin-calendar-readonly-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:1px; margin:0; overflow:hidden; border:1px solid #dce7e4; border-radius:9px; background:#dce7e4; }
+.admin-calendar-readonly-item { display:grid; align-content:start; gap:3px; min-width:0; padding:7px 9px; background:#fff; }
+.admin-calendar-readonly-item--full { grid-column:1 / -1; }
+.admin-calendar-readonly-item dt { color:#647873; font-size:.7rem; font-weight:850; letter-spacing:.02em; text-transform:uppercase; }
+.admin-calendar-readonly-item dd { margin:0; color:#173b35; font-size:.86rem; font-weight:750; line-height:1.35; overflow-wrap:anywhere; }
+.admin-calendar-readonly-item a { color:#0d6672; }
+.admin-calendar-status { display:inline-flex; align-items:center; min-height:24px; width:max-content; max-width:100%; border-radius:999px; padding:3px 8px; background:#e7f2f1; color:#174f59; font-size:.76rem; font-weight:850; }
+.admin-calendar-status[data-tone="success"] { background:#e5f3ea; color:#24613d; }
+.admin-calendar-status[data-tone="danger"] { background:#fde9e7; color:#8a2f27; }
+.admin-calendar-readonly-program { display:grid; gap:8px; }
+.admin-calendar-readonly-program > h3 { margin:0; color:#173b35; font-size:.86rem; }
+.admin-calendar-program-details { border:1px solid #dce7e4; border-radius:9px; background:#fff; }
+.admin-calendar-program-details > summary { display:flex; align-items:center; justify-content:space-between; gap:12px; cursor:pointer; padding:9px 11px; color:#173b35; list-style-position:inside; }
+.admin-calendar-program-details > summary span { display:grid; gap:2px; }
+.admin-calendar-program-details small { color:#647873; font-size:.72rem; font-weight:750; }
+.admin-calendar-program-details > p { margin:0; padding:0 11px 10px; color:#455d58; font-size:.8rem; }
+.admin-calendar-program-details > ul { display:grid; gap:0; margin:0; padding:0 11px 10px; list-style:none; }
+.admin-calendar-program-details li { display:flex; justify-content:space-between; gap:12px; border-top:1px solid #edf2f1; padding:6px 0; color:#294b45; font-size:.78rem; }
+.admin-calendar-event-description { grid-column:1 / -1; }
+.admin-calendar-event-check { align-content:center; }
+.admin-calendar-program-row { display:grid; grid-template-columns:1fr 140px 105px 105px minmax(180px,2fr) auto; align-items:end; gap:10px; padding:12px 0; border-bottom:1px solid var(--admin-border, #dce7e9); }
+.admin-calendar-program-row label { display:grid; gap:5px; }
+.admin-calendar-documents { gap:10px; margin-top:8px; padding:12px; }
+.admin-calendar-documents > h3 { margin-bottom:4px; }
+.admin-calendar-documents > p { margin-top:0; color:#5f746f; font-size:.8rem; }
+.admin-calendar-document { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; gap:12px; padding:8px 0; border-top:1px solid var(--admin-border, #dce7e9); }
+.admin-calendar-document div:first-child { display:grid; min-width:0; gap:3px; }
+.admin-calendar-document div:first-child strong,
+.admin-calendar-document div:first-child small { overflow-wrap:anywhere; }
+.admin-calendar-document > .admin-portal-actions { flex-wrap:nowrap; justify-content:flex-end; gap:8px; }
+.admin-calendar-document > .admin-portal-actions > a { min-width:66px; justify-content:center; }
+.admin-calendar-document > .admin-portal-actions > [data-calendar-document-edit] { min-width:136px; justify-content:center; }
+.admin-calendar-document-editor { margin-top:4px; border:1px solid #dce7e4; border-radius:9px; background:#fbfcfc; }
+.admin-calendar-document-editor > summary { cursor:pointer; padding:8px 10px; color:#174f59; font-size:.8rem; font-weight:850; }
+.admin-calendar-document-editor[open] > summary { border-bottom:1px solid #dce7e4; }
+.admin-calendar-document-editor > form { gap:8px; padding:8px; }
+.admin-calendar-document-editor .admin-engagements-form-section-grid { grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+.admin-calendar-document-editor .admin-engagements-form-section-grid > label { display:grid; grid-template-columns:1fr; align-items:start; gap:4px; min-height:0; border:0; padding:0; }
+.admin-calendar-document-editor .admin-engagements-form-section-grid > label:first-child,
+.admin-calendar-document-editor .admin-engagements-form-section-grid > label:last-child { grid-column:1 / -1; }
+.admin-calendar-document-editor .admin-engagements-form-section-grid > label > input,
+.admin-calendar-document-editor .admin-engagements-form-section-grid > label > select { grid-column:auto; min-height:36px; padding:6px 8px; }
+.admin-calendar-document-editor .admin-portal-actions button { min-height:36px; }
+@media (max-width:800px) { .admin-calendar-program-row { grid-template-columns:repeat(2,minmax(0,1fr)); }.admin-calendar-program-summary { grid-column:1/-1; } }
+@media (max-width:600px) { .admin-calendar-readonly-grid { grid-template-columns:1fr; }.admin-calendar-readonly-item--full { grid-column:auto; }.admin-calendar-document { grid-template-columns:1fr; align-items:start; }.admin-calendar-document > .admin-portal-actions { flex-wrap:wrap; justify-content:flex-start; }.admin-calendar-document-editor .admin-engagements-form-section-grid { grid-template-columns:1fr; }.admin-calendar-document-editor .admin-engagements-form-section-grid > label { grid-column:auto; }.admin-calendar-event-dialog { width:calc(100% - 12px); max-height:calc(100dvh - 12px); padding:12px; }.admin-calendar-event-header { gap:10px; } }
+
+/* Échelle commune des boutons du portail. */
+.admin-portal-page {
+  --admin-button-height-compact: 36px;
+  --admin-button-height-standard: 40px;
+  --admin-button-height-large: 44px;
+  --admin-button-padding-compact: 10px;
+  --admin-button-padding-standard: 14px;
+}
+
+.admin-portal-page .admin-button-compact,
+.admin-portal-page .admin-tool-workspace-head button,
+#adminEngagementsDetail .admin-engagements-detail-actions button,
+#adminEngagementsDetail .admin-engagements-events-head > button,
+#adminEngagementsDetail .admin-engagements-documents-head button {
+  width: auto;
+  min-height: var(--admin-button-height-compact);
+  padding-right: var(--admin-button-padding-compact);
+  padding-left: var(--admin-button-padding-compact);
+  font-size: 0.82rem;
+  line-height: 1.1;
+}
+
+.admin-portal-page .admin-tool-workspace-head > .admin-button-compact {
+  align-self: center;
+  justify-self: start;
+}
+
+#adminRecordsView .admin-records-workspace-head .admin-button-compact {
+  width: auto;
+  min-width: 0;
+}
+
+#adminEngagementsView .admin-engagements-workspace-back {
+  column-gap: 5px;
+}
+
+.admin-button-label-short {
+  display: none;
+}
+
+/* Paramétrage général d'une compétition : grille dense et lisible. */
+#adminEngagementsEditForm {
+  gap: 10px;
+}
+
+#adminEngagementsEditForm .admin-engagements-compact-section > legend {
+  font-weight: 800;
+}
+
+#adminEngagementsEditForm .admin-engagements-compact-field--readonly input[readonly] {
+  min-height: 38px;
+  border-style: dashed;
+  background: #f2f6f6;
+  color: #40545c;
+  font-weight: 750;
+}
+
+#adminEngagementsEditForm .admin-engagements-compact-check {
+  grid-template-columns: 18px minmax(0, 1fr);
+  gap: 8px;
+  align-content: center;
+  align-items: center;
+  justify-content: start;
+}
+
+#adminEngagementsEditForm .admin-engagements-compact-check > input {
+  grid-column: 1;
+  width: 18px;
+  min-height: 18px;
+  height: 18px;
+  margin: 0;
+  padding: 0;
+  accent-color: #0b7285;
+}
+
+#adminEngagementsEditForm .admin-engagements-compact-check > span {
+  grid-column: 2;
+  justify-self: start;
+  text-align: left;
+}
+
+#adminEngagementsEditForm [data-engagements-conditional-region][hidden] {
+  display: none;
+}
+
+#adminEngagementsDetail .admin-engagements-inline-save-actions {
+  gap: 8px;
+  border: 1px solid rgba(216, 224, 227, 0.92);
+  border-radius: 9px;
+  margin-top: 2px;
+  padding: 8px;
+  background: #f8fafb;
+}
+
+#adminEngagementsDetail .admin-engagements-no-fees-choice {
+  width: fit-content;
+}
+
+#adminEngagementsEditForm .admin-engagements-embedded-fees {
+  display: grid;
+  gap: 8px;
+  border-top: 1px solid #dfe5e7;
+  padding: 9px 10px 10px;
+  background: #ffffff;
+}
+
+#adminEngagementsEditForm .admin-engagements-embedded-fees-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+#adminEngagementsEditForm .admin-engagements-embedded-fees-head strong {
+  color: #174f59;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+#adminEngagementsEditForm .admin-engagements-embedded-fees .admin-engagements-no-fees-choice {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  width: fit-content;
+  min-height: 28px;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  font-weight: 650;
+}
+
+#adminEngagementsEditForm .admin-engagements-embedded-fees .admin-engagements-no-fees-choice input {
+  flex: 0 0 auto;
+  min-height: 18px;
+}
+
+#adminEngagementsEditForm .admin-engagements-embedded-fees .admin-engagements-fees-grid {
+  gap: 8px 10px;
+}
+
+#adminEngagementsDetail #adminEngagementsEditForm .admin-engagements-embedded-fees .admin-engagements-fees-grid label {
+  gap: 5px;
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+  background: transparent;
+}
+
+#adminEngagementsDetail #adminEngagementsEditForm .admin-engagements-embedded-fees .admin-engagements-fees-grid input {
+  min-height: 36px;
+}
+
+@media (min-width: 701px) {
+  #adminEngagementsEditForm .admin-engagements-compact-section > .admin-engagements-form-section-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1px;
+    background: #e7ecee;
+  }
+
+  #adminEngagementsEditForm .admin-engagements-compact-section--documents > .admin-engagements-form-section-grid,
+  #adminEngagementsEditForm .admin-engagements-compact-section--engagements > .admin-engagements-form-section-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  #adminEngagementsEditForm .admin-engagements-compact-section .admin-engagements-compact-field,
+  #adminEngagementsEditForm .admin-engagements-compact-section .admin-engagements-invited-regions-field {
+    grid-template-columns: minmax(0, 1fr);
+    align-content: start;
+    align-items: stretch;
+    gap: 5px;
+    min-height: 0;
+    border: 0;
+    padding: 8px 10px;
+    background: #ffffff;
+  }
+
+  #adminEngagementsEditForm .admin-engagements-compact-section .admin-engagements-compact-field:nth-child(even) {
+    background: #ffffff;
+  }
+
+  #adminEngagementsEditForm .admin-engagements-compact-section .admin-engagements-compact-field > input:not([type="checkbox"]),
+  #adminEngagementsEditForm .admin-engagements-compact-section .admin-engagements-compact-field > select,
+  #adminEngagementsEditForm .admin-engagements-compact-section .admin-engagements-compact-field > textarea,
+  #adminEngagementsEditForm .admin-engagements-compact-section .admin-engagements-field-note {
+    grid-column: 1;
+    width: 100%;
+  }
+
+  #adminEngagementsEditForm .admin-engagements-compact-section .admin-engagements-compact-field > input:not([type="checkbox"]),
+  #adminEngagementsEditForm .admin-engagements-compact-section .admin-engagements-compact-field > select {
+    min-height: 38px;
+  }
+
+  #adminEngagementsEditForm .admin-engagements-compact-section .admin-engagements-compact-field > textarea {
+    min-height: 74px;
+    resize: vertical;
+  }
+
+  #adminEngagementsEditForm .admin-engagements-compact-field--full {
+    grid-column: 1 / -1;
+  }
+
+  #adminEngagementsEditForm .admin-engagements-entry-status-field {
+    border-left: 3px solid #0b7285;
+    padding-left: 8px;
+    background: #eef8fa;
+  }
+
+  #adminEngagementsEditForm .admin-engagements-compact-check {
+    grid-template-columns: 18px minmax(0, 1fr);
+    align-content: center;
+    align-items: center;
+    min-height: 59px;
+  }
+
+  #adminEngagementsDetail .admin-engagements-fees-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  #adminEngagementsDetail .admin-engagements-fees-grid label {
+    padding: 9px 10px;
+  }
+
+  #adminEngagementsDetail .admin-engagements-fees-grid input {
+    min-height: 38px;
+  }
+
+  #adminEngagementsDetail #adminEngagementsEditForm .admin-engagements-embedded-fees .admin-engagements-fees-grid input {
+    min-height: 36px;
+  }
+}
+
+@media (min-width: 900px) {
+  #adminEngagementsDetail #adminEngagementsEditForm .admin-engagements-embedded-fees .admin-engagements-fees-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1180px) {
+  #adminEngagementsEditForm .admin-engagements-compact-section--competition > .admin-engagements-form-section-grid,
+  #adminEngagementsEditForm .admin-engagements-compact-section--sports > .admin-engagements-form-section-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  #adminEngagementsDetail .admin-engagements-fees-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 700px) {
+  #adminEngagementsEditForm .admin-engagements-compact-check {
+    grid-template-columns: 18px minmax(0, 1fr);
+    min-height: 44px;
+  }
+
+  #adminEngagementsDetail .admin-engagements-no-fees-choice {
+    width: 100%;
+  }
+
+  #adminEngagementsDetail .admin-engagements-detail-actions {
+    display: flex;
+    flex-flow: row wrap;
+    gap: 8px;
+    width: 100%;
+    align-items: center;
+    justify-content: flex-start;
+  }
+
+  #adminEngagementsDetail .admin-engagements-detail-actions button {
+    width: auto;
+    min-height: 38px;
+    padding-right: 12px;
+    padding-left: 12px;
+  }
+
+  #adminEngagementsDetail #adminEngagementsEditButton {
+    border-color: #0b7285;
+    background: #0b7285;
+    color: #ffffff;
+    font-weight: 800;
+  }
+
+  #adminEngagementsView .admin-engagements-workspace-back {
+    align-self: start;
+    min-height: 38px;
+    padding-right: 11px;
+    padding-left: 11px;
+    font-size: 0.84rem;
+  }
+
+  .admin-portal-page .admin-tool-workspace-head > .admin-button-compact {
+    align-self: flex-start;
+  }
+
+  #adminEngagementsView .admin-engagements-workspace-back .admin-button-label-long {
+    display: none;
+  }
+
+  #adminEngagementsView .admin-engagements-workspace-back .admin-button-label-short {
+    display: inline;
+  }
+}
+
+/* Bandeau mobile du portail : navigation, marque puis compte. */
+@media (max-width: 680px) {
+  .admin-portal-page .admin-portal-topbar {
+    grid-template-columns: 38px 38px minmax(82px, 1fr) auto;
+    gap: 7px;
+    min-height: 54px;
+    padding: 5px 8px;
+  }
+
+  .admin-portal-page .admin-portal-topbar-actions {
+    display: contents;
+  }
+
+  .admin-portal-page .admin-portal-nav-toggle {
+    grid-column: 1;
+    grid-row: 1;
+    width: 38px;
+    height: 38px;
+    min-height: 38px;
+    border-color: transparent;
+    border-radius: 10px;
+    padding: 9px;
+    background: #e7f5f6;
+    color: var(--portal-color-accent-strong);
+  }
+
+  .admin-portal-page .admin-portal-nav-toggle:hover,
+  .admin-portal-page .admin-portal-nav-toggle[aria-expanded="true"] {
+    border-color: transparent;
+    background: #cfe9ec;
+  }
+
+  .admin-portal-page .admin-portal-nav-toggle:focus-visible {
+    outline: 3px solid var(--portal-focus-ring);
+    outline-offset: 2px;
+  }
+
+  .admin-portal-page .admin-portal-nav-toggle svg path {
+    transform-box: view-box;
+    transform-origin: center;
+    transition: transform 160ms ease, opacity 120ms ease;
+  }
+
+  .admin-portal-page .admin-portal-nav-toggle[aria-expanded="true"] svg path:first-child {
+    transform: translateY(5px) rotate(45deg);
+  }
+
+  .admin-portal-page .admin-portal-nav-toggle[aria-expanded="true"] svg path:nth-child(2) {
+    opacity: 0;
+  }
+
+  .admin-portal-page .admin-portal-nav-toggle[aria-expanded="true"] svg path:last-child {
+    transform: translateY(-5px) rotate(-45deg);
+  }
+
+  .admin-portal-page .admin-portal-federal-logo {
+    grid-column: 2;
+    grid-row: 1;
+    width: 38px;
+  }
+
+  .admin-portal-page .admin-portal-brand {
+    grid-column: 3;
+    grid-row: 1;
+    justify-self: start;
+  }
+
+  .admin-portal-page .admin-portal-brand h1 {
+    font-size: 1.08rem;
+  }
+
+  .admin-portal-page .admin-portal-title-prefix {
+    display: none;
+  }
+
+  .admin-portal-page .admin-portal-account-menu {
+    grid-column: 4;
+    grid-row: 1;
+    justify-self: end;
+  }
+
+  .admin-portal-page .admin-portal-account-menu > button {
+    min-height: 36px;
+    padding-inline: 6px;
+  }
+
+  .admin-portal-page .admin-portal-account-short {
+    max-width: 72px;
+    font-size: 0.8rem;
+  }
+
+  .admin-portal-page .admin-portal-account-icon {
+    width: 17px;
+    height: 17px;
+  }
+
+  #adminOverviewView > .admin-overview-head {
+    display: none !important;
+  }
+
+  .admin-portal-page .admin-portal-overview-view {
+    gap: 4px;
+  }
+
+  .admin-portal-page .admin-overview-grid {
+    gap: 4px;
+  }
+
+  .admin-portal-page .admin-overview-space-main {
+    min-height: 50px;
+    padding-block: 5px;
+  }
+
+  .admin-portal-page .admin-overview-space-toggle {
+    min-height: 28px;
+    padding-block: 4px;
+  }
+
+  .admin-portal-page .admin-portal-shell {
+    margin-top: 6px;
+  }
+}
+
+@media (max-width: 360px) {
+  .admin-portal-page .admin-portal-topbar {
+    grid-template-columns: 36px 34px minmax(72px, 1fr) auto;
+    gap: 5px;
+    padding-inline: 6px;
+  }
+
+  .admin-portal-page .admin-portal-nav-toggle {
+    width: 36px;
+    height: 36px;
+    min-height: 36px;
+  }
+
+  .admin-portal-page .admin-portal-federal-logo {
+    width: 34px;
+  }
+
+  .admin-portal-page .admin-portal-brand h1 {
+    font-size: 1rem;
+  }
+
+  .admin-portal-page .admin-portal-account-short {
+    max-width: 58px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-portal-page .admin-portal-nav-toggle svg path,
+  .admin-portal-page .admin-overview-space-toggle-icon-vertical {
+    transition: none;
+  }
+}
+
+/* Accueil du portail : une grille calme et régulière, adaptée au profil. */
+.admin-portal-page #adminOverviewView {
+  max-width: 1280px;
+  gap: 24px;
+}
+
+.admin-portal-page #adminOverviewView > .admin-overview-head {
+  display: block !important;
+  border: 0;
+  padding: 8px 0 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+#adminOverviewView .admin-overview-head h2 {
+  margin: 0 0 8px;
+  font-size: clamp(1.35rem, 2vw, 1.85rem);
+  line-height: 1.2;
+}
+
+#adminOverviewView .admin-overview-head p {
+  display: block;
+  margin: 0;
+  color: #607580;
+  font-size: 0.94rem;
+}
+
+#adminOverviewView .admin-overview-spaces {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+#adminOverviewView .admin-overview-space-card {
+  border-radius: 12px;
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+
+#adminOverviewView .admin-overview-space-card:is(:hover, :focus-within, .is-expanded) {
+  transform: none;
+  border-color: #8cbcc4;
+  box-shadow: 0 4px 16px rgb(24 64 73 / 6%);
+}
+
+#adminOverviewView .admin-overview-space-main {
+  box-sizing: border-box;
+  min-height: 164px;
+  grid-template-columns: 40px minmax(0, 1fr) 18px;
+  grid-template-rows: minmax(40px, auto) 1fr;
+  gap: 12px;
+  padding: 22px 22px 18px;
+}
+
+#adminOverviewView .admin-overview-card-icon {
+  grid-column: 1;
+  grid-row: 1;
+  align-self: start;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  color: #0b7285;
+  background: #edf6f7;
+}
+
+#adminOverviewView .admin-overview-space-main > strong {
+  grid-column: 2;
+  grid-row: 1;
+  align-self: center;
+  margin: 0;
+  padding: 0;
+  font-size: 1.08rem;
+  line-height: 1.35;
+  white-space: normal;
+  overflow: visible;
+}
+
+#adminOverviewView .admin-overview-space-main > p {
+  display: block;
+  grid-column: 1 / -1;
+  grid-row: 2;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: #607580;
+}
+
+#adminOverviewView .admin-overview-card-arrow {
+  grid-column: 3;
+  grid-row: 1;
+  align-self: center;
+  color: #0b7285;
+  font-size: 1.15rem;
+}
+
+#adminOverviewView .admin-pending-badge-card {
+  top: 12px;
+  right: auto;
+  left: 50px;
+}
+
+#adminOverviewView :is(.admin-overview-space-toggle, .admin-overview-direct-link) {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  min-height: 46px;
+  margin: 0;
+  padding: 12px 22px;
+  border: 0;
+  border-top: 1px solid #e8eef0;
+  color: #46616d;
+  background: #fbfcfd;
+  font-size: 0.82rem;
+  font-weight: var(--portal-font-weight-medium);
+  text-decoration: none;
+}
+
+#adminOverviewView :is(.admin-overview-space-toggle, .admin-overview-direct-link):hover {
+  color: #075866;
+  background: #edf6f7;
+}
+
+/* Les rubriques s'ouvrent sur demande, sans déplacement au simple survol. */
+#adminOverviewView .admin-overview-space-card:not(.is-expanded) .admin-overview-space-tools {
+  visibility: hidden;
+  max-height: 0;
+  padding-block: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+#adminOverviewView .admin-overview-space-card.is-expanded .admin-overview-space-tools {
+  max-height: none;
+  padding: 10px 14px 14px;
+}
+
+#adminOverviewView .admin-overview-space-tools a {
+  box-sizing: border-box;
+  min-height: 44px;
+  background: transparent;
+}
+
+#adminOverviewView .admin-overview-space-tools a:hover {
+  background: #edf6f7;
+}
+
+@media (min-width: 1440px) {
+  #adminOverviewView .admin-overview-spaces {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 680px) {
+  .admin-portal-page #adminOverviewView {
+    gap: 16px;
+  }
+
+  #adminOverviewView .admin-overview-head p {
+    font-size: 0.85rem;
+  }
+
+  #adminOverviewView .admin-overview-spaces {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+  }
+
+  #adminOverviewView .admin-overview-space-main {
+    min-height: 0;
+    grid-template-columns: 36px minmax(0, 1fr) 18px;
+    grid-template-rows: auto auto;
+    gap: 6px 12px;
+    padding: 16px;
+  }
+
+  #adminOverviewView .admin-overview-card-icon {
+    grid-row: 1 / 3;
+    width: 36px;
+    height: 36px;
+  }
+
+  #adminOverviewView .admin-overview-space-main > strong {
+    grid-column: 2;
+    grid-row: 1;
+    font-size: 0.98rem;
+  }
+
+  #adminOverviewView .admin-overview-space-main > p {
+    grid-column: 2 / -1;
+    grid-row: 2;
+    font-size: 0.82rem;
+  }
+
+  #adminOverviewView .admin-overview-card-arrow {
+    grid-column: 3;
+  }
+
+  #adminOverviewView .admin-pending-badge-card {
+    top: 9px;
+    right: auto;
+    left: 40px;
+  }
+
+  #adminOverviewView :is(.admin-overview-space-toggle, .admin-overview-direct-link) {
+    padding-inline: 16px;
+  }
+}
+
+.admin-portal-nav-scroll {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Optional DTN proximity filter, distinct from achieved minima. */
+#adminDtnView .admin-dtn-near-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 20px;
+  margin: 12px 0;
+}
