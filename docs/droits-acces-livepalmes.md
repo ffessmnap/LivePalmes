@@ -22,6 +22,31 @@ Les informations du profil sont conservées dans `users/{uid}`. Elles comprennen
 
 Le profil conserve aussi la préférence `emailPreferences.competitionNotifications`. Lorsqu'elle vaut `false`, le compte est exclu des courriels d'ouverture de compétition, de nouveaux documents et de récapitulatif PDF d'engagement. Les messages indispensables au compte, à sa sécurité et les envois techniques restent actifs. Cette préférence est reprise dans l'index borné des destinataires afin d'éviter une lecture par adresse lors d'un envoi groupé. Le profil et son entrée d'index sont mis à jour dans un même lot atomique : la désactivation est donc prise en compte immédiatement, y compris pour un courriel déjà préparé mais pas encore envoyé.
 
+## Copie des adresses par club dans NAP — préparation du 28 octobre 2026
+
+NAP/MySQL est partagé entre TEST et PROD. La table privée `livepalmes_club_account_emails` est une projection des seuls profils `users/{uid}` de PROD : identifiant Firebase stable, `club_id`, `email`, état actif/inactif et préférence `competition_notifications`. Aucun mot de passe, jeton ou droit n'est copié. Un profil sans club reste sans rattachement SQL.
+
+La synchronisation réutilise `syncEngagementMailRecipientIndex`, après ses traitements existants. Seul le projet explicite `livepalmes` ouvre NAP ; TEST n'effectue aucun accès à cette projection et ne reçoit pas le secret NAP pour ce déclencheur. Une panne SQL ne bloque ni l'enregistrement du compte ni la mise à jour préalable de l'index destinataires ; elle provoque la reprise existante de l'événement. La copie est asynchrone et peut donc être momentanément en retard.
+
+Le traitement verrouille les lignes SQL puis relit les profils Firestore courants en un appel groupé, sans rejouer une ancienne adresse issue de l'événement. Adresse, club, état et préférence sont remplacés ensemble. La suppression efface adresse et club ; seul un marqueur technique `deleted` portant l'identifiant subsiste pour sérialiser les reprises. Les parcours LivePalmes mettent à jour le profil ; une modification faite exclusivement dans la console Firebase Authentication n'est pas couverte par ce déclencheur Firestore.
+
+Lecture privée prévue pour Winpalm (son intégration n'est pas incluse) :
+
+```sql
+SELECT DISTINCT email
+FROM livepalmes_club_account_emails
+WHERE club_id = ? AND status = 'active' AND email IS NOT NULL
+ORDER BY email;
+```
+
+Pour les notifications concernées par la préférence existante, ajouter `AND competition_notifications = 1`. L'index `(club_id, status)` évite de parcourir tous les comptes. Aucun changement du circuit d'envoi actuel, aucun envoi et aucune publication publique des adresses.
+
+Budget supplémentaire : ouverture/rafraîchissement du portail = zéro ; événement de profil PROD = une lecture Firestore courante et trois requêtes SQL sur clé primaire dans une transaction, sans parcours des autres comptes ; événement TEST = zéro. Une reprise répète ce coût fixe. Les changements de champs sans effet sur l'adresse peuvent aussi provoquer ce traitement fixe. Table absente ou panne : échec avec reprise, jamais de reconstruction implicite.
+
+La reprise explicite `nap-club-account-emails.yml` est limitée à `main`, au commit exact, à la première tentative et à l'environnement protégé `production`, avec le compte backend PROD existant. `inspect` inventorie au plus 10 001 identifiants Firestore et les métadonnées/clés SQL, sans écriture. `apply` exige `nap-shared-prod-account-emails`, crée uniquement la table absente et refuse une structure/index/moteur incompatible. Au plus 10 000 identifiants sont synchronisés par pages de 100 ; les anciennes clés SQL sont incluses pour effacer les adresses des profils disparus. Budget maximal : 10 000 lectures d'inventaire Firestore et une sentinelle, 10 000 relectures groupées, une lecture SQL des clés limitée à 10 001 et trois requêtes SQL par page, plus les vérifications bornées de structure. Tout dépassement arrête l'opération. Les reçus publiés ne contiennent que compteurs et métadonnées, jamais les adresses.
+
+Mise en service : CI, `inspect`, création/reprise autorisée, puis publication PROD du déclencheur et de sa liaison au secret NAP après bilan approuvé dans Infra. TEST reste désactivé. Refaire la reprise après activation pour réconcilier les changements intervenus pendant l'initialisation. Aucun changement IAM implicite : un accès manquant est un blocage à signaler. À cette étape, préparation uniquement ; aucune table, reprise réelle ou activation PROD attestée. Une reprise après échec conserve les pages déjà validées. Le rollback de code conserve la table et n'autorise aucune suppression SQL.
+
 ## Capacités actuelles
 
 | Capacité | Utilité simple |

@@ -2,6 +2,13 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 28 octobre — Annuaire NAP des adresses des comptes par club
+
+- Demande d'Antoine : copie automatique compte/club/adresse/état dans NAP et reprise des comptes existants de PROD. Périmètre corrigé explicitement : NAP est commun à TEST et PROD, la synchronisation TEST doit rester désactivée et ne doit jamais alimenter l'annuaire avec des comptes TEST.
+- Préparation : projection SQL privée indexée, mise à jour depuis le déclencheur des profils existant uniquement en PROD, reprise paginée explicite avec compte backend PROD existant. Aucun compte Auth copié, droit modifié ou mail envoyé ; préférence de notification conservée. Événements retardés traités depuis le profil courant sous verrou SQL ; suppression de l'adresse/club avec marqueur technique sans adresse.
+- Budget : aucun accès supplémentaire à l'ouverture ou au rafraîchissement ; événement PROD = une lecture Firestore et trois requêtes SQL ciblées, TEST = zéro. Reprise plafonnée à 10 000 identifiants, pages de 100, inventaire et lectures groupées explicites, jamais de reconstruction interactive. Détails et limites dans [le modèle des comptes](../droits-acces-livepalmes.md#copie-des-adresses-par-club-dans-nap--préparation-du-28-octobre-2026).
+- Tests ciblés hors réseau réussis ; CI obligatoire, création/reprise réelle et activation PROD non encore attestées. L'activation du déclencheur et sa liaison au secret NAP doivent faire l'objet du bilan approuvé dans Infra ; aucune validation utilisateur ni livraison TEST/PROD n'est déduite de la préparation.
+
 ### 28 octobre — Complément ciblé des sources NAP conservées
 
 - La publication architecture [40737157891](https://github.com/ffessmnap/LivePalmes/actions/runs/40737157891) est réussie : candidat applicatif `67d40e84`, 98 fonctions actualisées, 15 révisions conservées, 113 fonctions actives ; sauvegarde chiffrée rouverte/comparée et contrôles de dérive réussis. [Preuve finale regroupée dans #607](https://github.com/ffessmnap/LivePalmes/pull/607#issuecomment-6476596681).

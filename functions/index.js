@@ -3654,9 +3654,17 @@ async function engagementActiveMailRecipients(input0) {
   return serverMailService().engagementActiveMailRecipients(...arguments);
 }
 
+// Reuse the existing profile trigger; TEST must never write account addresses to shared NAP.
+const syncNapClubAccountEmail = require("./nap-club-account-emails").createSynchronizer({
+  projectId: ENVIRONMENT.projectId,
+  createPool: () => createNapPool(defineSecret("LIVEPALMES_NAP_PASSWORD").value()),
+  db
+});
+
 exports.syncEngagementMailRecipientIndex = onDocumentWritten({
   region: REGION,
   document: "users/{uid}",
+  ...(ENVIRONMENT.projectId === "livepalmes" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}),
   retry: true
 }, async (event) => {
   const uid = cleanText(event.params.uid);
@@ -3696,6 +3704,7 @@ exports.syncEngagementMailRecipientIndex = onDocumentWritten({
     });
   }
   await snapshotSync;
+  await syncNapClubAccountEmail(uid);
 });
 
 exports.rebuildEngagementMailRecipientIndexNextPage = onCall(CALLABLE_OPTIONS, /* extracted-handler: functions/portal-competition-handlers.js#rebuildEngagementMailRecipientIndexNextPage#arrow */ async (request) => {

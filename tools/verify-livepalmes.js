@@ -59,6 +59,7 @@ function runUnitTests() {
     "backend-module-boundaries-tests.js",
     "backend-directory-outage-tests.js",
     "nap-mysql-tests.js",
+    "nap-club-account-emails-tests.js",
     "nap-direct-query-checks-tests.js",
     "nap-direct-swimmer-tests.js",
     "nap-direct-search-tests.js",
