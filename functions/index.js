@@ -693,10 +693,11 @@ if (ENVIRONMENT.projectId === "livepalmes-test") {
     const peopleSchema = request.method === "POST" && request.query.action === "approved-people-schema";
     const dtnSchema = request.method === "POST" && request.query.action === "approved-dtn-schema";
     const licenseReports = request.method === "POST" && request.query.action === "approved-license-reports";
+    const accountEmails = request.method === "POST" && request.query.action === "approved-club-account-emails";
     const dtnSettings = request.method === "POST" && request.query.action === "approved-dtn-settings";
     const homeRefresh = request.method === "POST" && request.query.action === "home-events-refresh";
     if (request.method === "GET" && request.query.action === "home-events-refresh") { response.status(405).json({ error: "Methode interdite." }); return; }
-    if (request.method !== "GET" && !indexOperation && !swimmerCorrection && !noraClubs && !portalSchema && !closureSchema && !peopleSchema && !dtnSchema && !dtnSettings && !licenseReports && !homeRefresh || request.method === "GET" && ["approved-index", "approved-swimmer-correction", "approved-nora-performance-clubs", "approved-portal-schema", "approved-closure-schema", "approved-people-schema", "approved-dtn-schema", "approved-dtn-settings", "approved-license-reports"].includes(request.query.action)) { response.status(405).json({ error: "Methode interdite." }); return; }
+    if (request.method !== "GET" && !indexOperation && !swimmerCorrection && !noraClubs && !portalSchema && !closureSchema && !peopleSchema && !dtnSchema && !dtnSettings && !licenseReports && !accountEmails && !homeRefresh || request.method === "GET" && ["approved-index", "approved-swimmer-correction", "approved-nora-performance-clubs", "approved-portal-schema", "approved-closure-schema", "approved-people-schema", "approved-dtn-schema", "approved-dtn-settings", "approved-license-reports", "approved-club-account-emails"].includes(request.query.action)) { response.status(405).json({ error: "Methode interdite." }); return; }
     try {
       if (!napPool) napPool = createNapPool(napPassword.value());
       const data = noraClubs ? await require("./nap-nora-performance-clubs").repair(napPool, request.body, {
@@ -704,7 +705,8 @@ if (ENVIRONMENT.projectId === "livepalmes-test") {
         read: async () => { const doc = await db.collection("auditLogs").doc("nap-nora-13787-performance-clubs-20261024-before").get(); return doc.exists ? doc.data().target : null; },
         prepare: target => db.collection("auditLogs").doc("nap-nora-13787-performance-clubs-20261024-before").create({ action: "nap.performanceClubs.authorizedRepair.prepare", actorUid: "github-livepalmes-test-backend", target, createdAt: new Date().toISOString() }),
         complete: target => writeAuditLogOnce("nap.performanceClubs.authorizedRepair.complete", "github-livepalmes-test-backend", target, "nap-nora-13787-performance-clubs-20261024")
-      }) : licenseReports ? await require("./nap-license-report-migration").request(napPool, request.body)
+      }) : accountEmails ? await require("./nap-club-account-emails-maintenance").request(napPool, request.body, ENVIRONMENT.projectId)
+        : licenseReports ? await require("./nap-license-report-migration").request(napPool, request.body)
         : dtnSettings ? await require("./nap-dtn-settings-migration").migrateDtnSettings(napPool, db, request.body)
         : dtnSchema ? await require("./nap-approved-dtn-schema").approvedDtnSchema(napPool, request.body)
         : peopleSchema ? request.body?.confirmation === "nap-add-official-identity-fields"

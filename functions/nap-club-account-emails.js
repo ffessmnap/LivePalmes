@@ -7,8 +7,15 @@ const FIELDS = ["email", "clubId", "status", "emailPreferences.competitionNotifi
 
 function enabled(projectId) { return projectId === "livepalmes"; }
 
+function sourceVersion(snapshot) {
+  const time = snapshot.exists ? snapshot.updateTime : snapshot.readTime;
+  if (!time || !Number.isSafeInteger(time.seconds) || !Number.isInteger(time.nanoseconds)) throw new Error("Version du profil requise.");
+  return (BigInt(time.seconds) * 1000000n + BigInt(Math.floor(time.nanoseconds / 1000))).toString();
+}
+
 function project(snapshot) {
-  if (!snapshot.exists) return { uid: snapshot.id, clubId: null, email: null, status: "deleted", notifications: 0 };
+  const version = sourceVersion(snapshot);
+  if (!snapshot.exists) return { uid: snapshot.id, clubId: null, email: null, status: "deleted", notifications: 0, version };
   const data = snapshot.data() || {};
   const email = String(data.email || "").trim().toLowerCase();
   const clubId = String(data.clubId || "").trim();
@@ -17,15 +24,17 @@ function project(snapshot) {
   }
   return { uid: snapshot.id, clubId: clubId || null, email: email || null,
     status: data.status === "active" ? "active" : "inactive",
-    notifications: data.emailPreferences?.competitionNotifications === false ? 0 : 1 };
+    notifications: data.emailPreferences?.competitionNotifications === false ? 0 : 1, version };
 }
 
-async function syncBatch({ projectId, pool, db, uids }) {
-  // Guard before acquiring a connection or reading Firestore, including on manual invocation.
-  if (!enabled(projectId)) return { disabled: true, synchronized: 0 };
+function validateIds(uids) {
   if (!Array.isArray(uids) || !uids.length || uids.length > PAGE_SIZE ||
       uids.some(uid => typeof uid !== "string" || !uid || uid.length > 128 || uid.includes("/")) ||
       new Set(uids).size !== uids.length) throw new Error("Page de comptes incorrecte.");
+}
+
+async function writeProjection(pool, uids, readRows) {
+  validateIds(uids);
   const ids = [...uids].sort();
   const connection = await pool.getConnection();
   try {
@@ -35,14 +44,15 @@ async function syncBatch({ projectId, pool, db, uids }) {
       ON DUPLICATE KEY UPDATE firebase_uid = VALUES(firebase_uid)`, timeout: 10000 }, ids);
     await connection.execute({ sql: `SELECT firebase_uid FROM ${TABLE} WHERE firebase_uid IN (${ids.map(() => "?").join(",")}) ORDER BY firebase_uid FOR UPDATE`, timeout: 10000 }, ids);
     // Re-read the CURRENT profile after the SQL locks, never replay an obsolete event payload.
-    const snapshots = await db.getAll(...ids.map(uid => db.collection("users").doc(uid)), { fieldMask: FIELDS });
-    const rows = snapshots.map(project);
+    const rows = await readRows(ids);
     if (rows.length !== ids.length || rows.some((row, index) => row.uid !== ids[index])) throw new Error("Page de profils incoherente.");
-    await connection.execute({ sql: `INSERT INTO ${TABLE} (firebase_uid, club_id, email, status, competition_notifications)
-      VALUES ${rows.map(() => "(?, ?, ?, ?, ?)").join(",")}
-      ON DUPLICATE KEY UPDATE club_id = VALUES(club_id), email = VALUES(email), status = VALUES(status),
-      competition_notifications = VALUES(competition_notifications), synchronized_at = CURRENT_TIMESTAMP(6)`, timeout: 10000 },
-    rows.flatMap(row => [row.uid, row.clubId, row.email, row.status, row.notifications]));
+    const replace = column => `${column} = IF(VALUES(source_version) >= source_version, VALUES(${column}), ${column})`;
+    await connection.execute({ sql: `INSERT INTO ${TABLE} (firebase_uid, club_id, email, status, competition_notifications, source_version)
+      VALUES ${rows.map(() => "(?, ?, ?, ?, ?, ?)").join(",")}
+      ON DUPLICATE KEY UPDATE ${["club_id", "email", "status", "competition_notifications"].map(replace).join(", ")},
+      synchronized_at = IF(VALUES(source_version) >= source_version, CURRENT_TIMESTAMP(6), synchronized_at),
+      source_version = GREATEST(source_version, VALUES(source_version))`, timeout: 10000 },
+    rows.flatMap(row => [row.uid, row.clubId, row.email, row.status, row.notifications, row.version]));
     await connection.commit();
     return { synchronized: rows.length };
   } catch {
@@ -50,6 +60,14 @@ async function syncBatch({ projectId, pool, db, uids }) {
     // SQL errors can contain bound values. Do not propagate them to Cloud Logging.
     throw new Error("Synchronisation des comptes NAP impossible ; reprise necessaire.");
   } finally { connection.release(); }
+}
+
+async function syncBatch({ projectId, pool, db, uids }) {
+  if (!enabled(projectId)) return { disabled: true, synchronized: 0 };
+  return writeProjection(pool, uids, async ids => {
+    const snapshots = await db.getAll(...ids.map(uid => db.collection("users").doc(uid)), { fieldMask: FIELDS });
+    return snapshots.map(project);
+  });
 }
 
 function createSynchronizer({ projectId, createPool, db }) {
@@ -61,4 +79,4 @@ function createSynchronizer({ projectId, createPool, db }) {
   };
 }
 
-module.exports = { TABLE, PAGE_SIZE, FIELDS, enabled, project, syncBatch, createSynchronizer };
+module.exports = { TABLE, PAGE_SIZE, FIELDS, enabled, project, syncBatch, createSynchronizer, validateIds, writeProjection };
