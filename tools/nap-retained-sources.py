@@ -9,6 +9,7 @@ from pathlib import Path
 import subprocess
 import sys
 import urllib.parse
+import urllib.error
 import urllib.request
 import zipfile
 
@@ -42,11 +43,24 @@ def controls(project):
     if project == 'livepalmes-test':
         urls['tasks'] = urls['queue'] + '/tasks?pageSize=1'
         urls['closures'] = 'https://firestore.googleapis.com/v1/projects/livepalmes-test/databases/(default)/documents/engagementClosureQueue?pageSize=1'
-    values = {}
+    values, errors = {}, {}
     for name, url in urls.items():
         req = urllib.request.Request(url, headers={'Authorization': 'Bearer ' + token})
-        with urllib.request.urlopen(req, timeout=30) as response:
-            values[name] = json.load(response)
+        try:
+            with urllib.request.urlopen(req, timeout=30) as response:
+                values[name] = json.load(response)
+        except urllib.error.HTTPError as error:
+            errors[name] = 'HTTP ' + str(error.code)
+    if project == 'livepalmes-test':
+        # Only technical booleans/statuses, never a document, task body or token.
+        summary = {'project': project, 'readOnly': True, 'unavailable': errors,
+                   'mailEnabled': values.get('mail', {}).get('fields', {}).get('enabled', {}).get('booleanValue'),
+                   'schedulerState': values.get('scheduler', {}).get('state'),
+                   'queueState': values.get('queue', {}).get('state')}
+        for name, key in [('tasks', 'tasks'), ('closures', 'documents')]:
+            summary[name + 'Empty'] = not values[name].get(key) and not values[name].get('nextPageToken') if name in values else None
+        print('Prerequis NAP TEST : ' + json.dumps(summary), flush=True)
+    policy.require(not errors, 'Lectures techniques indisponibles : ' + ', '.join(k + '=' + v for k, v in errors.items()))
     if project == 'livepalmes-test':
         policy.test_controls(**values)
     else:
