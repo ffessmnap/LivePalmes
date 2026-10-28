@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
     inputs:
       confirmation:
-        description: Saisir livepalmes-test ; mails coupes, scheduler et file deja suspendus
+        description: Saisir livepalmes-test ; mails coupes, scheduler et file deja suspendus, messages conserves
         required: true
         type: string
 permissions:
