@@ -1607,6 +1607,7 @@
         if (global.location.hash === "#gestion-acces") return "accessHome";
         if (global.location.hash === "#gestion-utilisateurs") return "access";
         if (global.location.hash === "#mon-compte") return "account";
+        if (global.location.hash === "#nouveautes") return "news";
         if (global.location.hash === "#records-mpf") return "records";
         if (global.location.hash === "#import-competitions") return "import";
         if (global.location.hash === "#correction-performance") return "correction";
@@ -1621,6 +1622,9 @@
 
     function updateNavigationView() {
         if (global.LivePalmesNationalDocuments?.beforeNavigate() === false) return;
+        document.querySelectorAll("[data-portal-news-nav]").forEach((item) => {
+          item.hidden = !canCreateEngagementCompetition() && !canViewActivityLog();
+        });
         syncEngagementRouteFromHash();
         const requestedView = requestedNavigationView();
         const accessDenied = (requestedView === "access" || requestedView === "accessHome") && !canManageAccessDirectory();
@@ -1634,7 +1638,8 @@
         const nationalHomeDenied = requestedView === "nationalHome" && !canDeleteEngagementCompetitionDirectly() && !canViewActivityLog();
         const nationalDocumentsDenied = requestedView === "nationalDocuments" && !canUse("engagements.national.manage");
         const engagementsDenied = requestedView === "engagements" && !canAccessEngagementsView();
-        const activeView = accessDenied || recordsDenied || importDenied || correctionDenied || performanceHomeDenied || clubHomeDenied || dtnDenied || engagementsAdminHomeDenied || nationalHomeDenied || nationalDocumentsDenied || engagementsDenied
+        const newsDenied = requestedView === "news" && !canCreateEngagementCompetition() && !canViewActivityLog();
+        const activeView = accessDenied || recordsDenied || importDenied || correctionDenied || performanceHomeDenied || clubHomeDenied || dtnDenied || engagementsAdminHomeDenied || nationalHomeDenied || nationalDocumentsDenied || engagementsDenied || newsDenied
           ? "dashboard"
           : requestedView;
         document.querySelectorAll("[data-admin-view]").forEach((section) => {

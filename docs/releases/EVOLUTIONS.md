@@ -2,6 +2,12 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 29 octobre — Entrée Nouveautés pour les administrateurs du portail
+
+- Chantier 1/3 explicitement autorisé par Antoine : petite entrée sous « Aide et retours », réservée aux capacités régionales/nationales et à l’administration générale existantes, avec protection identique du lien et de l’adresse directe. Aucun droit supplémentaire, serveur, notification ou accusé de lecture.
+- Dispositif initial vide, sans historique inventé ni annonce de changements seulement présents sur TEST. [Guide d’ajout](../PORTAIL_NOUVEAUTES.md) : texte préparé dans le bilan PROD, accord explicite d’Antoine et preuve de livraison PROD avant affichage ; date réelle et texte court, diffusion Hosting suivante autorisée.
+- Budget : zéro accès Firestore/NAP, appel serveur ou écriture supplémentaire à l’ouverture, par action, au rafraîchissement et au pire cas. Contrôles locaux réussis : syntaxe, frontières des modules, versions de cache, navigateur réel à 1280/390 px dans les deux thèmes, sept profils de capacités et cible tactile du menu mobile ; captures examinées, données fictives et HTTPS externe bloqué. CI, PR et déploiement TEST à attester ; preuves finales dans la PR. Validation utilisateur de l’état vide et de la visibilité régionale/nationale restant à recueillir. Aucune publication PROD autorisée ou effectuée.
+
 ### 29 octobre — Lisibilité renforcée des textes secondaires de tout le portail
 
 - Demande explicite d’Antoine : textes secondaires nettement plus lisibles dans les deux thèmes et livraison TEST avec comparatifs avant/après. Jeton commun `#304650` en clair, `#d0dee6` en sombre ; gris neutres fixes des styles du portail remplacés et modules partagés adaptés uniquement dans le portail. Fonds secondaires restants harmonisés en sombre. Couleurs sémantiques conservées, aucun changement métier.
