@@ -24,7 +24,7 @@ const {startStaticServer,launchBrowser,evaluate,waitFor,presentationScript}=requ
  const account=LivePalmesPortalAccountAndAccess.create(context);Object.assign(actions,account);
  elements.accessRegionId.replaceChildren(new Option('Region A','Region A'),new Option('Region B','Region B'));
  account.resetAccessForm();account.openAccessDialog();
- const checks={region:elements.accessRegionId.value,locked:elements.accessRegionId.disabled,clubs:[...elements.accessClubSelect.options].map(o=>o.value),rights:[...elements.accessForm.querySelectorAll("input[name=capability]")].filter(i=>!i.closest('label').hidden).map(i=>({value:i.value,checked:i.checked,disabled:i.disabled}))};
+ const checks={initialClubAccess:nav.canUse("engagements.club.manage"),region:elements.accessRegionId.value,locked:elements.accessRegionId.disabled,clubs:[...elements.accessClubSelect.options].map(o=>o.value),rights:[...elements.accessForm.querySelectorAll("input[name=capability]")].filter(i=>!i.closest('label').hidden).map(i=>({value:i.value,checked:i.checked,disabled:i.disabled}))};
  elements.accessClubSelect.value='10';modules.syncAccessClubFieldsFromSelect();
  checks.payload=account.accessPayloadFromForm();
  modules.renderClubSwitchResults();checks.switchClubs=[...elements.clubSwitchResults.querySelectorAll('[data-portal-active-club-id]')].map(b=>b.dataset.portalActiveClubId);
@@ -39,7 +39,7 @@ const {startStaticServer,launchBrowser,evaluate,waitFor,presentationScript}=requ
  checks.overflow=document.documentElement.scrollWidth>innerWidth;
  return checks;
  `);
- assert.equal(result.region,'Region A');assert.ok(result.locked&&result.canClub);assert.deepEqual(result.clubs,['','10']);assert.deepEqual(result.rights,[{value:'engagements.club.manage',checked:true,disabled:true}]);assert.deepEqual(result.payload.capabilities,['engagements.club.manage']);assert.deepEqual(result.switchClubs,['10']);assert.equal(result.foreignRestored,'');assert.equal(result.homeRestored,'10');assert.equal(result.overflow,false);assert.equal(result.nationalRights,true);assert.equal(result.nationalClubs,2);
+ assert.equal(result.initialClubAccess,false);assert.equal(result.region,'Region A');assert.ok(result.locked&&result.canClub);assert.deepEqual(result.clubs,['','10']);assert.deepEqual(result.rights,[{value:'engagements.club.manage',checked:true,disabled:true}]);assert.deepEqual(result.payload.capabilities,['engagements.club.manage']);assert.deepEqual(result.switchClubs,['10']);assert.equal(result.foreignRestored,'');assert.equal(result.homeRestored,'10');assert.equal(result.overflow,false);assert.equal(result.nationalRights,true);assert.equal(result.nationalClubs,2);
  fs.mkdirSync('tmp/regional-access',{recursive:true});const shot=await client.send('Page.captureScreenshot',{format:'png'});fs.writeFileSync('tmp/regional-access/'+width+'.png',Buffer.from(shot.data,'base64'));
  console.log(width+'px: locked region, single checked right, clubs/form payload, switch scope and restored session verified');
  }}finally{browser.cleanup();server.close();}
