@@ -5,7 +5,7 @@
 ### 29 octobre — Activation des deux colonnes NS autorisée
 
 - Accord explicite d’Antoine après présentation des deux colonnes et de la limite de livraison #624. Opération bornée au seul ALTER nullable dans nageurs et aux sauvegardes/contrôles nécessaires ; aucun statut réel, backfill, email ou déploiement PROD autorisé.
-- Workflow ponctuel TEST et script de migration : sauvegarde chiffrée rouverte et publiée avant mutation, privilèges et verrou natif, refus de dérive, état partiel et déclencheur ; comparaison exhaustive des onze colonnes historiques avant/après et contrôle des index. Aucun changement d’application ni de Cloud Function ; pas de nouvelle livraison Hosting nécessaire pour ces outils seuls.
+- Workflow ponctuel TEST et script de migration : sauvegarde chiffrée rouverte et publiée avant mutation, privilèges et verrou natif repris explicitement après ALTER, refus de dérive, état partiel et déclencheur ; comparaison exhaustive des onze colonnes historiques avant/après et contrôle des index. Aucun changement d’application ni de Cloud Function ; pas de nouvelle livraison Hosting nécessaire pour ces outils seuls.
 - Tests hors réseau de la migration intégrés à la suite globale. PR/CI et exécution réelle à attester ; preuves finales dans la PR. Disponibilité réelle NS et validation utilisateur restant à confirmer.
 
 ### 29 octobre — Statut NS privé des nageurs (code TEST, activation en attente)
