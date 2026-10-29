@@ -16,7 +16,7 @@
   padding: 4px 10px;
   border-radius: 999px;
   background: #edf3f4;
-  color: #51646b;
+  color: var(--portal-color-muted);
   font-size: 0.72rem;
   font-weight: 700;
 }
@@ -125,7 +125,7 @@
     display: flex;
     align-items: center;
     margin: 6px 0;
-    color: #60747b;
+    color: var(--portal-color-muted);
     font-size: 0.7rem;
   }
 
@@ -290,7 +290,7 @@
   }
 
   #adminEngagementsView[data-engagements-mode="club"] #adminEngagementsCalendarCard .admin-engagements-competition-mobile-meta {
-    color: #62747a;
+    color: var(--portal-color-muted);
     font-size: 0.68rem;
     font-weight: 400;
   }
@@ -868,7 +868,7 @@
   }
 
   #adminEngagementsView[data-engagements-mode="admin"] #adminEngagementsCalendarCard .admin-engagements-competition-mobile-meta {
-    color: #62747a;
+    color: var(--portal-color-muted);
     font-size: 0.68rem;
     font-weight: 400;
   }

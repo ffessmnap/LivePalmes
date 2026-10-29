@@ -27,7 +27,7 @@
 }
 
 .admin-engagements-club-entry-name small {
-  color: #5f746f;
+  color: var(--portal-color-muted);
   font-size: 0.62rem;
   line-height: 1.1;
   overflow: hidden;
@@ -97,7 +97,7 @@
 }
 
 .admin-engagements-club-swimmer-row small {
-  color: #5f746f;
+  color: var(--portal-color-muted);
   font-size: 0.72rem;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -121,7 +121,7 @@
 .admin-engagements-club-swimmer-license-cell small {
   display: block;
   min-width: 0;
-  color: #5f746f;
+  color: var(--portal-color-muted);
   font-size: 0.58rem;
   line-height: 1;
   text-overflow: ellipsis;
@@ -180,7 +180,7 @@
   gap: 8px;
   align-items: center;
   justify-content: space-between;
-  color: #5f746f;
+  color: var(--portal-color-muted);
   font-size: 0.78rem;
   font-weight: 800;
   text-transform: uppercase;
@@ -250,7 +250,7 @@
 .admin-engagements-club-entry-time-value[data-entry-time-mode="default595999"] {
   border-color: #d7dfe3;
   background: #f7f9fa;
-  color: #5d6b70;
+  color: var(--portal-color-muted);
 }
 
 .admin-engagements-club-entry-time-edit {
@@ -286,7 +286,7 @@
 
 .admin-engagements-club-swimmer-events-empty {
   margin: 0;
-  color: #6b7c78;
+  color: var(--portal-color-muted);
   font-size: 0.84rem;
 }
 
@@ -338,7 +338,7 @@
 
 .admin-engagements-club-relay-event small {
   overflow: hidden;
-  color: #6b7c82;
+  color: var(--portal-color-muted);
   font-size: 0.66rem;
   font-weight: 500;
   line-height: 1.15;
@@ -370,7 +370,7 @@
 
 .admin-engagements-club-relay-compose small {
   overflow: hidden;
-  color: #617279;
+  color: var(--portal-color-muted);
   font-size: 0.66rem;
   line-height: 1.15;
   text-overflow: ellipsis;
@@ -518,7 +518,7 @@
 }
 
 .admin-engagements-events-section summary small {
-  color: #5f746f;
+  color: var(--portal-color-muted);
   font-size: 0.76rem;
   font-weight: 760;
 }
@@ -559,7 +559,7 @@
 
 .admin-engagements-events-head small {
   margin-top: 3px;
-  color: #5f746f;
+  color: var(--portal-color-muted);
   font-weight: 760;
 }
 
@@ -598,7 +598,7 @@
 
 .admin-engagements-program-head small {
   margin-top: 1px;
-  color: #5f746f;
+  color: var(--portal-color-muted);
   font-size: 0.76rem;
   font-weight: 760;
 }
@@ -754,7 +754,7 @@
 .admin-engagements-program-session input:disabled,
 .admin-engagements-program-row select:disabled {
   background: #eef5f3;
-  color: #5f746f;
+  color: var(--portal-color-muted);
 }
 
 .admin-engagements-program-rows {
@@ -796,7 +796,7 @@
 }
 
 .admin-engagements-program-row-main > i {
-  color: #8a9b97;
+  color: var(--portal-color-muted);
   font-size: 0.72rem;
   font-style: normal;
   font-weight: 760;
@@ -1149,7 +1149,7 @@
 
 .admin-engagements-mixed-choice select:disabled {
   background: #eef5f3;
-  color: #7d8e8a;
+  color: var(--portal-color-muted);
 }
 
 .admin-engagements-mixed-choice input[type="checkbox"] {
@@ -1162,7 +1162,7 @@
 }
 
 .admin-engagements-event-main small {
-  color: #5f746f;
+  color: var(--portal-color-muted);
   font-size: 0.68rem;
   font-weight: 760;
 }
@@ -1288,7 +1288,7 @@
 
 .admin-engagements-fees-grid input:disabled {
   background: #eef5f3;
-  color: #5f746f;
+  color: var(--portal-color-muted);
 }
 
 .admin-engagements-fees-form[data-readonly="true"] .admin-engagements-fees-grid {
@@ -1341,7 +1341,7 @@
 
 .admin-engagements-documents-head small,
 .admin-engagements-documents-head span {
-  color: #5f746f;
+  color: var(--portal-color-muted);
   font-weight: 760;
 }
 
@@ -1384,7 +1384,7 @@
 }
 
 .admin-engagements-documents-section-head small {
-  color: #5f746f;
+  color: var(--portal-color-muted);
   font-size: 0.78rem;
   font-weight: 740;
 }
@@ -1413,7 +1413,7 @@
 
 .admin-engagements-document-card small {
   margin-top: 3px;
-  color: #5f746f;
+  color: var(--portal-color-muted);
   font-size: 0.78rem;
   font-weight: 740;
 }
@@ -1499,7 +1499,7 @@
 }
 
 .admin-engagements-closure-card dt {
-  color: #5f746f;
+  color: var(--portal-color-muted);
   font-size: 0.72rem;
   font-weight: 850;
   text-transform: uppercase;
@@ -1569,7 +1569,7 @@
 }
 
 .admin-engagements-club-recap-head small {
-  color: #5f746f;
+  color: var(--portal-color-muted);
   font-size: 0.8rem;
   font-weight: 760;
 }
@@ -1611,7 +1611,7 @@
 .admin-engagements-club-recap-row-head {
   min-height: 32px;
   background: #f2f7f6;
-  color: #5f746f;
+  color: var(--portal-color-muted);
   font-size: 0.72rem;
   font-weight: 850;
   text-transform: uppercase;
@@ -1624,7 +1624,7 @@
 
 .admin-engagements-club-recap-row small {
   margin-top: 2px;
-  color: #6b7f7a;
+  color: var(--portal-color-muted);
   font-size: 0.72rem;
   font-weight: 720;
 }
@@ -1649,7 +1649,7 @@
 }
 
 .admin-engagements-mail-jobs-head small {
-  color: #5f746f;
+  color: var(--portal-color-muted);
   font-size: 0.8rem;
   font-weight: 760;
 }
@@ -1681,7 +1681,7 @@
 .admin-engagements-mail-jobs-row-head {
   min-height: 30px;
   background: #f2f7f6;
-  color: #5f746f;
+  color: var(--portal-color-muted);
   font-size: 0.72rem;
   font-weight: 850;
   text-transform: uppercase;
@@ -1694,7 +1694,7 @@
 
 .admin-engagements-mail-jobs-row small {
   margin-top: 2px;
-  color: #6b7f7a;
+  color: var(--portal-color-muted);
   font-size: 0.72rem;
   font-weight: 720;
 }
@@ -1753,7 +1753,7 @@
   border-right: 1px solid #e7efed;
   padding: 8px 10px;
   background: #f8fbfa;
-  color: #5f746f;
+  color: var(--portal-color-muted);
   font-size: 0.72rem;
   font-weight: 850;
   text-transform: uppercase;
@@ -1808,7 +1808,7 @@
 .admin-access-count {
   display: block;
   margin-top: 3px;
-  color: #5f746f;
+  color: var(--portal-color-muted);
 }
 
 .admin-access-filters {
@@ -1875,7 +1875,7 @@
 
 .admin-access-row.inactive {
   background: #f6f7f7;
-  color: #667773;
+  color: var(--portal-color-muted);
 }
 
 .admin-access-row strong,
@@ -1884,7 +1884,7 @@
 }
 
 .admin-access-row small {
-  color: #5f746f;
+  color: var(--portal-color-muted);
   line-height: 1.35;
 }
 
@@ -1914,7 +1914,7 @@
 
 .admin-access-status.inactive {
   background: #ecefee;
-  color: #5f6f6b;
+  color: var(--portal-color-muted);
 }
 
 .admin-access-row-actions {
@@ -1945,7 +1945,7 @@
   border: 1px dashed #cddbd7;
   border-radius: 8px;
   background: #f9fbfa;
-  color: #5f746f;
+  color: var(--portal-color-muted);
   font-weight: 760;
   text-align: center;
 }
@@ -1983,7 +1983,7 @@
 
 .admin-access-section legend {
   padding: 0 6px;
-  color: #5f746f;
+  color: var(--portal-color-muted);
   font-size: 0.78rem;
   font-weight: 850;
 }
@@ -2006,7 +2006,7 @@
 
 .admin-access-rights legend {
   padding: 0 6px;
-  color: #5f746f;
+  color: var(--portal-color-muted);
   font-size: 0.78rem;
   font-weight: 850;
 }
@@ -2305,7 +2305,7 @@
     content: attr(data-label);
     display: block;
     margin-bottom: 3px;
-    color: #6a7e79;
+    color: var(--portal-color-muted);
     font-size: 0.66rem;
     font-weight: 850;
     letter-spacing: 0.02em;
