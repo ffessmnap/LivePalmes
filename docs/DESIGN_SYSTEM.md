@@ -731,6 +731,10 @@ Le pied de navigation est une pile verticale explicite : chaque accès utilise t
 
 ### Surfaces du portail en mode sombre
 
+Les menus dépliés de l’accueil, les informations de l’organisateur et les paires libellé/valeur du détail des compétitions utilisent les jetons du thème pour le fond et le texte ensemble. Les textes secondaires de l’accueil utilisent `--portal-color-muted`. Ne pas conserver un fond clair fixe sous un texte adapté au thème sombre. Contrôler ces composants dans les deux thèmes sur ordinateur et mobile (correction du 29 octobre 2026).
+
+Le bandeau commun conserve sa palette locale claire : les intitulés des menus, liens et éléments `summary` utilisent son jeton de texte, même quand le contenu du portail est sombre. L’en-tête et les onglets du détail d’une compétition utilisent la surface du thème du portail.
+
 Le thème sombre reste limité au portail. Les encarts du compte, le contexte du club, les filtres, les états vides et les tableaux utilisent une palette commune : fond `#101a22`, carte `#192630`, surface secondaire `#20323e`, texte `#e1ebef` et texte secondaire `#a8bbc5`. Les séparateurs restent discrets. Seul le logo fédéral conserve son support blanc. Les contenants des icônes reçoivent une teinte atténuée, sans ajouter de fond aux SVG de navigation. Les états succès, avertissement et erreur gardent leurs couleurs et libellés ; les lignes femmes/hommes conservent une distinction prune/bleu atténuée. Les règles sont conditionnées au thème sombre et ne changent ni les pages publiques ni les exports.
 
 Les bandeaux d’accueil des espaces remplacent intégralement leur dégradé clair par une surface sombre, y compris la couche `background-image`. La carte nationale prioritaire utilise la surface secondaire sombre ; les surtitres restent turquoise et les libellés secondaires lisibles. Sous 760 px, les bandeaux gardent leur présentation compacte sur fond transparent.

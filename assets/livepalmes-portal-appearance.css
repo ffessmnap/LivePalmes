@@ -1,4 +1,46 @@
 /* This stylesheet is loaded only by portail.html. */
+/* Keep related text and surfaces on the same theme palette. */
+.admin-portal-page .admin-overview-space-tools a {
+  background:var(--portal-color-field-background);
+  color:var(--portal-color-text);
+}
+.admin-portal-page .admin-overview-space-tools a:is(:hover,:focus-visible) {
+  background:var(--portal-color-surface);
+  color:var(--portal-color-accent-strong);
+}
+.admin-portal-page :is(.admin-overview-space-main,.admin-overview-card) > p,
+.admin-portal-page .admin-overview-card-label {
+  color:var(--portal-color-muted);
+}
+.admin-portal-page .admin-engagements-public-info {
+  background:var(--portal-color-field-background);
+  color:var(--portal-color-text);
+  border-color:var(--portal-color-border);
+  border-left-color:var(--portal-color-accent);
+}
+.admin-portal-page .admin-engagements-public-info strong { color:var(--portal-color-accent-strong); }
+.admin-portal-page #adminEngagementsDetail .admin-engagements-detail-list {
+  background:var(--portal-color-surface);
+  border-color:var(--portal-color-border);
+}
+.admin-portal-page #adminEngagementsDetail .admin-engagements-detail-list > div { border-color:var(--portal-color-border); }
+.admin-portal-page #adminEngagementsDetail .admin-engagements-detail-list dt {
+  background:var(--portal-color-field-background);
+  color:var(--portal-color-muted);
+  border-color:var(--portal-color-border);
+}
+.admin-portal-page #adminEngagementsDetail .admin-engagements-detail-list dd { color:var(--portal-color-text); }
+.admin-portal-page .admin-calendar-readonly-grid { background:var(--portal-color-border); border-color:var(--portal-color-border); }
+.admin-portal-page .admin-calendar-readonly-item { background:var(--portal-color-surface); }
+.admin-portal-page .admin-calendar-readonly-item dt { color:var(--portal-color-muted); }
+.admin-portal-page .admin-calendar-readonly-item dd { color:var(--portal-color-text); }
+.admin-portal-page .admin-calendar-readonly-item a { color:var(--portal-color-accent-strong); }
+html[data-portal-theme="dark"] .admin-portal-page :is(.public-site-header,.admin-engagements-detail-head,.admin-engagements-detail-tabs) {
+  background:var(--portal-color-surface) !important;
+  border-color:var(--portal-color-border) !important;
+}
+html[data-portal-theme="dark"] .admin-portal-page .public-site-nav :is(a,summary) { color:var(--portal-color-text) !important; }
+html[data-portal-theme="dark"] .admin-portal-page .public-site-nav :is(a,summary):hover { background:var(--portal-color-field-background) !important; }
 .admin-appearance-options { display:flex; flex-wrap:wrap; gap:8px; margin-top:14px; }
 .admin-appearance-options button { background:transparent; color:var(--portal-color-text); border:1px solid var(--portal-color-border); border-radius:8px; min-height:42px; padding:8px 18px; font:inherit; cursor:pointer; }
 .admin-appearance-options button[aria-pressed="true"] { color:var(--portal-color-accent-strong); border-color:var(--portal-color-accent); background:var(--portal-color-field-background); box-shadow:inset 0 0 0 1px var(--portal-color-accent); }
