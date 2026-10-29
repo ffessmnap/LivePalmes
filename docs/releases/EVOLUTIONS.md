@@ -2,6 +2,12 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 29 octobre — Lisibilité renforcée des textes secondaires de tout le portail
+
+- Demande explicite d’Antoine : textes secondaires nettement plus lisibles dans les deux thèmes et livraison TEST avec comparatifs avant/après. Jeton commun `#304650` en clair, `#d0dee6` en sombre ; gris neutres fixes des styles du portail remplacés et modules partagés adaptés uniquement dans le portail. Fonds secondaires restants harmonisés en sombre. Couleurs sémantiques conservées, aucun changement métier.
+- Contrôles locaux : 40 vues × 2 thèmes × 2 largeurs (1280/390 px), environ 1 680 textes secondaires examinés, contraste minimal mesuré 7,86:1 pour ces échantillons ; captures avant/après examinées. Préférences d’apparence et versions de cache vérifiées. Données fictives, HTTPS externe bloqué, aucun backend invoqué.
+- Budget données inchangé : zéro lecture supplémentaire à l’ouverture, par action, au rafraîchissement et au pire cas. Design system et versions des styles actualisés. État : PR/CI et livraison TEST à suivre ; preuves finales dans la PR de livraison. Aucune validation utilisateur ni publication PROD déduite.
+
 ### 29 octobre — Contraste de l’accueil et du détail des compétitions du portail
 
 - Retour utilisateur : menus d’accueil et informations de l’organisateur trop clairs. Correction ciblée des fonds et textes avec les jetons du thème, y compris les libellés et valeurs du détail ; version de cache actualisée et règle ajoutée au design system.

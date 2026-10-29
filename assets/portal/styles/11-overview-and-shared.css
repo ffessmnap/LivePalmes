@@ -120,7 +120,7 @@
 .admin-overview-space-main > p {
   grid-column: 1 / -1;
   margin: 0;
-  color: #66777e;
+  color: var(--portal-color-muted);
   font-size: 0.88rem;
   line-height: 1.45;
 }
@@ -260,7 +260,7 @@
   grid-row: 1;
   align-self: center;
   justify-self: end;
-  color: #718087;
+  color: var(--portal-color-muted);
   font-size: 0.72rem;
   font-weight: 850;
   letter-spacing: 0.05em;
@@ -276,7 +276,7 @@
 .admin-overview-card > p {
   grid-column: 1 / -1;
   margin: 0;
-  color: #66777e;
+  color: var(--portal-color-muted);
   font-size: 0.88rem;
   line-height: 1.45;
 }
@@ -291,7 +291,7 @@
 }
 
 .admin-overview-card-icon.tone-neutral {
-  color: #526b73;
+  color: var(--portal-color-muted);
   background: #edf3f4;
 }
 
@@ -493,7 +493,7 @@
   min-height: 34px;
   margin-bottom: 10px;
   padding: 5px 8px;
-  color: #6a7b81;
+  color: var(--portal-color-muted);
   font-size: 0.78rem;
 }
 
@@ -524,14 +524,14 @@
 }
 
 .admin-portal-breadcrumb-separator {
-  color: #9aa7ab;
+  color: var(--portal-color-muted);
 }
 
 /* Confort opérationnel : filtres persistants dans la vue et chargements lisibles. */
 .admin-portal-results-count {
   margin: 0;
   padding: 2px 2px 0;
-  color: #66777e;
+  color: var(--portal-color-muted);
   font-size: 0.78rem;
   font-weight: var(--portal-font-weight-regular);
 }
@@ -743,7 +743,7 @@
   }
 
   .admin-portal-responsive-table td[data-label]::before {
-    color: #718087;
+    color: var(--portal-color-muted);
     font-size: 0.7rem;
     font-weight: var(--portal-font-weight-medium);
     letter-spacing: 0.03em;
@@ -867,7 +867,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 6px 14px;
-  color: #66777e;
+  color: var(--portal-color-muted);
   font-size: 0.84rem;
 }
 
@@ -928,7 +928,7 @@
 }
 
 #adminAccountView .admin-account-edit-card > summary::after {
-  color: #718087;
+  color: var(--portal-color-muted);
   font-size: 1.25rem;
   content: "›";
   transition: transform 160ms ease;
