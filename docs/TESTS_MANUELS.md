@@ -2,6 +2,12 @@
 
 <!-- description: Checklist de tests manuels à exécuter avant une publication ou après une modification sensible. -->
 
+## Statut NS des nageurs — 29 octobre 2026
+
+- Sans réseau ni données réelles : node tests/nap-swimmer-ns-tests.js, node tests/nap-swimmer-ns-callable-tests.js, puis node tests/portal-swimmer-ns-browser-tests.js. Vérifier défaut NULL/colonnes absentes, périmètre club, retrait national seulement, refus, concurrence, sauvegarde et reprise sans double écriture.
+- Ordinateur/mobile, deux thèmes : cocher puis enregistrer ; demander le retrait avec NS conservé ; attente verrouillée ; refus et commentaire lisibles ; absence de structure désactivant seulement NS ; réponse ancienne après changement de contexte ignorée. Aucun appel métier réel ni email.
+- Activation réelle bloquée sur l’accord de structure, puis recette de données spécifiquement autorisée et validation utilisateur. Voir [procédure NS](PORTAIL_NAGEURS_NS.md).
+
 ## Création et contexte club régionaux — 29 octobre 2026
 
 - Sans compte réel ni envoi : lancer node tests/regional-club-access-tests.js et node tests/regional-club-access-browser-tests.js. Vérifier les refus région/club hors périmètre, droits injectés, UID, email déjà présent et conflit Auth concurrent ; confirmer le maintien du contexte national et la restriction avec droits cumulés.

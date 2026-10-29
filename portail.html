@@ -14,7 +14,7 @@
     <link rel="preload" as="style" href="assets/portal/styles/01-competition-and-club-base.css?v=20261029-readable-text-1">
     <link rel="preload" as="style" href="assets/portal/styles/02-forms-and-responsive-base.css?v=20261029-readable-text-1">
     <link rel="preload" as="style" href="assets/portal/styles/03-shell.css?v=20261029-readable-text-1">
-    <link rel="preload" as="style" href="assets/portal/styles/04-club-directories.css?v=20261029-readable-text-1">
+    <link rel="preload" as="style" href="assets/portal/styles/04-club-directories.css?v=20261029-ns-1">
     <link rel="preload" as="style" href="assets/portal/styles/05-club-entries.css?v=20261029-readable-text-1">
     <link rel="preload" as="style" href="assets/portal/styles/06-competition.css?v=20261029-readable-text-1">
     <link rel="preload" as="style" href="assets/portal/styles/07-access.css?v=20261029-readable-text-1">
@@ -26,7 +26,7 @@
     <link rel="preload" as="style" href="assets/portal/styles/13-mobile.css?v=20261029-readable-text-1">
     <link rel="preload" as="style" href="assets/portal/styles/14-shell-and-detail.css?v=20261029-readable-text-1">
     <link rel="preload" as="style" href="assets/portal/styles/15-dtn-and-club.css?v=20261028-styles-1">
-    <link rel="stylesheet" href="assets/livepalmes-admin-portal.css?v=20261029-readable-text-1">
+    <link rel="stylesheet" href="assets/livepalmes-admin-portal.css?v=20261029-ns-1">
     <link rel="stylesheet" href="assets/livepalmes-license-administration.css?v=20261027-license-closure">
     <link rel="stylesheet" href="assets/livepalmes-whatsapp-qr.css?v=20260831-whatsapp-qr-1">
     <link rel="stylesheet" href="assets/livepalmes-portal-appearance.css?v=20261029-readable-text-1">
@@ -2363,6 +2363,15 @@
                     </label>
                   </div>
                 </fieldset>
+                <fieldset data-swimmer-ns hidden>
+                  <legend>Statut NS</legend>
+                  <label data-swimmer-ns-label>
+                    <input type="checkbox" data-swimmer-ns-checkbox aria-describedby="adminSwimmerNsStatus" disabled>
+                    <span>Nageur étranger — non sélectionnable (NS)</span>
+                  </label>
+                  <p id="adminSwimmerNsStatus" class="admin-portal-message" data-swimmer-ns-status aria-live="polite"></p>
+                  <button type="button" class="ghost-button" data-swimmer-ns-save disabled>Enregistrer le statut NS</button>
+                </fieldset>
                 <div id="adminEngagementsSwimmerCorrectionClub" class="admin-swimmer-club-field" hidden></div>
                 <label class="admin-engagements-swimmer-correction-reason">
                   <span id="adminEngagementsSwimmerCorrectionReasonLabel">Motif de la demande (facultatif)</span>
@@ -2899,10 +2908,10 @@
     <script src="assets/portal/competition-settings.js?v=20261029-regional-1"></script>
     <script src="assets/portal/club-people.js?v=20261028-modules-1"></script>
     <script src="assets/portal/club-entry-state.js?v=20261028-modules-1"></script>
-    <script src="assets/portal/club-entry-views.js?v=20261028-modules-1"></script>
+    <script src="assets/portal/club-entry-views.js?v=20261029-ns-1"></script>
     <script src="assets/portal/documents-and-program.js?v=20261028-modules-1"></script>
     <script src="assets/portal/competition-actions.js?v=20261028-modules-1"></script>
-    <script src="assets/portal/national-requests.js?v=20261028-modules-1"></script>
+    <script src="assets/portal/national-requests.js?v=20261029-ns-1"></script>
     <script src="assets/portal/national-directories.js?v=20261028-nap-recovery-2"></script>
     <script src="assets/portal/activity-journal.js?v=20261028-modules-1"></script>
     <script src="assets/portal/club-and-competition.js?v=20261028-nap-recovery-1"></script>
