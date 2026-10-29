@@ -112,5 +112,20 @@ def assert_existing(before, after, state):
             and after.get('labels') == {**before.get('labels', {}), 'livepalmes-commit': contract()['candidate']},
             'Identite source annuaire differente')
     old, new = state.rollback_patch(before, {}), state.rollback_patch(after, {})
+    # This exact source-only update returned the same AND filters in a different
+    # order. Accept no different filter, region, type, account or other setting.
+    if (before['name'] == PREFIX+'syncOfficialResultToPublicIndex'
+            and before.get('serviceConfig', {}).get('revision') == 'syncofficialresulttopublicindex-00052-gup'
+            and after.get('serviceConfig', {}).get('revision') == 'syncofficialresulttopublicindex-00053-toz'):
+        expected = [{'attribute': 'database', 'value': '(default)'},
+                    {'attribute': 'namespace', 'value': '(default)'},
+                    {'attribute': 'document', 'operator': 'match-path-pattern',
+                     'value': 'competitions/{competitionId}/results/{resultId}'}]
+        canonical = lambda rows: sorted(rows, key=lambda row: json.dumps(row, sort_keys=True))
+        for view in [old, new]:
+            trigger = view.get('eventTrigger', {})
+            require(canonical(trigger.get('eventFilters', [])) == canonical(expected),
+                    'Filtres du resultat officiel differents')
+            trigger['eventFilters'] = canonical(expected)
     require(all(old.get(k) == new.get(k) for k in ['buildConfig', 'serviceConfig', 'eventTrigger']),
             'Configuration existante modifiee')
