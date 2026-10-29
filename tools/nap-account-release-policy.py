@@ -112,15 +112,19 @@ def assert_existing(before, after, state):
             and after.get('labels') == {**before.get('labels', {}), 'livepalmes-commit': contract()['candidate']},
             'Identite source annuaire differente')
     old, new = state.rollback_patch(before, {}), state.rollback_patch(after, {})
-    # This exact source-only update returned the same AND filters in a different
-    # order. Accept no different filter, region, type, account or other setting.
-    if (before['name'] == PREFIX+'syncOfficialResultToPublicIndex'
-            and before.get('serviceConfig', {}).get('revision') == 'syncofficialresulttopublicindex-00052-gup'
-            and after.get('serviceConfig', {}).get('revision') == 'syncofficialresulttopublicindex-00053-toz'):
+    # Both existing Eventarc triggers can return their AND filters in any order
+    # on successive reads. The two exact revision pairs remain closed.
+    reviewed = {
+        PREFIX+'syncOfficialResultToPublicIndex': ('syncofficialresulttopublicindex-00052-gup',
+            'syncofficialresulttopublicindex-00053-toz', 'competitions/{competitionId}/results/{resultId}'),
+        PREFIX+'syncEngagementMailRecipientIndex': ('syncengagementmailrecipientindex-00023-pig',
+            'syncengagementmailrecipientindex-00024-lak', 'users/{uid}')}.get(before['name'])
+    if (reviewed and before.get('serviceConfig', {}).get('revision') == reviewed[0]
+            and after.get('serviceConfig', {}).get('revision') == reviewed[1]):
         expected = [{'attribute': 'database', 'value': '(default)'},
                     {'attribute': 'namespace', 'value': '(default)'},
                     {'attribute': 'document', 'operator': 'match-path-pattern',
-                     'value': 'competitions/{competitionId}/results/{resultId}'}]
+                     'value': reviewed[2]}]
         canonical = lambda rows: sorted(rows, key=lambda row: json.dumps(row, sort_keys=True))
         for view in [old, new]:
             trigger = view.get('eventTrigger', {})
