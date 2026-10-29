@@ -9,7 +9,8 @@
   --portal-color-text: #24343b;
   --portal-color-brand: #20333a;
   --portal-color-heading: #263940;
-  --portal-color-muted: #52636a;
+  --portal-color-muted: #304650;
+  --muted: var(--portal-color-muted);
   --portal-color-accent: #0b7285;
   --portal-color-accent-strong: #075866;
   --portal-color-border: #dfe5e7;
@@ -178,7 +179,7 @@
   place-content: center;
   justify-items: center;
   gap: 10px;
-  color: #53666d;
+  color: var(--portal-color-muted);
 }
 
 .admin-portal-auth-loading span {
@@ -252,7 +253,7 @@
 .admin-portal-card span,
 .admin-access-preview-head span {
   display: block;
-  color: #5f746f;
+  color: var(--portal-color-muted);
   font-size: 0.76rem;
   font-weight: 850;
   letter-spacing: 0.04em;
@@ -262,7 +263,7 @@
 .admin-access-list-head span,
 .admin-access-status {
   display: block;
-  color: #5f746f;
+  color: var(--portal-color-muted);
   font-size: 0.76rem;
   font-weight: 850;
   letter-spacing: 0.04em;
@@ -295,7 +296,7 @@
 .admin-access-form input:disabled,
 .admin-access-form select:disabled {
   background: #eef4f2;
-  color: #7d8e8a;
+  color: var(--portal-color-muted);
 }
 
 .admin-portal-actions {
@@ -381,7 +382,7 @@
   min-height: 32px;
   border: 0;
   padding: 0 2px;
-  color: #4f6870;
+  color: var(--portal-color-muted);
   background: transparent;
   font: inherit;
   font-size: 0.86rem;
@@ -524,7 +525,7 @@
 
 .admin-portal-nav-title {
   padding: 6px 9px 4px;
-  color: #5f746f;
+  color: var(--portal-color-muted);
   font-size: 0.68rem;
   font-weight: 850;
   letter-spacing: 0.06em;
@@ -545,7 +546,7 @@
 .admin-portal-nav-group h2 {
   margin: 0;
   padding: 4px 9px 2px;
-  color: #6a7e79;
+  color: var(--portal-color-muted);
   font-size: 0.66rem;
   font-weight: 850;
   letter-spacing: 0.055em;
@@ -630,7 +631,7 @@
   align-items: center;
   border: 0;
   background: transparent;
-  color: #5f746f;
+  color: var(--portal-color-muted);
   font-size: 0.73rem;
   font-weight: 850;
   font-family: inherit;
@@ -653,7 +654,7 @@
 }
 
 .admin-portal-nav a[href="pilotage-livepalmes.html"] span {
-  color: #5f746f;
+  color: var(--portal-color-muted);
   font-size: 0.86rem;
 }
 
@@ -725,7 +726,7 @@
 
 .admin-account-card > div > span,
 .admin-engagements-card > div > span {
-  color: #5f746f;
+  color: var(--portal-color-muted);
   font-size: 0.74rem;
   font-weight: 850;
   letter-spacing: 0.04em;
@@ -744,7 +745,7 @@
 
 .admin-account-card > div > p {
   margin: 0;
-  color: #5f746f;
+  color: var(--portal-color-muted);
   line-height: 1.45;
 }
 
@@ -764,7 +765,7 @@
 }
 
 .admin-account-scope-list dt {
-  color: #5f746f;
+  color: var(--portal-color-muted);
   font-size: 0.7rem;
   font-weight: 850;
   text-transform: uppercase;
@@ -801,7 +802,7 @@
 }
 
 .admin-portal-workspace-head > span {
-  color: #5f746f;
+  color: var(--portal-color-muted);
   font-size: 0.76rem;
   font-weight: 850;
   letter-spacing: 0.04em;
@@ -815,7 +816,7 @@
 
 .admin-portal-workspace-head p {
   margin: 0;
-  color: #5f746f;
+  color: var(--portal-color-muted);
   line-height: 1.55;
 }
 
@@ -952,7 +953,7 @@
 
 .admin-dtn-refresh span {
   max-width: 220px;
-  color: #58706b;
+  color: var(--portal-color-muted);
   font-size: 0.75rem;
   line-height: 1.25;
 }
@@ -979,7 +980,7 @@
   border-radius: 999px;
   padding: 5px 9px;
   background: #ffffff;
-  color: #5f746f;
+  color: var(--portal-color-muted);
   font-size: 0.72rem;
 }
 
@@ -1018,7 +1019,7 @@
 
 .admin-dtn-grid-head span,
 .admin-dtn-qualifiers-head span {
-  color: #5f746f;
+  color: var(--portal-color-muted);
   font-size: 0.71rem;
   font-weight: 850;
   letter-spacing: 0.04em;
@@ -1030,7 +1031,7 @@
 }
 
 .admin-dtn-grid-head small {
-  color: #5f746f;
+  color: var(--portal-color-muted);
   font-size: 0.75rem;
 }
 
@@ -1175,7 +1176,7 @@
 .admin-dtn-export-status {
   min-height: 1em;
   margin: 0;
-  color: #5f746f;
+  color: var(--portal-color-muted);
   font-size: 0.68rem;
 }
 
@@ -1211,7 +1212,7 @@
 
 .admin-dtn-edf-standard-head span,
 .admin-dtn-edf-standard-head small {
-  color: #5f746f;
+  color: var(--portal-color-muted);
   font-size: 0.72rem;
 }
 
@@ -1243,7 +1244,7 @@
 .admin-dtn-edf-count.is-unavailable,
 .admin-dtn-edf-threshold.is-unavailable {
   background: #f1f4f3;
-  color: #96a39f;
+  color: var(--portal-color-muted);
 }
 
 .admin-dtn-detail-button {
@@ -1266,7 +1267,7 @@
 
 .admin-dtn-inline-loading {
   padding: 12px 14px;
-  color: #5f746f;
+  color: var(--portal-color-muted);
   font-size: 0.75rem;
 }
 
@@ -1284,7 +1285,7 @@
   gap: 12px;
   align-items: center;
   padding: 0 2px 7px;
-  color: #526b66;
+  color: var(--portal-color-muted);
   font-size: 0.72rem;
 }
 
@@ -1307,7 +1308,7 @@
 .admin-dtn-summary-loading {
   margin: 0;
   padding: 28px 16px;
-  color: #5f746f;
+  color: var(--portal-color-muted);
   text-align: center;
 }
 
@@ -1367,7 +1368,7 @@
 }
 
 .admin-dtn-summary-group-head span {
-  color: #5f746f;
+  color: var(--portal-color-muted);
   font-size: 0.68rem;
 }
 
@@ -1435,7 +1436,7 @@
   max-height: 0;
   overflow: hidden;
   opacity: 0;
-  color: #61746f;
+  color: var(--portal-color-muted);
   font-size: 0.64rem;
   line-height: 1.25;
   transition: max-height 150ms ease, margin-top 150ms ease, opacity 150ms ease;
@@ -1464,7 +1465,7 @@
 .admin-dtn-summary-empty {
   margin: 0;
   padding: 14px;
-  color: #5f746f;
+  color: var(--portal-color-muted);
   font-size: 0.75rem;
 }
 
@@ -1567,7 +1568,7 @@
 }
 
 .admin-dtn-no-time {
-  color: #9aaba7;
+  color: var(--portal-color-muted);
 }
 
 .admin-dtn-qualifiers {
@@ -1609,7 +1610,7 @@
 
 .admin-dtn-empty {
   padding: 22px !important;
-  color: #5f746f;
+  color: var(--portal-color-muted);
   text-align: center !important;
 }
 
@@ -1666,7 +1667,7 @@
   border-radius: 8px;
   padding: 16px;
   background: #ffffff;
-  color: #5f746f;
+  color: var(--portal-color-muted);
   font-weight: 760;
 }
 
@@ -1730,7 +1731,7 @@
   border-radius: 6px;
   padding: 4px 8px;
   background: #f1f8f6;
-  color: #61757c;
+  color: var(--portal-color-muted);
   font-size: 0.72rem;
   line-height: 1.25;
 }
@@ -1833,7 +1834,7 @@
 }
 
 .admin-current-user-grid dt {
-  color: #5f746f;
+  color: var(--portal-color-muted);
   font-size: 0.68rem;
   font-weight: 850;
   text-transform: uppercase;
@@ -1871,7 +1872,7 @@
 }
 
 .admin-portal-card small {
-  color: #5f746f;
+  color: var(--portal-color-muted);
   line-height: 1.45;
 }
 

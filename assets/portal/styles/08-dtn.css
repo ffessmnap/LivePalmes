@@ -26,7 +26,7 @@
 }
 
 #adminDtnView .admin-dtn-toolbar label {
-  color: #52636a;
+  color: var(--portal-color-muted);
   font-size: 0.74rem;
   letter-spacing: 0.02em;
 }
@@ -72,7 +72,7 @@
   border-radius: 8px;
   padding: 7px 10px;
   background: #f5f9f9;
-  color: #617178;
+  color: var(--portal-color-muted);
 }
 
 #adminDtnView .admin-dtn-definitions .admin-dtn-competition-scope {
@@ -296,7 +296,7 @@
 #adminDtnView .admin-dtn-listing-filters label {
   display: grid;
   gap: 4px;
-  color: #52636a;
+  color: var(--portal-color-muted);
   font-size: 0.7rem;
   font-weight: 500;
 }

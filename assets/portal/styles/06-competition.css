@@ -3,7 +3,7 @@
 #adminEngagementsDetail .admin-engagements-detail-list dt {
   border-color: #e3e9eb;
   background: #f5f8f9;
-  color: #64747a;
+  color: var(--portal-color-muted);
 }
 
 #adminEngagementsDetail .admin-engagements-detail-list dd {
@@ -122,13 +122,13 @@
   min-height: 50px;
   border-top: 1px solid #e7ecee;
   padding: 8px 12px;
-  color: #52636a;
+  color: var(--portal-color-muted);
   font-size: 0.78rem;
   font-weight: 850;
 }
 
 .admin-engagements-invited-regions-field small {
-  color: #5f746f;
+  color: var(--portal-color-muted);
   font-size: 0.74rem;
 }
 
@@ -236,7 +236,7 @@
 }
 
 .admin-engagements-invited-regions-summary small {
-  color: #5f746f;
+  color: var(--portal-color-muted);
   font-weight: 700;
 }
 
@@ -297,7 +297,7 @@
 
 .admin-engagements-create-checklist p,
 .admin-engagements-create-checklist li {
-  color: #52636a;
+  color: var(--portal-color-muted);
 }
 
 .admin-engagements-create-checklist ul {
@@ -347,7 +347,7 @@
 }
 
 .admin-engagements-unsaved-dialog p {
-  color: #52636a;
+  color: var(--portal-color-muted);
 }
 
 .admin-engagements-unsaved-dialog-actions {
@@ -379,7 +379,7 @@
 
 .admin-engagements-region-dialog p {
   margin-top: 4px;
-  color: #5f746f;
+  color: var(--portal-color-muted);
   font-size: 0.82rem;
 }
 
@@ -407,7 +407,7 @@
   min-height: 50px;
   border-color: #e7ecee;
   padding: 8px 12px;
-  color: #52636a;
+  color: var(--portal-color-muted);
 }
 
 #adminEngagementsDetail .admin-engagements-form-section-grid > label:nth-child(even) {
@@ -439,7 +439,7 @@
 #adminEngagementsDetail .admin-engagements-program-session input:disabled,
 #adminEngagementsDetail .admin-engagements-program-row select:disabled {
   background: #eef2f3;
-  color: #68787e;
+  color: var(--portal-color-muted);
 }
 
 #adminEngagementsDetail .admin-engagements-inline-save-actions {
@@ -519,7 +519,7 @@
   border-radius: 9px;
   padding: 11px 12px;
   background: #ffffff;
-  color: #52636a;
+  color: var(--portal-color-muted);
 }
 
 #adminEngagementsDetail .admin-engagements-fees-form[data-readonly="true"] .admin-engagements-fees-grid label {
@@ -590,7 +590,7 @@
 .admin-engagements-statistics-head small,
 .admin-engagements-statistics-section-head small,
 .admin-engagements-ged-card small {
-  color: #64767c;
+  color: var(--portal-color-muted);
   font-size: 0.75rem;
 }
 
@@ -613,7 +613,7 @@
 .admin-engagements-statistics-summary article small,
 .admin-engagements-statistics-summary article span {
   overflow: hidden;
-  color: #607278;
+  color: var(--portal-color-muted);
   font-size: 0.7rem;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -656,7 +656,7 @@
   display: grid;
   gap: 4px;
   min-width: min(330px, 100%);
-  color: #53666c;
+  color: var(--portal-color-muted);
   font-size: 0.7rem;
 }
 
@@ -754,7 +754,7 @@
 .admin-engagements-statistics-row small,
 .admin-engagements-statistics-club-row small {
   overflow: hidden;
-  color: #6c7d82;
+  color: var(--portal-color-muted);
   font-size: 0.66rem;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -766,7 +766,7 @@
 
 .admin-engagements-statistics-row-head > span {
   min-height: 32px;
-  color: #4f6268;
+  color: var(--portal-color-muted);
   font-size: 0.68rem;
   font-weight: 500;
 }
@@ -852,7 +852,7 @@
 .admin-engagements-document-file-field small,
 .admin-engagements-document-draft-file,
 .admin-engagements-shared-document-meta {
-  color: #64767c;
+  color: var(--portal-color-muted);
   font-size: 0.72rem;
 }
 
@@ -878,7 +878,7 @@
 .admin-engagements-document-draft > label {
   display: grid;
   gap: 4px;
-  color: #53666c;
+  color: var(--portal-color-muted);
   font-size: 0.7rem;
 }
 
@@ -947,7 +947,7 @@
 
 .admin-engagements-shared-document-main p {
   margin: 0;
-  color: #52666c;
+  color: var(--portal-color-muted);
   font-size: 0.76rem;
   line-height: 1.4;
 }
@@ -1109,7 +1109,7 @@
 }
 
 .admin-engagements-refresh-meta {
-  color: #77878d;
+  color: var(--portal-color-muted);
   font-size: 0.7rem;
   font-weight: var(--portal-font-weight-regular);
   white-space: nowrap;
@@ -1131,7 +1131,7 @@
 }
 
 #adminEngagementsCalendarCard .admin-engagements-calendar-filters label {
-  color: #52636a;
+  color: var(--portal-color-muted);
 }
 
 #adminEngagementsCalendarCard .admin-engagements-calendar-filters select {
@@ -1173,7 +1173,7 @@
   border-radius: 9px;
   padding: 15px;
   background: #f8fbfb;
-  color: #52666c;
+  color: var(--portal-color-muted);
 }
 
 #adminEngagementsCalendarCard .admin-engagements-calendar-loading > span {
@@ -1207,7 +1207,7 @@
 }
 
 #adminEngagementsCalendarCard .admin-engagements-competition-actions small {
-  color: #68787e;
+  color: var(--portal-color-muted);
   font-size: 0.73rem;
 }
 
@@ -1261,7 +1261,7 @@
   border-radius: 0;
   padding: 4px 7px;
   background: transparent;
-  color: #586b72;
+  color: var(--portal-color-muted);
   font-size: 0.69rem;
   cursor: pointer;
 }
@@ -1328,7 +1328,7 @@
   border-radius: 7px;
   padding: 5px 10px;
   background: #ffffff;
-  color: #50636a;
+  color: var(--portal-color-muted);
 }
 
 #adminEngagementsDetail .admin-engagements-detail-tab-group-items button:hover,
