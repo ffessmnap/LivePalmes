@@ -75,6 +75,9 @@ async function apply(connection,backup,proof){
     const started=Date.now();
     // No DML, migration/backfill, new table, function invocation or email.
     await connection.query({sql:ALTER_SQL,timeout:60000});
+    // ALTER may release an explicit table lock. Reacquire before verification;
+    // any intervening external write is detected by the unchanged native hash.
+    await connection.query({sql:"LOCK TABLES nageurs WRITE",timeout:10000});
     const after=await inspect(connection),added=after.columns.slice(COLUMNS.length);
     if(hash(after.tables)!==hash(before.tables)||hash(after.indexes)!==hash(before.indexes)||hash(after.columns.slice(0,COLUMNS.length))!==hash(before.columns)||
       added.length!==2||added.some((c,i)=>c.COLUMN_NAME!==["livepalmes_ns","livepalmes_ns_version"][i]||
