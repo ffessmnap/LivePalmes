@@ -1225,6 +1225,8 @@ def fetch_plan(preparation, resume, directory):
             artifact(resume, 'production-hosting-after', root / 'previous')
         if approved_bcc_functions(read(root / 'request.json')):
             artifact(resume, 'production-bcc-guards', root)
+        if nap_account.approved(read(root / 'request.json')):
+            artifact(resume, 'production-idf-preservation', root / 'previous/guards')
     else:
         artifact(preparation, 'release-plan', root, '.github/workflows/livepalmes-production-preflight.yml')
     value = read(root / 'request.json')

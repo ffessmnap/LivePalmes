@@ -73,6 +73,17 @@ def publish(candidate, plan, backup, cycle, archive):
     policy.require(not previous or previous.get('candidate') == value['candidate'], 'Reprise hors candidat')
     todo, create = pending(before, current, {f['name']: f for f in previous.get('functions', [])}, state)
     guard(plan)
+    if not todo and not create:
+        # Every revision was just checked against the authenticated interrupted
+        # run and original backup. Do not upload, rebuild or recreate anything.
+        receipt = cycle.read(plan/'previous/guards/nap-account-source-update.json')
+        policy.require(receipt.get('candidate') == value['candidate'] and receipt.get('created') is True
+                       and sorted(receipt.get('updated', [])) == policy.contract()['existingSelected'],
+                       'Recu de publication annuaire incomplet')
+        cycle.write(plan/'nap-account-source-update.json', {**receipt, 'resumedWithoutWrites': True})
+        state.check_after(backup, backup/'after.json', True)
+        guard(plan, True)
+        return
     data = archive(candidate, value['candidate'])
     upload = state.request(state.API+'projects/livepalmes/locations/europe-west1/functions:generateUploadUrl', 'POST', {})
     url = urllib.parse.urlsplit(upload['uploadUrl'])
