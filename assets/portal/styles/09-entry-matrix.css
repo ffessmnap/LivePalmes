@@ -34,7 +34,7 @@
 }
 
 #adminEngagementsDetailEntriesPanel .admin-engagements-club-entry-group-head span {
-  color: #64777c;
+  color: var(--portal-color-muted);
   font-size: 0.74rem;
   font-weight: 500;
 }
@@ -80,7 +80,7 @@
 
 #adminEngagementsDetailEntriesPanel .admin-engagements-club-entries-table thead th {
   background: #f5f8f9;
-  color: #50646a;
+  color: var(--portal-color-muted);
   font-weight: 500;
   text-align: center;
 }
@@ -104,7 +104,7 @@
 #adminEngagementsDetailEntriesPanel .admin-engagements-club-entry-session small,
 #adminEngagementsDetailEntriesPanel .admin-engagements-club-entry-course-head small {
   margin-top: 2px;
-  color: #718188;
+  color: var(--portal-color-muted);
   font-size: 0.63rem;
   font-weight: 500;
 }
@@ -167,7 +167,7 @@
 
 #adminEngagementsDetailEntriesPanel .admin-engagements-club-entry-swimmer span {
   margin-top: 2px;
-  color: #65777d;
+  color: var(--portal-color-muted);
   font-size: 0.68rem;
   font-weight: 400;
 }
@@ -259,7 +259,7 @@
   display: block;
   max-width: 58px;
   overflow: hidden;
-  color: #52676d;
+  color: var(--portal-color-muted);
   font-size: 0.57rem;
   font-variant-numeric: tabular-nums;
   font-weight: 500;
@@ -276,7 +276,7 @@
 }
 
 #adminEngagementsDetailEntriesPanel [data-engagement-club-entry-cell-time][data-entry-time-mode="pending"] {
-  color: #64777c;
+  color: var(--portal-color-muted);
   font-weight: 500;
 }
 
@@ -286,7 +286,7 @@
 
 #adminEngagementsDetailEntriesPanel .admin-engagements-club-entry-course.is-unavailable {
   background: #f6f7f7;
-  color: #a2adb0;
+  color: var(--portal-color-muted);
 }
 
 #adminEngagementsDetailEntriesPanel .admin-engagements-club-times-open,
@@ -362,7 +362,7 @@
 
 .admin-engagements-club-times-dialog-head p {
   margin-top: 4px;
-  color: #65777d;
+  color: var(--portal-color-muted);
   font-size: 0.74rem;
 }
 
@@ -394,7 +394,7 @@
 
 .admin-engagements-club-time-dialog-course small,
 .admin-engagements-club-time-dialog-help {
-  color: #6a7b80;
+  color: var(--portal-color-muted);
   font-size: 0.68rem;
 }
 
@@ -494,7 +494,7 @@
   display: grid;
   gap: 4px;
   min-width: 0;
-  color: #52636a;
+  color: var(--portal-color-muted);
   font-size: 0.72rem;
   font-weight: 750;
 }
@@ -547,7 +547,7 @@
 }
 
 .admin-engagements-club-relay-dialog-members.is-unavailable summary {
-  color: #7d8b90;
+  color: var(--portal-color-muted);
 }
 
 .admin-engagements-club-relay-dialog-members-head {
@@ -561,7 +561,7 @@
 
 .admin-engagements-club-relay-dialog-members-head p {
   margin: 0;
-  color: #617279;
+  color: var(--portal-color-muted);
   font-size: 0.71rem;
   line-height: 1.35;
 }
@@ -578,7 +578,7 @@
 
 .admin-engagements-club-relay-dialog-help {
   margin: 0;
-  color: #617279;
+  color: var(--portal-color-muted);
   font-size: 0.78rem;
   line-height: 1.4;
 }
@@ -595,7 +595,7 @@
   gap: 6px;
   align-items: center;
   min-width: 0;
-  color: #52636a;
+  color: var(--portal-color-muted);
   font-size: 0.76rem;
   font-weight: 800;
 }

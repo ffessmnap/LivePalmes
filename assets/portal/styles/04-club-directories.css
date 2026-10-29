@@ -80,7 +80,7 @@
 #adminEngagementsClubPeoplePanel .admin-engagements-club-person-swimmer-source label {
   display: grid;
   gap: 5px;
-  color: #52636a;
+  color: var(--portal-color-muted);
 }
 
 #adminEngagementsClubPeoplePanel .admin-engagements-club-person-swimmer-source small {
@@ -125,7 +125,7 @@
 }
 
 #adminEngagementsClubPeoplePanel .admin-engagements-club-person-swimmer-results button:disabled {
-  color: #7a898e;
+  color: var(--portal-color-muted);
   cursor: not-allowed;
 }
 
@@ -138,7 +138,7 @@
 }
 
 #adminEngagementsClubPeoplePanel .admin-engagements-club-person-swimmer-results button small {
-  color: #64747a;
+  color: var(--portal-color-muted);
   font-size: 0.74rem;
 }
 
@@ -146,7 +146,7 @@
 #adminEngagementsClubPeoplePanel .admin-engagements-club-person-swimmer-more {
   margin: 0;
   padding: 9px 10px;
-  color: #64747a;
+  color: var(--portal-color-muted);
   font-size: 0.76rem;
 }
 
@@ -233,7 +233,7 @@
   min-height: 36px;
   border-top: 0;
   background: #eef3f4;
-  color: #52636a;
+  color: var(--portal-color-muted);
   font-size: 0.7rem;
   font-weight: 700;
   text-transform: uppercase;
@@ -271,7 +271,7 @@
   border-radius: 999px;
   padding: 3px 7px;
   background: #e9eff1;
-  color: #52636a;
+  color: var(--portal-color-muted);
   font-size: 0.7rem;
   font-weight: 600;
   line-height: 1.25;
@@ -284,7 +284,7 @@
 
 #adminEngagementsClubPeoplePanel .admin-engagements-club-person-status[data-active="false"] {
   background: #edf0f1;
-  color: #687980;
+  color: var(--portal-color-muted);
 }
 
 #adminEngagementsClubPeoplePanel .admin-engagements-club-person-row > .admin-engagements-club-person-details > span:last-child {
@@ -384,7 +384,7 @@
 }
 
 #adminEngagementsClubSwimmersPanel .admin-engagements-club-swimmers-directory-tools label {
-  color: #52636a;
+  color: var(--portal-color-muted);
 }
 
 #adminEngagementsClubSwimmersPanel .admin-engagements-club-swimmers-directory-search-field input {
@@ -412,7 +412,7 @@
   padding: 0;
   transform: translateY(-50%);
   background: transparent;
-  color: #64747a;
+  color: var(--portal-color-muted);
   cursor: pointer;
 }
 
@@ -454,7 +454,7 @@
   border-left: 1px solid #e1e7e9;
   padding: 6px 12px;
   background: transparent;
-  color: #52636a;
+  color: var(--portal-color-muted);
   font: inherit;
   font-size: 0.78rem;
   font-weight: 650;
@@ -529,7 +529,7 @@
   min-height: 0;
   padding: 0;
   background: transparent;
-  color: #64747a;
+  color: var(--portal-color-muted);
   font-size: inherit;
 }
 
@@ -555,7 +555,7 @@
 #adminEngagementsClubSwimmersPanel .admin-engagements-club-inactive-toggle span {
   padding: 0;
   background: transparent;
-  color: #64747a;
+  color: var(--portal-color-muted);
 }
 
 #adminEngagementsClubSwimmersPanel .admin-engagements-club-inactive-toggle i {
@@ -675,7 +675,7 @@
   border-radius: 999px;
   padding: 3px 7px;
   background: #f7f9f9;
-  color: #68787d;
+  color: var(--portal-color-muted);
   font: inherit;
   font-size: 0.72rem;
   font-weight: 650;
@@ -726,7 +726,7 @@
 
 #adminEngagementsClubSwimmersPanel .admin-engagements-club-swimmers-directory-edit-button:disabled {
   background: transparent;
-  color: #8a999d;
+  color: var(--portal-color-muted);
   cursor: default;
   opacity: 0.65;
 }
@@ -803,7 +803,7 @@
 
 .admin-engagements-swimmer-change-requests-head > span,
 .admin-engagements-swimmer-change-request-head span {
-  color: #60746f;
+  color: var(--portal-color-muted);
   font-size: 0.74rem;
 }
 
@@ -850,7 +850,7 @@
 }
 
 .admin-engagements-swimmer-change-diff > div > span {
-  color: #64747a;
+  color: var(--portal-color-muted);
   font-weight: 700;
 }
 
@@ -863,7 +863,7 @@
 
 .admin-engagements-swimmer-change-diff > div > del::after {
   float: right;
-  color: #78908b;
+  color: var(--portal-color-muted);
   content: "→";
   text-decoration: none;
 }
@@ -878,7 +878,7 @@
 .admin-engagements-swimmer-change-resolution-note {
   display: grid;
   gap: 4px;
-  color: #52636a;
+  color: var(--portal-color-muted);
   font-size: 0.74rem;
   font-weight: 700;
 }
@@ -943,7 +943,7 @@
 }
 
 .admin-engagements-swimmer-correction-head span {
-  color: #60746f;
+  color: var(--portal-color-muted);
   font-size: 0.76rem;
 }
 
@@ -979,7 +979,7 @@
 .admin-engagements-swimmer-correction-reason {
   display: grid;
   gap: 5px;
-  color: #52636a;
+  color: var(--portal-color-muted);
   font-size: 0.78rem;
   font-weight: 750;
 }
@@ -1084,7 +1084,7 @@
 
 #adminEngagementsClubSwimmersPanel .admin-engagements-club-swimmers-directory-row[data-activity-status="inactive"] .admin-engagements-club-swimmers-directory-name-button,
 #adminEngagementsClubSwimmersPanel .admin-engagements-club-swimmers-directory-row[data-activity-status="inactive"] .admin-engagements-club-swimmers-directory-details > span:not(:last-child) {
-  color: #6d7a7f;
+  color: var(--portal-color-muted);
 }
 
 #adminEngagementsClubSwimmersPanel .admin-engagements-club-swimmers-directory-row[data-activity-status="inactive"] .admin-engagements-club-swimmers-directory-profile-icon {
@@ -1108,7 +1108,7 @@
   min-height: 36px;
   border-top: 0;
   background: #eef3f4;
-  color: #52636a;
+  color: var(--portal-color-muted);
 }
 
 @media (max-width: 700px) {
@@ -1188,7 +1188,7 @@
   }
 
   #adminEngagementsClubPeoplePanel .admin-engagements-club-person-chevron {
-    color: #64747a;
+    color: var(--portal-color-muted);
     font-size: 1.15rem;
     line-height: 1;
     transition: transform 160ms ease;
@@ -1231,7 +1231,7 @@
   }
 
   #adminEngagementsClubPeoplePanel .admin-engagements-club-person-details > span::before {
-    color: #64747a;
+    color: var(--portal-color-muted);
     font-size: 0.68rem;
     font-weight: 600;
     letter-spacing: 0.02em;
@@ -1384,7 +1384,7 @@
     border-radius: 999px;
     padding: 3px 7px;
     background: #edf2f3;
-    color: #52636a;
+    color: var(--portal-color-muted);
     font-size: 0.68rem;
     font-weight: 600;
     line-height: 1.25;
@@ -1407,7 +1407,7 @@
     border-radius: 6px;
     padding: 0;
     background: transparent;
-    color: #64747a;
+    color: var(--portal-color-muted);
     cursor: pointer;
   }
 
@@ -1420,7 +1420,7 @@
   }
 
   #adminEngagementsClubSwimmersPanel .admin-engagements-club-swimmers-directory-chevron {
-    color: #64747a;
+    color: var(--portal-color-muted);
     font-size: 1.15rem;
     line-height: 1;
     transition: transform 160ms ease;
@@ -1471,7 +1471,7 @@
   }
 
   #adminEngagementsClubSwimmersPanel .admin-engagements-club-swimmers-directory-details > span::before {
-    color: #64747a;
+    color: var(--portal-color-muted);
     font-size: 0.68rem;
     font-weight: 600;
     letter-spacing: 0.02em;

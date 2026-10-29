@@ -60,7 +60,7 @@ html[data-portal-theme="dark"] .admin-portal-page {
   --portal-color-text:#e1ebef;
   --portal-color-brand:#edf5f7;
   --portal-color-heading:#edf5f7;
-  --portal-color-muted:#a8bbc5;
+  --portal-color-muted:#d0dee6;
   --portal-color-accent:#65cbd9;
   --portal-color-accent-strong:#8bdeea;
   --portal-color-border:#3b515f;
@@ -70,7 +70,7 @@ html[data-portal-theme="dark"] .admin-portal-page {
   --portal-color-hover-border:#65cbd9;
   --portal-color-field-background:#13212b;
   --portal-focus-ring:rgba(101,203,217,.3);
-  --ink:#e1ebef; --muted:#a8bbc5; --line:#3b515f;
+  --ink:#e1ebef; --muted:#d0dee6; --line:#3b515f;
   background:var(--portal-color-background) !important;
   color:var(--portal-color-text) !important;
 }
@@ -87,7 +87,7 @@ html[data-portal-theme="dark"] .admin-portal-page :is(h1,h2,h3,h4,strong,label,l
 html[data-portal-theme="dark"] .admin-portal-page :is(p,small,[class$="-description"],[class$="-subtitle"],[class$="-meta"],[class$="-hint"]) { color:var(--portal-color-muted) !important; }
 html[data-portal-theme="dark"] .admin-portal-page :is(a,.admin-portal-nav-icon) { color:var(--portal-color-accent) !important; }
 html[data-portal-theme="dark"] .admin-portal-page :is(input,select,textarea,button,.ghost-button) { background:var(--portal-color-field-background) !important; color:var(--portal-color-text) !important; border-color:var(--portal-color-field-border) !important; }
-html[data-portal-theme="dark"] .admin-portal-page :is(input,textarea)::placeholder { color:#91a8b5; opacity:1; }
+html[data-portal-theme="dark"] .admin-portal-page :is(input,textarea)::placeholder { color:var(--portal-color-muted); opacity:1; }
 html[data-portal-theme="dark"] .admin-portal-page :is(button[type="submit"],.admin-primary-button) { background:#126f80 !important; color:#fff !important; border-color:#42a9bb !important; }
 html[data-portal-theme="dark"] .admin-portal-page :is(button,a):hover { border-color:var(--portal-color-hover-border) !important; }
 html[data-portal-theme="dark"] .admin-portal-page :is([aria-current="page"],[aria-pressed="true"],.admin-portal-nav a.active) { background:#203e4a !important; color:#9ae5ee !important; border-color:#65cbd9 !important; }
@@ -267,3 +267,36 @@ html[data-portal-theme="dark"] .admin-portal-page :is(.admin-overview-card-label
   html[data-portal-theme="dark"] .admin-portal-page,
   html[data-portal-theme="dark"] .admin-portal-page * { background:white !important; color:black !important; box-shadow:none !important; }
 }
+
+/* Secondary text in shared/lazy modules: scoped to the portal only. */
+.admin-portal-page :is(
+  .admin-license-admin-intro p, .admin-license-admin-step-title small,
+  .admin-license-admin-method small, .admin-license-admin-validation-bar small,
+  .admin-license-admin-season small, .admin-license-admin-flow small,
+  .admin-license-admin-limit, .admin-license-admin-competition small,
+  .admin-license-admin-competition-state, .admin-license-admin-person small,
+  .admin-license-admin-source small, .admin-license-admin-table td > small,
+  .admin-license-admin-state[data-state="to_check"],
+  .qualification-enable small, .qualification-intro, .qualification-standards-head p,
+  .competition-import-dialog-head p, .import-card-head span, .import-card-head p,
+  .performance-migration-status span, .import-summary-grid span,
+  .competition-import-preview-count, .import-preview-table th, .import-preview-table td small,
+  .competition-imports-filter-summary, .competition-import-row summary > span,
+  .competition-imports-note, .competition-import-details span, .competition-import-actions span
+) { color:var(--portal-color-muted) !important; }
+.admin-portal-page :is(input,textarea)::placeholder { color:var(--portal-color-muted); opacity:1; }
+/* The common header deliberately keeps its own light palette. */
+.admin-portal-page .public-site-header { --portal-color-muted:#304650; }
+
+/* Neutral secondary surfaces must follow the brighter dark-theme text. */
+html[data-portal-theme="dark"] .admin-portal-page :is(
+  .admin-portal-login, .admin-portal-experiment-notice,
+  .admin-engagements-club-person-swimmer-source,
+  .admin-engagements-club-person-status:not([data-active="true"]),
+  .admin-engagements-club-person-role-badge,
+  .admin-engagements-club-swimmers-directory-sex-category,
+  .admin-engagements-swimmer-change-request, .admin-engagements-swimmer-change-diff > div,
+  .admin-engagements-national-bulk-actions,
+  .admin-national-audit-entry, .admin-national-audit-entry > summary,
+  .admin-national-audit-entry-details, .admin-license-admin-validation-bar
+) { background:var(--portal-color-surface) !important; }

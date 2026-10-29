@@ -16,7 +16,7 @@
   border-bottom: 1px solid #d8e0e3;
   padding: 6px 10px;
   background: #edf2f3;
-  color: #53666d;
+  color: var(--portal-color-muted);
   font-size: 0.68rem;
   font-weight: 700;
   letter-spacing: 0.035em;
@@ -103,7 +103,7 @@
 #adminEngagementsCalendarCard .admin-engagements-competition-location,
 #adminEngagementsCalendarCard .admin-engagements-competition-scope small,
 #adminEngagementsCalendarCard .admin-engagements-competition-status small {
-  color: #62747a;
+  color: var(--portal-color-muted);
   font-size: 0.72rem;
   font-weight: 400;
   line-height: 1.25;
@@ -115,7 +115,7 @@
   border-radius: 999px;
   padding: 2px 7px;
   background: #eef3f4;
-  color: #4e6269;
+  color: var(--portal-color-muted);
   font-size: 0.67rem;
   font-weight: 650;
   line-height: 1.35;
@@ -128,7 +128,7 @@
 
 #adminEngagementsCalendarCard .admin-engagements-competition-entry-badge[data-entry-state="closed"] {
   background: #edf0f1;
-  color: #5f6d72;
+  color: var(--portal-color-muted);
 }
 
 #adminEngagementsCalendarCard .admin-engagements-competition-entry-badge[data-entry-state="upcoming"] {
@@ -273,7 +273,7 @@
 }
 
 .admin-engagements-scope-list dt {
-  color: #5f746f;
+  color: var(--portal-color-muted);
   font-size: 0.76rem;
   font-weight: 850;
   text-transform: uppercase;
@@ -403,7 +403,7 @@
 .admin-engagements-national-filters label {
   display: grid;
   gap: 4px;
-  color: #5f746f;
+  color: var(--portal-color-muted);
   font-size: 0.76rem;
   font-weight: 850;
   text-transform: uppercase;
@@ -440,7 +440,7 @@
 }
 
 .admin-engagements-national-bulk-actions span {
-  color: #5f746f;
+  color: var(--portal-color-muted);
   font-size: 0.82rem;
   font-weight: 700;
 }
@@ -474,7 +474,7 @@
   top: 0;
   z-index: 1;
   background: #f4f8f7;
-  color: #5f746f;
+  color: var(--portal-color-muted);
   font-size: 0.72rem;
   font-weight: 900;
   text-transform: uppercase;
@@ -489,7 +489,7 @@
 }
 
 .admin-engagements-national-swimmer-row[data-merged="true"] {
-  color: #6d7f7a;
+  color: var(--portal-color-muted);
   background: #f6f7f7;
 }
 
@@ -546,7 +546,7 @@
 
 .admin-engagements-national-audit-table small {
   display: block;
-  color: #6d827d;
+  color: var(--portal-color-muted);
   font-size: 0.72rem;
   font-weight: 700;
 }
@@ -586,7 +586,7 @@
 
 .admin-engagements-request-main small,
 .admin-engagements-request-meta span {
-  color: #5f746f;
+  color: var(--portal-color-muted);
   font-size: 0.78rem;
 }
 
@@ -601,7 +601,7 @@
   grid-column: 1 / -1;
   margin: 0;
   padding-top: 4px;
-  color: #5f746f;
+  color: var(--portal-color-muted);
   font-size: 0.82rem;
 }
 
@@ -673,7 +673,7 @@
 
 #adminEngagementsCalendarCard .admin-engagements-competition-type {
   width: fit-content;
-  color: #537078;
+  color: var(--portal-color-muted);
   font-size: 0.72rem;
   font-weight: 750;
 }
@@ -710,7 +710,7 @@
 }
 
 .admin-engagements-open-water-library-head small {
-  color: #607169;
+  color: var(--portal-color-muted);
 }
 
 .admin-engagements-open-water-course-creator {
@@ -803,7 +803,7 @@
   min-height: 20px;
   border: 0;
   background: transparent;
-  color: #61766f;
+  color: var(--portal-color-muted);
   font-size: 0.85rem;
   opacity: 0.3;
 }
@@ -825,7 +825,7 @@
 }
 
 .admin-engagements-open-water-unavailable {
-  color: #a3b0ab;
+  color: var(--portal-color-muted);
 }
 
 .admin-engagements-open-water-label-short {
@@ -839,7 +839,7 @@
 .admin-engagements-open-water-empty {
   margin: 0;
   padding: 12px;
-  color: #607169;
+  color: var(--portal-color-muted);
 }
 
 .admin-engagements-club-entry-count {
@@ -982,7 +982,7 @@
 
 .admin-engagements-national-swimmer-card[data-active="false"] .admin-engagements-request-main strong,
 .admin-engagements-national-person-card[data-active="false"] .admin-engagements-request-main strong {
-  color: #5f746f;
+  color: var(--portal-color-muted);
 }
 
 .admin-engagements-national-merge {
@@ -998,7 +998,7 @@
 .admin-engagements-national-merge label {
   display: grid;
   gap: 4px;
-  color: #5f746f;
+  color: var(--portal-color-muted);
   font-size: 0.76rem;
   font-weight: 850;
   text-transform: uppercase;
@@ -1022,7 +1022,7 @@
 
 .admin-engagements-empty {
   margin: 0;
-  color: #5f746f;
+  color: var(--portal-color-muted);
 }
 
 .admin-engagements-form {
@@ -1103,13 +1103,13 @@
 .admin-engagements-form input:disabled,
 .admin-engagements-form select:disabled {
   background: #eef5f3;
-  color: #5f746f;
+  color: var(--portal-color-muted);
 }
 
 .admin-engagements-field-note {
   grid-column: 2;
   margin-top: 4px;
-  color: #5f746f;
+  color: var(--portal-color-muted);
   font-size: 0.74rem;
   font-weight: 700;
   line-height: 1.35;
@@ -1152,7 +1152,7 @@
 
 .admin-engagements-empty {
   padding: 14px;
-  color: #5f746f;
+  color: var(--portal-color-muted);
   font-weight: 760;
 }
 
@@ -1182,7 +1182,7 @@
 }
 
 .admin-engagements-competition small {
-  color: #5f746f;
+  color: var(--portal-color-muted);
   line-height: 1.35;
 }
 
@@ -1283,7 +1283,7 @@
 }
 
 .admin-engagements-detail-head span {
-  color: #5f746f;
+  color: var(--portal-color-muted);
   font-size: 0.72rem;
   font-weight: 850;
   letter-spacing: 0.04em;
@@ -1297,7 +1297,7 @@
 
 .admin-engagements-detail-subtitle {
   margin: 4px 0 0;
-  color: #5f746f;
+  color: var(--portal-color-muted);
   font-size: 0.84rem;
   font-weight: 760;
   line-height: 1.35;
@@ -1356,7 +1356,7 @@
   border-radius: 999px;
   padding: 4px 9px;
   background: #f7fafb;
-  color: #52636a;
+  color: var(--portal-color-muted);
   font-size: 0.69rem;
   font-weight: 850;
   cursor: pointer;
@@ -1421,7 +1421,7 @@
 }
 
 .admin-engagements-detail-meta-item span {
-  color: #5f746f;
+  color: var(--portal-color-muted);
   font-size: 0.68rem;
   font-weight: 850;
   text-transform: uppercase;
@@ -1503,13 +1503,13 @@
 }
 
 .admin-engagements-detail-tabs button[data-locked="true"] {
-  color: #8a9996;
+  color: var(--portal-color-muted);
   background: #f6f8f7;
 }
 
 .admin-engagements-detail-tabs button[data-locked="true"]::after {
   content: " verrouille";
-  color: #8a9996;
+  color: var(--portal-color-muted);
   font-size: 0.68rem;
   font-weight: 800;
 }
@@ -1613,7 +1613,7 @@
 
 .admin-engagements-club-step p {
   margin: 0;
-  color: #5f746f;
+  color: var(--portal-color-muted);
 }
 
 .admin-engagements-club-step[data-locked="true"] {
@@ -1639,7 +1639,7 @@
   gap: 6px;
   align-items: center;
   margin: 0;
-  color: #5f746f;
+  color: var(--portal-color-muted);
   font-size: 0.72rem;
   font-weight: 900;
   text-transform: uppercase;
@@ -1677,7 +1677,7 @@
   padding: 5px 8px;
   background: #f5faf9;
   border-bottom: 1px solid #dce7e4;
-  color: #5f746f;
+  color: var(--portal-color-muted);
   font-size: 0.68rem;
   font-weight: 900;
   text-transform: uppercase;
@@ -1723,7 +1723,7 @@
 .admin-engagements-club-search {
   display: grid;
   gap: 6px;
-  color: #5f746f;
+  color: var(--portal-color-muted);
   font-weight: 850;
 }
 
@@ -1768,7 +1768,7 @@
 }
 
 .admin-engagements-club-swimmer-alert-list small {
-  color: #5f746f;
+  color: var(--portal-color-muted);
   font-size: 0.78rem;
 }
 
@@ -1787,7 +1787,7 @@
 
 .admin-engagements-club-swimmers-section h5 {
   margin: 0;
-  color: #5f746f;
+  color: var(--portal-color-muted);
   font-size: 0.72rem;
   font-weight: 900;
   text-transform: uppercase;
@@ -1820,7 +1820,7 @@
   border-left: 1px solid #e1e7e9;
   padding: 3px 9px;
   background: transparent;
-  color: #52636a;
+  color: var(--portal-color-muted);
   font: inherit;
   font-size: 0.7rem;
   font-weight: 650;
@@ -1930,7 +1930,7 @@
 .admin-engagements-club-swimmers-directory-tools label {
   display: grid;
   gap: 5px;
-  color: #5f746f;
+  color: var(--portal-color-muted);
   font-size: 0.78rem;
   font-weight: 850;
 }
@@ -1972,7 +1972,7 @@
 .admin-engagements-club-swimmers-directory-head {
   border-color: transparent;
   background: transparent;
-  color: #5f746f;
+  color: var(--portal-color-muted);
   font-size: 0.7rem;
   font-weight: 900;
   text-transform: uppercase;
@@ -1992,7 +1992,7 @@
 
 .admin-engagements-club-swimmers-directory-row small {
   overflow: hidden;
-  color: #5f746f;
+  color: var(--portal-color-muted);
   font-size: 0.7rem;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -2045,7 +2045,7 @@
   padding: 5px 8px;
   background: #f5faf9;
   border-bottom: 1px solid #dce7e4;
-  color: #5f746f;
+  color: var(--portal-color-muted);
   font-size: 0.68rem;
   font-weight: 900;
   text-transform: uppercase;
