@@ -2,6 +2,12 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 29 octobre — Contraste de l’accueil et du détail des compétitions du portail
+
+- Retour utilisateur : menus d’accueil et informations de l’organisateur trop clairs. Correction ciblée des fonds et textes avec les jetons du thème, y compris les libellés et valeurs du détail ; version de cache actualisée et règle ajoutée au design system.
+- Périmètre : CSS du portail uniquement, aucun accès aux données ajouté (ouverture, action, rafraîchissement et pire cas : zéro lecture supplémentaire).
+- État : préparation TEST ; contrôles locaux des deux thèmes sur ordinateur/mobile et CI à consigner dans la PR. Aucune validation utilisateur ni publication PROD déduite.
+
 ### 29 octobre — Préparation PROD de l'annuaire NAP et de l'adaptation aux archives
 
 - La [première reprise 40831388073](https://github.com/ffessmnap/LivePalmes/actions/runs/40831388073), après CI de #618, a conservé la sauvegarde et vérifié les 99 fonctions sans upload, rebuild ou création. Une lecture suivante a changé l'ordre des filtres de l'autre déclencheur existant, `syncEngagementMailRecipientIndex` : même refus avant Hosting. L'inventaire borné confirme que seules ces deux fonctions existantes sélectionnées ont des filtres Eventarc. Comparaison limitée aux révisions officielles 52→53 et annuaire mail 23→24, aux trois filtres exacts de chacune, avec 72 combinaisons d'ordre et refus des changements de valeur/opérateur/région/compte/autre révision. L'ordre peut varier entre deux lectures, sans changement de configuration ; la reprise suivante reste bornée au même plan, au candidat et à la sauvegarde initiale. Aucun élargissement du périmètre ou de l'accord final.
