@@ -506,7 +506,7 @@
         portalState.qualificationExceptionScope = "";
         const nextClubId = String(clubId || "").trim();
         const homeClubId = portalState.currentAccessProfile?.accessScopes?.["engagements.club.manage"]?.scopeId || portalState.currentAccessProfile?.clubId || "";
-        if (!nextClubId || nextClubId === homeClubId) {
+        if (!nextClubId || (nextClubId === homeClubId && !portalState.currentAccessProfile?.capabilities?.includes("engagements.region.manage"))) {
           clearActiveEngagementClub();
         } else {
           portalState.activeEngagementClubId = nextClubId;
@@ -1465,7 +1465,7 @@
 
     function canUse(capability) {
         const auth = ensureAdminAuth();
-        if (capability === "engagements.club.manage" && auth?.hasCapability?.("engagements.region.manage")) return true;
+        if (capability === "engagements.club.manage" && auth?.hasCapability?.("engagements.region.manage") && activeEngagementClubIdForProfile()) return true;
         if (capability === "dtn.view" || capability.startsWith("engagements.")) {
           return Boolean(auth?.hasCapability?.(capability));
         }
