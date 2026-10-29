@@ -72,7 +72,7 @@
           const licenseStatusIndicator = portalActions.engagementSwimmerLicenseStatusIndicator(swimmer, swimmer);
           const profileButton = `
         <button class="admin-engagements-club-swimmers-directory-name-button" type="button" title="Voir la fiche publique de ${portalActions.escapeHtml(name)}" aria-label="Voir la fiche publique de ${portalActions.escapeHtml(name)}" data-engagement-club-swimmer-public-profile="${portalActions.escapeHtml(publicProfileUrl)}" data-engagement-club-swimmer-public-name="${portalActions.escapeHtml(name)}">
-          <strong>${portalActions.escapeHtml(name)}</strong>
+          <strong>${portalActions.escapeHtml(name)}${swimmer.nonSelectable === true ? " · NS" : ""}</strong>
           <svg class="admin-engagements-club-swimmers-directory-profile-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 5h5v5M19 5l-7 7"></path><path d="M17 13v5a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1h5"></path></svg>
         </button>`;
           const correctionAction = changePending

@@ -929,7 +929,7 @@
   margin: 0 -16px;
   border-bottom: 1px solid #e1e8e7;
   padding: 12px 16px;
-  background: #ffffff;
+  background: var(--portal-color-surface, #ffffff);
 }
 
 .admin-engagements-swimmer-correction-head > div {
@@ -967,6 +967,25 @@
   color: #0b7285;
   font-size: 0.78rem;
   font-weight: 800;
+}
+
+.admin-engagements-swimmer-correction-form [data-swimmer-ns-label] {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  min-height: 40px;
+}
+
+.admin-engagements-swimmer-correction-form [data-swimmer-ns-label] input {
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+  order: 0;
+}
+
+.admin-engagements-swimmer-correction-form [data-swimmer-ns-label] span {
+  order: 1;
 }
 
 .admin-engagements-swimmer-correction-grid {
@@ -1011,7 +1030,7 @@
   margin: 0;
   border-left: 3px solid #d4a72c;
   padding: 7px 9px;
-  background: #fff9e8;
+  background: var(--portal-color-field-background, #fff9e8);
   color: #6d5819;
   font-size: 0.76rem;
   line-height: 1.4;
