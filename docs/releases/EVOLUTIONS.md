@@ -6,7 +6,7 @@
 
 - Demande explicite d’Antoine : textes secondaires nettement plus lisibles dans les deux thèmes et livraison TEST avec comparatifs avant/après. Jeton commun `#304650` en clair, `#d0dee6` en sombre ; gris neutres fixes des styles du portail remplacés et modules partagés adaptés uniquement dans le portail. Fonds secondaires restants harmonisés en sombre. Couleurs sémantiques conservées, aucun changement métier.
 - Contrôles locaux : 40 vues × 2 thèmes × 2 largeurs (1280/390 px), environ 1 680 textes secondaires examinés, contraste minimal mesuré 7,86:1 pour ces échantillons ; captures avant/après examinées. Préférences d’apparence et versions de cache vérifiées. Données fictives, HTTPS externe bloqué, aucun backend invoqué.
-- Budget données inchangé : zéro lecture supplémentaire à l’ouverture, par action, au rafraîchissement et au pire cas. Design system et versions des styles actualisés. État : PR/CI et livraison TEST à suivre ; preuves finales dans la PR de livraison. Aucune validation utilisateur ni publication PROD déduite.
+- Budget données inchangé : zéro lecture supplémentaire à l’ouverture, par action, au rafraîchissement et au pire cas. Design system et versions des styles actualisés. [PR #621](https://github.com/ffessmnap/LivePalmes/pull/621) : CI et livraison TEST à suivre ; preuves finales dans cette PR. Aucune validation utilisateur ni publication PROD déduite.
 
 ### 29 octobre — Contraste de l’accueil et du détail des compétitions du portail
 
