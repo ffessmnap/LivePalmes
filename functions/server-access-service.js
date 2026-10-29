@@ -518,34 +518,45 @@ function createAccessService(backendContext) {
     const capabilities = backendContext.ADMIN_UIDS.has(uid)
       ? capabilitiesMap(backendContext.ACCESS_CAPABILITIES)
       : (data.capabilities || request.auth?.token?.livepalmesCapabilities || {});
-    if (capabilities["engagements.club.manage"] !== true) {
+    const national = capabilities["admin.full"] === true || capabilities["engagements.national.manage"] === true;
+    const regional = !national && capabilities["engagements.region.manage"] === true;
+    if (capabilities["engagements.club.manage"] !== true && !regional) {
       throw new backendContext.HttpsError("permission-denied", "Droit engagements club requis.");
     }
     const accessScopes = data.accessScopes || {};
     const clubScope = normalizedAccessScope(accessScopes["engagements.club.manage"]);
     const homeClubId = backendContext.cleanText(clubScope.scopeId || data.clubId).slice(0, 40);
-    if (!homeClubId) {
+    if (!homeClubId && !regional) {
       throw new backendContext.HttpsError("failed-precondition", "Numero de club requis pour les engagements club.");
     }
     const requestedClubId = backendContext.cleanText(request.data?.activeClubId).slice(0, 40);
     const isSwitchingClub = Boolean(requestedClubId && requestedClubId !== homeClubId);
-    if (isSwitchingClub && capabilities["engagements.club.switch"] !== true) {
+    if (isSwitchingClub && !regional && capabilities["engagements.club.switch"] !== true) {
       throw new backendContext.HttpsError("permission-denied", "Droit de changement de club requis.");
     }
     let activeClub = null;
-    if (isSwitchingClub) {
+    const checkedClubId = requestedClubId || homeClubId;
+    if (regional && !checkedClubId) throw new backendContext.HttpsError("failed-precondition", "Choisissez un club de votre region.");
+    // Regional scope also checks the real home club; cumulative switch rights cannot bypass it.
+    if (isSwitchingClub || regional) {
       if (backendContext.ENVIRONMENT.sportingDataSource === "nap") {
         try {
           const pool = require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD);
-          activeClub = await require("./nap-club-directory").findClub(pool, requestedClubId);
+          activeClub = await require("./nap-club-directory").findClub(pool, checkedClubId);
         } catch (error) {
           throw new backendContext.HttpsError(error instanceof TypeError ? "invalid-argument" : "unavailable",
             error instanceof TypeError ? error.message : "Club NAP indisponible. Reessayez.");
         }
-      } else activeClub = await engagementClubById(requestedClubId);
+      } else activeClub = await engagementClubById(checkedClubId);
     }
-    if (isSwitchingClub && (!activeClub || !backendContext.CLUB_REFERENCE_REGION_LABELS[activeClub.regionId])) {
+    if ((isSwitchingClub || regional) && (!activeClub || !backendContext.CLUB_REFERENCE_REGION_LABELS[activeClub.regionId])) {
       throw new backendContext.HttpsError("invalid-argument", "Club actif inconnu.");
+    }
+    if (regional) {
+      const regionId = canonicalAccessDirectoryRegionId(accessScopes["engagements.region.manage"]?.scopeId || data.regionId);
+      if (!regionId || canonicalAccessDirectoryRegionId(activeClub.regionId) !== regionId) {
+        throw new backendContext.HttpsError("permission-denied", "Club hors de votre region.");
+      }
     }
     const clubId = activeClub?.clubId || homeClubId;
     return {
@@ -591,6 +602,11 @@ function createAccessService(backendContext) {
 
   async function userByEmailOrCreate(profile) {
     const displayName = displayNameFromProfile(profile);
+    if (profile.createOnly) {
+      // Auth uniqueness closes the race after the read-only email lookup.
+      const user = await backendContext.auth.createUser({ email: profile.email, emailVerified: false, displayName, disabled: false });
+      return { user, created: true };
+    }
     if (profile.uid) {
       const existing = await backendContext.auth.getUser(profile.uid);
       await backendContext.auth.updateUser(existing.uid, { email: profile.email, displayName, disabled: false });

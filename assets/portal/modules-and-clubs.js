@@ -676,6 +676,7 @@
         const query = portalActions.normalizedAccessSearch(portalContext.elements.clubSwitchSearch?.value || "");
         const clubs = portalState.accessClubReference
           .filter((club) => Boolean(portalConfig.LIVEPALMES_REFERENCE_REGION_LABELS[club.referenceRegionId]))
+          .filter((club) => !portalActions.canUse("engagements.region.manage") || portalActions.canUse("admin.full") || portalActions.canUse("engagements.national.manage") || sameLivePalmesRegion(club.regionId, portalActions.engagementRegionScope()))
           .filter((club) => !query || portalActions.normalizedAccessSearch([club.clubCode, club.clubName].join(" ")).includes(query))
           .sort((left, right) => accessClubLabel(left).localeCompare(accessClubLabel(right), "fr", { numeric: true }))
           .slice(0, 80);
@@ -697,7 +698,13 @@
     function openClubSwitchDialog() {
         if (!portalActions.canSwitchEngagementClub(portalState.currentAccessProfile || {})) return;
         if (!portalState.accessClubReference.length) {
-          void loadAccessClubReference().then(openClubSwitchDialog);
+          void loadAccessClubReference().then(clubs => {
+            if (clubs.length) openClubSwitchDialog();
+            else {
+              renderClubSwitchResults();
+              if (!portalContext.elements.clubSwitchDialog?.open) portalContext.elements.clubSwitchDialog?.showModal();
+            }
+          });
           return;
         }
         if (portalContext.elements.clubSwitchStatus) {

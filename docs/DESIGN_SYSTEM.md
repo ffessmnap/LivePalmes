@@ -2,6 +2,10 @@
 
 <!-- description: Référence du langage visuel, des composants d’interface et des règles responsive déjà présents dans LivePalmes. -->
 
+## Création régionale d'un accès club — 29 octobre 2026
+
+Variante du dialogue Ajouter existant : région visible mais verrouillée, liste des clubs de la région, seule case Engagements club visible, cochée et verrouillée. Champs d'identité et option de mail inchangés ; même formulaire défilant et actions accessibles sur mobile. Le bouton du contexte club affiche « Choisir un club » si le responsable régional n'a pas de club renseigné.
+
 ## Nouveautés du portail — 29 octobre 2026
 
 Entrée discrète du pied de menu, immédiatement sous « Aide et retours », avec les mêmes icône, cible tactile et état actif que « Mon compte ». Le menu du compte propose aussi ce lien sous son aide pour conserver l’accès sur mobile, où le menu latéral est masqué. La vue réutilise l’en-tête d’espace et les textes du thème existants, sans badge ni notification. L’état vide précise le démarrage sans historique ; les prochains textes validés et effectivement livrés en PROD seront présentés avec une date et un court paragraphe.
