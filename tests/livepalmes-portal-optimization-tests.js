@@ -1783,7 +1783,7 @@ assert.ok(portalHtml.includes('id="adminPortalAccountClubCode"'));
 assert.ok(portalHtml.includes('class="admin-portal-title-prefix"'));
 assert.ok(portal.includes("function renderPortalScopeContext"));
 assert.ok(portal.includes('const clubCode = clubDisplayCode({ clubId, clubName }, "");'));
-assert.ok(portal.includes('const clubLabel = clubCode || clubName;'));
+assert.ok(portal.includes('const clubLabel = clubCode || clubName || (canSwitchEngagementClub(currentAccessProfile || user) ? "Choisir un club" : "");'));
 assert.ok(portal.includes("elements.scopeRole.hidden = true"));
 assert.ok(portal.includes('Vos droits LivePalmes sont de niveau national. Votre club pour les engagements est <strong>${escapeHtml(clubValue)}</strong>'));
 assert.ok(portal.includes('Vos droits LivePalmes sont de niveau régional${regionValue && regionValue !== "-" ? ` (<strong>${escapeHtml(regionValue)}</strong>)` : ""}. Votre club pour les engagements est <strong>${escapeHtml(clubValue)}</strong>'));
@@ -1796,7 +1796,7 @@ assert.ok(functions.includes('"engagements.club.switch"'));
 assert.ok(functions.includes("Le droit de changement de club requiert le droit engagements club."));
 assert.ok(functions.includes("const requestedClubId = cleanText(request.data?.activeClubId).slice(0, 40);"));
 // The native club-switch behavior is exercised by nap-club-switch-tests.js.
-assert.ok(functions.includes('activeClub = await require("./nap-club-directory").findClub(pool, requestedClubId);'));
+assert.ok(functions.includes('activeClub = await require("./nap-club-directory").findClub(pool, checkedClubId);'));
 assert.ok(functions.includes("exports.listEngagementNationalClubs"));
 assert.ok(functions.includes("exports.saveEngagementNationalClub"));
 assert.ok(functions.includes('.orderBy("updatedAt", "asc")'));
