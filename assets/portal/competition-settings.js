@@ -340,7 +340,7 @@
         const referencedClub = portalActions.accessClubFromId(clubId);
         const clubName = user.clubName || clubScope.scopeName || referencedClub?.clubName || "";
         const clubCode = portalActions.clubDisplayCode({ clubId, clubName }, "");
-        const clubLabel = clubCode || clubName;
+        const clubLabel = clubCode || clubName || (portalActions.canSwitchEngagementClub(portalState.currentAccessProfile || user) ? "Choisir un club" : "");
         const accountClubCode = String(
           user.clubCode || referencedClub?.clubCode || portalState.portalClubCodeReferenceById.get(String(clubId || "").trim())?.clubCode || ""
         ).trim();

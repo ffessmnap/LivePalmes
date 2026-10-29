@@ -2,6 +2,12 @@
 
 <!-- description: Checklist de tests manuels à exécuter avant une publication ou après une modification sensible. -->
 
+## Création et contexte club régionaux — 29 octobre 2026
+
+- Sans compte réel ni envoi : lancer node tests/regional-club-access-tests.js et node tests/regional-club-access-browser-tests.js. Vérifier les refus région/club hors périmètre, droits injectés, UID, email déjà présent et conflit Auth concurrent ; confirmer le maintien du contexte national et la restriction avec droits cumulés.
+- Sur données fictives à 1280/390 px : Ajouter, région verrouillée, seul droit club coché, aucun club d'une autre région, défilement jusqu'à Enregistrer/Annuler ; sélecteur en haut à gauche et contexte restauré refusant une autre région. Le mécanisme email n'est jamais invoqué par ces tests.
+- Recette utilisateur TEST restant à recueillir ; toute création réelle ou envoi de mail requiert un accord spécifique. Aucune validation utilisateur déduite des tests.
+
 ## Pannes NAP et reprise hors connexion — 28 octobre 2026
 
 Autorisation : renforcer les tests du code réorganisé et la gestion des pannes pendant l'indisponibilité NAP. Tous les scénarios ci-dessous utilisent des services en mémoire ; ils n'autorisent aucune connexion à NAP, écriture réelle ou modification des droits. Aucun code serveur, configuration Firebase, schéma ou règle sportive modifié.
