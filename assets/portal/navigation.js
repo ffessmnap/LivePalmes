@@ -1550,7 +1550,7 @@
         });
         if (portalContext.elements.clubMenu) portalContext.elements.clubMenu.hidden = !canUse("engagements.club.manage");
         if (portalContext.elements.nationalMenu) portalContext.elements.nationalMenu.hidden = !canDeleteEngagementCompetitionDirectly() && !canViewActivityLog();
-        if (portalContext.elements.accessAdd) portalContext.elements.accessAdd.hidden = !canManageAccessDirectory();
+        if (portalContext.elements.accessAdd) portalContext.elements.accessAdd.hidden = !(canUse("admin.full") || canUse("engagements.region.manage"));
         if (portalContext.elements.accessPanel && !canUse("admin.full")) portalContext.elements.accessPanel.hidden = true;
         if (portalContext.elements.accessDeletionRequestsPanel) portalContext.elements.accessDeletionRequestsPanel.hidden = !canDeleteAccessUserDirectly();
         if (!canDeleteEngagementCompetitionDirectly()) {
