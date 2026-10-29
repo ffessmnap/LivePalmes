@@ -216,6 +216,7 @@ function createNationalService(backendContext) {
       name: backendContext.cleanText(swimmer.name).slice(0, 160) || [firstName, lastName].filter(Boolean).join(" "),
       birthDate: backendContext.cleanIsoDate(swimmer.birthDate),
       sex: backendContext.cleanText(swimmer.sex).toUpperCase().slice(0, 1),
+      nonSelectable: swimmer.nonSelectable === true,
       licenseNumber: backendContext.cleanText(swimmer.licenseNumber).toUpperCase().slice(0, 60),
       clubId: backendContext.cleanText(swimmer.clubId).slice(0, 40),
       clubName: backendContext.cleanText(swimmer.clubName).slice(0, 140),
@@ -776,7 +777,7 @@ function createNationalService(backendContext) {
     const data = doc.data() || {};
     return backendContext.cleanFirestoreValue({
       id: doc.id,
-      requestType: data.requestType === "person-change" ? "person-change" : "swimmer-change",
+      requestType: data.requestType === "swimmer-ns" ? "swimmer-ns" : data.requestType === "person-change" ? "person-change" : "swimmer-change",
       reportType: data.reportType === "duplicate" ? "duplicate" : "correction",
       status: backendContext.cleanText(data.status).slice(0, 40),
       napSource: data.napSource === true,
