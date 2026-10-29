@@ -5333,7 +5333,7 @@ exports.resolveEngagementSwimmerChangeRequest = onCall(ENVIRONMENT.sportingDataS
     }
     let nativeConnection, nativeLock, resolution, claimed = false, claimWasExisting = false, writeAttempted = false;
     try {
-      const helper = data.requestType === "person-change" ? require("./nap-person-change-requests") : require("./nap-swimmer-change-requests");
+      const helper = data.requestType === "swimmer-ns" ? require("./nap-swimmer-ns") : data.requestType === "person-change" ? require("./nap-person-change-requests") : require("./nap-swimmer-change-requests");
       resolution = helper.prepareResolution(data, { ...request.data, decision, resolutionNote }, context.uid);
       if (data.status !== "pending") {
         if (data.status === decision && data.nativeResolution?.key === resolution.key) return { ok: true, request: engagementSwimmerChangeRequestItem(snapshot), result: data.result || {} };
@@ -5362,7 +5362,10 @@ exports.resolveEngagementSwimmerChangeRequest = onCall(ENVIRONMENT.sportingDataS
           if (mutation && response[0]?.affectedRows === 0) writeAttempted = false;
           return response;
         } };
-        if(data.requestType === "person-change") {
+        if(data.requestType === "swimmer-ns") {
+          result=await require("./nap-swimmer-ns").change(correctionConnection,{swimmerId:data.targetSwimmerId,expectedNsFingerprint:resolution.expectedFingerprint,nonSelectable:false},
+            {uid:context.uid,clubId:String(data.clubId)},require("./nap-swimmer-ns-callables").audit({db,writeAuditLogOnce},context.uid),{nationalApproval:context.national===true});
+        } else if(data.requestType === "person-change") {
           result=await require("./nap-club-person-edit").editNativePerson(nap.portalPool(process.env.LIVEPALMES_NAP_PASSWORD),{
             clubId:String(data.clubId),actorUid:context.uid,personId:data.targetSwimmerId,expectedFingerprint:resolution.expectedFingerprint,patch:resolution.proposed
           },{

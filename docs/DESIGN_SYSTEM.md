@@ -2,6 +2,10 @@
 
 <!-- description: Référence du langage visuel, des composants d’interface et des règles responsive déjà présents dans LivePalmes. -->
 
+## Statut NS dans le crayon de Mes nageurs — 29 octobre 2026
+
+Section facultative du dialogue de correction existant : case tactile et texte « Nageur étranger — non sélectionnable (NS) », message de disponibilité/décision et bouton distinct « Enregistrer le statut NS » ou « Demander le retrait NS ». En attente nationale, case cochée et bouton désactivés avec libellé explicite. Sans structure NAP, seule cette section est indisponible ; les autres champs restent accessibles. La liste affiche « · NS » après le nom des nageurs concernés. Même dialogue défilant sur mobile ; case alignée au libellé avec cible tactile et en-tête/avertissement héritant des surfaces du thème pour rester lisibles en sombre. Aucun nouveau composant global.
+
 ## Création régionale d'un accès club — 29 octobre 2026
 
 Variante du dialogue Ajouter existant : région visible mais verrouillée, liste des clubs de la région, seule case Engagements club visible, cochée et verrouillée. Champs d'identité et option de mail inchangés ; même formulaire défilant et actions accessibles sur mobile. Le bouton du contexte club affiche « Choisir un club » si le responsable régional n'a pas de club renseigné.

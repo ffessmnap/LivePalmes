@@ -261,6 +261,8 @@ function runUnitTests() {
     "livepalmes-license-administration-tests.js",
     "nap-license-partial-validation-tests.js",
     "nap-swimmer-change-requests-tests.js",
+    "nap-swimmer-ns-tests.js",
+    "nap-swimmer-ns-callable-tests.js",
     "nap-club-person-edit-tests.js",
     "nap-club-identity-completion-tests.js",
     "nap-person-change-callable-tests.js",
