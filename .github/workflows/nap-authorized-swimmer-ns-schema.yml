@@ -1,0 +1,68 @@
+name: Ajouter les deux colonnes NS NAP autorisees
+on:
+  workflow_dispatch:
+    inputs:
+      expected_commit:
+        required: true
+        type: string
+      confirmation:
+        description: Accord specifique pour nap-add-swimmer-ns-columns sur la source NAP partagee
+        required: true
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: livepalmes-test-backend
+  cancel-in-progress: false
+jobs:
+  migrate:
+    if: github.ref == 'refs/heads/main' && github.run_attempt == 1
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: firebase-test
+    env:
+      TARGET_FIREBASE_PROJECT: livepalmes-test
+      EXPECTED_COMMIT: ${{ inputs.expected_commit }}
+      NAP_NS_CONFIRMATION: ${{ inputs.confirmation }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Verifier la cible et l'accord exact
+        run: |
+          test "$EXPECTED_COMMIT" = "$GITHUB_SHA"
+          test "$NAP_NS_CONFIRMATION" = nap-add-swimmer-ns-columns
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+      - run: npm ci --prefix functions
+      - uses: google-github-actions/auth@v3
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_TEST_BACKEND }}
+          project_id: livepalmes-test
+      - uses: google-github-actions/setup-gcloud@v3
+      - name: Sauvegarder et rouvrir les lignes natives sous verrou
+        env:
+          NAP_NS_PHASE: prepare
+        run: node tools/nap-swimmer-ns-migration.js
+      - name: Conserver la sauvegarde chiffree avant tout ALTER
+        uses: actions/upload-artifact@v4
+        with:
+          name: nap-swimmer-ns-encrypted-backup
+          path: |
+            outputs/ns-native-backup/*.enc
+            outputs/ns-native-backup/backup-proof.json
+            outputs/ns-schema-prepare-proof.json
+          if-no-files-found: error
+          retention-days: 90
+      - name: Ajouter uniquement les colonnes NS puis comparer les donnees historiques
+        env:
+          NAP_NS_PHASE: apply
+        run: node tools/nap-swimmer-ns-migration.js
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nap-swimmer-ns-schema-proof
+          path: outputs/ns-schema-*-proof.json
+          if-no-files-found: ignore
+          retention-days: 90
