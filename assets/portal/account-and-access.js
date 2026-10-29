@@ -286,7 +286,7 @@
     function resetAccessForm(close = false) {
         portalState.editingUid = "";
         portalContext.elements.accessForm?.reset();
-        const regional = portalActions.canUse("engagements.region.manage") && !portalActions.canUse("engagements.national.manage") && !portalActions.canUse("admin.full");
+        const regional = portalActions.canUse("engagements.region.manage") && !portalActions.canUse("admin.full");
         if (portalContext.elements.accessRegionId) {
           portalContext.elements.accessRegionId.disabled = regional;
           if (regional) portalActions.setRegionSelectValue(portalContext.elements.accessRegionId, portalActions.engagementRegionScope());
@@ -862,7 +862,7 @@
 
     async function saveAccessUser(event) {
         event?.preventDefault?.();
-        if (!portalActions.canManageAccessDirectory()) {
+        if (!portalActions.canUse("admin.full") && !portalActions.canUse("engagements.region.manage")) {
           portalActions.setAccessMessage("Droit de gestion des accès requis.");
           return;
         }

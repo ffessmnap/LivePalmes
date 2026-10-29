@@ -126,13 +126,13 @@ function createAccessHandlers(backendContext) {
   async function createOrUpdateAccessUser(request) {
     const context = await backendContext.accessManagementContext(request);
     const raw = request.data || {};
-    if (!context.national && (!context.region || !context.regionId || raw.uid ||
+    if (!context.adminFull && (!context.region || !context.regionId || raw.uid ||
         !Array.isArray(raw.capabilities) || raw.capabilities.length !== 1 || raw.capabilities[0] !== "engagements.club.manage" ||
         backendContext.canonicalAccessDirectoryRegionId(raw.regionId) !== context.regionId)) {
       throw new backendContext.HttpsError("permission-denied", "Creation limitee aux acces club de votre region.");
     }
     const profile = backendContext.cleanAccessProfile(request.data || {});
-    if (!context.national) {
+    if (!context.adminFull) {
       const club = await backendContext.engagementClubAccessContext({ ...request, data: { activeClubId: profile.clubId } });
       profile.clubId = club.clubId;
       profile.clubName = club.clubName;

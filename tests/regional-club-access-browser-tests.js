@@ -31,7 +31,7 @@ const {startStaticServer,launchBrowser,evaluate,waitFor,presentationScript}=requ
  state.activeEngagementClubId='20';checks.foreignRestored=nav.activeEngagementClubIdForProfile();
  state.activeEngagementClubId='10';checks.homeRestored=nav.activeEngagementClubIdForProfile();
  checks.canClub=nav.canUse('engagements.club.manage');
- regionalCaps=['engagements.region.manage','engagements.national.manage'];state.currentAccessProfile.capabilities=regionalCaps;
+ regionalCaps=['admin.full','engagements.region.manage','engagements.national.manage'];state.currentAccessProfile.capabilities=regionalCaps;
  account.resetAccessForm();modules.renderClubSwitchResults();
  checks.nationalRights=[...elements.accessForm.querySelectorAll('input[name=capability]')].every(i=>!i.disabled&&!i.closest('label').hidden);
  checks.nationalClubs=elements.clubSwitchResults.querySelectorAll('[data-portal-active-club-id]').length;

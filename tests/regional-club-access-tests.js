@@ -32,6 +32,10 @@ class HttpsError extends Error {constructor(code,message){super(message);this.co
  for(const attack of [{uid:"victim"},{capabilities:["admin.full"]},{capabilities:["engagements.club.manage","admin.full"]},{regionId:"2"},{clubId:""}]){
  await assert.rejects(()=>handlers.createOrUpdateAccessUser({...req,data:{...payload,...attack}}));assert.equal(writes,1);}
  clubRegion="2";await assert.rejects(()=>handlers.createOrUpdateAccessUser({...req,data:payload}),e=>e.code==="permission-denied");assert.equal(writes,1);
+ caps={"engagements.national.manage":true};
+ await assert.rejects(()=>handlers.createOrUpdateAccessUser({...req,data:payload}),e=>e.code==="permission-denied");assert.equal(writes,1);
+ caps={"engagements.national.manage":true,"engagements.region.manage":true};
+ await assert.rejects(()=>handlers.createOrUpdateAccessUser({...req,data:{...payload,capabilities:["admin.full"]}}),e=>e.code==="permission-denied");assert.equal(writes,1);
  clubRegion="1";existing=true;await assert.rejects(()=>handlers.createOrUpdateAccessUser({...req,data:payload}),e=>e.code==="already-exists");assert.equal(writes,1);
  const authService=createAccessService({...context,auth:{createUser:async()=>{throw {code:"auth/email-already-exists"};},updateUser:()=>{throw Error("Existing account must remain untouched");}}});
  await assert.rejects(()=>authService.userByEmailOrCreate({...payload,createOnly:true}),e=>e.code==="auth/email-already-exists");

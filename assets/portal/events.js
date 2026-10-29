@@ -1590,7 +1590,7 @@
         portalContext.elements.accessClubSelect?.addEventListener("change", portalActions.syncAccessClubFieldsFromSelect);
         portalContext.elements.accessDeletionRequestsRefresh?.addEventListener("click", () => portalActions.loadAccessDeletionRequests({ force: true }));
         portalContext.elements.accessAdd?.addEventListener("click", () => {
-          if (!portalActions.canManageAccessDirectory()) return;
+          if (!portalActions.canUse("admin.full") && !portalActions.canUse("engagements.region.manage")) return;
           portalActions.resetAccessForm();
           void portalActions.loadAccessClubReference().then(() => portalActions.populateAccessClubSelect());
           portalActions.openAccessDialog();
