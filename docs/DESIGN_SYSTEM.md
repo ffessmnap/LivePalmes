@@ -2,6 +2,10 @@
 
 <!-- description: Référence du langage visuel, des composants d’interface et des règles responsive déjà présents dans LivePalmes. -->
 
+## Nouveautés du portail — 29 octobre 2026
+
+Entrée discrète du pied de menu, immédiatement sous « Aide et retours », avec les mêmes icône, cible tactile et état actif que « Mon compte ». Le menu du compte propose aussi ce lien sous son aide pour conserver l’accès sur mobile, où le menu latéral est masqué. La vue réutilise l’en-tête d’espace et les textes du thème existants, sans badge ni notification. L’état vide précise le démarrage sans historique ; les prochains textes validés et effectivement livrés en PROD seront présentés avec une date et un court paragraphe.
+
 ## Vérification des licences — 27 octobre 2026
 
 Les quatre filtres de compétition restent alignés : ○ À faire, ⚠ À traiter, ✓ Conforme, 🔒 Clôturé. Chaque bouton affiche son symbole et son compteur, avec libellé accessible et infobulle ; recliquer sur le filtre actif réaffiche toutes les compétitions. La clôture est une action distincte dans le bilan à jour, disponible sans lot sélectionné ; le commentaire est obligatoire avec réserves et facultatif pour un bilan conforme. Le résultat sans anomalie/avec réserves reste affiché dans l’état Clôturé. Une confirmation précède l’enregistrement, aucun mail ni validation individuelle implicite. Un nouveau contrôle confirmé conserve la clôture précédente dans l’historique.
