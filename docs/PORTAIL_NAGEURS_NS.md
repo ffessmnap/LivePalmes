@@ -55,6 +55,16 @@ ALTER TABLE nageurs
 
 Retour arrière : désactiver le parcours NS par retour du code compatible sans supprimer ses colonnes ni ses valeurs. Les colonnes facultatives n’empêchent pas l’ancien code de lire les champs historiques. Un retour du code n’annule pas une décision métier déjà enregistrée. DROP des colonnes, restauration de table ou correction des données nécessitent un accord distinct et la comparaison avec la sauvegarde ; aucune suppression automatique ni copie TEST vers PROD.
 
+## Activation autorisée après livraison du code
+
+Antoine a donné son accord explicite dans cette discussion après l’explication des deux colonnes. Cet accord couvre le seul ALTER préparé et ses sauvegardes/contrôles ; les changements de statut sur un nageur réel, les emails et la publication PROD restent exclus. L’authentification Google locale étant expirée, le workflow ponctuel `nap-authorized-swimmer-ns-schema.yml` utilise le compte technique TEST existant, sans modification IAM ni configuration Firebase.
+
+Le workflow exige main, le commit exact, une confirmation nominative et une première tentative. Le script `tools/nap-swimmer-ns-migration.js` contrôle la cible TEST, reprend la version exacte du secret NAP déjà liée au lecteur TEST, vérifie SELECT/ALTER/LOCK TABLES et refuse un schéma inattendu, un déclencheur ou un écrivain actif. La sauvegarde parcourt la seule table nageurs par pages primaires de 1 000, plafond de 100 000 lignes/64 Mio et 30 s de parcours. Le verrou de table stabilise les lignes pendant la copie ; il est libéré avant l’envoi de l’artefact.
+
+Deux copies chiffrées sont rouvertes et comparées en mémoire, puis conservées dans un artefact avant toute mutation. La clé de chiffrement est dérivée de la clé privée du compte technique TEST existant ; aucune clé ni donnée en clair n’est publiée. Conserver l’accès à cette clé pour une restauration éventuelle autorisée séparément. L’étape apply reprend le verrou, refuse toute dérive de structure ou de données, exécute le seul ALTER puis compare toutes les colonnes natives, les index et plans de lecture. Les deux nouveaux champs doivent rester NULL partout ; aucune requête INSERT/UPDATE/DELETE n’existe dans ce circuit.
+
+Aucune relance implicite en cas d’échec ou de résultat incertain : examiner la preuve et la structure avant reprise. Une réussite sera attestée dans la PR, puis une recette de lecture et un rafraîchissement du crayon confirmeront la disponibilité sur TEST sans cocher une case réelle.
+
 ## Preuves de contrôle
 
 Tests hors réseau : `tests/nap-swimmer-ns-tests.js`, `tests/nap-swimmer-ns-callable-tests.js` et `tests/portal-swimmer-ns-browser-tests.js`. Les deux premiers sont intégrés à `node tools/verify-livepalmes.js`. Le dernier exerce les fabriques livrées, le dialogue réel, l’attente, le refus, les colonnes absentes, le changement de club et les deux thèmes à 1280/390 px ; HTTPS externe bloqué et données fictives. La CI obligatoire du candidat exact et la preuve TEST complètent ces contrôles dans la PR. La fonctionnalité réelle reste en attente de migration autorisée puis de recette utilisateur.

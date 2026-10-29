@@ -263,6 +263,7 @@ function runUnitTests() {
     "nap-swimmer-change-requests-tests.js",
     "nap-swimmer-ns-tests.js",
     "nap-swimmer-ns-callable-tests.js",
+    "nap-swimmer-ns-migration-tests.js",
     "nap-club-person-edit-tests.js",
     "nap-club-identity-completion-tests.js",
     "nap-person-change-callable-tests.js",
