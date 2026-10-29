@@ -286,6 +286,16 @@
     function resetAccessForm(close = false) {
         portalState.editingUid = "";
         portalContext.elements.accessForm?.reset();
+        const regional = portalActions.canUse("engagements.region.manage") && !portalActions.canUse("admin.full");
+        if (portalContext.elements.accessRegionId) {
+          portalContext.elements.accessRegionId.disabled = regional;
+          if (regional) portalActions.setRegionSelectValue(portalContext.elements.accessRegionId, portalActions.engagementRegionScope());
+        }
+        portalContext.elements.accessForm?.querySelectorAll("input[name='capability']").forEach(input => {
+          input.closest("label").hidden = regional && input.value !== "engagements.club.manage";
+          input.disabled = regional;
+          if (regional) input.checked = input.value === "engagements.club.manage";
+        });
         portalActions.populateAccessClubSelect();
         portalActions.setAccessMessage("");
         if (portalContext.elements.accessDialogTitle) portalContext.elements.accessDialogTitle.textContent = "Ajouter un utilisateur";
@@ -852,8 +862,8 @@
 
     async function saveAccessUser(event) {
         event?.preventDefault?.();
-        if (!portalActions.canUse("admin.full")) {
-          portalActions.setAccessMessage("Droit d'administration générale requis.");
+        if (!portalActions.canUse("admin.full") && !portalActions.canUse("engagements.region.manage")) {
+          portalActions.setAccessMessage("Droit de gestion des accès requis.");
           return;
         }
         const payload = accessPayloadFromForm();

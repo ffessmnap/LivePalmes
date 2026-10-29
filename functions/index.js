@@ -139,6 +139,8 @@ function portalAccessHandlers() {
     get rolePinsRef() { return rolePinsRef; },
     get safeCompareHex() { return safeCompareHex; },
     get saveAccessUserProfile() { return saveAccessUserProfile; },
+    get canonicalAccessDirectoryRegionId() { return canonicalAccessDirectoryRegionId; },
+    get engagementClubAccessContext() { return engagementClubAccessContext; },
     get searchAccessUserDocuments() { return searchAccessUserDocuments; },
     get stableHash() { return stableHash; },
     get updatePublicPinNotes() { return updatePublicPinNotes; },
@@ -1918,7 +1920,7 @@ exports.verifyPin = onCall(CALLABLE_OPTIONS, /* extracted-handler: functions/por
   return portalAccessHandlers().verifyPin(request);
 });
 
-exports.createOrUpdateAccessUser = onCall(CALLABLE_OPTIONS, /* extracted-handler: functions/portal-access-handlers.js#createOrUpdateAccessUser#arrow */ async (request) => {
+exports.createOrUpdateAccessUser = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/portal-access-handlers.js#createOrUpdateAccessUser#arrow */ async (request) => {
   return portalAccessHandlers().createOrUpdateAccessUser(request);
 });
 
