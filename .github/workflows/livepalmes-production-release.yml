@@ -119,6 +119,8 @@ jobs:
         python tooling/tests/release-simplification-tests.py
         python tooling/tests/license-report-release-tests.py
         python tooling/tests/nap-retained-source-tests.py
+        python tooling/tests/nap-account-release-tests.py
+        node tooling/tests/release-nap-account-compatibility.js
         node tooling/tests/license-report-source-guard-tests.js
     - uses: google-github-actions/auth@v3
       if: inputs.resume_run == '0'
@@ -190,12 +192,12 @@ jobs:
         if-no-files-found: error
         retention-days: 14
     - name: Preparer les Functions selectionnees
-      if: steps.plan.outputs.backend == 'true' && steps.plan.outputs.bcc_preservation != 'true'
+      if: steps.plan.outputs.backend == 'true' && steps.plan.outputs.bcc_preservation != 'true' && steps.plan.outputs.nap_account != 'true'
       run: 'python tooling/tools/release-cycle.py stage candidate livepalmes "$RUNNER_TEMP/production-functions" "$CANDIDATE_SHA"
 
         npm ci --prefix "$RUNNER_TEMP/production-functions/functions"'
     - name: Simuler les Functions par petits lots
-      if: steps.plan.outputs.backend == 'true' && steps.plan.outputs.bcc_preservation != 'true'
+      if: steps.plan.outputs.backend == 'true' && steps.plan.outputs.bcc_preservation != 'true' && steps.plan.outputs.nap_account != 'true'
       run: python tooling/tools/release-cycle.py batches livepalmes candidate "$RUNNER_TEMP/production-functions" "$RELEASE_SELECTION"
         dry-run
     - name: Publier les Functions par petits lots
@@ -274,6 +276,7 @@ jobs:
           ${{ runner.temp }}/release-plan/notification-scheduler-before.json
           ${{ runner.temp }}/release-plan/license-report-*.json
           ${{ runner.temp }}/release-plan/nap-retained-*.json
+          ${{ runner.temp }}/release-plan/nap-account-*.json
         if-no-files-found: error
         retention-days: 14
     - uses: google-github-actions/auth@v3

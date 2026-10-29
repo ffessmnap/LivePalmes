@@ -150,6 +150,13 @@ def main():
         bcc_names = cycle.approved_bcc_functions(plan) if os.environ.get('PLAN') else []
         bcc_contract = cycle.bcc.for_request(plan).contract() if bcc_names else {}
         allowed_new = {bcc_contract['worker']} if bcc_names and not bcc_contract.get('existingWorker') else set()
+        account_names = cycle.nap_account.approved(plan) if os.environ.get('PLAN') else []
+        if account_names:
+            allowed_new = {cycle.nap_account.NAME}
+            cycle.require(len(functions) == cycle.nap_account.contract()['inventoryCount']
+                          and not any(f['name'].split('/')[-1] in allowed_new for f in functions),
+                          'Inventaire initial annuaire NAP different')
+            cycle.nap_account.references(functions)
         if not (source_only - allowed_new).issubset({f['name'].split('/')[-1] for f in selected_functions}):
             raise ValueError('Traitement PDF existant absent')
         report['additionalBccFunctions'] = bcc_names
@@ -168,6 +175,7 @@ def main():
         report['additionalGroupedFunctions'] = cycle.approved_grouped_functions(plan) if os.environ.get('PLAN') else []
         report['additionalLicenseReportFunctions'] = cycle.approved_license_report_functions(plan) if os.environ.get('PLAN') else []
         report['additionalNapRetainedFunctions'] = cycle.nap_retained.approved(plan) if os.environ.get('PLAN') else []
+        report['additionalNapAccountFunctions'] = account_names
         report['additionalDtnFunctions'] = plan.get('additionalDtnFunctions', []) if os.environ.get('PLAN') else []
         report['nativeIdentityNapSecret'] = cycle.approved_native_identity_secret(plan) if os.environ.get('PLAN') else False
         report['additionalNotificationFunctions'] = notification

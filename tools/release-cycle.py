@@ -30,6 +30,9 @@ _license_spec.loader.exec_module(license_release)
 _nap_spec = importlib.util.spec_from_file_location('nap_retained_policy', ROOT / 'tools/nap-retained-source-policy.py')
 nap_retained = importlib.util.module_from_spec(_nap_spec)
 _nap_spec.loader.exec_module(nap_retained)
+_account_spec = importlib.util.spec_from_file_location('nap_account_policy', ROOT / 'tools/nap-account-release-policy.py')
+nap_account = importlib.util.module_from_spec(_account_spec)
+_account_spec.loader.exec_module(nap_account)
 
 
 def approved_license_report_functions(value):
@@ -75,7 +78,7 @@ def approved_native_identity_secret(value):
 
 def approved_extra_functions(value):
     approved_native_identity_secret(value)
-    names = approved_pdf_functions(value) + approved_dtn_functions(value) + approved_notification_functions(value) + approved_public_nap_functions(value) + approved_access_request_functions(value) + approved_club_directory_functions(value) + approved_grouped_functions(value) + approved_bcc_functions(value) + approved_license_report_functions(value) + nap_retained.approved(value)
+    names = approved_pdf_functions(value) + approved_dtn_functions(value) + approved_notification_functions(value) + approved_public_nap_functions(value) + approved_access_request_functions(value) + approved_club_directory_functions(value) + approved_grouped_functions(value) + approved_bcc_functions(value) + approved_license_report_functions(value) + nap_retained.approved(value) + nap_account.approved(value)
     require(len(names) == len(set(names)), 'Extensions de publication superposees')
     return names
 
@@ -138,7 +141,7 @@ def approved_club_directory_functions(value):
 
 def idf_preservation(value):
     # Existing reader authorization stays closed; this is a second, separately approved pair.
-    return (nap_retained.contract()['mailPreservation'] if nap_retained.approved(value) else None) or license_release.preservation(value) or grouped.preservation(value) or club_directory_idf_preservation(value) or public_reader_idf_preservation(value)
+    return (nap_account.contract()['mailPreservation'] if nap_account.approved(value) else None) or (nap_retained.contract()['mailPreservation'] if nap_retained.approved(value) else None) or license_release.preservation(value) or grouped.preservation(value) or club_directory_idf_preservation(value) or public_reader_idf_preservation(value)
 
 
 def approved_public_nap_functions(value):
@@ -220,6 +223,7 @@ def approved_access_request_functions(value):
 
 
 def require_access_request_selection(request, selected):
+    nap_account.selection(request, selected)
     license_release.selection(request, selected)
     bcc.for_request(request).selection(request, selected)
     grouped.selection(request, selected)
@@ -841,7 +845,7 @@ def prepare_selection(directory, candidate):
         require(all(not needs_function(names.get(n), n, request['candidate'], project='livepalmes-test') for n in selected), 'Backend TEST incomplet ou pas au code valide')
         extra = approved_extra_functions(request)
         notification = approved_notification_functions(request)
-        require(all(not needs_function(names.get(n), n, request['candidate'], project='livepalmes-test') for n in notification + approved_public_nap_functions(request) + approved_access_request_functions(request) + approved_club_directory_functions(request) + approved_grouped_functions(request) + approved_bcc_functions(request) + approved_license_report_functions(request) + nap_retained.approved(request)),
+        require(all(not needs_function(names.get(n), n, request['candidate'], project='livepalmes-test') for n in notification + approved_public_nap_functions(request) + approved_access_request_functions(request) + approved_club_directory_functions(request) + approved_grouped_functions(request) + approved_bcc_functions(request) + approved_license_report_functions(request) + nap_retained.approved(request) + nap_account.approved(request)),
                 'Notifications TEST absentes ou pas au code valide')
         if approved_dtn_functions(request):
             require(read(directory / 'test-proof.json').get('dtnExtensionVerification') == {'schema': 1, 'candidate': request['candidate'], 'suite': 'dtn-shared-invalidation', 'mode': 'offline-no-invocation', 'result': 'success', 'functions': sorted(DTN_FUNCTIONS)}, 'Preuve des dependances DTN absente ou incompatible')
@@ -1002,6 +1006,8 @@ def freeze_plan(directory, evidence=False):
     selected = read(root / 'selection.json')
     selected = [n for n in selected if n in approved_extra_functions(request) or needs_function(names.get(n), n, request['candidate'])]
     require_access_request_selection(request, selected)
+    if nap_account.approved(request):
+        write(root / 'nap-account-proof.json', nap_account.verify(request, read(root / 'baseline.json'), names))
     if nap_retained.approved(request):
         nap_retained.selection(request, selected)
         write(root / 'nap-retained-proof.json', nap_retained.verify(request, read(root / 'baseline.json'), names, backend_fingerprints))
@@ -1229,6 +1235,7 @@ def fetch_plan(preparation, resume, directory):
     output(candidate=value['candidate'], backend=str(bool(read(root / 'selection.json'))).lower(), verified=str(verified).lower(),
            license_reports=str(bool(approved_license_report_functions(value))).lower(),
            idf_preservation=str(idf_preservation(value) is not None).lower(),
+           nap_account=str(bool(nap_account.approved(value))).lower(),
            bcc_preservation=str(bool(approved_bcc_functions(value))).lower())
 
 

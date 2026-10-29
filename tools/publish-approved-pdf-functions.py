@@ -78,6 +78,11 @@ def main(candidate, plan, backup):
     request = json.loads((plan / 'request.json').read_text())
     spec = importlib.util.spec_from_file_location('cycle', Path(__file__).with_name('release-cycle.py'))
     cycle = importlib.util.module_from_spec(spec); spec.loader.exec_module(cycle)
+    if cycle.nap_account.approved(request):
+        spec = importlib.util.spec_from_file_location('nap_account_publisher', Path(__file__).with_name('publish-nap-account-release.py'))
+        publisher = importlib.util.module_from_spec(spec); spec.loader.exec_module(publisher)
+        publisher.publish(candidate, plan, backup, cycle, archive)
+        return
     if cycle.nap_retained.approved(request):
         spec = importlib.util.spec_from_file_location('nap_retained_publisher', Path(__file__).with_name('nap-retained-sources.py'))
         publisher = importlib.util.module_from_spec(spec); spec.loader.exec_module(publisher)

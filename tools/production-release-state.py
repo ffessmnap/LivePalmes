@@ -57,6 +57,15 @@ def check_after(backup, destination, require_success):
         if sorted(report['additionalBccFunctions']) != bcc_policy.contract()['selected']:
             raise ValueError('Selection CCI du rapport differente')
     errors = []
+    account_policy = None
+    if report.get('additionalNapAccountFunctions'):
+        spec = importlib.util.spec_from_file_location('account_state_policy', Path(__file__).with_name('nap-account-release-policy.py'))
+        account_policy = importlib.util.module_from_spec(spec); spec.loader.exec_module(account_policy)
+        c = account_policy.contract()
+        account_policy.require(report['additionalNapAccountFunctions'] == c['selected']
+            and report['candidate'] == c['candidate'] and len(before) == c['inventoryCount']
+            and selected == {PREFIX+n for n in c['selected']} and report['newFunctions'] == [account_policy.NAME],
+            'Rapport annuaire NAP hors contrat')
     nap_policy = None
     if report.get('additionalNapRetainedFunctions'):
         spec = importlib.util.spec_from_file_location('nap_retained_state_policy', Path(__file__).with_name('nap-retained-source-policy.py'))
@@ -73,6 +82,14 @@ def check_after(backup, destination, require_success):
         f = after.get(name)
         if not f or f.get("state") != "ACTIVE":
             errors.append("Function non active: " + name.split("/")[-1])
+        elif account_policy is not None:
+            try:
+                if name == PREFIX+account_policy.NAME:
+                    account_policy.assert_new(f)
+                else:
+                    account_policy.assert_existing(before[name], f, SimpleNamespace(rollback_patch=rollback_patch))
+            except ValueError as error:
+                errors.append(str(error)+': '+name.split('/')[-1])
         elif nap_policy is not None:
             try:
                 nap_policy.assert_config(before[name], f, SimpleNamespace(rollback_patch=rollback_patch))
