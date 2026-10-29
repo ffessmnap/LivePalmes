@@ -519,24 +519,25 @@ function createAccessService(backendContext) {
       ? capabilitiesMap(backendContext.ACCESS_CAPABILITIES)
       : (data.capabilities || request.auth?.token?.livepalmesCapabilities || {});
     const national = capabilities["admin.full"] === true || capabilities["engagements.national.manage"] === true;
-    const regional = !national && capabilities["engagements.region.manage"] === true;
-    if (capabilities["engagements.club.manage"] !== true && !regional) {
+    const hasRegional = capabilities["engagements.region.manage"] === true;
+    const regional = !national && hasRegional;
+    if (capabilities["engagements.club.manage"] !== true && !hasRegional) {
       throw new backendContext.HttpsError("permission-denied", "Droit engagements club requis.");
     }
     const accessScopes = data.accessScopes || {};
     const clubScope = normalizedAccessScope(accessScopes["engagements.club.manage"]);
     const homeClubId = backendContext.cleanText(clubScope.scopeId || data.clubId).slice(0, 40);
-    if (!homeClubId && !regional) {
+    if (!homeClubId && !hasRegional) {
       throw new backendContext.HttpsError("failed-precondition", "Numero de club requis pour les engagements club.");
     }
     const requestedClubId = backendContext.cleanText(request.data?.activeClubId).slice(0, 40);
     const isSwitchingClub = Boolean(requestedClubId && requestedClubId !== homeClubId);
-    if (isSwitchingClub && !regional && capabilities["engagements.club.switch"] !== true) {
+    if (isSwitchingClub && !hasRegional && capabilities["engagements.club.switch"] !== true) {
       throw new backendContext.HttpsError("permission-denied", "Droit de changement de club requis.");
     }
     let activeClub = null;
     const checkedClubId = requestedClubId || homeClubId;
-    if (regional && !checkedClubId) throw new backendContext.HttpsError("failed-precondition", "Choisissez un club de votre region.");
+    if (!checkedClubId) throw new backendContext.HttpsError("failed-precondition", "Choisissez un club.");
     // Regional scope also checks the real home club; cumulative switch rights cannot bypass it.
     if (isSwitchingClub || regional) {
       if (backendContext.ENVIRONMENT.sportingDataSource === "nap") {

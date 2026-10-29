@@ -17,7 +17,7 @@ class HttpsError extends Error {constructor(code,message){super(message);this.co
  caps["engagements.club.manage"]=true;caps["engagements.club.switch"]=true;
  clubRegion="2";await assert.rejects(()=>service.engagementClubAccessContext(req),e=>e.code==="permission-denied");
  await assert.rejects(()=>service.engagementClubAccessContext({...req,data:{}}),e=>e.code==="permission-denied");
- caps["engagements.national.manage"]=true;
+ caps["engagements.national.manage"]=true;delete caps["engagements.club.manage"];delete caps["engagements.club.switch"];
  assert.equal((await service.engagementClubAccessContext(req)).clubId,"20");
  delete caps["engagements.national.manage"];clubRegion="1";
  const handlers=createAccessHandlers({...context,accessManagementContext:service.accessManagementContext,canonicalAccessDirectoryRegionId:service.canonicalAccessDirectoryRegionId,
