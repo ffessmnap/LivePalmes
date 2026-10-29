@@ -2,6 +2,7 @@
 import copy
 import importlib.util
 import json
+import itertools
 from pathlib import Path
 import tempfile
 from types import SimpleNamespace
@@ -83,19 +84,40 @@ class AccountReleaseTests(unittest.TestCase):
             bad=copy.deepcopy(after);bad[section][key]=value
             with self.assertRaises(ValueError):policy.assert_existing(before,bad,state)
 
-    def filter_order_pair(self):
-        before=self.existing();before['name']=policy.PREFIX+'syncOfficialResultToPublicIndex'
-        before['serviceConfig']['revision']='syncofficialresulttopublicindex-00052-gup'
+    def filter_order_pair(self, mail=False):
+        before=self.existing();before['name']=policy.PREFIX+('syncEngagementMailRecipientIndex' if mail else 'syncOfficialResultToPublicIndex')
+        before['serviceConfig']['revision']='syncengagementmailrecipientindex-00023-pig' if mail else 'syncofficialresulttopublicindex-00052-gup'
         before['eventTrigger']['eventFilters']=[{'attribute':'namespace','value':'(default)'},
-            {'attribute':'document','operator':'match-path-pattern','value':'competitions/{competitionId}/results/{resultId}'},
+            {'attribute':'document','operator':'match-path-pattern','value':'users/{uid}' if mail else 'competitions/{competitionId}/results/{resultId}'},
             {'attribute':'database','value':'(default)'}]
-        after=copy.deepcopy(before);after['serviceConfig']['revision']='syncofficialresulttopublicindex-00053-toz'
+        after=copy.deepcopy(before);after['serviceConfig']['revision']='syncengagementmailrecipientindex-00024-lak' if mail else 'syncofficialresulttopublicindex-00053-toz'
         after['eventTrigger']['eventFilters']=list(reversed(after['eventTrigger']['eventFilters']))
         after['labels']['livepalmes-commit']=policy.contract()['candidate']
         return before,after
 
     def test_exact_reviewed_filter_order_is_equivalent(self):
         before,after=self.filter_order_pair();policy.assert_existing(before,after,state)
+
+    def test_all_72_filter_order_combinations_for_both_existing_triggers(self):
+        for mail in [False,True]:
+            before,after=self.filter_order_pair(mail)
+            filters=before['eventTrigger']['eventFilters']
+            for old_order,new_order in itertools.product(itertools.permutations(filters),repeat=2):
+                original,current=copy.deepcopy(before),copy.deepcopy(after)
+                original['eventTrigger']['eventFilters']=list(old_order)
+                current['eventTrigger']['eventFilters']=list(new_order)
+                policy.assert_existing(original,current,state)
+
+    def test_mail_index_filters_and_configuration_stay_strict(self):
+        before,after=self.filter_order_pair(True)
+        for mutate in ['value','operator','region','account','revision']:
+            current=copy.deepcopy(after)
+            if mutate=='value':current['eventTrigger']['eventFilters'][1]['value']='other/{uid}'
+            elif mutate=='operator':current['eventTrigger']['eventFilters'][1]['operator']='other'
+            elif mutate=='region':current['eventTrigger']['triggerRegion']='other'
+            elif mutate=='account':current['serviceConfig']['serviceAccountEmail']='other@example.test'
+            else:current['serviceConfig']['revision']='syncengagementmailrecipientindex-00025-other'
+            with self.assertRaises(ValueError):policy.assert_existing(before,current,state)
 
     def test_filter_changes_duplicates_and_other_configuration_refused(self):
         before,after=self.filter_order_pair()
