@@ -68,6 +68,7 @@
           <div id="adminPortalAccountActions" class="admin-portal-account-actions" role="menu" hidden>
             <a href="#mon-compte" role="menuitem">Mon compte</a>
             <a href="https://forms.gle/kPg4NcqhyzP6KV5L8" target="_blank" rel="noopener" role="menuitem">Signaler un bug ou une amélioration <span aria-hidden="true">↗</span></a>
+            <a href="#nouveautes" role="menuitem" data-portal-news-nav hidden>Nouveautés</a>
             <button id="adminPortalAccountClubSwitch" type="button" role="menuitem" hidden>Changer de club</button>
             <a class="admin-portal-public-link" href="./" target="_blank" rel="noopener" role="menuitem">LivePalmes public <span aria-hidden="true">↗</span></a>
             <button id="adminPortalSignOutButton" type="button" role="menuitem">Déconnexion</button>
@@ -277,6 +278,7 @@
               <section class="admin-portal-nav-group admin-portal-nav-footer" aria-label="Compte et assistance">
                 <a href="#mon-compte" data-admin-view-link="account"><span class="admin-portal-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"></circle><path d="M4 21a8 8 0 0 1 16 0"></path></svg></span><span>Mon compte</span></a>
                 <a href="https://forms.gle/kPg4NcqhyzP6KV5L8" target="_blank" rel="noopener"><span class="admin-portal-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 5h16v12H8l-4 4V5Z"></path><path d="M8 9h8M8 13h5"></path></svg></span><span>Aide et retours</span><span aria-hidden="true">↗</span></a>
+                <a href="#nouveautes" data-admin-view-link="news" data-portal-news-nav hidden><span class="admin-portal-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"></rect><path d="M8 8h8M8 12h8M8 16h5"></path></svg></span><span>Nouveautés</span></a>
               </section>
             </nav>
           </aside>
@@ -615,6 +617,17 @@
               </nav>
               <section id="nationalLibraryPanel" class="national-documents-panel" aria-labelledby="nationalLibraryTitle" hidden></section>
               <section id="featuredDocumentsPanel" class="national-documents-panel admin-featured-documents-panel" aria-labelledby="featuredDocumentsTitle" hidden></section>
+            </section>
+
+            <section id="adminNewsView" data-admin-view="news" aria-labelledby="adminNewsViewTitle" hidden>
+              <div class="admin-portal-workspace-head">
+                <h2 id="adminNewsViewTitle">Nouveautés</h2>
+                <p>Les changements livrés sur le Portail LivePalmes, en production.</p>
+              </div>
+              <!-- Ajouter uniquement les textes validés dont la livraison PROD est confirmée : docs/PORTAIL_NOUVEAUTES.md. -->
+              <div id="adminNewsPublishedEntries">
+                <p>Aucune nouveauté publiée pour le moment. Cette rubrique commence avec les prochaines publications, sans reprise de l’historique.</p>
+              </div>
             </section>
 
             <section id="adminAccountView" class="admin-portal-account-view" data-admin-view="account" aria-labelledby="adminAccountViewTitle" hidden>
@@ -2881,7 +2894,7 @@
   <script src="assets/livepalmes-import-source.js?v=20261026-import-text-1"></script>
   <script src="assets/livepalmes-access-request-history.js?v=20261026-1"></script>
   <script src="assets/livepalmes-club-identity.js?v=20261026-identity-1"></script>
-    <script src="assets/portal/navigation.js?v=20261028-nap-recovery-1"></script>
+    <script src="assets/portal/navigation.js?v=20261029-news-1"></script>
     <script src="assets/portal/modules-and-clubs.js?v=20261028-modules-1"></script>
     <script src="assets/portal/competition-settings.js?v=20261028-modules-1"></script>
     <script src="assets/portal/club-people.js?v=20261028-modules-1"></script>
