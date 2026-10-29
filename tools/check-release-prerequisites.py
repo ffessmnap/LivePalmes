@@ -93,11 +93,19 @@ def main(directory, run_id, kind):
         limited_oct27 = scope.contract().get('limitedOct27')
         if kind == 'backend' and limited_oct27:
             expected += ['cloudscheduler.jobs.get','cloudscheduler.jobs.update']
+        if kind == 'backend' and cycle.nap_account.approved(request):
+            expected += ['cloudfunctions.functions.create']
         granted = read(IAM, {'permissions': expected}).get('permissions', [])
         report['missingPermissions'] = sorted(set(expected) - set(granted))
         if kind == 'backend' and selected:
             state = load('readiness_state', 'production-release-state.py')
             functions = state.inventory()
+            if cycle.nap_account.approved(request):
+                cycle.nap_account.references(functions)
+                load('nap_account_readiness', 'publish-nap-account-release.py').guard(directory)
+                report['napAccountRelease'] = {'newTrigger': cycle.nap_account.NAME,
+                    'existingConfigurationChanges': False, 'mailPause': False,
+                    'existingRuntimeSecretAccess': True, 'dataReconciliation': False}
             if cycle.nap_retained.approved(request):
                 for function in functions:
                     if function['name'].split('/')[-1] in selected:
