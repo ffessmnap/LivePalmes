@@ -455,12 +455,14 @@
 
     function canSwitchEngagementClub(user = portalState.currentAccessProfile || {}) {
         const capabilities = new Set(user?.capabilities || []);
-        return capabilities.has("engagements.club.manage") && capabilities.has("engagements.club.switch");
+        return capabilities.has("engagements.region.manage") || (capabilities.has("engagements.club.manage") && capabilities.has("engagements.club.switch"));
       }
 
     function activeEngagementClubIdForProfile(user = portalState.currentAccessProfile || {}) {
         if (!portalState.activeEngagementClubId || !canSwitchEngagementClub(user)) return "";
-        return portalState.accessClubReferenceById.has(portalState.activeEngagementClubId) ? portalState.activeEngagementClubId : "";
+        const club = portalState.accessClubReferenceById.get(portalState.activeEngagementClubId);
+        const regional = user.capabilities?.includes("engagements.region.manage") && !user.capabilities?.some(cap => ["admin.full", "engagements.national.manage"].includes(cap));
+        return club && (!regional || portalActions.sameLivePalmesRegion(club.regionId, engagementRegionScope(user))) ? club.clubId : "";
       }
 
     function activeEngagementClubProfile(user = portalState.currentAccessProfile || {}) {
@@ -1463,6 +1465,7 @@
 
     function canUse(capability) {
         const auth = ensureAdminAuth();
+        if (capability === "engagements.club.manage" && auth?.hasCapability?.("engagements.region.manage")) return true;
         if (capability === "dtn.view" || capability.startsWith("engagements.")) {
           return Boolean(auth?.hasCapability?.(capability));
         }
@@ -1547,7 +1550,7 @@
         });
         if (portalContext.elements.clubMenu) portalContext.elements.clubMenu.hidden = !canUse("engagements.club.manage");
         if (portalContext.elements.nationalMenu) portalContext.elements.nationalMenu.hidden = !canDeleteEngagementCompetitionDirectly() && !canViewActivityLog();
-        if (portalContext.elements.accessAdd) portalContext.elements.accessAdd.hidden = !canUse("admin.full");
+        if (portalContext.elements.accessAdd) portalContext.elements.accessAdd.hidden = !canManageAccessDirectory();
         if (portalContext.elements.accessPanel && !canUse("admin.full")) portalContext.elements.accessPanel.hidden = true;
         if (portalContext.elements.accessDeletionRequestsPanel) portalContext.elements.accessDeletionRequestsPanel.hidden = !canDeleteAccessUserDirectly();
         if (!canDeleteEngagementCompetitionDirectly()) {
