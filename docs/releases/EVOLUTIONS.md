@@ -6,7 +6,7 @@
 
 - Retour utilisateur : menus d’accueil et informations de l’organisateur trop clairs. Correction ciblée des fonds et textes avec les jetons du thème, y compris les libellés et valeurs du détail ; version de cache actualisée et règle ajoutée au design system.
 - Périmètre : CSS du portail uniquement, aucun accès aux données ajouté (ouverture, action, rafraîchissement et pire cas : zéro lecture supplémentaire).
-- État : préparation TEST ; contrôles locaux des deux thèmes sur ordinateur/mobile et CI à consigner dans la PR. Aucune validation utilisateur ni publication PROD déduite.
+- [PR #620](https://github.com/ffessmnap/LivePalmes/pull/620). Contrôles locaux réussis : préférences d’apparence, versions de cache et test navigateur dédié des deux thèmes à 1280/390 px sur données fictives, sans backend ; contrastes ciblés ≥ 4,5:1, absence de débordement horizontal et captures examinées. État : CI et livraison TEST en attente ; preuves finales à suivre dans la PR. Aucune validation utilisateur ni publication PROD déduite.
 
 ### 29 octobre — Préparation PROD de l'annuaire NAP et de l'adaptation aux archives
 
