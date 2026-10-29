@@ -30,7 +30,7 @@ def digest(value):
     return hashlib.sha256(json.dumps(value, sort_keys=True).encode()).hexdigest()
 
 
-def controls(project):
+def controls(project, contract=None):
     policy.require(project in {'livepalmes', 'livepalmes-test'}, 'Cible NAP interdite')
     credentials = json.loads(Path(os.environ['GOOGLE_APPLICATION_CREDENTIALS']).read_text())
     policy.require(credentials.get('project_id') == project, 'Compte NAP du mauvais projet')
@@ -64,7 +64,7 @@ def controls(project):
         policy.test_controls(**values)
     else:
         guard = load('nap_retained_mail', 'check-license-report-release.py')
-        guard.validate(values['mail'], values['scheduler'], policy.contract())
+        guard.validate(values['mail'], values['scheduler'], contract or policy.contract())
         policy.require(values['queue'].get('state') == 'RUNNING', 'File PROD non active')
     scheduler = {k: v for k, v in values['scheduler'].items()
                  if k not in {'lastAttemptTime', 'scheduleTime', 'status'}}
