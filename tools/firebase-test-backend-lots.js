@@ -155,10 +155,10 @@ const METADATA = Object.freeze({
     dependencies: ["Firestore: users; règles; 11 index composites", "Auth: jeton Firebase requis par getCurrentAccessUser"]
   },
   access: {
-    secrets: [],
+    secrets: ["LIVEPALMES_NAP_PASSWORD"],
     apis: ["cloudfunctions.googleapis.com", "run.googleapis.com", "cloudbuild.googleapis.com", "artifactregistry.googleapis.com", "firestore.googleapis.com", "identitytoolkit.googleapis.com"],
     iam: ["roles/cloudfunctions.developer", "roles/iam.serviceAccountUser", "runtime: roles/datastore.user + administration Firebase Auth"],
-    dependencies: ["Firestore: users, accès, annuaires, grants, audit", "Auth: utilisateurs, custom claims, révocation"]
+    dependencies: ["Firestore: users, accès, annuaires, grants, audit", "Auth: utilisateurs, custom claims, révocation", "NAP: createOrUpdateAccessUser seulement, club par cle primaire pour la creation regionale"]
   },
   "engagement-core": {
     secrets: [],

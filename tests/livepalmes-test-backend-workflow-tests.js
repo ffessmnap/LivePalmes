@@ -72,7 +72,7 @@ assert.match(workflow, /prepare-firebase-test-functions\.js "\$SELECTED_LOT"/);
 assert.deepEqual(ALL_SAFE_LOTS, ["access", "engagement-core", "performance", "publications"]);
 assert.ok(!ALL_SAFE_LOTS.includes("email"));
 assert.ok(!ALL_SAFE_LOTS.includes("schedulers"));
-assert.deepEqual(METADATA.access.secrets, []);
+assert.deepEqual(METADATA.access.secrets, ["LIVEPALMES_NAP_PASSWORD"]);
 assert.deepEqual(METADATA["engagement-core"].secrets, []);
 assert.deepEqual(METADATA.performance.secrets, []);
 assert.equal(METADATA.email.secrets.length, 8);
@@ -126,8 +126,16 @@ try {
   assert.deepEqual(declaredSecrets, napOnly?[...METADATA.email.secrets].sort():selectedLot==="all-safe"?["LIVEPALMES_NAP_PASSWORD"]:[...METADATA[selectedLot].secrets].sort());
   if(napOnly)assert.deepEqual(JSON.parse(manifest).endpoints.closeDueEngagementCompetitions.secretEnvironmentVariables.map(item=>item.key),["LIVEPALMES_NAP_PASSWORD",...require('../tools/firebase-test-backend-lots').METADATA.email.secrets.filter(name=>name!=="LIVEPALMES_NAP_PASSWORD")]);
   if(selectedLot==="all-safe") for (const name of TEST_NON_MAIL_FUNCTIONS) assert.deepEqual(JSON.parse(manifest).endpoints[name].secretEnvironmentVariables.map(item=>item.key),["LIVEPALMES_NAP_PASSWORD"]);
+  if (selectedLot === "access" || selectedLot === "all-safe") {
+    const endpoints = JSON.parse(manifest).endpoints;
+    for (const name of activeLotFunctions("access")) {
+      assert.deepEqual((endpoints[name].secretEnvironmentVariables || []).map(item => item.key),
+        name === "createOrUpdateAccessUser" ? ["LIVEPALMES_NAP_PASSWORD"] : [],
+        "La liaison NAP du lot acces reste limitee a la creation regionale");
+    }
+  }
   for (const secret of METADATA.email.secrets) {
-    if (napOnly || ((selectedLot === "all-safe" || selectedLot === "nap") && secret === "LIVEPALMES_NAP_PASSWORD")) continue;
+    if (napOnly || ((selectedLot === "all-safe" || selectedLot === "nap" || selectedLot === "access") && secret === "LIVEPALMES_NAP_PASSWORD")) continue;
     assert.doesNotMatch(manifest, new RegExp(secret), `Le manifeste ${selectedLot} expose encore ${secret}.`);
   }
   }
