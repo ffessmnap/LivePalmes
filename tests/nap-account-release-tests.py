@@ -83,6 +83,36 @@ class AccountReleaseTests(unittest.TestCase):
             bad=copy.deepcopy(after);bad[section][key]=value
             with self.assertRaises(ValueError):policy.assert_existing(before,bad,state)
 
+    def filter_order_pair(self):
+        before=self.existing();before['name']=policy.PREFIX+'syncOfficialResultToPublicIndex'
+        before['serviceConfig']['revision']='syncofficialresulttopublicindex-00052-gup'
+        before['eventTrigger']['eventFilters']=[{'attribute':'namespace','value':'(default)'},
+            {'attribute':'document','operator':'match-path-pattern','value':'competitions/{competitionId}/results/{resultId}'},
+            {'attribute':'database','value':'(default)'}]
+        after=copy.deepcopy(before);after['serviceConfig']['revision']='syncofficialresulttopublicindex-00053-toz'
+        after['eventTrigger']['eventFilters']=list(reversed(after['eventTrigger']['eventFilters']))
+        after['labels']['livepalmes-commit']=policy.contract()['candidate']
+        return before,after
+
+    def test_exact_reviewed_filter_order_is_equivalent(self):
+        before,after=self.filter_order_pair();policy.assert_existing(before,after,state)
+
+    def test_filter_changes_duplicates_and_other_configuration_refused(self):
+        before,after=self.filter_order_pair()
+        for change in ['value','operator','duplicate','type','account','timeout']:
+            bad=copy.deepcopy(after)
+            if change=='value':bad['eventTrigger']['eventFilters'][1]['value']='users/{uid}'
+            elif change=='operator':bad['eventTrigger']['eventFilters'][1]['operator']='other'
+            elif change=='duplicate':bad['eventTrigger']['eventFilters'].append(bad['eventTrigger']['eventFilters'][0])
+            elif change=='type':bad['eventTrigger']['eventType']='other'
+            elif change=='account':bad['serviceConfig']['serviceAccountEmail']='other@example.test'
+            else:bad['serviceConfig']['timeoutSeconds']=300
+            with self.assertRaises(ValueError):policy.assert_existing(before,bad,state)
+
+    def test_filter_equivalence_cannot_be_reused_for_another_revision(self):
+        before,after=self.filter_order_pair();after['serviceConfig']['revision']='syncofficialresulttopublicindex-00054-other'
+        with self.assertRaises(ValueError):policy.assert_existing(before,after,state)
+
     def test_reference_nap_binding_cannot_change(self):
         c=policy.contract();rows=[{'name':policy.PREFIX+n} for n in c['existingSelected']+[r['name'] for r in c['retained']]]
         byname={r['name'].split('/')[-1]:r for r in rows}
@@ -130,7 +160,7 @@ class AccountReleaseTests(unittest.TestCase):
         self.assertNotIn('cloudtasks.googleapis.com',code)
         self.assertIn('?updateMask=build_config.source,labels',code)
 
-    def run_publisher(self, fail_update=False):
+    def run_publisher(self, fail_update=False, resume=False):
         c=policy.contract();rows=[]
         for name in c['existingSelected']+[r['name'] for r in c['retained']]:
             row=self.existing();row['name']=policy.PREFIX+name;rows.append(row)
@@ -148,13 +178,26 @@ class AccountReleaseTests(unittest.TestCase):
                 return {'done':True}
             raise AssertionError('Forbidden API: '+method+' '+url)
         fake=SimpleNamespace(API=state.API,inventory=lambda:copy.deepcopy(rows),request=api,
-            identity=state.identity,wait_operation=lambda op:None,check_after=lambda *args:None)
+            identity=state.identity,rollback_patch=state.rollback_patch,wait_operation=lambda op:None,check_after=lambda *args:None)
+        if resume:
+            current=copy.deepcopy(rows)
+            for row in current:
+                if row['name'].split('/')[-1] in c['existingSelected']:
+                    row['updateTime']='new';row['labels']['livepalmes-commit']=c['candidate']
+            new=policy.new_function({});new['state']='ACTIVE';current.append(new)
+            fake.inventory=lambda:copy.deepcopy(current)
         with tempfile.TemporaryDirectory() as directory:
             root=Path(directory);plan=root/'plan';backup=root/'backup';plan.mkdir();backup.mkdir()
             (plan/'request.json').write_text(json.dumps(request()));(plan/'selection.json').write_text(json.dumps(c['selected']))
             (backup/'functions.json').write_text(json.dumps(rows))
             (backup/'report.json').write_text(json.dumps({'additionalNapAccountFunctions':c['selected'],
                 'candidate':c['candidate'],'newFunctions':[policy.NAME]}))
+            if resume:
+                previous=plan/'previous';(previous/'guards').mkdir(parents=True)
+                (previous/'production-after.json').write_text(json.dumps({'candidate':c['candidate'],
+                    'functions':[state.identity(f) for f in current]}))
+                (previous/'guards/nap-account-source-update.json').write_text(json.dumps({'candidate':c['candidate'],
+                    'created':True,'updated':c['existingSelected']}))
             with patch.object(publisher,'load',return_value=fake),patch.object(publisher,'guard'),patch.object(publisher.urllib.request,'urlopen'):
                 if fail_update:
                     with self.assertRaises(ValueError):publisher.publish(root,plan,backup,cycle,lambda *args:b'fixture')
@@ -171,6 +214,9 @@ class AccountReleaseTests(unittest.TestCase):
     def test_failed_source_update_prevents_trigger_creation(self):
         calls=self.run_publisher(True)
         self.assertFalse(any('?functionId=' in url for url,_,_ in calls))
+
+    def test_attested_complete_resume_makes_no_source_api_call(self):
+        self.assertEqual(self.run_publisher(resume=True),[])
 
 
 if __name__=='__main__':unittest.main()
