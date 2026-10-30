@@ -54,8 +54,8 @@ async function main(){
     const result=await current.run(["100SF","50SF"]),reference=await before.run(["100SF","50SF"]);
     assert.deepEqual(JSON.parse(JSON.stringify(result.events)),JSON.parse(JSON.stringify(reference.events)));
     assert.equal(result.events.length,1);assert.equal(result.events[0].eventCode,"100SF");assert.equal(result.events[0].times.length,1);
-    assert.equal(current.calls.length,19+Number(presence));assert.equal(result.sqlBudget.queriesMax,current.calls.length);
-    assert.equal(before.calls.length-current.calls.length,4);
+    assert.equal(current.calls.length,15+Number(presence));assert.equal(result.sqlBudget.queriesMax,current.calls.length);
+    assert.equal(before.calls.length-current.calls.length,8);
     assert.ok(!current.calls.some(call=>/engagements_relais|engagements_relayeurs|officielsengager|livepalmes_club_entry_options/.test(call.sql)));
   }
   const all=await fixture().run();assert.deepEqual(Array.from(all.events,event=>event.eventCode),["100SF","200SF"]);
@@ -76,6 +76,6 @@ async function main(){
   }
   assert.equal((await fixture({inscriptionCount:800}).run()).events.length,2);
   assert.equal((await fixture({individual:Array.from({length:5000},(_,i)=>({id:i+1,engagement:9,course:"100SF"}))}).run()).events.length,1);
-  console.log("Actual history callable/service/readers: saved and duplicate inscriptions, course/date filters, 19–20 SELECT, former output equality, limits and denied scopes passed offline.");
+  console.log("Actual history callable/service/readers: saved and duplicate inscriptions, course/date filters, 15–16 SELECT, former output equality, limits and denied scopes passed offline.");
 }
 main().catch(error=>{console.error(error);process.exitCode=1;});

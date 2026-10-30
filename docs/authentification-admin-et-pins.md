@@ -17,6 +17,8 @@ Les utilisateurs se connectent avec une adresse email et un mot de passe geres p
 
 La session du Portail ne se verrouille plus automatiquement en cas d'inactivite. Elle reste ouverte jusqu'a une deconnexion volontaire, une invalidation Firebase ou la desactivation du compte. Les consoles de LivePalmes Direct conservent leurs propres protections et expirations.
 
+Optimisation autorisée le 30 octobre : à la restauration d'une session utilisant le profil serveur, le SDK réutilise un jeton encore valable et le renouvelle si nécessaire ([contrat Firebase](https://firebase.google.com/docs/reference/js/auth.user#getidtokenresult)). Le portail attend toujours la lecture du profil serveur actif et de ses capacités avant d'ouvrir l'espace privé ; aucun droit n'est accordé sur le seul jeton en cache. Une connexion explicite et les consommateurs historiques fondés sur les claims conservent le renouvellement forcé. Aucun appel réel de connexion/profil n'est utilisé pour la recette hors réseau, car la lecture du profil peut actualiser `lastLoginAt`.
+
 Le compte LivePalmes porte ensuite des capacites et un perimetre qui determinent ce que la personne peut consulter ou modifier : club, region, national, Records / MPF, import de competitions, DTN, administration ou acces au Direct.
 
 Masquer un bouton dans l'interface ne suffit jamais a proteger une action. Les fonctions serveur et les regles Firestore doivent aussi verifier le compte, son statut, ses capacites et son perimetre.
