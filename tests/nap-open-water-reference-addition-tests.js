@@ -6,6 +6,7 @@ const {ensureDistanceReferences,CATALOG,COLUMNS,ENGINE,TRIGGERS}=require('../fun
 const {backupVerified,seal,open}=require('../functions/nap-open-water-reference-backup');
 const legacyCrypto=require('../tools/production-backup-crypto');
 const water=require('../functions/nap-open-water-courses');
+const {planAdditions}=require('../functions/nap-course-addition');
 const clone=value=>structuredClone(value);
 const ids={SF:[98,99],BI:[273,274],SUP:[405,406]};
 const templates=['SF','BI','SUP'].flatMap(discipline=>['F','M'].map((sexe,index)=>({id:ids[discipline][index],course:discipline==='SF'?'5000':discipline==='BI'?'5000BI':'5000 SUPPORT',sexe,final:0,relais:0,categorie:0,p:0,ld:1,bi:discipline==='BI'?1:0,_order:discipline==='SUP'?null:ids[discipline][index],mixte:0,style:'SF',type_:1,longueur:'5000',nbnageur:1,validation:1,actif:1,wplabel:discipline==='SF'?'LD05KM':discipline==='BI'?'LD05KMBI':'LD5000SUP'})));
@@ -65,6 +66,8 @@ async function run(){
  const full=Array.from({length:301},(_,i)=>({...templates[0],id:i+1}));assert.throws(()=>planDistanceReferences(1200,full),/hors limites/);
  const almostFull=[...templates,...Array.from({length:289},(_,i)=>({...templates[0],id:1000+i,course:'OTHER'+i,ld:0,wplabel:'OTHER'+i}))];assert.throws(()=>planDistanceReferences(1200,almostFull),/Limite/);
  let f=fixture();const result=await ensure(f);assert.equal(result.created,6);assert.equal(result.referenceIds.length,6);assert.equal(f.state.inserts,1);assert.equal(f.state.completions.length,1);assert.equal(f.state.locked,false);assert(f.state.catalog.slice(0,6).every((row,i)=>isDeepStrictEqual(row,templates[i])));
+ const defaults=['opencourse','cost','limitnageur'].map(COLUMN_NAME=>({COLUMN_NAME,COLUMN_TYPE:COLUMN_NAME==='cost'?'decimal(10,0)':'int(11)',COLUMN_DEFAULT:COLUMN_NAME==='opencourse'?'0':null,IS_NULLABLE:'NO',EXTRA:''}));
+ const selected=planAdditions({event:{id:5168,eventType:'openWater'},nativeParameters:{qualif:0},groups:[],courses:[]},['SF','BI','SUP'].map(discipline=>({code:'OW1200'+discipline})),f.state.catalog,defaults,new Map());assert.equal(selected.length,6);assert.deepEqual(selected.map(row=>row.id_course),result.referenceIds,'All three new specialties can immediately be used by the native competition course planner');
  const encrypted=f.state.backups[0];assert.equal(JSON.stringify(encrypted).includes('5000 SUPPORT'),false);assert.equal(JSON.stringify(encrypted).includes('test-reference-secret'),false);const restored=JSON.parse(legacyCrypto.open(Buffer.from(encrypted.target.encrypted,'base64'),'test-reference-secret'));assert.deepEqual(restored.before,templates);
  await ensure(f);assert.equal(f.state.inserts,1,'Repeating a completed request never inserts duplicate references');assert.equal(f.state.backups.length,1,'A complete existing distance needs no backup write');
  for(const options of [{backupFailure:true},{tamperBackup:true},{badIndex:true},{badEngine:true},{trigger:true},{schemaDrift:true},{concurrentOldChange:true},{lockFailure:true}]){
