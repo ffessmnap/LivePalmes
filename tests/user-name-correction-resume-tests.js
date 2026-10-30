@@ -133,6 +133,24 @@ async function test() {
     assert(fs.readFileSync(path.join(backup.directory, "reviewed-resume-apply.lock")).equals(fs.readFileSync(path.join(copy, "reviewed-resume-apply.lock"))));
     assert.throws(() => cli.reserveLocks(backup, prefix, "apply", a), /already started/);
     assert.throws(() => cli.reserveLocks(backup, "resume-"+"b".repeat(16), "apply", { digest: "b".repeat(64) }), /already started/);
+    backup.key = require("node:crypto").randomBytes(32);
+    const previous = require("../tools/execute-production-user-name-correction");
+    const remaining = f.context.plan.entries.slice(70), originalsForFinish = policy.effectiveOriginals(f.context,annex,false), freshForFinish = new Map();
+    const confirmed = remaining.slice(0,10).map(entry => {
+      const doc = {...structuredClone(originalsForFinish.get(entry.name)),fields:{...originalsForFinish.get(entry.name).fields,...entry.after},updateTime:"2026-10-30T13:00:00Z"};
+      freshForFinish.set(entry.name,doc);return {name:entry.name,planDigest:check.DIGEST,afterVersion:doc.updateTime};
+    });
+    const common = {planDigest:check.DIGEST,resumeDigest:a.digest,direction:"apply"};
+    previous.savePrivate(backup,`${prefix}-apply-batch-001-receipt.enc`,{...common,saved:confirmed});
+    previous.savePrivate(backup,`${prefix}-apply-batch-001-intent.enc`,{...common,names:confirmed.map(row=>row.name),writes:remaining.slice(0,10).map(entry=>({update:{name:entry.name,fields:entry.after},updateMask:{fieldPaths:["firstName","lastName"]},currentDocument:{updateTime:originalsForFinish.get(entry.name).updateTime}}))});
+    assert.deepEqual(cli.confirmedPrefix(backup,prefix,a,remaining,freshForFinish,originalsForFinish,()=>false),confirmed);
+    assert.throws(()=>cli.confirmedPrefix(backup,prefix,a,remaining,freshForFinish,originalsForFinish,()=>true),/active/);
+    freshForFinish.get(remaining[0].name).fields.status={stringValue:"changed"};
+    assert.throws(()=>cli.confirmedPrefix(backup,prefix,a,remaining,freshForFinish,originalsForFinish,()=>false),/changed/);
+    freshForFinish.get(remaining[0].name).fields={...originalsForFinish.get(remaining[0].name).fields,...remaining[0].after};
+    previous.savePrivate(backup,`${prefix}-apply-batch-002-uncertain.enc`,{});
+    assert.throws(()=>cli.confirmedPrefix(backup,prefix,a,remaining,freshForFinish,originalsForFinish,()=>false),/journal differs/);
+    backup.key.fill(0);
     assert.throws(() => cli.reserveLocks(backup, prefix, "rollback", a, () => true), /active/);
     cli.reserveLocks(backup, prefix, "rollback", a, () => false);
     assert(fs.existsSync(path.join(backup.directory, "reviewed-resume-apply.lock")));

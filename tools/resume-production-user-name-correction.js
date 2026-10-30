@@ -123,13 +123,41 @@ function reserveLocks(backup, prefix, direction, annex, isAlive = alive) {
   for (const dir of dirs) previous.durable(path.join(dir, own), bytes);
   for (const dir of dirs) for (const file of [global, own]) if (!fs.readFileSync(path.join(dir, file)).equals(bytes)) throw new Error("Resume lock readback failed");
 }
-async function execute(backup, token, file, expectedDigest, direction) {
+function confirmedPrefix(backup, prefix, annex, entries, fresh, originals, isAlive = alive) {
+  const expectedFiles = ["intent", "receipt"].map(kind => `${prefix}-apply-batch-001-${kind}.enc`).sort();
+  for (const dir of [backup.directory, copyDirectory()]) {
+    if (["reviewed-resume-rollback.lock", "reviewed-resume-finish.lock", `${prefix}-apply-complete.json`].some(file => fs.existsSync(path.join(dir,file)))) throw new Error("Continuation already claimed or rollback started");
+    const files = fs.readdirSync(dir).filter(name => name.startsWith(prefix+"-apply-batch-")).sort();
+    if (planner.hash(files) !== planner.hash(expectedFiles)) throw new Error("Continuation journal differs from confirmed first batch");
+    for (const file of ["reviewed-resume-apply.lock", `${prefix}-apply.lock`]) {
+      const bytes = fs.readFileSync(path.join(dir, file));
+      if (!bytes.equals(fs.readFileSync(path.join(backup.directory, file)))) throw new Error("Continuation lock copies differ");
+      const lock = JSON.parse(bytes);
+      if (lock.operationId !== check.OPERATION || lock.planDigest !== check.DIGEST || lock.resumeDigest !== annex.digest || lock.direction !== "apply" || !Number.isSafeInteger(lock.pid) || isAlive(lock.pid)) throw new Error("Continuation writer active or lock differs");
+    }
+  }
+  const receipt = previous.readPrivate(backup, expectedFiles.find(name => name.endsWith("-receipt.enc")));
+  const intent = previous.readPrivate(backup, expectedFiles.find(name => name.endsWith("-intent.enc")));
+  const batch = entries.slice(0, 10), names = batch.map(entry => entry.name);
+  const expectedWrites = batch.map(entry => ({update:{name:entry.name,fields:entry.after},updateMask:{fieldPaths:["firstName","lastName"]},currentDocument:{updateTime:originals.get(entry.name).updateTime}}));
+  if (receipt.planDigest !== check.DIGEST || receipt.resumeDigest !== annex.digest || receipt.direction !== "apply"
+      || intent.planDigest !== check.DIGEST || intent.resumeDigest !== annex.digest || intent.direction !== "apply"
+      || planner.hash(intent.names) !== planner.hash(names) || planner.hash(intent.writes) !== planner.hash(expectedWrites) || planner.hash(receipt.saved.map(row => row.name)) !== planner.hash(names)) throw new Error("Continuation receipts differ");
+  for (const entry of batch) {
+    const doc = fresh.get(entry.name), saved = receipt.saved.find(row => row.name === entry.name);
+    if (saved.planDigest !== check.DIGEST || !doc || doc.updateTime !== saved.afterVersion
+        || planner.hash(doc.fields) !== planner.hash({...originals.get(entry.name).fields,...entry.after})) throw new Error("Confirmed batch changed");
+  }
+  return receipt.saved;
+}
+async function execute(backup, token, file, expectedDigest, direction, finishConfirmed = false) {
   if (!/^resume-preparation-[a-f0-9-]+\.enc$/.test(file) || !/^[a-f0-9]{64}$/.test(expectedDigest || "")) throw new Error("Explicit reviewed resume required");
   const ctx = context(backup), annex = previous.readPrivate(backup, file); policy.verify(ctx, annex);
   if (annex.digest !== expectedDigest) throw new Error("Reviewed resume digest differs");
   const prefix = `resume-${annex.digest.slice(0, 16)}`, complete = `${prefix}-${direction}-complete.json`;
-  for (const dir of [backup.directory, copyDirectory()]) if (fs.existsSync(path.join(dir, `reviewed-resume-${direction}.lock`))
-    || fs.existsSync(path.join(dir, `${prefix}-${direction}.lock`)) || fs.existsSync(path.join(dir, complete))) throw new Error("Resume already started; preserve journals");
+  if (finishConfirmed && direction !== "apply") throw new Error("Continuation only applies pending names");
+  for (const dir of [backup.directory, copyDirectory()]) if ((!finishConfirmed && (fs.existsSync(path.join(dir, `reviewed-resume-${direction}.lock`))
+    || fs.existsSync(path.join(dir, `${prefix}-${direction}.lock`)))) || fs.existsSync(path.join(dir, complete))) throw new Error("Resume already started; preserve journals");
   const recorded = direction === "rollback" ? savedResumeReceipts(backup, prefix, annex) : [];
   const entries = backup.plan.entries.filter(e => annex.remainingNames.includes(e.name) && (direction === "apply" || recorded.some(r => r.name === e.name)));
   const proposeWrite = (plan, name, current, receipt, mode) => policy.proposedWrite(ctx, annex, name, current, receipt, mode);
@@ -137,21 +165,30 @@ async function execute(backup, token, file, expectedDigest, direction) {
   const preparation = previous.readPrivate(backup, ORIGINAL_PREPARATION); await triggerGuard(token, preparation);
   stage = "resume-fresh-source-guard";
   const fresh = await controls.groupedRead(entries.map(e => e.name), token);
-  for (const entry of entries) if (proposeWrite(backup.plan, entry.name, fresh.get(entry.name), recorded.find(r => r.name === entry.name), direction).status !== "proposed-only") throw new Error("Profile changed since reviewed annex");
+  const originals = policy.effectiveOriginals(ctx, annex);
+  const confirmed = finishConfirmed ? confirmedPrefix(backup, prefix, annex, entries, fresh, originals) : [];
+  for (const entry of entries.slice(confirmed.length)) if (proposeWrite(backup.plan, entry.name, fresh.get(entry.name), recorded.find(r => r.name === entry.name), direction).status !== "proposed-only") throw new Error("Profile changed since reviewed annex");
   connection = await controls.napConnection(token);
-  reserveLocks(backup, prefix, direction, annex);
-  const baseline = baselineOf(preparation, annex), nap = new Map(preparation.napBaseline), originals = policy.effectiveOriginals(ctx, annex);
-  const saved = []; let projectionReads = 0, projectionEntries = 0, sqlQueries = 0;
+  if (finishConfirmed) {
+    const bytes = Buffer.from(JSON.stringify({resumeDigest:annex.digest,pid:process.pid,startedAt:new Date().toISOString()}));
+    for (const dir of [backup.directory, copyDirectory()]) previous.durable(path.join(dir,"reviewed-resume-finish.lock"),bytes);
+  } else reserveLocks(backup, prefix, direction, annex);
+  const baseline = baselineOf(preparation, annex), nap = new Map(preparation.napBaseline);
+  const saved = [...confirmed]; let projectionReads = 0, projectionEntries = 0, sqlQueries = 0;
   async function observe(batch, receipts, mode, final = false) {
-    for (let attempt = 0; attempt < (final ? 1 : 2); attempt++) {
+    for (let attempt = 0; attempt < (final ? 1 : 13); attempt++) {
       if (attempt) await new Promise(resolve => setTimeout(resolve, 5000));
       try {
         const value = await controls.verifyProjections(batch, baseline, token, mode); projectionReads += value.documentsRead; projectionEntries += value.entriesChecked;
         sqlQueries++; await controls.verifyNap(connection, batch, nap, receipts); return;
-      } catch { if (final || attempt === 1) throw new Error("Projection convergence failed; no automatic continuation"); }
+      } catch { if (final || attempt === 12) throw new Error("Projection convergence failed; no automatic continuation"); }
     }
   }
-  for (let offset = 0; offset < entries.length; offset += 10) {
+  if (finishConfirmed) {
+    await observe(entries.slice(0,10),confirmed,direction,true);
+    previous.savePrivate(backup,`${prefix}-apply-batch-001-verified.enc`,{planDigest:check.DIGEST,resumeDigest:annex.digest,direction,saved:confirmed});
+  }
+  for (let offset = confirmed.length; offset < entries.length; offset += 10) {
     const batch = entries.slice(offset, offset + 10), number = String(offset / 10 + 1).padStart(3, "0"); stage = `${direction}-resume-batch-${number}`;
     const result = await runBatch({ plan: backup.plan, entries: batch, originals, proposeWrite, direction, receipts: recorded,
       read: names => check.readDocuments(names, token), observe,
@@ -175,7 +212,7 @@ async function execute(backup, token, file, expectedDigest, direction) {
   }
   const summary = { operationId: check.OPERATION, originalPlanDigest: check.DIGEST, resumeDigest: annex.digest, direction,
     completedAt: new Date().toISOString(), correctedOrRestored: saved.length, protectedOriginalCorrections: 70,
-    sourceWrites: writes, projectionReads, projectionEntries, sqlQueries, originalLockPreserved: true,
+    sourceWrites: writes, priorConfirmedWrites: confirmed.length, projectionReads, projectionEntries, sqlQueries, originalLockPreserved: true,
     newLocksPreserved: true, originalManifestUnchanged: true, onlyNameFieldsWritten: true,
     authWrites: 0, directSqlWrites: 0, emailsRequested: 0, privateRollbackReceipts: true };
   previous.savePrivate(backup, `${prefix}-${direction}-completed-evidence.enc`, { summary, saved });
@@ -184,12 +221,12 @@ async function execute(backup, token, file, expectedDigest, direction) {
 }
 async function main() {
   const [mode, file, digest] = process.argv.slice(2);
-  if (process.platform !== "win32" || !["--prepare-remaining-181", "--apply-reviewed-resume", "--rollback-resume-recorded"].includes(mode)) throw new Error("Explicit resume mode required");
+  if (process.platform !== "win32" || !["--prepare-remaining-181", "--apply-reviewed-resume", "--finish-confirmed-resume", "--rollback-resume-recorded"].includes(mode)) throw new Error("Explicit resume mode required");
   const backup = check.loadBackup();
   try {
     const token = check.accessToken();
     const result = mode === "--prepare-remaining-181" ? await prepare(backup, token, file)
-      : await execute(backup, token, file, digest, mode === "--apply-reviewed-resume" ? "apply" : "rollback");
+      : await execute(backup, token, file, digest, mode === "--rollback-resume-recorded" ? "rollback" : "apply",mode === "--finish-confirmed-resume");
     console.log(JSON.stringify(result, null, 2));
   } finally { backup.key.fill(0); if (connection) await connection.end(); }
 }
@@ -198,4 +235,4 @@ if (require.main === module) main().catch(error => {
     diagnostic: /^HTTP-\d{3}$/.test(error?.message || "") ? error.message : "private-diagnostic-required", automaticRetry: false }));
   process.exitCode = 1;
 });
-module.exports = { context, prepare, execute, savedResumeReceipts, reserveLocks, baselineOf };
+module.exports = { context, prepare, execute, savedResumeReceipts, reserveLocks, baselineOf, confirmedPrefix };
