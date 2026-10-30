@@ -3,7 +3,7 @@ require("./helpers/offline-network");
 const assert=require("node:assert/strict");
 const {readEntryTimeContext}=require("../functions/nap-entry-time-context");
 const {readNativeClubEntry}=require("../functions/nap-portal-entries");
-const {readNativeCompetition}=require("../functions/nap-portal-competitions");
+const {readEntryTimeCompetition}=require("../functions/nap-portal-competitions");
 const {readEntryHistory}=require("../functions/nap-entry-performance-history");
 const {previewNativeTimes}=require("../functions/nap-entry-time-preview");
 function fixture(count=50,patch={}) {
@@ -37,7 +37,7 @@ function fixture(count=50,patch={}) {
 async function run(reader,count,patch={}) {
   const f=fixture(count,patch),ids=Array.from({length:count},(_,i)=>i+1),input={competitionId:1,clubId:"106",swimmerIds:ids,enrolledOnly:true};
   const services={authorize:async()=>{},preview:(person,rows)=>rows,
-    readers:{competition:readNativeCompetition,entry:reader,history:readEntryHistory},
+    readers:{competition:readEntryTimeCompetition,entry:reader,history:readEntryHistory},
     prepareQualifications:async(connection,{people})=>{
       await connection.execute({sql:"SELECT event_code FROM livepalmes_qualification_grants WHERE competition_id=? LIMIT 3201"},[1]);
       return new Map(people.map(person=>[person.id,{enabled:true}]));
@@ -49,7 +49,7 @@ async function run(reader,count,patch={}) {
     const before=await run(readNativeClubEntry,count,{active,presence}),after=await run(readEntryTimeContext,count,{active,presence});
     assert.deepEqual(after.result.swimmers,before.result.swimmers,"exact output, duplicate inscriptions keep membership");
     assert.equal(before.calls.length-after.calls.length,5);
-    assert.equal(after.calls.length,18+Number(active)+Number(presence));
+    assert.equal(after.calls.length,14+Number(active)+Number(presence));
     assert.equal(after.result.sqlBudget.queriesMax,after.calls.length);
   }
   for(const reader of [readNativeClubEntry,readEntryTimeContext]){
@@ -75,5 +75,5 @@ async function run(reader,count,patch={}) {
   assert.equal(selected.calls.length,3);assert.deepEqual(selected.calls[0].values,[1,"106"]);
   assert.match(selected.calls[0].sql,/FORCE INDEX \(PRIMARY\)/);assert.match(selected.calls[1].sql,/GROUP BY nageur/);
   assert.ok(selected.calls.every(call=>!/(?:engagements_relais|engagements_relayeurs|officielsengager|livepalmes_club_entry_options)/.test(call.sql)));
-  console.log("Preview context: exact former results, 1/50 swimmers, 18–20 SELECT, scope/waiver/duplicates/limits and SELECT only OK");
+  console.log("Preview context: exact former results, 1/50 swimmers, 14–16 SELECT, scope/waiver/duplicates/limits and SELECT only OK");
 })().catch(error=>{console.error(error);process.exitCode=1;});
