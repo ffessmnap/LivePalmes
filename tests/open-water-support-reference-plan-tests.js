@@ -1,0 +1,13 @@
+"use strict";
+const assert=require('node:assert/strict');
+const {prepareSupportReference}=require('../tools/plan-open-water-support-reference');
+const templates=['F','M'].map((sexe,i)=>({id:405+i,course:'5000 SUPPORT',sexe,final:0,relais:0,categorie:0,p:0,ld:1,bi:0,_order:null,wplabel:'LD5000SUP',mixte:0,style:'SF',type_:1,longueur:'5000',nbnageur:1,validation:1,actif:1}));
+const before=JSON.stringify(templates),plan=prepareSupportReference(templates,templates);
+assert.equal(plan.previewOnly,true);assert.equal(plan.writesExecuted,false);assert.equal(plan.approvalRequired,true);assert.equal(plan.newReferences.length,2);
+assert.deepEqual(plan.newReferences.map(x=>x.row.sexe),['F','M']);assert(plan.newReferences.every(x=>x.row.course==='1000 SUPPORT'&&x.row.wplabel==='LD1000SUP'&&x.row.longueur==='1000'&&!Object.hasOwn(x.row,'id')));assert.equal(JSON.stringify(templates),before);
+const complete=[...templates,...plan.newReferences.map((x,i)=>({id:500+i,...x.row}))];assert.equal(prepareSupportReference(complete,templates).newReferences.length,0);
+assert.throws(()=>prepareSupportReference([...complete,{...complete[2],id:600}],templates),/ambigue/);
+const incompatible=templates.map(r=>({...r,style:'BI'}));assert.throws(()=>prepareSupportReference(incompatible,incompatible),/incompatible/);
+assert.throws(()=>prepareSupportReference([{...templates[0],id:501,course:'different',wplabel:'LD1000SUP'},...templates],templates),/Collision/);
+assert.throws(()=>prepareSupportReference([...templates,...Array.from({length:297},(_,i)=>({...templates[0],id:1000+i,course:'OTHER'+i,wplabel:'OTHER'+i}))],templates),/Plafond/);
+console.log('Plan seul 1000 m Support : deux references, modeles stricts, aucune mutation, collisions, doublons et plafonds verifies hors reseau.');
