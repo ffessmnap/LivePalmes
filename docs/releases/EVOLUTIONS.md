@@ -2,6 +2,14 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 30 octobre — Parcours courses eau libre issu de la maquette validée
+
+- Maquette de fonctionnement et d'interface validée explicitement dans la conversation Eau libre : tableau compact, ajout de distance seule conservée en bibliothèque sans sélection automatique, catégories par course et programme Femmes/Hommes/F/H ensemble ; 150 m élimination proposé dès l'ouverture.
+- Développement TEST demandé ensuite ; préparation en cours, pas encore intégré ni déployé. Ajouts et retraits NAP groupés, contrôle des empreintes, sauvegarde avant écriture et protection nationale en présence d'engagements. Aucun engagement supprimé, aucune écriture métier exécutée lors de la préparation.
+- Catalogue NAP consulté en lecture seule après accord explicite : 275 références, couples Femmes/Hommes du 150 m élimination confirmés ; 1000 m Support absent. Décision sur les références absentes en attente. Aucun ajout au catalogue réel autorisé ni exécuté à ce stade.
+- Preuves préliminaires hors réseau : tests bibliothèque, ajout natif, retrait natif, programme/phases, présentation et callables existants ; nouveaux tests du parcours et des retraits groupés. PR, CI finale, preuve TEST et validation utilisateur de la version déployée restent à renseigner.
+
+
 ### 30 octobre — Dialogue Ajouter visible pour les administrateurs régionaux
 
 - Blocage reproduit dans la session Chrome TEST d’Antoine : le dialogue adminAccessPanel était modal mais conservait hidden=true pour tout profil sans admin.full. La page devenait inerte sans formulaire visible. Échap a fermé ce dialogue sans création de compte ni email.

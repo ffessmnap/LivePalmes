@@ -692,6 +692,36 @@
   background: #f8fbf9;
 }
 
+/* Same compact cells as the course/category table; selection stays local. */
+#adminEngagementsDetail .admin-engagements-open-water-library {
+  max-width:400px; border:0; background:transparent; padding:0; margin:0 0 12px; gap:8px;
+}
+#adminEngagementsDetail .admin-engagements-open-water-course-list table {
+  min-width:0; width:100%; table-layout:fixed; border:1px solid #dce7e4; border-radius:8px;
+}
+#adminEngagementsDetail .admin-engagements-open-water-course-list th,
+#adminEngagementsDetail .admin-engagements-open-water-course-list td {
+  height:36px; padding:0 4px; border-color:#e7efed;
+}
+#adminEngagementsDetail .admin-engagements-open-water-course-list thead th {
+  height:28px; background:#eef5f3; color:#31524c; font-size:11px;
+}
+#adminEngagementsDetail .admin-engagements-open-water-course-list th:first-child {
+  width:34%; text-align:left; padding-left:8px; white-space:normal;
+}
+#adminEngagementsDetail .admin-engagements-open-water-course-list tbody th {font-size:12px;font-weight:400;text-transform:none;}
+#adminEngagementsDetail .admin-engagements-open-water-course-list td:has(input:checked) {background:#dcefeb;}
+#adminEngagementsDetail .admin-engagements-open-water-course-check {display:flex;align-items:center;justify-content:center;min-height:28px;margin:0;}
+#adminEngagementsDetail .admin-engagements-open-water-course-check input {width:15px;height:15px;min-height:15px;margin:0;accent-color:var(--portal-color-accent);}
+#adminEngagementsDetail .admin-engagements-open-water-course-creator {display:flex;align-items:center;gap:8px;}
+#adminEngagementsDetail .admin-engagements-open-water-course-creator input {width:104px;min-height:36px;padding:6px 8px;}
+#adminEngagementsDetail .admin-engagements-open-water-course-creator button {min-height:36px;white-space:nowrap;}
+@media(pointer:coarse){
+  #adminEngagementsDetail .admin-engagements-open-water-course-check {min-width:44px;min-height:44px;}
+  #adminEngagementsDetail .admin-engagements-open-water-course-creator input,
+  #adminEngagementsDetail .admin-engagements-open-water-course-creator button {min-height:44px;}
+}
+
 .admin-engagements-open-water-library[hidden] {
   display: none;
 }

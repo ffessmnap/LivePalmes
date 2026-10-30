@@ -2,6 +2,11 @@
 
 <!-- description: Référence du langage visuel, des composants d’interface et des règles responsive déjà présents dans LivePalmes. -->
 
+## Sélecteur eau libre — 30 octobre 2026
+
+Le tableau distance/spécialités reprend les cellules et les coches du tableau course/catégories : largeur maximale de 400 px, lignes de 36 px, cases de 15 px, en-tête de 28 px et fond discret des cellules sélectionnées. Les zones tactiles restent de 44 px. Le champ Distance et l'action « Ajouter une distance » sont placés sous la dernière ligne ; aucun titre de bibliothèque ni explication technique permanente. Le choix reste réversible et local jusqu'à l'enregistrement des courses. Les catégories et le programme utilisent les composants existants ; leurs variantes piscine restent inchangées.
+
+
 ## Visibilité du dialogue Ajouter régional — 30 octobre 2026
 
 Le dialogue de création utilise la même visibilité autorisée que son bouton Ajouter (région ou administration générale). Retirer hidden avant showModal : un dialogue modal masqué bloque la page sans afficher son contenu. La fermeture doit rendre la page interactive et permettre une réouverture, sur ordinateur comme sur mobile. Formulaire et styles existants conservés.
