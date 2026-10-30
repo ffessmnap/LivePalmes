@@ -5,8 +5,8 @@
 ## Statut NS des nageurs — 29 octobre 2026
 
 - Sans réseau ni données réelles : node tests/nap-swimmer-ns-tests.js, node tests/nap-swimmer-ns-callable-tests.js, puis node tests/portal-swimmer-ns-browser-tests.js. Vérifier défaut NULL/colonnes absentes, périmètre club, retrait national seulement, refus, concurrence, sauvegarde et reprise sans double écriture.
-- Ordinateur/mobile, deux thèmes : cocher puis enregistrer ; demander le retrait avec NS conservé ; attente verrouillée ; refus et commentaire lisibles ; absence de structure désactivant seulement NS ; réponse ancienne après changement de contexte ignorée. Aucun appel métier réel ni email.
-- Activation réelle bloquée sur l’accord de structure, puis recette de données spécifiquement autorisée et validation utilisateur. Voir [procédure NS](PORTAIL_NAGEURS_NS.md).
+- Ordinateur/mobile (1280/390/320 px), deux thèmes : NS à côté de la licence dans Identité ; cocher/décocher sans bouton dédié. Avec réponse fictive retardée : message animé et bouton principal « Envoi en cours… » visibles jusqu’à réception, case/submit désactivés et aucun double appel. Vérifier aussi l’envoi de correction d’identité, l’arrêt de l’animation sur erreur, NS conservé en attente, refus/commentaire échappé, colonnes absentes et réponse ancienne après changement de contexte. Aucun appel métier réel ni email.
+- Migration autorisée et vérifiée le 30 octobre ; toute nouvelle recette modifiant un nageur réel conserve son accord spécifique. Validation utilisateur du parcours complet attendue. Voir [procédure NS](PORTAIL_NAGEURS_NS.md).
 
 ## Création et contexte club régionaux — 29 octobre 2026
 

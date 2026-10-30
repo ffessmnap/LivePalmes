@@ -2,9 +2,11 @@
 
 <!-- description: Référence du langage visuel, des composants d’interface et des règles responsive déjà présents dans LivePalmes. -->
 
-## Statut NS dans le crayon de Mes nageurs — 29 octobre 2026
+## Statut NS dans le crayon de Mes nageurs — 30 octobre 2026
 
-Section facultative du dialogue de correction existant : case tactile et texte « Nageur étranger — non sélectionnable (NS) », message de disponibilité/décision et bouton distinct « Enregistrer le statut NS » ou « Demander le retrait NS ». En attente nationale, case cochée et bouton désactivés avec libellé explicite. Sans structure NAP, seule cette section est indisponible ; les autres champs restent accessibles. La liste affiche « · NS » après le nom des nageurs concernés. Même dialogue défilant sur mobile ; case alignée au libellé avec cible tactile et en-tête/avertissement héritant des surfaces du thème pour rester lisibles en sombre. Aucun nouveau composant global.
+La case « Non sélectionnable (NS) », sous le libellé « Nageur étranger », est intégrée au bloc Identité à côté du numéro de licence, y compris à 320 px. Aucun encadré ni bouton NS séparé ; les messages ne prennent de place que pour un chargement, une confirmation ou une décision. Cocher enregistre directement ; décocher transmet la demande nationale puis réaffiche la case cochée et verrouillée tant que NS est maintenu.
+
+Pendant le véritable appel réseau : texte « Envoi de la demande de retrait NS en cours… » près de la case avec point animé, bouton principal « Envoi en cours… » avec spinner, aria-busy et contrôles désactivés contre le double envoi. La correction d’identité conserve le même retour visuel explicite. Les messages de ce dialogue suivent leur état loading déclaré, sans heuristique de libellé. Animation arrêtée après réponse ou erreur ; statut confirmé restitué en cas d’incertitude et réouverture explicite pour vérifier. La liste garde « · NS » après le nom.
 
 ## Création régionale d'un accès club — 29 octobre 2026
 
