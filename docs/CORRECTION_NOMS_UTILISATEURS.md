@@ -1,0 +1,138 @@
+# Préparation de la correction des noms des utilisateurs PROD
+
+<!-- description: Périmètre proposé, sauvegarde chiffrée, budget, concurrence et restauration pour échanger les noms et prénoms des profils utilisateurs PROD, sans exécution réelle. -->
+
+## Décision et limites
+
+Préparation demandée le 30 octobre 2026. Antoine fournit l'hypothèse métier suivante : tous les comptes utilisateurs ont leurs noms et prénoms inversés. Cette décision ne constitue pas une vérification individuelle des identités. La correction proposée échange exactement `users/{uid}.firstName` et `lastName` dans le projet `livepalmes`, base `(default)`, pour les documents figés dans un manifeste privé. Comptes actifs et inactifs sont inclus, sans filtrage par habilitation.
+
+La préparation initiale n'a effectué aucun accès privé. Antoine a ensuite explicitement autorisé l'inventaire PROD et la sauvegarde chiffrée, sans correction. Cet inventaire est terminé le 30 octobre 2026 à 10 h 15 (Paris) : 251 profils capturés et sauvegardés. Aucune écriture TEST/PROD, invocation métier, modification Auth, notification ou publication n'a été effectuée. Les 249 profils mentionnés dans la documentation du 28 octobre restent un repère historique, remplacé pour cette opération par le périmètre capturé de 251 profils.
+
+Les nageurs, officiels, demandes historiques, traces d'audit et autres copies historiques restent hors périmètre. UID, email, licence, club, région, droits, capacités, claims, statut, préférences et tous les autres champs restent intacts. Même `updatedAt` et `updatedBy` ne sont pas réécrits : la preuve de maintenance sera conservée séparément dans le dossier protégé de l'opération. Firestore changera nécessairement sa métadonnée `updateTime`.
+
+## Sources et conséquences réelles
+
+Analyse du code local à partir de `a5899b0e`, sans modification des fichiers des autres chantiers. Avant toute opération distante, vérifier les dernières consignes de `main` et la version réellement déployée ; le code local ne prouve pas l'état des déclencheurs PROD.
+
+| Élément | Constat et traitement proposé |
+| --- | --- |
+| Interface | [account-and-access.js](../assets/portal/account-and-access.js) associe `lastName` à Nom et `firstName` à Prénom, formulaire compris. Aucun échange de libellés. |
+| Enregistrement habituel | `saveAccessUserProfile` dans [server-access-service.js](../functions/server-access-service.js) réécrit aussi statut, claims et grants ; `userByEmailOrCreate` peut réactiver Auth. Ne pas appeler ce circuit pour la correction. |
+| Clés et recherches | `accessDirectoryKeys` dépend des droits, du statut et du périmètre, pas des noms : conserver ces clés. Les recherches directes sur `firstName`/`lastName` utiliseront les nouvelles valeurs et leurs index Firestore existants. Aucun nouvel index. |
+| Annuaire privé | `syncAccessDirectorySnapshotFromUserChange` dans [server-directory-service.js](../functions/server-directory-service.js) met à jour `accessDirectorySnapshots/national` et le document régional éventuel si l'état est `ready` ou `building`. Sinon il ne crée pas d'annuaire. |
+| Destinataires et responsables de club | `syncEngagementMailRecipientIndex` dans [index.js](../functions/index.js) réécrit les shards de `engagementMailRecipientShards` pour les trois capacités mail existantes et, si concerné, `engagementClubAdminDirectories/default`. Les noms y sont copiés par [server-mail-service.js](../functions/server-mail-service.js). Ce chemin ne crée pas de tâche d'envoi et n'appelle pas SMTP. |
+| Projection NAP | Si `syncNapClubAccountEmails` est effectivement actif en PROD, chaque écriture entraîne une relecture Firestore et une transaction SQL : insertion du marqueur, verrouillage, mise à jour. Aucun nom n'est stocké ; `source_version` et `synchronized_at` changent. Voir [nap-club-account-emails.js](../functions/nap-club-account-emails.js). La documentation locale indique une activation PROD encore à approuver : vérifier le déploiement réel. Ne pas l'activer pour cette opération. |
+| Caches | L'annuaire du navigateur conserve ses données en mémoire. Après convergence serveur, recharger complètement le portail pour vérifier la version regroupée, y compris recherche et tri. Aucun effacement global ni reconstruction implicite. |
+| Auth | `displayNameFromProfile` forme « prénom nom » à la création/modification habituelle. Aucun déclencheur `users` examiné ne synchronise Firebase Auth. Un patch Firestore laisse donc `Auth.displayName` inchangé. |
+
+L'opération Firestore ne demande aucun email, reset, création de compte, changement de mot de passe, révocation de session, claims ou droit. Les tâches d'envoi déjà programmées continuent leur fonctionnement existant : ne pas les rejouer, les couper ou affirmer que tout envoi ordinaire est suspendu.
+
+Les projections d'annuaire et de destinataires utilisent le contenu des événements sans verrou de version global. Une livraison tardive ou désordonnée peut réintroduire un ancien nom ; certaines erreurs d'annuaire sont journalisées puis absorbées. Une réussite de l'écriture source ne suffit donc pas à prouver la convergence. Vérifier les seules entrées concernées après chaque lot ; en cas d'écart ou de reprise persistante, arrêter. Une réparation de projection exige un diagnostic et un périmètre approuvé ; ne pas lancer de reconstruction globale ni modifier les déclencheurs implicitement.
+
+## Inventaire proposé et gel du périmètre
+
+Premier accord reçu dans cette conversation : lecture privée bornée des profils PROD et extraction d'une sauvegarde protégée, sans écriture distante. La session `gcloud` déjà connectée a permis cette lecture après constat d'expiration des identifiants ADC par défaut, sans nouvelle connexion ni changement de droits. Cible explicite : projet `livepalmes`, base `(default)`, collection racine `users`. Les consignes de `main` ont été récupérées avant l'opération ; aucun fichier partagé n'a été remplacé.
+
+1. Préparer un répertoire privé hors Git et hors synchronisation OneDrive, avec ACL Windows limitées à l'opérateur et à l'identité de restauration. Ne pas considérer `mode: 0600` comme une ACL Windows. Générer une clé aléatoire de 32 octets, conservée dans le stockage de secrets approuvé, séparément de la sauvegarde. Aucun secret en argument, journal ou artefact public.
+2. Lire uniquement la collection racine `users`, pages de 100 ordonnées par identifiant de document, curseur exclusif, maximum 1 000 documents et une sentinelle. Arrêter dès le 1 001e profil : aucun élargissement automatique. Ne pas parcourir toute la base, les sous-collections ou Auth. La lecture complète de chaque profil permet une sauvegarde typée et une comparaison de tous les champs hors correction ; aucune lecture individuelle supplémentaire.
+3. Conserver pour chaque profil son chemin, ses champs au format Firestore typé et son `updateTime` exact à la nanoseconde. Ne pas passer les timestamps par `Date` ou par un arrondi en millisecondes. Fermer puis figer le manifeste avec identifiant unique d'opération, plafond, heures de début/fin d'inventaire, empreinte et décision métier. Cet inventaire paginé n'est pas un instantané transactionnel global : chaque document a sa version propre. Les versions individuelles verrouilleront ensuite l'écriture.
+4. Produire seulement des compteurs publics : total, échange possible, identiques, incomplets/vides, types invalides et valeurs équivalentes après espaces/casse. Ne jamais imprimer UID, emails, noms, requêtes contenant ces valeurs, réponses Auth ou exceptions brutes. Le détail avant/après reste chiffré.
+
+Deux chaînes non vides et différentes : échange exact, sans normalisation ni troncature. Valeurs identiques : aucune écriture. Valeur absente, vide, nulle ou non textuelle : exception à examiner, sans création silencieuse de champ. Valeurs équivalentes après espaces/casse : revue privée avant décision. Aucune exception n'est comptée comme corrigée. Une correction partielle n'est pas détectable par le nom seul : un profil corrigé avant sa capture reste soumis à l'hypothèse métier fournie ; signaler tout contre-exemple avant exécution.
+
+Tous les comptes créés après fermeture du manifeste sont exclus, même si leur identifiant se situe au milieu de l'ordre des pages. Un compte modifié après sa capture devient un conflit ; il n'est pas réintégré automatiquement. Ne jamais produire un nouveau manifeste et relancer l'échange pour « reprendre » : il pourrait inverser à nouveau des comptes déjà traités.
+
+## Sauvegarde et preuve de restauration
+
+Le module de préparation réutilise uniquement les fonctions pures `seal` et `open` de [production-backup-crypto.js](../tools/production-backup-crypto.js), AES-256-GCM authentifié. Ne pas employer son CLI : celui-ci cible les sauvegardes de code et charge des identifiants techniques. Utiliser une clé de données dédiée, pas une clé privée de compte de service.
+
+Avant toute écriture réelle : sauvegarder les documents typés, le manifeste et les métadonnées d'opération dans une enveloppe chiffrée ; écriture exclusive sans écraser une sauvegarde existante. Éviter toute copie temporaire en clair. Vérifier l'ACL et conserver une seconde copie chiffrée dans le stockage approuvé. Relire les octets depuis le support, les déchiffrer en mémoire avec la clé récupérée séparément, comparer chaque document/version et l'empreinte du manifeste, puis simuler la restauration des champs sur un stockage fictif. Une simple empreinte du fichier sans réouverture ne suffit pas.
+
+Le format typé doit préserver nombres entiers, timestamps, nulls, références, tableaux et maps sans conversion destructrice. Le retour arrière ne restaurera que les deux champs corrigés ; la sauvegarde complète sert à prouver la préservation du reste, pas à écraser une évolution ultérieure. Fixer lors de l'accord l'emplacement sécurisé, la personne pouvant restaurer et la durée de conservation ; supprimer les copies selon cette durée. Aucune donnée privée dans les fichiers suivis Git, dans le chat ou dans les logs CI.
+
+## Écriture et reprise proposées après second accord
+
+Second accord obligatoire dans Infra : bilan chiffré de l'inventaire, empreinte du périmètre privé, sauvegarde rouverte, exceptions, état des déclencheurs, budget total et effets SQL éventuels. Cet accord doit autoriser explicitement les deux champs Firestore, les effets des déclencheurs existants et les conditions du retour arrière. Aucun déploiement nécessaire.
+
+Préparer ensuite un exécuteur séparé, à relire et tester avant cet accord ; le module actuel ne comporte aucun transport réseau ni commande d'exécution. Les écritures proposées utilisent un masque limité à `firstName,lastName` et une précondition atomique `currentDocument.updateTime`. Une relecture suivie d'une écriture sans cette précondition est interdite.
+
+Traiter au maximum 10 profils par lot, séquentiellement, sans lots concurrents. Avant le commit, relire les profils du lot en un appel groupé et vérifier les versions et contenus sauvegardés. Refuser toute modification, suppression ou divergence. Persister un journal d'intention chiffré lié au manifeste avant envoi. Le commit atomique du lot conserve les préconditions individuelles ; un conflit fait échouer le lot entier. Aucun nouvel essai automatique avec une version plus récente.
+
+Persister les reçus du commit et les `updateTime` retournés avant de passer au lot suivant ; relire les profils par appel groupé et comparer noms attendus et tous les autres champs typés à la sauvegarde. Vérifier ensuite les projections concernées, avec au plus trois observations bornées par lot et un délai entre observations. Ne pas bloquer les modifications ordinaires des utilisateurs ; arrêter en cas de conflit.
+
+Reprise exclusivement sur le même manifeste et son journal. Un reçu déjà enregistré interdit une nouvelle application. Si l'envoi a pu réussir mais que la réponse ou le reçu a été perdu, la précondition d'origine interdit une seconde inversion. Classer le lot « résultat incertain », comparer de façon privée la source et les preuves disponibles et demander une réconciliation contrôlée ; la simple égalité avec les noms attendus ne prouve pas l'auteur de l'écriture et n'autorise pas un rollback. Conserver les reçus et intentions durablement avant de fermer l'opération pour empêcher une relance dans un nouveau dossier.
+
+## Retour arrière contrôlé
+
+Restaurer les valeurs originales de la sauvegarde, jamais faire un échange aveugle. Seuls les profils dont le reçu atteste la correction sont éligibles. Exiger que la version actuelle soit exactement la version retournée par le commit de correction et que les deux noms correspondent à l'après attendu ; précondition atomique également lors du rollback. Une connexion ou toute modification ultérieure peut changer la version : conflit à examiner, jamais écrasement forcé. Ne pas recréer un compte supprimé. Réutiliser la pagination, les lots, le journal et les vérifications des projections ; le rollback déclenche les mêmes effets techniques et coûts. Aucun rollback Auth ou SQL global.
+
+## Nom d'affichage Firebase Auth
+
+Proposition initiale : laisser Auth inchangé pour limiter l'opération aux profils de l'annuaire. Présenter explicitement cette limite dans l'accord. Les lectures de nom depuis le profil, notamment `accessUserDisplayName`, utiliseront les noms corrigés ; un consommateur du nom Auth ou d'un ancien jeton pourra encore afficher l'ancien ordre.
+
+Si Antoine veut également corriger Auth : prévoir un sous-périmètre distinct sur les mêmes UID, lecture groupée bornée et sauvegarde du `displayName` initial, contrôle des comptes absents et noms personnalisés. Modifier uniquement `displayName`, sans appeler `saveAccessUserProfile`. Auth ne fournit pas ici de précondition comparable à `updateTime` : une relecture ne supprime pas la course entre contrôle et écriture. Une fenêtre sans édition des noms Auth et la stratégie de compensation entre les deux services devront être explicitement approuvées. Les jetons existants ne sont pas réécrits ; leur actualisation suit le parcours ordinaire, sans révocation forcée. Aucun patch Auth n'est préparé par le module actuel.
+
+## Budget avant autorisation distante
+
+`N` profils inventoriés, `M` échanges retenus, `R ≤ M` restaurations ; plafonds proposés `N ≤ 1 000`, pages de 100, lots de 10. Les coûts de l'opération de maintenance sont volontairement linéaires dans ce seul périmètre figé ; aucun coût n'est ajouté à l'ouverture ou aux actions courantes du portail. Zéro accès NAP/MySQL direct depuis l'outil.
+
+| Étape | Plafond proposé |
+| --- | --- |
+| Préparation actuelle et simulations | 0 lecture distante, 0 écriture distante |
+| Inventaire et sauvegarde | Au plus 1 001 profils lus, plus éventuelle lecture facturée d'une page finale vide ; arrêt au dépassement. Aucun accès Auth. |
+| Application source | Au plus `2M` profils relus (avant/après), `M` écritures ; aucune répétition silencieuse. |
+| Déclencheurs par correction | Annuaire : 1 lecture d'état, au plus 2 écritures (périmètres conservés). Destinataires : 0 à 3 écritures de shards ; si capacité mail, au plus 1 lecture/1 écriture de l'annuaire club dans une transaction. NAP si actif : 1 lecture de profil et 3 requêtes SQL par événement, dans une transaction (`BEGIN`/`COMMIT`, ou `ROLLBACK` en échec, en plus). |
+| Contrôle des projections | Jusqu'à 3 observations par lot ; chacune lit uniquement le national, les régions présentes dans le lot, les shards impliqués et l'annuaire club si nécessaire : au plus 42 documents par observation d'un lot de 10 (1 national + 10 régions + 30 shards + 1 annuaire club), donc `126 × ceil(M/10)` lectures maximum, plus 1 lecture d'état avant départ. Dédupliquer les références. Si NAP actif : au plus 1 requête SQL bornée aux UID du lot par observation, via accès existant approuvé. |
+| Retour arrière | Jusqu'à `2R` lectures source, `R` écritures, mêmes déclencheurs et observations que l'application. |
+| Rafraîchissement ou reprise | Pas de nouvel inventaire ; lecture groupée des seuls lots concernés dans le manifeste, budget supplémentaire à annoncer. |
+
+Sans reprise automatique ni conflit de transaction : au plus 5 lectures Firestore et 7 écritures Firestore par profil corrigé, contrôles de projections et inventaire exclus (4 lectures si NAP inactif). Les livraisons répétées des événements et les reprises de transactions peuvent dépasser ce nominal ; leur nombre n'est pas borné par le script. Le plafond source ne borne donc pas strictement le coût des triggers. Sur échec persistant, arrêter les nouveaux lots et demander un diagnostic ; ne pas désactiver un trigger ou changer sa politique sans accord. Le bilan avant exécution devra chiffrer les références réellement impliquées et accepter explicitement ce risque résiduel.
+
+## Livrables et vérifications
+
+- [Module de préparation pur](../tools/user-name-correction-plan.js) : plafond, contrôles de valeurs, manifeste lié à l'opération, sauvegarde chiffrée en mémoire, propositions d'écriture conditionnelle et de restauration. Aucun SDK, secret, réseau, accès fichier ou exécuteur réel.
+- [Simulations fictives](../tests/user-name-correction-plan-tests.js) : invariance des autres champs, Unicode, valeurs absentes/invalides/identiques, dépassement du plafond, mauvais projet, doublon, compte créé après gel, conflit de version, réponse perdue, reçu incompatible, refus de seconde inversion, restauration conditionnelle, mauvaise clé et altération chiffrée.
+- Commande ciblée : `node --require ./tests/helpers/offline-network.js tests/user-name-correction-plan-tests.js`. Syntaxe : `node --check tools/user-name-correction-plan.js`. Les simulations ne prouvent ni un accès PROD, ni une sauvegarde réelle, ni une convergence des déclencheurs déployés.
+
+Contrôles du 30 octobre 2026 : simulations ciblées réussies avec le garde réseau préchargé, syntaxe des deux nouveaux fichiers réussie, description Markdown/UTF-8/liens locaux vérifiés. La vérification globale `node tools/verify-livepalmes.js`, lancée avec le même garde réseau, a passé la syntaxe puis une partie des suites et s'est arrêtée à `tests/livepalmes-test-backend-workflow-tests.js:44` sur `main / access`. Le test exige `bash` ; un contrôle local distinct confirme `spawnSync("bash", ["--version"]) → ENOENT`. Ce poste ne fournit pas Bash dans le chemin des exécutables. La suite globale n'est donc pas validée ; aucun contournement du test ni modification du circuit de déploiement.
+
+Restent à préparer avant correction : transport d'écriture conditionnelle, persistance sécurisée et exclusive du journal de correction, lots réels et observation des projections. La sauvegarde sur support et son contrôle ont été réalisés lors de l'inventaire ci-dessous ; conserver cette preuve et vérifier sa compatibilité avant emploi. Faire exécuter la vérification globale en CI sur le candidat exact avant toute intégration d'un exécuteur ; cette préparation isolée n'est pas publiée. Les changements partagés d'autres chantiers sont conservés.
+
+## Résultat de l'inventaire autorisé
+
+Lecture du 30 octobre 2026 de `09:15:01.311Z` à `09:15:02.103Z` (10 h 15 à Paris). Trois requêtes GET paginées, 251 documents lus, 1 090 673 octets reçus, aucune lecture Auth ou NAP. Les essais préalables de stockage et d'authentification s'étaient arrêtés avant toute lecture de profils.
+
+| Contrôle | Nombre |
+| --- | ---: |
+| Profils dans le périmètre figé | 251 |
+| Actifs | 251 |
+| Inactifs ou statut absent/autre | 0 |
+| Échanges techniquement possibles | 251 |
+| Noms et prénoms identiques | 0 |
+| Valeurs équivalentes après espaces/casse | 0 |
+| Champs manquants, vides, nuls ou non textuels | 0 |
+| UID présent mais incohérent avec l'identifiant du document | 0 |
+
+Aucune exception technique détectée. Ce contrôle ne vérifie pas individuellement le sens métier de chaque nom : l'échange des 251 profils repose toujours sur l'hypothèse fournie par Antoine. Le manifeste conserve précisément les documents et versions capturés ; les comptes créés ensuite sont exclus et toute modification ultérieure devra provoquer un conflit avant correction.
+
+Deux copies chiffrées authentifiées ont été écrites puis relues depuis leur support local ; les 251 documents typés restaurés ont été comparés à la capture. La récupération de la clé protégée par Windows DPAPI `CurrentUser` a réussi ; 251 simulations de retour arrière ont préservé tous les autres champs. Les trois dossiers (sauvegarde, copie, clé) ont des ACL Windows vérifiées, sans héritage et limitées à l'utilisateur courant. Aucun fichier de profils en clair n'a été écrit.
+
+Les copies sont sur le même ordinateur, hors Git et OneDrive : elles ne constituent pas une sauvegarde externe indépendante. La restauration de la clé dépend de la protection DPAPI du compte Windows actuel. Cette limite a été présentée avant l'accord de correction : l'opération conserve les deux copies locales vérifiées, sans nouvelle transmission externe. Conserver sauvegarde, clé et journal tant que le retour arrière reste nécessaire ; aucune purge ou diffusion externe n'est déclenchée implicitement.
+
+Preuve technique locale : opération `user-names-20261030-c620c467-4e61-4f9c-906b-f0ebcd6a573f`, reçus sans noms ni emails dans les répertoires privés `LocalAppData/LivePalmes/ProtectedBackups/<opération>/receipt.json` et `ProtectedBackupCopies/<opération>/receipt.json`. Clé chiffrée dans `ProtectedKeys/<opération>/key.dpapi`. Empreinte du manifeste : `1ca1bfdb47b49b02f16bcc0cc9d2ee77394aea9b50455f5d3ac34f0434eb25ef` ; SHA-256 des fichiers chiffrés : `07013d705a6f739a854456d27bb1e5a65c8bf06475785fbe0e2b0c6dc8536201`.
+
+L'outil [inventory-production-user-names.js](../tools/inventory-production-user-names.js) n'offre aucun mode de correction : collecte GET seule, plafonds 1 000 profils + sentinelle et 32 Mio, arrêt sur pagination répétée ou accès refusé, chiffrement sans fichier intermédiaire en clair, vérification des copies et simulation de restauration. Les [tests fictifs de lecture](../tests/inventory-production-user-names-tests.js) et les simulations du plan sont réussis avec réseau externe bloqué ; la syntaxe du lecteur est vérifiée. Aucun changement applicatif ou déploiement.
+
+## Correction explicitement autorisée
+
+Antoine a ensuite donné dans cette conversation l'accord explicite : corriger les noms et prénoms des 251 comptes PROD sans toucher au reste, avec sauvegarde, contrôles et retour arrière prévus. Cet accord porte sur le périmètre présenté et les deux copies locales dont la limite a été signalée ; il ne couvre aucun déploiement applicatif, changement Auth, droit, nageur, officiel ou envoi. Ne pas redemander cet accord pour le même périmètre.
+
+Contrôle préalable : sauvegardes rouvertes, 251 profils relus et tous encore strictement conformes à leur capture, zéro conflit. Les deux déclencheurs sont réellement actifs. Leur code déployé a été téléchargé en lecture seule et comparé : déclencheurs, module mail, module annuaire et synchronisation NAP conformes au code examiné ; dans `server-access-service.js`, les seules différences sont `engagementClubAccessContext` et `userByEmailOrCreate`, fonctions non appelées par ces déclencheurs. Tous les autres octets de ce module concordent. Aucune fonction déployée n'a été modifiée.
+
+La préparation chiffrée des contrôles a capturé 71 documents de projection, soit 1 027 entrées concernées, et 251 lignes SQL de projection par 26 requêtes bornées. La connexion SQL est placée en mode transaction lecture seule ; aucun mot de passe n'est journalisé ou écrit sur disque. Les noms ne sont pas stockés dans cette table SQL : seuls sa version technique et son horodatage doivent évoluer par le déclencheur existant. Zéro écriture de correction à ce stade.
+
+L'exécuteur [execute-production-user-name-correction.js](../tools/execute-production-user-name-correction.js) propose trois modes explicites : préparation en lecture seule, correction du périmètre figé et restauration des corrections attestées par reçus. Chaque lot de dix maximum exige un journal d'intention chiffré, écrit exclusivement et synchronisé sur les deux copies avant le commit atomique ; les reçus et versions sont également conservés avant tout lot suivant. Le masque ne contient que `firstName,lastName`. Les conflits, reçus incomplets, fichiers déjà présents, erreurs de journal et résultats incertains arrêtent le traitement sans répétition automatique. Un verrou et un marqueur de fin empêchent une seconde inversion. Après interruption, examiner ces preuves avant toute reprise ; aucune recréation de manifeste ni écrasement de verrou automatique.
+
+Le retour arrière restaure les valeurs originales et exige pour chaque compte la version attestée après correction. Une modification ultérieure bloque sa restauration. Les contrôles d'annuaire et NAP utilisent la même référence préparée et sont exécutés par lot puis une dernière fois après l'ensemble des écritures : deux observations après commit et une finale au maximum par lot, aucune reconstruction de repli. Le budget source comprend 251 lectures préalables, au plus 502 lectures avant/après lots et 251 lectures finales ; 251 écritures directes maximum. Les contrôles de projection restent bornés aux références et lignes concernées. Toute reprise après échec devra annoncer son budget supplémentaire.
+
+Les quatre suites ciblées de plan, inventaire, moteur et contrôles sont réussies hors réseau. La vérification globale du candidat contenant ces outils et tests doit réussir en CI avant l'écriture réelle ; l'échec local antérieur dû à l'absence de Bash n'est pas présenté comme une validation. Le résultat réel de l'opération sera ajouté à ce bilan après les contrôles, sans prétendre à une validation utilisateur de l'affichage.
