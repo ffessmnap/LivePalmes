@@ -140,7 +140,7 @@ function fixture() {
   assert.match(c.engagementClubContextMessage({...open,qualificationJobId:"pending"}),/qualifications en cours/);
   assert.match(c.engagementClubContextMessage({...open,nativeTeamLeaderRequired:true}),/Déclarez votre chef/);
   c.isEngagementAdminMode=()=>true;
-  assert.match(c.engagementClubContextMessage(open),/paramètres et le programme/);
+  assert.equal(c.engagementClubContextMessage(open), "", "admin context must not reintroduce the redundant availability notice");
   c.isEngagementAdminMode=()=>false;
   const intro = {textContent:"Règle métier à conserver"};
   const steps = ["swimmers","entries","relays","summary"].map(clubStep=>({dataset:{clubStep},querySelector:()=>intro}));
