@@ -1,0 +1,67 @@
+name: Sauvegarde NAP vers Drive (preparation inactive)
+# No schedule: activation and the first export require a separate agreement.
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        type: choice
+        default: check
+        required: true
+        options: [check, backup]
+      confirmation:
+        description: Laisser vide pour verifier ; sauvegarde actuellement desactivee
+        type: string
+        required: false
+permissions:
+  contents: read
+concurrency:
+  group: nap-database-backup
+  cancel-in-progress: false
+jobs:
+  prepare:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    environment: nap-backup
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+      - name: Verifier les garde-fous avant les secrets et les acces reseau
+        env:
+          BACKUP_MODE: ${{ inputs.mode }}
+          NAP_BACKUP_CONFIRMATION: ${{ inputs.confirmation }}
+        run: |
+          node -e 'const b=require("./tools/nap-backup"); if(process.env.BACKUP_MODE==="backup") b.backupGate(require("./tools/nap-backup-config.json"),process.env); else if(process.env.BACKUP_MODE!=="check") process.exit(1);'
+      - name: Installer les dependances existantes
+        run: npm ci --prefix functions --ignore-scripts --no-audit --no-fund
+      - uses: google-github-actions/auth@v3
+        with:
+          credentials_json: ${{ secrets.NAP_BACKUP_SERVICE_ACCOUNT_JSON }}
+          project_id: livepalmes-test
+      - name: Verifier ou sauvegarder selon le mode autorise
+        env:
+          BACKUP_MODE: ${{ inputs.mode }}
+          NAP_BACKUP_CONFIRMATION: ${{ inputs.confirmation }}
+          NAP_BACKUP_FOLDER_ID: ${{ vars.NAP_BACKUP_FOLDER_ID }}
+          NAP_BACKUP_ENCRYPTION_KEY: ${{ secrets.NAP_BACKUP_ENCRYPTION_KEY }}
+        run: node tools/nap-backup.js "--$BACKUP_MODE"
+      - name: Conserver la copie chiffree meme si le depot Drive echoue
+        if: always() && inputs.mode == 'backup'
+        uses: actions/upload-artifact@v4
+        with:
+          name: nap-backup-encrypted-${{ github.run_id }}
+          path: outputs/nap-backups/*.sql.gz.enc
+          if-no-files-found: ignore
+          retention-days: 14
+      - name: Bilan
+        if: always()
+        env:
+          BACKUP_MODE: ${{ inputs.mode }}
+          RUN_STATUS: ${{ job.status }}
+        run: |
+          echo "Mode : $BACKUP_MODE. Etat : $RUN_STATUS. Planification absente ; activation non effectuee." >> "$GITHUB_STEP_SUMMARY"
+          echo "Le mode check ne produit aucun export, verrouillage ou fichier Drive. Aucun nettoyage automatique des anciennes sauvegardes." >> "$GITHUB_STEP_SUMMARY"

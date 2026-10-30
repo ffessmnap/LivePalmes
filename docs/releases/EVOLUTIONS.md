@@ -2,6 +2,12 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 30 octobre — Préparation inactive des sauvegardes NAP vers Drive partagé
+
+- Demande explicite : préparer le mécanisme et accompagner la configuration Drive, sans sauvegarde réelle. Diagnostic préalable en lecture seule : MySQL 5.7.30, 67 tables, environ 138 Mio. Outil CLI et workflow manuel préparés avec activation désactivée, aucun schedule, aucun changement de données, de droits réels ou de Cloud Function.
+- Compte technique dédié prévu avec accès au seul secret NAP et au dossier partagé ; export sous verrous READ limités à la base, délai borné, archive gzip/AES-GCM vérifiée avant dépôt, relecture taille/empreinte Drive, copie chiffrée de secours en cas d'échec. Aucune purge automatique. [Configuration, budgets et limites](../NAP_SAUVEGARDES.md).
+- Tests hors réseau ciblés et chiffrement existant réussis ; tests intégrés à la suite globale. PR/CI à attester ; aucun déploiement applicatif nécessaire pour cet outillage inactif. Dossier, compte technique, secrets, contrôle réel du runner, premier export, mesure de blocage, restauration isolée et activation périodique restant à réaliser avec les accords correspondants. Aucune validation utilisateur ou sauvegarde opérationnelle revendiquée.
+
 ### 29 octobre — Activation des deux colonnes NS autorisée
 
 - Accord explicite d’Antoine après présentation des deux colonnes et de la limite de livraison #624. Opération bornée au seul ALTER nullable dans nageurs et aux sauvegardes/contrôles nécessaires ; aucun statut réel, backfill, email ou déploiement PROD autorisé.
