@@ -10,6 +10,38 @@ const doc = { name, updateTime: "2026-10-30T09:00:00.123456789Z", fields: {
   capabilities: { mapValue: { fields: { "admin.full": { booleanValue: true }, "engagements.club.manage": { booleanValue: true } } } }
 } };
 (async () => {
+  const filters = [{ attribute: "database", value: "(default)" }, { attribute: "namespace", value: "(default)" },
+    { attribute: "document", value: "users/{uid}", operator: "match-path-pattern" }];
+  const triggers = ["syncEngagementMailRecipientIndex", "syncNapClubAccountEmails"].map((name, i) => ({ name, present: true, state: "ACTIVE",
+    revision: `fixture-${i}`, updateTime: "2026-10-30T09:00:00.123456789Z", source: { storageSource: { bucket: "fixture", object: name, generation: "1" } },
+    eventType: "google.cloud.firestore.document.v1.written", filters, retryPolicy: "RETRY_POLICY_RETRY" }));
+  const permutations = list => list.length ? list.flatMap((item, i) => permutations(list.filter((_, j) => i !== j)).map(rest => [item, ...rest])) : [[]];
+  const original = structuredClone(triggers);
+  // 36 before/after order combinations for each trigger; every other field stays strict.
+  for (const index of [0, 1]) for (const before of permutations(filters)) for (const after of permutations(filters)) {
+    const a = structuredClone(triggers), b = structuredClone(triggers); a[index].filters = before; b[index].filters = after;
+    assert.equal(controls.triggerMetadataHash(a), controls.triggerMetadataHash(b));
+  }
+  assert.deepEqual(triggers, original, "Metadata comparison must not rewrite captured evidence");
+  for (const field of ["name", "state", "revision", "updateTime", "eventType", "retryPolicy"]) {
+    const changed = structuredClone(triggers); changed[0][field] = "different";
+    assert.notEqual(controls.triggerMetadataHash(triggers), controls.triggerMetadataHash(changed), field);
+  }
+  for (const field of ["bucket", "object", "generation"]) {
+    const changed = structuredClone(triggers); changed[1].source.storageSource[field] = "different";
+    assert.notEqual(controls.triggerMetadataHash(triggers), controls.triggerMetadataHash(changed), field);
+  }
+  for (const field of ["attribute", "value", "operator"]) {
+    const changed = structuredClone(triggers); changed[0].filters[2][field] = "different";
+    assert.notEqual(controls.triggerMetadataHash(triggers), controls.triggerMetadataHash(changed), field);
+  }
+  const duplicate = structuredClone(triggers); duplicate[0].filters[1] = duplicate[0].filters[0];
+  assert.notEqual(controls.triggerMetadataHash(triggers), controls.triggerMetadataHash(duplicate));
+  const extra = structuredClone(triggers); extra[0].unexpected = true;
+  assert.notEqual(controls.triggerMetadataHash(triggers), controls.triggerMetadataHash(extra));
+  assert.throws(() => controls.triggerMetadataHash(triggers.slice(1)));
+  const missing = structuredClone(triggers); missing[0].filters.pop();
+  assert.throws(() => controls.triggerMetadataHash(missing));
   const rows = await readDocuments([name], "fiction-token", async (url, options) => {
     assert.equal(url, `https://firestore.googleapis.com/v1/${DATABASE}/documents:batchGet`); assert.equal(options.method, "POST");
     assert.deepEqual(JSON.parse(options.body), { documents: [name] }); return response([{ found: doc }]);
