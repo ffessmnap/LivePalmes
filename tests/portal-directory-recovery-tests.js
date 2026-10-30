@@ -1,14 +1,15 @@
 "use strict";
+require("./helpers/offline-network");
 const assert = require("node:assert/strict");
 const { portalModule, deferred } = require("./helpers/portal-module-runtime");
 const noop = () => {};
 
-function nationalFixture() {
-  const state = { engagementNationalClubs: [], engagementNationalClubsLoaded: false, engagementNationalClubsLoading: false };
+function nationalFixture(source = "nap") {
+  const state = { engagementNationalClubs: [], engagementNationalClubsLoaded: false, engagementNationalClubsLoading: false, accessClubReference: [] };
   const status = { dataset: {} }, calls = [], writes = [], cached = [{ clubId: "fixture-old" }];
-  let reply = async () => ({ clubs: [], hasMore: false });
+  let reply = async () => ({ clubs: [], hasMore: false }), referenceCalls = 0;
   const actions = {
-    canDeleteEngagementCompetitionDirectly: () => true, loadAccessClubReference: async () => {},
+    canDeleteEngagementCompetitionDirectly: () => true, loadAccessClubReference: async () => { referenceCalls++; },
     readEngagementNationalClubCache: () => ({ clubs: cached, syncedThrough: "2026-10-27" }),
     mergeEngagementNationalClubDirectory: (reference, clubs) => clubs.slice(), mergeNationalClubsIntoAccessReference: noop,
     renderEngagementNationalClubs: noop, engagementNationalClubSyncStart: value => value,
@@ -16,13 +17,31 @@ function nationalFixture() {
     writeEngagementNationalClubCache: (...input) => writes.push(input),
     callFunction: async (name, input) => { assert.equal(name, "listEngagementNationalClubs"); calls.push(input); return reply(input); }
   };
+  actions.normalizeAccessClubReference = value => value;
+  actions.mergeNationalClubsIntoAccessReference = portalModule("competition-settings.js", "LivePalmesPortalCompetitionSettings", {
+    state, actions, config: {}, elements: {}
+  }).mergeNationalClubsIntoAccessReference;
   const module = portalModule("national-directories.js", "LivePalmesPortalNationalDirectories", {
     state, actions, config: { ENGAGEMENT_NATIONAL_CLUB_PAGE_SIZE: 25 }, elements: { engagementsNationalClubsStatus: status }
-  });
-  return { module, state, status, calls, writes, setReply: value => { reply = value; } };
+  }, { window: { LivePalmesEnvironment: { sportingDataSource: source } } });
+  return { module, state, status, calls, writes, actions, referenceCalls: () => referenceCalls, setReply: value => { reply = value; } };
 }
 
 async function main() {
+  const cold = nationalFixture();
+  cold.setReply(async () => ({ clubs: [{ clubId: "106", clubName: "Fictif" }], replaceDirectory: true, hasMore: false }));
+  await cold.module.loadEngagementNationalClubs();
+  assert.equal(cold.referenceCalls(), 0, "NAP cold opening reads the directory only once");
+  assert.equal(cold.calls.length, 1); assert.equal(cold.calls[0].includeAdministrators, true);
+  assert.equal(cold.state.accessClubReferenceById.get("106").clubName, "Fictif");
+  const sharedReference = portalModule("modules-and-clubs.js", "LivePalmesPortalModulesAndClubs", {state:cold.state,actions:{callFunction:()=>{throw Error("Redundant reference RPC");}},elements:{},config:{}});
+  assert.equal((await sharedReference.loadAccessClubReference())[0].clubId, "106", "Other modules reuse the fresh national response");
+  await cold.module.loadEngagementNationalClubs(); assert.equal(cold.calls.length, 1);
+  await cold.module.loadEngagementNationalClubs({ force: true }); assert.equal(cold.calls.length, 2); assert.equal(cold.referenceCalls(), 0);
+  cold.actions.canDeleteEngagementCompetitionDirectly = () => false;
+  await cold.module.loadEngagementNationalClubs({ force: true }); assert.equal(cold.calls.length, 2, "Unauthorized opening performs no read");
+  const legacy = nationalFixture("firestore"); await legacy.module.loadEngagementNationalClubs();
+  assert.equal(legacy.referenceCalls(), 1, "Other source keeps its existing reference loading");
   const f = nationalFixture(), pending = deferred(); f.setReply(() => pending.promise);
   const first = f.module.loadEngagementNationalClubs(); await Promise.resolve(); await Promise.resolve();
   await f.module.loadEngagementNationalClubs(); assert.equal(f.calls.length, 1, "One request for concurrent openings");
