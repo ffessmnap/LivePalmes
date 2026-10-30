@@ -561,6 +561,8 @@ Dans les consoles, certains en-têtes restent visibles pendant le défilement ve
 
 ### États vides, chargement et erreurs
 
+Dans la fiche compétition en mode administrateur régional ou national, les statuts de fiche et d’aperçu des notifications ne réservent aucun espace lorsqu’ils sont vides. Ils restent présents pour afficher les chargements, confirmations et erreurs. Les boutons de vérification de la diffusion précisent « aperçu sans envoi » à leur point d’action.
+
 L’écran de chargement initial du portail conserve un seul indicateur visuel : le rond tournant et son libellé accessible. Le point animé des messages de chargement ordinaires ne s’ajoute pas à cet écran.
 
 Dans le dossier d’engagement Club, les attentes reposent sur un état explicite (`data-tone="loading"` ou état de sauvegarde), sans déduction à partir des mots du message. Un petit rond tournant remplace les points animés et les barres de préparation de l’ouverture du dossier ; il reste fixe lorsque la réduction des animations est demandée. Pendant une sauvegarde, le rond du repère commun suffit : les messages locaux conservent leur texte sans ajouter d’animation. Le repère se trouve dans la navigation collante, avec « Vos choix sont enregistrés automatiquement ». « Dernier enregistrement confirmé » reste visible après la réponse serveur, jusqu’à l’opération suivante ou au changement de dossier ; une erreur affiche « Enregistrement non confirmé » et renvoie au message de l’étape concernée. Ce repère ne constitue pas une validation finale du dossier.
