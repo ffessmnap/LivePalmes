@@ -642,6 +642,7 @@
     async function saveNativeCompetitionDetail(options = {}) {
         const button = portalContext.elements.engagementsSaveButton;
         let nativeCoursesAdded = false;
+        let nativeCoursesRemoved = false;
         try {
           const selectionError=portalActions.selectedEngagementEventsCategoryError()||portalActions.selectedEngagementProgramError();
           if(selectionError)throw new Error(selectionError);
@@ -674,7 +675,7 @@
           if(removalIds.length){
             result=await portalActions.callFunction("updateEngagementCompetition",{competitionId:portalState.selectedEngagementCompetition.id,expectedFingerprint:portalState.selectedEngagementCompetition.napFingerprint,patch:{removeNativeCourseIds:removalIds,confirmCourseRemoval:true}});
             portalState.selectedEngagementCompetition=result.competition;
-            nativeCoursesAdded=true;
+            nativeCoursesRemoved=true;
           }
           result = await portalActions.callFunction("updateEngagementCompetition", { competitionId:portalState.selectedEngagementCompetition.id, expectedFingerprint:portalState.selectedEngagementCompetition.napFingerprint, patch,notificationOpeningRequested });
           if (result.qualificationJobId) {
@@ -693,7 +694,7 @@
           if (portalContext.elements.engagementsDetailStatus) { portalContext.elements.engagementsDetailStatus.textContent = "Modifications enregistrées dans NAP."; portalContext.elements.engagementsDetailStatus.dataset.tone = "ok"; }
           return true;
         } catch (error) {
-          if (portalContext.elements.engagementsDetailStatus) { portalContext.elements.engagementsDetailStatus.textContent = `${nativeCoursesAdded ? "Les modifications de courses déjà effectuées dans NAP sont conservées ; les autres réglages restent à enregistrer. " : ""}Enregistrement impossible : ${error?.message || error}`; portalContext.elements.engagementsDetailStatus.dataset.tone = "error"; }
+          if (portalContext.elements.engagementsDetailStatus) { portalContext.elements.engagementsDetailStatus.textContent = `${nativeCoursesRemoved ? "Les modifications de courses déjà effectuées dans NAP sont conservées ; les autres réglages restent à enregistrer. " : nativeCoursesAdded ? "Les courses ont été ajoutées dans NAP, mais les autres réglages restent à enregistrer. " : ""}Enregistrement impossible : ${error?.message || error}`; portalContext.elements.engagementsDetailStatus.dataset.tone = "error"; }
           return false;
         } finally { if (button) button.disabled = false; }
       }
