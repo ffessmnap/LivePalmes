@@ -277,6 +277,7 @@ jobs:
           ${{ runner.temp }}/release-plan/license-report-*.json
           ${{ runner.temp }}/release-plan/nap-retained-*.json
           ${{ runner.temp }}/release-plan/nap-account-*.json
+          ${{ runner.temp }}/release-plan/portal-access-ns-*.json
         if-no-files-found: error
         retention-days: 14
     - uses: google-github-actions/auth@v3

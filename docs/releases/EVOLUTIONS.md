@@ -2,6 +2,13 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 30 octobre — Préparation PROD des sept ensembles validés du portail
+
+- Infra confirme « Oui, les cinq ensembles sont validés » pour accès régionaux, Nouveautés, NS, fiche allégée et optimisations. Lisibilité déjà validée dans son chat ; parcours eau libre validé après TEST dd43af92. Candidat figé 859c615de62af056bf5cb6039650f3edea3821f0, TEST commun réussi 41082870880. Brouillon officiel 41093015843 : validations couvertes, revue backend à joindre. Aucun développement ultérieur intégré au candidat.
+- Accord explicite de préparation limitée : liaison du secret NAP existant à createOrUpdateAccessUser, source existante resolveEngagementSwimmerChangeRequest pour la décision nationale NS, revue des quinze consommateurs conservés et tests/CI/preflight. Aucun déploiement, donnée ou mail autorisé à ce stade. Sélection calculée : 98 fonctions ordinaires et une source existante ; aucune création, migration ou nouvelle permission.
+- Contrat fermé à la paire et aux preuves. Liaison NAP existante version 2 seulement ; autres configurations contrôlées, résolution NS source seule. Quinze origines/révisions et protocoles conservés ; mails tous clubs actifs révision 9, scheduler et file comparés sans coupure/rattrapage. TEST reste suspendu. Sauvegarde chiffrée rouverte, dérive, retour arrière et exclusions Paris/CNHC/Basile, clubs historiques, DTN, Storage, règles/index, données et Direct conservés.
+- Contrôles hors ligne : 25 tests de contrat/configuration/gardes dont quatre nouveaux, 57 tests du circuit, équivalence des lecteurs bornés et contenus/pièces jointes des mails, refus d’accès/préférences, reprise des tâches sans réémission. CI et preflight exacts à attester dans la PR avant le bilan et l’accord final Infra. Texte Nouveautés à proposer et valider dans ce bilan ; aucune annonce affichée avant preuve PROD.
+
 ### 30 octobre — Lots regroupés : accueil plus rapide et contexte ciblé des temps
 
 - Antoine a validé le contexte ciblé des temps puis le regroupement avec l'accueil, y compris le code d'authentification et les Cloud Functions jusqu'à TEST, sans écriture réelle de base ni mail. Session restaurée : jeton encore valable réutilisé, renouvellement automatique Firebase et profil serveur obligatoire avant accès ; connexion explicite et mode historique inchangés. Calendrier/effectif préchargés après une opportunité de peinture de l'accueil, avec gardes compte/club/droit et mutualisation existante.

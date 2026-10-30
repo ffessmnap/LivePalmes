@@ -241,4 +241,8 @@ class AccountReleaseTests(unittest.TestCase):
         self.assertEqual(self.run_publisher(resume=True),[])
 
 
-if __name__=='__main__':unittest.main()
+if __name__=='__main__':
+    _portal_spec = importlib.util.spec_from_file_location('portal_access_ns_tests', Path(__file__).with_name('portal-access-ns-release-tests.py'))
+    _portal_tests = importlib.util.module_from_spec(_portal_spec); _portal_spec.loader.exec_module(_portal_tests)
+    PortalNsPolicyTests = _portal_tests.PortalNsPolicyTests
+    unittest.main()
