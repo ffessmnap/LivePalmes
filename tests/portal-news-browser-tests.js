@@ -33,14 +33,20 @@ async function main() {
             const link = document.querySelector('#adminPortalNavigation [data-portal-news-nav]');
             return {link:!link.hidden, allLinks:[...document.querySelectorAll('[data-portal-news-nav]')].every(el => el.hidden === link.hidden), view:!document.querySelector('#adminNewsView').hidden, active:link.getAttribute('aria-current'),
               afterHelp:link.previousElementSibling.textContent.includes('Aide et retours'),
-              empty:document.querySelector('#adminNewsPublishedEntries').textContent.includes('Aucune nouveauté publiée'),
+              items:[...document.querySelectorAll('#adminNewsPublishedEntries article li')].map(el=>el.textContent),
+              time:document.querySelector('#adminNewsPublishedEntries time')?.getAttribute('datetime'),
               overflow:document.documentElement.scrollWidth > innerWidth};
           `);
           assert.equal(result.link, allowed, caps.join(","));
           assert.ok(result.allLinks, "Both menu entries share the same visibility");
           assert.equal(result.view, allowed, "Direct hash access");
           assert.equal(result.active, allowed ? "page" : null);
-          assert.ok(result.afterHelp && result.empty);
+          assert.ok(result.afterHelp);
+          assert.equal(result.items.length, 3);
+          assert.match(result.items[0], /administrateurs régionaux.*clubs de leur région/);
+          assert.match(result.items[1], /NS.*étranger.*décision nationale/);
+          assert.match(result.items[2], /distance et spécialité.*ajoutés ou retirés/);
+          assert.equal(result.time, '2026-10-30T19:39:00+01:00');
           assert.equal(result.overflow, false);
         }
         await evaluate(client, `window.newsCaps=['engagements.region.manage']; newsNavigation.updateNavigationView();`);
@@ -59,7 +65,7 @@ async function main() {
           fs.writeFileSync(`tmp/portal-news/${width}-${theme}-menu.png`, Buffer.from(menuShot.data, "base64"));
           await evaluate(client, "document.querySelector('#adminPortalAccountToggle').click();");
         }
-        console.log(`${width}px ${theme}: 7 capability profiles, route, menu, empty state and overflow verified`);
+        console.log(`${width}px ${theme}: 7 capability profiles, route, menu, published entry and overflow verified`);
       }
     }
   } finally { browser.cleanup(); server.close(); }
