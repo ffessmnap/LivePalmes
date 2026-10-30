@@ -44,7 +44,16 @@ async function triggerGuard(token, preparation) {
   for (const name of ["syncEngagementMailRecipientIndex", "syncNapClubAccountEmails"]) current.push(await check.inspectTrigger(name, token));
   if (controls.triggerMetadataHash(current) !== controls.triggerMetadataHash(preparation.triggers)) throw new Error("Trigger deployment changed");
 }
-const baselineOf = preparation => ({ specs: new Map(preparation.projectionSpecs), docs: new Map(preparation.projectionDocuments) });
+function baselineOf(preparation, annex) {
+  const baseline = { specs: new Map(preparation.projectionSpecs), docs: new Map(structuredClone(preparation.projectionDocuments)) };
+  // The directory trigger copies the same login string. Preserve the one frozen
+  // login exception there too; every other projection field remains guarded.
+  for (const spec of baseline.specs.get(annex.override.name) || []) {
+    const fields = baseline.docs.get(spec.name)?.fields?.[spec.map]?.mapValue?.fields?.[spec.key]?.mapValue?.fields;
+    if (fields && Object.hasOwn(fields, "lastLoginAt")) fields.lastLoginAt = structuredClone(annex.override.fields.lastLoginAt);
+  }
+  return baseline;
+}
 async function prepare(backup, token, file) {
   if (file !== ORIGINAL_PREPARATION) throw new Error("Original preparation required");
   for (const dir of [backup.directory, copyDirectory()]) if (fs.readdirSync(dir).some(name => /^reviewed-resume-.*\.lock$/.test(name))) throw new Error("Resume already started; no new annex automatically");
@@ -54,7 +63,7 @@ async function prepare(backup, token, file) {
   const entries = backup.plan.entries.slice(70), current = await controls.groupedRead(entries.map(e => e.name), token);
   const annex = policy.make(ctx, current, crypto.randomUUID(), new Date().toISOString());
   stage = "prepare-projection-read";
-  const baseline = baselineOf(preparation), nap = new Map(preparation.napBaseline);
+  const baseline = baselineOf(preparation, annex), nap = new Map(preparation.napBaseline);
   connection = await controls.napConnection(token);
   let projectionDocuments = 0, projectionEntries = 0, queries = 0;
   for (let i = 0; i < entries.length; i += 10) {
@@ -131,7 +140,7 @@ async function execute(backup, token, file, expectedDigest, direction) {
   for (const entry of entries) if (proposeWrite(backup.plan, entry.name, fresh.get(entry.name), recorded.find(r => r.name === entry.name), direction).status !== "proposed-only") throw new Error("Profile changed since reviewed annex");
   connection = await controls.napConnection(token);
   reserveLocks(backup, prefix, direction, annex);
-  const baseline = baselineOf(preparation), nap = new Map(preparation.napBaseline), originals = policy.effectiveOriginals(ctx, annex);
+  const baseline = baselineOf(preparation, annex), nap = new Map(preparation.napBaseline), originals = policy.effectiveOriginals(ctx, annex);
   const saved = []; let projectionReads = 0, projectionEntries = 0, sqlQueries = 0;
   async function observe(batch, receipts, mode, final = false) {
     for (let attempt = 0; attempt < (final ? 1 : 2); attempt++) {
@@ -189,4 +198,4 @@ if (require.main === module) main().catch(error => {
     diagnostic: /^HTTP-\d{3}$/.test(error?.message || "") ? error.message : "private-diagnostic-required", automaticRetry: false }));
   process.exitCode = 1;
 });
-module.exports = { context, prepare, execute, savedResumeReceipts, reserveLocks };
+module.exports = { context, prepare, execute, savedResumeReceipts, reserveLocks, baselineOf };

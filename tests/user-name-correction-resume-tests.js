@@ -48,7 +48,7 @@ async function prepareIsReadOnly() {
   const fakePolicy={...policy,contextValid:ctx=>policy.contextValid(ctx,false),make:(...args)=>policy.make(...args,false),verify:(...args)=>policy.verify(...args,false)};
   const fakeCheck={OPERATION:f.context.plan.operationId,DIGEST:f.context.plan.digest,inspectTrigger:async name=>metadata.find(t=>t.name===name)};
   const exported={exports:{}};
-  const sandbox={module:exported,Buffer,console:{log(){},error(){}},setTimeout,process:{env:{LOCALAPPDATA:"/fiction-local"},kill(){const error=Error("dead");error.code="ESRCH";throw error;}},
+  const sandbox={module:exported,Buffer,structuredClone,console:{log(){},error(){}},setTimeout,process:{env:{LOCALAPPDATA:"/fiction-local"},kill(){const error=Error("dead");error.code="ESRCH";throw error;}},
     fetch(){throw Error("Remote write forbidden in preparation");},require(name){
       if(name==="node:fs")return fakeFs;if(name==="node:path")return path;if(name==="node:crypto")return require(name);
       if(name==="./user-name-correction-plan")return planner;if(name==="./user-name-correction-resume")return fakePolicy;
@@ -67,6 +67,17 @@ async function test() {
   assert.equal(JSON.stringify(f.context.plan), before, "Original manifest must stay byte-equivalent");
   assert.throws(() => policy.verify(f.context, annex), /Original operation differs/);
   policy.verify(f.context, annex, false);
+  const projectionFields = { firstName: { stringValue: "unchanged" }, lastLoginAt: { stringValue: "old" }, rights: { booleanValue: false } };
+  const otherFields = structuredClone(projectionFields);
+  const prep = { projectionSpecs: [[annex.override.name, [{name:"directory",map:"entries",key:"one"},{name:"mail",map:"recipients",key:"one"}]]],
+    projectionDocuments: [["directory", {fields:{entries:{mapValue:{fields:{one:{mapValue:{fields:projectionFields}},other:{mapValue:{fields:otherFields}}}}}}}],
+      ["mail", {fields:{recipients:{mapValue:{fields:{one:{mapValue:{fields:{firstName:{stringValue:"unchanged"}}}}}}}}}]] };
+  const beforeProjection = planner.hash(prep), adjusted = cli.baselineOf(prep,annex);
+  const actualProjection = adjusted.docs.get("directory").fields.entries.mapValue.fields;
+  assert.deepEqual(actualProjection.one.mapValue.fields, {...projectionFields,lastLoginAt:annex.override.fields.lastLoginAt});
+  assert.deepEqual(actualProjection.other.mapValue.fields,otherFields);
+  assert.equal(Object.hasOwn(adjusted.docs.get("mail").fields.recipients.mapValue.fields.one.mapValue.fields,"lastLoginAt"),false);
+  assert.equal(planner.hash(prep),beforeProjection,"Saved baseline must stay immutable");
   assert.equal(policy.proposedWrite(f.context, annex, f.context.plan.entries[0].name, null, null, "apply", false).status, "outside-resume-scope");
   const proposal = policy.proposedWrite(f.context, annex, f.name, f.current.get(f.name), null, "apply", false);
   assert.equal(proposal.status, "proposed-only"); assert.deepEqual(proposal.write.updateMask.fieldPaths, ["firstName", "lastName"]);
