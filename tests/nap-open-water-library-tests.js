@@ -24,6 +24,13 @@ async function run() {
   assert.equal(library.plan(full,{...input,courseId:"1000-SF",expectedFingerprint:full.fingerprint}).after.courses.length,111,"Legacy/default courses must not be truncated");
   assert.throws(()=>library.plan(full,{action:"add",course:course(9000),expectedFingerprint:full.fingerprint}),/limite/);
   assert.throws(()=>library.decode([...legacy,course(9000)]),/limites/);
+  const complete=library.snapshot({id:1,version:4,courses:['SF','BI','SUP'].map(discipline=>course(1200,discipline))});
+  const replay=library.plan(complete,{action:'addDistance',courses:['SF','BI','SUP'].map(discipline=>course(1200,discipline)),expectedFingerprint:complete.fingerprint});assert.equal(replay.unchanged,true);assert.equal(replay.after.version,4);
+  const inactive=library.snapshot({id:1,version:4,courses:complete.courses.map(item=>({...item,active:item.discipline!=='BI'}))});
+  const reactivate=library.plan(inactive,{action:'addDistance',courses:complete.courses,expectedFingerprint:inactive.fingerprint});assert(reactivate.after.courses.every(item=>item.active));assert.equal(reactivate.after.version,5);assert.equal(inactive.courses.find(item=>item.discipline==='BI').active,false,'Explicitly adding the distance reopens its library choices without changing the original snapshot');
+  let replayBackups=0,replayWrites=0,replayCommits=0;
+  const replayConnection={beginTransaction:async()=>{},execute:async({sql})=>{if(sql.startsWith('SELECT'))return [[{id:1,version:4,courses:complete.courses}]];replayWrites++;throw Error('Unexpected replay write');},commit:async()=>{replayCommits++;},rollback:async()=>{},release:()=>{}};
+  assert.equal((await library.change({getConnection:async()=>replayConnection},{action:'addDistance',courses:complete.courses},'admin',async()=>{replayBackups++;})).unchanged,true);assert.equal(replayBackups,0);assert.equal(replayWrites,0);assert.equal(replayCommits,1);
   let calls=0;
   const result=await library.read({execute:async(query,values)=>{
     calls++;assert.match(query.sql,/FORCE INDEX \(PRIMARY\).*WHERE id=1 LIMIT 1/);

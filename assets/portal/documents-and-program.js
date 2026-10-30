@@ -1499,6 +1499,7 @@
       }
 
     const openWaterProposedDistances = new Set([150,1000,2000,3000,4000,5000,6000]);
+    const openWaterReadyDistances = new Set(openWaterProposedDistances);
     const openWaterExtraDistances = new Set();
     let openWaterVisibleCompetitionId = null;
     function renderEngagementOpenWaterCourseLibrary() {
@@ -1635,7 +1636,8 @@
           const existing = portalState.engagementOpenWaterCourses.filter(course=>course.distance===distance);
           const disciplines = distance===150?["SF","BI"]:["SF","BI","SUP"];
           const alreadyAvailable = disciplines.every(discipline=>existing.some(course=>course.discipline===discipline&&course.active!==false));
-          const result = alreadyAvailable ? {courses:portalState.engagementOpenWaterCourses} : await portalActions.callFunction("addEngagementOpenWaterCourse", { distance });
+          const result = alreadyAvailable && openWaterReadyDistances.has(distance) ? {courses:portalState.engagementOpenWaterCourses} : await portalActions.callFunction("addEngagementOpenWaterCourse", { distance });
+          if(result.nativeReferencesReady===true)openWaterReadyDistances.add(distance);
           portalState.engagementOpenWaterCourses = Array.isArray(result.courses) ? result.courses : portalState.engagementOpenWaterCourses;
           portalState.engagementOpenWaterCoursesLoaded = true;
           openWaterExtraDistances.add(distance);
