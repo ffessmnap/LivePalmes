@@ -80,7 +80,7 @@
           if (String(currentUser?.uid || "") !== refreshUid) return;
           const capabilities = Array.isArray(result.data?.capabilities) ? result.data.capabilities : [];
           const activeProfile = result.data?.status === "active";
-          const serverAccessAllowed = activeProfile && (!serverProfileAuthentication || capabilities.includes("admin.full"));
+          const serverAccessAllowed = activeProfile && (!serverProfileAuthentication || capabilities.length > 0);
           currentProfile = serverAccessAllowed ? result.data : null;
           accessRefreshCompletedUid = refreshUid;
           accessRefreshCompletedAt = Date.now();
@@ -153,7 +153,7 @@
     function isAllowedUser(user = currentUser) {
       if (!user) return false;
       if (serverProfileAuthentication) {
-        return currentProfile?.status === "active" && currentClaims?.livepalmesCapabilities?.["admin.full"] === true;
+        return currentProfile?.status === "active" && hasLivePalmesCapability();
       }
       if (!isConfigured()) return hasLivePalmesCapability();
       return allowedUids.has(user.uid) || allowedEmails.has(normalizeEmail(user.email)) || hasLivePalmesCapability();
@@ -285,7 +285,7 @@
     return {
       isAdminAuthenticated: () => isAllowedUser(),
       hasCapability: (capability) => {
-        if (isAllowedUser() && (allowedUids.has(currentUser?.uid) || allowedEmails.has(normalizeEmail(currentUser?.email)))) return true;
+        if (!serverProfileAuthentication && isAllowedUser() && (allowedUids.has(currentUser?.uid) || allowedEmails.has(normalizeEmail(currentUser?.email)))) return true;
         if (capability === "consoles.access" && currentClaims?.livepalmesCapabilities?.["consoles.manage"] === true) return true;
         return currentClaims?.livepalmesCapabilities?.[capability] === true;
       },
