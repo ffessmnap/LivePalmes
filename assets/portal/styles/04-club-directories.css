@@ -971,8 +971,8 @@
 
 .admin-engagements-swimmer-correction-form [data-swimmer-ns-label] {
   display: flex;
-  align-items: flex-start;
-  gap: 10px;
+  align-items: center;
+  gap: 8px;
   min-height: 40px;
 }
 
@@ -980,7 +980,10 @@
   flex: 0 0 auto;
   width: 18px;
   height: 18px;
-  margin-top: 2px;
+  min-height: 0;
+  padding: 0;
+  margin: 0;
+  accent-color: var(--portal-color-accent, #0b7285);
   order: 0;
 }
 
@@ -1003,9 +1006,32 @@
   font-weight: 750;
 }
 
-.admin-engagements-swimmer-correction-license {
+.admin-engagements-swimmer-correction-last-row {
   grid-column: 1 / -1;
-  max-width: calc(50% - 5px);
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.admin-engagements-swimmer-correction-ns {
+  display: grid;
+  gap: 5px;
+  color: var(--portal-color-muted);
+  font-size: 0.78rem;
+  font-weight: 750;
+}
+
+.admin-engagements-swimmer-correction-form [data-swimmer-ns-status] {
+  grid-column: 1 / -1;
+  min-height: 0;
+  font-size: 0.78rem;
+  overflow-wrap: anywhere;
+}
+
+.admin-engagements-swimmer-correction-form [data-swimmer-ns-status].is-loading {
+  padding: 8px 10px;
+  border-left: 3px solid var(--portal-color-accent, #0b7285);
+  background: var(--portal-color-field-background, #f8fbfa);
 }
 
 .admin-engagements-swimmer-correction-grid input,

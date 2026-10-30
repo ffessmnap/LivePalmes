@@ -198,6 +198,11 @@
 
   function enhanceLoadingStates() {
     document.querySelectorAll("[aria-live]").forEach((status) => {
+      if (status.matches("[data-swimmer-ns-status],#adminEngagementsSwimmerCorrectionMessage")) {
+        // Le dialogue pilote explicitement l'envoi, sans dépendre de son libellé.
+        status.classList.toggle("is-loading", status.dataset.tone === "loading");
+        return;
+      }
       if (status.closest("#adminEngagementsDetail")) {
         // Le dossier pilote ses attentes explicitement, jamais par ses libellés.
         const saving = document.querySelector("#adminEngagementsSaveState")?.dataset.state === "saving";

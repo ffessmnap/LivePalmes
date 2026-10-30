@@ -2,6 +2,13 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 30 octobre — NS compact dans Identité et envoi visible
+
+- Visuel explicitement validé par Antoine : case « Non sélectionnable (NS) » sous « Nageur étranger », à côté du numéro de licence dans Identité, y compris sur mobile. Aucun encadré ni bouton NS dédié ; cocher/décocher déclenche directement le même appel serveur. Cocher enregistre NS ; décocher demande le visa national et maintient NS jusqu’à acceptation. Aucun changement serveur, de droits ou de règle sportive.
+- Pendant le véritable appel retardé : message animé près de la case, bouton principal « Envoi en cours… » avec spinner, aria-busy et prévention des doubles envois/correction d’identité simultanée. Attente nationale distincte de l’envoi ; animation arrêtée après réponse ou erreur, statut confirmé conservé et réouverture explicite en cas d’incertitude. Budget inchangé : même lecture initiale et même appel ciblé par action, zéro requête ajoutée ou réessai automatique.
+- Tests ciblés et navigateur hors réseau à 1280/390/320 px × clair/sombre : fabriques et composant d’attente réels, réponses retardées, doublons, envoi d’identité, refus, erreur, colonnes absentes et réponse ancienne. Captures examinées ; données fictives, HTTPS externe bloqué, aucun changement de statut réel ni mail. PR/CI et nouvelle livraison TEST à attester dans la PR ; la validation du visuel ne vaut pas recette utilisateur de la réalisation.
+- Suivi regroupé : [livraison initiale #624](https://github.com/ffessmnap/LivePalmes/pull/624#issuecomment-6509452476), [migration autorisée et vérifiée #626](https://github.com/ffessmnap/LivePalmes/pull/626#issuecomment-6516336806). Deux copies chiffrées rouvertes, 16 232 lignes et onze champs historiques préservés, colonnes initialement NULL, disponibilité NS réelle vérifiée le 30 octobre. Aucun déploiement PROD.
+
 ### 30 octobre — Connexion TEST avec un profil club/région
 
 - Demande explicite d’Antoine : retirer le verrou admin.full propre à la connexion TEST pour permettre la recette des droits club/région livrés par #623. Le profil serveur actif reste obligatoire ; seules ses capacités connues sont prises en compte, sans ajout de droit ni repli sur les anciennes claims/allowlists TEST. Les espaces exigeant une capacité précise restent protégés. Authentification PROD inchangée.
@@ -13,7 +20,7 @@
 
 - Accord explicite d’Antoine après présentation des deux colonnes et de la limite de livraison #624. Opération bornée au seul ALTER nullable dans nageurs et aux sauvegardes/contrôles nécessaires ; aucun statut réel, backfill, email ou déploiement PROD autorisé.
 - Workflow ponctuel TEST et script de migration : sauvegarde chiffrée rouverte et publiée avant mutation, privilèges et verrou natif repris explicitement après ALTER, refus de dérive, état partiel et déclencheur ; comparaison exhaustive des onze colonnes historiques avant/après et contrôle des index. Aucun changement d’application ni de Cloud Function ; pas de nouvelle livraison Hosting nécessaire pour ces outils seuls.
-- Tests hors réseau de la migration intégrés à la suite globale. PR/CI et exécution réelle à attester ; preuves finales dans la PR. Disponibilité réelle NS et validation utilisateur restant à confirmer.
+- Tests hors réseau et CI globale réussis : [PR #625](https://github.com/ffessmnap/LivePalmes/pull/625), [correctif #626 et preuve réelle du 30 octobre](https://github.com/ffessmnap/LivePalmes/pull/626#issuecomment-6516336806). Sauvegardes chiffrées vérifiées, 16 232 lignes et champs historiques préservés, colonnes NULL et NS disponible. Recette utilisateur du parcours complet restant à recueillir.
 
 ### 29 octobre — Statut NS privé des nageurs (code TEST, activation en attente)
 

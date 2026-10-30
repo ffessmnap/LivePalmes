@@ -849,6 +849,7 @@
           delete portalContext.elements.engagementsSwimmerCorrectionForm.dataset.historicalClubPayload;
           delete portalContext.elements.engagementsSwimmerCorrectionForm.dataset.identityKind;
           delete portalContext.elements.engagementsSwimmerCorrectionForm.dataset.initialIdentity;
+          delete portalContext.elements.engagementsSwimmerCorrectionForm.dataset.nsSaving;
         }
         if (portalContext.elements.engagementsSwimmerCorrectionLicense) portalContext.elements.engagementsSwimmerCorrectionLicense.readOnly = false;
         for(const field of [portalContext.elements.engagementsSwimmerCorrectionLastName,portalContext.elements.engagementsSwimmerCorrectionFirstName,portalContext.elements.engagementsSwimmerCorrectionBirthDate,portalContext.elements.engagementsSwimmerCorrectionSex,portalContext.elements.engagementsSwimmerCorrectionLicense]) if(field) field.disabled=false;
@@ -928,43 +929,56 @@
             const form=portalContext.elements.engagementsSwimmerCorrectionForm;
             const section=form?.querySelector?.("[data-swimmer-ns]");
             if(!section)return;
+            const checkbox=section.querySelector("[data-swimmer-ns-checkbox]"),message=form.querySelector("[data-swimmer-ns-status]");
             section.hidden=!allowed||swimmer.napSource!==true;
-            const checkbox=section.querySelector("[data-swimmer-ns-checkbox]"),button=section.querySelector("[data-swimmer-ns-save]"),message=section.querySelector("[data-swimmer-ns-status]");
-            button.onclick=null;checkbox.onchange=null;checkbox.checked=swimmer.nonSelectable===true;checkbox.disabled=true;button.disabled=true;
+            checkbox.onchange=null;checkbox.checked=swimmer.nonSelectable===true;checkbox.disabled=true;
+            message.hidden=true;message.textContent="";message.dataset.tone="neutral";message.classList.remove("is-loading");message.removeAttribute("aria-busy");
             if(section.hidden)return;
             const session=form.dataset.correctionSession,scope=portalState.engagementClubPeopleRequestVersion;
-            const current=()=>form.dataset.correctionSession===session&&scope===portalState.engagementClubPeopleRequestVersion&&portalContext.elements.engagementsSwimmerCorrectionDialog?.open;
+            const current=()=>!section.hidden&&form.dataset.napSource==="true"&&form.dataset.correctionSession===session&&scope===portalState.engagementClubPeopleRequestVersion&&portalContext.elements.engagementsSwimmerCorrectionDialog?.open;
             let saved=null,pending=false,busy=true;
             const update=()=>{
               checkbox.disabled=busy||!saved?.swimmer?.nsAvailable||pending;
-              button.disabled=checkbox.disabled||checkbox.checked===saved?.swimmer?.nonSelectable;
-              button.textContent=pending?"Retrait NS en attente":checkbox.checked?"Enregistrer le statut NS":"Demander le retrait NS";
+              section.setAttribute("aria-busy",String(busy));
             };
-            const display=result=>{
+            const feedback=(text,tone="ok",loading=false)=>{
+              message.textContent=text;message.hidden=!text;message.dataset.tone=tone;
+              message.classList.toggle("is-loading",loading);message.setAttribute("aria-busy",String(loading));
+            };
+            const display=(result,announce=false)=>{
               saved=result;pending=result.nsRequest?.status==="pending";checkbox.checked=result.swimmer.nonSelectable===true;
               const fields=["nonSelectable","nsAvailable","nsVersion","napNsFingerprint"];
               const patch=Object.fromEntries(fields.map(key=>[key,result.swimmer[key]]));
               portalState.engagementClubSwimmers=portalState.engagementClubSwimmers.map(item=>String(item.id||item.swimmerIndexId)===String(swimmer.id||swimmer.swimmerIndexId)?{...item,...patch}:item);
               portalActions.writeEngagementClubSwimmersCache();portalActions.renderEngagementClubSwimmersDirectory();
-              message.dataset.tone=!result.swimmer.nsAvailable||result.nsRequest?.status==="rejected"?"warning":"ok";
-              message.textContent=!result.swimmer.nsAvailable?"Statut NS indisponible : activation de la structure NAP en attente. Les autres modifications restent disponibles.":pending?"Retrait NS en attente de validation nationale. Le nageur reste NS.":result.nsRequest?.status==="rejected"?`Retrait NS refusé. Le nageur reste NS.${result.nsRequest.resolutionNote?" Motif : "+result.nsRequest.resolutionNote:""}`:result.swimmer.nonSelectable?"Statut NS enregistré. Le retrait nécessite une validation nationale.":"Statut NS décoché. Le cocher s’applique sans validation nationale.";
+              const rejected=result.nsRequest?.status==="rejected";
+              const text=!result.swimmer.nsAvailable?"Statut NS indisponible. Les autres modifications restent disponibles.":pending?"Retrait NS en attente de validation nationale. Le nageur reste NS.":rejected?"Retrait NS refusé. Le nageur reste NS."+(result.nsRequest.resolutionNote?" Motif : "+result.nsRequest.resolutionNote:""):announce?"Statut NS enregistré.":"";
+              feedback(text,!result.swimmer.nsAvailable||rejected?"warning":"ok");
             };
-            message.dataset.tone="loading";message.textContent="Chargement du statut NS…";
+            feedback("Chargement du statut NS…","loading",true);update();
             portalActions.callFunction("requestEngagementClubSwimmerChange",{nsAction:"read",swimmerId:String(swimmer.id||swimmer.swimmerIndexId)})
               .then(result=>{if(current())display(result);})
-              .catch(error=>{if(current())message.textContent=`Statut NS indisponible : ${error?.message||error}. Les autres modifications restent disponibles.`;})
+              .catch(error=>{if(current())feedback("Statut NS indisponible : "+(error?.message||error)+". Les autres modifications restent disponibles.","error");})
               .finally(()=>{if(current()){busy=false;update();}});
-            checkbox.onchange=update;
-            button.onclick=async()=>{
-              if(button.disabled||!saved)return;
+            checkbox.onchange=async event=>{
+              event.stopPropagation();
+              if(busy||pending||!saved||form.getAttribute("aria-busy")==="true"){
+                checkbox.checked=saved?.swimmer?.nonSelectable===true;return;
+              }
               const nonSelectable=checkbox.checked;
-              busy=true;update();message.textContent=nonSelectable?"Enregistrement du statut NS…":"Envoi de la demande nationale…";
+              busy=true;form.dataset.nsSaving="true";update();
+              portalActions.setFormPending(form,true,nonSelectable?"Enregistrement NS en cours…":"Envoi en cours…");
+              feedback(nonSelectable?"Enregistrement du statut NS en cours…":"Envoi de la demande de retrait NS en cours…","loading",true);
               try{
                 const result=await portalActions.callFunction("requestEngagementClubSwimmerChange",{nsAction:"save",swimmerId:String(swimmer.id||swimmer.swimmerIndexId),nonSelectable,expectedNsFingerprint:saved.swimmer.napNsFingerprint});
                 if(!current())return;
-                display(result);portalState.engagementSwimmerChangeRequestsLoaded=false;portalState.portalPendingOverviewLoaded=false;
-              }catch(error){if(current()){saved=null;message.dataset.tone="error";message.textContent=`Statut NS à vérifier : ${error?.message||error}. Fermez puis rouvrez la fiche avant de réessayer.`;}}
-              finally{if(current()){busy=false;update();}}
+                display(result,true);portalState.engagementSwimmerChangeRequestsLoaded=false;portalState.portalPendingOverviewLoaded=false;
+              }catch(error){if(current()){
+                checkbox.checked=saved.swimmer.nonSelectable===true;saved=null;
+                feedback("Statut NS à vérifier : "+(error?.message||error)+". Fermez puis rouvrez la fiche avant de réessayer.","error");
+              }}finally{if(current()){
+                busy=false;delete form.dataset.nsSaving;portalActions.setFormPending(form,false);update();updateClubIdentityCorrectionAction();
+              }}
             };
           }
 
@@ -976,6 +990,7 @@
 
     function updateClubIdentityCorrectionAction() {
         const form=portalContext.elements.engagementsSwimmerCorrectionForm;
+        if(form?.dataset.nsSaving==="true")return;
         if(!form?.dataset.initialIdentity||portalContext.elements.engagementsSwimmerCorrectionMode?.value!=="request")return;
         const after=Object.fromEntries(["FirstName","LastName","BirthDate","Sex","License"].map((suffix,index)=>[["firstName","lastName","birthDate","sex","licenseNumber"][index],portalContext.elements[`engagementsSwimmerCorrection${suffix}`]?.value||""]));
         let action="request";
@@ -991,6 +1006,7 @@
       }
 
     async function submitEngagementSwimmerCorrection() {
+        if(portalContext.elements.engagementsSwimmerCorrectionForm?.getAttribute?.("aria-busy")==="true")return;
         if (!portalContext.elements.engagementsSwimmerCorrectionForm?.reportValidity()) return;
         const correctionSession=portalContext.elements.engagementsSwimmerCorrectionForm.dataset.correctionSession;
         const clubScopeVersion=portalState.engagementClubPeopleRequestVersion;
