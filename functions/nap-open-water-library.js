@@ -41,23 +41,28 @@ function snapshot(row) {
   const fingerprint=createHash("sha256").update(JSON.stringify({version,courses})).digest("hex");
   return {courses,version,fingerprint};
 }
-async function read(connection) {
+async function readStored(connection) {
   const [rows]=await connection.execute({sql:"SELECT id,courses,version FROM livepalmes_open_water_course_library FORCE INDEX (PRIMARY) WHERE id=1 LIMIT 1",timeout:10000},[]);
-  const current=snapshot(rows[0]);
+  return snapshot(rows[0]);
+}
+async function read(connection) {
+  const current=await readStored(connection);
   return {ok:true,source:"nap",...current,courses:availableCourses(current.courses),readStats:{nativeQueries:1,maxNativeRows:1}};
 }
 function plan(current,input) {
   if(!current||input?.expectedFingerprint!==current.fingerprint) throw new TypeError("La bibliotheque a change. Rechargez avant d'enregistrer.");
-  const courses=decode(current.courses);
+  let courses=decode(current.courses);
   if(input.action==="add"||input.action==="addDistance") {
     const additions=decode(input.action==="addDistance"?input.courses:[input.course]);
     if(!additions.length||additions.length>3||new Set(additions.map(item=>item.distance)).size!==1)throw new TypeError("Distance eau libre invalide.");
     if(input.action==="addDistance"&&additions.map(item=>item.discipline).sort().join(',')!==(additions[0].distance===150?'BI,SF':'BI,SF,SUP'))throw new TypeError("Specialites de la distance incompletes.");
     if(input.action==="add"&&courses.some(item=>item.id===additions[0].id)) throw new TypeError("Cette course existe deja dans la bibliotheque eau libre.");
     const missing=additions.filter(item=>!courses.some(existing=>existing.id===item.id));
-    if(!missing.length)throw new TypeError("Cette distance existe deja dans la bibliotheque eau libre.");
+    const reactivated=input.action==='addDistance'&&courses.some(existing=>existing.active===false&&additions.some(item=>item.id===existing.id));
+    if(!missing.length&&!reactivated)return {before:{version:current.version,courses:decode(courses)},after:{version:current.version,courses:decode(courses)},unchanged:true};
     // Preserve the existing 100-course addition ceiling, including defaults.
-    if(courses.length+missing.length>100) throw new RangeError("La bibliotheque eau libre a atteint sa limite de courses.");
+    if(missing.length&&courses.length+missing.length>100) throw new RangeError("La bibliotheque eau libre a atteint sa limite de courses.");
+    if(reactivated)courses=courses.map(existing=>existing.active===false&&additions.some(item=>item.id===existing.id)?{...existing,active:true}:existing);
     courses.push(...missing);
   } else if(input.action==="status") {
     if(typeof input.active!=="boolean") throw new TypeError("Activation de course requise.");
@@ -78,6 +83,10 @@ async function change(pool,input,actorUid,backup) {
     const [rows]=await connection.execute({sql:"SELECT id,courses,version FROM livepalmes_open_water_course_library FORCE INDEX (PRIMARY) WHERE id=1 LIMIT 1 FOR UPDATE",timeout:10000},[]);
     const current=snapshot(rows[0]);
     const prepared=plan(current,{...input,expectedFingerprint:input.expectedFingerprint||current.fingerprint});
+    if(prepared.unchanged){
+      await connection.commit();transaction=false;
+      return {ok:true,source:"nap",...current,courses:availableCourses(current.courses),unchanged:true};
+    }
     await backup({kind:"nap-open-water-library-change",actorUid,...prepared});
     const [result]=await connection.execute({sql:"UPDATE livepalmes_open_water_course_library SET courses=?,version=?,updated_at=UTC_TIMESTAMP(6),updated_by=? WHERE id=1 AND version=?",timeout:10000},[JSON.stringify(prepared.after.courses),prepared.after.version,actorUid,current.version]);
     if(result.affectedRows!==1)throw new TypeError("Bibliotheque modifiee pendant l'enregistrement.");
@@ -88,4 +97,4 @@ async function change(pool,input,actorUid,backup) {
     if(safe)connection.release();else connection.destroy();
   }
 }
-module.exports={decode,snapshot,read,plan,change,defaultCourses,availableCourses};
+module.exports={decode,snapshot,read,readStored,plan,change,defaultCourses,availableCourses};
