@@ -54,6 +54,15 @@ class PortalNsPolicyTests(unittest.TestCase):
             after['labels']['livepalmes-commit'] = c['candidate']
             after['serviceConfig']['secretEnvironmentVariables'] = copy.deepcopy(c['napBinding'])
             policy.assert_config(before,after,state)
+            marked_before, marked_after = copy.deepcopy(before), copy.deepcopy(after)
+            marked_before['labels']['firebase-functions-hash'] = 'a'*40
+            marked_after['labels']['firebase-functions-hash'] = 'b'*40
+            if name == policy.ACCOUNT:
+                policy.assert_config(marked_before,marked_after,state)
+                marked_after['labels']['existing'] = 'changed'
+                with self.assertRaises(ValueError): policy.assert_config(marked_before,marked_after,state)
+            else:
+                with self.assertRaises(ValueError): policy.assert_config(marked_before,marked_after,state)
             for section,key,value in [('serviceConfig','timeoutSeconds',300),('buildConfig','runtime','nodejs24'),
                                       ('serviceConfig','serviceAccountEmail','other'),('serviceConfig','secretEnvironmentVariables',[])]:
                 bad=copy.deepcopy(after);bad[section][key]=value
