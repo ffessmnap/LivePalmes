@@ -1627,7 +1627,7 @@ assert.equal(portalHtml.includes('id="adminEngagementsDetailFeesPanel"'), false)
 assert.equal(portalHtml.includes("Paiement attendu avant la fin de la premi"), false);
 assert.ok(portalCss.includes("Paramétrage général d'une compétition : grille dense et lisible"));
 assert.ok(portalCss.includes("#adminEngagementsEditForm .admin-engagements-compact-field--full"));
-assert.ok(portalHtml.includes("assets/livepalmes-portal-ux.js?v=20261020-club-retour"));
+assert.ok(portalHtml.includes("assets/livepalmes-portal-ux.js?v=20261030-ns-compact-1"));
 assert.match(portalHtml, /assets\/livepalmes-admin-portal\.js\?v=[^"']+/);
 assert.ok(portalHtml.indexOf('id="adminEngagementsEditCity"') < portalHtml.indexOf('id="adminEngagementsEditAddress"'));
 assert.ok(portalHtml.indexOf('id="adminEngagementsEditAddress"') < portalHtml.indexOf('id="adminEngagementsEditLocation"'));

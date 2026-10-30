@@ -9,6 +9,13 @@
 - Tests ciblés et navigateur hors réseau à 1280/390/320 px × clair/sombre : fabriques et composant d’attente réels, réponses retardées, doublons, envoi d’identité, refus, erreur, colonnes absentes et réponse ancienne. Captures examinées ; données fictives, HTTPS externe bloqué, aucun changement de statut réel ni mail. PR/CI et nouvelle livraison TEST à attester dans la PR ; la validation du visuel ne vaut pas recette utilisateur de la réalisation.
 - Suivi regroupé : [livraison initiale #624](https://github.com/ffessmnap/LivePalmes/pull/624#issuecomment-6509452476), [migration autorisée et vérifiée #626](https://github.com/ffessmnap/LivePalmes/pull/626#issuecomment-6516336806). Deux copies chiffrées rouvertes, 16 232 lignes et onze champs historiques préservés, colonnes initialement NULL, disponibilité NS réelle vérifiée le 30 octobre. Aucun déploiement PROD.
 
+
+### 30 octobre — Préparation inactive des sauvegardes NAP vers Drive partagé
+
+- Demande explicite : préparer le mécanisme et accompagner la configuration Drive, sans sauvegarde réelle. Diagnostic préalable en lecture seule : MySQL 5.7.30, 67 tables, environ 138 Mio. Outil CLI et workflow manuel préparés avec activation désactivée, aucun schedule, aucun changement de données, de droits réels ou de Cloud Function.
+- Compte technique dédié prévu avec accès au seul secret NAP et au dossier partagé ; export sous verrous READ limités à la base, délai borné, archive gzip/AES-GCM vérifiée avant dépôt, relecture taille/empreinte Drive, copie chiffrée de secours en cas d'échec. Aucune purge automatique. [Configuration, budgets et limites](../NAP_SAUVEGARDES.md).
+- Tests hors réseau ciblés et chiffrement existant réussis ; tests intégrés à la suite globale. [PR #628](https://github.com/ffessmnap/LivePalmes/pull/628), CI à attester sur la version actualisée ; aucun déploiement applicatif nécessaire pour cet outillage inactif. Dossier, compte technique, secrets, contrôle réel du runner, premier export, mesure de blocage, restauration isolée et activation périodique restant à réaliser avec les accords correspondants. Aucune validation utilisateur ou sauvegarde opérationnelle revendiquée.
+
 ### 30 octobre — Connexion TEST avec un profil club/région
 
 - Demande explicite d’Antoine : retirer le verrou admin.full propre à la connexion TEST pour permettre la recette des droits club/région livrés par #623. Le profil serveur actif reste obligatoire ; seules ses capacités connues sont prises en compte, sans ajout de droit ni repli sur les anciennes claims/allowlists TEST. Les espaces exigeant une capacité précise restent protégés. Authentification PROD inchangée.

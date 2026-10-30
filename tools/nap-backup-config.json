@@ -1,0 +1,12 @@
+{
+  "enabled": false,
+  "secretProject": "livepalmes-test",
+  "secretName": "LIVEPALMES_NAP_PASSWORD",
+  "serviceAccount": "nap-backup-drive@livepalmes-test.iam.gserviceaccount.com",
+  "clientImage": "mysql:5.7.44",
+  "maxTables": 100,
+  "maxDatabaseBytes": 536870912,
+  "maxSqlBytes": 536870912,
+  "maxCompressedBytes": 134217728,
+  "maxLockMilliseconds": 90000
+}

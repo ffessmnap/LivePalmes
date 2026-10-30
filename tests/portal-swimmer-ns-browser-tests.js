@@ -52,6 +52,7 @@ async function main(){
     await evaluate(client,"nsDelay=null;nsRelease();");assert.ok(await waitFor(client,"document.querySelector('[data-swimmer-ns-status]').textContent.includes('en attente de validation')"));
     const pending=await evaluate(client,"return {checked:document.querySelector('[data-swimmer-ns-checkbox]').checked,disabled:document.querySelector('[data-swimmer-ns-checkbox]').disabled,loading:document.querySelector('[data-swimmer-ns-status]').classList.contains('is-loading'),mainEnabled:!document.querySelector('#adminEngagementsSwimmerCorrectionSubmit').disabled};");
     assert.deepEqual(pending,{checked:true,disabled:true,loading:false,mainEnabled:true});
+    assert.equal(await evaluate(client,"return Object.hasOwn(document.querySelector('#adminEngagementsSwimmerCorrectionSubmit').dataset,'idleLabel');"),false);
     // The identity correction keeps the same real spinner and in-flight text.
     await evaluate(client,"document.querySelector('#adminEngagementsSwimmerCorrectionLastName').value='CORRIGE';document.querySelector('#adminEngagementsSwimmerCorrectionReason').value='Correction fictive';nsDelay=new Promise(resolve=>window.nsRelease=resolve);nsFailIdentity=true;nsActions.submitEngagementSwimmerCorrection();");
     assert.equal(await evaluate(client,"return document.querySelector('#adminEngagementsSwimmerCorrectionSubmit').classList.contains('admin-portal-submit-pending');"),true);

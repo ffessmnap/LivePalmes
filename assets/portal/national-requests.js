@@ -977,7 +977,9 @@
                 checkbox.checked=saved.swimmer.nonSelectable===true;saved=null;
                 feedback("Statut NS à vérifier : "+(error?.message||error)+". Fermez puis rouvrez la fiche avant de réessayer.","error");
               }}finally{if(current()){
-                busy=false;delete form.dataset.nsSaving;portalActions.setFormPending(form,false);update();updateClubIdentityCorrectionAction();
+                busy=false;delete form.dataset.nsSaving;portalActions.setFormPending(form,false);
+                if(portalContext.elements.engagementsSwimmerCorrectionSubmit)delete portalContext.elements.engagementsSwimmerCorrectionSubmit.dataset.idleLabel;
+                update();updateClubIdentityCorrectionAction();
               }}
             };
           }
