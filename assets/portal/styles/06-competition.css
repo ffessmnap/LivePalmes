@@ -1343,6 +1343,10 @@
   padding: 0 var(--portal-panel-gutter) var(--portal-panel-gutter);
 }
 
+#adminEngagementsView[data-engagements-mode="admin"] :is(#adminEngagementsDetailStatus, #adminEngagementsNotificationPreviewStatus):empty {
+  display: none;
+}
+
 #adminEngagementsDetail[data-club-entry-loading] .admin-engagements-detail-tabs,
 #adminEngagementsDetail[data-club-entry-loading] .admin-engagements-detail-panel {
   display: none !important;
