@@ -306,6 +306,7 @@ function runUnitTests() {
     "nap-individual-entry-resolution-tests.js",
     "nap-individual-entry-callable-tests.js",
     "nap-entry-history-callable-tests.js",
+    "nap-entry-history-integration-tests.js",
     "nap-entry-time-preview-callable-tests.js",
     "nap-official-entry-statements-tests.js",
     "nap-official-entry-recovery-tests.js",

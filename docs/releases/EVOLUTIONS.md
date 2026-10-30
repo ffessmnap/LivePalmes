@@ -2,6 +2,12 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 30 octobre — Historique des temps réparé et annuaire national sans double lecture
+
+- Périmètre explicitement validé par Antoine, Cloud Functions et livraison jusqu'à TEST comprises, sans modification de la base ni mail réel. Régression du premier lot reproduite hors réseau : le service d'historique attendait des inscriptions/courses absentes du contexte ciblé. Ce parcours relit désormais les seules inscriptions et courses du nageur ; aperçus groupés inchangés, contrôles sportifs et accès conservés.
+- Historique piscine : plafond de 20 SELECT hors accès, participation comprise ; 19/20 dans les scénarios maximaux simulés contre 23/24 avec l'ancien dossier complet fonctionnel. Annuaire national à froid : deux appels/deux SELECT de clubs deviennent un appel/un SELECT ; référence partagée alimentée par la réponse fraîche, cache/actualisation et administrateurs conservés. [Budgets et limites](../OPTIMISATION_NAP.md#deuxième-lot-portail--30-octobre-2026).
+- Tests ciblés hors réseau réussis : vraie chaîne callable/service/lecteurs/formateur, équivalence ancienne, doublons, filtres et refus, limites ; vrais modules d'annuaire, référence partagée, cache, concurrence, panne et pagination. Annuaire vérifié à 1280/390/320 px avec le vrai rendu et les styles : recherche, retour sans RPC, erreur d'actualisation conservant les clubs, reprise, clavier/toucher et absence de débordement. CI globale et preuve TEST à attester dans la PR ; validation utilisateur de la version regroupée encore attendue. Aucun appel métier réel, écriture de base, mail, migration ou publication PROD.
+
 ### 30 octobre — Portail : lectures des temps, dossier compétition et journal
 
 - Lot explicitement approuvé par Antoine, y compris les Cloud Functions, pour une livraison jusqu'à TEST sans modification de la base ni mail réel. Aperçu limité aux 50 nageurs demandés, leurs appartenances et la déclaration du chef ; même historique, règles, droits et fraîcheur. Plafond piscine ramené de 25 à 20 SELECT, hors contrôle d'accès. Dossier complet conservé, regroupement des engagements/membres en mémoire et bornes corrigées à 26 SELECT/20 520 lignes acceptées. [Budgets et limites](../OPTIMISATION_NAP.md#premier-lot-portail--30-octobre-2026).
