@@ -93,7 +93,10 @@ for (const name of ["listEngagementCompetitions", "listEngagementCalendarEvents"
   assert.deepEqual(calls, ["authorize"]);
   const entry = await sandbox.exports.getEngagementClubEntry({ data: { competitionId: event.id, clubId: "999" } });
   assert.equal(entry.entry.clubId, "00123", "Caller cannot choose another club dossier");
-  assert.equal(entry.sqlBudget.queriesMax, 25);
+  assert.equal(entry.sqlBudget.queriesMax, 26);
+  assert.equal(entry.sqlBudget.rowsMax, 20520);
+  assert.equal(entry.sqlBudget.accessQueriesMax, 1);
+  assert.equal(entry.sqlBudget.profileDocumentsMax, 1);
   calls.length=0;
   const leader=await sandbox.exports.saveEngagementClubTeamLeader({data:{competitionId:event.id,clubId:"999",actorUid:"spoof",leaderId:51,patch:{firstName:"Chef",lastName:"Native",birthDate:"1980-01-02"}}});
   assert.equal(leader.competition.nativeTeamLeaderEditable,true);

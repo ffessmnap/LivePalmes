@@ -72,4 +72,14 @@ const waiver=view.entryItem({...entryPack,leaders:[{id:9,compet:5140,nom:"-1",pr
 assert.equal(waiver.teamLeader.mode,"renounced");assert.equal(waiver.teamLeader.renunciationAccepted,true);
 assert.equal(waiver.teamLeader.firstName,"");assert.equal(waiver.teamLeaderComplete,true);
 assert.equal(view.entryItem({...entryPack,leaders:[]},{},()=>"").teamLeaderComplete,false);
+// Interleaved relations, mixed native key types and duplicates retain exact order.
+const interleaved={...entryPack,inscriptions:[{id:"101",nageur:912},{id:100,nageur:"912"}],
+  individual:[{id:1,engagement:100,course:"50BI",tps:"14200"},{id:2,engagement:"101",course:"100SF",tps:"014200"},{id:3,engagement:"100",course:"200SF",tps:"599999"},{id:4,engagement:999,course:"100SF",tps:"11111"}],
+  relays:[{...entryPack.relays[0],id:"3"},{...entryPack.relays[0],id:2}],
+  members:[{...entryPack.members[0],id:1,relais:2},{...entryPack.members[0],id:2,relais:"3"},{...entryPack.members[0],id:3,relais:"2"}]};
+const original=JSON.stringify(interleaved),indexed=view.entryItem(interleaved,{clubName:"Club"},()=>"M30");
+assert.deepEqual(indexed.swimmers.map(s=>s.individualEntries.map(e=>e.nativeEntryId)),[["2"],["1","3"]]);
+assert.deepEqual(indexed.relays.map(r=>r.members.map(m=>m.nativeMemberId)),[["2"],["1","3"]]);
+assert.equal(indexed.napFingerprint,view.fingerprint(interleaved));assert.equal(JSON.stringify(interleaved),original);
+indexed.swimmers[1].individualEntries[0].entryTime="changed";assert.equal(JSON.stringify(interleaved),original,"presentation does not mutate native relations");
 console.log("NAP portal presentation bridge tests passed");

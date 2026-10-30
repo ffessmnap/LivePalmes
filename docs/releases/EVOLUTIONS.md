@@ -2,6 +2,12 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 30 octobre — Portail : lectures des temps, dossier compétition et journal
+
+- Lot explicitement approuvé par Antoine, y compris les Cloud Functions, pour une livraison jusqu'à TEST sans modification de la base ni mail réel. Aperçu limité aux 50 nageurs demandés, leurs appartenances et la déclaration du chef ; même historique, règles, droits et fraîcheur. Plafond piscine ramené de 25 à 20 SELECT, hors contrôle d'accès. Dossier complet conservé, regroupement des engagements/membres en mémoire et bornes corrigées à 26 SELECT/20 520 lignes acceptées. [Budgets et limites](../OPTIMISATION_NAP.md#premier-lot-portail--30-octobre-2026).
+- Journal : page indépendante du référentiel clubs, filtres capturés avant lecture et résolutions de références en parallèle, plafond inchangé de 177 documents/page. Aucun cache supplémentaire, changement de droits, nouvelle source, schéma, index, réglage Firebase, donnée réelle, email ni publication Storage.
+- Tests ciblés hors réseau : égalité des anciens/nouveaux aperçus pour 1/50 nageurs, participation/qualifications et refus, SELECT uniquement et 18–20 requêtes ; ordre/doublons/empreinte du dossier ; journal, cache/suite/filtres/erreurs/droits et plafond 177. Rendu du journal à 1440/390/320 px, clavier et débordement contrôlés. PR, CI et preuve TEST à attester après livraison ; validation utilisateur du résultat TEST encore attendue. Les anciennes mesures ne sont pas présentées comme celles du lot.
+
 ### 30 octobre — Eau libre : création encadrée des références d'une nouvelle distance
 
 - Accord explicite d'Antoine : « Oui, autoriser cette création automatique encadrée », après présentation du catalogue NAP commun TEST/PROD, des six références F/H maximum par distance, de la sauvegarde vérifiée et de la conservation des références existantes. Déclenchement uniquement par l'ajout explicite d'une distance, avec les droits régionaux/nationaux déjà exigés ; aucun nouveau droit, endpoint, secret, collection ou schéma.

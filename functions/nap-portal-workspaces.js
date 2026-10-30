@@ -95,11 +95,22 @@ async function entryWithCourseRules(connection,pack,context,competition,services
 }
 function entryItem(pack, context, categoryForBirthDate, competition = {}) {
   const identities = new Map(pack.swimmers.map(person => [String(person.id), person]));
+  const individualByInscription = new Map(), membersByRelay = new Map();
+  for (const row of pack.individual) {
+    const key = String(row.engagement);
+    if (!individualByInscription.has(key)) individualByInscription.set(key, []);
+    individualByInscription.get(key).push(row);
+  }
+  for (const member of pack.members) {
+    const key = String(member.relais);
+    if (!membersByRelay.has(key)) membersByRelay.set(key, []);
+    membersByRelay.get(key).push(member);
+  }
   const swimmers = pack.inscriptions.map(inscription => {
     const person = identities.get(String(inscription.nageur));
     if (!person) throw new TypeError("Inscription NAP sans fiche nageur.");
     return { ...person, swimmerIndexId: String(person.id), licenseNumber: String(person.licenseNumber ?? "").trim(), category: categoryForBirthDate(person.birthDate), nativeInscriptionId: String(inscription.id),
-      individualEntries: pack.individual.filter(row => String(row.engagement) === String(inscription.id)).map(row => ({
+      individualEntries: (individualByInscription.get(String(inscription.id)) || []).map(row => ({
         nativeEntryId: String(row.id), eventCode: require("./nap-open-water-courses").displayCode(row.course,competition.eventType || competition.competitionType), status: "selected", manualEntryTime: "", ...nativeTime(row.tps) })) };
   });
   const leaders = pack.leaders.map(row => ({ nativeLeaderId: String(row.id), personId: `nap-leader-${row.id}`, mode: require("./nap-team-leader-state").isWaiver(row) ? "renounced" : "person", renunciationAccepted: require("./nap-team-leader-state").isWaiver(row),
@@ -107,7 +118,7 @@ function entryItem(pack, context, categoryForBirthDate, competition = {}) {
     clubId: text(row.club), representedClubId: text(row.pourclub), externalClub: String(row.club) !== pack.clubId }));
   const relays = pack.relays.map(row => {
     const relayDetail = require("./nap-relay-details").detail(row, pack.options?.submission_metadata);
-    const members = pack.members.filter(member => String(member.relais) === String(row.id)).map(member => ({
+    const members = (membersByRelay.get(String(row.id)) || []).map(member => ({
       nativeMemberId: String(member.id), nativePosition: member.pos, swimmerIndexId: String(member.nageur), swimmerId: String(member.nageur),
       firstName: text(member.prenom), lastName: text(member.nom), name: [text(member.prenom), text(member.nom)].join(" "),
       birthDate: calendar.date(member.date), sex: text(member.sexe), clubId: text(member.club), ...require("./nap-license-state").state(member) }));
