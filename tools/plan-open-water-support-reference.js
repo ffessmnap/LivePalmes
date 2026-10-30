@@ -18,7 +18,7 @@ function prepareSupportReference(catalog,templates){
   const existing=catalog.filter(item=>water.definition(item.course)?.code==='OW1000SUP'&&item.sexe===sex);
   if(existing.length>1)throw new TypeError('Correspondance Support ambigue.');
   if(existing.length){if(!isDeepStrictEqual(Object.fromEntries(fields.map(key=>[key,existing[0][key]])),row))throw new TypeError('Reference Support existante differente du plan.');continue;}
-  if(catalog.some(item=>item.wplabel===row.wplabel||item.course===row.course&&item.sexe===sex))throw new TypeError('Collision du code technique Support.');
+  if(catalog.some(item=>item.wplabel===row.wplabel&&water.definition(item.course)?.code!=='OW1000SUP'||item.course===row.course&&item.sexe===sex))throw new TypeError('Collision du code technique Support.');
   proposals.push({sourceId:source.id,row});
  }
  if(catalog.length+proposals.length>300)throw new RangeError('Plafond de 300 references depasse.');

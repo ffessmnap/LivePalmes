@@ -185,6 +185,7 @@ function runUnitTests() {
     "nap-course-addition-tests.js",
     "nap-open-water-program-tests.js",
     "open-water-support-reference-plan-tests.js",
+    "open-water-support-reference-apply-tests.js",
     "portal-open-water-program-tests.js",
     "nap-team-leader-change-tests.js",
     "nap-team-leader-create-tests.js",
