@@ -43,5 +43,6 @@ function fixture() {
   assert.throws(() => proposedBatch(plan, Array(11).fill(plan.entries[0]), originals));
   assert.throws(() => proposedBatch(plan, [plan.entries[0], plan.entries[0]], originals));
   assert.equal(restored.length, 1);
+  await require("./user-name-correction-resume-tests").test();
   console.log("Correction engine: durable intent before commit, two-field mask, preserved inactive rights, verified receipts, double-apply/rollback refusal, disk failure, lost reply and projection failure passed offline.");
 })().catch(error => { console.error(error); process.exitCode = 1; });
