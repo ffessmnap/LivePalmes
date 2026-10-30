@@ -70,7 +70,7 @@ def initial(functions):
             'Liaison NAP runtime existante non prouvee')
     target = rows[NAME]
     require(not target.get('eventTrigger') and target.get('state') == 'ACTIVE'
-            and target.get('serviceConfig', {}).get('secretEnvironmentVariables') == c['napBinding'],
+            and target.get('serviceConfig', {}).get('secretEnvironmentVariables') == [{**c['napBinding'][0], 'version': 'latest'}],
             'Configuration resolution nationale differente')
 
 
