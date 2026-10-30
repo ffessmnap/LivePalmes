@@ -2,6 +2,13 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 30 octobre — Connexion TEST avec un profil club/région
+
+- Demande explicite d’Antoine : retirer le verrou admin.full propre à la connexion TEST pour permettre la recette des droits club/région livrés par #623. Le profil serveur actif reste obligatoire ; seules ses capacités connues sont prises en compte, sans ajout de droit ni repli sur les anciennes claims/allowlists TEST. Les espaces exigeant une capacité précise restent protégés. Authentification PROD inchangée.
+- Budget inchangé : même appel getCurrentAccessUser et lecture ponctuelle du profil à la connexion/au rafraîchissement, mutualisation et cache de cinq secondes conservés ; zéro lecture supplémentaire à l’ouverture, par action ou au pire cas, aucune lecture NAP, collection, listener ou écriture ajoutée. Aucun compte réel modifié ni email envoyé.
+- Tests hors réseau : connexions club seul, région seule et cumul, absence d’élévation via ancienne claim admin.full ou allowlist, refus du profil inactif/absent, des capacités inconnues/vides, de la panne serveur et de l’espace non autorisé ; compatibilité PROD. Version du script portail actualisée. CI globale et TEST commun à attester dans la PR ; recette utilisateur restant à recueillir. Aucun déploiement PROD.
+
+
 ### 29 octobre — Activation des deux colonnes NS autorisée
 
 - Accord explicite d’Antoine après présentation des deux colonnes et de la limite de livraison #624. Opération bornée au seul ALTER nullable dans nageurs et aux sauvegardes/contrôles nécessaires ; aucun statut réel, backfill, email ou déploiement PROD autorisé.
