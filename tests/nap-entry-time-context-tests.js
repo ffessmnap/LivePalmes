@@ -64,7 +64,7 @@ async function run(reader,count,patch={}) {
   }
   const f=fixture(),input={competitionId:1,clubId:"106",swimmerIds:[1]};
   await assert.rejects(readEntryTimeContext(f.connection,input,()=>{throw Error("Denied");}),/Denied/);assert.equal(f.calls.length,0);
-  for(const patch of [{swimmerIds:[]},{swimmerIds:[1,1]},{swimmerIds:Array.from({length:51},(_,i)=>i+1)},{clubId:"1 OR 1=1"}])await assert.rejects(readEntryTimeContext(f.connection,{...input,...patch},()=>{}));
+  for(const patch of [{swimmerIds:[]},{swimmerIds:[1,1]},{swimmerIds:Array.from({length:51},(_,i)=>i+1)},{clubId:"1 OR 1=1"},{swimmerIds:[1,2],includeIndividualEntries:true}])await assert.rejects(readEntryTimeContext(f.connection,{...input,...patch},()=>{}));
   assert.equal(f.calls.length,0);
   await assert.rejects(readEntryTimeContext({execute:async()=>[[{id:1,club:"99"}]]},input,()=>{}),/hors du club/);
   await assert.rejects(readEntryTimeContext({execute:async()=>[[{id:2,club:"106"}]]},input,()=>{}),/hors du club/);

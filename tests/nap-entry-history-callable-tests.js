@@ -1,4 +1,5 @@
 "use strict";
+require("./helpers/offline-network");
 const assert = require("node:assert/strict"), fs = require("./helpers/source-files"), vm = require("node:vm");
 const source = fs.readFileSync(require.resolve("../functions/index"), "utf8");
 const historyHelpers={cleanText:value=>String(value||""),engagementQualificationRowAllowed:()=>true,cleanFirestoreValue:value=>value,formatTimeValue:value=>String(value),cleanIsoDate:value=>value};
@@ -25,7 +26,7 @@ const context = { exports: {}, ENVIRONMENT: {sportingDataSource:"nap", projectId
     if (name === "./nap-portal-swimmers") return { portalPool: () => ({}) };
     if (name === "./nap-portal-workspaces") return { competitionItem: () => ({ missingEntryTimeMode: mode }) };
     if (name === "./nap-entry-time-preview") return { previewNativeTimes: async (pool, input, services) => {
-      calls++; assert.equal(input.enrolledOnly, true); assert.equal(input.clubId, "106");
+      calls++; assert.equal(input.enrolledOnly, true); assert.equal(input.clubId, "106"); assert.equal(input.includeIndividualEntries, true);
       await services.authorize({ clubId: "106" });
       return { swimmers: [{ individualEntries: services.preview({ id: 1 }, [{ course: "100SF", time: "14200" }], {}, dossier) }], sqlBudget: { queriesMax: 23 } };
     } };

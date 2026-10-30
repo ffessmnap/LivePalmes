@@ -191,7 +191,7 @@ function createEntryService(backendContext) {
     try {
       const pool = require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD);
       const result = await require("./nap-entry-time-preview").previewNativeTimes(pool,
-        { competitionId, clubId: String(context.clubId), swimmerIds: [swimmerIndexId], enrolledOnly: true }, {
+        { competitionId, clubId: String(context.clubId), swimmerIds: [swimmerIndexId], enrolledOnly: true, includeIndividualEntries: true }, {
           authorize: ({ clubId }) => { if (String(clubId) !== String(context.clubId)) throw new backendContext.HttpsError("permission-denied", "Dossier hors du club autorise."); },
           preview: (person, rows, nativeCompetition, dossier) => {
             const competition = require("./nap-portal-workspaces").competitionItem(nativeCompetition, backendContext.ENGAGEMENT_EVENT_DEFINITION_BY_CODE);
