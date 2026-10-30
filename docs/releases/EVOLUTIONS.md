@@ -6,8 +6,8 @@
 
 - Maquette de fonctionnement et d'interface validée explicitement dans la conversation Eau libre : tableau compact, ajout de distance seule conservée en bibliothèque sans sélection automatique, catégories par course et programme Femmes/Hommes/F/H ensemble ; 150 m élimination proposé dès l'ouverture.
 - Développement TEST demandé ensuite ; préparation en cours, pas encore intégré ni déployé. Ajouts et retraits NAP groupés, contrôle des empreintes, sauvegarde avant écriture et protection nationale en présence d'engagements. Aucun engagement supprimé, aucune écriture métier exécutée lors de la préparation.
-- Catalogue NAP consulté en lecture seule après accord explicite : 275 références, couples Femmes/Hommes du 150 m élimination confirmés ; 1000 m Support absent. Décision sur les références absentes en attente. Aucun ajout au catalogue réel autorisé ni exécuté à ce stade.
-- Preuves préliminaires hors réseau : tests bibliothèque, ajout natif, retrait natif, programme/phases, présentation et callables existants ; nouveaux tests du parcours et des retraits groupés. PR, CI finale, preuve TEST et validation utilisateur de la version déployée restent à renseigner.
+- Catalogue NAP consulté en lecture seule après accord explicite : 275 références, couples Femmes/Hommes du 150 m élimination confirmés ; 1000 m Support absent. Antoine demande de préparer l'ajout, sans écriture avant son accord sur le [bilan précis des deux références](../EAU_LIBRE_REFERENCES_NAP.md). Plan calculé et testé, aucune référence réelle ajoutée.
+- [PR #632](https://github.com/ffessmnap/LivePalmes/pull/632) en brouillon. Preuves ciblées hors réseau : bibliothèque, ajout/retrait natifs, programme/phases, présentation, callables, nouveaux tests des lots et du parcours ; vrai composant à 1280/390/320 px. CI finale en cours ; intégration, preuve TEST et validation utilisateur de la version déployée restent à renseigner. La création des références communes attend l'accord sur le bilan.
 
 
 ### 30 octobre — Dialogue Ajouter visible pour les administrateurs régionaux
