@@ -1994,7 +1994,7 @@
       }
 
     function engagementClubContextMessage(competition = {}) {
-        if (portalActions.isEngagementAdminMode()) return "Les paramètres et le programme de cette compétition sont disponibles.";
+        if (portalActions.isEngagementAdminMode()) return "";
         if (competition.canceled || competition.entryStatus !== "open" || portalActions.engagementDeadlineTone(competition) === "deadline-passed") return "";
         const lockReason = portalActions.engagementClubWriteLockReason({ ...competition, nativeReadOnly: false });
         if (lockReason) return lockReason;
