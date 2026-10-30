@@ -3,6 +3,7 @@
   // Creating this module performs no reads, writes, listener registration or rendering.
   function create(portalContext) {
     const { state: portalState, actions: portalActions, config: portalConfig } = portalContext;
+    let clubHomePreloadGeneration = 0;
     function updateEngagementDetailStepLabels() {
         const adminMode = portalActions.isEngagementAdminMode();
         const labels = adminMode
@@ -325,12 +326,12 @@
         initializeEngagementCalendarFilters(user);
         updateEngagementCreateFormAccess(user);
         void portalActions.loadPortalPendingOverview();
-        const preloadGeneration = portalState.clubHomePreloadGeneration = (portalState.clubHomePreloadGeneration || 0) + 1;
+        const preloadGeneration = ++clubHomePreloadGeneration;
         if (portalActions.canUse("engagements.club.manage")) {
           const authUid = portalState.activeAuthUid;
           const clubId = portalActions.engagementClubScope(user);
           const preload = () => {
-            if (preloadGeneration !== portalState.clubHomePreloadGeneration || authUid !== portalState.activeAuthUid
+            if (preloadGeneration !== clubHomePreloadGeneration || authUid !== portalState.activeAuthUid
               || clubId !== portalActions.engagementClubScope(portalState.currentAccessProfile || {})
               || !portalActions.canUse("engagements.club.manage")) return;
             void portalActions.loadEngagementCompetitions({ mode: "club", activate: false, silent: true });
