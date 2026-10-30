@@ -33,6 +33,9 @@ _nap_spec.loader.exec_module(nap_retained)
 _account_spec = importlib.util.spec_from_file_location('nap_account_policy', ROOT / 'tools/nap-account-release-policy.py')
 nap_account = importlib.util.module_from_spec(_account_spec)
 _account_spec.loader.exec_module(nap_account)
+_portal_spec = importlib.util.spec_from_file_location('portal_access_ns_policy', ROOT / 'tools/portal-access-ns-release-policy.py')
+portal_access_ns = importlib.util.module_from_spec(_portal_spec)
+_portal_spec.loader.exec_module(portal_access_ns)
 
 
 def approved_license_report_functions(value):
@@ -78,7 +81,7 @@ def approved_native_identity_secret(value):
 
 def approved_extra_functions(value):
     approved_native_identity_secret(value)
-    names = approved_pdf_functions(value) + approved_dtn_functions(value) + approved_notification_functions(value) + approved_public_nap_functions(value) + approved_access_request_functions(value) + approved_club_directory_functions(value) + approved_grouped_functions(value) + approved_bcc_functions(value) + approved_license_report_functions(value) + nap_retained.approved(value) + nap_account.approved(value)
+    names = approved_pdf_functions(value) + approved_dtn_functions(value) + approved_notification_functions(value) + approved_public_nap_functions(value) + approved_access_request_functions(value) + approved_club_directory_functions(value) + approved_grouped_functions(value) + approved_bcc_functions(value) + approved_license_report_functions(value) + nap_retained.approved(value) + nap_account.approved(value) + portal_access_ns.approved(value)
     require(len(names) == len(set(names)), 'Extensions de publication superposees')
     return names
 
@@ -141,6 +144,8 @@ def approved_club_directory_functions(value):
 
 def idf_preservation(value):
     # Existing reader authorization stays closed; this is a second, separately approved pair.
+    if portal_access_ns.approved(value):
+        return portal_access_ns.contract()['mailPreservation']
     return (nap_account.contract()['mailPreservation'] if nap_account.approved(value) else None) or (nap_retained.contract()['mailPreservation'] if nap_retained.approved(value) else None) or license_release.preservation(value) or grouped.preservation(value) or club_directory_idf_preservation(value) or public_reader_idf_preservation(value)
 
 
@@ -223,6 +228,7 @@ def approved_access_request_functions(value):
 
 
 def require_access_request_selection(request, selected):
+    portal_access_ns.selection(request, selected)
     nap_account.selection(request, selected)
     license_release.selection(request, selected)
     bcc.for_request(request).selection(request, selected)
@@ -579,6 +585,8 @@ def validate_request(value, paths):
                         'changes', 'excludedBackendReview', 'excludedBackendEvidence', 'freezeTestCandidate'}
             if approved_license_report_functions(value):
                 ordinary.add('licenseReportRelease')
+            if portal_access_ns.approved(value):
+                ordinary.add('portalAccessNsRelease')
             require(set(value).issubset(ordinary), 'Gel reserve au parcours ordinaire, sans contrat exceptionnel')
     path_set = set(paths)
     ignored = set(ignored_top_paths(paths, value['candidate']))
@@ -818,6 +826,8 @@ def verify_later_test(root, request, observed):
                 'changes', 'excludedBackendReview', 'excludedBackendEvidence', 'freezeTestCandidate'}
     if approved_license_report_functions(request):
         ordinary.add('licenseReportRelease')
+    if portal_access_ns.approved(request):
+        ordinary.add('portalAccessNsRelease')
     require(set(request).issubset(ordinary), 'Contrat exceptionnel incompatible avec le gel ordinaire')
     run_id = latest_run('livepalmes-test-common.yml')
     require(run_id != request['testRun'], 'Derive du meme run TEST')
@@ -845,7 +855,7 @@ def prepare_selection(directory, candidate):
         require(all(not needs_function(names.get(n), n, request['candidate'], project='livepalmes-test') for n in selected), 'Backend TEST incomplet ou pas au code valide')
         extra = approved_extra_functions(request)
         notification = approved_notification_functions(request)
-        require(all(not needs_function(names.get(n), n, request['candidate'], project='livepalmes-test') for n in notification + approved_public_nap_functions(request) + approved_access_request_functions(request) + approved_club_directory_functions(request) + approved_grouped_functions(request) + approved_bcc_functions(request) + approved_license_report_functions(request) + nap_retained.approved(request) + nap_account.approved(request)),
+        require(all(not needs_function(names.get(n), n, request['candidate'], project='livepalmes-test') for n in notification + approved_public_nap_functions(request) + approved_access_request_functions(request) + approved_club_directory_functions(request) + approved_grouped_functions(request) + approved_bcc_functions(request) + approved_license_report_functions(request) + nap_retained.approved(request) + nap_account.approved(request) + portal_access_ns.approved(request)),
                 'Notifications TEST absentes ou pas au code valide')
         if approved_dtn_functions(request):
             require(read(directory / 'test-proof.json').get('dtnExtensionVerification') == {'schema': 1, 'candidate': request['candidate'], 'suite': 'dtn-shared-invalidation', 'mode': 'offline-no-invocation', 'result': 'success', 'functions': sorted(DTN_FUNCTIONS)}, 'Preuve des dependances DTN absente ou incompatible')
@@ -1006,6 +1016,8 @@ def freeze_plan(directory, evidence=False):
     selected = read(root / 'selection.json')
     selected = [n for n in selected if n in approved_extra_functions(request) or needs_function(names.get(n), n, request['candidate'])]
     require_access_request_selection(request, selected)
+    if portal_access_ns.approved(request):
+        write(root / 'portal-access-ns-proof.json', portal_access_ns.verify(request, read(root / 'baseline.json'), names))
     if nap_account.approved(request):
         write(root / 'nap-account-proof.json', nap_account.verify(request, read(root / 'baseline.json'), names))
     if nap_retained.approved(request):
@@ -1227,6 +1239,12 @@ def fetch_plan(preparation, resume, directory):
             artifact(resume, 'production-bcc-guards', root)
         if nap_account.approved(read(root / 'request.json')):
             artifact(resume, 'production-idf-preservation', root / 'previous/guards')
+        if portal_access_ns.approved(read(root / 'request.json')):
+            artifact(resume, 'production-idf-preservation', root / 'previous/guards')
+            for witness in ['portal-access-ns-before.json', 'portal-access-ns-after.json']:
+                source = root/'previous/guards'/witness
+                if source.exists():
+                    write(root/witness, read(source))
     else:
         artifact(preparation, 'release-plan', root, '.github/workflows/livepalmes-production-preflight.yml')
     value = read(root / 'request.json')

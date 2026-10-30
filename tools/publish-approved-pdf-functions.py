@@ -100,7 +100,8 @@ def main(candidate, plan, backup):
         return
     native_identity = cycle.approved_native_identity_secret(request)
     licence_names = cycle.approved_license_report_functions(request)
-    names = cycle.approved_pdf_functions(request) + cycle.approved_dtn_functions(request) + cycle.approved_club_directory_functions(request) + licence_names
+    portal_names = cycle.portal_access_ns.approved(request)
+    names = cycle.approved_pdf_functions(request) + cycle.approved_dtn_functions(request) + cycle.approved_club_directory_functions(request) + licence_names + portal_names
     if not names:
         print('Aucun traitement PDF supplementaire demande.')
         return
@@ -109,14 +110,14 @@ def main(candidate, plan, backup):
         raise ValueError('Compte PROD requis')
     cycle.require_access_request_selection(request, json.loads((plan / 'selection.json').read_text()))
     report = json.loads((backup / 'report.json').read_text())
-    if report['candidate'] != request['candidate'] or set(report.get('additionalPdfFunctions', []) + report.get('additionalDtnFunctions', []) + report.get('additionalClubDirectoryFunctions', []) + report.get('additionalLicenseReportFunctions', [])) != set(names):
+    if report['candidate'] != request['candidate'] or set(report.get('additionalPdfFunctions', []) + report.get('additionalDtnFunctions', []) + report.get('additionalClubDirectoryFunctions', []) + report.get('additionalLicenseReportFunctions', []) + report.get('additionalPortalAccessNsFunctions', [])) != set(names):
         raise ValueError('Sauvegarde hors bilan')
     spec = importlib.util.spec_from_file_location('release_state', Path(__file__).with_name('production-release-state.py'))
     state = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(state)
     before = {f['name']: f for f in json.loads((backup / 'functions.json').read_text())}
     current = {f['name']: f for f in state.inventory()}
-    if cycle.approved_club_directory_functions(request) or licence_names:
+    if cycle.approved_club_directory_functions(request) or licence_names or portal_names:
         previous_path = plan / 'previous/production-after.json'
         previous = json.loads(previous_path.read_text()) if previous_path.exists() else {}
         if previous and previous.get('candidate') != request['candidate']:

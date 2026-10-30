@@ -174,6 +174,9 @@ def main():
         report['additionalClubDirectoryFunctions'] = cycle.approved_club_directory_functions(plan) if os.environ.get('PLAN') else []
         report['additionalGroupedFunctions'] = cycle.approved_grouped_functions(plan) if os.environ.get('PLAN') else []
         report['additionalLicenseReportFunctions'] = cycle.approved_license_report_functions(plan) if os.environ.get('PLAN') else []
+        report['additionalPortalAccessNsFunctions'] = cycle.portal_access_ns.approved(plan) if os.environ.get('PLAN') else []
+        if report['additionalPortalAccessNsFunctions']:
+            cycle.portal_access_ns.initial(functions)
         report['additionalNapRetainedFunctions'] = cycle.nap_retained.approved(plan) if os.environ.get('PLAN') else []
         report['additionalNapAccountFunctions'] = account_names
         report['additionalDtnFunctions'] = plan.get('additionalDtnFunctions', []) if os.environ.get('PLAN') else []
