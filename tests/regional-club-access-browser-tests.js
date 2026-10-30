@@ -32,7 +32,7 @@ const {startStaticServer,launchBrowser,evaluate,waitFor,presentationScript}=requ
  elements.accessPanel.close();
  if(elements.accessPanel.open)throw Error('Dialog must close and release the page');
  elements.accessAdd.click();
- 
+
  const checks={initialClubAccess:nav.canUse("engagements.club.manage"),region:elements.accessRegionId.value,locked:elements.accessRegionId.disabled,clubs:[...elements.accessClubSelect.options].map(o=>o.value),rights:[...elements.accessForm.querySelectorAll("input[name=capability]")].filter(i=>!i.closest('label').hidden).map(i=>({value:i.value,checked:i.checked,disabled:i.disabled}))};
  elements.accessClubSelect.value='10';modules.syncAccessClubFieldsFromSelect();
  checks.payload=account.accessPayloadFromForm();
