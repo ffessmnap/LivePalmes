@@ -178,7 +178,10 @@
         currentProfile = null;
         if (currentUser?.getIdTokenResult) {
           try {
-            currentClaims = (await currentUser.getIdTokenResult(true))?.claims || {};
+            // The portal still reads the authoritative server profile below.
+            // Firebase renews expired tokens; a valid restored session needs no
+            // additional forced renewal before that mandatory server check.
+            currentClaims = (await currentUser.getIdTokenResult(!serverProfileAuthentication))?.claims || {};
           } catch (error) {
             console.warn("Lecture des droits admin LivePalmes impossible", error);
           }

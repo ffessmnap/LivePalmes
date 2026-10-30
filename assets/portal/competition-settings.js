@@ -325,9 +325,20 @@
         initializeEngagementCalendarFilters(user);
         updateEngagementCreateFormAccess(user);
         void portalActions.loadPortalPendingOverview();
+        const preloadGeneration = portalState.clubHomePreloadGeneration = (portalState.clubHomePreloadGeneration || 0) + 1;
         if (portalActions.canUse("engagements.club.manage")) {
-          void portalActions.loadEngagementCompetitions({ mode: "club", activate: false, silent: true });
-          void portalActions.loadEngagementClubSwimmers({ silent: true });
+          const authUid = portalState.activeAuthUid;
+          const clubId = portalActions.engagementClubScope(user);
+          const preload = () => {
+            if (preloadGeneration !== portalState.clubHomePreloadGeneration || authUid !== portalState.activeAuthUid
+              || clubId !== portalActions.engagementClubScope(portalState.currentAccessProfile || {})
+              || !portalActions.canUse("engagements.club.manage")) return;
+            void portalActions.loadEngagementCompetitions({ mode: "club", activate: false, silent: true });
+            void portalActions.loadEngagementClubSwimmers({ silent: true });
+          };
+          // Give the home view a paint opportunity before warming optional data.
+          if (global.requestAnimationFrame) global.requestAnimationFrame(() => global.setTimeout(preload, 0));
+          else global.setTimeout(preload, 0);
         }
         void portalActions.restoreEngagementNavigation();
       }
