@@ -723,9 +723,31 @@ function createNationalHandlers(backendContext) {
       .map((log) => log.actorUid)
       .filter((uid) => uid && !knownActorUids.has(uid) && !uid.startsWith("system:") && uid !== "public-login-page")))
       .slice(0, backendContext.AUDIT_ACTOR_RESOLUTION_LIMIT);
-    const actorSnapshots = actorUidsToResolve.length
-      ? await backendContext.db.getAll(...actorUidsToResolve.map((uid) => backendContext.db.collection("users").doc(uid)))
-      : [];
+    const knownCompetitionIds = new Set((Array.isArray(request.data?.knownCompetitionIds) ? request.data.knownCompetitionIds : [])
+      .slice(0, 100)
+      .map((value) => backendContext.cleanText(value).slice(0, 128))
+      .filter(Boolean));
+    const competitionIdsToResolve = Array.from(new Set(logs
+      .map((log) => backendContext.cleanText(log.target?.competitionId).slice(0, 128))
+      .filter((competitionId) => competitionId && !knownCompetitionIds.has(competitionId))))
+      .slice(0, backendContext.AUDIT_COMPETITION_RESOLUTION_LIMIT);
+    const knownPersonIds = new Set((Array.isArray(request.data?.knownPersonIds) ? request.data.knownPersonIds : [])
+      .slice(0, 100)
+      .map((value) => backendContext.cleanText(value).slice(0, 80))
+      .filter(Boolean));
+    const personIdsToResolve = Array.from(new Set(logs
+      .map((log) => backendContext.cleanText(log.target?.personId).slice(0, 80))
+      .filter((personId) => personId && !knownPersonIds.has(personId))))
+      .slice(0, backendContext.AUDIT_PERSON_RESOLUTION_LIMIT);
+    // Independent reference families keep the same page limits and known IDs.
+    const [actorSnapshots, competitionSnapshots, personSnapshots] = await Promise.all([
+      actorUidsToResolve.length
+        ? backendContext.db.getAll(...actorUidsToResolve.map((uid) => backendContext.db.collection("users").doc(uid))) : [],
+      competitionIdsToResolve.length
+        ? backendContext.db.getAll(...competitionIdsToResolve.map((competitionId) => backendContext.db.collection("engagementCompetitions").doc(competitionId))) : [],
+      personIdsToResolve.length
+        ? backendContext.db.getAll(...personIdsToResolve.map((personId) => backendContext.db.collection("engagementClubPeople").doc(personId))) : []
+    ]);
     const unresolvedAuthUids = actorSnapshots
       .filter((actorSnapshot) => {
         const data = actorSnapshot.exists ? actorSnapshot.data() || {} : {};
@@ -745,17 +767,6 @@ function createNationalHandlers(backendContext) {
         email: (backendContext.cleanText(data.email) || backendContext.cleanText(authUser?.email)).slice(0, 180)
       };
     });
-    const knownCompetitionIds = new Set((Array.isArray(request.data?.knownCompetitionIds) ? request.data.knownCompetitionIds : [])
-      .slice(0, 100)
-      .map((value) => backendContext.cleanText(value).slice(0, 128))
-      .filter(Boolean));
-    const competitionIdsToResolve = Array.from(new Set(logs
-      .map((log) => backendContext.cleanText(log.target?.competitionId).slice(0, 128))
-      .filter((competitionId) => competitionId && !knownCompetitionIds.has(competitionId))))
-      .slice(0, backendContext.AUDIT_COMPETITION_RESOLUTION_LIMIT);
-    const competitionSnapshots = competitionIdsToResolve.length
-      ? await backendContext.db.getAll(...competitionIdsToResolve.map((competitionId) => backendContext.db.collection("engagementCompetitions").doc(competitionId)))
-      : [];
     const competitions = competitionSnapshots.map((competitionSnapshot) => {
       const data = competitionSnapshot.exists ? competitionSnapshot.data() || {} : {};
       return {
@@ -764,17 +775,6 @@ function createNationalHandlers(backendContext) {
         date: backendContext.cleanText(data.date).slice(0, 20)
       };
     });
-    const knownPersonIds = new Set((Array.isArray(request.data?.knownPersonIds) ? request.data.knownPersonIds : [])
-      .slice(0, 100)
-      .map((value) => backendContext.cleanText(value).slice(0, 80))
-      .filter(Boolean));
-    const personIdsToResolve = Array.from(new Set(logs
-      .map((log) => backendContext.cleanText(log.target?.personId).slice(0, 80))
-      .filter((personId) => personId && !knownPersonIds.has(personId))))
-      .slice(0, backendContext.AUDIT_PERSON_RESOLUTION_LIMIT);
-    const personSnapshots = personIdsToResolve.length
-      ? await backendContext.db.getAll(...personIdsToResolve.map((personId) => backendContext.db.collection("engagementClubPeople").doc(personId)))
-      : [];
     const people = personSnapshots.map((personSnapshot) => {
       const data = personSnapshot.exists ? personSnapshot.data() || {} : {};
       return {

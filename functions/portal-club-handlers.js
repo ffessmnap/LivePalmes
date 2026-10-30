@@ -18,7 +18,7 @@ function createClubHandlers(backendContext) {
       });
       return { ok: true, source: "nap", competition: { ...competition, nativeTeamLeaderEditable: pack.leaders.length <= 1, nativeTeamLeaderRequired: pack.leaders.length === 0, nativeRelaysEditable: competition.competitionType === "pool" && pack.leaders.length === 1 && !require("./nap-swimmer-entry-plan").selectionLockReason(competition), nativeOfficialsEditable: pack.leaders.length === 1 && new Set((pack.officials || []).map(row=>String(row.officiel))).size<=80, nativeIndividualEntriesEditable: pack.leaders.length === 1 && !require("./nap-entry-course-rules").courseLockReason(competition), nativeSwimmerSelectionEditable: pack.leaders.length === 1 && !require("./nap-swimmer-entry-plan").selectionLockReason(competition) }, entry: await backendContext.nativeClubEntryView(pack,context,competition),
         readStats: backendContext.portalReadStats("getEngagementClubEntry", startedAt, { baseDocuments: 1, variableDocumentsMax: 0, cacheHit: false }),
-        sqlBudget: { queriesMax: 25, rowsMax: 20519 } };
+        sqlBudget: { queriesMax: 26, rowsMax: 20520, accessQueriesMax: 1, profileDocumentsMax: 1 } };
     }
     const competitionRef = backendContext.db.collection("engagementCompetitions").doc(competitionId);
     const entryRef = backendContext.db.collection("engagementClubEntries").doc(backendContext.engagementClubEntryId(competitionId, context.clubId));

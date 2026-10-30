@@ -493,8 +493,7 @@
           portalContext.elements.engagementsNationalAuditStatus.dataset.tone = "loading";
         }
         try {
-          await portalActions.loadAccessClubReference();
-          const result = await portalActions.callFunction("listEngagementNationalAuditLogs", {
+          const requestFilters = {
             limit: 50,
             days: Number(portalContext.elements.engagementsNationalAuditPeriod?.value || 7),
             actorUid: portalContext.elements.engagementsNationalAuditActor?.value || "",
@@ -511,8 +510,13 @@
             knownPersonIds: [...portalConfig.engagementNationalAuditPeople.entries()]
               .map(([personId]) => personId)
               .slice(0, 100)
-          });
-          portalState.engagementNationalAuditAppliedActorUid = portalContext.elements.engagementsNationalAuditActor?.value || "";
+          };
+          // Club labels must not delay the journal or change its captured filters.
+          void Promise.resolve().then(() => portalActions.loadAccessClubReference()).then(() => {
+            if (portalState.engagementNationalAuditLogsLoaded) updateEngagementNationalAuditFilterOptions();
+          }).catch(() => {});
+          const result = await portalActions.callFunction("listEngagementNationalAuditLogs", requestFilters);
+          portalState.engagementNationalAuditAppliedActorUid = requestFilters.actorUid;
           (Array.isArray(result.actors) ? result.actors : []).forEach((actor) => {
             if (actor?.uid) portalConfig.engagementNationalAuditActors.set(actor.uid, actor);
           });
