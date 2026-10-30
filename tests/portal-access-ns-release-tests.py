@@ -38,11 +38,13 @@ class PortalNsPolicyTests(unittest.TestCase):
         with self.assertRaises(ValueError): policy.selection(request, [policy.NAME])
 
     def fixture(self, name):
+        binding = copy.deepcopy(policy.contract()['napBinding'])
+        if name == policy.NAME: binding[0]['version'] = 'latest'
         return {'name':'projects/livepalmes/locations/europe-west1/functions/'+name,
                 'state':'ACTIVE','environment':'GEN_2','labels':{'existing':'keep'},
                 'buildConfig':{'runtime':'nodejs22','entryPoint':name},
                 'serviceConfig':{'timeoutSeconds':60,'serviceAccountEmail':'same-fixture',
-                    'secretEnvironmentVariables':copy.deepcopy(policy.contract()['napBinding'])}}
+                    'secretEnvironmentVariables':binding}}
 
     def test_binding_only_and_source_only_preserve_every_other_setting(self):
         c = policy.contract()
@@ -52,7 +54,7 @@ class PortalNsPolicyTests(unittest.TestCase):
             if name == policy.ACCOUNT: before['serviceConfig']['secretEnvironmentVariables'] = []
             after = copy.deepcopy(before)
             after['labels']['livepalmes-commit'] = c['candidate']
-            after['serviceConfig']['secretEnvironmentVariables'] = copy.deepcopy(c['napBinding'])
+            if name == policy.ACCOUNT: after['serviceConfig']['secretEnvironmentVariables'] = copy.deepcopy(c['napBinding'])
             policy.assert_config(before,after,state)
             marked_before, marked_after = copy.deepcopy(before), copy.deepcopy(after)
             marked_before['labels']['firebase-functions-hash'] = 'a'*40
