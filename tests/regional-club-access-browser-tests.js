@@ -11,6 +11,8 @@ const {startStaticServer,launchBrowser,evaluate,waitFor,presentationScript}=requ
  const result=await evaluate(client, `
  try {
  const byId=id=>document.getElementById(id);
+ // Isolate the real component factories from presentation-fixture listeners.
+ for(const id of ["adminAccessPanel","adminAccessAddButton"]){const node=byId(id);node.replaceWith(node.cloneNode(true));}
  window.regionalCaps=['engagements.region.manage'];
  const clubs=[{clubId:'10',clubName:'Club A',clubCode:'A',regionId:'Region A',referenceRegionId:'1',active:true},{clubId:'20',clubName:'Club B',clubCode:'B',regionId:'Region B',referenceRegionId:'2',active:true}];
  const state={currentAccessProfile:{capabilities:regionalCaps,regionId:'Region A',clubId:'10'},accessClubReference:clubs,accessClubReferenceById:new Map(clubs.map(c=>[c.clubId,c])),adminAuth:{hasCapability:cap=>regionalCaps.includes(cap)}};
