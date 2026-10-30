@@ -1,14 +1,14 @@
 # Statut NS des nageurs du portail
 
-<!-- description: Champ NS privé NAP, transitions nationales, budget borné et préparation de la migration non exécutée. -->
+<!-- description: Champ NS privé NAP, interface compacte, transitions nationales, budgets et preuves de la migration autorisée. -->
 
 ## Périmètre et état
 
-Chantier 3/3 autorisé par Antoine le 29 octobre 2026, code destiné à TEST. Dans Mes nageurs, le crayon existant ouvre une section « Nageur étranger — non sélectionnable (NS) » avec son propre bouton d’enregistrement. Les droits club existants s’appliquent ; aucun nouveau droit n’est créé. Les responsables régionaux utilisent le contexte club déjà autorisé.
+Chantier 3/3 autorisé par Antoine le 29 octobre 2026, code destiné à TEST. Dans Mes nageurs, le crayon existant affiche « Nageur étranger » et la case « Non sélectionnable (NS) » à côté du numéro de licence, dans le bloc Identité. Le visuel compact a été validé par Antoine le 30 octobre ; aucun bouton NS dédié. Cocher ou décocher déclenche directement l’appel serveur existant. Les droits club existants s’appliquent ; aucun nouveau droit n’est créé. Les responsables régionaux utilisent le contexte club déjà autorisé.
 
-NAP/MySQL est la source réelle des nageurs. Le [diagnostic de métadonnées en lecture seule](https://github.com/ffessmnap/LivePalmes/actions/runs/40956880950) confirme les onze colonnes natives de `nageurs` et l’absence de champ NS. Aucun sens nouveau n’est attribué à `wc` ou `edf`. Deux colonnes facultatives sont préparées dans `functions/nap-swimmer-ns-schema.js` ; aucune migration n’est lancée par le code, une ouverture de fiche ou un déploiement.
+NAP/MySQL est la source réelle des nageurs. Le [diagnostic de métadonnées en lecture seule](https://github.com/ffessmnap/LivePalmes/actions/runs/40956880950) confirme les onze colonnes natives de `nageurs` et l’absence de champ NS. Aucun sens nouveau n’est attribué à `wc` ou `edf`. Les deux colonnes facultatives ont été créées le 30 octobre après accord spécifique : [preuve de migration](https://github.com/ffessmnap/LivePalmes/pull/626#issuecomment-6516336806). Sauvegardes chiffrées rouvertes, 16 232 lignes et onze champs historiques préservés, nouvelles valeurs entièrement NULL. Aucune migration n’est lancée par le code, une ouverture de fiche ou un déploiement.
 
-Sans ces colonnes, les lectures et corrections existantes continuent à fonctionner. Le statut est interprété décoché et son édition seule est désactivée, avec une explication. **Code livré sur TEST ne signifie pas fonctionnalité NS activée.** L’activation nécessite un accord spécifique sur l’opération de structure de la base réelle, puis les contrôles ci-dessous. Aucune validation utilisateur ni autorisation PROD n’est déduite.
+Sans ces colonnes, les lectures et corrections existantes continuent à fonctionner. Le statut est interprété décoché et son édition seule est désactivée, avec une explication. L’activation NS sur TEST a été vérifiée en lecture seule après migration. La recette utilisateur du fonctionnement complet reste distincte de la validation du visuel. Aucune validation utilisateur ni autorisation PROD n’est déduite.
 
 ## Transitions
 
@@ -19,6 +19,10 @@ Sans ces colonnes, les lectures et corrections existantes continuent à fonction
 - Acceptation nationale : contrôle national serveur, demande revendiquée et verrouillée selon le circuit existant, puis mise à jour d’un seul nageur. Sauvegarde durable, comparaison atomique de l’identité, du club, de NS et de sa version. Une demande devenue ancienne ne peut pas retirer un NS ultérieur.
 
 Les demandes NS sont distinctes des corrections d’identité et des signalements de doublon. Elles ne permettent pas « Modifier et valider » l’identité. Les reprises d’une décision interrompue après SQL réutilisent la même sauvegarde et ne doublent pas l’écriture. Aucun email, migration ou recalcul sportif n’est déclenché. Aucun branchement dans WinPan, classements, records, médailles ou qualifications.
+
+## Retour visuel pendant l’envoi
+
+Le chargement et l’envoi sont déclarés explicitement : message animé près de la case, spinner et libellé du bouton principal, aria-busy. Pendant une sauvegarde NS, le formulaire ne peut pas envoyer une correction d’identité en parallèle et la case est désactivée ; aucune requête supplémentaire n’est lancée. Après réception, le message passe à l’attente nationale ou à la confirmation. Une erreur arrête l’animation, rétablit le dernier statut confirmé et demande une réouverture explicite, sans réessai automatique. Les autres champs restent disponibles si seule la lecture NS est indisponible.
 
 ## Budget avant/après
 
@@ -67,4 +71,4 @@ Aucune relance implicite en cas d’échec ou de résultat incertain : examiner 
 
 ## Preuves de contrôle
 
-Tests hors réseau : `tests/nap-swimmer-ns-tests.js`, `tests/nap-swimmer-ns-callable-tests.js` et `tests/portal-swimmer-ns-browser-tests.js`. Les deux premiers sont intégrés à `node tools/verify-livepalmes.js`. Le dernier exerce les fabriques livrées, le dialogue réel, l’attente, le refus, les colonnes absentes, le changement de club et les deux thèmes à 1280/390 px ; HTTPS externe bloqué et données fictives. La CI obligatoire du candidat exact et la preuve TEST complètent ces contrôles dans la PR. La fonctionnalité réelle reste en attente de migration autorisée puis de recette utilisateur.
+Tests hors réseau : `tests/nap-swimmer-ns-tests.js`, `tests/nap-swimmer-ns-callable-tests.js` et `tests/portal-swimmer-ns-browser-tests.js`. Les deux premiers sont intégrés à `node tools/verify-livepalmes.js`. Le dernier exerce les fabriques livrées et le composant d’attente réel, le dialogue, les réponses volontairement retardées, la protection contre les doubles appels, le refus, les erreurs, les colonnes absentes, le changement de club et les deux thèmes à 1280/390/320 px ; HTTPS externe bloqué et données fictives. La CI obligatoire du candidat exact et la preuve TEST complètent ces contrôles dans la PR. La migration est attestée ci-dessus ; la nouvelle disposition et ses états d’envoi attendent encore leur recette utilisateur sur la version TEST livrée.
