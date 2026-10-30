@@ -18,6 +18,8 @@ Les lectures du journal restent réservées à `admin.full`, avec 50 traces et s
 
 Contrôles hors réseau : comparaison des lecteurs ancien/nouveau sur 1/50 nageurs et participation/qualifications, comptage de 18–20 SELECT, doublons d'inscription, fiches fusionnées et mauvais club, chef absent/ambigu/renonciation, limites et refus ; ordre des engagements et membres, empreinte inchangée ; journal, pagination, cache, droits, erreurs et plafond 177. Rendu réel du journal vérifié à 1440/390/320 px, clavier et absence de débordement. La CI du candidat exact et la preuve du déploiement TEST sont suivies dans le registre.
 
+Plans réels vérifiés le 30 octobre dans la connexion NAP existante, avec trois `EXPLAIN SELECT` uniquement, sur 50 identifiants de contrôle : identités en `range` sur `PRIMARY` (estimation 50), jointures clubs/licences/fusions en `eq_ref` sur leurs clés primaires (estimation 1 chacune) ; appartenances en `range` sur `livepalmes_compet_nageur_id` (estimation 50) ; chefs en `ref` sur `livepalmes_compet_id` (estimation 8 pour la compétition témoin). Aucun accès `ALL` observé, aucun SELECT de données ni changement exécuté. Ce sont des estimations du plan, pas des lignes réellement examinées ni des latences applicatives.
+
 Les traces du 30 octobre consultées pendant l'audit appartiennent à des révisions précédentes : elles montrent notamment une prérequête de 4,751 s concomitante au démarrage d'une instance, suivie d'un POST de 1,251 s. Elles ne mesurent ni ce lot ni le délai depuis le clic. Aucune latence d'aperçu n'a été retrouvée dans les fenêtres bornées du 23 au 30 octobre ; les mesures navigateur authentifiées et le SQL isolé restent à attester. Aucun gain en secondes n'est promis.
 
 ## Objectif
