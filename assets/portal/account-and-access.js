@@ -254,7 +254,8 @@
 
     function openAccessDialog() {
         const dialog = portalContext.elements.accessPanel;
-        if (!dialog) return;
+        if (!dialog || (!portalActions.canUse("admin.full") && !portalActions.canUse("engagements.region.manage"))) return;
+        dialog.hidden = false;
         if (!dialog.open) {
           if (typeof dialog.showModal === "function") dialog.showModal();
           else dialog.setAttribute("open", "");

@@ -2,6 +2,11 @@
 
 <!-- description: Référence du langage visuel, des composants d’interface et des règles responsive déjà présents dans LivePalmes. -->
 
+## Visibilité du dialogue Ajouter régional — 30 octobre 2026
+
+Le dialogue de création utilise la même visibilité autorisée que son bouton Ajouter (région ou administration générale). Retirer hidden avant showModal : un dialogue modal masqué bloque la page sans afficher son contenu. La fermeture doit rendre la page interactive et permettre une réouverture, sur ordinateur comme sur mobile. Formulaire et styles existants conservés.
+
+
 ## Statut NS dans le crayon de Mes nageurs — 30 octobre 2026
 
 La case « Non sélectionnable (NS) », sous le libellé « Nageur étranger », est intégrée au bloc Identité à côté du numéro de licence, y compris à 320 px. Aucun encadré ni bouton NS séparé ; les messages ne prennent de place que pour un chargement, une confirmation ou une décision. Cocher enregistre directement ; décocher transmet la demande nationale puis réaffiche la case cochée et verrouillée tant que NS est maintenu.
