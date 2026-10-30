@@ -78,6 +78,9 @@ async function test() {
   assert.deepEqual(actualProjection.other.mapValue.fields,otherFields);
   assert.equal(Object.hasOwn(adjusted.docs.get("mail").fields.recipients.mapValue.fields.one.mapValue.fields,"lastLoginAt"),false);
   assert.equal(planner.hash(prep),beforeProjection,"Saved baseline must stay immutable");
+  const sourceBaseline = cli.baselineOf(prep,annex,new Map([[annex.override.name,{fields:{lastLoginAt:{stringValue:"source-login"}}}]]));
+  assert.equal(sourceBaseline.docs.get("directory").fields.entries.mapValue.fields.one.mapValue.fields.lastLoginAt.stringValue,"source-login");
+  assert.deepEqual(sourceBaseline.docs.get("directory").fields.entries.mapValue.fields.other.mapValue.fields,otherFields);
   assert.equal(policy.proposedWrite(f.context, annex, f.context.plan.entries[0].name, null, null, "apply", false).status, "outside-resume-scope");
   const proposal = policy.proposedWrite(f.context, annex, f.name, f.current.get(f.name), null, "apply", false);
   assert.equal(proposal.status, "proposed-only"); assert.deepEqual(proposal.write.updateMask.fieldPaths, ["firstName", "lastName"]);

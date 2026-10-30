@@ -44,13 +44,14 @@ async function triggerGuard(token, preparation) {
   for (const name of ["syncEngagementMailRecipientIndex", "syncNapClubAccountEmails"]) current.push(await check.inspectTrigger(name, token));
   if (controls.triggerMetadataHash(current) !== controls.triggerMetadataHash(preparation.triggers)) throw new Error("Trigger deployment changed");
 }
-function baselineOf(preparation, annex) {
+function baselineOf(preparation, annex, originals = null) {
   const baseline = { specs: new Map(preparation.projectionSpecs), docs: new Map(structuredClone(preparation.projectionDocuments)) };
   // The directory trigger copies the same login string. Preserve the one frozen
   // login exception there too; every other projection field remains guarded.
-  for (const spec of baseline.specs.get(annex.override.name) || []) {
+  for (const [name, specs] of baseline.specs) for (const spec of specs) {
     const fields = baseline.docs.get(spec.name)?.fields?.[spec.map]?.mapValue?.fields?.[spec.key]?.mapValue?.fields;
-    if (fields && Object.hasOwn(fields, "lastLoginAt")) fields.lastLoginAt = structuredClone(annex.override.fields.lastLoginAt);
+    const source = originals?.get(name) || (name === annex.override.name ? annex.override : null);
+    if (source && fields && Object.hasOwn(fields, "lastLoginAt")) fields.lastLoginAt = structuredClone(source.fields.lastLoginAt || {stringValue:""});
   }
   return baseline;
 }
@@ -124,9 +125,19 @@ function reserveLocks(backup, prefix, direction, annex, isAlive = alive) {
   for (const dir of dirs) for (const file of [global, own]) if (!fs.readFileSync(path.join(dir, file)).equals(bytes)) throw new Error("Resume lock readback failed");
 }
 function confirmedPrefix(backup, prefix, annex, entries, fresh, originals, isAlive = alive) {
-  const expectedFiles = ["intent", "receipt"].map(kind => `${prefix}-apply-batch-001-${kind}.enc`).sort();
+  const receiptFiles = fs.readdirSync(backup.directory).filter(name=>name.startsWith(prefix+"-apply-batch-") && name.endsWith("-receipt.enc")).sort();
+  if (!receiptFiles.length || receiptFiles.length > 18) throw new Error("Continuation receipt count invalid");
+  const expectedFiles = receiptFiles.flatMap((file,index)=>{
+    const number=String(index+1).padStart(3,"0");
+    if(file!==`${prefix}-apply-batch-${number}-receipt.enc`) throw new Error("Continuation receipts not contiguous");
+    return ["intent","receipt",...(index<receiptFiles.length-1?["verified"]:[])].map(kind=>`${prefix}-apply-batch-${number}-${kind}.enc`);
+  }).sort();
   for (const dir of [backup.directory, copyDirectory()]) {
-    if (["reviewed-resume-rollback.lock", "reviewed-resume-finish.lock", `${prefix}-apply-complete.json`].some(file => fs.existsSync(path.join(dir,file)))) throw new Error("Continuation already claimed or rollback started");
+    if (["reviewed-resume-rollback.lock", `${prefix}-apply-complete.json`].some(file => fs.existsSync(path.join(dir,file)))) throw new Error("Continuation already claimed or rollback started");
+    for(const file of fs.readdirSync(dir).filter(name=>/^reviewed-resume-finish(?:-\d+)?\.lock$/.test(name))) {
+      const bytes=fs.readFileSync(path.join(dir,file)), lock=JSON.parse(bytes);
+      if(!bytes.equals(fs.readFileSync(path.join(backup.directory,file))) || lock.resumeDigest!==annex.digest || !Number.isSafeInteger(lock.pid) || isAlive(lock.pid)) throw new Error("Continuation writer active or lock differs");
+    }
     const files = fs.readdirSync(dir).filter(name => name.startsWith(prefix+"-apply-batch-")).sort();
     if (planner.hash(files) !== planner.hash(expectedFiles)) throw new Error("Continuation journal differs from confirmed first batch");
     for (const file of ["reviewed-resume-apply.lock", `${prefix}-apply.lock`]) {
@@ -136,9 +147,12 @@ function confirmedPrefix(backup, prefix, annex, entries, fresh, originals, isAli
       if (lock.operationId !== check.OPERATION || lock.planDigest !== check.DIGEST || lock.resumeDigest !== annex.digest || lock.direction !== "apply" || !Number.isSafeInteger(lock.pid) || isAlive(lock.pid)) throw new Error("Continuation writer active or lock differs");
     }
   }
-  const receipt = previous.readPrivate(backup, expectedFiles.find(name => name.endsWith("-receipt.enc")));
-  const intent = previous.readPrivate(backup, expectedFiles.find(name => name.endsWith("-intent.enc")));
-  const batch = entries.slice(0, 10), names = batch.map(entry => entry.name);
+  const savedPrefix=[];
+  for(let index=0;index<receiptFiles.length;index++) {
+  const number=String(index+1).padStart(3,"0");
+  const receipt = previous.readPrivate(backup, `${prefix}-apply-batch-${number}-receipt.enc`);
+  const intent = previous.readPrivate(backup, `${prefix}-apply-batch-${number}-intent.enc`);
+  const batch = entries.slice(index*10,index*10+10), names = batch.map(entry => entry.name);
   const expectedWrites = batch.map(entry => ({update:{name:entry.name,fields:entry.after},updateMask:{fieldPaths:["firstName","lastName"]},currentDocument:{updateTime:originals.get(entry.name).updateTime}}));
   if (receipt.planDigest !== check.DIGEST || receipt.resumeDigest !== annex.digest || receipt.direction !== "apply"
       || intent.planDigest !== check.DIGEST || intent.resumeDigest !== annex.digest || intent.direction !== "apply"
@@ -148,7 +162,13 @@ function confirmedPrefix(backup, prefix, annex, entries, fresh, originals, isAli
     if (saved.planDigest !== check.DIGEST || !doc || doc.updateTime !== saved.afterVersion
         || planner.hash(doc.fields) !== planner.hash({...originals.get(entry.name).fields,...entry.after})) throw new Error("Confirmed batch changed");
   }
-  return receipt.saved;
+  if(index<receiptFiles.length-1) {
+    const verified=previous.readPrivate(backup,`${prefix}-apply-batch-${number}-verified.enc`);
+    if(verified.planDigest!==check.DIGEST || verified.resumeDigest!==annex.digest || verified.direction!=="apply" || planner.hash(verified.saved)!==planner.hash(receipt.saved)) throw new Error("Continuation verified receipt differs");
+  }
+  savedPrefix.push(...receipt.saved);
+  }
+  return savedPrefix;
 }
 async function execute(backup, token, file, expectedDigest, direction, finishConfirmed = false) {
   if (!/^resume-preparation-[a-f0-9-]+\.enc$/.test(file) || !/^[a-f0-9]{64}$/.test(expectedDigest || "")) throw new Error("Explicit reviewed resume required");
@@ -171,9 +191,9 @@ async function execute(backup, token, file, expectedDigest, direction, finishCon
   connection = await controls.napConnection(token);
   if (finishConfirmed) {
     const bytes = Buffer.from(JSON.stringify({resumeDigest:annex.digest,pid:process.pid,startedAt:new Date().toISOString()}));
-    for (const dir of [backup.directory, copyDirectory()]) previous.durable(path.join(dir,"reviewed-resume-finish.lock"),bytes);
+    for (const dir of [backup.directory, copyDirectory()]) previous.durable(path.join(dir,`reviewed-resume-finish-${confirmed.length}.lock`),bytes);
   } else reserveLocks(backup, prefix, direction, annex);
-  const baseline = baselineOf(preparation, annex), nap = new Map(preparation.napBaseline);
+  const baseline = baselineOf(preparation, annex, originals), nap = new Map(preparation.napBaseline);
   const saved = [...confirmed]; let projectionReads = 0, projectionEntries = 0, sqlQueries = 0;
   async function observe(batch, receipts, mode, final = false) {
     for (let attempt = 0; attempt < (final ? 1 : 13); attempt++) {
@@ -185,8 +205,9 @@ async function execute(backup, token, file, expectedDigest, direction, finishCon
     }
   }
   if (finishConfirmed) {
-    await observe(entries.slice(0,10),confirmed,direction,true);
-    previous.savePrivate(backup,`${prefix}-apply-batch-001-verified.enc`,{planDigest:check.DIGEST,resumeDigest:annex.digest,direction,saved:confirmed});
+    for(let offset=0;offset<confirmed.length;offset+=10) await observe(entries.slice(offset,offset+10),confirmed.slice(offset,offset+10),direction,true);
+    const number=String(confirmed.length/10).padStart(3,"0");
+    previous.savePrivate(backup,`${prefix}-apply-batch-${number}-verified.enc`,{planDigest:check.DIGEST,resumeDigest:annex.digest,direction,saved:confirmed.slice(-10)});
   }
   for (let offset = confirmed.length; offset < entries.length; offset += 10) {
     const batch = entries.slice(offset, offset + 10), number = String(offset / 10 + 1).padStart(3, "0"); stage = `${direction}-resume-batch-${number}`;
