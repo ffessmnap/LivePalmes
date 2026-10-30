@@ -1498,16 +1498,28 @@
         updateEngagementCategoryColumnControls(mount);
       }
 
+    const openWaterProposedDistances = new Set([150,1000,2000,3000,4000,5000,6000]);
+    const openWaterExtraDistances = new Set();
+    let openWaterVisibleCompetitionId = null;
     function renderEngagementOpenWaterCourseLibrary() {
         if (!portalContext.elements.engagementsOpenWaterCourseList) return;
+        const competitionId = portalState.selectedEngagementCompetition?.id || "";
+        if (competitionId !== openWaterVisibleCompetitionId) {
+          openWaterExtraDistances.clear();
+          openWaterVisibleCompetitionId = competitionId;
+        }
         const canEdit = portalState.engagementDetailEditing && portalActions.canEditEngagementCompetition();
         const selectedCodes = new Set(selectedEngagementEventsFromForm().map((event) => event.code));
+        const visibleCourses = portalState.engagementOpenWaterCourses.filter(course =>
+          openWaterProposedDistances.has(course.distance) || openWaterExtraDistances.has(course.distance) ||
+          selectedCodes.has(portalActions.engagementOpenWaterEventCode(course))
+        );
         const disciplineColumns = [
           { code: "SF", label: "Surface", shortLabel: "SF" },
           { code: "BI", label: "Bi-palmes", shortLabel: "BI" },
           { code: "SUP", label: "Support", shortLabel: "SP" }
         ];
-        const courseRows = Array.from(portalState.engagementOpenWaterCourses.reduce((rows, course) => {
+        const courseRows = Array.from(visibleCourses.reduce((rows, course) => {
           const format = course.format || "standard";
           const key = `${Math.trunc(Number(course.distance) || 0)}-${format}`;
           if (!rows.has(key)) rows.set(key, {
@@ -1564,10 +1576,13 @@
         }
         try {
           const result = await portalActions.callFunction("listEngagementOpenWaterCourses", {});
+          const draft = portalState.engagementDetailEditing && portalContext.elements.engagementsEventsForm
+            ? {events:selectedEngagementEventsFromForm(),programSessions:selectedEngagementProgramSessionsFromForm()}
+            : {};
           portalState.engagementOpenWaterCourses = Array.isArray(result.courses) ? result.courses : portalState.engagementOpenWaterCourses;
           portalState.engagementOpenWaterCoursesLoaded = true;
           renderEngagementOpenWaterCourseLibrary();
-          if (portalActions.engagementCompetitionType(portalState.selectedEngagementCompetition) === "openWater") renderEngagementEvents(portalState.selectedEngagementCompetition);
+          if (portalActions.engagementCompetitionType(portalState.selectedEngagementCompetition) === "openWater") renderEngagementEvents({...portalState.selectedEngagementCompetition,...draft});
           if (portalContext.elements.engagementsOpenWaterCourseMessage) {portalContext.elements.engagementsOpenWaterCourseMessage.textContent = "";delete portalContext.elements.engagementsOpenWaterCourseMessage.dataset.tone;}
         } catch (error) {
           if (portalContext.elements.engagementsOpenWaterCourseMessage) {
@@ -1580,12 +1595,13 @@
       }
 
     function addEngagementOpenWaterCourseToProgram(courseId = "") {
-        const course = portalState.engagementOpenWaterCourses.find((item) => item.id === courseId && item.active !== false);
+        const course = portalState.engagementOpenWaterCourses.find((item) => item.id === courseId);
         if (!course) return;
         const preservedEvents = selectedEngagementEventsFromForm();
         const definition = portalActions.engagementOpenWaterEventDefinitions({ events: preservedEvents }).find((event) => event.openWaterCourseId === course.id);
         if (!definition) return;
         const removing=preservedEvents.some(event=>event.code===definition.code);
+        if (!removing && course.active === false) return;
         const preservedSessions = selectedEngagementProgramSessionsFromForm();
         if(removing&&preservedSessions.some(session=>session.items?.some(item=>item.eventCode===definition.code))&&!global.confirm("Décocher cette course et retirer ses passages du programme ? Les changements restent locaux jusqu’à l’enregistrement. Aucun engagement ne sera supprimé.")){renderEngagementOpenWaterCourseLibrary();return;}
         renderEngagementEvents({
@@ -1616,9 +1632,13 @@
         try {
           const addButton=portalContext.elements.engagementsOpenWaterCourseAdd;
           if(addButton)addButton.disabled=true;
-          const result = await portalActions.callFunction("addEngagementOpenWaterCourse", { distance });
+          const existing = portalState.engagementOpenWaterCourses.filter(course=>course.distance===distance);
+          const disciplines = distance===150?["SF","BI"]:["SF","BI","SUP"];
+          const alreadyAvailable = disciplines.every(discipline=>existing.some(course=>course.discipline===discipline&&course.active!==false));
+          const result = alreadyAvailable ? {courses:portalState.engagementOpenWaterCourses} : await portalActions.callFunction("addEngagementOpenWaterCourse", { distance });
           portalState.engagementOpenWaterCourses = Array.isArray(result.courses) ? result.courses : portalState.engagementOpenWaterCourses;
           portalState.engagementOpenWaterCoursesLoaded = true;
+          openWaterExtraDistances.add(distance);
           if (portalContext.elements.engagementsOpenWaterDistance) portalContext.elements.engagementsOpenWaterDistance.value = "";
           if (portalContext.elements.engagementsOpenWaterDiscipline) portalContext.elements.engagementsOpenWaterDiscipline.value = "";
           renderEngagementEvents({

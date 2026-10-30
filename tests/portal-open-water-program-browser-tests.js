@@ -20,7 +20,7 @@ async function main(){
   await ev(`
    ${categoryLiteral} ${relayLiteral}
    window.waterCalls=[];window.waterDirty=0;
-   const state=window.waterState={selectedEngagementCompetition:{id:'fixture',napSource:true,competitionType:'openWater',date:'2027-01-17',events:[],nativeRules:{courses:[]}},engagementDetailEditing:true,engagementOpenWaterCourses:${waterDefaults},engagementOpenWaterCoursesLoaded:true};
+   const state=window.waterState={selectedEngagementCompetition:{id:'fixture',napSource:true,competitionType:'openWater',date:'2027-01-17',events:[],nativeRules:{courses:[]}},engagementDetailEditing:true,engagementOpenWaterCourses:[...${waterDefaults},{id:'500-SF',distance:500,discipline:'SF',label:'500 m Surface',format:'standard',active:true}],engagementOpenWaterCoursesLoaded:true};
    const elements={};for(const el of document.querySelectorAll('[id^="adminEngagements"]')){const name=el.id.replace(/^admin/,'');elements[name[0].toLowerCase()+name.slice(1)]=el;}
    elements.engagementsSectionToggles=[];
    const config={ENGAGEMENT_INDIVIDUAL_CATEGORY_DEFINITIONS,ENGAGEMENT_RELAY_CATEGORY_DEFINITIONS:[],ENGAGEMENT_OPEN_WATER_RELAY_EVENT,ENGAGEMENT_OPEN_WATER_DISCIPLINES:[['SF','Surface'],['BI','Bi-palmes'],['SUP','Support']],ENGAGEMENT_EVENT_BY_CODE:new Map(),ENGAGEMENT_EVENT_FORBIDDEN_CATEGORIES:{},ENGAGEMENT_PROGRAM_GENDER_MODES:[['female','Femmes'],['male','Hommes'],['mixed','F/H ensemble']],ENGAGEMENT_PROGRAM_GENDER_MODE_LABELS:{female:'Femmes',male:'Hommes',mixed:'F/H ensemble'},ENGAGEMENT_PROGRAM_PHASE_LABELS:{direct:'Course directe',heats:'Séries',final:'Finale(s)'},ENGAGEMENT_PROGRAM_FORMAT_LABELS:{direct:'Course directe',heatsFinal:'Séries + finale(s)'},ENGAGEMENT_OPEN_WATER_ELIMINATION_PROGRAM_FORMATS:[['direct','Course directe'],['heatsFinal','Séries + finale(s)']]};
@@ -33,13 +33,30 @@ async function main(){
    elements.engagementsProgramAddSession.addEventListener('click',actions.addEngagementProgramSession);elements.engagementsProgramSessions.addEventListener('click',actions.handleEngagementProgramAction);
    actions.renderEngagementEvents(state.selectedEngagementCompetition);document.querySelectorAll('details').forEach(el=>el.open=true);return true;
   `);
-  assert.equal(await ev('return document.querySelectorAll("[data-open-water-course-select]").length;'),11);
+  assert.equal(await ev('return document.querySelectorAll("[data-open-water-course-select]").length;'),20);
+  assert.deepEqual(await ev('return Array.from(document.querySelectorAll("#adminEngagementsOpenWaterCourseList tbody th")).map(el=>el.textContent.trim());'),['150 m élimination','1000 m','2000 m','3000 m','4000 m','5000 m','6000 m']);
   await click('[data-open-water-course-select="3000-SF"]');assert.equal(await ev('return waterActions.selectedEngagementEventsFromForm().length;'),1);
   await click('[data-open-water-course-select="3000-SF"]');assert.equal(await ev('return waterActions.selectedEngagementEventsFromForm().length;'),0,'New choice can be unchecked');
-  await ev('document.querySelector("#adminEngagementsOpenWaterDistance").value="2000";');await click('#adminEngagementsOpenWaterCourseAdd');assert(await waitFor(c,'waterCalls.length===1&&!document.querySelector("#adminEngagementsOpenWaterCourseAdd").disabled'));assert.equal(await ev('return waterActions.selectedEngagementEventsFromForm().length;'),0,'Adding a distance never checks specialties');
+  await ev('document.querySelector("#adminEngagementsOpenWaterDistance").value="1200";');await click('#adminEngagementsOpenWaterCourseAdd');assert(await waitFor(c,'waterCalls.length===1&&!document.querySelector("#adminEngagementsOpenWaterCourseAdd").disabled'));assert.equal(await ev('return waterActions.selectedEngagementEventsFromForm().length;'),0,'Adding a distance never checks specialties');
+  assert.equal(await ev('return document.querySelectorAll("[data-open-water-course-select^=\\"1200-\\"]").length;'),3,'New distance exposes all three specialties');
   await click('[data-open-water-course-select="2000-BI"]');await click('#adminEngagementsProgramAddSession');
   assert.equal(await ev('return document.querySelectorAll("[data-engagement-program-action=add-slot]").length;'),3,'Native pending courses have F/H/combined controls');
   await click('[data-engagement-program-gender="female"]');assert.match(await ev('return document.querySelector("#adminEngagementsProgramSessions").textContent;'),/Femmes/);
+  await ev('waterActions.callFunction=()=>new Promise(resolve=>window.resolveWaterLibrary=resolve);waterActions.loadEngagementOpenWaterCourses({force:true});return true;');
+  await click('[data-open-water-course-select="2000-SUP"]');
+  await ev('resolveWaterLibrary({courses:waterState.engagementOpenWaterCourses});return true;');
+  assert(await waitFor(c,'!waterState.engagementOpenWaterCoursesLoading'));
+  assert.equal(await ev('return waterActions.selectedEngagementEventsFromForm().length;'),2,'A delayed library read preserves current choices');
+  assert.equal(await ev('return document.querySelectorAll("[data-engagement-program-row]").length;'),1,'A delayed library read preserves the programme');
+  assert.equal(await ev('return document.querySelector("#adminEngagementsOpenWaterCourseMessage").dataset.tone||"";'),'','Loading state ends when the read succeeds');
+  await click('[data-engagement-program-action="remove-row"]');
+  assert.equal(await ev('return document.querySelectorAll("[data-engagement-program-row]").length;'),0,'Removing the last programme line takes effect immediately');
+  await click('[data-engagement-program-action="remove-session"]');
+  assert.equal(await ev('return document.querySelectorAll("[data-engagement-program-session]").length;'),0,'Removing the last session takes effect immediately');
+  await ev('waterState.engagementOpenWaterCourses.find(course=>course.id==="500-SF").active=false;waterState.selectedEngagementCompetition.events=[{code:"OW500SF",type:"individual",distance:500,discipline:"SF",openWaterCourseId:"500-SF"}];waterActions.renderEngagementEvents(waterState.selectedEngagementCompetition);return true;');
+  assert.equal(await ev('return document.querySelectorAll("[data-open-water-course-select=\\"500-SF\\"]").length;'),1,'An existing nonstandard course stays visible');
+  await click('[data-open-water-course-select="500-SF"]');
+  assert.equal(await ev('return waterActions.selectedEngagementEventsFromForm().length;'),0,'An existing inactive course can still be unchecked locally');
   const geometry=await ev('return {w:document.documentElement.clientWidth,scroll:document.documentElement.scrollWidth};');assert(geometry.scroll<=geometry.w,JSON.stringify({width,...geometry}));
   assert.notEqual(await ev('return getComputedStyle(document.querySelector("#adminEngagementsOpenWaterCourseAdd")).display;'),'none');
  }
