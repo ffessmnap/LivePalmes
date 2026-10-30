@@ -100,6 +100,13 @@ def main(directory, run_id, kind):
         if kind == 'backend' and selected:
             state = load('readiness_state', 'production-release-state.py')
             functions = state.inventory()
+            if cycle.portal_access_ns.approved(request):
+                cycle.portal_access_ns.initial(functions)
+                load('portal_ns_readiness', 'check-portal-access-ns-release.py').guard(directory)
+                report['portalAccessNsRelease'] = {'existingSourcesOnly': True,
+                    'accountNapBindingReference': 'listEngagementClubSwimmers',
+                    'sameExistingRuntimeAccount': True, 'mailPause': False,
+                    'smtpInvocation': False, 'secretValuesRead': False}
             if cycle.nap_account.approved(request):
                 cycle.nap_account.references(functions)
                 load('nap_account_readiness', 'publish-nap-account-release.py').guard(directory)
