@@ -1,10 +1,10 @@
 "use strict";
 // Native preview only: no engagement writes and no exported performance cache.
-// Budget excluding access: competition (14), selected context (3), history (1),
+// Budget excluding access: time competition (10), selected context (3), history (1),
 // optional participation (1) and qualification grants (1). No cache of sporting data.
 // A single swimmer's saved-course history adds at most one entries SELECT.
 const {positiveId}=require("./nap-direct-calendar");
-const {readNativeCompetition}=require("./nap-portal-competitions");
+const {readEntryTimeCompetition}=require("./nap-portal-competitions");
 const {readEntryTimeContext}=require("./nap-entry-time-context");
 const {readEntryHistory}=require("./nap-entry-performance-history");
 async function previewNativeTimes(connection,input,services) {
@@ -14,7 +14,7 @@ async function previewNativeTimes(connection,input,services) {
   const includeIndividualEntries=input.includeIndividualEntries===true;
   if(includeIndividualEntries && ids.length!==1) throw new TypeError("Historique des courses reserve a un nageur.");
   await services.authorize({competitionId,clubId});
-  const readers=services.readers||{competition:readNativeCompetition,entry:readEntryTimeContext,history:readEntryHistory};
+  const readers=services.readers||{competition:readEntryTimeCompetition,entry:readEntryTimeContext,history:readEntryHistory};
   const competition=await readers.competition(connection,competitionId,event=>services.authorize({competitionId,clubId,event}));
   if(!competition) throw new TypeError("Competition NAP introuvable.");
   const pack=await readers.entry(connection,{competitionId,clubId,swimmerIds:ids,includeIndividualEntries},services.authorize);
@@ -28,12 +28,12 @@ async function previewNativeTimes(connection,input,services) {
   const participation=require("./nap-entry-participation-rules"),presence=participation.requirements(competition).presence.size>0;
   const evidence=await participation.readEvidence(connection,people,competition);
   const savedEntriesQueries=includeIndividualEntries?1:0;
-  if(competition.event.eventType==="openWater") return {ok:true,source:"nap",swimmers:people.map(person=>({swimmerIndexId:String(person.id),individualEntries:[]})),sqlBudget:{queriesMax:(presence?18:17)+savedEntriesQueries,historyQueries:0}};
+  if(competition.event.eventType==="openWater") return {ok:true,source:"nap",swimmers:people.map(person=>({swimmerIndexId:String(person.id),individualEntries:[]})),sqlBudget:{queriesMax:(presence?14:13)+savedEntriesQueries,historyQueries:0}};
   const histories=await readers.history(connection,people);
   const active=Number(competition.options?.qualifications_enabled)===1||competition.qualifications?.enabled===true;
   const evaluations=active?await services.prepareQualifications(connection,{pack:competition,people,histories}):null;
   if(active&&(!(evaluations instanceof Map)||people.some(person=>evaluations.get(String(person.id))?.enabled!==true)))throw new TypeError('Evaluations de qualification incompletes.');
   const swimmers=people.map(person=>({swimmerIndexId:String(person.id),individualEntries:require("./nap-entry-birth-policy").eligible(competition,person) && participation.eligible(competition,person.id,evidence) ? services.preview(person,participation.filterTimes(histories.get(String(person.id))||[],competition),competition,pack,evaluations?.get(String(person.id))) : []}));
-  return {ok:true,source:"nap",swimmers,sqlBudget:{queriesMax:(presence?19:18)+(active?1:0)+savedEntriesQueries,historyQueries:1,historyRowsMax:20000}};
+  return {ok:true,source:"nap",swimmers,sqlBudget:{queriesMax:(presence?15:14)+(active?1:0)+savedEntriesQueries,historyQueries:1,historyRowsMax:20000}};
 }
 module.exports={previewNativeTimes};

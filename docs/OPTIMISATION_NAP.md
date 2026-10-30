@@ -2,6 +2,23 @@
 
 <!-- description: Budgets actuels NAP, mesures après bascule et suivi des optimisations ; remplace les recommandations Firestore historiques. -->
 
+## Lots regroupés : accueil et contexte des temps — 30 octobre 2026
+
+Antoine a approuvé le contexte des temps, puis explicitement le regroupement avec l'accueil plus rapide, y compris l'authentification et les Cloud Functions jusqu'à TEST. Aucune écriture réelle de base ni aucun mail pendant la recette.
+
+| Parcours | Avant | Après et limites |
+| --- | --- | --- |
+| Retour sur une session utilisant le profil serveur | Renouvellement forcé du jeton, puis lecture du profil serveur | Jeton encore valable réutilisé ; expiration gérée par Firebase ; même lecture obligatoire du profil serveur avant accès. Jusqu'à un échange Auth évité, aucun document Firestore économisé : un profil lu à chaque démarrage. Connexion explicite et consommateurs historiques fondés sur les claims : renouvellement forcé conservé. |
+| Accueil club après profil | Calendrier et effectif préchargés immédiatement dans le rendu du profil | Préchargements après une opportunité de peinture puis une tâche différée ; mêmes chargeurs/cache/mutualisation et zéro lecture ajoutée. Génération, identité, club et droit vérifiés avant lancement. Un clic précoce continue à charger son écran normalement. |
+| Aperçu piscine 1–50 nageurs | Plafond 20 SELECT hors accès | Plafond **16 SELECT**, dont au plus dix pour la compétition ; 14–16 dans les cas maximaux simulés. Le contexte n'interroge plus tarifs, programme détaillé, sessions et lignes WinPalme. |
+| Historique des temps connus | Plafond 20 SELECT hors accès | Plafond **16 SELECT** ; 15/16 dans les cas maximaux simulés. Inscriptions multiples et seules courses enregistrées/demandées conservées. |
+
+Les préchargements NAP club conservent un SELECT par saison (501 événements sentinelle au plus, refus au-delà de 500) et un SELECT d'effectif (801 nageurs sentinelle, refus au-delà de 800), plus les contrôles d'accès existants. Selon la période, une ou deux saisons sont demandées : deux ou trois SELECT métier après l'affichage, comme avant. Le compteur des demandes, réservé aux profils habilités, conserve ses agrégations et contrôles et n'est pas modifié par ce lot. Retour/rafraîchissement : mêmes règles de cache des chargeurs ; aucune nouvelle durée de cache ni donnée d'autorisation persistée.
+
+Le contexte des temps économise trois SELECT systématiques et un quatrième si un programme WinPalme existe, jusqu'à 1 934 lignes acceptées de tarifs/programmes/sessions en moins ; ce plafond n'est pas un volume réellement observé. Les requêtes restantes sont un sous-ensemble inchangé du lecteur complet, avec mêmes index et bornes. Les aperçus gardent leurs lots de 50 et historiques de 20 000 lignes maximum/2 000 par nageur ; une clé valide en cache coûte zéro RPC. Après invalidation, prochaine demande fraîche sous le nouveau plafond. L'ouverture du dossier complet reste à 26 SELECT métier maximum ; fiches, écritures et contrôles de qualification conservent le lecteur complet et leurs empreintes. Aucun contexte partiel ni empreinte partielle n'est renvoyé comme fiche modifiable par les endpoints de temps.
+
+Contrôles ciblés hors réseau : égalité de toutes les entrées sportives et résultats, lecteur complet/frais/empreintes conservés, autorisation avant lectures dépendantes, erreurs et bornes ; vraie chaîne d'historique, aperçus 1/50, participation et qualifications ; session restaurée attendant le serveur, claims en cache incapables d'élargir les droits, profil inactif/absent/panne, connexion explicite et mode historique ; rendu réel du profil et ordonnancement frame/tâche, compte/club/droit/déconnexion et appels simultanés. Navigateur à 1280/390/320 px avec vrais modules, SDK/RPC fictifs et réseau externe bloqué : aucun accueil privé avant le profil, accueil visible avant les deux préchargements et aucun débordement. Aucun chronométrage de session réelle ni gain en secondes annoncé : `getCurrentAccessUser` peut mettre à jour `lastLoginAt`, il n'est pas invoqué pendant cette recette. Les démarrages d'instances et le réseau restent des coûts distincts.
+
 ## Deuxième lot portail — 30 octobre 2026
 
 Périmètre explicitement approuvé par Antoine, Cloud Functions et livraison TEST comprises, sans modification de la base ni mail réel : réparer l'historique des temps avant d'optimiser l'annuaire national.

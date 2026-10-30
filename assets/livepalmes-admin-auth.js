@@ -178,7 +178,10 @@
         currentProfile = null;
         if (currentUser?.getIdTokenResult) {
           try {
-            currentClaims = (await currentUser.getIdTokenResult(true))?.claims || {};
+            // The portal still reads the authoritative server profile below.
+            // Firebase renews expired tokens; a valid restored session needs no
+            // additional forced renewal before that mandatory server check.
+            currentClaims = (await currentUser.getIdTokenResult(!serverProfileAuthentication))?.claims || {};
           } catch (error) {
             console.warn("Lecture des droits admin LivePalmes impossible", error);
           }
@@ -285,6 +288,7 @@
     return {
       isAdminAuthenticated: () => isAllowedUser(),
       hasCapability: (capability) => {
+        if (serverProfileAuthentication && !currentProfile) return false;
         if (!serverProfileAuthentication && isAllowedUser() && (allowedUids.has(currentUser?.uid) || allowedEmails.has(normalizeEmail(currentUser?.email)))) return true;
         if (capability === "consoles.access" && currentClaims?.livepalmesCapabilities?.["consoles.manage"] === true) return true;
         return currentClaims?.livepalmesCapabilities?.[capability] === true;
