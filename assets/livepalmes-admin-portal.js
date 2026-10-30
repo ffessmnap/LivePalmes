@@ -1157,12 +1157,21 @@
     { id: "1000-SF", distance: 1000, discipline: "SF", label: "1000 m Surface", format: "standard", active: true },
     { id: "1000-BI", distance: 1000, discipline: "BI", label: "1000 m Bi-palmes", format: "standard", active: true },
     { id: "1000-SUP", distance: 1000, discipline: "SUP", label: "1000 m Support", format: "standard", active: true },
+    { id: "2000-SF", distance: 2000, discipline: "SF", label: "2000 m Surface", format: "standard", active: true },
+    { id: "2000-BI", distance: 2000, discipline: "BI", label: "2000 m Bi-palmes", format: "standard", active: true },
+    { id: "2000-SUP", distance: 2000, discipline: "SUP", label: "2000 m Support", format: "standard", active: true },
     { id: "3000-SF", distance: 3000, discipline: "SF", label: "3000 m Surface", format: "standard", active: true },
     { id: "3000-BI", distance: 3000, discipline: "BI", label: "3000 m Bi-palmes", format: "standard", active: true },
     { id: "3000-SUP", distance: 3000, discipline: "SUP", label: "3000 m Support", format: "standard", active: true },
+    { id: "4000-SF", distance: 4000, discipline: "SF", label: "4000 m Surface", format: "standard", active: true },
+    { id: "4000-BI", distance: 4000, discipline: "BI", label: "4000 m Bi-palmes", format: "standard", active: true },
+    { id: "4000-SUP", distance: 4000, discipline: "SUP", label: "4000 m Support", format: "standard", active: true },
     { id: "5000-SF", distance: 5000, discipline: "SF", label: "5000 m Surface", format: "standard", active: true },
     { id: "5000-BI", distance: 5000, discipline: "BI", label: "5000 m Bi-palmes", format: "standard", active: true },
-    { id: "5000-SUP", distance: 5000, discipline: "SUP", label: "5000 m Support", format: "standard", active: true }
+    { id: "5000-SUP", distance: 5000, discipline: "SUP", label: "5000 m Support", format: "standard", active: true },
+    { id: "6000-SF", distance: 6000, discipline: "SF", label: "6000 m Surface", format: "standard", active: true },
+    { id: "6000-BI", distance: 6000, discipline: "BI", label: "6000 m Bi-palmes", format: "standard", active: true },
+    { id: "6000-SUP", distance: 6000, discipline: "SUP", label: "6000 m Support", format: "standard", active: true }
   ];
   const ENGAGEMENT_EVENT_BY_CODE = new Map(
     [...ENGAGEMENT_EVENT_DEFINITIONS, ENGAGEMENT_OPEN_WATER_RELAY_EVENT].map((event) => [event.code, event])
