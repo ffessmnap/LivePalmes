@@ -1,6 +1,7 @@
 """One validated portal candidate: one existing source and one existing NAP binding."""
 import hashlib
 import json
+import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -74,8 +75,18 @@ def initial(functions):
 
 
 def assert_config(before, after, state):
+    expected_labels = {**before.get('labels', {}), 'livepalmes-commit': contract()['candidate']}
+    if before['name'].split('/')[-1] == ACCOUNT:
+        # The ordinary Firebase CLI updates its own SHA-1 source/secret hash.
+        # This build marker is not a runtime setting; no other label may drift.
+        key = 'firebase-functions-hash'
+        if key in expected_labels:
+            require(re.fullmatch(r'[a-f0-9]{40}', str(expected_labels[key]))
+                    and re.fullmatch(r'[a-f0-9]{40}', str(after.get('labels', {}).get(key, ''))),
+                    'Empreinte source Firebase invalide')
+            expected_labels[key] = after['labels'][key]
     require(before['name'] == after['name'] and after.get('state') == 'ACTIVE'
-            and after.get('labels') == {**before.get('labels', {}), 'livepalmes-commit': contract()['candidate']},
+            and after.get('labels') == expected_labels,
             'Identite portail NS/acces differente')
     old, new = state.rollback_patch(before, {}), state.rollback_patch(after, {})
     if before['name'].split('/')[-1] == ACCOUNT:
