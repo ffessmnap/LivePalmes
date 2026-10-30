@@ -18,6 +18,14 @@ assert.throws(()=>planAdditions(pack,[{code:'OW1000SUP'}],catalog,defaults,new M
 assert.throws(()=>planAdditions(pack,[{code:codes[0]}],[...catalog,catalog[0]],defaults,new Map()),/ambigue/);
 assert.equal(water.definition('150'),null,'A bare 150 m never becomes elimination');
 assert.equal(water.definition('150BIEL').code,'OW150ELIMBI');assert.equal(water.definition('3000 SUPPORT').code,'OW3000SUP');assert.equal(water.fromCode('OW150SUP'),null);
+const legacyLibrary=[course(500,'SF'),{...course(1000,'BI'),active:false},course(2000,'SF')];
+const available=library.availableCourses(legacyLibrary);
+assert.deepEqual(Array.from(new Set(library.defaultCourses().map(row=>row.distance))),[150,1000,2000,3000,4000,5000,6000]);
+assert.equal(library.defaultCourses().length,20);
+for(const distance of [1000,2000,3000,4000,5000,6000])assert.equal(available.filter(row=>row.distance===distance&&row.active).length,3);
+assert.equal(available.filter(row=>row.distance===150).length,2);
+assert(available.some(row=>row.id==='500-SF'),'Old library entries remain available without becoming proposed defaults');
+assert.equal(legacyLibrary[1].active,false,'A read projection never modifies persisted data');
 const current=library.snapshot({id:1,version:1,courses:[course(1000,'SF')]});
 const distance=library.plan(current,{action:'addDistance',courses:['SF','BI','SUP'].map(s=>course(2000,s)),expectedFingerprint:current.fingerprint});
 assert.equal(distance.after.courses.length,4);assert.equal(current.courses.length,1);
@@ -43,6 +51,9 @@ function fixture(options={}){
  return {state,input,audit,pool:{getConnection:async()=>connection}};
 }
 async function run(){try{
+ let libraryReads=0;
+ const listed=await library.read({execute:async({sql})=>{libraryReads++;assert.match(sql,/FORCE INDEX \(PRIMARY\).*id=1 LIMIT 1/);return [[{id:1,version:1,courses:legacyLibrary}]];}});
+ assert.equal(libraryReads,1);assert.equal(listed.version,1);assert.equal(listed.courses.length,21);assert.equal(listed.fingerprint,library.snapshot({id:1,version:1,courses:legacyLibrary}).fingerprint,'The expanded proposal retains the stored version and fingerprint');
  let f=fixture();await removeNativeCourses(f.pool,f.input,f.audit,()=>{});assert.deepEqual(f.state.rows.map(r=>r.id),[92]);assert.equal(f.state.deletes,1);assert.equal(f.state.locked,false);await removeNativeCourses(f.pool,f.input,f.audit,()=>{});assert.equal(f.state.deletes,1,'replay never removes another row');
  f=fixture({entries:true});await assert.rejects(removeNativeCourses(f.pool,f.input,f.audit,()=>{}),/national/);assert.equal(f.state.deletes,0);assert.equal(f.state.saved,null);
  f=fixture({entries:true,national:true});await removeNativeCourses(f.pool,f.input,f.audit,()=>{});assert(f.state.sql.filter(x=>x.startsWith('DELETE')).every(x=>x.startsWith('DELETE FROM compet_courses')));

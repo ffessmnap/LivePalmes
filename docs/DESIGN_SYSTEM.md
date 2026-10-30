@@ -6,6 +6,8 @@
 
 Le tableau distance/spécialités reprend les cellules et les coches du tableau course/catégories : largeur maximale de 400 px, lignes de 36 px, cases de 15 px, en-tête de 28 px et fond discret des cellules sélectionnées. Les zones tactiles restent de 44 px. Le champ Distance et l'action « Ajouter une distance » sont placés sous la dernière ligne ; aucun titre de bibliothèque ni explication technique permanente. Le choix reste réversible et local jusqu'à l'enregistrement des courses. Les catégories et le programme utilisent les composants existants ; leurs variantes piscine restent inchangées.
 
+La liste proposée comporte sept lignes : 150 m élimination puis 1000, 2000, 3000, 4000, 5000 et 6000 m. Les distances supplémentaires ne s'affichent qu'après leur ajout explicite dans cet écran ou lorsqu'une course de la compétition les utilise déjà. Le 500 m historique n'est pas une proposition par défaut. Aucun choix de spécialité n'est précoché ; une distance connue peut être réaffichée sans requête d'écriture.
+
 
 ## Visibilité du dialogue Ajouter régional — 30 octobre 2026
 

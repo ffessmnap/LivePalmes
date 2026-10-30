@@ -29,17 +29,18 @@ async function run() {
     calls++;assert.match(query.sql,/FORCE INDEX \(PRIMARY\).*WHERE id=1 LIMIT 1/);
     assert.deepEqual(values,[]);return [[{id:1,version:2,courses:current.courses}]];
   }});
-  assert.equal(calls,1);assert.equal(result.source,"nap");assert.deepEqual(result.courses,current.courses);
+  assert.equal(calls,1);assert.equal(result.source,"nap");assert.equal(result.courses.length,20);assert.equal(result.fingerprint,current.fingerprint);assert.equal(result.version,2);
+  assert(result.courses.some(row=>row.id==='2000-BI'&&row.active));assert(result.courses.some(row=>row.id==='2000-SUP'&&row.active));
   await assert.rejects(library.read({execute:async()=>[[]]}),/non preparee/);
   for(const failure of [false,true]) {
-    let saved=false,committed=false,rolledBack=false,released=false;
+    let saved=false,backup=null,committed=false,rolledBack=false,released=false;
     const connection={beginTransaction:async()=>{},execute:async(query)=>{
       if(query.sql.startsWith("SELECT")){assert.match(query.sql,/FOR UPDATE$/);return [[{id:1,version:2,courses:current.courses}]];}
       assert.equal(saved,true,"Backup before SQL write");return [{affectedRows:1}];
     },commit:async()=>{committed=true;},rollback:async()=>{rolledBack=true;},release:()=>{released=true;}};
-    const action=()=>library.change({getConnection:async()=>connection},input,"admin",async()=>{if(failure)throw Error("backup failed");saved=true;});
+    const action=()=>library.change({getConnection:async()=>connection},input,"admin",async target=>{if(failure)throw Error("backup failed");saved=true;backup=target;});
     if(failure){await assert.rejects(action(),/backup/);assert.equal(committed,false);assert.equal(rolledBack,true);}
-    else {assert.equal((await action()).courses[1].active,false);assert.equal(committed,true);}
+    else {const response=await action();assert.equal(response.courses.length,20);assert.equal(response.courses.find(row=>row.id==='1000-SF').active,true,'Fixed proposed choices remain available independently of old activation flags');assert.equal(backup.after.courses.find(row=>row.id==='1000-SF').active,false,'The stored status change and its backup remain compatible');assert.equal(committed,true);}
     assert.equal(released,true);
   }
   console.log("NAP open-water library: bounded reads, legacy preservation and change guards passed.");

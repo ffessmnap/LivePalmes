@@ -3,6 +3,21 @@
 // One indexed singleton read per opening; at most 111 legacy/default courses.
 const {createHash}=require("node:crypto");
 const MAX_COURSES=111,MAX_BYTES=64000;
+const DEFAULT_DISTANCES=Object.freeze([150,1000,2000,3000,4000,5000,6000]);
+function defaultCourses() {
+  return DEFAULT_DISTANCES.flatMap(distance=>(distance===150?["SF","BI"]:["SF","BI","SUP"]).map(discipline=>({
+    id:`${distance===150?"150-elimination":distance}-${discipline}`,distance,discipline,
+    label:`${distance} m${distance===150?" élimination":""} ${{SF:"Surface",BI:"Bi-palmes",SUP:"Support"}[discipline]}`,
+    format:distance===150?"elimination":"standard",active:true
+  })));
+}
+// The fixed proposed distances are available without mutating the stored library.
+// Legacy/custom courses are retained; the client decides which extra distances to show.
+function availableCourses(courses) {
+  const byId=new Map(decode(courses).map(course=>[course.id,course]));
+  for(const course of defaultCourses())byId.set(course.id,course);
+  return Array.from(byId.values()).sort((a,b)=>a.distance-b.distance||a.label.localeCompare(b.label,"fr"));
+}
 function decode(value) {
   let courses;
   try { courses=typeof value==="string"?JSON.parse(value):value; }
@@ -28,7 +43,8 @@ function snapshot(row) {
 }
 async function read(connection) {
   const [rows]=await connection.execute({sql:"SELECT id,courses,version FROM livepalmes_open_water_course_library FORCE INDEX (PRIMARY) WHERE id=1 LIMIT 1",timeout:10000},[]);
-  return {ok:true,source:"nap",...snapshot(rows[0]),readStats:{nativeQueries:1,maxNativeRows:1}};
+  const current=snapshot(rows[0]);
+  return {ok:true,source:"nap",...current,courses:availableCourses(current.courses),readStats:{nativeQueries:1,maxNativeRows:1}};
 }
 function plan(current,input) {
   if(!current||input?.expectedFingerprint!==current.fingerprint) throw new TypeError("La bibliotheque a change. Rechargez avant d'enregistrer.");
@@ -66,10 +82,10 @@ async function change(pool,input,actorUid,backup) {
     const [result]=await connection.execute({sql:"UPDATE livepalmes_open_water_course_library SET courses=?,version=?,updated_at=UTC_TIMESTAMP(6),updated_by=? WHERE id=1 AND version=?",timeout:10000},[JSON.stringify(prepared.after.courses),prepared.after.version,actorUid,current.version]);
     if(result.affectedRows!==1)throw new TypeError("Bibliotheque modifiee pendant l'enregistrement.");
     await connection.commit();transaction=false;
-    return {ok:true,source:"nap",...snapshot({id:1,...prepared.after}),...(input.action==="add"?{course:input.course}:{})};
+    return {ok:true,source:"nap",...snapshot({id:1,...prepared.after}),courses:availableCourses(prepared.after.courses),...(input.action==="add"?{course:input.course}:{})};
   } finally {
     if(transaction) {try{await connection.rollback();}catch{safe=false;}}
     if(safe)connection.release();else connection.destroy();
   }
 }
-module.exports={decode,snapshot,read,plan,change};
+module.exports={decode,snapshot,read,plan,change,defaultCourses,availableCourses};
