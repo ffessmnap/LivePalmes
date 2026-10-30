@@ -2,6 +2,13 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 30 octobre — Dialogue Ajouter visible pour les administrateurs régionaux
+
+- Blocage reproduit dans la session Chrome TEST d’Antoine : le dialogue adminAccessPanel était modal mais conservait hidden=true pour tout profil sans admin.full. La page devenait inerte sans formulaire visible. Échap a fermé ce dialogue sans création de compte ni email.
+- Même condition régionale/administration générale pour le bouton et le dialogue ; ouverture rétablissant explicitement sa visibilité, refus du profil club seul conservé. Région imposée, choix des clubs, droit club unique et contrôles serveur inchangés. Aucun changement de droit enregistré ou de backend.
+- Budget ajouté : zéro lecture Firestore/NAP, appel serveur, écriture ou listener à l’ouverture, au clic, au rafraîchissement ou au pire cas. Test navigateur hors réseau 1280/390 px : ouverture depuis un dialogue masqué, visibilité/dimensions, fermeture et réouverture, refus du profil club seul et restrictions du formulaire. CI globale et TEST commun à attester dans la PR ; recette utilisateur restante. Aucun compte réel créé, email envoyé ou déploiement PROD.
+
+
 ### 30 octobre — NS compact dans Identité et envoi visible
 
 - Visuel explicitement validé par Antoine : case « Non sélectionnable (NS) » sous « Nageur étranger », à côté du numéro de licence dans Identité, y compris sur mobile. Aucun encadré ni bouton NS dédié ; cocher/décocher déclenche directement le même appel serveur. Cocher enregistre NS ; décocher demande le visa national et maintient NS jusqu’à acceptation. Aucun changement serveur, de droits ou de règle sportive.
