@@ -2,6 +2,24 @@
 
 <!-- description: Budgets actuels NAP, mesures après bascule et suivi des optimisations ; remplace les recommandations Firestore historiques. -->
 
+## Premier lot portail — 30 octobre 2026
+
+Antoine a validé explicitement les changements de Cloud Functions et la livraison jusqu'à TEST, sans modification de la base ni mail réel. Le lot garde les règles sportives, les contrôles de droits, la fraîcheur des lectures et les files d'autosauvegarde. Aucun cache supplémentaire, index, schéma ou réglage Firebase.
+
+| Parcours | Avant | Après | Ouverture, action et retour |
+| --- | --- | --- | --- |
+| Aperçu piscine de 1 à 50 nageurs | Jusqu'à 25 SELECT : compétition complète, dossier complet, historique groupé, participation et exceptions | Jusqu'à 20 SELECT : mêmes règles et historique, trois lectures ciblées identités/appartenances/chef au lieu des huit lectures du dossier | Un lot non caché coûte 18 à 20 SELECT selon participation/qualifications ; une clé encore en cache coûte zéro RPC. Les lots de 50, les 80 ms de regroupement, l'attente des mutations et les invalidations sont conservés. |
+| Ouverture du dossier club | Budget annoncé 25 SELECT/20 519 lignes, incomplet dans le cas maximal | Borne corrigée : 26 SELECT métier/20 520 lignes acceptées ; un SELECT de contrôle club et un document profil au plus, séparément | Même coût initial, au retour et au rafraîchissement NAP. Le cache d'affichage ne remplace pas la relecture fraîche. Les engagements et membres de relais sont regroupés en mémoire une seule fois, en conservant ordre et doublons. |
+| Journal d'activité | Référentiel clubs puis page ; résolutions de références en série | Page indépendante des libellés clubs ; acteurs/compétitions/personnes résolus en parallèle | Plafond conservé de 177 documents Firestore/page, plus une lecture SQL des clubs si leur référence n'est pas en mémoire. Retour déjà chargé et filtres locaux : zéro RPC. Actualisation et suite : une nouvelle page bornée. |
+
+L'aperçu conserve 20 000 performances groupées maximum et 2 000 par nageur, 50 identités et 50 appartenances regroupées, 20 déclarations de chef, 64 exceptions par nageur et les limites existantes de la compétition. Ses plafonds acceptés cumulés passent de 42 669 à 34 568 lignes, hors contrôle d'accès ; ces plafonds ne sont pas les volumes réellement lus. Les sentinelles peuvent ajouter une ligne au SELECT qui refuse un dépassement. `LIMIT`, `GROUP BY`, jointures et `EXISTS` ne bornent pas seuls le nombre de lignes examinées par MySQL.
+
+Les lectures du journal restent réservées à `admin.full`, avec 50 traces et sentinelle, 50 contreparties maximum, puis 25 acteurs/25 compétitions/25 personnes ; un lot Auth de 25 au plus si nécessaire. Les filtres sont capturés avant les lectures. Une panne du référentiel clubs ne bloque pas la page ; une panne du journal reste signalée. Les anciennes références Firestore de compétition/personne ne sont pas remplacées dans ce lot.
+
+Contrôles hors réseau : comparaison des lecteurs ancien/nouveau sur 1/50 nageurs et participation/qualifications, comptage de 18–20 SELECT, doublons d'inscription, fiches fusionnées et mauvais club, chef absent/ambigu/renonciation, limites et refus ; ordre des engagements et membres, empreinte inchangée ; journal, pagination, cache, droits, erreurs et plafond 177. Rendu réel du journal vérifié à 1440/390/320 px, clavier et absence de débordement. La CI du candidat exact et la preuve du déploiement TEST sont suivies dans le registre.
+
+Les traces du 30 octobre consultées pendant l'audit appartiennent à des révisions précédentes : elles montrent notamment une prérequête de 4,751 s concomitante au démarrage d'une instance, suivie d'un POST de 1,251 s. Elles ne mesurent ni ce lot ni le délai depuis le clic. Aucune latence d'aperçu n'a été retrouvée dans les fenêtres bornées du 23 au 30 octobre ; les mesures navigateur authentifiées et le SQL isolé restent à attester. Aucun gain en secondes n'est promis.
+
 ## Objectif
 
 Lire NAP directement, conserver les règles sportives et les données fraîches, réduire le travail répété. Aucun export sportif parallèle, aucun nouveau stockage et aucun cache temporisé ajouté. Les modifications de la base NAP restent visibles à la consultation suivante.

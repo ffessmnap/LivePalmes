@@ -17,7 +17,7 @@ const {previewNativeTimes:preview}=require("../functions/nap-entry-time-preview"
   competition.qualifications={enabled:true};await assert.rejects(()=>preview({},input,services),/qualifications/);delete competition.qualifications;
   competition.qualifications={enabled:true};let grouped=0;
   const qualifiedServices={...services,readers:{...services.readers,history:async()=>new Map([['1',[]],['2',[]]])},prepareQualifications:async(c,scope)=>{grouped++;assert.equal(scope.people.length,2);return new Map([['1',{enabled:true,mode:'each'}],['2',{enabled:true,mode:'one'}]]);},preview:(person,rows,pack,dossier,evaluation)=>[{eventCode:'50BI',qualification:evaluation}]};
-  const qualified=await preview({},input,qualifiedServices);assert.equal(grouped,1);assert.equal(qualified.swimmers[1].individualEntries[0].qualification.mode,'one');assert.equal(qualified.sqlBudget.queriesMax,24);
+  const qualified=await preview({},input,qualifiedServices);assert.equal(grouped,1);assert.equal(qualified.swimmers[1].individualEntries[0].qualification.mode,'one');assert.equal(qualified.sqlBudget.queriesMax,19);
   competition.nativeParameters.qualif=28;await assert.rejects(preview({},input,qualifiedServices),/qualifications/);assert.equal(grouped,1,'A mapped LivePalmes grid must never bypass an unknown native qualifier');competition.nativeParameters.qualif=29;
   await assert.rejects(preview({},input,{...qualifiedServices,prepareQualifications:async()=>new Map()}),/incompletes/);delete competition.qualifications;
   competition.options={qualifications_enabled:1};await assert.rejects(()=>preview({},input,services),/qualifications/);competition.options=null;
@@ -31,7 +31,7 @@ const {previewNativeTimes:preview}=require("../functions/nap-entry-time-preview"
   let participationQueries=0;
   const evidenceConnection={execute:async query=>{participationQueries++;assert.match(query.sql,/FROM perfs FORCE INDEX \(nageur\)/);return [[{nageur:1,compet:11}]];}};
   const restricted=await preview(evidenceConnection,input,{...services,readers:{...services.readers,history:async()=>new Map([["1",[{competitionId:"11",entryTime:"1:42.00"},{competitionId:"99",entryTime:"1:00.00"}]], ["2",[{competitionId:"10",entryTime:"2:00.00"}]]])}});
-  assert.equal(participationQueries,1);assert.deepEqual(restricted.swimmers[0].individualEntries,[{competitionId:"11",entryTime:"1:42.00"}]);assert.deepEqual(restricted.swimmers[1].individualEntries,[]);assert.equal(restricted.sqlBudget.queriesMax,24);
+  assert.equal(participationQueries,1);assert.deepEqual(restricted.swimmers[0].individualEntries,[{competitionId:"11",entryTime:"1:42.00"}]);assert.deepEqual(restricted.swimmers[1].individualEntries,[]);assert.equal(restricted.sqlBudget.queriesMax,19);
   allowed=false;await assert.rejects(()=>preview({},input,{...services,authorize:async()=>{throw new Error("Denied");}}),/Denied/);assert.equal(allowed,false);
   console.log("NAP time preview: trusted club, enrolment and one grouped native history query passed");
 })().catch(error=>{console.error(error);process.exitCode=1;});
