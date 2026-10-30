@@ -2,6 +2,11 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 30 octobre — Publication du texte Nouveautés validé
+
+- Texte factuel approuvé dans Infra puis demande explicite « Tu peux publier ». Annonce datée du 30 octobre 2026 à 19 h 39 Europe/Paris, heure de la publication PROD réussie 41105909833, attestée dans son journal Hosting. Trois points uniquement : accès club régionaux, statut NS dans Identité et décision nationale, choix et programme eau libre. Aucun titre marketing ni ajout de fonctionnalités.
+- Périmètre applicatif : seul portail.html. Aucun backend, droit, destinataire, préférence, mail, donnée ou réglage modifié. Toutes les exclusions conservées ; zéro lecture/écriture métier ajoutée. Présentation ordinateur/mobile et clair/sombre, sept profils de capacités, route, menu et absence de débordement contrôlés hors réseau. CI et preuves TEST/PROD à lier dans la PR.
+
 ### 30 octobre — Préparation PROD des sept ensembles validés du portail
 
 - Infra confirme « Oui, les cinq ensembles sont validés » pour accès régionaux, Nouveautés, NS, fiche allégée et optimisations. Lisibilité déjà validée dans son chat ; parcours eau libre validé après TEST dd43af92. Candidat figé 859c615de62af056bf5cb6039650f3edea3821f0, TEST commun réussi 41082870880. Brouillon officiel 41093015843 : validations couvertes, revue backend à joindre. Aucun développement ultérieur intégré au candidat.
