@@ -644,7 +644,7 @@
         let nativeCoursesAdded = false;
         let nativeCoursesRemoved = false;
         try {
-          const selectionError=portalActions.selectedEngagementEventsCategoryError()||portalActions.selectedEngagementProgramError();
+          const selectionError=portalActions.engagementCompetitionType(portalState.selectedEngagementCompetition)==="openWater"&&(portalActions.selectedEngagementEventsCategoryError()||portalActions.selectedEngagementProgramError());
           if(selectionError)throw new Error(selectionError);
           const patch = nativeCompetitionPatchFromForm();
           const existingCodes = new Set((portalState.selectedEngagementCompetition.events || []).map(event => event.code));
