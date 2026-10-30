@@ -15,6 +15,18 @@ const access = require("../functions/server-access-service").createAccessService
 });
 const sha = text => crypto.createHash("sha256").update(text).digest("hex");
 const mailCapabilities = ["engagements.club.manage", "engagements.region.manage", "engagements.national.manage"];
+function triggerMetadataHash(triggers) {
+  if (!Array.isArray(triggers) || triggers.length !== 2) throw new Error("Trigger metadata scope invalid");
+  return planner.hash(triggers.map(trigger => {
+    if (!Array.isArray(trigger.filters) || trigger.filters.length !== 3 || trigger.filters.some(filter =>
+      !filter || typeof filter !== "object" || Array.isArray(filter) || typeof filter.attribute !== "string" || typeof filter.value !== "string")) {
+      throw new Error("Trigger filter metadata invalid");
+    }
+    // Eventarc applies all filters jointly. Preserve every field and duplicate;
+    // only the API's nondeterministic order of these three filters is canonical.
+    return { ...trigger, filters: [...trigger.filters].sort((a, b) => planner.hash(a).localeCompare(planner.hash(b))) };
+  }));
+}
 function decode(value) {
   if (!value) return undefined;
   if (value.mapValue) return Object.fromEntries(Object.entries(value.mapValue.fields || {}).map(([key, item]) => [key, decode(item)]));
@@ -164,4 +176,4 @@ async function sourceProof(trigger, token) {
   if (handler(ast, body) !== handler(indexAst, indexSource)) throw new Error("Deployed trigger differs from reviewed source");
   return { name: trigger.name, revision: trigger.revision, archiveBytes: length, reviewedModules: modules, unrelatedDifferences, handlerHash: sha(handler(ast, body)), matched: true };
 }
-module.exports = { projectionSpecs, projectionBaseline, verifyProjections, groupedRead, napConnection, napRows, verifyNap, microseconds, sourceProof, decode, zipMembers };
+module.exports = { triggerMetadataHash, projectionSpecs, projectionBaseline, verifyProjections, groupedRead, napConnection, napRows, verifyNap, microseconds, sourceProof, decode, zipMembers };

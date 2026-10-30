@@ -59,7 +59,7 @@ async function execute(backup, token, file, direction) {
   const baseline = { specs: new Map(data.projectionSpecs), docs: new Map(data.projectionDocuments) }, napBaseline = new Map(data.napBaseline);
   const originals = new Map(backup.documents.map(doc => [doc.name, doc]));
   stage = "live-trigger-revision-guard";
-  if (planner.hash(await liveTriggers(token)) !== planner.hash(data.triggers)) throw new Error("Trigger deployment changed");
+  if (controls.triggerMetadataHash(await liveTriggers(token)) !== controls.triggerMetadataHash(data.triggers)) throw new Error("Trigger deployment changed");
   connection = await controls.napConnection(token);
   const completion = path.join(backup.directory, `${direction}-complete.json`);
   if (fs.existsSync(completion)) throw new Error("Operation already completed; no second inversion");
