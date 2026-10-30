@@ -1,22 +1,27 @@
 "use strict";
 const planner = require("./user-name-correction-plan");
 
-function proposedBatch(plan, entries, current, direction = "apply", receipts = []) {
+function proposedBatch(plan, entries, current, direction = "apply", receipts = [], proposeWrite = planner.proposedWrite) {
   if (!Array.isArray(entries) || !entries.length || entries.length > 10 || new Set(entries.map(e => e.name)).size !== entries.length) throw new Error("Invalid batch");
   const writes = entries.map(entry => {
     const receipt = receipts.find(row => row.name === entry.name) || null;
-    const proposal = planner.proposedWrite(plan, entry.name, current.get(entry.name), receipt, direction);
+    const proposal = proposeWrite(plan, entry.name, current.get(entry.name), receipt, direction);
     if (proposal.status !== "proposed-only") throw new Error("Concurrent or previously processed profile");
-    return proposal.write;
+    const write = proposal.write;
+    if (write.update?.name !== entry.name || Object.keys(write.update).sort().join(",") !== "fields,name"
+        || Object.keys(write.updateMask || {}).join(",") !== "fieldPaths" || planner.hash(write.update.fields) !== planner.hash(direction === "apply" ? entry.after : entry.before)
+        || Object.keys(write).sort().join(",") !== "currentDocument,update,updateMask"
+        || Object.keys(write.currentDocument || {}).join(",") !== "updateTime") throw new Error("Write scope invalid");
+    return write;
   });
   if (writes.some(write => Object.keys(write.update.fields).sort().join(",") !== "firstName,lastName" ||
     write.updateMask.fieldPaths.join(",") !== "firstName,lastName" || !write.currentDocument.updateTime)) throw new Error("Write mask invalid");
   return writes;
 }
 
-async function runBatch({ plan, entries, originals, read, commit, persist, observe, direction = "apply", receipts = [] }) {
+async function runBatch({ plan, entries, originals, read, commit, persist, observe, direction = "apply", receipts = [], proposeWrite = planner.proposedWrite }) {
   const current = await read(entries.map(entry => entry.name));
-  const writes = proposedBatch(plan, entries, current, direction, receipts);
+  const writes = proposedBatch(plan, entries, current, direction, receipts, proposeWrite);
   const intent = { planDigest: plan.digest, direction, names: entries.map(entry => entry.name), writes };
   await persist("intent", intent); // Must succeed durably BEFORE sending a write.
   let response;
