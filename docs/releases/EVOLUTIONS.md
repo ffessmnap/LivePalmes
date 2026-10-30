@@ -2,6 +2,11 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 30 octobre — Fiche compétition administrateur allégée
+
+- Retouche minimale demandée et publication TEST explicitement autorisée par Antoine : suppression des deux textes de confort dans la fiche et Diffusion pour les administrateurs régionaux/nationaux. Avertissements, progression, confirmations, erreurs et trois boutons conservés ; les deux vérifications portent « aperçu sans envoi ». Statuts vides sans espace réservé, aucun droit ni traitement de notification modifié. Budget supplémentaire nul : aucune lecture, écriture, requête ni listener.
+- [Branche de livraison](https://github.com/ffessmnap/LivePalmes/commits/codex/competition-interface-compacte), préparée depuis main sans reprendre les autres travaux du dossier partagé. Contrôles ciblés locaux réussis : syntaxe, aperçus sans envoi simulés, formulaire NAP, versions de cache ; navigateur local sur vrai fragment HTML/styles/module à 1280/390/320 px pour les deux profils, avertissements et retours d’action conservés. CI obligatoire et preuve TEST commun à attester dans la PR après réussite ; recette utilisateur restante. Aucun mail réel, modification de données ou déploiement PROD.
+
 ### 30 octobre — Historique des temps réparé et annuaire national sans double lecture
 
 - Périmètre explicitement validé par Antoine, Cloud Functions et livraison jusqu'à TEST comprises, sans modification de la base ni mail réel. Régression du premier lot reproduite hors réseau : le service d'historique attendait des inscriptions/courses absentes du contexte ciblé. Ce parcours relit désormais les seules inscriptions et courses du nageur ; aperçus groupés inchangés, contrôles sportifs et accès conservés.
