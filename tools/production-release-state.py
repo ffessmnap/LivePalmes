@@ -57,6 +57,14 @@ def check_after(backup, destination, require_success):
         if sorted(report['additionalBccFunctions']) != bcc_policy.contract()['selected']:
             raise ValueError('Selection CCI du rapport differente')
     errors = []
+    portal_policy = None
+    if report.get('additionalPortalAccessNsFunctions'):
+        spec = importlib.util.spec_from_file_location('portal_ns_state_policy', Path(__file__).with_name('portal-access-ns-release-policy.py'))
+        portal_policy = importlib.util.module_from_spec(spec); spec.loader.exec_module(portal_policy)
+        c = portal_policy.contract()
+        portal_policy.require(report['additionalPortalAccessNsFunctions'] == c['sourceOnly']
+            and report['candidate'] == c['candidate'] and len(before) == c['inventoryCount']
+            and selected == {PREFIX+n for n in c['selected']} and not report['newFunctions'], 'Rapport portail NS/acces hors contrat')
     account_policy = None
     if report.get('additionalNapAccountFunctions'):
         spec = importlib.util.spec_from_file_location('account_state_policy', Path(__file__).with_name('nap-account-release-policy.py'))
@@ -112,6 +120,11 @@ def check_after(backup, destination, require_success):
             errors.append("Commit Function different: " + name.split("/")[-1])
         elif not report.get("commitLabel") and name in before and f.get("updateTime") == before[name].get("updateTime"):
             errors.append("Function non actualisee: " + name.split("/")[-1])
+        if f and portal_policy and name.split('/')[-1] in [portal_policy.NAME, portal_policy.ACCOUNT]:
+            try:
+                portal_policy.assert_config(before[name], f, SimpleNamespace(rollback_patch=rollback_patch))
+            except ValueError as error:
+                errors.append(str(error))
         if f and name.split('/')[-1] in (report.get('additionalPdfFunctions', []) + report.get('additionalDtnFunctions', []) + report.get('additionalClubDirectoryFunctions', []) + report.get('additionalLicenseReportFunctions', [])):
             old = rollback_patch(before[name], {})
             new = rollback_patch(f, {})
