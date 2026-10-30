@@ -288,6 +288,7 @@
     return {
       isAdminAuthenticated: () => isAllowedUser(),
       hasCapability: (capability) => {
+        if (serverProfileAuthentication && !currentProfile) return false;
         if (!serverProfileAuthentication && isAllowedUser() && (allowedUids.has(currentUser?.uid) || allowedEmails.has(normalizeEmail(currentUser?.email)))) return true;
         if (capability === "consoles.access" && currentClaims?.livepalmesCapabilities?.["consoles.manage"] === true) return true;
         return currentClaims?.livepalmesCapabilities?.[capability] === true;

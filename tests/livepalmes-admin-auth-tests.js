@@ -80,6 +80,7 @@ function createHarness({ profile, serverError = null, serverGate = null, authCon
   const restoring = restored.restore(); await restored.whenProfileRequested;
   assert.deepEqual(restored.tokenRefreshFlags,[false],"Restored server-profile sessions delegate expiry checks to Firebase");
   assert.equal(restored.calls().callableCalls,1);assert.equal(restored.auth.status().ready,false);assert.equal(restored.auth.status().signedIn,false);
+  assert.equal(restored.auth.hasCapability("admin.full"),false,"No cached capability while the server profile is pending");
   releaseProfile();await restoring;assert.equal(restored.auth.status().signedIn,true);
   assert.equal(restored.auth.hasCapability("admin.full"),false,"Cached claims cannot override the current server profile");
   assert.equal(restored.auth.hasCapability("engagements.club.manage"),true);
