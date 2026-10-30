@@ -15,6 +15,10 @@ async function run(){
  assert.deepEqual(JSON.parse(JSON.stringify(calls[0])),{name:'addEngagementOpenWaterCourse',input:{distance:2000}});assert.equal(dirty,0,'Adding a distance does not select a competition course');assert.equal(elements.engagementsOpenWaterCourseAdd.disabled,false);assert.equal(elements.engagementsOpenWaterDistance.value,'');assert(!/checked/.test(elements.engagementsOpenWaterCourseList.innerHTML));
  elements.engagementsOpenWaterDistance.value='2000';await moduleApi.addEngagementOpenWaterCourse();assert.equal(calls.length,1,'An already available distance reuses the shared library without a write');
  elements.engagementsOpenWaterDistance.value='2.5';await moduleApi.addEngagementOpenWaterCourse();assert.equal(calls.length,1);assert.equal(elements.engagementsOpenWaterCourseMessage.dataset.tone,'error');
+ const extra=['SF','BI','SUP'].map(discipline=>({id:'1200-'+discipline,distance:1200,discipline,label:'1200 m '+discipline,format:'standard',active:true}));
+ state.engagementOpenWaterCourses.push(...extra);actions.callFunction=async(name,input)=>{calls.push({name,input});return {courses:state.engagementOpenWaterCourses,nativeReferencesReady:true};};
+ elements.engagementsOpenWaterDistance.value='1200';await moduleApi.addEngagementOpenWaterCourse();assert.equal(calls.length,2,'A legacy library association is not proof that its native references exist');
+ elements.engagementsOpenWaterDistance.value='1200';await moduleApi.addEngagementOpenWaterCourse();assert.equal(calls.length,2,'A distance verified by the server is reused without another call');
  const loading=deferred();actions.callFunction=async()=>loading.promise;state.engagementOpenWaterCoursesLoaded=false;state.selectedEngagementCompetition.competitionType='pool';const read=moduleApi.loadEngagementOpenWaterCourses();loading.resolve({courses});await read;assert.equal(elements.engagementsOpenWaterCourseMessage.dataset.tone,undefined,'Successful load clears animated loading tone');
  console.log('Parcours eau libre : ajout distance sans sélection, double clic, validation et chargement, modes F/H avant enregistrement vérifiés avec le module réel hors réseau.');
 }

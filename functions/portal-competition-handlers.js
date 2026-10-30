@@ -489,7 +489,23 @@ function createCompetitionHandlers(backendContext) {
       const distance=Number(request.data?.distance);
       if(!Number.isInteger(distance)||distance<1||distance>100000)throw new backendContext.HttpsError("invalid-argument","Distance entière de 1 à 100 000 mètres requise.");
       const courses=(distance===150?["SF","BI"]:["SF","BI","SUP"]).map(discipline=>backendContext.cleanEngagementOpenWaterCourse({distance,discipline}));
-      return require("./nap-open-water-library").change(require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD),{action:"addDistance",courses},context.uid,saved=>backendContext.writeAuditLog("engagementOpenWaterCourse.nativeChange",context.uid,saved));
+      const pool=require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD),library=require("./nap-open-water-library");
+      let nativeReferencesCreated=0;
+      try {
+        const current=await library.readStored(pool);
+        library.plan(current,{action:"addDistance",courses,expectedFingerprint:current.fingerprint});
+        const native=await require("./nap-open-water-reference-addition").ensureDistanceReferences(pool,{distance,actorUid:context.uid},
+          payload=>require("./nap-open-water-reference-backup").backupVerified(backendContext.db,context.uid,payload,process.env.LIVEPALMES_NAP_PASSWORD));
+        nativeReferencesCreated=native.created;
+        const result=await library.change(pool,{action:"addDistance",courses,expectedFingerprint:current.fingerprint},context.uid,saved=>backendContext.writeAuditLog("engagementOpenWaterCourse.nativeChange",context.uid,saved));
+        return {...result,nativeReferencesReady:true,nativeReferencesCreated};
+      }catch(error){
+        if(error instanceof backendContext.HttpsError)throw error;
+        const created=Number(error.nativeReferencesCreated)||nativeReferencesCreated;
+        const message=created?`${created} référence(s) NAP créée(s) et sauvegardée(s), mais l'ajout de distance doit être repris. Aucune course de compétition ni aucun engagement modifié.`
+          : error instanceof TypeError||error instanceof RangeError?error.message:"Ajout de distance NAP à vérifier. Reprenez la même distance ; les sauvegardes sont conservées.";
+        throw new backendContext.HttpsError(error instanceof TypeError?"failed-precondition":error instanceof RangeError?"resource-exhausted":"unavailable",message);
+      }
     }
     const course = backendContext.cleanEngagementOpenWaterCourse({
       distance: request.data?.distance,
