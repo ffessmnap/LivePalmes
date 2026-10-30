@@ -5,7 +5,7 @@ const fields={name:{value:"Ancien nom"},date:{value:"2026-10-11"},endDate:{value
 let fee={enabled:false,swimmerFee:0,individualEventFee:0,relayFee:0,helloAssoUrl:""},approved=true,program=[];
 const calls=[];
 const sandbox={nativeCompetitionEditBaseline:null,selectedEngagementCompetition:{id:"legacy-nap-5140",napFingerprint:"abc",napSource:true},elements:{engagementsSaveButton:{disabled:false},engagementsDetailStatus:{dataset:{}}},
-  editCompetitionFields:()=>fields,selectedEngagementEventsFromForm:()=>[],selectedEngagementFeesFromForm:()=>({...fee}),selectedEngagementProgramSessionsFromForm:()=>structuredClone(program),global:{confirm:()=>approved},
+  editCompetitionFields:()=>fields,selectedEngagementEventsFromForm:()=>[],selectedEngagementEventsCategoryError:()=>'',selectedEngagementProgramError:()=>'',engagementCompetitionType:()=> 'pool',selectedEngagementFeesFromForm:()=>({...fee}),selectedEngagementProgramSessionsFromForm:()=>structuredClone(program),global:{confirm:()=>approved},
   callFunction:async(name,input)=>{calls.push({name,input});return {competition:{id:input.competitionId,napSource:true}};},invalidateEngagementCalendarCaches:()=>{},loadEngagementCompetitions:async()=>{},upsertEngagementCalendarItemFromServer:()=>{},renderEngagementCompetitionDetail:()=>{},clearEngagementDetailTabDirty:()=>{},setEngagementEditMode:()=>{}};
 vm.createContext(sandbox);
 const start=source.indexOf("  function nativeCompetitionFormValues("),end=source.indexOf("\n  function ",source.indexOf("  async function saveNativeCompetitionDetail(",start)+10);

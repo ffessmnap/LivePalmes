@@ -966,7 +966,7 @@
           : portalConfig.ENGAGEMENT_PROGRAM_GENDER_MODES.map(([mode]) => [mode, engagementProgramGenderModeDisplayLabel(mode, eventCode, eventOption)]);
         if (!portalState.selectedEngagementCompetition?.napSource) return modes;
         const nativeEvent = portalState.selectedEngagementCompetition.events?.find(event => event.code === eventCode);
-        if (!nativeEvent && definition && portalState.engagementDetailEditing && portalActions.engagementCompetitionType(portalState.selectedEngagementCompetition) === "pool") return modes;
+        if (!nativeEvent && definition && portalState.engagementDetailEditing && ["pool","openWater"].includes(portalActions.engagementCompetitionType(portalState.selectedEngagementCompetition))) return modes;
         if (!Array.isArray(nativeEvent?.nativeCourses)) return [];
         const available = new Set(nativeEvent.nativeCourses.map(course => String(course.sexe).trim()));
         return modes.filter(([mode]) => mode === "mixed"
@@ -1015,7 +1015,7 @@
       }
 
     function engagementProgramFormatsForEvent(eventCode = "") {
-        if (portalActions.engagementCompetitionType() !== "openWater") return portalConfig.ENGAGEMENT_PROGRAM_FORMATS;
+        if (portalActions.engagementCompetitionType(portalState.selectedEngagementCompetition) !== "openWater") return portalConfig.ENGAGEMENT_PROGRAM_FORMATS;
         return portalActions.engagementEventDefinition(eventCode)?.openWaterFormat === "elimination"
           ? portalConfig.ENGAGEMENT_OPEN_WATER_ELIMINATION_PROGRAM_FORMATS
           : [];
@@ -1023,7 +1023,7 @@
 
     function engagementProgramPhaseForEvent(eventCode = "", requestedPhase = "direct") {
         const phase = portalConfig.ENGAGEMENT_PROGRAM_PHASE_LABELS[requestedPhase] ? requestedPhase : "direct";
-        if (portalActions.engagementCompetitionType() !== "openWater") return phase;
+        if (portalActions.engagementCompetitionType(portalState.selectedEngagementCompetition) !== "openWater") return phase;
         const formats = engagementProgramFormatsForEvent(eventCode);
         if (!formats.length) return "direct";
         return ["direct", "heats", "final"].includes(phase) ? phase : "direct";
@@ -1524,6 +1524,7 @@
           if (!course) return '<span class="admin-engagements-open-water-unavailable" aria-label="Course non disponible">—</span>';
           const selected = selectedCodes.has(portalActions.engagementOpenWaterEventCode(course));
           const active = course.active !== false;
+          if(active||selected)return `<label class="admin-engagements-open-water-course-check"><input type="checkbox" data-open-water-course-select="${portalActions.escapeHtml(course.id)}" aria-label="${portalActions.escapeHtml(course.label)}" ${selected?'checked':''} ${canEdit?'':'disabled'}></label>`;
           const actionLabel = selected ? `${course.label} déjà ajoutée` : active ? `Ajouter ${course.label}` : `Réactiver ${course.label}`;
           const action = active
             ? `<button class="admin-engagements-open-water-course-add" type="button" data-open-water-course-select="${portalActions.escapeHtml(course.id)}" data-open-water-course-selected="${selected ? "true" : "false"}" aria-label="${portalActions.escapeHtml(actionLabel)}" title="${portalActions.escapeHtml(actionLabel)}" ${!canEdit || selected ? "disabled" : ""}>${selected ? "✓" : "+"}</button>`
@@ -1567,7 +1568,7 @@
           portalState.engagementOpenWaterCoursesLoaded = true;
           renderEngagementOpenWaterCourseLibrary();
           if (portalActions.engagementCompetitionType(portalState.selectedEngagementCompetition) === "openWater") renderEngagementEvents(portalState.selectedEngagementCompetition);
-          if (portalContext.elements.engagementsOpenWaterCourseMessage) portalContext.elements.engagementsOpenWaterCourseMessage.textContent = "";
+          if (portalContext.elements.engagementsOpenWaterCourseMessage) {portalContext.elements.engagementsOpenWaterCourseMessage.textContent = "";delete portalContext.elements.engagementsOpenWaterCourseMessage.dataset.tone;}
         } catch (error) {
           if (portalContext.elements.engagementsOpenWaterCourseMessage) {
             portalContext.elements.engagementsOpenWaterCourseMessage.textContent = `Bibliothèque indisponible : ${error?.message || error}`;
@@ -1583,55 +1584,50 @@
         if (!course) return;
         const preservedEvents = selectedEngagementEventsFromForm();
         const definition = portalActions.engagementOpenWaterEventDefinitions({ events: preservedEvents }).find((event) => event.openWaterCourseId === course.id);
-        if (!definition || preservedEvents.some((event) => event.code === definition.code)) return;
+        if (!definition) return;
+        const removing=preservedEvents.some(event=>event.code===definition.code);
         const preservedSessions = selectedEngagementProgramSessionsFromForm();
+        if(removing&&preservedSessions.some(session=>session.items?.some(item=>item.eventCode===definition.code))&&!global.confirm("Décocher cette course et retirer ses passages du programme ? Les changements restent locaux jusqu’à l’enregistrement. Aucun engagement ne sera supprimé.")){renderEngagementOpenWaterCourseLibrary();return;}
         renderEngagementEvents({
           ...portalState.selectedEngagementCompetition,
-          events: [...preservedEvents, { ...definition, categoryRestrictions: [] }],
-          programSessions: preservedSessions
+          events: removing?preservedEvents.filter(event=>event.code!==definition.code):[...preservedEvents, { ...definition, categoryRestrictions: [] }],
+          programSessions: removing?preservedSessions.map(session=>({...session,items:session.items.filter(item=>item.eventCode!==definition.code)})):preservedSessions
         });
         portalActions.markEngagementDetailTabDirty("courses");
         if (portalContext.elements.engagementsOpenWaterCourseMessage) {
-          portalContext.elements.engagementsOpenWaterCourseMessage.textContent = `${course.label} ajoutée au tableau.`;
+          portalContext.elements.engagementsOpenWaterCourseMessage.textContent = "";
           portalContext.elements.engagementsOpenWaterCourseMessage.dataset.tone = "ok";
         }
       }
 
     async function addEngagementOpenWaterCourse(event) {
         event?.preventDefault?.();
+        if(portalContext.elements.engagementsOpenWaterCourseAdd?.disabled)return;
         const distance = Math.trunc(Number(portalContext.elements.engagementsOpenWaterDistance?.value));
-        const discipline = portalContext.elements.engagementsOpenWaterDiscipline?.value || "";
-        if (!distance || !discipline) {
+        if (!Number.isInteger(Number(portalContext.elements.engagementsOpenWaterDistance?.value))||distance<1||distance>100000) {
           if (portalContext.elements.engagementsOpenWaterCourseMessage) {
-            portalContext.elements.engagementsOpenWaterCourseMessage.textContent = "Renseignez la distance et la spécialité.";
+            portalContext.elements.engagementsOpenWaterCourseMessage.textContent = "Renseignez une distance entière de 1 à 100 000 mètres.";
             portalContext.elements.engagementsOpenWaterCourseMessage.dataset.tone = "error";
           }
-          return;
-        }
-        if (distance === 150 && discipline === "SUP") {
-          portalContext.elements.engagementsOpenWaterCourseMessage.textContent = "Le 150 m élimination est disponible uniquement en Surface et Bi-palmes.";
-          portalContext.elements.engagementsOpenWaterCourseMessage.dataset.tone = "error";
           return;
         }
         const preservedEvents = selectedEngagementEventsFromForm();
         const preservedSessions = selectedEngagementProgramSessionsFromForm();
         try {
-          const result = await portalActions.callFunction("addEngagementOpenWaterCourse", { distance, discipline });
+          const addButton=portalContext.elements.engagementsOpenWaterCourseAdd;
+          if(addButton)addButton.disabled=true;
+          const result = await portalActions.callFunction("addEngagementOpenWaterCourse", { distance });
           portalState.engagementOpenWaterCourses = Array.isArray(result.courses) ? result.courses : portalState.engagementOpenWaterCourses;
           portalState.engagementOpenWaterCoursesLoaded = true;
           if (portalContext.elements.engagementsOpenWaterDistance) portalContext.elements.engagementsOpenWaterDistance.value = "";
           if (portalContext.elements.engagementsOpenWaterDiscipline) portalContext.elements.engagementsOpenWaterDiscipline.value = "";
-          const definition = portalActions.engagementOpenWaterEventDefinitions({ events: preservedEvents }).find((event) => event.openWaterCourseId === result.course?.id);
           renderEngagementEvents({
             ...portalState.selectedEngagementCompetition,
-            events: definition && !preservedEvents.some((item) => item.code === definition.code)
-              ? [...preservedEvents, { ...definition, categoryRestrictions: [] }]
-              : preservedEvents,
+            events: preservedEvents,
             programSessions: preservedSessions
           });
-          portalActions.markEngagementDetailTabDirty("courses");
           if (portalContext.elements.engagementsOpenWaterCourseMessage) {
-            portalContext.elements.engagementsOpenWaterCourseMessage.textContent = `${result.course?.label || `${distance} m`} ajoutée au tableau.`;
+            portalContext.elements.engagementsOpenWaterCourseMessage.textContent = `${distance} m ajouté.`;
             portalContext.elements.engagementsOpenWaterCourseMessage.dataset.tone = "ok";
           }
         } catch (error) {
@@ -1639,7 +1635,7 @@
             portalContext.elements.engagementsOpenWaterCourseMessage.textContent = `Ajout impossible : ${error?.message || error}`;
             portalContext.elements.engagementsOpenWaterCourseMessage.dataset.tone = "error";
           }
-        }
+        } finally {if(portalContext.elements.engagementsOpenWaterCourseAdd)portalContext.elements.engagementsOpenWaterCourseAdd.disabled=false;}
       }
 
     async function setEngagementOpenWaterCourseStatus(button) {
@@ -1719,7 +1715,7 @@
           return `
         <div class="admin-engagements-event-row" data-engagement-event-item data-selected="${selected ? "true" : "false"}">
           <label class="admin-engagements-event-main">
-            <input type="checkbox" data-engagement-event-code="${portalActions.escapeHtml(event.code)}" ${selected ? "checked" : ""} ${canEdit && (competition.napSource !== true || portalActions.engagementCompetitionType(competition) === "pool" && !selected) ? "" : "disabled"} ${competition.napSource === true && selected ? 'title="Course déjà enregistrée ; utilisez Retirer cette course pour la supprimer."' : ""}>
+            <input type="checkbox" data-engagement-event-code="${portalActions.escapeHtml(event.code)}" ${selected ? "checked" : ""} ${canEdit && (competition.napSource !== true || portalActions.engagementCompetitionType(competition) === "openWater" || portalActions.engagementCompetitionType(competition) === "pool" && !selected) ? "" : "disabled"} ${competition.napSource === true && selected && portalActions.engagementCompetitionType(competition)!=="openWater" ? 'title="Course déjà enregistrée ; utilisez Retirer cette course pour la supprimer."' : ""}>
             <span>
               <strong data-engagement-event-label title="${portalActions.escapeHtml(event.label)}${portalActions.escapeHtml(mixedRuleLabel)}">${portalActions.escapeHtml(event.shortLabel)}</strong>
             </span>
@@ -1807,7 +1803,7 @@
           mount.id = "adminNativeCourseRemoval";
           portalContext.elements.engagementsEventsForm.append(mount);
         }
-        mount.hidden = competition.napSource !== true || !canEdit;
+        mount.hidden = competition.napSource !== true || !canEdit || portalActions.engagementCompetitionType(competition)==="openWater";
         if (mount.hidden) { mount.textContent = ""; return; }
         mount.innerHTML = `<p>Courses de la compétition. Si des engagements existent, seul le National peut retirer une course après confirmation. Les engagements sont conservés.</p><ul>${(competition.nativeRules?.courses || []).map(course => `<li>${portalActions.escapeHtml(course.course || "Course ancienne")} ${portalActions.escapeHtml(course.sexe === "F" ? "Femmes" : course.sexe === "M" ? "Hommes" : "Mixte")} <button type="button" class="ghost-button" data-native-course-remove="${portalActions.escapeHtml(String(course.id))}">Retirer cette course</button></li>`).join("")}</ul>`;
         mount.querySelectorAll("[data-native-course-remove]").forEach(button => button.addEventListener("click", async () => {
