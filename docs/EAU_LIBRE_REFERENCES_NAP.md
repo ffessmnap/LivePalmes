@@ -1,20 +1,24 @@
 # Références NAP manquantes pour le parcours eau libre
 
-<!-- description: Bilan de préparation du seul ajout 1000 m Support Femmes/Hommes dans le catalogue NAP commun ; aucune autorisation d'écriture ni exécution implicite. -->
+<!-- description: Bilan et preuve du seul ajout 1000 m Support Femmes/Hommes explicitement autorisé et vérifié dans le catalogue NAP commun ; aucun autre ajout implicite. -->
 
 ## État et périmètre
 
-La maquette puis le développement TEST ont été demandés et validés dans la conversation Eau libre. Le 30 octobre 2026, Antoine a autorisé la consultation en lecture seule du seul catalogue technique NAP, puis demandé de préparer l'ajout des références manquantes, **sans écriture avant son accord sur le bilan**. Ce document ne constitue pas cet accord.
+La maquette puis le développement TEST ont été demandés et validés dans la conversation Eau libre. Le 30 octobre 2026, Antoine a autorisé la consultation en lecture seule du seul catalogue technique NAP, puis demandé de préparer l'ajout des références manquantes. Il a ensuite donné son accord explicite : « Oui, tu peux ajouter les deux références 1000 m Support Femmes et Hommes avec sauvegarde et vérification, puis terminer la livraison sur TEST. » Cet accord concerne uniquement les deux références du bilan présenté.
 
-Le catalogue contient 275 références. Les couples Femmes/Hommes des 150 m élimination Surface et Bi-palmes existent ; aucune création n'est nécessaire pour eux. Les références des 1000, 3000 et 5000 m Surface/Bi-palmes et des 3000/5000 m Support existent aussi. Le couple 1000 m Support manque. TEST utilise la même base NAP : le catalogue est commun aux environnements.
+Avant l'ajout, le catalogue contenait 275 références. Les couples Femmes/Hommes des 150 m élimination Surface et Bi-palmes existent ; aucune création n'est nécessaire pour eux. Les références des 1000, 3000 et 5000 m Surface/Bi-palmes et des 3000/5000 m Support existent aussi. Le couple 1000 m Support manquait. TEST utilise la même base NAP : le catalogue est commun aux environnements.
 
-## Ajout proposé, à approuver
+## Ajout approuvé et exécuté
 
-Créer **deux références seulement** dans `course_dispo` : 1000 m Support Femmes et 1000 m Support Hommes. Les identifiants seront attribués par l'auto-incrément, sans identifiant inventé. Les modèles sont les deux références existantes 5000 m Support, dont les champs techniques ont été lus. Seuls `course` (`1000 SUPPORT`), `longueur` (`1000`) et le nouveau code technique `wplabel` (`LD1000SUP`) diffèrent des modèles correspondants. Ce nouveau code est une proposition à approuver ; il reprend la convention de `LD5000SUP` et ne réécrit aucun ancien code.
+Ajout de **deux références seulement** dans `course_dispo` : 1000 m Support Femmes et 1000 m Support Hommes. Les identifiants ont été attribués par l'auto-incrément, sans identifiant inventé. Les modèles sont les deux références existantes 5000 m Support, dont les champs techniques ont été lus. Seuls `course` (`1000 SUPPORT`), `longueur` (`1000`) et le nouveau code technique approuvé `wplabel` (`LD1000SUP`) diffèrent des modèles correspondants. Ce code reprend la convention de `LD5000SUP` et ne réécrit aucun ancien code.
 
 Les autres valeurs sont conservées : `sexe=F/M`, `final=0`, `relais=0`, `categorie=0`, `p=0`, `ld=1`, `bi=0`, `_order=null`, `mixte=0`, `style=SF`, `type_=1`, `nbnageur=1`, `validation=1`, `actif=1`. Le champ technique `style=SF` est celui des références Support NAP existantes ; il ne change pas la spécialité affichée.
 
-Le plan pur `tools/plan-open-water-support-reference.js` produit les lignes proposées et les empreintes attendues, sans connexion, SQL exécutable ni mode d'application. Les tests refusent un modèle différent, les collisions et les correspondances ambiguës. Aucune référence réelle n'a été ajoutée.
+Le plan pur `tools/plan-open-water-support-reference.js` produit les lignes proposées et les empreintes attendues, sans connexion, SQL exécutable ni mode d'application. L'exécuteur séparé `tools/apply-open-water-support-reference.js` exige la confirmation précise, le plan approuvé et une sauvegarde durable vérifiée. Les tests refusent les dérives, collisions et déclencheurs ; ils vérifient aussi la reprise après insertion partielle et la conservation des anciennes lignes.
+
+Exécution le 30 octobre 2026 à 11 h 18 (Paris) : références natives **465 (Femmes)** et **466 (Hommes)**, `1000 SUPPORT`, `LD1000SUP`. Relecture sous verrou : 277 références, deux ajouts exacts, empreinte des 275 anciennes lignes inchangée. Aucune compétition ni aucun engagement modifié. Aucun changement de schéma.
+
+Sauvegarde du catalogue et de sa structure chiffrée avec le mécanisme AES-256-GCM existant, relue, déchiffrée et comparée avant écriture ; archive et reçu conservés dans l'espace durable de cette conversation. Empreinte SHA-256 de l'archive : `871bd47c84e61b9f48870e8db85aa7ee284db6e8e77fdbb527d6a3bac26e7b2e`. Le fichier de métadonnées identifie la version exacte du secret servant au déchiffrement ; aucune valeur du secret n'est incluse dans le dépôt ni dans le reçu.
 
 ## Conditions avant écriture
 
