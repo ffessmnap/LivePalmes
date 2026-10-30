@@ -33,12 +33,16 @@ async function read(connection) {
 function plan(current,input) {
   if(!current||input?.expectedFingerprint!==current.fingerprint) throw new TypeError("La bibliotheque a change. Rechargez avant d'enregistrer.");
   const courses=decode(current.courses);
-  if(input.action==="add") {
-    const [course]=decode([input.course]);
-    if(courses.some(item=>item.id===course.id)) throw new TypeError("Cette course existe deja dans la bibliotheque eau libre.");
+  if(input.action==="add"||input.action==="addDistance") {
+    const additions=decode(input.action==="addDistance"?input.courses:[input.course]);
+    if(!additions.length||additions.length>3||new Set(additions.map(item=>item.distance)).size!==1)throw new TypeError("Distance eau libre invalide.");
+    if(input.action==="addDistance"&&additions.map(item=>item.discipline).sort().join(',')!==(additions[0].distance===150?'BI,SF':'BI,SF,SUP'))throw new TypeError("Specialites de la distance incompletes.");
+    if(input.action==="add"&&courses.some(item=>item.id===additions[0].id)) throw new TypeError("Cette course existe deja dans la bibliotheque eau libre.");
+    const missing=additions.filter(item=>!courses.some(existing=>existing.id===item.id));
+    if(!missing.length)throw new TypeError("Cette distance existe deja dans la bibliotheque eau libre.");
     // Preserve the existing 100-course addition ceiling, including defaults.
-    if(courses.length>=100) throw new RangeError("La bibliotheque eau libre a atteint sa limite de courses.");
-    courses.push(course);
+    if(courses.length+missing.length>100) throw new RangeError("La bibliotheque eau libre a atteint sa limite de courses.");
+    courses.push(...missing);
   } else if(input.action==="status") {
     if(typeof input.active!=="boolean") throw new TypeError("Activation de course requise.");
     const index=courses.findIndex(course=>course.id===input.courseId);

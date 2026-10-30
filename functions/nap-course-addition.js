@@ -13,7 +13,8 @@ const CATALOG="SELECT id,course,sexe,final,relais,categorie,ld,mixte,actif FROM 
 const project=row=>Object.fromEntries(COLUMNS.map(key=>[key,row[key]]));
 const same=(a,b)=>COLUMNS.every(key=>a[key]==null||b[key]==null ? a[key]===b[key] : String(a[key])===String(b[key]));
 function planAdditions(pack,raw,catalog,defaults,definitions){
-  if(pack.event.eventType!=="pool"&&pack.event.competitionType!=="pool")throw new TypeError("Ajout natif disponible pour les competitions piscine uniquement.");
+  const water=pack.event.eventType==="openWater"||pack.event.competitionType==="openWater";
+  if(!water&&pack.event.eventType!=="pool"&&pack.event.competitionType!=="pool")throw new TypeError("Type de competition incompatible avec l'ajout natif.");
   if(!Array.isArray(raw)||!raw.length||raw.length>80||new Set(raw.map(row=>row?.code)).size!==raw.length)throw new TypeError("Selection de courses invalide.");
   if(pack.groups?.length||Number(pack.nativeParameters.qualif))throw new TypeError("Une grille de qualification existe : son programme doit etre verifie avant ajout de courses.");
   if(catalog.length>300||pack.courses.length>300)throw new RangeError("Referentiel de courses trop volumineux.");
@@ -33,10 +34,11 @@ function planAdditions(pack,raw,catalog,defaults,definitions){
   if(!Number.isSafeInteger(pos)||pos>2147483300)throw new TypeError("Ordre natif des courses a verifier.");
   const existing=new Set(pack.courses.map(row=>Number(row.id_course))),additions=[];
   for(const event of raw){
-    const definition=definitions?.get(event.code);
+    const waterRows=water?catalog.filter(row=>require('./nap-open-water-courses').definition(row.course)?.code===event.code):[];
+    const definition=definitions?.get(event.code)||(waterRows.length?require('./nap-open-water-courses').definition(waterRows[0].course):null);
     if(!definition)throw new TypeError("Course inconnue du programme LivePalmes.");
     const mixed=definition.relayMixedRule==="required"||definition.relayMixedRule==="mastersOnly"&&event.relayMixedMode==="masters";
-    const rows=catalog.filter(row=>nativeCourseCode(row.course)===event.code&&Number(row.final)===0&&Number(row.actif)===1&&Number(row.ld)===0&&Number(row.categorie)===0&&Boolean(Number(row.relais))===(definition.type==="relay")&&Boolean(Number(row.mixte))===mixed);
+    const rows=catalog.filter(row=>(water?require('./nap-open-water-courses').definition(row.course)?.code===event.code:nativeCourseCode(row.course)===event.code)&&Number(row.final)===0&&Number(row.actif)===1&&Number(row.ld)===(water?1:0)&&Number(row.categorie)===0&&Boolean(Number(row.relais))===(definition.type==="relay")&&Boolean(Number(row.mixte))===mixed);
     if(mixed ? rows.length!==1||String(rows[0].sexe)!=="0" : rows.length!==2||new Set(rows.map(row=>row.sexe)).size!==2||!rows.every(row=>["M","F"].includes(row.sexe)))throw new TypeError(`Correspondance native absente ou ambigue : ${event.code}.`);
     for(const row of rows)if(!existing.has(Number(row.id))){additions.push({compet:positiveId(pack.event.id),pos:++pos,id_course:Number(row.id),...fallback});existing.add(Number(row.id));}
   }

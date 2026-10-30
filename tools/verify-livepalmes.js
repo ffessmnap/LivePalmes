@@ -183,6 +183,8 @@ function runUnitTests() {
     "nap-approved-qualification-schema-tests.js",
     "nap-course-removal-tests.js",
     "nap-course-addition-tests.js",
+    "nap-open-water-program-tests.js",
+    "portal-open-water-program-tests.js",
     "nap-team-leader-change-tests.js",
     "nap-team-leader-create-tests.js",
     "nap-team-leader-remove-tests.js",
@@ -423,6 +425,7 @@ function runBrowserSmokeIfRequested() {
   const requested = process.argv.includes("--browser") || process.env.LIVEPALMES_BROWSER_SMOKE === "1";
   if (!requested) return;
   printStep("Smoke test navigateur");
+  run(process.execPath, [path.join(rootDir, "tests", "portal-open-water-program-browser-tests.js")]);
   run(process.execPath, [path.join(rootDir, "tests", "license-workspace-browser-tests.js")]);
   run(process.execPath, [path.join(rootDir, "tests", "license-workspace-usability-browser-tests.js")]);
   run(process.execPath, [path.join(rootDir, "tools", "livepalmes-browser-smoke.js")]);

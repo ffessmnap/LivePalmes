@@ -643,13 +643,20 @@
         const button = portalContext.elements.engagementsSaveButton;
         let nativeCoursesAdded = false;
         try {
+          const selectionError=portalActions.selectedEngagementEventsCategoryError()||portalActions.selectedEngagementProgramError();
+          if(selectionError)throw new Error(selectionError);
           const patch = nativeCompetitionPatchFromForm();
           const existingCodes = new Set((portalState.selectedEngagementCompetition.events || []).map(event => event.code));
           const additions = portalActions.selectedEngagementEventsFromForm().filter(event => !existingCodes.has(event.code));
+          const selectedCodes=new Set(portalActions.selectedEngagementEventsFromForm().map(event=>event.code));
+          const removedEvents=portalActions.engagementCompetitionType(portalState.selectedEngagementCompetition)==="openWater"?(portalState.selectedEngagementCompetition.events||[]).filter(event=>event.nativeRecognized===true&&!selectedCodes.has(event.code)):[];
+          const removalIds=removedEvents.flatMap(event=>(event.nativeCourses||[]).map(row=>Number(row.id)));
+          if(removedEvents.length&&(!removalIds.length||removedEvents.some(event=>!event.nativeCourses?.length)))throw new Error("Références natives des courses à retirer absentes. Rechargez la fiche.");
           if (!Object.keys(patch).length) {
             if (portalContext.elements.engagementsDetailStatus) portalContext.elements.engagementsDetailStatus.textContent = "Aucune modification à enregistrer.";
             return false;
           }
+          if(removalIds.length&&!global.confirm("Retirer les courses décochées de cette compétition ? Les engagements existants seront conservés. En présence d’engagements, ce retrait est réservé au National."))return false;
           if (patch.entryStatus === "closed" && !global.confirm("Fermer les engagements dans LivePalmes ? Les engagements existants et la date limite seront conservés.")) return false;
           if (["level","regionId","invitedRegionIds"].some(key=>Object.hasOwn(patch,key)) && !global.confirm("Modifier le niveau, la région organisatrice ou les régions invitées dans LivePalmes ? Les engagements déjà enregistrés seront conservés.")) return false;
           if (patch.entryStatus === "open" && !global.confirm("Ouvrir les engagements dans LivePalmes ? Les notifications autorisées par le réglage national partiront uniquement vers livepalmes@nap-ffessm.fr sur TEST.")) return false;
@@ -663,6 +670,11 @@
             nativeCoursesAdded = true;
             // Preserve pending settings; the second save uses the new native fingerprint.
             if (portalContext.elements.engagementsDetailStatus) portalContext.elements.engagementsDetailStatus.textContent = "Courses ajoutées dans NAP ; enregistrement des réglages...";
+          }
+          if(removalIds.length){
+            result=await portalActions.callFunction("updateEngagementCompetition",{competitionId:portalState.selectedEngagementCompetition.id,expectedFingerprint:portalState.selectedEngagementCompetition.napFingerprint,patch:{removeNativeCourseIds:removalIds,confirmCourseRemoval:true}});
+            portalState.selectedEngagementCompetition=result.competition;
+            nativeCoursesAdded=true;
           }
           result = await portalActions.callFunction("updateEngagementCompetition", { competitionId:portalState.selectedEngagementCompetition.id, expectedFingerprint:portalState.selectedEngagementCompetition.napFingerprint, patch,notificationOpeningRequested });
           if (result.qualificationJobId) {
@@ -681,7 +693,7 @@
           if (portalContext.elements.engagementsDetailStatus) { portalContext.elements.engagementsDetailStatus.textContent = "Modifications enregistrées dans NAP."; portalContext.elements.engagementsDetailStatus.dataset.tone = "ok"; }
           return true;
         } catch (error) {
-          if (portalContext.elements.engagementsDetailStatus) { portalContext.elements.engagementsDetailStatus.textContent = `${nativeCoursesAdded ? "Les courses ont été ajoutées dans NAP, mais les autres réglages restent à enregistrer. " : ""}Enregistrement impossible : ${error?.message || error}`; portalContext.elements.engagementsDetailStatus.dataset.tone = "error"; }
+          if (portalContext.elements.engagementsDetailStatus) { portalContext.elements.engagementsDetailStatus.textContent = `${nativeCoursesAdded ? "Les modifications de courses déjà effectuées dans NAP sont conservées ; les autres réglages restent à enregistrer. " : ""}Enregistrement impossible : ${error?.message || error}`; portalContext.elements.engagementsDetailStatus.dataset.tone = "error"; }
           return false;
         } finally { if (button) button.disabled = false; }
       }

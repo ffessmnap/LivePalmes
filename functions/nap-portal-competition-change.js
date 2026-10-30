@@ -138,7 +138,8 @@ function planCompetitionChange(pack, input, nowMs = Date.now()) {
       const events=require("./nap-portal-workspaces").competitionItem(pack,input.eventDefinitions).events;
       const known=new Set(events.filter(event=>event.nativeRecognized).map(event=>event.code));
       const previous=typeof pack.detailedProgram?.program_sessions==="string" ? JSON.parse(pack.detailedProgram.program_sessions) : pack.detailedProgram?.program_sessions || [];
-      if(previous.some(session=>session.items?.some(item=>!known.has(item.eventCode) && !input.eventDefinitions?.has(item.eventCode))) || Array.isArray(value) && value.some(session=>session.items?.some(item=>!known.has(item.eventCode)))) throw new TypeError("Une course ancienne doit etre raccordee avant de modifier le programme. Elle reste conservee.");
+      const recognizedWaterCode=code=>pack.event.competitionType==="openWater"&&require('./nap-open-water-courses').fromCode(code);
+      if(previous.some(session=>session.items?.some(item=>!known.has(item.eventCode) && !input.eventDefinitions?.has(item.eventCode)&&!recognizedWaterCode(item.eventCode))) || Array.isArray(value) && value.some(session=>session.items?.some(item=>!known.has(item.eventCode)))) throw new TypeError("Une course ancienne doit etre raccordee avant de modifier le programme. Elle reste conservee.");
       supplemental("livepalmes_competition_programs",pack.detailedProgram).program_sessions=require("./nap-program-validation").validateProgram(value,events,input.normalizeProgram);
     } else if (field === "courseOptions") {
       const operation=require('./nap-course-options-change').plan(pack,value,input,now);

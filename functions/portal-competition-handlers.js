@@ -485,6 +485,12 @@ function createCompetitionHandlers(backendContext) {
     if (!context.national && (!context.region || !context.regionId)) {
       throw new backendContext.HttpsError("permission-denied", "Droit regional ou national requis pour modifier la bibliotheque eau libre.");
     }
+    if(!request.data?.discipline&&backendContext.ENVIRONMENT.sportingDataSource === "nap"){
+      const distance=Number(request.data?.distance);
+      if(!Number.isInteger(distance)||distance<1||distance>100000)throw new backendContext.HttpsError("invalid-argument","Distance entière de 1 à 100 000 mètres requise.");
+      const courses=(distance===150?["SF","BI"]:["SF","BI","SUP"]).map(discipline=>backendContext.cleanEngagementOpenWaterCourse({distance,discipline}));
+      return require("./nap-open-water-library").change(require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD),{action:"addDistance",courses},context.uid,saved=>backendContext.writeAuditLog("engagementOpenWaterCourse.nativeChange",context.uid,saved));
+    }
     const course = backendContext.cleanEngagementOpenWaterCourse({
       distance: request.data?.distance,
       discipline: request.data?.discipline
@@ -1013,7 +1019,8 @@ function createCompetitionHandlers(backendContext) {
           }
           if(!Object.keys(patch).length)return {ok:true,unchanged:true,competition:await backendContext.nativePortalCompetition(competitionId,event=>backendContext.assertCanManageEngagementCompetition(context,event))};
         }
-        const applyNativeChange = Object.hasOwn(patch,"addNativeCourses") ? require("./nap-course-addition").addNativeCourses
+        const applyNativeChange = Object.hasOwn(patch,"removeNativeCourseIds") ? require("./nap-open-water-course-removal").removeNativeCourses
+          : Object.hasOwn(patch,"addNativeCourses") ? require("./nap-course-addition").addNativeCourses
           : Object.hasOwn(request.data?.patch || {},"removeNativeCourseId") ? require("./nap-course-removal").removeNativeCourse : nativeChange.applyCompetitionChange;
         const result = await require("./nap-qualification-edit-lock").ordinaryEdit(pool,competitionId,()=>applyNativeChange(pool, {
           competitionId, actorUid:context.uid,national:context.national,expectedFingerprint:request.data?.expectedFingerprint,patch,

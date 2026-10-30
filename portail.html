@@ -11,7 +11,7 @@
     <link id="adminPerformanceStyles" rel="stylesheet" href="performances/public/styles.css?v=20260613-delete-record-draft-1" disabled>
     <link id="adminImportStyles" rel="stylesheet" href="performances/public/import-competitions.css?v=20261026-import-relay-alerts-1" disabled>
     <link rel="preload" as="style" href="assets/portal/styles/00-foundation.css?v=20261029-readable-text-1">
-    <link rel="preload" as="style" href="assets/portal/styles/01-competition-and-club-base.css?v=20261029-readable-text-1">
+    <link rel="preload" as="style" href="assets/portal/styles/01-competition-and-club-base.css?v=20261030-open-water-program-1">
     <link rel="preload" as="style" href="assets/portal/styles/02-forms-and-responsive-base.css?v=20261029-readable-text-1">
     <link rel="preload" as="style" href="assets/portal/styles/03-shell.css?v=20261029-readable-text-1">
     <link rel="preload" as="style" href="assets/portal/styles/04-club-directories.css?v=20261030-ns-compact-1">
@@ -26,7 +26,7 @@
     <link rel="preload" as="style" href="assets/portal/styles/13-mobile.css?v=20261029-readable-text-1">
     <link rel="preload" as="style" href="assets/portal/styles/14-shell-and-detail.css?v=20261029-readable-text-1">
     <link rel="preload" as="style" href="assets/portal/styles/15-dtn-and-club.css?v=20261028-styles-1">
-    <link rel="stylesheet" href="assets/livepalmes-admin-portal.css?v=20261030-ns-compact-1">
+    <link rel="stylesheet" href="assets/livepalmes-admin-portal.css?v=20261030-open-water-program-1">
     <link rel="stylesheet" href="assets/livepalmes-license-administration.css?v=20261027-license-closure">
     <link rel="stylesheet" href="assets/livepalmes-whatsapp-qr.css?v=20260831-whatsapp-qr-1">
     <link rel="stylesheet" href="assets/livepalmes-portal-appearance.css?v=20261029-readable-text-1">
@@ -1356,28 +1356,13 @@
                           <fieldset>
                             <legend>Courses individuelles</legend>
                             <div id="adminEngagementsOpenWaterLibrary" class="admin-engagements-open-water-library" hidden>
-                              <div class="admin-engagements-open-water-library-head">
-                                <div>
-                                  <strong>Bibliothèque nationale des courses</strong>
-                                </div>
+                              <div id="adminEngagementsOpenWaterCourseList" class="admin-engagements-open-water-course-list"></div>
                                 <div id="adminEngagementsOpenWaterCourseCreator" class="admin-engagements-open-water-course-creator">
                                   <label>
-                                    Distance
-                                    <span><input id="adminEngagementsOpenWaterDistance" type="number" min="1" max="100000" step="1" inputmode="numeric"> m</span>
+                                    <span><input id="adminEngagementsOpenWaterDistance" type="number" min="1" max="100000" step="1" inputmode="numeric" placeholder="Distance" aria-label="Distance à ajouter en mètres"> m</span>
                                   </label>
-                                  <label>
-                                    Spécialité
-                                    <select id="adminEngagementsOpenWaterDiscipline">
-                                      <option value="">À choisir</option>
-                                      <option value="SF">Surface</option>
-                                      <option value="BI">Bi-palmes</option>
-                                      <option value="SUP">Support</option>
-                                    </select>
-                                  </label>
-                                  <button id="adminEngagementsOpenWaterCourseAdd" type="button"><span class="admin-engagements-open-water-action-full">Ajouter la course</span><span class="admin-engagements-open-water-action-short">Ajouter</span></button>
+                                  <button id="adminEngagementsOpenWaterCourseAdd" class="ghost-button" type="button"><span class="admin-engagements-open-water-action-full">+ Ajouter une distance</span><span class="admin-engagements-open-water-action-short">+ Ajouter</span></button>
                                 </div>
-                              </div>
-                              <div id="adminEngagementsOpenWaterCourseList" class="admin-engagements-open-water-course-list"></div>
                               <p id="adminEngagementsOpenWaterCourseMessage" class="admin-portal-message" aria-live="polite"></p>
                             </div>
                             <div id="adminEngagementsIndividualEvents" class="admin-engagements-events-list"></div>
@@ -2910,12 +2895,12 @@
     <script src="assets/portal/club-people.js?v=20261028-modules-1"></script>
     <script src="assets/portal/club-entry-state.js?v=20261028-modules-1"></script>
     <script src="assets/portal/club-entry-views.js?v=20261029-ns-1"></script>
-    <script src="assets/portal/documents-and-program.js?v=20261028-modules-1"></script>
+    <script src="assets/portal/documents-and-program.js?v=20261030-open-water-program-1"></script>
     <script src="assets/portal/competition-actions.js?v=20261028-modules-1"></script>
     <script src="assets/portal/national-requests.js?v=20261030-ns-compact-2"></script>
     <script src="assets/portal/national-directories.js?v=20261028-nap-recovery-2"></script>
     <script src="assets/portal/activity-journal.js?v=20261028-modules-1"></script>
-    <script src="assets/portal/club-and-competition.js?v=20261028-nap-recovery-1"></script>
+    <script src="assets/portal/club-and-competition.js?v=20261030-open-water-program-1"></script>
     <script src="assets/portal/account-and-access.js?v=20261030-access-dialog-1"></script>
     <script src="assets/portal/events.js?v=20261029-regional-3"></script>
   <script src="assets/livepalmes-admin-portal.js?v=20261028-nap-recovery-1"></script>
