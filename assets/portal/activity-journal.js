@@ -513,7 +513,7 @@
           };
           // Club labels must not delay the journal or change its captured filters.
           void Promise.resolve().then(() => portalActions.loadAccessClubReference()).then(() => {
-            if (portalState.engagementNationalAuditLogsLoaded) updateEngagementNationalAuditFilterOptions();
+            if (portalState.engagementNationalAuditLogsLoaded) renderEngagementNationalAuditLogs();
           }).catch(() => {});
           const result = await portalActions.callFunction("listEngagementNationalAuditLogs", requestFilters);
           portalState.engagementNationalAuditAppliedActorUid = requestFilters.actorUid;
