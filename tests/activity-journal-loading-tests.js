@@ -7,11 +7,12 @@ const settle=()=>new Promise(resolve=>setImmediate(resolve));
 function frontend() {
   const reference=deferred(),reply=deferred(),calls=[];
   const state={accessClubReference:[],engagementNationalAuditLogs:[],engagementNationalAuditLogsLoaded:false,engagementNationalAuditLogsLoading:false};
-  const elements={engagementsNationalAuditPeriod:{value:"7"},engagementsNationalAuditActor:{value:"actor-first"},engagementsNationalAuditClub:{value:"club-first"},engagementsNationalAuditStatus:{dataset:{}}};
+  const renders=[];
+  const elements={engagementsNationalAuditList:{set innerHTML(value){renders.push(value);}},engagementsNationalAuditPeriod:{value:"7"},engagementsNationalAuditActor:{value:"actor-first"},engagementsNationalAuditClub:{value:"club-first"},engagementsNationalAuditStatus:{dataset:{}}};
   const config=Object.fromEntries(["Actors","Clubs","Competitions","People"].map(key=>['engagementNationalAudit'+key,new Map()]));
-  const actions={canViewActivityLog:()=>true,loadAccessClubReference:()=>reference.promise,clubDisplayLabel:()=>"Club fictif",escapeHtml:v=>String(v),callFunction:(name,input)=>{calls.push({name,input});return reply.promise;}};
+  const actions={canViewActivityLog:()=>true,normalizedEngagementClubSearch:v=>String(v).toLowerCase(),loadAccessClubReference:()=>reference.promise,clubDisplayLabel:()=>"Club fictif",escapeHtml:v=>String(v),callFunction:(name,input)=>{calls.push({name,input});return reply.promise;}};
   const module=portalModule("activity-journal.js","LivePalmesPortalActivityJournal",{state,elements,config,actions},{window:{LivePalmesActivityJournal:require("../assets/livepalmes-activity-journal")}});
-  return {reference,reply,calls,state,elements,config,actions,module};
+  return {reference,reply,calls,state,elements,config,actions,module,renders};
 }
 function backend({hold=false,denied=false,authFails=false}={}) {
   const calls=[],gates=new Map(),query=[];
@@ -41,7 +42,11 @@ function backend({hold=false,denied=false,authFails=false}={}) {
   assert.equal(f.calls[0].input.actorUid,"actor-first");assert.equal(f.calls[0].input.clubId,"club-first");assert.equal(f.state.engagementNationalAuditAppliedActorUid,"actor-first");
   await f.module.loadEngagementNationalAuditLogs();assert.equal(f.calls.length,1,"return uses loaded page");
   await f.module.loadEngagementNationalAuditLogs({append:true});assert.equal(f.calls.length,2);assert.equal(f.calls[1].input.cursor.id,"next");
-  f.reference.reject(Error("Reference unavailable"));await settle();assert.equal(f.state.engagementNationalAuditLogsLoaded,true);
+  const beforeLabels=f.renders.length;
+  f.state.accessClubReference=[{clubId:"club-first"}];f.reference.resolve(f.state.accessClubReference);await settle();
+  assert.ok(f.renders.length>beforeLabels,"late club labels refresh the already loaded rows, not only filter options");
+  assert.equal(f.config.engagementNationalAuditClubs.get("club-first"),"Club fictif");assert.equal(f.calls.length,2,"label refresh adds no RPC");
+  const missingReference=frontend();missingReference.reply.resolve({logs:[]});await missingReference.module.loadEngagementNationalAuditLogs();missingReference.reference.reject(Error("Reference unavailable"));await settle();assert.equal(missingReference.state.engagementNationalAuditLogsLoaded,true);
   const unavailable=frontend();unavailable.reference.resolve([]);unavailable.reply.reject(Error("Journal indisponible"));await unavailable.module.loadEngagementNationalAuditLogs();
   assert.match(unavailable.elements.engagementsNationalAuditStatus.textContent,/Journal indisponible/);assert.equal(unavailable.state.engagementNationalAuditLogsLoaded,false);
   const denied=frontend();denied.actions.canViewActivityLog=()=>false;await denied.module.loadEngagementNationalAuditLogs();assert.equal(denied.calls.length,0);
