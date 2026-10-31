@@ -3,7 +3,6 @@ const fs = require("node:fs");
 const path = require("node:path");
 
 const rootDir = path.resolve(__dirname, "..");
-const skippedDirs = new Set([".git", "node_modules", "archives", "sauvegardes", "sources"]);
 
 function printStep(label) {
   console.log(`\n== ${label} ==`);
@@ -26,23 +25,9 @@ function run(command, args, options = {}) {
   }
 }
 
-function listJsFiles(dir) {
-  return fs.readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
-    const fullPath = path.join(dir, entry.name);
-    if (entry.isDirectory()) {
-      return skippedDirs.has(entry.name) ? [] : listJsFiles(fullPath);
-    }
-    return entry.isFile() && entry.name.endsWith(".js") ? [fullPath] : [];
-  });
-}
-
 function checkSyntax() {
   printStep("Verification syntaxe JavaScript");
-  const files = listJsFiles(rootDir);
-  files.forEach((file) => {
-    run(process.execPath, ["--check", file]);
-  });
-  console.log(`${files.length} fichiers JavaScript verifies.`);
+  run(process.execPath, [path.join(rootDir, "tools", "check-javascript-syntax.js")]);
 }
 
 function runUnitTests() {
@@ -50,6 +35,7 @@ function runUnitTests() {
   run(process.execPath, ["tools/build-public-home-template.js"]);
   [
     "offline-network-tests.js",
+    "javascript-syntax-tests.js",
     "source-files-tests.js",
     "portal-module-loader-tests.js",
     "portal-rpc-failure-tests.js",
