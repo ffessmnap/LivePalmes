@@ -132,6 +132,7 @@
         const focus = button.dataset.requestSelect ? panel.querySelector('[data-request-active="true"] .admin-national-request-back')
           : browser.querySelector('[data-request-filter][aria-pressed="true"]');
         if (focus?.getClientRects().length) focus.focus();
+        else browser.querySelector('[data-request-select][aria-pressed="true"]')?.focus();
       });
     }
     panel.dataset.requestLayout = 'split';

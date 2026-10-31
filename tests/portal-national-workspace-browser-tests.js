@@ -71,6 +71,7 @@ const {startStaticServer} = require('../tools/capture-portal-design');
       });
       await page.locator('[data-request-select="0:fixture"]').waitFor();
       await page.locator('[data-request-select="0:fixture"]').click();
+      if(width>760)assert.equal(await page.evaluate(()=>document.activeElement.dataset.requestSelect),'0:fixture','Keyboard focus stays on the selected request');
       await page.getByLabel('Commentaire national',{exact:true}).fill('Brouillon conservé');
       if(width<761)await page.locator('[data-engagement-swimmer-change-request="fixture"] .admin-national-request-back').click();
       await page.locator('[data-request-select="0:fixture2"]').click();
