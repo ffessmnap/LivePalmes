@@ -1,6 +1,6 @@
 "use strict";
 // One explicit national action. Fixed table set, grouped indexed reads/writes,
-// 4,000 captured links / 500 Ko journal, no production data used in tests.
+// 4,000 captured links / 500 Ko stored journal (8 Mo raw), no real data in tests.
 const {isDeepStrictEqual:equal}=require("node:util");
 const plans=require("./nap-swimmer-merge-plan"),schema=require("./nap-approved-swimmer-merge-schema");
 const {COLUMNS}=require("./nap-approved-swimmer-correction"),licenses=require("./nap-swimmer-merge-license-plan");

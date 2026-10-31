@@ -38,18 +38,7 @@ function planMerge(input,source,target,snapshots,seasonRows,performanceClubPolic
     if(table==="engagements_relayeurs"&&rows.some(row=>Number(row.nageur)===a&&rows.some(other=>Number(other.nageur)===b&&Number(other.relais)===Number(row.relais))))throw new TypeError("Les deux nageurs sont dans le meme relais. Corrigez ce relais avant de fusionner.");
     if(table==="perfs_relais"&&rows.some(row=>TABLES.find(spec=>spec.table===table).fields.some(field=>Number(row[field])===a)&&TABLES.find(spec=>spec.table===table).fields.some(field=>Number(row[field])===b)))throw new TypeError("Les deux nageurs sont dans le meme resultat relais. Verification nationale requise.");
   }
-  const inscriptions=snapshots.nageursengager,byCompetition=new Map(),parentRedirect=new Map();
-  for(const row of inscriptions){
-    const key=JSON.stringify([row.compet,String(row.nageur)]);if(byCompetition.has(key))throw new TypeError("Inscription native ambigue a verifier.");byCompetition.set(key,row);
-  }
-  for(const row of inscriptions.filter(row=>Number(row.nageur)===a)){
-    const existing=byCompetition.get(JSON.stringify([row.compet,String(b)]));if(existing)parentRedirect.set(Number(row.id),Number(existing.id));
-  }
-  const validParents=new Set(inscriptions.map(row=>Number(row.id))),eventKeys=new Set();
-  for(const row of snapshots.engagements){
-    if(!validParents.has(Number(row.engagement)))throw new TypeError("Course hors inscriptions capturees.");
-    const key=JSON.stringify([Number(row.engagement),row.course]);if(eventKeys.has(key))throw new TypeError("Course native dupliquee a verifier.");eventKeys.add(key);
-  }
+  const entries=require("./nap-swimmer-merge-entries").resolve(input,snapshots),parentRedirect=entries.redirect;
   const changes=TABLES.map(spec=>({table:spec.table,key:spec.key,updates:[],removals:[]}));
   for(const spec of TABLES){
     const change=changes.find(item=>item.table===spec.table);
@@ -58,7 +47,7 @@ function planMerge(input,source,target,snapshots,seasonRows,performanceClubPolic
       if(spec.table==="nageursengager"&&parentRedirect.has(Number(row.id)))remove=true;
       else if(spec.table==="engagements"){
         const redirect=parentRedirect.get(Number(row.engagement));
-        if(redirect){if(eventKeys.has(JSON.stringify([redirect,row.course])))remove=true;else after.engagement=redirect;}
+        if(entries.removals.has(Number(row.id)))remove=true;else if(redirect)after.engagement=redirect;
       }else for(const field of spec.fields)if(Number(row[field])===a)after[field]=target.id;
       if(performanceClubPolicy&&["perfs","perfs_relais"].includes(spec.table))after.club=require("./nap-swimmer-merge-clubs").historicalClub(spec.table,row,source,target,performanceClubPolicy);
       if(spec.table==="livepalmes_qualification_grants"&&!equal(after,row)&&snapshots[spec.table].some(other=>other!==row&&rowKey(other,spec.key)===rowKey(after,spec.key)))throw new TypeError("Deux derogations concernent la meme course. Verification nationale requise avant fusion.");
@@ -77,14 +66,17 @@ function planMerge(input,source,target,snapshots,seasonRows,performanceClubPolic
   if(forfeitPolicy)plan.forfeitPolicy=require("./nap-swimmer-merge-forfeits").validate(forfeitPolicy,snapshots);
   if(permanentDelete)plan.permanentDelete=true;
   if(priorMarker){plan.priorMarker={...priorMarker};plan.marker={...priorMarker};}
-  if(Buffer.byteLength(JSON.stringify(plan))>500000)throw new RangeError("Sauvegarde de fusion superieure a 500 Ko.");
+  if(entries.resolution)plan.entryResolution=entries.resolution;
+  require("./nap-swimmer-merge-backup").encode(plan);
   return plan;
 }
 function validateSaved(plan,input){
   if(!plan.snapshots||Object.keys(plan.snapshots).some(name=>!TABLES.some(spec=>spec.table===name)))throw new TypeError("Ancien plan de fusion hors perimetre courant. Reprise manuelle du journal requise avant toute ecriture.");
   if(plan.finalClubId!==undefined&&String(input.finalClubId)!==plan.finalClubId)throw new TypeError("Le club final differe de la fusion sauvegardee.");
+  if(plan.entryResolution&&input.entryConflictChoices!==undefined&&(!Array.isArray(input.entryConflictChoices)||!equal(input.entryConflictChoices.map(row=>({key:row?.key,id:String(row?.id)})).sort((a,b)=>String(a.key).localeCompare(String(b.key))),plan.entryResolution.choices)||input.entryConflictToken!==plan.entryResolution.token))throw new TypeError("Les choix d'engagements different de la fusion sauvegardee.");
+  if(!plan.entryResolution&&(input.entryConflictChoices!==undefined||input.entryConflictToken!==undefined))throw new TypeError("Choix d'engagements absents de la fusion sauvegardee.");
   if(![number(plan.source.number),number(plan.sourceAfter.number)].includes(input.sourceLicenseNumber)||![number(plan.target.number),number(plan.targetAfter.number)].includes(input.targetLicenseNumber))throw new TypeError("La licence differe de la fusion sauvegardee.");
-  if(!equal(plan,planMerge({...input,allowLegacyClub:true,finalClubId:plan.finalClubId,priorMarker:plan.priorMarker,permanentDelete:plan.permanentDelete===true,sourceLicenseNumber:plan.sourceLicenseNumber,targetLicenseNumber:plan.targetLicenseNumber,confirmClubMismatch:plan.confirmClubMismatch,confirmLicenseMismatch:plan.confirmLicenseMismatch,timestamp:plan.timestamp},plan.source,plan.target,plan.snapshots,plan.licensePlan.before,plan.performanceClubPolicy,plan.forfeitPolicy)))throw new TypeError("Sauvegarde de fusion incompatible.");
+  if(!equal(plan,planMerge({...input,...(plan.entryResolution?{entryConflictChoices:plan.entryResolution.choices,entryConflictToken:plan.entryResolution.token}:{}),allowLegacyClub:true,finalClubId:plan.finalClubId,priorMarker:plan.priorMarker,permanentDelete:plan.permanentDelete===true,sourceLicenseNumber:plan.sourceLicenseNumber,targetLicenseNumber:plan.targetLicenseNumber,confirmClubMismatch:plan.confirmClubMismatch,confirmLicenseMismatch:plan.confirmLicenseMismatch,timestamp:plan.timestamp},plan.source,plan.target,plan.snapshots,plan.licensePlan.before,plan.performanceClubPolicy,plan.forfeitPolicy)))throw new TypeError("Sauvegarde de fusion incompatible.");
 }
 function statement(table,key,rows,remove=false){
   if(!rows.length)return null;

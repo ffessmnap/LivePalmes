@@ -2,6 +2,14 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 31 octobre — Fusion : engagements en doublon et historique volumineux
+
+- Autorisation dans le chat « Expliquer les erreurs de fusion », après livraison TEST du chantier portail #645. Préparer les deux corrections et livrer sur TEST ; aucune fusion réelle, correction de données ou publication PROD autorisée.
+- Union des inscriptions/courses, un engagement par course avec priorité à la fiche conservée. Doublons identiques de la fiche prioritaire : plus petit identifiant ; informations différentes : choix explicite dans un dialogue, sans écriture avant ce choix. Empreinte des inscriptions/courses vérifiée lors du second appel, choix conservés au journal et à la reprise.
+- Plans de plus de 500 Ko compactés par gzip dans le document d’audit existant, identités lisibles par le journal, taille et SHA-256 contrôlés à la relecture. Anciens journaux inchangés ; plafonds de 4 000 liens, 500 000 octets stockés et 8 000 000 octets bruts ; aucune nouvelle collection ni dépendance.
+- Budget : ouverture/affichage/choix/annulation du dialogue = zéro lecture supplémentaire. Fusion = lectures groupées/indexées existantes, 160 requêtes NAP maximum par appel, 4 000 liens distincts capturés par passage, saisons et forfaits bornés comme avant ; pas de requête par engagement/performance. Audit inchangé : lecture initiale de trois documents, préparation atomique de trois documents, clôture existante et transaction des deux réservations. Un conflit non résolu termine avant préparation/écriture ; un seul second appel après choix, donc au plus deux budgets d’appel pour cette interaction. Rafraîchissement/reprise conserve les mêmes bornes ; aucune reconstruction ni lecture croissant avec toute la base. Compression sans appel distant supplémentaire.
+- Contrôles ciblés hors réseau : priorité, union, conflits, choix périmés/interdits, annulation simple/groupée, reprises après chaque écriture, gros plan, corruption et réservations ; contrôles navigateur 1440/390/320 px. CI, PR et preuve TEST à compléter ; validation utilisateur TEST non recueillie.
+
 ### 31 octobre — Pages Club homogènes et ajout direct de nageurs
 
 - Maquette approuvée puis demande d’un bouton Ajouter dans Mes nageurs. Livraison autorisée sur TEST uniquement. Engagements en compétition, Mes nageurs et Mes officiels partagent en-tête, titre et espacements, sans modifier leurs fonctionnalités métier.
