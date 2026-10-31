@@ -22,11 +22,11 @@
     <link rel="preload" as="style" href="assets/portal/styles/09-entry-matrix.css?v=20261029-readable-text-1">
     <link rel="preload" as="style" href="assets/portal/styles/10-account-and-performance.css?v=20261029-readable-text-1">
     <link rel="preload" as="style" href="assets/portal/styles/11-overview-and-shared.css?v=20261029-readable-text-1">
-    <link rel="preload" as="style" href="assets/portal/styles/12-calendar-and-national.css?v=20261031-national-workspace-2">
+    <link rel="preload" as="style" href="assets/portal/styles/12-calendar-and-national.css?v=20261031-national-chevron-1">
     <link rel="preload" as="style" href="assets/portal/styles/13-mobile.css?v=20261029-readable-text-1">
     <link rel="preload" as="style" href="assets/portal/styles/14-shell-and-detail.css?v=20261029-readable-text-1">
     <link rel="preload" as="style" href="assets/portal/styles/15-dtn-and-club.css?v=20261028-styles-1">
-    <link rel="stylesheet" href="assets/livepalmes-admin-portal.css?v=20261031-national-workspace-2">
+    <link rel="stylesheet" href="assets/livepalmes-admin-portal.css?v=20261031-national-chevron-1">
     <link rel="stylesheet" href="assets/livepalmes-license-administration.css?v=20261027-license-closure">
     <link rel="stylesheet" href="assets/livepalmes-whatsapp-qr.css?v=20260831-whatsapp-qr-1">
     <link rel="stylesheet" href="assets/livepalmes-portal-appearance.css?v=20261029-readable-text-1">
@@ -249,18 +249,24 @@
               <section class="admin-portal-nav-group" aria-labelledby="adminNavNational">
                 <h2 id="adminNavNational">Administration</h2>
                 <div class="admin-portal-nav-nested" data-engagements-national-menu hidden>
-                  <button id="adminPortalNationalToggle" class="admin-portal-nav-parent" type="button" data-admin-space-hash="administration-nationale">
+                  <div class="admin-national-menu-row"><button id="adminPortalNationalToggle" class="admin-portal-nav-parent" type="button" data-admin-space-hash="administration-nationale">
                     <span class="admin-portal-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m12 3 8 3v6c0 5-8 9-8 9s-8-4-8-9V6l8-3Z"></path><path d="m8 12 3 3 5-6"></path></svg></span>
-                    <span>Administration nationale</span><span id="adminPortalNationalPendingBadge" class="admin-pending-badge admin-pending-badge-nav" hidden>0</span><span hidden aria-hidden="true"><svg class="admin-portal-chevron" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"></path></svg></span>
-                  </button>
+                    <span>Administration nationale</span><span id="adminPortalNationalPendingBadge" class="admin-pending-badge admin-pending-badge-nav" hidden>0</span>
+                  </button><button id="adminPortalNationalDisclosure" class="admin-national-disclosure" type="button" aria-expanded="false" aria-controls="adminPortalNationalSubmenu" aria-label="Déplier ou replier les modules nationaux"><svg class="admin-portal-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg></button></div>
                   <div id="adminPortalNationalSubmenu" class="admin-portal-nav-submenu" aria-label="Pages de l’administration nationale" hidden>
+                    <a id="adminEngagementsDeletionRequestsNav" href="#administration-suppressions" data-admin-view-link="engagements" data-engagements-nav-entry="adminDeletionRequests" data-engagements-nav-tab="deletionRequests" data-engagements-national-target="deletions" data-engagements-national-nav hidden>Demandes à traiter <span id="adminEngagementsDeletionRequestsBadge" class="admin-portal-nav-badge" hidden>0</span></a>
+                    <div data-national-directory-menu hidden>
+                      <div class="admin-national-menu-row"><a href="#administration-annuaires" data-admin-view-link="nationalDirectories">Annuaires</a><button id="adminPortalNationalDirectoriesDisclosure" class="admin-national-disclosure" type="button" aria-expanded="false" aria-controls="adminPortalNationalDirectoriesSubmenu" aria-label="Déplier ou replier les annuaires"><svg class="admin-portal-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg></button></div>
+                      <div id="adminPortalNationalDirectoriesSubmenu" class="admin-national-directory-menu" hidden>
+                        <a href="#administration-clubs" data-admin-view-link="engagements" data-engagements-nav-entry="adminDeletionRequests" data-engagements-nav-tab="deletionRequests" data-engagements-national-target="clubs" data-engagements-national-nav hidden>Clubs</a>
+                        <a href="#administration-doublons-nageurs" data-admin-view-link="engagements" data-engagements-nav-entry="adminDeletionRequests" data-engagements-nav-tab="deletionRequests" data-engagements-national-target="swimmers" data-engagements-national-nav hidden>Nageurs</a>
+                        <a href="#administration-officiels" data-admin-view-link="engagements" data-engagements-nav-entry="adminDeletionRequests" data-engagements-nav-tab="deletionRequests" data-engagements-national-target="people" data-engagements-national-nav hidden>Officiels</a>
+                      </div>
+                    </div>
+                    <a href="#administration-licences" data-admin-view-link="engagements" data-engagements-nav-entry="adminDeletionRequests" data-engagements-nav-tab="deletionRequests" data-engagements-national-target="licenses" data-engagements-national-nav hidden>Vérification des licences</a>
                     <a href="#administration-documents" data-admin-view-link="nationalDocuments" data-national-documents-open hidden>Documents</a>
-                    <a id="adminEngagementsDeletionRequestsNav" href="#administration-suppressions" data-admin-view-link="engagements" data-engagements-nav-entry="adminDeletionRequests" data-engagements-nav-tab="deletionRequests" data-engagements-national-target="deletions" data-engagements-national-nav hidden>Demandes &agrave; traiter <span id="adminEngagementsDeletionRequestsBadge" class="admin-portal-nav-badge" hidden>0</span></a>
-                    <a href="#administration-clubs" data-admin-view-link="engagements" data-engagements-nav-entry="adminDeletionRequests" data-engagements-nav-tab="deletionRequests" data-engagements-national-target="clubs" data-engagements-national-nav hidden>Clubs</a>
-                    <a href="#administration-licences" data-admin-view-link="engagements" data-engagements-nav-entry="adminDeletionRequests" data-engagements-nav-tab="deletionRequests" data-engagements-national-target="licenses" data-engagements-national-nav hidden>V&eacute;rification des licences</a>
-                    <a href="#administration-doublons-nageurs" data-admin-view-link="engagements" data-engagements-nav-entry="adminDeletionRequests" data-engagements-nav-tab="deletionRequests" data-engagements-national-target="swimmers" data-engagements-national-nav hidden>Nageurs</a>
-                    <a href="#administration-officiels" data-admin-view-link="engagements" data-engagements-nav-entry="adminDeletionRequests" data-engagements-nav-tab="deletionRequests" data-engagements-national-target="people" data-engagements-national-nav hidden>Officiels</a>
-                    <a href="#administration-historique" data-admin-view-link="engagements" data-engagements-nav-entry="adminAudit" data-engagements-nav-tab="deletionRequests" data-engagements-national-target="audit" hidden>Journal d&rsquo;activit&eacute;</a>
+                    <a href="#administration-notifications" data-admin-view-link="nationalNotifications" data-engagements-national-nav hidden>Notifications</a>
+                    <a href="#administration-historique" data-admin-view-link="engagements" data-engagements-nav-entry="adminAudit" data-engagements-nav-tab="deletionRequests" data-engagements-national-target="audit" hidden>Journal d’activité</a>
                   </div>
                 </div>
                 <div class="admin-portal-nav-nested" data-access-management-nav hidden>
@@ -284,21 +290,25 @@
           </aside>
 
           <div class="admin-portal-workspace">
-            <section id="adminNationalWorkspace" class="admin-national-workspace" aria-labelledby="adminNationalWorkspaceTitle" hidden>
+            <a id="adminNationalModulesReturn" class="admin-national-modules-return" href="#administration-nationale" hidden>← Modules nationaux</a>
+            <section id="adminNationalWorkspace" class="admin-national-workspace" data-admin-view="nationalHome" aria-labelledby="adminNationalWorkspaceTitle" hidden>
               <div class="admin-portal-workspace-head"><h2 id="adminNationalWorkspaceTitle">Administration nationale</h2></div>
-              <nav class="admin-national-tabs" aria-label="Rubriques de l’administration nationale">
-                <a href="#administration-suppressions" data-national-workspace-tab="deletions">Demandes</a>
-                <a href="#administration-clubs" data-national-workspace-tab="directories">Annuaires</a>
-                <a href="#administration-licences" data-national-workspace-tab="licenses">Licences</a>
-                <a href="#administration-documents" data-national-workspace-tab="documents">Documents</a>
-                <a href="#administration-notifications" data-national-workspace-tab="notifications">Notifications</a>
-                <a href="#administration-historique" data-national-workspace-tab="audit">Journal</a>
-              </nav>
-              <nav id="adminNationalDirectoryTabs" class="admin-national-directory-tabs" aria-label="Annuaires nationaux" hidden>
-                <a href="#administration-clubs" data-national-directory-tab="clubs">Clubs</a>
-                <a href="#administration-doublons-nageurs" data-national-directory-tab="swimmers">Nageurs</a>
-                <a href="#administration-officiels" data-national-directory-tab="people">Officiels</a>
-              </nav>
+              <div class="admin-national-module-grid">
+                <a class="admin-national-module" href="#administration-suppressions" data-national-module="requests"><span><strong>Demandes à traiter</strong><span id="adminNationalOverviewPendingCount" class="admin-pending-badge" hidden>0</span><span aria-hidden="true">→</span></span><small>Examiner les demandes et prendre une décision.</small></a>
+                <a class="admin-national-module" href="#administration-annuaires" data-national-module="directories"><span><strong>Annuaires</strong><span aria-hidden="true">→</span></span><small>Clubs, nageurs et officiels.</small></a>
+                <a class="admin-national-module" href="#administration-licences" data-national-module="licenses"><span><strong>Vérification des licences</strong><span aria-hidden="true">→</span></span><small>Préparer et contrôler les lots de licences.</small></a>
+                <a class="admin-national-module" href="#administration-documents" data-national-module="documents"><span><strong>Documents</strong><span aria-hidden="true">→</span></span><small>Bibliothèque et documents mis en avant.</small></a>
+                <a class="admin-national-module" href="#administration-notifications" data-national-module="notifications"><span><strong>Notifications</strong><span aria-hidden="true">→</span></span><small>État et activation des mails automatiques.</small></a>
+                <a class="admin-national-module" href="#administration-historique" data-national-module="audit"><span><strong>Journal d’activité</strong><span aria-hidden="true">→</span></span><small>Consulter les actions nationales.</small></a>
+              </div>
+            </section>
+            <section id="adminNationalDirectoriesView" class="admin-national-workspace" data-admin-view="nationalDirectories" aria-labelledby="adminNationalDirectoriesTitle" hidden>
+              <div class="admin-portal-workspace-head"><h2 id="adminNationalDirectoriesTitle">Annuaires</h2></div>
+              <div class="admin-national-module-grid">
+                <a class="admin-national-module" href="#administration-clubs" data-national-module="clubs"><span><strong>Clubs</strong><span aria-hidden="true">→</span></span><small>Rechercher et gérer les fiches des clubs.</small></a>
+                <a class="admin-national-module" href="#administration-doublons-nageurs" data-national-module="swimmers"><span><strong>Nageurs</strong><span aria-hidden="true">→</span></span><small>Identités, doublons et fiches des nageurs.</small></a>
+                <a class="admin-national-module" href="#administration-officiels" data-national-module="people"><span><strong>Officiels</strong><span aria-hidden="true">→</span></span><small>Consulter et maintenir les fiches des officiels.</small></a>
+              </div>
             </section>
             <section id="adminOverviewView" class="admin-portal-overview-view" data-admin-view="dashboard" aria-labelledby="adminOverviewViewTitle" hidden>
               <div class="admin-portal-workspace-head admin-overview-head">
@@ -522,7 +532,7 @@
               </div>
             </section>
 
-            <section id="adminNationalHomeView" class="admin-portal-space-home admin-national-home" data-admin-view="nationalHome" aria-labelledby="adminNationalHomeTitle" hidden>
+            <section id="adminNationalNotificationsView" class="admin-portal-space-home admin-national-home" data-admin-view="nationalNotifications" aria-labelledby="adminNationalHomeTitle" hidden>
               <div class="admin-portal-workspace-head"><h2 id="adminNationalHomeTitle">Notifications</h2></div>
               <section id="adminNationalMailControl" class="admin-national-home-group" hidden aria-labelledby="adminNationalMailControlTitle">
                 <div class="admin-national-home-group-head"><h3 id="adminNationalMailControlTitle">Mails automatiques</h3></div>
@@ -2823,7 +2833,7 @@
   <script src="assets/livepalmes-import-source.js?v=20261026-import-text-1"></script>
   <script src="assets/livepalmes-access-request-history.js?v=20261026-1"></script>
   <script src="assets/livepalmes-club-identity.js?v=20261026-identity-1"></script>
-    <script src="assets/portal/navigation.js?v=20261031-national-workspace-1"></script>
+    <script src="assets/portal/navigation.js?v=20261031-national-chevron-1"></script>
     <script src="assets/portal/modules-and-clubs.js?v=20261029-regional-1"></script>
     <script src="assets/portal/competition-settings.js?v=20261030-home-preloads-1"></script>
     <script src="assets/portal/club-people.js?v=20261028-modules-1"></script>
@@ -2836,7 +2846,7 @@
     <script src="assets/portal/activity-journal.js?v=20261030-lectures-paralleles-2"></script>
     <script src="assets/portal/club-and-competition.js?v=20261030-open-water-program-3"></script>
     <script src="assets/portal/account-and-access.js?v=20261030-access-dialog-1"></script>
-    <script src="assets/portal/events.js?v=20261031-national-workspace-1"></script>
+    <script src="assets/portal/events.js?v=20261031-national-chevron-1"></script>
   <script src="assets/livepalmes-admin-portal.js?v=20261030-water-distances-2"></script>
     <script src="assets/livepalmes-license-administration.js?v=20261027-license-closure"></script>
     <script src="assets/livepalmes-admin-calendar-events.js?v=20261027-competition-labels-1"></script>

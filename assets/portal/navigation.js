@@ -617,10 +617,11 @@
         if (portalContext.elements.engagementsAdminSubmenu) portalContext.elements.engagementsAdminSubmenu.hidden = !expanded;
       }
 
-    function setNationalMenuOpen() {
-        // National sections now live in the persistent workspace navigation.
+    function setNationalMenuOpen(open) {
+        const expanded = Boolean(open) && (canDeleteEngagementCompetitionDirectly() || canViewActivityLog());
         portalContext.elements.nationalToggle?.removeAttribute("aria-expanded");
-        if (portalContext.elements.nationalSubmenu) portalContext.elements.nationalSubmenu.hidden = true;
+        document.getElementById("adminPortalNationalDisclosure")?.setAttribute("aria-expanded", String(expanded));
+        if (portalContext.elements.nationalSubmenu) portalContext.elements.nationalSubmenu.hidden = !expanded;
       }
 
     function setAccessMenuOpen(open) {
@@ -1571,25 +1572,26 @@
 
     function syncEngagementRouteFromHash() {
         let route = portalConfig.ENGAGEMENT_ROUTE_BY_HASH[global.location.hash];
-        if (global.location.hash === "#administration-nationale") {
-          route = portalConfig.ENGAGEMENT_ROUTE_BY_HASH[canDeleteEngagementCompetitionDirectly()
-            ? "#administration-suppressions" : "#administration-historique"];
-        }
         if (global.location.hash === "#engagements" || (route && !canAccessEngagementRoute(route.entry))) {
           const fallbackHash = preferredEngagementRouteHash();
           if (global.location.hash !== fallbackHash) global.history.replaceState(null, "", fallbackHash);
           route = portalConfig.ENGAGEMENT_ROUTE_BY_HASH[fallbackHash];
         }
-        if (!route) return false;
+        const nationalLanding = ["#administration-nationale", "#administration-annuaires", "#administration-notifications"].includes(global.location.hash);
+        if (!route && !nationalLanding) return false;
         const previousMode = portalContext.elements.engagementsView?.dataset.engagementsMode || "";
-        const nextMode = engagementNavigationMode(route.entry);
+        const nextMode = route ? engagementNavigationMode(route.entry) : "admin";
         const contextChanged = Boolean(previousMode && previousMode !== nextMode);
-        const closesCompetitionDetail = Boolean(portalState.selectedEngagementCompetitionId && route.tab !== "calendar");
+        const closesCompetitionDetail = Boolean(portalState.selectedEngagementCompetitionId && (!route || route.tab !== "calendar"));
         if ((contextChanged || closesCompetitionDetail) && portalState.selectedEngagementCompetitionId && !confirmLeaveDirtyEngagementTab()) {
           portalState.activeEngagementsNavEntry = previousMode === "admin" ? "adminCalendar" : "club";
           setEngagementsTab("calendar");
           const previousHash = previousMode === "admin" ? "#competitions-calendrier" : "#club-competitions";
           if (global.location.hash !== previousHash) global.history.replaceState(null, "", previousHash);
+          return false;
+        }
+        if (!route) {
+          if (closesCompetitionDetail) portalActions.closeEngagementCompetitionDetail({ skipConfirmation: true });
           return false;
         }
         portalState.activeEngagementsNavEntry = route.entry;
@@ -1611,8 +1613,9 @@
         if (global.location.hash === "#import-competitions") return "import";
         if (global.location.hash === "#correction-performance") return "correction";
         if (["#organisation-competitions", "#administration-competitions"].includes(global.location.hash)) return "engagementsAdminHome";
-        if (global.location.hash === "#administration-nationale") return "engagements";
-        if (global.location.hash === "#administration-notifications") return "nationalHome";
+        if (global.location.hash === "#administration-nationale") return "nationalHome";
+        if (global.location.hash === "#administration-annuaires") return "nationalDirectories";
+        if (global.location.hash === "#administration-notifications") return "nationalNotifications";
         if (["#administration-documents", "#administration-documents-accueil"].includes(global.location.hash)) return "nationalDocuments";
         if (global.location.hash === "#engagements" || portalConfig.ENGAGEMENT_ROUTE_BY_HASH[global.location.hash]) return "engagements";
         if (global.location.hash === "#espace-dtn") return "dtnHome";
@@ -1635,11 +1638,12 @@
         const clubHomeDenied = requestedView === "clubHome" && !canUse("engagements.club.manage");
         const dtnDenied = (requestedView === "dtn" || requestedView === "dtnHome") && !canUse("dtn.view");
         const engagementsAdminHomeDenied = requestedView === "engagementsAdminHome" && !canCreateEngagementCompetition();
-        const nationalHomeDenied = requestedView === "nationalHome" && !canDeleteEngagementCompetitionDirectly();
+        const nationalHomeDenied = requestedView === "nationalHome" && !canDeleteEngagementCompetitionDirectly() && !canViewActivityLog();
+        const nationalToolsDenied = ["nationalDirectories", "nationalNotifications"].includes(requestedView) && !canDeleteEngagementCompetitionDirectly();
         const nationalDocumentsDenied = requestedView === "nationalDocuments" && !canUse("engagements.national.manage");
         const engagementsDenied = requestedView === "engagements" && !canAccessEngagementsView();
         const newsDenied = requestedView === "news" && !canCreateEngagementCompetition() && !canViewActivityLog();
-        const activeView = accessDenied || recordsDenied || importDenied || correctionDenied || performanceHomeDenied || clubHomeDenied || dtnDenied || engagementsAdminHomeDenied || nationalHomeDenied || nationalDocumentsDenied || engagementsDenied || newsDenied
+        const activeView = accessDenied || recordsDenied || importDenied || correctionDenied || performanceHomeDenied || clubHomeDenied || dtnDenied || engagementsAdminHomeDenied || nationalHomeDenied || nationalToolsDenied || nationalDocumentsDenied || engagementsDenied || newsDenied
           ? "dashboard"
           : requestedView;
         document.querySelectorAll("[data-admin-view]").forEach((section) => {
@@ -1665,7 +1669,7 @@
         const performanceSpaceActive = ["performanceHome", "records", "import", "correction"].includes(activeView);
         const dtnSpaceActive = ["dtnHome", "dtn"].includes(activeView);
         const clubSpaceActive = activeView === "clubHome" || (activeView === "engagements" && ["club", "clubSwimmers", "clubPeople"].includes(portalState.activeEngagementsNavEntry));
-        const nationalSpaceActive = ["nationalHome", "nationalDocuments"].includes(activeView) || (activeView === "engagements" && ["adminDeletionRequests", "adminAudit"].includes(portalState.activeEngagementsNavEntry));
+        const nationalSpaceActive = ["nationalHome", "nationalDirectories", "nationalDocuments", "nationalNotifications"].includes(activeView) || (activeView === "engagements" && ["adminDeletionRequests", "adminAudit"].includes(portalState.activeEngagementsNavEntry));
         const accessSpaceActive = activeView === "accessHome" || activeView === "access" || (activeView === "engagements" && portalState.activeEngagementsNavEntry === "adminAccessRequests");
         const engagementsAdminSpaceActive = activeView === "engagementsAdminHome" || (activeView === "engagements" && portalState.activeEngagementsNavEntry.startsWith("admin") && !["adminAccessRequests", "adminDeletionRequests", "adminAudit"].includes(portalState.activeEngagementsNavEntry));
         const activeMenu = clubSpaceActive ? "club" : performanceSpaceActive ? "performance" : dtnSpaceActive ? "dtn" : nationalSpaceActive ? "national" : accessSpaceActive ? "access" : engagementsAdminSpaceActive ? "engagementsAdmin" : "";
@@ -1682,26 +1686,16 @@
           if (active) toggle?.setAttribute("aria-current", "page");
           else toggle?.removeAttribute("aria-current");
         });
-        const nationalWorkspace = document.getElementById("adminNationalWorkspace");
-        if (nationalWorkspace) {
-          nationalWorkspace.hidden = !nationalSpaceActive;
-          const tab = activeView === "nationalHome" ? "notifications" : activeView === "nationalDocuments" ? "documents"
-            : ["clubs", "swimmers", "people"].includes(portalState.activeEngagementNationalTab) ? "directories" : portalState.activeEngagementNationalTab;
-          nationalWorkspace.querySelectorAll("[data-national-workspace-tab]").forEach((link) => {
-            const key = link.dataset.nationalWorkspaceTab;
-            link.hidden = key === "audit" ? !canViewActivityLog() : !canDeleteEngagementCompetitionDirectly();
-            if (key === "directories" && tab === "directories") {
-              link.href = {clubs: "#administration-clubs", swimmers: "#administration-doublons-nageurs", people: "#administration-officiels"}[portalState.activeEngagementNationalTab];
-            }
-            if (key === tab) link.setAttribute("aria-current", "page"); else link.removeAttribute("aria-current");
-          });
-          const directories = document.getElementById("adminNationalDirectoryTabs");
-          if (directories) directories.hidden = tab !== "directories";
-          nationalWorkspace.querySelectorAll("[data-national-directory-tab]").forEach((link) => {
-            if (link.dataset.nationalDirectoryTab === portalState.activeEngagementNationalTab) link.setAttribute("aria-current", "page");
-            else link.removeAttribute("aria-current");
-          });
-        }
+        document.querySelectorAll("[data-national-module]").forEach((link) => {
+          link.hidden = link.dataset.nationalModule === "audit" ? !canViewActivityLog() : !canDeleteEngagementCompetitionDirectly();
+        });
+        document.querySelectorAll("[data-national-directory-menu]").forEach((menu) => { menu.hidden = !canDeleteEngagementCompetitionDirectly(); });
+        const directoryActive = activeView === "nationalDirectories" || (activeView === "engagements" && ["clubs", "swimmers", "people"].includes(portalState.activeEngagementNationalTab));
+        const directories = document.getElementById("adminPortalNationalDirectoriesSubmenu");
+        if (directoryActive && directories) directories.hidden = false;
+        document.getElementById("adminPortalNationalDirectoriesDisclosure")?.setAttribute("aria-expanded", String(Boolean(directories && !directories.hidden)));
+        const modulesReturn = document.getElementById("adminNationalModulesReturn");
+        if (modulesReturn) modulesReturn.hidden = !nationalSpaceActive || activeView === "nationalHome";
         const activeLink = document.querySelector("[data-admin-view-link].active");
         const activeParent = document.querySelector(".admin-portal-nav-parent.active");
         const activeParentLabel = activeParent?.children?.[1]?.textContent?.trim();
@@ -1719,7 +1713,8 @@
         if (recordsActive) portalActions.loadRecordModule();
         if (importModuleActive) portalActions.loadImportModule();
         if (dtnSpaceActive && activeView === "dtn") portalActions.loadDtnModule();
-        if (activeView === "nationalHome") loadNationalAutomaticMailControl();
+        if (activeView === "nationalHome") loadPortalPendingOverview();
+        if (activeView === "nationalNotifications") loadNationalAutomaticMailControl();
         global.LivePalmesNationalDocuments?.setActive(activeView === "nationalDocuments");
         if (engagementsActive && portalState.activeEngagementsTab === "calendar") portalActions.loadEngagementCompetitions();
         if (engagementsActive && global.location.hash === "#club-competitions") void portalActions.restoreEngagementNavigation();
