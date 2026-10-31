@@ -5,6 +5,10 @@ const fs = require('node:fs');
 const path = require('node:path');
 const {chromium} = require('playwright');
 const {startStaticServer} = require('../tools/capture-portal-design');
+const events=fs.readFileSync('assets/portal/events.js','utf8');
+const nationalEvents=events.slice(events.indexOf('        portalContext.elements.nationalToggle?.addEventListener'),events.indexOf('        portalContext.elements.accessToggle?.addEventListener'));
+const mobileEvents=events.slice(events.indexOf('        portalContext.elements.navToggle?.addEventListener'),events.indexOf('        portalContext.elements.navPin?.addEventListener'));
+const navigationEvents=events.slice(events.indexOf('        portalContext.elements.navigation?.addEventListener'),events.indexOf('        portalContext.elements.accountEmailForm?.addEventListener'));
 (async () => {
   const {server, baseUrl} = await startStaticServer();
   const browser = await chromium.launch({headless:true,...(process.env.LIVEPALMES_BROWSER_EXECUTABLE ? {executablePath:process.env.LIVEPALMES_BROWSER_EXECUTABLE} : {})});
@@ -22,16 +26,17 @@ const {startStaticServer} = require('../tools/capture-portal-design');
         document.body.dataset.adminAuth='unlocked';
         document.querySelector('#adminPortalDashboard').hidden=false;
         document.querySelector('#adminPortalLoginPanel').hidden=true;
+        document.querySelector('#adminPortalNavToggle').hidden=false;
         window.testCaps=['engagements.national.manage','admin.full'];
         window.testLoads=[];
         window.testState={adminAuth:{hasCapability:cap=>testCaps.includes(cap)}, currentAccessProfile:{},
-          activeEngagementsNavEntry:'',activeEngagementsTab:'calendar',activeEngagementNationalTab:'deletions',activeEngagementsDetailTab:'general',
+          portalPendingOverviewLoaded:true,activeEngagementsNavEntry:'',activeEngagementsTab:'calendar',activeEngagementNationalTab:'deletions',activeEngagementsDetailTab:'general',
           dirtyEngagementDetailTabs:new Set(),engagementClubPersistedSwimmerIds:new Set(),engagementClubRecapEntries:[],
           engagementClubSelectionChanges:new Map(),engagementCompetitions:[],engagementOpenWaterCourses:[],
           selectedEngagementCompetitionId:'',selectedEngagementCompetition:null,selectedEngagementClubEntry:null};
         const actions = new Proxy({}, {get:(object,key)=>object[key] || (()=>{if(String(key).startsWith('load'))testLoads.push(key);})});
-        const elements = {
-          nationalToggle:document.querySelector('#adminPortalNationalToggle'),nationalSubmenu:document.querySelector('#adminPortalNationalSubmenu'),
+        const elements = {navigation:document.querySelector('#adminPortalNavigation'),sidebar:document.querySelector('.admin-portal-sidebar'),navToggle:document.querySelector('#adminPortalNavToggle'),
+          nationalMenu:document.querySelector('[data-engagements-national-menu]'),nationalToggle:document.querySelector('#adminPortalNationalToggle'),nationalSubmenu:document.querySelector('#adminPortalNationalSubmenu'),
           engagementsView:document.querySelector('#adminEngagementsView'),engagementsViewTitle:document.querySelector('#adminEngagementsViewTitle'),
           engagementsTabPanels:document.querySelectorAll('[data-engagements-tab-panel]'),
           engagementsNationalPanels:document.querySelectorAll('[data-engagements-national-panel]')
@@ -44,23 +49,56 @@ const {startStaticServer} = require('../tools/capture-portal-design');
           '#administration-licences':{entry:'adminDeletionRequests',tab:'deletionRequests',nationalTab:'licenses'},
           '#administration-historique':{entry:'adminAudit',tab:'deletionRequests',nationalTab:'audit'}
         },ENGAGEMENT_DETAIL_TAB_GROUPS:{information:['general']},engagementClubSelectionChanges:new Map(),engagementClubEntriesAutosaveSwimmers:new Set()};
-        window.testNav=LivePalmesPortalNavigation.create({state:testState,config,elements,actions});
+        window.testContext={state:testState,config,elements,actions};
+        window.testNav=LivePalmesPortalNavigation.create(testContext);
         Object.assign(actions,testNav);
         window.LivePalmesNationalDocuments={beforeNavigate:()=>true,setActive:active=>{if(active)testLoads.push('documents');}};
         window.LivePalmesPortalAuth={hasCapability:cap=>testCaps.includes(cap)};
-        testNav.updateNavigationView();
-        document.querySelector('#adminPortalNationalToggle').addEventListener('click',()=>{location.hash='administration-nationale';});
+        testNav.updateCapabilityView();testNav.updateNavigationView();
         addEventListener('hashchange',()=>testNav.updateNavigationView());
       });
+      await page.evaluate(source=>new Function('portalContext','portalActions','portalState','global',source)(testContext,testContext.actions,testState,window),nationalEvents+mobileEvents+navigationEvents);
       await page.addScriptTag({path:path.resolve('assets/livepalmes-portal-ux.js')});
+      const openMenu=async()=>{if(width<=1080)await page.evaluate(()=>testNav.setMobilePortalNavigationOpen(true));};
       assert.equal(await page.locator('#adminPortalBreadcrumb').count(),0);
       await page.evaluate(()=>document.querySelector('#adminPortalNationalToggle').click());
       await page.locator('#adminNationalWorkspace').waitFor({state:'visible'});
-      assert.equal(await page.locator('[data-national-workspace-tab="deletions"]').getAttribute('aria-current'),'page');
+      assert.equal(await page.locator('.admin-national-tabs').count(),0);
+      assert.equal(await page.locator('#adminNationalWorkspace [data-national-module]:visible').count(),6);
+      assert.equal(await page.locator('#adminPortalNationalDisclosure').getAttribute('aria-expanded'),'true');
+      assert.equal(await page.evaluate(()=>testLoads.length),0,'Module home loads no lists');
+      const protectedDeparture=await page.evaluate(()=>{
+        const results=[];const originalConfirm=window.confirm;window.confirm=()=>false;
+        testState.selectedEngagementCompetitionId='fixture-competition';testState.selectedEngagementCompetition={};
+        testState.activeEngagementsDetailTab='courses';testState.dirtyEngagementDetailTabs.add('courses');
+        testContext.elements.engagementsView.dataset.engagementsMode='admin';
+        for(const hash of ['#administration-nationale','#administration-annuaires','#administration-notifications']){
+          history.replaceState(null,'',hash);testNav.syncEngagementRouteFromHash();
+          results.push(location.hash==='#competitions-calendrier'&&testState.selectedEngagementCompetitionId==='fixture-competition');
+        }
+        window.confirm=originalConfirm;testState.selectedEngagementCompetitionId='';testState.selectedEngagementCompetition=null;
+        testState.activeEngagementsDetailTab='general';testState.dirtyEngagementDetailTabs.clear();
+        history.replaceState(null,'','#administration-nationale');testNav.updateNavigationView();return results;
+      });
+      assert.deepEqual(protectedDeparture,[true,true,true],'New landing routes preserve a dossier when departure is cancelled');
+      await openMenu();
+      await page.locator('#adminPortalNationalDisclosure').click();
       assert.equal(await page.locator('#adminPortalNationalSubmenu').isVisible(),false);
-      assert.equal(await page.evaluate(()=>testLoads.some(key=>/Clubs|Swimmers$|People$|Audit|documents/.test(key))),false,'Opening national administration does not load other sections');
+      assert.equal(await page.locator('#adminNationalWorkspace').isVisible(),true,'Chevron keeps the current page');
+      await page.locator('#adminPortalNationalDisclosure').click();
+      assert.equal(await page.locator('#adminPortalNationalDisclosure').getAttribute('aria-expanded'),'true');
+      assert.equal(await page.evaluate(()=>testLoads.length),0,'Disclosure makes no data calls');
+      if(width<=1080)await page.locator('#adminPortalNavToggle').click();
+      fs.mkdirSync('tmp/national-workspace',{recursive:true});
+      for(const theme of ['light','dark']){
+        await page.evaluate(theme=>document.documentElement.dataset.portalTheme=theme,theme);
+        if(theme==='dark')assert.notEqual(await page.locator('#adminNationalWorkspace .admin-national-module').first().evaluate(el=>getComputedStyle(el).backgroundColor),'rgb(255, 255, 255)');
+        await page.screenshot({path:'tmp/national-workspace/modules-'+width+'-'+theme+'.png',fullPage:true});
+      }
+      await page.evaluate(()=>document.documentElement.dataset.portalTheme='light');
+      await page.locator('#adminNationalWorkspace [data-national-module="requests"]').click();
+      await page.locator('[data-engagements-national-panel="deletions"]').waitFor({state:'visible'});
       assert.equal(await page.locator('#adminNationalMailControlScope').count(),0);
-      assert.equal(await page.locator('.admin-national-request-browser > p').count(),0,'The list must not claim to be empty while the original loading/error status is active');
       await page.evaluate(()=>{
         const list=document.querySelector('#adminEngagementsSwimmerChangeRequestsList');
         list.closest('details').hidden=false;
@@ -82,27 +120,36 @@ const {startStaticServer} = require('../tools/capture-portal-design');
       await page.locator('#decisionFixture').click();
       assert.equal(await page.evaluate(()=>decisionCount),1,'Original delegated decision stays attached');
       if(width<761)assert(await page.locator('[data-engagement-swimmer-change-request="fixture"]').evaluate(el=>el.getBoundingClientRect().width>innerWidth*0.7),'Mobile detail uses the screen width');
-      for(const [tab,sub] of [['directories','swimmers'],['directories','people'],['licenses',null],['documents',null]]){
-        await page.locator('[data-national-workspace-tab="'+tab+'"]').click();
-        await page.locator('[data-national-workspace-tab="'+tab+'"][aria-current="page"]').waitFor();
-        if(sub){
-          await page.locator('[data-national-directory-tab="'+sub+'"]').click();
-          await page.locator('[data-national-directory-tab="'+sub+'"][aria-current="page"]').waitFor();
-        }
-        assert.equal(await page.locator('#adminNationalWorkspace').isVisible(),true);
+      await openMenu();
+      await page.locator('#adminPortalNationalDisclosure').click();
+      assert.equal(await page.locator('#adminPortalNationalSubmenu').isVisible(),false);
+      assert.equal(await page.locator('[data-engagements-national-panel="deletions"]').isVisible(),true,'Closing menu leaves the request open');
+      await page.locator('#adminPortalNationalDisclosure').click();
+      await page.locator('#adminPortalNationalSubmenu a[href="#administration-annuaires"]').click();
+      await page.locator('#adminNationalDirectoriesView').waitFor({state:'visible'});
+      assert.equal(await page.locator('#adminNationalDirectoriesView [data-national-module]:visible').count(),3);
+      await openMenu();
+      await page.locator('#adminPortalNationalDirectoriesDisclosure').click();
+      assert.equal(await page.locator('#adminPortalNationalDirectoriesSubmenu').isVisible(),false);
+      await page.locator('#adminPortalNationalDirectoriesDisclosure').click();
+      for(const [hash,title] of [['administration-doublons-nageurs','Nageurs'],['administration-officiels','Officiels'],['administration-licences','Vérification des licences']]){
+        await openMenu();
+        await page.locator('#adminPortalNationalSubmenu a[href="#'+hash+'"]').click();
+        await page.locator('#adminPortalNationalSubmenu a[href="#'+hash+'"][aria-current="page"]').waitFor({state:'attached'});
+        if(width<=1080)assert.equal(await page.locator('.admin-portal-sidebar').evaluate(el=>el.classList.contains('is-open')),false,'Choosing a direct link closes the mobile menu');
+        assert.equal(await page.locator('#adminNationalModulesReturn').isVisible(),true);
       }
-      await page.locator('[data-national-workspace-tab="directories"]').click();
-      await page.locator('[data-national-directory-tab="people"][aria-current="page"]').waitFor();
-      assert.equal(await page.locator('[data-national-directory-tab="people"]').getAttribute('aria-current'),'page','Last directory stays selected');
-      await page.evaluate(()=>{testCaps=['engagements.national.manage'];testNav.updateNavigationView();});
-      assert.equal(await page.locator('[data-national-workspace-tab="audit"]').isVisible(),false);
-      await page.evaluate(()=>{testCaps=['engagements.region.manage'];testNav.updateNavigationView();});
-      assert.equal(await page.locator('#adminNationalWorkspace').isVisible(),false,'Regional profile has no national workspace');
-      await page.evaluate(()=>{testCaps=['admin.full'];history.replaceState(null,'','#administration-nationale');testNav.updateNavigationView();});
-      assert.equal(await page.locator('[data-national-workspace-tab="audit"]').getAttribute('aria-current'),'page');
-      assert.equal(await page.locator('[data-national-workspace-tab="deletions"]').isVisible(),false);
-      await page.evaluate(()=>{testCaps=['engagements.national.manage','admin.full'];location.hash='administration-suppressions';});
-      await page.locator('[data-national-workspace-tab="deletions"][aria-current="page"]').waitFor();
+      await page.locator('#adminNationalModulesReturn').click();
+      await page.locator('#adminNationalWorkspace').waitFor({state:'visible'});
+      await page.evaluate(()=>{testCaps=['engagements.national.manage'];testNav.updateCapabilityView();testNav.updateNavigationView();});
+      assert.equal(await page.locator('#adminNationalWorkspace [data-national-module="audit"]').isVisible(),false);
+      await page.evaluate(()=>{testCaps=['engagements.region.manage'];testNav.updateCapabilityView();testNav.updateNavigationView();});
+      assert.equal(await page.locator('#adminNationalWorkspace').isVisible(),false,'Regional profile has no national home');
+      await page.evaluate(()=>{testCaps=['admin.full'];history.replaceState(null,'','#administration-nationale');testNav.updateCapabilityView();testNav.updateNavigationView();});
+      assert.equal(await page.locator('#adminNationalWorkspace [data-national-module="audit"]').isVisible(),true);
+      assert.equal(await page.locator('#adminNationalWorkspace [data-national-module="requests"]').isVisible(),false);
+      await page.evaluate(()=>{testCaps=['engagements.national.manage','admin.full'];testNav.updateCapabilityView();location.hash='administration-suppressions';});
+      await page.locator('[data-engagements-national-panel="deletions"]').waitFor({state:'visible'});
       for(const theme of ['light','dark']){
         await page.evaluate(theme=>document.documentElement.dataset.portalTheme=theme,theme);
         if(theme==='dark')assert.notEqual(await page.locator('#adminEngagementsSwimmerChangeRequests').evaluate(el=>getComputedStyle(el).backgroundColor),'rgb(255, 255, 255)','Detail group follows dark appearance');

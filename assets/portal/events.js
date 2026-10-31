@@ -1495,6 +1495,16 @@
           else global.location.hash = "administration-nationale";
           portalActions.collapsePortalNavigationAfterSelection();
         });
+        document.getElementById("adminPortalNationalDisclosure")?.addEventListener("click", () => {
+          portalActions.setNationalMenuOpen(Boolean(portalContext.elements.nationalSubmenu?.hidden));
+        });
+        document.getElementById("adminPortalNationalDirectoriesDisclosure")?.addEventListener("click", (event) => {
+          if (!portalActions.canDeleteEngagementCompetitionDirectly()) return;
+          const submenu = document.getElementById("adminPortalNationalDirectoriesSubmenu");
+          if (!submenu) return;
+          submenu.hidden = !submenu.hidden;
+          event.currentTarget.setAttribute("aria-expanded", String(!submenu.hidden));
+        });
         portalContext.elements.accessToggle?.addEventListener("click", () => {
           portalActions.togglePortalSpace("access", "accessHome", "gestion-acces", portalContext.elements.accessToggle);
           portalActions.collapsePortalNavigationAfterSelection();
