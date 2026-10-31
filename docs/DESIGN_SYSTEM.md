@@ -2,6 +2,12 @@
 
 <!-- description: Référence du langage visuel, des composants d’interface et des règles responsive déjà présents dans LivePalmes. -->
 
+## Espace Club homogène — 31 octobre 2026
+
+Engagements en compétition, Mes nageurs et Mes officiels partagent un en-tête compact, le même titre et les mêmes espacements. Les actions Ajouter restent à droite du titre. Les listes conservent leurs filtres et actions existants, avec colonnes souples et actions pouvant revenir à la ligne. Sur mobile, les actions essentielles gardent une cible de 44 px.
+
+Mes nageurs ouvre par Ajouter le dialogue existant « Ajouter ou récupérer un nageur », également accessible depuis une compétition. Ce dialogue unique appartient à la vue commune, avec son style autonome et les couleurs du thème ; il reste défilant sur petit écran. Contrôles de licence, doublons, récupération et confirmation d’abandon conservés ; formulaire verrouillé pendant le traitement, puis retour du focus au bouton d’origine.
+
 ## Navigation nationale et retours du portail — 31 octobre 2026
 
 Administration nationale ouvre un accueil de modules : Demandes à traiter, Annuaires, Vérification des licences, Documents, Notifications et Journal d’activité. Il n’y a pas d’onglets horizontaux ni de titre national répété au-dessus des outils. Les cartes passent de deux colonnes à une sur mobile. Les rubriques respectent les capacités existantes ; Journal reste réservé à `admin.full`. Les liens directs existants restent utilisables.

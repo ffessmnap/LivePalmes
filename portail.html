@@ -15,18 +15,18 @@
     <link rel="preload" as="style" href="assets/portal/styles/02-forms-and-responsive-base.css?v=20261029-readable-text-1">
     <link rel="preload" as="style" href="assets/portal/styles/03-shell.css?v=20261029-readable-text-1">
     <link rel="preload" as="style" href="assets/portal/styles/04-club-directories.css?v=20261030-ns-compact-1">
-    <link rel="preload" as="style" href="assets/portal/styles/05-club-entries.css?v=20261029-readable-text-1">
+    <link rel="preload" as="style" href="assets/portal/styles/05-club-entries.css?v=20261031-club-workspaces-1">
     <link rel="preload" as="style" href="assets/portal/styles/06-competition.css?v=20261030-competition-copy-trim-1">
     <link rel="preload" as="style" href="assets/portal/styles/07-access.css?v=20261029-readable-text-1">
     <link rel="preload" as="style" href="assets/portal/styles/08-dtn.css?v=20261029-readable-text-1">
     <link rel="preload" as="style" href="assets/portal/styles/09-entry-matrix.css?v=20261029-readable-text-1">
     <link rel="preload" as="style" href="assets/portal/styles/10-account-and-performance.css?v=20261029-readable-text-1">
     <link rel="preload" as="style" href="assets/portal/styles/11-overview-and-shared.css?v=20261029-readable-text-1">
-    <link rel="preload" as="style" href="assets/portal/styles/12-calendar-and-national.css?v=20261031-national-chevron-1">
+    <link rel="preload" as="style" href="assets/portal/styles/12-calendar-and-national.css?v=20261031-club-workspaces-1">
     <link rel="preload" as="style" href="assets/portal/styles/13-mobile.css?v=20261029-readable-text-1">
     <link rel="preload" as="style" href="assets/portal/styles/14-shell-and-detail.css?v=20261029-readable-text-1">
     <link rel="preload" as="style" href="assets/portal/styles/15-dtn-and-club.css?v=20261028-styles-1">
-    <link rel="stylesheet" href="assets/livepalmes-admin-portal.css?v=20261031-national-chevron-1">
+    <link rel="stylesheet" href="assets/livepalmes-admin-portal.css?v=20261031-club-workspaces-1">
     <link rel="stylesheet" href="assets/livepalmes-license-administration.css?v=20261027-license-closure">
     <link rel="stylesheet" href="assets/livepalmes-whatsapp-qr.css?v=20260831-whatsapp-qr-1">
     <link rel="stylesheet" href="assets/livepalmes-portal-appearance.css?v=20261029-readable-text-1">
@@ -904,13 +904,59 @@
                 <div id="adminEngagementsCalendarActions" class="admin-engagements-calendar-head-actions" hidden>
                 <button id="adminEngagementsCreateOpen" class="admin-button-compact" type="button">Ajouter un événement</button>
                 </div>
-                <div id="adminEngagementsClubPeopleActions" class="admin-engagements-club-people-head-actions" hidden>
+                <div id="adminEngagementsClubPeopleActions" class="admin-engagements-club-people-head-actions" data-club-workspace-actions hidden>
                   <button id="adminEngagementsClubPeopleAddButton" class="admin-button-compact" type="button">Ajouter</button>
+                </div>
+                <div id="adminEngagementsClubSwimmersDirectoryActions" data-club-workspace-actions hidden>
+                  <button id="adminEngagementsClubSwimmersDirectoryAddButton" class="admin-button-compact" type="button">Ajouter</button>
                 </div>
                 <button id="adminEngagementsNationalAuditRefresh" class="ghost-button compact admin-national-audit-head-refresh" type="button" hidden>Recharger le journal</button>
                 <button id="adminEngagementsDetailClose" class="ghost-button admin-button-compact admin-engagements-workspace-back" type="button" aria-label="Retour aux compétitions" hidden>&larr; <span class="admin-button-label-long">Retour aux comp&eacute;titions</span><span class="admin-button-label-short" aria-hidden="true">Retour</span></button>
               </div>
 
+                        <dialog id="adminEngagementsClubNewSwimmerDialog" class="admin-engagements-swimmer-correction-dialog admin-engagements-club-new-swimmer-dialog" aria-labelledby="adminEngagementsClubNewSwimmerDialogTitle">
+                          <div class="admin-engagements-club-new-swimmer-dialog-head">
+                            <div>
+                              <h3 id="adminEngagementsClubNewSwimmerDialogTitle">Ajouter ou récupérer un nageur</h3>
+                              <p id="adminEngagementsClubNewSwimmerDialogHelp">La récupération d’un nageur déjà licencié dans un autre club est possible uniquement pour sa première compétition de la saison.</p>
+                            </div>
+                            <button type="button" data-engagement-club-new-swimmer-dialog-close aria-label="Fermer la fenêtre">×</button>
+                          </div>
+                          <div class="admin-engagements-form-section-grid admin-engagements-club-new-swimmer-grid">
+                            <label>
+                              Nom
+                              <input id="adminEngagementsClubNewSwimmerLastName" type="text" maxlength="80" autocomplete="family-name">
+                            </label>
+                            <label>
+                              Pr&eacute;nom
+                              <input id="adminEngagementsClubNewSwimmerFirstName" type="text" maxlength="80" autocomplete="given-name">
+                            </label>
+                            <label>
+                              Date de naissance
+                              <input id="adminEngagementsClubNewSwimmerBirthDate" type="date">
+                            </label>
+                            <label>
+                              Sexe
+                              <select id="adminEngagementsClubNewSwimmerSex">
+                                <option value="">Choisir</option>
+                                <option value="F">Femme</option>
+                                <option value="M">Homme</option>
+                              </select>
+                            </label>
+                            <label class="admin-engagements-club-new-swimmer-license">
+                              Num&eacute;ro de licence
+                              <input id="adminEngagementsClubNewSwimmerLicense" type="text" maxlength="60" inputmode="text" autocapitalize="characters" autocomplete="off" pattern="[A-Za-z]-[0-9]{2}-[0-9]+" placeholder="A-12-34567" title="Une lettre, un tiret, deux chiffres, un tiret, puis des chiffres. Les tirets sont ajout&eacute;s automatiquement.">
+                            </label>
+                          </div>
+                          <div class="admin-engagements-club-new-swimmer-actions">
+                            <button class="ghost-button" type="button" data-engagement-club-new-swimmer-dialog-close>Annuler</button>
+                            <button id="adminEngagementsClubNewSwimmerResetButton" class="ghost-button" type="button" aria-label="R&eacute;initialiser le formulaire d'ajout d'un nageur">Réinitialiser</button>
+                            <button id="adminEngagementsClubNewSwimmerSaveButton" type="button">Vérifier ou créer le nageur</button>
+                            <button id="adminEngagementsClubRecoverSwimmerButton" type="button" hidden>Récupérer ce nageur</button>
+                          </div>
+                          <div id="adminEngagementsClubNewSwimmerAlerts" class="admin-engagements-club-swimmer-alerts" aria-live="polite"></div>
+                          <p id="adminEngagementsClubNewSwimmerMessage" class="admin-portal-message" aria-live="polite"></p>
+                        </dialog>
               <aside id="adminEngagementsLongOperation" class="admin-long-operation" hidden></aside>
 
               <div id="adminEngagementsCalendarPanel" class="admin-engagements-tab-panel admin-engagements-grid" data-engagements-tab-panel="calendar">
@@ -1484,49 +1530,7 @@
                         </label>
                         <button id="adminEngagementsClubNewSwimmerDialogOpen" class="admin-engagements-club-new-swimmer-open" type="button"><span aria-hidden="true">+</span> Ajouter ou récupérer un nageur</button>
                         </div>
-                        <dialog id="adminEngagementsClubNewSwimmerDialog" class="admin-engagements-swimmer-correction-dialog admin-engagements-club-new-swimmer-dialog" aria-labelledby="adminEngagementsClubNewSwimmerDialogTitle">
-                          <div class="admin-engagements-club-new-swimmer-dialog-head">
-                            <div>
-                              <h3 id="adminEngagementsClubNewSwimmerDialogTitle">Ajouter ou récupérer un nageur</h3>
-                              <p>La récupération d’un nageur déjà licencié dans un autre club est possible uniquement pour sa première compétition de la saison.</p>
-                            </div>
-                            <button type="button" data-engagement-club-new-swimmer-dialog-close aria-label="Fermer la fenêtre">×</button>
-                          </div>
-                          <div class="admin-engagements-form-section-grid admin-engagements-club-new-swimmer-grid">
-                            <label>
-                              Nom
-                              <input id="adminEngagementsClubNewSwimmerLastName" type="text" maxlength="80" autocomplete="family-name">
-                            </label>
-                            <label>
-                              Pr&eacute;nom
-                              <input id="adminEngagementsClubNewSwimmerFirstName" type="text" maxlength="80" autocomplete="given-name">
-                            </label>
-                            <label>
-                              Date de naissance
-                              <input id="adminEngagementsClubNewSwimmerBirthDate" type="date">
-                            </label>
-                            <label>
-                              Sexe
-                              <select id="adminEngagementsClubNewSwimmerSex">
-                                <option value="">Choisir</option>
-                                <option value="F">Femme</option>
-                                <option value="M">Homme</option>
-                              </select>
-                            </label>
-                            <label class="admin-engagements-club-new-swimmer-license">
-                              Num&eacute;ro de licence
-                              <input id="adminEngagementsClubNewSwimmerLicense" type="text" maxlength="60" inputmode="text" autocapitalize="characters" autocomplete="off" pattern="[A-Za-z]-[0-9]{2}-[0-9]+" placeholder="A-12-34567" title="Une lettre, un tiret, deux chiffres, un tiret, puis des chiffres. Les tirets sont ajout&eacute;s automatiquement.">
-                            </label>
-                          </div>
-                          <div class="admin-engagements-club-new-swimmer-actions">
-                            <button class="ghost-button" type="button" data-engagement-club-new-swimmer-dialog-close>Annuler</button>
-                            <button id="adminEngagementsClubNewSwimmerResetButton" class="ghost-button" type="button" aria-label="R&eacute;initialiser le formulaire d'ajout d'un nageur">Réinitialiser</button>
-                            <button id="adminEngagementsClubNewSwimmerSaveButton" type="button">Vérifier ou créer le nageur</button>
-                            <button id="adminEngagementsClubRecoverSwimmerButton" type="button" hidden>Récupérer ce nageur</button>
-                          </div>
-                          <div id="adminEngagementsClubNewSwimmerAlerts" class="admin-engagements-club-swimmer-alerts" aria-live="polite"></div>
-                          <p id="adminEngagementsClubNewSwimmerMessage" class="admin-portal-message" aria-live="polite"></p>
-                        </dialog>
+
                         <div id="adminEngagementsClubSwimmersList" class="admin-engagements-club-swimmers-list" aria-live="polite"></div>
                         <p id="adminEngagementsClubSwimmersMessage" class="admin-portal-message" aria-live="polite"></p>
                       </form>
@@ -2833,20 +2837,20 @@
   <script src="assets/livepalmes-import-source.js?v=20261026-import-text-1"></script>
   <script src="assets/livepalmes-access-request-history.js?v=20261026-1"></script>
   <script src="assets/livepalmes-club-identity.js?v=20261026-identity-1"></script>
-    <script src="assets/portal/navigation.js?v=20261031-national-chevron-1"></script>
+    <script src="assets/portal/navigation.js?v=20261031-club-workspaces-1"></script>
     <script src="assets/portal/modules-and-clubs.js?v=20261029-regional-1"></script>
     <script src="assets/portal/competition-settings.js?v=20261030-home-preloads-1"></script>
     <script src="assets/portal/club-people.js?v=20261028-modules-1"></script>
     <script src="assets/portal/club-entry-state.js?v=20261028-modules-1"></script>
     <script src="assets/portal/club-entry-views.js?v=20261029-ns-1"></script>
     <script src="assets/portal/documents-and-program.js?v=20261031-national-workspace-1"></script>
-    <script src="assets/portal/competition-actions.js?v=20261028-modules-1"></script>
+    <script src="assets/portal/competition-actions.js?v=20261031-club-workspaces-1"></script>
     <script src="assets/portal/national-requests.js?v=20261030-ns-compact-2"></script>
     <script src="assets/portal/national-directories.js?v=20261030-annuaire-lecture-unique-1"></script>
     <script src="assets/portal/activity-journal.js?v=20261030-lectures-paralleles-2"></script>
     <script src="assets/portal/club-and-competition.js?v=20261030-open-water-program-3"></script>
     <script src="assets/portal/account-and-access.js?v=20261030-access-dialog-1"></script>
-    <script src="assets/portal/events.js?v=20261031-national-chevron-1"></script>
+    <script src="assets/portal/events.js?v=20261031-club-workspaces-1"></script>
   <script src="assets/livepalmes-admin-portal.js?v=20261030-water-distances-2"></script>
     <script src="assets/livepalmes-license-administration.js?v=20261027-license-closure"></script>
     <script src="assets/livepalmes-admin-calendar-events.js?v=20261027-competition-labels-1"></script>
