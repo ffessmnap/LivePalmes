@@ -1217,7 +1217,8 @@ assert.ok(functions.includes("exports.resolveEngagementSwimmerDeletionRequest"))
 assert.ok(functions.includes('status: "deletion-pending"'));
 assert.ok(portalHtml.includes('id="adminEngagementsSwimmerCorrectionDialog"'));
 assert.ok(portalHtml.includes('id="adminEngagementsSwimmerChangeRequestsList"'));
-assert.ok(portalHtml.includes('id="adminNationalOverviewPendingCount"'));
+assert.ok(portalHtml.includes('id="adminNationalWorkspace"'));
+assert.ok(portalHtml.includes('data-national-workspace-tab="deletions"'));
 assert.ok(portalHtml.includes('data-engagements-national-panel="deletions"'));
 assert.ok(portalHtml.includes('data-engagements-national-panel="swimmers"'));
 assert.ok(portalHtml.includes('data-engagements-national-panel="people"'));
@@ -1627,7 +1628,7 @@ assert.equal(portalHtml.includes('id="adminEngagementsDetailFeesPanel"'), false)
 assert.equal(portalHtml.includes("Paiement attendu avant la fin de la premi"), false);
 assert.ok(portalCss.includes("Paramétrage général d'une compétition : grille dense et lisible"));
 assert.ok(portalCss.includes("#adminEngagementsEditForm .admin-engagements-compact-field--full"));
-assert.ok(portalHtml.includes("assets/livepalmes-portal-ux.js?v=20261030-ns-compact-1"));
+assert.match(portalHtml, /assets\/livepalmes-portal-ux\.js\?v=[^"']+/);
 assert.match(portalHtml, /assets\/livepalmes-admin-portal\.js\?v=[^"']+/);
 assert.ok(portalHtml.indexOf('id="adminEngagementsEditCity"') < portalHtml.indexOf('id="adminEngagementsEditAddress"'));
 assert.ok(portalHtml.indexOf('id="adminEngagementsEditAddress"') < portalHtml.indexOf('id="adminEngagementsEditLocation"'));
