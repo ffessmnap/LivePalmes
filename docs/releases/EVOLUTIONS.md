@@ -4,6 +4,9 @@
 
 ### 31 octobre — Fusion : engagements en doublon et historique volumineux
 
+- Complément de compatibilité après #646 : un onglet ancien reçoit une erreur explicite de rechargement si un conflit exige un choix ; seul un client annonçant le protocole de choix reçoit le récapitulatif. Évite un faux message de réussite sur une page restée ouverte pendant une mise à jour. Budget et absence d’écriture avant choix inchangés. CI et preuve TEST finale du complément à compléter avec celles de #646 dans GitHub.
+- Première livraison #646 : [TEST commun réussi](https://github.com/ffessmnap/LivePalmes/actions/runs/41216450728), après [CI main réussie](https://github.com/ffessmnap/LivePalmes/actions/runs/41215964555). Le complément de compatibilité suit dans une PR ciblée ; aucune validation utilisateur de cette évolution n’est déduite de ces contrôles.
+
 - Autorisation dans le chat « Expliquer les erreurs de fusion », après livraison TEST du chantier portail #645. Préparer les deux corrections et livrer sur TEST ; aucune fusion réelle, correction de données ou publication PROD autorisée.
 - Union des inscriptions/courses, un engagement par course avec priorité à la fiche conservée. Doublons identiques de la fiche prioritaire : plus petit identifiant ; informations différentes : choix explicite dans un dialogue, sans écriture avant ce choix. Empreinte des inscriptions/courses vérifiée lors du second appel, choix conservés au journal et à la reprise.
 - Plans de plus de 500 Ko compactés par gzip dans le document d’audit existant, identités lisibles par le journal, taille et SHA-256 contrôlés à la relecture. Anciens journaux inchangés ; plafonds de 4 000 liens, 500 000 octets stockés et 8 000 000 octets bruts ; aucune nouvelle collection ni dépendance.
