@@ -4,6 +4,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 const vm = require("node:vm");
 const { createDirectoryService } = require("../functions/server-directory-service");
+const { createDirectorySyncService } = require("../functions/server-directory-sync-service");
 
 const DELETE = Symbol("delete");
 const copy = value => value === DELETE ? DELETE : Array.isArray(value) ? value.map(copy)
@@ -52,12 +53,13 @@ function fixture(current = profile(), status = "ready") {
       throw new Error("fictional contention exhausted");
     }
   };
-  const service = createDirectoryService({ db, FieldValue: { delete: () => DELETE }, ACCESS_DIRECTORY_SNAPSHOT_VERSION: 2,
+  const context = { db, FieldValue: { delete: () => DELETE }, ACCESS_DIRECTORY_SNAPSHOT_VERSION: 2,
     activeCapabilitiesFromMap: values => Object.keys(values).filter(key => values[key] === true),
     accessUserRegionIdFromData: data => data.regionId,
     accessDirectorySnapshotStateRef: () => ({ key: "state/default" }),
     accessDirectorySnapshotRef: (type, id) => ({ key: type === "national" ? "snapshots/national" : `snapshots/region:${id}` }),
-    accessDirectorySnapshotEntryKey: () => "fictif" });
+    accessDirectorySnapshotEntryKey: () => "fictif" };
+  const service = createDirectorySyncService({ ...context, ...createDirectoryService(context) });
   f.sync = (before, after) => service.syncAccessDirectorySnapshotFromUserChange("fictif", before, after, "2026-10-31T00:00:00Z");
   f.entry = key => documents.get(key)?.entries?.fictif;
   return f;
