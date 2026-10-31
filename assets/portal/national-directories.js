@@ -437,6 +437,7 @@
     async function executeSwimmerMerge(payload) {
         if(swimmerMergePending)throw new Error("Une fusion est déjà en cours. Terminez-la avant d’en lancer une autre.");
         swimmerMergePending=true;
+        payload={...payload,entryConflictProtocol:1};
         try{
         let result=await portalActions.callFunction("mergeEngagementNationalClubSwimmer",payload);
         if(result?.mergeConflicts){

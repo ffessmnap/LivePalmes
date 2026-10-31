@@ -30,6 +30,7 @@ const fs=require("node:fs"),assert=require("node:assert/strict"),path=require("n
    await page.screenshot({path:path.join(out,`choice-${width}-${group?"group":"single"}.png`)});
    await dialog.getByRole("button",{name:"Valider et fusionner"}).click();await page.evaluate(()=>done);
    const sent=await page.evaluate(()=>calls.at(-1));assert.deepEqual(sent.entryConflictChoices,[{key:'[3,"50BI"]',id:"7"}]);assert.equal(sent.entryConflictToken,"c".repeat(64));
+   assert.equal(sent.entryConflictProtocol,1);assert.ok(await page.evaluate(()=>calls.every(call=>call.entryConflictProtocol===1)),"Both calls explicitly support the choice protocol");
    assert.match(await page.locator("#status").textContent(),group?/1 fusion/:/Fusion terminée/);
    assert.equal(await page.evaluate(()=>document.activeElement.id),"start");
   }
