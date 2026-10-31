@@ -2,6 +2,13 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 31 octobre — Correction de la densité Club et statut des officiels
+
+- Après inspection Chrome réelle de la livraison #645 : actions nageurs sur deux lignes dans une ligne trop basse, officiels trop hauts et enveloppes superflues. Antoine valide les corrections, puis demande de reprendre uniquement après la fin de « Expliquer les erreurs de fusion ». Reprise autonome explicitement autorisée ; chantier fusion terminé et TEST commun réussi 41218687332, candidat 5f6a236e.
+- Titres sans cadre (38 px ordinateur, 44 px mobile), suppression de la carte enveloppante et filtres rapprochés. Nageurs/officiels à 42 px par ligne, colonnes d’actions réservées et sans retour à la ligne ; défilement horizontal interne aux tableaux intermédiaires, détails mobiles conservés. Le bouton Actif / Inactif officiel remplace badge et Désactiver/Réactiver en réutilisant le service et la confirmation existants, avec crayon et Rôles inchangés. Ajouter nageur sans compétition conservé.
+- Budget avant/après inchangé : zéro lecture/écriture pour la mise en page, le rendu d’une ligne ou le dépliage mobile. Ouverture nageurs = appel existant borné à 800 profils (801 lignes SQL avec sentinelle), annuaire officiels = pagination existante ; retour utilise les caches existants et rafraîchissement conserve les mêmes limites. Un clic de statut confirmé = un appel existant avec empreinte, réponse NAP réutilisée sans relecture ; annulation zéro appel. Aucun listener, scan, reconstruction, appel par ligne ni changement backend. Aucun test sur données réelles, email ou PROD.
+- Tests ciblés hors réseau : vrais tableaux avec soixante-dix profils par annuaire (longs noms, rôles cumulés, licences absentes/à vérifier, correction en attente, inactifs et toutes actions), hauteurs/cellules sans débordement, ordinateur/mobile 1920/1440/1024/768/390/320 px, clair/sombre, confirmation/refus et appel de statut avec empreinte, droits de modification conservés ; création nageur sans compétition conservée. CI et preuve TEST à lier dans la PR ; validation utilisateur TEST à recueillir.
+
 ### 31 octobre — Fusion : engagements en doublon et historique volumineux
 
 - Complément de compatibilité après #646 : un onglet ancien reçoit une erreur explicite de rechargement si un conflit exige un choix ; seul un client annonçant le protocole de choix reçoit le récapitulatif. Évite un faux message de réussite sur une page restée ouverte pendant une mise à jour. Budget et absence d’écriture avant choix inchangés. CI et preuve TEST finale du complément à compléter avec celles de #646 dans GitHub.

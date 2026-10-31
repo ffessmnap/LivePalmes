@@ -2,6 +2,14 @@
 
 <!-- description: Référence du langage visuel, des composants d’interface et des règles responsive déjà présents dans LivePalmes. -->
 
+## Densité des annuaires Club — 31 octobre 2026
+
+Les trois pages Club utilisent un titre sans carte ni bandeau, 38 px minimum sur ordinateur et 44 px sur mobile, avec Ajouter à droite. Le panneau et sa carte enveloppante sont transparents ; seul le tableau conserve un cadre. Les filtres sont rapprochés du titre et de la liste. Cette variante reste limitée aux pages Club.
+
+Sur ordinateur, Mes nageurs et Mes officiels partagent une ligne de 42 px, un en-tête de 36 px et les mêmes tailles de texte. Les actions ne reviennent pas à la ligne : colonnes réservées, boutons de 32 px et statut compact de 28 px. Les tableaux défilent horizontalement quand leur largeur minimale ne tient plus ; leurs lignes ne se compriment pas avec la hauteur de l’effectif. Les longs noms et rôles gardent leur valeur complète en infobulle ; les détails mobiles restent accessibles au toucher.
+
+Le statut officiel Actif / Inactif reprend la présentation du bouton nageur, avec icône d’alimentation, nom accessible et action inverse annoncée. Il remplace le badge statique dans Statut et le bouton Désactiver/Réactiver des actions ; le crayon et Rôles restent dans Actions. Une fiche non modifiable conserve un badge. Confirmation, indisponibilité pendant l’enregistrement et traitement existants conservés. Les actions mobiles gardent une cible de 44 px.
+
 ## Choix des engagements en fusion — 31 octobre 2026
 
 Réutiliser le dialogue modal de choix de club pour les engagements différents d’une même course sur la fiche prioritaire. Un groupe de boutons radio par compétition/course, sans sélection initiale, présente chaque engagement et ses valeurs enregistrées en texte intégral avec retour à la ligne. Aucun choix automatique du meilleur temps. Validation obligatoire de tous les groupes ; Annuler ou Échap ferme sans second appel, puis restitue le focus. Le contenu reste défilant sur mobile ; les informations des options ne doivent pas être tronquées dans un sélecteur étroit. Cette variante utilise `admin-swimmer-merge-conflict`.

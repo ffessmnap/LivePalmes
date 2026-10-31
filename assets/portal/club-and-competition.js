@@ -124,23 +124,22 @@
           return `
         <div class="admin-engagements-club-person-row" role="row" data-engagement-club-person-id="${portalActions.escapeHtml(person.id)}" data-active="${active ? "true" : "false"}" data-expanded="false">
           <button class="admin-engagements-club-person-toggle" type="button" aria-expanded="false" aria-controls="${detailsId}" data-engagement-club-person-directory-toggle>
-            <strong>${portalActions.escapeHtml(name)}</strong>
+            <strong title="${portalActions.escapeHtml(name)}">${portalActions.escapeHtml(name)}</strong>
             <span class="admin-engagements-club-person-toggle-meta">
               <span class="admin-engagements-club-person-role-badge" title="${portalActions.escapeHtml(role)}">${portalActions.escapeHtml(role)}</span>
               <span class="admin-engagements-club-person-chevron" aria-hidden="true">›</span>
             </span>
           </button>
           <div id="${detailsId}" class="admin-engagements-club-person-details">
-            <span role="cell"><strong>${portalActions.escapeHtml(name)}</strong></span>
+            <span role="cell"><strong title="${portalActions.escapeHtml(name)}">${portalActions.escapeHtml(name)}</strong></span>
             <span role="cell">${portalActions.escapeHtml(person.licenseNumber || "-")}</span>
-            <span role="cell">${portalActions.escapeHtml(role)}</span>
-            <span role="cell"><span class="admin-engagements-club-person-status" data-active="${active ? "true" : "false"}">${active ? "Actif" : "Inactif"}</span></span>
+            <span role="cell" title="${portalActions.escapeHtml(role)}">${portalActions.escapeHtml(role)}</span>
+            <span role="cell">${nativeReadOnly && !person.nativeStatusEditable ? `<span class="admin-engagements-club-person-status" data-active="${active ? "true" : "false"}">${active ? "Actif" : "Inactif"}</span>` : `<button class="admin-engagements-club-person-activity-button" type="button" data-active="${active ? "true" : "false"}" title="Profil ${active ? "actif — cliquer pour rendre inactif" : "inactif — cliquer pour rendre actif"} : ${portalActions.escapeHtml(name)}" aria-label="Profil ${active ? "actif" : "inactif"} de ${portalActions.escapeHtml(name)}, ${active ? "rendre inactif" : "rendre actif"}" data-engagement-club-person-action="${active ? "disable" : "enable"}" data-engagement-club-person-id="${portalActions.escapeHtml(person.id)}" ${person.statusSaving ? 'disabled aria-busy="true"' : ""}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v9"></path><path d="M6.7 5.7a8 8 0 1 0 10.6 0"></path></svg><span>${active ? "Actif" : "Inactif"}</span></button>`}</span>
             <span role="cell">
               <span class="admin-engagements-request-actions">
                 ${nativeReadOnly && !person.nativeIdentityEditable
                       ? `<span class="admin-engagements-request-note admin-engagements-historical-person-note">Déclaration historique de chef d’équipe · compétition n° ${portalActions.escapeHtml(person.nativeCompetitionId || "non renseignée")}. À modifier depuis le dossier de cette compétition.</span>`
                       : `<button class="admin-engagements-club-person-edit-button" type="button" title="Compléter ou demander une correction pour ${portalActions.escapeHtml(name)}" aria-label="Compléter ou demander une correction pour ${portalActions.escapeHtml(name)}" data-engagement-club-person-action="edit" data-engagement-club-person-id="${portalActions.escapeHtml(person.id)}" ${nativeReadOnly && portalState.engagementClubPersonSaving ? 'disabled' : ""}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4l11-11-4-4L4 16v4zM13.5 6.5l4 4"></path></svg></button>${nativeReadOnly?`<button class="ghost-button" type="button" data-engagement-club-person-action="roles" data-engagement-club-person-id="${portalActions.escapeHtml(person.id)}">Rôles</button>`:""}`}
-                ${nativeReadOnly && !person.nativeStatusEditable ? "" : `<button class="ghost-button" type="button" data-engagement-club-person-action="${active ? "disable" : "enable"}" data-engagement-club-person-id="${portalActions.escapeHtml(person.id)}" ${person.statusSaving ? 'disabled title="Modification momentanément indisponible"' : ""}>${active ? "Désactiver" : "Réactiver"}</button>`}
               </span>
             </span>
           </div>
