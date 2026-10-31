@@ -4,7 +4,9 @@
 
 ## Navigation nationale et retours du portail — 31 octobre 2026
 
-Administration nationale ouvre directement les demandes à traiter. Un titre commun et une navigation persistante regroupent Demandes, Annuaires (Clubs, Nageurs, Officiels), Licences, Documents, Notifications et Journal. Les rubriques respectent les capacités existantes ; Journal reste réservé à `admin.full`. Le menu latéral national ne déplie plus un second jeu de rubriques. Les liens directs existants restent utilisables.
+Administration nationale ouvre un accueil de modules : Demandes à traiter, Annuaires, Vérification des licences, Documents, Notifications et Journal d’activité. Il n’y a pas d’onglets horizontaux ni de titre national répété au-dessus des outils. Les cartes passent de deux colonnes à une sur mobile. Les rubriques respectent les capacités existantes ; Journal reste réservé à `admin.full`. Les liens directs existants restent utilisables.
+
+Dans le menu latéral, le libellé « Administration nationale » ouvre cet accueil. Un bouton chevron distinct déplie ou replie ses accès directs sans quitter le module et sans charger de données. Annuaires possède également son libellé d’accueil et son chevron distinct pour Clubs, Nageurs et Officiels. L’ouverture d’un module national ouvre le groupe latéral correspondant ; son lien courant est marqué. Sur mobile, le choix d’une destination ferme le menu comme dans les autres espaces. Les boutons de dépliage exposent `aria-expanded` et `aria-controls` et gardent une cible tactile de 44 px. Le retour court « ← Modules nationaux » retrouve l’accueil.
 
 Les demandes réutilisent leurs cartes et traitements existants : liste à gauche et détail à droite sur ordinateur, liste puis détail avec « ← Demandes » sur mobile. Les filtres sont locaux. Changer de demande conserve les commentaires saisis et les actions déléguées. Les erreurs et états de chargement restent visibles. Les boutons et surfaces réutilisent les couleurs du portail en clair/sombre.
 
