@@ -31,6 +31,7 @@
 .admin-national-request-choice[aria-pressed="true"] { background: var(--portal-color-field-background); box-shadow: inset 3px 0 var(--portal-color-accent); }
 .admin-national-requests-page[data-request-layout="split"] > .admin-national-request-group,
 .admin-national-requests-page[data-request-layout="split"] > .admin-national-requests-empty { grid-column: 2; margin: 0; min-width: 0; }
+.admin-national-requests-page[data-request-layout="split"] > .admin-national-request-group { background: var(--portal-color-surface); border-color: var(--portal-color-border); }
 .admin-national-requests-page[data-request-layout="split"] > [data-request-active="false"] { display: none; }
 .admin-national-requests-page[data-request-layout="split"] > .admin-national-request-group > summary { display: none; }
 .admin-national-requests-page[data-request-layout="split"] article { min-width: 0; overflow-wrap: anywhere; }
