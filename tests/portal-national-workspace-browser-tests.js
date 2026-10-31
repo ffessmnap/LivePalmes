@@ -104,6 +104,7 @@ const {startStaticServer} = require('../tools/capture-portal-design');
       await page.locator('[data-national-workspace-tab="deletions"][aria-current="page"]').waitFor();
       for(const theme of ['light','dark']){
         await page.evaluate(theme=>document.documentElement.dataset.portalTheme=theme,theme);
+        if(theme==='dark')assert.notEqual(await page.locator('#adminEngagementsSwimmerChangeRequests').evaluate(el=>getComputedStyle(el).backgroundColor),'rgb(255, 255, 255)','Detail group follows dark appearance');
         assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,'No page overflow at '+width+' '+theme);
         fs.mkdirSync('tmp/national-workspace',{recursive:true});
         await page.screenshot({path:'tmp/national-workspace/'+width+'-'+theme+'.png',fullPage:true});
