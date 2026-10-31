@@ -1956,7 +1956,7 @@
           portalContext.elements.engagementsCalendarActions.hidden = !calendarActionsVisible;
         }
         if (portalContext.elements.engagementsDetail) portalContext.elements.engagementsDetail.hidden = !visible;
-        if (portalContext.elements.engagementsDetailClose) portalContext.elements.engagementsDetailClose.hidden = !visible || !portalActions.isEngagementAdminMode();
+        if (portalContext.elements.engagementsDetailClose) portalContext.elements.engagementsDetailClose.hidden = !visible;
         if (!visible) portalActions.setEngagementSaveState("");
       }
 

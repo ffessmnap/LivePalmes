@@ -1,5 +1,53 @@
 
 
+/* Persistent national workspace, using the portal's existing surfaces. */
+.admin-national-workspace { margin-bottom: 16px; min-width: 0; }
+.admin-national-workspace > .admin-portal-workspace-head { margin-bottom: 12px; }
+.admin-national-tabs, .admin-national-directory-tabs { display: flex; flex-wrap: wrap; gap: 6px; }
+.admin-national-tabs a, .admin-national-directory-tabs a {
+  display: inline-flex; align-items: center; min-height: 40px; padding: 8px 12px;
+  border: 1px solid var(--portal-color-border); border-radius: 8px;
+  background: var(--portal-color-surface); color: var(--portal-color-text); text-decoration: none;
+}
+.admin-national-tabs a[aria-current="page"], .admin-national-directory-tabs a[aria-current="page"] {
+  border-color: var(--portal-color-accent); background: var(--portal-color-field-background); color: var(--portal-color-accent);
+}
+.admin-national-directory-tabs { margin-top: 10px; }
+.admin-national-directory-tabs a { border-color: transparent; }
+.admin-national-workspace[hidden], .admin-national-directory-tabs[hidden], .admin-national-tabs a[hidden] { display: none; }
+#adminPortalNationalToggle > span[hidden] { display: none; }
+.admin-national-request-browser { grid-column: 1; grid-row: 1 / span 5; align-self: start; min-width: 0; }
+.admin-national-request-filters { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 10px; }
+.admin-national-request-filters button { min-height: 36px; padding: 6px 9px; }
+.admin-national-requests-page[data-request-layout="split"] {
+  display: grid; grid-template-columns: minmax(220px, 0.8fr) minmax(0, 1.2fr); gap: 16px; align-items: start;
+}
+.admin-national-request-choice {
+  display: grid; gap: 6px; width: 100%; padding: 14px; margin: 0;
+  text-align: left; border: 1px solid var(--portal-color-border); border-radius: 0;
+  background: var(--portal-color-surface); color: var(--portal-color-text); overflow-wrap: anywhere;
+}
+.admin-national-request-choice + .admin-national-request-choice { border-top: 0; }
+.admin-national-request-choice[aria-pressed="true"] { background: var(--portal-color-field-background); box-shadow: inset 3px 0 var(--portal-color-accent); }
+.admin-national-requests-page[data-request-layout="split"] > .admin-national-request-group,
+.admin-national-requests-page[data-request-layout="split"] > .admin-national-requests-empty { grid-column: 2; margin: 0; min-width: 0; }
+.admin-national-requests-page[data-request-layout="split"] > [data-request-active="false"] { display: none; }
+.admin-national-requests-page[data-request-layout="split"] > .admin-national-request-group > summary { display: none; }
+.admin-national-requests-page[data-request-layout="split"] article { min-width: 0; overflow-wrap: anywhere; }
+.admin-national-requests-page[data-request-layout="split"] .admin-engagements-request-card { grid-template-columns: minmax(0, 1fr); }
+.admin-national-requests-page[data-request-layout="split"] article[hidden] { display: none; }
+.admin-national-request-back { display: none; }
+@media (max-width: 760px) {
+  .admin-national-tabs a, .admin-national-directory-tabs a { min-height: 44px; }
+  .admin-national-requests-page[data-request-layout="split"] { grid-template-columns: minmax(0, 1fr); }
+  .admin-national-requests-page[data-request-layout="split"] > .admin-national-request-group,
+  .admin-national-requests-page[data-request-layout="split"] > .admin-national-requests-empty { grid-column: 1; }
+  .admin-national-requests-page[data-request-layout="split"] .admin-national-request-group { margin-top: 12px; }
+  .admin-national-requests-page[data-request-detail="true"] > .admin-national-request-browser { display: none; }
+  .admin-national-requests-page[data-request-layout="split"]:not([data-request-detail="true"]) > .admin-national-request-group:has(article) { display: none; }
+  .admin-national-request-back { display: inline-flex; margin-bottom: 12px; }
+}
+
 #adminEngagementsView[data-engagements-tab="calendar"] > .admin-portal-workspace-head {
   border: 1px solid #dfe5e7;
   border-radius: 10px;
