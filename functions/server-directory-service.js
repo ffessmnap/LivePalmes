@@ -434,43 +434,7 @@ function createDirectoryService(backendContext) {
     }, { merge: true });
   }
 
-  async function syncAccessDirectorySnapshotFromUserChange(uid, beforeData, afterData, now) {
-    const beforeEntry = beforeData ? accessDirectorySnapshotEntry(uid, beforeData) : null;
-    const afterEntry = afterData ? accessDirectorySnapshotEntry(uid, afterData) : null;
-    if (sameAccessDirectorySnapshotEntry(beforeEntry, afterEntry)) return;
 
-    const key = backendContext.accessDirectorySnapshotEntryKey(uid);
-    const userRef = backendContext.db.collection("users").doc(uid);
-    // Events may arrive out of order. Reading the current profile in the same
-    // transaction as the projection writes also retries a concurrent change.
-    // Two document reads per attempt, five attempts at most; no account scan.
-    await backendContext.db.runTransaction(async (transaction) => {
-      const [userSnapshot, stateSnapshot] = await transaction.getAll(
-        userRef, backendContext.accessDirectorySnapshotStateRef()
-      );
-      const state = stateSnapshot.exists ? stateSnapshot.data() || {} : {};
-      if (!["building", "ready"].includes(state.status)) return;
-
-      const currentData = userSnapshot.exists ? userSnapshot.data() || {} : null;
-      const currentEntry = currentData ? accessDirectorySnapshotEntry(uid, currentData) : null;
-      const currentRegionId = currentData ? accessDirectorySnapshotRegionId(currentData) : "";
-      mergeAccessDirectorySnapshotEntries(transaction, "national", "", {
-        [key]: currentEntry || backendContext.FieldValue.delete()
-      }, now);
-
-      // Event regions are cleanup hints only, never a source of profile data.
-      const regions = new Set([
-        beforeData ? accessDirectorySnapshotRegionId(beforeData) : "",
-        afterData ? accessDirectorySnapshotRegionId(afterData) : "",
-        currentRegionId
-      ].filter(Boolean));
-      for (const regionId of regions) {
-        mergeAccessDirectorySnapshotEntries(transaction, "region", regionId, {
-          [key]: regionId === currentRegionId ? currentEntry : backendContext.FieldValue.delete()
-        }, now);
-      }
-    }, { maxAttempts: 5 });
-  }
 
   function accessUserDeletionRequestItem(doc) {
     const data = doc.data() || {};
@@ -685,7 +649,6 @@ function createDirectoryService(backendContext) {
     accessDirectorySnapshotRegionId,
     sameAccessDirectorySnapshotEntry,
     mergeAccessDirectorySnapshotEntries,
-    syncAccessDirectorySnapshotFromUserChange,
     accessUserDeletionRequestItem,
     accessUserMatchesFilters,
     normalizedDirectoryText,
