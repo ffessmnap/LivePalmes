@@ -76,6 +76,7 @@ async function run({plan,sql,firestore,capture,persist,evidence,direction="apply
       // Never await Firestore/the projection worker under LOCK TABLES.
       const current = await sql.rows(plan.meta,{includeProjection:false});
       if (!p.equal(await sql.metadata(),plan.meta) || !p.equal(await sql.imports(current),plan.safety.imports)) p.fail("LOCKED_SCHEMA_OR_IMPORT_DRIFT");
+      if (!p.equal(await sql.historical(),plan.safety.historical)) p.fail("LOCKED_RECORD_REFERENCE_DRIFT");
       const states = inspect(plan,current);
       if (phase === "delete-sources" && plan.changes.some(op => op.after && states.get(op) !== "after")) p.fail("SOURCE_REFERENCES_REMAIN");
       for (const op of ops) {

@@ -58,6 +58,10 @@ async function main(){
   assert(queries.some(r=>r.sql.startsWith("LOCK TABLES ")));
   assert(queries.some(r=>r.sql.startsWith("LOCK TABLES ")&&!r.sql.includes(s.projectionTable)));
   assert.equal(queries.at(-1).sql,"UNLOCK TABLES");
+  const records=s.adapter({execute:async input=>[input.sql.includes("FROM records") ? [{id:1,club:"JSCC"}] : [{revision:1,payload:JSON.stringify({records:[{club:"JSCC"}],franceRecords:[]})}]]});
+  assert.equal((await records.historical()).labels.length,1);
+  const orphan=s.adapter({execute:async input=>[input.sql.includes("FROM records") ? [] : [{revision:1,payload:JSON.stringify({records:[{clubId:"518"}],franceRecords:[]})}]]});
+  await assert.rejects(()=>orphan.historical(),/CLUB_ID_DEPENDENCY/);
   assert.throws(()=>s.quote("clubs;DROP"),/IDENTIFIER/);
   const help=spawnSync(process.execPath,[path.join(__dirname,"../tools/club-merge.js"),"--help"],{encoding:"utf8",env:{...process.env,NAP_DB_PASSWORD:"",CLUB_MERGE_KEY_FILE:""}});
   assert.equal(help.status,0);assert.match(help.stdout,/Aucun mode par defaut/);

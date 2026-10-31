@@ -24,7 +24,7 @@ async function connect(env=process.env) {
     const meta = await sql.metadata(), rows = await sql.rows(meta), imports = await sql.imports(rows), firebase = await firestore.inventory(rows);
     const projectionRows = rows.livepalmes_club_account_emails;
     delete rows.livepalmes_club_account_emails;
-    return {project:"livepalmes",database:"nage-palmes",complete:true,meta,sql:rows,docs:firebase.docs,projection:{sql:projectionRows,firestore:[]},safety:{...firebase.safety,imports}};
+    return {project:"livepalmes",database:"nage-palmes",complete:true,meta,sql:rows,docs:firebase.docs,projection:{sql:projectionRows,firestore:[]},safety:{...firebase.safety,imports,historical:await sql.historical()}};
   }
   return {sql,firestore,capture,close:() => connection.end()};
 }

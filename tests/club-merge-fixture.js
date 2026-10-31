@@ -30,6 +30,7 @@ function fixture({large=false}={}) {
   }
   docs.push({path:"engagementAccessRequests/fiction-request",updateTime:"2026-10-31T01:00:00Z",fields:{clubId:s("518"),status:s("approved"),resolvedBy:s("preserved"),resolvedAt:s("same")}});
   const inventory = {project:"livepalmes",database:"nage-palmes",complete:true,sql,docs,meta:{fixture:true},safety:{imports:[],direct:[],reservations:[]},projection:{sql:docs.filter(d => d.path.startsWith("users/")).map(d => ({firebase_uid:d.path.slice(6),club_id:p.wire(d,"clubId"),email:"fiction@example.invalid",status:"active",competition_notifications:0,source_version:"1793408400123456",synchronized_at:"same"})),firestore:[]}};
+  inventory.safety.historical={labels:[],revision:"fiction",payloadDigest:"fiction"};
   return {inventory,plan:p.prepare(inventory,"fiction-clubs-20261031")};
 }
 function memory(plan,{stopAt=Infinity,failPersistAt=Infinity,failConvergence=false}={}) {
@@ -38,7 +39,7 @@ function memory(plan,{stopAt=Infinity,failPersistAt=Infinity,failConvergence=fal
   const crash = () => { mutations++; if (!failed && mutations === stopAt) { failed=true; throw Error("INJECTED_AFTER_MUTATION"); } };
   const capture = async () => p.clone(state);
   const sql = {
-    rows:async () => p.clone(state.sql),metadata:async () => p.clone(state.meta),imports:async () => p.clone(state.safety.imports),
+    rows:async () => p.clone(state.sql),metadata:async () => p.clone(state.meta),imports:async () => p.clone(state.safety.imports),historical:async () => p.clone(state.safety.historical || {}),
     locked:async fn => { if (locked) throw Error("NESTED_LOCK"); locked=true; try { return await fn(); } finally { locked=false; } },
     mutate:async (op,direction) => {
       if (!locked) throw Error("SQL_WRITE_WITHOUT_LOCK");
