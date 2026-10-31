@@ -1,20 +1,7 @@
 (function initLivePalmesPortalUx(global) {
   "use strict";
 
-  const HOME_LABELS = {
-    clubHome: "Espace club",
-    performanceHome: "Données sportives",
-    engagementsAdminHome: "Organisation des compétitions",
-    dtnHome: "Espace DTN",
-    nationalHome: "Administration nationale",
-    accessHome: "Gestion des accès"
-  };
-  const elements = {
-    breadcrumb: document.querySelector("#adminPortalBreadcrumb"),
-    navigation: document.querySelector("#adminPortalNavigation")
-  };
   const longOperationControllers = new WeakMap();
-  let breadcrumbSignature = "";
   let refreshTimer = null;
 
   function formatLongOperationElapsed(milliseconds) {
@@ -112,75 +99,84 @@
       .toLowerCase();
   }
 
-  function cleanLabel(element) {
-    const clone = element.cloneNode(true);
-    clone.querySelectorAll(".admin-portal-nav-icon,.admin-portal-nav-badge,.admin-pending-badge,[hidden],[aria-hidden='true']").forEach((item) => item.remove());
-    return clone.textContent.replace(/\s+/g, " ").trim();
-  }
-
-  function renderBreadcrumb() {
-    const mount = elements.breadcrumb;
-    if (!mount) return;
-    const activeView = document.querySelector("[data-admin-view]:not([hidden])")?.dataset.adminView || "";
-    const clubIsHome = document.body.dataset.portalHome === "club";
-    if (!activeView || activeView === "dashboard" || (clubIsHome && activeView === "clubHome")) {
-      mount.hidden = true;
-      if (breadcrumbSignature) mount.replaceChildren();
-      breadcrumbSignature = "";
-      return;
+  // Present existing cards in place: delegated decisions and unsaved comments
+  // keep their original nodes. This enhancement never requests or writes data.
+  const nationalRequests = { selected: "", filter: "all", signature: "" };
+  function enhanceNationalRequests() {
+    const panel = document.querySelector('.admin-national-requests-page');
+    if (!panel || panel.closest('[hidden]')) return;
+    const groups = [...panel.querySelectorAll('.admin-national-request-group')];
+    const cards = groups.flatMap((group, groupIndex) => [...group.querySelectorAll('article')].map(card => ({
+      card, group, groupIndex,
+      key: groupIndex + ':' + (card.dataset.engagementSwimmerChangeRequest || card.dataset.engagementDeletionRequestId || card.dataset.accessDeletionRequestId),
+      name: card.querySelector('strong')?.textContent.trim() || 'Demande',
+      meta: card.querySelector('.admin-engagements-request-main small,.admin-engagements-swimmer-change-request-head span')?.textContent.trim() || '',
+      type: ['Identité, doublon ou NS', 'Suppression de données', 'Suppression de compte'][groupIndex]
+    })));
+    const filtered = cards.filter(item => nationalRequests.filter === 'all' || String(item.groupIndex) === nationalRequests.filter);
+    if (!filtered.some(item => item.key === nationalRequests.selected)) nationalRequests.selected = filtered[0]?.key || '';
+    const selected = filtered.find(item => item.key === nationalRequests.selected);
+    let browser = panel.querySelector('.admin-national-request-browser');
+    if (!browser) {
+      nationalRequests.signature = '';
+      browser = document.createElement('nav');
+      browser.className = 'admin-national-request-browser';
+      browser.setAttribute('aria-label', 'Demandes nationales en attente');
+      panel.prepend(browser);
+      browser.addEventListener('click', event => {
+        const button = event.target.closest('[data-request-filter],[data-request-select]');
+        if (!button) return;
+        if (button.dataset.requestFilter) { nationalRequests.filter = button.dataset.requestFilter; panel.dataset.requestDetail = 'false'; }
+        else { nationalRequests.selected = button.dataset.requestSelect; panel.dataset.requestDetail = 'true'; }
+        enhanceNationalRequests();
+        const focus = button.dataset.requestSelect ? panel.querySelector('[data-request-active="true"] .admin-national-request-back')
+          : browser.querySelector('[data-request-filter][aria-pressed="true"]');
+        if (focus?.getClientRects().length) focus.focus();
+        else browser.querySelector('[data-request-select][aria-pressed="true"]')?.focus();
+      });
     }
-    const activeLink = elements.navigation?.querySelector("a.active,a[aria-current='page']");
-    const activeParent = elements.navigation?.querySelector(".admin-portal-nav-parent.active,.admin-portal-nav-parent[aria-current='page']") || activeLink?.closest(".admin-portal-nav-nested")?.querySelector(".admin-portal-nav-parent");
-    const parentLabel = activeParent ? cleanLabel(activeParent) : "";
-    const currentLabel = activeLink ? cleanLabel(activeLink) : parentLabel || HOME_LABELS[activeView] || document.querySelector(`[data-admin-view="${activeView}"] h2`)?.textContent?.trim() || "";
-    const items = [{
-      label: clubIsHome ? "Accueil club" : "Vue d’ensemble",
-      href: clubIsHome ? "#espace-club" : "#accueil"
-    }];
-    const engagementView = document.querySelector("#adminEngagementsView");
-    const competitionList = activeView === "engagements" && engagementView?.dataset.engagementsTab === "calendar";
-    if (competitionList) {
-      const detail = document.querySelector("#adminEngagementsDetail");
-      const detailOpen = detail && !detail.hidden;
-      const clubMode = engagementView.dataset.engagementsMode === "club";
-      if (clubMode && !clubIsHome) items.push({ label: "Espace club", href: "#espace-club" });
-      items.push({ label: clubMode ? (detailOpen ? "← Compétitions" : "Engagements en compétition") : "Compétitions", ...(detailOpen ? { href: clubMode ? "#club-competitions" : "#competitions-calendrier", competitionReturn: true } : {}) });
-      if (detailOpen) items.push({ label: document.querySelector("#adminEngagementsDetailTitle")?.textContent?.trim() || "Compétition" });
-    } else {
-      if (parentLabel && parentLabel !== currentLabel && !(clubIsHome && parentLabel === "Espace club")) {
-        items.push({ label: parentLabel, href: `#${activeParent.dataset.adminSpaceHash || "accueil"}` });
+    panel.dataset.requestLayout = 'split';
+    const signature = JSON.stringify([cards.map(({key, name, meta}) => [key, name, meta]), nationalRequests.filter, nationalRequests.selected]);
+    if (signature !== nationalRequests.signature) {
+      nationalRequests.signature = signature;
+      browser.replaceChildren();
+      const filters = document.createElement('div'); filters.className = 'admin-national-request-filters';
+      for (const [key,label] of [['all','Toutes'],['0','Identités et NS'],['1','Données'],['2','Comptes']]) {
+        const button = document.createElement('button'); button.type = 'button'; button.className = 'ghost-button';
+        button.dataset.requestFilter = key; button.setAttribute('aria-pressed', String(nationalRequests.filter === key));
+        button.textContent = label + ' · ' + cards.filter(item => key === 'all' || String(item.groupIndex) === key).length;
+        filters.append(button);
       }
-      if (currentLabel) items.push({ label: currentLabel });
+      browser.append(filters);
+      for (const item of filtered) {
+        const button = document.createElement('button'); button.type = 'button'; button.className = 'admin-national-request-choice';
+        button.dataset.requestSelect = item.key; button.setAttribute('aria-pressed', String(item.key === nationalRequests.selected));
+        const type = document.createElement('small'); type.textContent = item.type;
+        const name = document.createElement('strong'); name.textContent = item.name;
+        const meta = document.createElement('span'); meta.textContent = item.meta;
+        button.append(type, name, meta); browser.append(button);
+      }
+      if (!filtered.length && cards.length) { const empty = document.createElement('p'); empty.textContent = 'Aucune demande dans cette rubrique.'; browser.append(empty); }
     }
-    const nextSignature = JSON.stringify(items);
-    if (nextSignature === breadcrumbSignature) {
-      mount.hidden = items.length < 2;
-      return;
+    for (const group of groups) {
+      const active = group === selected?.group;
+      // Empty/error/loading groups stay visible below the detail, preserving
+      // their existing status and recovery messages.
+      const hasCards = group.querySelector('article');
+      const value = !hasCards || active ? 'true' : 'false';
+      if (group.dataset.requestActive !== value) group.dataset.requestActive = value;
+      if (active && !group.open) group.open = true;
     }
-    breadcrumbSignature = nextSignature;
-    mount.replaceChildren();
-    items.forEach((item, index) => {
-      if (index) {
-        const separator = document.createElement("span");
-        separator.className = "admin-portal-breadcrumb-separator";
-        separator.setAttribute("aria-hidden", "true");
-        separator.textContent = "›";
-        mount.append(separator);
+    for (const item of cards) {
+      const hidden = item.key !== nationalRequests.selected;
+      if (item.card.hidden !== hidden) item.card.hidden = hidden;
+      if (!item.card.querySelector('.admin-national-request-back')) {
+        const back = document.createElement('button'); back.type = 'button'; back.className = 'ghost-button admin-national-request-back';
+        back.textContent = '← Demandes';
+        back.onclick = () => { panel.dataset.requestDetail = 'false'; browser.querySelector('[data-request-select][aria-pressed="true"]')?.focus(); };
+        item.card.prepend(back);
       }
-      if (item.href) {
-        const link = document.createElement("a");
-        link.href = item.href;
-        if (item.competitionReturn) link.dataset.competitionListReturn = "true";
-        link.textContent = item.label;
-        mount.append(link);
-      } else {
-        const current = document.createElement("span");
-        current.setAttribute("aria-current", "page");
-        current.textContent = item.label;
-        mount.append(current);
-      }
-    });
-    mount.hidden = items.length < 2;
+    }
   }
 
   function enhanceResponsiveTables() {
@@ -290,7 +286,7 @@
     global.clearTimeout(refreshTimer);
     refreshTimer = global.setTimeout(() => {
       fitSidebarToViewport();
-      renderBreadcrumb();
+      enhanceNationalRequests();
       enhanceResponsiveTables();
       enhanceLoadingStates();
       enhanceTabFocus();
@@ -301,8 +297,7 @@
   document.addEventListener("livepalmes:portal-home-change", refreshEnhancements);
   document.addEventListener("keydown", handleTabKeydown);
   new MutationObserver((mutations) => {
-    const generatedOnly = mutations.every((mutation) => mutation.target.closest?.("#adminPortalBreadcrumb"));
-    if (!generatedOnly) refreshEnhancements();
+    refreshEnhancements();
   }).observe(document.querySelector("#adminPortalDashboard") || document.body, {
     attributes: true,
     attributeFilter: ["hidden", "class", "aria-current", "aria-selected", "aria-disabled", "data-tone", "data-detail-open"],

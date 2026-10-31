@@ -1491,7 +1491,8 @@
           portalActions.collapsePortalNavigationAfterSelection();
         });
         portalContext.elements.nationalToggle?.addEventListener("click", () => {
-          portalActions.togglePortalSpace("national", "nationalHome", "administration-nationale", portalContext.elements.nationalToggle);
+          if (global.location.hash === "#administration-nationale") portalActions.updateNavigationView();
+          else global.location.hash = "administration-nationale";
           portalActions.collapsePortalNavigationAfterSelection();
         });
         portalContext.elements.accessToggle?.addEventListener("click", () => {
@@ -1524,13 +1525,6 @@
           }
           if (global.location.hash === link.hash) portalActions.updateNavigationView();
         }));
-        document.querySelector("#adminPortalBreadcrumb")?.addEventListener("click", (event) => {
-          const link = event.target.closest("[data-competition-list-return]");
-          if (!link) return;
-          event.preventDefault();
-          if (!portalActions.closeEngagementCompetitionDetail()) return;
-          portalActions.updateNavigationView();
-        });
         portalContext.elements.navigation?.addEventListener("click", (event) => {
           const link = event.target.closest("a");
           if (!link) return;

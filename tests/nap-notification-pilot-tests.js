@@ -90,10 +90,11 @@ async function main() {
   // Exercise the actual UI handlers without a browser, backend or real writes.
   const portal = fs.readFileSync(require.resolve('../assets/livepalmes-admin-portal.js'), 'utf8');
   const uiStart = portal.indexOf('  let nationalAutomaticMailControl ='), uiEnd = portal.indexOf('  function updateEngagementDetailEditState()', uiStart);
-  const nodes = Object.fromEntries(['', 'Status', 'Toggle', 'Scope', 'ScopeSave'].map(suffix => ['adminNationalMailControl' + suffix, {
+  const nodes = Object.fromEntries(['', 'Status', 'Toggle'].map(suffix => ['adminNationalMailControl' + suffix, {
     disabled: true, value: 'idf', setAttribute: () => {} }]));
-  let national = true, uiSetting = { enabled: false, scope: 'idf', revision: 1 }, changes = [];
-  const ui = { Date, document: { getElementById: id => nodes[id] }, canDeleteEngagementCompetitionDirectly: () => national,
+  let national = true, uiSetting = { enabled: false, scope: 'all', revision: 1 }, changes = [];
+  let confirmation = false;
+  const ui = { Date, global: {confirm: () => confirmation}, document: { getElementById: id => nodes[id] }, canDeleteEngagementCompetitionDirectly: () => national,
     callFunction: async (name, input) => {
       if (name === 'updateEngagementAutomaticMailControl') { changes.push(input); uiSetting = { ...input, revision: uiSetting.revision + 1 }; }
       return uiSetting;
@@ -101,11 +102,16 @@ async function main() {
   vm.runInNewContext(portal.slice(uiStart, uiEnd), ui);
   await ui.loadNationalAutomaticMailControl(true);
   assert.equal(nodes.adminNationalMailControlToggle.disabled, false);
-  nodes.adminNationalMailControlScope.value = 'all'; nodes.adminNationalMailControlScope.onchange();
-  assert.equal(nodes.adminNationalMailControlToggle.disabled, true, 'Unsaved scope cannot activate mails');
-  assert.equal(nodes.adminNationalMailControlScopeSave.disabled, false); assert.equal(changes.length, 0);
-  await nodes.adminNationalMailControlScopeSave.onclick();
-  assert.equal(changes.length, 1); assert.equal(changes[0].enabled, false, 'Saving a scope does not enable delivery');
+  await nodes.adminNationalMailControlToggle.onclick();
+  assert.equal(changes.length, 0, 'Cancelling confirmation never changes delivery');
+  confirmation = true;
+  await nodes.adminNationalMailControlToggle.onclick();
+  assert.equal(changes.length, 1);
+  assert.equal(changes[0].scope, 'all', 'Toggling preserves the server scope');
+  assert.equal(changes[0].expectedRevision, 1);
+  uiSetting = { enabled: false, scope: 'idf', revision: 3 };
+  await ui.loadNationalAutomaticMailControl(true);
+  assert.equal(nodes.adminNationalMailControlToggle.disabled, true, 'A legacy pilot must not be silently broadened or activated');
   uiSetting = { enabled: true, scope: 'invalid', revision: 3 };
   await ui.loadNationalAutomaticMailControl(true);
   assert.equal(nodes.adminNationalMailControlToggle.disabled, false, 'Emergency off remains available');
