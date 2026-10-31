@@ -2,6 +2,12 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 31 octobre — Annuaire privé protégé contre les anciens événements
+
+- Demande explicite d'Antoine : corriger la synchronisation de l'annuaire privé avant les fusions de clubs ; aucune fusion ni modification de compte réel autorisée dans ce lot. Le helper relit le profil courant et l'état d'annuaire dans une transaction unique ; les données d'événement ne servent qu'à repérer les anciennes régions à nettoyer. Les rôles et périmètres ne sont pas modifiés. Les échecs de projection remontent au déclencheur pour conserver ses reprises.
+- Budget avant/après : chargement initial et rafraîchissement des pages inchangés. Fond : zéro lecture pour un événement sans changement projeté ; sinon deux documents lus par tentative au lieu d'un, au maximum dix pour cinq tentatives, sans scan ni lecture par ligne. Au plus quatre snapshots écrits par commit, en conservant les autres comptes. Aucun nouveau schéma, index, listener, paramètre mail ou accès NAP.
+- [PR #649](https://github.com/ffessmnap/LivePalmes/pull/649). Tests ciblés hors réseau réussis : ancien événement de connexion, livraison répétée, concurrence avec relance transactionnelle, retour arrière du rattachement, suppression/recréation, changement de région ou statut, index absent/en construction, échec propagé et borne des lectures. Contrôles régionaux, projection NAP des comptes, optimisations du portail, syntaxe et diff réussis. CI globale en cours ; preuve TEST à lier dans la PR. Validation utilisateur TEST non recueillie, aucune publication PROD.
+
 ### 31 octobre — Correction de la densité Club et statut des officiels
 
 - Après inspection Chrome réelle de la livraison #645 : actions nageurs sur deux lignes dans une ligne trop basse, officiels trop hauts et enveloppes superflues. Antoine valide les corrections, puis demande de reprendre uniquement après la fin de « Expliquer les erreurs de fusion ». Reprise autonome explicitement autorisée ; chantier fusion terminé et TEST commun réussi 41218687332, candidat 5f6a236e.

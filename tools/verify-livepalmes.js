@@ -71,6 +71,7 @@ function runUnitTests() {
     "nap-portal-contract-tests.js",
     "nap-club-switch-tests.js",
     "regional-club-access-tests.js",
+    "access-directory-event-order-tests.js",
     "nap-release-cleanup-tests.js",
     "nap-approved-portal-schema-tests.js",
     "nap-approved-closure-schema-tests.js",
