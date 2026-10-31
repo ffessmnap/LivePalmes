@@ -1,0 +1,35 @@
+"use strict";
+const assert = require("node:assert/strict"), path = require("node:path");
+const review = require("./release-portal-directory-compatibility");
+const shared = require("../tools/release-test-function-fingerprints");
+const utilities = require("./release-excluded-backend-compatibility-tests");
+const root = path.resolve(__dirname, "..");
+const rows = Object.entries(review.ORIGINS).map(([name, commit]) => ({ name, commit }));
+async function run() {
+  review.validateScope(review.BASE, review.CANDIDATE, rows);
+  assert.throws(() => review.validateScope(review.CANDIDATE, review.CANDIDATE, rows));
+  assert.throws(() => review.validateScope(review.BASE, review.BASE, rows));
+  assert.throws(() => review.validateScope(review.BASE, review.CANDIDATE, rows.slice(1)));
+  assert.throws(() => review.validateScope(review.BASE, review.CANDIDATE, [...rows, rows[0]]));
+  assert.throws(() => review.validateScope(review.BASE, review.CANDIDATE, rows.map((row, i) => i ? row : { ...row, name: "sendEngagementPreparedEmails" })));
+  assert.throws(() => review.validateScope(review.BASE, review.CANDIDATE, rows.map((row, i) => i ? row : { ...row, commit: review.BASE })));
+  assert.throws(() => review.validateScope(review.BASE, review.CANDIDATE, rows.map((row, i) => i ? row : { ...row, extra: true })));
+  const before = shared.snapshot(root, review.BASE, { production: true });
+  const after = shared.snapshot(root, review.CANDIDATE, { production: true });
+  const copy = () => structuredClone(after);
+  let changed = copy(); changed.source += "\nexports.unreviewed = () => {};\n";
+  assert.throws(() => review.verifySnapshots(before, changed));
+  changed = copy(); changed.files["functions/server-directory-service.js"].source += "\nmodule.exports.extra = true;\n";
+  assert.throws(() => review.verifySnapshots(before, changed));
+  changed = copy(); changed.common.push("unreviewed-package");
+  assert.throws(() => review.verifySnapshots(before, changed));
+  changed = copy(); changed.registrySource += "\n// unreviewed registry\n";
+  assert.throws(() => review.verifySnapshots(before, changed));
+  changed = copy(); delete changed.files["functions/server-directory-service.js"];
+  assert.throws(() => review.verifySnapshots(before, changed));
+  const result = await review.prove({ root, base: review.BASE, candidate: review.CANDIDATE, rows, ...utilities });
+  assert.equal(result.result, "success"); assert.equal(result.networkCalls, 0);
+  assert.deepEqual(result.passedFunctions, Object.keys(review.ORIGINS).sort());
+  console.log("Portal/directory retained proof: exact pair, four origins, closed negative cases and offline guards passed.");
+}
+run().catch(error => { console.error(error.stack); process.exitCode = 1; });
