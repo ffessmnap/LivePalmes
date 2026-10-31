@@ -57,6 +57,16 @@ function adapter(connection) {
     }
     return rows;
   }
+  async function historical() {
+    const labels = await q("SELECT id,club FROM records FORCE INDEX (PRIMARY) WHERE id>0 ORDER BY id LIMIT 1001");
+    if (labels.length >= 1001 || labels.some(row => p.mapping.has(String(row.club)))) p.fail("HISTORICAL_RECORD_DEPENDENCY_CHANGED");
+    const rows = await q("SELECT c.revision,OCTET_LENGTH(v.payload) AS bytes,IF(OCTET_LENGTH(v.payload)<=2097152,v.payload,NULL) AS payload FROM livepalmes_records_current c FORCE INDEX (PRIMARY) JOIN livepalmes_records_versions v FORCE INDEX (PRIMARY) ON v.revision=c.revision WHERE c.id=1 LIMIT 1");
+    if (rows.length !== 1 || !rows[0].payload) p.fail("CURRENT_RECORDS_UNAVAILABLE_OR_TOO_LARGE");
+    const payload = typeof rows[0].payload === "string" ? JSON.parse(rows[0].payload) : rows[0].payload;
+    if (!Array.isArray(payload.records) || !Array.isArray(payload.franceRecords)) p.fail("CURRENT_RECORDS_FORMAT_CHANGED");
+    if ([...payload.records,...payload.franceRecords].some(row => p.mapping.has(String(row.clubId)) || p.mapping.has(String(row.club)))) p.fail("CURRENT_RECORDS_CLUB_ID_DEPENDENCY");
+    return {labels,revision:rows[0].revision,payloadDigest:p.digest(payload)};
+  }
   function where(row) {
     const fields = Object.keys(row);
     return {sql:fields.map(f => `CAST(${quote(f)} AS BINARY) <=> CAST(? AS BINARY)`).join(" AND "),values:fields.map(f => row[f])};
@@ -84,7 +94,7 @@ function adapter(connection) {
     try {
       await q("SET SESSION lock_wait_timeout=10");
       await q("SET autocommit=1");
-      await connection.query({sql:"LOCK TABLES "+p.tables.map(t => quote(t)+" WRITE").join(", ")+", `livepalmes_performance_imports` READ",timeout:12000});
+      await connection.query({sql:"LOCK TABLES "+p.tables.map(t => quote(t)+" WRITE").join(", ")+", `livepalmes_performance_imports` READ, `records` READ, `livepalmes_records_current` AS c READ, `livepalmes_records_versions` AS v READ",timeout:12000});
       timer = setTimeout(() => connection.destroy(),60000);
       return await task();
     } finally {
@@ -92,6 +102,6 @@ function adapter(connection) {
       await connection.query({sql:"UNLOCK TABLES",timeout:10000}).catch(() => connection.destroy());
     }
   }
-  return {metadata,rows,imports,mutate,locked,q};
+  return {metadata,rows,imports,historical,mutate,locked,q};
 }
 module.exports = {adapter,quote,projectionTable};
