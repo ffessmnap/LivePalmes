@@ -130,6 +130,9 @@ jobs:
     - name: Rechercher la verification du commit main exact
       id: verified-main
       run: python tools/test-verification-evidence.py reuse "$RUNNER_TEMP/application-verification"
+    - name: Rechercher la verification du circuit exact
+      id: verified-publication
+      run: python tools/test-verification-evidence.py reuse-publication "$RUNNER_TEMP/publication-verification"
     - name: Installer les dependances verrouillees en parallele
       run: |
         npm ci --prefix functions --prefer-offline --no-audit --no-fund &
@@ -150,7 +153,9 @@ jobs:
         else
           node tools/verify-livepalmes.js
         fi
-
+    - name: Verifier le circuit ou reutiliser la preuve exacte
+      if: steps.verified-publication.outputs.verified != 'true'
+      run: |
         python tests/production-pdf-functions-tests.py
 
         python tests/production-release-state-tests.py

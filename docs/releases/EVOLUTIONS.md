@@ -10,6 +10,12 @@
 - CI puis nouveau preflight et publication déjà autorisée à attester dans GitHub. Mails tous clubs actifs et inchangés, sans rattrapage ; automates TEST suspendus. Fusions des 14 clubs, transferts de comptes, données Paris/CNHC/Basile, DTN, Storage, migrations, règles/index et Direct exclus.
 
 
+### 31 octobre — Publications quotidiennes : preuves réutilisées et contrôles proportionnés
+
+- Demande d'Antoine : reprendre les règles de publication pour réduire les attentes sans perdre en fiabilité. Parcours quotidien explicite, réutilisation des preuves, absence de confirmation répétée pour une version entièrement validée et diagnostic d'une sélection backend large. Les contrats sensibles et l'accord PROD Infra sont conservés.
+- TEST réutilise aussi la preuve CI exacte du circuit de publication pour éviter huit tests répétés ; sans preuve compatible, ces huit tests restent exécutés. La syntaxe de tous les JavaScript passe par au plus quatre processus, sans retirer de fichier. Les seules feuilles de style et images connues sous `assets/` et `css/` ne déclenchent plus l'émulateur Firestore ; les chemins inconnus/backend restent conservateurs.
+- Aucun accès métier ajouté, aucun changement des fonctions, droits, règles Firebase, données ou lots de déploiement. Contrôles locaux : 31 tests Python (29 réussis, deux contrôles Bash reportés à la CI Linux), tests du vérificateur syntaxique réussis, 1 003 JavaScript vérifiés et diff propre. CI globale requise avant intégration ; preuves à lier dans la PR. Outillage seul : aucun déploiement applicatif attendu. Aucune validation utilisateur ni publication PROD déduite.
+
 ### 31 octobre — Annuaire privé protégé contre les anciens événements
 
 - Demande explicite d'Antoine : corriger la synchronisation de l'annuaire privé avant les fusions de clubs ; aucune fusion ni modification de compte réel autorisée dans ce lot. Le helper relit le profil courant et l'état d'annuaire dans une transaction unique ; les données d'événement ne servent qu'à repérer les anciennes régions à nettoyer. Les rôles et périmètres ne sont pas modifiés. Les échecs de projection remontent au déclencheur pour conserver ses reprises.

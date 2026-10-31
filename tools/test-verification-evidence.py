@@ -49,6 +49,8 @@ def firestore_required(paths):
     def isolated(path):
         value = Path(path)
         return (path == 'AGENTS.md' or (path.startswith('docs/') and value.suffix == '.md')
+                or (path.startswith(('assets/', 'css/'))
+                    and value.suffix in {'.css', '.svg', '.png', '.ico', '.webp', '.jpg', '.jpeg'})
                 or (len(value.parts) == 1 and value.suffix in {'.html', '.css', '.js', '.svg', '.png', '.ico'})
                 and not path.startswith(('firebase', 'firestore')))
     return not paths or any(not isolated(path) for path in paths)
