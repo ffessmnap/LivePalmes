@@ -2,6 +2,14 @@
 
 <!-- description: Référence du langage visuel, des composants d’interface et des règles responsive déjà présents dans LivePalmes. -->
 
+## Navigation nationale et retours du portail — 31 octobre 2026
+
+Administration nationale ouvre directement les demandes à traiter. Un titre commun et une navigation persistante regroupent Demandes, Annuaires (Clubs, Nageurs, Officiels), Licences, Documents, Notifications et Journal. Les rubriques respectent les capacités existantes ; Journal reste réservé à `admin.full`. Le menu latéral national ne déplie plus un second jeu de rubriques. Les liens directs existants restent utilisables.
+
+Les demandes réutilisent leurs cartes et traitements existants : liste à gauche et détail à droite sur ordinateur, liste puis détail avec « ← Demandes » sur mobile. Les filtres sont locaux. Changer de demande conserve les commentaires saisis et les actions déléguées. Les erreurs et états de chargement restent visibles. Les boutons et surfaces réutilisent les couleurs du portail en clair/sombre.
+
+Le fil d’Ariane est supprimé dans tout le portail. La navigation principale, les titres et les onglets assurent le repérage. Les retours utiles restent disponibles : « Retour aux compétitions » dans les dossiers organisateur et club, retour depuis une demande et commandes de fermeture/annulation existantes. Le retour depuis un dossier protège toujours les modifications non enregistrées et conserve les filtres de la liste.
+
 ## Sélecteur eau libre — 30 octobre 2026
 
 Le tableau distance/spécialités reprend les cellules et les coches du tableau course/catégories : largeur maximale de 400 px, lignes de 36 px, cases de 15 px, en-tête de 28 px et fond discret des cellules sélectionnées. Les zones tactiles restent de 44 px. Le champ Distance et l'action « Ajouter une distance » sont placés sous la dernière ligne ; aucun titre de bibliothèque ni explication technique permanente. Le choix reste réversible et local jusqu'à l'enregistrement des courses. Les catégories et le programme utilisent les composants existants ; leurs variantes piscine restent inchangées.
@@ -739,7 +747,7 @@ Le formulaire compact place Nom puis Prénom sur une première ligne, Date de na
 
 ### Périmètre des mails automatiques
 
-Dans Administration nationale, le panneau « Mails automatiques » distingue le périmètre (Pilote Île-de-France ou Toutes les régions), son enregistrement et l’activation. Le statut indique le périmètre réellement enregistré et, sur TEST, la redirection des destinataires. Enregistrer un périmètre n’active pas les envois ; un périmètre modifié mais non enregistré bloque l’activation. Le bouton de désactivation reste disponible même si le périmètre est indisponible. Les champs et boutons réutilisent les composants du portail.
+Dans Administration nationale, l’onglet Notifications présente l’état des mails automatiques et leur activation/désactivation après confirmation. Le choix de périmètre du pilote IDF et son enregistrement ont été retirés. Aucune écriture de configuration n’est provoquée par cette suppression : le bouton conserve le périmètre et la révision renvoyés par le serveur. Une ancienne configuration autre que nationale bloque l’activation ; la désactivation d’urgence reste possible. Sur TEST, la redirection des destinataires reste indiquée. Aucun rattrapage des mails annulés à la réactivation.
 
 Dans Diffusion, le suivi des courriels propose « Actualiser le suivi » avec le bouton discret existant. Les compteurs concernent explicitement les lignes affichées (100 par page), sans actualisation permanente. L’en-tête se replie sur mobile. « Envoyé » signifie accepté par le serveur mail ; « À vérifier — ne pas renvoyer » distingue un résultat SMTP incertain ou un envoi resté en cours plus de cinq minutes. Une erreur n’est jamais renvoyée automatiquement.
 
