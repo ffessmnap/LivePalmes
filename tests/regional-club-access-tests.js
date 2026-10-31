@@ -1,7 +1,8 @@
 "use strict";
 const assert=require("node:assert/strict");
 const {createAccessService}=require("../functions/server-access-service");
-const {createAccessHandlers}=require("../functions/portal-access-handlers");
+const {createAccountHandlers}=require("../functions/portal-account-handlers");
+const {createAccountWriteService}=require("../functions/server-account-write-service");
 class HttpsError extends Error {constructor(code,message){super(message);this.code=code;}}
 (async()=>{
  let caps={"engagements.region.manage":true}, region="1", clubRegion="1", reads=0,sql=0,writes=0,existing=false;
@@ -20,7 +21,7 @@ class HttpsError extends Error {constructor(code,message){super(message);this.co
  caps["engagements.national.manage"]=true;delete caps["engagements.club.manage"];delete caps["engagements.club.switch"];
  assert.equal((await service.engagementClubAccessContext(req)).clubId,"20");
  delete caps["engagements.national.manage"];clubRegion="1";
- const handlers=createAccessHandlers({...context,accessManagementContext:service.accessManagementContext,canonicalAccessDirectoryRegionId:service.canonicalAccessDirectoryRegionId,
+ const handlers=createAccountHandlers({...context,accessManagementContext:service.accessManagementContext,canonicalAccessDirectoryRegionId:service.canonicalAccessDirectoryRegionId,
  cleanAccessProfile:service.cleanAccessProfile,engagementClubAccessContext:service.engagementClubAccessContext,
  ACCESS_CAPABILITY_SET:new Set(["engagements.club.manage","admin.full"]),
  auth:{getUserByEmail:async()=>{if(existing)return {uid:"old"};throw {code:"auth/user-not-found"};}},
@@ -37,7 +38,7 @@ class HttpsError extends Error {constructor(code,message){super(message);this.co
  caps={"engagements.national.manage":true,"engagements.region.manage":true};
  await assert.rejects(()=>handlers.createOrUpdateAccessUser({...req,data:{...payload,capabilities:["admin.full"]}}),e=>e.code==="permission-denied");assert.equal(writes,1);
  clubRegion="1";existing=true;await assert.rejects(()=>handlers.createOrUpdateAccessUser({...req,data:payload}),e=>e.code==="already-exists");assert.equal(writes,1);
- const authService=createAccessService({...context,auth:{createUser:async()=>{throw {code:"auth/email-already-exists"};},updateUser:()=>{throw Error("Existing account must remain untouched");}}});
+ const authService=createAccountWriteService({...context,displayNameFromProfile:service.displayNameFromProfile,auth:{createUser:async()=>{throw {code:"auth/email-already-exists"};},updateUser:()=>{throw Error("Existing account must remain untouched");}}});
  await assert.rejects(()=>authService.userByEmailOrCreate({...payload,createOnly:true}),e=>e.code==="auth/email-already-exists");
  console.log("Regional creation/switch: actual factories, region/cumulative rights, forged payloads, existing accounts/race rejected; bounded reads",reads,sql);
 })().catch(e=>{console.error(e);process.exitCode=1;});

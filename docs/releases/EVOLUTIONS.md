@@ -2,6 +2,12 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 31 octobre — Isolation des écritures de compte et de la synchronisation d'annuaire
+
+- Demande explicite d'Antoine : isoler les dépendances pour publier les seules fonctions concernées sans perdre en fiabilité. Synchronisation d'annuaire, callable de création/mise à jour de compte et écriture Auth/profil déplacés dans trois modules dédiés ; dépendances inutilisées retirées des anciennes fabriques. Déclarations, options, secrets et exports Firebase conservés ; aucun changement métier ou de droits.
+- Vérification du déplacement : les quatre corps de fonctions sont identiques à ceux du commit `1a009e23`, après normalisation des accesseurs de contexte. Les tests des vraies fabriques conservent les refus régionaux, collisions Auth, événements retardés, transactions et reprises. Tests de sélection TEST/PROD : une modification du module de synchronisation affecte son seul déclencheur ; une modification du module d'écriture affecte les deux consommateurs réels, y compris celui hors lot ordinaire. Contrôle d'une dépendance d'autorisation partagée et du repli prudent sur tout le backend.
+- Budget initial/action/rafraîchissement inchangé, aucun accès ajouté. Fond annuaire : zéro lecture sans changement projeté, sinon deux documents par tentative, cinq tentatives maximum et au plus quatre snapshots écrits par commit. Aucun scan, listener, changement SQL, migration ou invocation réelle de recette. CI globale et publication TEST requises ; premier déploiement potentiellement large pour installer le découpage. Validation utilisateur non recueillie ; aucune publication PROD autorisée par ce lot.
+
 ### 31 octobre — Publications quotidiennes : preuves réutilisées et contrôles proportionnés
 
 - Demande d'Antoine : reprendre les règles de publication pour réduire les attentes sans perdre en fiabilité. Parcours quotidien explicite, réutilisation des preuves, absence de confirmation répétée pour une version entièrement validée et diagnostic d'une sélection backend large. Les contrats sensibles et l'accord PROD Infra sont conservés.

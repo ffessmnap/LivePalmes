@@ -293,6 +293,8 @@ Ces fonctions font partie des zones sensibles.
 
 Depuis le découpage du 28 octobre, `functions/index.js` conserve les déclarations Firebase, leurs options et les points d'entrée. Les corps des callables ordinaires sont dans `portal-*-handlers.js` ; les fonctions privées sont dans `server-*-service.js`. Les imports, le rendu PDF, les statistiques et l'ancien circuit public disposent de modules dédiés. Les fabriques sont initialisées à la première utilisation, sans opération externe à leur création. Les services, constantes et états partagés passent par des accesseurs explicites ; aucun chemin Firestore, SQL, secret, droit ou déclencheur n'est remplacé par ce découpage. Les exports existants sont conservés.
 
+La synchronisation transactionnelle de l'annuaire est isolée dans `server-directory-sync-service.js`. La création/mise à jour des comptes utilise `portal-account-handlers.js` et `server-account-write-service.js`. Les lecteurs et contrôles communs ne dépendent pas de ces traitements d'écriture. Les accesseurs d'un service doivent se limiter aux dépendances qu'il utilise : un accesseur inutilisé peut suffire à élargir la sélection de déploiement. Une modification d'un contrôle d'accès partagé continue d'affecter tous ses consommateurs ; cette séparation ne change ni le sélecteur conservateur ni les contrats des fonctions exclues.
+
 Les valeurs de calendrier, l'état d'activité, les références de personnes et les témoins de périmètre NAP sont des modules indépendants des lecteurs/écrivains qui les utilisent. Le graphe des imports serveur est contrôlé sans dépendance circulaire. Voir [la maintenance et ses contrôles](MAINTENANCE_ARCHITECTURE.md).
 
 ## Pages consoles generees
