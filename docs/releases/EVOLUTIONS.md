@@ -2,6 +2,13 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 31 octobre — Préparation locale des 14 fusions de clubs
+
+- Demande explicite : finaliser l'outil et les vérifications de sauvegarde/reprise, Corbie compris, sans appliquer les fusions. Noms/sigles/paramètres des 12 cibles conservés ; transfert des seules références approuvées puis suppression physique des 14 sources. Trois comptes Corbie conservés et OPEN/OPEN PASS regroupés vers 220. Identités du classeur figées, sans reprendre les anciennes propositions de sigles.
+- Outil local `tools/club-merge*.js` : préparation, simulation fraîche, archives chiffrées sur deux chemins et rouvertes, journal chiffré durable, comparaison des images, reprise et restauration ciblées ; adaptateurs NAP/Firestore existants, aucun changement d'application ou de Function. [Procédure, budget borné et prérequis réels](../NAP_FUSION_CLUBS.md). Coût du portail inchangé ; lectures par ensembles/index et plafonds explicites, aucune reconstruction ou scan des performances.
+- Tests ciblés hors réseau réussis : 46 points après mutation dans les deux sens, 95 frontières de journal, profils/roles inchangés, erreurs et collisions, masques atomiques Firestore, CAS SQL, sauvegardes altérées et fixture de 133 nageurs/455 performances. CI globale à attester dans la PR. Aucune connexion aux bases réelles, archive réelle, écriture de donnée, fusion ou restauration réelle pendant ce développement.
+- Blocage confirmé par rejeu du véritable déclencheur : #649 protège les snapshots privés mais les listes administrateurs/destinataires restent vulnérables aux événements anciens. Le diagnostic et les commandes d'exécution refusent ce cas. Antoine demande de ne pas modifier TEST pendant la publication PROD en cours : aucune nouvelle correction serveur, livraison TEST/PROD ou intégration à main de ce nouvel outillage à ce stade. Fenêtre exclusive, clé/copies durables et contrôles de verrous réels restent à établir avant un accord d'exécution. Aucun état « prêt à fusionner » ou validation utilisateur inventé.
+
 ### 31 octobre — Annuaire privé protégé contre les anciens événements
 
 - Demande explicite d'Antoine : corriger la synchronisation de l'annuaire privé avant les fusions de clubs ; aucune fusion ni modification de compte réel autorisée dans ce lot. Le helper relit le profil courant et l'état d'annuaire dans une transaction unique ; les données d'événement ne servent qu'à repérer les anciennes régions à nettoyer. Les rôles et périmètres ne sont pas modifiés. Les échecs de projection remontent au déclencheur pour conserver ses reprises.
