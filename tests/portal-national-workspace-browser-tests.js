@@ -60,6 +60,7 @@ const {startStaticServer} = require('../tools/capture-portal-design');
       assert.equal(await page.locator('#adminPortalNationalSubmenu').isVisible(),false);
       assert.equal(await page.evaluate(()=>testLoads.some(key=>/Clubs|Swimmers$|People$|Audit|documents/.test(key))),false,'Opening national administration does not load other sections');
       assert.equal(await page.locator('#adminNationalMailControlScope').count(),0);
+      assert.equal(await page.locator('.admin-national-request-browser > p').count(),0,'The list must not claim to be empty while the original loading/error status is active');
       await page.evaluate(()=>{
         const list=document.querySelector('#adminEngagementsSwimmerChangeRequestsList');
         list.closest('details').hidden=false;

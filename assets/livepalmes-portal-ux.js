@@ -155,7 +155,7 @@
         const meta = document.createElement('span'); meta.textContent = item.meta;
         button.append(type, name, meta); browser.append(button);
       }
-      if (!filtered.length) { const empty = document.createElement('p'); empty.textContent = 'Aucune demande dans cette rubrique.'; browser.append(empty); }
+      if (!filtered.length && cards.length) { const empty = document.createElement('p'); empty.textContent = 'Aucune demande dans cette rubrique.'; browser.append(empty); }
     }
     for (const group of groups) {
       const active = group === selected?.group;
