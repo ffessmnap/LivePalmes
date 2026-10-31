@@ -43,6 +43,7 @@ function runUnitTests() {
     "portal-module-boundaries-tests.js",
     "portal-cache-version-tests.js",
     "backend-module-boundaries-tests.js",
+    "backend-dependency-isolation-tests.js",
     "backend-directory-outage-tests.js",
     "nap-mysql-tests.js",
     "nap-club-account-emails-tests.js",

@@ -1,3 +1,44 @@
+function portalAccountHandlers() {
+  if (!portalAccountHandlers.instance) portalAccountHandlers.instance = require("./portal-account-handlers").createAccountHandlers({
+    get HttpsError() { return HttpsError; },
+    get accessManagementContext() { return accessManagementContext; },
+    get auth() { return auth; },
+    get canonicalAccessDirectoryRegionId() { return canonicalAccessDirectoryRegionId; },
+    get cleanAccessProfile() { return cleanAccessProfile; },
+    get engagementClubAccessContext() { return engagementClubAccessContext; },
+    get saveAccessUserProfile() { return saveAccessUserProfile; }
+  });
+  return portalAccountHandlers.instance;
+}
+
+function serverAccountWriteService() {
+  if (!serverAccountWriteService.instance) serverAccountWriteService.instance = require("./server-account-write-service").createAccountWriteService({
+    get accessDirectoryKeys() { return accessDirectoryKeys; },
+    get auth() { return auth; },
+    get capabilitiesMap() { return capabilitiesMap; },
+    get db() { return db; },
+    get displayNameFromProfile() { return displayNameFromProfile; },
+    get hasConsolePortalCapability() { return hasConsolePortalCapability; },
+    get writeAccessGrants() { return writeAccessGrants; },
+    get writeAuditLog() { return writeAuditLog; }
+  });
+  return serverAccountWriteService.instance;
+}
+
+function serverDirectorySyncService() {
+  if (!serverDirectorySyncService.instance) serverDirectorySyncService.instance = require("./server-directory-sync-service").createDirectorySyncService({
+    get FieldValue() { return FieldValue; },
+    get accessDirectorySnapshotEntry() { return accessDirectorySnapshotEntry; },
+    get accessDirectorySnapshotEntryKey() { return accessDirectorySnapshotEntryKey; },
+    get accessDirectorySnapshotRegionId() { return accessDirectorySnapshotRegionId; },
+    get accessDirectorySnapshotStateRef() { return accessDirectorySnapshotStateRef; },
+    get db() { return db; },
+    get mergeAccessDirectorySnapshotEntries() { return mergeAccessDirectorySnapshotEntries; },
+    get sameAccessDirectorySnapshotEntry() { return sameAccessDirectorySnapshotEntry; }
+  });
+  return serverDirectorySyncService.instance;
+}
+
 function portalPerformanceHandlers() {
   if (!portalPerformanceHandlers.instance) portalPerformanceHandlers.instance = require("./portal-performance-handlers").createPerformanceHandlers({
     get ENGAGEMENT_SWIMMER_LICENSE_NUMBERS_COLLECTION() { return ENGAGEMENT_SWIMMER_LICENSE_NUMBERS_COLLECTION; },
@@ -118,7 +159,6 @@ function portalAccessHandlers() {
     get assertRole() { return assertRole; },
     get auth() { return auth; },
     get capabilitiesMap() { return capabilitiesMap; },
-    get cleanAccessProfile() { return cleanAccessProfile; },
     get cleanText() { return cleanText; },
     get clearPinAttempts() { return clearPinAttempts; },
     get competitionEmailNotificationsEnabled() { return competitionEmailNotificationsEnabled; },
@@ -138,9 +178,6 @@ function portalAccessHandlers() {
     get recordFailedPinAttempt() { return recordFailedPinAttempt; },
     get rolePinsRef() { return rolePinsRef; },
     get safeCompareHex() { return safeCompareHex; },
-    get saveAccessUserProfile() { return saveAccessUserProfile; },
-    get canonicalAccessDirectoryRegionId() { return canonicalAccessDirectoryRegionId; },
-    get engagementClubAccessContext() { return engagementClubAccessContext; },
     get searchAccessUserDocuments() { return searchAccessUserDocuments; },
     get stableHash() { return stableHash; },
     get updatePublicPinNotes() { return updatePublicPinNotes; },
@@ -927,10 +964,8 @@ function serverAccessService() {
     get HttpsError() { return HttpsError; },
     get LIVEPALMES_NOTIFICATION_LINK_SECRET() { return LIVEPALMES_NOTIFICATION_LINK_SECRET; },
     get ROLE_SET() { return ROLE_SET; },
-    get auth() { return auth; },
     get crypto() { return crypto; },
     get db() { return db; },
-    get hasConsolePortalCapability() { return hasConsolePortalCapability; }
   });
   return serverAccessService.instance;
 }
@@ -1343,14 +1378,14 @@ async function accessUserDisplayName(input0) {
   return serverAccessService().accessUserDisplayName(...arguments);
 }
 
-/* extracted-function: functions/server-access-service.js#userByEmailOrCreate */
+/* extracted-function: functions/server-account-write-service.js#userByEmailOrCreate */
 async function userByEmailOrCreate(input0) {
-  return serverAccessService().userByEmailOrCreate(...arguments);
+  return serverAccountWriteService().userByEmailOrCreate(...arguments);
 }
 
-/* extracted-function: functions/server-access-service.js#saveAccessUserProfile */
+/* extracted-function: functions/server-account-write-service.js#saveAccessUserProfile */
 async function saveAccessUserProfile(input0, input1) {
-  return serverAccessService().saveAccessUserProfile(...arguments);
+  return serverAccountWriteService().saveAccessUserProfile(...arguments);
 }
 
 /* extracted-function: functions/server-access-service.js#writeAuditLog */
@@ -1920,8 +1955,8 @@ exports.verifyPin = onCall(CALLABLE_OPTIONS, /* extracted-handler: functions/por
   return portalAccessHandlers().verifyPin(request);
 });
 
-exports.createOrUpdateAccessUser = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/portal-access-handlers.js#createOrUpdateAccessUser#arrow */ async (request) => {
-  return portalAccessHandlers().createOrUpdateAccessUser(request);
+exports.createOrUpdateAccessUser = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/portal-account-handlers.js#createOrUpdateAccessUser#arrow */ async (request) => {
+  return portalAccountHandlers().createOrUpdateAccessUser(request);
 });
 
 function serverDirectoryService() {
@@ -1936,9 +1971,7 @@ function serverDirectoryService() {
     get FieldValue() { return FieldValue; },
     get HttpsError() { return HttpsError; },
     get PORTAL_ACCESS_RATE_LIMIT_COLLECTION() { return PORTAL_ACCESS_RATE_LIMIT_COLLECTION; },
-    get accessDirectorySnapshotEntryKey() { return accessDirectorySnapshotEntryKey; },
     get accessDirectorySnapshotRef() { return accessDirectorySnapshotRef; },
-    get accessDirectorySnapshotStateRef() { return accessDirectorySnapshotStateRef; },
     get accessUserRegionIdFromData() { return accessUserRegionIdFromData; },
     get activeCapabilitiesFromMap() { return activeCapabilitiesFromMap; },
     get assertEmail() { return assertEmail; },
@@ -2266,9 +2299,9 @@ function mergeAccessDirectorySnapshotEntries(input0, input1, input2, input3, inp
   return serverDirectoryService().mergeAccessDirectorySnapshotEntries(...arguments);
 }
 
-/* extracted-function: functions/server-directory-service.js#syncAccessDirectorySnapshotFromUserChange */
+/* extracted-function: functions/server-directory-sync-service.js#syncAccessDirectorySnapshotFromUserChange */
 async function syncAccessDirectorySnapshotFromUserChange(input0, input1, input2, input3) {
-  return serverDirectoryService().syncAccessDirectorySnapshotFromUserChange(...arguments);
+  return serverDirectorySyncService().syncAccessDirectorySnapshotFromUserChange(...arguments);
 }
 
 /* extracted-function: functions/server-directory-service.js#accessUserDeletionRequestItem */
