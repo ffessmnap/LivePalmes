@@ -1602,6 +1602,11 @@
 .admin-swimmer-club-dialog form { display: grid; gap: 14px; }
 .admin-swimmer-club-dialog h2,
 .admin-swimmer-club-dialog p { margin: 0; }
+.admin-swimmer-merge-conflict { min-width: 0; margin: 0; padding: 12px; border: 1px solid #bfd8dc; border-radius: 8px; }
+.admin-swimmer-merge-conflict legend { font-weight: 700; }
+.admin-swimmer-merge-conflict label { display: grid; grid-template-columns: 20px minmax(0, 1fr); gap: 8px; padding: 10px 0; cursor: pointer; }
+.admin-swimmer-merge-conflict input[type="radio"] { width: auto; min-height: 0; margin: 3px 0; align-self: start; }
+.admin-swimmer-merge-conflict span { overflow-wrap: anywhere; }
 
 .admin-national-row-no-action {
   color: var(--portal-color-muted);

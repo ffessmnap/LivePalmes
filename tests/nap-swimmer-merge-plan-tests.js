@@ -29,3 +29,26 @@ const selected=plans.planMerge({...input,finalClubId:"107"},source,target,snapsh
 assert.throws(()=>plans.planMerge({...input,confirmClubMismatch:true}, {...source,club:"999"},target,snapshots,[]));
 
 const otherSource={...source,club:"999"};const otherInput={...input,sourceFingerprint:fingerprint(otherSource),confirmClubMismatch:true};assert.throws(()=>plans.planMerge(otherInput,otherSource,target,snapshots,[]),/club final/);assert.equal(plans.planMerge({...otherInput,finalClubId:"999"},otherSource,target,snapshots,[]).targetAfter.club,"999");
+
+// Duplicate courses on either identity: target wins, then identical rows use
+// the smallest native id. Never compare sporting times to pick a winner.
+const duplicates=structuredClone(snapshots);
+duplicates.engagements.push({...duplicates.engagements[0],id:9,tps:"1100"},{...duplicates.engagements[1],id:10},{...duplicates.engagements[2],id:11});
+const deduplicated=plans.planMerge(input,source,target,duplicates,[]);
+assert.deepEqual(deduplicated.changes.find(row=>row.table==="engagements").removals.map(row=>row.id),[6,9,10,11]);
+assert.equal(deduplicated.changes.find(row=>row.table==="engagements").updates[0].before.id,8);
+plans.validateSaved(deduplicated,input);
+const conflicts=structuredClone(duplicates);conflicts.engagements.find(row=>row.id===10).tps="1200";conflicts.engagements.find(row=>row.id===11).tps="4500";
+let summary;try{plans.planMerge(input,source,target,conflicts,[]);assert.fail("Choice required");}catch(error){summary=error.mergeConflicts;assert.equal(summary.conflicts.length,2);}
+const choices=summary.conflicts.map(row=>({key:row.key,id:row.choices.at(-1).id}));
+const chosenInput={...input,entryConflictToken:summary.token,entryConflictChoices:choices};
+const chosen=plans.planMerge(chosenInput,source,target,conflicts,[]),chosenEntries=chosen.changes.find(row=>row.table==="engagements");
+assert.ok(chosenEntries.removals.some(row=>row.id===7));assert.equal(chosenEntries.updates[0].before.id,11);
+plans.validateSaved(chosen,chosenInput);plans.validateSaved(chosen,input); // Retry also works after a lost choice response.
+assert.throws(()=>plans.validateSaved(chosen,{...chosenInput,entryConflictChoices:choices.map(row=>({...row,id:"999"}))}),/choix d'engagements/);
+assert.throws(()=>plans.planMerge({...chosenInput,entryConflictToken:"0".repeat(64)},source,target,conflicts,[]),/ont change/);
+assert.throws(()=>plans.planMerge({...chosenInput,entryConflictChoices:[...choices,choices[0]]},source,target,conflicts,[]),/invalides/);
+assert.throws(()=>plans.planMerge({...chosenInput,entryConflictChoices:choices.map(row=>({...row,id:"6"}))},source,target,conflicts,[]),/hors de la fiche prioritaire/);
+const stale=structuredClone(conflicts);stale.engagements[0].tps="9999";assert.throws(()=>plans.planMerge(chosenInput,source,target,stale,[]),/ont change/);
+assert.equal(JSON.stringify(snapshots),saved,"No snapshot mutation");
+console.log("Duplicate entries: priority, union, identical rows, explicit conflicts, stale and foreign choices, journal validation and retry passed.");

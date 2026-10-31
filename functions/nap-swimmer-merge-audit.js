@@ -1,4 +1,5 @@
 "use strict";
+const backup=require("./nap-swimmer-merge-backup");
 // Fixed technical audit documents only. A pending operation also reserves both
 // identities across failed invocations; another merge cannot split the history.
 function createAudit(db,input,writeOnce){
@@ -12,12 +13,12 @@ function createAudit(db,input,writeOnce){
   return {
     read:async operation=>{
       const [saved,...pointers]=await Promise.all([before(operation).get(),...pointerRefs.map(ref=>ref.get())]);check(pointers,operation);
-      return saved.exists?saved.data().target:null;
+      return saved.exists?backup.decode(saved.data().target):null;
     },
     prepare:(operation,target)=>db.runTransaction(async transaction=>{
       const [saved,...pointers]=await transaction.getAll(before(operation),...pointerRefs);check(pointers,operation);
       if(saved.exists)throw new TypeError("La preparation existe deja. Reprenez exactement la meme demande.");
-      transaction.create(before(operation),{action:"nap.swimmerMerge.prepare",actorUid:input.actorUid,target,createdAt:new Date().toISOString()});
+      transaction.create(before(operation),{action:"nap.swimmerMerge.prepare",actorUid:input.actorUid,target:backup.encode(target),createdAt:new Date().toISOString()});
       for(const ref of pointerRefs)transaction.set(ref,{action:"nap.swimmerMerge.reservation",actorUid:input.actorUid,operation,state:"pending",updatedAt:new Date().toISOString()});
     }),
     complete:async(operation,target)=>{

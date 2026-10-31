@@ -2,6 +2,10 @@
 
 <!-- description: Référence du langage visuel, des composants d’interface et des règles responsive déjà présents dans LivePalmes. -->
 
+## Choix des engagements en fusion — 31 octobre 2026
+
+Réutiliser le dialogue modal de choix de club pour les engagements différents d’une même course sur la fiche prioritaire. Un groupe de boutons radio par compétition/course, sans sélection initiale, présente chaque engagement et ses valeurs enregistrées en texte intégral avec retour à la ligne. Aucun choix automatique du meilleur temps. Validation obligatoire de tous les groupes ; Annuler ou Échap ferme sans second appel, puis restitue le focus. Le contenu reste défilant sur mobile ; les informations des options ne doivent pas être tronquées dans un sélecteur étroit. Cette variante utilise `admin-swimmer-merge-conflict`.
+
 ## Espace Club homogène — 31 octobre 2026
 
 Engagements en compétition, Mes nageurs et Mes officiels partagent un en-tête compact, le même titre et les mêmes espacements. Les actions Ajouter restent à droite du titre. Les listes conservent leurs filtres et actions existants, avec colonnes souples et actions pouvant revenir à la ligne. Sur mobile, les actions essentielles gardent une cible de 44 px.
