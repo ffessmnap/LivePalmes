@@ -439,29 +439,37 @@ function createDirectoryService(backendContext) {
     const afterEntry = afterData ? accessDirectorySnapshotEntry(uid, afterData) : null;
     if (sameAccessDirectorySnapshotEntry(beforeEntry, afterEntry)) return;
 
-    const stateSnapshot = await backendContext.accessDirectorySnapshotStateRef().get();
-    const state = stateSnapshot.exists ? stateSnapshot.data() || {} : {};
-    if (!["building", "ready"].includes(state.status)) return;
-
     const key = backendContext.accessDirectorySnapshotEntryKey(uid);
-    const batch = backendContext.db.batch();
-    mergeAccessDirectorySnapshotEntries(batch, "national", "", {
-      [key]: afterEntry || backendContext.FieldValue.delete()
-    }, now);
+    const userRef = backendContext.db.collection("users").doc(uid);
+    // Events may arrive out of order. Reading the current profile in the same
+    // transaction as the projection writes also retries a concurrent change.
+    // Two document reads per attempt, five attempts at most; no account scan.
+    await backendContext.db.runTransaction(async (transaction) => {
+      const [userSnapshot, stateSnapshot] = await transaction.getAll(
+        userRef, backendContext.accessDirectorySnapshotStateRef()
+      );
+      const state = stateSnapshot.exists ? stateSnapshot.data() || {} : {};
+      if (!["building", "ready"].includes(state.status)) return;
 
-    const beforeRegionId = beforeData ? accessDirectorySnapshotRegionId(beforeData) : "";
-    const afterRegionId = afterData ? accessDirectorySnapshotRegionId(afterData) : "";
-    if (beforeRegionId && beforeRegionId !== afterRegionId) {
-      mergeAccessDirectorySnapshotEntries(batch, "region", beforeRegionId, {
-        [key]: backendContext.FieldValue.delete()
+      const currentData = userSnapshot.exists ? userSnapshot.data() || {} : null;
+      const currentEntry = currentData ? accessDirectorySnapshotEntry(uid, currentData) : null;
+      const currentRegionId = currentData ? accessDirectorySnapshotRegionId(currentData) : "";
+      mergeAccessDirectorySnapshotEntries(transaction, "national", "", {
+        [key]: currentEntry || backendContext.FieldValue.delete()
       }, now);
-    }
-    if (afterRegionId) {
-      mergeAccessDirectorySnapshotEntries(batch, "region", afterRegionId, {
-        [key]: afterEntry
-      }, now);
-    }
-    await batch.commit();
+
+      // Event regions are cleanup hints only, never a source of profile data.
+      const regions = new Set([
+        beforeData ? accessDirectorySnapshotRegionId(beforeData) : "",
+        afterData ? accessDirectorySnapshotRegionId(afterData) : "",
+        currentRegionId
+      ].filter(Boolean));
+      for (const regionId of regions) {
+        mergeAccessDirectorySnapshotEntries(transaction, "region", regionId, {
+          [key]: regionId === currentRegionId ? currentEntry : backendContext.FieldValue.delete()
+        }, now);
+      }
+    }, { maxAttempts: 5 });
   }
 
   function accessUserDeletionRequestItem(doc) {
