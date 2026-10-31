@@ -2,6 +2,12 @@
 
 <!-- description: Checklist de tests manuels à exécuter avant une publication ou après une modification sensible. -->
 
+## Annuaire privé et événements retardés — 31 octobre 2026
+
+Fixtures hors réseau uniquement (`node tests/access-directory-event-order-tests.js`) : un profil courant sur le club conservé ne reprend jamais le club d'un ancien événement de connexion. Vérifier livraison en double, changement de profil entre lecture et validation de transaction, retour au rattachement précédent, suppression/recréation du profil et changement de région. Les anciennes régions sont nettoyées, les autres comptes conservés, les rôles/périmètres/statuts viennent du profil courant et ne sont jamais modifiés par la projection. Une panne de transaction remonte au déclencheur configuré pour réessayer ; aucun échec silencieux, reconstruction ou scan de comptes. Aucun test de fusion ni modification de compte réel n'est nécessaire pour cette recette.
+
+Budget du fond : zéro lecture si les champs projetés de l'événement sont identiques ; sinon deux documents par tentative transactionnelle (profil et état d'annuaire), cinq tentatives au maximum, donc dix lectures au pire. Un commit écrit au maximum quatre snapshots (national et trois régions candidates). Le chargement initial et le rafraîchissement des pages gardent leurs lecteurs existants ; aucune lecture NAP, collection nouvelle ou champ de version ajouté.
+
 ## Fusion : courses en doublon et sauvegarde volumineuse — 31 octobre 2026
 
 Compatibilité des onglets déjà ouverts : un ancien client sans protocole de choix reçoit une erreur demandant de recharger le portail en cas de conflit, jamais une réponse pouvant être affichée comme une réussite. Les deux appels du nouveau client annoncent explicitement le protocole de choix. Les fusions sans conflit restent compatibles.
