@@ -1,40 +1,47 @@
-# Publication LivePalmes — choisir le parcours
+# Publication LivePalmes — parcours quotidien
 
-<!-- description: Consignes courantes et proportionnées pour préparer, vérifier et publier TEST/PROD ; orientation vers la procédure unique. -->
+<!-- description: Parcours court TEST/PROD, réutilisation des preuves et protections à conserver ; exécution technique dans PROCEDURE.md. -->
 
-## Commencer par le besoin
+## Choisir le parcours
 
-Lire les consignes de `main`, préserver les changements des autres conversations et choisir le parcours ci-dessous. Une demande de développement autorise la préparation, la PR, son intégration après contrôles et TEST pour le périmètre demandé. Une analyse seule ne déclenche aucun développement. Une demande explicite peut déjà contenir l’accord nécessaire à une opération sensible ; ne pas redemander un accord acquis.
+Lire les consignes du dernier `main` et préserver le travail des autres conversations. Une demande de développement autorise PR, intégration après contrôles et TEST dans son périmètre. Une analyse seule ne déclenche aucun développement. Les accords sensibles d'`AGENTS.md` restent nécessaires ; un accord explicite déjà acquis ne se redemande pas.
 
-| Parcours | Contrôles et publication |
+| Changement | Parcours |
 | --- | --- |
-| Documentation ou interface | Documentation seule : relecture et CI requise, aucun déploiement. Interface : syntaxe/tests ciblés et contrôle ordinateur/mobile pertinent ; CI requise puis TEST commun. Pour une interface seule, `hosting_only=true` conserve le contrôle de sélection backend et refuse toute fonction différente ou non attestée. |
-| Backend existant, périmètre déjà autorisé | Examiner la sélection par dépendances, tester les comportements concernés, utiliser la CI et les preuves compatibles. Publier les seules fonctions sélectionnées avec les garde-fous existants ; Hosting en dernier. Une dépendance sensible ou ambiguë conduit au parcours spécifique. |
-| Données, droits, mails ou infrastructure nouvelle | Accord explicite sur l’opération et ses limites avant exécution. Inclut règles/index, migrations, écritures métier réelles, envois et rattrapage, changement de destinataires/préférences/paiements, secrets/configurations/services/déclencheurs nouveaux, suppressions et changements de règles sportives. Préparation spécifique proportionnée au changement. |
+| Documentation seule | Relecture et CI requise. Aucun déploiement ni preflight. |
+| Interface seule | Tests ciblés, contrôle ordinateur/mobile pertinent, CI puis TEST commun. Hosting seul si le backend est équivalent et prouvé ; toute différence ou preuve absente bloque ce mode. |
+| Backend existant autorisé | Tests concernés, CI, sélection calculée des fonctions différentes, contrôles backend puis Hosting. Expliquer les dépendances qui élargissent la sélection. |
+| Données, droits, mails, infrastructure ou autre opération sensible | Accord explicite sur l'opération et ses limites, puis parcours spécifique. Aucun ancien accord ne s'étend à un nouveau besoin. |
 
-Un changement de code d’authentification, de PDF/import/résultats, de DTN ou de Function reste soumis aux accords sensibles d’`AGENTS.md`, même s’il ne modifie aucune infrastructure. Un accord de préparation ne vaut jamais accord d’écriture métier ou de publication PROD.
+## Enchaîner les étapes autorisées
 
-## Chemin courant
+**PR → CI → TEST commun → retour utilisateur → bilan PROD → accord Infra → PROD.** L'assistant gère les commits, runs, preuves et manifestes. Les commandes et contrats techniques figurent dans la [procédure actuelle](../releases/PROCEDURE.md).
 
-1. Regrouper le besoin dans une PR courte depuis `main`, avec tests et documentation utiles. Attendre les contrôles obligatoires. L’aperçu `pr-N` est facultatif, uniquement avec l’étiquette `apercu-test` demandée ; il ne remplace pas TEST commun.
-2. Après CI main réussie, laisser l’automatisme publier les interfaces ordinaires connues sur TEST commun, avec contrôle backend et candidat exact. Fonctions serveur, chemins inconnus et cas sensibles restent au parcours explicite. Documentation seule : aucun déploiement. Conserver la preuve TEST. Réutiliser les suites attestées du commit exact ; ne pas les répéter manuellement pour préparer PROD.
-3. Recueillir le retour utilisateur sur les parcours concernés de la version commune. Une modification de ces parcours invalide leur validation ; les autres validations ne sont pas annulées par principe. Ne jamais déduire un accord utilisateur d’une CI verte.
-4. Pour PROD, assembler le brouillon avec `livepalmes-release-draft.yml` depuis les preuves et retours utilisateur authentiques ; compléter les points bloquants puis utiliser le preflight existant. Figer la version ordinaire validée pour que les développements suivants ne changent pas le candidat approuvé. Préparer le bilan complet depuis les preuves, vérifier les prérequis nécessaires, présenter un résumé court et appliquer l’accord explicite d’Antoine dans Infra au seul périmètre présenté. Les modalités techniques sont dans la [procédure actuelle](../releases/PROCEDURE.md).
+1. Une PR courte par besoin depuis `main`, avec les tests et la documentation utiles. Attendre les contrôles GitHub obligatoires. L'aperçu `pr-N` est facultatif, sur demande via `apercu-test` ; il ne remplace pas TEST commun.
+2. Après CI main réussie, laisser l'automatisme publier les interfaces ordinaires connues sur TEST. Backend, chemins inconnus et cas sensibles suivent le parcours explicite. TEST commun reste un commit intégré de `main`, jamais une branche isolée. Conserver la preuve de réussite.
+3. Recueillir le retour utilisateur sur la version commune présentée. Une validation explicite de toute cette version couvre ses évolutions présentées, sans confirmation individuelle répétée ; une validation partielle reste partielle. Une modification ultérieure invalide les parcours concernés. Une CI verte ne vaut pas validation utilisateur.
+4. Assembler le bilan PROD depuis les preuves et retours authentiques, compléter les points bloquants et exécuter le preflight existant. Figer le candidat validé pour exclure les ajouts suivants. Présenter un bilan court dans Infra ; l'accord explicite d'Antoine autorise uniquement ce périmètre. La PR d'un manifeste seul n'est pas obligatoire.
+5. Publier après cet accord, vérifier le résultat et fournir les liens utiles. Une approbation GitHub encore requise reste obligatoire.
 
-L’assistant gère commits, runs et manifeste. La demande ordinaire n’exige ni PR de manifeste ni adaptation du circuit. Si un contrat existant refuse le candidat, présenter le motif et le périmètre réellement bloqué avant toute écriture ; une consigne simplifiée n’autorise pas à contourner le refus.
+## Réutiliser le travail déjà fait
 
-## Garde-fous conservés
+| Situation | Action attendue |
+| --- | --- |
+| CI ou publication en cours | Attendre le run existant avec une attente bornée. Aucun second lancement identique ni annulation d'une publication engagée. |
+| Preuve CI exacte compatible | Réutiliser les suites applicative et publication attestées ; sans preuve compatible, exécuter la suite concernée. Garder les contrôles frais de l'état déployé. |
+| Petite interface, backend équivalent et prouvé | Hosting seul. Ne pas redéployer les fonctions pour aligner leur SHA sur celui de Hosting. |
+| Version TEST déjà publiée et validée | Réutiliser sa preuve pour PROD. Ne relancer TEST que si la version, son état ou la validité de la preuve l'exige. |
+| Permissions et capacités inchangées, déjà attestées | Réutiliser les preuves compatibles. Nouveauté, doute ou preuve manquante : contrôle ciblé des prérequis. |
+| Sélection backend large | Expliquer la dépendance commune ou la preuve manquante. Ne pas réduire la sélection à la main ; une amélioration du sélecteur ou une extraction métier constitue un besoin distinct. |
 
-- Version exacte, diff applicatif entièrement couvert, validations authentiques et preuves GitHub vérifiées. Une évolution incluse et non validée bloque ; aucune sélection silencieuse de fichiers pour la masquer.
-- En PROD : accord final sur le bilan précis, environnement `production` limité à `main`, contrôle frais de dérive, sauvegarde chiffrée rouverte et comparée avant écriture, retour arrière disponible et vérifications après publication. Une approbation GitHub encore exigée reste obligatoire.
-- Aucune copie TEST→PROD, génération de données d’accueil, migration, règle/index, suppression, invocation métier ou envoi de test implicite. Les Functions email/schedulers restent hors circuit ordinaire et nécessitent leur autorisation spécifique.
-- Préserver les réglages courants et les exclusions du lot. Un ancien plan IDF n’est pas la preuve du périmètre des mails actuel. Ne couper/réactiver les mails ou élargir les envois que dans un plan explicitement autorisé.
-- Utiliser la sélection calculée, expliquer les replis larges et conserver les contrôles rapides. Source inconnue, preuve incompatible, dérive ou nouveau risque : arrêter l’écriture, diagnostiquer le point en cause et présenter la suite utile.
+Pas de benchmark, audit général, rapport HTML ou refonte d'outillage ajouté à une livraison ordinaire. Ne répéter un contrôle que si un changement, un échec ou une preuve incompatible le justifie. Inclure le suivi dans la PR ouverte ; après fusion, lier les preuves GitHub et regrouper la mise à jour de `docs/releases/EVOLUTIONS.md`, sans PR par résultat de contrôle. Distinguer déploiement et validation, durée totale et attentes externes.
 
-## Éviter le travail ajouté
+## Protections conservées
 
-Un correctif ordinaire n’entraîne pas un nouveau benchmark, un audit général, une refonte d’outillage ou un rapport HTML. Réutiliser les outils et preuves existants ; relancer un contrôle seulement si le code concerné change, qu’il échoue ou que sa preuve n’est plus compatible. Conserver toutes les étapes imposées par les workflows ; cette règle évite les doublons manuels.
+- Version exacte, diff applicatif entièrement couvert, validations authentiques et preuves GitHub vérifiées. Une évolution incluse et non validée bloque ; aucune sélection silencieuse de fichiers.
+- PROD : accord Infra sur le bilan précis, environnement `production` limité à `main`, contrôle frais de dérive, sauvegarde chiffrée rouverte et comparée avant écriture, retour arrière disponible et vérifications finales.
+- Aucune copie TEST→PROD, migration, correction/génération de données, publication Storage, règle/index, suppression, invocation métier ou envoi de test implicite. Fonctions email/schedulers et opérations sensibles restent dans leurs contrats autorisés.
+- Préserver exclusions et réglages mail courants. Ne pas couper, réactiver ou élargir les envois sans plan explicite. Un ancien plan IDF ne prouve pas le périmètre mail actuel.
+- Source inconnue, preuve incompatible, dérive ou contrat refusé : arrêter l'écriture et expliquer le point bloqué. Ne pas élargir les permissions pour débloquer une livraison.
 
-Tenir `docs/releases/EVOLUTIONS.md` à jour sans PR documentaire par contrôle. Inclure le suivi dans la PR ouverte ; après fusion, lier les nouvelles preuves dans GitHub et regrouper le prochain suivi du registre. Donner un résultat court avec les vérifications, le blocage éventuel et les liens utiles. Mesurer le délai total de la demande au résultat, en distinguant les attentes externes.
-
-Les [anciennes consignes](PUBLICATION_HISTORIQUE_20261026.md) et les [contrats et décisions datés](../releases/PROCEDURE_HISTORIQUE_20261026.md) servent uniquement à une reprise ancienne ou à une exception identifiée. Les contrats exécutables, leurs empreintes et leurs autorisations restent inchangés.
+Les [anciennes consignes](PUBLICATION_HISTORIQUE_20261026.md) et les [contrats datés](../releases/PROCEDURE_HISTORIQUE_20261026.md) servent uniquement à une reprise ou exception identifiée. Leurs autorisations restent bornées à leurs versions.
