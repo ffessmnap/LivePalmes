@@ -2,6 +2,13 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 31 octobre — Pages Club homogènes et ajout direct de nageurs
+
+- Maquette approuvée puis demande d’un bouton Ajouter dans Mes nageurs. Livraison autorisée sur TEST uniquement. Engagements en compétition, Mes nageurs et Mes officiels partagent en-tête, titre et espacements, sans modifier leurs fonctionnalités métier.
+- Ajouter réutilise le dialogue et les services de création/récupération existants, sans compétition sélectionnée ni chef d’équipe. Licence, doublons, éligibilité de récupération, confirmation et identifiants de reprise existants conservés. Une seule actualisation de l’effectif après réussite ; filtre local sur le nom. Double clic bloqué, réponse obsolète ignorée si club/page/droit change pendant les vérifications. Aucun backend, droit, règle sportive, donnée réelle ou mail modifié pour la livraison.
+- Budget : ouverture et rafraîchissement de Mes nageurs inchangés = un appel d’effectif, au plus 801 lignes SQL indexées examinées pour 800 nageurs retournés, hors contrôles d’accès existants ; cache court mutualisé conservé. Ouverture/saisie/annulation du dialogue = zéro lecture/écriture. Création = au plus trois appels existants (aperçu récupération, aperçu création, création) puis un appel d’effectif borné. Récupération = aperçu puis mutation et actualisation ; plafonds existants de licence/doublons et historique (2001 résultats maximum) inchangés. Pire cas = ces mêmes plafonds, sans lecture par ligne, scan global ou reconstruction ; reprise avec le même identifiant de mutation.
+- Contrôles hors réseau : vrais modules et handlers, création/récupération simulées sans compétition, prévention du double envoi et de l’écriture après changement de contexte, reprise idempotente, droits existants, ordinateur/mobile 1440/1024/390/320 px, clair/sombre. CI et preuve de déploiement TEST seront liées dans la PR ; recette utilisateur TEST à recueillir.
+
 ### 31 octobre — Accueil national des modules et chevrons latéraux
 
 - Retour sur la première livraison : Antoine souhaite conserver les accès directs dépliables du menu latéral. Nouvelle maquette validée, puis demande explicite de modification sur TEST : chevron, accès directs et accueil des modules, sans onglets horizontaux. Aucun accord PROD.

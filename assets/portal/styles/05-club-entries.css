@@ -664,12 +664,12 @@
   outline-offset: -3px;
 }
 
-#adminEngagementsDetailSwimmersPanel .admin-engagements-club-new-swimmer-dialog {
+#adminEngagementsView .admin-engagements-club-new-swimmer-dialog {
   width: min(680px, calc(100vw - 32px));
   border-radius: 12px;
 }
 
-#adminEngagementsDetailSwimmersPanel .admin-engagements-club-new-swimmer-dialog-head {
+#adminEngagementsView .admin-engagements-club-new-swimmer-dialog-head {
   display: flex;
   gap: 16px;
   align-items: flex-start;
@@ -679,24 +679,24 @@
   background: #f7fafb;
 }
 
-#adminEngagementsDetailSwimmersPanel .admin-engagements-club-new-swimmer-dialog-head h3,
-#adminEngagementsDetailSwimmersPanel .admin-engagements-club-new-swimmer-dialog-head p {
+#adminEngagementsView .admin-engagements-club-new-swimmer-dialog-head h3,
+#adminEngagementsView .admin-engagements-club-new-swimmer-dialog-head p {
   margin: 0;
 }
 
-#adminEngagementsDetailSwimmersPanel .admin-engagements-club-new-swimmer-dialog-head h3 {
+#adminEngagementsView .admin-engagements-club-new-swimmer-dialog-head h3 {
   color: #263940;
   font-size: 1.05rem;
 }
 
-#adminEngagementsDetailSwimmersPanel .admin-engagements-club-new-swimmer-dialog-head p {
+#adminEngagementsView .admin-engagements-club-new-swimmer-dialog-head p {
   margin-top: 5px;
   color: var(--portal-color-muted);
   font-size: 0.76rem;
   line-height: 1.4;
 }
 
-#adminEngagementsDetailSwimmersPanel .admin-engagements-club-new-swimmer-dialog-head > button {
+#adminEngagementsView .admin-engagements-club-new-swimmer-dialog-head > button {
   display: grid;
   flex: 0 0 auto;
   place-items: center;
@@ -712,55 +712,55 @@
   cursor: pointer;
 }
 
-#adminEngagementsDetailSwimmersPanel .admin-engagements-club-new-swimmer-dialog-head > button:hover {
+#adminEngagementsView .admin-engagements-club-new-swimmer-dialog-head > button:hover {
   background: #e8eef0;
 }
 
-#adminEngagementsDetailSwimmersPanel .admin-engagements-club-new-swimmer-dialog > .admin-engagements-form-section-grid,
-#adminEngagementsDetailSwimmersPanel .admin-engagements-club-new-swimmer-dialog > .admin-engagements-club-new-swimmer-actions,
-#adminEngagementsDetailSwimmersPanel .admin-engagements-club-new-swimmer-dialog > .admin-engagements-club-swimmer-alerts,
-#adminEngagementsDetailSwimmersPanel .admin-engagements-club-new-swimmer-dialog > .admin-portal-message {
+#adminEngagementsView .admin-engagements-club-new-swimmer-dialog > .admin-engagements-form-section-grid,
+#adminEngagementsView .admin-engagements-club-new-swimmer-dialog > .admin-engagements-club-new-swimmer-actions,
+#adminEngagementsView .admin-engagements-club-new-swimmer-dialog > .admin-engagements-club-swimmer-alerts,
+#adminEngagementsView .admin-engagements-club-new-swimmer-dialog > .admin-portal-message {
   margin-right: 14px;
   margin-left: 14px;
 }
 
-#adminEngagementsDetailSwimmersPanel .admin-engagements-club-new-swimmer-dialog > .admin-engagements-form-section-grid {
+#adminEngagementsView .admin-engagements-club-new-swimmer-dialog > .admin-engagements-form-section-grid {
   margin-top: 14px;
   border: 0;
   overflow: visible;
 }
 
-#adminEngagementsDetailSwimmersPanel .admin-engagements-club-new-swimmer-dialog > .admin-engagements-club-new-swimmer-actions {
+#adminEngagementsView .admin-engagements-club-new-swimmer-dialog > .admin-engagements-club-new-swimmer-actions {
   margin-bottom: 14px;
 }
 
-#adminEngagementsDetailSwimmersPanel .admin-engagements-club-new-swimmer-dialog > .admin-portal-message:empty {
+#adminEngagementsView .admin-engagements-club-new-swimmer-dialog > .admin-portal-message:empty {
   display: none;
 }
 
-#adminEngagementsDetailSwimmersPanel .admin-engagements-club-new-swimmer-dialog > .admin-portal-message:not(:empty) {
+#adminEngagementsView .admin-engagements-club-new-swimmer-dialog > .admin-portal-message:not(:empty) {
   margin-bottom: 14px;
 }
 
 @media (max-width: 520px) {
-  #adminEngagementsDetailSwimmersPanel .admin-engagements-club-new-swimmer-dialog {
+  #adminEngagementsView .admin-engagements-club-new-swimmer-dialog {
     width: calc(100vw - 16px);
     max-height: calc(100vh - 16px);
   }
 
-  #adminEngagementsDetailSwimmersPanel .admin-engagements-club-new-swimmer-dialog-head {
+  #adminEngagementsView .admin-engagements-club-new-swimmer-dialog-head {
     padding: 12px;
   }
 }
 
-#adminEngagementsDetailSwimmersPanel .admin-engagements-club-new-swimmer-grid {
+#adminEngagementsView .admin-engagements-club-new-swimmer-grid {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 11px 14px;
   border: 0;
   background: transparent;
 }
 
-#adminEngagementsDetailSwimmersPanel .admin-engagements-club-new-swimmer-grid > label {
+#adminEngagementsView .admin-engagements-club-new-swimmer-grid > label {
   grid-template-columns: 1fr;
   gap: 4px;
   align-items: stretch;
@@ -774,8 +774,8 @@
   font-weight: 750;
 }
 
-#adminEngagementsDetailSwimmersPanel .admin-engagements-club-new-swimmer-grid > label > input,
-#adminEngagementsDetailSwimmersPanel .admin-engagements-club-new-swimmer-grid > label > select {
+#adminEngagementsView .admin-engagements-club-new-swimmer-grid > label > input,
+#adminEngagementsView .admin-engagements-club-new-swimmer-grid > label > select {
   grid-column: 1;
   min-width: 0;
   min-height: 40px;
@@ -785,20 +785,21 @@
   background: #f8fafb;
 }
 
-#adminEngagementsDetailSwimmersPanel .admin-engagements-club-new-swimmer-grid > label > input:focus,
-#adminEngagementsDetailSwimmersPanel .admin-engagements-club-new-swimmer-grid > label > select:focus {
+#adminEngagementsView .admin-engagements-club-new-swimmer-grid > label > input:focus,
+#adminEngagementsView .admin-engagements-club-new-swimmer-grid > label > select:focus {
   border-color: #0b7285;
   outline: 3px solid rgba(11, 114, 133, 0.14);
   outline-offset: 1px;
   background: #ffffff;
 }
 
-#adminEngagementsDetailSwimmersPanel .admin-engagements-club-new-swimmer-grid > .admin-engagements-club-new-swimmer-license {
+#adminEngagementsView .admin-engagements-club-new-swimmer-grid > .admin-engagements-club-new-swimmer-license {
   grid-column: 1 / -1;
   max-width: calc(50% - 7px);
 }
 
-#adminEngagementsDetailSwimmersPanel .admin-engagements-club-new-swimmer-actions {
+#adminEngagementsView .admin-engagements-club-new-swimmer-actions {
+  flex-wrap: wrap;
   display: flex;
   justify-content: flex-end;
   gap: 8px;
@@ -806,7 +807,7 @@
   padding-top: 11px;
 }
 
-#adminEngagementsDetailSwimmersPanel .admin-engagements-club-new-swimmer-actions button {
+#adminEngagementsView .admin-engagements-club-new-swimmer-actions button {
   min-height: 36px;
   border-radius: 8px;
   padding: 0 12px;
@@ -815,13 +816,13 @@
   cursor: pointer;
 }
 
-#adminEngagementsDetailSwimmersPanel .admin-engagements-club-new-swimmer-actions #adminEngagementsClubNewSwimmerSaveButton {
+#adminEngagementsView .admin-engagements-club-new-swimmer-actions #adminEngagementsClubNewSwimmerSaveButton {
   border: 0;
   background: #0b7285;
   color: #ffffff;
 }
 
-#adminEngagementsDetailSwimmersPanel .admin-engagements-club-swimmer-alert-list article {
+#adminEngagementsView .admin-engagements-club-swimmer-alert-list article {
   border-color: #eadcae;
   border-radius: 9px;
   background: #fffae9;
@@ -977,15 +978,15 @@
     grid-column: 1 / -1;
   }
 
-  #adminEngagementsDetailSwimmersPanel .admin-engagements-club-new-swimmer-actions {
+  #adminEngagementsView .admin-engagements-club-new-swimmer-actions {
     justify-content: stretch;
   }
 
-  #adminEngagementsDetailSwimmersPanel .admin-engagements-club-new-swimmer-grid > .admin-engagements-club-new-swimmer-license {
+  #adminEngagementsView .admin-engagements-club-new-swimmer-grid > .admin-engagements-club-new-swimmer-license {
     max-width: none;
   }
 
-  #adminEngagementsDetailSwimmersPanel .admin-engagements-club-new-swimmer-actions button {
+  #adminEngagementsView .admin-engagements-club-new-swimmer-actions button {
     flex: 1 1 auto;
   }
 
@@ -1080,4 +1081,13 @@
   border-color: #dfe5e7;
   border-radius: 9px;
   box-shadow: none;
+}
+/* The same modal is shared by competitions and Mes nageurs. */
+#adminEngagementsClubNewSwimmerDialog { background: var(--portal-color-surface); color: var(--portal-color-text); border-color: var(--portal-color-border); }
+#adminEngagementsView .admin-engagements-club-new-swimmer-dialog-head { background: var(--portal-color-field-background); border-color: var(--portal-color-border); }
+#adminEngagementsView .admin-engagements-club-new-swimmer-dialog-head h3 { color: var(--portal-color-heading); }
+#adminEngagementsView .admin-engagements-club-new-swimmer-grid > label > :is(input, select) { background: var(--portal-color-field-background); color: var(--portal-color-text); border-color: var(--portal-color-border); }
+@media (max-width: 520px) {
+  #adminEngagementsView .admin-engagements-club-new-swimmer-grid { grid-template-columns: minmax(0, 1fr); }
+  #adminEngagementsView .admin-engagements-club-new-swimmer-actions button, #adminEngagementsView .admin-engagements-club-new-swimmer-dialog-head > button { min-height: 44px; }
 }
