@@ -847,7 +847,7 @@ assert.ok(portalCss.includes(".admin-engagements-club-swimmers-sex-filter"));
 assert.ok(portal.includes("? engagementClubSwimmerSearchText(swimmer).includes(query)"));
 assert.ok(portal.includes(": engagementClubSwimmerIsActive(swimmer)"));
 assert.equal(portal.includes("Recherchez un nageur par son nom"), false);
-assert.ok(portalCss.includes("#adminEngagementsDetailSwimmersPanel .admin-engagements-club-new-swimmer-dialog"));
+assert.ok(portalCss.includes("#adminEngagementsView .admin-engagements-club-new-swimmer-dialog"));
 assert.ok(portalCss.includes("#adminEngagementsDetailSwimmersPanel .admin-engagements-club-swimmer-tools"));
 assert.ok(portalCss.includes("font-weight: 500"));
 assert.equal(portal.includes("data-engagement-club-swimmers-show-more"), false);

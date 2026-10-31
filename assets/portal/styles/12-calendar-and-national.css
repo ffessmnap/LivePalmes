@@ -1,5 +1,38 @@
 
 
+/* Same heading and spacing for the three Club workspaces. */
+#adminEngagementsView.admin-club-workspace[data-engagements-mode="club"] > .admin-club-workspace-head {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center;
+  gap: 10px 16px; box-sizing: border-box; min-height: 64px; padding: 12px 14px; margin: 0 0 16px;
+  border: 1px solid var(--portal-color-border); border-radius: var(--portal-radius-card);
+  background: var(--portal-color-surface); box-shadow: none;
+}
+#adminEngagementsView.admin-club-workspace[data-engagements-mode="club"] > .admin-club-workspace-head #adminEngagementsViewTitle {
+  grid-column: 1; grid-row: 1; margin: 0; color: var(--portal-color-heading);
+  font-size: 1.25rem; line-height: 1.25; font-weight: 600;
+}
+#adminEngagementsView.admin-club-workspace[data-engagements-mode="club"] > .admin-club-workspace-head > :is([data-club-workspace-actions], .admin-engagements-workspace-back) { grid-column: 2; grid-row: 1; justify-self: end; }
+#adminEngagementsView.admin-club-workspace[data-engagements-mode="club"] :is(#adminEngagementsClubPeopleActions, #adminEngagementsClubSwimmersDirectoryActions) button { box-sizing: border-box; min-height: 38px; padding: 6px 14px; border: 0; border-radius: 8px; background: var(--portal-color-accent); color: #fff; font: inherit; cursor: pointer; }
+#adminEngagementsView.admin-club-workspace[data-engagements-mode="club"] > [data-engagements-tab-panel] > .admin-engagements-card {
+  min-width: 0; margin: 0; padding: 0; border: 0; border-radius: 0; background: transparent; box-shadow: none;
+}
+#adminEngagementsView.admin-club-workspace[data-engagements-mode="club"] :is(.admin-engagements-calendar-filters, .admin-engagements-club-swimmers-directory-tools) { margin: 0 0 14px; padding: 0; }
+#adminEngagementsView.admin-club-workspace[data-engagements-mode="club"] [role="columnheader"] { font-size: .75rem; font-weight: 500; text-transform: none; color: var(--portal-color-muted); }
+@media (min-width: 701px) {
+  #adminEngagementsView.admin-club-workspace[data-engagements-mode="club"] #adminEngagementsClubPeoplePanel .admin-engagements-club-person-row { min-width: 0; grid-template-columns: minmax(150px, 1.4fr) 110px minmax(120px, 1fr) 60px 160px; }
+  #adminEngagementsView.admin-club-workspace[data-engagements-mode="club"] #adminEngagementsClubPeoplePanel [role="cell"] { min-width: 0; }
+  #adminEngagementsView.admin-club-workspace[data-engagements-mode="club"] #adminEngagementsClubPeoplePanel .admin-engagements-request-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+  #adminEngagementsView.admin-club-workspace[data-engagements-mode="club"] #adminEngagementsClubSwimmersPanel .admin-engagements-club-swimmers-directory-row { min-width: 0; grid-template-columns: minmax(170px, 1.4fr) 92px 44px 44px minmax(100px, .7fr) 110px; }
+  #adminEngagementsView.admin-club-workspace[data-engagements-mode="club"] #adminEngagementsClubSwimmersPanel .admin-engagements-club-swimmers-directory-actions { flex-wrap: wrap; }
+  #adminEngagementsView.admin-club-workspace[data-engagements-mode="club"] #adminEngagementsCalendarCard .admin-engagements-competition-status { display: grid; justify-items: start; gap: 5px; min-width: 0; }
+  #adminEngagementsView.admin-club-workspace[data-engagements-mode="club"] #adminEngagementsCalendarCard .admin-engagements-competition-status small { max-width: 100%; white-space: normal; overflow-wrap: anywhere; }
+}
+@media (max-width: 700px) {
+  #adminEngagementsView.admin-club-workspace[data-engagements-mode="club"] > .admin-club-workspace-head { min-height: 72px; padding: 12px; gap: 10px; }
+  #adminEngagementsView.admin-club-workspace[data-engagements-mode="club"] > .admin-club-workspace-head #adminEngagementsViewTitle { font-size: 1.18rem; }
+  #adminEngagementsView.admin-club-workspace[data-engagements-mode="club"] :is(#adminEngagementsClubPeopleActions, #adminEngagementsClubSwimmersDirectoryActions) button { min-height: 44px; }
+}
+
 /* National module home and direct sidebar navigation. */
 .admin-national-workspace { margin-bottom: 16px; min-width: 0; }
 .admin-national-workspace > .admin-portal-workspace-head { margin-bottom: 12px; }

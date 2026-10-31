@@ -1378,24 +1378,46 @@
       }
 
     function engagementClubNewSwimmerLockReason() {
+        const dialog = portalContext.elements.engagementsClubNewSwimmerDialog;
+        if (dialog?.dataset?.origin === "directory") {
+          if (!portalActions.canUse("engagements.club.manage") || !portalActions.engagementClubScope()) return "Sélectionnez un club autorisé avant d’ajouter un nageur.";
+          if (String(portalActions.engagementClubScope()) !== dialog.dataset.clubId) return "Le club actif a changé. Rouvrez le formulaire depuis Mes nageurs.";
+          if (portalState.activeEngagementsTab !== "clubSwimmers" || portalActions.requestedNavigationView() !== "engagements") return "Ouvrez Mes nageurs pour poursuivre cet ajout.";
+          return "";
+        }
         return portalActions.engagementClubSwimmerSelectionLockReason()
           || (!portalActions.engagementClubTeamComplete() ? "Renseignez le chef d'équipe ou confirmez la renonciation pour activer cette étape." : "");
       }
 
     function updateEngagementClubNewSwimmerControls() {
         const reason = engagementClubNewSwimmerLockReason();
+        const busy = portalContext.elements.engagementsClubNewSwimmerDialog?.dataset?.busy === "true";
         [portalContext.elements.engagementsClubNewSwimmerDialogOpen, portalContext.elements.engagementsClubNewSwimmerSaveButton,
           portalContext.elements.engagementsClubRecoverSwimmerButton].forEach((button) => {
           if (!button) return;
-          button.disabled = Boolean(reason);
+          button.disabled = Boolean(reason) || busy;
           button.title = reason;
         });
+        const directoryButton = document.getElementById("adminEngagementsClubSwimmersDirectoryAddButton");
+        if (directoryButton) directoryButton.disabled = busy || !portalActions.canUse("engagements.club.manage") || !portalActions.engagementClubScope();
+        [portalContext.elements.engagementsClubNewSwimmerFirstName, portalContext.elements.engagementsClubNewSwimmerLastName,
+          portalContext.elements.engagementsClubNewSwimmerBirthDate, portalContext.elements.engagementsClubNewSwimmerSex,
+          portalContext.elements.engagementsClubNewSwimmerLicense, portalContext.elements.engagementsClubNewSwimmerResetButton]
+          .forEach((field) => { if (field) field.disabled = busy; });
       }
 
-    function openEngagementClubNewSwimmerDialog() {
+    function openEngagementClubNewSwimmerDialog({ origin = "competition", currentTarget } = {}) {
         const dialog = portalContext.elements.engagementsClubNewSwimmerDialog;
-        if (!dialog || dialog.open || engagementClubNewSwimmerLockReason()) return;
+        if (!dialog || dialog.open) return;
+        dialog.dataset.origin = origin === "directory" ? "directory" : "competition";
+        dialog.dataset.clubId = String(portalActions.engagementClubScope() || "");
+        if (engagementClubNewSwimmerLockReason()) { delete dialog.dataset.origin; return; }
+        dialog.dataset.requestVersion = String((Number(dialog.dataset.requestVersion) || 0) + 1);
+        dialog.dataset.openerId = currentTarget?.id || "adminEngagementsClubNewSwimmerDialogOpen";
+        delete dialog.dataset.busy;
+        resetEngagementClubNewSwimmerForm();
         setEngagementClubNewSwimmerMessage();
+        updateEngagementClubNewSwimmerControls();
         dialog.showModal();
         global.requestAnimationFrame?.(() => portalContext.elements.engagementsClubNewSwimmerLastName?.focus?.());
       }
@@ -1403,16 +1425,23 @@
     function closeEngagementClubNewSwimmerDialog({ force = false, restoreFocus = true } = {}) {
         const dialog = portalContext.elements.engagementsClubNewSwimmerDialog;
         if (!dialog?.open) return true;
+        if (!force && dialog.dataset.busy === "true") return false;
         if (!force && engagementClubNewSwimmerFormHasValues() && !global.confirm("Abandonner les informations saisies pour ce nageur ?")) return false;
         resetEngagementClubNewSwimmerForm();
         if (portalContext.elements.engagementsClubNewSwimmerAlerts) portalContext.elements.engagementsClubNewSwimmerAlerts.innerHTML = "";
         setEngagementClubNewSwimmerMessage();
+        const openerId = dialog.dataset.openerId;
+        dialog.dataset.requestVersion = String((Number(dialog.dataset.requestVersion) || 0) + 1);
+        delete dialog.dataset.busy;
+        delete dialog.dataset.origin;
         dialog.close();
-        if (restoreFocus) portalContext.elements.engagementsClubNewSwimmerDialogOpen?.focus?.();
+        updateEngagementClubNewSwimmerControls();
+        if (restoreFocus) (document.getElementById(openerId) || portalContext.elements.engagementsClubNewSwimmerDialogOpen)?.focus?.();
         return true;
       }
 
     function resetEngagementClubNewSwimmerFormFromButton() {
+        if (portalContext.elements.engagementsClubNewSwimmerDialog?.dataset?.busy === "true") return;
         resetEngagementClubNewSwimmerForm();
         if (portalContext.elements.engagementsClubNewSwimmerAlerts) portalContext.elements.engagementsClubNewSwimmerAlerts.innerHTML = "";
         setEngagementClubNewSwimmerMessage();
@@ -1487,6 +1516,16 @@
 
     async function createEngagementClubSwimmer() {
         if (!portalActions.canUse("engagements.club.manage")) return;
+        const dialog = portalContext.elements.engagementsClubNewSwimmerDialog;
+        if (dialog?.dataset?.busy === "true") return;
+        const directory = dialog?.dataset?.origin === "directory";
+        const requestClubId = String(portalActions.engagementClubScope() || "");
+        const requestVersion = dialog?.dataset?.requestVersion;
+        const competitionId = portalState.selectedEngagementCompetitionId;
+        const current = () => portalActions.canUse("engagements.club.manage") && String(portalActions.engagementClubScope() || "") === requestClubId &&
+          dialog?.dataset?.requestVersion === requestVersion && (directory
+            ? dialog.open && dialog.dataset.origin === "directory" && portalState.activeEngagementsTab === "clubSwimmers" && portalActions.requestedNavigationView() === "engagements"
+            : portalState.selectedEngagementCompetitionId === competitionId);
         const lockReason = engagementClubNewSwimmerLockReason();
         if (lockReason) {
           setEngagementClubNewSwimmerMessage(lockReason, "error");
@@ -1510,6 +1549,8 @@
         portalState.engagementClubSwimmerRecovery = null;
         if (portalContext.elements.engagementsClubRecoverSwimmerButton) portalContext.elements.engagementsClubRecoverSwimmerButton.hidden = true;
         if (portalContext.elements.engagementsClubNewSwimmerSaveButton) portalContext.elements.engagementsClubNewSwimmerSaveButton.disabled = true;
+        if (dialog?.dataset) dialog.dataset.busy = "true";
+        updateEngagementClubNewSwimmerControls();
         setEngagementClubNewSwimmerMessage("Vérification des rapprochements...", "loading");
         try {
           let result;
@@ -1519,6 +1560,7 @@
           const recovery = await portalActions.callFunction("previewEngagementClubSwimmerRecovery", {
             licenseNumber: swimmer.licenseNumber
           });
+          if (!current()) return;
           if (recovery.found) {
             portalState.engagementClubSwimmerRecovery = recovery;
             renderEngagementClubSwimmerRecovery(recovery);
@@ -1539,6 +1581,7 @@
           const preview = await portalActions.callFunction("previewEngagementClubSwimmerCreation", {
             swimmer
           });
+          if (!current()) return;
           const alerts = Array.isArray(preview.alerts) ? preview.alerts : [];
           renderEngagementClubNewSwimmerAlerts(alerts, { confirmed: false });
           const blockingAlert = alerts.find((alert) => alert.type === "inverted-identity");
@@ -1552,8 +1595,9 @@
             return;
           }
           setEngagementClubNewSwimmerMessage("Création du nageur...", "loading");
+          if (!current()) return;
           const payload = {
-            competitionId: portalState.selectedEngagementCompetitionId || "",
+            competitionId: directory ? "" : competitionId || "",
             swimmer,
             confirmAlerts: alerts.length > 0,
             ...(preview.source === "nap" ? {creationId: global.crypto.randomUUID()} : {})
@@ -1561,11 +1605,26 @@
           if (preview.source === "nap") portalState.engagementClubSwimmerCreationRetry = payload;
           result = await portalActions.callFunction("createEngagementClubSwimmer", payload);
           }
+          if (!current()) return;
           portalActions.invalidateEngagementClubSwimmersCache();
           await loadEngagementClubSwimmers({ force: true, silent: true });
+          if (!current()) return;
           renderEngagementClubNewSwimmerAlerts(Array.isArray(result.alerts) ? result.alerts : [], { confirmed: true });
           resetEngagementClubNewSwimmerForm();
           closeEngagementClubNewSwimmerDialog({ force: true, restoreFocus: false });
+          if (directory) {
+            if (portalContext.elements.engagementsClubSwimmersDirectorySearch) portalContext.elements.engagementsClubSwimmersDirectorySearch.value = result.swimmer?.lastName || swimmer.lastName || "";
+            portalState.engagementClubSwimmersDirectorySexFilter = "all";
+            portalActions.renderEngagementClubSwimmersDirectory();
+            const status = portalContext.elements.engagementsClubSwimmersDirectoryStatus;
+            if (status) {
+              const visible = portalState.engagementClubSwimmers?.some(row => String(row.licenseNumber || "") === String(result.swimmer?.licenseNumber || swimmer.licenseNumber));
+              status.textContent = visible === false ? "Nageur créé ; actualisez la liste pour vérifier son affichage." : "Nageur créé pour ce club.";
+              status.dataset.tone = visible === false ? "warning" : "ok";
+            }
+            document.getElementById("adminEngagementsClubSwimmersDirectoryAddButton")?.focus();
+            return;
+          }
           if (portalContext.elements.engagementsClubSwimmersSearch) {
             portalContext.elements.engagementsClubSwimmersSearch.value = result.swimmer?.lastName || swimmer.lastName || "";
             portalActions.renderEngagementClubSwimmers();
@@ -1575,15 +1634,28 @@
             portalContext.elements.engagementsClubSwimmersMessage.dataset.tone = "ok";
           }
         } catch (error) {
-          setEngagementClubNewSwimmerMessage(`Création impossible : ${error?.message || error}`, "error");
+          if (current()) setEngagementClubNewSwimmerMessage(`Création impossible : ${error?.message || error}`, "error");
         } finally {
-          updateEngagementClubNewSwimmerControls();
+          if (dialog?.dataset?.requestVersion === requestVersion) {
+            if (dialog?.dataset) delete dialog.dataset.busy;
+            updateEngagementClubNewSwimmerControls();
+          }
         }
       }
 
     async function recoverEngagementClubSwimmer() {
         const recovery = portalState.engagementClubSwimmerRecovery;
         if (!recovery?.eligible || !recovery?.swimmer?.licenseNumber || !portalActions.canUse("engagements.club.manage")) return;
+        const dialog = portalContext.elements.engagementsClubNewSwimmerDialog;
+        if (dialog?.dataset?.busy === "true") return;
+        const directory = dialog?.dataset?.origin === "directory";
+        const requestClubId = String(portalActions.engagementClubScope() || "");
+        const requestVersion = dialog?.dataset?.requestVersion;
+        const competitionId = portalState.selectedEngagementCompetitionId;
+        const current = () => portalActions.canUse("engagements.club.manage") && String(portalActions.engagementClubScope() || "") === requestClubId &&
+          dialog?.dataset?.requestVersion === requestVersion && (directory
+            ? dialog.open && dialog.dataset.origin === "directory" && portalState.activeEngagementsTab === "clubSwimmers" && portalActions.requestedNavigationView() === "engagements"
+            : portalState.selectedEngagementCompetitionId === competitionId);
         const lockReason = engagementClubNewSwimmerLockReason();
         if (lockReason) {
           setEngagementClubNewSwimmerMessage(lockReason, "error");
@@ -1592,6 +1664,9 @@
         }
         const name = portalActions.engagementSwimmerDisplayName(recovery.swimmer, "ce nageur");
         if (!global.confirm(`Récupérer ${name} pour votre club ? Cette action est possible car aucun résultat n'est publié cette saison.`)) return;
+        if (!current()) return;
+        if (dialog?.dataset) dialog.dataset.busy = "true";
+        updateEngagementClubNewSwimmerControls();
         if (portalContext.elements.engagementsClubRecoverSwimmerButton) portalContext.elements.engagementsClubRecoverSwimmerButton.disabled = true;
         setEngagementClubNewSwimmerMessage("Récupération du nageur...", "loading");
         try {
@@ -1599,12 +1674,27 @@
           const result = await portalActions.callFunction("recoverEngagementClubSwimmer", {
             licenseNumber: recovery.swimmer.licenseNumber,
             ...(recovery.source === "nap" ? {mutationId:recovery.mutationId,expectedFingerprint:recovery.swimmer.napFingerprint} : {}),
-            competitionId: portalState.selectedEngagementCompetitionId || ""
+            competitionId: directory ? "" : competitionId || ""
           });
+          if (!current()) return;
           portalActions.invalidateEngagementClubSwimmersCache();
           await loadEngagementClubSwimmers({ force: true, silent: true });
+          if (!current()) return;
           resetEngagementClubNewSwimmerForm();
           closeEngagementClubNewSwimmerDialog({ force: true, restoreFocus: false });
+          if (directory) {
+            if (portalContext.elements.engagementsClubSwimmersDirectorySearch) portalContext.elements.engagementsClubSwimmersDirectorySearch.value = result.swimmer?.lastName || "";
+            portalState.engagementClubSwimmersDirectorySexFilter = "all";
+            portalActions.renderEngagementClubSwimmersDirectory();
+            const status = portalContext.elements.engagementsClubSwimmersDirectoryStatus;
+            if (status) {
+              const visible = portalState.engagementClubSwimmers?.some(row => String(row.licenseNumber || "") === String(result.swimmer?.licenseNumber || recovery.swimmer.licenseNumber));
+              status.textContent = visible === false ? "Nageur récupéré ; actualisez la liste pour vérifier son affichage." : "Nageur récupéré pour ce club.";
+              status.dataset.tone = visible === false ? "warning" : "ok";
+            }
+            document.getElementById("adminEngagementsClubSwimmersDirectoryAddButton")?.focus();
+            return;
+          }
           if (portalContext.elements.engagementsClubSwimmersSearch) {
             portalContext.elements.engagementsClubSwimmersSearch.value = result.swimmer?.lastName || "";
             portalActions.renderEngagementClubSwimmers();
@@ -1614,9 +1704,12 @@
             portalContext.elements.engagementsClubSwimmersMessage.dataset.tone = "ok";
           }
         } catch (error) {
-          setEngagementClubNewSwimmerMessage(`Récupération impossible : ${error?.message || error}`, "error");
+          if (current()) setEngagementClubNewSwimmerMessage(`Récupération impossible : ${error?.message || error}`, "error");
         } finally {
-          updateEngagementClubNewSwimmerControls();
+          if (dialog?.dataset?.requestVersion === requestVersion) {
+            if (dialog?.dataset) delete dialog.dataset.busy;
+            updateEngagementClubNewSwimmerControls();
+          }
         }
       }
 
