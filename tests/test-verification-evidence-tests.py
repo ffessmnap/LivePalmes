@@ -81,11 +81,13 @@ class EvidenceTests(unittest.TestCase):
             output.assert_called_once_with(verified='false')
 
     def test_emulator_scope_is_conservative(self):
-        for paths in [['portail.css'], ['portail.js', 'index.html'], ['docs/releases/EVOLUTIONS.md']]:
+        for paths in [['portail.css'], ['portail.js', 'index.html'], ['docs/releases/EVOLUTIONS.md'],
+                      ['assets/portal/styles/06-competition.css'], ['css/public.css', 'assets/logo.webp']]:
             self.assertFalse(m.firestore_required(paths))
         for path in ['firestore.rules', 'firebase.json', 'firestore.indexes.json',
                      'functions/index.js', 'tests/firestore-rules/firestore-rules.test.cjs',
-                     'tests/firestore-rules/package-lock.json', 'tools/unknown.py', 'unknown', '.github/workflows/check.yml']:
+                     'tests/firestore-rules/package-lock.json', 'tools/unknown.py', 'unknown', '.github/workflows/check.yml',
+                     'assets/portal/auth.js', 'assets/portal/config.json', 'assets/firestore.rules', 'custom/style.css']:
             self.assertTrue(m.firestore_required(['portail.css', path]))
         self.assertTrue(m.firestore_required([]))
 
@@ -98,6 +100,22 @@ class EvidenceTests(unittest.TestCase):
         ci = (ROOT/m.WORKFLOW).read_text(encoding='utf-8')
         self.assertLess(ci.index('node tools/verify-livepalmes.js'), ci.index('application-verification/verification.json'))
         self.assertIn("if: github.event_name == 'push'", ci)
+
+    def test_test_publication_reuses_only_the_distinct_exact_ci_suite(self):
+        script = "const y=require('./tests/firestore-rules/node_modules/js-yaml'),f=require('fs'); console.log(JSON.stringify(y.load(f.readFileSync('.github/workflows/livepalmes-test-common.yml','utf8')).jobs.test.steps));"
+        steps = json.loads(subprocess.check_output(['node', '-e', script], cwd=ROOT, text=True))
+        proof = next(step for step in steps if step.get('id') == 'verified-publication')
+        self.assertIn('reuse-publication', proof['run'])
+        fallback = next(step for step in steps if step.get('name') == 'Verifier le circuit ou reutiliser la preuve exacte')
+        self.assertEqual(fallback['if'], "steps.verified-publication.outputs.verified != 'true'")
+        commands = [line.strip() for line in fallback['run'].splitlines() if line.strip()]
+        self.assertEqual(len(commands), 8)
+        ci = (ROOT/m.WORKFLOW).read_text(encoding='utf-8')
+        for command in commands:
+            self.assertIn(command, ci)
+        for step in steps:
+            if any(command in step.get('run', '') for command in ['test-selection', 'check-test', 'release-cycle.py proof']):
+                self.assertNotIn('verified-publication', step.get('if', ''))
 
     def test_source_operation_timings_preserve_errors_and_do_not_expose_metadata(self):
         spec = importlib.util.spec_from_file_location('state', ROOT/'tools/production-release-state.py')
