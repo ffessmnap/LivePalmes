@@ -1,21 +1,35 @@
 
 
-/* Persistent national workspace, using the portal's existing surfaces. */
+/* National module home and direct sidebar navigation. */
 .admin-national-workspace { margin-bottom: 16px; min-width: 0; }
 .admin-national-workspace > .admin-portal-workspace-head { margin-bottom: 12px; }
-.admin-national-tabs, .admin-national-directory-tabs { display: flex; flex-wrap: wrap; gap: 6px; }
-.admin-national-tabs a, .admin-national-directory-tabs a {
-  display: inline-flex; align-items: center; min-height: 40px; padding: 8px 12px;
-  border: 1px solid var(--portal-color-border); border-radius: 8px;
-  background: var(--portal-color-surface); color: var(--portal-color-text); text-decoration: none;
+.admin-national-menu-row { display: flex; align-items: stretch; min-width: 0; }
+.admin-national-menu-row > :first-child { flex: 1; min-width: 0; }
+.admin-national-disclosure {
+  flex: 0 0 36px; display: inline-flex; align-items: center; justify-content: center;
+  padding: 6px; min-height: 38px; border: 0; border-radius: 6px;
+  background: transparent; color: var(--portal-color-text); cursor: pointer;
 }
-.admin-national-tabs a[aria-current="page"], .admin-national-directory-tabs a[aria-current="page"] {
-  border-color: var(--portal-color-accent); background: var(--portal-color-field-background); color: var(--portal-color-accent);
+.admin-national-disclosure:hover { background: var(--portal-color-field-background); }
+.admin-national-disclosure[aria-expanded="true"] .admin-portal-chevron { transform: rotate(180deg); }
+.admin-national-directory-menu { margin-left: 10px; padding-left: 8px; border-left: 1px solid var(--portal-color-border); }
+.admin-national-module-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 18px; }
+.admin-national-module {
+  display: grid; gap: 10px; padding: 18px; text-decoration: none;
+  border: 1px solid var(--portal-color-border); border-radius: var(--portal-radius-card);
+  background: var(--portal-color-surface); color: var(--portal-color-text);
 }
-.admin-national-directory-tabs { margin-top: 10px; }
-.admin-national-directory-tabs a { border-color: transparent; }
-.admin-national-workspace[hidden], .admin-national-directory-tabs[hidden], .admin-national-tabs a[hidden] { display: none; }
-#adminPortalNationalToggle > span[hidden] { display: none; }
+.admin-national-module > span { display: flex; align-items: center; gap: 10px; }
+.admin-national-module > span > span:last-child { margin-left: auto; color: var(--portal-color-accent-strong); }
+.admin-national-module small { color: var(--portal-color-muted); line-height: 1.5; }
+.admin-national-module:hover { border-color: var(--portal-color-accent); background: var(--portal-color-field-background); }
+.admin-national-modules-return { display: inline-flex; align-items: center; min-height: 32px; margin-bottom: 8px; color: var(--portal-color-accent-strong); font-size: .8rem; text-decoration: none; }
+.admin-national-workspace[hidden], .admin-national-directory-menu[hidden], .admin-national-module[hidden], .admin-national-modules-return[hidden] { display: none; }
+@media (max-width: 760px) {
+  .admin-national-module-grid { grid-template-columns: minmax(0, 1fr); }
+  .admin-national-disclosure { flex-basis: 44px; min-height: 44px; }
+  .admin-national-modules-return { min-height: 44px; }
+}
 .admin-national-request-browser { grid-column: 1; grid-row: 1 / span 5; align-self: start; min-width: 0; }
 .admin-national-request-filters { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 10px; }
 .admin-national-request-filters button { min-height: 36px; padding: 6px 9px; }
@@ -39,7 +53,6 @@
 .admin-national-requests-page[data-request-layout="split"] article[hidden] { display: none; }
 .admin-national-request-back { display: none; }
 @media (max-width: 760px) {
-  .admin-national-tabs a, .admin-national-directory-tabs a { min-height: 44px; }
   .admin-national-requests-page[data-request-layout="split"] { grid-template-columns: minmax(0, 1fr); }
   .admin-national-requests-page[data-request-layout="split"] > .admin-national-request-group,
   .admin-national-requests-page[data-request-layout="split"] > .admin-national-requests-empty { grid-column: 1; }
