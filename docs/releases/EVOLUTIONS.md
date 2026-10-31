@@ -2,6 +2,14 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 31 octobre — Administration nationale regroupée et retours du portail
+
+- Maquette validée dans le chat ; demande explicite de développer et livrer sur TEST, avec suppression du sélecteur IDF et du fil d’Ariane sur le portail, en gardant les retours utiles. Aucun accord PROD.
+- Onglets nationaux persistants, annuaires regroupés, demandes en liste/détail ordinateur et mobile ; modules métier, liens directs, droits et confirmations existants conservés. Journal uniquement `admin.full`. Retour aux compétitions rendu accessible aussi au club, avec la protection des modifications non enregistrées.
+- Notifications : retrait du choix de périmètre, confirmation de l’interrupteur et conservation du périmètre/révision serveur. Aucune modification de données, réglage réel, destinataire, backend ou envoi. Une ancienne configuration pilote ne peut pas être activée depuis cette interface.
+- Budget de lectures : navigation, filtres et sélection d’une demande = zéro lecture/écriture. En NAP, entrée nationale = listes existantes des corrections/NS (50 documents maximum) et suppressions de comptes (100 maximum, si habilité), soit 150 documents en attente maximum hors contrôles d’accès existants ; aucune lecture des suppressions historiques NAP. Ce coût correspond à l’ancienne ouverture de « Demandes à traiter », désormais directe. Retours vers un onglet déjà chargé = cache session ; rafraîchissement complet = mêmes plafonds. Notifications = un appel existant de réglage, cache de 30 secondes, uniquement à son ouverture. Aucun chargement des autres onglets à l’entrée ; annuaires/documents/licences/journal gardent leurs budgets et chargements à la demande. Les erreurs ne déclenchent pas de reconstruction ni de lecture par ligne.
+- Contrôles locaux hors réseau : navigation nationale et capacités, commentaires conservés, décisions déléguées, retour protégé, notifications sans élargissement, ordinateur/mobile 1440/390/320 px en clair/sombre, contrats des modules et versions de cache. CI obligatoire et déploiement TEST à attester dans la PR ; validation utilisateur de TEST à recueillir.
+
 ### 30 octobre — Publication du texte Nouveautés validé
 
 - Texte factuel approuvé dans Infra puis demande explicite « Tu peux publier ». Annonce datée du 30 octobre 2026 à 19 h 39 Europe/Paris, heure de la publication PROD réussie 41105909833, attestée dans son journal Hosting. Trois points uniquement : accès club régionaux, statut NS dans Identité et décision nationale, choix et programme eau libre. Aucun titre marketing ni ajout de fonctionnalités.

@@ -617,10 +617,10 @@
         if (portalContext.elements.engagementsAdminSubmenu) portalContext.elements.engagementsAdminSubmenu.hidden = !expanded;
       }
 
-    function setNationalMenuOpen(open) {
-        const expanded = Boolean(open) && (canDeleteEngagementCompetitionDirectly() || canViewActivityLog());
-        portalContext.elements.nationalToggle?.setAttribute("aria-expanded", expanded ? "true" : "false");
-        if (portalContext.elements.nationalSubmenu) portalContext.elements.nationalSubmenu.hidden = !expanded;
+    function setNationalMenuOpen() {
+        // National sections now live in the persistent workspace navigation.
+        portalContext.elements.nationalToggle?.removeAttribute("aria-expanded");
+        if (portalContext.elements.nationalSubmenu) portalContext.elements.nationalSubmenu.hidden = true;
       }
 
     function setAccessMenuOpen(open) {
@@ -910,24 +910,27 @@
         const panel = document.getElementById('adminNationalMailControl');
         const status = document.getElementById('adminNationalMailControlStatus');
         const button = document.getElementById('adminNationalMailControlToggle');
-        const scope = document.getElementById('adminNationalMailControlScope');
-        const save = document.getElementById('adminNationalMailControlScopeSave');
-        if (!panel || !status || !button || !scope || !save || !canDeleteEngagementCompetitionDirectly()) return;
+        if (!panel || !status || !button || !canDeleteEngagementCompetitionDirectly()) return;
         panel.hidden = false;
         if (portalState.nationalAutomaticMailLoading || (!force && Date.now() - portalState.nationalAutomaticMailLoadedAt < 30000)) return;
-        portalState.nationalAutomaticMailLoading = true; button.disabled = true; scope.disabled = true; save.disabled = true;
+        portalState.nationalAutomaticMailLoading = true; button.disabled = true;
         try {
           portalState.nationalAutomaticMailControl = await callFunction('getEngagementAutomaticMailControl', {});
           portalState.nationalAutomaticMailLoadedAt = Date.now();
           renderNationalAutomaticMailControl(status, button);
         } catch (error) { portalState.nationalAutomaticMailControl = null; status.textContent = error.message || 'Réglage indisponible.'; }
         finally { portalState.nationalAutomaticMailLoading = false; renderNationalAutomaticMailControls(); }
-        async function update(enabled) {
-          if (portalState.nationalAutomaticMailLoading || !portalState.nationalAutomaticMailControl) return;
+        button.onclick = async () => {
+          const setting = portalState.nationalAutomaticMailControl;
+          if (button.disabled || portalState.nationalAutomaticMailLoading || !setting) return;
+          const enabled = !setting.enabled;
+          if (!global.confirm(enabled ? 'Activer les mails automatiques pour les prochaines notifications ?'
+            : 'Désactiver les mails automatiques ? Les mails en attente seront annulés, sans rattrapage à la réactivation.')) return;
           portalState.nationalAutomaticMailLoading = true; renderNationalAutomaticMailControls();
           try {
+            // Preserve the server setting: removing a selector must never widen delivery.
             portalState.nationalAutomaticMailControl = await callFunction('updateEngagementAutomaticMailControl', {
-              enabled, scope: scope.value, expectedRevision: portalState.nationalAutomaticMailControl.revision
+              enabled, scope: setting.scope, expectedRevision: setting.revision
             });
             portalState.nationalAutomaticMailLoadedAt = Date.now();
             renderNationalAutomaticMailControl(status, button);
@@ -938,32 +941,20 @@
             portalState.nationalAutomaticMailLoading = false; renderNationalAutomaticMailControls();
             if (!portalState.nationalAutomaticMailControl) loadNationalAutomaticMailControl(true);
           }
-        }
-        button.onclick = () => update(!portalState.nationalAutomaticMailControl?.enabled);
-        save.onclick = () => update(portalState.nationalAutomaticMailControl?.enabled === true);
-        scope.onchange = renderNationalAutomaticMailControls;
+        };
       }
 
     function renderNationalAutomaticMailControls() {
-        const scope = document.getElementById('adminNationalMailControlScope');
-        const save = document.getElementById('adminNationalMailControlScopeSave');
         const button = document.getElementById('adminNationalMailControlToggle');
-        if (!scope || !save || !button) return;
-        const available = !portalState.nationalAutomaticMailLoading && ['all', 'idf'].includes(portalState.nationalAutomaticMailControl?.scope);
-        scope.disabled = !available;
-        save.disabled = !available || scope.value === portalState.nationalAutomaticMailControl.scope;
-        // Always allow the emergency switch-off, even if a scope is invalid.
-        button.disabled = portalState.nationalAutomaticMailLoading || !portalState.nationalAutomaticMailControl ||
-          (!portalState.nationalAutomaticMailControl.enabled && (!available || scope.value !== portalState.nationalAutomaticMailControl.scope));
+        if (!button) return;
+        const setting = portalState.nationalAutomaticMailControl;
+        // Allow emergency switch-off, including an old or unavailable configuration.
+        button.disabled = portalState.nationalAutomaticMailLoading || !setting || (!setting.enabled && setting.scope !== 'all');
       }
 
     function renderNationalAutomaticMailControl(status, button) {
         const setting = portalState.nationalAutomaticMailControl;
-        const label = setting.scope === 'idf' ? 'Pilote Île-de-France : clubs IDF et organisateurs des compétitions IDF'
-          : setting.scope === 'all' ? 'Toutes les régions' : 'Périmètre indisponible : activation bloquée';
-        status.textContent = `Mails automatiques ${setting.enabled ? 'activés' : 'désactivés'}. ${label}.${setting.testRecipient ? ` TEST : tous les mails sont dirigés vers ${setting.testRecipient}.` : ''}`;
-        const scope = document.getElementById('adminNationalMailControlScope');
-        if (scope && ['all', 'idf'].includes(setting.scope)) scope.value = setting.scope;
+        status.textContent = 'Mails automatiques ' + (setting.enabled ? 'activés' : 'désactivés') + '.' + (setting.scope !== 'all' ? ' Configuration nationale à vérifier avant activation.' : '') + (setting.testRecipient ? ' TEST : tous les mails sont dirigés vers ' + setting.testRecipient + '.' : '');
         button.textContent = setting.enabled ? 'Désactiver les mails automatiques' : 'Activer les mails automatiques';
         button.setAttribute('aria-pressed', String(setting.enabled));
       }
@@ -1580,6 +1571,10 @@
 
     function syncEngagementRouteFromHash() {
         let route = portalConfig.ENGAGEMENT_ROUTE_BY_HASH[global.location.hash];
+        if (global.location.hash === "#administration-nationale") {
+          route = portalConfig.ENGAGEMENT_ROUTE_BY_HASH[canDeleteEngagementCompetitionDirectly()
+            ? "#administration-suppressions" : "#administration-historique"];
+        }
         if (global.location.hash === "#engagements" || (route && !canAccessEngagementRoute(route.entry))) {
           const fallbackHash = preferredEngagementRouteHash();
           if (global.location.hash !== fallbackHash) global.history.replaceState(null, "", fallbackHash);
@@ -1589,7 +1584,8 @@
         const previousMode = portalContext.elements.engagementsView?.dataset.engagementsMode || "";
         const nextMode = engagementNavigationMode(route.entry);
         const contextChanged = Boolean(previousMode && previousMode !== nextMode);
-        if (contextChanged && portalState.selectedEngagementCompetitionId && !confirmLeaveDirtyEngagementTab()) {
+        const closesCompetitionDetail = Boolean(portalState.selectedEngagementCompetitionId && route.tab !== "calendar");
+        if ((contextChanged || closesCompetitionDetail) && portalState.selectedEngagementCompetitionId && !confirmLeaveDirtyEngagementTab()) {
           portalState.activeEngagementsNavEntry = previousMode === "admin" ? "adminCalendar" : "club";
           setEngagementsTab("calendar");
           const previousHash = previousMode === "admin" ? "#competitions-calendrier" : "#club-competitions";
@@ -1599,7 +1595,7 @@
         portalState.activeEngagementsNavEntry = route.entry;
         setEngagementsTab(route.tab);
         if (route.nationalTab) setEngagementNationalTab(route.nationalTab);
-        if (contextChanged) portalActions.closeEngagementCompetitionDetail({ skipConfirmation: true });
+        if (contextChanged || closesCompetitionDetail) portalActions.closeEngagementCompetitionDetail({ skipConfirmation: true });
         return true;
       }
 
@@ -1615,7 +1611,8 @@
         if (global.location.hash === "#import-competitions") return "import";
         if (global.location.hash === "#correction-performance") return "correction";
         if (["#organisation-competitions", "#administration-competitions"].includes(global.location.hash)) return "engagementsAdminHome";
-        if (global.location.hash === "#administration-nationale") return "nationalHome";
+        if (global.location.hash === "#administration-nationale") return "engagements";
+        if (global.location.hash === "#administration-notifications") return "nationalHome";
         if (["#administration-documents", "#administration-documents-accueil"].includes(global.location.hash)) return "nationalDocuments";
         if (global.location.hash === "#engagements" || portalConfig.ENGAGEMENT_ROUTE_BY_HASH[global.location.hash]) return "engagements";
         if (global.location.hash === "#espace-dtn") return "dtnHome";
@@ -1638,7 +1635,7 @@
         const clubHomeDenied = requestedView === "clubHome" && !canUse("engagements.club.manage");
         const dtnDenied = (requestedView === "dtn" || requestedView === "dtnHome") && !canUse("dtn.view");
         const engagementsAdminHomeDenied = requestedView === "engagementsAdminHome" && !canCreateEngagementCompetition();
-        const nationalHomeDenied = requestedView === "nationalHome" && !canDeleteEngagementCompetitionDirectly() && !canViewActivityLog();
+        const nationalHomeDenied = requestedView === "nationalHome" && !canDeleteEngagementCompetitionDirectly();
         const nationalDocumentsDenied = requestedView === "nationalDocuments" && !canUse("engagements.national.manage");
         const engagementsDenied = requestedView === "engagements" && !canAccessEngagementsView();
         const newsDenied = requestedView === "news" && !canCreateEngagementCompetition() && !canViewActivityLog();
@@ -1678,13 +1675,33 @@
           [portalContext.elements.performanceToggle, activeView === "performanceHome"],
           [portalContext.elements.dtnToggle, activeView === "dtnHome"],
           [portalContext.elements.engagementsAdminToggle, activeView === "engagementsAdminHome"],
-          [portalContext.elements.nationalToggle, activeView === "nationalHome"],
+          [portalContext.elements.nationalToggle, nationalSpaceActive],
           [portalContext.elements.accessToggle, activeView === "accessHome"]
         ].forEach(([toggle, active]) => {
           toggle?.classList.toggle("active", active);
           if (active) toggle?.setAttribute("aria-current", "page");
           else toggle?.removeAttribute("aria-current");
         });
+        const nationalWorkspace = document.getElementById("adminNationalWorkspace");
+        if (nationalWorkspace) {
+          nationalWorkspace.hidden = !nationalSpaceActive;
+          const tab = activeView === "nationalHome" ? "notifications" : activeView === "nationalDocuments" ? "documents"
+            : ["clubs", "swimmers", "people"].includes(portalState.activeEngagementNationalTab) ? "directories" : portalState.activeEngagementNationalTab;
+          nationalWorkspace.querySelectorAll("[data-national-workspace-tab]").forEach((link) => {
+            const key = link.dataset.nationalWorkspaceTab;
+            link.hidden = key === "audit" ? !canViewActivityLog() : !canDeleteEngagementCompetitionDirectly();
+            if (key === "directories" && tab === "directories") {
+              link.href = {clubs: "#administration-clubs", swimmers: "#administration-doublons-nageurs", people: "#administration-officiels"}[portalState.activeEngagementNationalTab];
+            }
+            if (key === tab) link.setAttribute("aria-current", "page"); else link.removeAttribute("aria-current");
+          });
+          const directories = document.getElementById("adminNationalDirectoryTabs");
+          if (directories) directories.hidden = tab !== "directories";
+          nationalWorkspace.querySelectorAll("[data-national-directory-tab]").forEach((link) => {
+            if (link.dataset.nationalDirectoryTab === portalState.activeEngagementNationalTab) link.setAttribute("aria-current", "page");
+            else link.removeAttribute("aria-current");
+          });
+        }
         const activeLink = document.querySelector("[data-admin-view-link].active");
         const activeParent = document.querySelector(".admin-portal-nav-parent.active");
         const activeParentLabel = activeParent?.children?.[1]?.textContent?.trim();
@@ -1702,7 +1719,7 @@
         if (recordsActive) portalActions.loadRecordModule();
         if (importModuleActive) portalActions.loadImportModule();
         if (dtnSpaceActive && activeView === "dtn") portalActions.loadDtnModule();
-        if (activeView === "nationalHome") loadEngagementNationalOverview();
+        if (activeView === "nationalHome") loadNationalAutomaticMailControl();
         global.LivePalmesNationalDocuments?.setActive(activeView === "nationalDocuments");
         if (engagementsActive && portalState.activeEngagementsTab === "calendar") portalActions.loadEngagementCompetitions();
         if (engagementsActive && global.location.hash === "#club-competitions") void portalActions.restoreEngagementNavigation();
