@@ -3690,14 +3690,12 @@ exports.syncEngagementMailRecipientIndex = onDocumentWritten({
     ? engagementMailRecipientFromUserDoc(event.data.after)
     : null;
   const now = new Date().toISOString();
-  const snapshotSync = syncAccessDirectorySnapshotFromUserChange(
+  await syncAccessDirectorySnapshotFromUserChange(
     uid,
     beforeData,
     event.data?.after?.exists ? afterData : null,
     now
-  ).catch((error) => {
-    console.error("Mise à jour de l'annuaire privé des accès impossible.", cleanText(error?.message || error));
-  });
+  );
   const key = engagementMailRecipientIndexKey(uid);
   const capabilities = new Set([...(before?.capabilities || []), ...(after?.capabilities || [])]);
   if (capabilities.size) {
@@ -3717,7 +3715,6 @@ exports.syncEngagementMailRecipientIndex = onDocumentWritten({
       console.error("Mise à jour de l'annuaire privé des administrateurs impossible.", cleanText(error?.message || error));
     });
   }
-  await snapshotSync;
 });
 
 exports.rebuildEngagementMailRecipientIndexNextPage = onCall(CALLABLE_OPTIONS, /* extracted-handler: functions/portal-competition-handlers.js#rebuildEngagementMailRecipientIndexNextPage#arrow */ async (request) => {
