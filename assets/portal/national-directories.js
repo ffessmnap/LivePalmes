@@ -406,6 +406,49 @@
         }
       }
 
+    function chooseMergeEngagements(summary) {
+        const document=global.document,dialog=document.createElement("dialog"),form=document.createElement("form"),heading=document.createElement("h2"),intro=document.createElement("p"),actions=document.createElement("div"),confirm=document.createElement("button"),cancel=document.createElement("button"),controls=[];
+        const opener=document.activeElement;
+        dialog.className="admin-swimmer-club-dialog";dialog.setAttribute("aria-label","Choisir les engagements conservés");heading.textContent="Choisir les engagements conservés";
+        intro.textContent="Plusieurs engagements diffèrent sur la fiche prioritaire. Choisissez celui à conserver pour chaque course. Les autres courses seront réunies automatiquement. Aucune fusion n’a encore été effectuée pour ces deux fiches.";
+        form.append(heading,intro);
+        for(const [index,conflict] of summary.conflicts.entries()){
+          const field=document.createElement("fieldset"),legend=document.createElement("legend"),radios=[];
+          field.className="admin-swimmer-merge-conflict";
+          legend.textContent=`Compétition ${conflict.competitionId} — ${conflict.course} — fiche ${conflict.swimmerId}`;field.append(legend);
+          for(const choice of conflict.choices){
+            const label=document.createElement("label"),radio=document.createElement("input"),text=document.createElement("span");
+            const detail=Object.entries(choice.fields).filter(([key])=>key!=="course").map(([key,value])=>`${key==="tps"?"Temps d’engagement":key} : ${value===null?"non renseigné":String(value)}`).join(" ; ");
+            radio.type="radio";radio.name=`merge-engagement-choice-${index}`;radio.value=choice.id;radio.required=true;text.textContent=`Engagement ${choice.id} — ${detail}`;
+            label.append(radio,text);field.append(label);radios.push(radio);
+          }
+          form.append(field);controls.push({key:conflict.key,radios});
+        }
+        actions.className="admin-portal-actions";confirm.type="submit";confirm.textContent="Valider et fusionner";cancel.type="button";cancel.textContent="Annuler";cancel.className="ghost-button";
+        actions.append(cancel,confirm);form.append(actions);dialog.append(form);document.body.append(dialog);
+        return new Promise(resolve=>{let result=null;
+          cancel.addEventListener("click",()=>dialog.close());
+          form.addEventListener("submit",event=>{event.preventDefault();if(!form.reportValidity())return;result=controls.map(({key,radios})=>({key,id:radios.find(radio=>radio.checked).value}));dialog.close();});
+          dialog.addEventListener("close",()=>{dialog.remove();if(opener?.isConnected)opener.focus();resolve(result);},{once:true});dialog.showModal();controls[0]?.radios[0]?.focus();
+        });
+      }
+
+    let swimmerMergePending=false;
+    async function executeSwimmerMerge(payload) {
+        if(swimmerMergePending)throw new Error("Une fusion est déjà en cours. Terminez-la avant d’en lancer une autre.");
+        swimmerMergePending=true;
+        try{
+        let result=await portalActions.callFunction("mergeEngagementNationalClubSwimmer",payload);
+        if(result?.mergeConflicts){
+          const choices=await chooseMergeEngagements(result.mergeConflicts);
+          if(!choices){const error=new Error("Fusion annulée avant modification.");error.mergeCancelled=true;throw error;}
+          result=await portalActions.callFunction("mergeEngagementNationalClubSwimmer",{...payload,entryConflictToken:result.mergeConflicts.token,entryConflictChoices:choices});
+          if(result?.mergeConflicts)throw new Error("Les engagements ont changé. Relancez la fusion pour refaire les choix.");
+        }
+        return result;
+        }finally{swimmerMergePending=false;}
+      }
+
     async function mergeEngagementNationalSwimmer(sourceSwimmerId, sourceSource, targetValue) {
         const sourceId = String(sourceSwimmerId || "").trim();
         const sourceType = String(sourceSource || "engagement").trim() || "engagement";
@@ -433,7 +476,7 @@
           portalContext.elements.engagementsNationalSwimmersStatus.dataset.tone = "loading";
         }
         try {
-          const result = await portalActions.callFunction("mergeEngagementNationalClubSwimmer", {
+          const result = await executeSwimmerMerge({
             ...(finalClub?{finalClubId:finalClub.clubId}:{}),
             sourceSwimmerId: sourceId,
             sourceSource: sourceType,
@@ -500,7 +543,7 @@
           const sourceKey = portalActions.engagementNationalSwimmerKey(source);
           const [sourceSourceRaw, sourceIdRaw] = sourceKey.split(":");
           try {
-            const result = await portalActions.callFunction("mergeEngagementNationalClubSwimmer", {
+            const result = await executeSwimmerMerge({
               ...(finalClub?{finalClubId:finalClub.clubId}:{}),
               sourceSwimmerId: sourceIdRaw,
               sourceSource: sourceSourceRaw || "engagement",
@@ -521,6 +564,7 @@
           } catch (error) {
             const sourceName = [source.firstName, source.lastName].filter(Boolean).join(" ") || source.name || sourceKey;
             errors.push(`${sourceName} : ${error?.message || error}`);
+            if(error?.mergeCancelled)break;
           }
         }
         portalState.engagementNationalSwimmerMergeLoading = false;
@@ -548,7 +592,7 @@
             if(!target)throw new Error("La fiche conservée est introuvable.");
             const finalClub=await global.LivePalmesSwimmerClubs.getTools(portalActions.callFunction).chooseFinalClub({target,sources:[swimmer]});
             if(!finalClub||!global.confirm(`Finaliser la fusion vers ${portalActions.engagementSwimmerDisplayName(target)} ? Club final : ${finalClub.label}. La fiche doublon sera supprimée définitivement ; le journal sera conservé.`))return;
-            await portalActions.callFunction("mergeEngagementNationalClubSwimmer",{sourceSwimmerId:swimmerId,targetSwimmerId:target.id,finalClubId:finalClub.clubId,sourceFingerprint:swimmer.napFingerprint,targetFingerprint:target.napFingerprint,sourceLicenseNumber:String(swimmer.licenseNumber||"").trim(),targetLicenseNumber:String(target.licenseNumber||"").trim(),confirmMerge:true,confirmClubMismatch:true,confirmLicenseMismatch:true});
+            await executeSwimmerMerge({sourceSwimmerId:swimmerId,targetSwimmerId:target.id,finalClubId:finalClub.clubId,sourceFingerprint:swimmer.napFingerprint,targetFingerprint:target.napFingerprint,sourceLicenseNumber:String(swimmer.licenseNumber||"").trim(),targetLicenseNumber:String(target.licenseNumber||"").trim(),confirmMerge:true,confirmClubMismatch:true,confirmLicenseMismatch:true});
             await loadEngagementNationalSwimmers({force:true,silent:true});
             if(portalContext.elements.engagementsNationalSwimmersStatus)portalContext.elements.engagementsNationalSwimmersStatus.textContent="Fusion NAP vérifiée et finalisée.";
           }catch(error){if(portalContext.elements.engagementsNationalSwimmersStatus)portalContext.elements.engagementsNationalSwimmersStatus.textContent=`Finalisation impossible : ${error?.message||error}`;}

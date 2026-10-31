@@ -113,11 +113,13 @@ function createPerformanceHandlers(backendContext) {
         return await require("./nap-swimmer-merge").mergeSwimmers(require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD),{
           sourceSwimmerId:request.data?.sourceSwimmerId,targetSwimmerId:request.data?.targetSwimmerId,
           ...(request.data?.finalClubId!==undefined?{finalClubId:request.data.finalClubId}:{}),
+          ...(request.data?.entryConflictChoices!==undefined?{entryConflictChoices:request.data.entryConflictChoices,entryConflictToken:request.data.entryConflictToken}:{}),
           sourceFingerprint:request.data?.sourceFingerprint,targetFingerprint:request.data?.targetFingerprint,
           sourceLicenseNumber:request.data?.sourceLicenseNumber,targetLicenseNumber:request.data?.targetLicenseNumber,
           actorUid:context.uid,confirmMerge:true,confirmClubMismatch:request.data?.confirmClubMismatch===true,confirmLicenseMismatch:request.data?.confirmLicenseMismatch===true
         },require("./nap-swimmer-merge-audit").createAudit(backendContext.db,{sourceSwimmerId:request.data?.sourceSwimmerId,targetSwimmerId:request.data?.targetSwimmerId,actorUid:context.uid},backendContext.writeAuditLogOnce),async()=>{if(!context.national)throw new TypeError("Fusion reservee au niveau national.");});
       } catch(error) {
+        if(error instanceof TypeError&&error.mergeConflicts)return {ok:false,mergeConflicts:error.mergeConflicts};
         if(error instanceof backendContext.HttpsError)throw error;
         throw new backendContext.HttpsError(error instanceof TypeError||error instanceof RangeError?"failed-precondition":"unavailable",error instanceof TypeError||error instanceof RangeError?error.message:"Fusion NAP interrompue. Conservez les deux fiches choisies et reprenez la meme demande.");
       }

@@ -129,4 +129,23 @@ function fixture(failAfter=0,historic=false){
     assert.equal(f.state.nageurs.some(row=>row.id===12),false);assert.equal(f.state.forfait[0].forfait,1);
   }
   console.log("Native swimmer merge executor: licence season retained, raw result times unchanged, entries joined, authorization, no-op retries and every lost-write-response stage passed without network.");
+  for(let stop=0;stop<=total;stop++){
+    const f=fixture(stop);f.state.engagements.push({...f.state.engagements[1],id:7,tps:"1200"},{...f.state.engagements[2],id:8});
+    let summary;try{await service.mergeSwimmers(f.pool,f.input,f.audit,async()=>{});assert.fail("Conflict expected");}catch(error){summary=error.mergeConflicts;assert.ok(summary);}
+    assert.equal(f.stats().writes,0);assert.equal(await f.audit.read(),undefined);
+    f.input.entryConflictToken=summary.token;f.input.entryConflictChoices=summary.conflicts.map(row=>({key:row.key,id:"7"}));
+    if(stop)await assert.rejects(service.mergeSwimmers(f.pool,f.input,f.audit,async()=>{}),/lost response/);
+    await service.mergeSwimmers(f.pool,f.input,f.audit,async()=>{});
+    assert.deepEqual(f.state.engagements.map(row=>row.id).sort((a,b)=>a-b),[6,7]);assert.equal(f.state.engagements.find(row=>row.id===7).tps,"1200");
+    assert.equal(f.state.nageursengager.length,1);assert.equal(f.state.nageurs.some(row=>row.id===12),false);
+  }
+  console.log("Duplicate-course execution: no backup/write before choice, selected raw time retained, union and every lost-write-response stage passed.");
+  for(const stop of [1,total]){
+    const f=fixture(stop),backup=require("../functions/nap-swimmer-merge-backup"),audit=f.audit;let durable;
+    f.state.perfs=Array.from({length:600},(_,id)=>({...f.state.perfs[0],id:id+1,note:"Historique fictif volumineux. ".repeat(20)}));
+    f.audit={...audit,prepare:async(operation,plan)=>{durable=backup.encode(plan);await audit.prepare(operation,plan);},read:async()=>durable?backup.decode(durable):undefined};
+    await assert.rejects(service.mergeSwimmers(f.pool,f.input,f.audit,async()=>{}),/lost response/);assert.equal(durable.encoding,"swimmer-merge-gzip-v1");
+    await service.mergeSwimmers(f.pool,f.input,f.audit,async()=>{});assert.equal(f.state.nageurs.some(row=>row.id===12),false);assert.equal(f.state.perfs.length,600);assert.ok(f.state.perfs.every(row=>row.nageur===13&&row.tps==="14200"));
+  }
+  console.log("Large compressed plans: first/final uncertain writes resume with all 600 performances and raw times preserved.");
 })().catch(error=>{console.error(error);process.exitCode=1;});
