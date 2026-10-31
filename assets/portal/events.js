@@ -953,6 +953,9 @@
         portalContext.elements.engagementsClubNewSwimmerResetButton?.addEventListener("click", portalActions.resetEngagementClubNewSwimmerFormFromButton);
         portalContext.elements.engagementsClubNewSwimmerSaveButton?.addEventListener("click", portalActions.createEngagementClubSwimmer);
         portalContext.elements.engagementsClubRecoverSwimmerButton?.addEventListener("click", portalActions.recoverEngagementClubSwimmer);
+        document.getElementById("adminEngagementsClubSwimmersDirectoryAddButton")?.addEventListener("click", (event) => {
+          portalActions.openEngagementClubNewSwimmerDialog({ origin: "directory", currentTarget: event.currentTarget });
+        });
         portalContext.elements.engagementsClubNewSwimmerDialogOpen?.addEventListener("click", portalActions.openEngagementClubNewSwimmerDialog);
         portalContext.elements.engagementsClubNewSwimmerDialog?.addEventListener("click", (event) => {
           const dialog = portalContext.elements.engagementsClubNewSwimmerDialog;

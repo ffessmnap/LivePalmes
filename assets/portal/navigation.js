@@ -732,7 +732,12 @@
                       ? "Mes nageurs"
                       : "Engagements en comp\u00e9tition";
         }
+        const clubWorkspace = !adminMode && ["calendar", "clubPeople", "clubSwimmers"].includes(portalState.activeEngagementsTab);
+        portalContext.elements.engagementsView?.classList.toggle("admin-club-workspace", clubWorkspace);
+        const directoryActions = document.getElementById("adminEngagementsClubSwimmersDirectoryActions");
+        if (directoryActions) directoryActions.hidden = !swimmersMode || !canUse("engagements.club.manage");
         const workspaceHead = portalContext.elements.engagementsViewTitle?.closest(".admin-portal-workspace-head");
+        workspaceHead?.classList.toggle("admin-club-workspace-head", clubWorkspace);
         workspaceHead?.classList.toggle("admin-overview-head", adminCalendarMode);
         workspaceHead?.classList.toggle("admin-competition-workspace-head", adminCalendarMode);
         workspaceHead?.classList.toggle("admin-tool-workspace-head", !adminCalendarMode);
