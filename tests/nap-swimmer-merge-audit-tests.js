@@ -17,5 +17,18 @@ const db={collection:name=>{assert.equal(name,"auditLogs");return {doc:id=>({id,
   await assert.rejects(audit.complete("first",{}));assert.equal(documents.get("nap-swimmer-merge-person-13").state,"pending");
   failComplete=false;await audit.complete("first",{});assert.equal(documents.get("nap-swimmer-merge-person-13").state,"complete");
   assert.equal(await other.read("second"),null);await other.prepare("second",{});assert.equal(documents.get("nap-swimmer-merge-person-13").operation,"second");
+  const backup=require("../functions/nap-swimmer-merge-backup"),{randomBytes}=require("node:crypto");
+  const large={kind:"native-swimmer-merge",operation:"large",source:{nom:"FICTIF"},target:{nom:"CIBLE"},targetAfter:{nom:"CIBLE"},snapshots:{perfs:Array.from({length:1200},(_,id)=>({id,nageur:20,tps:"14200",notes:"Historique fictif. ".repeat(40)}))}};
+  assert.ok(Buffer.byteLength(JSON.stringify(large))>500000);
+  const packed=backup.encode(large);assert.ok(Buffer.byteLength(JSON.stringify(packed))<500000);assert.deepEqual(backup.decode(packed),large);
+  for(const tampered of [{...packed,sha256:"0".repeat(64)},{...packed,bytes:packed.bytes+1},{...packed,data:"invalid"},{...packed,target:{nom:"ALTERE"}},{...packed,encoding:"unknown"}])assert.throws(()=>backup.decode(tampered),/Sauvegarde/);
+  assert.throws(()=>backup.encode({...large,noise:randomBytes(600000).toString("base64")}),/apres compression/);
+  assert.throws(()=>backup.encode({...large,noise:"a".repeat(8000001)}),/8 Mo/);
+  const bomb={...packed,bytes:backup.MAX_RAW,data:require("node:zlib").gzipSync(Buffer.alloc(backup.MAX_RAW+1)).toString("base64")};assert.throws(()=>backup.decode(bomb),/alteree/);
+  const operation="a".repeat(64),journal=await require("../functions/activity-journal").projectPage([{id:`nap-swimmer-merge-${operation}-before`,action:"nap.swimmerMerge.prepare",actorUid:"national",target:backup.encode({...large,operation})}],async()=>[]);
+  assert.equal(journal.logs[0].target.sourcePersonName,"FICTIF");assert.equal(journal.logs[0].target.targetPersonName,"CIBLE");
+  const largeAudit=createAudit(db,{sourceSwimmerId:"20",targetSwimmerId:"21",actorUid:"national"},async()=>{});
+  await largeAudit.prepare("large",large);assert.equal(documents.get("nap-swimmer-merge-large-before").target.encoding,"swimmer-merge-gzip-v1");assert.deepEqual(await largeAudit.read("large"),large);
+  documents.get("nap-swimmer-merge-large-before").target.sha256="0".repeat(64);await assert.rejects(largeAudit.read("large"),/alteree/);assert.equal(documents.get("nap-swimmer-merge-person-20").state,"pending");
   console.log("Swimmer merge audit: atomic source/target reservations, cross-operation conflict, backup before reservation release and failed completion retry passed without Firebase access.");
 })().catch(error=>{console.error(error);process.exitCode=1;});
