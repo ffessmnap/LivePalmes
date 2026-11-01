@@ -1,610 +1,303 @@
-// Preserve the execution mode of the existing index.js function bodies.
-
-// Private existing helpers; live services/state are supplied by index.js.
-// Module creation performs no external operation.
+// Compatibility factory; operation modules hold the existing bodies.
 function createClubPeopleService(backendContext) {
-  function cleanEngagementClubPerson(raw = {}, context = {}) {
-    const firstName = backendContext.cleanText(raw.firstName).slice(0, 80);
-    const lastName = backendContext.cleanText(raw.lastName).slice(0, 80);
-    const birthDate = backendContext.cleanIsoDate(raw.birthDate);
-    const sex = ["F", "M"].includes(backendContext.cleanText(raw.sex).toUpperCase()) ? backendContext.cleanText(raw.sex).toUpperCase() : "";
-    const licenseNumber = backendContext.cleanText(raw.licenseNumber).toUpperCase().slice(0, 60);
-    const roles = raw.roles || {};
-    const official = roles.official === true || raw.official === true;
-    const teamLeader = roles.teamLeader === true || raw.teamLeader === true;
-    const swimmerIndexId = backendContext.cleanText(raw.swimmerIndexId).slice(0, 80);
-    const swimmerSource = backendContext.cleanText(raw.swimmerSource || raw.source).slice(0, 40);
-    const swimmer = Boolean(swimmerIndexId);
-    if (!firstName || !lastName) {
-      throw new backendContext.HttpsError("invalid-argument", "Nom et prenom obligatoires.");
-    }
-    if (!licenseNumber) {
-      throw new backendContext.HttpsError("invalid-argument", "Numero de licence obligatoire.");
-    }
-    if (!backendContext.ENGAGEMENT_SWIMMER_LICENSE_PATTERN.test(licenseNumber)) {
-      throw new backendContext.HttpsError("invalid-argument", "Le numero de licence doit respecter le format A-12-34567.");
-    }
-    if (!birthDate || !sex) {
-      throw new backendContext.HttpsError("invalid-argument", "Date de naissance et sexe obligatoires.");
-    }
-    if (!official && !teamLeader) {
-      throw new backendContext.HttpsError("invalid-argument", "Selectionnez au moins un role.");
-    }
-    return {
-      clubId: context.clubId,
-      clubName: context.clubName,
-      regionId: context.regionId,
-      firstName,
-      lastName,
-      licenseNumber,
-      swimmerIndexId,
-      swimmerSource: swimmer ? (swimmerSource || "performances") : "",
-      birthDate,
-      sex,
-      identityKey: backendContext.engagementSwimmerIdentityKey(firstName, lastName, birthDate),
-      roles: {
-        swimmer,
-        official,
-        teamLeader
-      },
-      active: raw.active === false ? false : true
-    };
-  }
-
-  function engagementClubPersonItem(doc) {
-    const data = doc.data() || {};
-    const roles = data.roles || {};
-    return {
-      id: doc.id,
-      clubId: backendContext.cleanText(data.clubId).slice(0, 40),
-      clubName: backendContext.cleanText(data.clubName).slice(0, 140),
-      regionId: backendContext.cleanText(data.regionId).slice(0, 80),
-      firstName: backendContext.cleanText(data.firstName).slice(0, 80),
-      lastName: backendContext.cleanText(data.lastName).slice(0, 80),
-      licenseNumber: backendContext.cleanText(data.licenseNumber).slice(0, 60),
-      swimmerIndexId: backendContext.cleanText(data.swimmerIndexId).slice(0, 80),
-      swimmerSource: backendContext.cleanText(data.swimmerSource).slice(0, 40),
-      birthDate: backendContext.cleanIsoDate(data.birthDate),
-      sex: backendContext.cleanText(data.sex).toUpperCase().slice(0, 20),
-      identityKey: backendContext.cleanText(data.identityKey).slice(0, 180),
-      roles: {
-        swimmer: roles.swimmer === true || Boolean(backendContext.cleanText(data.swimmerIndexId)),
-        official: roles.official === true,
-        teamLeader: roles.teamLeader === true
-      },
-      active: data.active !== false,
-      status: backendContext.cleanText(data.status || (data.mergedIntoId ? "merged" : "active")).slice(0, 30),
-      mergedIntoId: backendContext.cleanText(data.mergedIntoId).slice(0, 80),
-      mergedIntoName: backendContext.cleanText(data.mergedIntoName).slice(0, 180),
-      mergedAt: backendContext.cleanText(data.mergedAt).slice(0, 40),
-      updatedAt: backendContext.cleanText(data.updatedAt).slice(0, 40)
-    };
-  }
-
-  function engagementClubPeopleRosterId(clubId) {
-    return backendContext.stableHash(backendContext.cleanText(clubId)).slice(0, 40);
-  }
-
-  function engagementClubPeopleRosterRef(db, clubId) {
-    return db.collection(backendContext.ENGAGEMENT_CLUB_PEOPLE_ROSTERS_COLLECTION).doc(engagementClubPeopleRosterId(clubId));
-  }
-
-  function engagementClubPeopleRosterPersonItem(person = {}) {
-    const roles = person.roles || {};
-    return backendContext.cleanFirestoreValue({
-      id: backendContext.cleanText(person.id).slice(0, 80),
-      clubId: backendContext.cleanText(person.clubId).slice(0, 40),
-      clubName: backendContext.cleanText(person.clubName).slice(0, 140),
-      regionId: backendContext.cleanText(person.regionId).slice(0, 80),
-      firstName: backendContext.cleanText(person.firstName).slice(0, 80),
-      lastName: backendContext.cleanText(person.lastName).slice(0, 80),
-      licenseNumber: backendContext.cleanText(person.licenseNumber).slice(0, 60),
-      swimmerIndexId: backendContext.cleanText(person.swimmerIndexId).slice(0, 80),
-      swimmerSource: backendContext.cleanText(person.swimmerSource).slice(0, 40),
-      birthDate: backendContext.cleanIsoDate(person.birthDate),
-      sex: backendContext.cleanText(person.sex).toUpperCase().slice(0, 20),
-      identityKey: backendContext.cleanText(person.identityKey).slice(0, 180),
-      roles: {
-        swimmer: roles.swimmer === true || Boolean(backendContext.cleanText(person.swimmerIndexId)),
-        official: roles.official === true,
-        teamLeader: roles.teamLeader === true
-      },
-      active: person.active !== false,
-      updatedAt: backendContext.cleanText(person.updatedAt).slice(0, 40)
+  let cache0;
+  function operation0() {
+    if (!cache0) cache0 = require("./backend/server-club-people-service/clean-engagement-club-person").createClubPeopleService_cleanEngagementClubPerson({
+      get ENGAGEMENT_SWIMMER_LICENSE_PATTERN() { return backendContext.ENGAGEMENT_SWIMMER_LICENSE_PATTERN; },
+      set ENGAGEMENT_SWIMMER_LICENSE_PATTERN(value) { backendContext.ENGAGEMENT_SWIMMER_LICENSE_PATTERN = value; },
+      get HttpsError() { return backendContext.HttpsError; },
+      set HttpsError(value) { backendContext.HttpsError = value; },
+      get cleanIsoDate() { return backendContext.cleanIsoDate; },
+      set cleanIsoDate(value) { backendContext.cleanIsoDate = value; },
+      get cleanText() { return backendContext.cleanText; },
+      set cleanText(value) { backendContext.cleanText = value; },
+      get db() { return backendContext.db; },
+      set db(value) { backendContext.db = value; },
+      get engagementSwimmerIdentityKey() { return backendContext.engagementSwimmerIdentityKey; },
+      set engagementSwimmerIdentityKey(value) { backendContext.engagementSwimmerIdentityKey = value; },
+      get engagementSwimmerLicenseNumberKey() { return backendContext.engagementSwimmerLicenseNumberKey; },
+      set engagementSwimmerLicenseNumberKey(value) { backendContext.engagementSwimmerLicenseNumberKey = value; },
+      get local$engagementClubPeopleRosterPersonItem() { return operation3().engagementClubPeopleRosterPersonItem; },
+      get local$engagementClubPersonItem() { return operation1().engagementClubPersonItem; }
     });
+    return cache0;
   }
 
-  function engagementClubPeopleRosterPeopleFromData(data = {}) {
-    const people = data.people && typeof data.people === "object" ? data.people : {};
-    return Object.values(people)
-      .map(engagementClubPeopleRosterPersonItem)
-      .filter((person) => person.id && person.clubId)
-      .sort((left, right) => `${left.lastName} ${left.firstName}`.localeCompare(`${right.lastName} ${right.firstName}`, "fr"));
-  }
-
-  function engagementClubPersonIdentityConflict(people = [], person = {}, ignoredPersonId = "") {
-    const candidates = people.filter((candidate) => candidate.id && candidate.id !== ignoredPersonId);
-    const licenseKey = backendContext.engagementSwimmerLicenseNumberKey(person.licenseNumber);
-    const sameLicense = licenseKey && candidates.find((candidate) =>
-      backendContext.engagementSwimmerLicenseNumberKey(candidate.licenseNumber) === licenseKey
-    );
-    if (sameLicense) return { type: "license", person: sameLicense };
-    const identityKey = backendContext.engagementSwimmerIdentityKey(person.firstName, person.lastName, person.birthDate);
-    const invertedIdentityKey = backendContext.engagementSwimmerIdentityKey(person.lastName, person.firstName, person.birthDate);
-    const exact = identityKey && candidates.find((candidate) =>
-      (candidate.identityKey || backendContext.engagementSwimmerIdentityKey(candidate.firstName, candidate.lastName, candidate.birthDate)) === identityKey
-    );
-    if (exact) return { type: "exact", person: exact };
-    const inverted = invertedIdentityKey && invertedIdentityKey !== identityKey
-      ? candidates.find((candidate) =>
-          (candidate.identityKey || backendContext.engagementSwimmerIdentityKey(candidate.firstName, candidate.lastName, candidate.birthDate)) === invertedIdentityKey
-        )
-      : null;
-    return inverted ? { type: "inverted", person: inverted } : null;
-  }
-
-  function throwEngagementClubPersonIdentityConflict(conflict = {}) {
-    const person = conflict.person || {};
-    const name = [person.lastName, person.firstName].filter(Boolean).join(" ") || "un membre existant";
-    const reason = conflict.type === "inverted"
-      ? "avec le nom et le prenom inverses"
-      : conflict.type === "license"
-        ? "avec le meme numero de licence"
-        : "avec la meme identite";
-    throw new backendContext.HttpsError("already-exists", `${name} existe deja ${reason}. Utilisez cette fiche au lieu d'en creer une autre.`, {
-      matchType: conflict.type,
-      person: engagementClubPeopleRosterPersonItem(person)
+  let cache1;
+  function operation1() {
+    if (!cache1) cache1 = require("./backend/server-club-people-service/engagement-club-person-item").createClubPeopleService_engagementClubPersonItem({
+      get cleanIsoDate() { return backendContext.cleanIsoDate; },
+      set cleanIsoDate(value) { backendContext.cleanIsoDate = value; },
+      get cleanText() { return backendContext.cleanText; },
+      set cleanText(value) { backendContext.cleanText = value; }
     });
+    return cache1;
   }
 
-  async function engagementClubPersonOutsideClubConflict(person = {}, clubId = "") {
-    const licenseNumber = backendContext.cleanText(person.licenseNumber).toUpperCase();
-    const identityKey = backendContext.cleanText(person.identityKey);
-    const snapshots = await Promise.all([
-      licenseNumber
-        ? backendContext.db.collection("engagementClubPeople").where("licenseNumber", "==", licenseNumber).limit(10).get()
-        : Promise.resolve(null),
-      identityKey
-        ? backendContext.db.collection("engagementClubPeople").where("identityKey", "==", identityKey).limit(10).get()
-        : Promise.resolve(null)
-    ]);
-    for (const snapshot of snapshots) {
-      const outsideClubPerson = snapshot?.docs
-        .map(engagementClubPersonItem)
-        .find((candidate) => candidate.clubId && candidate.clubId !== clubId && candidate.active);
-      if (outsideClubPerson) return true;
-    }
-    return false;
-  }
-
-  function upsertEngagementClubPeopleRosterPerson(batch, db, person = {}, now = "") {
-    const item = engagementClubPeopleRosterPersonItem(person);
-    if (!item.clubId || !item.id) return;
-    if (backendContext.cleanText(person.status) === "merged" || backendContext.cleanText(person.mergedIntoId)) {
-      deleteEngagementClubPeopleRosterPerson(batch, db, item, now);
-      return;
-    }
-    batch.set(engagementClubPeopleRosterRef(db, item.clubId), {
-      clubId: item.clubId,
-      clubName: item.clubName,
-      updatedAt: now || new Date().toISOString(),
-      people: {
-        [item.id]: item
-      }
-    }, { merge: true });
-  }
-
-  function deleteEngagementClubPeopleRosterPerson(batch, db, person = {}, now = "") {
-    const clubId = backendContext.cleanText(person.clubId).slice(0, 40);
-    const personId = backendContext.cleanText(person.id).slice(0, 80);
-    if (!clubId || !personId) return;
-    batch.set(engagementClubPeopleRosterRef(db, clubId), {
-      updatedAt: now || new Date().toISOString(),
-      people: {
-        [personId]: backendContext.FieldValue.delete()
-      }
-    }, { merge: true });
-  }
-
-  async function rebuildEngagementClubPeopleRoster(db, context = {}) {
-    const clubId = backendContext.cleanText(context.clubId).slice(0, 40);
-    if (!clubId) return [];
-    const snapshot = await db.collection("engagementClubPeople")
-      .where("clubId", "==", clubId)
-      .limit(200)
-      .get();
-    const people = {};
-    snapshot.docs.forEach((doc) => {
-      const item = engagementClubPeopleRosterPersonItem(engagementClubPersonItem(doc));
-      if (item.id && item.clubId === clubId) people[item.id] = item;
+  let cache2;
+  function operation2() {
+    if (!cache2) cache2 = require("./backend/server-club-people-service/engagement-club-people-roster-id").createClubPeopleService_engagementClubPeopleRosterId({
+      get ENGAGEMENT_CLUB_PEOPLE_ROSTERS_COLLECTION() { return backendContext.ENGAGEMENT_CLUB_PEOPLE_ROSTERS_COLLECTION; },
+      set ENGAGEMENT_CLUB_PEOPLE_ROSTERS_COLLECTION(value) { backendContext.ENGAGEMENT_CLUB_PEOPLE_ROSTERS_COLLECTION = value; },
+      get cleanText() { return backendContext.cleanText; },
+      set cleanText(value) { backendContext.cleanText = value; },
+      get stableHash() { return backendContext.stableHash; },
+      set stableHash(value) { backendContext.stableHash = value; }
     });
-    const now = new Date().toISOString();
-    await engagementClubPeopleRosterRef(db, clubId).set({
-      clubId,
-      clubName: backendContext.cleanText(context.clubName).slice(0, 140),
-      generatedAt: now,
-      updatedAt: now,
-      personCount: Object.keys(people).length,
-      people
-    }, { merge: false });
-    return engagementClubPeopleRosterPeopleFromData({ people });
+    return cache2;
   }
 
-  async function syncEngagementClubPeopleRosterFromChange(event = {}) {
-    const before = event.data?.before?.exists ? engagementClubPersonItem(event.data.before) : null;
-    const after = event.data?.after?.exists ? engagementClubPersonItem(event.data.after) : null;
-    const now = new Date().toISOString();
-    const batch = backendContext.db.batch();
-    let batchSize = 0;
-    if (before?.clubId && (!after || before.clubId !== after.clubId)) {
-      deleteEngagementClubPeopleRosterPerson(batch, backendContext.db, before, now);
-      batchSize += 1;
-    }
-    if (after?.clubId) {
-      upsertEngagementClubPeopleRosterPerson(batch, backendContext.db, after, now);
-      batchSize += 1;
-    }
-    if (batchSize) await batch.commit();
-  }
-
-  function engagementClubSwimmerItem(doc) {
-    const data = doc.data() || {};
-    const firstName = backendContext.cleanText(data.firstName).slice(0, 80);
-    const lastName = backendContext.cleanText(data.lastName).slice(0, 80);
-    const name = backendContext.cleanText(data.name).slice(0, 160) || [firstName, lastName].filter(Boolean).join(" ");
-    const licenseSeason = backendContext.engagementLicenseSeasonState(data);
-    return backendContext.cleanFirestoreValue({
-      id: doc.id,
-      swimmerIndexId: doc.id,
-      source: "performances",
-      swimmerId: backendContext.cleanText(data.id || data.swimmerId).slice(0, 80),
-      identityKey: backendContext.cleanText(data.identityKey).slice(0, 180),
-      firstName,
-      lastName,
-      name,
-      birthDate: backendContext.cleanIsoDate(data.birthDate),
-      sex: backendContext.cleanText(data.sex).slice(0, 20),
-      category: backendContext.currentEngagementCategoryFromBirthDate(data.birthDate),
-      clubId: backendContext.cleanText(data.clubId).slice(0, 40),
-      club: backendContext.cleanText(data.club).slice(0, 60),
-      clubName: backendContext.cleanText(data.clubName).slice(0, 140),
-      licenseNumber: backendContext.cleanText(data.licenseNumber).slice(0, 60),
-      licenseVerificationStatus: backendContext.cleanEngagementLicenseVerificationStatus(data.licenseVerificationStatus || data.verificationStatus, "pending"),
-      licenseSeasonLabel: licenseSeason.label,
-      licenseSeasonStatus: licenseSeason.status,
-      latestDate: backendContext.cleanIsoDate(data.latestDate),
-      performanceCount: Math.max(0, Math.trunc(Number(data.performanceCount) || 0)),
-      active: data.active !== false,
-      status: backendContext.cleanText(data.status || (data.active === false ? "inactive" : "active")).slice(0, 40),
-      mergedIntoId: backendContext.cleanText(data.mergedIntoId).slice(0, 80),
-      mergedIntoSource: backendContext.cleanText(data.mergedIntoSource).slice(0, 40),
-      mergedIntoName: backendContext.cleanText(data.mergedIntoName).slice(0, 160),
-      sourceIds: Array.isArray(data.sourceIds) ? data.sourceIds.map((id) => backendContext.cleanText(id).slice(0, 80)).filter(Boolean).slice(0, 20) : []
+  let cache3;
+  function operation3() {
+    if (!cache3) cache3 = require("./backend/server-club-people-service/engagement-club-people-roster-person-item").createClubPeopleService_engagementClubPeopleRosterPersonItem({
+      get cleanFirestoreValue() { return backendContext.cleanFirestoreValue; },
+      set cleanFirestoreValue(value) { backendContext.cleanFirestoreValue = value; },
+      get cleanIsoDate() { return backendContext.cleanIsoDate; },
+      set cleanIsoDate(value) { backendContext.cleanIsoDate = value; },
+      get cleanText() { return backendContext.cleanText; },
+      set cleanText(value) { backendContext.cleanText = value; }
     });
+    return cache3;
   }
 
-  function engagementReferenceSwimmerItem(raw = {}) {
-    const swimmerId = backendContext.cleanText(raw.id || raw.swimmerId).slice(0, 80);
-    const firstName = backendContext.cleanText(raw.firstName).slice(0, 80);
-    const lastName = backendContext.cleanText(raw.lastName).slice(0, 80);
-    const name = backendContext.cleanText(raw.name).slice(0, 160) || [firstName, lastName].filter(Boolean).join(" ");
-    const birthDate = backendContext.cleanIsoDate(raw.birthDate);
-    const licenseSeason = backendContext.engagementLicenseSeasonState(raw);
-    return backendContext.cleanFirestoreValue({
-      id: swimmerId,
-      swimmerIndexId: swimmerId,
-      source: "reference",
-      swimmerId,
-      identityKey: backendContext.cleanText(raw.identityKey).slice(0, 180) || backendContext.engagementSwimmerIdentityKey(firstName, lastName, birthDate),
-      firstName,
-      lastName,
-      name,
-      birthDate,
-      sex: backendContext.cleanText(raw.sex).slice(0, 20),
-      category: backendContext.currentEngagementCategoryFromBirthDate(birthDate),
-      clubId: backendContext.cleanText(raw.clubId).slice(0, 40),
-      club: backendContext.cleanText(raw.club).slice(0, 60),
-      clubName: backendContext.cleanText(raw.clubName).slice(0, 140),
-      licenseNumber: backendContext.cleanText(raw.licenseNumber).slice(0, 60),
-      licenseVerificationStatus: backendContext.cleanEngagementLicenseVerificationStatus(raw.licenseVerificationStatus || raw.verificationStatus, "pending"),
-      licenseSeasonLabel: licenseSeason.label,
-      licenseSeasonStatus: licenseSeason.status,
-      latestDate: backendContext.cleanIsoDate(raw.latestDate),
-      performanceCount: Math.max(0, Math.trunc(Number(raw.performanceCount) || 0)),
-      sourceIds: swimmerId ? [swimmerId] : []
+  let cache4;
+  function operation4() {
+    if (!cache4) cache4 = require("./backend/server-club-people-service/engagement-club-people-roster-people-from-data").createClubPeopleService_engagementClubPeopleRosterPeopleFromData({
+      get local$engagementClubPeopleRosterPersonItem() { return operation3().engagementClubPeopleRosterPersonItem; }
     });
+    return cache4;
   }
 
-  function engagementReferenceClubSwimmers(clubId = "", limit = 800) {
-    const targetClubId = backendContext.cleanText(clubId);
-    if (!targetClubId) return [];
-    return backendContext.intranapSwimmersIndex
-      .filter((swimmer) => backendContext.cleanText(swimmer.clubId) === targetClubId)
-      .slice(0, limit)
-      .map(engagementReferenceSwimmerItem)
-      .filter((swimmer) => swimmer.swimmerIndexId && swimmer.clubId === targetClubId);
-  }
-
-  function sortEngagementClubSwimmers(swimmers = []) {
-    return swimmers.sort((left, right) =>
-      backendContext.cleanText(right.latestDate).localeCompare(backendContext.cleanText(left.latestDate)) ||
-      backendContext.cleanText(left.lastName).localeCompare(backendContext.cleanText(right.lastName), "fr") ||
-      backendContext.cleanText(left.firstName).localeCompare(backendContext.cleanText(right.firstName), "fr")
-    );
-  }
-
-  function engagementClubSwimmerMatchKeys(swimmer = {}) {
-    const swimmerId = backendContext.cleanText(swimmer.swimmerId);
-    const licenseKey = backendContext.engagementSwimmerLicenseNumberKey(swimmer.licenseNumber);
-    const identityKey = backendContext.normalizePerformanceSearchText(swimmer.identityKey || [swimmer.lastName, swimmer.firstName, swimmer.birthDate].filter(Boolean).join("|"));
-    const swimmerIndexId = backendContext.cleanText(swimmer.swimmerIndexId || swimmer.id);
-    const source = backendContext.cleanText(swimmer.source || "performances");
-    return Array.from(new Set((swimmerId ? [
-      `swimmer:${swimmerId}`,
-      swimmerIndexId ? `index:${source}:${swimmerIndexId}` : ""
-    ] : [
-      licenseKey ? `license:${licenseKey}` : "",
-      identityKey ? `identity:${identityKey}` : "",
-      swimmerIndexId ? `index:${source}:${swimmerIndexId}` : ""
-    ]).filter(Boolean)));
-  }
-
-  function engagementClubSwimmerSourceRank(source = "") {
-    return {
-      performances: 3,
-      engagement: 2,
-      reference: 1
-    }[backendContext.cleanText(source)] || 0;
-  }
-
-  function mergeEngagementClubSwimmerItems(left = {}, right = {}) {
-    const rightPreferred = engagementClubSwimmerSourceRank(right.source) > engagementClubSwimmerSourceRank(left.source);
-    const preferred = rightPreferred ? right : left;
-    const fallback = rightPreferred ? left : right;
-    const merged = { ...fallback, ...preferred };
-    [
-      "id", "swimmerIndexId", "swimmerId", "identityKey", "firstName", "lastName", "name", "birthDate", "sex", "category",
-      "clubId", "club", "clubName", "licenseNumber", "licenseVerificationStatus", "licenseSeasonLabel", "licenseSeasonStatus",
-      "changeRequestStatus", "changeRequestId", "changeRequestedAt", "clubActivityStatus", "clubActivityStatusSource",
-      "clubActivityStatusUpdatedAt", "clubActivityStatusUpdatedBy"
-    ].forEach((key) => {
-      if (!backendContext.cleanText(merged[key]) && backendContext.cleanText(fallback[key])) merged[key] = fallback[key];
+  let cache5;
+  function operation5() {
+    if (!cache5) cache5 = require("./backend/server-club-people-service/upsert-engagement-club-people-roster-person").createClubPeopleService_upsertEngagementClubPeopleRosterPerson({
+      get cleanText() { return backendContext.cleanText; },
+      set cleanText(value) { backendContext.cleanText = value; },
+      get local$deleteEngagementClubPeopleRosterPerson() { return operation6().deleteEngagementClubPeopleRosterPerson; },
+      get local$engagementClubPeopleRosterPersonItem() { return operation3().engagementClubPeopleRosterPersonItem; },
+      get local$engagementClubPeopleRosterRef() { return operation2().engagementClubPeopleRosterRef; }
     });
-    merged.performanceCount = Math.max(Number(left.performanceCount || 0), Number(right.performanceCount || 0));
-    merged.latestDate = [backendContext.cleanIsoDate(left.latestDate), backendContext.cleanIsoDate(right.latestDate)].filter(Boolean).sort().pop() || "";
-    merged.updatedAt = [backendContext.cleanText(left.updatedAt), backendContext.cleanText(right.updatedAt)].filter(Boolean).sort().pop() || "";
-    merged.active = left.active !== false || right.active !== false;
-    return backendContext.engagementClubRosterSwimmerItem(merged);
+    return cache5;
   }
 
-  function uniqueEngagementClubSwimmers(swimmers = [], limit = 800) {
-    const groups = [];
-    swimmers.filter((swimmer) => swimmer.swimmerIndexId).forEach((swimmer) => {
-      const keys = engagementClubSwimmerMatchKeys(swimmer);
-      const matchingIndexes = groups
-        .map((group, index) => group.keys.some((key) => keys.includes(key)) ? index : -1)
-        .filter((index) => index >= 0);
-      if (!matchingIndexes.length) {
-        groups.push({ item: backendContext.engagementClubRosterSwimmerItem(swimmer), keys });
-        return;
-      }
-      const targetIndex = matchingIndexes[0];
-      const target = groups[targetIndex];
-      target.item = mergeEngagementClubSwimmerItems(target.item, swimmer);
-      target.keys = Array.from(new Set([...target.keys, ...keys, ...engagementClubSwimmerMatchKeys(target.item)]));
-      matchingIndexes.slice(1).reverse().forEach((index) => {
-        target.item = mergeEngagementClubSwimmerItems(target.item, groups[index].item);
-        target.keys = Array.from(new Set([...target.keys, ...groups[index].keys, ...engagementClubSwimmerMatchKeys(target.item)]));
-        groups.splice(index, 1);
-      });
+  let cache6;
+  function operation6() {
+    if (!cache6) cache6 = require("./backend/server-club-people-service/delete-engagement-club-people-roster-person").createClubPeopleService_deleteEngagementClubPeopleRosterPerson({
+      get FieldValue() { return backendContext.FieldValue; },
+      set FieldValue(value) { backendContext.FieldValue = value; },
+      get cleanText() { return backendContext.cleanText; },
+      set cleanText(value) { backendContext.cleanText = value; },
+      get local$engagementClubPeopleRosterRef() { return operation2().engagementClubPeopleRosterRef; }
     });
-    return groups.map((group) => group.item).slice(0, limit);
+    return cache6;
   }
 
-  async function rebuildEngagementClubRoster(db, context = {}, limit = 800) {
-    const clubId = backendContext.cleanText(context.clubId);
-    if (!clubId) return [];
-    const snapshot = await db
-      .collection(backendContext.PERFORMANCE_SWIMMERS_COLLECTION)
-      .where("clubId", "==", clubId)
-      .limit(limit)
-      .get();
-    const newSwimmersSnapshot = await db
-      .collection("engagementClubSwimmers")
-      .where("clubId", "==", clubId)
-      .where("active", "==", true)
-      .limit(200)
-      .get();
-    const legacyLicenses = await backendContext.engagementLegacySwimmerLicensesByClub(db, clubId);
-    const swimmers = sortEngagementClubSwimmers(uniqueEngagementClubSwimmers([
-      ...newSwimmersSnapshot.docs.map(backendContext.engagementNewSwimmerItem),
-      ...snapshot.docs.map(engagementClubSwimmerItem),
-      ...engagementReferenceClubSwimmers(clubId, limit)
-    ], limit).map((swimmer) => {
-      const legacyLicense = legacyLicenses.get(swimmer.swimmerIndexId);
-      return legacyLicense?.licenseNumber
-        ? {
-            ...swimmer,
-            licenseNumber: legacyLicense.licenseNumber,
-            licenseVerificationStatus: legacyLicense.verificationStatus || "pending",
-            licenseSeasonLabel: legacyLicense.licenseSeasonLabel,
-            licenseSeasonStatus: legacyLicense.licenseSeasonStatus,
-            licenseSeasons: legacyLicense.licenseSeasons
-          }
-        : swimmer;
-    }));
-    const now = new Date().toISOString();
-    const rosterEntries = {};
-    swimmers.forEach((swimmer) => {
-      const item = backendContext.engagementClubRosterSwimmerItem(swimmer);
-      if (item.swimmerIndexId && item.clubId === clubId) rosterEntries[backendContext.engagementClubRosterSwimmerKey(item)] = item;
+  let cache7;
+  function operation7() {
+    if (!cache7) cache7 = require("./backend/server-club-people-service/rebuild-engagement-club-people-roster").createClubPeopleService_rebuildEngagementClubPeopleRoster({
+      get cleanText() { return backendContext.cleanText; },
+      set cleanText(value) { backendContext.cleanText = value; },
+      get local$engagementClubPeopleRosterPeopleFromData() { return operation4().engagementClubPeopleRosterPeopleFromData; },
+      get local$engagementClubPeopleRosterPersonItem() { return operation3().engagementClubPeopleRosterPersonItem; },
+      get local$engagementClubPeopleRosterRef() { return operation2().engagementClubPeopleRosterRef; },
+      get local$engagementClubPersonItem() { return operation1().engagementClubPersonItem; }
     });
-    await backendContext.engagementClubRosterRef(db, clubId).set({
-      clubId,
-      clubName: backendContext.cleanText(context.clubName).slice(0, 140) || swimmers.find((swimmer) => swimmer.clubName)?.clubName || "",
-      generatedAt: now,
-      updatedAt: now,
-      swimmerCount: Object.keys(rosterEntries).length,
-      swimmers: rosterEntries
-    }, { merge: false });
-    return swimmers;
+    return cache7;
   }
 
-  async function syncEngagementClubRosterFromSwimmerChange(event = {}, source = "performances") {
-    const before = event.data?.before?.exists ? event.data.before.data() || {} : null;
-    const after = event.data?.after?.exists ? event.data.after.data() || {} : null;
-    const docId = backendContext.cleanText(event.params?.swimmerIndexId || event.params?.swimmerId);
-    const now = new Date().toISOString();
-    const batch = backendContext.db.batch();
-    let batchSize = 0;
-    const beforeItem = before
-      ? backendContext.engagementClubRosterSwimmerItem({ ...before, swimmerIndexId: docId, source })
-      : null;
-    const afterItem = after
-      ? backendContext.engagementClubRosterSwimmerItem({ ...after, swimmerIndexId: docId, source })
-      : null;
-    const shouldDeleteBefore = beforeItem?.clubId && (
-      !afterItem ||
-      afterItem.active === false ||
-      beforeItem.clubId !== afterItem.clubId ||
-      backendContext.engagementClubRosterSwimmerKey(beforeItem) !== backendContext.engagementClubRosterSwimmerKey(afterItem)
-    );
-    if (shouldDeleteBefore) {
-      backendContext.deleteEngagementClubRosterSwimmer(batch, backendContext.db, beforeItem, now);
-      batchSize += 1;
-    }
-    if (afterItem?.clubId && afterItem.active !== false) {
-      backendContext.upsertEngagementClubRosterSwimmer(batch, backendContext.db, afterItem, now);
-      batchSize += 1;
-    }
-    if (source !== "engagement" && docId) {
-      backendContext.deleteEngagementEntryTimeCache(batch, backendContext.db, { ...(after || before || {}), source, swimmerIndexId: docId });
-      batchSize += 1;
-    }
-    if (batchSize) await batch.commit();
-  }
-
-  async function reactivateEngagementClubRosterSwimmersFromPerformanceRows(rows = [], context = {}) {
-    const byClub = new Map();
-    rows.filter((row) => row && row.isIntermediate !== true).forEach((row) => {
-      const clubId = backendContext.cleanText(row.clubId).slice(0, 40);
-      const swimmerId = backendContext.cleanText(row.swimmerId || row.originalSwimmerId).slice(0, 80);
-      const identityKey = backendContext.cleanText(row.swimmerIdentityKey).slice(0, 180);
-      if (!clubId || (!swimmerId && !identityKey)) return;
-      if (!byClub.has(clubId)) byClub.set(clubId, { swimmerIds: new Set(), identityKeys: new Set() });
-      if (swimmerId) byClub.get(clubId).swimmerIds.add(swimmerId);
-      if (identityKey) byClub.get(clubId).identityKeys.add(identityKey);
+  let cache8;
+  function operation8() {
+    if (!cache8) cache8 = require("./backend/server-club-people-service/sync-engagement-club-people-roster-from-change").createClubPeopleService_syncEngagementClubPeopleRosterFromChange({
+      get db() { return backendContext.db; },
+      set db(value) { backendContext.db = value; },
+      get local$deleteEngagementClubPeopleRosterPerson() { return operation6().deleteEngagementClubPeopleRosterPerson; },
+      get local$engagementClubPersonItem() { return operation1().engagementClubPersonItem; },
+      get local$upsertEngagementClubPeopleRosterPerson() { return operation5().upsertEngagementClubPeopleRosterPerson; }
     });
-    if (!byClub.size) return { affectedClubs: 0, reactivatedSwimmers: 0 };
-    if (byClub.size > 200) throw new Error("Trop de clubs à réactiver dans un seul import.");
-    const clubIds = Array.from(byClub.keys());
-    const refs = clubIds.map((clubId) => backendContext.engagementClubRosterRef(backendContext.db, clubId));
-    const snapshots = await backendContext.db.getAll(...refs);
-    const now = context.now || new Date().toISOString();
-    const writer = backendContext.db.bulkWriter({ throttling: { initialOpsPerSecond: 50, maxOpsPerSecond: 100 } });
-    let affectedClubs = 0;
-    let reactivatedSwimmers = 0;
-    snapshots.forEach((snapshot, index) => {
-      if (!snapshot.exists) return;
-      const targets = byClub.get(clubIds[index]);
-      const data = snapshot.data() || {};
-      const entries = data.swimmers && typeof data.swimmers === "object" ? data.swimmers : {};
-      const updates = {};
-      Object.entries(entries).forEach(([key, swimmer]) => {
-        const matches = targets.swimmerIds.has(backendContext.cleanText(swimmer?.swimmerId)) ||
-          targets.identityKeys.has(backendContext.cleanText(swimmer?.identityKey));
-        if (!matches || backendContext.cleanEngagementClubActivityStatus(swimmer?.clubActivityStatus) === "active") return;
-        updates[key] = backendContext.engagementClubRosterSwimmerItem({
-          ...swimmer,
-          clubActivityStatus: "active",
-          clubActivityStatusSource: "new-performance",
-          clubActivityStatusUpdatedAt: now,
-          clubActivityStatusUpdatedBy: context.actorUid || "system:performance-import"
-        });
-        reactivatedSwimmers += 1;
-      });
-      if (!Object.keys(updates).length) return;
-      affectedClubs += 1;
-      writer.set(snapshot.ref, { updatedAt: now, swimmers: updates }, { merge: true });
+    return cache8;
+  }
+
+  let cache9;
+  function operation9() {
+    if (!cache9) cache9 = require("./backend/server-club-people-service/engagement-club-swimmer-item").createClubPeopleService_engagementClubSwimmerItem({
+      get cleanEngagementLicenseVerificationStatus() { return backendContext.cleanEngagementLicenseVerificationStatus; },
+      set cleanEngagementLicenseVerificationStatus(value) { backendContext.cleanEngagementLicenseVerificationStatus = value; },
+      get cleanFirestoreValue() { return backendContext.cleanFirestoreValue; },
+      set cleanFirestoreValue(value) { backendContext.cleanFirestoreValue = value; },
+      get cleanIsoDate() { return backendContext.cleanIsoDate; },
+      set cleanIsoDate(value) { backendContext.cleanIsoDate = value; },
+      get cleanText() { return backendContext.cleanText; },
+      set cleanText(value) { backendContext.cleanText = value; },
+      get currentEngagementCategoryFromBirthDate() { return backendContext.currentEngagementCategoryFromBirthDate; },
+      set currentEngagementCategoryFromBirthDate(value) { backendContext.currentEngagementCategoryFromBirthDate = value; },
+      get engagementLicenseSeasonState() { return backendContext.engagementLicenseSeasonState; },
+      set engagementLicenseSeasonState(value) { backendContext.engagementLicenseSeasonState = value; }
     });
-    await writer.close();
-    return { affectedClubs, reactivatedSwimmers };
+    return cache9;
   }
 
-  function cleanIsoDateTime(value) {
-    const text = backendContext.cleanText(value).slice(0, 40);
-    if (!text) return "";
-    const date = new Date(text);
-    return Number.isNaN(date.getTime()) ? "" : date.toISOString();
+  let cache10;
+  function operation10() {
+    if (!cache10) cache10 = require("./backend/server-club-people-service/engagement-reference-swimmer-item").createClubPeopleService_engagementReferenceSwimmerItem({
+      get cleanEngagementLicenseVerificationStatus() { return backendContext.cleanEngagementLicenseVerificationStatus; },
+      set cleanEngagementLicenseVerificationStatus(value) { backendContext.cleanEngagementLicenseVerificationStatus = value; },
+      get cleanFirestoreValue() { return backendContext.cleanFirestoreValue; },
+      set cleanFirestoreValue(value) { backendContext.cleanFirestoreValue = value; },
+      get cleanIsoDate() { return backendContext.cleanIsoDate; },
+      set cleanIsoDate(value) { backendContext.cleanIsoDate = value; },
+      get cleanText() { return backendContext.cleanText; },
+      set cleanText(value) { backendContext.cleanText = value; },
+      get currentEngagementCategoryFromBirthDate() { return backendContext.currentEngagementCategoryFromBirthDate; },
+      set currentEngagementCategoryFromBirthDate(value) { backendContext.currentEngagementCategoryFromBirthDate = value; },
+      get engagementLicenseSeasonState() { return backendContext.engagementLicenseSeasonState; },
+      set engagementLicenseSeasonState(value) { backendContext.engagementLicenseSeasonState = value; },
+      get engagementSwimmerIdentityKey() { return backendContext.engagementSwimmerIdentityKey; },
+      set engagementSwimmerIdentityKey(value) { backendContext.engagementSwimmerIdentityKey = value; }
+    });
+    return cache10;
   }
 
-  function cleanEngagementDeadlineAt(value) {
-    const text = cleanIsoDateTime(value);
-    if (!text) return "";
-    const date = new Date(text);
-    date.setUTCMinutes(0, 0, 0);
-    return date.toISOString();
+  let cache11;
+  function operation11() {
+    if (!cache11) cache11 = require("./backend/server-club-people-service/engagement-reference-club-swimmers").createClubPeopleService_engagementReferenceClubSwimmers({
+      get PERFORMANCE_SWIMMERS_COLLECTION() { return backendContext.PERFORMANCE_SWIMMERS_COLLECTION; },
+      set PERFORMANCE_SWIMMERS_COLLECTION(value) { backendContext.PERFORMANCE_SWIMMERS_COLLECTION = value; },
+      get cleanText() { return backendContext.cleanText; },
+      set cleanText(value) { backendContext.cleanText = value; },
+      get engagementClubRosterRef() { return backendContext.engagementClubRosterRef; },
+      set engagementClubRosterRef(value) { backendContext.engagementClubRosterRef = value; },
+      get engagementClubRosterSwimmerItem() { return backendContext.engagementClubRosterSwimmerItem; },
+      set engagementClubRosterSwimmerItem(value) { backendContext.engagementClubRosterSwimmerItem = value; },
+      get engagementClubRosterSwimmerKey() { return backendContext.engagementClubRosterSwimmerKey; },
+      set engagementClubRosterSwimmerKey(value) { backendContext.engagementClubRosterSwimmerKey = value; },
+      get engagementLegacySwimmerLicensesByClub() { return backendContext.engagementLegacySwimmerLicensesByClub; },
+      set engagementLegacySwimmerLicensesByClub(value) { backendContext.engagementLegacySwimmerLicensesByClub = value; },
+      get engagementNewSwimmerItem() { return backendContext.engagementNewSwimmerItem; },
+      set engagementNewSwimmerItem(value) { backendContext.engagementNewSwimmerItem = value; },
+      get intranapSwimmersIndex() { return backendContext.intranapSwimmersIndex; },
+      set intranapSwimmersIndex(value) { backendContext.intranapSwimmersIndex = value; },
+      get local$engagementClubSwimmerItem() { return operation9().engagementClubSwimmerItem; },
+      get local$engagementReferenceSwimmerItem() { return operation10().engagementReferenceSwimmerItem; },
+      get local$sortEngagementClubSwimmers() { return operation12().sortEngagementClubSwimmers; },
+      get local$uniqueEngagementClubSwimmers() { return operation12().uniqueEngagementClubSwimmers; }
+    });
+    return cache11;
   }
 
-  function isEngagementOpeningDeadlinePast(entryStatus, entryDeadlineAt, nowMs = Date.now()) {
-    if (backendContext.cleanEngagementEntryStatus(entryStatus) !== "open" || !entryDeadlineAt) return false;
-    const deadline = new Date(entryDeadlineAt);
-    return !Number.isNaN(deadline.getTime()) && deadline.getTime() <= nowMs;
+  let cache12;
+  function operation12() {
+    if (!cache12) cache12 = require("./backend/server-club-people-service/engagement-club-swimmer-match-keys").createClubPeopleService_engagementClubSwimmerMatchKeys({
+      get cleanIsoDate() { return backendContext.cleanIsoDate; },
+      set cleanIsoDate(value) { backendContext.cleanIsoDate = value; },
+      get cleanText() { return backendContext.cleanText; },
+      set cleanText(value) { backendContext.cleanText = value; },
+      get engagementClubRosterSwimmerItem() { return backendContext.engagementClubRosterSwimmerItem; },
+      set engagementClubRosterSwimmerItem(value) { backendContext.engagementClubRosterSwimmerItem = value; },
+      get engagementSwimmerLicenseNumberKey() { return backendContext.engagementSwimmerLicenseNumberKey; },
+      set engagementSwimmerLicenseNumberKey(value) { backendContext.engagementSwimmerLicenseNumberKey = value; },
+      get normalizePerformanceSearchText() { return backendContext.normalizePerformanceSearchText; },
+      set normalizePerformanceSearchText(value) { backendContext.normalizePerformanceSearchText = value; }
+    });
+    return cache12;
   }
 
-  function isEngagementOpeningTooEarly(entryStatus, competitionDate, nowMs = Date.now()) {
-    if (backendContext.cleanEngagementEntryStatus(entryStatus) !== "open" || !competitionDate) return false;
-    const startMs = Date.parse(`${competitionDate}T00:00:00.000Z`);
-    return Number.isFinite(startMs) && startMs - nowMs > 30 * 24 * 60 * 60 * 1000;
+  let cache13;
+  function operation13() {
+    if (!cache13) cache13 = require("./backend/server-club-people-service/sync-engagement-club-roster-from-swimmer-change").createClubPeopleService_syncEngagementClubRosterFromSwimmerChange({
+      get cleanText() { return backendContext.cleanText; },
+      set cleanText(value) { backendContext.cleanText = value; },
+      get db() { return backendContext.db; },
+      set db(value) { backendContext.db = value; },
+      get deleteEngagementClubRosterSwimmer() { return backendContext.deleteEngagementClubRosterSwimmer; },
+      set deleteEngagementClubRosterSwimmer(value) { backendContext.deleteEngagementClubRosterSwimmer = value; },
+      get deleteEngagementEntryTimeCache() { return backendContext.deleteEngagementEntryTimeCache; },
+      set deleteEngagementEntryTimeCache(value) { backendContext.deleteEngagementEntryTimeCache = value; },
+      get engagementClubRosterSwimmerItem() { return backendContext.engagementClubRosterSwimmerItem; },
+      set engagementClubRosterSwimmerItem(value) { backendContext.engagementClubRosterSwimmerItem = value; },
+      get engagementClubRosterSwimmerKey() { return backendContext.engagementClubRosterSwimmerKey; },
+      set engagementClubRosterSwimmerKey(value) { backendContext.engagementClubRosterSwimmerKey = value; },
+      get upsertEngagementClubRosterSwimmer() { return backendContext.upsertEngagementClubRosterSwimmer; },
+      set upsertEngagementClubRosterSwimmer(value) { backendContext.upsertEngagementClubRosterSwimmer = value; }
+    });
+    return cache13;
   }
 
-  function cleanEngagementRegionIds(raw = [], excludedRegionId = "") {
-    const values = Array.isArray(raw) ? raw : [raw];
-    const excludedKey = backendContext.normalizedEngagementRegionKey(excludedRegionId);
-    const seen = new Set();
-    return values
-      .map((value) => backendContext.cleanText(value).slice(0, 80))
-      .filter(Boolean)
-      .filter((regionId) => backendContext.normalizedEngagementRegionKey(regionId) !== excludedKey)
-      .filter((regionId) => {
-        const key = backendContext.normalizedEngagementRegionKey(regionId);
-        if (!key || seen.has(key)) return false;
-        seen.add(key);
-        return true;
-      })
-      .slice(0, 30);
+  let cache14;
+  function operation14() {
+    if (!cache14) cache14 = require("./backend/server-club-people-service/reactivate-engagement-club-roster-swimmers-from-performance-rows").createClubPeopleService_reactivateEngagementClubRosterSwimmersFromPerformanceRows({
+      get cleanEngagementClubActivityStatus() { return backendContext.cleanEngagementClubActivityStatus; },
+      set cleanEngagementClubActivityStatus(value) { backendContext.cleanEngagementClubActivityStatus = value; },
+      get cleanText() { return backendContext.cleanText; },
+      set cleanText(value) { backendContext.cleanText = value; },
+      get db() { return backendContext.db; },
+      set db(value) { backendContext.db = value; },
+      get engagementClubRosterRef() { return backendContext.engagementClubRosterRef; },
+      set engagementClubRosterRef(value) { backendContext.engagementClubRosterRef = value; },
+      get engagementClubRosterSwimmerItem() { return backendContext.engagementClubRosterSwimmerItem; },
+      set engagementClubRosterSwimmerItem(value) { backendContext.engagementClubRosterSwimmerItem = value; }
+    });
+    return cache14;
   }
 
+  let cache15;
+  function operation15() {
+    if (!cache15) cache15 = require("./backend/server-club-people-service/clean-iso-date-time").createClubPeopleService_cleanIsoDateTime({
+      get cleanText() { return backendContext.cleanText; },
+      set cleanText(value) { backendContext.cleanText = value; }
+    });
+    return cache15;
+  }
+
+  let cache16;
+  function operation16() {
+    if (!cache16) cache16 = require("./backend/server-club-people-service/clean-engagement-deadline-at").createClubPeopleService_cleanEngagementDeadlineAt({
+      get cleanEngagementEntryStatus() { return backendContext.cleanEngagementEntryStatus; },
+      set cleanEngagementEntryStatus(value) { backendContext.cleanEngagementEntryStatus = value; },
+      get local$cleanIsoDateTime() { return operation15().cleanIsoDateTime; }
+    });
+    return cache16;
+  }
+
+  let cache17;
+  function operation17() {
+    if (!cache17) cache17 = require("./backend/server-club-people-service/clean-engagement-region-ids").createClubPeopleService_cleanEngagementRegionIds({
+      get cleanText() { return backendContext.cleanText; },
+      set cleanText(value) { backendContext.cleanText = value; },
+      get normalizedEngagementRegionKey() { return backendContext.normalizedEngagementRegionKey; },
+      set normalizedEngagementRegionKey(value) { backendContext.normalizedEngagementRegionKey = value; }
+    });
+    return cache17;
+  }
   return {
-    cleanEngagementClubPerson,
-    engagementClubPersonItem,
-    engagementClubPeopleRosterId,
-    engagementClubPeopleRosterRef,
-    engagementClubPeopleRosterPersonItem,
-    engagementClubPeopleRosterPeopleFromData,
-    engagementClubPersonIdentityConflict,
-    throwEngagementClubPersonIdentityConflict,
-    engagementClubPersonOutsideClubConflict,
-    upsertEngagementClubPeopleRosterPerson,
-    deleteEngagementClubPeopleRosterPerson,
-    rebuildEngagementClubPeopleRoster,
-    syncEngagementClubPeopleRosterFromChange,
-    engagementClubSwimmerItem,
-    engagementReferenceSwimmerItem,
-    engagementReferenceClubSwimmers,
-    sortEngagementClubSwimmers,
-    engagementClubSwimmerMatchKeys,
-    engagementClubSwimmerSourceRank,
-    mergeEngagementClubSwimmerItems,
-    uniqueEngagementClubSwimmers,
-    rebuildEngagementClubRoster,
-    syncEngagementClubRosterFromSwimmerChange,
-    reactivateEngagementClubRosterSwimmersFromPerformanceRows,
-    cleanIsoDateTime,
-    cleanEngagementDeadlineAt,
-    isEngagementOpeningDeadlinePast,
-    isEngagementOpeningTooEarly,
-    cleanEngagementRegionIds
+    cleanEngagementClubPerson: operation0().cleanEngagementClubPerson,
+    engagementClubPersonItem: operation1().engagementClubPersonItem,
+    engagementClubPeopleRosterId: operation2().engagementClubPeopleRosterId,
+    engagementClubPeopleRosterRef: operation2().engagementClubPeopleRosterRef,
+    engagementClubPeopleRosterPersonItem: operation3().engagementClubPeopleRosterPersonItem,
+    engagementClubPeopleRosterPeopleFromData: operation4().engagementClubPeopleRosterPeopleFromData,
+    engagementClubPersonIdentityConflict: operation0().engagementClubPersonIdentityConflict,
+    throwEngagementClubPersonIdentityConflict: operation0().throwEngagementClubPersonIdentityConflict,
+    engagementClubPersonOutsideClubConflict: operation0().engagementClubPersonOutsideClubConflict,
+    upsertEngagementClubPeopleRosterPerson: operation5().upsertEngagementClubPeopleRosterPerson,
+    deleteEngagementClubPeopleRosterPerson: operation6().deleteEngagementClubPeopleRosterPerson,
+    rebuildEngagementClubPeopleRoster: operation7().rebuildEngagementClubPeopleRoster,
+    syncEngagementClubPeopleRosterFromChange: operation8().syncEngagementClubPeopleRosterFromChange,
+    engagementClubSwimmerItem: operation9().engagementClubSwimmerItem,
+    engagementReferenceSwimmerItem: operation10().engagementReferenceSwimmerItem,
+    engagementReferenceClubSwimmers: operation11().engagementReferenceClubSwimmers,
+    sortEngagementClubSwimmers: operation12().sortEngagementClubSwimmers,
+    engagementClubSwimmerMatchKeys: operation12().engagementClubSwimmerMatchKeys,
+    engagementClubSwimmerSourceRank: operation12().engagementClubSwimmerSourceRank,
+    mergeEngagementClubSwimmerItems: operation12().mergeEngagementClubSwimmerItems,
+    uniqueEngagementClubSwimmers: operation12().uniqueEngagementClubSwimmers,
+    rebuildEngagementClubRoster: operation11().rebuildEngagementClubRoster,
+    syncEngagementClubRosterFromSwimmerChange: operation13().syncEngagementClubRosterFromSwimmerChange,
+    reactivateEngagementClubRosterSwimmersFromPerformanceRows: operation14().reactivateEngagementClubRosterSwimmersFromPerformanceRows,
+    cleanIsoDateTime: operation15().cleanIsoDateTime,
+    cleanEngagementDeadlineAt: operation16().cleanEngagementDeadlineAt,
+    isEngagementOpeningDeadlinePast: operation16().isEngagementOpeningDeadlinePast,
+    isEngagementOpeningTooEarly: operation16().isEngagementOpeningTooEarly,
+    cleanEngagementRegionIds: operation17().cleanEngagementRegionIds
   };
 }
 

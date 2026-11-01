@@ -2,6 +2,11 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 1er novembre — Cloisonnement de tous les domaines des fabriques backend
+
+- Suite du chantier global autorisé : compétitions, engagements, personnes, annuaires nationaux, PDF/documents, mail, performances, DTN et ancien circuit public. Les 480 corps restants sont déplacés sans changement ; cumul de 635 corps dans 419 groupes, avec les 157 déclarations Firebase conservées. Trois fabriques à contexte vivant ont déjà un groupe de consommateurs unique. Quatre autres conservent exactement leurs paramètres capturés, leur initialisation et leur API, dont PDF et ancien circuit public. Le lot conserve les APIs, les accesseurs vivants, les caches uniques et le contexte complet du seul passage opaque vers les callables NS.
+- Regroupement des domaines dans une livraison technique commune pour éviter deux installations TEST larges successives. Le test réel PDF a détecté avant PR un cas de paramètre capturé oublié par le premier aperçu ; rendu non publié retiré, garde et régression ajoutées. Preuve structurelle du runtime réel, tests ciblés par domaine puis CI globale obligatoire. Budgets des données et comportement inchangés ; aucun envoi, migration, donnée réelle, droit ou option de fonction modifié. Les fonctions exclues restent soumises à leurs contrats. L’examen des 260 autres modules JavaScript continue ; la partition des fabriques ne suffit pas à déclarer le chantier terminé.
+
 ### 1er novembre — Cloisonnement systématique des dépendances backend, premier lot
 
 - Autorisation explicite d’Antoine : couvrir tout le backend, avec validation technique autonome, TEST puis transmission de la version exacte à Infra pour la PROD. La version TEST `ac677ad5` est acceptée par l’utilisateur ; les versions suivantes auront des preuves techniques, sans validation manuelle utilisateur inventée. Aucune donnée réelle, migration, règle sportive, habilitation, configuration Firebase ou émission réelle n’entre dans ce chantier.
