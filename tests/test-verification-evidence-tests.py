@@ -72,6 +72,11 @@ class EvidenceTests(unittest.TestCase):
         self.assertFalse(self.check(artifact_info=self.info(head_sha='b'*40))[0])
         self.assertFalse(self.check(artifact_info=self.info(event='pull_request'))[0])
 
+    def test_same_major_different_patch_still_requires_verification(self):
+        with patch.object(m, 'node_version', return_value='v22.23.4'):
+            proof = {**m.evidence('a'*40), 'node': 'v22.23.3'}
+            self.assertFalse(self.check(proof=proof)[0])
+
     def test_unavailable_or_altered_artifact_cannot_be_reused(self):
         with patch.dict(os.environ, {'GITHUB_REPOSITORY': 'owner/repo'}), patch.object(m.cycle, 'gh', return_value={'workflow_runs': [self.info()]}), patch.object(m.cycle, 'artifact', side_effect=ValueError('Artefact altere')):
             with self.assertRaises(ValueError):

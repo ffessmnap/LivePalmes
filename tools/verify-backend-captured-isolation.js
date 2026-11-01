@@ -3,13 +3,16 @@
 const assert=require("node:assert/strict"),crypto=require("node:crypto");
 const {parse,walk}=require("./backend-factory-model"),{symbols}=require("./backend-native-symbols");
 function writes(node,visit){if(!node)return;if(node.type==="Identifier")visit(node);else if(node.type==="ObjectPattern")node.properties.forEach(p=>writes(p.value||p.argument,visit));else if(node.type==="ArrayPattern")node.elements.forEach(n=>writes(n,visit));else if(node.type==="AssignmentPattern")writes(node.left,visit);else if(node.type==="RestElement")writes(node.argument,visit);}
-function assertStableRoot(result){const ast=result.m.ast,lex=symbols(ast),stable=new Set();
+function assertStableRoot(result){const ast=result.m.ast,lex=symbols(ast),stable=new Set(),parents=new Map();walk(ast,(n,p)=>{if(p)parents.set(n,p);});
+ const owners=new Set(result.captures.map(c=>result.m.factories.get(c.owner).node));
+ walk(ast,n=>{if(n.type!=="CallExpression"||n.callee.type!=="Identifier"||!owners.has(lex.lookup(n.callee)?.definition.node))return;let ancestor=parents.get(n),inside=false;while(ancestor){if(/Function/.test(ancestor.type)||ancestor.type==="ArrowFunctionExpression")inside=true;ancestor=parents.get(ancestor);}assert(inside,"Captured factory invoked before root initialization completes");});
  for(const c of result.captures){const f=result.m.factories.get(c.owner);for(const [alias,key]of c.keys){const value=f.context.get(key);assert.equal(f.contextKinds.get(key),"value","Captured root must read a plain value");assert.equal(value.type,"Identifier");const b=lex.lookup(value);assert(b?.definition.module,"Captured root must be a module binding: "+key);assert(["function","const"].includes(b.definition.kind),"Mutable captured root binding: "+key);stable.add(b.definition);}}
  walk(ast,n=>{if(n.type==="AssignmentExpression"||n.type==="UpdateExpression"||["ForInStatement","ForOfStatement"].includes(n.type))writes(n.left||n.argument,id=>assert(!stable.has(lex.lookup(id)?.definition),"Captured root reassigned: "+id.name));if(n.type==="CallExpression"&&n.callee.type==="Identifier"&&["eval","Function"].includes(n.callee.name)&&!lex.lookup(n.callee))assert.fail("Dynamic root binding mutation needs review");});
  return stable.size;
 }
 function captureCatalog(source,c,converted){const ast=parse(source),lex=symbols(ast),factory=ast.body.find(n=>n.type==="FunctionDeclaration"&&n.id.name===c.factory);assert(factory);assert.equal(factory.params.length,1);const param=factory.params[0],keys=new Map(c.keys),allowed=new Set(keys.values());
  if(converted){assert.equal(param.type,"Identifier");assert.equal(param.name,"backendContext");}else{assert.equal(param.type,"ObjectPattern");assert.equal(JSON.stringify(param,(k,v)=>["start","end"].includes(k)?undefined:v),JSON.stringify(parse("function f("+c.parameter+"){}").body[0].params[0],(k,v)=>["start","end"].includes(k)?undefined:v));}
+ walk(factory.body,n=>assert.notEqual(n.type,"ThisExpression","Receiver-sensitive captured API needs separate review"));
  const parameterRef=n=>n?.type==="Identifier"&&lex.refs.get(n)?.definition.kind==="parameter"&&lex.refs.get(n).definition.node===param;
  walk(ast,n=>{if(n.type==="AssignmentExpression"||n.type==="UpdateExpression"||["ForInStatement","ForOfStatement"].includes(n.type))writes(n.left||n.argument,id=>assert(!parameterRef(id),"Captured parameter reassigned"));});
  function canonical(n,parent,key){if(!n||typeof n!=="object")return n;if(Array.isArray(n))return n.map(v=>canonical(v,parent,key));
