@@ -1,0 +1,13 @@
+"use strict";
+const assert = require("node:assert/strict");
+const c = require("../.github/releases/evidence/20261101-validated-portal-contract.json");
+const proof = require("./release-validated-portal-compatibility");
+const snapshots = require("../tools/release-test-function-fingerprints");
+const root = require("node:path").resolve(__dirname, "..");
+const before = snapshots.snapshot(root, c.productionCommit, {production:true});
+const after = snapshots.snapshot(root, c.candidate, {production:true});
+proof.verifySnapshots(before, after, c.retained.map(r=>r.name));
+assert.throws(()=>proof.verifySnapshots(before, {...after,registrySource:after.registrySource+'\n// other mutation'}, c.retained.map(r=>r.name)));
+assert.throws(()=>proof.verifySnapshots(before, {...after,source:after.source+'\nexports.verifyPin = () => true;'}, c.retained.map(r=>r.name)));
+assert.throws(()=>proof.verifySnapshots(before, {...after,source:after.source.replace('"5": "CMAS"','"5": "other"')}, c.retained.map(r=>r.name)));
+console.log(JSON.stringify({retained:c.retained.length,networkCalls:0,result:"success",negativeCases:3}));

@@ -36,6 +36,9 @@ _account_spec.loader.exec_module(nap_account)
 _portal_spec = importlib.util.spec_from_file_location('portal_access_ns_policy', ROOT / 'tools/portal-access-ns-release-policy.py')
 portal_access_ns = importlib.util.module_from_spec(_portal_spec)
 _portal_spec.loader.exec_module(portal_access_ns)
+_validated_spec = importlib.util.spec_from_file_location('validated_portal_policy', ROOT / 'tools/validated-portal-release-policy.py')
+validated_portal = importlib.util.module_from_spec(_validated_spec)
+_validated_spec.loader.exec_module(validated_portal)
 
 
 def approved_license_report_functions(value):
@@ -82,6 +85,7 @@ def approved_native_identity_secret(value):
 def approved_extra_functions(value):
     approved_native_identity_secret(value)
     names = approved_pdf_functions(value) + approved_dtn_functions(value) + approved_notification_functions(value) + approved_public_nap_functions(value) + approved_access_request_functions(value) + approved_club_directory_functions(value) + approved_grouped_functions(value) + approved_bcc_functions(value) + approved_license_report_functions(value) + nap_retained.approved(value) + nap_account.approved(value) + portal_access_ns.approved(value)
+    names += validated_portal.approved(value)
     require(len(names) == len(set(names)), 'Extensions de publication superposees')
     return names
 
@@ -143,6 +147,8 @@ def approved_club_directory_functions(value):
 
 
 def idf_preservation(value):
+    if validated_portal.approved(value):
+        return validated_portal.contract()['mailPreservation']
     # Existing reader authorization stays closed; this is a second, separately approved pair.
     if portal_access_ns.approved(value):
         return portal_access_ns.contract()['mailPreservation']
@@ -228,6 +234,7 @@ def approved_access_request_functions(value):
 
 
 def require_access_request_selection(request, selected):
+    validated_portal.selection(request, selected)
     portal_access_ns.selection(request, selected)
     nap_account.selection(request, selected)
     license_release.selection(request, selected)
@@ -587,6 +594,8 @@ def validate_request(value, paths):
                 ordinary.add('licenseReportRelease')
             if portal_access_ns.approved(value):
                 ordinary.add('portalAccessNsRelease')
+            if validated_portal.approved(value):
+                ordinary.add('validatedPortalRelease')
             require(set(value).issubset(ordinary), 'Gel reserve au parcours ordinaire, sans contrat exceptionnel')
     path_set = set(paths)
     ignored = set(ignored_top_paths(paths, value['candidate']))
@@ -828,6 +837,8 @@ def verify_later_test(root, request, observed):
         ordinary.add('licenseReportRelease')
     if portal_access_ns.approved(request):
         ordinary.add('portalAccessNsRelease')
+    if validated_portal.approved(request):
+        ordinary.add('validatedPortalRelease')
     require(set(request).issubset(ordinary), 'Contrat exceptionnel incompatible avec le gel ordinaire')
     run_id = latest_run('livepalmes-test-common.yml')
     require(run_id != request['testRun'], 'Derive du meme run TEST')
@@ -854,6 +865,7 @@ def prepare_selection(directory, candidate):
         names = {f['name'].split('/')[-1]: f for f in state['functions']}
         require(all(not needs_function(names.get(n), n, request['candidate'], project='livepalmes-test') for n in selected), 'Backend TEST incomplet ou pas au code valide')
         extra = approved_extra_functions(request)
+        require(all(not needs_function(names.get(n), n, request['candidate'], project='livepalmes-test') for n in validated_portal.approved(request)), 'Preuve TEST CMAS/CCI absente ou incompatible')
         notification = approved_notification_functions(request)
         require(all(not needs_function(names.get(n), n, request['candidate'], project='livepalmes-test') for n in notification + approved_public_nap_functions(request) + approved_access_request_functions(request) + approved_club_directory_functions(request) + approved_grouped_functions(request) + approved_bcc_functions(request) + approved_license_report_functions(request) + nap_retained.approved(request) + nap_account.approved(request) + portal_access_ns.approved(request)),
                 'Notifications TEST absentes ou pas au code valide')
@@ -1016,6 +1028,8 @@ def freeze_plan(directory, evidence=False):
     selected = read(root / 'selection.json')
     selected = [n for n in selected if n in approved_extra_functions(request) or needs_function(names.get(n), n, request['candidate'])]
     require_access_request_selection(request, selected)
+    if validated_portal.approved(request):
+        write(root / 'validated-portal-proof.json', validated_portal.verify(request, read(root / 'baseline.json'), names))
     if portal_access_ns.approved(request):
         write(root / 'portal-access-ns-proof.json', portal_access_ns.verify(request, read(root / 'baseline.json'), names))
     if nap_account.approved(request):
@@ -1243,6 +1257,12 @@ def fetch_plan(preparation, resume, directory):
             artifact(resume, 'production-idf-preservation', root / 'previous/guards')
             for witness in ['portal-access-ns-before.json', 'portal-access-ns-after.json']:
                 source = root/'previous/guards'/witness
+                if source.exists():
+                    write(root/witness, read(source))
+        if validated_portal.approved(read(root / 'request.json')):
+            artifact(resume, 'production-idf-preservation', root / 'previous/validated-guards')
+            for witness in ['validated-portal-before.json', 'validated-portal-after.json']:
+                source = root/'previous/validated-guards'/witness
                 if source.exists():
                     write(root/witness, read(source))
     else:

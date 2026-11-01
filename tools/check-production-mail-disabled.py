@@ -67,6 +67,13 @@ def check_idf_preservation(document, preservation, directory, after=False):
 
 def main():
     request = json.loads((Path(os.environ['PLAN']) / 'request.json').read_text())
+    if request.get('validatedPortalRelease'):
+        spec = importlib.util.spec_from_file_location('validated_portal_guard', Path(__file__).with_name('validated-portal-release-policy.py'))
+        guard = importlib.util.module_from_spec(spec); spec.loader.exec_module(guard)
+        if sys.argv[1:] not in ([], ['--after']):
+            raise ValueError('Mode CMAS/CCI/nouveautes invalide')
+        guard.guard(Path(os.environ['PLAN']), sys.argv[1:] == ['--after'])
+        return
     if request.get('portalAccessNsRelease'):
         spec = importlib.util.spec_from_file_location('portal_ns_guard', Path(__file__).with_name('check-portal-access-ns-release.py'))
         guard = importlib.util.module_from_spec(spec); spec.loader.exec_module(guard)
