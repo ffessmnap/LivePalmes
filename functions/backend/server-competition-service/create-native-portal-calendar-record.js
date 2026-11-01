@@ -5,7 +5,7 @@ function createCompetitionService_createNativePortalCalendarRecord(backendContex
     event.competitionType=kind;
     const committeeId=["national","international"].includes(event.level) ? (event.level==="national"?4:5) : Object.keys(backendContext.CLUB_REFERENCE_REGION_LABELS).find(id=>backendContext.engagementRegionsMatch(id,event.regionId));
     try {
-      const result=await require("../../nap-competition-create").createCompetition(require("../../nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD),{actorUid:context.uid,creationId:raw.creationId,committeeId,event},{
+      const result=await require("../../nap-competition-create").createCompetition(require("../../nap-portal-pool").portalPool(process.env.LIVEPALMES_NAP_PASSWORD),{actorUid:context.uid,creationId:raw.creationId,committeeId,event},{
         read:async operation=>{const snapshot=await backendContext.db.collection("auditLogs").doc(`nap-competition-create-${operation}-before`).get();return snapshot.exists?snapshot.data().target:null;},
         prepare:(operation,target)=>backendContext.db.collection("auditLogs").doc(`nap-competition-create-${operation}-before`).create({action:"nap.competition.create.prepare",actorUid:context.uid,target,createdAt:new Date().toISOString()}),
         checkpoint:(operation,target)=>backendContext.db.collection("auditLogs").doc(`nap-competition-create-${operation}-before`).update({target}),

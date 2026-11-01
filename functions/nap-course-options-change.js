@@ -6,7 +6,7 @@ const columns=require('./nap-approved-portal-schema').tables[1].columns.map(row=
 const normalize=rows=>rows.map(row=>Object.fromEntries(columns.map(key=>[key,key==='category_restrictions'&&typeof row[key]==='string'?JSON.parse(row[key]):row[key]]))).sort((a,b)=>a.event_code.localeCompare(b.event_code));
 function plan(pack,raw,input,now){
   if(!Array.isArray(raw)||raw.length>80||typeof input.normalizeEvents!=='function')throw new TypeError('Reglages de courses LivePalmes requis.');
-  const events=require('./nap-portal-workspaces').competitionItem(pack,input.eventDefinitions).events;
+  const events=require("./nap-competition-view").competitionItem(pack,input.eventDefinitions).events;
   const known=new Map(events.filter(event=>event.nativeRecognized).map(event=>[event.code,event]));
   const seen=new Set();
   if(raw.some(row=>!known.has(row?.code)||seen.has(row.code)||!seen.add(row.code)))throw new TypeError('Course absente ou dupliquee.');

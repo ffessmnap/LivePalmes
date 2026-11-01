@@ -5,7 +5,7 @@ function createCompetitionService_notifyNationalLibraryDocument(backendContext) 
     try{
       const input=request.data||{},library=require("../../nap-national-documents");
       if(!['preview','send'].includes(input.action))throw new TypeError('Action de notification invalide.');
-      const pool=require("../../nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD);
+      const pool=require("../../nap-portal-pool").portalPool(process.env.LIVEPALMES_NAP_PASSWORD);
       const document=library.view(await library.record(pool,input.documentId));
       const setting=await require("../../engagement-mail-control").read(backendContext.db);
       if((await backendContext.engagementMailRecipientIndexStateRef(backendContext.db).get()).data()?.status!=='ready')throw new TypeError('Annuaire des destinataires indisponible ; aucune reconstruction automatique.');
@@ -54,7 +54,7 @@ function createCompetitionService_notifyNationalLibraryDocument(backendContext) 
     if(documents.length!==new Set(ids).size)throw new backendContext.HttpsError('failed-precondition','Les documents ont change. Rechargez la fiche.');
     const automation=require("../../nap-notification-automation");
     const mailState=await require("../../engagement-mail-control").read(backendContext.db);
-    const queued=await automation.armDocuments(backendContext.db,{competitionId:String(require("../../nap-direct-calendar").positiveId(competition.id)),
+    const queued=await automation.armDocuments(backendContext.db,{competitionId:String(require("../../nap-calendar-values").positiveId(competition.id)),
       action:'documents',documentIds:ids,controlRevision:mailState.revision,actorUid:context.uid,operation:automation.hash(['documents-v1',competition.id,context.uid,documents])});
     await (0, backendContext.local$enqueueNativeNotificationTask)(queued.eventId);
     return {...preview,previewOnly:false,queued:true,notificationAt:queued.runAt,groupingMinutes:5};

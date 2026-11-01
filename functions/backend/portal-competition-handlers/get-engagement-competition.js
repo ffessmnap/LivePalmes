@@ -5,7 +5,7 @@ function createCompetitionHandlers_getEngagementCompetition(backendContext) {
     if(request.data?.action!==undefined){
       if(request.data.action!=="import-source"||backendContext.ENVIRONMENT.sportingDataSource!=="nap")throw new backendContext.HttpsError("invalid-argument","Action de consultation invalide.");
       if(!context.national&&(!context.region||!context.regionId))throw new backendContext.HttpsError("permission-denied","TXT réservé aux administrations régionale et nationale.");
-      try{return await require("../../nap-import-private-text").readCurrent(require("../../nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD),request.data.competitionId,event=>backendContext.assertCanManageEngagementCompetition(context,event));}
+      try{return await require("../../nap-import-private-text").readCurrent(require("../../nap-portal-pool").portalPool(process.env.LIVEPALMES_NAP_PASSWORD),request.data.competitionId,event=>backendContext.assertCanManageEngagementCompetition(context,event));}
       catch(error){throw backendContext.nativePerformanceFailure(error);}
     }
     const competitionId = backendContext.cleanText(request.data?.competitionId).slice(0, 128);

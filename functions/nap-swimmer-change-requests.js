@@ -1,8 +1,9 @@
 "use strict";
 const { createHash } = require("node:crypto");
-const { swimmerId } = require("./nap-direct-swimmer");
-const { person } = require("./nap-portal-swimmers");
-const { fingerprint, planIdentityChange } = require("./nap-portal-swimmer-change");
+const { swimmerId } = require("./nap-swimmer-values");
+const { person } = require("./nap-swimmer-profile");
+const { fingerprint } = require("./nap-swimmer-identity-values");
+const { planIdentityChange } = require("./nap-portal-swimmer-change");
 const FIELDS = ["firstName", "lastName", "birthDate", "sex"];
 function proposedFields(raw) {
   if (!raw || typeof raw !== "object" || Array.isArray(raw) || Object.keys(raw).some(key => !FIELDS.includes(key) && key !== "licenseNumber")) throw new TypeError("Champs de correction invalides.");

@@ -5,7 +5,7 @@ function createDtnService_dtnSeasonService(backendContext) {
     const factory = native ? require("../../nap-dtn-season-service").createNativeDtnSeasonService : backendContext.createDtnSeasonService;
     return factory({
       db: /* backend-shorthand */ backendContext.db, fieldPath: backendContext.FieldPath,
-      getPool: () => require("../../nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD),
+      getPool: () => require("../../nap-portal-pool").portalPool(process.env.LIVEPALMES_NAP_PASSWORD),
       audit: (action, request, target) => backendContext.writeAuditLogOnce(action, request.auth.uid, target, `nap-dtn-${target.seasonId}-${target.revision}-${action}`),
       fail: (message, code = "failed-precondition") => { throw new backendContext.HttpsError(code, message); },
       authorize: async (request) => {

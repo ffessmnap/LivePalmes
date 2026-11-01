@@ -1,6 +1,6 @@
 "use strict";
 // Three grouped writes at most; no SQL is executed by this module.
-const {positiveId}=require("./nap-direct-calendar");
+const { positiveId } = require("./nap-calendar-values");
 const {entryAuthority,deadline}=require("./nap-official-entry-statements");
 const RELAY_COLUMNS=["id","compet","categorie","club","course","tps"];
 function statements(plan,authority,end) {

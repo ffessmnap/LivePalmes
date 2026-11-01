@@ -4,7 +4,7 @@ function createEntryService_saveNativeClubIndividualEntries(backendContext) {
     try {
       const swimmers=request.data?.swimmers;
       if(!Array.isArray(swimmers) || !swimmers.length || swimmers.length>100) throw new TypeError("Modification de 1 a 100 nageurs requise.");
-      const pool=require("../../nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD);
+      const pool=require("../../nap-portal-pool").portalPool(process.env.LIVEPALMES_NAP_PASSWORD);
       const result=await require("../../nap-individual-entry-change").saveNativeIndividualEntries(pool,{
         competitionId:request.data?.competitionId,clubId:String(context.clubId),actorUid:context.uid,
         expectedFingerprint:request.data?.expectedFingerprint,mutationId:request.data?.mutationId,
@@ -16,12 +16,12 @@ function createEntryService_saveNativeClubIndividualEntries(backendContext) {
           if(reason) throw new TypeError(reason);
           const categories=await rules.readCategories(input.connection);
           return require("../../nap-individual-entry-resolution").resolveChanges({...input,categories},{
-            view:pack=>require("../../nap-portal-workspaces").competitionItem(pack,backendContext.ENGAGEMENT_EVENT_DEFINITION_BY_CODE),
+            view:pack=>require("../../nap-competition-view").competitionItem(pack,backendContext.ENGAGEMENT_EVENT_DEFINITION_BY_CODE),
             age:(date,birthDate)=>(backendContext.importSeasonYear(date)||backendContext.competitionYear(date))-backendContext.birthYear(birthDate),
             category:backendContext.ageCategoryFromDates,
             forbidden:(code,category)=>backendContext.ENGAGEMENT_EVENT_FORBIDDEN_CATEGORIES[code]?.has(category)===true,
             automatic:backendContext.automaticEngagementIndividualEntry,parse:backendContext.parseEngagementEntryTime,
-            prepareQualifications:(connection,input)=>require("../../nap-qualification-people").readEvaluations(connection,{...input,events:backendContext.qualificationEvents(require("../../nap-portal-workspaces").competitionItem(input.pack,backendContext.ENGAGEMENT_EVENT_DEFINITION_BY_CODE)),categoryFor:backendContext.ageCategoryFromDates}),
+            prepareQualifications:(connection,input)=>require("../../nap-qualification-people").readEvaluations(connection,{...input,events:backendContext.qualificationEvents(require("../../nap-competition-view").competitionItem(input.pack,backendContext.ENGAGEMENT_EVENT_DEFINITION_BY_CODE)),categoryFor:backendContext.ageCategoryFromDates}),
             validateTimes:async(swimmers,competition)=>backendContext.validateEngagementIndividualEntryTimes(swimmers,competition,(await require("../../nap-records-store").read(input.connection)).data)
           });
         },
@@ -33,7 +33,7 @@ function createEntryService_saveNativeClubIndividualEntries(backendContext) {
           complete:(operation,target)=>backendContext.writeAuditLogOnce("engagementClubEntry.individualEntriesSaved",context.uid,{...target,auditPreparationId:`nap-individual-${operation}-before`},operation)
         }
       });
-      const competition=require("../../nap-portal-workspaces").competitionItem(result.competition,backendContext.ENGAGEMENT_EVENT_DEFINITION_BY_CODE);
+      const competition=require("../../nap-competition-view").competitionItem(result.competition,backendContext.ENGAGEMENT_EVENT_DEFINITION_BY_CODE);
       return {ok:true,source:"nap",operation:result.operation,writesExecuted:result.writesExecuted,
         entry:await backendContext.nativeClubEntryView(result.nativeEntry,context,competition),
         sqlBudget:{queriesMax:40,writesMax:4}};

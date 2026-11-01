@@ -9,7 +9,7 @@ function createClubHandlers_getEngagementClubEntry(backendContext) {
     }
     if (backendContext.ENVIRONMENT.sportingDataSource === "nap") {
       const competition = await backendContext.nativePortalCompetition(competitionId, () => {});
-      const pool = require("../../nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD);
+      const pool = require("../../nap-portal-pool").portalPool(process.env.LIVEPALMES_NAP_PASSWORD);
       const pack = await require("../../nap-portal-entries").readNativeClubEntry(pool, { competitionId, clubId: context.clubId }, ({ clubId }) => {
         if (String(clubId) !== String(context.clubId)) throw new backendContext.HttpsError("permission-denied", "Dossier hors du club autorise.");
       });

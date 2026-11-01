@@ -14,6 +14,12 @@ Le serveur conserve dans `functions/index.js` les déclarations Firebase, option
 
 Les petits outils NAP partagés ont été extraits vers des modules indépendants : valeurs du calendrier, état d'activité nageur, options des personnes, témoin d'autorité de compétition, lectures/plans des officiels et validation de plan des nageurs. Les anciens chemins continuent de réexporter les mêmes fonctions. Le test d'architecture refuse les cycles d'imports serveur.
 
+Le cloisonnement des dépendances du 1er novembre affine cette organisation : 635 corps privés dans 419 groupes de consommateurs, puis 34 composants natifs séparant connexion, valeurs, projections, lectures et vues. Les quatre fabriques à paramètres capturés conservent leurs contrats d’initialisation. Aucun état de transaction, pool, règle sportive, accès ou budget de données n’est dupliqué ou changé. Les imports des helpers sont capturés une fois, sans chargement par ligne ; le snapshot d’origine des URLs reste fixé au démarrage.
+
+Les outils `backend-factory-model`, `isolate-backend-factories` et `isolate-backend-native-modules` servent au déplacement ponctuel et à sa preuve. Les modules déplacés sont ensuite les sources canoniques à maintenir normalement ; une correction quotidienne ne relance pas cette génération. Les preuves historiques seront liées aux commits exacts livrés. Les tests des modules réels, refus d’accès, budgets et sélecteurs restent actifs. La table `tests/helpers/backend-native-paths.json`, générée par `writeLogicalPaths`, ne restaure que les noms d’imports des tests historiques de source logique ; les tests de runtime et le circuit de déploiement n’utilisent jamais cette table.
+
+L’inventaire `docs/releases/backend-native-inventory.json` couvre les 294 modules natifs après déplacement, leurs interfaces, états et consommateurs TEST/PROD calculés hors réseau. Il explique les composants conservés et les dépendances communes légitimes ; il ne constitue pas une sélection de publication. La configuration et les caches réellement partagés gardent tous leurs consommateurs, et un cas inconnu reste conservateur.
+
 ## Styles et cache
 
 L'entrée CSS importe seize fragments dans l'ordre initial de la cascade. Les préchargements HTML évitent une découverte séquentielle des fragments. Une seule duplication de bloc strictement identique a été retirée ; les variantes responsive et les priorités existantes sont conservées. Aucun composant ni règle visuelle n'est redessiné, donc le design system fonctionnel reste inchangé.

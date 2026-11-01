@@ -1,7 +1,7 @@
 "use strict";
 // One indexed date/id page, 51 rows max. Filter pool events after pagination,
 // so an empty pool-only page cannot scan all other event types in SQL.
-const {positiveId,date,text}=require("./nap-direct-calendar");
+const { positiveId, date, text } = require("./nap-calendar-values");
 const {cleanTimingType}=require("./performance-import-timing");
 function validDate(value) {
   if(typeof value!=="string"||!date(value)||new Date(`${value}T12:00:00Z`).toISOString().slice(0,10)!==value) throw new TypeError("Periode de qualification invalide.");

@@ -45,6 +45,7 @@ function runUnitTests() {
     "backend-module-boundaries-tests.js",
     "backend-dependency-isolation-tests.js",
     "backend-factory-migration-tests.js",
+    "backend-native-isolation-tests.js",
     "backend-directory-outage-tests.js",
     "nap-mysql-tests.js",
     "nap-club-account-emails-tests.js",

@@ -9,7 +9,9 @@ function createNationalHandlers_searchEngagementNationalSwimmers(backendContext)
     const limit = Math.min(80, Math.max(10, Math.trunc(Number(request.data?.limit) || 40)));
     if (backendContext.ENVIRONMENT.sportingDataSource === "nap") {
       try {
-        const nap = require("../../nap-portal-swimmers");
+        const { searchPortalSwimmers: __nativeMember0 } = require("../../nap-portal-swimmer-readers");
+const { portalPool: __nativeMember1 } = require("../../nap-portal-pool");
+const nap = { searchPortalSwimmers: __nativeMember0, portalPool: __nativeMember1 };
         const result = await nap.searchPortalSwimmers(nap.portalPool(process.env.LIVEPALMES_NAP_PASSWORD), query);
         return { ok: true, query, source: "nap", hasMore: result.hasMore, swimmers: result.swimmers.map((item, index) => ({
           ...item, category: backendContext.currentEngagementCategoryFromBirthDate(item.birthDate),

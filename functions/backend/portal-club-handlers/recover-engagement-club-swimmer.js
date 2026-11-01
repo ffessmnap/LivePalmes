@@ -5,7 +5,7 @@ function createClubHandlers_recoverEngagementClubSwimmer(backendContext) {
     const context = await backendContext.engagementClubAccessContext(request);
     if (backendContext.ENVIRONMENT.sportingDataSource === "nap") {
       try {
-        return await require("../../nap-swimmer-recovery").recoverSwimmer(require("../../nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD),{
+        return await require("../../nap-swimmer-recovery").recoverSwimmer(require("../../nap-portal-pool").portalPool(process.env.LIVEPALMES_NAP_PASSWORD),{
           clubId:String(context.clubId),actorUid:context.uid,licenseNumber:backendContext.cleanText(request.data?.licenseNumber).toUpperCase(),mutationId:request.data?.mutationId,expectedFingerprint:request.data?.expectedFingerprint
         },{
           read:async operation=>{const snapshot=await backendContext.db.collection("auditLogs").doc(`nap-swimmer-recovery-${operation}-before`).get();return snapshot.exists?snapshot.data().target:null;},

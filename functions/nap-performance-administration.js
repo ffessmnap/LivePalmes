@@ -7,7 +7,7 @@ function createPerformanceAdministration({getPool,authorize}) {
   return async function read(request) {
     const actor=await authorize(request);
     const input=request.data||{},pool=await getPool();
-    if(input.action==="search") return {ok:true,source:"nap",...await require("./nap-portal-swimmers").searchPortalSwimmers(pool,input.query)};
+    if(input.action==="search") return {ok:true,source:"nap",...await require("./nap-portal-swimmer-readers").searchPortalSwimmers(pool,input.query)};
     if(input.action!=="list")throw new TypeError("Action de consultation invalide.");
     const id=positiveId(Number(input.swimmerId)),cursor=input.cursor===undefined?0:input.cursor;
     const filters=input.filters||{};

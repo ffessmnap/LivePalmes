@@ -8,7 +8,7 @@ function createPerformanceHandlers_mergeEngagementNationalClubSwimmer(backendCon
     if (backendContext.ENVIRONMENT.sportingDataSource === "nap") {
       if (request.data?.confirmMerge !== true) throw new backendContext.HttpsError("failed-precondition", "Confirmation de fusion requise.");
       try {
-        return await require("../../nap-swimmer-merge").mergeSwimmers(require("../../nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD),{
+        return await require("../../nap-swimmer-merge").mergeSwimmers(require("../../nap-portal-pool").portalPool(process.env.LIVEPALMES_NAP_PASSWORD),{
           sourceSwimmerId:request.data?.sourceSwimmerId,targetSwimmerId:request.data?.targetSwimmerId,
           ...(request.data?.finalClubId!==undefined?{finalClubId:request.data.finalClubId}:{}),
           ...(request.data?.entryConflictChoices!==undefined?{entryConflictChoices:request.data.entryConflictChoices,entryConflictToken:request.data.entryConflictToken}:{}),

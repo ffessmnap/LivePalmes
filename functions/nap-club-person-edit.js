@@ -5,9 +5,9 @@
 const {createHash}=require("node:crypto");
 const {isDeepStrictEqual}=require("node:util");
 const {nativeEqual}=require("./nap-native-compare");
-const {SOURCES,OPTION_COLUMNS,normalizeOptions,person}=require("./nap-club-people");
+const { SOURCES, OPTION_COLUMNS, normalizeOptions, person } = require("./nap-club-people-values");
 const {reference}=require("./nap-club-person-options");
-const {date}=require("./nap-direct-calendar");
+const { date } = require("./nap-calendar-values");
 const spec=SOURCES.officials;
 function identity(row) {return [row.nom,row.prenom].map(value=>String(value).trim().toLocaleUpperCase("fr")).concat(date(row.date)).join("|");}
 function planIdentity(native,patch,options={}) {

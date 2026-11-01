@@ -13,7 +13,7 @@ function createCompetitionService_nativeNotificationPreview(backendContext) {
           const state = await backendContext.engagementMailRecipientIndexStateRef(backendContext.db).get();
           if (state.data()?.status !== "ready") throw new backendContext.HttpsError("failed-precondition", "Annuaire des destinataires indisponible. Sa reconstruction doit être demandée séparément.");
           return require("../../nap-notification-preview").nativeClubScopes(
-            require("../../nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD), await backendContext.engagementMailRecipientsFromIndex(backendContext.db));
+            require("../../nap-portal-pool").portalPool(process.env.LIVEPALMES_NAP_PASSWORD), await backendContext.engagementMailRecipientsFromIndex(backendContext.db));
         },
         select: (type, recipients, competition) => type === "opening"
           ? backendContext.engagementCompetitionOpeningRecipients(recipients, competition, [backendContext.engagementMailRecipientFromContext(context)].filter(Boolean))
@@ -21,7 +21,7 @@ function createCompetitionService_nativeNotificationPreview(backendContext) {
         clubRecipients: recipients => backendContext.engagementCompetitionNotificationRecipients(backendContext.engagementDedupMailRecipients(recipients))
           .filter(recipient => recipient.clubId && backendContext.engagementRecipientHasCapability(recipient, "engagements.club.manage")),
         entries: competition => require("../../nap-admin-entries").readAdminEntries(
-          require("../../nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD), { competitionId, competition },
+          require("../../nap-portal-pool").portalPool(process.env.LIVEPALMES_NAP_PASSWORD), { competitionId, competition },
           event => (0, backendContext.local$assertCanManageEngagementCompetition)(context, event), { category: backendContext.ageCategoryFromDates }),
         hasParticipants: backendContext.engagementClubEntryHasParticipants
       });

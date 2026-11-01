@@ -7,7 +7,7 @@ function createPerformanceHandlers_savePerformanceCorrection(backendContext) {
     }
     backendContext.assertCapability(request, "competitions.import");
     if(backendContext.ENVIRONMENT.sportingDataSource === "nap") {
-      try{return await require("../../nap-performance-write").createPerformanceWriter({authorize:backendContext.authorizeNativePerformance,getPool:()=>require("../../nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD)}).change(request,request.data);}
+      try{return await require("../../nap-performance-write").createPerformanceWriter({authorize:backendContext.authorizeNativePerformance,getPool:()=>require("../../nap-portal-pool").portalPool(process.env.LIVEPALMES_NAP_PASSWORD)}).change(request,request.data);}
       catch(error){throw backendContext.nativePerformanceFailure(error);}
     }
     const data = request.data || {};

@@ -43,9 +43,9 @@ async function nativeClubScopes(connection, recipients) {
   if (ids.length > 1000) throw new RangeError("Annuaire des clubs trop volumineux.");
   if (ids.some(id => !/^[1-9]\d{0,15}$/.test(id) || !Number.isSafeInteger(Number(id)))) throw new TypeError("Un compte club doit être raccordé à son identifiant NAP.");
   if (!ids.length) return recipients.map(item => ({ ...item, napClubRegionId: '' }));
-  const rows = await require("./nap-direct-calendar").execute(connection,
+  const rows = await require("./nap-query").execute(connection,
     `SELECT num_club,comite_club FROM clubs FORCE INDEX (PRIMARY) WHERE num_club IN (${ids.map(() => "?").join(",")}) ORDER BY num_club LIMIT 1001`, ids);
-  const regions = new Map(rows.map(row => [String(row.num_club), require("./nap-competition-scope").REGIONS[row.comite_club] || String(row.comite_club)]));
+  const regions = new Map(rows.map(row => [String(row.num_club), require("./nap-competition-regions").REGIONS[row.comite_club] || String(row.comite_club)]));
   if (regions.size !== ids.length || ids.some(id => !regions.has(id))) throw new TypeError("Un compte club ne correspond pas à un club NAP existant.");
   return recipients.map(item => regions.has(String(item.clubId)) && item.capabilities?.includes("engagements.club.manage")
     ? { ...item, clubId: String(item.clubId), regionId: regions.get(String(item.clubId)), napClubRegionId: regions.get(String(item.clubId)) }

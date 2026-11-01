@@ -3,7 +3,7 @@ function createClubHandlers_getPublicEngagementClubDirectory(backendContext) {
   async function getPublicEngagementClubDirectory() {
     const startedAt = Date.now();
     if (backendContext.ENVIRONMENT.sportingDataSource === "nap") {
-      try {return await require("../../nap-club-directory").directory(require("../../nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD));}
+      try {return await require("../../nap-club-directory-page").directory(require("../../nap-portal-pool").portalPool(process.env.LIVEPALMES_NAP_PASSWORD));}
       catch(error) {throw new backendContext.HttpsError("unavailable",error instanceof RangeError?error.message:"Annuaire NAP indisponible. Reessayez.");}
     }
     const snapshot = await backendContext.publicEngagementClubDirectoryRef().get();

@@ -45,7 +45,7 @@ function fixture(patch={},legacy=false){
     const realRequire=createRequire(actualFile),sandbox={module,process:{env:{}},Error,TypeError,RangeError};
     sandbox.require=name=>{
       const target=realRequire.resolve(name);
-      if(target===path.join(functionRoot,"nap-portal-swimmers.js"))return {portalPool:()=>pool};
+      if((target===path.join(functionRoot,"nap-portal-swimmers.js")||target===path.join(functionRoot,"nap-portal-pool.js")))return {portalPool:()=>pool};
       if(legacy&&target===path.join(functionRoot,"nap-entry-time-preview.js"))return {previewNativeTimes:(connection,input,services)=>previewNativeTimes(connection,input,{...services,readers:{competition:readNativeCompetition,entry:readNativeClubEntry,history:readEntryHistory}})};
       // Exercise real adapter and operation bodies in the same isolated fixture.
       if(target.startsWith(path.join(functionRoot,"backend")+path.sep))return load(target);

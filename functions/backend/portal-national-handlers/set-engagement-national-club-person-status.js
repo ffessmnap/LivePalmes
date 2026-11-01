@@ -13,8 +13,8 @@ function createNationalHandlers_setEngagementNationalClubPersonStatus(backendCon
     if (backendContext.ENVIRONMENT.sportingDataSource === "nap") {
       try {
         const statusService=require("../../nap-club-person-status");
-        const ref=statusService.reference(personId),spec=require("../../nap-club-people").SOURCES[ref.kind];
-        const pool=require("../../nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD);
+        const ref=statusService.reference(personId),spec=require("../../nap-club-people-values").SOURCES[ref.kind];
+        const pool=require("../../nap-portal-pool").portalPool(process.env.LIVEPALMES_NAP_PASSWORD);
         const [rows]=await pool.execute({sql:`SELECT club FROM \`${spec.table}\` WHERE id=? LIMIT 1`,timeout:10000},[ref.id]);
         if(rows.length!==1) throw new TypeError("Personne NAP introuvable.");
         const clubId=String(rows[0].club);

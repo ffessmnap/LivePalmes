@@ -10,15 +10,16 @@ function createCompetitionService_assertCanDeleteEngagementDocument(backendConte
   async function mutateNativeCompetitionDocument(request, action) {
     const context = await backendContext.engagementAccessContext(request);
     const competitionId = request.data?.calendarEventId || request.data?.competitionId;
-    const pool = require("../../nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD);
+    const pool = require("../../nap-portal-pool").portalPool(process.env.LIVEPALMES_NAP_PASSWORD);
     try {
       const result=await require("../../nap-competition-documents").mutate(pool, {...request.data, competitionId, action, actorUid:context.uid}, {
         national:context.national === true,
         authorize:async (connection,id,kind) => {
-          const calendar=require("../../nap-direct-calendar");
-          const rows=await require("../../nap-portal-competitions").bounded(connection,`${calendar.SELECT_EVENT.replace(" FROM competitions c",",cp.id AS parameter_id,cp.niveau FROM competitions c")}${calendar.EVENT_JOINS} WHERE c.id=? LIMIT 2`,[id],1);
+          const { SELECT_EVENT: __nativeMember0, EVENT_JOINS: __nativeMember1 } = require("../../nap-calendar-event");
+const calendar={ SELECT_EVENT: __nativeMember0, EVENT_JOINS: __nativeMember1 };
+          const rows=await require("../../nap-competition-query").bounded(connection,`${calendar.SELECT_EVENT.replace(" FROM competitions c",",cp.id AS parameter_id,cp.niveau FROM competitions c")}${calendar.EVENT_JOINS} WHERE c.id=? LIMIT 2`,[id],1);
           if(!rows.length) throw new backendContext.HttpsError("not-found","Compétition NAP introuvable.");
-          const event=require("../../nap-portal-competitions").portalEventFromRow(rows[0]);
+          const event=require("../../nap-portal-event").portalEventFromRow(rows[0]);
           (0, backendContext.local$assertCanManageEngagementCompetition)(context,event);
           if(kind==="delete") assertCanDeleteEngagementDocument(context,event);
           return Object.fromEntries(["id","date","enddate","comite","parameter_id","niveau"].map(key=>[key,rows[0][key]??null]));

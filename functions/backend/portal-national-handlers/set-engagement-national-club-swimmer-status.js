@@ -12,8 +12,8 @@ function createNationalHandlers_setEngagementNationalClubSwimmerStatus(backendCo
     const active = request.data?.active === true;
     if (backendContext.ENVIRONMENT.sportingDataSource === "nap") {
       try {
-        const pool=require("../../nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD);
-        const id=require("../../nap-direct-swimmer").swimmerId(swimmerId);
+        const pool=require("../../nap-portal-pool").portalPool(process.env.LIVEPALMES_NAP_PASSWORD);
+        const id=require("../../nap-swimmer-values").swimmerId(swimmerId);
         const [rows]=await pool.execute({sql:"SELECT club FROM nageurs WHERE id=? LIMIT 1",timeout:10000},[id]);
         if(rows.length!==1) throw new TypeError("Nageur NAP introuvable.");
         return await require("../../nap-swimmer-activity").change(pool,{id,clubId:String(rows[0].club),actorUid:context.uid,status:active?"active":"inactive",expectedFingerprint:request.data?.expectedFingerprint},{

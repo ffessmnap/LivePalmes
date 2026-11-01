@@ -3,7 +3,7 @@ function createCompetitionHandlers_listEngagementOpenWaterCourses(backendContext
   async function listEngagementOpenWaterCourses(request) {
     const startedAt = Date.now();
     await backendContext.engagementAccessContext(request);
-    if (backendContext.ENVIRONMENT.sportingDataSource === "nap") return require("../../nap-open-water-library").read(require("../../nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD));
+    if (backendContext.ENVIRONMENT.sportingDataSource === "nap") return require("../../nap-open-water-library").read(require("../../nap-portal-pool").portalPool(process.env.LIVEPALMES_NAP_PASSWORD));
     const snapshot = await backendContext.engagementOpenWaterCourseConfigRef().get();
     return {
       ok: true,

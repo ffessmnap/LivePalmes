@@ -3,7 +3,7 @@ function createCompetitionService_generateNativeClubRecapPdf(backendContext) {
   async function generateNativeClubRecapPdf(context, competitionId) {
     try {
       const competition = await (0, backendContext.local$nativePortalCompetition)(competitionId, () => {});
-      const pool = require("../../nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD);
+      const pool = require("../../nap-portal-pool").portalPool(process.env.LIVEPALMES_NAP_PASSWORD);
       const pack = await require("../../nap-portal-entries").readNativeClubEntry(pool, { competitionId, clubId: context.clubId }, ({ clubId }) => {
         if (String(clubId) !== String(context.clubId)) throw new backendContext.HttpsError("permission-denied", "Dossier hors du club autorise.");
       });

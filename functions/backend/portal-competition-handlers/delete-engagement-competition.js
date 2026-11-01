@@ -3,7 +3,7 @@ function createCompetitionHandlers_deleteEngagementCompetition(backendContext) {
   async function deleteEngagementCompetition(request) {
     const context = await backendContext.engagementAccessContext(request);
     if (backendContext.ENVIRONMENT.sportingDataSource === "nap") {
-      const pool = require("../../nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD);
+      const pool = require("../../nap-portal-pool").portalPool(process.env.LIVEPALMES_NAP_PASSWORD);
       try {
         return await require("../../nap-competition-deletion").competitionDeletion(pool, {
           competitionId: request.data?.competitionId, actorUid: context.uid,

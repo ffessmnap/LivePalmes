@@ -4,7 +4,7 @@ function createClubHandlers_validateEngagementSwimmerLicenses(backendContext) {
     const context = await backendContext.engagementAccessContext(request);
     if (!context.national) throw new backendContext.HttpsError("permission-denied", "Validation des licences reservee au niveau national.");
     if (backendContext.ENVIRONMENT.sportingDataSource === "nap") {
-      const connection=await require("../../nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD).getConnection();
+      const connection=await require("../../nap-portal-pool").portalPool(process.env.LIVEPALMES_NAP_PASSWORD).getConnection();
       let locked=false;
       try {
         const [lock]=await connection.execute({sql:"SELECT GET_LOCK('livepalmes_license_control',0) AS acquired",timeout:10000});

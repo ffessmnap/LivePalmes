@@ -14,7 +14,7 @@ function createNationalHandlers_deleteEngagementNationalClubSwimmer(backendConte
     }
     if (backendContext.ENVIRONMENT.sportingDataSource === "nap") {
       try {
-        return await require("../../nap-swimmer-deletion").deleteSwimmer(require("../../nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD),{
+        return await require("../../nap-swimmer-deletion").deleteSwimmer(require("../../nap-portal-pool").portalPool(process.env.LIVEPALMES_NAP_PASSWORD),{
           swimmerId,actorUid:context.uid,confirmPermanent:true,expectedFingerprint:request.data?.expectedFingerprint,
           expectedActivityFingerprint:request.data?.expectedActivityFingerprint,expectedLicenseNumber:request.data?.expectedLicenseNumber
         },{

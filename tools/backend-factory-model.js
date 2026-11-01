@@ -54,6 +54,9 @@ function model(root, snapshot = null) {
       const module = parse(text);
       const factory = module.body.find(n => n.type === "FunctionDeclaration" && n.id.name === member(call.callee));
       if (!factory) return;
+      // Only private method-object APIs are modeled here. Lazy closure creators
+      // remain ordinary root dependencies, with their own native/cache proof.
+      if (!factory.body.body.some(n => n.type === "ReturnStatement" && n.argument?.type === "ObjectExpression")) return;
       const directives = module.body.filter(n => n.type === "ExpressionStatement" && n.directive).map(n => text.slice(n.start, n.end));
       const moduleOther = module.body.filter(n => n !== factory && !(n.type === "ExpressionStatement"
         && (n.directive || n.expression?.type === "AssignmentExpression" && n.expression.operator === "="
@@ -78,7 +81,11 @@ function model(root, snapshot = null) {
         if (property.kind === "get" && property.value.body.body.length === 1
             && property.value.body.body[0].type === "ReturnStatement") {
           context.set(name, property.value.body.body[0].argument); contextKinds.set(name, "get");
-        } else if (property.kind === "init" && ["Identifier", "Literal"].includes(property.value.type)) {
+        } else if (property.kind === "init" && (["Identifier", "Literal"].includes(property.value.type)
+            || property.value.type === "MemberExpression" && !property.value.computed && !property.value.optional
+              && property.value.object.type === "CallExpression" && property.value.object.callee.name === "require"
+              && property.value.object.arguments.length === 1 && property.value.object.arguments[0].type === "Literal"
+              && typeof property.value.object.arguments[0].value === "string" && property.value.object.arguments[0].value.startsWith("./"))) {
           context.set(name, property.value); contextKinds.set(name, "value");
         } else throw Error("Unknown context binding: " + accessor + "." + name);
       }

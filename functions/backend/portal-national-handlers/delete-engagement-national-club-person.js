@@ -14,7 +14,7 @@ function createNationalHandlers_deleteEngagementNationalClubPerson(backendContex
     }
     if (backendContext.ENVIRONMENT.sportingDataSource === "nap") {
       try {
-        return await require("../../nap-person-deletion").deletePerson(require("../../nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD),{personId,actorUid:context.uid,confirmPermanent:true,expectedFingerprint:request.data?.expectedFingerprint},{
+        return await require("../../nap-person-deletion").deletePerson(require("../../nap-portal-pool").portalPool(process.env.LIVEPALMES_NAP_PASSWORD),{personId,actorUid:context.uid,confirmPermanent:true,expectedFingerprint:request.data?.expectedFingerprint},{
           read:async operation=>{const doc=await backendContext.db.collection("auditLogs").doc(`nap-person-delete-${operation}-before`).get();return doc.exists?doc.data().target:null;},
           prepare:(operation,target)=>backendContext.db.collection("auditLogs").doc(`nap-person-delete-${operation}-before`).create({action:"nap.personDelete.prepare",actorUid:context.uid,target,createdAt:new Date().toISOString()}),
           complete:(operation,target)=>backendContext.writeAuditLogOnce("nap.personDelete.complete",context.uid,{...target,auditPreparationId:`nap-person-delete-${operation}-before`},`nap-person-delete-${operation}-complete`)
