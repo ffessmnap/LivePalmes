@@ -25,7 +25,9 @@ function engagementAccessAcknowledgement(profile = {}) {
       "",
       clubLine,
       "",
-      "Elle sera prochainement examinée par un responsable régional ou national. Vous recevrez un nouvel e-mail lorsque votre accès aura été validé.",
+      require("./club-access-policy").isForeignClubRegion(profile.regionId)
+        ? "Elle sera prochainement examinée par un responsable national. Vous recevrez un nouvel e-mail lorsque votre accès aura été validé."
+        : "Elle sera prochainement examinée par un responsable régional ou national. Vous recevrez un nouvel e-mail lorsque votre accès aura été validé.",
       "",
       "Si vous n’êtes pas à l’origine de cette demande, vous pouvez ignorer cet e-mail.",
       "",
@@ -148,12 +150,13 @@ function normalizedMailRegionKey(value) {
 }
 
 function engagementAccessAdminNotificationRecipients(recipients = [], payload = {}, limit = 100) {
+  const foreignClub = require("./club-access-policy").isForeignClubRegion(payload.regionId);
   const requestedRegionKey = normalizedMailRegionKey(payload.regionId);
   const recipientsByEmail = new Map();
   recipients.forEach((recipient) => {
     const capabilities = Array.isArray(recipient?.capabilities) ? recipient.capabilities : [];
-    const nationalRecipient = payload.newClubRequested === true && capabilities.includes("engagements.national.manage");
-    const regionalRecipient = capabilities.includes("engagements.region.manage") &&
+    const nationalRecipient = (payload.newClubRequested === true || foreignClub) && capabilities.includes("engagements.national.manage");
+    const regionalRecipient = !foreignClub && capabilities.includes("engagements.region.manage") &&
       requestedRegionKey &&
       normalizedMailRegionKey(recipient.regionId) === requestedRegionKey;
     const email = cleanMailText(recipient?.email).toLocaleLowerCase("fr");

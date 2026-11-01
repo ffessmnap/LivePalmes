@@ -1,11 +1,26 @@
 // Existing operation bodies; live services arrive through explicit accessors.
 function createDirectoryService_consumePublicAccessRequestRateLimit(backendContext) {
   async function resolveExistingClubForAccessRequest(payload = {}) {
-    if (payload.newClubRequested !== true || !payload.newClub?.federalNumber) return payload;
-    const existingClub = await (0, backendContext.local$findEngagementClubByFederalNumber)(payload.newClub.federalNumber);
-    return existingClub
+    const { isForeignClubRegion } = require("../../club-access-policy");
+    let existingClub = null;
+    if (payload.newClubRequested === true && payload.newClub?.federalNumber) {
+      existingClub = await (0, backendContext.local$findEngagementClubByFederalNumber)(payload.newClub.federalNumber);
+    } else if (payload.clubId) {
+      if (backendContext.ENVIRONMENT.sportingDataSource === "nap") {
+        existingClub = await require("../../nap-club-directory").findClub(
+          require("../../nap-portal-pool").portalPool(process.env.LIVEPALMES_NAP_PASSWORD), payload.clubId);
+      } else {
+        const snapshot = await backendContext.db.collection(backendContext.ENGAGEMENT_CLUBS_COLLECTION).doc(payload.clubId).get();
+        existingClub = snapshot.exists ? backendContext.engagementStoredClubItem(snapshot) : backendContext.CLUB_REFERENCE_BY_ID.get(payload.clubId);
+      }
+      if (!existingClub || existingClub.deleted === true) throw new TypeError("Club introuvable dans l'annuaire.");
+    }
+    const resolved = existingClub
       ? { ...payload, ...(0, backendContext.local$engagementAccessExistingClubPayload)(existingClub), newClub: null }
       : payload;
+    if (isForeignClubRegion(resolved.regionId)) return { ...resolved, regionId: "CMAS" };
+    if (!resolved.licenseNumber) throw new TypeError("La licence FFESSM est obligatoire pour un club francais.");
+    return resolved;
   }
 
   async function sendEngagementAccessAcknowledgement(payload = {}) {
@@ -106,7 +121,7 @@ function createDirectoryService_consumePublicAccessRequestRateLimit(backendConte
         reason: "Configuration SMTP incomplete."
       };
     }
-    const capabilities = [
+    const capabilities = require("../../club-access-policy").isForeignClubRegion(payload.regionId) ? ["engagements.national.manage"] : [
       "engagements.region.manage",
       ...(payload.newClubRequested === true ? ["engagements.national.manage"] : [])
     ];

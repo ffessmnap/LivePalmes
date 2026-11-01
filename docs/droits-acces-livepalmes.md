@@ -2,6 +2,14 @@
 
 <!-- description: Modèle actuel des comptes, capacités, périmètres et accès temporaires du portail et des consoles LivePalmes. -->
 
+## Demandes de compte des clubs étrangers — 1er novembre 2026
+
+Dans les sélecteurs de rattachement des comptes, « Clubs étrangers (CMAS) » correspond au comité NAP 5 et à la valeur canonique `CMAS`. Ce regroupement ne crée pas une autorité régionale et n'est pas ajouté aux régions organisatrices des compétitions. Le numéro de licence du demandeur est facultatif pour ce comité ; aucune licence FFESSM fictive ni vérification fédérale automatique n'est créée. L'obligation demeure pour les demandes des clubs français. Cela concerne le demandeur de compte, sans changement des règles des nageurs ou des engagements.
+
+Les demandes CMAS sont réservées au niveau national, pour l'acceptation comme pour le refus, y compris si un compte régional porte ce même périmètre. Les notifications de ces demandes sont destinées aux responsables nationaux selon les réglages mail existants. Aucun droit n'est attribué avant la décision habituelle. Le club existant est relu à la soumission et lors d'une approbation, après correction éventuelle : sa région réelle remplace la valeur déclarée avant le contrôle du périmètre et de la licence. Un club français présenté comme CMAS ne bénéficie donc pas de l'exemption.
+
+Budget ajouté : zéro lecture à l'ouverture, au filtrage, au changement de région ou au retour en cache. Soumission d'une demande pour un club existant et approbation : une requête NAP indexée par clé primaire, `LIMIT 1`, par action ; pour la source historique, une lecture Firestore du club et le référentiel local existant. Le rapprochement d'un nouveau club par numéro fédéral réutilise son résultat, sans lecture par ligne supplémentaire. Rafraîchissement et pire cas : même plafond fixe, indépendant de la taille de l'annuaire ; aucun scan, listener, index, collection ou migration ajouté. Les budgets existants de traitement des demandes et d'envoi sont conservés.
+
 ## Principe
 
 Un compte LivePalmes ne reçoit pas un unique rôle général. Il reçoit des **capacités**, c'est-à-dire des autorisations précises, éventuellement limitées à un club ou à une région.

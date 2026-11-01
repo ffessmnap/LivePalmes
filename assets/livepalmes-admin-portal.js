@@ -405,6 +405,8 @@
     capabilityLabel,
     normalizedRegionKey,
     canonicalLivePalmesRegion,
+    isForeignClubRegion,
+    updateAccessRequestLicenseFields,
     sameLivePalmesRegion,
     regionDisplayLabel,
     setRegionSelectValue,
@@ -1273,6 +1275,7 @@
     "Polyn\u00e9sie"
   ];
   const LIVEPALMES_REFERENCE_REGION_LABELS = {
+    "5": "CMAS",
     "1": "Grand Est",
     "2": "Nouvelle Aquitaine",
     "3": "Ile de France",
