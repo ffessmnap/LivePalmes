@@ -21,9 +21,9 @@ function edits(source, changes) {
   return source;
 }
 
-function render(root, baseline, selected = null) {
+function render(root, baseline, selected = null, providedSnapshot = null) {
   if (!/^[a-f0-9]{40}$/.test(baseline)) throw Error("Full baseline commit required");
-  const snapshot = selection.snapshot(root, baseline, { production: true }), m = model(root, snapshot);
+  const snapshot = providedSnapshot || selection.snapshot(root, baseline, { production: true }), m = model(root, snapshot);
   if (selected?.some(name => !m.factories.has(name))) throw Error("Unknown factory selection");
   if (m.warnings.length) throw Error("Unreviewed factory initialization");
   if (m.opaque.some(case_ => case_.reason !== "context escapes method")) throw Error("Unreviewed ambiguous binding");

@@ -1,3 +1,195 @@
+function $engagementPdfRenderer_buildEngagementClubRecapPdf() {
+  if (!$engagementPdfRenderer_buildEngagementClubRecapPdf.instance) $engagementPdfRenderer_buildEngagementClubRecapPdf.instance = require("./backend/engagement-pdf-renderer/build-engagement-club-recap-pdf").createEngagementPdfRenderer_buildEngagementClubRecapPdf({
+    ENGAGEMENT_EVENT_DEFINITION_BY_CODE: ENGAGEMENT_EVENT_DEFINITION_BY_CODE,
+    ENGAGEMENT_PDF_LOGO_PATH: ENGAGEMENT_PDF_LOGO_PATH,
+    PDFDocument: PDFDocument,
+    QRCode: QRCode,
+    ageCategoryFromDates: ageCategoryFromDates,
+    cleanEngagementCompetitionLevel: cleanEngagementCompetitionLevel,
+    cleanEngagementCompetitionType: cleanEngagementCompetitionType,
+    cleanIsoDate: cleanIsoDate,
+    cleanPublicCalendarWhatsAppUrl: cleanPublicCalendarWhatsAppUrl,
+    cleanText: cleanText,
+    engagementClubCode: engagementClubCode,
+    fs: fs,
+    normalizeCategoryCode: normalizeCategoryCode,
+    normalizeCourseCode: normalizeCourseCode,
+    get local$engagementPdfEntryStats() { return $engagementPdfRenderer_engagementPdfEntryStats().engagementPdfEntryStats; },
+    get local$engagementPdfEventLabel() { return $engagementPdfRenderer_engagementPdfEventLabel().engagementPdfEventLabel; },
+    get local$engagementPdfFeeTotal() { return $engagementPdfRenderer_engagementPdfFeeTotal().engagementPdfFeeTotal; },
+    get local$engagementPdfFileName() { return $engagementPdfRenderer_engagementPdfFileName().engagementPdfFileName; }
+  });
+  return $engagementPdfRenderer_buildEngagementClubRecapPdf.instance;
+}
+
+function $engagementPdfRenderer_engagementPdfCollectIndividualRows() {
+  if (!$engagementPdfRenderer_engagementPdfCollectIndividualRows.instance) $engagementPdfRenderer_engagementPdfCollectIndividualRows.instance = require("./backend/engagement-pdf-renderer/engagement-pdf-collect-individual-rows").createEngagementPdfRenderer_engagementPdfCollectIndividualRows({
+    ageCategoryFromDates: ageCategoryFromDates,
+    cleanEngagementTimingType: cleanEngagementTimingType,
+    cleanText: cleanText,
+    normalizeCategoryCode: normalizeCategoryCode,
+    get local$engagementPdfEnsureSpace() { return $engagementPdfRenderer_buildEngagementClubRecapPdf().engagementPdfEnsureSpace; },
+    get local$engagementPdfEventLabel() { return $engagementPdfRenderer_engagementPdfEventLabel().engagementPdfEventLabel; },
+    get local$engagementPdfSwimmerName() { return $engagementPdfRenderer_buildEngagementClubRecapPdf().engagementPdfSwimmerName; }
+  });
+  return $engagementPdfRenderer_engagementPdfCollectIndividualRows.instance;
+}
+
+function $engagementPdfRenderer_engagementPdfFileName() {
+  if (!$engagementPdfRenderer_engagementPdfFileName.instance) $engagementPdfRenderer_engagementPdfFileName.instance = require("./backend/engagement-pdf-renderer/engagement-pdf-file-name").createEngagementPdfRenderer_engagementPdfFileName({
+    cleanText: cleanText
+  });
+  return $engagementPdfRenderer_engagementPdfFileName.instance;
+}
+
+function $engagementPdfRenderer_engagementPdfEventLabel() {
+  if (!$engagementPdfRenderer_engagementPdfEventLabel.instance) $engagementPdfRenderer_engagementPdfEventLabel.instance = require("./backend/engagement-pdf-renderer/engagement-pdf-event-label").createEngagementPdfRenderer_engagementPdfEventLabel({
+    ENGAGEMENT_EVENT_DEFINITION_BY_CODE: ENGAGEMENT_EVENT_DEFINITION_BY_CODE,
+    normalizeCourseCode: normalizeCourseCode
+  });
+  return $engagementPdfRenderer_engagementPdfEventLabel.instance;
+}
+
+function $engagementPdfRenderer_engagementPdfEntryStats() {
+  if (!$engagementPdfRenderer_engagementPdfEntryStats.instance) $engagementPdfRenderer_engagementPdfEntryStats.instance = require("./backend/engagement-pdf-renderer/engagement-pdf-entry-stats").createEngagementPdfRenderer_engagementPdfEntryStats({
+
+  });
+  return $engagementPdfRenderer_engagementPdfEntryStats.instance;
+}
+
+function $engagementPdfRenderer_engagementPdfFeeTotal() {
+  if (!$engagementPdfRenderer_engagementPdfFeeTotal.instance) $engagementPdfRenderer_engagementPdfFeeTotal.instance = require("./backend/engagement-pdf-renderer/engagement-pdf-fee-total").createEngagementPdfRenderer_engagementPdfFeeTotal({
+    get local$engagementPdfEntryStats() { return $engagementPdfRenderer_engagementPdfEntryStats().engagementPdfEntryStats; }
+  });
+  return $engagementPdfRenderer_engagementPdfFeeTotal.instance;
+}
+
+function $engagementPdfRenderer_buildEngagementOfficialsPdf() {
+  if (!$engagementPdfRenderer_buildEngagementOfficialsPdf.instance) $engagementPdfRenderer_buildEngagementOfficialsPdf.instance = require("./backend/engagement-pdf-renderer/build-engagement-officials-pdf").createEngagementPdfRenderer_buildEngagementOfficialsPdf({
+    ENGAGEMENT_PDF_LOGO_PATH: ENGAGEMENT_PDF_LOGO_PATH,
+    PDFDocument: PDFDocument,
+    cleanText: cleanText,
+    fs: fs,
+    get local$engagementPdfDocToBuffer() { return $engagementPdfRenderer_buildEngagementClubRecapPdf().engagementPdfDocToBuffer; },
+    get local$engagementPdfEmptyState() { return $engagementPdfRenderer_buildEngagementClubRecapPdf().engagementPdfEmptyState; },
+    get local$engagementPdfFileName() { return $engagementPdfRenderer_engagementPdfFileName().engagementPdfFileName; },
+    get local$engagementPdfFormatDate() { return $engagementPdfRenderer_buildEngagementClubRecapPdf().engagementPdfFormatDate; },
+    get local$engagementPdfFormatDateTime() { return $engagementPdfRenderer_buildEngagementClubRecapPdf().engagementPdfFormatDateTime; },
+    get local$engagementPdfTable() { return $engagementPdfRenderer_buildEngagementClubRecapPdf().engagementPdfTable; }
+  });
+  return $engagementPdfRenderer_buildEngagementOfficialsPdf.instance;
+}
+
+function $legacyPerformancePublication_publicPerformanceFile() {
+  if (!$legacyPerformancePublication_publicPerformanceFile.instance) $legacyPerformancePublication_publicPerformanceFile.instance = require("./backend/legacy-performance-publication/public-performance-file").createLegacyPerformancePublication_publicPerformanceFile({
+    PUBLIC_PERFORMANCE_FILES_PATH: PUBLIC_PERFORMANCE_FILES_PATH,
+    publicPerformanceFilesBucket: publicPerformanceFilesBucket
+  });
+  return $legacyPerformancePublication_publicPerformanceFile.instance;
+}
+
+function $legacyPerformancePublication_buildPublicSearchRow() {
+  if (!$legacyPerformancePublication_buildPublicSearchRow.instance) $legacyPerformancePublication_buildPublicSearchRow.instance = require("./backend/legacy-performance-publication/build-public-search-row").createLegacyPerformancePublication_buildPublicSearchRow({
+    PUBLIC_PERFORMANCE_SWIMMER_ROW_SCHEMA_VERSION: PUBLIC_PERFORMANCE_SWIMMER_ROW_SCHEMA_VERSION,
+    cleanText: cleanText,
+    normalizePerformanceSearchText: normalizePerformanceSearchText,
+    performancePublicKey: performancePublicKey,
+    performanceSearchPrefixes: performanceSearchPrefixes,
+    publicBetterPerformance: publicBetterPerformance,
+    publicPerformanceBaseRow: publicPerformanceBaseRow,
+    publicPerformanceSwimmerStorageRow: publicPerformanceSwimmerStorageRow,
+    publicSwimmerKey: publicSwimmerKey,
+    stableHash: stableHash,
+    get local$publicPerformanceFile() { return $legacyPerformancePublication_publicPerformanceFile().publicPerformanceFile; },
+    get local$publicPerformanceFilePath() { return $legacyPerformancePublication_publicPerformanceFile().publicPerformanceFilePath; },
+    get local$readPublicPerformanceJson() { return $legacyPerformancePublication_publicPerformanceFile().readPublicPerformanceJson; }
+  });
+  return $legacyPerformancePublication_buildPublicSearchRow.instance;
+}
+
+function $legacyPerformancePublication_publicPerformanceTopFileName() {
+  if (!$legacyPerformancePublication_publicPerformanceTopFileName.instance) $legacyPerformancePublication_publicPerformanceTopFileName.instance = require("./backend/legacy-performance-publication/public-performance-top-file-name").createLegacyPerformancePublication_publicPerformanceTopFileName({
+    cleanText: cleanText
+  });
+  return $legacyPerformancePublication_publicPerformanceTopFileName.instance;
+}
+
+function $legacyPerformancePublication_publicPerformanceSwimmerFilePath() {
+  if (!$legacyPerformancePublication_publicPerformanceSwimmerFilePath.instance) $legacyPerformancePublication_publicPerformanceSwimmerFilePath.instance = require("./backend/legacy-performance-publication/public-performance-swimmer-file-path").createLegacyPerformancePublication_publicPerformanceSwimmerFilePath({
+    stableHash: stableHash
+  });
+  return $legacyPerformancePublication_publicPerformanceSwimmerFilePath.instance;
+}
+
+function $legacyPerformancePublication_mergePublicSwimmerRows() {
+  if (!$legacyPerformancePublication_mergePublicSwimmerRows.instance) $legacyPerformancePublication_mergePublicSwimmerRows.instance = require("./backend/legacy-performance-publication/merge-public-swimmer-rows").createLegacyPerformancePublication_mergePublicSwimmerRows({
+    PUBLIC_PERFORMANCE_TOP_PREVIEW_LIMIT: PUBLIC_PERFORMANCE_TOP_PREVIEW_LIMIT,
+    cleanText: cleanText,
+    publicPerformanceBaseRow: publicPerformanceBaseRow,
+    publicSwimmerKey: publicSwimmerKey,
+    get local$buildPublicSwimmerPayload() { return $legacyPerformancePublication_buildPublicSearchRow().buildPublicSwimmerPayload; },
+    get local$distinctPublicTopPreview() { return $legacyPerformancePublication_buildPublicSearchRow().distinctPublicTopPreview; },
+    get local$mergePublicPerformanceManifest() { return $legacyPerformancePublication_buildPublicSearchRow().mergePublicPerformanceManifest; },
+    get local$mergePublicTopRows() { return $legacyPerformancePublication_buildPublicSearchRow().mergePublicTopRows; },
+    get local$publicPerformanceFilePath() { return $legacyPerformancePublication_publicPerformanceFile().publicPerformanceFilePath; },
+    get local$publicPerformanceRowKey() { return $legacyPerformancePublication_buildPublicSearchRow().publicPerformanceRowKey; },
+    get local$publicPerformanceSwimmerFilePath() { return $legacyPerformancePublication_publicPerformanceSwimmerFilePath().publicPerformanceSwimmerFilePath; },
+    get local$publicPerformanceSwimmerRow() { return $legacyPerformancePublication_buildPublicSearchRow().publicPerformanceSwimmerRow; },
+    get local$publicPerformanceTopFileName() { return $legacyPerformancePublication_publicPerformanceTopFileName().publicPerformanceTopFileName; },
+    get local$publishPublicSearchIndexes() { return $legacyPerformancePublication_buildPublicSearchRow().publishPublicSearchIndexes; },
+    get local$readPublicPerformanceJson() { return $legacyPerformancePublication_publicPerformanceFile().readPublicPerformanceJson; },
+    get local$savePublicPerformanceJson() { return $legacyPerformancePublication_buildPublicSearchRow().savePublicPerformanceJson; },
+    get local$savePublicPerformanceText() { return $legacyPerformancePublication_buildPublicSearchRow().savePublicPerformanceText; },
+    get local$sortPublicPerformanceRows() { return $legacyPerformancePublication_buildPublicSearchRow().sortPublicPerformanceRows; }
+  });
+  return $legacyPerformancePublication_mergePublicSwimmerRows.instance;
+}
+
+function $legacyPerformancePublication_deletePublicPerformanceFile() {
+  if (!$legacyPerformancePublication_deletePublicPerformanceFile.instance) $legacyPerformancePublication_deletePublicPerformanceFile.instance = require("./backend/legacy-performance-publication/delete-public-performance-file").createLegacyPerformancePublication_deletePublicPerformanceFile({
+    PUBLIC_PERFORMANCE_TOP_PREVIEW_LIMIT: PUBLIC_PERFORMANCE_TOP_PREVIEW_LIMIT,
+    cleanText: cleanText,
+    hydratePublicSwimmerRowsFromPayload: hydratePublicSwimmerRowsFromPayload,
+    publicPerformanceBaseRow: publicPerformanceBaseRow,
+    publicSwimmerKey: publicSwimmerKey,
+    publicSwimmerPayloadSupportsTopRebuild: publicSwimmerPayloadSupportsTopRebuild,
+    uniquePublicPerformanceRows: uniquePublicPerformanceRows,
+    get local$buildPublicSearchRow() { return $legacyPerformancePublication_buildPublicSearchRow().buildPublicSearchRow; },
+    get local$buildPublicSwimmerPayload() { return $legacyPerformancePublication_buildPublicSearchRow().buildPublicSwimmerPayload; },
+    get local$distinctPublicTopPreview() { return $legacyPerformancePublication_buildPublicSearchRow().distinctPublicTopPreview; },
+    get local$mergePublicPerformanceManifest() { return $legacyPerformancePublication_buildPublicSearchRow().mergePublicPerformanceManifest; },
+    get local$mergePublicTopRows() { return $legacyPerformancePublication_buildPublicSearchRow().mergePublicTopRows; },
+    get local$publicPerformanceFile() { return $legacyPerformancePublication_publicPerformanceFile().publicPerformanceFile; },
+    get local$publicPerformanceFilePath() { return $legacyPerformancePublication_publicPerformanceFile().publicPerformanceFilePath; },
+    get local$publicPerformanceIdShard() { return $legacyPerformancePublication_buildPublicSearchRow().publicPerformanceIdShard; },
+    get local$publicPerformanceRowKey() { return $legacyPerformancePublication_buildPublicSearchRow().publicPerformanceRowKey; },
+    get local$publicPerformanceSearchShard() { return $legacyPerformancePublication_buildPublicSearchRow().publicPerformanceSearchShard; },
+    get local$publicPerformanceSwimmerFilePath() { return $legacyPerformancePublication_publicPerformanceSwimmerFilePath().publicPerformanceSwimmerFilePath; },
+    get local$publicPerformanceTopCandidateKey() { return $legacyPerformancePublication_buildPublicSearchRow().publicPerformanceTopCandidateKey; },
+    get local$publicPerformanceTopFileName() { return $legacyPerformancePublication_publicPerformanceTopFileName().publicPerformanceTopFileName; },
+    get local$publishPublicSearchIndexes() { return $legacyPerformancePublication_buildPublicSearchRow().publishPublicSearchIndexes; },
+    get local$readPublicPerformanceJson() { return $legacyPerformancePublication_publicPerformanceFile().readPublicPerformanceJson; },
+    get local$savePublicPerformanceJson() { return $legacyPerformancePublication_buildPublicSearchRow().savePublicPerformanceJson; },
+    get local$savePublicPerformanceText() { return $legacyPerformancePublication_buildPublicSearchRow().savePublicPerformanceText; }
+  });
+  return $legacyPerformancePublication_deletePublicPerformanceFile.instance;
+}
+
+function $legacyPerformancePublication_assertPublicSwimmerIdentityReplaced() {
+  if (!$legacyPerformancePublication_assertPublicSwimmerIdentityReplaced.instance) $legacyPerformancePublication_assertPublicSwimmerIdentityReplaced.instance = require("./backend/legacy-performance-publication/assert-public-swimmer-identity-replaced").createLegacyPerformancePublication_assertPublicSwimmerIdentityReplaced({
+    cleanText: cleanText,
+    get local$buildPublicSearchRow() { return $legacyPerformancePublication_buildPublicSearchRow().buildPublicSearchRow; },
+    get local$deletePublicPerformanceFile() { return $legacyPerformancePublication_deletePublicPerformanceFile().deletePublicPerformanceFile; },
+    get local$publicPerformanceIdShard() { return $legacyPerformancePublication_buildPublicSearchRow().publicPerformanceIdShard; },
+    get local$publicPerformanceSearchShard() { return $legacyPerformancePublication_buildPublicSearchRow().publicPerformanceSearchShard; },
+    get local$publicPerformanceSwimmerFilePath() { return $legacyPerformancePublication_publicPerformanceSwimmerFilePath().publicPerformanceSwimmerFilePath; },
+    get local$readPublicPerformanceJson() { return $legacyPerformancePublication_publicPerformanceFile().readPublicPerformanceJson; },
+    get local$rebuildPublicPerformanceFilesForAffectedRows() { return $legacyPerformancePublication_deletePublicPerformanceFile().rebuildPublicPerformanceFilesForAffectedRows; },
+    get local$removePublicSearchIndexes() { return $legacyPerformancePublication_deletePublicPerformanceFile().removePublicSearchIndexes; }
+  });
+  return $legacyPerformancePublication_assertPublicSwimmerIdentityReplaced.instance;
+}
+
 function $portalPerformanceHandlers_storeCompetitionPdf() {
   if (!$portalPerformanceHandlers_storeCompetitionPdf.instance) $portalPerformanceHandlers_storeCompetitionPdf.instance = require("./backend/portal-performance-handlers/store-competition-pdf").createPerformanceHandlers_storeCompetitionPdf({
     get HttpsError() { return HttpsError; },
@@ -7742,60 +7934,41 @@ function engagementClubEntryHasParticipants() {
   return $serverEntryModelService_engagementClubEntryHasParticipants().engagementClubEntryHasParticipants(...arguments);
 }
 
-function engagementPdfRenderer() {
-  if (!engagementPdfRenderer.instance) engagementPdfRenderer.instance = require("./engagement-pdf-renderer").createEngagementPdfRenderer({
-    ENGAGEMENT_EVENT_DEFINITION_BY_CODE,
-    ENGAGEMENT_PDF_LOGO_PATH,
-    PDFDocument,
-    QRCode,
-    ageCategoryFromDates,
-    cleanEngagementCompetitionLevel,
-    cleanEngagementCompetitionType,
-    cleanEngagementTimingType,
-    cleanIsoDate,
-    cleanPublicCalendarWhatsAppUrl,
-    cleanText,
-    engagementClubCode,
-    fs,
-    normalizeCategoryCode,
-    normalizeCourseCode
-  });
-  return engagementPdfRenderer.instance;
-}
 
-/* extracted-function: functions/engagement-pdf-renderer.js#engagementPdfFormatDate */
+
+/* extracted-function: functions/backend/engagement-pdf-renderer/build-engagement-club-recap-pdf.js#engagementPdfFormatDate */
 function engagementPdfFormatDate(input0) {
-  return engagementPdfRenderer().engagementPdfFormatDate(...arguments);
+  return $engagementPdfRenderer_buildEngagementClubRecapPdf().engagementPdfFormatDate(...arguments);
 }
 
-/* extracted-function: functions/engagement-pdf-renderer.js#engagementPdfFormatDateTime */
+/* extracted-function: functions/backend/engagement-pdf-renderer/build-engagement-club-recap-pdf.js#engagementPdfFormatDateTime */
 function engagementPdfFormatDateTime(input0) {
-  return engagementPdfRenderer().engagementPdfFormatDateTime(...arguments);
+  return $engagementPdfRenderer_buildEngagementClubRecapPdf().engagementPdfFormatDateTime(...arguments);
 }
 
-/* extracted-function: functions/engagement-pdf-renderer.js#engagementPdfLevelLabel */
+/* extracted-function: functions/backend/engagement-pdf-renderer/build-engagement-club-recap-pdf.js#engagementPdfLevelLabel */
 function engagementPdfLevelLabel(input0) {
-  return engagementPdfRenderer().engagementPdfLevelLabel(...arguments);
+  return $engagementPdfRenderer_buildEngagementClubRecapPdf().engagementPdfLevelLabel(...arguments);
 }
 
-/* extracted-function: functions/engagement-pdf-renderer.js#engagementPdfStatusLabel */
+/* extracted-function: functions/backend/engagement-pdf-renderer/engagement-pdf-collect-individual-rows.js#engagementPdfStatusLabel */
 function engagementPdfStatusLabel(input0) {
-  return engagementPdfRenderer().engagementPdfStatusLabel(...arguments);
+  return $engagementPdfRenderer_engagementPdfCollectIndividualRows().engagementPdfStatusLabel(...arguments);
 }
 
-/* extracted-function: functions/engagement-pdf-renderer.js#engagementPdfTimingLabel */
+/* extracted-function: functions/backend/engagement-pdf-renderer/engagement-pdf-collect-individual-rows.js#engagementPdfTimingLabel */
 function engagementPdfTimingLabel(input0) {
-  return engagementPdfRenderer().engagementPdfTimingLabel(...arguments);
+  return $engagementPdfRenderer_engagementPdfCollectIndividualRows().engagementPdfTimingLabel(...arguments);
 }
 
-/* extracted-function: functions/engagement-pdf-renderer.js#engagementPdfMoney */
+/* extracted-function: functions/backend/engagement-pdf-renderer/build-engagement-club-recap-pdf.js#engagementPdfMoney */
 function engagementPdfMoney(input0) {
-  return engagementPdfRenderer().engagementPdfMoney(...arguments);
+  return $engagementPdfRenderer_buildEngagementClubRecapPdf().engagementPdfMoney(...arguments);
 }
 
-/* extracted-function: functions/engagement-pdf-renderer.js#engagementPdfFileName */
+/* extracted-function: functions/backend/engagement-pdf-renderer/engagement-pdf-file-name.js#engagementPdfFileName */
 function engagementPdfFileName(input0) {
-  return engagementPdfRenderer().engagementPdfFileName(...arguments);
+  return $engagementPdfRenderer_engagementPdfFileName().engagementPdfFileName(...arguments);
 }
 
 
@@ -7830,39 +8003,39 @@ function engagementClubRecapPdfSourceHash() {
   return $serverDocumentsService_engagementClubRecapPdfSourceHash().engagementClubRecapPdfSourceHash(...arguments);
 }
 
-/* extracted-function: functions/engagement-pdf-renderer.js#engagementPdfEventLabel */
+/* extracted-function: functions/backend/engagement-pdf-renderer/engagement-pdf-event-label.js#engagementPdfEventLabel */
 function engagementPdfEventLabel(input0) {
-  return engagementPdfRenderer().engagementPdfEventLabel(...arguments);
+  return $engagementPdfRenderer_engagementPdfEventLabel().engagementPdfEventLabel(...arguments);
 }
 
-/* extracted-function: functions/engagement-pdf-renderer.js#engagementPdfSwimmerName */
+/* extracted-function: functions/backend/engagement-pdf-renderer/build-engagement-club-recap-pdf.js#engagementPdfSwimmerName */
 function engagementPdfSwimmerName() {
-  return engagementPdfRenderer().engagementPdfSwimmerName(...arguments);
+  return $engagementPdfRenderer_buildEngagementClubRecapPdf().engagementPdfSwimmerName(...arguments);
 }
 
-/* extracted-function: functions/engagement-pdf-renderer.js#engagementPdfPersonName */
+/* extracted-function: functions/backend/engagement-pdf-renderer/build-engagement-club-recap-pdf.js#engagementPdfPersonName */
 function engagementPdfPersonName() {
-  return engagementPdfRenderer().engagementPdfPersonName(...arguments);
+  return $engagementPdfRenderer_buildEngagementClubRecapPdf().engagementPdfPersonName(...arguments);
 }
 
-/* extracted-function: functions/engagement-pdf-renderer.js#engagementPdfGenderLabel */
+/* extracted-function: functions/backend/engagement-pdf-renderer/build-engagement-club-recap-pdf.js#engagementPdfGenderLabel */
 function engagementPdfGenderLabel(input0) {
-  return engagementPdfRenderer().engagementPdfGenderLabel(...arguments);
+  return $engagementPdfRenderer_buildEngagementClubRecapPdf().engagementPdfGenderLabel(...arguments);
 }
 
-/* extracted-function: functions/engagement-pdf-renderer.js#engagementPdfRelayCategoryLabel */
+/* extracted-function: functions/backend/engagement-pdf-renderer/build-engagement-club-recap-pdf.js#engagementPdfRelayCategoryLabel */
 function engagementPdfRelayCategoryLabel(input0) {
-  return engagementPdfRenderer().engagementPdfRelayCategoryLabel(...arguments);
+  return $engagementPdfRenderer_buildEngagementClubRecapPdf().engagementPdfRelayCategoryLabel(...arguments);
 }
 
-/* extracted-function: functions/engagement-pdf-renderer.js#engagementPdfEntryStats */
+/* extracted-function: functions/backend/engagement-pdf-renderer/engagement-pdf-entry-stats.js#engagementPdfEntryStats */
 function engagementPdfEntryStats() {
-  return engagementPdfRenderer().engagementPdfEntryStats(...arguments);
+  return $engagementPdfRenderer_engagementPdfEntryStats().engagementPdfEntryStats(...arguments);
 }
 
-/* extracted-function: functions/engagement-pdf-renderer.js#engagementPdfFeeTotal */
+/* extracted-function: functions/backend/engagement-pdf-renderer/engagement-pdf-fee-total.js#engagementPdfFeeTotal */
 function engagementPdfFeeTotal() {
-  return engagementPdfRenderer().engagementPdfFeeTotal(...arguments);
+  return $engagementPdfRenderer_engagementPdfFeeTotal().engagementPdfFeeTotal(...arguments);
 }
 
 /* extracted-function: functions/backend/server-documents-service/engagement-competition-entry-summary-id.js#engagementCompetitionEntrySummaryId */
@@ -7943,94 +8116,94 @@ exports.syncEngagementClubEntryToCompetitionSummary = onDocumentWritten({
   await syncEngagementCompetitionEntrySummaryFromChange(event);
 });
 
-/* extracted-function: functions/engagement-pdf-renderer.js#engagementPdfCollectIndividualRows */
+/* extracted-function: functions/backend/engagement-pdf-renderer/engagement-pdf-collect-individual-rows.js#engagementPdfCollectIndividualRows */
 function engagementPdfCollectIndividualRows() {
-  return engagementPdfRenderer().engagementPdfCollectIndividualRows(...arguments);
+  return $engagementPdfRenderer_engagementPdfCollectIndividualRows().engagementPdfCollectIndividualRows(...arguments);
 }
 
-/* extracted-function: functions/engagement-pdf-renderer.js#engagementPdfIndividualProgramColumns */
+/* extracted-function: functions/backend/engagement-pdf-renderer/build-engagement-club-recap-pdf.js#engagementPdfIndividualProgramColumns */
 function engagementPdfIndividualProgramColumns() {
-  return engagementPdfRenderer().engagementPdfIndividualProgramColumns(...arguments);
+  return $engagementPdfRenderer_buildEngagementClubRecapPdf().engagementPdfIndividualProgramColumns(...arguments);
 }
 
-/* extracted-function: functions/engagement-pdf-renderer.js#engagementPdfIndividualMatrix */
+/* extracted-function: functions/backend/engagement-pdf-renderer/build-engagement-club-recap-pdf.js#engagementPdfIndividualMatrix */
 function engagementPdfIndividualMatrix() {
-  return engagementPdfRenderer().engagementPdfIndividualMatrix(...arguments);
+  return $engagementPdfRenderer_buildEngagementClubRecapPdf().engagementPdfIndividualMatrix(...arguments);
 }
 
-/* extracted-function: functions/engagement-pdf-renderer.js#engagementPdfSwimmersWithoutIndividualRows */
+/* extracted-function: functions/backend/engagement-pdf-renderer/build-engagement-club-recap-pdf.js#engagementPdfSwimmersWithoutIndividualRows */
 function engagementPdfSwimmersWithoutIndividualRows() {
-  return engagementPdfRenderer().engagementPdfSwimmersWithoutIndividualRows(...arguments);
+  return $engagementPdfRenderer_buildEngagementClubRecapPdf().engagementPdfSwimmersWithoutIndividualRows(...arguments);
 }
 
-/* extracted-function: functions/engagement-pdf-renderer.js#engagementPdfCompactSummary */
+/* extracted-function: functions/backend/engagement-pdf-renderer/build-engagement-club-recap-pdf.js#engagementPdfCompactSummary */
 function engagementPdfCompactSummary(input0) {
-  return engagementPdfRenderer().engagementPdfCompactSummary(...arguments);
+  return $engagementPdfRenderer_buildEngagementClubRecapPdf().engagementPdfCompactSummary(...arguments);
 }
 
-/* extracted-function: functions/engagement-pdf-renderer.js#engagementPdfDrawIndividualMatrix */
+/* extracted-function: functions/backend/engagement-pdf-renderer/build-engagement-club-recap-pdf.js#engagementPdfDrawIndividualMatrix */
 function engagementPdfDrawIndividualMatrix(input0) {
-  return engagementPdfRenderer().engagementPdfDrawIndividualMatrix(...arguments);
+  return $engagementPdfRenderer_buildEngagementClubRecapPdf().engagementPdfDrawIndividualMatrix(...arguments);
 }
 
-/* extracted-function: functions/engagement-pdf-renderer.js#engagementPdfCollectRelayRows */
+/* extracted-function: functions/backend/engagement-pdf-renderer/build-engagement-club-recap-pdf.js#engagementPdfCollectRelayRows */
 function engagementPdfCollectRelayRows() {
-  return engagementPdfRenderer().engagementPdfCollectRelayRows(...arguments);
+  return $engagementPdfRenderer_buildEngagementClubRecapPdf().engagementPdfCollectRelayRows(...arguments);
 }
 
-/* extracted-function: functions/engagement-pdf-renderer.js#engagementPdfDocToBuffer */
+/* extracted-function: functions/backend/engagement-pdf-renderer/build-engagement-club-recap-pdf.js#engagementPdfDocToBuffer */
 function engagementPdfDocToBuffer(input0) {
-  return engagementPdfRenderer().engagementPdfDocToBuffer(...arguments);
+  return $engagementPdfRenderer_buildEngagementClubRecapPdf().engagementPdfDocToBuffer(...arguments);
 }
 
-/* extracted-function: functions/engagement-pdf-renderer.js#engagementPdfAddFooter */
+/* extracted-function: functions/backend/engagement-pdf-renderer/build-engagement-club-recap-pdf.js#engagementPdfAddFooter */
 function engagementPdfAddFooter(input0, input1) {
-  return engagementPdfRenderer().engagementPdfAddFooter(...arguments);
+  return $engagementPdfRenderer_buildEngagementClubRecapPdf().engagementPdfAddFooter(...arguments);
 }
 
-/* extracted-function: functions/engagement-pdf-renderer.js#engagementPdfEnsureSpace */
+/* extracted-function: functions/backend/engagement-pdf-renderer/build-engagement-club-recap-pdf.js#engagementPdfEnsureSpace */
 function engagementPdfEnsureSpace(input0, input1, input2) {
-  return engagementPdfRenderer().engagementPdfEnsureSpace(...arguments);
+  return $engagementPdfRenderer_buildEngagementClubRecapPdf().engagementPdfEnsureSpace(...arguments);
 }
 
-/* extracted-function: functions/engagement-pdf-renderer.js#engagementPdfSection */
+/* extracted-function: functions/backend/engagement-pdf-renderer/build-engagement-club-recap-pdf.js#engagementPdfSection */
 function engagementPdfSection(input0, input1, input2) {
-  return engagementPdfRenderer().engagementPdfSection(...arguments);
+  return $engagementPdfRenderer_buildEngagementClubRecapPdf().engagementPdfSection(...arguments);
 }
 
-/* extracted-function: functions/engagement-pdf-renderer.js#engagementPdfEmptyState */
+/* extracted-function: functions/backend/engagement-pdf-renderer/build-engagement-club-recap-pdf.js#engagementPdfEmptyState */
 function engagementPdfEmptyState(input0, input1, input2) {
-  return engagementPdfRenderer().engagementPdfEmptyState(...arguments);
+  return $engagementPdfRenderer_buildEngagementClubRecapPdf().engagementPdfEmptyState(...arguments);
 }
 
-/* extracted-function: functions/engagement-pdf-renderer.js#engagementPdfWhatsAppBlock */
+/* extracted-function: functions/backend/engagement-pdf-renderer/build-engagement-club-recap-pdf.js#engagementPdfWhatsAppBlock */
 function engagementPdfWhatsAppBlock(input0, input1, input2, input3) {
-  return engagementPdfRenderer().engagementPdfWhatsAppBlock(...arguments);
+  return $engagementPdfRenderer_buildEngagementClubRecapPdf().engagementPdfWhatsAppBlock(...arguments);
 }
 
-/* extracted-function: functions/engagement-pdf-renderer.js#engagementPdfKeyValues */
+/* extracted-function: functions/backend/engagement-pdf-renderer/engagement-pdf-collect-individual-rows.js#engagementPdfKeyValues */
 function engagementPdfKeyValues(input0, input1, input2) {
-  return engagementPdfRenderer().engagementPdfKeyValues(...arguments);
+  return $engagementPdfRenderer_engagementPdfCollectIndividualRows().engagementPdfKeyValues(...arguments);
 }
 
-/* extracted-function: functions/engagement-pdf-renderer.js#engagementPdfFeesTable */
+/* extracted-function: functions/backend/engagement-pdf-renderer/build-engagement-club-recap-pdf.js#engagementPdfFeesTable */
 function engagementPdfFeesTable(input0) {
-  return engagementPdfRenderer().engagementPdfFeesTable(...arguments);
+  return $engagementPdfRenderer_buildEngagementClubRecapPdf().engagementPdfFeesTable(...arguments);
 }
 
-/* extracted-function: functions/engagement-pdf-renderer.js#engagementPdfTextHeight */
+/* extracted-function: functions/backend/engagement-pdf-renderer/build-engagement-club-recap-pdf.js#engagementPdfTextHeight */
 function engagementPdfTextHeight(input0, input1, input2) {
-  return engagementPdfRenderer().engagementPdfTextHeight(...arguments);
+  return $engagementPdfRenderer_buildEngagementClubRecapPdf().engagementPdfTextHeight(...arguments);
 }
 
-/* extracted-function: functions/engagement-pdf-renderer.js#engagementPdfTable */
+/* extracted-function: functions/backend/engagement-pdf-renderer/build-engagement-club-recap-pdf.js#engagementPdfTable */
 function engagementPdfTable(input0, input1, input2, input3) {
-  return engagementPdfRenderer().engagementPdfTable(...arguments);
+  return $engagementPdfRenderer_buildEngagementClubRecapPdf().engagementPdfTable(...arguments);
 }
 
-/* extracted-function: functions/engagement-pdf-renderer.js#buildEngagementClubRecapPdf */
+/* extracted-function: functions/backend/engagement-pdf-renderer/build-engagement-club-recap-pdf.js#buildEngagementClubRecapPdf */
 async function buildEngagementClubRecapPdf() {
-  return engagementPdfRenderer().buildEngagementClubRecapPdf(...arguments);
+  return $engagementPdfRenderer_buildEngagementClubRecapPdf().buildEngagementClubRecapPdf(...arguments);
 }
 
 /* extracted-function: functions/backend/server-documents-service/read-stored-engagement-club-recap-pdf.js#readStoredEngagementClubRecapPdf */
@@ -8068,9 +8241,9 @@ function engagementOfficialsPdfSourceHash() {
   return $serverDocumentsService_engagementOfficialsPdfSourceHash().engagementOfficialsPdfSourceHash(...arguments);
 }
 
-/* extracted-function: functions/engagement-pdf-renderer.js#buildEngagementOfficialsPdf */
+/* extracted-function: functions/backend/engagement-pdf-renderer/build-engagement-officials-pdf.js#buildEngagementOfficialsPdf */
 async function buildEngagementOfficialsPdf() {
-  return engagementPdfRenderer().buildEngagementOfficialsPdf(...arguments);
+  return $engagementPdfRenderer_buildEngagementOfficialsPdf().buildEngagementOfficialsPdf(...arguments);
 }
 
 /* extracted-function: functions/backend/server-documents-service/engagement-officials-pdf-source-hash.js#saveEngagementOfficialsPdfDocument */
@@ -11603,211 +11776,191 @@ function publicPerformanceFilesBucket() {
   return $serverLegacyService_publicPerformanceFilesBucket().publicPerformanceFilesBucket(...arguments);
 }
 
-function legacyPerformancePublication() {
-  if (!legacyPerformancePublication.instance) legacyPerformancePublication.instance = require("./legacy-performance-publication").createLegacyPerformancePublication({
-    PUBLIC_PERFORMANCE_FILES_PATH,
-    PUBLIC_PERFORMANCE_SWIMMER_ROW_SCHEMA_VERSION,
-    PUBLIC_PERFORMANCE_TOP_PREVIEW_LIMIT,
-    cleanText,
-    hydratePublicSwimmerRowsFromPayload,
-    normalizePerformanceSearchText,
-    performancePublicKey,
-    performanceSearchPrefixes,
-    publicBetterPerformance,
-    publicPerformanceBaseRow,
-    publicPerformanceFilesBucket,
-    publicPerformanceSwimmerStorageRow,
-    publicSwimmerKey,
-    publicSwimmerPayloadSupportsTopRebuild,
-    stableHash,
-    uniquePublicPerformanceRows
-  });
-  return legacyPerformancePublication.instance;
-}
 
-/* extracted-function: functions/legacy-performance-publication.js#publicPerformanceFilePath */
+
+/* extracted-function: functions/backend/legacy-performance-publication/public-performance-file.js#publicPerformanceFilePath */
 function publicPerformanceFilePath() {
-  return legacyPerformancePublication().publicPerformanceFilePath(...arguments);
+  return $legacyPerformancePublication_publicPerformanceFile().publicPerformanceFilePath(...arguments);
 }
 
-/* extracted-function: functions/legacy-performance-publication.js#publicPerformanceFile */
+/* extracted-function: functions/backend/legacy-performance-publication/public-performance-file.js#publicPerformanceFile */
 function publicPerformanceFile() {
-  return legacyPerformancePublication().publicPerformanceFile(...arguments);
+  return $legacyPerformancePublication_publicPerformanceFile().publicPerformanceFile(...arguments);
 }
 
-/* extracted-function: functions/legacy-performance-publication.js#readPublicPerformanceJson */
+/* extracted-function: functions/backend/legacy-performance-publication/public-performance-file.js#readPublicPerformanceJson */
 async function readPublicPerformanceJson(input0, input1) {
-  return legacyPerformancePublication().readPublicPerformanceJson(...arguments);
+  return $legacyPerformancePublication_publicPerformanceFile().readPublicPerformanceJson(...arguments);
 }
 
-/* extracted-function: functions/legacy-performance-publication.js#savePublicPerformanceJson */
+/* extracted-function: functions/backend/legacy-performance-publication/build-public-search-row.js#savePublicPerformanceJson */
 async function savePublicPerformanceJson(input0, input1) {
-  return legacyPerformancePublication().savePublicPerformanceJson(...arguments);
+  return $legacyPerformancePublication_buildPublicSearchRow().savePublicPerformanceJson(...arguments);
 }
 
-/* extracted-function: functions/legacy-performance-publication.js#savePublicPerformanceText */
+/* extracted-function: functions/backend/legacy-performance-publication/build-public-search-row.js#savePublicPerformanceText */
 async function savePublicPerformanceText(input0, input1) {
-  return legacyPerformancePublication().savePublicPerformanceText(...arguments);
+  return $legacyPerformancePublication_buildPublicSearchRow().savePublicPerformanceText(...arguments);
 }
 
-/* extracted-function: functions/legacy-performance-publication.js#publicPerformanceCompactObject */
+/* extracted-function: functions/backend/legacy-performance-publication/build-public-search-row.js#publicPerformanceCompactObject */
 function publicPerformanceCompactObject() {
-  return legacyPerformancePublication().publicPerformanceCompactObject(...arguments);
+  return $legacyPerformancePublication_buildPublicSearchRow().publicPerformanceCompactObject(...arguments);
 }
 
-/* extracted-function: functions/legacy-performance-publication.js#publicPerformanceSearchShard */
+/* extracted-function: functions/backend/legacy-performance-publication/build-public-search-row.js#publicPerformanceSearchShard */
 function publicPerformanceSearchShard(input0) {
-  return legacyPerformancePublication().publicPerformanceSearchShard(...arguments);
+  return $legacyPerformancePublication_buildPublicSearchRow().publicPerformanceSearchShard(...arguments);
 }
 
-/* extracted-function: functions/legacy-performance-publication.js#publicPerformanceIdShard */
+/* extracted-function: functions/backend/legacy-performance-publication/build-public-search-row.js#publicPerformanceIdShard */
 function publicPerformanceIdShard(input0) {
-  return legacyPerformancePublication().publicPerformanceIdShard(...arguments);
+  return $legacyPerformancePublication_buildPublicSearchRow().publicPerformanceIdShard(...arguments);
 }
 
-/* extracted-function: functions/legacy-performance-publication.js#publicPerformanceTopFileName */
+/* extracted-function: functions/backend/legacy-performance-publication/public-performance-top-file-name.js#publicPerformanceTopFileName */
 function publicPerformanceTopFileName(input0, input1) {
-  return legacyPerformancePublication().publicPerformanceTopFileName(...arguments);
+  return $legacyPerformancePublication_publicPerformanceTopFileName().publicPerformanceTopFileName(...arguments);
 }
 
-/* extracted-function: functions/legacy-performance-publication.js#publicPerformanceSwimmerFilePath */
+/* extracted-function: functions/backend/legacy-performance-publication/public-performance-swimmer-file-path.js#publicPerformanceSwimmerFilePath */
 function publicPerformanceSwimmerFilePath(input0) {
-  return legacyPerformancePublication().publicPerformanceSwimmerFilePath(...arguments);
+  return $legacyPerformancePublication_publicPerformanceSwimmerFilePath().publicPerformanceSwimmerFilePath(...arguments);
 }
 
-/* extracted-function: functions/legacy-performance-publication.js#publicPerformanceRowKey */
+/* extracted-function: functions/backend/legacy-performance-publication/build-public-search-row.js#publicPerformanceRowKey */
 function publicPerformanceRowKey() {
-  return legacyPerformancePublication().publicPerformanceRowKey(...arguments);
+  return $legacyPerformancePublication_buildPublicSearchRow().publicPerformanceRowKey(...arguments);
 }
 
-/* extracted-function: functions/legacy-performance-publication.js#publicPerformanceTopCandidateKey */
+/* extracted-function: functions/backend/legacy-performance-publication/build-public-search-row.js#publicPerformanceTopCandidateKey */
 function publicPerformanceTopCandidateKey() {
-  return legacyPerformancePublication().publicPerformanceTopCandidateKey(...arguments);
+  return $legacyPerformancePublication_buildPublicSearchRow().publicPerformanceTopCandidateKey(...arguments);
 }
 
-/* extracted-function: functions/legacy-performance-publication.js#publicPerformanceSwimmerRow */
+/* extracted-function: functions/backend/legacy-performance-publication/build-public-search-row.js#publicPerformanceSwimmerRow */
 function publicPerformanceSwimmerRow() {
-  return legacyPerformancePublication().publicPerformanceSwimmerRow(...arguments);
+  return $legacyPerformancePublication_buildPublicSearchRow().publicPerformanceSwimmerRow(...arguments);
 }
 
-/* extracted-function: functions/legacy-performance-publication.js#publicPerformanceTopRow */
+/* extracted-function: functions/backend/legacy-performance-publication/build-public-search-row.js#publicPerformanceTopRow */
 function publicPerformanceTopRow() {
-  return legacyPerformancePublication().publicPerformanceTopRow(...arguments);
+  return $legacyPerformancePublication_buildPublicSearchRow().publicPerformanceTopRow(...arguments);
 }
 
-/* extracted-function: functions/legacy-performance-publication.js#sortPublicPerformanceRows */
+/* extracted-function: functions/backend/legacy-performance-publication/build-public-search-row.js#sortPublicPerformanceRows */
 function sortPublicPerformanceRows() {
-  return legacyPerformancePublication().sortPublicPerformanceRows(...arguments);
+  return $legacyPerformancePublication_buildPublicSearchRow().sortPublicPerformanceRows(...arguments);
 }
 
-/* extracted-function: functions/legacy-performance-publication.js#sortPublicTopRows */
+/* extracted-function: functions/backend/legacy-performance-publication/build-public-search-row.js#sortPublicTopRows */
 function sortPublicTopRows() {
-  return legacyPerformancePublication().sortPublicTopRows(...arguments);
+  return $legacyPerformancePublication_buildPublicSearchRow().sortPublicTopRows(...arguments);
 }
 
-/* extracted-function: functions/legacy-performance-publication.js#mergePublicSwimmerRows */
+/* extracted-function: functions/backend/legacy-performance-publication/merge-public-swimmer-rows.js#mergePublicSwimmerRows */
 function mergePublicSwimmerRows() {
-  return legacyPerformancePublication().mergePublicSwimmerRows(...arguments);
+  return $legacyPerformancePublication_mergePublicSwimmerRows().mergePublicSwimmerRows(...arguments);
 }
 
-/* extracted-function: functions/legacy-performance-publication.js#mergePublicTopRows */
+/* extracted-function: functions/backend/legacy-performance-publication/build-public-search-row.js#mergePublicTopRows */
 function mergePublicTopRows() {
-  return legacyPerformancePublication().mergePublicTopRows(...arguments);
+  return $legacyPerformancePublication_buildPublicSearchRow().mergePublicTopRows(...arguments);
 }
 
-/* extracted-function: functions/legacy-performance-publication.js#buildPublicSwimmerPayload */
+/* extracted-function: functions/backend/legacy-performance-publication/build-public-search-row.js#buildPublicSwimmerPayload */
 function buildPublicSwimmerPayload(input0) {
-  return legacyPerformancePublication().buildPublicSwimmerPayload(...arguments);
+  return $legacyPerformancePublication_buildPublicSearchRow().buildPublicSwimmerPayload(...arguments);
 }
 
-/* extracted-function: functions/legacy-performance-publication.js#buildPublicSearchRow */
+/* extracted-function: functions/backend/legacy-performance-publication/build-public-search-row.js#buildPublicSearchRow */
 function buildPublicSearchRow() {
-  return legacyPerformancePublication().buildPublicSearchRow(...arguments);
+  return $legacyPerformancePublication_buildPublicSearchRow().buildPublicSearchRow(...arguments);
 }
 
-/* extracted-function: functions/legacy-performance-publication.js#publishPublicSwimmerFile */
+/* extracted-function: functions/backend/legacy-performance-publication/merge-public-swimmer-rows.js#publishPublicSwimmerFile */
 async function publishPublicSwimmerFile(input0) {
-  return legacyPerformancePublication().publishPublicSwimmerFile(...arguments);
+  return $legacyPerformancePublication_mergePublicSwimmerRows().publishPublicSwimmerFile(...arguments);
 }
 
-/* extracted-function: functions/legacy-performance-publication.js#publishPublicSearchIndexes */
+/* extracted-function: functions/backend/legacy-performance-publication/build-public-search-row.js#publishPublicSearchIndexes */
 async function publishPublicSearchIndexes(input0, input1) {
-  return legacyPerformancePublication().publishPublicSearchIndexes(...arguments);
+  return $legacyPerformancePublication_buildPublicSearchRow().publishPublicSearchIndexes(...arguments);
 }
 
-/* extracted-function: functions/legacy-performance-publication.js#distinctPublicTopPreview */
+/* extracted-function: functions/backend/legacy-performance-publication/build-public-search-row.js#distinctPublicTopPreview */
 function distinctPublicTopPreview(input0, input1, input2) {
-  return legacyPerformancePublication().distinctPublicTopPreview(...arguments);
+  return $legacyPerformancePublication_buildPublicSearchRow().distinctPublicTopPreview(...arguments);
 }
 
-/* extracted-function: functions/legacy-performance-publication.js#publishPublicTopFiles */
+/* extracted-function: functions/backend/legacy-performance-publication/merge-public-swimmer-rows.js#publishPublicTopFiles */
 async function publishPublicTopFiles(input0) {
-  return legacyPerformancePublication().publishPublicTopFiles(...arguments);
+  return $legacyPerformancePublication_mergePublicSwimmerRows().publishPublicTopFiles(...arguments);
 }
 
-/* extracted-function: functions/legacy-performance-publication.js#mergePublicPerformanceManifest */
+/* extracted-function: functions/backend/legacy-performance-publication/build-public-search-row.js#mergePublicPerformanceManifest */
 function mergePublicPerformanceManifest() {
-  return legacyPerformancePublication().mergePublicPerformanceManifest(...arguments);
+  return $legacyPerformancePublication_buildPublicSearchRow().mergePublicPerformanceManifest(...arguments);
 }
 
-/* extracted-function: functions/legacy-performance-publication.js#publishIncrementalPublicPerformanceFiles */
+/* extracted-function: functions/backend/legacy-performance-publication/merge-public-swimmer-rows.js#publishIncrementalPublicPerformanceFiles */
 async function publishIncrementalPublicPerformanceFiles() {
-  return legacyPerformancePublication().publishIncrementalPublicPerformanceFiles(...arguments);
+  return $legacyPerformancePublication_mergePublicSwimmerRows().publishIncrementalPublicPerformanceFiles(...arguments);
 }
 
-/* extracted-function: functions/legacy-performance-publication.js#deletePublicPerformanceFile */
+/* extracted-function: functions/backend/legacy-performance-publication/delete-public-performance-file.js#deletePublicPerformanceFile */
 async function deletePublicPerformanceFile() {
-  return legacyPerformancePublication().deletePublicPerformanceFile(...arguments);
+  return $legacyPerformancePublication_deletePublicPerformanceFile().deletePublicPerformanceFile(...arguments);
 }
 
-/* extracted-function: functions/legacy-performance-publication.js#removePublicSearchIndexes */
+/* extracted-function: functions/backend/legacy-performance-publication/delete-public-performance-file.js#removePublicSearchIndexes */
 async function removePublicSearchIndexes() {
-  return legacyPerformancePublication().removePublicSearchIndexes(...arguments);
+  return $legacyPerformancePublication_deletePublicPerformanceFile().removePublicSearchIndexes(...arguments);
 }
 
-/* extracted-function: functions/legacy-performance-publication.js#assertPublicSwimmerIdentityReplaced */
+/* extracted-function: functions/backend/legacy-performance-publication/assert-public-swimmer-identity-replaced.js#assertPublicSwimmerIdentityReplaced */
 async function assertPublicSwimmerIdentityReplaced() {
-  return legacyPerformancePublication().assertPublicSwimmerIdentityReplaced(...arguments);
+  return $legacyPerformancePublication_assertPublicSwimmerIdentityReplaced().assertPublicSwimmerIdentityReplaced(...arguments);
 }
 
-/* extracted-function: functions/legacy-performance-publication.js#replacePublicSwimmerIdentity */
+/* extracted-function: functions/backend/legacy-performance-publication/assert-public-swimmer-identity-replaced.js#replacePublicSwimmerIdentity */
 async function replacePublicSwimmerIdentity() {
-  return legacyPerformancePublication().replacePublicSwimmerIdentity(...arguments);
+  return $legacyPerformancePublication_assertPublicSwimmerIdentityReplaced().replacePublicSwimmerIdentity(...arguments);
 }
 
-/* extracted-function: functions/legacy-performance-publication.js#publicPerformanceTopKey */
+/* extracted-function: functions/backend/legacy-performance-publication/delete-public-performance-file.js#publicPerformanceTopKey */
 function publicPerformanceTopKey() {
-  return legacyPerformancePublication().publicPerformanceTopKey(...arguments);
+  return $legacyPerformancePublication_deletePublicPerformanceFile().publicPerformanceTopKey(...arguments);
 }
 
-/* extracted-function: functions/legacy-performance-publication.js#publicPerformanceMatchesTopKey */
+/* extracted-function: functions/backend/legacy-performance-publication/delete-public-performance-file.js#publicPerformanceMatchesTopKey */
 function publicPerformanceMatchesTopKey() {
-  return legacyPerformancePublication().publicPerformanceMatchesTopKey(...arguments);
+  return $legacyPerformancePublication_deletePublicPerformanceFile().publicPerformanceMatchesTopKey(...arguments);
 }
 
-/* extracted-function: functions/legacy-performance-publication.js#publicPerformanceActiveRow */
+/* extracted-function: functions/backend/legacy-performance-publication/delete-public-performance-file.js#publicPerformanceActiveRow */
 function publicPerformanceActiveRow() {
-  return legacyPerformancePublication().publicPerformanceActiveRow(...arguments);
+  return $legacyPerformancePublication_deletePublicPerformanceFile().publicPerformanceActiveRow(...arguments);
 }
 
-/* extracted-function: functions/legacy-performance-publication.js#getActivePublicRowsForAffectedSwimmer */
+/* extracted-function: functions/backend/legacy-performance-publication/delete-public-performance-file.js#getActivePublicRowsForAffectedSwimmer */
 async function getActivePublicRowsForAffectedSwimmer() {
-  return legacyPerformancePublication().getActivePublicRowsForAffectedSwimmer(...arguments);
+  return $legacyPerformancePublication_deletePublicPerformanceFile().getActivePublicRowsForAffectedSwimmer(...arguments);
 }
 
-/* extracted-function: functions/legacy-performance-publication.js#rebuildPublicSwimmerFilesForAffectedRows */
+/* extracted-function: functions/backend/legacy-performance-publication/delete-public-performance-file.js#rebuildPublicSwimmerFilesForAffectedRows */
 async function rebuildPublicSwimmerFilesForAffectedRows() {
-  return legacyPerformancePublication().rebuildPublicSwimmerFilesForAffectedRows(...arguments);
+  return $legacyPerformancePublication_deletePublicPerformanceFile().rebuildPublicSwimmerFilesForAffectedRows(...arguments);
 }
 
-/* extracted-function: functions/legacy-performance-publication.js#rebuildPublicTopFilesForAffectedRows */
+/* extracted-function: functions/backend/legacy-performance-publication/delete-public-performance-file.js#rebuildPublicTopFilesForAffectedRows */
 async function rebuildPublicTopFilesForAffectedRows() {
-  return legacyPerformancePublication().rebuildPublicTopFilesForAffectedRows(...arguments);
+  return $legacyPerformancePublication_deletePublicPerformanceFile().rebuildPublicTopFilesForAffectedRows(...arguments);
 }
 
-/* extracted-function: functions/legacy-performance-publication.js#rebuildPublicPerformanceFilesForAffectedRows */
+/* extracted-function: functions/backend/legacy-performance-publication/delete-public-performance-file.js#rebuildPublicPerformanceFilesForAffectedRows */
 async function rebuildPublicPerformanceFilesForAffectedRows() {
-  return legacyPerformancePublication().rebuildPublicPerformanceFilesForAffectedRows(...arguments);
+  return $legacyPerformancePublication_deletePublicPerformanceFile().rebuildPublicPerformanceFilesForAffectedRows(...arguments);
 }
 
 /* extracted-function: functions/backend/server-legacy-service/migration-chunk-statuses.js#performanceBaseMigrationManifest */
