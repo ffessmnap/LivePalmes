@@ -2,11 +2,12 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
-### 1er novembre — Préparation des deux fusions Laon sans mutation Firebase
+### 1er novembre — Deux fusions Laon exécutées sans pause ni mutation Firebase
 
-- Demande d'Antoine : 677 → 500, puis confirmation de 558 « z » → 500 après constat de 14 performances et sept relais sur cette fiche. Cible, compte et droits de 500 inchangés. Audit réel : aucun lien Firebase/projection sur les deux sources ; 37 lignes à transférer et deux sources à supprimer en dernier. Aucun transfert exécuté à ce stade.
+- Demande d'Antoine : 677 → 500, puis confirmation de 558 « z » → 500 après constat de 14 performances et sept relais sur cette fiche. Exécution vérifiée à `2026-11-01T08:48:57.139Z` : 37 lignes transférées, puis deux sources physiquement supprimées ; 39 images après et zéro référence restante dans les 18 couples table/champ contrôlés. Six nageurs, 19 performances individuelles, sept relais et cinq lignes de chefs d'équipe transférés. Tous les champs, le compte, les droits et la projection de 500 sont inchangés ; aucun lien Firebase/projection sur les sources.
 - Outil local SQL seul et manifeste explicite, réutilisant adaptateurs, chiffrement, verrous, journal et contrôles d'images existants ; les adaptateurs gardent leur périmètre historique par défaut et acceptent un périmètre borné explicite. Refus de tout compte/droit/demande/projection sur une source, collisions, dérives et dépendances sensibles. Firebase en lecture seule, aucun changement serveur ou déploiement TEST/PROD. [Budget et procédure](../NAP_FUSION_CLUBS.md).
-- Tests ciblés hors réseau réussis : 39 frontières d'interruption, reprise/restauration, cible conservée, absence de mutation Firebase, sauvegarde altérée et périmètres SQL/Firestore ; tests du lot initial conservés. CI globale requise dans la PR. Sauvegardes réelles indépendantes et fenêtre exclusive à établir avant exécution ; aucun accord historique de pause/restauration réutilisé implicitement.
+- [PR #662](https://github.com/ffessmnap/LivePalmes/pull/662) intégrée `d312292385629016aec64bcfdf6e6c92c5e00d6b`, [CI main réussie](https://github.com/ffessmnap/LivePalmes/actions/runs/41289950014). Tests ciblés : 39 frontières d'interruption, reprise/restauration, cible conservée, absence de mutation Firebase, sauvegarde altérée et lecteurs bornés ; tests du lot initial conservés. Sauvegardes réelles primaire/copie Drive privée rouvertes avec la clé séparée, 39 prédicats réels et 16 simulations de reprise sur les images réelles vérifiés.
+- Après assurance directe d'Antoine d'absence de modifications concurrentes sur les nageurs de Laon, exécution avec contrôles frais et verrous SQL brefs : pause globale proposée abandonnée, aucune interruption du Portail, suspension de notifications, modification IAM ni écriture Firebase. Assurance humaine tracée comme telle, sans prétendre à un blocage logiciel par club. Aucun retour arrière nécessaire ; journal et sauvegardes conservés, preuve exécutable close.
 
 ### 1er novembre — Les 14 fusions de clubs réellement exécutées
 
