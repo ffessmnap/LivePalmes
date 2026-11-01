@@ -1150,18 +1150,18 @@
         if (button) button.disabled = true;
         if (portalContext.elements.engagementsNotificationPreviewStatus) portalContext.elements.engagementsNotificationPreviewStatus.textContent = "Calcul des destinataires…";
         if (portalContext.elements.engagementsDocumentsSummary) {
-          portalContext.elements.engagementsDocumentsSummary.textContent = "Preparation des mails d'ouverture...";
+          portalContext.elements.engagementsDocumentsSummary.textContent = "Vérification des destinataires de l'ouverture…";
         }
         portalActions.startEngagementLongOperation(
-          "Préparation des courriels d'ouverture en cours...",
-          "Les destinataires autorisés sont regroupés et les courriels sont préparés sans être envoyés."
+          "Vérification des destinataires de l'ouverture…",
+          "Les destinataires éligibles sont calculés sans déclencher d'envoi."
         );
         try {
           const result = await portalActions.callFunction("prepareEngagementOpeningNotificationEmails", {
             competitionId: portalState.selectedEngagementCompetitionId
           });
           if (result.disabled) {
-            const message = `TEST : ${Number(result.recipientCount || 0)} destinataire(s) prévus pour l'ouverture. Aucun mail préparé ni envoyé.`;
+            const message = `Aperçu actuel : ${Number(result.recipientCount || 0)} destinataire(s) éligibles pour l'ouverture. Cette vérification ne prépare ni n'envoie de mail et ne décrit pas les envois précédents.`;
             if (portalContext.elements.engagementsDocumentsSummary) portalContext.elements.engagementsDocumentsSummary.textContent = message;
             if (portalContext.elements.engagementsNotificationPreviewStatus) portalContext.elements.engagementsNotificationPreviewStatus.textContent = message;
             portalActions.finishEngagementLongOperation("success", "Aperçu des notifications", message);
@@ -1190,18 +1190,18 @@
         if (button) button.disabled = true;
         if (portalContext.elements.engagementsNotificationPreviewStatus) portalContext.elements.engagementsNotificationPreviewStatus.textContent = "Vérification des récapitulatifs…";
         if (portalContext.elements.engagementsDocumentsSummary) {
-          portalContext.elements.engagementsDocumentsSummary.textContent = "Preparation des mails PDF clubs...";
+          portalContext.elements.engagementsDocumentsSummary.textContent = "Vérification des récapitulatifs des clubs…";
         }
         portalActions.startEngagementLongOperation(
-          "Préparation des courriels PDF clubs en cours...",
-          "Les récapitulatifs disponibles et les administrateurs de chaque club sont contrôlés avant l'envoi."
+          "Vérification des récapitulatifs des clubs…",
+          "Les récapitulatifs disponibles et les destinataires éligibles sont contrôlés sans déclencher d'envoi."
         );
         try {
           const result = await portalActions.callFunction("prepareEngagementClubRecapEmails", {
             competitionId: portalState.selectedEngagementCompetitionId
           });
           if (result.disabled) {
-            const message = `TEST : ${Number(result.recipientCount || 0)} destinataire(s) prévus pour ${Number(result.clubCount || 0)} club(s). Aucun mail préparé ni envoyé.`;
+            const message = `Aperçu actuel : ${Number(result.recipientCount || 0)} destinataire(s) éligibles pour ${Number(result.clubCount || 0)} club(s). Cette vérification ne prépare ni n'envoie de mail et ne décrit pas les envois précédents.`;
             if (portalContext.elements.engagementsDocumentsSummary) portalContext.elements.engagementsDocumentsSummary.textContent = message;
             if (portalContext.elements.engagementsNotificationPreviewStatus) portalContext.elements.engagementsNotificationPreviewStatus.textContent = message;
             portalActions.finishEngagementLongOperation("success", "Aperçu des récapitulatifs", message);

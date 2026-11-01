@@ -9281,9 +9281,17 @@ exports.listEngagementCompetitionMailJobs = onCall(ENGAGEMENT_NOTIFICATION_PREVI
     .filter(doc=>ENVIRONMENT.sportingDataSource !== "nap"||doc.data().source==='nap')
     .map(doc=>{
       const data=doc.data()||{};
-      const gate=control.decision(setting,data,ENVIRONMENT.projectId);
+      // Reading history must not validate a new SMTP delivery or rewrite a
+      // terminal status. CCI groups intentionally have no individual toEmail.
+      let displayState={};
+      if(['ready','pending'].includes(data.status)){
+        const gate=control.eventDecision(setting,data);
+        const recipients=data.deliveryMode==='bcc-v1'&&Array.isArray(data.recipients)?data.recipients:[data];
+        const audienceAllowed=recipients.some(recipient=>control.audienceAllowed(setting,{...data,...recipient}));
+        if(!gate.allowed||!audienceAllowed)displayState={status:'cancelled',reason:gate.reason||'automatic-mail-outside-pilot'};
+      }
       return engagementMailJobItemFromData({...data,
-        ...(['ready','pending'].includes(data.status)&&!gate.allowed?{status:'cancelled',reason:gate.reason}:{}),
+        ...displayState,
         ...(ENVIRONMENT.projectId==='livepalmes-test'?{toEmail:control.TEST_ADDRESS}:{})},doc.id);
     })
     .sort((left, right) => cleanText(right.updatedAt).localeCompare(cleanText(left.updatedAt)) || cleanText(left.toEmail).localeCompare(cleanText(right.toEmail)));
