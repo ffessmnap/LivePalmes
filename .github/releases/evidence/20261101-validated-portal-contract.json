@@ -1,0 +1,363 @@
+{
+  "schema": 1,
+  "candidate": "2a0d84d3f73a54bd7f7fcc8d08ddc32fdded5d96",
+  "productionCommit": "5a371b452effa505c7e10d151bcb54b3b4f75282",
+  "productionHosting": "sites/livepalmes/versions/9546326d05205391",
+  "productionRun": 41279353864,
+  "testRun": 41325848912,
+  "inventoryCount": 114,
+  "selected": [
+    "acknowledgeEngagementQualificationAlert",
+    "createEngagementCalendarEvent",
+    "createEngagementClubSwimmer",
+    "createEngagementCompetition",
+    "createOrUpdateAccessUser",
+    "deleteAccessUser",
+    "deleteEngagementCalendarEvent",
+    "deleteEngagementCompetition",
+    "deleteEngagementCompetitionDocument",
+    "generateEngagementClubRecapPdf",
+    "generateEngagementClubRecapPdfForAdmin",
+    "generateEngagementCompetitionClubRecapPdfs",
+    "generateEngagementCompetitionTxtExport",
+    "getEngagementCalendarEvent",
+    "getEngagementClubEntry",
+    "getEngagementClubEntryTimeHistory",
+    "getEngagementCompetition",
+    "getEngagementCompetitionStatistics",
+    "getPortalPendingRequestOverview",
+    "grantEngagementQualificationException",
+    "listAccessUserDeletionRequests",
+    "listAccessUsers",
+    "listEngagementCalendarEvents",
+    "listEngagementClubPeople",
+    "listEngagementClubSwimmers",
+    "listEngagementCompetitionClubRecaps",
+    "listEngagementCompetitionMailJobs",
+    "listEngagementCompetitions",
+    "listEngagementQualificationSources",
+    "managePortalNews",
+    "previewEngagementClubSwimmerCreation",
+    "previewEngagementClubSwimmerEventTimes",
+    "previewEngagementClubSwimmerEventTimesBatch",
+    "previewEngagementClubSwimmerRecovery",
+    "previewEngagementCompetitionDocumentNotification",
+    "processEngagementQualificationJob",
+    "rebuildAccessDirectoryIndexNextPage",
+    "rebuildAccessDirectorySnapshotNextPage",
+    "recoverEngagementClubSwimmer",
+    "removeEngagementClubTeamLeader",
+    "requestAccessUserDeletion",
+    "requestEngagementClubSwimmerChange",
+    "resolveAccessUserDeletionRequest",
+    "resolveEngagementAccessRequest",
+    "saveEngagementClubIndividualEntries",
+    "saveEngagementClubOfficials",
+    "saveEngagementClubPerson",
+    "saveEngagementClubRelays",
+    "saveEngagementClubSwimmerSelection",
+    "saveEngagementClubSwimmerSelections",
+    "saveEngagementClubTeamLeader",
+    "setAccessUserStatus",
+    "setEngagementClubPersonStatus",
+    "setEngagementClubSwimmerActivityStatus",
+    "submitEngagementAccessRequest",
+    "syncEngagementMailRecipientIndex",
+    "updateEngagementCalendarEvent",
+    "updateEngagementCompetition",
+    "updateEngagementCompetitionDocument",
+    "uploadEngagementCompetitionDocument"
+  ],
+  "sourceOnly": [
+    "listEngagementCompetitionMailJobs",
+    "resolveEngagementAccessRequest",
+    "submitEngagementAccessRequest"
+  ],
+  "newFunction": "managePortalNews",
+  "retained": [
+    {
+      "name": "addEngagementOpenWaterCourse",
+      "commit": "249b9068f4ba3c5044230ea9d38fab83a7a2ffea",
+      "revision": "addengagementopenwatercourse-00015-qoy"
+    },
+    {
+      "name": "closeDueEngagementCompetitions",
+      "commit": "67d40e84cf9713403614f77bb53067cd449510a7",
+      "revision": "closedueengagementcompetitions-00031-pax"
+    },
+    {
+      "name": "createCompetitionImport",
+      "commit": "249b9068f4ba3c5044230ea9d38fab83a7a2ffea",
+      "revision": "createcompetitionimport-00117-yoq"
+    },
+    {
+      "name": "deleteCompetitionPdf",
+      "commit": "249b9068f4ba3c5044230ea9d38fab83a7a2ffea",
+      "revision": "deletecompetitionpdf-00020-tur"
+    },
+    {
+      "name": "deleteEngagementNationalClub",
+      "commit": "249b9068f4ba3c5044230ea9d38fab83a7a2ffea",
+      "revision": "deleteengagementnationalclub-00018-loy"
+    },
+    {
+      "name": "deleteEngagementNationalClubPerson",
+      "commit": "249b9068f4ba3c5044230ea9d38fab83a7a2ffea",
+      "revision": "deleteengagementnationalclubperson-00029-ziv"
+    },
+    {
+      "name": "deleteEngagementNationalClubSwimmer",
+      "commit": "249b9068f4ba3c5044230ea9d38fab83a7a2ffea",
+      "revision": "deleteengagementnationalclubswimmer-00048-ler"
+    },
+    {
+      "name": "disableCompetitionEmailNotifications",
+      "commit": "67d40e84cf9713403614f77bb53067cd449510a7",
+      "revision": "disablecompetitionemailnotifications-00005-lim"
+    },
+    {
+      "name": "getCurrentAccessUser",
+      "commit": "249b9068f4ba3c5044230ea9d38fab83a7a2ffea",
+      "revision": "getcurrentaccessuser-00107-jej"
+    },
+    {
+      "name": "getDtnSeasonOverview",
+      "commit": "249b9068f4ba3c5044230ea9d38fab83a7a2ffea",
+      "revision": "getdtnseasonoverview-00012-tel"
+    },
+    {
+      "name": "getDtnSeasons",
+      "commit": "249b9068f4ba3c5044230ea9d38fab83a7a2ffea",
+      "revision": "getdtnseasons-00012-yez"
+    },
+    {
+      "name": "getEngagementAutomaticMailControl",
+      "commit": "249b9068f4ba3c5044230ea9d38fab83a7a2ffea",
+      "revision": "getengagementautomaticmailcontrol-00013-foq"
+    },
+    {
+      "name": "getNapPerformanceAdministration",
+      "commit": "249b9068f4ba3c5044230ea9d38fab83a7a2ffea",
+      "revision": "getnapperformanceadministration-00011-dek"
+    },
+    {
+      "name": "getNationalFeaturedDocuments",
+      "commit": "249b9068f4ba3c5044230ea9d38fab83a7a2ffea",
+      "revision": "getnationalfeatureddocuments-00009-xej"
+    },
+    {
+      "name": "getPublicEngagementClubDirectory",
+      "commit": "249b9068f4ba3c5044230ea9d38fab83a7a2ffea",
+      "revision": "getpublicengagementclubdirectory-00015-qoz"
+    },
+    {
+      "name": "listCompetitionImports",
+      "commit": "249b9068f4ba3c5044230ea9d38fab83a7a2ffea",
+      "revision": "listcompetitionimports-00097-zuq"
+    },
+    {
+      "name": "listDtnSeasonSources",
+      "commit": "249b9068f4ba3c5044230ea9d38fab83a7a2ffea",
+      "revision": "listdtnseasonsources-00012-kid"
+    },
+    {
+      "name": "listEngagementAccessRequests",
+      "commit": "249b9068f4ba3c5044230ea9d38fab83a7a2ffea",
+      "revision": "listengagementaccessrequests-00046-qiv"
+    },
+    {
+      "name": "listEngagementNationalAuditLogs",
+      "commit": "249b9068f4ba3c5044230ea9d38fab83a7a2ffea",
+      "revision": "listengagementnationalauditlogs-00024-maz"
+    },
+    {
+      "name": "listEngagementNationalClubPeople",
+      "commit": "249b9068f4ba3c5044230ea9d38fab83a7a2ffea",
+      "revision": "listengagementnationalclubpeople-00028-xuf"
+    },
+    {
+      "name": "listEngagementNationalClubs",
+      "commit": "249b9068f4ba3c5044230ea9d38fab83a7a2ffea",
+      "revision": "listengagementnationalclubs-00019-koy"
+    },
+    {
+      "name": "listEngagementOpenWaterCourses",
+      "commit": "249b9068f4ba3c5044230ea9d38fab83a7a2ffea",
+      "revision": "listengagementopenwatercourses-00015-yab"
+    },
+    {
+      "name": "listEngagementSwimmerChangeRequests",
+      "commit": "249b9068f4ba3c5044230ea9d38fab83a7a2ffea",
+      "revision": "listengagementswimmerchangerequests-00022-nox"
+    },
+    {
+      "name": "mergeEngagementNationalClubPerson",
+      "commit": "249b9068f4ba3c5044230ea9d38fab83a7a2ffea",
+      "revision": "mergeengagementnationalclubperson-00030-cih"
+    },
+    {
+      "name": "mergeEngagementNationalClubSwimmer",
+      "commit": "249b9068f4ba3c5044230ea9d38fab83a7a2ffea",
+      "revision": "mergeengagementnationalclubswimmer-00033-cox"
+    },
+    {
+      "name": "notifyEngagementCompetitionDocuments",
+      "commit": "67d40e84cf9713403614f77bb53067cd449510a7",
+      "revision": "notifyengagementcompetitiondocuments-00013-tuh"
+    },
+    {
+      "name": "prepareEngagementClubRecapEmails",
+      "commit": "67d40e84cf9713403614f77bb53067cd449510a7",
+      "revision": "prepareengagementclubrecapemails-00037-zul"
+    },
+    {
+      "name": "prepareEngagementLicenseControlBatch",
+      "commit": "67d40e84cf9713403614f77bb53067cd449510a7",
+      "revision": "prepareengagementlicensecontrolbatch-00016-zow"
+    },
+    {
+      "name": "prepareEngagementOpeningNotificationEmails",
+      "commit": "67d40e84cf9713403614f77bb53067cd449510a7",
+      "revision": "prepareengagementopeningnotificationemails-00034-geg"
+    },
+    {
+      "name": "previewCompetitionImport",
+      "commit": "249b9068f4ba3c5044230ea9d38fab83a7a2ffea",
+      "revision": "previewcompetitionimport-00106-huw"
+    },
+    {
+      "name": "processNapCompetitionNotifications",
+      "commit": "67d40e84cf9713403614f77bb53067cd449510a7",
+      "revision": "processnapcompetitionnotifications-00007-yox"
+    },
+    {
+      "name": "processNapNotificationTask",
+      "commit": "67d40e84cf9713403614f77bb53067cd449510a7",
+      "revision": "processnapnotificationtask-00003-mig"
+    },
+    {
+      "name": "readNapPublicSwimmer",
+      "commit": "67d40e84cf9713403614f77bb53067cd449510a7",
+      "revision": "readnappublicswimmer-00012-zop"
+    },
+    {
+      "name": "rebuildEngagementMailRecipientIndexNextPage",
+      "commit": "249b9068f4ba3c5044230ea9d38fab83a7a2ffea",
+      "revision": "rebuildengagementmailrecipientindexnextpage-00022-xag"
+    },
+    {
+      "name": "resolveEngagementSwimmerChangeRequest",
+      "commit": "859c615de62af056bf5cb6039650f3edea3821f0",
+      "revision": "resolveengagementswimmerchangerequest-00024-hux"
+    },
+    {
+      "name": "saveEngagementNationalClub",
+      "commit": "249b9068f4ba3c5044230ea9d38fab83a7a2ffea",
+      "revision": "saveengagementnationalclub-00018-nuw"
+    },
+    {
+      "name": "saveNationalFeaturedDocuments",
+      "commit": "249b9068f4ba3c5044230ea9d38fab83a7a2ffea",
+      "revision": "savenationalfeatureddocuments-00009-buc"
+    },
+    {
+      "name": "savePerformanceCorrection",
+      "commit": "249b9068f4ba3c5044230ea9d38fab83a7a2ffea",
+      "revision": "saveperformancecorrection-00098-foz"
+    },
+    {
+      "name": "searchEngagementNationalSwimmerMergeTargets",
+      "commit": "249b9068f4ba3c5044230ea9d38fab83a7a2ffea",
+      "revision": "searchengagementnationalswimmermergetargets-00026-xez"
+    },
+    {
+      "name": "searchEngagementNationalSwimmers",
+      "commit": "249b9068f4ba3c5044230ea9d38fab83a7a2ffea",
+      "revision": "searchengagementnationalswimmers-00026-zuh"
+    },
+    {
+      "name": "sendEngagementPreparedEmails",
+      "commit": "67d40e84cf9713403614f77bb53067cd449510a7",
+      "revision": "sendengagementpreparedemails-00032-miw"
+    },
+    {
+      "name": "setEngagementNationalClubPersonStatus",
+      "commit": "249b9068f4ba3c5044230ea9d38fab83a7a2ffea",
+      "revision": "setengagementnationalclubpersonstatus-00030-zam"
+    },
+    {
+      "name": "setEngagementNationalClubSwimmerStatus",
+      "commit": "249b9068f4ba3c5044230ea9d38fab83a7a2ffea",
+      "revision": "setengagementnationalclubswimmerstatus-00048-tap"
+    },
+    {
+      "name": "setEngagementOpenWaterCourseStatus",
+      "commit": "249b9068f4ba3c5044230ea9d38fab83a7a2ffea",
+      "revision": "setengagementopenwatercoursestatus-00015-cis"
+    },
+    {
+      "name": "setRolePins",
+      "commit": "249b9068f4ba3c5044230ea9d38fab83a7a2ffea",
+      "revision": "setrolepins-00106-das"
+    },
+    {
+      "name": "storeCompetitionPdf",
+      "commit": "249b9068f4ba3c5044230ea9d38fab83a7a2ffea",
+      "revision": "storecompetitionpdf-00020-cip"
+    },
+    {
+      "name": "syncNapClubAccountEmails",
+      "commit": "65c418c486682844531dd07048b23d27fa25b352",
+      "revision": "syncnapclubaccountemails-00001-quh"
+    },
+    {
+      "name": "syncOfficialResultToPublicIndex",
+      "commit": "249b9068f4ba3c5044230ea9d38fab83a7a2ffea",
+      "revision": "syncofficialresulttopublicindex-00055-vad"
+    },
+    {
+      "name": "updateCurrentAccountEmail",
+      "commit": "249b9068f4ba3c5044230ea9d38fab83a7a2ffea",
+      "revision": "updatecurrentaccountemail-00060-wim"
+    },
+    {
+      "name": "updateCurrentEmailNotificationPreferences",
+      "commit": "67d40e84cf9713403614f77bb53067cd449510a7",
+      "revision": "updatecurrentemailnotificationpreferences-00005-xoj"
+    },
+    {
+      "name": "updateDtnSeason",
+      "commit": "249b9068f4ba3c5044230ea9d38fab83a7a2ffea",
+      "revision": "updatedtnseason-00012-ril"
+    },
+    {
+      "name": "updateEngagementAutomaticMailControl",
+      "commit": "249b9068f4ba3c5044230ea9d38fab83a7a2ffea",
+      "revision": "updateengagementautomaticmailcontrol-00013-qey"
+    },
+    {
+      "name": "updateEngagementNationalSwimmerIdentity",
+      "commit": "249b9068f4ba3c5044230ea9d38fab83a7a2ffea",
+      "revision": "updateengagementnationalswimmeridentity-00029-yik"
+    },
+    {
+      "name": "validateEngagementSwimmerLicenses",
+      "commit": "249b9068f4ba3c5044230ea9d38fab83a7a2ffea",
+      "revision": "validateengagementswimmerlicenses-00018-hac"
+    },
+    {
+      "name": "verifyPin",
+      "commit": "249b9068f4ba3c5044230ea9d38fab83a7a2ffea",
+      "revision": "verifypin-00109-ren"
+    }
+  ],
+  "mailPreservation": {
+    "scope": "all",
+    "revision": 9,
+    "documentSha256": "0518eceb90a30cdd79d5babd93732d9f9e57e8060a469d5c8ce6363b75d94fef",
+    "schedulerSha256": "8253d3bee91efe5b8496c01a76ae8cb0adadaff8087da4771769a55d048c806a"
+  },
+  "approval": "Tout ça, donc je te donne vraiment l’autorisation, tu peux mettre en prod tout ça, t’as pas besoin d’autres autorisations encore. Tu prépares tout, tu mets en prod.",
+  "mailPause": false,
+  "dataCopy": false
+}

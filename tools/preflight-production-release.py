@@ -175,6 +175,9 @@ def main():
         report['additionalGroupedFunctions'] = cycle.approved_grouped_functions(plan) if os.environ.get('PLAN') else []
         report['additionalLicenseReportFunctions'] = cycle.approved_license_report_functions(plan) if os.environ.get('PLAN') else []
         report['additionalPortalAccessNsFunctions'] = cycle.portal_access_ns.approved(plan) if os.environ.get('PLAN') else []
+        report['additionalValidatedPortalFunctions'] = cycle.validated_portal.approved(plan) if os.environ.get('PLAN') else []
+        if report['additionalValidatedPortalFunctions']:
+            cycle.validated_portal.initial(functions)
         if report['additionalPortalAccessNsFunctions']:
             cycle.portal_access_ns.initial(functions)
         report['additionalNapRetainedFunctions'] = cycle.nap_retained.approved(plan) if os.environ.get('PLAN') else []

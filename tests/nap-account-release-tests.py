@@ -245,4 +245,7 @@ if __name__=='__main__':
     _portal_spec = importlib.util.spec_from_file_location('portal_access_ns_tests', Path(__file__).with_name('portal-access-ns-release-tests.py'))
     _portal_tests = importlib.util.module_from_spec(_portal_spec); _portal_spec.loader.exec_module(_portal_tests)
     PortalNsPolicyTests = _portal_tests.PortalNsPolicyTests
+    _validated_spec = importlib.util.spec_from_file_location('validated_portal_tests', Path(__file__).with_name('validated-portal-release-tests.py'))
+    _validated_tests = importlib.util.module_from_spec(_validated_spec); _validated_spec.loader.exec_module(_validated_tests)
+    ValidatedPortalPolicyTests = _validated_tests.ValidatedPortalPolicyTests
     unittest.main()

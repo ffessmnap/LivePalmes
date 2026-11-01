@@ -57,6 +57,15 @@ def check_after(backup, destination, require_success):
         if sorted(report['additionalBccFunctions']) != bcc_policy.contract()['selected']:
             raise ValueError('Selection CCI du rapport differente')
     errors = []
+    validated_policy = None
+    if report.get('additionalValidatedPortalFunctions'):
+        spec = importlib.util.spec_from_file_location('validated_portal_state', Path(__file__).with_name('validated-portal-release-policy.py'))
+        validated_policy = importlib.util.module_from_spec(spec); spec.loader.exec_module(validated_policy)
+        c = validated_policy.contract()
+        validated_policy.require(report['additionalValidatedPortalFunctions'] == c['sourceOnly']
+            and report['candidate'] == c['candidate'] and len(before) == c['inventoryCount']
+            and selected == {PREFIX+n for n in c['selected']} and report['newFunctions'] == [c['newFunction']],
+            'Rapport CMAS/CCI/nouveautes hors contrat')
     portal_policy = None
     if report.get('additionalPortalAccessNsFunctions'):
         spec = importlib.util.spec_from_file_location('portal_ns_state_policy', Path(__file__).with_name('portal-access-ns-release-policy.py'))
@@ -123,6 +132,11 @@ def check_after(backup, destination, require_success):
         if f and portal_policy and name.split('/')[-1] in [portal_policy.NAME, portal_policy.ACCOUNT]:
             try:
                 portal_policy.assert_config(before[name], f, SimpleNamespace(rollback_patch=rollback_patch))
+            except ValueError as error:
+                errors.append(str(error))
+        if f and validated_policy and name.split('/')[-1] in validated_policy.contract()['sourceOnly']:
+            try:
+                validated_policy.assert_config(before[name], f, SimpleNamespace(rollback_patch=rollback_patch))
             except ValueError as error:
                 errors.append(str(error))
         if f and name.split('/')[-1] in (report.get('additionalPdfFunctions', []) + report.get('additionalDtnFunctions', []) + report.get('additionalClubDirectoryFunctions', []) + report.get('additionalLicenseReportFunctions', [])):
