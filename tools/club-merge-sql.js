@@ -3,7 +3,9 @@ const p = require("./club-merge-plan"), crypto = require("node:crypto");
 const quote = name => { if (!/^[a-zA-Z_][a-zA-Z_0-9]*$/.test(name)) p.fail("SQL_IDENTIFIER"); return "`"+name+"`"; };
 const slots = values => values.map(() => "?").join(",");
 const projectionTable = "livepalmes_club_account_emails";
-function adapter(connection) {
+function adapter(connection,scope=p) {
+  const ids=[...scope.ids], mapping=new Map(scope.mapping);
+  if (!ids.length || ids.length>26 || new Set(ids).size!==ids.length || ids.some(id=>!/^\d+$/.test(id)||Number(id)<=0||Number(id)>2147483647)) p.fail("INVALID_SQL_CLUB_SCOPE");
   const q = async (sql,values=[]) => (await connection.execute({sql,timeout:10000},values))[0];
   async function metadata() {
     const names = [...p.tables,projectionTable];
@@ -33,7 +35,7 @@ function adapter(connection) {
       for (let n=0;n<fields.length;n++) {
         const type = meta.columns.find(c => c.TABLE_NAME === table && c.COLUMN_NAME === fields[n])?.DATA_TYPE;
         if (!type) p.fail("CLUB_COLUMN_MISSING");
-        const values = /int/.test(type) ? p.ids.map(Number) : p.ids;
+        const values = /int/.test(type) ? ids.map(Number) : ids;
         const read = await q(`SELECT * FROM ${quote(table)} FORCE INDEX (${quote(ix[n])}) WHERE ${quote(fields[n])} IN (${slots(values)}) LIMIT 10001`,values);
         if (read.length >= 10001) p.fail("SQL_READ_LIMIT");
         for (const row of read) found.set(p.key(row,pk),row);
@@ -59,12 +61,12 @@ function adapter(connection) {
   }
   async function historical() {
     const labels = await q("SELECT id,club FROM records FORCE INDEX (PRIMARY) WHERE id>0 ORDER BY id LIMIT 10001");
-    if (labels.length >= 10001 || labels.some(row => p.mapping.has(String(row.club)))) p.fail("HISTORICAL_RECORD_DEPENDENCY_CHANGED");
+    if (labels.length >= 10001 || labels.some(row => mapping.has(String(row.club)))) p.fail("HISTORICAL_RECORD_DEPENDENCY_CHANGED");
     const rows = await q("SELECT c.revision,OCTET_LENGTH(v.payload) AS bytes,IF(OCTET_LENGTH(v.payload)<=2097152,v.payload,NULL) AS payload FROM livepalmes_records_current c FORCE INDEX (PRIMARY) JOIN livepalmes_records_versions v FORCE INDEX (PRIMARY) ON v.revision=c.revision WHERE c.id=1 LIMIT 1");
     if (rows.length !== 1 || !rows[0].payload) p.fail("CURRENT_RECORDS_UNAVAILABLE_OR_TOO_LARGE");
     const payload = typeof rows[0].payload === "string" ? JSON.parse(rows[0].payload) : rows[0].payload;
     if (!Array.isArray(payload.records) || !Array.isArray(payload.franceRecords)) p.fail("CURRENT_RECORDS_FORMAT_CHANGED");
-    if ([...payload.records,...payload.franceRecords].some(row => p.mapping.has(String(row.clubId)) || p.mapping.has(String(row.club)))) p.fail("CURRENT_RECORDS_CLUB_ID_DEPENDENCY");
+    if ([...payload.records,...payload.franceRecords].some(row => mapping.has(String(row.clubId)) || mapping.has(String(row.club)))) p.fail("CURRENT_RECORDS_CLUB_ID_DEPENDENCY");
     return {labels,revision:rows[0].revision,payloadDigest:p.digest(payload)};
   }
   function where(row) {

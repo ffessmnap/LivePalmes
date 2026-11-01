@@ -1,6 +1,18 @@
-# Fusions des 14 fiches de clubs NAP
+# Fusions ponctuelles de fiches de clubs NAP
 
-<!-- description: Lot des 14 fusions réellement exécuté le 1er novembre 2026 ; décisions, preuves, sauvegarde chiffrée et procédure de reprise ciblée. -->
+<!-- description: Fusions NAP avec sauvegarde/reprise : lot des 14 exécuté, préparation Laon sans mutation Firebase et contrôles opérateur bornés. -->
+
+## Laon : préparation sans compte Firebase sur les sources
+
+Demande explicite d'Antoine : 677 (Avan Plongée) → 500 (Club de Plongée de Laon), puis confirmation de 558 (« z », Laon) → 500 après constat de son historique non vide. La cible 500 garde tous ses champs, dont nom, sigle CPL et numéro fédéral 09020305 ; son compte et ses droits restent intacts. Audit réel en lecture seule : aucune dépendance Firebase ni projection de compte sur 677/558 ; cible avec un compte et son droit existant. Six nageurs, 19 performances individuelles, sept performances de relais et cinq lignes de chefs d'équipe sont concernées : 37 mises à jour, puis deux suppressions physiques. Aucune fusion encore exécutée à cette étape.
+
+L'outil local `tools/club-merge-sql-only.js` réutilise les adaptateurs SQL/Firestore, comparaison binaire, verrous, codec typé, chiffrement et journal existants. Un manifeste explicite (`tools/club-merge-laon.json`) borne les identités et couples approuvés ; chaînes de fusion, collision de clé, dérive d'identité, qualification/historique sensible, compte/droit/demande ou projection sur une source bloquent. Firebase reste **strictement en lecture seule** : les documents et la projection de la cible sont gardés sans modification. Aucun nouveau code serveur, collection, règle, rôle, paramètre mail ou déploiement n'est requis.
+
+Les adaptateurs acceptent un périmètre explicite, copié et borné à 26 clubs ; sans paramètre, ils gardent le lot initial des 14. Budget par capture : 19 lectures SQL indexées (clubs, relations et projection), chacune avec sentinelle à 10 001 lignes, métadonnées bornées et deux gardes Records inchangées ; 16 requêtes Firebase groupées par chaînes/entiers, neuf chemins clubs/rosters pour Laon et 14 réservations nageurs connues. Pas de requête par ligne, ni nouveau coût d'ouverture/action/rafraîchissement du Portail. Préparation : deux captures concordantes. Application : trois captures complètes ; chaque phase SQL relit deux fois les relations sous verrou, plus métadonnées/imports/Records. Plafonds : 5 000 mutations, 32 Mo d'inventaire, 4 000 réservations et 1 000 compétitions.
+
+Commandes explicites : `--prepare <manifest.json> <operation> <archive> <copie>`, `--verify-backup|--check <archive> <copie>`, puis `--apply|--restore <archive> <copie> <preuves.json> <journal>`. Mêmes options privées de clé/authentification que l'outil initial. Archives chiffrées typées, écriture exclusive/fsync et deux réouvertures ; copie indépendante et clé opérateur à vérifier réellement. Le fichier de preuves reprend les contrôles existants, plus l'empreinte du manifeste et la revue de l'absence de dépendances Firebase sources. Une vraie fenêtre exclusive reste obligatoire : absence de compte source ne prouve pas absence d'autres écrivains SQL. Aucun ancien accord de pause ou de restauration ne s'étend automatiquement à ce lot.
+
+Reprise : mêmes images initiales et mêmes archives, reconnaissance de chaque ligne avant/après, aucune réapplication aveugle. Suppression des sources en dernier après nouvelle capture. Restauration ciblée : recréation des sources avant remise des références ; toute clé réutilisée ou donnée étrangère bloque. Tests hors réseau : 39 frontières d'interruption en application/reprise/restauration, comptes de la cible préservés, refus de liens Firebase sources y compris périmètre entier, collisions/dérive, copies chiffrées/altération et lecteurs réellement bornés au nouveau périmètre. Inclus dans la CI globale ; aucune connexion réelle automatique depuis les tests.
 
 ## Résultat réel du 1er novembre 2026
 

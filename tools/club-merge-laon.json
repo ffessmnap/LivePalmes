@@ -1,0 +1,8 @@
+{
+  "pairs": [[677,500],[558,500]],
+  "clubs": [
+    {"num_club":500,"nom_club":"Club de Plongée de Laon","abre_club":"CPL","federal_club":"09020305"},
+    {"num_club":677,"nom_club":"Avan Plongée","abre_club":"AVAN","federal_club":"09020305"},
+    {"num_club":558,"nom_club":"z","abre_club":"z","federal_club":"z"}
+  ]
+}
