@@ -95,6 +95,8 @@ def main(directory, run_id, kind):
             expected += ['cloudscheduler.jobs.get','cloudscheduler.jobs.update']
         if kind == 'backend' and cycle.nap_account.approved(request):
             expected += ['cloudfunctions.functions.create']
+        if kind == 'backend' and cycle.validated_portal.approved(request):
+            expected += ['cloudfunctions.functions.create', 'cloudfunctions.functions.setIamPolicy']
         granted = read(IAM, {'permissions': expected}).get('permissions', [])
         report['missingPermissions'] = sorted(set(expected) - set(granted))
         if kind == 'backend' and selected:

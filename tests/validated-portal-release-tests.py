@@ -60,6 +60,17 @@ class ValidatedPortalPolicyTests(unittest.TestCase):
             with self.assertRaises(ValueError): policy.assert_config(before,after,state)
         with self.assertRaises(ValueError): policy.source_patch(self.fixture('sendEngagementPreparedEmails'), {})
 
+    def test_new_callable_has_no_secret_or_automatic_trigger(self):
+        function = self.fixture(policy.contract()['newFunction'])
+        function['environment'] = 'GEN_2'
+        function['labels']['livepalmes-commit'] = policy.contract()['candidate']
+        function['serviceConfig']['secretEnvironmentVariables'] = []
+        policy.assert_new(function)
+        for key, value in [('eventTrigger',{'fixture':True}), ('environment','GEN_1')]:
+            with self.assertRaises(ValueError): policy.assert_new({**function,key:value})
+        function['serviceConfig']['secretEnvironmentVariables'] = [{'key':'SMTP'}]
+        with self.assertRaises(ValueError): policy.assert_new(function)
+
     def test_publisher_uses_three_source_patches_and_refuses_drift(self):
         for drift, resume in [(False,False),(True,False),(False,True)]:
             with tempfile.TemporaryDirectory() as temp:

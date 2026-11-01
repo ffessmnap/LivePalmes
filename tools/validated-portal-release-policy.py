@@ -94,6 +94,18 @@ def source_patch(before, storage):
             'labels': {**before.get('labels', {}), 'livepalmes-commit': c['candidate']}}
 
 
+def assert_new(function):
+    c = contract()
+    require(function.get('name') == 'projects/livepalmes/locations/europe-west1/functions/'+c['newFunction']
+            and function.get('state') == 'ACTIVE' and function.get('environment') == 'GEN_2'
+            and function.get('buildConfig', {}).get('runtime') == 'nodejs22'
+            and function.get('buildConfig', {}).get('entryPoint') == c['newFunction']
+            and function.get('labels', {}).get('livepalmes-commit') == c['candidate']
+            and not function.get('eventTrigger')
+            and not function.get('serviceConfig', {}).get('secretEnvironmentVariables')
+            and not function.get('serviceConfig', {}).get('secretVolumes'), 'Nouvelle callable hors configuration validee')
+
+
 def guard(directory, after=False):
     directory = Path(directory)
     require(approved(json.loads((directory/'request.json').read_text())), 'Garde sans accord')

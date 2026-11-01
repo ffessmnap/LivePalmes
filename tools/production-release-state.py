@@ -139,6 +139,11 @@ def check_after(backup, destination, require_success):
                 validated_policy.assert_config(before[name], f, SimpleNamespace(rollback_patch=rollback_patch))
             except ValueError as error:
                 errors.append(str(error))
+        if f and validated_policy and name.split('/')[-1] == validated_policy.contract()['newFunction']:
+            try:
+                validated_policy.assert_new(f)
+            except ValueError as error:
+                errors.append(str(error))
         if f and name.split('/')[-1] in (report.get('additionalPdfFunctions', []) + report.get('additionalDtnFunctions', []) + report.get('additionalClubDirectoryFunctions', []) + report.get('additionalLicenseReportFunctions', [])):
             old = rollback_patch(before[name], {})
             new = rollback_patch(f, {})
