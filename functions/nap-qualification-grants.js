@@ -1,7 +1,7 @@
 "use strict";
 // Bounded native exception storage primitives. The callable must authorize the
 // competition/club and verify the current sporting snapshot before any write.
-const {positiveId}=require("./nap-direct-calendar");
+const { positiveId } = require("./nap-calendar-values");
 const {specs}=require("./nap-approved-qualification-schema");
 const columns=specs[0].columns.map(([name])=>name);
 function scope(input) {

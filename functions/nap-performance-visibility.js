@@ -1,10 +1,7 @@
 "use strict";
 // Primary-key antijoin inside each bounded sporting query, no network read per
 // result. Administrative correction reads deliberately include hidden rows.
-function visiblePerformanceSql(alias = "p") {
-  if (!/^[a-z][a-z0-9_]*$/i.test(alias)) throw new TypeError("Alias de performance invalide.");
-  return `NOT EXISTS (SELECT 1 FROM livepalmes_performance_visibility lpv FORCE INDEX (PRIMARY) WHERE lpv.performance_id=${alias}.id AND lpv.hidden=1)`;
-}
+const { visiblePerformanceSql } = require("./nap-performance-visibility-sql");
 async function visibilityStamp(connection, { settled = false } = {}) {
   const [rows] = await connection.execute({ sql: "SELECT performance_id,version,DATE_FORMAT(updated_at,'%Y-%m-%d %H:%i:%s.%f') AS changed_at,TIMESTAMPDIFF(SECOND,updated_at,UTC_TIMESTAMP(6)) AS age_seconds FROM livepalmes_performance_visibility FORCE INDEX (livepalmes_visibility_updated) ORDER BY updated_at DESC,performance_id DESC LIMIT 1", timeout: 10000 });
   if (!Array.isArray(rows) || rows.length > 1) throw new TypeError("Suivi du masquage NAP indisponible.");

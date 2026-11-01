@@ -3,8 +3,8 @@
 // reconciled or deleted. Budget: native dossier + 5 bounded reads, one DELETE;
 // the caller returns a fresh native dossier after completion.
 const native=require("./nap-portal-competitions");
-const {positiveId}=require("./nap-direct-calendar");
-const {fingerprint}=require("./nap-portal-workspaces");
+const { positiveId } = require("./nap-calendar-values");
+const { fingerprint } = require("./nap-competition-fingerprint");
 const {operationHash,authorityGuard}=require("./nap-portal-competition-change");
 const {isDeepStrictEqual}=require("node:util");
 const COLUMNS=["id","compet","pos","id_course","opencourse","cost","limitnageur"];

@@ -5,7 +5,7 @@ function createClubHandlers_previewEngagementClubSwimmerRecovery(backendContext)
     const context = await backendContext.engagementClubAccessContext(request);
     if (backendContext.ENVIRONMENT.sportingDataSource === "nap") {
       try {
-        const preview = await require("../../nap-swimmer-recovery").previewRecovery(require("../../nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD), {
+        const preview = await require("../../nap-swimmer-recovery").previewRecovery(require("../../nap-portal-pool").portalPool(process.env.LIVEPALMES_NAP_PASSWORD), {
           clubId:String(context.clubId),licenseNumber:backendContext.cleanText(request.data?.licenseNumber).toUpperCase()
         }, scope=>{if(scope.clubId!==String(context.clubId)) throw new backendContext.HttpsError("permission-denied","Nageur hors club.");});
         return {ok:true,...preview};

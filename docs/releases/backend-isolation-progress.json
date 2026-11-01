@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "objective": "Complete systematic backend dependency isolation, technically validated on exact TEST version, then handed off to Infra for authorized PROD publication",
-  "status": "all-factories-local-validation",
+  "status": "native-lot-applied-local-validation",
   "startedAt": "2026-10-31T23:20:21Z",
   "baseline": {
     "main": "ac677ad530aab6b121b3a038accc0fb4860fa5e6",
@@ -144,7 +144,7 @@
   "lots": [
     {
       "id": "access-directories",
-      "status": "integrated-awaiting-test",
+      "status": "test-success",
       "factories": [
         "portalAccessHandlers",
         "serverAccessService",
@@ -158,15 +158,42 @@
       "pr": 654,
       "commit": "63717a87ee6b8efcd99918a0e12720bc283c365e",
       "prCi": 41256416187,
-      "mainCi": 41256912251
+      "mainCi": 41256912251,
+      "testRun": 41257341239,
+      "testCandidate": "63717a87ee6b8efcd99918a0e12720bc283c365e",
+      "hostingVersion": "sites/livepalmes-test/versions/968cd697ea5b67df",
+      "updatedFunctions": 104,
+      "conservedFunctions": 12
     },
     {
       "id": "competitions-entries",
-      "status": "local-validation"
+      "status": "test-success",
+      "pr": 655,
+      "head": "85e55f2375b9339c1640e56caf58f2386d0a0d8b",
+      "ci": 41258508964,
+      "commit": "227207b5cc385a29bbabac1cc63b11f4142b1d52",
+      "prCi": 41258508964,
+      "mainCi": 41258980637,
+      "testRun": 41259584648,
+      "testCandidate": "227207b5cc385a29bbabac1cc63b11f4142b1d52",
+      "hostingVersion": "sites/livepalmes-test/versions/df12e04e578b5660",
+      "updatedFunctions": 91,
+      "conservedFunctions": 25
     },
     {
       "id": "performance-import-dtn-legacy",
-      "status": "local-validation"
+      "status": "test-success",
+      "pr": 655,
+      "head": "85e55f2375b9339c1640e56caf58f2386d0a0d8b",
+      "ci": 41258508964,
+      "commit": "227207b5cc385a29bbabac1cc63b11f4142b1d52",
+      "prCi": 41258508964,
+      "mainCi": 41258980637,
+      "testRun": 41259584648,
+      "testCandidate": "227207b5cc385a29bbabac1cc63b11f4142b1d52",
+      "hostingVersion": "sites/livepalmes-test/versions/df12e04e578b5660",
+      "updatedFunctions": 91,
+      "conservedFunctions": 25
     },
     {
       "id": "remaining-native-responsibilities",
@@ -182,7 +209,7 @@
     }
   ],
   "nativeReview": {
-    "status": "recheck-corrected-partition",
+    "status": "ready-for-pr-final-local-checks",
     "diagnosticOnly": true,
     "networkCalls": 0,
     "nativeJavaScriptModules": 260,
@@ -193,6 +220,137 @@
       "Eight native sources still influence all exports, including real environment/SQL infrastructure and eager imports; inspect before narrowing",
       "Shared native bounded queries and calendar adapters remain overly coupled; preserve singleton state and initialization contracts",
       "Previous virtual probes superseded for captured PDF/legacy consumers; rerun on corrected partition before final claims."
-    ]
-  }
+    ],
+    "baselineForPreview": "227207b5cc385a29bbabac1cc63b11f4142b1d52",
+    "nativeAndRetainedModules": 267,
+    "plans": 34,
+    "actualRuntimeApplied": true,
+    "previewTool": "tools/isolate-backend-native-modules.js",
+    "decisions": [
+      "Extract singleton portalPool without duplicating cache or changing createPool options",
+      "Separate swimmer identifiers, profile projection and identity fingerprint from read/correct adapters",
+      "Separate generic execute/bounded, calendar event values, portal event projection, region constants, competition fingerprint and visibility SQL",
+      "Extract createNapPool/options with its existing mysql2 load from inspection readers, preserving exact options and execution mode",
+      "Lazy root imports of pure static-data factories/helpers return actual cached module objects/functions; keep startup environment and connection infrastructure shared",
+      "Lazy account synchronizer factory must keep one instance and one pool per process; no invocation during proof",
+      "Need independent symbol/body/API proof, negative fixtures and original/candidate offline behavior traces before any application",
+      "Partition normalization into identity/time/dates/categories/courses/committees/intermediate components, with unique shared data and unchanged sporting rules",
+      "Capture remapped namespace members once at their original import scope; do not introduce require calls in row-processing helpers. Unknown namespace escapes stay conservative; direct module API mutation is refused.",
+      "Use statically destructured captured aliases plus the original local namespace name, keeping both one-time loading and conservative module-purity recognition; no selector edits.",
+      "Separate native swimmer read adapters, performance-row projection and seasonal calendar reads from correction/history/detail modules.",
+      "Keep portal origin snapshot eager at the original mail import position; mail functions load lazily against that immutable startup value",
+      "Final audit also separates club directory/by-id queries, club/person projections and club/national pagination, competition/entry views and document loading. Remaining atomic operations keep their shared transaction state."
+    ],
+    "probeFiles": "C:/Users/ITIFP/AppData/Local/Temp/livepalmes-corrected-native-{0,1,2,3}.json",
+    "previewCounts": {
+      "qualificationServiceOrdinary": {
+        "before": 105,
+        "after": 11
+      },
+      "portalMailAll": {
+        "before": 157,
+        "after": 2
+      },
+      "accountEmailProjectionAll": {
+        "before": 157,
+        "after": 2
+      },
+      "mysqlInspectionAll": {
+        "before": 157,
+        "after": 1
+      }
+    },
+    "remaining": [
+      "Actual native/factory/behavior checks, complete native module inventory and final dependency simulations",
+      "PR/CI/integrate and exact TEST for native lot",
+      "Prepare a closed equivalence contract for final candidate vs current PROD 6f76f792 and actual retained origins; do not waive exclusions",
+      "Final tooling/evidence closure pins historical migration proofs to immutable delivered commits so future daily fixes remain possible",
+      "Authorized Infra PROD handoff, verified final checks, then conditional clubs resumption"
+    ],
+    "previewProof": {
+      "declarations": 2902,
+      "apis": 704,
+      "moves": 34,
+      "networkCalls": 0,
+      "runtimeSourceSha256": "e8e2492625a7f2c044d60bba2cd5ef7dfd23e11278c46a12cc36d80bd5d6dd3b"
+    },
+    "runtimeSourceSha256": "e8e2492625a7f2c044d60bba2cd5ef7dfd23e11278c46a12cc36d80bd5d6dd3b",
+    "appliedTargets": [
+      "functions/nap-club-values.js",
+      "functions/nap-club-directory-page.js",
+      "functions/nap-club-read-by-id.js",
+      "functions/nap-club-people-values.js",
+      "functions/nap-club-people-page.js",
+      "functions/nap-national-people-page.js",
+      "functions/nap-competition-view-values.js",
+      "functions/nap-competition-list-item.js",
+      "functions/nap-competition-view.js",
+      "functions/nap-entry-view.js",
+      "functions/nap-workspace-documents.js",
+      "functions/portal-access-origin.js",
+      "functions/nap-portal-swimmer-readers.js",
+      "functions/nap-performance-row.js",
+      "functions/nap-portal-calendar-reader.js",
+      "functions/nap-performance-identity.js",
+      "functions/nap-performance-time.js",
+      "functions/nap-performance-dates.js",
+      "functions/nap-performance-categories.js",
+      "functions/nap-performance-courses.js",
+      "functions/nap-performance-committees.js",
+      "functions/nap-performance-intermediates.js",
+      "functions/nap-connection.js",
+      "functions/nap-swimmer-identity-values.js",
+      "functions/nap-swimmer-profile.js",
+      "functions/nap-portal-pool.js",
+      "functions/nap-swimmer-values.js",
+      "functions/nap-query.js",
+      "functions/nap-competition-query.js",
+      "functions/nap-calendar-event.js",
+      "functions/nap-portal-event.js",
+      "functions/nap-competition-regions.js",
+      "functions/nap-performance-visibility-sql.js",
+      "functions/nap-competition-fingerprint.js"
+    ],
+    "inventory": "docs/releases/backend-native-inventory.json",
+    "auditedNativeModules": 294,
+    "completedChecks": [
+      "Independent complete runtime declaration/API/identity/initializer proof",
+      "No namespace mutation/escape or receiver-sensitive helper in mapped native APIs",
+      "Static one-time captures; no per-row require added",
+      "Original and candidate singleton TEST/PROD simulated traces, origin startup snapshot retained",
+      "Actual authorization/outage/history/PDF/club/person/competition checks passed offline",
+      "All 294 native module source mutations simulated under both existing TEST/PROD selectors"
+    ],
+    "finalSamples": {
+      "ordinaryTEST": {
+        "nap-portal-swimmers.js": {
+          "before": 82,
+          "after": 2
+        },
+        "nap-portal-competitions.js": {
+          "before": 42,
+          "after": 33
+        },
+        "portal-access-mail.js": {
+          "before": 105,
+          "after": 0
+        }
+      },
+      "allExports": {
+        "portal-access-mail.js": {
+          "before": 157,
+          "after": 2
+        },
+        "nap-club-account-emails.js": {
+          "before": 157,
+          "after": 2
+        },
+        "nap-direct-calendar.js": {
+          "before": 60,
+          "after": 1
+        }
+      }
+    }
+  },
+  "factoryIsolationCommit": "227207b5cc385a29bbabac1cc63b11f4142b1d52"
 }

@@ -1,7 +1,7 @@
 "use strict";
 // Native category reference is read once for the complete group, never per
 // swimmer. Existing LivePalmes categories/apnoea rules are supplied by caller.
-const {bounded}=require("./nap-portal-competitions");
+const { bounded } = require("./nap-competition-query");
 const {selectionLockReason}=require("./nap-swimmer-entry-plan");
 async function readCategories(connection) {
   return bounded(connection,"SELECT id,abbr,age_d,age_f,sexe,record_categorie FROM categories FORCE INDEX (PRIMARY) WHERE id>0 ORDER BY id LIMIT 201",[],200);

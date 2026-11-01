@@ -1,7 +1,7 @@
 "use strict";
 // Private read-only sample: seven metadata columns, one EXPLAIN and at most
 // 201 latest declarations through PRIMARY. No names or birth dates returned.
-const {date,positiveId}=require("./nap-direct-calendar");
+const { date, positiveId } = require("./nap-calendar-values");
 const COLUMNS=["id","compet","nom","prenom","date","club","pourclub"];
 const SELECT="SELECT id,compet,nom,prenom,date,club,pourclub FROM chefsdequipe FORCE INDEX (PRIMARY) ORDER BY id DESC LIMIT 201";
 function marker(row) {

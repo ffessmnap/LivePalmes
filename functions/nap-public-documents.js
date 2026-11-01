@@ -1,5 +1,5 @@
 "use strict";
-const {text,publicUrl}=require("./nap-direct-calendar");
+const { text, publicUrl } = require("./nap-calendar-values");
 const {parisDeadline}=require("./nap-paris-time");
 const PAGE_SIZE=25;
 const FIELDS="d.id,d.name,d.date,d.location,d.type,d.element,t.label AS type_label,e.title AS element_label";

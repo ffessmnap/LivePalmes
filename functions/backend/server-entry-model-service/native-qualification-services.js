@@ -1,7 +1,7 @@
 // Existing operation bodies; live services arrive through explicit accessors.
 function createEntryModelService_nativeQualificationServices(backendContext) {
   function nativeQualificationServices(context) {
-    const competitionFor=(pack,rules)=>({...require("../../nap-portal-workspaces").competitionItem(pack,backendContext.ENGAGEMENT_EVENT_DEFINITION_BY_CODE),...(rules?{qualifications:rules}:{})});
+    const competitionFor=(pack,rules)=>({...require("../../nap-competition-view").competitionItem(pack,backendContext.ENGAGEMENT_EVENT_DEFINITION_BY_CODE),...(rules?{qualifications:rules}:{})});
     return {
       authorize:event=>backendContext.assertCanModifyEngagementEvent(context,event),
       competitionFor,eventsFor:pack=>(0, backendContext.local$qualificationEvents)(competitionFor(pack)),categoryFor:backendContext.ageCategoryFromDates,
@@ -9,7 +9,7 @@ function createEntryModelService_nativeQualificationServices(backendContext) {
       effects:require("../../nap-qualification-effects").effects,
       eventDefinitions:backendContext.ENGAGEMENT_EVENT_DEFINITION_BY_CODE,normalizeProgram:backendContext.cleanEngagementProgramSessions,normalizeEvents:backendContext.cleanEngagementCompetitionEvents,
       applyNativePatch:input=>require("../../nap-portal-competition-change").applyCompetitionChange(
-        require("../../nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD),
+        require("../../nap-portal-pool").portalPool(process.env.LIVEPALMES_NAP_PASSWORD),
         {...input,national:true,eventDefinitions:backendContext.ENGAGEMENT_EVENT_DEFINITION_BY_CODE,normalizeProgram:backendContext.cleanEngagementProgramSessions,normalizeEvents:backendContext.cleanEngagementCompetitionEvents},
         {
           read:async operation=>{const snapshot=await backendContext.db.collection("auditLogs").doc(`nap-competition-${operation}-before`).get();return snapshot.exists?snapshot.data().target:null;},

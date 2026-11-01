@@ -6,7 +6,7 @@ function createPerformanceHandlers_createCompetitionImport(backendContext) {
     if(request.data?.sourceType==="winpalme-zip-preview"&&backendContext.ENVIRONMENT.sportingDataSource!=="nap")throw new backendContext.HttpsError("failed-precondition","Le dépôt ZIP nécessite la source NAP.");
     if(backendContext.ENVIRONMENT.sportingDataSource === "nap") {
       if(request.data?.sourceType==="international-xlsx"||request.data?.workbook)throw new backendContext.HttpsError("failed-precondition","Import Excel NAP non disponible pour le moment.");
-      try{return await require("../../nap-import-write").createNativeImportWriter({authorize:backendContext.authorizeNativePerformance,getPool:()=>require("../../nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD),protocolStorage:require("../../nap-import-protocol-storage").createProtocolStorage(backendContext.storage.bucket(backendContext.LIVEPALMES_STORAGE_BUCKET))})(request);}
+      try{return await require("../../nap-import-write").createNativeImportWriter({authorize:backendContext.authorizeNativePerformance,getPool:()=>require("../../nap-portal-pool").portalPool(process.env.LIVEPALMES_NAP_PASSWORD),protocolStorage:require("../../nap-import-protocol-storage").createProtocolStorage(backendContext.storage.bucket(backendContext.LIVEPALMES_STORAGE_BUCKET))})(request);}
       catch(error){throw backendContext.nativePerformanceFailure(error);}
     }
     const fileName = backendContext.cleanText(request.data?.fileName).slice(0, 180);

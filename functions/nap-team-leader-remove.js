@@ -3,11 +3,11 @@
 // journal before mutation; no participant, roster or entry option is removed.
 const { createHash } = require("node:crypto");
 const { isDeepStrictEqual } = require("node:util");
-const { positiveId } = require("./nap-direct-calendar");
+const { positiveId } = require("./nap-calendar-values");
 const { nativeEqual } = require("./nap-native-compare");
 const { COLUMNS } = require("./nap-team-leader-change");
 const { indexed } = require("./nap-team-leader-create");
-const { fingerprint } = require("./nap-portal-workspaces");
+const { fingerprint } = require("./nap-competition-fingerprint");
 const { operationHash, authorityGuard } = require("./nap-portal-competition-change");
 const { readNativeCompetition } = require("./nap-portal-competitions");
 const { readNativeClubEntry } = require("./nap-portal-entries");

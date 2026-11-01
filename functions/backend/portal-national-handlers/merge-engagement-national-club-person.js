@@ -15,7 +15,7 @@ function createNationalHandlers_mergeEngagementNationalClubPerson(backendContext
     }
     if (backendContext.ENVIRONMENT.sportingDataSource === "nap") {
       try {
-        return await require("../../nap-person-merge").mergePeople(require("../../nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD),{sourcePersonId,targetPersonId,actorUid:context.uid,confirmMerge:true,confirmClubMismatch:request.data?.confirmClubMismatch===true,sourceFingerprint:request.data?.sourceFingerprint,targetFingerprint:request.data?.targetFingerprint},{
+        return await require("../../nap-person-merge").mergePeople(require("../../nap-portal-pool").portalPool(process.env.LIVEPALMES_NAP_PASSWORD),{sourcePersonId,targetPersonId,actorUid:context.uid,confirmMerge:true,confirmClubMismatch:request.data?.confirmClubMismatch===true,sourceFingerprint:request.data?.sourceFingerprint,targetFingerprint:request.data?.targetFingerprint},{
           read:async operation=>{const doc=await backendContext.db.collection("auditLogs").doc(`nap-person-merge-${operation}-before`).get();return doc.exists?doc.data().target:null;},
           prepare:(operation,target)=>backendContext.db.collection("auditLogs").doc(`nap-person-merge-${operation}-before`).create({action:"nap.personMerge.prepare",actorUid:context.uid,target,createdAt:new Date().toISOString()}),
           complete:(operation,target)=>backendContext.writeAuditLogOnce("nap.personMerge.complete",context.uid,{...target,auditPreparationId:`nap-person-merge-${operation}-before`},`nap-person-merge-${operation}-complete`)

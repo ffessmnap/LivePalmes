@@ -16,7 +16,7 @@ function createCompetitionHandlers_generateEngagementCompetitionTxtExport(backen
           ? require("../../winpalme-open-water-manual").prepareManualOpenWaterEntries(entries) : entries;
         const exportCompetition=result.competition.competitionType==="openWater"
           ? await require("../../winpalme-open-water-manual").readManualOpenWaterCompetition(
-            require("../../nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD),result.competition)
+            require("../../nap-portal-pool").portalPool(process.env.LIVEPALMES_NAP_PASSWORD),result.competition)
           : result.competition;
         txt=result.competition.competitionType==="openWater"
           ? {...require("../../winpalme-open-water-manual").buildNativeManualOpenWaterTxt(exportCompetition,

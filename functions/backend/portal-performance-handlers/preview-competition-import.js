@@ -8,7 +8,7 @@ function createPerformanceHandlers_previewCompetitionImport(backendContext) {
       backendContext.authorizeNativePerformance(request);
       if(request.data?.sourceType==="international-xlsx"||request.data?.workbook)throw new backendContext.HttpsError("failed-precondition","Le raccordement de l'import Excel international reste a terminer ; aucune ancienne base ne sera utilisee.");
       try{
-        const result=require("../../nap-import-response").importPreviewResponse(await require("../../nap-import-preview").previewNativeImport(require("../../nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD),request.data||{}));
+        const result=require("../../nap-import-response").importPreviewResponse(await require("../../nap-import-preview").previewNativeImport(require("../../nap-portal-pool").portalPool(process.env.LIVEPALMES_NAP_PASSWORD),request.data||{}));
         return request.data?.sourceType==="winpalme-zip-preview"?{...result,previewOnly:false,reviewReady:result.canConfirm===true}:result;
       }
       catch(error){throw backendContext.nativePerformanceFailure(error);}

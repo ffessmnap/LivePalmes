@@ -3,8 +3,8 @@ function cleanMailText(value) {
 }
 
 const MAIL_SIGNATURE = "Commission Nationale Nage avec Palmes - FFESSM";
-const { livePalmesEnvironment } = require("./livepalmes-environment");
-const PORTAL_ORIGIN = livePalmesEnvironment().hostingOrigin;
+const { PORTAL_ORIGIN } = require("./portal-access-origin");
+
 
 function mailSignatureLines() {
   return ["Sportivement,", MAIL_SIGNATURE];

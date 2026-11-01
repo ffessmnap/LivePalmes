@@ -2,7 +2,7 @@
 // Pure native mapping after existing LivePalmes sporting validation. Explicit
 // positions/category/course come from the trusted resolver, never the client.
 // No database, generated-id allocation, licence lookup or old-row rewrite.
-const {positiveId}=require("./nap-direct-calendar");
+const { positiveId } = require("./nap-calendar-values");
 const fields=["id","compet","categorie","club","course","tps"];
 const shape=(row,keys)=>Object.fromEntries(keys.map(key=>[key,row[key]]));
 function planComposition(pack,resolved) {

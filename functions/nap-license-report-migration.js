@@ -18,7 +18,7 @@ async function inspect(pool){
 }
 function validate(report){
  require("./nap-license-state").seasonInfo(report.season);
- require("./nap-direct-calendar").positiveId(report.competitionId);
+ require("./nap-calendar-values").positiveId(report.competitionId);
  if(!["ok","issues"].includes(report.status)||!Array.isArray(report.people)||!report.people.length||report.people.length>800||!/^[a-f0-9]{64}$/.test(report.revision)||!/^[a-f0-9]{64}$/.test(report.fingerprint)||!Number.isFinite(Date.parse(report.completedAt))||!report.completedBy||report.counts?.total!==report.people.length||Buffer.byteLength(JSON.stringify(report))>700000)throw Error("Bilan source incompatible");
  const counts=report.counts;
  if([counts.total,counts.valid,counts.expired,counts.notFound,counts.unconfirmed??counts.other??0].some(n=>!Number.isSafeInteger(n)||n<0)||counts.valid+counts.expired+counts.notFound+(counts.unconfirmed??counts.other??0)!==counts.total||report.people.some(p=>!["valid","licence_expiree","introuvable","anomalie_licence","anomalie_identite","ambigu","erreur","timeout","non_controle"].includes(p.status)))throw Error("Compteurs ou statuts incompatibles");

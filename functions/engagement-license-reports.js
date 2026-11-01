@@ -3,7 +3,7 @@
 // Sporting identities and season validations remain in NAP. TEST never sends.
 const {createHash}=require("node:crypto");
 const {seasonInfo}=require("./nap-license-state");
-const {positiveId}=require("./nap-direct-calendar");
+const { positiveId } = require("./nap-calendar-values");
 const hash=value=>createHash("sha256").update(JSON.stringify(value)).digest("hex");
 const id=value=>String(positiveId(value));
 const summaryRef=(db,season)=>db.collection("engagementConfigurations").doc(`license-controls-${seasonInfo(season).label}`);

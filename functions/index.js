@@ -115,7 +115,7 @@ function $portalPerformanceHandlers_createCompetitionImport() {
     get assertCapability() { return assertCapability; },
     get authorizeNativePerformance() { return authorizeNativePerformance; },
     get cleanText() { return cleanText; },
-    get cleanTimingType() { return cleanTimingType; },
+    get cleanTimingType() { return require("./performance-import-timing").cleanTimingType; },
     get competitionImportIdentity() { return competitionImportIdentity; },
     get competitionImportPerformanceId() { return competitionImportPerformanceId; },
     get db() { return db; },
@@ -812,7 +812,7 @@ function $portalCompetitionHandlers_createEngagementCompetition() {
     get db() { return db; },
     get engagementAccessContext() { return engagementAccessContext; },
     get engagementCompetitionListItem() { return engagementCompetitionListItem; },
-    get qualificationEngine() { return qualificationEngine; },
+    get qualificationEngine() { return require("./engagement-qualification"); },
     get qualificationEvents() { return qualificationEvents; },
     get writeAuditLog() { return writeAuditLog; }
   });
@@ -840,7 +840,7 @@ function $portalCompetitionHandlers_updateEngagementCompetition() {
     get engagementOpenWaterCourseConfigRef() { return engagementOpenWaterCourseConfigRef; },
     get nativePortalCompetition() { return nativePortalCompetition; },
     get nativeQualificationServices() { return nativeQualificationServices; },
-    get qualificationEngine() { return qualificationEngine; },
+    get qualificationEngine() { return require("./engagement-qualification"); },
     get qualificationEvents() { return qualificationEvents; },
     get qualificationService() { return qualificationService; },
     get writeAuditLog() { return writeAuditLog; },
@@ -1707,7 +1707,7 @@ function $portalClubHandlers_saveEngagementClubRelays() {
     get engagementClubEntryItem() { return engagementClubEntryItem; },
     get engagementTeamLeaderComplete() { return engagementTeamLeaderComplete; },
     get loadPerformanceRecordsData() { return loadPerformanceRecordsData; },
-    get qualificationEngine() { return qualificationEngine; },
+    get qualificationEngine() { return require("./engagement-qualification"); },
     get qualificationService() { return qualificationService; },
     get saveNativeClubRelays() { return saveNativeClubRelays; },
     get validateEngagementRelayEntryTimes() { return validateEngagementRelayEntryTimes; },
@@ -2423,7 +2423,7 @@ function $serverDirectoryService_assertEngagementAccessRequestScope() {
     get cleanClubPayload() { return cleanClubPayload; },
     get cleanText() { return cleanText; },
     get db() { return db; },
-    get engagementAccessRejection() { return engagementAccessRejection; },
+    get engagementAccessRejection() { return require("./portal-access-mail").engagementAccessRejection; },
     get engagementMailSmtpConfig() { return engagementMailSmtpConfig; },
     get livePalmesMailHtml() { return livePalmesMailHtml; },
     get nodemailer() { return nodemailer; },
@@ -2444,13 +2444,13 @@ function $serverDirectoryService_consumePublicAccessRequestRateLimit() {
     get PORTAL_ACCESS_RATE_LIMIT_COLLECTION() { return PORTAL_ACCESS_RATE_LIMIT_COLLECTION; },
     get cleanText() { return cleanText; },
     get db() { return db; },
-    get engagementAccessAcknowledgement() { return engagementAccessAcknowledgement; },
-    get engagementAccessAdminNotification() { return engagementAccessAdminNotification; },
-    get engagementAccessAdminNotificationRecipients() { return engagementAccessAdminNotificationRecipients; },
+    get engagementAccessAcknowledgement() { return require("./portal-access-mail").engagementAccessAcknowledgement; },
+    get engagementAccessAdminNotification() { return require("./portal-access-mail").engagementAccessAdminNotification; },
+    get engagementAccessAdminNotificationRecipients() { return require("./portal-access-mail").engagementAccessAdminNotificationRecipients; },
     get engagementActiveMailRecipients() { return engagementActiveMailRecipients; },
     get engagementClubCode() { return engagementClubCode; },
     get engagementClubName() { return engagementClubName; },
-    get engagementExistingAccountNotice() { return engagementExistingAccountNotice; },
+    get engagementExistingAccountNotice() { return require("./portal-access-mail").engagementExistingAccountNotice; },
     get engagementMailSmtpConfig() { return engagementMailSmtpConfig; },
     get livePalmesMailHtml() { return livePalmesMailHtml; },
     get nextPortalAccessRateLimit() { return nextPortalAccessRateLimit; },
@@ -2895,7 +2895,7 @@ function $serverEntryModelService_assertEngagementRelayMembers() {
 
 function $serverEntryModelService_qualificationRelaysAfterIndividualChange() {
   if (!$serverEntryModelService_qualificationRelaysAfterIndividualChange.instance) $serverEntryModelService_qualificationRelaysAfterIndividualChange.instance = require("./backend/server-entry-model-service/qualification-relays-after-individual-change").createEntryModelService_qualificationRelaysAfterIndividualChange({
-    get qualificationEngine() { return qualificationEngine; }
+    get qualificationEngine() { return require("./engagement-qualification"); }
   });
   return $serverEntryModelService_qualificationRelaysAfterIndividualChange.instance;
 }
@@ -2917,7 +2917,7 @@ function $serverEntryModelService_automaticEngagementIndividualEntry() {
     get ageCategoryFromDates() { return ageCategoryFromDates; },
     get assertEngagementClubWriteOpen() { return assertEngagementClubWriteOpen; },
     get cleanText() { return cleanText; },
-    get createQualificationService() { return createQualificationService; },
+    get createQualificationService() { return require("./engagement-qualification-service").createQualificationService; },
     get db() { return db; },
     get engagementAccessContext() { return engagementAccessContext; },
     get engagementClubAccessContext() { return engagementClubAccessContext; },
@@ -3055,7 +3055,7 @@ function $serverEntryModelService_resolveEngagementIndividualEntriesForSwimmer()
   if (!$serverEntryModelService_resolveEngagementIndividualEntriesForSwimmer.instance) $serverEntryModelService_resolveEngagementIndividualEntriesForSwimmer.instance = require("./backend/server-entry-model-service/resolve-engagement-individual-entries-for-swimmer").createEntryModelService_resolveEngagementIndividualEntriesForSwimmer({
     get HttpsError() { return HttpsError; },
     get cleanText() { return cleanText; },
-    get qualificationEngine() { return qualificationEngine; },
+    get qualificationEngine() { return require("./engagement-qualification"); },
     get local$automaticEngagementIndividualEntry() { return $serverEntryModelService_automaticEngagementIndividualEntry().automaticEngagementIndividualEntry; },
     get local$cleanEngagementEntryIndividualEntries() { return $serverEntryModelService_cleanEngagementEntryIndividualEntries().cleanEngagementEntryIndividualEntries; },
     get local$getEngagementEntryTimeRowsForSwimmer() { return $serverEntryModelService_engagementEntryTimeCacheRef().getEngagementEntryTimeRowsForSwimmer; },
@@ -4766,13 +4766,13 @@ function $serverPerformanceService_competitionImportPublicSnapshotSummary() {
     get categoryCodeFromCategory() { return categoryCodeFromCategory; },
     get cleanFirestoreValue() { return cleanFirestoreValue; },
     get cleanText() { return cleanText; },
-    get cleanTimingType() { return cleanTimingType; },
+    get cleanTimingType() { return require("./performance-import-timing").cleanTimingType; },
     get coursePayload() { return coursePayload; },
     get fallbackCategoryFromSource() { return fallbackCategoryFromSource; },
     get importSeasonYear() { return importSeasonYear; },
     get normalizeCategoryCode() { return normalizeCategoryCode; },
     get normalizeCourseCode() { return normalizeCourseCode; },
-    get performanceImportChrono() { return performanceImportChrono; },
+    get performanceImportChrono() { return require("./performance-import-timing").performanceImportChrono; },
     get resolveIntranapSwimmer() { return resolveIntranapSwimmer; },
     get stableHash() { return stableHash; },
     get swimmerIdentityKey() { return swimmerIdentityKey; }
@@ -5374,9 +5374,9 @@ function serverDirectorySyncService() {
 
 const crypto = require("node:crypto");
 const { clubRecapZip } = require("./club-recap-zip");
-const qualificationEngine = require("./engagement-qualification");
+
 const { createDtnSeasonService } = require("./dtn-season-service");
-const { createQualificationService } = require("./engagement-qualification-service");
+
 const fs = require("node:fs");
 const path = require("node:path");
 const zlib = require("node:zlib");
@@ -5399,7 +5399,8 @@ const {
   publicPerformancePublicationJob
 } = require("./performance-publication-jobs");
 const { defineBoolean, defineSecret } = require("firebase-functions/params");
-const { createNapPool, readSwimmerPerformances, performanceRequest } = require("./nap-mysql");
+const { createNapPool } = require("./nap-connection");
+
 const { consoleRoleClaims, hasConsolePortalCapability } = require("./console-access");
 const clubReference = require("./assets/club-reference.json");
 const intranapSwimmersReference = require("./intranap-swimmers-reference.json");
@@ -5412,13 +5413,7 @@ const {
 } = require("./public-pdf-storage");
 const { nextPortalAccessRateLimit } = require("./portal-access-protection");
 const { livePalmesEnvironment } = require("./livepalmes-environment");
-const {
-  engagementAccessAcknowledgement,
-  engagementAccessRejection,
-  engagementExistingAccountNotice,
-  engagementAccessAdminNotification,
-  engagementAccessAdminNotificationRecipients
-} = require("./portal-access-mail");
+require("./portal-access-origin");
 const { engagementSwimmerChangeResolutionMail } = require("./engagement-swimmer-change-mail");
 const { competitionMailLines, competitionMailDateTime } = require("./engagement-competition-mail-format");
 const { escapeMailHtml, livePalmesMailHtml } = require("./livepalmes-mail-html");
@@ -5438,12 +5433,7 @@ const {
   competitionDocumentStoragePath,
   decodeCompetitionDocumentDataUrl
 } = require("./engagement-competition-documents");
-const {
-  applyCompetitionImportTiming,
-  cleanTimingType,
-  ffessmBasTimingType,
-  performanceImportChrono
-} = require("./performance-import-timing");
+
 const {
   competitionImportIdentity,
   sameCompetitionImport
@@ -5601,11 +5591,11 @@ exports.getNapSwimmerPerformances = onCall({
     if (!request.auth) throw new HttpsError("unauthenticated", "Connexion requise.");
     assertAdmin(request);
     let input;
-    try { input = performanceRequest(request.data); }
+    try { input = require("./nap-mysql").performanceRequest(request.data); }
     catch { throw new HttpsError("invalid-argument", "Identifiants NAP entiers requis."); }
     try {
       if (!napPool) napPool = createNapPool(napPassword.value());
-      return await readSwimmerPerformances(napPool, input);
+      return await require("./nap-mysql").readSwimmerPerformances(napPool, input);
     } catch {
       // Ne pas exposer les erreurs du pilote, les secrets ou les donnees.
       throw new HttpsError("unavailable", "Consultation NAP indisponible. Verifier la configuration serveur.");
@@ -6298,12 +6288,12 @@ function competitionImportParser() {
     HttpsError,
     POOL_COURSES,
     ageCategoryFromDates,
-    applyCompetitionImportTiming,
+    applyCompetitionImportTiming: require("./performance-import-timing").applyCompetitionImportTiming,
     cleanText,
     courseLengthFromCode,
     courseStyleFromCode,
     fallbackCategoryFromSource,
-    ffessmBasTimingType,
+    ffessmBasTimingType: require("./performance-import-timing").ffessmBasTimingType,
     formatTimeValue,
     importSeasonYear,
     normalizeCategoryCode,
@@ -8268,11 +8258,14 @@ async function engagementActiveMailRecipients(input0) {
 }
 
 // Isolate NAP retries from existing recipient indexes; TEST never opens shared NAP.
-const syncNapClubAccountEmail = require("./nap-club-account-emails").createSynchronizer({
+function nativeAccountEmailSynchronizer() {
+  if (!nativeAccountEmailSynchronizer.instance) nativeAccountEmailSynchronizer.instance = require("./nap-club-account-emails").createSynchronizer({
   projectId: ENVIRONMENT.projectId,
   createPool: () => createNapPool(defineSecret("LIVEPALMES_NAP_PASSWORD").value()),
   db
 });
+  return nativeAccountEmailSynchronizer.instance;
+}
 
 exports.syncNapClubAccountEmails = onDocumentWritten({
   region: REGION,
@@ -8281,7 +8274,7 @@ exports.syncNapClubAccountEmails = onDocumentWritten({
   retry: true
 }, async (event) => {
   if (!event.params?.uid) return;
-  await syncNapClubAccountEmail(event.params.uid);
+  await nativeAccountEmailSynchronizer()(event.params.uid);
 });
 
 exports.syncEngagementMailRecipientIndex = onDocumentWritten({
@@ -9003,10 +8996,10 @@ exports.processNapCompetitionNotifications = onCall({ ...ENGAGEMENT_NOTIFICATION
     if(request.data?.action==='adopt-open-season'){
       if(!context.national)throw new HttpsError('permission-denied','Reprise reservee au niveau national.');
       return await automation.adoptOpenCompetitions(db,{season:request.data.season,offset:request.data.offset},{
-        authorize:async()=>{},schedule:enqueueNativeNotificationTask,season:async year=>{const pack=await require('./nap-portal-competitions').readNativeCompetitionSeason(require('./nap-portal-swimmers').portalPool(process.env.LIVEPALMES_NAP_PASSWORD),year);return {...pack,events:pack.events.map(event=>({...event,id:String(require('./nap-direct-calendar').positiveId(event.id))}))};}});
+        authorize:async()=>{},schedule:enqueueNativeNotificationTask,season:async year=>{const pack=await require("./nap-portal-calendar-reader").readNativeCompetitionSeason(require("./nap-portal-pool").portalPool(process.env.LIVEPALMES_NAP_PASSWORD),year);return {...pack,events:pack.events.map(event=>({...event,id:String(require("./nap-calendar-values").positiveId(event.id))}))};}});
     }
     if(!['process','restart'].includes(request.data?.action))throw new TypeError('Action de notification inconnue.');
-    const competitionId=String(require('./nap-direct-calendar').positiveId(request.data.competitionId));
+    const competitionId=String(require("./nap-calendar-values").positiveId(request.data.competitionId));
     await nativePortalCompetition(competitionId,event=>assertCanManageEngagementCompetition(context,event));
     const snapshot=await db.collection(automation.COLLECTION).where('competitionId','==',competitionId).limit(101).get();
     if(snapshot.size>100)throw new RangeError('Historique technique trop volumineux : maintenance requise.');
@@ -9075,7 +9068,7 @@ exports.listEngagementCompetitionMailJobs = onCall(ENGAGEMENT_NOTIFICATION_PREVI
     throw new HttpsError("invalid-argument", "Competition requise.");
   }
   if (ENVIRONMENT.sportingDataSource === "nap") {
-    competitionId=String(require('./nap-direct-calendar').positiveId(competitionId));
+    competitionId=String(require("./nap-calendar-values").positiveId(competitionId));
     await nativePortalCompetition(competitionId, event => assertCanManageEngagementCompetition(context, event));
   } else {
     const competition = await db.collection("engagementCompetitions").doc(competitionId).get();
@@ -9438,7 +9431,9 @@ exports.listEngagementNationalClubSwimmers = onCall({ ...CALLABLE_OPTIONS, ...(E
   }
   if (ENVIRONMENT.sportingDataSource === "nap") {
     try {
-      const service = require("./nap-portal-swimmers");
+      const { listNationalSwimmers: __nativeMember0 } = require("./nap-portal-swimmer-readers");
+const { portalPool: __nativeMember1 } = require("./nap-portal-pool");
+const service = { listNationalSwimmers: __nativeMember0, portalPool: __nativeMember1 };
       return await service.listNationalSwimmers(service.portalPool(process.env.LIVEPALMES_NAP_PASSWORD), {cursor:request.data?.cursor});
     } catch (error) {
       throw new HttpsError(error instanceof TypeError ? "invalid-argument" : "unavailable", error instanceof TypeError ? error.message : "Annuaire national NAP indisponible. Reessayez.");
@@ -9496,7 +9491,7 @@ exports.prepareEngagementLicenseControlBatch = onCall(ENVIRONMENT.projectId === 
   if (!context.national) throw new HttpsError("permission-denied", "Controle des licences reserve au niveau national.");
   if (ENVIRONMENT.sportingDataSource === "nap") {
     try {
-      const pool = require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD);
+      const pool = require("./nap-portal-pool").portalPool(process.env.LIVEPALMES_NAP_PASSWORD);
       if (request.data?.action) return await engagementLicenseReportRequest(request.data, context, pool);
       return await require("./engagement-license-reports").attach(db, await require("./nap-license-control").prepareBatch(pool, request.data || {}), require("./nap-license-reports").store(pool));
     }

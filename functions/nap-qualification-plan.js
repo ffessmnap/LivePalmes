@@ -3,8 +3,8 @@
 // native ids, updates a sporting row or assumes a control has been confirmed.
 const engine=require("./engagement-qualification");
 const {fromPack}=require("./nap-qualification-rules");
-const {positiveId}=require("./nap-direct-calendar");
-const {fingerprint}=require("./nap-portal-workspaces");
+const { positiveId } = require("./nap-calendar-values");
+const { fingerprint } = require("./nap-competition-fingerprint");
 const {isDeepStrictEqual}=require("node:util");
 function plan(pack,input) {
   if(input?.national!==true) throw new TypeError("Grille reservee a l'administration nationale.");

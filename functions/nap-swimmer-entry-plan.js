@@ -1,5 +1,5 @@
 "use strict";
-const {positiveId}=require("./nap-direct-calendar");
+const { positiveId } = require("./nap-calendar-values");
 
 // Prepare only explicitly selected/deselected swimmers, using the trusted NAP
 // dossier. Licence numbers are intentionally not consulted.

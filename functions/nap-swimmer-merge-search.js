@@ -1,6 +1,6 @@
 "use strict";
-const { swimmerId } = require("./nap-direct-swimmer");
-const { searchPortalSwimmers } = require("./nap-portal-swimmers");
+const { swimmerId } = require("./nap-swimmer-values");
+const { searchPortalSwimmers } = require("./nap-portal-swimmer-readers");
 
 // No reads on screen opening. Each explicit search costs at most three SQL
 // queries: source PK, two bounded name ranges, grouped identity/licence join.

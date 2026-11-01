@@ -5,7 +5,7 @@ function createCompetitionHandlers_deleteEngagementCalendarEvent(backendContext)
     const calendarEventId = backendContext.cleanText(request.data?.calendarEventId).slice(0, 128);
     if (!calendarEventId) throw new backendContext.HttpsError("invalid-argument", "Evenement requis.");
     if (backendContext.ENVIRONMENT.sportingDataSource === "nap") {
-      const pool=require("../../nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD);
+      const pool=require("../../nap-portal-pool").portalPool(process.env.LIVEPALMES_NAP_PASSWORD);
       try {
         const result=await require("../../nap-competition-deletion").competitionDeletion(pool,{competitionId:calendarEventId,actorUid:context.uid,previewOnly:request.data?.previewOnly===true,confirmPermanent:request.data?.confirmPermanent===true,expectedFingerprint:request.data?.expectedFingerprint},{
           prepare:(id,target)=>backendContext.db.collection("auditLogs").doc(`nap-competition-delete-${id}-before`).create({action:"nap.calendarEventDelete.prepare",actorUid:context.uid,target,createdAt:new Date().toISOString()}),

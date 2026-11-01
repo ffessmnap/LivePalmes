@@ -1,7 +1,7 @@
 "use strict";
 // Private EXPLAIN-only proof: no sports write, identifiers/contacts or SQL
 // parameters in its result. Existing dossier/directory are reused.
-const {positiveId}=require("./nap-direct-calendar");
+const { positiveId } = require("./nap-calendar-values");
 const {readNativeCompetition}=require("./nap-portal-competitions");
 const {readPeople,indexed}=require("./nap-official-entry-reads");
 const {selectedStatement,insertion,deletion}=require("./nap-official-entry-statements");

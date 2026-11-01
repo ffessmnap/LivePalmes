@@ -32,7 +32,7 @@ function createNationalService_engagementLicenseControlPerson(backendContext) {
     const batch = await require("../../nap-license-control").prepareBatch(pool, { season: input.season, competitionIds: [input.competitionId] });
     if (input.action === "readReport") {
       await reports.attach(backendContext.db, batch, store);
-      return { report: batch.controlReports[String(require("../../nap-direct-calendar").positiveId(input.competitionId))], participantCount: batch.people.length, history: await store.history(input.season,input.competitionId) };
+      return { report: batch.controlReports[String(require("../../nap-calendar-values").positiveId(input.competitionId))], participantCount: batch.people.length, history: await store.history(input.season,input.competitionId) };
     }
     if (input.action === "completeReport") return reports.complete(backendContext.db, batch, input, context.uid, store);
     if (input.action === "closeReport") return reports.close(backendContext.db, batch, input, context.uid, store);
@@ -41,10 +41,10 @@ function createNationalService_engagementLicenseControlPerson(backendContext) {
       return await reports.notify(backendContext.db, batch, input, {
         projectId: backendContext.ENVIRONMENT.projectId,
         competition: async competitionId => {
-          const rows = await require("../../nap-portal-competitions").bounded(pool,
+          const rows = await require("../../nap-competition-query").bounded(pool,
             "SELECT c.id,c.comite,cp.mailtxt FROM competitions c FORCE INDEX (PRIMARY) LEFT JOIN compet_parametres cp ON cp.compet=c.id WHERE c.id=? LIMIT 2", [Number(competitionId)], 1);
           if (!rows.length) throw new TypeError("Compétition introuvable.");
-          return { regionId: require("../../nap-competition-scope").REGIONS[rows[0].comite] || "", computerEmail: backendContext.cleanText(rows[0].mailtxt) };
+          return { regionId: require("../../nap-competition-regions").REGIONS[rows[0].comite] || "", computerEmail: backendContext.cleanText(rows[0].mailtxt) };
         },
         directory: async () => {
           if ((await backendContext.engagementMailRecipientIndexStateRef(backendContext.db).get()).data()?.status !== "ready") throw new TypeError("Annuaire des destinataires indisponible ; aucune reconstruction automatique.");

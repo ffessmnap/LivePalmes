@@ -1,9 +1,9 @@
 "use strict";
 const {notMerged}=require("./nap-swimmer-merge-state");
-const {positiveId}=require("./nap-direct-calendar");
+const { positiveId } = require("./nap-calendar-values");
 const {selectionLockReason}=require("./nap-swimmer-entry-plan");
 const {readCategories}=require("./nap-entry-course-rules");
-const {nativeCourseCode}=require("./nap-portal-workspaces");
+const { nativeCourseCode } = require("./nap-competition-view-values");
 const {compact}=require("./nap-individual-entry-resolution");
 const {detail}=require("./nap-relay-details");
 const ABBR={P:"PO",B:"BE",M:"MI",C:"CA",J:"JE"};

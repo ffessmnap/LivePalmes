@@ -52,7 +52,7 @@ function createDirectoryService_cleanEngagementAccessRequestPayload(backendConte
   }
 
   async function findEngagementClubByFederalNumber(federalNumber = "") {
-    if (backendContext.ENVIRONMENT.sportingDataSource === "nap") return require("../../nap-club-access-request").findByFederalNumber(require("../../nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD), federalNumber);
+    if (backendContext.ENVIRONMENT.sportingDataSource === "nap") return require("../../nap-club-access-request").findByFederalNumber(require("../../nap-portal-pool").portalPool(process.env.LIVEPALMES_NAP_PASSWORD), federalNumber);
     const cleanNumber = backendContext.cleanText(federalNumber).toUpperCase().slice(0, 24);
     if (!cleanNumber) return null;
     const referenceClub = backendContext.CLUB_REFERENCE_BY_FEDERAL_NUMBER.get(cleanNumber);

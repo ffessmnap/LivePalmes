@@ -41,8 +41,8 @@ function createAccessService_engagementClubAccessContext(backendContext) {
     if (isSwitchingClub || regional) {
       if (backendContext.ENVIRONMENT.sportingDataSource === "nap") {
         try {
-          const pool = require("../../nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD);
-          activeClub = await require("../../nap-club-directory").findClub(pool, checkedClubId);
+          const pool = require("../../nap-portal-pool").portalPool(process.env.LIVEPALMES_NAP_PASSWORD);
+          activeClub = await require("../../nap-club-read-by-id").findClub(pool, checkedClubId);
         } catch (error) {
           throw new backendContext.HttpsError(error instanceof TypeError ? "invalid-argument" : "unavailable",
             error instanceof TypeError ? error.message : "Club NAP indisponible. Reessayez.");

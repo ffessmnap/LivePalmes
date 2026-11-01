@@ -4,12 +4,12 @@ function createEntryService_nativeClubEntryTimeHistory(backendContext) {
     const requestedCodes = new Set((Array.isArray(rawCodes) ? rawCodes : []).slice(0, 30)
       .map(value => backendContext.cleanText(value).toUpperCase().replace(/\s+/g, "")).filter(Boolean));
     try {
-      const pool = require("../../nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD);
+      const pool = require("../../nap-portal-pool").portalPool(process.env.LIVEPALMES_NAP_PASSWORD);
       const result = await require("../../nap-entry-time-preview").previewNativeTimes(pool,
         { competitionId, clubId: String(context.clubId), swimmerIds: [swimmerIndexId], enrolledOnly: true, includeIndividualEntries: true }, {
           authorize: ({ clubId }) => { if (String(clubId) !== String(context.clubId)) throw new backendContext.HttpsError("permission-denied", "Dossier hors du club autorise."); },
           preview: (person, rows, nativeCompetition, dossier) => {
-            const competition = require("../../nap-portal-workspaces").competitionItem(nativeCompetition, backendContext.ENGAGEMENT_EVENT_DEFINITION_BY_CODE);
+            const competition = require("../../nap-competition-view").competitionItem(nativeCompetition, backendContext.ENGAGEMENT_EVENT_DEFINITION_BY_CODE);
             if (!["manual", "default595999"].includes(competition.missingEntryTimeMode)) {
               throw new backendContext.HttpsError("failed-precondition", "La modification des temps n'est pas autorisee pour cette competition.");
             }

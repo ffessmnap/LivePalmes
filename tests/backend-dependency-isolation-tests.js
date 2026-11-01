@@ -17,11 +17,12 @@ input.source = fs.readFileSync("functions/index.js", "utf8");
 function operationFiles(directory) {
   if (!fs.existsSync(directory)) return [];
   return fs.readdirSync(directory, { withFileTypes: true }).flatMap(entry => {
+    if (entry.name === "node_modules") return [];
     const name = directory + "/" + entry.name;
-    return entry.isDirectory() ? operationFiles(name) : entry.isFile() && name.endsWith(".js") ? [name] : [];
+    return entry.isDirectory() ? operationFiles(name) : entry.isFile() && name.endsWith(".js") && name !== "functions/index.js" ? [name] : [];
   });
 }
-operationFiles("functions/backend").forEach(name => { input.files[name] = file(fs.readFileSync(name, "utf8")); });
+operationFiles("functions").forEach(name => { input.files[name] = file(fs.readFileSync(name, "utf8")); });
 for (const name of new Set([...Object.keys(input.files), ...isolated])) {
   const original = input.files[name];
   // Preserve JSON hashes; their source is intentionally absent from snapshots.

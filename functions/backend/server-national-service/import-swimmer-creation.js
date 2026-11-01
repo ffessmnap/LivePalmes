@@ -4,7 +4,7 @@ function createNationalService_importSwimmerCreation(backendContext) {
     if(backendContext.ENVIRONMENT.sportingDataSource!=="nap")throw new backendContext.HttpsError("failed-precondition","Source NAP requise.");
     try{return await require("../../nap-import-swimmer-creation").service({
       authorize:backendContext.authorizeNativePerformance,
-      getPool:()=>require("../../nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD),
+      getPool:()=>require("../../nap-portal-pool").portalPool(process.env.LIVEPALMES_NAP_PASSWORD),
       formatAlert:(match,type,clubId)=>{
         const {validationStatus,...alert}=backendContext.engagementNewSwimmerAlertFromMatch(match,{clubId},type);
         return alert;
