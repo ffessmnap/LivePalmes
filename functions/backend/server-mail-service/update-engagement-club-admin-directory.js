@@ -6,10 +6,12 @@ function createMailService_updateEngagementClubAdminDirectory(backendContext) {
     const key = (0, backendContext.local$engagementMailRecipientIndexKey)(uid);
     await db.runTransaction(async (transaction) => {
       const ref = (0, backendContext.local$engagementClubAdminDirectoryRef)(db);
-      const snapshot = await transaction.get(ref);
+      const [profile, snapshot] = await transaction.getAll(db.collection("users").doc(uid), ref);
       if (!snapshot.exists || snapshot.data()?.status !== "ready") return;
       const admins = { ...(snapshot.data()?.admins || {}) };
-      const entry = (0, backendContext.local$engagementClubAdminDirectoryEntry)(after || {});
+      const recipient = profile.exists && profile.data()?.status === "active"
+        ? (0, backendContext.local$engagementMailRecipientFromUserDoc)(profile) : null;
+      const entry = (0, backendContext.local$engagementClubAdminDirectoryEntry)(recipient || {});
       if (entry) admins[key] = entry;
       else delete admins[key];
       const byteLength = (0, backendContext.local$assertEngagementClubAdminDirectorySize)(admins);
@@ -20,7 +22,7 @@ function createMailService_updateEngagementClubAdminDirectory(backendContext) {
         byteLength,
         updatedAt: now
       }, { merge: false });
-    });
+    }, { maxAttempts: 5 });
   }
 
   return { updateEngagementClubAdminDirectory };

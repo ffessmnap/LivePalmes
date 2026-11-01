@@ -2,6 +2,14 @@
 
 <!-- description: Checklist de tests manuels à exécuter avant une publication ou après une modification sensible. -->
 
+## Préparation des 14 fusions de clubs — 31 octobre 2026
+
+Reprise conditionnelle du 1er novembre après PROD globale vérifiée : le complément administrateurs/destinataires utilise le profil courant avec transactions bornées. Ajouter `node tests/club-merge-projection-replay-tests.js` et `node tools/club-merge-projections.js` aux contrôles hors réseau. Exiger le même résultat sur le candidat CI/TEST, puis sa promotion exacte avant toute fusion. Budget complet du déclencheur : cinq lectures sans conflit, 25 au pire pour cinq tentatives sur chaque transaction ; aucun envoi réel ou invocation métier nécessaire. Les consignes de pause suivantes décrivent l'état initial du 31 octobre.
+
+Outil local uniquement, aucune exécution connectée dans la recette automatique. Voir [périmètre, budgets et procédure de reprise](NAP_FUSION_CLUBS.md). Les tests `club-merge-tests.js` et `club-merge-adapters-tests.js` couvrent les sauvegardes chiffrées rouvertes, interruptions application/restauration, accusés perdus, journal indisponible, clés composées, dérives, conservation des identités et droits, masques/versions Firestore, CAS SQL et suppression physique en dernier. Le test `node tools/club-merge-projections.js` est un diagnostic hors réseau du déclencheur réel : un refus indique un blocage métier à résoudre, pas une invitation à le contourner.
+
+Avant toute opération réelle : accord spécifique, protection des deux projections annexes et preuve de la version PROD, fenêtre exclusive établie, archives réelles sur deux emplacements privés et rouvertes avec la clé de reprise, privilèges/verrous SQL contrôlés. Ne pas utiliser une fusion réelle comme test automatique. Aucun déploiement TEST supplémentaire n'est demandé pour cet outillage ; Antoine a explicitement demandé de laisser TEST inchangé pendant la publication PROD en cours.
+
 ## Annuaire privé et événements retardés — 31 octobre 2026
 
 Fixtures hors réseau uniquement (`node tests/access-directory-event-order-tests.js`) : un profil courant sur le club conservé ne reprend jamais le club d'un ancien événement de connexion. Vérifier livraison en double, changement de profil entre lecture et validation de transaction, retour au rattachement précédent, suppression/recréation du profil et changement de région. Les anciennes régions sont nettoyées, les autres comptes conservés, les rôles/périmètres/statuts viennent du profil courant et ne sont jamais modifiés par la projection. Une panne de transaction remonte au déclencheur configuré pour réessayer ; aucun échec silencieux, reconstruction ou scan de comptes. Aucun test de fusion ni modification de compte réel n'est nécessaire pour cette recette.

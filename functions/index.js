@@ -3810,6 +3810,7 @@ function $serverMailService_engagementClubAdminDirectoryMap() {
 function $serverMailService_updateEngagementClubAdminDirectory() {
   if (!$serverMailService_updateEngagementClubAdminDirectory.instance) $serverMailService_updateEngagementClubAdminDirectory.instance = require("./backend/server-mail-service/update-engagement-club-admin-directory").createMailService_updateEngagementClubAdminDirectory({
     get cleanText() { return cleanText; },
+    get local$engagementMailRecipientFromUserDoc() { return $serverMailService_engagementMailRecipientFromUserDoc().engagementMailRecipientFromUserDoc; },
     get local$assertEngagementClubAdminDirectorySize() { return $serverMailService_assertEngagementClubAdminDirectorySize().assertEngagementClubAdminDirectorySize; },
     get local$engagementClubAdminDirectoryEntry() { return $serverMailService_assertEngagementClubAdminDirectorySize().engagementClubAdminDirectoryEntry; },
     get local$engagementClubAdminDirectoryRef() { return $serverMailService_assertEngagementClubAdminDirectorySize().engagementClubAdminDirectoryRef; },
@@ -8471,24 +8472,27 @@ exports.syncEngagementMailRecipientIndex = onDocumentWritten({
     now
   );
   const key = engagementMailRecipientIndexKey(uid);
-  const capabilities = new Set([...(before?.capabilities || []), ...(after?.capabilities || [])]);
-  if (capabilities.size) {
-    const batch = db.batch();
+  // Event capabilities are cleanup hints only. A transaction binds every
+  // shard update to the CURRENT profile, including concurrent scope changes.
+  await db.runTransaction(async (transaction) => {
+    const profile = await transaction.get(db.collection("users").doc(uid));
+    const current = profile.exists && profile.data()?.status === "active"
+      ? engagementMailRecipientFromUserDoc(profile) : null;
+    const capabilities = new Set([...(before?.capabilities || []), ...(after?.capabilities || []), ...(current?.capabilities || [])]);
     capabilities.forEach((capability) => {
       const shardNumber = engagementMailRecipientShardNumber(uid);
-      const value = after?.capabilities?.includes(capability) ? after : FieldValue.delete();
-      batch.set(engagementMailRecipientShardRef(db, capability, shardNumber), {
+      const value = current?.capabilities?.includes(capability) ? current : FieldValue.delete();
+      transaction.set(engagementMailRecipientShardRef(db, capability, shardNumber), {
         capability,
         shardNumber,
         recipients: { [key]: value },
         generatedAt: now
       }, { merge: true });
     });
-    await batch.commit();
-    await updateEngagementClubAdminDirectory(db, before, after, now).catch((error) => {
-      console.error("Mise à jour de l'annuaire privé des administrateurs impossible.", cleanText(error?.message || error));
-    });
-  }
+  }, { maxAttempts: 5 });
+  // The helper re-reads profile + directory together. Propagate its failure to
+  // the existing retry:true trigger; never acknowledge an incomplete update.
+  await updateEngagementClubAdminDirectory(db, before, after, now);
 });
 
 exports.rebuildEngagementMailRecipientIndexNextPage = onCall(CALLABLE_OPTIONS, /* extracted-handler: functions/backend/portal-competition-handlers/rebuild-engagement-mail-recipient-index-next-page.js#rebuildEngagementMailRecipientIndexNextPage#arrow */ async (request) => {
