@@ -106,7 +106,9 @@ async function run() {
     vm.runInNewContext(portal.slice(start, end), ui);
     await ui[name]();
     assert.deepEqual(apiCalls, [expectedCall]); assert.equal(finishes.length, 1);
-    assert.match(ui.elements.engagementsDocumentsSummary.textContent, /TEST.*12.*Aucun mail préparé ni envoyé/);
+    assert.match(ui.elements.engagementsDocumentsSummary.textContent, /Aperçu actuel : 12 destinataire\(s\) éligibles/);
+    assert.match(ui.elements.engagementsDocumentsSummary.textContent, /Cette vérification ne prépare ni n'envoie de mail et ne décrit pas les envois précédents/);
+    assert.doesNotMatch(ui.elements.engagementsDocumentsSummary.textContent, /TEST|Aucun mail préparé ni envoyé/);
     assert.equal(ui.elements.engagementsNotificationPreviewStatus.textContent, ui.elements.engagementsDocumentsSummary.textContent);
   }
   const html = fs.readFileSync("portail.html", "utf8");
