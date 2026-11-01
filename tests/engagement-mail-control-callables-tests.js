@@ -22,7 +22,7 @@ async function main(){
   Object.assign(sandbox,{cleanText:value=>String(value||''),FieldPath:{documentId:()=> '__name__'},ENGAGEMENT_MAIL_JOBS_COLLECTION:'engagementMailJobs',
     nativePortalCompetition:async(_id,authorize)=>{calls.push('NAP authorization');authorize({});},assertCanManageEngagementCompetition:()=>{},
     engagementMailJobItemFromData:(data,id)=>({...data,id}),db:{collection:name=>{calls.push(name);assert.equal(name,'engagementMailJobs');return query;}},
-    require:name=>name==='./nap-direct-calendar'?require('../functions/nap-direct-calendar'):control});
+    require:name=>['./nap-direct-calendar','./nap-calendar-values'].includes(name)?require('../functions/nap-direct-calendar'):control});
   vm.runInNewContext(endpoint('listEngagementCompetitionMailJobs'),sandbox);
   const result=await sandbox.exports.listEngagementCompetitionMailJobs({data:{competitionId:'legacy-nap-5162'}});
   assert.equal(calls[0],'NAP authorization');assert.equal(result.jobs[0].toEmail,'livepalmes@nap-ffessm.fr');assert.equal(result.hasMore,false);
