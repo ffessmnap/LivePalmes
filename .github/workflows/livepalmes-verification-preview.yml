@@ -55,6 +55,7 @@ jobs:
         uses: actions/setup-node@v7
         with:
           node-version: ${{ steps.node-version.outputs.version }}
+          check-latest: true
           cache: npm
           cache-dependency-path: |
             functions/package-lock.json
@@ -131,6 +132,7 @@ jobs:
         uses: actions/setup-node@v7
         with:
           node-version: ${{ steps.node-version.outputs.version }}
+          check-latest: true
           cache: npm
           cache-dependency-path: |
             functions/package-lock.json

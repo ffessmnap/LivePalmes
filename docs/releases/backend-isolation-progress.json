@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "objective": "Complete systematic backend dependency isolation, technically validated on exact TEST version, then handed off to Infra for authorized PROD publication",
-  "status": "captured-factories-final-isolation",
+  "status": "global-runtime-complete-test-validated-production-tooling-preparation",
   "startedAt": "2026-10-31T23:20:21Z",
   "baseline": {
     "main": "ac677ad530aab6b121b3a038accc0fb4860fa5e6",
@@ -54,12 +54,12 @@
     "First runtime lot applied behind divergence and path guards: 103 bodies in 72 operation groups; exact proof d2519c8bbca21dec61931a49ddb9dc5df65ed084a4c6148ffa0fd5459c7b042f",
     "First lot expanded to include shared import references required by PIN/console access: 155 unchanged bodies in 99 groups, exact proof 2bc0b74ef6c092da02ce7ce9466663a1cf6e180cf1a67d10678a49b3a5e1d45a",
     "Actual corrected partition: 635 unchanged bodies in 419 groups, 157 registrations preserved, runtime proof f2cb84441c5c21f1d465aa9c871d6b2a04899ee9e3e7a6a80122dcd03e4f9c81",
-    "Native lot #656 integrated: 34 components, 2902 declarations and 704 APIs preserved; exact PR CI 41267539078 successful"
+    "Native lot #656 integrated: 34 components, 2902 declarations and 704 APIs preserved; exact PR CI 41267539078 successful",
+    "All 157 Firebase exports and 438 actual factories audited: 705 unchanged moved bodies in 433 groups, 34 native components, no remaining artificial multi-consumer factory; final TEST 41271348708 successful"
   ],
   "next": [
-    "Finish PDF/legacy captured-parameter isolation with stable-root proof and exact capture compatibility",
-    "CI and exact TEST of final application candidate",
-    "Finalize the closed production equivalence proof, then authorized Infra publication",
+    "Required CI and merge of final proof tooling",
+    "Authorized Infra preflight/PROD publication and final checks",
     "After verified PROD, resume authorized Corbie prerequisite and clubs thread"
   ],
   "inventory": {
@@ -219,6 +219,18 @@
       "testHosting": "2f7c450377857de8",
       "updatedFunctions": 105,
       "conservedFunctions": 11
+    },
+    {
+      "phase": "captured-final",
+      "pr": 657,
+      "commit": "249b9068f4ba3c5044230ea9d38fab83a7a2ffea",
+      "prCi": 41270388203,
+      "mainCi": 41270946670,
+      "testRun": 41271348708,
+      "testHosting": "92bd73d2a28ab5be",
+      "updatedFunctions": 26,
+      "conservedFunctions": 90,
+      "status": "test-success-technical-validation"
     }
   ],
   "nativeReview": {
@@ -274,10 +286,7 @@
       }
     },
     "remaining": [
-      "Exact main CI and TEST for native lot",
-      "Merge the closed retained equivalence proof and historical migration pins",
-      "Authorized Infra PROD publication and final verification",
-      "After verified PROD, resume authorized Corbie prerequisite and clubs thread"
+      "Global production status is tracked in next and closedProductionCompatibility"
     ],
     "previewProof": {
       "declarations": 2902,
@@ -369,13 +378,16 @@
   "closedProductionCompatibility": {
     "contract": ".github/releases/evidence/20261101-backend-isolation-contract.json",
     "base": "6f76f7921d401cde1f45a5ce90acf5bbde097574",
-    "candidate": "468fe9163db117ebf27ba2665dfed7b0641b6623",
+    "candidate": "249b9068f4ba3c5044230ea9d38fab83a7a2ffea",
     "retainedFunctions": 16,
-    "status": "exact-integrated-candidate-offline-proof-success",
+    "status": "exact-final-integrated-candidate-offline-success",
     "networkCalls": 0,
     "factoryProofSha256": "f2cb84441c5c21f1d465aa9c871d6b2a04899ee9e3e7a6a80122dcd03e4f9c81",
     "nativeProofSha256": "e8e2492625a7f2c044d60bba2cd5ef7dfd23e11278c46a12cc36d80bd5d6dd3b",
-    "scope": "Native phase only; final captured candidate requires its additional proof and exact pair"
+    "scope": "One exact complete dependency migration, including captured factories; no excluded function deployment or business operation",
+    "capturedProofSha256": "90f497d405c70633af85278334d6c14469bf28fa3c5f64fee37adfeb4c7786b8",
+    "proofFile": "C:/Users/ITIFP/AppData/Local/Temp/livepalmes-global-final-offline-proof.json",
+    "toolingCi": "required-before-Infra-promotion"
   },
   "capturedReview": {
     "baseline": "468fe9163db117ebf27ba2665dfed7b0641b6623",
@@ -387,7 +399,7 @@
       "competitionImportParser: one real consumer set",
       "competitionStatistics: one real consumer set"
     ],
-    "status": "applied-targeted-checks-success",
+    "status": "exact-test-success-technical-validation",
     "reason": "Two retained captured factories still have multiple real consumer groups; finish them before global completion",
     "proof": {
       "bodies": 70,
@@ -400,6 +412,27 @@
     "remainingMultiConsumerFactories": 0,
     "totalDeliveredFactories": 438,
     "cumulativeMovedBodies": 705,
-    "cumulativeOperationGroups": 433
+    "cumulativeOperationGroups": 433,
+    "pr": 657,
+    "candidate": "249b9068f4ba3c5044230ea9d38fab83a7a2ffea",
+    "prCi": 41270388203,
+    "mainCi": 41270946670,
+    "testRun": 41271348708,
+    "testHosting": "92bd73d2a28ab5be",
+    "updatedFunctions": 26,
+    "conservedFunctions": 90
+  },
+  "capturedIsolationCommit": "249b9068f4ba3c5044230ea9d38fab83a7a2ffea",
+  "finalApplicationCandidate": "249b9068f4ba3c5044230ea9d38fab83a7a2ffea",
+  "runtimePatchAlignment": {
+    "observed": {
+      "mainApplication": "v22.23.3",
+      "test": "v22.23.4",
+      "repeatedVerificationSeconds": 402,
+      "mainRun": 41270946670,
+      "testRun": 41271348708
+    },
+    "correction": "Common workflows check latest available Node 22 patch instead of accepting divergent runner caches; exact Node/platform proof equality and full fallback unchanged",
+    "status": "prepared-for-required-CI"
   }
 }
