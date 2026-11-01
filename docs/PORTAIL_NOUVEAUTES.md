@@ -1,20 +1,34 @@
 # Nouveautés du portail
 
-<!-- description: Ajouter les prochains textes des nouveautés du portail après validation d’Antoine et confirmation de leur publication PROD. -->
+<!-- description: Consultation régionale et gestion nationale des nouveautés du portail, stockage Firestore, reprise de la première publication et budget borné. -->
 
 ## Fonctionnement
 
-L’entrée « Nouveautés », sous « Aide et retours », ouvre `#nouveautes` pour les capacités existantes `engagements.region.manage`, `engagements.national.manage` ou `admin.full`. Le lien et la navigation directe appliquent la même condition. Aucun droit serveur n’est ajouté. Les autres profils reviennent à la vue d’ensemble s’ils utilisent cette adresse.
+L’entrée « Nouveautés », sous « Aide et retours », ouvre `#nouveautes` pour les capacités existantes `engagements.region.manage`, `engagements.national.manage` ou `admin.full`. Le menu du compte conserve le même accès sur mobile. Les autres profils n’accèdent pas à cette vue.
 
-Sur mobile, le menu latéral est masqué par l’interface existante : le même lien est disponible dans le menu du compte, sous son aide, avec la même condition d’accès.
+Le format reste une date et une heure en gras, puis une liste de modifications, les publications les plus récentes en premier. Aucun titre supplémentaire, suivi de lecture, badge ou notification. Le niveau régional consulte uniquement. Le niveau national et les administrateurs complets peuvent ajouter, modifier et supprimer directement depuis la page. Une ligne de texte produit une puce ; le texte est affiché littéralement, jamais interprété comme HTML. La date est initialisée à l’heure courante lors d’un ajout et conservée lors d’une correction ; l’affichage utilise Europe/Paris.
 
-Le contenu est statique dans `portail.html`, section `adminNewsView`. Le dispositif commence vide, sans historique reconstitué. Aucun suivi de lecture, badge ou notification. Budget supplémentaire : zéro lecture Firestore/NAP, zéro écriture et zéro appel serveur à l’ouverture, par action, au retour/rafraîchissement et au pire cas ; seul le HTML déjà chargé est affiché.
+## Stockage et autorisation
 
-## Ajouter un texte
+`functions/portal-news.js` utilise le document `engagementConfigurations/portalNews` de la collection existante, via la seule callable `managePortalNews`. Aucun changement de règle Firestore, d’index, de capacité ou de collection. Les accès directs client restent interdits. Le profil actif en base prévaut sur les claims et les informations transmises par le navigateur ; les administrateurs historiques de la configuration serveur conservent leur accès.
 
-1. Préparer dans le bilan de la publication PROD un court texte compréhensible et la date prévue. Le faire valider explicitement par Antoine dans cette publication ; conserver le lien de cet accord et le périmètre dans la PR/le registre. Un brouillon reste dans le bilan, jamais dans la liste affichée sur TEST.
-2. Après réussite confirmée de la publication PROD, ajouter le texte validé dans `adminNewsPublishedEntries`, en tête (plus récent d’abord). Employer la date réelle de livraison, sans anticiper une date future. Conserver la preuve de publication et l’accord dans la PR/le registre. En cas de report, d’échec ou de retrait du périmètre, ne pas ajouter le texte.
-3. Pour le premier texte, remplacer le paragraphe d’état vide. Réutiliser un simple `<article>` avec un `<h3>`, un `<time datetime="AAAA-MM-JJ">` et un court `<p>`, sans nouveau composant ni dépendance. Les textes sont publics dans les sources : aucune information personnelle ou confidentielle.
-4. Livrer cette mise à jour par le circuit commun. Sur TEST, seuls les changements dont la PROD est déjà prouvée sont ainsi annoncés ; le texte devient visible en PROD lors de la publication Hosting suivante autorisée. Ce léger décalage évite toute annonce de livraison avant sa réussite effective. Vérifier les deux thèmes et les largeurs mobile/ordinateur. Ne jamais déduire une validation utilisateur d’un déploiement TEST.
+Chaque entrée conserve identifiant, date de publication, lignes de texte et, après modification, auteur/date de mise à jour. La révision de création départage les publications écrites à la même minute, sans faire remonter une ancienne publication lors de sa correction. Le document porte une révision : toute sauvegarde ou suppression exige la révision chargée et se déroule dans une transaction. Un conflit conserve le brouillon et demande une actualisation explicite ; aucune écriture n’est relancée automatiquement par le navigateur.
 
-Le dispositif initial utilise uniquement l’état vide pour la recette TEST. La publication PROD du dispositif reste soumise à l’accord Infra habituel.
+TEST utilise exclusivement le Firestore du projet `livepalmes-test`. Le futur déploiement PROD utilisera son propre document dans `livepalmes`, sans copie TEST → PROD. Aucun texte de recette TEST ne se retrouve automatiquement en PROD.
+
+## Première publication et suppressions
+
+La publication du 30 octobre 2026 à 19 h 39 est définie une seule fois dans le module serveur comme amorce. Tant que le document n’existe pas, la lecture retourne cette publication sans aucune écriture. La première sauvegarde ou suppression nationale crée atomiquement le document et applique l’action à cette amorce. Les consultations suivantes utilisent uniquement le document existant : une publication modifiée ou supprimée ne revient jamais, même après suppression de la dernière entrée. Aucune migration de données ni invocation métier n’est nécessaire au déploiement.
+
+## Budget de lectures et limites
+
+- Ouverture réelle de l’écran ou Actualiser : une lecture du profil actif et une lecture de contenu ; aucune requête de nouveautés au démarrage d’un autre écran. Les administrateurs historiques reconnus côté serveur n’exigent pas la lecture de profil.
+- Retour dans les 60 secondes : cache de session, zéro appel. Une requête déjà en cours est mutualisée. Changement de compte ou perte des droits : purge et invalidation des réponses en vol.
+- Ajout/correction/suppression : une lecture du profil, une lecture transactionnelle et une écriture. Cinq tentatives transactionnelles au maximum : six lectures et une écriture dans le pire cas. La réponse suffit à actualiser la liste, sans relecture supplémentaire.
+- Le document est borné à 200 entrées et 512 Kio sérialisés UTF-8 ; chaque publication à 8 000 caractères et 80 puces. Une limite atteinte demande de réduire le texte ou supprimer d’anciennes entrées ; aucun effacement automatique. Affichage par groupes de 20 à partir du document déjà lu, sans requête par ligne ou page. Le coût ne dépend pas du volume des clubs, comptes, performances ou compétitions. Aucun listener ni scan/reconstruction.
+
+## Vérification et publication
+
+`node tests/portal-news-tests.js` couvre le serveur réel avec stockage fictif : droits actuels, CRUD de l’amorce, ordre, conflits, suppressions persistantes et plafonds. `node tests/portal-news-browser-tests.js` couvre la navigation réelle, l’éditeur, les refus, le cache, le texte littéral, les confirmations et les deux thèmes à 390/1280 px, HTTPS externe bloqué. La CI globale obligatoire reste nécessaire avant intégration et TEST commun.
+
+Antoine publie les textes depuis son compte national, après avoir vérifié la réalité des changements annoncés. La mise en PROD du dispositif suit le circuit Infra habituel ; une livraison sur TEST n’est pas une validation utilisateur ni un accord PROD.

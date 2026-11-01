@@ -42,6 +42,7 @@ function runUnitTests() {
     "portal-directory-recovery-tests.js",
     "portal-module-boundaries-tests.js",
     "portal-cache-version-tests.js",
+    "portal-news-tests.js",
     "foreign-club-access-tests.js",
     "backend-module-boundaries-tests.js",
     "backend-dependency-isolation-tests.js",
@@ -433,6 +434,7 @@ function runBrowserSmokeIfRequested() {
   const requested = process.argv.includes("--browser") || process.env.LIVEPALMES_BROWSER_SMOKE === "1";
   if (!requested) return;
   printStep("Smoke test navigateur");
+  run(process.execPath, [path.join(rootDir, "tests", "portal-news-browser-tests.js")]);
   run(process.execPath, [path.join(rootDir, "tests", "nap-swimmer-merge-conflicts-browser-tests.js")]);
   run(process.execPath, [path.join(rootDir, "tests", "foreign-club-access-browser-tests.js")]);
   run(process.execPath, [path.join(rootDir, "tests", "portal-open-water-program-browser-tests.js")]);
