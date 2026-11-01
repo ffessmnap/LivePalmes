@@ -1,0 +1,161 @@
+{
+  "decisionWorkbookSha256": "698ded6b78fa1d8dd0c27c7db126488f15ccb886266498ce5f22237adcde5506",
+  "clubs": [
+    {
+      "num_club": 389,
+      "nom_club": "Alsace Nautile Club",
+      "abre_club": "ANC",
+      "federal_club": "06670000"
+    },
+    {
+      "num_club": 413,
+      "nom_club": "Alsace Nautile Club",
+      "abre_club": "ANC",
+      "federal_club": "06670236"
+    },
+    {
+      "num_club": 551,
+      "nom_club": "Club Oceanaute de Courbevoie",
+      "abre_club": "COC",
+      "federal_club": "07020161"
+    },
+    {
+      "num_club": 209,
+      "nom_club": "Club Océnanaute de Courbevoie",
+      "abre_club": "COC",
+      "federal_club": "07920161"
+    },
+    {
+      "num_club": 718,
+      "nom_club": "Chinon plongee",
+      "abre_club": "CP",
+      "federal_club": "Chinon plongee"
+    },
+    {
+      "num_club": 719,
+      "nom_club": "Chinon plongee",
+      "abre_club": "CP",
+      "federal_club": "27370203"
+    },
+    {
+      "num_club": 223,
+      "nom_club": "cSMB",
+      "abre_club": "CSMB",
+      "federal_club": "070000000"
+    },
+    {
+      "num_club": 444,
+      "nom_club": "Centre Sportif Municipal Bonneuil",
+      "abre_club": "CSMB",
+      "federal_club": "07940428"
+    },
+    {
+      "num_club": 457,
+      "nom_club": "club sous marin des trois vallées",
+      "abre_club": "CSMTV",
+      "federal_club": "0962064"
+    },
+    {
+      "num_club": 345,
+      "nom_club": "Club Sous Marin des Trois VAllées",
+      "abre_club": "CSMTV",
+      "federal_club": "09620064"
+    },
+    {
+      "num_club": 123,
+      "nom_club": "Club Subaquatique Orléanais",
+      "abre_club": "CSO",
+      "federal_club": "07450111"
+    },
+    {
+      "num_club": 278,
+      "nom_club": "Centre Subaquatique Orléanais",
+      "abre_club": "CSO",
+      "federal_club": "27450111"
+    },
+    {
+      "num_club": 382,
+      "nom_club": "FFESSM",
+      "abre_club": "FFESSM",
+      "federal_club": "9900005"
+    },
+    {
+      "num_club": 662,
+      "nom_club": "Club France - FFESSM",
+      "abre_club": "FFESSM",
+      "federal_club": "24010001"
+    },
+    {
+      "num_club": 532,
+      "nom_club": "Harpon Club Audois",
+      "abre_club": "HCA",
+      "federal_club": "08110146-OLD"
+    },
+    {
+      "num_club": 639,
+      "nom_club": "HARPON-CLUB AUDOIS-NARBONNE",
+      "abre_club": "HCA",
+      "federal_club": "08110146"
+    },
+    {
+      "num_club": 518,
+      "nom_club": "Jeux Subaquatiques du Canton de Corbie",
+      "abre_club": "JSCC",
+      "federal_club": "0980733"
+    },
+    {
+      "num_club": 126,
+      "nom_club": "Jeux Subaquatiques Canton de Corbie",
+      "abre_club": "JSCC",
+      "federal_club": "09800733"
+    },
+    {
+      "num_club": 664,
+      "nom_club": "LIEGE GRIVEGNEE MONOPALME",
+      "abre_club": "LGM",
+      "federal_club": "99999999"
+    },
+    {
+      "num_club": 45,
+      "nom_club": "Liège Grivegnée Monopalme",
+      "abre_club": "LGM",
+      "federal_club": "990001"
+    },
+    {
+      "num_club": 708,
+      "nom_club": "Nautilus Hasselt",
+      "abre_club": "NH",
+      "federal_club": "999999"
+    },
+    {
+      "num_club": 188,
+      "nom_club": "Nautilus-Hasselt",
+      "abre_club": "NH",
+      "federal_club": "990004"
+    },
+    {
+      "num_club": 651,
+      "nom_club": "OPEN",
+      "abre_club": "OPEN",
+      "federal_club": "OPEN"
+    },
+    {
+      "num_club": 220,
+      "nom_club": "OPEN",
+      "abre_club": "OPEN",
+      "federal_club": "98000001"
+    },
+    {
+      "num_club": 699,
+      "nom_club": "OPEN PASS",
+      "abre_club": "OPEN PASS",
+      "federal_club": "OPEN PASS"
+    },
+    {
+      "num_club": 698,
+      "nom_club": "OPEN PASS",
+      "abre_club": "OPEN PASS",
+      "federal_club": "OPEN PASS"
+    }
+  ]
+}
