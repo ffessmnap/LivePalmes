@@ -2,6 +2,12 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 1er novembre — Préparation des deux fusions Laon sans mutation Firebase
+
+- Demande d'Antoine : 677 → 500, puis confirmation de 558 « z » → 500 après constat de 14 performances et sept relais sur cette fiche. Cible, compte et droits de 500 inchangés. Audit réel : aucun lien Firebase/projection sur les deux sources ; 37 lignes à transférer et deux sources à supprimer en dernier. Aucun transfert exécuté à ce stade.
+- Outil local SQL seul et manifeste explicite, réutilisant adaptateurs, chiffrement, verrous, journal et contrôles d'images existants ; les adaptateurs gardent leur périmètre historique par défaut et acceptent un périmètre borné explicite. Refus de tout compte/droit/demande/projection sur une source, collisions, dérives et dépendances sensibles. Firebase en lecture seule, aucun changement serveur ou déploiement TEST/PROD. [Budget et procédure](../NAP_FUSION_CLUBS.md).
+- Tests ciblés hors réseau réussis : 39 frontières d'interruption, reprise/restauration, cible conservée, absence de mutation Firebase, sauvegarde altérée et périmètres SQL/Firestore ; tests du lot initial conservés. CI globale requise dans la PR. Sauvegardes réelles indépendantes et fenêtre exclusive à établir avant exécution ; aucun accord historique de pause/restauration réutilisé implicitement.
+
 ### 1er novembre — Les 14 fusions de clubs réellement exécutées
 
 - Accord final direct d'Antoine pour les fusions, la pause temporaire du Portail/notifications, le rétablissement et la restauration ciblée en cas d'incident ; accord transmis et enregistré dans Infra, sans publication concurrente. Préalable Corbie PROD #651 réutilisé ; outil local [#660](https://github.com/ffessmnap/LivePalmes/pull/660), [CI main réussie](https://github.com/ffessmnap/LivePalmes/actions/runs/41284545755). Aucun nouveau déploiement TEST/PROD ni changement applicatif.
