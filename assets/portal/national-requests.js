@@ -937,7 +937,7 @@
             if(section.hidden)return;
             const session=form.dataset.correctionSession,scope=portalState.engagementClubPeopleRequestVersion;
             const current=()=>!section.hidden&&form.dataset.napSource==="true"&&form.dataset.correctionSession===session&&scope===portalState.engagementClubPeopleRequestVersion&&portalContext.elements.engagementsSwimmerCorrectionDialog?.open;
-            let saved=null,pending=false,busy=true;
+            let saved={swimmer},pending=false,busy=false;
             const update=()=>{
               checkbox.disabled=busy||!saved?.swimmer?.nsAvailable||pending;
               section.setAttribute("aria-busy",String(busy));
@@ -956,11 +956,7 @@
               const text=!result.swimmer.nsAvailable?"Statut NS indisponible. Les autres modifications restent disponibles.":pending?"Retrait NS en attente de validation nationale. Le nageur reste NS.":rejected?"Retrait NS refusé. Le nageur reste NS."+(result.nsRequest.resolutionNote?" Motif : "+result.nsRequest.resolutionNote:""):announce?"Statut NS enregistré.":"";
               feedback(text,!result.swimmer.nsAvailable||rejected?"warning":"ok");
             };
-            feedback("Chargement du statut NS…","loading",true);update();
-            portalActions.callFunction("requestEngagementClubSwimmerChange",{nsAction:"read",swimmerId:String(swimmer.id||swimmer.swimmerIndexId)})
-              .then(result=>{if(current())display(result);})
-              .catch(error=>{if(current())feedback("Statut NS indisponible : "+(error?.message||error)+". Les autres modifications restent disponibles.","error");})
-              .finally(()=>{if(current()){busy=false;update();}});
+            feedback(swimmer.nsAvailable?"":"Statut NS indisponible. Les autres modifications restent disponibles.",swimmer.nsAvailable?"ok":"warning");update();
             checkbox.onchange=async event=>{
               event.stopPropagation();
               if(busy||pending||!saved||form.getAttribute("aria-busy")==="true"){
@@ -976,7 +972,7 @@
                 display(result,true);portalState.engagementSwimmerChangeRequestsLoaded=false;portalState.portalPendingOverviewLoaded=false;
               }catch(error){if(current()){
                 checkbox.checked=saved.swimmer.nonSelectable===true;saved=null;
-                feedback("Statut NS à vérifier : "+(error?.message||error)+". Fermez puis rouvrez la fiche avant de réessayer.","error");
+                feedback("Statut NS à vérifier : "+(error?.message||error)+". Actualisez Mes nageurs avant de réessayer.","error");
               }}finally{if(current()){
                 busy=false;delete form.dataset.nsSaving;portalActions.setFormPending(form,false);
                 if(portalContext.elements.engagementsSwimmerCorrectionSubmit)delete portalContext.elements.engagementsSwimmerCorrectionSubmit.dataset.idleLabel;

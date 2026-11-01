@@ -2,6 +2,10 @@
 
 <!-- description: Référence du langage visuel, des composants d’interface et des règles responsive déjà présents dans LivePalmes. -->
 
+## Colonne NS de Mes nageurs — 1er novembre 2026
+
+Mes nageurs affiche une colonne NS de 32 px sur ordinateur, entre Licence et Action. La cellule indique uniquement « NS » si le champ natif est actif et reste vide sinon. Le nom ne porte plus de suffixe NS. Sur mobile, l'information apparaît dans le détail déplié, uniquement pour un nageur NS. La grille conserve ses lignes de 42 px et son défilement horizontal ; les actions tactiles existantes restent accessibles.
+
 ## Licence facultative des demandeurs CMAS — 1er novembre 2026
 
 Les sélecteurs de rattachement des comptes proposent « Clubs étrangers (CMAS) ». Dans la demande publique et son examen administratif, le champ devient « Licence (facultative) » pour ce choix, avec une aide sous le champ précisant l'absence d'obligation FFESSM et le traitement national. Revenir à une région française rétablit immédiatement « Licence FFESSM » et le caractère obligatoire. Les styles et la grille du formulaire existant sont conservés ; l'aide reste lisible à 320 px.

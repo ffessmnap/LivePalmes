@@ -58,6 +58,7 @@
           <span role="columnheader">Sexe</span>
           <span role="columnheader">Cat.</span>
           <span role="columnheader">Licence</span>
+          <span role="columnheader">NS</span>
           <span role="columnheader">Action</span>
         </div>
         ${swimmers.map((swimmer, index) => {
@@ -72,7 +73,7 @@
           const licenseStatusIndicator = portalActions.engagementSwimmerLicenseStatusIndicator(swimmer, swimmer);
           const profileButton = `
         <button class="admin-engagements-club-swimmers-directory-name-button" type="button" title="Voir la fiche publique de ${portalActions.escapeHtml(name)}" aria-label="Voir la fiche publique de ${portalActions.escapeHtml(name)}" data-engagement-club-swimmer-public-profile="${portalActions.escapeHtml(publicProfileUrl)}" data-engagement-club-swimmer-public-name="${portalActions.escapeHtml(name)}">
-          <strong>${portalActions.escapeHtml(name)}${swimmer.nonSelectable === true ? " · NS" : ""}</strong>
+          <strong>${portalActions.escapeHtml(name)}</strong>
           <svg class="admin-engagements-club-swimmers-directory-profile-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 5h5v5M19 5l-7 7"></path><path d="M17 13v5a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1h5"></path></svg>
         </button>`;
           const correctionAction = changePending
@@ -112,6 +113,7 @@
             <span class="admin-engagements-club-swimmer-license-cell" role="cell">${swimmer.licenseNumber
                   ? `<span class="admin-engagements-club-swimmers-directory-license-content"><span class="admin-engagements-club-swimmer-license-value">${portalActions.escapeHtml(swimmer.licenseNumber)}</span>${licenseStatusIndicator}</span>`
                   : '<span class="admin-engagements-club-swimmers-directory-license-missing">Licence à renseigner</span>'}</span>
+            <span role="cell" class="admin-engagements-club-swimmers-directory-ns"${swimmer.nonSelectable === true ? ' title="Non sélectionnable"' : ""}>${swimmer.nonSelectable === true ? "NS" : ""}</span>
             <span role="cell" class="admin-engagements-club-swimmers-directory-actions">
               ${activityAction}${correctionAction}${duplicateAction}${deletionAction}
             </span>
