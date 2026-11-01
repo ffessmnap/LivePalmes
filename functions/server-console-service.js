@@ -1,133 +1,63 @@
-// Preserve the execution mode of the existing index.js function bodies.
-
-// Private existing helpers; live services/state are supplied by index.js.
-// Module creation performs no external operation.
+// Compatibility factory; operation modules hold the existing bodies.
 function createConsoleService(backendContext) {
-  async function recordFailedPinAttempt(ref, details = {}) {
-    const now = new Date();
-    const nowIso = now.toISOString();
-    let blockedSeconds = 0;
-    await backendContext.db.runTransaction(async (transaction) => {
-      const snapshot = await transaction.get(ref);
-      const previous = snapshot.exists ? snapshot.data() || {} : {};
-      const wasLocked = backendContext.lockRemainingSeconds(previous, now.getTime()) > 0;
-      if (wasLocked) {
-        blockedSeconds = backendContext.lockRemainingSeconds(previous, now.getTime());
-        return;
-      }
-      const failedCount = Number(previous.failedCount || 0) + 1;
-      const previousLockLevel = Number(previous.lockLevel || 0);
-      const payload = {
-        clientIdHash: backendContext.stableHash(details.clientId || ""),
-        failedCount,
-        lastFailedAt: nowIso,
-        role: details.role,
-        uid: details.uid,
-        uidHash: backendContext.stableHash(details.uid || ""),
-        updatedAt: nowIso
-      };
-      if (failedCount >= backendContext.PIN_MAX_FAILED_ATTEMPTS) {
-        const lockLevel = Math.min(previousLockLevel + 1, backendContext.PIN_LOCK_MS_BY_LEVEL.length);
-        const lockMs = backendContext.PIN_LOCK_MS_BY_LEVEL[Math.max(0, lockLevel - 1)] || backendContext.PIN_LOCK_MS_BY_LEVEL[backendContext.PIN_LOCK_MS_BY_LEVEL.length - 1];
-        const lockedUntil = new Date(now.getTime() + lockMs);
-        payload.failedCount = 0;
-        payload.lockLevel = lockLevel;
-        payload.lockedAt = nowIso;
-        payload.lockedUntil = lockedUntil.toISOString();
-        blockedSeconds = Math.ceil(lockMs / 1000);
-      } else {
-        payload.lockLevel = previousLockLevel;
-        payload.lockedUntil = "";
-      }
-      transaction.set(ref, payload, { merge: true });
+  let cache0;
+  function operation0() {
+    if (!cache0) cache0 = require("./backend/server-console-service/assert-console-portal-access").createConsoleService_assertConsolePortalAccess({
+      get ADMIN_UIDS() { return backendContext.ADMIN_UIDS; },
+      set ADMIN_UIDS(value) { backendContext.ADMIN_UIDS = value; },
+      get HttpsError() { return backendContext.HttpsError; },
+      set HttpsError(value) { backendContext.HttpsError = value; },
+      get PIN_LOCK_MS_BY_LEVEL() { return backendContext.PIN_LOCK_MS_BY_LEVEL; },
+      set PIN_LOCK_MS_BY_LEVEL(value) { backendContext.PIN_LOCK_MS_BY_LEVEL = value; },
+      get PIN_MAX_FAILED_ATTEMPTS() { return backendContext.PIN_MAX_FAILED_ATTEMPTS; },
+      set PIN_MAX_FAILED_ATTEMPTS(value) { backendContext.PIN_MAX_FAILED_ATTEMPTS = value; },
+      get cleanText() { return backendContext.cleanText; },
+      set cleanText(value) { backendContext.cleanText = value; },
+      get db() { return backendContext.db; },
+      set db(value) { backendContext.db = value; },
+      get hasConsolePortalCapability() { return backendContext.hasConsolePortalCapability; },
+      set hasConsolePortalCapability(value) { backendContext.hasConsolePortalCapability = value; },
+      get lockMessage() { return backendContext.lockMessage; },
+      set lockMessage(value) { backendContext.lockMessage = value; },
+      get lockRemainingSeconds() { return backendContext.lockRemainingSeconds; },
+      set lockRemainingSeconds(value) { backendContext.lockRemainingSeconds = value; },
+      get stableHash() { return backendContext.stableHash; },
+      set stableHash(value) { backendContext.stableHash = value; }
     });
-    if (blockedSeconds > 0) {
-      throw new backendContext.HttpsError("resource-exhausted", backendContext.lockMessage(blockedSeconds), { retryAfterSeconds: blockedSeconds });
-    }
+    return cache0;
   }
 
-  async function clearPinAttempts(ref) {
-    await ref.delete().catch(() => {});
-  }
-
-  async function updatePublicPinNotes(competitionId, enabled) {
-    const now = new Date().toISOString();
-    const ref = backendContext.liveDataRef(competitionId);
-    await backendContext.db.runTransaction(async (transaction) => {
-      const snapshot = await transaction.get(ref);
-      const current = snapshot.exists ? snapshot.data() : {};
-      const liveData = current.data || {};
-      const notes = { ...(liveData.notes || {}) };
-      delete notes.rolePins;
-      notes.pinAuthMode = "cloud";
-      notes.pinLockEnabled = Boolean(enabled);
-      notes.pinLockUpdatedAt = now;
-      transaction.set(ref, {
-        data: {
-          ...liveData,
-          notes,
-          sourceVersion: `cloud-pins-${Date.now()}`
-        },
-        updatedAt: now,
-        source: enabled ? "Codes PIN securises" : "Codes PIN desactives"
-      }, { merge: true });
+  let cache1;
+  function operation1() {
+    if (!cache1) cache1 = require("./backend/server-console-service/update-public-pin-notes").createConsoleService_updatePublicPinNotes({
+      get db() { return backendContext.db; },
+      set db(value) { backendContext.db = value; },
+      get liveDataRef() { return backendContext.liveDataRef; },
+      set liveDataRef(value) { backendContext.liveDataRef = value; }
     });
+    return cache1;
   }
 
-  async function assertConsolePortalAccess(request) {
-    const uid = backendContext.cleanText(request.auth?.uid);
-    if (!uid) {
-      throw new backendContext.HttpsError("unauthenticated", "Connexion au portail LivePalmes requise.");
-    }
-    if (backendContext.ADMIN_UIDS.has(uid)) return;
-    const token = request.auth?.token || {};
-    if (token.livepalmesAccess !== true || !backendContext.hasConsolePortalCapability(token.livepalmesCapabilities || {})) {
-      throw new backendContext.HttpsError("permission-denied", "Acces aux consoles LivePalmes requis.");
-    }
-    const snapshot = await backendContext.db.collection("users").doc(uid).get();
-    const data = snapshot.exists ? snapshot.data() || {} : {};
-    if (!snapshot.exists || data.status !== "active" || !backendContext.hasConsolePortalCapability(data.capabilities || {})) {
-      throw new backendContext.HttpsError("permission-denied", "Acces aux consoles LivePalmes inactif.");
-    }
+  let cache2;
+  function operation2() {
+    if (!cache2) cache2 = require("./backend/server-console-service/assert-computer-pdf-access").createConsoleService_assertComputerPdfAccess({
+      get ADMIN_UIDS() { return backendContext.ADMIN_UIDS; },
+      set ADMIN_UIDS(value) { backendContext.ADMIN_UIDS = value; },
+      get HttpsError() { return backendContext.HttpsError; },
+      set HttpsError(value) { backendContext.HttpsError = value; },
+      get cleanText() { return backendContext.cleanText; },
+      set cleanText(value) { backendContext.cleanText = value; },
+      get consoleGrantRef() { return backendContext.consoleGrantRef; },
+      set consoleGrantRef(value) { backendContext.consoleGrantRef = value; }
+    });
+    return cache2;
   }
-
-  async function assertComputerPdfAccess(request, competitionId) {
-    const uid = backendContext.cleanText(request.auth?.uid);
-    if (!uid) throw new backendContext.HttpsError("unauthenticated", "Connexion Firebase requise.");
-    const token = request.auth?.token || {};
-    const capabilities = token.livepalmesCapabilities || {};
-    if (backendContext.ADMIN_UIDS.has(uid) || capabilities["admin.full"] === true) return;
-    if (
-      token.livepalmesAccess !== true
-      || token.livepalmesConsoleAccess !== true
-      || token.livepalmesConsole !== true
-      || token.livepalmesRole !== "computer"
-      || token.livepalmesCompetition !== competitionId
-    ) {
-      throw new backendContext.HttpsError("permission-denied", "Acces bureau des performances requis.");
-    }
-    const grantSnapshot = await backendContext.consoleGrantRef(competitionId, uid).get();
-    const grant = grantSnapshot.exists ? grantSnapshot.data() || {} : {};
-    const expiresAtMs = typeof grant.expiresAt?.toMillis === "function"
-      ? grant.expiresAt.toMillis()
-      : Date.parse(grant.expiresAt || "");
-    if (
-      !grantSnapshot.exists
-      || grant.role !== "computer"
-      || grant.competitionId !== competitionId
-      || !Number.isFinite(expiresAtMs)
-      || expiresAtMs <= Date.now()
-    ) {
-      throw new backendContext.HttpsError("permission-denied", "Autorisation bureau des performances expiree.");
-    }
-  }
-
   return {
-    recordFailedPinAttempt,
-    clearPinAttempts,
-    updatePublicPinNotes,
-    assertConsolePortalAccess,
-    assertComputerPdfAccess
+    recordFailedPinAttempt: operation0().recordFailedPinAttempt,
+    clearPinAttempts: operation0().clearPinAttempts,
+    updatePublicPinNotes: operation1().updatePublicPinNotes,
+    assertConsolePortalAccess: operation0().assertConsolePortalAccess,
+    assertComputerPdfAccess: operation2().assertComputerPdfAccess
   };
 }
 
