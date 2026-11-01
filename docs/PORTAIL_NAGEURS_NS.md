@@ -4,6 +4,8 @@
 
 ## Périmètre et état
 
+Évolution demandée le 1er novembre : le champ natif déjà renvoyé par l'effectif alimente une colonne NS (vide sinon) sur ordinateur et le détail déplié sur mobile. Le crayon utilise immédiatement ce même statut et son empreinte ; aucune recherche de demande de retrait n'est lancée à son ouverture. L'envoi d'une demande et la décision nationale conservent leurs contrôles serveur, dont le refus d'une demande déjà en cours. Le retour de l'action reste affiché dans la fiche.
+
 Chantier 3/3 autorisé par Antoine le 29 octobre 2026, code destiné à TEST. Dans Mes nageurs, le crayon existant affiche « Nageur étranger » et la case « Non sélectionnable (NS) » à côté du numéro de licence, dans le bloc Identité. Le visuel compact a été validé par Antoine le 30 octobre ; aucun bouton NS dédié. Cocher ou décocher déclenche directement l’appel serveur existant. Les droits club existants s’appliquent ; aucun nouveau droit n’est créé. Les responsables régionaux utilisent le contexte club déjà autorisé.
 
 NAP/MySQL est la source réelle des nageurs. Le [diagnostic de métadonnées en lecture seule](https://github.com/ffessmnap/LivePalmes/actions/runs/40956880950) confirme les onze colonnes natives de `nageurs` et l’absence de champ NS. Aucun sens nouveau n’est attribué à `wc` ou `edf`. Les deux colonnes facultatives ont été créées le 30 octobre après accord spécifique : [preuve de migration](https://github.com/ffessmnap/LivePalmes/pull/626#issuecomment-6516336806). Sauvegardes chiffrées rouvertes, 16 232 lignes et onze champs historiques préservés, nouvelles valeurs entièrement NULL. Aucune migration n’est lancée par le code, une ouverture de fiche ou un déploiement.
@@ -31,7 +33,7 @@ Budgets additionnels, hors contrôles d’accès existants et fonctionnement inc
 | Situation | Coût supplémentaire maximal |
 | --- | --- |
 | Ouverture/rafraîchissement de Mes nageurs | Aucune requête ni lecture Firestore ajoutée. La même requête club bornée à 801 lignes lit la ligne native, dont les deux petits scalaires NS lorsqu’ils existent. Projection publique de réponse explicitement filtrée par `person()`. Cache de liste existant conservé. |
-| Crayon d’un nageur | Un appel existant avec action NS, une lecture NAP par clé primaire, un document Firestore de demande à identifiant déterministe. Si structure absente : zéro lecture Firestore de demande. Aucun chargement par ligne de la liste. |
+| Crayon d’un nageur | Aucun appel ni lecture supplémentaire : statut et empreinte de la liste déjà chargée. Aucune recherche de demande en cours. Aucun chargement par ligne. |
 | Cocher NS | Cinq requêtes SQL au maximum : trois lectures d’un nageur, un contrôle de déclencheur borné à un résultat, une mise à jour limitée à une ligne. Une lecture d’audit et deux écritures d’audit au maximum hors mécanisme d’audit existant. La réponse actualise le cache sans relire l’effectif. |
 | Demander le retrait | Une lecture NAP par clé ; une transaction sur un document de demande et une trace d’audit. Zéro écriture NAP. |
 | Décision nationale | Circuit existant : verrou/release SQL ; approbation : deux lectures par clé, un contrôle de déclencheur, une mise à jour limitée à une ligne ; refus : zéro écriture NAP. Un document de demande, une sauvegarde et les traces d’audit ; reprises de transaction limitées à trois. |

@@ -497,8 +497,8 @@
 }
 
 #adminEngagementsClubSwimmersPanel .admin-engagements-club-swimmers-directory-row {
-  grid-template-columns: minmax(210px, 1.4fr) 92px 48px 54px minmax(110px, 0.7fr) 166px;
-  min-width: 796px;
+  grid-template-columns: minmax(210px, 1.4fr) 92px 48px 54px minmax(110px, 0.7fr) 32px 166px;
+  min-width: 828px;
   min-height: 42px;
   border: 0;
   border-top: 1px solid #e7ecee;
@@ -511,7 +511,7 @@
   display: flex;
   gap: 5px;
   align-items: center;
-  min-width: 796px;
+  min-width: 828px;
   padding: 4px 12px;
   border-top: 1px solid #d9e2e4;
   background: #f5f8f8;
@@ -1511,7 +1511,8 @@
 
   #adminEngagementsClubSwimmersPanel .admin-engagements-club-swimmers-directory-details > span:nth-child(3),
   #adminEngagementsClubSwimmersPanel .admin-engagements-club-swimmers-directory-details > span:nth-child(4),
-  #adminEngagementsClubSwimmersPanel .admin-engagements-club-swimmers-directory-details > span:nth-child(6) {
+  #adminEngagementsClubSwimmersPanel .admin-engagements-club-swimmers-directory-details > span:nth-child(7),
+  #adminEngagementsClubSwimmersPanel .admin-engagements-club-swimmers-directory-details > .admin-engagements-club-swimmers-directory-ns:empty {
     display: none;
   }
 
@@ -1539,7 +1540,7 @@
     content: "Licence";
   }
 
-  #adminEngagementsClubSwimmersPanel .admin-engagements-club-swimmers-directory-details > span:nth-child(6)::before {
+  #adminEngagementsClubSwimmersPanel .admin-engagements-club-swimmers-directory-details > span:nth-child(7)::before {
     content: "Action";
   }
 

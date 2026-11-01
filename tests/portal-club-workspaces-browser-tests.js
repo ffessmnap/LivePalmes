@@ -64,6 +64,7 @@ const dialogEvents=events.slice(events.indexOf('        portalContext.elements.e
     addEventListener('hashchange',()=>actions.updateNavigationView());
    });
    await page.evaluate(source=>new Function('portalContext','portalActions','portalState','global',source)(clubContext,clubActions,clubContext.state,window),dialogEvents);
+   await page.evaluate(source=>new Function('portalContext','portalActions','portalState','global',source)(clubContext,clubActions,clubContext.state,window),events.slice(events.indexOf('        portalContext.elements.engagementsClubSwimmersDirectoryList?.addEventListener("click"'),events.indexOf('        portalContext.elements.engagementsSwimmerCorrectionForm?.addEventListener("submit"')));
    await page.evaluate(source=>new Function('portalContext','portalActions','portalState','global',source)(clubContext,clubActions,clubContext.state,window),events.slice(events.indexOf('        portalContext.elements.engagementsClubPeopleList?.addEventListener(\"click\"'),events.indexOf('        portalContext.elements.engagementsDetailClose?.addEventListener')));
    const button=page.locator('#adminEngagementsClubSwimmersDirectoryAddButton');await button.waitFor({state:'visible'});
    const before=await page.evaluate(()=>clubCalls.length);await button.click();
@@ -91,7 +92,21 @@ const dialogEvents=events.slice(events.indexOf('        portalContext.elements.e
     await page.evaluate(hash=>{history.replaceState(null,'',hash);clubActions.updateNavigationView();if(hash==='#club-nageurs')clubActions.renderEngagementClubSwimmersDirectory();if(hash==='#club-officiels')clubActions.renderEngagementClubPeople();},hash);
     metrics.push(await page.locator('#adminEngagementsViewTitle').evaluate(el=>({size:getComputedStyle(el).fontSize,weight:getComputedStyle(el).fontWeight,head:el.parentElement.getBoundingClientRect().height,border:getComputedStyle(el.parentElement).borderTopWidth,background:getComputedStyle(el.parentElement).backgroundColor})));
     assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,'No page overflow '+width+' '+hash);
+    if(hash==='#club-nageurs'){
+     assert.equal(await page.locator('[role="columnheader"]').filter({hasText:/^NS$/}).count(),1);
+     const ns=page.locator('.admin-engagements-club-swimmers-directory-ns');assert.equal(await ns.count(),70);
+     assert.equal((await ns.allTextContents()).filter(Boolean).length,1,'Non-NS cells stay empty');
+     const marked=ns.filter({hasText:/^NS$/});assert.equal(await marked.textContent(),'NS');
+     assert.equal(await page.locator('.admin-engagements-club-swimmers-directory-name-button').filter({hasText:/ · NS/}).count(),0);
+     if(width<=700){
+      const row=page.locator('.admin-engagements-club-swimmers-directory-row').filter({has:marked});
+      assert.equal(await marked.isVisible(),false);await row.locator('[data-engagement-club-swimmer-directory-toggle]').click();assert.equal(await marked.isVisible(),true);
+      const ordinary=page.locator('.admin-engagements-club-swimmers-directory-row').filter({has:page.locator('.admin-engagements-club-swimmers-directory-ns:empty')}).first();
+      await ordinary.locator('[data-engagement-club-swimmer-directory-toggle]').click();assert.equal(await ordinary.locator('.admin-engagements-club-swimmers-directory-ns').isVisible(),false);
+     }else assert.equal(await marked.isVisible(),true);
+    }
     if(hash!=='#club-competitions'){
+
      if(width>700){
       const rows=await page.locator('[role="table"][aria-label="'+(hash==='#club-nageurs'?'Mes nageurs':'Mes officiels')+'"] > [role="row"]:not(:has([role="columnheader"]))').evaluateAll(rows=>rows.filter(row=>row.querySelector('[role="cell"]')).map(row=>{const r=row.getBoundingClientRect();return {h:r.height,cells:[...row.querySelectorAll('[role="cell"]')].filter(c=>c.getBoundingClientRect().height>0).map(c=>{const b=c.getBoundingClientRect();return {top:b.top-r.top,bottom:b.bottom-r.bottom,actionsFit:[...c.querySelectorAll('button')].every(button=>{const a=button.getBoundingClientRect();return a.left>=b.left-1&&a.right<=b.right+1&&a.top>=b.top-1&&a.bottom<=b.bottom+1;})};})};}));
       assert.equal(rows.length,70);assert(rows.every(r=>r.h===42),'Same compact row height '+width+' '+hash+' '+JSON.stringify(rows.map(r=>r.h)));
