@@ -12,14 +12,16 @@ function localKey(file) {
   return key;
 }
 async function connect(env=process.env) {
-  if (!env.NAP_DB_PASSWORD) p.fail("NAP_CREDENTIALS_REQUIRED");
-  const admin = require("../functions/node_modules/firebase-admin");
-  const credential = admin.credential.applicationDefault();
+  if (!env.NAP_DB_PASSWORD && env.CLUB_MERGE_LOAD_NAP_SECRET !== "1") p.fail("NAP_CREDENTIALS_REQUIRED");
+  const auth=require("./club-merge-auth");
+  const token=auth.tokenProvider({mode:env.CLUB_MERGE_AUTH_MODE || "adc",account:env.CLUB_MERGE_GCLOUD_ACCOUNT || ""});
+  let password=env.NAP_DB_PASSWORD || await auth.existingNapPassword(token);
   const {napPoolOptions} = require("../functions/nap-mysql");
-  const {connectionLimit,waitForConnections,queueLimit,...options} = napPoolOptions(env.NAP_DB_PASSWORD);
+  const {connectionLimit,waitForConnections,queueLimit,...options} = napPoolOptions(password);
   const connection = await require("../functions/node_modules/mysql2/promise").createConnection(options);
+  password="";
   const sql = require("./club-merge-sql").adapter(connection);
-  const firestore = require("./club-merge-firestore").adapter(async () => (await credential.getAccessToken()).access_token);
+  const firestore = require("./club-merge-firestore").adapter(token);
   async function capture() {
     const meta = await sql.metadata(), rows = await sql.rows(meta), imports = await sql.imports(rows), firebase = await firestore.inventory(rows);
     const projectionRows = rows.livepalmes_club_account_emails;
@@ -33,7 +35,7 @@ function summary(plan) {
 }
 async function main(args=process.argv.slice(2)) {
   if (!args.length || args[0] === "--help") {
-    console.log("Preparation: node tools/club-merge.js --prepare <operation> <archive-privee> <copie-durable>\nVerification hors reseau: --verify-backup <archive> <copie>\nSimulation fraiche sans ecriture: --check <archive> <copie>\nExecution future apres accord: --apply|--restore <archive> <copie> <preuves.json> <journal-prive>\nCLUB_MERGE_KEY_FILE: cle existante privee ; NAP_DB_PASSWORD + ADC seulement pour les modes connectes. Aucun mode par defaut ne contacte une base.");
+    console.log("Preparation: node tools/club-merge.js --prepare <operation> <archive-privee> <copie-durable>\nVerification hors reseau: --verify-backup <archive> <copie>\nSimulation fraiche sans ecriture: --check <archive> <copie>\nExecution future apres accord: --apply|--restore <archive> <copie> <preuves.json> <journal-prive>\nCLUB_MERGE_KEY_FILE: cle privee ; NAP_DB_PASSWORD + ADC pour les modes connectes. Option explicite : CLUB_MERGE_AUTH_MODE=gcloud avec CLUB_MERGE_GCLOUD_ACCOUNT ; CLUB_MERGE_LOAD_NAP_SECRET=1 autorise la lecture du seul secret NAP existant. Aucun mode par defaut ne contacte une base.");
     return;
   }
   const [mode,...values] = args;

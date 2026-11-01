@@ -48,8 +48,9 @@ async function main(){
   await sql.mutate(op,"apply");
   assert.match(queries.at(-1).sql,/WHERE `id`=\? AND /);
   assert.match(queries.at(-1).sql,/CAST\(`id` AS BINARY\) <=> CAST\(\? AS BINARY\)/);
-  assert.match(queries.at(-1).sql,/CAST\(`name` AS BINARY\) <=> CAST\(\? AS BINARY\)/);
+  assert.match(queries.at(-1).sql,/CAST\(CONVERT\(`name` USING utf8mb4\) AS BINARY\) <=> CAST\(CONVERT\(\? USING utf8mb4\) AS BINARY\)/);
   assert(queries.at(-1).values.some(Buffer.isBuffer));
+  assert.match(queries.at(-1).sql,/CAST\(`bytes` AS BINARY\) <=> CAST\(\? AS BINARY\)/,"Binary columns must never undergo text conversion");
   assert(!queries.at(-1).sql.includes("Épreuve"));
   affected=0;await assert.rejects(()=>sql.mutate(op,"apply"),/COMPARE_AND_SWAP/);affected=1;
   const deleted=plan.changes.find(o=>!o.after);await sql.mutate(deleted,"apply");assert.match(queries.at(-1).sql,/^DELETE FROM `clubs`.*LIMIT 1$/);
@@ -60,6 +61,11 @@ async function main(){
   assert.equal(queries.at(-1).sql,"UNLOCK TABLES");
   const records=s.adapter({execute:async input=>[input.sql.includes("FROM records") ? [{id:1,club:"JSCC"}] : [{revision:1,payload:JSON.stringify({records:[{club:"JSCC"}],franceRecords:[]})}]]});
   assert.equal((await records.historical()).labels.length,1);
+  const legacyRows=Array.from({length:2955},(_,i)=>({id:i+1,club:"JSCC"}));
+  const fullHistory=s.adapter({execute:async input=>[input.sql.includes("FROM records") ? legacyRows : [{revision:1,payload:JSON.stringify({records:[],franceRecords:[]})}]]});
+  assert.equal((await fullHistory.historical()).labels.length,2955,"Real legacy cardinality stays bounded without false refusal");
+  const cappedHistory=s.adapter({execute:async()=>[Array.from({length:10001},(_,i)=>({id:i+1,club:"JSCC"}))]});
+  await assert.rejects(()=>cappedHistory.historical(),/HISTORICAL_RECORD_DEPENDENCY_CHANGED/);
   const orphan=s.adapter({execute:async input=>[input.sql.includes("FROM records") ? [] : [{revision:1,payload:JSON.stringify({records:[{clubId:"518"}],franceRecords:[]})}]]});
   await assert.rejects(()=>orphan.historical(),/CLUB_ID_DEPENDENCY/);
   assert.throws(()=>s.quote("clubs;DROP"),/IDENTIFIER/);

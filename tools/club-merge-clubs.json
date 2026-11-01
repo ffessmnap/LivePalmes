@@ -3,13 +3,13 @@
   "clubs": [
     {
       "num_club": 389,
-      "nom_club": "Alsace Nautile Club",
+      "nom_club": "Alsace Nautile Club  ",
       "abre_club": "ANC",
       "federal_club": "06670000"
     },
     {
       "num_club": 413,
-      "nom_club": "Alsace Nautile Club",
+      "nom_club": "Alsace Nautile Club ",
       "abre_club": "ANC",
       "federal_club": "06670236"
     },
@@ -51,7 +51,7 @@
     },
     {
       "num_club": 457,
-      "nom_club": "club sous marin des trois vallées",
+      "nom_club": "club sous marin des trois vallées ",
       "abre_club": "CSMTV",
       "federal_club": "0962064"
     },
@@ -111,7 +111,7 @@
     },
     {
       "num_club": 664,
-      "nom_club": "LIEGE GRIVEGNEE MONOPALME",
+      "nom_club": "LIEGE GRIVEGNEE MONOPALME ",
       "abre_club": "LGM",
       "federal_club": "99999999"
     },
@@ -157,5 +157,10 @@
       "abre_club": "OPEN PASS",
       "federal_club": "OPEN PASS"
     }
-  ]
+  ],
+  "rawIdentityVerification": {
+    "date": "2026-11-01",
+    "source": "NAP read-only capture",
+    "note": "Four pre-existing trailing spaces are retained exactly; workbook labels were trimmed. No database field changed."
+  }
 }

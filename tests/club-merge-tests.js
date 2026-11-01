@@ -7,6 +7,9 @@ async function main() {
   assert.equal(p.validate(plan),plan);
   assert.equal(plan.changes.filter(o => !o.after).length,14);
   assert.equal(plan.firestore.length,3);
+  assert.equal(plan.sql.clubs.find(r=>r.num_club===413).nom_club,"Alsace Nautile Club ","Existing NAP trailing space is backed up and kept exactly");
+  const trimmed=p.clone(inventory);trimmed.sql.clubs.find(r=>r.num_club===413).nom_club=trimmed.sql.clubs.find(r=>r.num_club===413).nom_club.trimEnd();
+  assert.throws(()=>p.prepare(trimmed,plan.operation),/APPROVED_CLUB_IDENTITY_CHANGED/,"Do not normalize stored names during preparation");
   assert.equal(plan.changes.find(o => o.table === "chefsdequipe").after.pourclub,"220");
   const tampered=p.clone(plan); tampered.changes[0].after={wrong:true}; assert.throws(() => p.validate(tampered),/PLAN_TAMPERED/);
   assert.throws(() => p.encode(9007199254740992),/LOSSY/);
