@@ -7,6 +7,8 @@ const { createCompetitionImportParser } = require("../functions/competition-impo
 const { createEngagementPdfRenderer } = require("../functions/engagement-pdf-renderer");
 const { createAccessHandlers } = require("../functions/portal-access-handlers");
 const { references } = require("./helpers/lexical-references");
+const factoryModel = require("../tools/backend-factory-model").model(process.cwd());
+const liveFactories = new Map([...factoryModel.factories.values()].map(factory => [factory.file, factory]));
 
 // Exercise the actual extracted modules, separately from legacy source contracts.
 const parser = createCompetitionImportParser({ cleanText: value => String(value || "").trim() });
@@ -50,7 +52,7 @@ for (const [file, source] of files) {
     if (files.has(resolved)) dependencies.add(resolved);
   });
   edges.set(file, dependencies);
-  if (/\/(?:portal-.*-handlers|server-.*-service)\.js$/.test(file)) {
+  if (/\/(?:portal-.*-handlers|server-.*-service)\.js$/.test(file) || file.startsWith("functions/backend/")) {
     const ast = acorn.parse(source, { ecmaVersion: "latest" });
     const factory = ast.body.find(node => node.type === "FunctionDeclaration");
     const loaded = require("../" + file);
@@ -60,8 +62,21 @@ for (const [file, source] of files) {
     walk(entry, node => {
       if (node.type === "CallExpression" && node.callee.property?.name === factory.id.name) supplied = node.arguments[0];
     });
-    assert.equal(supplied?.type, "ObjectExpression", file + " must have explicit live services");
-    const names = new Set(supplied.properties.map(p => p.key.name));
+    let names;
+    if (supplied) {
+      assert.equal(supplied.type, "ObjectExpression", file + " must have explicit live services");
+      names = new Set(supplied.properties.map(p => p.key.name));
+    } else {
+      assert(source.includes("// Compatibility factory; operation modules hold the existing bodies."), file + " must be a checked compatibility API");
+      const prefix = "functions/backend/" + path.posix.basename(file, ".js") + "/";
+      assert(dependencies.size > 0 && [...dependencies].every(target => target.startsWith(prefix)), file + " must directly use its own operation modules");
+      names = new Set();
+      for (const target of dependencies) {
+        const live = liveFactories.get(target);
+        assert(live, target + " must have real explicit index wiring");
+        live.context.forEach((_, name) => names.add(name));
+      }
+    }
     walk(ast, node => {
       if (node.type === "MemberExpression" && node.object.name === "backendContext") assert.ok(names.has(node.property.name), file + " missing " + node.property.name);
     });

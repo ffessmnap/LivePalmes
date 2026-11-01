@@ -1,0 +1,171 @@
+{
+  "schema": 1,
+  "objective": "Complete systematic backend dependency isolation, technically validated on exact TEST version, then handed off to Infra for authorized PROD publication",
+  "status": "first-lot-local-validation",
+  "startedAt": "2026-10-31T23:20:21Z",
+  "baseline": {
+    "main": "ac677ad530aab6b121b3a038accc0fb4860fa5e6",
+    "testRun": 41250258371,
+    "testCandidate": "ac677ad530aab6b121b3a038accc0fb4860fa5e6",
+    "productionRun": 41248805209,
+    "productionCandidate": "6f76f7921d401cde1f45a5ce90acf5bbde097574"
+  },
+  "authorization": {
+    "sourceThread": "01a19430-7d9d-71b3-9e61-7d8ac7c30e33",
+    "currentTestValidatedByUser": true,
+    "futureVersions": "Autonomous technical validation, TEST, then exact-scope PROD handoff to Infra authorized; no invented future user acceptance",
+    "infraThread": "01a131b4-e6a6-73e2-bbea-b53cc3f4cb6d",
+    "excluded": [
+      "real data changes",
+      "migrations",
+      "real messages",
+      "business test invocations",
+      "new infrastructure",
+      "rules/index/configuration/IAM changes",
+      "sporting-rule changes",
+      "authorization-rule changes"
+    ]
+  },
+  "decisions": [
+    "Preserve existing conservative selectors and excluded-function contracts",
+    "Separate actual method dependencies from unused factory context getters",
+    "Preserve every Firebase declaration, option, secret and trigger",
+    "No new business reads or writes; initial/action/refresh/worst-case budgets remain unchanged",
+    "Use an isolated worktree because shared workspace contains extensive unrelated edits",
+    "Target: group methods by actual Firebase-consumer sets within their original domain/factory, without helper duplication",
+    "Generated operation factories reuse the existing lazy explicit-context pattern; no framework or runtime dependency added",
+    "Preserve old factory APIs through compatibility adapters used by existing tests, while production index wiring targets operation providers directly",
+    "Cross-group private references must retain the actual private function object, its signature and unbound-call semantics; do not replace them with global forwarding wrappers",
+    "Preserve writable context accessors and existing singleton/cache identity; reject unknown initialization or mutable binding patterns until separately proven",
+    "Keep the complete original context for the one opaque NS handoff rather than guessing its downstream needs",
+    "Prove moved bodies by canonical AST plus permitted binding substitutions, and preserve Firebase declarations/options/secrets/triggers exactly",
+    "Apply coherent cumulative lots from a pinned baseline, stop on unexpected source divergence, and reassess remaining native-module fanouts after all factory-context coupling is removed",
+    "Renderer will use operation-provider getters returning actual function objects and (0, providerReference) for cross-group unbound calls; original local bodies retained within each group",
+    "Original factory compatibility adapters return the actual operation functions, preserving method names, arity and identity, with no eager context reads",
+    "Generated inventory is read-only analysis, not an alternative selector or deployment allowlist"
+  ],
+  "completed": [
+    "Verified current main and successful TEST/PROD run references",
+    "Created clean worktree from main",
+    "Initial review: 27 factories, no factory-scope initialization statements",
+    "Read-only model and generated inventory cover 157 exports and 726 private methods; one opaque context escape, 32 function-identity references, no factory initializer statements",
+    "Full preview proof: 705 unchanged bodies, 157 unchanged Firebase registrations and identical private call graphs; negative fixtures and Git source guards passed",
+    "First runtime lot applied behind divergence and path guards: 103 bodies in 72 operation groups; exact proof d2519c8bbca21dec61931a49ddb9dc5df65ed084a4c6148ffa0fd5459c7b042f",
+    "First lot expanded to include shared import references required by PIN/console access: 155 unchanged bodies in 99 groups, exact proof 2bc0b74ef6c092da02ce7ce9466663a1cf6e180cf1a67d10678a49b3a5e1d45a"
+  ],
+  "next": [
+    "Run actual-factory, authorization, source-contract and selection regression checks for first lot",
+    "Commit/PR/CI/integrate and TEST first coherent lot",
+    "Continue all remaining lots and native-module review; do not stop at first lot",
+    "Final technical validation and exact-scope Infra PROD handoff",
+    "After verified PROD, resume authorized Corbie prerequisite and clubs thread"
+  ],
+  "inventory": {
+    "exports": 157,
+    "factories": 27,
+    "privateMethods": 726,
+    "factoryScopeInitializationStatements": 0,
+    "opaqueCases": [
+      "portalNationalHandlers: backendContext passed to nap-swimmer-ns-callables.club; keep complete context for this case until separately proven"
+    ]
+  },
+  "afterVerifiedProduction": {
+    "status": "pending-condition",
+    "condition": "Global dependency isolation fully completed, published to PROD and final checks passed",
+    "targetThread": "01a1936b-e9fe-7983-9cc3-3ca030675c86",
+    "targetTitle": "Compter les clubs par abréviation",
+    "action": "Resume existing club work autonomously; do not wake or execute it before the condition",
+    "userQuotes": [
+      "est ce que une fois que ce chantier sera terminé et en prod tu pourras relancer la fusion des 14 clubs qu'on avait mis en stop dans la conversation \"compter les clubs par abréviation\"?",
+      "Eh bien, il faudra faire le nécessaire pour que ce soit possible à la suite de ce chantier-là. C'est... quand tu dis, j'ai ajouté, c'est reposé à la suite du chantier, j'ai rien à faire de mon côté ?"
+    ],
+    "authorizedKnownPrerequisite": "If still present, fix administrator-list and recipient-index projections so stale events cannot restore an old club; preserve current-profile rights/preferences/legitimate recipients; no real sends or catch-up",
+    "sequence": [
+      "Read original detailed plan and current paused state",
+      "If still needed, fix known Corbie prerequisite with stale-event/concurrency/retry tests, CI, TEST and exact-scope PROD handoff to Infra",
+      "Recheck drift, verified backups and resume protections",
+      "Execute only the 14 already-defined merges with preserved decisions and existing safeguards"
+    ],
+    "knownReferences": {
+      "draftPr": 651,
+      "verificationRun": 41247081576
+    },
+    "preservedDecisions": [
+      "Original target identities/names/abbreviations",
+      "Keep all three Corbie accounts",
+      "OPEN/OPEN PASS into OPEN 220"
+    ],
+    "limits": [
+      "Re-read full plan; the number 14 alone does not identify records",
+      "No silent extension to other clubs/accounts/rights/data",
+      "Do not bypass Corbie lock or backup/drift/resume checks",
+      "Report genuine new divergence or unavailable access; continue independent safe parts"
+    ]
+  },
+  "blockers": [],
+  "preview": {
+    "applied": false,
+    "baseline": "ac677ad530aab6b121b3a038accc0fb4860fa5e6",
+    "factoriesNeedingPartition": 22,
+    "operationGroups": 433,
+    "movedMethods": 705,
+    "files": 456,
+    "indexLines": 12200,
+    "selectorMode": "dependency-closure",
+    "exportsPreserved": 157,
+    "testSimulations": {
+      "nap-open-water-library.js": 3,
+      "nap-entry-time-preview.js": 3,
+      "nap-portal-competitions.js": 42
+    },
+    "productionSimulations": {
+      "nap-open-water-library.js": 3,
+      "nap-entry-time-preview.js": 3,
+      "nap-portal-competitions.js": 36
+    },
+    "note": "In-memory mutations only; not deployment promises or proven minimal counts. Competition module still needs native-level review."
+  },
+  "appliedFactories": [
+    "portalAccessHandlers",
+    "serverAccessService",
+    "serverConsoleService",
+    "serverDirectoryService",
+    "serverImportService"
+  ],
+  "lots": [
+    {
+      "id": "access-directories",
+      "status": "local-validation",
+      "factories": [
+        "portalAccessHandlers",
+        "serverAccessService",
+        "serverConsoleService",
+        "serverDirectoryService",
+        "serverImportService"
+      ],
+      "proof": "2bc0b74ef6c092da02ce7ce9466663a1cf6e180cf1a67d10678a49b3a5e1d45a",
+      "bodies": 155,
+      "groups": 99
+    },
+    {
+      "id": "competitions-entries",
+      "status": "pending"
+    },
+    {
+      "id": "performance-import-dtn-legacy",
+      "status": "pending"
+    },
+    {
+      "id": "remaining-native-responsibilities",
+      "status": "pending"
+    },
+    {
+      "id": "final-test-and-infra-production",
+      "status": "pending"
+    },
+    {
+      "id": "authorized-club-resumption",
+      "status": "pending-condition"
+    }
+  ]
+}

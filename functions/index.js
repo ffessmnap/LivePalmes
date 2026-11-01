@@ -1,3 +1,1007 @@
+function $portalAccessHandlers_setRolePins() {
+  if (!$portalAccessHandlers_setRolePins.instance) $portalAccessHandlers_setRolePins.instance = require("./backend/portal-access-handlers/set-role-pins").createAccessHandlers_setRolePins({
+    get HttpsError() { return HttpsError; },
+    get ROLES() { return ROLES; },
+    get assertCapability() { return assertCapability; },
+    get assertPin() { return assertPin; },
+    get cleanText() { return cleanText; },
+    get competitionIdFrom() { return competitionIdFrom; },
+    get crypto() { return crypto; },
+    get db() { return db; },
+    get pinHash() { return pinHash; },
+    get rolePinsRef() { return rolePinsRef; },
+    get updatePublicPinNotes() { return updatePublicPinNotes; }
+  });
+  return $portalAccessHandlers_setRolePins.instance;
+}
+
+function $portalAccessHandlers_verifyPin() {
+  if (!$portalAccessHandlers_verifyPin.instance) $portalAccessHandlers_verifyPin.instance = require("./backend/portal-access-handlers/verify-pin").createAccessHandlers_verifyPin({
+    get HttpsError() { return HttpsError; },
+    get Timestamp() { return Timestamp; },
+    get assertConsolePortalAccess() { return assertConsolePortalAccess; },
+    get assertPin() { return assertPin; },
+    get assertPinAttemptAllowed() { return assertPinAttemptAllowed; },
+    get assertRole() { return assertRole; },
+    get auth() { return auth; },
+    get cleanText() { return cleanText; },
+    get clearPinAttempts() { return clearPinAttempts; },
+    get competitionIdFrom() { return competitionIdFrom; },
+    get consoleGrantRef() { return consoleGrantRef; },
+    get consoleRoleClaims() { return consoleRoleClaims; },
+    get pinAttemptRef() { return pinAttemptRef; },
+    get pinHash() { return pinHash; },
+    get recordFailedPinAttempt() { return recordFailedPinAttempt; },
+    get rolePinsRef() { return rolePinsRef; },
+    get safeCompareHex() { return safeCompareHex; },
+    get stableHash() { return stableHash; }
+  });
+  return $portalAccessHandlers_verifyPin.instance;
+}
+
+function $portalAccessHandlers_rebuildAccessDirectoryIndexNextPage() {
+  if (!$portalAccessHandlers_rebuildAccessDirectoryIndexNextPage.instance) $portalAccessHandlers_rebuildAccessDirectoryIndexNextPage.instance = require("./backend/portal-access-handlers/rebuild-access-directory-index-next-page").createAccessHandlers_rebuildAccessDirectoryIndexNextPage({
+    get ACCESS_DIRECTORY_INDEX_VERSION() { return ACCESS_DIRECTORY_INDEX_VERSION; },
+    get FieldPath() { return FieldPath; },
+    get FieldValue() { return FieldValue; },
+    get HttpsError() { return HttpsError; },
+    get accessDirectoryIndexStateRef() { return accessDirectoryIndexStateRef; },
+    get accessDirectoryKeys() { return accessDirectoryKeys; },
+    get accessManagementContext() { return accessManagementContext; },
+    get cleanText() { return cleanText; },
+    get db() { return db; }
+  });
+  return $portalAccessHandlers_rebuildAccessDirectoryIndexNextPage.instance;
+}
+
+function $portalAccessHandlers_rebuildAccessDirectorySnapshotNextPage() {
+  if (!$portalAccessHandlers_rebuildAccessDirectorySnapshotNextPage.instance) $portalAccessHandlers_rebuildAccessDirectorySnapshotNextPage.instance = require("./backend/portal-access-handlers/rebuild-access-directory-snapshot-next-page").createAccessHandlers_rebuildAccessDirectorySnapshotNextPage({
+    get ACCESS_DIRECTORY_SNAPSHOTS_COLLECTION() { return ACCESS_DIRECTORY_SNAPSHOTS_COLLECTION; },
+    get ACCESS_DIRECTORY_SNAPSHOT_VERSION() { return ACCESS_DIRECTORY_SNAPSHOT_VERSION; },
+    get FieldPath() { return FieldPath; },
+    get FieldValue() { return FieldValue; },
+    get HttpsError() { return HttpsError; },
+    get accessDirectorySnapshotEntry() { return accessDirectorySnapshotEntry; },
+    get accessDirectorySnapshotEntryKey() { return accessDirectorySnapshotEntryKey; },
+    get accessDirectorySnapshotRegionId() { return accessDirectorySnapshotRegionId; },
+    get accessDirectorySnapshotStateRef() { return accessDirectorySnapshotStateRef; },
+    get accessManagementContext() { return accessManagementContext; },
+    get cleanText() { return cleanText; },
+    get db() { return db; },
+    get mergeAccessDirectorySnapshotEntries() { return mergeAccessDirectorySnapshotEntries; }
+  });
+  return $portalAccessHandlers_rebuildAccessDirectorySnapshotNextPage.instance;
+}
+
+function $portalAccessHandlers_listAccessUsers() {
+  if (!$portalAccessHandlers_listAccessUsers.instance) $portalAccessHandlers_listAccessUsers.instance = require("./backend/portal-access-handlers/list-access-users").createAccessHandlers_listAccessUsers({
+    get ACCESS_CAPABILITY_SET() { return ACCESS_CAPABILITY_SET; },
+    get ACCESS_DIRECTORY_INDEX_VERSION() { return ACCESS_DIRECTORY_INDEX_VERSION; },
+    get FieldPath() { return FieldPath; },
+    get accessDirectoryFilterKey() { return accessDirectoryFilterKey; },
+    get accessDirectoryIndexStateRef() { return accessDirectoryIndexStateRef; },
+    get accessManagementContext() { return accessManagementContext; },
+    get accessUserListItem() { return accessUserListItem; },
+    get accessUserMatchesFilters() { return accessUserMatchesFilters; },
+    get accessUserVisibleForAccessDirectory() { return accessUserVisibleForAccessDirectory; },
+    get cleanText() { return cleanText; },
+    get db() { return db; },
+    get searchAccessUserDocuments() { return searchAccessUserDocuments; }
+  });
+  return $portalAccessHandlers_listAccessUsers.instance;
+}
+
+function $portalAccessHandlers_setAccessUserStatus() {
+  if (!$portalAccessHandlers_setAccessUserStatus.instance) $portalAccessHandlers_setAccessUserStatus.instance = require("./backend/portal-access-handlers/set-access-user-status").createAccessHandlers_setAccessUserStatus({
+    get HttpsError() { return HttpsError; },
+    get accessDirectoryKeys() { return accessDirectoryKeys; },
+    get activeCapabilitiesFromMap() { return activeCapabilitiesFromMap; },
+    get assertAdmin() { return assertAdmin; },
+    get auth() { return auth; },
+    get capabilitiesMap() { return capabilitiesMap; },
+    get cleanText() { return cleanText; },
+    get db() { return db; },
+    get hasConsolePortalCapability() { return hasConsolePortalCapability; },
+    get writeAccessGrants() { return writeAccessGrants; },
+    get writeAuditLog() { return writeAuditLog; }
+  });
+  return $portalAccessHandlers_setAccessUserStatus.instance;
+}
+
+function $portalAccessHandlers_deleteAccessUser() {
+  if (!$portalAccessHandlers_deleteAccessUser.instance) $portalAccessHandlers_deleteAccessUser.instance = require("./backend/portal-access-handlers/delete-access-user").createAccessHandlers_deleteAccessUser({
+    get HttpsError() { return HttpsError; },
+    get accessManagementContext() { return accessManagementContext; },
+    get deleteAccessUserAccount() { return deleteAccessUserAccount; }
+  });
+  return $portalAccessHandlers_deleteAccessUser.instance;
+}
+
+function $portalAccessHandlers_requestAccessUserDeletion() {
+  if (!$portalAccessHandlers_requestAccessUserDeletion.instance) $portalAccessHandlers_requestAccessUserDeletion.instance = require("./backend/portal-access-handlers/request-access-user-deletion").createAccessHandlers_requestAccessUserDeletion({
+    get HttpsError() { return HttpsError; },
+    get accessManagementContext() { return accessManagementContext; },
+    get accessUserDeletionRequestItem() { return accessUserDeletionRequestItem; },
+    get accessUserRegionIdFromData() { return accessUserRegionIdFromData; },
+    get activeCapabilitiesFromMap() { return activeCapabilitiesFromMap; },
+    get assertRegionalAccessUserDeletionRequestAllowed() { return assertRegionalAccessUserDeletionRequestAllowed; },
+    get cleanText() { return cleanText; },
+    get db() { return db; },
+    get writeAuditLog() { return writeAuditLog; }
+  });
+  return $portalAccessHandlers_requestAccessUserDeletion.instance;
+}
+
+function $portalAccessHandlers_listAccessUserDeletionRequests() {
+  if (!$portalAccessHandlers_listAccessUserDeletionRequests.instance) $portalAccessHandlers_listAccessUserDeletionRequests.instance = require("./backend/portal-access-handlers/list-access-user-deletion-requests").createAccessHandlers_listAccessUserDeletionRequests({
+    get HttpsError() { return HttpsError; },
+    get accessManagementContext() { return accessManagementContext; },
+    get accessUserDeletionRequestItem() { return accessUserDeletionRequestItem; },
+    get db() { return db; }
+  });
+  return $portalAccessHandlers_listAccessUserDeletionRequests.instance;
+}
+
+function $portalAccessHandlers_resolveAccessUserDeletionRequest() {
+  if (!$portalAccessHandlers_resolveAccessUserDeletionRequest.instance) $portalAccessHandlers_resolveAccessUserDeletionRequest.instance = require("./backend/portal-access-handlers/resolve-access-user-deletion-request").createAccessHandlers_resolveAccessUserDeletionRequest({
+    get HttpsError() { return HttpsError; },
+    get accessManagementContext() { return accessManagementContext; },
+    get cleanText() { return cleanText; },
+    get db() { return db; },
+    get deleteAccessUserAccount() { return deleteAccessUserAccount; },
+    get writeAuditLog() { return writeAuditLog; }
+  });
+  return $portalAccessHandlers_resolveAccessUserDeletionRequest.instance;
+}
+
+function $portalAccessHandlers_updateCurrentAccountEmail() {
+  if (!$portalAccessHandlers_updateCurrentAccountEmail.instance) $portalAccessHandlers_updateCurrentAccountEmail.instance = require("./backend/portal-access-handlers/update-current-account-email").createAccessHandlers_updateCurrentAccountEmail({
+    get ACCESS_CAPABILITIES() { return ACCESS_CAPABILITIES; },
+    get ADMIN_UIDS() { return ADMIN_UIDS; },
+    get HttpsError() { return HttpsError; },
+    get activeCapabilitiesFromMap() { return activeCapabilitiesFromMap; },
+    get assertEmail() { return assertEmail; },
+    get assertLivePalmesAccess() { return assertLivePalmesAccess; },
+    get auth() { return auth; },
+    get cleanText() { return cleanText; },
+    get db() { return db; },
+    get normalizeEmail() { return normalizeEmail; },
+    get normalizedAccessScope() { return normalizedAccessScope; },
+    get writeAuditLog() { return writeAuditLog; }
+  });
+  return $portalAccessHandlers_updateCurrentAccountEmail.instance;
+}
+
+function $portalAccessHandlers_getCurrentAccessUser() {
+  if (!$portalAccessHandlers_getCurrentAccessUser.instance) $portalAccessHandlers_getCurrentAccessUser.instance = require("./backend/portal-access-handlers/get-current-access-user").createAccessHandlers_getCurrentAccessUser({
+    get ACCESS_CAPABILITIES() { return ACCESS_CAPABILITIES; },
+    get ADMIN_UIDS() { return ADMIN_UIDS; },
+    get FUNCTIONS_EMULATOR_ACTIVE() { return FUNCTIONS_EMULATOR_ACTIVE; },
+    get HttpsError() { return HttpsError; },
+    get activeCapabilitiesFromMap() { return activeCapabilitiesFromMap; },
+    get cleanText() { return cleanText; },
+    get competitionEmailNotificationsEnabled() { return competitionEmailNotificationsEnabled; },
+    get db() { return db; },
+    get portalReadStats() { return portalReadStats; }
+  });
+  return $portalAccessHandlers_getCurrentAccessUser.instance;
+}
+
+function $serverAccessService_portalReadStats() {
+  if (!$serverAccessService_portalReadStats.instance) $serverAccessService_portalReadStats.instance = require("./backend/server-access-service/portal-read-stats").createAccessService_portalReadStats({
+
+  });
+  return $serverAccessService_portalReadStats.instance;
+}
+
+function $serverAccessService_cleanEngagementRelayMixedMode() {
+  if (!$serverAccessService_cleanEngagementRelayMixedMode.instance) $serverAccessService_cleanEngagementRelayMixedMode.instance = require("./backend/server-access-service/clean-engagement-relay-mixed-mode").createAccessService_cleanEngagementRelayMixedMode({
+    get cleanText() { return cleanText; },
+    get ENGAGEMENT_EVENT_DEFINITION_BY_CODE() { return ENGAGEMENT_EVENT_DEFINITION_BY_CODE; },
+    get ENGAGEMENT_EVENT_FORBIDDEN_CATEGORIES() { return ENGAGEMENT_EVENT_FORBIDDEN_CATEGORIES; },
+    get ENGAGEMENT_INDIVIDUAL_CATEGORY_CODES() { return ENGAGEMENT_INDIVIDUAL_CATEGORY_CODES; },
+    get ENGAGEMENT_RELAY_CATEGORY_CODES() { return ENGAGEMENT_RELAY_CATEGORY_CODES; },
+    get ENGAGEMENT_RELAY_MIXED_MODES() { return ENGAGEMENT_RELAY_MIXED_MODES; }
+  });
+  return $serverAccessService_cleanEngagementRelayMixedMode.instance;
+}
+
+function $serverAccessService_competitionEmailNotificationsEnabled() {
+  if (!$serverAccessService_competitionEmailNotificationsEnabled.instance) $serverAccessService_competitionEmailNotificationsEnabled.instance = require("./backend/server-access-service/competition-email-notifications-enabled").createAccessService_competitionEmailNotificationsEnabled({
+
+  });
+  return $serverAccessService_competitionEmailNotificationsEnabled.instance;
+}
+
+function $serverAccessService_competitionNotificationPreferenceToken() {
+  if (!$serverAccessService_competitionNotificationPreferenceToken.instance) $serverAccessService_competitionNotificationPreferenceToken.instance = require("./backend/server-access-service/competition-notification-preference-token").createAccessService_competitionNotificationPreferenceToken({
+    get cleanText() { return cleanText; },
+    get LIVEPALMES_NOTIFICATION_LINK_SECRET() { return LIVEPALMES_NOTIFICATION_LINK_SECRET; },
+    get crypto() { return crypto; }
+  });
+  return $serverAccessService_competitionNotificationPreferenceToken.instance;
+}
+
+function $serverAccessService_validCompetitionNotificationPreferenceToken() {
+  if (!$serverAccessService_validCompetitionNotificationPreferenceToken.instance) $serverAccessService_validCompetitionNotificationPreferenceToken.instance = require("./backend/server-access-service/valid-competition-notification-preference-token").createAccessService_validCompetitionNotificationPreferenceToken({
+    get cleanText() { return cleanText; },
+    get crypto() { return crypto; },
+    get local$competitionNotificationPreferenceToken() { return $serverAccessService_competitionNotificationPreferenceToken().competitionNotificationPreferenceToken; }
+  });
+  return $serverAccessService_validCompetitionNotificationPreferenceToken.instance;
+}
+
+function $serverAccessService_competitionNotificationPreferenceUrl() {
+  if (!$serverAccessService_competitionNotificationPreferenceUrl.instance) $serverAccessService_competitionNotificationPreferenceUrl.instance = require("./backend/server-access-service/competition-notification-preference-url").createAccessService_competitionNotificationPreferenceUrl({
+    get cleanText() { return cleanText; },
+    get ENVIRONMENT() { return ENVIRONMENT; },
+    get local$competitionNotificationPreferenceToken() { return $serverAccessService_competitionNotificationPreferenceToken().competitionNotificationPreferenceToken; }
+  });
+  return $serverAccessService_competitionNotificationPreferenceUrl.instance;
+}
+
+function $serverAccessService_engagementClubRegionId() {
+  if (!$serverAccessService_engagementClubRegionId.instance) $serverAccessService_engagementClubRegionId.instance = require("./backend/server-access-service/engagement-club-region-id").createAccessService_engagementClubRegionId({
+    get cleanText() { return cleanText; },
+    get CLUB_REFERENCE_REGION_LABELS() { return CLUB_REFERENCE_REGION_LABELS; }
+  });
+  return $serverAccessService_engagementClubRegionId.instance;
+}
+
+function $serverAccessService_engagementClubCode() {
+  if (!$serverAccessService_engagementClubCode.instance) $serverAccessService_engagementClubCode.instance = require("./backend/server-access-service/engagement-club-code").createAccessService_engagementClubCode({
+    get cleanText() { return cleanText; },
+    get CLUB_REFERENCE_BY_ID() { return CLUB_REFERENCE_BY_ID; }
+  });
+  return $serverAccessService_engagementClubCode.instance;
+}
+
+function $serverAccessService_engagementClubName() {
+  if (!$serverAccessService_engagementClubName.instance) $serverAccessService_engagementClubName.instance = require("./backend/server-access-service/engagement-club-name").createAccessService_engagementClubName({
+    get cleanText() { return cleanText; },
+    get CLUB_REFERENCE_BY_ID() { return CLUB_REFERENCE_BY_ID; }
+  });
+  return $serverAccessService_engagementClubName.instance;
+}
+
+function $serverAccessService_engagementStoredClubItem() {
+  if (!$serverAccessService_engagementStoredClubItem.instance) $serverAccessService_engagementStoredClubItem.instance = require("./backend/server-access-service/engagement-stored-club-item").createAccessService_engagementStoredClubItem({
+    get cleanText() { return cleanText; },
+    get local$cleanFirestoreValue() { return $serverAccessService_cleanFirestoreValue().cleanFirestoreValue; }
+  });
+  return $serverAccessService_engagementStoredClubItem.instance;
+}
+
+function $serverAccessService_publicEngagementClubItem() {
+  if (!$serverAccessService_publicEngagementClubItem.instance) $serverAccessService_publicEngagementClubItem.instance = require("./backend/server-access-service/public-engagement-club-item").createAccessService_publicEngagementClubItem({
+    get cleanText() { return cleanText; },
+    get local$cleanFirestoreValue() { return $serverAccessService_cleanFirestoreValue().cleanFirestoreValue; }
+  });
+  return $serverAccessService_publicEngagementClubItem.instance;
+}
+
+function $serverAccessService_publicEngagementClubDirectoryRef() {
+  if (!$serverAccessService_publicEngagementClubDirectoryRef.instance) $serverAccessService_publicEngagementClubDirectoryRef.instance = require("./backend/server-access-service/public-engagement-club-directory-ref").createAccessService_publicEngagementClubDirectoryRef({
+    get ENGAGEMENT_PUBLIC_DIRECTORIES_COLLECTION() { return ENGAGEMENT_PUBLIC_DIRECTORIES_COLLECTION; },
+    get db() { return db; }
+  });
+  return $serverAccessService_publicEngagementClubDirectoryRef.instance;
+}
+
+function $serverAccessService_engagementClubsByIds() {
+  if (!$serverAccessService_engagementClubsByIds.instance) $serverAccessService_engagementClubsByIds.instance = require("./backend/server-access-service/engagement-clubs-by-ids").createAccessService_engagementClubsByIds({
+    get cleanText() { return cleanText; },
+    get CLUB_REFERENCE_BY_ID() { return CLUB_REFERENCE_BY_ID; },
+    get ENGAGEMENT_CLUBS_COLLECTION() { return ENGAGEMENT_CLUBS_COLLECTION; },
+    get db() { return db; },
+    get local$engagementStoredClubItem() { return $serverAccessService_engagementStoredClubItem().engagementStoredClubItem; }
+  });
+  return $serverAccessService_engagementClubsByIds.instance;
+}
+
+function $serverAccessService_engagementClubAccessContext() {
+  if (!$serverAccessService_engagementClubAccessContext.instance) $serverAccessService_engagementClubAccessContext.instance = require("./backend/server-access-service/engagement-club-access-context").createAccessService_engagementClubAccessContext({
+    get cleanText() { return cleanText; },
+    get ACCESS_CAPABILITIES() { return ACCESS_CAPABILITIES; },
+    get ADMIN_UIDS() { return ADMIN_UIDS; },
+    get CLUB_REFERENCE_REGION_LABELS() { return CLUB_REFERENCE_REGION_LABELS; },
+    get ENVIRONMENT() { return ENVIRONMENT; },
+    get HttpsError() { return HttpsError; },
+    get db() { return db; },
+    get local$canonicalAccessDirectoryRegionId() { return $serverAccessService_canonicalAccessDirectoryRegionId().canonicalAccessDirectoryRegionId; },
+    get local$capabilitiesMap() { return $serverAccessService_capabilitiesMap().capabilitiesMap; },
+    get local$engagementClubRegionId() { return $serverAccessService_engagementClubRegionId().engagementClubRegionId; },
+    get local$engagementClubsByIds() { return $serverAccessService_engagementClubsByIds().engagementClubsByIds; },
+    get local$normalizedAccessScope() { return $serverAccessService_normalizedAccessScope().normalizedAccessScope; }
+  });
+  return $serverAccessService_engagementClubAccessContext.instance;
+}
+
+function $serverAccessService_cleanFirestoreValue() {
+  if (!$serverAccessService_cleanFirestoreValue.instance) $serverAccessService_cleanFirestoreValue.instance = require("./backend/server-access-service/clean-firestore-value").createAccessService_cleanFirestoreValue({
+
+  });
+  return $serverAccessService_cleanFirestoreValue.instance;
+}
+
+function $serverAccessService_competitionIdFrom() {
+  if (!$serverAccessService_competitionIdFrom.instance) $serverAccessService_competitionIdFrom.instance = require("./backend/server-access-service/competition-id-from").createAccessService_competitionIdFrom({
+    get cleanText() { return cleanText; },
+    get COMPETITION_IDS() { return COMPETITION_IDS; },
+    get HttpsError() { return HttpsError; }
+  });
+  return $serverAccessService_competitionIdFrom.instance;
+}
+
+function $serverAccessService_assertAdmin() {
+  if (!$serverAccessService_assertAdmin.instance) $serverAccessService_assertAdmin.instance = require("./backend/server-access-service/assert-admin").createAccessService_assertAdmin({
+    get ADMIN_UIDS() { return ADMIN_UIDS; },
+    get HttpsError() { return HttpsError; }
+  });
+  return $serverAccessService_assertAdmin.instance;
+}
+
+function $serverAccessService_assertCapability() {
+  if (!$serverAccessService_assertCapability.instance) $serverAccessService_assertCapability.instance = require("./backend/server-access-service/assert-capability").createAccessService_assertCapability({
+    get ADMIN_UIDS() { return ADMIN_UIDS; },
+    get HttpsError() { return HttpsError; }
+  });
+  return $serverAccessService_assertCapability.instance;
+}
+
+function $serverAccessService_assertLivePalmesAccess() {
+  if (!$serverAccessService_assertLivePalmesAccess.instance) $serverAccessService_assertLivePalmesAccess.instance = require("./backend/server-access-service/assert-live-palmes-access").createAccessService_assertLivePalmesAccess({
+    get ACCESS_CAPABILITIES() { return ACCESS_CAPABILITIES; },
+    get ADMIN_UIDS() { return ADMIN_UIDS; },
+    get HttpsError() { return HttpsError; },
+    get db() { return db; },
+    get local$activeCapabilitiesFromMap() { return $serverAccessService_activeCapabilitiesFromMap().activeCapabilitiesFromMap; }
+  });
+  return $serverAccessService_assertLivePalmesAccess.instance;
+}
+
+function $serverAccessService_normalizeEmail() {
+  if (!$serverAccessService_normalizeEmail.instance) $serverAccessService_normalizeEmail.instance = require("./backend/server-access-service/normalize-email").createAccessService_normalizeEmail({
+    get cleanText() { return cleanText; }
+  });
+  return $serverAccessService_normalizeEmail.instance;
+}
+
+function $serverAccessService_normalizedEngagementRegionKey() {
+  if (!$serverAccessService_normalizedEngagementRegionKey.instance) $serverAccessService_normalizedEngagementRegionKey.instance = require("./backend/server-access-service/normalized-engagement-region-key").createAccessService_normalizedEngagementRegionKey({
+    get cleanText() { return cleanText; },
+    get CLUB_REFERENCE_REGION_LABELS() { return CLUB_REFERENCE_REGION_LABELS; }
+  });
+  return $serverAccessService_normalizedEngagementRegionKey.instance;
+}
+
+function $serverAccessService_engagementRegionsMatch() {
+  if (!$serverAccessService_engagementRegionsMatch.instance) $serverAccessService_engagementRegionsMatch.instance = require("./backend/server-access-service/engagement-regions-match").createAccessService_engagementRegionsMatch({
+    get local$normalizedEngagementRegionKey() { return $serverAccessService_normalizedEngagementRegionKey().normalizedEngagementRegionKey; }
+  });
+  return $serverAccessService_engagementRegionsMatch.instance;
+}
+
+function $serverAccessService_canonicalAccessDirectoryRegionId() {
+  if (!$serverAccessService_canonicalAccessDirectoryRegionId.instance) $serverAccessService_canonicalAccessDirectoryRegionId.instance = require("./backend/server-access-service/canonical-access-directory-region-id").createAccessService_canonicalAccessDirectoryRegionId({
+    get cleanText() { return cleanText; },
+    get CLUB_REFERENCE_REGION_LABELS() { return CLUB_REFERENCE_REGION_LABELS; },
+    get local$normalizedEngagementRegionKey() { return $serverAccessService_normalizedEngagementRegionKey().normalizedEngagementRegionKey; }
+  });
+  return $serverAccessService_canonicalAccessDirectoryRegionId.instance;
+}
+
+function $serverAccessService_assertEmail() {
+  if (!$serverAccessService_assertEmail.instance) $serverAccessService_assertEmail.instance = require("./backend/server-access-service/assert-email").createAccessService_assertEmail({
+    get HttpsError() { return HttpsError; }
+  });
+  return $serverAccessService_assertEmail.instance;
+}
+
+function $serverAccessService_accessScopeForCapability() {
+  if (!$serverAccessService_accessScopeForCapability.instance) $serverAccessService_accessScopeForCapability.instance = require("./backend/server-access-service/access-scope-for-capability").createAccessService_accessScopeForCapability({
+    get cleanText() { return cleanText; },
+    get ACCESS_CAPABILITY_SET() { return ACCESS_CAPABILITY_SET; },
+    get HttpsError() { return HttpsError; },
+    get local$assertEmail() { return $serverAccessService_assertEmail().assertEmail; },
+    get local$canonicalAccessDirectoryRegionId() { return $serverAccessService_canonicalAccessDirectoryRegionId().canonicalAccessDirectoryRegionId; },
+    get local$normalizeEmail() { return $serverAccessService_normalizeEmail().normalizeEmail; },
+    get local$normalizedAccessScope() { return $serverAccessService_normalizedAccessScope().normalizedAccessScope; }
+  });
+  return $serverAccessService_accessScopeForCapability.instance;
+}
+
+function $serverAccessService_capabilitiesMap() {
+  if (!$serverAccessService_capabilitiesMap.instance) $serverAccessService_capabilitiesMap.instance = require("./backend/server-access-service/capabilities-map").createAccessService_capabilitiesMap({
+    get ACCESS_CAPABILITIES() { return ACCESS_CAPABILITIES; }
+  });
+  return $serverAccessService_capabilitiesMap.instance;
+}
+
+function $serverAccessService_activeCapabilitiesFromMap() {
+  if (!$serverAccessService_activeCapabilitiesFromMap.instance) $serverAccessService_activeCapabilitiesFromMap.instance = require("./backend/server-access-service/active-capabilities-from-map").createAccessService_activeCapabilitiesFromMap({
+    get ACCESS_CAPABILITIES() { return ACCESS_CAPABILITIES; }
+  });
+  return $serverAccessService_activeCapabilitiesFromMap.instance;
+}
+
+function $serverAccessService_accessDirectoryKeys() {
+  if (!$serverAccessService_accessDirectoryKeys.instance) $serverAccessService_accessDirectoryKeys.instance = require("./backend/server-access-service/access-directory-keys").createAccessService_accessDirectoryKeys({
+    get local$accessUserRegionIdFromData() { return $serverAccessService_accessUserRegionIdFromData().accessUserRegionIdFromData; },
+    get local$activeCapabilitiesFromMap() { return $serverAccessService_activeCapabilitiesFromMap().activeCapabilitiesFromMap; },
+    get local$capabilitiesMap() { return $serverAccessService_capabilitiesMap().capabilitiesMap; }
+  });
+  return $serverAccessService_accessDirectoryKeys.instance;
+}
+
+function $serverAccessService_accessDirectoryFilterKey() {
+  if (!$serverAccessService_accessDirectoryFilterKey.instance) $serverAccessService_accessDirectoryFilterKey.instance = require("./backend/server-access-service/access-directory-filter-key").createAccessService_accessDirectoryFilterKey({
+    get local$accessUserRegionIdFromData() { return $serverAccessService_accessUserRegionIdFromData().accessUserRegionIdFromData; }
+  });
+  return $serverAccessService_accessDirectoryFilterKey.instance;
+}
+
+function $serverAccessService_accessDirectoryIndexStateRef() {
+  if (!$serverAccessService_accessDirectoryIndexStateRef.instance) $serverAccessService_accessDirectoryIndexStateRef.instance = require("./backend/server-access-service/access-directory-index-state-ref").createAccessService_accessDirectoryIndexStateRef({
+    get ACCESS_DIRECTORY_INDEX_STATE_COLLECTION() { return ACCESS_DIRECTORY_INDEX_STATE_COLLECTION; },
+    get db() { return db; }
+  });
+  return $serverAccessService_accessDirectoryIndexStateRef.instance;
+}
+
+function $serverAccessService_accessDirectorySnapshotDocumentId() {
+  if (!$serverAccessService_accessDirectorySnapshotDocumentId.instance) $serverAccessService_accessDirectorySnapshotDocumentId.instance = require("./backend/server-access-service/access-directory-snapshot-document-id").createAccessService_accessDirectorySnapshotDocumentId({
+    get cleanText() { return cleanText; },
+    get ACCESS_DIRECTORY_SNAPSHOTS_COLLECTION() { return ACCESS_DIRECTORY_SNAPSHOTS_COLLECTION; },
+    get ACCESS_DIRECTORY_SNAPSHOT_STATE_COLLECTION() { return ACCESS_DIRECTORY_SNAPSHOT_STATE_COLLECTION; },
+    get crypto() { return crypto; },
+    get db() { return db; }
+  });
+  return $serverAccessService_accessDirectorySnapshotDocumentId.instance;
+}
+
+function $serverAccessService_normalizedAccessScope() {
+  if (!$serverAccessService_normalizedAccessScope.instance) $serverAccessService_normalizedAccessScope.instance = require("./backend/server-access-service/normalized-access-scope").createAccessService_normalizedAccessScope({
+    get cleanText() { return cleanText; }
+  });
+  return $serverAccessService_normalizedAccessScope.instance;
+}
+
+function $serverAccessService_assertEngagementsAccess() {
+  if (!$serverAccessService_assertEngagementsAccess.instance) $serverAccessService_assertEngagementsAccess.instance = require("./backend/server-access-service/assert-engagements-access").createAccessService_assertEngagementsAccess({
+    get ADMIN_UIDS() { return ADMIN_UIDS; },
+    get HttpsError() { return HttpsError; },
+    get db() { return db; }
+  });
+  return $serverAccessService_assertEngagementsAccess.instance;
+}
+
+function $serverAccessService_engagementAccessContext() {
+  if (!$serverAccessService_engagementAccessContext.instance) $serverAccessService_engagementAccessContext.instance = require("./backend/server-access-service/engagement-access-context").createAccessService_engagementAccessContext({
+    get cleanText() { return cleanText; },
+    get ADMIN_UIDS() { return ADMIN_UIDS; },
+    get FUNCTIONS_EMULATOR_ACTIVE() { return FUNCTIONS_EMULATOR_ACTIVE; },
+    get HttpsError() { return HttpsError; },
+    get db() { return db; },
+    get local$competitionEmailNotificationsEnabled() { return $serverAccessService_competitionEmailNotificationsEnabled().competitionEmailNotificationsEnabled; },
+    get local$normalizedAccessScope() { return $serverAccessService_normalizedAccessScope().normalizedAccessScope; }
+  });
+  return $serverAccessService_engagementAccessContext.instance;
+}
+
+function $serverAccessService_accessManagementContext() {
+  if (!$serverAccessService_accessManagementContext.instance) $serverAccessService_accessManagementContext.instance = require("./backend/server-access-service/access-management-context").createAccessService_accessManagementContext({
+    get cleanText() { return cleanText; },
+    get ADMIN_UIDS() { return ADMIN_UIDS; },
+    get FUNCTIONS_EMULATOR_ACTIVE() { return FUNCTIONS_EMULATOR_ACTIVE; },
+    get HttpsError() { return HttpsError; },
+    get db() { return db; },
+    get local$canonicalAccessDirectoryRegionId() { return $serverAccessService_canonicalAccessDirectoryRegionId().canonicalAccessDirectoryRegionId; },
+    get local$normalizedAccessScope() { return $serverAccessService_normalizedAccessScope().normalizedAccessScope; }
+  });
+  return $serverAccessService_accessManagementContext.instance;
+}
+
+function $serverAccessService_auditManagementContext() {
+  if (!$serverAccessService_auditManagementContext.instance) $serverAccessService_auditManagementContext.instance = require("./backend/server-access-service/audit-management-context").createAccessService_auditManagementContext({
+    get ADMIN_UIDS() { return ADMIN_UIDS; },
+    get FUNCTIONS_EMULATOR_ACTIVE() { return FUNCTIONS_EMULATOR_ACTIVE; },
+    get HttpsError() { return HttpsError; },
+    get db() { return db; }
+  });
+  return $serverAccessService_auditManagementContext.instance;
+}
+
+function $serverAccessService_accessUserRegionIdFromData() {
+  if (!$serverAccessService_accessUserRegionIdFromData.instance) $serverAccessService_accessUserRegionIdFromData.instance = require("./backend/server-access-service/access-user-region-id-from-data").createAccessService_accessUserRegionIdFromData({
+    get cleanText() { return cleanText; },
+    get CLUB_REFERENCE_BY_ID() { return CLUB_REFERENCE_BY_ID; },
+    get local$canonicalAccessDirectoryRegionId() { return $serverAccessService_canonicalAccessDirectoryRegionId().canonicalAccessDirectoryRegionId; },
+    get local$normalizedAccessScope() { return $serverAccessService_normalizedAccessScope().normalizedAccessScope; }
+  });
+  return $serverAccessService_accessUserRegionIdFromData.instance;
+}
+
+function $serverAccessService_accessUserCanBeManagedByRegional() {
+  if (!$serverAccessService_accessUserCanBeManagedByRegional.instance) $serverAccessService_accessUserCanBeManagedByRegional.instance = require("./backend/server-access-service/access-user-can-be-managed-by-regional").createAccessService_accessUserCanBeManagedByRegional({
+    get HttpsError() { return HttpsError; },
+    get local$accessUserRegionIdFromData() { return $serverAccessService_accessUserRegionIdFromData().accessUserRegionIdFromData; }
+  });
+  return $serverAccessService_accessUserCanBeManagedByRegional.instance;
+}
+
+function $serverAccessService_displayNameFromProfile() {
+  if (!$serverAccessService_displayNameFromProfile.instance) $serverAccessService_displayNameFromProfile.instance = require("./backend/server-access-service/display-name-from-profile").createAccessService_displayNameFromProfile({
+    get cleanText() { return cleanText; }
+  });
+  return $serverAccessService_displayNameFromProfile.instance;
+}
+
+function $serverAccessService_accessUserDisplayName() {
+  if (!$serverAccessService_accessUserDisplayName.instance) $serverAccessService_accessUserDisplayName.instance = require("./backend/server-access-service/access-user-display-name").createAccessService_accessUserDisplayName({
+    get cleanText() { return cleanText; },
+    get db() { return db; },
+    get local$displayNameFromProfile() { return $serverAccessService_displayNameFromProfile().displayNameFromProfile; }
+  });
+  return $serverAccessService_accessUserDisplayName.instance;
+}
+
+function $serverAccessService_writeAuditLog() {
+  if (!$serverAccessService_writeAuditLog.instance) $serverAccessService_writeAuditLog.instance = require("./backend/server-access-service/write-audit-log").createAccessService_writeAuditLog({
+    get db() { return db; }
+  });
+  return $serverAccessService_writeAuditLog.instance;
+}
+
+function $serverAccessService_writeAuditLogOnce() {
+  if (!$serverAccessService_writeAuditLogOnce.instance) $serverAccessService_writeAuditLogOnce.instance = require("./backend/server-access-service/write-audit-log-once").createAccessService_writeAuditLogOnce({
+    get db() { return db; },
+    get local$stableHash() { return $serverAccessService_stableHash().stableHash; }
+  });
+  return $serverAccessService_writeAuditLogOnce.instance;
+}
+
+function $serverAccessService_writeAccessGrants() {
+  if (!$serverAccessService_writeAccessGrants.instance) $serverAccessService_writeAccessGrants.instance = require("./backend/server-access-service/write-access-grants").createAccessService_writeAccessGrants({
+    get ACCESS_CAPABILITIES() { return ACCESS_CAPABILITIES; },
+    get db() { return db; },
+    get local$normalizedAccessScope() { return $serverAccessService_normalizedAccessScope().normalizedAccessScope; }
+  });
+  return $serverAccessService_writeAccessGrants.instance;
+}
+
+function $serverAccessService_assertRole() {
+  if (!$serverAccessService_assertRole.instance) $serverAccessService_assertRole.instance = require("./backend/server-access-service/assert-role").createAccessService_assertRole({
+    get HttpsError() { return HttpsError; },
+    get ROLE_SET() { return ROLE_SET; }
+  });
+  return $serverAccessService_assertRole.instance;
+}
+
+function $serverAccessService_assertPin() {
+  if (!$serverAccessService_assertPin.instance) $serverAccessService_assertPin.instance = require("./backend/server-access-service/assert-pin").createAccessService_assertPin({
+    get HASH_BYTES() { return HASH_BYTES; },
+    get HASH_ITERATIONS() { return HASH_ITERATIONS; },
+    get HttpsError() { return HttpsError; },
+    get crypto() { return crypto; }
+  });
+  return $serverAccessService_assertPin.instance;
+}
+
+function $serverAccessService_stableHash() {
+  if (!$serverAccessService_stableHash.instance) $serverAccessService_stableHash.instance = require("./backend/server-access-service/stable-hash").createAccessService_stableHash({
+    get crypto() { return crypto; }
+  });
+  return $serverAccessService_stableHash.instance;
+}
+
+function $serverImportService_activeCompetitionImportData() {
+  if (!$serverImportService_activeCompetitionImportData.instance) $serverImportService_activeCompetitionImportData.instance = require("./backend/server-import-service/active-competition-import-data").createImportService_activeCompetitionImportData({
+    get POOL_COURSES() { return POOL_COURSES; },
+    get cleanText() { return cleanText; },
+    get stableHash() { return stableHash; },
+    get local$ageCategoryFromDates() { return $serverImportService_ageCategoryFromDates().ageCategoryFromDates; },
+    get local$categoryCodeFromCategory() { return $serverImportService_categoryCodeFromCategory().categoryCodeFromCategory; },
+    get local$fallbackCategoryFromSource() { return $serverImportService_categoryCodeFromCategory().fallbackCategoryFromSource; },
+    get local$formatTimeValue() { return $serverImportService_formatTimeValue().formatTimeValue; },
+    get local$isYouthCategory() { return $serverImportService_isYouthCategory().isYouthCategory; },
+    get local$normalizeCategoryCode() { return $serverImportService_normalizeCategoryCode().normalizeCategoryCode; },
+    get local$normalizeCourseCode() { return $serverImportService_normalizeCourseCode().normalizeCourseCode; },
+    get local$recordReferenceForPerformance() { return $serverImportService_isYouthCategory().recordReferenceForPerformance; },
+    get local$recordReferenceMap() { return $serverImportService_isYouthCategory().recordReferenceMap; },
+    get local$sameRecordAlertSwimmer() { return $serverImportService_normalizedRecordAlertName().sameRecordAlertSwimmer; }
+  });
+  return $serverImportService_activeCompetitionImportData.instance;
+}
+
+function $serverImportService_parseTimeValue() {
+  if (!$serverImportService_parseTimeValue.instance) $serverImportService_parseTimeValue.instance = require("./backend/server-import-service/parse-time-value").createImportService_parseTimeValue({
+    get cleanText() { return cleanText; }
+  });
+  return $serverImportService_parseTimeValue.instance;
+}
+
+function $serverImportService_formatTimeValue() {
+  if (!$serverImportService_formatTimeValue.instance) $serverImportService_formatTimeValue.instance = require("./backend/server-import-service/format-time-value").createImportService_formatTimeValue({
+
+  });
+  return $serverImportService_formatTimeValue.instance;
+}
+
+function $serverImportService_normalizeCourseCode() {
+  if (!$serverImportService_normalizeCourseCode.instance) $serverImportService_normalizeCourseCode.instance = require("./backend/server-import-service/normalize-course-code").createImportService_normalizeCourseCode({
+    get cleanText() { return cleanText; }
+  });
+  return $serverImportService_normalizeCourseCode.instance;
+}
+
+function $serverImportService_normalizeCategoryCode() {
+  if (!$serverImportService_normalizeCategoryCode.instance) $serverImportService_normalizeCategoryCode.instance = require("./backend/server-import-service/normalize-category-code").createImportService_normalizeCategoryCode({
+    get cleanText() { return cleanText; }
+  });
+  return $serverImportService_normalizeCategoryCode.instance;
+}
+
+function $serverImportService_ageCategoryFromDates() {
+  if (!$serverImportService_ageCategoryFromDates.instance) $serverImportService_ageCategoryFromDates.instance = require("./backend/server-import-service/age-category-from-dates").createImportService_ageCategoryFromDates({
+    get local$importSeasonYear() { return $serverImportService_importSeasonYear().importSeasonYear; }
+  });
+  return $serverImportService_ageCategoryFromDates.instance;
+}
+
+function $serverImportService_performanceCategoryFromRow() {
+  if (!$serverImportService_performanceCategoryFromRow.instance) $serverImportService_performanceCategoryFromRow.instance = require("./backend/server-import-service/performance-category-from-row").createImportService_performanceCategoryFromRow({
+    get cleanText() { return cleanText; },
+    get local$ageCategoryFromDates() { return $serverImportService_ageCategoryFromDates().ageCategoryFromDates; },
+    get local$fallbackCategoryFromSource() { return $serverImportService_categoryCodeFromCategory().fallbackCategoryFromSource; }
+  });
+  return $serverImportService_performanceCategoryFromRow.instance;
+}
+
+function $serverImportService_categoryCodeFromCategory() {
+  if (!$serverImportService_categoryCodeFromCategory.instance) $serverImportService_categoryCodeFromCategory.instance = require("./backend/server-import-service/category-code-from-category").createImportService_categoryCodeFromCategory({
+    get local$normalizeCategoryCode() { return $serverImportService_normalizeCategoryCode().normalizeCategoryCode; }
+  });
+  return $serverImportService_categoryCodeFromCategory.instance;
+}
+
+function $serverImportService_loadPerformanceRecordsData() {
+  if (!$serverImportService_loadPerformanceRecordsData.instance) $serverImportService_loadPerformanceRecordsData.instance = require("./backend/server-import-service/load-performance-records-data").createImportService_loadPerformanceRecordsData({
+    get db() { return db; }
+  });
+  return $serverImportService_loadPerformanceRecordsData.instance;
+}
+
+function $serverImportService_isYouthCategory() {
+  if (!$serverImportService_isYouthCategory.instance) $serverImportService_isYouthCategory.instance = require("./backend/server-import-service/is-youth-category").createImportService_isYouthCategory({
+    get cleanText() { return cleanText; },
+    get local$normalizeCategoryCode() { return $serverImportService_normalizeCategoryCode().normalizeCategoryCode; },
+    get local$normalizeCourseCode() { return $serverImportService_normalizeCourseCode().normalizeCourseCode; }
+  });
+  return $serverImportService_isYouthCategory.instance;
+}
+
+function $serverImportService_engagementRelayReferenceCourseCode() {
+  if (!$serverImportService_engagementRelayReferenceCourseCode.instance) $serverImportService_engagementRelayReferenceCourseCode.instance = require("./backend/server-import-service/engagement-relay-reference-course-code").createImportService_engagementRelayReferenceCourseCode({
+    get cleanText() { return cleanText; },
+    get local$normalizeCourseCode() { return $serverImportService_normalizeCourseCode().normalizeCourseCode; }
+  });
+  return $serverImportService_engagementRelayReferenceCourseCode.instance;
+}
+
+function $serverImportService_normalizedRecordAlertName() {
+  if (!$serverImportService_normalizedRecordAlertName.instance) $serverImportService_normalizedRecordAlertName.instance = require("./backend/server-import-service/normalized-record-alert-name").createImportService_normalizedRecordAlertName({
+    get normalizeIdentityText() { return normalizeIdentityText; }
+  });
+  return $serverImportService_normalizedRecordAlertName.instance;
+}
+
+function $serverImportService_isAlreadyPublishedRecordAlert() {
+  if (!$serverImportService_isAlreadyPublishedRecordAlert.instance) $serverImportService_isAlreadyPublishedRecordAlert.instance = require("./backend/server-import-service/is-already-published-record-alert").createImportService_isAlreadyPublishedRecordAlert({
+    get cleanText() { return cleanText; },
+    get local$sameRecordAlertSwimmer() { return $serverImportService_normalizedRecordAlertName().sameRecordAlertSwimmer; }
+  });
+  return $serverImportService_isAlreadyPublishedRecordAlert.instance;
+}
+
+function $serverImportService_resolveIntranapSwimmer() {
+  if (!$serverImportService_resolveIntranapSwimmer.instance) $serverImportService_resolveIntranapSwimmer.instance = require("./backend/server-import-service/resolve-intranap-swimmer").createImportService_resolveIntranapSwimmer({
+    get swimmerIdentityKey() { return swimmerIdentityKey; },
+    get cleanText() { return cleanText; },
+    get intranapSwimmerLookup() { return intranapSwimmerLookup; },
+    get local$normalizeCategoryCode() { return $serverImportService_normalizeCategoryCode().normalizeCategoryCode; }
+  });
+  return $serverImportService_resolveIntranapSwimmer.instance;
+}
+
+function $serverImportService_competitionImportExistingSummary() {
+  if (!$serverImportService_competitionImportExistingSummary.instance) $serverImportService_competitionImportExistingSummary.instance = require("./backend/server-import-service/competition-import-existing-summary").createImportService_competitionImportExistingSummary({
+    get cleanFirestoreValue() { return cleanFirestoreValue; },
+    get cleanText() { return cleanText; },
+    get competitionImportIdentity() { return competitionImportIdentity; },
+    get db() { return db; },
+    get importPublicationStatus() { return importPublicationStatus; },
+    get sameCompetitionImport() { return sameCompetitionImport; },
+    get local$activeCompetitionImportData() { return $serverImportService_activeCompetitionImportData().activeCompetitionImportData; },
+    get local$normalizeCategoryCode() { return $serverImportService_normalizeCategoryCode().normalizeCategoryCode; },
+    get local$resolveIntranapSwimmer() { return $serverImportService_resolveIntranapSwimmer().resolveIntranapSwimmer; }
+  });
+  return $serverImportService_competitionImportExistingSummary.instance;
+}
+
+function $serverImportService_coursePayload() {
+  if (!$serverImportService_coursePayload.instance) $serverImportService_coursePayload.instance = require("./backend/server-import-service/course-payload").createImportService_coursePayload({
+    get courseLengthFromCode() { return courseLengthFromCode; },
+    get courseStyleFromCode() { return courseStyleFromCode; },
+    get COURSE_META() { return COURSE_META; }
+  });
+  return $serverImportService_coursePayload.instance;
+}
+
+function $serverImportService_importSeasonYear() {
+  if (!$serverImportService_importSeasonYear.instance) $serverImportService_importSeasonYear.instance = require("./backend/server-import-service/import-season-year").createImportService_importSeasonYear({
+
+  });
+  return $serverImportService_importSeasonYear.instance;
+}
+
+function $serverImportService_currentEngagementSeasonInfo() {
+  if (!$serverImportService_currentEngagementSeasonInfo.instance) $serverImportService_currentEngagementSeasonInfo.instance = require("./backend/server-import-service/current-engagement-season-info").createImportService_currentEngagementSeasonInfo({
+
+  });
+  return $serverImportService_currentEngagementSeasonInfo.instance;
+}
+
+function $serverImportService_cleanEngagementLicenseSeasonStatus() {
+  if (!$serverImportService_cleanEngagementLicenseSeasonStatus.instance) $serverImportService_cleanEngagementLicenseSeasonStatus.instance = require("./backend/server-import-service/clean-engagement-license-season-status").createImportService_cleanEngagementLicenseSeasonStatus({
+    get ENGAGEMENT_LICENSE_SEASON_STATUSES() { return ENGAGEMENT_LICENSE_SEASON_STATUSES; },
+    get ENGAGEMENT_LICENSE_VERIFICATION_STATUSES() { return ENGAGEMENT_LICENSE_VERIFICATION_STATUSES; },
+    get cleanText() { return cleanText; },
+    get local$currentEngagementSeasonInfo() { return $serverImportService_currentEngagementSeasonInfo().currentEngagementSeasonInfo; }
+  });
+  return $serverImportService_cleanEngagementLicenseSeasonStatus.instance;
+}
+
+function $serverImportService_engagementSeasonEndYearFromIsoDate() {
+  if (!$serverImportService_engagementSeasonEndYearFromIsoDate.instance) $serverImportService_engagementSeasonEndYearFromIsoDate.instance = require("./backend/server-import-service/engagement-season-end-year-from-iso-date").createImportService_engagementSeasonEndYearFromIsoDate({
+    get cleanIsoDate() { return cleanIsoDate; },
+    get local$currentEngagementSeasonInfo() { return $serverImportService_currentEngagementSeasonInfo().currentEngagementSeasonInfo; },
+    get local$importSeasonYear() { return $serverImportService_importSeasonYear().importSeasonYear; }
+  });
+  return $serverImportService_engagementSeasonEndYearFromIsoDate.instance;
+}
+
+function $serverImportService_engagementSeasonBoundsFromEndYear() {
+  if (!$serverImportService_engagementSeasonBoundsFromEndYear.instance) $serverImportService_engagementSeasonBoundsFromEndYear.instance = require("./backend/server-import-service/engagement-season-bounds-from-end-year").createImportService_engagementSeasonBoundsFromEndYear({
+    get local$currentEngagementSeasonInfo() { return $serverImportService_currentEngagementSeasonInfo().currentEngagementSeasonInfo; }
+  });
+  return $serverImportService_engagementSeasonBoundsFromEndYear.instance;
+}
+
+function $serverImportService_currentEngagementCategoryFromBirthDate() {
+  if (!$serverImportService_currentEngagementCategoryFromBirthDate.instance) $serverImportService_currentEngagementCategoryFromBirthDate.instance = require("./backend/server-import-service/current-engagement-category-from-birth-date").createImportService_currentEngagementCategoryFromBirthDate({
+    get local$ageCategoryFromDates() { return $serverImportService_ageCategoryFromDates().ageCategoryFromDates; }
+  });
+  return $serverImportService_currentEngagementCategoryFromBirthDate.instance;
+}
+
+function $serverImportService_assertPinAttemptAllowed() {
+  if (!$serverImportService_assertPinAttemptAllowed.instance) $serverImportService_assertPinAttemptAllowed.instance = require("./backend/server-import-service/assert-pin-attempt-allowed").createImportService_assertPinAttemptAllowed({
+    get HttpsError() { return HttpsError; },
+    get cleanText() { return cleanText; },
+    get crypto() { return crypto; },
+    get db() { return db; },
+    get stableHash() { return stableHash; }
+  });
+  return $serverImportService_assertPinAttemptAllowed.instance;
+}
+
+function $serverImportService_roleUid() {
+  if (!$serverImportService_roleUid.instance) $serverImportService_roleUid.instance = require("./backend/server-import-service/role-uid").createImportService_roleUid({
+    get cleanText() { return cleanText; },
+    get crypto() { return crypto; }
+  });
+  return $serverImportService_roleUid.instance;
+}
+
+function $serverImportService_liveDataRef() {
+  if (!$serverImportService_liveDataRef.instance) $serverImportService_liveDataRef.instance = require("./backend/server-import-service/live-data-ref").createImportService_liveDataRef({
+    get db() { return db; }
+  });
+  return $serverImportService_liveDataRef.instance;
+}
+
+function $serverImportService_rolePinsRef() {
+  if (!$serverImportService_rolePinsRef.instance) $serverImportService_rolePinsRef.instance = require("./backend/server-import-service/role-pins-ref").createImportService_rolePinsRef({
+    get db() { return db; }
+  });
+  return $serverImportService_rolePinsRef.instance;
+}
+
+function $serverImportService_consoleGrantRef() {
+  if (!$serverImportService_consoleGrantRef.instance) $serverImportService_consoleGrantRef.instance = require("./backend/server-import-service/console-grant-ref").createImportService_consoleGrantRef({
+    get db() { return db; }
+  });
+  return $serverImportService_consoleGrantRef.instance;
+}
+
+function $serverConsoleService_assertConsolePortalAccess() {
+  if (!$serverConsoleService_assertConsolePortalAccess.instance) $serverConsoleService_assertConsolePortalAccess.instance = require("./backend/server-console-service/assert-console-portal-access").createConsoleService_assertConsolePortalAccess({
+    get ADMIN_UIDS() { return ADMIN_UIDS; },
+    get HttpsError() { return HttpsError; },
+    get PIN_LOCK_MS_BY_LEVEL() { return PIN_LOCK_MS_BY_LEVEL; },
+    get PIN_MAX_FAILED_ATTEMPTS() { return PIN_MAX_FAILED_ATTEMPTS; },
+    get cleanText() { return cleanText; },
+    get db() { return db; },
+    get hasConsolePortalCapability() { return hasConsolePortalCapability; },
+    get lockMessage() { return lockMessage; },
+    get lockRemainingSeconds() { return lockRemainingSeconds; },
+    get stableHash() { return stableHash; }
+  });
+  return $serverConsoleService_assertConsolePortalAccess.instance;
+}
+
+function $serverConsoleService_updatePublicPinNotes() {
+  if (!$serverConsoleService_updatePublicPinNotes.instance) $serverConsoleService_updatePublicPinNotes.instance = require("./backend/server-console-service/update-public-pin-notes").createConsoleService_updatePublicPinNotes({
+    get db() { return db; },
+    get liveDataRef() { return liveDataRef; }
+  });
+  return $serverConsoleService_updatePublicPinNotes.instance;
+}
+
+function $serverConsoleService_assertComputerPdfAccess() {
+  if (!$serverConsoleService_assertComputerPdfAccess.instance) $serverConsoleService_assertComputerPdfAccess.instance = require("./backend/server-console-service/assert-computer-pdf-access").createConsoleService_assertComputerPdfAccess({
+    get ADMIN_UIDS() { return ADMIN_UIDS; },
+    get HttpsError() { return HttpsError; },
+    get cleanText() { return cleanText; },
+    get consoleGrantRef() { return consoleGrantRef; }
+  });
+  return $serverConsoleService_assertComputerPdfAccess.instance;
+}
+
+function $serverDirectoryService_cleanEngagementAccessRequestPayload() {
+  if (!$serverDirectoryService_cleanEngagementAccessRequestPayload.instance) $serverDirectoryService_cleanEngagementAccessRequestPayload.instance = require("./backend/server-directory-service/clean-engagement-access-request-payload").createDirectoryService_cleanEngagementAccessRequestPayload({
+    get CLUB_REFERENCE_BY_FEDERAL_NUMBER() { return CLUB_REFERENCE_BY_FEDERAL_NUMBER; },
+    get ENGAGEMENT_CLUBS_COLLECTION() { return ENGAGEMENT_CLUBS_COLLECTION; },
+    get ENVIRONMENT() { return ENVIRONMENT; },
+    get HttpsError() { return HttpsError; },
+    get assertEmail() { return assertEmail; },
+    get auth() { return auth; },
+    get cleanClubPayload() { return cleanClubPayload; },
+    get cleanText() { return cleanText; },
+    get db() { return db; },
+    get engagementClubCode() { return engagementClubCode; },
+    get engagementClubRegionId() { return engagementClubRegionId; },
+    get engagementStoredClubItem() { return engagementStoredClubItem; },
+    get normalizeEmail() { return normalizeEmail; }
+  });
+  return $serverDirectoryService_cleanEngagementAccessRequestPayload.instance;
+}
+
+function $serverDirectoryService_engagementAccessRequestItem() {
+  if (!$serverDirectoryService_engagementAccessRequestItem.instance) $serverDirectoryService_engagementAccessRequestItem.instance = require("./backend/server-directory-service/engagement-access-request-item").createDirectoryService_engagementAccessRequestItem({
+    get cleanFirestoreValue() { return cleanFirestoreValue; },
+    get cleanText() { return cleanText; }
+  });
+  return $serverDirectoryService_engagementAccessRequestItem.instance;
+}
+
+function $serverDirectoryService_assertEngagementAccessRequestScope() {
+  if (!$serverDirectoryService_assertEngagementAccessRequestScope.instance) $serverDirectoryService_assertEngagementAccessRequestScope.instance = require("./backend/server-directory-service/assert-engagement-access-request-scope").createDirectoryService_assertEngagementAccessRequestScope({
+    get ENGAGEMENT_CLUBS_COLLECTION() { return ENGAGEMENT_CLUBS_COLLECTION; },
+    get ENVIRONMENT() { return ENVIRONMENT; },
+    get HttpsError() { return HttpsError; },
+    get cleanClubPayload() { return cleanClubPayload; },
+    get cleanText() { return cleanText; },
+    get db() { return db; },
+    get engagementAccessRejection() { return engagementAccessRejection; },
+    get engagementMailSmtpConfig() { return engagementMailSmtpConfig; },
+    get livePalmesMailHtml() { return livePalmesMailHtml; },
+    get nodemailer() { return nodemailer; },
+    get publicEngagementClubDirectoryRef() { return publicEngagementClubDirectoryRef; },
+    get publicEngagementClubItem() { return publicEngagementClubItem; },
+    get stableHash() { return stableHash; },
+    get writeAuditLog() { return writeAuditLog; },
+    get writeAuditLogOnce() { return writeAuditLogOnce; },
+    get local$findEngagementClubByFederalNumber() { return $serverDirectoryService_cleanEngagementAccessRequestPayload().findEngagementClubByFederalNumber; }
+  });
+  return $serverDirectoryService_assertEngagementAccessRequestScope.instance;
+}
+
+function $serverDirectoryService_consumePublicAccessRequestRateLimit() {
+  if (!$serverDirectoryService_consumePublicAccessRequestRateLimit.instance) $serverDirectoryService_consumePublicAccessRequestRateLimit.instance = require("./backend/server-directory-service/consume-public-access-request-rate-limit").createDirectoryService_consumePublicAccessRequestRateLimit({
+    get CLUB_REFERENCE_REGION_LABELS() { return CLUB_REFERENCE_REGION_LABELS; },
+    get HttpsError() { return HttpsError; },
+    get PORTAL_ACCESS_RATE_LIMIT_COLLECTION() { return PORTAL_ACCESS_RATE_LIMIT_COLLECTION; },
+    get cleanText() { return cleanText; },
+    get db() { return db; },
+    get engagementAccessAcknowledgement() { return engagementAccessAcknowledgement; },
+    get engagementAccessAdminNotification() { return engagementAccessAdminNotification; },
+    get engagementAccessAdminNotificationRecipients() { return engagementAccessAdminNotificationRecipients; },
+    get engagementActiveMailRecipients() { return engagementActiveMailRecipients; },
+    get engagementClubCode() { return engagementClubCode; },
+    get engagementClubName() { return engagementClubName; },
+    get engagementExistingAccountNotice() { return engagementExistingAccountNotice; },
+    get engagementMailSmtpConfig() { return engagementMailSmtpConfig; },
+    get livePalmesMailHtml() { return livePalmesMailHtml; },
+    get nextPortalAccessRateLimit() { return nextPortalAccessRateLimit; },
+    get nodemailer() { return nodemailer; },
+    get stableHash() { return stableHash; },
+    get local$engagementAccessExistingClubPayload() { return $serverDirectoryService_cleanEngagementAccessRequestPayload().engagementAccessExistingClubPayload; },
+    get local$findEngagementClubByFederalNumber() { return $serverDirectoryService_cleanEngagementAccessRequestPayload().findEngagementClubByFederalNumber; }
+  });
+  return $serverDirectoryService_consumePublicAccessRequestRateLimit.instance;
+}
+
+function $serverDirectoryService_accessUserListItemFromData() {
+  if (!$serverDirectoryService_accessUserListItemFromData.instance) $serverDirectoryService_accessUserListItemFromData.instance = require("./backend/server-directory-service/access-user-list-item-from-data").createDirectoryService_accessUserListItemFromData({
+    get activeCapabilitiesFromMap() { return activeCapabilitiesFromMap; }
+  });
+  return $serverDirectoryService_accessUserListItemFromData.instance;
+}
+
+function $serverDirectoryService_accessUserContainsSearch() {
+  if (!$serverDirectoryService_accessUserContainsSearch.instance) $serverDirectoryService_accessUserContainsSearch.instance = require("./backend/server-directory-service/access-user-contains-search").createDirectoryService_accessUserContainsSearch({
+    get cleanText() { return cleanText; },
+    get db() { return db; },
+    get local$accessUserListItemFromData() { return $serverDirectoryService_accessUserListItemFromData().accessUserListItemFromData; }
+  });
+  return $serverDirectoryService_accessUserContainsSearch.instance;
+}
+
+function $serverDirectoryService_accessDirectorySnapshotEntry() {
+  if (!$serverDirectoryService_accessDirectorySnapshotEntry.instance) $serverDirectoryService_accessDirectorySnapshotEntry.instance = require("./backend/server-directory-service/access-directory-snapshot-entry").createDirectoryService_accessDirectorySnapshotEntry({
+    get ACCESS_DIRECTORY_SNAPSHOT_VERSION() { return ACCESS_DIRECTORY_SNAPSHOT_VERSION; },
+    get accessDirectorySnapshotRef() { return accessDirectorySnapshotRef; },
+    get accessUserRegionIdFromData() { return accessUserRegionIdFromData; },
+    get local$accessUserListItemFromData() { return $serverDirectoryService_accessUserListItemFromData().accessUserListItemFromData; }
+  });
+  return $serverDirectoryService_accessDirectorySnapshotEntry.instance;
+}
+
+function $serverDirectoryService_sameAccessDirectorySnapshotEntry() {
+  if (!$serverDirectoryService_sameAccessDirectorySnapshotEntry.instance) $serverDirectoryService_sameAccessDirectorySnapshotEntry.instance = require("./backend/server-directory-service/same-access-directory-snapshot-entry").createDirectoryService_sameAccessDirectorySnapshotEntry({
+
+  });
+  return $serverDirectoryService_sameAccessDirectorySnapshotEntry.instance;
+}
+
+function $serverDirectoryService_accessUserDeletionRequestItem() {
+  if (!$serverDirectoryService_accessUserDeletionRequestItem.instance) $serverDirectoryService_accessUserDeletionRequestItem.instance = require("./backend/server-directory-service/access-user-deletion-request-item").createDirectoryService_accessUserDeletionRequestItem({
+
+  });
+  return $serverDirectoryService_accessUserDeletionRequestItem.instance;
+}
+
+function $serverDirectoryService_deleteAccessUserAccount() {
+  if (!$serverDirectoryService_deleteAccessUserAccount.instance) $serverDirectoryService_deleteAccessUserAccount.instance = require("./backend/server-directory-service/delete-access-user-account").createDirectoryService_deleteAccessUserAccount({
+    get ACCESS_CAPABILITIES() { return ACCESS_CAPABILITIES; },
+    get ADMIN_UIDS() { return ADMIN_UIDS; },
+    get HttpsError() { return HttpsError; },
+    get activeCapabilitiesFromMap() { return activeCapabilitiesFromMap; },
+    get auth() { return auth; },
+    get cleanText() { return cleanText; },
+    get db() { return db; },
+    get writeAuditLog() { return writeAuditLog; }
+  });
+  return $serverDirectoryService_deleteAccessUserAccount.instance;
+}
+
+function $serverDirectoryService_setCompetitionEmailNotificationPreference() {
+  if (!$serverDirectoryService_setCompetitionEmailNotificationPreference.instance) $serverDirectoryService_setCompetitionEmailNotificationPreference.instance = require("./backend/server-directory-service/set-competition-email-notification-preference").createDirectoryService_setCompetitionEmailNotificationPreference({
+    get FieldValue() { return FieldValue; },
+    get HttpsError() { return HttpsError; },
+    get cleanText() { return cleanText; },
+    get db() { return db; },
+    get engagementMailRecipientFromUserDoc() { return engagementMailRecipientFromUserDoc; },
+    get engagementMailRecipientIndexKey() { return engagementMailRecipientIndexKey; },
+    get engagementMailRecipientShardNumber() { return engagementMailRecipientShardNumber; },
+    get engagementMailRecipientShardRef() { return engagementMailRecipientShardRef; },
+    get writeAuditLog() { return writeAuditLog; }
+  });
+  return $serverDirectoryService_setCompetitionEmailNotificationPreference.instance;
+}
+
 function portalAccountHandlers() {
   if (!portalAccountHandlers.instance) portalAccountHandlers.instance = require("./portal-account-handlers").createAccountHandlers({
     get HttpsError() { return HttpsError; },
@@ -120,72 +1124,7 @@ function portalPerformanceHandlers() {
   return portalPerformanceHandlers.instance;
 }
 
-function portalAccessHandlers() {
-  if (!portalAccessHandlers.instance) portalAccessHandlers.instance = require("./portal-access-handlers").createAccessHandlers({
-    get ACCESS_CAPABILITIES() { return ACCESS_CAPABILITIES; },
-    get ACCESS_CAPABILITY_SET() { return ACCESS_CAPABILITY_SET; },
-    get ACCESS_DIRECTORY_INDEX_VERSION() { return ACCESS_DIRECTORY_INDEX_VERSION; },
-    get ACCESS_DIRECTORY_SNAPSHOTS_COLLECTION() { return ACCESS_DIRECTORY_SNAPSHOTS_COLLECTION; },
-    get ACCESS_DIRECTORY_SNAPSHOT_VERSION() { return ACCESS_DIRECTORY_SNAPSHOT_VERSION; },
-    get ADMIN_UIDS() { return ADMIN_UIDS; },
-    get FUNCTIONS_EMULATOR_ACTIVE() { return FUNCTIONS_EMULATOR_ACTIVE; },
-    get FieldPath() { return FieldPath; },
-    get FieldValue() { return FieldValue; },
-    get HttpsError() { return HttpsError; },
-    get ROLES() { return ROLES; },
-    get Timestamp() { return Timestamp; },
-    get accessDirectoryFilterKey() { return accessDirectoryFilterKey; },
-    get accessDirectoryIndexStateRef() { return accessDirectoryIndexStateRef; },
-    get accessDirectoryKeys() { return accessDirectoryKeys; },
-    get accessDirectorySnapshotEntry() { return accessDirectorySnapshotEntry; },
-    get accessDirectorySnapshotEntryKey() { return accessDirectorySnapshotEntryKey; },
-    get accessDirectorySnapshotRegionId() { return accessDirectorySnapshotRegionId; },
-    get accessDirectorySnapshotStateRef() { return accessDirectorySnapshotStateRef; },
-    get accessManagementContext() { return accessManagementContext; },
-    get accessUserDeletionRequestItem() { return accessUserDeletionRequestItem; },
-    get accessUserListItem() { return accessUserListItem; },
-    get accessUserMatchesFilters() { return accessUserMatchesFilters; },
-    get accessUserRegionIdFromData() { return accessUserRegionIdFromData; },
-    get accessUserVisibleForAccessDirectory() { return accessUserVisibleForAccessDirectory; },
-    get activeCapabilitiesFromMap() { return activeCapabilitiesFromMap; },
-    get assertAdmin() { return assertAdmin; },
-    get assertCapability() { return assertCapability; },
-    get assertConsolePortalAccess() { return assertConsolePortalAccess; },
-    get assertEmail() { return assertEmail; },
-    get assertLivePalmesAccess() { return assertLivePalmesAccess; },
-    get assertPin() { return assertPin; },
-    get assertPinAttemptAllowed() { return assertPinAttemptAllowed; },
-    get assertRegionalAccessUserDeletionRequestAllowed() { return assertRegionalAccessUserDeletionRequestAllowed; },
-    get assertRole() { return assertRole; },
-    get auth() { return auth; },
-    get capabilitiesMap() { return capabilitiesMap; },
-    get cleanText() { return cleanText; },
-    get clearPinAttempts() { return clearPinAttempts; },
-    get competitionEmailNotificationsEnabled() { return competitionEmailNotificationsEnabled; },
-    get competitionIdFrom() { return competitionIdFrom; },
-    get consoleGrantRef() { return consoleGrantRef; },
-    get consoleRoleClaims() { return consoleRoleClaims; },
-    get crypto() { return crypto; },
-    get db() { return db; },
-    get deleteAccessUserAccount() { return deleteAccessUserAccount; },
-    get hasConsolePortalCapability() { return hasConsolePortalCapability; },
-    get mergeAccessDirectorySnapshotEntries() { return mergeAccessDirectorySnapshotEntries; },
-    get normalizeEmail() { return normalizeEmail; },
-    get normalizedAccessScope() { return normalizedAccessScope; },
-    get pinAttemptRef() { return pinAttemptRef; },
-    get pinHash() { return pinHash; },
-    get portalReadStats() { return portalReadStats; },
-    get recordFailedPinAttempt() { return recordFailedPinAttempt; },
-    get rolePinsRef() { return rolePinsRef; },
-    get safeCompareHex() { return safeCompareHex; },
-    get searchAccessUserDocuments() { return searchAccessUserDocuments; },
-    get stableHash() { return stableHash; },
-    get updatePublicPinNotes() { return updatePublicPinNotes; },
-    get writeAccessGrants() { return writeAccessGrants; },
-    get writeAuditLog() { return writeAuditLog; }
-  });
-  return portalAccessHandlers.instance;
-}
+
 
 function portalCompetitionHandlers() {
   if (!portalCompetitionHandlers.instance) portalCompetitionHandlers.instance = require("./portal-competition-handlers").createCompetitionHandlers({
@@ -938,41 +1877,11 @@ const PERFORMANCE_PUBLIC_DATA_URL = `${ENVIRONMENT.hostingOrigin}/performances/p
 const PERFORMANCE_BASE_MIGRATION_BATCH_SIZE = 2000;
 const POOL_COURSES = ["50SF", "100SF", "200SF", "400SF", "800SF", "1500SF", "50AP", "100IS", "200IS", "400IS", "50BI", "100BI", "200BI", "400BI"];
 
-function serverAccessService() {
-  if (!serverAccessService.instance) serverAccessService.instance = require("./server-access-service").createAccessService({
-    get cleanText() { return cleanText; },
-    get ACCESS_CAPABILITIES() { return ACCESS_CAPABILITIES; },
-    get ACCESS_CAPABILITY_SET() { return ACCESS_CAPABILITY_SET; },
-    get ACCESS_DIRECTORY_INDEX_STATE_COLLECTION() { return ACCESS_DIRECTORY_INDEX_STATE_COLLECTION; },
-    get ACCESS_DIRECTORY_SNAPSHOTS_COLLECTION() { return ACCESS_DIRECTORY_SNAPSHOTS_COLLECTION; },
-    get ACCESS_DIRECTORY_SNAPSHOT_STATE_COLLECTION() { return ACCESS_DIRECTORY_SNAPSHOT_STATE_COLLECTION; },
-    get ADMIN_UIDS() { return ADMIN_UIDS; },
-    get CLUB_REFERENCE_BY_ID() { return CLUB_REFERENCE_BY_ID; },
-    get CLUB_REFERENCE_REGION_LABELS() { return CLUB_REFERENCE_REGION_LABELS; },
-    get COMPETITION_IDS() { return COMPETITION_IDS; },
-    get ENGAGEMENT_CLUBS_COLLECTION() { return ENGAGEMENT_CLUBS_COLLECTION; },
-    get ENGAGEMENT_EVENT_DEFINITION_BY_CODE() { return ENGAGEMENT_EVENT_DEFINITION_BY_CODE; },
-    get ENGAGEMENT_EVENT_FORBIDDEN_CATEGORIES() { return ENGAGEMENT_EVENT_FORBIDDEN_CATEGORIES; },
-    get ENGAGEMENT_INDIVIDUAL_CATEGORY_CODES() { return ENGAGEMENT_INDIVIDUAL_CATEGORY_CODES; },
-    get ENGAGEMENT_PUBLIC_DIRECTORIES_COLLECTION() { return ENGAGEMENT_PUBLIC_DIRECTORIES_COLLECTION; },
-    get ENGAGEMENT_RELAY_CATEGORY_CODES() { return ENGAGEMENT_RELAY_CATEGORY_CODES; },
-    get ENGAGEMENT_RELAY_MIXED_MODES() { return ENGAGEMENT_RELAY_MIXED_MODES; },
-    get ENVIRONMENT() { return ENVIRONMENT; },
-    get FUNCTIONS_EMULATOR_ACTIVE() { return FUNCTIONS_EMULATOR_ACTIVE; },
-    get HASH_BYTES() { return HASH_BYTES; },
-    get HASH_ITERATIONS() { return HASH_ITERATIONS; },
-    get HttpsError() { return HttpsError; },
-    get LIVEPALMES_NOTIFICATION_LINK_SECRET() { return LIVEPALMES_NOTIFICATION_LINK_SECRET; },
-    get ROLE_SET() { return ROLE_SET; },
-    get crypto() { return crypto; },
-    get db() { return db; },
-  });
-  return serverAccessService.instance;
-}
 
-/* extracted-function: functions/server-access-service.js#portalReadStats */
+
+/* extracted-function: functions/backend/server-access-service/portal-read-stats.js#portalReadStats */
 function portalReadStats(input0, input1) {
-  return serverAccessService().portalReadStats(...arguments);
+  return $serverAccessService_portalReadStats().portalReadStats(...arguments);
 }
 const COURSE_META = {
   "50SF": ["50 m Surface", "50 SF", "SF", 50],
@@ -1047,19 +1956,19 @@ const ENGAGEMENT_RELAY_MIXED_MODES = new Set(["none", "masters", "required"]);
 const ENGAGEMENT_PROGRAM_GENDER_MODES = new Set(["female", "male", "mixed"]);
 const ENGAGEMENT_PROGRAM_PHASES = new Set(["direct", "heats", "final", "slowHeats", "fastHeat"]);
 
-/* extracted-function: functions/server-access-service.js#engagementCategoryCodesForEvent */
+/* extracted-function: functions/backend/server-access-service/clean-engagement-relay-mixed-mode.js#engagementCategoryCodesForEvent */
 function engagementCategoryCodesForEvent(input0) {
-  return serverAccessService().engagementCategoryCodesForEvent(...arguments);
+  return $serverAccessService_cleanEngagementRelayMixedMode().engagementCategoryCodesForEvent(...arguments);
 }
 
-/* extracted-function: functions/server-access-service.js#normalizeEngagementEventCategoryRestrictions */
+/* extracted-function: functions/backend/server-access-service/clean-engagement-relay-mixed-mode.js#normalizeEngagementEventCategoryRestrictions */
 function normalizeEngagementEventCategoryRestrictions(input0) {
-  return serverAccessService().normalizeEngagementEventCategoryRestrictions(...arguments);
+  return $serverAccessService_cleanEngagementRelayMixedMode().normalizeEngagementEventCategoryRestrictions(...arguments);
 }
 
-/* extracted-function: functions/server-access-service.js#cleanEngagementRelayMixedMode */
+/* extracted-function: functions/backend/server-access-service/clean-engagement-relay-mixed-mode.js#cleanEngagementRelayMixedMode */
 function cleanEngagementRelayMixedMode() {
-  return serverAccessService().cleanEngagementRelayMixedMode(...arguments);
+  return $serverAccessService_cleanEngagementRelayMixedMode().cleanEngagementRelayMixedMode(...arguments);
 }
 
 const CATEGORY_LABELS = {
@@ -1097,29 +2006,29 @@ function cleanText(value) {
   return String(value || "").trim();
 }
 
-/* extracted-function: functions/server-access-service.js#competitionEmailNotificationsEnabled */
+/* extracted-function: functions/backend/server-access-service/competition-email-notifications-enabled.js#competitionEmailNotificationsEnabled */
 function competitionEmailNotificationsEnabled() {
-  return serverAccessService().competitionEmailNotificationsEnabled(...arguments);
+  return $serverAccessService_competitionEmailNotificationsEnabled().competitionEmailNotificationsEnabled(...arguments);
 }
 
-/* extracted-function: functions/server-access-service.js#notificationPreferenceSecretValue */
+/* extracted-function: functions/backend/server-access-service/competition-notification-preference-token.js#notificationPreferenceSecretValue */
 function notificationPreferenceSecretValue() {
-  return serverAccessService().notificationPreferenceSecretValue(...arguments);
+  return $serverAccessService_competitionNotificationPreferenceToken().notificationPreferenceSecretValue(...arguments);
 }
 
-/* extracted-function: functions/server-access-service.js#competitionNotificationPreferenceToken */
+/* extracted-function: functions/backend/server-access-service/competition-notification-preference-token.js#competitionNotificationPreferenceToken */
 function competitionNotificationPreferenceToken() {
-  return serverAccessService().competitionNotificationPreferenceToken(...arguments);
+  return $serverAccessService_competitionNotificationPreferenceToken().competitionNotificationPreferenceToken(...arguments);
 }
 
-/* extracted-function: functions/server-access-service.js#validCompetitionNotificationPreferenceToken */
+/* extracted-function: functions/backend/server-access-service/valid-competition-notification-preference-token.js#validCompetitionNotificationPreferenceToken */
 function validCompetitionNotificationPreferenceToken() {
-  return serverAccessService().validCompetitionNotificationPreferenceToken(...arguments);
+  return $serverAccessService_validCompetitionNotificationPreferenceToken().validCompetitionNotificationPreferenceToken(...arguments);
 }
 
-/* extracted-function: functions/server-access-service.js#competitionNotificationPreferenceUrl */
+/* extracted-function: functions/backend/server-access-service/competition-notification-preference-url.js#competitionNotificationPreferenceUrl */
 function competitionNotificationPreferenceUrl() {
-  return serverAccessService().competitionNotificationPreferenceUrl(...arguments);
+  return $serverAccessService_competitionNotificationPreferenceUrl().competitionNotificationPreferenceUrl(...arguments);
 }
 
 const CLUB_REFERENCE_BY_ID = new Map((Array.isArray(clubReference.clubs) ? clubReference.clubs : [])
@@ -1158,224 +2067,224 @@ const CLUB_REFERENCE_REGION_LABELS = {
   "22": "Bourgogne Franche Comté"
 };
 
-/* extracted-function: functions/server-access-service.js#engagementClubRegionId */
+/* extracted-function: functions/backend/server-access-service/engagement-club-region-id.js#engagementClubRegionId */
 function engagementClubRegionId() {
-  return serverAccessService().engagementClubRegionId(...arguments);
+  return $serverAccessService_engagementClubRegionId().engagementClubRegionId(...arguments);
 }
 
-/* extracted-function: functions/server-access-service.js#engagementClubCode */
+/* extracted-function: functions/backend/server-access-service/engagement-club-code.js#engagementClubCode */
 function engagementClubCode(input0) {
-  return serverAccessService().engagementClubCode(...arguments);
+  return $serverAccessService_engagementClubCode().engagementClubCode(...arguments);
 }
 
-/* extracted-function: functions/server-access-service.js#engagementClubName */
+/* extracted-function: functions/backend/server-access-service/engagement-club-name.js#engagementClubName */
 function engagementClubName(input0) {
-  return serverAccessService().engagementClubName(...arguments);
+  return $serverAccessService_engagementClubName().engagementClubName(...arguments);
 }
 
-/* extracted-function: functions/server-access-service.js#engagementStoredClubItem */
+/* extracted-function: functions/backend/server-access-service/engagement-stored-club-item.js#engagementStoredClubItem */
 function engagementStoredClubItem(input0) {
-  return serverAccessService().engagementStoredClubItem(...arguments);
+  return $serverAccessService_engagementStoredClubItem().engagementStoredClubItem(...arguments);
 }
 
-/* extracted-function: functions/server-access-service.js#publicEngagementClubItem */
+/* extracted-function: functions/backend/server-access-service/public-engagement-club-item.js#publicEngagementClubItem */
 function publicEngagementClubItem() {
-  return serverAccessService().publicEngagementClubItem(...arguments);
+  return $serverAccessService_publicEngagementClubItem().publicEngagementClubItem(...arguments);
 }
 
-/* extracted-function: functions/server-access-service.js#publicEngagementClubDirectoryRef */
+/* extracted-function: functions/backend/server-access-service/public-engagement-club-directory-ref.js#publicEngagementClubDirectoryRef */
 function publicEngagementClubDirectoryRef() {
-  return serverAccessService().publicEngagementClubDirectoryRef(...arguments);
+  return $serverAccessService_publicEngagementClubDirectoryRef().publicEngagementClubDirectoryRef(...arguments);
 }
 
-/* extracted-function: functions/server-access-service.js#engagementClubsByIds */
+/* extracted-function: functions/backend/server-access-service/engagement-clubs-by-ids.js#engagementClubsByIds */
 async function engagementClubsByIds() {
-  return serverAccessService().engagementClubsByIds(...arguments);
+  return $serverAccessService_engagementClubsByIds().engagementClubsByIds(...arguments);
 }
 
-/* extracted-function: functions/server-access-service.js#engagementClubById */
+/* extracted-function: functions/backend/server-access-service/engagement-club-access-context.js#engagementClubById */
 async function engagementClubById(input0) {
-  return serverAccessService().engagementClubById(...arguments);
+  return $serverAccessService_engagementClubAccessContext().engagementClubById(...arguments);
 }
 
-/* extracted-function: functions/server-access-service.js#cleanFirestoreValue */
+/* extracted-function: functions/backend/server-access-service/clean-firestore-value.js#cleanFirestoreValue */
 function cleanFirestoreValue(input0) {
-  return serverAccessService().cleanFirestoreValue(...arguments);
+  return $serverAccessService_cleanFirestoreValue().cleanFirestoreValue(...arguments);
 }
 
-/* extracted-function: functions/server-access-service.js#competitionIdFrom */
+/* extracted-function: functions/backend/server-access-service/competition-id-from.js#competitionIdFrom */
 function competitionIdFrom() {
-  return serverAccessService().competitionIdFrom(...arguments);
+  return $serverAccessService_competitionIdFrom().competitionIdFrom(...arguments);
 }
 
-/* extracted-function: functions/server-access-service.js#assertAdmin */
+/* extracted-function: functions/backend/server-access-service/assert-admin.js#assertAdmin */
 function assertAdmin(input0) {
-  return serverAccessService().assertAdmin(...arguments);
+  return $serverAccessService_assertAdmin().assertAdmin(...arguments);
 }
 
-/* extracted-function: functions/server-access-service.js#assertCapability */
+/* extracted-function: functions/backend/server-access-service/assert-capability.js#assertCapability */
 function assertCapability(input0, input1) {
-  return serverAccessService().assertCapability(...arguments);
+  return $serverAccessService_assertCapability().assertCapability(...arguments);
 }
 
-/* extracted-function: functions/server-access-service.js#assertLivePalmesAccess */
+/* extracted-function: functions/backend/server-access-service/assert-live-palmes-access.js#assertLivePalmesAccess */
 async function assertLivePalmesAccess(input0) {
-  return serverAccessService().assertLivePalmesAccess(...arguments);
+  return $serverAccessService_assertLivePalmesAccess().assertLivePalmesAccess(...arguments);
 }
 
-/* extracted-function: functions/server-access-service.js#normalizeEmail */
+/* extracted-function: functions/backend/server-access-service/normalize-email.js#normalizeEmail */
 function normalizeEmail(input0) {
-  return serverAccessService().normalizeEmail(...arguments);
+  return $serverAccessService_normalizeEmail().normalizeEmail(...arguments);
 }
 
-/* extracted-function: functions/server-access-service.js#normalizedEngagementRegionKey */
+/* extracted-function: functions/backend/server-access-service/normalized-engagement-region-key.js#normalizedEngagementRegionKey */
 function normalizedEngagementRegionKey(input0) {
-  return serverAccessService().normalizedEngagementRegionKey(...arguments);
+  return $serverAccessService_normalizedEngagementRegionKey().normalizedEngagementRegionKey(...arguments);
 }
 
-/* extracted-function: functions/server-access-service.js#engagementRegionsMatch */
+/* extracted-function: functions/backend/server-access-service/engagement-regions-match.js#engagementRegionsMatch */
 function engagementRegionsMatch(input0, input1) {
-  return serverAccessService().engagementRegionsMatch(...arguments);
+  return $serverAccessService_engagementRegionsMatch().engagementRegionsMatch(...arguments);
 }
 
-/* extracted-function: functions/server-access-service.js#canonicalAccessDirectoryRegionId */
+/* extracted-function: functions/backend/server-access-service/canonical-access-directory-region-id.js#canonicalAccessDirectoryRegionId */
 function canonicalAccessDirectoryRegionId(input0) {
-  return serverAccessService().canonicalAccessDirectoryRegionId(...arguments);
+  return $serverAccessService_canonicalAccessDirectoryRegionId().canonicalAccessDirectoryRegionId(...arguments);
 }
 
-/* extracted-function: functions/server-access-service.js#assertEmail */
+/* extracted-function: functions/backend/server-access-service/assert-email.js#assertEmail */
 function assertEmail(input0) {
-  return serverAccessService().assertEmail(...arguments);
+  return $serverAccessService_assertEmail().assertEmail(...arguments);
 }
 
-/* extracted-function: functions/server-access-service.js#cleanAccessProfile */
+/* extracted-function: functions/backend/server-access-service/access-scope-for-capability.js#cleanAccessProfile */
 function cleanAccessProfile() {
-  return serverAccessService().cleanAccessProfile(...arguments);
+  return $serverAccessService_accessScopeForCapability().cleanAccessProfile(...arguments);
 }
 
-/* extracted-function: functions/server-access-service.js#capabilitiesMap */
+/* extracted-function: functions/backend/server-access-service/capabilities-map.js#capabilitiesMap */
 function capabilitiesMap() {
-  return serverAccessService().capabilitiesMap(...arguments);
+  return $serverAccessService_capabilitiesMap().capabilitiesMap(...arguments);
 }
 
-/* extracted-function: functions/server-access-service.js#activeCapabilitiesFromMap */
+/* extracted-function: functions/backend/server-access-service/active-capabilities-from-map.js#activeCapabilitiesFromMap */
 function activeCapabilitiesFromMap() {
-  return serverAccessService().activeCapabilitiesFromMap(...arguments);
+  return $serverAccessService_activeCapabilitiesFromMap().activeCapabilitiesFromMap(...arguments);
 }
 
-/* extracted-function: functions/server-access-service.js#accessDirectoryKeys */
+/* extracted-function: functions/backend/server-access-service/access-directory-keys.js#accessDirectoryKeys */
 function accessDirectoryKeys() {
-  return serverAccessService().accessDirectoryKeys(...arguments);
+  return $serverAccessService_accessDirectoryKeys().accessDirectoryKeys(...arguments);
 }
 
-/* extracted-function: functions/server-access-service.js#accessDirectoryFilterKey */
+/* extracted-function: functions/backend/server-access-service/access-directory-filter-key.js#accessDirectoryFilterKey */
 function accessDirectoryFilterKey() {
-  return serverAccessService().accessDirectoryFilterKey(...arguments);
+  return $serverAccessService_accessDirectoryFilterKey().accessDirectoryFilterKey(...arguments);
 }
 
-/* extracted-function: functions/server-access-service.js#accessDirectoryIndexStateRef */
+/* extracted-function: functions/backend/server-access-service/access-directory-index-state-ref.js#accessDirectoryIndexStateRef */
 function accessDirectoryIndexStateRef() {
-  return serverAccessService().accessDirectoryIndexStateRef(...arguments);
+  return $serverAccessService_accessDirectoryIndexStateRef().accessDirectoryIndexStateRef(...arguments);
 }
 
-/* extracted-function: functions/server-access-service.js#accessDirectorySnapshotStateRef */
+/* extracted-function: functions/backend/server-access-service/access-directory-snapshot-document-id.js#accessDirectorySnapshotStateRef */
 function accessDirectorySnapshotStateRef() {
-  return serverAccessService().accessDirectorySnapshotStateRef(...arguments);
+  return $serverAccessService_accessDirectorySnapshotDocumentId().accessDirectorySnapshotStateRef(...arguments);
 }
 
-/* extracted-function: functions/server-access-service.js#accessDirectorySnapshotDocumentId */
+/* extracted-function: functions/backend/server-access-service/access-directory-snapshot-document-id.js#accessDirectorySnapshotDocumentId */
 function accessDirectorySnapshotDocumentId() {
-  return serverAccessService().accessDirectorySnapshotDocumentId(...arguments);
+  return $serverAccessService_accessDirectorySnapshotDocumentId().accessDirectorySnapshotDocumentId(...arguments);
 }
 
-/* extracted-function: functions/server-access-service.js#accessDirectorySnapshotRef */
+/* extracted-function: functions/backend/server-access-service/access-directory-snapshot-document-id.js#accessDirectorySnapshotRef */
 function accessDirectorySnapshotRef() {
-  return serverAccessService().accessDirectorySnapshotRef(...arguments);
+  return $serverAccessService_accessDirectorySnapshotDocumentId().accessDirectorySnapshotRef(...arguments);
 }
 
-/* extracted-function: functions/server-access-service.js#accessDirectorySnapshotEntryKey */
+/* extracted-function: functions/backend/server-access-service/access-directory-snapshot-document-id.js#accessDirectorySnapshotEntryKey */
 function accessDirectorySnapshotEntryKey() {
-  return serverAccessService().accessDirectorySnapshotEntryKey(...arguments);
+  return $serverAccessService_accessDirectorySnapshotDocumentId().accessDirectorySnapshotEntryKey(...arguments);
 }
 
-/* extracted-function: functions/server-access-service.js#normalizedAccessScope */
+/* extracted-function: functions/backend/server-access-service/normalized-access-scope.js#normalizedAccessScope */
 function normalizedAccessScope() {
-  return serverAccessService().normalizedAccessScope(...arguments);
+  return $serverAccessService_normalizedAccessScope().normalizedAccessScope(...arguments);
 }
 
-/* extracted-function: functions/server-access-service.js#accessScopeForCapability */
+/* extracted-function: functions/backend/server-access-service/access-scope-for-capability.js#accessScopeForCapability */
 function accessScopeForCapability() {
-  return serverAccessService().accessScopeForCapability(...arguments);
+  return $serverAccessService_accessScopeForCapability().accessScopeForCapability(...arguments);
 }
 
-/* extracted-function: functions/server-access-service.js#accessScopesMapFromProfile */
+/* extracted-function: functions/backend/server-access-service/access-scope-for-capability.js#accessScopesMapFromProfile */
 function accessScopesMapFromProfile() {
-  return serverAccessService().accessScopesMapFromProfile(...arguments);
+  return $serverAccessService_accessScopeForCapability().accessScopesMapFromProfile(...arguments);
 }
 
-/* extracted-function: functions/server-access-service.js#hasEngagementsCapability */
+/* extracted-function: functions/backend/server-access-service/assert-engagements-access.js#hasEngagementsCapability */
 function hasEngagementsCapability() {
-  return serverAccessService().hasEngagementsCapability(...arguments);
+  return $serverAccessService_assertEngagementsAccess().hasEngagementsCapability(...arguments);
 }
 
-/* extracted-function: functions/server-access-service.js#engagementAccessContext */
+/* extracted-function: functions/backend/server-access-service/engagement-access-context.js#engagementAccessContext */
 async function engagementAccessContext(input0) {
-  return serverAccessService().engagementAccessContext(...arguments);
+  return $serverAccessService_engagementAccessContext().engagementAccessContext(...arguments);
 }
 
-/* extracted-function: functions/server-access-service.js#accessManagementContext */
+/* extracted-function: functions/backend/server-access-service/access-management-context.js#accessManagementContext */
 async function accessManagementContext(input0) {
-  return serverAccessService().accessManagementContext(...arguments);
+  return $serverAccessService_accessManagementContext().accessManagementContext(...arguments);
 }
 
-/* extracted-function: functions/server-access-service.js#auditManagementContext */
+/* extracted-function: functions/backend/server-access-service/audit-management-context.js#auditManagementContext */
 async function auditManagementContext(input0) {
-  return serverAccessService().auditManagementContext(...arguments);
+  return $serverAccessService_auditManagementContext().auditManagementContext(...arguments);
 }
 
-/* extracted-function: functions/server-access-service.js#accessUserRegionIdFromData */
+/* extracted-function: functions/backend/server-access-service/access-user-region-id-from-data.js#accessUserRegionIdFromData */
 function accessUserRegionIdFromData() {
-  return serverAccessService().accessUserRegionIdFromData(...arguments);
+  return $serverAccessService_accessUserRegionIdFromData().accessUserRegionIdFromData(...arguments);
 }
 
-/* extracted-function: functions/server-access-service.js#accessUserVisibleToRegional */
+/* extracted-function: functions/backend/server-access-service/access-directory-filter-key.js#accessUserVisibleToRegional */
 function accessUserVisibleToRegional(input0) {
-  return serverAccessService().accessUserVisibleToRegional(...arguments);
+  return $serverAccessService_accessDirectoryFilterKey().accessUserVisibleToRegional(...arguments);
 }
 
-/* extracted-function: functions/server-access-service.js#accessUserCanBeManagedByRegional */
+/* extracted-function: functions/backend/server-access-service/access-user-can-be-managed-by-regional.js#accessUserCanBeManagedByRegional */
 function accessUserCanBeManagedByRegional(input0) {
-  return serverAccessService().accessUserCanBeManagedByRegional(...arguments);
+  return $serverAccessService_accessUserCanBeManagedByRegional().accessUserCanBeManagedByRegional(...arguments);
 }
 
-/* extracted-function: functions/server-access-service.js#accessUserVisibleForAccessDirectory */
+/* extracted-function: functions/backend/server-access-service/access-directory-filter-key.js#accessUserVisibleForAccessDirectory */
 function accessUserVisibleForAccessDirectory(input0, input1) {
-  return serverAccessService().accessUserVisibleForAccessDirectory(...arguments);
+  return $serverAccessService_accessDirectoryFilterKey().accessUserVisibleForAccessDirectory(...arguments);
 }
 
-/* extracted-function: functions/server-access-service.js#assertRegionalAccessUserDeletionRequestAllowed */
+/* extracted-function: functions/backend/server-access-service/access-user-can-be-managed-by-regional.js#assertRegionalAccessUserDeletionRequestAllowed */
 function assertRegionalAccessUserDeletionRequestAllowed(input0) {
-  return serverAccessService().assertRegionalAccessUserDeletionRequestAllowed(...arguments);
+  return $serverAccessService_accessUserCanBeManagedByRegional().assertRegionalAccessUserDeletionRequestAllowed(...arguments);
 }
 
-/* extracted-function: functions/server-access-service.js#engagementClubAccessContext */
+/* extracted-function: functions/backend/server-access-service/engagement-club-access-context.js#engagementClubAccessContext */
 async function engagementClubAccessContext(input0) {
-  return serverAccessService().engagementClubAccessContext(...arguments);
+  return $serverAccessService_engagementClubAccessContext().engagementClubAccessContext(...arguments);
 }
 
-/* extracted-function: functions/server-access-service.js#assertEngagementsAccess */
+/* extracted-function: functions/backend/server-access-service/assert-engagements-access.js#assertEngagementsAccess */
 async function assertEngagementsAccess(input0) {
-  return serverAccessService().assertEngagementsAccess(...arguments);
+  return $serverAccessService_assertEngagementsAccess().assertEngagementsAccess(...arguments);
 }
 
-/* extracted-function: functions/server-access-service.js#displayNameFromProfile */
+/* extracted-function: functions/backend/server-access-service/display-name-from-profile.js#displayNameFromProfile */
 function displayNameFromProfile() {
-  return serverAccessService().displayNameFromProfile(...arguments);
+  return $serverAccessService_displayNameFromProfile().displayNameFromProfile(...arguments);
 }
 
-/* extracted-function: functions/server-access-service.js#accessUserDisplayName */
+/* extracted-function: functions/backend/server-access-service/access-user-display-name.js#accessUserDisplayName */
 async function accessUserDisplayName(input0) {
-  return serverAccessService().accessUserDisplayName(...arguments);
+  return $serverAccessService_accessUserDisplayName().accessUserDisplayName(...arguments);
 }
 
 /* extracted-function: functions/server-account-write-service.js#userByEmailOrCreate */
@@ -1388,39 +2297,39 @@ async function saveAccessUserProfile(input0, input1) {
   return serverAccountWriteService().saveAccessUserProfile(...arguments);
 }
 
-/* extracted-function: functions/server-access-service.js#writeAuditLog */
+/* extracted-function: functions/backend/server-access-service/write-audit-log.js#writeAuditLog */
 async function writeAuditLog(input0, input1) {
-  return serverAccessService().writeAuditLog(...arguments);
+  return $serverAccessService_writeAuditLog().writeAuditLog(...arguments);
 }
 
-/* extracted-function: functions/server-access-service.js#writeAuditLogOnce */
+/* extracted-function: functions/backend/server-access-service/write-audit-log-once.js#writeAuditLogOnce */
 async function writeAuditLogOnce(input0, input1) {
-  return serverAccessService().writeAuditLogOnce(...arguments);
+  return $serverAccessService_writeAuditLogOnce().writeAuditLogOnce(...arguments);
 }
 
-/* extracted-function: functions/server-access-service.js#writeAccessGrants */
+/* extracted-function: functions/backend/server-access-service/write-access-grants.js#writeAccessGrants */
 async function writeAccessGrants(input0, input1, input2, input3, input4, input5) {
-  return serverAccessService().writeAccessGrants(...arguments);
+  return $serverAccessService_writeAccessGrants().writeAccessGrants(...arguments);
 }
 
-/* extracted-function: functions/server-access-service.js#assertRole */
+/* extracted-function: functions/backend/server-access-service/assert-role.js#assertRole */
 function assertRole(input0) {
-  return serverAccessService().assertRole(...arguments);
+  return $serverAccessService_assertRole().assertRole(...arguments);
 }
 
-/* extracted-function: functions/server-access-service.js#assertPin */
+/* extracted-function: functions/backend/server-access-service/assert-pin.js#assertPin */
 function assertPin(input0) {
-  return serverAccessService().assertPin(...arguments);
+  return $serverAccessService_assertPin().assertPin(...arguments);
 }
 
-/* extracted-function: functions/server-access-service.js#pinHash */
+/* extracted-function: functions/backend/server-access-service/assert-pin.js#pinHash */
 function pinHash(input0, input1) {
-  return serverAccessService().pinHash(...arguments);
+  return $serverAccessService_assertPin().pinHash(...arguments);
 }
 
-/* extracted-function: functions/server-access-service.js#stableHash */
+/* extracted-function: functions/backend/server-access-service/stable-hash.js#stableHash */
 function stableHash(input0) {
-  return serverAccessService().stableHash(...arguments);
+  return $serverAccessService_stableHash().stableHash(...arguments);
 }
 
 function competitionImportParser() {
@@ -1451,35 +2360,11 @@ function cleanImportText(input0) {
   return competitionImportParser().cleanImportText(...arguments);
 }
 
-function serverImportService() {
-  if (!serverImportService.instance) serverImportService.instance = require("./server-import-service").createImportService({
-    get courseLengthFromCode() { return courseLengthFromCode; },
-    get courseStyleFromCode() { return courseStyleFromCode; },
-    get swimmerIdentityKey() { return swimmerIdentityKey; },
-    get normalizeIdentityText() { return normalizeIdentityText; },
-    get COURSE_META() { return COURSE_META; },
-    get ENGAGEMENT_LICENSE_SEASON_STATUSES() { return ENGAGEMENT_LICENSE_SEASON_STATUSES; },
-    get ENGAGEMENT_LICENSE_VERIFICATION_STATUSES() { return ENGAGEMENT_LICENSE_VERIFICATION_STATUSES; },
-    get HttpsError() { return HttpsError; },
-    get POOL_COURSES() { return POOL_COURSES; },
-    get cleanFirestoreValue() { return cleanFirestoreValue; },
-    get cleanIsoDate() { return cleanIsoDate; },
-    get cleanText() { return cleanText; },
-    get competitionImportIdentity() { return competitionImportIdentity; },
-    get crypto() { return crypto; },
-    get db() { return db; },
-    get importPublicationStatus() { return importPublicationStatus; },
-    get intranapSwimmerLookup() { return intranapSwimmerLookup; },
-    get intranapSwimmersReference() { return intranapSwimmersReference; },
-    get sameCompetitionImport() { return sameCompetitionImport; },
-    get stableHash() { return stableHash; }
-  });
-  return serverImportService.instance;
-}
 
-/* extracted-function: functions/server-import-service.js#normalizeImportToken */
+
+/* extracted-function: functions/backend/server-import-service/active-competition-import-data.js#normalizeImportToken */
 function normalizeImportToken(input0) {
-  return serverImportService().normalizeImportToken(...arguments);
+  return $serverImportService_activeCompetitionImportData().normalizeImportToken(...arguments);
 }
 
 /* extracted-function: functions/competition-import-parser.js#parseFrenchDate */
@@ -1492,14 +2377,14 @@ function parseImportDate(input0) {
   return competitionImportParser().parseImportDate(...arguments);
 }
 
-/* extracted-function: functions/server-import-service.js#parseTimeValue */
+/* extracted-function: functions/backend/server-import-service/parse-time-value.js#parseTimeValue */
 function parseTimeValue(input0) {
-  return serverImportService().parseTimeValue(...arguments);
+  return $serverImportService_parseTimeValue().parseTimeValue(...arguments);
 }
 
-/* extracted-function: functions/server-import-service.js#formatTimeValue */
+/* extracted-function: functions/backend/server-import-service/format-time-value.js#formatTimeValue */
 function formatTimeValue(input0) {
-  return serverImportService().formatTimeValue(...arguments);
+  return $serverImportService_formatTimeValue().formatTimeValue(...arguments);
 }
 
 /* extracted-function: functions/competition-import-parser.js#parseIntermediateTimes */
@@ -1517,14 +2402,14 @@ function courseLengthFromCode(course) {
   return match ? Number(match[1]) : null;
 }
 
-/* extracted-function: functions/server-import-service.js#normalizeCourseCode */
+/* extracted-function: functions/backend/server-import-service/normalize-course-code.js#normalizeCourseCode */
 function normalizeCourseCode(input0) {
-  return serverImportService().normalizeCourseCode(...arguments);
+  return $serverImportService_normalizeCourseCode().normalizeCourseCode(...arguments);
 }
 
-/* extracted-function: functions/server-import-service.js#normalizeCategoryCode */
+/* extracted-function: functions/backend/server-import-service/normalize-category-code.js#normalizeCategoryCode */
 function normalizeCategoryCode(input0) {
-  return serverImportService().normalizeCategoryCode(...arguments);
+  return $serverImportService_normalizeCategoryCode().normalizeCategoryCode(...arguments);
 }
 
 function normalizeIdentityText(value) {
@@ -1551,114 +2436,114 @@ function canonicalSwimmerId(ids) {
     .sort((a, b) => Number(a) - Number(b) || a.localeCompare(b, "fr-FR", { numeric: true }))[0] || "";
 }
 
-/* extracted-function: functions/server-import-service.js#competitionYear */
+/* extracted-function: functions/backend/server-import-service/age-category-from-dates.js#competitionYear */
 function competitionYear(input0) {
-  return serverImportService().competitionYear(...arguments);
+  return $serverImportService_ageCategoryFromDates().competitionYear(...arguments);
 }
 
-/* extracted-function: functions/server-import-service.js#birthYear */
+/* extracted-function: functions/backend/server-import-service/age-category-from-dates.js#birthYear */
 function birthYear(input0) {
-  return serverImportService().birthYear(...arguments);
+  return $serverImportService_ageCategoryFromDates().birthYear(...arguments);
 }
 
-/* extracted-function: functions/server-import-service.js#ageCategoryFromDates */
+/* extracted-function: functions/backend/server-import-service/age-category-from-dates.js#ageCategoryFromDates */
 function ageCategoryFromDates(input0, input1) {
-  return serverImportService().ageCategoryFromDates(...arguments);
+  return $serverImportService_ageCategoryFromDates().ageCategoryFromDates(...arguments);
 }
 
-/* extracted-function: functions/server-import-service.js#performanceCategoryFromRow */
+/* extracted-function: functions/backend/server-import-service/performance-category-from-row.js#performanceCategoryFromRow */
 function performanceCategoryFromRow() {
-  return serverImportService().performanceCategoryFromRow(...arguments);
+  return $serverImportService_performanceCategoryFromRow().performanceCategoryFromRow(...arguments);
 }
 
-/* extracted-function: functions/server-import-service.js#fallbackCategoryFromSource */
+/* extracted-function: functions/backend/server-import-service/category-code-from-category.js#fallbackCategoryFromSource */
 function fallbackCategoryFromSource(input0) {
-  return serverImportService().fallbackCategoryFromSource(...arguments);
+  return $serverImportService_categoryCodeFromCategory().fallbackCategoryFromSource(...arguments);
 }
 
-/* extracted-function: functions/server-import-service.js#importPerformanceCategory */
+/* extracted-function: functions/backend/server-import-service/active-competition-import-data.js#importPerformanceCategory */
 function importPerformanceCategory() {
-  return serverImportService().importPerformanceCategory(...arguments);
+  return $serverImportService_activeCompetitionImportData().importPerformanceCategory(...arguments);
 }
 
-/* extracted-function: functions/server-import-service.js#loadPerformanceRecordsData */
+/* extracted-function: functions/backend/server-import-service/load-performance-records-data.js#loadPerformanceRecordsData */
 async function loadPerformanceRecordsData() {
-  return serverImportService().loadPerformanceRecordsData(...arguments);
+  return $serverImportService_loadPerformanceRecordsData().loadPerformanceRecordsData(...arguments);
 }
 
-/* extracted-function: functions/server-import-service.js#recordReferenceRows */
+/* extracted-function: functions/backend/server-import-service/is-youth-category.js#recordReferenceRows */
 function recordReferenceRows() {
-  return serverImportService().recordReferenceRows(...arguments);
+  return $serverImportService_isYouthCategory().recordReferenceRows(...arguments);
 }
 
-/* extracted-function: functions/server-import-service.js#recordReferenceKey */
+/* extracted-function: functions/backend/server-import-service/is-youth-category.js#recordReferenceKey */
 function recordReferenceKey() {
-  return serverImportService().recordReferenceKey(...arguments);
+  return $serverImportService_isYouthCategory().recordReferenceKey(...arguments);
 }
 
-/* extracted-function: functions/server-import-service.js#recordReferenceMap */
+/* extracted-function: functions/backend/server-import-service/is-youth-category.js#recordReferenceMap */
 function recordReferenceMap() {
-  return serverImportService().recordReferenceMap(...arguments);
+  return $serverImportService_isYouthCategory().recordReferenceMap(...arguments);
 }
 
-/* extracted-function: functions/server-import-service.js#recordReferenceForPerformance */
+/* extracted-function: functions/backend/server-import-service/is-youth-category.js#recordReferenceForPerformance */
 function recordReferenceForPerformance(input0, input1, input2, input3) {
-  return serverImportService().recordReferenceForPerformance(...arguments);
+  return $serverImportService_isYouthCategory().recordReferenceForPerformance(...arguments);
 }
 
-/* extracted-function: functions/server-import-service.js#engagementRelayReferenceCourseCode */
+/* extracted-function: functions/backend/server-import-service/engagement-relay-reference-course-code.js#engagementRelayReferenceCourseCode */
 function engagementRelayReferenceCourseCode(input0) {
-  return serverImportService().engagementRelayReferenceCourseCode(...arguments);
+  return $serverImportService_engagementRelayReferenceCourseCode().engagementRelayReferenceCourseCode(...arguments);
 }
 
-/* extracted-function: functions/server-import-service.js#engagementRelayReferenceRows */
+/* extracted-function: functions/backend/server-import-service/engagement-relay-reference-course-code.js#engagementRelayReferenceRows */
 function engagementRelayReferenceRows() {
-  return serverImportService().engagementRelayReferenceRows(...arguments);
+  return $serverImportService_engagementRelayReferenceCourseCode().engagementRelayReferenceRows(...arguments);
 }
 
-/* extracted-function: functions/server-import-service.js#engagementRelayReferenceKey */
+/* extracted-function: functions/backend/server-import-service/engagement-relay-reference-course-code.js#engagementRelayReferenceKey */
 function engagementRelayReferenceKey() {
-  return serverImportService().engagementRelayReferenceKey(...arguments);
+  return $serverImportService_engagementRelayReferenceCourseCode().engagementRelayReferenceKey(...arguments);
 }
 
-/* extracted-function: functions/server-import-service.js#engagementRelayReferenceMap */
+/* extracted-function: functions/backend/server-import-service/engagement-relay-reference-course-code.js#engagementRelayReferenceMap */
 function engagementRelayReferenceMap() {
-  return serverImportService().engagementRelayReferenceMap(...arguments);
+  return $serverImportService_engagementRelayReferenceCourseCode().engagementRelayReferenceMap(...arguments);
 }
 
-/* extracted-function: functions/server-import-service.js#engagementRelayReferenceForEntry */
+/* extracted-function: functions/backend/server-import-service/engagement-relay-reference-course-code.js#engagementRelayReferenceForEntry */
 function engagementRelayReferenceForEntry(input0, input1) {
-  return serverImportService().engagementRelayReferenceForEntry(...arguments);
+  return $serverImportService_engagementRelayReferenceCourseCode().engagementRelayReferenceForEntry(...arguments);
 }
 
-/* extracted-function: functions/server-import-service.js#isYouthCategory */
+/* extracted-function: functions/backend/server-import-service/is-youth-category.js#isYouthCategory */
 function isYouthCategory(input0) {
-  return serverImportService().isYouthCategory(...arguments);
+  return $serverImportService_isYouthCategory().isYouthCategory(...arguments);
 }
 
-/* extracted-function: functions/server-import-service.js#normalizedRecordAlertName */
+/* extracted-function: functions/backend/server-import-service/normalized-record-alert-name.js#normalizedRecordAlertName */
 function normalizedRecordAlertName(input0) {
-  return serverImportService().normalizedRecordAlertName(...arguments);
+  return $serverImportService_normalizedRecordAlertName().normalizedRecordAlertName(...arguments);
 }
 
-/* extracted-function: functions/server-import-service.js#sameRecordAlertSwimmer */
+/* extracted-function: functions/backend/server-import-service/normalized-record-alert-name.js#sameRecordAlertSwimmer */
 function sameRecordAlertSwimmer(input0, input1) {
-  return serverImportService().sameRecordAlertSwimmer(...arguments);
+  return $serverImportService_normalizedRecordAlertName().sameRecordAlertSwimmer(...arguments);
 }
 
-/* extracted-function: functions/server-import-service.js#isAlreadyPublishedRecordAlert */
+/* extracted-function: functions/backend/server-import-service/is-already-published-record-alert.js#isAlreadyPublishedRecordAlert */
 function isAlreadyPublishedRecordAlert() {
-  return serverImportService().isAlreadyPublishedRecordAlert(...arguments);
+  return $serverImportService_isAlreadyPublishedRecordAlert().isAlreadyPublishedRecordAlert(...arguments);
 }
 
-/* extracted-function: functions/server-import-service.js#buildRecordAlert */
+/* extracted-function: functions/backend/server-import-service/active-competition-import-data.js#buildRecordAlert */
 function buildRecordAlert(input0, input1, input2) {
-  return serverImportService().buildRecordAlert(...arguments);
+  return $serverImportService_activeCompetitionImportData().buildRecordAlert(...arguments);
 }
 
-/* extracted-function: functions/server-import-service.js#detectRecordAlerts */
+/* extracted-function: functions/backend/server-import-service/active-competition-import-data.js#detectRecordAlerts */
 function detectRecordAlerts() {
-  return serverImportService().detectRecordAlerts(...arguments);
+  return $serverImportService_activeCompetitionImportData().detectRecordAlerts(...arguments);
 }
 
 function buildIntranapSwimmerReference() {
@@ -1692,64 +2577,64 @@ function buildIntranapSwimmerReference() {
 
 const intranapSwimmerLookup = buildIntranapSwimmerReference();
 
-/* extracted-function: functions/server-import-service.js#resolveIntranapSwimmer */
+/* extracted-function: functions/backend/server-import-service/resolve-intranap-swimmer.js#resolveIntranapSwimmer */
 function resolveIntranapSwimmer(input0, input1) {
-  return serverImportService().resolveIntranapSwimmer(...arguments);
+  return $serverImportService_resolveIntranapSwimmer().resolveIntranapSwimmer(...arguments);
 }
 
-/* extracted-function: functions/server-import-service.js#competitionImportPreviewPerformance */
+/* extracted-function: functions/backend/server-import-service/competition-import-existing-summary.js#competitionImportPreviewPerformance */
 function competitionImportPreviewPerformance() {
-  return serverImportService().competitionImportPreviewPerformance(...arguments);
+  return $serverImportService_competitionImportExistingSummary().competitionImportPreviewPerformance(...arguments);
 }
 
-/* extracted-function: functions/server-import-service.js#categoryCodeFromCategory */
+/* extracted-function: functions/backend/server-import-service/category-code-from-category.js#categoryCodeFromCategory */
 function categoryCodeFromCategory(input0, input1) {
-  return serverImportService().categoryCodeFromCategory(...arguments);
+  return $serverImportService_categoryCodeFromCategory().categoryCodeFromCategory(...arguments);
 }
 
-/* extracted-function: functions/server-import-service.js#coursePayload */
+/* extracted-function: functions/backend/server-import-service/course-payload.js#coursePayload */
 function coursePayload(input0) {
-  return serverImportService().coursePayload(...arguments);
+  return $serverImportService_coursePayload().coursePayload(...arguments);
 }
 
-/* extracted-function: functions/server-import-service.js#importSeasonYear */
+/* extracted-function: functions/backend/server-import-service/import-season-year.js#importSeasonYear */
 function importSeasonYear(input0) {
-  return serverImportService().importSeasonYear(...arguments);
+  return $serverImportService_importSeasonYear().importSeasonYear(...arguments);
 }
 
-/* extracted-function: functions/server-import-service.js#currentEngagementSeasonInfo */
+/* extracted-function: functions/backend/server-import-service/current-engagement-season-info.js#currentEngagementSeasonInfo */
 function currentEngagementSeasonInfo() {
-  return serverImportService().currentEngagementSeasonInfo(...arguments);
+  return $serverImportService_currentEngagementSeasonInfo().currentEngagementSeasonInfo(...arguments);
 }
 
-/* extracted-function: functions/server-import-service.js#cleanEngagementLicenseVerificationStatus */
+/* extracted-function: functions/backend/server-import-service/clean-engagement-license-season-status.js#cleanEngagementLicenseVerificationStatus */
 function cleanEngagementLicenseVerificationStatus(input0) {
-  return serverImportService().cleanEngagementLicenseVerificationStatus(...arguments);
+  return $serverImportService_cleanEngagementLicenseSeasonStatus().cleanEngagementLicenseVerificationStatus(...arguments);
 }
 
-/* extracted-function: functions/server-import-service.js#cleanEngagementLicenseSeasonStatus */
+/* extracted-function: functions/backend/server-import-service/clean-engagement-license-season-status.js#cleanEngagementLicenseSeasonStatus */
 function cleanEngagementLicenseSeasonStatus(input0) {
-  return serverImportService().cleanEngagementLicenseSeasonStatus(...arguments);
+  return $serverImportService_cleanEngagementLicenseSeasonStatus().cleanEngagementLicenseSeasonStatus(...arguments);
 }
 
-/* extracted-function: functions/server-import-service.js#engagementLicenseSeasonState */
+/* extracted-function: functions/backend/server-import-service/clean-engagement-license-season-status.js#engagementLicenseSeasonState */
 function engagementLicenseSeasonState() {
-  return serverImportService().engagementLicenseSeasonState(...arguments);
+  return $serverImportService_cleanEngagementLicenseSeasonStatus().engagementLicenseSeasonState(...arguments);
 }
 
-/* extracted-function: functions/server-import-service.js#engagementSeasonEndYearFromIsoDate */
+/* extracted-function: functions/backend/server-import-service/engagement-season-end-year-from-iso-date.js#engagementSeasonEndYearFromIsoDate */
 function engagementSeasonEndYearFromIsoDate() {
-  return serverImportService().engagementSeasonEndYearFromIsoDate(...arguments);
+  return $serverImportService_engagementSeasonEndYearFromIsoDate().engagementSeasonEndYearFromIsoDate(...arguments);
 }
 
-/* extracted-function: functions/server-import-service.js#engagementSeasonBoundsFromEndYear */
+/* extracted-function: functions/backend/server-import-service/engagement-season-bounds-from-end-year.js#engagementSeasonBoundsFromEndYear */
 function engagementSeasonBoundsFromEndYear(input0) {
-  return serverImportService().engagementSeasonBoundsFromEndYear(...arguments);
+  return $serverImportService_engagementSeasonBoundsFromEndYear().engagementSeasonBoundsFromEndYear(...arguments);
 }
 
-/* extracted-function: functions/server-import-service.js#currentEngagementCategoryFromBirthDate */
+/* extracted-function: functions/backend/server-import-service/current-engagement-category-from-birth-date.js#currentEngagementCategoryFromBirthDate */
 function currentEngagementCategoryFromBirthDate(input0) {
-  return serverImportService().currentEngagementCategoryFromBirthDate(...arguments);
+  return $serverImportService_currentEngagementCategoryFromBirthDate().currentEngagementCategoryFromBirthDate(...arguments);
 }
 
 /* extracted-function: functions/competition-import-parser.js#parseFfessmTxtImport */
@@ -1812,112 +2697,96 @@ function parseCompetitionImportPayload() {
   return competitionImportParser().parseCompetitionImportPayload(...arguments);
 }
 
-/* extracted-function: functions/server-import-service.js#importDocumentId */
+/* extracted-function: functions/backend/server-import-service/active-competition-import-data.js#importDocumentId */
 function importDocumentId() {
-  return serverImportService().importDocumentId(...arguments);
+  return $serverImportService_activeCompetitionImportData().importDocumentId(...arguments);
 }
 
-/* extracted-function: functions/server-import-service.js#activeCompetitionImportData */
+/* extracted-function: functions/backend/server-import-service/active-competition-import-data.js#activeCompetitionImportData */
 function activeCompetitionImportData() {
-  return serverImportService().activeCompetitionImportData(...arguments);
+  return $serverImportService_activeCompetitionImportData().activeCompetitionImportData(...arguments);
 }
 
-/* extracted-function: functions/server-import-service.js#competitionImportExistingSummary */
+/* extracted-function: functions/backend/server-import-service/competition-import-existing-summary.js#competitionImportExistingSummary */
 function competitionImportExistingSummary(input0) {
-  return serverImportService().competitionImportExistingSummary(...arguments);
+  return $serverImportService_competitionImportExistingSummary().competitionImportExistingSummary(...arguments);
 }
 
-/* extracted-function: functions/server-import-service.js#findExistingCompetitionImport */
+/* extracted-function: functions/backend/server-import-service/competition-import-existing-summary.js#findExistingCompetitionImport */
 async function findExistingCompetitionImport() {
-  return serverImportService().findExistingCompetitionImport(...arguments);
+  return $serverImportService_competitionImportExistingSummary().findExistingCompetitionImport(...arguments);
 }
 
-/* extracted-function: functions/server-import-service.js#safeCompareHex */
+/* extracted-function: functions/backend/server-import-service/assert-pin-attempt-allowed.js#safeCompareHex */
 function safeCompareHex(input0, input1) {
-  return serverImportService().safeCompareHex(...arguments);
+  return $serverImportService_assertPinAttemptAllowed().safeCompareHex(...arguments);
 }
 
-/* extracted-function: functions/server-import-service.js#roleUid */
+/* extracted-function: functions/backend/server-import-service/role-uid.js#roleUid */
 function roleUid(input0, input1, input2) {
-  return serverImportService().roleUid(...arguments);
+  return $serverImportService_roleUid().roleUid(...arguments);
 }
 
-/* extracted-function: functions/server-import-service.js#liveDataRef */
+/* extracted-function: functions/backend/server-import-service/live-data-ref.js#liveDataRef */
 function liveDataRef(input0) {
-  return serverImportService().liveDataRef(...arguments);
+  return $serverImportService_liveDataRef().liveDataRef(...arguments);
 }
 
-/* extracted-function: functions/server-import-service.js#rolePinsRef */
+/* extracted-function: functions/backend/server-import-service/role-pins-ref.js#rolePinsRef */
 function rolePinsRef(input0) {
-  return serverImportService().rolePinsRef(...arguments);
+  return $serverImportService_rolePinsRef().rolePinsRef(...arguments);
 }
 
-/* extracted-function: functions/server-import-service.js#pinAttemptRef */
+/* extracted-function: functions/backend/server-import-service/assert-pin-attempt-allowed.js#pinAttemptRef */
 function pinAttemptRef(input0, input1, input2, input3) {
-  return serverImportService().pinAttemptRef(...arguments);
+  return $serverImportService_assertPinAttemptAllowed().pinAttemptRef(...arguments);
 }
 
-/* extracted-function: functions/server-import-service.js#consoleGrantRef */
+/* extracted-function: functions/backend/server-import-service/console-grant-ref.js#consoleGrantRef */
 function consoleGrantRef(input0, input1) {
-  return serverImportService().consoleGrantRef(...arguments);
+  return $serverImportService_consoleGrantRef().consoleGrantRef(...arguments);
 }
 
-/* extracted-function: functions/server-import-service.js#lockRemainingSeconds */
+/* extracted-function: functions/backend/server-import-service/assert-pin-attempt-allowed.js#lockRemainingSeconds */
 function lockRemainingSeconds() {
-  return serverImportService().lockRemainingSeconds(...arguments);
+  return $serverImportService_assertPinAttemptAllowed().lockRemainingSeconds(...arguments);
 }
 
-/* extracted-function: functions/server-import-service.js#lockMessage */
+/* extracted-function: functions/backend/server-import-service/assert-pin-attempt-allowed.js#lockMessage */
 function lockMessage(input0) {
-  return serverImportService().lockMessage(...arguments);
+  return $serverImportService_assertPinAttemptAllowed().lockMessage(...arguments);
 }
 
-/* extracted-function: functions/server-import-service.js#assertPinAttemptAllowed */
+/* extracted-function: functions/backend/server-import-service/assert-pin-attempt-allowed.js#assertPinAttemptAllowed */
 async function assertPinAttemptAllowed(input0) {
-  return serverImportService().assertPinAttemptAllowed(...arguments);
+  return $serverImportService_assertPinAttemptAllowed().assertPinAttemptAllowed(...arguments);
 }
 
-function serverConsoleService() {
-  if (!serverConsoleService.instance) serverConsoleService.instance = require("./server-console-service").createConsoleService({
-    get ADMIN_UIDS() { return ADMIN_UIDS; },
-    get HttpsError() { return HttpsError; },
-    get PIN_LOCK_MS_BY_LEVEL() { return PIN_LOCK_MS_BY_LEVEL; },
-    get PIN_MAX_FAILED_ATTEMPTS() { return PIN_MAX_FAILED_ATTEMPTS; },
-    get cleanText() { return cleanText; },
-    get consoleGrantRef() { return consoleGrantRef; },
-    get db() { return db; },
-    get hasConsolePortalCapability() { return hasConsolePortalCapability; },
-    get liveDataRef() { return liveDataRef; },
-    get lockMessage() { return lockMessage; },
-    get lockRemainingSeconds() { return lockRemainingSeconds; },
-    get stableHash() { return stableHash; }
-  });
-  return serverConsoleService.instance;
-}
 
-/* extracted-function: functions/server-console-service.js#recordFailedPinAttempt */
+
+/* extracted-function: functions/backend/server-console-service/assert-console-portal-access.js#recordFailedPinAttempt */
 async function recordFailedPinAttempt(input0) {
-  return serverConsoleService().recordFailedPinAttempt(...arguments);
+  return $serverConsoleService_assertConsolePortalAccess().recordFailedPinAttempt(...arguments);
 }
 
-/* extracted-function: functions/server-console-service.js#clearPinAttempts */
+/* extracted-function: functions/backend/server-console-service/assert-console-portal-access.js#clearPinAttempts */
 async function clearPinAttempts(input0) {
-  return serverConsoleService().clearPinAttempts(...arguments);
+  return $serverConsoleService_assertConsolePortalAccess().clearPinAttempts(...arguments);
 }
 
-/* extracted-function: functions/server-console-service.js#updatePublicPinNotes */
+/* extracted-function: functions/backend/server-console-service/update-public-pin-notes.js#updatePublicPinNotes */
 async function updatePublicPinNotes(input0, input1) {
-  return serverConsoleService().updatePublicPinNotes(...arguments);
+  return $serverConsoleService_updatePublicPinNotes().updatePublicPinNotes(...arguments);
 }
 
-/* extracted-function: functions/server-console-service.js#assertConsolePortalAccess */
+/* extracted-function: functions/backend/server-console-service/assert-console-portal-access.js#assertConsolePortalAccess */
 async function assertConsolePortalAccess(input0) {
-  return serverConsoleService().assertConsolePortalAccess(...arguments);
+  return $serverConsoleService_assertConsolePortalAccess().assertConsolePortalAccess(...arguments);
 }
 
-/* extracted-function: functions/server-console-service.js#assertComputerPdfAccess */
+/* extracted-function: functions/backend/server-console-service/assert-computer-pdf-access.js#assertComputerPdfAccess */
 async function assertComputerPdfAccess(input0, input1) {
-  return serverConsoleService().assertComputerPdfAccess(...arguments);
+  return $serverConsoleService_assertComputerPdfAccess().assertComputerPdfAccess(...arguments);
 }
 
 exports.storeCompetitionPdf = onCall(CALLABLE_OPTIONS, /* extracted-handler: functions/portal-performance-handlers.js#storeCompetitionPdf#arrow */ async (request) => {
@@ -1947,130 +2816,83 @@ exports.syncOfficialResultToPublicIndex = onDocumentUpdated(PUBLIC_RESULT_TRIGGE
   });
 });
 
-exports.setRolePins = onCall(CALLABLE_OPTIONS, /* extracted-handler: functions/portal-access-handlers.js#setRolePins#arrow */ async (request) => {
-  return portalAccessHandlers().setRolePins(request);
+exports.setRolePins = onCall(CALLABLE_OPTIONS, /* extracted-handler: functions/backend/portal-access-handlers/set-role-pins.js#setRolePins#arrow */ async (request) => {
+  return $portalAccessHandlers_setRolePins().setRolePins(request);
 });
 
-exports.verifyPin = onCall(CALLABLE_OPTIONS, /* extracted-handler: functions/portal-access-handlers.js#verifyPin#arrow */ async (request) => {
-  return portalAccessHandlers().verifyPin(request);
+exports.verifyPin = onCall(CALLABLE_OPTIONS, /* extracted-handler: functions/backend/portal-access-handlers/verify-pin.js#verifyPin#arrow */ async (request) => {
+  return $portalAccessHandlers_verifyPin().verifyPin(request);
 });
 
 exports.createOrUpdateAccessUser = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/portal-account-handlers.js#createOrUpdateAccessUser#arrow */ async (request) => {
   return portalAccountHandlers().createOrUpdateAccessUser(request);
 });
 
-function serverDirectoryService() {
-  if (!serverDirectoryService.instance) serverDirectoryService.instance = require("./server-directory-service").createDirectoryService({
-    get ACCESS_CAPABILITIES() { return ACCESS_CAPABILITIES; },
-    get ACCESS_DIRECTORY_SNAPSHOT_VERSION() { return ACCESS_DIRECTORY_SNAPSHOT_VERSION; },
-    get ADMIN_UIDS() { return ADMIN_UIDS; },
-    get CLUB_REFERENCE_BY_FEDERAL_NUMBER() { return CLUB_REFERENCE_BY_FEDERAL_NUMBER; },
-    get CLUB_REFERENCE_REGION_LABELS() { return CLUB_REFERENCE_REGION_LABELS; },
-    get ENGAGEMENT_CLUBS_COLLECTION() { return ENGAGEMENT_CLUBS_COLLECTION; },
-    get ENVIRONMENT() { return ENVIRONMENT; },
-    get FieldValue() { return FieldValue; },
-    get HttpsError() { return HttpsError; },
-    get PORTAL_ACCESS_RATE_LIMIT_COLLECTION() { return PORTAL_ACCESS_RATE_LIMIT_COLLECTION; },
-    get accessDirectorySnapshotRef() { return accessDirectorySnapshotRef; },
-    get accessUserRegionIdFromData() { return accessUserRegionIdFromData; },
-    get activeCapabilitiesFromMap() { return activeCapabilitiesFromMap; },
-    get assertEmail() { return assertEmail; },
-    get auth() { return auth; },
-    get cleanClubPayload() { return cleanClubPayload; },
-    get cleanFirestoreValue() { return cleanFirestoreValue; },
-    get cleanText() { return cleanText; },
-    get db() { return db; },
-    get engagementAccessAcknowledgement() { return engagementAccessAcknowledgement; },
-    get engagementAccessAdminNotification() { return engagementAccessAdminNotification; },
-    get engagementAccessAdminNotificationRecipients() { return engagementAccessAdminNotificationRecipients; },
-    get engagementAccessRejection() { return engagementAccessRejection; },
-    get engagementActiveMailRecipients() { return engagementActiveMailRecipients; },
-    get engagementClubCode() { return engagementClubCode; },
-    get engagementClubName() { return engagementClubName; },
-    get engagementClubRegionId() { return engagementClubRegionId; },
-    get engagementExistingAccountNotice() { return engagementExistingAccountNotice; },
-    get engagementMailRecipientFromUserDoc() { return engagementMailRecipientFromUserDoc; },
-    get engagementMailRecipientIndexKey() { return engagementMailRecipientIndexKey; },
-    get engagementMailRecipientShardNumber() { return engagementMailRecipientShardNumber; },
-    get engagementMailRecipientShardRef() { return engagementMailRecipientShardRef; },
-    get engagementMailSmtpConfig() { return engagementMailSmtpConfig; },
-    get engagementStoredClubItem() { return engagementStoredClubItem; },
-    get livePalmesMailHtml() { return livePalmesMailHtml; },
-    get nextPortalAccessRateLimit() { return nextPortalAccessRateLimit; },
-    get nodemailer() { return nodemailer; },
-    get normalizeEmail() { return normalizeEmail; },
-    get publicEngagementClubDirectoryRef() { return publicEngagementClubDirectoryRef; },
-    get publicEngagementClubItem() { return publicEngagementClubItem; },
-    get stableHash() { return stableHash; },
-    get writeAuditLog() { return writeAuditLog; },
-    get writeAuditLogOnce() { return writeAuditLogOnce; }
-  });
-  return serverDirectoryService.instance;
-}
 
-/* extracted-function: functions/server-directory-service.js#cleanEngagementAccessRequestPayload */
+
+/* extracted-function: functions/backend/server-directory-service/clean-engagement-access-request-payload.js#cleanEngagementAccessRequestPayload */
 function cleanEngagementAccessRequestPayload() {
-  return serverDirectoryService().cleanEngagementAccessRequestPayload(...arguments);
+  return $serverDirectoryService_cleanEngagementAccessRequestPayload().cleanEngagementAccessRequestPayload(...arguments);
 }
 
-/* extracted-function: functions/server-directory-service.js#engagementAccessRequestItem */
+/* extracted-function: functions/backend/server-directory-service/engagement-access-request-item.js#engagementAccessRequestItem */
 function engagementAccessRequestItem(input0) {
-  return serverDirectoryService().engagementAccessRequestItem(...arguments);
+  return $serverDirectoryService_engagementAccessRequestItem().engagementAccessRequestItem(...arguments);
 }
 
-/* extracted-function: functions/server-directory-service.js#assertEngagementAccessRequestScope */
+/* extracted-function: functions/backend/server-directory-service/assert-engagement-access-request-scope.js#assertEngagementAccessRequestScope */
 function assertEngagementAccessRequestScope() {
-  return serverDirectoryService().assertEngagementAccessRequestScope(...arguments);
+  return $serverDirectoryService_assertEngagementAccessRequestScope().assertEngagementAccessRequestScope(...arguments);
 }
 
-/* extracted-function: functions/server-directory-service.js#engagementAccessExistingClubPayload */
+/* extracted-function: functions/backend/server-directory-service/clean-engagement-access-request-payload.js#engagementAccessExistingClubPayload */
 function engagementAccessExistingClubPayload() {
-  return serverDirectoryService().engagementAccessExistingClubPayload(...arguments);
+  return $serverDirectoryService_cleanEngagementAccessRequestPayload().engagementAccessExistingClubPayload(...arguments);
 }
 
-/* extracted-function: functions/server-directory-service.js#findEngagementClubByFederalNumber */
+/* extracted-function: functions/backend/server-directory-service/clean-engagement-access-request-payload.js#findEngagementClubByFederalNumber */
 async function findEngagementClubByFederalNumber() {
-  return serverDirectoryService().findEngagementClubByFederalNumber(...arguments);
+  return $serverDirectoryService_cleanEngagementAccessRequestPayload().findEngagementClubByFederalNumber(...arguments);
 }
 
-/* extracted-function: functions/server-directory-service.js#resolveExistingClubForAccessRequest */
+/* extracted-function: functions/backend/server-directory-service/consume-public-access-request-rate-limit.js#resolveExistingClubForAccessRequest */
 async function resolveExistingClubForAccessRequest() {
-  return serverDirectoryService().resolveExistingClubForAccessRequest(...arguments);
+  return $serverDirectoryService_consumePublicAccessRequestRateLimit().resolveExistingClubForAccessRequest(...arguments);
 }
 
-/* extracted-function: functions/server-directory-service.js#createClubFromEngagementAccessRequest */
+/* extracted-function: functions/backend/server-directory-service/assert-engagement-access-request-scope.js#createClubFromEngagementAccessRequest */
 async function createClubFromEngagementAccessRequest() {
-  return serverDirectoryService().createClubFromEngagementAccessRequest(...arguments);
+  return $serverDirectoryService_assertEngagementAccessRequestScope().createClubFromEngagementAccessRequest(...arguments);
 }
 
-/* extracted-function: functions/server-directory-service.js#sendEngagementAccessAcknowledgement */
+/* extracted-function: functions/backend/server-directory-service/consume-public-access-request-rate-limit.js#sendEngagementAccessAcknowledgement */
 async function sendEngagementAccessAcknowledgement() {
-  return serverDirectoryService().sendEngagementAccessAcknowledgement(...arguments);
+  return $serverDirectoryService_consumePublicAccessRequestRateLimit().sendEngagementAccessAcknowledgement(...arguments);
 }
 
-/* extracted-function: functions/server-directory-service.js#sendEngagementAccessRejection */
+/* extracted-function: functions/backend/server-directory-service/assert-engagement-access-request-scope.js#sendEngagementAccessRejection */
 async function sendEngagementAccessRejection() {
-  return serverDirectoryService().sendEngagementAccessRejection(...arguments);
+  return $serverDirectoryService_assertEngagementAccessRequestScope().sendEngagementAccessRejection(...arguments);
 }
 
-/* extracted-function: functions/server-directory-service.js#sendEngagementExistingAccountNotice */
+/* extracted-function: functions/backend/server-directory-service/consume-public-access-request-rate-limit.js#sendEngagementExistingAccountNotice */
 async function sendEngagementExistingAccountNotice() {
-  return serverDirectoryService().sendEngagementExistingAccountNotice(...arguments);
+  return $serverDirectoryService_consumePublicAccessRequestRateLimit().sendEngagementExistingAccountNotice(...arguments);
 }
 
-/* extracted-function: functions/server-directory-service.js#engagementExistingAccessAccount */
+/* extracted-function: functions/backend/server-directory-service/clean-engagement-access-request-payload.js#engagementExistingAccessAccount */
 async function engagementExistingAccessAccount() {
-  return serverDirectoryService().engagementExistingAccessAccount(...arguments);
+  return $serverDirectoryService_cleanEngagementAccessRequestPayload().engagementExistingAccessAccount(...arguments);
 }
 
-/* extracted-function: functions/server-directory-service.js#consumePublicAccessRequestRateLimit */
+/* extracted-function: functions/backend/server-directory-service/consume-public-access-request-rate-limit.js#consumePublicAccessRequestRateLimit */
 async function consumePublicAccessRequestRateLimit() {
-  return serverDirectoryService().consumePublicAccessRequestRateLimit(...arguments);
+  return $serverDirectoryService_consumePublicAccessRequestRateLimit().consumePublicAccessRequestRateLimit(...arguments);
 }
 
-/* extracted-function: functions/server-directory-service.js#sendEngagementAccessAdminNotifications */
+/* extracted-function: functions/backend/server-directory-service/consume-public-access-request-rate-limit.js#sendEngagementAccessAdminNotifications */
 async function sendEngagementAccessAdminNotifications() {
-  return serverDirectoryService().sendEngagementAccessAdminNotifications(...arguments);
+  return $serverDirectoryService_consumePublicAccessRequestRateLimit().sendEngagementAccessAdminNotifications(...arguments);
 }
 
 exports.submitEngagementAccessRequest = onCall({ ...PORTAL_ACCESS_REQUEST_OPTIONS, secrets: ENVIRONMENT.sportingDataSource === "nap" ? [...ENGAGEMENT_MAIL_SECRETS, defineSecret("LIVEPALMES_NAP_PASSWORD") ] : ENGAGEMENT_MAIL_SECRETS }, async (request) => {
@@ -2269,34 +3091,34 @@ exports.resolveEngagementAccessRequest = onCall({ ...PORTAL_ACCESS_REQUEST_OPTIO
   };
 });
 
-/* extracted-function: functions/server-directory-service.js#accessUserListItemFromData */
+/* extracted-function: functions/backend/server-directory-service/access-user-list-item-from-data.js#accessUserListItemFromData */
 function accessUserListItemFromData(input0) {
-  return serverDirectoryService().accessUserListItemFromData(...arguments);
+  return $serverDirectoryService_accessUserListItemFromData().accessUserListItemFromData(...arguments);
 }
 
-/* extracted-function: functions/server-directory-service.js#accessUserListItem */
+/* extracted-function: functions/backend/server-directory-service/access-user-contains-search.js#accessUserListItem */
 function accessUserListItem(input0) {
-  return serverDirectoryService().accessUserListItem(...arguments);
+  return $serverDirectoryService_accessUserContainsSearch().accessUserListItem(...arguments);
 }
 
-/* extracted-function: functions/server-directory-service.js#accessDirectorySnapshotEntry */
+/* extracted-function: functions/backend/server-directory-service/access-directory-snapshot-entry.js#accessDirectorySnapshotEntry */
 function accessDirectorySnapshotEntry(input0) {
-  return serverDirectoryService().accessDirectorySnapshotEntry(...arguments);
+  return $serverDirectoryService_accessDirectorySnapshotEntry().accessDirectorySnapshotEntry(...arguments);
 }
 
-/* extracted-function: functions/server-directory-service.js#accessDirectorySnapshotRegionId */
+/* extracted-function: functions/backend/server-directory-service/access-directory-snapshot-entry.js#accessDirectorySnapshotRegionId */
 function accessDirectorySnapshotRegionId() {
-  return serverDirectoryService().accessDirectorySnapshotRegionId(...arguments);
+  return $serverDirectoryService_accessDirectorySnapshotEntry().accessDirectorySnapshotRegionId(...arguments);
 }
 
-/* extracted-function: functions/server-directory-service.js#sameAccessDirectorySnapshotEntry */
+/* extracted-function: functions/backend/server-directory-service/same-access-directory-snapshot-entry.js#sameAccessDirectorySnapshotEntry */
 function sameAccessDirectorySnapshotEntry(input0, input1) {
-  return serverDirectoryService().sameAccessDirectorySnapshotEntry(...arguments);
+  return $serverDirectoryService_sameAccessDirectorySnapshotEntry().sameAccessDirectorySnapshotEntry(...arguments);
 }
 
-/* extracted-function: functions/server-directory-service.js#mergeAccessDirectorySnapshotEntries */
+/* extracted-function: functions/backend/server-directory-service/access-directory-snapshot-entry.js#mergeAccessDirectorySnapshotEntries */
 function mergeAccessDirectorySnapshotEntries(input0, input1, input2, input3, input4) {
-  return serverDirectoryService().mergeAccessDirectorySnapshotEntries(...arguments);
+  return $serverDirectoryService_accessDirectorySnapshotEntry().mergeAccessDirectorySnapshotEntries(...arguments);
 }
 
 /* extracted-function: functions/server-directory-sync-service.js#syncAccessDirectorySnapshotFromUserChange */
@@ -2304,75 +3126,75 @@ async function syncAccessDirectorySnapshotFromUserChange(input0, input1, input2,
   return serverDirectorySyncService().syncAccessDirectorySnapshotFromUserChange(...arguments);
 }
 
-/* extracted-function: functions/server-directory-service.js#accessUserDeletionRequestItem */
+/* extracted-function: functions/backend/server-directory-service/access-user-deletion-request-item.js#accessUserDeletionRequestItem */
 function accessUserDeletionRequestItem(input0) {
-  return serverDirectoryService().accessUserDeletionRequestItem(...arguments);
+  return $serverDirectoryService_accessUserDeletionRequestItem().accessUserDeletionRequestItem(...arguments);
 }
 
-/* extracted-function: functions/server-directory-service.js#accessUserMatchesFilters */
+/* extracted-function: functions/backend/server-directory-service/access-user-contains-search.js#accessUserMatchesFilters */
 function accessUserMatchesFilters(input0, input1, input2) {
-  return serverDirectoryService().accessUserMatchesFilters(...arguments);
+  return $serverDirectoryService_accessUserContainsSearch().accessUserMatchesFilters(...arguments);
 }
 
-/* extracted-function: functions/server-directory-service.js#normalizedDirectoryText */
+/* extracted-function: functions/backend/server-directory-service/access-user-contains-search.js#normalizedDirectoryText */
 function normalizedDirectoryText(input0) {
-  return serverDirectoryService().normalizedDirectoryText(...arguments);
+  return $serverDirectoryService_accessUserContainsSearch().normalizedDirectoryText(...arguments);
 }
 
-/* extracted-function: functions/server-directory-service.js#accessUserContainsSearch */
+/* extracted-function: functions/backend/server-directory-service/access-user-contains-search.js#accessUserContainsSearch */
 function accessUserContainsSearch(input0, input1) {
-  return serverDirectoryService().accessUserContainsSearch(...arguments);
+  return $serverDirectoryService_accessUserContainsSearch().accessUserContainsSearch(...arguments);
 }
 
-/* extracted-function: functions/server-directory-service.js#searchAccessUserDocuments */
+/* extracted-function: functions/backend/server-directory-service/access-user-contains-search.js#searchAccessUserDocuments */
 async function searchAccessUserDocuments(input0, input1) {
-  return serverDirectoryService().searchAccessUserDocuments(...arguments);
+  return $serverDirectoryService_accessUserContainsSearch().searchAccessUserDocuments(...arguments);
 }
 
-exports.rebuildAccessDirectoryIndexNextPage = onCall(CALLABLE_OPTIONS, /* extracted-handler: functions/portal-access-handlers.js#rebuildAccessDirectoryIndexNextPage#arrow */ async (request) => {
-  return portalAccessHandlers().rebuildAccessDirectoryIndexNextPage(request);
+exports.rebuildAccessDirectoryIndexNextPage = onCall(CALLABLE_OPTIONS, /* extracted-handler: functions/backend/portal-access-handlers/rebuild-access-directory-index-next-page.js#rebuildAccessDirectoryIndexNextPage#arrow */ async (request) => {
+  return $portalAccessHandlers_rebuildAccessDirectoryIndexNextPage().rebuildAccessDirectoryIndexNextPage(request);
 });
 
-exports.rebuildAccessDirectorySnapshotNextPage = onCall(CALLABLE_OPTIONS, /* extracted-handler: functions/portal-access-handlers.js#rebuildAccessDirectorySnapshotNextPage#arrow */ async (request) => {
-  return portalAccessHandlers().rebuildAccessDirectorySnapshotNextPage(request);
+exports.rebuildAccessDirectorySnapshotNextPage = onCall(CALLABLE_OPTIONS, /* extracted-handler: functions/backend/portal-access-handlers/rebuild-access-directory-snapshot-next-page.js#rebuildAccessDirectorySnapshotNextPage#arrow */ async (request) => {
+  return $portalAccessHandlers_rebuildAccessDirectorySnapshotNextPage().rebuildAccessDirectorySnapshotNextPage(request);
 });
 
-exports.listAccessUsers = onCall(CALLABLE_OPTIONS, /* extracted-handler: functions/portal-access-handlers.js#listAccessUsers#arrow */ async (request) => {
-  return portalAccessHandlers().listAccessUsers(request);
+exports.listAccessUsers = onCall(CALLABLE_OPTIONS, /* extracted-handler: functions/backend/portal-access-handlers/list-access-users.js#listAccessUsers#arrow */ async (request) => {
+  return $portalAccessHandlers_listAccessUsers().listAccessUsers(request);
 });
 
-exports.setAccessUserStatus = onCall(CALLABLE_OPTIONS, /* extracted-handler: functions/portal-access-handlers.js#setAccessUserStatus#arrow */ async (request) => {
-  return portalAccessHandlers().setAccessUserStatus(request);
+exports.setAccessUserStatus = onCall(CALLABLE_OPTIONS, /* extracted-handler: functions/backend/portal-access-handlers/set-access-user-status.js#setAccessUserStatus#arrow */ async (request) => {
+  return $portalAccessHandlers_setAccessUserStatus().setAccessUserStatus(request);
 });
 
-/* extracted-function: functions/server-directory-service.js#deleteAccessUserAccount */
+/* extracted-function: functions/backend/server-directory-service/delete-access-user-account.js#deleteAccessUserAccount */
 async function deleteAccessUserAccount(input0, input1) {
-  return serverDirectoryService().deleteAccessUserAccount(...arguments);
+  return $serverDirectoryService_deleteAccessUserAccount().deleteAccessUserAccount(...arguments);
 }
 
-exports.deleteAccessUser = onCall(CALLABLE_OPTIONS, /* extracted-handler: functions/portal-access-handlers.js#deleteAccessUser#arrow */ async (request) => {
-  return portalAccessHandlers().deleteAccessUser(request);
+exports.deleteAccessUser = onCall(CALLABLE_OPTIONS, /* extracted-handler: functions/backend/portal-access-handlers/delete-access-user.js#deleteAccessUser#arrow */ async (request) => {
+  return $portalAccessHandlers_deleteAccessUser().deleteAccessUser(request);
 });
 
-exports.requestAccessUserDeletion = onCall(CALLABLE_OPTIONS, /* extracted-handler: functions/portal-access-handlers.js#requestAccessUserDeletion#arrow */ async (request) => {
-  return portalAccessHandlers().requestAccessUserDeletion(request);
+exports.requestAccessUserDeletion = onCall(CALLABLE_OPTIONS, /* extracted-handler: functions/backend/portal-access-handlers/request-access-user-deletion.js#requestAccessUserDeletion#arrow */ async (request) => {
+  return $portalAccessHandlers_requestAccessUserDeletion().requestAccessUserDeletion(request);
 });
 
-exports.listAccessUserDeletionRequests = onCall(CALLABLE_OPTIONS, /* extracted-handler: functions/portal-access-handlers.js#listAccessUserDeletionRequests#arrow */ async (request) => {
-  return portalAccessHandlers().listAccessUserDeletionRequests(request);
+exports.listAccessUserDeletionRequests = onCall(CALLABLE_OPTIONS, /* extracted-handler: functions/backend/portal-access-handlers/list-access-user-deletion-requests.js#listAccessUserDeletionRequests#arrow */ async (request) => {
+  return $portalAccessHandlers_listAccessUserDeletionRequests().listAccessUserDeletionRequests(request);
 });
 
-exports.resolveAccessUserDeletionRequest = onCall(CALLABLE_OPTIONS, /* extracted-handler: functions/portal-access-handlers.js#resolveAccessUserDeletionRequest#arrow */ async (request) => {
-  return portalAccessHandlers().resolveAccessUserDeletionRequest(request);
+exports.resolveAccessUserDeletionRequest = onCall(CALLABLE_OPTIONS, /* extracted-handler: functions/backend/portal-access-handlers/resolve-access-user-deletion-request.js#resolveAccessUserDeletionRequest#arrow */ async (request) => {
+  return $portalAccessHandlers_resolveAccessUserDeletionRequest().resolveAccessUserDeletionRequest(request);
 });
 
-exports.updateCurrentAccountEmail = onCall(CALLABLE_OPTIONS, /* extracted-handler: functions/portal-access-handlers.js#updateCurrentAccountEmail#arrow */ async (request) => {
-  return portalAccessHandlers().updateCurrentAccountEmail(request);
+exports.updateCurrentAccountEmail = onCall(CALLABLE_OPTIONS, /* extracted-handler: functions/backend/portal-access-handlers/update-current-account-email.js#updateCurrentAccountEmail#arrow */ async (request) => {
+  return $portalAccessHandlers_updateCurrentAccountEmail().updateCurrentAccountEmail(request);
 });
 
-/* extracted-function: functions/server-directory-service.js#setCompetitionEmailNotificationPreference */
+/* extracted-function: functions/backend/server-directory-service/set-competition-email-notification-preference.js#setCompetitionEmailNotificationPreference */
 async function setCompetitionEmailNotificationPreference() {
-  return serverDirectoryService().setCompetitionEmailNotificationPreference(...arguments);
+  return $serverDirectoryService_setCompetitionEmailNotificationPreference().setCompetitionEmailNotificationPreference(...arguments);
 }
 
 exports.updateCurrentEmailNotificationPreferences = onCall(CALLABLE_OPTIONS, async (request) => {
@@ -2396,8 +3218,8 @@ exports.disableCompetitionEmailNotifications = onCall(NOTIFICATION_PREFERENCE_CA
   return { ok: true, competitionNotificationsEnabled: result.enabled, updatedAt: result.updatedAt };
 });
 
-exports.getCurrentAccessUser = onCall(CALLABLE_OPTIONS, /* extracted-handler: functions/portal-access-handlers.js#getCurrentAccessUser#arrow */ async (request) => {
-  return portalAccessHandlers().getCurrentAccessUser(request);
+exports.getCurrentAccessUser = onCall(CALLABLE_OPTIONS, /* extracted-handler: functions/backend/portal-access-handlers/get-current-access-user.js#getCurrentAccessUser#arrow */ async (request) => {
+  return $portalAccessHandlers_getCurrentAccessUser().getCurrentAccessUser(request);
 });
 
 function serverCompetitionModelService() {
