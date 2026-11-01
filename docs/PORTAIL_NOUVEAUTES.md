@@ -12,7 +12,7 @@ Le format reste une date et une heure en gras, puis une liste de modifications, 
 
 `functions/portal-news.js` utilise le document `engagementConfigurations/portalNews` de la collection existante, via la seule callable `managePortalNews`. Aucun changement de règle Firestore, d’index, de capacité ou de collection. Les accès directs client restent interdits. Le profil actif en base prévaut sur les claims et les informations transmises par le navigateur ; les administrateurs historiques de la configuration serveur conservent leur accès.
 
-Chaque entrée conserve identifiant, date de publication, lignes de texte et, après modification, auteur/date de mise à jour. Le document porte une révision : toute sauvegarde ou suppression exige la révision chargée et se déroule dans une transaction. Un conflit conserve le brouillon et demande une actualisation explicite ; aucune écriture n’est relancée automatiquement par le navigateur.
+Chaque entrée conserve identifiant, date de publication, lignes de texte et, après modification, auteur/date de mise à jour. La révision de création départage les publications écrites à la même minute, sans faire remonter une ancienne publication lors de sa correction. Le document porte une révision : toute sauvegarde ou suppression exige la révision chargée et se déroule dans une transaction. Un conflit conserve le brouillon et demande une actualisation explicite ; aucune écriture n’est relancée automatiquement par le navigateur.
 
 TEST utilise exclusivement le Firestore du projet `livepalmes-test`. Le futur déploiement PROD utilisera son propre document dans `livepalmes`, sans copie TEST → PROD. Aucun texte de recette TEST ne se retrouve automatiquement en PROD.
 

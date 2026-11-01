@@ -56,6 +56,14 @@ async function main() {
   await assert.rejects(f.call("national", { action: "save", id: "entry-0", text: "Corrected", publishedAt: INITIAL_ENTRY.publishedAt, expectedRevision: 10 }), { code: "resource-exhausted" });
   f.set(undefined);
   assert.equal((await f.call("legacy", { action: "list" })).entries.length, 1);
+  const ties = fixture();
+  const sameTime = { action: "save", text: "Première", publishedAt: INITIAL_ENTRY.publishedAt };
+  const first = await ties.call("national", { ...sameTime, expectedRevision: 0 });
+  const firstId = first.entries[0].id;
+  const second = await ties.call("national", { ...sameTime, text: "Deuxième", expectedRevision: 1 });
+  assert.notEqual(second.entries[0].id, firstId, "The latest addition comes first even within the same minute");
+  const corrected = await ties.call("national", { ...sameTime, id: firstId, text: "Première corrigée", expectedRevision: 2 });
+  assert.equal(corrected.entries[0].id, second.entries[0].id, "Editing an older entry preserves its order when timestamps match");
   console.log("Portal news: live permissions, bounded reads/writes, original publication, CRUD, chronology, conflicts, empty state and capacity verified offline.");
 }
 main().catch(error => { console.error(error); process.exitCode = 1; });

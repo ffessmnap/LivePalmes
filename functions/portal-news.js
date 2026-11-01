@@ -32,7 +32,7 @@ async function managePortalNews({ db, HttpsError, ADMIN_UIDS }, request) {
   if (input.action !== "list" && !national) fail("permission-denied", "Modification réservée à l’administration nationale.");
   const ref = db.collection("engagementConfigurations").doc("portalNews");
   const read = snapshot => snapshot.exists ? snapshot.data() : { revision: 0, entries: [INITIAL_ENTRY] };
-  const result = data => ({ revision: data.revision, entries: [...data.entries].sort((a, b) => Date.parse(b.publishedAt) - Date.parse(a.publishedAt) || a.id.localeCompare(b.id)) });
+  const result = data => ({ revision: data.revision, entries: [...data.entries].sort((a, b) => Date.parse(b.publishedAt) - Date.parse(a.publishedAt) || (b.createdRevision || 0) - (a.createdRevision || 0) || a.id.localeCompare(b.id)) });
   if (input.action === "list") return result(read(await ref.get()));
   if (!Number.isSafeInteger(input.expectedRevision) || input.expectedRevision < 0) fail("invalid-argument", "Rechargez les nouveautés avant de les modifier.");
   const id = input.id || require("node:crypto").randomUUID();
@@ -49,8 +49,9 @@ async function managePortalNews({ db, HttpsError, ADMIN_UIDS }, request) {
     const before = read(await transaction.get(ref));
     if (before.revision !== input.expectedRevision) fail("aborted", "Les nouveautés ont changé. Actualisez la page avant de recommencer ; votre texte est conservé.");
     if (input.id && !before.entries.some(item => item.id === id)) fail("not-found", "Cette nouveauté n’existe plus. Actualisez la page.");
+    const existing = before.entries.find(item => item.id === id);
     const entries = before.entries.filter(item => item.id !== id);
-    if (entry) entries.push({ ...entry, updatedAt: new Date().toISOString(), updatedBy: uid });
+    if (entry) entries.push({ ...entry, createdRevision: existing ? existing.createdRevision || 0 : before.revision + 1, updatedAt: new Date().toISOString(), updatedBy: uid });
     if (entries.length > MAX_ENTRIES) fail("resource-exhausted", "La page contient déjà 200 nouveautés. Supprimez une ancienne publication avant d’en ajouter une.");
     const data = { revision: before.revision + 1, entries, updatedBy: uid, updatedAt: new Date().toISOString() };
     if (Buffer.byteLength(JSON.stringify(data), "utf8") > MAX_BYTES) fail("resource-exhausted", "La page est pleine. Réduisez les textes ou supprimez une ancienne publication.");
