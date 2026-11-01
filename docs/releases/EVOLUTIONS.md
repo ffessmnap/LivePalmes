@@ -2,6 +2,13 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 1er novembre — Les 14 fusions de clubs réellement exécutées
+
+- Accord final direct d'Antoine pour les fusions, la pause temporaire du Portail/notifications, le rétablissement et la restauration ciblée en cas d'incident ; accord transmis et enregistré dans Infra, sans publication concurrente. Préalable Corbie PROD #651 réutilisé ; outil local [#660](https://github.com/ffessmnap/LivePalmes/pull/660), [CI main réussie](https://github.com/ffessmnap/LivePalmes/actions/runs/41284545755). Aucun nouveau déploiement TEST/PROD ni changement applicatif.
+- Sauvegardes chiffrées réelle et indépendante rouvertes, clé séparée, 212 refus IAM vérifiés et drainage 540 s avant écriture. Verrou réel testé sans mutation (483 ms). Reprise contrôlée sur les mêmes archives après attente de convergence privée, sans répéter les 616 transferts déjà effectués.
+- Vérification réelle à `2026-11-01T07:45:32.938Z` : 630 images SQL après, 14 sources physiquement supprimées et aucune référence restante dans les 18 couples table/champ contrôlés ; 12 cibles et leurs champs intacts. 133 nageurs et 455 performances transférés ; trois comptes Corbie conservés, sept documents vérifiés, projections convergentes. OPEN/OPEN PASS vers 220. Noms et sigles conservés ; aucun compte ou résultat supprimé. Aucun retour arrière nécessaire. [Résultat et procédure conservée](../NAP_FUSION_CLUBS.md).
+- Remise des 106 accès et réouverture achevées à `2026-11-01T07:50:03.124Z` ; scheduler `ENABLED`, file de notifications `RUNNING`, états initiaux rétablis. Aucun réglage SMTP/préférence/rôle changé et aucun envoi de test. Preuves exécutables closes après intervention ; sauvegardes et journal conservés privés.
+
 ### 1er novembre — Sauvegardes réelles et préparation opérateur des 14 fusions
 
 - Accord direct d'Antoine pour préparer les sauvegardes et créer une clé dédiée, sans appliquer les fusions. Archive chiffrée réelle, copie privée indépendante sur Drive téléchargée et comparée ; clé relue séparément depuis le Secret Manager existant pour ouvrir cette copie. Aucun rôle/IAM, configuration applicative ou donnée métier modifié.
