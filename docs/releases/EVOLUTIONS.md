@@ -2,6 +2,13 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 1er novembre — Sauvegardes réelles et préparation opérateur des 14 fusions
+
+- Accord direct d'Antoine pour préparer les sauvegardes et créer une clé dédiée, sans appliquer les fusions. Archive chiffrée réelle, copie privée indépendante sur Drive téléchargée et comparée ; clé relue séparément depuis le Secret Manager existant pour ouvrir cette copie. Aucun rôle/IAM, configuration applicative ou donnée métier modifié.
+- Outil local uniquement : identités NAP brutes avec espaces préexistants, garde historique bornée adaptée aux 2 955 lignes mesurées, comparaison binaire des textes après conversion UTF-8 pour les anciennes colonnes latin1. Authentification opérateur explicite par session gcloud existante et lecture optionnelle en mémoire du seul secret NAP existant ; aucun login ou secret créé par l'outil.
+- Contrôle connecté en lecture seule : 630 images SQL exactes, accès par clé primaire ; 16 scénarios de reprise/restauration en mémoire avec les images réelles et ouverture de la copie indépendante. Tests ciblés hors réseau réussis. CI globale de cette adaptation à attester dans la PR ; aucun déploiement TEST/PROD nécessaire pour cet outil local.
+- Préalable Corbie publié en PROD après accord Infra : [41279353864](https://github.com/ffessmnap/LivePalmes/actions/runs/41279353864), [bilan #651](https://github.com/ffessmnap/LivePalmes/pull/651#issuecomment-6554277793). Reste une fenêtre d'exclusion réelle des écritures et l'accord final d'exécution. Aucune fusion ni restauration réelle exécutée. [Procédure et limites des preuves](../NAP_FUSION_CLUBS.md).
+
 ### 1er novembre — Reprise des clubs : projections Corbie depuis le profil courant
 
 - Reprise conditionnelle enregistrée dans `backend-isolation-progress.json#afterVerifiedProduction`, après publication globale [41274625834](https://github.com/ffessmnap/LivePalmes/actions/runs/41274625834) réussie : préalable Corbie, CI/TEST/PROD via Infra, puis sauvegardes/dérive et seules 14 fusions initiales. Les décisions de cibles, noms/sigles, trois comptes Corbie et regroupement OPEN sont conservées. Aucune fusion exécutée à cette étape.

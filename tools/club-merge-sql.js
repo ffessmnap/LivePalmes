@@ -58,8 +58,8 @@ function adapter(connection) {
     return rows;
   }
   async function historical() {
-    const labels = await q("SELECT id,club FROM records FORCE INDEX (PRIMARY) WHERE id>0 ORDER BY id LIMIT 1001");
-    if (labels.length >= 1001 || labels.some(row => p.mapping.has(String(row.club)))) p.fail("HISTORICAL_RECORD_DEPENDENCY_CHANGED");
+    const labels = await q("SELECT id,club FROM records FORCE INDEX (PRIMARY) WHERE id>0 ORDER BY id LIMIT 10001");
+    if (labels.length >= 10001 || labels.some(row => p.mapping.has(String(row.club)))) p.fail("HISTORICAL_RECORD_DEPENDENCY_CHANGED");
     const rows = await q("SELECT c.revision,OCTET_LENGTH(v.payload) AS bytes,IF(OCTET_LENGTH(v.payload)<=2097152,v.payload,NULL) AS payload FROM livepalmes_records_current c FORCE INDEX (PRIMARY) JOIN livepalmes_records_versions v FORCE INDEX (PRIMARY) ON v.revision=c.revision WHERE c.id=1 LIMIT 1");
     if (rows.length !== 1 || !rows[0].payload) p.fail("CURRENT_RECORDS_UNAVAILABLE_OR_TOO_LARGE");
     const payload = typeof rows[0].payload === "string" ? JSON.parse(rows[0].payload) : rows[0].payload;
@@ -69,7 +69,11 @@ function adapter(connection) {
   }
   function where(row) {
     const fields = Object.keys(row);
-    return {sql:fields.map(f => `CAST(${quote(f)} AS BINARY) <=> CAST(? AS BINARY)`).join(" AND "),values:fields.map(f => row[f])};
+    // SQL text columns may use latin1 while mysql2 decodes to Unicode. Compare
+    // their UTF-8 bytes, preserving case/accents/spaces. Buffers stay raw bytes.
+    return {sql:fields.map(f => typeof row[f] === "string"
+      ? `CAST(CONVERT(${quote(f)} USING utf8mb4) AS BINARY) <=> CAST(CONVERT(? USING utf8mb4) AS BINARY)`
+      : `CAST(${quote(f)} AS BINARY) <=> CAST(? AS BINARY)`).join(" AND "),values:fields.map(f => row[f])};
   }
   async function mutate(op,direction) {
     const from = direction === "restore" ? op.after : op.before, to = direction === "restore" ? op.before : op.after;
