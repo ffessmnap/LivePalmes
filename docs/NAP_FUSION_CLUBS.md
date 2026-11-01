@@ -1,6 +1,12 @@
-# Fusions ponctuelles de fiches de clubs NAP
+# Opérations ponctuelles sur les fiches de clubs NAP
 
-<!-- description: Fusions NAP avec sauvegarde/reprise : lots des 14 et Laon exécutés, Laon sans pause du Portail ni mutation Firebase, contrôles bornés. -->
+<!-- description: Fusions des 14 et de Laon réalisées, puis dix fiches vides supprimées sur accord explicite ; preuves, périmètres et reprise ciblée. -->
+
+## Dix fiches vides supprimées le 1er novembre
+
+Après le listing des dix fiches sans données rattachées, Antoine a explicitement autorisé leur suppression sans pause du Portail, puis demandé de ne pas relancer le contrôle. **Fiches physiquement supprimées : 167, 308, 391, 392, 393, 474, 533, 625, 652 et 653.** Résultat vérifié à `2026-11-01T10:09:43.276Z` : aucune de ces dix clés n'est encore présente, aucune fiche conservée par les conditions de suppression.
+
+L'audit global NAP/Firebase n'a pas été relancé. Seules les dix lignes complètes ont été copiées avant suppression dans une archive chiffrée de 1 088 octets, avec copie Drive privée indépendante rouverte et journal conservé. Suppressions limitées à `clubs`, par clé primaire/image complète via l'adaptateur existant et 18 gardes SQL conditionnelles de non-référence (dont la projection de comptes et les codes/numéros fédéraux WinPalme), sous verrous SQL brefs. Les gardes font partie des écritures ; elles ne constituent pas une nouvelle campagne d'audit. Aucun autre tableau métier, profil ou document Firebase modifié. Portail et notifications restés actifs, aucun IAM, SMTP ou déploiement modifié. Preuve finale privée conservée ; opération marquée terminée pour empêcher une réexécution.
 
 ## Laon : deux fusions exécutées sans pause du Portail
 
