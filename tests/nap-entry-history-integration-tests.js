@@ -1,6 +1,6 @@
 "use strict";
 require("./helpers/offline-network");
-const assert=require("node:assert/strict"),fs=require("node:fs"),vm=require("node:vm"),{createRequire}=require("node:module");
+const assert=require("node:assert/strict"),fs=require("node:fs"),vm=require("node:vm"),path=require("node:path"),{createRequire}=require("node:module");
 const {createClubHandlers}=require("../functions/portal-club-handlers");
 const {createEntryModelService}=require("../functions/server-entry-model-service");
 const {readNativeClubEntry}=require("../functions/nap-portal-entries");
@@ -37,14 +37,24 @@ function fixture(patch={},legacy=false){
     engagementClubAccessContext:async()=>{if(!data.allowed)throw new HttpsError("permission-denied","Denied");return {clubId:"106"};},
     db:{collection:()=>{throw Error("No Firestore operation permitted");}}};
   backend.engagementKnownTimeHistory=createEntryModelService(backend).engagementKnownTimeHistory;
-  const file=require.resolve("../functions/server-entry-service"),realRequire=createRequire(file),sandbox={module:{exports:{}},process:{env:{}},Error,TypeError,RangeError};
-  sandbox.require=name=>{
-    if(name==="./nap-portal-swimmers")return {portalPool:()=>pool};
-    if(legacy&&name==="./nap-entry-time-preview")return {previewNativeTimes:(connection,input,services)=>previewNativeTimes(connection,input,{...services,readers:{competition:readNativeCompetition,entry:readNativeClubEntry,history:readEntryHistory}})};
-    return realRequire(name);
-  };
-  vm.runInNewContext(fs.readFileSync(file,"utf8"),sandbox,{filename:file});
-  backend.nativeClubEntryTimeHistory=sandbox.module.exports.createEntryService(backend).nativeClubEntryTimeHistory;
+  const file=require.resolve("../functions/server-entry-service"),cache=new Map();
+  const functionRoot=path.resolve(__dirname,"../functions");
+  function load(actualFile){
+    if(cache.has(actualFile))return cache.get(actualFile).exports;
+    const module={exports:{}};cache.set(actualFile,module);
+    const realRequire=createRequire(actualFile),sandbox={module,process:{env:{}},Error,TypeError,RangeError};
+    sandbox.require=name=>{
+      const target=realRequire.resolve(name);
+      if(target===path.join(functionRoot,"nap-portal-swimmers.js"))return {portalPool:()=>pool};
+      if(legacy&&target===path.join(functionRoot,"nap-entry-time-preview.js"))return {previewNativeTimes:(connection,input,services)=>previewNativeTimes(connection,input,{...services,readers:{competition:readNativeCompetition,entry:readNativeClubEntry,history:readEntryHistory}})};
+      // Exercise real adapter and operation bodies in the same isolated fixture.
+      if(target.startsWith(path.join(functionRoot,"backend")+path.sep))return load(target);
+      return realRequire(name);
+    };
+    vm.runInNewContext(fs.readFileSync(actualFile,"utf8"),sandbox,{filename:actualFile});
+    return module.exports;
+  }
+  backend.nativeClubEntryTimeHistory=load(file).createEntryService(backend).nativeClubEntryTimeHistory;
   const handlers=createClubHandlers(backend);
   return {calls,data,run:eventCodes=>handlers.getEngagementClubEntryTimeHistory({data:{competitionId:"5140",swimmerIndexId:"1",eventCodes}})};
 }
