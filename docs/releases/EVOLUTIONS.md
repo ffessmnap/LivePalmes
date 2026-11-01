@@ -2,6 +2,14 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 1er novembre — NS visible et engagement des identités natives avec espaces
+
+- Demande : colonne NS dans Mes nageurs, vide sinon, détail déplié sur mobile et suppression de la recherche NS à l'ouverture du crayon ; diagnostic puis correction de l'engagement d'un nageur récupéré. Destination autorisée : TEST, aucune écriture métier PROD.
+- Cause confirmée en lecture seule : prénom natif avec espace final, conservé lors de la récupération. Le plan utilisait le prénom normalisé dans une comparaison binaire. Sur le dossier réel, le SELECT équivalent trouve zéro ligne avec le prénom normalisé et une avec la valeur native exacte ; récupération et identité préservées. Aucun nageur, engagement ou historique réel modifié par le diagnostic.
+- Correction : relire en un seul lot les identités natives des seuls nageurs explicitement modifiés, vérifier leur empreinte d'origine et conserver les comparaisons strictes dans les écritures. Le journal et les reprises existants restent compatibles ; aucune normalisation des données ni relâchement des gardes.
+- Budget : NS liste/crayon/action locale/rafraîchissement = zéro lecture ajoutée (un appel NS, une lecture NAP et au plus un document de demande économisés par ouverture du crayon). Enregistrement participants = une requête SQL primaire supplémentaire, 50 lignes maximum, indépendante de l'effectif affiché et de la base totale ; zéro lecture supplémentaire à l'ouverture/rafraîchissement et pour une reprise déjà terminée. Plafond exposé : 48 requêtes SQL, écritures et audit inchangés. Aucun scan, N+1, listener ou reconstruction.
+- Preuves ciblées : identités avec espaces et accents, reprise interrompue et refus d'une identité modifiée ; handlers réels NS/sélection, diagnostic du code corrigé sur le dossier réel (17 SELECT, au plus 20 documents d'audit, zéro écriture), contrôles navigateur de 1920 à 320 px en clair/sombre. CI à lier dans la PR. État : préparation ; déploiement TEST et validation utilisateur non acquis.
+
 ### 1er novembre — Publication regroupée CMAS, suivi CCI et Nouveautés autorisée
 
 - Antoine autorise explicitement dans Infra la préparation et la publication des trois lots validés, sans nouvelle demande d'accord pour ce périmètre : « Tu prépares tout, tu mets en prod. » Candidat figé `2a0d84d3`, preuve TEST commune [41325848912](https://github.com/ffessmnap/LivePalmes/actions/runs/41325848912). Base PROD vérifiée : `5a371b45`, [41279353864](https://github.com/ffessmnap/LivePalmes/actions/runs/41279353864). Brouillon authentifié [41327398099](https://github.com/ffessmnap/LivePalmes/actions/runs/41327398099), trois validations couvertes, revue backend complétée par un contrat limité à cette version.

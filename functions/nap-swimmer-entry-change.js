@@ -33,7 +33,7 @@ function remaining(plan,pack) {
   });
   return {...plan,additions,removals,complete:!additions.length&&!removals.length};
 }
-// Opening: existing 14+8 reads. Save: <= 42 bounded SQL operations, including
+// Opening: existing 14+8 reads. Save: <= 43 bounded SQL operations, including
 // lock/release, trigger/forfait checks, <=4 grouped writes and one full verify.
 // Journal: one read, one before image, one completion; no sports copy/cache.
 async function saveNativeSwimmerSelection(pool,input,services) {
@@ -73,7 +73,8 @@ async function saveNativeSwimmerSelection(pool,input,services) {
     if(plan.removals.length && (await query("SELECT id FROM forfait FORCE INDEX (livepalmes_compet_engagement_id) WHERE compet=? LIMIT 1",[input.competitionId])).length) throw new TypeError("Cette competition contient des forfaits anciens. Leur lien NAP doit etre confirme avant le retrait d'un nageur.");
     if((await query("SELECT TRIGGER_NAME FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA=DATABASE() AND EVENT_OBJECT_TABLE IN ('nageursengager','engagements','engagements_relayeurs') LIMIT 1")).length) throw new TypeError("Declencheur NAP a verifier avant l'enregistrement.");
     const authority={competitions:competition.nativeSnapshot.competition,compet_parametres:competition.nativeSnapshot.parameters,options:competition.options,nativeLeader:pack.leaders[0]};
-    const batch=statements(plan,authority,competition.event.entryDeadlineAt);
+    const nativePlan=await require("./nap-swimmer-entry-identity").nativeIdentityPlan(query,plan);
+    const batch=statements(nativePlan,authority,competition.event.entryDeadlineAt);
     // Check the actual server's access plans before any durable operation.
     // EXPLAIN never executes these prepared DML statements.
     for(const statement of batch) {

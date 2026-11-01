@@ -32,12 +32,13 @@ async function main(){
       noButton:!document.querySelector('[data-swimmer-ns-save]'),quiet:document.querySelector('[data-swimmer-ns-status]').hidden,
       overflow:ns.closest('fieldset').scrollWidth>ns.closest('fieldset').clientWidth+1};`);
     assert.deepEqual(layout,{insideIdentity:true,beside:true,noButton:true,quiet:true,overflow:false});
+    assert.equal(await evaluate(client,"return nsCalls.length;"),0,'Opening uses the roster status without a request lookup');
     // Real pending component, delayed automatic RPC, no second request or identity submit.
     await evaluate(client,"nsDelay=new Promise(resolve=>window.nsRelease=resolve);document.querySelector('[data-swimmer-ns-checkbox]').click();");
     const adding=await evaluate(client,"return {disabled:document.querySelector('[data-swimmer-ns-checkbox]').disabled,animated:document.querySelector('[data-swimmer-ns-status]').classList.contains('is-loading'),button:document.querySelector('#adminEngagementsSwimmerCorrectionSubmit').classList.contains('admin-portal-submit-pending'),calls:nsCalls.length};");
-    assert.deepEqual(adding,{disabled:true,animated:true,button:true,calls:2});
+    assert.deepEqual(adding,{disabled:true,animated:true,button:true,calls:1});
     await evaluate(client,"document.querySelector('[data-swimmer-ns-checkbox]').dispatchEvent(new Event('change',{bubbles:true}));nsActions.submitEngagementSwimmerCorrection();");
-    assert.equal(await evaluate(client,"return nsCalls.length;"),2);
+    assert.equal(await evaluate(client,"return nsCalls.length;"),1);
     await evaluate(client,"nsDelay=null;nsRelease();");assert.ok(await waitFor(client,"document.querySelector('[data-swimmer-ns-status]').textContent.includes('enregistré')"));
     assert.equal(await evaluate(client,"return nsState.engagementClubSwimmers[0].nonSelectable;"),true);
     await evaluate(client,"nsDelay=new Promise(resolve=>window.nsRelease=resolve);document.querySelector('[data-swimmer-ns-checkbox]').click();");
@@ -47,7 +48,7 @@ async function main(){
       spinner:button.classList.contains('admin-portal-submit-pending'),checkboxDisabled:document.querySelector('[data-swimmer-ns-checkbox]').disabled,
       nsMaintained:nsState.engagementClubSwimmers[0].nonSelectable,calls:nsCalls.length};`);
     assert.match(sending.message,/Envoi.*en cours/);assert.equal(sending.visible,true);assert.equal(sending.animated,true);assert.notEqual(sending.dot,"none");
-    assert.equal(sending.busy,"true");assert.match(sending.button,/Envoi en cours/);assert.equal(sending.spinner,true);assert.equal(sending.checkboxDisabled,true);assert.equal(sending.nsMaintained,true);assert.equal(sending.calls,3);
+    assert.equal(sending.busy,"true");assert.match(sending.button,/Envoi en cours/);assert.equal(sending.spinner,true);assert.equal(sending.checkboxDisabled,true);assert.equal(sending.nsMaintained,true);assert.equal(sending.calls,2);
     fs.mkdirSync('tmp/swimmer-ns-compact',{recursive:true});const shot=await client.send('Page.captureScreenshot',{format:'png'});fs.writeFileSync('tmp/swimmer-ns-compact/'+width+'-'+theme+'-sending.png',Buffer.from(shot.data,'base64'));
     await evaluate(client,"nsDelay=null;nsRelease();");assert.ok(await waitFor(client,"document.querySelector('[data-swimmer-ns-status]').textContent.includes('en attente de validation')"));
     const pending=await evaluate(client,"return {checked:document.querySelector('[data-swimmer-ns-checkbox]').checked,disabled:document.querySelector('[data-swimmer-ns-checkbox]').disabled,loading:document.querySelector('[data-swimmer-ns-status]').classList.contains('is-loading'),mainEnabled:!document.querySelector('#adminEngagementsSwimmerCorrectionSubmit').disabled};");
@@ -59,20 +60,21 @@ async function main(){
     assert.match(await evaluate(client,"return document.querySelector('#adminEngagementsSwimmerCorrectionMessage').textContent;"),/Envoi de la demande/);
     await evaluate(client,"nsDelay=null;nsRelease();");assert.ok(await waitFor(client,"document.querySelector('#adminEngagementsSwimmerCorrectionMessage').textContent.includes('Erreur fictive')"));
     await reopen(client,"nsFailIdentity=false;nsRequest={status:'rejected',resolutionNote:'Vérification nationale nécessaire <script>fictif</script>'}");
-    assert.ok(await waitFor(client,"document.querySelector('[data-swimmer-ns-status]').textContent.includes('refusé')"));
+    assert.equal(await evaluate(client,"return document.querySelector('[data-swimmer-ns-status]').hidden;"),true,'No pending/rejected request lookup on reopening');
     assert.equal(await evaluate(client,"return !!document.querySelector('[data-swimmer-ns-status] script');"),false);
-    await reopen(client,"nsAvailable=false");
+    await reopen(client,"nsAvailable=false;nsSwimmer={...nsSwimmer,nsAvailable:false}");
     assert.ok(await waitFor(client,"document.querySelector('[data-swimmer-ns-status]').textContent.includes('indisponible')"));
     assert.equal(await evaluate(client,"return document.querySelector('[data-swimmer-ns-checkbox]').disabled;"),true);
     assert.equal(await evaluate(client,"return document.querySelector('#adminEngagementsSwimmerCorrectionLastName').disabled;"),false);
     // Uncertain save: restore the confirmed flag, stop animation, require an explicit reopen.
-    await reopen(client,"nsAvailable=true;nsRequest=null");
+    await reopen(client,"nsAvailable=true;nsSwimmer={...nsSwimmer,nsAvailable:true};nsRequest=null");
     assert.ok(await waitFor(client,"!document.querySelector('[data-swimmer-ns-checkbox]').disabled"));
     await evaluate(client,"nsFail=true;document.querySelector('[data-swimmer-ns-checkbox]').click();");
     assert.ok(await waitFor(client,"document.querySelector('[data-swimmer-ns-status]').dataset.tone==='error'"));
     assert.equal(await evaluate(client,"return document.querySelector('[data-swimmer-ns-status]').classList.contains('is-loading');"),false);
     assert.equal(await evaluate(client,"return document.querySelector('[data-swimmer-ns-checkbox]').checked;"),true);
     await reopen(client,"nsFail=false;nsDelay=new Promise(resolve=>window.nsRelease=resolve)");
+    await evaluate(client,"document.querySelector('[data-swimmer-ns-checkbox]').click();");
     await reopen(client,"nsState.engagementClubPeopleRequestVersion++;nsRelease();nsDelay=null","{...nsSwimmer,nativePersonKind:'officials'}");
     assert.equal(await evaluate(client,"return document.querySelector('[data-swimmer-ns]').hidden;"),true);
     console.log(width+'px '+theme+': compact NS, automatic check/uncheck, delayed-RPC feedback, duplicate guard, identity sending, pending/error/schema absence and stale response passed');
