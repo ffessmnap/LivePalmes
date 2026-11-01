@@ -48,7 +48,7 @@ const LOTS = Object.freeze({
     "getEngagementClubEntryTimeHistory", "previewEngagementClubSwimmerEventTimes",
     "previewEngagementClubSwimmerEventTimesBatch", "saveEngagementClubIndividualEntries",
     "saveEngagementClubSwimmerSelection", "saveEngagementClubSwimmerSelections",
-    "saveEngagementClubSwimmers", "saveEngagementClubRelays", "createEngagementCompetition",
+    "saveEngagementClubSwimmers", "saveEngagementClubRelays", "createEngagementCompetition", "managePortalNews",
     "updateEngagementCompetition", "deleteEngagementCompetition", "requestEngagementCompetitionDeletion",
     "listEngagementCompetitionDeletionRequests", "resolveEngagementCompetitionDeletionRequest"
   ],

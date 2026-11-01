@@ -22,11 +22,11 @@
     <link rel="preload" as="style" href="assets/portal/styles/09-entry-matrix.css?v=20261029-readable-text-1">
     <link rel="preload" as="style" href="assets/portal/styles/10-account-and-performance.css?v=20261029-readable-text-1">
     <link rel="preload" as="style" href="assets/portal/styles/11-overview-and-shared.css?v=20261029-readable-text-1">
-    <link rel="preload" as="style" href="assets/portal/styles/12-calendar-and-national.css?v=20261031-club-compact-2">
+    <link rel="preload" as="style" href="assets/portal/styles/12-calendar-and-national.css?v=20261101-news-editor-1">
     <link rel="preload" as="style" href="assets/portal/styles/13-mobile.css?v=20261029-readable-text-1">
     <link rel="preload" as="style" href="assets/portal/styles/14-shell-and-detail.css?v=20261029-readable-text-1">
     <link rel="preload" as="style" href="assets/portal/styles/15-dtn-and-club.css?v=20261028-styles-1">
-    <link rel="stylesheet" href="assets/livepalmes-admin-portal.css?v=20261031-club-compact-2">
+    <link rel="stylesheet" href="assets/livepalmes-admin-portal.css?v=20261101-news-editor-1">
     <link rel="stylesheet" href="assets/livepalmes-license-administration.css?v=20261027-license-closure">
     <link rel="stylesheet" href="assets/livepalmes-whatsapp-qr.css?v=20260831-whatsapp-qr-1">
     <link rel="stylesheet" href="assets/livepalmes-portal-appearance.css?v=20261029-readable-text-1">
@@ -563,17 +563,23 @@
                 <h2 id="adminNewsViewTitle">Nouveautés</h2>
                 <p>Les changements livrés sur le Portail LivePalmes, en production.</p>
               </div>
-              <!-- Ajouter uniquement les textes validés dont la livraison PROD est confirmée : docs/PORTAIL_NOUVEAUTES.md. -->
-              <div id="adminNewsPublishedEntries">
-                <article>
-                  <h3><time datetime="2026-10-30T19:39:00+01:00">30 octobre 2026 à 19 h 39</time></h3>
-                  <ul>
-                    <li>Les administrateurs régionaux peuvent créer les accès des clubs de leur région.</li>
-                    <li>Le statut NS (« non sélectionnable — nageur étranger ») est accessible dans l’identité du nageur. Son retrait reste soumis à une décision nationale.</li>
-                    <li>En eau libre, les courses se sélectionnent par distance et spécialité. Les passages peuvent être ajoutés ou retirés du programme.</li>
-                  </ul>
-                </article>
+              <div class="admin-portal-actions admin-news-actions">
+                <button type="button" id="adminNewsAdd" class="admin-primary-button" hidden>Ajouter une nouveauté</button>
+                <button type="button" id="adminNewsRefresh" class="ghost-button">Actualiser</button>
               </div>
+              <p id="adminNewsStatus" role="status" aria-live="polite"></p>
+              <form id="adminNewsForm" class="admin-news-form" hidden>
+                <h3 id="adminNewsFormTitle">Ajouter une nouveauté</h3>
+                <label>Date et heure<input id="adminNewsDate" type="datetime-local" required></label>
+                <label>Modifications<textarea id="adminNewsText" rows="7" maxlength="8000" aria-describedby="adminNewsTextHelp" required></textarea></label>
+                <small id="adminNewsTextHelp">Une modification par ligne. Chaque ligne sera affichée avec une puce.</small>
+                <div class="admin-portal-actions admin-news-actions">
+                  <button type="submit" id="adminNewsSave" class="admin-primary-button">Publier</button>
+                  <button type="button" id="adminNewsCancel" class="ghost-button">Annuler</button>
+                </div>
+              </form>
+              <div id="adminNewsPublishedEntries"></div>
+              <button type="button" id="adminNewsMore" class="ghost-button" hidden>Afficher les nouveautés précédentes</button>
             </section>
 
             <section id="adminAccountView" class="admin-portal-account-view" data-admin-view="account" aria-labelledby="adminAccountViewTitle" hidden>
@@ -2839,7 +2845,7 @@
   <script src="assets/livepalmes-import-source.js?v=20261026-import-text-1"></script>
   <script src="assets/livepalmes-access-request-history.js?v=20261026-1"></script>
   <script src="assets/livepalmes-club-identity.js?v=20261026-identity-1"></script>
-    <script src="assets/portal/navigation.js?v=20261031-club-workspaces-1"></script>
+    <script src="assets/portal/navigation.js?v=20261101-news-editor-1"></script>
     <script src="assets/portal/modules-and-clubs.js?v=20261101-cmas-1"></script>
     <script src="assets/portal/competition-settings.js?v=20261030-home-preloads-1"></script>
     <script src="assets/portal/club-people.js?v=20261028-modules-1"></script>
@@ -2860,6 +2866,7 @@
     <script src="assets/livepalmes-featured-documents-model.js?v=20261013-documents-1"></script>
     <script src="assets/livepalmes-featured-documents.js?v=20261023-documents-page-1"></script>
     <script src="assets/livepalmes-national-documents.js?v=20261025-documents-2mo-1"></script>
+    <script src="assets/livepalmes-portal-news.js?v=20261101-news-editor-1"></script>
     <script src="assets/livepalmes-portal-ux.js?v=20261031-national-workspace-3"></script>
 <script src="assets/livepalmes-legal-footer.js?v=20260920-legal-1"></script>
     <script src="assets/livepalmes-portal-shell.js?v=20261021-common-header"></script>

@@ -1629,6 +1629,7 @@
       }
 
     function updateNavigationView() {
+        if (global.LivePalmesPortalNews?.beforeNavigate() === false) return;
         if (global.LivePalmesNationalDocuments?.beforeNavigate() === false) return;
         document.querySelectorAll("[data-portal-news-nav]").forEach((item) => {
           item.hidden = !canCreateEngagementCompetition() && !canViewActivityLog();
@@ -1721,6 +1722,7 @@
         if (activeView === "nationalHome") loadPortalPendingOverview();
         if (activeView === "nationalNotifications") loadNationalAutomaticMailControl();
         global.LivePalmesNationalDocuments?.setActive(activeView === "nationalDocuments");
+        global.LivePalmesPortalNews?.setActive(activeView === "news");
         if (engagementsActive && portalState.activeEngagementsTab === "calendar") portalActions.loadEngagementCompetitions();
         if (engagementsActive && global.location.hash === "#club-competitions") void portalActions.restoreEngagementNavigation();
         if (engagementsActive && portalState.activeEngagementsTab === "accessRequests") portalActions.loadEngagementAccessRequests();
