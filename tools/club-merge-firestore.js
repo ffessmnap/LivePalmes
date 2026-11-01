@@ -3,7 +3,9 @@ const p = require("./club-merge-plan"), crypto = require("node:crypto");
 const root = "https://firestore.googleapis.com/v1/projects/livepalmes/databases/(default)/documents";
 const prefix = "projects/livepalmes/databases/(default)/documents/";
 const hash = v => crypto.createHash("sha256").update(v).digest("hex");
-function adapter(token,fetcher=fetch) {
+function adapter(token,fetcher=fetch,scope=p) {
+  const ids=[...scope.ids];
+  if (!ids.length || ids.length>26 || new Set(ids).size!==ids.length || ids.some(id=>!/^\d+$/.test(id)||Number(id)<=0||Number(id)>2147483647)) p.fail("INVALID_FIRESTORE_CLUB_SCOPE");
   async function api(action,body) {
     const response = await fetcher(root+action,{method:"POST",headers:{Authorization:"Bearer "+await token(),"Content-Type":"application/json"},body:JSON.stringify(body),signal:AbortSignal.timeout(30000)});
     if (!response.ok) p.fail("FIRESTORE_REQUEST_FAILED_"+response.status);
@@ -34,11 +36,11 @@ function adapter(token,fetcher=fetch) {
     const docs = new Map();
     const queries = [["users","clubId"],["users","accessScopes.`engagements.club.manage`.scopeId"],["accessGrants","scopeId"],["engagementAccessRequests","clubId"],...["engagementClubSwimmers","engagementClubPeople","engagementClubEntries","performances"].map(c => [c,"clubId"])];
     for (const [collection,field] of queries) for (const type of ["stringValue","integerValue"]) {
-      const found = await query(collection,field,p.ids.map(id => ({[type]:id})),["users","accessGrants"].includes(collection) ? 101 : 501);
+      const found = await query(collection,field,ids.map(id => ({[type]:id})),["users","accessGrants"].includes(collection) ? 101 : 501);
       if (!["users","accessGrants","engagementAccessRequests"].includes(collection) && found.length) p.fail("NEW_FIRESTORE_DEPENDENCY");
       for (const doc of found) docs.set(doc.path,doc);
     }
-    const direct = await get(p.ids.flatMap(id => ["engagementClubs","engagementClubRosters","engagementClubPeopleRosters"].map(c => c+"/"+id)));
+    const direct = await get(ids.flatMap(id => ["engagementClubs","engagementClubRosters","engagementClubPeopleRosters"].map(c => c+"/"+id)));
     if (direct.some(d => d.fields)) p.fail("NEW_CLUB_DOCUMENT");
     const swimmers = sql.nageurs.map(r => String(r.id));
     if (swimmers.length > 4000) p.fail("SWIMMER_RESERVATION_LIMIT");
