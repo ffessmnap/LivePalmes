@@ -1,6 +1,16 @@
-# Préparation des 14 regroupements de clubs NAP
+# Fusions des 14 fiches de clubs NAP
 
-<!-- description: Outil ponctuel des 14 fusions de clubs, inventaire borné, sauvegarde chiffrée, reprise et restauration ; aucune autorisation d'exécution. -->
+<!-- description: Lot des 14 fusions réellement exécuté le 1er novembre 2026 ; décisions, preuves, sauvegarde chiffrée et procédure de reprise ciblée. -->
+
+## Résultat réel du 1er novembre 2026
+
+Après accord final direct d'Antoine, transmis et enregistré dans Infra, les **14 fusions sont exécutées**, Corbie compris. Vérification finale à `2026-11-01T07:45:32.938Z` : 630 images SQL dans l'état attendu, **14 sources supprimées physiquement**, aucune référence restante dans les 18 couples table/champ contrôlés, **12 cibles conservées avec tous leurs champs inchangés**. Les 133 nageurs et 455 performances ont été transférés, sans suppression de personne, compte ou résultat.
+
+Corbie : trois comptes conservés, sept documents profil/droit/demande vérifiés, seuls les trois documents prévus modifiés ; projections privées, administrateurs, destinataires et NAP convergentes vers 126. OPEN/OPEN PASS rejoignent OPEN 220, dont les paramètres restent intacts. Aucune nouvelle abréviation ni modification de nom de club.
+
+La pause des 106 accès concernés et des notifications a été vérifiée sur 212 URL, puis les appels en cours ont bénéficié d'un drainage de 540 secondes. Le test réel des verrous a réussi sans mutation en 483 ms. L'application a repris sur les mêmes archives après l'attente initiale de convergence de l'annuaire : 616 transferts reconnus comme déjà effectués, puis suppression des sources seulement après convergence. Aucun retour arrière n'a été nécessaire. Les 106 accès ont été remis et la réouverture achevée à `2026-11-01T07:50:03.124Z`, scheduler `ENABLED` et file de notifications `RUNNING`, leurs états initiaux. Aucun rôle de compte, paramètre SMTP ou préférence n'a été changé ; aucune notification de test n'a été envoyée. Les archives initiales et leur copie privée indépendante, la clé séparée et le journal chiffré sont conservés hors dépôt. Les fichiers de preuves d'application/restauration sont clos pour empêcher leur réutilisation après la fenêtre.
+
+L'outil utilisé est intégré dans la [PR #660](https://github.com/ffessmnap/LivePalmes/pull/660), commit `ec796cbb7247e441e058ae622f2c42e30ce0225f` ; [CI main réussie](https://github.com/ffessmnap/LivePalmes/actions/runs/41284545755). Aucun nouveau déploiement de l'application n'a accompagné ces opérations de données. Les sections suivantes conservent la préparation et les contrôles techniques ; elles ne décrivent plus un lot restant à appliquer.
 
 ## Décisions et limites
 
