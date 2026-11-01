@@ -2,6 +2,12 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 1er novembre — Suivi des courriels CCI et aperçu des destinataires
+
+- Accord explicite d'Antoine : corriger le suivi CCI et le libellé de l'aperçu, puis déployer sur TEST ; aucun renvoi de mail ni modification des données existantes. Cause confirmée dans les journaux PROD : la lecture de l'historique exigeait une adresse individuelle alors que les groupes CCI utilisent une liste de destinataires.
+- Le suivi conserve les statuts historiques et applique seulement aux courriels en attente les contrôles d'activation et de périmètre, adaptés aux listes CCI. L'aperçu d'ouverture et des récapitulatifs décrit les destinataires actuels, sans étiquette TEST ni affirmation sur les envois précédents. Aucun changement du transport, des automatismes ou des réglages mail.
+- Budget inchangé : requête de suivi paginée (100 lignes demandées, 200 maximum, plus un témoin), comptage initial, une lecture du réglage et contrôles d'accès existants ; aucun accès par destinataire ni écriture. Tests hors réseau avec les vrais contrôles de périmètre, formats individuel/CCI, contextes PROD/TEST et conservation des statuts. CI globale et déploiement TEST à suivre dans la PR ; validation utilisateur attendue.
+
 ### 1er novembre — Demandes de compte des clubs étrangers CMAS
 
 - Besoin et accord explicite d'Antoine : proposer « Clubs étrangers (CMAS) » pour le comité 5, réserver les demandes au niveau national et ne pas exiger une licence FFESSM du demandeur. Périmètre : demande de compte et examen administratif ; aucune modification des règles des nageurs/engagements, donnée réelle, migration ou envoi de test.
