@@ -36,8 +36,9 @@ function restoreBackendOperation(text, file) {
   const ast = acorn.parse(text, { ecmaVersion: "latest" });
   const free = lexicalReferences(ast), context = new Set(free.filter(r => r.node.name === "backendContext").map(r => r.node));
   const requireRefs = new Set(free.filter(r => r.node.name === "require").map(r => r.node)), changes = [];
+  const captured = /^functions\/backend\/(?:engagement-pdf-renderer|legacy-performance-publication)\//.test(file);
   const local = node => node?.type === "MemberExpression" && !node.computed && context.has(node.object)
-    && node.property.name.startsWith("local$") ? node.property.name.slice(6) : null;
+    && (node.property.name.startsWith("local$") || captured) ? (node.property.name.startsWith("local$") ? node.property.name.slice(6) : node.property.name) : null;
   walk(ast, node => {
     const callee = node.type === "CallExpression" && node.callee;
     if (callee?.type === "SequenceExpression" && callee.expressions.length === 2

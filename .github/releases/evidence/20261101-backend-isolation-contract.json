@@ -1,0 +1,94 @@
+{
+  "schema": 1,
+  "scope": "One exact code-only dependency migration; no excluded function deployment or business operation",
+  "productionCommit": "6f76f7921d401cde1f45a5ce90acf5bbde097574",
+  "candidate": "468fe9163db117ebf27ba2665dfed7b0641b6623",
+  "firstIsolationCommit": "ac677ad530aab6b121b3a038accc0fb4860fa5e6",
+  "factoryIsolationCommit": "227207b5cc385a29bbabac1cc63b11f4142b1d52",
+  "runtimeSourceSha256": "e8e2492625a7f2c044d60bba2cd5ef7dfd23e11278c46a12cc36d80bd5d6dd3b",
+  "productionRun": 41248805209,
+  "productionAfterArtifact": 13061330322,
+  "productionAfterSha256": "df7bfe95725a62292ffecb5fc02052f59d6d7cc354d468bdebc32c293831498a",
+  "retained": [
+    {
+      "name": "closeDueEngagementCompetitions",
+      "commit": "67d40e84cf9713403614f77bb53067cd449510a7",
+      "revision": "closedueengagementcompetitions-00031-pax"
+    },
+    {
+      "name": "disableCompetitionEmailNotifications",
+      "commit": "67d40e84cf9713403614f77bb53067cd449510a7",
+      "revision": "disablecompetitionemailnotifications-00005-lim"
+    },
+    {
+      "name": "listEngagementCompetitionMailJobs",
+      "commit": "67d40e84cf9713403614f77bb53067cd449510a7",
+      "revision": "listengagementcompetitionmailjobs-00030-reb"
+    },
+    {
+      "name": "notifyEngagementCompetitionDocuments",
+      "commit": "67d40e84cf9713403614f77bb53067cd449510a7",
+      "revision": "notifyengagementcompetitiondocuments-00013-tuh"
+    },
+    {
+      "name": "prepareEngagementClubRecapEmails",
+      "commit": "67d40e84cf9713403614f77bb53067cd449510a7",
+      "revision": "prepareengagementclubrecapemails-00037-zul"
+    },
+    {
+      "name": "prepareEngagementLicenseControlBatch",
+      "commit": "67d40e84cf9713403614f77bb53067cd449510a7",
+      "revision": "prepareengagementlicensecontrolbatch-00016-zow"
+    },
+    {
+      "name": "prepareEngagementOpeningNotificationEmails",
+      "commit": "67d40e84cf9713403614f77bb53067cd449510a7",
+      "revision": "prepareengagementopeningnotificationemails-00034-geg"
+    },
+    {
+      "name": "processNapCompetitionNotifications",
+      "commit": "67d40e84cf9713403614f77bb53067cd449510a7",
+      "revision": "processnapcompetitionnotifications-00007-yox"
+    },
+    {
+      "name": "processNapNotificationTask",
+      "commit": "67d40e84cf9713403614f77bb53067cd449510a7",
+      "revision": "processnapnotificationtask-00003-mig"
+    },
+    {
+      "name": "readNapPublicSwimmer",
+      "commit": "67d40e84cf9713403614f77bb53067cd449510a7",
+      "revision": "readnappublicswimmer-00012-zop"
+    },
+    {
+      "name": "resolveEngagementAccessRequest",
+      "commit": "67d40e84cf9713403614f77bb53067cd449510a7",
+      "revision": "resolveengagementaccessrequest-00041-vir"
+    },
+    {
+      "name": "resolveEngagementSwimmerChangeRequest",
+      "commit": "859c615de62af056bf5cb6039650f3edea3821f0",
+      "revision": "resolveengagementswimmerchangerequest-00024-hux"
+    },
+    {
+      "name": "sendEngagementPreparedEmails",
+      "commit": "67d40e84cf9713403614f77bb53067cd449510a7",
+      "revision": "sendengagementpreparedemails-00032-miw"
+    },
+    {
+      "name": "submitEngagementAccessRequest",
+      "commit": "67d40e84cf9713403614f77bb53067cd449510a7",
+      "revision": "submitengagementaccessrequest-00040-nak"
+    },
+    {
+      "name": "syncNapClubAccountEmails",
+      "commit": "65c418c486682844531dd07048b23d27fa25b352",
+      "revision": "syncnapclubaccountemails-00001-quh"
+    },
+    {
+      "name": "updateCurrentEmailNotificationPreferences",
+      "commit": "67d40e84cf9713403614f77bb53067cd449510a7",
+      "revision": "updatecurrentemailnotificationpreferences-00005-xoj"
+    }
+  ]
+}

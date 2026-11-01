@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "objective": "Complete systematic backend dependency isolation, technically validated on exact TEST version, then handed off to Infra for authorized PROD publication",
-  "status": "native-lot-applied-local-validation",
+  "status": "captured-factories-final-isolation",
   "startedAt": "2026-10-31T23:20:21Z",
   "baseline": {
     "main": "ac677ad530aab6b121b3a038accc0fb4860fa5e6",
@@ -51,15 +51,15 @@
     "Created clean worktree from main",
     "Initial review: 27 factories, no factory-scope initialization statements",
     "Read-only model and generated inventory cover 157 exports and 726 private methods; one opaque context escape, 32 function-identity references, no factory initializer statements",
-    "Full preview proof: 705 unchanged bodies, 157 unchanged Firebase registrations and identical private call graphs; negative fixtures and Git source guards passed",
     "First runtime lot applied behind divergence and path guards: 103 bodies in 72 operation groups; exact proof d2519c8bbca21dec61931a49ddb9dc5df65ed084a4c6148ffa0fd5459c7b042f",
     "First lot expanded to include shared import references required by PIN/console access: 155 unchanged bodies in 99 groups, exact proof 2bc0b74ef6c092da02ce7ce9466663a1cf6e180cf1a67d10678a49b3a5e1d45a",
-    "Actual corrected partition: 635 unchanged bodies in 419 groups, 157 registrations preserved, runtime proof f2cb84441c5c21f1d465aa9c871d6b2a04899ee9e3e7a6a80122dcd03e4f9c81"
+    "Actual corrected partition: 635 unchanged bodies in 419 groups, 157 registrations preserved, runtime proof f2cb84441c5c21f1d465aa9c871d6b2a04899ee9e3e7a6a80122dcd03e4f9c81",
+    "Native lot #656 integrated: 34 components, 2902 declarations and 704 APIs preserved; exact PR CI 41267539078 successful"
   ],
   "next": [
-    "Validate all actual factory domains locally, PR/CI and exact TEST",
-    "Finish systematic native module classification and isolate proven artificial coupling",
-    "Final exact TEST evidence and authorized Infra PROD handoff",
+    "Finish PDF/legacy captured-parameter isolation with stable-root proof and exact capture compatibility",
+    "CI and exact TEST of final application candidate",
+    "Finalize the closed production equivalence proof, then authorized Infra publication",
     "After verified PROD, resume authorized Corbie prerequisite and clubs thread"
   ],
   "inventory": {
@@ -206,10 +206,23 @@
     {
       "id": "authorized-club-resumption",
       "status": "pending-condition"
+    },
+    {
+      "phase": "native",
+      "pr": 656,
+      "commit": "468fe9163db117ebf27ba2665dfed7b0641b6623",
+      "prHead": "16b6adcab60aec6d71bc5a4e341fa001cf3ca6f8",
+      "ci": 41267539078,
+      "status": "test-success-technical-validation",
+      "mainCi": 41268106490,
+      "testRun": 41268654053,
+      "testHosting": "2f7c450377857de8",
+      "updatedFunctions": 105,
+      "conservedFunctions": 11
     }
   ],
   "nativeReview": {
-    "status": "ready-for-pr-final-local-checks",
+    "status": "test-success-technical-validation",
     "diagnosticOnly": true,
     "networkCalls": 0,
     "nativeJavaScriptModules": 260,
@@ -261,11 +274,10 @@
       }
     },
     "remaining": [
-      "Actual native/factory/behavior checks, complete native module inventory and final dependency simulations",
-      "PR/CI/integrate and exact TEST for native lot",
-      "Prepare a closed equivalence contract for final candidate vs current PROD 6f76f792 and actual retained origins; do not waive exclusions",
-      "Final tooling/evidence closure pins historical migration proofs to immutable delivered commits so future daily fixes remain possible",
-      "Authorized Infra PROD handoff, verified final checks, then conditional clubs resumption"
+      "Exact main CI and TEST for native lot",
+      "Merge the closed retained equivalence proof and historical migration pins",
+      "Authorized Infra PROD publication and final verification",
+      "After verified PROD, resume authorized Corbie prerequisite and clubs thread"
     ],
     "previewProof": {
       "declarations": 2902,
@@ -352,5 +364,42 @@
       }
     }
   },
-  "factoryIsolationCommit": "227207b5cc385a29bbabac1cc63b11f4142b1d52"
+  "factoryIsolationCommit": "227207b5cc385a29bbabac1cc63b11f4142b1d52",
+  "nativeIsolationCommit": "468fe9163db117ebf27ba2665dfed7b0641b6623",
+  "closedProductionCompatibility": {
+    "contract": ".github/releases/evidence/20261101-backend-isolation-contract.json",
+    "base": "6f76f7921d401cde1f45a5ce90acf5bbde097574",
+    "candidate": "468fe9163db117ebf27ba2665dfed7b0641b6623",
+    "retainedFunctions": 16,
+    "status": "exact-integrated-candidate-offline-proof-success",
+    "networkCalls": 0,
+    "factoryProofSha256": "f2cb84441c5c21f1d465aa9c871d6b2a04899ee9e3e7a6a80122dcd03e4f9c81",
+    "nativeProofSha256": "e8e2492625a7f2c044d60bba2cd5ef7dfd23e11278c46a12cc36d80bd5d6dd3b",
+    "scope": "Native phase only; final captured candidate requires its additional proof and exact pair"
+  },
+  "capturedReview": {
+    "baseline": "468fe9163db117ebf27ba2665dfed7b0641b6623",
+    "factories": [
+      "engagementPdfRenderer",
+      "legacyPerformancePublication"
+    ],
+    "cohesiveRetained": [
+      "competitionImportParser: one real consumer set",
+      "competitionStatistics: one real consumer set"
+    ],
+    "status": "applied-targeted-checks-success",
+    "reason": "Two retained captured factories still have multiple real consumer groups; finish them before global completion",
+    "proof": {
+      "bodies": 70,
+      "groups": 14,
+      "exports": 157,
+      "stableBindings": 27,
+      "runtimeSourceSha256": "90f497d405c70633af85278334d6c14469bf28fa3c5f64fee37adfeb4c7786b8"
+    },
+    "inventory": "docs/releases/backend-captured-inventory.json",
+    "remainingMultiConsumerFactories": 0,
+    "totalDeliveredFactories": 438,
+    "cumulativeMovedBodies": 705,
+    "cumulativeOperationGroups": 433
+  }
 }
