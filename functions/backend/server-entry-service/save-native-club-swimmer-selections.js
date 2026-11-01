@@ -35,7 +35,7 @@ function createEntryService_saveNativeClubSwimmerSelections(backendContext) {
         }
       });
       const competition=require("../../nap-competition-view").competitionItem(result.competition,backendContext.ENGAGEMENT_EVENT_DEFINITION_BY_CODE);
-      return {ok:true,source:"nap",operation:result.operation,writesExecuted:result.writesExecuted,entry:await backendContext.nativeClubEntryView(result.nativeEntry,context,competition),sqlBudget:{queriesMax:47,writesMax:5}};
+      return {ok:true,source:"nap",operation:result.operation,writesExecuted:result.writesExecuted,entry:await backendContext.nativeClubEntryView(result.nativeEntry,context,competition),sqlBudget:{queriesMax:48,writesMax:5}};
     } catch(error) {
       if(error instanceof backendContext.HttpsError) throw error;
       throw new backendContext.HttpsError(error instanceof RangeError?"resource-exhausted":error instanceof TypeError?"failed-precondition":"unavailable",error instanceof RangeError || error instanceof TypeError?error.message:"Enregistrement NAP a verifier. Reprenez la meme modification ; la sauvegarde est conservee.");

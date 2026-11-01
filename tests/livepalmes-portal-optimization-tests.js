@@ -1204,7 +1204,7 @@ assert.ok(portal.includes("${subject} n'apparaîtra plus spontanément dans les 
 assert.ok(portal.includes('data-engagement-club-swimmer-activity-sex="${escapeHtml(sex)}"'));
 assert.ok(portal.includes('? "Elle"'));
 assert.ok(portal.includes('title="Profil ${isActive ? "actif — cliquer pour rendre inactif"'));
-assert.ok(portalCss.includes("minmax(110px, 0.7fr) 166px"));
+assert.ok(portalCss.includes("minmax(110px, 0.7fr) 32px 166px"));
 assert.ok(portalHtml.indexOf('id="adminEngagementsClubNewSwimmerDialog"') < portalHtml.indexOf('id="adminEngagementsClubSwimmersList"'));
 assert.ok(portal.includes('callFunction("listEngagementSwimmerDeletionRequests"'));
 assert.ok(portal.includes('"resolveEngagementSwimmerDeletionRequest"'));
