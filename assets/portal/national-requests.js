@@ -18,7 +18,7 @@
           const name = [request.firstName, request.lastName].filter(Boolean).join(" ") || request.email || "Demande sans nom";
           const newClubRequested = request.newClubRequested === true;
           const newClub = request.newClub || {};
-          const nationalOnly = newClubRequested && !portalActions.canUse("engagements.national.manage");
+          const nationalOnly = (newClubRequested || portalActions.isForeignClubRegion(request.regionId)) && !portalActions.canUse("engagements.national.manage");
           const clubLabel = newClubRequested
             ? `${newClub.clubCode || "Nouveau club"} — ${newClub.clubName || "Nom non renseigné"}`
             : portalActions.clubDisplayLabel(request, { fallback: "Club non renseigné" });
@@ -43,7 +43,7 @@
           </div>
           <div class="admin-engagements-request-actions">
             <button class="ghost-button" type="button" data-engagement-access-request-action="edit" data-engagement-access-request-id="${portalActions.escapeHtml(request.id || "")}" ${nationalOnly ? "disabled title=\"Traitement réservé au niveau national\"" : ""}>${nationalOnly ? "Traitement national" : "Examiner"}</button>
-            <button class="ghost-button" type="button" data-engagement-access-request-action="reject" data-engagement-access-request-id="${portalActions.escapeHtml(request.id || "")}">Refuser</button>
+            <button class="ghost-button" type="button" data-engagement-access-request-action="reject" data-engagement-access-request-id="${portalActions.escapeHtml(request.id || "")}" ${nationalOnly ? "disabled" : ""}>Refuser</button>
           </div>
           ${requestDetails.length ? `<details class="admin-engagements-request-details"><summary>Voir les informations complémentaires</summary>${requestDetails.map((detail) => `<p>${portalActions.escapeHtml(detail)}</p>`).join("")}</details>` : ""}
         </article>
@@ -97,6 +97,7 @@
     function openEngagementAccessRequestEditForm(requestId) {
         const request = portalState.engagementAccessRequests.find((item) => item.id === requestId);
         if (!request || !portalContext.elements.engagementsAccessRequestEditForm) return;
+        if (portalActions.isForeignClubRegion(request.regionId) && !portalActions.canUse("engagements.national.manage")) return;
         const requestName = [request.firstName, request.lastName].filter(Boolean).join(" ") || request.email || "la demande";
         if (portalContext.elements.engagementsAccessRequestEditTitle) portalContext.elements.engagementsAccessRequestEditTitle.textContent = `Vérifier · ${requestName}`;
         if (portalContext.elements.engagementsAccessRequestEditId) portalContext.elements.engagementsAccessRequestEditId.value = request.id || "";

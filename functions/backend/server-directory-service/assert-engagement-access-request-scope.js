@@ -2,6 +2,9 @@
 function createDirectoryService_assertEngagementAccessRequestScope(backendContext) {
   function assertEngagementAccessRequestScope(context = {}, requestData = {}) {
     if (context.national) return;
+    if (require("../../club-access-policy").isForeignClubRegion(requestData.regionId)) {
+      throw new backendContext.HttpsError("permission-denied", "Les demandes des clubs etrangers sont reservees au niveau national.");
+    }
     if (!context.region) {
       throw new backendContext.HttpsError("permission-denied", "Droit engagements region ou national requis.");
     }

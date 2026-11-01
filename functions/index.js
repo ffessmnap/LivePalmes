@@ -2631,6 +2631,10 @@ function $serverDirectoryService_assertEngagementAccessRequestScope() {
 
 function $serverDirectoryService_consumePublicAccessRequestRateLimit() {
   if (!$serverDirectoryService_consumePublicAccessRequestRateLimit.instance) $serverDirectoryService_consumePublicAccessRequestRateLimit.instance = require("./backend/server-directory-service/consume-public-access-request-rate-limit").createDirectoryService_consumePublicAccessRequestRateLimit({
+    get ENVIRONMENT() { return ENVIRONMENT; },
+    get ENGAGEMENT_CLUBS_COLLECTION() { return ENGAGEMENT_CLUBS_COLLECTION; },
+    get CLUB_REFERENCE_BY_ID() { return CLUB_REFERENCE_BY_ID; },
+    get engagementStoredClubItem() { return engagementStoredClubItem; },
     get CLUB_REFERENCE_REGION_LABELS() { return CLUB_REFERENCE_REGION_LABELS; },
     get HttpsError() { return HttpsError; },
     get PORTAL_ACCESS_RATE_LIMIT_COLLECTION() { return PORTAL_ACCESS_RATE_LIMIT_COLLECTION; },
@@ -6193,6 +6197,7 @@ const CLUB_REFERENCE_BY_FEDERAL_NUMBER = new Map(Array.from(CLUB_REFERENCE_BY_ID
   .map((club) => [club.federalNumber.toUpperCase(), club]));
 
 const CLUB_REFERENCE_REGION_LABELS = {
+  "5": "CMAS",
   "1": "Grand Est",
   "2": "Nouvelle Aquitaine",
   "3": "Ile de France",
@@ -7148,6 +7153,8 @@ exports.resolveEngagementAccessRequest = onCall({ ...PORTAL_ACCESS_REQUEST_OPTIO
         ...(request.data?.correctedRequest && typeof request.data.correctedRequest === "object" ? request.data.correctedRequest : {})
       }, request)
     };
+    try { resolvedData = await resolveExistingClubForAccessRequest(resolvedData); }
+    catch (error) { throw new HttpsError(error instanceof TypeError ? "failed-precondition" : "unavailable", error instanceof TypeError ? error.message : "Annuaire indisponible. Reessayez."); }
     assertEngagementAccessRequestScope(context, resolvedData);
     const existingAccount = await engagementExistingAccessAccount(resolvedData.email);
     if (existingAccount) {

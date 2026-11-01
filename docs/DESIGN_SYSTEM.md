@@ -2,6 +2,10 @@
 
 <!-- description: Référence du langage visuel, des composants d’interface et des règles responsive déjà présents dans LivePalmes. -->
 
+## Licence facultative des demandeurs CMAS — 1er novembre 2026
+
+Les sélecteurs de rattachement des comptes proposent « Clubs étrangers (CMAS) ». Dans la demande publique et son examen administratif, le champ devient « Licence (facultative) » pour ce choix, avec une aide sous le champ précisant l'absence d'obligation FFESSM et le traitement national. Revenir à une région française rétablit immédiatement « Licence FFESSM » et le caractère obligatoire. Les styles et la grille du formulaire existant sont conservés ; l'aide reste lisible à 320 px.
+
 ## Densité des annuaires Club — 31 octobre 2026
 
 Les trois pages Club utilisent un titre sans carte ni bandeau, 38 px minimum sur ordinateur et 44 px sur mobile, avec Ajouter à droite. Le panneau et sa carte enveloppante sont transparents ; seul le tableau conserve un cadre. Les filtres sont rapprochés du titre et de la liste. Cette variante reste limitée aux pages Club.
