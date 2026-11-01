@@ -1,6 +1,6 @@
 "use strict";
 const {parseCompactTime,formatTime}=require("./nap-duration");
-const {text}=require("./nap-direct-calendar");
+const { text } = require("./nap-calendar-values");
 const MAX_MEMBERS=4000;
 const memberIds=row=>[1,2,3,4].map(position=>Number(row[`nageur${position}`]||row.memberIds?.[position-1]||0));
 async function readMembers(pool,relays){

@@ -1,9 +1,9 @@
 "use strict";
 // Read-only context for at most 50 previewed swimmers, or one saved-course
 // history. Never load the full dossier (relays, officials and options).
-const {positiveId}=require("./nap-direct-calendar");
-const {bounded}=require("./nap-portal-competitions");
-const {person}=require("./nap-portal-swimmers");
+const { positiveId } = require("./nap-calendar-values");
+const { bounded } = require("./nap-competition-query");
+const { person } = require("./nap-swimmer-profile");
 const license=require("./nap-license-state"),merge=require("./nap-swimmer-merge-state");
 async function readEntryTimeContext(connection,input,authorize) {
   if(typeof authorize!=="function" || !/^\d{1,16}$/.test(String(input?.clubId)) || !Array.isArray(input?.swimmerIds) || !input.swimmerIds.length || input.swimmerIds.length>50) throw new TypeError("Contexte d'apercu borne et autorise requis.");

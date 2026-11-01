@@ -1,0 +1,1117 @@
+{
+  "schema": 1,
+  "diagnosticOnly": true,
+  "notDeploymentSelection": true,
+  "networkCalls": 0,
+  "baseline": "468fe9163db117ebf27ba2665dfed7b0641b6623",
+  "retainedCohesive": [
+    {
+      "factory": "competitionImportParser",
+      "reason": "one actual consumer set"
+    },
+    {
+      "factory": "competitionStatistics",
+      "reason": "one actual consumer set"
+    }
+  ],
+  "before": [
+    {
+      "environment": "TEST",
+      "file": "functions/engagement-pdf-renderer.js",
+      "mode": "dependency-closure",
+      "allConsumers": [
+        "closeDueEngagementCompetitions",
+        "generateEngagementClubRecapPdf",
+        "generateEngagementClubRecapPdfForAdmin",
+        "generateEngagementCompetitionClubRecapPdfs",
+        "generateEngagementCompetitionTxtExport",
+        "getEngagementCompetitionStatistics",
+        "grantEngagementQualificationException",
+        "listEngagementCompetitionClubRecaps",
+        "notifyEngagementCompetitionDocuments",
+        "prepareEngagementClubRecapEmails",
+        "processEngagementQualificationJob",
+        "processNapCompetitionNotifications",
+        "processNapNotificationTask",
+        "syncEngagementClubEntryToCompetitionSummary",
+        "updateEngagementCompetition"
+      ],
+      "ordinaryConsumers": [
+        "generateEngagementClubRecapPdf",
+        "generateEngagementClubRecapPdfForAdmin",
+        "generateEngagementCompetitionClubRecapPdfs",
+        "generateEngagementCompetitionTxtExport",
+        "getEngagementCompetitionStatistics",
+        "grantEngagementQualificationException",
+        "listEngagementCompetitionClubRecaps",
+        "notifyEngagementCompetitionDocuments",
+        "prepareEngagementClubRecapEmails",
+        "processEngagementQualificationJob",
+        "updateEngagementCompetition"
+      ]
+    },
+    {
+      "environment": "TEST",
+      "file": "functions/legacy-performance-publication.js",
+      "mode": "dependency-closure",
+      "allConsumers": [
+        "acknowledgeEngagementQualificationAlert",
+        "buildDtnQualificationView",
+        "createCompetitionImport",
+        "deleteCompetitionImport",
+        "getEngagementClubEntryTimeHistory",
+        "grantEngagementQualificationException",
+        "listEngagementQualificationSources",
+        "mergeEngagementNationalClubSwimmer",
+        "previewEngagementClubEntryTimes",
+        "previewEngagementClubSwimmerEventTimes",
+        "previewEngagementClubSwimmerEventTimesBatch",
+        "processEngagementQualificationJob",
+        "publishPerformanceCorrectionJob",
+        "repairEngagementNationalSwimmerMergePublication",
+        "requestEngagementClubSwimmerChange",
+        "resolveEngagementSwimmerChangeRequest",
+        "resumeCompetitionImportPublication",
+        "resumePerformancePublicationJobs",
+        "revalidateEngagementQualificationCache",
+        "saveEngagementClubIndividualEntries",
+        "saveEngagementClubRelays",
+        "saveEngagementClubSwimmerSelection",
+        "saveEngagementClubSwimmerSelections",
+        "saveEngagementClubSwimmers",
+        "searchEngagementNationalSwimmerMergeTargets",
+        "syncEngagementQualificationTargets",
+        "updateEngagementCompetition",
+        "updateEngagementNationalSwimmerIdentity"
+      ],
+      "ordinaryConsumers": [
+        "acknowledgeEngagementQualificationAlert",
+        "createCompetitionImport",
+        "getEngagementClubEntryTimeHistory",
+        "grantEngagementQualificationException",
+        "listEngagementQualificationSources",
+        "mergeEngagementNationalClubSwimmer",
+        "previewEngagementClubSwimmerEventTimes",
+        "previewEngagementClubSwimmerEventTimesBatch",
+        "processEngagementQualificationJob",
+        "requestEngagementClubSwimmerChange",
+        "resolveEngagementSwimmerChangeRequest",
+        "saveEngagementClubIndividualEntries",
+        "saveEngagementClubRelays",
+        "saveEngagementClubSwimmerSelection",
+        "saveEngagementClubSwimmerSelections",
+        "searchEngagementNationalSwimmerMergeTargets",
+        "updateEngagementCompetition",
+        "updateEngagementNationalSwimmerIdentity"
+      ]
+    },
+    {
+      "environment": "PROD",
+      "file": "functions/engagement-pdf-renderer.js",
+      "mode": "dependency-closure",
+      "allConsumers": [
+        "closeDueEngagementCompetitions",
+        "generateEngagementClubRecapPdf",
+        "generateEngagementClubRecapPdfForAdmin",
+        "generateEngagementCompetitionClubRecapPdfs",
+        "generateEngagementCompetitionTxtExport",
+        "getEngagementCompetitionStatistics",
+        "grantEngagementQualificationException",
+        "listEngagementCompetitionClubRecaps",
+        "notifyEngagementCompetitionDocuments",
+        "prepareEngagementClubRecapEmails",
+        "processEngagementQualificationJob",
+        "processNapCompetitionNotifications",
+        "processNapNotificationTask",
+        "syncEngagementClubEntryToCompetitionSummary",
+        "updateEngagementCompetition"
+      ],
+      "ordinaryConsumers": [
+        "generateEngagementClubRecapPdf",
+        "generateEngagementClubRecapPdfForAdmin",
+        "generateEngagementCompetitionClubRecapPdfs",
+        "generateEngagementCompetitionTxtExport",
+        "getEngagementCompetitionStatistics",
+        "grantEngagementQualificationException",
+        "listEngagementCompetitionClubRecaps",
+        "processEngagementQualificationJob",
+        "updateEngagementCompetition"
+      ]
+    },
+    {
+      "environment": "PROD",
+      "file": "functions/legacy-performance-publication.js",
+      "mode": "dependency-closure",
+      "allConsumers": [
+        "acknowledgeEngagementQualificationAlert",
+        "buildDtnQualificationView",
+        "createCompetitionImport",
+        "deleteCompetitionImport",
+        "getEngagementClubEntryTimeHistory",
+        "grantEngagementQualificationException",
+        "listEngagementQualificationSources",
+        "mergeEngagementNationalClubSwimmer",
+        "previewEngagementClubEntryTimes",
+        "previewEngagementClubSwimmerEventTimes",
+        "previewEngagementClubSwimmerEventTimesBatch",
+        "processEngagementQualificationJob",
+        "publishPerformanceCorrectionJob",
+        "repairEngagementNationalSwimmerMergePublication",
+        "requestEngagementClubSwimmerChange",
+        "resolveEngagementSwimmerChangeRequest",
+        "resumeCompetitionImportPublication",
+        "resumePerformancePublicationJobs",
+        "revalidateEngagementQualificationCache",
+        "saveEngagementClubIndividualEntries",
+        "saveEngagementClubRelays",
+        "saveEngagementClubSwimmerSelection",
+        "saveEngagementClubSwimmerSelections",
+        "saveEngagementClubSwimmers",
+        "searchEngagementNationalSwimmerMergeTargets",
+        "syncEngagementQualificationTargets",
+        "updateEngagementCompetition",
+        "updateEngagementNationalSwimmerIdentity"
+      ],
+      "ordinaryConsumers": [
+        "acknowledgeEngagementQualificationAlert",
+        "createCompetitionImport",
+        "getEngagementClubEntryTimeHistory",
+        "grantEngagementQualificationException",
+        "listEngagementQualificationSources",
+        "mergeEngagementNationalClubSwimmer",
+        "previewEngagementClubSwimmerEventTimes",
+        "previewEngagementClubSwimmerEventTimesBatch",
+        "processEngagementQualificationJob",
+        "requestEngagementClubSwimmerChange",
+        "saveEngagementClubIndividualEntries",
+        "saveEngagementClubRelays",
+        "saveEngagementClubSwimmerSelection",
+        "saveEngagementClubSwimmerSelections",
+        "searchEngagementNationalSwimmerMergeTargets",
+        "updateEngagementCompetition",
+        "updateEngagementNationalSwimmerIdentity"
+      ]
+    }
+  ],
+  "groups": [
+    {
+      "file": "functions/backend/engagement-pdf-renderer/build-engagement-club-recap-pdf.js",
+      "owner": "engagementPdfRenderer",
+      "methods": [
+        "engagementPdfFormatDate",
+        "engagementPdfFormatDateTime",
+        "engagementPdfLevelLabel",
+        "engagementPdfMoney",
+        "engagementPdfSwimmerName",
+        "engagementPdfPersonName",
+        "engagementPdfGenderLabel",
+        "engagementPdfRelayCategoryLabel",
+        "engagementPdfIndividualProgramColumns",
+        "engagementPdfIndividualMatrix",
+        "engagementPdfSwimmersWithoutIndividualRows",
+        "engagementPdfCompactSummary",
+        "engagementPdfDrawIndividualMatrix",
+        "engagementPdfCollectRelayRows",
+        "engagementPdfDocToBuffer",
+        "engagementPdfAddFooter",
+        "engagementPdfEnsureSpace",
+        "engagementPdfSection",
+        "engagementPdfEmptyState",
+        "engagementPdfWhatsAppBlock",
+        "engagementPdfFeesTable",
+        "engagementPdfTextHeight",
+        "engagementPdfTable",
+        "buildEngagementClubRecapPdf"
+      ],
+      "selection": [
+        {
+          "environment": "TEST",
+          "file": "functions/backend/engagement-pdf-renderer/build-engagement-club-recap-pdf.js",
+          "mode": "dependency-closure",
+          "allConsumers": [
+            "closeDueEngagementCompetitions",
+            "generateEngagementClubRecapPdf",
+            "generateEngagementClubRecapPdfForAdmin",
+            "generateEngagementCompetitionClubRecapPdfs",
+            "grantEngagementQualificationException",
+            "notifyEngagementCompetitionDocuments",
+            "prepareEngagementClubRecapEmails",
+            "processEngagementQualificationJob",
+            "processNapCompetitionNotifications",
+            "processNapNotificationTask",
+            "updateEngagementCompetition"
+          ],
+          "ordinaryConsumers": [
+            "generateEngagementClubRecapPdf",
+            "generateEngagementClubRecapPdfForAdmin",
+            "generateEngagementCompetitionClubRecapPdfs",
+            "grantEngagementQualificationException",
+            "notifyEngagementCompetitionDocuments",
+            "prepareEngagementClubRecapEmails",
+            "processEngagementQualificationJob",
+            "updateEngagementCompetition"
+          ]
+        },
+        {
+          "environment": "PROD",
+          "file": "functions/backend/engagement-pdf-renderer/build-engagement-club-recap-pdf.js",
+          "mode": "dependency-closure",
+          "allConsumers": [
+            "closeDueEngagementCompetitions",
+            "generateEngagementClubRecapPdf",
+            "generateEngagementClubRecapPdfForAdmin",
+            "generateEngagementCompetitionClubRecapPdfs",
+            "grantEngagementQualificationException",
+            "notifyEngagementCompetitionDocuments",
+            "prepareEngagementClubRecapEmails",
+            "processEngagementQualificationJob",
+            "processNapCompetitionNotifications",
+            "processNapNotificationTask",
+            "updateEngagementCompetition"
+          ],
+          "ordinaryConsumers": [
+            "generateEngagementClubRecapPdf",
+            "generateEngagementClubRecapPdfForAdmin",
+            "generateEngagementCompetitionClubRecapPdfs",
+            "grantEngagementQualificationException",
+            "processEngagementQualificationJob",
+            "updateEngagementCompetition"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "functions/backend/engagement-pdf-renderer/engagement-pdf-collect-individual-rows.js",
+      "owner": "engagementPdfRenderer",
+      "methods": [
+        "engagementPdfStatusLabel",
+        "engagementPdfTimingLabel",
+        "engagementPdfCollectIndividualRows",
+        "engagementPdfKeyValues"
+      ],
+      "selection": [
+        {
+          "environment": "TEST",
+          "file": "functions/backend/engagement-pdf-renderer/engagement-pdf-collect-individual-rows.js",
+          "mode": "dependency-closure",
+          "allConsumers": [],
+          "ordinaryConsumers": []
+        },
+        {
+          "environment": "PROD",
+          "file": "functions/backend/engagement-pdf-renderer/engagement-pdf-collect-individual-rows.js",
+          "mode": "dependency-closure",
+          "allConsumers": [],
+          "ordinaryConsumers": []
+        }
+      ]
+    },
+    {
+      "file": "functions/backend/engagement-pdf-renderer/engagement-pdf-file-name.js",
+      "owner": "engagementPdfRenderer",
+      "methods": [
+        "engagementPdfFileName"
+      ],
+      "selection": [
+        {
+          "environment": "TEST",
+          "file": "functions/backend/engagement-pdf-renderer/engagement-pdf-file-name.js",
+          "mode": "dependency-closure",
+          "allConsumers": [
+            "closeDueEngagementCompetitions",
+            "generateEngagementClubRecapPdf",
+            "generateEngagementClubRecapPdfForAdmin",
+            "generateEngagementCompetitionClubRecapPdfs",
+            "generateEngagementCompetitionTxtExport",
+            "grantEngagementQualificationException",
+            "notifyEngagementCompetitionDocuments",
+            "prepareEngagementClubRecapEmails",
+            "processEngagementQualificationJob",
+            "processNapCompetitionNotifications",
+            "processNapNotificationTask",
+            "updateEngagementCompetition"
+          ],
+          "ordinaryConsumers": [
+            "generateEngagementClubRecapPdf",
+            "generateEngagementClubRecapPdfForAdmin",
+            "generateEngagementCompetitionClubRecapPdfs",
+            "generateEngagementCompetitionTxtExport",
+            "grantEngagementQualificationException",
+            "notifyEngagementCompetitionDocuments",
+            "prepareEngagementClubRecapEmails",
+            "processEngagementQualificationJob",
+            "updateEngagementCompetition"
+          ]
+        },
+        {
+          "environment": "PROD",
+          "file": "functions/backend/engagement-pdf-renderer/engagement-pdf-file-name.js",
+          "mode": "dependency-closure",
+          "allConsumers": [
+            "closeDueEngagementCompetitions",
+            "generateEngagementClubRecapPdf",
+            "generateEngagementClubRecapPdfForAdmin",
+            "generateEngagementCompetitionClubRecapPdfs",
+            "generateEngagementCompetitionTxtExport",
+            "grantEngagementQualificationException",
+            "notifyEngagementCompetitionDocuments",
+            "prepareEngagementClubRecapEmails",
+            "processEngagementQualificationJob",
+            "processNapCompetitionNotifications",
+            "processNapNotificationTask",
+            "updateEngagementCompetition"
+          ],
+          "ordinaryConsumers": [
+            "generateEngagementClubRecapPdf",
+            "generateEngagementClubRecapPdfForAdmin",
+            "generateEngagementCompetitionClubRecapPdfs",
+            "generateEngagementCompetitionTxtExport",
+            "grantEngagementQualificationException",
+            "processEngagementQualificationJob",
+            "updateEngagementCompetition"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "functions/backend/engagement-pdf-renderer/engagement-pdf-event-label.js",
+      "owner": "engagementPdfRenderer",
+      "methods": [
+        "engagementPdfEventLabel"
+      ],
+      "selection": [
+        {
+          "environment": "TEST",
+          "file": "functions/backend/engagement-pdf-renderer/engagement-pdf-event-label.js",
+          "mode": "dependency-closure",
+          "allConsumers": [
+            "closeDueEngagementCompetitions",
+            "generateEngagementClubRecapPdf",
+            "generateEngagementClubRecapPdfForAdmin",
+            "generateEngagementCompetitionClubRecapPdfs",
+            "getEngagementCompetitionStatistics",
+            "grantEngagementQualificationException",
+            "notifyEngagementCompetitionDocuments",
+            "prepareEngagementClubRecapEmails",
+            "processEngagementQualificationJob",
+            "processNapCompetitionNotifications",
+            "processNapNotificationTask",
+            "updateEngagementCompetition"
+          ],
+          "ordinaryConsumers": [
+            "generateEngagementClubRecapPdf",
+            "generateEngagementClubRecapPdfForAdmin",
+            "generateEngagementCompetitionClubRecapPdfs",
+            "getEngagementCompetitionStatistics",
+            "grantEngagementQualificationException",
+            "notifyEngagementCompetitionDocuments",
+            "prepareEngagementClubRecapEmails",
+            "processEngagementQualificationJob",
+            "updateEngagementCompetition"
+          ]
+        },
+        {
+          "environment": "PROD",
+          "file": "functions/backend/engagement-pdf-renderer/engagement-pdf-event-label.js",
+          "mode": "dependency-closure",
+          "allConsumers": [
+            "closeDueEngagementCompetitions",
+            "generateEngagementClubRecapPdf",
+            "generateEngagementClubRecapPdfForAdmin",
+            "generateEngagementCompetitionClubRecapPdfs",
+            "getEngagementCompetitionStatistics",
+            "grantEngagementQualificationException",
+            "notifyEngagementCompetitionDocuments",
+            "prepareEngagementClubRecapEmails",
+            "processEngagementQualificationJob",
+            "processNapCompetitionNotifications",
+            "processNapNotificationTask",
+            "updateEngagementCompetition"
+          ],
+          "ordinaryConsumers": [
+            "generateEngagementClubRecapPdf",
+            "generateEngagementClubRecapPdfForAdmin",
+            "generateEngagementCompetitionClubRecapPdfs",
+            "getEngagementCompetitionStatistics",
+            "grantEngagementQualificationException",
+            "processEngagementQualificationJob",
+            "updateEngagementCompetition"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "functions/backend/engagement-pdf-renderer/engagement-pdf-entry-stats.js",
+      "owner": "engagementPdfRenderer",
+      "methods": [
+        "engagementPdfEntryStats"
+      ],
+      "selection": [
+        {
+          "environment": "TEST",
+          "file": "functions/backend/engagement-pdf-renderer/engagement-pdf-entry-stats.js",
+          "mode": "dependency-closure",
+          "allConsumers": [
+            "closeDueEngagementCompetitions",
+            "generateEngagementClubRecapPdf",
+            "generateEngagementClubRecapPdfForAdmin",
+            "generateEngagementCompetitionClubRecapPdfs",
+            "grantEngagementQualificationException",
+            "listEngagementCompetitionClubRecaps",
+            "notifyEngagementCompetitionDocuments",
+            "prepareEngagementClubRecapEmails",
+            "processEngagementQualificationJob",
+            "processNapCompetitionNotifications",
+            "processNapNotificationTask",
+            "syncEngagementClubEntryToCompetitionSummary",
+            "updateEngagementCompetition"
+          ],
+          "ordinaryConsumers": [
+            "generateEngagementClubRecapPdf",
+            "generateEngagementClubRecapPdfForAdmin",
+            "generateEngagementCompetitionClubRecapPdfs",
+            "grantEngagementQualificationException",
+            "listEngagementCompetitionClubRecaps",
+            "notifyEngagementCompetitionDocuments",
+            "prepareEngagementClubRecapEmails",
+            "processEngagementQualificationJob",
+            "updateEngagementCompetition"
+          ]
+        },
+        {
+          "environment": "PROD",
+          "file": "functions/backend/engagement-pdf-renderer/engagement-pdf-entry-stats.js",
+          "mode": "dependency-closure",
+          "allConsumers": [
+            "closeDueEngagementCompetitions",
+            "generateEngagementClubRecapPdf",
+            "generateEngagementClubRecapPdfForAdmin",
+            "generateEngagementCompetitionClubRecapPdfs",
+            "grantEngagementQualificationException",
+            "listEngagementCompetitionClubRecaps",
+            "notifyEngagementCompetitionDocuments",
+            "prepareEngagementClubRecapEmails",
+            "processEngagementQualificationJob",
+            "processNapCompetitionNotifications",
+            "processNapNotificationTask",
+            "syncEngagementClubEntryToCompetitionSummary",
+            "updateEngagementCompetition"
+          ],
+          "ordinaryConsumers": [
+            "generateEngagementClubRecapPdf",
+            "generateEngagementClubRecapPdfForAdmin",
+            "generateEngagementCompetitionClubRecapPdfs",
+            "grantEngagementQualificationException",
+            "listEngagementCompetitionClubRecaps",
+            "processEngagementQualificationJob",
+            "updateEngagementCompetition"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "functions/backend/engagement-pdf-renderer/engagement-pdf-fee-total.js",
+      "owner": "engagementPdfRenderer",
+      "methods": [
+        "engagementPdfFeeTotal"
+      ],
+      "selection": [
+        {
+          "environment": "TEST",
+          "file": "functions/backend/engagement-pdf-renderer/engagement-pdf-fee-total.js",
+          "mode": "dependency-closure",
+          "allConsumers": [
+            "closeDueEngagementCompetitions",
+            "generateEngagementClubRecapPdf",
+            "generateEngagementClubRecapPdfForAdmin",
+            "generateEngagementCompetitionClubRecapPdfs",
+            "grantEngagementQualificationException",
+            "listEngagementCompetitionClubRecaps",
+            "notifyEngagementCompetitionDocuments",
+            "prepareEngagementClubRecapEmails",
+            "processEngagementQualificationJob",
+            "processNapCompetitionNotifications",
+            "processNapNotificationTask",
+            "updateEngagementCompetition"
+          ],
+          "ordinaryConsumers": [
+            "generateEngagementClubRecapPdf",
+            "generateEngagementClubRecapPdfForAdmin",
+            "generateEngagementCompetitionClubRecapPdfs",
+            "grantEngagementQualificationException",
+            "listEngagementCompetitionClubRecaps",
+            "notifyEngagementCompetitionDocuments",
+            "prepareEngagementClubRecapEmails",
+            "processEngagementQualificationJob",
+            "updateEngagementCompetition"
+          ]
+        },
+        {
+          "environment": "PROD",
+          "file": "functions/backend/engagement-pdf-renderer/engagement-pdf-fee-total.js",
+          "mode": "dependency-closure",
+          "allConsumers": [
+            "closeDueEngagementCompetitions",
+            "generateEngagementClubRecapPdf",
+            "generateEngagementClubRecapPdfForAdmin",
+            "generateEngagementCompetitionClubRecapPdfs",
+            "grantEngagementQualificationException",
+            "listEngagementCompetitionClubRecaps",
+            "notifyEngagementCompetitionDocuments",
+            "prepareEngagementClubRecapEmails",
+            "processEngagementQualificationJob",
+            "processNapCompetitionNotifications",
+            "processNapNotificationTask",
+            "updateEngagementCompetition"
+          ],
+          "ordinaryConsumers": [
+            "generateEngagementClubRecapPdf",
+            "generateEngagementClubRecapPdfForAdmin",
+            "generateEngagementCompetitionClubRecapPdfs",
+            "grantEngagementQualificationException",
+            "listEngagementCompetitionClubRecaps",
+            "processEngagementQualificationJob",
+            "updateEngagementCompetition"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "functions/backend/engagement-pdf-renderer/build-engagement-officials-pdf.js",
+      "owner": "engagementPdfRenderer",
+      "methods": [
+        "buildEngagementOfficialsPdf"
+      ],
+      "selection": [
+        {
+          "environment": "TEST",
+          "file": "functions/backend/engagement-pdf-renderer/build-engagement-officials-pdf.js",
+          "mode": "dependency-closure",
+          "allConsumers": [
+            "closeDueEngagementCompetitions",
+            "grantEngagementQualificationException",
+            "notifyEngagementCompetitionDocuments",
+            "processEngagementQualificationJob",
+            "processNapCompetitionNotifications",
+            "processNapNotificationTask",
+            "updateEngagementCompetition"
+          ],
+          "ordinaryConsumers": [
+            "grantEngagementQualificationException",
+            "notifyEngagementCompetitionDocuments",
+            "processEngagementQualificationJob",
+            "updateEngagementCompetition"
+          ]
+        },
+        {
+          "environment": "PROD",
+          "file": "functions/backend/engagement-pdf-renderer/build-engagement-officials-pdf.js",
+          "mode": "dependency-closure",
+          "allConsumers": [
+            "closeDueEngagementCompetitions",
+            "grantEngagementQualificationException",
+            "notifyEngagementCompetitionDocuments",
+            "processEngagementQualificationJob",
+            "processNapCompetitionNotifications",
+            "processNapNotificationTask",
+            "updateEngagementCompetition"
+          ],
+          "ordinaryConsumers": [
+            "grantEngagementQualificationException",
+            "processEngagementQualificationJob",
+            "updateEngagementCompetition"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "functions/backend/legacy-performance-publication/public-performance-file.js",
+      "owner": "legacyPerformancePublication",
+      "methods": [
+        "publicPerformanceFilePath",
+        "publicPerformanceFile",
+        "readPublicPerformanceJson"
+      ],
+      "selection": [
+        {
+          "environment": "TEST",
+          "file": "functions/backend/legacy-performance-publication/public-performance-file.js",
+          "mode": "dependency-closure",
+          "allConsumers": [
+            "acknowledgeEngagementQualificationAlert",
+            "buildDtnQualificationView",
+            "createCompetitionImport",
+            "deleteCompetitionImport",
+            "getEngagementClubEntryTimeHistory",
+            "grantEngagementQualificationException",
+            "listEngagementQualificationSources",
+            "mergeEngagementNationalClubSwimmer",
+            "previewEngagementClubEntryTimes",
+            "previewEngagementClubSwimmerEventTimes",
+            "previewEngagementClubSwimmerEventTimesBatch",
+            "processEngagementQualificationJob",
+            "publishPerformanceCorrectionJob",
+            "repairEngagementNationalSwimmerMergePublication",
+            "requestEngagementClubSwimmerChange",
+            "resolveEngagementSwimmerChangeRequest",
+            "resumeCompetitionImportPublication",
+            "resumePerformancePublicationJobs",
+            "revalidateEngagementQualificationCache",
+            "saveEngagementClubIndividualEntries",
+            "saveEngagementClubRelays",
+            "saveEngagementClubSwimmerSelection",
+            "saveEngagementClubSwimmerSelections",
+            "saveEngagementClubSwimmers",
+            "searchEngagementNationalSwimmerMergeTargets",
+            "syncEngagementQualificationTargets",
+            "updateEngagementCompetition",
+            "updateEngagementNationalSwimmerIdentity"
+          ],
+          "ordinaryConsumers": [
+            "acknowledgeEngagementQualificationAlert",
+            "createCompetitionImport",
+            "getEngagementClubEntryTimeHistory",
+            "grantEngagementQualificationException",
+            "listEngagementQualificationSources",
+            "mergeEngagementNationalClubSwimmer",
+            "previewEngagementClubSwimmerEventTimes",
+            "previewEngagementClubSwimmerEventTimesBatch",
+            "processEngagementQualificationJob",
+            "requestEngagementClubSwimmerChange",
+            "resolveEngagementSwimmerChangeRequest",
+            "saveEngagementClubIndividualEntries",
+            "saveEngagementClubRelays",
+            "saveEngagementClubSwimmerSelection",
+            "saveEngagementClubSwimmerSelections",
+            "searchEngagementNationalSwimmerMergeTargets",
+            "updateEngagementCompetition",
+            "updateEngagementNationalSwimmerIdentity"
+          ]
+        },
+        {
+          "environment": "PROD",
+          "file": "functions/backend/legacy-performance-publication/public-performance-file.js",
+          "mode": "dependency-closure",
+          "allConsumers": [
+            "acknowledgeEngagementQualificationAlert",
+            "buildDtnQualificationView",
+            "createCompetitionImport",
+            "deleteCompetitionImport",
+            "getEngagementClubEntryTimeHistory",
+            "grantEngagementQualificationException",
+            "listEngagementQualificationSources",
+            "mergeEngagementNationalClubSwimmer",
+            "previewEngagementClubEntryTimes",
+            "previewEngagementClubSwimmerEventTimes",
+            "previewEngagementClubSwimmerEventTimesBatch",
+            "processEngagementQualificationJob",
+            "publishPerformanceCorrectionJob",
+            "repairEngagementNationalSwimmerMergePublication",
+            "requestEngagementClubSwimmerChange",
+            "resolveEngagementSwimmerChangeRequest",
+            "resumeCompetitionImportPublication",
+            "resumePerformancePublicationJobs",
+            "revalidateEngagementQualificationCache",
+            "saveEngagementClubIndividualEntries",
+            "saveEngagementClubRelays",
+            "saveEngagementClubSwimmerSelection",
+            "saveEngagementClubSwimmerSelections",
+            "saveEngagementClubSwimmers",
+            "searchEngagementNationalSwimmerMergeTargets",
+            "syncEngagementQualificationTargets",
+            "updateEngagementCompetition",
+            "updateEngagementNationalSwimmerIdentity"
+          ],
+          "ordinaryConsumers": [
+            "acknowledgeEngagementQualificationAlert",
+            "createCompetitionImport",
+            "getEngagementClubEntryTimeHistory",
+            "grantEngagementQualificationException",
+            "listEngagementQualificationSources",
+            "mergeEngagementNationalClubSwimmer",
+            "previewEngagementClubSwimmerEventTimes",
+            "previewEngagementClubSwimmerEventTimesBatch",
+            "processEngagementQualificationJob",
+            "requestEngagementClubSwimmerChange",
+            "saveEngagementClubIndividualEntries",
+            "saveEngagementClubRelays",
+            "saveEngagementClubSwimmerSelection",
+            "saveEngagementClubSwimmerSelections",
+            "searchEngagementNationalSwimmerMergeTargets",
+            "updateEngagementCompetition",
+            "updateEngagementNationalSwimmerIdentity"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "functions/backend/legacy-performance-publication/build-public-search-row.js",
+      "owner": "legacyPerformancePublication",
+      "methods": [
+        "savePublicPerformanceJson",
+        "savePublicPerformanceText",
+        "publicPerformanceCompactObject",
+        "publicPerformanceSearchShard",
+        "publicPerformanceIdShard",
+        "publicPerformanceRowKey",
+        "publicPerformanceTopCandidateKey",
+        "publicPerformanceSwimmerRow",
+        "publicPerformanceTopRow",
+        "sortPublicPerformanceRows",
+        "sortPublicTopRows",
+        "mergePublicTopRows",
+        "buildPublicSwimmerPayload",
+        "buildPublicSearchRow",
+        "publishPublicSearchIndexes",
+        "distinctPublicTopPreview",
+        "mergePublicPerformanceManifest"
+      ],
+      "selection": [
+        {
+          "environment": "TEST",
+          "file": "functions/backend/legacy-performance-publication/build-public-search-row.js",
+          "mode": "dependency-closure",
+          "allConsumers": [
+            "createCompetitionImport",
+            "deleteCompetitionImport",
+            "mergeEngagementNationalClubSwimmer",
+            "publishPerformanceCorrectionJob",
+            "repairEngagementNationalSwimmerMergePublication",
+            "resolveEngagementSwimmerChangeRequest",
+            "resumeCompetitionImportPublication",
+            "resumePerformancePublicationJobs",
+            "updateEngagementNationalSwimmerIdentity"
+          ],
+          "ordinaryConsumers": [
+            "createCompetitionImport",
+            "mergeEngagementNationalClubSwimmer",
+            "resolveEngagementSwimmerChangeRequest",
+            "updateEngagementNationalSwimmerIdentity"
+          ]
+        },
+        {
+          "environment": "PROD",
+          "file": "functions/backend/legacy-performance-publication/build-public-search-row.js",
+          "mode": "dependency-closure",
+          "allConsumers": [
+            "createCompetitionImport",
+            "deleteCompetitionImport",
+            "mergeEngagementNationalClubSwimmer",
+            "publishPerformanceCorrectionJob",
+            "repairEngagementNationalSwimmerMergePublication",
+            "resolveEngagementSwimmerChangeRequest",
+            "resumeCompetitionImportPublication",
+            "resumePerformancePublicationJobs",
+            "updateEngagementNationalSwimmerIdentity"
+          ],
+          "ordinaryConsumers": [
+            "createCompetitionImport",
+            "mergeEngagementNationalClubSwimmer",
+            "updateEngagementNationalSwimmerIdentity"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "functions/backend/legacy-performance-publication/public-performance-top-file-name.js",
+      "owner": "legacyPerformancePublication",
+      "methods": [
+        "publicPerformanceTopFileName"
+      ],
+      "selection": [
+        {
+          "environment": "TEST",
+          "file": "functions/backend/legacy-performance-publication/public-performance-top-file-name.js",
+          "mode": "dependency-closure",
+          "allConsumers": [
+            "buildDtnQualificationView",
+            "createCompetitionImport",
+            "deleteCompetitionImport",
+            "mergeEngagementNationalClubSwimmer",
+            "publishPerformanceCorrectionJob",
+            "repairEngagementNationalSwimmerMergePublication",
+            "resolveEngagementSwimmerChangeRequest",
+            "resumeCompetitionImportPublication",
+            "resumePerformancePublicationJobs",
+            "updateEngagementNationalSwimmerIdentity"
+          ],
+          "ordinaryConsumers": [
+            "createCompetitionImport",
+            "mergeEngagementNationalClubSwimmer",
+            "resolveEngagementSwimmerChangeRequest",
+            "updateEngagementNationalSwimmerIdentity"
+          ]
+        },
+        {
+          "environment": "PROD",
+          "file": "functions/backend/legacy-performance-publication/public-performance-top-file-name.js",
+          "mode": "dependency-closure",
+          "allConsumers": [
+            "buildDtnQualificationView",
+            "createCompetitionImport",
+            "deleteCompetitionImport",
+            "mergeEngagementNationalClubSwimmer",
+            "publishPerformanceCorrectionJob",
+            "repairEngagementNationalSwimmerMergePublication",
+            "resolveEngagementSwimmerChangeRequest",
+            "resumeCompetitionImportPublication",
+            "resumePerformancePublicationJobs",
+            "updateEngagementNationalSwimmerIdentity"
+          ],
+          "ordinaryConsumers": [
+            "createCompetitionImport",
+            "mergeEngagementNationalClubSwimmer",
+            "updateEngagementNationalSwimmerIdentity"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "functions/backend/legacy-performance-publication/public-performance-swimmer-file-path.js",
+      "owner": "legacyPerformancePublication",
+      "methods": [
+        "publicPerformanceSwimmerFilePath"
+      ],
+      "selection": [
+        {
+          "environment": "TEST",
+          "file": "functions/backend/legacy-performance-publication/public-performance-swimmer-file-path.js",
+          "mode": "dependency-closure",
+          "allConsumers": [
+            "acknowledgeEngagementQualificationAlert",
+            "createCompetitionImport",
+            "deleteCompetitionImport",
+            "getEngagementClubEntryTimeHistory",
+            "grantEngagementQualificationException",
+            "listEngagementQualificationSources",
+            "mergeEngagementNationalClubSwimmer",
+            "previewEngagementClubEntryTimes",
+            "previewEngagementClubSwimmerEventTimes",
+            "previewEngagementClubSwimmerEventTimesBatch",
+            "processEngagementQualificationJob",
+            "publishPerformanceCorrectionJob",
+            "repairEngagementNationalSwimmerMergePublication",
+            "requestEngagementClubSwimmerChange",
+            "resolveEngagementSwimmerChangeRequest",
+            "resumeCompetitionImportPublication",
+            "resumePerformancePublicationJobs",
+            "revalidateEngagementQualificationCache",
+            "saveEngagementClubIndividualEntries",
+            "saveEngagementClubRelays",
+            "saveEngagementClubSwimmerSelection",
+            "saveEngagementClubSwimmerSelections",
+            "saveEngagementClubSwimmers",
+            "searchEngagementNationalSwimmerMergeTargets",
+            "syncEngagementQualificationTargets",
+            "updateEngagementCompetition",
+            "updateEngagementNationalSwimmerIdentity"
+          ],
+          "ordinaryConsumers": [
+            "acknowledgeEngagementQualificationAlert",
+            "createCompetitionImport",
+            "getEngagementClubEntryTimeHistory",
+            "grantEngagementQualificationException",
+            "listEngagementQualificationSources",
+            "mergeEngagementNationalClubSwimmer",
+            "previewEngagementClubSwimmerEventTimes",
+            "previewEngagementClubSwimmerEventTimesBatch",
+            "processEngagementQualificationJob",
+            "requestEngagementClubSwimmerChange",
+            "resolveEngagementSwimmerChangeRequest",
+            "saveEngagementClubIndividualEntries",
+            "saveEngagementClubRelays",
+            "saveEngagementClubSwimmerSelection",
+            "saveEngagementClubSwimmerSelections",
+            "searchEngagementNationalSwimmerMergeTargets",
+            "updateEngagementCompetition",
+            "updateEngagementNationalSwimmerIdentity"
+          ]
+        },
+        {
+          "environment": "PROD",
+          "file": "functions/backend/legacy-performance-publication/public-performance-swimmer-file-path.js",
+          "mode": "dependency-closure",
+          "allConsumers": [
+            "acknowledgeEngagementQualificationAlert",
+            "createCompetitionImport",
+            "deleteCompetitionImport",
+            "getEngagementClubEntryTimeHistory",
+            "grantEngagementQualificationException",
+            "listEngagementQualificationSources",
+            "mergeEngagementNationalClubSwimmer",
+            "previewEngagementClubEntryTimes",
+            "previewEngagementClubSwimmerEventTimes",
+            "previewEngagementClubSwimmerEventTimesBatch",
+            "processEngagementQualificationJob",
+            "publishPerformanceCorrectionJob",
+            "repairEngagementNationalSwimmerMergePublication",
+            "requestEngagementClubSwimmerChange",
+            "resolveEngagementSwimmerChangeRequest",
+            "resumeCompetitionImportPublication",
+            "resumePerformancePublicationJobs",
+            "revalidateEngagementQualificationCache",
+            "saveEngagementClubIndividualEntries",
+            "saveEngagementClubRelays",
+            "saveEngagementClubSwimmerSelection",
+            "saveEngagementClubSwimmerSelections",
+            "saveEngagementClubSwimmers",
+            "searchEngagementNationalSwimmerMergeTargets",
+            "syncEngagementQualificationTargets",
+            "updateEngagementCompetition",
+            "updateEngagementNationalSwimmerIdentity"
+          ],
+          "ordinaryConsumers": [
+            "acknowledgeEngagementQualificationAlert",
+            "createCompetitionImport",
+            "getEngagementClubEntryTimeHistory",
+            "grantEngagementQualificationException",
+            "listEngagementQualificationSources",
+            "mergeEngagementNationalClubSwimmer",
+            "previewEngagementClubSwimmerEventTimes",
+            "previewEngagementClubSwimmerEventTimesBatch",
+            "processEngagementQualificationJob",
+            "requestEngagementClubSwimmerChange",
+            "saveEngagementClubIndividualEntries",
+            "saveEngagementClubRelays",
+            "saveEngagementClubSwimmerSelection",
+            "saveEngagementClubSwimmerSelections",
+            "searchEngagementNationalSwimmerMergeTargets",
+            "updateEngagementCompetition",
+            "updateEngagementNationalSwimmerIdentity"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "functions/backend/legacy-performance-publication/merge-public-swimmer-rows.js",
+      "owner": "legacyPerformancePublication",
+      "methods": [
+        "mergePublicSwimmerRows",
+        "publishPublicSwimmerFile",
+        "publishPublicTopFiles",
+        "publishIncrementalPublicPerformanceFiles"
+      ],
+      "selection": [
+        {
+          "environment": "TEST",
+          "file": "functions/backend/legacy-performance-publication/merge-public-swimmer-rows.js",
+          "mode": "dependency-closure",
+          "allConsumers": [
+            "createCompetitionImport",
+            "resumeCompetitionImportPublication"
+          ],
+          "ordinaryConsumers": [
+            "createCompetitionImport"
+          ]
+        },
+        {
+          "environment": "PROD",
+          "file": "functions/backend/legacy-performance-publication/merge-public-swimmer-rows.js",
+          "mode": "dependency-closure",
+          "allConsumers": [
+            "createCompetitionImport",
+            "resumeCompetitionImportPublication"
+          ],
+          "ordinaryConsumers": [
+            "createCompetitionImport"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "functions/backend/legacy-performance-publication/delete-public-performance-file.js",
+      "owner": "legacyPerformancePublication",
+      "methods": [
+        "deletePublicPerformanceFile",
+        "removePublicSearchIndexes",
+        "publicPerformanceTopKey",
+        "publicPerformanceMatchesTopKey",
+        "publicPerformanceActiveRow",
+        "getActivePublicRowsForAffectedSwimmer",
+        "rebuildPublicSwimmerFilesForAffectedRows",
+        "rebuildPublicTopFilesForAffectedRows",
+        "rebuildPublicPerformanceFilesForAffectedRows"
+      ],
+      "selection": [
+        {
+          "environment": "TEST",
+          "file": "functions/backend/legacy-performance-publication/delete-public-performance-file.js",
+          "mode": "dependency-closure",
+          "allConsumers": [
+            "deleteCompetitionImport",
+            "mergeEngagementNationalClubSwimmer",
+            "publishPerformanceCorrectionJob",
+            "repairEngagementNationalSwimmerMergePublication",
+            "resolveEngagementSwimmerChangeRequest",
+            "resumePerformancePublicationJobs",
+            "updateEngagementNationalSwimmerIdentity"
+          ],
+          "ordinaryConsumers": [
+            "mergeEngagementNationalClubSwimmer",
+            "resolveEngagementSwimmerChangeRequest",
+            "updateEngagementNationalSwimmerIdentity"
+          ]
+        },
+        {
+          "environment": "PROD",
+          "file": "functions/backend/legacy-performance-publication/delete-public-performance-file.js",
+          "mode": "dependency-closure",
+          "allConsumers": [
+            "deleteCompetitionImport",
+            "mergeEngagementNationalClubSwimmer",
+            "publishPerformanceCorrectionJob",
+            "repairEngagementNationalSwimmerMergePublication",
+            "resolveEngagementSwimmerChangeRequest",
+            "resumePerformancePublicationJobs",
+            "updateEngagementNationalSwimmerIdentity"
+          ],
+          "ordinaryConsumers": [
+            "mergeEngagementNationalClubSwimmer",
+            "updateEngagementNationalSwimmerIdentity"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "functions/backend/legacy-performance-publication/assert-public-swimmer-identity-replaced.js",
+      "owner": "legacyPerformancePublication",
+      "methods": [
+        "assertPublicSwimmerIdentityReplaced",
+        "replacePublicSwimmerIdentity"
+      ],
+      "selection": [
+        {
+          "environment": "TEST",
+          "file": "functions/backend/legacy-performance-publication/assert-public-swimmer-identity-replaced.js",
+          "mode": "dependency-closure",
+          "allConsumers": [
+            "mergeEngagementNationalClubSwimmer",
+            "repairEngagementNationalSwimmerMergePublication",
+            "resolveEngagementSwimmerChangeRequest",
+            "updateEngagementNationalSwimmerIdentity"
+          ],
+          "ordinaryConsumers": [
+            "mergeEngagementNationalClubSwimmer",
+            "resolveEngagementSwimmerChangeRequest",
+            "updateEngagementNationalSwimmerIdentity"
+          ]
+        },
+        {
+          "environment": "PROD",
+          "file": "functions/backend/legacy-performance-publication/assert-public-swimmer-identity-replaced.js",
+          "mode": "dependency-closure",
+          "allConsumers": [
+            "mergeEngagementNationalClubSwimmer",
+            "repairEngagementNationalSwimmerMergePublication",
+            "resolveEngagementSwimmerChangeRequest",
+            "updateEngagementNationalSwimmerIdentity"
+          ],
+          "ordinaryConsumers": [
+            "mergeEngagementNationalClubSwimmer",
+            "updateEngagementNationalSwimmerIdentity"
+          ]
+        }
+      ]
+    }
+  ]
+}

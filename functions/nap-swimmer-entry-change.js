@@ -1,8 +1,8 @@
 "use strict";
 const { indexed } = require("./nap-swimmer-entry-query-plan");
 const {createHash}=require("node:crypto");
-const {positiveId}=require("./nap-direct-calendar");
-const {fingerprint}=require("./nap-portal-workspaces");
+const { positiveId } = require("./nap-calendar-values");
+const { fingerprint } = require("./nap-competition-fingerprint");
 const {readNativeCompetition}=require("./nap-portal-competitions");
 const {readNativeClubEntry}=require("./nap-portal-entries");
 const {planSelection}=require("./nap-swimmer-entry-plan");

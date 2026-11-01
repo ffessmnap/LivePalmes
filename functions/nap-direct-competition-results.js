@@ -1,9 +1,14 @@
 "use strict";
-const {visiblePerformanceSql}=require("./nap-performance-visibility");
-const rules = require("./nap-performance-normalization");
+const { visiblePerformanceSql } = require("./nap-performance-visibility-sql");
+const { swimmerIdentityKey: __nativeMember0 } = require("./nap-performance-identity");
+const { CURRENT_POOL_COURSES: __nativeMember1, coursePayload: __nativeMember2 } = require("./nap-performance-courses");
+const { competitionSeasonYear: __nativeMember3 } = require("./nap-performance-dates");
+const rules = { swimmerIdentityKey: __nativeMember0, CURRENT_POOL_COURSES: __nativeMember1, coursePayload: __nativeMember2, competitionSeasonYear: __nativeMember3 };
 const duration = require("./nap-duration");
-const { performanceRow } = require("./nap-direct-swimmer");
-const { MAX_RESULTS, positiveId, text, execute } = require("./nap-direct-calendar");
+const { performanceRow } = require("./nap-performance-row");
+const { MAX_RESULTS } = require("./nap-direct-calendar");
+const { positiveId, text } = require("./nap-calendar-values");
+const { execute } = require("./nap-query");
 const MAX_HISTORY_ROWS = 100000;
 const MAX_PARTICIPANTS = 1000;
 const PROJECTION = "p.id,p.nageur,p.course,p.cat,p.tps,p.passage,p.relais,c.id AS competition_id,c.libelle,c.lieu,c.date,c.bassin,c.chrono,c.ld,n.nom,n.prenom,n.date AS birth_date,n.sexe";

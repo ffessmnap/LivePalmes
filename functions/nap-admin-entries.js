@@ -1,10 +1,10 @@
 "use strict";
 // One competition, nine grouped queries maximum after authorization. No
 // per-club dossier or performance history read, cache reconstruction or write.
-const {positiveId}=require("./nap-direct-calendar");
-const {bounded}=require("./nap-portal-competitions");
-const {person}=require("./nap-portal-swimmers");
-const {entryItem}=require("./nap-portal-workspaces");
+const { positiveId } = require("./nap-calendar-values");
+const { bounded } = require("./nap-competition-query");
+const { person } = require("./nap-swimmer-profile");
+const { entryItem } = require("./nap-entry-view");
 const {storedCategory}=require("./nap-relay-resolution");
 const licenseState=require("./nap-license-state");
 const LIMITS=Object.freeze({inscriptions:5000,individual:20000,relays:2000,members:8000,officials:2000,leaders:1000,options:500,clubs:500,categories:200});

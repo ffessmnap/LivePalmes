@@ -1,9 +1,9 @@
 "use strict";
-const {visiblePerformanceSql}=require("./nap-performance-visibility");
+const { visiblePerformanceSql } = require("./nap-performance-visibility-sql");
 // Direct read preparation. This module registers no endpoint, performs no
 // writes and accepts a trusted pool only after the caller's authorization.
-const {performanceRow}=require("./nap-direct-swimmer");
-const {person}=require("./nap-portal-swimmers");
+const { performanceRow } = require("./nap-performance-row");
+const { person } = require("./nap-swimmer-profile");
 const PAGE_SIZE=500,MAX_ROWS=100000,MAX_COMPETITIONS=1200;
 function bounds(year) {
   if(!Number.isInteger(year) || year<2001 || year>2100) throw new TypeError("Saison DTN invalide.");

@@ -1,7 +1,7 @@
 "use strict";
 // Pure retry classification only. No database or audit write is performed.
 const {isDeepStrictEqual}=require("node:util");
-const {positiveId}=require("./nap-direct-calendar");
+const { positiveId } = require("./nap-calendar-values");
 const columns=["id","compet","officiel","club"];
 function row(value,plan) {
   if(!value || columns.some(key=>!Object.hasOwn(value,key))) throw new TypeError("Lien officiel incomplet.");

@@ -2,7 +2,7 @@
 const {createHash,randomUUID}=require("node:crypto");
 const {documentOptionsContract}=require("./nap-document-options-contract");
 const {publicDocument}=require("./nap-public-documents");
-const {publicUrl}=require("./nap-direct-calendar");
+const { publicUrl } = require("./nap-calendar-values");
 const LOCK="livepalmes-featured-documents";
 const MAX_VERSION=Number.MAX_SAFE_INTEGER-2;
 const digest=value=>createHash("sha256").update(JSON.stringify(value)).digest("hex");

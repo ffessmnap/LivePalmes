@@ -3,7 +3,8 @@
 // no sporting reference is removed and no real deletion is used for tests.
 const {createHash}=require("node:crypto"),{isDeepStrictEqual:equal}=require("node:util");
 const {COLUMNS}=require("./nap-approved-swimmer-correction");
-const identity=require("./nap-portal-swimmer-change"),activity=require("./nap-swimmer-activity"),licenses=require("./nap-swimmer-merge-license-plan");
+const { fingerprint: __nativeMember0 } = require("./nap-swimmer-identity-values");
+const identity={ fingerprint: __nativeMember0 },activity=require("./nap-swimmer-activity"),licenses=require("./nap-swimmer-merge-license-plan");
 const {number}=require("./nap-license-state"),{nativeEqual}=require("./nap-native-compare");
 const REFERENCES=require("./nap-swimmer-merge-plan").TABLES.filter(spec=>spec.table!=="engagements");
 function operation(input){return createHash("sha256").update(JSON.stringify(["swimmer-delete",input.actorUid,String(input.swimmerId),input.expectedFingerprint,input.expectedActivityFingerprint,input.expectedLicenseNumber])).digest("hex");}

@@ -1,7 +1,8 @@
 "use strict";
 // National-created, unused clubs only. Fixed <=40 SQL calls, one row deleted.
 const {createHash}=require("node:crypto"),{isDeepStrictEqual:equal}=require("node:util"),{nativeEqual}=require("./nap-native-compare");
-const {COLUMNS}=require("./nap-club-change"),directory=require("./nap-club-directory"),{references}=require("./nap-club-deletion-references");
+const { fingerprint: __nativeMember0 } = require("./nap-club-values");
+const {COLUMNS}=require("./nap-club-change"),directory={ fingerprint: __nativeMember0 },{references}=require("./nap-club-deletion-references");
 function operation(input){return createHash("sha256").update(JSON.stringify(["club-delete",input.actorUid,String(input.clubId),input.expectedFingerprint])).digest("hex");}
 async function deleteClub(pool,input,audit,authorize){
  if(!/^[1-9]\d{0,9}$/.test(input?.clubId||"")||!input.actorUid||input.actorUid.length>128||input.confirmPermanent!==true||!/^[a-f0-9]{64}$/.test(input.expectedFingerprint||"")||typeof authorize!=="function")throw new TypeError("Confirmation nationale et fiche affichee requises.");

@@ -1,5 +1,5 @@
 "use strict";
-const {positiveId}=require("./nap-direct-calendar");
+const { positiveId } = require("./nap-calendar-values");
 const {entryAuthority,deadline}=require("./nap-official-entry-statements");
 const json=value=>value==null?null:typeof value==="string"?value:JSON.stringify(value);
 function detailStatement(input,before,after,authority,end) {

@@ -4,7 +4,7 @@
 const {isDeepStrictEqual}=require('node:util');
 const jobs=require('./nap-qualification-jobs');
 const native=require('./nap-portal-competitions');
-const {fingerprint}=require('./nap-portal-workspaces');
+const { fingerprint } = require("./nap-competition-fingerprint");
 function pageIds(job){
   const ids=job.payload.pageIds;
   if(!Array.isArray(ids)||ids.length>1000||new Set(ids).size!==ids.length||ids.some(id=>!/^[a-f0-9]{64}$/.test(id)))throw new TypeError('Pages de controle incompatibles.');

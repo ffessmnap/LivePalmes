@@ -2,8 +2,8 @@
 const {notMerged}=require("./nap-swimmer-merge-state");
 const {randomUUID}=require("node:crypto");
 const license=require("./nap-license-state");
-const {positiveId}=require("./nap-direct-calendar");
-const {person}=require("./nap-portal-swimmers");
+const { positiveId } = require("./nap-calendar-values");
+const { person } = require("./nap-swimmer-profile");
 async function query(connection,sql,values,max) {
   const [rows]=await connection.execute({sql,timeout:10000},values);
   if(rows.length>max) throw new RangeError("Lot de licences trop volumineux. Reduisez la selection.");

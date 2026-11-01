@@ -5,7 +5,7 @@
 const {createHash}=require("node:crypto");
 const {isDeepStrictEqual:equal}=require("node:util");
 const {reference,changedOptions}=require("./nap-club-person-status");
-const {person,normalizeOptions,SOURCES,OPTION_COLUMNS}=require("./nap-club-people");
+const { person, normalizeOptions, SOURCES, OPTION_COLUMNS } = require("./nap-club-people-values");
 const {nativeEqual}=require("./nap-native-compare");
 function operation(input) {return createHash("sha256").update(JSON.stringify(["person-merge",input.actorUid,input.sourcePersonId,input.targetPersonId,input.sourceFingerprint,input.targetFingerprint])).digest("hex");}
 function planMerge(input,source,target,sourceOptions,targetOptions,links) {

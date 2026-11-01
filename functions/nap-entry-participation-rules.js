@@ -1,8 +1,8 @@
 "use strict";
-const {visiblePerformanceSql}=require("./nap-performance-visibility");
+const { visiblePerformanceSql } = require("./nap-performance-visibility-sql");
 // Existing IntraNAP modes: presence, tps, presencetps. One indexed grouped
 // read at most for 800 people; no read at all without a presence requirement.
-const {positiveId}=require("./nap-direct-calendar");
+const { positiveId } = require("./nap-calendar-values");
 function requirements(pack) {
   const rows=pack.participations || pack.nativeRules?.participations;
   if(!Array.isArray(rows) || rows.length>200) throw new TypeError("Conditions de participation NAP incompletes.");

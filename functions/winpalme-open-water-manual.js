@@ -19,7 +19,7 @@ function prepareManualOpenWaterEntries(entries) {
 // e-NAP meeting identity: committee code + meeting date + native meeting ID.
 // Verified against Jumièges 4982 and Beaumont 4760 supplied TXT references.
 async function readManualOpenWaterCompetition(connection, competition) {
-  const { positiveId } = require("./nap-direct-calendar");
+  const { positiveId } = require("./nap-calendar-values");
   const { regionCode } = require("./winpalme-export");
   const id = positiveId(competition.id);
   let rows;

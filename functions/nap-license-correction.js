@@ -3,7 +3,7 @@ const {notMerged}=require("./nap-swimmer-merge-state");
 const {createHash}=require("node:crypto");
 const {COLUMNS,hash}=require("./nap-approved-swimmer-correction");
 const {nativeEqual}=require("./nap-native-compare");
-const {swimmerId}=require("./nap-direct-swimmer");
+const { swimmerId } = require("./nap-swimmer-values");
 const {number}=require("./nap-license-state");
 // A durable before-image is required: nageurs is MyISAM, so rollback is insufficient.
 async function correctLicense(connection,input,audit) {

@@ -1,6 +1,7 @@
 "use strict";
 const assert = require("node:assert/strict");
 const Module = require("node:module");
+const path = require("node:path");
 const { createClubHandlers } = require("../functions/portal-club-handlers");
 const { createNationalHandlers } = require("../functions/portal-national-handlers");
 class HttpsError extends Error { constructor(code, message) { super(message); this.code = code; } }
@@ -11,12 +12,15 @@ async function main() {
   process.env.LIVEPALMES_NAP_PASSWORD = "fixture-not-a-secret";
   let reads = 0, poolCalls = 0, reply = async () => ({ source: "nap", people: [], hasMore: false });
   Module._load = function(request, parent, ...rest) {
-    if (/portal-(?:club|national)-handlers\.js$/.test(parent?.filename || "")) {
-      if (request === "./nap-portal-swimmers") return { portalPool(password) { assert.equal(password, "fixture-not-a-secret"); poolCalls++; return pool; } };
-      if (request === "./nap-club-people") return { async readClubPeople(actualPool, input, authorize) {
+    const owner = parent?.filename ? path.relative(path.resolve(__dirname, "../functions"), parent.filename).replaceAll("\\", "/") : "";
+    if (/^(?:portal-(?:club|national)-handlers\.js|backend\/portal-(?:club|national)-handlers\/[\w-]+\.js)$/.test(owner)) {
+      const target = request.startsWith(".") ? path.resolve(path.dirname(parent.filename), request) : null;
+      const modulePath = name => path.resolve(__dirname, "../functions", name);
+      if ((target === modulePath("nap-portal-swimmers") || target === modulePath("nap-portal-pool"))) return { portalPool(password) { assert.equal(password, "fixture-not-a-secret"); poolCalls++; return pool; } };
+      if ((target === modulePath("nap-club-people") || target === modulePath("nap-club-people-page"))) return { async readClubPeople(actualPool, input, authorize) {
         assert.equal(actualPool, pool); assert.equal(input.clubId, "fixture-club"); authorize({ clubId: input.clubId }); reads++; return reply(input);
       } };
-      if (request === "./nap-club-directory") return { async directory(actualPool) { assert.equal(actualPool, pool); reads++; return reply(); } };
+      if ((target === modulePath("nap-club-directory") || target === modulePath("nap-club-directory-page"))) return { async directory(actualPool) { assert.equal(actualPool, pool); reads++; return reply(); } };
     }
     return originalLoad.call(this, request, parent, ...rest);
   };

@@ -1,7 +1,7 @@
 "use strict";
 // Serialize an ordinary parameter/course edit with qualification preview and
 // application. IntraNAP is unchanged; native before-image guards still apply.
-const {positiveId}=require('./nap-direct-calendar');
+const { positiveId } = require("./nap-calendar-values");
 const {lockName}=require('./nap-qualification-control-start');
 async function ordinaryEdit(pool,id,action,services){
   id=positiveId(id);if(typeof action!=='function'||typeof services?.authorize!=='function')throw new TypeError('Modification native autorisee requise.');

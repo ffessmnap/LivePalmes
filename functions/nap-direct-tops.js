@@ -1,7 +1,13 @@
 "use strict";
-const {visiblePerformanceSql}=require("./nap-performance-visibility");
-const rules = require("./nap-performance-normalization");
-const { performanceRow } = require("./nap-direct-swimmer");
+const { visiblePerformanceSql } = require("./nap-performance-visibility-sql");
+const { categoryFromAge: __nativeMember0, fallbackCategoryFromSource: __nativeMember1, CATEGORY_ORDER: __nativeMember3 } = require("./nap-performance-categories");
+const { CURRENT_POOL_COURSES: __nativeMember2, MIN_TIME_BY_COURSE: __nativeMember4 } = require("./nap-performance-courses");
+const { cleanText: __nativeMember5, swimmerIdentityKey: __nativeMember6 } = require("./nap-performance-identity");
+const { parseCompactTime: __nativeMember7 } = require("./nap-performance-time");
+const { competitionSeasonYear: __nativeMember8 } = require("./nap-performance-dates");
+const { committeeId: __nativeMember9, committeeLabel: __nativeMember10 } = require("./nap-performance-committees");
+const rules = { categoryFromAge: __nativeMember0, fallbackCategoryFromSource: __nativeMember1, CURRENT_POOL_COURSES: __nativeMember2, CATEGORY_ORDER: __nativeMember3, MIN_TIME_BY_COURSE: __nativeMember4, cleanText: __nativeMember5, swimmerIdentityKey: __nativeMember6, parseCompactTime: __nativeMember7, competitionSeasonYear: __nativeMember8, committeeId: __nativeMember9, committeeLabel: __nativeMember10 };
+const { performanceRow } = require("./nap-performance-row");
 const MAX_COURSE_ROWS = 150000;
 const MAX_CANDIDATES = 5000;
 const MAX_LIMIT = 5000;

@@ -1,730 +1,336 @@
-// Preserve the execution mode of the existing index.js function bodies.
-
-// Existing callable bodies only. Firebase registrations stay in index.js.
-// This factory performs no I/O and retains live access to its explicit services.
+// Compatibility factory; operation modules hold the existing bodies.
 function createAccessHandlers(backendContext) {
-  async function setRolePins(request) {
-    backendContext.assertCapability(request, "consoles.manage");
-    const competitionId = backendContext.competitionIdFrom(request.data || {});
-    if (request.data?.enabled === false) {
-      throw new backendContext.HttpsError("failed-precondition", "Les codes PIN des consoles ne peuvent plus etre desactives.");
-    }
-    const enabled = true;
-    const now = new Date().toISOString();
-    const pins = request.data?.pins || {};
-    const ref = backendContext.rolePinsRef(competitionId);
-
-    await backendContext.db.runTransaction(async (transaction) => {
-      const snapshot = await transaction.get(ref);
-      const previousRoles = snapshot.exists ? (snapshot.data()?.roles || {}) : {};
-      const nextRoles = enabled ? { ...previousRoles } : {};
-
-      if (enabled) {
-        backendContext.ROLES.forEach((role) => {
-          const pin = backendContext.cleanText(pins[role]);
-          if (!pin) {
-            const previous = previousRoles[role] || {};
-            if (!previous.hash || !previous.salt) {
-              throw new backendContext.HttpsError("invalid-argument", `Le code PIN ${role} doit contenir 4 chiffres.`);
-            }
-            nextRoles[role] = previous;
-            return;
-          }
-          backendContext.assertPin(pin);
-          const salt = backendContext.crypto.randomBytes(16).toString("hex");
-          nextRoles[role] = {
-            hash: backendContext.pinHash(pin, salt),
-            salt,
-            updatedAt: now
-          };
-        });
-      }
-
-      transaction.set(ref, {
-        enabled,
-        roles: nextRoles,
-        updatedAt: now,
-        updatedBy: request.auth.uid,
-        version: 1
-      }, { merge: false });
+  let cache0;
+  function operation0() {
+    if (!cache0) cache0 = require("./backend/portal-access-handlers/set-role-pins").createAccessHandlers_setRolePins({
+      get HttpsError() { return backendContext.HttpsError; },
+      set HttpsError(value) { backendContext.HttpsError = value; },
+      get ROLES() { return backendContext.ROLES; },
+      set ROLES(value) { backendContext.ROLES = value; },
+      get assertCapability() { return backendContext.assertCapability; },
+      set assertCapability(value) { backendContext.assertCapability = value; },
+      get assertPin() { return backendContext.assertPin; },
+      set assertPin(value) { backendContext.assertPin = value; },
+      get cleanText() { return backendContext.cleanText; },
+      set cleanText(value) { backendContext.cleanText = value; },
+      get competitionIdFrom() { return backendContext.competitionIdFrom; },
+      set competitionIdFrom(value) { backendContext.competitionIdFrom = value; },
+      get crypto() { return backendContext.crypto; },
+      set crypto(value) { backendContext.crypto = value; },
+      get db() { return backendContext.db; },
+      set db(value) { backendContext.db = value; },
+      get pinHash() { return backendContext.pinHash; },
+      set pinHash(value) { backendContext.pinHash = value; },
+      get rolePinsRef() { return backendContext.rolePinsRef; },
+      set rolePinsRef(value) { backendContext.rolePinsRef = value; },
+      get updatePublicPinNotes() { return backendContext.updatePublicPinNotes; },
+      set updatePublicPinNotes(value) { backendContext.updatePublicPinNotes = value; }
     });
-
-    await backendContext.db.runTransaction(async (transaction) => {
-      const attemptsRoot = backendContext.db
-        .collection("competitions")
-        .doc(competitionId)
-        .collection("security")
-        .doc("pinAttempts")
-        .collection("items");
-      const changedRoles = new Set(backendContext.ROLES.filter((role) => backendContext.cleanText(pins[role])));
-      if (!changedRoles.size) return;
-      const snapshot = await transaction.get(attemptsRoot.where("role", "in", [...changedRoles]));
-      snapshot.docs.forEach((doc) => {
-        transaction.delete(doc.ref);
-      });
-    }).catch(() => {});
-
-    await backendContext.updatePublicPinNotes(competitionId, enabled);
-
-    return {
-      ok: true,
-      enabled,
-      mode: "cloud",
-      updatedAt: now
-    };
+    return cache0;
   }
 
-  async function verifyPin(request) {
-    const competitionId = backendContext.competitionIdFrom(request.data || {});
-    const role = backendContext.cleanText(request.data?.role);
-    const pin = backendContext.cleanText(request.data?.pin);
-    const clientId = backendContext.cleanText(request.data?.clientId);
-    backendContext.assertRole(role);
-    backendContext.assertPin(pin);
-    const uid = backendContext.cleanText(request.auth?.uid);
-    if (!uid) {
-      throw new backendContext.HttpsError("unauthenticated", "Connexion Firebase console requise.");
-    }
-    await backendContext.assertConsolePortalAccess(request);
-    const attemptsRef = backendContext.pinAttemptRef(competitionId, role, uid, clientId);
-    await backendContext.assertPinAttemptAllowed(attemptsRef);
-
-    const snapshot = await backendContext.rolePinsRef(competitionId).get();
-    if (!snapshot.exists || snapshot.data()?.enabled !== true) {
-      throw new backendContext.HttpsError("failed-precondition", "Codes PIN serveur non configures.");
-    }
-
-    const entry = snapshot.data()?.roles?.[role];
-    if (!entry?.hash || !entry?.salt || !backendContext.safeCompareHex(backendContext.pinHash(pin, entry.salt), entry.hash)) {
-      await backendContext.recordFailedPinAttempt(attemptsRef, { clientId, role, uid });
-      throw new backendContext.HttpsError("permission-denied", "Code PIN incorrect.");
-    }
-
-    await backendContext.clearPinAttempts(attemptsRef);
-    const authUser = await backendContext.auth.getUser(uid);
-    await backendContext.auth.setCustomUserClaims(uid, backendContext.consoleRoleClaims(
-      authUser.customClaims || {},
-      role,
-      competitionId
-    ));
-    const now = new Date();
-    await backendContext.consoleGrantRef(competitionId, uid).set({
-      uid,
-      role,
-      competitionId,
-      clientIdHash: backendContext.stableHash(clientId),
-      updatedAt: now.toISOString(),
-      expiresAt: backendContext.Timestamp.fromMillis(now.getTime() + 12 * 60 * 60 * 1000)
-    }, { merge: false });
-
-    return {
-      ok: true,
-      role
-    };
-  }
-
-  async function createOrUpdateAccessUser(request) {
-    const context = await backendContext.accessManagementContext(request);
-    const raw = request.data || {};
-    if (!context.adminFull && (!context.region || !context.regionId || raw.uid ||
-        !Array.isArray(raw.capabilities) || raw.capabilities.length !== 1 || raw.capabilities[0] !== "engagements.club.manage" ||
-        backendContext.canonicalAccessDirectoryRegionId(raw.regionId) !== context.regionId)) {
-      throw new backendContext.HttpsError("permission-denied", "Creation limitee aux acces club de votre region.");
-    }
-    const profile = backendContext.cleanAccessProfile(request.data || {});
-    if (!context.adminFull) {
-      const club = await backendContext.engagementClubAccessContext({ ...request, data: { activeClubId: profile.clubId } });
-      profile.clubId = club.clubId;
-      profile.clubName = club.clubName;
-      profile.regionId = context.regionId;
-      // Creation only: preserve existing accounts and cumulative capabilities.
-      try {
-        await backendContext.auth.getUserByEmail(profile.email);
-        throw new backendContext.HttpsError("already-exists", "Ce compte existe deja ; contactez l'administration nationale.");
-      } catch (error) {
-        if (error?.code !== "auth/user-not-found") throw error;
-      }
-      profile.createOnly = true;
-    }
-    return backendContext.saveAccessUserProfile(profile, request.auth.uid);
-  }
-
-  async function rebuildAccessDirectoryIndexNextPage(request) {
-    const context = await backendContext.accessManagementContext(request);
-    if (!context.national) throw new backendContext.HttpsError("permission-denied", "Reconstruction reservee au niveau national.");
-    const pageSize = Math.min(200, Math.max(20, Math.trunc(Number(request.data?.pageSize) || 100)));
-    const requestedCursor = backendContext.cleanText(request.data?.cursor).slice(0, 128);
-    const restart = request.data?.restart === true;
-    const stateRef = backendContext.accessDirectoryIndexStateRef();
-    const stateSnapshot = requestedCursor ? null : await stateRef.get();
-    if (!requestedCursor && !restart && stateSnapshot?.data()?.status === "ready" && Number(stateSnapshot.data()?.version) >= backendContext.ACCESS_DIRECTORY_INDEX_VERSION) {
-      return { ok: true, processed: 0, cursor: "", completed: true };
-    }
-    const cursor = requestedCursor || (restart ? "" : backendContext.cleanText(stateSnapshot?.data()?.cursor).slice(0, 128));
-    let query = backendContext.db.collection("users").orderBy(backendContext.FieldPath.documentId()).limit(pageSize);
-    if (cursor) query = query.startAfter(cursor);
-    const snapshot = await query.get();
-    const now = new Date().toISOString();
-    const batch = backendContext.db.batch();
-    snapshot.docs.forEach((doc) => {
-      const data = doc.data() || {};
-      batch.set(doc.ref, {
-        accessDirectoryKeys: backendContext.accessDirectoryKeys(data, data.status),
-        accessDirectoryIndexedAt: now
-      }, { merge: true });
+  let cache1;
+  function operation1() {
+    if (!cache1) cache1 = require("./backend/portal-access-handlers/verify-pin").createAccessHandlers_verifyPin({
+      get HttpsError() { return backendContext.HttpsError; },
+      set HttpsError(value) { backendContext.HttpsError = value; },
+      get Timestamp() { return backendContext.Timestamp; },
+      set Timestamp(value) { backendContext.Timestamp = value; },
+      get assertConsolePortalAccess() { return backendContext.assertConsolePortalAccess; },
+      set assertConsolePortalAccess(value) { backendContext.assertConsolePortalAccess = value; },
+      get assertPin() { return backendContext.assertPin; },
+      set assertPin(value) { backendContext.assertPin = value; },
+      get assertPinAttemptAllowed() { return backendContext.assertPinAttemptAllowed; },
+      set assertPinAttemptAllowed(value) { backendContext.assertPinAttemptAllowed = value; },
+      get assertRole() { return backendContext.assertRole; },
+      set assertRole(value) { backendContext.assertRole = value; },
+      get auth() { return backendContext.auth; },
+      set auth(value) { backendContext.auth = value; },
+      get cleanText() { return backendContext.cleanText; },
+      set cleanText(value) { backendContext.cleanText = value; },
+      get clearPinAttempts() { return backendContext.clearPinAttempts; },
+      set clearPinAttempts(value) { backendContext.clearPinAttempts = value; },
+      get competitionIdFrom() { return backendContext.competitionIdFrom; },
+      set competitionIdFrom(value) { backendContext.competitionIdFrom = value; },
+      get consoleGrantRef() { return backendContext.consoleGrantRef; },
+      set consoleGrantRef(value) { backendContext.consoleGrantRef = value; },
+      get consoleRoleClaims() { return backendContext.consoleRoleClaims; },
+      set consoleRoleClaims(value) { backendContext.consoleRoleClaims = value; },
+      get pinAttemptRef() { return backendContext.pinAttemptRef; },
+      set pinAttemptRef(value) { backendContext.pinAttemptRef = value; },
+      get pinHash() { return backendContext.pinHash; },
+      set pinHash(value) { backendContext.pinHash = value; },
+      get recordFailedPinAttempt() { return backendContext.recordFailedPinAttempt; },
+      set recordFailedPinAttempt(value) { backendContext.recordFailedPinAttempt = value; },
+      get rolePinsRef() { return backendContext.rolePinsRef; },
+      set rolePinsRef(value) { backendContext.rolePinsRef = value; },
+      get safeCompareHex() { return backendContext.safeCompareHex; },
+      set safeCompareHex(value) { backendContext.safeCompareHex = value; },
+      get stableHash() { return backendContext.stableHash; },
+      set stableHash(value) { backendContext.stableHash = value; }
     });
-    const nextCursor = snapshot.docs.at(-1)?.id || cursor;
-    const completed = snapshot.size < pageSize;
-    batch.set(stateRef, {
-      status: completed ? "ready" : "building",
-      version: backendContext.ACCESS_DIRECTORY_INDEX_VERSION,
-      cursor: completed ? "" : nextCursor,
-      indexedCount: restart ? snapshot.size : backendContext.FieldValue.increment(snapshot.size),
-      updatedAt: now,
-      ...(completed ? { completedAt: now } : {})
-    }, { merge: true });
-    await batch.commit();
-    return { ok: true, processed: snapshot.size, cursor: completed ? "" : nextCursor, completed };
+    return cache1;
   }
 
-  async function rebuildAccessDirectorySnapshotNextPage(request) {
-    const context = await backendContext.accessManagementContext(request);
-    if (!context.national) throw new backendContext.HttpsError("permission-denied", "Reconstruction reservee au niveau national.");
-    const pageSize = Math.min(100, Math.max(20, Math.trunc(Number(request.data?.pageSize) || 100)));
-    const restart = request.data?.restart === true;
-    const stateRef = backendContext.accessDirectorySnapshotStateRef();
-    const stateSnapshot = await stateRef.get();
-    const state = stateSnapshot.exists ? stateSnapshot.data() || {} : {};
-    if (!restart && state.status === "ready" && Number(state.version) >= backendContext.ACCESS_DIRECTORY_SNAPSHOT_VERSION) {
-      return { ok: true, processed: 0, cursor: "", completed: true };
-    }
-    if (!restart && state.status !== "building") {
-      throw new backendContext.HttpsError("failed-precondition", "Commence la reconstruction avec restart: true.");
-    }
-
-    if (restart) {
-      const existingSnapshots = await backendContext.db.collection(backendContext.ACCESS_DIRECTORY_SNAPSHOTS_COLLECTION).limit(101).get();
-      if (existingSnapshots.size > 100) {
-        throw new backendContext.HttpsError("failed-precondition", "Trop de fragments d'annuaire a reinitialiser.");
-      }
-      const clearBatch = backendContext.db.batch();
-      existingSnapshots.docs.forEach((doc) => clearBatch.delete(doc.ref));
-      clearBatch.set(stateRef, {
-        status: "building",
-        version: backendContext.ACCESS_DIRECTORY_SNAPSHOT_VERSION,
-        cursor: "",
-        indexedCount: 0,
-        updatedAt: new Date().toISOString()
-      });
-      await clearBatch.commit();
-    }
-
-    const cursor = restart ? "" : backendContext.cleanText(state.cursor).slice(0, 128);
-    let query = backendContext.db.collection("users").orderBy(backendContext.FieldPath.documentId()).limit(pageSize);
-    if (cursor) query = query.startAfter(cursor);
-    const snapshot = await query.get();
-    const now = new Date().toISOString();
-    const nationalEntries = {};
-    const regionalEntries = new Map();
-    snapshot.docs.forEach((doc) => {
-      const data = doc.data() || {};
-      const key = backendContext.accessDirectorySnapshotEntryKey(doc.id);
-      const entry = backendContext.accessDirectorySnapshotEntry(doc.id, data);
-      nationalEntries[key] = entry;
-      const regionId = backendContext.accessDirectorySnapshotRegionId(data);
-      if (!regionId) return;
-      if (!regionalEntries.has(regionId)) regionalEntries.set(regionId, {});
-      regionalEntries.get(regionId)[key] = entry;
+  let cache2;
+  function operation2() {
+    if (!cache2) cache2 = require("./backend/portal-access-handlers/rebuild-access-directory-index-next-page").createAccessHandlers_rebuildAccessDirectoryIndexNextPage({
+      get ACCESS_DIRECTORY_INDEX_VERSION() { return backendContext.ACCESS_DIRECTORY_INDEX_VERSION; },
+      set ACCESS_DIRECTORY_INDEX_VERSION(value) { backendContext.ACCESS_DIRECTORY_INDEX_VERSION = value; },
+      get FieldPath() { return backendContext.FieldPath; },
+      set FieldPath(value) { backendContext.FieldPath = value; },
+      get FieldValue() { return backendContext.FieldValue; },
+      set FieldValue(value) { backendContext.FieldValue = value; },
+      get HttpsError() { return backendContext.HttpsError; },
+      set HttpsError(value) { backendContext.HttpsError = value; },
+      get accessDirectoryIndexStateRef() { return backendContext.accessDirectoryIndexStateRef; },
+      set accessDirectoryIndexStateRef(value) { backendContext.accessDirectoryIndexStateRef = value; },
+      get accessDirectoryKeys() { return backendContext.accessDirectoryKeys; },
+      set accessDirectoryKeys(value) { backendContext.accessDirectoryKeys = value; },
+      get accessManagementContext() { return backendContext.accessManagementContext; },
+      set accessManagementContext(value) { backendContext.accessManagementContext = value; },
+      get cleanText() { return backendContext.cleanText; },
+      set cleanText(value) { backendContext.cleanText = value; },
+      get db() { return backendContext.db; },
+      set db(value) { backendContext.db = value; }
     });
+    return cache2;
+  }
 
-    const nextCursor = snapshot.docs.at(-1)?.id || cursor;
-    const completed = snapshot.size < pageSize;
-    const writeBatch = backendContext.db.batch();
-    backendContext.mergeAccessDirectorySnapshotEntries(writeBatch, "national", "", nationalEntries, now, "building");
-    regionalEntries.forEach((entries, regionId) => {
-      backendContext.mergeAccessDirectorySnapshotEntries(writeBatch, "region", regionId, entries, now, "building");
+  let cache3;
+  function operation3() {
+    if (!cache3) cache3 = require("./backend/portal-access-handlers/rebuild-access-directory-snapshot-next-page").createAccessHandlers_rebuildAccessDirectorySnapshotNextPage({
+      get ACCESS_DIRECTORY_SNAPSHOTS_COLLECTION() { return backendContext.ACCESS_DIRECTORY_SNAPSHOTS_COLLECTION; },
+      set ACCESS_DIRECTORY_SNAPSHOTS_COLLECTION(value) { backendContext.ACCESS_DIRECTORY_SNAPSHOTS_COLLECTION = value; },
+      get ACCESS_DIRECTORY_SNAPSHOT_VERSION() { return backendContext.ACCESS_DIRECTORY_SNAPSHOT_VERSION; },
+      set ACCESS_DIRECTORY_SNAPSHOT_VERSION(value) { backendContext.ACCESS_DIRECTORY_SNAPSHOT_VERSION = value; },
+      get FieldPath() { return backendContext.FieldPath; },
+      set FieldPath(value) { backendContext.FieldPath = value; },
+      get FieldValue() { return backendContext.FieldValue; },
+      set FieldValue(value) { backendContext.FieldValue = value; },
+      get HttpsError() { return backendContext.HttpsError; },
+      set HttpsError(value) { backendContext.HttpsError = value; },
+      get accessDirectorySnapshotEntry() { return backendContext.accessDirectorySnapshotEntry; },
+      set accessDirectorySnapshotEntry(value) { backendContext.accessDirectorySnapshotEntry = value; },
+      get accessDirectorySnapshotEntryKey() { return backendContext.accessDirectorySnapshotEntryKey; },
+      set accessDirectorySnapshotEntryKey(value) { backendContext.accessDirectorySnapshotEntryKey = value; },
+      get accessDirectorySnapshotRegionId() { return backendContext.accessDirectorySnapshotRegionId; },
+      set accessDirectorySnapshotRegionId(value) { backendContext.accessDirectorySnapshotRegionId = value; },
+      get accessDirectorySnapshotStateRef() { return backendContext.accessDirectorySnapshotStateRef; },
+      set accessDirectorySnapshotStateRef(value) { backendContext.accessDirectorySnapshotStateRef = value; },
+      get accessManagementContext() { return backendContext.accessManagementContext; },
+      set accessManagementContext(value) { backendContext.accessManagementContext = value; },
+      get cleanText() { return backendContext.cleanText; },
+      set cleanText(value) { backendContext.cleanText = value; },
+      get db() { return backendContext.db; },
+      set db(value) { backendContext.db = value; },
+      get mergeAccessDirectorySnapshotEntries() { return backendContext.mergeAccessDirectorySnapshotEntries; },
+      set mergeAccessDirectorySnapshotEntries(value) { backendContext.mergeAccessDirectorySnapshotEntries = value; }
     });
-    writeBatch.set(stateRef, {
-      status: "building",
-      version: backendContext.ACCESS_DIRECTORY_SNAPSHOT_VERSION,
-      cursor: completed ? "" : nextCursor,
-      indexedCount: restart ? snapshot.size : backendContext.FieldValue.increment(snapshot.size),
-      updatedAt: now
-    }, { merge: true });
-    await writeBatch.commit();
-
-    if (completed) {
-      const generatedSnapshots = await backendContext.db.collection(backendContext.ACCESS_DIRECTORY_SNAPSHOTS_COLLECTION).limit(101).get();
-      if (generatedSnapshots.size > 100) {
-        throw new backendContext.HttpsError("failed-precondition", "Trop de fragments d'annuaire a finaliser.");
-      }
-      const finalizeBatch = backendContext.db.batch();
-      generatedSnapshots.docs.forEach((doc) => finalizeBatch.set(doc.ref, {
-        status: "ready",
-        version: backendContext.ACCESS_DIRECTORY_SNAPSHOT_VERSION,
-        updatedAt: now
-      }, { merge: true }));
-      finalizeBatch.set(stateRef, {
-        status: "ready",
-        version: backendContext.ACCESS_DIRECTORY_SNAPSHOT_VERSION,
-        cursor: "",
-        completedAt: now,
-        updatedAt: now
-      }, { merge: true });
-      await finalizeBatch.commit();
-    }
-
-    return {
-      ok: true,
-      processed: snapshot.size,
-      cursor: completed ? "" : nextCursor,
-      completed,
-      readBudget: {
-        baseDocuments: 1,
-        userDocumentsMax: pageSize,
-        snapshotDocumentsMax: restart || completed ? 100 : 0
-      }
-    };
+    return cache3;
   }
 
-  async function listAccessUsers(request) {
-    const context = await backendContext.accessManagementContext(request);
-    const pageSize = Math.min(50, Math.max(10, Math.trunc(Number(request.data?.pageSize) || 25)));
-    const status = ["active", "inactive"].includes(backendContext.cleanText(request.data?.status))
-      ? backendContext.cleanText(request.data.status)
-      : "";
-    const capability = backendContext.ACCESS_CAPABILITY_SET.has(backendContext.cleanText(request.data?.capability))
-      ? backendContext.cleanText(request.data.capability)
-      : "";
-    const search = backendContext.cleanText(request.data?.search).slice(0, 80);
-    const cursor = request.data?.cursor && typeof request.data.cursor === "object" ? request.data.cursor : {};
-
-    if (search) {
-      const offset = Math.max(0, Math.trunc(Number(cursor.offset) || 0));
-      const searchResult = await backendContext.searchAccessUserDocuments(search, context);
-      const matches = searchResult.documents
-        .filter((doc) => backendContext.accessUserMatchesFilters(doc, status, capability))
-        .filter((doc) => backendContext.accessUserVisibleForAccessDirectory(context, doc));
-      const page = matches.slice(offset, offset + pageSize);
-      return {
-        ok: true,
-        directoryVersion: 2,
-        users: page.map(backendContext.accessUserListItem),
-        nextCursor: offset + pageSize < matches.length ? { offset: offset + pageSize } : null,
-        scannedCount: searchResult.scannedCount,
-        truncated: searchResult.truncated
-      };
-    }
-
-    const indexState = await backendContext.accessDirectoryIndexStateRef().get();
-    if (indexState.data()?.status === "ready" && Number(indexState.data()?.version) >= backendContext.ACCESS_DIRECTORY_INDEX_VERSION) {
-      const documentId = backendContext.FieldPath.documentId();
-      let query = backendContext.db.collection("users")
-        .where("accessDirectoryKeys", "array-contains", backendContext.accessDirectoryFilterKey(context, status, capability))
-        .orderBy("lastName")
-        .orderBy(documentId);
-      if (backendContext.cleanText(cursor.uid) && typeof cursor.lastName === "string") {
-        query = query.startAfter(cursor.lastName, backendContext.cleanText(cursor.uid));
-      }
-      const snapshot = await query.limit(pageSize + 1).get();
-      const page = snapshot.docs.slice(0, pageSize);
-      const lastVisible = page.at(-1);
-      return {
-        ok: true,
-        directoryVersion: 3,
-        users: page.map(backendContext.accessUserListItem),
-        nextCursor: snapshot.size > pageSize && lastVisible
-          ? { lastName: lastVisible.data()?.lastName || "", uid: lastVisible.id }
-          : null,
-        scannedCount: snapshot.size,
-        truncated: false
-      };
-    }
-
-    const usersRef = backendContext.db.collection("users");
-    const documentId = backendContext.FieldPath.documentId();
-    const matchingDocs = [];
-    let queryCursor = backendContext.cleanText(cursor.uid) && typeof cursor.lastName === "string"
-      ? { lastName: cursor.lastName, uid: backendContext.cleanText(cursor.uid) }
-      : null;
-    let exhausted = false;
-    let scannedCount = 0;
-    const maxScanned = 250;
-
-    while (matchingDocs.length <= pageSize && !exhausted && scannedCount < maxScanned) {
-      let query = usersRef;
-      if (!context.national && context.regionId) query = query.where("regionId", "==", context.regionId);
-      query = query.orderBy("lastName").orderBy(documentId);
-      if (queryCursor) query = query.startAfter(queryCursor.lastName, queryCursor.uid);
-      const batchSize = Math.min(status || capability ? 100 : pageSize + 1, maxScanned - scannedCount);
-      const snapshot = await query.limit(batchSize).get();
-      if (!snapshot.size) break;
-      scannedCount += snapshot.size;
-      for (const doc of snapshot.docs) {
-        queryCursor = { lastName: doc.data()?.lastName || "", uid: doc.id };
-        if (backendContext.accessUserMatchesFilters(doc, status, capability) && backendContext.accessUserVisibleForAccessDirectory(context, doc)) matchingDocs.push(doc);
-        if (matchingDocs.length > pageSize) break;
-      }
-      exhausted = snapshot.size < batchSize;
-    }
-
-    const page = matchingDocs.slice(0, pageSize);
-    const lastVisible = page.at(-1);
-    const truncated = !exhausted && scannedCount >= maxScanned;
-    const nextCursor = matchingDocs.length > pageSize && lastVisible
-      ? { lastName: lastVisible.data()?.lastName || "", uid: lastVisible.id }
-      : truncated && queryCursor
-        ? queryCursor
-        : null;
-    console.info("Annuaire portail", { uid: context.uid, search: Boolean(search), scannedCount, returnedCount: page.length, truncated });
-    return {
-      ok: true,
-      directoryVersion: 2,
-      users: page.map(backendContext.accessUserListItem),
-      nextCursor,
-      scannedCount,
-      truncated
-    };
-  }
-
-  async function setAccessUserStatus(request) {
-    backendContext.assertAdmin(request);
-    const uid = backendContext.cleanText(request.data?.uid);
-    const status = backendContext.cleanText(request.data?.status);
-    if (!uid) {
-      throw new backendContext.HttpsError("invalid-argument", "Utilisateur requis.");
-    }
-    if (!["active", "inactive"].includes(status)) {
-      throw new backendContext.HttpsError("invalid-argument", "Statut invalide.");
-    }
-    if (uid === request.auth.uid && status === "inactive") {
-      throw new backendContext.HttpsError("failed-precondition", "Tu ne peux pas desactiver ton propre acces.");
-    }
-    const userRef = backendContext.db.collection("users").doc(uid);
-    const snapshot = await userRef.get();
-    if (!snapshot.exists) {
-      throw new backendContext.HttpsError("not-found", "Acces LivePalmes introuvable.");
-    }
-    const data = snapshot.data() || {};
-    const capabilities = backendContext.activeCapabilitiesFromMap(data.capabilities || {});
-    const accessScopes = data.accessScopes || {};
-    const email = data.email || "";
-    const now = new Date().toISOString();
-    const authUser = await backendContext.auth.getUser(uid);
-    await backendContext.auth.updateUser(uid, { disabled: status !== "active" });
-    await backendContext.auth.setCustomUserClaims(uid, {
-      ...(authUser.customClaims || {}),
-      livepalmesAccess: status === "active",
-      livepalmesConsoleAccess: status === "active" && backendContext.hasConsolePortalCapability(backendContext.capabilitiesMap(capabilities)),
-      livepalmesCapabilities: status === "active" ? backendContext.capabilitiesMap(capabilities) : backendContext.capabilitiesMap([])
+  let cache4;
+  function operation4() {
+    if (!cache4) cache4 = require("./backend/portal-access-handlers/list-access-users").createAccessHandlers_listAccessUsers({
+      get ACCESS_CAPABILITY_SET() { return backendContext.ACCESS_CAPABILITY_SET; },
+      set ACCESS_CAPABILITY_SET(value) { backendContext.ACCESS_CAPABILITY_SET = value; },
+      get ACCESS_DIRECTORY_INDEX_VERSION() { return backendContext.ACCESS_DIRECTORY_INDEX_VERSION; },
+      set ACCESS_DIRECTORY_INDEX_VERSION(value) { backendContext.ACCESS_DIRECTORY_INDEX_VERSION = value; },
+      get FieldPath() { return backendContext.FieldPath; },
+      set FieldPath(value) { backendContext.FieldPath = value; },
+      get accessDirectoryFilterKey() { return backendContext.accessDirectoryFilterKey; },
+      set accessDirectoryFilterKey(value) { backendContext.accessDirectoryFilterKey = value; },
+      get accessDirectoryIndexStateRef() { return backendContext.accessDirectoryIndexStateRef; },
+      set accessDirectoryIndexStateRef(value) { backendContext.accessDirectoryIndexStateRef = value; },
+      get accessManagementContext() { return backendContext.accessManagementContext; },
+      set accessManagementContext(value) { backendContext.accessManagementContext = value; },
+      get accessUserListItem() { return backendContext.accessUserListItem; },
+      set accessUserListItem(value) { backendContext.accessUserListItem = value; },
+      get accessUserMatchesFilters() { return backendContext.accessUserMatchesFilters; },
+      set accessUserMatchesFilters(value) { backendContext.accessUserMatchesFilters = value; },
+      get accessUserVisibleForAccessDirectory() { return backendContext.accessUserVisibleForAccessDirectory; },
+      set accessUserVisibleForAccessDirectory(value) { backendContext.accessUserVisibleForAccessDirectory = value; },
+      get cleanText() { return backendContext.cleanText; },
+      set cleanText(value) { backendContext.cleanText = value; },
+      get db() { return backendContext.db; },
+      set db(value) { backendContext.db = value; },
+      get searchAccessUserDocuments() { return backendContext.searchAccessUserDocuments; },
+      set searchAccessUserDocuments(value) { backendContext.searchAccessUserDocuments = value; }
     });
-    if (status !== "active") await backendContext.auth.revokeRefreshTokens(uid);
-    await userRef.set({
-      status,
-      accessDirectoryKeys: backendContext.accessDirectoryKeys({ ...data, capabilities }, status),
-      updatedAt: now,
-      updatedBy: request.auth.uid
-    }, { merge: true });
-    await backendContext.writeAccessGrants(uid, email, capabilities, status, request.auth.uid, now, accessScopes);
-    await backendContext.writeAuditLog(status === "active" ? "accessUser.activated" : "accessUser.deactivated", request.auth.uid, {
-      uid,
-      email,
-      capabilities,
-      accessScopes
+    return cache4;
+  }
+
+  let cache5;
+  function operation5() {
+    if (!cache5) cache5 = require("./backend/portal-access-handlers/set-access-user-status").createAccessHandlers_setAccessUserStatus({
+      get HttpsError() { return backendContext.HttpsError; },
+      set HttpsError(value) { backendContext.HttpsError = value; },
+      get accessDirectoryKeys() { return backendContext.accessDirectoryKeys; },
+      set accessDirectoryKeys(value) { backendContext.accessDirectoryKeys = value; },
+      get activeCapabilitiesFromMap() { return backendContext.activeCapabilitiesFromMap; },
+      set activeCapabilitiesFromMap(value) { backendContext.activeCapabilitiesFromMap = value; },
+      get assertAdmin() { return backendContext.assertAdmin; },
+      set assertAdmin(value) { backendContext.assertAdmin = value; },
+      get auth() { return backendContext.auth; },
+      set auth(value) { backendContext.auth = value; },
+      get capabilitiesMap() { return backendContext.capabilitiesMap; },
+      set capabilitiesMap(value) { backendContext.capabilitiesMap = value; },
+      get cleanText() { return backendContext.cleanText; },
+      set cleanText(value) { backendContext.cleanText = value; },
+      get db() { return backendContext.db; },
+      set db(value) { backendContext.db = value; },
+      get hasConsolePortalCapability() { return backendContext.hasConsolePortalCapability; },
+      set hasConsolePortalCapability(value) { backendContext.hasConsolePortalCapability = value; },
+      get writeAccessGrants() { return backendContext.writeAccessGrants; },
+      set writeAccessGrants(value) { backendContext.writeAccessGrants = value; },
+      get writeAuditLog() { return backendContext.writeAuditLog; },
+      set writeAuditLog(value) { backendContext.writeAuditLog = value; }
     });
-    return {
-      ok: true,
-      uid,
-      status
-    };
+    return cache5;
   }
 
-  async function deleteAccessUser(request) {
-    const context = await backendContext.accessManagementContext(request);
-    if (!context.national) {
-      throw new backendContext.HttpsError("permission-denied", "Admin national requis.");
-    }
-    if (request.data?.confirmPermanent !== true) {
-      throw new backendContext.HttpsError("failed-precondition", "Confirmation de suppression definitive requise.");
-    }
-    return backendContext.deleteAccessUserAccount(request.data?.uid, context.uid, { mode: "direct" });
-  }
-
-  async function requestAccessUserDeletion(request) {
-    const context = await backendContext.accessManagementContext(request);
-    if (context.national) {
-      throw new backendContext.HttpsError("failed-precondition", "Un admin national peut supprimer directement ce compte.");
-    }
-    const targetUid = backendContext.cleanText(request.data?.uid);
-    if (!targetUid) {
-      throw new backendContext.HttpsError("invalid-argument", "Utilisateur requis.");
-    }
-    if (targetUid === context.uid) {
-      throw new backendContext.HttpsError("failed-precondition", "Tu ne peux pas demander la suppression de ton propre acces.");
-    }
-    const userRef = backendContext.db.collection("users").doc(targetUid);
-    const snapshot = await userRef.get();
-    if (!snapshot.exists) {
-      throw new backendContext.HttpsError("not-found", "Acces LivePalmes introuvable.");
-    }
-    const data = snapshot.data() || {};
-    backendContext.assertRegionalAccessUserDeletionRequestAllowed(context, data);
-
-    const pendingSnapshot = await backendContext.db.collection("accessUserDeletionRequests")
-      .where("targetUid", "==", targetUid)
-      .where("status", "==", "pending")
-      .limit(1)
-      .get();
-    if (!pendingSnapshot.empty) {
-      throw new backendContext.HttpsError("already-exists", "Une demande de suppression est deja en attente pour ce compte.");
-    }
-
-    const now = new Date().toISOString();
-    const requestRef = await backendContext.db.collection("accessUserDeletionRequests").add({
-      targetUid,
-      targetEmail: data.email || "",
-      targetFirstName: data.firstName || "",
-      targetLastName: data.lastName || "",
-      targetRegionId: backendContext.accessUserRegionIdFromData(data),
-      targetClubId: data.clubId || "",
-      targetClubName: data.clubName || "",
-      targetCapabilities: backendContext.activeCapabilitiesFromMap(data.capabilities || {}),
-      status: "pending",
-      requestedBy: context.uid,
-      requestedByEmail: context.email || "",
-      requestedAt: now,
-      updatedAt: now
+  let cache6;
+  function operation6() {
+    if (!cache6) cache6 = require("./backend/portal-access-handlers/delete-access-user").createAccessHandlers_deleteAccessUser({
+      get HttpsError() { return backendContext.HttpsError; },
+      set HttpsError(value) { backendContext.HttpsError = value; },
+      get accessManagementContext() { return backendContext.accessManagementContext; },
+      set accessManagementContext(value) { backendContext.accessManagementContext = value; },
+      get deleteAccessUserAccount() { return backendContext.deleteAccessUserAccount; },
+      set deleteAccessUserAccount(value) { backendContext.deleteAccessUserAccount = value; }
     });
-    await backendContext.writeAuditLog("accessUser.deletionRequested", context.uid, {
-      requestId: requestRef.id,
-      uid: targetUid,
-      email: data.email || "",
-      regionId: backendContext.accessUserRegionIdFromData(data)
+    return cache6;
+  }
+
+  let cache7;
+  function operation7() {
+    if (!cache7) cache7 = require("./backend/portal-access-handlers/request-access-user-deletion").createAccessHandlers_requestAccessUserDeletion({
+      get HttpsError() { return backendContext.HttpsError; },
+      set HttpsError(value) { backendContext.HttpsError = value; },
+      get accessManagementContext() { return backendContext.accessManagementContext; },
+      set accessManagementContext(value) { backendContext.accessManagementContext = value; },
+      get accessUserDeletionRequestItem() { return backendContext.accessUserDeletionRequestItem; },
+      set accessUserDeletionRequestItem(value) { backendContext.accessUserDeletionRequestItem = value; },
+      get accessUserRegionIdFromData() { return backendContext.accessUserRegionIdFromData; },
+      set accessUserRegionIdFromData(value) { backendContext.accessUserRegionIdFromData = value; },
+      get activeCapabilitiesFromMap() { return backendContext.activeCapabilitiesFromMap; },
+      set activeCapabilitiesFromMap(value) { backendContext.activeCapabilitiesFromMap = value; },
+      get assertRegionalAccessUserDeletionRequestAllowed() { return backendContext.assertRegionalAccessUserDeletionRequestAllowed; },
+      set assertRegionalAccessUserDeletionRequestAllowed(value) { backendContext.assertRegionalAccessUserDeletionRequestAllowed = value; },
+      get cleanText() { return backendContext.cleanText; },
+      set cleanText(value) { backendContext.cleanText = value; },
+      get db() { return backendContext.db; },
+      set db(value) { backendContext.db = value; },
+      get writeAuditLog() { return backendContext.writeAuditLog; },
+      set writeAuditLog(value) { backendContext.writeAuditLog = value; }
     });
-    const created = await requestRef.get();
-    return {
-      ok: true,
-      request: backendContext.accessUserDeletionRequestItem(created)
-    };
+    return cache7;
   }
 
-  async function listAccessUserDeletionRequests(request) {
-    const context = await backendContext.accessManagementContext(request);
-    if (!context.national) {
-      throw new backendContext.HttpsError("permission-denied", "Admin national requis.");
-    }
-    const snapshot = await backendContext.db.collection("accessUserDeletionRequests")
-      .where("status", "==", "pending")
-      .limit(100)
-      .get();
-    const requests = snapshot.docs
-      .map(backendContext.accessUserDeletionRequestItem)
-      .sort((left, right) => String(left.requestedAt || "").localeCompare(String(right.requestedAt || "")));
-    return {
-      ok: true,
-      requests
-    };
-  }
-
-  async function resolveAccessUserDeletionRequest(request) {
-    const context = await backendContext.accessManagementContext(request);
-    if (!context.national) {
-      throw new backendContext.HttpsError("permission-denied", "Admin national requis.");
-    }
-    const requestId = backendContext.cleanText(request.data?.requestId);
-    const decision = backendContext.cleanText(request.data?.decision);
-    if (!requestId) {
-      throw new backendContext.HttpsError("invalid-argument", "Demande requise.");
-    }
-    if (!["approved", "rejected"].includes(decision)) {
-      throw new backendContext.HttpsError("invalid-argument", "Decision invalide.");
-    }
-    const requestRef = backendContext.db.collection("accessUserDeletionRequests").doc(requestId);
-    const snapshot = await requestRef.get();
-    if (!snapshot.exists) {
-      throw new backendContext.HttpsError("not-found", "Demande introuvable.");
-    }
-    const data = snapshot.data() || {};
-    if (data.status !== "pending") {
-      throw new backendContext.HttpsError("failed-precondition", "Cette demande a deja ete traitee.");
-    }
-    let deletionResult = null;
-    if (decision === "approved") {
-      deletionResult = await backendContext.deleteAccessUserAccount(data.targetUid, context.uid, { mode: "request", requestId });
-    }
-    const now = new Date().toISOString();
-    await requestRef.set({
-      status: decision,
-      decision,
-      resolvedBy: context.uid,
-      resolvedByEmail: context.email || "",
-      resolvedAt: now,
-      updatedAt: now,
-      targetDeleted: decision === "approved"
-    }, { merge: true });
-    await backendContext.writeAuditLog("accessUser.deletionRequestResolved", context.uid, {
-      requestId,
-      decision,
-      uid: data.targetUid || "",
-      email: data.targetEmail || ""
+  let cache8;
+  function operation8() {
+    if (!cache8) cache8 = require("./backend/portal-access-handlers/list-access-user-deletion-requests").createAccessHandlers_listAccessUserDeletionRequests({
+      get HttpsError() { return backendContext.HttpsError; },
+      set HttpsError(value) { backendContext.HttpsError = value; },
+      get accessManagementContext() { return backendContext.accessManagementContext; },
+      set accessManagementContext(value) { backendContext.accessManagementContext = value; },
+      get accessUserDeletionRequestItem() { return backendContext.accessUserDeletionRequestItem; },
+      set accessUserDeletionRequestItem(value) { backendContext.accessUserDeletionRequestItem = value; },
+      get db() { return backendContext.db; },
+      set db(value) { backendContext.db = value; }
     });
-    return {
-      ok: true,
-      requestId,
-      decision,
-      deletion: deletionResult
-    };
+    return cache8;
   }
 
-  async function updateCurrentAccountEmail(request) {
-    await backendContext.assertLivePalmesAccess(request);
-    const uid = backendContext.cleanText(request.auth?.uid);
-    const email = backendContext.normalizeEmail(request.data?.email);
-    backendContext.assertEmail(email);
-
-    const authTime = Number(request.auth?.token?.auth_time || 0) * 1000;
-    if (!authTime || Date.now() - authTime > 5 * 60 * 1000) {
-      throw new backendContext.HttpsError("failed-precondition", "Reconnexion recente requise.");
-    }
-
-    const authUser = await backendContext.auth.getUser(uid);
-    const previousEmail = backendContext.normalizeEmail(authUser.email);
-    const userRef = backendContext.db.collection("users").doc(uid);
-    const userSnapshot = await userRef.get();
-    const userData = userSnapshot.exists ? userSnapshot.data() || {} : {};
-    const capabilities = backendContext.ADMIN_UIDS.has(uid)
-      ? backendContext.ACCESS_CAPABILITIES
-      : backendContext.activeCapabilitiesFromMap(userData.capabilities || request.auth?.token?.livepalmesCapabilities || {});
-    const accessScopes = userData.accessScopes || {};
-    const now = new Date().toISOString();
-
-    if (email !== previousEmail) {
-      try {
-        await backendContext.auth.updateUser(uid, { email, emailVerified: false });
-      } catch (error) {
-        if (error?.code === "auth/email-already-exists") {
-          throw new backendContext.HttpsError("already-exists", "Cette adresse email est deja utilisee.");
-        }
-        if (error?.code === "auth/invalid-email") {
-          throw new backendContext.HttpsError("invalid-argument", "Email invalide.");
-        }
-        throw error;
-      }
-    }
-
-    try {
-      const batch = backendContext.db.batch();
-      batch.set(userRef, {
-        uid,
-        email,
-        status: userData.status || "active",
-        updatedAt: now,
-        updatedBy: uid,
-        ...(!userSnapshot.exists ? { createdAt: now, createdBy: uid } : {})
-      }, { merge: true });
-      backendContext.ACCESS_CAPABILITIES.forEach((capability) => {
-        const grantRef = backendContext.db.collection("accessGrants").doc(`${uid}_${capability.replace(".", "_")}`);
-        const scope = backendContext.normalizedAccessScope(accessScopes[capability]);
-        batch.set(grantRef, {
-          uid,
-          email,
-          capability,
-          scopeType: scope.scopeType,
-          scopeId: scope.scopeId,
-          status: capabilities.includes(capability) ? "active" : "inactive",
-          updatedAt: now,
-          updatedBy: uid,
-          createdAt: now
-        }, { merge: true });
-      });
-      await batch.commit();
-    } catch (error) {
-      if (email !== previousEmail && previousEmail) {
-        await backendContext.auth.updateUser(uid, { email: previousEmail }).catch((rollbackError) => {
-          console.error("Rollback email compte impossible", rollbackError);
-        });
-      }
-      throw new backendContext.HttpsError("internal", "La mise a jour du profil LivePalmes a echoue.");
-    }
-
-    await backendContext.writeAuditLog("accessUser.emailUpdated", uid, {
-      uid,
-      previousEmail,
-      email
-    }).catch((error) => console.warn("Journalisation du changement d'email impossible", error));
-
-    return {
-      ok: true,
-      uid,
-      email,
-      verificationRequired: true
-    };
+  let cache9;
+  function operation9() {
+    if (!cache9) cache9 = require("./backend/portal-access-handlers/resolve-access-user-deletion-request").createAccessHandlers_resolveAccessUserDeletionRequest({
+      get HttpsError() { return backendContext.HttpsError; },
+      set HttpsError(value) { backendContext.HttpsError = value; },
+      get accessManagementContext() { return backendContext.accessManagementContext; },
+      set accessManagementContext(value) { backendContext.accessManagementContext = value; },
+      get cleanText() { return backendContext.cleanText; },
+      set cleanText(value) { backendContext.cleanText = value; },
+      get db() { return backendContext.db; },
+      set db(value) { backendContext.db = value; },
+      get deleteAccessUserAccount() { return backendContext.deleteAccessUserAccount; },
+      set deleteAccessUserAccount(value) { backendContext.deleteAccessUserAccount = value; },
+      get writeAuditLog() { return backendContext.writeAuditLog; },
+      set writeAuditLog(value) { backendContext.writeAuditLog = value; }
+    });
+    return cache9;
   }
 
-  async function getCurrentAccessUser(request) {
-    const startedAt = Date.now();
-    const uid = backendContext.cleanText(request.auth?.uid);
-    if (!uid) {
-      throw new backendContext.HttpsError("unauthenticated", "Connexion Firebase requise.");
-    }
-    const snapshot = await backendContext.db.collection("users").doc(uid).get();
-    const data = snapshot.exists ? snapshot.data() || {} : {};
-    const authTimeSeconds = Number(request.auth?.token?.auth_time) || 0;
-    const lastLoginAt = authTimeSeconds ? new Date(authTimeSeconds * 1000).toISOString() : (data.lastLoginAt || "");
-    if (snapshot.exists && lastLoginAt && lastLoginAt !== data.lastLoginAt) {
-      await snapshot.ref.set({ lastLoginAt }, { merge: true }).catch((error) => {
-        console.warn("Mise a jour de la derniere connexion impossible", error);
-      });
-    }
-    if (backendContext.ADMIN_UIDS.has(uid) || backendContext.FUNCTIONS_EMULATOR_ACTIVE) {
-      return {
-        ok: true,
-        uid,
-        email: data.email || request.auth?.token?.email || "",
-        firstName: data.firstName || "",
-        lastName: data.lastName || "",
-        clubId: data.clubId || "",
-        clubName: data.clubName || "",
-        regionId: data.regionId || "",
-        licenseNumber: data.licenseNumber || "",
-        status: "active",
-        capabilities: backendContext.ACCESS_CAPABILITIES,
-        accessScopes: data.accessScopes || {},
-        competitionNotificationsEnabled: backendContext.competitionEmailNotificationsEnabled(data),
-        lastLoginAt,
-        readStats: backendContext.portalReadStats("getCurrentAccessUser", startedAt, { baseDocuments: 1, cacheHit: false })
-      };
-    }
-    if (!snapshot.exists) {
-      throw new backendContext.HttpsError("permission-denied", "Aucun acces LivePalmes actif.");
-    }
-    if (data.status !== "active") {
-      throw new backendContext.HttpsError("permission-denied", "Acces LivePalmes desactive.");
-    }
-    const capabilities = backendContext.activeCapabilitiesFromMap(data.capabilities || {});
-    if (!capabilities.length) {
-      throw new backendContext.HttpsError("permission-denied", "Aucun droit LivePalmes actif.");
-    }
-    return {
-      ok: true,
-      uid,
-      email: data.email || request.auth?.token?.email || "",
-      firstName: data.firstName || "",
-      lastName: data.lastName || "",
-      clubId: data.clubId || "",
-      clubName: data.clubName || "",
-      regionId: data.regionId || "",
-      licenseNumber: data.licenseNumber || "",
-      status: "active",
-      capabilities,
-      accessScopes: data.accessScopes || {},
-      competitionNotificationsEnabled: backendContext.competitionEmailNotificationsEnabled(data),
-      lastLoginAt,
-      readStats: backendContext.portalReadStats("getCurrentAccessUser", startedAt, { baseDocuments: 1, cacheHit: false })
-    };
+  let cache10;
+  function operation10() {
+    if (!cache10) cache10 = require("./backend/portal-access-handlers/update-current-account-email").createAccessHandlers_updateCurrentAccountEmail({
+      get ACCESS_CAPABILITIES() { return backendContext.ACCESS_CAPABILITIES; },
+      set ACCESS_CAPABILITIES(value) { backendContext.ACCESS_CAPABILITIES = value; },
+      get ADMIN_UIDS() { return backendContext.ADMIN_UIDS; },
+      set ADMIN_UIDS(value) { backendContext.ADMIN_UIDS = value; },
+      get HttpsError() { return backendContext.HttpsError; },
+      set HttpsError(value) { backendContext.HttpsError = value; },
+      get activeCapabilitiesFromMap() { return backendContext.activeCapabilitiesFromMap; },
+      set activeCapabilitiesFromMap(value) { backendContext.activeCapabilitiesFromMap = value; },
+      get assertEmail() { return backendContext.assertEmail; },
+      set assertEmail(value) { backendContext.assertEmail = value; },
+      get assertLivePalmesAccess() { return backendContext.assertLivePalmesAccess; },
+      set assertLivePalmesAccess(value) { backendContext.assertLivePalmesAccess = value; },
+      get auth() { return backendContext.auth; },
+      set auth(value) { backendContext.auth = value; },
+      get cleanText() { return backendContext.cleanText; },
+      set cleanText(value) { backendContext.cleanText = value; },
+      get db() { return backendContext.db; },
+      set db(value) { backendContext.db = value; },
+      get normalizeEmail() { return backendContext.normalizeEmail; },
+      set normalizeEmail(value) { backendContext.normalizeEmail = value; },
+      get normalizedAccessScope() { return backendContext.normalizedAccessScope; },
+      set normalizedAccessScope(value) { backendContext.normalizedAccessScope = value; },
+      get writeAuditLog() { return backendContext.writeAuditLog; },
+      set writeAuditLog(value) { backendContext.writeAuditLog = value; }
+    });
+    return cache10;
   }
 
-  return { setRolePins, verifyPin, createOrUpdateAccessUser, rebuildAccessDirectoryIndexNextPage, rebuildAccessDirectorySnapshotNextPage, listAccessUsers, setAccessUserStatus, deleteAccessUser, requestAccessUserDeletion, listAccessUserDeletionRequests, resolveAccessUserDeletionRequest, updateCurrentAccountEmail, getCurrentAccessUser };
+  let cache11;
+  function operation11() {
+    if (!cache11) cache11 = require("./backend/portal-access-handlers/get-current-access-user").createAccessHandlers_getCurrentAccessUser({
+      get ACCESS_CAPABILITIES() { return backendContext.ACCESS_CAPABILITIES; },
+      set ACCESS_CAPABILITIES(value) { backendContext.ACCESS_CAPABILITIES = value; },
+      get ADMIN_UIDS() { return backendContext.ADMIN_UIDS; },
+      set ADMIN_UIDS(value) { backendContext.ADMIN_UIDS = value; },
+      get FUNCTIONS_EMULATOR_ACTIVE() { return backendContext.FUNCTIONS_EMULATOR_ACTIVE; },
+      set FUNCTIONS_EMULATOR_ACTIVE(value) { backendContext.FUNCTIONS_EMULATOR_ACTIVE = value; },
+      get HttpsError() { return backendContext.HttpsError; },
+      set HttpsError(value) { backendContext.HttpsError = value; },
+      get activeCapabilitiesFromMap() { return backendContext.activeCapabilitiesFromMap; },
+      set activeCapabilitiesFromMap(value) { backendContext.activeCapabilitiesFromMap = value; },
+      get cleanText() { return backendContext.cleanText; },
+      set cleanText(value) { backendContext.cleanText = value; },
+      get competitionEmailNotificationsEnabled() { return backendContext.competitionEmailNotificationsEnabled; },
+      set competitionEmailNotificationsEnabled(value) { backendContext.competitionEmailNotificationsEnabled = value; },
+      get db() { return backendContext.db; },
+      set db(value) { backendContext.db = value; },
+      get portalReadStats() { return backendContext.portalReadStats; },
+      set portalReadStats(value) { backendContext.portalReadStats = value; }
+    });
+    return cache11;
+  }
+  return {
+    setRolePins: operation0().setRolePins,
+    verifyPin: operation1().verifyPin,
+    rebuildAccessDirectoryIndexNextPage: operation2().rebuildAccessDirectoryIndexNextPage,
+    rebuildAccessDirectorySnapshotNextPage: operation3().rebuildAccessDirectorySnapshotNextPage,
+    listAccessUsers: operation4().listAccessUsers,
+    setAccessUserStatus: operation5().setAccessUserStatus,
+    deleteAccessUser: operation6().deleteAccessUser,
+    requestAccessUserDeletion: operation7().requestAccessUserDeletion,
+    listAccessUserDeletionRequests: operation8().listAccessUserDeletionRequests,
+    resolveAccessUserDeletionRequest: operation9().resolveAccessUserDeletionRequest,
+    updateCurrentAccountEmail: operation10().updateCurrentAccountEmail,
+    getCurrentAccessUser: operation11().getCurrentAccessUser
+  };
 }
 
 module.exports = { createAccessHandlers };

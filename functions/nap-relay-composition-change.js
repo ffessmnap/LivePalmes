@@ -3,8 +3,8 @@
 // Existing dossier limits apply. Firebase is solely a durable operation log.
 const {createHash}=require("node:crypto");
 const {isDeepStrictEqual}=require("node:util");
-const {positiveId}=require("./nap-direct-calendar");
-const {fingerprint}=require("./nap-portal-workspaces");
+const { positiveId } = require("./nap-calendar-values");
+const { fingerprint } = require("./nap-competition-fingerprint");
 const {readNativeCompetition}=require("./nap-portal-competitions");
 const {readNativeClubEntry}=require("./nap-portal-entries");
 const {planComposition}=require("./nap-relay-composition-plan");

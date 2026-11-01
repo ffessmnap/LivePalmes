@@ -1,6 +1,6 @@
 "use strict";
 // Bounded reads and EXPLAIN classification; no writer or dossier dependency.
-const {SOURCES,OPTION_COLUMNS,normalizeOptions}=require("./nap-club-people");
+const { SOURCES, OPTION_COLUMNS, normalizeOptions } = require("./nap-club-people-values");
 const {selectedStatement}=require("./nap-official-entry-statements");
 
 function indexed(statement,rows) {

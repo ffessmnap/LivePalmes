@@ -2,7 +2,8 @@
 // Existing club edit: six SQL calls maximum; no new club and no historical deletion.
 const {createHash}=require("node:crypto");
 const {nativeEqual}=require("./nap-native-compare");
-const directory=require("./nap-club-directory");
+const { club: __nativeMember0, region: __nativeMember1, fingerprint: __nativeMember2 } = require("./nap-club-values");
+const directory={ club: __nativeMember0, region: __nativeMember1, fingerprint: __nativeMember2 };
 const COLUMNS=["num_club","federal_club","nom_club","abre_club","hc_club","comite_club","actif_club","postalcode","longitude","latitude","ville","web","enf","cnnp","email","tel","logo","integrationdate"];
 const hash=row=>createHash("sha256").update(JSON.stringify(COLUMNS.map(key=>row[key]))).digest("hex");
 const MUTABLE=["federal_club","nom_club","abre_club","comite_club","actif_club","postalcode","ville"];

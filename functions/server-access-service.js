@@ -1,807 +1,617 @@
-// Preserve the execution mode of the existing index.js function bodies.
-
-// Private existing helpers; live services/state are supplied by index.js.
-// Module creation performs no external operation.
+// Compatibility factory; operation modules hold the existing bodies.
 function createAccessService(backendContext) {
-  function portalReadStats(callable, startedAt, options = {}) {
-    const stats = {
-      baseDocuments: Math.max(0, Math.trunc(Number(options.baseDocuments) || 0)),
-      variableDocumentsMax: Math.max(0, Math.trunc(Number(options.variableDocumentsMax) || 0)),
-      cacheHit: typeof options.cacheHit === "boolean" ? options.cacheHit : null,
-      durationMs: Math.max(0, Date.now() - startedAt)
-    };
-    console.info("livepalmes.portal.reads", { callable, ...stats });
-    return stats;
-  }
+  let cache0;
+  function operation0() {
+    if (!cache0) cache0 = require("./backend/server-access-service/portal-read-stats").createAccessService_portalReadStats({
 
-  function engagementCategoryCodesForEvent(code) {
-    const definition = backendContext.ENGAGEMENT_EVENT_DEFINITION_BY_CODE.get(code);
-    return definition?.type === "relay"
-      ? backendContext.ENGAGEMENT_RELAY_CATEGORY_CODES
-      : backendContext.ENGAGEMENT_INDIVIDUAL_CATEGORY_CODES;
-  }
-
-  function normalizeEngagementEventCategoryRestrictions(code, categories = []) {
-    const allowedCategories = engagementCategoryCodesForEvent(code)
-      .filter((category) => !(backendContext.ENGAGEMENT_EVENT_FORBIDDEN_CATEGORIES[code] || new Set()).has(category));
-    const restrictionSet = new Set(categories.filter((category) => allowedCategories.includes(category)));
-    if (code === "50AP") {
-      const legacyDefault = ["C", "J", "S", "M30+", "M40+", "M50+"];
-      if (legacyDefault.every((category) => restrictionSet.has(category)) && ["M60+", "M70+", "M80+"].some((category) => !restrictionSet.has(category))) {
-        return allowedCategories;
-      }
-    }
-    return Array.from(restrictionSet);
-  }
-
-  function cleanEngagementRelayMixedMode(rawEvent = {}, definition = {}) {
-    if (definition.type !== "relay") return "";
-    if (definition.relayMixedRule === "required") return "required";
-    if (definition.relayMixedRule === "mastersOnly") {
-      const mode = backendContext.cleanText(rawEvent.relayMixedMode).trim();
-      return backendContext.ENGAGEMENT_RELAY_MIXED_MODES.has(mode) && mode === "masters" ? "masters" : "none";
-    }
-    return "";
-  }
-
-
-
-  function competitionEmailNotificationsEnabled(value = {}) {
-    return value?.emailPreferences?.competitionNotifications !== false && value?.competitionNotificationsEnabled !== false;
-  }
-
-  function notificationPreferenceSecretValue() {
-    try {
-      return String(backendContext.LIVEPALMES_NOTIFICATION_LINK_SECRET.value() || process.env.LIVEPALMES_NOTIFICATION_LINK_SECRET || "");
-    } catch (_) {
-      return String(process.env.LIVEPALMES_NOTIFICATION_LINK_SECRET || "");
-    }
-  }
-
-  function competitionNotificationPreferenceToken(uid = "") {
-    const cleanUid = backendContext.cleanText(uid).slice(0, 128);
-    const secret = notificationPreferenceSecretValue();
-    if (!cleanUid || !secret) return "";
-    return backendContext.crypto.createHmac("sha256", secret)
-      .update(`competition-notifications|${cleanUid}`)
-      .digest("base64url");
-  }
-
-  function validCompetitionNotificationPreferenceToken(uid = "", token = "") {
-    const expected = competitionNotificationPreferenceToken(uid);
-    const provided = backendContext.cleanText(token);
-    if (!expected || !provided || expected.length !== provided.length) return false;
-    return backendContext.crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(provided));
-  }
-
-  function competitionNotificationPreferenceUrl(uid = "") {
-    const token = competitionNotificationPreferenceToken(uid);
-    if (!token) return "";
-    return `${backendContext.ENVIRONMENT.hostingOrigin}/notifications.html?uid=${encodeURIComponent(backendContext.cleanText(uid))}&token=${encodeURIComponent(token)}`;
-  }
-
-  function engagementClubRegionId(club = {}, fallback = "") {
-    return backendContext.CLUB_REFERENCE_REGION_LABELS[backendContext.cleanText(club.regionId)] || backendContext.cleanText(fallback).slice(0, 80);
-  }
-
-  function engagementClubCode(clubId, fallback = "") {
-    return backendContext.CLUB_REFERENCE_BY_ID.get(backendContext.cleanText(clubId))?.clubCode || backendContext.cleanText(fallback);
-  }
-
-  function engagementClubName(clubId, fallback = "") {
-    return backendContext.CLUB_REFERENCE_BY_ID.get(backendContext.cleanText(clubId))?.clubName || backendContext.cleanText(fallback);
-  }
-
-  function engagementStoredClubItem(doc) {
-    const data = doc?.data ? doc.data() || {} : doc || {};
-    return cleanFirestoreValue({
-      id: backendContext.cleanText(doc?.id || data.id || data.clubId).slice(0, 40),
-      clubId: backendContext.cleanText(data.clubId || doc?.id).slice(0, 40),
-      clubCode: backendContext.cleanText(data.clubCode).slice(0, 40),
-      clubName: backendContext.cleanText(data.clubName).slice(0, 140),
-      regionId: backendContext.cleanText(data.regionId).slice(0, 80),
-      federalNumber: backendContext.cleanText(data.federalNumber).slice(0, 24),
-      city: backendContext.cleanText(data.city).slice(0, 100),
-      postalCode: backendContext.cleanText(data.postalCode).slice(0, 16),
-      active: data.active !== false,
-      deleted: data.deleted === true,
-      source: backendContext.cleanText(data.source || "national").slice(0, 40),
-      createdAt: backendContext.cleanText(data.createdAt).slice(0, 40),
-      createdBy: backendContext.cleanText(data.createdBy).slice(0, 128),
-      updatedAt: backendContext.cleanText(data.updatedAt).slice(0, 40),
-      updatedBy: backendContext.cleanText(data.updatedBy).slice(0, 128)
     });
+    return cache0;
   }
 
-  function publicEngagementClubItem(club = {}) {
-    return cleanFirestoreValue({
-      clubId: backendContext.cleanText(club.clubId || club.id).slice(0, 40),
-      clubCode: backendContext.cleanText(club.clubCode).slice(0, 40),
-      clubName: backendContext.cleanText(club.clubName).slice(0, 140),
-      regionId: backendContext.cleanText(club.regionId).slice(0, 80),
-      federalNumber: backendContext.cleanText(club.federalNumber).slice(0, 24),
-      city: backendContext.cleanText(club.city).slice(0, 100),
-      postalCode: backendContext.cleanText(club.postalCode).slice(0, 16),
-      active: club.active !== false,
-      source: backendContext.cleanText(club.source || "national").slice(0, 40)
+  let cache1;
+  function operation1() {
+    if (!cache1) cache1 = require("./backend/server-access-service/clean-engagement-relay-mixed-mode").createAccessService_cleanEngagementRelayMixedMode({
+      get cleanText() { return backendContext.cleanText; },
+      set cleanText(value) { backendContext.cleanText = value; },
+      get ENGAGEMENT_EVENT_DEFINITION_BY_CODE() { return backendContext.ENGAGEMENT_EVENT_DEFINITION_BY_CODE; },
+      set ENGAGEMENT_EVENT_DEFINITION_BY_CODE(value) { backendContext.ENGAGEMENT_EVENT_DEFINITION_BY_CODE = value; },
+      get ENGAGEMENT_EVENT_FORBIDDEN_CATEGORIES() { return backendContext.ENGAGEMENT_EVENT_FORBIDDEN_CATEGORIES; },
+      set ENGAGEMENT_EVENT_FORBIDDEN_CATEGORIES(value) { backendContext.ENGAGEMENT_EVENT_FORBIDDEN_CATEGORIES = value; },
+      get ENGAGEMENT_INDIVIDUAL_CATEGORY_CODES() { return backendContext.ENGAGEMENT_INDIVIDUAL_CATEGORY_CODES; },
+      set ENGAGEMENT_INDIVIDUAL_CATEGORY_CODES(value) { backendContext.ENGAGEMENT_INDIVIDUAL_CATEGORY_CODES = value; },
+      get ENGAGEMENT_RELAY_CATEGORY_CODES() { return backendContext.ENGAGEMENT_RELAY_CATEGORY_CODES; },
+      set ENGAGEMENT_RELAY_CATEGORY_CODES(value) { backendContext.ENGAGEMENT_RELAY_CATEGORY_CODES = value; },
+      get ENGAGEMENT_RELAY_MIXED_MODES() { return backendContext.ENGAGEMENT_RELAY_MIXED_MODES; },
+      set ENGAGEMENT_RELAY_MIXED_MODES(value) { backendContext.ENGAGEMENT_RELAY_MIXED_MODES = value; }
     });
+    return cache1;
   }
 
-  function publicEngagementClubDirectoryRef() {
-    return backendContext.db.collection(backendContext.ENGAGEMENT_PUBLIC_DIRECTORIES_COLLECTION).doc("clubs");
-  }
+  let cache2;
+  function operation2() {
+    if (!cache2) cache2 = require("./backend/server-access-service/competition-email-notifications-enabled").createAccessService_competitionEmailNotificationsEnabled({
 
-  async function engagementClubsByIds(clubIds = []) {
-    const ids = Array.from(new Set(clubIds.map((clubId) => backendContext.cleanText(clubId).slice(0, 40)).filter(Boolean)));
-    const byId = new Map(ids.map((clubId) => [clubId, backendContext.CLUB_REFERENCE_BY_ID.get(clubId) || { clubId }]));
-    if (!ids.length) return byId;
-    const snapshots = await backendContext.db.getAll(...ids.map((clubId) => backendContext.db.collection(backendContext.ENGAGEMENT_CLUBS_COLLECTION).doc(clubId)));
-    snapshots.filter((snapshot) => snapshot.exists).forEach((snapshot) => {
-      const stored = engagementStoredClubItem(snapshot);
-      byId.set(stored.clubId, { ...(byId.get(stored.clubId) || {}), ...stored });
     });
-    return byId;
+    return cache2;
   }
 
-  async function engagementClubById(clubId) {
-    return (await engagementClubsByIds([clubId])).get(backendContext.cleanText(clubId)) || null;
-  }
-
-  function cleanFirestoreValue(value) {
-    if (value === undefined || typeof value === "function") return undefined;
-    if (value === null) return null;
-    if (Array.isArray(value)) {
-      return value
-        .map(cleanFirestoreValue)
-        .filter((item) => item !== undefined);
-    }
-    if (value && typeof value === "object") {
-      return Object.entries(value).reduce((acc, [key, item]) => {
-        const cleaned = cleanFirestoreValue(item);
-        if (cleaned !== undefined) acc[key] = cleaned;
-        return acc;
-      }, {});
-    }
-    return value;
-  }
-
-  function competitionIdFrom(data = {}) {
-    const competitionId = backendContext.cleanText(data.competitionId || "livepalmes-active");
-    if (!backendContext.COMPETITION_IDS.has(competitionId)) {
-      throw new backendContext.HttpsError("invalid-argument", "Competition LivePalmes inconnue.");
-    }
-    return competitionId;
-  }
-
-  function assertAdmin(request) {
-    const uid = request.auth?.uid || "";
-    const capabilities = request.auth?.token?.livepalmesCapabilities || {};
-    if (!backendContext.ADMIN_UIDS.has(uid) && capabilities["admin.full"] !== true) {
-      throw new backendContext.HttpsError("permission-denied", "Admin LivePalmes requis.");
-    }
-  }
-
-  function assertCapability(request, capability) {
-    const uid = request.auth?.uid || "";
-    const capabilities = request.auth?.token?.livepalmesCapabilities || {};
-    const explicitCapabilityRequired = capability === "dtn.view" || capability.startsWith("engagements.");
-    const adminFallbackAllowed = !explicitCapabilityRequired && capabilities["admin.full"] === true;
-    if (!backendContext.ADMIN_UIDS.has(uid) && !adminFallbackAllowed && capabilities[capability] !== true) {
-      throw new backendContext.HttpsError("permission-denied", "Droit LivePalmes requis.");
-    }
-  }
-
-  async function assertLivePalmesAccess(request) {
-    const uid = request.auth?.uid || "";
-    if (!uid) {
-      throw new backendContext.HttpsError("unauthenticated", "Connexion Firebase requise.");
-    }
-    if (backendContext.ADMIN_UIDS.has(uid)) return;
-    const capabilities = request.auth?.token?.livepalmesCapabilities || {};
-    if (capabilities["admin.full"] === true || backendContext.ACCESS_CAPABILITIES.some((capability) => capabilities[capability] === true)) return;
-
-    const snapshot = await backendContext.db.collection("users").doc(uid).get();
-    const data = snapshot.exists ? snapshot.data() || {} : {};
-    const activeCapabilities = activeCapabilitiesFromMap(data.capabilities || {});
-    if (!snapshot.exists || data.status !== "active" || !activeCapabilities.length) {
-      throw new backendContext.HttpsError("permission-denied", "Acces LivePalmes requis.");
-    }
-  }
-
-  function normalizeEmail(value) {
-    return backendContext.cleanText(value).toLowerCase();
-  }
-
-  function normalizedEngagementRegionKey(value) {
-    const cleanValue = backendContext.cleanText(value);
-    return backendContext.cleanText(backendContext.CLUB_REFERENCE_REGION_LABELS[cleanValue] || cleanValue)
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .replace(/[^a-z0-9]+/gi, "")
-      .toLocaleLowerCase("fr");
-  }
-
-  function engagementRegionsMatch(left, right) {
-    const leftKey = normalizedEngagementRegionKey(left);
-    return Boolean(leftKey && leftKey === normalizedEngagementRegionKey(right));
-  }
-
-  function canonicalAccessDirectoryRegionId(value) {
-    const cleanValue = backendContext.cleanText(value).slice(0, 80);
-    if (!cleanValue) return "";
-    if (backendContext.CLUB_REFERENCE_REGION_LABELS[cleanValue]) return backendContext.CLUB_REFERENCE_REGION_LABELS[cleanValue];
-    const normalizedValue = normalizedEngagementRegionKey(cleanValue);
-    const knownRegion = Object.values(backendContext.CLUB_REFERENCE_REGION_LABELS)
-      .find((label) => normalizedEngagementRegionKey(label) === normalizedValue);
-    return knownRegion || cleanValue;
-  }
-
-  function assertEmail(email) {
-    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
-      throw new backendContext.HttpsError("invalid-argument", "Email invalide.");
-    }
-  }
-
-  function cleanAccessProfile(raw = {}) {
-    const uid = backendContext.cleanText(raw.uid).slice(0, 128);
-    const email = normalizeEmail(raw.email);
-    assertEmail(email);
-    const firstName = backendContext.cleanText(raw.firstName).slice(0, 80);
-    const lastName = backendContext.cleanText(raw.lastName).slice(0, 80);
-    const clubId = backendContext.cleanText(raw.clubId).slice(0, 40);
-    const clubName = backendContext.cleanText(raw.clubName).slice(0, 140);
-    const regionId = canonicalAccessDirectoryRegionId(raw.regionId);
-    const licenseNumber = backendContext.cleanText(raw.licenseNumber).slice(0, 60);
-    const capabilities = Array.isArray(raw.capabilities)
-      ? raw.capabilities.map(backendContext.cleanText).filter((item) => backendContext.ACCESS_CAPABILITY_SET.has(item))
-      : [];
-    if (!firstName || !lastName) {
-      throw new backendContext.HttpsError("invalid-argument", "Nom et prenom obligatoires.");
-    }
-    if (!capabilities.length) {
-      throw new backendContext.HttpsError("invalid-argument", "Selectionne au moins un droit.");
-    }
-    if (capabilities.includes("dtn.manage") && !capabilities.includes("dtn.view")) {
-      throw new backendContext.HttpsError("invalid-argument", "La gestion des paramètres DTN requiert l’accès à l’espace DTN.");
-    }
-    if (capabilities.includes("engagements.club.manage") && !clubId) {
-      throw new backendContext.HttpsError("invalid-argument", "Numero de club obligatoire pour un acces engagements club.");
-    }
-    if (capabilities.includes("engagements.club.switch") && !capabilities.includes("engagements.club.manage")) {
-      throw new backendContext.HttpsError("invalid-argument", "Le droit de changement de club requiert le droit engagements club.");
-    }
-    if (capabilities.includes("engagements.region.manage") && !regionId) {
-      throw new backendContext.HttpsError("invalid-argument", "Region obligatoire pour un acces engagements region.");
-    }
-    const accessScopes = accessScopesMapFromProfile({ clubId, regionId, capabilities });
-    return { uid, email, firstName, lastName, clubId, clubName, regionId, licenseNumber, capabilities, accessScopes };
-  }
-
-  function capabilitiesMap(capabilities = []) {
-    return backendContext.ACCESS_CAPABILITIES.reduce((acc, capability) => {
-      acc[capability] = capabilities.includes(capability);
-      return acc;
-    }, {});
-  }
-
-  function activeCapabilitiesFromMap(map = {}) {
-    return backendContext.ACCESS_CAPABILITIES.filter((capability) => map?.[capability] === true);
-  }
-
-  function accessDirectoryKeys(profile = {}, status = profile.status || "active") {
-    const cleanStatus = status === "inactive" ? "inactive" : "active";
-    const capabilities = Array.isArray(profile.capabilities)
-      ? profile.capabilities
-      : activeCapabilitiesFromMap(profile.capabilities || {});
-    const regionId = accessUserRegionIdFromData({
-      ...profile,
-      capabilities: capabilitiesMap(capabilities)
+  let cache3;
+  function operation3() {
+    if (!cache3) cache3 = require("./backend/server-access-service/competition-notification-preference-token").createAccessService_competitionNotificationPreferenceToken({
+      get cleanText() { return backendContext.cleanText; },
+      set cleanText(value) { backendContext.cleanText = value; },
+      get LIVEPALMES_NOTIFICATION_LINK_SECRET() { return backendContext.LIVEPALMES_NOTIFICATION_LINK_SECRET; },
+      set LIVEPALMES_NOTIFICATION_LINK_SECRET(value) { backendContext.LIVEPALMES_NOTIFICATION_LINK_SECRET = value; },
+      get crypto() { return backendContext.crypto; },
+      set crypto(value) { backendContext.crypto = value; }
     });
-    const nationalAccount = capabilities.includes("admin.full") || capabilities.includes("engagements.national.manage");
-    const keys = new Set(["all", `status:${cleanStatus}`]);
-    capabilities.forEach((capability) => {
-      keys.add(`capability:${capability}`);
-      keys.add(`status:${cleanStatus}|capability:${capability}`);
+    return cache3;
+  }
+
+  let cache4;
+  function operation4() {
+    if (!cache4) cache4 = require("./backend/server-access-service/valid-competition-notification-preference-token").createAccessService_validCompetitionNotificationPreferenceToken({
+      get cleanText() { return backendContext.cleanText; },
+      set cleanText(value) { backendContext.cleanText = value; },
+      get crypto() { return backendContext.crypto; },
+      set crypto(value) { backendContext.crypto = value; },
+      get local$competitionNotificationPreferenceToken() { return operation3().competitionNotificationPreferenceToken; }
     });
-    if (regionId && !nationalAccount) {
-      keys.add(`region:${regionId}`);
-      keys.add(`region:${regionId}|status:${cleanStatus}`);
-      capabilities.forEach((capability) => {
-        keys.add(`region:${regionId}|capability:${capability}`);
-        keys.add(`region:${regionId}|status:${cleanStatus}|capability:${capability}`);
-      });
-    }
-    return [...keys];
+    return cache4;
   }
 
-  function accessDirectoryFilterKey(context = {}, status = "", capability = "") {
-    return [
-      !context.national && context.regionId ? `region:${context.regionId}` : "",
-      status ? `status:${status}` : "",
-      capability ? `capability:${capability}` : ""
-    ].filter(Boolean).join("|") || "all";
-  }
-
-  function accessDirectoryIndexStateRef() {
-    return backendContext.db.collection(backendContext.ACCESS_DIRECTORY_INDEX_STATE_COLLECTION).doc("default");
-  }
-
-  function accessDirectorySnapshotStateRef() {
-    return backendContext.db.collection(backendContext.ACCESS_DIRECTORY_SNAPSHOT_STATE_COLLECTION).doc("default");
-  }
-
-  function accessDirectorySnapshotDocumentId(scopeType = "national", scopeId = "") {
-    return scopeType === "region"
-      ? `region:${encodeURIComponent(backendContext.cleanText(scopeId).slice(0, 80))}`
-      : "national";
-  }
-
-  function accessDirectorySnapshotRef(scopeType = "national", scopeId = "") {
-    return backendContext.db.collection(backendContext.ACCESS_DIRECTORY_SNAPSHOTS_COLLECTION)
-      .doc(accessDirectorySnapshotDocumentId(scopeType, scopeId));
-  }
-
-  function accessDirectorySnapshotEntryKey(uid = "") {
-    return backendContext.crypto.createHash("sha256").update(backendContext.cleanText(uid)).digest("hex").slice(0, 32);
-  }
-
-  function normalizedAccessScope(scope = {}) {
-    const scopeType = ["club", "region", "national"].includes(backendContext.cleanText(scope.scopeType))
-      ? backendContext.cleanText(scope.scopeType)
-      : "national";
-    return {
-      scopeType,
-      scopeId: scopeType === "national" ? "" : backendContext.cleanText(scope.scopeId).slice(0, 80)
-    };
-  }
-
-  function accessScopeForCapability(profile = {}, capability) {
-    if (capability === "engagements.club.manage") {
-      return normalizedAccessScope({ scopeType: "club", scopeId: profile.clubId });
-    }
-    if (capability === "engagements.region.manage") {
-      return normalizedAccessScope({ scopeType: "region", scopeId: profile.regionId });
-    }
-    return normalizedAccessScope({ scopeType: "national", scopeId: "" });
-  }
-
-  function accessScopesMapFromProfile(profile = {}) {
-    return (profile.capabilities || []).reduce((acc, capability) => {
-      acc[capability] = accessScopeForCapability(profile, capability);
-      return acc;
-    }, {});
-  }
-
-  function hasEngagementsCapability(capabilities = {}) {
-    return capabilities["engagements.club.manage"] === true ||
-      capabilities["engagements.region.manage"] === true ||
-      capabilities["engagements.national.manage"] === true;
-  }
-
-  async function engagementAccessContext(request) {
-    const uid = request.auth?.uid || "";
-    if (!uid) {
-      throw new backendContext.HttpsError("unauthenticated", "Connexion Firebase requise.");
-    }
-    if (backendContext.ADMIN_UIDS.has(uid) || backendContext.FUNCTIONS_EMULATOR_ACTIVE) {
-      return {
-        uid,
-        email: backendContext.cleanText(request.auth?.token?.email).slice(0, 180),
-        national: true,
-        region: true,
-        regionId: "",
-        competitionNotificationsEnabled: true
-      };
-    }
-    const snapshot = await backendContext.db.collection("users").doc(uid).get();
-    const data = snapshot.exists ? snapshot.data() || {} : {};
-    if (!snapshot.exists || data.status !== "active") {
-      throw new backendContext.HttpsError("permission-denied", "Acces LivePalmes desactive.");
-    }
-    const capabilities = data.capabilities || request.auth?.token?.livepalmesCapabilities || {};
-    const accessScopes = data.accessScopes || {};
-    const national = capabilities["engagements.national.manage"] === true;
-    const region = capabilities["engagements.region.manage"] === true;
-    const regionScope = normalizedAccessScope(accessScopes["engagements.region.manage"]);
-    return {
-      uid,
-      email: backendContext.cleanText(request.auth?.token?.email || data.email).slice(0, 180),
-      national,
-      region,
-      regionId: regionScope.scopeId || backendContext.cleanText(data.regionId).slice(0, 80),
-      competitionNotificationsEnabled: competitionEmailNotificationsEnabled(data)
-    };
-  }
-
-  async function accessManagementContext(request) {
-    const uid = request.auth?.uid || "";
-    if (!uid) {
-      throw new backendContext.HttpsError("unauthenticated", "Connexion Firebase requise.");
-    }
-    const tokenCapabilities = request.auth?.token?.livepalmesCapabilities || {};
-    if (backendContext.ADMIN_UIDS.has(uid) || backendContext.FUNCTIONS_EMULATOR_ACTIVE || tokenCapabilities["admin.full"] === true) {
-      return {
-        uid,
-        email: backendContext.cleanText(request.auth?.token?.email).slice(0, 180),
-        adminFull: true,
-        national: true,
-        region: true,
-        regionId: ""
-      };
-    }
-    const snapshot = await backendContext.db.collection("users").doc(uid).get();
-    const data = snapshot.exists ? snapshot.data() || {} : {};
-    if (!snapshot.exists || data.status !== "active") {
-      throw new backendContext.HttpsError("permission-denied", "Acces LivePalmes desactive.");
-    }
-    const capabilities = data.capabilities || tokenCapabilities || {};
-    const accessScopes = data.accessScopes || {};
-    const national = capabilities["engagements.national.manage"] === true;
-    const region = capabilities["engagements.region.manage"] === true;
-    if (!national && !region) {
-      throw new backendContext.HttpsError("permission-denied", "Droit de gestion des acces requis.");
-    }
-    const regionScope = normalizedAccessScope(accessScopes["engagements.region.manage"]);
-    return {
-      uid,
-      email: backendContext.cleanText(request.auth?.token?.email || data.email).slice(0, 180),
-      adminFull: false,
-      national,
-      region,
-      regionId: canonicalAccessDirectoryRegionId(regionScope.scopeId || data.regionId)
-    };
-  }
-
-  async function auditManagementContext(request) {
-    const uid = request.auth?.uid || "";
-    if (!uid) {
-      throw new backendContext.HttpsError("unauthenticated", "Connexion Firebase requise.");
-    }
-    const tokenCapabilities = request.auth?.token?.livepalmesCapabilities || {};
-    if (backendContext.ADMIN_UIDS.has(uid) || backendContext.FUNCTIONS_EMULATOR_ACTIVE || tokenCapabilities["admin.full"] === true) {
-      return { uid, adminFull: true, profileReadCount: 0 };
-    }
-    const snapshot = await backendContext.db.collection("users").doc(uid).get();
-    const data = snapshot.exists ? snapshot.data() || {} : {};
-    if (!snapshot.exists || data.status !== "active" || data.capabilities?.["admin.full"] !== true) {
-      throw new backendContext.HttpsError("permission-denied", "Journal reserve a la gestion generale.");
-    }
-    return { uid, adminFull: true, profileReadCount: 1 };
-  }
-
-  function accessUserRegionIdFromData(data = {}) {
-    const regionScope = normalizedAccessScope(data.accessScopes?.["engagements.region.manage"]);
-    const directRegionId = regionScope.scopeId || backendContext.cleanText(data.regionId).slice(0, 80);
-    if (directRegionId) return canonicalAccessDirectoryRegionId(directRegionId);
-    const clubScope = normalizedAccessScope(data.accessScopes?.["engagements.club.manage"]);
-    const clubId = clubScope.scopeId || backendContext.cleanText(data.clubId).slice(0, 40);
-    return canonicalAccessDirectoryRegionId(backendContext.CLUB_REFERENCE_BY_ID.get(clubId)?.regionId);
-  }
-
-  function accessUserVisibleToRegional(context, data = {}) {
-    if (!context?.region || !context.regionId) return false;
-    const capabilities = data.capabilities || {};
-    if (capabilities["admin.full"] === true || capabilities["engagements.national.manage"] === true) return false;
-    return accessUserRegionIdFromData(data) === context.regionId;
-  }
-
-  function accessUserCanBeManagedByRegional(context, data = {}) {
-    if (!context?.region || !context.regionId) return false;
-    const capabilities = data.capabilities || {};
-    if (capabilities["admin.full"] === true || capabilities["engagements.national.manage"] === true) return false;
-    if (capabilities["engagements.region.manage"] !== true) return false;
-    return accessUserRegionIdFromData(data) === context.regionId;
-  }
-
-  function accessUserVisibleForAccessDirectory(context, doc) {
-    if (context?.national) return true;
-    return accessUserVisibleToRegional(context, doc.data() || {});
-  }
-
-  function assertRegionalAccessUserDeletionRequestAllowed(context, targetData = {}) {
-    if (context?.national) return;
-    if (!accessUserCanBeManagedByRegional(context, targetData)) {
-      throw new backendContext.HttpsError("permission-denied", "Demande limitee aux admins region de ta region.");
-    }
-  }
-
-  async function engagementClubAccessContext(request) {
-    const uid = request.auth?.uid || "";
-    if (!uid) {
-      throw new backendContext.HttpsError("unauthenticated", "Connexion Firebase requise.");
-    }
-    const snapshot = await backendContext.db.collection("users").doc(uid).get();
-    const data = snapshot.exists ? snapshot.data() || {} : {};
-    if (!snapshot.exists || data.status !== "active") {
-      throw new backendContext.HttpsError("permission-denied", "Acces LivePalmes desactive.");
-    }
-    const capabilities = backendContext.ADMIN_UIDS.has(uid)
-      ? capabilitiesMap(backendContext.ACCESS_CAPABILITIES)
-      : (data.capabilities || request.auth?.token?.livepalmesCapabilities || {});
-    const national = capabilities["admin.full"] === true || capabilities["engagements.national.manage"] === true;
-    const hasRegional = capabilities["engagements.region.manage"] === true;
-    const regional = !national && hasRegional;
-    if (capabilities["engagements.club.manage"] !== true && !hasRegional) {
-      throw new backendContext.HttpsError("permission-denied", "Droit engagements club requis.");
-    }
-    const accessScopes = data.accessScopes || {};
-    const clubScope = normalizedAccessScope(accessScopes["engagements.club.manage"]);
-    const homeClubId = backendContext.cleanText(clubScope.scopeId || data.clubId).slice(0, 40);
-    if (!homeClubId && !hasRegional) {
-      throw new backendContext.HttpsError("failed-precondition", "Numero de club requis pour les engagements club.");
-    }
-    const requestedClubId = backendContext.cleanText(request.data?.activeClubId).slice(0, 40);
-    const isSwitchingClub = Boolean(requestedClubId && requestedClubId !== homeClubId);
-    if (isSwitchingClub && !hasRegional && capabilities["engagements.club.switch"] !== true) {
-      throw new backendContext.HttpsError("permission-denied", "Droit de changement de club requis.");
-    }
-    let activeClub = null;
-    const checkedClubId = requestedClubId || homeClubId;
-    if (!checkedClubId) throw new backendContext.HttpsError("failed-precondition", "Choisissez un club.");
-    // Regional scope also checks the real home club; cumulative switch rights cannot bypass it.
-    if (isSwitchingClub || regional) {
-      if (backendContext.ENVIRONMENT.sportingDataSource === "nap") {
-        try {
-          const pool = require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD);
-          activeClub = await require("./nap-club-directory").findClub(pool, checkedClubId);
-        } catch (error) {
-          throw new backendContext.HttpsError(error instanceof TypeError ? "invalid-argument" : "unavailable",
-            error instanceof TypeError ? error.message : "Club NAP indisponible. Reessayez.");
-        }
-      } else activeClub = await engagementClubById(checkedClubId);
-    }
-    if ((isSwitchingClub || regional) && (!activeClub || !backendContext.CLUB_REFERENCE_REGION_LABELS[activeClub.regionId])) {
-      throw new backendContext.HttpsError("invalid-argument", "Club actif inconnu.");
-    }
-    if (regional) {
-      const regionId = canonicalAccessDirectoryRegionId(accessScopes["engagements.region.manage"]?.scopeId || data.regionId);
-      if (!regionId || canonicalAccessDirectoryRegionId(activeClub.regionId) !== regionId) {
-        throw new backendContext.HttpsError("permission-denied", "Club hors de votre region.");
-      }
-    }
-    const clubId = activeClub?.clubId || homeClubId;
-    return {
-      uid,
-      email: backendContext.cleanText(request.auth?.token?.email || data.email).slice(0, 180),
-      firstName: backendContext.cleanText(data.firstName || request.auth?.token?.given_name).slice(0, 80),
-      lastName: backendContext.cleanText(data.lastName || request.auth?.token?.family_name).slice(0, 80),
-      clubId,
-      clubName: activeClub?.clubName || backendContext.cleanText(data.clubName).slice(0, 140),
-      regionId: activeClub ? engagementClubRegionId(activeClub, data.regionId) : backendContext.cleanText(data.regionId).slice(0, 80),
-      homeClubId,
-      switchedClub: isSwitchingClub
-    };
-  }
-
-  async function assertEngagementsAccess(request) {
-    const uid = request.auth?.uid || "";
-    if (!uid) {
-      throw new backendContext.HttpsError("unauthenticated", "Connexion Firebase requise.");
-    }
-    if (backendContext.ADMIN_UIDS.has(uid)) return;
-    const tokenCapabilities = request.auth?.token?.livepalmesCapabilities || {};
-    if (request.auth?.token?.livepalmesAccess === true && hasEngagementsCapability(tokenCapabilities)) return;
-
-    const snapshot = await backendContext.db.collection("users").doc(uid).get();
-    const data = snapshot.exists ? snapshot.data() || {} : {};
-    if (!snapshot.exists || data.status !== "active" || !hasEngagementsCapability(data.capabilities || {})) {
-      throw new backendContext.HttpsError("permission-denied", "Droit engagements requis.");
-    }
-  }
-
-  function displayNameFromProfile(profile = {}) {
-    return [backendContext.cleanText(profile.firstName), backendContext.cleanText(profile.lastName)].filter(Boolean).join(" ");
-  }
-
-  async function accessUserDisplayName(uid, fallbackToken = {}) {
-    const cleanUid = backendContext.cleanText(uid);
-    if (!cleanUid) return "";
-    const snapshot = await backendContext.db.collection("users").doc(cleanUid).get().catch(() => null);
-    const data = snapshot?.exists ? snapshot.data() || {} : {};
-    return displayNameFromProfile(data) || backendContext.cleanText(fallbackToken.name);
-  }
-
-  async function userByEmailOrCreate(profile) {
-    const displayName = displayNameFromProfile(profile);
-    if (profile.createOnly) {
-      // Auth uniqueness closes the race after the read-only email lookup.
-      const user = await backendContext.auth.createUser({ email: profile.email, emailVerified: false, displayName, disabled: false });
-      return { user, created: true };
-    }
-    if (profile.uid) {
-      const existing = await backendContext.auth.getUser(profile.uid);
-      await backendContext.auth.updateUser(existing.uid, { email: profile.email, displayName, disabled: false });
-      return { user: { ...existing, email: profile.email, displayName }, created: false };
-    }
-    try {
-      const existing = await backendContext.auth.getUserByEmail(profile.email);
-      await backendContext.auth.updateUser(existing.uid, { displayName, disabled: false });
-      return { user: existing, created: false };
-    } catch (error) {
-      if (error?.code !== "auth/user-not-found") throw error;
-      const user = await backendContext.auth.createUser({
-        email: profile.email,
-        emailVerified: false,
-        displayName,
-        disabled: false
-      });
-      return { user, created: true };
-    }
-  }
-
-  async function saveAccessUserProfile(profile, actorUid) {
-    const { user, created } = await userByEmailOrCreate(profile);
-    const now = new Date().toISOString();
-    const capabilityMap = capabilitiesMap(profile.capabilities);
-
-    await backendContext.auth.setCustomUserClaims(user.uid, {
-      ...(user.customClaims || {}),
-      livepalmesAccess: true,
-      livepalmesConsoleAccess: backendContext.hasConsolePortalCapability(capabilityMap),
-      livepalmesCapabilities: capabilityMap
+  let cache5;
+  function operation5() {
+    if (!cache5) cache5 = require("./backend/server-access-service/competition-notification-preference-url").createAccessService_competitionNotificationPreferenceUrl({
+      get cleanText() { return backendContext.cleanText; },
+      set cleanText(value) { backendContext.cleanText = value; },
+      get ENVIRONMENT() { return backendContext.ENVIRONMENT; },
+      set ENVIRONMENT(value) { backendContext.ENVIRONMENT = value; },
+      get local$competitionNotificationPreferenceToken() { return operation3().competitionNotificationPreferenceToken; }
     });
+    return cache5;
+  }
 
-    const userRef = backendContext.db.collection("users").doc(user.uid);
-    await userRef.set({
-      uid: user.uid,
-      email: profile.email,
-      firstName: profile.firstName,
-      lastName: profile.lastName,
-      clubId: profile.clubId,
-      clubName: profile.clubName,
-      regionId: profile.regionId,
-      licenseNumber: profile.licenseNumber,
-      status: "active",
-      capabilities: capabilityMap,
-      accessDirectoryKeys: accessDirectoryKeys({ ...profile, capabilities: profile.capabilities }, "active"),
-      accessScopes: profile.accessScopes,
-      updatedAt: now,
-      updatedBy: actorUid,
-      ...(created ? { createdAt: now, createdBy: actorUid } : {})
-    }, { merge: true });
-
-    await writeAccessGrants(user.uid, profile.email, profile.capabilities, "active", actorUid, now, profile.accessScopes);
-
-    await writeAuditLog(created ? "accessUser.created" : "accessUser.updated", actorUid, {
-      uid: user.uid,
-      email: profile.email,
-      capabilities: profile.capabilities,
-      accessScopes: profile.accessScopes
+  let cache6;
+  function operation6() {
+    if (!cache6) cache6 = require("./backend/server-access-service/engagement-club-region-id").createAccessService_engagementClubRegionId({
+      get cleanText() { return backendContext.cleanText; },
+      set cleanText(value) { backendContext.cleanText = value; },
+      get CLUB_REFERENCE_REGION_LABELS() { return backendContext.CLUB_REFERENCE_REGION_LABELS; },
+      set CLUB_REFERENCE_REGION_LABELS(value) { backendContext.CLUB_REFERENCE_REGION_LABELS = value; }
     });
-
-    return {
-      ok: true,
-      created,
-      uid: user.uid,
-      email: profile.email,
-      capabilities: profile.capabilities
-    };
+    return cache6;
   }
 
-  async function writeAuditLog(action, actorUid, target = {}) {
-    const now = new Date().toISOString();
-    await backendContext.db.collection("auditLogs").add({
-      action,
-      actorUid,
-      target,
-      createdAt: now
+  let cache7;
+  function operation7() {
+    if (!cache7) cache7 = require("./backend/server-access-service/engagement-club-code").createAccessService_engagementClubCode({
+      get cleanText() { return backendContext.cleanText; },
+      set cleanText(value) { backendContext.cleanText = value; },
+      get CLUB_REFERENCE_BY_ID() { return backendContext.CLUB_REFERENCE_BY_ID; },
+      set CLUB_REFERENCE_BY_ID(value) { backendContext.CLUB_REFERENCE_BY_ID = value; }
     });
+    return cache7;
   }
 
-  async function writeAuditLogOnce(action, actorUid, target = {}, eventId = "") {
-    const now = new Date().toISOString();
-    const auditId = stableHash([action, eventId || now].join("|")).slice(0, 40);
-    await backendContext.db.collection("auditLogs").doc(auditId).set({
-      action,
-      actorUid,
-      target,
-      createdAt: now
-    }, { merge: false });
-  }
-
-  async function writeAccessGrants(uid, email, capabilities, status, actorUid, now, accessScopes = {}) {
-    const batch = backendContext.db.batch();
-    backendContext.ACCESS_CAPABILITIES.forEach((capability) => {
-      const grantRef = backendContext.db.collection("accessGrants").doc(`${uid}_${capability.replace(".", "_")}`);
-      const scope = normalizedAccessScope(accessScopes[capability]);
-      batch.set(grantRef, {
-        uid,
-        email,
-        capability,
-        scopeType: scope.scopeType,
-        scopeId: scope.scopeId,
-        status: capabilities.includes(capability) ? status : "inactive",
-        updatedAt: now,
-        updatedBy: actorUid,
-        createdAt: now
-      }, { merge: true });
+  let cache8;
+  function operation8() {
+    if (!cache8) cache8 = require("./backend/server-access-service/engagement-club-name").createAccessService_engagementClubName({
+      get cleanText() { return backendContext.cleanText; },
+      set cleanText(value) { backendContext.cleanText = value; },
+      get CLUB_REFERENCE_BY_ID() { return backendContext.CLUB_REFERENCE_BY_ID; },
+      set CLUB_REFERENCE_BY_ID(value) { backendContext.CLUB_REFERENCE_BY_ID = value; }
     });
-    return batch.commit();
+    return cache8;
   }
 
-  function assertRole(role) {
-    if (!backendContext.ROLE_SET.has(role)) {
-      throw new backendContext.HttpsError("invalid-argument", "Role LivePalmes inconnu.");
-    }
+  let cache9;
+  function operation9() {
+    if (!cache9) cache9 = require("./backend/server-access-service/engagement-stored-club-item").createAccessService_engagementStoredClubItem({
+      get cleanText() { return backendContext.cleanText; },
+      set cleanText(value) { backendContext.cleanText = value; },
+      get local$cleanFirestoreValue() { return operation14().cleanFirestoreValue; }
+    });
+    return cache9;
   }
 
-  function assertPin(pin) {
-    if (!/^\d{4}$/.test(pin)) {
-      throw new backendContext.HttpsError("invalid-argument", "Le code PIN doit contenir 4 chiffres.");
-    }
+  let cache10;
+  function operation10() {
+    if (!cache10) cache10 = require("./backend/server-access-service/public-engagement-club-item").createAccessService_publicEngagementClubItem({
+      get cleanText() { return backendContext.cleanText; },
+      set cleanText(value) { backendContext.cleanText = value; },
+      get local$cleanFirestoreValue() { return operation14().cleanFirestoreValue; }
+    });
+    return cache10;
   }
 
-  function pinHash(pin, salt) {
-    return backendContext.crypto.pbkdf2Sync(String(pin), String(salt), backendContext.HASH_ITERATIONS, backendContext.HASH_BYTES, "sha256").toString("hex");
+  let cache11;
+  function operation11() {
+    if (!cache11) cache11 = require("./backend/server-access-service/public-engagement-club-directory-ref").createAccessService_publicEngagementClubDirectoryRef({
+      get ENGAGEMENT_PUBLIC_DIRECTORIES_COLLECTION() { return backendContext.ENGAGEMENT_PUBLIC_DIRECTORIES_COLLECTION; },
+      set ENGAGEMENT_PUBLIC_DIRECTORIES_COLLECTION(value) { backendContext.ENGAGEMENT_PUBLIC_DIRECTORIES_COLLECTION = value; },
+      get db() { return backendContext.db; },
+      set db(value) { backendContext.db = value; }
+    });
+    return cache11;
   }
 
-  function stableHash(value) {
-    return backendContext.crypto.createHash("sha256").update(String(value || "")).digest("hex");
+  let cache12;
+  function operation12() {
+    if (!cache12) cache12 = require("./backend/server-access-service/engagement-clubs-by-ids").createAccessService_engagementClubsByIds({
+      get cleanText() { return backendContext.cleanText; },
+      set cleanText(value) { backendContext.cleanText = value; },
+      get CLUB_REFERENCE_BY_ID() { return backendContext.CLUB_REFERENCE_BY_ID; },
+      set CLUB_REFERENCE_BY_ID(value) { backendContext.CLUB_REFERENCE_BY_ID = value; },
+      get ENGAGEMENT_CLUBS_COLLECTION() { return backendContext.ENGAGEMENT_CLUBS_COLLECTION; },
+      set ENGAGEMENT_CLUBS_COLLECTION(value) { backendContext.ENGAGEMENT_CLUBS_COLLECTION = value; },
+      get db() { return backendContext.db; },
+      set db(value) { backendContext.db = value; },
+      get local$engagementStoredClubItem() { return operation9().engagementStoredClubItem; }
+    });
+    return cache12;
   }
 
+  let cache13;
+  function operation13() {
+    if (!cache13) cache13 = require("./backend/server-access-service/engagement-club-access-context").createAccessService_engagementClubAccessContext({
+      get cleanText() { return backendContext.cleanText; },
+      set cleanText(value) { backendContext.cleanText = value; },
+      get ACCESS_CAPABILITIES() { return backendContext.ACCESS_CAPABILITIES; },
+      set ACCESS_CAPABILITIES(value) { backendContext.ACCESS_CAPABILITIES = value; },
+      get ADMIN_UIDS() { return backendContext.ADMIN_UIDS; },
+      set ADMIN_UIDS(value) { backendContext.ADMIN_UIDS = value; },
+      get CLUB_REFERENCE_REGION_LABELS() { return backendContext.CLUB_REFERENCE_REGION_LABELS; },
+      set CLUB_REFERENCE_REGION_LABELS(value) { backendContext.CLUB_REFERENCE_REGION_LABELS = value; },
+      get ENVIRONMENT() { return backendContext.ENVIRONMENT; },
+      set ENVIRONMENT(value) { backendContext.ENVIRONMENT = value; },
+      get HttpsError() { return backendContext.HttpsError; },
+      set HttpsError(value) { backendContext.HttpsError = value; },
+      get db() { return backendContext.db; },
+      set db(value) { backendContext.db = value; },
+      get local$canonicalAccessDirectoryRegionId() { return operation22().canonicalAccessDirectoryRegionId; },
+      get local$capabilitiesMap() { return operation25().capabilitiesMap; },
+      get local$engagementClubRegionId() { return operation6().engagementClubRegionId; },
+      get local$engagementClubsByIds() { return operation12().engagementClubsByIds; },
+      get local$normalizedAccessScope() { return operation31().normalizedAccessScope; }
+    });
+    return cache13;
+  }
+
+  let cache14;
+  function operation14() {
+    if (!cache14) cache14 = require("./backend/server-access-service/clean-firestore-value").createAccessService_cleanFirestoreValue({
+
+    });
+    return cache14;
+  }
+
+  let cache15;
+  function operation15() {
+    if (!cache15) cache15 = require("./backend/server-access-service/competition-id-from").createAccessService_competitionIdFrom({
+      get cleanText() { return backendContext.cleanText; },
+      set cleanText(value) { backendContext.cleanText = value; },
+      get COMPETITION_IDS() { return backendContext.COMPETITION_IDS; },
+      set COMPETITION_IDS(value) { backendContext.COMPETITION_IDS = value; },
+      get HttpsError() { return backendContext.HttpsError; },
+      set HttpsError(value) { backendContext.HttpsError = value; }
+    });
+    return cache15;
+  }
+
+  let cache16;
+  function operation16() {
+    if (!cache16) cache16 = require("./backend/server-access-service/assert-admin").createAccessService_assertAdmin({
+      get ADMIN_UIDS() { return backendContext.ADMIN_UIDS; },
+      set ADMIN_UIDS(value) { backendContext.ADMIN_UIDS = value; },
+      get HttpsError() { return backendContext.HttpsError; },
+      set HttpsError(value) { backendContext.HttpsError = value; }
+    });
+    return cache16;
+  }
+
+  let cache17;
+  function operation17() {
+    if (!cache17) cache17 = require("./backend/server-access-service/assert-capability").createAccessService_assertCapability({
+      get ADMIN_UIDS() { return backendContext.ADMIN_UIDS; },
+      set ADMIN_UIDS(value) { backendContext.ADMIN_UIDS = value; },
+      get HttpsError() { return backendContext.HttpsError; },
+      set HttpsError(value) { backendContext.HttpsError = value; }
+    });
+    return cache17;
+  }
+
+  let cache18;
+  function operation18() {
+    if (!cache18) cache18 = require("./backend/server-access-service/assert-live-palmes-access").createAccessService_assertLivePalmesAccess({
+      get ACCESS_CAPABILITIES() { return backendContext.ACCESS_CAPABILITIES; },
+      set ACCESS_CAPABILITIES(value) { backendContext.ACCESS_CAPABILITIES = value; },
+      get ADMIN_UIDS() { return backendContext.ADMIN_UIDS; },
+      set ADMIN_UIDS(value) { backendContext.ADMIN_UIDS = value; },
+      get HttpsError() { return backendContext.HttpsError; },
+      set HttpsError(value) { backendContext.HttpsError = value; },
+      get db() { return backendContext.db; },
+      set db(value) { backendContext.db = value; },
+      get local$activeCapabilitiesFromMap() { return operation26().activeCapabilitiesFromMap; }
+    });
+    return cache18;
+  }
+
+  let cache19;
+  function operation19() {
+    if (!cache19) cache19 = require("./backend/server-access-service/normalize-email").createAccessService_normalizeEmail({
+      get cleanText() { return backendContext.cleanText; },
+      set cleanText(value) { backendContext.cleanText = value; }
+    });
+    return cache19;
+  }
+
+  let cache20;
+  function operation20() {
+    if (!cache20) cache20 = require("./backend/server-access-service/normalized-engagement-region-key").createAccessService_normalizedEngagementRegionKey({
+      get cleanText() { return backendContext.cleanText; },
+      set cleanText(value) { backendContext.cleanText = value; },
+      get CLUB_REFERENCE_REGION_LABELS() { return backendContext.CLUB_REFERENCE_REGION_LABELS; },
+      set CLUB_REFERENCE_REGION_LABELS(value) { backendContext.CLUB_REFERENCE_REGION_LABELS = value; }
+    });
+    return cache20;
+  }
+
+  let cache21;
+  function operation21() {
+    if (!cache21) cache21 = require("./backend/server-access-service/engagement-regions-match").createAccessService_engagementRegionsMatch({
+      get local$normalizedEngagementRegionKey() { return operation20().normalizedEngagementRegionKey; }
+    });
+    return cache21;
+  }
+
+  let cache22;
+  function operation22() {
+    if (!cache22) cache22 = require("./backend/server-access-service/canonical-access-directory-region-id").createAccessService_canonicalAccessDirectoryRegionId({
+      get cleanText() { return backendContext.cleanText; },
+      set cleanText(value) { backendContext.cleanText = value; },
+      get CLUB_REFERENCE_REGION_LABELS() { return backendContext.CLUB_REFERENCE_REGION_LABELS; },
+      set CLUB_REFERENCE_REGION_LABELS(value) { backendContext.CLUB_REFERENCE_REGION_LABELS = value; },
+      get local$normalizedEngagementRegionKey() { return operation20().normalizedEngagementRegionKey; }
+    });
+    return cache22;
+  }
+
+  let cache23;
+  function operation23() {
+    if (!cache23) cache23 = require("./backend/server-access-service/assert-email").createAccessService_assertEmail({
+      get HttpsError() { return backendContext.HttpsError; },
+      set HttpsError(value) { backendContext.HttpsError = value; }
+    });
+    return cache23;
+  }
+
+  let cache24;
+  function operation24() {
+    if (!cache24) cache24 = require("./backend/server-access-service/access-scope-for-capability").createAccessService_accessScopeForCapability({
+      get cleanText() { return backendContext.cleanText; },
+      set cleanText(value) { backendContext.cleanText = value; },
+      get ACCESS_CAPABILITY_SET() { return backendContext.ACCESS_CAPABILITY_SET; },
+      set ACCESS_CAPABILITY_SET(value) { backendContext.ACCESS_CAPABILITY_SET = value; },
+      get HttpsError() { return backendContext.HttpsError; },
+      set HttpsError(value) { backendContext.HttpsError = value; },
+      get local$assertEmail() { return operation23().assertEmail; },
+      get local$canonicalAccessDirectoryRegionId() { return operation22().canonicalAccessDirectoryRegionId; },
+      get local$normalizeEmail() { return operation19().normalizeEmail; },
+      get local$normalizedAccessScope() { return operation31().normalizedAccessScope; }
+    });
+    return cache24;
+  }
+
+  let cache25;
+  function operation25() {
+    if (!cache25) cache25 = require("./backend/server-access-service/capabilities-map").createAccessService_capabilitiesMap({
+      get ACCESS_CAPABILITIES() { return backendContext.ACCESS_CAPABILITIES; },
+      set ACCESS_CAPABILITIES(value) { backendContext.ACCESS_CAPABILITIES = value; }
+    });
+    return cache25;
+  }
+
+  let cache26;
+  function operation26() {
+    if (!cache26) cache26 = require("./backend/server-access-service/active-capabilities-from-map").createAccessService_activeCapabilitiesFromMap({
+      get ACCESS_CAPABILITIES() { return backendContext.ACCESS_CAPABILITIES; },
+      set ACCESS_CAPABILITIES(value) { backendContext.ACCESS_CAPABILITIES = value; }
+    });
+    return cache26;
+  }
+
+  let cache27;
+  function operation27() {
+    if (!cache27) cache27 = require("./backend/server-access-service/access-directory-keys").createAccessService_accessDirectoryKeys({
+      get local$accessUserRegionIdFromData() { return operation36().accessUserRegionIdFromData; },
+      get local$activeCapabilitiesFromMap() { return operation26().activeCapabilitiesFromMap; },
+      get local$capabilitiesMap() { return operation25().capabilitiesMap; }
+    });
+    return cache27;
+  }
+
+  let cache28;
+  function operation28() {
+    if (!cache28) cache28 = require("./backend/server-access-service/access-directory-filter-key").createAccessService_accessDirectoryFilterKey({
+      get local$accessUserRegionIdFromData() { return operation36().accessUserRegionIdFromData; }
+    });
+    return cache28;
+  }
+
+  let cache29;
+  function operation29() {
+    if (!cache29) cache29 = require("./backend/server-access-service/access-directory-index-state-ref").createAccessService_accessDirectoryIndexStateRef({
+      get ACCESS_DIRECTORY_INDEX_STATE_COLLECTION() { return backendContext.ACCESS_DIRECTORY_INDEX_STATE_COLLECTION; },
+      set ACCESS_DIRECTORY_INDEX_STATE_COLLECTION(value) { backendContext.ACCESS_DIRECTORY_INDEX_STATE_COLLECTION = value; },
+      get db() { return backendContext.db; },
+      set db(value) { backendContext.db = value; }
+    });
+    return cache29;
+  }
+
+  let cache30;
+  function operation30() {
+    if (!cache30) cache30 = require("./backend/server-access-service/access-directory-snapshot-document-id").createAccessService_accessDirectorySnapshotDocumentId({
+      get cleanText() { return backendContext.cleanText; },
+      set cleanText(value) { backendContext.cleanText = value; },
+      get ACCESS_DIRECTORY_SNAPSHOTS_COLLECTION() { return backendContext.ACCESS_DIRECTORY_SNAPSHOTS_COLLECTION; },
+      set ACCESS_DIRECTORY_SNAPSHOTS_COLLECTION(value) { backendContext.ACCESS_DIRECTORY_SNAPSHOTS_COLLECTION = value; },
+      get ACCESS_DIRECTORY_SNAPSHOT_STATE_COLLECTION() { return backendContext.ACCESS_DIRECTORY_SNAPSHOT_STATE_COLLECTION; },
+      set ACCESS_DIRECTORY_SNAPSHOT_STATE_COLLECTION(value) { backendContext.ACCESS_DIRECTORY_SNAPSHOT_STATE_COLLECTION = value; },
+      get crypto() { return backendContext.crypto; },
+      set crypto(value) { backendContext.crypto = value; },
+      get db() { return backendContext.db; },
+      set db(value) { backendContext.db = value; }
+    });
+    return cache30;
+  }
+
+  let cache31;
+  function operation31() {
+    if (!cache31) cache31 = require("./backend/server-access-service/normalized-access-scope").createAccessService_normalizedAccessScope({
+      get cleanText() { return backendContext.cleanText; },
+      set cleanText(value) { backendContext.cleanText = value; }
+    });
+    return cache31;
+  }
+
+  let cache32;
+  function operation32() {
+    if (!cache32) cache32 = require("./backend/server-access-service/assert-engagements-access").createAccessService_assertEngagementsAccess({
+      get ADMIN_UIDS() { return backendContext.ADMIN_UIDS; },
+      set ADMIN_UIDS(value) { backendContext.ADMIN_UIDS = value; },
+      get HttpsError() { return backendContext.HttpsError; },
+      set HttpsError(value) { backendContext.HttpsError = value; },
+      get db() { return backendContext.db; },
+      set db(value) { backendContext.db = value; }
+    });
+    return cache32;
+  }
+
+  let cache33;
+  function operation33() {
+    if (!cache33) cache33 = require("./backend/server-access-service/engagement-access-context").createAccessService_engagementAccessContext({
+      get cleanText() { return backendContext.cleanText; },
+      set cleanText(value) { backendContext.cleanText = value; },
+      get ADMIN_UIDS() { return backendContext.ADMIN_UIDS; },
+      set ADMIN_UIDS(value) { backendContext.ADMIN_UIDS = value; },
+      get FUNCTIONS_EMULATOR_ACTIVE() { return backendContext.FUNCTIONS_EMULATOR_ACTIVE; },
+      set FUNCTIONS_EMULATOR_ACTIVE(value) { backendContext.FUNCTIONS_EMULATOR_ACTIVE = value; },
+      get HttpsError() { return backendContext.HttpsError; },
+      set HttpsError(value) { backendContext.HttpsError = value; },
+      get db() { return backendContext.db; },
+      set db(value) { backendContext.db = value; },
+      get local$competitionEmailNotificationsEnabled() { return operation2().competitionEmailNotificationsEnabled; },
+      get local$normalizedAccessScope() { return operation31().normalizedAccessScope; }
+    });
+    return cache33;
+  }
+
+  let cache34;
+  function operation34() {
+    if (!cache34) cache34 = require("./backend/server-access-service/access-management-context").createAccessService_accessManagementContext({
+      get cleanText() { return backendContext.cleanText; },
+      set cleanText(value) { backendContext.cleanText = value; },
+      get ADMIN_UIDS() { return backendContext.ADMIN_UIDS; },
+      set ADMIN_UIDS(value) { backendContext.ADMIN_UIDS = value; },
+      get FUNCTIONS_EMULATOR_ACTIVE() { return backendContext.FUNCTIONS_EMULATOR_ACTIVE; },
+      set FUNCTIONS_EMULATOR_ACTIVE(value) { backendContext.FUNCTIONS_EMULATOR_ACTIVE = value; },
+      get HttpsError() { return backendContext.HttpsError; },
+      set HttpsError(value) { backendContext.HttpsError = value; },
+      get db() { return backendContext.db; },
+      set db(value) { backendContext.db = value; },
+      get local$canonicalAccessDirectoryRegionId() { return operation22().canonicalAccessDirectoryRegionId; },
+      get local$normalizedAccessScope() { return operation31().normalizedAccessScope; }
+    });
+    return cache34;
+  }
+
+  let cache35;
+  function operation35() {
+    if (!cache35) cache35 = require("./backend/server-access-service/audit-management-context").createAccessService_auditManagementContext({
+      get ADMIN_UIDS() { return backendContext.ADMIN_UIDS; },
+      set ADMIN_UIDS(value) { backendContext.ADMIN_UIDS = value; },
+      get FUNCTIONS_EMULATOR_ACTIVE() { return backendContext.FUNCTIONS_EMULATOR_ACTIVE; },
+      set FUNCTIONS_EMULATOR_ACTIVE(value) { backendContext.FUNCTIONS_EMULATOR_ACTIVE = value; },
+      get HttpsError() { return backendContext.HttpsError; },
+      set HttpsError(value) { backendContext.HttpsError = value; },
+      get db() { return backendContext.db; },
+      set db(value) { backendContext.db = value; }
+    });
+    return cache35;
+  }
+
+  let cache36;
+  function operation36() {
+    if (!cache36) cache36 = require("./backend/server-access-service/access-user-region-id-from-data").createAccessService_accessUserRegionIdFromData({
+      get cleanText() { return backendContext.cleanText; },
+      set cleanText(value) { backendContext.cleanText = value; },
+      get CLUB_REFERENCE_BY_ID() { return backendContext.CLUB_REFERENCE_BY_ID; },
+      set CLUB_REFERENCE_BY_ID(value) { backendContext.CLUB_REFERENCE_BY_ID = value; },
+      get local$canonicalAccessDirectoryRegionId() { return operation22().canonicalAccessDirectoryRegionId; },
+      get local$normalizedAccessScope() { return operation31().normalizedAccessScope; }
+    });
+    return cache36;
+  }
+
+  let cache37;
+  function operation37() {
+    if (!cache37) cache37 = require("./backend/server-access-service/access-user-can-be-managed-by-regional").createAccessService_accessUserCanBeManagedByRegional({
+      get HttpsError() { return backendContext.HttpsError; },
+      set HttpsError(value) { backendContext.HttpsError = value; },
+      get local$accessUserRegionIdFromData() { return operation36().accessUserRegionIdFromData; }
+    });
+    return cache37;
+  }
+
+  let cache38;
+  function operation38() {
+    if (!cache38) cache38 = require("./backend/server-access-service/display-name-from-profile").createAccessService_displayNameFromProfile({
+      get cleanText() { return backendContext.cleanText; },
+      set cleanText(value) { backendContext.cleanText = value; }
+    });
+    return cache38;
+  }
+
+  let cache39;
+  function operation39() {
+    if (!cache39) cache39 = require("./backend/server-access-service/access-user-display-name").createAccessService_accessUserDisplayName({
+      get cleanText() { return backendContext.cleanText; },
+      set cleanText(value) { backendContext.cleanText = value; },
+      get db() { return backendContext.db; },
+      set db(value) { backendContext.db = value; },
+      get local$displayNameFromProfile() { return operation38().displayNameFromProfile; }
+    });
+    return cache39;
+  }
+
+  let cache40;
+  function operation40() {
+    if (!cache40) cache40 = require("./backend/server-access-service/write-audit-log").createAccessService_writeAuditLog({
+      get db() { return backendContext.db; },
+      set db(value) { backendContext.db = value; }
+    });
+    return cache40;
+  }
+
+  let cache41;
+  function operation41() {
+    if (!cache41) cache41 = require("./backend/server-access-service/write-audit-log-once").createAccessService_writeAuditLogOnce({
+      get db() { return backendContext.db; },
+      set db(value) { backendContext.db = value; },
+      get local$stableHash() { return operation45().stableHash; }
+    });
+    return cache41;
+  }
+
+  let cache42;
+  function operation42() {
+    if (!cache42) cache42 = require("./backend/server-access-service/write-access-grants").createAccessService_writeAccessGrants({
+      get ACCESS_CAPABILITIES() { return backendContext.ACCESS_CAPABILITIES; },
+      set ACCESS_CAPABILITIES(value) { backendContext.ACCESS_CAPABILITIES = value; },
+      get db() { return backendContext.db; },
+      set db(value) { backendContext.db = value; },
+      get local$normalizedAccessScope() { return operation31().normalizedAccessScope; }
+    });
+    return cache42;
+  }
+
+  let cache43;
+  function operation43() {
+    if (!cache43) cache43 = require("./backend/server-access-service/assert-role").createAccessService_assertRole({
+      get HttpsError() { return backendContext.HttpsError; },
+      set HttpsError(value) { backendContext.HttpsError = value; },
+      get ROLE_SET() { return backendContext.ROLE_SET; },
+      set ROLE_SET(value) { backendContext.ROLE_SET = value; }
+    });
+    return cache43;
+  }
+
+  let cache44;
+  function operation44() {
+    if (!cache44) cache44 = require("./backend/server-access-service/assert-pin").createAccessService_assertPin({
+      get HASH_BYTES() { return backendContext.HASH_BYTES; },
+      set HASH_BYTES(value) { backendContext.HASH_BYTES = value; },
+      get HASH_ITERATIONS() { return backendContext.HASH_ITERATIONS; },
+      set HASH_ITERATIONS(value) { backendContext.HASH_ITERATIONS = value; },
+      get HttpsError() { return backendContext.HttpsError; },
+      set HttpsError(value) { backendContext.HttpsError = value; },
+      get crypto() { return backendContext.crypto; },
+      set crypto(value) { backendContext.crypto = value; }
+    });
+    return cache44;
+  }
+
+  let cache45;
+  function operation45() {
+    if (!cache45) cache45 = require("./backend/server-access-service/stable-hash").createAccessService_stableHash({
+      get crypto() { return backendContext.crypto; },
+      set crypto(value) { backendContext.crypto = value; }
+    });
+    return cache45;
+  }
   return {
-    portalReadStats,
-    engagementCategoryCodesForEvent,
-    normalizeEngagementEventCategoryRestrictions,
-    cleanEngagementRelayMixedMode,
-    competitionEmailNotificationsEnabled,
-    notificationPreferenceSecretValue,
-    competitionNotificationPreferenceToken,
-    validCompetitionNotificationPreferenceToken,
-    competitionNotificationPreferenceUrl,
-    engagementClubRegionId,
-    engagementClubCode,
-    engagementClubName,
-    engagementStoredClubItem,
-    publicEngagementClubItem,
-    publicEngagementClubDirectoryRef,
-    engagementClubsByIds,
-    engagementClubById,
-    cleanFirestoreValue,
-    competitionIdFrom,
-    assertAdmin,
-    assertCapability,
-    assertLivePalmesAccess,
-    normalizeEmail,
-    normalizedEngagementRegionKey,
-    engagementRegionsMatch,
-    canonicalAccessDirectoryRegionId,
-    assertEmail,
-    cleanAccessProfile,
-    capabilitiesMap,
-    activeCapabilitiesFromMap,
-    accessDirectoryKeys,
-    accessDirectoryFilterKey,
-    accessDirectoryIndexStateRef,
-    accessDirectorySnapshotStateRef,
-    accessDirectorySnapshotDocumentId,
-    accessDirectorySnapshotRef,
-    accessDirectorySnapshotEntryKey,
-    normalizedAccessScope,
-    accessScopeForCapability,
-    accessScopesMapFromProfile,
-    hasEngagementsCapability,
-    engagementAccessContext,
-    accessManagementContext,
-    auditManagementContext,
-    accessUserRegionIdFromData,
-    accessUserVisibleToRegional,
-    accessUserCanBeManagedByRegional,
-    accessUserVisibleForAccessDirectory,
-    assertRegionalAccessUserDeletionRequestAllowed,
-    engagementClubAccessContext,
-    assertEngagementsAccess,
-    displayNameFromProfile,
-    accessUserDisplayName,
-    userByEmailOrCreate,
-    saveAccessUserProfile,
-    writeAuditLog,
-    writeAuditLogOnce,
-    writeAccessGrants,
-    assertRole,
-    assertPin,
-    pinHash,
-    stableHash
+    portalReadStats: operation0().portalReadStats,
+    engagementCategoryCodesForEvent: operation1().engagementCategoryCodesForEvent,
+    normalizeEngagementEventCategoryRestrictions: operation1().normalizeEngagementEventCategoryRestrictions,
+    cleanEngagementRelayMixedMode: operation1().cleanEngagementRelayMixedMode,
+    competitionEmailNotificationsEnabled: operation2().competitionEmailNotificationsEnabled,
+    notificationPreferenceSecretValue: operation3().notificationPreferenceSecretValue,
+    competitionNotificationPreferenceToken: operation3().competitionNotificationPreferenceToken,
+    validCompetitionNotificationPreferenceToken: operation4().validCompetitionNotificationPreferenceToken,
+    competitionNotificationPreferenceUrl: operation5().competitionNotificationPreferenceUrl,
+    engagementClubRegionId: operation6().engagementClubRegionId,
+    engagementClubCode: operation7().engagementClubCode,
+    engagementClubName: operation8().engagementClubName,
+    engagementStoredClubItem: operation9().engagementStoredClubItem,
+    publicEngagementClubItem: operation10().publicEngagementClubItem,
+    publicEngagementClubDirectoryRef: operation11().publicEngagementClubDirectoryRef,
+    engagementClubsByIds: operation12().engagementClubsByIds,
+    engagementClubById: operation13().engagementClubById,
+    cleanFirestoreValue: operation14().cleanFirestoreValue,
+    competitionIdFrom: operation15().competitionIdFrom,
+    assertAdmin: operation16().assertAdmin,
+    assertCapability: operation17().assertCapability,
+    assertLivePalmesAccess: operation18().assertLivePalmesAccess,
+    normalizeEmail: operation19().normalizeEmail,
+    normalizedEngagementRegionKey: operation20().normalizedEngagementRegionKey,
+    engagementRegionsMatch: operation21().engagementRegionsMatch,
+    canonicalAccessDirectoryRegionId: operation22().canonicalAccessDirectoryRegionId,
+    assertEmail: operation23().assertEmail,
+    cleanAccessProfile: operation24().cleanAccessProfile,
+    capabilitiesMap: operation25().capabilitiesMap,
+    activeCapabilitiesFromMap: operation26().activeCapabilitiesFromMap,
+    accessDirectoryKeys: operation27().accessDirectoryKeys,
+    accessDirectoryFilterKey: operation28().accessDirectoryFilterKey,
+    accessDirectoryIndexStateRef: operation29().accessDirectoryIndexStateRef,
+    accessDirectorySnapshotStateRef: operation30().accessDirectorySnapshotStateRef,
+    accessDirectorySnapshotDocumentId: operation30().accessDirectorySnapshotDocumentId,
+    accessDirectorySnapshotRef: operation30().accessDirectorySnapshotRef,
+    accessDirectorySnapshotEntryKey: operation30().accessDirectorySnapshotEntryKey,
+    normalizedAccessScope: operation31().normalizedAccessScope,
+    accessScopeForCapability: operation24().accessScopeForCapability,
+    accessScopesMapFromProfile: operation24().accessScopesMapFromProfile,
+    hasEngagementsCapability: operation32().hasEngagementsCapability,
+    engagementAccessContext: operation33().engagementAccessContext,
+    accessManagementContext: operation34().accessManagementContext,
+    auditManagementContext: operation35().auditManagementContext,
+    accessUserRegionIdFromData: operation36().accessUserRegionIdFromData,
+    accessUserVisibleToRegional: operation28().accessUserVisibleToRegional,
+    accessUserCanBeManagedByRegional: operation37().accessUserCanBeManagedByRegional,
+    accessUserVisibleForAccessDirectory: operation28().accessUserVisibleForAccessDirectory,
+    assertRegionalAccessUserDeletionRequestAllowed: operation37().assertRegionalAccessUserDeletionRequestAllowed,
+    engagementClubAccessContext: operation13().engagementClubAccessContext,
+    assertEngagementsAccess: operation32().assertEngagementsAccess,
+    displayNameFromProfile: operation38().displayNameFromProfile,
+    accessUserDisplayName: operation39().accessUserDisplayName,
+    writeAuditLog: operation40().writeAuditLog,
+    writeAuditLogOnce: operation41().writeAuditLogOnce,
+    writeAccessGrants: operation42().writeAccessGrants,
+    assertRole: operation43().assertRole,
+    assertPin: operation44().assertPin,
+    pinHash: operation44().pinHash,
+    stableHash: operation45().stableHash
   };
 }
 

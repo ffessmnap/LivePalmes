@@ -1,5 +1,6 @@
 "use strict";
-const calendar=require("./nap-direct-calendar"),home=require("./nap-home-events"),{civilAt}=require("./nap-paris-time");
+const { SELECT_EVENT: __nativeMember0, EVENT_JOINS: __nativeMember1, eventFromRow: __nativeMember2 } = require("./nap-calendar-event");
+const calendar={ SELECT_EVENT: __nativeMember0, EVENT_JOINS: __nativeMember1, eventFromRow: __nativeMember2 },home=require("./nap-home-events"),{civilAt}=require("./nap-paris-time");
 const CACHE_MS=5*60*1000,MAX_CANDIDATES=500;
 function queries(today){
  // Bound the driving index window BEFORE the one-to-one joins and result checks.

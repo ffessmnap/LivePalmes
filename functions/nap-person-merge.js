@@ -5,7 +5,7 @@
 const {createHash}=require("node:crypto"),{isDeepStrictEqual:equal}=require("node:util");
 const {reference}=require("./nap-club-person-status");
 const {nativeEqual}=require("./nap-native-compare");
-const {SOURCES,OPTION_COLUMNS,normalizeOptions,person}=require("./nap-club-people");
+const { SOURCES, OPTION_COLUMNS, normalizeOptions, person } = require("./nap-club-people-values");
 const schema=require("./nap-approved-person-history-schema"),plans=require("./nap-person-merge-plan");
 async function mergePeople(pool,input,audit,authorize) {
   if(typeof authorize!=="function" || input?.confirmMerge!==true || typeof input.actorUid!=="string" || !input.actorUid || input.actorUid.length>128 || !/^[a-f0-9]{64}$/.test(input.sourceFingerprint||"") || !/^[a-f0-9]{64}$/.test(input.targetFingerprint||""))throw new TypeError("Confirmation nationale et fiches affichees requises.");

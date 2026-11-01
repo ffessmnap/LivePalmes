@@ -1,9 +1,12 @@
 "use strict";
-const {visiblePerformanceSql}=require("./nap-performance-visibility");
+const { visiblePerformanceSql } = require("./nap-performance-visibility-sql");
 // On-demand native history for a grouped entry action. No export, cache or
 // Firestore fallback. One indexed SQL query, <=100 people / 20000 raw rows.
-const {swimmerId,performanceRow,MAX_HISTORY}=require("./nap-direct-swimmer");
-const rules=require("./nap-performance-normalization");
+const { swimmerId } = require("./nap-swimmer-values");
+const { performanceRow } = require("./nap-performance-row");
+const { MAX_HISTORY } = require("./nap-direct-swimmer");
+const { annotateIntermediateOrigins: __nativeMember0 } = require("./nap-performance-intermediates");
+const rules={ annotateIntermediateOrigins: __nativeMember0 };
 const MAX_ROWS=20000;
 function historyStatement(people) {
   if(!Array.isArray(people) || !people.length || people.length>100) throw new RangeError("De 1 a 100 nageurs NAP requis.");
