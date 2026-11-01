@@ -3,6 +3,7 @@
 const fs=require("node:fs"),path=require("node:path"),cp=require("node:child_process");
 const {model,parse,walk}=require("./backend-factory-model"),{symbols}=require("./backend-native-symbols");
 const snapshots=require("./release-test-function-fingerprints"),live=require("./isolate-backend-factories");
+const BASELINE="468fe9163db117ebf27ba2665dfed7b0641b6623";
 const OWNERS=["engagementPdfRenderer","legacyPerformancePublication"];
 function patch(source,changes){for(const x of changes.sort((a,b)=>b.start-a.start))source=source.slice(0,x.start)+x.text+source.slice(x.end);return source;}
 function prepare(root,baseline,input=snapshots.snapshot(root,baseline,{production:true})){
@@ -15,7 +16,7 @@ function prepare(root,baseline,input=snapshots.snapshot(root,baseline,{productio
    const key=f.snapshotBindings.get(n.name);if(!key)throw Error("Unknown captured binding");
    let parent;walk(f.factory,(x,p)=>{if(x.start===n.start&&x.end===n.end&&x.type===n.type)parent=p;});
    const value="backendContext."+key,direct=parent?.type==="CallExpression"&&parent.callee.start===n.start;
-   const text=parent?.type==="Property"&&parent.shorthand?key+": "+value:direct?"(0, "+value+")":value;
+   const text=parent?.type==="Property"&&parent.shorthand?n.name+": "+value:direct?"(0, "+value+")":value;
    changes.push({start:n.start,end:n.end,text});
   }
   const converted=patch(f.text,changes);files[f.file]={...files[f.file],source:converted};
@@ -25,7 +26,7 @@ function prepare(root,baseline,input=snapshots.snapshot(root,baseline,{productio
 }
 function prefix(c){return "const backendContext = { "+c.keys.map(([alias,key])=>key+": "+alias).join(", ")+" };";}
 function restoreAdapter(text,c){const needle="function "+c.factory+"(backendContext) {";if(!text.includes(needle))throw Error("Unknown live adapter");return text.replace(needle,"function "+c.factory+"("+c.parameter+") {\n  "+prefix(c));}
-function render(root,baseline){const result=prepare(root,baseline),rendered=live.render(root,baseline,OWNERS,result.prepared),outputs=new Map(rendered.outputs);for(const c of result.captures)outputs.set(c.file,restoreAdapter(outputs.get(c.file),c));return {...result,rendered,outputs};}
+function render(root,baseline){if(baseline!==BASELINE)throw Error("Captured migration is limited to its reviewed immutable baseline");const result=prepare(root,baseline),rendered=live.render(root,baseline,OWNERS,result.prepared),outputs=new Map(rendered.outputs);for(const c of result.captures)outputs.set(c.file,restoreAdapter(outputs.get(c.file),c));return {...result,rendered,outputs};}
 function apply(root,result){
  require("./verify-backend-captured-isolation").verify(result);
  const normal=s=>s.replace(/\r\n/g,"\n"),original=f=>f==="functions/index.js"?result.input.source:result.input.files[f]?.source;
@@ -37,5 +38,5 @@ function apply(root,result){
  for(const[f,desired]of result.outputs){const target=path.resolve(root,f),before=observed.get(f),current=fs.existsSync(target)?fs.readFileSync(target,"utf8"):null;if(current!==before)throw Error("Concurrent captured source change");if(current!==null&&normal(current)===normal(desired))continue;fs.mkdirSync(path.dirname(target),{recursive:true});fs.writeFileSync(target,desired,{flag:before===null?"wx":"w"});}
  return require("./verify-backend-captured-isolation").verify(result,new Map([...result.outputs.keys()].map(f=>[f,fs.readFileSync(path.resolve(root,f),"utf8")])));
 }
-module.exports={OWNERS,prepare,render,apply,prefix};
+module.exports={BASELINE,OWNERS,prepare,render,apply,prefix};
 if(require.main===module){const result=render(path.resolve(__dirname,".."),process.argv[2]);console.log(JSON.stringify(process.argv.includes("--apply")?apply(path.resolve(__dirname,".."),result):require("./verify-backend-captured-isolation").verify(result)));}

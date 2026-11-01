@@ -2,6 +2,13 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 1er novembre — Clôture technique du cloisonnement global
+
+- Version applicative finale `249b9068`, intégrée par [#657](https://github.com/ffessmnap/LivePalmes/pull/657), [CI main 41270946670](https://github.com/ffessmnap/LivePalmes/actions/runs/41270946670) et [TEST commun 41271348708](https://github.com/ffessmnap/LivePalmes/actions/runs/41271348708) réussis : 26 fonctions mises à jour, 90 conservées, Hosting `92bd73d2a28ab5be`. Validation technique autonome autorisée ; aucune nouvelle recette manuelle utilisateur inventée. Candidat figé, aucun ajout suivant de main inclus.
+- Chaîne d’équivalence hors réseau réussie depuis la PROD `6f76f792` : extraction initiale et câblage réel, 635 corps/419 groupes à contexte vivant, 2 902 déclarations/704 APIs de la phase native, puis 70 corps/14 groupes et captures stables. Les seize origines conservées sont bornées exactement. Le contrat de publication ne réduit ni les exclusions, ni les contrôles de dérive, sauvegarde ou retour arrière. Les preuves de migration sont figées sur leurs versions livrées ; les tests du comportement courant et sélecteurs restent actifs.
+- Le dernier TEST a refait 6 min 42 de vérification parce que la CI applicative utilisait Node 22.23.3 et TEST 22.23.4. Les quatre workflows communs demanderont la dernière version corrective disponible de Node 22 pour réduire ces écarts de cache. L’égalité exacte Node/plateforme reste requise ; toute incompatibilité garde la suite complète. Aucun changement du moteur Firebase, des lots, approbations ou fonctions applicatives. Contrôles Python ciblés : 9 réussis, 2 tests Bash réservés à la CI Linux ; CI finale d’outillage obligatoire.
+- Promotion PROD autorisée à transmettre à Infra après cette CI d’outillage. Aucune donnée réelle, migration, règle sportive, habilitation, configuration Firebase, invocation métier ou émission réelle dans ce chantier. La reprise conditionnelle des 14 fusions reste après la publication PROD globale vérifiée.
+
 ### 1er novembre — Dernières dépendances capturées PDF et ancien circuit public
 
 - Les deux derniers modules capturés avec plusieurs ensembles de consommateurs sont séparés : 70 corps dans 14 groupes, sans changer les captures ni les fonctions retournées. Les 27 valeurs racine sont stables ; les APIs historiques lisent les getters une fois, dans le même ordre, et gardent les références obtenues. Le parser et les statistiques ont chacun un ensemble de consommateurs unique et restent cohésifs. Cumul : 705 corps, 433 groupes ; les 438 fabriques du runtime livré ne gardent aucun groupe artificiellement multi-consommateurs.

@@ -47,12 +47,16 @@ async function prove({root,base,candidate,rows,source,loader}){
  equalOutside(initial,factorySnapshot,new Set(f.outputs.keys()));
  const factoryProof=require("../tools/verify-backend-factory-isolation").verify(f,new Map([...f.outputs.keys()].map(p=>[p,factoryRuntime.get(p)])));
  assert.equal(factoryProof.bodies,635);assert.equal(factoryProof.groups,419);assert.equal(factoryProof.exports,157);
- const n=require("../tools/isolate-backend-native-modules").render(root,factory),final=snapshots.snapshot(root,candidate,{production:true});
- equalOutside(factorySnapshot,final,new Set(n.outputs.keys()));
- const nativeProof=require("../tools/verify-backend-native-isolation").verify(n,runtime(final));
+ const n=require("../tools/isolate-backend-native-modules").render(root,factory),native=snapshots.snapshot(root,contract.nativeIsolationCommit,{production:true});
+ equalOutside(factorySnapshot,native,new Set(n.outputs.keys()));
+ const nativeProof=require("../tools/verify-backend-native-isolation").verify(n,runtime(native));
  assert.equal(nativeProof.runtimeSourceSha256,contract.runtimeSourceSha256);assert.equal(nativeProof.declarations,2902);assert.equal(nativeProof.apis,704);assert.equal(nativeProof.moves,34);
+ const captured=require("../tools/isolate-backend-captured-factories").render(root,contract.nativeIsolationCommit),final=snapshots.snapshot(root,candidate,{production:true});
+ equalOutside(native,final,new Set(captured.outputs.keys()));
+ const finalRuntime=runtime(final),capturedProof=require("../tools/verify-backend-captured-isolation").verify(captured,new Map([...captured.outputs.keys()].map(p=>[p,finalRuntime.get(p)])));
+ assert.equal(capturedProof.runtimeSourceSha256,contract.capturedSourceSha256);assert.equal(capturedProof.bodies,70);assert.equal(capturedProof.groups,14);
  return {suite:"retained-calendar-consumers-v1",productionCommit:base,candidate,result:"success",networkCalls:0,
- passedFunctions:rows.map(r=>r.name).sort(),contractSha256:crypto.createHash("sha256").update(JSON.stringify(contract)).digest("hex"),
- checks:["exact-application-pair-and-installed-origins","initial-logical-index-and-actual-wiring","all-factory-bodies-and-contexts","all-native-declarations-apis-effects-caches","unchanged-packages-builders-registry-and-exclusions","transitive-equivalence-to-existing-production-protocols"],factoryProof,nativeProof};
+ passedFunctions:rows.map(r=>r.name).sort(),backendIsolationProofSha256:crypto.createHash("sha256").update(require("node:fs").readFileSync(__filename)).digest("hex"),contractSha256:crypto.createHash("sha256").update(JSON.stringify(contract)).digest("hex"),
+ checks:["exact-application-pair-and-installed-origins","initial-logical-index-and-actual-wiring","all-factory-bodies-and-contexts","all-native-declarations-apis-effects-caches","captured-parameters-ordered-once-and-stable-root-bindings","unchanged-packages-builders-registry-and-exclusions","transitive-equivalence-to-existing-production-protocols"],factoryProof,nativeProof,capturedProof};
 }
 module.exports={matches,validateScope,prove,contract};

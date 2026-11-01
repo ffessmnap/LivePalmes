@@ -14,4 +14,6 @@ for(const [base,candidate,input]of [
  [c.productionCommit,c.candidate,rows.map((r,i)=>i? r:{...r,skip:true})]
 ])assert.throws(()=>review.validateScope(base,candidate,input));
 assert.equal(c.runtimeSourceSha256,require("../docs/releases/backend-isolation-progress.json").nativeReview.runtimeSourceSha256);
+assert.equal(c.nativeIsolationCommit,require("../docs/releases/backend-isolation-progress.json").nativeIsolationCommit);
+assert.equal(c.capturedSourceSha256,require("../docs/releases/backend-isolation-progress.json").capturedReview.proof.runtimeSourceSha256);
 console.log("Isolation retained contract: exact pair, 16 installed origins, missing/extra/duplicate/forged scope refused offline.");
