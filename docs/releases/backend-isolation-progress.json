@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "objective": "Complete systematic backend dependency isolation, technically validated on exact TEST version, then handed off to Infra for authorized PROD publication",
-  "status": "first-lot-local-validation",
+  "status": "all-factories-local-validation",
   "startedAt": "2026-10-31T23:20:21Z",
   "baseline": {
     "main": "ac677ad530aab6b121b3a038accc0fb4860fa5e6",
@@ -42,7 +42,9 @@
     "Apply coherent cumulative lots from a pinned baseline, stop on unexpected source divergence, and reassess remaining native-module fanouts after all factory-context coupling is removed",
     "Renderer will use operation-provider getters returning actual function objects and (0, providerReference) for cross-group unbound calls; original local bodies retained within each group",
     "Original factory compatibility adapters return the actual operation functions, preserving method names, arity and identity, with no eager context reads",
-    "Generated inventory is read-only analysis, not an alternative selector or deployment allowlist"
+    "Generated inventory is read-only analysis, not an alternative selector or deployment allowlist",
+    "Deliver remaining factory domains together after domain-specific checks, avoiding two redundant large installation deployments; native module review remains a separate proven lot",
+    "Retain the four destructured-parameter factories byte-identically: parser, PDF, statistics and legacy publication capture their inputs at creation; initial preview incorrectly treated them as live contexts and was never published. Reject unknown/default/rest parameter captures and cover this with a real-factory regression."
   ],
   "completed": [
     "Verified current main and successful TEST/PROD run references",
@@ -51,13 +53,13 @@
     "Read-only model and generated inventory cover 157 exports and 726 private methods; one opaque context escape, 32 function-identity references, no factory initializer statements",
     "Full preview proof: 705 unchanged bodies, 157 unchanged Firebase registrations and identical private call graphs; negative fixtures and Git source guards passed",
     "First runtime lot applied behind divergence and path guards: 103 bodies in 72 operation groups; exact proof d2519c8bbca21dec61931a49ddb9dc5df65ed084a4c6148ffa0fd5459c7b042f",
-    "First lot expanded to include shared import references required by PIN/console access: 155 unchanged bodies in 99 groups, exact proof 2bc0b74ef6c092da02ce7ce9466663a1cf6e180cf1a67d10678a49b3a5e1d45a"
+    "First lot expanded to include shared import references required by PIN/console access: 155 unchanged bodies in 99 groups, exact proof 2bc0b74ef6c092da02ce7ce9466663a1cf6e180cf1a67d10678a49b3a5e1d45a",
+    "Actual corrected partition: 635 unchanged bodies in 419 groups, 157 registrations preserved, runtime proof f2cb84441c5c21f1d465aa9c871d6b2a04899ee9e3e7a6a80122dcd03e4f9c81"
   ],
   "next": [
-    "Run actual-factory, authorization, source-contract and selection regression checks for first lot",
-    "Commit/PR/CI/integrate and TEST first coherent lot",
-    "Continue all remaining lots and native-module review; do not stop at first lot",
-    "Final technical validation and exact-scope Infra PROD handoff",
+    "Validate all actual factory domains locally, PR/CI and exact TEST",
+    "Finish systematic native module classification and isolate proven artificial coupling",
+    "Final exact TEST evidence and authorized Infra PROD handoff",
     "After verified PROD, resume authorized Corbie prerequisite and clubs thread"
   ],
   "inventory": {
@@ -104,38 +106,45 @@
   },
   "blockers": [],
   "preview": {
-    "applied": false,
+    "applied": true,
     "baseline": "ac677ad530aab6b121b3a038accc0fb4860fa5e6",
-    "factoriesNeedingPartition": 22,
-    "operationGroups": 433,
-    "movedMethods": 705,
-    "files": 456,
-    "indexLines": 12200,
+    "factoriesNeedingPartition": 20,
+    "operationGroups": 419,
+    "movedMethods": 635,
+    "files": 440,
+    "indexLines": 12093,
     "selectorMode": "dependency-closure",
     "exportsPreserved": 157,
-    "testSimulations": {
-      "nap-open-water-library.js": 3,
-      "nap-entry-time-preview.js": 3,
-      "nap-portal-competitions.js": 42
-    },
-    "productionSimulations": {
-      "nap-open-water-library.js": 3,
-      "nap-entry-time-preview.js": 3,
-      "nap-portal-competitions.js": 36
-    },
-    "note": "In-memory mutations only; not deployment promises or proven minimal counts. Competition module still needs native-level review."
+    "testSimulations": null,
+    "productionSimulations": null,
+    "note": "Earlier 705-body preview superseded: actual PDF test detected unsupported parameter captures. Four captured singleton factories remain exact; their independent isolation requires a capture-preserving proof."
   },
   "appliedFactories": [
+    "portalPerformanceHandlers",
     "portalAccessHandlers",
+    "portalCompetitionHandlers",
+    "portalNationalHandlers",
+    "portalClubHandlers",
     "serverAccessService",
+    "serverImportService",
     "serverConsoleService",
     "serverDirectoryService",
-    "serverImportService"
+    "serverCompetitionModelService",
+    "serverEntryModelService",
+    "serverDocumentsService",
+    "serverMailService",
+    "serverClubPeopleService",
+    "serverCompetitionService",
+    "serverNationalService",
+    "serverEntryService",
+    "serverPerformanceService",
+    "serverDtnService",
+    "serverLegacyService"
   ],
   "lots": [
     {
       "id": "access-directories",
-      "status": "local-validation",
+      "status": "integrated-awaiting-test",
       "factories": [
         "portalAccessHandlers",
         "serverAccessService",
@@ -145,15 +154,19 @@
       ],
       "proof": "2bc0b74ef6c092da02ce7ce9466663a1cf6e180cf1a67d10678a49b3a5e1d45a",
       "bodies": 155,
-      "groups": 99
+      "groups": 99,
+      "pr": 654,
+      "commit": "63717a87ee6b8efcd99918a0e12720bc283c365e",
+      "prCi": 41256416187,
+      "mainCi": 41256912251
     },
     {
       "id": "competitions-entries",
-      "status": "pending"
+      "status": "local-validation"
     },
     {
       "id": "performance-import-dtn-legacy",
-      "status": "pending"
+      "status": "local-validation"
     },
     {
       "id": "remaining-native-responsibilities",
@@ -167,5 +180,19 @@
       "id": "authorized-club-resumption",
       "status": "pending-condition"
     }
-  ]
+  ],
+  "nativeReview": {
+    "status": "recheck-corrected-partition",
+    "diagnosticOnly": true,
+    "networkCalls": 0,
+    "nativeJavaScriptModules": 260,
+    "operationModules": 433,
+    "selectorMode": "dependency-closure",
+    "notes": [
+      "693 source-mutation probes in TEST and PROD completed offline on full virtual partition",
+      "Eight native sources still influence all exports, including real environment/SQL infrastructure and eager imports; inspect before narrowing",
+      "Shared native bounded queries and calendar adapters remain overly coupled; preserve singleton state and initialization contracts",
+      "Previous virtual probes superseded for captured PDF/legacy consumers; rerun on corrected partition before final claims."
+    ]
+  }
 }

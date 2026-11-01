@@ -1,433 +1,244 @@
-// Preserve the execution mode of the existing index.js function bodies.
-
-// Private existing helpers; live services/state are supplied by index.js.
-// Module creation performs no external operation.
+// Compatibility factory; operation modules hold the existing bodies.
 function createDtnService(backendContext) {
-  function dtnSeasonService() {
-    const native = backendContext.ENVIRONMENT.sportingDataSource === "nap";
-    const factory = native ? require("./nap-dtn-season-service").createNativeDtnSeasonService : backendContext.createDtnSeasonService;
-    return factory({
-      db: /* backend-shorthand */ backendContext.db, fieldPath: backendContext.FieldPath,
-      getPool: () => require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD),
-      audit: (action, request, target) => backendContext.writeAuditLogOnce(action, request.auth.uid, target, `nap-dtn-${target.seasonId}-${target.revision}-${action}`),
-      fail: (message, code = "failed-precondition") => { throw new backendContext.HttpsError(code, message); },
-      authorize: async (request) => {
-        if (!request.auth?.uid) throw new backendContext.HttpsError("unauthenticated", "Connexion requise.");
-        await backendContext.assertLivePalmesAccess(request);
-        backendContext.assertCapability(request, "dtn.view");
-      },
-      canManage: (request) => backendContext.ADMIN_UIDS.has(request.auth?.uid) || request.auth?.token?.livepalmesCapabilities?.["admin.full"] === true || request.auth?.token?.livepalmesCapabilities?.["dtn.manage"] === true,
-      normalizeRow: backendContext.publicPerformanceBaseRow
+  let cache0;
+  function operation0() {
+    if (!cache0) cache0 = require("./backend/server-dtn-service/dtn-season-service").createDtnService_dtnSeasonService({
+      get ADMIN_UIDS() { return backendContext.ADMIN_UIDS; },
+      set ADMIN_UIDS(value) { backendContext.ADMIN_UIDS = value; },
+      get ENVIRONMENT() { return backendContext.ENVIRONMENT; },
+      set ENVIRONMENT(value) { backendContext.ENVIRONMENT = value; },
+      get FieldPath() { return backendContext.FieldPath; },
+      set FieldPath(value) { backendContext.FieldPath = value; },
+      get HttpsError() { return backendContext.HttpsError; },
+      set HttpsError(value) { backendContext.HttpsError = value; },
+      get assertCapability() { return backendContext.assertCapability; },
+      set assertCapability(value) { backendContext.assertCapability = value; },
+      get assertLivePalmesAccess() { return backendContext.assertLivePalmesAccess; },
+      set assertLivePalmesAccess(value) { backendContext.assertLivePalmesAccess = value; },
+      get createDtnSeasonService() { return backendContext.createDtnSeasonService; },
+      set createDtnSeasonService(value) { backendContext.createDtnSeasonService = value; },
+      get db() { return backendContext.db; },
+      set db(value) { backendContext.db = value; },
+      get publicPerformanceBaseRow() { return backendContext.publicPerformanceBaseRow; },
+      set publicPerformanceBaseRow(value) { backendContext.publicPerformanceBaseRow = value; },
+      get writeAuditLogOnce() { return backendContext.writeAuditLogOnce; },
+      set writeAuditLogOnce(value) { backendContext.writeAuditLogOnce = value; }
     });
+    return cache0;
   }
 
-  async function invokeDtnSeason(method, request) {
-    if (backendContext.ENVIRONMENT.sportingDataSource !== "nap") return dtnSeasonService()[method](request);
-    try { return await dtnSeasonService()[method](request); }
-    catch (error) {
-      if (error instanceof backendContext.HttpsError) throw error;
-      if (error instanceof TypeError || error instanceof RangeError) throw new backendContext.HttpsError("failed-precondition", error.message);
-      throw new backendContext.HttpsError("unavailable", "La DTN est temporairement indisponible. Reessayez dans quelques instants.");
-    }
-  }
-
-  function dtnQualificationRow(row = {}) {
-    return backendContext.cleanFirestoreValue({
-      swimmerId: backendContext.cleanText(row.swimmerId),
-      swimmerIdentityKey: backendContext.cleanText(row.swimmerIdentityKey),
-      swimmer: backendContext.cleanText(row.swimmer),
-      firstName: backendContext.cleanText(row.firstName),
-      lastName: backendContext.cleanText(row.lastName),
-      birthDate: backendContext.cleanText(row.birthDate),
-      sex: backendContext.cleanText(row.sex),
-      club: backendContext.cleanText(row.club || row.clubName),
-      competition: backendContext.cleanText(row.competition),
-      location: backendContext.cleanText(row.location),
-      date: backendContext.cleanText(row.date),
-      seasonYear: Number(row.seasonYear || 0) || 0,
-      course: backendContext.cleanText(row.course),
-      time: backendContext.cleanText(row.time),
-      timeValue: Number(row.timeValue || 0) || 0
+  let cache1;
+  function operation1() {
+    if (!cache1) cache1 = require("./backend/server-dtn-service/invoke-dtn-season").createDtnService_invokeDtnSeason({
+      get ENVIRONMENT() { return backendContext.ENVIRONMENT; },
+      set ENVIRONMENT(value) { backendContext.ENVIRONMENT = value; },
+      get HttpsError() { return backendContext.HttpsError; },
+      set HttpsError(value) { backendContext.HttpsError = value; },
+      get local$dtnSeasonService() { return operation0().dtnSeasonService; }
     });
+    return cache1;
   }
 
-  function bestDtnQualificationRows(rows = [], standard = {}, threshold = 0) {
-    const bestBySwimmer = new Map();
-    rows.forEach((row) => {
-      if (!Number(row.timeValue) || Number(row.timeValue) > threshold) return;
-      if (standard.birthMin && backendContext.birthYear(row.birthDate) < standard.birthMin) return;
-      const key = backendContext.publicSwimmerKey(row);
-      if (!key) return;
-      const current = bestBySwimmer.get(key);
-      if (backendContext.publicBetterPerformance(row, current)) bestBySwimmer.set(key, row);
+  let cache2;
+  function operation2() {
+    if (!cache2) cache2 = require("./backend/server-dtn-service/best-dtn-qualification-rows").createDtnService_bestDtnQualificationRows({
+      get DTN_EDF_LIMOGES_COMPETITION_ID() { return backendContext.DTN_EDF_LIMOGES_COMPETITION_ID; },
+      set DTN_EDF_LIMOGES_COMPETITION_ID(value) { backendContext.DTN_EDF_LIMOGES_COMPETITION_ID = value; },
+      get DTN_NEAR_MINIMUM_MAX_PERCENT() { return backendContext.DTN_NEAR_MINIMUM_MAX_PERCENT; },
+      set DTN_NEAR_MINIMUM_MAX_PERCENT(value) { backendContext.DTN_NEAR_MINIMUM_MAX_PERCENT = value; },
+      get DTN_QUALIFICATION_MAX_ROWS_PER_COURSE() { return backendContext.DTN_QUALIFICATION_MAX_ROWS_PER_COURSE; },
+      set DTN_QUALIFICATION_MAX_ROWS_PER_COURSE(value) { backendContext.DTN_QUALIFICATION_MAX_ROWS_PER_COURSE = value; },
+      get ENGAGEMENT_INDIVIDUAL_CATEGORY_CODES() { return backendContext.ENGAGEMENT_INDIVIDUAL_CATEGORY_CODES; },
+      set ENGAGEMENT_INDIVIDUAL_CATEGORY_CODES(value) { backendContext.ENGAGEMENT_INDIVIDUAL_CATEGORY_CODES = value; },
+      get POOL_COURSES() { return backendContext.POOL_COURSES; },
+      set POOL_COURSES(value) { backendContext.POOL_COURSES = value; },
+      get birthYear() { return backendContext.birthYear; },
+      set birthYear(value) { backendContext.birthYear = value; },
+      get cleanFirestoreValue() { return backendContext.cleanFirestoreValue; },
+      set cleanFirestoreValue(value) { backendContext.cleanFirestoreValue = value; },
+      get cleanText() { return backendContext.cleanText; },
+      set cleanText(value) { backendContext.cleanText = value; },
+      get publicBetterPerformance() { return backendContext.publicBetterPerformance; },
+      set publicBetterPerformance(value) { backendContext.publicBetterPerformance = value; },
+      get publicPerformanceBaseRow() { return backendContext.publicPerformanceBaseRow; },
+      set publicPerformanceBaseRow(value) { backendContext.publicPerformanceBaseRow = value; },
+      get publicPerformanceTopFileName() { return backendContext.publicPerformanceTopFileName; },
+      set publicPerformanceTopFileName(value) { backendContext.publicPerformanceTopFileName = value; },
+      get publicSwimmerKey() { return backendContext.publicSwimmerKey; },
+      set publicSwimmerKey(value) { backendContext.publicSwimmerKey = value; },
+      get readPublicPerformanceJson() { return backendContext.readPublicPerformanceJson; },
+      set readPublicPerformanceJson(value) { backendContext.readPublicPerformanceJson = value; },
+      get uniquePublicPerformanceRows() { return backendContext.uniquePublicPerformanceRows; },
+      set uniquePublicPerformanceRows(value) { backendContext.uniquePublicPerformanceRows = value; }
     });
-    return Array.from(bestBySwimmer.values())
-      .sort((a, b) => Number(a.timeValue || 0) - Number(b.timeValue || 0) || backendContext.cleanText(a.swimmer).localeCompare(backendContext.cleanText(b.swimmer), "fr-FR"))
-      .map(dtnQualificationRow);
+    return cache2;
   }
 
-  function nearDtnQualificationRows(rows = [], standard = {}, threshold = 0) {
-    if (!threshold || !["TSP", "TRP"].includes(standard.id)) return [];
-    // Select the best admissible swim BEFORE excluding achieved minima.
-    return bestDtnQualificationRows(rows, standard, threshold * (1 + backendContext.DTN_NEAR_MINIMUM_MAX_PERCENT / 100))
-      .filter((row) => row.timeValue > threshold &&
-        (row.timeValue - threshold) * 100 < threshold * backendContext.DTN_NEAR_MINIMUM_MAX_PERCENT);
-  }
-
-  function dtnQualificationCacheStateRef(seasonYear) {
-    return backendContext.db.collection(backendContext.DTN_QUALIFICATION_CACHE_STATE_COLLECTION).doc(String(seasonYear));
-  }
-
-  function dtnQualificationCacheRef(seasonYear, sex) {
-    return backendContext.db.collection(backendContext.DTN_QUALIFICATION_CACHE_COLLECTION).doc(`${seasonYear}-${sex}`);
-  }
-
-  function dtnListingCacheRef(seasonYear) {
-    return backendContext.db.collection(backendContext.DTN_QUALIFICATION_CACHE_COLLECTION).doc(`${seasonYear}-listing`);
-  }
-
-  function dtnQualificationSeasonsForRows(rows = []) {
-    const seasons = new Set();
-    rows.forEach((inputRow) => {
-      const row = inputRow && typeof inputRow === "object" ? inputRow : {};
-      const seasonYear = Number(row.seasonYear || 0) || backendContext.importSeasonYear(backendContext.cleanText(row.date));
-      if (Number.isInteger(seasonYear) && seasonYear >= 2001 && seasonYear <= 2100) seasons.add(seasonYear);
+  let cache3;
+  function operation3() {
+    if (!cache3) cache3 = require("./backend/server-dtn-service/dtn-qualification-cache-state-ref").createDtnService_dtnQualificationCacheStateRef({
+      get DTN_QUALIFICATION_CACHE_STATE_COLLECTION() { return backendContext.DTN_QUALIFICATION_CACHE_STATE_COLLECTION; },
+      set DTN_QUALIFICATION_CACHE_STATE_COLLECTION(value) { backendContext.DTN_QUALIFICATION_CACHE_STATE_COLLECTION = value; },
+      get db() { return backendContext.db; },
+      set db(value) { backendContext.db = value; }
     });
-    return Array.from(seasons);
+    return cache3;
   }
 
-  async function touchDtnQualificationCacheState(rows = [], context = {}) {
-    const seasons = dtnQualificationSeasonsForRows(rows);
-    if (!seasons.length) return { touchedSeasons: [] };
-    const now = backendContext.cleanText(context.now) || new Date().toISOString();
-    const batch = backendContext.db.batch();
-    seasons.forEach((seasonYear) => {
-      batch.set(dtnQualificationCacheStateRef(seasonYear), {
-        version: backendContext.FieldValue.increment(1),
-        updatedAt: now,
-        reason: backendContext.cleanText(context.action || "performanceBase.updated")
-      }, { merge: true });
+  let cache4;
+  function operation4() {
+    if (!cache4) cache4 = require("./backend/server-dtn-service/dtn-qualification-cache-ref").createDtnService_dtnQualificationCacheRef({
+      get DTN_QUALIFICATION_CACHE_COLLECTION() { return backendContext.DTN_QUALIFICATION_CACHE_COLLECTION; },
+      set DTN_QUALIFICATION_CACHE_COLLECTION(value) { backendContext.DTN_QUALIFICATION_CACHE_COLLECTION = value; },
+      get db() { return backendContext.db; },
+      set db(value) { backendContext.db = value; }
     });
-    await batch.commit();
-    return { touchedSeasons: seasons };
+    return cache4;
   }
 
-  function dtnQualificationCacheFingerprint({ seasonYear, sex, standards, competitionIds, sourceVersion }) {
-    return backendContext.stableHash(JSON.stringify({
-      cacheVersion: backendContext.DTN_QUALIFICATION_CACHE_VERSION,
-      seasonYear,
-      sex,
-      standards,
-      competitionIds,
-      sourceVersion
-    }));
-  }
-
-  function dtnQualificationRowsForStandard(rows = [], standardId = "", competitionIds = []) {
-    const id = backendContext.cleanText(standardId).toUpperCase();
-    if (id === "TU16C1" || id === "TU16C2") return rows;
-    const allowedCompetitionIds = id === "TJP" || id === "TEP"
-      ? competitionIds.filter((competitionId) => competitionId !== backendContext.DTN_EDF_LIMOGES_COMPETITION_ID)
-      : competitionIds;
-    const allowed = new Set(allowedCompetitionIds);
-    return rows.filter((row) => allowed.has(backendContext.cleanText(row.competitionId)));
-  }
-
-  function dtnListingCacheFingerprint({ seasonYear, rules, sourceVersion, listingVersion }) {
-    return backendContext.stableHash(JSON.stringify({
-      cacheVersion: backendContext.DTN_LISTING_CACHE_VERSION,
-      seasonYear,
-      rules,
-      sourceVersion,
-      listingVersion
-    }));
-  }
-
-  function emptyDtnQualificationPayload({ seasonYear, sex, standards, competitionIds }) {
-    return {
-      ok: true,
-      seasonYear,
-      sex,
-      standards: standards.map((standard) => ({
-        id: standard.id,
-        courses: backendContext.POOL_COURSES.map((course) => ({
-          course,
-          threshold: Number(standard.thresholds[course] || 0),
-          qualifiers: [],
-          count: 0
-        }))
-      })),
-      competitionIds,
-      readStats: { scannedRows: 0, bounded: true }
-    };
-  }
-
-  async function buildDtnQualificationPayload({ seasonYear, sex, standards, competitionIds }) {
-    const indexedCourses = await Promise.all(backendContext.POOL_COURSES.map(async (course) => {
-      const categoryRows = await Promise.all(backendContext.ENGAGEMENT_INDIVIDUAL_CATEGORY_CODES.map((category) =>
-        backendContext.readPublicPerformanceJson(`tops/${course}/${backendContext.publicPerformanceTopFileName(sex, category)}`, [])
-      ));
-      const rows = backendContext.uniquePublicPerformanceRows(categoryRows.flat()
-        .map(backendContext.publicPerformanceBaseRow)
-        .filter((row) =>
-          Number(row.seasonYear || 0) === seasonYear &&
-          row.course === course &&
-          row.sex === sex &&
-          row.active !== false &&
-          row.status !== "hidden" &&
-          row.status !== "deleted"
-        ));
-      if (rows.length > backendContext.DTN_QUALIFICATION_MAX_ROWS_PER_COURSE) {
-        throw new Error(`Qualification DTN bornee pour ${course} (${rows.length} lignes).`);
-      }
-      return {
-        course,
-        rows
-      };
-    }));
-    const scannedRows = indexedCourses.reduce((total, item) => total + item.rows.length, 0);
-    return {
-      ok: true,
-      seasonYear,
-      sex,
-      standards: standards.map((standard) => ({
-        id: standard.id,
-        courses: indexedCourses.map(({ course, rows }) => {
-          const threshold = Number(standard.thresholds[course] || 0);
-          const eligibleRows = dtnQualificationRowsForStandard(rows, standard.id, competitionIds);
-          const qualifiers = threshold ? bestDtnQualificationRows(eligibleRows, standard, threshold) : [];
-          const nearMinimum = nearDtnQualificationRows(eligibleRows, standard, threshold);
-          return { course, threshold, qualifiers, count: qualifiers.length,
-            ...(["TSP", "TRP"].includes(standard.id) ? { nearMinimum, nearMinimumMaxPercent: backendContext.DTN_NEAR_MINIMUM_MAX_PERCENT } : {}) };
-        })
-      })),
-      competitionIds,
-      readStats: { scannedRows, firestoreDocuments: 0, source: "public-storage-top-files", bounded: true }
-    };
-  }
-
-  function emptyDtnListingPayload({ seasonYear, rules }) {
-    return {
-      ok: true,
-      seasonYear,
-      standards: rules.map((rule) => ({
-        id: rule.id,
-        sourceId: rule.sourceId,
-        minAge: rule.minAge,
-        maxAge: rule.maxAge,
-        athletes: [],
-        count: 0
-      })),
-      eligibility: { pool: "50", timing: "electronic" },
-      readStats: { scannedRows: 0, bounded: true }
-    };
-  }
-
-  function isDtnElectronicFiftyMeterPerformance(row = {}) {
-    const pool = backendContext.cleanText(row.pool).toUpperCase().replace(/\s+/g, "");
-    const chrono = backendContext.cleanText(row.chrono)
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .replace(/[^A-Za-z]/g, "")
-      .toUpperCase();
-    return (pool === "50" || pool === "50M") && (chrono === "E" || chrono === "ELECTRONIC" || chrono === "ELECTRONIQUE");
-  }
-
-  function dtnListingAthletes(rows = [], rule = {}, seasonYear = 0) {
-    const athletes = new Map();
-    rows.forEach((row) => {
-      if (!isDtnElectronicFiftyMeterPerformance(row)) return;
-      const born = backendContext.birthYear(row.birthDate);
-      const age = born ? seasonYear - born : -1;
-      if (age < rule.minAge || age > rule.maxAge) return;
-      const threshold = Number(rule.thresholds?.[row.sex]?.[row.course] || 0);
-      if (!threshold || !Number(row.timeValue) || Number(row.timeValue) > threshold) return;
-      const key = backendContext.publicSwimmerKey(row);
-      if (!key) return;
-      if (!athletes.has(key)) {
-        athletes.set(key, {
-          ...dtnQualificationRow(row),
-          qualificationsByCourse: new Map()
-        });
-      }
-      const athlete = athletes.get(key);
-      const current = athlete.qualificationsByCourse.get(row.course)?.row;
-      if (!current || backendContext.publicBetterPerformance(row, current)) {
-        athlete.qualificationsByCourse.set(row.course, { row, threshold });
-      }
+  let cache5;
+  function operation5() {
+    if (!cache5) cache5 = require("./backend/server-dtn-service/dtn-listing-cache-ref").createDtnService_dtnListingCacheRef({
+      get DTN_QUALIFICATION_CACHE_COLLECTION() { return backendContext.DTN_QUALIFICATION_CACHE_COLLECTION; },
+      set DTN_QUALIFICATION_CACHE_COLLECTION(value) { backendContext.DTN_QUALIFICATION_CACHE_COLLECTION = value; },
+      get db() { return backendContext.db; },
+      set db(value) { backendContext.db = value; }
     });
-    return Array.from(athletes.values()).map((athlete) => {
-      const qualifications = Array.from(athlete.qualificationsByCourse.entries())
-        .sort((a, b) => backendContext.POOL_COURSES.indexOf(a[0]) - backendContext.POOL_COURSES.indexOf(b[0]))
-        .map(([course, qualification]) => ({
-          course,
-          time: backendContext.cleanText(qualification.row.time),
-          timeValue: Number(qualification.row.timeValue || 0),
-          threshold: qualification.threshold,
-          competition: backendContext.cleanText(qualification.row.competition),
-          location: backendContext.cleanText(qualification.row.location),
-          date: backendContext.cleanText(qualification.row.date)
-        }));
-      const { qualificationsByCourse, ...row } = athlete;
-      return backendContext.cleanFirestoreValue({ ...row, qualifications });
-    }).sort((a, b) => backendContext.cleanText(a.lastName).localeCompare(backendContext.cleanText(b.lastName), "fr-FR") || backendContext.cleanText(a.firstName).localeCompare(backendContext.cleanText(b.firstName), "fr-FR"));
+    return cache5;
   }
 
-  async function buildDtnListingPayload({ seasonYear, rules }) {
-    const sourceRows = await backendContext.readPublicPerformanceJson(`dtn-listing/${seasonYear}.json`, []);
-    const rows = backendContext.uniquePublicPerformanceRows(sourceRows
-      .map(backendContext.publicPerformanceBaseRow)
-      .filter((row) =>
-        Number(row.seasonYear || 0) === seasonYear &&
-        backendContext.POOL_COURSES.includes(row.course) &&
-        (row.sex === "F" || row.sex === "M") &&
-        isDtnElectronicFiftyMeterPerformance(row) &&
-        row.active !== false &&
-        row.status !== "hidden" &&
-        row.status !== "deleted"
-      ));
-    if (rows.length > backendContext.DTN_QUALIFICATION_MAX_ROWS_PER_COURSE * backendContext.POOL_COURSES.length) {
-      throw new Error(`Mise en liste DTN bornee pour ${seasonYear} (${rows.length} lignes).`);
-    }
-    const athletesByRule = new Map(rules.map((rule) => [rule.id, dtnListingAthletes(rows, rule, seasonYear)]));
-    const releveAthleteKeys = new Set((athletesByRule.get("RELEVE") || []).map(backendContext.publicSwimmerKey).filter(Boolean));
-    return {
-      ok: true,
-      seasonYear,
-      standards: rules.map((rule) => {
-        const athletes = rule.id === "RELEVE"
-          ? athletesByRule.get(rule.id) || []
-          : (athletesByRule.get(rule.id) || []).filter((athlete) => !releveAthleteKeys.has(backendContext.publicSwimmerKey(athlete)));
-        return {
-          id: rule.id,
-          sourceId: rule.sourceId,
-          minAge: rule.minAge,
-          maxAge: rule.maxAge,
-          athletes,
-          count: athletes.length
-        };
-      }),
-      eligibility: { pool: "50", timing: "electronic" },
-      readStats: { scannedRows: rows.length, firestoreDocuments: 0, storageFiles: 1, source: "public-storage-dtn-season-file", bounded: true }
-    };
-  }
-
-  async function enqueueDtnQualificationJob(job = {}) {
-    const jobId = job.view === "listing"
-      ? `${job.seasonYear}-listing-${backendContext.cleanText(job.fingerprint).slice(0, 24)}`
-      : `${job.seasonYear}-${job.sex}-${backendContext.cleanText(job.fingerprint).slice(0, 24)}`;
-    const ref = backendContext.db.collection(backendContext.DTN_QUALIFICATION_JOBS_COLLECTION).doc(jobId);
-    try {
-      await ref.create({
-        ...backendContext.cleanFirestoreValue(job),
-        status: "pending",
-        createdAt: new Date().toISOString()
-      });
-    } catch (error) {
-      if (Number(error?.code) !== 6 && backendContext.cleanText(error?.code) !== "already-exists") throw error;
-    }
-    return jobId;
-  }
-
-  function normalizeDtnListingRules(inputRules = []) {
-    const expectedSources = new Map([
-      ["RELEVE", "TRP"],
-      ["TEP", "TEP"],
-      ["TEC1", "TU16C1"]
-    ]);
-    const rules = (Array.isArray(inputRules) ? inputRules : []).slice(0, 3).map((raw) => {
-      const id = backendContext.cleanText(raw?.id).toUpperCase();
-      const sourceId = backendContext.cleanText(raw?.sourceId).toUpperCase();
-      const minAge = Number(raw?.minAge);
-      const maxAge = Number(raw?.maxAge);
-      if (expectedSources.get(id) !== sourceId || !Number.isInteger(minAge) || !Number.isInteger(maxAge) || minAge < 0 || maxAge > 120 || minAge > maxAge) {
-        throw new backendContext.HttpsError("invalid-argument", "Regle de mise en liste DTN invalide.");
-      }
-      const thresholds = { F: {}, M: {} };
-      ["F", "M"].forEach((sex) => {
-        backendContext.POOL_COURSES.forEach((course) => {
-          const threshold = Number(raw?.thresholds?.[sex]?.[course] || 0) || 0;
-          if (threshold > 0 && threshold <= 10000000) thresholds[sex][course] = threshold;
-        });
-      });
-      return { id, sourceId, minAge, maxAge, thresholds };
+  let cache6;
+  function operation6() {
+    if (!cache6) cache6 = require("./backend/server-dtn-service/dtn-qualification-seasons-for-rows").createDtnService_dtnQualificationSeasonsForRows({
+      get FieldValue() { return backendContext.FieldValue; },
+      set FieldValue(value) { backendContext.FieldValue = value; },
+      get cleanText() { return backendContext.cleanText; },
+      set cleanText(value) { backendContext.cleanText = value; },
+      get db() { return backendContext.db; },
+      set db(value) { backendContext.db = value; },
+      get importSeasonYear() { return backendContext.importSeasonYear; },
+      set importSeasonYear(value) { backendContext.importSeasonYear = value; },
+      get local$dtnQualificationCacheStateRef() { return operation3().dtnQualificationCacheStateRef; }
     });
-    if (rules.length !== 3 || new Set(rules.map((rule) => rule.id)).size !== 3) {
-      throw new backendContext.HttpsError("invalid-argument", "Referentiels de mise en liste DTN incomplets.");
-    }
-    const tep = rules.find((rule) => rule.id === "TEP");
-    const tec1 = rules.find((rule) => rule.id === "TEC1");
-    if (tep.minAge !== tec1.maxAge + 1) {
-      throw new backendContext.HttpsError("invalid-argument", "Tranches Espoir DTN invalides.");
-    }
-    return rules;
+    return cache6;
   }
 
-  function normalizePerformanceSearchText(value) {
-    return backendContext.cleanText(value)
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .replace(/[^A-Za-z0-9]+/g, " ")
-      .toUpperCase()
-      .trim();
-  }
-
-  function performanceSearchTokens(value) {
-    return Array.from(new Set(normalizePerformanceSearchText(value).split(/\s+/).filter((token) => token.length >= 2)));
-  }
-
-  function performanceSearchPrefixes(value) {
-    const prefixes = new Set();
-    performanceSearchTokens(value).forEach((token) => {
-      const max = Math.min(token.length, 18);
-      for (let length = 2; length <= max; length += 1) {
-        prefixes.add(token.slice(0, length));
-      }
+  let cache7;
+  function operation7() {
+    if (!cache7) cache7 = require("./backend/server-dtn-service/dtn-qualification-cache-fingerprint").createDtnService_dtnQualificationCacheFingerprint({
+      get DTN_QUALIFICATION_CACHE_VERSION() { return backendContext.DTN_QUALIFICATION_CACHE_VERSION; },
+      set DTN_QUALIFICATION_CACHE_VERSION(value) { backendContext.DTN_QUALIFICATION_CACHE_VERSION = value; },
+      get POOL_COURSES() { return backendContext.POOL_COURSES; },
+      set POOL_COURSES(value) { backendContext.POOL_COURSES = value; },
+      get stableHash() { return backendContext.stableHash; },
+      set stableHash(value) { backendContext.stableHash = value; }
     });
-    return Array.from(prefixes).slice(0, 300);
+    return cache7;
   }
 
-  function performanceSwimmerIndexKey(row = {}) {
-    const identity = backendContext.cleanText(row.swimmerIdentityKey);
-    if (identity) return identity;
-    const first = normalizePerformanceSearchText(row.firstName);
-    const last = normalizePerformanceSearchText(row.lastName);
-    const birth = backendContext.cleanText(row.birthDate);
-    if (first && last && birth) return `${last}|${first}|${birth}`;
-    return backendContext.cleanText(row.swimmerId || row.originalSwimmerId || row.swimmer);
+  let cache8;
+  function operation8() {
+    if (!cache8) cache8 = require("./backend/server-dtn-service/dtn-listing-cache-fingerprint").createDtnService_dtnListingCacheFingerprint({
+      get DTN_LISTING_CACHE_VERSION() { return backendContext.DTN_LISTING_CACHE_VERSION; },
+      set DTN_LISTING_CACHE_VERSION(value) { backendContext.DTN_LISTING_CACHE_VERSION = value; },
+      get HttpsError() { return backendContext.HttpsError; },
+      set HttpsError(value) { backendContext.HttpsError = value; },
+      get POOL_COURSES() { return backendContext.POOL_COURSES; },
+      set POOL_COURSES(value) { backendContext.POOL_COURSES = value; },
+      get cleanText() { return backendContext.cleanText; },
+      set cleanText(value) { backendContext.cleanText = value; },
+      get stableHash() { return backendContext.stableHash; },
+      set stableHash(value) { backendContext.stableHash = value; }
+    });
+    return cache8;
   }
 
-  function performanceSwimmerIndexDocId(row = {}) {
-    return backendContext.stableHash(performanceSwimmerIndexKey(row)).slice(0, 40);
+  let cache9;
+  function operation9() {
+    if (!cache9) cache9 = require("./backend/server-dtn-service/enqueue-dtn-qualification-job").createDtnService_enqueueDtnQualificationJob({
+      get DTN_QUALIFICATION_JOBS_COLLECTION() { return backendContext.DTN_QUALIFICATION_JOBS_COLLECTION; },
+      set DTN_QUALIFICATION_JOBS_COLLECTION(value) { backendContext.DTN_QUALIFICATION_JOBS_COLLECTION = value; },
+      get cleanFirestoreValue() { return backendContext.cleanFirestoreValue; },
+      set cleanFirestoreValue(value) { backendContext.cleanFirestoreValue = value; },
+      get cleanText() { return backendContext.cleanText; },
+      set cleanText(value) { backendContext.cleanText = value; },
+      get db() { return backendContext.db; },
+      set db(value) { backendContext.db = value; }
+    });
+    return cache9;
   }
 
+  let cache10;
+  function operation10() {
+    if (!cache10) cache10 = require("./backend/server-dtn-service/normalize-performance-search-text").createDtnService_normalizePerformanceSearchText({
+      get cleanText() { return backendContext.cleanText; },
+      set cleanText(value) { backendContext.cleanText = value; }
+    });
+    return cache10;
+  }
+
+  let cache11;
+  function operation11() {
+    if (!cache11) cache11 = require("./backend/server-dtn-service/performance-search-tokens").createDtnService_performanceSearchTokens({
+      get local$normalizePerformanceSearchText() { return operation10().normalizePerformanceSearchText; }
+    });
+    return cache11;
+  }
+
+  let cache12;
+  function operation12() {
+    if (!cache12) cache12 = require("./backend/server-dtn-service/performance-search-prefixes").createDtnService_performanceSearchPrefixes({
+      get local$performanceSearchTokens() { return operation11().performanceSearchTokens; }
+    });
+    return cache12;
+  }
+
+  let cache13;
+  function operation13() {
+    if (!cache13) cache13 = require("./backend/server-dtn-service/performance-swimmer-index-key").createDtnService_performanceSwimmerIndexKey({
+      get cleanText() { return backendContext.cleanText; },
+      set cleanText(value) { backendContext.cleanText = value; },
+      get local$normalizePerformanceSearchText() { return operation10().normalizePerformanceSearchText; }
+    });
+    return cache13;
+  }
+
+  let cache14;
+  function operation14() {
+    if (!cache14) cache14 = require("./backend/server-dtn-service/performance-swimmer-index-doc-id").createDtnService_performanceSwimmerIndexDocId({
+      get stableHash() { return backendContext.stableHash; },
+      set stableHash(value) { backendContext.stableHash = value; },
+      get local$performanceSwimmerIndexKey() { return operation13().performanceSwimmerIndexKey; }
+    });
+    return cache14;
+  }
   return {
-    dtnSeasonService,
-    invokeDtnSeason,
-    dtnQualificationRow,
-    bestDtnQualificationRows,
-    nearDtnQualificationRows,
-    dtnQualificationCacheStateRef,
-    dtnQualificationCacheRef,
-    dtnListingCacheRef,
-    dtnQualificationSeasonsForRows,
-    touchDtnQualificationCacheState,
-    dtnQualificationCacheFingerprint,
-    dtnQualificationRowsForStandard,
-    dtnListingCacheFingerprint,
-    emptyDtnQualificationPayload,
-    buildDtnQualificationPayload,
-    emptyDtnListingPayload,
-    isDtnElectronicFiftyMeterPerformance,
-    dtnListingAthletes,
-    buildDtnListingPayload,
-    enqueueDtnQualificationJob,
-    normalizeDtnListingRules,
-    normalizePerformanceSearchText,
-    performanceSearchTokens,
-    performanceSearchPrefixes,
-    performanceSwimmerIndexKey,
-    performanceSwimmerIndexDocId
+    dtnSeasonService: operation0().dtnSeasonService,
+    invokeDtnSeason: operation1().invokeDtnSeason,
+    dtnQualificationRow: operation2().dtnQualificationRow,
+    bestDtnQualificationRows: operation2().bestDtnQualificationRows,
+    nearDtnQualificationRows: operation2().nearDtnQualificationRows,
+    dtnQualificationCacheStateRef: operation3().dtnQualificationCacheStateRef,
+    dtnQualificationCacheRef: operation4().dtnQualificationCacheRef,
+    dtnListingCacheRef: operation5().dtnListingCacheRef,
+    dtnQualificationSeasonsForRows: operation6().dtnQualificationSeasonsForRows,
+    touchDtnQualificationCacheState: operation6().touchDtnQualificationCacheState,
+    dtnQualificationCacheFingerprint: operation7().dtnQualificationCacheFingerprint,
+    dtnQualificationRowsForStandard: operation2().dtnQualificationRowsForStandard,
+    dtnListingCacheFingerprint: operation8().dtnListingCacheFingerprint,
+    emptyDtnQualificationPayload: operation7().emptyDtnQualificationPayload,
+    buildDtnQualificationPayload: operation2().buildDtnQualificationPayload,
+    emptyDtnListingPayload: operation8().emptyDtnListingPayload,
+    isDtnElectronicFiftyMeterPerformance: operation2().isDtnElectronicFiftyMeterPerformance,
+    dtnListingAthletes: operation2().dtnListingAthletes,
+    buildDtnListingPayload: operation2().buildDtnListingPayload,
+    enqueueDtnQualificationJob: operation9().enqueueDtnQualificationJob,
+    normalizeDtnListingRules: operation8().normalizeDtnListingRules,
+    normalizePerformanceSearchText: operation10().normalizePerformanceSearchText,
+    performanceSearchTokens: operation11().performanceSearchTokens,
+    performanceSearchPrefixes: operation12().performanceSearchPrefixes,
+    performanceSwimmerIndexKey: operation13().performanceSwimmerIndexKey,
+    performanceSwimmerIndexDocId: operation14().performanceSwimmerIndexDocId
   };
 }
 

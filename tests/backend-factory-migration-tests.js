@@ -14,8 +14,8 @@ const originalIndex = fs.readFileSync("functions/index.js", "utf8");
 const result = render(process.cwd(), baseline);
 const proof = verify(result);
 assert.equal(proof.exports, 157);
-assert.equal(proof.bodies, 705);
-assert.equal(proof.groups, 433);
+assert.equal(proof.bodies, 635);
+assert.equal(proof.groups, 419);
 assert.equal(proof.networkCalls, 0);
 const progress = JSON.parse(fs.readFileSync("docs/releases/backend-isolation-progress.json", "utf8"));
 const applied = render(process.cwd(), baseline, progress.appliedFactories);
@@ -23,6 +23,10 @@ const actual = new Map([...applied.outputs.keys()].map(file => [file, fs.readFil
 const actualProof = verify(applied, actual);
 assert.equal(actualProof.exports, 157, "Verify actual committed runtime, not only a virtual preview");
 assert.equal(actualProof.result, "success");
+for (const f of result.m.factories.values()) if (f.snapshotBindings.size) {
+  assert(!result.outputs.has(f.file), "Preserve captured factory interface and initialization");
+  assert.equal(fs.readFileSync(f.file, "utf8").replace(/\r\n/g, "\n"), f.text.replace(/\r\n/g, "\n"));
+}
 const relative = file => path.relative(process.cwd(), file).replaceAll("\\", "/");
 const loadBefore = file => result.snapshot.files[relative(file)]?.source;
 const loadAfter = file => result.outputs.get(relative(file)) ?? loadBefore(file);
@@ -89,6 +93,10 @@ assert(!m.nodes.get("service:first").edges.includes("index:rootUnused"), "Shadow
 assert.deepEqual(m.consumers.get("service:first"), ["first", "second"]);
 assert.deepEqual(m.identityPairs, [["service:second", "service:first"]]);
 assert.equal(m.opaque.length, 0);
+const captured = mini('function createMiniService({safe: capturedSafe,unused}){function first(){return capturedSafe();}function second(){return unused();}return {first,second};}module.exports={createMiniService};');
+assert.equal(captured.factories.get("service").snapshotBindings.get("capturedSafe"), "safe");
+assert.deepEqual(captured.nodes.get("service:first").edges, ["index:rootSafe"]);
+assert.throws(() => mini('function createMiniService({safe=123}){function first(){return safe;}return {first};}module.exports={createMiniService};'), /Unknown captured factory binding/);
 assert(mini(fixture.replace("function first()", "let state=0; function first()")).warnings.length > 0, "Unknown factory state requires review");
 assert.throws(() => mini(fixture, "safe: () => rootSafe()"), /Unknown context binding/);
 const writable = mini(fixture, "get safe(){return rootSafe;},get state(){return cache;},set state(value){cache=value;}");
