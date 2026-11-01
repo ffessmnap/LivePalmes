@@ -2,6 +2,12 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 1er novembre — Cloisonnement systématique des dépendances backend, premier lot
+
+- Autorisation explicite d’Antoine : couvrir tout le backend, avec validation technique autonome, TEST puis transmission de la version exacte à Infra pour la PROD. La version TEST `ac677ad5` est acceptée par l’utilisateur ; les versions suivantes auront des preuves techniques, sans validation manuelle utilisateur inventée. Aucune donnée réelle, migration, règle sportive, habilitation, configuration Firebase ou émission réelle n’entre dans ce chantier.
+- Premier lot : accès, PIN, consoles, annuaires et primitives partagées des imports. 155 corps privés déplacés sans changement dans 99 groupes de consommateurs ; APIs historiques compatibles, helpers non dupliqués, caches et identités conservés. Inventaire initial de 157 exports et 726 méthodes ; le chantier se poursuit au-delà de ce lot sur les autres domaines puis les modules natifs partagés.
+- Preuves hors réseau : comparaison structurelle exhaustive des corps, déclarations/options/secrets/déclencheurs et graphes ; refus d’altérations métier, d’initialisation inconnue et de divergence concurrente. Régressions des vraies fabriques pour les droits, PIN/consoles, demandes d’accès et événements d’annuaire. Budget initial/action/rafraîchissement/pire cas inchangé : zéro lecture ou écriture ajoutée. CI globale, intégration et TEST exacts restent requis ; liens et états dans la PR et le fichier d’avancement. L’installation initiale du découpage peut être large ; le gain concerne les corrections suivantes.
+
 ### 31 octobre — Isolation des écritures de compte et de la synchronisation d'annuaire
 
 - Demande explicite d'Antoine : isoler les dépendances pour publier les seules fonctions concernées sans perdre en fiabilité. Synchronisation d'annuaire, callable de création/mise à jour de compte et écriture Auth/profil déplacés dans trois modules dédiés ; dépendances inutilisées retirées des anciennes fabriques. Déclarations, options, secrets et exports Firebase conservés ; aucun changement métier ou de droits.

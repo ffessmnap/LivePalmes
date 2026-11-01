@@ -5,6 +5,7 @@ const crypto = require("node:crypto");
 const { execFileSync } = require("node:child_process");
 const test = require("../tools/release-test-function-fingerprints");
 const production = require("../tools/release-production-function-fingerprints");
+const factoryModel = require("../tools/backend-factory-model").model(process.cwd());
 
 // Exercise the real source graph, without loading application code or Firebase.
 const sha = execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim();
@@ -13,6 +14,14 @@ const isolated = ["functions/server-directory-sync-service.js", "functions/serve
   "functions/portal-account-handlers.js"];
 const file = source => ({ source, sha: crypto.createHash("sha256").update(source).digest("hex") });
 input.source = fs.readFileSync("functions/index.js", "utf8");
+function operationFiles(directory) {
+  if (!fs.existsSync(directory)) return [];
+  return fs.readdirSync(directory, { withFileTypes: true }).flatMap(entry => {
+    const name = directory + "/" + entry.name;
+    return entry.isDirectory() ? operationFiles(name) : entry.isFile() && name.endsWith(".js") ? [name] : [];
+  });
+}
+operationFiles("functions/backend").forEach(name => { input.files[name] = file(fs.readFileSync(name, "utf8")); });
 for (const name of new Set([...Object.keys(input.files), ...isolated])) {
   const original = input.files[name];
   // Preserve JSON hashes; their source is intentionally absent from snapshots.
@@ -35,11 +44,13 @@ for (const [label, analyser] of [["TEST", test], ["PROD", production]]) {
     console.log(`${label} ${name}: ${expected.join(", ")}`);
   }
   // A real shared authorization dependency must still include its consumers.
-  const shared = "functions/server-access-service.js";
+  const shared = [...factoryModel.factories.values()].find(factory => factory.methods.has("assertCapability")).file;
   const next = analyser.analyse({ ...input, files: { ...input.files,
     [shared]: file(input.files[shared].source + "\n// shared dependency changed\n") } });
-  for (const name of ["setRolePins", "getCurrentAccessUser", "createOrUpdateAccessUser", "syncEngagementMailRecipientIndex"])
+  for (const name of ["setRolePins", "savePerformanceCorrection"])
     assert(affected(next).includes(name), `${label}: shared authorization missed ${name}`);
+  if (shared.startsWith("functions/backend/"))
+    assert(!affected(next).includes("getCurrentAccessUser"), `${label}: unrelated current-user reader must remain unchanged`);
   // Unknown dynamic execution retains the existing whole-backend fallback.
   const unknown = analyser.analyse({ ...input, source: input.source + '\neval("0");\n' });
   assert.equal(unknown.mode, "whole-backend");
