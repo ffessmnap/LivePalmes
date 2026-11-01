@@ -1,6 +1,6 @@
 "use strict";
 const {createHash}=require("node:crypto");
-const {SOURCES,OPTION_COLUMNS,normalizeOptions,person}=require("./nap-club-people");
+const { SOURCES, OPTION_COLUMNS, normalizeOptions, person } = require("./nap-club-people-values");
 const {reference}=require("./nap-club-person-status");
 const {planIdentity}=require("./nap-club-person-edit");
 const FIELDS=["firstName","lastName","birthDate","sex"];

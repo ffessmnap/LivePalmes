@@ -2,51 +2,21 @@
 const {notMerged}=require("./nap-swimmer-merge-state");
 const { createHash } = require("node:crypto");
 const {nativeEqual}=require("./nap-native-compare");
-const { createNapPool } = require("./nap-mysql");
-const { swimmerId } = require("./nap-direct-swimmer");
-const { fingerprint, planIdentityChange } = require("./nap-portal-swimmer-change");
+const { portalPool } = require("./nap-portal-pool");
+const { swimmerId } = require("./nap-swimmer-values");
+const { fingerprint } = require("./nap-swimmer-identity-values");
+const { planIdentityChange } = require("./nap-portal-swimmer-change");
 const { COLUMNS, hash } = require("./nap-approved-swimmer-correction");
-const rules = require("./nap-performance-normalization");
+
 const licenseState = require("./nap-license-state");
 const mergeState = require("./nap-swimmer-merge-state");
-let pool;
-function portalPool(password) { if (!pool) pool = createNapPool(password); return pool; }
-function person(row) {
-  const firstName = rules.cleanText(row.prenom), lastName = rules.cleanText(row.nom), id = String(row.id);
-  return { id, swimmerId: id, swimmerIndexId: id, source: "reference", napSource: true, napFingerprint: fingerprint(row),
-    ...require("./nap-swimmer-ns-state").state(row), napNsFingerprint: require("./nap-swimmer-ns-state").fingerprint(row),
-    ...(row.actif !== undefined ? {active: require("./nap-swimmer-activity-state").status(row) === "active", clubActivityStatus: require("./nap-swimmer-activity-state").status(row), napActivityFingerprint: require("./nap-swimmer-activity-state").fingerprint(row)} : {}),
-    ...licenseState.state(row), ...(row.merged_into_id ? {active:false,status:"merged",mergedIntoId:String(row.merged_into_id),mergedIntoSource:"reference"} : {}), firstName, lastName, name: [firstName, lastName].join(" "), birthDate: row.date, sex: row.sexe,
-    clubId: String(row.club || ""), club: rules.cleanText(row.abre_club || row.nom_club), clubName: rules.cleanText(row.nom_club),
-    identityKey: rules.swimmerIdentityKey(firstName, lastName, row.date), sourceIds: [id] };
-}
-async function searchPortalSwimmers(connection, query) {
-  const result = await require("./nap-direct-search").searchDirectSwimmers(connection, query);
-  if (!result.swimmers.length) return { ...result, swimmers: [] };
-  const ids = result.swimmers.map(item => swimmerId(item.id));
-  const [rows] = await connection.execute({ sql: `SELECT n.*,cl.abre_club,cl.nom_club,${licenseState.projection()},${mergeState.projection} FROM nageurs n LEFT JOIN clubs cl ON cl.num_club=n.club AND CAST(cl.num_club AS CHAR)=n.club ${licenseState.join()} ${mergeState.join} WHERE n.id IN (${ids.map(() => "?").join(",")}) ORDER BY n.nom,n.prenom,n.date,n.id LIMIT 20`, timeout: 10000 }, ids);
-  return { ...result, swimmers: rows.map(person) };
-}
-async function listPortalClubSwimmers(connection, clubId) {
-  if (!/^\d{1,16}$/.test(String(clubId))) throw new TypeError("Club NAP invalide.");
-  const [rows] = await connection.execute({ sql: `SELECT n.*,cl.abre_club,cl.nom_club,${licenseState.projection()},${mergeState.projection} FROM nageurs n FORCE INDEX (livepalmes_club_id) LEFT JOIN clubs cl ON cl.num_club=n.club AND CAST(cl.num_club AS CHAR)=n.club ${licenseState.join()} ${mergeState.join} WHERE n.club=? AND m.swimmer_id IS NULL ORDER BY n.id LIMIT 801`, timeout: 10000 }, [String(clubId)]);
-  if (rows.length > 800) throw new RangeError("Effectif superieur a 800 nageurs : pagination requise.");
-  return rows.map(person);
-}
+
+
+const { person } = require("./nap-swimmer-profile");
+const { searchPortalSwimmers, listPortalClubSwimmers, listNationalSwimmers } = require("./nap-portal-swimmer-readers");
+
 // National directory: one indexed keyset page, no legacy roster or per-row read.
-async function listNationalSwimmers(connection, input = {}) {
-  const cursor = input.cursor === undefined || input.cursor === null ? 0 : input.cursor;
-  if (!Number.isSafeInteger(cursor) || cursor < 0 || cursor > 2147483647) throw new TypeError("Page nationale invalide.");
-  const [rows] = await connection.execute({sql:`SELECT n.*,cl.abre_club,cl.nom_club,${licenseState.projection()},${mergeState.projection} FROM nageurs n FORCE INDEX (PRIMARY) LEFT JOIN clubs cl FORCE INDEX (PRIMARY) ON cl.num_club=n.club AND CAST(cl.num_club AS CHAR)=n.club ${licenseState.join()} ${mergeState.join} WHERE n.id>? ORDER BY n.id LIMIT 101`,timeout:10000},[cursor]);
-  if (rows.length > 101) throw new RangeError("Page nationale trop volumineuse.");
-  let previous = cursor;
-  for (const row of rows) {
-    if (!Number.isSafeInteger(Number(row.id)) || Number(row.id) <= previous || Number(row.id) > 2147483647) throw new TypeError("Page nationale incoherente.");
-    previous = Number(row.id);
-  }
-  const page = rows.slice(0,100), hasMore = rows.length > 100;
-  return {ok:true,source:"nap",swimmers:page.map(person),hasMore,nextCursor:hasMore?Number(page.at(-1).id):null,sqlBudget:{queriesMax:1,rowsMax:101}};
-}
+
 async function correctPortalIdentity(connection, input, audit, linked) {
   const id = swimmerId(input?.id);
   if (!/^[a-f0-9]{64}$/.test(input.expectedFingerprint || "") || !input.actorUid || !input.reason?.trim() || input.reason.length > 500) throw new TypeError("Fiche et motif requis.");

@@ -2,10 +2,10 @@
 const {createHash}=require("node:crypto");
 const {correctLicense}=require("./nap-license-correction");
 const {COLUMNS}=require("./nap-approved-swimmer-correction");
-const {person}=require("./nap-portal-swimmers");
-const {fingerprint}=require("./nap-portal-swimmer-change");
+const { person } = require("./nap-swimmer-profile");
+const { fingerprint } = require("./nap-swimmer-identity-values");
 const {notMerged}=require("./nap-swimmer-merge-state");
-const {swimmerId}=require("./nap-direct-swimmer");
+const { swimmerId } = require("./nap-swimmer-values");
 const {clean}=require("./nap-club-identity-fields");
 async function fillClubLicense(pool,input,context,audit) {
   const id=swimmerId(input.swimmerId);

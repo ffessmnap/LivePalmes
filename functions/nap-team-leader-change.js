@@ -4,8 +4,8 @@
 // reads, trigger/PK checks, one guarded UPDATE and one verification read.
 const {isDeepStrictEqual}=require("node:util");
 const {nativeEqual}=require("./nap-native-compare");
-const {positiveId,date}=require("./nap-direct-calendar");
-const {fingerprint}=require("./nap-portal-workspaces");
+const { positiveId, date } = require("./nap-calendar-values");
+const { fingerprint } = require("./nap-competition-fingerprint");
 const {operationHash,authorityGuard}=require("./nap-portal-competition-change");
 const {readNativeCompetition}=require("./nap-portal-competitions");
 const {readNativeClubEntry}=require("./nap-portal-entries");

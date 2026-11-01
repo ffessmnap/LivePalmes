@@ -5,7 +5,7 @@ const {nativeEqual}=require("./nap-native-compare");
 // Fixed budget: 12 SQL calls maximum, one options write; one audit read/two writes.
 const {createHash}=require("node:crypto");
 const {isDeepStrictEqual}=require("node:util");
-const {SOURCES,OPTION_COLUMNS,normalizeOptions,person}=require("./nap-club-people");
+const { SOURCES, OPTION_COLUMNS, normalizeOptions, person } = require("./nap-club-people-values");
 const {inspectPeopleSchema,validate}=require("./nap-approved-people-schema");
 const table="livepalmes_club_people_options";
 

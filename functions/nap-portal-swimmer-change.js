@@ -2,11 +2,9 @@
 const {notMerged}=require("./nap-swimmer-merge-state");
 const { createHash } = require("node:crypto");
 const {nativeEqual}=require("./nap-native-compare");
-const { swimmerId } = require("./nap-direct-swimmer");
+const { swimmerId } = require("./nap-swimmer-values");
 const EDITABLE = ["firstName", "lastName", "birthDate", "sex"];
-function fingerprint(row) {
-  return createHash("sha256").update(JSON.stringify([row.id, row.nom, row.prenom, row.date, row.sexe, row.club])).digest("hex");
-}
+const { fingerprint } = require("./nap-swimmer-identity-values");
 function name(value) {
   if (typeof value !== "string" || !value.trim() || value.trim().length > 64 || /[\u0000-\u001f\u007f]/.test(value)) throw new TypeError("Nom et prenom requis, 64 caracteres maximum.");
   return value.trim();

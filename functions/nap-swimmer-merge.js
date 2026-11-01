@@ -117,7 +117,7 @@ async function mergeSwimmers(pool,input,audit,authorize){
     await audit.complete(operation,{...result,verified:true});
     const season=plan.licensePlan.after.find(row=>Number(row.swimmer_id)===b&&row.season===require("./nap-license-state").currentSeason());
     const validation=season?{license_validation_season:season.season,license_validated_number:season.license_number,license_validation_status:season.status,license_validation_source:season.source,license_validated_at:season.validated_at,license_validated_by:season.validated_by,license_validity_end_date:season.federal_validity_end_date}:{};
-    return {...result,target:require("./nap-portal-swimmers").person({...plan.targetAfter,...validation,...(finalClub?{abre_club:finalClub.abre_club,nom_club:finalClub.nom_club}:{})})};
+    return {...result,target:require("./nap-swimmer-profile").person({...plan.targetAfter,...validation,...(finalClub?{abre_club:finalClub.abre_club,nom_club:finalClub.nom_club}:{})})};
   }finally{
     try{if(locked)await connection.query({sql:"UNLOCK TABLES",timeout:10000});}catch{safe=false;}
     try{for(const lock of locks.reverse())if(Number((await query("SELECT RELEASE_LOCK(?) AS released",[lock]))[0]?.released)!==1)safe=false;}catch{safe=false;}

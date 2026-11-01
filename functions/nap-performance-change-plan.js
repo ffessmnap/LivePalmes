@@ -2,7 +2,7 @@
 // Pure plans only. Callers must authorize, journal the before image and verify
 // the fingerprint again under the native write lock before executing a plan.
 const { createHash } = require("node:crypto");
-const { parseCompactTime } = require("./nap-performance-normalization");
+const { parseCompactTime } = require("./nap-performance-time");
 const COLUMNS = Object.freeze(["id", "nageur", "compet", "course", "cat", "tps", "points", "newpoints", "passage", "club", "relais", "pid", "classement"]);
 function positiveId(value) {
   if (!Number.isSafeInteger(value) || value < 1 || value > 2147483647) throw new TypeError("Identifiant NAP invalide.");

@@ -1,5 +1,7 @@
 "use strict";
-const calendar=require("./nap-direct-calendar");
+const { publicUrl: __nativeMember0 } = require("./nap-calendar-values");
+const { SELECT_EVENT: __nativeMember1, EVENT_JOINS: __nativeMember2, eventFromRow: __nativeMember3 } = require("./nap-calendar-event");
+const calendar={ publicUrl: __nativeMember0, SELECT_EVENT: __nativeMember1, EVENT_JOINS: __nativeMember2, eventFromRow: __nativeMember3 };
 const {civilAt}=require("./nap-paris-time");
 const parisToday=()=>civilAt(Date.now()).slice(0,10);
 function validDate(value){

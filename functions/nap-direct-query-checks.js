@@ -15,7 +15,8 @@ async function inspectDirectQueries(pool) {
   const top = require("./nap-direct-tops").queryFor({ course: "100SF", sex: "M", category: "S", pool: "50" });
   const [topPlan] = await pool.execute({ sql: `EXPLAIN ${top.sql}`, timeout: 10000 }, top.values);
   plans.directTop = topPlan;
-  const calendar = require("./nap-direct-calendar");
+  const { SELECT_EVENT: __nativeMember0, EVENT_JOINS: __nativeMember1 } = require("./nap-calendar-event");
+const calendar = { SELECT_EVENT: __nativeMember0, EVENT_JOINS: __nativeMember1 };
   const calendarQueries = {
     calendarSeason: { sql: `${calendar.SELECT_EVENT} FORCE INDEX (livepalmes_date_id)${calendar.EVENT_JOINS} WHERE c.date >= ? AND c.date < ? ORDER BY c.date,c.id LIMIT 501`, values: ["2025-09-01", "2026-09-01"] },
     competitionDocuments: { sql: "SELECT d.id,d.name,d.location,t.label FROM documents d FORCE INDEX (livepalmes_compet_public_id) LEFT JOIN documents_types t ON t.id=d.type WHERE d.competition=? AND d.public='Y' ORDER BY d.id LIMIT 101", values: [2652] },
@@ -36,7 +37,9 @@ async function inspectTimeShape(pool, input) {
   const through = Math.min(after + 10000, lastId);
   const [counts] = await pool.execute({ sql: "SELECT CHAR_LENGTH(tps) AS width, SUM(tps REGEXP '^[0-9]+$') AS numericRows, COUNT(*) AS rowCount FROM perfs WHERE id > ? AND id <= ? GROUP BY CHAR_LENGTH(tps)", timeout: 10000 }, [after, through]);
   const [shortTimes] = await pool.execute({ sql: "SELECT course, tps FROM perfs WHERE id > ? AND id <= ? AND tps REGEXP '^[0-9]{1,5}$' LIMIT 11", timeout: 10000 }, [after, through]);
-  const rules = require("./nap-performance-normalization");
+  const { CURRENT_POOL_COURSES: __nativeMember2, MIN_TIME_BY_COURSE: __nativeMember4 } = require("./nap-performance-courses");
+const { parseCompactTime: __nativeMember3 } = require("./nap-performance-time");
+const rules = { CURRENT_POOL_COURSES: __nativeMember2, parseCompactTime: __nativeMember3, MIN_TIME_BY_COURSE: __nativeMember4 };
   const validShortNumericRows = shortTimes.filter(row => rules.CURRENT_POOL_COURSES.includes(row.course) &&
     rules.parseCompactTime(row.tps) >= rules.MIN_TIME_BY_COURSE[row.course]).length;
   return { source: "nap", mode: "time-shape-counts-only", counts, validShortNumericRows, shortTimesTruncated: shortTimes.length > 10, next: through, hasMore: through < lastId };

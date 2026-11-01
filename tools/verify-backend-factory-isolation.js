@@ -19,7 +19,7 @@ function canonical(node, options = {}) {
     const last = canonical(node.expressions[1], options);
     if (last.type === "Identifier" && options.methodNames?.has(last.name)) return last;
   }
-  const clone = Object.fromEntries(Object.entries(node).filter(([key]) => !["start", "end", "raw"].includes(key))
+  const clone = Object.fromEntries(Object.entries(node).filter(([key]) => !["start", "end"].includes(key) && !(key === "raw" && node.type === "Literal"))
     .map(([key, value]) => [key, canonical(value, options)]));
   if (node.type === "CallExpression" && options.requireRefs
       && (options.requireRefs.has(node.callee) || node.callee.type === "MemberExpression"

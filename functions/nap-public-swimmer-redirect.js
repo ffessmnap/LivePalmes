@@ -1,5 +1,6 @@
 "use strict";
-const {swimmerId,readDirectSwimmer}=require("./nap-direct-swimmer");
+const { swimmerId } = require("./nap-swimmer-values");
+const { readDirectSwimmer } = require("./nap-direct-swimmer");
 const {searchDirectSwimmers}=require("./nap-direct-search");
 
 // One indexed technical lookup. The original identity may have been deleted;

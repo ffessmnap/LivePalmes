@@ -30,7 +30,10 @@ function restore(archive){
   return {...source,dataBase64:bytes.toString("base64")};
 }
 async function readCurrent(pool,input,authorize){
-  const calendar=require("./nap-direct-calendar"),native=require("./nap-portal-competitions"),id=calendar.positiveId(input);
+  const { positiveId: __nativeMember0 } = require("./nap-calendar-values");
+const { bounded: __nativeMember1 } = require("./nap-competition-query");
+const { portalEventFromRow: __nativeMember2 } = require("./nap-portal-event");
+const calendar={ positiveId: __nativeMember0 },native={ bounded: __nativeMember1, portalEventFromRow: __nativeMember2 },id=calendar.positiveId(input);
   const rows=await native.bounded(pool,"SELECT c.id,c.comite,cp.niveau FROM competitions c LEFT JOIN compet_parametres cp ON cp.compet=c.id WHERE c.id=? LIMIT 2",[id],1);
   if(!rows.length)throw new TypeError("Compétition NAP introuvable.");
   await authorize(native.portalEventFromRow(rows[0]));

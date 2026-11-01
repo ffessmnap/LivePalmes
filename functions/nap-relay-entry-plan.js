@@ -1,7 +1,7 @@
 "use strict";
 // Preparation only. A server-side resolver must apply the existing sporting
 // rules before calling this module. No connection, SQL or generated id here.
-const {positiveId}=require("./nap-direct-calendar");
+const { positiveId } = require("./nap-calendar-values");
 const {isDeepStrictEqual}=require("node:util");
 const FIELDS=["id","compet","categorie","club","course","tps"];
 function nativeRelay(row,competitionId,clubId) {

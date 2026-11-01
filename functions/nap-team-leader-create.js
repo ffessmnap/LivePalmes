@@ -3,8 +3,8 @@
 // one native INSERT. A lost generated id requires verification, never a retry.
 const {createHash}=require("node:crypto");
 const {isDeepStrictEqual}=require("node:util");
-const {positiveId}=require("./nap-direct-calendar");
-const {fingerprint}=require("./nap-portal-workspaces");
+const { positiveId } = require("./nap-calendar-values");
+const { fingerprint } = require("./nap-competition-fingerprint");
 const {authorityGuard,operationHash}=require("./nap-portal-competition-change");
 const {readNativeCompetition}=require("./nap-portal-competitions");
 const {readNativeClubEntry}=require("./nap-portal-entries");

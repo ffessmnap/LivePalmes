@@ -2,6 +2,12 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 1er novembre — Isolation native des dépendances et captures conservées
+
+- Suite autorisée du cloisonnement global : 34 composants pour connexion/pool, projections des nageurs/personnes/clubs/performances, lectures paginées ou unitaires, vues, calendrier, valeurs et politiques partagées. Les annuaires, corrections, vues et lecteurs ne chargent plus les traitements sans rapport. Les anciennes APIs restent compatibles et réexportent les objets/fonctions réels ; aucun helper dupliqué. Les opérations atomiques gardent leurs états communs.
+- Preuve indépendante sur 2 902 déclarations après normalisation des imports et 704 APIs existantes : mêmes corps, signatures, objets partagés, valeurs, effets et déclarations Firebase. Refus des modifications de connexion, de cache, de namespace mutable et de dépendances altérées. Captures statiques une fois par niveau, sans require ajouté par ligne ; pool unique, origine des URLs capturée au démarrage. Fixtures des anciennes/nouvelles versions sur projets simulés TEST/PROD, sans réseau ni envoi. Budget initial/action/rafraîchissement/pire cas : zéro lecture/écriture ajoutée.
+- Fabriques déjà intégrées et attestées : [#654](https://github.com/ffessmnap/LivePalmes/pull/654), [#655](https://github.com/ffessmnap/LivePalmes/pull/655). Dernier TEST commun réussi au candidat `227207b5` : [run 41259584648](https://github.com/ffessmnap/LivePalmes/actions/runs/41259584648), 91 fonctions mises à jour, 25 conservées, Hosting `df12e04e578b5660`. Validation technique, aucune nouvelle acceptation manuelle utilisateur inventée. Lot natif : CI globale et TEST exacts requis avant bilan final Infra ; les contrats d’exclusion restent obligatoires.
+
 ### 1er novembre — Cloisonnement de tous les domaines des fabriques backend
 
 - Suite du chantier global autorisé : compétitions, engagements, personnes, annuaires nationaux, PDF/documents, mail, performances, DTN et ancien circuit public. Les 480 corps restants sont déplacés sans changement ; cumul de 635 corps dans 419 groupes, avec les 157 déclarations Firebase conservées. Trois fabriques à contexte vivant ont déjà un groupe de consommateurs unique. Quatre autres conservent exactement leurs paramètres capturés, leur initialisation et leur API, dont PDF et ancien circuit public. Le lot conserve les APIs, les accesseurs vivants, les caches uniques et le contexte complet du seul passage opaque vers les callables NS.

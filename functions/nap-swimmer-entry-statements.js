@@ -1,7 +1,7 @@
 "use strict";
 const {notMerged}=require("./nap-swimmer-merge-state");
 const {nativeEqual}=require("./nap-native-compare");
-const {positiveId}=require("./nap-direct-calendar");
+const { positiveId } = require("./nap-calendar-values");
 const {entryAuthority,deadline}=require("./nap-official-entry-statements");
 // Four grouped statements maximum. This module never executes SQL.
 function statements(plan,authority,end) {

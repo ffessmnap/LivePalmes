@@ -6,7 +6,9 @@ function createClubHandlers_listEngagementClubSwimmers(backendContext) {
     const limit = Math.min(800, Math.max(50, Math.trunc(Number(request.data?.limit) || 400)));
     if (backendContext.ENVIRONMENT.sportingDataSource === "nap") {
       try {
-        const nap = require("../../nap-portal-swimmers");
+        const { listPortalClubSwimmers: __nativeMember0 } = require("../../nap-portal-swimmer-readers");
+const { portalPool: __nativeMember1 } = require("../../nap-portal-pool");
+const nap = { listPortalClubSwimmers: __nativeMember0, portalPool: __nativeMember1 };
         const people = await nap.listPortalClubSwimmers(nap.portalPool(process.env.LIVEPALMES_NAP_PASSWORD), context.clubId);
         return { ok: true, clubId: context.clubId, source: "nap", swimmers: people.map(item => ({
           ...item, category: backendContext.currentEngagementCategoryFromBirthDate(item.birthDate)

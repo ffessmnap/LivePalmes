@@ -1,7 +1,8 @@
 "use strict";
 // At most seven SQL calls, one native insert, durable generated-id checkpoint.
 const {createHash}=require("node:crypto"),{isDeepStrictEqual}=require("node:util");
-const {COLUMNS}=require("./nap-club-change"),directory=require("./nap-club-directory");
+const { region: __nativeMember0, club: __nativeMember1 } = require("./nap-club-values");
+const {COLUMNS}=require("./nap-club-change"),directory={ region: __nativeMember0, club: __nativeMember1 };
 function proposed(raw) {
  const c=require("./engagement-clubs").cleanClubPayload(raw,{});
  return {federal_club:c.federalNumber,nom_club:c.clubName,abre_club:c.clubCode,hc_club:"",comite_club:directory.region(c.regionId),actif_club:c.active?1:0,postalcode:c.postalCode,longitude:"",latitude:"",ville:c.city,web:"",enf:0,cnnp:0,email:"",tel:"",logo:""};

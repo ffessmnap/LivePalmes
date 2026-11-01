@@ -8,7 +8,7 @@ function createClubHandlers_saveEngagementClubTeamLeader(backendContext) {
     }
     if (backendContext.ENVIRONMENT.sportingDataSource === "nap") {
       try {
-        const pool = require("../../nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD);
+        const pool = require("../../nap-portal-pool").portalPool(process.env.LIVEPALMES_NAP_PASSWORD);
         const saveLeader = request.data?.leaderId == null || request.data.leaderId === ""
           ? require("../../nap-team-leader-create").createNativeTeamLeader
           : require("../../nap-team-leader-change").editNativeTeamLeader;

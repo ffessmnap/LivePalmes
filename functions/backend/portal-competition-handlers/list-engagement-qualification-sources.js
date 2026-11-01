@@ -5,7 +5,7 @@ function createCompetitionHandlers_listEngagementQualificationSources(backendCon
     const context=await backendContext.engagementAccessContext(request);
     if(!context.national) throw new backendContext.HttpsError("permission-denied","Droit national des engagements requis.");
     try {
-      return await require("../../nap-qualification-sources").listSources(require("../../nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD),request.data);
+      return await require("../../nap-qualification-sources").listSources(require("../../nap-portal-pool").portalPool(process.env.LIVEPALMES_NAP_PASSWORD),request.data);
     } catch(error) {
       throw new backendContext.HttpsError(error instanceof TypeError ? "invalid-argument" : "unavailable",error instanceof TypeError ? error.message : "Liste des competitions NAP momentanement indisponible.");
     }

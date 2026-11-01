@@ -4,7 +4,7 @@ function createNationalHandlers_saveNationalFeaturedDocuments(backendContext) {
     if(request.data?.library===true)return backendContext.manageNationalLibraryDocuments(request);
     if(backendContext.ENVIRONMENT.sportingDataSource!=="nap")throw new backendContext.HttpsError("failed-precondition","Sélection documentaire indisponible.");
     try{
-      const pool=require("../../nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD);
+      const pool=require("../../nap-portal-pool").portalPool(process.env.LIVEPALMES_NAP_PASSWORD);
       const result=await require("../../nap-featured-documents").saveSelection(pool,request.data,{
         authorize:()=>backendContext.engagementAccessContext(request),
         audit:{

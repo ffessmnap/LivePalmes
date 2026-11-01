@@ -3,7 +3,7 @@
 const {lockName}=require('./nap-qualification-control-start');
 const jobs=require('./nap-qualification-jobs');
 const native=require('./nap-portal-competitions');
-const {fingerprint}=require('./nap-portal-workspaces');
+const { fingerprint } = require("./nap-competition-fingerprint");
 const {previewPage}=require('./nap-qualification-preview-page');
 const {savePage}=require('./nap-qualification-preview-store');
 async function processPreview(pool,input,services){

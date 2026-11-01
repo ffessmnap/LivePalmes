@@ -2,7 +2,7 @@
 // Pure preparation. The caller must authorize the club, check opening/leader
 // and resolve sporting eligibility and times before calling this module.
 // Never rewrites an entire dossier: at most 100 explicitly changed swimmers.
-const {positiveId}=require("./nap-direct-calendar");
+const { positiveId } = require("./nap-calendar-values");
 const course=value=>{
   if(typeof value!=="string" || !/^[A-Z0-9]{1,32}$/.test(value)) throw new TypeError("Course NAP invalide.");
   return value;

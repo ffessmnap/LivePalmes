@@ -2,7 +2,7 @@
 // Snapshot only exceptions attached to explicitly removed native courses.
 // Persist this witness in the existing entry journal before any MyISAM write.
 // A retry must never revoke a newer national decision made after that snapshot.
-const {positiveId}=require('./nap-direct-calendar');
+const { positiveId } = require("./nap-calendar-values");
 const {nativeEqual}=require('./nap-native-compare');
 async function prepare(connection,{plan}){
   const competitionId=positiveId(plan.competitionId),clubId=String(plan.clubId);

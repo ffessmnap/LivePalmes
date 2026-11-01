@@ -3,7 +3,7 @@ function createCompetitionService_manageNationalLibraryDocuments(backendContext)
   async function manageNationalLibraryDocuments(request) {
     const context=await (0, backendContext.local$nationalLibraryContext)(request);
     const library=require("../../nap-national-documents");
-    const pool=require("../../nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD);
+    const pool=require("../../nap-portal-pool").portalPool(process.env.LIVEPALMES_NAP_PASSWORD);
     try{
       const input=request.data||{};
       if(input.action==='list')return await library.list(pool,input);

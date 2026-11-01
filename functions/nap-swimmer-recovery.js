@@ -4,11 +4,11 @@ const {notMerged}=require("./nap-swimmer-merge-state");
 // Transfer: bounded historical snapshots, durable backup, only club changes.
 // No old sporting directory, result-time inference or silent truncation.
 const licenses = require("./nap-license-state");
-const {person} = require("./nap-portal-swimmers");
-const {visiblePerformanceSql} = require("./nap-performance-visibility");
+const { person } = require("./nap-swimmer-profile");
+const { visiblePerformanceSql } = require("./nap-performance-visibility-sql");
 const {createHash}=require("node:crypto");
 const {COLUMNS,hash}=require("./nap-approved-swimmer-correction");
-const {fingerprint}=require("./nap-portal-swimmer-change");
+const { fingerprint } = require("./nap-swimmer-identity-values");
 const {nativeEqual}=require("./nap-native-compare");
 const {isDeepStrictEqual}=require("node:util");
 const historical=require("./nap-swimmer-recovery-clubs");

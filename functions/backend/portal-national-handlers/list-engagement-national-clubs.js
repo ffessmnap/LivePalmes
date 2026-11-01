@@ -7,7 +7,7 @@ function createNationalHandlers_listEngagementNationalClubs(backendContext) {
     if (backendContext.ENVIRONMENT.sportingDataSource === "nap") {
       try {
         if(request.data?.deletionClubId!==undefined){const clubId=String(request.data.deletionClubId);return{ok:true,source:"nap",clubId,deletionEligible:Boolean(await require("../../nap-club-provenance").eligibility(backendContext.db,clubId))};}
-        const result=await require("../../nap-club-directory").directory(require("../../nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD));
+        const result=await require("../../nap-club-directory-page").directory(require("../../nap-portal-pool").portalPool(process.env.LIVEPALMES_NAP_PASSWORD));
         const adminDirectory=request.data?.includeAdministrators===true?await backendContext.readEngagementClubAdminDirectory(backendContext.db):null;
         return {...result,...(adminDirectory?{clubAdministrators:adminDirectory.administrators,clubAdministratorsAvailable:adminDirectory.available!==false,clubAdministratorsBootstrapped:adminDirectory.bootstrapped===true}:{})};
       } catch(error) {throw new backendContext.HttpsError("unavailable",error instanceof RangeError?error.message:"Annuaire NAP indisponible. Reessayez.");}

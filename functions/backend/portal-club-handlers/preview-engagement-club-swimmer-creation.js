@@ -8,7 +8,7 @@ function createClubHandlers_previewEngagementClubSwimmerCreation(backendContext)
         const input={clubId:String(context.clubId),actorUid:context.uid,swimmer:request.data?.swimmer,creationId:request.data?.creationId,confirmAlerts:request.data?.confirmAlerts};
         const authorize=scope=>{if(scope.clubId!==String(context.clubId)) throw new backendContext.HttpsError("permission-denied","Nageur hors club.");};
         const formatAlert=(match,type)=>backendContext.engagementNewSwimmerAlertFromMatch(match,{...context,clubId:String(context.clubId)},type);
-        return await require("../../nap-swimmer-creation").previewCreation(require("../../nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD),input,authorize,formatAlert);
+        return await require("../../nap-swimmer-creation").previewCreation(require("../../nap-portal-pool").portalPool(process.env.LIVEPALMES_NAP_PASSWORD),input,authorize,formatAlert);
       } catch(error) {
         if(error instanceof backendContext.HttpsError) throw error;
         throw new backendContext.HttpsError(error instanceof TypeError || error instanceof RangeError?"failed-precondition":"unavailable",error instanceof TypeError || error instanceof RangeError?error.message:"Creation NAP a verifier. Reprenez la meme action ; sauvegarde conservee.");

@@ -8,7 +8,7 @@ const {nativeEqual}=require("./nap-native-compare");
 
 
 async function change(connection,input,audit) {
-  const id=require("./nap-direct-swimmer").swimmerId(input.id);
+  const id=require("./nap-swimmer-values").swimmerId(input.id);
   if(!/^\d{1,16}$/.test(input.clubId||"") || !input.actorUid || !["active","inactive"].includes(input.status) || !/^[a-f0-9]{64}$/.test(input.expectedFingerprint||"")) throw new TypeError("Fiche et statut requis.");
   const operation=createHash("sha256").update(JSON.stringify([id,input.clubId,input.actorUid,input.status,input.expectedFingerprint])).digest("hex");
   const query=async(sql,values=[]) => (await connection.execute({sql,timeout:10000},values))[0];
@@ -31,6 +31,6 @@ async function change(connection,input,audit) {
   const verified=await read();
   if(hash(verified)!==saved.afterHash) throw new Error("Statut NAP a verifier ; sauvegarde conservee.");
   await audit.complete(operation,{id,clubId:input.clubId,status:input.status,verified:true});
-  return {ok:true,source:"nap",swimmer:require("./nap-portal-swimmers").person(verified)};
+  return {ok:true,source:"nap",swimmer:require("./nap-swimmer-profile").person(verified)};
 }
 module.exports={fingerprint,status,change};

@@ -62,6 +62,26 @@ function restoreBackendOperation(text, file) {
   return text;
 }
 
+function restoreNativeImportPaths(source, file) {
+  if (!file.replaceAll("\\", "/").endsWith("/functions/index.js")) return source;
+  const paths = require("./backend-native-paths.json").paths;
+  const ast = acorn.parse(source, { ecmaVersion: "latest" });
+  const imports = new Set(lexicalReferences(ast).filter(ref => ref.node.name === "require").map(ref => ref.node));
+  const changes = [];
+  walk(ast, node => {
+    if (node.type !== "CallExpression" || !imports.has(node.callee) || node.arguments.length !== 1) return;
+    const arg = node.arguments[0];
+    if (arg.type !== "Literal" || typeof arg.value !== "string" || !arg.value.startsWith(".")) return;
+    const target = path.posix.normalize(path.posix.join("functions", arg.value)) + (arg.value.endsWith(".js") ? "" : ".js");
+    if (!paths[target]) return;
+    let relative = path.posix.relative("functions", paths[target]).replace(/\.js$/, "");
+    if (!relative.startsWith(".")) relative = "./" + relative;
+    changes.push({ start: arg.start, end: arg.end, text: JSON.stringify(relative) });
+  });
+  for (const change of changes.sort((a, b) => b.start - a.start)) source = source.slice(0, change.start) + change.text + source.slice(change.end);
+  return source;
+}
+
 function expandedSource(file, source, loadModule = name => fs.readFileSync(name, "utf8")) {
   if (file.endsWith(".css")) {
     return source.replace(/@import url\("([^"?#]+)\?[^"\n]*"\);/g, (_, name) =>
@@ -152,7 +172,7 @@ function expandedSource(file, source, loadModule = name => fs.readFileSync(name,
   for (const replacement of replacements.sort((a, b) => b.start - a.start)) {
     source = source.slice(0, replacement.start) + replacement.text + source.slice(replacement.end);
   }
-  return source;
+  return restoreNativeImportPaths(source, file);
 }
 
 function readFileSync(file, options) {
@@ -163,4 +183,4 @@ function readFileSync(file, options) {
     ? expandedSource(absolute, value) : value;
 }
 
-module.exports = { ...fs, readFileSync, expandedSource, unindentCode, restoreBackendOperation };
+module.exports = { ...fs, readFileSync, expandedSource, unindentCode, restoreBackendOperation, restoreNativeImportPaths };

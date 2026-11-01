@@ -4,7 +4,7 @@ function createClubHandlers_setEngagementClubPersonStatus(backendContext) {
     const context = await backendContext.engagementClubAccessContext(request);
     if(backendContext.ENVIRONMENT.sportingDataSource === "nap") {
       try {
-        const pool=require("../../nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD);
+        const pool=require("../../nap-portal-pool").portalPool(process.env.LIVEPALMES_NAP_PASSWORD);
         return await require("../../nap-club-person-status").changeNativePersonStatus(pool,{
           clubId:String(context.clubId),actorUid:context.uid,personId:request.data?.personId,
           active:request.data?.active,expectedFingerprint:request.data?.expectedFingerprint

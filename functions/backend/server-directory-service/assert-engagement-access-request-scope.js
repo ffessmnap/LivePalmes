@@ -12,7 +12,7 @@ function createDirectoryService_assertEngagementAccessRequestScope(backendContex
 
   async function createClubFromEngagementAccessRequest(payload = {}, actorUid = "", requestId = "") {
     if (backendContext.ENVIRONMENT.sportingDataSource === "nap") return require("../../nap-club-access-request").createFromRequest(
-      require("../../nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD), {payload, actorUid, requestId}, {
+      require("../../nap-portal-pool").portalPool(process.env.LIVEPALMES_NAP_PASSWORD), {payload, actorUid, requestId}, {
         read: async operation => { const doc = await backendContext.db.collection("auditLogs").doc(`nap-club-create-${operation}-before`).get(); return doc.exists ? doc.data().target : null; },
         prepare: (operation, target) => backendContext.db.collection("auditLogs").doc(`nap-club-create-${operation}-before`).create({action:"nap.clubCreate.prepare",actorUid,target,createdAt:new Date().toISOString()}),
         checkpoint: (operation, target) => backendContext.db.collection("auditLogs").doc(`nap-club-create-${operation}-before`).update({target}),

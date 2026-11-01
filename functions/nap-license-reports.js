@@ -2,7 +2,7 @@
 // Business reports shared by TEST/PROD. No SMTP, swimmer validation or Firestore.
 const {createHash}=require("node:crypto");
 const {seasonInfo}=require("./nap-license-state");
-const {positiveId}=require("./nap-direct-calendar");
+const { positiveId } = require("./nap-calendar-values");
 const tables=["livepalmes_license_control_current","livepalmes_license_control_history"];
 const ddl=[
  `CREATE TABLE ${tables[0]} (season varchar(9) NOT NULL,competition_id int NOT NULL,version int unsigned NOT NULL,revision char(64) NOT NULL,summary text NOT NULL,PRIMARY KEY(season,competition_id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,

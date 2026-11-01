@@ -2,7 +2,7 @@
 // Translate already-loaded NAP supplements for the existing sporting engine.
 // No database, export, Firebase fallback or inferred qualification rule.
 const engine=require("./engagement-qualification");
-const {positiveId,date}=require("./nap-direct-calendar");
+const { positiveId, date } = require("./nap-calendar-values");
 function array(value) {
   const parsed=typeof value==="string"?JSON.parse(value):value;
   if(!Array.isArray(parsed)) throw new TypeError("Liste de qualification NAP invalide.");

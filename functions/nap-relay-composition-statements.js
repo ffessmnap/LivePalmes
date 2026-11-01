@@ -2,7 +2,7 @@
 const {notMerged}=require("./nap-swimmer-merge-state");
 // Preparation only: generated identifiers are returned by MySQL and must be
 // checkpointed before member insertion. No native INSERT is executed here.
-const {positiveId}=require("./nap-direct-calendar");
+const { positiveId } = require("./nap-calendar-values");
 const {entryAuthority,deadline}=require("./nap-official-entry-statements");
 const FIELDS=["id","compet","categorie","club","course","tps"];
 function openAuthority(plan,authority) {
