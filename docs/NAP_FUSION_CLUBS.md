@@ -1,6 +1,16 @@
 # Opérations ponctuelles sur les fiches de clubs NAP
 
-<!-- description: Fusions des 14 et de Laon réalisées, puis dix fiches vides supprimées sur accord explicite ; preuves, périmètres et reprise ciblée. -->
+<!-- description: Opérations clubs exécutées : lots des 14, Laon, dix fiches vides et sept fusions de pôles ; décisions, preuves et reprise ciblée. -->
+
+## Sept fiches de pôles fusionnées le 1er novembre
+
+Sur demande explicite d'Antoine, les sept fusions suivantes sont **réalisées et vérifiées à `2026-11-01T10:46:05.165Z`** : 589→106 (CNHC - PF Aix), 583→107 (CPBR - PF Rennes), 590→33 (CPS - PF Aix), 584→33 (CPS - PF Rennes), 587→103 (MV - PF Aix), 586→48 (PAN - PF Aix), 599→83 (SCA - PF Rennes). Pour SCA, Antoine a précisé **Spondyle Club Antibes**, fiche 83 ; la fiche 635 de Sanguinet n'est pas concernée. Les mentions dictées « PFX » ont été identifiées comme PF Aix dans les fiches correspondantes.
+
+334 images SQL après : 297 lignes de performances, quatre relais, un nageur et 25 lignes de chefs d'équipe rattachés, puis sept fiches sources physiquement supprimées en dernier. Aucune référence restante aux sept sources dans les 19 couples table/champ contrôlés, projection de comptes incluse. Tous les champs des six cibles sont inchangés : noms, sigles, numéros fédéraux et paramètres conservés. Aucun compte, droit, profil ou destinataire modifié. Les sources n'avaient pas de compte/grant/projection ; **seule une ancienne demande d'accès CPBR déjà approuvée a changé de clubId, de 583 vers 107**, par commit CAS et masque d'un champ. Son statut et tous ses autres champs sont conservés.
+
+Le lecteur d'opération borne les lectures aux sources et aux clés primaires avant/après connues (lots de 100), avec contrôle des collisions et conservation des lignes complètes des clubs cibles. Il évite la lecture de l'historique complet des six cibles qui dépassait le plafond de 10 001 lignes ; aucun plafond n'a été relevé et aucune donnée n'a été tronquée. Nouveaux liens sources, dérives ou contraintes bloquent toujours. Les comptes cibles ne sont pas figés ni modifiés ; les contrôles Firebase portent sur les dépendances des sources. Les réservations des nageurs sources/cibles et des personnes citées dans les performances sont vérifiées : 2 243 chemins bornés, aucun état pending. Imports et gardes Records/MPF conservés.
+
+Archive combinée typée de 78 882 octets : images natives avant, demande historique avant/après et plan natif attendu après son rattachement. Copies locale et Drive privée indépendantes rouvertes ; clé séparée et journal chiffré conservés. Les 334 prédicats SQL réels ont été vérifiés en lecture seule et 16 scénarios de reprise/restauration simulés sur les images réelles. Exécution par l'outil natif existant, verrous SQL brefs, demande historique déplacée avant le natif ; aucune nouvelle livraison applicative TEST/PROD, fermeture du Portail, suspension de notifications ou modification IAM. Aucun retour arrière nécessaire ; preuve exécutable close après succès.
 
 ## Dix fiches vides supprimées le 1er novembre
 
