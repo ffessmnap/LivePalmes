@@ -65,6 +65,7 @@ function runUnitTests() {
     "access-directory-event-order-tests.js",
     "club-merge-tests.js",
     "club-merge-adapters-tests.js",
+    "club-merge-projection-replay-tests.js",
     "nap-release-cleanup-tests.js",
     "nap-approved-portal-schema-tests.js",
     "nap-approved-closure-schema-tests.js",

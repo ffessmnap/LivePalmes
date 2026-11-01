@@ -138,6 +138,7 @@ function createMailService(backendContext) {
     if (!cache9) cache9 = require("./backend/server-mail-service/update-engagement-club-admin-directory").createMailService_updateEngagementClubAdminDirectory({
       get cleanText() { return backendContext.cleanText; },
       set cleanText(value) { backendContext.cleanText = value; },
+      get local$engagementMailRecipientFromUserDoc() { return operation2().engagementMailRecipientFromUserDoc; },
       get local$assertEngagementClubAdminDirectorySize() { return operation7().assertEngagementClubAdminDirectorySize; },
       get local$engagementClubAdminDirectoryEntry() { return operation7().engagementClubAdminDirectoryEntry; },
       get local$engagementClubAdminDirectoryRef() { return operation7().engagementClubAdminDirectoryRef; },

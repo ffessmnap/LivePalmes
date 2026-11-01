@@ -2,6 +2,12 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 1er novembre — Reprise des clubs : projections Corbie depuis le profil courant
+
+- Reprise conditionnelle enregistrée dans `backend-isolation-progress.json#afterVerifiedProduction`, après publication globale [41274625834](https://github.com/ffessmnap/LivePalmes/actions/runs/41274625834) réussie : préalable Corbie, CI/TEST/PROD via Infra, puis sauvegardes/dérive et seules 14 fusions initiales. Les décisions de cibles, noms/sigles, trois comptes Corbie et regroupement OPEN sont conservées. Aucune fusion exécutée à cette étape.
+- Complément dans la [PR #651](https://github.com/ffessmnap/LivePalmes/pull/651) : transaction des fragments destinataires liée au profil courant, transaction des administrateurs liée au profil et à l'annuaire ; erreurs propagées au déclencheur existant. Aucun changement de droit/préférence/SMTP ni envoi. Budget avant/après : fragments +1 lecture, annuaire admin +1 ; avec les snapshots privés, cinq lectures sans conflit et 25 au maximum pour cinq tentatives par transaction. Aucun coût ajouté à l'interface, aucune collection ni reconstruction.
+- Contrôles locaux hors réseau réussis : ancien événement, répétition, restauration, concurrence profil/annuaire avec retry, panne partielle/reprise, limites, compte absent/inactif/rôle changé, préférences et comptes tiers conservés. Tests existants snapshots privés, projection NAP, optimisations et isolation des consommateurs conservés. Diagnostic initial désormais corrigé localement ; CI exacte, TEST et promotion PROD encore à attester avant levée du verrou. La sélection diagnostique existante identifie seulement `syncEngagementMailRecipientIndex` en TEST et PROD ; la sélection réelle reste calculée par les workflows.
+
 ### 31 octobre — Préparation locale des 14 fusions de clubs
 
 - Demande explicite : finaliser l'outil et les vérifications de sauvegarde/reprise, Corbie compris, sans appliquer les fusions. Noms/sigles/paramètres des 12 cibles conservés ; transfert des seules références approuvées puis suppression physique des 14 sources. Trois comptes Corbie conservés et OPEN/OPEN PASS regroupés vers 220. Identités du classeur figées, sans reprendre les anciennes propositions de sigles.
