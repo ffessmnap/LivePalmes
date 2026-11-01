@@ -6,7 +6,7 @@ function createPerformanceHandlers_getNapPerformanceAdministration(backendContex
       return backendContext.readNapRecordsAdministration(request);
     }
     if(backendContext.ENVIRONMENT.sportingDataSource !== "nap")throw new backendContext.HttpsError("failed-precondition","Source NAP requise.");
-    try{return await require("../../nap-performance-administration").createPerformanceAdministration({authorize:backendContext.authorizeNativePerformance,getPool:()=>require("../../nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD)})(request);}
+    try{return await require("../../nap-performance-administration").createPerformanceAdministration({authorize:backendContext.authorizeNativePerformance,getPool:()=>require("../../nap-portal-pool").portalPool(process.env.LIVEPALMES_NAP_PASSWORD)})(request);}
     catch(error){throw backendContext.nativePerformanceFailure(error);}
   }
 

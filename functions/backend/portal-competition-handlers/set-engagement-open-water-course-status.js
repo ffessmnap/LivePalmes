@@ -8,7 +8,7 @@ function createCompetitionHandlers_setEngagementOpenWaterCourseStatus(backendCon
     const courseId = backendContext.cleanText(request.data?.courseId).slice(0, 60);
     const active = request.data?.active === true;
     if (!courseId) throw new backendContext.HttpsError("invalid-argument", "Course eau libre requise.");
-    if (backendContext.ENVIRONMENT.sportingDataSource === "nap") return require("../../nap-open-water-library").change(require("../../nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD), {action:"status",courseId,active}, context.uid, saved => backendContext.writeAuditLog("engagementOpenWaterCourse.nativeChange",context.uid,saved));
+    if (backendContext.ENVIRONMENT.sportingDataSource === "nap") return require("../../nap-open-water-library").change(require("../../nap-portal-pool").portalPool(process.env.LIVEPALMES_NAP_PASSWORD), {action:"status",courseId,active}, context.uid, saved => backendContext.writeAuditLog("engagementOpenWaterCourse.nativeChange",context.uid,saved));
     const ref = backendContext.engagementOpenWaterCourseConfigRef();
     const now = new Date().toISOString();
     let courses = [];

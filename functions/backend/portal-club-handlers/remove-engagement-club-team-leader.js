@@ -5,7 +5,7 @@ function createClubHandlers_removeEngagementClubTeamLeader(backendContext) {
     if (backendContext.ENVIRONMENT.sportingDataSource === "nap") {
       try {
         const competitionId = backendContext.cleanText(request.data?.competitionId).slice(0,128);
-        const pool = require("../../nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD);
+        const pool = require("../../nap-portal-pool").portalPool(process.env.LIVEPALMES_NAP_PASSWORD);
         const result = await require("../../nap-team-leader-remove").removeNativeTeamLeader(pool, {
           competitionId, clubId: String(context.clubId), actorUid: context.uid,
           leaderId: request.data?.leaderId, expectedFingerprint: request.data?.expectedFingerprint

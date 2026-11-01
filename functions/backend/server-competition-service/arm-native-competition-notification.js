@@ -7,7 +7,7 @@ function createCompetitionService_armNativeCompetitionNotification(backendContex
     const journal=await backendContext.db.collection('auditLogs').doc(`nap-competition-${operation}-before`).get();
     if(!journal.exists)throw new TypeError('Sauvegarde de notification introuvable.');
     const requested=journal.data()?.target?.notificationOpeningRequested===true;
-    const automation=require("../../nap-notification-automation"),id=String(require("../../nap-direct-calendar").positiveId(competition.id));
+    const automation=require("../../nap-notification-automation"),id=String(require("../../nap-calendar-values").positiveId(competition.id));
     await automation.arm(backendContext.db,{competitionId:id,operation,deliveryMode:'bcc-v1',
       action:competition.entryStatus,deadline:competition.entryDeadlineAt,openingRequested:requested,actorUid:context.uid,newCycle:requested});
     for(const kind of competition.entryStatus==='open'?['opening','closure']:competition.entryStatus==='closed'?['closure']:[])

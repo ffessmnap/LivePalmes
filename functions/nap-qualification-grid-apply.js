@@ -3,7 +3,7 @@
 // Native competition/parameters, performances and engagements are never changed
 // here. The caller must finish the confirmed entry-control job before this step.
 const {isDeepStrictEqual}=require('node:util');
-const {positiveId}=require('./nap-direct-calendar');
+const { positiveId } = require("./nap-calendar-values");
 const {fromPack}=require('./nap-qualification-rules');
 const {authorityGuard,SPECS}=require('./nap-portal-competition-change');
 const schema=require('./nap-approved-portal-schema');
@@ -16,7 +16,7 @@ async function applyGrid(connection,input,pack,services){
   await services.authorize(pack.event);
   const rules=engine.validateRules(input.rules,input.events,true);
   if(isDeepStrictEqual(fromPack(pack,input.events),rules))return {verified:true,unchanged:true};
-  const prepared=require('./nap-qualification-plan').plan(pack,{...input,expectedFingerprint:require('./nap-portal-workspaces').fingerprint(pack)});
+  const prepared=require('./nap-qualification-plan').plan(pack,{...input,expectedFingerprint:require("./nap-competition-fingerprint").fingerprint(pack)});
   if(!isDeepStrictEqual(canonical(prepared.before),canonical(input.before)))throw new TypeError('Ancienne grille modifiee avant application.');
   const query=async(sql,values=[]) => (await connection.execute({sql,timeout:10000},values))[0];
   const tracking=[input.now,input.now,input.actorUid,input.actorUid];let started=false;

@@ -1,7 +1,7 @@
 "use strict";
 // One grouped exception query for a previously grouped NAP history. No old
 // sporting collection, per-person query, performance export or hidden scan.
-const {positiveId}=require('./nap-direct-calendar');
+const { positiveId } = require("./nap-calendar-values");
 const {evaluatePerson}=require('./nap-qualification-evaluation');
 const grants=require('./nap-qualification-grants');
 async function readEvaluations(connection,input){

@@ -3,11 +3,11 @@ const { indexed, readPeople } = require("./nap-official-entry-reads");
 // Prepared native official selection. No callable is registered by this module.
 // Reuse the dossier lock/journal used by swimmer and individual selections.
 const {createHash}=require("node:crypto");
-const {positiveId}=require("./nap-direct-calendar");
-const {fingerprint}=require("./nap-portal-workspaces");
+const { positiveId } = require("./nap-calendar-values");
+const { fingerprint } = require("./nap-competition-fingerprint");
 const {readNativeCompetition}=require("./nap-portal-competitions");
 const {readNativeClubEntry}=require("./nap-portal-entries");
-const {SOURCES,OPTION_COLUMNS,normalizeOptions}=require("./nap-club-people");
+const { SOURCES, OPTION_COLUMNS, normalizeOptions } = require("./nap-club-people-values");
 const {officialIds,planOfficials}=require("./nap-official-entry-plan");
 const {remainingOfficials}=require("./nap-official-entry-recovery");
 const {selectedStatement,insertion,deletion}=require("./nap-official-entry-statements");

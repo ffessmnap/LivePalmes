@@ -20,6 +20,7 @@ async function main(){
   },release(){},destroy(){locked=false;}};
   const pool={execute:connection.execute,getConnection:async()=>connection};
   native.portalPool=()=>pool;
+  require("../functions/nap-portal-pool").portalPool=()=>pool;
   const backend={db,stableHash,HttpsError,cleanFirestoreValue:value=>value,cleanText:value=>String(value||""),writeAuditLogOnce:async()=>{},
     ENGAGEMENT_SWIMMER_CHANGE_REQUESTS_COLLECTION:"requests",engagementSwimmerChangeRequestItem:doc=>({id:doc.id,...doc.data()}),ENVIRONMENT:{sportingDataSource:"nap"},
     engagementClubAccessContext:async()=>({uid:"club-test",clubId}),engagementAccessContext:async()=>({uid:"national-test",national})};

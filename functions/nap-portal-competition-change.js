@@ -6,9 +6,10 @@ const { createHash } = require("node:crypto");
 const {nativeEqual}=require("./nap-native-compare");
 const { isDeepStrictEqual } = require("node:util");
 const native = require("./nap-portal-competitions");
-const calendar = require("./nap-direct-calendar");
+const { date: __nativeMember0, positiveId: __nativeMember1, publicUrl: __nativeMember2 } = require("./nap-calendar-values");
+const calendar = { date: __nativeMember0, positiveId: __nativeMember1, publicUrl: __nativeMember2 };
 const { parisDeadline } = require("./nap-paris-time");
-const { fingerprint } = require("./nap-portal-workspaces");
+const { fingerprint } = require("./nap-competition-fingerprint");
 const schema = require("./nap-approved-portal-schema");
 const SPECS = Object.freeze({
   ...SCOPE_SPECS,
@@ -135,7 +136,7 @@ function planCompetitionChange(pack, input, nowMs = Date.now()) {
       after.compet_parametres.actif=value === "open" ? 1 : 0;
       supplemental("livepalmes_competition_options",pack.options).entry_closed=value === "closed" ? 1 : 0;
     } else if(field === "programSessions") {
-      const events=require("./nap-portal-workspaces").competitionItem(pack,input.eventDefinitions).events;
+      const events=require("./nap-competition-view").competitionItem(pack,input.eventDefinitions).events;
       const known=new Set(events.filter(event=>event.nativeRecognized).map(event=>event.code));
       const previous=typeof pack.detailedProgram?.program_sessions==="string" ? JSON.parse(pack.detailedProgram.program_sessions) : pack.detailedProgram?.program_sessions || [];
       const recognizedWaterCode=code=>pack.event.competitionType==="openWater"&&require('./nap-open-water-courses').fromCode(code);

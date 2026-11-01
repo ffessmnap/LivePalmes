@@ -3,7 +3,7 @@
 // Budget excluding access: time competition (10), selected context (3), history (1),
 // optional participation (1) and qualification grants (1). No cache of sporting data.
 // A single swimmer's saved-course history adds at most one entries SELECT.
-const {positiveId}=require("./nap-direct-calendar");
+const { positiveId } = require("./nap-calendar-values");
 const {readEntryTimeCompetition}=require("./nap-portal-competitions");
 const {readEntryTimeContext}=require("./nap-entry-time-context");
 const {readEntryHistory}=require("./nap-entry-performance-history");

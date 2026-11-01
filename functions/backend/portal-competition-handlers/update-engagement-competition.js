@@ -8,7 +8,7 @@ function createCompetitionHandlers_updateEngagementCompetition(backendContext) {
     }
     if (backendContext.ENVIRONMENT.sportingDataSource === "nap") {
       const nativeChange = require("../../nap-portal-competition-change");
-      const pool = require("../../nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD);
+      const pool = require("../../nap-portal-pool").portalPool(process.env.LIVEPALMES_NAP_PASSWORD);
       const authorize = event => backendContext.assertCanModifyEngagementEvent(context,event);
       try {
         const patch={...(request.data?.patch||{})},incoming=request.data?.qualifications??patch.qualifications;

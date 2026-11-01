@@ -5,7 +5,7 @@ function createCompetitionHandlers_updateEngagementCalendarEvent(backendContext)
     const calendarEventId = backendContext.cleanText(request.data?.calendarEventId).slice(0, 128);
     if (!calendarEventId) throw new backendContext.HttpsError("invalid-argument", "Evenement requis.");
     if (backendContext.ENVIRONMENT.sportingDataSource === "nap") {
-      const pool=require("../../nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD);
+      const pool=require("../../nap-portal-pool").portalPool(process.env.LIVEPALMES_NAP_PASSWORD);
       const authorize=event=>{backendContext.assertCanModifyEngagementEvent(context,event);if(!require("../../nap-calendar-event-details").KINDS.has(event.competitionType))throw new backendContext.HttpsError("failed-precondition","Formation, stage ou reunion requis.");};
       try {
         const pack=await require("../../nap-portal-competitions").readNativeCompetition(pool,calendarEventId,authorize);

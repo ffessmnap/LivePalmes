@@ -1,7 +1,7 @@
 "use strict";
 // Native persistence primitives for the existing preview/confirm/apply workflow.
 // No entry is changed here; callers supply separately verified sporting plans.
-const {positiveId}=require('./nap-direct-calendar');
+const { positiveId } = require("./nap-calendar-values");
 const states=new Set(['preview','ready','apply','done','cancelled']);
 function scope(input){
   if(input.national!==true||typeof input.actorUid!=='string'||!input.actorUid.trim()||input.actorUid.length>128||!/^[a-f0-9]{64}$/.test(input.jobId))throw new TypeError('Controle national requis.');

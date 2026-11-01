@@ -5,7 +5,7 @@ function createPerformanceHandlers_listCompetitionImports(backendContext) {
     if (backendContext.ENVIRONMENT.sportingDataSource === "nap") {
       backendContext.authorizeNativePerformance(request);
       try {
-        return await require("../../nap-import-history").readImportHistory(require("../../nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD));
+        return await require("../../nap-import-history").readImportHistory(require("../../nap-portal-pool").portalPool(process.env.LIVEPALMES_NAP_PASSWORD));
       } catch(error) { throw backendContext.nativePerformanceFailure(error); }
     }
     const snapshot = await backendContext.db

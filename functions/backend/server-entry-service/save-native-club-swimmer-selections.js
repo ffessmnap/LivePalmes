@@ -3,7 +3,7 @@ function createEntryService_saveNativeClubSwimmerSelections(backendContext) {
   async function saveNativeClubSwimmerSelections(context,request,rawChanges) {
     try {
       if(!Array.isArray(rawChanges) || !rawChanges.length || rawChanges.length>50) throw new TypeError("Selection de 1 a 50 nageurs requise.");
-      const pool=require("../../nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD);
+      const pool=require("../../nap-portal-pool").portalPool(process.env.LIVEPALMES_NAP_PASSWORD);
       const result=await require("../../nap-swimmer-entry-change").saveNativeSwimmerSelection(pool,{
         competitionId:request.data?.competitionId,clubId:String(context.clubId),actorUid:context.uid,
         expectedFingerprint:request.data?.expectedFingerprint,mutationId:request.data?.mutationId,
@@ -34,7 +34,7 @@ function createEntryService_saveNativeClubSwimmerSelections(backendContext) {
           complete:(operation,target)=>backendContext.writeAuditLogOnce("engagementClubEntry.swimmerSelectionsSaved",context.uid,{...target,auditPreparationId:`nap-swimmer-selection-${operation}-before`},operation)
         }
       });
-      const competition=require("../../nap-portal-workspaces").competitionItem(result.competition,backendContext.ENGAGEMENT_EVENT_DEFINITION_BY_CODE);
+      const competition=require("../../nap-competition-view").competitionItem(result.competition,backendContext.ENGAGEMENT_EVENT_DEFINITION_BY_CODE);
       return {ok:true,source:"nap",operation:result.operation,writesExecuted:result.writesExecuted,entry:await backendContext.nativeClubEntryView(result.nativeEntry,context,competition),sqlBudget:{queriesMax:47,writesMax:5}};
     } catch(error) {
       if(error instanceof backendContext.HttpsError) throw error;

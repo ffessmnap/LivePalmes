@@ -1,7 +1,7 @@
 "use strict";
-const {positiveId}=require('./nap-direct-calendar');
+const { positiveId } = require("./nap-calendar-values");
 const {lockName}=require('./nap-qualification-control-start');
-const {fingerprint}=require('./nap-portal-workspaces');
+const { fingerprint } = require("./nap-competition-fingerprint");
 const {authorityGuard}=require('./nap-portal-competition-change');
 const {nativeEqual}=require('./nap-native-compare');
 const grants=require('./nap-qualification-grants');

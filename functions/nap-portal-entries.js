@@ -1,8 +1,8 @@
 "use strict";
 // Native entry dossier. Reading does not reconcile, remove or rewrite old entries.
-const { positiveId } = require("./nap-direct-calendar");
-const { bounded } = require("./nap-portal-competitions");
-const { listPortalClubSwimmers } = require("./nap-portal-swimmers");
+const { positiveId } = require("./nap-calendar-values");
+const { bounded } = require("./nap-competition-query");
+const { listPortalClubSwimmers } = require("./nap-portal-swimmer-readers");
 const licenseState=require("./nap-license-state");
 const LIMITS = Object.freeze({ swimmers: 800, inscriptions: 800, individual: 5000, relays: 200, members: 1200, officials: 200, leaders: 20 });
 const placeholders = rows => rows.map(() => "?").join(",");
@@ -60,7 +60,7 @@ async function inspectNativeClubEntry(connection) {
     const [clubs] = await checked.execute({sql:"SELECT n.club FROM nageursengager e FORCE INDEX (livepalmes_compet_nageur_id) LEFT JOIN nageurs n ON n.id=e.nageur WHERE e.compet=? ORDER BY e.nageur,e.id LIMIT 1",timeout:10000},[5140]);
     if (!clubs.length || !/^\d{1,16}$/.test(String(clubs[0].club ?? ""))) return {source:"nap",mode:"portal-entry-contract-readonly",present:false,complete:true,plans,writesExecuted:false};
     const result = await readNativeClubEntry(checked,{competitionId:5140,clubId:String(clubs[0].club)},()=>{});
-    const directory = await require("./nap-club-people").readClubPeople(checked,{clubId:String(clubs[0].club)},()=>{});
+    const directory = await require("./nap-club-people-page").readClubPeople(checked,{clubId:String(clubs[0].club)},()=>{});
     const selectedIds=new Set(result.inscriptions.map(row=>String(row.nageur)));
     const selectedPeople=result.swimmers.filter(row=>selectedIds.has(String(row.id))).slice(0,100);
     const histories=selectedPeople.length ? await require("./nap-entry-performance-history").readEntryHistory(checked,selectedPeople) : new Map();

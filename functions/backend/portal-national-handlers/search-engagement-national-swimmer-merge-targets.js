@@ -7,7 +7,7 @@ function createNationalHandlers_searchEngagementNationalSwimmerMergeTargets(back
     }
     if (backendContext.ENVIRONMENT.sportingDataSource === "nap") {
       try {
-        const pool = require("../../nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD);
+        const pool = require("../../nap-portal-pool").portalPool(process.env.LIVEPALMES_NAP_PASSWORD);
         return await require("../../nap-swimmer-merge-search").searchMergeTargets(pool, {sourceSwimmerId:request.data?.sourceSwimmerId,query:request.data?.query});
       } catch (error) {
         throw new backendContext.HttpsError(error instanceof TypeError ? "invalid-argument" : "unavailable", "Recherche NAP indisponible. Precisez le nom, le prenom ou l'identifiant de la fiche a conserver.");

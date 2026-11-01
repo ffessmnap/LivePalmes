@@ -2,8 +2,8 @@
 // Recheck one immutable preview page using four grouped indexed reads at most.
 // Evaluate the saved original entries, so a partially applied MyISAM operation
 // cannot erase its own proof or turn an interruption into an unrelated removal.
-const {positiveId}=require('./nap-direct-calendar');
-const {person}=require('./nap-portal-swimmers');
+const { positiveId } = require("./nap-calendar-values");
+const { person } = require("./nap-swimmer-profile");
 const {readEntryHistory}=require('./nap-entry-performance-history');
 const grants=require('./nap-qualification-grants');
 const engine=require('./engagement-qualification');

@@ -9,7 +9,7 @@ function createCompetitionHandlers_addEngagementOpenWaterCourse(backendContext) 
       const distance=Number(request.data?.distance);
       if(!Number.isInteger(distance)||distance<1||distance>100000)throw new backendContext.HttpsError("invalid-argument","Distance entière de 1 à 100 000 mètres requise.");
       const courses=(distance===150?["SF","BI"]:["SF","BI","SUP"]).map(discipline=>backendContext.cleanEngagementOpenWaterCourse({distance,discipline}));
-      const pool=require("../../nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD),library=require("../../nap-open-water-library");
+      const pool=require("../../nap-portal-pool").portalPool(process.env.LIVEPALMES_NAP_PASSWORD),library=require("../../nap-open-water-library");
       let nativeReferencesCreated=0;
       try {
         const current=await library.readStored(pool);
@@ -31,7 +31,7 @@ function createCompetitionHandlers_addEngagementOpenWaterCourse(backendContext) 
       distance: request.data?.distance,
       discipline: request.data?.discipline
     });
-    if (backendContext.ENVIRONMENT.sportingDataSource === "nap") return require("../../nap-open-water-library").change(require("../../nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD), {action:"add",course}, context.uid, saved => backendContext.writeAuditLog("engagementOpenWaterCourse.nativeChange",context.uid,saved));
+    if (backendContext.ENVIRONMENT.sportingDataSource === "nap") return require("../../nap-open-water-library").change(require("../../nap-portal-pool").portalPool(process.env.LIVEPALMES_NAP_PASSWORD), {action:"add",course}, context.uid, saved => backendContext.writeAuditLog("engagementOpenWaterCourse.nativeChange",context.uid,saved));
     const ref = backendContext.engagementOpenWaterCourseConfigRef();
     const now = new Date().toISOString();
     let courses = [];

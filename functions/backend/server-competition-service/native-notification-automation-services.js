@@ -2,7 +2,7 @@
 function createCompetitionService_nativeNotificationAutomationServices(backendContext) {
   function nativeNotificationAutomationServices(simulation = true) {
     if(backendContext.ENVIRONMENT.sportingDataSource !== "nap")throw new backendContext.HttpsError("failed-precondition","Source NAP requise.");
-    const pool=require("../../nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD);
+    const pool=require("../../nap-portal-pool").portalPool(process.env.LIVEPALMES_NAP_PASSWORD);
     let recipientPromise, mailSettingPromise;
     const competitionPromises=new Map(),entryPromises=new Map();
     const services={simulation,deleteField:()=>backendContext.FieldValue.delete(),
@@ -18,7 +18,7 @@ function createCompetitionService_nativeNotificationAutomationServices(backendCo
         return {...metadata,storagePath};
       },
       competition:id=>{
-        if(!competitionPromises.has(id))competitionPromises.set(id,(async()=>({...await (0, backendContext.local$nativePortalCompetition)(id,()=>{}),id:String(require("../../nap-direct-calendar").positiveId(id))}))());
+        if(!competitionPromises.has(id))competitionPromises.set(id,(async()=>({...await (0, backendContext.local$nativePortalCompetition)(id,()=>{}),id:String(require("../../nap-calendar-values").positiveId(id))}))());
         return competitionPromises.get(id);
       },
       recipients:()=>recipientPromise||=(async()=>{

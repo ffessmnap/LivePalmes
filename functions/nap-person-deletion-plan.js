@@ -5,7 +5,7 @@
 const {createHash}=require("node:crypto");
 const {isDeepStrictEqual}=require("node:util");
 const {reference}=require("./nap-club-person-status");
-const {SOURCES,normalizeOptions,person,OPTION_COLUMNS}=require("./nap-club-people");
+const { SOURCES, normalizeOptions, person, OPTION_COLUMNS } = require("./nap-club-people-values");
 const {nativeEqual}=require("./nap-native-compare");
 const COLUMNS=["engagement_id","person_id","competition_id","entry_club","nom","prenom","date","club","deleted_at","deleted_by"];
 const TABLE="livepalmes_deleted_people_history";

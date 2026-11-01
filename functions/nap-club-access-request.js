@@ -1,6 +1,7 @@
 "use strict";
 const {createHash}=require("node:crypto");
-const directory=require("./nap-club-directory"),creation=require("./nap-club-create");
+const { COLUMNS: __nativeMember0, club: __nativeMember1 } = require("./nap-club-values");
+const directory={ COLUMNS: __nativeMember0, club: __nativeMember1 },creation=require("./nap-club-create");
 // One indexed lookup, at most two rows. Never consult the former sporting directory.
 async function findByFederalNumber(pool,value) {
  const number=String(value||"").trim().toUpperCase().slice(0,24);

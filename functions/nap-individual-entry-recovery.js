@@ -2,7 +2,7 @@
 // Recognize only the recorded operation's partial effects. MyISAM cannot
 // roll back several writes; an unrelated native edit requires a fresh review.
 const {isDeepStrictEqual}=require("node:util");
-const {positiveId}=require("./nap-direct-calendar");
+const { positiveId } = require("./nap-calendar-values");
 const same=(a,b)=>["id","engagement","course","tps"].every(key=>isDeepStrictEqual(a[key],b[key]));
 function remaining(plan,current) {
   if(!plan || !Array.isArray(plan.plans) || plan.plans.length>100 || !Array.isArray(current) || current.length>5000) throw new TypeError("Reprise NAP bornee requise.");

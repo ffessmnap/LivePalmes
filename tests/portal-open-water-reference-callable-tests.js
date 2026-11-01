@@ -2,7 +2,7 @@
 const assert=require('node:assert/strict');
 const {createCompetitionHandlers}=require('../functions/portal-competition-handlers');
 const library=require('../functions/nap-open-water-library');
-const swimmers=require('../functions/nap-portal-swimmers');
+const swimmers=require('../functions/nap-portal-pool');
 const native=require('../functions/nap-open-water-reference-addition');
 const cryptoBackup=require('../functions/nap-open-water-reference-backup');
 class HttpsError extends Error{constructor(code,message){super(message);this.code=code;}}

@@ -11,7 +11,7 @@ function createClubHandlers_setEngagementClubSwimmerActivityStatus(backendContex
     }
     if (backendContext.ENVIRONMENT.sportingDataSource === "nap") {
       try {
-        const result=await require("../../nap-swimmer-activity").change(require("../../nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD), {
+        const result=await require("../../nap-swimmer-activity").change(require("../../nap-portal-pool").portalPool(process.env.LIVEPALMES_NAP_PASSWORD), {
           id:swimmerIndexId,clubId:String(context.clubId),actorUid:context.uid,status,expectedFingerprint:request.data?.expectedFingerprint
         }, {
           read:async operation=>{const doc=await backendContext.db.collection("auditLogs").doc(`nap-swimmer-activity-${operation}-before`).get();return doc.exists?doc.data().target:null;},

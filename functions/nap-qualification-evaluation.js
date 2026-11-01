@@ -3,7 +3,7 @@
 // Firestore source, generated cache or new sporting rule is used here.
 const engine=require("./engagement-qualification");
 const {fromPack}=require("./nap-qualification-rules");
-const {positiveId}=require("./nap-direct-calendar");
+const { positiveId } = require("./nap-calendar-values");
 function evaluatePerson({pack,person,events,rows,grants=[],categoryFor}) {
   if(typeof categoryFor!=="function"||!Array.isArray(rows)||rows.length>2000||!Array.isArray(grants)||grants.length>64) throw new TypeError("Controle de qualification NAP borne requis.");
   if(![0,29].includes(Number(pack.nativeParameters?.qualif||0))) throw new TypeError("Ancienne grille de qualifications non raccordee.");

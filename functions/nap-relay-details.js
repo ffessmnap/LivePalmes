@@ -1,7 +1,7 @@
 "use strict";
 // Additive detail in the already approved club-entry JSON. Native relay rows
 // remain the shared source; a stale companion never changes their identity.
-const {positiveId}=require("./nap-direct-calendar");
+const { positiveId } = require("./nap-calendar-values");
 const CATEGORIES=new Set(["P","B","M","C","J","S","R140","R180","R220","R260"]);
 const MODES=new Set(["female","male","mixed"]);
 const KEY="relay_details_v1";

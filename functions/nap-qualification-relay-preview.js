@@ -3,7 +3,7 @@
 // existing competition/club/id index. Qualification anchors come from the
 // individual preview, never from an old sporting Firebase document.
 const {sourceHash}=require('./nap-qualification-source-hash');
-const {positiveId}=require('./nap-direct-calendar');
+const { positiveId } = require("./nap-calendar-values");
 const engine=require('./engagement-qualification');
 function cursor(value){
   if(!value)return {clubId:'',relayId:0};
@@ -46,7 +46,7 @@ async function readAnchors(connection,input,ids,services){
   const id=positiveId(input.competitionId),marks=values=>values.map(()=>'?').join(',');
   const raw=await query(`SELECT n.id,n.nom,n.prenom,n.date,n.sexe,n.club,e.id AS inscription_id FROM nageurs n FORCE INDEX (PRIMARY) LEFT JOIN nageursengager e FORCE INDEX (livepalmes_compet_nageur_id) ON e.compet=? AND e.nageur=n.id WHERE n.id IN (${marks(ids)}) ORDER BY n.id,e.id LIMIT 13`,[id,...ids],12);
   if(raw.length!==ids.length||raw.some(row=>!ids.includes(Number(row.id)))||new Set(raw.map(row=>Number(row.id))).size!==ids.length)throw new TypeError('Identites ou inscriptions des relayeurs ambigues.');
-  const people=raw.map(require('./nap-portal-swimmers').person),links=raw.filter(row=>row.inscription_id!=null).map(row=>positiveId(row.inscription_id));
+  const people=raw.map(require("./nap-swimmer-profile").person),links=raw.filter(row=>row.inscription_id!=null).map(row=>positiveId(row.inscription_id));
   const courses=links.length?await query(`SELECT id,engagement,course,tps FROM engagements FORCE INDEX (engagements_clef) WHERE engagement IN (${marks(links)}) ORDER BY engagement,course,id LIMIT 3601`,links,3600):[];
   const exceptions=await query(`SELECT competition_id,swimmer_id,event_code,club_id,status,reason,approved_by,approved_at,revoked_by,revoked_at,version FROM livepalmes_qualification_grants FORCE INDEX (PRIMARY) WHERE competition_id=? AND swimmer_id IN (${marks(ids)}) ORDER BY swimmer_id,event_code LIMIT 769`,[id,...ids],768);
   if(courses.some(row=>!links.includes(Number(row.engagement)))||exceptions.some(row=>!ids.includes(Number(row.swimmer_id))))throw new TypeError('Preuves des relayeurs hors selection.');

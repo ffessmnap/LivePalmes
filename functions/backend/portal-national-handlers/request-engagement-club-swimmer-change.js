@@ -4,7 +4,8 @@ function createNationalHandlers_requestEngagementClubSwimmerChange(backendContex
     const context = await backendContext.engagementClubAccessContext(request);
     if (backendContext.ENVIRONMENT.sportingDataSource === "nap") {
       try {
-        const nap = require("../../nap-portal-swimmers");
+        const { portalPool: __nativeMember0 } = require("../../nap-portal-pool");
+const nap = { portalPool: __nativeMember0 };
         if(request.data?.nsAction!==undefined)return await require("../../nap-swimmer-ns-callables").club(backendContext,context,request.data);
         if(request.data?.completeLicense===true) return await require("../../nap-club-license-fill").fillClubLicense(nap.portalPool(process.env.LIVEPALMES_NAP_PASSWORD),request.data,context,{
           read:async operation=>{const snapshot=await backendContext.db.collection("auditLogs").doc(`nap-club-license-${operation}-before`).get();return snapshot.exists?snapshot.data().target:null;},
