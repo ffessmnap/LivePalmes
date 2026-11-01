@@ -2,6 +2,13 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 1er novembre — Nouveautés modifiables depuis le portail
+
+- Demande et accord explicites d’Antoine : conserver le format date/heure et puces ; permettre au niveau national d’ajouter, modifier et supprimer, y compris la publication existante ; consultation seule pour le niveau régional. Livraison TEST autorisée, aucune publication PROD ni modification des données sportives.
+- Contenu dans le document Firestore dédié `engagementConfigurations/portalNews` de la collection existante, isolé par projet Firebase. Une nouvelle callable `managePortalNews` vérifie le profil actif réel et les capacités, sans nouvelle capacité, collection ou règle. La publication initiale reste une amorce source tant que le document est absent ; sa reprise est atomique lors de la première écriture autorisée, jamais à la lecture. Les suppressions, même de la dernière entrée, ne rétablissent pas l’amorce.
+- Budget : à l’ouverture/actualisation, une lecture de profil et une lecture du document de contenu ; retour en cache de 60 s, zéro appel. Modification : une lecture de profil, une lecture transactionnelle et une écriture du document ; au pire cinq tentatives transactionnelles, soit six lectures et une écriture. Profil des administrateurs historiques autorisés : lecture de profil évitée. Aucun listener, N+1, accès NAP ou scan. Plafonds : 200 publications, 512 Kio de contenu UTF-8 et 8 000 caractères par publication ; affichage par groupes de 20 sans requête supplémentaire. Conflit de révision refusé avec brouillon conservé ; aucune relance automatique d’écriture.
+- Tests serveur hors réseau réussis (profils réels simulés, CRUD, reprise, conflits, limites). Contrôle navigateur local réussi à 1280/390 px dans les deux thèmes : lecture seule régionale, édition/suppression des anciennes publications, ajout, texte littéral, cache/pagination, panne et changement de compte avec réponse en vol. PR, CI exacte et preuve TEST à renseigner après réussite. Retour utilisateur sur TEST attendu ; aucune validation fonctionnelle inventée.
+
 ### 1er novembre — Suivi des courriels CCI et aperçu des destinataires
 
 - Accord explicite d'Antoine : corriger le suivi CCI et le libellé de l'aperçu, puis déployer sur TEST ; aucun renvoi de mail ni modification des données existantes. Cause confirmée dans les journaux PROD : la lecture de l'historique exigeait une adresse individuelle alors que les groupes CCI utilisent une liste de destinataires.

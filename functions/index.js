@@ -8917,6 +8917,11 @@ async function engagementCompetitionDocumentContext(input0) {
   return $serverCompetitionService_engagementCompetitionDocumentContext().engagementCompetitionDocumentContext(...arguments);
 }
 
+// Portal news use the live server profile, never a client-supplied role.
+exports.managePortalNews = onCall(CALLABLE_OPTIONS, async (request) => {
+  return require("./portal-news").managePortalNews({ db, HttpsError, ADMIN_UIDS }, request);
+});
+
 // National document selection. No client-supplied role or actor is authoritative.
 exports.getNationalFeaturedDocuments = onCall({ ...CALLABLE_OPTIONS, secrets:[defineSecret("LIVEPALMES_NAP_PASSWORD")] }, /* extracted-handler: functions/backend/portal-national-handlers/get-national-featured-documents.js#getNationalFeaturedDocuments#arrow */ async (request) => {
   return $portalNationalHandlers_getNationalFeaturedDocuments().getNationalFeaturedDocuments(request);

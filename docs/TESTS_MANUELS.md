@@ -528,6 +528,12 @@ Cette checklist sert avant une publication importante ou apres une modification 
 
 ## Portail LivePalmes
 
+### Nouveautés administrables — TEST
+
+- Avec un compte national, modifier la publication du 30 octobre sans changer sa date, créer un texte sur plusieurs lignes puis le recharger ; vérifier date/heure, puces et ordre décroissant. Tester au clavier et à 390 px dans les deux thèmes. Une suppression annulée conserve le texte ; une suppression confirmée est persistante, y compris pour la publication initiale et la dernière publication.
+- Avec un compte régional, vérifier la lecture seule et le refus serveur de save/delete ; un compte club ne peut pas consulter. Deux éditeurs sur la même révision : le second enregistrement est refusé avec conservation du brouillon et possibilité d’actualiser. Une panne ne doit pas être présentée comme une page vide ni provoquer une nouvelle tentative d’écriture automatique.
+- Tests automatisés hors réseau : `node tests/portal-news-tests.js` et `node tests/portal-news-browser-tests.js`. Le second produit les captures dans `tmp/portal-news/`. Toute recette connectée avec écriture concerne exclusivement `livepalmes-test`, jamais la PROD.
+
 ### PDF club : inscrits sans course
 
 - Sur TEST uniquement, télécharger le récapitulatif d'un club comprenant des inscrits avec courses individuelles, sans aucune course, et uniquement en relais. Tous les inscrits doivent apparaître ; « Aucune course engagée » doit être affiché pour ceux sans course ni relais, sans statut de remplaçant.
