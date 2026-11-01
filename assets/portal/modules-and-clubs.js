@@ -209,6 +209,7 @@
 
     function canonicalLivePalmesRegion(value) {
         const cleanValue = String(value || "").trim();
+        if (isForeignClubRegion(cleanValue)) return "CMAS";
         const referenceLabel = portalConfig.LIVEPALMES_REFERENCE_REGION_LABELS[cleanValue] || cleanValue;
         const key = normalizedRegionKey(referenceLabel);
         if (!key) return "";
@@ -221,7 +222,28 @@
       }
 
     function regionDisplayLabel(value) {
+        if (isForeignClubRegion(value)) return "Clubs étrangers (CMAS)";
         return canonicalLivePalmesRegion(value) || "-";
+      }
+
+    function isForeignClubRegion(value) {
+        return ["5", "cmas", "clubsetrangerscmas", "autrecode5"].includes(normalizedRegionKey(value));
+      }
+
+    function updateAccessRequestLicenseFields() {
+        [
+          [portalContext.elements.publicAccessRequestRegionId, portalContext.elements.publicAccessRequestLicenseNumber],
+          [portalContext.elements.engagementsAccessRequestEditRegionId, portalContext.elements.engagementsAccessRequestEditLicenseNumber]
+        ].forEach(([region, license]) => {
+          if (!license) return;
+          const foreignClub = isForeignClubRegion(region?.value);
+          license.required = !foreignClub;
+          const label = license.closest("label");
+          const text = label?.querySelector("[data-access-license-label]");
+          const hint = label?.querySelector("[data-access-license-hint]");
+          if (text) text.textContent = foreignClub ? "Licence (facultative)" : "Licence FFESSM";
+          if (hint) hint.hidden = !foreignClub;
+        });
       }
 
     function setRegionSelectValue(select, value) {
@@ -239,8 +261,12 @@
         select.innerHTML = "";
         select.append(new Option(placeholder, ""));
         portalConfig.LIVEPALMES_REGION_DEFINITIONS.forEach((region) => {
-          select.append(new Option(region, region));
+          select.append(new Option(regionDisplayLabel(region), region));
         });
+        if ([portalContext.elements.accessRegionId, portalContext.elements.publicAccessRequestRegionId,
+          portalContext.elements.engagementsAccessRequestEditRegionId].includes(select)) {
+          select.append(new Option("Clubs étrangers (CMAS)", "CMAS"));
+        }
         setRegionSelectValue(select, currentValue);
       }
 
@@ -386,7 +412,7 @@
         if (!selects.length) return;
         const knownRegions = new Set(portalConfig.LIVEPALMES_REGION_DEFINITIONS.map(normalizedRegionKey));
         const extraRegions = Array.from(new Set(portalState.accessClubReference.map((club) => club.regionId)))
-          .filter((region) => region && !knownRegions.has(normalizedRegionKey(region)))
+          .filter((region) => region && !isForeignClubRegion(region) && !knownRegions.has(normalizedRegionKey(region)))
           .sort((a, b) => a.localeCompare(b, "fr"));
         selects.forEach((select) => {
           const currentValue = select.value;
@@ -462,6 +488,7 @@
           setRegionSelectValue(portalContext.elements.publicAccessRequestRegionId, knownClub.regionId);
         }
         const regionId = canonicalLivePalmesRegion(portalContext.elements.publicAccessRequestRegionId?.value || "");
+        updateAccessRequestLicenseFields();
         select.innerHTML = "";
         if (!regionId) {
           select.append(new Option("Choisissez d'abord une région", ""));
@@ -587,6 +614,7 @@
           setRegionSelectValue(portalContext.elements.engagementsAccessRequestEditRegionId, knownClub.regionId);
         }
         const regionId = canonicalLivePalmesRegion(portalContext.elements.engagementsAccessRequestEditRegionId?.value || "");
+        updateAccessRequestLicenseFields();
         select.innerHTML = "";
         if (!regionId) {
           select.append(new Option("Choisissez d'abord une région", ""));
@@ -784,6 +812,8 @@
       capabilityLabel,
       normalizedRegionKey,
       canonicalLivePalmesRegion,
+      isForeignClubRegion,
+      updateAccessRequestLicenseFields,
       sameLivePalmesRegion,
       regionDisplayLabel,
       setRegionSelectValue,
