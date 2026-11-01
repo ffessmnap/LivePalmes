@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "objective": "Complete systematic backend dependency isolation, technically validated on exact TEST version, then handed off to Infra for authorized PROD publication",
-  "status": "global-runtime-complete-test-validated-production-tooling-preparation",
+  "status": "complete-production-verified",
   "startedAt": "2026-10-31T23:20:21Z",
   "baseline": {
     "main": "ac677ad530aab6b121b3a038accc0fb4860fa5e6",
@@ -55,12 +55,11 @@
     "First lot expanded to include shared import references required by PIN/console access: 155 unchanged bodies in 99 groups, exact proof 2bc0b74ef6c092da02ce7ce9466663a1cf6e180cf1a67d10678a49b3a5e1d45a",
     "Actual corrected partition: 635 unchanged bodies in 419 groups, 157 registrations preserved, runtime proof f2cb84441c5c21f1d465aa9c871d6b2a04899ee9e3e7a6a80122dcd03e4f9c81",
     "Native lot #656 integrated: 34 components, 2902 declarations and 704 APIs preserved; exact PR CI 41267539078 successful",
-    "All 157 Firebase exports and 438 actual factories audited: 705 unchanged moved bodies in 433 groups, 34 native components, no remaining artificial multi-consumer factory; final TEST 41271348708 successful"
+    "All 157 Firebase exports and 438 actual factories audited: 705 unchanged moved bodies in 433 groups, 34 native components, no remaining artificial multi-consumer factory; final TEST 41271348708 successful",
+    "PROD 41274625834 successful at exact final candidate: 98 updated, 16 retained, 114 ACTIVE and zero errors; Hosting 97b33beeeacb06e7 and final artifacts checked; no business invocations/data changes/messages"
   ],
   "next": [
-    "Required CI and merge of final proof tooling",
-    "Authorized Infra preflight/PROD publication and final checks",
-    "After verified PROD, resume authorized Corbie prerequisite and clubs thread"
+    "The separately authorized clubs follow-up is tracked in its existing target thread; global isolation itself is complete"
   ],
   "inventory": {
     "exports": 157,
@@ -72,7 +71,7 @@
     ]
   },
   "afterVerifiedProduction": {
-    "status": "pending-condition",
+    "status": "condition-met",
     "condition": "Global dependency isolation fully completed, published to PROD and final checks passed",
     "targetThread": "01a1936b-e9fe-7983-9cc3-3ca030675c86",
     "targetTitle": "Compter les clubs par abréviation",
@@ -102,7 +101,9 @@
       "No silent extension to other clubs/accounts/rights/data",
       "Do not bypass Corbie lock or backup/drift/resume checks",
       "Report genuine new divergence or unavailable access; continue independent safe parts"
-    ]
+    ],
+    "conditionSatisfiedProductionRun": 41274625834,
+    "executionStatus": "Continue only in the original target thread with its complete plan and safeguards"
   },
   "blockers": [],
   "preview": {
@@ -380,14 +381,16 @@
     "base": "6f76f7921d401cde1f45a5ce90acf5bbde097574",
     "candidate": "249b9068f4ba3c5044230ea9d38fab83a7a2ffea",
     "retainedFunctions": 16,
-    "status": "exact-final-integrated-candidate-offline-success",
+    "status": "verified-by-successful-production",
     "networkCalls": 0,
     "factoryProofSha256": "f2cb84441c5c21f1d465aa9c871d6b2a04899ee9e3e7a6a80122dcd03e4f9c81",
     "nativeProofSha256": "e8e2492625a7f2c044d60bba2cd5ef7dfd23e11278c46a12cc36d80bd5d6dd3b",
     "scope": "One exact complete dependency migration, including captured factories; no excluded function deployment or business operation",
     "capturedProofSha256": "90f497d405c70633af85278334d6c14469bf28fa3c5f64fee37adfeb4c7786b8",
-    "proofFile": "C:/Users/ITIFP/AppData/Local/Temp/livepalmes-global-final-offline-proof.json",
-    "toolingCi": "required-before-Infra-promotion"
+    "proofFile": "Authenticated release-plan artifact 13070661186 in successful PROD run 41274625834",
+    "toolingCi": 41273183117,
+    "toolingCommit": "2f45e6a69cd73a1d3a9ecdbc0205acd6c08d4c00",
+    "productionRun": 41274625834
   },
   "capturedReview": {
     "baseline": "468fe9163db117ebf27ba2665dfed7b0641b6623",
@@ -433,6 +436,49 @@
       "testRun": 41271348708
     },
     "correction": "Common workflows check latest available Node 22 patch instead of accepting divergent runner caches; exact Node/platform proof equality and full fallback unchanged",
-    "status": "prepared-for-required-CI"
+    "status": "verified-both-final-main-suites-v22.23.4-linux",
+    "proofRun": 41273183117,
+    "applicationNode": "v22.23.4",
+    "publicationNode": "v22.23.4"
+  },
+  "verifiedAt": "2026-11-01T05:13:29Z",
+  "production": {
+    "candidate": "249b9068f4ba3c5044230ea9d38fab83a7a2ffea",
+    "toolingCommit": "2f45e6a69cd73a1d3a9ecdbc0205acd6c08d4c00",
+    "preflightRun": 41274108003,
+    "readinessRun": 41274310497,
+    "releaseRun": 41274625834,
+    "hosting": "sites/livepalmes/versions/97b33beeeacb06e7",
+    "updatedFunctions": 98,
+    "conservedFunctions": 16,
+    "totalActiveFunctions": 114,
+    "errors": 0,
+    "codeBackup": "Encrypted, reopened and compared before publication by existing workflow",
+    "retainedRevisions": "All 16 exact contract revisions independently matched in production-after",
+    "hostingChecks": "5 expected served-file SHA256 matches and 2 expected 404 absences",
+    "artifacts": {
+      "after": 13071243032,
+      "hosting": 13071228233,
+      "plan": 13070661186,
+      "encryptedBackup": 13070626293
+    },
+    "businessInvocations": 0,
+    "realDataChanges": 0,
+    "realMessages": 0
+  },
+  "finalSelectionExamples": {
+    "diagnosticOnly": true,
+    "notDeploymentSelection": true,
+    "networkCalls": 0,
+    "ordinaryTEST": {
+      "functions/nap-portal-swimmers.js": 2,
+      "functions/nap-open-water-library.js": 3,
+      "functions/nap-entry-time-preview.js": 3
+    },
+    "ordinaryPROD": {
+      "functions/nap-portal-swimmers.js": 1,
+      "functions/nap-open-water-library.js": 3,
+      "functions/nap-entry-time-preview.js": 3
+    }
   }
 }
