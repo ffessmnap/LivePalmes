@@ -2,6 +2,13 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 1er novembre — Sept fusions de fiches de pôles réalisées
+
+- Demande directe d'Antoine, avec précision SCA = Spondyle Club Antibes (83) : **589→106, 583→107, 590→33, 584→33, 587→103, 586→48 et 599→83**. Les sept sources sont physiquement supprimées après transferts. Vérification finale à `2026-11-01T10:46:05.165Z` : 334 images SQL après et zéro référence source dans 19 couples table/champ ; tous les champs des six cibles sont conservés.
+- Transferts : 297 lignes de performances, quatre relais, un nageur et 25 lignes de chefs d'équipe. Aucun compte/grant/projection source ; aucun compte, profil ou droit modifié. Seule une ancienne demande d'accès CPBR approuvée a été rattachée de 583 à 107, avec masque clubId/CAS, tous ses autres champs inchangés.
+- Lectures limitées aux sources, clés primaires connues et collisions (lots de 100), au lieu de l'historique complet des cibles qui atteignait la sentinelle existante ; aucun relèvement de plafond/troncature. 2 243 réservations de nageurs sources/cibles ou cités dans les performances contrôlées, aucun pending ; gardes imports/Records conservées. Archive combinée de 78 882 octets et copie Drive privée rouvertes, 334 prédicats réels et 16 simulations de reprise sur images réelles réussis ; journal et clé séparée conservés.
+- Portail et notifications restés actifs, aucun IAM ni nouveau déploiement applicatif TEST/PROD, aucun retour arrière nécessaire. [Périmètre et preuve](../NAP_FUSION_CLUBS.md). Opération close, aucun lot restant à appliquer.
+
 ### 1er novembre — Dix fiches de clubs vides supprimées sans pause
 
 - Accord direct d'Antoine après listing, puis instruction de ne pas refaire l'audit. Suppression physique des seules fiches **167, 308, 391, 392, 393, 474, 533, 625, 652 et 653**. Vérification à `2026-11-01T10:09:43.276Z` : dix suppressions, aucune de ces clés restante, aucune fiche écartée par les gardes.
