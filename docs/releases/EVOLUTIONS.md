@@ -2,6 +2,12 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 1er novembre — Dix fiches de clubs vides supprimées sans pause
+
+- Accord direct d'Antoine après listing, puis instruction de ne pas refaire l'audit. Suppression physique des seules fiches **167, 308, 391, 392, 393, 474, 533, 625, 652 et 653**. Vérification à `2026-11-01T10:09:43.276Z` : dix suppressions, aucune de ces clés restante, aucune fiche écartée par les gardes.
+- Aucun nouvel audit global NAP/Firebase ; copie préalable des dix lignes uniquement, archive chiffrée de 1 088 octets et copie Drive privée rouverte, journal conservé. Écritures protégées par clé/image complète et 18 conditions SQL de non-référence, sous verrous brefs. Seule la table `clubs` modifiée ; aucun autre nageur, compte, engagement ou résultat touché.
+- Aucune pause du Portail ou des notifications, aucune modification IAM/Firebase/SMTP, aucun nouveau code applicatif ou déploiement TEST/PROD. [Bilan et périmètre](../NAP_FUSION_CLUBS.md). Opération terminée et preuve privée conservée.
+
 ### 1er novembre — Deux fusions Laon exécutées sans pause ni mutation Firebase
 
 - Demande d'Antoine : 677 → 500, puis confirmation de 558 « z » → 500 après constat de 14 performances et sept relais sur cette fiche. Exécution vérifiée à `2026-11-01T08:48:57.139Z` : 37 lignes transférées, puis deux sources physiquement supprimées ; 39 images après et zéro référence restante dans les 18 couples table/champ contrôlés. Six nageurs, 19 performances individuelles, sept relais et cinq lignes de chefs d'équipe transférés. Tous les champs, le compte, les droits et la projection de 500 sont inchangés ; aucun lien Firebase/projection sur les sources.
