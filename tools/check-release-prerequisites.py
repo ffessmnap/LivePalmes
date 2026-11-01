@@ -95,6 +95,8 @@ def main(directory, run_id, kind):
             expected += ['cloudscheduler.jobs.get','cloudscheduler.jobs.update']
         if kind == 'backend' and cycle.nap_account.approved(request):
             expected += ['cloudfunctions.functions.create']
+        if kind == 'backend' and cycle.validated_portal.approved(request):
+            expected += ['cloudfunctions.functions.create', 'cloudfunctions.functions.setIamPolicy']
         granted = read(IAM, {'permissions': expected}).get('permissions', [])
         report['missingPermissions'] = sorted(set(expected) - set(granted))
         if kind == 'backend' and selected:
@@ -107,6 +109,11 @@ def main(directory, run_id, kind):
                     'accountNapBindingReference': 'listEngagementClubSwimmers',
                     'sameExistingRuntimeAccount': True, 'mailPause': False,
                     'smtpInvocation': False, 'secretValuesRead': False}
+            if cycle.validated_portal.approved(request):
+                cycle.validated_portal.initial(functions)
+                cycle.validated_portal.guard(directory)
+                report['validatedPortalRelease'] = {'newCallable': 'managePortalNews', 'sourceOnlyProtected': cycle.validated_portal.approved(request),
+                    'mailPause': False, 'configurationChanges': False, 'smtpInvocation': False}
             if cycle.nap_account.approved(request):
                 cycle.nap_account.references(functions)
                 load('nap_account_readiness', 'publish-nap-account-release.py').guard(directory)

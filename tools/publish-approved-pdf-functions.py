@@ -78,6 +78,9 @@ def main(candidate, plan, backup):
     request = json.loads((plan / 'request.json').read_text())
     spec = importlib.util.spec_from_file_location('cycle', Path(__file__).with_name('release-cycle.py'))
     cycle = importlib.util.module_from_spec(spec); spec.loader.exec_module(cycle)
+    if cycle.validated_portal.approved(request):
+        cycle.validated_portal.publish(candidate, plan, backup, cycle, archive)
+        return
     if cycle.nap_account.approved(request):
         spec = importlib.util.spec_from_file_location('nap_account_publisher', Path(__file__).with_name('publish-nap-account-release.py'))
         publisher = importlib.util.module_from_spec(spec); spec.loader.exec_module(publisher)
