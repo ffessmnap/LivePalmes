@@ -2,6 +2,12 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 1er novembre — Dernières dépendances capturées PDF et ancien circuit public
+
+- Les deux derniers modules capturés avec plusieurs ensembles de consommateurs sont séparés : 70 corps dans 14 groupes, sans changer les captures ni les fonctions retournées. Les 27 valeurs racine sont stables ; les APIs historiques lisent les getters une fois, dans le même ordre, et gardent les références obtenues. Le parser et les statistiques ont chacun un ensemble de consommateurs unique et restent cohésifs. Cumul : 705 corps, 433 groupes ; les 438 fabriques du runtime livré ne gardent aucun groupe artificiellement multi-consommateurs.
+- Preuves ciblées : comparaison indépendante des corps, racines immuables, paramètres capturés et câblages, refus des altérations, tests réels PDF club/officiels, mails/TXT et API administrateur sans réseau ni envoi. Sélection calculée avec les deux outils existants sur les 14 groupes ; une modification du PDF officiels concerne 4 fonctions TEST au lieu de 11 pour l’ancien module, une écriture incrémentale publique 1 au lieu de 18. Lecteurs réellement communs et exclusions conservés. Budget initial/action/rafraîchissement/pire cas : aucune lecture/écriture ajoutée. CI et TEST du dernier candidat requis avant bilan final.
+- Lot natif précédent [#656](https://github.com/ffessmnap/LivePalmes/pull/656) attesté sur [TEST 41268654053](https://github.com/ffessmnap/LivePalmes/actions/runs/41268654053) au candidat `468fe916` : 105 fonctions mises à jour, 11 conservées, Hosting `2f7c450377857de8`. Validation technique autorisée, aucune nouvelle recette manuelle utilisateur inventée.
+
 ### 1er novembre — Isolation native des dépendances et captures conservées
 
 - Suite autorisée du cloisonnement global : 34 composants pour connexion/pool, projections des nageurs/personnes/clubs/performances, lectures paginées ou unitaires, vues, calendrier, valeurs et politiques partagées. Les annuaires, corrections, vues et lecteurs ne chargent plus les traitements sans rapport. Les anciennes APIs restent compatibles et réexportent les objets/fonctions réels ; aucun helper dupliqué. Les opérations atomiques gardent leurs états communs.
