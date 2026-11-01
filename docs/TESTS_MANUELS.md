@@ -2,6 +2,10 @@
 
 <!-- description: Checklist de tests manuels à exécuter avant une publication ou après une modification sensible. -->
 
+## Demande de compte CMAS — 1er novembre 2026
+
+Contrôles hors réseau : `node tests/foreign-club-access-tests.js` et `node tests/foreign-club-access-browser-tests.js` (HTTPS bloqué, clubs fictifs). Vérifier à 1280, 390 et 320 px : choix unique « Clubs étrangers (CMAS) », clubs du comité 5, licence vide acceptée, aide et caractère facultatif également dans l'examen national ; passage à une région française puis remise à zéro rétablissant l'obligation. Serveur : région réelle du club relue en une requête indexée `LIMIT 1`, refus d'un club français déclaré CMAS sans licence, refus de toute décision régionale sur une demande CMAS, notifications aux seuls responsables nationaux. Aucun compte, e-mail ni donnée réelle créé pendant ces tests. La recette sur TEST après déploiement reste à distinguer de ces contrôles locaux.
+
 ## Préparation des 14 fusions de clubs — 31 octobre 2026
 
 Reprise conditionnelle du 1er novembre après PROD globale vérifiée : le complément administrateurs/destinataires utilise le profil courant avec transactions bornées. Ajouter `node tests/club-merge-projection-replay-tests.js` et `node tools/club-merge-projections.js` aux contrôles hors réseau. Exiger le même résultat sur le candidat CI/TEST, puis sa promotion exacte avant toute fusion. Budget complet du déclencheur : cinq lectures sans conflit, 25 au pire pour cinq tentatives sur chaque transaction ; aucun envoi réel ou invocation métier nécessaire. Les consignes de pause suivantes décrivent l'état initial du 31 octobre.

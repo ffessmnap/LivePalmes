@@ -41,6 +41,7 @@
           event.currentTarget.value = event.currentTarget.value.toLocaleUpperCase("fr-FR");
         });
         portalContext.elements.publicAccessRequestRegionId?.addEventListener("change", () => {
+          portalActions.updateAccessRequestLicenseFields();
           if (portalContext.elements.publicAccessRequestNewClub?.checked !== true) {
             void portalActions.loadAccessClubReference().then(() => portalActions.populatePublicAccessRequestClubSelect());
           }

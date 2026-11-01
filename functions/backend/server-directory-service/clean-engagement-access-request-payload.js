@@ -9,7 +9,9 @@ function createDirectoryService_cleanEngagementAccessRequestPayload(backendConte
     const clubRole = backendContext.cleanText(raw.clubRole).slice(0, 120);
     const clubId = backendContext.cleanText(raw.clubId).slice(0, 40);
     const clubName = backendContext.cleanText(raw.clubName).slice(0, 140);
-    const regionId = backendContext.cleanText(raw.regionId).slice(0, 80);
+    const rawRegionId = backendContext.cleanText(raw.regionId).slice(0, 80);
+    const foreignClub = require("../../club-access-policy").isForeignClubRegion(rawRegionId);
+    const regionId = foreignClub ? "CMAS" : rawRegionId;
     const licenseNumber = backendContext.cleanText(raw.licenseNumber).slice(0, 60);
     const message = backendContext.cleanText(raw.message).slice(0, 600);
     const newClubRequested = raw.newClubRequested === true;
@@ -24,7 +26,7 @@ function createDirectoryService_cleanEngagementAccessRequestPayload(backendConte
         throw new backendContext.HttpsError("invalid-argument", "Ville et code postal du nouveau club obligatoires.");
       }
     }
-    if (!firstName || !lastName || !regionId || !licenseNumber || (!clubId && !newClubRequested)) {
+    if (!firstName || !lastName || !regionId || (!licenseNumber && !foreignClub) || (!clubId && !newClubRequested)) {
       throw new backendContext.HttpsError("invalid-argument", "Nom, prenom, club, region et licence sont obligatoires.");
     }
     return {

@@ -2,6 +2,12 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 1er novembre — Demandes de compte des clubs étrangers CMAS
+
+- Besoin et accord explicite d'Antoine : proposer « Clubs étrangers (CMAS) » pour le comité 5, réserver les demandes au niveau national et ne pas exiger une licence FFESSM du demandeur. Périmètre : demande de compte et examen administratif ; aucune modification des règles des nageurs/engagements, donnée réelle, migration ou envoi de test.
+- Formulaire : licence facultative et aide CMAS, obligation française rétablie au changement de région ; rattachement 5 → CMAS reconnu. Serveur : vérification du club réel avant exemption et décision ; acceptation/refus et destinataires CMAS nationaux. Budget ajouté : une lecture ponctuelle indexée du club existant à la soumission et à l'approbation, aucun accès supplémentaire au filtrage.
+- Préparation dans `codex/club-etranger-cmas` depuis `af357ed8`, copie isolée nécessaire pour préserver les modifications partagées sur les mêmes fichiers. Tests ciblés métier et navigateur local à 1280/390/320 px ; CI globale et livraison TEST à suivre dans la PR. **Non déployé, non validé par l'utilisateur.**
+
 ### 1er novembre — Sept fusions de fiches de pôles réalisées
 
 - Demande directe d'Antoine, avec précision SCA = Spondyle Club Antibes (83) : **589→106, 583→107, 590→33, 584→33, 587→103, 586→48 et 599→83**. Les sept sources sont physiquement supprimées après transferts. Vérification finale à `2026-11-01T10:46:05.165Z` : 334 images SQL après et zéro référence source dans 19 couples table/champ ; tous les champs des six cibles sont conservés.

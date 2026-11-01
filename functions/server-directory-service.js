@@ -85,6 +85,10 @@ function createDirectoryService(backendContext) {
   let cache3;
   function operation3() {
     if (!cache3) cache3 = require("./backend/server-directory-service/consume-public-access-request-rate-limit").createDirectoryService_consumePublicAccessRequestRateLimit({
+      get ENVIRONMENT() { return backendContext.ENVIRONMENT; },
+      get ENGAGEMENT_CLUBS_COLLECTION() { return backendContext.ENGAGEMENT_CLUBS_COLLECTION; },
+      get CLUB_REFERENCE_BY_ID() { return backendContext.CLUB_REFERENCE_BY_ID; },
+      get engagementStoredClubItem() { return backendContext.engagementStoredClubItem; },
       get CLUB_REFERENCE_REGION_LABELS() { return backendContext.CLUB_REFERENCE_REGION_LABELS; },
       set CLUB_REFERENCE_REGION_LABELS(value) { backendContext.CLUB_REFERENCE_REGION_LABELS = value; },
       get HttpsError() { return backendContext.HttpsError; },
