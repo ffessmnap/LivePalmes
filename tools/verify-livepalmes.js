@@ -66,6 +66,7 @@ function runUnitTests() {
     "club-merge-tests.js",
     "club-merge-adapters-tests.js",
     "club-merge-projection-replay-tests.js",
+    "club-merge-auth-tests.js",
     "nap-release-cleanup-tests.js",
     "nap-approved-portal-schema-tests.js",
     "nap-approved-closure-schema-tests.js",
