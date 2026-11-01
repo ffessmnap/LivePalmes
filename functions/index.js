@@ -1,3 +1,213 @@
+function $portalPerformanceHandlers_storeCompetitionPdf() {
+  if (!$portalPerformanceHandlers_storeCompetitionPdf.instance) $portalPerformanceHandlers_storeCompetitionPdf.instance = require("./backend/portal-performance-handlers/store-competition-pdf").createPerformanceHandlers_storeCompetitionPdf({
+    get HttpsError() { return HttpsError; },
+    get PUBLIC_PERFORMANCE_BUCKET() { return PUBLIC_PERFORMANCE_BUCKET; },
+    get assertComputerPdfAccess() { return assertComputerPdfAccess; },
+    get cleanText() { return cleanText; },
+    get competitionIdFrom() { return competitionIdFrom; },
+    get decodePdfDataUrl() { return decodePdfDataUrl; },
+    get publicPdfStoragePath() { return publicPdfStoragePath; },
+    get publicStorageUrl() { return publicStorageUrl; },
+    get storage() { return storage; }
+  });
+  return $portalPerformanceHandlers_storeCompetitionPdf.instance;
+}
+
+function $portalPerformanceHandlers_deleteCompetitionPdf() {
+  if (!$portalPerformanceHandlers_deleteCompetitionPdf.instance) $portalPerformanceHandlers_deleteCompetitionPdf.instance = require("./backend/portal-performance-handlers/delete-competition-pdf").createPerformanceHandlers_deleteCompetitionPdf({
+    get HttpsError() { return HttpsError; },
+    get PUBLIC_COMPETITION_PDF_PREFIX() { return PUBLIC_COMPETITION_PDF_PREFIX; },
+    get PUBLIC_PERFORMANCE_BUCKET() { return PUBLIC_PERFORMANCE_BUCKET; },
+    get assertComputerPdfAccess() { return assertComputerPdfAccess; },
+    get cleanText() { return cleanText; },
+    get competitionIdFrom() { return competitionIdFrom; },
+    get storage() { return storage; }
+  });
+  return $portalPerformanceHandlers_deleteCompetitionPdf.instance;
+}
+
+function $portalPerformanceHandlers_updateEngagementNationalSwimmerIdentity() {
+  if (!$portalPerformanceHandlers_updateEngagementNationalSwimmerIdentity.instance) $portalPerformanceHandlers_updateEngagementNationalSwimmerIdentity.instance = require("./backend/portal-performance-handlers/update-engagement-national-swimmer-identity").createPerformanceHandlers_updateEngagementNationalSwimmerIdentity({
+    get ENVIRONMENT() { return ENVIRONMENT; },
+    get HttpsError() { return HttpsError; },
+    get applyEngagementSwimmerIdentityCorrection() { return applyEngagementSwimmerIdentityCorrection; },
+    get cleanEngagementSwimmerIdentityCorrection() { return cleanEngagementSwimmerIdentityCorrection; },
+    get cleanText() { return cleanText; },
+    get db() { return db; },
+    get engagementAccessContext() { return engagementAccessContext; },
+    get engagementSwimmerIdentitySnapshot() { return engagementSwimmerIdentitySnapshot; },
+    get getEngagementSwimmerCorrectionTarget() { return getEngagementSwimmerCorrectionTarget; },
+    get writeAuditLog() { return writeAuditLog; },
+    get writeAuditLogOnce() { return writeAuditLogOnce; }
+  });
+  return $portalPerformanceHandlers_updateEngagementNationalSwimmerIdentity.instance;
+}
+
+function $portalPerformanceHandlers_mergeEngagementNationalClubSwimmer() {
+  if (!$portalPerformanceHandlers_mergeEngagementNationalClubSwimmer.instance) $portalPerformanceHandlers_mergeEngagementNationalClubSwimmer.instance = require("./backend/portal-performance-handlers/merge-engagement-national-club-swimmer").createPerformanceHandlers_mergeEngagementNationalClubSwimmer({
+    get ENGAGEMENT_SWIMMER_LICENSE_NUMBERS_COLLECTION() { return ENGAGEMENT_SWIMMER_LICENSE_NUMBERS_COLLECTION; },
+    get ENVIRONMENT() { return ENVIRONMENT; },
+    get FieldValue() { return FieldValue; },
+    get HttpsError() { return HttpsError; },
+    get PERFORMANCE_BASE_COLLECTION() { return PERFORMANCE_BASE_COLLECTION; },
+    get PERFORMANCE_SWIMMER_PAGES_COLLECTION() { return PERFORMANCE_SWIMMER_PAGES_COLLECTION; },
+    get activePerformanceRowsForNationalSwimmer() { return activePerformanceRowsForNationalSwimmer; },
+    get cleanFirestoreValue() { return cleanFirestoreValue; },
+    get cleanText() { return cleanText; },
+    get db() { return db; },
+    get deleteEngagementClubRosterSwimmer() { return deleteEngagementClubRosterSwimmer; },
+    get deleteEngagementEntryTimeCache() { return deleteEngagementEntryTimeCache; },
+    get engagementAccessContext() { return engagementAccessContext; },
+    get engagementNationalSwimmerEntrySnapshot() { return engagementNationalSwimmerEntrySnapshot; },
+    get engagementNationalSwimmerFullName() { return engagementNationalSwimmerFullName; },
+    get engagementNationalSwimmerItemFromDoc() { return engagementNationalSwimmerItemFromDoc; },
+    get engagementSwimmerLicenseNumberId() { return engagementSwimmerLicenseNumberId; },
+    get engagementSwimmerLicensePayload() { return engagementSwimmerLicensePayload; },
+    get getEngagementNationalSwimmerForMerge() { return getEngagementNationalSwimmerForMerge; },
+    get mergeEngagementClubEntryRelays() { return mergeEngagementClubEntryRelays; },
+    get mergeEngagementClubEntrySwimmers() { return mergeEngagementClubEntrySwimmers; },
+    get performanceBaseDocId() { return performanceBaseDocId; },
+    get performanceMergeTargetPayloadFromSwimmer() { return performanceMergeTargetPayloadFromSwimmer; },
+    get performancePublicKey() { return performancePublicKey; },
+    get performanceSwimmerPageId() { return performanceSwimmerPageId; },
+    get publicPerformanceBaseRow() { return publicPerformanceBaseRow; },
+    get publishEngagementNationalSwimmerMerge() { return publishEngagementNationalSwimmerMerge; },
+    get readPerformanceDocsForNationalSwimmerMerge() { return readPerformanceDocsForNationalSwimmerMerge; },
+    get stableHash() { return stableHash; },
+    get swimmerMergeIds() { return swimmerMergeIds; },
+    get upsertEngagementClubRosterSwimmer() { return upsertEngagementClubRosterSwimmer; },
+    get writeAuditLog() { return writeAuditLog; },
+    get writeAuditLogOnce() { return writeAuditLogOnce; },
+    get writePerformanceSwimmerIndexRows() { return writePerformanceSwimmerIndexRows; },
+    get writePerformanceSwimmerPageRows() { return writePerformanceSwimmerPageRows; }
+  });
+  return $portalPerformanceHandlers_mergeEngagementNationalClubSwimmer.instance;
+}
+
+function $portalPerformanceHandlers_previewCompetitionImport() {
+  if (!$portalPerformanceHandlers_previewCompetitionImport.instance) $portalPerformanceHandlers_previewCompetitionImport.instance = require("./backend/portal-performance-handlers/preview-competition-import").createPerformanceHandlers_previewCompetitionImport({
+    get ENVIRONMENT() { return ENVIRONMENT; },
+    get HttpsError() { return HttpsError; },
+    get activeCompetitionImportData() { return activeCompetitionImportData; },
+    get assertCapability() { return assertCapability; },
+    get authorizeNativePerformance() { return authorizeNativePerformance; },
+    get canResumeImportPublication() { return canResumeImportPublication; },
+    get competitionImportExistingSummary() { return competitionImportExistingSummary; },
+    get competitionImportPreviewPerformance() { return competitionImportPreviewPerformance; },
+    get db() { return db; },
+    get detectRecordAlerts() { return detectRecordAlerts; },
+    get findExistingCompetitionImport() { return findExistingCompetitionImport; },
+    get importDocumentId() { return importDocumentId; },
+    get importPublicationStatus() { return importPublicationStatus; },
+    get loadPerformanceRecordsData() { return loadPerformanceRecordsData; },
+    get nativePerformanceFailure() { return nativePerformanceFailure; },
+    get parseCompetitionImportPayload() { return parseCompetitionImportPayload; },
+    get stableHash() { return stableHash; }
+  });
+  return $portalPerformanceHandlers_previewCompetitionImport.instance;
+}
+
+function $portalPerformanceHandlers_createCompetitionImport() {
+  if (!$portalPerformanceHandlers_createCompetitionImport.instance) $portalPerformanceHandlers_createCompetitionImport.instance = require("./backend/portal-performance-handlers/create-competition-import").createPerformanceHandlers_createCompetitionImport({
+    get ENVIRONMENT() { return ENVIRONMENT; },
+    get HttpsError() { return HttpsError; },
+    get LIVEPALMES_STORAGE_BUCKET() { return LIVEPALMES_STORAGE_BUCKET; },
+    get assertCapability() { return assertCapability; },
+    get authorizeNativePerformance() { return authorizeNativePerformance; },
+    get cleanText() { return cleanText; },
+    get cleanTimingType() { return cleanTimingType; },
+    get competitionImportIdentity() { return competitionImportIdentity; },
+    get competitionImportPerformanceId() { return competitionImportPerformanceId; },
+    get db() { return db; },
+    get detectRecordAlerts() { return detectRecordAlerts; },
+    get importDocumentId() { return importDocumentId; },
+    get loadPerformanceRecordsData() { return loadPerformanceRecordsData; },
+    get nativePerformanceFailure() { return nativePerformanceFailure; },
+    get normalizeLivePalmesImportPerformances() { return normalizeLivePalmesImportPerformances; },
+    get parseCompetitionImportPayload() { return parseCompetitionImportPayload; },
+    get publishCompetitionImportOutputs() { return publishCompetitionImportOutputs; },
+    get reactivateEngagementClubRosterSwimmersFromPerformanceRows() { return reactivateEngagementClubRosterSwimmersFromPerformanceRows; },
+    get stableHash() { return stableHash; },
+    get stageCompetitionImportReplacement() { return stageCompetitionImportReplacement; },
+    get storage() { return storage; },
+    get writeAuditLog() { return writeAuditLog; },
+    get writePerformanceBaseRows() { return writePerformanceBaseRows; }
+  });
+  return $portalPerformanceHandlers_createCompetitionImport.instance;
+}
+
+function $portalPerformanceHandlers_listCompetitionImports() {
+  if (!$portalPerformanceHandlers_listCompetitionImports.instance) $portalPerformanceHandlers_listCompetitionImports.instance = require("./backend/portal-performance-handlers/list-competition-imports").createPerformanceHandlers_listCompetitionImports({
+    get ENVIRONMENT() { return ENVIRONMENT; },
+    get assertCapability() { return assertCapability; },
+    get authorizeNativePerformance() { return authorizeNativePerformance; },
+    get canResumeImportPublication() { return canResumeImportPublication; },
+    get db() { return db; },
+    get importPublicationStatus() { return importPublicationStatus; },
+    get isAlreadyPublishedRecordAlert() { return isAlreadyPublishedRecordAlert; },
+    get nativePerformanceFailure() { return nativePerformanceFailure; }
+  });
+  return $portalPerformanceHandlers_listCompetitionImports.instance;
+}
+
+function $portalPerformanceHandlers_getDtnSeasons() {
+  if (!$portalPerformanceHandlers_getDtnSeasons.instance) $portalPerformanceHandlers_getDtnSeasons.instance = require("./backend/portal-performance-handlers/get-dtn-seasons").createPerformanceHandlers_getDtnSeasons({
+    get invokeDtnSeason() { return invokeDtnSeason; }
+  });
+  return $portalPerformanceHandlers_getDtnSeasons.instance;
+}
+
+function $portalPerformanceHandlers_updateDtnSeason() {
+  if (!$portalPerformanceHandlers_updateDtnSeason.instance) $portalPerformanceHandlers_updateDtnSeason.instance = require("./backend/portal-performance-handlers/update-dtn-season").createPerformanceHandlers_updateDtnSeason({
+    get invokeDtnSeason() { return invokeDtnSeason; }
+  });
+  return $portalPerformanceHandlers_updateDtnSeason.instance;
+}
+
+function $portalPerformanceHandlers_getDtnSeasonOverview() {
+  if (!$portalPerformanceHandlers_getDtnSeasonOverview.instance) $portalPerformanceHandlers_getDtnSeasonOverview.instance = require("./backend/portal-performance-handlers/get-dtn-season-overview").createPerformanceHandlers_getDtnSeasonOverview({
+    get invokeDtnSeason() { return invokeDtnSeason; }
+  });
+  return $portalPerformanceHandlers_getDtnSeasonOverview.instance;
+}
+
+function $portalPerformanceHandlers_listDtnSeasonSources() {
+  if (!$portalPerformanceHandlers_listDtnSeasonSources.instance) $portalPerformanceHandlers_listDtnSeasonSources.instance = require("./backend/portal-performance-handlers/list-dtn-season-sources").createPerformanceHandlers_listDtnSeasonSources({
+    get invokeDtnSeason() { return invokeDtnSeason; }
+  });
+  return $portalPerformanceHandlers_listDtnSeasonSources.instance;
+}
+
+function $portalPerformanceHandlers_getNapPerformanceAdministration() {
+  if (!$portalPerformanceHandlers_getNapPerformanceAdministration.instance) $portalPerformanceHandlers_getNapPerformanceAdministration.instance = require("./backend/portal-performance-handlers/get-nap-performance-administration").createPerformanceHandlers_getNapPerformanceAdministration({
+    get ENVIRONMENT() { return ENVIRONMENT; },
+    get HttpsError() { return HttpsError; },
+    get authorizeNativePerformance() { return authorizeNativePerformance; },
+    get nativePerformanceFailure() { return nativePerformanceFailure; },
+    get readNapRecordsAdministration() { return readNapRecordsAdministration; }
+  });
+  return $portalPerformanceHandlers_getNapPerformanceAdministration.instance;
+}
+
+function $portalPerformanceHandlers_savePerformanceCorrection() {
+  if (!$portalPerformanceHandlers_savePerformanceCorrection.instance) $portalPerformanceHandlers_savePerformanceCorrection.instance = require("./backend/portal-performance-handlers/save-performance-correction").createPerformanceHandlers_savePerformanceCorrection({
+    get ENVIRONMENT() { return ENVIRONMENT; },
+    get HttpsError() { return HttpsError; },
+    get accessUserDisplayName() { return accessUserDisplayName; },
+    get assertCapability() { return assertCapability; },
+    get authorizeNativePerformance() { return authorizeNativePerformance; },
+    get cleanFirestoreValue() { return cleanFirestoreValue; },
+    get cleanText() { return cleanText; },
+    get db() { return db; },
+    get enqueuePerformancePublicationJob() { return enqueuePerformancePublicationJob; },
+    get nativePerformanceFailure() { return nativePerformanceFailure; },
+    get publishNativeRecords() { return publishNativeRecords; },
+    get stableHash() { return stableHash; },
+    get writeAuditLog() { return writeAuditLog; }
+  });
+  return $portalPerformanceHandlers_savePerformanceCorrection.instance;
+}
+
 function $portalAccessHandlers_setRolePins() {
   if (!$portalAccessHandlers_setRolePins.instance) $portalAccessHandlers_setRolePins.instance = require("./backend/portal-access-handlers/set-role-pins").createAccessHandlers_setRolePins({
     get HttpsError() { return HttpsError; },
@@ -185,6 +395,1325 @@ function $portalAccessHandlers_getCurrentAccessUser() {
     get portalReadStats() { return portalReadStats; }
   });
   return $portalAccessHandlers_getCurrentAccessUser.instance;
+}
+
+function $portalCompetitionHandlers_listEngagementAccessRequests() {
+  if (!$portalCompetitionHandlers_listEngagementAccessRequests.instance) $portalCompetitionHandlers_listEngagementAccessRequests.instance = require("./backend/portal-competition-handlers/list-engagement-access-requests").createCompetitionHandlers_listEngagementAccessRequests({
+    get FieldPath() { return FieldPath; },
+    get HttpsError() { return HttpsError; },
+    get cleanText() { return cleanText; },
+    get db() { return db; },
+    get engagementAccessContext() { return engagementAccessContext; },
+    get engagementAccessRequestItem() { return engagementAccessRequestItem; }
+  });
+  return $portalCompetitionHandlers_listEngagementAccessRequests.instance;
+}
+
+function $portalCompetitionHandlers_listEngagementQualificationSources() {
+  if (!$portalCompetitionHandlers_listEngagementQualificationSources.instance) $portalCompetitionHandlers_listEngagementQualificationSources.instance = require("./backend/portal-competition-handlers/list-engagement-qualification-sources").createCompetitionHandlers_listEngagementQualificationSources({
+    get ENVIRONMENT() { return ENVIRONMENT; },
+    get HttpsError() { return HttpsError; },
+    get engagementAccessContext() { return engagementAccessContext; },
+    get qualificationService() { return qualificationService; }
+  });
+  return $portalCompetitionHandlers_listEngagementQualificationSources.instance;
+}
+
+function $portalCompetitionHandlers_processEngagementQualificationJob() {
+  if (!$portalCompetitionHandlers_processEngagementQualificationJob.instance) $portalCompetitionHandlers_processEngagementQualificationJob.instance = require("./backend/portal-competition-handlers/process-engagement-qualification-job").createCompetitionHandlers_processEngagementQualificationJob({
+    get ENVIRONMENT() { return ENVIRONMENT; },
+    get HttpsError() { return HttpsError; },
+    get engagementAccessContext() { return engagementAccessContext; },
+    get nativeQualificationError() { return nativeQualificationError; },
+    get nativeQualificationNow() { return nativeQualificationNow; },
+    get nativeQualificationServices() { return nativeQualificationServices; },
+    get qualificationService() { return qualificationService; }
+  });
+  return $portalCompetitionHandlers_processEngagementQualificationJob.instance;
+}
+
+function $portalCompetitionHandlers_grantEngagementQualificationException() {
+  if (!$portalCompetitionHandlers_grantEngagementQualificationException.instance) $portalCompetitionHandlers_grantEngagementQualificationException.instance = require("./backend/portal-competition-handlers/grant-engagement-qualification-exception").createCompetitionHandlers_grantEngagementQualificationException({
+    get ENVIRONMENT() { return ENVIRONMENT; },
+    get HttpsError() { return HttpsError; },
+    get engagementAccessContext() { return engagementAccessContext; },
+    get engagementClubAccessContext() { return engagementClubAccessContext; },
+    get nativeQualificationError() { return nativeQualificationError; },
+    get nativeQualificationNow() { return nativeQualificationNow; },
+    get nativeQualificationServices() { return nativeQualificationServices; },
+    get qualificationService() { return qualificationService; }
+  });
+  return $portalCompetitionHandlers_grantEngagementQualificationException.instance;
+}
+
+function $portalCompetitionHandlers_acknowledgeEngagementQualificationAlert() {
+  if (!$portalCompetitionHandlers_acknowledgeEngagementQualificationAlert.instance) $portalCompetitionHandlers_acknowledgeEngagementQualificationAlert.instance = require("./backend/portal-competition-handlers/acknowledge-engagement-qualification-alert").createCompetitionHandlers_acknowledgeEngagementQualificationAlert({
+    get ENVIRONMENT() { return ENVIRONMENT; },
+    get HttpsError() { return HttpsError; },
+    get engagementClubAccessContext() { return engagementClubAccessContext; },
+    get nativeQualificationError() { return nativeQualificationError; },
+    get nativeQualificationNow() { return nativeQualificationNow; },
+    get qualificationService() { return qualificationService; }
+  });
+  return $portalCompetitionHandlers_acknowledgeEngagementQualificationAlert.instance;
+}
+
+function $portalCompetitionHandlers_getEngagementAutomaticMailControl() {
+  if (!$portalCompetitionHandlers_getEngagementAutomaticMailControl.instance) $portalCompetitionHandlers_getEngagementAutomaticMailControl.instance = require("./backend/portal-competition-handlers/get-engagement-automatic-mail-control").createCompetitionHandlers_getEngagementAutomaticMailControl({
+    get ENVIRONMENT() { return ENVIRONMENT; },
+    get HttpsError() { return HttpsError; },
+    get db() { return db; },
+    get engagementAccessContext() { return engagementAccessContext; }
+  });
+  return $portalCompetitionHandlers_getEngagementAutomaticMailControl.instance;
+}
+
+function $portalCompetitionHandlers_updateEngagementAutomaticMailControl() {
+  if (!$portalCompetitionHandlers_updateEngagementAutomaticMailControl.instance) $portalCompetitionHandlers_updateEngagementAutomaticMailControl.instance = require("./backend/portal-competition-handlers/update-engagement-automatic-mail-control").createCompetitionHandlers_updateEngagementAutomaticMailControl({
+    get ENVIRONMENT() { return ENVIRONMENT; },
+    get HttpsError() { return HttpsError; },
+    get db() { return db; },
+    get engagementAccessContext() { return engagementAccessContext; },
+    get writeAuditLog() { return writeAuditLog; }
+  });
+  return $portalCompetitionHandlers_updateEngagementAutomaticMailControl.instance;
+}
+
+function $portalCompetitionHandlers_rebuildEngagementMailRecipientIndexNextPage() {
+  if (!$portalCompetitionHandlers_rebuildEngagementMailRecipientIndexNextPage.instance) $portalCompetitionHandlers_rebuildEngagementMailRecipientIndexNextPage.instance = require("./backend/portal-competition-handlers/rebuild-engagement-mail-recipient-index-next-page").createCompetitionHandlers_rebuildEngagementMailRecipientIndexNextPage({
+    get FieldPath() { return FieldPath; },
+    get HttpsError() { return HttpsError; },
+    get assertCapability() { return assertCapability; },
+    get cleanText() { return cleanText; },
+    get db() { return db; },
+    get engagementMailRecipientFromUserDoc() { return engagementMailRecipientFromUserDoc; },
+    get engagementMailRecipientIndexStateRef() { return engagementMailRecipientIndexStateRef; },
+    get engagementMailRecipientShardGroups() { return engagementMailRecipientShardGroups; },
+    get engagementMailRecipientShardRef() { return engagementMailRecipientShardRef; },
+    get engagementMailRecipientShardRefs() { return engagementMailRecipientShardRefs; },
+    get engagementMailRecipientsFromIndex() { return engagementMailRecipientsFromIndex; },
+    get writeEngagementClubAdminDirectory() { return writeEngagementClubAdminDirectory; }
+  });
+  return $portalCompetitionHandlers_rebuildEngagementMailRecipientIndexNextPage.instance;
+}
+
+function $portalCompetitionHandlers_listEngagementCompetitions() {
+  if (!$portalCompetitionHandlers_listEngagementCompetitions.instance) $portalCompetitionHandlers_listEngagementCompetitions.instance = require("./backend/portal-competition-handlers/list-engagement-competitions").createCompetitionHandlers_listEngagementCompetitions({
+    get ENGAGEMENT_COMPETITION_CALENDARS_COLLECTION() { return ENGAGEMENT_COMPETITION_CALENDARS_COLLECTION; },
+    get ENGAGEMENT_COMPETITION_LEVELS() { return ENGAGEMENT_COMPETITION_LEVELS; },
+    get ENGAGEMENT_ENTRY_STATUSES() { return ENGAGEMENT_ENTRY_STATUSES; },
+    get ENVIRONMENT() { return ENVIRONMENT; },
+    get HttpsError() { return HttpsError; },
+    get cleanIsoDate() { return cleanIsoDate; },
+    get cleanText() { return cleanText; },
+    get db() { return db; },
+    get engagementAccessContext() { return engagementAccessContext; },
+    get engagementClubAccessContext() { return engagementClubAccessContext; },
+    get engagementClubCompetitionIndexRef() { return engagementClubCompetitionIndexRef; },
+    get engagementClubEntryCompetitionIds() { return engagementClubEntryCompetitionIds; },
+    get engagementCompetitionCalendarItemsFromData() { return engagementCompetitionCalendarItemsFromData; },
+    get engagementCompetitionCalendarRef() { return engagementCompetitionCalendarRef; },
+    get engagementRegionsMatch() { return engagementRegionsMatch; },
+    get engagementSeasonBoundsFromEndYear() { return engagementSeasonBoundsFromEndYear; },
+    get engagementSeasonEndYearFromIsoDate() { return engagementSeasonEndYearFromIsoDate; },
+    get filterEngagementCompetitionCalendarItems() { return filterEngagementCompetitionCalendarItems; },
+    get isNationalOnlyEngagementCompetitionLevel() { return isNationalOnlyEngagementCompetitionLevel; },
+    get nativePortalCalendarItems() { return nativePortalCalendarItems; },
+    get portalReadStats() { return portalReadStats; }
+  });
+  return $portalCompetitionHandlers_listEngagementCompetitions.instance;
+}
+
+function $portalCompetitionHandlers_listEngagementCalendarEvents() {
+  if (!$portalCompetitionHandlers_listEngagementCalendarEvents.instance) $portalCompetitionHandlers_listEngagementCalendarEvents.instance = require("./backend/portal-competition-handlers/list-engagement-calendar-events").createCompetitionHandlers_listEngagementCalendarEvents({
+    get ENVIRONMENT() { return ENVIRONMENT; },
+    get HttpsError() { return HttpsError; },
+    get cleanIsoDate() { return cleanIsoDate; },
+    get cleanText() { return cleanText; },
+    get db() { return db; },
+    get engagementAccessContext() { return engagementAccessContext; },
+    get engagementCalendarEventCalendarRef() { return engagementCalendarEventCalendarRef; },
+    get engagementCalendarEventItemsFromData() { return engagementCalendarEventItemsFromData; },
+    get engagementRegionsMatch() { return engagementRegionsMatch; },
+    get engagementSeasonBoundsFromEndYear() { return engagementSeasonBoundsFromEndYear; },
+    get engagementSeasonEndYearFromIsoDate() { return engagementSeasonEndYearFromIsoDate; },
+    get isNationalOnlyEngagementCompetitionLevel() { return isNationalOnlyEngagementCompetitionLevel; },
+    get nativePortalCalendarItems() { return nativePortalCalendarItems; },
+    get portalReadStats() { return portalReadStats; }
+  });
+  return $portalCompetitionHandlers_listEngagementCalendarEvents.instance;
+}
+
+function $portalCompetitionHandlers_getEngagementCalendarEvent() {
+  if (!$portalCompetitionHandlers_getEngagementCalendarEvent.instance) $portalCompetitionHandlers_getEngagementCalendarEvent.instance = require("./backend/portal-competition-handlers/get-engagement-calendar-event").createCompetitionHandlers_getEngagementCalendarEvent({
+    get ENGAGEMENT_CALENDAR_EVENTS_COLLECTION() { return ENGAGEMENT_CALENDAR_EVENTS_COLLECTION; },
+    get ENVIRONMENT() { return ENVIRONMENT; },
+    get HttpsError() { return HttpsError; },
+    get assertCanManageEngagementCompetition() { return assertCanManageEngagementCompetition; },
+    get cleanText() { return cleanText; },
+    get db() { return db; },
+    get engagementAccessContext() { return engagementAccessContext; },
+    get engagementCalendarEventDetailItem() { return engagementCalendarEventDetailItem; },
+    get engagementDeletionRequestId() { return engagementDeletionRequestId; },
+    get engagementEventIsPast() { return engagementEventIsPast; },
+    get nativePortalCompetition() { return nativePortalCompetition; }
+  });
+  return $portalCompetitionHandlers_getEngagementCalendarEvent.instance;
+}
+
+function $portalCompetitionHandlers_createEngagementCalendarEvent() {
+  if (!$portalCompetitionHandlers_createEngagementCalendarEvent.instance) $portalCompetitionHandlers_createEngagementCalendarEvent.instance = require("./backend/portal-competition-handlers/create-engagement-calendar-event").createCompetitionHandlers_createEngagementCalendarEvent({
+    get ENGAGEMENT_CALENDAR_EVENTS_COLLECTION() { return ENGAGEMENT_CALENDAR_EVENTS_COLLECTION; },
+    get ENVIRONMENT() { return ENVIRONMENT; },
+    get HttpsError() { return HttpsError; },
+    get cleanEngagementCalendarEventPayload() { return cleanEngagementCalendarEventPayload; },
+    get createNativePortalCalendarRecord() { return createNativePortalCalendarRecord; },
+    get db() { return db; },
+    get engagementAccessContext() { return engagementAccessContext; },
+    get engagementCalendarEventDetailItem() { return engagementCalendarEventDetailItem; },
+    get engagementEventIsPast() { return engagementEventIsPast; },
+    get writeAuditLog() { return writeAuditLog; }
+  });
+  return $portalCompetitionHandlers_createEngagementCalendarEvent.instance;
+}
+
+function $portalCompetitionHandlers_updateEngagementCalendarEvent() {
+  if (!$portalCompetitionHandlers_updateEngagementCalendarEvent.instance) $portalCompetitionHandlers_updateEngagementCalendarEvent.instance = require("./backend/portal-competition-handlers/update-engagement-calendar-event").createCompetitionHandlers_updateEngagementCalendarEvent({
+    get ENGAGEMENT_CALENDAR_EVENTS_COLLECTION() { return ENGAGEMENT_CALENDAR_EVENTS_COLLECTION; },
+    get ENVIRONMENT() { return ENVIRONMENT; },
+    get HttpsError() { return HttpsError; },
+    get assertCanManageEngagementCompetition() { return assertCanManageEngagementCompetition; },
+    get assertCanModifyEngagementEvent() { return assertCanModifyEngagementEvent; },
+    get cleanEngagementCalendarEventPayload() { return cleanEngagementCalendarEventPayload; },
+    get cleanText() { return cleanText; },
+    get db() { return db; },
+    get engagementAccessContext() { return engagementAccessContext; },
+    get engagementCalendarEventDetailItem() { return engagementCalendarEventDetailItem; },
+    get engagementEventIsPast() { return engagementEventIsPast; },
+    get engagementRegionsMatch() { return engagementRegionsMatch; },
+    get nativePortalCompetition() { return nativePortalCompetition; },
+    get writeAuditLog() { return writeAuditLog; },
+    get writeAuditLogOnce() { return writeAuditLogOnce; }
+  });
+  return $portalCompetitionHandlers_updateEngagementCalendarEvent.instance;
+}
+
+function $portalCompetitionHandlers_deleteEngagementCalendarEvent() {
+  if (!$portalCompetitionHandlers_deleteEngagementCalendarEvent.instance) $portalCompetitionHandlers_deleteEngagementCalendarEvent.instance = require("./backend/portal-competition-handlers/delete-engagement-calendar-event").createCompetitionHandlers_deleteEngagementCalendarEvent({
+    get ENGAGEMENT_CALENDAR_EVENTS_COLLECTION() { return ENGAGEMENT_CALENDAR_EVENTS_COLLECTION; },
+    get ENVIRONMENT() { return ENVIRONMENT; },
+    get HttpsError() { return HttpsError; },
+    get LIVEPALMES_STORAGE_BUCKET() { return LIVEPALMES_STORAGE_BUCKET; },
+    get assertCanModifyEngagementEvent() { return assertCanModifyEngagementEvent; },
+    get assertEngagementCompetitionDocumentPath() { return assertEngagementCompetitionDocumentPath; },
+    get cleanCompetitionDocuments() { return cleanCompetitionDocuments; },
+    get cleanText() { return cleanText; },
+    get db() { return db; },
+    get engagementAccessContext() { return engagementAccessContext; },
+    get hasManagedEngagementCompetitionDocumentStorage() { return hasManagedEngagementCompetitionDocumentStorage; },
+    get storage() { return storage; },
+    get writeAuditLog() { return writeAuditLog; },
+    get writeAuditLogOnce() { return writeAuditLogOnce; }
+  });
+  return $portalCompetitionHandlers_deleteEngagementCalendarEvent.instance;
+}
+
+function $portalCompetitionHandlers_listEngagementOpenWaterCourses() {
+  if (!$portalCompetitionHandlers_listEngagementOpenWaterCourses.instance) $portalCompetitionHandlers_listEngagementOpenWaterCourses.instance = require("./backend/portal-competition-handlers/list-engagement-open-water-courses").createCompetitionHandlers_listEngagementOpenWaterCourses({
+    get ENVIRONMENT() { return ENVIRONMENT; },
+    get cleanEngagementOpenWaterCourses() { return cleanEngagementOpenWaterCourses; },
+    get engagementAccessContext() { return engagementAccessContext; },
+    get engagementOpenWaterCourseConfigRef() { return engagementOpenWaterCourseConfigRef; },
+    get portalReadStats() { return portalReadStats; }
+  });
+  return $portalCompetitionHandlers_listEngagementOpenWaterCourses.instance;
+}
+
+function $portalCompetitionHandlers_addEngagementOpenWaterCourse() {
+  if (!$portalCompetitionHandlers_addEngagementOpenWaterCourse.instance) $portalCompetitionHandlers_addEngagementOpenWaterCourse.instance = require("./backend/portal-competition-handlers/add-engagement-open-water-course").createCompetitionHandlers_addEngagementOpenWaterCourse({
+    get ENGAGEMENT_OPEN_WATER_COURSE_LIMIT() { return ENGAGEMENT_OPEN_WATER_COURSE_LIMIT; },
+    get ENVIRONMENT() { return ENVIRONMENT; },
+    get HttpsError() { return HttpsError; },
+    get cleanEngagementOpenWaterCourse() { return cleanEngagementOpenWaterCourse; },
+    get cleanEngagementOpenWaterCourses() { return cleanEngagementOpenWaterCourses; },
+    get db() { return db; },
+    get engagementAccessContext() { return engagementAccessContext; },
+    get engagementOpenWaterCourseConfigRef() { return engagementOpenWaterCourseConfigRef; },
+    get writeAuditLog() { return writeAuditLog; }
+  });
+  return $portalCompetitionHandlers_addEngagementOpenWaterCourse.instance;
+}
+
+function $portalCompetitionHandlers_setEngagementOpenWaterCourseStatus() {
+  if (!$portalCompetitionHandlers_setEngagementOpenWaterCourseStatus.instance) $portalCompetitionHandlers_setEngagementOpenWaterCourseStatus.instance = require("./backend/portal-competition-handlers/set-engagement-open-water-course-status").createCompetitionHandlers_setEngagementOpenWaterCourseStatus({
+    get ENVIRONMENT() { return ENVIRONMENT; },
+    get HttpsError() { return HttpsError; },
+    get cleanEngagementOpenWaterCourses() { return cleanEngagementOpenWaterCourses; },
+    get cleanText() { return cleanText; },
+    get db() { return db; },
+    get engagementAccessContext() { return engagementAccessContext; },
+    get engagementOpenWaterCourseConfigRef() { return engagementOpenWaterCourseConfigRef; },
+    get writeAuditLog() { return writeAuditLog; }
+  });
+  return $portalCompetitionHandlers_setEngagementOpenWaterCourseStatus.instance;
+}
+
+function $portalCompetitionHandlers_getEngagementCompetition() {
+  if (!$portalCompetitionHandlers_getEngagementCompetition.instance) $portalCompetitionHandlers_getEngagementCompetition.instance = require("./backend/portal-competition-handlers/get-engagement-competition").createCompetitionHandlers_getEngagementCompetition({
+    get ENVIRONMENT() { return ENVIRONMENT; },
+    get HttpsError() { return HttpsError; },
+    get assertCanManageEngagementCompetition() { return assertCanManageEngagementCompetition; },
+    get cleanText() { return cleanText; },
+    get db() { return db; },
+    get engagementAccessContext() { return engagementAccessContext; },
+    get engagementCompetitionDetailItem() { return engagementCompetitionDetailItem; },
+    get engagementEventIsPast() { return engagementEventIsPast; },
+    get nativePerformanceFailure() { return nativePerformanceFailure; },
+    get nativePortalCompetition() { return nativePortalCompetition; }
+  });
+  return $portalCompetitionHandlers_getEngagementCompetition.instance;
+}
+
+function $portalCompetitionHandlers_uploadEngagementCompetitionDocument() {
+  if (!$portalCompetitionHandlers_uploadEngagementCompetitionDocument.instance) $portalCompetitionHandlers_uploadEngagementCompetitionDocument.instance = require("./backend/portal-competition-handlers/upload-engagement-competition-document").createCompetitionHandlers_uploadEngagementCompetitionDocument({
+    get ENVIRONMENT() { return ENVIRONMENT; },
+    get HttpsError() { return HttpsError; },
+    get LIVEPALMES_STORAGE_BUCKET() { return LIVEPALMES_STORAGE_BUCKET; },
+    get MAX_COMPETITION_DOCUMENTS() { return MAX_COMPETITION_DOCUMENTS; },
+    get assertCanManageEngagementCompetition() { return assertCanManageEngagementCompetition; },
+    get assertEngagementCompetitionDocumentPath() { return assertEngagementCompetitionDocumentPath; },
+    get cleanCompetitionDocumentInput() { return cleanCompetitionDocumentInput; },
+    get cleanCompetitionDocuments() { return cleanCompetitionDocuments; },
+    get cleanText() { return cleanText; },
+    get competitionDocumentDownloadUrl() { return competitionDocumentDownloadUrl; },
+    get competitionDocumentStoragePath() { return competitionDocumentStoragePath; },
+    get competitionDocumentTokenFromUrl() { return competitionDocumentTokenFromUrl; },
+    get crypto() { return crypto; },
+    get db() { return db; },
+    get decodeCompetitionDocumentDataUrl() { return decodeCompetitionDocumentDataUrl; },
+    get engagementCompetitionDocumentContext() { return engagementCompetitionDocumentContext; },
+    get engagementCompetitionDocumentUploader() { return engagementCompetitionDocumentUploader; },
+    get hasManagedEngagementCompetitionDocumentStorage() { return hasManagedEngagementCompetitionDocumentStorage; },
+    get mutateNativeCompetitionDocument() { return mutateNativeCompetitionDocument; },
+    get storage() { return storage; },
+    get writeAuditLog() { return writeAuditLog; }
+  });
+  return $portalCompetitionHandlers_uploadEngagementCompetitionDocument.instance;
+}
+
+function $portalCompetitionHandlers_updateEngagementCompetitionDocument() {
+  if (!$portalCompetitionHandlers_updateEngagementCompetitionDocument.instance) $portalCompetitionHandlers_updateEngagementCompetitionDocument.instance = require("./backend/portal-competition-handlers/update-engagement-competition-document").createCompetitionHandlers_updateEngagementCompetitionDocument({
+    get ENVIRONMENT() { return ENVIRONMENT; },
+    get HttpsError() { return HttpsError; },
+    get assertCanManageEngagementCompetition() { return assertCanManageEngagementCompetition; },
+    get cleanCompetitionDocumentInput() { return cleanCompetitionDocumentInput; },
+    get cleanCompetitionDocuments() { return cleanCompetitionDocuments; },
+    get cleanText() { return cleanText; },
+    get db() { return db; },
+    get engagementCompetitionDocumentContext() { return engagementCompetitionDocumentContext; },
+    get mutateNativeCompetitionDocument() { return mutateNativeCompetitionDocument; },
+    get writeAuditLog() { return writeAuditLog; }
+  });
+  return $portalCompetitionHandlers_updateEngagementCompetitionDocument.instance;
+}
+
+function $portalCompetitionHandlers_deleteEngagementCompetitionDocument() {
+  if (!$portalCompetitionHandlers_deleteEngagementCompetitionDocument.instance) $portalCompetitionHandlers_deleteEngagementCompetitionDocument.instance = require("./backend/portal-competition-handlers/delete-engagement-competition-document").createCompetitionHandlers_deleteEngagementCompetitionDocument({
+    get ENVIRONMENT() { return ENVIRONMENT; },
+    get HttpsError() { return HttpsError; },
+    get LIVEPALMES_STORAGE_BUCKET() { return LIVEPALMES_STORAGE_BUCKET; },
+    get assertCanDeleteEngagementDocument() { return assertCanDeleteEngagementDocument; },
+    get assertCanManageEngagementCompetition() { return assertCanManageEngagementCompetition; },
+    get assertEngagementCompetitionDocumentPath() { return assertEngagementCompetitionDocumentPath; },
+    get cleanCompetitionDocuments() { return cleanCompetitionDocuments; },
+    get cleanText() { return cleanText; },
+    get db() { return db; },
+    get engagementCompetitionDocumentContext() { return engagementCompetitionDocumentContext; },
+    get hasManagedEngagementCompetitionDocumentStorage() { return hasManagedEngagementCompetitionDocumentStorage; },
+    get mutateNativeCompetitionDocument() { return mutateNativeCompetitionDocument; },
+    get storage() { return storage; },
+    get writeAuditLog() { return writeAuditLog; }
+  });
+  return $portalCompetitionHandlers_deleteEngagementCompetitionDocument.instance;
+}
+
+function $portalCompetitionHandlers_previewEngagementCompetitionDocumentNotification() {
+  if (!$portalCompetitionHandlers_previewEngagementCompetitionDocumentNotification.instance) $portalCompetitionHandlers_previewEngagementCompetitionDocumentNotification.instance = require("./backend/portal-competition-handlers/preview-engagement-competition-document-notification").createCompetitionHandlers_previewEngagementCompetitionDocumentNotification({
+    get ENVIRONMENT() { return ENVIRONMENT; },
+    get cleanText() { return cleanText; },
+    get db() { return db; },
+    get engagementActiveClubMailRecipients() { return engagementActiveClubMailRecipients; },
+    get engagementCompetitionDetailItem() { return engagementCompetitionDetailItem; },
+    get engagementCompetitionDocumentContext() { return engagementCompetitionDocumentContext; },
+    get engagementCompetitionDocumentRecipients() { return engagementCompetitionDocumentRecipients; },
+    get nativeNotificationPreview() { return nativeNotificationPreview; }
+  });
+  return $portalCompetitionHandlers_previewEngagementCompetitionDocumentNotification.instance;
+}
+
+function $portalCompetitionHandlers_getEngagementCompetitionStatistics() {
+  if (!$portalCompetitionHandlers_getEngagementCompetitionStatistics.instance) $portalCompetitionHandlers_getEngagementCompetitionStatistics.instance = require("./backend/portal-competition-handlers/get-engagement-competition-statistics").createCompetitionHandlers_getEngagementCompetitionStatistics({
+    get ENVIRONMENT() { return ENVIRONMENT; },
+    get HttpsError() { return HttpsError; },
+    get assertCanManageEngagementCompetition() { return assertCanManageEngagementCompetition; },
+    get cleanText() { return cleanText; },
+    get db() { return db; },
+    get decodeEngagementCompetitionStatisticsCache() { return decodeEngagementCompetitionStatisticsCache; },
+    get encodeEngagementCompetitionStatisticsCache() { return encodeEngagementCompetitionStatisticsCache; },
+    get engagementAccessContext() { return engagementAccessContext; },
+    get engagementClubEntryItem() { return engagementClubEntryItem; },
+    get engagementCompetitionDetailItem() { return engagementCompetitionDetailItem; },
+    get engagementCompetitionStatisticsCacheRef() { return engagementCompetitionStatisticsCacheRef; },
+    get engagementCompetitionStatisticsItem() { return engagementCompetitionStatisticsItem; },
+    get nativeAdminCompetitionEntries() { return nativeAdminCompetitionEntries; },
+    get portalReadStats() { return portalReadStats; }
+  });
+  return $portalCompetitionHandlers_getEngagementCompetitionStatistics.instance;
+}
+
+function $portalCompetitionHandlers_generateEngagementCompetitionTxtExport() {
+  if (!$portalCompetitionHandlers_generateEngagementCompetitionTxtExport.instance) $portalCompetitionHandlers_generateEngagementCompetitionTxtExport.instance = require("./backend/portal-competition-handlers/generate-engagement-competition-txt-export").createCompetitionHandlers_generateEngagementCompetitionTxtExport({
+    get ENVIRONMENT() { return ENVIRONMENT; },
+    get HttpsError() { return HttpsError; },
+    get assertCanManageEngagementCompetition() { return assertCanManageEngagementCompetition; },
+    get buildEngagementCompetitionTxt() { return buildEngagementCompetitionTxt; },
+    get cleanEngagementCompetitionType() { return cleanEngagementCompetitionType; },
+    get cleanText() { return cleanText; },
+    get db() { return db; },
+    get engagementAccessContext() { return engagementAccessContext; },
+    get engagementClubEntryHasParticipants() { return engagementClubEntryHasParticipants; },
+    get engagementPdfFileName() { return engagementPdfFileName; },
+    get engagementTxtSwimmerCategory() { return engagementTxtSwimmerCategory; },
+    get getOrCreateEngagementCompetitionTxt() { return getOrCreateEngagementCompetitionTxt; },
+    get nativeAdminCompetitionEntries() { return nativeAdminCompetitionEntries; },
+    get writeAuditLog() { return writeAuditLog; }
+  });
+  return $portalCompetitionHandlers_generateEngagementCompetitionTxtExport.instance;
+}
+
+function $portalCompetitionHandlers_getPortalPendingRequestOverview() {
+  if (!$portalCompetitionHandlers_getPortalPendingRequestOverview.instance) $portalCompetitionHandlers_getPortalPendingRequestOverview.instance = require("./backend/portal-competition-handlers/get-portal-pending-request-overview").createCompetitionHandlers_getPortalPendingRequestOverview({
+    get HttpsError() { return HttpsError; },
+    get accessManagementContext() { return accessManagementContext; },
+    get db() { return db; },
+    get engagementNationalAdministrationPendingCounts() { return engagementNationalAdministrationPendingCounts; }
+  });
+  return $portalCompetitionHandlers_getPortalPendingRequestOverview.instance;
+}
+
+function $portalCompetitionHandlers_createEngagementCompetition() {
+  if (!$portalCompetitionHandlers_createEngagementCompetition.instance) $portalCompetitionHandlers_createEngagementCompetition.instance = require("./backend/portal-competition-handlers/create-engagement-competition").createCompetitionHandlers_createEngagementCompetition({
+    get ENGAGEMENT_COMPETITION_TYPES() { return ENGAGEMENT_COMPETITION_TYPES; },
+    get ENVIRONMENT() { return ENVIRONMENT; },
+    get HttpsError() { return HttpsError; },
+    get cleanEngagementCompetitionPayload() { return cleanEngagementCompetitionPayload; },
+    get cleanText() { return cleanText; },
+    get createNativePortalCalendarRecord() { return createNativePortalCalendarRecord; },
+    get db() { return db; },
+    get engagementAccessContext() { return engagementAccessContext; },
+    get engagementCompetitionListItem() { return engagementCompetitionListItem; },
+    get qualificationEngine() { return qualificationEngine; },
+    get qualificationEvents() { return qualificationEvents; },
+    get writeAuditLog() { return writeAuditLog; }
+  });
+  return $portalCompetitionHandlers_createEngagementCompetition.instance;
+}
+
+function $portalCompetitionHandlers_updateEngagementCompetition() {
+  if (!$portalCompetitionHandlers_updateEngagementCompetition.instance) $portalCompetitionHandlers_updateEngagementCompetition.instance = require("./backend/portal-competition-handlers/update-engagement-competition").createCompetitionHandlers_updateEngagementCompetition({
+    get ENGAGEMENT_EVENT_DEFINITION_BY_CODE() { return ENGAGEMENT_EVENT_DEFINITION_BY_CODE; },
+    get ENVIRONMENT() { return ENVIRONMENT; },
+    get HttpsError() { return HttpsError; },
+    get armNativeCompetitionNotification() { return armNativeCompetitionNotification; },
+    get assertCanManageEngagementCompetition() { return assertCanManageEngagementCompetition; },
+    get assertCanModifyEngagementEvent() { return assertCanModifyEngagementEvent; },
+    get cleanEngagementCompetitionEvents() { return cleanEngagementCompetitionEvents; },
+    get cleanEngagementCompetitionPayload() { return cleanEngagementCompetitionPayload; },
+    get cleanEngagementCompetitionType() { return cleanEngagementCompetitionType; },
+    get cleanEngagementOpenWaterCourses() { return cleanEngagementOpenWaterCourses; },
+    get cleanEngagementProgramSessions() { return cleanEngagementProgramSessions; },
+    get cleanText() { return cleanText; },
+    get db() { return db; },
+    get engagementAccessContext() { return engagementAccessContext; },
+    get engagementCompetitionDetailItem() { return engagementCompetitionDetailItem; },
+    get engagementEventIsPast() { return engagementEventIsPast; },
+    get engagementOpenWaterCourseConfigRef() { return engagementOpenWaterCourseConfigRef; },
+    get nativePortalCompetition() { return nativePortalCompetition; },
+    get nativeQualificationServices() { return nativeQualificationServices; },
+    get qualificationEngine() { return qualificationEngine; },
+    get qualificationEvents() { return qualificationEvents; },
+    get qualificationService() { return qualificationService; },
+    get writeAuditLog() { return writeAuditLog; },
+    get writeAuditLogOnce() { return writeAuditLogOnce; }
+  });
+  return $portalCompetitionHandlers_updateEngagementCompetition.instance;
+}
+
+function $portalCompetitionHandlers_deleteEngagementCompetition() {
+  if (!$portalCompetitionHandlers_deleteEngagementCompetition.instance) $portalCompetitionHandlers_deleteEngagementCompetition.instance = require("./backend/portal-competition-handlers/delete-engagement-competition").createCompetitionHandlers_deleteEngagementCompetition({
+    get ENVIRONMENT() { return ENVIRONMENT; },
+    get FieldValue() { return FieldValue; },
+    get HttpsError() { return HttpsError; },
+    get LIVEPALMES_STORAGE_BUCKET() { return LIVEPALMES_STORAGE_BUCKET; },
+    get assertCanManageEngagementCompetition() { return assertCanManageEngagementCompetition; },
+    get assertCanModifyEngagementEvent() { return assertCanModifyEngagementEvent; },
+    get assertEngagementCompetitionDocumentPath() { return assertEngagementCompetitionDocumentPath; },
+    get cleanCompetitionDocuments() { return cleanCompetitionDocuments; },
+    get cleanEngagementEntryStatus() { return cleanEngagementEntryStatus; },
+    get cleanIsoDate() { return cleanIsoDate; },
+    get cleanText() { return cleanText; },
+    get db() { return db; },
+    get engagementAccessContext() { return engagementAccessContext; },
+    get engagementClosureQueueRef() { return engagementClosureQueueRef; },
+    get engagementCompetitionCalendarRef() { return engagementCompetitionCalendarRef; },
+    get engagementEventIsPast() { return engagementEventIsPast; },
+    get engagementSeasonBoundsFromEndYear() { return engagementSeasonBoundsFromEndYear; },
+    get engagementSeasonEndYearFromIsoDate() { return engagementSeasonEndYearFromIsoDate; },
+    get hasManagedEngagementCompetitionDocumentStorage() { return hasManagedEngagementCompetitionDocumentStorage; },
+    get storage() { return storage; },
+    get writeAuditLog() { return writeAuditLog; },
+    get writeAuditLogOnce() { return writeAuditLogOnce; }
+  });
+  return $portalCompetitionHandlers_deleteEngagementCompetition.instance;
+}
+
+function $portalNationalHandlers_getNationalFeaturedDocuments() {
+  if (!$portalNationalHandlers_getNationalFeaturedDocuments.instance) $portalNationalHandlers_getNationalFeaturedDocuments.instance = require("./backend/portal-national-handlers/get-national-featured-documents").createNationalHandlers_getNationalFeaturedDocuments({
+    get ENVIRONMENT() { return ENVIRONMENT; },
+    get HttpsError() { return HttpsError; },
+    get engagementAccessContext() { return engagementAccessContext; },
+    get manageNationalLibraryDocuments() { return manageNationalLibraryDocuments; }
+  });
+  return $portalNationalHandlers_getNationalFeaturedDocuments.instance;
+}
+
+function $portalNationalHandlers_saveNationalFeaturedDocuments() {
+  if (!$portalNationalHandlers_saveNationalFeaturedDocuments.instance) $portalNationalHandlers_saveNationalFeaturedDocuments.instance = require("./backend/portal-national-handlers/save-national-featured-documents").createNationalHandlers_saveNationalFeaturedDocuments({
+    get ENVIRONMENT() { return ENVIRONMENT; },
+    get HttpsError() { return HttpsError; },
+    get db() { return db; },
+    get engagementAccessContext() { return engagementAccessContext; },
+    get manageNationalLibraryDocuments() { return manageNationalLibraryDocuments; },
+    get writeAuditLogOnce() { return writeAuditLogOnce; }
+  });
+  return $portalNationalHandlers_saveNationalFeaturedDocuments.instance;
+}
+
+function $portalNationalHandlers_searchEngagementNationalSwimmers() {
+  if (!$portalNationalHandlers_searchEngagementNationalSwimmers.instance) $portalNationalHandlers_searchEngagementNationalSwimmers.instance = require("./backend/portal-national-handlers/search-engagement-national-swimmers").createNationalHandlers_searchEngagementNationalSwimmers({
+    get ENVIRONMENT() { return ENVIRONMENT; },
+    get HttpsError() { return HttpsError; },
+    get cleanText() { return cleanText; },
+    get currentEngagementCategoryFromBirthDate() { return currentEngagementCategoryFromBirthDate; },
+    get db() { return db; },
+    get engagementAccessContext() { return engagementAccessContext; },
+    get searchEngagementNationalSwimmerDocs() { return searchEngagementNationalSwimmerDocs; }
+  });
+  return $portalNationalHandlers_searchEngagementNationalSwimmers.instance;
+}
+
+function $portalNationalHandlers_requestEngagementClubSwimmerChange() {
+  if (!$portalNationalHandlers_requestEngagementClubSwimmerChange.instance) $portalNationalHandlers_requestEngagementClubSwimmerChange.instance = require("./backend/portal-national-handlers/request-engagement-club-swimmer-change").createNationalHandlers_requestEngagementClubSwimmerChange({
+    get AUDIT_ACTOR_RESOLUTION_LIMIT() { return AUDIT_ACTOR_RESOLUTION_LIMIT; },
+    get AUDIT_COMPETITION_RESOLUTION_LIMIT() { return AUDIT_COMPETITION_RESOLUTION_LIMIT; },
+    get AUDIT_LEGACY_VISIBLE_SINCE() { return AUDIT_LEGACY_VISIBLE_SINCE; },
+    get AUDIT_PAGE_LIMIT() { return AUDIT_PAGE_LIMIT; },
+    get AUDIT_PERSON_RESOLUTION_LIMIT() { return AUDIT_PERSON_RESOLUTION_LIMIT; },
+    get CLUB_REFERENCE_BY_FEDERAL_NUMBER() { return CLUB_REFERENCE_BY_FEDERAL_NUMBER; },
+    get CLUB_REFERENCE_BY_ID() { return CLUB_REFERENCE_BY_ID; },
+    get ENGAGEMENT_CLUBS_COLLECTION() { return ENGAGEMENT_CLUBS_COLLECTION; },
+    get ENGAGEMENT_CLUB_PEOPLE_ROSTERS_COLLECTION() { return ENGAGEMENT_CLUB_PEOPLE_ROSTERS_COLLECTION; },
+    get ENGAGEMENT_CLUB_ROSTERS_COLLECTION() { return ENGAGEMENT_CLUB_ROSTERS_COLLECTION; },
+    get ENGAGEMENT_MAIL_RECIPIENT_SHARD_COUNT() { return ENGAGEMENT_MAIL_RECIPIENT_SHARD_COUNT; },
+    get ENGAGEMENT_SWIMMER_CHANGE_REQUESTS_COLLECTION() { return ENGAGEMENT_SWIMMER_CHANGE_REQUESTS_COLLECTION; },
+    get ENVIRONMENT() { return ENVIRONMENT; },
+    get FieldPath() { return FieldPath; },
+    get FieldValue() { return FieldValue; },
+    get HttpsError() { return HttpsError; },
+    get PERFORMANCE_BASE_COLLECTION() { return PERFORMANCE_BASE_COLLECTION; },
+    get auditManagementContext() { return auditManagementContext; },
+    get auth() { return auth; },
+    get cleanClubPayload() { return cleanClubPayload; },
+    get cleanEngagementSwimmerIdentityCorrection() { return cleanEngagementSwimmerIdentityCorrection; },
+    get cleanFirestoreValue() { return cleanFirestoreValue; },
+    get cleanText() { return cleanText; },
+    get currentEngagementCategoryFromBirthDate() { return currentEngagementCategoryFromBirthDate; },
+    get db() { return db; },
+    get deleteEngagementClubPeopleRosterPerson() { return deleteEngagementClubPeopleRosterPerson; },
+    get deleteEngagementClubSwimmerPermanently() { return deleteEngagementClubSwimmerPermanently; },
+    get displayNameFromProfile() { return displayNameFromProfile; },
+    get engagementAccessContext() { return engagementAccessContext; },
+    get engagementClubAccessContext() { return engagementClubAccessContext; },
+    get engagementClubPersonEntrySnapshot() { return engagementClubPersonEntrySnapshot; },
+    get engagementClubPersonFullName() { return engagementClubPersonFullName; },
+    get engagementClubPersonItem() { return engagementClubPersonItem; },
+    get engagementClubSwimmerDeletionUsage() { return engagementClubSwimmerDeletionUsage; },
+    get engagementNationalSwimmerItemFromDoc() { return engagementNationalSwimmerItemFromDoc; },
+    get engagementNewSwimmerItem() { return engagementNewSwimmerItem; },
+    get engagementStoredClubItem() { return engagementStoredClubItem; },
+    get engagementSwimmerChangeRequestItem() { return engagementSwimmerChangeRequestItem; },
+    get engagementSwimmerIdentitySnapshot() { return engagementSwimmerIdentitySnapshot; },
+    get getEngagementNationalSwimmerForMerge() { return getEngagementNationalSwimmerForMerge; },
+    get getEngagementSwimmerCorrectionTarget() { return getEngagementSwimmerCorrectionTarget; },
+    get manageNationalLibraryDocuments() { return manageNationalLibraryDocuments; },
+    get mergeEngagementClubEntryOfficials() { return mergeEngagementClubEntryOfficials; },
+    get portalReadStats() { return portalReadStats; },
+    get publicEngagementClubDirectoryRef() { return publicEngagementClubDirectoryRef; },
+    get publicEngagementClubItem() { return publicEngagementClubItem; },
+    get readEngagementClubAdminDirectory() { return readEngagementClubAdminDirectory; },
+    get searchEngagementNationalSwimmerDocs() { return searchEngagementNationalSwimmerDocs; },
+    get searchEngagementNationalSwimmerMergeTargetDocs() { return searchEngagementNationalSwimmerMergeTargetDocs; },
+    get setEngagementSwimmerChangeRequestRosterState() { return setEngagementSwimmerChangeRequestRosterState; },
+    get stableHash() { return stableHash; },
+    get upsertEngagementClubPeopleRosterPerson() { return upsertEngagementClubPeopleRosterPerson; },
+    get writeAuditLog() { return writeAuditLog; },
+    get writeAuditLogOnce() { return writeAuditLogOnce; }
+  });
+  return $portalNationalHandlers_requestEngagementClubSwimmerChange.instance;
+}
+
+function $portalNationalHandlers_listEngagementSwimmerChangeRequests() {
+  if (!$portalNationalHandlers_listEngagementSwimmerChangeRequests.instance) $portalNationalHandlers_listEngagementSwimmerChangeRequests.instance = require("./backend/portal-national-handlers/list-engagement-swimmer-change-requests").createNationalHandlers_listEngagementSwimmerChangeRequests({
+    get ENGAGEMENT_SWIMMER_CHANGE_REQUESTS_COLLECTION() { return ENGAGEMENT_SWIMMER_CHANGE_REQUESTS_COLLECTION; },
+    get HttpsError() { return HttpsError; },
+    get cleanText() { return cleanText; },
+    get db() { return db; },
+    get engagementAccessContext() { return engagementAccessContext; },
+    get engagementSwimmerChangeRequestItem() { return engagementSwimmerChangeRequestItem; }
+  });
+  return $portalNationalHandlers_listEngagementSwimmerChangeRequests.instance;
+}
+
+function $portalNationalHandlers_listEngagementNationalClubs() {
+  if (!$portalNationalHandlers_listEngagementNationalClubs.instance) $portalNationalHandlers_listEngagementNationalClubs.instance = require("./backend/portal-national-handlers/list-engagement-national-clubs").createNationalHandlers_listEngagementNationalClubs({
+    get ENGAGEMENT_CLUBS_COLLECTION() { return ENGAGEMENT_CLUBS_COLLECTION; },
+    get ENGAGEMENT_MAIL_RECIPIENT_SHARD_COUNT() { return ENGAGEMENT_MAIL_RECIPIENT_SHARD_COUNT; },
+    get ENVIRONMENT() { return ENVIRONMENT; },
+    get FieldPath() { return FieldPath; },
+    get HttpsError() { return HttpsError; },
+    get cleanText() { return cleanText; },
+    get db() { return db; },
+    get engagementAccessContext() { return engagementAccessContext; },
+    get engagementStoredClubItem() { return engagementStoredClubItem; },
+    get portalReadStats() { return portalReadStats; },
+    get publicEngagementClubDirectoryRef() { return publicEngagementClubDirectoryRef; },
+    get publicEngagementClubItem() { return publicEngagementClubItem; },
+    get readEngagementClubAdminDirectory() { return readEngagementClubAdminDirectory; }
+  });
+  return $portalNationalHandlers_listEngagementNationalClubs.instance;
+}
+
+function $portalNationalHandlers_saveEngagementNationalClub() {
+  if (!$portalNationalHandlers_saveEngagementNationalClub.instance) $portalNationalHandlers_saveEngagementNationalClub.instance = require("./backend/portal-national-handlers/save-engagement-national-club").createNationalHandlers_saveEngagementNationalClub({
+    get CLUB_REFERENCE_BY_FEDERAL_NUMBER() { return CLUB_REFERENCE_BY_FEDERAL_NUMBER; },
+    get CLUB_REFERENCE_BY_ID() { return CLUB_REFERENCE_BY_ID; },
+    get ENGAGEMENT_CLUBS_COLLECTION() { return ENGAGEMENT_CLUBS_COLLECTION; },
+    get ENVIRONMENT() { return ENVIRONMENT; },
+    get HttpsError() { return HttpsError; },
+    get cleanClubPayload() { return cleanClubPayload; },
+    get cleanText() { return cleanText; },
+    get db() { return db; },
+    get engagementAccessContext() { return engagementAccessContext; },
+    get engagementStoredClubItem() { return engagementStoredClubItem; },
+    get publicEngagementClubDirectoryRef() { return publicEngagementClubDirectoryRef; },
+    get publicEngagementClubItem() { return publicEngagementClubItem; },
+    get stableHash() { return stableHash; },
+    get writeAuditLog() { return writeAuditLog; },
+    get writeAuditLogOnce() { return writeAuditLogOnce; }
+  });
+  return $portalNationalHandlers_saveEngagementNationalClub.instance;
+}
+
+function $portalNationalHandlers_deleteEngagementNationalClub() {
+  if (!$portalNationalHandlers_deleteEngagementNationalClub.instance) $portalNationalHandlers_deleteEngagementNationalClub.instance = require("./backend/portal-national-handlers/delete-engagement-national-club").createNationalHandlers_deleteEngagementNationalClub({
+    get CLUB_REFERENCE_BY_ID() { return CLUB_REFERENCE_BY_ID; },
+    get ENGAGEMENT_CLUBS_COLLECTION() { return ENGAGEMENT_CLUBS_COLLECTION; },
+    get ENGAGEMENT_CLUB_PEOPLE_ROSTERS_COLLECTION() { return ENGAGEMENT_CLUB_PEOPLE_ROSTERS_COLLECTION; },
+    get ENGAGEMENT_CLUB_ROSTERS_COLLECTION() { return ENGAGEMENT_CLUB_ROSTERS_COLLECTION; },
+    get ENVIRONMENT() { return ENVIRONMENT; },
+    get FieldValue() { return FieldValue; },
+    get HttpsError() { return HttpsError; },
+    get PERFORMANCE_BASE_COLLECTION() { return PERFORMANCE_BASE_COLLECTION; },
+    get cleanText() { return cleanText; },
+    get db() { return db; },
+    get engagementAccessContext() { return engagementAccessContext; },
+    get engagementStoredClubItem() { return engagementStoredClubItem; },
+    get portalReadStats() { return portalReadStats; },
+    get publicEngagementClubDirectoryRef() { return publicEngagementClubDirectoryRef; },
+    get writeAuditLog() { return writeAuditLog; },
+    get writeAuditLogOnce() { return writeAuditLogOnce; }
+  });
+  return $portalNationalHandlers_deleteEngagementNationalClub.instance;
+}
+
+function $portalNationalHandlers_setEngagementNationalClubSwimmerStatus() {
+  if (!$portalNationalHandlers_setEngagementNationalClubSwimmerStatus.instance) $portalNationalHandlers_setEngagementNationalClubSwimmerStatus.instance = require("./backend/portal-national-handlers/set-engagement-national-club-swimmer-status").createNationalHandlers_setEngagementNationalClubSwimmerStatus({
+    get ENVIRONMENT() { return ENVIRONMENT; },
+    get HttpsError() { return HttpsError; },
+    get cleanText() { return cleanText; },
+    get db() { return db; },
+    get engagementAccessContext() { return engagementAccessContext; },
+    get engagementNewSwimmerItem() { return engagementNewSwimmerItem; },
+    get writeAuditLog() { return writeAuditLog; },
+    get writeAuditLogOnce() { return writeAuditLogOnce; }
+  });
+  return $portalNationalHandlers_setEngagementNationalClubSwimmerStatus.instance;
+}
+
+function $portalNationalHandlers_deleteEngagementNationalClubSwimmer() {
+  if (!$portalNationalHandlers_deleteEngagementNationalClubSwimmer.instance) $portalNationalHandlers_deleteEngagementNationalClubSwimmer.instance = require("./backend/portal-national-handlers/delete-engagement-national-club-swimmer").createNationalHandlers_deleteEngagementNationalClubSwimmer({
+    get ENVIRONMENT() { return ENVIRONMENT; },
+    get HttpsError() { return HttpsError; },
+    get cleanText() { return cleanText; },
+    get db() { return db; },
+    get deleteEngagementClubSwimmerPermanently() { return deleteEngagementClubSwimmerPermanently; },
+    get engagementAccessContext() { return engagementAccessContext; },
+    get engagementClubSwimmerDeletionUsage() { return engagementClubSwimmerDeletionUsage; },
+    get writeAuditLogOnce() { return writeAuditLogOnce; }
+  });
+  return $portalNationalHandlers_deleteEngagementNationalClubSwimmer.instance;
+}
+
+function $portalNationalHandlers_searchEngagementNationalSwimmerMergeTargets() {
+  if (!$portalNationalHandlers_searchEngagementNationalSwimmerMergeTargets.instance) $portalNationalHandlers_searchEngagementNationalSwimmerMergeTargets.instance = require("./backend/portal-national-handlers/search-engagement-national-swimmer-merge-targets").createNationalHandlers_searchEngagementNationalSwimmerMergeTargets({
+    get ENVIRONMENT() { return ENVIRONMENT; },
+    get HttpsError() { return HttpsError; },
+    get cleanText() { return cleanText; },
+    get db() { return db; },
+    get engagementAccessContext() { return engagementAccessContext; },
+    get engagementNationalSwimmerItemFromDoc() { return engagementNationalSwimmerItemFromDoc; },
+    get getEngagementNationalSwimmerForMerge() { return getEngagementNationalSwimmerForMerge; },
+    get searchEngagementNationalSwimmerDocs() { return searchEngagementNationalSwimmerDocs; },
+    get searchEngagementNationalSwimmerMergeTargetDocs() { return searchEngagementNationalSwimmerMergeTargetDocs; }
+  });
+  return $portalNationalHandlers_searchEngagementNationalSwimmerMergeTargets.instance;
+}
+
+function $portalNationalHandlers_listEngagementNationalClubPeople() {
+  if (!$portalNationalHandlers_listEngagementNationalClubPeople.instance) $portalNationalHandlers_listEngagementNationalClubPeople.instance = require("./backend/portal-national-handlers/list-engagement-national-club-people").createNationalHandlers_listEngagementNationalClubPeople({
+    get ENVIRONMENT() { return ENVIRONMENT; },
+    get HttpsError() { return HttpsError; },
+    get db() { return db; },
+    get engagementAccessContext() { return engagementAccessContext; },
+    get engagementClubPersonItem() { return engagementClubPersonItem; }
+  });
+  return $portalNationalHandlers_listEngagementNationalClubPeople.instance;
+}
+
+function $portalNationalHandlers_setEngagementNationalClubPersonStatus() {
+  if (!$portalNationalHandlers_setEngagementNationalClubPersonStatus.instance) $portalNationalHandlers_setEngagementNationalClubPersonStatus.instance = require("./backend/portal-national-handlers/set-engagement-national-club-person-status").createNationalHandlers_setEngagementNationalClubPersonStatus({
+    get ENVIRONMENT() { return ENVIRONMENT; },
+    get HttpsError() { return HttpsError; },
+    get cleanText() { return cleanText; },
+    get db() { return db; },
+    get engagementAccessContext() { return engagementAccessContext; },
+    get engagementClubPersonItem() { return engagementClubPersonItem; },
+    get upsertEngagementClubPeopleRosterPerson() { return upsertEngagementClubPeopleRosterPerson; },
+    get writeAuditLog() { return writeAuditLog; },
+    get writeAuditLogOnce() { return writeAuditLogOnce; }
+  });
+  return $portalNationalHandlers_setEngagementNationalClubPersonStatus.instance;
+}
+
+function $portalNationalHandlers_deleteEngagementNationalClubPerson() {
+  if (!$portalNationalHandlers_deleteEngagementNationalClubPerson.instance) $portalNationalHandlers_deleteEngagementNationalClubPerson.instance = require("./backend/portal-national-handlers/delete-engagement-national-club-person").createNationalHandlers_deleteEngagementNationalClubPerson({
+    get ENVIRONMENT() { return ENVIRONMENT; },
+    get HttpsError() { return HttpsError; },
+    get cleanText() { return cleanText; },
+    get db() { return db; },
+    get deleteEngagementClubPeopleRosterPerson() { return deleteEngagementClubPeopleRosterPerson; },
+    get engagementAccessContext() { return engagementAccessContext; },
+    get writeAuditLog() { return writeAuditLog; },
+    get writeAuditLogOnce() { return writeAuditLogOnce; }
+  });
+  return $portalNationalHandlers_deleteEngagementNationalClubPerson.instance;
+}
+
+function $portalNationalHandlers_listEngagementNationalAuditLogs() {
+  if (!$portalNationalHandlers_listEngagementNationalAuditLogs.instance) $portalNationalHandlers_listEngagementNationalAuditLogs.instance = require("./backend/portal-national-handlers/list-engagement-national-audit-logs").createNationalHandlers_listEngagementNationalAuditLogs({
+    get AUDIT_ACTOR_RESOLUTION_LIMIT() { return AUDIT_ACTOR_RESOLUTION_LIMIT; },
+    get AUDIT_COMPETITION_RESOLUTION_LIMIT() { return AUDIT_COMPETITION_RESOLUTION_LIMIT; },
+    get AUDIT_LEGACY_VISIBLE_SINCE() { return AUDIT_LEGACY_VISIBLE_SINCE; },
+    get AUDIT_PAGE_LIMIT() { return AUDIT_PAGE_LIMIT; },
+    get AUDIT_PERSON_RESOLUTION_LIMIT() { return AUDIT_PERSON_RESOLUTION_LIMIT; },
+    get FieldPath() { return FieldPath; },
+    get auditManagementContext() { return auditManagementContext; },
+    get auth() { return auth; },
+    get cleanFirestoreValue() { return cleanFirestoreValue; },
+    get cleanText() { return cleanText; },
+    get db() { return db; },
+    get displayNameFromProfile() { return displayNameFromProfile; }
+  });
+  return $portalNationalHandlers_listEngagementNationalAuditLogs.instance;
+}
+
+function $portalNationalHandlers_mergeEngagementNationalClubPerson() {
+  if (!$portalNationalHandlers_mergeEngagementNationalClubPerson.instance) $portalNationalHandlers_mergeEngagementNationalClubPerson.instance = require("./backend/portal-national-handlers/merge-engagement-national-club-person").createNationalHandlers_mergeEngagementNationalClubPerson({
+    get ENVIRONMENT() { return ENVIRONMENT; },
+    get FieldValue() { return FieldValue; },
+    get HttpsError() { return HttpsError; },
+    get cleanText() { return cleanText; },
+    get db() { return db; },
+    get deleteEngagementClubPeopleRosterPerson() { return deleteEngagementClubPeopleRosterPerson; },
+    get engagementAccessContext() { return engagementAccessContext; },
+    get engagementClubPersonEntrySnapshot() { return engagementClubPersonEntrySnapshot; },
+    get engagementClubPersonFullName() { return engagementClubPersonFullName; },
+    get engagementClubPersonItem() { return engagementClubPersonItem; },
+    get mergeEngagementClubEntryOfficials() { return mergeEngagementClubEntryOfficials; },
+    get upsertEngagementClubPeopleRosterPerson() { return upsertEngagementClubPeopleRosterPerson; },
+    get writeAuditLog() { return writeAuditLog; },
+    get writeAuditLogOnce() { return writeAuditLogOnce; }
+  });
+  return $portalNationalHandlers_mergeEngagementNationalClubPerson.instance;
+}
+
+function $portalClubHandlers_getEngagementClubEntry() {
+  if (!$portalClubHandlers_getEngagementClubEntry.instance) $portalClubHandlers_getEngagementClubEntry.instance = require("./backend/portal-club-handlers/get-engagement-club-entry").createClubHandlers_getEngagementClubEntry({
+    get ENVIRONMENT() { return ENVIRONMENT; },
+    get HttpsError() { return HttpsError; },
+    get cleanText() { return cleanText; },
+    get db() { return db; },
+    get engagementClubAccessContext() { return engagementClubAccessContext; },
+    get engagementClubEntryId() { return engagementClubEntryId; },
+    get engagementClubEntryItem() { return engagementClubEntryItem; },
+    get engagementCompetitionDetailItem() { return engagementCompetitionDetailItem; },
+    get nativeClubEntryView() { return nativeClubEntryView; },
+    get nativePortalCompetition() { return nativePortalCompetition; },
+    get portalReadStats() { return portalReadStats; }
+  });
+  return $portalClubHandlers_getEngagementClubEntry.instance;
+}
+
+function $portalClubHandlers_generateEngagementClubRecapPdf() {
+  if (!$portalClubHandlers_generateEngagementClubRecapPdf.instance) $portalClubHandlers_generateEngagementClubRecapPdf.instance = require("./backend/portal-club-handlers/generate-engagement-club-recap-pdf").createClubHandlers_generateEngagementClubRecapPdf({
+    get ENVIRONMENT() { return ENVIRONMENT; },
+    get HttpsError() { return HttpsError; },
+    get cleanText() { return cleanText; },
+    get db() { return db; },
+    get engagementClubAccessContext() { return engagementClubAccessContext; },
+    get engagementClubEntryHasParticipants() { return engagementClubEntryHasParticipants; },
+    get engagementClubEntryId() { return engagementClubEntryId; },
+    get engagementClubEntryItem() { return engagementClubEntryItem; },
+    get generateNativeClubRecapPdf() { return generateNativeClubRecapPdf; },
+    get getOrCreateEngagementClubRecapPdf() { return getOrCreateEngagementClubRecapPdf; },
+    get writeAuditLog() { return writeAuditLog; }
+  });
+  return $portalClubHandlers_generateEngagementClubRecapPdf.instance;
+}
+
+function $portalClubHandlers_listEngagementCompetitionClubRecaps() {
+  if (!$portalClubHandlers_listEngagementCompetitionClubRecaps.instance) $portalClubHandlers_listEngagementCompetitionClubRecaps.instance = require("./backend/portal-club-handlers/list-engagement-competition-club-recaps").createClubHandlers_listEngagementCompetitionClubRecaps({
+    get ENGAGEMENT_COMPETITION_ENTRY_SUMMARIES_COLLECTION() { return ENGAGEMENT_COMPETITION_ENTRY_SUMMARIES_COLLECTION; },
+    get ENVIRONMENT() { return ENVIRONMENT; },
+    get HttpsError() { return HttpsError; },
+    get assertCanManageEngagementCompetition() { return assertCanManageEngagementCompetition; },
+    get cleanText() { return cleanText; },
+    get db() { return db; },
+    get engagementAccessContext() { return engagementAccessContext; },
+    get engagementClubEntryHasParticipants() { return engagementClubEntryHasParticipants; },
+    get engagementCompetitionDetailItem() { return engagementCompetitionDetailItem; },
+    get engagementCompetitionEntrySummariesFromData() { return engagementCompetitionEntrySummariesFromData; },
+    get engagementCompetitionEntrySummaryItem() { return engagementCompetitionEntrySummaryItem; },
+    get engagementCompetitionEntrySummaryRef() { return engagementCompetitionEntrySummaryRef; },
+    get engagementPdfFeeTotal() { return engagementPdfFeeTotal; },
+    get nativeAdminCompetitionEntries() { return nativeAdminCompetitionEntries; }
+  });
+  return $portalClubHandlers_listEngagementCompetitionClubRecaps.instance;
+}
+
+function $portalClubHandlers_generateEngagementClubRecapPdfForAdmin() {
+  if (!$portalClubHandlers_generateEngagementClubRecapPdfForAdmin.instance) $portalClubHandlers_generateEngagementClubRecapPdfForAdmin.instance = require("./backend/portal-club-handlers/generate-engagement-club-recap-pdf-for-admin").createClubHandlers_generateEngagementClubRecapPdfForAdmin({
+    get ENVIRONMENT() { return ENVIRONMENT; },
+    get HttpsError() { return HttpsError; },
+    get assertCanManageEngagementCompetition() { return assertCanManageEngagementCompetition; },
+    get buildEngagementClubRecapPdf() { return buildEngagementClubRecapPdf; },
+    get cleanText() { return cleanText; },
+    get db() { return db; },
+    get engagementAccessContext() { return engagementAccessContext; },
+    get engagementClubEntryHasParticipants() { return engagementClubEntryHasParticipants; },
+    get engagementClubEntryId() { return engagementClubEntryId; },
+    get engagementClubEntryItem() { return engagementClubEntryItem; },
+    get getOrCreateEngagementClubRecapPdf() { return getOrCreateEngagementClubRecapPdf; },
+    get nativeAdminCompetitionEntries() { return nativeAdminCompetitionEntries; },
+    get writeAuditLog() { return writeAuditLog; }
+  });
+  return $portalClubHandlers_generateEngagementClubRecapPdfForAdmin.instance;
+}
+
+function $portalClubHandlers_generateEngagementCompetitionClubRecapPdfs() {
+  if (!$portalClubHandlers_generateEngagementCompetitionClubRecapPdfs.instance) $portalClubHandlers_generateEngagementCompetitionClubRecapPdfs.instance = require("./backend/portal-club-handlers/generate-engagement-competition-club-recap-pdfs").createClubHandlers_generateEngagementCompetitionClubRecapPdfs({
+    get ENVIRONMENT() { return ENVIRONMENT; },
+    get HttpsError() { return HttpsError; },
+    get assertCanManageEngagementCompetition() { return assertCanManageEngagementCompetition; },
+    get buildEngagementClubRecapPdf() { return buildEngagementClubRecapPdf; },
+    get cleanText() { return cleanText; },
+    get clubRecapZip() { return clubRecapZip; },
+    get db() { return db; },
+    get engagementAccessContext() { return engagementAccessContext; },
+    get engagementClubEntryHasParticipants() { return engagementClubEntryHasParticipants; },
+    get engagementClubEntryItem() { return engagementClubEntryItem; },
+    get engagementCompetitionEntrySummaryItem() { return engagementCompetitionEntrySummaryItem; },
+    get getOrCreateEngagementClubRecapPdf() { return getOrCreateEngagementClubRecapPdf; },
+    get nativeAdminCompetitionEntries() { return nativeAdminCompetitionEntries; },
+    get writeAuditLog() { return writeAuditLog; }
+  });
+  return $portalClubHandlers_generateEngagementCompetitionClubRecapPdfs.instance;
+}
+
+function $portalClubHandlers_saveEngagementClubTeamLeader() {
+  if (!$portalClubHandlers_saveEngagementClubTeamLeader.instance) $portalClubHandlers_saveEngagementClubTeamLeader.instance = require("./backend/portal-club-handlers/save-engagement-club-team-leader").createClubHandlers_saveEngagementClubTeamLeader({
+    get ENVIRONMENT() { return ENVIRONMENT; },
+    get HttpsError() { return HttpsError; },
+    get assertEngagementClubWriteOpen() { return assertEngagementClubWriteOpen; },
+    get cleanEngagementTeamLeader() { return cleanEngagementTeamLeader; },
+    get cleanText() { return cleanText; },
+    get db() { return db; },
+    get engagementClubAccessContext() { return engagementClubAccessContext; },
+    get engagementClubEntryId() { return engagementClubEntryId; },
+    get engagementClubEntryItem() { return engagementClubEntryItem; },
+    get engagementClubPersonItem() { return engagementClubPersonItem; },
+    get engagementPersonLicenseKey() { return engagementPersonLicenseKey; },
+    get engagementTeamLeaderComplete() { return engagementTeamLeaderComplete; },
+    get nativeClubEntryView() { return nativeClubEntryView; },
+    get nativePortalCompetition() { return nativePortalCompetition; },
+    get upsertEngagementClubPeopleRosterPerson() { return upsertEngagementClubPeopleRosterPerson; },
+    get writeAuditLog() { return writeAuditLog; },
+    get writeAuditLogOnce() { return writeAuditLogOnce; }
+  });
+  return $portalClubHandlers_saveEngagementClubTeamLeader.instance;
+}
+
+function $portalClubHandlers_removeEngagementClubTeamLeader() {
+  if (!$portalClubHandlers_removeEngagementClubTeamLeader.instance) $portalClubHandlers_removeEngagementClubTeamLeader.instance = require("./backend/portal-club-handlers/remove-engagement-club-team-leader").createClubHandlers_removeEngagementClubTeamLeader({
+    get ENVIRONMENT() { return ENVIRONMENT; },
+    get HttpsError() { return HttpsError; },
+    get assertEngagementClubWriteOpen() { return assertEngagementClubWriteOpen; },
+    get cleanText() { return cleanText; },
+    get db() { return db; },
+    get deleteEngagementCompetitionEntrySummary() { return deleteEngagementCompetitionEntrySummary; },
+    get engagementClubAccessContext() { return engagementClubAccessContext; },
+    get engagementClubEntryHasParticipants() { return engagementClubEntryHasParticipants; },
+    get engagementClubEntryId() { return engagementClubEntryId; },
+    get engagementClubEntryItem() { return engagementClubEntryItem; },
+    get nativeClubEntryView() { return nativeClubEntryView; },
+    get nativePortalCompetition() { return nativePortalCompetition; },
+    get writeAuditLog() { return writeAuditLog; },
+    get writeAuditLogOnce() { return writeAuditLogOnce; }
+  });
+  return $portalClubHandlers_removeEngagementClubTeamLeader.instance;
+}
+
+function $portalClubHandlers_listEngagementClubPeople() {
+  if (!$portalClubHandlers_listEngagementClubPeople.instance) $portalClubHandlers_listEngagementClubPeople.instance = require("./backend/portal-club-handlers/list-engagement-club-people").createClubHandlers_listEngagementClubPeople({
+    get ENGAGEMENT_CLUB_PEOPLE_ROSTERS_COLLECTION() { return ENGAGEMENT_CLUB_PEOPLE_ROSTERS_COLLECTION; },
+    get ENVIRONMENT() { return ENVIRONMENT; },
+    get HttpsError() { return HttpsError; },
+    get cleanText() { return cleanText; },
+    get db() { return db; },
+    get engagementClubAccessContext() { return engagementClubAccessContext; },
+    get engagementClubPeopleRosterPeopleFromData() { return engagementClubPeopleRosterPeopleFromData; },
+    get engagementClubPeopleRosterRef() { return engagementClubPeopleRosterRef; },
+    get portalReadStats() { return portalReadStats; },
+    get rebuildEngagementClubPeopleRoster() { return rebuildEngagementClubPeopleRoster; }
+  });
+  return $portalClubHandlers_listEngagementClubPeople.instance;
+}
+
+function $portalClubHandlers_saveEngagementClubPerson() {
+  if (!$portalClubHandlers_saveEngagementClubPerson.instance) $portalClubHandlers_saveEngagementClubPerson.instance = require("./backend/portal-club-handlers/save-engagement-club-person").createClubHandlers_saveEngagementClubPerson({
+    get ENVIRONMENT() { return ENVIRONMENT; },
+    get HttpsError() { return HttpsError; },
+    get cleanEngagementClubPerson() { return cleanEngagementClubPerson; },
+    get cleanText() { return cleanText; },
+    get db() { return db; },
+    get engagementClubAccessContext() { return engagementClubAccessContext; },
+    get engagementClubPeopleRosterPeopleFromData() { return engagementClubPeopleRosterPeopleFromData; },
+    get engagementClubPeopleRosterRef() { return engagementClubPeopleRosterRef; },
+    get engagementClubPersonIdentityConflict() { return engagementClubPersonIdentityConflict; },
+    get engagementClubPersonItem() { return engagementClubPersonItem; },
+    get engagementClubPersonOutsideClubConflict() { return engagementClubPersonOutsideClubConflict; },
+    get resolveEngagementClubPersonSwimmer() { return resolveEngagementClubPersonSwimmer; },
+    get stableHash() { return stableHash; },
+    get throwEngagementClubPersonIdentityConflict() { return throwEngagementClubPersonIdentityConflict; },
+    get upsertEngagementClubPeopleRosterPerson() { return upsertEngagementClubPeopleRosterPerson; },
+    get writeAuditLog() { return writeAuditLog; },
+    get writeAuditLogOnce() { return writeAuditLogOnce; }
+  });
+  return $portalClubHandlers_saveEngagementClubPerson.instance;
+}
+
+function $portalClubHandlers_setEngagementClubPersonStatus() {
+  if (!$portalClubHandlers_setEngagementClubPersonStatus.instance) $portalClubHandlers_setEngagementClubPersonStatus.instance = require("./backend/portal-club-handlers/set-engagement-club-person-status").createClubHandlers_setEngagementClubPersonStatus({
+    get ENVIRONMENT() { return ENVIRONMENT; },
+    get HttpsError() { return HttpsError; },
+    get cleanText() { return cleanText; },
+    get db() { return db; },
+    get engagementClubAccessContext() { return engagementClubAccessContext; },
+    get engagementClubPersonItem() { return engagementClubPersonItem; },
+    get upsertEngagementClubPeopleRosterPerson() { return upsertEngagementClubPeopleRosterPerson; },
+    get writeAuditLog() { return writeAuditLog; },
+    get writeAuditLogOnce() { return writeAuditLogOnce; }
+  });
+  return $portalClubHandlers_setEngagementClubPersonStatus.instance;
+}
+
+function $portalClubHandlers_saveEngagementClubOfficials() {
+  if (!$portalClubHandlers_saveEngagementClubOfficials.instance) $portalClubHandlers_saveEngagementClubOfficials.instance = require("./backend/portal-club-handlers/save-engagement-club-officials").createClubHandlers_saveEngagementClubOfficials({
+    get ENVIRONMENT() { return ENVIRONMENT; },
+    get HttpsError() { return HttpsError; },
+    get assertEngagementClubWriteOpen() { return assertEngagementClubWriteOpen; },
+    get cleanEngagementEntrySwimmer() { return cleanEngagementEntrySwimmer; },
+    get cleanText() { return cleanText; },
+    get db() { return db; },
+    get engagementClubAccessContext() { return engagementClubAccessContext; },
+    get engagementClubEntryId() { return engagementClubEntryId; },
+    get engagementClubEntryItem() { return engagementClubEntryItem; },
+    get engagementClubPersonItem() { return engagementClubPersonItem; },
+    get engagementPersonLicenseKey() { return engagementPersonLicenseKey; },
+    get engagementTeamLeaderComplete() { return engagementTeamLeaderComplete; },
+    get saveNativeClubOfficials() { return saveNativeClubOfficials; },
+    get writeAuditLog() { return writeAuditLog; }
+  });
+  return $portalClubHandlers_saveEngagementClubOfficials.instance;
+}
+
+function $portalClubHandlers_listEngagementClubSwimmers() {
+  if (!$portalClubHandlers_listEngagementClubSwimmers.instance) $portalClubHandlers_listEngagementClubSwimmers.instance = require("./backend/portal-club-handlers/list-engagement-club-swimmers").createClubHandlers_listEngagementClubSwimmers({
+    get ENVIRONMENT() { return ENVIRONMENT; },
+    get HttpsError() { return HttpsError; },
+    get cleanText() { return cleanText; },
+    get currentEngagementCategoryFromBirthDate() { return currentEngagementCategoryFromBirthDate; },
+    get db() { return db; },
+    get engagementClubAccessContext() { return engagementClubAccessContext; },
+    get engagementClubRosterRef() { return engagementClubRosterRef; },
+    get engagementClubRosterSwimmersFromData() { return engagementClubRosterSwimmersFromData; },
+    get portalReadStats() { return portalReadStats; },
+    get sortEngagementClubSwimmers() { return sortEngagementClubSwimmers; },
+    get uniqueEngagementClubSwimmers() { return uniqueEngagementClubSwimmers; }
+  });
+  return $portalClubHandlers_listEngagementClubSwimmers.instance;
+}
+
+function $portalClubHandlers_setEngagementClubSwimmerActivityStatus() {
+  if (!$portalClubHandlers_setEngagementClubSwimmerActivityStatus.instance) $portalClubHandlers_setEngagementClubSwimmerActivityStatus.instance = require("./backend/portal-club-handlers/set-engagement-club-swimmer-activity-status").createClubHandlers_setEngagementClubSwimmerActivityStatus({
+    get ENVIRONMENT() { return ENVIRONMENT; },
+    get HttpsError() { return HttpsError; },
+    get cleanEngagementClubActivityStatus() { return cleanEngagementClubActivityStatus; },
+    get cleanText() { return cleanText; },
+    get db() { return db; },
+    get engagementClubAccessContext() { return engagementClubAccessContext; },
+    get engagementClubRosterRef() { return engagementClubRosterRef; },
+    get engagementClubRosterSwimmerItem() { return engagementClubRosterSwimmerItem; },
+    get portalReadStats() { return portalReadStats; },
+    get writeAuditLog() { return writeAuditLog; },
+    get writeAuditLogOnce() { return writeAuditLogOnce; }
+  });
+  return $portalClubHandlers_setEngagementClubSwimmerActivityStatus.instance;
+}
+
+function $portalClubHandlers_previewEngagementClubSwimmerCreation() {
+  if (!$portalClubHandlers_previewEngagementClubSwimmerCreation.instance) $portalClubHandlers_previewEngagementClubSwimmerCreation.instance = require("./backend/portal-club-handlers/preview-engagement-club-swimmer-creation").createClubHandlers_previewEngagementClubSwimmerCreation({
+    get ENVIRONMENT() { return ENVIRONMENT; },
+    get HttpsError() { return HttpsError; },
+    get assertNoEngagementSwimmerLicenseConflict() { return assertNoEngagementSwimmerLicenseConflict; },
+    get buildEngagementNewSwimmerAlerts() { return buildEngagementNewSwimmerAlerts; },
+    get cleanEngagementNewSwimmer() { return cleanEngagementNewSwimmer; },
+    get db() { return db; },
+    get engagementClubAccessContext() { return engagementClubAccessContext; },
+    get engagementNewSwimmerAlertFromMatch() { return engagementNewSwimmerAlertFromMatch; },
+    get importSwimmerCreation() { return importSwimmerCreation; }
+  });
+  return $portalClubHandlers_previewEngagementClubSwimmerCreation.instance;
+}
+
+function $portalClubHandlers_previewEngagementClubSwimmerRecovery() {
+  if (!$portalClubHandlers_previewEngagementClubSwimmerRecovery.instance) $portalClubHandlers_previewEngagementClubSwimmerRecovery.instance = require("./backend/portal-club-handlers/preview-engagement-club-swimmer-recovery").createClubHandlers_previewEngagementClubSwimmerRecovery({
+    get ENVIRONMENT() { return ENVIRONMENT; },
+    get HttpsError() { return HttpsError; },
+    get cleanText() { return cleanText; },
+    get db() { return db; },
+    get engagementClubAccessContext() { return engagementClubAccessContext; },
+    get engagementSwimmerRecoveryPreview() { return engagementSwimmerRecoveryPreview; },
+    get portalReadStats() { return portalReadStats; }
+  });
+  return $portalClubHandlers_previewEngagementClubSwimmerRecovery.instance;
+}
+
+function $portalClubHandlers_recoverEngagementClubSwimmer() {
+  if (!$portalClubHandlers_recoverEngagementClubSwimmer.instance) $portalClubHandlers_recoverEngagementClubSwimmer.instance = require("./backend/portal-club-handlers/recover-engagement-club-swimmer").createClubHandlers_recoverEngagementClubSwimmer({
+    get ENGAGEMENT_SWIMMER_LICENSE_NUMBERS_COLLECTION() { return ENGAGEMENT_SWIMMER_LICENSE_NUMBERS_COLLECTION; },
+    get ENVIRONMENT() { return ENVIRONMENT; },
+    get HttpsError() { return HttpsError; },
+    get cleanEngagementNewSwimmer() { return cleanEngagementNewSwimmer; },
+    get cleanText() { return cleanText; },
+    get db() { return db; },
+    get deleteEngagementClubRosterSwimmer() { return deleteEngagementClubRosterSwimmer; },
+    get engagementClubAccessContext() { return engagementClubAccessContext; },
+    get engagementNewSwimmerItem() { return engagementNewSwimmerItem; },
+    get engagementSwimmerLicenseId() { return engagementSwimmerLicenseId; },
+    get engagementSwimmerLicenseNumberId() { return engagementSwimmerLicenseNumberId; },
+    get engagementSwimmerLicenseNumberKey() { return engagementSwimmerLicenseNumberKey; },
+    get engagementSwimmerLicensePayload() { return engagementSwimmerLicensePayload; },
+    get engagementSwimmerRecoveryPreview() { return engagementSwimmerRecoveryPreview; },
+    get portalReadStats() { return portalReadStats; },
+    get stableHash() { return stableHash; },
+    get upsertEngagementClubRosterSwimmer() { return upsertEngagementClubRosterSwimmer; },
+    get writeAuditLog() { return writeAuditLog; },
+    get writeAuditLogOnce() { return writeAuditLogOnce; }
+  });
+  return $portalClubHandlers_recoverEngagementClubSwimmer.instance;
+}
+
+function $portalClubHandlers_createEngagementClubSwimmer() {
+  if (!$portalClubHandlers_createEngagementClubSwimmer.instance) $portalClubHandlers_createEngagementClubSwimmer.instance = require("./backend/portal-club-handlers/create-engagement-club-swimmer").createClubHandlers_createEngagementClubSwimmer({
+    get ENGAGEMENT_SWIMMER_LICENSE_NUMBERS_COLLECTION() { return ENGAGEMENT_SWIMMER_LICENSE_NUMBERS_COLLECTION; },
+    get ENVIRONMENT() { return ENVIRONMENT; },
+    get HttpsError() { return HttpsError; },
+    get assertNoEngagementSwimmerLicenseConflict() { return assertNoEngagementSwimmerLicenseConflict; },
+    get buildEngagementNewSwimmerAlerts() { return buildEngagementNewSwimmerAlerts; },
+    get cleanEngagementNewSwimmer() { return cleanEngagementNewSwimmer; },
+    get cleanText() { return cleanText; },
+    get currentEngagementSeasonInfo() { return currentEngagementSeasonInfo; },
+    get db() { return db; },
+    get engagementClubAccessContext() { return engagementClubAccessContext; },
+    get engagementNewSwimmerAlertFromMatch() { return engagementNewSwimmerAlertFromMatch; },
+    get engagementNewSwimmerItem() { return engagementNewSwimmerItem; },
+    get engagementSwimmerLicenseId() { return engagementSwimmerLicenseId; },
+    get engagementSwimmerLicenseNumberId() { return engagementSwimmerLicenseNumberId; },
+    get engagementSwimmerLicenseNumberKey() { return engagementSwimmerLicenseNumberKey; },
+    get engagementSwimmerLicensePayload() { return engagementSwimmerLicensePayload; },
+    get importSwimmerCreation() { return importSwimmerCreation; },
+    get stableHash() { return stableHash; },
+    get upsertEngagementClubRosterSwimmer() { return upsertEngagementClubRosterSwimmer; },
+    get writeAuditLog() { return writeAuditLog; },
+    get writeAuditLogOnce() { return writeAuditLogOnce; }
+  });
+  return $portalClubHandlers_createEngagementClubSwimmer.instance;
+}
+
+function $portalClubHandlers_validateEngagementSwimmerLicenses() {
+  if (!$portalClubHandlers_validateEngagementSwimmerLicenses.instance) $portalClubHandlers_validateEngagementSwimmerLicenses.instance = require("./backend/portal-club-handlers/validate-engagement-swimmer-licenses").createClubHandlers_validateEngagementSwimmerLicenses({
+    get ENGAGEMENT_SWIMMER_LICENSE_NUMBERS_COLLECTION() { return ENGAGEMENT_SWIMMER_LICENSE_NUMBERS_COLLECTION; },
+    get ENGAGEMENT_SWIMMER_LICENSE_PATTERN() { return ENGAGEMENT_SWIMMER_LICENSE_PATTERN; },
+    get ENVIRONMENT() { return ENVIRONMENT; },
+    get HttpsError() { return HttpsError; },
+    get cleanFirestoreValue() { return cleanFirestoreValue; },
+    get cleanIsoDate() { return cleanIsoDate; },
+    get cleanText() { return cleanText; },
+    get db() { return db; },
+    get engagementAccessContext() { return engagementAccessContext; },
+    get engagementClubRosterRef() { return engagementClubRosterRef; },
+    get engagementClubRosterSwimmerItem() { return engagementClubRosterSwimmerItem; },
+    get engagementClubRosterSwimmerKey() { return engagementClubRosterSwimmerKey; },
+    get engagementLicenseControlSeason() { return engagementLicenseControlSeason; },
+    get engagementSwimmerLicenseId() { return engagementSwimmerLicenseId; },
+    get engagementSwimmerLicenseNumberId() { return engagementSwimmerLicenseNumberId; },
+    get engagementSwimmerLicenseNumberKey() { return engagementSwimmerLicenseNumberKey; },
+    get writeAuditLog() { return writeAuditLog; },
+    get writeAuditLogOnce() { return writeAuditLogOnce; }
+  });
+  return $portalClubHandlers_validateEngagementSwimmerLicenses.instance;
+}
+
+function $portalClubHandlers_getPublicEngagementClubDirectory() {
+  if (!$portalClubHandlers_getPublicEngagementClubDirectory.instance) $portalClubHandlers_getPublicEngagementClubDirectory.instance = require("./backend/portal-club-handlers/get-public-engagement-club-directory").createClubHandlers_getPublicEngagementClubDirectory({
+    get ENVIRONMENT() { return ENVIRONMENT; },
+    get HttpsError() { return HttpsError; },
+    get cleanText() { return cleanText; },
+    get portalReadStats() { return portalReadStats; },
+    get publicEngagementClubDirectoryRef() { return publicEngagementClubDirectoryRef; },
+    get publicEngagementClubItem() { return publicEngagementClubItem; }
+  });
+  return $portalClubHandlers_getPublicEngagementClubDirectory.instance;
+}
+
+function $portalClubHandlers_getEngagementClubEntryTimeHistory() {
+  if (!$portalClubHandlers_getEngagementClubEntryTimeHistory.instance) $portalClubHandlers_getEngagementClubEntryTimeHistory.instance = require("./backend/portal-club-handlers/get-engagement-club-entry-time-history").createClubHandlers_getEngagementClubEntryTimeHistory({
+    get ENVIRONMENT() { return ENVIRONMENT; },
+    get HttpsError() { return HttpsError; },
+    get cleanEngagementEntrySwimmer() { return cleanEngagementEntrySwimmer; },
+    get cleanEngagementMissingEntryTimeMode() { return cleanEngagementMissingEntryTimeMode; },
+    get cleanEngagementQualificationTimesMode() { return cleanEngagementQualificationTimesMode; },
+    get cleanIsoDate() { return cleanIsoDate; },
+    get cleanText() { return cleanText; },
+    get db() { return db; },
+    get engagementClubAccessContext() { return engagementClubAccessContext; },
+    get engagementClubEntryId() { return engagementClubEntryId; },
+    get engagementKnownTimeHistory() { return engagementKnownTimeHistory; },
+    get engagementTeamLeaderComplete() { return engagementTeamLeaderComplete; },
+    get getEngagementEntryTimeRowsForSwimmer() { return getEngagementEntryTimeRowsForSwimmer; },
+    get nativeClubEntryTimeHistory() { return nativeClubEntryTimeHistory; },
+    get portalReadStats() { return portalReadStats; }
+  });
+  return $portalClubHandlers_getEngagementClubEntryTimeHistory.instance;
+}
+
+function $portalClubHandlers_previewEngagementClubSwimmerEventTimes() {
+  if (!$portalClubHandlers_previewEngagementClubSwimmerEventTimes.instance) $portalClubHandlers_previewEngagementClubSwimmerEventTimes.instance = require("./backend/portal-club-handlers/preview-engagement-club-swimmer-event-times").createClubHandlers_previewEngagementClubSwimmerEventTimes({
+    get ENVIRONMENT() { return ENVIRONMENT; },
+    get HttpsError() { return HttpsError; },
+    get PERFORMANCE_SWIMMERS_COLLECTION() { return PERFORMANCE_SWIMMERS_COLLECTION; },
+    get cleanEngagementCompetitionEvents() { return cleanEngagementCompetitionEvents; },
+    get cleanEngagementCompetitionType() { return cleanEngagementCompetitionType; },
+    get cleanEngagementMissingEntryTimeMode() { return cleanEngagementMissingEntryTimeMode; },
+    get cleanEngagementPoolLength() { return cleanEngagementPoolLength; },
+    get cleanEngagementQualificationTimesMode() { return cleanEngagementQualificationTimesMode; },
+    get cleanEngagementTimingType() { return cleanEngagementTimingType; },
+    get cleanIsoDate() { return cleanIsoDate; },
+    get cleanText() { return cleanText; },
+    get db() { return db; },
+    get engagementClubAccessContext() { return engagementClubAccessContext; },
+    get engagementClubEntryId() { return engagementClubEntryId; },
+    get engagementClubSwimmerItem() { return engagementClubSwimmerItem; },
+    get engagementNewSwimmerItem() { return engagementNewSwimmerItem; },
+    get engagementReferenceSwimmerItem() { return engagementReferenceSwimmerItem; },
+    get engagementTeamLeaderComplete() { return engagementTeamLeaderComplete; },
+    get intranapSwimmersIndex() { return intranapSwimmersIndex; },
+    get previewNativeClubEntryTimes() { return previewNativeClubEntryTimes; },
+    get resolveEngagementIndividualEntriesForSwimmer() { return resolveEngagementIndividualEntriesForSwimmer; }
+  });
+  return $portalClubHandlers_previewEngagementClubSwimmerEventTimes.instance;
+}
+
+function $portalClubHandlers_previewEngagementClubSwimmerEventTimesBatch() {
+  if (!$portalClubHandlers_previewEngagementClubSwimmerEventTimesBatch.instance) $portalClubHandlers_previewEngagementClubSwimmerEventTimesBatch.instance = require("./backend/portal-club-handlers/preview-engagement-club-swimmer-event-times-batch").createClubHandlers_previewEngagementClubSwimmerEventTimesBatch({
+    get ENVIRONMENT() { return ENVIRONMENT; },
+    get HttpsError() { return HttpsError; },
+    get cleanEngagementCompetitionEvents() { return cleanEngagementCompetitionEvents; },
+    get cleanEngagementCompetitionType() { return cleanEngagementCompetitionType; },
+    get cleanEngagementEntrySwimmer() { return cleanEngagementEntrySwimmer; },
+    get cleanEngagementMissingEntryTimeMode() { return cleanEngagementMissingEntryTimeMode; },
+    get cleanEngagementPoolLength() { return cleanEngagementPoolLength; },
+    get cleanEngagementQualificationTimesMode() { return cleanEngagementQualificationTimesMode; },
+    get cleanEngagementTimingType() { return cleanEngagementTimingType; },
+    get cleanIsoDate() { return cleanIsoDate; },
+    get cleanText() { return cleanText; },
+    get db() { return db; },
+    get engagementClubAccessContext() { return engagementClubAccessContext; },
+    get engagementClubEntryId() { return engagementClubEntryId; },
+    get engagementTeamLeaderComplete() { return engagementTeamLeaderComplete; },
+    get portalReadStats() { return portalReadStats; },
+    get previewNativeClubEntryTimes() { return previewNativeClubEntryTimes; },
+    get resolveEngagementIndividualEntriesForSwimmer() { return resolveEngagementIndividualEntriesForSwimmer; }
+  });
+  return $portalClubHandlers_previewEngagementClubSwimmerEventTimesBatch.instance;
+}
+
+function $portalClubHandlers_saveEngagementClubIndividualEntries() {
+  if (!$portalClubHandlers_saveEngagementClubIndividualEntries.instance) $portalClubHandlers_saveEngagementClubIndividualEntries.instance = require("./backend/portal-club-handlers/save-engagement-club-individual-entries").createClubHandlers_saveEngagementClubIndividualEntries({
+    get ENVIRONMENT() { return ENVIRONMENT; },
+    get HttpsError() { return HttpsError; },
+    get assertEngagementClubWriteOpen() { return assertEngagementClubWriteOpen; },
+    get cleanEngagementCompetitionEvents() { return cleanEngagementCompetitionEvents; },
+    get cleanEngagementCompetitionType() { return cleanEngagementCompetitionType; },
+    get cleanEngagementEntryIndividualEntries() { return cleanEngagementEntryIndividualEntries; },
+    get cleanEngagementEntrySwimmer() { return cleanEngagementEntrySwimmer; },
+    get cleanEngagementMaxEventsPerSwimmer() { return cleanEngagementMaxEventsPerSwimmer; },
+    get cleanEngagementMissingEntryTimeMode() { return cleanEngagementMissingEntryTimeMode; },
+    get cleanEngagementPoolLength() { return cleanEngagementPoolLength; },
+    get cleanEngagementQualificationTimesMode() { return cleanEngagementQualificationTimesMode; },
+    get cleanEngagementTimingType() { return cleanEngagementTimingType; },
+    get cleanIsoDate() { return cleanIsoDate; },
+    get cleanText() { return cleanText; },
+    get db() { return db; },
+    get engagementClubAccessContext() { return engagementClubAccessContext; },
+    get engagementClubEntryId() { return engagementClubEntryId; },
+    get engagementClubEntryItem() { return engagementClubEntryItem; },
+    get engagementTeamLeaderComplete() { return engagementTeamLeaderComplete; },
+    get loadPerformanceRecordsData() { return loadPerformanceRecordsData; },
+    get qualificationRelaysAfterIndividualChange() { return qualificationRelaysAfterIndividualChange; },
+    get qualificationService() { return qualificationService; },
+    get resolveEngagementIndividualEntriesForSwimmer() { return resolveEngagementIndividualEntriesForSwimmer; },
+    get saveNativeClubIndividualEntries() { return saveNativeClubIndividualEntries; },
+    get validateEngagementIndividualEntryTimes() { return validateEngagementIndividualEntryTimes; },
+    get writeAuditLog() { return writeAuditLog; }
+  });
+  return $portalClubHandlers_saveEngagementClubIndividualEntries.instance;
+}
+
+function $portalClubHandlers_saveEngagementClubSwimmerSelection() {
+  if (!$portalClubHandlers_saveEngagementClubSwimmerSelection.instance) $portalClubHandlers_saveEngagementClubSwimmerSelection.instance = require("./backend/portal-club-handlers/save-engagement-club-swimmer-selection").createClubHandlers_saveEngagementClubSwimmerSelection({
+    get ENVIRONMENT() { return ENVIRONMENT; },
+    get HttpsError() { return HttpsError; },
+    get PERFORMANCE_SWIMMERS_COLLECTION() { return PERFORMANCE_SWIMMERS_COLLECTION; },
+    get assertEngagementClubWriteOpen() { return assertEngagementClubWriteOpen; },
+    get assertEngagementSwimmerRoleCompatibility() { return assertEngagementSwimmerRoleCompatibility; },
+    get buildEngagementClubSwimmersFromRequest() { return buildEngagementClubSwimmersFromRequest; },
+    get cleanEngagementEntrySwimmer() { return cleanEngagementEntrySwimmer; },
+    get cleanEngagementLicenseSeasonStatus() { return cleanEngagementLicenseSeasonStatus; },
+    get cleanEngagementLicenseVerificationStatus() { return cleanEngagementLicenseVerificationStatus; },
+    get cleanText() { return cleanText; },
+    get db() { return db; },
+    get engagementClubAccessContext() { return engagementClubAccessContext; },
+    get engagementClubEntryId() { return engagementClubEntryId; },
+    get engagementClubEntryItem() { return engagementClubEntryItem; },
+    get engagementSwimmerLicenseId() { return engagementSwimmerLicenseId; },
+    get engagementSwimmerLicensePayload() { return engagementSwimmerLicensePayload; },
+    get engagementTeamLeaderComplete() { return engagementTeamLeaderComplete; },
+    get qualificationRelaysAfterIndividualChange() { return qualificationRelaysAfterIndividualChange; },
+    get qualificationService() { return qualificationService; },
+    get saveNativeClubSwimmerSelections() { return saveNativeClubSwimmerSelections; },
+    get upsertEngagementClubRosterSwimmer() { return upsertEngagementClubRosterSwimmer; },
+    get writeAuditLog() { return writeAuditLog; }
+  });
+  return $portalClubHandlers_saveEngagementClubSwimmerSelection.instance;
+}
+
+function $portalClubHandlers_saveEngagementClubSwimmerSelections() {
+  if (!$portalClubHandlers_saveEngagementClubSwimmerSelections.instance) $portalClubHandlers_saveEngagementClubSwimmerSelections.instance = require("./backend/portal-club-handlers/save-engagement-club-swimmer-selections").createClubHandlers_saveEngagementClubSwimmerSelections({
+    get ENVIRONMENT() { return ENVIRONMENT; },
+    get HttpsError() { return HttpsError; },
+    get PERFORMANCE_SWIMMERS_COLLECTION() { return PERFORMANCE_SWIMMERS_COLLECTION; },
+    get assertEngagementClubWriteOpen() { return assertEngagementClubWriteOpen; },
+    get assertEngagementSwimmerRoleCompatibility() { return assertEngagementSwimmerRoleCompatibility; },
+    get buildEngagementClubSwimmersFromRequest() { return buildEngagementClubSwimmersFromRequest; },
+    get cleanEngagementEntrySwimmer() { return cleanEngagementEntrySwimmer; },
+    get cleanEngagementLicenseSeasonStatus() { return cleanEngagementLicenseSeasonStatus; },
+    get cleanEngagementLicenseVerificationStatus() { return cleanEngagementLicenseVerificationStatus; },
+    get cleanText() { return cleanText; },
+    get db() { return db; },
+    get engagementClubAccessContext() { return engagementClubAccessContext; },
+    get engagementClubEntryId() { return engagementClubEntryId; },
+    get engagementClubEntryItem() { return engagementClubEntryItem; },
+    get engagementSwimmerLicenseId() { return engagementSwimmerLicenseId; },
+    get engagementSwimmerLicensePayload() { return engagementSwimmerLicensePayload; },
+    get engagementTeamLeaderComplete() { return engagementTeamLeaderComplete; },
+    get portalReadStats() { return portalReadStats; },
+    get qualificationRelaysAfterIndividualChange() { return qualificationRelaysAfterIndividualChange; },
+    get qualificationService() { return qualificationService; },
+    get saveNativeClubSwimmerSelections() { return saveNativeClubSwimmerSelections; },
+    get upsertEngagementClubRosterSwimmer() { return upsertEngagementClubRosterSwimmer; },
+    get writeAuditLog() { return writeAuditLog; }
+  });
+  return $portalClubHandlers_saveEngagementClubSwimmerSelections.instance;
+}
+
+function $portalClubHandlers_saveEngagementClubRelays() {
+  if (!$portalClubHandlers_saveEngagementClubRelays.instance) $portalClubHandlers_saveEngagementClubRelays.instance = require("./backend/portal-club-handlers/save-engagement-club-relays").createClubHandlers_saveEngagementClubRelays({
+    get ENVIRONMENT() { return ENVIRONMENT; },
+    get HttpsError() { return HttpsError; },
+    get assertEngagementClubWriteOpen() { return assertEngagementClubWriteOpen; },
+    get cleanEngagementCompetitionEvents() { return cleanEngagementCompetitionEvents; },
+    get cleanEngagementCompetitionType() { return cleanEngagementCompetitionType; },
+    get cleanEngagementEntryRelays() { return cleanEngagementEntryRelays; },
+    get cleanEngagementEntrySwimmer() { return cleanEngagementEntrySwimmer; },
+    get cleanEngagementPoolLength() { return cleanEngagementPoolLength; },
+    get cleanEngagementTimingType() { return cleanEngagementTimingType; },
+    get cleanIsoDate() { return cleanIsoDate; },
+    get cleanText() { return cleanText; },
+    get db() { return db; },
+    get engagementClubAccessContext() { return engagementClubAccessContext; },
+    get engagementClubEntryId() { return engagementClubEntryId; },
+    get engagementClubEntryItem() { return engagementClubEntryItem; },
+    get engagementTeamLeaderComplete() { return engagementTeamLeaderComplete; },
+    get loadPerformanceRecordsData() { return loadPerformanceRecordsData; },
+    get qualificationEngine() { return qualificationEngine; },
+    get qualificationService() { return qualificationService; },
+    get saveNativeClubRelays() { return saveNativeClubRelays; },
+    get validateEngagementRelayEntryTimes() { return validateEngagementRelayEntryTimes; },
+    get writeAuditLog() { return writeAuditLog; }
+  });
+  return $portalClubHandlers_saveEngagementClubRelays.instance;
 }
 
 function $serverAccessService_portalReadStats() {
@@ -1002,6 +2531,2786 @@ function $serverDirectoryService_setCompetitionEmailNotificationPreference() {
   return $serverDirectoryService_setCompetitionEmailNotificationPreference.instance;
 }
 
+function $serverCompetitionModelService_cleanIsoDate() {
+  if (!$serverCompetitionModelService_cleanIsoDate.instance) $serverCompetitionModelService_cleanIsoDate.instance = require("./backend/server-competition-model-service/clean-iso-date").createCompetitionModelService_cleanIsoDate({
+    get cleanText() { return cleanText; }
+  });
+  return $serverCompetitionModelService_cleanIsoDate.instance;
+}
+
+function $serverCompetitionModelService_cleanEngagementCompetitionLevel() {
+  if (!$serverCompetitionModelService_cleanEngagementCompetitionLevel.instance) $serverCompetitionModelService_cleanEngagementCompetitionLevel.instance = require("./backend/server-competition-model-service/clean-engagement-competition-level").createCompetitionModelService_cleanEngagementCompetitionLevel({
+    get ENGAGEMENT_COMPETITION_LEVELS() { return ENGAGEMENT_COMPETITION_LEVELS; },
+    get cleanText() { return cleanText; }
+  });
+  return $serverCompetitionModelService_cleanEngagementCompetitionLevel.instance;
+}
+
+function $serverCompetitionModelService_cleanEngagementEntryStatus() {
+  if (!$serverCompetitionModelService_cleanEngagementEntryStatus.instance) $serverCompetitionModelService_cleanEngagementEntryStatus.instance = require("./backend/server-competition-model-service/clean-engagement-entry-status").createCompetitionModelService_cleanEngagementEntryStatus({
+    get ENGAGEMENT_ENTRY_STATUSES() { return ENGAGEMENT_ENTRY_STATUSES; },
+    get cleanText() { return cleanText; }
+  });
+  return $serverCompetitionModelService_cleanEngagementEntryStatus.instance;
+}
+
+function $serverCompetitionModelService_cleanEngagementCompetitionType() {
+  if (!$serverCompetitionModelService_cleanEngagementCompetitionType.instance) $serverCompetitionModelService_cleanEngagementCompetitionType.instance = require("./backend/server-competition-model-service/clean-engagement-competition-type").createCompetitionModelService_cleanEngagementCompetitionType({
+    get ENGAGEMENT_COMPETITION_TYPES() { return ENGAGEMENT_COMPETITION_TYPES; },
+    get cleanText() { return cleanText; }
+  });
+  return $serverCompetitionModelService_cleanEngagementCompetitionType.instance;
+}
+
+function $serverCompetitionModelService_cleanEngagementPoolLaneCount() {
+  if (!$serverCompetitionModelService_cleanEngagementPoolLaneCount.instance) $serverCompetitionModelService_cleanEngagementPoolLaneCount.instance = require("./backend/server-competition-model-service/clean-engagement-pool-lane-count").createCompetitionModelService_cleanEngagementPoolLaneCount({
+    get ENGAGEMENT_WATER_BODY_TYPES() { return ENGAGEMENT_WATER_BODY_TYPES; },
+    get HttpsError() { return HttpsError; },
+    get cleanCompetitionDocuments() { return cleanCompetitionDocuments; },
+    get cleanEngagementRegionIds() { return cleanEngagementRegionIds; },
+    get cleanPublicCalendarPublicationStatus() { return cleanPublicCalendarPublicationStatus; },
+    get cleanPublicCalendarWhatsAppUrl() { return cleanPublicCalendarWhatsAppUrl; },
+    get cleanText() { return cleanText; },
+    get normalizeEmail() { return normalizeEmail; },
+    get local$cleanEngagementCompetitionEvents() { return $serverCompetitionModelService_cleanEngagementCompetitionEvents().cleanEngagementCompetitionEvents; },
+    get local$cleanEngagementCompetitionLevel() { return $serverCompetitionModelService_cleanEngagementCompetitionLevel().cleanEngagementCompetitionLevel; },
+    get local$cleanEngagementCompetitionType() { return $serverCompetitionModelService_cleanEngagementCompetitionType().cleanEngagementCompetitionType; },
+    get local$cleanEngagementEntryStatus() { return $serverCompetitionModelService_cleanEngagementEntryStatus().cleanEngagementEntryStatus; },
+    get local$cleanEngagementMaxEventsPerSwimmer() { return $serverCompetitionModelService_cleanEngagementMaxEventsPerSwimmer().cleanEngagementMaxEventsPerSwimmer; },
+    get local$cleanEngagementMissingEntryTimeMode() { return $serverCompetitionModelService_cleanEngagementMissingEntryTimeMode().cleanEngagementMissingEntryTimeMode; },
+    get local$cleanEngagementPoolLength() { return $serverCompetitionModelService_cleanEngagementPoolLength().cleanEngagementPoolLength; },
+    get local$cleanEngagementProgramSessions() { return $serverCompetitionModelService_cleanEngagementProgramSessions().cleanEngagementProgramSessions; },
+    get local$cleanEngagementQualificationTimesMode() { return $serverCompetitionModelService_cleanEngagementMissingEntryTimeMode().cleanEngagementQualificationTimesMode; },
+    get local$cleanEngagementTimingType() { return $serverCompetitionModelService_cleanEngagementPoolLength().cleanEngagementTimingType; },
+    get local$cleanIsoDate() { return $serverCompetitionModelService_cleanIsoDate().cleanIsoDate; },
+    get local$isNationalOnlyEngagementCompetitionLevel() { return $serverCompetitionModelService_cleanEngagementCompetitionLevel().isNationalOnlyEngagementCompetitionLevel; }
+  });
+  return $serverCompetitionModelService_cleanEngagementPoolLaneCount.instance;
+}
+
+function $serverCompetitionModelService_cleanEngagementOpenWaterCourse() {
+  if (!$serverCompetitionModelService_cleanEngagementOpenWaterCourse.instance) $serverCompetitionModelService_cleanEngagementOpenWaterCourse.instance = require("./backend/server-competition-model-service/clean-engagement-open-water-course").createCompetitionModelService_cleanEngagementOpenWaterCourse({
+    get ENGAGEMENT_OPEN_WATER_COURSE_DISCIPLINES() { return ENGAGEMENT_OPEN_WATER_COURSE_DISCIPLINES; },
+    get HttpsError() { return HttpsError; },
+    get cleanText() { return cleanText; }
+  });
+  return $serverCompetitionModelService_cleanEngagementOpenWaterCourse.instance;
+}
+
+function $serverCompetitionModelService_cleanEngagementOpenWaterCourses() {
+  if (!$serverCompetitionModelService_cleanEngagementOpenWaterCourses.instance) $serverCompetitionModelService_cleanEngagementOpenWaterCourses.instance = require("./backend/server-competition-model-service/clean-engagement-open-water-courses").createCompetitionModelService_cleanEngagementOpenWaterCourses({
+    get ENGAGEMENT_CONFIGURATION_COLLECTION() { return ENGAGEMENT_CONFIGURATION_COLLECTION; },
+    get ENGAGEMENT_OPEN_WATER_COURSE_CONFIG_ID() { return ENGAGEMENT_OPEN_WATER_COURSE_CONFIG_ID; },
+    get ENGAGEMENT_OPEN_WATER_COURSE_LIMIT() { return ENGAGEMENT_OPEN_WATER_COURSE_LIMIT; },
+    get ENGAGEMENT_OPEN_WATER_DEFAULT_COURSES() { return ENGAGEMENT_OPEN_WATER_DEFAULT_COURSES; },
+    get db() { return db; },
+    get local$cleanEngagementOpenWaterCourse() { return $serverCompetitionModelService_cleanEngagementOpenWaterCourse().cleanEngagementOpenWaterCourse; }
+  });
+  return $serverCompetitionModelService_cleanEngagementOpenWaterCourses.instance;
+}
+
+function $serverCompetitionModelService_cleanEngagementCompetitionEvents() {
+  if (!$serverCompetitionModelService_cleanEngagementCompetitionEvents.instance) $serverCompetitionModelService_cleanEngagementCompetitionEvents.instance = require("./backend/server-competition-model-service/clean-engagement-competition-events").createCompetitionModelService_cleanEngagementCompetitionEvents({
+    get ENGAGEMENT_CATEGORY_CODE_SET() { return ENGAGEMENT_CATEGORY_CODE_SET; },
+    get ENGAGEMENT_EVENT_DEFINITION_BY_CODE() { return ENGAGEMENT_EVENT_DEFINITION_BY_CODE; },
+    get ENGAGEMENT_EVENT_FORBIDDEN_CATEGORIES() { return ENGAGEMENT_EVENT_FORBIDDEN_CATEGORIES; },
+    get HttpsError() { return HttpsError; },
+    get cleanEngagementRelayMixedMode() { return cleanEngagementRelayMixedMode; },
+    get cleanText() { return cleanText; },
+    get engagementCategoryCodesForEvent() { return engagementCategoryCodesForEvent; },
+    get normalizeEngagementEventCategoryRestrictions() { return normalizeEngagementEventCategoryRestrictions; },
+    get local$cleanEngagementCompetitionType() { return $serverCompetitionModelService_cleanEngagementCompetitionType().cleanEngagementCompetitionType; },
+    get local$cleanEngagementOpenWaterCourse() { return $serverCompetitionModelService_cleanEngagementOpenWaterCourse().cleanEngagementOpenWaterCourse; }
+  });
+  return $serverCompetitionModelService_cleanEngagementCompetitionEvents.instance;
+}
+
+function $serverCompetitionModelService_cleanOptionalEmail() {
+  if (!$serverCompetitionModelService_cleanOptionalEmail.instance) $serverCompetitionModelService_cleanOptionalEmail.instance = require("./backend/server-competition-model-service/clean-optional-email").createCompetitionModelService_cleanOptionalEmail({
+    get HttpsError() { return HttpsError; },
+    get normalizeEmail() { return normalizeEmail; }
+  });
+  return $serverCompetitionModelService_cleanOptionalEmail.instance;
+}
+
+function $serverCompetitionModelService_cleanEngagementPoolLength() {
+  if (!$serverCompetitionModelService_cleanEngagementPoolLength.instance) $serverCompetitionModelService_cleanEngagementPoolLength.instance = require("./backend/server-competition-model-service/clean-engagement-pool-length").createCompetitionModelService_cleanEngagementPoolLength({
+    get ENGAGEMENT_POOL_LENGTHS() { return ENGAGEMENT_POOL_LENGTHS; },
+    get ENGAGEMENT_TIMING_TYPES() { return ENGAGEMENT_TIMING_TYPES; },
+    get cleanText() { return cleanText; }
+  });
+  return $serverCompetitionModelService_cleanEngagementPoolLength.instance;
+}
+
+function $serverCompetitionModelService_cleanEngagementMissingEntryTimeMode() {
+  if (!$serverCompetitionModelService_cleanEngagementMissingEntryTimeMode.instance) $serverCompetitionModelService_cleanEngagementMissingEntryTimeMode.instance = require("./backend/server-competition-model-service/clean-engagement-missing-entry-time-mode").createCompetitionModelService_cleanEngagementMissingEntryTimeMode({
+    get ENGAGEMENT_MISSING_ENTRY_TIME_MODES() { return ENGAGEMENT_MISSING_ENTRY_TIME_MODES; },
+    get ENGAGEMENT_QUALIFICATION_TIME_MODES() { return ENGAGEMENT_QUALIFICATION_TIME_MODES; },
+    get cleanText() { return cleanText; }
+  });
+  return $serverCompetitionModelService_cleanEngagementMissingEntryTimeMode.instance;
+}
+
+function $serverCompetitionModelService_cleanEngagementMaxEventsPerSwimmer() {
+  if (!$serverCompetitionModelService_cleanEngagementMaxEventsPerSwimmer.instance) $serverCompetitionModelService_cleanEngagementMaxEventsPerSwimmer.instance = require("./backend/server-competition-model-service/clean-engagement-max-events-per-swimmer").createCompetitionModelService_cleanEngagementMaxEventsPerSwimmer({
+
+  });
+  return $serverCompetitionModelService_cleanEngagementMaxEventsPerSwimmer.instance;
+}
+
+function $serverCompetitionModelService_cleanEngagementFeeAmount() {
+  if (!$serverCompetitionModelService_cleanEngagementFeeAmount.instance) $serverCompetitionModelService_cleanEngagementFeeAmount.instance = require("./backend/server-competition-model-service/clean-engagement-fee-amount").createCompetitionModelService_cleanEngagementFeeAmount({
+    get HttpsError() { return HttpsError; },
+    get cleanText() { return cleanText; },
+    get local$engagementCompetitionCalendarItem() { return $serverCompetitionModelService_cleanEngagementPoolLaneCount().engagementCompetitionCalendarItem; }
+  });
+  return $serverCompetitionModelService_cleanEngagementFeeAmount.instance;
+}
+
+function $serverCompetitionModelService_cleanEngagementProgramSessions() {
+  if (!$serverCompetitionModelService_cleanEngagementProgramSessions.instance) $serverCompetitionModelService_cleanEngagementProgramSessions.instance = require("./backend/server-competition-model-service/clean-engagement-program-sessions").createCompetitionModelService_cleanEngagementProgramSessions({
+    get ENGAGEMENT_EVENT_DEFINITION_BY_CODE() { return ENGAGEMENT_EVENT_DEFINITION_BY_CODE; },
+    get ENGAGEMENT_PROGRAM_GENDER_MODES() { return ENGAGEMENT_PROGRAM_GENDER_MODES; },
+    get ENGAGEMENT_PROGRAM_PHASES() { return ENGAGEMENT_PROGRAM_PHASES; },
+    get HttpsError() { return HttpsError; },
+    get cleanText() { return cleanText; },
+    get local$cleanIsoDate() { return $serverCompetitionModelService_cleanIsoDate().cleanIsoDate; }
+  });
+  return $serverCompetitionModelService_cleanEngagementProgramSessions.instance;
+}
+
+function $serverCompetitionModelService_engagementCompetitionCalendarRef() {
+  if (!$serverCompetitionModelService_engagementCompetitionCalendarRef.instance) $serverCompetitionModelService_engagementCompetitionCalendarRef.instance = require("./backend/server-competition-model-service/engagement-competition-calendar-ref").createCompetitionModelService_engagementCompetitionCalendarRef({
+    get ENGAGEMENT_COMPETITION_CALENDARS_COLLECTION() { return ENGAGEMENT_COMPETITION_CALENDARS_COLLECTION; }
+  });
+  return $serverCompetitionModelService_engagementCompetitionCalendarRef.instance;
+}
+
+function $serverCompetitionModelService_engagementCalendarEventCalendarRef() {
+  if (!$serverCompetitionModelService_engagementCalendarEventCalendarRef.instance) $serverCompetitionModelService_engagementCalendarEventCalendarRef.instance = require("./backend/server-competition-model-service/engagement-calendar-event-calendar-ref").createCompetitionModelService_engagementCalendarEventCalendarRef({
+    get ENGAGEMENT_CALENDAR_EVENT_CALENDARS_COLLECTION() { return ENGAGEMENT_CALENDAR_EVENT_CALENDARS_COLLECTION; },
+    get local$engagementCalendarEventCalendarItem() { return $serverCompetitionModelService_engagementCalendarEventCalendarItem().engagementCalendarEventCalendarItem; }
+  });
+  return $serverCompetitionModelService_engagementCalendarEventCalendarRef.instance;
+}
+
+function $serverCompetitionModelService_cleanEngagementCalendarEventPayload() {
+  if (!$serverCompetitionModelService_cleanEngagementCalendarEventPayload.instance) $serverCompetitionModelService_cleanEngagementCalendarEventPayload.instance = require("./backend/server-competition-model-service/clean-engagement-calendar-event-payload").createCompetitionModelService_cleanEngagementCalendarEventPayload({
+    get HttpsError() { return HttpsError; },
+    get PUBLIC_CALENDAR_EVENT_TYPES() { return PUBLIC_CALENDAR_EVENT_TYPES; },
+    get cleanIsoDateTime() { return cleanIsoDateTime; },
+    get cleanPublicCalendarEventType() { return cleanPublicCalendarEventType; },
+    get cleanPublicCalendarLevel() { return cleanPublicCalendarLevel; },
+    get cleanPublicCalendarProgram() { return cleanPublicCalendarProgram; },
+    get cleanPublicCalendarUrl() { return cleanPublicCalendarUrl; },
+    get cleanText() { return cleanText; },
+    get local$cleanIsoDate() { return $serverCompetitionModelService_cleanIsoDate().cleanIsoDate; },
+    get local$isNationalOnlyEngagementCompetitionLevel() { return $serverCompetitionModelService_cleanEngagementCompetitionLevel().isNationalOnlyEngagementCompetitionLevel; }
+  });
+  return $serverCompetitionModelService_cleanEngagementCalendarEventPayload.instance;
+}
+
+function $serverCompetitionModelService_engagementCalendarEventCalendarItem() {
+  if (!$serverCompetitionModelService_engagementCalendarEventCalendarItem.instance) $serverCompetitionModelService_engagementCalendarEventCalendarItem.instance = require("./backend/server-competition-model-service/engagement-calendar-event-calendar-item").createCompetitionModelService_engagementCalendarEventCalendarItem({
+    get cleanCompetitionDocuments() { return cleanCompetitionDocuments; },
+    get cleanIsoDateTime() { return cleanIsoDateTime; },
+    get cleanPublicCalendarEventType() { return cleanPublicCalendarEventType; },
+    get cleanPublicCalendarLevel() { return cleanPublicCalendarLevel; },
+    get cleanPublicCalendarPublicationStatus() { return cleanPublicCalendarPublicationStatus; },
+    get cleanPublicCalendarUrl() { return cleanPublicCalendarUrl; },
+    get cleanText() { return cleanText; },
+    get local$cleanIsoDate() { return $serverCompetitionModelService_cleanIsoDate().cleanIsoDate; }
+  });
+  return $serverCompetitionModelService_engagementCalendarEventCalendarItem.instance;
+}
+
+function $serverCompetitionModelService_engagementCalendarEventDetailItem() {
+  if (!$serverCompetitionModelService_engagementCalendarEventDetailItem.instance) $serverCompetitionModelService_engagementCalendarEventDetailItem.instance = require("./backend/server-competition-model-service/engagement-calendar-event-detail-item").createCompetitionModelService_engagementCalendarEventDetailItem({
+    get cleanCompetitionDocuments() { return cleanCompetitionDocuments; },
+    get cleanPublicCalendarProgram() { return cleanPublicCalendarProgram; },
+    get cleanText() { return cleanText; },
+    get local$engagementCalendarEventCalendarItem() { return $serverCompetitionModelService_engagementCalendarEventCalendarItem().engagementCalendarEventCalendarItem; }
+  });
+  return $serverCompetitionModelService_engagementCalendarEventDetailItem.instance;
+}
+
+function $serverCompetitionModelService_engagementClubCompetitionIndexKey() {
+  if (!$serverCompetitionModelService_engagementClubCompetitionIndexKey.instance) $serverCompetitionModelService_engagementClubCompetitionIndexKey.instance = require("./backend/server-competition-model-service/engagement-club-competition-index-key").createCompetitionModelService_engagementClubCompetitionIndexKey({
+    get ENGAGEMENT_CLUB_COMPETITION_INDEXES_COLLECTION() { return ENGAGEMENT_CLUB_COMPETITION_INDEXES_COLLECTION; },
+    get cleanText() { return cleanText; },
+    get stableHash() { return stableHash; }
+  });
+  return $serverCompetitionModelService_engagementClubCompetitionIndexKey.instance;
+}
+
+function $serverCompetitionModelService_engagementClosureQueueRef() {
+  if (!$serverCompetitionModelService_engagementClosureQueueRef.instance) $serverCompetitionModelService_engagementClosureQueueRef.instance = require("./backend/server-competition-model-service/engagement-closure-queue-ref").createCompetitionModelService_engagementClosureQueueRef({
+    get ENGAGEMENT_CLOSURE_QUEUE_COLLECTION() { return ENGAGEMENT_CLOSURE_QUEUE_COLLECTION; },
+    get cleanText() { return cleanText; }
+  });
+  return $serverCompetitionModelService_engagementClosureQueueRef.instance;
+}
+
+function $serverCompetitionModelService_engagementClosureQueueItem() {
+  if (!$serverCompetitionModelService_engagementClosureQueueItem.instance) $serverCompetitionModelService_engagementClosureQueueItem.instance = require("./backend/server-competition-model-service/engagement-closure-queue-item").createCompetitionModelService_engagementClosureQueueItem({
+    get cleanFirestoreValue() { return cleanFirestoreValue; },
+    get cleanIsoDateTime() { return cleanIsoDateTime; },
+    get cleanText() { return cleanText; },
+    get local$cleanEngagementCompetitionLevel() { return $serverCompetitionModelService_cleanEngagementCompetitionLevel().cleanEngagementCompetitionLevel; },
+    get local$cleanEngagementEntryStatus() { return $serverCompetitionModelService_cleanEngagementEntryStatus().cleanEngagementEntryStatus; }
+  });
+  return $serverCompetitionModelService_engagementClosureQueueItem.instance;
+}
+
+function $serverCompetitionModelService_engagementClubEntryCompetitionIds() {
+  if (!$serverCompetitionModelService_engagementClubEntryCompetitionIds.instance) $serverCompetitionModelService_engagementClubEntryCompetitionIds.instance = require("./backend/server-competition-model-service/engagement-club-entry-competition-ids").createCompetitionModelService_engagementClubEntryCompetitionIds({
+    get FieldPath() { return FieldPath; },
+    get cleanText() { return cleanText; },
+    get db() { return db; },
+    get local$engagementClubCompetitionIndexKey() { return $serverCompetitionModelService_engagementClubCompetitionIndexKey().engagementClubCompetitionIndexKey; },
+    get local$engagementClubCompetitionIndexRef() { return $serverCompetitionModelService_engagementClubCompetitionIndexKey().engagementClubCompetitionIndexRef; },
+    get local$engagementClubEntryId() { return $serverCompetitionModelService_engagementClubEntryId().engagementClubEntryId; },
+    get local$engagementCompetitionCalendarItem() { return $serverCompetitionModelService_cleanEngagementPoolLaneCount().engagementCompetitionCalendarItem; }
+  });
+  return $serverCompetitionModelService_engagementClubEntryCompetitionIds.instance;
+}
+
+function $serverCompetitionModelService_engagementCompetitionDetailItem() {
+  if (!$serverCompetitionModelService_engagementCompetitionDetailItem.instance) $serverCompetitionModelService_engagementCompetitionDetailItem.instance = require("./backend/server-competition-model-service/engagement-competition-detail-item").createCompetitionModelService_engagementCompetitionDetailItem({
+    get cleanCompetitionDocuments() { return cleanCompetitionDocuments; },
+    get cleanEngagementGeneratedFiles() { return cleanEngagementGeneratedFiles; },
+    get cleanText() { return cleanText; },
+    get engagementCompetitionDocumentsMetadata() { return engagementCompetitionDocumentsMetadata; },
+    get local$cleanEngagementCompetitionEvents() { return $serverCompetitionModelService_cleanEngagementCompetitionEvents().cleanEngagementCompetitionEvents; },
+    get local$cleanEngagementCompetitionType() { return $serverCompetitionModelService_cleanEngagementCompetitionType().cleanEngagementCompetitionType; },
+    get local$cleanEngagementFees() { return $serverCompetitionModelService_cleanEngagementFeeAmount().cleanEngagementFees; },
+    get local$cleanEngagementProgramSessions() { return $serverCompetitionModelService_cleanEngagementProgramSessions().cleanEngagementProgramSessions; },
+    get local$engagementCompetitionListItem() { return $serverCompetitionModelService_cleanEngagementFeeAmount().engagementCompetitionListItem; }
+  });
+  return $serverCompetitionModelService_engagementCompetitionDetailItem.instance;
+}
+
+function $serverCompetitionModelService_engagementClubEntryId() {
+  if (!$serverCompetitionModelService_engagementClubEntryId.instance) $serverCompetitionModelService_engagementClubEntryId.instance = require("./backend/server-competition-model-service/engagement-club-entry-id").createCompetitionModelService_engagementClubEntryId({
+    get cleanText() { return cleanText; }
+  });
+  return $serverCompetitionModelService_engagementClubEntryId.instance;
+}
+
+function $serverCompetitionModelService_engagementPersonLicenseKey() {
+  if (!$serverCompetitionModelService_engagementPersonLicenseKey.instance) $serverCompetitionModelService_engagementPersonLicenseKey.instance = require("./backend/server-competition-model-service/engagement-person-license-key").createCompetitionModelService_engagementPersonLicenseKey({
+    get cleanText() { return cleanText; }
+  });
+  return $serverCompetitionModelService_engagementPersonLicenseKey.instance;
+}
+
+function $serverCompetitionModelService_assertEngagementSwimmerRoleCompatibility() {
+  if (!$serverCompetitionModelService_assertEngagementSwimmerRoleCompatibility.instance) $serverCompetitionModelService_assertEngagementSwimmerRoleCompatibility.instance = require("./backend/server-competition-model-service/assert-engagement-swimmer-role-compatibility").createCompetitionModelService_assertEngagementSwimmerRoleCompatibility({
+    get HttpsError() { return HttpsError; },
+    get local$engagementPersonLicenseKey() { return $serverCompetitionModelService_engagementPersonLicenseKey().engagementPersonLicenseKey; }
+  });
+  return $serverCompetitionModelService_assertEngagementSwimmerRoleCompatibility.instance;
+}
+
+function $serverEntryModelService_cleanEngagementTeamLeader() {
+  if (!$serverEntryModelService_cleanEngagementTeamLeader.instance) $serverEntryModelService_cleanEngagementTeamLeader.instance = require("./backend/server-entry-model-service/clean-engagement-team-leader").createEntryModelService_cleanEngagementTeamLeader({
+    get ENGAGEMENT_SWIMMER_LICENSE_PATTERN() { return ENGAGEMENT_SWIMMER_LICENSE_PATTERN; },
+    get HttpsError() { return HttpsError; },
+    get cleanIsoDate() { return cleanIsoDate; },
+    get cleanText() { return cleanText; }
+  });
+  return $serverEntryModelService_cleanEngagementTeamLeader.instance;
+}
+
+function $serverEntryModelService_engagementTeamLeaderComplete() {
+  if (!$serverEntryModelService_engagementTeamLeaderComplete.instance) $serverEntryModelService_engagementTeamLeaderComplete.instance = require("./backend/server-entry-model-service/engagement-team-leader-complete").createEntryModelService_engagementTeamLeaderComplete({
+
+  });
+  return $serverEntryModelService_engagementTeamLeaderComplete.instance;
+}
+
+function $serverEntryModelService_cleanEngagementEntryOfficial() {
+  if (!$serverEntryModelService_cleanEngagementEntryOfficial.instance) $serverEntryModelService_cleanEngagementEntryOfficial.instance = require("./backend/server-entry-model-service/clean-engagement-entry-official").createEntryModelService_cleanEngagementEntryOfficial({
+    get cleanIsoDate() { return cleanIsoDate; },
+    get cleanText() { return cleanText; }
+  });
+  return $serverEntryModelService_cleanEngagementEntryOfficial.instance;
+}
+
+function $serverEntryModelService_parseEngagementEntryTime() {
+  if (!$serverEntryModelService_parseEngagementEntryTime.instance) $serverEntryModelService_parseEngagementEntryTime.instance = require("./backend/server-entry-model-service/parse-engagement-entry-time").createEntryModelService_parseEngagementEntryTime({
+    get cleanText() { return cleanText; },
+    get formatTimeValue() { return formatTimeValue; },
+    get parseTimeValue() { return parseTimeValue; }
+  });
+  return $serverEntryModelService_parseEngagementEntryTime.instance;
+}
+
+function $serverEntryModelService_cleanEngagementEntryIndividualEntries() {
+  if (!$serverEntryModelService_cleanEngagementEntryIndividualEntries.instance) $serverEntryModelService_cleanEngagementEntryIndividualEntries.instance = require("./backend/server-entry-model-service/clean-engagement-entry-individual-entries").createEntryModelService_cleanEngagementEntryIndividualEntries({
+    get cleanIsoDate() { return cleanIsoDate; },
+    get cleanText() { return cleanText; }
+  });
+  return $serverEntryModelService_cleanEngagementEntryIndividualEntries.instance;
+}
+
+function $serverEntryModelService_cleanEngagementEntrySwimmer() {
+  if (!$serverEntryModelService_cleanEngagementEntrySwimmer.instance) $serverEntryModelService_cleanEngagementEntrySwimmer.instance = require("./backend/server-entry-model-service/clean-engagement-entry-swimmer").createEntryModelService_cleanEngagementEntrySwimmer({
+    get cleanEngagementLicenseSeasonStatus() { return cleanEngagementLicenseSeasonStatus; },
+    get cleanEngagementLicenseVerificationStatus() { return cleanEngagementLicenseVerificationStatus; },
+    get cleanIsoDate() { return cleanIsoDate; },
+    get cleanText() { return cleanText; },
+    get engagementLicenseSeasonState() { return engagementLicenseSeasonState; },
+    get local$cleanEngagementEntryIndividualEntries() { return $serverEntryModelService_cleanEngagementEntryIndividualEntries().cleanEngagementEntryIndividualEntries; }
+  });
+  return $serverEntryModelService_cleanEngagementEntrySwimmer.instance;
+}
+
+function $serverEntryModelService_assertEngagementRelayMembers() {
+  if (!$serverEntryModelService_assertEngagementRelayMembers.instance) $serverEntryModelService_assertEngagementRelayMembers.instance = require("./backend/server-entry-model-service/assert-engagement-relay-members").createEntryModelService_assertEngagementRelayMembers({
+    get ENGAGEMENT_EVENT_FORBIDDEN_CATEGORIES() { return ENGAGEMENT_EVENT_FORBIDDEN_CATEGORIES; },
+    get ENGAGEMENT_PROGRAM_GENDER_MODES() { return ENGAGEMENT_PROGRAM_GENDER_MODES; },
+    get ENGAGEMENT_RELAY_AGE_CATEGORY_RANK() { return ENGAGEMENT_RELAY_AGE_CATEGORY_RANK; },
+    get ENGAGEMENT_RELAY_CATEGORY_CODES() { return ENGAGEMENT_RELAY_CATEGORY_CODES; },
+    get HttpsError() { return HttpsError; },
+    get ageCategoryFromDates() { return ageCategoryFromDates; },
+    get birthYear() { return birthYear; },
+    get cleanEngagementCompetitionType() { return cleanEngagementCompetitionType; },
+    get cleanFirestoreValue() { return cleanFirestoreValue; },
+    get cleanText() { return cleanText; },
+    get competitionYear() { return competitionYear; },
+    get engagementRelayReferenceForEntry() { return engagementRelayReferenceForEntry; },
+    get engagementRelayReferenceMap() { return engagementRelayReferenceMap; },
+    get formatTimeValue() { return formatTimeValue; },
+    get importSeasonYear() { return importSeasonYear; },
+    get normalizeCategoryCode() { return normalizeCategoryCode; },
+    get normalizeCourseCode() { return normalizeCourseCode; },
+    get stableHash() { return stableHash; },
+    get local$engagementCompetitionAppliesToFranceRecords() { return $serverEntryModelService_engagementCompetitionAppliesToFranceRecords().engagementCompetitionAppliesToFranceRecords; },
+    get local$engagementCompetitionAppliesToMpf() { return $serverEntryModelService_engagementCompetitionAppliesToFranceRecords().engagementCompetitionAppliesToMpf; },
+    get local$parseEngagementEntryTime() { return $serverEntryModelService_parseEngagementEntryTime().parseEngagementEntryTime; }
+  });
+  return $serverEntryModelService_assertEngagementRelayMembers.instance;
+}
+
+function $serverEntryModelService_qualificationRelaysAfterIndividualChange() {
+  if (!$serverEntryModelService_qualificationRelaysAfterIndividualChange.instance) $serverEntryModelService_qualificationRelaysAfterIndividualChange.instance = require("./backend/server-entry-model-service/qualification-relays-after-individual-change").createEntryModelService_qualificationRelaysAfterIndividualChange({
+    get qualificationEngine() { return qualificationEngine; }
+  });
+  return $serverEntryModelService_qualificationRelaysAfterIndividualChange.instance;
+}
+
+function $serverEntryModelService_qualificationEvents() {
+  if (!$serverEntryModelService_qualificationEvents.instance) $serverEntryModelService_qualificationEvents.instance = require("./backend/server-entry-model-service/qualification-events").createEntryModelService_qualificationEvents({
+    get ENGAGEMENT_EVENT_FORBIDDEN_CATEGORIES() { return ENGAGEMENT_EVENT_FORBIDDEN_CATEGORIES; },
+    get cleanEngagementCompetitionEvents() { return cleanEngagementCompetitionEvents; },
+    get engagementCategoryCodesForEvent() { return engagementCategoryCodesForEvent; }
+  });
+  return $serverEntryModelService_qualificationEvents.instance;
+}
+
+function $serverEntryModelService_automaticEngagementIndividualEntry() {
+  if (!$serverEntryModelService_automaticEngagementIndividualEntry.instance) $serverEntryModelService_automaticEngagementIndividualEntry.instance = require("./backend/server-entry-model-service/automatic-engagement-individual-entry").createEntryModelService_automaticEngagementIndividualEntry({
+    get HttpsError() { return HttpsError; },
+    get PERFORMANCE_SWIMMERS_COLLECTION() { return PERFORMANCE_SWIMMERS_COLLECTION; },
+    get PERFORMANCE_SWIMMER_PAGES_COLLECTION() { return PERFORMANCE_SWIMMER_PAGES_COLLECTION; },
+    get ageCategoryFromDates() { return ageCategoryFromDates; },
+    get assertEngagementClubWriteOpen() { return assertEngagementClubWriteOpen; },
+    get cleanText() { return cleanText; },
+    get createQualificationService() { return createQualificationService; },
+    get db() { return db; },
+    get engagementAccessContext() { return engagementAccessContext; },
+    get engagementClubAccessContext() { return engagementClubAccessContext; },
+    get engagementClubEntryId() { return engagementClubEntryId; },
+    get formatTimeValue() { return formatTimeValue; },
+    get legacyQualificationService() { return legacyQualificationService; },
+    set legacyQualificationService(value) { legacyQualificationService = value; },
+    get performanceSwimmerPageId() { return performanceSwimmerPageId; },
+    get publicBetterPerformance() { return publicBetterPerformance; },
+    get stableHash() { return stableHash; },
+    get writeAuditLog() { return writeAuditLog; },
+    get local$cleanEngagementEntryIndividualEntries() { return $serverEntryModelService_cleanEngagementEntryIndividualEntries().cleanEngagementEntryIndividualEntries; },
+    get local$engagementEntryTimeCacheId() { return $serverEntryModelService_engagementEntryTimeCacheId().engagementEntryTimeCacheId; },
+    get local$engagementEntryTimeCacheRef() { return $serverEntryModelService_engagementEntryTimeCacheRef().engagementEntryTimeCacheRef; },
+    get local$engagementEntryTimeCacheRow() { return $serverEntryModelService_engagementEntryTimeCacheRef().engagementEntryTimeCacheRow; },
+    get local$engagementEntryTimeCacheRowsFromData() { return $serverEntryModelService_engagementEntryTimeCacheRef().engagementEntryTimeCacheRowsFromData; },
+    get local$engagementEntryTimeRowsToEvents() { return $serverEntryModelService_engagementEntryTimeCacheRef().engagementEntryTimeRowsToEvents; },
+    get local$engagementQualificationRowAllowed() { return $serverEntryModelService_engagementEntryTimeCacheRef().engagementQualificationRowAllowed; },
+    get local$getEngagementEntryTimeRowsForSwimmer() { return $serverEntryModelService_engagementEntryTimeCacheRef().getEngagementEntryTimeRowsForSwimmer; },
+    get local$qualificationEvents() { return $serverEntryModelService_qualificationEvents().qualificationEvents; }
+  });
+  return $serverEntryModelService_automaticEngagementIndividualEntry.instance;
+}
+
+function $serverEntryModelService_nativeQualificationServices() {
+  if (!$serverEntryModelService_nativeQualificationServices.instance) $serverEntryModelService_nativeQualificationServices.instance = require("./backend/server-entry-model-service/native-qualification-services").createEntryModelService_nativeQualificationServices({
+    get ENGAGEMENT_EVENT_DEFINITION_BY_CODE() { return ENGAGEMENT_EVENT_DEFINITION_BY_CODE; },
+    get ageCategoryFromDates() { return ageCategoryFromDates; },
+    get armNativeCompetitionNotification() { return armNativeCompetitionNotification; },
+    get assertCanModifyEngagementEvent() { return assertCanModifyEngagementEvent; },
+    get assertEngagementClubWriteOpen() { return assertEngagementClubWriteOpen; },
+    get cleanEngagementCompetitionEvents() { return cleanEngagementCompetitionEvents; },
+    get cleanEngagementProgramSessions() { return cleanEngagementProgramSessions; },
+    get db() { return db; },
+    get writeAuditLogOnce() { return writeAuditLogOnce; },
+    get local$automaticEngagementIndividualEntry() { return $serverEntryModelService_automaticEngagementIndividualEntry().automaticEngagementIndividualEntry; },
+    get local$qualificationEvents() { return $serverEntryModelService_qualificationEvents().qualificationEvents; }
+  });
+  return $serverEntryModelService_nativeQualificationServices.instance;
+}
+
+function $serverEntryModelService_nativeQualificationError() {
+  if (!$serverEntryModelService_nativeQualificationError.instance) $serverEntryModelService_nativeQualificationError.instance = require("./backend/server-entry-model-service/native-qualification-error").createEntryModelService_nativeQualificationError({
+    get HttpsError() { return HttpsError; }
+  });
+  return $serverEntryModelService_nativeQualificationError.instance;
+}
+
+function $serverEntryModelService_engagementEntryTimeCacheRef() {
+  if (!$serverEntryModelService_engagementEntryTimeCacheRef.instance) $serverEntryModelService_engagementEntryTimeCacheRef.instance = require("./backend/server-entry-model-service/engagement-entry-time-cache-ref").createEntryModelService_engagementEntryTimeCacheRef({
+    get ENGAGEMENT_ENTRY_TIME_CACHES_COLLECTION() { return ENGAGEMENT_ENTRY_TIME_CACHES_COLLECTION; },
+    get ENGAGEMENT_ENTRY_TIME_CACHE_VERSION() { return ENGAGEMENT_ENTRY_TIME_CACHE_VERSION; },
+    get ENGAGEMENT_ENTRY_TIME_SOURCE_KEY_LIMIT() { return ENGAGEMENT_ENTRY_TIME_SOURCE_KEY_LIMIT; },
+    get HttpsError() { return HttpsError; },
+    get cleanFirestoreValue() { return cleanFirestoreValue; },
+    get cleanIsoDate() { return cleanIsoDate; },
+    get cleanText() { return cleanText; },
+    get db() { return db; },
+    get engagementEntryTimeCacheBuilds() { return engagementEntryTimeCacheBuilds; },
+    get hydratePublicSwimmerRowsFromPayload() { return hydratePublicSwimmerRowsFromPayload; },
+    get normalizeCourseCode() { return normalizeCourseCode; },
+    get publicPerformanceBaseRow() { return publicPerformanceBaseRow; },
+    get publicPerformanceSwimmerFilePath() { return publicPerformanceSwimmerFilePath; },
+    get readPublicPerformanceJson() { return readPublicPerformanceJson; },
+    get stableHash() { return stableHash; },
+    get local$engagementEntryTimeCacheId() { return $serverEntryModelService_engagementEntryTimeCacheId().engagementEntryTimeCacheId; }
+  });
+  return $serverEntryModelService_engagementEntryTimeCacheRef.instance;
+}
+
+function $serverEntryModelService_engagementKnownTimeHistory() {
+  if (!$serverEntryModelService_engagementKnownTimeHistory.instance) $serverEntryModelService_engagementKnownTimeHistory.instance = require("./backend/server-entry-model-service/engagement-known-time-history").createEntryModelService_engagementKnownTimeHistory({
+    get cleanFirestoreValue() { return cleanFirestoreValue; },
+    get cleanIsoDate() { return cleanIsoDate; },
+    get cleanText() { return cleanText; },
+    get formatTimeValue() { return formatTimeValue; },
+    get local$engagementQualificationRowAllowed() { return $serverEntryModelService_engagementEntryTimeCacheRef().engagementQualificationRowAllowed; }
+  });
+  return $serverEntryModelService_engagementKnownTimeHistory.instance;
+}
+
+function $serverEntryModelService_engagementEntryTimeCacheId() {
+  if (!$serverEntryModelService_engagementEntryTimeCacheId.instance) $serverEntryModelService_engagementEntryTimeCacheId.instance = require("./backend/server-entry-model-service/engagement-entry-time-cache-id").createEntryModelService_engagementEntryTimeCacheId({
+    get cleanText() { return cleanText; },
+    get stableHash() { return stableHash; }
+  });
+  return $serverEntryModelService_engagementEntryTimeCacheId.instance;
+}
+
+function $serverEntryModelService_deleteEngagementEntryTimeCache() {
+  if (!$serverEntryModelService_deleteEngagementEntryTimeCache.instance) $serverEntryModelService_deleteEngagementEntryTimeCache.instance = require("./backend/server-entry-model-service/delete-engagement-entry-time-cache").createEntryModelService_deleteEngagementEntryTimeCache({
+    get ENGAGEMENT_ENTRY_TIME_CACHES_COLLECTION() { return ENGAGEMENT_ENTRY_TIME_CACHES_COLLECTION; },
+    get local$engagementEntryTimeCacheId() { return $serverEntryModelService_engagementEntryTimeCacheId().engagementEntryTimeCacheId; }
+  });
+  return $serverEntryModelService_deleteEngagementEntryTimeCache.instance;
+}
+
+function $serverEntryModelService_invalidateEngagementEntryTimeCachesForPerformanceRows() {
+  if (!$serverEntryModelService_invalidateEngagementEntryTimeCachesForPerformanceRows.instance) $serverEntryModelService_invalidateEngagementEntryTimeCachesForPerformanceRows.instance = require("./backend/server-entry-model-service/invalidate-engagement-entry-time-caches-for-performance-rows").createEntryModelService_invalidateEngagementEntryTimeCachesForPerformanceRows({
+    get ENGAGEMENT_ENTRY_TIME_CACHES_COLLECTION() { return ENGAGEMENT_ENTRY_TIME_CACHES_COLLECTION; },
+    get db() { return db; },
+    get performanceSwimmerIndexKey() { return performanceSwimmerIndexKey; },
+    get local$engagementEntryTimeCacheId() { return $serverEntryModelService_engagementEntryTimeCacheId().engagementEntryTimeCacheId; }
+  });
+  return $serverEntryModelService_invalidateEngagementEntryTimeCachesForPerformanceRows.instance;
+}
+
+function $serverEntryModelService_engagementCompetitionAppliesToFranceRecords() {
+  if (!$serverEntryModelService_engagementCompetitionAppliesToFranceRecords.instance) $serverEntryModelService_engagementCompetitionAppliesToFranceRecords.instance = require("./backend/server-entry-model-service/engagement-competition-applies-to-france-records").createEntryModelService_engagementCompetitionAppliesToFranceRecords({
+    get cleanEngagementPoolLength() { return cleanEngagementPoolLength; },
+    get cleanEngagementTimingType() { return cleanEngagementTimingType; }
+  });
+  return $serverEntryModelService_engagementCompetitionAppliesToFranceRecords.instance;
+}
+
+function $serverEntryModelService_engagementEntryTimeWarning() {
+  if (!$serverEntryModelService_engagementEntryTimeWarning.instance) $serverEntryModelService_engagementEntryTimeWarning.instance = require("./backend/server-entry-model-service/engagement-entry-time-warning").createEntryModelService_engagementEntryTimeWarning({
+    get HttpsError() { return HttpsError; },
+    get POOL_COURSES() { return POOL_COURSES; },
+    get ageCategoryFromDates() { return ageCategoryFromDates; },
+    get cleanText() { return cleanText; },
+    get formatTimeValue() { return formatTimeValue; },
+    get isYouthCategory() { return isYouthCategory; },
+    get normalizeCategoryCode() { return normalizeCategoryCode; },
+    get normalizeCourseCode() { return normalizeCourseCode; },
+    get recordReferenceForPerformance() { return recordReferenceForPerformance; },
+    get recordReferenceMap() { return recordReferenceMap; },
+    get local$engagementCompetitionAppliesToFranceRecords() { return $serverEntryModelService_engagementCompetitionAppliesToFranceRecords().engagementCompetitionAppliesToFranceRecords; },
+    get local$engagementCompetitionAppliesToMpf() { return $serverEntryModelService_engagementCompetitionAppliesToFranceRecords().engagementCompetitionAppliesToMpf; }
+  });
+  return $serverEntryModelService_engagementEntryTimeWarning.instance;
+}
+
+function $serverEntryModelService_resolveEngagementIndividualEntriesForSwimmer() {
+  if (!$serverEntryModelService_resolveEngagementIndividualEntriesForSwimmer.instance) $serverEntryModelService_resolveEngagementIndividualEntriesForSwimmer.instance = require("./backend/server-entry-model-service/resolve-engagement-individual-entries-for-swimmer").createEntryModelService_resolveEngagementIndividualEntriesForSwimmer({
+    get HttpsError() { return HttpsError; },
+    get cleanText() { return cleanText; },
+    get qualificationEngine() { return qualificationEngine; },
+    get local$automaticEngagementIndividualEntry() { return $serverEntryModelService_automaticEngagementIndividualEntry().automaticEngagementIndividualEntry; },
+    get local$cleanEngagementEntryIndividualEntries() { return $serverEntryModelService_cleanEngagementEntryIndividualEntries().cleanEngagementEntryIndividualEntries; },
+    get local$getEngagementEntryTimeRowsForSwimmer() { return $serverEntryModelService_engagementEntryTimeCacheRef().getEngagementEntryTimeRowsForSwimmer; },
+    get local$getEngagementQualificationRows() { return $serverEntryModelService_automaticEngagementIndividualEntry().getEngagementQualificationRows; },
+    get local$parseEngagementEntryTime() { return $serverEntryModelService_parseEngagementEntryTime().parseEngagementEntryTime; },
+    get local$qualificationService() { return $serverEntryModelService_automaticEngagementIndividualEntry().qualificationService; }
+  });
+  return $serverEntryModelService_resolveEngagementIndividualEntriesForSwimmer.instance;
+}
+
+function $serverEntryModelService_engagementSwimmerIdentityKey() {
+  if (!$serverEntryModelService_engagementSwimmerIdentityKey.instance) $serverEntryModelService_engagementSwimmerIdentityKey.instance = require("./backend/server-entry-model-service/engagement-swimmer-identity-key").createEntryModelService_engagementSwimmerIdentityKey({
+    get cleanIsoDate() { return cleanIsoDate; },
+    get normalizePerformanceSearchText() { return normalizePerformanceSearchText; }
+  });
+  return $serverEntryModelService_engagementSwimmerIdentityKey.instance;
+}
+
+function $serverEntryModelService_cleanEngagementNewSwimmer() {
+  if (!$serverEntryModelService_cleanEngagementNewSwimmer.instance) $serverEntryModelService_cleanEngagementNewSwimmer.instance = require("./backend/server-entry-model-service/clean-engagement-new-swimmer").createEntryModelService_cleanEngagementNewSwimmer({
+    get ENGAGEMENT_SWIMMER_LICENSE_PATTERN() { return ENGAGEMENT_SWIMMER_LICENSE_PATTERN; },
+    get HttpsError() { return HttpsError; },
+    get cleanIsoDate() { return cleanIsoDate; },
+    get cleanText() { return cleanText; },
+    get currentEngagementSeasonInfo() { return currentEngagementSeasonInfo; },
+    get local$engagementSwimmerIdentityKey() { return $serverEntryModelService_engagementSwimmerIdentityKey().engagementSwimmerIdentityKey; }
+  });
+  return $serverEntryModelService_cleanEngagementNewSwimmer.instance;
+}
+
+function $serverEntryModelService_engagementNewSwimmerItem() {
+  if (!$serverEntryModelService_engagementNewSwimmerItem.instance) $serverEntryModelService_engagementNewSwimmerItem.instance = require("./backend/server-entry-model-service/engagement-new-swimmer-item").createEntryModelService_engagementNewSwimmerItem({
+    get cleanEngagementLicenseVerificationStatus() { return cleanEngagementLicenseVerificationStatus; },
+    get cleanFirestoreValue() { return cleanFirestoreValue; },
+    get cleanIsoDate() { return cleanIsoDate; },
+    get cleanText() { return cleanText; },
+    get currentEngagementCategoryFromBirthDate() { return currentEngagementCategoryFromBirthDate; },
+    get engagementLicenseSeasonState() { return engagementLicenseSeasonState; }
+  });
+  return $serverEntryModelService_engagementNewSwimmerItem.instance;
+}
+
+function $serverEntryModelService_buildEngagementNewSwimmerAlerts() {
+  if (!$serverEntryModelService_buildEngagementNewSwimmerAlerts.instance) $serverEntryModelService_buildEngagementNewSwimmerAlerts.instance = require("./backend/server-entry-model-service/build-engagement-new-swimmer-alerts").createEntryModelService_buildEngagementNewSwimmerAlerts({
+    get PERFORMANCE_SWIMMERS_COLLECTION() { return PERFORMANCE_SWIMMERS_COLLECTION; },
+    get cleanFirestoreValue() { return cleanFirestoreValue; },
+    get cleanIsoDate() { return cleanIsoDate; },
+    get cleanText() { return cleanText; },
+    get db() { return db; },
+    get engagementClubSwimmerItem() { return engagementClubSwimmerItem; },
+    get intranapSwimmersIndex() { return intranapSwimmersIndex; },
+    get performanceSearchTokens() { return performanceSearchTokens; },
+    get local$engagementNewSwimmerItem() { return $serverEntryModelService_engagementNewSwimmerItem().engagementNewSwimmerItem; },
+    get local$engagementSwimmerIdentityKey() { return $serverEntryModelService_engagementSwimmerIdentityKey().engagementSwimmerIdentityKey; }
+  });
+  return $serverEntryModelService_buildEngagementNewSwimmerAlerts.instance;
+}
+
+function $serverEntryModelService_engagementSwimmerLicenseId() {
+  if (!$serverEntryModelService_engagementSwimmerLicenseId.instance) $serverEntryModelService_engagementSwimmerLicenseId.instance = require("./backend/server-entry-model-service/engagement-swimmer-license-id").createEntryModelService_engagementSwimmerLicenseId({
+    get cleanText() { return cleanText; },
+    get stableHash() { return stableHash; }
+  });
+  return $serverEntryModelService_engagementSwimmerLicenseId.instance;
+}
+
+function $serverEntryModelService_engagementSwimmerLicenseNumberKey() {
+  if (!$serverEntryModelService_engagementSwimmerLicenseNumberKey.instance) $serverEntryModelService_engagementSwimmerLicenseNumberKey.instance = require("./backend/server-entry-model-service/engagement-swimmer-license-number-key").createEntryModelService_engagementSwimmerLicenseNumberKey({
+    get cleanText() { return cleanText; }
+  });
+  return $serverEntryModelService_engagementSwimmerLicenseNumberKey.instance;
+}
+
+function $serverEntryModelService_engagementSwimmerLicenseNumberId() {
+  if (!$serverEntryModelService_engagementSwimmerLicenseNumberId.instance) $serverEntryModelService_engagementSwimmerLicenseNumberId.instance = require("./backend/server-entry-model-service/engagement-swimmer-license-number-id").createEntryModelService_engagementSwimmerLicenseNumberId({
+    get stableHash() { return stableHash; },
+    get local$engagementSwimmerLicenseNumberKey() { return $serverEntryModelService_engagementSwimmerLicenseNumberKey().engagementSwimmerLicenseNumberKey; }
+  });
+  return $serverEntryModelService_engagementSwimmerLicenseNumberId.instance;
+}
+
+function $serverEntryModelService_engagementClubRosterId() {
+  if (!$serverEntryModelService_engagementClubRosterId.instance) $serverEntryModelService_engagementClubRosterId.instance = require("./backend/server-entry-model-service/engagement-club-roster-id").createEntryModelService_engagementClubRosterId({
+    get ENGAGEMENT_CLUB_ROSTERS_COLLECTION() { return ENGAGEMENT_CLUB_ROSTERS_COLLECTION; },
+    get cleanText() { return cleanText; },
+    get stableHash() { return stableHash; }
+  });
+  return $serverEntryModelService_engagementClubRosterId.instance;
+}
+
+function $serverEntryModelService_cleanEngagementClubActivityStatus() {
+  if (!$serverEntryModelService_cleanEngagementClubActivityStatus.instance) $serverEntryModelService_cleanEngagementClubActivityStatus.instance = require("./backend/server-entry-model-service/clean-engagement-club-activity-status").createEntryModelService_cleanEngagementClubActivityStatus({
+    get cleanEngagementLicenseSeasonStatus() { return cleanEngagementLicenseSeasonStatus; },
+    get cleanEngagementLicenseVerificationStatus() { return cleanEngagementLicenseVerificationStatus; },
+    get cleanFirestoreValue() { return cleanFirestoreValue; },
+    get cleanIsoDate() { return cleanIsoDate; },
+    get cleanText() { return cleanText; },
+    get engagementLicenseSeasonState() { return engagementLicenseSeasonState; }
+  });
+  return $serverEntryModelService_cleanEngagementClubActivityStatus.instance;
+}
+
+function $serverEntryModelService_engagementClubRosterSwimmerKey() {
+  if (!$serverEntryModelService_engagementClubRosterSwimmerKey.instance) $serverEntryModelService_engagementClubRosterSwimmerKey.instance = require("./backend/server-entry-model-service/engagement-club-roster-swimmer-key").createEntryModelService_engagementClubRosterSwimmerKey({
+    get cleanText() { return cleanText; },
+    get stableHash() { return stableHash; }
+  });
+  return $serverEntryModelService_engagementClubRosterSwimmerKey.instance;
+}
+
+function $serverEntryModelService_engagementClubRosterSwimmersFromData() {
+  if (!$serverEntryModelService_engagementClubRosterSwimmersFromData.instance) $serverEntryModelService_engagementClubRosterSwimmersFromData.instance = require("./backend/server-entry-model-service/engagement-club-roster-swimmers-from-data").createEntryModelService_engagementClubRosterSwimmersFromData({
+    get local$engagementClubRosterSwimmerItem() { return $serverEntryModelService_cleanEngagementClubActivityStatus().engagementClubRosterSwimmerItem; }
+  });
+  return $serverEntryModelService_engagementClubRosterSwimmersFromData.instance;
+}
+
+function $serverEntryModelService_upsertEngagementClubRosterSwimmer() {
+  if (!$serverEntryModelService_upsertEngagementClubRosterSwimmer.instance) $serverEntryModelService_upsertEngagementClubRosterSwimmer.instance = require("./backend/server-entry-model-service/upsert-engagement-club-roster-swimmer").createEntryModelService_upsertEngagementClubRosterSwimmer({
+    get local$engagementClubRosterRef() { return $serverEntryModelService_engagementClubRosterId().engagementClubRosterRef; },
+    get local$engagementClubRosterSwimmerItem() { return $serverEntryModelService_cleanEngagementClubActivityStatus().engagementClubRosterSwimmerItem; },
+    get local$engagementClubRosterSwimmerKey() { return $serverEntryModelService_engagementClubRosterSwimmerKey().engagementClubRosterSwimmerKey; }
+  });
+  return $serverEntryModelService_upsertEngagementClubRosterSwimmer.instance;
+}
+
+function $serverEntryModelService_deleteEngagementClubRosterSwimmer() {
+  if (!$serverEntryModelService_deleteEngagementClubRosterSwimmer.instance) $serverEntryModelService_deleteEngagementClubRosterSwimmer.instance = require("./backend/server-entry-model-service/delete-engagement-club-roster-swimmer").createEntryModelService_deleteEngagementClubRosterSwimmer({
+    get FieldValue() { return FieldValue; },
+    get cleanText() { return cleanText; },
+    get local$engagementClubRosterRef() { return $serverEntryModelService_engagementClubRosterId().engagementClubRosterRef; },
+    get local$engagementClubRosterSwimmerKey() { return $serverEntryModelService_engagementClubRosterSwimmerKey().engagementClubRosterSwimmerKey; }
+  });
+  return $serverEntryModelService_deleteEngagementClubRosterSwimmer.instance;
+}
+
+function $serverEntryModelService_engagementSwimmerLicenseDataItem() {
+  if (!$serverEntryModelService_engagementSwimmerLicenseDataItem.instance) $serverEntryModelService_engagementSwimmerLicenseDataItem.instance = require("./backend/server-entry-model-service/engagement-swimmer-license-data-item").createEntryModelService_engagementSwimmerLicenseDataItem({
+    get cleanEngagementLicenseVerificationStatus() { return cleanEngagementLicenseVerificationStatus; },
+    get cleanText() { return cleanText; },
+    get engagementLicenseSeasonState() { return engagementLicenseSeasonState; }
+  });
+  return $serverEntryModelService_engagementSwimmerLicenseDataItem.instance;
+}
+
+function $serverEntryModelService_engagementLegacySwimmerLicensesByClub() {
+  if (!$serverEntryModelService_engagementLegacySwimmerLicensesByClub.instance) $serverEntryModelService_engagementLegacySwimmerLicensesByClub.instance = require("./backend/server-entry-model-service/engagement-legacy-swimmer-licenses-by-club").createEntryModelService_engagementLegacySwimmerLicensesByClub({
+    get HttpsError() { return HttpsError; },
+    get cleanText() { return cleanText; },
+    get local$engagementSwimmerLicenseItem() { return $serverEntryModelService_engagementSwimmerLicenseDataItem().engagementSwimmerLicenseItem; }
+  });
+  return $serverEntryModelService_engagementLegacySwimmerLicensesByClub.instance;
+}
+
+function $serverEntryModelService_engagementSwimmerLicensePayload() {
+  if (!$serverEntryModelService_engagementSwimmerLicensePayload.instance) $serverEntryModelService_engagementSwimmerLicensePayload.instance = require("./backend/server-entry-model-service/engagement-swimmer-license-payload").createEntryModelService_engagementSwimmerLicensePayload({
+    get cleanEngagementLicenseSeasonStatus() { return cleanEngagementLicenseSeasonStatus; },
+    get cleanEngagementLicenseVerificationStatus() { return cleanEngagementLicenseVerificationStatus; },
+    get cleanFirestoreValue() { return cleanFirestoreValue; },
+    get cleanIsoDate() { return cleanIsoDate; },
+    get cleanText() { return cleanText; },
+    get currentEngagementSeasonInfo() { return currentEngagementSeasonInfo; }
+  });
+  return $serverEntryModelService_engagementSwimmerLicensePayload.instance;
+}
+
+function $serverEntryModelService_engagementSwimmerLicenseConflictData() {
+  if (!$serverEntryModelService_engagementSwimmerLicenseConflictData.instance) $serverEntryModelService_engagementSwimmerLicenseConflictData.instance = require("./backend/server-entry-model-service/engagement-swimmer-license-conflict-data").createEntryModelService_engagementSwimmerLicenseConflictData({
+    get ENGAGEMENT_SWIMMER_LICENSE_NUMBERS_COLLECTION() { return ENGAGEMENT_SWIMMER_LICENSE_NUMBERS_COLLECTION; },
+    get PERFORMANCE_SWIMMERS_COLLECTION() { return PERFORMANCE_SWIMMERS_COLLECTION; },
+    get cleanFirestoreValue() { return cleanFirestoreValue; },
+    get cleanIsoDate() { return cleanIsoDate; },
+    get cleanText() { return cleanText; },
+    get intranapSwimmersIndex() { return intranapSwimmersIndex; },
+    get local$engagementSwimmerLicenseNumberId() { return $serverEntryModelService_engagementSwimmerLicenseNumberId().engagementSwimmerLicenseNumberId; },
+    get local$engagementSwimmerLicenseNumberKey() { return $serverEntryModelService_engagementSwimmerLicenseNumberKey().engagementSwimmerLicenseNumberKey; }
+  });
+  return $serverEntryModelService_engagementSwimmerLicenseConflictData.instance;
+}
+
+function $serverEntryModelService_assertNoEngagementSwimmerLicenseConflict() {
+  if (!$serverEntryModelService_assertNoEngagementSwimmerLicenseConflict.instance) $serverEntryModelService_assertNoEngagementSwimmerLicenseConflict.instance = require("./backend/server-entry-model-service/assert-no-engagement-swimmer-license-conflict").createEntryModelService_assertNoEngagementSwimmerLicenseConflict({
+    get HttpsError() { return HttpsError; },
+    get engagementClubCode() { return engagementClubCode; },
+    get engagementClubName() { return engagementClubName; },
+    get local$findEngagementSwimmerLicenseConflict() { return $serverEntryModelService_engagementSwimmerLicenseConflictData().findEngagementSwimmerLicenseConflict; }
+  });
+  return $serverEntryModelService_assertNoEngagementSwimmerLicenseConflict.instance;
+}
+
+function $serverEntryModelService_engagementSwimmerRecoveryPreview() {
+  if (!$serverEntryModelService_engagementSwimmerRecoveryPreview.instance) $serverEntryModelService_engagementSwimmerRecoveryPreview.instance = require("./backend/server-entry-model-service/engagement-swimmer-recovery-preview").createEntryModelService_engagementSwimmerRecoveryPreview({
+    get ENGAGEMENT_SWIMMER_LICENSE_PATTERN() { return ENGAGEMENT_SWIMMER_LICENSE_PATTERN; },
+    get HttpsError() { return HttpsError; },
+    get PERFORMANCE_SWIMMERS_COLLECTION() { return PERFORMANCE_SWIMMERS_COLLECTION; },
+    get cleanIsoDate() { return cleanIsoDate; },
+    get cleanText() { return cleanText; },
+    get currentEngagementSeasonInfo() { return currentEngagementSeasonInfo; },
+    get engagementSeasonBoundsFromEndYear() { return engagementSeasonBoundsFromEndYear; },
+    get local$engagementClubRosterSwimmerItem() { return $serverEntryModelService_cleanEngagementClubActivityStatus().engagementClubRosterSwimmerItem; },
+    get local$engagementNewSwimmerItem() { return $serverEntryModelService_engagementNewSwimmerItem().engagementNewSwimmerItem; },
+    get local$engagementSwimmerLicenseNumberKey() { return $serverEntryModelService_engagementSwimmerLicenseNumberKey().engagementSwimmerLicenseNumberKey; },
+    get local$findEngagementSwimmerLicenseConflict() { return $serverEntryModelService_engagementSwimmerLicenseConflictData().findEngagementSwimmerLicenseConflict; }
+  });
+  return $serverEntryModelService_engagementSwimmerRecoveryPreview.instance;
+}
+
+function $serverEntryModelService_engagementClubEntryItem() {
+  if (!$serverEntryModelService_engagementClubEntryItem.instance) $serverEntryModelService_engagementClubEntryItem.instance = require("./backend/server-entry-model-service/engagement-club-entry-item").createEntryModelService_engagementClubEntryItem({
+    get ENGAGEMENT_PROGRAM_GENDER_MODES() { return ENGAGEMENT_PROGRAM_GENDER_MODES; },
+    get cleanEngagementDocumentMetadata() { return cleanEngagementDocumentMetadata; },
+    get cleanIsoDate() { return cleanIsoDate; },
+    get cleanText() { return cleanText; },
+    get engagementClubCode() { return engagementClubCode; },
+    get engagementClubEntryId() { return engagementClubEntryId; },
+    get engagementClubName() { return engagementClubName; },
+    get normalizeCategoryCode() { return normalizeCategoryCode; },
+    get normalizeCourseCode() { return normalizeCourseCode; },
+    get local$cleanEngagementEntryOfficial() { return $serverEntryModelService_cleanEngagementEntryOfficial().cleanEngagementEntryOfficial; },
+    get local$cleanEngagementEntrySwimmer() { return $serverEntryModelService_cleanEngagementEntrySwimmer().cleanEngagementEntrySwimmer; },
+    get local$engagementTeamLeaderComplete() { return $serverEntryModelService_engagementTeamLeaderComplete().engagementTeamLeaderComplete; }
+  });
+  return $serverEntryModelService_engagementClubEntryItem.instance;
+}
+
+function $serverEntryModelService_engagementClubEntryHasParticipants() {
+  if (!$serverEntryModelService_engagementClubEntryHasParticipants.instance) $serverEntryModelService_engagementClubEntryHasParticipants.instance = require("./backend/server-entry-model-service/engagement-club-entry-has-participants").createEntryModelService_engagementClubEntryHasParticipants({
+
+  });
+  return $serverEntryModelService_engagementClubEntryHasParticipants.instance;
+}
+
+function $serverDocumentsService_cleanEngagementDocumentMetadata() {
+  if (!$serverDocumentsService_cleanEngagementDocumentMetadata.instance) $serverDocumentsService_cleanEngagementDocumentMetadata.instance = require("./backend/server-documents-service/clean-engagement-document-metadata").createDocumentsService_cleanEngagementDocumentMetadata({
+    get cleanFirestoreValue() { return cleanFirestoreValue; },
+    get cleanText() { return cleanText; }
+  });
+  return $serverDocumentsService_cleanEngagementDocumentMetadata.instance;
+}
+
+function $serverDocumentsService_cleanEngagementGeneratedFile() {
+  if (!$serverDocumentsService_cleanEngagementGeneratedFile.instance) $serverDocumentsService_cleanEngagementGeneratedFile.instance = require("./backend/server-documents-service/clean-engagement-generated-file").createDocumentsService_cleanEngagementGeneratedFile({
+    get cleanFirestoreValue() { return cleanFirestoreValue; },
+    get cleanText() { return cleanText; },
+    get local$cleanEngagementDocumentMetadata() { return $serverDocumentsService_cleanEngagementDocumentMetadata().cleanEngagementDocumentMetadata; }
+  });
+  return $serverDocumentsService_cleanEngagementGeneratedFile.instance;
+}
+
+function $serverDocumentsService_engagementClubRecapPdfSourceHash() {
+  if (!$serverDocumentsService_engagementClubRecapPdfSourceHash.instance) $serverDocumentsService_engagementClubRecapPdfSourceHash.instance = require("./backend/server-documents-service/engagement-club-recap-pdf-source-hash").createDocumentsService_engagementClubRecapPdfSourceHash({
+    get ENGAGEMENT_DOCUMENTS_STORAGE_PREFIX() { return ENGAGEMENT_DOCUMENTS_STORAGE_PREFIX; },
+    get HttpsError() { return HttpsError; },
+    get LIVEPALMES_STORAGE_BUCKET() { return LIVEPALMES_STORAGE_BUCKET; },
+    get buildEngagementClubRecapPdf() { return buildEngagementClubRecapPdf; },
+    get cleanPublicCalendarWhatsAppUrl() { return cleanPublicCalendarWhatsAppUrl; },
+    get cleanText() { return cleanText; },
+    get db() { return db; },
+    get engagementClubEntryHasParticipants() { return engagementClubEntryHasParticipants; },
+    get engagementClubEntryId() { return engagementClubEntryId; },
+    get engagementClubEntryItem() { return engagementClubEntryItem; },
+    get engagementCompetitionDetailItem() { return engagementCompetitionDetailItem; },
+    get engagementPdfFileName() { return engagementPdfFileName; },
+    get stableHash() { return stableHash; },
+    get storage() { return storage; },
+    get local$cleanEngagementDocumentMetadata() { return $serverDocumentsService_cleanEngagementDocumentMetadata().cleanEngagementDocumentMetadata; },
+    get local$deleteEngagementCompetitionEntrySummary() { return $serverDocumentsService_deleteEngagementCompetitionEntrySummary().deleteEngagementCompetitionEntrySummary; },
+    get local$engagementCompetitionEntrySummaryItem() { return $serverDocumentsService_engagementCompetitionEntrySummaryItem().engagementCompetitionEntrySummaryItem; },
+    get local$engagementCompetitionEntrySummaryRef() { return $serverDocumentsService_engagementCompetitionEntrySummaryRef().engagementCompetitionEntrySummaryRef; },
+    get local$readStoredEngagementClubRecapPdf() { return $serverDocumentsService_readStoredEngagementClubRecapPdf().readStoredEngagementClubRecapPdf; }
+  });
+  return $serverDocumentsService_engagementClubRecapPdfSourceHash.instance;
+}
+
+function $serverDocumentsService_engagementCompetitionEntrySummaryId() {
+  if (!$serverDocumentsService_engagementCompetitionEntrySummaryId.instance) $serverDocumentsService_engagementCompetitionEntrySummaryId.instance = require("./backend/server-documents-service/engagement-competition-entry-summary-id").createDocumentsService_engagementCompetitionEntrySummaryId({
+    get cleanText() { return cleanText; },
+    get stableHash() { return stableHash; }
+  });
+  return $serverDocumentsService_engagementCompetitionEntrySummaryId.instance;
+}
+
+function $serverDocumentsService_engagementCompetitionEntrySummaryRef() {
+  if (!$serverDocumentsService_engagementCompetitionEntrySummaryRef.instance) $serverDocumentsService_engagementCompetitionEntrySummaryRef.instance = require("./backend/server-documents-service/engagement-competition-entry-summary-ref").createDocumentsService_engagementCompetitionEntrySummaryRef({
+    get ENGAGEMENT_COMPETITION_ENTRY_SUMMARIES_COLLECTION() { return ENGAGEMENT_COMPETITION_ENTRY_SUMMARIES_COLLECTION; },
+    get local$engagementCompetitionEntrySummaryId() { return $serverDocumentsService_engagementCompetitionEntrySummaryId().engagementCompetitionEntrySummaryId; }
+  });
+  return $serverDocumentsService_engagementCompetitionEntrySummaryRef.instance;
+}
+
+function $serverDocumentsService_engagementCompetitionStatisticsCacheRef() {
+  if (!$serverDocumentsService_engagementCompetitionStatisticsCacheRef.instance) $serverDocumentsService_engagementCompetitionStatisticsCacheRef.instance = require("./backend/server-documents-service/engagement-competition-statistics-cache-ref").createDocumentsService_engagementCompetitionStatisticsCacheRef({
+    get ENGAGEMENT_COMPETITION_STATISTICS_CACHE_COLLECTION() { return ENGAGEMENT_COMPETITION_STATISTICS_CACHE_COLLECTION; },
+    get local$engagementCompetitionEntrySummaryId() { return $serverDocumentsService_engagementCompetitionEntrySummaryId().engagementCompetitionEntrySummaryId; }
+  });
+  return $serverDocumentsService_engagementCompetitionStatisticsCacheRef.instance;
+}
+
+function $serverDocumentsService_invalidateEngagementCompetitionStatistics() {
+  if (!$serverDocumentsService_invalidateEngagementCompetitionStatistics.instance) $serverDocumentsService_invalidateEngagementCompetitionStatistics.instance = require("./backend/server-documents-service/invalidate-engagement-competition-statistics").createDocumentsService_invalidateEngagementCompetitionStatistics({
+    get FieldValue() { return FieldValue; },
+    get cleanText() { return cleanText; },
+    get db() { return db; },
+    get engagementClubCompetitionIndexKey() { return engagementClubCompetitionIndexKey; },
+    get engagementClubCompetitionIndexRef() { return engagementClubCompetitionIndexRef; },
+    get engagementClubEntryHasParticipants() { return engagementClubEntryHasParticipants; },
+    get engagementClubEntryItem() { return engagementClubEntryItem; },
+    get local$engagementCompetitionEntrySummaryItem() { return $serverDocumentsService_engagementCompetitionEntrySummaryItem().engagementCompetitionEntrySummaryItem; },
+    get local$engagementCompetitionEntrySummaryRef() { return $serverDocumentsService_engagementCompetitionEntrySummaryRef().engagementCompetitionEntrySummaryRef; },
+    get local$engagementCompetitionStatisticsCacheRef() { return $serverDocumentsService_engagementCompetitionStatisticsCacheRef().engagementCompetitionStatisticsCacheRef; }
+  });
+  return $serverDocumentsService_invalidateEngagementCompetitionStatistics.instance;
+}
+
+function $serverDocumentsService_decodeEngagementCompetitionStatisticsCache() {
+  if (!$serverDocumentsService_decodeEngagementCompetitionStatisticsCache.instance) $serverDocumentsService_decodeEngagementCompetitionStatisticsCache.instance = require("./backend/server-documents-service/decode-engagement-competition-statistics-cache").createDocumentsService_decodeEngagementCompetitionStatisticsCache({
+    get cleanText() { return cleanText; },
+    get zlib() { return zlib; }
+  });
+  return $serverDocumentsService_decodeEngagementCompetitionStatisticsCache.instance;
+}
+
+function $serverDocumentsService_engagementCompetitionEntrySummaryItem() {
+  if (!$serverDocumentsService_engagementCompetitionEntrySummaryItem.instance) $serverDocumentsService_engagementCompetitionEntrySummaryItem.instance = require("./backend/server-documents-service/engagement-competition-entry-summary-item").createDocumentsService_engagementCompetitionEntrySummaryItem({
+    get cleanFirestoreValue() { return cleanFirestoreValue; },
+    get cleanText() { return cleanText; },
+    get engagementClubCode() { return engagementClubCode; },
+    get engagementClubEntryId() { return engagementClubEntryId; },
+    get engagementClubName() { return engagementClubName; },
+    get engagementPdfEntryStats() { return engagementPdfEntryStats; },
+    get local$cleanEngagementDocumentMetadata() { return $serverDocumentsService_cleanEngagementDocumentMetadata().cleanEngagementDocumentMetadata; }
+  });
+  return $serverDocumentsService_engagementCompetitionEntrySummaryItem.instance;
+}
+
+function $serverDocumentsService_engagementCompetitionEntrySummariesFromData() {
+  if (!$serverDocumentsService_engagementCompetitionEntrySummariesFromData.instance) $serverDocumentsService_engagementCompetitionEntrySummariesFromData.instance = require("./backend/server-documents-service/engagement-competition-entry-summaries-from-data").createDocumentsService_engagementCompetitionEntrySummariesFromData({
+    get cleanText() { return cleanText; },
+    get engagementClubEntryHasParticipants() { return engagementClubEntryHasParticipants; },
+    get local$engagementCompetitionEntrySummaryItem() { return $serverDocumentsService_engagementCompetitionEntrySummaryItem().engagementCompetitionEntrySummaryItem; }
+  });
+  return $serverDocumentsService_engagementCompetitionEntrySummariesFromData.instance;
+}
+
+function $serverDocumentsService_deleteEngagementClubCompetitionIndexEntry() {
+  if (!$serverDocumentsService_deleteEngagementClubCompetitionIndexEntry.instance) $serverDocumentsService_deleteEngagementClubCompetitionIndexEntry.instance = require("./backend/server-documents-service/delete-engagement-club-competition-index-entry").createDocumentsService_deleteEngagementClubCompetitionIndexEntry({
+    get FieldValue() { return FieldValue; },
+    get cleanText() { return cleanText; },
+    get engagementClubCompetitionIndexKey() { return engagementClubCompetitionIndexKey; },
+    get engagementClubCompetitionIndexRef() { return engagementClubCompetitionIndexRef; },
+    get engagementClubEntryHasParticipants() { return engagementClubEntryHasParticipants; },
+    get engagementClubEntryItem() { return engagementClubEntryItem; },
+    get local$engagementCompetitionEntrySummariesFromData() { return $serverDocumentsService_engagementCompetitionEntrySummariesFromData().engagementCompetitionEntrySummariesFromData; },
+    get local$engagementCompetitionEntrySummaryItem() { return $serverDocumentsService_engagementCompetitionEntrySummaryItem().engagementCompetitionEntrySummaryItem; },
+    get local$engagementCompetitionEntrySummaryRef() { return $serverDocumentsService_engagementCompetitionEntrySummaryRef().engagementCompetitionEntrySummaryRef; }
+  });
+  return $serverDocumentsService_deleteEngagementClubCompetitionIndexEntry.instance;
+}
+
+function $serverDocumentsService_deleteEngagementCompetitionEntrySummary() {
+  if (!$serverDocumentsService_deleteEngagementCompetitionEntrySummary.instance) $serverDocumentsService_deleteEngagementCompetitionEntrySummary.instance = require("./backend/server-documents-service/delete-engagement-competition-entry-summary").createDocumentsService_deleteEngagementCompetitionEntrySummary({
+    get FieldValue() { return FieldValue; },
+    get cleanText() { return cleanText; },
+    get local$engagementCompetitionEntrySummaryRef() { return $serverDocumentsService_engagementCompetitionEntrySummaryRef().engagementCompetitionEntrySummaryRef; }
+  });
+  return $serverDocumentsService_deleteEngagementCompetitionEntrySummary.instance;
+}
+
+function $serverDocumentsService_readStoredEngagementClubRecapPdf() {
+  if (!$serverDocumentsService_readStoredEngagementClubRecapPdf.instance) $serverDocumentsService_readStoredEngagementClubRecapPdf.instance = require("./backend/server-documents-service/read-stored-engagement-club-recap-pdf").createDocumentsService_readStoredEngagementClubRecapPdf({
+    get LIVEPALMES_STORAGE_BUCKET() { return LIVEPALMES_STORAGE_BUCKET; },
+    get cleanText() { return cleanText; },
+    get storage() { return storage; }
+  });
+  return $serverDocumentsService_readStoredEngagementClubRecapPdf.instance;
+}
+
+function $serverDocumentsService_engagementOfficialsPdfSourceHash() {
+  if (!$serverDocumentsService_engagementOfficialsPdfSourceHash.instance) $serverDocumentsService_engagementOfficialsPdfSourceHash.instance = require("./backend/server-documents-service/engagement-officials-pdf-source-hash").createDocumentsService_engagementOfficialsPdfSourceHash({
+    get ENGAGEMENT_DOCUMENTS_STORAGE_PREFIX() { return ENGAGEMENT_DOCUMENTS_STORAGE_PREFIX; },
+    get LIVEPALMES_STORAGE_BUCKET() { return LIVEPALMES_STORAGE_BUCKET; },
+    get buildEngagementOfficialsPdf() { return buildEngagementOfficialsPdf; },
+    get cleanIsoDate() { return cleanIsoDate; },
+    get cleanText() { return cleanText; },
+    get db() { return db; },
+    get engagementClubEntryItem() { return engagementClubEntryItem; },
+    get engagementCompetitionDetailItem() { return engagementCompetitionDetailItem; },
+    get engagementPdfFileName() { return engagementPdfFileName; },
+    get stableHash() { return stableHash; },
+    get storage() { return storage; },
+    get local$cleanEngagementDocumentMetadata() { return $serverDocumentsService_cleanEngagementDocumentMetadata().cleanEngagementDocumentMetadata; },
+    get local$engagementOfficialsPdfRows() { return $serverDocumentsService_engagementOfficialsPdfRows().engagementOfficialsPdfRows; },
+    get local$readStoredEngagementClubRecapPdf() { return $serverDocumentsService_readStoredEngagementClubRecapPdf().readStoredEngagementClubRecapPdf; }
+  });
+  return $serverDocumentsService_engagementOfficialsPdfSourceHash.instance;
+}
+
+function $serverDocumentsService_engagementOfficialsPdfRows() {
+  if (!$serverDocumentsService_engagementOfficialsPdfRows.instance) $serverDocumentsService_engagementOfficialsPdfRows.instance = require("./backend/server-documents-service/engagement-officials-pdf-rows").createDocumentsService_engagementOfficialsPdfRows({
+    get cleanIsoDate() { return cleanIsoDate; },
+    get cleanText() { return cleanText; },
+    get engagementClubCode() { return engagementClubCode; }
+  });
+  return $serverDocumentsService_engagementOfficialsPdfRows.instance;
+}
+
+function $serverDocumentsService_engagementTxtDownloadUrl() {
+  if (!$serverDocumentsService_engagementTxtDownloadUrl.instance) $serverDocumentsService_engagementTxtDownloadUrl.instance = require("./backend/server-documents-service/engagement-txt-download-url").createDocumentsService_engagementTxtDownloadUrl({
+    get ENGAGEMENT_DOCUMENTS_STORAGE_PREFIX() { return ENGAGEMENT_DOCUMENTS_STORAGE_PREFIX; },
+    get HttpsError() { return HttpsError; },
+    get LIVEPALMES_STORAGE_BUCKET() { return LIVEPALMES_STORAGE_BUCKET; },
+    get cleanText() { return cleanText; },
+    get crypto() { return crypto; },
+    get db() { return db; },
+    get engagementClubEntryHasParticipants() { return engagementClubEntryHasParticipants; },
+    get engagementClubEntryItem() { return engagementClubEntryItem; },
+    get engagementClubsByIds() { return engagementClubsByIds; },
+    get engagementCompetitionDetailItem() { return engagementCompetitionDetailItem; },
+    get engagementPdfFileName() { return engagementPdfFileName; },
+    get stableHash() { return stableHash; },
+    get storage() { return storage; },
+    get local$buildEngagementCompetitionTxt() { return $serverDocumentsService_buildEngagementCompetitionTxt().buildEngagementCompetitionTxt; },
+    get local$cleanEngagementDocumentMetadata() { return $serverDocumentsService_cleanEngagementDocumentMetadata().cleanEngagementDocumentMetadata; },
+    get local$cleanEngagementGeneratedFile() { return $serverDocumentsService_cleanEngagementGeneratedFile().cleanEngagementGeneratedFile; },
+    get local$cleanEngagementGeneratedFiles() { return $serverDocumentsService_cleanEngagementGeneratedFile().cleanEngagementGeneratedFiles; }
+  });
+  return $serverDocumentsService_engagementTxtDownloadUrl.instance;
+}
+
+function $serverDocumentsService_buildEngagementCompetitionTxt() {
+  if (!$serverDocumentsService_buildEngagementCompetitionTxt.instance) $serverDocumentsService_buildEngagementCompetitionTxt.instance = require("./backend/server-documents-service/build-engagement-competition-txt").createDocumentsService_buildEngagementCompetitionTxt({
+    get ageCategoryFromDates() { return ageCategoryFromDates; },
+    get buildWinPalmeCompetitionTxt() { return buildWinPalmeCompetitionTxt; },
+    get engagementPdfFileName() { return engagementPdfFileName; }
+  });
+  return $serverDocumentsService_buildEngagementCompetitionTxt.instance;
+}
+
+function $serverDocumentsService_engagementMailStatusLabel() {
+  if (!$serverDocumentsService_engagementMailStatusLabel.instance) $serverDocumentsService_engagementMailStatusLabel.instance = require("./backend/server-documents-service/engagement-mail-status-label").createDocumentsService_engagementMailStatusLabel({
+    get cleanText() { return cleanText; }
+  });
+  return $serverDocumentsService_engagementMailStatusLabel.instance;
+}
+
+function $serverDocumentsService_engagementMailSecretValue() {
+  if (!$serverDocumentsService_engagementMailSecretValue.instance) $serverDocumentsService_engagementMailSecretValue.instance = require("./backend/server-documents-service/engagement-mail-secret-value").createDocumentsService_engagementMailSecretValue({
+    get LIVEPALMES_MAIL_FROM() { return LIVEPALMES_MAIL_FROM; },
+    get LIVEPALMES_SMTP_HOST() { return LIVEPALMES_SMTP_HOST; },
+    get LIVEPALMES_SMTP_PASS() { return LIVEPALMES_SMTP_PASS; },
+    get LIVEPALMES_SMTP_PORT() { return LIVEPALMES_SMTP_PORT; },
+    get LIVEPALMES_SMTP_SECURE() { return LIVEPALMES_SMTP_SECURE; },
+    get LIVEPALMES_SMTP_USER() { return LIVEPALMES_SMTP_USER; },
+    get cleanText() { return cleanText; },
+    get normalizeEmail() { return normalizeEmail; }
+  });
+  return $serverDocumentsService_engagementMailSecretValue.instance;
+}
+
+function $serverDocumentsService_engagementMailPreparedStatus() {
+  if (!$serverDocumentsService_engagementMailPreparedStatus.instance) $serverDocumentsService_engagementMailPreparedStatus.instance = require("./backend/server-documents-service/engagement-mail-prepared-status").createDocumentsService_engagementMailPreparedStatus({
+    get local$engagementMailSmtpConfig() { return $serverDocumentsService_engagementMailSecretValue().engagementMailSmtpConfig; }
+  });
+  return $serverDocumentsService_engagementMailPreparedStatus.instance;
+}
+
+function $serverMailService_engagementMailPreparedReason() {
+  if (!$serverMailService_engagementMailPreparedReason.instance) $serverMailService_engagementMailPreparedReason.instance = require("./backend/server-mail-service/engagement-mail-prepared-reason").createMailService_engagementMailPreparedReason({
+    get ENGAGEMENT_MAIL_JOBS_COLLECTION() { return ENGAGEMENT_MAIL_JOBS_COLLECTION; },
+    get FieldValue() { return FieldValue; },
+    get cleanFirestoreValue() { return cleanFirestoreValue; },
+    get cleanText() { return cleanText; },
+    get db() { return db; },
+    get engagementMailPreparedStatus() { return engagementMailPreparedStatus; },
+    get engagementMailSmtpConfig() { return engagementMailSmtpConfig; },
+    get normalizeEmail() { return normalizeEmail; },
+    get local$engagementMailJobId() { return $serverMailService_engagementMailJobId().engagementMailJobId; },
+    get local$engagementMailJobItemFromData() { return $serverMailService_engagementMailJobItemFromData().engagementMailJobItemFromData; }
+  });
+  return $serverMailService_engagementMailPreparedReason.instance;
+}
+
+function $serverMailService_engagementMailJobId() {
+  if (!$serverMailService_engagementMailJobId.instance) $serverMailService_engagementMailJobId.instance = require("./backend/server-mail-service/engagement-mail-job-id").createMailService_engagementMailJobId({
+    get cleanText() { return cleanText; },
+    get normalizeEmail() { return normalizeEmail; },
+    get stableHash() { return stableHash; }
+  });
+  return $serverMailService_engagementMailJobId.instance;
+}
+
+function $serverMailService_engagementMailRecipientFromUserDoc() {
+  if (!$serverMailService_engagementMailRecipientFromUserDoc.instance) $serverMailService_engagementMailRecipientFromUserDoc.instance = require("./backend/server-mail-service/engagement-mail-recipient-from-user-doc").createMailService_engagementMailRecipientFromUserDoc({
+    get ENGAGEMENT_MAIL_CAPABILITIES() { return ENGAGEMENT_MAIL_CAPABILITIES; },
+    get activeCapabilitiesFromMap() { return activeCapabilitiesFromMap; },
+    get cleanFirestoreValue() { return cleanFirestoreValue; },
+    get cleanText() { return cleanText; },
+    get competitionEmailNotificationsEnabled() { return competitionEmailNotificationsEnabled; },
+    get engagementClubName() { return engagementClubName; },
+    get normalizeEmail() { return normalizeEmail; }
+  });
+  return $serverMailService_engagementMailRecipientFromUserDoc.instance;
+}
+
+function $serverMailService_engagementMailRecipientShardNumber() {
+  if (!$serverMailService_engagementMailRecipientShardNumber.instance) $serverMailService_engagementMailRecipientShardNumber.instance = require("./backend/server-mail-service/engagement-mail-recipient-shard-number").createMailService_engagementMailRecipientShardNumber({
+    get ENGAGEMENT_MAIL_RECIPIENT_SHARD_COUNT() { return ENGAGEMENT_MAIL_RECIPIENT_SHARD_COUNT; },
+    get stableHash() { return stableHash; }
+  });
+  return $serverMailService_engagementMailRecipientShardNumber.instance;
+}
+
+function $serverMailService_engagementMailRecipientShardRef() {
+  if (!$serverMailService_engagementMailRecipientShardRef.instance) $serverMailService_engagementMailRecipientShardRef.instance = require("./backend/server-mail-service/engagement-mail-recipient-shard-ref").createMailService_engagementMailRecipientShardRef({
+    get ENGAGEMENT_MAIL_RECIPIENT_SHARDS_COLLECTION() { return ENGAGEMENT_MAIL_RECIPIENT_SHARDS_COLLECTION; },
+    get cleanText() { return cleanText; }
+  });
+  return $serverMailService_engagementMailRecipientShardRef.instance;
+}
+
+function $serverMailService_engagementMailRecipientIndexStateRef() {
+  if (!$serverMailService_engagementMailRecipientIndexStateRef.instance) $serverMailService_engagementMailRecipientIndexStateRef.instance = require("./backend/server-mail-service/engagement-mail-recipient-index-state-ref").createMailService_engagementMailRecipientIndexStateRef({
+    get ENGAGEMENT_MAIL_CAPABILITIES() { return ENGAGEMENT_MAIL_CAPABILITIES; },
+    get ENGAGEMENT_MAIL_RECIPIENT_INDEX_STATE_COLLECTION() { return ENGAGEMENT_MAIL_RECIPIENT_INDEX_STATE_COLLECTION; },
+    get ENGAGEMENT_MAIL_RECIPIENT_SHARD_COUNT() { return ENGAGEMENT_MAIL_RECIPIENT_SHARD_COUNT; },
+    get local$engagementMailRecipientShardRef() { return $serverMailService_engagementMailRecipientShardRef().engagementMailRecipientShardRef; }
+  });
+  return $serverMailService_engagementMailRecipientIndexStateRef.instance;
+}
+
+function $serverMailService_engagementMailRecipientIndexKey() {
+  if (!$serverMailService_engagementMailRecipientIndexKey.instance) $serverMailService_engagementMailRecipientIndexKey.instance = require("./backend/server-mail-service/engagement-mail-recipient-index-key").createMailService_engagementMailRecipientIndexKey({
+    get stableHash() { return stableHash; }
+  });
+  return $serverMailService_engagementMailRecipientIndexKey.instance;
+}
+
+function $serverMailService_assertEngagementClubAdminDirectorySize() {
+  if (!$serverMailService_assertEngagementClubAdminDirectorySize.instance) $serverMailService_assertEngagementClubAdminDirectorySize.instance = require("./backend/server-mail-service/assert-engagement-club-admin-directory-size").createMailService_assertEngagementClubAdminDirectorySize({
+    get ENGAGEMENT_CLUB_ADMIN_DIRECTORY_COLLECTION() { return ENGAGEMENT_CLUB_ADMIN_DIRECTORY_COLLECTION; },
+    get ENGAGEMENT_CLUB_ADMIN_DIRECTORY_MAX_BYTES() { return ENGAGEMENT_CLUB_ADMIN_DIRECTORY_MAX_BYTES; },
+    get cleanFirestoreValue() { return cleanFirestoreValue; },
+    get cleanText() { return cleanText; },
+    get normalizeEmail() { return normalizeEmail; },
+    get local$engagementRecipientHasCapability() { return $serverMailService_engagementRecipientHasCapability().engagementRecipientHasCapability; }
+  });
+  return $serverMailService_assertEngagementClubAdminDirectorySize.instance;
+}
+
+function $serverMailService_engagementClubAdminDirectoryMap() {
+  if (!$serverMailService_engagementClubAdminDirectoryMap.instance) $serverMailService_engagementClubAdminDirectoryMap.instance = require("./backend/server-mail-service/engagement-club-admin-directory-map").createMailService_engagementClubAdminDirectoryMap({
+    get local$assertEngagementClubAdminDirectorySize() { return $serverMailService_assertEngagementClubAdminDirectorySize().assertEngagementClubAdminDirectorySize; },
+    get local$engagementClubAdminDirectoryEntry() { return $serverMailService_assertEngagementClubAdminDirectorySize().engagementClubAdminDirectoryEntry; },
+    get local$engagementClubAdminDirectoryRef() { return $serverMailService_assertEngagementClubAdminDirectorySize().engagementClubAdminDirectoryRef; },
+    get local$engagementMailRecipientIndexKey() { return $serverMailService_engagementMailRecipientIndexKey().engagementMailRecipientIndexKey; }
+  });
+  return $serverMailService_engagementClubAdminDirectoryMap.instance;
+}
+
+function $serverMailService_updateEngagementClubAdminDirectory() {
+  if (!$serverMailService_updateEngagementClubAdminDirectory.instance) $serverMailService_updateEngagementClubAdminDirectory.instance = require("./backend/server-mail-service/update-engagement-club-admin-directory").createMailService_updateEngagementClubAdminDirectory({
+    get cleanText() { return cleanText; },
+    get local$assertEngagementClubAdminDirectorySize() { return $serverMailService_assertEngagementClubAdminDirectorySize().assertEngagementClubAdminDirectorySize; },
+    get local$engagementClubAdminDirectoryEntry() { return $serverMailService_assertEngagementClubAdminDirectorySize().engagementClubAdminDirectoryEntry; },
+    get local$engagementClubAdminDirectoryRef() { return $serverMailService_assertEngagementClubAdminDirectorySize().engagementClubAdminDirectoryRef; },
+    get local$engagementMailRecipientIndexKey() { return $serverMailService_engagementMailRecipientIndexKey().engagementMailRecipientIndexKey; }
+  });
+  return $serverMailService_updateEngagementClubAdminDirectory.instance;
+}
+
+function $serverMailService_readEngagementClubAdminDirectory() {
+  if (!$serverMailService_readEngagementClubAdminDirectory.instance) $serverMailService_readEngagementClubAdminDirectory.instance = require("./backend/server-mail-service/read-engagement-club-admin-directory").createMailService_readEngagementClubAdminDirectory({
+    get cleanText() { return cleanText; },
+    get local$engagementClubAdminDirectoryRef() { return $serverMailService_assertEngagementClubAdminDirectorySize().engagementClubAdminDirectoryRef; },
+    get local$engagementMailRecipientIndexStateRef() { return $serverMailService_engagementMailRecipientIndexStateRef().engagementMailRecipientIndexStateRef; },
+    get local$engagementMailRecipientsFromIndex() { return $serverMailService_engagementMailRecipientIndexStateRef().engagementMailRecipientsFromIndex; },
+    get local$writeEngagementClubAdminDirectory() { return $serverMailService_engagementClubAdminDirectoryMap().writeEngagementClubAdminDirectory; }
+  });
+  return $serverMailService_readEngagementClubAdminDirectory.instance;
+}
+
+function $serverMailService_engagementMailRecipientShardGroups() {
+  if (!$serverMailService_engagementMailRecipientShardGroups.instance) $serverMailService_engagementMailRecipientShardGroups.instance = require("./backend/server-mail-service/engagement-mail-recipient-shard-groups").createMailService_engagementMailRecipientShardGroups({
+    get ENGAGEMENT_MAIL_CAPABILITIES() { return ENGAGEMENT_MAIL_CAPABILITIES; },
+    get local$engagementMailRecipientIndexKey() { return $serverMailService_engagementMailRecipientIndexKey().engagementMailRecipientIndexKey; },
+    get local$engagementMailRecipientShardNumber() { return $serverMailService_engagementMailRecipientShardNumber().engagementMailRecipientShardNumber; }
+  });
+  return $serverMailService_engagementMailRecipientShardGroups.instance;
+}
+
+function $serverMailService_bootstrapEngagementMailRecipientIndex() {
+  if (!$serverMailService_bootstrapEngagementMailRecipientIndex.instance) $serverMailService_bootstrapEngagementMailRecipientIndex.instance = require("./backend/server-mail-service/bootstrap-engagement-mail-recipient-index").createMailService_bootstrapEngagementMailRecipientIndex({
+    get ENGAGEMENT_MAIL_CAPABILITIES() { return ENGAGEMENT_MAIL_CAPABILITIES; },
+    get ENGAGEMENT_MAIL_RECIPIENT_BOOTSTRAP_LIMIT() { return ENGAGEMENT_MAIL_RECIPIENT_BOOTSTRAP_LIMIT; },
+    get FieldPath() { return FieldPath; },
+    get HttpsError() { return HttpsError; },
+    get local$engagementMailRecipientFromUserDoc() { return $serverMailService_engagementMailRecipientFromUserDoc().engagementMailRecipientFromUserDoc; },
+    get local$engagementMailRecipientIndexStateRef() { return $serverMailService_engagementMailRecipientIndexStateRef().engagementMailRecipientIndexStateRef; },
+    get local$engagementMailRecipientShardGroups() { return $serverMailService_engagementMailRecipientShardGroups().engagementMailRecipientShardGroups; },
+    get local$engagementMailRecipientShardRef() { return $serverMailService_engagementMailRecipientShardRef().engagementMailRecipientShardRef; },
+    get local$engagementMailRecipientShardRefs() { return $serverMailService_engagementMailRecipientIndexStateRef().engagementMailRecipientShardRefs; },
+    get local$engagementMailRecipientsFromIndex() { return $serverMailService_engagementMailRecipientIndexStateRef().engagementMailRecipientsFromIndex; },
+    get local$engagementRecipientHasCapability() { return $serverMailService_engagementRecipientHasCapability().engagementRecipientHasCapability; },
+    get local$writeEngagementClubAdminDirectory() { return $serverMailService_engagementClubAdminDirectoryMap().writeEngagementClubAdminDirectory; }
+  });
+  return $serverMailService_bootstrapEngagementMailRecipientIndex.instance;
+}
+
+function $serverMailService_engagementRecipientHasCapability() {
+  if (!$serverMailService_engagementRecipientHasCapability.instance) $serverMailService_engagementRecipientHasCapability.instance = require("./backend/server-mail-service/engagement-recipient-has-capability").createMailService_engagementRecipientHasCapability({
+
+  });
+  return $serverMailService_engagementRecipientHasCapability.instance;
+}
+
+function $serverMailService_engagementCompetitionDocumentRecipients() {
+  if (!$serverMailService_engagementCompetitionDocumentRecipients.instance) $serverMailService_engagementCompetitionDocumentRecipients.instance = require("./backend/server-mail-service/engagement-competition-document-recipients").createMailService_engagementCompetitionDocumentRecipients({
+    get cleanEngagementCompetitionLevel() { return cleanEngagementCompetitionLevel; },
+    get cleanEngagementRegionIds() { return cleanEngagementRegionIds; },
+    get cleanText() { return cleanText; },
+    get isNationalOnlyEngagementCompetitionLevel() { return isNationalOnlyEngagementCompetitionLevel; },
+    get normalizeEmail() { return normalizeEmail; },
+    get normalizedEngagementRegionKey() { return normalizedEngagementRegionKey; },
+    get local$engagementRecipientHasCapability() { return $serverMailService_engagementRecipientHasCapability().engagementRecipientHasCapability; }
+  });
+  return $serverMailService_engagementCompetitionDocumentRecipients.instance;
+}
+
+function $serverMailService_engagementActiveClubMailRecipients() {
+  if (!$serverMailService_engagementActiveClubMailRecipients.instance) $serverMailService_engagementActiveClubMailRecipients.instance = require("./backend/server-mail-service/engagement-active-club-mail-recipients").createMailService_engagementActiveClubMailRecipients({
+    get local$engagementActiveMailRecipients() { return $serverMailService_bootstrapEngagementMailRecipientIndex().engagementActiveMailRecipients; },
+    get local$engagementRecipientHasCapability() { return $serverMailService_engagementRecipientHasCapability().engagementRecipientHasCapability; }
+  });
+  return $serverMailService_engagementActiveClubMailRecipients.instance;
+}
+
+function $serverMailService_engagementMailRecipientFromContext() {
+  if (!$serverMailService_engagementMailRecipientFromContext.instance) $serverMailService_engagementMailRecipientFromContext.instance = require("./backend/server-mail-service/engagement-mail-recipient-from-context").createMailService_engagementMailRecipientFromContext({
+    get cleanText() { return cleanText; },
+    get normalizeEmail() { return normalizeEmail; }
+  });
+  return $serverMailService_engagementMailRecipientFromContext.instance;
+}
+
+function $serverMailService_engagementCompetitionDocumentMailSubject() {
+  if (!$serverMailService_engagementCompetitionDocumentMailSubject.instance) $serverMailService_engagementCompetitionDocumentMailSubject.instance = require("./backend/server-mail-service/engagement-competition-document-mail-subject").createMailService_engagementCompetitionDocumentMailSubject({
+    get ENVIRONMENT() { return ENVIRONMENT; },
+    get competitionMailLines() { return competitionMailLines; }
+  });
+  return $serverMailService_engagementCompetitionDocumentMailSubject.instance;
+}
+
+function $serverMailService_engagementCompetitionDocumentMailHtml() {
+  if (!$serverMailService_engagementCompetitionDocumentMailHtml.instance) $serverMailService_engagementCompetitionDocumentMailHtml.instance = require("./backend/server-mail-service/engagement-competition-document-mail-html").createMailService_engagementCompetitionDocumentMailHtml({
+    get ENVIRONMENT() { return ENVIRONMENT; },
+    get competitionMailLines() { return competitionMailLines; },
+    get escapeMailHtml() { return escapeMailHtml; }
+  });
+  return $serverMailService_engagementCompetitionDocumentMailHtml.instance;
+}
+
+function $serverMailService_engagementRecipientsByClub() {
+  if (!$serverMailService_engagementRecipientsByClub.instance) $serverMailService_engagementRecipientsByClub.instance = require("./backend/server-mail-service/engagement-recipients-by-club").createMailService_engagementRecipientsByClub({
+    get cleanText() { return cleanText; }
+  });
+  return $serverMailService_engagementRecipientsByClub.instance;
+}
+
+function $serverMailService_engagementOpeningMailSubject() {
+  if (!$serverMailService_engagementOpeningMailSubject.instance) $serverMailService_engagementOpeningMailSubject.instance = require("./backend/server-mail-service/engagement-opening-mail-subject").createMailService_engagementOpeningMailSubject({
+    get ENVIRONMENT() { return ENVIRONMENT; },
+    get competitionMailDateTime() { return competitionMailDateTime; },
+    get competitionMailLines() { return competitionMailLines; }
+  });
+  return $serverMailService_engagementOpeningMailSubject.instance;
+}
+
+function $serverMailService_engagementClubRecapMailSubject() {
+  if (!$serverMailService_engagementClubRecapMailSubject.instance) $serverMailService_engagementClubRecapMailSubject.instance = require("./backend/server-mail-service/engagement-club-recap-mail-subject").createMailService_engagementClubRecapMailSubject({
+    get ENVIRONMENT() { return ENVIRONMENT; },
+    get competitionMailLines() { return competitionMailLines; },
+    get engagementPdfFeeTotal() { return engagementPdfFeeTotal; },
+    get engagementPdfMoney() { return engagementPdfMoney; }
+  });
+  return $serverMailService_engagementClubRecapMailSubject.instance;
+}
+
+function $serverMailService_engagementMailJobItemFromData() {
+  if (!$serverMailService_engagementMailJobItemFromData.instance) $serverMailService_engagementMailJobItemFromData.instance = require("./backend/server-mail-service/engagement-mail-job-item-from-data").createMailService_engagementMailJobItemFromData({
+    get cleanFirestoreValue() { return cleanFirestoreValue; },
+    get cleanText() { return cleanText; },
+    get engagementClubCode() { return engagementClubCode; },
+    get engagementMailStatusLabel() { return engagementMailStatusLabel; },
+    get normalizeEmail() { return normalizeEmail; }
+  });
+  return $serverMailService_engagementMailJobItemFromData.instance;
+}
+
+function $serverMailService_engagementMailAttachments() {
+  if (!$serverMailService_engagementMailAttachments.instance) $serverMailService_engagementMailAttachments.instance = require("./backend/server-mail-service/engagement-mail-attachments").createMailService_engagementMailAttachments({
+    get cleanText() { return cleanText; },
+    get crypto() { return crypto; },
+    get readStoredEngagementClubRecapPdf() { return readStoredEngagementClubRecapPdf; }
+  });
+  return $serverMailService_engagementMailAttachments.instance;
+}
+
+function $serverMailService_engagementMailWithNotificationPreferenceFooter() {
+  if (!$serverMailService_engagementMailWithNotificationPreferenceFooter.instance) $serverMailService_engagementMailWithNotificationPreferenceFooter.instance = require("./backend/server-mail-service/engagement-mail-with-notification-preference-footer").createMailService_engagementMailWithNotificationPreferenceFooter({
+    get ENVIRONMENT() { return ENVIRONMENT; },
+    get OPTIONAL_COMPETITION_MAIL_TYPES() { return OPTIONAL_COMPETITION_MAIL_TYPES; },
+    get cleanFirestoreValue() { return cleanFirestoreValue; },
+    get cleanText() { return cleanText; },
+    get competitionNotificationPreferenceUrl() { return competitionNotificationPreferenceUrl; },
+    get db() { return db; },
+    get escapeMailHtml() { return escapeMailHtml; },
+    get livePalmesMailHtml() { return livePalmesMailHtml; },
+    get normalizeEmail() { return normalizeEmail; },
+    get local$engagementMailAttachments() { return $serverMailService_engagementMailAttachments().engagementMailAttachments; },
+    get local$engagementMailJobItemFromData() { return $serverMailService_engagementMailJobItemFromData().engagementMailJobItemFromData; }
+  });
+  return $serverMailService_engagementMailWithNotificationPreferenceFooter.instance;
+}
+
+function $serverClubPeopleService_cleanEngagementClubPerson() {
+  if (!$serverClubPeopleService_cleanEngagementClubPerson.instance) $serverClubPeopleService_cleanEngagementClubPerson.instance = require("./backend/server-club-people-service/clean-engagement-club-person").createClubPeopleService_cleanEngagementClubPerson({
+    get ENGAGEMENT_SWIMMER_LICENSE_PATTERN() { return ENGAGEMENT_SWIMMER_LICENSE_PATTERN; },
+    get HttpsError() { return HttpsError; },
+    get cleanIsoDate() { return cleanIsoDate; },
+    get cleanText() { return cleanText; },
+    get db() { return db; },
+    get engagementSwimmerIdentityKey() { return engagementSwimmerIdentityKey; },
+    get engagementSwimmerLicenseNumberKey() { return engagementSwimmerLicenseNumberKey; },
+    get local$engagementClubPeopleRosterPersonItem() { return $serverClubPeopleService_engagementClubPeopleRosterPersonItem().engagementClubPeopleRosterPersonItem; },
+    get local$engagementClubPersonItem() { return $serverClubPeopleService_engagementClubPersonItem().engagementClubPersonItem; }
+  });
+  return $serverClubPeopleService_cleanEngagementClubPerson.instance;
+}
+
+function $serverClubPeopleService_engagementClubPersonItem() {
+  if (!$serverClubPeopleService_engagementClubPersonItem.instance) $serverClubPeopleService_engagementClubPersonItem.instance = require("./backend/server-club-people-service/engagement-club-person-item").createClubPeopleService_engagementClubPersonItem({
+    get cleanIsoDate() { return cleanIsoDate; },
+    get cleanText() { return cleanText; }
+  });
+  return $serverClubPeopleService_engagementClubPersonItem.instance;
+}
+
+function $serverClubPeopleService_engagementClubPeopleRosterId() {
+  if (!$serverClubPeopleService_engagementClubPeopleRosterId.instance) $serverClubPeopleService_engagementClubPeopleRosterId.instance = require("./backend/server-club-people-service/engagement-club-people-roster-id").createClubPeopleService_engagementClubPeopleRosterId({
+    get ENGAGEMENT_CLUB_PEOPLE_ROSTERS_COLLECTION() { return ENGAGEMENT_CLUB_PEOPLE_ROSTERS_COLLECTION; },
+    get cleanText() { return cleanText; },
+    get stableHash() { return stableHash; }
+  });
+  return $serverClubPeopleService_engagementClubPeopleRosterId.instance;
+}
+
+function $serverClubPeopleService_engagementClubPeopleRosterPersonItem() {
+  if (!$serverClubPeopleService_engagementClubPeopleRosterPersonItem.instance) $serverClubPeopleService_engagementClubPeopleRosterPersonItem.instance = require("./backend/server-club-people-service/engagement-club-people-roster-person-item").createClubPeopleService_engagementClubPeopleRosterPersonItem({
+    get cleanFirestoreValue() { return cleanFirestoreValue; },
+    get cleanIsoDate() { return cleanIsoDate; },
+    get cleanText() { return cleanText; }
+  });
+  return $serverClubPeopleService_engagementClubPeopleRosterPersonItem.instance;
+}
+
+function $serverClubPeopleService_engagementClubPeopleRosterPeopleFromData() {
+  if (!$serverClubPeopleService_engagementClubPeopleRosterPeopleFromData.instance) $serverClubPeopleService_engagementClubPeopleRosterPeopleFromData.instance = require("./backend/server-club-people-service/engagement-club-people-roster-people-from-data").createClubPeopleService_engagementClubPeopleRosterPeopleFromData({
+    get local$engagementClubPeopleRosterPersonItem() { return $serverClubPeopleService_engagementClubPeopleRosterPersonItem().engagementClubPeopleRosterPersonItem; }
+  });
+  return $serverClubPeopleService_engagementClubPeopleRosterPeopleFromData.instance;
+}
+
+function $serverClubPeopleService_upsertEngagementClubPeopleRosterPerson() {
+  if (!$serverClubPeopleService_upsertEngagementClubPeopleRosterPerson.instance) $serverClubPeopleService_upsertEngagementClubPeopleRosterPerson.instance = require("./backend/server-club-people-service/upsert-engagement-club-people-roster-person").createClubPeopleService_upsertEngagementClubPeopleRosterPerson({
+    get cleanText() { return cleanText; },
+    get local$deleteEngagementClubPeopleRosterPerson() { return $serverClubPeopleService_deleteEngagementClubPeopleRosterPerson().deleteEngagementClubPeopleRosterPerson; },
+    get local$engagementClubPeopleRosterPersonItem() { return $serverClubPeopleService_engagementClubPeopleRosterPersonItem().engagementClubPeopleRosterPersonItem; },
+    get local$engagementClubPeopleRosterRef() { return $serverClubPeopleService_engagementClubPeopleRosterId().engagementClubPeopleRosterRef; }
+  });
+  return $serverClubPeopleService_upsertEngagementClubPeopleRosterPerson.instance;
+}
+
+function $serverClubPeopleService_deleteEngagementClubPeopleRosterPerson() {
+  if (!$serverClubPeopleService_deleteEngagementClubPeopleRosterPerson.instance) $serverClubPeopleService_deleteEngagementClubPeopleRosterPerson.instance = require("./backend/server-club-people-service/delete-engagement-club-people-roster-person").createClubPeopleService_deleteEngagementClubPeopleRosterPerson({
+    get FieldValue() { return FieldValue; },
+    get cleanText() { return cleanText; },
+    get local$engagementClubPeopleRosterRef() { return $serverClubPeopleService_engagementClubPeopleRosterId().engagementClubPeopleRosterRef; }
+  });
+  return $serverClubPeopleService_deleteEngagementClubPeopleRosterPerson.instance;
+}
+
+function $serverClubPeopleService_rebuildEngagementClubPeopleRoster() {
+  if (!$serverClubPeopleService_rebuildEngagementClubPeopleRoster.instance) $serverClubPeopleService_rebuildEngagementClubPeopleRoster.instance = require("./backend/server-club-people-service/rebuild-engagement-club-people-roster").createClubPeopleService_rebuildEngagementClubPeopleRoster({
+    get cleanText() { return cleanText; },
+    get local$engagementClubPeopleRosterPeopleFromData() { return $serverClubPeopleService_engagementClubPeopleRosterPeopleFromData().engagementClubPeopleRosterPeopleFromData; },
+    get local$engagementClubPeopleRosterPersonItem() { return $serverClubPeopleService_engagementClubPeopleRosterPersonItem().engagementClubPeopleRosterPersonItem; },
+    get local$engagementClubPeopleRosterRef() { return $serverClubPeopleService_engagementClubPeopleRosterId().engagementClubPeopleRosterRef; },
+    get local$engagementClubPersonItem() { return $serverClubPeopleService_engagementClubPersonItem().engagementClubPersonItem; }
+  });
+  return $serverClubPeopleService_rebuildEngagementClubPeopleRoster.instance;
+}
+
+function $serverClubPeopleService_syncEngagementClubPeopleRosterFromChange() {
+  if (!$serverClubPeopleService_syncEngagementClubPeopleRosterFromChange.instance) $serverClubPeopleService_syncEngagementClubPeopleRosterFromChange.instance = require("./backend/server-club-people-service/sync-engagement-club-people-roster-from-change").createClubPeopleService_syncEngagementClubPeopleRosterFromChange({
+    get db() { return db; },
+    get local$deleteEngagementClubPeopleRosterPerson() { return $serverClubPeopleService_deleteEngagementClubPeopleRosterPerson().deleteEngagementClubPeopleRosterPerson; },
+    get local$engagementClubPersonItem() { return $serverClubPeopleService_engagementClubPersonItem().engagementClubPersonItem; },
+    get local$upsertEngagementClubPeopleRosterPerson() { return $serverClubPeopleService_upsertEngagementClubPeopleRosterPerson().upsertEngagementClubPeopleRosterPerson; }
+  });
+  return $serverClubPeopleService_syncEngagementClubPeopleRosterFromChange.instance;
+}
+
+function $serverClubPeopleService_engagementClubSwimmerItem() {
+  if (!$serverClubPeopleService_engagementClubSwimmerItem.instance) $serverClubPeopleService_engagementClubSwimmerItem.instance = require("./backend/server-club-people-service/engagement-club-swimmer-item").createClubPeopleService_engagementClubSwimmerItem({
+    get cleanEngagementLicenseVerificationStatus() { return cleanEngagementLicenseVerificationStatus; },
+    get cleanFirestoreValue() { return cleanFirestoreValue; },
+    get cleanIsoDate() { return cleanIsoDate; },
+    get cleanText() { return cleanText; },
+    get currentEngagementCategoryFromBirthDate() { return currentEngagementCategoryFromBirthDate; },
+    get engagementLicenseSeasonState() { return engagementLicenseSeasonState; }
+  });
+  return $serverClubPeopleService_engagementClubSwimmerItem.instance;
+}
+
+function $serverClubPeopleService_engagementReferenceSwimmerItem() {
+  if (!$serverClubPeopleService_engagementReferenceSwimmerItem.instance) $serverClubPeopleService_engagementReferenceSwimmerItem.instance = require("./backend/server-club-people-service/engagement-reference-swimmer-item").createClubPeopleService_engagementReferenceSwimmerItem({
+    get cleanEngagementLicenseVerificationStatus() { return cleanEngagementLicenseVerificationStatus; },
+    get cleanFirestoreValue() { return cleanFirestoreValue; },
+    get cleanIsoDate() { return cleanIsoDate; },
+    get cleanText() { return cleanText; },
+    get currentEngagementCategoryFromBirthDate() { return currentEngagementCategoryFromBirthDate; },
+    get engagementLicenseSeasonState() { return engagementLicenseSeasonState; },
+    get engagementSwimmerIdentityKey() { return engagementSwimmerIdentityKey; }
+  });
+  return $serverClubPeopleService_engagementReferenceSwimmerItem.instance;
+}
+
+function $serverClubPeopleService_engagementReferenceClubSwimmers() {
+  if (!$serverClubPeopleService_engagementReferenceClubSwimmers.instance) $serverClubPeopleService_engagementReferenceClubSwimmers.instance = require("./backend/server-club-people-service/engagement-reference-club-swimmers").createClubPeopleService_engagementReferenceClubSwimmers({
+    get PERFORMANCE_SWIMMERS_COLLECTION() { return PERFORMANCE_SWIMMERS_COLLECTION; },
+    get cleanText() { return cleanText; },
+    get engagementClubRosterRef() { return engagementClubRosterRef; },
+    get engagementClubRosterSwimmerItem() { return engagementClubRosterSwimmerItem; },
+    get engagementClubRosterSwimmerKey() { return engagementClubRosterSwimmerKey; },
+    get engagementLegacySwimmerLicensesByClub() { return engagementLegacySwimmerLicensesByClub; },
+    get engagementNewSwimmerItem() { return engagementNewSwimmerItem; },
+    get intranapSwimmersIndex() { return intranapSwimmersIndex; },
+    get local$engagementClubSwimmerItem() { return $serverClubPeopleService_engagementClubSwimmerItem().engagementClubSwimmerItem; },
+    get local$engagementReferenceSwimmerItem() { return $serverClubPeopleService_engagementReferenceSwimmerItem().engagementReferenceSwimmerItem; },
+    get local$sortEngagementClubSwimmers() { return $serverClubPeopleService_engagementClubSwimmerMatchKeys().sortEngagementClubSwimmers; },
+    get local$uniqueEngagementClubSwimmers() { return $serverClubPeopleService_engagementClubSwimmerMatchKeys().uniqueEngagementClubSwimmers; }
+  });
+  return $serverClubPeopleService_engagementReferenceClubSwimmers.instance;
+}
+
+function $serverClubPeopleService_engagementClubSwimmerMatchKeys() {
+  if (!$serverClubPeopleService_engagementClubSwimmerMatchKeys.instance) $serverClubPeopleService_engagementClubSwimmerMatchKeys.instance = require("./backend/server-club-people-service/engagement-club-swimmer-match-keys").createClubPeopleService_engagementClubSwimmerMatchKeys({
+    get cleanIsoDate() { return cleanIsoDate; },
+    get cleanText() { return cleanText; },
+    get engagementClubRosterSwimmerItem() { return engagementClubRosterSwimmerItem; },
+    get engagementSwimmerLicenseNumberKey() { return engagementSwimmerLicenseNumberKey; },
+    get normalizePerformanceSearchText() { return normalizePerformanceSearchText; }
+  });
+  return $serverClubPeopleService_engagementClubSwimmerMatchKeys.instance;
+}
+
+function $serverClubPeopleService_syncEngagementClubRosterFromSwimmerChange() {
+  if (!$serverClubPeopleService_syncEngagementClubRosterFromSwimmerChange.instance) $serverClubPeopleService_syncEngagementClubRosterFromSwimmerChange.instance = require("./backend/server-club-people-service/sync-engagement-club-roster-from-swimmer-change").createClubPeopleService_syncEngagementClubRosterFromSwimmerChange({
+    get cleanText() { return cleanText; },
+    get db() { return db; },
+    get deleteEngagementClubRosterSwimmer() { return deleteEngagementClubRosterSwimmer; },
+    get deleteEngagementEntryTimeCache() { return deleteEngagementEntryTimeCache; },
+    get engagementClubRosterSwimmerItem() { return engagementClubRosterSwimmerItem; },
+    get engagementClubRosterSwimmerKey() { return engagementClubRosterSwimmerKey; },
+    get upsertEngagementClubRosterSwimmer() { return upsertEngagementClubRosterSwimmer; }
+  });
+  return $serverClubPeopleService_syncEngagementClubRosterFromSwimmerChange.instance;
+}
+
+function $serverClubPeopleService_reactivateEngagementClubRosterSwimmersFromPerformanceRows() {
+  if (!$serverClubPeopleService_reactivateEngagementClubRosterSwimmersFromPerformanceRows.instance) $serverClubPeopleService_reactivateEngagementClubRosterSwimmersFromPerformanceRows.instance = require("./backend/server-club-people-service/reactivate-engagement-club-roster-swimmers-from-performance-rows").createClubPeopleService_reactivateEngagementClubRosterSwimmersFromPerformanceRows({
+    get cleanEngagementClubActivityStatus() { return cleanEngagementClubActivityStatus; },
+    get cleanText() { return cleanText; },
+    get db() { return db; },
+    get engagementClubRosterRef() { return engagementClubRosterRef; },
+    get engagementClubRosterSwimmerItem() { return engagementClubRosterSwimmerItem; }
+  });
+  return $serverClubPeopleService_reactivateEngagementClubRosterSwimmersFromPerformanceRows.instance;
+}
+
+function $serverClubPeopleService_cleanIsoDateTime() {
+  if (!$serverClubPeopleService_cleanIsoDateTime.instance) $serverClubPeopleService_cleanIsoDateTime.instance = require("./backend/server-club-people-service/clean-iso-date-time").createClubPeopleService_cleanIsoDateTime({
+    get cleanText() { return cleanText; }
+  });
+  return $serverClubPeopleService_cleanIsoDateTime.instance;
+}
+
+function $serverClubPeopleService_cleanEngagementDeadlineAt() {
+  if (!$serverClubPeopleService_cleanEngagementDeadlineAt.instance) $serverClubPeopleService_cleanEngagementDeadlineAt.instance = require("./backend/server-club-people-service/clean-engagement-deadline-at").createClubPeopleService_cleanEngagementDeadlineAt({
+    get cleanEngagementEntryStatus() { return cleanEngagementEntryStatus; },
+    get local$cleanIsoDateTime() { return $serverClubPeopleService_cleanIsoDateTime().cleanIsoDateTime; }
+  });
+  return $serverClubPeopleService_cleanEngagementDeadlineAt.instance;
+}
+
+function $serverClubPeopleService_cleanEngagementRegionIds() {
+  if (!$serverClubPeopleService_cleanEngagementRegionIds.instance) $serverClubPeopleService_cleanEngagementRegionIds.instance = require("./backend/server-club-people-service/clean-engagement-region-ids").createClubPeopleService_cleanEngagementRegionIds({
+    get cleanText() { return cleanText; },
+    get normalizedEngagementRegionKey() { return normalizedEngagementRegionKey; }
+  });
+  return $serverClubPeopleService_cleanEngagementRegionIds.instance;
+}
+
+function $serverCompetitionService_cleanEngagementCompetitionPayload() {
+  if (!$serverCompetitionService_cleanEngagementCompetitionPayload.instance) $serverCompetitionService_cleanEngagementCompetitionPayload.instance = require("./backend/server-competition-service/clean-engagement-competition-payload").createCompetitionService_cleanEngagementCompetitionPayload({
+    get HttpsError() { return HttpsError; },
+    get cleanEngagementCompetitionEvents() { return cleanEngagementCompetitionEvents; },
+    get cleanEngagementCompetitionLevel() { return cleanEngagementCompetitionLevel; },
+    get cleanEngagementCompetitionType() { return cleanEngagementCompetitionType; },
+    get cleanEngagementDeadlineAt() { return cleanEngagementDeadlineAt; },
+    get cleanEngagementEntryStatus() { return cleanEngagementEntryStatus; },
+    get cleanEngagementFees() { return cleanEngagementFees; },
+    get cleanEngagementMaxEventsPerSwimmer() { return cleanEngagementMaxEventsPerSwimmer; },
+    get cleanEngagementMissingEntryTimeMode() { return cleanEngagementMissingEntryTimeMode; },
+    get cleanEngagementPoolLaneCount() { return cleanEngagementPoolLaneCount; },
+    get cleanEngagementPoolLength() { return cleanEngagementPoolLength; },
+    get cleanEngagementProgramSessions() { return cleanEngagementProgramSessions; },
+    get cleanEngagementQualificationTimesMode() { return cleanEngagementQualificationTimesMode; },
+    get cleanEngagementRegionIds() { return cleanEngagementRegionIds; },
+    get cleanEngagementTimingType() { return cleanEngagementTimingType; },
+    get cleanEngagementWaterBodyType() { return cleanEngagementWaterBodyType; },
+    get cleanIsoDate() { return cleanIsoDate; },
+    get cleanOptionalEmail() { return cleanOptionalEmail; },
+    get cleanPublicCalendarWhatsAppUrl() { return cleanPublicCalendarWhatsAppUrl; },
+    get cleanText() { return cleanText; },
+    get isEngagementOpeningDeadlinePast() { return isEngagementOpeningDeadlinePast; },
+    get isEngagementOpeningTooEarly() { return isEngagementOpeningTooEarly; },
+    get isNationalOnlyEngagementCompetitionLevel() { return isNationalOnlyEngagementCompetitionLevel; }
+  });
+  return $serverCompetitionService_cleanEngagementCompetitionPayload.instance;
+}
+
+function $serverCompetitionService_assertCanManageEngagementCompetition() {
+  if (!$serverCompetitionService_assertCanManageEngagementCompetition.instance) $serverCompetitionService_assertCanManageEngagementCompetition.instance = require("./backend/server-competition-service/assert-can-manage-engagement-competition").createCompetitionService_assertCanManageEngagementCompetition({
+    get HttpsError() { return HttpsError; },
+    get engagementRegionsMatch() { return engagementRegionsMatch; },
+    get isNationalOnlyEngagementCompetitionLevel() { return isNationalOnlyEngagementCompetitionLevel; }
+  });
+  return $serverCompetitionService_assertCanManageEngagementCompetition.instance;
+}
+
+function $serverCompetitionService_engagementEventIsPast() {
+  if (!$serverCompetitionService_engagementEventIsPast.instance) $serverCompetitionService_engagementEventIsPast.instance = require("./backend/server-competition-service/engagement-event-is-past").createCompetitionService_engagementEventIsPast({
+    get cleanIsoDate() { return cleanIsoDate; }
+  });
+  return $serverCompetitionService_engagementEventIsPast.instance;
+}
+
+function $serverCompetitionService_assertCanModifyEngagementEvent() {
+  if (!$serverCompetitionService_assertCanModifyEngagementEvent.instance) $serverCompetitionService_assertCanModifyEngagementEvent.instance = require("./backend/server-competition-service/assert-can-modify-engagement-event").createCompetitionService_assertCanModifyEngagementEvent({
+    get HttpsError() { return HttpsError; },
+    get local$assertCanManageEngagementCompetition() { return $serverCompetitionService_assertCanManageEngagementCompetition().assertCanManageEngagementCompetition; },
+    get local$engagementEventIsPast() { return $serverCompetitionService_engagementEventIsPast().engagementEventIsPast; }
+  });
+  return $serverCompetitionService_assertCanModifyEngagementEvent.instance;
+}
+
+function $serverCompetitionService_assertCanDeleteEngagementDocument() {
+  if (!$serverCompetitionService_assertCanDeleteEngagementDocument.instance) $serverCompetitionService_assertCanDeleteEngagementDocument.instance = require("./backend/server-competition-service/assert-can-delete-engagement-document").createCompetitionService_assertCanDeleteEngagementDocument({
+    get HttpsError() { return HttpsError; },
+    get LIVEPALMES_STORAGE_BUCKET() { return LIVEPALMES_STORAGE_BUCKET; },
+    get competitionDocumentDownloadUrl() { return competitionDocumentDownloadUrl; },
+    get db() { return db; },
+    get engagementAccessContext() { return engagementAccessContext; },
+    get storage() { return storage; },
+    get writeAuditLogOnce() { return writeAuditLogOnce; },
+    get local$assertCanManageEngagementCompetition() { return $serverCompetitionService_assertCanManageEngagementCompetition().assertCanManageEngagementCompetition; },
+    get local$engagementEventIsPast() { return $serverCompetitionService_engagementEventIsPast().engagementEventIsPast; },
+    get local$nativeDocumentAuthors() { return $serverCompetitionService_nativeDocumentAuthors().nativeDocumentAuthors; }
+  });
+  return $serverCompetitionService_assertCanDeleteEngagementDocument.instance;
+}
+
+function $serverCompetitionService_engagementDeletionRequestId() {
+  if (!$serverCompetitionService_engagementDeletionRequestId.instance) $serverCompetitionService_engagementDeletionRequestId.instance = require("./backend/server-competition-service/engagement-deletion-request-id").createCompetitionService_engagementDeletionRequestId({
+
+  });
+  return $serverCompetitionService_engagementDeletionRequestId.instance;
+}
+
+function $serverCompetitionService_assertEngagementClubWriteOpen() {
+  if (!$serverCompetitionService_assertEngagementClubWriteOpen.instance) $serverCompetitionService_assertEngagementClubWriteOpen.instance = require("./backend/server-competition-service/assert-engagement-club-write-open").createCompetitionService_assertEngagementClubWriteOpen({
+    get HttpsError() { return HttpsError; },
+    get cleanEngagementEntryStatus() { return cleanEngagementEntryStatus; },
+    get cleanIsoDateTime() { return cleanIsoDateTime; }
+  });
+  return $serverCompetitionService_assertEngagementClubWriteOpen.instance;
+}
+
+function $serverCompetitionService_nativePortalCalendarItems() {
+  if (!$serverCompetitionService_nativePortalCalendarItems.instance) $serverCompetitionService_nativePortalCalendarItems.instance = require("./backend/server-competition-service/native-portal-calendar-items").createCompetitionService_nativePortalCalendarItems({
+
+  });
+  return $serverCompetitionService_nativePortalCalendarItems.instance;
+}
+
+function $serverCompetitionService_nativeDocumentAuthors() {
+  if (!$serverCompetitionService_nativeDocumentAuthors.instance) $serverCompetitionService_nativeDocumentAuthors.instance = require("./backend/server-competition-service/native-document-authors").createCompetitionService_nativeDocumentAuthors({
+    get cleanText() { return cleanText; },
+    get getAuth() { return getAuth; }
+  });
+  return $serverCompetitionService_nativeDocumentAuthors.instance;
+}
+
+function $serverCompetitionService_nativePortalCompetition() {
+  if (!$serverCompetitionService_nativePortalCompetition.instance) $serverCompetitionService_nativePortalCompetition.instance = require("./backend/server-competition-service/native-portal-competition").createCompetitionService_nativePortalCompetition({
+    get ENGAGEMENT_EVENT_DEFINITION_BY_CODE() { return ENGAGEMENT_EVENT_DEFINITION_BY_CODE; },
+    get HttpsError() { return HttpsError; },
+    get local$nativeDocumentAuthors() { return $serverCompetitionService_nativeDocumentAuthors().nativeDocumentAuthors; }
+  });
+  return $serverCompetitionService_nativePortalCompetition.instance;
+}
+
+function $serverCompetitionService_createNativePortalCalendarRecord() {
+  if (!$serverCompetitionService_createNativePortalCalendarRecord.instance) $serverCompetitionService_createNativePortalCalendarRecord.instance = require("./backend/server-competition-service/create-native-portal-calendar-record").createCompetitionService_createNativePortalCalendarRecord({
+    get CLUB_REFERENCE_REGION_LABELS() { return CLUB_REFERENCE_REGION_LABELS; },
+    get HttpsError() { return HttpsError; },
+    get cleanEngagementCalendarEventPayload() { return cleanEngagementCalendarEventPayload; },
+    get db() { return db; },
+    get engagementRegionsMatch() { return engagementRegionsMatch; },
+    get writeAuditLogOnce() { return writeAuditLogOnce; },
+    get local$assertCanManageEngagementCompetition() { return $serverCompetitionService_assertCanManageEngagementCompetition().assertCanManageEngagementCompetition; },
+    get local$assertCanModifyEngagementEvent() { return $serverCompetitionService_assertCanModifyEngagementEvent().assertCanModifyEngagementEvent; },
+    get local$nativePortalCompetition() { return $serverCompetitionService_nativePortalCompetition().nativePortalCompetition; }
+  });
+  return $serverCompetitionService_createNativePortalCalendarRecord.instance;
+}
+
+function $serverCompetitionService_nativeClubEntryView() {
+  if (!$serverCompetitionService_nativeClubEntryView.instance) $serverCompetitionService_nativeClubEntryView.instance = require("./backend/server-competition-service/native-club-entry-view").createCompetitionService_nativeClubEntryView({
+    get ENGAGEMENT_EVENT_FORBIDDEN_CATEGORIES() { return ENGAGEMENT_EVENT_FORBIDDEN_CATEGORIES; },
+    get ageCategoryFromDates() { return ageCategoryFromDates; },
+    get birthYear() { return birthYear; },
+    get competitionYear() { return competitionYear; },
+    get importSeasonYear() { return importSeasonYear; }
+  });
+  return $serverCompetitionService_nativeClubEntryView.instance;
+}
+
+function $serverCompetitionService_engagementCompetitionDocumentUploader() {
+  if (!$serverCompetitionService_engagementCompetitionDocumentUploader.instance) $serverCompetitionService_engagementCompetitionDocumentUploader.instance = require("./backend/server-competition-service/engagement-competition-document-uploader").createCompetitionService_engagementCompetitionDocumentUploader({
+    get cleanText() { return cleanText; },
+    get normalizeEmail() { return normalizeEmail; }
+  });
+  return $serverCompetitionService_engagementCompetitionDocumentUploader.instance;
+}
+
+function $serverCompetitionService_assertEngagementCompetitionDocumentPath() {
+  if (!$serverCompetitionService_assertEngagementCompetitionDocumentPath.instance) $serverCompetitionService_assertEngagementCompetitionDocumentPath.instance = require("./backend/server-competition-service/assert-engagement-competition-document-path").createCompetitionService_assertEngagementCompetitionDocumentPath({
+    get ENGAGEMENT_COMPETITION_DOCUMENTS_STORAGE_PREFIX() { return ENGAGEMENT_COMPETITION_DOCUMENTS_STORAGE_PREFIX; },
+    get HttpsError() { return HttpsError; },
+    get cleanText() { return cleanText; }
+  });
+  return $serverCompetitionService_assertEngagementCompetitionDocumentPath.instance;
+}
+
+function $serverCompetitionService_engagementCompetitionDocumentContext() {
+  if (!$serverCompetitionService_engagementCompetitionDocumentContext.instance) $serverCompetitionService_engagementCompetitionDocumentContext.instance = require("./backend/server-competition-service/engagement-competition-document-context").createCompetitionService_engagementCompetitionDocumentContext({
+    get ENGAGEMENT_CALENDAR_EVENTS_COLLECTION() { return ENGAGEMENT_CALENDAR_EVENTS_COLLECTION; },
+    get HttpsError() { return HttpsError; },
+    get cleanText() { return cleanText; },
+    get db() { return db; },
+    get engagementAccessContext() { return engagementAccessContext; },
+    get local$assertCanManageEngagementCompetition() { return $serverCompetitionService_assertCanManageEngagementCompetition().assertCanManageEngagementCompetition; }
+  });
+  return $serverCompetitionService_engagementCompetitionDocumentContext.instance;
+}
+
+function $serverCompetitionService_nationalLibraryContext() {
+  if (!$serverCompetitionService_nationalLibraryContext.instance) $serverCompetitionService_nationalLibraryContext.instance = require("./backend/server-competition-service/national-library-context").createCompetitionService_nationalLibraryContext({
+    get ENVIRONMENT() { return ENVIRONMENT; },
+    get HttpsError() { return HttpsError; },
+    get engagementAccessContext() { return engagementAccessContext; }
+  });
+  return $serverCompetitionService_nationalLibraryContext.instance;
+}
+
+function $serverCompetitionService_manageNationalLibraryDocuments() {
+  if (!$serverCompetitionService_manageNationalLibraryDocuments.instance) $serverCompetitionService_manageNationalLibraryDocuments.instance = require("./backend/server-competition-service/manage-national-library-documents").createCompetitionService_manageNationalLibraryDocuments({
+    get HttpsError() { return HttpsError; },
+    get LIVEPALMES_STORAGE_BUCKET() { return LIVEPALMES_STORAGE_BUCKET; },
+    get competitionDocumentDownloadUrl() { return competitionDocumentDownloadUrl; },
+    get db() { return db; },
+    get storage() { return storage; },
+    get writeAuditLogOnce() { return writeAuditLogOnce; },
+    get local$nationalLibraryContext() { return $serverCompetitionService_nationalLibraryContext().nationalLibraryContext; }
+  });
+  return $serverCompetitionService_manageNationalLibraryDocuments.instance;
+}
+
+function $serverCompetitionService_notifyNationalLibraryDocument() {
+  if (!$serverCompetitionService_notifyNationalLibraryDocument.instance) $serverCompetitionService_notifyNationalLibraryDocument.instance = require("./backend/server-competition-service/notify-national-library-document").createCompetitionService_notifyNationalLibraryDocument({
+    get ENGAGEMENT_MAIL_JOBS_COLLECTION() { return ENGAGEMENT_MAIL_JOBS_COLLECTION; },
+    get ENVIRONMENT() { return ENVIRONMENT; },
+    get HttpsError() { return HttpsError; },
+    get crypto() { return crypto; },
+    get db() { return db; },
+    get engagementAccessContext() { return engagementAccessContext; },
+    get engagementCompetitionNotificationRecipients() { return engagementCompetitionNotificationRecipients; },
+    get engagementDedupMailRecipients() { return engagementDedupMailRecipients; },
+    get engagementMailRecipientIndexStateRef() { return engagementMailRecipientIndexStateRef; },
+    get engagementMailRecipientsFromIndex() { return engagementMailRecipientsFromIndex; },
+    get engagementMailSmtpConfig() { return engagementMailSmtpConfig; },
+    get engagementRecipientHasCapability() { return engagementRecipientHasCapability; },
+    get nodemailer() { return nodemailer; },
+    get sendEngagementMailJob() { return sendEngagementMailJob; },
+    get writeAuditLog() { return writeAuditLog; },
+    get local$assertCanManageEngagementCompetition() { return $serverCompetitionService_assertCanManageEngagementCompetition().assertCanManageEngagementCompetition; },
+    get local$enqueueNativeNotificationTask() { return $serverCompetitionService_enqueueNativeNotificationTask().enqueueNativeNotificationTask; },
+    get local$nationalLibraryContext() { return $serverCompetitionService_nationalLibraryContext().nationalLibraryContext; },
+    get local$nativeNotificationPreview() { return $serverCompetitionService_nativeNotificationPreview().nativeNotificationPreview; },
+    get local$nativePortalCompetition() { return $serverCompetitionService_nativePortalCompetition().nativePortalCompetition; }
+  });
+  return $serverCompetitionService_notifyNationalLibraryDocument.instance;
+}
+
+function $serverCompetitionService_generateNativeClubRecapPdf() {
+  if (!$serverCompetitionService_generateNativeClubRecapPdf.instance) $serverCompetitionService_generateNativeClubRecapPdf.instance = require("./backend/server-competition-service/generate-native-club-recap-pdf").createCompetitionService_generateNativeClubRecapPdf({
+    get HttpsError() { return HttpsError; },
+    get buildEngagementClubRecapPdf() { return buildEngagementClubRecapPdf; },
+    get engagementClubEntryHasParticipants() { return engagementClubEntryHasParticipants; },
+    get local$nativeClubEntryView() { return $serverCompetitionService_nativeClubEntryView().nativeClubEntryView; },
+    get local$nativePortalCompetition() { return $serverCompetitionService_nativePortalCompetition().nativePortalCompetition; }
+  });
+  return $serverCompetitionService_generateNativeClubRecapPdf.instance;
+}
+
+function $serverCompetitionService_nativeAdminCompetitionEntries() {
+  if (!$serverCompetitionService_nativeAdminCompetitionEntries.instance) $serverCompetitionService_nativeAdminCompetitionEntries.instance = require("./backend/server-competition-service/native-admin-competition-entries").createCompetitionService_nativeAdminCompetitionEntries({
+    get HttpsError() { return HttpsError; },
+    get ageCategoryFromDates() { return ageCategoryFromDates; },
+    get local$assertCanManageEngagementCompetition() { return $serverCompetitionService_assertCanManageEngagementCompetition().assertCanManageEngagementCompetition; },
+    get local$nativePortalCompetition() { return $serverCompetitionService_nativePortalCompetition().nativePortalCompetition; }
+  });
+  return $serverCompetitionService_nativeAdminCompetitionEntries.instance;
+}
+
+function $serverCompetitionService_nativeNotificationPreview() {
+  if (!$serverCompetitionService_nativeNotificationPreview.instance) $serverCompetitionService_nativeNotificationPreview.instance = require("./backend/server-competition-service/native-notification-preview").createCompetitionService_nativeNotificationPreview({
+    get HttpsError() { return HttpsError; },
+    get ageCategoryFromDates() { return ageCategoryFromDates; },
+    get cleanText() { return cleanText; },
+    get db() { return db; },
+    get engagementAccessContext() { return engagementAccessContext; },
+    get engagementClubEntryHasParticipants() { return engagementClubEntryHasParticipants; },
+    get engagementCompetitionDocumentRecipients() { return engagementCompetitionDocumentRecipients; },
+    get engagementCompetitionNotificationRecipients() { return engagementCompetitionNotificationRecipients; },
+    get engagementCompetitionOpeningRecipients() { return engagementCompetitionOpeningRecipients; },
+    get engagementDedupMailRecipients() { return engagementDedupMailRecipients; },
+    get engagementMailRecipientFromContext() { return engagementMailRecipientFromContext; },
+    get engagementMailRecipientIndexStateRef() { return engagementMailRecipientIndexStateRef; },
+    get engagementMailRecipientsFromIndex() { return engagementMailRecipientsFromIndex; },
+    get engagementRecipientHasCapability() { return engagementRecipientHasCapability; },
+    get local$assertCanManageEngagementCompetition() { return $serverCompetitionService_assertCanManageEngagementCompetition().assertCanManageEngagementCompetition; },
+    get local$nativePortalCompetition() { return $serverCompetitionService_nativePortalCompetition().nativePortalCompetition; }
+  });
+  return $serverCompetitionService_nativeNotificationPreview.instance;
+}
+
+function $serverCompetitionService_nativeNotificationAutomationServices() {
+  if (!$serverCompetitionService_nativeNotificationAutomationServices.instance) $serverCompetitionService_nativeNotificationAutomationServices.instance = require("./backend/server-competition-service/native-notification-automation-services").createCompetitionService_nativeNotificationAutomationServices({
+    get ENVIRONMENT() { return ENVIRONMENT; },
+    get FieldValue() { return FieldValue; },
+    get HttpsError() { return HttpsError; },
+    get LIVEPALMES_STORAGE_BUCKET() { return LIVEPALMES_STORAGE_BUCKET; },
+    get REGION() { return REGION; },
+    get ageCategoryFromDates() { return ageCategoryFromDates; },
+    get buildEngagementClubRecapPdf() { return buildEngagementClubRecapPdf; },
+    get buildEngagementCompetitionTxt() { return buildEngagementCompetitionTxt; },
+    get buildEngagementOfficialsPdf() { return buildEngagementOfficialsPdf; },
+    get db() { return db; },
+    get engagementClubEntryHasParticipants() { return engagementClubEntryHasParticipants; },
+    get engagementClubRecapMailSubject() { return engagementClubRecapMailSubject; },
+    get engagementClubRecapMailText() { return engagementClubRecapMailText; },
+    get engagementCompetitionDocumentMailSubject() { return engagementCompetitionDocumentMailSubject; },
+    get engagementCompetitionDocumentMailText() { return engagementCompetitionDocumentMailText; },
+    get engagementCompetitionDocumentRecipients() { return engagementCompetitionDocumentRecipients; },
+    get engagementCompetitionNotificationRecipients() { return engagementCompetitionNotificationRecipients; },
+    get engagementCompetitionOpeningRecipients() { return engagementCompetitionOpeningRecipients; },
+    get engagementDedupMailRecipients() { return engagementDedupMailRecipients; },
+    get engagementMailAttachments() { return engagementMailAttachments; },
+    get engagementMailJobId() { return engagementMailJobId; },
+    get engagementMailRecipientFromUserDoc() { return engagementMailRecipientFromUserDoc; },
+    get engagementMailRecipientIndexStateRef() { return engagementMailRecipientIndexStateRef; },
+    get engagementMailRecipientsFromIndex() { return engagementMailRecipientsFromIndex; },
+    get engagementMailSmtpConfig() { return engagementMailSmtpConfig; },
+    get engagementOfficialsMailSubject() { return engagementOfficialsMailSubject; },
+    get engagementOfficialsMailText() { return engagementOfficialsMailText; },
+    get engagementOfficialsPdfRows() { return engagementOfficialsPdfRows; },
+    get engagementOpeningMailSubject() { return engagementOpeningMailSubject; },
+    get engagementOpeningMailText() { return engagementOpeningMailText; },
+    get engagementPdfFileName() { return engagementPdfFileName; },
+    get engagementRecipientHasCapability() { return engagementRecipientHasCapability; },
+    get engagementTxtMailSubject() { return engagementTxtMailSubject; },
+    get engagementTxtMailText() { return engagementTxtMailText; },
+    get engagementTxtSwimmerCategory() { return engagementTxtSwimmerCategory; },
+    get livePalmesMailHtml() { return livePalmesMailHtml; },
+    get nodemailer() { return nodemailer; },
+    get normalizeEmail() { return normalizeEmail; },
+    get storage() { return storage; },
+    get local$nativePortalCompetition() { return $serverCompetitionService_nativePortalCompetition().nativePortalCompetition; }
+  });
+  return $serverCompetitionService_nativeNotificationAutomationServices.instance;
+}
+
+function $serverCompetitionService_enqueueNativeNotificationTask() {
+  if (!$serverCompetitionService_enqueueNativeNotificationTask.instance) $serverCompetitionService_enqueueNativeNotificationTask.instance = require("./backend/server-competition-service/enqueue-native-notification-task").createCompetitionService_enqueueNativeNotificationTask({
+    get db() { return db; },
+    get local$nativeNotificationTaskServices() { return $serverCompetitionService_nativeNotificationAutomationServices().nativeNotificationTaskServices; }
+  });
+  return $serverCompetitionService_enqueueNativeNotificationTask.instance;
+}
+
+function $serverCompetitionService_deliverNativeNotificationJobs() {
+  if (!$serverCompetitionService_deliverNativeNotificationJobs.instance) $serverCompetitionService_deliverNativeNotificationJobs.instance = require("./backend/server-competition-service/deliver-native-notification-jobs").createCompetitionService_deliverNativeNotificationJobs({
+    get ENVIRONMENT() { return ENVIRONMENT; },
+    get db() { return db; },
+    get engagementMailSmtpConfig() { return engagementMailSmtpConfig; },
+    get nodemailer() { return nodemailer; },
+    get sendEngagementMailJob() { return sendEngagementMailJob; }
+  });
+  return $serverCompetitionService_deliverNativeNotificationJobs.instance;
+}
+
+function $serverCompetitionService_armNativeCompetitionNotification() {
+  if (!$serverCompetitionService_armNativeCompetitionNotification.instance) $serverCompetitionService_armNativeCompetitionNotification.instance = require("./backend/server-competition-service/arm-native-competition-notification").createCompetitionService_armNativeCompetitionNotification({
+    get db() { return db; },
+    get local$assertCanManageEngagementCompetition() { return $serverCompetitionService_assertCanManageEngagementCompetition().assertCanManageEngagementCompetition; },
+    get local$enqueueNativeNotificationTask() { return $serverCompetitionService_enqueueNativeNotificationTask().enqueueNativeNotificationTask; },
+    get local$nativePortalCompetition() { return $serverCompetitionService_nativePortalCompetition().nativePortalCompetition; }
+  });
+  return $serverCompetitionService_armNativeCompetitionNotification.instance;
+}
+
+function $serverCompetitionService_prepareEngagementClubRecapEmailJobs() {
+  if (!$serverCompetitionService_prepareEngagementClubRecapEmailJobs.instance) $serverCompetitionService_prepareEngagementClubRecapEmailJobs.instance = require("./backend/server-competition-service/prepare-engagement-club-recap-email-jobs").createCompetitionService_prepareEngagementClubRecapEmailJobs({
+    get cleanText() { return cleanText; },
+    get engagementActiveClubMailRecipients() { return engagementActiveClubMailRecipients; },
+    get engagementClubEntryHasParticipants() { return engagementClubEntryHasParticipants; },
+    get engagementClubEntryItem() { return engagementClubEntryItem; },
+    get engagementClubRecapMailSubject() { return engagementClubRecapMailSubject; },
+    get engagementClubRecapMailText() { return engagementClubRecapMailText; },
+    get engagementCompetitionDetailItem() { return engagementCompetitionDetailItem; },
+    get engagementCompetitionNotificationRecipients() { return engagementCompetitionNotificationRecipients; },
+    get engagementMailPreparedStatus() { return engagementMailPreparedStatus; },
+    get engagementRecipientsByClub() { return engagementRecipientsByClub; },
+    get getOrCreateEngagementClubRecapPdf() { return getOrCreateEngagementClubRecapPdf; },
+    get upsertEngagementMailJob() { return upsertEngagementMailJob; }
+  });
+  return $serverCompetitionService_prepareEngagementClubRecapEmailJobs.instance;
+}
+
+function $serverCompetitionService_engagementClosureAutomationContext() {
+  if (!$serverCompetitionService_engagementClosureAutomationContext.instance) $serverCompetitionService_engagementClosureAutomationContext.instance = require("./backend/server-competition-service/engagement-closure-automation-context").createCompetitionService_engagementClosureAutomationContext({
+    get FieldValue() { return FieldValue; },
+    get cleanEngagementCompetitionType() { return cleanEngagementCompetitionType; },
+    get cleanEngagementEntryStatus() { return cleanEngagementEntryStatus; },
+    get cleanEngagementGeneratedFiles() { return cleanEngagementGeneratedFiles; },
+    get cleanFirestoreValue() { return cleanFirestoreValue; },
+    get cleanIsoDateTime() { return cleanIsoDateTime; },
+    get cleanText() { return cleanText; },
+    get engagementCompetitionDetailItem() { return engagementCompetitionDetailItem; },
+    get engagementMailPreparedStatus() { return engagementMailPreparedStatus; },
+    get engagementOfficialsMailSubject() { return engagementOfficialsMailSubject; },
+    get engagementOfficialsMailText() { return engagementOfficialsMailText; },
+    get engagementTxtMailSubject() { return engagementTxtMailSubject; },
+    get engagementTxtMailText() { return engagementTxtMailText; },
+    get getOrCreateEngagementCompetitionTxt() { return getOrCreateEngagementCompetitionTxt; },
+    get getOrCreateEngagementOfficialsPdf() { return getOrCreateEngagementOfficialsPdf; },
+    get normalizeEmail() { return normalizeEmail; },
+    get upsertEngagementMailJob() { return upsertEngagementMailJob; },
+    get writeAuditLog() { return writeAuditLog; },
+    get local$prepareEngagementClubRecapEmailJobs() { return $serverCompetitionService_prepareEngagementClubRecapEmailJobs().prepareEngagementClubRecapEmailJobs; },
+    get local$sendEngagementPreparedEmailJobs() { return $serverCompetitionService_sendEngagementPreparedEmailJobs().sendEngagementPreparedEmailJobs; }
+  });
+  return $serverCompetitionService_engagementClosureAutomationContext.instance;
+}
+
+function $serverCompetitionService_sendEngagementPreparedEmailJobs() {
+  if (!$serverCompetitionService_sendEngagementPreparedEmailJobs.instance) $serverCompetitionService_sendEngagementPreparedEmailJobs.instance = require("./backend/server-competition-service/send-engagement-prepared-email-jobs").createCompetitionService_sendEngagementPreparedEmailJobs({
+    get ENGAGEMENT_MAIL_CAPABILITIES() { return ENGAGEMENT_MAIL_CAPABILITIES; },
+    get ENGAGEMENT_MAIL_JOBS_COLLECTION() { return ENGAGEMENT_MAIL_JOBS_COLLECTION; },
+    get HttpsError() { return HttpsError; },
+    get OPTIONAL_COMPETITION_MAIL_TYPES() { return OPTIONAL_COMPETITION_MAIL_TYPES; },
+    get cleanText() { return cleanText; },
+    get engagementActiveMailRecipients() { return engagementActiveMailRecipients; },
+    get engagementClubEntryHasParticipants() { return engagementClubEntryHasParticipants; },
+    get engagementClubEntryItem() { return engagementClubEntryItem; },
+    get engagementCompetitionNotificationRecipients() { return engagementCompetitionNotificationRecipients; },
+    get engagementMailSmtpConfig() { return engagementMailSmtpConfig; },
+    get nodemailer() { return nodemailer; },
+    get sendEngagementMailJob() { return sendEngagementMailJob; }
+  });
+  return $serverCompetitionService_sendEngagementPreparedEmailJobs.instance;
+}
+
+function $serverCompetitionService_resolveEngagementClubPersonSwimmer() {
+  if (!$serverCompetitionService_resolveEngagementClubPersonSwimmer.instance) $serverCompetitionService_resolveEngagementClubPersonSwimmer.instance = require("./backend/server-competition-service/resolve-engagement-club-person-swimmer").createCompetitionService_resolveEngagementClubPersonSwimmer({
+    get HttpsError() { return HttpsError; },
+    get cleanText() { return cleanText; },
+    get engagementClubRosterRef() { return engagementClubRosterRef; },
+    get engagementClubRosterSwimmersFromData() { return engagementClubRosterSwimmersFromData; }
+  });
+  return $serverCompetitionService_resolveEngagementClubPersonSwimmer.instance;
+}
+
+function $serverCompetitionService_saveNativeClubOfficials() {
+  if (!$serverCompetitionService_saveNativeClubOfficials.instance) $serverCompetitionService_saveNativeClubOfficials.instance = require("./backend/server-competition-service/save-native-club-officials").createCompetitionService_saveNativeClubOfficials({
+    get ENGAGEMENT_EVENT_DEFINITION_BY_CODE() { return ENGAGEMENT_EVENT_DEFINITION_BY_CODE; },
+    get HttpsError() { return HttpsError; },
+    get db() { return db; },
+    get writeAuditLogOnce() { return writeAuditLogOnce; },
+    get local$nativeClubEntryView() { return $serverCompetitionService_nativeClubEntryView().nativeClubEntryView; }
+  });
+  return $serverCompetitionService_saveNativeClubOfficials.instance;
+}
+
+function $serverNationalService_importSwimmerCreation() {
+  if (!$serverNationalService_importSwimmerCreation.instance) $serverNationalService_importSwimmerCreation.instance = require("./backend/server-national-service/import-swimmer-creation").createNationalService_importSwimmerCreation({
+    get ENVIRONMENT() { return ENVIRONMENT; },
+    get HttpsError() { return HttpsError; },
+    get authorizeNativePerformance() { return authorizeNativePerformance; },
+    get db() { return db; },
+    get engagementNewSwimmerAlertFromMatch() { return engagementNewSwimmerAlertFromMatch; },
+    get nativePerformanceFailure() { return nativePerformanceFailure; },
+    get writeAuditLogOnce() { return writeAuditLogOnce; }
+  });
+  return $serverNationalService_importSwimmerCreation.instance;
+}
+
+function $serverNationalService_nationalSwimmerSearchMatches() {
+  if (!$serverNationalService_nationalSwimmerSearchMatches.instance) $serverNationalService_nationalSwimmerSearchMatches.instance = require("./backend/server-national-service/national-swimmer-search-matches").createNationalService_nationalSwimmerSearchMatches({
+    get PERFORMANCE_SWIMMERS_COLLECTION() { return PERFORMANCE_SWIMMERS_COLLECTION; },
+    get cleanText() { return cleanText; },
+    get engagementSwimmerLicenseNumberKey() { return engagementSwimmerLicenseNumberKey; },
+    get normalizePerformanceSearchText() { return normalizePerformanceSearchText; },
+    get local$engagementNationalSwimmerItemFromDoc() { return $serverNationalService_engagementNationalSwimmerItemFromDoc().engagementNationalSwimmerItemFromDoc; }
+  });
+  return $serverNationalService_nationalSwimmerSearchMatches.instance;
+}
+
+function $serverNationalService_engagementLicenseControlSeason() {
+  if (!$serverNationalService_engagementLicenseControlSeason.instance) $serverNationalService_engagementLicenseControlSeason.instance = require("./backend/server-national-service/engagement-license-control-season").createNationalService_engagementLicenseControlSeason({
+    get HttpsError() { return HttpsError; },
+    get cleanText() { return cleanText; }
+  });
+  return $serverNationalService_engagementLicenseControlSeason.instance;
+}
+
+function $serverNationalService_engagementLicenseControlPerson() {
+  if (!$serverNationalService_engagementLicenseControlPerson.instance) $serverNationalService_engagementLicenseControlPerson.instance = require("./backend/server-national-service/engagement-license-control-person").createNationalService_engagementLicenseControlPerson({
+    get ENVIRONMENT() { return ENVIRONMENT; },
+    get cleanIsoDate() { return cleanIsoDate; },
+    get cleanText() { return cleanText; },
+    get db() { return db; },
+    get engagementMailRecipientIndexStateRef() { return engagementMailRecipientIndexStateRef; },
+    get engagementMailRecipientsFromIndex() { return engagementMailRecipientsFromIndex; },
+    get engagementMailSmtpConfig() { return engagementMailSmtpConfig; },
+    get livePalmesMailHtml() { return livePalmesMailHtml; },
+    get nodemailer() { return nodemailer; }
+  });
+  return $serverNationalService_engagementLicenseControlPerson.instance;
+}
+
+function $serverNationalService_engagementSwimmerIdentitySnapshot() {
+  if (!$serverNationalService_engagementSwimmerIdentitySnapshot.instance) $serverNationalService_engagementSwimmerIdentitySnapshot.instance = require("./backend/server-national-service/engagement-swimmer-identity-snapshot").createNationalService_engagementSwimmerIdentitySnapshot({
+    get cleanFirestoreValue() { return cleanFirestoreValue; },
+    get cleanIsoDate() { return cleanIsoDate; },
+    get cleanText() { return cleanText; }
+  });
+  return $serverNationalService_engagementSwimmerIdentitySnapshot.instance;
+}
+
+function $serverNationalService_cleanEngagementSwimmerIdentityCorrection() {
+  if (!$serverNationalService_cleanEngagementSwimmerIdentityCorrection.instance) $serverNationalService_cleanEngagementSwimmerIdentityCorrection.instance = require("./backend/server-national-service/clean-engagement-swimmer-identity-correction").createNationalService_cleanEngagementSwimmerIdentityCorrection({
+    get ENGAGEMENT_SWIMMER_LICENSE_PATTERN() { return ENGAGEMENT_SWIMMER_LICENSE_PATTERN; },
+    get HttpsError() { return HttpsError; },
+    get cleanIsoDate() { return cleanIsoDate; },
+    get cleanText() { return cleanText; },
+    get engagementSwimmerIdentityKey() { return engagementSwimmerIdentityKey; }
+  });
+  return $serverNationalService_cleanEngagementSwimmerIdentityCorrection.instance;
+}
+
+function $serverNationalService_findEngagementSwimmerCorrectionLicense() {
+  if (!$serverNationalService_findEngagementSwimmerCorrectionLicense.instance) $serverNationalService_findEngagementSwimmerCorrectionLicense.instance = require("./backend/server-national-service/find-engagement-swimmer-correction-license").createNationalService_findEngagementSwimmerCorrectionLicense({
+    get HttpsError() { return HttpsError; },
+    get PERFORMANCE_SWIMMERS_COLLECTION() { return PERFORMANCE_SWIMMERS_COLLECTION; },
+    get aggregateSwimmerIndexRows() { return aggregateSwimmerIndexRows; },
+    get cleanText() { return cleanText; },
+    get engagementClubSwimmerItem() { return engagementClubSwimmerItem; },
+    get engagementNewSwimmerItem() { return engagementNewSwimmerItem; },
+    get engagementReferenceSwimmerItem() { return engagementReferenceSwimmerItem; },
+    get engagementSwimmerLicenseId() { return engagementSwimmerLicenseId; },
+    get engagementSwimmerLicenseItem() { return engagementSwimmerLicenseItem; },
+    get findReferenceSwimmerCorrectionTarget() { return findReferenceSwimmerCorrectionTarget; },
+    get getPerformanceBaseRowsBySwimmer() { return getPerformanceBaseRowsBySwimmer; },
+    get intranapSwimmersIndex() { return intranapSwimmersIndex; }
+  });
+  return $serverNationalService_findEngagementSwimmerCorrectionLicense.instance;
+}
+
+function $serverNationalService_applyEngagementSwimmerIdentityCorrection() {
+  if (!$serverNationalService_applyEngagementSwimmerIdentityCorrection.instance) $serverNationalService_applyEngagementSwimmerIdentityCorrection.instance = require("./backend/server-national-service/apply-engagement-swimmer-identity-correction").createNationalService_applyEngagementSwimmerIdentityCorrection({
+    get ENGAGEMENT_SWIMMER_CORRECTION_ENTRY_PAGE_SIZE() { return ENGAGEMENT_SWIMMER_CORRECTION_ENTRY_PAGE_SIZE; },
+    get ENGAGEMENT_SWIMMER_CORRECTION_MAX_PERFORMANCE_ROWS() { return ENGAGEMENT_SWIMMER_CORRECTION_MAX_PERFORMANCE_ROWS; },
+    get ENGAGEMENT_SWIMMER_LICENSE_NUMBERS_COLLECTION() { return ENGAGEMENT_SWIMMER_LICENSE_NUMBERS_COLLECTION; },
+    get FieldPath() { return FieldPath; },
+    get HttpsError() { return HttpsError; },
+    get PERFORMANCE_SWIMMERS_COLLECTION() { return PERFORMANCE_SWIMMERS_COLLECTION; },
+    get PERFORMANCE_SWIMMER_PAGES_COLLECTION() { return PERFORMANCE_SWIMMER_PAGES_COLLECTION; },
+    get assertNoEngagementSwimmerLicenseConflict() { return assertNoEngagementSwimmerLicenseConflict; },
+    get cleanFirestoreValue() { return cleanFirestoreValue; },
+    get cleanText() { return cleanText; },
+    get currentEngagementCategoryFromBirthDate() { return currentEngagementCategoryFromBirthDate; },
+    get db() { return db; },
+    get deleteEngagementClubRosterSwimmer() { return deleteEngagementClubRosterSwimmer; },
+    get engagementClubSwimmerItem() { return engagementClubSwimmerItem; },
+    get engagementSwimmerLicenseId() { return engagementSwimmerLicenseId; },
+    get engagementSwimmerLicenseNumberId() { return engagementSwimmerLicenseNumberId; },
+    get engagementSwimmerLicenseNumberKey() { return engagementSwimmerLicenseNumberKey; },
+    get engagementSwimmerLicensePayload() { return engagementSwimmerLicensePayload; },
+    get getPerformanceBaseRowsBySwimmer() { return getPerformanceBaseRowsBySwimmer; },
+    get invalidateEngagementEntryTimeCachesForPerformanceRows() { return invalidateEngagementEntryTimeCachesForPerformanceRows; },
+    get performanceSwimmerIndexDocId() { return performanceSwimmerIndexDocId; },
+    get performanceSwimmerPageId() { return performanceSwimmerPageId; },
+    get publicSwimmerKey() { return publicSwimmerKey; },
+    get rebuildPublicPerformanceFilesForAffectedRows() { return rebuildPublicPerformanceFilesForAffectedRows; },
+    get rebuildPublicTopFilesForAffectedRows() { return rebuildPublicTopFilesForAffectedRows; },
+    get replacePublicSwimmerIdentity() { return replacePublicSwimmerIdentity; },
+    get stableHash() { return stableHash; },
+    get upsertEngagementClubRosterSwimmer() { return upsertEngagementClubRosterSwimmer; },
+    get writePerformanceBaseRows() { return writePerformanceBaseRows; },
+    get writePerformanceSwimmerIndexRows() { return writePerformanceSwimmerIndexRows; },
+    get writePerformanceSwimmerPageRows() { return writePerformanceSwimmerPageRows; },
+    get local$engagementSwimmerIdentitySnapshot() { return $serverNationalService_engagementSwimmerIdentitySnapshot().engagementSwimmerIdentitySnapshot; }
+  });
+  return $serverNationalService_applyEngagementSwimmerIdentityCorrection.instance;
+}
+
+function $serverNationalService_setEngagementSwimmerChangeRequestRosterState() {
+  if (!$serverNationalService_setEngagementSwimmerChangeRequestRosterState.instance) $serverNationalService_setEngagementSwimmerChangeRequestRosterState.instance = require("./backend/server-national-service/set-engagement-swimmer-change-request-roster-state").createNationalService_setEngagementSwimmerChangeRequestRosterState({
+    get db() { return db; },
+    get upsertEngagementClubRosterSwimmer() { return upsertEngagementClubRosterSwimmer; },
+    get local$engagementSwimmerIdentitySnapshot() { return $serverNationalService_engagementSwimmerIdentitySnapshot().engagementSwimmerIdentitySnapshot; }
+  });
+  return $serverNationalService_setEngagementSwimmerChangeRequestRosterState.instance;
+}
+
+function $serverNationalService_engagementSwimmerChangeRequestItem() {
+  if (!$serverNationalService_engagementSwimmerChangeRequestItem.instance) $serverNationalService_engagementSwimmerChangeRequestItem.instance = require("./backend/server-national-service/engagement-swimmer-change-request-item").createNationalService_engagementSwimmerChangeRequestItem({
+    get cleanFirestoreValue() { return cleanFirestoreValue; },
+    get cleanText() { return cleanText; },
+    get local$engagementSwimmerIdentitySnapshot() { return $serverNationalService_engagementSwimmerIdentitySnapshot().engagementSwimmerIdentitySnapshot; }
+  });
+  return $serverNationalService_engagementSwimmerChangeRequestItem.instance;
+}
+
+function $serverNationalService_sendEngagementSwimmerChangeResolutionNotification() {
+  if (!$serverNationalService_sendEngagementSwimmerChangeResolutionNotification.instance) $serverNationalService_sendEngagementSwimmerChangeResolutionNotification.instance = require("./backend/server-national-service/send-engagement-swimmer-change-resolution-notification").createNationalService_sendEngagementSwimmerChangeResolutionNotification({
+    get cleanText() { return cleanText; },
+    get engagementMailSmtpConfig() { return engagementMailSmtpConfig; },
+    get engagementSwimmerChangeResolutionMail() { return engagementSwimmerChangeResolutionMail; },
+    get livePalmesMailHtml() { return livePalmesMailHtml; },
+    get nodemailer() { return nodemailer; },
+    get normalizeEmail() { return normalizeEmail; }
+  });
+  return $serverNationalService_sendEngagementSwimmerChangeResolutionNotification.instance;
+}
+
+function $serverNationalService_engagementNationalAdministrationPendingCounts() {
+  if (!$serverNationalService_engagementNationalAdministrationPendingCounts.instance) $serverNationalService_engagementNationalAdministrationPendingCounts.instance = require("./backend/server-national-service/engagement-national-administration-pending-counts").createNationalService_engagementNationalAdministrationPendingCounts({
+    get ENGAGEMENT_SWIMMER_CHANGE_REQUESTS_COLLECTION() { return ENGAGEMENT_SWIMMER_CHANGE_REQUESTS_COLLECTION; },
+    get ENVIRONMENT() { return ENVIRONMENT; },
+    get db() { return db; }
+  });
+  return $serverNationalService_engagementNationalAdministrationPendingCounts.instance;
+}
+
+function $serverNationalService_deleteEngagementClubSwimmerPermanently() {
+  if (!$serverNationalService_deleteEngagementClubSwimmerPermanently.instance) $serverNationalService_deleteEngagementClubSwimmerPermanently.instance = require("./backend/server-national-service/delete-engagement-club-swimmer-permanently").createNationalService_deleteEngagementClubSwimmerPermanently({
+    get ENGAGEMENT_SWIMMER_LICENSE_NUMBERS_COLLECTION() { return ENGAGEMENT_SWIMMER_LICENSE_NUMBERS_COLLECTION; },
+    get PERFORMANCE_SWIMMERS_COLLECTION() { return PERFORMANCE_SWIMMERS_COLLECTION; },
+    get cleanText() { return cleanText; },
+    get db() { return db; },
+    get deleteEngagementClubRosterSwimmer() { return deleteEngagementClubRosterSwimmer; },
+    get engagementSwimmerLicenseNumberId() { return engagementSwimmerLicenseNumberId; },
+    get stableHash() { return stableHash; },
+    get writeAuditLog() { return writeAuditLog; }
+  });
+  return $serverNationalService_deleteEngagementClubSwimmerPermanently.instance;
+}
+
+function $serverNationalService_engagementNationalSwimmerCollectionForSource() {
+  if (!$serverNationalService_engagementNationalSwimmerCollectionForSource.instance) $serverNationalService_engagementNationalSwimmerCollectionForSource.instance = require("./backend/server-national-service/engagement-national-swimmer-collection-for-source").createNationalService_engagementNationalSwimmerCollectionForSource({
+    get ENGAGEMENT_SWIMMER_CORRECTION_MAX_PERFORMANCE_ROWS() { return ENGAGEMENT_SWIMMER_CORRECTION_MAX_PERFORMANCE_ROWS; },
+    get HttpsError() { return HttpsError; },
+    get PERFORMANCE_SWIMMERS_COLLECTION() { return PERFORMANCE_SWIMMERS_COLLECTION; },
+    get cleanText() { return cleanText; },
+    get db() { return db; },
+    get engagementClubSwimmerItem() { return engagementClubSwimmerItem; },
+    get performanceSwimmerIndexDocId() { return performanceSwimmerIndexDocId; },
+    get recoveredPerformanceRowsAreComplete() { return recoveredPerformanceRowsAreComplete; },
+    get writePerformanceSwimmerIndexRows() { return writePerformanceSwimmerIndexRows; },
+    get writePerformanceSwimmerPageRows() { return writePerformanceSwimmerPageRows; },
+    get local$engagementNationalSwimmerItemFromDoc() { return $serverNationalService_engagementNationalSwimmerItemFromDoc().engagementNationalSwimmerItemFromDoc; },
+    get local$getEngagementSwimmerCorrectionTarget() { return $serverNationalService_findEngagementSwimmerCorrectionLicense().getEngagementSwimmerCorrectionTarget; }
+  });
+  return $serverNationalService_engagementNationalSwimmerCollectionForSource.instance;
+}
+
+function $serverNationalService_engagementNationalSwimmerItemFromDoc() {
+  if (!$serverNationalService_engagementNationalSwimmerItemFromDoc.instance) $serverNationalService_engagementNationalSwimmerItemFromDoc.instance = require("./backend/server-national-service/engagement-national-swimmer-item-from-doc").createNationalService_engagementNationalSwimmerItemFromDoc({
+    get cleanText() { return cleanText; },
+    get engagementClubSwimmerItem() { return engagementClubSwimmerItem; },
+    get engagementNewSwimmerItem() { return engagementNewSwimmerItem; }
+  });
+  return $serverNationalService_engagementNationalSwimmerItemFromDoc.instance;
+}
+
+function $serverNationalService_engagementNationalSwimmerFullName() {
+  if (!$serverNationalService_engagementNationalSwimmerFullName.instance) $serverNationalService_engagementNationalSwimmerFullName.instance = require("./backend/server-national-service/engagement-national-swimmer-full-name").createNationalService_engagementNationalSwimmerFullName({
+
+  });
+  return $serverNationalService_engagementNationalSwimmerFullName.instance;
+}
+
+function $serverNationalService_engagementNationalSwimmerEntrySnapshot() {
+  if (!$serverNationalService_engagementNationalSwimmerEntrySnapshot.instance) $serverNationalService_engagementNationalSwimmerEntrySnapshot.instance = require("./backend/server-national-service/engagement-national-swimmer-entry-snapshot").createNationalService_engagementNationalSwimmerEntrySnapshot({
+    get HttpsError() { return HttpsError; },
+    get PERFORMANCE_BASE_COLLECTION() { return PERFORMANCE_BASE_COLLECTION; },
+    get cleanEngagementEntryIndividualEntries() { return cleanEngagementEntryIndividualEntries; },
+    get cleanEngagementEntrySwimmer() { return cleanEngagementEntrySwimmer; },
+    get cleanFirestoreValue() { return cleanFirestoreValue; },
+    get cleanIsoDate() { return cleanIsoDate; },
+    get cleanText() { return cleanText; },
+    get engagementSwimmerIdentityKey() { return engagementSwimmerIdentityKey; },
+    get getPerformanceBaseRowsBySwimmer() { return getPerformanceBaseRowsBySwimmer; },
+    get normalizeCategoryCode() { return normalizeCategoryCode; },
+    get performanceBaseDocId() { return performanceBaseDocId; },
+    get local$engagementNationalSwimmerFullName() { return $serverNationalService_engagementNationalSwimmerFullName().engagementNationalSwimmerFullName; }
+  });
+  return $serverNationalService_engagementNationalSwimmerEntrySnapshot.instance;
+}
+
+function $serverNationalService_searchEngagementNationalSwimmerMergeTargetDocs() {
+  if (!$serverNationalService_searchEngagementNationalSwimmerMergeTargetDocs.instance) $serverNationalService_searchEngagementNationalSwimmerMergeTargetDocs.instance = require("./backend/server-national-service/search-engagement-national-swimmer-merge-target-docs").createNationalService_searchEngagementNationalSwimmerMergeTargetDocs({
+    get PERFORMANCE_SWIMMERS_COLLECTION() { return PERFORMANCE_SWIMMERS_COLLECTION; },
+    get cleanText() { return cleanText; },
+    get normalizePerformanceSearchText() { return normalizePerformanceSearchText; },
+    get local$engagementNationalSwimmerFullName() { return $serverNationalService_engagementNationalSwimmerFullName().engagementNationalSwimmerFullName; }
+  });
+  return $serverNationalService_searchEngagementNationalSwimmerMergeTargetDocs.instance;
+}
+
+function $serverNationalService_activePerformanceRowsForNationalSwimmer() {
+  if (!$serverNationalService_activePerformanceRowsForNationalSwimmer.instance) $serverNationalService_activePerformanceRowsForNationalSwimmer.instance = require("./backend/server-national-service/active-performance-rows-for-national-swimmer").createNationalService_activePerformanceRowsForNationalSwimmer({
+    get cleanText() { return cleanText; },
+    get deletePublicPerformanceFile() { return deletePublicPerformanceFile; },
+    get getPerformanceBaseRowsBySwimmer() { return getPerformanceBaseRowsBySwimmer; },
+    get publicPerformanceBaseRow() { return publicPerformanceBaseRow; },
+    get publicPerformanceSwimmerFilePath() { return publicPerformanceSwimmerFilePath; },
+    get publicSwimmerKey() { return publicSwimmerKey; },
+    get readPublicPerformanceJson() { return readPublicPerformanceJson; },
+    get rebuildPublicPerformanceFilesForAffectedRows() { return rebuildPublicPerformanceFilesForAffectedRows; },
+    get rebuildPublicTopFilesForAffectedRows() { return rebuildPublicTopFilesForAffectedRows; },
+    get removePublicSearchIndexes() { return removePublicSearchIndexes; },
+    get replacePublicSwimmerIdentity() { return replacePublicSwimmerIdentity; },
+    get swimmerMergeIds() { return swimmerMergeIds; },
+    get uniquePublicPerformanceRows() { return uniquePublicPerformanceRows; }
+  });
+  return $serverNationalService_activePerformanceRowsForNationalSwimmer.instance;
+}
+
+function $serverNationalService_engagementClubPersonEntrySnapshot() {
+  if (!$serverNationalService_engagementClubPersonEntrySnapshot.instance) $serverNationalService_engagementClubPersonEntrySnapshot.instance = require("./backend/server-national-service/engagement-club-person-entry-snapshot").createNationalService_engagementClubPersonEntrySnapshot({
+    get cleanEngagementEntryOfficial() { return cleanEngagementEntryOfficial; },
+    get cleanText() { return cleanText; }
+  });
+  return $serverNationalService_engagementClubPersonEntrySnapshot.instance;
+}
+
+function $serverEntryService_buildEngagementClubSwimmersFromRequest() {
+  if (!$serverEntryService_buildEngagementClubSwimmersFromRequest.instance) $serverEntryService_buildEngagementClubSwimmersFromRequest.instance = require("./backend/server-entry-service/build-engagement-club-swimmers-from-request").createEntryService_buildEngagementClubSwimmersFromRequest({
+    get ENGAGEMENT_REQUIRE_ENTRY_SWIMMER_LICENSE() { return ENGAGEMENT_REQUIRE_ENTRY_SWIMMER_LICENSE; },
+    get ENGAGEMENT_SWIMMER_LICENSE_PATTERN() { return ENGAGEMENT_SWIMMER_LICENSE_PATTERN; },
+    get HttpsError() { return HttpsError; },
+    get PERFORMANCE_SWIMMERS_COLLECTION() { return PERFORMANCE_SWIMMERS_COLLECTION; },
+    get cleanEngagementCompetitionEvents() { return cleanEngagementCompetitionEvents; },
+    get cleanEngagementCompetitionType() { return cleanEngagementCompetitionType; },
+    get cleanEngagementEntryIndividualEntries() { return cleanEngagementEntryIndividualEntries; },
+    get cleanEngagementEntrySwimmer() { return cleanEngagementEntrySwimmer; },
+    get cleanEngagementLicenseVerificationStatus() { return cleanEngagementLicenseVerificationStatus; },
+    get cleanEngagementMaxEventsPerSwimmer() { return cleanEngagementMaxEventsPerSwimmer; },
+    get cleanEngagementMissingEntryTimeMode() { return cleanEngagementMissingEntryTimeMode; },
+    get cleanEngagementPoolLength() { return cleanEngagementPoolLength; },
+    get cleanEngagementQualificationTimesMode() { return cleanEngagementQualificationTimesMode; },
+    get cleanEngagementTimingType() { return cleanEngagementTimingType; },
+    get cleanIsoDate() { return cleanIsoDate; },
+    get cleanText() { return cleanText; },
+    get db() { return db; },
+    get engagementClubSwimmerItem() { return engagementClubSwimmerItem; },
+    get engagementLicenseSeasonState() { return engagementLicenseSeasonState; },
+    get engagementNewSwimmerItem() { return engagementNewSwimmerItem; },
+    get engagementReferenceSwimmerItem() { return engagementReferenceSwimmerItem; },
+    get engagementSwimmerLicenseItem() { return engagementSwimmerLicenseItem; },
+    get intranapSwimmersIndex() { return intranapSwimmersIndex; },
+    get loadPerformanceRecordsData() { return loadPerformanceRecordsData; },
+    get resolveEngagementIndividualEntriesForSwimmer() { return resolveEngagementIndividualEntriesForSwimmer; },
+    get validateEngagementIndividualEntryTimes() { return validateEngagementIndividualEntryTimes; }
+  });
+  return $serverEntryService_buildEngagementClubSwimmersFromRequest.instance;
+}
+
+function $serverEntryService_engagementEntryTimeStats() {
+  if (!$serverEntryService_engagementEntryTimeStats.instance) $serverEntryService_engagementEntryTimeStats.instance = require("./backend/server-entry-service/engagement-entry-time-stats").createEntryService_engagementEntryTimeStats({
+    get cleanText() { return cleanText; }
+  });
+  return $serverEntryService_engagementEntryTimeStats.instance;
+}
+
+function $serverEntryService_nativeClubEntryTimeHistory() {
+  if (!$serverEntryService_nativeClubEntryTimeHistory.instance) $serverEntryService_nativeClubEntryTimeHistory.instance = require("./backend/server-entry-service/native-club-entry-time-history").createEntryService_nativeClubEntryTimeHistory({
+    get ENGAGEMENT_EVENT_DEFINITION_BY_CODE() { return ENGAGEMENT_EVENT_DEFINITION_BY_CODE; },
+    get HttpsError() { return HttpsError; },
+    get cleanText() { return cleanText; },
+    get engagementKnownTimeHistory() { return engagementKnownTimeHistory; }
+  });
+  return $serverEntryService_nativeClubEntryTimeHistory.instance;
+}
+
+function $serverEntryService_previewNativeClubEntryTimes() {
+  if (!$serverEntryService_previewNativeClubEntryTimes.instance) $serverEntryService_previewNativeClubEntryTimes.instance = require("./backend/server-entry-service/preview-native-club-entry-times").createEntryService_previewNativeClubEntryTimes({
+    get ENGAGEMENT_EVENT_DEFINITION_BY_CODE() { return ENGAGEMENT_EVENT_DEFINITION_BY_CODE; },
+    get HttpsError() { return HttpsError; },
+    get ageCategoryFromDates() { return ageCategoryFromDates; },
+    get automaticEngagementIndividualEntry() { return automaticEngagementIndividualEntry; },
+    get parseEngagementEntryTime() { return parseEngagementEntryTime; },
+    get qualificationEvents() { return qualificationEvents; }
+  });
+  return $serverEntryService_previewNativeClubEntryTimes.instance;
+}
+
+function $serverEntryService_saveNativeClubIndividualEntries() {
+  if (!$serverEntryService_saveNativeClubIndividualEntries.instance) $serverEntryService_saveNativeClubIndividualEntries.instance = require("./backend/server-entry-service/save-native-club-individual-entries").createEntryService_saveNativeClubIndividualEntries({
+    get ENGAGEMENT_EVENT_DEFINITION_BY_CODE() { return ENGAGEMENT_EVENT_DEFINITION_BY_CODE; },
+    get ENGAGEMENT_EVENT_FORBIDDEN_CATEGORIES() { return ENGAGEMENT_EVENT_FORBIDDEN_CATEGORIES; },
+    get HttpsError() { return HttpsError; },
+    get ageCategoryFromDates() { return ageCategoryFromDates; },
+    get automaticEngagementIndividualEntry() { return automaticEngagementIndividualEntry; },
+    get birthYear() { return birthYear; },
+    get competitionYear() { return competitionYear; },
+    get db() { return db; },
+    get importSeasonYear() { return importSeasonYear; },
+    get nativeClubEntryView() { return nativeClubEntryView; },
+    get parseEngagementEntryTime() { return parseEngagementEntryTime; },
+    get qualificationEvents() { return qualificationEvents; },
+    get validateEngagementIndividualEntryTimes() { return validateEngagementIndividualEntryTimes; },
+    get writeAuditLogOnce() { return writeAuditLogOnce; }
+  });
+  return $serverEntryService_saveNativeClubIndividualEntries.instance;
+}
+
+function $serverEntryService_saveNativeClubSwimmerSelections() {
+  if (!$serverEntryService_saveNativeClubSwimmerSelections.instance) $serverEntryService_saveNativeClubSwimmerSelections.instance = require("./backend/server-entry-service/save-native-club-swimmer-selections").createEntryService_saveNativeClubSwimmerSelections({
+    get ENGAGEMENT_EVENT_DEFINITION_BY_CODE() { return ENGAGEMENT_EVENT_DEFINITION_BY_CODE; },
+    get HttpsError() { return HttpsError; },
+    get cleanIsoDate() { return cleanIsoDate; },
+    get cleanText() { return cleanText; },
+    get db() { return db; },
+    get nativeClubEntryView() { return nativeClubEntryView; },
+    get writeAuditLogOnce() { return writeAuditLogOnce; }
+  });
+  return $serverEntryService_saveNativeClubSwimmerSelections.instance;
+}
+
+function $serverEntryService_saveNativeClubRelays() {
+  if (!$serverEntryService_saveNativeClubRelays.instance) $serverEntryService_saveNativeClubRelays.instance = require("./backend/server-entry-service/save-native-club-relays").createEntryService_saveNativeClubRelays({
+    get ENGAGEMENT_EVENT_DEFINITION_BY_CODE() { return ENGAGEMENT_EVENT_DEFINITION_BY_CODE; },
+    get HttpsError() { return HttpsError; },
+    get ageCategoryFromDates() { return ageCategoryFromDates; },
+    get cleanEngagementCompetitionEvents() { return cleanEngagementCompetitionEvents; },
+    get cleanEngagementEntryRelays() { return cleanEngagementEntryRelays; },
+    get db() { return db; },
+    get nativeClubEntryView() { return nativeClubEntryView; },
+    get qualificationEvents() { return qualificationEvents; },
+    get validateEngagementRelayEntryTimes() { return validateEngagementRelayEntryTimes; },
+    get writeAuditLogOnce() { return writeAuditLogOnce; }
+  });
+  return $serverEntryService_saveNativeClubRelays.instance;
+}
+
+function $serverPerformanceService_competitionImportPublicSnapshotSummary() {
+  if (!$serverPerformanceService_competitionImportPublicSnapshotSummary.instance) $serverPerformanceService_competitionImportPublicSnapshotSummary.instance = require("./backend/server-performance-service/competition-import-public-snapshot-summary").createPerformanceService_competitionImportPublicSnapshotSummary({
+    get CATEGORY_LABELS() { return CATEGORY_LABELS; },
+    get POOL_COURSES() { return POOL_COURSES; },
+    get ageCategoryFromDates() { return ageCategoryFromDates; },
+    get categoryCodeFromCategory() { return categoryCodeFromCategory; },
+    get cleanFirestoreValue() { return cleanFirestoreValue; },
+    get cleanText() { return cleanText; },
+    get cleanTimingType() { return cleanTimingType; },
+    get coursePayload() { return coursePayload; },
+    get fallbackCategoryFromSource() { return fallbackCategoryFromSource; },
+    get importSeasonYear() { return importSeasonYear; },
+    get normalizeCategoryCode() { return normalizeCategoryCode; },
+    get normalizeCourseCode() { return normalizeCourseCode; },
+    get performanceImportChrono() { return performanceImportChrono; },
+    get resolveIntranapSwimmer() { return resolveIntranapSwimmer; },
+    get stableHash() { return stableHash; },
+    get swimmerIdentityKey() { return swimmerIdentityKey; }
+  });
+  return $serverPerformanceService_competitionImportPublicSnapshotSummary.instance;
+}
+
+function $serverPerformanceService_publishCompetitionImportOutputs() {
+  if (!$serverPerformanceService_publishCompetitionImportOutputs.instance) $serverPerformanceService_publishCompetitionImportOutputs.instance = require("./backend/server-performance-service/publish-competition-import-outputs").createPerformanceService_publishCompetitionImportOutputs({
+    get cleanText() { return cleanText; },
+    get importPublicationError() { return importPublicationError; },
+    get importPublicationResultStatus() { return importPublicationResultStatus; },
+    get invalidateEngagementEntryTimeCachesForPerformanceRows() { return invalidateEngagementEntryTimeCachesForPerformanceRows; },
+    get publishIncrementalPerformanceImport() { return publishIncrementalPerformanceImport; },
+    get publishIncrementalPublicPerformanceFiles() { return publishIncrementalPublicPerformanceFiles; },
+    get local$competitionImportPublicSnapshotSummary() { return $serverPerformanceService_competitionImportPublicSnapshotSummary().competitionImportPublicSnapshotSummary; }
+  });
+  return $serverPerformanceService_publishCompetitionImportOutputs.instance;
+}
+
+function $serverPerformanceService_competitionImportPerformanceId() {
+  if (!$serverPerformanceService_competitionImportPerformanceId.instance) $serverPerformanceService_competitionImportPerformanceId.instance = require("./backend/server-performance-service/competition-import-performance-id").createPerformanceService_competitionImportPerformanceId({
+    get HttpsError() { return HttpsError; },
+    get PERFORMANCE_PUBLICATION_JOBS_COLLECTION() { return PERFORMANCE_PUBLICATION_JOBS_COLLECTION; },
+    get activeCompetitionImportData() { return activeCompetitionImportData; },
+    get cleanFirestoreValue() { return cleanFirestoreValue; },
+    get cleanText() { return cleanText; },
+    get competitionImportIdentity() { return competitionImportIdentity; },
+    get db() { return db; },
+    get publicPerformancePublicationJob() { return publicPerformancePublicationJob; },
+    get sameCompetitionImport() { return sameCompetitionImport; },
+    get stableHash() { return stableHash; },
+    get writeAuditLog() { return writeAuditLog; }
+  });
+  return $serverPerformanceService_competitionImportPerformanceId.instance;
+}
+
+function $serverPerformanceService_markCompetitionImportDeleted() {
+  if (!$serverPerformanceService_markCompetitionImportDeleted.instance) $serverPerformanceService_markCompetitionImportDeleted.instance = require("./backend/server-performance-service/mark-competition-import-deleted").createPerformanceService_markCompetitionImportDeleted({
+    get HttpsError() { return HttpsError; },
+    get PERFORMANCE_BASE_CHANGES_COLLECTION() { return PERFORMANCE_BASE_CHANGES_COLLECTION; },
+    get PERFORMANCE_BASE_COLLECTION() { return PERFORMANCE_BASE_COLLECTION; },
+    get cleanFirestoreValue() { return cleanFirestoreValue; },
+    get cleanText() { return cleanText; },
+    get db() { return db; },
+    get invalidateEngagementEntryTimeCachesForPerformanceRows() { return invalidateEngagementEntryTimeCachesForPerformanceRows; },
+    get readPublishedAdditionalPerformanceDataSnapshot() { return readPublishedAdditionalPerformanceDataSnapshot; },
+    get stableHash() { return stableHash; },
+    get local$performanceBaseDocId() { return $serverPerformanceService_performanceBaseDocId().performanceBaseDocId; },
+    get local$publicPerformanceBaseRow() { return $serverPerformanceService_publicPerformanceBaseRow().publicPerformanceBaseRow; }
+  });
+  return $serverPerformanceService_markCompetitionImportDeleted.instance;
+}
+
+function $serverPerformanceService_performancePublicKey() {
+  if (!$serverPerformanceService_performancePublicKey.instance) $serverPerformanceService_performancePublicKey.instance = require("./backend/server-performance-service/performance-public-key").createPerformanceService_performancePublicKey({
+    get cleanText() { return cleanText; }
+  });
+  return $serverPerformanceService_performancePublicKey.instance;
+}
+
+function $serverPerformanceService_performanceBaseDocId() {
+  if (!$serverPerformanceService_performanceBaseDocId.instance) $serverPerformanceService_performanceBaseDocId.instance = require("./backend/server-performance-service/performance-base-doc-id").createPerformanceService_performanceBaseDocId({
+    get stableHash() { return stableHash; },
+    get local$performancePublicKey() { return $serverPerformanceService_performancePublicKey().performancePublicKey; }
+  });
+  return $serverPerformanceService_performanceBaseDocId.instance;
+}
+
+function $serverPerformanceService_cleanPerformanceBaseRow() {
+  if (!$serverPerformanceService_cleanPerformanceBaseRow.instance) $serverPerformanceService_cleanPerformanceBaseRow.instance = require("./backend/server-performance-service/clean-performance-base-row").createPerformanceService_cleanPerformanceBaseRow({
+    get CATEGORY_LABELS() { return CATEGORY_LABELS; },
+    get PERFORMANCE_BASE_CHANGES_COLLECTION() { return PERFORMANCE_BASE_CHANGES_COLLECTION; },
+    get PERFORMANCE_BASE_COLLECTION() { return PERFORMANCE_BASE_COLLECTION; },
+    get categoryCodeFromCategory() { return categoryCodeFromCategory; },
+    get cleanFirestoreValue() { return cleanFirestoreValue; },
+    get cleanText() { return cleanText; },
+    get coursePayload() { return coursePayload; },
+    get db() { return db; },
+    get importSeasonYear() { return importSeasonYear; },
+    get invalidateEngagementEntryTimeCachesForPerformanceRows() { return invalidateEngagementEntryTimeCachesForPerformanceRows; },
+    get normalizeCategoryCode() { return normalizeCategoryCode; },
+    get normalizeCourseCode() { return normalizeCourseCode; },
+    get performanceCategoryFromRow() { return performanceCategoryFromRow; },
+    get stableHash() { return stableHash; },
+    get touchDtnQualificationCacheState() { return touchDtnQualificationCacheState; },
+    get local$performanceBaseDocId() { return $serverPerformanceService_performanceBaseDocId().performanceBaseDocId; },
+    get local$performancePublicKey() { return $serverPerformanceService_performancePublicKey().performancePublicKey; }
+  });
+  return $serverPerformanceService_cleanPerformanceBaseRow.instance;
+}
+
+function $serverPerformanceService_publicPerformanceBaseRow() {
+  if (!$serverPerformanceService_publicPerformanceBaseRow.instance) $serverPerformanceService_publicPerformanceBaseRow.instance = require("./backend/server-performance-service/public-performance-base-row").createPerformanceService_publicPerformanceBaseRow({
+    get CATEGORY_LABELS() { return CATEGORY_LABELS; },
+    get categoryCodeFromCategory() { return categoryCodeFromCategory; },
+    get cleanFirestoreValue() { return cleanFirestoreValue; },
+    get cleanText() { return cleanText; },
+    get normalizeCategoryCode() { return normalizeCategoryCode; },
+    get performanceCategoryFromRow() { return performanceCategoryFromRow; }
+  });
+  return $serverPerformanceService_publicPerformanceBaseRow.instance;
+}
+
+function $serverPerformanceService_uniquePublicPerformanceRows() {
+  if (!$serverPerformanceService_uniquePublicPerformanceRows.instance) $serverPerformanceService_uniquePublicPerformanceRows.instance = require("./backend/server-performance-service/unique-public-performance-rows").createPerformanceService_uniquePublicPerformanceRows({
+    get cleanText() { return cleanText; },
+    get local$performancePublicKey() { return $serverPerformanceService_performancePublicKey().performancePublicKey; }
+  });
+  return $serverPerformanceService_uniquePublicPerformanceRows.instance;
+}
+
+function $serverPerformanceService_publicSwimmerKey() {
+  if (!$serverPerformanceService_publicSwimmerKey.instance) $serverPerformanceService_publicSwimmerKey.instance = require("./backend/server-performance-service/public-swimmer-key").createPerformanceService_publicSwimmerKey({
+    get cleanText() { return cleanText; }
+  });
+  return $serverPerformanceService_publicSwimmerKey.instance;
+}
+
+function $serverPerformanceService_publicBetterPerformance() {
+  if (!$serverPerformanceService_publicBetterPerformance.instance) $serverPerformanceService_publicBetterPerformance.instance = require("./backend/server-performance-service/public-better-performance").createPerformanceService_publicBetterPerformance({
+    get cleanText() { return cleanText; }
+  });
+  return $serverPerformanceService_publicBetterPerformance.instance;
+}
+
+function $serverPerformanceService_bestTopRows() {
+  if (!$serverPerformanceService_bestTopRows.instance) $serverPerformanceService_bestTopRows.instance = require("./backend/server-performance-service/best-top-rows").createPerformanceService_bestTopRows({
+    get CATEGORY_LABELS() { return CATEGORY_LABELS; },
+    get PERFORMANCE_TOP_BUCKETS_COLLECTION() { return PERFORMANCE_TOP_BUCKETS_COLLECTION; },
+    get PERFORMANCE_TOP_INDEX_LIMIT() { return PERFORMANCE_TOP_INDEX_LIMIT; },
+    get categoryCodeFromCategory() { return categoryCodeFromCategory; },
+    get cleanFirestoreValue() { return cleanFirestoreValue; },
+    get cleanText() { return cleanText; },
+    get db() { return db; },
+    get normalizeCategoryCode() { return normalizeCategoryCode; },
+    get performanceCategoryFromRow() { return performanceCategoryFromRow; },
+    get stableHash() { return stableHash; },
+    get local$performancePublicKey() { return $serverPerformanceService_performancePublicKey().performancePublicKey; },
+    get local$publicBetterPerformance() { return $serverPerformanceService_publicBetterPerformance().publicBetterPerformance; },
+    get local$publicSwimmerKey() { return $serverPerformanceService_publicSwimmerKey().publicSwimmerKey; }
+  });
+  return $serverPerformanceService_bestTopRows.instance;
+}
+
+function $serverPerformanceService_performanceTopRowsFromIndex() {
+  if (!$serverPerformanceService_performanceTopRowsFromIndex.instance) $serverPerformanceService_performanceTopRowsFromIndex.instance = require("./backend/server-performance-service/performance-top-rows-from-index").createPerformanceService_performanceTopRowsFromIndex({
+    get PERFORMANCE_TOP_BUCKETS_COLLECTION() { return PERFORMANCE_TOP_BUCKETS_COLLECTION; },
+    get db() { return db; },
+    get local$performanceTopBucketId() { return $serverPerformanceService_bestTopRows().performanceTopBucketId; },
+    get local$performanceTopBucketKey() { return $serverPerformanceService_bestTopRows().performanceTopBucketKey; },
+    get local$readPerformanceTopIndexRows() { return $serverPerformanceService_bestTopRows().readPerformanceTopIndexRows; }
+  });
+  return $serverPerformanceService_performanceTopRowsFromIndex.instance;
+}
+
+function $serverDtnService_dtnSeasonService() {
+  if (!$serverDtnService_dtnSeasonService.instance) $serverDtnService_dtnSeasonService.instance = require("./backend/server-dtn-service/dtn-season-service").createDtnService_dtnSeasonService({
+    get ADMIN_UIDS() { return ADMIN_UIDS; },
+    get ENVIRONMENT() { return ENVIRONMENT; },
+    get FieldPath() { return FieldPath; },
+    get HttpsError() { return HttpsError; },
+    get assertCapability() { return assertCapability; },
+    get assertLivePalmesAccess() { return assertLivePalmesAccess; },
+    get createDtnSeasonService() { return createDtnSeasonService; },
+    get db() { return db; },
+    get publicPerformanceBaseRow() { return publicPerformanceBaseRow; },
+    get writeAuditLogOnce() { return writeAuditLogOnce; }
+  });
+  return $serverDtnService_dtnSeasonService.instance;
+}
+
+function $serverDtnService_invokeDtnSeason() {
+  if (!$serverDtnService_invokeDtnSeason.instance) $serverDtnService_invokeDtnSeason.instance = require("./backend/server-dtn-service/invoke-dtn-season").createDtnService_invokeDtnSeason({
+    get ENVIRONMENT() { return ENVIRONMENT; },
+    get HttpsError() { return HttpsError; },
+    get local$dtnSeasonService() { return $serverDtnService_dtnSeasonService().dtnSeasonService; }
+  });
+  return $serverDtnService_invokeDtnSeason.instance;
+}
+
+function $serverDtnService_bestDtnQualificationRows() {
+  if (!$serverDtnService_bestDtnQualificationRows.instance) $serverDtnService_bestDtnQualificationRows.instance = require("./backend/server-dtn-service/best-dtn-qualification-rows").createDtnService_bestDtnQualificationRows({
+    get DTN_EDF_LIMOGES_COMPETITION_ID() { return DTN_EDF_LIMOGES_COMPETITION_ID; },
+    get DTN_NEAR_MINIMUM_MAX_PERCENT() { return DTN_NEAR_MINIMUM_MAX_PERCENT; },
+    get DTN_QUALIFICATION_MAX_ROWS_PER_COURSE() { return DTN_QUALIFICATION_MAX_ROWS_PER_COURSE; },
+    get ENGAGEMENT_INDIVIDUAL_CATEGORY_CODES() { return ENGAGEMENT_INDIVIDUAL_CATEGORY_CODES; },
+    get POOL_COURSES() { return POOL_COURSES; },
+    get birthYear() { return birthYear; },
+    get cleanFirestoreValue() { return cleanFirestoreValue; },
+    get cleanText() { return cleanText; },
+    get publicBetterPerformance() { return publicBetterPerformance; },
+    get publicPerformanceBaseRow() { return publicPerformanceBaseRow; },
+    get publicPerformanceTopFileName() { return publicPerformanceTopFileName; },
+    get publicSwimmerKey() { return publicSwimmerKey; },
+    get readPublicPerformanceJson() { return readPublicPerformanceJson; },
+    get uniquePublicPerformanceRows() { return uniquePublicPerformanceRows; }
+  });
+  return $serverDtnService_bestDtnQualificationRows.instance;
+}
+
+function $serverDtnService_dtnQualificationCacheStateRef() {
+  if (!$serverDtnService_dtnQualificationCacheStateRef.instance) $serverDtnService_dtnQualificationCacheStateRef.instance = require("./backend/server-dtn-service/dtn-qualification-cache-state-ref").createDtnService_dtnQualificationCacheStateRef({
+    get DTN_QUALIFICATION_CACHE_STATE_COLLECTION() { return DTN_QUALIFICATION_CACHE_STATE_COLLECTION; },
+    get db() { return db; }
+  });
+  return $serverDtnService_dtnQualificationCacheStateRef.instance;
+}
+
+function $serverDtnService_dtnQualificationCacheRef() {
+  if (!$serverDtnService_dtnQualificationCacheRef.instance) $serverDtnService_dtnQualificationCacheRef.instance = require("./backend/server-dtn-service/dtn-qualification-cache-ref").createDtnService_dtnQualificationCacheRef({
+    get DTN_QUALIFICATION_CACHE_COLLECTION() { return DTN_QUALIFICATION_CACHE_COLLECTION; },
+    get db() { return db; }
+  });
+  return $serverDtnService_dtnQualificationCacheRef.instance;
+}
+
+function $serverDtnService_dtnListingCacheRef() {
+  if (!$serverDtnService_dtnListingCacheRef.instance) $serverDtnService_dtnListingCacheRef.instance = require("./backend/server-dtn-service/dtn-listing-cache-ref").createDtnService_dtnListingCacheRef({
+    get DTN_QUALIFICATION_CACHE_COLLECTION() { return DTN_QUALIFICATION_CACHE_COLLECTION; },
+    get db() { return db; }
+  });
+  return $serverDtnService_dtnListingCacheRef.instance;
+}
+
+function $serverDtnService_dtnQualificationSeasonsForRows() {
+  if (!$serverDtnService_dtnQualificationSeasonsForRows.instance) $serverDtnService_dtnQualificationSeasonsForRows.instance = require("./backend/server-dtn-service/dtn-qualification-seasons-for-rows").createDtnService_dtnQualificationSeasonsForRows({
+    get FieldValue() { return FieldValue; },
+    get cleanText() { return cleanText; },
+    get db() { return db; },
+    get importSeasonYear() { return importSeasonYear; },
+    get local$dtnQualificationCacheStateRef() { return $serverDtnService_dtnQualificationCacheStateRef().dtnQualificationCacheStateRef; }
+  });
+  return $serverDtnService_dtnQualificationSeasonsForRows.instance;
+}
+
+function $serverDtnService_dtnQualificationCacheFingerprint() {
+  if (!$serverDtnService_dtnQualificationCacheFingerprint.instance) $serverDtnService_dtnQualificationCacheFingerprint.instance = require("./backend/server-dtn-service/dtn-qualification-cache-fingerprint").createDtnService_dtnQualificationCacheFingerprint({
+    get DTN_QUALIFICATION_CACHE_VERSION() { return DTN_QUALIFICATION_CACHE_VERSION; },
+    get POOL_COURSES() { return POOL_COURSES; },
+    get stableHash() { return stableHash; }
+  });
+  return $serverDtnService_dtnQualificationCacheFingerprint.instance;
+}
+
+function $serverDtnService_dtnListingCacheFingerprint() {
+  if (!$serverDtnService_dtnListingCacheFingerprint.instance) $serverDtnService_dtnListingCacheFingerprint.instance = require("./backend/server-dtn-service/dtn-listing-cache-fingerprint").createDtnService_dtnListingCacheFingerprint({
+    get DTN_LISTING_CACHE_VERSION() { return DTN_LISTING_CACHE_VERSION; },
+    get HttpsError() { return HttpsError; },
+    get POOL_COURSES() { return POOL_COURSES; },
+    get cleanText() { return cleanText; },
+    get stableHash() { return stableHash; }
+  });
+  return $serverDtnService_dtnListingCacheFingerprint.instance;
+}
+
+function $serverDtnService_enqueueDtnQualificationJob() {
+  if (!$serverDtnService_enqueueDtnQualificationJob.instance) $serverDtnService_enqueueDtnQualificationJob.instance = require("./backend/server-dtn-service/enqueue-dtn-qualification-job").createDtnService_enqueueDtnQualificationJob({
+    get DTN_QUALIFICATION_JOBS_COLLECTION() { return DTN_QUALIFICATION_JOBS_COLLECTION; },
+    get cleanFirestoreValue() { return cleanFirestoreValue; },
+    get cleanText() { return cleanText; },
+    get db() { return db; }
+  });
+  return $serverDtnService_enqueueDtnQualificationJob.instance;
+}
+
+function $serverDtnService_normalizePerformanceSearchText() {
+  if (!$serverDtnService_normalizePerformanceSearchText.instance) $serverDtnService_normalizePerformanceSearchText.instance = require("./backend/server-dtn-service/normalize-performance-search-text").createDtnService_normalizePerformanceSearchText({
+    get cleanText() { return cleanText; }
+  });
+  return $serverDtnService_normalizePerformanceSearchText.instance;
+}
+
+function $serverDtnService_performanceSearchTokens() {
+  if (!$serverDtnService_performanceSearchTokens.instance) $serverDtnService_performanceSearchTokens.instance = require("./backend/server-dtn-service/performance-search-tokens").createDtnService_performanceSearchTokens({
+    get local$normalizePerformanceSearchText() { return $serverDtnService_normalizePerformanceSearchText().normalizePerformanceSearchText; }
+  });
+  return $serverDtnService_performanceSearchTokens.instance;
+}
+
+function $serverDtnService_performanceSearchPrefixes() {
+  if (!$serverDtnService_performanceSearchPrefixes.instance) $serverDtnService_performanceSearchPrefixes.instance = require("./backend/server-dtn-service/performance-search-prefixes").createDtnService_performanceSearchPrefixes({
+    get local$performanceSearchTokens() { return $serverDtnService_performanceSearchTokens().performanceSearchTokens; }
+  });
+  return $serverDtnService_performanceSearchPrefixes.instance;
+}
+
+function $serverDtnService_performanceSwimmerIndexKey() {
+  if (!$serverDtnService_performanceSwimmerIndexKey.instance) $serverDtnService_performanceSwimmerIndexKey.instance = require("./backend/server-dtn-service/performance-swimmer-index-key").createDtnService_performanceSwimmerIndexKey({
+    get cleanText() { return cleanText; },
+    get local$normalizePerformanceSearchText() { return $serverDtnService_normalizePerformanceSearchText().normalizePerformanceSearchText; }
+  });
+  return $serverDtnService_performanceSwimmerIndexKey.instance;
+}
+
+function $serverDtnService_performanceSwimmerIndexDocId() {
+  if (!$serverDtnService_performanceSwimmerIndexDocId.instance) $serverDtnService_performanceSwimmerIndexDocId.instance = require("./backend/server-dtn-service/performance-swimmer-index-doc-id").createDtnService_performanceSwimmerIndexDocId({
+    get stableHash() { return stableHash; },
+    get local$performanceSwimmerIndexKey() { return $serverDtnService_performanceSwimmerIndexKey().performanceSwimmerIndexKey; }
+  });
+  return $serverDtnService_performanceSwimmerIndexDocId.instance;
+}
+
+function $serverLegacyService_aggregateSwimmerIndexRows() {
+  if (!$serverLegacyService_aggregateSwimmerIndexRows.instance) $serverLegacyService_aggregateSwimmerIndexRows.instance = require("./backend/server-legacy-service/aggregate-swimmer-index-rows").createLegacyService_aggregateSwimmerIndexRows({
+    get FieldValue() { return FieldValue; },
+    get PERFORMANCE_SWIMMERS_COLLECTION() { return PERFORMANCE_SWIMMERS_COLLECTION; },
+    get PERFORMANCE_SWIMMER_PAGES_COLLECTION() { return PERFORMANCE_SWIMMER_PAGES_COLLECTION; },
+    get PERFORMANCE_SWIMMER_PAGE_SIZE() { return PERFORMANCE_SWIMMER_PAGE_SIZE; },
+    get cleanFirestoreValue() { return cleanFirestoreValue; },
+    get cleanText() { return cleanText; },
+    get db() { return db; },
+    get normalizePerformanceSearchText() { return normalizePerformanceSearchText; },
+    get performancePublicKey() { return performancePublicKey; },
+    get performanceSearchPrefixes() { return performanceSearchPrefixes; },
+    get performanceSwimmerIndexKey() { return performanceSwimmerIndexKey; },
+    get publicPerformanceBaseRow() { return publicPerformanceBaseRow; },
+    get stableHash() { return stableHash; },
+    get local$performanceSwimmerPageId() { return $serverLegacyService_performanceSwimmerPageId().performanceSwimmerPageId; }
+  });
+  return $serverLegacyService_aggregateSwimmerIndexRows.instance;
+}
+
+function $serverLegacyService_performanceSwimmerPageId() {
+  if (!$serverLegacyService_performanceSwimmerPageId.instance) $serverLegacyService_performanceSwimmerPageId.instance = require("./backend/server-legacy-service/performance-swimmer-page-id").createLegacyService_performanceSwimmerPageId({
+
+  });
+  return $serverLegacyService_performanceSwimmerPageId.instance;
+}
+
+function $serverLegacyService_getPerformanceBaseRowsBySwimmer() {
+  if (!$serverLegacyService_getPerformanceBaseRowsBySwimmer.instance) $serverLegacyService_getPerformanceBaseRowsBySwimmer.instance = require("./backend/server-legacy-service/get-performance-base-rows-by-swimmer").createLegacyService_getPerformanceBaseRowsBySwimmer({
+    get ENGAGEMENT_SWIMMER_CORRECTION_MAX_PERFORMANCE_ROWS() { return ENGAGEMENT_SWIMMER_CORRECTION_MAX_PERFORMANCE_ROWS; },
+    get HttpsError() { return HttpsError; },
+    get PERFORMANCE_BASE_COLLECTION() { return PERFORMANCE_BASE_COLLECTION; },
+    get PERFORMANCE_SWIMMERS_COLLECTION() { return PERFORMANCE_SWIMMERS_COLLECTION; },
+    get PERFORMANCE_SWIMMER_PAGES_COLLECTION() { return PERFORMANCE_SWIMMER_PAGES_COLLECTION; },
+    get cleanText() { return cleanText; },
+    get db() { return db; },
+    get publicPerformanceBaseRow() { return publicPerformanceBaseRow; },
+    get publicPerformanceSwimmerFilePath() { return publicPerformanceSwimmerFilePath; },
+    get readPublicPerformanceJson() { return readPublicPerformanceJson; },
+    get stableHash() { return stableHash; },
+    get uniquePublicPerformanceRows() { return uniquePublicPerformanceRows; },
+    get local$performanceSwimmerPageId() { return $serverLegacyService_performanceSwimmerPageId().performanceSwimmerPageId; }
+  });
+  return $serverLegacyService_getPerformanceBaseRowsBySwimmer.instance;
+}
+
+function $serverLegacyService_normalizedImportPerformances() {
+  if (!$serverLegacyService_normalizedImportPerformances.instance) $serverLegacyService_normalizedImportPerformances.instance = require("./backend/server-legacy-service/normalized-import-performances").createLegacyService_normalizedImportPerformances({
+    get db() { return db; },
+    get normalizeLivePalmesImportPerformances() { return normalizeLivePalmesImportPerformances; },
+    get writePerformanceBaseRows() { return writePerformanceBaseRows; }
+  });
+  return $serverLegacyService_normalizedImportPerformances.instance;
+}
+
+function $serverLegacyService_additionalPerformanceFile() {
+  if (!$serverLegacyService_additionalPerformanceFile.instance) $serverLegacyService_additionalPerformanceFile.instance = require("./backend/server-legacy-service/additional-performance-file").createLegacyService_additionalPerformanceFile({
+    get PUBLIC_ADDITIONAL_PERFORMANCE_PATH() { return PUBLIC_ADDITIONAL_PERFORMANCE_PATH; },
+    get PUBLIC_PERFORMANCE_BUCKET() { return PUBLIC_PERFORMANCE_BUCKET; },
+    get cleanText() { return cleanText; },
+    get publicPerformanceBaseRow() { return publicPerformanceBaseRow; },
+    get storage() { return storage; }
+  });
+  return $serverLegacyService_additionalPerformanceFile.instance;
+}
+
+function $serverLegacyService_additionalPerformanceRowKey() {
+  if (!$serverLegacyService_additionalPerformanceRowKey.instance) $serverLegacyService_additionalPerformanceRowKey.instance = require("./backend/server-legacy-service/additional-performance-row-key").createLegacyService_additionalPerformanceRowKey({
+    get cleanText() { return cleanText; },
+    get performancePublicKey() { return performancePublicKey; }
+  });
+  return $serverLegacyService_additionalPerformanceRowKey.instance;
+}
+
+function $serverLegacyService_claimPerformancePublicationJob() {
+  if (!$serverLegacyService_claimPerformancePublicationJob.instance) $serverLegacyService_claimPerformancePublicationJob.instance = require("./backend/server-legacy-service/claim-performance-publication-job").createLegacyService_claimPerformancePublicationJob({
+    get MAX_COMPETITION_IMPORT_PERFORMANCES() { return MAX_COMPETITION_IMPORT_PERFORMANCES; },
+    get PERFORMANCE_BASE_CHANGES_COLLECTION() { return PERFORMANCE_BASE_CHANGES_COLLECTION; },
+    get PERFORMANCE_BASE_COLLECTION() { return PERFORMANCE_BASE_COLLECTION; },
+    get PERFORMANCE_PUBLICATION_LEASE_MS() { return PERFORMANCE_PUBLICATION_LEASE_MS; },
+    get PERFORMANCE_PUBLICATION_MAX_ATTEMPTS() { return PERFORMANCE_PUBLICATION_MAX_ATTEMPTS; },
+    get canClaimPerformancePublicationJob() { return canClaimPerformancePublicationJob; },
+    get cleanFirestoreValue() { return cleanFirestoreValue; },
+    get cleanText() { return cleanText; },
+    get competitionImportPublicSnapshotSummary() { return competitionImportPublicSnapshotSummary; },
+    get db() { return db; },
+    get deactivatedImportPerformanceRows() { return deactivatedImportPerformanceRows; },
+    get invalidateEngagementEntryTimeCachesForPerformanceRows() { return invalidateEngagementEntryTimeCachesForPerformanceRows; },
+    get normalizeLivePalmesImportPerformances() { return normalizeLivePalmesImportPerformances; },
+    get performanceBaseDocId() { return performanceBaseDocId; },
+    get performancePublicationFailureStatus() { return performancePublicationFailureStatus; },
+    get rebuildPublicPerformanceFilesForAffectedRows() { return rebuildPublicPerformanceFilesForAffectedRows; },
+    get sameCompetitionImport() { return sameCompetitionImport; },
+    get stableHash() { return stableHash; },
+    get touchDtnQualificationCacheState() { return touchDtnQualificationCacheState; },
+    get writeAuditLog() { return writeAuditLog; },
+    get writePerformanceBaseRows() { return writePerformanceBaseRows; },
+    get local$mergeAdditionalPerformanceRows() { return $serverLegacyService_additionalPerformanceRowKey().mergeAdditionalPerformanceRows; },
+    get local$readPublishedAdditionalPerformanceDataSnapshot() { return $serverLegacyService_additionalPerformanceFile().readPublishedAdditionalPerformanceDataSnapshot; },
+    get local$saveAdditionalPerformanceDataSnapshot() { return $serverLegacyService_saveAdditionalPerformanceDataSnapshot().saveAdditionalPerformanceDataSnapshot; }
+  });
+  return $serverLegacyService_claimPerformancePublicationJob.instance;
+}
+
+function $serverLegacyService_saveAdditionalPerformanceDataSnapshot() {
+  if (!$serverLegacyService_saveAdditionalPerformanceDataSnapshot.instance) $serverLegacyService_saveAdditionalPerformanceDataSnapshot.instance = require("./backend/server-legacy-service/save-additional-performance-data-snapshot").createLegacyService_saveAdditionalPerformanceDataSnapshot({
+    get PUBLIC_ADDITIONAL_PERFORMANCE_PATH() { return PUBLIC_ADDITIONAL_PERFORMANCE_PATH; },
+    get PUBLIC_ADDITIONAL_PERFORMANCE_TOKEN() { return PUBLIC_ADDITIONAL_PERFORMANCE_TOKEN; },
+    get local$additionalPerformanceFile() { return $serverLegacyService_additionalPerformanceFile().additionalPerformanceFile; },
+    get local$buildAdditionalPerformanceSwimmers() { return $serverLegacyService_additionalPerformanceFile().buildAdditionalPerformanceSwimmers; },
+    get local$normalizeAdditionalPerformanceDataSnapshot() { return $serverLegacyService_additionalPerformanceFile().normalizeAdditionalPerformanceDataSnapshot; }
+  });
+  return $serverLegacyService_saveAdditionalPerformanceDataSnapshot.instance;
+}
+
+function $serverLegacyService_publishIncrementalPerformanceImport() {
+  if (!$serverLegacyService_publishIncrementalPerformanceImport.instance) $serverLegacyService_publishIncrementalPerformanceImport.instance = require("./backend/server-legacy-service/publish-incremental-performance-import").createLegacyService_publishIncrementalPerformanceImport({
+    get cleanText() { return cleanText; },
+    get local$mergeAdditionalPerformanceRows() { return $serverLegacyService_additionalPerformanceRowKey().mergeAdditionalPerformanceRows; },
+    get local$readPublishedAdditionalPerformanceDataSnapshot() { return $serverLegacyService_additionalPerformanceFile().readPublishedAdditionalPerformanceDataSnapshot; },
+    get local$saveAdditionalPerformanceDataSnapshot() { return $serverLegacyService_saveAdditionalPerformanceDataSnapshot().saveAdditionalPerformanceDataSnapshot; }
+  });
+  return $serverLegacyService_publishIncrementalPerformanceImport.instance;
+}
+
+function $serverLegacyService_publicPerformanceFilesBucket() {
+  if (!$serverLegacyService_publicPerformanceFilesBucket.instance) $serverLegacyService_publicPerformanceFilesBucket.instance = require("./backend/server-legacy-service/public-performance-files-bucket").createLegacyService_publicPerformanceFilesBucket({
+    get PUBLIC_PERFORMANCE_BUCKET() { return PUBLIC_PERFORMANCE_BUCKET; },
+    get storage() { return storage; }
+  });
+  return $serverLegacyService_publicPerformanceFilesBucket.instance;
+}
+
+function $serverLegacyService_migrationChunkStatuses() {
+  if (!$serverLegacyService_migrationChunkStatuses.instance) $serverLegacyService_migrationChunkStatuses.instance = require("./backend/server-legacy-service/migration-chunk-statuses").createLegacyService_migrationChunkStatuses({
+    get HttpsError() { return HttpsError; },
+    get PERFORMANCE_BASE_MIGRATION_COLLECTION() { return PERFORMANCE_BASE_MIGRATION_COLLECTION; },
+    get PERFORMANCE_PUBLIC_DATA_URL() { return PERFORMANCE_PUBLIC_DATA_URL; },
+    get cleanText() { return cleanText; },
+    get db() { return db; }
+  });
+  return $serverLegacyService_migrationChunkStatuses.instance;
+}
+
+function $serverLegacyService_historicalRowsFromChunkPayload() {
+  if (!$serverLegacyService_historicalRowsFromChunkPayload.instance) $serverLegacyService_historicalRowsFromChunkPayload.instance = require("./backend/server-legacy-service/historical-rows-from-chunk-payload").createLegacyService_historicalRowsFromChunkPayload({
+
+  });
+  return $serverLegacyService_historicalRowsFromChunkPayload.instance;
+}
+
+function $serverLegacyService_migrateHistoricalPerformanceBaseChunk() {
+  if (!$serverLegacyService_migrateHistoricalPerformanceBaseChunk.instance) $serverLegacyService_migrateHistoricalPerformanceBaseChunk.instance = require("./backend/server-legacy-service/migrate-historical-performance-base-chunk").createLegacyService_migrateHistoricalPerformanceBaseChunk({
+    get HttpsError() { return HttpsError; },
+    get PERFORMANCE_BASE_MIGRATION_BATCH_SIZE() { return PERFORMANCE_BASE_MIGRATION_BATCH_SIZE; },
+    get PERFORMANCE_BASE_MIGRATION_COLLECTION() { return PERFORMANCE_BASE_MIGRATION_COLLECTION; },
+    get PERFORMANCE_PUBLIC_DATA_URL() { return PERFORMANCE_PUBLIC_DATA_URL; },
+    get cleanText() { return cleanText; },
+    get db() { return db; },
+    get writePerformanceBaseRows() { return writePerformanceBaseRows; },
+    get local$historicalRowsFromChunkPayload() { return $serverLegacyService_historicalRowsFromChunkPayload().historicalRowsFromChunkPayload; }
+  });
+  return $serverLegacyService_migrateHistoricalPerformanceBaseChunk.instance;
+}
+
+function $serverLegacyService_buildAdditionalPerformanceDataSnapshot() {
+  if (!$serverLegacyService_buildAdditionalPerformanceDataSnapshot.instance) $serverLegacyService_buildAdditionalPerformanceDataSnapshot.instance = require("./backend/server-legacy-service/build-additional-performance-data-snapshot").createLegacyService_buildAdditionalPerformanceDataSnapshot({
+    get HttpsError() { return HttpsError; },
+    get local$readPublishedAdditionalPerformanceDataSnapshot() { return $serverLegacyService_additionalPerformanceFile().readPublishedAdditionalPerformanceDataSnapshot; }
+  });
+  return $serverLegacyService_buildAdditionalPerformanceDataSnapshot.instance;
+}
+
+function $serverLegacyService_publishAdditionalPerformanceDataSnapshot() {
+  if (!$serverLegacyService_publishAdditionalPerformanceDataSnapshot.instance) $serverLegacyService_publishAdditionalPerformanceDataSnapshot.instance = require("./backend/server-legacy-service/publish-additional-performance-data-snapshot").createLegacyService_publishAdditionalPerformanceDataSnapshot({
+    get local$buildAdditionalPerformanceDataSnapshot() { return $serverLegacyService_buildAdditionalPerformanceDataSnapshot().buildAdditionalPerformanceDataSnapshot; },
+    get local$saveAdditionalPerformanceDataSnapshot() { return $serverLegacyService_saveAdditionalPerformanceDataSnapshot().saveAdditionalPerformanceDataSnapshot; }
+  });
+  return $serverLegacyService_publishAdditionalPerformanceDataSnapshot.instance;
+}
+
+function $serverLegacyService_enqueuePerformancePublicationJob() {
+  if (!$serverLegacyService_enqueuePerformancePublicationJob.instance) $serverLegacyService_enqueuePerformancePublicationJob.instance = require("./backend/server-legacy-service/enqueue-performance-publication-job").createLegacyService_enqueuePerformancePublicationJob({
+    get PERFORMANCE_PUBLICATION_JOBS_COLLECTION() { return PERFORMANCE_PUBLICATION_JOBS_COLLECTION; },
+    get cleanFirestoreValue() { return cleanFirestoreValue; },
+    get db() { return db; },
+    get publicPerformancePublicationJob() { return publicPerformancePublicationJob; },
+    get stableHash() { return stableHash; }
+  });
+  return $serverLegacyService_enqueuePerformancePublicationJob.instance;
+}
+
+function $serverLegacyService_authorizeNapRecords() {
+  if (!$serverLegacyService_authorizeNapRecords.instance) $serverLegacyService_authorizeNapRecords.instance = require("./backend/server-legacy-service/authorize-nap-records").createLegacyService_authorizeNapRecords({
+    get ADMIN_UIDS() { return ADMIN_UIDS; },
+    get ENVIRONMENT() { return ENVIRONMENT; },
+    get HttpsError() { return HttpsError; },
+    get assertCapability() { return assertCapability; }
+  });
+  return $serverLegacyService_authorizeNapRecords.instance;
+}
+
+function $serverLegacyService_readNapRecordsAdministration() {
+  if (!$serverLegacyService_readNapRecordsAdministration.instance) $serverLegacyService_readNapRecordsAdministration.instance = require("./backend/server-legacy-service/read-nap-records-administration").createLegacyService_readNapRecordsAdministration({
+    get local$authorizeNapRecords() { return $serverLegacyService_authorizeNapRecords().authorizeNapRecords; },
+    get local$nativePerformanceFailure() { return $serverLegacyService_nativePerformanceFailure().nativePerformanceFailure; }
+  });
+  return $serverLegacyService_readNapRecordsAdministration.instance;
+}
+
+function $serverLegacyService_publishNativeRecords() {
+  if (!$serverLegacyService_publishNativeRecords.instance) $serverLegacyService_publishNativeRecords.instance = require("./backend/server-legacy-service/publish-native-records").createLegacyService_publishNativeRecords({
+    get writeAuditLogOnce() { return writeAuditLogOnce; },
+    get local$authorizeNapRecords() { return $serverLegacyService_authorizeNapRecords().authorizeNapRecords; },
+    get local$nativePerformanceFailure() { return $serverLegacyService_nativePerformanceFailure().nativePerformanceFailure; }
+  });
+  return $serverLegacyService_publishNativeRecords.instance;
+}
+
+function $serverLegacyService_authorizeNativePerformance() {
+  if (!$serverLegacyService_authorizeNativePerformance.instance) $serverLegacyService_authorizeNativePerformance.instance = require("./backend/server-legacy-service/authorize-native-performance").createLegacyService_authorizeNativePerformance({
+    get ADMIN_UIDS() { return ADMIN_UIDS; },
+    get HttpsError() { return HttpsError; },
+    get assertCapability() { return assertCapability; }
+  });
+  return $serverLegacyService_authorizeNativePerformance.instance;
+}
+
+function $serverLegacyService_nativePerformanceFailure() {
+  if (!$serverLegacyService_nativePerformanceFailure.instance) $serverLegacyService_nativePerformanceFailure.instance = require("./backend/server-legacy-service/native-performance-failure").createLegacyService_nativePerformanceFailure({
+    get HttpsError() { return HttpsError; }
+  });
+  return $serverLegacyService_nativePerformanceFailure.instance;
+}
+
 function portalAccountHandlers() {
   if (!portalAccountHandlers.instance) portalAccountHandlers.instance = require("./portal-account-handlers").createAccountHandlers({
     get HttpsError() { return HttpsError; },
@@ -1043,364 +5352,15 @@ function serverDirectorySyncService() {
   return serverDirectorySyncService.instance;
 }
 
-function portalPerformanceHandlers() {
-  if (!portalPerformanceHandlers.instance) portalPerformanceHandlers.instance = require("./portal-performance-handlers").createPerformanceHandlers({
-    get ENGAGEMENT_SWIMMER_LICENSE_NUMBERS_COLLECTION() { return ENGAGEMENT_SWIMMER_LICENSE_NUMBERS_COLLECTION; },
-    get ENVIRONMENT() { return ENVIRONMENT; },
-    get FieldValue() { return FieldValue; },
-    get HttpsError() { return HttpsError; },
-    get LIVEPALMES_STORAGE_BUCKET() { return LIVEPALMES_STORAGE_BUCKET; },
-    get PERFORMANCE_BASE_COLLECTION() { return PERFORMANCE_BASE_COLLECTION; },
-    get PERFORMANCE_SWIMMER_PAGES_COLLECTION() { return PERFORMANCE_SWIMMER_PAGES_COLLECTION; },
-    get PUBLIC_COMPETITION_PDF_PREFIX() { return PUBLIC_COMPETITION_PDF_PREFIX; },
-    get PUBLIC_PERFORMANCE_BUCKET() { return PUBLIC_PERFORMANCE_BUCKET; },
-    get accessUserDisplayName() { return accessUserDisplayName; },
-    get activeCompetitionImportData() { return activeCompetitionImportData; },
-    get activePerformanceRowsForNationalSwimmer() { return activePerformanceRowsForNationalSwimmer; },
-    get applyEngagementSwimmerIdentityCorrection() { return applyEngagementSwimmerIdentityCorrection; },
-    get assertCapability() { return assertCapability; },
-    get assertComputerPdfAccess() { return assertComputerPdfAccess; },
-    get authorizeNativePerformance() { return authorizeNativePerformance; },
-    get canResumeImportPublication() { return canResumeImportPublication; },
-    get cleanEngagementSwimmerIdentityCorrection() { return cleanEngagementSwimmerIdentityCorrection; },
-    get cleanFirestoreValue() { return cleanFirestoreValue; },
-    get cleanText() { return cleanText; },
-    get cleanTimingType() { return cleanTimingType; },
-    get competitionIdFrom() { return competitionIdFrom; },
-    get competitionImportExistingSummary() { return competitionImportExistingSummary; },
-    get competitionImportIdentity() { return competitionImportIdentity; },
-    get competitionImportPerformanceId() { return competitionImportPerformanceId; },
-    get competitionImportPreviewPerformance() { return competitionImportPreviewPerformance; },
-    get db() { return db; },
-    get decodePdfDataUrl() { return decodePdfDataUrl; },
-    get deleteEngagementClubRosterSwimmer() { return deleteEngagementClubRosterSwimmer; },
-    get deleteEngagementEntryTimeCache() { return deleteEngagementEntryTimeCache; },
-    get detectRecordAlerts() { return detectRecordAlerts; },
-    get engagementAccessContext() { return engagementAccessContext; },
-    get engagementNationalSwimmerEntrySnapshot() { return engagementNationalSwimmerEntrySnapshot; },
-    get engagementNationalSwimmerFullName() { return engagementNationalSwimmerFullName; },
-    get engagementNationalSwimmerItemFromDoc() { return engagementNationalSwimmerItemFromDoc; },
-    get engagementSwimmerIdentitySnapshot() { return engagementSwimmerIdentitySnapshot; },
-    get engagementSwimmerLicenseNumberId() { return engagementSwimmerLicenseNumberId; },
-    get engagementSwimmerLicensePayload() { return engagementSwimmerLicensePayload; },
-    get enqueuePerformancePublicationJob() { return enqueuePerformancePublicationJob; },
-    get findExistingCompetitionImport() { return findExistingCompetitionImport; },
-    get getEngagementNationalSwimmerForMerge() { return getEngagementNationalSwimmerForMerge; },
-    get getEngagementSwimmerCorrectionTarget() { return getEngagementSwimmerCorrectionTarget; },
-    get importDocumentId() { return importDocumentId; },
-    get importPublicationStatus() { return importPublicationStatus; },
-    get invokeDtnSeason() { return invokeDtnSeason; },
-    get isAlreadyPublishedRecordAlert() { return isAlreadyPublishedRecordAlert; },
-    get loadPerformanceRecordsData() { return loadPerformanceRecordsData; },
-    get mergeEngagementClubEntryRelays() { return mergeEngagementClubEntryRelays; },
-    get mergeEngagementClubEntrySwimmers() { return mergeEngagementClubEntrySwimmers; },
-    get nativePerformanceFailure() { return nativePerformanceFailure; },
-    get normalizeLivePalmesImportPerformances() { return normalizeLivePalmesImportPerformances; },
-    get parseCompetitionImportPayload() { return parseCompetitionImportPayload; },
-    get performanceBaseDocId() { return performanceBaseDocId; },
-    get performanceMergeTargetPayloadFromSwimmer() { return performanceMergeTargetPayloadFromSwimmer; },
-    get performancePublicKey() { return performancePublicKey; },
-    get performanceSwimmerPageId() { return performanceSwimmerPageId; },
-    get publicPdfStoragePath() { return publicPdfStoragePath; },
-    get publicPerformanceBaseRow() { return publicPerformanceBaseRow; },
-    get publicStorageUrl() { return publicStorageUrl; },
-    get publishCompetitionImportOutputs() { return publishCompetitionImportOutputs; },
-    get publishEngagementNationalSwimmerMerge() { return publishEngagementNationalSwimmerMerge; },
-    get publishNativeRecords() { return publishNativeRecords; },
-    get reactivateEngagementClubRosterSwimmersFromPerformanceRows() { return reactivateEngagementClubRosterSwimmersFromPerformanceRows; },
-    get readNapRecordsAdministration() { return readNapRecordsAdministration; },
-    get readPerformanceDocsForNationalSwimmerMerge() { return readPerformanceDocsForNationalSwimmerMerge; },
-    get stableHash() { return stableHash; },
-    get stageCompetitionImportReplacement() { return stageCompetitionImportReplacement; },
-    get storage() { return storage; },
-    get swimmerMergeIds() { return swimmerMergeIds; },
-    get upsertEngagementClubRosterSwimmer() { return upsertEngagementClubRosterSwimmer; },
-    get writeAuditLog() { return writeAuditLog; },
-    get writeAuditLogOnce() { return writeAuditLogOnce; },
-    get writePerformanceBaseRows() { return writePerformanceBaseRows; },
-    get writePerformanceSwimmerIndexRows() { return writePerformanceSwimmerIndexRows; },
-    get writePerformanceSwimmerPageRows() { return writePerformanceSwimmerPageRows; }
-  });
-  return portalPerformanceHandlers.instance;
-}
 
 
 
-function portalCompetitionHandlers() {
-  if (!portalCompetitionHandlers.instance) portalCompetitionHandlers.instance = require("./portal-competition-handlers").createCompetitionHandlers({
-    get ENGAGEMENT_CALENDAR_EVENTS_COLLECTION() { return ENGAGEMENT_CALENDAR_EVENTS_COLLECTION; },
-    get ENGAGEMENT_COMPETITION_CALENDARS_COLLECTION() { return ENGAGEMENT_COMPETITION_CALENDARS_COLLECTION; },
-    get ENGAGEMENT_COMPETITION_LEVELS() { return ENGAGEMENT_COMPETITION_LEVELS; },
-    get ENGAGEMENT_COMPETITION_TYPES() { return ENGAGEMENT_COMPETITION_TYPES; },
-    get ENGAGEMENT_ENTRY_STATUSES() { return ENGAGEMENT_ENTRY_STATUSES; },
-    get ENGAGEMENT_EVENT_DEFINITION_BY_CODE() { return ENGAGEMENT_EVENT_DEFINITION_BY_CODE; },
-    get ENGAGEMENT_OPEN_WATER_COURSE_LIMIT() { return ENGAGEMENT_OPEN_WATER_COURSE_LIMIT; },
-    get ENVIRONMENT() { return ENVIRONMENT; },
-    get FieldPath() { return FieldPath; },
-    get FieldValue() { return FieldValue; },
-    get HttpsError() { return HttpsError; },
-    get LIVEPALMES_STORAGE_BUCKET() { return LIVEPALMES_STORAGE_BUCKET; },
-    get MAX_COMPETITION_DOCUMENTS() { return MAX_COMPETITION_DOCUMENTS; },
-    get accessManagementContext() { return accessManagementContext; },
-    get armNativeCompetitionNotification() { return armNativeCompetitionNotification; },
-    get assertCanDeleteEngagementDocument() { return assertCanDeleteEngagementDocument; },
-    get assertCanManageEngagementCompetition() { return assertCanManageEngagementCompetition; },
-    get assertCanModifyEngagementEvent() { return assertCanModifyEngagementEvent; },
-    get assertCapability() { return assertCapability; },
-    get assertEngagementCompetitionDocumentPath() { return assertEngagementCompetitionDocumentPath; },
-    get buildEngagementCompetitionTxt() { return buildEngagementCompetitionTxt; },
-    get cleanCompetitionDocumentInput() { return cleanCompetitionDocumentInput; },
-    get cleanCompetitionDocuments() { return cleanCompetitionDocuments; },
-    get cleanEngagementCalendarEventPayload() { return cleanEngagementCalendarEventPayload; },
-    get cleanEngagementCompetitionEvents() { return cleanEngagementCompetitionEvents; },
-    get cleanEngagementCompetitionPayload() { return cleanEngagementCompetitionPayload; },
-    get cleanEngagementCompetitionType() { return cleanEngagementCompetitionType; },
-    get cleanEngagementEntryStatus() { return cleanEngagementEntryStatus; },
-    get cleanEngagementOpenWaterCourse() { return cleanEngagementOpenWaterCourse; },
-    get cleanEngagementOpenWaterCourses() { return cleanEngagementOpenWaterCourses; },
-    get cleanEngagementProgramSessions() { return cleanEngagementProgramSessions; },
-    get cleanIsoDate() { return cleanIsoDate; },
-    get cleanText() { return cleanText; },
-    get competitionDocumentDownloadUrl() { return competitionDocumentDownloadUrl; },
-    get competitionDocumentStoragePath() { return competitionDocumentStoragePath; },
-    get competitionDocumentTokenFromUrl() { return competitionDocumentTokenFromUrl; },
-    get createNativePortalCalendarRecord() { return createNativePortalCalendarRecord; },
-    get crypto() { return crypto; },
-    get db() { return db; },
-    get decodeCompetitionDocumentDataUrl() { return decodeCompetitionDocumentDataUrl; },
-    get decodeEngagementCompetitionStatisticsCache() { return decodeEngagementCompetitionStatisticsCache; },
-    get encodeEngagementCompetitionStatisticsCache() { return encodeEngagementCompetitionStatisticsCache; },
-    get engagementAccessContext() { return engagementAccessContext; },
-    get engagementAccessRequestItem() { return engagementAccessRequestItem; },
-    get engagementActiveClubMailRecipients() { return engagementActiveClubMailRecipients; },
-    get engagementCalendarEventCalendarRef() { return engagementCalendarEventCalendarRef; },
-    get engagementCalendarEventDetailItem() { return engagementCalendarEventDetailItem; },
-    get engagementCalendarEventItemsFromData() { return engagementCalendarEventItemsFromData; },
-    get engagementClosureQueueRef() { return engagementClosureQueueRef; },
-    get engagementClubAccessContext() { return engagementClubAccessContext; },
-    get engagementClubCompetitionIndexRef() { return engagementClubCompetitionIndexRef; },
-    get engagementClubEntryCompetitionIds() { return engagementClubEntryCompetitionIds; },
-    get engagementClubEntryHasParticipants() { return engagementClubEntryHasParticipants; },
-    get engagementClubEntryItem() { return engagementClubEntryItem; },
-    get engagementCompetitionCalendarItemsFromData() { return engagementCompetitionCalendarItemsFromData; },
-    get engagementCompetitionCalendarRef() { return engagementCompetitionCalendarRef; },
-    get engagementCompetitionDetailItem() { return engagementCompetitionDetailItem; },
-    get engagementCompetitionDocumentContext() { return engagementCompetitionDocumentContext; },
-    get engagementCompetitionDocumentRecipients() { return engagementCompetitionDocumentRecipients; },
-    get engagementCompetitionDocumentUploader() { return engagementCompetitionDocumentUploader; },
-    get engagementCompetitionListItem() { return engagementCompetitionListItem; },
-    get engagementCompetitionStatisticsCacheRef() { return engagementCompetitionStatisticsCacheRef; },
-    get engagementCompetitionStatisticsItem() { return engagementCompetitionStatisticsItem; },
-    get engagementDeletionRequestId() { return engagementDeletionRequestId; },
-    get engagementEventIsPast() { return engagementEventIsPast; },
-    get engagementMailRecipientFromUserDoc() { return engagementMailRecipientFromUserDoc; },
-    get engagementMailRecipientIndexStateRef() { return engagementMailRecipientIndexStateRef; },
-    get engagementMailRecipientShardGroups() { return engagementMailRecipientShardGroups; },
-    get engagementMailRecipientShardRef() { return engagementMailRecipientShardRef; },
-    get engagementMailRecipientShardRefs() { return engagementMailRecipientShardRefs; },
-    get engagementMailRecipientsFromIndex() { return engagementMailRecipientsFromIndex; },
-    get engagementNationalAdministrationPendingCounts() { return engagementNationalAdministrationPendingCounts; },
-    get engagementOpenWaterCourseConfigRef() { return engagementOpenWaterCourseConfigRef; },
-    get engagementPdfFileName() { return engagementPdfFileName; },
-    get engagementRegionsMatch() { return engagementRegionsMatch; },
-    get engagementSeasonBoundsFromEndYear() { return engagementSeasonBoundsFromEndYear; },
-    get engagementSeasonEndYearFromIsoDate() { return engagementSeasonEndYearFromIsoDate; },
-    get engagementTxtSwimmerCategory() { return engagementTxtSwimmerCategory; },
-    get filterEngagementCompetitionCalendarItems() { return filterEngagementCompetitionCalendarItems; },
-    get getOrCreateEngagementCompetitionTxt() { return getOrCreateEngagementCompetitionTxt; },
-    get hasManagedEngagementCompetitionDocumentStorage() { return hasManagedEngagementCompetitionDocumentStorage; },
-    get isNationalOnlyEngagementCompetitionLevel() { return isNationalOnlyEngagementCompetitionLevel; },
-    get mutateNativeCompetitionDocument() { return mutateNativeCompetitionDocument; },
-    get nativeAdminCompetitionEntries() { return nativeAdminCompetitionEntries; },
-    get nativeNotificationPreview() { return nativeNotificationPreview; },
-    get nativePerformanceFailure() { return nativePerformanceFailure; },
-    get nativePortalCalendarItems() { return nativePortalCalendarItems; },
-    get nativePortalCompetition() { return nativePortalCompetition; },
-    get nativeQualificationError() { return nativeQualificationError; },
-    get nativeQualificationNow() { return nativeQualificationNow; },
-    get nativeQualificationServices() { return nativeQualificationServices; },
-    get portalReadStats() { return portalReadStats; },
-    get qualificationEngine() { return qualificationEngine; },
-    get qualificationEvents() { return qualificationEvents; },
-    get qualificationService() { return qualificationService; },
-    get storage() { return storage; },
-    get writeAuditLog() { return writeAuditLog; },
-    get writeAuditLogOnce() { return writeAuditLogOnce; },
-    get writeEngagementClubAdminDirectory() { return writeEngagementClubAdminDirectory; }
-  });
-  return portalCompetitionHandlers.instance;
-}
 
-function portalNationalHandlers() {
-  if (!portalNationalHandlers.instance) portalNationalHandlers.instance = require("./portal-national-handlers").createNationalHandlers({
-    get AUDIT_ACTOR_RESOLUTION_LIMIT() { return AUDIT_ACTOR_RESOLUTION_LIMIT; },
-    get AUDIT_COMPETITION_RESOLUTION_LIMIT() { return AUDIT_COMPETITION_RESOLUTION_LIMIT; },
-    get AUDIT_LEGACY_VISIBLE_SINCE() { return AUDIT_LEGACY_VISIBLE_SINCE; },
-    get AUDIT_PAGE_LIMIT() { return AUDIT_PAGE_LIMIT; },
-    get AUDIT_PERSON_RESOLUTION_LIMIT() { return AUDIT_PERSON_RESOLUTION_LIMIT; },
-    get CLUB_REFERENCE_BY_FEDERAL_NUMBER() { return CLUB_REFERENCE_BY_FEDERAL_NUMBER; },
-    get CLUB_REFERENCE_BY_ID() { return CLUB_REFERENCE_BY_ID; },
-    get ENGAGEMENT_CLUBS_COLLECTION() { return ENGAGEMENT_CLUBS_COLLECTION; },
-    get ENGAGEMENT_CLUB_PEOPLE_ROSTERS_COLLECTION() { return ENGAGEMENT_CLUB_PEOPLE_ROSTERS_COLLECTION; },
-    get ENGAGEMENT_CLUB_ROSTERS_COLLECTION() { return ENGAGEMENT_CLUB_ROSTERS_COLLECTION; },
-    get ENGAGEMENT_MAIL_RECIPIENT_SHARD_COUNT() { return ENGAGEMENT_MAIL_RECIPIENT_SHARD_COUNT; },
-    get ENGAGEMENT_SWIMMER_CHANGE_REQUESTS_COLLECTION() { return ENGAGEMENT_SWIMMER_CHANGE_REQUESTS_COLLECTION; },
-    get ENVIRONMENT() { return ENVIRONMENT; },
-    get FieldPath() { return FieldPath; },
-    get FieldValue() { return FieldValue; },
-    get HttpsError() { return HttpsError; },
-    get PERFORMANCE_BASE_COLLECTION() { return PERFORMANCE_BASE_COLLECTION; },
-    get auditManagementContext() { return auditManagementContext; },
-    get auth() { return auth; },
-    get cleanClubPayload() { return cleanClubPayload; },
-    get cleanEngagementSwimmerIdentityCorrection() { return cleanEngagementSwimmerIdentityCorrection; },
-    get cleanFirestoreValue() { return cleanFirestoreValue; },
-    get cleanText() { return cleanText; },
-    get currentEngagementCategoryFromBirthDate() { return currentEngagementCategoryFromBirthDate; },
-    get db() { return db; },
-    get deleteEngagementClubPeopleRosterPerson() { return deleteEngagementClubPeopleRosterPerson; },
-    get deleteEngagementClubSwimmerPermanently() { return deleteEngagementClubSwimmerPermanently; },
-    get displayNameFromProfile() { return displayNameFromProfile; },
-    get engagementAccessContext() { return engagementAccessContext; },
-    get engagementClubAccessContext() { return engagementClubAccessContext; },
-    get engagementClubPersonEntrySnapshot() { return engagementClubPersonEntrySnapshot; },
-    get engagementClubPersonFullName() { return engagementClubPersonFullName; },
-    get engagementClubPersonItem() { return engagementClubPersonItem; },
-    get engagementClubSwimmerDeletionUsage() { return engagementClubSwimmerDeletionUsage; },
-    get engagementNationalSwimmerItemFromDoc() { return engagementNationalSwimmerItemFromDoc; },
-    get engagementNewSwimmerItem() { return engagementNewSwimmerItem; },
-    get engagementStoredClubItem() { return engagementStoredClubItem; },
-    get engagementSwimmerChangeRequestItem() { return engagementSwimmerChangeRequestItem; },
-    get engagementSwimmerIdentitySnapshot() { return engagementSwimmerIdentitySnapshot; },
-    get getEngagementNationalSwimmerForMerge() { return getEngagementNationalSwimmerForMerge; },
-    get getEngagementSwimmerCorrectionTarget() { return getEngagementSwimmerCorrectionTarget; },
-    get manageNationalLibraryDocuments() { return manageNationalLibraryDocuments; },
-    get mergeEngagementClubEntryOfficials() { return mergeEngagementClubEntryOfficials; },
-    get portalReadStats() { return portalReadStats; },
-    get publicEngagementClubDirectoryRef() { return publicEngagementClubDirectoryRef; },
-    get publicEngagementClubItem() { return publicEngagementClubItem; },
-    get readEngagementClubAdminDirectory() { return readEngagementClubAdminDirectory; },
-    get searchEngagementNationalSwimmerDocs() { return searchEngagementNationalSwimmerDocs; },
-    get searchEngagementNationalSwimmerMergeTargetDocs() { return searchEngagementNationalSwimmerMergeTargetDocs; },
-    get setEngagementSwimmerChangeRequestRosterState() { return setEngagementSwimmerChangeRequestRosterState; },
-    get stableHash() { return stableHash; },
-    get upsertEngagementClubPeopleRosterPerson() { return upsertEngagementClubPeopleRosterPerson; },
-    get writeAuditLog() { return writeAuditLog; },
-    get writeAuditLogOnce() { return writeAuditLogOnce; }
-  });
-  return portalNationalHandlers.instance;
-}
 
-function portalClubHandlers() {
-  if (!portalClubHandlers.instance) portalClubHandlers.instance = require("./portal-club-handlers").createClubHandlers({
-    get ENGAGEMENT_CLUB_PEOPLE_ROSTERS_COLLECTION() { return ENGAGEMENT_CLUB_PEOPLE_ROSTERS_COLLECTION; },
-    get ENGAGEMENT_COMPETITION_ENTRY_SUMMARIES_COLLECTION() { return ENGAGEMENT_COMPETITION_ENTRY_SUMMARIES_COLLECTION; },
-    get ENGAGEMENT_SWIMMER_LICENSE_NUMBERS_COLLECTION() { return ENGAGEMENT_SWIMMER_LICENSE_NUMBERS_COLLECTION; },
-    get ENGAGEMENT_SWIMMER_LICENSE_PATTERN() { return ENGAGEMENT_SWIMMER_LICENSE_PATTERN; },
-    get ENVIRONMENT() { return ENVIRONMENT; },
-    get HttpsError() { return HttpsError; },
-    get PERFORMANCE_SWIMMERS_COLLECTION() { return PERFORMANCE_SWIMMERS_COLLECTION; },
-    get assertCanManageEngagementCompetition() { return assertCanManageEngagementCompetition; },
-    get assertEngagementClubWriteOpen() { return assertEngagementClubWriteOpen; },
-    get assertEngagementSwimmerRoleCompatibility() { return assertEngagementSwimmerRoleCompatibility; },
-    get assertNoEngagementSwimmerLicenseConflict() { return assertNoEngagementSwimmerLicenseConflict; },
-    get buildEngagementClubRecapPdf() { return buildEngagementClubRecapPdf; },
-    get buildEngagementClubSwimmersFromRequest() { return buildEngagementClubSwimmersFromRequest; },
-    get buildEngagementNewSwimmerAlerts() { return buildEngagementNewSwimmerAlerts; },
-    get cleanEngagementClubActivityStatus() { return cleanEngagementClubActivityStatus; },
-    get cleanEngagementClubPerson() { return cleanEngagementClubPerson; },
-    get cleanEngagementCompetitionEvents() { return cleanEngagementCompetitionEvents; },
-    get cleanEngagementCompetitionType() { return cleanEngagementCompetitionType; },
-    get cleanEngagementEntryIndividualEntries() { return cleanEngagementEntryIndividualEntries; },
-    get cleanEngagementEntryRelays() { return cleanEngagementEntryRelays; },
-    get cleanEngagementEntrySwimmer() { return cleanEngagementEntrySwimmer; },
-    get cleanEngagementLicenseSeasonStatus() { return cleanEngagementLicenseSeasonStatus; },
-    get cleanEngagementLicenseVerificationStatus() { return cleanEngagementLicenseVerificationStatus; },
-    get cleanEngagementMaxEventsPerSwimmer() { return cleanEngagementMaxEventsPerSwimmer; },
-    get cleanEngagementMissingEntryTimeMode() { return cleanEngagementMissingEntryTimeMode; },
-    get cleanEngagementNewSwimmer() { return cleanEngagementNewSwimmer; },
-    get cleanEngagementPoolLength() { return cleanEngagementPoolLength; },
-    get cleanEngagementQualificationTimesMode() { return cleanEngagementQualificationTimesMode; },
-    get cleanEngagementTeamLeader() { return cleanEngagementTeamLeader; },
-    get cleanEngagementTimingType() { return cleanEngagementTimingType; },
-    get cleanFirestoreValue() { return cleanFirestoreValue; },
-    get cleanIsoDate() { return cleanIsoDate; },
-    get cleanText() { return cleanText; },
-    get clubRecapZip() { return clubRecapZip; },
-    get currentEngagementCategoryFromBirthDate() { return currentEngagementCategoryFromBirthDate; },
-    get currentEngagementSeasonInfo() { return currentEngagementSeasonInfo; },
-    get db() { return db; },
-    get deleteEngagementClubRosterSwimmer() { return deleteEngagementClubRosterSwimmer; },
-    get deleteEngagementCompetitionEntrySummary() { return deleteEngagementCompetitionEntrySummary; },
-    get engagementAccessContext() { return engagementAccessContext; },
-    get engagementClubAccessContext() { return engagementClubAccessContext; },
-    get engagementClubEntryHasParticipants() { return engagementClubEntryHasParticipants; },
-    get engagementClubEntryId() { return engagementClubEntryId; },
-    get engagementClubEntryItem() { return engagementClubEntryItem; },
-    get engagementClubPeopleRosterPeopleFromData() { return engagementClubPeopleRosterPeopleFromData; },
-    get engagementClubPeopleRosterRef() { return engagementClubPeopleRosterRef; },
-    get engagementClubPersonIdentityConflict() { return engagementClubPersonIdentityConflict; },
-    get engagementClubPersonItem() { return engagementClubPersonItem; },
-    get engagementClubPersonOutsideClubConflict() { return engagementClubPersonOutsideClubConflict; },
-    get engagementClubRosterRef() { return engagementClubRosterRef; },
-    get engagementClubRosterSwimmerItem() { return engagementClubRosterSwimmerItem; },
-    get engagementClubRosterSwimmerKey() { return engagementClubRosterSwimmerKey; },
-    get engagementClubRosterSwimmersFromData() { return engagementClubRosterSwimmersFromData; },
-    get engagementClubSwimmerItem() { return engagementClubSwimmerItem; },
-    get engagementCompetitionDetailItem() { return engagementCompetitionDetailItem; },
-    get engagementCompetitionEntrySummariesFromData() { return engagementCompetitionEntrySummariesFromData; },
-    get engagementCompetitionEntrySummaryItem() { return engagementCompetitionEntrySummaryItem; },
-    get engagementCompetitionEntrySummaryRef() { return engagementCompetitionEntrySummaryRef; },
-    get engagementKnownTimeHistory() { return engagementKnownTimeHistory; },
-    get engagementLicenseControlSeason() { return engagementLicenseControlSeason; },
-    get engagementNewSwimmerAlertFromMatch() { return engagementNewSwimmerAlertFromMatch; },
-    get engagementNewSwimmerItem() { return engagementNewSwimmerItem; },
-    get engagementPdfFeeTotal() { return engagementPdfFeeTotal; },
-    get engagementPersonLicenseKey() { return engagementPersonLicenseKey; },
-    get engagementReferenceSwimmerItem() { return engagementReferenceSwimmerItem; },
-    get engagementSwimmerLicenseId() { return engagementSwimmerLicenseId; },
-    get engagementSwimmerLicenseNumberId() { return engagementSwimmerLicenseNumberId; },
-    get engagementSwimmerLicenseNumberKey() { return engagementSwimmerLicenseNumberKey; },
-    get engagementSwimmerLicensePayload() { return engagementSwimmerLicensePayload; },
-    get engagementSwimmerRecoveryPreview() { return engagementSwimmerRecoveryPreview; },
-    get engagementTeamLeaderComplete() { return engagementTeamLeaderComplete; },
-    get generateNativeClubRecapPdf() { return generateNativeClubRecapPdf; },
-    get getEngagementEntryTimeRowsForSwimmer() { return getEngagementEntryTimeRowsForSwimmer; },
-    get getOrCreateEngagementClubRecapPdf() { return getOrCreateEngagementClubRecapPdf; },
-    get importSwimmerCreation() { return importSwimmerCreation; },
-    get intranapSwimmersIndex() { return intranapSwimmersIndex; },
-    get loadPerformanceRecordsData() { return loadPerformanceRecordsData; },
-    get nativeAdminCompetitionEntries() { return nativeAdminCompetitionEntries; },
-    get nativeClubEntryTimeHistory() { return nativeClubEntryTimeHistory; },
-    get nativeClubEntryView() { return nativeClubEntryView; },
-    get nativePortalCompetition() { return nativePortalCompetition; },
-    get portalReadStats() { return portalReadStats; },
-    get previewNativeClubEntryTimes() { return previewNativeClubEntryTimes; },
-    get publicEngagementClubDirectoryRef() { return publicEngagementClubDirectoryRef; },
-    get publicEngagementClubItem() { return publicEngagementClubItem; },
-    get qualificationEngine() { return qualificationEngine; },
-    get qualificationRelaysAfterIndividualChange() { return qualificationRelaysAfterIndividualChange; },
-    get qualificationService() { return qualificationService; },
-    get rebuildEngagementClubPeopleRoster() { return rebuildEngagementClubPeopleRoster; },
-    get resolveEngagementClubPersonSwimmer() { return resolveEngagementClubPersonSwimmer; },
-    get resolveEngagementIndividualEntriesForSwimmer() { return resolveEngagementIndividualEntriesForSwimmer; },
-    get saveNativeClubIndividualEntries() { return saveNativeClubIndividualEntries; },
-    get saveNativeClubOfficials() { return saveNativeClubOfficials; },
-    get saveNativeClubRelays() { return saveNativeClubRelays; },
-    get saveNativeClubSwimmerSelections() { return saveNativeClubSwimmerSelections; },
-    get sortEngagementClubSwimmers() { return sortEngagementClubSwimmers; },
-    get stableHash() { return stableHash; },
-    get throwEngagementClubPersonIdentityConflict() { return throwEngagementClubPersonIdentityConflict; },
-    get uniqueEngagementClubSwimmers() { return uniqueEngagementClubSwimmers; },
-    get upsertEngagementClubPeopleRosterPerson() { return upsertEngagementClubPeopleRosterPerson; },
-    get upsertEngagementClubRosterSwimmer() { return upsertEngagementClubRosterSwimmer; },
-    get validateEngagementIndividualEntryTimes() { return validateEngagementIndividualEntryTimes; },
-    get validateEngagementRelayEntryTimes() { return validateEngagementRelayEntryTimes; },
-    get writeAuditLog() { return writeAuditLog; },
-    get writeAuditLogOnce() { return writeAuditLogOnce; }
-  });
-  return portalClubHandlers.instance;
-}
+
+
+
+
 
 
 
@@ -2789,12 +6749,12 @@ async function assertComputerPdfAccess(input0, input1) {
   return $serverConsoleService_assertComputerPdfAccess().assertComputerPdfAccess(...arguments);
 }
 
-exports.storeCompetitionPdf = onCall(CALLABLE_OPTIONS, /* extracted-handler: functions/portal-performance-handlers.js#storeCompetitionPdf#arrow */ async (request) => {
-  return portalPerformanceHandlers().storeCompetitionPdf(request);
+exports.storeCompetitionPdf = onCall(CALLABLE_OPTIONS, /* extracted-handler: functions/backend/portal-performance-handlers/store-competition-pdf.js#storeCompetitionPdf#arrow */ async (request) => {
+  return $portalPerformanceHandlers_storeCompetitionPdf().storeCompetitionPdf(request);
 });
 
-exports.deleteCompetitionPdf = onCall(CALLABLE_OPTIONS, /* extracted-handler: functions/portal-performance-handlers.js#deleteCompetitionPdf#arrow */ async (request) => {
-  return portalPerformanceHandlers().deleteCompetitionPdf(request);
+exports.deleteCompetitionPdf = onCall(CALLABLE_OPTIONS, /* extracted-handler: functions/backend/portal-performance-handlers/delete-competition-pdf.js#deleteCompetitionPdf#arrow */ async (request) => {
+  return $portalPerformanceHandlers_deleteCompetitionPdf().deleteCompetitionPdf(request);
 });
 
 exports.syncOfficialResultToPublicIndex = onDocumentUpdated(PUBLIC_RESULT_TRIGGER_OPTIONS, async (event) => {
@@ -2965,8 +6925,8 @@ exports.submitEngagementAccessRequest = onCall({ ...PORTAL_ACCESS_REQUEST_OPTION
   };
 });
 
-exports.listEngagementAccessRequests = onCall(CALLABLE_OPTIONS, /* extracted-handler: functions/portal-competition-handlers.js#listEngagementAccessRequests#arrow */ async (request) => {
-  return portalCompetitionHandlers().listEngagementAccessRequests(request);
+exports.listEngagementAccessRequests = onCall(CALLABLE_OPTIONS, /* extracted-handler: functions/backend/portal-competition-handlers/list-engagement-access-requests.js#listEngagementAccessRequests#arrow */ async (request) => {
+  return $portalCompetitionHandlers_listEngagementAccessRequests().listEngagementAccessRequests(request);
 });
 
 exports.resolveEngagementAccessRequest = onCall({ ...PORTAL_ACCESS_REQUEST_OPTIONS, secrets: ENVIRONMENT.sportingDataSource === "nap" ? [...ENGAGEMENT_MAIL_SECRETS, defineSecret("LIVEPALMES_NAP_PASSWORD") ] : ENGAGEMENT_MAIL_SECRETS }, async (request) => {
@@ -3222,436 +7182,312 @@ exports.getCurrentAccessUser = onCall(CALLABLE_OPTIONS, /* extracted-handler: fu
   return $portalAccessHandlers_getCurrentAccessUser().getCurrentAccessUser(request);
 });
 
-function serverCompetitionModelService() {
-  if (!serverCompetitionModelService.instance) serverCompetitionModelService.instance = require("./server-competition-model-service").createCompetitionModelService({
-    get ENGAGEMENT_CALENDAR_EVENT_CALENDARS_COLLECTION() { return ENGAGEMENT_CALENDAR_EVENT_CALENDARS_COLLECTION; },
-    get ENGAGEMENT_CATEGORY_CODE_SET() { return ENGAGEMENT_CATEGORY_CODE_SET; },
-    get ENGAGEMENT_CLOSURE_QUEUE_COLLECTION() { return ENGAGEMENT_CLOSURE_QUEUE_COLLECTION; },
-    get ENGAGEMENT_CLUB_COMPETITION_INDEXES_COLLECTION() { return ENGAGEMENT_CLUB_COMPETITION_INDEXES_COLLECTION; },
-    get ENGAGEMENT_COMPETITION_CALENDARS_COLLECTION() { return ENGAGEMENT_COMPETITION_CALENDARS_COLLECTION; },
-    get ENGAGEMENT_COMPETITION_LEVELS() { return ENGAGEMENT_COMPETITION_LEVELS; },
-    get ENGAGEMENT_COMPETITION_TYPES() { return ENGAGEMENT_COMPETITION_TYPES; },
-    get ENGAGEMENT_CONFIGURATION_COLLECTION() { return ENGAGEMENT_CONFIGURATION_COLLECTION; },
-    get ENGAGEMENT_ENTRY_STATUSES() { return ENGAGEMENT_ENTRY_STATUSES; },
-    get ENGAGEMENT_EVENT_DEFINITION_BY_CODE() { return ENGAGEMENT_EVENT_DEFINITION_BY_CODE; },
-    get ENGAGEMENT_EVENT_FORBIDDEN_CATEGORIES() { return ENGAGEMENT_EVENT_FORBIDDEN_CATEGORIES; },
-    get ENGAGEMENT_MISSING_ENTRY_TIME_MODES() { return ENGAGEMENT_MISSING_ENTRY_TIME_MODES; },
-    get ENGAGEMENT_OPEN_WATER_COURSE_CONFIG_ID() { return ENGAGEMENT_OPEN_WATER_COURSE_CONFIG_ID; },
-    get ENGAGEMENT_OPEN_WATER_COURSE_DISCIPLINES() { return ENGAGEMENT_OPEN_WATER_COURSE_DISCIPLINES; },
-    get ENGAGEMENT_OPEN_WATER_COURSE_LIMIT() { return ENGAGEMENT_OPEN_WATER_COURSE_LIMIT; },
-    get ENGAGEMENT_OPEN_WATER_DEFAULT_COURSES() { return ENGAGEMENT_OPEN_WATER_DEFAULT_COURSES; },
-    get ENGAGEMENT_POOL_LENGTHS() { return ENGAGEMENT_POOL_LENGTHS; },
-    get ENGAGEMENT_PROGRAM_GENDER_MODES() { return ENGAGEMENT_PROGRAM_GENDER_MODES; },
-    get ENGAGEMENT_PROGRAM_PHASES() { return ENGAGEMENT_PROGRAM_PHASES; },
-    get ENGAGEMENT_QUALIFICATION_TIME_MODES() { return ENGAGEMENT_QUALIFICATION_TIME_MODES; },
-    get ENGAGEMENT_TIMING_TYPES() { return ENGAGEMENT_TIMING_TYPES; },
-    get ENGAGEMENT_WATER_BODY_TYPES() { return ENGAGEMENT_WATER_BODY_TYPES; },
-    get FieldPath() { return FieldPath; },
-    get HttpsError() { return HttpsError; },
-    get PUBLIC_CALENDAR_EVENT_TYPES() { return PUBLIC_CALENDAR_EVENT_TYPES; },
-    get cleanCompetitionDocuments() { return cleanCompetitionDocuments; },
-    get cleanEngagementGeneratedFiles() { return cleanEngagementGeneratedFiles; },
-    get cleanEngagementRegionIds() { return cleanEngagementRegionIds; },
-    get cleanEngagementRelayMixedMode() { return cleanEngagementRelayMixedMode; },
-    get cleanFirestoreValue() { return cleanFirestoreValue; },
-    get cleanIsoDateTime() { return cleanIsoDateTime; },
-    get cleanPublicCalendarEventType() { return cleanPublicCalendarEventType; },
-    get cleanPublicCalendarLevel() { return cleanPublicCalendarLevel; },
-    get cleanPublicCalendarProgram() { return cleanPublicCalendarProgram; },
-    get cleanPublicCalendarPublicationStatus() { return cleanPublicCalendarPublicationStatus; },
-    get cleanPublicCalendarUrl() { return cleanPublicCalendarUrl; },
-    get cleanPublicCalendarWhatsAppUrl() { return cleanPublicCalendarWhatsAppUrl; },
-    get cleanText() { return cleanText; },
-    get db() { return db; },
-    get engagementCategoryCodesForEvent() { return engagementCategoryCodesForEvent; },
-    get engagementCompetitionDocumentsMetadata() { return engagementCompetitionDocumentsMetadata; },
-    get normalizeEmail() { return normalizeEmail; },
-    get normalizeEngagementEventCategoryRestrictions() { return normalizeEngagementEventCategoryRestrictions; },
-    get stableHash() { return stableHash; }
-  });
-  return serverCompetitionModelService.instance;
-}
 
-/* extracted-function: functions/server-competition-model-service.js#cleanIsoDate */
+
+/* extracted-function: functions/backend/server-competition-model-service/clean-iso-date.js#cleanIsoDate */
 function cleanIsoDate(input0) {
-  return serverCompetitionModelService().cleanIsoDate(...arguments);
+  return $serverCompetitionModelService_cleanIsoDate().cleanIsoDate(...arguments);
 }
 
-/* extracted-function: functions/server-competition-model-service.js#cleanEngagementCompetitionLevel */
+/* extracted-function: functions/backend/server-competition-model-service/clean-engagement-competition-level.js#cleanEngagementCompetitionLevel */
 function cleanEngagementCompetitionLevel(input0) {
-  return serverCompetitionModelService().cleanEngagementCompetitionLevel(...arguments);
+  return $serverCompetitionModelService_cleanEngagementCompetitionLevel().cleanEngagementCompetitionLevel(...arguments);
 }
 
-/* extracted-function: functions/server-competition-model-service.js#isNationalOnlyEngagementCompetitionLevel */
+/* extracted-function: functions/backend/server-competition-model-service/clean-engagement-competition-level.js#isNationalOnlyEngagementCompetitionLevel */
 function isNationalOnlyEngagementCompetitionLevel(input0) {
-  return serverCompetitionModelService().isNationalOnlyEngagementCompetitionLevel(...arguments);
+  return $serverCompetitionModelService_cleanEngagementCompetitionLevel().isNationalOnlyEngagementCompetitionLevel(...arguments);
 }
 
-/* extracted-function: functions/server-competition-model-service.js#cleanEngagementEntryStatus */
+/* extracted-function: functions/backend/server-competition-model-service/clean-engagement-entry-status.js#cleanEngagementEntryStatus */
 function cleanEngagementEntryStatus(input0) {
-  return serverCompetitionModelService().cleanEngagementEntryStatus(...arguments);
+  return $serverCompetitionModelService_cleanEngagementEntryStatus().cleanEngagementEntryStatus(...arguments);
 }
 
-/* extracted-function: functions/server-competition-model-service.js#cleanEngagementCompetitionType */
+/* extracted-function: functions/backend/server-competition-model-service/clean-engagement-competition-type.js#cleanEngagementCompetitionType */
 function cleanEngagementCompetitionType(input0) {
-  return serverCompetitionModelService().cleanEngagementCompetitionType(...arguments);
+  return $serverCompetitionModelService_cleanEngagementCompetitionType().cleanEngagementCompetitionType(...arguments);
 }
 
-/* extracted-function: functions/server-competition-model-service.js#cleanEngagementWaterBodyType */
+/* extracted-function: functions/backend/server-competition-model-service/clean-engagement-pool-lane-count.js#cleanEngagementWaterBodyType */
 function cleanEngagementWaterBodyType(input0) {
-  return serverCompetitionModelService().cleanEngagementWaterBodyType(...arguments);
+  return $serverCompetitionModelService_cleanEngagementPoolLaneCount().cleanEngagementWaterBodyType(...arguments);
 }
 
-/* extracted-function: functions/server-competition-model-service.js#cleanEngagementOpenWaterCourse */
+/* extracted-function: functions/backend/server-competition-model-service/clean-engagement-open-water-course.js#cleanEngagementOpenWaterCourse */
 function cleanEngagementOpenWaterCourse() {
-  return serverCompetitionModelService().cleanEngagementOpenWaterCourse(...arguments);
+  return $serverCompetitionModelService_cleanEngagementOpenWaterCourse().cleanEngagementOpenWaterCourse(...arguments);
 }
 
-/* extracted-function: functions/server-competition-model-service.js#cleanEngagementOpenWaterCourses */
+/* extracted-function: functions/backend/server-competition-model-service/clean-engagement-open-water-courses.js#cleanEngagementOpenWaterCourses */
 function cleanEngagementOpenWaterCourses() {
-  return serverCompetitionModelService().cleanEngagementOpenWaterCourses(...arguments);
+  return $serverCompetitionModelService_cleanEngagementOpenWaterCourses().cleanEngagementOpenWaterCourses(...arguments);
 }
 
-/* extracted-function: functions/server-competition-model-service.js#engagementOpenWaterCourseConfigRef */
+/* extracted-function: functions/backend/server-competition-model-service/clean-engagement-open-water-courses.js#engagementOpenWaterCourseConfigRef */
 function engagementOpenWaterCourseConfigRef() {
-  return serverCompetitionModelService().engagementOpenWaterCourseConfigRef(...arguments);
+  return $serverCompetitionModelService_cleanEngagementOpenWaterCourses().engagementOpenWaterCourseConfigRef(...arguments);
 }
 
-/* extracted-function: functions/server-competition-model-service.js#engagementOpenWaterEventDefinition */
+/* extracted-function: functions/backend/server-competition-model-service/clean-engagement-competition-events.js#engagementOpenWaterEventDefinition */
 function engagementOpenWaterEventDefinition() {
-  return serverCompetitionModelService().engagementOpenWaterEventDefinition(...arguments);
+  return $serverCompetitionModelService_cleanEngagementCompetitionEvents().engagementOpenWaterEventDefinition(...arguments);
 }
 
-/* extracted-function: functions/server-competition-model-service.js#cleanOptionalEmail */
+/* extracted-function: functions/backend/server-competition-model-service/clean-optional-email.js#cleanOptionalEmail */
 function cleanOptionalEmail(input0) {
-  return serverCompetitionModelService().cleanOptionalEmail(...arguments);
+  return $serverCompetitionModelService_cleanOptionalEmail().cleanOptionalEmail(...arguments);
 }
 
-/* extracted-function: functions/server-competition-model-service.js#cleanEngagementPoolLength */
+/* extracted-function: functions/backend/server-competition-model-service/clean-engagement-pool-length.js#cleanEngagementPoolLength */
 function cleanEngagementPoolLength(input0) {
-  return serverCompetitionModelService().cleanEngagementPoolLength(...arguments);
+  return $serverCompetitionModelService_cleanEngagementPoolLength().cleanEngagementPoolLength(...arguments);
 }
 
-/* extracted-function: functions/server-competition-model-service.js#cleanEngagementPoolLaneCount */
+/* extracted-function: functions/backend/server-competition-model-service/clean-engagement-pool-lane-count.js#cleanEngagementPoolLaneCount */
 function cleanEngagementPoolLaneCount(input0) {
-  return serverCompetitionModelService().cleanEngagementPoolLaneCount(...arguments);
+  return $serverCompetitionModelService_cleanEngagementPoolLaneCount().cleanEngagementPoolLaneCount(...arguments);
 }
 
-/* extracted-function: functions/server-competition-model-service.js#cleanEngagementTimingType */
+/* extracted-function: functions/backend/server-competition-model-service/clean-engagement-pool-length.js#cleanEngagementTimingType */
 function cleanEngagementTimingType(input0) {
-  return serverCompetitionModelService().cleanEngagementTimingType(...arguments);
+  return $serverCompetitionModelService_cleanEngagementPoolLength().cleanEngagementTimingType(...arguments);
 }
 
-/* extracted-function: functions/server-competition-model-service.js#cleanEngagementQualificationTimesMode */
+/* extracted-function: functions/backend/server-competition-model-service/clean-engagement-missing-entry-time-mode.js#cleanEngagementQualificationTimesMode */
 function cleanEngagementQualificationTimesMode(input0) {
-  return serverCompetitionModelService().cleanEngagementQualificationTimesMode(...arguments);
+  return $serverCompetitionModelService_cleanEngagementMissingEntryTimeMode().cleanEngagementQualificationTimesMode(...arguments);
 }
 
-/* extracted-function: functions/server-competition-model-service.js#cleanEngagementMissingEntryTimeMode */
+/* extracted-function: functions/backend/server-competition-model-service/clean-engagement-missing-entry-time-mode.js#cleanEngagementMissingEntryTimeMode */
 function cleanEngagementMissingEntryTimeMode(input0) {
-  return serverCompetitionModelService().cleanEngagementMissingEntryTimeMode(...arguments);
+  return $serverCompetitionModelService_cleanEngagementMissingEntryTimeMode().cleanEngagementMissingEntryTimeMode(...arguments);
 }
 
-/* extracted-function: functions/server-competition-model-service.js#cleanEngagementMaxEventsPerSwimmer */
+/* extracted-function: functions/backend/server-competition-model-service/clean-engagement-max-events-per-swimmer.js#cleanEngagementMaxEventsPerSwimmer */
 function cleanEngagementMaxEventsPerSwimmer(input0) {
-  return serverCompetitionModelService().cleanEngagementMaxEventsPerSwimmer(...arguments);
+  return $serverCompetitionModelService_cleanEngagementMaxEventsPerSwimmer().cleanEngagementMaxEventsPerSwimmer(...arguments);
 }
 
-/* extracted-function: functions/server-competition-model-service.js#cleanEngagementFeeAmount */
+/* extracted-function: functions/backend/server-competition-model-service/clean-engagement-fee-amount.js#cleanEngagementFeeAmount */
 function cleanEngagementFeeAmount(input0) {
-  return serverCompetitionModelService().cleanEngagementFeeAmount(...arguments);
+  return $serverCompetitionModelService_cleanEngagementFeeAmount().cleanEngagementFeeAmount(...arguments);
 }
 
-/* extracted-function: functions/server-competition-model-service.js#cleanEngagementFees */
+/* extracted-function: functions/backend/server-competition-model-service/clean-engagement-fee-amount.js#cleanEngagementFees */
 function cleanEngagementFees() {
-  return serverCompetitionModelService().cleanEngagementFees(...arguments);
+  return $serverCompetitionModelService_cleanEngagementFeeAmount().cleanEngagementFees(...arguments);
 }
 
-/* extracted-function: functions/server-competition-model-service.js#cleanEngagementCompetitionEvents */
+/* extracted-function: functions/backend/server-competition-model-service/clean-engagement-competition-events.js#cleanEngagementCompetitionEvents */
 function cleanEngagementCompetitionEvents() {
-  return serverCompetitionModelService().cleanEngagementCompetitionEvents(...arguments);
+  return $serverCompetitionModelService_cleanEngagementCompetitionEvents().cleanEngagementCompetitionEvents(...arguments);
 }
 
-/* extracted-function: functions/server-competition-model-service.js#cleanEngagementProgramSessions */
+/* extracted-function: functions/backend/server-competition-model-service/clean-engagement-program-sessions.js#cleanEngagementProgramSessions */
 function cleanEngagementProgramSessions() {
-  return serverCompetitionModelService().cleanEngagementProgramSessions(...arguments);
+  return $serverCompetitionModelService_cleanEngagementProgramSessions().cleanEngagementProgramSessions(...arguments);
 }
 
-/* extracted-function: functions/server-competition-model-service.js#engagementCompetitionCalendarItem */
+/* extracted-function: functions/backend/server-competition-model-service/clean-engagement-pool-lane-count.js#engagementCompetitionCalendarItem */
 function engagementCompetitionCalendarItem() {
-  return serverCompetitionModelService().engagementCompetitionCalendarItem(...arguments);
+  return $serverCompetitionModelService_cleanEngagementPoolLaneCount().engagementCompetitionCalendarItem(...arguments);
 }
 
-/* extracted-function: functions/server-competition-model-service.js#engagementCompetitionListItem */
+/* extracted-function: functions/backend/server-competition-model-service/clean-engagement-fee-amount.js#engagementCompetitionListItem */
 function engagementCompetitionListItem(input0) {
-  return serverCompetitionModelService().engagementCompetitionListItem(...arguments);
+  return $serverCompetitionModelService_cleanEngagementFeeAmount().engagementCompetitionListItem(...arguments);
 }
 
-/* extracted-function: functions/server-competition-model-service.js#engagementCompetitionCalendarRef */
+/* extracted-function: functions/backend/server-competition-model-service/engagement-competition-calendar-ref.js#engagementCompetitionCalendarRef */
 function engagementCompetitionCalendarRef(input0, input1) {
-  return serverCompetitionModelService().engagementCompetitionCalendarRef(...arguments);
+  return $serverCompetitionModelService_engagementCompetitionCalendarRef().engagementCompetitionCalendarRef(...arguments);
 }
 
-/* extracted-function: functions/server-competition-model-service.js#engagementCalendarEventCalendarRef */
+/* extracted-function: functions/backend/server-competition-model-service/engagement-calendar-event-calendar-ref.js#engagementCalendarEventCalendarRef */
 function engagementCalendarEventCalendarRef(input0, input1) {
-  return serverCompetitionModelService().engagementCalendarEventCalendarRef(...arguments);
+  return $serverCompetitionModelService_engagementCalendarEventCalendarRef().engagementCalendarEventCalendarRef(...arguments);
 }
 
-/* extracted-function: functions/server-competition-model-service.js#cleanEngagementCalendarEventPayload */
+/* extracted-function: functions/backend/server-competition-model-service/clean-engagement-calendar-event-payload.js#cleanEngagementCalendarEventPayload */
 function cleanEngagementCalendarEventPayload() {
-  return serverCompetitionModelService().cleanEngagementCalendarEventPayload(...arguments);
+  return $serverCompetitionModelService_cleanEngagementCalendarEventPayload().cleanEngagementCalendarEventPayload(...arguments);
 }
 
-/* extracted-function: functions/server-competition-model-service.js#engagementCalendarEventCalendarItem */
+/* extracted-function: functions/backend/server-competition-model-service/engagement-calendar-event-calendar-item.js#engagementCalendarEventCalendarItem */
 function engagementCalendarEventCalendarItem() {
-  return serverCompetitionModelService().engagementCalendarEventCalendarItem(...arguments);
+  return $serverCompetitionModelService_engagementCalendarEventCalendarItem().engagementCalendarEventCalendarItem(...arguments);
 }
 
-/* extracted-function: functions/server-competition-model-service.js#engagementCalendarEventDetailItem */
+/* extracted-function: functions/backend/server-competition-model-service/engagement-calendar-event-detail-item.js#engagementCalendarEventDetailItem */
 function engagementCalendarEventDetailItem(input0) {
-  return serverCompetitionModelService().engagementCalendarEventDetailItem(...arguments);
+  return $serverCompetitionModelService_engagementCalendarEventDetailItem().engagementCalendarEventDetailItem(...arguments);
 }
 
-/* extracted-function: functions/server-competition-model-service.js#engagementCalendarEventItemsFromData */
+/* extracted-function: functions/backend/server-competition-model-service/engagement-calendar-event-calendar-ref.js#engagementCalendarEventItemsFromData */
 function engagementCalendarEventItemsFromData() {
-  return serverCompetitionModelService().engagementCalendarEventItemsFromData(...arguments);
+  return $serverCompetitionModelService_engagementCalendarEventCalendarRef().engagementCalendarEventItemsFromData(...arguments);
 }
 
-/* extracted-function: functions/server-competition-model-service.js#engagementClubCompetitionIndexRef */
+/* extracted-function: functions/backend/server-competition-model-service/engagement-club-competition-index-key.js#engagementClubCompetitionIndexRef */
 function engagementClubCompetitionIndexRef(input0, input1) {
-  return serverCompetitionModelService().engagementClubCompetitionIndexRef(...arguments);
+  return $serverCompetitionModelService_engagementClubCompetitionIndexKey().engagementClubCompetitionIndexRef(...arguments);
 }
 
-/* extracted-function: functions/server-competition-model-service.js#engagementClubCompetitionIndexKey */
+/* extracted-function: functions/backend/server-competition-model-service/engagement-club-competition-index-key.js#engagementClubCompetitionIndexKey */
 function engagementClubCompetitionIndexKey(input0) {
-  return serverCompetitionModelService().engagementClubCompetitionIndexKey(...arguments);
+  return $serverCompetitionModelService_engagementClubCompetitionIndexKey().engagementClubCompetitionIndexKey(...arguments);
 }
 
-/* extracted-function: functions/server-competition-model-service.js#engagementClosureQueueRef */
+/* extracted-function: functions/backend/server-competition-model-service/engagement-closure-queue-ref.js#engagementClosureQueueRef */
 function engagementClosureQueueRef(input0, input1) {
-  return serverCompetitionModelService().engagementClosureQueueRef(...arguments);
+  return $serverCompetitionModelService_engagementClosureQueueRef().engagementClosureQueueRef(...arguments);
 }
 
-/* extracted-function: functions/server-competition-model-service.js#engagementClosureQueueItem */
+/* extracted-function: functions/backend/server-competition-model-service/engagement-closure-queue-item.js#engagementClosureQueueItem */
 function engagementClosureQueueItem() {
-  return serverCompetitionModelService().engagementClosureQueueItem(...arguments);
+  return $serverCompetitionModelService_engagementClosureQueueItem().engagementClosureQueueItem(...arguments);
 }
 
-/* extracted-function: functions/server-competition-model-service.js#engagementCompetitionCalendarItemsFromData */
+/* extracted-function: functions/backend/server-competition-model-service/engagement-club-entry-competition-ids.js#engagementCompetitionCalendarItemsFromData */
 function engagementCompetitionCalendarItemsFromData() {
-  return serverCompetitionModelService().engagementCompetitionCalendarItemsFromData(...arguments);
+  return $serverCompetitionModelService_engagementClubEntryCompetitionIds().engagementCompetitionCalendarItemsFromData(...arguments);
 }
 
-/* extracted-function: functions/server-competition-model-service.js#filterEngagementCompetitionCalendarItems */
+/* extracted-function: functions/backend/server-competition-model-service/engagement-club-entry-competition-ids.js#filterEngagementCompetitionCalendarItems */
 function filterEngagementCompetitionCalendarItems() {
-  return serverCompetitionModelService().filterEngagementCompetitionCalendarItems(...arguments);
+  return $serverCompetitionModelService_engagementClubEntryCompetitionIds().filterEngagementCompetitionCalendarItems(...arguments);
 }
 
-/* extracted-function: functions/server-competition-model-service.js#engagementCompetitionDetailItem */
+/* extracted-function: functions/backend/server-competition-model-service/engagement-competition-detail-item.js#engagementCompetitionDetailItem */
 function engagementCompetitionDetailItem(input0) {
-  return serverCompetitionModelService().engagementCompetitionDetailItem(...arguments);
+  return $serverCompetitionModelService_engagementCompetitionDetailItem().engagementCompetitionDetailItem(...arguments);
 }
 
-/* extracted-function: functions/server-competition-model-service.js#engagementClubEntryId */
+/* extracted-function: functions/backend/server-competition-model-service/engagement-club-entry-id.js#engagementClubEntryId */
 function engagementClubEntryId(input0, input1) {
-  return serverCompetitionModelService().engagementClubEntryId(...arguments);
+  return $serverCompetitionModelService_engagementClubEntryId().engagementClubEntryId(...arguments);
 }
 
-/* extracted-function: functions/server-competition-model-service.js#engagementClubEntryCompetitionIds */
+/* extracted-function: functions/backend/server-competition-model-service/engagement-club-entry-competition-ids.js#engagementClubEntryCompetitionIds */
 async function engagementClubEntryCompetitionIds() {
-  return serverCompetitionModelService().engagementClubEntryCompetitionIds(...arguments);
+  return $serverCompetitionModelService_engagementClubEntryCompetitionIds().engagementClubEntryCompetitionIds(...arguments);
 }
 
-/* extracted-function: functions/server-competition-model-service.js#engagementPersonLicenseKey */
+/* extracted-function: functions/backend/server-competition-model-service/engagement-person-license-key.js#engagementPersonLicenseKey */
 function engagementPersonLicenseKey(input0) {
-  return serverCompetitionModelService().engagementPersonLicenseKey(...arguments);
+  return $serverCompetitionModelService_engagementPersonLicenseKey().engagementPersonLicenseKey(...arguments);
 }
 
-/* extracted-function: functions/server-competition-model-service.js#assertEngagementSwimmerRoleCompatibility */
+/* extracted-function: functions/backend/server-competition-model-service/assert-engagement-swimmer-role-compatibility.js#assertEngagementSwimmerRoleCompatibility */
 function assertEngagementSwimmerRoleCompatibility() {
-  return serverCompetitionModelService().assertEngagementSwimmerRoleCompatibility(...arguments);
+  return $serverCompetitionModelService_assertEngagementSwimmerRoleCompatibility().assertEngagementSwimmerRoleCompatibility(...arguments);
 }
 
-function serverEntryModelService() {
-  if (!serverEntryModelService.instance) serverEntryModelService.instance = require("./server-entry-model-service").createEntryModelService({
-    get ENGAGEMENT_CLUB_ROSTERS_COLLECTION() { return ENGAGEMENT_CLUB_ROSTERS_COLLECTION; },
-    get ENGAGEMENT_ENTRY_TIME_CACHES_COLLECTION() { return ENGAGEMENT_ENTRY_TIME_CACHES_COLLECTION; },
-    get ENGAGEMENT_ENTRY_TIME_CACHE_VERSION() { return ENGAGEMENT_ENTRY_TIME_CACHE_VERSION; },
-    get ENGAGEMENT_ENTRY_TIME_SOURCE_KEY_LIMIT() { return ENGAGEMENT_ENTRY_TIME_SOURCE_KEY_LIMIT; },
-    get ENGAGEMENT_EVENT_DEFINITION_BY_CODE() { return ENGAGEMENT_EVENT_DEFINITION_BY_CODE; },
-    get ENGAGEMENT_EVENT_FORBIDDEN_CATEGORIES() { return ENGAGEMENT_EVENT_FORBIDDEN_CATEGORIES; },
-    get ENGAGEMENT_PROGRAM_GENDER_MODES() { return ENGAGEMENT_PROGRAM_GENDER_MODES; },
-    get ENGAGEMENT_RELAY_AGE_CATEGORY_RANK() { return ENGAGEMENT_RELAY_AGE_CATEGORY_RANK; },
-    get ENGAGEMENT_RELAY_CATEGORY_CODES() { return ENGAGEMENT_RELAY_CATEGORY_CODES; },
-    get ENGAGEMENT_SWIMMER_LICENSE_NUMBERS_COLLECTION() { return ENGAGEMENT_SWIMMER_LICENSE_NUMBERS_COLLECTION; },
-    get ENGAGEMENT_SWIMMER_LICENSE_PATTERN() { return ENGAGEMENT_SWIMMER_LICENSE_PATTERN; },
-    get FieldValue() { return FieldValue; },
-    get HttpsError() { return HttpsError; },
-    get PERFORMANCE_SWIMMERS_COLLECTION() { return PERFORMANCE_SWIMMERS_COLLECTION; },
-    get PERFORMANCE_SWIMMER_PAGES_COLLECTION() { return PERFORMANCE_SWIMMER_PAGES_COLLECTION; },
-    get POOL_COURSES() { return POOL_COURSES; },
-    get ageCategoryFromDates() { return ageCategoryFromDates; },
-    get armNativeCompetitionNotification() { return armNativeCompetitionNotification; },
-    get assertCanModifyEngagementEvent() { return assertCanModifyEngagementEvent; },
-    get assertEngagementClubWriteOpen() { return assertEngagementClubWriteOpen; },
-    get birthYear() { return birthYear; },
-    get cleanEngagementCompetitionEvents() { return cleanEngagementCompetitionEvents; },
-    get cleanEngagementCompetitionType() { return cleanEngagementCompetitionType; },
-    get cleanEngagementDocumentMetadata() { return cleanEngagementDocumentMetadata; },
-    get cleanEngagementLicenseSeasonStatus() { return cleanEngagementLicenseSeasonStatus; },
-    get cleanEngagementLicenseVerificationStatus() { return cleanEngagementLicenseVerificationStatus; },
-    get cleanEngagementPoolLength() { return cleanEngagementPoolLength; },
-    get cleanEngagementProgramSessions() { return cleanEngagementProgramSessions; },
-    get cleanEngagementTimingType() { return cleanEngagementTimingType; },
-    get cleanFirestoreValue() { return cleanFirestoreValue; },
-    get cleanIsoDate() { return cleanIsoDate; },
-    get cleanText() { return cleanText; },
-    get competitionYear() { return competitionYear; },
-    get createQualificationService() { return createQualificationService; },
-    get currentEngagementCategoryFromBirthDate() { return currentEngagementCategoryFromBirthDate; },
-    get currentEngagementSeasonInfo() { return currentEngagementSeasonInfo; },
-    get db() { return db; },
-    get engagementAccessContext() { return engagementAccessContext; },
-    get engagementCategoryCodesForEvent() { return engagementCategoryCodesForEvent; },
-    get engagementClubAccessContext() { return engagementClubAccessContext; },
-    get engagementClubCode() { return engagementClubCode; },
-    get engagementClubEntryId() { return engagementClubEntryId; },
-    get engagementClubName() { return engagementClubName; },
-    get engagementClubSwimmerItem() { return engagementClubSwimmerItem; },
-    get engagementEntryTimeCacheBuilds() { return engagementEntryTimeCacheBuilds; },
-    get engagementLicenseSeasonState() { return engagementLicenseSeasonState; },
-    get engagementRelayReferenceForEntry() { return engagementRelayReferenceForEntry; },
-    get engagementRelayReferenceMap() { return engagementRelayReferenceMap; },
-    get engagementSeasonBoundsFromEndYear() { return engagementSeasonBoundsFromEndYear; },
-    get formatTimeValue() { return formatTimeValue; },
-    get hydratePublicSwimmerRowsFromPayload() { return hydratePublicSwimmerRowsFromPayload; },
-    get importSeasonYear() { return importSeasonYear; },
-    get intranapSwimmersIndex() { return intranapSwimmersIndex; },
-    get isYouthCategory() { return isYouthCategory; },
-    get legacyQualificationService() { return legacyQualificationService; }, set legacyQualificationService(value) { legacyQualificationService = value; },
-    get normalizeCategoryCode() { return normalizeCategoryCode; },
-    get normalizeCourseCode() { return normalizeCourseCode; },
-    get normalizePerformanceSearchText() { return normalizePerformanceSearchText; },
-    get parseTimeValue() { return parseTimeValue; },
-    get performanceSearchTokens() { return performanceSearchTokens; },
-    get performanceSwimmerIndexKey() { return performanceSwimmerIndexKey; },
-    get performanceSwimmerPageId() { return performanceSwimmerPageId; },
-    get publicBetterPerformance() { return publicBetterPerformance; },
-    get publicPerformanceBaseRow() { return publicPerformanceBaseRow; },
-    get publicPerformanceSwimmerFilePath() { return publicPerformanceSwimmerFilePath; },
-    get qualificationEngine() { return qualificationEngine; },
-    get readPublicPerformanceJson() { return readPublicPerformanceJson; },
-    get recordReferenceForPerformance() { return recordReferenceForPerformance; },
-    get recordReferenceMap() { return recordReferenceMap; },
-    get stableHash() { return stableHash; },
-    get writeAuditLog() { return writeAuditLog; },
-    get writeAuditLogOnce() { return writeAuditLogOnce; }
-  });
-  return serverEntryModelService.instance;
-}
 
-/* extracted-function: functions/server-entry-model-service.js#cleanEngagementTeamLeader */
+
+/* extracted-function: functions/backend/server-entry-model-service/clean-engagement-team-leader.js#cleanEngagementTeamLeader */
 function cleanEngagementTeamLeader() {
-  return serverEntryModelService().cleanEngagementTeamLeader(...arguments);
+  return $serverEntryModelService_cleanEngagementTeamLeader().cleanEngagementTeamLeader(...arguments);
 }
 
-/* extracted-function: functions/server-entry-model-service.js#engagementTeamLeaderComplete */
+/* extracted-function: functions/backend/server-entry-model-service/engagement-team-leader-complete.js#engagementTeamLeaderComplete */
 function engagementTeamLeaderComplete() {
-  return serverEntryModelService().engagementTeamLeaderComplete(...arguments);
+  return $serverEntryModelService_engagementTeamLeaderComplete().engagementTeamLeaderComplete(...arguments);
 }
 
-/* extracted-function: functions/server-entry-model-service.js#cleanEngagementEntryOfficial */
+/* extracted-function: functions/backend/server-entry-model-service/clean-engagement-entry-official.js#cleanEngagementEntryOfficial */
 function cleanEngagementEntryOfficial() {
-  return serverEntryModelService().cleanEngagementEntryOfficial(...arguments);
+  return $serverEntryModelService_cleanEngagementEntryOfficial().cleanEngagementEntryOfficial(...arguments);
 }
 
-/* extracted-function: functions/server-entry-model-service.js#parseEngagementEntryTime */
+/* extracted-function: functions/backend/server-entry-model-service/parse-engagement-entry-time.js#parseEngagementEntryTime */
 function parseEngagementEntryTime(input0) {
-  return serverEntryModelService().parseEngagementEntryTime(...arguments);
+  return $serverEntryModelService_parseEngagementEntryTime().parseEngagementEntryTime(...arguments);
 }
 
-/* extracted-function: functions/server-entry-model-service.js#cleanEngagementEntryIndividualEntries */
+/* extracted-function: functions/backend/server-entry-model-service/clean-engagement-entry-individual-entries.js#cleanEngagementEntryIndividualEntries */
 function cleanEngagementEntryIndividualEntries() {
-  return serverEntryModelService().cleanEngagementEntryIndividualEntries(...arguments);
+  return $serverEntryModelService_cleanEngagementEntryIndividualEntries().cleanEngagementEntryIndividualEntries(...arguments);
 }
 
-/* extracted-function: functions/server-entry-model-service.js#cleanEngagementEntrySwimmer */
+/* extracted-function: functions/backend/server-entry-model-service/clean-engagement-entry-swimmer.js#cleanEngagementEntrySwimmer */
 function cleanEngagementEntrySwimmer() {
-  return serverEntryModelService().cleanEngagementEntrySwimmer(...arguments);
+  return $serverEntryModelService_cleanEngagementEntrySwimmer().cleanEngagementEntrySwimmer(...arguments);
 }
 
-/* extracted-function: functions/server-entry-model-service.js#engagementRelayAllowedCategories */
+/* extracted-function: functions/backend/server-entry-model-service/assert-engagement-relay-members.js#engagementRelayAllowedCategories */
 function engagementRelayAllowedCategories() {
-  return serverEntryModelService().engagementRelayAllowedCategories(...arguments);
+  return $serverEntryModelService_assertEngagementRelayMembers().engagementRelayAllowedCategories(...arguments);
 }
 
-/* extracted-function: functions/server-entry-model-service.js#cleanEngagementRelayGenderMode */
+/* extracted-function: functions/backend/server-entry-model-service/assert-engagement-relay-members.js#cleanEngagementRelayGenderMode */
 function cleanEngagementRelayGenderMode() {
-  return serverEntryModelService().cleanEngagementRelayGenderMode(...arguments);
+  return $serverEntryModelService_assertEngagementRelayMembers().cleanEngagementRelayGenderMode(...arguments);
 }
 
-/* extracted-function: functions/server-entry-model-service.js#engagementRelayMemberCategory */
+/* extracted-function: functions/backend/server-entry-model-service/assert-engagement-relay-members.js#engagementRelayMemberCategory */
 function engagementRelayMemberCategory() {
-  return serverEntryModelService().engagementRelayMemberCategory(...arguments);
+  return $serverEntryModelService_assertEngagementRelayMembers().engagementRelayMemberCategory(...arguments);
 }
 
-/* extracted-function: functions/server-entry-model-service.js#engagementRelayMemberAge */
+/* extracted-function: functions/backend/server-entry-model-service/assert-engagement-relay-members.js#engagementRelayMemberAge */
 function engagementRelayMemberAge() {
-  return serverEntryModelService().engagementRelayMemberAge(...arguments);
+  return $serverEntryModelService_assertEngagementRelayMembers().engagementRelayMemberAge(...arguments);
 }
 
-/* extracted-function: functions/server-entry-model-service.js#engagementRelayMemberAllowedForCategory */
+/* extracted-function: functions/backend/server-entry-model-service/assert-engagement-relay-members.js#engagementRelayMemberAllowedForCategory */
 function engagementRelayMemberAllowedForCategory() {
-  return serverEntryModelService().engagementRelayMemberAllowedForCategory(...arguments);
+  return $serverEntryModelService_assertEngagementRelayMembers().engagementRelayMemberAllowedForCategory(...arguments);
 }
 
-/* extracted-function: functions/server-entry-model-service.js#assertEngagementRelayMembers */
+/* extracted-function: functions/backend/server-entry-model-service/assert-engagement-relay-members.js#assertEngagementRelayMembers */
 function assertEngagementRelayMembers() {
-  return serverEntryModelService().assertEngagementRelayMembers(...arguments);
+  return $serverEntryModelService_assertEngagementRelayMembers().assertEngagementRelayMembers(...arguments);
 }
 
-/* extracted-function: functions/server-entry-model-service.js#cleanEngagementEntryRelays */
+/* extracted-function: functions/backend/server-entry-model-service/assert-engagement-relay-members.js#cleanEngagementEntryRelays */
 function cleanEngagementEntryRelays() {
-  return serverEntryModelService().cleanEngagementEntryRelays(...arguments);
+  return $serverEntryModelService_assertEngagementRelayMembers().cleanEngagementEntryRelays(...arguments);
 }
 
-/* extracted-function: functions/server-entry-model-service.js#qualificationRelaysAfterIndividualChange */
+/* extracted-function: functions/backend/server-entry-model-service/qualification-relays-after-individual-change.js#qualificationRelaysAfterIndividualChange */
 function qualificationRelaysAfterIndividualChange() {
-  return serverEntryModelService().qualificationRelaysAfterIndividualChange(...arguments);
+  return $serverEntryModelService_qualificationRelaysAfterIndividualChange().qualificationRelaysAfterIndividualChange(...arguments);
 }
 
-/* extracted-function: functions/server-entry-model-service.js#qualificationEvents */
+/* extracted-function: functions/backend/server-entry-model-service/qualification-events.js#qualificationEvents */
 function qualificationEvents() {
-  return serverEntryModelService().qualificationEvents(...arguments);
+  return $serverEntryModelService_qualificationEvents().qualificationEvents(...arguments);
 }
 
 let legacyQualificationService;
-/* extracted-function: functions/server-entry-model-service.js#qualificationService */
+/* extracted-function: functions/backend/server-entry-model-service/automatic-engagement-individual-entry.js#qualificationService */
 function qualificationService() {
-  return serverEntryModelService().qualificationService(...arguments);
+  return $serverEntryModelService_automaticEngagementIndividualEntry().qualificationService(...arguments);
 }
 
-exports.listEngagementQualificationSources = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")], maxInstances:2, concurrency:4, timeoutSeconds:60 } : {}) }, /* extracted-handler: functions/portal-competition-handlers.js#listEngagementQualificationSources#arrow */ async (request) => {
-  return portalCompetitionHandlers().listEngagementQualificationSources(request);
+exports.listEngagementQualificationSources = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")], maxInstances:2, concurrency:4, timeoutSeconds:60 } : {}) }, /* extracted-handler: functions/backend/portal-competition-handlers/list-engagement-qualification-sources.js#listEngagementQualificationSources#arrow */ async (request) => {
+  return $portalCompetitionHandlers_listEngagementQualificationSources().listEngagementQualificationSources(request);
 });
-/* extracted-function: functions/server-entry-model-service.js#nativeQualificationServices */
+/* extracted-function: functions/backend/server-entry-model-service/native-qualification-services.js#nativeQualificationServices */
 function nativeQualificationServices(input0) {
-  return serverEntryModelService().nativeQualificationServices(...arguments);
+  return $serverEntryModelService_nativeQualificationServices().nativeQualificationServices(...arguments);
 }
 const nativeQualificationOptions=ENVIRONMENT.sportingDataSource === "nap"?{secrets:[defineSecret("LIVEPALMES_NAP_PASSWORD")],maxInstances:2,concurrency:4}:{};
 const nativeQualificationNow=()=>new Date().toISOString().replace('T',' ').replace('Z','000');
-/* extracted-function: functions/server-entry-model-service.js#nativeQualificationError */
+/* extracted-function: functions/backend/server-entry-model-service/native-qualification-error.js#nativeQualificationError */
 function nativeQualificationError(input0) {
-  return serverEntryModelService().nativeQualificationError(...arguments);
+  return $serverEntryModelService_nativeQualificationError().nativeQualificationError(...arguments);
 }
-exports.processEngagementQualificationJob = onCall({ ...CALLABLE_OPTIONS,...nativeQualificationOptions,timeoutSeconds:300 }, /* extracted-handler: functions/portal-competition-handlers.js#processEngagementQualificationJob#arrow */ async (request) => {
-  return portalCompetitionHandlers().processEngagementQualificationJob(request);
+exports.processEngagementQualificationJob = onCall({ ...CALLABLE_OPTIONS,...nativeQualificationOptions,timeoutSeconds:300 }, /* extracted-handler: functions/backend/portal-competition-handlers/process-engagement-qualification-job.js#processEngagementQualificationJob#arrow */ async (request) => {
+  return $portalCompetitionHandlers_processEngagementQualificationJob().processEngagementQualificationJob(request);
 });
-exports.grantEngagementQualificationException = onCall({ ...CALLABLE_OPTIONS,...nativeQualificationOptions,timeoutSeconds:60 },/* extracted-handler: functions/portal-competition-handlers.js#grantEngagementQualificationException#arrow */ async (request) => {
-  return portalCompetitionHandlers().grantEngagementQualificationException(request);
+exports.grantEngagementQualificationException = onCall({ ...CALLABLE_OPTIONS,...nativeQualificationOptions,timeoutSeconds:60 },/* extracted-handler: functions/backend/portal-competition-handlers/grant-engagement-qualification-exception.js#grantEngagementQualificationException#arrow */ async (request) => {
+  return $portalCompetitionHandlers_grantEngagementQualificationException().grantEngagementQualificationException(request);
 });
-exports.acknowledgeEngagementQualificationAlert = onCall({ ...CALLABLE_OPTIONS,...nativeQualificationOptions,timeoutSeconds:60 },/* extracted-handler: functions/portal-competition-handlers.js#acknowledgeEngagementQualificationAlert#arrow */ async (request) => {
-  return portalCompetitionHandlers().acknowledgeEngagementQualificationAlert(request);
+exports.acknowledgeEngagementQualificationAlert = onCall({ ...CALLABLE_OPTIONS,...nativeQualificationOptions,timeoutSeconds:60 },/* extracted-handler: functions/backend/portal-competition-handlers/acknowledge-engagement-qualification-alert.js#acknowledgeEngagementQualificationAlert#arrow */ async (request) => {
+  return $portalCompetitionHandlers_acknowledgeEngagementQualificationAlert().acknowledgeEngagementQualificationAlert(request);
 });
 // Retired endpoints remain deny-only so previously deployed clients cannot use
 // the removed request workflow. Historical documents are not migrated or erased.
@@ -3664,256 +7500,256 @@ exports.syncEngagementQualificationTargets = onDocumentWritten({ region: REGION,
 exports.revalidateEngagementQualificationCache = onDocumentWritten({ region: REGION,
   document: `${ENGAGEMENT_ENTRY_TIME_CACHES_COLLECTION}/{cacheId}`, retry: true, timeoutSeconds: 540 }, (event) => ENVIRONMENT.sportingDataSource === "nap" ? null : qualificationService().revalidateCache(event));
 
-/* extracted-function: functions/server-entry-model-service.js#engagementQualificationRowAllowed */
+/* extracted-function: functions/backend/server-entry-model-service/engagement-entry-time-cache-ref.js#engagementQualificationRowAllowed */
 function engagementQualificationRowAllowed() {
-  return serverEntryModelService().engagementQualificationRowAllowed(...arguments);
+  return $serverEntryModelService_engagementEntryTimeCacheRef().engagementQualificationRowAllowed(...arguments);
 }
 
-/* extracted-function: functions/server-entry-model-service.js#bestEngagementKnownTime */
+/* extracted-function: functions/backend/server-entry-model-service/automatic-engagement-individual-entry.js#bestEngagementKnownTime */
 function bestEngagementKnownTime() {
-  return serverEntryModelService().bestEngagementKnownTime(...arguments);
+  return $serverEntryModelService_automaticEngagementIndividualEntry().bestEngagementKnownTime(...arguments);
 }
 
-/* extracted-function: functions/server-entry-model-service.js#engagementKnownTimeHistory */
+/* extracted-function: functions/backend/server-entry-model-service/engagement-known-time-history.js#engagementKnownTimeHistory */
 function engagementKnownTimeHistory() {
-  return serverEntryModelService().engagementKnownTimeHistory(...arguments);
+  return $serverEntryModelService_engagementKnownTimeHistory().engagementKnownTimeHistory(...arguments);
 }
 
-/* extracted-function: functions/server-entry-model-service.js#engagementEntryTimeCacheId */
+/* extracted-function: functions/backend/server-entry-model-service/engagement-entry-time-cache-id.js#engagementEntryTimeCacheId */
 function engagementEntryTimeCacheId() {
-  return serverEntryModelService().engagementEntryTimeCacheId(...arguments);
+  return $serverEntryModelService_engagementEntryTimeCacheId().engagementEntryTimeCacheId(...arguments);
 }
 
-/* extracted-function: functions/server-entry-model-service.js#engagementEntryTimeCacheRef */
+/* extracted-function: functions/backend/server-entry-model-service/engagement-entry-time-cache-ref.js#engagementEntryTimeCacheRef */
 function engagementEntryTimeCacheRef(input0) {
-  return serverEntryModelService().engagementEntryTimeCacheRef(...arguments);
+  return $serverEntryModelService_engagementEntryTimeCacheRef().engagementEntryTimeCacheRef(...arguments);
 }
 
-/* extracted-function: functions/server-entry-model-service.js#engagementEntryTimeCacheRow */
+/* extracted-function: functions/backend/server-entry-model-service/engagement-entry-time-cache-ref.js#engagementEntryTimeCacheRow */
 function engagementEntryTimeCacheRow() {
-  return serverEntryModelService().engagementEntryTimeCacheRow(...arguments);
+  return $serverEntryModelService_engagementEntryTimeCacheRef().engagementEntryTimeCacheRow(...arguments);
 }
 
-/* extracted-function: functions/server-entry-model-service.js#engagementEntryTimeCacheRowsFromData */
+/* extracted-function: functions/backend/server-entry-model-service/engagement-entry-time-cache-ref.js#engagementEntryTimeCacheRowsFromData */
 function engagementEntryTimeCacheRowsFromData() {
-  return serverEntryModelService().engagementEntryTimeCacheRowsFromData(...arguments);
+  return $serverEntryModelService_engagementEntryTimeCacheRef().engagementEntryTimeCacheRowsFromData(...arguments);
 }
 
-/* extracted-function: functions/server-entry-model-service.js#engagementEntryTimeRowsToEvents */
+/* extracted-function: functions/backend/server-entry-model-service/engagement-entry-time-cache-ref.js#engagementEntryTimeRowsToEvents */
 function engagementEntryTimeRowsToEvents() {
-  return serverEntryModelService().engagementEntryTimeRowsToEvents(...arguments);
+  return $serverEntryModelService_engagementEntryTimeCacheRef().engagementEntryTimeRowsToEvents(...arguments);
 }
 
 const engagementEntryTimeCacheBuilds = new Map();
 
-/* extracted-function: functions/server-entry-model-service.js#engagementEntryTimeSourceKeys */
+/* extracted-function: functions/backend/server-entry-model-service/engagement-entry-time-cache-ref.js#engagementEntryTimeSourceKeys */
 function engagementEntryTimeSourceKeys() {
-  return serverEntryModelService().engagementEntryTimeSourceKeys(...arguments);
+  return $serverEntryModelService_engagementEntryTimeCacheRef().engagementEntryTimeSourceKeys(...arguments);
 }
 
-/* extracted-function: functions/server-entry-model-service.js#readEngagementEntryTimeSourceRows */
+/* extracted-function: functions/backend/server-entry-model-service/engagement-entry-time-cache-ref.js#readEngagementEntryTimeSourceRows */
 async function readEngagementEntryTimeSourceRows() {
-  return serverEntryModelService().readEngagementEntryTimeSourceRows(...arguments);
+  return $serverEntryModelService_engagementEntryTimeCacheRef().readEngagementEntryTimeSourceRows(...arguments);
 }
 
-/* extracted-function: functions/server-entry-model-service.js#rebuildEngagementEntryTimeCache */
+/* extracted-function: functions/backend/server-entry-model-service/engagement-entry-time-cache-ref.js#rebuildEngagementEntryTimeCache */
 async function rebuildEngagementEntryTimeCache(input0) {
-  return serverEntryModelService().rebuildEngagementEntryTimeCache(...arguments);
+  return $serverEntryModelService_engagementEntryTimeCacheRef().rebuildEngagementEntryTimeCache(...arguments);
 }
 
-/* extracted-function: functions/server-entry-model-service.js#getEngagementEntryTimeRowsForSwimmer */
+/* extracted-function: functions/backend/server-entry-model-service/engagement-entry-time-cache-ref.js#getEngagementEntryTimeRowsForSwimmer */
 async function getEngagementEntryTimeRowsForSwimmer() {
-  return serverEntryModelService().getEngagementEntryTimeRowsForSwimmer(...arguments);
+  return $serverEntryModelService_engagementEntryTimeCacheRef().getEngagementEntryTimeRowsForSwimmer(...arguments);
 }
 
-/* extracted-function: functions/server-entry-model-service.js#getEngagementQualificationRows */
+/* extracted-function: functions/backend/server-entry-model-service/automatic-engagement-individual-entry.js#getEngagementQualificationRows */
 async function getEngagementQualificationRows() {
-  return serverEntryModelService().getEngagementQualificationRows(...arguments);
+  return $serverEntryModelService_automaticEngagementIndividualEntry().getEngagementQualificationRows(...arguments);
 }
 
-/* extracted-function: functions/server-entry-model-service.js#deleteEngagementEntryTimeCache */
+/* extracted-function: functions/backend/server-entry-model-service/delete-engagement-entry-time-cache.js#deleteEngagementEntryTimeCache */
 function deleteEngagementEntryTimeCache(input0, input1) {
-  return serverEntryModelService().deleteEngagementEntryTimeCache(...arguments);
+  return $serverEntryModelService_deleteEngagementEntryTimeCache().deleteEngagementEntryTimeCache(...arguments);
 }
 
-/* extracted-function: functions/server-entry-model-service.js#invalidateEngagementEntryTimeCachesForPerformanceRows */
+/* extracted-function: functions/backend/server-entry-model-service/invalidate-engagement-entry-time-caches-for-performance-rows.js#invalidateEngagementEntryTimeCachesForPerformanceRows */
 async function invalidateEngagementEntryTimeCachesForPerformanceRows() {
-  return serverEntryModelService().invalidateEngagementEntryTimeCachesForPerformanceRows(...arguments);
+  return $serverEntryModelService_invalidateEngagementEntryTimeCachesForPerformanceRows().invalidateEngagementEntryTimeCachesForPerformanceRows(...arguments);
 }
 
-/* extracted-function: functions/server-entry-model-service.js#engagementCompetitionAppliesToFranceRecords */
+/* extracted-function: functions/backend/server-entry-model-service/engagement-competition-applies-to-france-records.js#engagementCompetitionAppliesToFranceRecords */
 function engagementCompetitionAppliesToFranceRecords() {
-  return serverEntryModelService().engagementCompetitionAppliesToFranceRecords(...arguments);
+  return $serverEntryModelService_engagementCompetitionAppliesToFranceRecords().engagementCompetitionAppliesToFranceRecords(...arguments);
 }
 
-/* extracted-function: functions/server-entry-model-service.js#engagementCompetitionAppliesToMpf */
+/* extracted-function: functions/backend/server-entry-model-service/engagement-competition-applies-to-france-records.js#engagementCompetitionAppliesToMpf */
 function engagementCompetitionAppliesToMpf() {
-  return serverEntryModelService().engagementCompetitionAppliesToMpf(...arguments);
+  return $serverEntryModelService_engagementCompetitionAppliesToFranceRecords().engagementCompetitionAppliesToMpf(...arguments);
 }
 
-/* extracted-function: functions/server-entry-model-service.js#engagementRecordReferencesForEntry */
+/* extracted-function: functions/backend/server-entry-model-service/engagement-entry-time-warning.js#engagementRecordReferencesForEntry */
 function engagementRecordReferencesForEntry(input0) {
-  return serverEntryModelService().engagementRecordReferencesForEntry(...arguments);
+  return $serverEntryModelService_engagementEntryTimeWarning().engagementRecordReferencesForEntry(...arguments);
 }
 
-/* extracted-function: functions/server-entry-model-service.js#engagementEntryTimeWarning */
+/* extracted-function: functions/backend/server-entry-model-service/engagement-entry-time-warning.js#engagementEntryTimeWarning */
 function engagementEntryTimeWarning() {
-  return serverEntryModelService().engagementEntryTimeWarning(...arguments);
+  return $serverEntryModelService_engagementEntryTimeWarning().engagementEntryTimeWarning(...arguments);
 }
 
-/* extracted-function: functions/server-entry-model-service.js#validateEngagementIndividualEntryTimes */
+/* extracted-function: functions/backend/server-entry-model-service/engagement-entry-time-warning.js#validateEngagementIndividualEntryTimes */
 function validateEngagementIndividualEntryTimes() {
-  return serverEntryModelService().validateEngagementIndividualEntryTimes(...arguments);
+  return $serverEntryModelService_engagementEntryTimeWarning().validateEngagementIndividualEntryTimes(...arguments);
 }
 
-/* extracted-function: functions/server-entry-model-service.js#engagementRelayReferencesForEntry */
+/* extracted-function: functions/backend/server-entry-model-service/assert-engagement-relay-members.js#engagementRelayReferencesForEntry */
 function engagementRelayReferencesForEntry(input0) {
-  return serverEntryModelService().engagementRelayReferencesForEntry(...arguments);
+  return $serverEntryModelService_assertEngagementRelayMembers().engagementRelayReferencesForEntry(...arguments);
 }
 
-/* extracted-function: functions/server-entry-model-service.js#validateEngagementRelayEntryTimes */
+/* extracted-function: functions/backend/server-entry-model-service/assert-engagement-relay-members.js#validateEngagementRelayEntryTimes */
 function validateEngagementRelayEntryTimes() {
-  return serverEntryModelService().validateEngagementRelayEntryTimes(...arguments);
+  return $serverEntryModelService_assertEngagementRelayMembers().validateEngagementRelayEntryTimes(...arguments);
 }
 
-/* extracted-function: functions/server-entry-model-service.js#resolveEngagementIndividualEntriesForSwimmer */
+/* extracted-function: functions/backend/server-entry-model-service/resolve-engagement-individual-entries-for-swimmer.js#resolveEngagementIndividualEntriesForSwimmer */
 async function resolveEngagementIndividualEntriesForSwimmer() {
-  return serverEntryModelService().resolveEngagementIndividualEntriesForSwimmer(...arguments);
+  return $serverEntryModelService_resolveEngagementIndividualEntriesForSwimmer().resolveEngagementIndividualEntriesForSwimmer(...arguments);
 }
 
-/* extracted-function: functions/server-entry-model-service.js#automaticEngagementIndividualEntry */
+/* extracted-function: functions/backend/server-entry-model-service/automatic-engagement-individual-entry.js#automaticEngagementIndividualEntry */
 function automaticEngagementIndividualEntry(input0, input1, input2) {
-  return serverEntryModelService().automaticEngagementIndividualEntry(...arguments);
+  return $serverEntryModelService_automaticEngagementIndividualEntry().automaticEngagementIndividualEntry(...arguments);
 }
 
-/* extracted-function: functions/server-entry-model-service.js#engagementSwimmerIdentityKey */
+/* extracted-function: functions/backend/server-entry-model-service/engagement-swimmer-identity-key.js#engagementSwimmerIdentityKey */
 function engagementSwimmerIdentityKey(input0, input1, input2) {
-  return serverEntryModelService().engagementSwimmerIdentityKey(...arguments);
+  return $serverEntryModelService_engagementSwimmerIdentityKey().engagementSwimmerIdentityKey(...arguments);
 }
 
-/* extracted-function: functions/server-entry-model-service.js#cleanEngagementNewSwimmer */
+/* extracted-function: functions/backend/server-entry-model-service/clean-engagement-new-swimmer.js#cleanEngagementNewSwimmer */
 function cleanEngagementNewSwimmer() {
-  return serverEntryModelService().cleanEngagementNewSwimmer(...arguments);
+  return $serverEntryModelService_cleanEngagementNewSwimmer().cleanEngagementNewSwimmer(...arguments);
 }
 
-/* extracted-function: functions/server-entry-model-service.js#engagementNewSwimmerItem */
+/* extracted-function: functions/backend/server-entry-model-service/engagement-new-swimmer-item.js#engagementNewSwimmerItem */
 function engagementNewSwimmerItem(input0) {
-  return serverEntryModelService().engagementNewSwimmerItem(...arguments);
+  return $serverEntryModelService_engagementNewSwimmerItem().engagementNewSwimmerItem(...arguments);
 }
 
-/* extracted-function: functions/server-entry-model-service.js#engagementNewSwimmerAlertFromMatch */
+/* extracted-function: functions/backend/server-entry-model-service/build-engagement-new-swimmer-alerts.js#engagementNewSwimmerAlertFromMatch */
 function engagementNewSwimmerAlertFromMatch() {
-  return serverEntryModelService().engagementNewSwimmerAlertFromMatch(...arguments);
+  return $serverEntryModelService_buildEngagementNewSwimmerAlerts().engagementNewSwimmerAlertFromMatch(...arguments);
 }
 
-/* extracted-function: functions/server-entry-model-service.js#buildEngagementNewSwimmerAlerts */
+/* extracted-function: functions/backend/server-entry-model-service/build-engagement-new-swimmer-alerts.js#buildEngagementNewSwimmerAlerts */
 async function buildEngagementNewSwimmerAlerts() {
-  return serverEntryModelService().buildEngagementNewSwimmerAlerts(...arguments);
+  return $serverEntryModelService_buildEngagementNewSwimmerAlerts().buildEngagementNewSwimmerAlerts(...arguments);
 }
 
-/* extracted-function: functions/server-entry-model-service.js#engagementSwimmerLicenseId */
+/* extracted-function: functions/backend/server-entry-model-service/engagement-swimmer-license-id.js#engagementSwimmerLicenseId */
 function engagementSwimmerLicenseId() {
-  return serverEntryModelService().engagementSwimmerLicenseId(...arguments);
+  return $serverEntryModelService_engagementSwimmerLicenseId().engagementSwimmerLicenseId(...arguments);
 }
 
-/* extracted-function: functions/server-entry-model-service.js#engagementSwimmerLicenseNumberKey */
+/* extracted-function: functions/backend/server-entry-model-service/engagement-swimmer-license-number-key.js#engagementSwimmerLicenseNumberKey */
 function engagementSwimmerLicenseNumberKey() {
-  return serverEntryModelService().engagementSwimmerLicenseNumberKey(...arguments);
+  return $serverEntryModelService_engagementSwimmerLicenseNumberKey().engagementSwimmerLicenseNumberKey(...arguments);
 }
 
-/* extracted-function: functions/server-entry-model-service.js#engagementSwimmerLicenseNumberId */
+/* extracted-function: functions/backend/server-entry-model-service/engagement-swimmer-license-number-id.js#engagementSwimmerLicenseNumberId */
 function engagementSwimmerLicenseNumberId() {
-  return serverEntryModelService().engagementSwimmerLicenseNumberId(...arguments);
+  return $serverEntryModelService_engagementSwimmerLicenseNumberId().engagementSwimmerLicenseNumberId(...arguments);
 }
 
-/* extracted-function: functions/server-entry-model-service.js#engagementClubRosterId */
+/* extracted-function: functions/backend/server-entry-model-service/engagement-club-roster-id.js#engagementClubRosterId */
 function engagementClubRosterId(input0) {
-  return serverEntryModelService().engagementClubRosterId(...arguments);
+  return $serverEntryModelService_engagementClubRosterId().engagementClubRosterId(...arguments);
 }
 
-/* extracted-function: functions/server-entry-model-service.js#engagementClubRosterRef */
+/* extracted-function: functions/backend/server-entry-model-service/engagement-club-roster-id.js#engagementClubRosterRef */
 function engagementClubRosterRef(input0, input1) {
-  return serverEntryModelService().engagementClubRosterRef(...arguments);
+  return $serverEntryModelService_engagementClubRosterId().engagementClubRosterRef(...arguments);
 }
 
-/* extracted-function: functions/server-entry-model-service.js#cleanEngagementClubActivityStatus */
+/* extracted-function: functions/backend/server-entry-model-service/clean-engagement-club-activity-status.js#cleanEngagementClubActivityStatus */
 function cleanEngagementClubActivityStatus() {
-  return serverEntryModelService().cleanEngagementClubActivityStatus(...arguments);
+  return $serverEntryModelService_cleanEngagementClubActivityStatus().cleanEngagementClubActivityStatus(...arguments);
 }
 
-/* extracted-function: functions/server-entry-model-service.js#engagementClubRosterSwimmerKey */
+/* extracted-function: functions/backend/server-entry-model-service/engagement-club-roster-swimmer-key.js#engagementClubRosterSwimmerKey */
 function engagementClubRosterSwimmerKey() {
-  return serverEntryModelService().engagementClubRosterSwimmerKey(...arguments);
+  return $serverEntryModelService_engagementClubRosterSwimmerKey().engagementClubRosterSwimmerKey(...arguments);
 }
 
-/* extracted-function: functions/server-entry-model-service.js#engagementClubRosterSwimmerItem */
+/* extracted-function: functions/backend/server-entry-model-service/clean-engagement-club-activity-status.js#engagementClubRosterSwimmerItem */
 function engagementClubRosterSwimmerItem() {
-  return serverEntryModelService().engagementClubRosterSwimmerItem(...arguments);
+  return $serverEntryModelService_cleanEngagementClubActivityStatus().engagementClubRosterSwimmerItem(...arguments);
 }
 
-/* extracted-function: functions/server-entry-model-service.js#engagementClubRosterSwimmersFromData */
+/* extracted-function: functions/backend/server-entry-model-service/engagement-club-roster-swimmers-from-data.js#engagementClubRosterSwimmersFromData */
 function engagementClubRosterSwimmersFromData() {
-  return serverEntryModelService().engagementClubRosterSwimmersFromData(...arguments);
+  return $serverEntryModelService_engagementClubRosterSwimmersFromData().engagementClubRosterSwimmersFromData(...arguments);
 }
 
-/* extracted-function: functions/server-entry-model-service.js#upsertEngagementClubRosterSwimmer */
+/* extracted-function: functions/backend/server-entry-model-service/upsert-engagement-club-roster-swimmer.js#upsertEngagementClubRosterSwimmer */
 function upsertEngagementClubRosterSwimmer(input0, input1) {
-  return serverEntryModelService().upsertEngagementClubRosterSwimmer(...arguments);
+  return $serverEntryModelService_upsertEngagementClubRosterSwimmer().upsertEngagementClubRosterSwimmer(...arguments);
 }
 
-/* extracted-function: functions/server-entry-model-service.js#deleteEngagementClubRosterSwimmer */
+/* extracted-function: functions/backend/server-entry-model-service/delete-engagement-club-roster-swimmer.js#deleteEngagementClubRosterSwimmer */
 function deleteEngagementClubRosterSwimmer(input0, input1) {
-  return serverEntryModelService().deleteEngagementClubRosterSwimmer(...arguments);
+  return $serverEntryModelService_deleteEngagementClubRosterSwimmer().deleteEngagementClubRosterSwimmer(...arguments);
 }
 
-/* extracted-function: functions/server-entry-model-service.js#engagementSwimmerLicenseDataItem */
+/* extracted-function: functions/backend/server-entry-model-service/engagement-swimmer-license-data-item.js#engagementSwimmerLicenseDataItem */
 function engagementSwimmerLicenseDataItem() {
-  return serverEntryModelService().engagementSwimmerLicenseDataItem(...arguments);
+  return $serverEntryModelService_engagementSwimmerLicenseDataItem().engagementSwimmerLicenseDataItem(...arguments);
 }
 
-/* extracted-function: functions/server-entry-model-service.js#engagementSwimmerLicenseItem */
+/* extracted-function: functions/backend/server-entry-model-service/engagement-swimmer-license-data-item.js#engagementSwimmerLicenseItem */
 function engagementSwimmerLicenseItem(input0) {
-  return serverEntryModelService().engagementSwimmerLicenseItem(...arguments);
+  return $serverEntryModelService_engagementSwimmerLicenseDataItem().engagementSwimmerLicenseItem(...arguments);
 }
 
-/* extracted-function: functions/server-entry-model-service.js#engagementLegacySwimmerLicensesByClub */
+/* extracted-function: functions/backend/server-entry-model-service/engagement-legacy-swimmer-licenses-by-club.js#engagementLegacySwimmerLicensesByClub */
 async function engagementLegacySwimmerLicensesByClub(input0, input1) {
-  return serverEntryModelService().engagementLegacySwimmerLicensesByClub(...arguments);
+  return $serverEntryModelService_engagementLegacySwimmerLicensesByClub().engagementLegacySwimmerLicensesByClub(...arguments);
 }
 
-/* extracted-function: functions/server-entry-model-service.js#engagementSwimmerLicensePayload */
+/* extracted-function: functions/backend/server-entry-model-service/engagement-swimmer-license-payload.js#engagementSwimmerLicensePayload */
 function engagementSwimmerLicensePayload() {
-  return serverEntryModelService().engagementSwimmerLicensePayload(...arguments);
+  return $serverEntryModelService_engagementSwimmerLicensePayload().engagementSwimmerLicensePayload(...arguments);
 }
 
-/* extracted-function: functions/server-entry-model-service.js#engagementSwimmerLicenseConflictData */
+/* extracted-function: functions/backend/server-entry-model-service/engagement-swimmer-license-conflict-data.js#engagementSwimmerLicenseConflictData */
 function engagementSwimmerLicenseConflictData() {
-  return serverEntryModelService().engagementSwimmerLicenseConflictData(...arguments);
+  return $serverEntryModelService_engagementSwimmerLicenseConflictData().engagementSwimmerLicenseConflictData(...arguments);
 }
 
-/* extracted-function: functions/server-entry-model-service.js#findEngagementSwimmerLicenseConflict */
+/* extracted-function: functions/backend/server-entry-model-service/engagement-swimmer-license-conflict-data.js#findEngagementSwimmerLicenseConflict */
 async function findEngagementSwimmerLicenseConflict(input0) {
-  return serverEntryModelService().findEngagementSwimmerLicenseConflict(...arguments);
+  return $serverEntryModelService_engagementSwimmerLicenseConflictData().findEngagementSwimmerLicenseConflict(...arguments);
 }
 
-/* extracted-function: functions/server-entry-model-service.js#assertNoEngagementSwimmerLicenseConflict */
+/* extracted-function: functions/backend/server-entry-model-service/assert-no-engagement-swimmer-license-conflict.js#assertNoEngagementSwimmerLicenseConflict */
 async function assertNoEngagementSwimmerLicenseConflict(input0) {
-  return serverEntryModelService().assertNoEngagementSwimmerLicenseConflict(...arguments);
+  return $serverEntryModelService_assertNoEngagementSwimmerLicenseConflict().assertNoEngagementSwimmerLicenseConflict(...arguments);
 }
 
-/* extracted-function: functions/server-entry-model-service.js#engagementSwimmerRecoveryPreview */
+/* extracted-function: functions/backend/server-entry-model-service/engagement-swimmer-recovery-preview.js#engagementSwimmerRecoveryPreview */
 async function engagementSwimmerRecoveryPreview(input0, input1) {
-  return serverEntryModelService().engagementSwimmerRecoveryPreview(...arguments);
+  return $serverEntryModelService_engagementSwimmerRecoveryPreview().engagementSwimmerRecoveryPreview(...arguments);
 }
 
-/* extracted-function: functions/server-entry-model-service.js#engagementClubEntryItem */
+/* extracted-function: functions/backend/server-entry-model-service/engagement-club-entry-item.js#engagementClubEntryItem */
 function engagementClubEntryItem(input0) {
-  return serverEntryModelService().engagementClubEntryItem(...arguments);
+  return $serverEntryModelService_engagementClubEntryItem().engagementClubEntryItem(...arguments);
 }
 
-/* extracted-function: functions/server-entry-model-service.js#engagementClubEntryHasParticipants */
+/* extracted-function: functions/backend/server-entry-model-service/engagement-club-entry-has-participants.js#engagementClubEntryHasParticipants */
 function engagementClubEntryHasParticipants() {
-  return serverEntryModelService().engagementClubEntryHasParticipants(...arguments);
+  return $serverEntryModelService_engagementClubEntryHasParticipants().engagementClubEntryHasParticipants(...arguments);
 }
 
 function engagementPdfRenderer() {
@@ -3972,77 +7808,36 @@ function engagementPdfFileName(input0) {
   return engagementPdfRenderer().engagementPdfFileName(...arguments);
 }
 
-function serverDocumentsService() {
-  if (!serverDocumentsService.instance) serverDocumentsService.instance = require("./server-documents-service").createDocumentsService({
-    get ENGAGEMENT_COMPETITION_ENTRY_SUMMARIES_COLLECTION() { return ENGAGEMENT_COMPETITION_ENTRY_SUMMARIES_COLLECTION; },
-    get ENGAGEMENT_COMPETITION_STATISTICS_CACHE_COLLECTION() { return ENGAGEMENT_COMPETITION_STATISTICS_CACHE_COLLECTION; },
-    get ENGAGEMENT_DOCUMENTS_STORAGE_PREFIX() { return ENGAGEMENT_DOCUMENTS_STORAGE_PREFIX; },
-    get FieldValue() { return FieldValue; },
-    get HttpsError() { return HttpsError; },
-    get LIVEPALMES_MAIL_FROM() { return LIVEPALMES_MAIL_FROM; },
-    get LIVEPALMES_SMTP_HOST() { return LIVEPALMES_SMTP_HOST; },
-    get LIVEPALMES_SMTP_PASS() { return LIVEPALMES_SMTP_PASS; },
-    get LIVEPALMES_SMTP_PORT() { return LIVEPALMES_SMTP_PORT; },
-    get LIVEPALMES_SMTP_SECURE() { return LIVEPALMES_SMTP_SECURE; },
-    get LIVEPALMES_SMTP_USER() { return LIVEPALMES_SMTP_USER; },
-    get LIVEPALMES_STORAGE_BUCKET() { return LIVEPALMES_STORAGE_BUCKET; },
-    get ageCategoryFromDates() { return ageCategoryFromDates; },
-    get buildEngagementClubRecapPdf() { return buildEngagementClubRecapPdf; },
-    get buildEngagementOfficialsPdf() { return buildEngagementOfficialsPdf; },
-    get buildWinPalmeCompetitionTxt() { return buildWinPalmeCompetitionTxt; },
-    get cleanFirestoreValue() { return cleanFirestoreValue; },
-    get cleanIsoDate() { return cleanIsoDate; },
-    get cleanPublicCalendarWhatsAppUrl() { return cleanPublicCalendarWhatsAppUrl; },
-    get cleanText() { return cleanText; },
-    get crypto() { return crypto; },
-    get db() { return db; },
-    get engagementClubCode() { return engagementClubCode; },
-    get engagementClubCompetitionIndexKey() { return engagementClubCompetitionIndexKey; },
-    get engagementClubCompetitionIndexRef() { return engagementClubCompetitionIndexRef; },
-    get engagementClubEntryHasParticipants() { return engagementClubEntryHasParticipants; },
-    get engagementClubEntryId() { return engagementClubEntryId; },
-    get engagementClubEntryItem() { return engagementClubEntryItem; },
-    get engagementClubName() { return engagementClubName; },
-    get engagementClubsByIds() { return engagementClubsByIds; },
-    get engagementCompetitionDetailItem() { return engagementCompetitionDetailItem; },
-    get engagementPdfEntryStats() { return engagementPdfEntryStats; },
-    get engagementPdfFileName() { return engagementPdfFileName; },
-    get normalizeEmail() { return normalizeEmail; },
-    get stableHash() { return stableHash; },
-    get storage() { return storage; },
-    get zlib() { return zlib; }
-  });
-  return serverDocumentsService.instance;
-}
 
-/* extracted-function: functions/server-documents-service.js#cleanEngagementDocumentMetadata */
+
+/* extracted-function: functions/backend/server-documents-service/clean-engagement-document-metadata.js#cleanEngagementDocumentMetadata */
 function cleanEngagementDocumentMetadata() {
-  return serverDocumentsService().cleanEngagementDocumentMetadata(...arguments);
+  return $serverDocumentsService_cleanEngagementDocumentMetadata().cleanEngagementDocumentMetadata(...arguments);
 }
 
-/* extracted-function: functions/server-documents-service.js#cleanEngagementGeneratedFile */
+/* extracted-function: functions/backend/server-documents-service/clean-engagement-generated-file.js#cleanEngagementGeneratedFile */
 function cleanEngagementGeneratedFile() {
-  return serverDocumentsService().cleanEngagementGeneratedFile(...arguments);
+  return $serverDocumentsService_cleanEngagementGeneratedFile().cleanEngagementGeneratedFile(...arguments);
 }
 
-/* extracted-function: functions/server-documents-service.js#cleanEngagementGeneratedFiles */
+/* extracted-function: functions/backend/server-documents-service/clean-engagement-generated-file.js#cleanEngagementGeneratedFiles */
 function cleanEngagementGeneratedFiles() {
-  return serverDocumentsService().cleanEngagementGeneratedFiles(...arguments);
+  return $serverDocumentsService_cleanEngagementGeneratedFile().cleanEngagementGeneratedFiles(...arguments);
 }
 
-/* extracted-function: functions/server-documents-service.js#engagementCompetitionDocumentsMetadata */
+/* extracted-function: functions/backend/server-documents-service/clean-engagement-generated-file.js#engagementCompetitionDocumentsMetadata */
 function engagementCompetitionDocumentsMetadata() {
-  return serverDocumentsService().engagementCompetitionDocumentsMetadata(...arguments);
+  return $serverDocumentsService_cleanEngagementGeneratedFile().engagementCompetitionDocumentsMetadata(...arguments);
 }
 
-/* extracted-function: functions/server-documents-service.js#engagementClubRecapPdfStoragePath */
+/* extracted-function: functions/backend/server-documents-service/engagement-club-recap-pdf-source-hash.js#engagementClubRecapPdfStoragePath */
 function engagementClubRecapPdfStoragePath(input0, input1) {
-  return serverDocumentsService().engagementClubRecapPdfStoragePath(...arguments);
+  return $serverDocumentsService_engagementClubRecapPdfSourceHash().engagementClubRecapPdfStoragePath(...arguments);
 }
 
-/* extracted-function: functions/server-documents-service.js#engagementClubRecapPdfSourceHash */
+/* extracted-function: functions/backend/server-documents-service/engagement-club-recap-pdf-source-hash.js#engagementClubRecapPdfSourceHash */
 function engagementClubRecapPdfSourceHash() {
-  return serverDocumentsService().engagementClubRecapPdfSourceHash(...arguments);
+  return $serverDocumentsService_engagementClubRecapPdfSourceHash().engagementClubRecapPdfSourceHash(...arguments);
 }
 
 /* extracted-function: functions/engagement-pdf-renderer.js#engagementPdfEventLabel */
@@ -4080,74 +7875,74 @@ function engagementPdfFeeTotal() {
   return engagementPdfRenderer().engagementPdfFeeTotal(...arguments);
 }
 
-/* extracted-function: functions/server-documents-service.js#engagementCompetitionEntrySummaryId */
+/* extracted-function: functions/backend/server-documents-service/engagement-competition-entry-summary-id.js#engagementCompetitionEntrySummaryId */
 function engagementCompetitionEntrySummaryId(input0) {
-  return serverDocumentsService().engagementCompetitionEntrySummaryId(...arguments);
+  return $serverDocumentsService_engagementCompetitionEntrySummaryId().engagementCompetitionEntrySummaryId(...arguments);
 }
 
-/* extracted-function: functions/server-documents-service.js#engagementCompetitionEntrySummaryRef */
+/* extracted-function: functions/backend/server-documents-service/engagement-competition-entry-summary-ref.js#engagementCompetitionEntrySummaryRef */
 function engagementCompetitionEntrySummaryRef(input0, input1) {
-  return serverDocumentsService().engagementCompetitionEntrySummaryRef(...arguments);
+  return $serverDocumentsService_engagementCompetitionEntrySummaryRef().engagementCompetitionEntrySummaryRef(...arguments);
 }
 
-/* extracted-function: functions/server-documents-service.js#engagementCompetitionStatisticsCacheRef */
+/* extracted-function: functions/backend/server-documents-service/engagement-competition-statistics-cache-ref.js#engagementCompetitionStatisticsCacheRef */
 function engagementCompetitionStatisticsCacheRef(input0, input1) {
-  return serverDocumentsService().engagementCompetitionStatisticsCacheRef(...arguments);
+  return $serverDocumentsService_engagementCompetitionStatisticsCacheRef().engagementCompetitionStatisticsCacheRef(...arguments);
 }
 
-/* extracted-function: functions/server-documents-service.js#invalidateEngagementCompetitionStatistics */
+/* extracted-function: functions/backend/server-documents-service/invalidate-engagement-competition-statistics.js#invalidateEngagementCompetitionStatistics */
 function invalidateEngagementCompetitionStatistics(input0, input1, input2) {
-  return serverDocumentsService().invalidateEngagementCompetitionStatistics(...arguments);
+  return $serverDocumentsService_invalidateEngagementCompetitionStatistics().invalidateEngagementCompetitionStatistics(...arguments);
 }
 
-/* extracted-function: functions/server-documents-service.js#decodeEngagementCompetitionStatisticsCache */
+/* extracted-function: functions/backend/server-documents-service/decode-engagement-competition-statistics-cache.js#decodeEngagementCompetitionStatisticsCache */
 function decodeEngagementCompetitionStatisticsCache() {
-  return serverDocumentsService().decodeEngagementCompetitionStatisticsCache(...arguments);
+  return $serverDocumentsService_decodeEngagementCompetitionStatisticsCache().decodeEngagementCompetitionStatisticsCache(...arguments);
 }
 
-/* extracted-function: functions/server-documents-service.js#encodeEngagementCompetitionStatisticsCache */
+/* extracted-function: functions/backend/server-documents-service/decode-engagement-competition-statistics-cache.js#encodeEngagementCompetitionStatisticsCache */
 function encodeEngagementCompetitionStatisticsCache() {
-  return serverDocumentsService().encodeEngagementCompetitionStatisticsCache(...arguments);
+  return $serverDocumentsService_decodeEngagementCompetitionStatisticsCache().encodeEngagementCompetitionStatisticsCache(...arguments);
 }
 
-/* extracted-function: functions/server-documents-service.js#engagementCompetitionEntrySummaryItem */
+/* extracted-function: functions/backend/server-documents-service/engagement-competition-entry-summary-item.js#engagementCompetitionEntrySummaryItem */
 function engagementCompetitionEntrySummaryItem() {
-  return serverDocumentsService().engagementCompetitionEntrySummaryItem(...arguments);
+  return $serverDocumentsService_engagementCompetitionEntrySummaryItem().engagementCompetitionEntrySummaryItem(...arguments);
 }
 
-/* extracted-function: functions/server-documents-service.js#engagementCompetitionEntrySummariesFromData */
+/* extracted-function: functions/backend/server-documents-service/engagement-competition-entry-summaries-from-data.js#engagementCompetitionEntrySummariesFromData */
 function engagementCompetitionEntrySummariesFromData() {
-  return serverDocumentsService().engagementCompetitionEntrySummariesFromData(...arguments);
+  return $serverDocumentsService_engagementCompetitionEntrySummariesFromData().engagementCompetitionEntrySummariesFromData(...arguments);
 }
 
-/* extracted-function: functions/server-documents-service.js#rebuildEngagementCompetitionEntrySummary */
+/* extracted-function: functions/backend/server-documents-service/delete-engagement-club-competition-index-entry.js#rebuildEngagementCompetitionEntrySummary */
 async function rebuildEngagementCompetitionEntrySummary(input0, input1) {
-  return serverDocumentsService().rebuildEngagementCompetitionEntrySummary(...arguments);
+  return $serverDocumentsService_deleteEngagementClubCompetitionIndexEntry().rebuildEngagementCompetitionEntrySummary(...arguments);
 }
 
-/* extracted-function: functions/server-documents-service.js#upsertEngagementCompetitionEntrySummary */
+/* extracted-function: functions/backend/server-documents-service/engagement-club-recap-pdf-source-hash.js#upsertEngagementCompetitionEntrySummary */
 function upsertEngagementCompetitionEntrySummary(input0, input1) {
-  return serverDocumentsService().upsertEngagementCompetitionEntrySummary(...arguments);
+  return $serverDocumentsService_engagementClubRecapPdfSourceHash().upsertEngagementCompetitionEntrySummary(...arguments);
 }
 
-/* extracted-function: functions/server-documents-service.js#deleteEngagementCompetitionEntrySummary */
+/* extracted-function: functions/backend/server-documents-service/delete-engagement-competition-entry-summary.js#deleteEngagementCompetitionEntrySummary */
 function deleteEngagementCompetitionEntrySummary(input0, input1) {
-  return serverDocumentsService().deleteEngagementCompetitionEntrySummary(...arguments);
+  return $serverDocumentsService_deleteEngagementCompetitionEntrySummary().deleteEngagementCompetitionEntrySummary(...arguments);
 }
 
-/* extracted-function: functions/server-documents-service.js#upsertEngagementClubCompetitionIndex */
+/* extracted-function: functions/backend/server-documents-service/delete-engagement-club-competition-index-entry.js#upsertEngagementClubCompetitionIndex */
 function upsertEngagementClubCompetitionIndex(input0, input1) {
-  return serverDocumentsService().upsertEngagementClubCompetitionIndex(...arguments);
+  return $serverDocumentsService_deleteEngagementClubCompetitionIndexEntry().upsertEngagementClubCompetitionIndex(...arguments);
 }
 
-/* extracted-function: functions/server-documents-service.js#deleteEngagementClubCompetitionIndexEntry */
+/* extracted-function: functions/backend/server-documents-service/delete-engagement-club-competition-index-entry.js#deleteEngagementClubCompetitionIndexEntry */
 function deleteEngagementClubCompetitionIndexEntry(input0, input1) {
-  return serverDocumentsService().deleteEngagementClubCompetitionIndexEntry(...arguments);
+  return $serverDocumentsService_deleteEngagementClubCompetitionIndexEntry().deleteEngagementClubCompetitionIndexEntry(...arguments);
 }
 
-/* extracted-function: functions/server-documents-service.js#syncEngagementCompetitionEntrySummaryFromChange */
+/* extracted-function: functions/backend/server-documents-service/invalidate-engagement-competition-statistics.js#syncEngagementCompetitionEntrySummaryFromChange */
 async function syncEngagementCompetitionEntrySummaryFromChange() {
-  return serverDocumentsService().syncEngagementCompetitionEntrySummaryFromChange(...arguments);
+  return $serverDocumentsService_invalidateEngagementCompetitionStatistics().syncEngagementCompetitionEntrySummaryFromChange(...arguments);
 }
 
 exports.syncEngagementClubEntryToCompetitionSummary = onDocumentWritten({
@@ -4248,39 +8043,39 @@ async function buildEngagementClubRecapPdf() {
   return engagementPdfRenderer().buildEngagementClubRecapPdf(...arguments);
 }
 
-/* extracted-function: functions/server-documents-service.js#readStoredEngagementClubRecapPdf */
+/* extracted-function: functions/backend/server-documents-service/read-stored-engagement-club-recap-pdf.js#readStoredEngagementClubRecapPdf */
 async function readStoredEngagementClubRecapPdf() {
-  return serverDocumentsService().readStoredEngagementClubRecapPdf(...arguments);
+  return $serverDocumentsService_readStoredEngagementClubRecapPdf().readStoredEngagementClubRecapPdf(...arguments);
 }
 
-/* extracted-function: functions/server-documents-service.js#saveEngagementClubRecapPdfDocument */
+/* extracted-function: functions/backend/server-documents-service/engagement-club-recap-pdf-source-hash.js#saveEngagementClubRecapPdfDocument */
 async function saveEngagementClubRecapPdfDocument() {
-  return serverDocumentsService().saveEngagementClubRecapPdfDocument(...arguments);
+  return $serverDocumentsService_engagementClubRecapPdfSourceHash().saveEngagementClubRecapPdfDocument(...arguments);
 }
 
-/* extracted-function: functions/server-documents-service.js#getOrCreateEngagementClubRecapPdf */
+/* extracted-function: functions/backend/server-documents-service/engagement-club-recap-pdf-source-hash.js#getOrCreateEngagementClubRecapPdf */
 async function getOrCreateEngagementClubRecapPdf(input0, input1) {
-  return serverDocumentsService().getOrCreateEngagementClubRecapPdf(...arguments);
+  return $serverDocumentsService_engagementClubRecapPdfSourceHash().getOrCreateEngagementClubRecapPdf(...arguments);
 }
 
-/* extracted-function: functions/server-documents-service.js#engagementOfficialsPdfStoragePath */
+/* extracted-function: functions/backend/server-documents-service/engagement-officials-pdf-source-hash.js#engagementOfficialsPdfStoragePath */
 function engagementOfficialsPdfStoragePath(input0) {
-  return serverDocumentsService().engagementOfficialsPdfStoragePath(...arguments);
+  return $serverDocumentsService_engagementOfficialsPdfSourceHash().engagementOfficialsPdfStoragePath(...arguments);
 }
 
-/* extracted-function: functions/server-documents-service.js#engagementOfficialsPdfRows */
+/* extracted-function: functions/backend/server-documents-service/engagement-officials-pdf-rows.js#engagementOfficialsPdfRows */
 function engagementOfficialsPdfRows() {
-  return serverDocumentsService().engagementOfficialsPdfRows(...arguments);
+  return $serverDocumentsService_engagementOfficialsPdfRows().engagementOfficialsPdfRows(...arguments);
 }
 
-/* extracted-function: functions/server-documents-service.js#resolveEngagementOfficialsPdfRows */
+/* extracted-function: functions/backend/server-documents-service/engagement-officials-pdf-source-hash.js#resolveEngagementOfficialsPdfRows */
 async function resolveEngagementOfficialsPdfRows(input0) {
-  return serverDocumentsService().resolveEngagementOfficialsPdfRows(...arguments);
+  return $serverDocumentsService_engagementOfficialsPdfSourceHash().resolveEngagementOfficialsPdfRows(...arguments);
 }
 
-/* extracted-function: functions/server-documents-service.js#engagementOfficialsPdfSourceHash */
+/* extracted-function: functions/backend/server-documents-service/engagement-officials-pdf-source-hash.js#engagementOfficialsPdfSourceHash */
 function engagementOfficialsPdfSourceHash() {
-  return serverDocumentsService().engagementOfficialsPdfSourceHash(...arguments);
+  return $serverDocumentsService_engagementOfficialsPdfSourceHash().engagementOfficialsPdfSourceHash(...arguments);
 }
 
 /* extracted-function: functions/engagement-pdf-renderer.js#buildEngagementOfficialsPdf */
@@ -4288,230 +8083,188 @@ async function buildEngagementOfficialsPdf() {
   return engagementPdfRenderer().buildEngagementOfficialsPdf(...arguments);
 }
 
-/* extracted-function: functions/server-documents-service.js#saveEngagementOfficialsPdfDocument */
+/* extracted-function: functions/backend/server-documents-service/engagement-officials-pdf-source-hash.js#saveEngagementOfficialsPdfDocument */
 async function saveEngagementOfficialsPdfDocument() {
-  return serverDocumentsService().saveEngagementOfficialsPdfDocument(...arguments);
+  return $serverDocumentsService_engagementOfficialsPdfSourceHash().saveEngagementOfficialsPdfDocument(...arguments);
 }
 
-/* extracted-function: functions/server-documents-service.js#getOrCreateEngagementOfficialsPdf */
+/* extracted-function: functions/backend/server-documents-service/engagement-officials-pdf-source-hash.js#getOrCreateEngagementOfficialsPdf */
 async function getOrCreateEngagementOfficialsPdf(input0, input1) {
-  return serverDocumentsService().getOrCreateEngagementOfficialsPdf(...arguments);
+  return $serverDocumentsService_engagementOfficialsPdfSourceHash().getOrCreateEngagementOfficialsPdf(...arguments);
 }
 
-/* extracted-function: functions/server-documents-service.js#engagementTxtStoragePath */
+/* extracted-function: functions/backend/server-documents-service/engagement-txt-download-url.js#engagementTxtStoragePath */
 function engagementTxtStoragePath(input0) {
-  return serverDocumentsService().engagementTxtStoragePath(...arguments);
+  return $serverDocumentsService_engagementTxtDownloadUrl().engagementTxtStoragePath(...arguments);
 }
 
-/* extracted-function: functions/server-documents-service.js#engagementTxtDownloadUrl */
+/* extracted-function: functions/backend/server-documents-service/engagement-txt-download-url.js#engagementTxtDownloadUrl */
 function engagementTxtDownloadUrl(input0, input1) {
-  return serverDocumentsService().engagementTxtDownloadUrl(...arguments);
+  return $serverDocumentsService_engagementTxtDownloadUrl().engagementTxtDownloadUrl(...arguments);
 }
 
-/* extracted-function: functions/server-documents-service.js#engagementTxtSourceHash */
+/* extracted-function: functions/backend/server-documents-service/engagement-txt-download-url.js#engagementTxtSourceHash */
 function engagementTxtSourceHash() {
-  return serverDocumentsService().engagementTxtSourceHash(...arguments);
+  return $serverDocumentsService_engagementTxtDownloadUrl().engagementTxtSourceHash(...arguments);
 }
 
-/* extracted-function: functions/server-documents-service.js#engagementTxtSwimmerCategory */
+/* extracted-function: functions/backend/server-documents-service/build-engagement-competition-txt.js#engagementTxtSwimmerCategory */
 function engagementTxtSwimmerCategory() {
-  return serverDocumentsService().engagementTxtSwimmerCategory(...arguments);
+  return $serverDocumentsService_buildEngagementCompetitionTxt().engagementTxtSwimmerCategory(...arguments);
 }
 
-/* extracted-function: functions/server-documents-service.js#buildEngagementCompetitionTxt */
+/* extracted-function: functions/backend/server-documents-service/build-engagement-competition-txt.js#buildEngagementCompetitionTxt */
 function buildEngagementCompetitionTxt() {
-  return serverDocumentsService().buildEngagementCompetitionTxt(...arguments);
+  return $serverDocumentsService_buildEngagementCompetitionTxt().buildEngagementCompetitionTxt(...arguments);
 }
 
-/* extracted-function: functions/server-documents-service.js#readStoredEngagementTxt */
+/* extracted-function: functions/backend/server-documents-service/engagement-txt-download-url.js#readStoredEngagementTxt */
 async function readStoredEngagementTxt() {
-  return serverDocumentsService().readStoredEngagementTxt(...arguments);
+  return $serverDocumentsService_engagementTxtDownloadUrl().readStoredEngagementTxt(...arguments);
 }
 
-/* extracted-function: functions/server-documents-service.js#getOrCreateEngagementCompetitionTxt */
+/* extracted-function: functions/backend/server-documents-service/engagement-txt-download-url.js#getOrCreateEngagementCompetitionTxt */
 async function getOrCreateEngagementCompetitionTxt(input0) {
-  return serverDocumentsService().getOrCreateEngagementCompetitionTxt(...arguments);
+  return $serverDocumentsService_engagementTxtDownloadUrl().getOrCreateEngagementCompetitionTxt(...arguments);
 }
 
-/* extracted-function: functions/server-documents-service.js#engagementMailStatusLabel */
+/* extracted-function: functions/backend/server-documents-service/engagement-mail-status-label.js#engagementMailStatusLabel */
 function engagementMailStatusLabel(input0) {
-  return serverDocumentsService().engagementMailStatusLabel(...arguments);
+  return $serverDocumentsService_engagementMailStatusLabel().engagementMailStatusLabel(...arguments);
 }
 
-/* extracted-function: functions/server-documents-service.js#engagementMailSecretValue */
+/* extracted-function: functions/backend/server-documents-service/engagement-mail-secret-value.js#engagementMailSecretValue */
 function engagementMailSecretValue(input0, input1) {
-  return serverDocumentsService().engagementMailSecretValue(...arguments);
+  return $serverDocumentsService_engagementMailSecretValue().engagementMailSecretValue(...arguments);
 }
 
-/* extracted-function: functions/server-documents-service.js#engagementMailSmtpConfig */
+/* extracted-function: functions/backend/server-documents-service/engagement-mail-secret-value.js#engagementMailSmtpConfig */
 function engagementMailSmtpConfig() {
-  return serverDocumentsService().engagementMailSmtpConfig(...arguments);
+  return $serverDocumentsService_engagementMailSecretValue().engagementMailSmtpConfig(...arguments);
 }
 
-/* extracted-function: functions/server-documents-service.js#engagementMailPreparedStatus */
+/* extracted-function: functions/backend/server-documents-service/engagement-mail-prepared-status.js#engagementMailPreparedStatus */
 function engagementMailPreparedStatus() {
-  return serverDocumentsService().engagementMailPreparedStatus(...arguments);
+  return $serverDocumentsService_engagementMailPreparedStatus().engagementMailPreparedStatus(...arguments);
 }
 
-exports.getEngagementAutomaticMailControl = onCall(CALLABLE_OPTIONS, /* extracted-handler: functions/portal-competition-handlers.js#getEngagementAutomaticMailControl#arrow */ async (request) => {
-  return portalCompetitionHandlers().getEngagementAutomaticMailControl(request);
+exports.getEngagementAutomaticMailControl = onCall(CALLABLE_OPTIONS, /* extracted-handler: functions/backend/portal-competition-handlers/get-engagement-automatic-mail-control.js#getEngagementAutomaticMailControl#arrow */ async (request) => {
+  return $portalCompetitionHandlers_getEngagementAutomaticMailControl().getEngagementAutomaticMailControl(request);
 });
-exports.updateEngagementAutomaticMailControl = onCall(CALLABLE_OPTIONS, /* extracted-handler: functions/portal-competition-handlers.js#updateEngagementAutomaticMailControl#arrow */ async (request) => {
-  return portalCompetitionHandlers().updateEngagementAutomaticMailControl(request);
+exports.updateEngagementAutomaticMailControl = onCall(CALLABLE_OPTIONS, /* extracted-handler: functions/backend/portal-competition-handlers/update-engagement-automatic-mail-control.js#updateEngagementAutomaticMailControl#arrow */ async (request) => {
+  return $portalCompetitionHandlers_updateEngagementAutomaticMailControl().updateEngagementAutomaticMailControl(request);
 });
 
-function serverMailService() {
-  if (!serverMailService.instance) serverMailService.instance = require("./server-mail-service").createMailService({
-    get ENGAGEMENT_CLUB_ADMIN_DIRECTORY_COLLECTION() { return ENGAGEMENT_CLUB_ADMIN_DIRECTORY_COLLECTION; },
-    get ENGAGEMENT_CLUB_ADMIN_DIRECTORY_MAX_BYTES() { return ENGAGEMENT_CLUB_ADMIN_DIRECTORY_MAX_BYTES; },
-    get ENGAGEMENT_MAIL_CAPABILITIES() { return ENGAGEMENT_MAIL_CAPABILITIES; },
-    get ENGAGEMENT_MAIL_JOBS_COLLECTION() { return ENGAGEMENT_MAIL_JOBS_COLLECTION; },
-    get ENGAGEMENT_MAIL_RECIPIENT_BOOTSTRAP_LIMIT() { return ENGAGEMENT_MAIL_RECIPIENT_BOOTSTRAP_LIMIT; },
-    get ENGAGEMENT_MAIL_RECIPIENT_INDEX_STATE_COLLECTION() { return ENGAGEMENT_MAIL_RECIPIENT_INDEX_STATE_COLLECTION; },
-    get ENGAGEMENT_MAIL_RECIPIENT_SHARDS_COLLECTION() { return ENGAGEMENT_MAIL_RECIPIENT_SHARDS_COLLECTION; },
-    get ENGAGEMENT_MAIL_RECIPIENT_SHARD_COUNT() { return ENGAGEMENT_MAIL_RECIPIENT_SHARD_COUNT; },
-    get ENVIRONMENT() { return ENVIRONMENT; },
-    get FieldPath() { return FieldPath; },
-    get FieldValue() { return FieldValue; },
-    get HttpsError() { return HttpsError; },
-    get OPTIONAL_COMPETITION_MAIL_TYPES() { return OPTIONAL_COMPETITION_MAIL_TYPES; },
-    get activeCapabilitiesFromMap() { return activeCapabilitiesFromMap; },
-    get cleanEngagementCompetitionLevel() { return cleanEngagementCompetitionLevel; },
-    get cleanEngagementRegionIds() { return cleanEngagementRegionIds; },
-    get cleanFirestoreValue() { return cleanFirestoreValue; },
-    get cleanText() { return cleanText; },
-    get competitionEmailNotificationsEnabled() { return competitionEmailNotificationsEnabled; },
-    get competitionMailDateTime() { return competitionMailDateTime; },
-    get competitionMailLines() { return competitionMailLines; },
-    get competitionNotificationPreferenceUrl() { return competitionNotificationPreferenceUrl; },
-    get crypto() { return crypto; },
-    get db() { return db; },
-    get engagementClubCode() { return engagementClubCode; },
-    get engagementClubName() { return engagementClubName; },
-    get engagementMailPreparedStatus() { return engagementMailPreparedStatus; },
-    get engagementMailSmtpConfig() { return engagementMailSmtpConfig; },
-    get engagementMailStatusLabel() { return engagementMailStatusLabel; },
-    get engagementPdfFeeTotal() { return engagementPdfFeeTotal; },
-    get engagementPdfMoney() { return engagementPdfMoney; },
-    get escapeMailHtml() { return escapeMailHtml; },
-    get isNationalOnlyEngagementCompetitionLevel() { return isNationalOnlyEngagementCompetitionLevel; },
-    get livePalmesMailHtml() { return livePalmesMailHtml; },
-    get normalizeEmail() { return normalizeEmail; },
-    get normalizedEngagementRegionKey() { return normalizedEngagementRegionKey; },
-    get readStoredEngagementClubRecapPdf() { return readStoredEngagementClubRecapPdf; },
-    get stableHash() { return stableHash; }
-  });
-  return serverMailService.instance;
-}
 
-/* extracted-function: functions/server-mail-service.js#engagementMailPreparedReason */
+
+/* extracted-function: functions/backend/server-mail-service/engagement-mail-prepared-reason.js#engagementMailPreparedReason */
 function engagementMailPreparedReason() {
-  return serverMailService().engagementMailPreparedReason(...arguments);
+  return $serverMailService_engagementMailPreparedReason().engagementMailPreparedReason(...arguments);
 }
 
-/* extracted-function: functions/server-mail-service.js#engagementMailJobId */
+/* extracted-function: functions/backend/server-mail-service/engagement-mail-job-id.js#engagementMailJobId */
 function engagementMailJobId() {
-  return serverMailService().engagementMailJobId(...arguments);
+  return $serverMailService_engagementMailJobId().engagementMailJobId(...arguments);
 }
 
-/* extracted-function: functions/server-mail-service.js#engagementMailRecipientFromUserDoc */
+/* extracted-function: functions/backend/server-mail-service/engagement-mail-recipient-from-user-doc.js#engagementMailRecipientFromUserDoc */
 function engagementMailRecipientFromUserDoc(input0) {
-  return serverMailService().engagementMailRecipientFromUserDoc(...arguments);
+  return $serverMailService_engagementMailRecipientFromUserDoc().engagementMailRecipientFromUserDoc(...arguments);
 }
 
-/* extracted-function: functions/server-mail-service.js#engagementMailRecipientShardNumber */
+/* extracted-function: functions/backend/server-mail-service/engagement-mail-recipient-shard-number.js#engagementMailRecipientShardNumber */
 function engagementMailRecipientShardNumber() {
-  return serverMailService().engagementMailRecipientShardNumber(...arguments);
+  return $serverMailService_engagementMailRecipientShardNumber().engagementMailRecipientShardNumber(...arguments);
 }
 
-/* extracted-function: functions/server-mail-service.js#engagementMailRecipientShardRef */
+/* extracted-function: functions/backend/server-mail-service/engagement-mail-recipient-shard-ref.js#engagementMailRecipientShardRef */
 function engagementMailRecipientShardRef(input0, input1, input2) {
-  return serverMailService().engagementMailRecipientShardRef(...arguments);
+  return $serverMailService_engagementMailRecipientShardRef().engagementMailRecipientShardRef(...arguments);
 }
 
-/* extracted-function: functions/server-mail-service.js#engagementMailRecipientIndexStateRef */
+/* extracted-function: functions/backend/server-mail-service/engagement-mail-recipient-index-state-ref.js#engagementMailRecipientIndexStateRef */
 function engagementMailRecipientIndexStateRef(input0) {
-  return serverMailService().engagementMailRecipientIndexStateRef(...arguments);
+  return $serverMailService_engagementMailRecipientIndexStateRef().engagementMailRecipientIndexStateRef(...arguments);
 }
 
-/* extracted-function: functions/server-mail-service.js#engagementMailRecipientIndexKey */
+/* extracted-function: functions/backend/server-mail-service/engagement-mail-recipient-index-key.js#engagementMailRecipientIndexKey */
 function engagementMailRecipientIndexKey() {
-  return serverMailService().engagementMailRecipientIndexKey(...arguments);
+  return $serverMailService_engagementMailRecipientIndexKey().engagementMailRecipientIndexKey(...arguments);
 }
 
-/* extracted-function: functions/server-mail-service.js#engagementClubAdminDirectoryRef */
+/* extracted-function: functions/backend/server-mail-service/assert-engagement-club-admin-directory-size.js#engagementClubAdminDirectoryRef */
 function engagementClubAdminDirectoryRef(input0) {
-  return serverMailService().engagementClubAdminDirectoryRef(...arguments);
+  return $serverMailService_assertEngagementClubAdminDirectorySize().engagementClubAdminDirectoryRef(...arguments);
 }
 
-/* extracted-function: functions/server-mail-service.js#engagementClubAdminDirectoryEntry */
+/* extracted-function: functions/backend/server-mail-service/assert-engagement-club-admin-directory-size.js#engagementClubAdminDirectoryEntry */
 function engagementClubAdminDirectoryEntry() {
-  return serverMailService().engagementClubAdminDirectoryEntry(...arguments);
+  return $serverMailService_assertEngagementClubAdminDirectorySize().engagementClubAdminDirectoryEntry(...arguments);
 }
 
-/* extracted-function: functions/server-mail-service.js#engagementClubAdminDirectoryMap */
+/* extracted-function: functions/backend/server-mail-service/engagement-club-admin-directory-map.js#engagementClubAdminDirectoryMap */
 function engagementClubAdminDirectoryMap() {
-  return serverMailService().engagementClubAdminDirectoryMap(...arguments);
+  return $serverMailService_engagementClubAdminDirectoryMap().engagementClubAdminDirectoryMap(...arguments);
 }
 
-/* extracted-function: functions/server-mail-service.js#assertEngagementClubAdminDirectorySize */
+/* extracted-function: functions/backend/server-mail-service/assert-engagement-club-admin-directory-size.js#assertEngagementClubAdminDirectorySize */
 function assertEngagementClubAdminDirectorySize() {
-  return serverMailService().assertEngagementClubAdminDirectorySize(...arguments);
+  return $serverMailService_assertEngagementClubAdminDirectorySize().assertEngagementClubAdminDirectorySize(...arguments);
 }
 
-/* extracted-function: functions/server-mail-service.js#writeEngagementClubAdminDirectory */
+/* extracted-function: functions/backend/server-mail-service/engagement-club-admin-directory-map.js#writeEngagementClubAdminDirectory */
 async function writeEngagementClubAdminDirectory(input0) {
-  return serverMailService().writeEngagementClubAdminDirectory(...arguments);
+  return $serverMailService_engagementClubAdminDirectoryMap().writeEngagementClubAdminDirectory(...arguments);
 }
 
-/* extracted-function: functions/server-mail-service.js#updateEngagementClubAdminDirectory */
+/* extracted-function: functions/backend/server-mail-service/update-engagement-club-admin-directory.js#updateEngagementClubAdminDirectory */
 async function updateEngagementClubAdminDirectory(input0) {
-  return serverMailService().updateEngagementClubAdminDirectory(...arguments);
+  return $serverMailService_updateEngagementClubAdminDirectory().updateEngagementClubAdminDirectory(...arguments);
 }
 
-/* extracted-function: functions/server-mail-service.js#readEngagementClubAdminDirectory */
+/* extracted-function: functions/backend/server-mail-service/read-engagement-club-admin-directory.js#readEngagementClubAdminDirectory */
 async function readEngagementClubAdminDirectory(input0) {
-  return serverMailService().readEngagementClubAdminDirectory(...arguments);
+  return $serverMailService_readEngagementClubAdminDirectory().readEngagementClubAdminDirectory(...arguments);
 }
 
-/* extracted-function: functions/server-mail-service.js#engagementMailRecipientShardRefs */
+/* extracted-function: functions/backend/server-mail-service/engagement-mail-recipient-index-state-ref.js#engagementMailRecipientShardRefs */
 function engagementMailRecipientShardRefs(input0) {
-  return serverMailService().engagementMailRecipientShardRefs(...arguments);
+  return $serverMailService_engagementMailRecipientIndexStateRef().engagementMailRecipientShardRefs(...arguments);
 }
 
-/* extracted-function: functions/server-mail-service.js#engagementMailRecipientShardGroups */
+/* extracted-function: functions/backend/server-mail-service/engagement-mail-recipient-shard-groups.js#engagementMailRecipientShardGroups */
 function engagementMailRecipientShardGroups() {
-  return serverMailService().engagementMailRecipientShardGroups(...arguments);
+  return $serverMailService_engagementMailRecipientShardGroups().engagementMailRecipientShardGroups(...arguments);
 }
 
-/* extracted-function: functions/server-mail-service.js#replaceEngagementMailRecipientIndex */
+/* extracted-function: functions/backend/server-mail-service/bootstrap-engagement-mail-recipient-index.js#replaceEngagementMailRecipientIndex */
 async function replaceEngagementMailRecipientIndex(input0) {
-  return serverMailService().replaceEngagementMailRecipientIndex(...arguments);
+  return $serverMailService_bootstrapEngagementMailRecipientIndex().replaceEngagementMailRecipientIndex(...arguments);
 }
 
-/* extracted-function: functions/server-mail-service.js#bootstrapEngagementMailRecipientIndex */
+/* extracted-function: functions/backend/server-mail-service/bootstrap-engagement-mail-recipient-index.js#bootstrapEngagementMailRecipientIndex */
 async function bootstrapEngagementMailRecipientIndex(input0) {
-  return serverMailService().bootstrapEngagementMailRecipientIndex(...arguments);
+  return $serverMailService_bootstrapEngagementMailRecipientIndex().bootstrapEngagementMailRecipientIndex(...arguments);
 }
 
-/* extracted-function: functions/server-mail-service.js#engagementMailRecipientsFromIndex */
+/* extracted-function: functions/backend/server-mail-service/engagement-mail-recipient-index-state-ref.js#engagementMailRecipientsFromIndex */
 async function engagementMailRecipientsFromIndex(input0) {
-  return serverMailService().engagementMailRecipientsFromIndex(...arguments);
+  return $serverMailService_engagementMailRecipientIndexStateRef().engagementMailRecipientsFromIndex(...arguments);
 }
 
-/* extracted-function: functions/server-mail-service.js#engagementRecipientHasCapability */
+/* extracted-function: functions/backend/server-mail-service/engagement-recipient-has-capability.js#engagementRecipientHasCapability */
 function engagementRecipientHasCapability() {
-  return serverMailService().engagementRecipientHasCapability(...arguments);
+  return $serverMailService_engagementRecipientHasCapability().engagementRecipientHasCapability(...arguments);
 }
 
-/* extracted-function: functions/server-mail-service.js#engagementCompetitionNotificationRecipients */
+/* extracted-function: functions/backend/server-mail-service/engagement-competition-document-recipients.js#engagementCompetitionNotificationRecipients */
 function engagementCompetitionNotificationRecipients() {
-  return serverMailService().engagementCompetitionNotificationRecipients(...arguments);
+  return $serverMailService_engagementCompetitionDocumentRecipients().engagementCompetitionNotificationRecipients(...arguments);
 }
 
-/* extracted-function: functions/server-mail-service.js#engagementActiveMailRecipients */
+/* extracted-function: functions/backend/server-mail-service/bootstrap-engagement-mail-recipient-index.js#engagementActiveMailRecipients */
 async function engagementActiveMailRecipients(input0) {
-  return serverMailService().engagementActiveMailRecipients(...arguments);
+  return $serverMailService_bootstrapEngagementMailRecipientIndex().engagementActiveMailRecipients(...arguments);
 }
 
 // Isolate NAP retries from existing recipient indexes; TEST never opens shared NAP.
@@ -4572,217 +8325,185 @@ exports.syncEngagementMailRecipientIndex = onDocumentWritten({
   }
 });
 
-exports.rebuildEngagementMailRecipientIndexNextPage = onCall(CALLABLE_OPTIONS, /* extracted-handler: functions/portal-competition-handlers.js#rebuildEngagementMailRecipientIndexNextPage#arrow */ async (request) => {
-  return portalCompetitionHandlers().rebuildEngagementMailRecipientIndexNextPage(request);
+exports.rebuildEngagementMailRecipientIndexNextPage = onCall(CALLABLE_OPTIONS, /* extracted-handler: functions/backend/portal-competition-handlers/rebuild-engagement-mail-recipient-index-next-page.js#rebuildEngagementMailRecipientIndexNextPage#arrow */ async (request) => {
+  return $portalCompetitionHandlers_rebuildEngagementMailRecipientIndexNextPage().rebuildEngagementMailRecipientIndexNextPage(request);
 });
 
-/* extracted-function: functions/server-mail-service.js#engagementActiveClubMailRecipients */
+/* extracted-function: functions/backend/server-mail-service/engagement-active-club-mail-recipients.js#engagementActiveClubMailRecipients */
 async function engagementActiveClubMailRecipients(input0) {
-  return serverMailService().engagementActiveClubMailRecipients(...arguments);
+  return $serverMailService_engagementActiveClubMailRecipients().engagementActiveClubMailRecipients(...arguments);
 }
 
-/* extracted-function: functions/server-mail-service.js#engagementMailRecipientFromContext */
+/* extracted-function: functions/backend/server-mail-service/engagement-mail-recipient-from-context.js#engagementMailRecipientFromContext */
 function engagementMailRecipientFromContext() {
-  return serverMailService().engagementMailRecipientFromContext(...arguments);
+  return $serverMailService_engagementMailRecipientFromContext().engagementMailRecipientFromContext(...arguments);
 }
 
-/* extracted-function: functions/server-mail-service.js#engagementDedupMailRecipients */
+/* extracted-function: functions/backend/server-mail-service/engagement-competition-document-recipients.js#engagementDedupMailRecipients */
 function engagementDedupMailRecipients() {
-  return serverMailService().engagementDedupMailRecipients(...arguments);
+  return $serverMailService_engagementCompetitionDocumentRecipients().engagementDedupMailRecipients(...arguments);
 }
 
-/* extracted-function: functions/server-mail-service.js#engagementCompetitionOpeningRecipients */
+/* extracted-function: functions/backend/server-mail-service/engagement-competition-document-recipients.js#engagementCompetitionOpeningRecipients */
 function engagementCompetitionOpeningRecipients() {
-  return serverMailService().engagementCompetitionOpeningRecipients(...arguments);
+  return $serverMailService_engagementCompetitionDocumentRecipients().engagementCompetitionOpeningRecipients(...arguments);
 }
 
-/* extracted-function: functions/server-mail-service.js#engagementCompetitionDocumentRecipients */
+/* extracted-function: functions/backend/server-mail-service/engagement-competition-document-recipients.js#engagementCompetitionDocumentRecipients */
 function engagementCompetitionDocumentRecipients() {
-  return serverMailService().engagementCompetitionDocumentRecipients(...arguments);
+  return $serverMailService_engagementCompetitionDocumentRecipients().engagementCompetitionDocumentRecipients(...arguments);
 }
 
-/* extracted-function: functions/server-mail-service.js#engagementCompetitionDocumentMailSubject */
+/* extracted-function: functions/backend/server-mail-service/engagement-competition-document-mail-subject.js#engagementCompetitionDocumentMailSubject */
 function engagementCompetitionDocumentMailSubject() {
-  return serverMailService().engagementCompetitionDocumentMailSubject(...arguments);
+  return $serverMailService_engagementCompetitionDocumentMailSubject().engagementCompetitionDocumentMailSubject(...arguments);
 }
 
-/* extracted-function: functions/server-mail-service.js#engagementCompetitionDocumentMailText */
+/* extracted-function: functions/backend/server-mail-service/engagement-competition-document-mail-subject.js#engagementCompetitionDocumentMailText */
 function engagementCompetitionDocumentMailText() {
-  return serverMailService().engagementCompetitionDocumentMailText(...arguments);
+  return $serverMailService_engagementCompetitionDocumentMailSubject().engagementCompetitionDocumentMailText(...arguments);
 }
 
-/* extracted-function: functions/server-mail-service.js#engagementCompetitionDocumentMailHtml */
+/* extracted-function: functions/backend/server-mail-service/engagement-competition-document-mail-html.js#engagementCompetitionDocumentMailHtml */
 function engagementCompetitionDocumentMailHtml() {
-  return serverMailService().engagementCompetitionDocumentMailHtml(...arguments);
+  return $serverMailService_engagementCompetitionDocumentMailHtml().engagementCompetitionDocumentMailHtml(...arguments);
 }
 
-/* extracted-function: functions/server-mail-service.js#engagementRecipientsByClub */
+/* extracted-function: functions/backend/server-mail-service/engagement-recipients-by-club.js#engagementRecipientsByClub */
 function engagementRecipientsByClub() {
-  return serverMailService().engagementRecipientsByClub(...arguments);
+  return $serverMailService_engagementRecipientsByClub().engagementRecipientsByClub(...arguments);
 }
 
-/* extracted-function: functions/server-mail-service.js#engagementOpeningMailSubject */
+/* extracted-function: functions/backend/server-mail-service/engagement-opening-mail-subject.js#engagementOpeningMailSubject */
 function engagementOpeningMailSubject() {
-  return serverMailService().engagementOpeningMailSubject(...arguments);
+  return $serverMailService_engagementOpeningMailSubject().engagementOpeningMailSubject(...arguments);
 }
 
-/* extracted-function: functions/server-mail-service.js#engagementOpeningMailText */
+/* extracted-function: functions/backend/server-mail-service/engagement-opening-mail-subject.js#engagementOpeningMailText */
 function engagementOpeningMailText() {
-  return serverMailService().engagementOpeningMailText(...arguments);
+  return $serverMailService_engagementOpeningMailSubject().engagementOpeningMailText(...arguments);
 }
 
-/* extracted-function: functions/server-mail-service.js#engagementClubRecapMailSubject */
+/* extracted-function: functions/backend/server-mail-service/engagement-club-recap-mail-subject.js#engagementClubRecapMailSubject */
 function engagementClubRecapMailSubject() {
-  return serverMailService().engagementClubRecapMailSubject(...arguments);
+  return $serverMailService_engagementClubRecapMailSubject().engagementClubRecapMailSubject(...arguments);
 }
 
-/* extracted-function: functions/server-mail-service.js#engagementClubRecapMailText */
+/* extracted-function: functions/backend/server-mail-service/engagement-club-recap-mail-subject.js#engagementClubRecapMailText */
 function engagementClubRecapMailText() {
-  return serverMailService().engagementClubRecapMailText(...arguments);
+  return $serverMailService_engagementClubRecapMailSubject().engagementClubRecapMailText(...arguments);
 }
 
-/* extracted-function: functions/server-mail-service.js#engagementTxtMailSubject */
+/* extracted-function: functions/backend/server-mail-service/engagement-competition-document-mail-subject.js#engagementTxtMailSubject */
 function engagementTxtMailSubject() {
-  return serverMailService().engagementTxtMailSubject(...arguments);
+  return $serverMailService_engagementCompetitionDocumentMailSubject().engagementTxtMailSubject(...arguments);
 }
 
-/* extracted-function: functions/server-mail-service.js#engagementTxtMailText */
+/* extracted-function: functions/backend/server-mail-service/engagement-competition-document-mail-subject.js#engagementTxtMailText */
 function engagementTxtMailText() {
-  return serverMailService().engagementTxtMailText(...arguments);
+  return $serverMailService_engagementCompetitionDocumentMailSubject().engagementTxtMailText(...arguments);
 }
 
-/* extracted-function: functions/server-mail-service.js#engagementOfficialsMailSubject */
+/* extracted-function: functions/backend/server-mail-service/engagement-competition-document-mail-subject.js#engagementOfficialsMailSubject */
 function engagementOfficialsMailSubject() {
-  return serverMailService().engagementOfficialsMailSubject(...arguments);
+  return $serverMailService_engagementCompetitionDocumentMailSubject().engagementOfficialsMailSubject(...arguments);
 }
 
-/* extracted-function: functions/server-mail-service.js#engagementOfficialsMailText */
+/* extracted-function: functions/backend/server-mail-service/engagement-competition-document-mail-subject.js#engagementOfficialsMailText */
 function engagementOfficialsMailText() {
-  return serverMailService().engagementOfficialsMailText(...arguments);
+  return $serverMailService_engagementCompetitionDocumentMailSubject().engagementOfficialsMailText(...arguments);
 }
 
-/* extracted-function: functions/server-mail-service.js#engagementMailJobItemFromData */
+/* extracted-function: functions/backend/server-mail-service/engagement-mail-job-item-from-data.js#engagementMailJobItemFromData */
 function engagementMailJobItemFromData() {
-  return serverMailService().engagementMailJobItemFromData(...arguments);
+  return $serverMailService_engagementMailJobItemFromData().engagementMailJobItemFromData(...arguments);
 }
 
-/* extracted-function: functions/server-mail-service.js#upsertEngagementMailJob */
+/* extracted-function: functions/backend/server-mail-service/engagement-mail-prepared-reason.js#upsertEngagementMailJob */
 async function upsertEngagementMailJob() {
-  return serverMailService().upsertEngagementMailJob(...arguments);
+  return $serverMailService_engagementMailPreparedReason().upsertEngagementMailJob(...arguments);
 }
 
-/* extracted-function: functions/server-mail-service.js#engagementMailAttachments */
+/* extracted-function: functions/backend/server-mail-service/engagement-mail-attachments.js#engagementMailAttachments */
 async function engagementMailAttachments() {
-  return serverMailService().engagementMailAttachments(...arguments);
+  return $serverMailService_engagementMailAttachments().engagementMailAttachments(...arguments);
 }
 
-/* extracted-function: functions/server-mail-service.js#engagementMailWithNotificationPreferenceFooter */
+/* extracted-function: functions/backend/server-mail-service/engagement-mail-with-notification-preference-footer.js#engagementMailWithNotificationPreferenceFooter */
 function engagementMailWithNotificationPreferenceFooter() {
-  return serverMailService().engagementMailWithNotificationPreferenceFooter(...arguments);
+  return $serverMailService_engagementMailWithNotificationPreferenceFooter().engagementMailWithNotificationPreferenceFooter(...arguments);
 }
 
-/* extracted-function: functions/server-mail-service.js#sendEngagementMailJob */
+/* extracted-function: functions/backend/server-mail-service/engagement-mail-with-notification-preference-footer.js#sendEngagementMailJob */
 async function sendEngagementMailJob(input0, input1, input2, input3) {
-  return serverMailService().sendEngagementMailJob(...arguments);
+  return $serverMailService_engagementMailWithNotificationPreferenceFooter().sendEngagementMailJob(...arguments);
 }
 
-function serverClubPeopleService() {
-  if (!serverClubPeopleService.instance) serverClubPeopleService.instance = require("./server-club-people-service").createClubPeopleService({
-    get ENGAGEMENT_CLUB_PEOPLE_ROSTERS_COLLECTION() { return ENGAGEMENT_CLUB_PEOPLE_ROSTERS_COLLECTION; },
-    get ENGAGEMENT_SWIMMER_LICENSE_PATTERN() { return ENGAGEMENT_SWIMMER_LICENSE_PATTERN; },
-    get FieldValue() { return FieldValue; },
-    get HttpsError() { return HttpsError; },
-    get PERFORMANCE_SWIMMERS_COLLECTION() { return PERFORMANCE_SWIMMERS_COLLECTION; },
-    get cleanEngagementClubActivityStatus() { return cleanEngagementClubActivityStatus; },
-    get cleanEngagementEntryStatus() { return cleanEngagementEntryStatus; },
-    get cleanEngagementLicenseVerificationStatus() { return cleanEngagementLicenseVerificationStatus; },
-    get cleanFirestoreValue() { return cleanFirestoreValue; },
-    get cleanIsoDate() { return cleanIsoDate; },
-    get cleanText() { return cleanText; },
-    get currentEngagementCategoryFromBirthDate() { return currentEngagementCategoryFromBirthDate; },
-    get db() { return db; },
-    get deleteEngagementClubRosterSwimmer() { return deleteEngagementClubRosterSwimmer; },
-    get deleteEngagementEntryTimeCache() { return deleteEngagementEntryTimeCache; },
-    get engagementClubRosterRef() { return engagementClubRosterRef; },
-    get engagementClubRosterSwimmerItem() { return engagementClubRosterSwimmerItem; },
-    get engagementClubRosterSwimmerKey() { return engagementClubRosterSwimmerKey; },
-    get engagementLegacySwimmerLicensesByClub() { return engagementLegacySwimmerLicensesByClub; },
-    get engagementLicenseSeasonState() { return engagementLicenseSeasonState; },
-    get engagementNewSwimmerItem() { return engagementNewSwimmerItem; },
-    get engagementSwimmerIdentityKey() { return engagementSwimmerIdentityKey; },
-    get engagementSwimmerLicenseNumberKey() { return engagementSwimmerLicenseNumberKey; },
-    get intranapSwimmersIndex() { return intranapSwimmersIndex; },
-    get normalizePerformanceSearchText() { return normalizePerformanceSearchText; },
-    get normalizedEngagementRegionKey() { return normalizedEngagementRegionKey; },
-    get stableHash() { return stableHash; },
-    get upsertEngagementClubRosterSwimmer() { return upsertEngagementClubRosterSwimmer; }
-  });
-  return serverClubPeopleService.instance;
-}
 
-/* extracted-function: functions/server-club-people-service.js#cleanEngagementClubPerson */
+
+/* extracted-function: functions/backend/server-club-people-service/clean-engagement-club-person.js#cleanEngagementClubPerson */
 function cleanEngagementClubPerson() {
-  return serverClubPeopleService().cleanEngagementClubPerson(...arguments);
+  return $serverClubPeopleService_cleanEngagementClubPerson().cleanEngagementClubPerson(...arguments);
 }
 
-/* extracted-function: functions/server-club-people-service.js#engagementClubPersonItem */
+/* extracted-function: functions/backend/server-club-people-service/engagement-club-person-item.js#engagementClubPersonItem */
 function engagementClubPersonItem(input0) {
-  return serverClubPeopleService().engagementClubPersonItem(...arguments);
+  return $serverClubPeopleService_engagementClubPersonItem().engagementClubPersonItem(...arguments);
 }
 
-/* extracted-function: functions/server-club-people-service.js#engagementClubPeopleRosterId */
+/* extracted-function: functions/backend/server-club-people-service/engagement-club-people-roster-id.js#engagementClubPeopleRosterId */
 function engagementClubPeopleRosterId(input0) {
-  return serverClubPeopleService().engagementClubPeopleRosterId(...arguments);
+  return $serverClubPeopleService_engagementClubPeopleRosterId().engagementClubPeopleRosterId(...arguments);
 }
 
-/* extracted-function: functions/server-club-people-service.js#engagementClubPeopleRosterRef */
+/* extracted-function: functions/backend/server-club-people-service/engagement-club-people-roster-id.js#engagementClubPeopleRosterRef */
 function engagementClubPeopleRosterRef(input0, input1) {
-  return serverClubPeopleService().engagementClubPeopleRosterRef(...arguments);
+  return $serverClubPeopleService_engagementClubPeopleRosterId().engagementClubPeopleRosterRef(...arguments);
 }
 
-/* extracted-function: functions/server-club-people-service.js#engagementClubPeopleRosterPersonItem */
+/* extracted-function: functions/backend/server-club-people-service/engagement-club-people-roster-person-item.js#engagementClubPeopleRosterPersonItem */
 function engagementClubPeopleRosterPersonItem() {
-  return serverClubPeopleService().engagementClubPeopleRosterPersonItem(...arguments);
+  return $serverClubPeopleService_engagementClubPeopleRosterPersonItem().engagementClubPeopleRosterPersonItem(...arguments);
 }
 
-/* extracted-function: functions/server-club-people-service.js#engagementClubPeopleRosterPeopleFromData */
+/* extracted-function: functions/backend/server-club-people-service/engagement-club-people-roster-people-from-data.js#engagementClubPeopleRosterPeopleFromData */
 function engagementClubPeopleRosterPeopleFromData() {
-  return serverClubPeopleService().engagementClubPeopleRosterPeopleFromData(...arguments);
+  return $serverClubPeopleService_engagementClubPeopleRosterPeopleFromData().engagementClubPeopleRosterPeopleFromData(...arguments);
 }
 
-/* extracted-function: functions/server-club-people-service.js#engagementClubPersonIdentityConflict */
+/* extracted-function: functions/backend/server-club-people-service/clean-engagement-club-person.js#engagementClubPersonIdentityConflict */
 function engagementClubPersonIdentityConflict() {
-  return serverClubPeopleService().engagementClubPersonIdentityConflict(...arguments);
+  return $serverClubPeopleService_cleanEngagementClubPerson().engagementClubPersonIdentityConflict(...arguments);
 }
 
-/* extracted-function: functions/server-club-people-service.js#throwEngagementClubPersonIdentityConflict */
+/* extracted-function: functions/backend/server-club-people-service/clean-engagement-club-person.js#throwEngagementClubPersonIdentityConflict */
 function throwEngagementClubPersonIdentityConflict() {
-  return serverClubPeopleService().throwEngagementClubPersonIdentityConflict(...arguments);
+  return $serverClubPeopleService_cleanEngagementClubPerson().throwEngagementClubPersonIdentityConflict(...arguments);
 }
 
-/* extracted-function: functions/server-club-people-service.js#engagementClubPersonOutsideClubConflict */
+/* extracted-function: functions/backend/server-club-people-service/clean-engagement-club-person.js#engagementClubPersonOutsideClubConflict */
 async function engagementClubPersonOutsideClubConflict() {
-  return serverClubPeopleService().engagementClubPersonOutsideClubConflict(...arguments);
+  return $serverClubPeopleService_cleanEngagementClubPerson().engagementClubPersonOutsideClubConflict(...arguments);
 }
 
-/* extracted-function: functions/server-club-people-service.js#upsertEngagementClubPeopleRosterPerson */
+/* extracted-function: functions/backend/server-club-people-service/upsert-engagement-club-people-roster-person.js#upsertEngagementClubPeopleRosterPerson */
 function upsertEngagementClubPeopleRosterPerson(input0, input1) {
-  return serverClubPeopleService().upsertEngagementClubPeopleRosterPerson(...arguments);
+  return $serverClubPeopleService_upsertEngagementClubPeopleRosterPerson().upsertEngagementClubPeopleRosterPerson(...arguments);
 }
 
-/* extracted-function: functions/server-club-people-service.js#deleteEngagementClubPeopleRosterPerson */
+/* extracted-function: functions/backend/server-club-people-service/delete-engagement-club-people-roster-person.js#deleteEngagementClubPeopleRosterPerson */
 function deleteEngagementClubPeopleRosterPerson(input0, input1) {
-  return serverClubPeopleService().deleteEngagementClubPeopleRosterPerson(...arguments);
+  return $serverClubPeopleService_deleteEngagementClubPeopleRosterPerson().deleteEngagementClubPeopleRosterPerson(...arguments);
 }
 
-/* extracted-function: functions/server-club-people-service.js#rebuildEngagementClubPeopleRoster */
+/* extracted-function: functions/backend/server-club-people-service/rebuild-engagement-club-people-roster.js#rebuildEngagementClubPeopleRoster */
 async function rebuildEngagementClubPeopleRoster(input0) {
-  return serverClubPeopleService().rebuildEngagementClubPeopleRoster(...arguments);
+  return $serverClubPeopleService_rebuildEngagementClubPeopleRoster().rebuildEngagementClubPeopleRoster(...arguments);
 }
 
-/* extracted-function: functions/server-club-people-service.js#syncEngagementClubPeopleRosterFromChange */
+/* extracted-function: functions/backend/server-club-people-service/sync-engagement-club-people-roster-from-change.js#syncEngagementClubPeopleRosterFromChange */
 async function syncEngagementClubPeopleRosterFromChange() {
-  return serverClubPeopleService().syncEngagementClubPeopleRosterFromChange(...arguments);
+  return $serverClubPeopleService_syncEngagementClubPeopleRosterFromChange().syncEngagementClubPeopleRosterFromChange(...arguments);
 }
 
 exports.syncEngagementClubPersonToRoster = onDocumentWritten({
@@ -4793,54 +8514,54 @@ exports.syncEngagementClubPersonToRoster = onDocumentWritten({
   await syncEngagementClubPeopleRosterFromChange(event);
 });
 
-/* extracted-function: functions/server-club-people-service.js#engagementClubSwimmerItem */
+/* extracted-function: functions/backend/server-club-people-service/engagement-club-swimmer-item.js#engagementClubSwimmerItem */
 function engagementClubSwimmerItem(input0) {
-  return serverClubPeopleService().engagementClubSwimmerItem(...arguments);
+  return $serverClubPeopleService_engagementClubSwimmerItem().engagementClubSwimmerItem(...arguments);
 }
 
-/* extracted-function: functions/server-club-people-service.js#engagementReferenceSwimmerItem */
+/* extracted-function: functions/backend/server-club-people-service/engagement-reference-swimmer-item.js#engagementReferenceSwimmerItem */
 function engagementReferenceSwimmerItem() {
-  return serverClubPeopleService().engagementReferenceSwimmerItem(...arguments);
+  return $serverClubPeopleService_engagementReferenceSwimmerItem().engagementReferenceSwimmerItem(...arguments);
 }
 
-/* extracted-function: functions/server-club-people-service.js#engagementReferenceClubSwimmers */
+/* extracted-function: functions/backend/server-club-people-service/engagement-reference-club-swimmers.js#engagementReferenceClubSwimmers */
 function engagementReferenceClubSwimmers() {
-  return serverClubPeopleService().engagementReferenceClubSwimmers(...arguments);
+  return $serverClubPeopleService_engagementReferenceClubSwimmers().engagementReferenceClubSwimmers(...arguments);
 }
 
-/* extracted-function: functions/server-club-people-service.js#sortEngagementClubSwimmers */
+/* extracted-function: functions/backend/server-club-people-service/engagement-club-swimmer-match-keys.js#sortEngagementClubSwimmers */
 function sortEngagementClubSwimmers() {
-  return serverClubPeopleService().sortEngagementClubSwimmers(...arguments);
+  return $serverClubPeopleService_engagementClubSwimmerMatchKeys().sortEngagementClubSwimmers(...arguments);
 }
 
-/* extracted-function: functions/server-club-people-service.js#engagementClubSwimmerMatchKeys */
+/* extracted-function: functions/backend/server-club-people-service/engagement-club-swimmer-match-keys.js#engagementClubSwimmerMatchKeys */
 function engagementClubSwimmerMatchKeys() {
-  return serverClubPeopleService().engagementClubSwimmerMatchKeys(...arguments);
+  return $serverClubPeopleService_engagementClubSwimmerMatchKeys().engagementClubSwimmerMatchKeys(...arguments);
 }
 
-/* extracted-function: functions/server-club-people-service.js#engagementClubSwimmerSourceRank */
+/* extracted-function: functions/backend/server-club-people-service/engagement-club-swimmer-match-keys.js#engagementClubSwimmerSourceRank */
 function engagementClubSwimmerSourceRank() {
-  return serverClubPeopleService().engagementClubSwimmerSourceRank(...arguments);
+  return $serverClubPeopleService_engagementClubSwimmerMatchKeys().engagementClubSwimmerSourceRank(...arguments);
 }
 
-/* extracted-function: functions/server-club-people-service.js#mergeEngagementClubSwimmerItems */
+/* extracted-function: functions/backend/server-club-people-service/engagement-club-swimmer-match-keys.js#mergeEngagementClubSwimmerItems */
 function mergeEngagementClubSwimmerItems() {
-  return serverClubPeopleService().mergeEngagementClubSwimmerItems(...arguments);
+  return $serverClubPeopleService_engagementClubSwimmerMatchKeys().mergeEngagementClubSwimmerItems(...arguments);
 }
 
-/* extracted-function: functions/server-club-people-service.js#uniqueEngagementClubSwimmers */
+/* extracted-function: functions/backend/server-club-people-service/engagement-club-swimmer-match-keys.js#uniqueEngagementClubSwimmers */
 function uniqueEngagementClubSwimmers() {
-  return serverClubPeopleService().uniqueEngagementClubSwimmers(...arguments);
+  return $serverClubPeopleService_engagementClubSwimmerMatchKeys().uniqueEngagementClubSwimmers(...arguments);
 }
 
-/* extracted-function: functions/server-club-people-service.js#rebuildEngagementClubRoster */
+/* extracted-function: functions/backend/server-club-people-service/engagement-reference-club-swimmers.js#rebuildEngagementClubRoster */
 async function rebuildEngagementClubRoster(input0) {
-  return serverClubPeopleService().rebuildEngagementClubRoster(...arguments);
+  return $serverClubPeopleService_engagementReferenceClubSwimmers().rebuildEngagementClubRoster(...arguments);
 }
 
-/* extracted-function: functions/server-club-people-service.js#syncEngagementClubRosterFromSwimmerChange */
+/* extracted-function: functions/backend/server-club-people-service/sync-engagement-club-roster-from-swimmer-change.js#syncEngagementClubRosterFromSwimmerChange */
 async function syncEngagementClubRosterFromSwimmerChange() {
-  return serverClubPeopleService().syncEngagementClubRosterFromSwimmerChange(...arguments);
+  return $serverClubPeopleService_syncEngagementClubRosterFromSwimmerChange().syncEngagementClubRosterFromSwimmerChange(...arguments);
 }
 
 exports.syncPerformanceSwimmerToEngagementClubRoster = onDocumentWritten({
@@ -4859,305 +8580,204 @@ exports.syncEngagementClubSwimmerToRoster = onDocumentWritten({
   await syncEngagementClubRosterFromSwimmerChange(event, "engagement");
 });
 
-/* extracted-function: functions/server-club-people-service.js#reactivateEngagementClubRosterSwimmersFromPerformanceRows */
+/* extracted-function: functions/backend/server-club-people-service/reactivate-engagement-club-roster-swimmers-from-performance-rows.js#reactivateEngagementClubRosterSwimmersFromPerformanceRows */
 async function reactivateEngagementClubRosterSwimmersFromPerformanceRows() {
-  return serverClubPeopleService().reactivateEngagementClubRosterSwimmersFromPerformanceRows(...arguments);
+  return $serverClubPeopleService_reactivateEngagementClubRosterSwimmersFromPerformanceRows().reactivateEngagementClubRosterSwimmersFromPerformanceRows(...arguments);
 }
 
-/* extracted-function: functions/server-club-people-service.js#cleanIsoDateTime */
+/* extracted-function: functions/backend/server-club-people-service/clean-iso-date-time.js#cleanIsoDateTime */
 function cleanIsoDateTime(input0) {
-  return serverClubPeopleService().cleanIsoDateTime(...arguments);
+  return $serverClubPeopleService_cleanIsoDateTime().cleanIsoDateTime(...arguments);
 }
 
-/* extracted-function: functions/server-club-people-service.js#cleanEngagementDeadlineAt */
+/* extracted-function: functions/backend/server-club-people-service/clean-engagement-deadline-at.js#cleanEngagementDeadlineAt */
 function cleanEngagementDeadlineAt(input0) {
-  return serverClubPeopleService().cleanEngagementDeadlineAt(...arguments);
+  return $serverClubPeopleService_cleanEngagementDeadlineAt().cleanEngagementDeadlineAt(...arguments);
 }
 
-/* extracted-function: functions/server-club-people-service.js#isEngagementOpeningDeadlinePast */
+/* extracted-function: functions/backend/server-club-people-service/clean-engagement-deadline-at.js#isEngagementOpeningDeadlinePast */
 function isEngagementOpeningDeadlinePast(input0, input1) {
-  return serverClubPeopleService().isEngagementOpeningDeadlinePast(...arguments);
+  return $serverClubPeopleService_cleanEngagementDeadlineAt().isEngagementOpeningDeadlinePast(...arguments);
 }
 
-/* extracted-function: functions/server-club-people-service.js#isEngagementOpeningTooEarly */
+/* extracted-function: functions/backend/server-club-people-service/clean-engagement-deadline-at.js#isEngagementOpeningTooEarly */
 function isEngagementOpeningTooEarly(input0, input1) {
-  return serverClubPeopleService().isEngagementOpeningTooEarly(...arguments);
+  return $serverClubPeopleService_cleanEngagementDeadlineAt().isEngagementOpeningTooEarly(...arguments);
 }
 
-/* extracted-function: functions/server-club-people-service.js#cleanEngagementRegionIds */
+/* extracted-function: functions/backend/server-club-people-service/clean-engagement-region-ids.js#cleanEngagementRegionIds */
 function cleanEngagementRegionIds() {
-  return serverClubPeopleService().cleanEngagementRegionIds(...arguments);
+  return $serverClubPeopleService_cleanEngagementRegionIds().cleanEngagementRegionIds(...arguments);
 }
 
-function serverCompetitionService() {
-  if (!serverCompetitionService.instance) serverCompetitionService.instance = require("./server-competition-service").createCompetitionService({
-    get CLUB_REFERENCE_REGION_LABELS() { return CLUB_REFERENCE_REGION_LABELS; },
-    get ENGAGEMENT_CALENDAR_EVENTS_COLLECTION() { return ENGAGEMENT_CALENDAR_EVENTS_COLLECTION; },
-    get ENGAGEMENT_COMPETITION_DOCUMENTS_STORAGE_PREFIX() { return ENGAGEMENT_COMPETITION_DOCUMENTS_STORAGE_PREFIX; },
-    get ENGAGEMENT_EVENT_DEFINITION_BY_CODE() { return ENGAGEMENT_EVENT_DEFINITION_BY_CODE; },
-    get ENGAGEMENT_EVENT_FORBIDDEN_CATEGORIES() { return ENGAGEMENT_EVENT_FORBIDDEN_CATEGORIES; },
-    get ENGAGEMENT_MAIL_CAPABILITIES() { return ENGAGEMENT_MAIL_CAPABILITIES; },
-    get ENGAGEMENT_MAIL_JOBS_COLLECTION() { return ENGAGEMENT_MAIL_JOBS_COLLECTION; },
-    get ENVIRONMENT() { return ENVIRONMENT; },
-    get FieldValue() { return FieldValue; },
-    get HttpsError() { return HttpsError; },
-    get LIVEPALMES_STORAGE_BUCKET() { return LIVEPALMES_STORAGE_BUCKET; },
-    get OPTIONAL_COMPETITION_MAIL_TYPES() { return OPTIONAL_COMPETITION_MAIL_TYPES; },
-    get REGION() { return REGION; },
-    get ageCategoryFromDates() { return ageCategoryFromDates; },
-    get birthYear() { return birthYear; },
-    get buildEngagementClubRecapPdf() { return buildEngagementClubRecapPdf; },
-    get buildEngagementCompetitionTxt() { return buildEngagementCompetitionTxt; },
-    get buildEngagementOfficialsPdf() { return buildEngagementOfficialsPdf; },
-    get cleanEngagementCalendarEventPayload() { return cleanEngagementCalendarEventPayload; },
-    get cleanEngagementCompetitionEvents() { return cleanEngagementCompetitionEvents; },
-    get cleanEngagementCompetitionLevel() { return cleanEngagementCompetitionLevel; },
-    get cleanEngagementCompetitionType() { return cleanEngagementCompetitionType; },
-    get cleanEngagementDeadlineAt() { return cleanEngagementDeadlineAt; },
-    get cleanEngagementEntryStatus() { return cleanEngagementEntryStatus; },
-    get cleanEngagementFees() { return cleanEngagementFees; },
-    get cleanEngagementGeneratedFiles() { return cleanEngagementGeneratedFiles; },
-    get cleanEngagementMaxEventsPerSwimmer() { return cleanEngagementMaxEventsPerSwimmer; },
-    get cleanEngagementMissingEntryTimeMode() { return cleanEngagementMissingEntryTimeMode; },
-    get cleanEngagementPoolLaneCount() { return cleanEngagementPoolLaneCount; },
-    get cleanEngagementPoolLength() { return cleanEngagementPoolLength; },
-    get cleanEngagementProgramSessions() { return cleanEngagementProgramSessions; },
-    get cleanEngagementQualificationTimesMode() { return cleanEngagementQualificationTimesMode; },
-    get cleanEngagementRegionIds() { return cleanEngagementRegionIds; },
-    get cleanEngagementTimingType() { return cleanEngagementTimingType; },
-    get cleanEngagementWaterBodyType() { return cleanEngagementWaterBodyType; },
-    get cleanFirestoreValue() { return cleanFirestoreValue; },
-    get cleanIsoDate() { return cleanIsoDate; },
-    get cleanIsoDateTime() { return cleanIsoDateTime; },
-    get cleanOptionalEmail() { return cleanOptionalEmail; },
-    get cleanPublicCalendarWhatsAppUrl() { return cleanPublicCalendarWhatsAppUrl; },
-    get cleanText() { return cleanText; },
-    get competitionDocumentDownloadUrl() { return competitionDocumentDownloadUrl; },
-    get competitionYear() { return competitionYear; },
-    get crypto() { return crypto; },
-    get db() { return db; },
-    get engagementAccessContext() { return engagementAccessContext; },
-    get engagementActiveClubMailRecipients() { return engagementActiveClubMailRecipients; },
-    get engagementActiveMailRecipients() { return engagementActiveMailRecipients; },
-    get engagementClubEntryHasParticipants() { return engagementClubEntryHasParticipants; },
-    get engagementClubEntryItem() { return engagementClubEntryItem; },
-    get engagementClubRecapMailSubject() { return engagementClubRecapMailSubject; },
-    get engagementClubRecapMailText() { return engagementClubRecapMailText; },
-    get engagementClubRosterRef() { return engagementClubRosterRef; },
-    get engagementClubRosterSwimmersFromData() { return engagementClubRosterSwimmersFromData; },
-    get engagementCompetitionDetailItem() { return engagementCompetitionDetailItem; },
-    get engagementCompetitionDocumentMailSubject() { return engagementCompetitionDocumentMailSubject; },
-    get engagementCompetitionDocumentMailText() { return engagementCompetitionDocumentMailText; },
-    get engagementCompetitionDocumentRecipients() { return engagementCompetitionDocumentRecipients; },
-    get engagementCompetitionNotificationRecipients() { return engagementCompetitionNotificationRecipients; },
-    get engagementCompetitionOpeningRecipients() { return engagementCompetitionOpeningRecipients; },
-    get engagementDedupMailRecipients() { return engagementDedupMailRecipients; },
-    get engagementMailAttachments() { return engagementMailAttachments; },
-    get engagementMailJobId() { return engagementMailJobId; },
-    get engagementMailPreparedStatus() { return engagementMailPreparedStatus; },
-    get engagementMailRecipientFromContext() { return engagementMailRecipientFromContext; },
-    get engagementMailRecipientFromUserDoc() { return engagementMailRecipientFromUserDoc; },
-    get engagementMailRecipientIndexStateRef() { return engagementMailRecipientIndexStateRef; },
-    get engagementMailRecipientsFromIndex() { return engagementMailRecipientsFromIndex; },
-    get engagementMailSmtpConfig() { return engagementMailSmtpConfig; },
-    get engagementOfficialsMailSubject() { return engagementOfficialsMailSubject; },
-    get engagementOfficialsMailText() { return engagementOfficialsMailText; },
-    get engagementOfficialsPdfRows() { return engagementOfficialsPdfRows; },
-    get engagementOpeningMailSubject() { return engagementOpeningMailSubject; },
-    get engagementOpeningMailText() { return engagementOpeningMailText; },
-    get engagementPdfFileName() { return engagementPdfFileName; },
-    get engagementRecipientHasCapability() { return engagementRecipientHasCapability; },
-    get engagementRecipientsByClub() { return engagementRecipientsByClub; },
-    get engagementRegionsMatch() { return engagementRegionsMatch; },
-    get engagementTxtMailSubject() { return engagementTxtMailSubject; },
-    get engagementTxtMailText() { return engagementTxtMailText; },
-    get engagementTxtSwimmerCategory() { return engagementTxtSwimmerCategory; },
-    get getAuth() { return getAuth; },
-    get getOrCreateEngagementClubRecapPdf() { return getOrCreateEngagementClubRecapPdf; },
-    get getOrCreateEngagementCompetitionTxt() { return getOrCreateEngagementCompetitionTxt; },
-    get getOrCreateEngagementOfficialsPdf() { return getOrCreateEngagementOfficialsPdf; },
-    get importSeasonYear() { return importSeasonYear; },
-    get isEngagementOpeningDeadlinePast() { return isEngagementOpeningDeadlinePast; },
-    get isEngagementOpeningTooEarly() { return isEngagementOpeningTooEarly; },
-    get isNationalOnlyEngagementCompetitionLevel() { return isNationalOnlyEngagementCompetitionLevel; },
-    get livePalmesMailHtml() { return livePalmesMailHtml; },
-    get nodemailer() { return nodemailer; },
-    get normalizeEmail() { return normalizeEmail; },
-    get sendEngagementMailJob() { return sendEngagementMailJob; },
-    get storage() { return storage; },
-    get upsertEngagementMailJob() { return upsertEngagementMailJob; },
-    get writeAuditLog() { return writeAuditLog; },
-    get writeAuditLogOnce() { return writeAuditLogOnce; }
-  });
-  return serverCompetitionService.instance;
-}
 
-/* extracted-function: functions/server-competition-service.js#cleanEngagementCompetitionPayload */
+
+/* extracted-function: functions/backend/server-competition-service/clean-engagement-competition-payload.js#cleanEngagementCompetitionPayload */
 function cleanEngagementCompetitionPayload() {
-  return serverCompetitionService().cleanEngagementCompetitionPayload(...arguments);
+  return $serverCompetitionService_cleanEngagementCompetitionPayload().cleanEngagementCompetitionPayload(...arguments);
 }
 
-/* extracted-function: functions/server-competition-service.js#assertCanManageEngagementCompetition */
+/* extracted-function: functions/backend/server-competition-service/assert-can-manage-engagement-competition.js#assertCanManageEngagementCompetition */
 function assertCanManageEngagementCompetition() {
-  return serverCompetitionService().assertCanManageEngagementCompetition(...arguments);
+  return $serverCompetitionService_assertCanManageEngagementCompetition().assertCanManageEngagementCompetition(...arguments);
 }
 
-/* extracted-function: functions/server-competition-service.js#engagementParisIsoDate */
+/* extracted-function: functions/backend/server-competition-service/engagement-event-is-past.js#engagementParisIsoDate */
 function engagementParisIsoDate() {
-  return serverCompetitionService().engagementParisIsoDate(...arguments);
+  return $serverCompetitionService_engagementEventIsPast().engagementParisIsoDate(...arguments);
 }
 
-/* extracted-function: functions/server-competition-service.js#engagementEventIsPast */
+/* extracted-function: functions/backend/server-competition-service/engagement-event-is-past.js#engagementEventIsPast */
 function engagementEventIsPast() {
-  return serverCompetitionService().engagementEventIsPast(...arguments);
+  return $serverCompetitionService_engagementEventIsPast().engagementEventIsPast(...arguments);
 }
 
-/* extracted-function: functions/server-competition-service.js#assertCanModifyEngagementEvent */
+/* extracted-function: functions/backend/server-competition-service/assert-can-modify-engagement-event.js#assertCanModifyEngagementEvent */
 function assertCanModifyEngagementEvent() {
-  return serverCompetitionService().assertCanModifyEngagementEvent(...arguments);
+  return $serverCompetitionService_assertCanModifyEngagementEvent().assertCanModifyEngagementEvent(...arguments);
 }
 
-/* extracted-function: functions/server-competition-service.js#assertCanDeleteEngagementDocument */
+/* extracted-function: functions/backend/server-competition-service/assert-can-delete-engagement-document.js#assertCanDeleteEngagementDocument */
 function assertCanDeleteEngagementDocument() {
-  return serverCompetitionService().assertCanDeleteEngagementDocument(...arguments);
+  return $serverCompetitionService_assertCanDeleteEngagementDocument().assertCanDeleteEngagementDocument(...arguments);
 }
 
-/* extracted-function: functions/server-competition-service.js#engagementDeletionRequestId */
+/* extracted-function: functions/backend/server-competition-service/engagement-deletion-request-id.js#engagementDeletionRequestId */
 function engagementDeletionRequestId() {
-  return serverCompetitionService().engagementDeletionRequestId(...arguments);
+  return $serverCompetitionService_engagementDeletionRequestId().engagementDeletionRequestId(...arguments);
 }
 
-/* extracted-function: functions/server-competition-service.js#engagementClubWriteLockReason */
+/* extracted-function: functions/backend/server-competition-service/assert-engagement-club-write-open.js#engagementClubWriteLockReason */
 function engagementClubWriteLockReason() {
-  return serverCompetitionService().engagementClubWriteLockReason(...arguments);
+  return $serverCompetitionService_assertEngagementClubWriteOpen().engagementClubWriteLockReason(...arguments);
 }
 
-/* extracted-function: functions/server-competition-service.js#assertEngagementClubWriteOpen */
+/* extracted-function: functions/backend/server-competition-service/assert-engagement-club-write-open.js#assertEngagementClubWriteOpen */
 function assertEngagementClubWriteOpen() {
-  return serverCompetitionService().assertEngagementClubWriteOpen(...arguments);
+  return $serverCompetitionService_assertEngagementClubWriteOpen().assertEngagementClubWriteOpen(...arguments);
 }
 
-/* extracted-function: functions/server-competition-service.js#nativePortalCalendarItems */
+/* extracted-function: functions/backend/server-competition-service/native-portal-calendar-items.js#nativePortalCalendarItems */
 async function nativePortalCalendarItems(input0) {
-  return serverCompetitionService().nativePortalCalendarItems(...arguments);
+  return $serverCompetitionService_nativePortalCalendarItems().nativePortalCalendarItems(...arguments);
 }
 
-/* extracted-function: functions/server-competition-service.js#nativeDocumentAuthors */
+/* extracted-function: functions/backend/server-competition-service/native-document-authors.js#nativeDocumentAuthors */
 async function nativeDocumentAuthors(input0) {
-  return serverCompetitionService().nativeDocumentAuthors(...arguments);
+  return $serverCompetitionService_nativeDocumentAuthors().nativeDocumentAuthors(...arguments);
 }
-/* extracted-function: functions/server-competition-service.js#nativePortalCompetition */
+/* extracted-function: functions/backend/server-competition-service/native-portal-competition.js#nativePortalCompetition */
 async function nativePortalCompetition(input0, input1) {
-  return serverCompetitionService().nativePortalCompetition(...arguments);
+  return $serverCompetitionService_nativePortalCompetition().nativePortalCompetition(...arguments);
 }
-/* extracted-function: functions/server-competition-service.js#createNativePortalCalendarRecord */
+/* extracted-function: functions/backend/server-competition-service/create-native-portal-calendar-record.js#createNativePortalCalendarRecord */
 async function createNativePortalCalendarRecord(input0, input1, input2) {
-  return serverCompetitionService().createNativePortalCalendarRecord(...arguments);
+  return $serverCompetitionService_createNativePortalCalendarRecord().createNativePortalCalendarRecord(...arguments);
 }
 
-/* extracted-function: functions/server-competition-service.js#nativeClubEntryView */
+/* extracted-function: functions/backend/server-competition-service/native-club-entry-view.js#nativeClubEntryView */
 async function nativeClubEntryView(input0, input1, input2) {
-  return serverCompetitionService().nativeClubEntryView(...arguments);
+  return $serverCompetitionService_nativeClubEntryView().nativeClubEntryView(...arguments);
 }
 
-exports.listEngagementCompetitions = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/portal-competition-handlers.js#listEngagementCompetitions#arrow */ async (request) => {
-  return portalCompetitionHandlers().listEngagementCompetitions(request);
+exports.listEngagementCompetitions = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/backend/portal-competition-handlers/list-engagement-competitions.js#listEngagementCompetitions#arrow */ async (request) => {
+  return $portalCompetitionHandlers_listEngagementCompetitions().listEngagementCompetitions(request);
 });
 
-exports.listEngagementCalendarEvents = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/portal-competition-handlers.js#listEngagementCalendarEvents#arrow */ async (request) => {
-  return portalCompetitionHandlers().listEngagementCalendarEvents(request);
+exports.listEngagementCalendarEvents = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/backend/portal-competition-handlers/list-engagement-calendar-events.js#listEngagementCalendarEvents#arrow */ async (request) => {
+  return $portalCompetitionHandlers_listEngagementCalendarEvents().listEngagementCalendarEvents(request);
 });
 
-exports.getEngagementCalendarEvent = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/portal-competition-handlers.js#getEngagementCalendarEvent#arrow */ async (request) => {
-  return portalCompetitionHandlers().getEngagementCalendarEvent(request);
+exports.getEngagementCalendarEvent = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/backend/portal-competition-handlers/get-engagement-calendar-event.js#getEngagementCalendarEvent#arrow */ async (request) => {
+  return $portalCompetitionHandlers_getEngagementCalendarEvent().getEngagementCalendarEvent(request);
 });
 
-exports.createEngagementCalendarEvent = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")], maxInstances:2, concurrency:4, timeoutSeconds:120 } : {}) }, /* extracted-handler: functions/portal-competition-handlers.js#createEngagementCalendarEvent#arrow */ async (request) => {
-  return portalCompetitionHandlers().createEngagementCalendarEvent(request);
+exports.createEngagementCalendarEvent = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")], maxInstances:2, concurrency:4, timeoutSeconds:120 } : {}) }, /* extracted-handler: functions/backend/portal-competition-handlers/create-engagement-calendar-event.js#createEngagementCalendarEvent#arrow */ async (request) => {
+  return $portalCompetitionHandlers_createEngagementCalendarEvent().createEngagementCalendarEvent(request);
 });
 
-exports.updateEngagementCalendarEvent = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")], maxInstances:2, concurrency:4, timeoutSeconds:120 } : {}) }, /* extracted-handler: functions/portal-competition-handlers.js#updateEngagementCalendarEvent#arrow */ async (request) => {
-  return portalCompetitionHandlers().updateEngagementCalendarEvent(request);
+exports.updateEngagementCalendarEvent = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")], maxInstances:2, concurrency:4, timeoutSeconds:120 } : {}) }, /* extracted-handler: functions/backend/portal-competition-handlers/update-engagement-calendar-event.js#updateEngagementCalendarEvent#arrow */ async (request) => {
+  return $portalCompetitionHandlers_updateEngagementCalendarEvent().updateEngagementCalendarEvent(request);
 });
 
-exports.deleteEngagementCalendarEvent = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/portal-competition-handlers.js#deleteEngagementCalendarEvent#arrow */ async (request) => {
-  return portalCompetitionHandlers().deleteEngagementCalendarEvent(request);
+exports.deleteEngagementCalendarEvent = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/backend/portal-competition-handlers/delete-engagement-calendar-event.js#deleteEngagementCalendarEvent#arrow */ async (request) => {
+  return $portalCompetitionHandlers_deleteEngagementCalendarEvent().deleteEngagementCalendarEvent(request);
 });
 
-exports.listEngagementOpenWaterCourses = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/portal-competition-handlers.js#listEngagementOpenWaterCourses#arrow */ async (request) => {
-  return portalCompetitionHandlers().listEngagementOpenWaterCourses(request);
+exports.listEngagementOpenWaterCourses = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/backend/portal-competition-handlers/list-engagement-open-water-courses.js#listEngagementOpenWaterCourses#arrow */ async (request) => {
+  return $portalCompetitionHandlers_listEngagementOpenWaterCourses().listEngagementOpenWaterCourses(request);
 });
 
-exports.addEngagementOpenWaterCourse = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/portal-competition-handlers.js#addEngagementOpenWaterCourse#arrow */ async (request) => {
-  return portalCompetitionHandlers().addEngagementOpenWaterCourse(request);
+exports.addEngagementOpenWaterCourse = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/backend/portal-competition-handlers/add-engagement-open-water-course.js#addEngagementOpenWaterCourse#arrow */ async (request) => {
+  return $portalCompetitionHandlers_addEngagementOpenWaterCourse().addEngagementOpenWaterCourse(request);
 });
 
-exports.setEngagementOpenWaterCourseStatus = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/portal-competition-handlers.js#setEngagementOpenWaterCourseStatus#arrow */ async (request) => {
-  return portalCompetitionHandlers().setEngagementOpenWaterCourseStatus(request);
+exports.setEngagementOpenWaterCourseStatus = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/backend/portal-competition-handlers/set-engagement-open-water-course-status.js#setEngagementOpenWaterCourseStatus#arrow */ async (request) => {
+  return $portalCompetitionHandlers_setEngagementOpenWaterCourseStatus().setEngagementOpenWaterCourseStatus(request);
 });
 
-exports.getEngagementCompetition = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/portal-competition-handlers.js#getEngagementCompetition#arrow */ async (request) => {
-  return portalCompetitionHandlers().getEngagementCompetition(request);
+exports.getEngagementCompetition = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/backend/portal-competition-handlers/get-engagement-competition.js#getEngagementCompetition#arrow */ async (request) => {
+  return $portalCompetitionHandlers_getEngagementCompetition().getEngagementCompetition(request);
 });
 
-/* extracted-function: functions/server-competition-service.js#engagementCompetitionDocumentUploader */
+/* extracted-function: functions/backend/server-competition-service/engagement-competition-document-uploader.js#engagementCompetitionDocumentUploader */
 function engagementCompetitionDocumentUploader() {
-  return serverCompetitionService().engagementCompetitionDocumentUploader(...arguments);
+  return $serverCompetitionService_engagementCompetitionDocumentUploader().engagementCompetitionDocumentUploader(...arguments);
 }
 
-/* extracted-function: functions/server-competition-service.js#assertEngagementCompetitionDocumentPath */
+/* extracted-function: functions/backend/server-competition-service/assert-engagement-competition-document-path.js#assertEngagementCompetitionDocumentPath */
 function assertEngagementCompetitionDocumentPath() {
-  return serverCompetitionService().assertEngagementCompetitionDocumentPath(...arguments);
+  return $serverCompetitionService_assertEngagementCompetitionDocumentPath().assertEngagementCompetitionDocumentPath(...arguments);
 }
 
-/* extracted-function: functions/server-competition-service.js#hasManagedEngagementCompetitionDocumentStorage */
+/* extracted-function: functions/backend/server-competition-service/assert-engagement-competition-document-path.js#hasManagedEngagementCompetitionDocumentStorage */
 function hasManagedEngagementCompetitionDocumentStorage() {
-  return serverCompetitionService().hasManagedEngagementCompetitionDocumentStorage(...arguments);
+  return $serverCompetitionService_assertEngagementCompetitionDocumentPath().hasManagedEngagementCompetitionDocumentStorage(...arguments);
 }
 
-/* extracted-function: functions/server-competition-service.js#engagementCompetitionDocumentContext */
+/* extracted-function: functions/backend/server-competition-service/engagement-competition-document-context.js#engagementCompetitionDocumentContext */
 async function engagementCompetitionDocumentContext(input0) {
-  return serverCompetitionService().engagementCompetitionDocumentContext(...arguments);
+  return $serverCompetitionService_engagementCompetitionDocumentContext().engagementCompetitionDocumentContext(...arguments);
 }
 
 // National document selection. No client-supplied role or actor is authoritative.
-exports.getNationalFeaturedDocuments = onCall({ ...CALLABLE_OPTIONS, secrets:[defineSecret("LIVEPALMES_NAP_PASSWORD")] }, /* extracted-handler: functions/portal-national-handlers.js#getNationalFeaturedDocuments#arrow */ async (request) => {
-  return portalNationalHandlers().getNationalFeaturedDocuments(request);
+exports.getNationalFeaturedDocuments = onCall({ ...CALLABLE_OPTIONS, secrets:[defineSecret("LIVEPALMES_NAP_PASSWORD")] }, /* extracted-handler: functions/backend/portal-national-handlers/get-national-featured-documents.js#getNationalFeaturedDocuments#arrow */ async (request) => {
+  return $portalNationalHandlers_getNationalFeaturedDocuments().getNationalFeaturedDocuments(request);
 });
-exports.saveNationalFeaturedDocuments = onCall({ ...ENGAGEMENT_DOCUMENT_UPLOAD_OPTIONS, secrets:[defineSecret("LIVEPALMES_NAP_PASSWORD")] }, /* extracted-handler: functions/portal-national-handlers.js#saveNationalFeaturedDocuments#arrow */ async (request) => {
-  return portalNationalHandlers().saveNationalFeaturedDocuments(request);
+exports.saveNationalFeaturedDocuments = onCall({ ...ENGAGEMENT_DOCUMENT_UPLOAD_OPTIONS, secrets:[defineSecret("LIVEPALMES_NAP_PASSWORD")] }, /* extracted-handler: functions/backend/portal-national-handlers/save-national-featured-documents.js#saveNationalFeaturedDocuments#arrow */ async (request) => {
+  return $portalNationalHandlers_saveNationalFeaturedDocuments().saveNationalFeaturedDocuments(request);
 });
 // End national document selection.
-/* extracted-function: functions/server-competition-service.js#nationalLibraryContext */
+/* extracted-function: functions/backend/server-competition-service/national-library-context.js#nationalLibraryContext */
 async function nationalLibraryContext(input0) {
-  return serverCompetitionService().nationalLibraryContext(...arguments);
+  return $serverCompetitionService_nationalLibraryContext().nationalLibraryContext(...arguments);
 }
-/* extracted-function: functions/server-competition-service.js#manageNationalLibraryDocuments */
+/* extracted-function: functions/backend/server-competition-service/manage-national-library-documents.js#manageNationalLibraryDocuments */
 async function manageNationalLibraryDocuments(input0) {
-  return serverCompetitionService().manageNationalLibraryDocuments(...arguments);
+  return $serverCompetitionService_manageNationalLibraryDocuments().manageNationalLibraryDocuments(...arguments);
 }
-/* extracted-function: functions/server-competition-service.js#notifyNationalLibraryDocument */
+/* extracted-function: functions/backend/server-competition-service/notify-national-library-document.js#notifyNationalLibraryDocument */
 async function notifyNationalLibraryDocument(input0) {
-  return serverCompetitionService().notifyNationalLibraryDocument(...arguments);
+  return $serverCompetitionService_notifyNationalLibraryDocument().notifyNationalLibraryDocument(...arguments);
 }
-/* extracted-function: functions/server-competition-service.js#mutateNativeCompetitionDocument */
+/* extracted-function: functions/backend/server-competition-service/assert-can-delete-engagement-document.js#mutateNativeCompetitionDocument */
 async function mutateNativeCompetitionDocument(input0, input1) {
-  return serverCompetitionService().mutateNativeCompetitionDocument(...arguments);
+  return $serverCompetitionService_assertCanDeleteEngagementDocument().mutateNativeCompetitionDocument(...arguments);
 }
-exports.uploadEngagementCompetitionDocument = onCall({ ...ENGAGEMENT_DOCUMENT_UPLOAD_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/portal-competition-handlers.js#uploadEngagementCompetitionDocument#arrow */ async (request) => {
-  return portalCompetitionHandlers().uploadEngagementCompetitionDocument(request);
+exports.uploadEngagementCompetitionDocument = onCall({ ...ENGAGEMENT_DOCUMENT_UPLOAD_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/backend/portal-competition-handlers/upload-engagement-competition-document.js#uploadEngagementCompetitionDocument#arrow */ async (request) => {
+  return $portalCompetitionHandlers_uploadEngagementCompetitionDocument().uploadEngagementCompetitionDocument(request);
 });
 
-exports.updateEngagementCompetitionDocument = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/portal-competition-handlers.js#updateEngagementCompetitionDocument#arrow */ async (request) => {
-  return portalCompetitionHandlers().updateEngagementCompetitionDocument(request);
+exports.updateEngagementCompetitionDocument = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/backend/portal-competition-handlers/update-engagement-competition-document.js#updateEngagementCompetitionDocument#arrow */ async (request) => {
+  return $portalCompetitionHandlers_updateEngagementCompetitionDocument().updateEngagementCompetitionDocument(request);
 });
 
-exports.deleteEngagementCompetitionDocument = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/portal-competition-handlers.js#deleteEngagementCompetitionDocument#arrow */ async (request) => {
-  return portalCompetitionHandlers().deleteEngagementCompetitionDocument(request);
+exports.deleteEngagementCompetitionDocument = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/backend/portal-competition-handlers/delete-engagement-competition-document.js#deleteEngagementCompetitionDocument#arrow */ async (request) => {
+  return $portalCompetitionHandlers_deleteEngagementCompetitionDocument().deleteEngagementCompetitionDocument(request);
 });
 
-exports.previewEngagementCompetitionDocumentNotification = onCall(ENGAGEMENT_NOTIFICATION_PREVIEW_OPTIONS, /* extracted-handler: functions/portal-competition-handlers.js#previewEngagementCompetitionDocumentNotification#arrow */ async (request) => {
-  return portalCompetitionHandlers().previewEngagementCompetitionDocumentNotification(request);
+exports.previewEngagementCompetitionDocumentNotification = onCall(ENGAGEMENT_NOTIFICATION_PREVIEW_OPTIONS, /* extracted-handler: functions/backend/portal-competition-handlers/preview-engagement-competition-document-notification.js#previewEngagementCompetitionDocumentNotification#arrow */ async (request) => {
+  return $portalCompetitionHandlers_previewEngagementCompetitionDocumentNotification().previewEngagementCompetitionDocumentNotification(request);
 });
 
 exports.notifyEngagementCompetitionDocuments = onCall(ENVIRONMENT.sportingDataSource === "nap" ? (ENVIRONMENT.projectId === "livepalmes-test" ? ENGAGEMENT_NOTIFICATION_PREVIEW_OPTIONS : { ...ENGAGEMENT_NOTIFICATION_PREVIEW_OPTIONS, timeoutSeconds:300, secrets:[defineSecret("LIVEPALMES_NAP_PASSWORD"),...ENGAGEMENT_NOTIFICATION_MAIL_SECRETS] }) : ENGAGEMENT_MAIL_CALLABLE_OPTIONS, async (request) => {
@@ -5262,8 +8882,8 @@ exports.notifyEngagementCompetitionDocuments = onCall(ENVIRONMENT.sportingDataSo
   };
 });
 
-exports.getEngagementClubEntry = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/portal-club-handlers.js#getEngagementClubEntry#arrow */ async (request) => {
-  return portalClubHandlers().getEngagementClubEntry(request);
+exports.getEngagementClubEntry = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/backend/portal-club-handlers/get-engagement-club-entry.js#getEngagementClubEntry#arrow */ async (request) => {
+  return $portalClubHandlers_getEngagementClubEntry().getEngagementClubEntry(request);
 });
 
 exports.preloadEngagementClubWorkspaces = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
@@ -5322,36 +8942,36 @@ exports.preloadEngagementClubWorkspaces = onCall({ ...CALLABLE_OPTIONS, ...(ENVI
 
 // TEST recap is generated directly from the trusted native dossier. No sports
 // Firestore read, saved PDF cache or Storage write: <=14+1 documents+8 bounded SQL reads.
-/* extracted-function: functions/server-competition-service.js#generateNativeClubRecapPdf */
+/* extracted-function: functions/backend/server-competition-service/generate-native-club-recap-pdf.js#generateNativeClubRecapPdf */
 async function generateNativeClubRecapPdf(input0, input1) {
-  return serverCompetitionService().generateNativeClubRecapPdf(...arguments);
+  return $serverCompetitionService_generateNativeClubRecapPdf().generateNativeClubRecapPdf(...arguments);
 }
 
-exports.generateEngagementClubRecapPdf = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/portal-club-handlers.js#generateEngagementClubRecapPdf#arrow */ async (request) => {
-  return portalClubHandlers().generateEngagementClubRecapPdf(request);
+exports.generateEngagementClubRecapPdf = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/backend/portal-club-handlers/generate-engagement-club-recap-pdf.js#generateEngagementClubRecapPdf#arrow */ async (request) => {
+  return $portalClubHandlers_generateEngagementClubRecapPdf().generateEngagementClubRecapPdf(request);
 });
 
-/* extracted-function: functions/server-competition-service.js#nativeAdminCompetitionEntries */
+/* extracted-function: functions/backend/server-competition-service/native-admin-competition-entries.js#nativeAdminCompetitionEntries */
 async function nativeAdminCompetitionEntries(input0, input1) {
-  return serverCompetitionService().nativeAdminCompetitionEntries(...arguments);
+  return $serverCompetitionService_nativeAdminCompetitionEntries().nativeAdminCompetitionEntries(...arguments);
 }
-/* extracted-function: functions/server-competition-service.js#nativeNotificationPreview */
+/* extracted-function: functions/backend/server-competition-service/native-notification-preview.js#nativeNotificationPreview */
 async function nativeNotificationPreview(input0, input1) {
-  return serverCompetitionService().nativeNotificationPreview(...arguments);
+  return $serverCompetitionService_nativeNotificationPreview().nativeNotificationPreview(...arguments);
 }
 // Reuse the queue and builders. Preview retains manifests only; delivery is
 // explicitly selected and gated by the national setting on TEST.
-/* extracted-function: functions/server-competition-service.js#nativeNotificationAutomationServices */
+/* extracted-function: functions/backend/server-competition-service/native-notification-automation-services.js#nativeNotificationAutomationServices */
 function nativeNotificationAutomationServices() {
-  return serverCompetitionService().nativeNotificationAutomationServices(...arguments);
+  return $serverCompetitionService_nativeNotificationAutomationServices().nativeNotificationAutomationServices(...arguments);
 }
-/* extracted-function: functions/server-competition-service.js#nativeNotificationTaskServices */
+/* extracted-function: functions/backend/server-competition-service/native-notification-automation-services.js#nativeNotificationTaskServices */
 function nativeNotificationTaskServices() {
-  return serverCompetitionService().nativeNotificationTaskServices(...arguments);
+  return $serverCompetitionService_nativeNotificationAutomationServices().nativeNotificationTaskServices(...arguments);
 }
-/* extracted-function: functions/server-competition-service.js#enqueueNativeNotificationTask */
+/* extracted-function: functions/backend/server-competition-service/enqueue-native-notification-task.js#enqueueNativeNotificationTask */
 async function enqueueNativeNotificationTask(input0) {
-  return serverCompetitionService().enqueueNativeNotificationTask(...arguments);
+  return $serverCompetitionService_enqueueNativeNotificationTask().enqueueNativeNotificationTask(...arguments);
 }
 exports.processNapNotificationTask = onTaskDispatched({region:REGION,
   timeoutSeconds:540,memory:'1GiB',concurrency:1,maxInstances:1,
@@ -5364,17 +8984,17 @@ exports.processNapNotificationTask = onTaskDispatched({region:REGION,
   }
   await require('./nap-notification-task').run(db,String(request.data?.eventId||''),nativeNotificationTaskServices());
 });
-/* extracted-function: functions/server-competition-service.js#deliverNativeNotificationJobs */
+/* extracted-function: functions/backend/server-competition-service/deliver-native-notification-jobs.js#deliverNativeNotificationJobs */
 async function deliverNativeNotificationJobs() {
-  return serverCompetitionService().deliverNativeNotificationJobs(...arguments);
+  return $serverCompetitionService_deliverNativeNotificationJobs().deliverNativeNotificationJobs(...arguments);
 }
-/* extracted-function: functions/server-competition-service.js#armNativeCompetitionNotification */
+/* extracted-function: functions/backend/server-competition-service/arm-native-competition-notification.js#armNativeCompetitionNotification */
 async function armNativeCompetitionNotification(input0, input1, input2) {
-  return serverCompetitionService().armNativeCompetitionNotification(...arguments);
+  return $serverCompetitionService_armNativeCompetitionNotification().armNativeCompetitionNotification(...arguments);
 }
-/* extracted-function: functions/server-competition-service.js#queueNativeDocumentNotification */
+/* extracted-function: functions/backend/server-competition-service/notify-national-library-document.js#queueNativeDocumentNotification */
 async function queueNativeDocumentNotification(input0) {
-  return serverCompetitionService().queueNativeDocumentNotification(...arguments);
+  return $serverCompetitionService_notifyNationalLibraryDocument().queueNativeDocumentNotification(...arguments);
 }
 exports.processNapCompetitionNotifications = onCall({ ...ENGAGEMENT_NOTIFICATION_PREVIEW_OPTIONS,secrets:[defineSecret('LIVEPALMES_NAP_PASSWORD'),...ENGAGEMENT_NOTIFICATION_MAIL_SECRETS],timeoutSeconds:300,memory:'1GiB' },async request=>{
   if(ENVIRONMENT.sportingDataSource !== "nap")throw new HttpsError('failed-precondition','Source NAP requise.');
@@ -5410,8 +9030,8 @@ exports.processNapCompetitionNotifications = onCall({ ...ENGAGEMENT_NOTIFICATION
     return {ok:true,source:'nap',disabled:false,scheduledCount:schedules.filter(result=>result.queued).length,schedulingPending:future.length-schedules.filter(result=>result.queued).length,sentCount:delivery.sent,processedCount:results.length,jobCount:results.reduce((sum,result)=>sum+(result.jobCount||0),0),attachmentCount:results.reduce((sum,result)=>sum+(result.attachmentCount||0),0),remaining:Math.max(0,due.length-results.filter(result=>result.done||result.skipped).length)};
   }catch(error){if(error instanceof HttpsError)throw error;throw new HttpsError(error instanceof TypeError?'failed-precondition':error instanceof RangeError?'resource-exhausted':'unavailable',error instanceof TypeError||error instanceof RangeError?error.message:'Preparation NAP interrompue : vous pouvez reprendre le traitement.');}
 });
-exports.listEngagementCompetitionClubRecaps = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/portal-club-handlers.js#listEngagementCompetitionClubRecaps#arrow */ async (request) => {
-  return portalClubHandlers().listEngagementCompetitionClubRecaps(request);
+exports.listEngagementCompetitionClubRecaps = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/backend/portal-club-handlers/list-engagement-competition-club-recaps.js#listEngagementCompetitionClubRecaps#arrow */ async (request) => {
+  return $portalClubHandlers_listEngagementCompetitionClubRecaps().listEngagementCompetitionClubRecaps(request);
 });
 
 function competitionStatistics() {
@@ -5432,20 +9052,20 @@ function engagementCompetitionStatisticsItem() {
   return competitionStatistics().engagementCompetitionStatisticsItem(...arguments);
 }
 
-exports.getEngagementCompetitionStatistics = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/portal-competition-handlers.js#getEngagementCompetitionStatistics#arrow */ async (request) => {
-  return portalCompetitionHandlers().getEngagementCompetitionStatistics(request);
+exports.getEngagementCompetitionStatistics = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/backend/portal-competition-handlers/get-engagement-competition-statistics.js#getEngagementCompetitionStatistics#arrow */ async (request) => {
+  return $portalCompetitionHandlers_getEngagementCompetitionStatistics().getEngagementCompetitionStatistics(request);
 });
 
-exports.generateEngagementClubRecapPdfForAdmin = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/portal-club-handlers.js#generateEngagementClubRecapPdfForAdmin#arrow */ async (request) => {
-  return portalClubHandlers().generateEngagementClubRecapPdfForAdmin(request);
+exports.generateEngagementClubRecapPdfForAdmin = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/backend/portal-club-handlers/generate-engagement-club-recap-pdf-for-admin.js#generateEngagementClubRecapPdfForAdmin#arrow */ async (request) => {
+  return $portalClubHandlers_generateEngagementClubRecapPdfForAdmin().generateEngagementClubRecapPdfForAdmin(request);
 });
 
-exports.generateEngagementCompetitionClubRecapPdfs = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/portal-club-handlers.js#generateEngagementCompetitionClubRecapPdfs#arrow */ async (request) => {
-  return portalClubHandlers().generateEngagementCompetitionClubRecapPdfs(request);
+exports.generateEngagementCompetitionClubRecapPdfs = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/backend/portal-club-handlers/generate-engagement-competition-club-recap-pdfs.js#generateEngagementCompetitionClubRecapPdfs#arrow */ async (request) => {
+  return $portalClubHandlers_generateEngagementCompetitionClubRecapPdfs().generateEngagementCompetitionClubRecapPdfs(request);
 });
 
-exports.generateEngagementCompetitionTxtExport = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/portal-competition-handlers.js#generateEngagementCompetitionTxtExport#arrow */ async (request) => {
-  return portalCompetitionHandlers().generateEngagementCompetitionTxtExport(request);
+exports.generateEngagementCompetitionTxtExport = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/backend/portal-competition-handlers/generate-engagement-competition-txt-export.js#generateEngagementCompetitionTxtExport#arrow */ async (request) => {
+  return $portalCompetitionHandlers_generateEngagementCompetitionTxtExport().generateEngagementCompetitionTxtExport(request);
 });
 
 exports.listEngagementCompetitionMailJobs = onCall(ENGAGEMENT_NOTIFICATION_PREVIEW_OPTIONS, async (request) => {
@@ -5556,9 +9176,9 @@ exports.prepareEngagementOpeningNotificationEmails = onCall(ENGAGEMENT_NOTIFICAT
   };
 });
 
-/* extracted-function: functions/server-competition-service.js#prepareEngagementClubRecapEmailJobs */
+/* extracted-function: functions/backend/server-competition-service/prepare-engagement-club-recap-email-jobs.js#prepareEngagementClubRecapEmailJobs */
 async function prepareEngagementClubRecapEmailJobs(input0, input1) {
-  return serverCompetitionService().prepareEngagementClubRecapEmailJobs(...arguments);
+  return $serverCompetitionService_prepareEngagementClubRecapEmailJobs().prepareEngagementClubRecapEmailJobs(...arguments);
 }
 
 exports.prepareEngagementClubRecapEmails = onCall(ENGAGEMENT_NOTIFICATION_PREVIEW_OPTIONS, async (request) => {
@@ -5592,19 +9212,19 @@ exports.prepareEngagementClubRecapEmails = onCall(ENGAGEMENT_NOTIFICATION_PREVIE
   };
 });
 
-/* extracted-function: functions/server-competition-service.js#prepareEngagementTxtEmailJob */
+/* extracted-function: functions/backend/server-competition-service/engagement-closure-automation-context.js#prepareEngagementTxtEmailJob */
 async function prepareEngagementTxtEmailJob(input0, input1) {
-  return serverCompetitionService().prepareEngagementTxtEmailJob(...arguments);
+  return $serverCompetitionService_engagementClosureAutomationContext().prepareEngagementTxtEmailJob(...arguments);
 }
 
-/* extracted-function: functions/server-competition-service.js#prepareEngagementOfficialsEmailJob */
+/* extracted-function: functions/backend/server-competition-service/engagement-closure-automation-context.js#prepareEngagementOfficialsEmailJob */
 async function prepareEngagementOfficialsEmailJob(input0, input1) {
-  return serverCompetitionService().prepareEngagementOfficialsEmailJob(...arguments);
+  return $serverCompetitionService_engagementClosureAutomationContext().prepareEngagementOfficialsEmailJob(...arguments);
 }
 
-/* extracted-function: functions/server-competition-service.js#sendEngagementPreparedEmailJobs */
+/* extracted-function: functions/backend/server-competition-service/send-engagement-prepared-email-jobs.js#sendEngagementPreparedEmailJobs */
 async function sendEngagementPreparedEmailJobs(input0, input1) {
-  return serverCompetitionService().sendEngagementPreparedEmailJobs(...arguments);
+  return $serverCompetitionService_sendEngagementPreparedEmailJobs().sendEngagementPreparedEmailJobs(...arguments);
 }
 
 exports.sendEngagementPreparedEmails = onCall(ENVIRONMENT.sportingDataSource === "nap" ? ENGAGEMENT_NOTIFICATION_PREVIEW_OPTIONS : ENGAGEMENT_MAIL_CALLABLE_OPTIONS, async (request) => {
@@ -5636,19 +9256,19 @@ exports.sendEngagementPreparedEmails = onCall(ENVIRONMENT.sportingDataSource ===
   };
 });
 
-/* extracted-function: functions/server-competition-service.js#engagementClosureAutomationContext */
+/* extracted-function: functions/backend/server-competition-service/engagement-closure-automation-context.js#engagementClosureAutomationContext */
 function engagementClosureAutomationContext() {
-  return serverCompetitionService().engagementClosureAutomationContext(...arguments);
+  return $serverCompetitionService_engagementClosureAutomationContext().engagementClosureAutomationContext(...arguments);
 }
 
-/* extracted-function: functions/server-competition-service.js#reserveEngagementCompetitionClosure */
+/* extracted-function: functions/backend/server-competition-service/engagement-closure-automation-context.js#reserveEngagementCompetitionClosure */
 async function reserveEngagementCompetitionClosure(input0, input1, input2) {
-  return serverCompetitionService().reserveEngagementCompetitionClosure(...arguments);
+  return $serverCompetitionService_engagementClosureAutomationContext().reserveEngagementCompetitionClosure(...arguments);
 }
 
-/* extracted-function: functions/server-competition-service.js#processEngagementCompetitionAutomaticClosure */
+/* extracted-function: functions/backend/server-competition-service/engagement-closure-automation-context.js#processEngagementCompetitionAutomaticClosure */
 async function processEngagementCompetitionAutomaticClosure(input0, input1, input2) {
-  return serverCompetitionService().processEngagementCompetitionAutomaticClosure(...arguments);
+  return $serverCompetitionService_engagementClosureAutomationContext().processEngagementCompetitionAutomaticClosure(...arguments);
 }
 
 exports.closeDueEngagementCompetitions = onSchedule(ENGAGEMENT_CLOSURE_SCHEDULER_OPTIONS, async () => {
@@ -5706,46 +9326,46 @@ exports.closeDueEngagementCompetitions = onSchedule(ENGAGEMENT_CLOSURE_SCHEDULER
   return null;
 });
 
-exports.saveEngagementClubTeamLeader = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/portal-club-handlers.js#saveEngagementClubTeamLeader#arrow */ async (request) => {
-  return portalClubHandlers().saveEngagementClubTeamLeader(request);
+exports.saveEngagementClubTeamLeader = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/backend/portal-club-handlers/save-engagement-club-team-leader.js#saveEngagementClubTeamLeader#arrow */ async (request) => {
+  return $portalClubHandlers_saveEngagementClubTeamLeader().saveEngagementClubTeamLeader(request);
 });
 
-exports.removeEngagementClubTeamLeader = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/portal-club-handlers.js#removeEngagementClubTeamLeader#arrow */ async (request) => {
-  return portalClubHandlers().removeEngagementClubTeamLeader(request);
+exports.removeEngagementClubTeamLeader = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/backend/portal-club-handlers/remove-engagement-club-team-leader.js#removeEngagementClubTeamLeader#arrow */ async (request) => {
+  return $portalClubHandlers_removeEngagementClubTeamLeader().removeEngagementClubTeamLeader(request);
 });
 
-exports.listEngagementClubPeople = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/portal-club-handlers.js#listEngagementClubPeople#arrow */ async (request) => {
-  return portalClubHandlers().listEngagementClubPeople(request);
+exports.listEngagementClubPeople = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/backend/portal-club-handlers/list-engagement-club-people.js#listEngagementClubPeople#arrow */ async (request) => {
+  return $portalClubHandlers_listEngagementClubPeople().listEngagementClubPeople(request);
 });
 
-/* extracted-function: functions/server-competition-service.js#resolveEngagementClubPersonSwimmer */
+/* extracted-function: functions/backend/server-competition-service/resolve-engagement-club-person-swimmer.js#resolveEngagementClubPersonSwimmer */
 async function resolveEngagementClubPersonSwimmer(input0) {
-  return serverCompetitionService().resolveEngagementClubPersonSwimmer(...arguments);
+  return $serverCompetitionService_resolveEngagementClubPersonSwimmer().resolveEngagementClubPersonSwimmer(...arguments);
 }
 
-exports.saveEngagementClubPerson = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/portal-club-handlers.js#saveEngagementClubPerson#arrow */ async (request) => {
-  return portalClubHandlers().saveEngagementClubPerson(request);
+exports.saveEngagementClubPerson = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/backend/portal-club-handlers/save-engagement-club-person.js#saveEngagementClubPerson#arrow */ async (request) => {
+  return $portalClubHandlers_saveEngagementClubPerson().saveEngagementClubPerson(request);
 });
 
-exports.setEngagementClubPersonStatus = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/portal-club-handlers.js#setEngagementClubPersonStatus#arrow */ async (request) => {
-  return portalClubHandlers().setEngagementClubPersonStatus(request);
+exports.setEngagementClubPersonStatus = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/backend/portal-club-handlers/set-engagement-club-person-status.js#setEngagementClubPersonStatus#arrow */ async (request) => {
+  return $portalClubHandlers_setEngagementClubPersonStatus().setEngagementClubPersonStatus(request);
 });
 
-/* extracted-function: functions/server-competition-service.js#saveNativeClubOfficials */
+/* extracted-function: functions/backend/server-competition-service/save-native-club-officials.js#saveNativeClubOfficials */
 async function saveNativeClubOfficials(input0, input1) {
-  return serverCompetitionService().saveNativeClubOfficials(...arguments);
+  return $serverCompetitionService_saveNativeClubOfficials().saveNativeClubOfficials(...arguments);
 }
 
-exports.saveEngagementClubOfficials = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/portal-club-handlers.js#saveEngagementClubOfficials#arrow */ async (request) => {
-  return portalClubHandlers().saveEngagementClubOfficials(request);
+exports.saveEngagementClubOfficials = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/backend/portal-club-handlers/save-engagement-club-officials.js#saveEngagementClubOfficials#arrow */ async (request) => {
+  return $portalClubHandlers_saveEngagementClubOfficials().saveEngagementClubOfficials(request);
 });
 
-exports.listEngagementClubSwimmers = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/portal-club-handlers.js#listEngagementClubSwimmers#arrow */ async (request) => {
-  return portalClubHandlers().listEngagementClubSwimmers(request);
+exports.listEngagementClubSwimmers = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/backend/portal-club-handlers/list-engagement-club-swimmers.js#listEngagementClubSwimmers#arrow */ async (request) => {
+  return $portalClubHandlers_listEngagementClubSwimmers().listEngagementClubSwimmers(request);
 });
 
-exports.setEngagementClubSwimmerActivityStatus = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/portal-club-handlers.js#setEngagementClubSwimmerActivityStatus#arrow */ async (request) => {
-  return portalClubHandlers().setEngagementClubSwimmerActivityStatus(request);
+exports.setEngagementClubSwimmerActivityStatus = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/backend/portal-club-handlers/set-engagement-club-swimmer-activity-status.js#setEngagementClubSwimmerActivityStatus#arrow */ async (request) => {
+  return $portalClubHandlers_setEngagementClubSwimmerActivityStatus().setEngagementClubSwimmerActivityStatus(request);
 });
 
 exports.rebuildEngagementClubAggregates = onCall(MIGRATION_CALLABLE_OPTIONS, async (request) => {
@@ -5789,99 +9409,26 @@ exports.rebuildEngagementClubAggregates = onCall(MIGRATION_CALLABLE_OPTIONS, asy
   };
 });
 
-function serverNationalService() {
-  if (!serverNationalService.instance) serverNationalService.instance = require("./server-national-service").createNationalService({
-    get ENGAGEMENT_SWIMMER_CHANGE_REQUESTS_COLLECTION() { return ENGAGEMENT_SWIMMER_CHANGE_REQUESTS_COLLECTION; },
-    get ENGAGEMENT_SWIMMER_CORRECTION_ENTRY_PAGE_SIZE() { return ENGAGEMENT_SWIMMER_CORRECTION_ENTRY_PAGE_SIZE; },
-    get ENGAGEMENT_SWIMMER_CORRECTION_MAX_PERFORMANCE_ROWS() { return ENGAGEMENT_SWIMMER_CORRECTION_MAX_PERFORMANCE_ROWS; },
-    get ENGAGEMENT_SWIMMER_LICENSE_NUMBERS_COLLECTION() { return ENGAGEMENT_SWIMMER_LICENSE_NUMBERS_COLLECTION; },
-    get ENGAGEMENT_SWIMMER_LICENSE_PATTERN() { return ENGAGEMENT_SWIMMER_LICENSE_PATTERN; },
-    get ENVIRONMENT() { return ENVIRONMENT; },
-    get FieldPath() { return FieldPath; },
-    get HttpsError() { return HttpsError; },
-    get PERFORMANCE_BASE_COLLECTION() { return PERFORMANCE_BASE_COLLECTION; },
-    get PERFORMANCE_SWIMMERS_COLLECTION() { return PERFORMANCE_SWIMMERS_COLLECTION; },
-    get PERFORMANCE_SWIMMER_PAGES_COLLECTION() { return PERFORMANCE_SWIMMER_PAGES_COLLECTION; },
-    get aggregateSwimmerIndexRows() { return aggregateSwimmerIndexRows; },
-    get assertNoEngagementSwimmerLicenseConflict() { return assertNoEngagementSwimmerLicenseConflict; },
-    get authorizeNativePerformance() { return authorizeNativePerformance; },
-    get cleanEngagementEntryIndividualEntries() { return cleanEngagementEntryIndividualEntries; },
-    get cleanEngagementEntryOfficial() { return cleanEngagementEntryOfficial; },
-    get cleanEngagementEntrySwimmer() { return cleanEngagementEntrySwimmer; },
-    get cleanFirestoreValue() { return cleanFirestoreValue; },
-    get cleanIsoDate() { return cleanIsoDate; },
-    get cleanText() { return cleanText; },
-    get currentEngagementCategoryFromBirthDate() { return currentEngagementCategoryFromBirthDate; },
-    get db() { return db; },
-    get deleteEngagementClubRosterSwimmer() { return deleteEngagementClubRosterSwimmer; },
-    get deletePublicPerformanceFile() { return deletePublicPerformanceFile; },
-    get engagementClubSwimmerItem() { return engagementClubSwimmerItem; },
-    get engagementMailRecipientIndexStateRef() { return engagementMailRecipientIndexStateRef; },
-    get engagementMailRecipientsFromIndex() { return engagementMailRecipientsFromIndex; },
-    get engagementMailSmtpConfig() { return engagementMailSmtpConfig; },
-    get engagementNewSwimmerAlertFromMatch() { return engagementNewSwimmerAlertFromMatch; },
-    get engagementNewSwimmerItem() { return engagementNewSwimmerItem; },
-    get engagementReferenceSwimmerItem() { return engagementReferenceSwimmerItem; },
-    get engagementSwimmerChangeResolutionMail() { return engagementSwimmerChangeResolutionMail; },
-    get engagementSwimmerIdentityKey() { return engagementSwimmerIdentityKey; },
-    get engagementSwimmerLicenseId() { return engagementSwimmerLicenseId; },
-    get engagementSwimmerLicenseItem() { return engagementSwimmerLicenseItem; },
-    get engagementSwimmerLicenseNumberId() { return engagementSwimmerLicenseNumberId; },
-    get engagementSwimmerLicenseNumberKey() { return engagementSwimmerLicenseNumberKey; },
-    get engagementSwimmerLicensePayload() { return engagementSwimmerLicensePayload; },
-    get findReferenceSwimmerCorrectionTarget() { return findReferenceSwimmerCorrectionTarget; },
-    get getPerformanceBaseRowsBySwimmer() { return getPerformanceBaseRowsBySwimmer; },
-    get intranapSwimmersIndex() { return intranapSwimmersIndex; },
-    get invalidateEngagementEntryTimeCachesForPerformanceRows() { return invalidateEngagementEntryTimeCachesForPerformanceRows; },
-    get livePalmesMailHtml() { return livePalmesMailHtml; },
-    get nativePerformanceFailure() { return nativePerformanceFailure; },
-    get nodemailer() { return nodemailer; },
-    get normalizeCategoryCode() { return normalizeCategoryCode; },
-    get normalizeEmail() { return normalizeEmail; },
-    get normalizePerformanceSearchText() { return normalizePerformanceSearchText; },
-    get performanceBaseDocId() { return performanceBaseDocId; },
-    get performanceSwimmerIndexDocId() { return performanceSwimmerIndexDocId; },
-    get performanceSwimmerPageId() { return performanceSwimmerPageId; },
-    get publicPerformanceBaseRow() { return publicPerformanceBaseRow; },
-    get publicPerformanceSwimmerFilePath() { return publicPerformanceSwimmerFilePath; },
-    get publicSwimmerKey() { return publicSwimmerKey; },
-    get readPublicPerformanceJson() { return readPublicPerformanceJson; },
-    get rebuildPublicPerformanceFilesForAffectedRows() { return rebuildPublicPerformanceFilesForAffectedRows; },
-    get rebuildPublicTopFilesForAffectedRows() { return rebuildPublicTopFilesForAffectedRows; },
-    get recoveredPerformanceRowsAreComplete() { return recoveredPerformanceRowsAreComplete; },
-    get removePublicSearchIndexes() { return removePublicSearchIndexes; },
-    get replacePublicSwimmerIdentity() { return replacePublicSwimmerIdentity; },
-    get stableHash() { return stableHash; },
-    get swimmerMergeIds() { return swimmerMergeIds; },
-    get uniquePublicPerformanceRows() { return uniquePublicPerformanceRows; },
-    get upsertEngagementClubRosterSwimmer() { return upsertEngagementClubRosterSwimmer; },
-    get writeAuditLog() { return writeAuditLog; },
-    get writeAuditLogOnce() { return writeAuditLogOnce; },
-    get writePerformanceBaseRows() { return writePerformanceBaseRows; },
-    get writePerformanceSwimmerIndexRows() { return writePerformanceSwimmerIndexRows; },
-    get writePerformanceSwimmerPageRows() { return writePerformanceSwimmerPageRows; }
-  });
-  return serverNationalService.instance;
-}
 
-/* extracted-function: functions/server-national-service.js#importSwimmerCreation */
+
+/* extracted-function: functions/backend/server-national-service/import-swimmer-creation.js#importSwimmerCreation */
 async function importSwimmerCreation(input0, input1) {
-  return serverNationalService().importSwimmerCreation(...arguments);
+  return $serverNationalService_importSwimmerCreation().importSwimmerCreation(...arguments);
 }
-exports.previewEngagementClubSwimmerCreation = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")], maxInstances:2, concurrency:4 } : {}) }, /* extracted-handler: functions/portal-club-handlers.js#previewEngagementClubSwimmerCreation#arrow */ async (request) => {
-  return portalClubHandlers().previewEngagementClubSwimmerCreation(request);
+exports.previewEngagementClubSwimmerCreation = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")], maxInstances:2, concurrency:4 } : {}) }, /* extracted-handler: functions/backend/portal-club-handlers/preview-engagement-club-swimmer-creation.js#previewEngagementClubSwimmerCreation#arrow */ async (request) => {
+  return $portalClubHandlers_previewEngagementClubSwimmerCreation().previewEngagementClubSwimmerCreation(request);
 });
 
-exports.previewEngagementClubSwimmerRecovery = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")], maxInstances:2, concurrency:4 } : {}) }, /* extracted-handler: functions/portal-club-handlers.js#previewEngagementClubSwimmerRecovery#arrow */ async (request) => {
-  return portalClubHandlers().previewEngagementClubSwimmerRecovery(request);
+exports.previewEngagementClubSwimmerRecovery = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")], maxInstances:2, concurrency:4 } : {}) }, /* extracted-handler: functions/backend/portal-club-handlers/preview-engagement-club-swimmer-recovery.js#previewEngagementClubSwimmerRecovery#arrow */ async (request) => {
+  return $portalClubHandlers_previewEngagementClubSwimmerRecovery().previewEngagementClubSwimmerRecovery(request);
 });
 
-exports.recoverEngagementClubSwimmer = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")], maxInstances:2, concurrency:4 } : {}) }, /* extracted-handler: functions/portal-club-handlers.js#recoverEngagementClubSwimmer#arrow */ async (request) => {
-  return portalClubHandlers().recoverEngagementClubSwimmer(request);
+exports.recoverEngagementClubSwimmer = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")], maxInstances:2, concurrency:4 } : {}) }, /* extracted-handler: functions/backend/portal-club-handlers/recover-engagement-club-swimmer.js#recoverEngagementClubSwimmer#arrow */ async (request) => {
+  return $portalClubHandlers_recoverEngagementClubSwimmer().recoverEngagementClubSwimmer(request);
 });
 
-exports.createEngagementClubSwimmer = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")], maxInstances:2, concurrency:4 } : {}) }, /* extracted-handler: functions/portal-club-handlers.js#createEngagementClubSwimmer#arrow */ async (request) => {
-  return portalClubHandlers().createEngagementClubSwimmer(request);
+exports.createEngagementClubSwimmer = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")], maxInstances:2, concurrency:4 } : {}) }, /* extracted-handler: functions/backend/portal-club-handlers/create-engagement-club-swimmer.js#createEngagementClubSwimmer#arrow */ async (request) => {
+  return $portalClubHandlers_createEngagementClubSwimmer().createEngagementClubSwimmer(request);
 });
 
 exports.listEngagementNationalClubSwimmers = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
@@ -5909,38 +9456,38 @@ exports.listEngagementNationalClubSwimmers = onCall({ ...CALLABLE_OPTIONS, ...(E
   };
 });
 
-/* extracted-function: functions/server-national-service.js#nationalSwimmerSearchMatches */
+/* extracted-function: functions/backend/server-national-service/national-swimmer-search-matches.js#nationalSwimmerSearchMatches */
 function nationalSwimmerSearchMatches() {
-  return serverNationalService().nationalSwimmerSearchMatches(...arguments);
+  return $serverNationalService_nationalSwimmerSearchMatches().nationalSwimmerSearchMatches(...arguments);
 }
 
-/* extracted-function: functions/server-national-service.js#nationalSwimmerSort */
+/* extracted-function: functions/backend/server-national-service/national-swimmer-search-matches.js#nationalSwimmerSort */
 function nationalSwimmerSort() {
-  return serverNationalService().nationalSwimmerSort(...arguments);
+  return $serverNationalService_nationalSwimmerSearchMatches().nationalSwimmerSort(...arguments);
 }
 
-/* extracted-function: functions/server-national-service.js#searchEngagementNationalSwimmerDocs */
+/* extracted-function: functions/backend/server-national-service/national-swimmer-search-matches.js#searchEngagementNationalSwimmerDocs */
 async function searchEngagementNationalSwimmerDocs(input0) {
-  return serverNationalService().searchEngagementNationalSwimmerDocs(...arguments);
+  return $serverNationalService_nationalSwimmerSearchMatches().searchEngagementNationalSwimmerDocs(...arguments);
 }
 
-exports.searchEngagementNationalSwimmers = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/portal-national-handlers.js#searchEngagementNationalSwimmers#arrow */ async (request) => {
-  return portalNationalHandlers().searchEngagementNationalSwimmers(request);
+exports.searchEngagementNationalSwimmers = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/backend/portal-national-handlers/search-engagement-national-swimmers.js#searchEngagementNationalSwimmers#arrow */ async (request) => {
+  return $portalNationalHandlers_searchEngagementNationalSwimmers().searchEngagementNationalSwimmers(request);
 });
 
-/* extracted-function: functions/server-national-service.js#engagementLicenseControlSeason */
+/* extracted-function: functions/backend/server-national-service/engagement-license-control-season.js#engagementLicenseControlSeason */
 function engagementLicenseControlSeason() {
-  return serverNationalService().engagementLicenseControlSeason(...arguments);
+  return $serverNationalService_engagementLicenseControlSeason().engagementLicenseControlSeason(...arguments);
 }
 
-/* extracted-function: functions/server-national-service.js#engagementLicenseControlPerson */
+/* extracted-function: functions/backend/server-national-service/engagement-license-control-person.js#engagementLicenseControlPerson */
 function engagementLicenseControlPerson() {
-  return serverNationalService().engagementLicenseControlPerson(...arguments);
+  return $serverNationalService_engagementLicenseControlPerson().engagementLicenseControlPerson(...arguments);
 }
 
-/* extracted-function: functions/server-national-service.js#engagementLicenseReportRequest */
+/* extracted-function: functions/backend/server-national-service/engagement-license-control-person.js#engagementLicenseReportRequest */
 async function engagementLicenseReportRequest(input0, input1, input2) {
-  return serverNationalService().engagementLicenseReportRequest(...arguments);
+  return $serverNationalService_engagementLicenseControlPerson().engagementLicenseReportRequest(...arguments);
 }
 
 exports.prepareEngagementLicenseControlBatch = onCall(ENVIRONMENT.projectId === "livepalmes-test" ? ENGAGEMENT_NOTIFICATION_PREVIEW_OPTIONS : { ...ENGAGEMENT_NOTIFICATION_PREVIEW_OPTIONS, timeoutSeconds: 300, secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD"), ...ENGAGEMENT_NOTIFICATION_MAIL_SECRETS] }, async (request) => {
@@ -6036,86 +9583,86 @@ exports.prepareEngagementLicenseControlBatch = onCall(ENVIRONMENT.projectId === 
   };
 });
 
-exports.validateEngagementSwimmerLicenses = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/portal-club-handlers.js#validateEngagementSwimmerLicenses#arrow */ async (request) => {
-  return portalClubHandlers().validateEngagementSwimmerLicenses(request);
+exports.validateEngagementSwimmerLicenses = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/backend/portal-club-handlers/validate-engagement-swimmer-licenses.js#validateEngagementSwimmerLicenses#arrow */ async (request) => {
+  return $portalClubHandlers_validateEngagementSwimmerLicenses().validateEngagementSwimmerLicenses(request);
 });
 
-/* extracted-function: functions/server-national-service.js#engagementSwimmerIdentitySnapshot */
+/* extracted-function: functions/backend/server-national-service/engagement-swimmer-identity-snapshot.js#engagementSwimmerIdentitySnapshot */
 function engagementSwimmerIdentitySnapshot() {
-  return serverNationalService().engagementSwimmerIdentitySnapshot(...arguments);
+  return $serverNationalService_engagementSwimmerIdentitySnapshot().engagementSwimmerIdentitySnapshot(...arguments);
 }
 
-/* extracted-function: functions/server-national-service.js#cleanEngagementSwimmerIdentityCorrection */
+/* extracted-function: functions/backend/server-national-service/clean-engagement-swimmer-identity-correction.js#cleanEngagementSwimmerIdentityCorrection */
 function cleanEngagementSwimmerIdentityCorrection() {
-  return serverNationalService().cleanEngagementSwimmerIdentityCorrection(...arguments);
+  return $serverNationalService_cleanEngagementSwimmerIdentityCorrection().cleanEngagementSwimmerIdentityCorrection(...arguments);
 }
 
-/* extracted-function: functions/server-national-service.js#findPerformanceSwimmerCorrectionTarget */
+/* extracted-function: functions/backend/server-national-service/find-engagement-swimmer-correction-license.js#findPerformanceSwimmerCorrectionTarget */
 async function findPerformanceSwimmerCorrectionTarget(input0) {
-  return serverNationalService().findPerformanceSwimmerCorrectionTarget(...arguments);
+  return $serverNationalService_findEngagementSwimmerCorrectionLicense().findPerformanceSwimmerCorrectionTarget(...arguments);
 }
 
-/* extracted-function: functions/server-national-service.js#findEngagementSwimmerCorrectionLicense */
+/* extracted-function: functions/backend/server-national-service/find-engagement-swimmer-correction-license.js#findEngagementSwimmerCorrectionLicense */
 async function findEngagementSwimmerCorrectionLicense(input0) {
-  return serverNationalService().findEngagementSwimmerCorrectionLicense(...arguments);
+  return $serverNationalService_findEngagementSwimmerCorrectionLicense().findEngagementSwimmerCorrectionLicense(...arguments);
 }
 
-/* extracted-function: functions/server-national-service.js#getEngagementSwimmerCorrectionTarget */
+/* extracted-function: functions/backend/server-national-service/find-engagement-swimmer-correction-license.js#getEngagementSwimmerCorrectionTarget */
 async function getEngagementSwimmerCorrectionTarget(input0) {
-  return serverNationalService().getEngagementSwimmerCorrectionTarget(...arguments);
+  return $serverNationalService_findEngagementSwimmerCorrectionLicense().getEngagementSwimmerCorrectionTarget(...arguments);
 }
 
-/* extracted-function: functions/server-national-service.js#assertNoEngagementSwimmerIdentityConflict */
+/* extracted-function: functions/backend/server-national-service/apply-engagement-swimmer-identity-correction.js#assertNoEngagementSwimmerIdentityConflict */
 async function assertNoEngagementSwimmerIdentityConflict(input0) {
-  return serverNationalService().assertNoEngagementSwimmerIdentityConflict(...arguments);
+  return $serverNationalService_applyEngagementSwimmerIdentityCorrection().assertNoEngagementSwimmerIdentityConflict(...arguments);
 }
 
-/* extracted-function: functions/server-national-service.js#engagementEntrySwimmerCorrectionResult */
+/* extracted-function: functions/backend/server-national-service/apply-engagement-swimmer-identity-correction.js#engagementEntrySwimmerCorrectionResult */
 function engagementEntrySwimmerCorrectionResult() {
-  return serverNationalService().engagementEntrySwimmerCorrectionResult(...arguments);
+  return $serverNationalService_applyEngagementSwimmerIdentityCorrection().engagementEntrySwimmerCorrectionResult(...arguments);
 }
 
-/* extracted-function: functions/server-national-service.js#engagementEntryRelayCorrectionResult */
+/* extracted-function: functions/backend/server-national-service/apply-engagement-swimmer-identity-correction.js#engagementEntryRelayCorrectionResult */
 function engagementEntryRelayCorrectionResult() {
-  return serverNationalService().engagementEntryRelayCorrectionResult(...arguments);
+  return $serverNationalService_applyEngagementSwimmerIdentityCorrection().engagementEntryRelayCorrectionResult(...arguments);
 }
 
-/* extracted-function: functions/server-national-service.js#updateEngagementEntriesForSwimmerCorrection */
+/* extracted-function: functions/backend/server-national-service/apply-engagement-swimmer-identity-correction.js#updateEngagementEntriesForSwimmerCorrection */
 async function updateEngagementEntriesForSwimmerCorrection(input0) {
-  return serverNationalService().updateEngagementEntriesForSwimmerCorrection(...arguments);
+  return $serverNationalService_applyEngagementSwimmerIdentityCorrection().updateEngagementEntriesForSwimmerCorrection(...arguments);
 }
 
-/* extracted-function: functions/server-national-service.js#setEngagementSwimmerChangeRequestRosterState */
+/* extracted-function: functions/backend/server-national-service/set-engagement-swimmer-change-request-roster-state.js#setEngagementSwimmerChangeRequestRosterState */
 function setEngagementSwimmerChangeRequestRosterState(input0) {
-  return serverNationalService().setEngagementSwimmerChangeRequestRosterState(...arguments);
+  return $serverNationalService_setEngagementSwimmerChangeRequestRosterState().setEngagementSwimmerChangeRequestRosterState(...arguments);
 }
 
-/* extracted-function: functions/server-national-service.js#applyEngagementSwimmerIdentityCorrection */
+/* extracted-function: functions/backend/server-national-service/apply-engagement-swimmer-identity-correction.js#applyEngagementSwimmerIdentityCorrection */
 async function applyEngagementSwimmerIdentityCorrection() {
-  return serverNationalService().applyEngagementSwimmerIdentityCorrection(...arguments);
+  return $serverNationalService_applyEngagementSwimmerIdentityCorrection().applyEngagementSwimmerIdentityCorrection(...arguments);
 }
 
-/* extracted-function: functions/server-national-service.js#engagementSwimmerChangeRequestItem */
+/* extracted-function: functions/backend/server-national-service/engagement-swimmer-change-request-item.js#engagementSwimmerChangeRequestItem */
 function engagementSwimmerChangeRequestItem(input0) {
-  return serverNationalService().engagementSwimmerChangeRequestItem(...arguments);
+  return $serverNationalService_engagementSwimmerChangeRequestItem().engagementSwimmerChangeRequestItem(...arguments);
 }
 
-/* extracted-function: functions/server-national-service.js#sendEngagementSwimmerChangeResolutionNotification */
+/* extracted-function: functions/backend/server-national-service/send-engagement-swimmer-change-resolution-notification.js#sendEngagementSwimmerChangeResolutionNotification */
 async function sendEngagementSwimmerChangeResolutionNotification() {
-  return serverNationalService().sendEngagementSwimmerChangeResolutionNotification(...arguments);
+  return $serverNationalService_sendEngagementSwimmerChangeResolutionNotification().sendEngagementSwimmerChangeResolutionNotification(...arguments);
 }
 
-exports.requestEngagementClubSwimmerChange = onCall({ ...ENGAGEMENT_SWIMMER_CORRECTION_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/portal-national-handlers.js#requestEngagementClubSwimmerChange#arrow */ async (request) => {
-  return portalNationalHandlers().requestEngagementClubSwimmerChange(request);
+exports.requestEngagementClubSwimmerChange = onCall({ ...ENGAGEMENT_SWIMMER_CORRECTION_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/backend/portal-national-handlers/request-engagement-club-swimmer-change.js#requestEngagementClubSwimmerChange#arrow */ async (request) => {
+  return $portalNationalHandlers_requestEngagementClubSwimmerChange().requestEngagementClubSwimmerChange(request);
 });
 
-exports.listEngagementSwimmerChangeRequests = onCall(CALLABLE_OPTIONS, /* extracted-handler: functions/portal-national-handlers.js#listEngagementSwimmerChangeRequests#arrow */ async (request) => {
-  return portalNationalHandlers().listEngagementSwimmerChangeRequests(request);
+exports.listEngagementSwimmerChangeRequests = onCall(CALLABLE_OPTIONS, /* extracted-handler: functions/backend/portal-national-handlers/list-engagement-swimmer-change-requests.js#listEngagementSwimmerChangeRequests#arrow */ async (request) => {
+  return $portalNationalHandlers_listEngagementSwimmerChangeRequests().listEngagementSwimmerChangeRequests(request);
 });
 
-/* extracted-function: functions/server-national-service.js#engagementNationalAdministrationPendingCounts */
+/* extracted-function: functions/backend/server-national-service/engagement-national-administration-pending-counts.js#engagementNationalAdministrationPendingCounts */
 async function engagementNationalAdministrationPendingCounts() {
-  return serverNationalService().engagementNationalAdministrationPendingCounts(...arguments);
+  return $serverNationalService_engagementNationalAdministrationPendingCounts().engagementNationalAdministrationPendingCounts(...arguments);
 }
 
 exports.getEngagementNationalAdministrationOverview = onCall(CALLABLE_OPTIONS, async (request) => {
@@ -6127,24 +9674,24 @@ exports.getEngagementNationalAdministrationOverview = onCall(CALLABLE_OPTIONS, a
   };
 });
 
-exports.listEngagementNationalClubs = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/portal-national-handlers.js#listEngagementNationalClubs#arrow */ async (request) => {
-  return portalNationalHandlers().listEngagementNationalClubs(request);
+exports.listEngagementNationalClubs = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/backend/portal-national-handlers/list-engagement-national-clubs.js#listEngagementNationalClubs#arrow */ async (request) => {
+  return $portalNationalHandlers_listEngagementNationalClubs().listEngagementNationalClubs(request);
 });
 
-exports.getPublicEngagementClubDirectory = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/portal-club-handlers.js#getPublicEngagementClubDirectory#arrow */ async () => {
-  return portalClubHandlers().getPublicEngagementClubDirectory();
+exports.getPublicEngagementClubDirectory = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/backend/portal-club-handlers/get-public-engagement-club-directory.js#getPublicEngagementClubDirectory#arrow */ async () => {
+  return $portalClubHandlers_getPublicEngagementClubDirectory().getPublicEngagementClubDirectory();
 });
 
-exports.saveEngagementNationalClub = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/portal-national-handlers.js#saveEngagementNationalClub#arrow */ async (request) => {
-  return portalNationalHandlers().saveEngagementNationalClub(request);
+exports.saveEngagementNationalClub = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/backend/portal-national-handlers/save-engagement-national-club.js#saveEngagementNationalClub#arrow */ async (request) => {
+  return $portalNationalHandlers_saveEngagementNationalClub().saveEngagementNationalClub(request);
 });
 
-exports.deleteEngagementNationalClub = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/portal-national-handlers.js#deleteEngagementNationalClub#arrow */ async (request) => {
-  return portalNationalHandlers().deleteEngagementNationalClub(request);
+exports.deleteEngagementNationalClub = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/backend/portal-national-handlers/delete-engagement-national-club.js#deleteEngagementNationalClub#arrow */ async (request) => {
+  return $portalNationalHandlers_deleteEngagementNationalClub().deleteEngagementNationalClub(request);
 });
 
-exports.getPortalPendingRequestOverview = onCall(CALLABLE_OPTIONS, /* extracted-handler: functions/portal-competition-handlers.js#getPortalPendingRequestOverview#arrow */ async (request) => {
-  return portalCompetitionHandlers().getPortalPendingRequestOverview(request);
+exports.getPortalPendingRequestOverview = onCall(CALLABLE_OPTIONS, /* extracted-handler: functions/backend/portal-competition-handlers/get-portal-pending-request-overview.js#getPortalPendingRequestOverview#arrow */ async (request) => {
+  return $portalCompetitionHandlers_getPortalPendingRequestOverview().getPortalPendingRequestOverview(request);
 });
 
 exports.resolveEngagementSwimmerChangeRequest = onCall(ENVIRONMENT.sportingDataSource === "nap"
@@ -6346,22 +9893,22 @@ exports.resolveEngagementSwimmerChangeRequest = onCall(ENVIRONMENT.sportingDataS
   return { ok: true, request: engagementSwimmerChangeRequestItem(updated), result };
 });
 
-exports.updateEngagementNationalSwimmerIdentity = onCall({ ...ENGAGEMENT_SWIMMER_CORRECTION_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/portal-performance-handlers.js#updateEngagementNationalSwimmerIdentity#arrow */ async (request) => {
-  return portalPerformanceHandlers().updateEngagementNationalSwimmerIdentity(request);
+exports.updateEngagementNationalSwimmerIdentity = onCall({ ...ENGAGEMENT_SWIMMER_CORRECTION_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/backend/portal-performance-handlers/update-engagement-national-swimmer-identity.js#updateEngagementNationalSwimmerIdentity#arrow */ async (request) => {
+  return $portalPerformanceHandlers_updateEngagementNationalSwimmerIdentity().updateEngagementNationalSwimmerIdentity(request);
 });
 
-exports.setEngagementNationalClubSwimmerStatus = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/portal-national-handlers.js#setEngagementNationalClubSwimmerStatus#arrow */ async (request) => {
-  return portalNationalHandlers().setEngagementNationalClubSwimmerStatus(request);
+exports.setEngagementNationalClubSwimmerStatus = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/backend/portal-national-handlers/set-engagement-national-club-swimmer-status.js#setEngagementNationalClubSwimmerStatus#arrow */ async (request) => {
+  return $portalNationalHandlers_setEngagementNationalClubSwimmerStatus().setEngagementNationalClubSwimmerStatus(request);
 });
 
-/* extracted-function: functions/server-national-service.js#engagementClubSwimmerDeletionUsage */
+/* extracted-function: functions/backend/server-national-service/delete-engagement-club-swimmer-permanently.js#engagementClubSwimmerDeletionUsage */
 async function engagementClubSwimmerDeletionUsage(input0) {
-  return serverNationalService().engagementClubSwimmerDeletionUsage(...arguments);
+  return $serverNationalService_deleteEngagementClubSwimmerPermanently().engagementClubSwimmerDeletionUsage(...arguments);
 }
 
-/* extracted-function: functions/server-national-service.js#deleteEngagementClubSwimmerPermanently */
+/* extracted-function: functions/backend/server-national-service/delete-engagement-club-swimmer-permanently.js#deleteEngagementClubSwimmerPermanently */
 async function deleteEngagementClubSwimmerPermanently(input0, input1) {
-  return serverNationalService().deleteEngagementClubSwimmerPermanently(...arguments);
+  return $serverNationalService_deleteEngagementClubSwimmerPermanently().deleteEngagementClubSwimmerPermanently(...arguments);
 }
 
 exports.requestEngagementClubSwimmerDeletion = onCall(CALLABLE_OPTIONS, async (request) => {
@@ -6433,8 +9980,8 @@ exports.requestEngagementClubSwimmerDeletion = onCall(CALLABLE_OPTIONS, async (r
   return { ok: true, deleted: false, requested: true, usage };
 });
 
-exports.deleteEngagementNationalClubSwimmer = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/portal-national-handlers.js#deleteEngagementNationalClubSwimmer#arrow */ async (request) => {
-  return portalNationalHandlers().deleteEngagementNationalClubSwimmer(request);
+exports.deleteEngagementNationalClubSwimmer = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/backend/portal-national-handlers/delete-engagement-national-club-swimmer.js#deleteEngagementNationalClubSwimmer#arrow */ async (request) => {
+  return $portalNationalHandlers_deleteEngagementNationalClubSwimmer().deleteEngagementNationalClubSwimmer(request);
 });
 
 exports.listEngagementSwimmerDeletionRequests = onCall(CALLABLE_OPTIONS, async (request) => {
@@ -6546,87 +10093,87 @@ exports.resolveEngagementSwimmerDeletionRequest = onCall(CALLABLE_OPTIONS, async
   return { ok: true, requestId, swimmerId, decision, swimmerActive: decision === "rejected" };
 });
 
-/* extracted-function: functions/server-national-service.js#engagementNationalSwimmerCollectionForSource */
+/* extracted-function: functions/backend/server-national-service/engagement-national-swimmer-collection-for-source.js#engagementNationalSwimmerCollectionForSource */
 function engagementNationalSwimmerCollectionForSource(input0) {
-  return serverNationalService().engagementNationalSwimmerCollectionForSource(...arguments);
+  return $serverNationalService_engagementNationalSwimmerCollectionForSource().engagementNationalSwimmerCollectionForSource(...arguments);
 }
 
-/* extracted-function: functions/server-national-service.js#engagementNationalSwimmerItemFromDoc */
+/* extracted-function: functions/backend/server-national-service/engagement-national-swimmer-item-from-doc.js#engagementNationalSwimmerItemFromDoc */
 function engagementNationalSwimmerItemFromDoc(input0) {
-  return serverNationalService().engagementNationalSwimmerItemFromDoc(...arguments);
+  return $serverNationalService_engagementNationalSwimmerItemFromDoc().engagementNationalSwimmerItemFromDoc(...arguments);
 }
 
-/* extracted-function: functions/server-national-service.js#materializeEngagementNationalPerformanceSwimmerForMerge */
+/* extracted-function: functions/backend/server-national-service/engagement-national-swimmer-collection-for-source.js#materializeEngagementNationalPerformanceSwimmerForMerge */
 async function materializeEngagementNationalPerformanceSwimmerForMerge() {
-  return serverNationalService().materializeEngagementNationalPerformanceSwimmerForMerge(...arguments);
+  return $serverNationalService_engagementNationalSwimmerCollectionForSource().materializeEngagementNationalPerformanceSwimmerForMerge(...arguments);
 }
 
-/* extracted-function: functions/server-national-service.js#getEngagementNationalSwimmerForMerge */
+/* extracted-function: functions/backend/server-national-service/engagement-national-swimmer-collection-for-source.js#getEngagementNationalSwimmerForMerge */
 async function getEngagementNationalSwimmerForMerge(input0) {
-  return serverNationalService().getEngagementNationalSwimmerForMerge(...arguments);
+  return $serverNationalService_engagementNationalSwimmerCollectionForSource().getEngagementNationalSwimmerForMerge(...arguments);
 }
 
-/* extracted-function: functions/server-national-service.js#engagementNationalSwimmerFullName */
+/* extracted-function: functions/backend/server-national-service/engagement-national-swimmer-full-name.js#engagementNationalSwimmerFullName */
 function engagementNationalSwimmerFullName() {
-  return serverNationalService().engagementNationalSwimmerFullName(...arguments);
+  return $serverNationalService_engagementNationalSwimmerFullName().engagementNationalSwimmerFullName(...arguments);
 }
 
-/* extracted-function: functions/server-national-service.js#engagementNationalSwimmerEntrySnapshot */
+/* extracted-function: functions/backend/server-national-service/engagement-national-swimmer-entry-snapshot.js#engagementNationalSwimmerEntrySnapshot */
 function engagementNationalSwimmerEntrySnapshot() {
-  return serverNationalService().engagementNationalSwimmerEntrySnapshot(...arguments);
+  return $serverNationalService_engagementNationalSwimmerEntrySnapshot().engagementNationalSwimmerEntrySnapshot(...arguments);
 }
 
-/* extracted-function: functions/server-national-service.js#mergeEngagementEntryIndividualEntries */
+/* extracted-function: functions/backend/server-national-service/engagement-national-swimmer-entry-snapshot.js#mergeEngagementEntryIndividualEntries */
 function mergeEngagementEntryIndividualEntries() {
-  return serverNationalService().mergeEngagementEntryIndividualEntries(...arguments);
+  return $serverNationalService_engagementNationalSwimmerEntrySnapshot().mergeEngagementEntryIndividualEntries(...arguments);
 }
 
-/* extracted-function: functions/server-national-service.js#mergeEngagementClubEntrySwimmers */
+/* extracted-function: functions/backend/server-national-service/engagement-national-swimmer-entry-snapshot.js#mergeEngagementClubEntrySwimmers */
 function mergeEngagementClubEntrySwimmers() {
-  return serverNationalService().mergeEngagementClubEntrySwimmers(...arguments);
+  return $serverNationalService_engagementNationalSwimmerEntrySnapshot().mergeEngagementClubEntrySwimmers(...arguments);
 }
 
-/* extracted-function: functions/server-national-service.js#mergeEngagementClubEntryRelays */
+/* extracted-function: functions/backend/server-national-service/engagement-national-swimmer-entry-snapshot.js#mergeEngagementClubEntryRelays */
 function mergeEngagementClubEntryRelays() {
-  return serverNationalService().mergeEngagementClubEntryRelays(...arguments);
+  return $serverNationalService_engagementNationalSwimmerEntrySnapshot().mergeEngagementClubEntryRelays(...arguments);
 }
 
-/* extracted-function: functions/server-national-service.js#searchEngagementNationalSwimmerMergeTargetDocs */
+/* extracted-function: functions/backend/server-national-service/search-engagement-national-swimmer-merge-target-docs.js#searchEngagementNationalSwimmerMergeTargetDocs */
 async function searchEngagementNationalSwimmerMergeTargetDocs(input0) {
-  return serverNationalService().searchEngagementNationalSwimmerMergeTargetDocs(...arguments);
+  return $serverNationalService_searchEngagementNationalSwimmerMergeTargetDocs().searchEngagementNationalSwimmerMergeTargetDocs(...arguments);
 }
 
-exports.searchEngagementNationalSwimmerMergeTargets = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/portal-national-handlers.js#searchEngagementNationalSwimmerMergeTargets#arrow */ async (request) => {
-  return portalNationalHandlers().searchEngagementNationalSwimmerMergeTargets(request);
+exports.searchEngagementNationalSwimmerMergeTargets = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/backend/portal-national-handlers/search-engagement-national-swimmer-merge-targets.js#searchEngagementNationalSwimmerMergeTargets#arrow */ async (request) => {
+  return $portalNationalHandlers_searchEngagementNationalSwimmerMergeTargets().searchEngagementNationalSwimmerMergeTargets(request);
 });
 
-/* extracted-function: functions/server-national-service.js#performanceMergeTargetPayloadFromSwimmer */
+/* extracted-function: functions/backend/server-national-service/engagement-national-swimmer-entry-snapshot.js#performanceMergeTargetPayloadFromSwimmer */
 function performanceMergeTargetPayloadFromSwimmer() {
-  return serverNationalService().performanceMergeTargetPayloadFromSwimmer(...arguments);
+  return $serverNationalService_engagementNationalSwimmerEntrySnapshot().performanceMergeTargetPayloadFromSwimmer(...arguments);
 }
 
-/* extracted-function: functions/server-national-service.js#publicPerformanceRowsFromSwimmerPayload */
+/* extracted-function: functions/backend/server-national-service/active-performance-rows-for-national-swimmer.js#publicPerformanceRowsFromSwimmerPayload */
 function publicPerformanceRowsFromSwimmerPayload() {
-  return serverNationalService().publicPerformanceRowsFromSwimmerPayload(...arguments);
+  return $serverNationalService_activePerformanceRowsForNationalSwimmer().publicPerformanceRowsFromSwimmerPayload(...arguments);
 }
 
-/* extracted-function: functions/server-national-service.js#publishEngagementNationalSwimmerMerge */
+/* extracted-function: functions/backend/server-national-service/active-performance-rows-for-national-swimmer.js#publishEngagementNationalSwimmerMerge */
 async function publishEngagementNationalSwimmerMerge() {
-  return serverNationalService().publishEngagementNationalSwimmerMerge(...arguments);
+  return $serverNationalService_activePerformanceRowsForNationalSwimmer().publishEngagementNationalSwimmerMerge(...arguments);
 }
 
-/* extracted-function: functions/server-national-service.js#activePerformanceRowsForNationalSwimmer */
+/* extracted-function: functions/backend/server-national-service/active-performance-rows-for-national-swimmer.js#activePerformanceRowsForNationalSwimmer */
 async function activePerformanceRowsForNationalSwimmer() {
-  return serverNationalService().activePerformanceRowsForNationalSwimmer(...arguments);
+  return $serverNationalService_activePerformanceRowsForNationalSwimmer().activePerformanceRowsForNationalSwimmer(...arguments);
 }
 
-/* extracted-function: functions/server-national-service.js#readPerformanceDocsForNationalSwimmerMerge */
+/* extracted-function: functions/backend/server-national-service/engagement-national-swimmer-entry-snapshot.js#readPerformanceDocsForNationalSwimmerMerge */
 async function readPerformanceDocsForNationalSwimmerMerge(input0) {
-  return serverNationalService().readPerformanceDocsForNationalSwimmerMerge(...arguments);
+  return $serverNationalService_engagementNationalSwimmerEntrySnapshot().readPerformanceDocsForNationalSwimmerMerge(...arguments);
 }
 
-exports.mergeEngagementNationalClubSwimmer = onCall({ ...ENGAGEMENT_SWIMMER_CORRECTION_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/portal-performance-handlers.js#mergeEngagementNationalClubSwimmer#arrow */ async (request) => {
-  return portalPerformanceHandlers().mergeEngagementNationalClubSwimmer(request);
+exports.mergeEngagementNationalClubSwimmer = onCall({ ...ENGAGEMENT_SWIMMER_CORRECTION_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/backend/portal-performance-handlers/merge-engagement-national-club-swimmer.js#mergeEngagementNationalClubSwimmer#arrow */ async (request) => {
+  return $portalPerformanceHandlers_mergeEngagementNationalClubSwimmer().mergeEngagementNationalClubSwimmer(request);
 });
 
 exports.repairEngagementNationalSwimmerMergePublication = onCall(ENGAGEMENT_SWIMMER_CORRECTION_OPTIONS, async (request) => {
@@ -6672,95 +10219,51 @@ exports.repairEngagementNationalSwimmerMergePublication = onCall(ENGAGEMENT_SWIM
   return { ok: true, publicSnapshot };
 });
 
-exports.listEngagementNationalClubPeople = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/portal-national-handlers.js#listEngagementNationalClubPeople#arrow */ async (request) => {
-  return portalNationalHandlers().listEngagementNationalClubPeople(request);
+exports.listEngagementNationalClubPeople = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/backend/portal-national-handlers/list-engagement-national-club-people.js#listEngagementNationalClubPeople#arrow */ async (request) => {
+  return $portalNationalHandlers_listEngagementNationalClubPeople().listEngagementNationalClubPeople(request);
 });
 
-exports.setEngagementNationalClubPersonStatus = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/portal-national-handlers.js#setEngagementNationalClubPersonStatus#arrow */ async (request) => {
-  return portalNationalHandlers().setEngagementNationalClubPersonStatus(request);
+exports.setEngagementNationalClubPersonStatus = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/backend/portal-national-handlers/set-engagement-national-club-person-status.js#setEngagementNationalClubPersonStatus#arrow */ async (request) => {
+  return $portalNationalHandlers_setEngagementNationalClubPersonStatus().setEngagementNationalClubPersonStatus(request);
 });
 
-exports.deleteEngagementNationalClubPerson = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/portal-national-handlers.js#deleteEngagementNationalClubPerson#arrow */ async (request) => {
-  return portalNationalHandlers().deleteEngagementNationalClubPerson(request);
+exports.deleteEngagementNationalClubPerson = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/backend/portal-national-handlers/delete-engagement-national-club-person.js#deleteEngagementNationalClubPerson#arrow */ async (request) => {
+  return $portalNationalHandlers_deleteEngagementNationalClubPerson().deleteEngagementNationalClubPerson(request);
 });
 
-exports.listEngagementNationalAuditLogs = onCall(CALLABLE_OPTIONS, /* extracted-handler: functions/portal-national-handlers.js#listEngagementNationalAuditLogs#arrow */ async (request) => {
-  return portalNationalHandlers().listEngagementNationalAuditLogs(request);
+exports.listEngagementNationalAuditLogs = onCall(CALLABLE_OPTIONS, /* extracted-handler: functions/backend/portal-national-handlers/list-engagement-national-audit-logs.js#listEngagementNationalAuditLogs#arrow */ async (request) => {
+  return $portalNationalHandlers_listEngagementNationalAuditLogs().listEngagementNationalAuditLogs(request);
 });
 
-/* extracted-function: functions/server-national-service.js#engagementClubPersonEntrySnapshot */
+/* extracted-function: functions/backend/server-national-service/engagement-club-person-entry-snapshot.js#engagementClubPersonEntrySnapshot */
 function engagementClubPersonEntrySnapshot() {
-  return serverNationalService().engagementClubPersonEntrySnapshot(...arguments);
+  return $serverNationalService_engagementClubPersonEntrySnapshot().engagementClubPersonEntrySnapshot(...arguments);
 }
 
-/* extracted-function: functions/server-national-service.js#engagementClubPersonFullName */
+/* extracted-function: functions/backend/server-national-service/engagement-club-person-entry-snapshot.js#engagementClubPersonFullName */
 function engagementClubPersonFullName() {
-  return serverNationalService().engagementClubPersonFullName(...arguments);
+  return $serverNationalService_engagementClubPersonEntrySnapshot().engagementClubPersonFullName(...arguments);
 }
 
-/* extracted-function: functions/server-national-service.js#mergeEngagementClubEntryOfficials */
+/* extracted-function: functions/backend/server-national-service/engagement-club-person-entry-snapshot.js#mergeEngagementClubEntryOfficials */
 function mergeEngagementClubEntryOfficials() {
-  return serverNationalService().mergeEngagementClubEntryOfficials(...arguments);
+  return $serverNationalService_engagementClubPersonEntrySnapshot().mergeEngagementClubEntryOfficials(...arguments);
 }
 
-exports.mergeEngagementNationalClubPerson = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/portal-national-handlers.js#mergeEngagementNationalClubPerson#arrow */ async (request) => {
-  return portalNationalHandlers().mergeEngagementNationalClubPerson(request);
+exports.mergeEngagementNationalClubPerson = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/backend/portal-national-handlers/merge-engagement-national-club-person.js#mergeEngagementNationalClubPerson#arrow */ async (request) => {
+  return $portalNationalHandlers_mergeEngagementNationalClubPerson().mergeEngagementNationalClubPerson(request);
 });
 
-function serverEntryService() {
-  if (!serverEntryService.instance) serverEntryService.instance = require("./server-entry-service").createEntryService({
-    get ENGAGEMENT_EVENT_DEFINITION_BY_CODE() { return ENGAGEMENT_EVENT_DEFINITION_BY_CODE; },
-    get ENGAGEMENT_EVENT_FORBIDDEN_CATEGORIES() { return ENGAGEMENT_EVENT_FORBIDDEN_CATEGORIES; },
-    get ENGAGEMENT_REQUIRE_ENTRY_SWIMMER_LICENSE() { return ENGAGEMENT_REQUIRE_ENTRY_SWIMMER_LICENSE; },
-    get ENGAGEMENT_SWIMMER_LICENSE_PATTERN() { return ENGAGEMENT_SWIMMER_LICENSE_PATTERN; },
-    get HttpsError() { return HttpsError; },
-    get PERFORMANCE_SWIMMERS_COLLECTION() { return PERFORMANCE_SWIMMERS_COLLECTION; },
-    get ageCategoryFromDates() { return ageCategoryFromDates; },
-    get automaticEngagementIndividualEntry() { return automaticEngagementIndividualEntry; },
-    get birthYear() { return birthYear; },
-    get cleanEngagementCompetitionEvents() { return cleanEngagementCompetitionEvents; },
-    get cleanEngagementCompetitionType() { return cleanEngagementCompetitionType; },
-    get cleanEngagementEntryIndividualEntries() { return cleanEngagementEntryIndividualEntries; },
-    get cleanEngagementEntryRelays() { return cleanEngagementEntryRelays; },
-    get cleanEngagementEntrySwimmer() { return cleanEngagementEntrySwimmer; },
-    get cleanEngagementLicenseVerificationStatus() { return cleanEngagementLicenseVerificationStatus; },
-    get cleanEngagementMaxEventsPerSwimmer() { return cleanEngagementMaxEventsPerSwimmer; },
-    get cleanEngagementMissingEntryTimeMode() { return cleanEngagementMissingEntryTimeMode; },
-    get cleanEngagementPoolLength() { return cleanEngagementPoolLength; },
-    get cleanEngagementQualificationTimesMode() { return cleanEngagementQualificationTimesMode; },
-    get cleanEngagementTimingType() { return cleanEngagementTimingType; },
-    get cleanIsoDate() { return cleanIsoDate; },
-    get cleanText() { return cleanText; },
-    get competitionYear() { return competitionYear; },
-    get db() { return db; },
-    get engagementClubSwimmerItem() { return engagementClubSwimmerItem; },
-    get engagementKnownTimeHistory() { return engagementKnownTimeHistory; },
-    get engagementLicenseSeasonState() { return engagementLicenseSeasonState; },
-    get engagementNewSwimmerItem() { return engagementNewSwimmerItem; },
-    get engagementReferenceSwimmerItem() { return engagementReferenceSwimmerItem; },
-    get engagementSwimmerLicenseItem() { return engagementSwimmerLicenseItem; },
-    get importSeasonYear() { return importSeasonYear; },
-    get intranapSwimmersIndex() { return intranapSwimmersIndex; },
-    get loadPerformanceRecordsData() { return loadPerformanceRecordsData; },
-    get nativeClubEntryView() { return nativeClubEntryView; },
-    get parseEngagementEntryTime() { return parseEngagementEntryTime; },
-    get qualificationEvents() { return qualificationEvents; },
-    get resolveEngagementIndividualEntriesForSwimmer() { return resolveEngagementIndividualEntriesForSwimmer; },
-    get validateEngagementIndividualEntryTimes() { return validateEngagementIndividualEntryTimes; },
-    get validateEngagementRelayEntryTimes() { return validateEngagementRelayEntryTimes; },
-    get writeAuditLogOnce() { return writeAuditLogOnce; }
-  });
-  return serverEntryService.instance;
-}
 
-/* extracted-function: functions/server-entry-service.js#buildEngagementClubSwimmersFromRequest */
+
+/* extracted-function: functions/backend/server-entry-service/build-engagement-club-swimmers-from-request.js#buildEngagementClubSwimmersFromRequest */
 async function buildEngagementClubSwimmersFromRequest() {
-  return serverEntryService().buildEngagementClubSwimmersFromRequest(...arguments);
+  return $serverEntryService_buildEngagementClubSwimmersFromRequest().buildEngagementClubSwimmersFromRequest(...arguments);
 }
 
-/* extracted-function: functions/server-entry-service.js#engagementEntryTimeStats */
+/* extracted-function: functions/backend/server-entry-service/engagement-entry-time-stats.js#engagementEntryTimeStats */
 function engagementEntryTimeStats() {
-  return serverEntryService().engagementEntryTimeStats(...arguments);
+  return $serverEntryService_engagementEntryTimeStats().engagementEntryTimeStats(...arguments);
 }
 
 exports.previewEngagementClubEntryTimes = onCall(CALLABLE_OPTIONS, async (request) => {
@@ -6787,48 +10290,48 @@ exports.previewEngagementClubEntryTimes = onCall(CALLABLE_OPTIONS, async (reques
   };
 });
 
-exports.getEngagementClubEntryTimeHistory = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/portal-club-handlers.js#getEngagementClubEntryTimeHistory#arrow */ async (request) => {
-  return portalClubHandlers().getEngagementClubEntryTimeHistory(request);
+exports.getEngagementClubEntryTimeHistory = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/backend/portal-club-handlers/get-engagement-club-entry-time-history.js#getEngagementClubEntryTimeHistory#arrow */ async (request) => {
+  return $portalClubHandlers_getEngagementClubEntryTimeHistory().getEngagementClubEntryTimeHistory(request);
 });
 
-/* extracted-function: functions/server-entry-service.js#nativeClubEntryTimeHistory */
+/* extracted-function: functions/backend/server-entry-service/native-club-entry-time-history.js#nativeClubEntryTimeHistory */
 async function nativeClubEntryTimeHistory(input0, input1, input2, input3) {
-  return serverEntryService().nativeClubEntryTimeHistory(...arguments);
+  return $serverEntryService_nativeClubEntryTimeHistory().nativeClubEntryTimeHistory(...arguments);
 }
 
-/* extracted-function: functions/server-entry-service.js#previewNativeClubEntryTimes */
+/* extracted-function: functions/backend/server-entry-service/preview-native-club-entry-times.js#previewNativeClubEntryTimes */
 async function previewNativeClubEntryTimes(input0, input1, input2, input3) {
-  return serverEntryService().previewNativeClubEntryTimes(...arguments);
+  return $serverEntryService_previewNativeClubEntryTimes().previewNativeClubEntryTimes(...arguments);
 }
 
-exports.previewEngagementClubSwimmerEventTimes = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/portal-club-handlers.js#previewEngagementClubSwimmerEventTimes#arrow */ async (request) => {
-  return portalClubHandlers().previewEngagementClubSwimmerEventTimes(request);
+exports.previewEngagementClubSwimmerEventTimes = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/backend/portal-club-handlers/preview-engagement-club-swimmer-event-times.js#previewEngagementClubSwimmerEventTimes#arrow */ async (request) => {
+  return $portalClubHandlers_previewEngagementClubSwimmerEventTimes().previewEngagementClubSwimmerEventTimes(request);
 });
 
-exports.previewEngagementClubSwimmerEventTimesBatch = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/portal-club-handlers.js#previewEngagementClubSwimmerEventTimesBatch#arrow */ async (request) => {
-  return portalClubHandlers().previewEngagementClubSwimmerEventTimesBatch(request);
+exports.previewEngagementClubSwimmerEventTimesBatch = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/backend/portal-club-handlers/preview-engagement-club-swimmer-event-times-batch.js#previewEngagementClubSwimmerEventTimesBatch#arrow */ async (request) => {
+  return $portalClubHandlers_previewEngagementClubSwimmerEventTimesBatch().previewEngagementClubSwimmerEventTimesBatch(request);
 });
 
-/* extracted-function: functions/server-entry-service.js#saveNativeClubIndividualEntries */
+/* extracted-function: functions/backend/server-entry-service/save-native-club-individual-entries.js#saveNativeClubIndividualEntries */
 async function saveNativeClubIndividualEntries(input0, input1) {
-  return serverEntryService().saveNativeClubIndividualEntries(...arguments);
+  return $serverEntryService_saveNativeClubIndividualEntries().saveNativeClubIndividualEntries(...arguments);
 }
 
-exports.saveEngagementClubIndividualEntries = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/portal-club-handlers.js#saveEngagementClubIndividualEntries#arrow */ async (request) => {
-  return portalClubHandlers().saveEngagementClubIndividualEntries(request);
+exports.saveEngagementClubIndividualEntries = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/backend/portal-club-handlers/save-engagement-club-individual-entries.js#saveEngagementClubIndividualEntries#arrow */ async (request) => {
+  return $portalClubHandlers_saveEngagementClubIndividualEntries().saveEngagementClubIndividualEntries(request);
 });
 
-/* extracted-function: functions/server-entry-service.js#saveNativeClubSwimmerSelections */
+/* extracted-function: functions/backend/server-entry-service/save-native-club-swimmer-selections.js#saveNativeClubSwimmerSelections */
 async function saveNativeClubSwimmerSelections(input0, input1, input2) {
-  return serverEntryService().saveNativeClubSwimmerSelections(...arguments);
+  return $serverEntryService_saveNativeClubSwimmerSelections().saveNativeClubSwimmerSelections(...arguments);
 }
 
-exports.saveEngagementClubSwimmerSelection = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/portal-club-handlers.js#saveEngagementClubSwimmerSelection#arrow */ async (request) => {
-  return portalClubHandlers().saveEngagementClubSwimmerSelection(request);
+exports.saveEngagementClubSwimmerSelection = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/backend/portal-club-handlers/save-engagement-club-swimmer-selection.js#saveEngagementClubSwimmerSelection#arrow */ async (request) => {
+  return $portalClubHandlers_saveEngagementClubSwimmerSelection().saveEngagementClubSwimmerSelection(request);
 });
 
-exports.saveEngagementClubSwimmerSelections = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/portal-club-handlers.js#saveEngagementClubSwimmerSelections#arrow */ async (request) => {
-  return portalClubHandlers().saveEngagementClubSwimmerSelections(request);
+exports.saveEngagementClubSwimmerSelections = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/backend/portal-club-handlers/save-engagement-club-swimmer-selections.js#saveEngagementClubSwimmerSelections#arrow */ async (request) => {
+  return $portalClubHandlers_saveEngagementClubSwimmerSelections().saveEngagementClubSwimmerSelections(request);
 });
 
 exports.saveEngagementClubSwimmers = onCall(CALLABLE_OPTIONS, async (request) => {
@@ -6922,25 +10425,25 @@ exports.saveEngagementClubSwimmers = onCall(CALLABLE_OPTIONS, async (request) =>
   };
 });
 
-/* extracted-function: functions/server-entry-service.js#saveNativeClubRelays */
+/* extracted-function: functions/backend/server-entry-service/save-native-club-relays.js#saveNativeClubRelays */
 async function saveNativeClubRelays(input0, input1) {
-  return serverEntryService().saveNativeClubRelays(...arguments);
+  return $serverEntryService_saveNativeClubRelays().saveNativeClubRelays(...arguments);
 }
 
-exports.saveEngagementClubRelays = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/portal-club-handlers.js#saveEngagementClubRelays#arrow */ async (request) => {
-  return portalClubHandlers().saveEngagementClubRelays(request);
+exports.saveEngagementClubRelays = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/backend/portal-club-handlers/save-engagement-club-relays.js#saveEngagementClubRelays#arrow */ async (request) => {
+  return $portalClubHandlers_saveEngagementClubRelays().saveEngagementClubRelays(request);
 });
 
-exports.createEngagementCompetition = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")], maxInstances:2, concurrency:4, timeoutSeconds:120 } : {}) }, /* extracted-handler: functions/portal-competition-handlers.js#createEngagementCompetition#arrow */ async (request) => {
-  return portalCompetitionHandlers().createEngagementCompetition(request);
+exports.createEngagementCompetition = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")], maxInstances:2, concurrency:4, timeoutSeconds:120 } : {}) }, /* extracted-handler: functions/backend/portal-competition-handlers/create-engagement-competition.js#createEngagementCompetition#arrow */ async (request) => {
+  return $portalCompetitionHandlers_createEngagementCompetition().createEngagementCompetition(request);
 });
 
-exports.updateEngagementCompetition = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")], maxInstances:2, concurrency:4, timeoutSeconds:120 } : {}) }, /* extracted-handler: functions/portal-competition-handlers.js#updateEngagementCompetition#arrow */ async (request) => {
-  return portalCompetitionHandlers().updateEngagementCompetition(request);
+exports.updateEngagementCompetition = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")], maxInstances:2, concurrency:4, timeoutSeconds:120 } : {}) }, /* extracted-handler: functions/backend/portal-competition-handlers/update-engagement-competition.js#updateEngagementCompetition#arrow */ async (request) => {
+  return $portalCompetitionHandlers_updateEngagementCompetition().updateEngagementCompetition(request);
 });
 
-exports.deleteEngagementCompetition = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/portal-competition-handlers.js#deleteEngagementCompetition#arrow */ async (request) => {
-  return portalCompetitionHandlers().deleteEngagementCompetition(request);
+exports.deleteEngagementCompetition = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/backend/portal-competition-handlers/delete-engagement-competition.js#deleteEngagementCompetition#arrow */ async (request) => {
+  return $portalCompetitionHandlers_deleteEngagementCompetition().deleteEngagementCompetition(request);
 });
 
 exports.requestEngagementCompetitionDeletion = onCall(CALLABLE_OPTIONS, async (request) => {
@@ -7120,74 +10623,34 @@ exports.resolveEngagementCompetitionDeletionRequest = onCall(CALLABLE_OPTIONS, a
   };
 });
 
-exports.previewCompetitionImport = onCall(COMPETITION_IMPORT_CALLABLE_OPTIONS, /* extracted-handler: functions/portal-performance-handlers.js#previewCompetitionImport#arrow */ async (request) => {
-  return portalPerformanceHandlers().previewCompetitionImport(request);
+exports.previewCompetitionImport = onCall(COMPETITION_IMPORT_CALLABLE_OPTIONS, /* extracted-handler: functions/backend/portal-performance-handlers/preview-competition-import.js#previewCompetitionImport#arrow */ async (request) => {
+  return $portalPerformanceHandlers_previewCompetitionImport().previewCompetitionImport(request);
 });
 
-function serverPerformanceService() {
-  if (!serverPerformanceService.instance) serverPerformanceService.instance = require("./server-performance-service").createPerformanceService({
-    get CATEGORY_LABELS() { return CATEGORY_LABELS; },
-    get HttpsError() { return HttpsError; },
-    get PERFORMANCE_BASE_CHANGES_COLLECTION() { return PERFORMANCE_BASE_CHANGES_COLLECTION; },
-    get PERFORMANCE_BASE_COLLECTION() { return PERFORMANCE_BASE_COLLECTION; },
-    get PERFORMANCE_PUBLICATION_JOBS_COLLECTION() { return PERFORMANCE_PUBLICATION_JOBS_COLLECTION; },
-    get PERFORMANCE_TOP_BUCKETS_COLLECTION() { return PERFORMANCE_TOP_BUCKETS_COLLECTION; },
-    get PERFORMANCE_TOP_INDEX_LIMIT() { return PERFORMANCE_TOP_INDEX_LIMIT; },
-    get POOL_COURSES() { return POOL_COURSES; },
-    get activeCompetitionImportData() { return activeCompetitionImportData; },
-    get ageCategoryFromDates() { return ageCategoryFromDates; },
-    get categoryCodeFromCategory() { return categoryCodeFromCategory; },
-    get cleanFirestoreValue() { return cleanFirestoreValue; },
-    get cleanText() { return cleanText; },
-    get cleanTimingType() { return cleanTimingType; },
-    get competitionImportIdentity() { return competitionImportIdentity; },
-    get coursePayload() { return coursePayload; },
-    get db() { return db; },
-    get fallbackCategoryFromSource() { return fallbackCategoryFromSource; },
-    get importPublicationError() { return importPublicationError; },
-    get importPublicationResultStatus() { return importPublicationResultStatus; },
-    get importSeasonYear() { return importSeasonYear; },
-    get invalidateEngagementEntryTimeCachesForPerformanceRows() { return invalidateEngagementEntryTimeCachesForPerformanceRows; },
-    get normalizeCategoryCode() { return normalizeCategoryCode; },
-    get normalizeCourseCode() { return normalizeCourseCode; },
-    get performanceCategoryFromRow() { return performanceCategoryFromRow; },
-    get performanceImportChrono() { return performanceImportChrono; },
-    get publicPerformancePublicationJob() { return publicPerformancePublicationJob; },
-    get publishIncrementalPerformanceImport() { return publishIncrementalPerformanceImport; },
-    get publishIncrementalPublicPerformanceFiles() { return publishIncrementalPublicPerformanceFiles; },
-    get readPublishedAdditionalPerformanceDataSnapshot() { return readPublishedAdditionalPerformanceDataSnapshot; },
-    get resolveIntranapSwimmer() { return resolveIntranapSwimmer; },
-    get sameCompetitionImport() { return sameCompetitionImport; },
-    get stableHash() { return stableHash; },
-    get swimmerIdentityKey() { return swimmerIdentityKey; },
-    get touchDtnQualificationCacheState() { return touchDtnQualificationCacheState; },
-    get writeAuditLog() { return writeAuditLog; }
-  });
-  return serverPerformanceService.instance;
-}
 
-/* extracted-function: functions/server-performance-service.js#competitionImportPublicSnapshotSummary */
+
+/* extracted-function: functions/backend/server-performance-service/competition-import-public-snapshot-summary.js#competitionImportPublicSnapshotSummary */
 function competitionImportPublicSnapshotSummary() {
-  return serverPerformanceService().competitionImportPublicSnapshotSummary(...arguments);
+  return $serverPerformanceService_competitionImportPublicSnapshotSummary().competitionImportPublicSnapshotSummary(...arguments);
 }
 
-/* extracted-function: functions/server-performance-service.js#publishCompetitionImportOutputs */
+/* extracted-function: functions/backend/server-performance-service/publish-competition-import-outputs.js#publishCompetitionImportOutputs */
 async function publishCompetitionImportOutputs() {
-  return serverPerformanceService().publishCompetitionImportOutputs(...arguments);
+  return $serverPerformanceService_publishCompetitionImportOutputs().publishCompetitionImportOutputs(...arguments);
 }
 
-/* extracted-function: functions/server-performance-service.js#competitionImportPerformanceId */
+/* extracted-function: functions/backend/server-performance-service/competition-import-performance-id.js#competitionImportPerformanceId */
 function competitionImportPerformanceId(input0) {
-  return serverPerformanceService().competitionImportPerformanceId(...arguments);
+  return $serverPerformanceService_competitionImportPerformanceId().competitionImportPerformanceId(...arguments);
 }
 
-/* extracted-function: functions/server-performance-service.js#stageCompetitionImportReplacement */
+/* extracted-function: functions/backend/server-performance-service/competition-import-performance-id.js#stageCompetitionImportReplacement */
 async function stageCompetitionImportReplacement() {
-  return serverPerformanceService().stageCompetitionImportReplacement(...arguments);
+  return $serverPerformanceService_competitionImportPerformanceId().stageCompetitionImportReplacement(...arguments);
 }
 
-exports.createCompetitionImport = onCall(COMPETITION_IMPORT_CALLABLE_OPTIONS, /* extracted-handler: functions/portal-performance-handlers.js#createCompetitionImport#arrow */ async (request) => {
-  return portalPerformanceHandlers().createCompetitionImport(request);
+exports.createCompetitionImport = onCall(COMPETITION_IMPORT_CALLABLE_OPTIONS, /* extracted-handler: functions/backend/portal-performance-handlers/create-competition-import.js#createCompetitionImport#arrow */ async (request) => {
+  return $portalPerformanceHandlers_createCompetitionImport().createCompetitionImport(request);
 });
 
 exports.resumeCompetitionImportPublication = onCall(COMPETITION_IMPORT_CALLABLE_OPTIONS, async (request) => {
@@ -7283,13 +10746,13 @@ exports.resumeCompetitionImportPublication = onCall(COMPETITION_IMPORT_CALLABLE_
   };
 });
 
-exports.listCompetitionImports = onCall(COMPETITION_IMPORT_CALLABLE_OPTIONS, /* extracted-handler: functions/portal-performance-handlers.js#listCompetitionImports#arrow */ async (request) => {
-  return portalPerformanceHandlers().listCompetitionImports(request);
+exports.listCompetitionImports = onCall(COMPETITION_IMPORT_CALLABLE_OPTIONS, /* extracted-handler: functions/backend/portal-performance-handlers/list-competition-imports.js#listCompetitionImports#arrow */ async (request) => {
+  return $portalPerformanceHandlers_listCompetitionImports().listCompetitionImports(request);
 });
 
-/* extracted-function: functions/server-performance-service.js#markCompetitionImportDeleted */
+/* extracted-function: functions/backend/server-performance-service/mark-competition-import-deleted.js#markCompetitionImportDeleted */
 async function markCompetitionImportDeleted(input0) {
-  return serverPerformanceService().markCompetitionImportDeleted(...arguments);
+  return $serverPerformanceService_markCompetitionImportDeleted().markCompetitionImportDeleted(...arguments);
 }
 
 exports.deleteCompetitionImport = onCall(PUBLIC_PERFORMANCE_CALLABLE_OPTIONS, async (request) => {
@@ -7440,246 +10903,211 @@ exports.updateCompetitionImportRecordAlertDecision = onCall(CALLABLE_OPTIONS, as
   };
 });
 
-/* extracted-function: functions/server-performance-service.js#performancePublicKey */
+/* extracted-function: functions/backend/server-performance-service/performance-public-key.js#performancePublicKey */
 function performancePublicKey() {
-  return serverPerformanceService().performancePublicKey(...arguments);
+  return $serverPerformanceService_performancePublicKey().performancePublicKey(...arguments);
 }
 
-/* extracted-function: functions/server-performance-service.js#performanceBaseDocId */
+/* extracted-function: functions/backend/server-performance-service/performance-base-doc-id.js#performanceBaseDocId */
 function performanceBaseDocId() {
-  return serverPerformanceService().performanceBaseDocId(...arguments);
+  return $serverPerformanceService_performanceBaseDocId().performanceBaseDocId(...arguments);
 }
 
-/* extracted-function: functions/server-performance-service.js#normalizeLivePalmesImportPerformances */
+/* extracted-function: functions/backend/server-performance-service/competition-import-public-snapshot-summary.js#normalizeLivePalmesImportPerformances */
 function normalizeLivePalmesImportPerformances() {
-  return serverPerformanceService().normalizeLivePalmesImportPerformances(...arguments);
+  return $serverPerformanceService_competitionImportPublicSnapshotSummary().normalizeLivePalmesImportPerformances(...arguments);
 }
 
-/* extracted-function: functions/server-performance-service.js#cleanPerformanceBaseRow */
+/* extracted-function: functions/backend/server-performance-service/clean-performance-base-row.js#cleanPerformanceBaseRow */
 function cleanPerformanceBaseRow() {
-  return serverPerformanceService().cleanPerformanceBaseRow(...arguments);
+  return $serverPerformanceService_cleanPerformanceBaseRow().cleanPerformanceBaseRow(...arguments);
 }
 
-/* extracted-function: functions/server-performance-service.js#writePerformanceBaseRows */
+/* extracted-function: functions/backend/server-performance-service/clean-performance-base-row.js#writePerformanceBaseRows */
 async function writePerformanceBaseRows() {
-  return serverPerformanceService().writePerformanceBaseRows(...arguments);
+  return $serverPerformanceService_cleanPerformanceBaseRow().writePerformanceBaseRows(...arguments);
 }
 
-/* extracted-function: functions/server-performance-service.js#publicPerformanceBaseRow */
+/* extracted-function: functions/backend/server-performance-service/public-performance-base-row.js#publicPerformanceBaseRow */
 function publicPerformanceBaseRow() {
-  return serverPerformanceService().publicPerformanceBaseRow(...arguments);
+  return $serverPerformanceService_publicPerformanceBaseRow().publicPerformanceBaseRow(...arguments);
 }
 
-/* extracted-function: functions/server-performance-service.js#uniquePublicPerformanceRows */
+/* extracted-function: functions/backend/server-performance-service/unique-public-performance-rows.js#uniquePublicPerformanceRows */
 function uniquePublicPerformanceRows() {
-  return serverPerformanceService().uniquePublicPerformanceRows(...arguments);
+  return $serverPerformanceService_uniquePublicPerformanceRows().uniquePublicPerformanceRows(...arguments);
 }
 
-/* extracted-function: functions/server-performance-service.js#publicSwimmerKey */
+/* extracted-function: functions/backend/server-performance-service/public-swimmer-key.js#publicSwimmerKey */
 function publicSwimmerKey() {
-  return serverPerformanceService().publicSwimmerKey(...arguments);
+  return $serverPerformanceService_publicSwimmerKey().publicSwimmerKey(...arguments);
 }
 
-/* extracted-function: functions/server-performance-service.js#publicBetterPerformance */
+/* extracted-function: functions/backend/server-performance-service/public-better-performance.js#publicBetterPerformance */
 function publicBetterPerformance(input0, input1) {
-  return serverPerformanceService().publicBetterPerformance(...arguments);
+  return $serverPerformanceService_publicBetterPerformance().publicBetterPerformance(...arguments);
 }
 
-/* extracted-function: functions/server-performance-service.js#publicTopIndexRow */
+/* extracted-function: functions/backend/server-performance-service/best-top-rows.js#publicTopIndexRow */
 function publicTopIndexRow() {
-  return serverPerformanceService().publicTopIndexRow(...arguments);
+  return $serverPerformanceService_bestTopRows().publicTopIndexRow(...arguments);
 }
 
-/* extracted-function: functions/server-performance-service.js#performanceTopBucketKey */
+/* extracted-function: functions/backend/server-performance-service/best-top-rows.js#performanceTopBucketKey */
 function performanceTopBucketKey() {
-  return serverPerformanceService().performanceTopBucketKey(...arguments);
+  return $serverPerformanceService_bestTopRows().performanceTopBucketKey(...arguments);
 }
 
-/* extracted-function: functions/server-performance-service.js#performanceTopBucketId */
+/* extracted-function: functions/backend/server-performance-service/best-top-rows.js#performanceTopBucketId */
 function performanceTopBucketId(input0) {
-  return serverPerformanceService().performanceTopBucketId(...arguments);
+  return $serverPerformanceService_bestTopRows().performanceTopBucketId(...arguments);
 }
 
-/* extracted-function: functions/server-performance-service.js#performanceTopBucketVariants */
+/* extracted-function: functions/backend/server-performance-service/best-top-rows.js#performanceTopBucketVariants */
 function performanceTopBucketVariants() {
-  return serverPerformanceService().performanceTopBucketVariants(...arguments);
+  return $serverPerformanceService_bestTopRows().performanceTopBucketVariants(...arguments);
 }
 
-/* extracted-function: functions/server-performance-service.js#bestTopRows */
+/* extracted-function: functions/backend/server-performance-service/best-top-rows.js#bestTopRows */
 function bestTopRows() {
-  return serverPerformanceService().bestTopRows(...arguments);
+  return $serverPerformanceService_bestTopRows().bestTopRows(...arguments);
 }
 
-/* extracted-function: functions/server-performance-service.js#encodePerformanceTopIndexRows */
+/* extracted-function: functions/backend/server-performance-service/best-top-rows.js#encodePerformanceTopIndexRows */
 function encodePerformanceTopIndexRows(input0) {
-  return serverPerformanceService().encodePerformanceTopIndexRows(...arguments);
+  return $serverPerformanceService_bestTopRows().encodePerformanceTopIndexRows(...arguments);
 }
 
-/* extracted-function: functions/server-performance-service.js#readPerformanceTopIndexRows */
+/* extracted-function: functions/backend/server-performance-service/best-top-rows.js#readPerformanceTopIndexRows */
 function readPerformanceTopIndexRows() {
-  return serverPerformanceService().readPerformanceTopIndexRows(...arguments);
+  return $serverPerformanceService_bestTopRows().readPerformanceTopIndexRows(...arguments);
 }
 
-/* extracted-function: functions/server-performance-service.js#writePerformanceTopIndexRows */
+/* extracted-function: functions/backend/server-performance-service/best-top-rows.js#writePerformanceTopIndexRows */
 async function writePerformanceTopIndexRows() {
-  return serverPerformanceService().writePerformanceTopIndexRows(...arguments);
+  return $serverPerformanceService_bestTopRows().writePerformanceTopIndexRows(...arguments);
 }
 
-/* extracted-function: functions/server-performance-service.js#performanceTopRowsFromIndex */
+/* extracted-function: functions/backend/server-performance-service/performance-top-rows-from-index.js#performanceTopRowsFromIndex */
 async function performanceTopRowsFromIndex() {
-  return serverPerformanceService().performanceTopRowsFromIndex(...arguments);
+  return $serverPerformanceService_performanceTopRowsFromIndex().performanceTopRowsFromIndex(...arguments);
 }
 
-function serverDtnService() {
-  if (!serverDtnService.instance) serverDtnService.instance = require("./server-dtn-service").createDtnService({
-    get ADMIN_UIDS() { return ADMIN_UIDS; },
-    get DTN_EDF_LIMOGES_COMPETITION_ID() { return DTN_EDF_LIMOGES_COMPETITION_ID; },
-    get DTN_LISTING_CACHE_VERSION() { return DTN_LISTING_CACHE_VERSION; },
-    get DTN_NEAR_MINIMUM_MAX_PERCENT() { return DTN_NEAR_MINIMUM_MAX_PERCENT; },
-    get DTN_QUALIFICATION_CACHE_COLLECTION() { return DTN_QUALIFICATION_CACHE_COLLECTION; },
-    get DTN_QUALIFICATION_CACHE_STATE_COLLECTION() { return DTN_QUALIFICATION_CACHE_STATE_COLLECTION; },
-    get DTN_QUALIFICATION_CACHE_VERSION() { return DTN_QUALIFICATION_CACHE_VERSION; },
-    get DTN_QUALIFICATION_JOBS_COLLECTION() { return DTN_QUALIFICATION_JOBS_COLLECTION; },
-    get DTN_QUALIFICATION_MAX_ROWS_PER_COURSE() { return DTN_QUALIFICATION_MAX_ROWS_PER_COURSE; },
-    get ENGAGEMENT_INDIVIDUAL_CATEGORY_CODES() { return ENGAGEMENT_INDIVIDUAL_CATEGORY_CODES; },
-    get ENVIRONMENT() { return ENVIRONMENT; },
-    get FieldPath() { return FieldPath; },
-    get FieldValue() { return FieldValue; },
-    get HttpsError() { return HttpsError; },
-    get POOL_COURSES() { return POOL_COURSES; },
-    get assertCapability() { return assertCapability; },
-    get assertLivePalmesAccess() { return assertLivePalmesAccess; },
-    get birthYear() { return birthYear; },
-    get cleanFirestoreValue() { return cleanFirestoreValue; },
-    get cleanText() { return cleanText; },
-    get createDtnSeasonService() { return createDtnSeasonService; },
-    get db() { return db; },
-    get importSeasonYear() { return importSeasonYear; },
-    get publicBetterPerformance() { return publicBetterPerformance; },
-    get publicPerformanceBaseRow() { return publicPerformanceBaseRow; },
-    get publicPerformanceTopFileName() { return publicPerformanceTopFileName; },
-    get publicSwimmerKey() { return publicSwimmerKey; },
-    get readPublicPerformanceJson() { return readPublicPerformanceJson; },
-    get stableHash() { return stableHash; },
-    get uniquePublicPerformanceRows() { return uniquePublicPerformanceRows; },
-    get writeAuditLogOnce() { return writeAuditLogOnce; }
-  });
-  return serverDtnService.instance;
-}
 
-/* extracted-function: functions/server-dtn-service.js#dtnSeasonService */
+
+/* extracted-function: functions/backend/server-dtn-service/dtn-season-service.js#dtnSeasonService */
 function dtnSeasonService() {
-  return serverDtnService().dtnSeasonService(...arguments);
+  return $serverDtnService_dtnSeasonService().dtnSeasonService(...arguments);
 }
 
 const DTN_SEASON_OPTIONS = ENVIRONMENT.sportingDataSource === "nap" ? {
   ...CALLABLE_OPTIONS, secrets: ["LIVEPALMES_NAP_PASSWORD"], timeoutSeconds: 540, memory: "1GiB", maxInstances: 2, concurrency: 4
 } : CALLABLE_OPTIONS;
-/* extracted-function: functions/server-dtn-service.js#invokeDtnSeason */
+/* extracted-function: functions/backend/server-dtn-service/invoke-dtn-season.js#invokeDtnSeason */
 async function invokeDtnSeason(input0, input1) {
-  return serverDtnService().invokeDtnSeason(...arguments);
+  return $serverDtnService_invokeDtnSeason().invokeDtnSeason(...arguments);
 }
-exports.getDtnSeasons = onCall(DTN_SEASON_OPTIONS, /* extracted-handler: functions/portal-performance-handlers.js#getDtnSeasons#expression */ (request) => {
-  return portalPerformanceHandlers().getDtnSeasons(request);
+exports.getDtnSeasons = onCall(DTN_SEASON_OPTIONS, /* extracted-handler: functions/backend/portal-performance-handlers/get-dtn-seasons.js#getDtnSeasons#expression */ (request) => {
+  return $portalPerformanceHandlers_getDtnSeasons().getDtnSeasons(request);
 });
-exports.updateDtnSeason = onCall(DTN_SEASON_OPTIONS, /* extracted-handler: functions/portal-performance-handlers.js#updateDtnSeason#expression */ (request) => {
-  return portalPerformanceHandlers().updateDtnSeason(request);
+exports.updateDtnSeason = onCall(DTN_SEASON_OPTIONS, /* extracted-handler: functions/backend/portal-performance-handlers/update-dtn-season.js#updateDtnSeason#expression */ (request) => {
+  return $portalPerformanceHandlers_updateDtnSeason().updateDtnSeason(request);
 });
-exports.getDtnSeasonOverview = onCall(DTN_SEASON_OPTIONS, /* extracted-handler: functions/portal-performance-handlers.js#getDtnSeasonOverview#expression */ (request) => {
-  return portalPerformanceHandlers().getDtnSeasonOverview(request);
+exports.getDtnSeasonOverview = onCall(DTN_SEASON_OPTIONS, /* extracted-handler: functions/backend/portal-performance-handlers/get-dtn-season-overview.js#getDtnSeasonOverview#expression */ (request) => {
+  return $portalPerformanceHandlers_getDtnSeasonOverview().getDtnSeasonOverview(request);
 });
-exports.listDtnSeasonSources = onCall(DTN_SEASON_OPTIONS, /* extracted-handler: functions/portal-performance-handlers.js#listDtnSeasonSources#expression */ (request) => {
-  return portalPerformanceHandlers().listDtnSeasonSources(request);
+exports.listDtnSeasonSources = onCall(DTN_SEASON_OPTIONS, /* extracted-handler: functions/backend/portal-performance-handlers/list-dtn-season-sources.js#listDtnSeasonSources#expression */ (request) => {
+  return $portalPerformanceHandlers_listDtnSeasonSources().listDtnSeasonSources(request);
 });
 
-/* extracted-function: functions/server-dtn-service.js#dtnQualificationRow */
+/* extracted-function: functions/backend/server-dtn-service/best-dtn-qualification-rows.js#dtnQualificationRow */
 function dtnQualificationRow() {
-  return serverDtnService().dtnQualificationRow(...arguments);
+  return $serverDtnService_bestDtnQualificationRows().dtnQualificationRow(...arguments);
 }
 
-/* extracted-function: functions/server-dtn-service.js#bestDtnQualificationRows */
+/* extracted-function: functions/backend/server-dtn-service/best-dtn-qualification-rows.js#bestDtnQualificationRows */
 function bestDtnQualificationRows() {
-  return serverDtnService().bestDtnQualificationRows(...arguments);
+  return $serverDtnService_bestDtnQualificationRows().bestDtnQualificationRows(...arguments);
 }
 
-/* extracted-function: functions/server-dtn-service.js#nearDtnQualificationRows */
+/* extracted-function: functions/backend/server-dtn-service/best-dtn-qualification-rows.js#nearDtnQualificationRows */
 function nearDtnQualificationRows() {
-  return serverDtnService().nearDtnQualificationRows(...arguments);
+  return $serverDtnService_bestDtnQualificationRows().nearDtnQualificationRows(...arguments);
 }
 
-/* extracted-function: functions/server-dtn-service.js#dtnQualificationCacheStateRef */
+/* extracted-function: functions/backend/server-dtn-service/dtn-qualification-cache-state-ref.js#dtnQualificationCacheStateRef */
 function dtnQualificationCacheStateRef(input0) {
-  return serverDtnService().dtnQualificationCacheStateRef(...arguments);
+  return $serverDtnService_dtnQualificationCacheStateRef().dtnQualificationCacheStateRef(...arguments);
 }
 
-/* extracted-function: functions/server-dtn-service.js#dtnQualificationCacheRef */
+/* extracted-function: functions/backend/server-dtn-service/dtn-qualification-cache-ref.js#dtnQualificationCacheRef */
 function dtnQualificationCacheRef(input0, input1) {
-  return serverDtnService().dtnQualificationCacheRef(...arguments);
+  return $serverDtnService_dtnQualificationCacheRef().dtnQualificationCacheRef(...arguments);
 }
 
-/* extracted-function: functions/server-dtn-service.js#dtnListingCacheRef */
+/* extracted-function: functions/backend/server-dtn-service/dtn-listing-cache-ref.js#dtnListingCacheRef */
 function dtnListingCacheRef(input0) {
-  return serverDtnService().dtnListingCacheRef(...arguments);
+  return $serverDtnService_dtnListingCacheRef().dtnListingCacheRef(...arguments);
 }
 
-/* extracted-function: functions/server-dtn-service.js#dtnQualificationSeasonsForRows */
+/* extracted-function: functions/backend/server-dtn-service/dtn-qualification-seasons-for-rows.js#dtnQualificationSeasonsForRows */
 function dtnQualificationSeasonsForRows() {
-  return serverDtnService().dtnQualificationSeasonsForRows(...arguments);
+  return $serverDtnService_dtnQualificationSeasonsForRows().dtnQualificationSeasonsForRows(...arguments);
 }
 
-/* extracted-function: functions/server-dtn-service.js#touchDtnQualificationCacheState */
+/* extracted-function: functions/backend/server-dtn-service/dtn-qualification-seasons-for-rows.js#touchDtnQualificationCacheState */
 async function touchDtnQualificationCacheState() {
-  return serverDtnService().touchDtnQualificationCacheState(...arguments);
+  return $serverDtnService_dtnQualificationSeasonsForRows().touchDtnQualificationCacheState(...arguments);
 }
 
-/* extracted-function: functions/server-dtn-service.js#dtnQualificationCacheFingerprint */
+/* extracted-function: functions/backend/server-dtn-service/dtn-qualification-cache-fingerprint.js#dtnQualificationCacheFingerprint */
 function dtnQualificationCacheFingerprint(input0) {
-  return serverDtnService().dtnQualificationCacheFingerprint(...arguments);
+  return $serverDtnService_dtnQualificationCacheFingerprint().dtnQualificationCacheFingerprint(...arguments);
 }
 
-/* extracted-function: functions/server-dtn-service.js#dtnQualificationRowsForStandard */
+/* extracted-function: functions/backend/server-dtn-service/best-dtn-qualification-rows.js#dtnQualificationRowsForStandard */
 function dtnQualificationRowsForStandard() {
-  return serverDtnService().dtnQualificationRowsForStandard(...arguments);
+  return $serverDtnService_bestDtnQualificationRows().dtnQualificationRowsForStandard(...arguments);
 }
 
-/* extracted-function: functions/server-dtn-service.js#dtnListingCacheFingerprint */
+/* extracted-function: functions/backend/server-dtn-service/dtn-listing-cache-fingerprint.js#dtnListingCacheFingerprint */
 function dtnListingCacheFingerprint(input0) {
-  return serverDtnService().dtnListingCacheFingerprint(...arguments);
+  return $serverDtnService_dtnListingCacheFingerprint().dtnListingCacheFingerprint(...arguments);
 }
 
-/* extracted-function: functions/server-dtn-service.js#emptyDtnQualificationPayload */
+/* extracted-function: functions/backend/server-dtn-service/dtn-qualification-cache-fingerprint.js#emptyDtnQualificationPayload */
 function emptyDtnQualificationPayload(input0) {
-  return serverDtnService().emptyDtnQualificationPayload(...arguments);
+  return $serverDtnService_dtnQualificationCacheFingerprint().emptyDtnQualificationPayload(...arguments);
 }
 
-/* extracted-function: functions/server-dtn-service.js#buildDtnQualificationPayload */
+/* extracted-function: functions/backend/server-dtn-service/best-dtn-qualification-rows.js#buildDtnQualificationPayload */
 async function buildDtnQualificationPayload(input0) {
-  return serverDtnService().buildDtnQualificationPayload(...arguments);
+  return $serverDtnService_bestDtnQualificationRows().buildDtnQualificationPayload(...arguments);
 }
 
-/* extracted-function: functions/server-dtn-service.js#emptyDtnListingPayload */
+/* extracted-function: functions/backend/server-dtn-service/dtn-listing-cache-fingerprint.js#emptyDtnListingPayload */
 function emptyDtnListingPayload(input0) {
-  return serverDtnService().emptyDtnListingPayload(...arguments);
+  return $serverDtnService_dtnListingCacheFingerprint().emptyDtnListingPayload(...arguments);
 }
 
-/* extracted-function: functions/server-dtn-service.js#isDtnElectronicFiftyMeterPerformance */
+/* extracted-function: functions/backend/server-dtn-service/best-dtn-qualification-rows.js#isDtnElectronicFiftyMeterPerformance */
 function isDtnElectronicFiftyMeterPerformance() {
-  return serverDtnService().isDtnElectronicFiftyMeterPerformance(...arguments);
+  return $serverDtnService_bestDtnQualificationRows().isDtnElectronicFiftyMeterPerformance(...arguments);
 }
 
-/* extracted-function: functions/server-dtn-service.js#dtnListingAthletes */
+/* extracted-function: functions/backend/server-dtn-service/best-dtn-qualification-rows.js#dtnListingAthletes */
 function dtnListingAthletes() {
-  return serverDtnService().dtnListingAthletes(...arguments);
+  return $serverDtnService_bestDtnQualificationRows().dtnListingAthletes(...arguments);
 }
 
-/* extracted-function: functions/server-dtn-service.js#buildDtnListingPayload */
+/* extracted-function: functions/backend/server-dtn-service/best-dtn-qualification-rows.js#buildDtnListingPayload */
 async function buildDtnListingPayload(input0) {
-  return serverDtnService().buildDtnListingPayload(...arguments);
+  return $serverDtnService_bestDtnQualificationRows().buildDtnListingPayload(...arguments);
 }
 
-/* extracted-function: functions/server-dtn-service.js#enqueueDtnQualificationJob */
+/* extracted-function: functions/backend/server-dtn-service/enqueue-dtn-qualification-job.js#enqueueDtnQualificationJob */
 async function enqueueDtnQualificationJob() {
-  return serverDtnService().enqueueDtnQualificationJob(...arguments);
+  return $serverDtnService_enqueueDtnQualificationJob().enqueueDtnQualificationJob(...arguments);
 }
 
 exports.buildDtnQualificationView = onDocumentCreated(DTN_QUALIFICATION_JOB_OPTIONS, async (event) => {
@@ -7851,9 +11279,9 @@ exports.getDtnQualificationOverview = onCall(CALLABLE_OPTIONS, async (request) =
   };
 });
 
-/* extracted-function: functions/server-dtn-service.js#normalizeDtnListingRules */
+/* extracted-function: functions/backend/server-dtn-service/dtn-listing-cache-fingerprint.js#normalizeDtnListingRules */
 function normalizeDtnListingRules() {
-  return serverDtnService().normalizeDtnListingRules(...arguments);
+  return $serverDtnService_dtnListingCacheFingerprint().normalizeDtnListingRules(...arguments);
 }
 
 exports.refreshDtnListingCache = onCall(CALLABLE_OPTIONS, async (request) => {
@@ -7940,123 +11368,71 @@ exports.getDtnListingOverview = onCall(CALLABLE_OPTIONS, async (request) => {
   };
 });
 
-/* extracted-function: functions/server-dtn-service.js#normalizePerformanceSearchText */
+/* extracted-function: functions/backend/server-dtn-service/normalize-performance-search-text.js#normalizePerformanceSearchText */
 function normalizePerformanceSearchText(input0) {
-  return serverDtnService().normalizePerformanceSearchText(...arguments);
+  return $serverDtnService_normalizePerformanceSearchText().normalizePerformanceSearchText(...arguments);
 }
 
-/* extracted-function: functions/server-dtn-service.js#performanceSearchTokens */
+/* extracted-function: functions/backend/server-dtn-service/performance-search-tokens.js#performanceSearchTokens */
 function performanceSearchTokens(input0) {
-  return serverDtnService().performanceSearchTokens(...arguments);
+  return $serverDtnService_performanceSearchTokens().performanceSearchTokens(...arguments);
 }
 
-/* extracted-function: functions/server-dtn-service.js#performanceSearchPrefixes */
+/* extracted-function: functions/backend/server-dtn-service/performance-search-prefixes.js#performanceSearchPrefixes */
 function performanceSearchPrefixes(input0) {
-  return serverDtnService().performanceSearchPrefixes(...arguments);
+  return $serverDtnService_performanceSearchPrefixes().performanceSearchPrefixes(...arguments);
 }
 
-/* extracted-function: functions/server-dtn-service.js#performanceSwimmerIndexKey */
+/* extracted-function: functions/backend/server-dtn-service/performance-swimmer-index-key.js#performanceSwimmerIndexKey */
 function performanceSwimmerIndexKey() {
-  return serverDtnService().performanceSwimmerIndexKey(...arguments);
+  return $serverDtnService_performanceSwimmerIndexKey().performanceSwimmerIndexKey(...arguments);
 }
 
-/* extracted-function: functions/server-dtn-service.js#performanceSwimmerIndexDocId */
+/* extracted-function: functions/backend/server-dtn-service/performance-swimmer-index-doc-id.js#performanceSwimmerIndexDocId */
 function performanceSwimmerIndexDocId() {
-  return serverDtnService().performanceSwimmerIndexDocId(...arguments);
+  return $serverDtnService_performanceSwimmerIndexDocId().performanceSwimmerIndexDocId(...arguments);
 }
 
-function serverLegacyService() {
-  if (!serverLegacyService.instance) serverLegacyService.instance = require("./server-legacy-service").createLegacyService({
-    get ADMIN_UIDS() { return ADMIN_UIDS; },
-    get ENGAGEMENT_SWIMMER_CORRECTION_MAX_PERFORMANCE_ROWS() { return ENGAGEMENT_SWIMMER_CORRECTION_MAX_PERFORMANCE_ROWS; },
-    get ENVIRONMENT() { return ENVIRONMENT; },
-    get FieldValue() { return FieldValue; },
-    get HttpsError() { return HttpsError; },
-    get MAX_COMPETITION_IMPORT_PERFORMANCES() { return MAX_COMPETITION_IMPORT_PERFORMANCES; },
-    get PERFORMANCE_BASE_CHANGES_COLLECTION() { return PERFORMANCE_BASE_CHANGES_COLLECTION; },
-    get PERFORMANCE_BASE_COLLECTION() { return PERFORMANCE_BASE_COLLECTION; },
-    get PERFORMANCE_BASE_MIGRATION_BATCH_SIZE() { return PERFORMANCE_BASE_MIGRATION_BATCH_SIZE; },
-    get PERFORMANCE_BASE_MIGRATION_COLLECTION() { return PERFORMANCE_BASE_MIGRATION_COLLECTION; },
-    get PERFORMANCE_PUBLICATION_JOBS_COLLECTION() { return PERFORMANCE_PUBLICATION_JOBS_COLLECTION; },
-    get PERFORMANCE_PUBLICATION_LEASE_MS() { return PERFORMANCE_PUBLICATION_LEASE_MS; },
-    get PERFORMANCE_PUBLICATION_MAX_ATTEMPTS() { return PERFORMANCE_PUBLICATION_MAX_ATTEMPTS; },
-    get PERFORMANCE_PUBLIC_DATA_URL() { return PERFORMANCE_PUBLIC_DATA_URL; },
-    get PERFORMANCE_SWIMMERS_COLLECTION() { return PERFORMANCE_SWIMMERS_COLLECTION; },
-    get PERFORMANCE_SWIMMER_PAGES_COLLECTION() { return PERFORMANCE_SWIMMER_PAGES_COLLECTION; },
-    get PERFORMANCE_SWIMMER_PAGE_SIZE() { return PERFORMANCE_SWIMMER_PAGE_SIZE; },
-    get PUBLIC_ADDITIONAL_PERFORMANCE_PATH() { return PUBLIC_ADDITIONAL_PERFORMANCE_PATH; },
-    get PUBLIC_ADDITIONAL_PERFORMANCE_TOKEN() { return PUBLIC_ADDITIONAL_PERFORMANCE_TOKEN; },
-    get PUBLIC_PERFORMANCE_BUCKET() { return PUBLIC_PERFORMANCE_BUCKET; },
-    get assertCapability() { return assertCapability; },
-    get canClaimPerformancePublicationJob() { return canClaimPerformancePublicationJob; },
-    get cleanFirestoreValue() { return cleanFirestoreValue; },
-    get cleanText() { return cleanText; },
-    get competitionImportPublicSnapshotSummary() { return competitionImportPublicSnapshotSummary; },
-    get db() { return db; },
-    get deactivatedImportPerformanceRows() { return deactivatedImportPerformanceRows; },
-    get invalidateEngagementEntryTimeCachesForPerformanceRows() { return invalidateEngagementEntryTimeCachesForPerformanceRows; },
-    get normalizeLivePalmesImportPerformances() { return normalizeLivePalmesImportPerformances; },
-    get normalizePerformanceSearchText() { return normalizePerformanceSearchText; },
-    get performanceBaseDocId() { return performanceBaseDocId; },
-    get performancePublicKey() { return performancePublicKey; },
-    get performancePublicationFailureStatus() { return performancePublicationFailureStatus; },
-    get performanceSearchPrefixes() { return performanceSearchPrefixes; },
-    get performanceSwimmerIndexKey() { return performanceSwimmerIndexKey; },
-    get publicPerformanceBaseRow() { return publicPerformanceBaseRow; },
-    get publicPerformancePublicationJob() { return publicPerformancePublicationJob; },
-    get publicPerformanceSwimmerFilePath() { return publicPerformanceSwimmerFilePath; },
-    get readPublicPerformanceJson() { return readPublicPerformanceJson; },
-    get rebuildPublicPerformanceFilesForAffectedRows() { return rebuildPublicPerformanceFilesForAffectedRows; },
-    get sameCompetitionImport() { return sameCompetitionImport; },
-    get stableHash() { return stableHash; },
-    get storage() { return storage; },
-    get touchDtnQualificationCacheState() { return touchDtnQualificationCacheState; },
-    get uniquePublicPerformanceRows() { return uniquePublicPerformanceRows; },
-    get writeAuditLog() { return writeAuditLog; },
-    get writeAuditLogOnce() { return writeAuditLogOnce; },
-    get writePerformanceBaseRows() { return writePerformanceBaseRows; }
-  });
-  return serverLegacyService.instance;
-}
 
-/* extracted-function: functions/server-legacy-service.js#swimmerDisplayNameFromRow */
+
+/* extracted-function: functions/backend/server-legacy-service/aggregate-swimmer-index-rows.js#swimmerDisplayNameFromRow */
 function swimmerDisplayNameFromRow() {
-  return serverLegacyService().swimmerDisplayNameFromRow(...arguments);
+  return $serverLegacyService_aggregateSwimmerIndexRows().swimmerDisplayNameFromRow(...arguments);
 }
 
-/* extracted-function: functions/server-legacy-service.js#aggregateSwimmerIndexRows */
+/* extracted-function: functions/backend/server-legacy-service/aggregate-swimmer-index-rows.js#aggregateSwimmerIndexRows */
 function aggregateSwimmerIndexRows() {
-  return serverLegacyService().aggregateSwimmerIndexRows(...arguments);
+  return $serverLegacyService_aggregateSwimmerIndexRows().aggregateSwimmerIndexRows(...arguments);
 }
 
-/* extracted-function: functions/server-legacy-service.js#writePerformanceSwimmerIndexRows */
+/* extracted-function: functions/backend/server-legacy-service/aggregate-swimmer-index-rows.js#writePerformanceSwimmerIndexRows */
 async function writePerformanceSwimmerIndexRows() {
-  return serverLegacyService().writePerformanceSwimmerIndexRows(...arguments);
+  return $serverLegacyService_aggregateSwimmerIndexRows().writePerformanceSwimmerIndexRows(...arguments);
 }
 
-/* extracted-function: functions/server-legacy-service.js#performanceSwimmerPageId */
+/* extracted-function: functions/backend/server-legacy-service/performance-swimmer-page-id.js#performanceSwimmerPageId */
 function performanceSwimmerPageId(input0, input1) {
-  return serverLegacyService().performanceSwimmerPageId(...arguments);
+  return $serverLegacyService_performanceSwimmerPageId().performanceSwimmerPageId(...arguments);
 }
 
-/* extracted-function: functions/server-legacy-service.js#sortSwimmerPerformanceRows */
+/* extracted-function: functions/backend/server-legacy-service/aggregate-swimmer-index-rows.js#sortSwimmerPerformanceRows */
 function sortSwimmerPerformanceRows() {
-  return serverLegacyService().sortSwimmerPerformanceRows(...arguments);
+  return $serverLegacyService_aggregateSwimmerIndexRows().sortSwimmerPerformanceRows(...arguments);
 }
 
-/* extracted-function: functions/server-legacy-service.js#writePerformanceSwimmerPageRows */
+/* extracted-function: functions/backend/server-legacy-service/aggregate-swimmer-index-rows.js#writePerformanceSwimmerPageRows */
 async function writePerformanceSwimmerPageRows() {
-  return serverLegacyService().writePerformanceSwimmerPageRows(...arguments);
+  return $serverLegacyService_aggregateSwimmerIndexRows().writePerformanceSwimmerPageRows(...arguments);
 }
 
-/* extracted-function: functions/server-legacy-service.js#hydratePerformanceBaseRows */
+/* extracted-function: functions/backend/server-legacy-service/get-performance-base-rows-by-swimmer.js#hydratePerformanceBaseRows */
 async function hydratePerformanceBaseRows() {
-  return serverLegacyService().hydratePerformanceBaseRows(...arguments);
+  return $serverLegacyService_getPerformanceBaseRowsBySwimmer().hydratePerformanceBaseRows(...arguments);
 }
 
-/* extracted-function: functions/server-legacy-service.js#getPerformanceBaseRowsBySwimmer */
+/* extracted-function: functions/backend/server-legacy-service/get-performance-base-rows-by-swimmer.js#getPerformanceBaseRowsBySwimmer */
 async function getPerformanceBaseRowsBySwimmer() {
-  return serverLegacyService().getPerformanceBaseRowsBySwimmer(...arguments);
+  return $serverLegacyService_getPerformanceBaseRowsBySwimmer().getPerformanceBaseRowsBySwimmer(...arguments);
 }
 
 exports.rebuildPerformanceSwimmerIndexNextPage = onCall(PUBLIC_PERFORMANCE_CALLABLE_OPTIONS, async (request) => {
@@ -8162,74 +11538,74 @@ exports.rebuildPerformanceTopIndexNextPage = onCall(PUBLIC_PERFORMANCE_CALLABLE_
   };
 });
 
-/* extracted-function: functions/server-legacy-service.js#normalizedImportPerformances */
+/* extracted-function: functions/backend/server-legacy-service/normalized-import-performances.js#normalizedImportPerformances */
 async function normalizedImportPerformances(input0) {
-  return serverLegacyService().normalizedImportPerformances(...arguments);
+  return $serverLegacyService_normalizedImportPerformances().normalizedImportPerformances(...arguments);
 }
 
-/* extracted-function: functions/server-legacy-service.js#syncImportToPerformanceBase */
+/* extracted-function: functions/backend/server-legacy-service/normalized-import-performances.js#syncImportToPerformanceBase */
 async function syncImportToPerformanceBase(input0) {
-  return serverLegacyService().syncImportToPerformanceBase(...arguments);
+  return $serverLegacyService_normalizedImportPerformances().syncImportToPerformanceBase(...arguments);
 }
 
-/* extracted-function: functions/server-legacy-service.js#buildAdditionalPerformanceSwimmers */
+/* extracted-function: functions/backend/server-legacy-service/additional-performance-file.js#buildAdditionalPerformanceSwimmers */
 function buildAdditionalPerformanceSwimmers() {
-  return serverLegacyService().buildAdditionalPerformanceSwimmers(...arguments);
+  return $serverLegacyService_additionalPerformanceFile().buildAdditionalPerformanceSwimmers(...arguments);
 }
 
-/* extracted-function: functions/server-legacy-service.js#emptyAdditionalPerformanceDataSnapshot */
+/* extracted-function: functions/backend/server-legacy-service/additional-performance-file.js#emptyAdditionalPerformanceDataSnapshot */
 function emptyAdditionalPerformanceDataSnapshot() {
-  return serverLegacyService().emptyAdditionalPerformanceDataSnapshot(...arguments);
+  return $serverLegacyService_additionalPerformanceFile().emptyAdditionalPerformanceDataSnapshot(...arguments);
 }
 
-/* extracted-function: functions/server-legacy-service.js#normalizeAdditionalPerformanceDataSnapshot */
+/* extracted-function: functions/backend/server-legacy-service/additional-performance-file.js#normalizeAdditionalPerformanceDataSnapshot */
 function normalizeAdditionalPerformanceDataSnapshot() {
-  return serverLegacyService().normalizeAdditionalPerformanceDataSnapshot(...arguments);
+  return $serverLegacyService_additionalPerformanceFile().normalizeAdditionalPerformanceDataSnapshot(...arguments);
 }
 
-/* extracted-function: functions/server-legacy-service.js#additionalPerformanceFile */
+/* extracted-function: functions/backend/server-legacy-service/additional-performance-file.js#additionalPerformanceFile */
 function additionalPerformanceFile() {
-  return serverLegacyService().additionalPerformanceFile(...arguments);
+  return $serverLegacyService_additionalPerformanceFile().additionalPerformanceFile(...arguments);
 }
 
-/* extracted-function: functions/server-legacy-service.js#readPublishedAdditionalPerformanceDataSnapshot */
+/* extracted-function: functions/backend/server-legacy-service/additional-performance-file.js#readPublishedAdditionalPerformanceDataSnapshot */
 async function readPublishedAdditionalPerformanceDataSnapshot() {
-  return serverLegacyService().readPublishedAdditionalPerformanceDataSnapshot(...arguments);
+  return $serverLegacyService_additionalPerformanceFile().readPublishedAdditionalPerformanceDataSnapshot(...arguments);
 }
 
-/* extracted-function: functions/server-legacy-service.js#additionalPerformanceRowKey */
+/* extracted-function: functions/backend/server-legacy-service/additional-performance-row-key.js#additionalPerformanceRowKey */
 function additionalPerformanceRowKey() {
-  return serverLegacyService().additionalPerformanceRowKey(...arguments);
+  return $serverLegacyService_additionalPerformanceRowKey().additionalPerformanceRowKey(...arguments);
 }
 
-/* extracted-function: functions/server-legacy-service.js#mergeAdditionalPerformanceRows */
+/* extracted-function: functions/backend/server-legacy-service/additional-performance-row-key.js#mergeAdditionalPerformanceRows */
 function mergeAdditionalPerformanceRows() {
-  return serverLegacyService().mergeAdditionalPerformanceRows(...arguments);
+  return $serverLegacyService_additionalPerformanceRowKey().mergeAdditionalPerformanceRows(...arguments);
 }
 
-/* extracted-function: functions/server-legacy-service.js#upsertAdditionalCorrection */
+/* extracted-function: functions/backend/server-legacy-service/claim-performance-publication-job.js#upsertAdditionalCorrection */
 function upsertAdditionalCorrection() {
-  return serverLegacyService().upsertAdditionalCorrection(...arguments);
+  return $serverLegacyService_claimPerformancePublicationJob().upsertAdditionalCorrection(...arguments);
 }
 
-/* extracted-function: functions/server-legacy-service.js#saveAdditionalPerformanceDataSnapshot */
+/* extracted-function: functions/backend/server-legacy-service/save-additional-performance-data-snapshot.js#saveAdditionalPerformanceDataSnapshot */
 async function saveAdditionalPerformanceDataSnapshot() {
-  return serverLegacyService().saveAdditionalPerformanceDataSnapshot(...arguments);
+  return $serverLegacyService_saveAdditionalPerformanceDataSnapshot().saveAdditionalPerformanceDataSnapshot(...arguments);
 }
 
-/* extracted-function: functions/server-legacy-service.js#publishIncrementalPerformanceImport */
+/* extracted-function: functions/backend/server-legacy-service/publish-incremental-performance-import.js#publishIncrementalPerformanceImport */
 async function publishIncrementalPerformanceImport() {
-  return serverLegacyService().publishIncrementalPerformanceImport(...arguments);
+  return $serverLegacyService_publishIncrementalPerformanceImport().publishIncrementalPerformanceImport(...arguments);
 }
 
-/* extracted-function: functions/server-legacy-service.js#publishIncrementalPerformanceCorrection */
+/* extracted-function: functions/backend/server-legacy-service/claim-performance-publication-job.js#publishIncrementalPerformanceCorrection */
 async function publishIncrementalPerformanceCorrection() {
-  return serverLegacyService().publishIncrementalPerformanceCorrection(...arguments);
+  return $serverLegacyService_claimPerformancePublicationJob().publishIncrementalPerformanceCorrection(...arguments);
 }
 
-/* extracted-function: functions/server-legacy-service.js#publicPerformanceFilesBucket */
+/* extracted-function: functions/backend/server-legacy-service/public-performance-files-bucket.js#publicPerformanceFilesBucket */
 function publicPerformanceFilesBucket() {
-  return serverLegacyService().publicPerformanceFilesBucket(...arguments);
+  return $serverLegacyService_publicPerformanceFilesBucket().publicPerformanceFilesBucket(...arguments);
 }
 
 function legacyPerformancePublication() {
@@ -8439,19 +11815,19 @@ async function rebuildPublicPerformanceFilesForAffectedRows() {
   return legacyPerformancePublication().rebuildPublicPerformanceFilesForAffectedRows(...arguments);
 }
 
-/* extracted-function: functions/server-legacy-service.js#performanceBaseMigrationManifest */
+/* extracted-function: functions/backend/server-legacy-service/migration-chunk-statuses.js#performanceBaseMigrationManifest */
 async function performanceBaseMigrationManifest() {
-  return serverLegacyService().performanceBaseMigrationManifest(...arguments);
+  return $serverLegacyService_migrationChunkStatuses().performanceBaseMigrationManifest(...arguments);
 }
 
-/* extracted-function: functions/server-legacy-service.js#migrationChunkStatuses */
+/* extracted-function: functions/backend/server-legacy-service/migration-chunk-statuses.js#migrationChunkStatuses */
 async function migrationChunkStatuses() {
-  return serverLegacyService().migrationChunkStatuses(...arguments);
+  return $serverLegacyService_migrationChunkStatuses().migrationChunkStatuses(...arguments);
 }
 
-/* extracted-function: functions/server-legacy-service.js#historicalRowsFromChunkPayload */
+/* extracted-function: functions/backend/server-legacy-service/historical-rows-from-chunk-payload.js#historicalRowsFromChunkPayload */
 function historicalRowsFromChunkPayload() {
-  return serverLegacyService().historicalRowsFromChunkPayload(...arguments);
+  return $serverLegacyService_historicalRowsFromChunkPayload().historicalRowsFromChunkPayload(...arguments);
 }
 
 exports.importHistoricalPerformanceRows = onCall(MIGRATION_CALLABLE_OPTIONS, async (request) => {
@@ -8496,19 +11872,19 @@ exports.importHistoricalPerformanceRows = onCall(MIGRATION_CALLABLE_OPTIONS, asy
   };
 });
 
-/* extracted-function: functions/server-legacy-service.js#migrateHistoricalPerformanceBaseChunk */
+/* extracted-function: functions/backend/server-legacy-service/migrate-historical-performance-base-chunk.js#migrateHistoricalPerformanceBaseChunk */
 async function migrateHistoricalPerformanceBaseChunk(input0, input1) {
-  return serverLegacyService().migrateHistoricalPerformanceBaseChunk(...arguments);
+  return $serverLegacyService_migrateHistoricalPerformanceBaseChunk().migrateHistoricalPerformanceBaseChunk(...arguments);
 }
 
-/* extracted-function: functions/server-legacy-service.js#buildAdditionalPerformanceDataSnapshot */
+/* extracted-function: functions/backend/server-legacy-service/build-additional-performance-data-snapshot.js#buildAdditionalPerformanceDataSnapshot */
 async function buildAdditionalPerformanceDataSnapshot() {
-  return serverLegacyService().buildAdditionalPerformanceDataSnapshot(...arguments);
+  return $serverLegacyService_buildAdditionalPerformanceDataSnapshot().buildAdditionalPerformanceDataSnapshot(...arguments);
 }
 
-/* extracted-function: functions/server-legacy-service.js#publishAdditionalPerformanceDataSnapshot */
+/* extracted-function: functions/backend/server-legacy-service/publish-additional-performance-data-snapshot.js#publishAdditionalPerformanceDataSnapshot */
 async function publishAdditionalPerformanceDataSnapshot() {
-  return serverLegacyService().publishAdditionalPerformanceDataSnapshot(...arguments);
+  return $serverLegacyService_publishAdditionalPerformanceDataSnapshot().publishAdditionalPerformanceDataSnapshot(...arguments);
 }
 
 exports.exportAdditionalPerformanceData = onCall(CALLABLE_OPTIONS, async (request) => {
@@ -8581,34 +11957,34 @@ exports.migratePerformanceBaseNextChunk = onCall(MIGRATION_CALLABLE_OPTIONS, asy
   };
 });
 
-/* extracted-function: functions/server-legacy-service.js#enqueuePerformancePublicationJob */
+/* extracted-function: functions/backend/server-legacy-service/enqueue-performance-publication-job.js#enqueuePerformancePublicationJob */
 async function enqueuePerformancePublicationJob() {
-  return serverLegacyService().enqueuePerformancePublicationJob(...arguments);
+  return $serverLegacyService_enqueuePerformancePublicationJob().enqueuePerformancePublicationJob(...arguments);
 }
 
-/* extracted-function: functions/server-legacy-service.js#claimPerformancePublicationJob */
+/* extracted-function: functions/backend/server-legacy-service/claim-performance-publication-job.js#claimPerformancePublicationJob */
 async function claimPerformancePublicationJob(input0) {
-  return serverLegacyService().claimPerformancePublicationJob(...arguments);
+  return $serverLegacyService_claimPerformancePublicationJob().claimPerformancePublicationJob(...arguments);
 }
 
-/* extracted-function: functions/server-legacy-service.js#replacementImportRows */
+/* extracted-function: functions/backend/server-legacy-service/claim-performance-publication-job.js#replacementImportRows */
 async function replacementImportRows() {
-  return serverLegacyService().replacementImportRows(...arguments);
+  return $serverLegacyService_claimPerformancePublicationJob().replacementImportRows(...arguments);
 }
 
-/* extracted-function: functions/server-legacy-service.js#deactivateReplacedPerformanceBaseRows */
+/* extracted-function: functions/backend/server-legacy-service/claim-performance-publication-job.js#deactivateReplacedPerformanceBaseRows */
 async function deactivateReplacedPerformanceBaseRows() {
-  return serverLegacyService().deactivateReplacedPerformanceBaseRows(...arguments);
+  return $serverLegacyService_claimPerformancePublicationJob().deactivateReplacedPerformanceBaseRows(...arguments);
 }
 
-/* extracted-function: functions/server-legacy-service.js#processPerformanceImportReplacementJob */
+/* extracted-function: functions/backend/server-legacy-service/claim-performance-publication-job.js#processPerformanceImportReplacementJob */
 async function processPerformanceImportReplacementJob(input0) {
-  return serverLegacyService().processPerformanceImportReplacementJob(...arguments);
+  return $serverLegacyService_claimPerformancePublicationJob().processPerformanceImportReplacementJob(...arguments);
 }
 
-/* extracted-function: functions/server-legacy-service.js#processPerformancePublicationJob */
+/* extracted-function: functions/backend/server-legacy-service/claim-performance-publication-job.js#processPerformancePublicationJob */
 async function processPerformancePublicationJob(input0) {
-  return serverLegacyService().processPerformancePublicationJob(...arguments);
+  return $serverLegacyService_claimPerformancePublicationJob().processPerformancePublicationJob(...arguments);
 }
 
 exports.publishPerformanceCorrectionJob = onDocumentCreated(PERFORMANCE_PUBLICATION_JOB_OPTIONS, async (event) => {
@@ -8686,31 +12062,31 @@ exports.retryPerformancePublicationJob = onCall(CALLABLE_OPTIONS, async (request
 });
 
 // RF/MPF: existing records capability, native versioned snapshot, no mail or TOP rebuild.
-/* extracted-function: functions/server-legacy-service.js#authorizeNapRecords */
+/* extracted-function: functions/backend/server-legacy-service/authorize-nap-records.js#authorizeNapRecords */
 function authorizeNapRecords(input0) {
-  return serverLegacyService().authorizeNapRecords(...arguments);
+  return $serverLegacyService_authorizeNapRecords().authorizeNapRecords(...arguments);
 }
-/* extracted-function: functions/server-legacy-service.js#readNapRecordsAdministration */
+/* extracted-function: functions/backend/server-legacy-service/read-nap-records-administration.js#readNapRecordsAdministration */
 async function readNapRecordsAdministration(input0) {
-  return serverLegacyService().readNapRecordsAdministration(...arguments);
+  return $serverLegacyService_readNapRecordsAdministration().readNapRecordsAdministration(...arguments);
 }
-/* extracted-function: functions/server-legacy-service.js#publishNativeRecords */
+/* extracted-function: functions/backend/server-legacy-service/publish-native-records.js#publishNativeRecords */
 async function publishNativeRecords(input0) {
-  return serverLegacyService().publishNativeRecords(...arguments);
+  return $serverLegacyService_publishNativeRecords().publishNativeRecords(...arguments);
 }
 
 const NAP_PERFORMANCE_OPTIONS={...CALLABLE_OPTIONS,...(ENVIRONMENT.sportingDataSource === "nap"?{secrets:[defineSecret("LIVEPALMES_NAP_PASSWORD")],maxInstances:2,concurrency:4}: {})};
-/* extracted-function: functions/server-legacy-service.js#authorizeNativePerformance */
+/* extracted-function: functions/backend/server-legacy-service/authorize-native-performance.js#authorizeNativePerformance */
 function authorizeNativePerformance(input0) {
-  return serverLegacyService().authorizeNativePerformance(...arguments);
+  return $serverLegacyService_authorizeNativePerformance().authorizeNativePerformance(...arguments);
 }
-/* extracted-function: functions/server-legacy-service.js#nativePerformanceFailure */
+/* extracted-function: functions/backend/server-legacy-service/native-performance-failure.js#nativePerformanceFailure */
 function nativePerformanceFailure(input0) {
-  return serverLegacyService().nativePerformanceFailure(...arguments);
+  return $serverLegacyService_nativePerformanceFailure().nativePerformanceFailure(...arguments);
 }
-exports.getNapPerformanceAdministration=onCall(NAP_PERFORMANCE_OPTIONS,/* extracted-handler: functions/portal-performance-handlers.js#getNapPerformanceAdministration#arrow */ async (request) => {
-  return portalPerformanceHandlers().getNapPerformanceAdministration(request);
+exports.getNapPerformanceAdministration=onCall(NAP_PERFORMANCE_OPTIONS,/* extracted-handler: functions/backend/portal-performance-handlers/get-nap-performance-administration.js#getNapPerformanceAdministration#arrow */ async (request) => {
+  return $portalPerformanceHandlers_getNapPerformanceAdministration().getNapPerformanceAdministration(request);
 });
-exports.savePerformanceCorrection = onCall(NAP_PERFORMANCE_OPTIONS, /* extracted-handler: functions/portal-performance-handlers.js#savePerformanceCorrection#arrow */ async (request) => {
-  return portalPerformanceHandlers().savePerformanceCorrection(request);
+exports.savePerformanceCorrection = onCall(NAP_PERFORMANCE_OPTIONS, /* extracted-handler: functions/backend/portal-performance-handlers/save-performance-correction.js#savePerformanceCorrection#arrow */ async (request) => {
+  return $portalPerformanceHandlers_savePerformanceCorrection().savePerformanceCorrection(request);
 });

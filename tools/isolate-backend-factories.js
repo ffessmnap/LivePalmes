@@ -29,6 +29,9 @@ function render(root, baseline, selected = null) {
   if (m.opaque.some(case_ => case_.reason !== "context escapes method")) throw Error("Unreviewed ambiguous binding");
   const factories = [...m.factories.values()], groups = [], byMethod = new Map();
   for (const f of factories) {
+    // Captured destructured parameters are an initialization contract, not live getters.
+    // Keep their singleton and API until a separate capture-preserving proof exists.
+    if (f.snapshotBindings.size) continue;
     const buckets = new Map();
     for (const name of f.methods.keys()) {
       const signature = m.consumers.get(f.accessor + ":" + name).join("|");
