@@ -82,6 +82,18 @@ function model(root, snapshot = null) {
           context.set(name, property.value); contextKinds.set(name, "value");
         } else throw Error("Unknown context binding: " + accessor + "." + name);
       }
+      const parameter = factory.params[0];
+      const snapshotBindings = new Map();
+      if (factory.params.length !== 1) throw Error("Unknown factory parameters: " + accessor);
+      if (parameter?.type === "ObjectPattern") {
+        for (const property of parameter.properties) {
+          if (property.type !== "Property" || property.computed || property.kind !== "init"
+              || property.value.type !== "Identifier" || !context.has(property.key.name))
+            throw Error("Unknown captured factory binding: " + accessor);
+          snapshotBindings.set(property.value.name, property.key.name);
+        }
+      } else if (parameter?.type !== "Identifier" || parameter.name !== "backendContext")
+        throw Error("Unknown live factory context: " + accessor);
       const methods = new Map(factory.body.body.filter(n => n.type === "FunctionDeclaration").map(n => [n.id.name, n]));
       const other = factory.body.body.filter(n => !["FunctionDeclaration", "ReturnStatement"].includes(n.type));
       if (other.length) warnings.push({ accessor, reason: "factory initialization requires separate review" });
@@ -90,7 +102,7 @@ function model(root, snapshot = null) {
           || returns[0].argument.properties.some(p => p.type !== "Property" || p.value.type !== "Identifier" || !methods.has(p.value.name)))
         throw Error("Unknown factory return: " + accessor);
       if (returns[0].argument.properties.length !== methods.size) throw Error("Unexposed private method: " + accessor);
-      factories.set(accessor, { accessor, node, file, text, factory, directives, context, contextKinds, contextSetters, methods, other,
+      factories.set(accessor, { accessor, node, file, text, factory, directives, context, contextKinds, contextSetters, snapshotBindings, methods, other,
         returnNames: returns[0].argument.properties.map(property => property.value.name) });
     });
   }
@@ -141,6 +153,8 @@ function model(root, snapshot = null) {
         result.add(id);
         if (recordIdentity && !(reference.parent?.type === "CallExpression" && reference.parent.callee === reference.node))
           identityPairs.push([owner + ":" + node.id.name, id]);
+      } else if (owner && factories.get(owner).snapshotBindings.has(name)) {
+        edges(factories.get(owner).context.get(factories.get(owner).snapshotBindings.get(name))).forEach(id => result.add(id));
       } else if (owner && name === "backendContext") {
         factories.get(owner).context.forEach(expression => edges(expression).forEach(id => result.add(id)));
         opaque.push({ owner, reason: "context escapes method" });

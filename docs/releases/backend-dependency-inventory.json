@@ -2140,6 +2140,7 @@
       "file": "functions/portal-account-handlers.js",
       "factory": "createAccountHandlers",
       "initializedStatements": 0,
+      "contextContract": "live-context",
       "methods": [
         {
           "name": "createOrUpdateAccessUser",
@@ -2163,6 +2164,7 @@
       "file": "functions/server-account-write-service.js",
       "factory": "createAccountWriteService",
       "initializedStatements": 0,
+      "contextContract": "live-context",
       "methods": [
         {
           "name": "userByEmailOrCreate",
@@ -2199,6 +2201,7 @@
       "file": "functions/server-directory-sync-service.js",
       "factory": "createDirectorySyncService",
       "initializedStatements": 0,
+      "contextContract": "live-context",
       "methods": [
         {
           "name": "syncAccessDirectorySnapshotFromUserChange",
@@ -2223,6 +2226,7 @@
       "file": "functions/portal-performance-handlers.js",
       "factory": "createPerformanceHandlers",
       "initializedStatements": 0,
+      "contextContract": "live-context",
       "methods": [
         {
           "name": "storeCompetitionPdf",
@@ -2467,6 +2471,7 @@
       "file": "functions/portal-access-handlers.js",
       "factory": "createAccessHandlers",
       "initializedStatements": 0,
+      "contextContract": "live-context",
       "methods": [
         {
           "name": "setRolePins",
@@ -2688,6 +2693,7 @@
       "file": "functions/portal-competition-handlers.js",
       "factory": "createCompetitionHandlers",
       "initializedStatements": 0,
+      "contextContract": "live-context",
       "methods": [
         {
           "name": "listEngagementAccessRequests",
@@ -3232,6 +3238,7 @@
       "file": "functions/portal-national-handlers.js",
       "factory": "createNationalHandlers",
       "initializedStatements": 0,
+      "contextContract": "live-context",
       "methods": [
         {
           "name": "getNationalFeaturedDocuments",
@@ -3562,6 +3569,7 @@
       "file": "functions/portal-club-handlers.js",
       "factory": "createClubHandlers",
       "initializedStatements": 0,
+      "contextContract": "live-context",
       "methods": [
         {
           "name": "getEngagementClubEntry",
@@ -4171,6 +4179,7 @@
       "file": "functions/server-access-service.js",
       "factory": "createAccessService",
       "initializedStatements": 0,
+      "contextContract": "live-context",
       "methods": [
         {
           "name": "portalReadStats",
@@ -6090,6 +6099,7 @@
       "file": "functions/competition-import-parser.js",
       "factory": "createCompetitionImportParser",
       "initializedStatements": 0,
+      "contextContract": "captured-parameters-preserved",
       "methods": [
         {
           "name": "cleanImportText",
@@ -6298,6 +6308,7 @@
       "file": "functions/server-import-service.js",
       "factory": "createImportService",
       "initializedStatements": 0,
+      "contextContract": "live-context",
       "methods": [
         {
           "name": "normalizeImportToken",
@@ -7576,6 +7587,7 @@
       "file": "functions/server-console-service.js",
       "factory": "createConsoleService",
       "initializedStatements": 0,
+      "contextContract": "live-context",
       "methods": [
         {
           "name": "recordFailedPinAttempt",
@@ -7642,6 +7654,7 @@
       "file": "functions/server-directory-service.js",
       "factory": "createDirectoryService",
       "initializedStatements": 0,
+      "contextContract": "live-context",
       "methods": [
         {
           "name": "cleanEngagementAccessRequestPayload",
@@ -7965,6 +7978,7 @@
       "file": "functions/server-competition-model-service.js",
       "factory": "createCompetitionModelService",
       "initializedStatements": 0,
+      "contextContract": "live-context",
       "methods": [
         {
           "name": "cleanIsoDate",
@@ -9039,6 +9053,7 @@
       "file": "functions/server-entry-model-service.js",
       "factory": "createEntryModelService",
       "initializedStatements": 0,
+      "contextContract": "live-context",
       "methods": [
         {
           "name": "cleanEngagementTeamLeader",
@@ -10524,6 +10539,7 @@
       "file": "functions/engagement-pdf-renderer.js",
       "factory": "createEngagementPdfRenderer",
       "initializedStatements": 0,
+      "contextContract": "captured-parameters-preserved",
       "methods": [
         {
           "name": "engagementPdfFormatDate",
@@ -11165,6 +11181,7 @@
       "file": "functions/server-documents-service.js",
       "factory": "createDocumentsService",
       "initializedStatements": 0,
+      "contextContract": "live-context",
       "methods": [
         {
           "name": "cleanEngagementDocumentMetadata",
@@ -11817,6 +11834,7 @@
       "file": "functions/server-mail-service.js",
       "factory": "createMailService",
       "initializedStatements": 0,
+      "contextContract": "live-context",
       "methods": [
         {
           "name": "engagementMailPreparedReason",
@@ -12634,6 +12652,7 @@
       "file": "functions/server-club-people-service.js",
       "factory": "createClubPeopleService",
       "initializedStatements": 0,
+      "contextContract": "live-context",
       "methods": [
         {
           "name": "cleanEngagementClubPerson",
@@ -13100,6 +13119,7 @@
       "file": "functions/server-competition-service.js",
       "factory": "createCompetitionService",
       "initializedStatements": 0,
+      "contextContract": "live-context",
       "methods": [
         {
           "name": "cleanEngagementCompetitionPayload",
@@ -13889,6 +13909,7 @@
       "file": "functions/engagement-competition-statistics.js",
       "factory": "createCompetitionStatistics",
       "initializedStatements": 0,
+      "contextContract": "captured-parameters-preserved",
       "methods": [
         {
           "name": "engagementCompetitionStatisticsItem",
@@ -13912,6 +13933,7 @@
       "file": "functions/server-national-service.js",
       "factory": "createNationalService",
       "initializedStatements": 0,
+      "contextContract": "live-context",
       "methods": [
         {
           "name": "importSwimmerCreation",
@@ -14499,6 +14521,7 @@
       "file": "functions/server-entry-service.js",
       "factory": "createEntryService",
       "initializedStatements": 0,
+      "contextContract": "live-context",
       "methods": [
         {
           "name": "buildEngagementClubSwimmersFromRequest",
@@ -14636,6 +14659,7 @@
       "file": "functions/server-performance-service.js",
       "factory": "createPerformanceService",
       "initializedStatements": 0,
+      "contextContract": "live-context",
       "methods": [
         {
           "name": "competitionImportPublicSnapshotSummary",
@@ -15052,6 +15076,7 @@
       "file": "functions/server-dtn-service.js",
       "factory": "createDtnService",
       "initializedStatements": 0,
+      "contextContract": "live-context",
       "methods": [
         {
           "name": "dtnSeasonService",
@@ -15454,6 +15479,7 @@
       "file": "functions/server-legacy-service.js",
       "factory": "createLegacyService",
       "initializedStatements": 0,
+      "contextContract": "live-context",
       "methods": [
         {
           "name": "swimmerDisplayNameFromRow",
@@ -16075,6 +16101,7 @@
       "file": "functions/legacy-performance-publication.js",
       "factory": "createLegacyPerformancePublication",
       "initializedStatements": 0,
+      "contextContract": "captured-parameters-preserved",
       "methods": [
         {
           "name": "publicPerformanceFilePath",
