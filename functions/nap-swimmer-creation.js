@@ -5,8 +5,9 @@ const {notMerged}=require("./nap-swimmer-merge-state");
 const {createHash}=require("node:crypto");
 const {isDeepStrictEqual}=require("node:util");
 const {planIdentityChange}=require("./nap-portal-swimmer-change");
-const {person}=require("./nap-portal-swimmers");
-const rules=require("./nap-performance-normalization");
+const { person } = require("./nap-swimmer-profile");
+const { normalizeIdentityText: __nativeMember0, swimmerIdentityKey: __nativeMember1 } = require("./nap-performance-identity");
+const rules={ normalizeIdentityText: __nativeMember0, swimmerIdentityKey: __nativeMember1 };
 const {likeLiteral}=require("./nap-direct-search");
 const {COLUMNS}=require("./nap-approved-swimmer-correction");
 function proposed(input) {

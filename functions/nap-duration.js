@@ -1,7 +1,8 @@
 "use strict";
 // Legacy NAP: hours + space + MMSSCC, sometimes without leading zeros.
 // Compare durations numerically without rewriting historical stored values.
-const pool=require("./nap-performance-normalization");
+const { parseCompactTime: __nativeMember0, formatTime: __nativeMember1 } = require("./nap-performance-time");
+const pool={ parseCompactTime: __nativeMember0, formatTime: __nativeMember1 };
 function parseCompactTime(value){
   const raw=String(value??"").trim(),match=/^(\d{1,2}) (\d{1,6})$/.exec(raw);
   if(!match)return pool.parseCompactTime(value);

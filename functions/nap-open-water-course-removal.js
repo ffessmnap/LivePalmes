@@ -5,8 +5,8 @@
 // two locked course reads (<=300), authority, one grouped DELETE, verification.
 const {isDeepStrictEqual}=require('node:util');
 const native=require('./nap-portal-competitions');
-const {fingerprint}=require('./nap-portal-workspaces');
-const {positiveId}=require('./nap-direct-calendar');
+const { fingerprint } = require("./nap-competition-fingerprint");
+const { positiveId } = require("./nap-calendar-values");
 const {operationHash,authorityGuard}=require('./nap-portal-competition-change');
 const {ENTRY_CHECKS}=require('./nap-course-removal');
 const READ='SELECT id,compet,pos,id_course,opencourse,cost,limitnageur FROM compet_courses WHERE compet=? ORDER BY pos,id LIMIT 301';

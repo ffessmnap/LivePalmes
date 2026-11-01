@@ -1,6 +1,6 @@
 "use strict";
 const {isDeepStrictEqual}=require("node:util");
-const {positiveId}=require("./nap-direct-calendar");
+const { positiveId } = require("./nap-calendar-values");
 const fields=["id","compet","categorie","club","course","tps"];
 const shape=(row,keys)=>Object.fromEntries(keys.map(key=>[key,row[key]]));
 // The generated relay identifier must have been durably checkpointed. An

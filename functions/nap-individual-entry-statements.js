@@ -2,7 +2,7 @@
 const {nativeEqual}=require("./nap-native-compare");
 // Statement preparation only; no writes are executed here. Three grouped
 // writes maximum regardless of the number of swimmers in the change.
-const {positiveId}=require("./nap-direct-calendar");
+const { positiveId } = require("./nap-calendar-values");
 const {entryAuthority,deadline}=require("./nap-official-entry-statements");
 function statements(plan,authority,end) {
   if(!plan || !Array.isArray(plan.plans) || plan.plans.length>100) throw new TypeError("Plan individuel borne requis.");

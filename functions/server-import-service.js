@@ -1,668 +1,352 @@
-// Preserve the execution mode of the existing index.js function bodies.
-
-// Private existing helpers; live services/state are supplied by index.js.
-// Module creation performs no external operation.
+// Compatibility factory; operation modules hold the existing bodies.
 function createImportService(backendContext) {
-  function normalizeImportToken(value) {
-    return backendContext.cleanText(value).replace(/\s+/g, " ");
-  }
-
-  function parseTimeValue(value) {
-    const raw = backendContext.cleanText(value).replace(",", ".");
-    if (!raw || raw === "00.00" || raw === "00:00.00" || raw === "59:59.99") return null;
-    const match = raw.match(/^(?:(\d+):)?(\d{1,2})\.(\d{1,2})$/);
-    if (!match) return null;
-    const minutes = Number(match[1] || 0);
-    const seconds = Number(match[2]);
-    const hundredths = Number(match[3].padEnd(2, "0").slice(0, 2));
-    if (!Number.isFinite(minutes) || !Number.isFinite(seconds) || !Number.isFinite(hundredths) || seconds >= 60) return null;
-    return minutes * 6000 + seconds * 100 + hundredths;
-  }
-
-  function formatTimeValue(timeValue) {
-    const total = Number(timeValue);
-    if (!Number.isFinite(total) || total <= 0) return "";
-    const minutes = Math.floor(total / 6000);
-    const seconds = Math.floor((total % 6000) / 100);
-    const hundredths = total % 100;
-    return minutes
-      ? `${minutes}:${String(seconds).padStart(2, "0")}.${String(hundredths).padStart(2, "0")}`
-      : `${seconds}.${String(hundredths).padStart(2, "0")}`;
-  }
-
-
-
-
-
-  function normalizeCourseCode(value) {
-    return backendContext.cleanText(value).replace(/\s+/g, "").toUpperCase();
-  }
-
-  function normalizeCategoryCode(value) {
-    return backendContext.cleanText(value).replace(/\s+/g, "").toUpperCase();
-  }
-
-
-
-
-
-
-
-  function competitionYear(date) {
-    const match = String(date || "").match(/^(\d{4})-/);
-    return match ? Number(match[1]) : 0;
-  }
-
-  function birthYear(date) {
-    const match = String(date || "").match(/^(\d{4})-/);
-    const year = match ? Number(match[1]) : 0;
-    return year >= 1900 && year <= 2100 ? year : 0;
-  }
-
-  function ageCategoryFromDates(competitionDate, birthDate) {
-    const year = importSeasonYear(competitionDate) || competitionYear(competitionDate);
-    const born = birthYear(birthDate);
-    const age = year && born ? year - born : null;
-    if (!Number.isFinite(age) || age < 0 || age > 120) return "";
-    if (age <= 9) return "P";
-    if (age <= 11) return "B";
-    if (age <= 13) return "M";
-    if (age <= 15) return "C";
-    if (age <= 17) return "J";
-    if (age <= 29) return "S";
-    if (age <= 39) return "M30+";
-    if (age <= 49) return "M40+";
-    if (age <= 59) return "M50+";
-    if (age <= 69) return "M60+";
-    if (age <= 79) return "M70+";
-    return "M80+";
-  }
-
-  function performanceCategoryFromRow(row = {}, dateOverride = "") {
-    const date = backendContext.cleanText(dateOverride || row.date || row.metadata?.date);
-    return ageCategoryFromDates(date, row.birthDate) ||
-      backendContext.cleanText(row.category) ||
-      fallbackCategoryFromSource(row.categoryCode || row.categoryLabel || row.importedCategoryCode || row.classificationCategory);
-  }
-
-  function fallbackCategoryFromSource(sourceCategory) {
-    const code = normalizeCategoryCode(sourceCategory);
-    if (code.endsWith("PO")) return "P";
-    if (code.endsWith("BE")) return "B";
-    if (code.endsWith("MI")) return "M";
-    if (code.endsWith("CA")) return "C";
-    if (code.endsWith("JU")) return "J";
-    if (code.endsWith("SE") || code.endsWith("S1")) return "S";
-    if (/^[FH](30|35)\+$/.test(code) || /^[FH][MV][01]$/.test(code) || code === "M30+") return "M30+";
-    if (/^[FH](40|45)\+$/.test(code) || /^[FH][MV]2$/.test(code)) return "M40+";
-    if (/^[FH](50|55)\+$/.test(code) || /^[FH][MV]3$/.test(code)) return "M50+";
-    if (/^[FH](60|65)\+$/.test(code) || /^[FH][MV]4$/.test(code)) return "M60+";
-    if (/^[FH](70|75)\+$/.test(code) || /^[FH][MV][5-9]$/.test(code)) return "M70+";
-    if (/^[FH]80\+$/.test(code)) return "M80+";
-    return "";
-  }
-
-  function importPerformanceCategory(perf = {}) {
-    return ageCategoryFromDates(perf.date, perf.birthDate) ||
-      fallbackCategoryFromSource(perf.categoryCode || perf.importedCategoryCode || perf.classificationCategory);
-  }
-
-  async function loadPerformanceRecordsData() {
-    const snapshot = await backendContext.db
-      .collection("competitions")
-      .doc("livepalmes-active")
-      .collection("performanceData")
-      .doc("records")
-      .get();
-    return snapshot.exists ? snapshot.data() || {} : {};
-  }
-
-  function recordReferenceRows(recordsData = {}) {
-    return [
-      ...(Array.isArray(recordsData.franceRecords) ? recordsData.franceRecords : []).map((row) => ({
-        ...row,
-        alertType: row.recordType === "RFJ" ? "RFJ" : "RF",
-        alertLabel: row.recordType === "RFJ" ? "Record de France Jeunes" : "Record de France"
-      })),
-      ...(Array.isArray(recordsData.records) ? recordsData.records : []).map((row) => ({
-        ...row,
-        alertType: "MPF",
-        alertLabel: "Meilleure Performance Francaise"
-      }))
-    ].filter((row) =>
-      !String(row.course || "").startsWith("4X") &&
-      normalizeCourseCode(row.course) &&
-      (row.sex === "F" || row.sex === "M") &&
-      Number(row.value || 0) > 0 &&
-      backendContext.cleanText(row.time) &&
-      backendContext.cleanText(row.time) !== "A etablir" &&
-      backendContext.cleanText(row.time) !== "À établir"
-    );
-  }
-
-  function recordReferenceKey(row = {}) {
-    return [
-      backendContext.cleanText(row.alertType || row.recordType || "MPF"),
-      backendContext.cleanText(row.sex),
-      backendContext.cleanText(row.alertType) === "MPF" ? backendContext.cleanText(row.category) : "",
-      normalizeCourseCode(row.course)
-    ].join("|");
-  }
-
-  function recordReferenceMap(recordsData = {}) {
-    const byKey = new Map();
-    recordReferenceRows(recordsData).forEach((row) => {
-      const key = recordReferenceKey(row);
-      const existing = byKey.get(key);
-      if (!existing || Number(row.value || 0) < Number(existing.value || 0)) byKey.set(key, row);
+  let cache0;
+  function operation0() {
+    if (!cache0) cache0 = require("./backend/server-import-service/active-competition-import-data").createImportService_activeCompetitionImportData({
+      get POOL_COURSES() { return backendContext.POOL_COURSES; },
+      set POOL_COURSES(value) { backendContext.POOL_COURSES = value; },
+      get cleanText() { return backendContext.cleanText; },
+      set cleanText(value) { backendContext.cleanText = value; },
+      get stableHash() { return backendContext.stableHash; },
+      set stableHash(value) { backendContext.stableHash = value; },
+      get local$ageCategoryFromDates() { return operation5().ageCategoryFromDates; },
+      get local$categoryCodeFromCategory() { return operation7().categoryCodeFromCategory; },
+      get local$fallbackCategoryFromSource() { return operation7().fallbackCategoryFromSource; },
+      get local$formatTimeValue() { return operation2().formatTimeValue; },
+      get local$isYouthCategory() { return operation9().isYouthCategory; },
+      get local$normalizeCategoryCode() { return operation4().normalizeCategoryCode; },
+      get local$normalizeCourseCode() { return operation3().normalizeCourseCode; },
+      get local$recordReferenceForPerformance() { return operation9().recordReferenceForPerformance; },
+      get local$recordReferenceMap() { return operation9().recordReferenceMap; },
+      get local$sameRecordAlertSwimmer() { return operation11().sameRecordAlertSwimmer; }
     });
-    return byKey;
+    return cache0;
   }
 
-  function recordReferenceForPerformance(referenceMap, type, perf, category) {
-    const sex = normalizeCategoryCode(perf.sex);
-    const course = normalizeCourseCode(perf.course);
-    const key = [type, sex, type === "MPF" ? category : "", course].join("|");
-    return referenceMap.get(key) || null;
-  }
-
-  function engagementRelayReferenceCourseCode(course) {
-    const code = normalizeCourseCode(course);
-    return code === "4X100BI" ? "4X100BIX" : code;
-  }
-
-  function engagementRelayReferenceRows(recordsData = {}) {
-    return [
-      ...(Array.isArray(recordsData.franceRecords) ? recordsData.franceRecords : []).map((row) => ({
-        ...row,
-        alertType: row.recordType === "RFJ" ? "RFJ" : "RF",
-        alertLabel: row.recordType === "RFJ" ? "Record de France Junior club" : "Record de France club"
-      })),
-      ...(Array.isArray(recordsData.records) ? recordsData.records : []).map((row) => ({
-        ...row,
-        alertType: "MPF",
-        alertLabel: "Meilleure Performance Francaise club"
-      }))
-    ].filter((row) =>
-      normalizeCourseCode(row.course).startsWith("4X") &&
-      (backendContext.cleanText(row.relayType).toLowerCase() === "club" || backendContext.cleanText(row.style).toUpperCase() === "RELAY_CLUB") &&
-      (row.sex === "F" || row.sex === "M") &&
-      Number(row.value || 0) > 0 &&
-      backendContext.cleanText(row.time) &&
-      backendContext.cleanText(row.time) !== "A etablir" &&
-      backendContext.cleanText(row.time) !== "À établir"
-    );
-  }
-
-  function engagementRelayReferenceKey(row = {}) {
-    return [
-      backendContext.cleanText(row.alertType || row.recordType || "MPF"),
-      backendContext.cleanText(row.mixedRelay) === "true" || row.mixedRelay === true ? "MIXED" : backendContext.cleanText(row.sex),
-      backendContext.cleanText(row.alertType) === "MPF" ? backendContext.cleanText(row.category) : "",
-      normalizeCourseCode(row.course)
-    ].join("|");
-  }
-
-  function engagementRelayReferenceMap(recordsData = {}) {
-    const byKey = new Map();
-    engagementRelayReferenceRows(recordsData).forEach((row) => {
-      const key = engagementRelayReferenceKey(row);
-      const existing = byKey.get(key);
-      if (!existing || Number(row.value || 0) < Number(existing.value || 0)) byKey.set(key, row);
+  let cache1;
+  function operation1() {
+    if (!cache1) cache1 = require("./backend/server-import-service/parse-time-value").createImportService_parseTimeValue({
+      get cleanText() { return backendContext.cleanText; },
+      set cleanText(value) { backendContext.cleanText = value; }
     });
-    return byKey;
+    return cache1;
   }
 
-  function engagementRelayReferenceForEntry(referenceMap, type, relay = {}) {
-    const sex = relay.genderMode === "mixed" ? "MIXED" : relay.genderMode === "male" ? "M" : "F";
-    const course = engagementRelayReferenceCourseCode(relay.eventCode);
-    const key = [type, sex, type === "MPF" ? relay.category : "", course].join("|");
-    return referenceMap.get(key) || null;
-  }
+  let cache2;
+  function operation2() {
+    if (!cache2) cache2 = require("./backend/server-import-service/format-time-value").createImportService_formatTimeValue({
 
-  function isYouthCategory(category) {
-    return ["P", "B", "M", "C", "J"].includes(backendContext.cleanText(category));
-  }
-
-  function normalizedRecordAlertName(value) {
-    const normalized = backendContext.normalizeIdentityText(value);
-    if (!normalized) return "";
-    return normalized.split(/\s+/).filter(Boolean).sort().join(" ");
-  }
-
-  function sameRecordAlertSwimmer(left, right) {
-    const leftRaw = backendContext.normalizeIdentityText(left);
-    const rightRaw = backendContext.normalizeIdentityText(right);
-    if (!leftRaw || !rightRaw) return false;
-    return leftRaw === rightRaw || normalizedRecordAlertName(leftRaw) === normalizedRecordAlertName(rightRaw);
-  }
-
-  function isAlreadyPublishedRecordAlert(alert = {}) {
-    return backendContext.cleanText(alert.status) === "equal" &&
-      Number(alert.timeValue || 0) === Number(alert.referenceValue || 0) &&
-      sameRecordAlertSwimmer(alert.swimmer, alert.referenceSwimmer);
-  }
-
-  function buildRecordAlert(perf, category, reference) {
-    const timeValue = Number(perf.timeValue || 0);
-    const referenceValue = Number(reference.value || 0);
-    if (!timeValue || !referenceValue || timeValue > referenceValue) return null;
-    const status = timeValue < referenceValue ? "improved" : "equal";
-    const sourceLine = Number(perf.sourceLine || perf.originSourceLine || 0) || "";
-    const swimmer = [perf.firstName, perf.lastName].filter(Boolean).join(" ").trim();
-    const referenceSwimmer = backendContext.cleanText(reference.swimmer);
-    if (status === "equal" && sameRecordAlertSwimmer(swimmer, referenceSwimmer)) return null;
-    return {
-      type: reference.alertType,
-      label: reference.alertLabel,
-      status,
-      swimmer,
-      firstName: backendContext.cleanText(perf.firstName),
-      lastName: backendContext.cleanText(perf.lastName),
-      birthDate: backendContext.cleanText(perf.birthDate),
-      sex: normalizeCategoryCode(perf.sex),
-      category,
-      categoryCode: categoryCodeFromCategory(category, normalizeCategoryCode(perf.sex)),
-      course: normalizeCourseCode(perf.course),
-      time: backendContext.cleanText(perf.time) || formatTimeValue(timeValue),
-      timeValue,
-      referenceTime: backendContext.cleanText(reference.time) || formatTimeValue(referenceValue),
-      referenceValue,
-      referenceSwimmer,
-      referenceDate: backendContext.cleanText(reference.date),
-      referenceLocation: backendContext.cleanText(reference.location),
-      referenceKey: backendContext.cleanText(reference.key),
-      date: backendContext.cleanText(perf.date),
-      location: backendContext.cleanText(perf.location),
-      club: backendContext.cleanText(perf.club),
-      clubName: backendContext.cleanText(perf.clubName),
-      isIntermediate: perf.isIntermediate === true,
-      originCourse: normalizeCourseCode(perf.originCourse),
-      originTime: backendContext.cleanText(perf.originTime),
-      splitCode: backendContext.cleanText(perf.splitCode),
-      splitDistance: Number(perf.splitDistance || 0) || "",
-      sourceLine
-    };
-  }
-
-  function detectRecordAlerts(performances = [], recordsData = {}) {
-    const referenceMap = recordReferenceMap(recordsData);
-    const alerts = [];
-    const seen = new Set();
-    performances.forEach((perf) => {
-      const timeValue = Number(perf.timeValue || 0);
-      const sex = normalizeCategoryCode(perf.sex);
-      const course = normalizeCourseCode(perf.course);
-      if (!timeValue || (sex !== "F" && sex !== "M") || !backendContext.POOL_COURSES.includes(course)) return;
-      const category = importPerformanceCategory(perf);
-      if (!category) return;
-      const candidates = [
-        recordReferenceForPerformance(referenceMap, "MPF", perf, category),
-        recordReferenceForPerformance(referenceMap, "RF", perf, category),
-        isYouthCategory(category) ? recordReferenceForPerformance(referenceMap, "RFJ", perf, category) : null
-      ].filter(Boolean);
-      candidates.forEach((reference) => {
-        const alert = buildRecordAlert(perf, category, reference);
-        if (!alert) return;
-        const key = [
-          alert.type,
-          alert.course,
-          alert.sex,
-          alert.category,
-          alert.timeValue,
-          alert.swimmer,
-          alert.date,
-          alert.sourceLine,
-          alert.isIntermediate ? alert.originCourse : ""
-        ].join("|");
-        if (seen.has(key)) return;
-        seen.add(key);
-        alerts.push(alert);
-      });
     });
-    return alerts.sort((a, b) =>
-      ["RF", "RFJ", "MPF"].indexOf(a.type) - ["RF", "RFJ", "MPF"].indexOf(b.type) ||
-      a.course.localeCompare(b.course, "fr-FR", { numeric: true }) ||
-      a.timeValue - b.timeValue
-    );
+    return cache2;
   }
 
-
-
-  function resolveIntranapSwimmer(perf, sex) {
-    const expectedSex = normalizeCategoryCode(sex || perf.sex);
-    const isCompatible = (swimmer) => {
-      if (!swimmer) return false;
-      const swimmerSex = normalizeCategoryCode(swimmer.sex);
-      return !expectedSex || swimmerSex === expectedSex;
-    };
-    const rawId = backendContext.cleanText(perf.swimmerId);
-    const allowSourceIdMatch = backendContext.cleanText(perf.sourceFormat) !== "international-xlsx";
-    const byIdMatch = allowSourceIdMatch && rawId ? backendContext.intranapSwimmerLookup.byId.get(rawId) : null;
-    if (isCompatible(byIdMatch)) return { swimmer: byIdMatch, method: "id" };
-
-    const key = backendContext.swimmerIdentityKey(perf.firstName, perf.lastName, perf.birthDate);
-    if (!key) return { swimmer: null, method: "none" };
-    const identityMatch = backendContext.intranapSwimmerLookup.byIdentity.get(key) || null;
-    return isCompatible(identityMatch)
-      ? { swimmer: identityMatch, method: "identity" }
-      : { swimmer: null, method: "none" };
-  }
-
-  function competitionImportPreviewPerformance(perf = {}) {
-    const swimmerMatch = resolveIntranapSwimmer(perf, perf.sex);
-    const swimmer = swimmerMatch.swimmer;
-    return backendContext.cleanFirestoreValue({
-      sourceLine: Number(perf.sourceLine || perf.originSourceLine || 0) || null,
-      firstName: backendContext.cleanText(perf.firstName),
-      lastName: backendContext.cleanText(perf.lastName),
-      birthDate: backendContext.cleanText(perf.birthDate),
-      sex: normalizeCategoryCode(perf.sex),
-      swimmerId: backendContext.cleanText(perf.swimmerId),
-      course: backendContext.cleanText(perf.course),
-      time: backendContext.cleanText(perf.time),
-      intermediateTimes: Array.isArray(perf.intermediateTimes)
-        ? perf.intermediateTimes.map((split) => ({ code: backendContext.cleanText(split.code), time: backendContext.cleanText(split.time) }))
-        : [],
-      categoryCode: backendContext.cleanText(perf.categoryCode),
-      club: backendContext.cleanText(perf.club),
-      clubName: backendContext.cleanText(perf.clubName),
-      date: backendContext.cleanText(perf.date),
-      round: backendContext.cleanText(perf.round),
-      isIntermediate: perf.isIntermediate === true,
-      originCourse: backendContext.cleanText(perf.originCourse),
-      duplicateInFile: perf.duplicateInFile === true,
-      swimmerMatch: swimmer ? {
-        status: "matched",
-        method: swimmerMatch.method,
-        swimmerId: backendContext.cleanText(swimmer.id),
-        name: backendContext.cleanText(swimmer.name) || [backendContext.cleanText(swimmer.firstName), backendContext.cleanText(swimmer.lastName)].filter(Boolean).join(" "),
-        birthDate: backendContext.cleanText(swimmer.birthDate),
-        sex: normalizeCategoryCode(swimmer.sex)
-      } : {
-        status: "unmatched",
-        method: "none"
-      }
+  let cache3;
+  function operation3() {
+    if (!cache3) cache3 = require("./backend/server-import-service/normalize-course-code").createImportService_normalizeCourseCode({
+      get cleanText() { return backendContext.cleanText; },
+      set cleanText(value) { backendContext.cleanText = value; }
     });
+    return cache3;
   }
 
-  function categoryCodeFromCategory(category, sex) {
-    const prefix = sex === "F" ? "F" : "H";
-    const suffixes = {
-      P: "PO",
-      B: "BE",
-      M: "MI",
-      C: "CA",
-      J: "JU",
-      S: "SE",
-      "M30+": "30+",
-      "M40+": "40+",
-      "M50+": "50+",
-      "M60+": "60+",
-      "M70+": "70+",
-      "M80+": "80+"
-    };
-    return `${prefix}${suffixes[category] || category}`;
-  }
-
-  function coursePayload(course) {
-    const meta = backendContext.COURSE_META[course] || [course, course, backendContext.courseStyleFromCode(course), backendContext.courseLengthFromCode(course)];
-    return {
-      code: course,
-      label: meta[0],
-      shortLabel: meta[1],
-      style: meta[2],
-      length: meta[3]
-    };
-  }
-
-  function importSeasonYear(dateIso) {
-    const date = new Date(`${dateIso}T00:00:00Z`);
-    if (Number.isNaN(date.getTime())) return null;
-    return date.getUTCMonth() >= 8 ? date.getUTCFullYear() + 1 : date.getUTCFullYear();
-  }
-
-  function currentEngagementSeasonInfo(date = new Date()) {
-    const year = date.getUTCFullYear();
-    const startYear = date.getUTCMonth() >= 8 ? year : year - 1;
-    return {
-      startYear,
-      endYear: startYear + 1,
-      label: `${startYear}-${startYear + 1}`
-    };
-  }
-
-  function cleanEngagementLicenseVerificationStatus(value, fallback = "pending") {
-    const status = backendContext.cleanText(value).toLowerCase();
-    return backendContext.ENGAGEMENT_LICENSE_VERIFICATION_STATUSES.has(status) ? status : fallback;
-  }
-
-  function cleanEngagementLicenseSeasonStatus(value, fallback = "to_check") {
-    const status = backendContext.cleanText(value).toLowerCase();
-    return backendContext.ENGAGEMENT_LICENSE_SEASON_STATUSES.has(status) ? status : fallback;
-  }
-
-  function engagementLicenseSeasonState(data = {}, date = new Date()) {
-    const season = currentEngagementSeasonInfo(date);
-    const seasons = data.licenseSeasons && typeof data.licenseSeasons === "object" ? data.licenseSeasons : {};
-    const stored = seasons[season.label] && typeof seasons[season.label] === "object" ? seasons[season.label] : {};
-    const legacyStatus = backendContext.cleanText(data.licenseSeasonLabel) === season.label ? data.licenseSeasonStatus : "";
-    return {
-      startYear: season.startYear,
-      endYear: season.endYear,
-      label: season.label,
-      status: cleanEngagementLicenseSeasonStatus(stored.status || legacyStatus, "to_check")
-    };
-  }
-
-  function engagementSeasonEndYearFromIsoDate(dateIso = "") {
-    const cleanDate = backendContext.cleanIsoDate(dateIso);
-    if (!cleanDate) return currentEngagementSeasonInfo(new Date()).endYear;
-    return importSeasonYear(cleanDate) || currentEngagementSeasonInfo(new Date()).endYear;
-  }
-
-  function engagementSeasonBoundsFromEndYear(endYear) {
-    const year = Math.trunc(Number(endYear) || currentEngagementSeasonInfo(new Date()).endYear);
-    return {
-      startYear: year - 1,
-      endYear: year,
-      label: `${year - 1}-${year}`,
-      startDate: `${year - 1}-09-01`,
-      endDate: `${year}-08-31`
-    };
-  }
-
-  function currentEngagementCategoryFromBirthDate(birthDate) {
-    return ageCategoryFromDates(new Date().toISOString().slice(0, 10), birthDate);
-  }
-
-  function importDocumentId(metadata = {}, fileHash = "") {
-    const seed = [
-      metadata.date,
-      metadata.competitionName,
-      metadata.location,
-      metadata.poolSize,
-      fileHash
-    ].join("|");
-    return backendContext.stableHash(seed).slice(0, 32);
-  }
-
-  function activeCompetitionImportData(data = {}) {
-    return !["deleted", "replaced"].includes(backendContext.cleanText(data.status));
-  }
-
-  function competitionImportExistingSummary(snapshot) {
-    if (!snapshot?.exists) return null;
-    const data = snapshot.data() || {};
-    return backendContext.cleanFirestoreValue({
-      importId: snapshot.id,
-      status: data.status || "",
-      fileName: data.fileName || "",
-      fileHash: data.fileHash || "",
-      metadata: data.metadata || {},
-      summary: data.summary || {},
-      importedAt: data.importedAt || "",
-      importedByEmail: data.importedByEmail || "",
-      publicationStatus: backendContext.importPublicationStatus(data) || "",
-      replacementJobId: data.replacementJobId || ""
+  let cache4;
+  function operation4() {
+    if (!cache4) cache4 = require("./backend/server-import-service/normalize-category-code").createImportService_normalizeCategoryCode({
+      get cleanText() { return backendContext.cleanText; },
+      set cleanText(value) { backendContext.cleanText = value; }
     });
+    return cache4;
   }
 
-  async function findExistingCompetitionImport(metadata = {}, excludedImportId = "") {
-    const identity = backendContext.competitionImportIdentity(metadata);
-    const candidateSnapshots = [];
-    const keyedSnapshot = await backendContext.db.collection("performanceImports")
-      .where("competitionKey", "==", identity)
-      .limit(5)
-      .get();
-    candidateSnapshots.push(...keyedSnapshot.docs);
-
-    if (!candidateSnapshots.length && backendContext.cleanText(metadata.competitionCode)) {
-      const codeSnapshot = await backendContext.db.collection("performanceImports")
-        .where("metadata.competitionCode", "==", backendContext.cleanText(metadata.competitionCode))
-        .limit(5)
-        .get();
-      candidateSnapshots.push(...codeSnapshot.docs);
-    }
-
-    if (!candidateSnapshots.length && !backendContext.cleanText(metadata.competitionCode) && backendContext.cleanText(metadata.date)) {
-      const dateSnapshot = await backendContext.db.collection("performanceImports")
-        .where("metadata.date", "==", backendContext.cleanText(metadata.date))
-        .limit(20)
-        .get();
-      candidateSnapshots.push(...dateSnapshot.docs);
-    }
-
-    return candidateSnapshots.find((snapshot) => {
-      const data = snapshot.data() || {};
-      return snapshot.id !== excludedImportId &&
-        activeCompetitionImportData(data) &&
-        backendContext.sameCompetitionImport(data.metadata || {}, metadata);
-    }) || null;
+  let cache5;
+  function operation5() {
+    if (!cache5) cache5 = require("./backend/server-import-service/age-category-from-dates").createImportService_ageCategoryFromDates({
+      get local$importSeasonYear() { return operation16().importSeasonYear; }
+    });
+    return cache5;
   }
 
-  function safeCompareHex(left, right) {
-    const leftBuffer = Buffer.from(String(left || ""), "hex");
-    const rightBuffer = Buffer.from(String(right || ""), "hex");
-    return leftBuffer.length === rightBuffer.length && backendContext.crypto.timingSafeEqual(leftBuffer, rightBuffer);
+  let cache6;
+  function operation6() {
+    if (!cache6) cache6 = require("./backend/server-import-service/performance-category-from-row").createImportService_performanceCategoryFromRow({
+      get cleanText() { return backendContext.cleanText; },
+      set cleanText(value) { backendContext.cleanText = value; },
+      get local$ageCategoryFromDates() { return operation5().ageCategoryFromDates; },
+      get local$fallbackCategoryFromSource() { return operation7().fallbackCategoryFromSource; }
+    });
+    return cache6;
   }
 
-  function roleUid(competitionId, role, clientId) {
-    const digest = backendContext.crypto
-      .createHash("sha256")
-      .update(`${competitionId}|${role}|${backendContext.cleanText(clientId) || Date.now()}`)
-      .digest("hex")
-      .slice(0, 28);
-    return `lp-${role}-${digest}`;
+  let cache7;
+  function operation7() {
+    if (!cache7) cache7 = require("./backend/server-import-service/category-code-from-category").createImportService_categoryCodeFromCategory({
+      get local$normalizeCategoryCode() { return operation4().normalizeCategoryCode; }
+    });
+    return cache7;
   }
 
-  function liveDataRef(competitionId) {
-    return backendContext.db
-      .collection("competitions")
-      .doc(competitionId)
-      .collection("liveData")
-      .doc("current");
+  let cache8;
+  function operation8() {
+    if (!cache8) cache8 = require("./backend/server-import-service/load-performance-records-data").createImportService_loadPerformanceRecordsData({
+      get db() { return backendContext.db; },
+      set db(value) { backendContext.db = value; }
+    });
+    return cache8;
   }
 
-  function rolePinsRef(competitionId) {
-    return backendContext.db
-      .collection("competitions")
-      .doc(competitionId)
-      .collection("secrets")
-      .doc("rolePins");
+  let cache9;
+  function operation9() {
+    if (!cache9) cache9 = require("./backend/server-import-service/is-youth-category").createImportService_isYouthCategory({
+      get cleanText() { return backendContext.cleanText; },
+      set cleanText(value) { backendContext.cleanText = value; },
+      get local$normalizeCategoryCode() { return operation4().normalizeCategoryCode; },
+      get local$normalizeCourseCode() { return operation3().normalizeCourseCode; }
+    });
+    return cache9;
   }
 
-  function pinAttemptRef(competitionId, role, uid, clientId) {
-    const key = backendContext.stableHash(`${competitionId}|${role}|${uid}|${backendContext.cleanText(clientId)}`);
-    return backendContext.db
-      .collection("competitions")
-      .doc(competitionId)
-      .collection("security")
-      .doc("pinAttempts")
-      .collection("items")
-      .doc(key);
+  let cache10;
+  function operation10() {
+    if (!cache10) cache10 = require("./backend/server-import-service/engagement-relay-reference-course-code").createImportService_engagementRelayReferenceCourseCode({
+      get cleanText() { return backendContext.cleanText; },
+      set cleanText(value) { backendContext.cleanText = value; },
+      get local$normalizeCourseCode() { return operation3().normalizeCourseCode; }
+    });
+    return cache10;
   }
 
-  function consoleGrantRef(competitionId, uid) {
-    return backendContext.db
-      .collection("competitions")
-      .doc(competitionId)
-      .collection("consoleGrants")
-      .doc(uid);
+  let cache11;
+  function operation11() {
+    if (!cache11) cache11 = require("./backend/server-import-service/normalized-record-alert-name").createImportService_normalizedRecordAlertName({
+      get normalizeIdentityText() { return backendContext.normalizeIdentityText; },
+      set normalizeIdentityText(value) { backendContext.normalizeIdentityText = value; }
+    });
+    return cache11;
   }
 
-  function lockRemainingSeconds(attempt = {}, nowMs = Date.now()) {
-    const lockedUntilMs = Date.parse(attempt.lockedUntil || "");
-    if (!Number.isFinite(lockedUntilMs) || lockedUntilMs <= nowMs) return 0;
-    return Math.ceil((lockedUntilMs - nowMs) / 1000);
+  let cache12;
+  function operation12() {
+    if (!cache12) cache12 = require("./backend/server-import-service/is-already-published-record-alert").createImportService_isAlreadyPublishedRecordAlert({
+      get cleanText() { return backendContext.cleanText; },
+      set cleanText(value) { backendContext.cleanText = value; },
+      get local$sameRecordAlertSwimmer() { return operation11().sameRecordAlertSwimmer; }
+    });
+    return cache12;
   }
 
-  function lockMessage(seconds) {
-    const minutes = Math.max(1, Math.ceil(seconds / 60));
-    return `Trop d'essais incorrects. Reessaie dans ${minutes} minute${minutes > 1 ? "s" : ""}.`;
+  let cache13;
+  function operation13() {
+    if (!cache13) cache13 = require("./backend/server-import-service/resolve-intranap-swimmer").createImportService_resolveIntranapSwimmer({
+      get swimmerIdentityKey() { return backendContext.swimmerIdentityKey; },
+      set swimmerIdentityKey(value) { backendContext.swimmerIdentityKey = value; },
+      get cleanText() { return backendContext.cleanText; },
+      set cleanText(value) { backendContext.cleanText = value; },
+      get intranapSwimmerLookup() { return backendContext.intranapSwimmerLookup; },
+      set intranapSwimmerLookup(value) { backendContext.intranapSwimmerLookup = value; },
+      get local$normalizeCategoryCode() { return operation4().normalizeCategoryCode; }
+    });
+    return cache13;
   }
 
-  async function assertPinAttemptAllowed(ref) {
-    const snapshot = await ref.get();
-    const seconds = lockRemainingSeconds(snapshot.data() || {});
-    if (seconds > 0) {
-      throw new backendContext.HttpsError("resource-exhausted", lockMessage(seconds), { retryAfterSeconds: seconds });
-    }
+  let cache14;
+  function operation14() {
+    if (!cache14) cache14 = require("./backend/server-import-service/competition-import-existing-summary").createImportService_competitionImportExistingSummary({
+      get cleanFirestoreValue() { return backendContext.cleanFirestoreValue; },
+      set cleanFirestoreValue(value) { backendContext.cleanFirestoreValue = value; },
+      get cleanText() { return backendContext.cleanText; },
+      set cleanText(value) { backendContext.cleanText = value; },
+      get competitionImportIdentity() { return backendContext.competitionImportIdentity; },
+      set competitionImportIdentity(value) { backendContext.competitionImportIdentity = value; },
+      get db() { return backendContext.db; },
+      set db(value) { backendContext.db = value; },
+      get importPublicationStatus() { return backendContext.importPublicationStatus; },
+      set importPublicationStatus(value) { backendContext.importPublicationStatus = value; },
+      get sameCompetitionImport() { return backendContext.sameCompetitionImport; },
+      set sameCompetitionImport(value) { backendContext.sameCompetitionImport = value; },
+      get local$activeCompetitionImportData() { return operation0().activeCompetitionImportData; },
+      get local$normalizeCategoryCode() { return operation4().normalizeCategoryCode; },
+      get local$resolveIntranapSwimmer() { return operation13().resolveIntranapSwimmer; }
+    });
+    return cache14;
   }
 
+  let cache15;
+  function operation15() {
+    if (!cache15) cache15 = require("./backend/server-import-service/course-payload").createImportService_coursePayload({
+      get courseLengthFromCode() { return backendContext.courseLengthFromCode; },
+      set courseLengthFromCode(value) { backendContext.courseLengthFromCode = value; },
+      get courseStyleFromCode() { return backendContext.courseStyleFromCode; },
+      set courseStyleFromCode(value) { backendContext.courseStyleFromCode = value; },
+      get COURSE_META() { return backendContext.COURSE_META; },
+      set COURSE_META(value) { backendContext.COURSE_META = value; }
+    });
+    return cache15;
+  }
+
+  let cache16;
+  function operation16() {
+    if (!cache16) cache16 = require("./backend/server-import-service/import-season-year").createImportService_importSeasonYear({
+
+    });
+    return cache16;
+  }
+
+  let cache17;
+  function operation17() {
+    if (!cache17) cache17 = require("./backend/server-import-service/current-engagement-season-info").createImportService_currentEngagementSeasonInfo({
+
+    });
+    return cache17;
+  }
+
+  let cache18;
+  function operation18() {
+    if (!cache18) cache18 = require("./backend/server-import-service/clean-engagement-license-season-status").createImportService_cleanEngagementLicenseSeasonStatus({
+      get ENGAGEMENT_LICENSE_SEASON_STATUSES() { return backendContext.ENGAGEMENT_LICENSE_SEASON_STATUSES; },
+      set ENGAGEMENT_LICENSE_SEASON_STATUSES(value) { backendContext.ENGAGEMENT_LICENSE_SEASON_STATUSES = value; },
+      get ENGAGEMENT_LICENSE_VERIFICATION_STATUSES() { return backendContext.ENGAGEMENT_LICENSE_VERIFICATION_STATUSES; },
+      set ENGAGEMENT_LICENSE_VERIFICATION_STATUSES(value) { backendContext.ENGAGEMENT_LICENSE_VERIFICATION_STATUSES = value; },
+      get cleanText() { return backendContext.cleanText; },
+      set cleanText(value) { backendContext.cleanText = value; },
+      get local$currentEngagementSeasonInfo() { return operation17().currentEngagementSeasonInfo; }
+    });
+    return cache18;
+  }
+
+  let cache19;
+  function operation19() {
+    if (!cache19) cache19 = require("./backend/server-import-service/engagement-season-end-year-from-iso-date").createImportService_engagementSeasonEndYearFromIsoDate({
+      get cleanIsoDate() { return backendContext.cleanIsoDate; },
+      set cleanIsoDate(value) { backendContext.cleanIsoDate = value; },
+      get local$currentEngagementSeasonInfo() { return operation17().currentEngagementSeasonInfo; },
+      get local$importSeasonYear() { return operation16().importSeasonYear; }
+    });
+    return cache19;
+  }
+
+  let cache20;
+  function operation20() {
+    if (!cache20) cache20 = require("./backend/server-import-service/engagement-season-bounds-from-end-year").createImportService_engagementSeasonBoundsFromEndYear({
+      get local$currentEngagementSeasonInfo() { return operation17().currentEngagementSeasonInfo; }
+    });
+    return cache20;
+  }
+
+  let cache21;
+  function operation21() {
+    if (!cache21) cache21 = require("./backend/server-import-service/current-engagement-category-from-birth-date").createImportService_currentEngagementCategoryFromBirthDate({
+      get local$ageCategoryFromDates() { return operation5().ageCategoryFromDates; }
+    });
+    return cache21;
+  }
+
+  let cache22;
+  function operation22() {
+    if (!cache22) cache22 = require("./backend/server-import-service/assert-pin-attempt-allowed").createImportService_assertPinAttemptAllowed({
+      get HttpsError() { return backendContext.HttpsError; },
+      set HttpsError(value) { backendContext.HttpsError = value; },
+      get cleanText() { return backendContext.cleanText; },
+      set cleanText(value) { backendContext.cleanText = value; },
+      get crypto() { return backendContext.crypto; },
+      set crypto(value) { backendContext.crypto = value; },
+      get db() { return backendContext.db; },
+      set db(value) { backendContext.db = value; },
+      get stableHash() { return backendContext.stableHash; },
+      set stableHash(value) { backendContext.stableHash = value; }
+    });
+    return cache22;
+  }
+
+  let cache23;
+  function operation23() {
+    if (!cache23) cache23 = require("./backend/server-import-service/role-uid").createImportService_roleUid({
+      get cleanText() { return backendContext.cleanText; },
+      set cleanText(value) { backendContext.cleanText = value; },
+      get crypto() { return backendContext.crypto; },
+      set crypto(value) { backendContext.crypto = value; }
+    });
+    return cache23;
+  }
+
+  let cache24;
+  function operation24() {
+    if (!cache24) cache24 = require("./backend/server-import-service/live-data-ref").createImportService_liveDataRef({
+      get db() { return backendContext.db; },
+      set db(value) { backendContext.db = value; }
+    });
+    return cache24;
+  }
+
+  let cache25;
+  function operation25() {
+    if (!cache25) cache25 = require("./backend/server-import-service/role-pins-ref").createImportService_rolePinsRef({
+      get db() { return backendContext.db; },
+      set db(value) { backendContext.db = value; }
+    });
+    return cache25;
+  }
+
+  let cache26;
+  function operation26() {
+    if (!cache26) cache26 = require("./backend/server-import-service/console-grant-ref").createImportService_consoleGrantRef({
+      get db() { return backendContext.db; },
+      set db(value) { backendContext.db = value; }
+    });
+    return cache26;
+  }
   return {
-    normalizeImportToken,
-    parseTimeValue,
-    formatTimeValue,
-    normalizeCourseCode,
-    normalizeCategoryCode,
-    competitionYear,
-    birthYear,
-    ageCategoryFromDates,
-    performanceCategoryFromRow,
-    fallbackCategoryFromSource,
-    importPerformanceCategory,
-    loadPerformanceRecordsData,
-    recordReferenceRows,
-    recordReferenceKey,
-    recordReferenceMap,
-    recordReferenceForPerformance,
-    engagementRelayReferenceCourseCode,
-    engagementRelayReferenceRows,
-    engagementRelayReferenceKey,
-    engagementRelayReferenceMap,
-    engagementRelayReferenceForEntry,
-    isYouthCategory,
-    normalizedRecordAlertName,
-    sameRecordAlertSwimmer,
-    isAlreadyPublishedRecordAlert,
-    buildRecordAlert,
-    detectRecordAlerts,
-    resolveIntranapSwimmer,
-    competitionImportPreviewPerformance,
-    categoryCodeFromCategory,
-    coursePayload,
-    importSeasonYear,
-    currentEngagementSeasonInfo,
-    cleanEngagementLicenseVerificationStatus,
-    cleanEngagementLicenseSeasonStatus,
-    engagementLicenseSeasonState,
-    engagementSeasonEndYearFromIsoDate,
-    engagementSeasonBoundsFromEndYear,
-    currentEngagementCategoryFromBirthDate,
-    importDocumentId,
-    activeCompetitionImportData,
-    competitionImportExistingSummary,
-    findExistingCompetitionImport,
-    safeCompareHex,
-    roleUid,
-    liveDataRef,
-    rolePinsRef,
-    pinAttemptRef,
-    consoleGrantRef,
-    lockRemainingSeconds,
-    lockMessage,
-    assertPinAttemptAllowed
+    normalizeImportToken: operation0().normalizeImportToken,
+    parseTimeValue: operation1().parseTimeValue,
+    formatTimeValue: operation2().formatTimeValue,
+    normalizeCourseCode: operation3().normalizeCourseCode,
+    normalizeCategoryCode: operation4().normalizeCategoryCode,
+    competitionYear: operation5().competitionYear,
+    birthYear: operation5().birthYear,
+    ageCategoryFromDates: operation5().ageCategoryFromDates,
+    performanceCategoryFromRow: operation6().performanceCategoryFromRow,
+    fallbackCategoryFromSource: operation7().fallbackCategoryFromSource,
+    importPerformanceCategory: operation0().importPerformanceCategory,
+    loadPerformanceRecordsData: operation8().loadPerformanceRecordsData,
+    recordReferenceRows: operation9().recordReferenceRows,
+    recordReferenceKey: operation9().recordReferenceKey,
+    recordReferenceMap: operation9().recordReferenceMap,
+    recordReferenceForPerformance: operation9().recordReferenceForPerformance,
+    engagementRelayReferenceCourseCode: operation10().engagementRelayReferenceCourseCode,
+    engagementRelayReferenceRows: operation10().engagementRelayReferenceRows,
+    engagementRelayReferenceKey: operation10().engagementRelayReferenceKey,
+    engagementRelayReferenceMap: operation10().engagementRelayReferenceMap,
+    engagementRelayReferenceForEntry: operation10().engagementRelayReferenceForEntry,
+    isYouthCategory: operation9().isYouthCategory,
+    normalizedRecordAlertName: operation11().normalizedRecordAlertName,
+    sameRecordAlertSwimmer: operation11().sameRecordAlertSwimmer,
+    isAlreadyPublishedRecordAlert: operation12().isAlreadyPublishedRecordAlert,
+    buildRecordAlert: operation0().buildRecordAlert,
+    detectRecordAlerts: operation0().detectRecordAlerts,
+    resolveIntranapSwimmer: operation13().resolveIntranapSwimmer,
+    competitionImportPreviewPerformance: operation14().competitionImportPreviewPerformance,
+    categoryCodeFromCategory: operation7().categoryCodeFromCategory,
+    coursePayload: operation15().coursePayload,
+    importSeasonYear: operation16().importSeasonYear,
+    currentEngagementSeasonInfo: operation17().currentEngagementSeasonInfo,
+    cleanEngagementLicenseVerificationStatus: operation18().cleanEngagementLicenseVerificationStatus,
+    cleanEngagementLicenseSeasonStatus: operation18().cleanEngagementLicenseSeasonStatus,
+    engagementLicenseSeasonState: operation18().engagementLicenseSeasonState,
+    engagementSeasonEndYearFromIsoDate: operation19().engagementSeasonEndYearFromIsoDate,
+    engagementSeasonBoundsFromEndYear: operation20().engagementSeasonBoundsFromEndYear,
+    currentEngagementCategoryFromBirthDate: operation21().currentEngagementCategoryFromBirthDate,
+    importDocumentId: operation0().importDocumentId,
+    activeCompetitionImportData: operation0().activeCompetitionImportData,
+    competitionImportExistingSummary: operation14().competitionImportExistingSummary,
+    findExistingCompetitionImport: operation14().findExistingCompetitionImport,
+    safeCompareHex: operation22().safeCompareHex,
+    roleUid: operation23().roleUid,
+    liveDataRef: operation24().liveDataRef,
+    rolePinsRef: operation25().rolePinsRef,
+    pinAttemptRef: operation22().pinAttemptRef,
+    consoleGrantRef: operation26().consoleGrantRef,
+    lockRemainingSeconds: operation22().lockRemainingSeconds,
+    lockMessage: operation22().lockMessage,
+    assertPinAttemptAllowed: operation22().assertPinAttemptAllowed
   };
 }
 

@@ -1,7 +1,7 @@
 "use strict";
 // Portal metadata only: never consulted by sporting calculations or exports.
 const {createHash}=require("node:crypto");
-const {swimmerId}=require("./nap-direct-swimmer");
+const { swimmerId } = require("./nap-swimmer-values");
 const {notMerged}=require("./nap-swimmer-merge-state");
 const digest=value=>createHash("sha256").update(JSON.stringify(value)).digest("hex");
 const {state,fingerprint}=require("./nap-swimmer-ns-state");
@@ -18,7 +18,7 @@ function proposal(row,input) {
   if(!state(row).nsAvailable)throw new TypeError("Le statut NS attend l’activation de la structure NAP.");
   if(input.expectedNsFingerprint!==fingerprint(row))throw new TypeError("Le statut ou la fiche a changé. Rechargez-la.");
   if(input.nonSelectable!==false||!state(row).nonSelectable)throw new TypeError("Une demande nationale concerne uniquement le retrait du statut NS.");
-  const current=require("./nap-portal-swimmers").person(row);
+  const current=require("./nap-swimmer-profile").person(row);
   return {napSource:true,requestType:"swimmer-ns",nativeBefore:row,expectedFingerprint:fingerprint(row),
     requestedSource:"reference",targetSource:"reference",requestedSwimmerId:String(row.id),targetSwimmerId:String(row.id),
     current,proposed:{...current,nonSelectable:false},reason:"Demande de retrait du statut non sélectionnable (NS)."};
@@ -63,6 +63,6 @@ async function change(connection,input,context,audit,{nationalApproval=false}={}
   row=await read(connection,input,context);
   if(fingerprint(row)!==saved.afterHash)throw new Error("Statut NS à vérifier ; sauvegarde conservée.");
   await audit.complete(operation,{id:String(row.id),clubId:String(context.clubId),nonSelectable:input.nonSelectable,verified:true});
-  return {ok:true,source:"nap",swimmer:require("./nap-portal-swimmers").person(row)};
+  return {ok:true,source:"nap",swimmer:require("./nap-swimmer-profile").person(row)};
 }
 module.exports={state,fingerprint,read,proposal,prepareResolution,change};

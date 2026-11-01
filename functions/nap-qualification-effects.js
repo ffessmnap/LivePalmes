@@ -2,8 +2,8 @@
 // Supplemental effects join the parent's progress transaction. Preserve all
 // unrelated dossier metadata and contacts; one grouped read and upsert, no
 // query per swimmer/course. Existing LivePalmes alert shape is retained.
-const {positiveId}=require('./nap-direct-calendar');
-const {json}=require('./nap-portal-workspaces');
+const { positiveId } = require("./nap-calendar-values");
+const { json } = require("./nap-competition-view-values");
 const {nativeEqual}=require('./nap-native-compare');
 const clubKey=value=>{if(!/^\d{1,16}$/.test(String(value)))throw new TypeError('Club NAP invalide.');return positiveId(Number(value));};
 async function effects(connection,input){

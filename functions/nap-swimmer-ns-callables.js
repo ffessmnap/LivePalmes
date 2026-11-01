@@ -9,8 +9,8 @@ function audit(backend,uid) {
 }
 async function club(backend,context,input) {
   if(!["read","save"].includes(input.nsAction))throw new TypeError("Action NS invalide.");
-  const pool=require("./nap-portal-swimmers").portalPool(process.env.LIVEPALMES_NAP_PASSWORD);
-  const row=await ns.read(pool,input,context), swimmer=require("./nap-portal-swimmers").person(row);
+  const pool=require("./nap-portal-pool").portalPool(process.env.LIVEPALMES_NAP_PASSWORD);
+  const row=await ns.read(pool,input,context), swimmer=require("./nap-swimmer-profile").person(row);
   if(input.nsAction==="save"&&input.nonSelectable===true)return ns.change(pool,input,context,audit(backend,context.uid));
   const requestId=backend.stableHash(["nap-ns",String(row.id),String(context.clubId),ns.fingerprint(row)].join("|")).slice(0,40);
   const ref=backend.db.collection(backend.ENGAGEMENT_SWIMMER_CHANGE_REQUESTS_COLLECTION).doc(requestId);

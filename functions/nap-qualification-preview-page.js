@@ -3,8 +3,8 @@
 // indexed queries (enrolments, courses, exceptions, history). No query per course
 // or swimmer; rows are checked before a single sporting evaluation is returned.
 const {sourceHash}=require('./nap-qualification-source-hash');
-const {positiveId}=require('./nap-direct-calendar');
-const {person}=require('./nap-portal-swimmers');
+const { positiveId } = require("./nap-calendar-values");
+const { person } = require("./nap-swimmer-profile");
 const {readEntryHistory}=require('./nap-entry-performance-history');
 const grants=require('./nap-qualification-grants');
 const engine=require('./engagement-qualification');

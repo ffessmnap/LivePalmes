@@ -2,8 +2,8 @@
 const {nativeEqual}=require("./nap-native-compare");
 // Unregistered preparation: one grouped PK lookup (80 people), one INSERT
 // and one DELETE maximum. No statement is executed by this module.
-const {SOURCES,OPTION_COLUMNS}=require("./nap-club-people");
-const {positiveId}=require("./nap-direct-calendar");
+const { SOURCES, OPTION_COLUMNS } = require("./nap-club-people-values");
+const { positiveId } = require("./nap-calendar-values");
 const {authorityGuard}=require("./nap-portal-competition-change");
 const columns=SOURCES.officials.columns;
 function selectedStatement(ids,clubId) {

@@ -1,6 +1,7 @@
 "use strict";
-const rules = require("./nap-performance-normalization");
-const { swimmerId } = require("./nap-direct-swimmer");
+const { cleanText: __nativeMember0, swimmerIdentityKey: __nativeMember1 } = require("./nap-performance-identity");
+const rules = { cleanText: __nativeMember0, swimmerIdentityKey: __nativeMember1 };
+const { swimmerId } = require("./nap-swimmer-values");
 const {notMerged}=require("./nap-swimmer-merge-state");
 function likeLiteral(value) { return value.replace(/[=%_]/g, character => `=${character}`); }
 async function searchDirectSwimmers(pool, input) {

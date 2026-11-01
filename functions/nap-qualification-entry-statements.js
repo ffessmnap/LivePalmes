@@ -3,7 +3,7 @@
 // This prepares SQL only. Caller must journal, recheck proofs and reread after
 // each operation; an affected-row mismatch cannot be treated as a rollback.
 const jobs=require('./nap-qualification-jobs');
-const {positiveId}=require('./nap-direct-calendar');
+const { positiveId } = require("./nap-calendar-values");
 const {nativeEqual}=require('./nap-native-compare');
 const {authorityGuard}=require('./nap-portal-competition-change');
 function statements(input,plan,pack){

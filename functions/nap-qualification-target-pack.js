@@ -20,7 +20,7 @@ function targetPack(pack,operations=[]){
     else throw new TypeError('Table de parametres non prise en charge par le controle.');
   }
   const native=result.nativeSnapshot.competition,parameters=result.nativeParameters,options=result.options||{};
-  result.event={...result.event,...require('./nap-portal-competitions').portalEventFromRow({...native,...parameters,id:native.id,type_label:pack.event.competitionType==='pool'?'Piscine':'Eau libre',native_level_code:parameters.niveau,event_type:options.event_type||pack.event.eventType,entry_closed:options.entry_closed,portal_city:options.city,portal_address:options.address,portal_whatsapp:options.whatsapp_url,portal_organizer:options.organizer_label,portal_water_body_type:options.water_body_type,portal_canceled:options.canceled})};
+  result.event={...result.event,...require("./nap-portal-event").portalEventFromRow({...native,...parameters,id:native.id,type_label:pack.event.competitionType==='pool'?'Piscine':'Eau libre',native_level_code:parameters.niveau,event_type:options.event_type||pack.event.eventType,entry_closed:options.entry_closed,portal_city:options.city,portal_address:options.address,portal_whatsapp:options.whatsapp_url,portal_organizer:options.organizer_label,portal_water_body_type:options.water_body_type,portal_canceled:options.canceled})};
   return result;
 }
 module.exports={targetPack};

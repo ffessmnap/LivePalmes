@@ -1,5 +1,5 @@
 "use strict";
-const {positiveId}=require("./nap-direct-calendar");
+const { positiveId } = require("./nap-calendar-values");
 const {allowedCourses}=require("./nap-entry-course-rules");
 const {resolveTime}=require("./nap-entry-time-rules");
 const normalize=value=>String(value || "").toUpperCase().replace(/\s+/g,"");
@@ -69,7 +69,7 @@ async function resolveChanges(input,services) {
         known:entry=>require("./nap-entry-time-policy").known(entry,history,competition,services.parse)
       });
       const tps=resolved.nativeTime==="599999" ? "599999" : compact(resolved.entryTimeValue);
-      const previousValue=unchanged?require('./nap-performance-normalization').parseCompactTime(saved[0].tps):null;
+      const previousValue=unchanged?require("./nap-performance-time").parseCompactTime(saved[0].tps):null;
       entries.push({course:code,tps:unchanged&&previousValue===resolved.entryTimeValue?saved[0].tps:tps});
       if(resolved.entryTimeMode==="manual") manualEntries.push(resolved);
     }

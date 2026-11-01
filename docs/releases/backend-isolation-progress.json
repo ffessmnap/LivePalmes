@@ -1,0 +1,438 @@
+{
+  "schema": 1,
+  "objective": "Complete systematic backend dependency isolation, technically validated on exact TEST version, then handed off to Infra for authorized PROD publication",
+  "status": "global-runtime-complete-test-validated-production-tooling-preparation",
+  "startedAt": "2026-10-31T23:20:21Z",
+  "baseline": {
+    "main": "ac677ad530aab6b121b3a038accc0fb4860fa5e6",
+    "testRun": 41250258371,
+    "testCandidate": "ac677ad530aab6b121b3a038accc0fb4860fa5e6",
+    "productionRun": 41248805209,
+    "productionCandidate": "6f76f7921d401cde1f45a5ce90acf5bbde097574"
+  },
+  "authorization": {
+    "sourceThread": "01a19430-7d9d-71b3-9e61-7d8ac7c30e33",
+    "currentTestValidatedByUser": true,
+    "futureVersions": "Autonomous technical validation, TEST, then exact-scope PROD handoff to Infra authorized; no invented future user acceptance",
+    "infraThread": "01a131b4-e6a6-73e2-bbea-b53cc3f4cb6d",
+    "excluded": [
+      "real data changes",
+      "migrations",
+      "real messages",
+      "business test invocations",
+      "new infrastructure",
+      "rules/index/configuration/IAM changes",
+      "sporting-rule changes",
+      "authorization-rule changes"
+    ]
+  },
+  "decisions": [
+    "Preserve existing conservative selectors and excluded-function contracts",
+    "Separate actual method dependencies from unused factory context getters",
+    "Preserve every Firebase declaration, option, secret and trigger",
+    "No new business reads or writes; initial/action/refresh/worst-case budgets remain unchanged",
+    "Use an isolated worktree because shared workspace contains extensive unrelated edits",
+    "Target: group methods by actual Firebase-consumer sets within their original domain/factory, without helper duplication",
+    "Generated operation factories reuse the existing lazy explicit-context pattern; no framework or runtime dependency added",
+    "Preserve old factory APIs through compatibility adapters used by existing tests, while production index wiring targets operation providers directly",
+    "Cross-group private references must retain the actual private function object, its signature and unbound-call semantics; do not replace them with global forwarding wrappers",
+    "Preserve writable context accessors and existing singleton/cache identity; reject unknown initialization or mutable binding patterns until separately proven",
+    "Keep the complete original context for the one opaque NS handoff rather than guessing its downstream needs",
+    "Prove moved bodies by canonical AST plus permitted binding substitutions, and preserve Firebase declarations/options/secrets/triggers exactly",
+    "Apply coherent cumulative lots from a pinned baseline, stop on unexpected source divergence, and reassess remaining native-module fanouts after all factory-context coupling is removed",
+    "Renderer will use operation-provider getters returning actual function objects and (0, providerReference) for cross-group unbound calls; original local bodies retained within each group",
+    "Original factory compatibility adapters return the actual operation functions, preserving method names, arity and identity, with no eager context reads",
+    "Generated inventory is read-only analysis, not an alternative selector or deployment allowlist",
+    "Deliver remaining factory domains together after domain-specific checks, avoiding two redundant large installation deployments; native module review remains a separate proven lot",
+    "Retain the four destructured-parameter factories byte-identically: parser, PDF, statistics and legacy publication capture their inputs at creation; initial preview incorrectly treated them as live contexts and was never published. Reject unknown/default/rest parameter captures and cover this with a real-factory regression."
+  ],
+  "completed": [
+    "Verified current main and successful TEST/PROD run references",
+    "Created clean worktree from main",
+    "Initial review: 27 factories, no factory-scope initialization statements",
+    "Read-only model and generated inventory cover 157 exports and 726 private methods; one opaque context escape, 32 function-identity references, no factory initializer statements",
+    "First runtime lot applied behind divergence and path guards: 103 bodies in 72 operation groups; exact proof d2519c8bbca21dec61931a49ddb9dc5df65ed084a4c6148ffa0fd5459c7b042f",
+    "First lot expanded to include shared import references required by PIN/console access: 155 unchanged bodies in 99 groups, exact proof 2bc0b74ef6c092da02ce7ce9466663a1cf6e180cf1a67d10678a49b3a5e1d45a",
+    "Actual corrected partition: 635 unchanged bodies in 419 groups, 157 registrations preserved, runtime proof f2cb84441c5c21f1d465aa9c871d6b2a04899ee9e3e7a6a80122dcd03e4f9c81",
+    "Native lot #656 integrated: 34 components, 2902 declarations and 704 APIs preserved; exact PR CI 41267539078 successful",
+    "All 157 Firebase exports and 438 actual factories audited: 705 unchanged moved bodies in 433 groups, 34 native components, no remaining artificial multi-consumer factory; final TEST 41271348708 successful"
+  ],
+  "next": [
+    "Required CI and merge of final proof tooling",
+    "Authorized Infra preflight/PROD publication and final checks",
+    "After verified PROD, resume authorized Corbie prerequisite and clubs thread"
+  ],
+  "inventory": {
+    "exports": 157,
+    "factories": 27,
+    "privateMethods": 726,
+    "factoryScopeInitializationStatements": 0,
+    "opaqueCases": [
+      "portalNationalHandlers: backendContext passed to nap-swimmer-ns-callables.club; keep complete context for this case until separately proven"
+    ]
+  },
+  "afterVerifiedProduction": {
+    "status": "pending-condition",
+    "condition": "Global dependency isolation fully completed, published to PROD and final checks passed",
+    "targetThread": "01a1936b-e9fe-7983-9cc3-3ca030675c86",
+    "targetTitle": "Compter les clubs par abréviation",
+    "action": "Resume existing club work autonomously; do not wake or execute it before the condition",
+    "userQuotes": [
+      "est ce que une fois que ce chantier sera terminé et en prod tu pourras relancer la fusion des 14 clubs qu'on avait mis en stop dans la conversation \"compter les clubs par abréviation\"?",
+      "Eh bien, il faudra faire le nécessaire pour que ce soit possible à la suite de ce chantier-là. C'est... quand tu dis, j'ai ajouté, c'est reposé à la suite du chantier, j'ai rien à faire de mon côté ?"
+    ],
+    "authorizedKnownPrerequisite": "If still present, fix administrator-list and recipient-index projections so stale events cannot restore an old club; preserve current-profile rights/preferences/legitimate recipients; no real sends or catch-up",
+    "sequence": [
+      "Read original detailed plan and current paused state",
+      "If still needed, fix known Corbie prerequisite with stale-event/concurrency/retry tests, CI, TEST and exact-scope PROD handoff to Infra",
+      "Recheck drift, verified backups and resume protections",
+      "Execute only the 14 already-defined merges with preserved decisions and existing safeguards"
+    ],
+    "knownReferences": {
+      "draftPr": 651,
+      "verificationRun": 41247081576
+    },
+    "preservedDecisions": [
+      "Original target identities/names/abbreviations",
+      "Keep all three Corbie accounts",
+      "OPEN/OPEN PASS into OPEN 220"
+    ],
+    "limits": [
+      "Re-read full plan; the number 14 alone does not identify records",
+      "No silent extension to other clubs/accounts/rights/data",
+      "Do not bypass Corbie lock or backup/drift/resume checks",
+      "Report genuine new divergence or unavailable access; continue independent safe parts"
+    ]
+  },
+  "blockers": [],
+  "preview": {
+    "applied": true,
+    "baseline": "ac677ad530aab6b121b3a038accc0fb4860fa5e6",
+    "factoriesNeedingPartition": 20,
+    "operationGroups": 419,
+    "movedMethods": 635,
+    "files": 440,
+    "indexLines": 12093,
+    "selectorMode": "dependency-closure",
+    "exportsPreserved": 157,
+    "testSimulations": null,
+    "productionSimulations": null,
+    "note": "Earlier 705-body preview superseded: actual PDF test detected unsupported parameter captures. Four captured singleton factories remain exact; their independent isolation requires a capture-preserving proof."
+  },
+  "appliedFactories": [
+    "portalPerformanceHandlers",
+    "portalAccessHandlers",
+    "portalCompetitionHandlers",
+    "portalNationalHandlers",
+    "portalClubHandlers",
+    "serverAccessService",
+    "serverImportService",
+    "serverConsoleService",
+    "serverDirectoryService",
+    "serverCompetitionModelService",
+    "serverEntryModelService",
+    "serverDocumentsService",
+    "serverMailService",
+    "serverClubPeopleService",
+    "serverCompetitionService",
+    "serverNationalService",
+    "serverEntryService",
+    "serverPerformanceService",
+    "serverDtnService",
+    "serverLegacyService"
+  ],
+  "lots": [
+    {
+      "id": "access-directories",
+      "status": "test-success",
+      "factories": [
+        "portalAccessHandlers",
+        "serverAccessService",
+        "serverConsoleService",
+        "serverDirectoryService",
+        "serverImportService"
+      ],
+      "proof": "2bc0b74ef6c092da02ce7ce9466663a1cf6e180cf1a67d10678a49b3a5e1d45a",
+      "bodies": 155,
+      "groups": 99,
+      "pr": 654,
+      "commit": "63717a87ee6b8efcd99918a0e12720bc283c365e",
+      "prCi": 41256416187,
+      "mainCi": 41256912251,
+      "testRun": 41257341239,
+      "testCandidate": "63717a87ee6b8efcd99918a0e12720bc283c365e",
+      "hostingVersion": "sites/livepalmes-test/versions/968cd697ea5b67df",
+      "updatedFunctions": 104,
+      "conservedFunctions": 12
+    },
+    {
+      "id": "competitions-entries",
+      "status": "test-success",
+      "pr": 655,
+      "head": "85e55f2375b9339c1640e56caf58f2386d0a0d8b",
+      "ci": 41258508964,
+      "commit": "227207b5cc385a29bbabac1cc63b11f4142b1d52",
+      "prCi": 41258508964,
+      "mainCi": 41258980637,
+      "testRun": 41259584648,
+      "testCandidate": "227207b5cc385a29bbabac1cc63b11f4142b1d52",
+      "hostingVersion": "sites/livepalmes-test/versions/df12e04e578b5660",
+      "updatedFunctions": 91,
+      "conservedFunctions": 25
+    },
+    {
+      "id": "performance-import-dtn-legacy",
+      "status": "test-success",
+      "pr": 655,
+      "head": "85e55f2375b9339c1640e56caf58f2386d0a0d8b",
+      "ci": 41258508964,
+      "commit": "227207b5cc385a29bbabac1cc63b11f4142b1d52",
+      "prCi": 41258508964,
+      "mainCi": 41258980637,
+      "testRun": 41259584648,
+      "testCandidate": "227207b5cc385a29bbabac1cc63b11f4142b1d52",
+      "hostingVersion": "sites/livepalmes-test/versions/df12e04e578b5660",
+      "updatedFunctions": 91,
+      "conservedFunctions": 25
+    },
+    {
+      "id": "remaining-native-responsibilities",
+      "status": "pending"
+    },
+    {
+      "id": "final-test-and-infra-production",
+      "status": "pending"
+    },
+    {
+      "id": "authorized-club-resumption",
+      "status": "pending-condition"
+    },
+    {
+      "phase": "native",
+      "pr": 656,
+      "commit": "468fe9163db117ebf27ba2665dfed7b0641b6623",
+      "prHead": "16b6adcab60aec6d71bc5a4e341fa001cf3ca6f8",
+      "ci": 41267539078,
+      "status": "test-success-technical-validation",
+      "mainCi": 41268106490,
+      "testRun": 41268654053,
+      "testHosting": "2f7c450377857de8",
+      "updatedFunctions": 105,
+      "conservedFunctions": 11
+    },
+    {
+      "phase": "captured-final",
+      "pr": 657,
+      "commit": "249b9068f4ba3c5044230ea9d38fab83a7a2ffea",
+      "prCi": 41270388203,
+      "mainCi": 41270946670,
+      "testRun": 41271348708,
+      "testHosting": "92bd73d2a28ab5be",
+      "updatedFunctions": 26,
+      "conservedFunctions": 90,
+      "status": "test-success-technical-validation"
+    }
+  ],
+  "nativeReview": {
+    "status": "test-success-technical-validation",
+    "diagnosticOnly": true,
+    "networkCalls": 0,
+    "nativeJavaScriptModules": 260,
+    "operationModules": 433,
+    "selectorMode": "dependency-closure",
+    "notes": [
+      "693 source-mutation probes in TEST and PROD completed offline on full virtual partition",
+      "Eight native sources still influence all exports, including real environment/SQL infrastructure and eager imports; inspect before narrowing",
+      "Shared native bounded queries and calendar adapters remain overly coupled; preserve singleton state and initialization contracts",
+      "Previous virtual probes superseded for captured PDF/legacy consumers; rerun on corrected partition before final claims."
+    ],
+    "baselineForPreview": "227207b5cc385a29bbabac1cc63b11f4142b1d52",
+    "nativeAndRetainedModules": 267,
+    "plans": 34,
+    "actualRuntimeApplied": true,
+    "previewTool": "tools/isolate-backend-native-modules.js",
+    "decisions": [
+      "Extract singleton portalPool without duplicating cache or changing createPool options",
+      "Separate swimmer identifiers, profile projection and identity fingerprint from read/correct adapters",
+      "Separate generic execute/bounded, calendar event values, portal event projection, region constants, competition fingerprint and visibility SQL",
+      "Extract createNapPool/options with its existing mysql2 load from inspection readers, preserving exact options and execution mode",
+      "Lazy root imports of pure static-data factories/helpers return actual cached module objects/functions; keep startup environment and connection infrastructure shared",
+      "Lazy account synchronizer factory must keep one instance and one pool per process; no invocation during proof",
+      "Need independent symbol/body/API proof, negative fixtures and original/candidate offline behavior traces before any application",
+      "Partition normalization into identity/time/dates/categories/courses/committees/intermediate components, with unique shared data and unchanged sporting rules",
+      "Capture remapped namespace members once at their original import scope; do not introduce require calls in row-processing helpers. Unknown namespace escapes stay conservative; direct module API mutation is refused.",
+      "Use statically destructured captured aliases plus the original local namespace name, keeping both one-time loading and conservative module-purity recognition; no selector edits.",
+      "Separate native swimmer read adapters, performance-row projection and seasonal calendar reads from correction/history/detail modules.",
+      "Keep portal origin snapshot eager at the original mail import position; mail functions load lazily against that immutable startup value",
+      "Final audit also separates club directory/by-id queries, club/person projections and club/national pagination, competition/entry views and document loading. Remaining atomic operations keep their shared transaction state."
+    ],
+    "probeFiles": "C:/Users/ITIFP/AppData/Local/Temp/livepalmes-corrected-native-{0,1,2,3}.json",
+    "previewCounts": {
+      "qualificationServiceOrdinary": {
+        "before": 105,
+        "after": 11
+      },
+      "portalMailAll": {
+        "before": 157,
+        "after": 2
+      },
+      "accountEmailProjectionAll": {
+        "before": 157,
+        "after": 2
+      },
+      "mysqlInspectionAll": {
+        "before": 157,
+        "after": 1
+      }
+    },
+    "remaining": [
+      "Global production status is tracked in next and closedProductionCompatibility"
+    ],
+    "previewProof": {
+      "declarations": 2902,
+      "apis": 704,
+      "moves": 34,
+      "networkCalls": 0,
+      "runtimeSourceSha256": "e8e2492625a7f2c044d60bba2cd5ef7dfd23e11278c46a12cc36d80bd5d6dd3b"
+    },
+    "runtimeSourceSha256": "e8e2492625a7f2c044d60bba2cd5ef7dfd23e11278c46a12cc36d80bd5d6dd3b",
+    "appliedTargets": [
+      "functions/nap-club-values.js",
+      "functions/nap-club-directory-page.js",
+      "functions/nap-club-read-by-id.js",
+      "functions/nap-club-people-values.js",
+      "functions/nap-club-people-page.js",
+      "functions/nap-national-people-page.js",
+      "functions/nap-competition-view-values.js",
+      "functions/nap-competition-list-item.js",
+      "functions/nap-competition-view.js",
+      "functions/nap-entry-view.js",
+      "functions/nap-workspace-documents.js",
+      "functions/portal-access-origin.js",
+      "functions/nap-portal-swimmer-readers.js",
+      "functions/nap-performance-row.js",
+      "functions/nap-portal-calendar-reader.js",
+      "functions/nap-performance-identity.js",
+      "functions/nap-performance-time.js",
+      "functions/nap-performance-dates.js",
+      "functions/nap-performance-categories.js",
+      "functions/nap-performance-courses.js",
+      "functions/nap-performance-committees.js",
+      "functions/nap-performance-intermediates.js",
+      "functions/nap-connection.js",
+      "functions/nap-swimmer-identity-values.js",
+      "functions/nap-swimmer-profile.js",
+      "functions/nap-portal-pool.js",
+      "functions/nap-swimmer-values.js",
+      "functions/nap-query.js",
+      "functions/nap-competition-query.js",
+      "functions/nap-calendar-event.js",
+      "functions/nap-portal-event.js",
+      "functions/nap-competition-regions.js",
+      "functions/nap-performance-visibility-sql.js",
+      "functions/nap-competition-fingerprint.js"
+    ],
+    "inventory": "docs/releases/backend-native-inventory.json",
+    "auditedNativeModules": 294,
+    "completedChecks": [
+      "Independent complete runtime declaration/API/identity/initializer proof",
+      "No namespace mutation/escape or receiver-sensitive helper in mapped native APIs",
+      "Static one-time captures; no per-row require added",
+      "Original and candidate singleton TEST/PROD simulated traces, origin startup snapshot retained",
+      "Actual authorization/outage/history/PDF/club/person/competition checks passed offline",
+      "All 294 native module source mutations simulated under both existing TEST/PROD selectors"
+    ],
+    "finalSamples": {
+      "ordinaryTEST": {
+        "nap-portal-swimmers.js": {
+          "before": 82,
+          "after": 2
+        },
+        "nap-portal-competitions.js": {
+          "before": 42,
+          "after": 33
+        },
+        "portal-access-mail.js": {
+          "before": 105,
+          "after": 0
+        }
+      },
+      "allExports": {
+        "portal-access-mail.js": {
+          "before": 157,
+          "after": 2
+        },
+        "nap-club-account-emails.js": {
+          "before": 157,
+          "after": 2
+        },
+        "nap-direct-calendar.js": {
+          "before": 60,
+          "after": 1
+        }
+      }
+    }
+  },
+  "factoryIsolationCommit": "227207b5cc385a29bbabac1cc63b11f4142b1d52",
+  "nativeIsolationCommit": "468fe9163db117ebf27ba2665dfed7b0641b6623",
+  "closedProductionCompatibility": {
+    "contract": ".github/releases/evidence/20261101-backend-isolation-contract.json",
+    "base": "6f76f7921d401cde1f45a5ce90acf5bbde097574",
+    "candidate": "249b9068f4ba3c5044230ea9d38fab83a7a2ffea",
+    "retainedFunctions": 16,
+    "status": "exact-final-integrated-candidate-offline-success",
+    "networkCalls": 0,
+    "factoryProofSha256": "f2cb84441c5c21f1d465aa9c871d6b2a04899ee9e3e7a6a80122dcd03e4f9c81",
+    "nativeProofSha256": "e8e2492625a7f2c044d60bba2cd5ef7dfd23e11278c46a12cc36d80bd5d6dd3b",
+    "scope": "One exact complete dependency migration, including captured factories; no excluded function deployment or business operation",
+    "capturedProofSha256": "90f497d405c70633af85278334d6c14469bf28fa3c5f64fee37adfeb4c7786b8",
+    "proofFile": "C:/Users/ITIFP/AppData/Local/Temp/livepalmes-global-final-offline-proof.json",
+    "toolingCi": "required-before-Infra-promotion"
+  },
+  "capturedReview": {
+    "baseline": "468fe9163db117ebf27ba2665dfed7b0641b6623",
+    "factories": [
+      "engagementPdfRenderer",
+      "legacyPerformancePublication"
+    ],
+    "cohesiveRetained": [
+      "competitionImportParser: one real consumer set",
+      "competitionStatistics: one real consumer set"
+    ],
+    "status": "exact-test-success-technical-validation",
+    "reason": "Two retained captured factories still have multiple real consumer groups; finish them before global completion",
+    "proof": {
+      "bodies": 70,
+      "groups": 14,
+      "exports": 157,
+      "stableBindings": 27,
+      "runtimeSourceSha256": "90f497d405c70633af85278334d6c14469bf28fa3c5f64fee37adfeb4c7786b8"
+    },
+    "inventory": "docs/releases/backend-captured-inventory.json",
+    "remainingMultiConsumerFactories": 0,
+    "totalDeliveredFactories": 438,
+    "cumulativeMovedBodies": 705,
+    "cumulativeOperationGroups": 433,
+    "pr": 657,
+    "candidate": "249b9068f4ba3c5044230ea9d38fab83a7a2ffea",
+    "prCi": 41270388203,
+    "mainCi": 41270946670,
+    "testRun": 41271348708,
+    "testHosting": "92bd73d2a28ab5be",
+    "updatedFunctions": 26,
+    "conservedFunctions": 90
+  },
+  "capturedIsolationCommit": "249b9068f4ba3c5044230ea9d38fab83a7a2ffea",
+  "finalApplicationCandidate": "249b9068f4ba3c5044230ea9d38fab83a7a2ffea",
+  "runtimePatchAlignment": {
+    "observed": {
+      "mainApplication": "v22.23.3",
+      "test": "v22.23.4",
+      "repeatedVerificationSeconds": 402,
+      "mainRun": 41270946670,
+      "testRun": 41271348708
+    },
+    "correction": "Common workflows check latest available Node 22 patch instead of accepting divergent runner caches; exact Node/platform proof equality and full fallback unchanged",
+    "status": "prepared-for-required-CI"
+  }
+}

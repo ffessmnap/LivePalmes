@@ -2,8 +2,8 @@
 // Preparation only: no database connection or write. The future caller must
 // authorize the native competition/club before loading the bounded dossier.
 // 80 selected identities at most, one grouped PK read for new selections.
-const {positiveId,date}=require("./nap-direct-calendar");
-const {person}=require("./nap-club-people");
+const { positiveId, date } = require("./nap-calendar-values");
+const { person } = require("./nap-club-people-values");
 const {identity}=require("./nap-club-person-edit");
 function officialIds(values) {
   if(!Array.isArray(values) || values.length>80) throw new RangeError("80 officiels maximum.");

@@ -1,7 +1,7 @@
 "use strict";
 // Shared identity references and guarded option statements; no mutation execution.
 const {nativeEqual}=require("./nap-native-compare");
-const {SOURCES,OPTION_COLUMNS}=require("./nap-club-people");
+const { SOURCES, OPTION_COLUMNS } = require("./nap-club-people-values");
 const table="livepalmes_club_people_options";
 
 function changedOptions(kind,native,previous,active,now,actorUid,roles=null) {

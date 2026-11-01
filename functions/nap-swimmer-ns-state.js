@@ -1,6 +1,7 @@
 "use strict";
 const {createHash}=require("node:crypto");
-const identity=require("./nap-portal-swimmer-change");
+const { fingerprint: __nativeMember0 } = require("./nap-swimmer-identity-values");
+const identity={ fingerprint: __nativeMember0 };
 const digest=value=>createHash("sha256").update(JSON.stringify(value)).digest("hex");
 function state(row) {
   const available=Object.hasOwn(row,"livepalmes_ns")&&Object.hasOwn(row,"livepalmes_ns_version");

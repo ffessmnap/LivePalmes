@@ -4,7 +4,7 @@
 const {createHash}=require("node:crypto");
 const {isDeepStrictEqual:equal}=require("node:util");
 const {reference}=require("./nap-club-person-status");
-const {SOURCES,OPTION_COLUMNS,normalizeOptions}=require("./nap-club-people");
+const { SOURCES, OPTION_COLUMNS, normalizeOptions } = require("./nap-club-people-values");
 const plans=require("./nap-person-deletion-plan");
 const schema=require("./nap-approved-person-history-schema");
 function operation(input) {return createHash("sha256").update(JSON.stringify(["person-delete",input.actorUid,input.personId,input.expectedFingerprint])).digest("hex");}

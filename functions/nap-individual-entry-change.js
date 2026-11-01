@@ -2,8 +2,8 @@
 // Native writes use existing tables; Firestore is only
 // the operation journal. Authorization and sporting resolution stay server-side.
 const {createHash}=require("node:crypto");
-const {positiveId}=require("./nap-direct-calendar");
-const {fingerprint}=require("./nap-portal-workspaces");
+const { positiveId } = require("./nap-calendar-values");
+const { fingerprint } = require("./nap-competition-fingerprint");
 const {readNativeCompetition}=require("./nap-portal-competitions");
 const {readNativeClubEntry}=require("./nap-portal-entries");
 const {readEntryHistory}=require("./nap-entry-performance-history");

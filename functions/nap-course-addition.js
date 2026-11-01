@@ -4,9 +4,10 @@
 // two locked course reads (<=300 each), authority, one grouped INSERT, verify.
 const {isDeepStrictEqual}=require("node:util");
 const native=require("./nap-portal-competitions");
-const {fingerprint,nativeCourseCode}=require("./nap-portal-workspaces");
+const { fingerprint } = require("./nap-competition-fingerprint");
+const { nativeCourseCode } = require("./nap-competition-view-values");
 const {operationHash,authorityGuard}=require("./nap-portal-competition-change");
-const {positiveId}=require("./nap-direct-calendar");
+const { positiveId } = require("./nap-calendar-values");
 const COLUMNS=["compet","pos","id_course","opencourse","cost","limitnageur"];
 const READ="SELECT id,compet,pos,id_course,opencourse,cost,limitnageur FROM compet_courses WHERE compet=? ORDER BY pos,id LIMIT 301";
 const CATALOG="SELECT id,course,sexe,final,relais,categorie,ld,mixte,actif FROM course_dispo FORCE INDEX(PRIMARY) WHERE id>0 ORDER BY id LIMIT 301";

@@ -1,7 +1,8 @@
 "use strict";
 const {createHash}=require("node:crypto"),{isDeepStrictEqual:equal}=require("node:util");
 const {COLUMNS,hash}=require("./nap-approved-swimmer-correction");
-const {fingerprint,planIdentityChange}=require("./nap-portal-swimmer-change");
+const { fingerprint } = require("./nap-swimmer-identity-values");
+const { planIdentityChange } = require("./nap-portal-swimmer-change");
 const {person}=require("./nap-portal-swimmers"),{findClub}=require("./nap-club-directory");
 const {notMerged}=require("./nap-swimmer-merge-state"),{nativeEqual}=require("./nap-native-compare");
 const history=require("./nap-national-swimmer-clubs-history");
