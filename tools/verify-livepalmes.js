@@ -34,6 +34,10 @@ function runUnitTests() {
   printStep("Tests automatiques");
   run(process.execPath, ["tools/build-public-home-template.js"]);
   [
+    "user-name-correction-plan-tests.js",
+    "inventory-production-user-names-tests.js",
+    "user-name-correction-engine-tests.js",
+    "user-name-correction-controls-tests.js",
     "offline-network-tests.js",
     "javascript-syntax-tests.js",
     "source-files-tests.js",
