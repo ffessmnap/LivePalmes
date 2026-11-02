@@ -45,10 +45,17 @@ async function wiringTests(){
   const exceptions=new Set(["getCurrentAccessUser","getPublicEngagementClubDirectory","submitEngagementAccessRequest"]);
   function visit(node){if(!node||typeof node!=="object")return;if(node.type==="Literal"&&registrations.has(node.value)&&!exceptions.has(node.value))assert(names.includes(node.value),"Unguarded portal endpoint, including conditional calls: "+node.value);for(const value of Object.values(node))if(value&&typeof value==="object"){if(Array.isArray(value))value.forEach(visit);else visit(value);}}
   files.forEach(file=>visit(acorn.parse(fs.readFileSync(file,"utf8"),{ecmaVersion:"latest"})));
-  const handler=registrations.get("getEngagementCompetition").arguments.at(-1);let business=0;
+  // Include active historical variants even when the current UI no longer calls
+  // them. Public/profile, Direct and maintenance keep their separate contracts.
+  const separateContracts=new Set(["getCurrentAccessUser","getPublicEngagementClubDirectory","setRolePins","verifyPin","storeCompetitionPdf","deleteCompetitionPdf","syncOfficialResultToPublicIndex","rebuildAccessDirectoryIndexNextPage","rebuildAccessDirectorySnapshotNextPage","syncEngagementMailRecipientIndex","rebuildEngagementMailRecipientIndexNextPage"]);
+  const lots=require("../tools/firebase-test-backend-lots");
+  for(const name of lots.ALL_SAFE_LOTS.flatMap(lots.activeLotFunctions).concat(lots.TEST_NON_MAIL_FUNCTIONS))assert(separateContracts.has(name)||names.includes(name),"Active portal variant needs session authorization: "+name);
+  for(const name of ["getEngagementCompetition","previewEngagementClubSwimmerEventTimes","saveEngagementClubSwimmerSelection"]){
+  const handler=registrations.get(name).arguments.at(-1);let business=0;
   const code=source.slice(handler.start,handler.end),delegate=/return (\$\w+)\(\)\./.exec(code)[1];
   const sandbox={portalSessionService:()=>({assertSession:async()=>{throw new HttpsError("unauthenticated","expired");}}),[delegate]:()=>{business++;throw Error("No business work before session authorization");}};
   await assert.rejects(vm.runInNewContext("("+code+")",sandbox)({}),e=>e.code==="unauthenticated");assert.equal(business,0);
+  }
   const profileHandler=registrations.get("getCurrentAccessUser").arguments.at(-1),operations=[];
   const session={open:async()=>operations.push("open"),touch:async()=>operations.push("touch"),close:async()=>operations.push("close"),assertSession:async()=>operations.push("assert")};
   const dispatch=vm.runInNewContext("("+source.slice(profileHandler.start,profileHandler.end)+")",{ENVIRONMENT:{name:"test"},HttpsError,portalSessionService:()=>session,$portalAccessHandlers_getCurrentAccessUser:()=>({getCurrentAccessUser:async()=>operations.push("profile")})});
