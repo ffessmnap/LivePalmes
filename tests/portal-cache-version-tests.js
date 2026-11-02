@@ -17,9 +17,10 @@ function versions(html, css, loader = "", modules = "") {
     assert.ok(!result.has(match[1]), "Duplicate module script: " + match[1]);
     result.set(match[1], match[2]);
   }
-  const stylesheet = /href="(assets\/livepalmes-admin-portal\.css)\?v=([^"?]+)"/.exec(html);
+  const stylesheet = /(?:href|data-portal-style-source)="(assets\/livepalmes-admin-portal\.css)\?v=([^"?]+)"/.exec(html);
   assert.ok(stylesheet);
   result.set(stylesheet[1], stylesheet[2]);
+  for (const match of html.matchAll(/data-portal-fragment-src="([^"?]+)\?v=([^"?]+)"/g)) result.set(match[1], match[2]);
   for (const match of css.matchAll(/@import url\("(portal\/styles\/[^"?]+)\?v=([^"?]+)"\);/g)) result.set("assets/" + match[1], match[2]);
   const chunkVersion = /const version = "([^"]+)"/.exec(loader)?.[1];
   if (chunkVersion) for (const name of fs.readdirSync("assets/portal/deferred")) result.set("assets/portal/deferred/"+name,chunkVersion);
@@ -30,7 +31,7 @@ function versions(html, css, loader = "", modules = "") {
   return result;
 }
 const current = versions(html, entry, fs.readFileSync("assets/livepalmes-portal-deferred.js","utf8"), fs.readFileSync("assets/portal/modules-and-clubs.js","utf8"));
-assert.equal(current.size, 50);
+assert.equal(current.size, 55);
 const historical = file => {
   try { return execFileSync("git", ["show", "HEAD^:" + file], { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }); }
   catch { return null; } // New resources have no cached predecessor.

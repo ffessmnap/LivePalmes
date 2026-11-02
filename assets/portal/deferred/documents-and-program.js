@@ -305,6 +305,1447 @@
           }
         }
       }
-    return { loadEngagementClubRecapFiles, loadEngagementCompetitionStatistics, loadEngagementMailJobs, saveEngagementCompetitionDocuments, deleteEngagementCompetitionDocument, loadEngagementOpenWaterCourses, setEngagementOpenWaterCourseStatus };
+
+    function engagementCompetitionDocumentDraftValues() {
+        return Array.from(portalContext.elements.engagementsDocumentDrafts?.querySelectorAll("[data-engagement-document-draft]") || []).map((row) => ({
+          title: row.querySelector("[data-engagement-document-title]")?.value.trim() || "",
+          category: row.querySelector("[data-engagement-document-category]")?.value || "other",
+          description: row.querySelector("[data-engagement-document-description]")?.value.trim() || ""
+        }));
+      }
+
+    function readEngagementCompetitionDocumentFile(file) {
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.addEventListener("load", () => resolve(String(reader.result || "")), { once: true });
+          reader.addEventListener("error", () => reject(reader.error || new Error("Lecture du fichier impossible.")), { once: true });
+          reader.readAsDataURL(file);
+        });
+      }
+
+    function updateSelectedEngagementCompetitionDocuments(documents = []) {
+        portalState.selectedEngagementCompetition = {
+          ...(portalState.selectedEngagementCompetition || {}),
+          clubDocuments: Array.isArray(documents) ? documents : []
+        };
+        moduleActions.renderEngagementDocuments(portalState.selectedEngagementCompetition);
+      }
+
+    function updateSelectedEngagementDocumentStatus(key, status, generatedAt = new Date().toISOString()) {
+        if (!key || !portalState.selectedEngagementCompetition) return;
+        portalState.selectedEngagementCompetition = {
+          ...portalState.selectedEngagementCompetition,
+          documents: {
+            ...(portalState.selectedEngagementCompetition.documents || {}),
+            [key]: {
+              ...((portalState.selectedEngagementCompetition.documents || {})[key] || {}),
+              status,
+              generatedAt
+            }
+          }
+        };
+        moduleActions.renderEngagementDocuments(portalState.selectedEngagementCompetition);
+      }
+
+    function engagementEventCountLabel(competition = {}) {
+        const count = Number(competition.eventCount || 0);
+        if (!count) return "";
+        return `${count} épreuve${count > 1 ? "s" : ""}`;
+      }
+
+    function refreshEngagementProgramEditor(sessions = moduleActions.selectedEngagementProgramSessionsFromForm()) {
+        moduleActions.renderEngagementProgramSessions(sessions, portalActions.isEngagementAdminMode() && portalState.engagementDetailEditing && portalActions.canEditEngagementCompetition());
+      }
+
+    function selectedEngagementEventsCategoryError() {
+        const selectedItems = Array.from(portalContext.elements.engagementsEventsForm?.querySelectorAll("[data-engagement-event-item]") || [])
+          .filter((item) => item.querySelector("[data-engagement-event-code]")?.checked === true);
+        const invalidItem = selectedItems.find((item) => !item.querySelectorAll("[data-engagement-category-code]:checked").length);
+        const label = invalidItem?.querySelector("[data-engagement-event-label]")?.textContent?.trim();
+        return invalidItem ? `Au moins une catégorie doit rester autorisée pour ${label || "chaque épreuve"}.` : "";
+      }
+
+    function selectedEngagementProgramError() {
+        const eventLabels = new Map(moduleActions.selectedEngagementEventOptions().map((event) => [event.code, event.label]));
+        const sessions = moduleActions.selectedEngagementProgramSessionsFromForm();
+        const occurrences = sessions.flatMap((session, sessionIndex) => (session.items || []).map((item, itemIndex) => ({
+          ...item,
+          position: sessionIndex * 160 + itemIndex
+        })));
+        const usedByPhase = new Map();
+        for (const item of occurrences) {
+          const phaseKey = `${item.eventCode}:${item.phase}`;
+          const usedModes = usedByPhase.get(phaseKey) || new Set();
+          const duplicate = item.genderMode === "mixed" ? usedModes.size > 0 : usedModes.has("mixed") || usedModes.has(item.genderMode);
+          if (duplicate) return `Doublon dans le programme : ${eventLabels.get(item.eventCode) || item.eventCode} · ${moduleActions.engagementProgramPhaseLabel(item.phase)}.`;
+          usedModes.add(item.genderMode);
+          usedByPhase.set(phaseKey, usedModes);
+        }
+        const modesByEvent = new Map();
+        occurrences.forEach((item) => {
+          if (!modesByEvent.has(item.eventCode)) modesByEvent.set(item.eventCode, new Set());
+          modesByEvent.get(item.eventCode).add(item.genderMode);
+        });
+        for (const [eventCode, modes] of modesByEvent) {
+          if (modes.has("mixed") && modes.size > 1) return `F/H ensemble ne peut pas être combiné avec Femmes ou Hommes pour ${eventLabels.get(eventCode) || eventCode}.`;
+        }
+        const groups = new Map();
+        occurrences.forEach((item) => {
+          const key = `${item.eventCode}:${item.genderMode}`;
+          if (!groups.has(key)) groups.set(key, []);
+          groups.get(key).push(item);
+        });
+        for (const items of groups.values()) {
+          const eventCode = items[0].eventCode;
+          const eventLabel = eventLabels.get(eventCode) || eventCode;
+          const phases = new Set(items.map((item) => item.phase));
+          if (phases.has("direct") && phases.size > 1) return `Course directe incompatible avec un autre passage pour ${eventLabel}.`;
+          const heats = items.find((item) => item.phase === "heats");
+          const final = items.find((item) => item.phase === "final");
+          const slowHeats = items.find((item) => item.phase === "slowHeats");
+          const fastHeat = items.find((item) => item.phase === "fastHeat");
+          if (Boolean(heats) !== Boolean(final)) return `Les séries et la finale doivent être programmées ensemble pour ${eventLabel}.`;
+          if (Boolean(slowHeats) !== Boolean(fastHeat)) return `Les séries lentes et la série rapide doivent être programmées ensemble pour ${eventLabel}.`;
+          if ((heats || final) && (slowHeats || fastHeat)) return `Deux formats de déroulement sont combinés pour ${eventLabel}.`;
+          if (heats && final && heats.position >= final.position) return `La finale doit être placée après les séries pour ${eventLabel}.`;
+          if (slowHeats && fastHeat && slowHeats.position >= fastHeat.position) return `La série rapide doit être placée après les séries lentes pour ${eventLabel}.`;
+        }
+        return "";
+      }
+
+    function formatEngagementAutomationDate(value) {
+        return value ? portalActions.formatDeadline(value).replace(/^Limite /, "") : "-";
+      }
+
+    function renderEngagementClosureAutomation(competition = {}) {
+        const status = String(competition.closureAutomationStatus || "").trim();
+        const summary = competition.closureAutomationSummary || {};
+        const shouldShow = status || competition.entryStatus === "closed" || competition.closureRecapEmailsPreparedAt || competition.closureRecapEmailsSentAt;
+        if (!shouldShow) return "";
+        const updatedAt = summary.updatedAt || competition.closureAutomationCompletedAt || competition.closureAutomationFailedAt || competition.closureAutomationStartedAt;
+        const rows = [
+          ["Dernière exécution", moduleActions.formatEngagementAutomationDate(updatedAt)],
+          ["Clubs traites", `${Number(summary.clubEntryCount || 0)}${Number(summary.skippedClubCount || 0) ? ` - ${Number(summary.skippedClubCount || 0)} ignore${Number(summary.skippedClubCount || 0) > 1 ? "s" : ""}` : ""}`],
+          ["PDF", `${Number(summary.pdfGeneratedCount || 0)} généré${Number(summary.pdfGeneratedCount || 0) > 1 ? "s" : ""} - ${Number(summary.pdfReusedCount || 0)} déjà à jour`],
+          ["TXT", `${Number(summary.txtGeneratedCount || 0)} généré - ${Number(summary.txtSentMailCount || 0)}/${Number(summary.txtAttemptedMailCount || 0)} envoyé${Number(summary.txtSentMailCount || 0) > 1 ? "s" : ""}`],
+          ["E-mails", `${Number(summary.sentMailCount || 0)}/${Number(summary.attemptedMailCount || 0)} envoyé${Number(summary.sentMailCount || 0) > 1 ? "s" : ""}`]
+        ];
+        const errorCount = Number(summary.prepareErrorCount || 0) + Number(summary.sendErrorCount || 0);
+        if (errorCount || competition.closureAutomationReason) {
+          rows.push(["Erreurs", competition.closureAutomationReason || String(errorCount)]);
+        }
+        return `
+      <article class="admin-engagements-closure-card" data-closure-status="${portalActions.escapeHtml(portalActions.engagementClosureAutomationStatusTone(status))}">
+        <div class="admin-engagements-closure-card-head">
+          <strong>Fermeture automatique</strong>
+          <span>${portalActions.escapeHtml(portalActions.engagementClosureAutomationStatusLabel(status))}</span>
+        </div>
+        <dl>
+          ${rows.map(([label, value]) => `
+            <div>
+              <dt>${portalActions.escapeHtml(label)}</dt>
+              <dd>${portalActions.escapeHtml(value)}</dd>
+            </div>
+          `).join("")}
+        </dl>
+      </article>
+    `;
+      }
+
+    function renderEngagementClubRecapSelector() {
+        const select = portalContext.elements.engagementsClubPdfSelect;
+        const button = portalContext.elements.engagementsClubPdfDownloadButton;
+        const status = portalContext.elements.engagementsClubRecapFiles;
+        if (!select || !button || !status) return;
+        const previousValue = select.value;
+        select.innerHTML = "";
+        if (portalState.engagementClubRecapEntriesLoading) {
+          select.append(new Option("Chargement des clubs…", ""));
+          button.disabled = true;
+          status.innerHTML = '<p class="admin-engagements-empty">Chargement des dossiers clubs…</p>';
+          return;
+        }
+        if (!portalState.engagementClubRecapEntries.length) {
+          select.append(new Option("Aucun club engagé", ""));
+          button.disabled = true;
+          status.innerHTML = '<p class="admin-engagements-empty">Aucun dossier club n’est disponible pour le moment.</p>';
+          return;
+        }
+        portalState.engagementClubRecapEntries.forEach((entry) => {
+          select.append(new Option(portalActions.clubDisplayLabel(entry, { fallback: "Club" }), entry.clubId || ""));
+        });
+        select.value = Array.from(select.options).some((option) => option.value === previousValue)
+          ? previousValue
+          : select.options[0]?.value || "";
+        button.disabled = !select.value;
+        const selectedEntry = portalState.engagementClubRecapEntries.find((entry) => entry.clubId === select.value) || portalState.engagementClubRecapEntries[0];
+        status.innerHTML = selectedEntry
+          ? `<small>${portalActions.escapeHtml(`${selectedEntry.swimmerCount || 0} nageur${Number(selectedEntry.swimmerCount || 0) > 1 ? "s" : ""} · ${selectedEntry.individualCount || 0} course${Number(selectedEntry.individualCount || 0) > 1 ? "s" : ""} · ${selectedEntry.relayCount || 0} relais`)}</small>`
+          : "";
+      }
+
+    function engagementStatisticsTimeModeLabel(mode = "") {
+        return {
+          known: "Temps connu",
+          manual: "Saisie manuelle",
+          native: "Origine non connue",
+          default595999: "Temps par défaut"
+        }[String(mode || "")] || "";
+      }
+
+    function renderEngagementCompetitionStatistics() {
+        const summary = portalContext.elements.engagementsStatisticsSummary;
+        const alerts = portalContext.elements.engagementsStatisticsAlerts;
+        const select = portalContext.elements.engagementsStatisticsEventSelect;
+        const eventRows = portalContext.elements.engagementsStatisticsEventRows;
+        const clubRows = portalContext.elements.engagementsStatisticsClubRows;
+        if (!summary || !alerts || !select || !eventRows || !clubRows) return;
+        if (portalState.engagementCompetitionStatisticsLoading) {
+          summary.innerHTML = '<p class="admin-engagements-empty">Calcul des statistiques en cours…</p>';
+          alerts.innerHTML = "";
+          eventRows.innerHTML = "";
+          clubRows.innerHTML = "";
+          if (portalContext.elements.engagementsStatisticsRefreshButton) portalContext.elements.engagementsStatisticsRefreshButton.disabled = true;
+          return;
+        }
+        if (portalContext.elements.engagementsStatisticsRefreshButton) portalContext.elements.engagementsStatisticsRefreshButton.disabled = false;
+        const statistics = portalState.engagementCompetitionStatistics;
+        if (!statistics) {
+          summary.innerHTML = '<p class="admin-engagements-empty">Ouvrez cet onglet pour calculer les statistiques.</p>';
+          alerts.innerHTML = "";
+          eventRows.innerHTML = "";
+          clubRows.innerHTML = "";
+          return;
+        }
+        if (statistics.error) {
+          summary.innerHTML = `<p class="admin-portal-message" data-tone="error">Calcul impossible : ${portalActions.escapeHtml(statistics.error)}</p>`;
+          alerts.innerHTML = "";
+          eventRows.innerHTML = "";
+          clubRows.innerHTML = "";
+          return;
+        }
+        const counts = statistics.counts || {};
+        const openWater = portalActions.engagementCompetitionType(portalState.selectedEngagementCompetition) === "openWater";
+        const cards = [
+          ["Participants", counts.swimmerCount || 0, `${counts.femaleCount || 0} F · ${counts.maleCount || 0} H`],
+          ["Clubs", counts.clubCount || 0, "dossiers engagés"],
+          ["Courses", counts.individualEntryCount || 0, "engagements individuels"],
+          ["Relais", counts.relayCount || 0, "équipes engagées"],
+          ["Officiels", counts.officialCount || 0, "déclarés"]
+        ];
+        summary.innerHTML = cards.map(([label, value, detail]) => `
+      <article><small>${portalActions.escapeHtml(label)}</small><strong>${portalActions.escapeHtml(String(value))}</strong><span>${portalActions.escapeHtml(detail)}</span></article>
+    `).join("");
+        const warningParts = [
+          counts.incompleteClubCount ? `${counts.incompleteClubCount} dossier${counts.incompleteClubCount > 1 ? "s" : ""} à vérifier` : "",
+          !openWater && counts.manualTimeCount ? `${counts.manualTimeCount} temps saisi${counts.manualTimeCount > 1 ? "s" : ""} manuellement` : "",
+          !openWater && counts.unknownTimeOriginCount ? `${counts.unknownTimeOriginCount} temps : origine non connue` : "",
+          !openWater && counts.defaultTimeCount ? `${counts.defaultTimeCount} temps par défaut 59:59.99` : "",
+          counts.unknownSexCount ? `${counts.unknownSexCount} sexe${counts.unknownSexCount > 1 ? "s" : ""} non renseigné${counts.unknownSexCount > 1 ? "s" : ""}` : "",
+          statistics.truncated ? "Liste détaillée limitée aux 10 000 premiers engagements" : ""
+        ].filter(Boolean);
+        alerts.innerHTML = warningParts.length
+          ? `<div class="admin-engagements-statistics-warning"><strong>Points de contrôle</strong><span>${portalActions.escapeHtml(warningParts.join(" · "))}</span></div>`
+          : '<div class="admin-engagements-statistics-ok">Aucun point de contrôle détecté.</div>';
+
+        const events = Array.isArray(statistics.events) ? statistics.events : [];
+        const selectedEventCode = select.value;
+        select.innerHTML = "";
+        events.forEach((event) => {
+          const suffix = event.type === "relay" ? `${event.entryCount || 0} relais` : `${event.entryCount || 0} engagé${Number(event.entryCount || 0) > 1 ? "s" : ""}`;
+          select.append(new Option(`${event.label || event.eventCode} — ${suffix}`, event.eventCode || ""));
+        });
+        if (events.some((event) => event.eventCode === selectedEventCode)) select.value = selectedEventCode;
+        const selectedEvent = events.find((event) => event.eventCode === select.value) || events[0];
+        if (!selectedEvent) {
+          select.append(new Option("Aucune course au programme", ""));
+          eventRows.innerHTML = '<p class="admin-engagements-empty">Aucune course n’est disponible.</p>';
+        } else if (!selectedEvent.rows?.length) {
+          eventRows.innerHTML = '<p class="admin-engagements-empty">Aucun engagement pour cette course.</p>';
+        } else if (selectedEvent.type === "relay") {
+          eventRows.innerHTML = `
+        <div class="admin-engagements-statistics-row admin-engagements-statistics-row-head" role="row"><span>Ordre</span><span>Club</span><span>Catégorie</span><span>Composition</span><span>${openWater ? "Inscription" : "Temps"}</span></div>
+        ${selectedEvent.rows.map((row, index) => `
+          <div class="admin-engagements-statistics-row" role="row">
+            <span data-label="Ordre">${index + 1}</span><span data-label="Club"><strong>${portalActions.escapeHtml(portalActions.clubDisplayCode(row, "-"))}</strong></span>
+            <span data-label="Catégorie">${portalActions.escapeHtml([row.category, moduleActions.engagementProgramGenderModeDisplayLabel(row.genderMode, row.eventCode)].filter(Boolean).join(" · ") || "-")}</span>
+            <span data-label="Composition">${portalActions.escapeHtml((row.members || []).map((member) => [member.lastName, member.firstName].filter(Boolean).join(" ")).join(", ") || "-")}</span>
+            <span data-label="${openWater ? "Inscription" : "Temps"}"><strong>${openWater ? "Oui" : portalActions.escapeHtml(row.entryTime || "-")}</strong></span>
+          </div>`).join("")}`;
+        } else {
+          const individualRows = selectedEvent.rows
+            .map((row, index) => ({ row, index }))
+            .sort((left, right) => {
+              const sexOrder = { F: 0, M: 1 };
+              return (sexOrder[String(left.row.sex || "").toUpperCase()] ?? 2) - (sexOrder[String(right.row.sex || "").toUpperCase()] ?? 2)
+                || left.index - right.index;
+            })
+            .map(({ row }) => row);
+          const groupedIndividualRows = [
+            { sex: "F", label: "Femmes", tone: "female" },
+            { sex: "M", label: "Hommes", tone: "male" },
+            { sex: "", label: "Sexe à vérifier", tone: "unknown" }
+          ].map((group) => ({
+            ...group,
+            rows: individualRows.filter((row) => String(row.sex || "").toUpperCase() === group.sex)
+          })).filter((group) => group.rows.length);
+          eventRows.innerHTML = `
+        <div class="admin-engagements-statistics-row admin-engagements-statistics-row-head admin-engagements-statistics-individual-row" role="row"><span>Ordre</span><span>Nageur</span><span>Club</span><span>Catégorie</span><span>${openWater ? "Inscription" : "Temps"}</span></div>
+        ${groupedIndividualRows.map((group) => `
+          <div class="admin-engagements-statistics-gender-heading is-${portalActions.escapeHtml(group.tone)}" role="row"><strong>${portalActions.escapeHtml(group.label)}</strong><span>${group.rows.length} engagé${group.rows.length > 1 ? "s" : ""}</span></div>
+          ${group.rows.map((row, index) => `
+          <div class="admin-engagements-statistics-row admin-engagements-statistics-individual-row" role="row" data-sex="${portalActions.escapeHtml(group.sex || "unknown")}">
+            <span data-label="Ordre">${index + 1}</span>
+            <span data-label="Nageur"><strong>${portalActions.escapeHtml([row.lastName, row.firstName].filter(Boolean).join(" ") || "-")}</strong></span>
+            <span data-label="Club"><strong>${portalActions.escapeHtml(portalActions.clubDisplayCode(row, "-"))}</strong></span>
+            <span data-label="Catégorie">${portalActions.escapeHtml(row.category || "-")}</span>
+            <span data-label="${openWater ? "Inscription" : "Temps"}" ${openWater ? "" : `title="${portalActions.escapeHtml(moduleActions.engagementStatisticsTimeModeLabel(row.entryTimeMode))}"`}><strong>${openWater ? "Oui" : portalActions.escapeHtml(row.entryTime || "-")}</strong></span>
+          </div>`).join("")}`).join("")}`;
+        }
+        const clubs = Array.isArray(statistics.clubs) ? statistics.clubs : [];
+        clubRows.innerHTML = clubs.length ? `
+      <div class="admin-engagements-statistics-club-row admin-engagements-statistics-row-head" role="row"><span>Club</span><span>Nageurs</span><span>Courses</span><span>Relais</span><span>Officiels</span><span>Dernière modification</span></div>
+      ${clubs.map((club) => `
+        <div class="admin-engagements-statistics-club-row" role="row">
+          <span data-label="Club"><strong>${portalActions.escapeHtml(portalActions.clubDisplayCode(club, "-"))}</strong><small>${portalActions.escapeHtml(club.clubName || portalActions.accessClubFromId(club.clubId)?.clubName || "")}</small></span>
+          <span data-label="Nageurs">${portalActions.escapeHtml(`${club.swimmerCount || 0} (${club.femaleCount || 0} F · ${club.maleCount || 0} H)`)}</span>
+          <span data-label="Courses">${portalActions.escapeHtml(String(club.individualCount || 0))}</span><span data-label="Relais">${portalActions.escapeHtml(String(club.relayCount || 0))}</span>
+          <span data-label="Officiels">${portalActions.escapeHtml(String(club.officialCount || 0))}</span>
+          <span data-label="Dernière modification">${portalActions.escapeHtml(club.updatedAt ? portalActions.formatDeadline(club.updatedAt).replace(/^Limite /, "") : "-")}</span>
+        </div>`).join("")}` : '<p class="admin-engagements-empty">Aucun club engagé pour le moment.</p>';
+      }
+
+    function engagementMailJobTypeLabel(type) {
+        return {
+          opening_notification: "Ouverture",
+          entries_txt: "TXT informatique",
+          club_recap_pdf: "PDF club",
+          competition_documents: "Documents"
+        }[String(type || "")] || "Mail";
+      }
+
+    function renderEngagementMailJobs() {
+        const mount = portalContext.elements.engagementsMailJobsList;
+        if (!mount) return;
+        if (!portalActions.isEngagementAdminMode()) {
+          mount.innerHTML = "";
+          return;
+        }
+        if (portalState.engagementMailJobsLoading && !portalState.engagementMailJobs.length) {
+          mount.innerHTML = '<p class="admin-engagements-empty">Chargement du suivi des envois…</p>';
+          return;
+        }
+        if (!portalState.selectedEngagementCompetitionId) {
+          mount.innerHTML = "";
+          return;
+        }
+        if (!portalState.engagementMailJobsCompetitionId || portalState.engagementMailJobsCompetitionId !== portalState.selectedEngagementCompetitionId) {
+          mount.innerHTML = '<p class="admin-engagements-empty">Suivi des envois à charger.</p>';
+          return;
+        }
+        if (!portalState.engagementMailJobs.length) {
+          mount.innerHTML = '<p class="admin-engagements-empty">Aucun courriel préparé pour le moment.</p><button class="ghost-button" type="button" data-engagement-mail-jobs-refresh>Actualiser le suivi</button>';
+          return;
+        }
+        const sentCount = portalState.engagementMailJobs.filter((job) => job.status === "sent").length;
+        const readyCount = portalState.engagementMailJobs.filter((job) => job.status === "ready").length;
+        const failedCount = portalState.engagementMailJobs.filter((job) => job.status === "failed" || job.status === "partial").length;
+        const blockedCount = portalState.engagementMailJobs.filter((job) => job.status === "blocked_missing_config").length;
+        const uncertainCount = portalState.engagementMailJobs.filter((job) => job.status === "uncertain" ||
+          (job.status === "sending" && Date.now() - Date.parse(job.updatedAt) > 5 * 60 * 1000)).length;
+        const sendingCount = portalState.engagementMailJobs.filter((job) => job.status === "sending" &&
+          !(Date.now() - Date.parse(job.updatedAt) > 5 * 60 * 1000)).length;
+        const statusParts = [
+          readyCount ? `${readyCount} en attente d'envoi` : "",
+              sentCount ? `${sentCount} envoyé${sentCount > 1 ? "s" : ""}` : "",
+          failedCount ? `${failedCount} erreur${failedCount > 1 ? "s" : ""}` : "",
+          sendingCount ? `${sendingCount} en cours` : "",
+          uncertainCount ? `${uncertainCount} à vérifier — ne pas renvoyer` : "",
+          blockedCount ? `${blockedCount} configuration manquante` : ""
+        ].filter(Boolean);
+        mount.innerHTML = `
+      <div class="admin-engagements-mail-jobs-head">
+        <strong>Courriels</strong>
+        <button class="ghost-button" type="button" data-engagement-mail-jobs-refresh ${portalState.engagementMailJobsLoading ? "disabled" : ""}>Actualiser le suivi</button>
+        <small aria-live="polite">${portalState.engagementMailJobs.length}${portalState.engagementMailJobsTotalCount > portalState.engagementMailJobs.length ? ` sur ${portalState.engagementMailJobsTotalCount}` : ""} envois affichés${statusParts.length ? ` · Sur les lignes affichées : ${statusParts.join(" · ")}` : ""}. Un envoi peut regrouper plusieurs destinataires en CCI. Envoyé = accepté par le serveur mail.</small>
+      </div>
+      <div class="admin-engagements-mail-jobs-table" role="table" aria-label="Suivi des envois">
+        <div class="admin-engagements-mail-jobs-row admin-engagements-mail-jobs-row-head" role="row">
+          <span role="columnheader">Type</span>
+          <span role="columnheader">Destinataire</span>
+          <span role="columnheader">Club</span>
+          <span role="columnheader">Statut</span>
+        </div>
+        ${portalState.engagementMailJobs.map((job) => `
+          <div class="admin-engagements-mail-jobs-row" role="row" data-mail-status="${portalActions.escapeHtml(job.status || "")}">
+            <span role="cell">${portalActions.escapeHtml(moduleActions.engagementMailJobTypeLabel(job.type))}</span>
+            <span role="cell">
+              <strong>${portalActions.escapeHtml(job.deliveryMode === "bcc-v1" ? `${job.recipientCount} destinataire${job.recipientCount > 1 ? "s" : ""} · CCI` : job.toEmail || "-")}</strong>
+              <small>${portalActions.escapeHtml(job.subject || "-")}</small>
+            </span>
+            <span role="cell">${portalActions.escapeHtml(portalActions.clubDisplayLabel(job, { fallback: "-" }))}</span>
+            <span role="cell">
+              <span class="admin-engagements-mail-status">${portalActions.escapeHtml(job.status === "sending" && Date.now() - Date.parse(job.updatedAt) > 5 * 60 * 1000 ? "À vérifier — ne pas renvoyer" : { ready: "En attente d'envoi", sending: "Envoi en cours — ne pas relancer", uncertain: "À vérifier — ne pas renvoyer", cancelled: "Annulé", disabled: "Désactivé", sent: "Envoyé", partial: "Partiellement accepté — ne pas renvoyer le groupe", failed: "En erreur — non renvoyé automatiquement", blocked_missing_config: "Configuration manquante", cancelled_no_participants: "Annulé — aucun participant" }[job.status] || job.statusLabel || job.status || "Non envoyé")}</span>
+              ${job.deliveryMode === "bcc-v1" ? `<small>${Number(job.sentCount || 0)} accepté(s) · ${Number(job.failedCount || 0)} rejeté(s) · ${Number(job.uncertainCount || 0)} à vérifier · ${Number(job.cancelledCount || 0)} annulé(s)</small>` : ""}
+              ${job.reason && ["failed", "uncertain"].includes(job.status) ? `<small>${portalActions.escapeHtml(job.reason)}</small>` : ""}
+              <small>${portalActions.escapeHtml(job.updatedAt ? portalActions.formatDeadline(job.updatedAt).replace(/^Limite /, "") : "")}</small>
+            </span>
+          </div>
+        `).join("")}
+      </div>
+      ${portalState.engagementMailJobsHasMore ? `<button class="ghost-button" type="button" data-engagement-mail-jobs-more ${portalState.engagementMailJobsLoading ? "disabled" : ""}>${portalState.engagementMailJobsLoading ? "Chargement…" : "Afficher plus de courriels"}</button>` : ""}
+    `;
+      }
+
+    function engagementCompetitionDocumentCategoryLabel(category = "") {
+        return {
+          poster: "Affiche",
+          circular: "Circulaire",
+          rules: "Règlement",
+          information: "Note d'information",
+          access: "Plan / accès",
+          results: "Résultats",
+          other: "Autre"
+        }[String(category || "")] || "Autre";
+      }
+
+    function engagementCompetitionDocumentCategoryOptions(selected = "other") {
+        return Object.entries({
+          poster: "Affiche",
+          circular: "Circulaire",
+          rules: "Règlement",
+          information: "Note d'information",
+          access: "Plan / accès",
+          results: "Résultats",
+          other: "Autre"
+        }).map(([value, label]) => `<option value="${value}" ${value === selected ? "selected" : ""}>${portalActions.escapeHtml(label)}</option>`).join("");
+      }
+
+    function engagementCompetitionDocumentFileSize(size = 0) {
+        const bytes = Number(size);
+        if (!Number.isFinite(bytes) || bytes <= 0) return "";
+        if (bytes < 1024) return `${bytes} o`;
+        if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} Ko`;
+        return `${(bytes / (1024 * 1024)).toLocaleString("fr-FR", { maximumFractionDigits: 1 })} Mo`;
+      }
+
+    function engagementCompetitionDocumentTypeLabel(fileName = "") {
+        return String(fileName || "").split(".").pop()?.toUpperCase() || "FICHIER";
+      }
+
+    function renderEngagementCompetitionDocumentDrafts() {
+        const mount = portalContext.elements.engagementsDocumentDrafts;
+        if (!mount) return;
+        const documents = Array.isArray(portalState.selectedEngagementCompetition?.clubDocuments) ? portalState.selectedEngagementCompetition.clubDocuments : [];
+        const editing = documents.find((document) => document.id === portalState.engagementCompetitionDocumentEditingId) || null;
+        const drafts = editing
+          ? [{
+              file: portalState.engagementCompetitionDocumentFiles[0] || null,
+              title: editing.title || "",
+              category: editing.category || "other",
+              description: editing.description || "",
+              fileName: portalState.engagementCompetitionDocumentFiles[0]?.name || editing.fileName || ""
+            }]
+          : portalState.engagementCompetitionDocumentFiles.map((file) => ({
+              file,
+              title: file.name.replace(/\.[^.]+$/, "").replace(/[-_]+/g, " ").trim(),
+              category: "other",
+              description: "",
+              fileName: file.name
+            }));
+        mount.innerHTML = drafts.map((draft, index) => `
+      <div class="admin-engagements-document-draft" data-engagement-document-draft="${index}">
+        <small class="admin-engagements-document-draft-file">${portalActions.escapeHtml(draft.fileName)}${draft.file ? ` · ${portalActions.escapeHtml(moduleActions.engagementCompetitionDocumentFileSize(draft.file.size))}` : " · fichier actuel conservé"}</small>
+        <label>Titre<input type="text" maxlength="160" required data-engagement-document-title value="${portalActions.escapeHtml(draft.title)}"></label>
+        <label>Catégorie<select data-engagement-document-category>${moduleActions.engagementCompetitionDocumentCategoryOptions(draft.category)}</select></label>
+        <label>Description facultative<textarea maxlength="500" rows="2" data-engagement-document-description>${portalActions.escapeHtml(draft.description)}</textarea></label>
+      </div>
+    `).join("");
+        if (portalContext.elements.engagementsDocumentNotifyLabel) {
+          portalContext.elements.engagementsDocumentNotifyLabel.hidden = Boolean(editing && !portalState.engagementCompetitionDocumentFiles.length);
+        }
+        if (portalContext.elements.engagementsDocumentSubmitButton) {
+          portalContext.elements.engagementsDocumentSubmitButton.textContent = editing
+            ? (portalState.engagementCompetitionDocumentFiles.length ? "Remplacer le document" : "Enregistrer")
+            : `Mettre en ligne${drafts.length > 1 ? ` (${drafts.length})` : ""}`;
+        }
+      }
+
+    function openEngagementCompetitionDocumentForm(documentId = "") {
+        if (!portalActions.isEngagementAdminMode() || portalState.engagementCompetitionDocumentSaving) return;
+        portalState.engagementCompetitionDocumentEditingId = String(documentId || "");
+        portalState.engagementCompetitionDocumentFiles = [];
+        if (portalContext.elements.engagementsDocumentFiles) {
+          portalContext.elements.engagementsDocumentFiles.value = "";
+          portalContext.elements.engagementsDocumentFiles.multiple = !portalState.engagementCompetitionDocumentEditingId;
+          portalContext.elements.engagementsDocumentFiles.required = !portalState.engagementCompetitionDocumentEditingId;
+        }
+        if (portalContext.elements.engagementsDocumentNotify) portalContext.elements.engagementsDocumentNotify.checked = false;
+        if (portalContext.elements.engagementsDocumentFormMessage) {
+          portalContext.elements.engagementsDocumentFormMessage.textContent = "";
+          portalContext.elements.engagementsDocumentFormMessage.dataset.tone = "";
+        }
+        if (portalContext.elements.engagementsDocumentForm) portalContext.elements.engagementsDocumentForm.hidden = false;
+        if (portalContext.elements.engagementsDocumentAddButton) portalContext.elements.engagementsDocumentAddButton.hidden = true;
+        moduleActions.renderEngagementCompetitionDocumentDrafts();
+        portalContext.elements.engagementsDocumentFiles?.focus();
+      }
+
+    function handleEngagementCompetitionDocumentFiles() {
+        const files = Array.from(portalContext.elements.engagementsDocumentFiles?.files || []);
+        const maximum = portalActions.canUse("engagements.national.manage") ? portalConfig.ENGAGEMENT_COMPETITION_DOCUMENT_NATIONAL_MAX_BYTES : portalConfig.ENGAGEMENT_COMPETITION_DOCUMENT_MAX_BYTES;
+        const invalid = files.find((file) => !portalConfig.ENGAGEMENT_COMPETITION_DOCUMENT_EXTENSION_PATTERN.test(file.name) || file.size <= 0 || file.size > maximum);
+        const currentCount = Array.isArray(portalState.selectedEngagementCompetition?.clubDocuments) ? portalState.selectedEngagementCompetition.clubDocuments.length : 0;
+        const tooMany = !portalState.engagementCompetitionDocumentEditingId && currentCount + files.length > portalConfig.ENGAGEMENT_COMPETITION_DOCUMENT_MAX_COUNT;
+        if (invalid || tooMany) {
+          portalState.engagementCompetitionDocumentFiles = [];
+          if (portalContext.elements.engagementsDocumentFiles) portalContext.elements.engagementsDocumentFiles.value = "";
+          if (portalContext.elements.engagementsDocumentFormMessage) {
+            portalContext.elements.engagementsDocumentFormMessage.textContent = tooMany
+              ? `La compétition est limitée à ${portalConfig.ENGAGEMENT_COMPETITION_DOCUMENT_MAX_COUNT} documents actifs.`
+              : `${invalid?.name || "Ce fichier"} est vide, dépasse ${maximum / (1024 * 1024)} Mo ou utilise un format non autorisé.`;
+            portalContext.elements.engagementsDocumentFormMessage.dataset.tone = "error";
+          }
+          moduleActions.renderEngagementCompetitionDocumentDrafts();
+          return;
+        }
+        portalState.engagementCompetitionDocumentFiles = portalState.engagementCompetitionDocumentEditingId ? files.slice(0, 1) : files;
+        if (portalContext.elements.engagementsDocumentFormMessage) portalContext.elements.engagementsDocumentFormMessage.textContent = "";
+        moduleActions.renderEngagementCompetitionDocumentDrafts();
+      }
+
+    function renderEngagementSharedDocuments(competition = {}) {
+        const documents = Array.isArray(competition.clubDocuments) ? competition.clubDocuments : [];
+        const adminMode = portalActions.isEngagementAdminMode();
+        const regionalPastReadOnly = portalActions.isRegionalPastEngagementReadOnly(competition);
+        if (portalContext.elements.engagementsSharedDocumentsTitle) {
+          portalContext.elements.engagementsSharedDocumentsTitle.textContent = adminMode ? "Documents de la compétition" : "Documents disponibles";
+        }
+        if (portalContext.elements.engagementsSharedDocumentsCount) {
+          portalContext.elements.engagementsSharedDocumentsCount.textContent = documents.length
+            ? adminMode
+              ? `${documents.length} document${documents.length > 1 ? "s" : ""} disponible${documents.length > 1 ? "s" : ""} · maximum ${portalConfig.ENGAGEMENT_COMPETITION_DOCUMENT_MAX_COUNT}`
+              : `${documents.length} document${documents.length > 1 ? "s" : ""}`
+            : adminMode ? "Affiches, circulaires, règlements et informations utiles." : "";
+          portalContext.elements.engagementsSharedDocumentsCount.hidden = !adminMode && !documents.length;
+        }
+        if (portalContext.elements.engagementsDocumentAddButton) {
+          portalContext.elements.engagementsDocumentAddButton.disabled = documents.length >= portalConfig.ENGAGEMENT_COMPETITION_DOCUMENT_MAX_COUNT;
+          portalContext.elements.engagementsDocumentAddButton.title = documents.length >= portalConfig.ENGAGEMENT_COMPETITION_DOCUMENT_MAX_COUNT
+            ? `La limite de ${portalConfig.ENGAGEMENT_COMPETITION_DOCUMENT_MAX_COUNT} documents est atteinte.`
+            : "";
+        }
+        if (!portalContext.elements.engagementsSharedDocumentsList) return;
+        portalContext.elements.engagementsSharedDocumentsList.innerHTML = documents.length ? documents.map((document) => {
+          const uploader = adminMode && document.uploadedBy
+            ? [document.uploadedBy.name || document.uploadedBy.email, document.uploadedBy.name && document.uploadedBy.email ? document.uploadedBy.email : ""].filter(Boolean).join(" · ")
+            : "";
+          return `
+        <article class="admin-engagements-shared-document-card">
+          <div class="admin-engagements-shared-document-main">
+            <div class="admin-engagements-shared-document-badges">
+              <span>${portalActions.escapeHtml(moduleActions.engagementCompetitionDocumentCategoryLabel(document.category))}</span>
+              <span>${portalActions.escapeHtml(moduleActions.engagementCompetitionDocumentTypeLabel(document.fileName))}</span>
+              ${moduleActions.engagementCompetitionDocumentFileSize(document.size) ? `<span>${portalActions.escapeHtml(moduleActions.engagementCompetitionDocumentFileSize(document.size))}</span>` : ""}
+            </div>
+            <a href="${portalActions.escapeHtml(document.url || "#")}" target="_blank" rel="noopener">${portalActions.escapeHtml(document.title || document.fileName || "Document")}</a>
+            ${document.description ? `<p>${portalActions.escapeHtml(document.description)}</p>` : ""}
+            <small class="admin-engagements-shared-document-meta">Mis en ligne ${portalActions.escapeHtml(document.updatedAt ? portalActions.formatDeadline(document.updatedAt).replace(/^Limite /, "") : "")}${uploader ? ` · par ${portalActions.escapeHtml(uploader)}` : ""}</small>
+          </div>
+          ${adminMode ? `
+            <div class="admin-engagements-shared-document-actions">
+              <a class="ghost-button compact" href="${portalActions.escapeHtml(document.url || "#")}" target="_blank" rel="noopener">Télécharger</a>
+              <button class="ghost-button compact" type="button" data-engagement-document-edit="${portalActions.escapeHtml(document.id)}">Modifier / remplacer</button>
+              ${regionalPastReadOnly ? "" : `<button class="ghost-button compact admin-engagements-danger-button" type="button" data-engagement-document-delete="${portalActions.escapeHtml(document.id)}">Supprimer</button>`}
+            </div>` : ""}
+        </article>`;
+        }).join("") : '<p class="admin-engagements-empty">Aucun document mis en ligne pour cette compétition.</p>';
+        if(adminMode&&competition.napSource===true&&global.LivePalmesImportSource){
+          const host=document.createElement('div');portalContext.elements.engagementsSharedDocumentsList.append(host);
+          global.LivePalmesImportSource.mount({host,competitionId:competition.id,onRead:payload=>portalActions.callFunction('getEngagementCompetition',payload)});
+        }
+      }
+
+    function canDownloadEngagementOpenWaterTxt(competition) {
+        return competition?.napSource === true;
+      }
+
+    function renderEngagementDocuments(competition = portalState.selectedEngagementCompetition || {}) {
+        const adminMode = portalActions.isEngagementAdminMode();
+        if (portalContext.elements.engagementsNotificationPreviewActions) portalContext.elements.engagementsNotificationPreviewActions.hidden =
+          !adminMode || global.LivePalmesEnvironment?.sportingDataSource !== "nap" || competition.napSource !== true;
+        if (portalContext.elements.engagementsNotificationPreviewStatus) portalContext.elements.engagementsNotificationPreviewStatus.textContent = "";
+        if (portalContext.elements.engagementsGenerateClubRecapsButton) portalContext.elements.engagementsGenerateClubRecapsButton.hidden = !adminMode || competition.napSource !== true;
+        const openWater = portalActions.engagementCompetitionType(competition) === "openWater";
+        const documentsHead = portalContext.elements.engagementsDocumentsTitle?.closest(".admin-engagements-documents-head");
+        if (documentsHead) documentsHead.hidden = !adminMode;
+        if (portalContext.elements.engagementsGenerateTxtExportButton) {
+          portalContext.elements.engagementsGenerateTxtExportButton.disabled = openWater && !moduleActions.canDownloadEngagementOpenWaterTxt(competition);
+          portalContext.elements.engagementsGenerateTxtExportButton.title = openWater
+            ? (moduleActions.canDownloadEngagementOpenWaterTxt(competition) ? "Téléchargement manuel de l’export eau libre. Aucun envoi automatique." : "L’export TXT eau libre nécessite une compétition issue de NAP.")
+            : "";
+        }
+        if (portalContext.elements.engagementsDocumentsTitle) portalContext.elements.engagementsDocumentsTitle.textContent = adminMode ? "GED" : "Documents";
+        if (portalContext.elements.engagementsDocumentsSummary) {
+          portalContext.elements.engagementsDocumentsSummary.textContent = adminMode
+            ? openWater
+              ? (moduleActions.canDownloadEngagementOpenWaterTxt(competition) ? "Gérez les documents destinés aux clubs et téléchargez l’export TXT eau libre. Aucun envoi automatique." : "Gérez les documents destinés aux clubs. L’export TXT eau libre nécessite une compétition issue de NAP.")
+              : "Gérez les documents destinés aux clubs et téléchargez les fichiers techniques."
+            : "Consultez et téléchargez les documents utiles de la compétition.";
+          portalContext.elements.engagementsDocumentsSummary.dataset.tone = "";
+        }
+        if (portalContext.elements.engagementsComputerEmailLabel) {
+          portalContext.elements.engagementsComputerEmailLabel.textContent = competition.computerEmail
+            ? `Informatique : ${competition.computerEmail}`
+            : "Email du responsable informatique non renseigne";
+          portalContext.elements.engagementsComputerEmailLabel.hidden = !adminMode || !competition.computerEmail;
+        }
+        if (portalContext.elements.engagementsDocumentsList) {
+          portalContext.elements.engagementsDocumentsList.innerHTML = moduleActions.renderEngagementClosureAutomation(competition);
+        }
+        if (portalContext.elements.engagementsGeneratedFiles) {
+          const files = Array.isArray(competition.generatedFiles) ? competition.generatedFiles : [];
+          portalContext.elements.engagementsGeneratedFiles.innerHTML = files.length
+            ? files.map((file) => `<a href="${portalActions.escapeHtml(file.url || "#")}" target="_blank" rel="noopener">${portalActions.escapeHtml(file.name || "Document")}</a>`).join("")
+            : `<p class="admin-engagements-empty">Aucun fichier disponible pour le moment.</p>`;
+        }
+        moduleActions.renderEngagementSharedDocuments(competition);
+        moduleActions.renderEngagementClubRecapSelector();
+        moduleActions.renderEngagementMailJobs();
+      }
+
+    function engagementEventSummary(events = []) {
+        const eventList = Array.isArray(events) ? events : [];
+        const individualCount = eventList.filter((event) => event.type === "individual").length;
+        const relayCount = eventList.filter((event) => event.type === "relay").length;
+        if (!eventList.length) return "Aucune épreuve sélectionnée";
+        const restrictedCount = eventList.filter((event) => Array.isArray(event.categoryRestrictions) && event.categoryRestrictions.length).length;
+        const restrictionLabel = restrictedCount ? `, ${restrictedCount} restriction${restrictedCount > 1 ? "s" : ""}` : "";
+        return `${individualCount} course${individualCount > 1 ? "s" : ""} individuelle${individualCount > 1 ? "s" : ""}, ${relayCount} relais${restrictionLabel}`;
+      }
+
+    function engagementProgramSummary(sessions = []) {
+        const sessionList = Array.isArray(sessions) ? sessions : [];
+        const itemCount = sessionList.reduce((sum, session) => sum + (Array.isArray(session.items) ? session.items.length : 0), 0);
+        if (!itemCount) return "Ordre non renseigne.";
+        return `${sessionList.length} session${sessionList.length > 1 ? "s" : ""}, ${itemCount} ligne${itemCount > 1 ? "s" : ""} au programme.`;
+      }
+
+    function engagementProgramStatusSummary(events = [], sessions = []) {
+        const eventCount = Array.isArray(events) ? events.length : 0;
+        const sessionCount = Array.isArray(sessions) ? sessions.length : 0;
+        return `${eventCount} épreuve${eventCount > 1 ? "s" : ""} - ${sessionCount} session${sessionCount > 1 ? "s" : ""}`;
+      }
+
+    function engagementEventsCompactSummary(events = []) {
+        const eventList = Array.isArray(events) ? events : [];
+        const individualCount = eventList.filter((event) => event.type === "individual").length;
+        const relayCount = eventList.filter((event) => event.type === "relay").length;
+        if (!individualCount && !relayCount) return "Aucune épreuve sélectionnée.";
+        const parts = [];
+        if (individualCount) parts.push(`${individualCount} course${individualCount > 1 ? "s" : ""} individuelle${individualCount > 1 ? "s" : ""}`);
+        if (relayCount) parts.push(`${relayCount} relais`);
+        return parts.join(" - ");
+      }
+
+    function missingEngagementProgramEventCount(events = moduleActions.selectedEngagementEventsFromForm(), sessions = moduleActions.selectedEngagementProgramSessionsFromForm(events.map((event) => ({ code: event.code, label: event.shortLabel || event.code })))) {
+        const placedCodes = new Set();
+        (Array.isArray(sessions) ? sessions : []).forEach((session) => {
+          (session.items || []).forEach((item) => {
+            if (item.eventCode) placedCodes.add(item.eventCode);
+          });
+        });
+        return (Array.isArray(events) ? events : []).filter((event) => event.code && !placedCodes.has(event.code)).length;
+      }
+
+    function updateEngagementEventsSectionSummaries(events = moduleActions.selectedEngagementEventsFromForm(), sessions = moduleActions.selectedEngagementProgramSessionsFromForm(events.map((event) => ({ code: event.code, label: event.shortLabel || event.code })))) {
+        if (portalContext.elements.engagementsEventsChoiceSummary) {
+          portalContext.elements.engagementsEventsChoiceSummary.textContent = moduleActions.engagementEventsCompactSummary(events);
+        }
+        if (portalContext.elements.engagementsEventsSummary) {
+          portalContext.elements.engagementsEventsSummary.textContent = moduleActions.engagementProgramStatusSummary(events, sessions);
+        }
+        if (portalContext.elements.engagementsProgramSummary) {
+          const missingCount = moduleActions.missingEngagementProgramEventCount(events, sessions);
+          const summary = moduleActions.engagementProgramSummary(sessions);
+          portalContext.elements.engagementsProgramSummary.textContent = missingCount
+          ? `${summary} ${missingCount} épreuve${missingCount > 1 ? "s" : ""} à placer.`
+            : summary;
+          if (portalContext.elements.engagementsProgramSection) {
+            portalContext.elements.engagementsProgramSection.dataset.warning = missingCount ? "true" : "false";
+          }
+          const coursesTab = document.querySelector('[data-engagements-detail-tab-button="courses"]');
+          if (coursesTab) {
+            coursesTab.dataset.warning = missingCount ? "true" : "false";
+            coursesTab.title = missingCount
+          ? `${missingCount} épreuve${missingCount > 1 ? "s" : ""} sélectionnée${missingCount > 1 ? "s" : ""} non placée${missingCount > 1 ? "s" : ""} dans le programme.`
+              : "";
+          }
+        }
+        moduleActions.updateEngagementEventsSectionToggleLabels();
+      }
+
+    function selectedEngagementEventOptions() {
+        return moduleActions.selectedEngagementEventsFromForm().map((event) => ({
+          code: event.code,
+          label: event.shortLabel || event.code,
+          type: event.type || "",
+          relayMixedRule: event.relayMixedRule || "",
+          relayMixedMode: event.relayMixedMode || ""
+        }));
+      }
+
+    function selectedEngagementProgramSessionsFromForm(eventOptions = moduleActions.selectedEngagementEventOptions()) {
+        const allowedCodes = new Set(eventOptions.map((event) => event.code));
+        return Array.from(portalContext.elements.engagementsProgramSessions?.querySelectorAll("[data-engagement-program-session]") || []).map((sessionElement, sessionIndex) => {
+          const items = Array.from(sessionElement.querySelectorAll("[data-engagement-program-row]")).map((row) => {
+            const eventCode = row.dataset.engagementProgramEvent || "";
+            const genderMode = row.dataset.engagementProgramGender || "mixed";
+            const phase = row.dataset.engagementProgramPhase || "direct";
+            return {
+              eventCode,
+              genderMode: portalConfig.ENGAGEMENT_PROGRAM_GENDER_MODE_LABELS[genderMode] ? genderMode : "mixed",
+              phase: moduleActions.engagementProgramPhaseForEvent(eventCode, phase)
+            };
+          }).filter((item) => allowedCodes.has(item.eventCode));
+          return {
+            id: sessionElement.dataset.engagementProgramSession || `session-${sessionIndex + 1}`,
+            label: `Session ${sessionIndex + 1}`,
+            date: sessionElement.querySelector("[data-engagement-program-session-date]")?.value || sessionElement.dataset.engagementProgramSessionDateValue || "",
+            startTime: sessionElement.querySelector("[data-engagement-program-session-time]")?.value || sessionElement.dataset.engagementProgramSessionTimeValue || "",
+            items
+          };
+        }).filter((session) => session.label || session.date || session.startTime || session.items.length);
+      }
+
+    function engagementProgramGenderModesForEvent(eventOption) {
+        const eventCode = typeof eventOption === "string" ? eventOption : eventOption?.code;
+        const definition = portalActions.engagementEventDefinition(eventCode);
+        const modes = definition?.relayMixedRule === "required"
+          ? [["mixed", "Relais mixte"]]
+          : portalConfig.ENGAGEMENT_PROGRAM_GENDER_MODES.map(([mode]) => [mode, moduleActions.engagementProgramGenderModeDisplayLabel(mode, eventCode, eventOption)]);
+        if (!portalState.selectedEngagementCompetition?.napSource) return modes;
+        const nativeEvent = portalState.selectedEngagementCompetition.events?.find(event => event.code === eventCode);
+        if (!nativeEvent && definition && portalState.engagementDetailEditing && ["pool","openWater"].includes(portalActions.engagementCompetitionType(portalState.selectedEngagementCompetition))) return modes;
+        if (!Array.isArray(nativeEvent?.nativeCourses)) return [];
+        const available = new Set(nativeEvent.nativeCourses.map(course => String(course.sexe).trim()));
+        return modes.filter(([mode]) => mode === "mixed"
+          ? nativeEvent.type === "relay" ? available.has("0") : available.has("F") && available.has("M")
+          : available.has(mode === "female" ? "F" : "M"));
+      }
+
+    function engagementProgramGenderModeTone(mode, eventCode = "", eventOption = null) {
+        const definition = portalActions.engagementEventDefinition(eventCode);
+        if (mode === "female") return "female";
+        if (mode === "male") return "male";
+        if (definition?.relayMixedRule === "required" || (definition?.relayMixedRule === "mastersOnly" && eventOption?.relayMixedMode === "masters")) {
+          return "relay-mixed";
+        }
+        return "combined";
+      }
+
+    function engagementProgramPhaseLabel(phase = "direct") {
+        return portalConfig.ENGAGEMENT_PROGRAM_PHASE_LABELS[phase] || portalConfig.ENGAGEMENT_PROGRAM_PHASE_LABELS.direct;
+      }
+
+    function engagementProgramSameSlot(item = {}, eventCode = "", genderMode = "") {
+        return item.eventCode === eventCode && item.genderMode === genderMode;
+      }
+
+    function engagementProgramPassages(sessions, eventCode, genderMode) {
+        const passages = [];
+        sessions.forEach((session, sessionIndex) => {
+          (session.items || []).forEach((item, itemIndex) => {
+            if (moduleActions.engagementProgramSameSlot(item, eventCode, genderMode)) passages.push({ item, sessionIndex, itemIndex });
+          });
+        });
+        return passages;
+      }
+
+    function engagementProgramFormatForPhase(phase = "direct") {
+        if (phase === "heats" || phase === "final") return "heatsFinal";
+        if (phase === "slowHeats" || phase === "fastHeat") return "slowFast";
+        return "direct";
+      }
+
+    function engagementProgramFirstPhaseForFormat(format = "direct") {
+        return format === "heatsFinal" ? "heats" : format === "slowFast" ? "slowHeats" : "direct";
+      }
+
+    function engagementProgramSecondPhaseForFormat(format = "direct") {
+        return format === "heatsFinal" ? "final" : format === "slowFast" ? "fastHeat" : "";
+      }
+
+    function engagementProgramCanAddPassage(sessions, eventCode, genderMode, targetSessionId = "") {
+        const passages = moduleActions.engagementProgramPassages(sessions, eventCode, genderMode);
+        if (!passages.length) return true;
+        if (!moduleActions.engagementProgramFormatsForEvent(eventCode).length) return false;
+        if (passages.length !== 1 || !["heats", "slowHeats"].includes(passages[0].item.phase)) return false;
+        const targetSessionIndex = sessions.findIndex((session) => session.id === targetSessionId);
+        return targetSessionIndex >= passages[0].sessionIndex;
+      }
+
+    function engagementProgramNextPhase(sessions, eventCode, genderMode) {
+        const passages = moduleActions.engagementProgramPassages(sessions, eventCode, genderMode);
+        if (!passages.length) return "direct";
+        return passages[0].item.phase === "heats" ? "final" : passages[0].item.phase === "slowHeats" ? "fastHeat" : "";
+      }
+
+    function normalizeEngagementProgramPassageOrder(sessions) {
+        const slots = new Map();
+        sessions.forEach((session) => {
+          (session.items || []).forEach((item) => {
+            const key = `${item.eventCode}:${item.genderMode}`;
+            if (!slots.has(key)) slots.set(key, []);
+            slots.get(key).push(item);
+          });
+        });
+        slots.forEach((items) => {
+          const phases = new Set(items.map((item) => item.phase || "direct"));
+          if (phases.has("direct") || items.length > 2) return;
+          const format = phases.has("slowHeats") || phases.has("fastHeat") ? "slowFast" : "heatsFinal";
+          items[0].phase = moduleActions.engagementProgramFirstPhaseForFormat(format);
+          if (items[1]) items[1].phase = moduleActions.engagementProgramSecondPhaseForFormat(format);
+        });
+        return sessions;
+      }
+
+    function applyEngagementProgramFormatChange(row, requestedFormat = "direct") {
+        const eventCode = row?.dataset.engagementProgramEvent || "";
+        const availableFormats = moduleActions.engagementProgramFormatsForEvent(eventCode);
+        const format = availableFormats.some(([value]) => value === requestedFormat) ? requestedFormat : "direct";
+        const genderMode = row?.dataset.engagementProgramGender || "mixed";
+        const sessions = moduleActions.selectedEngagementProgramSessionsFromForm();
+        const passages = moduleActions.engagementProgramPassages(sessions, eventCode, genderMode);
+        const first = passages[0]?.item;
+        if (!first) return sessions;
+        first.phase = moduleActions.engagementProgramFirstPhaseForFormat(format);
+        if (format === "direct") {
+          sessions.forEach((session) => {
+            session.items = (session.items || []).filter((item) => item === first || !moduleActions.engagementProgramSameSlot(item, eventCode, genderMode));
+          });
+        } else if (passages[1]?.item) {
+          passages[1].item.phase = moduleActions.engagementProgramSecondPhaseForFormat(format);
+        }
+        return sessions;
+      }
+
+    function renderEngagementProgramSessions(programSessions = [], canEdit = false) {
+        const mount = portalContext.elements.engagementsProgramSessions;
+        if (!mount) return;
+        const eventOptions = moduleActions.selectedEngagementEventOptions();
+        const sessions = moduleActions.normalizeEngagementProgramPassageOrder(moduleActions.normalizedEngagementProgramSessions(programSessions, eventOptions));
+        if (!canEdit || !sessions.some((session) => session.id === portalState.activeEngagementProgramSessionId)) {
+          portalState.activeEngagementProgramSessionId = "";
+        }
+        if (portalContext.elements.engagementsProgramAddSession) {
+          portalContext.elements.engagementsProgramAddSession.hidden = !canEdit;
+          portalContext.elements.engagementsProgramAddSession.disabled = !canEdit || !eventOptions.length;
+        }
+        moduleActions.updateEngagementEventsSectionSummaries(moduleActions.selectedEngagementEventsFromForm(), sessions);
+        if (!eventOptions.length) {
+          mount.innerHTML = `<p class="admin-engagements-empty">${canEdit ? "Sélectionnez d'abord les épreuves qui seront nagées." : "Programme en préparation."}</p>`;
+          return;
+        }
+        if (!sessions.length) {
+          mount.innerHTML = `<p class="admin-engagements-empty">${canEdit ? "Ajoutez une session pour définir l'ordre des épreuves." : "Ordre des épreuves non renseigné."}</p>`;
+          return;
+        }
+        const availableHtml = eventOptions.map((event) => `
+      <div class="admin-engagements-program-available-event">
+        <strong>${portalActions.escapeHtml(event.label)}</strong>
+        <div>
+          ${moduleActions.engagementProgramGenderModesForEvent(event).map(([mode, label]) => {
+                const disabled = !canEdit || !portalState.activeEngagementProgramSessionId || !moduleActions.engagementProgramCanAddPassage(sessions, event.code, mode, portalState.activeEngagementProgramSessionId);
+                return `<button class="ghost-button" type="button" title="${portalActions.escapeHtml(label)}" aria-label="${portalActions.escapeHtml(`${event.label} ${label}`)}" data-engagement-program-action="add-slot" data-engagement-program-event="${portalActions.escapeHtml(event.code)}" data-engagement-program-gender="${portalActions.escapeHtml(mode)}" ${disabled ? "disabled" : ""}>${portalActions.escapeHtml(moduleActions.engagementProgramGenderModeShortLabel(mode, event.code, event))}</button>`;
+              }).join("")}
+        </div>
+      </div>
+    `).join("");
+        const eventLabelFor = (eventCode) => eventOptions.find((event) => event.code === eventCode)?.label || eventCode;
+        const eventOptionFor = (eventCode) => eventOptions.find((event) => event.code === eventCode) || null;
+        const sessionHtmlFor = (session, sessionIndex) => {
+          const active = canEdit && session.id === portalState.activeEngagementProgramSessionId;
+          return `
+      <div class="admin-engagements-program-builder-row" data-has-palette="${active && canEdit ? "true" : "false"}">
+        <div class="admin-engagements-program-available-slot">
+          ${active && canEdit ? `
+            <div class="admin-engagements-program-available">
+              <strong>Epreuves disponibles</strong>
+              ${availableHtml}
+            </div>
+          ` : ""}
+        </div>
+        <section class="admin-engagements-program-session" data-engagement-program-session="${portalActions.escapeHtml(session.id || `session-${sessionIndex + 1}`)}" data-engagement-program-session-date-value="${portalActions.escapeHtml(session.date || "")}" data-engagement-program-session-time-value="${portalActions.escapeHtml(session.startTime || "")}" data-active="${active ? "true" : "false"}">
+        <div class="admin-engagements-program-session-head">
+          <div class="admin-engagements-program-session-title">
+            <span>Session</span>
+            <strong>${portalActions.escapeHtml(`Session ${sessionIndex + 1}`)}</strong>
+          </div>
+          <label>
+            Date
+            ${canEdit
+                  ? `<input type="date" value="${portalActions.escapeHtml(session.date || "")}" data-engagement-program-session-date>`
+                  : `<span class="admin-engagements-program-read-value">${portalActions.escapeHtml(portalActions.formatShortDate(session.date) || "-")}</span>`}
+          </label>
+          <label>
+            Debut
+            ${canEdit
+                  ? `<input type="time" value="${portalActions.escapeHtml(session.startTime || "")}" data-engagement-program-session-time>`
+                  : `<span class="admin-engagements-program-read-value">${portalActions.escapeHtml(session.startTime || "-")}</span>`}
+          </label>
+          <div class="admin-engagements-program-actions">
+            <button class="ghost-button" type="button" title="Les épreuves disponibles s'ajoutent dans cette session" aria-label="Choisir cette session comme cible" data-engagement-program-action="select-session" ${canEdit ? "" : "hidden"}>${active ? "Cible" : "Choisir"}</button>
+            <button class="ghost-button" type="button" title="Supprimer la session" aria-label="Supprimer la session" data-engagement-program-action="remove-session" ${canEdit ? "" : "hidden"}>&times;</button>
+          </div>
+        </div>
+        <div class="admin-engagements-program-rows">
+          ${session.items.length ? session.items.map((item, itemIndex) => {
+                const passageIndex = moduleActions.engagementProgramPassages(sessions, item.eventCode, item.genderMode)
+                  .findIndex((passage) => passage.sessionIndex === sessionIndex && passage.itemIndex === itemIndex);
+                const format = moduleActions.engagementProgramFormatForPhase(item.phase);
+                const formatOptions = moduleActions.engagementProgramFormatsForEvent(item.eventCode);
+                return `
+            <div class="admin-engagements-program-row" data-engagement-program-row data-engagement-program-event="${portalActions.escapeHtml(item.eventCode)}" data-engagement-program-gender="${portalActions.escapeHtml(item.genderMode)}" data-engagement-program-phase="${portalActions.escapeHtml(item.phase || "direct")}">
+              <div class="admin-engagements-program-row-main">
+                <span>${itemIndex + 1}.</span>
+                <strong>${portalActions.escapeHtml(eventLabelFor(item.eventCode))}</strong>
+                <i aria-hidden="true">-</i>
+                <em data-gender-mode="${portalActions.escapeHtml(item.genderMode)}" data-gender-tone="${portalActions.escapeHtml(moduleActions.engagementProgramGenderModeTone(item.genderMode, item.eventCode, eventOptionFor(item.eventCode)))}" title="${portalActions.escapeHtml(moduleActions.engagementProgramGenderModeDisplayLabel(item.genderMode, item.eventCode, eventOptionFor(item.eventCode)))}">${portalActions.escapeHtml(moduleActions.engagementProgramGenderModeDisplayLabel(item.genderMode, item.eventCode, eventOptionFor(item.eventCode)))}</em>
+                ${passageIndex <= 0 && formatOptions.length ? `
+                  <div class="admin-engagements-program-format" data-engagement-program-format>
+                    ${canEdit ? `
+                      <button class="admin-engagements-program-format-trigger" type="button" data-engagement-program-action="toggle-format" aria-haspopup="menu" aria-expanded="false" title="${portalActions.escapeHtml(portalConfig.ENGAGEMENT_PROGRAM_FORMAT_LABELS[format] || moduleActions.engagementProgramPhaseLabel(item.phase))}">
+                        <span>${portalActions.escapeHtml(moduleActions.engagementProgramPhaseLabel(item.phase))}</span><i aria-hidden="true">⌄</i>
+                      </button>
+                      <div class="admin-engagements-program-format-menu" role="menu" hidden>
+                        ${formatOptions.map(([value, label]) => `<button type="button" role="menuitem" data-engagement-program-action="set-format" data-engagement-program-format-value="${portalActions.escapeHtml(value)}" ${value === format ? "aria-current=\"true\"" : ""}>${portalActions.escapeHtml(label)}</button>`).join("")}
+                      </div>
+                    ` : `<span class="admin-engagements-program-format-read-value">${portalActions.escapeHtml(moduleActions.engagementProgramPhaseLabel(item.phase))}</span>`}
+                  </div>
+                ` : passageIndex > 0 ? `<b class="admin-engagements-program-phase">${portalActions.escapeHtml(moduleActions.engagementProgramPhaseLabel(item.phase))}</b>` : ""}
+              </div>
+              <div class="admin-engagements-program-actions">
+                <button class="ghost-button" type="button" title="Monter" aria-label="Monter" data-engagement-program-action="move-up" ${canEdit ? "" : "hidden"}>↑</button>
+                <button class="ghost-button" type="button" title="Descendre" aria-label="Descendre" data-engagement-program-action="move-down" ${canEdit ? "" : "hidden"}>↓</button>
+                <button class="ghost-button" type="button" title="Retirer" aria-label="Retirer" data-engagement-program-action="remove-row" ${canEdit ? "" : "hidden"}>&times;</button>
+              </div>
+            </div>
+          `;
+              }).join("") : `<p class="admin-engagements-empty">Aucune ligne dans cette session.</p>`}
+        </div>
+        </section>
+      </div>
+    `;
+        };
+        const sessionGroups = [];
+        sessions.forEach((session, sessionIndex) => {
+          const dayKey = session.date || `sans-date-${sessionIndex + 1}`;
+          const previousGroup = sessionGroups.at(-1);
+          if (!previousGroup || previousGroup.dayKey !== dayKey) {
+            sessionGroups.push({ dayKey, rows: [] });
+          }
+          sessionGroups.at(-1).rows.push(sessionHtmlFor(session, sessionIndex));
+        });
+        const sessionsHtml = sessionGroups.map((group) => `
+      <div class="admin-engagements-program-day-group" data-program-day="${portalActions.escapeHtml(group.dayKey)}">
+        ${group.rows.join("")}
+      </div>
+    `).join("");
+        mount.innerHTML = `
+      <div class="admin-engagements-program-builder">
+        ${sessionsHtml}
+      </div>
+    `;
+      }
+
+    function addEngagementProgramSession() {
+        const eventOptions = moduleActions.selectedEngagementEventOptions();
+        if (!eventOptions.length) return;
+        const sessions = moduleActions.selectedEngagementProgramSessionsFromForm(eventOptions);
+        sessions.push({
+          id: `session-${Date.now()}`,
+          label: `Session ${sessions.length + 1}`,
+          date: portalState.selectedEngagementCompetition?.date || "",
+          startTime: "",
+          items: []
+        });
+        portalState.activeEngagementProgramSessionId = sessions.at(-1)?.id || "";
+        portalActions.markEngagementDetailTabDirty("courses");
+        moduleActions.renderEngagementProgramSessions(sessions, portalActions.isEngagementAdminMode() && portalState.engagementDetailEditing && portalActions.canEditEngagementCompetition());
+      }
+
+    function handleEngagementProgramAction(event) {
+        const button = event.target.closest("[data-engagement-program-action]");
+        if (!portalActions.isEngagementAdminMode() || !portalState.engagementDetailEditing || !portalActions.canEditEngagementCompetition()) return;
+        const eventOptions = moduleActions.selectedEngagementEventOptions();
+        if (!eventOptions.length) return;
+        const sessions = moduleActions.selectedEngagementProgramSessionsFromForm(eventOptions);
+        if (!button) {
+          const clickedSession = event.target.closest("[data-engagement-program-session]");
+          if (!clickedSession || event.target.closest("input, select, textarea, button, label")) return;
+          portalState.activeEngagementProgramSessionId = clickedSession.dataset.engagementProgramSession || portalState.activeEngagementProgramSessionId;
+          moduleActions.renderEngagementProgramSessions(sessions, portalActions.isEngagementAdminMode() && portalState.engagementDetailEditing && portalActions.canEditEngagementCompetition());
+          return;
+        }
+        const action = button.dataset.engagementProgramAction;
+        if (action === "toggle-format") {
+          const control = button.closest("[data-engagement-program-format]");
+          const menu = control?.querySelector("[role=menu]");
+          const opening = menu?.hidden !== false;
+          portalContext.elements.engagementsProgramSessions?.querySelectorAll("[data-engagement-program-format] [role=menu]").forEach((candidate) => { candidate.hidden = true; });
+          portalContext.elements.engagementsProgramSessions?.querySelectorAll('[data-engagement-program-action="toggle-format"]').forEach((candidate) => { candidate.setAttribute("aria-expanded", "false"); });
+          if (menu) menu.hidden = !opening;
+          button.setAttribute("aria-expanded", opening ? "true" : "false");
+          return;
+        }
+        if (action === "set-format") {
+          const row = button.closest("[data-engagement-program-row]");
+          const nextSessions = moduleActions.applyEngagementProgramFormatChange(row, button.dataset.engagementProgramFormatValue || "direct");
+          portalActions.markEngagementDetailTabDirty("courses");
+          moduleActions.renderEngagementProgramSessions(nextSessions, portalActions.isEngagementAdminMode() && portalState.engagementDetailEditing && portalActions.canEditEngagementCompetition());
+          return;
+        }
+        const sessionElement = button.closest("[data-engagement-program-session]");
+        const sessionIndex = Array.from(portalContext.elements.engagementsProgramSessions?.querySelectorAll("[data-engagement-program-session]") || []).indexOf(sessionElement);
+        if (action === "add-slot") {
+          const targetSession = sessions.find((session) => session.id === portalState.activeEngagementProgramSessionId);
+          const eventCode = button.dataset.engagementProgramEvent || "";
+          const genderMode = button.dataset.engagementProgramGender || "mixed";
+          const phase = moduleActions.engagementProgramNextPhase(sessions, eventCode, genderMode);
+          if (targetSession && phase && moduleActions.engagementProgramCanAddPassage(sessions, eventCode, genderMode, portalState.activeEngagementProgramSessionId)) {
+            targetSession.items.push({ eventCode, genderMode, phase });
+            portalActions.markEngagementDetailTabDirty("courses");
+          }
+        } else if (action === "select-session" && sessions[sessionIndex]) {
+          portalState.activeEngagementProgramSessionId = sessions[sessionIndex].id;
+        } else if (action === "remove-session" && sessionIndex >= 0) {
+          const removedId = sessions[sessionIndex]?.id;
+          sessions.splice(sessionIndex, 1);
+          if (removedId === portalState.activeEngagementProgramSessionId) portalState.activeEngagementProgramSessionId = "";
+          portalActions.markEngagementDetailTabDirty("courses");
+        } else {
+          const rowElement = button.closest("[data-engagement-program-row]");
+          const rowIndex = Array.from(sessionElement?.querySelectorAll("[data-engagement-program-row]") || []).indexOf(rowElement);
+          const rows = sessions[sessionIndex]?.items || [];
+          if (action === "remove-row" && rowIndex >= 0) {
+            rows.splice(rowIndex, 1);
+            portalActions.markEngagementDetailTabDirty("courses");
+          } else if (action === "move-up" && rowIndex > 0) {
+            [rows[rowIndex - 1], rows[rowIndex]] = [rows[rowIndex], rows[rowIndex - 1]];
+            portalActions.markEngagementDetailTabDirty("courses");
+          } else if (action === "move-down" && rowIndex >= 0 && rowIndex < rows.length - 1) {
+            [rows[rowIndex + 1], rows[rowIndex]] = [rows[rowIndex], rows[rowIndex + 1]];
+            portalActions.markEngagementDetailTabDirty("courses");
+          }
+        }
+        moduleActions.renderEngagementProgramSessions(sessions, portalActions.isEngagementAdminMode() && portalState.engagementDetailEditing && portalActions.canEditEngagementCompetition());
+      }
+
+    function selectedEngagementEventsFromForm() {
+        const checkedInputs = Array.from(portalContext.elements.engagementsEventsForm?.querySelectorAll("[data-engagement-event-code]:checked") || []);
+        return checkedInputs.map((input) => {
+          const code = input.dataset.engagementEventCode || "";
+          const definition = portalActions.engagementEventDefinition(code);
+          if (!definition) return null;
+          const allowedCategories = moduleActions.engagementAllowedCategoryCodes(code);
+          const checkedCategories = Array.from(input.closest("[data-engagement-event-item]")?.querySelectorAll("[data-engagement-category-code]:checked") || [])
+            .map((categoryInput) => categoryInput.dataset.engagementCategoryCode)
+            .filter((categoryCode) => allowedCategories.includes(categoryCode))
+            .filter(Boolean);
+          const categoryRestrictions = checkedCategories.length === allowedCategories.length && !portalConfig.ENGAGEMENT_EVENT_FORBIDDEN_CATEGORIES[code]
+            ? []
+            : checkedCategories;
+          const row = input.closest("[data-engagement-event-item]");
+          const relayMixedModeField = row?.querySelector("[data-engagement-relay-mixed-mode]");
+          const relayMixedMode = definition.relayMixedRule === "required"
+            ? "required"
+            : definition.relayMixedRule === "mastersOnly"
+              ? (relayMixedModeField?.value === "masters" ? "masters" : "none")
+              : "";
+          const multipleRelaysAllowed = definition.type === "relay" &&
+            row?.querySelector("[data-engagement-relay-multiple]")?.checked === true;
+          return {
+            ...definition,
+            categoryRestrictions,
+            ...(relayMixedMode ? { relayMixedMode } : {}),
+            ...(definition.type === "relay" ? { multipleRelaysAllowed } : {})
+          };
+        }).filter(Boolean);
+      }
+
+    function engagementAllowedCategoryCodes(eventCode) {
+        const definitions = moduleActions.engagementCategoryDefinitionsForEvent(eventCode);
+        const forbidden = portalConfig.ENGAGEMENT_EVENT_FORBIDDEN_CATEGORIES[eventCode] || new Set();
+        return definitions
+          .map(([code]) => code)
+          .filter((code) => !forbidden.has(code));
+      }
+
+    function normalizeEngagementCategoryRestrictions(eventCode, categories = []) {
+        const allowedCategories = moduleActions.engagementAllowedCategoryCodes(eventCode);
+        const restrictionSet = new Set(Array.from(categories).filter((code) => allowedCategories.includes(code)));
+        if (eventCode === "50AP") {
+          const legacyDefault = ["C", "J", "S", "M30+", "M40+", "M50+"];
+          if (legacyDefault.every((code) => restrictionSet.has(code)) && ["M60+", "M70+", "M80+"].some((code) => !restrictionSet.has(code))) {
+            return new Set(allowedCategories);
+          }
+        }
+        return restrictionSet;
+      }
+
+    function engagementCategoryDefinitionsForEvent(eventCode) {
+        const definition = portalActions.engagementEventDefinition(eventCode);
+        return definition?.type === "relay"
+          ? portalConfig.ENGAGEMENT_RELAY_CATEGORY_DEFINITIONS
+          : portalConfig.ENGAGEMENT_INDIVIDUAL_CATEGORY_DEFINITIONS;
+      }
+
+    function updateEngagementEventsSummaryFromForm(event) {
+        if (event?.type === "input" && event.target?.matches?.("[data-engagement-category-column]")) return;
+        if (event?.target?.closest?.("[data-engagement-program-sessions]")) {
+          const sessions = moduleActions.selectedEngagementProgramSessionsFromForm();
+          moduleActions.updateEngagementEventsSectionSummaries(moduleActions.selectedEngagementEventsFromForm(), sessions);
+          portalActions.markEngagementDetailTabDirty("courses");
+          return;
+        }
+        portalActions.markEngagementDetailTabDirty("courses");
+        moduleActions.setEngagementEventsSectionOpen(portalContext.elements.engagementsProgramSection, true);
+        const previousProgramSessions = moduleActions.selectedEngagementProgramSessionsFromForm();
+        portalContext.elements.engagementsEventsForm?.querySelectorAll("[data-engagement-event-item]").forEach((item) => {
+          const checked = item.querySelector("[data-engagement-event-code]")?.checked === true;
+          const restrictions = item.querySelector("[data-engagement-event-restrictions]");
+          const relayMixedModeField = item.querySelector("[data-engagement-relay-mixed-mode]");
+          const relayMultipleField = item.querySelector("[data-engagement-relay-multiple]");
+          item.dataset.selected = checked ? "true" : "false";
+          if (restrictions) restrictions.hidden = !checked;
+          if (relayMixedModeField?.dataset.engagementRelayMixedEditable === "true") {
+            relayMixedModeField.disabled = !checked;
+          }
+          if (relayMultipleField) relayMultipleField.disabled = !checked || !portalActions.isEngagementAdminMode() || !portalState.engagementDetailEditing || !portalActions.canEditEngagementCompetition();
+        });
+        moduleActions.updateEngagementCategoryColumnControls(portalContext.elements.engagementsIndividualEvents);
+        moduleActions.updateEngagementCategoryColumnControls(portalContext.elements.engagementsRelayEvents);
+        if (!portalContext.elements.engagementsEventsSummary) return;
+        const selectedEvents = moduleActions.selectedEngagementEventsFromForm();
+        portalContext.elements.engagementsEventsSummary.textContent = moduleActions.engagementEventSummary(selectedEvents);
+        moduleActions.updateEngagementEventsSectionSummaries(selectedEvents, previousProgramSessions);
+        moduleActions.renderEngagementProgramSessions(previousProgramSessions, portalActions.isEngagementAdminMode() && portalState.engagementDetailEditing && portalActions.canEditEngagementCompetition());
+      }
+
+    function engagementCategoryColumnInputs(mount, categoryCode = "") {
+        return Array.from(mount?.querySelectorAll(`[data-engagement-category-code="${categoryCode}"]`) || [])
+          .filter((input) => !input.disabled && input.closest("[data-engagement-event-item]")?.dataset.selected === "true");
+      }
+
+    function updateEngagementCategoryColumnControls(mount) {
+        Array.from(mount?.querySelectorAll("[data-engagement-category-column]") || []).forEach((control) => {
+          const inputs = moduleActions.engagementCategoryColumnInputs(mount, control.dataset.engagementCategoryColumn || "");
+          const checkedCount = inputs.filter((input) => input.checked).length;
+          control.disabled = inputs.length === 0;
+          control.checked = inputs.length > 0 && checkedCount === inputs.length;
+          control.indeterminate = checkedCount > 0 && checkedCount < inputs.length;
+        });
+      }
+
+    function applyEngagementCategoryColumnControl(control) {
+        const mount = control?.closest("[data-engagement-event-group]");
+        if (!mount) return;
+        const inputs = moduleActions.engagementCategoryColumnInputs(mount, control.dataset.engagementCategoryColumn || "");
+        inputs.forEach((input) => { input.checked = control.checked; });
+        control.indeterminate = false;
+        moduleActions.updateEngagementCategoryColumnControls(mount);
+      }
+
+    function renderEngagementOpenWaterCourseLibrary() {
+        if (!portalContext.elements.engagementsOpenWaterCourseList) return;
+        const competitionId = portalState.selectedEngagementCompetition?.id || "";
+        if (competitionId !== moduleActions.openWaterVisibleCompetitionId) {
+          moduleActions.openWaterExtraDistances.clear();
+          moduleActions.openWaterVisibleCompetitionId = competitionId;
+        }
+        const canEdit = portalState.engagementDetailEditing && portalActions.canEditEngagementCompetition();
+        const selectedCodes = new Set(moduleActions.selectedEngagementEventsFromForm().map((event) => event.code));
+        const visibleCourses = portalState.engagementOpenWaterCourses.filter(course =>
+          moduleActions.openWaterProposedDistances.has(course.distance) || moduleActions.openWaterExtraDistances.has(course.distance) ||
+          selectedCodes.has(portalActions.engagementOpenWaterEventCode(course))
+        );
+        const disciplineColumns = [
+          { code: "SF", label: "Surface", shortLabel: "SF" },
+          { code: "BI", label: "Bi-palmes", shortLabel: "BI" },
+          { code: "SUP", label: "Support", shortLabel: "SP" }
+        ];
+        const courseRows = Array.from(visibleCourses.reduce((rows, course) => {
+          const format = course.format || "standard";
+          const key = `${Math.trunc(Number(course.distance) || 0)}-${format}`;
+          if (!rows.has(key)) rows.set(key, {
+            distance: Math.trunc(Number(course.distance) || 0),
+            format,
+            courses: new Map()
+          });
+          rows.get(key).courses.set(course.discipline, course);
+          return rows;
+        }, new Map()).values()).sort((left, right) =>
+          left.distance - right.distance || left.format.localeCompare(right.format, "fr")
+        );
+        const renderCourseCell = (course) => {
+          if (!course) return '<span class="admin-engagements-open-water-unavailable" aria-label="Course non disponible">—</span>';
+          const selected = selectedCodes.has(portalActions.engagementOpenWaterEventCode(course));
+          const active = course.active !== false;
+          if(active||selected)return `<label class="admin-engagements-open-water-course-check"><input type="checkbox" data-open-water-course-select="${portalActions.escapeHtml(course.id)}" aria-label="${portalActions.escapeHtml(course.label)}" ${selected?'checked':''} ${canEdit?'':'disabled'}></label>`;
+          const actionLabel = selected ? `${course.label} déjà ajoutée` : active ? `Ajouter ${course.label}` : `Réactiver ${course.label}`;
+          const action = active
+            ? `<button class="admin-engagements-open-water-course-add" type="button" data-open-water-course-select="${portalActions.escapeHtml(course.id)}" data-open-water-course-selected="${selected ? "true" : "false"}" aria-label="${portalActions.escapeHtml(actionLabel)}" title="${portalActions.escapeHtml(actionLabel)}" ${!canEdit || selected ? "disabled" : ""}>${selected ? "✓" : "+"}</button>`
+            : `<button class="admin-engagements-open-water-course-status" type="button" data-open-water-course-id="${portalActions.escapeHtml(course.id)}" data-open-water-course-next-active="true" aria-label="${portalActions.escapeHtml(actionLabel)}" title="${portalActions.escapeHtml(actionLabel)}" ${!canEdit ? "disabled" : ""}>↻</button>`;
+          const deactivate = canEdit && active
+            ? `<button class="admin-engagements-open-water-course-status" type="button" data-open-water-course-id="${portalActions.escapeHtml(course.id)}" data-open-water-course-next-active="false" aria-label="Désactiver ${portalActions.escapeHtml(course.label)}" title="Désactiver ${portalActions.escapeHtml(course.label)}">×</button>`
+            : "";
+          return `<span class="admin-engagements-open-water-course-actions" data-open-water-course-active="${active ? "true" : "false"}">${action}${deactivate}</span>`;
+        };
+        portalContext.elements.engagementsOpenWaterCourseList.innerHTML = `
+      <table>
+        <thead>
+          <tr>
+            <th scope="col">Distance</th>
+            ${disciplineColumns.map((discipline) => `<th scope="col"><span class="admin-engagements-open-water-label-full">${discipline.label}</span><span class="admin-engagements-open-water-label-short">${discipline.shortLabel}</span></th>`).join("")}
+          </tr>
+        </thead>
+        <tbody>
+          ${courseRows.map((row) => `
+            <tr>
+              <th scope="row">${row.distance} m${row.format === "elimination" ? " élimination" : ""}</th>
+              ${disciplineColumns.map((discipline) => `<td>${renderCourseCell(row.courses.get(discipline.code))}</td>`).join("")}
+            </tr>
+          `).join("")}
+        </tbody>
+      </table>
+    `;
+        if (portalContext.elements.engagementsOpenWaterCourseCreator) portalContext.elements.engagementsOpenWaterCourseCreator.hidden = !canEdit;
+      }
+
+    function addEngagementOpenWaterCourseToProgram(courseId = "") {
+        const course = portalState.engagementOpenWaterCourses.find((item) => item.id === courseId);
+        if (!course) return;
+        const preservedEvents = moduleActions.selectedEngagementEventsFromForm();
+        const definition = portalActions.engagementOpenWaterEventDefinitions({ events: preservedEvents }).find((event) => event.openWaterCourseId === course.id);
+        if (!definition) return;
+        const removing=preservedEvents.some(event=>event.code===definition.code);
+        if (!removing && course.active === false) return;
+        const preservedSessions = moduleActions.selectedEngagementProgramSessionsFromForm();
+        if(removing&&preservedSessions.some(session=>session.items?.some(item=>item.eventCode===definition.code))&&!global.confirm("Décocher cette course et retirer ses passages du programme ? Les changements restent locaux jusqu’à l’enregistrement. Aucun engagement ne sera supprimé.")){moduleActions.renderEngagementOpenWaterCourseLibrary();return;}
+        moduleActions.renderEngagementEvents({
+          ...portalState.selectedEngagementCompetition,
+          events: removing?preservedEvents.filter(event=>event.code!==definition.code):[...preservedEvents, { ...definition, categoryRestrictions: [] }],
+          programSessions: removing?preservedSessions.map(session=>({...session,items:session.items.filter(item=>item.eventCode!==definition.code)})):preservedSessions
+        });
+        portalActions.markEngagementDetailTabDirty("courses");
+        if (portalContext.elements.engagementsOpenWaterCourseMessage) {
+          portalContext.elements.engagementsOpenWaterCourseMessage.textContent = "";
+          portalContext.elements.engagementsOpenWaterCourseMessage.dataset.tone = "ok";
+        }
+      }
+
+    function renderEngagementEventGroup(mount, type, selectedCodes, canEdit, competition = portalState.selectedEngagementCompetition || {}) {
+        if (!mount) return;
+        let events = portalActions.engagementEventDefinitionsForCompetition(competition).filter((event) => event.type === type);
+        if (portalActions.engagementCompetitionType(competition) === "openWater" && type === "individual") {
+          events = events.filter((event) => selectedCodes.has(event.code));
+        }
+        const relayTable = type === "relay";
+        const categoryDefinitions = type === "relay"
+          ? portalConfig.ENGAGEMENT_RELAY_CATEGORY_DEFINITIONS
+          : portalConfig.ENGAGEMENT_INDIVIDUAL_CATEGORY_DEFINITIONS;
+        const categoryHead = categoryDefinitions.map(([code, label]) => `
+      <label class="admin-engagements-category-column-control" title="${portalActions.escapeHtml(label)} : appliquer à toutes les courses sélectionnées">
+        <input type="checkbox" data-engagement-category-column="${portalActions.escapeHtml(code)}" aria-label="${portalActions.escapeHtml(label)} pour toutes les courses" ${canEdit ? "" : "disabled"}>
+        <span>${portalActions.escapeHtml(code)}</span>
+      </label>
+    `).join("");
+        const rows = events.map((event) => {
+          const selectedEvent = selectedCodes.get(event.code) || {};
+          const selected = Boolean(selectedEvent.code);
+          const restrictedCategories = moduleActions.normalizeEngagementCategoryRestrictions(
+            event.code,
+            Array.isArray(selectedEvent.categoryRestrictions) ? selectedEvent.categoryRestrictions : []
+          );
+          const forbiddenCategories = portalConfig.ENGAGEMENT_EVENT_FORBIDDEN_CATEGORIES[event.code] || new Set();
+          const allCategoriesAllowed = !restrictedCategories.size;
+          const mixedRuleLabel = event.relayMixedRule === "required"
+            ? " - relais obligatoirement mixte"
+            : event.relayMixedRule === "mastersOnly"
+              ? " - mixte possible uniquement en Master"
+              : "";
+          const relayMixedMode = event.relayMixedRule === "required"
+            ? "required"
+            : event.relayMixedRule === "mastersOnly" && selectedEvent.relayMixedMode === "masters"
+              ? "masters"
+              : event.relayMixedRule === "mastersOnly"
+                ? "none"
+                : "";
+          const mixedRuleCell = event.relayMixedRule === "required"
+            ? `<span class="admin-engagements-mixed-cell" title="Relais obligatoirement mixte">Oui</span>`
+            : event.relayMixedRule === "mastersOnly"
+              ? `
+            <label class="admin-engagements-mixed-cell admin-engagements-mixed-choice" title="Choix admin pour les categories Master">
+              <select data-engagement-relay-mixed-mode data-engagement-relay-mixed-editable="true" ${canEdit && selected ? "" : "disabled"}>
+                <option value="none" ${relayMixedMode === "none" ? "selected" : ""}>Non</option>
+                <option value="masters" ${relayMixedMode === "masters" ? "selected" : ""}>Master</option>
+              </select>
+            </label>
+          `
+              : `<span class="admin-engagements-mixed-cell" title="Relais non mixte">-</span>`;
+          const multipleRelayCell = relayTable
+            ? `
+          <label class="admin-engagements-mixed-cell admin-engagements-mixed-choice" title="Autoriser plusieurs relais identiques par club">
+            <input type="checkbox" data-engagement-relay-multiple ${selectedEvent.multipleRelaysAllowed === true ? "checked" : ""} ${canEdit && selected ? "" : "disabled"}>
+          </label>
+        `
+            : "";
+          return `
+        <div class="admin-engagements-event-row" data-engagement-event-item data-selected="${selected ? "true" : "false"}">
+          <label class="admin-engagements-event-main">
+            <input type="checkbox" data-engagement-event-code="${portalActions.escapeHtml(event.code)}" ${selected ? "checked" : ""} ${canEdit && (competition.napSource !== true || portalActions.engagementCompetitionType(competition) === "openWater" || portalActions.engagementCompetitionType(competition) === "pool" && !selected) ? "" : "disabled"} ${competition.napSource === true && selected && portalActions.engagementCompetitionType(competition)!=="openWater" ? 'title="Course déjà enregistrée ; utilisez Retirer cette course pour la supprimer."' : ""}>
+            <span>
+              <strong data-engagement-event-label title="${portalActions.escapeHtml(event.label)}${portalActions.escapeHtml(mixedRuleLabel)}">${portalActions.escapeHtml(event.shortLabel)}</strong>
+            </span>
+          </label>
+          ${relayTable ? mixedRuleCell : ""}
+          ${multipleRelayCell}
+          <div class="admin-engagements-event-restrictions" data-engagement-event-restrictions ${selected ? "" : "hidden"}>
+            ${categoryDefinitions.map(([code, label]) => forbiddenCategories.has(code)
+                  ? `<span class="admin-engagements-category-blocked" title="${portalActions.escapeHtml(label)} - interdit par le reglement"></span>`
+                  : `
+                <label title="${portalActions.escapeHtml(label)}">
+                  <input type="checkbox" aria-label="${portalActions.escapeHtml(label)}" data-engagement-category-code="${portalActions.escapeHtml(code)}" ${allCategoriesAllowed || restrictedCategories.has(code) ? "checked" : ""} ${canEdit ? "" : "disabled"}>
+                  <span>${portalActions.escapeHtml(code)}</span>
+                </label>
+              `).join("")}
+          </div>
+        </div>
+      `;
+        }).join("");
+        mount.innerHTML = `
+      <div class="admin-engagements-events-table ${relayTable ? "admin-engagements-events-table-relay" : "admin-engagements-events-table-individual"}" style="--engagement-category-count: ${categoryDefinitions.length}">
+        <div class="admin-engagements-event-row admin-engagements-event-row-head" role="row">
+          <span role="columnheader">Course</span>
+          ${relayTable ? '<span role="columnheader">Mixte</span>' : ""}
+          ${relayTable ? '<span role="columnheader">Plusieurs</span>' : ""}
+          <div role="presentation">${categoryHead}</div>
+        </div>
+        ${rows || '<p class="admin-engagements-open-water-empty">Cliquez sur une course de la bibliothèque pour l’ajouter.</p>'}
+      </div>
+    `;
+        mount.dataset.engagementEventGroup = type;
+        moduleActions.updateEngagementCategoryColumnControls(mount);
+      }
+
+    function renderEngagementEvents(competition = portalState.selectedEngagementCompetition || {}) {
+        const events = Array.isArray(competition.events) ? competition.events : [];
+        const selectedCodes = new Map(events.map((event) => [event.code, event]).filter(([code]) => Boolean(code)));
+        const adminMode = portalActions.isEngagementAdminMode();
+        moduleActions.renderEngagementNativeEditWarnings(competition);
+        moduleActions.renderNativeCourseRemoval(competition, adminMode && portalState.engagementDetailEditing && portalActions.canEditEngagementCompetition(competition));
+        const canEdit = adminMode && portalState.engagementDetailEditing && portalActions.canEditEngagementCompetition(competition) && !competition.qualificationJobId && (competition.napSource !== true || !competition.qualifications?.enabled || portalActions.canUse("engagements.national.manage"));
+        const clubProgramView = !adminMode;
+        const openWater = portalActions.engagementCompetitionType(competition) === "openWater";
+        if (portalContext.elements.engagementsOpenWaterLibrary) portalContext.elements.engagementsOpenWaterLibrary.hidden = !openWater || !adminMode;
+        if (portalContext.elements.engagementsEventsForm) {
+          portalContext.elements.engagementsEventsForm.dataset.clubProgramView = clubProgramView ? "true" : "false";
+        }
+        if (portalContext.elements.engagementsEventsChoiceSection) portalContext.elements.engagementsEventsChoiceSection.hidden = !adminMode;
+        if (portalContext.elements.engagementsProgramSection) portalContext.elements.engagementsProgramSection.hidden = false;
+        if (portalContext.elements.engagementsProgramEditHint) portalContext.elements.engagementsProgramEditHint.hidden = !adminMode || !portalState.engagementDetailEditing || !canEdit;
+        moduleActions.renderEngagementEventGroup(portalContext.elements.engagementsIndividualEvents, "individual", selectedCodes, canEdit, competition);
+        moduleActions.renderEngagementEventGroup(portalContext.elements.engagementsRelayEvents, "relay", selectedCodes, canEdit, competition);
+        if (openWater && adminMode) {
+          moduleActions.renderEngagementOpenWaterCourseLibrary();
+          void moduleActions.loadEngagementOpenWaterCourses();
+        }
+        if (portalContext.elements.engagementsEventsSummary) {
+          portalContext.elements.engagementsEventsSummary.textContent = clubProgramView && !events.length ? "Programme en préparation." : moduleActions.engagementEventSummary(events);
+        }
+        if (portalContext.elements.engagementsEventsSaveButton) {
+          portalContext.elements.engagementsEventsSaveButton.hidden = true;
+          portalContext.elements.engagementsEventsSaveButton.disabled = true;
+        }
+        moduleActions.renderEngagementProgramSessions(competition.programSessions || [], adminMode && portalState.engagementDetailEditing && portalActions.canEditEngagementCompetition(competition));
+        if (clubProgramView) moduleActions.setEngagementEventsSectionOpen(portalContext.elements.engagementsProgramSection, true);
+        moduleActions.updateEngagementEventsSectionSummaries(
+          events,
+          moduleActions.normalizedEngagementProgramSessions(competition.programSessions || [], events.map((event) => ({ code: event.code, label: event.shortLabel || event.code })))
+        );
+        if (portalContext.elements.engagementsEventsMessage) {
+          portalContext.elements.engagementsEventsMessage.textContent = !adminMode
+            ? ""
+            : portalActions.canEditEngagementCompetition(competition)
+            ? ""
+          : "Programme consultable uniquement avec un droit de gestion sur cette compétition.";
+          portalContext.elements.engagementsEventsMessage.dataset.tone = canEdit ? "ok" : "";
+        }
+      }
+
+    function renderNativeCourseRemoval(competition, canEdit) {
+        if (!portalContext.elements.engagementsEventsForm) return;
+        let mount = document.getElementById("adminNativeCourseRemoval");
+        if (!mount) {
+          mount = document.createElement("div");
+          mount.id = "adminNativeCourseRemoval";
+          portalContext.elements.engagementsEventsForm.append(mount);
+        }
+        mount.hidden = competition.napSource !== true || !canEdit || portalActions.engagementCompetitionType(competition)==="openWater";
+        if (mount.hidden) { mount.textContent = ""; return; }
+        mount.innerHTML = `<p>Courses de la compétition. Si des engagements existent, seul le National peut retirer une course après confirmation. Les engagements sont conservés.</p><ul>${(competition.nativeRules?.courses || []).map(course => `<li>${portalActions.escapeHtml(course.course || "Course ancienne")} ${portalActions.escapeHtml(course.sexe === "F" ? "Femmes" : course.sexe === "M" ? "Hommes" : "Mixte")} <button type="button" class="ghost-button" data-native-course-remove="${portalActions.escapeHtml(String(course.id))}">Retirer cette course</button></li>`).join("")}</ul>`;
+        mount.querySelectorAll("[data-native-course-remove]").forEach(button => button.addEventListener("click", async () => {
+          try {
+            if (Object.keys(portalActions.nativeCompetitionPatchFromForm()).length) throw new Error("Enregistrez ou annulez vos autres modifications avant de retirer une course.");
+            if (!global.confirm("Retirer cette course de la compétition ?\n\nAttention : les engagements déjà saisis seront conservés et devront être vérifiés manuellement. Le programme détaillé sera conservé. Si des engagements existent, ce retrait est réservé au National.")) return;
+            mount.querySelectorAll("button").forEach(item => { item.disabled = true; });
+            const result = await portalActions.callFunction("updateEngagementCompetition", { competitionId:competition.id, expectedFingerprint:competition.napFingerprint, patch:{removeNativeCourseId:button.dataset.nativeCourseRemove,confirmCourseRemoval:true} });
+            portalState.selectedEngagementCompetition = result.competition;
+            portalState.nativeCompetitionEditBaseline = null;
+            portalActions.invalidateEngagementCalendarCaches();
+            await portalActions.loadEngagementCompetitions({force:true});
+            portalActions.upsertEngagementCalendarItemFromServer(portalState.selectedEngagementCompetition, "competition");
+            portalActions.renderEngagementCompetitionDetail(portalState.selectedEngagementCompetition);
+            portalActions.clearEngagementDetailTabDirty();
+            portalContext.elements.engagementsDetailStatus.textContent = "Course retirée de NAP. Les engagements et le programme détaillé sont conservés : vérifiez-les si nécessaire.";
+          } catch(error) {
+            portalContext.elements.engagementsDetailStatus.textContent = error.message;
+            mount.querySelectorAll("button").forEach(item => { item.disabled = false; });
+          }
+        }));
+      }
+
+    function engagementNativeEditWarningKind(warning) {
+        switch (String(warning || "").trim()) {
+          case "Courses anciennes conservees.": return "courses";
+          case "Une admission regionale ancienne reste conservee ; sa correspondance doit etre verifiee avant modification.": return "regions";
+          default: return "";
+        }
+      }
+
+    function renderEngagementNativeEditWarnings(competition = {}) {
+        const editing = portalActions.isEngagementAdminMode() && portalState.engagementDetailEditing && competition.napSource === true && portalActions.canEditEngagementCompetition(competition);
+        const kinds = new Set((competition.nativeWarnings || []).map(moduleActions.engagementNativeEditWarningKind));
+        [
+          [portalContext.elements.engagementsNativeCoursesWarning, "courses", "Une ou plusieurs courses NAP ne correspondent pas au catalogue LivePalmes. Elles sont conservées ; faites vérifier leur correspondance avant de modifier le programme."],
+          [portalContext.elements.engagementsNativeRegionsWarning, "regions", "Un code de région NAP n’est pas reconnu. Les régions invitées sont conservées ; leur modification est bloquée jusqu’à vérification de la correspondance."]
+        ].forEach(([element, kind, label]) => {
+          if (!element) return;
+          const visible = editing && kinds.has(kind);
+          element.textContent = visible ? label : "";
+          element.hidden = !visible;
+        });
+      }
+
+    function engagementClubContextMessage(competition = {}) {
+        if (portalActions.isEngagementAdminMode()) return "";
+        if (competition.canceled || competition.entryStatus !== "open" || portalActions.engagementDeadlineTone(competition) === "deadline-passed") return "";
+        const lockReason = portalActions.engagementClubWriteLockReason({ ...competition, nativeReadOnly: false });
+        if (lockReason) return lockReason;
+        if (global.LivePalmesEnvironment?.sportingDataSource === "nap" && competition.nativeTeamLeaderRequired) return "Déclarez votre chef d’équipe pour commencer les engagements.";
+        return "";
+      }
+    return { loadEngagementClubRecapFiles, loadEngagementCompetitionStatistics, loadEngagementMailJobs, saveEngagementCompetitionDocuments, deleteEngagementCompetitionDocument, loadEngagementOpenWaterCourses, setEngagementOpenWaterCourseStatus , engagementCompetitionDocumentDraftValues, readEngagementCompetitionDocumentFile, updateSelectedEngagementCompetitionDocuments, updateSelectedEngagementDocumentStatus, engagementEventCountLabel, refreshEngagementProgramEditor, selectedEngagementEventsCategoryError, selectedEngagementProgramError , formatEngagementAutomationDate, renderEngagementClosureAutomation, renderEngagementClubRecapSelector, engagementStatisticsTimeModeLabel, renderEngagementCompetitionStatistics, engagementMailJobTypeLabel, renderEngagementMailJobs, engagementCompetitionDocumentCategoryLabel, engagementCompetitionDocumentCategoryOptions, engagementCompetitionDocumentFileSize, engagementCompetitionDocumentTypeLabel, renderEngagementCompetitionDocumentDrafts, openEngagementCompetitionDocumentForm, handleEngagementCompetitionDocumentFiles, renderEngagementSharedDocuments, canDownloadEngagementOpenWaterTxt, renderEngagementDocuments, engagementEventSummary, engagementProgramSummary, engagementProgramStatusSummary, engagementEventsCompactSummary, missingEngagementProgramEventCount, updateEngagementEventsSectionSummaries, selectedEngagementEventOptions, selectedEngagementProgramSessionsFromForm, engagementProgramGenderModesForEvent, engagementProgramGenderModeTone, engagementProgramPhaseLabel, engagementProgramSameSlot, engagementProgramPassages, engagementProgramFormatForPhase, engagementProgramFirstPhaseForFormat, engagementProgramSecondPhaseForFormat, engagementProgramCanAddPassage, engagementProgramNextPhase, normalizeEngagementProgramPassageOrder, applyEngagementProgramFormatChange, renderEngagementProgramSessions, addEngagementProgramSession, handleEngagementProgramAction, selectedEngagementEventsFromForm, engagementAllowedCategoryCodes, normalizeEngagementCategoryRestrictions, engagementCategoryDefinitionsForEvent, updateEngagementEventsSummaryFromForm, engagementCategoryColumnInputs, updateEngagementCategoryColumnControls, applyEngagementCategoryColumnControl, renderEngagementOpenWaterCourseLibrary, addEngagementOpenWaterCourseToProgram, renderEngagementEventGroup, renderEngagementEvents, renderNativeCourseRemoval, engagementNativeEditWarningKind, renderEngagementNativeEditWarnings, engagementClubContextMessage };
   });
 })(window);
