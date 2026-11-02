@@ -42,14 +42,17 @@ async function scheduler(){
 }
 async function loaders(){
   let reads=0;
+  let clock=Date.now();class Clock extends Date{static now(){return clock;}}
   const state={currentAccessProfile:{clubId:"106"},engagementClubPeopleRequestVersion:0,engagementClubSwimmers:[]};
   const actions={canUse:()=>true,engagementClubScope:()=>"106",callFunction:async()=>{reads++;return {source:"nap",people:[{id:"p"}],hasMore:true,nextCursor:{officials:100}};},callFunctionWithTimeout:async()=>{reads++;return {source:"nap",clubId:"106",swimmers:[{id:"s"}]};},writeEngagementClubSwimmersCache:()=>{state.engagementClubSwimmersCachedAt=Date.now();}};
   const elements=new Proxy({engagementsView:{hidden:true}},{get:(target,key)=>{if(key in target)return target[key];throw Error("Background read must not touch hidden forms: "+key);}});
   const context={state,actions,config:{ENGAGEMENT_CLUB_SWIMMERS_CACHE_TTL_MS:300000},elements};
   const people=portalModule("club-and-competition.js","LivePalmesPortalClubAndCompetition",context);
-  const swimmers=portalModule("competition-actions.js","LivePalmesPortalCompetitionActions",context);
+  const swimmers=portalModule("competition-actions.js","LivePalmesPortalCompetitionActions",context,{Date:Clock});
   await people.loadEngagementClubPeople({silent:true,background:true});await swimmers.loadEngagementClubSwimmers({silent:true,background:true});
   assert.equal(reads,2);assert.equal(state.engagementClubPeople[0].id,"p");assert.equal(state.engagementClubPeopleHasMore,true);assert.equal(state.engagementClubSwimmers[0].id,"s");
-  await people.loadEngagementClubPeople({silent:true,background:true});await swimmers.loadEngagementClubSwimmers({silent:true,background:true});assert.equal(reads,2,"The real loaders reuse existing bounded caches, without paging through all officials");
+  clock+=6*60*60*1000;
+  await people.loadEngagementClubPeople({silent:true,background:true});await swimmers.loadEngagementClubSwimmers({silent:true,background:true});assert.equal(reads,2,"The real loaders reuse the page cache beyond five minutes, without paging through all officials");
+  await swimmers.loadEngagementClubSwimmers({silent:true,background:true,force:true});assert.equal(reads,3,"Explicit refresh bypasses the page cache");
 }
 (async()=>{await scheduler();await loaders();console.log("Progressive preload: paint/idle first, sequential bounded tasks, cache reuse, foreground priority, context/session/visibility/network guards, hidden forms untouched and no retry loop passed offline.");})().catch(error=>{console.error(error);process.exitCode=1;});

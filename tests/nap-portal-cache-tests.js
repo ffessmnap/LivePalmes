@@ -14,9 +14,13 @@ for (const [name, next] of [["engagementCalendarCacheCompetition", "readEngageme
 }
 const item = { id: "legacy-nap-5140", napSource: true, nativeReadOnly: true, legacyCompetitionId: "5140", competitionType: "pool" };
 context.writeEngagementCalendarCache("club", [item], 100, "nap");
+context.engagementCompetitionCalendarMemoryCache.get("club").loadedInPage = true;
+context.writeEngagementCalendarCache("club", [item], 101, "nap");
+assert.equal(context.engagementCompetitionCalendarMemoryCache.get("club").loadedInPage,true,"Local server-response updates preserve the page cache");
 context.engagementCompetitionCalendarMemoryCache.clear();
 const restored = context.readEngagementCalendarCache("club");
 assert.equal(restored.source, "nap");
+assert.notEqual(restored.loadedInPage,true,"F5 never trusts a persisted successful-read marker");
 assert.equal(restored.competitions[0].napSource, true);
 assert.equal(restored.competitions[0].nativeReadOnly, true);
 assert.equal(restored.competitions[0].legacyCompetitionId, "5140");
@@ -96,16 +100,19 @@ async function calendarOpening(){
     assert.equal(f.trace.includes("listEngagementCalendarEvents"),false,"Combined native result skips the second endpoint");
     assert.equal(f.state.engagementCompetitions.length,2);
     await f.state.loadEngagementCompetitions();
-    assert.equal(f.trace.filter(x=>x==="listEngagementCompetitions").length,2,"Every later NAP visit still refreshes native data");
+    assert.equal(f.trace.filter(x=>x==="listEngagementCompetitions").length,1,"Later visits reuse the successful page read");
+    await f.state.loadEngagementCompetitions({force:true});
+    assert.equal(f.trace.filter(x=>x==="listEngagementCompetitions").length,2,"Explicit refresh still reads the server");
   }
   const club=fixture({mode:"club"});const clubRead=club.state.loadEngagementCompetitions();club.release();await clubRead;
   assert.equal(club.state.engagementCompetitions.length,1);assert.equal(club.trace.includes("listEngagementCalendarEvents"),false);
+  const aged=fixture({cached:{competitions:[],source:"nap",cachedAt:1,loadedInPage:true}});await aged.state.loadEngagementCompetitions();assert.equal(aged.trace.includes("listEngagementCompetitions"),false,"No automatic expiry for a successful page read, including an empty list");
   const old=fixture({legacy:true});const oldRead=old.state.loadEngagementCompetitions();old.release();await oldRead;
   assert.equal(old.trace.filter(x=>x==="listEngagementCalendarEvents").length,1,"Older backends retain their authorized fallback");
   const failed=fixture({fail:true,cached:{competitions:[],source:"nap",cachedAt:Date.now()}});
   const failedRead=failed.state.loadEngagementCompetitions();failed.release();await failedRead;
   assert.equal(failed.state.elements.engagementsStatus.dataset.tone,"error");assert.equal(failed.state.elements.engagementsCalendarList.innerHTML,"cached list");
   assert.equal(failed.state.engagementCompetitionCalendarRequests.size,0);
-  console.log("Calendar opening: immediate cached/empty display, one native admin endpoint, grouped concurrent calls, fresh returns, club scope and error retention verified.");
+  console.log("Calendar opening: immediate cached/empty display, shared calls, no navigation/age reload, explicit refresh, club scope and error retention verified.");
 }
 calendarOpening().catch(error=>{console.error(error);process.exitCode=1;});

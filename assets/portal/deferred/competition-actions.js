@@ -399,11 +399,12 @@
           if (cached) {
             portalState.engagementClubSwimmers = cached.swimmers;
             portalState.engagementClubSwimmersClubId = cached.clubId || expectedClubId || "";
-            portalState.engagementClubSwimmersCachedAt = cached.cachedAt;
+            // Persistent data is a visual fallback; a new page still reads once.
+            portalState.engagementClubSwimmersCachedAt = 0;
             portalState.engagementClubSwimmersLoaded = true;
           }
         }
-        const cacheFresh = Boolean(portalState.engagementClubSwimmersLoaded && portalState.engagementClubSwimmersCachedAt && Date.now() - portalState.engagementClubSwimmersCachedAt < portalConfig.ENGAGEMENT_CLUB_SWIMMERS_CACHE_TTL_MS);
+        const cacheFresh = Boolean(portalState.engagementClubSwimmersLoaded && portalState.engagementClubSwimmersCachedAt);
         if (!force && cacheFresh) {
           if (visible()) moduleActions.renderActiveEngagementClubSwimmerConsumer();
           return portalState.engagementClubSwimmers;

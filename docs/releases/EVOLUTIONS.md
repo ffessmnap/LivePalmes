@@ -2,6 +2,12 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 2 novembre — Navigation depuis les listes en mémoire
+
+- Accord : « parfait tu peux lancer la modif? », après choix de conserver nageurs, officiels et compétitions dans la page, sans expiration automatique ni relecture au changement d’onglet ; actualisation volontaire, nouveau contexte et contrôles d’enregistrement conservés. Destination TEST, sans PROD ni modification backend/Firebase.
+- Périmètre : suppression de la relecture forcée au vrai clic Mes officiels, cache mémoire du calendrier par périmètre/période et suppression de l’expiration des nageurs à cinq minutes. F5 relit le serveur, même avec stockage de session conservé. Bouton Actualiser dans les trois listes, commandes séparées du titre et d’Ajouter sur ordinateur/mobile. [Budget et limites](../PORTAIL_REACTIVITE.md#cache-des-listes-pendant-la-page--demande-du-2-novembre).
+- Preuves ciblées : caches vides/anciens, réponse locale, marqueur non persistant et actualisation forcée ; navigateur réel local, données fictives et HTTPS externe bloqué : vrais clics des menus, retours après plus de cinq minutes sans RPC catalogue, actualisation de chaque liste et rechargement frais à 1280/390/320 px. Aucun enregistrement réel. État : préparation, CI et preuve TEST à consigner après réussite ; retour utilisateur non déduit de l’accord de développement.
+
 ### 2 novembre — Préchargement progressif du club après l’accueil
 
 - Accord : « ok pour ça alors », après échange sur l’affichage immédiat de l’accueil autorisé et la préparation progressive des compétitions, nageurs et officiels ; destination TEST, sans PROD, écriture métier ni modification Firebase.
