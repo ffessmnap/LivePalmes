@@ -18,7 +18,7 @@ Les sélecteurs de rattachement des comptes proposent « Clubs étrangers (CMAS)
 
 Les trois pages Club utilisent un titre sans carte ni bandeau, 38 px minimum sur ordinateur et 44 px sur mobile, avec Ajouter à droite. Le panneau et sa carte enveloppante sont transparents ; seul le tableau conserve un cadre. Les filtres sont rapprochés du titre et de la liste. Cette variante reste limitée aux pages Club.
 
-Depuis le 2 novembre, les listes compétitions, nageurs et officiels proposent Actualiser dans leur en-tête. Sur ordinateur Club, titre, actualisation et action Ajouter occupent des colonnes distinctes. Jusqu’à 700 px, le titre prend la première ligne ; Actualiser et Ajouter restent séparés sur la ligne suivante, avec des commandes de 44 px minimum. La commande d’actualisation est masquée dans le détail d’une compétition et ne déclenche aucune écriture métier.
+Les listes compétitions, nageurs et officiels ne proposent pas de bouton Actualiser : le rechargement complet du navigateur renouvelle les données. Dans les pages Club, le titre et les actions restantes occupent deux colonnes sur ordinateur ; jusqu’à 700 px, le titre prend la première ligne et Ajouter reste à droite sur la suivante, avec une cible tactile de 44 px minimum.
 
 Sur ordinateur, Mes nageurs et Mes officiels partagent une ligne de 42 px, un en-tête de 36 px et les mêmes tailles de texte. Les actions ne reviennent pas à la ligne : colonnes réservées, boutons de 32 px et statut compact de 28 px. Les tableaux défilent horizontalement quand leur largeur minimale ne tient plus ; leurs lignes ne se compriment pas avec la hauteur de l’effectif. Les longs noms et rôles gardent leur valeur complète en infobulle ; les détails mobiles restent accessibles au toucher.
 

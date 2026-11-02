@@ -3,7 +3,7 @@
   gap: 8px; padding: 0; border: 0; background: transparent !important; box-shadow: none;
 }
 #adminEngagementsView.admin-club-workspace[data-engagements-mode="club"] > .admin-club-workspace-head {
-  display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center;
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center;
   gap: 8px 16px; box-sizing: border-box; min-height: 38px !important; padding: 0 !important; margin: 0 0 8px;
   border: 0; border-radius: 0; background: transparent !important; box-shadow: none;
 }
@@ -11,9 +11,7 @@
   grid-column: 1; grid-row: 1; margin: 0; padding: 0; border: 0; background: none;
   color: var(--portal-color-heading); font-size: 1.25rem; line-height: 1.25; font-weight: 600;
 }
-#adminEngagementsView.admin-club-workspace[data-engagements-mode="club"] > .admin-club-workspace-head > :is(#adminEngagementsClubPeopleActions, #adminEngagementsClubSwimmersDirectoryActions, .admin-engagements-workspace-back) { grid-column: 3; grid-row: 1; justify-self: end; }
-#adminEngagementsCatalogRefresh { grid-column: 2; grid-row: 2; justify-self: end; }
-#adminEngagementsView.admin-club-workspace[data-engagements-mode="club"] #adminEngagementsCatalogRefresh { grid-column: 2; grid-row: 1; }
+#adminEngagementsView.admin-club-workspace[data-engagements-mode="club"] > .admin-club-workspace-head > :is(#adminEngagementsClubPeopleActions, #adminEngagementsClubSwimmersDirectoryActions, .admin-engagements-workspace-back) { grid-column: 2; grid-row: 1; justify-self: end; }
 #adminEngagementsView.admin-club-workspace[data-engagements-mode="club"] :is(#adminEngagementsClubPeopleActions, #adminEngagementsClubSwimmersDirectoryActions) button { box-sizing: border-box; min-height: 38px; padding: 6px 14px; border: 0; border-radius: 8px; background: var(--portal-color-accent); color: #fff; font: inherit; cursor: pointer; }
 #adminEngagementsView.admin-club-workspace[data-engagements-mode="club"] > [data-engagements-tab-panel],
 #adminEngagementsView.admin-club-workspace[data-engagements-mode="club"] > [data-engagements-tab-panel] > .admin-engagements-card {
@@ -54,8 +52,6 @@
   #adminEngagementsView.admin-club-workspace[data-engagements-mode="club"] > .admin-club-workspace-head { min-height: 44px !important; gap: 8px; grid-template-columns: minmax(0, 1fr) auto; }
   #adminEngagementsView.admin-club-workspace[data-engagements-mode="club"] > .admin-club-workspace-head #adminEngagementsViewTitle { font-size: 1.18rem; grid-column: 1 / -1; }
   #adminEngagementsView.admin-club-workspace[data-engagements-mode="club"] > .admin-club-workspace-head > :is(#adminEngagementsClubPeopleActions, #adminEngagementsClubSwimmersDirectoryActions, .admin-engagements-workspace-back) { grid-column: 2; grid-row: 2; }
-  #adminEngagementsView.admin-club-workspace[data-engagements-mode="club"] #adminEngagementsCatalogRefresh { grid-column: 1; grid-row: 2; justify-self: start; }
-  #adminEngagementsView #adminEngagementsCatalogRefresh { min-height: 44px; }
   #adminEngagementsView.admin-club-workspace[data-engagements-mode="club"] :is(#adminEngagementsClubPeopleActions, #adminEngagementsClubSwimmersDirectoryActions) button { min-height: 44px; }
   #adminEngagementsView #adminEngagementsClubPeoplePanel .admin-engagements-club-person-activity-button,
   #adminEngagementsView #adminEngagementsClubPeoplePanel .admin-engagements-request-actions button { min-height: 44px; }
