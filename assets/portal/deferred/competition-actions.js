@@ -378,7 +378,9 @@
         }
       }
 
-    async function loadEngagementClubSwimmers({ force = false, silent = false } = {}) {
+    async function loadEngagementClubSwimmers({ force = false, silent = false, background = false } = {}) {
+        const visible = () => !background || portalContext.elements.engagementsView?.hidden === false;
+        const report = () => !silent || background && visible();
         if (!portalActions.canUse("engagements.club.manage")) return [];
         if (portalState.engagementClubSwimmersLoadPromise) {
           return force
@@ -403,7 +405,7 @@
         }
         const cacheFresh = Boolean(portalState.engagementClubSwimmersLoaded && portalState.engagementClubSwimmersCachedAt && Date.now() - portalState.engagementClubSwimmersCachedAt < portalConfig.ENGAGEMENT_CLUB_SWIMMERS_CACHE_TTL_MS);
         if (!force && cacheFresh) {
-          moduleActions.renderActiveEngagementClubSwimmerConsumer();
+          if (visible()) moduleActions.renderActiveEngagementClubSwimmerConsumer();
           return portalState.engagementClubSwimmers;
         }
         const cachedListVisible = portalState.engagementClubSwimmersLoaded;
@@ -412,7 +414,7 @@
           portalContext.elements.engagementsClubSwimmersMessage.textContent = "Chargement des nageurs du club...";
           portalContext.elements.engagementsClubSwimmersMessage.dataset.tone = "loading";
         }
-        moduleActions.renderActiveEngagementClubSwimmerConsumer();
+        if (visible()) moduleActions.renderActiveEngagementClubSwimmerConsumer();
         const requestPromise = (async () => {
           try {
             const result = await portalActions.callFunctionWithTimeout("listEngagementClubSwimmers", { limit: 800 }, 30000);
@@ -425,19 +427,19 @@
             portalState.engagementClubSwimmersClubId = resultClubId || expectedClubId || "";
             portalState.engagementClubSwimmersLoaded = true;
             portalActions.writeEngagementClubSwimmersCache();
-            if (!silent && portalContext.elements.engagementsClubSwimmersMessage) {
+            if (report() && portalContext.elements.engagementsClubSwimmersMessage) {
               portalContext.elements.engagementsClubSwimmersMessage.textContent = "";
               portalContext.elements.engagementsClubSwimmersMessage.dataset.tone = "neutral";
             }
             return portalState.engagementClubSwimmers;
           } catch (error) {
-            if (!silent && portalContext.elements.engagementsClubSwimmersMessage) {
+            if (report() && portalContext.elements.engagementsClubSwimmersMessage) {
               portalContext.elements.engagementsClubSwimmersMessage.textContent = cachedListVisible
                 ? `Effectif affiché depuis le cache ; actualisation impossible : ${error?.message || error}`
                 : `Lecture impossible : ${error?.message || error}`;
               portalContext.elements.engagementsClubSwimmersMessage.dataset.tone = cachedListVisible ? "warning" : "error";
             }
-            if (!silent && portalContext.elements.engagementsClubSwimmersDirectoryStatus) {
+            if (report() && portalContext.elements.engagementsClubSwimmersDirectoryStatus) {
               portalContext.elements.engagementsClubSwimmersDirectoryStatus.textContent = cachedListVisible
                 ? "Effectif affiché depuis le cache ; actualisation momentanément indisponible."
                 : `Lecture impossible : ${error?.message || error}`;
@@ -448,7 +450,7 @@
             portalState.engagementClubSwimmersLoading = false;
             if (portalState.engagementClubSwimmersLoadPromise === requestPromise) portalState.engagementClubSwimmersLoadPromise = null;
             try {
-              moduleActions.renderActiveEngagementClubSwimmerConsumer();
+              if (visible()) moduleActions.renderActiveEngagementClubSwimmerConsumer();
             } catch (renderError) {
               if (portalContext.elements.engagementsClubSwimmersDirectoryStatus) {
                 portalContext.elements.engagementsClubSwimmersDirectoryStatus.textContent = `Affichage nageurs impossible : ${renderError?.message || renderError}`;

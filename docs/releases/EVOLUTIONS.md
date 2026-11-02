@@ -2,6 +2,12 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 2 novembre — Préchargement progressif du club après l’accueil
+
+- Accord : « ok pour ça alors », après échange sur l’affichage immédiat de l’accueil autorisé et la préparation progressive des compétitions, nageurs et officiels ; destination TEST, sans PROD, écriture métier ni modification Firebase.
+- Périmètre : coordinateur client dédié, premier affichage préservé, au plus trois lectures bornées et séquentielles via les chargeurs/caches existants. Priorité aux actions, suspension hors accueil ou contexte autorisé, économie de données/2G/hors-ligne respectés ; formulaires masqués préservés. Annuaires nationaux, historiques et documents restent à la demande. [Budget et limites](../PORTAIL_REACTIVITE.md#préchargement-progressif-après-affichage--complément-du-2-novembre).
+- Contrôles ciblés : vraie file avec horloge simulée et vrais chargeurs, annulation avant envoi, séquence, caches, erreurs et absence de reprise automatique ; navigateur réel local, RPC fictifs et réseau externe bloqué, accueil avant les trois lectures, réutilisation au premier accès aux officiels, navigation prioritaire et session de 24 h à 1280/390/320 px. État : préparation ; PR, CI et preuve TEST à consigner après réussite. Aucun retour utilisateur du résultat inventé.
+
 ### 2 novembre — Réactivité du portail et reconnexion après 24 heures
 
 - Demande et accord : « Ok je valide tout ce plan que tu peux mener de bout en bout jusqu'à TEST » ; démarrage, navigation, échanges serveur et session de 24 h, avec protections nécessaires. PROD, données sportives et envois réels exclus.
