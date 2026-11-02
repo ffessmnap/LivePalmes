@@ -876,6 +876,10 @@
 
     /* deferred-function: assets/portal/deferred/club-entry-state.js#restoreEngagementNavigation */
     async function restoreEngagementNavigation(...args) {
+      const checkpoint = global.LivePalmesEngagementNavigation;
+      if (!checkpoint || !portalState.currentAccessProfile || portalState.engagementNavigationRestoring
+          || !portalActions.canUse("engagements.club.manage") || portalActions.isEngagementAdminMode()
+          || global.location.hash !== "#club-competitions" || !checkpoint.read(engagementClubWorkspaceScopeKey())) return;
       return global.LivePalmesPortalDeferred.invoke(portalContext, "club-entry-state", "restoreEngagementNavigation", args, moduleActions);
     }
 

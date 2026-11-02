@@ -170,7 +170,8 @@
         const entry = {
           competitions: competitions.map(engagementCalendarCacheCompetition).filter((competition) => competition.id),
           source,
-          cachedAt
+          cachedAt,
+          loadedInPage: portalConfig.engagementCompetitionCalendarMemoryCache.get(cacheKey)?.loadedInPage === true
         };
         portalConfig.engagementCompetitionCalendarMemoryCache.set(cacheKey, entry);
         try {
