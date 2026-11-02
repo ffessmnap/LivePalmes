@@ -146,6 +146,10 @@ function createHarness({ profile, serverError = null, serverGate = null, authCon
     /n'est pas autorise comme admin/
   );
   assert.equal(testServerFailure.auth.status().signedIn, false);
+  const unavailable = createHarness({ authConfig:{serverProfileAuthentication:true}, serverError:Object.assign(new Error("Unavailable"),{code:"functions/unavailable"}) });
+  await unavailable.restore();
+  assert.equal(unavailable.auth.status().accessError.retryable,true);
+  assert.match(unavailable.auth.status().accessError.message,/momentanément indisponible/);
 
   const productionWithoutAllowlist = createHarness({ authConfig: {} });
   await assert.rejects(

@@ -47,6 +47,11 @@ run-name: ${{ inputs.verification_only && 'Verification TEST sans deploiement' |
         required: true
         type: boolean
         default: false
+      approved_portal_session_rules:
+        description: Restriction exacte de l'annuaire TEST pour la session portail 24h approuvee le 2 novembre ; aucun index ni PROD
+        required: false
+        type: boolean
+        default: false
       followup_depth:
         description: Compteur technique de suivi main (laisser 0 au lancement manuel)
         required: false
@@ -106,6 +111,8 @@ jobs:
         APPROVED_RECORDS_CLEANUP: ${{ inputs.approved_records_cleanup }}
         APPROVED_PUBLIC_EXPORT_CLEANUP: ${{ inputs.approved_public_export_cleanup }}
         APPROVED_HOME_ROUTING: ${{ inputs.approved_home_routing }}
+        APPROVED_PORTAL_SESSION_RULES: ${{ inputs.approved_portal_session_rules }}
+        PORTAL_SESSION_RULES_REUSE: 'true'
       run: '[[ "$BASE_SHA" =~ ^[0-9a-f]{40}$ ]]
 
         test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
@@ -125,7 +132,7 @@ jobs:
 
         paths=subprocess.check_output([''git'',''diff'',''--name-only'',''--no-renames'',os.environ[''BASE_SHA''],''HEAD''],text=True).splitlines()
 
-        m.classify_test(paths, os.environ[''APPROVED_TOP_FILES''] == ''true'', os.environ[''APPROVED_RECORDS_CLEANUP''] == ''true'', os.environ[''APPROVED_PUBLIC_EXPORT_CLEANUP''] == ''true'', os.environ[''APPROVED_HOME_ROUTING''] == ''true'')
+        m.classify_test(paths, os.environ[''APPROVED_TOP_FILES''] == ''true'', os.environ[''APPROVED_RECORDS_CLEANUP''] == ''true'', os.environ[''APPROVED_PUBLIC_EXPORT_CLEANUP''] == ''true'', os.environ[''APPROVED_HOME_ROUTING''] == ''true'', os.environ[''APPROVED_PORTAL_SESSION_RULES''] == ''true'')
 
         PYCODE'
     - name: Rechercher la verification du commit main exact
@@ -169,6 +176,8 @@ jobs:
 
         python tests/test-publication-coordination-tests.py
 
+        python tests/portal-session-rules-tests.py
+
         node tests/nap-source-diagnostic-tests.js
 
         python tests/test-verification-evidence-tests.py
@@ -177,6 +186,10 @@ jobs:
         credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_TEST_BACKEND }}
         project_id: livepalmes-test
     - uses: google-github-actions/setup-gcloud@v3
+    - name: Controler les regles de session TEST avant toute publication
+      env:
+        PORTAL_SESSION_RULES_WRITE: ${{ inputs.approved_portal_session_rules }}
+      run: python tools/test-portal-session-rules.py check . "$RUNNER_TEMP/test-portal-session-rules-proof.json"
     - name: Selectionner les Functions TEST reellement differentes
       id: selection
       env:
@@ -197,6 +210,20 @@ jobs:
         deploy
     - name: Controler le backend TEST et les Functions conservees
       run: python tools/release-cycle.py check-test "$RUNNER_TEMP" .
+    - name: Publier uniquement la restriction de session Firestore TEST explicitement approuvee
+      if: inputs.approved_portal_session_rules && !inputs.verification_only && !inputs.hosting_only
+      env:
+        PORTAL_SESSION_RULES_APPROVAL: '20261102-portal-session-24h-test'
+        HOSTING_ONLY: ${{ inputs.hosting_only }}
+        AUTOMATIC_CANDIDATE: ${{ inputs.automatic_candidate }}
+      run: python tools/test-portal-session-rules.py . "$RUNNER_TEMP/test-portal-session-rules-proof.json"
+    - uses: actions/upload-artifact@v4
+      if: '!inputs.verification_only'
+      with:
+        name: portal-session-rules-proof
+        path: ${{ runner.temp }}/test-portal-session-rules-proof.json
+        if-no-files-found: error
+        retention-days: 14
     - name: Verifier les dependances DTN sans invocation ni deploiement
       if: inputs.dtn_extension && !inputs.verification_only
       id: dtn-checks

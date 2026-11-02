@@ -1404,7 +1404,7 @@ assert.ok(portalHtml.includes('livepalmes-admin-calendar-events.js?v=20261027-co
 assert.ok(portal.includes("ENGAGEMENT_CALENDAR_CACHE_TTL_MS = 5 * 60 * 1000"));
 assert.ok(portal.includes("engagementCompetitionCalendarMemoryCache"));
 assert.ok(portal.includes("engagementCompetitionCalendarRequests"));
-assert.ok(portal.includes('loadEngagementCompetitions({ mode: "club", activate: false, silent: true })'));
+assert.ok(!portal.includes('loadEngagementCompetitions({ mode: "club", activate: false, silent: true })'), "Home must not read unused club data");
 assert.ok(portal.includes('manageOnly: requestedMode === "admin"'));
 assert.ok(portal.includes("global.sessionStorage?.setItem(`${ENGAGEMENT_CALENDAR_SESSION_CACHE_PREFIX}${cacheKey}`"));
 assert.ok(portal.includes("function upsertEngagementCalendarItemFromServer"));

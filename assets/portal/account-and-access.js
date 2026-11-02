@@ -21,7 +21,11 @@
         if (!signedIn) portalConfig.accessRequestHistory?.reset();
         const authReady = status.ready === true;
         const authUid = global.firebase?.auth?.().currentUser?.uid || "";
-        if (portalState.activeAuthUid && portalState.activeAuthUid !== authUid) {
+        const retry = document.querySelector?.("#adminPortalAuthRetry");
+        if (retry) retry.hidden = signedIn || !authReady || !authUid || status.accessError?.retryable !== true;
+        const context = profile => profile ? JSON.stringify([profile.clubId,profile.regionId,profile.accessScopes,[...(profile.capabilities || [])].sort()]) : "";
+        const contextChanged = status.profile && portalState.currentAccessProfile && context(status.profile) !== context(portalState.currentAccessProfile);
+        if (portalState.activeAuthUid && (portalState.activeAuthUid !== authUid || contextChanged)) {
           portalConfig.accessRequestHistory?.reset();
           portalActions.clearEngagementClubWorkspaceSessionCaches();
           portalActions.clearEngagementClubSwimmersSessionCaches();
@@ -83,7 +87,7 @@
           portalActions.setMessage("Aucun administrateur Firebase n'est configure.");
         } else if (!signedIn) {
           portalActions.closeAccountMenu();
-          portalActions.setMessage("");
+          portalActions.setMessage(status.accessError?.message || "", status.accessError ? "error" : "");
         }
       }
 
@@ -98,6 +102,7 @@
         portalActions.setMessage("Connexion en cours...", "loading");
         try {
           await auth.signIn(portalContext.elements.email?.value, portalContext.elements.password?.value);
+          if (portalContext.elements.password) portalContext.elements.password.value = "";
         } catch (error) {
           portalActions.setMessage(`Connexion impossible : ${error?.message || error}`);
         } finally {
@@ -128,112 +133,20 @@
         }
       }
 
-    async function updateAccountEmail(event) {
-        event?.preventDefault?.();
-        const nextEmail = String(portalContext.elements.accountEmail?.value || "").trim().toLowerCase();
-        const currentPassword = portalContext.elements.accountEmailPassword?.value || "";
-        const currentEmail = String(global.firebase?.auth?.().currentUser?.email || "").trim().toLowerCase();
-        if (!nextEmail || !currentPassword) return;
-        if (nextEmail === currentEmail) {
-          portalActions.setAccountMessage(portalContext.elements.accountEmailMessage, "Cette adresse est déjà celle de votre compte.");
-          return;
-        }
-        const button = portalContext.elements.accountEmailForm?.querySelector("button[type='submit']");
-        if (button) button.disabled = true;
-        portalActions.setAccountMessage(portalContext.elements.accountEmailMessage, "Mise à jour en cours…", "loading");
-        try {
-          const user = await portalActions.reauthenticateCurrentUser(currentPassword);
-          await portalActions.callFunction("updateCurrentAccountEmail", { email: nextEmail });
-          await user.reload?.();
-          await user.getIdToken?.(true);
-          let verificationSent = false;
-          try {
-            await user.sendEmailVerification?.();
-            verificationSent = true;
-          } catch (error) {
-            console.warn("Envoi de la vérification email impossible", error);
-          }
-          portalContext.elements.accountEmailPassword.value = "";
-          portalActions.renderCurrentUser({ ...(portalActions.ensureAdminAuth()?.status?.().profile || {}), email: nextEmail });
-          await loadCurrentUser();
-          portalActions.setAccountMessage(
-            portalContext.elements.accountEmailMessage,
-            verificationSent
-              ? "Adresse mise à jour. Un email de vérification vient de vous être envoyé."
-              : "Adresse mise à jour.",
-            "ok"
-          );
-        } catch (error) {
-          portalActions.setAccountMessage(portalContext.elements.accountEmailMessage, `Modification impossible : ${portalActions.firebaseAccountError(error)}`);
-        } finally {
-          if (button) button.disabled = false;
-        }
-      }
+    /* deferred-function: assets/portal/deferred/account-and-access.js#updateAccountEmail */
+    async function updateAccountEmail(...args) {
+      return global.LivePalmesPortalDeferred.invoke(portalContext, "account-and-access", "updateAccountEmail", args, moduleActions);
+    }
 
-    async function toggleAccountNotificationPreferences() {
-        const button = portalContext.elements.accountCompetitionNotifications;
-        if (!button || button.disabled) return;
-        const currentlyEnabled = button.getAttribute("aria-checked") !== "false";
-        const enabled = !currentlyEnabled;
-        if (!enabled && !global.confirm(
-          "Désactiver les notifications de compétition ? Vous ne recevrez plus les ouvertures de compétitions, les nouveaux documents ni les récapitulatifs PDF d’engagement."
-        )) return;
-        if (button) button.disabled = true;
-        portalActions.setAccountMessage(portalContext.elements.accountNotificationsMessage, "Enregistrement…", "loading");
-        try {
-          const result = await portalActions.callFunction("updateCurrentEmailNotificationPreferences", {
-            competitionNotifications: enabled
-          });
-          portalActions.renderCurrentUser({
-            ...(portalState.currentAccessProfile || {}),
-            competitionNotificationsEnabled: result.competitionNotificationsEnabled !== false
-          });
-          portalActions.setAccountMessage(
-            portalContext.elements.accountNotificationsMessage,
-            result.competitionNotificationsEnabled !== false
-              ? "Notifications de compétition activées."
-              : "Notifications de compétition désactivées.",
-            "ok"
-          );
-        } catch (error) {
-          portalActions.setAccountMessage(portalContext.elements.accountNotificationsMessage, `Enregistrement impossible : ${error?.message || error}`);
-        } finally {
-          if (button) button.disabled = false;
-        }
-      }
+    /* deferred-function: assets/portal/deferred/account-and-access.js#toggleAccountNotificationPreferences */
+    async function toggleAccountNotificationPreferences(...args) {
+      return global.LivePalmesPortalDeferred.invoke(portalContext, "account-and-access", "toggleAccountNotificationPreferences", args, moduleActions);
+    }
 
-    async function updateAccountPassword(event) {
-        event?.preventDefault?.();
-        const currentPassword = portalContext.elements.accountCurrentPassword?.value || "";
-        const nextPassword = portalContext.elements.accountNewPassword?.value || "";
-        const confirmation = portalContext.elements.accountConfirmPassword?.value || "";
-        if (nextPassword.length < 8) {
-          portalActions.setAccountMessage(portalContext.elements.accountPasswordMessage, "Le nouveau mot de passe doit contenir au moins 8 caractères.");
-          return;
-        }
-        if (nextPassword !== confirmation) {
-          portalActions.setAccountMessage(portalContext.elements.accountPasswordMessage, "La confirmation ne correspond pas au nouveau mot de passe.");
-          return;
-        }
-        if (currentPassword === nextPassword) {
-          portalActions.setAccountMessage(portalContext.elements.accountPasswordMessage, "Le nouveau mot de passe doit être différent de l’ancien.");
-          return;
-        }
-        const button = portalContext.elements.accountPasswordForm?.querySelector("button[type='submit']");
-        if (button) button.disabled = true;
-        portalActions.setAccountMessage(portalContext.elements.accountPasswordMessage, "Mise à jour en cours…", "loading");
-        try {
-          const user = await portalActions.reauthenticateCurrentUser(currentPassword);
-          await user.updatePassword(nextPassword);
-          await user.getIdToken?.(true);
-          portalContext.elements.accountPasswordForm.reset();
-          portalActions.setAccountMessage(portalContext.elements.accountPasswordMessage, "Mot de passe modifié.", "ok");
-        } catch (error) {
-          portalActions.setAccountMessage(portalContext.elements.accountPasswordMessage, `Modification impossible : ${portalActions.firebaseAccountError(error)}`);
-        } finally {
-          if (button) button.disabled = false;
-        }
-      }
+    /* deferred-function: assets/portal/deferred/account-and-access.js#updateAccountPassword */
+    async function updateAccountPassword(...args) {
+      return global.LivePalmesPortalDeferred.invoke(portalContext, "account-and-access", "updateAccountPassword", args, moduleActions);
+    }
 
     function accessPayloadFromForm() {
         const form = portalContext.elements.accessForm;
@@ -523,6 +436,10 @@
     async function loadAccessDirectorySnapshot() {
         const scope = accessDirectorySnapshotScope();
         if (scope.scopeType === "region" && !scope.scopeId) return null;
+        if (global.LivePalmesPortalSession?.enabled) {
+          const result = await portalActions.callFunction("getPortalAccessDirectorySnapshot", {});
+          return Array.isArray(result.users) ? result.users : null;
+        }
         await loadAccessDirectoryFirestoreModule();
         if (!portalActions.ensureFirebaseApp() || !global.firebase?.firestore) return null;
         const snapshot = await global.firebase.firestore()
@@ -597,122 +514,30 @@
         renderAccessUsers();
       }
 
-    async function loadAccessUsers({ reset = false, force = false, skipSnapshot = false } = {}) {
-        if (!portalActions.canManageAccessDirectory()) return;
-        if (portalState.accessUsersLoading && !reset) return;
-        if (portalState.accessDirectorySnapshotMode && portalState.accessDirectorySnapshotUsers && !skipSnapshot) {
-          renderAccessDirectorySnapshotPage({ reset });
-          return;
-        }
-        if (portalState.accessUsersLoaded && !reset && !force) {
-          renderAccessUsers();
-          return;
-        }
-        const loadSequence = ++portalState.accessLoadSequence;
-        if (reset) {
-          portalState.accessCurrentCursor = null;
-          portalState.accessNextCursor = null;
-          portalState.accessPreviousCursors = [];
-          portalState.accessPage = 1;
-        }
-        portalState.accessUsersLoading = true;
-        renderAccessPagination();
-        if (portalContext.elements.accessCount) portalContext.elements.accessCount.textContent = "Chargement…";
-        try {
-          if (!skipSnapshot) {
-            try {
-              const snapshotUsers = await loadAccessDirectorySnapshot();
-              if (loadSequence !== portalState.accessLoadSequence) return;
-              if (snapshotUsers) {
-                portalState.accessDirectorySnapshotUsers = snapshotUsers;
-                portalState.accessDirectorySnapshotMode = true;
-                renderAccessDirectorySnapshotPage({ reset: true });
-                return;
-              }
-            } catch (error) {
-              console.warn("Annuaire privé direct indisponible, utilisation de la lecture paginée.", error?.code || error?.message || error);
-            }
-          }
-          portalState.accessDirectorySnapshotMode = false;
-          renderAccessDirectoryAlphabet();
-          const filters = accessFiltersPayload();
-          const result = await portalActions.callFunction("listAccessUsers", {
-            pageSize: 25,
-            cursor: portalState.accessCurrentCursor,
-            ...filters
-          });
-          if (loadSequence !== portalState.accessLoadSequence) return;
-          const returnedUsers = Array.isArray(result.users) ? result.users : [];
-          if (Number(result.directoryVersion) >= 2) {
-            portalState.accessUsers = returnedUsers;
-            portalState.accessNextCursor = result.nextCursor || null;
-            portalState.accessDirectoryTruncated = result.truncated === true;
-          } else {
-            const filteredUsers = legacyFilteredAccessUsers(returnedUsers, filters);
-            const offset = Math.max(0, Math.trunc(Number(portalState.accessCurrentCursor?.offset) || 0));
-            portalState.accessUsers = filteredUsers.slice(offset, offset + 25);
-            portalState.accessNextCursor = offset + 25 < filteredUsers.length ? { offset: offset + 25 } : null;
-            portalState.accessDirectoryTruncated = false;
-          }
-          portalState.accessUsersLoaded = true;
-          renderAccessUsers();
-        } catch (error) {
-          if (loadSequence !== portalState.accessLoadSequence) return;
-          if (portalContext.elements.accessList) {
-            portalContext.elements.accessList.innerHTML = `<p class="admin-access-empty">Lecture des accès impossible : ${escapeHtml(error?.message || error)}</p>`;
-          }
-        } finally {
-          if (loadSequence !== portalState.accessLoadSequence) return;
-          portalState.accessUsersLoading = false;
-          renderAccessPagination();
-        }
-      }
+    /* deferred-function: assets/portal/deferred/account-and-access.js#loadAccessUsers */
+    async function loadAccessUsers(...args) {
+      return global.LivePalmesPortalDeferred.invoke(portalContext, "account-and-access", "loadAccessUsers", args, moduleActions);
+    }
 
-    async function showNextAccessPage() {
-        if (!portalState.accessNextCursor || portalState.accessUsersLoading) return;
-        if (portalState.accessDirectorySnapshotMode) {
-          portalState.accessPage += 1;
-          renderAccessDirectorySnapshotPage();
-          return;
-        }
-        portalState.accessPreviousCursors.push(portalState.accessCurrentCursor);
-        portalState.accessCurrentCursor = portalState.accessNextCursor;
-        portalState.accessPage += 1;
-        await loadAccessUsers({ force: true });
-      }
+    /* deferred-function: assets/portal/deferred/account-and-access.js#showNextAccessPage */
+    async function showNextAccessPage(...args) {
+      return global.LivePalmesPortalDeferred.invoke(portalContext, "account-and-access", "showNextAccessPage", args, moduleActions);
+    }
 
-    async function showPreviousAccessPage() {
-        if (portalState.accessUsersLoading || (portalState.accessDirectorySnapshotMode ? portalState.accessPage <= 1 : !portalState.accessPreviousCursors.length)) return;
-        if (portalState.accessDirectorySnapshotMode) {
-          portalState.accessPage = Math.max(1, portalState.accessPage - 1);
-          renderAccessDirectorySnapshotPage();
-          return;
-        }
-        portalState.accessCurrentCursor = portalState.accessPreviousCursors.pop() || null;
-        portalState.accessPage = Math.max(1, portalState.accessPage - 1);
-        await loadAccessUsers({ force: true });
-      }
+    /* deferred-function: assets/portal/deferred/account-and-access.js#showPreviousAccessPage */
+    async function showPreviousAccessPage(...args) {
+      return global.LivePalmesPortalDeferred.invoke(portalContext, "account-and-access", "showPreviousAccessPage", args, moduleActions);
+    }
 
-    async function refreshAccessUsersAfterMutation({ reset = false } = {}) {
-        portalState.accessDirectorySnapshotUsers = null;
-        portalState.accessDirectorySnapshotMode = false;
-        portalState.accessDirectorySnapshotFilteredCount = 0;
-        await loadAccessUsers({ reset, force: true, skipSnapshot: true });
-      }
+    /* deferred-function: assets/portal/deferred/account-and-access.js#refreshAccessUsersAfterMutation */
+    async function refreshAccessUsersAfterMutation(...args) {
+      return global.LivePalmesPortalDeferred.invoke(portalContext, "account-and-access", "refreshAccessUsersAfterMutation", args, moduleActions);
+    }
 
-    async function setAccessStatus(uid, status) {
-        const user = portalState.accessUsers.find((item) => item.uid === uid);
-        const label = user?.email || uid;
-        const verb = status === "active" ? "réactiver" : "désactiver";
-        if (!window.confirm(`Confirmer : ${verb} ${label} ?`)) return;
-        try {
-          await portalActions.callFunction("setAccessUserStatus", { uid, status });
-          await refreshAccessUsersAfterMutation();
-          portalActions.setAccessMessage(`Accès ${status === "active" ? "réactivé" : "désactivé"}.`, "ok");
-        } catch (error) {
-          portalActions.setAccessMessage(`Changement de statut impossible : ${error?.message || error}`);
-        }
-      }
+    /* deferred-function: assets/portal/deferred/account-and-access.js#setAccessStatus */
+    async function setAccessStatus(...args) {
+      return global.LivePalmesPortalDeferred.invoke(portalContext, "account-and-access", "setAccessStatus", args, moduleActions);
+    }
 
     function renderAccessDeletionRequests() {
         if (!portalActions.canDeleteAccessUserDirectly()) {
@@ -767,128 +592,32 @@
         portalActions.updateEngagementNationalRequestsPresentation();
       }
 
-    async function loadAccessDeletionRequests({ force = false } = {}) {
-        if (!portalActions.canDeleteAccessUserDirectly() || portalState.accessDeletionRequestsLoading) return;
-        if (portalState.accessDeletionRequestsLoaded && !force) return;
-        portalState.accessDeletionRequestsLoading = true;
-        portalActions.updateEngagementNationalRequestsPresentation();
-        if (portalContext.elements.accessDeletionRequestsStatus) {
-          portalContext.elements.accessDeletionRequestsStatus.textContent = "Chargement...";
-          portalContext.elements.accessDeletionRequestsStatus.dataset.tone = "loading";
-        }
-        if (portalContext.elements.engagementsNationalAccountsStatus) {
-          portalContext.elements.engagementsNationalAccountsStatus.textContent = "Chargement...";
-          portalContext.elements.engagementsNationalAccountsStatus.dataset.tone = "loading";
-        }
-        try {
-          const result = await portalActions.callFunction("listAccessUserDeletionRequests", {});
-          portalState.accessDeletionRequests = Array.isArray(result.requests) ? result.requests : [];
-          portalState.accessDeletionRequestsLoaded = true;
-          portalActions.markLastRefresh(portalContext.elements.accessDeletionRequestsStatus);
-          portalActions.markLastRefresh(portalContext.elements.engagementsNationalAccountsStatus);
-          renderAccessDeletionRequests();
-          if (portalContext.elements.accessDeletionRequestsStatus) portalContext.elements.accessDeletionRequestsStatus.dataset.tone = "ok";
-        } catch (error) {
-          if (portalContext.elements.accessDeletionRequestsStatus) {
-            portalContext.elements.accessDeletionRequestsStatus.textContent = `Lecture impossible : ${error?.message || error}`;
-            portalContext.elements.accessDeletionRequestsStatus.dataset.tone = "error";
-          }
-          if (portalContext.elements.engagementsNationalAccountsStatus) {
-            portalContext.elements.engagementsNationalAccountsStatus.textContent = `Lecture impossible : ${error?.message || error}`;
-            portalContext.elements.engagementsNationalAccountsStatus.dataset.tone = "error";
-          }
-        } finally {
-          portalState.accessDeletionRequestsLoading = false;
-          portalActions.updateEngagementNationalRequestsPresentation();
-        }
-      }
+    /* deferred-function: assets/portal/deferred/account-and-access.js#loadAccessDeletionRequests */
+    async function loadAccessDeletionRequests(...args) {
+      return global.LivePalmesPortalDeferred.invoke(portalContext, "account-and-access", "loadAccessDeletionRequests", args, moduleActions);
+    }
 
-    async function deleteAccessUser(uid) {
-        const user = portalState.accessUsers.find((item) => item.uid === uid);
-        const label = user?.email || uid;
-        if (!global.confirm(`Suppression définitive du compte ${label} ? Cette action supprime le compte Firebase et ses droits LivePalmes.`)) return;
-        try {
-          await portalActions.callFunction("deleteAccessUser", { uid, confirmPermanent: true });
-          portalState.accessDeletionRequestsLoaded = false;
-          await refreshAccessUsersAfterMutation({ reset: true });
-          if (portalActions.canDeleteAccessUserDirectly()) await loadAccessDeletionRequests({ force: true });
-          portalActions.setAccessMessage("Compte supprimé définitivement.", "ok");
-        } catch (error) {
-          portalActions.setAccessMessage(`Suppression impossible : ${error?.message || error}`);
-        }
-      }
+    /* deferred-function: assets/portal/deferred/account-and-access.js#deleteAccessUser */
+    async function deleteAccessUser(...args) {
+      return global.LivePalmesPortalDeferred.invoke(portalContext, "account-and-access", "deleteAccessUser", args, moduleActions);
+    }
 
-    async function requestAccessUserDeletion(uid) {
-        const user = portalState.accessUsers.find((item) => item.uid === uid);
-        const label = user?.email || uid;
-        if (!global.confirm(`Demander à un admin national de supprimer le compte ${label} ?`)) return;
-        try {
-          await portalActions.callFunction("requestAccessUserDeletion", { uid });
-          portalActions.setAccessMessage("Demande de suppression envoyée à l'administration nationale.", "ok");
-        } catch (error) {
-          portalActions.setAccessMessage(`Demande impossible : ${error?.message || error}`);
-        }
-      }
+    /* deferred-function: assets/portal/deferred/account-and-access.js#requestAccessUserDeletion */
+    async function requestAccessUserDeletion(...args) {
+      return global.LivePalmesPortalDeferred.invoke(portalContext, "account-and-access", "requestAccessUserDeletion", args, moduleActions);
+    }
 
-    async function resolveAccessDeletionRequest(requestId, decision, statusElement = portalContext.elements.accessDeletionRequestsStatus) {
-        const request = portalState.accessDeletionRequests.find((item) => item.id === requestId);
-        const label = request?.targetEmail || request?.targetUid || "ce compte";
-        const approve = decision === "approved";
-        const message = approve
-          ? `Accepter la demande et supprimer définitivement ${label} ?`
-          : `Refuser la demande de suppression de ${label} ?`;
-        if (!global.confirm(message)) return;
-        if (statusElement) {
-          statusElement.textContent = approve ? "Suppression en cours..." : "Refus en cours...";
-          statusElement.dataset.tone = "loading";
-        }
-        try {
-          await portalActions.callFunction("resolveAccessUserDeletionRequest", { requestId, decision: approve ? "approved" : "rejected" });
-          portalState.portalPendingOverviewLoaded = false;
-          portalState.accessDeletionRequestsLoaded = false;
-          await refreshAccessUsersAfterMutation({ reset: true });
-          await loadAccessDeletionRequests({ force: true });
-          await portalActions.loadPortalPendingOverview({ force: true });
-          if (statusElement) {
-          statusElement.textContent = approve ? "Demande acceptée et compte supprimé." : "Demande refusée.";
-            statusElement.dataset.tone = "ok";
-          }
-        } catch (error) {
-          if (statusElement) {
-            statusElement.textContent = `Traitement impossible : ${error?.message || error}`;
-            statusElement.dataset.tone = "error";
-          }
-        }
-      }
+    /* deferred-function: assets/portal/deferred/account-and-access.js#resolveAccessDeletionRequest */
+    async function resolveAccessDeletionRequest(...args) {
+      return global.LivePalmesPortalDeferred.invoke(portalContext, "account-and-access", "resolveAccessDeletionRequest", args, moduleActions);
+    }
 
-    async function saveAccessUser(event) {
-        event?.preventDefault?.();
-        if (!portalActions.canUse("admin.full") && !portalActions.canUse("engagements.region.manage")) {
-          portalActions.setAccessMessage("Droit de gestion des accès requis.");
-          return;
-        }
-        const payload = accessPayloadFromForm();
-        portalActions.setAccessMessage("");
-        try {
-          const result = await portalActions.callFunction("createOrUpdateAccessUser", payload);
-          const sendReset = portalContext.elements.accessForm.querySelector("#adminAccessSendReset")?.checked;
-          if (sendReset) {
-            await global.firebase.auth().sendPasswordResetEmail(result.email || payload.email, {
-              url: `${global.LivePalmesEnvironment.authOrigin}/portail.html`,
-              handleCodeInApp: false
-            });
-          }
-          resetAccessForm(true);
-          await refreshAccessUsersAfterMutation({ reset: true });
-          portalActions.setAccessMessage(
-            `${result.created ? "Compte créé" : "Compte mis à jour"} : ${result.email}. ${sendReset ? "E-mail de mot de passe envoyé." : ""}`,
-            "ok"
-          );
-        } catch (error) {
-          portalActions.setAccessMessage(`Enregistrement impossible : ${error?.message || error}`);
-        }
-      }
+    /* deferred-function: assets/portal/deferred/account-and-access.js#saveAccessUser */
+    async function saveAccessUser(...args) {
+      return global.LivePalmesPortalDeferred.invoke(portalContext, "account-and-access", "saveAccessUser", args, moduleActions);
+    }
 
+    const moduleActions = { loadCurrentUser, updateView, signIn, sendPasswordReset, signOut, updateAccountEmail, toggleAccountNotificationPreferences, updateAccountPassword, accessPayloadFromForm, openAccessDialog, fillAccessForm, resetAccessForm, formatAccessDateTime, accessActionIcon, renderAccessUsers, renderAccessPagination, escapeHtml, accessFiltersPayload, normalizedAccessSearch, legacyFilteredAccessUsers, accessDirectorySnapshotScope, loadAccessDirectoryFirestoreModule, preloadAccessDirectoryFirestore, loadAccessDirectorySnapshot, sortedAccessUsers, accessDirectoryUserLetter, renderAccessDirectoryAlphabet, renderAccessDirectorySnapshotPage, loadAccessUsers, showNextAccessPage, showPreviousAccessPage, refreshAccessUsersAfterMutation, setAccessStatus, renderAccessDeletionRequests, loadAccessDeletionRequests, deleteAccessUser, requestAccessUserDeletion, resolveAccessDeletionRequest, saveAccessUser };
     return {
       loadCurrentUser,
       updateView,
