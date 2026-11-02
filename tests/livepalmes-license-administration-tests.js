@@ -15,7 +15,9 @@ assert.match(html, /data-engagements-national-panel="licenses"/);
 assert.match(html, /id="adminLicenseControlValidate"/);
 assert.match(html, /Contr&ocirc;le manuel/);
 assert.match(html, /adminLicenseControlRequiredDate/);
-assert.match(html, /livepalmes-license-administration\.js/);
+const startup = fs.readFileSync(path.join(root, "assets/livepalmes-portal-deferred.js"), "utf8");
+assert.match(startup, /"engagements":\["assets\/livepalmes-license-administration\.js\?v=/);
+assert.doesNotMatch(html, /<script[^>]+livepalmes-license-administration\.js/, "License tools load on their workspace, not home");
 
 assert.match(portal, /"#administration-licences"[\s\S]*nationalTab: "licenses"/);
 assert.match(portal, /new Set\(\["deletions", "clubs", "licenses", "swimmers", "people", "audit"\]\)/);
