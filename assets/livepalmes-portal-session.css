@@ -5,5 +5,6 @@
 .admin-portal-session-dialog input { box-sizing:border-box; width:100%; min-height:44px; padding:10px; border:1px solid #84969e; border-radius:6px; font:inherit; }
 .admin-portal-session-dialog button { min-height:44px; }
 body[data-portal-session="locked"] .admin-portal-shell { visibility:hidden; }
+body[data-portal-session="locked"] .admin-portal-topbar-actions { visibility:hidden; }
 body[data-portal-module-loading="true"] { cursor:progress; }
 .admin-portal-module-status { position:fixed; z-index:100001; bottom:12px; left:50%; transform:translateX(-50%); box-sizing:border-box; max-width:calc(100% - 32px); padding:10px 16px; border:1px solid #84969e; border-radius:8px; background:#fff; color:#24343b; box-shadow:0 3px 15px #0002; font:500 14px/1.4 system-ui,sans-serif; pointer-events:none; }

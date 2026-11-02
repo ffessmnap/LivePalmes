@@ -4,7 +4,7 @@ const assert=require("node:assert/strict"),fs=require("node:fs"),vm=require("nod
 const {createPortalSessions,DAY,INTERVAL}=require("../functions/portal-session");
 class HttpsError extends Error{constructor(code,message,details){super(message);this.code=code;this.details=details;}}
 function environment(){
-  const clock={value:1793600000000},documents=new Map(),calls=[],storage=new Map();let writes=0;
+  const clock={value:1793600000000},documents=new Map(),calls=[],storage=new Map();let writes=0,readGate;
   const snapshot=id=>({exists:documents.has(id),data:()=>documents.get(id)});
   const db={collection:name=>{assert.equal(name,"portalSessions");return{doc:id=>({id,get:async()=>snapshot(id)})};},runTransaction:async fn=>fn({get:async ref=>snapshot(ref.id),set:(ref,data)=>{writes++;documents.set(ref.id,{...data});},update:(ref,data)=>{writes++;documents.set(ref.id,{...documents.get(ref.id),...data});}})};
   const account={uid:"client-user",email:"fixture@example.test",authTime:Math.floor(clock.value/1000),getIdTokenResult:async function(){return{claims:{auth_time:this.authTime}};},getIdToken:async()=>"token",reauthenticateWithCredential:async function(password){if(password!=="correct")throw Object.assign(new Error("wrong-password"),{code:"auth/wrong-password"});this.authTime=Math.floor(clock.value/1000);}};
@@ -22,7 +22,7 @@ function environment(){
       if(name==="openPortalSession")return{data:await server.open(request)};
       if(name==="touchPortalSession")return{data:await server.touch(request)};
       if(name==="closePortalSession")return{data:await server.close(request)};
-      await server.assertSession(request);return{data:name==="getPortalAccessUser"?profile():{ok:true}};
+      await server.assertSession(request);if(name==="getEngagementCompetition"&&readGate)await readGate;return{data:name==="getPortalAccessUser"?profile():{ok:true}};
     }};
     const authFactory=()=>auth;authFactory.EmailAuthProvider={credential:(_email,password)=>password};
     const window={LivePalmesEnvironment:{isTest:true},firebase:{auth:authFactory},localStorage:{getItem:key=>store.get(key)||null,setItem:(key,value)=>store.set(key,value)},crypto:{getRandomValues:bytes=>bytes.fill(seed)},location:{reload(){}},setTimeout:(fn,ms)=>{timers.set(++timerId,{fn,at:clock.value+ms});return timerId;},clearTimeout:id=>timers.delete(id),addEventListener:(name,fn)=>listeners[name]=fn};
@@ -35,7 +35,7 @@ function environment(){
     async function due(){for(let n=0;n<10;n++){const entry=[...timers].find(([,value])=>value.at<=clock.value);if(!entry)break;timers.delete(entry[0]);await entry[1].fn();}await Promise.resolve();}
     return{session,service,document,main,timers,notifications,get resumed(){return resumed;},activity:()=>listeners.pointerdown({isTrusted:true}),storage:()=>listeners.storage({key:"livepalmes.portal.session.v2."+account.uid}),visibility:()=>documentListeners.visibilitychange(),due,lock:()=>nodes.get("adminPortalSessionLock"),unlock:async password=>{const dialog=nodes.get("adminPortalSessionLock");dialog.querySelector("#adminPortalSessionPassword").value=password;await dialog.querySelector("form").submit({preventDefault(){}});}};
   }
-  return{clock,documents,calls,account,auth,storage,server,tab,advance:ms=>clock.value+=ms,get writes(){return writes;}};
+  return{clock,documents,calls,account,auth,storage,server,tab,pauseReads:promise=>{readGate=promise;},advance:ms=>clock.value+=ms,get writes(){return writes;}};
 }
 async function main(){
   const e=environment(),a=e.tab();
@@ -54,6 +54,11 @@ async function main(){
   const old=environment(),oldTab=old.tab({seed:12});old.advance(DAY);await assert.rejects(oldTab.session.prepare(),x=>x.details?.portalSessionExpired);assert.equal(old.writes,0,"Old sessions with no local history require a real login");
   const future=environment(),futureTab=future.tab();await futureTab.session.prepare();const key=[...future.storage.keys()][0],state=JSON.parse(future.storage.get(key));state.lastActivityAt=future.clock.value+DAY;future.storage.set(key,JSON.stringify(state));const reload=future.tab();await assert.rejects(reload.session.prepare());assert.equal(reload.document.body.dataset.portalSession,"locked");
   assert.match(fs.readFileSync("portail.html","utf8"),/livepalmes-portal-session\.js\?v=/);
+  const race=environment(),raceTab=race.tab();await raceTab.session.prepare();race.advance(DAY-1000);
+  let finish;race.pauseReads(new Promise(resolve=>{finish=resolve;}));
+  const oldRead=raceTab.service.httpsCallable("getEngagementCompetition")({});for(let n=0;n<10;n++)await Promise.resolve();
+  race.advance(2000);raceTab.session.check();await raceTab.unlock("correct");assert.equal(raceTab.lock().open,false);
+  finish();await assert.rejects(oldRead,error=>error.code==="functions/cancelled");assert.equal(raceTab.document.body.dataset.portalSession,"active","Late response cannot reopen or relock a renewed session");
   {
   const {portalModule}=require("./helpers/portal-module-runtime");
   const state={activeAuthUid:"same-user",currentAccessProfile:{clubId:"106",regionId:"IDF",capabilities:["engagements.region.manage"],accessScopes:{}},accessUsers:[{uid:"previous-region"}],accessUsersLoaded:true,accessDirectorySnapshotMode:true};

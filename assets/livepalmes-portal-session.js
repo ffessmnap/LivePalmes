@@ -4,6 +4,7 @@
   const enabled = global.LivePalmesEnvironment?.isTest === true && document.body?.classList.contains("admin-portal-page");
   let state, uid = "", prepared = false, preparing, preparingUid, profile, raw, expiryTimer, activityTimer;
   let lastStored = 0, lastSynced = 0, lastTouchAttempt = 0, serverDeadline = Infinity, offset = 0, dialog;
+  let generation = 0;
   const originalServices = new WeakMap();
   function now() { return Date.now() + offset; }
   function user() { return global.firebase?.auth?.().currentUser; }
@@ -15,6 +16,7 @@
   }
   function expired() { return !state || state.locked || now() >= state.lastActivityAt + DAY || now() >= serverDeadline; }
   function error() { return Object.assign(new Error("Votre session a expiré. Reconnectez-vous."), {code:"functions/unauthenticated",details:{portalSessionExpired:true}}); }
+  function obsolete() { return Object.assign(new Error("La session a changé pendant l’opération. Vérifiez son état avant de poursuivre."),{code:"functions/cancelled"}); }
   function setLocked(value) {
     document.body.dataset.portalSession = value ? "locked" : "active";
     const main = document.querySelector("main");
@@ -22,6 +24,7 @@
   }
   function lock(persist = true) {
     if (!user()) return;
+    generation++;
     if (state) { state.locked = true; if (persist) save(true); }
     prepared = false;
     global.clearTimeout(expiryTimer); global.clearTimeout(activityTimer);
@@ -31,7 +34,8 @@
       dialog.id = "adminPortalSessionLock";
       dialog.className = "admin-portal-session-dialog";
       dialog.setAttribute("aria-labelledby", "adminPortalSessionTitle");
-      dialog.innerHTML = '<form id="adminPortalSessionUnlockForm"><h2 id="adminPortalSessionTitle">Reconnectez-vous</h2><p>Après 24 heures sans activité, votre mot de passe est nécessaire pour reprendre. Les saisies de cette page restent en mémoire.</p><label>Compte<input type="email" id="adminPortalSessionEmail" readonly autocomplete="username"></label><label>Mot de passe<input id="adminPortalSessionPassword" type="password" autocomplete="current-password" required></label><p id="adminPortalSessionMessage" role="status" aria-live="polite"></p><div class="admin-portal-actions"><button type="submit">Reprendre ma session</button><button type="button" id="adminPortalSessionSignOut" class="ghost-button">Déconnexion</button></div></form>';
+      dialog.setAttribute("aria-describedby", "adminPortalSessionHint");
+      dialog.innerHTML = '<form id="adminPortalSessionUnlockForm"><h2 id="adminPortalSessionTitle">Reconnectez-vous</h2><p id="adminPortalSessionHint">Après 24 heures sans activité, votre mot de passe est nécessaire pour reprendre. Les saisies de cette page restent en mémoire.</p><label>Compte<input type="email" id="adminPortalSessionEmail" readonly autocomplete="username"></label><label>Mot de passe<input id="adminPortalSessionPassword" type="password" autocomplete="current-password" required></label><p id="adminPortalSessionMessage" role="status" aria-live="polite"></p><div class="admin-portal-actions"><button type="submit">Reprendre ma session</button><button type="button" id="adminPortalSessionSignOut" class="ghost-button">Déconnexion</button></div></form>';
       document.body.appendChild(dialog);
       dialog.addEventListener("cancel", e => e.preventDefault());
       dialog.querySelector("form").addEventListener("submit", unlock);
@@ -41,7 +45,11 @@
       });
     }
     dialog.querySelector("#adminPortalSessionEmail").value = user().email || "";
-    if (!dialog.open) { dialog.showModal(); dialog.querySelector("#adminPortalSessionPassword").focus(); }
+    if (!dialog.open) {
+      dialog.querySelector("#adminPortalSessionPassword").value = "";
+      dialog.querySelector("#adminPortalSessionMessage").textContent = "";
+      dialog.showModal(); dialog.querySelector("#adminPortalSessionPassword").focus();
+    }
   }
   function schedule() {
     global.clearTimeout(expiryTimer);
@@ -64,10 +72,12 @@
     if (prepared && user()?.uid === uid) { check(); if (expired()) throw error(); return profile; }
     const account = user();
     if (!account) throw error();
+    if (uid && uid !== account.uid) generation++;
+    const expectedGeneration = generation;
     let pending;
     pending = (async () => {
       const token = await account.getIdTokenResult(forceToken);
-      if (user() !== account) throw error();
+      if (user() !== account || expectedGeneration !== generation) throw obsolete();
       const authTime = Number(token.claims?.auth_time) * 1000;
       if (!Number.isSafeInteger(authTime) || authTime <= 0) throw error();
       if (uid !== account.uid) serverDeadline = Infinity;
@@ -82,14 +92,14 @@
       if (!Number.isFinite(state.lastActivityAt) || state.lastActivityAt > now() + 60000 || expired()) {lock();throw error();}
       try {
         const response = await raw("openPortalSession")({_portalSession:state.id});
-        if (user()?.uid !== uid || user() !== account) throw error();
+        if (user()?.uid !== uid || user() !== account || expectedGeneration !== generation) throw obsolete();
         stamp(response.data); profile = response.data.profile;
         if (!profile || profile.uid !== uid) throw error();
         prepared = true; save(true); check();
         if (expired()) throw error();
         setLocked(false);
         return profile;
-      } catch (failure) { if (failure.details?.portalSessionExpired) lock(); throw failure; }
+      } catch (failure) { if (expectedGeneration === generation && failure.details?.portalSessionExpired) lock(); throw failure; }
     })().finally(() => { if (preparing === pending) preparing = null; });
     preparingUid = account.uid; preparing = pending;
     return pending;
@@ -100,14 +110,14 @@
     const stored = read(uid);
     if (stored?.syncedAt > lastSynced) lastSynced = stored.syncedAt;
     if (now() - lastSynced < INTERVAL) return;
-    const expected = uid, id = state.id;
+    const expected = uid, id = state.id, expectedGeneration = generation;
     lastTouchAttempt = now();
     try {
       const response = await raw("touchPortalSession")({_portalSession:id,_portalActivityAge:Math.min(INTERVAL,Math.max(0,now()-state.lastActivityAt))});
-      if (expected !== uid || id !== state?.id) return;
+      if (expected !== uid || id !== state?.id || expectedGeneration !== generation) return;
       stamp(response.data); schedule();
     } catch (failure) {
-      if (failure.details?.portalSessionExpired) lock();
+      if (expectedGeneration === generation && failure.details?.portalSessionExpired) lock();
       // No retry loop or heartbeat while idle. A later real interaction retries.
     }
   }
@@ -136,8 +146,13 @@
         const current = await prepare();
         if (name === "getCurrentAccessUser" && !wasPrepared) return {data:current};
         check(); if (expired()) throw error();
-        try { return await call({...input,_portalSession:state.id}); }
-        catch (failure) { if (failure.details?.portalSessionExpired) lock(); throw failure; }
+        const expectedGeneration = generation;
+        try {
+          const response = await call({...input,_portalSession:state.id});
+          if (expectedGeneration !== generation) throw obsolete();
+          return response;
+        }
+        catch (failure) { if (expectedGeneration === generation && failure.details?.portalSessionExpired) lock(); throw failure; }
       };
     };
     return service;
@@ -152,12 +167,12 @@
     try {
       const credential = global.firebase.auth.EmailAuthProvider.credential(account.email,password.value);
       await account.reauthenticateWithCredential(credential); await account.getIdToken(true);
-      prepared = false;
+      generation++; prepared = false; preparing = null;
       const next = await prepare();
       const changed = signature(previous) !== signature(next);
       const allowed = await global.LivePalmesPortalAuth?.refreshProfile?.({notify:changed});
       if (!allowed || user()?.uid !== account.uid) throw new Error("Ce compte n’a plus accès au portail.");
-      password.value = ""; dialog.close(); setLocked(false);
+      password.value = ""; message.textContent = ""; dialog.close(); setLocked(false);
       document.dispatchEvent(new CustomEvent("livepalmes:portal-session-resumed", {detail:{profile:next,changed}}));
     } catch (failure) {
       lock();
@@ -165,16 +180,23 @@
     } finally { button.disabled = false; }
   }
   async function end() {
+    generation++; preparing = null;
     if (raw && state && user()?.uid === uid) {
       state.locked = true; save(true);
-      await raw("closePortalSession")({_portalSession:state.id}).catch(()=>{});
+      setLocked(true);
+      let timer;
+      try {
+        await Promise.race([raw("closePortalSession")({_portalSession:state.id}).catch(()=>{}),
+          new Promise(resolve=>{timer=global.setTimeout(resolve,1500);})]);
+      } finally { global.clearTimeout(timer); }
     }
     prepared = false; preparing = null; profile = null;
     global.clearTimeout(expiryTimer); global.clearTimeout(activityTimer);
-    dialog?.close(); setLocked(false);
+    if (dialog) { dialog.querySelector("#adminPortalSessionPassword").value="";dialog.close(); }
+    setLocked(false);
   }
   if (enabled) {
-    for (const name of ["pointerdown","keydown","input","scroll","touchstart"]) global.addEventListener(name,activity,{capture:true,passive:true});
+    for (const name of ["pointerdown","keydown","input","wheel","touchstart"]) global.addEventListener(name,activity,{capture:true,passive:true});
     document.addEventListener("visibilitychange",check);
     global.addEventListener("pageshow",check);
     global.addEventListener("storage",event=>{
@@ -184,7 +206,7 @@
       if (stored.locked) { state=stored;lock(false);return; }
       if (stored.authTime !== state?.authTime || state.locked) {
         const previous = global.LivePalmesPortalAuth?.status?.().profile;
-        state = stored; prepared=false; serverDeadline=Infinity;
+        generation++; state = stored; prepared=false; preparing=null; serverDeadline=Infinity;
         void prepare(true).then(async next => {
           const changed = signature(previous) !== signature(next);
           if (!await global.LivePalmesPortalAuth?.refreshProfile?.({notify:changed})) throw error();
