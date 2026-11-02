@@ -13,7 +13,7 @@ for (const source of ["/assets/livepalmes-admin-portal.js", "/assets/livepalmes-
 }
 function versions(html, css, loader = "", modules = "") {
   const result = new Map();
-  for (const match of html.matchAll(/src="(assets\/(?:portal\/[^"?]+|livepalmes-(?:admin-portal|admin-auth|app-config|portal-session|portal-deferred)\.js))\?v=([^"?]+)"/g)) {
+  for (const match of html.matchAll(/src="(assets\/(?:portal\/[^"?]+|livepalmes-(?:admin-portal|admin-auth|app-config|portal-session|portal-deferred|portal-preload)\.js))\?v=([^"?]+)"/g)) {
     assert.ok(!result.has(match[1]), "Duplicate module script: " + match[1]);
     result.set(match[1], match[2]);
   }
@@ -30,7 +30,7 @@ function versions(html, css, loader = "", modules = "") {
   return result;
 }
 const current = versions(html, entry, fs.readFileSync("assets/livepalmes-portal-deferred.js","utf8"), fs.readFileSync("assets/portal/modules-and-clubs.js","utf8"));
-assert.equal(current.size, 49);
+assert.equal(current.size, 50);
 const historical = file => {
   try { return execFileSync("git", ["show", "HEAD^:" + file], { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }); }
   catch { return null; } // New resources have no cached predecessor.

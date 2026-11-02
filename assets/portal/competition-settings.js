@@ -324,8 +324,8 @@
         initializeEngagementCalendarFilters(user);
         updateEngagementCreateFormAccess(user);
         void portalActions.loadPortalPendingOverview();
-        // Opening the home does not read the calendar or the entire club roster.
-        // Their routes retain the existing fresh, bounded, shared loaders.
+        // Reads start only after the authorised home has painted, at idle priority.
+        global.LivePalmesPortalPreload?.schedule();
         if (global.location.hash === "#club-competitions") void portalActions.restoreEngagementNavigation();
       }
 
