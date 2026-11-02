@@ -35,6 +35,7 @@ async function saveNativeRelayChanges(pool,input,services) {
     const saved=await services.audit.read(operation);
     const competition=await readers.competition(checked,input.competitionId,event=>services.authorize({...input,event}));
     if(!competition) throw new TypeError("Competition NAP introuvable.");
+    if(require('./nap-team-entries').format(competition)!=='classic')throw new TypeError('Utilisez le dossier global des équipes pour cette compétition.');
     const pack=await readers.entry(checked,input,scope=>services.authorize(scope));
     let target=saved;
     if(target) {

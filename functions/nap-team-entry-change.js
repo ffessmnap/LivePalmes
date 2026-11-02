@@ -1,0 +1,118 @@
+"use strict";
+// One grouped club dossier, with the existing durable audit log. Native MyISAM
+// rows are not transactional: all before-images are retained for safe recovery.
+const {createHash}=require('node:crypto');
+const {isDeepStrictEqual:equal}=require('node:util');
+const model=require('./nap-team-entries');
+const {positiveId}=require('./nap-calendar-values');
+const {fingerprint}=require('./nap-competition-fingerprint');
+const hash=x=>createHash('sha256').update(JSON.stringify(x)).digest('hex');
+const columns={inscriptions:['id','nageur','compet'],individual:['id','engagement','course','tps'],relays:['id','compet','categorie','club','course','tps'],members:['id','relais','pos','nageur']};
+const pick=(row,keys)=>Object.fromEntries(keys.map(k=>[k,row[k]]));
+const cleanRows=(rows,keys)=>rows.map(row=>pick(row,keys));
+const lockTables='competitions READ, compet_parametres READ, livepalmes_competition_options READ, livepalmes_competition_fees READ, compet_courses AS cc READ, course_dispo AS d READ, courses_swim READ, compet_participations READ, nageurs READ, livepalmes_swimmer_merges READ, chefsdequipe READ, officielsengager READ, forfait READ, nageursengager WRITE, nageursengager AS write_nageursengager WRITE, engagements WRITE, engagements AS write_engagements WRITE, engagements_relais WRITE, engagements_relais AS write_engagements_relais WRITE, engagements_relayeurs WRITE, engagements_relayeurs AS write_engagements_relayeurs WRITE, livepalmes_club_entry_options WRITE';
+function image(pack){return {...Object.fromEntries(Object.entries(columns).map(([key,keys])=>[key,cleanRows(pack[key],keys)])),options:pack.options,leaders:pack.leaders,officials:pack.officials.map(row=>pick(row,['id','compet','officiel','club']))};}
+function index(rows,key){const out=new Map();for(const row of rows){const k=key(row);if(out.has(k))throw new TypeError('Lignes natives ambiguës : vérification requise.');out.set(k,row);}return out;}
+function complete(pack,target){
+  const value=model.stored(pack),strip=v=>({outside:v.outside,individuals:v.individuals,teams:v.teams.map(t=>({...t,relays:t.relays.map(({nativeRelayId,...r})=>r)}))});
+  if(value.nativeWitness!==model.witness(pack))return false;
+  if(!equal(strip(value),strip(target.plan.value)))return false;
+  const selected=new Map(pack.inscriptions.map(x=>[String(x.id),String(x.nageur)]));
+  if(selected.size!==target.plan.people.length||[...selected.values()].some(x=>!target.plan.people.includes(x)))return false;
+  const actual=pack.individual.map(x=>[selected.get(String(x.engagement)),x.course,String(x.tps)]).sort(),expected=target.plan.individual.map(x=>[String(x.swimmerId),x.course,String(x.tps)]).sort();
+  if(!equal(actual,expected))return false;
+  const mapped=value.teams.flatMap(t=>t.relays.map(r=>({key:t.id+'|'+r.eventCode,id:String(r.nativeRelayId)})));
+  if(pack.relays.length!==target.plan.relays.length||mapped.length!==pack.relays.length)return false;
+  for(const expected of target.plan.relays){const ref=mapped.find(x=>x.key===expected.key),row=pack.relays.find(x=>String(x.id)===ref?.id);if(!row||!['course','categorie','tps'].every(k=>String(row[k])===String(expected[k])))return false;const members=pack.members.filter(x=>String(x.relais)===ref.id).sort((a,b)=>a.pos-b.pos);if(!equal(members.map(x=>String(x.nageur)),expected.members)||members.some((x,i)=>Number(x.pos)!==i+1))return false;}
+  const withoutTeam=x=>{const copy=model.metadata(x?.submission_metadata);delete copy[model.KEY];return copy;};return equal(withoutTeam(pack.options),withoutTeam(target.before.options));
+}
+// An interrupted operation may contain only original or planned values. A third
+// value is never overwritten, even if it resembles the requested final dossier.
+function pending(before,current,desired,key,fields){const b=index(before,key),c=index(current,key),d=index(desired,key),remove=[],add=[],update=[];for(const [k,row]of c){const old=b.get(k),next=d.get(k);if(!old&&!next||!([old,next].filter(Boolean).some(x=>fields.every(f=>String(x[f]??'')===String(row[f]??'')))))throw new TypeError('Le dossier a été modifié ailleurs. Reprise automatique refusée.');if(!next)remove.push(row);else if(!fields.every(f=>String(next[f]??'')===String(row[f]??'')))update.push({before:row,after:next});}for(const [k,row]of d)if(!c.has(k))add.push(row);return {remove,add,update};}
+async function saveTeamEntries(pool,input,services){
+  if(typeof services?.authorize!=='function'||typeof services.resolve!=='function'||!services.audit||typeof input?.actorUid!=='string'||!input.actorUid||input.actorUid.length>128||!/^\d{1,16}$/.test(String(input.clubId))||! /^[a-f0-9]{64}$/.test(input.expectedFingerprint||'')||! /^[a-f0-9-]{36}$/i.test(input.mutationId||'')||Buffer.byteLength(JSON.stringify(input.dossier||{}))>200000)throw new TypeError('Enregistrement explicite du dossier requis.');
+  input={...input,competitionId:positiveId(input.competitionId),clubId:String(input.clubId)};await services.authorize(input);
+  const operation=hash(['nap-team-entry',input.actorUid,input.competitionId,input.clubId,input.mutationId]),payloadHash=hash(input.dossier),connection=await pool.getConnection();
+  let locked=false,tablesLocked=false,safe=true,queries=0,writes=0,result,attemptedWrite=false;
+  const checked={execute:async(spec,values=[])=>{if(++queries>120)throw new RangeError('Budget SQL du dossier dépassé.');return /^(LOCK TABLES|UNLOCK TABLES)/.test(spec.sql)?connection.query({...spec,timeout:10000}):connection.execute({...spec,timeout:10000},values);}};
+  const query=async(sql,values=[])=> (await checked.execute({sql},values))[0];
+  const readers=services.readers||{competition:require('./nap-portal-competitions').readNativeCompetition,entry:require('./nap-portal-entries').readNativeClubEntry};
+  const deadline=()=>{if(Date.now()>=Date.parse(result.competition.event.entryDeadlineAt))throw new TypeError('Les engagements sont fermés.');};
+  async function write(sql,values,expected){deadline();const plans=await query('EXPLAIN '+sql,values);if(!plans.length||plans.some(row=>row.select_type!=='INSERT'&&!String(row.table||'').startsWith('<')&&row.type==='ALL'))throw new TypeError('Plan de recherche non indexé : écriture refusée.');attemptedWrite=true;const r=await query(sql,values);if(Number(r.affectedRows)!==expected)throw new TypeError('Écriture interrompue. Reprenez le même enregistrement.');writes++;return r;}
+  async function rows(key){const id=input.competitionId,club=input.clubId;if(key==='inscriptions')return query('SELECT id,nageur,compet FROM nageursengager FORCE INDEX (livepalmes_compet_nageur_id) WHERE compet=? AND nageur IN ('+result.personIds.map(()=>'?').join(',')+') ORDER BY nageur,id LIMIT 801',[id,...result.personIds]);if(key==='relays')return query('SELECT id,compet,categorie,club,course,tps FROM engagements_relais FORCE INDEX (livepalmes_compet_club_id) WHERE compet=? AND club=? ORDER BY id LIMIT 401',[id,club]);if(key==='members'){const r=await rows('relays');return r.length?query('SELECT id,relais,pos,nageur FROM engagements_relayeurs FORCE INDEX (livepalmes_relais_pos_id) WHERE relais IN ('+r.map(()=>'?').join(',')+') ORDER BY relais,pos,id LIMIT 2401',r.map(x=>x.id)):[];}const inscriptions=await rows('inscriptions');return inscriptions.length?query('SELECT id,engagement,course,tps FROM engagements FORCE INDEX (engagements_clef) WHERE engagement IN ('+inscriptions.map(()=>'?').join(',')+') ORDER BY engagement,course,id LIMIT 5001',inscriptions.map(x=>x.id)):[];}
+  async function remove(table,values){if(!values.length)return;const max={engagements:5000,engagements_relayeurs:2400,engagements_relais:400,nageursengager:800}[table];if(!max||values.length>max)throw new RangeError('Retrait natif trop volumineux.');const candidates=values.map((_,i)=>'SELECT ?'+(i===0?' AS id':'')).join(' UNION ALL '),alias='write_'+table;await write(`DELETE ${alias} FROM (${candidates}) candidates STRAIGHT_JOIN ${table} ${alias} FORCE INDEX (PRIMARY) ON ${alias}.id=candidates.id WHERE UTC_TIMESTAMP() < ?`,[...values.map(x=>positiveId(x.id)),result.deadlineSql],values.length);}
+  async function insert(table,fields,values){if(!values.length)return;const parameters=[];const selects=values.map((row,i)=>{parameters.push(...fields.map(f=>row[f]));return 'SELECT '+i+' AS lp_order,'+fields.map((f,j)=>`?${i===0?' AS `'+f+'`':''}`).join(',');});parameters.push(result.deadlineSql);await write(`INSERT INTO ${table} (${fields.map(f=>'`'+f+'`').join(',')}) SELECT ${fields.map(f=>'candidates.`'+f+'`').join(',')} FROM (${selects.join(' UNION ALL ')}) candidates WHERE UTC_TIMESTAMP() < ? ORDER BY candidates.lp_order`,parameters,values.length);}
+  async function updateTimes(table,changes){if(!changes.length)return;const values=[],candidates=changes.map((x,i)=>{values.push(x.before.id,x.after.tps);return 'SELECT ?'+(i===0?' AS id':'')+',?'+(i===0?' AS tps':'');}).join(' UNION ALL '),alias='write_'+table;values.push(result.deadlineSql);await write(`UPDATE (${candidates}) candidates STRAIGHT_JOIN ${table} ${alias} FORCE INDEX (PRIMARY) ON ${alias}.id=candidates.id SET ${alias}.tps=candidates.tps WHERE UTC_TIMESTAMP() < ?`,values,changes.length);}
+  try{
+    const lock='lp-entry-'+hash([input.competitionId,input.clubId]).slice(0,40);if(Number((await query('SELECT GET_LOCK(?,0) AS acquired',[lock]))[0]?.acquired)!==1)throw new TypeError('Dossier en cours d’enregistrement.');locked=true;
+    const competition=await readers.competition(checked,input.competitionId,event=>services.authorize({...input,event}));if(!competition)throw new TypeError('Compétition introuvable.');model.profile(competition);
+    const pack=await readers.entry(checked,input,services.authorize),saved=await services.audit.read(operation);
+    if(saved){attemptedWrite=true;if(saved.operation!==operation||saved.payloadHash!==payloadHash||saved.expectedFingerprint!==input.expectedFingerprint||saved.actorUid!==input.actorUid||saved.planHash!==hash(saved.plan))throw new TypeError('Reprise du dossier incompatible.');result=saved;}
+    else{
+      if(fingerprint(pack)!==input.expectedFingerprint)throw new TypeError('Le dossier a changé. Rechargez avant d’enregistrer.');
+      const issues=model.consistency(pack);if(issues.length)throw new TypeError(issues[0]);
+      if(competition.event.entryStatus!=='open'||!Number.isFinite(Date.parse(competition.event.entryDeadlineAt)))throw new TypeError('Les engagements sont fermés.');
+      if(!require('./nap-team-leader-state').declarationComplete(pack.leaders))throw new TypeError('Chef d’équipe obligatoire avant les engagements.');
+      const plan=await services.resolve({connection:checked,competition,pack,dossier:input.dossier});
+      const allIds=new Set([...pack.swimmers.map(x=>String(x.id)),...plan.people]);if(!allIds.size||allIds.size>800)throw new RangeError('Dossier hors des limites de l’annuaire du club.');
+      result={kind:'nap-team-entry',operation,payloadHash,expectedFingerprint:input.expectedFingerprint,actorUid:input.actorUid,competitionId:input.competitionId,clubId:input.clubId,competitionHash:fingerprint(competition),competition,before:image(pack),personIds:[...allIds],people:pack.swimmers.map(x=>pick(x,['id','firstName','lastName','birthDate','sex','clubId'])),deadlineSql:competition.event.entryDeadlineAt.replace('T',' ').replace('Z',''),plan,planHash:hash(plan)};
+      if(Buffer.byteLength(JSON.stringify(result))>500000)throw new RangeError('Dossier trop volumineux pour le journal de reprise.');
+      await services.audit.prepare(operation,result);
+    }
+    if(saved&&complete(pack,saved)){await services.audit.complete(operation,{competitionId:input.competitionId,clubId:input.clubId,verified:true});return {ok:true,competition,nativeEntry:pack,operation,writesExecuted:0};}
+    if(saved&&saved.competitionHash!==fingerprint(competition))throw new TypeError('La compétition a changé depuis la préparation.');
+    if(competition.event.entryStatus!=='open')throw new TypeError('Les engagements sont fermés.');deadline();
+    // All external NAP writers are excluded while native images are checked and
+    // changed. No network call or performance-history query runs under this lock.
+    if((await query("SELECT TRIGGER_NAME FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA=DATABASE() AND EVENT_OBJECT_TABLE IN ('nageursengager','engagements','engagements_relais','engagements_relayeurs','livepalmes_club_entry_options') LIMIT 1")).length)throw new TypeError('Déclencheur natif à vérifier avant enregistrement.');
+    await query('LOCK TABLES '+lockTables);tablesLocked=true;
+    for(const [table,key,expected]of [['competitions','id',competition.nativeSnapshot.competition],['compet_parametres','id',competition.nativeSnapshot.parameters]]){const fields=Object.keys(expected),r=await query(`SELECT ${fields.map(f=>'`'+f+'`').join(',')} FROM ${table} WHERE ${key}=? LIMIT 1`,[expected[key]]);if(!equal(r[0],expected))throw new TypeError('La compétition a changé pendant la préparation.');}
+    const options=(await query('SELECT * FROM livepalmes_competition_options WHERE competition_id=? LIMIT 1',[input.competitionId]))[0]||null;if(!equal(options,competition.options))throw new TypeError('Le profil ou la clôture a changé.');
+    const currentFees=(await query('SELECT * FROM livepalmes_competition_fees WHERE competition_id=? LIMIT 1',[input.competitionId]))[0]||null;if(!equal(currentFees,competition.fees))throw new TypeError('Les frais ont changé.');
+    const currentCourses=await query('SELECT cc.id,cc.pos,cc.id_course,cc.opencourse,cc.cost,cc.limitnageur,d.course,d.sexe,d.relais FROM compet_courses cc LEFT JOIN course_dispo d ON d.id=cc.id_course WHERE cc.compet=? ORDER BY cc.pos,cc.id LIMIT 301',[input.competitionId]);if(!equal(currentCourses,competition.courses))throw new TypeError('Le programme natif a changé.');
+    const restrictions=await query('SELECT id,course,categorie,swim FROM courses_swim FORCE INDEX (livepalmes_compet_course_cat_id) WHERE compet=? ORDER BY course,categorie,id LIMIT 3001',[input.competitionId]);if(!equal(restrictions,competition.restrictions))throw new TypeError('Les restrictions natives ont changé.');
+    const participation=await query('SELECT id,participation,modeengagement FROM compet_participations FORCE INDEX (livepalmes_compet_id) WHERE compet=? ORDER BY id LIMIT 201',[input.competitionId]);if(!equal(participation,competition.participations))throw new TypeError('Les conditions de participation ont changé.');
+    const leaders=await query('SELECT id,compet,nom,prenom,date,club,pourclub FROM chefsdequipe FORCE INDEX (livepalmes_compet_id) WHERE compet=? AND (club=? OR pourclub=?) ORDER BY id LIMIT 21',[input.competitionId,input.clubId,input.clubId]);if(!equal(leaders,result.before.leaders))throw new TypeError('Le chef d’équipe a changé.');
+    const officialLinks=await query('SELECT id,compet,officiel,club FROM officielsengager FORCE INDEX (livepalmes_compet_club_id) WHERE compet=? AND club=? ORDER BY id LIMIT 201',[input.competitionId,input.clubId]);if(!equal(officialLinks,result.before.officials))throw new TypeError('Les officiels ont changé.');
+    const optionBeforeWrite=(await query('SELECT * FROM livepalmes_club_entry_options WHERE competition_id=? AND club_id=? LIMIT 1',[input.competitionId,input.clubId]))[0]||null;if(!equal(optionBeforeWrite,result.before.options))throw new TypeError('Le complément du dossier a changé.');
+    if((await query('SELECT id FROM forfait FORCE INDEX (livepalmes_compet_engagement_id) WHERE compet=? LIMIT 1',[input.competitionId])).length)throw new TypeError('Les forfaits doivent être raccordés avant toute modification.');
+    const identities=await query('SELECT id,nom,prenom,date,sexe,club FROM nageurs FORCE INDEX (PRIMARY) WHERE id IN ('+result.personIds.map(()=>'?').join(',')+') ORDER BY id LIMIT 801',result.personIds);
+    if(identities.length!==result.people.length||identities.some(row=>{const old=result.people.find(x=>Number(x.id)===Number(row.id));return !old||String(row.club)!==old.clubId||require('./nap-performance-identity').cleanText(row.nom)!==old.lastName||require('./nap-performance-identity').cleanText(row.prenom)!==old.firstName||row.date!==old.birthDate||row.sexe!==old.sex;}))throw new TypeError('Une identité NAP a changé.');
+    if((await query('SELECT swimmer_id FROM livepalmes_swimmer_merges FORCE INDEX (PRIMARY) WHERE swimmer_id IN ('+result.personIds.map(()=>'?').join(',')+') LIMIT 801',result.personIds)).length)throw new TypeError('Une identité a été fusionnée. Rechargez le dossier.');
+    let inscriptions=await rows('inscriptions');const desiredPeople=result.plan.people.map(nageur=>({nageur:Number(nageur),compet:input.competitionId}));
+    const selection=pending(result.before.inscriptions,inscriptions,desiredPeople,x=>String(x.nageur),['nageur','compet']);
+    await insert('nageursengager',['compet','nageur'],selection.add);inscriptions=await rows('inscriptions');
+    const byPerson=new Map(inscriptions.map(x=>[String(x.nageur),x.id])),oldByInscription=new Map([...result.before.inscriptions,...inscriptions].map(x=>[String(x.id),String(x.nageur)]));
+    const desiredIndividuals=result.plan.individual.map(x=>({engagement:byPerson.get(String(x.swimmerId)),course:x.course,tps:x.tps}));
+    let individual=await rows('individual');const ikey=x=>oldByInscription.get(String(x.engagement))+'|'+x.course;
+    const ip=pending(result.before.individual,individual,desiredIndividuals,ikey,['course','tps']);await remove('engagements',ip.remove);await updateTimes('engagements',ip.update);await insert('engagements',['engagement','course','tps'],ip.add);
+    const beforeValue=model.stored({options:result.before.options}),oldKeys=new Map(beforeValue.teams.flatMap(t=>t.relays.filter(r=>r.nativeRelayId).map(r=>[String(r.nativeRelayId),t.id+'|'+r.eventCode])));
+    if(result.before.relays.some(r=>!oldKeys.has(String(r.id))))throw new TypeError('Un ancien relais sans équipe doit être raccordé avant modification.');
+    let nativeRelays=await rows('relays'),desiredRelay=result.plan.relays.map(x=>({...x,compet:input.competitionId,club:Number(input.clubId)}));
+    const relayMap=new Map(),newRows=nativeRelays.filter(x=>!oldKeys.has(String(x.id))),newPlans=desiredRelay.filter(x=>![...oldKeys.values()].includes(x.key)).sort((a,b)=>a.key.localeCompare(b.key));
+    if(newRows.length>newPlans.length)throw new TypeError('Relais ajoutés ailleurs : reprise refusée.');
+    for(const r of nativeRelays){const key=oldKeys.get(String(r.id));if(key)relayMap.set(key,r.id);}
+    for(let i=0;i<newRows.length;i++){const row=newRows[i],planned=newPlans[i];if(!['compet','club','course','categorie','tps'].every(k=>String(row[k])===String(planned[k])))throw new TypeError('Nouveau relais ambigu : reprise refusée.');relayMap.set(planned.key,row.id);}
+    const desiredKeys=new Set(desiredRelay.map(x=>x.key));
+    const removedRelays=nativeRelays.filter(r=>oldKeys.has(String(r.id))&&!desiredKeys.has(oldKeys.get(String(r.id))));
+    let memberRows=await rows('members');await remove('engagements_relayeurs',memberRows.filter(x=>removedRelays.some(r=>Number(r.id)===Number(x.relais))));await remove('engagements_relais',removedRelays);
+    const relayUpdates=[];for(const target of desiredRelay.filter(x=>relayMap.has(x.key))){const row=nativeRelays.find(x=>Number(x.id)===Number(relayMap.get(target.key))),old=result.before.relays.find(x=>Number(x.id)===Number(row.id));if(!['compet','club','course','categorie','tps'].every(k=>String(row[k])===String(target[k])||old&&String(row[k])===String(old[k])))throw new TypeError('Un relais a été modifié ailleurs.');if(Number(row.course)!==Number(target.course)||Number(row.categorie)!==Number(target.categorie))throw new TypeError('Conservez la course et le format du relais ; retirez-le puis recréez-le.');if(row.tps!==target.tps)relayUpdates.push({before:row,after:target});}await updateTimes('engagements_relais',relayUpdates);
+    const additions=newPlans.filter(x=>!relayMap.has(x.key));await insert('engagements_relais',['compet','categorie','club','course','tps'],additions);
+    nativeRelays=await rows('relays');const fresh=nativeRelays.filter(x=>!oldKeys.has(String(x.id)));if(fresh.length!==newPlans.length)throw new TypeError('Identification des nouveaux relais incomplète.');
+    fresh.forEach((r,i)=>{const target=newPlans[i];if(!['compet','club','course','categorie','tps'].every(k=>String(r[k])===String(target[k])))throw new TypeError('Identification du relais ambiguë.');relayMap.set(target.key,r.id);});
+    const desiredMembers=desiredRelay.flatMap(r=>r.members.map((nageur,i)=>({relais:relayMap.get(r.key),pos:i+1,nageur:Number(nageur)})));memberRows=await rows('members');
+    const mp=pending(result.before.members,memberRows,desiredMembers,x=>String(x.relais)+'|'+x.pos,['nageur']);await remove('engagements_relayeurs',[...mp.remove,...mp.update.map(x=>x.before)]);await insert('engagements_relayeurs',['relais','pos','nageur'],[...mp.add,...mp.update.map(x=>x.after)]);
+    await remove('nageursengager',selection.remove);
+    const finalMetadata={...result.plan.value,teams:result.plan.value.teams.map(t=>({...t,relays:t.relays.map(r=>({...r,nativeRelayId:String(relayMap.get(t.id+'|'+r.eventCode))}))}))};
+    finalMetadata.nativeWitness=model.witness({inscriptions:await rows('inscriptions'),individual:await rows('individual'),relays:await rows('relays'),members:await rows('members')});
+    const currentOption=(await query('SELECT * FROM livepalmes_club_entry_options WHERE competition_id=? AND club_id=? LIMIT 1',[input.competitionId,input.clubId]))[0]||null;
+    if(!equal(currentOption,result.before.options))throw new TypeError('Le complément du dossier a changé.');
+    const metadata={...model.metadata(result.before.options?.submission_metadata),[model.KEY]:finalMetadata},now=new Date().toISOString().replace('T',' ').replace('Z','000');
+    if(currentOption)await write('UPDATE livepalmes_club_entry_options SET submission_metadata=CAST(? AS JSON),version=version+1,updated_at=?,updated_by=? WHERE competition_id=? AND club_id=? AND version=? AND UTC_TIMESTAMP() < ? LIMIT 1',[JSON.stringify(metadata),now,input.actorUid,input.competitionId,input.clubId,currentOption.version,result.deadlineSql],1);
+    else await insert('livepalmes_club_entry_options',['competition_id','club_id','submission_metadata','version','created_at','updated_at','created_by','updated_by'],[{competition_id:input.competitionId,club_id:input.clubId,submission_metadata:JSON.stringify(metadata),version:1,created_at:now,updated_at:now,created_by:input.actorUid,updated_by:input.actorUid}]);
+    await query('UNLOCK TABLES');tablesLocked=false;
+    const finalPack=await readers.entry(checked,input,services.authorize);if(!equal(model.stored(finalPack),finalMetadata)||model.consistency(finalPack).length||!complete(finalPack,result))throw new TypeError('Vérification finale du dossier incomplète.');
+    await services.audit.complete(operation,{competitionId:input.competitionId,clubId:input.clubId,verified:true});return {ok:true,competition,nativeEntry:finalPack,operation,writesExecuted:writes,sqlBudget:{queriesMax:120,writesMax:12}};
+  }catch(error){error.teamWritesStarted=attemptedWrite;throw error;}finally{try{if(tablesLocked)await connection.query({sql:'UNLOCK TABLES',timeout:10000});if(locked)await connection.execute({sql:'SELECT RELEASE_LOCK(?)',timeout:10000},['lp-entry-'+hash([input.competitionId,input.clubId]).slice(0,40)]);}catch{safe=false;}if(safe)connection.release();else connection.destroy();}
+}
+module.exports={saveTeamEntries,pending,image,lockTables,complete};

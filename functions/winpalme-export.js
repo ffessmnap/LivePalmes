@@ -121,8 +121,9 @@ function sortedIndividualEntries(entries = []) {
 }
 
 function relayMemberIds(relay = {}) {
-  const ids = (relay.members || []).slice(0, 4).map(swimmerWinPalmeId);
-  while (ids.length < 4) ids.push("");
+  const count=relay.relayLegs===6?6:4;
+  const ids = (relay.members || []).slice(0, count).map(swimmerWinPalmeId);
+  while (ids.length < count) ids.push("");
   return ids;
 }
 
@@ -170,6 +171,7 @@ function openWaterExportProgram(competition) {
 }
 
 function buildWinPalmeCompetitionTxt(competition = {}, entries = [], clubsById = new Map(), options = {}) {
+  if(entries.some(entry=>entry.teamConsistencyIssues?.length))throw new Error('Un dossier par équipes doit être vérifié avant export.');
   const openWater = competition.competitionType === "openWater";
   const waterProgram = openWater ? openWaterExportProgram(competition) : null;
   const exportCode = code => {

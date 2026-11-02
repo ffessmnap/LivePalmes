@@ -1,6 +1,7 @@
 // Existing operation bodies; live services arrive through explicit accessors.
 function createEngagementPdfRenderer_engagementPdfFeeTotal(backendContext) {
   function engagementPdfFeeTotal(entry = {}, competition = {}) {
+    const teamFees=competition.entryFormat&&competition.entryFormat!=='classic'?require('../../nap-team-entries').fees(competition,entry):null;if(teamFees)return competition.fees?.enabled===false?0:teamFees.total;
     const fees = competition.fees || {};
     if (fees.enabled === false) return 0;
     const stats = (0, backendContext.local$engagementPdfEntryStats)(entry);

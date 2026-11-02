@@ -2,6 +2,20 @@
 
 <!-- description: Cahier des charges fonctionnel de référence du module de gestion des engagements en compétition, actuellement en finalisation et en test. -->
 
+## Championnats de France des clubs — module 2026/2027
+
+Périmètre approuvé : engagements avant compétition uniquement, deux compétitions distinctes Clubs et Clubs Masters, profils réglementaires fixes. L'administration nationale choisit le profil sur une compétition nationale piscine sans engagements existants. Aucun rattachement ni effacement automatique d'un ancien dossier. Source : [règlement validé 2026/2027](https://docs.google.com/document/d/1-_WA9g2t37W0D563kUZ_ocvoxL1y4musZTHiJTgolJY/edit).
+
+Le dossier global du club contient les équipes A, B, C… par sexe (Clubs : six titulaires et un remplaçant facultatif ; Masters : deux femmes et deux hommes, sans remplaçant ni HC). Deux individuels au plus par nageur et un titulaire par course et par équipe. Une équipe ou son programme incomplet reste enregistrable avec alerte ; les relais exigent une équipe complète. La composition d'un relais peut être entièrement renseignée ou entièrement vide : six positions Clubs, quatre Masters. Les remplaçants ne figurent pas dans les relais.
+
+Le parcours « Hors concours sans équipe » déclare les nageurs indépendants. Un remplaçant peut choisir zéro, une ou deux courses HC. Temps HC imposé 59:59.99 ; statut HC distinct du temps pour ne pas confondre un titulaire sans référence. Les temps des titulaires viennent des références NAP autorisées entre le 1er septembre 2023 et le 30 novembre 2026. Les restrictions existantes de naissance, catégories et spécialités continuent de s'appliquer. Le contrôle de double participation Clubs/Masters reste manuel.
+
+Un chef d'équipe pour le dossier, officiels dans le parcours existant, modifications libres avant clôture et dossier définitif à la clôture, sans acceptation du secrétariat. Après clôture : demande éventuelle par mail, sans réouverture intégrée ni garantie d'acceptation. Tarif fixe 70 € par équipe ; HC : 10 € par personne et 5 € par course. Remplaçant sans course : aucun supplément. Hors délai, composition du défi et gestion pendant/après compétition exclus.
+
+Exports : tableau Excel global (équipes, individuels, relais et HC), TXT WinPalme classique avec six relayeurs Clubs, PDF club cohérent. Une modification native hors du parcours est détectée par empreinte et bloque le nouvel enregistrement et l'export jusqu'à vérification nationale.
+
+Stockage : exactement trois colonnes nullable, aucune table : `livepalmes_competition_options.entry_format` VARCHAR(24), `entry_rules_version` VARCHAR(32), `livepalmes_competition_fees.team_fee` DECIMAL(10,2). Compositions dans le JSON existant `livepalmes_club_entry_options.submission_metadata.club_teams_v1`, courses dans les tables NAP natives, reprise dans l'audit existant. L'outil de schéma TEST est séparé du déploiement, conserve sa préparation avant ALTER et ne réécrit aucune compétition ni donnée sportive.
+
 ## Identités des officiels et licences manquantes — 26 octobre 2026
 
 Règle validée par Antoine : seuls les champs vides d’une ancienne fiche de l’annuaire des officiels sont complétables directement par le club, sans demande ni visa national. Tout changement d’une valeur déjà renseignée passe par la file nationale de corrections existante. Il n’existe pas de période de modification libre « avant premier visa ». Le numéro de licence est saisissable une seule fois, puis verrouillé dans le parcours club ; aucune correction de ce numéro n’est acceptée dans le formulaire de demande. Les nouvelles fiches exigent nom, prénom, naissance, sexe et licence.

@@ -27,9 +27,17 @@ async function readCompetition(connection, input, authorize, entryTimesOnly = fa
   const restrictions = await bounded(connection, "SELECT id,course,categorie,swim FROM courses_swim FORCE INDEX (livepalmes_compet_course_cat_id) WHERE compet=? ORDER BY course,categorie,id LIMIT 3001", [id], LIMITS.restrictions);
   const participations = await bounded(connection, "SELECT id,participation,modeengagement FROM compet_participations FORCE INDEX (livepalmes_compet_id) WHERE compet=? ORDER BY id LIMIT 201", [id], LIMITS.participations);
   const committees = await bounded(connection, "SELECT id,comite FROM compet_comites FORCE INDEX (livepalmes_compet_comite_id) WHERE compet=? ORDER BY comite,id LIMIT 51", [id], LIMITS.committees);
-  const options = await bounded(connection, "SELECT * FROM livepalmes_competition_options WHERE competition_id=? LIMIT 1", [id], 1);
+  // Result field metadata also proves additive columns when this competition
+  // has no supplemental row yet. No schema query or write is needed.
+  async function supplemental(table){
+    const [values,fields]=await connection.execute({sql:`SELECT * FROM ${table} WHERE competition_id=? LIMIT 1`,timeout:10000},[id]);
+    if(values.length>1)throw new RangeError('Complément de compétition ambigu.');
+    return {values,columns:new Set((fields||[]).map(field=>field.name))};
+  }
+  const optionResult=await supplemental('livepalmes_competition_options'),options=optionResult.values;
   const courseOptions = await bounded(connection, "SELECT * FROM livepalmes_course_options WHERE competition_id=? ORDER BY event_code LIMIT 301", [id], LIMITS.courses);
-  const fees = entryTimesOnly ? [] : await bounded(connection, "SELECT * FROM livepalmes_competition_fees WHERE competition_id=? LIMIT 1", [id], 1);
+  const feeResult=entryTimesOnly?{values:[],columns:new Set()}:await supplemental('livepalmes_competition_fees'),fees=feeResult.values;
+  const teamSchemaReady=['entry_format','entry_rules_version'].every(key=>optionResult.columns.has(key)||Object.hasOwn(options[0]||{},key))&&(feeResult.columns.has('team_fee')||Object.hasOwn(fees[0]||{},'team_fee'));
   const detailedProgram = entryTimesOnly ? [] : await bounded(connection, "SELECT * FROM livepalmes_competition_programs WHERE competition_id=? LIMIT 1", [id], 1);
   const calendarDetails = require("./nap-calendar-event-details").KINDS.has(event.competitionType)
     ? await bounded(connection, "SELECT * FROM livepalmes_calendar_event_details FORCE INDEX (PRIMARY) WHERE competition_id=? LIMIT 1", [id], 1) : null;
@@ -43,7 +51,7 @@ async function readCompetition(connection, input, authorize, entryTimesOnly = fa
     parameters: { id:row.parameter_id,compet:row.id,...Object.fromEntries(["actif","dateactif","date_limit","officiel","nb_lignes","mailtxt","mailjuges","tps_d","tps_f","niveau","saisie","relais","cat_d","cat_f","qualif"].map(key=>[key,row[key] ?? null])) }
   };
   return { source: "nap", readAt: new Date().toISOString(), event: {...event,...entryState({...row,entry_closed:options[0]?.entry_closed})}, nativeParameters, nativeSnapshot, nativeOrganizerId: row.organisateur, nativeDelegate: row.delegue, nativeComments: row.comments,
-    courses, restrictions, participations, committees, options: options[0] || null, courseOptions, fees: fees[0] || null, detailedProgram: detailedProgram[0] || null, ...(calendarDetails ? {calendarDetails:calendarDetails[0]||null} : {}), groups, standards, qualifyingCompetitions, sessions, program };
+    courses, restrictions, participations, committees, options: options[0] || null, courseOptions, fees: fees[0] || null, detailedProgram: detailedProgram[0] || null, ...(teamSchemaReady?{teamSchemaReady:true}:{}), ...(calendarDetails ? {calendarDetails:calendarDetails[0]||null} : {}), groups, standards, qualifyingCompetitions, sessions, program };
 }
 // Keep the full reader and its fingerprint inputs for every existing detail,
 // mutation and qualification-control caller. Only read-only time views opt in.
