@@ -38,17 +38,6 @@
           // server fingerprints still validate the next deliberate save.
         });
         bindEngagementClubPeopleRetry();
-        document.querySelector("#adminEngagementsCatalogRefresh")?.addEventListener("click", async (event) => {
-          const button = event.currentTarget;
-          if (button.disabled) return;
-          button.disabled = true;
-          button.textContent = "Actualisation…";
-          try {
-            if (portalState.activeEngagementsTab === "calendar") await portalActions.loadEngagementCompetitions({ force: true });
-            else if (portalState.activeEngagementsTab === "clubPeople") await portalActions.loadEngagementClubPeople({ force: true });
-            else if (portalState.activeEngagementsTab === "clubSwimmers") await portalActions.loadEngagementClubSwimmers({ force: true });
-          } finally { button.disabled = false; button.textContent = "Actualiser"; }
-        });
         portalContext.elements.form?.addEventListener("submit", portalActions.signIn);
         portalContext.elements.passwordToggle?.addEventListener("click", portalActions.toggleLoginPasswordVisibility);
         portalContext.elements.scopeClubButton?.addEventListener("click", portalActions.openClubSwitchDialog);
