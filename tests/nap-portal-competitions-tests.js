@@ -39,6 +39,15 @@ const { SPECS, approvedIndexOperation } = require("../functions/nap-approved-ind
   assert.equal(result.options,null); assert.equal(result.fees,null); assert.equal(result.courses[0].course,"legacy unknown course"); assert.equal(result.restrictions[0].swim,0);
   assert.equal(result.nativeParameters.saisie,1); assert.equal(result.nativeParameters.cat_d,null); assert.equal(result.detailedProgram,null); assert.equal(calls.length,12);
   assert.ok(!calls.some(c=>c.sql.includes("WHERE group_id IN") || c.sql.includes("WHERE session IN")),"empty sets do not query all children");
+  const schemaPool={execute:async(spec,values)=>{
+    const response=await pool.execute(spec,values);
+    if(spec.sql.includes('FROM livepalmes_competition_options'))response[1]=['entry_format','entry_rules_version'].map(name=>({name}));
+    if(spec.sql.includes('FROM livepalmes_competition_fees'))response[1]=[{name:'team_fee'}];
+    return response;
+  }};
+  const schemaReady=await readNativeCompetition(schemaPool,5140,()=>{});
+  assert.equal(schemaReady.teamSchemaReady,true,'schema is visible even before supplemental rows exist');
+  assert.equal(schemaReady.options,null);assert.equal(schemaReady.fees,null);assert.equal(calls.length,24,'no schema query was added');
   calls=[];
   await assert.rejects(readNativeCompetition(pool,5140,()=>{throw new Error("scope denied");}), /scope denied/); assert.equal(calls.length,1);
   await assert.rejects(readNativeCompetition(pool,"1 OR 1=1",()=>{}),TypeError);

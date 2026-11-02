@@ -67,14 +67,14 @@ function entryItem(pack, context, categoryForBirthDate, competition = {}) {
       nativeCourseId: row.course, genderMode: relayDetail?.genderMode || ({ F: "female", M: "male", X: "mixed", 0: "mixed" })[text(row.sexe)] || "",
       manualEntryTime: "", ...nativeTime(row.tps), members, memberIds: members.map(member => member.swimmerIndexId) };
   });
-  return { id: `${pack.competitionId}_${pack.clubId}`, competitionId: `legacy-nap-${pack.competitionId}`, source: "nap", napSource: true,
+  return require('./nap-team-entries').decorate({ ...(require('./nap-team-entries').profile(competition)?{teamConsistencyIssues:require('./nap-team-entries').consistency(pack)}:{}), id: `${pack.competitionId}_${pack.clubId}`, competitionId: `legacy-nap-${pack.competitionId}`, source: "nap", napSource: true,
     napFingerprint: fingerprint(pack), clubId: pack.clubId, clubCode: context.clubCode || pack.clubId, clubName: context.clubName || "", regionId: context.regionId || "",
     status: "active", swimmers, relays, officials: pack.officials.map(row => ({ personId: `nap-official-${row.officiel}`, nativeLinkId: String(row.id), nativeOfficialId: String(row.officiel),
       firstName: text(row.prenom), lastName: text(row.nom), birthDate: calendar.date(row.date), licenseNumber: "", sex: "" })),
     // Multiple leaders are kept explicitly, without selecting one arbitrarily.
     teamLeader: leaders.length === 1 ? leaders[0] : {}, nativeLeaders: leaders, teamLeaderComplete: require("./nap-team-leader-state").declarationComplete(pack.leaders),
     nativeOptions: pack.options, qualificationAlert: json(pack.options?.submission_metadata,{}).qualificationAlert||null, documents: {}, updatedAt: pack.readAt,
-    nativeWarnings: [leaders.length > 1 ? "Plusieurs chefs d'equipe NAP conserves." : "", relays.length ? "Categories natives des relais conservees." : ""].filter(Boolean) };
+    nativeWarnings: [leaders.length > 1 ? "Plusieurs chefs d'equipe NAP conserves." : "", relays.length ? "Categories natives des relais conservees." : ""].filter(Boolean) },competition);
 }
 
 module.exports = { nativeTime, entryItem, entryWithCourseRules };

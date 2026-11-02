@@ -6,6 +6,7 @@ const code=source.slice(start,source.indexOf("  function resetEngagementClubEntr
 function fixture({confirm=true,locked=false,allowed=true,relays=true,pending=false,failed=false}={}) {
   const calls=[],button={disabled:false},message={textContent:""};
   const c={engagementClubSwimmerRemoving:false,selectedEngagementCompetitionId:"fixture-competition",activeEngagementClubProfile:()=>({clubId:"fixture-club"}),canUse:()=>allowed,engagementClubSwimmerSelectionLockReason:()=>locked?"closed":"",engagementClubSelectionChanges:new Map(pending?[["x",{}]]:[]),engagementClubEntriesAutosaveSwimmers:new Map(),engagementClubNativeRelayRetry:null,engagementClubNativeOfficialRetry:null,engagementClubNativeSelectionRetry:null,engagementClubNativeIndividualRetry:null,elements:{engagementsClubEntriesMessage:message},engagementClubEntryMutationQueue:Promise.resolve(),selectedEngagementClubEntry:{swimmers:[{swimmerIndexId:"s1",firstName:"Test",lastName:"Nageur"}],relays:relays?[{memberIds:["s1"]}]:[]},global:{confirm:text=>{calls.push(["confirm",text]);return confirm;}},discardPendingEngagementClubIndividualEntries:id=>calls.push(["discard",id]),persistEngagementClubSwimmerSelection:async(s,selected)=>calls.push(["persist",s.swimmerIndexId,selected]),flushEngagementClubSwimmerSelections:async()=>{calls.push(["flush"]);return !failed;}};
+  c.teamEntrySection=()=>false; // Classic fixture; real team routing is covered in the browser.
   vm.createContext(c);vm.runInContext(code,c);return {c,calls,button,message,run:()=>c.removeEngagementClubSwimmerFromCourses("s1",button)};
 }
 function confirmedRemovalFixture({last=false}={}) {
@@ -37,6 +38,7 @@ function confirmedRemovalFixture({last=false}={}) {
     engagementClubProgramSessionsForEntries:()=>[{}],renderQualificationExceptionToggle:()=>{},renderQualificationAlert:()=>{},updateQualificationCheckboxes:()=>{},
     renderEngagementClubEntriesTable:({rows})=>rows.map(person=>`${person.swimmerIndexId}:${person.individualEntries.map(row=>row.entryTime||"Calcul...").join(",")}`).join(";"),
     callFunction:async(name,payload)=>{calls.push({name,payload});return reply;}};
+  c.teamEntrySection=()=>false; // Classic fixture; real team routing is covered in the browser.
   vm.createContext(c);
   for(const name of ["selectedEngagementClubSwimmerRows","selectedEngagementClubEntryRowsBySwimmerId","currentEngagementClubSwimmersForSummary","renderEngagementClubEntries","renderEngagementClubEntry","renderEngagementClubMutationResult","queueEngagementClubEntryMutation","persistEngagementClubSwimmerSelection","flushEngagementClubSwimmerSelections","removeEngagementClubSwimmerFromCourses"]){
     const start=source.search(new RegExp(`  (?:async )?function ${name}\\(`)),next=source.slice(start+1).search(/\n  (?:async )?function /);

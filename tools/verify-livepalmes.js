@@ -75,6 +75,9 @@ function runUnitTests() {
     "nap-release-cleanup-tests.js",
     "nap-approved-portal-schema-tests.js",
     "nap-approved-closure-schema-tests.js",
+    "nap-team-entries-tests.js",
+    "nap-team-entry-schema-tests.js",
+    "nap-team-entry-export-tests.js",
     "nap-approved-people-schema-tests.js",
     "nap-competition-documents-tests.js",
     "nap-document-options-contract-tests.js",
@@ -444,6 +447,7 @@ function runBrowserSmokeIfRequested() {
   run(process.execPath, [path.join(rootDir, "tests", "license-workspace-browser-tests.js")]);
   run(process.execPath, [path.join(rootDir, "tests", "license-workspace-usability-browser-tests.js")]);
   run(process.execPath, [path.join(rootDir, "tools", "livepalmes-browser-smoke.js")]);
+  run(process.execPath, [path.join(rootDir, "tests", "portal-team-entries-browser-tests.js")]);
 }
 
 function runDiffCheck() {

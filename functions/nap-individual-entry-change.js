@@ -29,6 +29,7 @@ async function saveNativeIndividualEntries(pool,input,services) {
     const saved=await services.audit.read(operation);
     const competition=await readers.competition(connection,input.competitionId,event=>services.authorize({competitionId:input.competitionId,clubId:input.clubId,event}));
     if(!competition) throw new TypeError("Competition NAP introuvable.");
+    if(require('./nap-team-entries').format(competition)!=='classic')throw new TypeError('Utilisez le dossier global des équipes pour cette compétition.');
     const pack=await readers.entry(connection,input,scope=>services.authorize(scope));
     let target=saved;
     if(target) {

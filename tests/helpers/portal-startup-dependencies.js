@@ -6,6 +6,9 @@ function requirements(){
   const methods=new Map(),secondary=new Map();
   for(const directory of ["assets/portal","assets/portal/deferred"]){
     for(const file of fs.readdirSync(directory).filter(file=>file.endsWith(".js"))){
+      // Standalone optional module: its methods are called through invoke,
+      // never through the synchronous facade graph reconstructed here.
+      if(file==='team-entries.js')continue;
       const source=fs.readFileSync(directory+"/"+file,"utf8"),ast=acorn.parse(source,{ecmaVersion:"latest"});let factory;
       walk(ast,node=>{if(node.type==="FunctionDeclaration"&&node.id.name==="create"||node.type==="FunctionExpression"&&node.id?.name==="create")factory=node;});
       for(const node of factory.body.body.filter(node=>node.type==="FunctionDeclaration")){

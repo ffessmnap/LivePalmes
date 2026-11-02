@@ -3,6 +3,13 @@
   // Creating this module performs no reads, writes, listener registration or rendering.
   function create(portalContext) {
     const { state: portalState, actions: portalActions, config: portalConfig } = portalContext;
+    function teamEntrySection(section){
+      const ids={swimmers:'adminEngagementsDetailSwimmersPanel',entries:'adminEngagementsDetailEntriesPanel',relays:'adminEngagementsDetailRelaysPanel',summary:'adminEngagementsDetailSummaryPanel'},panel=document.getElementById?.(ids[section]);
+      if(portalState.selectedEngagementCompetition?.entryFormat&&portalState.selectedEngagementCompetition.entryFormat!=='classic'){
+        void global.LivePalmesPortalDeferred.invoke(portalContext,'team-entries','render',[section],{});return true;
+      }
+      panel?.querySelector('[data-team-entry-mount]')?.remove();panel?.querySelectorAll('[data-team-entry-previous-hidden]').forEach(node=>{node.hidden=node.dataset.teamEntryPreviousHidden==='true';delete node.dataset.teamEntryPreviousHidden;});return false;
+    }
     /* deferred-function: assets/portal/deferred/club-entry-views.js#renderEngagementClubSwimmersDirectory */
     function renderEngagementClubSwimmersDirectory(...args) {
       return global.LivePalmesPortalDeferred.sync(portalContext, "club-entry-views", "renderEngagementClubSwimmersDirectory", args, moduleActions);
@@ -62,6 +69,7 @@
       }
 
     function renderEngagementClubSwimmers() {
+        if(teamEntrySection('swimmers'))return;
         const mount = portalContext.elements.engagementsClubSwimmersList;
         const selectedMount = portalContext.elements.engagementsClubSelectedSwimmersList;
         if (!mount || !selectedMount) return;
@@ -381,6 +389,7 @@
       }
 
     function renderEngagementClubEntries() {
+        if(teamEntrySection('entries'))return;
         const mount = portalContext.elements.engagementsClubEntriesList;
         if (!mount) return;
         mount.dataset.tone = portalState.engagementClubSwimmersLoading && !portalState.engagementClubSwimmersLoaded ? "loading" : "";
@@ -922,6 +931,7 @@
       }
 
     function renderEngagementClubNativeSummary(entry) {
+        if(teamEntrySection('summary'))return;
         const mount = portalContext.elements.engagementsClubNativeSummary;
         if (!mount) return;
         mount.hidden = !entry;
@@ -968,6 +978,7 @@
       }
 
     function renderEngagementClubRelays() {
+        if(teamEntrySection('relays'))return;
         const mount = portalContext.elements.engagementsClubRelaysList;
         if (!mount) return;
         portalState.engagementClubRelaysRenderedCompetitionId = portalState.selectedEngagementCompetitionId;

@@ -53,6 +53,7 @@ class RecordedPdf extends PDFDocument {
 }
 const context = vm.createContext({
   fs, crypto, Buffer, console, PDFDocument: RecordedPdf,
+  require:require('node:module').createRequire(path.join(root,'functions/index.js')),
   QRCode: require("../functions/node_modules/qrcode"),
   cleanPublicCalendarWhatsAppUrl: require("../functions/public-calendar").cleanPublicCalendarWhatsAppUrl,
   CLUB_REFERENCE_BY_ID: new Map(),
@@ -120,5 +121,12 @@ async function main() {
   await context.buildEngagementClubRecapPdf(competition, many);
   assert.equal(textCalls.filter(text => text === "Aucune course engagée").length, 70, "Aucun inscrit perdu lors des sauts de page.");
   console.log("PDF club : inscrits sans course, relais, effectifs, frais, cache et pagination OK.");
+  const teamsEntry={...entry,swimmers:entry.swimmers.map((p,i)=>({...p,teamRole:i===0?'outside':'titular'})),teamEntries:{teams:[{id:'f-a',letter:'A',sex:'F',members:['2','3','4','5','6'],reserve:'',relays:[]}],outside:['1'],individuals:[{swimmerId:'1',eventCodes:['50SF','100SF']}]}};
+  const teamCompetition={...competition,entryFormat:'clubs',entryRulesVersion:'2026-2027-v1',fees:{enabled:true,teamFee:70,swimmerFee:10,individualEventFee:5,relayFee:0}};
+  assert.equal(context.engagementPdfFeeTotal(teamsEntry,teamCompetition),90);
+  textCalls.length=0;await context.buildEngagementClubRecapPdf(teamCompetition,teamsEntry);
+  assert.ok(textCalls.includes('Équipes déclarées'));assert.ok(textCalls.includes('Femmes A'));assert.ok(textCalls.includes('Sans équipe'));assert.ok(textCalls.includes('90,00 EUR'));
+  assert.notEqual(context.engagementClubRecapPdfSourceHash(teamCompetition,teamsEntry),context.engagementClubRecapPdfSourceHash(teamCompetition,{...teamsEntry,teamEntries:{...teamsEntry.teamEntries,teams:[]}}));
+  console.log('PDF équipes : rôles explicites, composition, hors concours, frais par équipe et empreinte vérifiés.');
 }
 main().catch(error => { console.error(error); process.exitCode = 1; });

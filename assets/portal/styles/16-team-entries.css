@@ -1,0 +1,19 @@
+.portal-team-workspace{display:grid;gap:12px;min-width:0;padding:12px 0}
+.portal-team-list,.portal-team-subnav{display:flex;flex-wrap:wrap;gap:6px}
+.portal-team-list [aria-pressed="true"],.portal-team-subnav [aria-pressed="true"]{background:var(--portal-color-accent);color:#fff;border-color:var(--portal-color-accent)}
+.portal-team-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;align-items:end}
+.portal-team-fields label,.portal-team-relay>label{display:grid;gap:5px;font-size:.82rem;min-width:0}
+.portal-team-fields select,.portal-team-relay select,.portal-team-relay input:not([type=checkbox]){width:100%;max-width:100%;min-height:38px;border:1px solid var(--portal-color-field-border);border-radius:7px;padding:7px;background:var(--portal-color-field-background);color:var(--portal-color-text);font:inherit}
+.portal-team-table{width:100%;overflow-x:auto;border:1px solid var(--portal-color-border);border-radius:9px}
+.portal-team-table table{min-width:100%;border-collapse:separate;border-spacing:0;width:max-content;font-size:.76rem}
+.portal-team-table th,.portal-team-table td{padding:6px 8px;border-right:1px solid var(--portal-color-border-soft);border-bottom:1px solid var(--portal-color-border-soft);min-width:78px;text-align:center;font-weight:400}
+.portal-team-table th{background:var(--portal-color-field-background);font-weight:500}
+.portal-team-table th:first-child,.portal-team-table td:first-child{position:sticky;left:0;min-width:155px;max-width:180px;background:var(--portal-color-surface);text-align:left;z-index:1}
+.portal-team-table small{display:block;font-size:.68rem;max-width:100px}
+.portal-team-check{display:grid;min-width:44px;min-height:44px;place-items:center;gap:3px}
+.portal-team-check input{accent-color:var(--portal-color-accent);width:17px;height:17px}
+.portal-team-relay{display:grid;gap:10px;padding:12px 0;border-bottom:1px solid var(--portal-color-border-soft)}
+.portal-team-save{justify-content:space-between;padding-top:12px;border-top:1px solid var(--portal-color-border-soft)}
+.portal-team-workspace details{padding:10px 0;border-bottom:1px solid var(--portal-color-border-soft)}
+.portal-team-workspace p{margin:4px 0;font-size:.82rem}
+@media(max-width:650px){.portal-team-fields{grid-template-columns:1fr}.portal-team-list button,.portal-team-subnav button{min-height:44px}.portal-team-fields select,.portal-team-relay input:not([type=checkbox]){font-size:16px}.portal-team-table th:first-child,.portal-team-table td:first-child{min-width:125px}.portal-team-save button{width:100%}}

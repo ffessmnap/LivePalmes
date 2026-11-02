@@ -40,7 +40,9 @@ function validateExisting(metadata) {
         normalizeType(eventType[0].COLUMN_TYPE) !== "varchar(16)" || eventType[0].IS_NULLABLE !== "YES" ||
         eventType[0].COLUMN_DEFAULT !== null || eventType[0].EXTRA)) throw new Error("Champ de type incompatible.");
     // Only the two separately approved nullable markers may extend this baseline.
-    const columns = rawColumns.filter(c => !["entry_closed", "event_type"].includes(c.COLUMN_NAME));
+    const teamColumns=require('./nap-approved-team-entry-schema').definitions;
+    for(const c of rawColumns.filter(c=>teamColumns.some(x=>x.name===c.COLUMN_NAME))){const spec=teamColumns.find(x=>x.name===c.COLUMN_NAME);if(spec.table!==actual.TABLE_NAME||normalizeType(c.COLUMN_TYPE)!==spec.type||c.IS_NULLABLE!=='YES'||c.COLUMN_DEFAULT!==null||c.EXTRA)throw new Error('Colonne équipes incompatible.');}
+    const columns = rawColumns.filter(c => !["entry_closed", "event_type",...teamColumns.map(x=>x.name)].includes(c.COLUMN_NAME));
     if (columns.length !== spec.columns.length || columns.some((c, i) => {
       const expected = spec.columns[i];
       return c.COLUMN_NAME !== expected.name || normalizeType(c.COLUMN_TYPE) !== expected.type ||

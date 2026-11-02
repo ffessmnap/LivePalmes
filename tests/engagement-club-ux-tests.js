@@ -35,6 +35,7 @@ function fixture() {
     engagementEventDefinition: code => code === "50SF" ? {label:"50 m surface"} : null,
     calls, renders,
   };
+  c.teamEntrySection=()=>false; // Classic fixture; real team routing is covered in the browser.
   vm.createContext(c);
   for (const name of ["compareEngagementSwimmersByName", "compareEngagementSwimmersBySexAndName", "engagementClubWriteLockReason", "engagementDeadlineTone", "engagementNativeEditWarningKind", "renderEngagementNativeEditWarnings", "engagementClubContextMessage", "setEngagementSaveState", "engagementClubEmptySwimmersHtml", "renderEngagementClubNativeSummary", "engagementCompetitionDocumentFileSize", "engagementClubReadRetryBlocked", "retryEngagementCompetitionRead"]) vm.runInContext(block(name), c);
   return c;

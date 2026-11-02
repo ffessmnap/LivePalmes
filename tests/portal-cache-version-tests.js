@@ -31,7 +31,7 @@ function versions(html, css, loader = "", modules = "") {
   return result;
 }
 const current = versions(html, entry, fs.readFileSync("assets/livepalmes-portal-deferred.js","utf8"), fs.readFileSync("assets/portal/modules-and-clubs.js","utf8"));
-assert.equal(current.size, 55);
+assert.equal(current.size, 57);
 const historical = file => {
   try { return execFileSync("git", ["show", "HEAD^:" + file], { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }); }
   catch { return null; } // New resources have no cached predecessor.
