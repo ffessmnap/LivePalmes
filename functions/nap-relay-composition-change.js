@@ -52,6 +52,7 @@ async function saveNativeRelayComposition(pool,input,services) {
     let target=await services.audit.read(operation);
     const competition=await readers.competition(checked,input.competitionId,event=>services.authorize({...input,event}));
     if(!competition) throw new TypeError("Competition NAP introuvable.");
+    if(require('./nap-team-entries').format(competition)!=='classic')throw new TypeError('Utilisez le dossier global des équipes pour cette compétition.');
     let pack=await readers.entry(checked,input,scope=>services.authorize(scope));
     if(target) {
       if(target.kind!=="native-relay-composition" || target.operation!==operation || target.actorUid!==input.actorUid || target.competitionId!==input.competitionId || target.clubId!==input.clubId || target.payloadHash!==payloadHash || target.expectedFingerprint!==input.expectedFingerprint || target.planHash!==hash(target.plan) || !["prepared","writing","identified"].includes(target.phase)) throw new TypeError("Sauvegarde du relais incompatible.");

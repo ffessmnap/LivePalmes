@@ -2,6 +2,21 @@
 
 <!-- description: Checklist de tests manuels à exécuter avant une publication ou après une modification sensible. -->
 
+## Module équipes Clubs / Masters — recette TEST
+
+Automatisation sur données fictives : profils et tarifs fixes, références dans la période, restrictions, doublons, équipes incomplètes, HC indépendant et remplaçant, compositions vides/complètes, fermeture et reprise à identifiant identique. MySQL 5.7 isolé : trois ALTER seulement, MyISAM/InnoDB, verrous réels, perte de réponse à chaque mutation et refus d'une valeur tierce. Navigateur local : vrais composants et CSS, 1280/736/390/320 px, réseau externe bloqué.
+
+Recette utilisateur après livraison TEST et préparation autorisée des colonnes :
+
+- Choisir Clubs puis Masters sur deux compétitions vides : national uniquement, profil fixe. Vérifier le parcours inchangé d'une compétition classique.
+- Déclarer le chef, créer les équipes A/B, sélectionner et retirer des titulaires ; enregistrer une équipe incomplète sans relais.
+- Choisir deux courses par titulaire : conflits par équipe, références NAP, spécialités et alerte de programme incomplet.
+- Déclarer un remplaçant sans course puis avec HC, et un HC sans équipe : 59:59.99, 70 €/équipe, HC 10 €/personne + 5 €/course.
+- Renseigner six relayeurs Clubs et laisser une autre composition entièrement vide ; Masters à quatre, sans HC ni remplaçant.
+- Enregistrer, rouvrir et modifier avant clôture ; contrôler le total global et l'absence d'acceptation par le secrétariat. Après clôture : refus des écritures club.
+- Comparer Excel, PDF et TXT ; importer le TXT dans WinPalme pour confirmer six positions et compositions vides. Le contrôle de structure TXT ne vaut pas preuve de cet import.
+- Contrôler clavier, toucher, thèmes clair/sombre et défilement des matrices. Toute recette écrivant des personnes ou engagements réels garde son accord spécifique ; aucune donnée d'essai réelle n'est créée automatiquement.
+
 ## Réactivité et session de 24 heures — 2 novembre 2026
 
 Hors réseau : `node tests/portal-deferred-tests.js`, `node tests/portal-session-server-tests.js`, `node tests/livepalmes-portal-session-tests.js`, `python tests/portal-session-rules-tests.py`, puis `node tests/portal-reactivity-browser-tests.js` (Edge local, HTTPS bloqué). Vérifier l’accueil sans préchargement calendrier/effectif, l’ouverture d’une rubrique et la reprise après erreur de téléchargement ; le changement de compte/club/route pendant le chargement ne doit exécuter aucune ancienne action. À 1280, 390 et 320 px : compte, dialogue après 24 h simulées, mot de passe erroné, reprise, conservation du brouillon et ouverture des officiels. Les tests de session couvrent aussi onglets/appareils, réveil, ancien jeton, absence d’historique, contexte changé et absence de rejeu.

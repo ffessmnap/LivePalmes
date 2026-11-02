@@ -1128,7 +1128,10 @@
     ["4X100SF", "relay", "4 x 100 m Surface", "4 x 100 SF", "SF", 100, 4],
     ["4X200SF", "relay", "4 x 200 m Surface", "4 x 200 SF", "SF", 200, 4],
     ["4X100BI", "relay", "4 x 100 m Bi-palmes mixte", "4 x 100 BI", "BI", 100, 4, "required"],
-    ["4X100SB", "relay", "4 x 100 m Surface/Bi-palmes mixte", "4 x 100 SB", "SB", 100, 4, "required"]
+    ["4X100SB", "relay", "4 x 100 m Surface/Bi-palmes mixte", "4 x 100 SB", "SB", 100, 4, "required"],
+    ["6X100SBI", "relay", "6 x 100 m Surface/Bi-palmes/Immersion", "6 x 100 SBI", "SBI", 100, 6],
+    ["6X50SF", "relay", "6 x 50 m Surface", "6 x 50 SF", "SF", 50, 6],
+    ["6X50SBA", "relay", "6 x 50 m Surface/Bi-palmes/Apnée", "6 x 50 SBA", "SBA", 50, 6]
   ].map(([code, type, label, shortLabel, discipline, distance, relayLegs, relayMixedRule]) => ({
     code,
     type,

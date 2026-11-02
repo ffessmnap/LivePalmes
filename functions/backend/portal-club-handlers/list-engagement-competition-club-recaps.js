@@ -8,6 +8,10 @@ function createClubHandlers_listEngagementCompetitionClubRecaps(backendContext) 
     }
     if(backendContext.ENVIRONMENT.sportingDataSource === "nap") {
       const result=await backendContext.nativeAdminCompetitionEntries(context,competitionId);
+      if(request.data?.teamExport===true&&result.competition.entryFormat&&result.competition.entryFormat!=='classic'){
+        if(result.entries.some(entry=>entry.teamConsistencyIssues?.length))throw new backendContext.HttpsError('failed-precondition','Un dossier par équipes doit être vérifié avant export.');
+        return {ok:true,source:'nap',entries:result.entries,sqlBudget:result.sqlBudget};
+      }
       return {ok:true,source:"nap",competitionId,summaryGenerated:false,summaryReady:true,entries:result.entries.filter(backendContext.engagementClubEntryHasParticipants).map(entry=>({...backendContext.engagementCompetitionEntrySummaryItem(entry),totalFee:backendContext.engagementPdfFeeTotal(entry,result.competition)})),sqlBudget:result.sqlBudget};
     }
     const competition = await backendContext.db.collection("engagementCompetitions").doc(competitionId).get();

@@ -335,7 +335,7 @@ function createEngagementPdfRenderer_buildEngagementClubRecapPdf(backendContext)
     return y + height + 10;
   }
 
-  function engagementPdfFeesTable(doc, stats = {}, fees = {}, y) {
+  function engagementPdfFeesTable(doc, stats = {}, fees = {}, y, teamFees = null) {
     const left = 42;
     const tableWidth = doc.page.width - 84;
     const columns = [
@@ -366,6 +366,10 @@ function createEngagementPdfRenderer_buildEngagementClubRecapPdf(backendContext)
         subtotal: engagementPdfMoney(stats.relayCount * (Number(fees.relayFee) || 0))
       }
     ];
+    if(teamFees)rows.splice(0,rows.length,
+      {type:'Équipes',quantity:teamFees.teamCount,rate:engagementPdfMoney(fees.teamFee),subtotal:engagementPdfMoney(teamFees.teamCount*Number(fees.teamFee||0))},
+      {type:'Nageurs hors concours',quantity:teamFees.hcPeople,rate:engagementPdfMoney(fees.swimmerFee),subtotal:engagementPdfMoney(teamFees.hcPeople*Number(fees.swimmerFee||0))},
+      {type:'Courses hors concours',quantity:teamFees.hcEvents,rate:engagementPdfMoney(fees.individualEventFee),subtotal:engagementPdfMoney(teamFees.hcEvents*Number(fees.individualEventFee||0))});
     const drawCells = (row, rowY, font = "Helvetica", color = "#102f35") => {
       let x = left;
       scaledColumns.forEach((column) => {
@@ -393,7 +397,7 @@ function createEngagementPdfRenderer_buildEngagementClubRecapPdf(backendContext)
     doc.font("Helvetica-Bold").fontSize(8.5).fillColor("#073b44").text("TOTAL ESTIMÉ", left + 8, y + 7, {
       width: tableWidth - scaledColumns[3].width - 16
     });
-    doc.font("Helvetica-Bold").fontSize(9).fillColor("#073b44").text(engagementPdfMoney((0, backendContext.local$engagementPdfFeeTotal)({
+    doc.font("Helvetica-Bold").fontSize(9).fillColor("#073b44").text(engagementPdfMoney(teamFees?teamFees.total:(0, backendContext.local$engagementPdfFeeTotal)({
       swimmerCount: stats.swimmerCount,
       individualCount: stats.individualCount,
       relayCount: stats.relayCount
@@ -538,6 +542,15 @@ function createEngagementPdfRenderer_buildEngagementClubRecapPdf(backendContext)
 
     y = engagementPdfWhatsAppBlock(doc, whatsAppUrl, whatsAppQrBuffer, y);
 
+    if(entry.teamEntries){
+      const name=id=>engagementPdfPersonName((entry.swimmers||[]).find(x=>String(x.swimmerIndexId)===String(id))||{});
+      y=engagementPdfSection(doc,'Équipes déclarées',y);
+      const teamRows=entry.teamEntries.teams.map(t=>({team:(t.sex==='F'?'Femmes':t.sex==='M'?'Hommes':'Mixte')+' '+t.letter,members:t.members.filter(Boolean).map(name).join(', '),reserve:t.reserve?name(t.reserve):'-'}));
+      y=teamRows.length?engagementPdfTable(doc,[{key:'team',label:'Équipe',width:80},{key:'members',label:'Titulaires',width:290},{key:'reserve',label:'Remplaçant',width:141}],teamRows,y):engagementPdfEmptyState(doc,'Aucune équipe déclarée.',y);
+      const hc=(entry.swimmers||[]).filter(p=>['reserve','outside'].includes(p.teamRole)).map(p=>({swimmer:engagementPdfPersonName(p),role:p.teamRole==='reserve'?'Remplaçant':'Sans équipe',courses:p.individualEntries.map(e=>e.eventCode+' · 59:59.99').join(', ')||'Sans course'}));
+      if(hc.length){y=engagementPdfSection(doc,'Remplaçants et hors concours',y);y=engagementPdfTable(doc,[{key:'swimmer',label:'Nageur',width:170},{key:'role',label:'Rôle',width:95},{key:'courses',label:'Courses HC',width:246}],hc,y);}
+    }
+
     y = engagementPdfSection(doc, "Nageurs et courses individuelles", y);
     const individualMatrices = [
       engagementPdfIndividualMatrix(entry, competition, "F", "Nageuse"),
@@ -619,7 +632,7 @@ function createEngagementPdfRenderer_buildEngagementClubRecapPdf(backendContext)
     y = engagementPdfSection(doc, "Frais d'engagement", y);
     y = fees.enabled === false
       ? engagementPdfEmptyState(doc, "Aucun frais d'engagement.", y)
-      : engagementPdfFeesTable(doc, stats, fees, y);
+      : engagementPdfFeesTable(doc, stats, fees, y, competition.entryFormat&&competition.entryFormat!=='classic'?require('../../nap-team-entries').fees(competition,entry):null);
 
     engagementPdfAddFooter(doc, generatedAt);
     const buffer = await engagementPdfDocToBuffer(doc);
