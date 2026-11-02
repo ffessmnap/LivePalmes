@@ -63,6 +63,16 @@ async function main() {
         console.log(`${width}px ${warm ? "warm" : "cold"}: home ${Math.round(startup.homeAt)}ms, local JS ${startup.resources.reduce((n,r)=>n+r.bytes,0)} bytes, RPC ${startup.calls.length}`);
       }
       if (baseline) continue;
+      const preparedNames = ["listEngagementCompetitions","listEngagementClubSwimmers","listEngagementClubPeople"];
+      assert.ok(await waitFor(client,`['listEngagementCompetitions','listEngagementClubSwimmers','listEngagementClubPeople'].every(name=>fixtureCalls.some(c=>c.name===name))`));
+      const prepared = await evaluate(client,`return {home:!document.querySelector('#adminClubHomeView').hidden,homeAt:fixtureHomeAt,calls:fixtureCalls.filter(c=>['listEngagementCompetitions','listEngagementClubSwimmers','listEngagementClubPeople'].includes(c.name)),overlay:document.body.hasAttribute('data-portal-module-loading')};`);
+      assert.equal(prepared.home,true);assert.equal(prepared.overlay,false);assert.equal(prepared.calls.length,3);
+      assert.ok(prepared.calls.every(c=>c.at>prepared.homeAt),"Speculative reads must start after the authorised home paints");
+      await evaluate(client,`location.hash='#club-officiels';`);
+      assert.ok(await waitFor(client,"!document.querySelector('#adminEngagementsView').hidden && document.querySelector('#adminEngagementsClubPeopleStatus').dataset.tone!=='error'"));
+      const reused = await evaluate(client,`return fixtureCalls.filter(c=>['listEngagementClubSwimmers','listEngagementClubPeople'].includes(c.name)).map(c=>c.name);`);
+      assert.equal(reused.length,2,"The first officials visit reuses prepared people/swimmer data");
+      console.log(`${width}px: home paints before three quiet reads; first officials visit reuses the prepared data.`);
       const start = client.events.length;
       await evaluate(client, `location.hash='#mon-compte';`);
       assert.ok(await waitFor(client,"!document.querySelector('#adminAccountView').hidden"));
@@ -83,6 +93,10 @@ async function main() {
       assert.equal(await evaluate(client,"return fixtureCalls.some(c=>/^(save|send|create|delete|update)/.test(c.name));"),false);
       assert.deepEqual(client.events.slice(start).filter(e=>e.method==="Runtime.exceptionThrown").map(e=>e.params.exceptionDetails.text),[]);
       console.log(`${width}px: account route, expiry/visible dialog, wrong password, resume/draft, deferred officials and no write passed.`);
+      await client.send("Page.navigate",{url:baseUrl+`/portail.html?foregroundPriority=${width}#espace-club`});
+      assert.ok(await waitFor(client,"fixtureHomeAt>0"));
+      await evaluate(client,`location.hash='#mon-compte';return await new Promise(resolve=>setTimeout(resolve,1200));`);
+      assert.equal(await evaluate(client,`return fixtureCalls.some(c=>['listEngagementCompetitions','listEngagementClubSwimmers','listEngagementClubPeople'].includes(c.name));`),false,"Leaving home suspends speculative data reads");
       await client.send("Page.navigate",{url:baseUrl+`/portail.html?profileFailure=${width}#espace-club`});
       assert.ok(await waitFor(client,"!document.querySelector('#adminPortalAuthRetry').hidden && document.querySelector('#adminPortalMessage').textContent.includes('indisponible')"));
       assert.equal(await evaluate(client,"return document.querySelector('#adminPortalDashboard').hidden;"),true);
