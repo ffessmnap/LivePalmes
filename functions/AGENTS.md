@@ -23,6 +23,6 @@ Avant toute nouvelle collection ou évolution de schéma, vérifier si les struc
 
 ## Vérification
 
-Analyser les scripts et tests existants avant modification. Depuis la racine, lancer la vérification globale et les tests ciblés correspondant à la fonction modifiée. Consulter les sections pertinentes de `docs/TESTS_MANUELS.md` pour Firebase, les droits, les imports, les PDF ou les données métier.
+Analyser les scripts et tests existants avant modification. Depuis la racine, lancer les tests ciblés correspondant à la fonction modifiée et faire exécuter la vérification globale `node tools/verify-livepalmes.js`, en priorité par la CI obligatoire. Ne pas doubler localement une suite déjà exécutée avec succès par la CI du commit exact ; une relance se justifie par un changement, un échec ou une preuve incompatible. Consulter les sections pertinentes de `docs/TESTS_MANUELS.md` pour Firebase, les droits, les imports, les PDF ou les données métier.
 
 `npm install` dans `functions/` ne doit être lancé que si les dépendances doivent réellement être installées ou mises à jour. Signaler avant tout test susceptible de contacter la production ou d’écrire des données réelles.

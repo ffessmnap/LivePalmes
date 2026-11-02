@@ -55,7 +55,7 @@ Toute évolution du portail qui lit ou écrit des données doit inclure, avant l
 Règles de conception :
 
 - réutiliser d'abord les agrégats, index, caches et fichiers publics existants ;
-- charger les données seulement à l'ouverture réelle du module concerné ;
+- charger les données à l'ouverture réelle du module concerné, sauf pour le préchargement progressif des trois listes après affichage de l'accueil, dans les limites et budgets décrits dans [Réactivité du portail](../PORTAIL_REACTIVITE.md) ;
 - mutualiser les demandes simultanées et regrouper les opérations rapprochées ;
 - préférer une requête bornée ou un appel groupé à une lecture par résultat ;
 - éviter de relire automatiquement les données qui viennent d'être enregistrées lorsque la réponse serveur suffit ;
