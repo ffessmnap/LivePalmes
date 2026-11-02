@@ -108,22 +108,10 @@
         return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}.${String(hundredths).padStart(2, "0")}`;
       }
 
-    function normalizeEngagementEntryTimeInput(input) {
-        if (!input) return true;
-        const rawValue = String(input.value || "").trim();
-        if (!rawValue) {
-          input.setCustomValidity?.("");
-          return true;
-        }
-        const formattedValue = formatEngagementEntryTimeInput(rawValue);
-        if (!formattedValue) {
-          input.setCustomValidity?.("Saisissez un temps au format MM:SS.CC, par exemple 00:59.12, ou uniquement les chiffres 5912.");
-          return false;
-        }
-        input.value = formattedValue;
-        input.setCustomValidity?.("");
-        return true;
-      }
+    /* deferred-function: assets/portal/deferred/club-entry-state.js#normalizeEngagementEntryTimeInput */
+    function normalizeEngagementEntryTimeInput(...args) {
+      return global.LivePalmesPortalDeferred.sync(portalContext, "club-entry-state", "normalizeEngagementEntryTimeInput", args, moduleActions);
+    }
 
     function engagementEntryTimeDisplayLabel(entry = {}) {
         if (String(entry.nativeTime || "") === "599999" || (portalState.selectedEngagementCompetition?.napSource === true && Number(portalState.selectedEngagementCompetition.nativeParameters?.saisie) === 0 && entry.entryTimeMode === "default595999")) return "Sans temps connu";
@@ -141,58 +129,15 @@
         ].join(":");
       }
 
-    function mergeEngagementClubSwimmerEventTimes(swimmerIndexId = "", entries = []) {
-        const previewByCode = new Map((Array.isArray(entries) ? entries : [])
-          .map((entry) => [entry?.eventCode, entry])
-          .filter(([eventCode]) => eventCode));
-        if (!swimmerIndexId || !previewByCode.size) return;
-        let updatedSwimmer = null;
-        const swimmers = selectedEngagementClubSwimmerRows().map((swimmer) => {
-          if (swimmer.swimmerIndexId !== swimmerIndexId) return swimmer;
-          updatedSwimmer = {
-            ...swimmer,
-            individualEntries: (swimmer.individualEntries || []).map((entry) => {
-              if(portalState.selectedEngagementCompetition?.napSource===true && entry.entryTimeMode==="native") return entry;
-              if (portalActions.engagementManualIndividualTimesAllowed() && entry.entryTimeMode === "manual" && entry.manualEntryTime) return entry;
-              const preview = previewByCode.get(entry.eventCode);
-              return preview ? { ...entry, ...preview, manualEntryTime: "" } : entry;
-            })
-          };
-          return updatedSwimmer;
-        });
-        portalState.selectedEngagementClubEntry = {
-          ...(portalState.selectedEngagementClubEntry || {}),
-          swimmers
-        };
-        const entryRow = Array.from(portalContext.elements.engagementsClubEntriesList?.querySelectorAll("[data-engagement-club-entry-row]") || [])
-          .find((row) => row.dataset.engagementClubEntrySwimmerId === swimmerIndexId);
-        portalActions.updateQualificationCheckboxes(entryRow, entries);
-        const updatedByCode = new Map((updatedSwimmer?.individualEntries || []).map((entry) => [entry.eventCode, entry]));
-        Array.from(entryRow?.querySelectorAll("[data-engagement-club-swimmer-event]:checked") || []).forEach((checkbox) => {
-          const eventCode = checkbox.dataset.engagementClubSwimmerEvent || "";
-          const choice = checkbox.closest("[data-event-selected]");
-          const entry = updatedByCode.get(eventCode);
-          const timeValue = choice?.querySelector("[data-engagement-club-entry-cell-time]");
-          const editButton = choice?.querySelector("[data-engagement-club-time-edit]");
-          if (!entry || !timeValue) return;
-          timeValue.textContent = engagementEntryTimeDisplayLabel(entry);
-          timeValue.dataset.entryTimeMode = entry.entryTimeMode || "pending";
-          timeValue.title = engagementEntryTimeHelpLabel(entry, portalActions.engagementManualIndividualTimesAllowed());
-          if (editButton) editButton.dataset.engagementClubTimeAuto = entry.entryTime || "59:59.99";
-        });
-        updateEngagementClubEntriesSummary();
-        portalActions.renderEngagementClubSummary();
-      }
+    /* deferred-function: assets/portal/deferred/club-entry-state.js#mergeEngagementClubSwimmerEventTimes */
+    function mergeEngagementClubSwimmerEventTimes(...args) {
+      return global.LivePalmesPortalDeferred.sync(portalContext, "club-entry-state", "mergeEngagementClubSwimmerEventTimes", args, moduleActions);
+    }
 
-    function markEngagementClubSwimmerEventTimesError(swimmerIndexId = "") {
-        const entryRow = Array.from(portalContext.elements.engagementsClubEntriesList?.querySelectorAll("[data-engagement-club-entry-row]") || [])
-          .find((row) => row.dataset.engagementClubEntrySwimmerId === swimmerIndexId);
-        Array.from(entryRow?.querySelectorAll('[data-engagement-club-entry-cell-time][data-entry-time-mode="pending"]') || [])
-          .forEach((timeValue) => {
-            timeValue.textContent = "Indisponible";
-            timeValue.dataset.entryTimeMode = "error";
-          });
-      }
+    /* deferred-function: assets/portal/deferred/club-entry-state.js#markEngagementClubSwimmerEventTimesError */
+    function markEngagementClubSwimmerEventTimesError(...args) {
+      return global.LivePalmesPortalDeferred.sync(portalContext, "club-entry-state", "markEngagementClubSwimmerEventTimesError", args, moduleActions);
+    }
 
     /* deferred-function: assets/portal/deferred/club-entry-state.js#flushEngagementClubSwimmerEventTimesBatch */
     async function flushEngagementClubSwimmerEventTimesBatch(...args) {
@@ -283,22 +228,15 @@
         };
       }
 
-    function engagementClubEntryRowCountLabel(row) {
-        const count = row?.querySelectorAll("[data-engagement-club-swimmer-event]:checked").length || 0;
-        const maxEvents = Number(portalState.selectedEngagementCompetition?.maxEventsPerSwimmer || 0);
-        return maxEvents > 0 ? `${count}/${maxEvents}` : String(count);
-      }
+    /* deferred-function: assets/portal/deferred/club-entry-state.js#engagementClubEntryRowCountLabel */
+    function engagementClubEntryRowCountLabel(...args) {
+      return global.LivePalmesPortalDeferred.sync(portalContext, "club-entry-state", "engagementClubEntryRowCountLabel", args, moduleActions);
+    }
 
-    function updateEngagementClubEntryRowCount(row) {
-        const button = row?.querySelector("[data-engagement-club-times-open]");
-        if (!button) return;
-        const countLabel = engagementClubEntryRowCountLabel(row);
-        const count = row?.querySelectorAll("[data-engagement-club-swimmer-event]:checked").length || 0;
-        button.querySelector("span")?.replaceChildren(countLabel);
-        button.setAttribute("aria-label", portalActions.engagementCompetitionType(portalState.selectedEngagementCompetition) === "openWater"
-          ? `${count} course${count > 1 ? "s" : ""} sélectionnée${count > 1 ? "s" : ""}`
-          : `Voir ou modifier les temps d'engagement, ${count} course${count > 1 ? "s" : ""}`);
-      }
+    /* deferred-function: assets/portal/deferred/club-entry-state.js#updateEngagementClubEntryRowCount */
+    function updateEngagementClubEntryRowCount(...args) {
+      return global.LivePalmesPortalDeferred.sync(portalContext, "club-entry-state", "updateEngagementClubEntryRowCount", args, moduleActions);
+    }
 
     function updateEngagementClubSwimmersSummary() {
         if (!portalContext.elements.engagementsClubSwimmersSummary) return;
@@ -328,11 +266,10 @@
         syncEngagementClubEntriesSaveBar();
       }
 
-    function markEngagementClubEntrySwimmerDirty(swimmerIndexId = "") {
-        const cleanId = String(swimmerIndexId || "").trim();
-        if (cleanId) portalConfig.engagementClubEntriesDirtySwimmerIds.add(cleanId);
-        setEngagementClubEntriesDirty(true);
-      }
+    /* deferred-function: assets/portal/deferred/club-entry-state.js#markEngagementClubEntrySwimmerDirty */
+    function markEngagementClubEntrySwimmerDirty(...args) {
+      return global.LivePalmesPortalDeferred.sync(portalContext, "club-entry-state", "markEngagementClubEntrySwimmerDirty", args, moduleActions);
+    }
 
     function setEngagementClubPersistedSwimmers(entry = {}) {
         portalState.engagementClubPersistedSwimmerIds = new Set((entry.swimmers || [])
@@ -410,48 +347,25 @@
         } catch (_) {}
       }
 
-    function engagementClubSwimmersCacheKey() {
-        return engagementClubWorkspaceScopeKey();
-      }
+    /* deferred-function: assets/portal/deferred/club-entry-state.js#engagementClubSwimmersCacheKey */
+    function engagementClubSwimmersCacheKey(...args) {
+      return global.LivePalmesPortalDeferred.sync(portalContext, "club-entry-state", "engagementClubSwimmersCacheKey", args, moduleActions);
+    }
 
-    function readEngagementClubSwimmersCache() {
-        try {
-          const cacheKey = engagementClubSwimmersCacheKey();
-          const stored = JSON.parse(global.sessionStorage?.getItem(`${portalConfig.ENGAGEMENT_CLUB_SWIMMERS_SESSION_CACHE_PREFIX}${cacheKey}`) || "null");
-          if (!stored || stored.version !== 1 || !Array.isArray(stored.swimmers) || !Number(stored.cachedAt)) return null;
-          const expectedClubId = portalActions.engagementClubScope();
-          if (expectedClubId && stored.clubId && String(stored.clubId) !== expectedClubId) return null;
-          return {
-            clubId: String(stored.clubId || expectedClubId || ""),
-            swimmers: stored.swimmers.map((swimmer) => ({ ...swimmer })),
-            cachedAt: Number(stored.cachedAt)
-          };
-        } catch (_) {
-          return null;
-        }
-      }
+    /* deferred-function: assets/portal/deferred/club-entry-state.js#readEngagementClubSwimmersCache */
+    function readEngagementClubSwimmersCache(...args) {
+      return global.LivePalmesPortalDeferred.sync(portalContext, "club-entry-state", "readEngagementClubSwimmersCache", args, moduleActions);
+    }
 
-    function writeEngagementClubSwimmersCache(swimmers = portalState.engagementClubSwimmers, clubId = portalState.engagementClubSwimmersClubId, cachedAt = Date.now()) {
-        portalState.engagementClubSwimmersCachedAt = cachedAt;
-        try {
-          global.sessionStorage?.setItem(`${portalConfig.ENGAGEMENT_CLUB_SWIMMERS_SESSION_CACHE_PREFIX}${engagementClubSwimmersCacheKey()}`, JSON.stringify({
-            version: 1,
-            clubId: String(clubId || portalActions.engagementClubScope() || ""),
-            cachedAt,
-            swimmers
-          }));
-        } catch (_) {
-          // Le cache reste facultatif si le stockage de session est indisponible.
-        }
-      }
+    /* deferred-function: assets/portal/deferred/club-entry-state.js#writeEngagementClubSwimmersCache */
+    function writeEngagementClubSwimmersCache(...args) {
+      return global.LivePalmesPortalDeferred.sync(portalContext, "club-entry-state", "writeEngagementClubSwimmersCache", args, moduleActions);
+    }
 
-    function invalidateEngagementClubSwimmersCache() {
-        portalState.engagementClubSwimmersLoaded = false;
-        portalState.engagementClubSwimmersCachedAt = 0;
-        try {
-          global.sessionStorage?.removeItem(`${portalConfig.ENGAGEMENT_CLUB_SWIMMERS_SESSION_CACHE_PREFIX}${engagementClubSwimmersCacheKey()}`);
-        } catch (_) {}
-      }
+    /* deferred-function: assets/portal/deferred/club-entry-state.js#invalidateEngagementClubSwimmersCache */
+    function invalidateEngagementClubSwimmersCache(...args) {
+      return global.LivePalmesPortalDeferred.sync(portalContext, "club-entry-state", "invalidateEngagementClubSwimmersCache", args, moduleActions);
+    }
 
     function clearEngagementClubSwimmersSessionCaches() {
         portalState.engagementClubSwimmersCachedAt = 0;
@@ -466,69 +380,25 @@
         } catch (_) {}
       }
 
-    function pendingEngagementClubWorkspaceRequest(competitionId) {
-        return portalConfig.engagementClubWorkspaceRequests.get(engagementClubWorkspaceCacheKey(competitionId)) || null;
-      }
+    /* deferred-function: assets/portal/deferred/club-entry-state.js#pendingEngagementClubWorkspaceRequest */
+    function pendingEngagementClubWorkspaceRequest(...args) {
+      return global.LivePalmesPortalDeferred.sync(portalContext, "club-entry-state", "pendingEngagementClubWorkspaceRequest", args, moduleActions);
+    }
 
-    function preloadEngagementClubWorkspaces(competitions = []) {
-        if (!portalActions.canUse("engagements.club.manage")) return Promise.resolve([]);
-        const candidates = competitions
-          .filter((competition) => competition?.id && competition.napSource !== true && competition.clubEntryExists === true)
-          .sort((left, right) => {
-            const priority = (competition) => competition.entryStatus === "open" ? 0 : competition.entryStatus === "upcoming" ? 1 : 2;
-            return priority(left) - priority(right) || String(left.date || "").localeCompare(String(right.date || ""));
-          })
-          .slice(0, portalConfig.ENGAGEMENT_CLUB_WORKSPACE_PRELOAD_LIMIT);
-        const competitionIds = candidates
-          .filter((competition) => {
-            const cached = readEngagementClubWorkspaceCache(competition.id);
-            return !cached?.cachedAt || Date.now() - cached.cachedAt >= portalConfig.ENGAGEMENT_CLUB_WORKSPACE_CACHE_TTL_MS;
-          })
-          .map((competition) => competition.id)
-          .filter((competitionId) => !pendingEngagementClubWorkspaceRequest(competitionId));
-        if (!competitionIds.length) return Promise.resolve([]);
-        const scopeKey = engagementClubWorkspaceScopeKey();
-        const requestedAt = Date.now();
-        const requestPromise = portalActions.callFunction("preloadEngagementClubWorkspaces", { competitionIds })
-          .then((result) => {
-            if (scopeKey !== engagementClubWorkspaceScopeKey()) return [];
-            const workspaces = Array.isArray(result.workspaces) ? result.workspaces : [];
-            workspaces.forEach((workspace) => {
-              writeEngagementClubWorkspaceCache(workspace.competitionId, workspace, requestedAt);
-            });
-            return workspaces;
-          })
-          .catch(() => [])
-          .finally(() => {
-            competitionIds.forEach((competitionId) => {
-              const cacheKey = engagementClubWorkspaceCacheKey(competitionId, scopeKey);
-              if (portalConfig.engagementClubWorkspaceRequests.get(cacheKey) === requestPromise) {
-                portalConfig.engagementClubWorkspaceRequests.delete(cacheKey);
-              }
-            });
-          });
-        competitionIds.forEach((competitionId) => {
-          portalConfig.engagementClubWorkspaceRequests.set(engagementClubWorkspaceCacheKey(competitionId, scopeKey), requestPromise);
-        });
-        return requestPromise;
-      }
+    /* deferred-function: assets/portal/deferred/club-entry-state.js#preloadEngagementClubWorkspaces */
+    function preloadEngagementClubWorkspaces(...args) {
+      return global.LivePalmesPortalDeferred.sync(portalContext, "club-entry-state", "preloadEngagementClubWorkspaces", args, moduleActions);
+    }
 
-    function scheduleEngagementClubWorkspacePreload(competitions = []) {
-        global.setTimeout(() => { void preloadEngagementClubWorkspaces(competitions); }, 0);
-      }
+    /* deferred-function: assets/portal/deferred/club-entry-state.js#scheduleEngagementClubWorkspacePreload */
+    function scheduleEngagementClubWorkspacePreload(...args) {
+      return global.LivePalmesPortalDeferred.sync(portalContext, "club-entry-state", "scheduleEngagementClubWorkspacePreload", args, moduleActions);
+    }
 
-    function resetEngagementClubTransientMessages() {
-        [
-          portalContext.elements.engagementsClubTeamMessage,
-          portalContext.elements.engagementsClubOfficialsMessage,
-          portalContext.elements.engagementsClubSwimmersMessage,
-          portalContext.elements.engagementsClubEntriesMessage,
-          portalContext.elements.engagementsClubRelaysMessage
-        ].filter(Boolean).forEach((message) => {
-          message.textContent = "";
-          delete message.dataset.tone;
-        });
-      }
+    /* deferred-function: assets/portal/deferred/club-entry-state.js#resetEngagementClubTransientMessages */
+    function resetEngagementClubTransientMessages(...args) {
+      return global.LivePalmesPortalDeferred.sync(portalContext, "club-entry-state", "resetEngagementClubTransientMessages", args, moduleActions);
+    }
 
     function rememberEngagementClubPersistedEntry(entry = {}) {
         portalState.engagementClubLastPersistedEntry = cloneEngagementClubEntry(entry);
@@ -673,24 +543,10 @@
         });
       }
 
-    function persistEngagementClubSwimmerSelection(swimmer = {}, selected = true) {
-        const swimmerIndexId = String(swimmer.swimmerIndexId || swimmer.id || "").trim();
-        const competitionId = portalState.selectedEngagementCompetitionId;
-        if (!swimmerIndexId) return Promise.resolve(false);
-        portalActions.setEngagementSaveState("saving");
-        if (portalState.engagementClubSelectionCompetitionId && portalState.engagementClubSelectionCompetitionId !== competitionId) {
-          void flushEngagementClubSwimmerSelections();
-        }
-        portalState.engagementClubSelectionCompetitionId = competitionId;
-        portalConfig.engagementClubSelectionChanges.set(swimmerIndexId, {
-          swimmerIndexId,
-          selected,
-          swimmer: selected ? swimmer : undefined
-        });
-        if (portalState.engagementClubSelectionTimer) global.clearTimeout(portalState.engagementClubSelectionTimer);
-        portalState.engagementClubSelectionTimer = global.setTimeout(() => void flushEngagementClubSwimmerSelections(), 400);
-        return Promise.resolve(true);
-      }
+    /* deferred-function: assets/portal/deferred/club-entry-state.js#persistEngagementClubSwimmerSelection */
+    function persistEngagementClubSwimmerSelection(...args) {
+      return global.LivePalmesPortalDeferred.sync(portalContext, "club-entry-state", "persistEngagementClubSwimmerSelection", args, moduleActions);
+    }
 
     /* deferred-function: assets/portal/deferred/club-entry-state.js#removeEngagementClubSwimmerFromCourses */
     async function removeEngagementClubSwimmerFromCourses(...args) {
@@ -717,15 +573,10 @@
         if (pending) portalActions.setEngagementSaveState("error");
       }
 
-    function discardPendingEngagementClubIndividualEntries(swimmerIndexId = "") {
-        const cleanId = String(swimmerIndexId || "").trim();
-        if (!cleanId) return;
-        portalConfig.engagementClubEntriesAutosaveSwimmers.delete(cleanId);
-        if (portalConfig.engagementClubEntriesAutosaveSwimmers.size || !portalState.engagementClubEntriesAutosaveTimer) return;
-        global.clearTimeout(portalState.engagementClubEntriesAutosaveTimer);
-        portalState.engagementClubEntriesAutosaveTimer = null;
-        portalState.engagementClubEntriesAutosaveCompetitionId = "";
-      }
+    /* deferred-function: assets/portal/deferred/club-entry-state.js#discardPendingEngagementClubIndividualEntries */
+    function discardPendingEngagementClubIndividualEntries(...args) {
+      return global.LivePalmesPortalDeferred.sync(portalContext, "club-entry-state", "discardPendingEngagementClubIndividualEntries", args, moduleActions);
+    }
 
     function flushEngagementClubIndividualEntriesAutosave() {
         if (portalState.engagementClubEntriesAutosaveTimer) global.clearTimeout(portalState.engagementClubEntriesAutosaveTimer);
@@ -754,31 +605,10 @@
         });
       }
 
-    function persistEngagementClubIndividualEntries(swimmer = {}) {
-        const swimmerIndexId = String(swimmer.swimmerIndexId || swimmer.id || "").trim();
-        const competitionId = portalState.selectedEngagementCompetitionId;
-        if (!swimmerIndexId || !competitionId) return Promise.resolve(false);
-        portalActions.setEngagementSaveState("saving");
-        if (portalState.engagementClubEntriesAutosaveCompetitionId && portalState.engagementClubEntriesAutosaveCompetitionId !== competitionId) {
-          resetEngagementClubEntriesAutosave();
-        }
-        markEngagementClubEntrySwimmerDirty(swimmerIndexId);
-        portalState.engagementClubEntriesAutosaveCompetitionId = competitionId;
-        portalConfig.engagementClubEntriesAutosaveSwimmers.set(swimmerIndexId, {
-          swimmerIndexId,
-          individualEntries: cloneEngagementClubEntry(swimmer.individualEntries || [])
-        });
-        portalState.engagementClubEntryMutationRevision += 1;
-        if (portalContext.elements.engagementsClubEntriesMessage) {
-          portalContext.elements.engagementsClubEntriesMessage.textContent = "Enregistrement des courses...";
-          portalContext.elements.engagementsClubEntriesMessage.dataset.tone = "loading";
-        }
-        if (portalState.engagementClubEntriesAutosaveTimer) global.clearTimeout(portalState.engagementClubEntriesAutosaveTimer);
-        portalState.engagementClubEntriesAutosaveTimer = global.setTimeout(() => {
-          void flushEngagementClubIndividualEntriesAutosave();
-        }, 500);
-        return Promise.resolve(true);
-      }
+    /* deferred-function: assets/portal/deferred/club-entry-state.js#persistEngagementClubIndividualEntries */
+    function persistEngagementClubIndividualEntries(...args) {
+      return global.LivePalmesPortalDeferred.sync(portalContext, "club-entry-state", "persistEngagementClubIndividualEntries", args, moduleActions);
+    }
 
     function engagementClubHasPendingWrites() {
         return Boolean(
@@ -796,83 +626,20 @@
         if (portalConfig.engagementClubEntriesAutosaveSwimmers.size) void flushEngagementClubIndividualEntriesAutosave();
       }
 
-    function engagementNavigationBaseline() {
-        return JSON.stringify([
-          portalState.selectedEngagementClubEntry?.napFingerprint || portalState.engagementClubLastPersistedEntry,
-          // NAP updatedAt is the read time, not a stored modification date.
-          portalState.selectedEngagementCompetition?.napFingerprint || portalState.selectedEngagementCompetition?.updatedAt || "",
-          portalState.selectedEngagementCompetition?.entryStatus || ""
-        ]);
-      }
+    /* deferred-function: assets/portal/deferred/club-entry-state.js#engagementNavigationBaseline */
+    function engagementNavigationBaseline(...args) {
+      return global.LivePalmesPortalDeferred.sync(portalContext, "club-entry-state", "engagementNavigationBaseline", args, moduleActions);
+    }
 
-    function preserveEngagementNavigation() {
-        const checkpoint = global.LivePalmesEngagementNavigation;
-        if (!checkpoint) throw new Error("Le brouillon ne peut pas encore être conservé. Réessayez dans un instant.");
-        if (!portalState.selectedEngagementCompetitionId) return;
-        if (portalActions.isEngagementAdminMode()) {
-          if (portalState.dirtyEngagementDetailTabs.size) throw new Error("Enregistrez ou annulez vos modifications avant de consulter le site public.");
-          return;
-        }
-        if (!portalActions.canUse("engagements.club.manage") || !portalState.selectedEngagementClubEntry) return;
-        if (engagementClubHasPendingWrites() || portalState.engagementClubTeamSaving || portalState.engagementClubTeamRenunciationSaving
-          || portalState.engagementClubSwimmerRemoving || portalState.engagementClubNativeSelectionRetry || portalState.engagementClubNativeIndividualRetry
-          || portalState.engagementClubNativeOfficialRetry || portalState.engagementClubNativeRelayRetry || portalState.engagementNavigationRestoring) {
-          throw new Error("Un enregistrement est en cours ou reste à vérifier. Terminez-le avant de consulter le site public.");
-        }
-        if (document.querySelector("dialog[open]")) throw new Error("Terminez ou fermez la fenêtre ouverte avant de consulter le site public.");
-        if (document.getElementById("engagementNavigationRecovery")) throw new Error("Conservez le brouillon proposé au téléchargement avant de poursuivre.");
-        const forms = [portalContext.elements.engagementsClubTeamForm, portalContext.elements.engagementsClubOfficialsForm,
-          portalContext.elements.engagementsClubSwimmersForm, portalContext.elements.engagementsClubEntriesForm, portalContext.elements.engagementsClubRelaysForm];
-        const entry = cloneEngagementClubEntry(portalState.selectedEngagementClubEntry);
-        entry.swimmers = selectedEngagementClubSwimmerRows();
-        checkpoint.save(engagementClubWorkspaceScopeKey(), {
-          competitionId: portalState.selectedEngagementCompetitionId, tab: portalState.activeEngagementsDetailTab,
-          baseline: engagementNavigationBaseline(), entry,
-          fields: checkpoint.captureFields(forms),
-          relays: portalActions.selectedEngagementClubRelayRows(),
-          dirtyTabs: [...portalState.dirtyEngagementDetailTabs], entriesDirty: portalState.engagementClubEntriesDirty,
-          dirtySwimmers: [...portalConfig.engagementClubEntriesDirtySwimmerIds],
-          teamEditing: portalState.engagementClubTeamEditing,
-          teamManual: portalContext.elements.engagementsClubTeamPersonFields?.dataset.manualEntry === "true",
-          teamMode: portalContext.elements.engagementsClubTeamForm?.querySelector('input[name="adminEngagementsClubTeamMode"]:checked')?.value || ""
-        });
-      }
+    /* deferred-function: assets/portal/deferred/club-entry-state.js#preserveEngagementNavigation */
+    function preserveEngagementNavigation(...args) {
+      return global.LivePalmesPortalDeferred.sync(portalContext, "club-entry-state", "preserveEngagementNavigation", args, moduleActions);
+    }
 
-    function showEngagementNavigationRecovery(snapshot, message = "Le dossier a évolué depuis votre départ.") {
-        if (document.getElementById("engagementNavigationRecovery")) return;
-        const note = document.createElement("p");
-        note.id = "engagementNavigationRecovery";
-        note.setAttribute("role", "status");
-        note.textContent = message + " Votre brouillon est conservé sans remplacer les données actuelles. ";
-        const download = document.createElement("a");
-        download.textContent = "Télécharger mon brouillon";
-        download.download = "brouillon-engagements.json";
-        download.href = "data:application/json;charset=utf-8," + encodeURIComponent(JSON.stringify(snapshot, null, 2));
-        note.append(download);
-        const retry = document.createElement("button");
-        retry.type = "button";
-        retry.textContent = "Réessayer la reprise";
-        retry.addEventListener("click", () => {
-          if (portalActions.engagementClubReadRetryBlocked()) {
-            global.alert("Terminez les modifications ou enregistrements en cours avant de reprendre le brouillon.");
-            return;
-          }
-          note.remove();
-          portalState.selectedEngagementCompetitionId = "";
-          void restoreEngagementNavigation();
-        });
-        note.append(" ", retry);
-        const dismiss = document.createElement("button");
-        dismiss.type = "button";
-        dismiss.textContent = "Fermer ce rappel";
-        dismiss.addEventListener("click", () => {
-          if (!global.confirm("Avez-vous conservé votre brouillon ? Fermer ce rappel abandonne sa restauration automatique.")) return;
-          global.LivePalmesEngagementNavigation.clear();
-          note.remove();
-        });
-        note.append(" ", dismiss);
-        portalContext.elements.engagementsDetail?.prepend(note);
-      }
+    /* deferred-function: assets/portal/deferred/club-entry-state.js#showEngagementNavigationRecovery */
+    function showEngagementNavigationRecovery(...args) {
+      return global.LivePalmesPortalDeferred.sync(portalContext, "club-entry-state", "showEngagementNavigationRecovery", args, moduleActions);
+    }
 
     /* deferred-function: assets/portal/deferred/club-entry-state.js#restoreEngagementNavigation */
     async function restoreEngagementNavigation(...args) {
@@ -975,16 +742,10 @@
         return `<span class="admin-engagements-club-swimmer-license-status" title="${portalActions.escapeHtml(label)}" aria-label="${portalActions.escapeHtml(label)}">${requiresAttention ? "!" : "✓"}</span>`;
       }
 
-    function setEngagementClubSwimmerRowExpanded(row, expanded) {
-        if (!row) return;
-        const open = expanded === true;
-        row.dataset.expanded = open ? "true" : "false";
-        const button = row.querySelector("[data-engagement-club-swimmer-details-toggle]");
-        if (button) {
-          button.setAttribute("aria-expanded", open ? "true" : "false");
-          button.setAttribute("aria-label", `${open ? "Masquer" : "Afficher"} le détail de ${button.dataset.engagementClubSwimmerDetailsName || "ce nageur"}`);
-        }
-      }
+    /* deferred-function: assets/portal/deferred/club-entry-state.js#setEngagementClubSwimmerRowExpanded */
+    function setEngagementClubSwimmerRowExpanded(...args) {
+      return global.LivePalmesPortalDeferred.sync(portalContext, "club-entry-state", "setEngagementClubSwimmerRowExpanded", args, moduleActions);
+    }
 
     function engagementSwimmerDisplayName(swimmer = {}, fallback = "Nageur") {
         return [swimmer.lastName, swimmer.firstName].filter(Boolean).join(" ") || swimmer.name || fallback;
@@ -1001,18 +762,10 @@
           compareEngagementSwimmersByName(left, right);
       }
 
-    function engagementPublicSwimmerProfileUrl(swimmer = {}, name = engagementSwimmerDisplayName(swimmer)) {
-        const params = new URLSearchParams();
-        const swimmerId = String(swimmer.swimmerId || swimmer.id || swimmer.swimmerIndexId || "").trim();
-        if (swimmerId) {
-          params.set("id", swimmerId);
-        } else {
-          params.set("name", name);
-          if (swimmer.birthDate) params.set("birth", swimmer.birthDate);
-          if (swimmer.sex) params.set("sex", swimmer.sex);
-        }
-        return `performances/nageur.html?${params.toString()}`;
-      }
+    /* deferred-function: assets/portal/deferred/club-entry-state.js#engagementPublicSwimmerProfileUrl */
+    function engagementPublicSwimmerProfileUrl(...args) {
+      return global.LivePalmesPortalDeferred.sync(portalContext, "club-entry-state", "engagementPublicSwimmerProfileUrl", args, moduleActions);
+    }
 
     function engagementClubSwimmerIsActive(swimmer = {}) {
         return String(swimmer.clubActivityStatus || "active").trim().toLowerCase() !== "inactive";

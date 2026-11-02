@@ -84,6 +84,15 @@ function restoreNativeImportPaths(source, file) {
 }
 
 function expandedSource(file, source, loadModule = name => fs.readFileSync(name, "utf8")) {
+  source = source.replace(/\/\* deferred-listeners: ([\w/.-]+) \*\//g, (_, name) => {
+    const text = loadModule(path.resolve(root, name));
+    let body;
+    walk(acorn.parse(text, {ecmaVersion:"latest"}), node => {
+      if (node.type === "FunctionDeclaration" && node.id.name === "bindWorkspaceEvents") body = node.body;
+    });
+    if (!body) throw new Error("Gestionnaires différés absents.");
+    return text.slice(body.start + 1, body.end - 1);
+  });
   if (file.endsWith(".css")) {
     return source.replace(/@import url\("([^"?#]+)\?[^"\n]*"\);/g, (_, name) =>
       expandedSource(path.resolve(path.dirname(file), name), loadModule(path.resolve(path.dirname(file), name)), loadModule));
@@ -204,6 +213,12 @@ function readFileSync(file, options) {
   const value = fs.readFileSync(file, options);
   if (typeof value !== "string" || typeof file !== "string") return value;
   const absolute = path.resolve(file);
+  // Historical markup contracts inspect the logical form; browser tests serve
+  // the actual initial document and exercise its lazy fragments separately.
+  if (/(?:^|[/\\])portail\.html$/.test(absolute)) return value.replace(
+    /(<(?:section|div)\b[^>]*data-portal-fragment-src="(assets\/portal\/views\/[a-z-]+\.html)\?[^" ]+"[^>]*>)/g,
+    (opening, tag, fragment) => tag + fs.readFileSync(path.resolve(root, fragment), "utf8")
+  );
   return /(?:livepalmes-admin-portal\.(?:js|css)|functions[/\\]index\.js)$/.test(absolute)
     ? expandedSource(absolute, value) : value;
 }

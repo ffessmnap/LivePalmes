@@ -1,0 +1,157 @@
+
+                <details id="performanceSuperAdminPanel" class="import-card super-admin-maintenance" hidden>
+                  <summary class="import-card-head advanced-tools-summary">
+                    <span>Outils avancés</span>
+                    <strong>Maintenance de la base LivePalmes</strong>
+                    <p>Les imports et corrections publient automatiquement les changements. La reconstruction complète sert seulement en secours ou après une évolution technique.</p>
+                  </summary>
+                  <div class="super-admin-maintenance-actions">
+                    <button id="performancePublishPublicDataButton" type="button">Republier TOP / fiches nageurs</button>
+                    <p id="performancePublishPublicDataMessage" class="admin-portal-message" aria-live="polite"></p>
+                  </div>
+                </details>
+
+                <section class="import-card import-launch-card">
+                  <div class="import-card-head">
+                    <span>Résultats</span>
+                    <strong>Ajouter un nouvel import</strong>
+                    <p>Choisissez un fichier, contrôlez toutes les performances détectées puis validez l’import.</p>
+                  </div>
+                  <button id="competitionImportOpenButton" type="button" aria-haspopup="dialog">Importer des résultats</button>
+                </section>
+
+                <dialog id="competitionImportDialog" class="competition-import-dialog" aria-labelledby="competitionImportDialogTitle">
+                  <div class="competition-import-dialog-shell">
+                    <header class="competition-import-dialog-head">
+                      <div>
+                        <span>Import de résultats</span>
+                        <h3 id="competitionImportDialogTitle">Charger et vérifier un fichier</h3>
+                        <p>ZIP WinPalme avec contrôle national, TXT fédéral ou trame Excel internationale</p>
+                      </div>
+                      <button id="competitionImportDialogClose" class="ghost-button competition-import-dialog-close" type="button" aria-label="Fermer la fenêtre">×</button>
+                    </header>
+
+                    <div class="competition-import-dialog-body">
+                      <section class="import-card">
+                        <div class="import-card-head">
+                          <span>Étape 1</span>
+                          <strong>Choisir le fichier</strong>
+                          <p>Le fichier est analysé avant toute écriture dans la base LivePalmes.</p>
+                        </div>
+                        <form id="competitionImportForm" class="competition-import-form">
+                          <label>
+                            Fichier ZIP WinPalme, TXT ou Excel
+                            <input id="competitionImportFile" type="file" accept=".zip,application/zip,.txt,text/plain,.xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" required>
+                          </label>
+                          <label>
+                            Encodage TXT
+                            <select id="competitionImportEncoding">
+                              <option value="utf-8" selected>UTF-8 / export fédéral récent</option>
+                              <option value="windows-1252">Windows-1252 / ancien export</option>
+                            </select>
+                          </label>
+                          <div class="admin-portal-actions">
+                            <button type="submit">Analyser le fichier</button>
+                          </div>
+                        </form>
+                        <p id="competitionImportMessage" class="admin-portal-message" aria-live="polite"></p>
+                      </section>
+
+                      <section id="competitionZipPreview" class="import-card competition-zip-preview" aria-label="Fichiers retenus dans le ZIP" hidden></section>
+                      <aside id="competitionImportProgress" class="admin-long-operation" hidden></aside>
+
+                      <section id="competitionImportPreview" class="import-card" hidden>
+                        <div class="import-card-head">
+                          <span>Étape 2</span>
+                          <strong>Vérifier les performances</strong>
+                          <p>Contrôlez les informations détectées avant d’ajouter les résultats dans la base LivePalmes.</p>
+                        </div>
+                        <div id="competitionImportSummary" class="import-summary-grid"></div>
+                        <div id="competitionImportWarnings" class="import-warnings"></div>
+                        <aside id="competitionImportExisting" class="competition-import-existing" hidden></aside>
+                        <div class="competition-import-preview-tools">
+                          <label>
+                            Afficher
+                            <select id="competitionImportPreviewFilter">
+                              <option value="all">Toutes les performances</option>
+                              <option value="ready">Rattachement prêt</option>
+                              <option value="verify">À vérifier</option>
+                              <option value="duplicates">Doublons possibles</option>
+                            </select>
+                          </label>
+                          <label>
+                            Rechercher
+                            <input id="competitionImportPreviewSearch" type="search" placeholder="Nageur, course, club ou phase" autocomplete="off">
+                          </label>
+                          <p id="competitionImportPreviewCount" class="competition-import-preview-count" aria-live="polite"></p>
+                        </div>
+                        <div class="import-table-wrap">
+                          <table class="import-preview-table">
+                            <thead>
+                              <tr>
+                                <th>Ligne</th>
+                                <th>Nageur</th>
+                                <th>Rattachement LivePalmes</th>
+                                <th>Course</th>
+                                <th>Phase</th>
+                                <th>Temps</th>
+                                <th>Passage</th>
+                                <th>Catégorie</th>
+                                <th>Club</th>
+                              </tr>
+                            </thead>
+                            <tbody id="competitionImportSample"></tbody>
+                          </table>
+                        </div>
+                        <div id="competitionImportPreviewPagination" class="competition-import-preview-pagination" hidden>
+                          <button id="competitionImportPreviewPrevious" class="ghost-button" type="button">Page précédente</button>
+                          <span id="competitionImportPreviewPage"></span>
+                          <button id="competitionImportPreviewNext" class="ghost-button" type="button">Page suivante</button>
+                        </div>
+                        <div class="admin-portal-actions competition-import-dialog-actions">
+                          <button id="competitionImportDialogCancel" class="ghost-button" type="button">Annuler</button>
+                          <button id="competitionImportValidateButton" type="button">Valider l’import</button>
+                          <button id="competitionImportReplaceButton" class="danger-button" type="button" hidden>Remplacer l’import existant</button>
+                        </div>
+                      </section>
+                    </div>
+                  </div>
+                </dialog>
+
+                <section class="import-card">
+                  <div class="import-card-head import-card-head-inline">
+                    <div>
+                      <span>Historique</span>
+                      <strong>Imports déjà stockés</strong>
+                    </div>
+                    <div class="import-card-actions">
+                      <button id="competitionImportsExportButton" class="ghost-button" type="button">Exporter les données publiques</button>
+                      <button id="competitionImportsRefreshButton" class="ghost-button" type="button">Actualiser</button>
+                    </div>
+                  </div>
+                  <div class="competition-import-history-filters" aria-label="Filtres de l'historique des imports">
+                    <label>
+                      Rechercher
+                      <input id="competitionImportsSearch" type="search" placeholder="Compétition, lieu ou fichier" autocomplete="off">
+                    </label>
+                    <label>
+                      Année
+                      <select id="competitionImportsYear">
+                        <option value="">Toutes les années</option>
+                      </select>
+                    </label>
+                    <label>
+                      Statut
+                      <select id="competitionImportsStatus">
+                        <option value="">Tous les statuts</option>
+                        <option value="stored">Stocké</option>
+                        <option value="replacement_staged">Remplacement en cours</option>
+                        <option value="replaced">Remplacé</option>
+                        <option value="deleted">Annulé</option>
+                      </select>
+                    </label>
+                  </div>
+                  <p id="competitionImportsFilterSummary" class="competition-imports-filter-summary" aria-live="polite"></p>
+                  <div id="competitionImportsList" class="competition-imports-list"></div>
+                </section>
+              

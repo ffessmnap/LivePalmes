@@ -1671,6 +1671,7 @@
         const activeView = accessDenied || recordsDenied || importDenied || correctionDenied || performanceHomeDenied || clubHomeDenied || dtnDenied || engagementsAdminHomeDenied || nationalHomeDenied || nationalToolsDenied || nationalDocumentsDenied || engagementsDenied || newsDenied
           ? "dashboard"
           : requestedView;
+        if (document.body.dataset.adminAuth === "unlocked" && global.LivePalmesPortalDeferred?.prepareView?.(portalContext, activeView, updateNavigationView) === false) return;
         document.querySelectorAll("[data-admin-view]").forEach((section) => {
           section.hidden = section.dataset.adminView !== activeView;
         });
