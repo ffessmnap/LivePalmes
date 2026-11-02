@@ -89,6 +89,13 @@ function expandedSource(file, source, loadModule = name => fs.readFileSync(name,
       expandedSource(path.resolve(path.dirname(file), name), loadModule(path.resolve(path.dirname(file), name)), loadModule));
   }
   source = source.replace(/\s*\/\* portal-wiring-start \*\/[\s\S]*?\/\* portal-wiring-end \*\//, "");
+  // These historical contracts isolate the pre-existing business operation.
+  // The additional session boundary is exercised against the actual deployed
+  // callbacks (including denied-before-business execution) by the session suite.
+  // Never use this adapter for runtime/session coverage or deployment selection.
+  if (/(?:^|\/)functions\/index\.js$/.test(file.replace(/\\/g,"/"))) {
+    source = source.replace(/\n  await portalSessionService\(\)\.assertSession\(request\);/g, "");
+  }
   if (source.includes("/* deferred-function: ")) {
     const declarations = new Map(), changes = [];
     walk(acorn.parse(source, { ecmaVersion: "latest" }), node => {
