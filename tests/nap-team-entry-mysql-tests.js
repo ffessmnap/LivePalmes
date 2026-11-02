@@ -75,4 +75,4 @@ async function main(){
     console.log('Isolated MySQL 5.7: additive three-column schema, real table locks, grouped SQL, six members, empty composition, removal, stale dossiers, closure and every write-response-loss recovery passed.');
   }finally{await pool.end();assert.match(database,/^lp_team_fixture_[0-9]+_[0-9]+$/);await admin.query('DROP DATABASE `'+database+'`');await admin.end();}
 }
-main().catch(error=>{console.error(error.message);process.exitCode=1;});
+main().catch(error=>{console.error(error.code||'',error.message,error.sql||'');console.error(error.stack);process.exitCode=1;});
