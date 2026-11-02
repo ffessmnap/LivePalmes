@@ -89,6 +89,30 @@ function expandedSource(file, source, loadModule = name => fs.readFileSync(name,
       expandedSource(path.resolve(path.dirname(file), name), loadModule(path.resolve(path.dirname(file), name)), loadModule));
   }
   source = source.replace(/\s*\/\* portal-wiring-start \*\/[\s\S]*?\/\* portal-wiring-end \*\//, "");
+  // These historical contracts isolate the pre-existing business operation.
+  // The additional session boundary is exercised against the actual deployed
+  // callbacks (including denied-before-business execution) by the session suite.
+  // Never use this adapter for runtime/session coverage or deployment selection.
+  if (/(?:^|\/)functions\/index\.js$/.test(file.replace(/\\/g,"/"))) {
+    source = source.replace(/\n  await portalSessionService\(\)\.assertSession\(request\);/g, "");
+  }
+  if (source.includes("/* deferred-function: ")) {
+    const declarations = new Map(), changes = [];
+    walk(acorn.parse(source, { ecmaVersion: "latest" }), node => {
+      if (node.type === "FunctionDeclaration") declarations.set(node.id.name, node);
+    });
+    for (const match of source.matchAll(/\/\* deferred-function: ([\w/.-]+)#(\w+) \*\//g)) {
+      const text = loadModule(path.resolve(root, match[1]));
+      let declaration;
+      walk(acorn.parse(text, { ecmaVersion: "latest" }), node => {
+        if (node.type === "FunctionDeclaration" && node.id.name === match[2]) declaration = node;
+      });
+      if (!declaration) throw new Error("Traitement différé absent : " + match[2]);
+      const restored = text.slice(declaration.start, declaration.end).replace(/moduleActions\.(\w+)/g, "$1");
+      changes.push({ start: match.index, end: declarations.get(match[2]).end, text: restored });
+    }
+    for (const change of changes.sort((a,b)=>b.start-a.start)) source = source.slice(0,change.start)+change.text+source.slice(change.end);
+  }
   if (!source.includes("/* extracted-function: ") && !source.includes("/* extracted-handler: ")) return source;
   // Callable registrations are still tested as real original bodies. Separate
   // module-boundary tests verify the deployed delegation and live services.
@@ -145,7 +169,7 @@ function expandedSource(file, source, loadModule = name => fs.readFileSync(name,
     const moduleFile = path.resolve(root, match[1]);
     if (!moduleFile.startsWith(root + path.sep)) throw new Error("Source hors dépôt");
     if (!modules.has(moduleFile)) {
-      const text = loadModule(moduleFile);
+      const text = expandedSource(moduleFile, loadModule(moduleFile), loadModule);
       const declarations = new Map();
       walk(acorn.parse(text, { ecmaVersion: "latest" }), node => {
         if (node.type === "FunctionDeclaration") declarations.set(node.id.name, node);

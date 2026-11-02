@@ -652,6 +652,7 @@
     persistEngagementClubSwimmerSelection,
     removeEngagementClubSwimmerFromCourses,
     resetEngagementClubEntriesAutosave,
+    suspendEngagementClubWrites,
     discardPendingEngagementClubIndividualEntries,
     flushEngagementClubIndividualEntriesAutosave,
     persistEngagementClubIndividualEntries,
@@ -2950,6 +2951,8 @@
   /* extracted-function: assets/portal/club-entry-state.js#removeEngagementClubSwimmerFromCourses */
 
   /* extracted-function: assets/portal/club-entry-state.js#resetEngagementClubEntriesAutosave */
+
+  /* extracted-function: assets/portal/club-entry-state.js#suspendEngagementClubWrites */
 
   /* extracted-function: assets/portal/club-entry-state.js#discardPendingEngagementClubIndividualEntries */
 

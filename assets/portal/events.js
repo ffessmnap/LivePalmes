@@ -19,6 +19,21 @@
         portalActions.populateEngagementSeasonFilter();
         const auth = portalActions.ensureAdminAuth();
         portalActions.updateView(auth?.status?.() || {});
+        document.querySelector("#adminPortalAuthRetry")?.addEventListener("click", async (event) => {
+          const button = event.currentTarget; button.disabled = true;
+          portalActions.setMessage("Vérification de votre accès…", "loading");
+          try { await auth?.refreshProfile?.(); }
+          finally { button.disabled = false; }
+        });
+        document.addEventListener("livepalmes:portal-session-locked", () => portalActions.suspendEngagementClubWrites());
+        document.addEventListener("livepalmes:portal-session-resumed", (event) => {
+          portalActions.clearEngagementClubWorkspaceSessionCaches();
+          portalActions.clearEngagementClubSwimmersSessionCaches();
+          portalActions.invalidateEngagementCalendarCaches();
+          if (!event.detail.changed) portalState.currentAccessProfile = event.detail.profile;
+          // Preserve the current form in memory. No write or replay on resume;
+          // server fingerprints still validate the next deliberate save.
+        });
         bindEngagementClubPeopleRetry();
         portalContext.elements.form?.addEventListener("submit", portalActions.signIn);
         portalContext.elements.passwordToggle?.addEventListener("click", portalActions.toggleLoginPasswordVisibility);

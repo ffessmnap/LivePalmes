@@ -551,10 +551,18 @@ def approved_production_home_routing(value, paths):
     return {'firebase.json'}
 
 
-def classify_test(paths, approved_top_files=False, approved_records_cleanup=False, approved_public_export_cleanup=False, approved_home_routing=False):
+def classify_test(paths, approved_top_files=False, approved_records_cleanup=False, approved_public_export_cleanup=False, approved_home_routing=False, approved_portal_session_rules=False):
     # Exact files authorized by Antoine on TEST, 5 October 2026.
     # Ordinary and production classification remain unchanged.
     allowed = set(ignored_top_paths(paths, 'HEAD'))
+    if approved_portal_session_rules or ('firestore.rules' in paths and os.environ.get('PORTAL_SESSION_RULES_REUSE') == 'true'):
+        require(os.environ.get('TARGET_FIREBASE_PROJECT') == 'livepalmes-test', 'Session reservee a TEST')
+        base = os.environ.get('BASE_SHA', '')
+        require(SHA.fullmatch(base), 'Base exacte requise pour les regles de session')
+        spec = importlib.util.spec_from_file_location('portal_session_rules', ROOT / 'tools/test-portal-session-rules.py')
+        policy = importlib.util.module_from_spec(spec); spec.loader.exec_module(policy)
+        policy.validate_sources(git('show', base + ':firestore.rules'), git('show', 'HEAD:firestore.rules'), 'livepalmes-test')
+        allowed.add('firestore.rules')
     if approved_home_routing and 'firebase.json' in paths:
         require(os.environ.get('TARGET_FIREBASE_PROJECT') == 'livepalmes-test', 'Routage accueil reserve a TEST')
         base = os.environ.get('BASE_SHA', '')

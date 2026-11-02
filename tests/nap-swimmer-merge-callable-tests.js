@@ -15,8 +15,8 @@ const callable=sandbox.exports.mergeEngagementNationalClubSwimmer;
   conflict=true;const legacyReads=reads;await assert.rejects(callable({data}),sandbox.HttpsError);assert.equal(reads,legacyReads); // An old page must receive an error, never a false success or new audit.
   const preview=await callable({data:{...data,entryConflictProtocol:1}});assert.equal(preview.ok,false);assert.equal(preview.mergeConflicts.token,"a".repeat(64));
   conflict=false;const choices=[{key:'[3,"50BI"]',id:"5"}];await callable({data:{...data,entryConflictChoices:choices,entryConflictToken:"a".repeat(64)}});assert.equal(received.entryConflictChoices,choices);assert.equal(received.entryConflictToken,"a".repeat(64));
-  const ui=require("node:fs").readFileSync(require.resolve("../assets/portal/national-directories.js"),"utf8");
-  const block=ui.slice(ui.indexOf('async function mergeEngagementNationalSwimmer('),ui.indexOf("async function mergeSelectedEngagementNationalSwimmers"));
+  const ui=require("node:fs").readFileSync(require.resolve("../assets/portal/deferred/national-directories.js"),"utf8");
+  const block=ui.slice(ui.indexOf('async function mergeEngagementNationalSwimmer('),ui.indexOf('\n    async function ',ui.indexOf('async function mergeEngagementNationalSwimmer(')+1));
   for(const field of ["sourceFingerprint","targetFingerprint","sourceLicenseNumber","targetLicenseNumber"])assert.ok(block.includes(field));
   console.log("Native swimmer merge callable: national confirmation before access, secret binding, technical audit only and displayed fingerprints/licences sent passed.");
 })().catch(error=>{console.error(error);process.exitCode=1;});

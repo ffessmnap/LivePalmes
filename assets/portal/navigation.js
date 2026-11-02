@@ -3,6 +3,8 @@
   // Creating this module performs no reads, writes, listener registration or rendering.
   function create(portalContext) {
     const { state: portalState, actions: portalActions, config: portalConfig } = portalContext;
+    const pendingReads = new Map();
+    const sharedReads = new Set(["listEngagementCompetitions","getEngagementCompetition","getEngagementClubEntry","listEngagementClubSwimmers","listEngagementClubPeople","getPortalPendingRequestOverview","listAccessUsers","getPortalAccessDirectorySnapshot"]);
     function engagementCompetitionType(competition = {}) {
         if (competition?.sourceType === "calendarEvent") return String(competition.eventType || "other");
         if (competition?.napSource === true) return String(competition.eventType || competition.competitionType || "other");
@@ -145,7 +147,7 @@
     function ensureAdminAuth() {
         if (portalState.adminAuth) return portalState.adminAuth;
         if (!ensureFirebaseApp() || !global.LivePalmesAdminAuth?.init) return null;
-        portalState.adminAuth = global.LivePalmesAdminAuth.init({
+        portalState.adminAuth = global.LivePalmesPortalAuth || global.LivePalmesAdminAuth.init({
           firebase: global.firebase,
           authConfig: global.LivePalmesAppConfig?.adminAuth || {}
         });
@@ -220,19 +222,36 @@
         const functions = functionsService();
         if (!functions?.httpsCallable) throw new Error("Cloud Functions LivePalmes indisponibles.");
         const activeClubId = activeEngagementClubIdForProfile(portalState.currentAccessProfile);
+        const authUid = portalState.activeAuthUid;
+        const input = { ...(payload || {}), ...(activeClubId ? { activeClubId } : {}) };
+        const shared = sharedReads.has(name);
+        const accessContext = () => {
+          const profile = global.LivePalmesPortalAuth?.status ? global.LivePalmesPortalAuth.status().profile : portalState.currentAccessProfile;
+          return JSON.stringify([profile?.clubId,profile?.regionId,profile?.accessScopes,[...(profile?.capabilities || [])].sort()]);
+        };
+        const accessScope = shared ? accessContext() : "";
+        const key = shared ? JSON.stringify([authUid,activeClubId,accessScope,name,input]) : "";
+        if (shared && pendingReads.has(key)) return pendingReads.get(key);
         const startedAt = performance.now();
-        try {
-          const result = await functions.httpsCallable(name)({
-            ...(payload || {}),
-            ...(activeClubId ? { activeClubId } : {})
-          });
-          const data = result.data || {};
-          recordPortalCall(name, startedAt, data, true);
-          return data;
-        } catch (error) {
-          recordPortalCall(name, startedAt, null, false);
-          throw normalizePortalFrenchError(error);
+        const request = (async () => {
+          try {
+            const result = await functions.httpsCallable(name)(input);
+            if (shared && (authUid !== portalState.activeAuthUid || activeClubId !== activeEngagementClubIdForProfile(portalState.currentAccessProfile) || accessScope !== accessContext())) {
+              throw new Error("Le compte ou le club actif a changé. Rouvrez cet écran.");
+            }
+            const data = result.data || {};
+            recordPortalCall(name, startedAt, data, true);
+            return data;
+          } catch (error) {
+            recordPortalCall(name, startedAt, null, false);
+            throw normalizePortalFrenchError(error);
+          }
+        })();
+        if (shared) {
+          pendingReads.set(key,request);
+          void request.finally(() => { if (pendingReads.get(key) === request) pendingReads.delete(key); }).catch(() => {});
         }
+        return request;
       }
 
     async function callFunctionWithTimeout(name, payload, timeoutMs = 30000) {

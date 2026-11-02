@@ -895,7 +895,11 @@ service cloud.firestore {
     }
 
     match /accessDirectorySnapshots/{snapshotId} {
-      allow get: if canReadAccessDirectorySnapshot();
+      // TEST portal reads pass through its server session and existing scope.
+      // Historical production clients retain their current access until release.
+      allow get: if request.auth != null
+        && request.auth.token.aud != "livepalmes-test"
+        && canReadAccessDirectorySnapshot();
       allow list, write: if false;
     }
 

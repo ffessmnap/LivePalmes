@@ -6,7 +6,10 @@ const path = require("node:path");
 // Load the shipped module itself, without reconstructing the historical entry.
 function portalModule(file, exportedName, context, globals = {}) {
   const window = { LivePalmesEnvironment: { sportingDataSource: "nap" }, ...globals.window };
-  const sandbox = { console, Promise, Error, Date, TextEncoder, performance, setTimeout, clearTimeout, ...globals, window };
+  const sandbox = { console, Promise, Error, Date, TextEncoder, performance, setTimeout, clearTimeout, document:{}, ...globals, window };
+  vm.runInNewContext(fs.readFileSync(path.join(__dirname, "../../assets/livepalmes-portal-deferred.js"), "utf8"), sandbox);
+  const deferred = path.join(__dirname, "../../assets/portal/deferred", file);
+  if (fs.existsSync(deferred)) vm.runInNewContext(fs.readFileSync(deferred, "utf8"), sandbox);
   vm.runInNewContext(fs.readFileSync(path.join(__dirname, "../../assets/portal", file), "utf8"), sandbox, { filename: file });
   return window[exportedName].create(context);
 }

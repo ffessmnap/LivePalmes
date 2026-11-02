@@ -297,6 +297,16 @@ test("annuaire privé : lecture directe strictement limitée au périmètre d'ha
   await assertFails(getDoc(doc(regionalWithoutScope, "accessDirectorySnapshots", "region:IDF")));
 });
 
+test("session portail TEST : annuaire direct et registre technique interdits aux clients", async () => {
+  const client = testEnv.authenticatedContext("national-manager", {
+    aud:"livepalmes-test", livepalmesAccess:true,
+    livepalmesCapabilities:{"engagements.national.manage":true,"admin.full":true}
+  }).firestore();
+  await assertFails(getDoc(doc(client,"accessDirectorySnapshots","national")));
+  await assertFails(getDoc(doc(client,"portalSessions","fixture")));
+  await assertFails(setDoc(doc(client,"portalSessions","fixture"),{lastActivityAt:Date.now()}));
+});
+
 test("index public des archives : lecture publique et ecriture computer uniquement", async () => {
   const publicRef = competitionDoc(testEnv.unauthenticatedContext().firestore(), "public", "archivesIndex");
   await assertSucceeds(getDoc(publicRef));
