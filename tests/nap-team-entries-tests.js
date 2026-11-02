@@ -32,6 +32,9 @@ assert.throws(()=>model.profile({...comp,entryRulesVersion:'unknown'}),/règleme
 assert.equal(model.profile({}),null);assert.throws(()=>model.format({entryFormat:'bad'}),/inconnu/);
 const before={options:{submission_metadata:JSON.stringify({qualificationAlert:{x:1},relay_details_v1:{'42':{category:'S'}}})}};
 const after=model.supplement(before,normalized);assert.deepEqual(after.qualificationAlert,{x:1});assert.equal(after.relay_details_v1['42'].category,'S');assert.equal(after[model.KEY],normalized);
+const relayValue=structuredClone(normalized);relayValue.teams[0].relays[0].nativeRelayId='99';
+const decorated=model.decorate({nativeOptions:{submission_metadata:{[model.KEY]:relayValue}},swimmers:[],relays:[{relayId:'99',category:'NAP-42'}]},comp);
+assert.equal(decorated.relays[0].category,'S');assert.equal(decorated.relays[0].genderMode,'female');assert.equal(decorated.relays[0].relayLegs,6);
 assert.deepEqual(period('2026-12-12'),{start:'2023-09-01',end:'2026-11-30'});
 assert.deepEqual(period('2027-05-12'),{start:'2023-09-01',end:'2026-11-30'});
 const old=[{id:1,course:'50SF',tps:'2500'}],desired=[{course:'50SF',tps:'2600'}];

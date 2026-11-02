@@ -61,4 +61,4 @@
     function bindUnload(){if(unloadBound)return;unloadBound=true;global.addEventListener('beforeunload',e=>{if([...drafts.values()].some(x=>x.dirty||x.pending)){e.preventDefault();e.returnValue='';}});}
     return {render,renderAdmin};
   });
-})(typeof window==='undefined'?globalThis:window);
+})(window);
