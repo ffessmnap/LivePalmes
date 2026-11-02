@@ -85,12 +85,15 @@
     const route = global.location?.hash, competitionId = context.state.selectedEngagementCompetitionId;
     const changesData = /^(?:save|create|delete|remove|set|update|send|generate|prepare|recover|merge|resolve|request)/.test(action);
     const control = args[0]?.submitter || args[0]?.currentTarget;
+    const quiet = args[0]?.background === true || args[0]?.silent === true && args[0]?.activate === false;
     const button = control?.tagName === "BUTTON" ? control : null;
     const disabled = button?.disabled;
     if (button) button.disabled = true;
     args[0]?.preventDefault?.();
-    pending++; message("Chargement des outils…");
-    document.body.setAttribute("data-portal-module-loading", "true");
+    if (!quiet) {
+      pending++; message("Chargement des outils…");
+      document.body.setAttribute("data-portal-module-loading", "true");
+    }
     return Promise.all(dependencies.map(load)).then(() => {
       if (button) button.disabled = disabled;
       if (sessionRevision !== global.LivePalmesPortalSession?.revision() || uid !== context.state.activeAuthUid || clubId !== context.state.activeEngagementClubId || route !== global.location?.hash
@@ -99,15 +102,15 @@
       }
       return implementation(context, key, action, helpers)(...args);
     }).catch(error => {
-      if (error.portalModuleFailure) message(error.message,true);
+      if (error.portalModuleFailure && !quiet) message(error.message,true);
       if (dependencies.some(name => !factories.has(name))) {
         error.portalModuleFailure = true;
-        message("Module indisponible. Réessayez votre action.",true);
+        if (!quiet) message("Module indisponible. Réessayez votre action.",true);
       }
       throw error;
     }).finally(() => {
       if (button) button.disabled = disabled;
-      if (--pending === 0) { document.body.removeAttribute("data-portal-module-loading"); if (!failed) message(""); }
+      if (!quiet && --pending === 0) { document.body.removeAttribute("data-portal-module-loading"); if (!failed) message(""); }
     });
   }
 
