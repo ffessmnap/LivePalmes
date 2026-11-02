@@ -2,6 +2,12 @@
 
 <!-- description: Checklist de tests manuels à exécuter avant une publication ou après une modification sensible. -->
 
+## Réactivité et session de 24 heures — 2 novembre 2026
+
+Hors réseau : `node tests/portal-deferred-tests.js`, `node tests/portal-session-server-tests.js`, `node tests/livepalmes-portal-session-tests.js`, `python tests/portal-session-rules-tests.py`, puis `node tests/portal-reactivity-browser-tests.js` (Edge local, HTTPS bloqué). Vérifier l’accueil sans préchargement calendrier/effectif, l’ouverture d’une rubrique et la reprise après erreur de téléchargement ; le changement de compte/club/route pendant le chargement ne doit exécuter aucune ancienne action. À 1280 et 390 px : compte, dialogue après 24 h simulées, mot de passe erroné, reprise, conservation du brouillon et ouverture des officiels. Les tests de session couvrent aussi onglets/appareils, réveil, ancien jeton, absence d’historique, contexte changé et absence de rejeu.
+
+Après la livraison TEST, distinguer la preuve CI/fixtures d’un retour utilisateur connecté. Toute recette réelle qui crée des sessions ou actualise `lastLoginAt` doit être annoncée ; aucune écriture NAP, qualification, envoi ni donnée sportive n’est autorisée par cette checklist. La preuve du parcours spécifique de règles doit montrer uniquement les empreintes approuvées, la cible TEST et aucun index/PROD. La suite globale obligatoire reste celle du candidat exact.
+
 ## Demande de compte CMAS — 1er novembre 2026
 
 Contrôles hors réseau : `node tests/foreign-club-access-tests.js` et `node tests/foreign-club-access-browser-tests.js` (HTTPS bloqué, clubs fictifs). Vérifier à 1280, 390 et 320 px : choix unique « Clubs étrangers (CMAS) », clubs du comité 5, licence vide acceptée, aide et caractère facultatif également dans l'examen national ; passage à une région française puis remise à zéro rétablissant l'obligation. Serveur : région réelle du club relue en une requête indexée `LIMIT 1`, refus d'un club français déclaré CMAS sans licence, refus de toute décision régionale sur une demande CMAS, notifications aux seuls responsables nationaux. Aucun compte, e-mail ni donnée réelle créé pendant ces tests. La recette sur TEST après déploiement reste à distinguer de ces contrôles locaux.

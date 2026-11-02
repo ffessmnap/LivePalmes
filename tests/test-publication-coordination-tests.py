@@ -48,6 +48,13 @@ class CoordinationTests(unittest.TestCase):
         self.assertFalse(result['queued'])
         self.assertEqual(api.call_count, 2)
 
+    def test_session_rules_approval_stays_manual_and_exact(self):
+        self.assertTrue(self.call('prepare',approved_portal_session_rules=True)[0]['publish'])
+        self.assertFalse(self.call('prepare','b',approved_portal_session_rules=True)[0]['publish'])
+        self.assertFalse(self.call('followup','b',approved_portal_session_rules=True)[0]['queued'])
+        for extra in [{'hosting_only':True},{'automatic_candidate':'a'*40}]:
+            with self.assertRaises(ValueError):self.call('prepare',approved_portal_session_rules=True,**extra)
+
     def test_rewritten_branch_api_failure_and_invalid_sha_stop(self):
         with patch.object(m, 'gh', side_effect=[{'object': {'sha': 'b'*40}}, {'status': 'diverged'}]) as api:
             with self.assertRaises(ValueError):

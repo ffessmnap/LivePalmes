@@ -15,7 +15,7 @@ Le portail et ces mecanismes sont encore en phase de finalisation et de test.
 
 Les utilisateurs se connectent avec une adresse email et un mot de passe geres par Firebase Authentication.
 
-La session du Portail ne se verrouille plus automatiquement en cas d'inactivite. Elle reste ouverte jusqu'a une deconnexion volontaire, une invalidation Firebase ou la desactivation du compte. Les consoles de LivePalmes Direct conservent leurs propres protections et expirations.
+Sur PROD, la session reste ouverte jusqu’à une déconnexion volontaire, une invalidation Firebase ou la désactivation du compte. Le chantier approuvé du 2 novembre prépare sur TEST une reconnexion après 24 heures d’inactivité réelle, partagée entre onglets et contrôlée aussi côté serveur. Les saisies restent en mémoire pendant la reconnexion du même compte ; aucune écriture n’est rejouée. Activation PROD exclue de l’accord TEST. Les consoles de LivePalmes Direct conservent leurs propres protections et expirations. Voir les budgets, limites et contrôles dans [Réactivité du portail](PORTAIL_REACTIVITE.md).
 
 Optimisation autorisée le 30 octobre : à la restauration d'une session utilisant le profil serveur, le SDK réutilise un jeton encore valable et le renouvelle si nécessaire ([contrat Firebase](https://firebase.google.com/docs/reference/js/auth.user#getidtokenresult)). Le portail attend toujours la lecture du profil serveur actif et de ses capacités avant d'ouvrir l'espace privé ; aucun droit n'est accordé sur le seul jeton en cache. Une connexion explicite et les consommateurs historiques fondés sur les claims conservent le renouvellement forcé. Aucun appel réel de connexion/profil n'est utilisé pour la recette hors réseau, car la lecture du profil peut actualiser `lastLoginAt`.
 

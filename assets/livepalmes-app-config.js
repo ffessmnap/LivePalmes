@@ -113,6 +113,7 @@ const fallbackData = {
 };
 
   function configureFunctionsService(service) {
+    service = window.LivePalmesPortalSession?.wrap?.(service) || service;
     if (!LOCAL_FUNCTIONS_EMULATOR.enabled || !service?.useEmulator || service.livePalmesEmulatorConfigured) return service;
     try {
       service.useEmulator(LOCAL_FUNCTIONS_EMULATOR.host, LOCAL_FUNCTIONS_EMULATOR.port);
