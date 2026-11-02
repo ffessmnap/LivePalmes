@@ -55,7 +55,7 @@
   #adminEngagementsView.admin-club-workspace[data-engagements-mode="club"] > .admin-club-workspace-head #adminEngagementsViewTitle { font-size: 1.18rem; grid-column: 1 / -1; }
   #adminEngagementsView.admin-club-workspace[data-engagements-mode="club"] > .admin-club-workspace-head > :is(#adminEngagementsClubPeopleActions, #adminEngagementsClubSwimmersDirectoryActions, .admin-engagements-workspace-back) { grid-column: 2; grid-row: 2; }
   #adminEngagementsView.admin-club-workspace[data-engagements-mode="club"] #adminEngagementsCatalogRefresh { grid-column: 1; grid-row: 2; justify-self: start; }
-  #adminEngagementsCatalogRefresh { min-height: 44px; }
+  #adminEngagementsView #adminEngagementsCatalogRefresh { min-height: 44px; }
   #adminEngagementsView.admin-club-workspace[data-engagements-mode="club"] :is(#adminEngagementsClubPeopleActions, #adminEngagementsClubSwimmersDirectoryActions) button { min-height: 44px; }
   #adminEngagementsView #adminEngagementsClubPeoplePanel .admin-engagements-club-person-activity-button,
   #adminEngagementsView #adminEngagementsClubPeoplePanel .admin-engagements-request-actions button { min-height: 44px; }
