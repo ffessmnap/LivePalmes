@@ -38,6 +38,17 @@ function environment(){
   return{clock,documents,calls,account,auth,storage,server,tab,pauseReads:promise=>{readGate=promise;},advance:ms=>clock.value+=ms,get writes(){return writes;}};
 }
 async function main(){
+  {
+    const {portalModule,deferred}=require("./helpers/portal-module-runtime"),gate=deferred();
+    let revision=1,executions=0;const cleared=[];
+    const state={engagementClubEntryMutationQueue:gate.promise,engagementClubEntryMutationRevision:0,selectedEngagementCompetitionId:"c",engagementClubSelectionTimer:1,engagementClubEntriesAutosaveTimer:2,engagementClubNativeIndividualRetry:{mutationId:"keep"}};
+    const config={engagementClubSelectionChanges:new Map([["s",true]]),engagementClubEntriesAutosaveSwimmers:new Map([["s",true]])};
+    const api=portalModule("club-entry-state.js","LivePalmesPortalClubEntryState",{state,config,actions:{setEngagementSaveState(){}},elements:{}},{window:{LivePalmesPortalSession:{revision:()=>revision},clearTimeout:id=>cleared.push(id)}});
+    const pending=api.queueEngagementClubEntryMutation({execute:()=>{executions++;}});
+    revision++;api.suspendEngagementClubWrites();gate.resolve();
+    assert.equal(await pending,false);assert.equal(executions,0,"Queued writes are not replayed after session renewal");
+    assert.deepEqual(cleared,[1,2]);assert.equal(config.engagementClubSelectionChanges.size,0);assert.equal(config.engagementClubEntriesAutosaveSwimmers.size,0);assert.equal(state.engagementClubNativeIndividualRetry.mutationId,"keep","Keep uncertain mutation IDs for explicit reconciliation");
+  }
   const e=environment(),a=e.tab();
   await Promise.all([a.service.httpsCallable("getCurrentAccessUser")({}),a.service.httpsCallable("getCurrentAccessUser")({})]);assert.deepEqual(e.calls,["openPortalSession"],"Simultaneous initial profile requests share session/profile verification");
   const initial=e.writes;e.advance(1000);a.activity();e.advance(INTERVAL);await a.due();assert.equal(e.calls.filter(x=>x==="touchPortalSession").length,1);assert.equal(e.writes,initial+1);

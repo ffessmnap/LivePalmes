@@ -48,8 +48,8 @@ async function main() {
   fs.mkdirSync(output, { recursive: true });
   try {
     await client.send("Page.addScriptToEvaluateOnNewDocument", { source: fixture });
-    for (const width of [1280, 390]) {
-      await client.send("Emulation.setDeviceMetricsOverride", { width, height: 900, deviceScaleFactor: 1, mobile: width < 700 });
+    for (const width of [1280, 390, 320]) {
+      await client.send("Emulation.setDeviceMetricsOverride", { width, height: width === 320 ? 568 : 900, deviceScaleFactor: 1, mobile: width < 700 });
       await client.send("Network.clearBrowserCache");
       for (const warm of [false, true]) {
         const eventStart = client.events.length;
@@ -66,10 +66,11 @@ async function main() {
       const start = client.events.length;
       await evaluate(client, `location.hash='#mon-compte';`);
       assert.ok(await waitFor(client,"!document.querySelector('#adminAccountView').hidden"));
-      await evaluate(client, `document.querySelector('#adminAccountEmail').value='draft@example.test';fixtureAdvance(86400001);LivePalmesPortalSession.check();`);
+      await evaluate(client, `document.querySelector('#adminAccountEmail').value='draft@example.test';document.querySelector('#adminPortalPassword').type='text';document.querySelector('#adminPortalPassword').value='secret-to-clear';fixtureAdvance(86400001);LivePalmesPortalSession.check();`);
       assert.ok(await waitFor(client,"document.querySelector('#adminPortalSessionLock')?.open"));
       const locked = await evaluate(client, `const r=document.querySelector('#adminPortalSessionLock').getBoundingClientRect();return {inert:document.querySelector('main').inert,hidden:getComputedStyle(document.querySelector('main')).visibility==='hidden',fits:r.left>=0&&r.right<=innerWidth+1&&r.height<=innerHeight};`);
       assert.deepEqual(locked,{inert:true,hidden:true,fits:true});
+      assert.equal(await evaluate(client,"return document.querySelector('#adminPortalPassword').value;"),"");
       const shot = await client.send("Page.captureScreenshot",{format:"png"});fs.writeFileSync(path.join(output,`session-lock-${width}.png`),Buffer.from(shot.data,"base64"));
       await evaluate(client, `document.querySelector('#adminPortalSessionPassword').value='wrong';document.querySelector('#adminPortalSessionUnlockForm').requestSubmit();`);
       assert.ok(await waitFor(client,"document.querySelector('#adminPortalSessionMessage').textContent.includes('incorrect')"));

@@ -102,6 +102,7 @@
         portalActions.setMessage("Connexion en cours...", "loading");
         try {
           await auth.signIn(portalContext.elements.email?.value, portalContext.elements.password?.value);
+          if (portalContext.elements.password) portalContext.elements.password.value = "";
         } catch (error) {
           portalActions.setMessage(`Connexion impossible : ${error?.message || error}`);
         } finally {

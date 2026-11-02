@@ -42,6 +42,7 @@
     // A warmed module runs synchronously up to its first await, like its original.
     if (factories.has(key)) return implementation(context, key, action, helpers)(...args);
     const uid = context.state.activeAuthUid, clubId = context.state.activeEngagementClubId;
+    const sessionRevision = global.LivePalmesPortalSession?.revision();
     const route = global.location?.hash, competitionId = context.state.selectedEngagementCompetitionId;
     const changesData = /^(?:save|create|delete|remove|set|update|send|generate|prepare|recover|merge|resolve|request)/.test(action);
     const control = args[0]?.submitter || args[0]?.currentTarget;
@@ -53,7 +54,7 @@
     document.body.setAttribute("data-portal-module-loading", "true");
     return load(key).then(() => {
       if (button) button.disabled = disabled;
-      if (uid !== context.state.activeAuthUid || clubId !== context.state.activeEngagementClubId || route !== global.location?.hash
+      if (sessionRevision !== global.LivePalmesPortalSession?.revision() || uid !== context.state.activeAuthUid || clubId !== context.state.activeEngagementClubId || route !== global.location?.hash
           || changesData && competitionId !== context.state.selectedEngagementCompetitionId) {
         throw Object.assign(new Error("Le contexte a changé. Réessayez depuis l’écran actuel."),{portalModuleFailure:true});
       }

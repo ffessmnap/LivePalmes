@@ -25,6 +25,7 @@
           try { await auth?.refreshProfile?.(); }
           finally { button.disabled = false; }
         });
+        document.addEventListener("livepalmes:portal-session-locked", () => portalActions.suspendEngagementClubWrites());
         document.addEventListener("livepalmes:portal-session-resumed", (event) => {
           portalActions.clearEngagementClubWorkspaceSessionCaches();
           portalActions.clearEngagementClubSwimmersSessionCaches();
