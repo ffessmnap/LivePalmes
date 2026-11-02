@@ -1,0 +1,47 @@
+
+              <div class="admin-portal-workspace-head admin-tool-workspace-head admin-dtn-workspace-head">
+                <h2 id="adminDtnViewTitle">Espace DTN</h2>
+                <select id="adminDtnSeason" class="admin-dtn-season-picker" aria-label="Saison DTN" title="Saison DTN"></select>
+              </div>
+
+              <section id="adminDtnToolbar" class="admin-dtn-toolbar" aria-label="Actions des qualifications DTN">
+                <div id="adminDtnSexSegment" class="admin-dtn-segment admin-dtn-sex-segment" role="group" aria-label="Sexe" hidden>
+                  <button type="button" data-dtn-sex="F" aria-pressed="true">Femmes</button>
+                  <button type="button" data-dtn-sex="M" aria-pressed="false">Hommes</button>
+                </div>
+                <div id="adminDtnRefreshBox" class="admin-dtn-refresh" hidden>
+                  <button id="adminDtnRefresh" class="ghost-button" type="button">Recalculer les qualifications</button>
+                  <span id="adminDtnRefreshStatus" aria-live="polite"></span>
+                </div>
+              </section>
+              <aside id="adminDtnLongOperation" class="admin-long-operation" hidden></aside>
+
+              <div id="adminDtnDefinitions" class="admin-dtn-definitions" hidden></div>
+              <div id="adminDtnGrid" class="admin-dtn-grid" aria-live="polite"></div>
+
+              <section id="adminDtnQualifiers" class="admin-dtn-qualifiers" aria-labelledby="adminDtnQualifiersTitle" hidden>
+                <div class="admin-dtn-qualifiers-head">
+                  <div>
+                    <span id="adminDtnQualifiersContext">Qualifiés</span>
+                    <h3 id="adminDtnQualifiersTitle">Nageurs ayant réalisé le temps</h3>
+                  </div>
+                  <button id="adminDtnQualifiersClose" class="ghost-button" type="button">Fermer</button>
+                </div>
+                <p id="adminDtnQualifiersStatus" class="admin-record-module-status" aria-live="polite"></p>
+                <div class="admin-dtn-results-wrap">
+                  <table class="admin-dtn-results-table">
+                    <thead>
+                      <tr>
+                        <th>Temps</th>
+                        <th>Nageur</th>
+                        <th>Club</th>
+                        <th>Compétition</th>
+                        <th>Lieu</th>
+                        <th>Date</th>
+                      </tr>
+                    </thead>
+                    <tbody id="adminDtnQualifiersBody"></tbody>
+                  </table>
+                </div>
+              </section>
+            

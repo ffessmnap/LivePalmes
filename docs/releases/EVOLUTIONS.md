@@ -2,6 +2,13 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 2 novembre — Démarrage minimal et mesure serveur
+
+- Accord : priorités 1 et 2 jusqu’à TEST et mesure côté serveur avant toute suite ; aucun serveur, droit, donnée métier ou PROD à modifier.
+- Périmètre : 328 helpers synchrones et 250 inscriptions d’outils différés, sept contrôleurs/modèles à la rubrique, huit CSS communs et quatre spécialisés différés à leur emplacement initial, quatre formulaires versionnés conservés après ouverture. Authentification, session 24 h, cache de navigation et préchargement progressif conservés. [Budget et limites](../PORTAIL_REACTIVITE.md#démarrage-minimal--priorités-1-et-2-du-2-novembre).
+- Preuves ciblées : comparaison syntaxique des 767 corps/paramètres et des 290 inscriptions d’écouteurs ; vrais chargeurs/fabriques, cache, dépendances, erreurs et brouillons. Edge local 1280/390/320 px, services fictifs et HTTPS externe bloqué : environ 36,4 % de JavaScript local en moins avant accueil, formulaires préparés avant leur module, styles en ordre, contexte courant et saisies conservés. Aucune promesse de latence réelle déduite des fixtures.
+- Mesure existante Cloud Run TEST, lecture seule : 18 réponses 200 de la révision actuelle du profil, médiane 153 ms, p95/maximum 646 ms ; endpoint avec actions de session confondues, échantillon réduit, aucun réglage serveur modifié. CI et publication TEST en cours ; retour utilisateur du résultat encore attendu.
+
 ### 2 novembre — Listes sans bouton Actualiser
 
 - Demande : simplifier les listes nageurs, officiels et compétitions en utilisant le rechargement du navigateur ; accord pour passer au développement, destination TEST.

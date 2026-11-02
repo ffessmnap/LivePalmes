@@ -3,69 +3,35 @@
   // Creating this module performs no reads, writes, listener registration or rendering.
   function create(portalContext) {
     const { state: portalState, actions: portalActions, config: portalConfig } = portalContext;
-    function auditActionLabel(action = "") {
-        return global.LivePalmesActivityJournal.metadata[action]?.[0] || portalConfig.AUDIT_ACTION_METADATA[action]?.[0] || String(action || "Action non reconnue").replaceAll(".", " · ");
-      }
+    /* deferred-function: assets/portal/deferred/activity-journal.js#auditActionLabel */
+    function auditActionLabel(...args) {
+      return global.LivePalmesPortalDeferred.sync(portalContext, "activity-journal", "auditActionLabel", args, moduleActions);
+    }
 
-    function auditActionCategory(action = "") {
-        if (global.LivePalmesActivityJournal.metadata[action]?.[1]) return global.LivePalmesActivityJournal.metadata[action][1];
-        if (portalConfig.AUDIT_ACTION_METADATA[action]?.[1]) return portalConfig.AUDIT_ACTION_METADATA[action][1];
-        const value = String(action || "");
-        if (/request|deletion/i.test(value)) return "requests";
-        if (/performance|record|mpf/i.test(value)) return "performances";
-        if (/ClubSwimmer|ClubPerson/i.test(value)) return "people";
-        if (/Competition|ClubEntry/i.test(value)) return "competitions";
-        return "technical";
-      }
+    /* deferred-function: assets/portal/deferred/activity-journal.js#auditActionCategory */
+    function auditActionCategory(...args) {
+      return global.LivePalmesPortalDeferred.sync(portalContext, "activity-journal", "auditActionCategory", args, moduleActions);
+    }
 
-    function auditActorOrigin(log = {}) {
-        const uid = String(log.actorUid || "");
-        return !uid || uid.startsWith("system:") || uid === "public-login-page" ? "system" : "human";
-      }
+    /* deferred-function: assets/portal/deferred/activity-journal.js#auditActorOrigin */
+    function auditActorOrigin(...args) {
+      return global.LivePalmesPortalDeferred.sync(portalContext, "activity-journal", "auditActorOrigin", args, moduleActions);
+    }
 
-    function auditActorLabel(log = {}) {
-        const actorUid = String(log.actorUid || "");
-        if (!actorUid || actorUid.startsWith("system:")) return "Système LivePalmes";
-        if (actorUid === "public-login-page") return "Demande publique";
-        const actor = portalConfig.engagementNationalAuditActors.get(actorUid) || {};
-        const currentUserName = [portalState.currentAccessProfile?.firstName, portalState.currentAccessProfile?.lastName].filter(Boolean).join(" ");
-        const isCurrentUser = actorUid === String(portalState.currentAccessProfile?.uid || "");
-        const label = (isCurrentUser ? currentUserName || portalState.currentAccessProfile?.displayName || portalState.currentAccessProfile?.email : "")
-          || actor.name || actor.email || "Utilisateur non identifié";
-        return label;
-      }
+    /* deferred-function: assets/portal/deferred/activity-journal.js#auditActorLabel */
+    function auditActorLabel(...args) {
+      return global.LivePalmesPortalDeferred.sync(portalContext, "activity-journal", "auditActorLabel", args, moduleActions);
+    }
 
-    function auditActorOptionLabel(actor = {}, uid = "") {
-        const name = actor.name || [actor.firstName, actor.lastName].filter(Boolean).join(" ");
-        const email = String(actor.email || "").trim();
-        if (name && email) return `${name} — ${email}`;
-        return name || email || "Utilisateur non identifié";
-      }
+    /* deferred-function: assets/portal/deferred/activity-journal.js#auditActorOptionLabel */
+    function auditActorOptionLabel(...args) {
+      return global.LivePalmesPortalDeferred.sync(portalContext, "activity-journal", "auditActorOptionLabel", args, moduleActions);
+    }
 
-    function renderEngagementNationalAuditActorSuggestions(users = []) {
-        const choices = [];
-        const labels = new Set();
-        users.forEach((user) => {
-          const uid = String(user.uid || "");
-          if (!uid) return;
-          const actor = {
-            uid,
-            name: user.name || [user.firstName, user.lastName].filter(Boolean).join(" "),
-            email: user.email || ""
-          };
-          portalConfig.engagementNationalAuditActors.set(uid, actor);
-          const label = auditActorOptionLabel(actor, uid);
-          if (labels.has(label)) return;
-          labels.add(label);
-          choices.push({ uid, label });
-        });
-        portalState.engagementNationalAuditActorSuggestions = choices.sort((left, right) => left.label.localeCompare(right.label, "fr"));
-        if (portalContext.elements.engagementsNationalAuditActorOptions) {
-          portalContext.elements.engagementsNationalAuditActorOptions.innerHTML = portalState.engagementNationalAuditActorSuggestions
-            .map((choice) => `<option value="${portalActions.escapeHtml(choice.label)}"></option>`)
-            .join("");
-        }
-      }
+    /* deferred-function: assets/portal/deferred/activity-journal.js#renderEngagementNationalAuditActorSuggestions */
+    function renderEngagementNationalAuditActorSuggestions(...args) {
+      return global.LivePalmesPortalDeferred.sync(portalContext, "activity-journal", "renderEngagementNationalAuditActorSuggestions", args, moduleActions);
+    }
 
     function setEngagementNationalAuditActorSelection(choice = null) {
         const uid = String(choice?.uid || "");
@@ -82,344 +48,115 @@
       return global.LivePalmesPortalDeferred.invoke(portalContext, "activity-journal", "searchEngagementNationalAuditActors", args, moduleActions);
     }
 
-    function handleEngagementNationalAuditActorSearch() {
-        const searchInput = portalContext.elements.engagementsNationalAuditActorSearch;
-        const actorInput = portalContext.elements.engagementsNationalAuditActor;
-        if (!searchInput || !actorInput) return;
-        const value = searchInput.value.trim();
-        const selected = portalState.engagementNationalAuditActorSuggestions.find((choice) => choice.label === value);
-        portalState.engagementNationalAuditActorSearchSequence += 1;
-        global.clearTimeout(portalState.engagementNationalAuditActorSearchTimer);
-        if (selected) {
-          setEngagementNationalAuditActorSelection(selected);
-          if (portalState.engagementNationalAuditAppliedActorUid !== selected.uid) void loadEngagementNationalAuditLogs({ force: true });
-          return;
-        }
-        setEngagementNationalAuditActorSelection();
-        if (!value) {
-          renderEngagementNationalAuditActorSuggestions([...portalConfig.engagementNationalAuditActors.values()]);
-          if (portalState.engagementNationalAuditAppliedActorUid) void loadEngagementNationalAuditLogs({ force: true });
-          return;
-        }
-        if (value.length < 2) {
-          renderEngagementNationalAuditActorSuggestions([]);
-          return;
-        }
-        const sequence = portalState.engagementNationalAuditActorSearchSequence;
-        portalState.engagementNationalAuditActorSearchTimer = global.setTimeout(() => {
-          void searchEngagementNationalAuditActors(value, sequence);
-        }, 300);
-      }
+    /* deferred-function: assets/portal/deferred/activity-journal.js#handleEngagementNationalAuditActorSearch */
+    function handleEngagementNationalAuditActorSearch(...args) {
+      return global.LivePalmesPortalDeferred.sync(portalContext, "activity-journal", "handleEngagementNationalAuditActorSearch", args, moduleActions);
+    }
 
-    function auditClubId(log = {}) {
-        return String(log.target?.clubId || log.target?.sourceClubId || "");
-      }
+    /* deferred-function: assets/portal/deferred/activity-journal.js#auditClubId */
+    function auditClubId(...args) {
+      return global.LivePalmesPortalDeferred.sync(portalContext, "activity-journal", "auditClubId", args, moduleActions);
+    }
 
-    function auditClubLabel(log = {}) {
-        const clubId = auditClubId(log);
-        return log.target?.clubName || portalConfig.engagementNationalAuditClubs.get(clubId)
-          || (clubId ? portalActions.clubDisplayLabel({ clubId }, { fallback: "" }) : "");
-      }
+    /* deferred-function: assets/portal/deferred/activity-journal.js#auditClubLabel */
+    function auditClubLabel(...args) {
+      return global.LivePalmesPortalDeferred.sync(portalContext, "activity-journal", "auditClubLabel", args, moduleActions);
+    }
 
-    function auditCompetitionLabel(target = {}) {
-        const competitionId = String(target.competitionId || "");
-        const auditCompetition = portalConfig.engagementNationalAuditCompetitions.get(competitionId);
-        const cachedCompetition = portalState.engagementCompetitions.find((competition) => competition.id === competitionId);
-        return target.competitionName || target.name || auditCompetition?.name || cachedCompetition?.name || (competitionId ? "Compétition" : "");
-      }
+    /* deferred-function: assets/portal/deferred/activity-journal.js#auditCompetitionLabel */
+    function auditCompetitionLabel(...args) {
+      return global.LivePalmesPortalDeferred.sync(portalContext, "activity-journal", "auditCompetitionLabel", args, moduleActions);
+    }
 
-    function auditTargetSummary(target = {}, action = "") {
-        if (!target || typeof target !== "object") target = {};
-        const personName = [target.firstName || target.targetFirstName, target.lastName || target.targetLastName]
-          .filter(Boolean).join(" ");
-        const competition = auditCompetitionLabel(target);
-        if (personName) return personName;
-        if (competition) return competition;
-        if (target.personId) return auditPersonLabel(target);
-        if (target.swimmerName || target.personName) return target.swimmerName || target.personName;
-        if (target.clubName) return target.clubName;
-        if (target.email || target.targetEmail) return target.email || target.targetEmail;
-        if (target.fileName) return target.fileName;
-        if (target.clubId || target.sourceClubId) {
-          const clubLabel = portalActions.clubDisplayLabel({ clubId: target.clubId || target.sourceClubId }, { fallback: "" });
-          if (clubLabel) return clubLabel;
-        }
-        if (action === "accessUser.competitionEmailPreferenceUpdated") return "Notifications du compte";
-        if (action.startsWith("engagementAccessRequest.")) return "Demande d'accès";
-        if (action.startsWith("engagementOpenWaterCourse.")) return "Course d'eau libre";
-        if (action.startsWith("engagementClubSwimmer.")) return "Fiche nageur";
-        if (action.startsWith("engagementClubPerson.")) return "Fiche officiel";
-        if (action.startsWith("engagementClubAggregates.")) return "Données du club";
-        if (action.startsWith("performanceImport.")) return "Import de résultats";
-        if (action.startsWith("performancePublicData.")) return "Données publiques des performances";
-        if (action.startsWith("recordsMpf.")) return "Référentiels Records et MPF";
-        if (action.startsWith("performanceCorrection.")) return "Performance concernée";
-        if (action.startsWith("accessUser.")) return "Compte utilisateur";
-        return "Action LivePalmes";
-      }
+    /* deferred-function: assets/portal/deferred/activity-journal.js#auditTargetSummary */
+    function auditTargetSummary(...args) {
+      return global.LivePalmesPortalDeferred.sync(portalContext, "activity-journal", "auditTargetSummary", args, moduleActions);
+    }
 
-    function auditDateLabel(value = "") {
-        const date = new Date(value);
-        if (!Number.isFinite(date.getTime())) return "Date inconnue";
-        return new Intl.DateTimeFormat("fr-FR", {
-          day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit", timeZone: "Europe/Paris"
-        }).format(date);
-      }
+    /* deferred-function: assets/portal/deferred/activity-journal.js#auditDateLabel */
+    function auditDateLabel(...args) {
+      return global.LivePalmesPortalDeferred.sync(portalContext, "activity-journal", "auditDateLabel", args, moduleActions);
+    }
 
-    function auditDetailValue(value) {
-        if (value === true) return "Oui";
-        if (value === false) return "Non";
-        if (value === null || value === undefined || value === "") return "Non renseigné";
-        if (Array.isArray(value)) return value.map((item) => auditDetailValue(item)).join(", ");
-        if (typeof value === "object") return Object.entries(value)
-          .map(([key, item]) => `${auditDetailLabel(key)} : ${auditDetailValue(item)}`)
-          .join(" · ") || "Aucun";
-        return String(value);
-      }
+    /* deferred-function: assets/portal/deferred/activity-journal.js#auditDetailValue */
+    function auditDetailValue(...args) {
+      return global.LivePalmesPortalDeferred.sync(portalContext, "activity-journal", "auditDetailValue", args, moduleActions);
+    }
 
-    function auditEnabledLabels(value = {}, labels = {}) {
-        const entries = Array.isArray(value)
-          ? value.map((key) => [String(key), true])
-          : Object.entries(value && typeof value === "object" ? value : {});
-        const enabled = entries
-          .filter(([, active]) => active === true)
-          .map(([key]) => labels[key] || auditDetailLabel(key));
-        return enabled.join(", ") || "Aucun";
-      }
+    /* deferred-function: assets/portal/deferred/activity-journal.js#auditEnabledLabels */
+    function auditEnabledLabels(...args) {
+      return global.LivePalmesPortalDeferred.sync(portalContext, "activity-journal", "auditEnabledLabels", args, moduleActions);
+    }
 
-    function auditPersonLabel(target = {}) {
-        const personId = String(target.personId || "");
-        const person = portalConfig.engagementNationalAuditPeople.get(personId) || {};
-        return [target.firstName, target.lastName].filter(Boolean).join(" ")
-          || target.personName || person.name || target.licenseNumber || person.licenseNumber || "Personne concernée";
-      }
+    /* deferred-function: assets/portal/deferred/activity-journal.js#auditPersonLabel */
+    function auditPersonLabel(...args) {
+      return global.LivePalmesPortalDeferred.sync(portalContext, "activity-journal", "auditPersonLabel", args, moduleActions);
+    }
 
-    function auditReadableValue(key = "", value, log = {}) {
-        const target = log.target && typeof log.target === "object" ? log.target : {};
-        if (key === "roles") return auditEnabledLabels(value, portalConfig.AUDIT_ROLE_LABELS);
-        if (key === "capabilities") return auditEnabledLabels(value, portalConfig.AUDIT_CAPABILITY_LABELS);
-        if (key === "status") return global.LivePalmesActivityJournal.value(value);
-        if (key === "active") return value === true ? "Actif" : value === false ? "Inactif" : auditDetailValue(value);
-        if (key === "hidden") return value === true ? "Masquée" : value === false ? "Visible" : auditDetailValue(value);
-        if (key === "personId") return auditPersonLabel(target);
-        if (["clubId", "sourceClubId", "targetClubId"].includes(key)) {
-          return (String(value) === String(target.clubId) ? target.clubName : "") || portalConfig.engagementNationalAuditClubs.get(String(value))
-            || portalActions.clubDisplayLabel({ clubId: value }, { fallback: value ? `Club réf. ${value}` : "Non renseigné" });
-        }
-        if (key === "competitionId") return auditCompetitionLabel(target) || "Compétition concernée";
-        if (["swimmerId", "swimmerIndexId"].includes(key)) return target.swimmerName || target.personName || "Nageur concerné";
-        if (key === "uid") {
-          const user = portalConfig.engagementNationalAuditActors.get(String(value)) || {};
-          return user.name || user.email || target.email || "Utilisateur concerné";
-        }
-        if (Array.isArray(value)) return value.map((item) => typeof item === "object" ? auditEnabledLabels(item) : String(item)).join(", ");
-        if (value && typeof value === "object") {
-          const booleanEntries = Object.values(value).every((item) => typeof item === "boolean");
-          if (booleanEntries) return auditEnabledLabels(value);
-        }
-        return auditDetailValue(value);
-      }
+    /* deferred-function: assets/portal/deferred/activity-journal.js#auditReadableValue */
+    function auditReadableValue(...args) {
+      return global.LivePalmesPortalDeferred.sync(portalContext, "activity-journal", "auditReadableValue", args, moduleActions);
+    }
 
-    function auditDetailLabel(key = "") {
-        return portalConfig.AUDIT_DETAIL_LABELS[key]
-          || String(key).replace(/([a-z])([A-Z])/g, "$1 $2").replace(/^./, (letter) => letter.toUpperCase());
-      }
+    /* deferred-function: assets/portal/deferred/activity-journal.js#auditDetailLabel */
+    function auditDetailLabel(...args) {
+      return global.LivePalmesPortalDeferred.sync(portalContext, "activity-journal", "auditDetailLabel", args, moduleActions);
+    }
 
-    function auditComplementaryLabel(key = "") {
-        if (key === "personId") return "Personne concernée";
-        if (["clubId", "sourceClubId", "targetClubId"].includes(key)) return "Club concerné";
-        if (key === "competitionId") return "Compétition concernée";
-        if (["swimmerId", "swimmerIndexId"].includes(key)) return "Nageur concerné";
-        if (key === "uid") return "Utilisateur concerné";
-        return auditDetailLabel(key);
-      }
+    /* deferred-function: assets/portal/deferred/activity-journal.js#auditComplementaryLabel */
+    function auditComplementaryLabel(...args) {
+      return global.LivePalmesPortalDeferred.sync(portalContext, "activity-journal", "auditComplementaryLabel", args, moduleActions);
+    }
 
-    function auditValuesEqual(left, right) {
-        return JSON.stringify(left ?? null) === JSON.stringify(right ?? null);
-      }
+    /* deferred-function: assets/portal/deferred/activity-journal.js#auditValuesEqual */
+    function auditValuesEqual(...args) {
+      return global.LivePalmesPortalDeferred.sync(portalContext, "activity-journal", "auditValuesEqual", args, moduleActions);
+    }
 
-    function auditChangeRows(target = {}) {
-        const rows = [];
-        const consumedKeys = new Set();
-        const addChange = (key, before, after) => {
-          if (auditValuesEqual(before, after)) return;
-          const beforeValue = auditReadableValue(key, before, { target });
-          const afterValue = auditReadableValue(key, after, { target });
-          rows.push(`<div class="admin-national-audit-change"><dt>${portalActions.escapeHtml(auditDetailLabel(key))}</dt><dd><span>${portalActions.escapeHtml(beforeValue)}</span><span class="admin-national-audit-change-arrow" aria-hidden="true">→</span><strong>${portalActions.escapeHtml(afterValue)}</strong></dd></div>`);
-        };
-        const objectPairs = [
-          ["current", "proposed"],
-          ["requestedProposed", "resolvedProposed"],
-          ["before", "after"],
-          ["previous", "next"]
-        ];
-        objectPairs.forEach(([beforeKey, afterKey]) => {
-          const before = target[beforeKey];
-          const after = target[afterKey];
-          if (!before || !after || typeof before !== "object" || typeof after !== "object" || Array.isArray(before) || Array.isArray(after)) return;
-          const keys = new Set([...Object.keys(before), ...Object.keys(after)]);
-          const comparableKeys = [...keys];
-          const changedKeys = comparableKeys.filter((key) => !auditValuesEqual(before[key], after[key]));
-          if (!changedKeys.length) return;
-          consumedKeys.add(beforeKey);
-          consumedKeys.add(afterKey);
-          changedKeys.forEach((key) => addChange(key, before[key], after[key]));
-        });
-        Object.keys(target).forEach((key) => {
-          let afterKey = "";
-          let baseKey = "";
-          if (/^previous[A-Z]/.test(key)) {
-            baseKey = key.slice(8).replace(/^./, (letter) => letter.toLowerCase());
-            afterKey = baseKey;
-          } else if (/^old[A-Z]/.test(key)) {
-            baseKey = key.slice(3).replace(/^./, (letter) => letter.toLowerCase());
-            afterKey = `new${key.slice(3)}`;
-          } else if (/^before[A-Z]/.test(key)) {
-            baseKey = key.slice(6).replace(/^./, (letter) => letter.toLowerCase());
-            afterKey = `after${key.slice(6)}`;
-          }
-          if (!afterKey || !Object.hasOwn(target, afterKey)) return;
-          consumedKeys.add(key);
-          consumedKeys.add(afterKey);
-          addChange(baseKey, target[key], target[afterKey]);
-        });
-        return { rows, consumedKeys };
-      }
+    /* deferred-function: assets/portal/deferred/activity-journal.js#auditChangeRows */
+    function auditChangeRows(...args) {
+      return global.LivePalmesPortalDeferred.sync(portalContext, "activity-journal", "auditChangeRows", args, moduleActions);
+    }
 
-    function auditDetailIsTechnicalKey(key = "") {
-        return /(?:^id$|^uid$|Id$|Ids$|Uid$|Key$|Hash$|Path$|Snapshot$)/.test(String(key));
-      }
+    /* deferred-function: assets/portal/deferred/activity-journal.js#auditDetailIsTechnicalKey */
+    function auditDetailIsTechnicalKey(...args) {
+      return global.LivePalmesPortalDeferred.sync(portalContext, "activity-journal", "auditDetailIsTechnicalKey", args, moduleActions);
+    }
 
-    function auditTechnicalKeyIsReadable(key = "") {
-        return [
-          "personId", "clubId", "sourceClubId", "targetClubId", "competitionId",
-          "swimmerId", "swimmerIndexId", "uid"
-        ].includes(key) || !auditDetailIsTechnicalKey(key);
-      }
+    /* deferred-function: assets/portal/deferred/activity-journal.js#auditTechnicalKeyIsReadable */
+    function auditTechnicalKeyIsReadable(...args) {
+      return global.LivePalmesPortalDeferred.sync(portalContext, "activity-journal", "auditTechnicalKeyIsReadable", args, moduleActions);
+    }
 
-    function auditDetailRows(log = {}) {
-        const target = log.target && typeof log.target === "object" ? log.target : {};
-        const changes = auditChangeRows(target);
-        const preferredKeys = Object.keys(portalConfig.AUDIT_DETAIL_LABELS)
-          .filter((key) => Object.hasOwn(target, key) && !changes.consumedKeys.has(key) && !auditDetailIsTechnicalKey(key));
-        const rows = preferredKeys.map((key) => {
-          const rawValue = auditReadableValue(key, target[key], log);
-          const value = rawValue.length > 500 ? `${rawValue.slice(0, 497)}…` : rawValue;
-          const label = auditDetailLabel(key);
-          return `<div><dt>${portalActions.escapeHtml(label)}</dt><dd>${portalActions.escapeHtml(value)}</dd></div>`;
-        });
-        rows.unshift(...changes.rows);
-        return rows.join("");
-      }
+    /* deferred-function: assets/portal/deferred/activity-journal.js#auditDetailRows */
+    function auditDetailRows(...args) {
+      return global.LivePalmesPortalDeferred.sync(portalContext, "activity-journal", "auditDetailRows", args, moduleActions);
+    }
 
-    function auditTechnicalDetailsHtml(logs = []) {
-        const first = logs[0] || {};
-        const target = first.target && typeof first.target === "object" ? first.target : {};
-        const changes = auditChangeRows(target);
-        const technicalKeys = Object.keys(target)
-          .filter((key) => !changes.consumedKeys.has(key))
-          .filter((key) => auditDetailIsTechnicalKey(key) || !Object.hasOwn(portalConfig.AUDIT_DETAIL_LABELS, key))
-          .filter(auditTechnicalKeyIsReadable)
-          .filter((key) => !["fileHash", "performanceBaseSync", "clubActivityReactivation"].includes(key))
-          .slice(0, 12);
-        const rows = technicalKeys.map((key) => {
-          const rawValue = auditReadableValue(key, target[key], first);
-          const value = rawValue.length > 500 ? `${rawValue.slice(0, 497)}…` : rawValue;
-          return `<div><dt>${portalActions.escapeHtml(auditComplementaryLabel(key))}</dt><dd>${portalActions.escapeHtml(value)}</dd></div>`;
-        });
-        const actionCodes = [...new Set(logs.map((log) => String(log.action || "")).filter(Boolean))];
-        if (logs.length > 1) rows.push(`<div><dt>Traces regroupées</dt><dd>${logs.length}</dd></div>`);
-        rows.push(`<div><dt>Type${actionCodes.length > 1 ? "s" : ""} d’action</dt><dd>${actionCodes.map((action) => portalActions.escapeHtml(auditActionLabel(action))).join("<br>") || "-"}</dd></div>`);
-        if (first.actorUid) rows.push(`<div><dt>Action réalisée par</dt><dd>${portalActions.escapeHtml(auditActorLabel(first))}</dd></div>`);
-        return `<details class="admin-national-audit-technical-disclosure"><summary>Détails complémentaires</summary><dl>${rows.join("")}</dl></details>`;
-      }
+    /* deferred-function: assets/portal/deferred/activity-journal.js#auditTechnicalDetailsHtml */
+    function auditTechnicalDetailsHtml(...args) {
+      return global.LivePalmesPortalDeferred.sync(portalContext, "activity-journal", "auditTechnicalDetailsHtml", args, moduleActions);
+    }
 
-    function filteredEngagementNationalAuditLogs() {
-        const query = portalActions.normalizedEngagementClubSearch(portalContext.elements.engagementsNationalAuditSearch?.value || "");
-        const type = portalContext.elements.engagementsNationalAuditType?.value || "";
-        const origin = portalContext.elements.engagementsNationalAuditOrigin?.value || "";
-        return portalState.engagementNationalAuditLogs.filter((log) => {
-          if (type && auditActionCategory(log.action) !== type) return false;
-          if (origin && auditActorOrigin(log) !== origin) return false;
-          if (!query) return true;
-          const haystack = portalActions.normalizedEngagementClubSearch([
-            auditActionLabel(log.action), log.action, auditActorLabel(log), auditTargetSummary(log.target, log.action),
-            auditClubLabel(log), JSON.stringify(log.target || {})
-          ].join(" "));
-          return haystack.includes(query);
-        });
-      }
+    /* deferred-function: assets/portal/deferred/activity-journal.js#filteredEngagementNationalAuditLogs */
+    function filteredEngagementNationalAuditLogs(...args) {
+      return global.LivePalmesPortalDeferred.sync(portalContext, "activity-journal", "filteredEngagementNationalAuditLogs", args, moduleActions);
+    }
 
-    function auditEntryHtml(group = {}) {
-        const logs = group.logs || [];
-        const first = logs[0] || {};
-        let actionLabel = auditActionLabel(first.action);
-        if (first.action === "nap.swimmerActivity.complete") {
-          const active = first.target?.after?.active ?? (first.target?.status === "active" ? true : first.target?.status === "inactive" ? false : null);
-          if (active !== null) actionLabel = first.outcome === "completed"
-            ? (active ? "Nageur réactivé" : "Nageur désactivé")
-            : (active ? "Réactivation du nageur" : "Désactivation du nageur");
-        }
-        const targetLabel = auditTargetSummary(first.target, first.action);
-        const clubLabel = auditClubLabel(first);
-        const category = auditActionCategory(first.action);
-        const status = first.outcome === "unconfirmed" ? "Résultat non confirmé" : first.outcome === "completed" ? "Terminé" : "Trace enregistrée";
-        const humanDetails = auditDetailRows(first);
-        const planChanges = global.LivePalmesActivityJournal.changes(first.target || {});
-        const operationDetails = planChanges.length ? `<dl class="admin-national-audit-detail-grid">${planChanges.map((row) => `<div><dt>${portalActions.escapeHtml(row.label)}</dt><dd>${portalActions.escapeHtml(row.before)} → <strong>${portalActions.escapeHtml(row.after)}</strong></dd></div>`).join("")}</dl>` : "";
-        const detailHtml = `<p class="admin-national-audit-outcome">${status}${first.outcome === "unconfirmed" ? " : une préparation existe, aucun reçu de fin n’a été retrouvé. Les changements ci-dessous sont ceux préparés ; leur application n’est pas confirmée." : ""}${first.action.startsWith("nap.") && !first.historyComplete ? ". Détails historiques partiels : ils peuvent être complétés en chargeant les traces précédentes." : ""}</p>${humanDetails ? `<dl class="admin-national-audit-detail-grid">${humanDetails}</dl>` : ""}${operationDetails}${auditTechnicalDetailsHtml(logs)}`;
-        return `
-      <details class="admin-national-audit-entry" data-audit-category="${portalActions.escapeHtml(category)}">
-        <summary>
-          <time datetime="${portalActions.escapeHtml(first.createdAt || "")}">${portalActions.escapeHtml(auditDateLabel(first.createdAt))}</time>
-          <span class="admin-national-audit-entry-main"><strong>${portalActions.escapeHtml(actionLabel)}</strong><small>${portalActions.escapeHtml(targetLabel)} · ${status}</small></span>
-          <span class="admin-national-audit-actor">${portalActions.escapeHtml(auditActorLabel(first))}</span>
-          ${clubLabel ? `<span class="admin-national-audit-club">${portalActions.escapeHtml(clubLabel)}</span>` : ""}
-          <span class="admin-national-audit-chevron" aria-hidden="true">⌄</span>
-        </summary>
-        <div class="admin-national-audit-entry-details">
-          ${detailHtml}
-        </div>
-      </details>`;
-      }
+    /* deferred-function: assets/portal/deferred/activity-journal.js#auditEntryHtml */
+    function auditEntryHtml(...args) {
+      return global.LivePalmesPortalDeferred.sync(portalContext, "activity-journal", "auditEntryHtml", args, moduleActions);
+    }
 
-    function updateEngagementNationalAuditFilterOptions() {
-        portalState.accessClubReference.forEach((club) => {
-          const clubId = String(club.clubId || "");
-          const clubLabel = portalActions.clubDisplayLabel(club, { fallback: "" });
-          if (clubId && clubLabel) portalConfig.engagementNationalAuditClubs.set(clubId, clubLabel);
-        });
-        portalState.engagementNationalAuditLogs.forEach((log) => {
-          const clubId = String(log.target?.clubId || "");
-          if (clubId && !portalConfig.engagementNationalAuditClubs.has(clubId)) {
-            const clubLabel = log.target?.clubName || portalActions.clubDisplayLabel({ clubId }, { fallback: "" });
-            if (clubLabel) portalConfig.engagementNationalAuditClubs.set(clubId, clubLabel);
-          }
-        });
-        const replaceOptions = (select, options, emptyLabel) => {
-          if (!select) return;
-          const selected = select.value;
-          select.innerHTML = `<option value="">${portalActions.escapeHtml(emptyLabel)}</option>${options.map(([value, label]) => `<option value="${portalActions.escapeHtml(value)}">${portalActions.escapeHtml(label)}</option>`).join("")}`;
-          select.value = selected;
-        };
-        replaceOptions(portalContext.elements.engagementsNationalAuditClub,
-          [...portalConfig.engagementNationalAuditClubs.entries()].sort((left, right) => left[1].localeCompare(right[1], "fr")),
-          "Tous les clubs");
-        if (!portalContext.elements.engagementsNationalAuditActorSearch?.value.trim()) {
-          renderEngagementNationalAuditActorSuggestions([...portalConfig.engagementNationalAuditActors.values()]);
-        }
-      }
+    /* deferred-function: assets/portal/deferred/activity-journal.js#updateEngagementNationalAuditFilterOptions */
+    function updateEngagementNationalAuditFilterOptions(...args) {
+      return global.LivePalmesPortalDeferred.sync(portalContext, "activity-journal", "updateEngagementNationalAuditFilterOptions", args, moduleActions);
+    }
 
-    function resetEngagementNationalAuditFilters() {
-        if (portalContext.elements.engagementsNationalAuditSearch) portalContext.elements.engagementsNationalAuditSearch.value = "";
-        if (portalContext.elements.engagementsNationalAuditPeriod) portalContext.elements.engagementsNationalAuditPeriod.value = "7";
-        if (portalContext.elements.engagementsNationalAuditClub) portalContext.elements.engagementsNationalAuditClub.value = "";
-        setEngagementNationalAuditActorSelection();
-        if (portalContext.elements.engagementsNationalAuditActorSearch) portalContext.elements.engagementsNationalAuditActorSearch.value = "";
-        if (portalContext.elements.engagementsNationalAuditType) portalContext.elements.engagementsNationalAuditType.value = "";
-        if (portalContext.elements.engagementsNationalAuditOrigin) portalContext.elements.engagementsNationalAuditOrigin.value = "";
-        void loadEngagementNationalAuditLogs({ force: true });
-      }
+    /* deferred-function: assets/portal/deferred/activity-journal.js#resetEngagementNationalAuditFilters */
+    function resetEngagementNationalAuditFilters(...args) {
+      return global.LivePalmesPortalDeferred.sync(portalContext, "activity-journal", "resetEngagementNationalAuditFilters", args, moduleActions);
+    }
 
     function resetEngagementNationalAuditData() {
         portalState.engagementNationalAuditLogs = [];
@@ -439,44 +176,20 @@
         portalConfig.engagementNationalAuditPeople.clear();
       }
 
-    function renderEngagementNationalAuditLogs() {
-        if (!portalContext.elements.engagementsNationalAuditList) return;
-        if (!portalActions.canViewActivityLog()) {
-          portalContext.elements.engagementsNationalAuditList.innerHTML = "";
-          return;
-        }
-        updateEngagementNationalAuditFilterOptions();
-        const filteredLogs = filteredEngagementNationalAuditLogs();
-        const groups = global.LivePalmesActivityJournal.byDayAndActor(filteredLogs);
-        if (!portalState.engagementNationalAuditLogs.length) {
-          portalContext.elements.engagementsNationalAuditList.innerHTML = '<p class="admin-engagements-empty">Aucune action enregistrée sur cette période.</p>';
-        } else if (!groups.length) {
-          portalContext.elements.engagementsNationalAuditList.innerHTML = '<p class="admin-engagements-empty">Aucune action ne correspond aux filtres.</p>';
-        } else {
-          portalContext.elements.engagementsNationalAuditList.innerHTML = `<div class="admin-national-audit-list">${groups.map((group) => `<section class="admin-national-audit-day"><h3>${portalActions.escapeHtml(auditDateLabel(group.logs[0].createdAt).split(" ")[0])} · ${portalActions.escapeHtml(auditActorLabel(group.logs[0]))}<small>${group.logs.length} opération${group.logs.length > 1 ? "s" : ""}</small></h3>${group.logs.map((log) => auditEntryHtml({ logs: [log] })).join("")}</section>`).join("")}</div>`;
-        }
-        if (portalContext.elements.engagementsNationalAuditStatus && !portalState.engagementNationalAuditLogsLoading) {
-          const loaded = portalState.engagementNationalAuditLogs.length;
-          const groupedCount = filteredLogs.length;
-          const visibleFromLabel = portalState.engagementNationalAuditVisibleFrom ? auditDateLabel(portalState.engagementNationalAuditVisibleFrom).split(" ")[0] : "";
-          portalContext.elements.engagementsNationalAuditStatus.textContent = `${groupedCount} opération${groupedCount > 1 ? "s" : ""} affichée${groupedCount > 1 ? "s" : ""} parmi ${loaded} chargée${loaded > 1 ? "s" : ""}${visibleFromLabel ? ` depuis le ${visibleFromLabel}` : ""}. ${portalState.engagementNationalAuditHasMore ? "Historique partiel : charger la suite pour poursuivre la recherche." : "Fin de la période atteinte."} Recherche, catégorie et origine portent sur les opérations chargées.`;
-          portalContext.elements.engagementsNationalAuditStatus.dataset.tone = "ok";
-        }
-        if (portalContext.elements.engagementsNationalAuditLoadMore) portalContext.elements.engagementsNationalAuditLoadMore.hidden = !portalState.engagementNationalAuditHasMore;
-      }
+    /* deferred-function: assets/portal/deferred/activity-journal.js#renderEngagementNationalAuditLogs */
+    function renderEngagementNationalAuditLogs(...args) {
+      return global.LivePalmesPortalDeferred.sync(portalContext, "activity-journal", "renderEngagementNationalAuditLogs", args, moduleActions);
+    }
 
     /* deferred-function: assets/portal/deferred/activity-journal.js#loadEngagementNationalAuditLogs */
     async function loadEngagementNationalAuditLogs(...args) {
       return global.LivePalmesPortalDeferred.invoke(portalContext, "activity-journal", "loadEngagementNationalAuditLogs", args, moduleActions);
     }
 
-    function engagementClubPersonRoleLabel(person = {}) {
-        const roles = [];
-        if (person.roles?.swimmer || person.swimmerIndexId) roles.push("Nageur");
-        if (person.roles?.teamLeader) roles.push("Chef d'équipe");
-        if (person.roles?.official) roles.push("Officiel");
-        return roles.join(" - ") || "-";
-      }
+    /* deferred-function: assets/portal/deferred/activity-journal.js#engagementClubPersonRoleLabel */
+    function engagementClubPersonRoleLabel(...args) {
+      return global.LivePalmesPortalDeferred.sync(portalContext, "activity-journal", "engagementClubPersonRoleLabel", args, moduleActions);
+    }
 
     function closeEngagementClubPersonDialog() {
         const form=portalContext.elements.engagementsClubPersonForm;
@@ -488,27 +201,15 @@
         form.hidden=true;
       }
 
-    function openNativeCompetitionPersonCreation() {
-        if(global.LivePalmesEnvironment?.sportingDataSource !== "nap" || portalState.engagementClubPersonSaving || !portalActions.canUse("engagements.club.manage")) return;
-        const form=portalContext.elements.engagementsClubPersonForm,dialog=portalContext.elements.engagementsClubPersonDialog;
-        if(!form || !dialog || portalState.engagementClubPersonFormHome) return;
-        portalActions.openEngagementClubPersonForm();
-        if(portalContext.elements.engagementsClubPersonRoleTeamLeader) portalContext.elements.engagementsClubPersonRoleTeamLeader.checked=true;
-        if(portalContext.elements.engagementsClubPersonRoleOfficial) portalContext.elements.engagementsClubPersonRoleOfficial.checked=false;
-        if(portalState.engagementClubPersonFormHome) portalState.engagementClubPersonFormHome.fromCompetition=true;
-        portalContext.elements.engagementsClubPersonFirstName?.focus();
-      }
+    /* deferred-function: assets/portal/deferred/activity-journal.js#openNativeCompetitionPersonCreation */
+    function openNativeCompetitionPersonCreation(...args) {
+      return global.LivePalmesPortalDeferred.sync(portalContext, "activity-journal", "openNativeCompetitionPersonCreation", args, moduleActions);
+    }
 
-    function resetEngagementClubPersonForm() {
-        portalContext.elements.engagementsClubPersonForm?.reset();
-        if (portalContext.elements.engagementsClubPersonId) portalContext.elements.engagementsClubPersonId.value = "";
-        if (portalContext.elements.engagementsClubPersonSwimmerId) portalContext.elements.engagementsClubPersonSwimmerId.value = "";
-        if (portalContext.elements.engagementsClubPersonSwimmerSource) portalContext.elements.engagementsClubPersonSwimmerSource.value = "";
-        portalActions.applyEngagementClubPersonSwimmer("");
-        if (portalContext.elements.engagementsClubPersonRoleTeamLeader) portalContext.elements.engagementsClubPersonRoleTeamLeader.checked = false;
-        if (portalContext.elements.engagementsClubPersonRoleOfficial) portalContext.elements.engagementsClubPersonRoleOfficial.checked = true;
-        if (portalContext.elements.engagementsClubPersonMessage) portalContext.elements.engagementsClubPersonMessage.textContent = "";
-      }
+    /* deferred-function: assets/portal/deferred/activity-journal.js#resetEngagementClubPersonForm */
+    function resetEngagementClubPersonForm(...args) {
+      return global.LivePalmesPortalDeferred.sync(portalContext, "activity-journal", "resetEngagementClubPersonForm", args, moduleActions);
+    }
 
     const moduleActions = { auditActionLabel, auditActionCategory, auditActorOrigin, auditActorLabel, auditActorOptionLabel, renderEngagementNationalAuditActorSuggestions, setEngagementNationalAuditActorSelection, searchEngagementNationalAuditActors, handleEngagementNationalAuditActorSearch, auditClubId, auditClubLabel, auditCompetitionLabel, auditTargetSummary, auditDateLabel, auditDetailValue, auditEnabledLabels, auditPersonLabel, auditReadableValue, auditDetailLabel, auditComplementaryLabel, auditValuesEqual, auditChangeRows, auditDetailIsTechnicalKey, auditTechnicalKeyIsReadable, auditDetailRows, auditTechnicalDetailsHtml, filteredEngagementNationalAuditLogs, auditEntryHtml, updateEngagementNationalAuditFilterOptions, resetEngagementNationalAuditFilters, resetEngagementNationalAuditData, renderEngagementNationalAuditLogs, loadEngagementNationalAuditLogs, engagementClubPersonRoleLabel, closeEngagementClubPersonDialog, openNativeCompetitionPersonCreation, resetEngagementClubPersonForm };
     return {

@@ -1,0 +1,79 @@
+
+
+                <section class="import-card">
+                  <div class="import-card-head">
+                    <span>Correction</span>
+                    <strong>Rechercher une performance</strong>
+                    <p>Recherchez un nageur, filtrez ses performances, puis corrigez ou masquez la ligne publiée. Un motif est obligatoire.</p>
+                  </div>
+                  <div class="performance-correction-search">
+                    <label>
+                      Nageur / nageuse
+                      <input id="performanceCorrectionSwimmer" type="search" placeholder="Nom ou prénom" autocomplete="off">
+                    </label>
+                    <label>
+                      Course
+                      <select id="performanceCorrectionCourse"></select>
+                    </label>
+                    <label>
+                      Année
+                      <select id="performanceCorrectionYear"></select>
+                    </label>
+                    <label>
+                      Compétition
+                      <select id="performanceCorrectionCompetition"></select>
+                    </label>
+                  </div>
+                  <div id="performanceCorrectionSuggestions" class="performance-correction-suggestions"></div>
+                  <div id="performanceCorrectionResultsWrap" class="import-table-wrap">
+                    <table class="import-preview-table">
+                      <thead>
+                        <tr>
+                          <th>Date</th>
+                          <th>Course</th>
+                          <th>Temps</th>
+                          <th>Nageur</th>
+                          <th>Club</th>
+                          <th>Compétition</th>
+                        </tr>
+                      </thead>
+                      <tbody id="performanceCorrectionResults">
+                        <tr><td colspan="6">Sélectionnez un nageur pour afficher ses performances.</td></tr>
+                      </tbody>
+                    </table>
+                    <button id="performanceCorrectionMore" class="ghost-button" type="button" hidden>Charger les 100 résultats suivants</button>
+                  </div>
+                  <form id="performanceCorrectionForm" class="performance-correction-form" hidden>
+                    <div class="import-card-head-inline">
+                      <div class="import-card-head">
+                        <span>Ligne sélectionnée</span>
+                        <strong id="performanceCorrectionTitle">Performance</strong>
+                      </div>
+                      <button id="performanceCorrectionBackToList" class="ghost-button" type="button">Choisir une autre performance</button>
+                    </div>
+                    <div class="performance-correction-grid">
+                      <label>Temps final<input id="performanceCorrectionTime" type="text"></label>
+                      <label>Date<input id="performanceCorrectionDate" type="date"></label>
+                      <label>Club<input id="performanceCorrectionClub" type="text"></label>
+                      <label>Lieu<input id="performanceCorrectionLocation" type="text"></label>
+                    </div>
+                    <div>
+                      <div class="import-card-head compact">
+                        <span>Temps intermédiaires</span>
+                        <strong>Passages</strong>
+                      </div>
+                      <div id="performanceCorrectionSplits" class="performance-correction-splits"></div>
+                      <button id="performanceCorrectionAddSplit" class="ghost-button" type="button">Ajouter un passage</button>
+                    </div>
+                    <label class="performance-correction-reason">
+                      Motif de la correction
+                      <textarea id="performanceCorrectionReason" rows="3" required placeholder="Exemple : temps corrigé après vérification du protocole"></textarea>
+                    </label>
+                    <div class="admin-portal-actions">
+                      <button id="performanceCorrectionSave" type="submit">Enregistrer la correction</button>
+                      <button id="performanceCorrectionHide" class="ghost-button danger-button" type="button">Supprimer définitivement</button>
+                      <button id="performanceCorrectionDelete" class="ghost-button danger-button" type="button" hidden>Supprimer définitivement de NAP</button>
+                    </div>
+                  </form>
+                </section>
+              
