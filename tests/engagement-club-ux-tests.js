@@ -53,7 +53,7 @@ function fixture() {
   assert.equal(navigation.selectedEngagementCompetitionId, "fixture");
   assert.equal(navigation.selectedEngagementClubEntry.draft, "kept");
   assert.match(source, /elements\.engagementsDetailClose\?\.addEventListener\("click", closeEngagementCompetitionDetail\)/);
-  const visibility = {elements: {engagementsView: {dataset:{}}, engagementsDetail: {}, engagementsDetailClose: {}},
+  const visibility = {global: {}, elements: {engagementsView: {dataset:{}}, engagementsDetail: {}, engagementsDetailClose: {}},
     isEngagementAdminMode: () => false, setEngagementSaveState() {}};
   vm.createContext(visibility);
   vm.runInContext(block("setEngagementCompetitionDetailVisible"), visibility);
