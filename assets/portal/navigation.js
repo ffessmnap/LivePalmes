@@ -755,8 +755,6 @@
         portalContext.elements.engagementsView?.classList.toggle("admin-club-workspace", clubWorkspace);
         const directoryActions = document.getElementById("adminEngagementsClubSwimmersDirectoryActions");
         if (directoryActions) directoryActions.hidden = !swimmersMode || !canUse("engagements.club.manage");
-        const catalogRefresh = document.getElementById("adminEngagementsCatalogRefresh");
-        if (catalogRefresh) catalogRefresh.hidden = !(clubWorkspace || adminCalendarMode) || Boolean(portalState.selectedEngagementCompetitionId);
         const workspaceHead = portalContext.elements.engagementsViewTitle?.closest(".admin-portal-workspace-head");
         workspaceHead?.classList.toggle("admin-club-workspace-head", clubWorkspace);
         workspaceHead?.classList.toggle("admin-overview-head", adminCalendarMode);

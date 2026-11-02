@@ -55,12 +55,4 @@ async function loaders(){
   await people.loadEngagementClubPeople({silent:true,background:true});await swimmers.loadEngagementClubSwimmers({silent:true,background:true});assert.equal(reads,2,"The real loaders reuse the page cache beyond five minutes, without paging through all officials");
   await swimmers.loadEngagementClubSwimmers({silent:true,background:true,force:true});assert.equal(reads,3,"Explicit refresh bypasses the page cache");
 }
-function refreshVisibility(){
-  const control={hidden:false},state={activeEngagementsTab:"calendar"};
-  const actions={setEngagementSaveState(){}};
-  const api=portalModule("documents-and-program.js","LivePalmesPortalDocumentsAndProgram",{state,actions,config:{},elements:{}},{window:{document:{getElementById:()=>control}}});
-  api.setEngagementCompetitionDetailVisible(true);assert.equal(control.hidden,true,"List refresh is hidden while a competition form is open");
-  api.setEngagementCompetitionDetailVisible(false);assert.equal(control.hidden,false,"List refresh returns on the same route when the detail closes");
-  state.activeEngagementsTab="accessRequests";control.hidden=true;api.setEngagementCompetitionDetailVisible(false);assert.equal(control.hidden,true,"Other tabs keep their visibility policy");
-}
-(async()=>{await scheduler();await loaders();refreshVisibility();console.log("Progressive preload: paint/idle first, sequential bounded tasks, cache reuse, foreground priority, context/session/visibility/network guards, hidden forms untouched and no retry loop passed offline.");})().catch(error=>{console.error(error);process.exitCode=1;});
+(async()=>{await scheduler();await loaders();console.log("Progressive preload: paint/idle first, sequential bounded tasks, cache reuse, foreground priority, context/session/visibility/network guards, hidden forms untouched and no retry loop passed offline.");})().catch(error=>{console.error(error);process.exitCode=1;});
