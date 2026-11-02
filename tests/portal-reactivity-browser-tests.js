@@ -4,7 +4,8 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
 const {execFileSync} = require("node:child_process");
-const { startStaticServer, launchBrowser, evaluate, waitFor } = require("../tools/capture-portal-design");
+const { startStaticServer, launchBrowser, waitFor } = require("../tools/capture-portal-design");
+const { evaluate } = require("./helpers/portal-browser-evaluate");
 
 const fixture = `
 window.LIVEPALMES_ENVIRONMENT = 'test';
@@ -22,7 +23,7 @@ const nativeFetch=window.fetch.bind(window);let failedFragment=false;
 window.fetch=async (url,...args)=>{
   if(String(url).includes('assets/portal/views/')){
     fixtureFragments.push(String(url));
-    if(new URL(location.href).searchParams.has('fragmentDelay'))await new Promise(resolve=>setTimeout(resolve,200));
+    if(new URL(location.href).searchParams.has('fragmentDelay'))await new Promise(resolve=>setTimeout(resolve,Math.max(200,Number(new URL(location.href).searchParams.get('fragmentDelay'))||0)));
     if(new URL(location.href).searchParams.has('fragmentFailure')&&!failedFragment){failedFragment=true;return {ok:false};}
   }
   return nativeFetch(url,...args);
@@ -151,6 +152,7 @@ async function main() {
       await evaluate(client,`location.hash='#records-mpf';`);
       assert.ok(await waitFor(client,"!document.querySelector('#adminOverviewView').hidden"));
       assert.equal(await evaluate(client,"return fixtureFragments.length;"),0,"Denied routes do not fetch a private tool's form");
+      const lazyStart=client.events.length;
       await client.send("Page.navigate",{url:baseUrl+`/portail.html?startupAdmin=${width}#accueil`});
       assert.ok(await waitFor(client,"document.body.dataset.adminAuth==='unlocked' && !document.querySelector('#adminOverviewView').hidden"));
       assert.equal(await evaluate(client,"return fixtureFragments.length;"),0);
@@ -180,9 +182,10 @@ async function main() {
         await evaluate(client,`location.hash='#espace-dtn-france';`);
         assert.ok(await waitFor(client,"fixtureModuleViews.dtn && !document.querySelector('#adminDtnView').hidden"));
         assert.equal(await evaluate(client,"return document.querySelector('#adminRecordsView').hidden;"),true,"Late form completion uses the current route");
-        await client.send("Page.navigate",{url:baseUrl+'/portail.html?startupAdmin=1&fragmentDelay=1&revoked=1#records-mpf'});
+        await client.send("Page.navigate",{url:baseUrl+'/portail.html?startupAdmin=1&fragmentDelay=1000&revoked=1#records-mpf'});
         assert.ok(await waitFor(client,"fixtureFragments.length===1"));
-        await evaluate(client,`fixtureProfile={...fixtureProfile,capabilities:['engagements.club.manage']};await LivePalmesPortalAuth.refreshProfile();return await new Promise(resolve=>setTimeout(resolve,400));`);
+        await evaluate(client,`fixtureProfile={...fixtureProfile,capabilities:['engagements.club.manage']};fixtureAdvance(6000);await LivePalmesPortalAuth.refreshProfile();`);
+        assert.ok(await waitFor(client,"document.querySelector('[data-portal-fragment=records]').dataset.portalFragmentLoaded==='true'"));
         assert.equal(await evaluate(client,"return !!fixtureModuleViews.records;"),false,"Rights revoked during hydration cannot start the old private tool");
         assert.equal(await evaluate(client,"return document.querySelector('#adminRecordsView').hidden;"),true);
         await client.send("Page.navigate",{url:baseUrl+'/portail.html?startupAdmin=1&fragmentFailure=1#records-mpf'});
@@ -194,6 +197,8 @@ async function main() {
         assert.ok(await waitFor(client,"fixtureModuleViews.records && !document.querySelector('#adminRecordsView').hidden"));
         assert.equal(await evaluate(client,"return fixtureFragments.length;"),2,"A deliberate reopening retries the failed form once");
       }
+      assert.equal(await evaluate(client,"return fixtureCalls.some(c=>/^(save|send|create|delete|update)/.test(c.name));"),false);
+      assert.deepEqual(client.events.slice(lazyStart).filter(event=>event.method==='Runtime.exceptionThrown').map(event=>event.params.exceptionDetails.exception?.description||event.params.exceptionDetails.text),[]);
       console.log(`${width}px: authorized lazy forms/styles, module ordering, retained state, direct links and no business writes passed.`);
     }
     const target = path.join(output, (process.env.PORTAL_MEASURE_LABEL || "current") + ".json");
