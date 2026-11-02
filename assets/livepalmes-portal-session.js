@@ -24,11 +24,14 @@
   }
   function lock(persist = true) {
     if (!user()) return;
+    const alreadyLocked = document.body.dataset.portalSession === "locked";
     generation++;
     if (state) { state.locked = true; if (persist) save(true); }
     prepared = false;
     global.clearTimeout(expiryTimer); global.clearTimeout(activityTimer);
+    if (!alreadyLocked) document.querySelectorAll?.('input[type="password"],input[autocomplete="current-password"],input[autocomplete="new-password"]')?.forEach(input=>{input.value="";});
     setLocked(true);
+    if (!alreadyLocked) document.dispatchEvent(new CustomEvent("livepalmes:portal-session-locked"));
     if (!dialog) {
       dialog = document.createElement("dialog");
       dialog.id = "adminPortalSessionLock";
@@ -97,7 +100,7 @@
         if (!profile || profile.uid !== uid) throw error();
         prepared = true; save(true); check();
         if (expired()) throw error();
-        setLocked(false);
+        if (!dialog?.open) setLocked(false);
         return profile;
       } catch (failure) { if (expectedGeneration === generation && failure.details?.portalSessionExpired) lock(); throw failure; }
     })().finally(() => { if (preparing === pending) preparing = null; });
@@ -218,5 +221,5 @@
       state = stored; lastSynced=Math.max(lastSynced,stored.syncedAt||0);check();
     });
   }
-  global.LivePalmesPortalSession = {enabled,wrap,check,end,prepare,inactivityTimeoutMs:DAY};
+  global.LivePalmesPortalSession = {enabled,wrap,check,end,prepare,revision:()=>generation,inactivityTimeoutMs:DAY};
 })(window);

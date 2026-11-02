@@ -21,6 +21,9 @@ async function loader(){
   const stale=f.api.invoke(context,"stale","run",[],{});state.activeAuthUid="other";f.api.register("stale",()=>({run:()=>{throw Error("Obsolete context must never execute");}}));f.scripts.at(-1).events.load();await assert.rejects(stale,/contexte a changé/);
   const route=f.api.invoke(context,"route","run",[],{});f.window.location.hash="#other";f.api.register("route",()=>({run:()=>{throw Error("Obsolete route");}}));f.scripts.at(-1).events.load();await assert.rejects(route,/contexte a changé/);
   const before=f.scripts.length;f.listeners.pointerover({target:{closest:()=>({getAttribute:()=>"#club-competitions"})}});assert.equal(f.scripts.length,before+3,"Intent warms code only; no factory or RPC executes");
+  let sessionRevision=1;f.window.LivePalmesPortalSession={revision:()=>sessionRevision};
+  const expired=f.api.invoke(context,"expired","save",[],{});sessionRevision++;
+  f.api.register("expired",()=>({save:()=>{throw Error("Expired action must not replay after reauthentication");}}));f.scripts.at(-1).events.load();await assert.rejects(expired,/contexte a changé/);
   let chunks=0;
   for(const file of fs.readdirSync("assets/portal/deferred")){
     let factory;
@@ -36,6 +39,8 @@ async function reads(){
   const first=api.callFunction("listEngagementCompetitions",{limit:250}),second=api.callFunction("listEngagementCompetitions",{limit:250});assert.equal(calls,1);response.resolve({data:{competitions:[]}});assert.deepEqual(await first,await second);
   response=deferred();const stale=api.callFunction("listEngagementCompetitions",{limit:250});assert.equal(calls,2);state.activeAuthUid="other";response.resolve({data:{competitions:[{private:true}]}});await assert.rejects(stale,/compte ou le club actif a changé/);
   response=deferred();const a=api.callFunction("saveEngagementClubPerson",{}),b=api.callFunction("saveEngagementClubPerson",{});assert.equal(calls,4,"Writes are never deduplicated/replayed as reads");response.resolve({data:{ok:true}});await Promise.all([a,b]);
+  state.currentAccessProfile={regionId:"IDF",capabilities:["engagements.region.manage"]};response=deferred();
+  const regionRead=api.callFunction("listAccessUsers",{});state.currentAccessProfile={...state.currentAccessProfile,regionId:"HDF"};response.resolve({data:{users:[{private:true}]}});await assert.rejects(regionRead,/compte ou le club actif a changé/);
   console.log("RPC sharing: identical simultaneous reads only, no freshness cache, fresh next consultation, stale identity rejected and writes separate passed offline.");
 }
 (async()=>{await loader();await reads();})().catch(error=>{console.error(error);process.exitCode=1;});

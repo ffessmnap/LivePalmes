@@ -225,13 +225,18 @@
         const authUid = portalState.activeAuthUid;
         const input = { ...(payload || {}), ...(activeClubId ? { activeClubId } : {}) };
         const shared = sharedReads.has(name);
-        const key = shared ? JSON.stringify([authUid,activeClubId,name,input]) : "";
+        const accessContext = () => {
+          const profile = global.LivePalmesPortalAuth?.status ? global.LivePalmesPortalAuth.status().profile : portalState.currentAccessProfile;
+          return JSON.stringify([profile?.clubId,profile?.regionId,profile?.accessScopes,[...(profile?.capabilities || [])].sort()]);
+        };
+        const accessScope = shared ? accessContext() : "";
+        const key = shared ? JSON.stringify([authUid,activeClubId,accessScope,name,input]) : "";
         if (shared && pendingReads.has(key)) return pendingReads.get(key);
         const startedAt = performance.now();
         const request = (async () => {
           try {
             const result = await functions.httpsCallable(name)(input);
-            if (shared && (authUid !== portalState.activeAuthUid || activeClubId !== activeEngagementClubIdForProfile(portalState.currentAccessProfile))) {
+            if (shared && (authUid !== portalState.activeAuthUid || activeClubId !== activeEngagementClubIdForProfile(portalState.currentAccessProfile) || accessScope !== accessContext())) {
               throw new Error("Le compte ou le club actif a changé. Rouvrez cet écran.");
             }
             const data = result.data || {};

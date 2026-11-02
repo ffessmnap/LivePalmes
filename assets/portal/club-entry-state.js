@@ -605,12 +605,14 @@
 
     function queueEngagementClubEntryMutation({ execute, messageElement, loadingMessage, errorPrefix = "Enregistrement impossible", competitionId = portalState.selectedEngagementCompetitionId, renderScope = "all", preserveLocalSwimmerSelections = false } = {}) {
         const revision = ++portalState.engagementClubEntryMutationRevision;
+        const sessionRevision = global.LivePalmesPortalSession?.revision();
         portalActions.setEngagementSaveState("saving");
         if (messageElement) {
           messageElement.textContent = loadingMessage || "Enregistrement...";
           messageElement.dataset.tone = "loading";
         }
         const task = portalState.engagementClubEntryMutationQueue.then(async () => {
+          if (sessionRevision !== global.LivePalmesPortalSession?.revision()) return false;
           try {
             const result = await execute?.();
             if (result?.entry && competitionId === portalState.selectedEngagementCompetitionId) rememberEngagementClubPersistedEntry(result.entry);
@@ -700,6 +702,19 @@
         portalState.engagementClubEntriesAutosaveTimer = null;
         portalConfig.engagementClubEntriesAutosaveSwimmers.clear();
         portalState.engagementClubEntriesAutosaveCompetitionId = "";
+      }
+
+    function suspendEngagementClubWrites() {
+        const pending = engagementClubHasPendingWrites();
+        if (portalState.engagementClubSelectionTimer) global.clearTimeout(portalState.engagementClubSelectionTimer);
+        portalState.engagementClubSelectionTimer = null;
+        portalState.engagementClubSelectionCompetitionId = "";
+        portalConfig.engagementClubSelectionChanges.clear();
+        resetEngagementClubEntriesAutosave();
+        ++portalState.engagementClubEntryMutationRevision;
+        // Keep the form, dirty markers and uncertain native mutation IDs. Only
+        // a new deliberate save may submit them after reauthentication.
+        if (pending) portalActions.setEngagementSaveState("error");
       }
 
     function discardPendingEngagementClubIndividualEntries(swimmerIndexId = "") {
@@ -1050,6 +1065,7 @@
       persistEngagementClubSwimmerSelection,
       removeEngagementClubSwimmerFromCourses,
       resetEngagementClubEntriesAutosave,
+      suspendEngagementClubWrites,
       discardPendingEngagementClubIndividualEntries,
       flushEngagementClubIndividualEntriesAutosave,
       persistEngagementClubIndividualEntries,
