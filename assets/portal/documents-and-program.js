@@ -1675,6 +1675,8 @@
       }
 
     function setEngagementCompetitionDetailVisible(visible) {
+        const catalogRefresh = global.document?.getElementById?.("adminEngagementsCatalogRefresh");
+        if (catalogRefresh && portalState.activeEngagementsTab === "calendar") catalogRefresh.hidden = Boolean(visible);
         if (portalContext.elements.engagementsView) portalContext.elements.engagementsView.dataset.detailOpen = visible ? "true" : "false";
         if (!visible) portalState.qualificationExceptionScope = "";
         if (portalContext.elements.engagementsCalendarPanel) portalContext.elements.engagementsCalendarPanel.dataset.detailOpen = visible ? "true" : "false";
