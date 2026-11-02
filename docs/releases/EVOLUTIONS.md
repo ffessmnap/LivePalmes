@@ -2,6 +2,13 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 2 novembre — Engagements par équipes Clubs 2026/2027 — développement TEST
+
+- Accord : développement TEST, exactement trois colonnes et aucune nouvelle table ; aucune PROD. Profils fixes Clubs et Clubs Masters, avant compétition uniquement.
+- Périmètre : dossier global d'équipes A/B/C, remplaçant, HC indépendant, individuels, relais six/quatre, frais, Excel national, TXT et PDF. Tables NAP et JSON complémentaire existants, audit de reprise existant pour les interruptions MyISAM. Contrôle croisé Clubs/Masters, défi et terrain exclus.
+- Schéma séparé : `entry_format`, `entry_rules_version`, `team_fee`, nullable ; préparation et empreinte avant ALTER, aucun engagement ni compétition réécrit. [Budget](../OPTIMISATION_NAP.md), [recette](../TESTS_MANUELS.md).
+- État : développement et contrôles en cours ; PR, preuves CI, ajout des colonnes et déploiement TEST à consigner après réussite. Aucune validation utilisateur de la livraison déduite de l'accord de développement.
+
 ### 2 novembre — Démarrage minimal et mesure serveur
 
 - Accord : priorités 1 et 2 jusqu’à TEST et mesure côté serveur avant toute suite ; aucun serveur, droit, donnée métier ou PROD à modifier.

@@ -19,6 +19,7 @@ const SPECS = Object.freeze({
   livepalmes_calendar_event_details: {key:"competition_id",columns:require("./nap-approved-calendar-schema").specs[1].columns.map(c=>c[0])}
 });
 const JSON_COLUMNS = new Set(["invited_region_ids","program_sessions"]);
+function supplementalSpec(table,row){const additions=require('./nap-approved-team-entry-schema').definitions.filter(x=>x.table===table&&Object.hasOwn(row||{},x.name)).map(x=>x.name);return {...SPECS[table],columns:[...SPECS[table].columns,...additions]};}
 const string = (value, max, required = false) => {
   if (typeof value !== "string" || value.length > max || /[\u0000-\u0008\u000b\u000c\u000e-\u001f]/.test(value) || required && !value.trim()) throw new TypeError("Valeur de champ invalide.");
   return value.trim();
@@ -84,11 +85,24 @@ function planCompetitionChange(pack, input, nowMs = Date.now()) {
     } else after.competitions.comite=scope.region(patch.regionId || before.competitions.comite);
   }
   function supplemental(table, row) {
-    if (!after[table]) { before[table] = row ? selectRow(row,SPECS[table]) : null; after[table] = row ? structuredClone(before[table]) : emptyRow(table,id,input.actorUid,now); }
+    if (!after[table]) { before[table] = row ? selectRow(row,supplementalSpec(table,row)) : null; after[table] = row ? structuredClone(before[table]) : emptyRow(table,id,input.actorUid,now); }
     return after[table];
   }
   for (const [field,value] of Object.entries(patch)) {
     if(field === "level" || field === "regionId") continue;
+    if(field==='entryFormat'){
+      if(!input.national||pack.event.level!=='national'||pack.event.eventType!=='pool'||!['classic','clubs','clubs_masters'].includes(value))throw new TypeError('Profil réservé à l’administration nationale piscine.');
+      if(!pack.teamSchemaReady)throw new TypeError('Les trois colonnes du module équipes doivent être préparées avant activation.');
+      const current=pack.options?.entry_format||'classic';if(current!=='classic'&&value!==current)throw new TypeError('Le profil réglementaire de cette édition est définitif.');
+      const options=supplemental('livepalmes_competition_options',pack.options);options.entry_format=value;options.entry_rules_version=value==='classic'?null:require('./nap-team-entries').VERSION;
+      if(value!=='classic'){
+        if(after.competitions.date<'2026-09-01'||after.competitions.date>'2027-08-31')throw new TypeError('Ce profil couvre uniquement la saison 2026/2027.');
+        options.max_events_per_swimmer=2;after.compet_parametres.saisie=0;
+        const period=require('./nap-team-entry-resolution').period(after.competitions.date);after.compet_parametres.tps_d=period.start;after.compet_parametres.tps_f=period.end;
+        const fee=supplemental('livepalmes_competition_fees',pack.fees);fee.team_fee='70.00';fee.enabled=1;fee.swimmer_fee=value==='clubs'?'10.00':'0.00';fee.individual_event_fee=value==='clubs'?'5.00':'0.00';fee.relay_fee='0.00';
+      }
+      continue;
+    }
     if(field === "eventType") {
       const kinds=require("./nap-calendar-event-details").KINDS;
       if(!kinds.has(pack.event.competitionType)||!kinds.has(value))throw new TypeError("Type de formation, stage ou reunion requis.");
@@ -156,6 +170,13 @@ function planCompetitionChange(pack, input, nowMs = Date.now()) {
     } else throw new TypeError("Ce champ n'est pas encore raccorde a NAP.");
   }
   const start=after.competitions.date,end=after.competitions.enddate || start;
+  const teamFormat=(after.livepalmes_competition_options||pack.options)?.entry_format||'classic';
+  if(teamFormat!=='classic'){
+    const options=after.livepalmes_competition_options||pack.options,fees=after.livepalmes_competition_fees||pack.fees,period=require('./nap-team-entry-resolution').period(start);
+    if(start<'2026-09-01'||start>'2027-08-31'||effectiveLevel!=='national'||Number(options?.max_events_per_swimmer)!==2||Number(after.compet_parametres.saisie)!==0||after.compet_parametres.tps_d!==period.start||after.compet_parametres.tps_f!==period.end)throw new TypeError('Les règles du profil 2026/2027 sont fixes.');
+    const hc=teamFormat==='clubs';if(!fees||Number(fees.enabled)!==1||Number(fees.team_fee)!==70||Number(fees.swimmer_fee)!==(hc?10:0)||Number(fees.individual_event_fee)!==(hc?5:0)||Number(fees.relay_fee)!==0)throw new TypeError('Les tarifs du profil par équipes sont fixes.');
+    if(pack.groups.length||pack.standards.length||Number(pack.nativeParameters.qualif)>0)throw new TypeError('Le profil par équipes ne peut pas reprendre une grille de qualification.');
+  }
   if ((Object.hasOwn(patch,"date") || Object.hasOwn(patch,"endDate")) && end<start) throw new TypeError("La date de fin doit suivre la date de debut.");
   if ((Object.hasOwn(patch,"qualificationStartDate") || Object.hasOwn(patch,"qualificationEndDate")) && after.compet_parametres.tps_d && after.compet_parametres.tps_f && after.compet_parametres.tps_d>after.compet_parametres.tps_f) throw new TypeError("Periode des temps invalide.");
   if (patch.entryStatus === "open") {
@@ -187,9 +208,9 @@ function operationHash(input) {
 }
 
 function buildStatement(item, authority) {
-  const spec=SPECS[item.table];
+  const spec=supplementalSpec(item.table,item.after);
   if(!spec || item.key!==spec.key) throw new TypeError("Table de correction invalide.");
-  const after=selectRow(item.after,spec),before=item.before ? selectRow(item.before,spec) : null;
+    const after=selectRow(item.after,spec),before=item.before ? selectRow({...Object.fromEntries(spec.columns.map(k=>[k,null])),...item.before},spec) : null;
   const value=(key,row)=>JSON_COLUMNS.has(key) && row[key] != null ? JSON.stringify(normalizedRow(row)[key]) : row[key];
   const scope=authorityGuard(item.table,authority);
   if(before) {
@@ -212,6 +233,9 @@ async function applyCompetitionChange(pool, input, audit, authorize) {
     const pack=await native.readNativeCompetition(connection,input.competitionId,authorize);
     if (!pack) throw new TypeError("Competition introuvable.");
     if(!saved) {
+      if(input.patch?.entryFormat&&input.patch.entryFormat!=='classic'&&(pack.options?.entry_format||'classic')==='classic'){
+        if((await query('SELECT id FROM nageursengager FORCE INDEX (livepalmes_compet_nageur_id) WHERE compet=? LIMIT 1',[input.competitionId])).length||(await query('SELECT id FROM engagements_relais FORCE INDEX (livepalmes_compet_club_id) WHERE compet=? LIMIT 1',[input.competitionId])).length)throw new TypeError('Des engagements existent déjà : leur rattachement aux équipes doit être préparé avant activation.');
+      }
       const plan=planCompetitionChange(pack,input);
       saved={...plan,actorUid:input.actorUid,expectedFingerprint:input.expectedFingerprint,operation,planHash:rowHash({operations:plan.operations})};
       if(Buffer.byteLength(JSON.stringify(saved))>500000) throw new RangeError("Sauvegarde trop volumineuse.");
@@ -252,8 +276,8 @@ async function applyCompetitionChange(pool, input, audit, authorize) {
         if(!isDeepStrictEqual((await rows()).map(row=>row.comite),item.after)) throw new Error("Liste des regions a verifier : sauvegarde conservee.");
         continue;
       }
-      const spec=SPECS[item.table]; if(!spec || item.key!==spec.key) throw new TypeError("Table de correction invalide.");
-      const after=selectRow(item.after,spec), before=item.before ? selectRow(item.before,spec) : null;
+      const spec=supplementalSpec(item.table,item.after); if(!spec || item.key!==spec.key) throw new TypeError("Table de correction invalide.");
+      const after=selectRow(item.after,spec), before=item.before ? selectRow({...Object.fromEntries(spec.columns.map(k=>[k,null])),...item.before},spec) : null;
       if(Number(after[spec.key])!==(spec.key === "competition_id" ? saved.competitionId : item.table === "competitions" ? saved.competitionId : Number(pack.nativeParameters.parameter_id)) || item.table === "compet_parametres" && Number(after.compet)!==saved.competitionId) throw new TypeError("Identifiant de correction incompatible.");
       const read=async()=>query(`SELECT ${spec.columns.map(key=>`\`${key}\``).join(",")} FROM \`${item.table}\` WHERE \`${spec.key}\`=? LIMIT 1`,[after[spec.key]]);
       const current=await read();

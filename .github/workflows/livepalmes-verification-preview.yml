@@ -84,6 +84,20 @@ jobs:
         if: steps.test-scope.outputs.documentation != 'true'
         run: node tools/verify-livepalmes.js
 
+      - name: Verifier les ecritures par equipes dans MySQL isole
+        if: ${{ !cancelled() && steps.test-scope.outputs.documentation != 'true' }}
+        env:
+          NAP_TEAM_FIXTURE_ALLOWED: isolated-ci
+          NAP_TEAM_FIXTURE_PASSWORD: isolated-team-fixture-only
+        run: |
+          docker run -d --name livepalmes-team-mysql -e MYSQL_ROOT_PASSWORD="$NAP_TEAM_FIXTURE_PASSWORD" -e MYSQL_ROOT_HOST=% -p 127.0.0.1:33317:3306 mysql:5.7.30
+          trap 'docker rm -f livepalmes-team-mysql >/dev/null 2>&1 || true' EXIT
+          for attempt in $(seq 1 60); do
+            if docker exec livepalmes-team-mysql mysqladmin ping --protocol=TCP -h127.0.0.1 -uroot -p"$NAP_TEAM_FIXTURE_PASSWORD" --silent >/dev/null 2>&1; then break; fi
+            sleep 1
+          done
+          node tests/nap-team-entry-mysql-tests.js
+
       - name: Enregistrer la verification du commit main exact
         if: github.event_name == 'push' && steps.test-scope.outputs.documentation != 'true'
         run: python tools/test-verification-evidence.py record "$RUNNER_TEMP/application-verification"

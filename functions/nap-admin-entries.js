@@ -7,7 +7,7 @@ const { person } = require("./nap-swimmer-profile");
 const { entryItem } = require("./nap-entry-view");
 const {storedCategory}=require("./nap-relay-resolution");
 const licenseState=require("./nap-license-state");
-const LIMITS=Object.freeze({inscriptions:5000,individual:20000,relays:2000,members:8000,officials:2000,leaders:1000,options:500,clubs:500,categories:200});
+const LIMITS=Object.freeze({inscriptions:5000,individual:20000,relays:2000,members:12000,officials:2000,leaders:1000,options:500,clubs:500,categories:200});
 async function readAdminEntries(connection,input,authorize,services) {
   const id=positiveId(input?.competitionId);
   if(typeof authorize!=="function" || typeof services?.category!=="function" || !input.competition) throw new TypeError("Competition et controle administrateur requis.");
@@ -17,7 +17,7 @@ async function readAdminEntries(connection,input,authorize,services) {
   if(inscriptions.some(row=>!row.id || !row.club)) throw new TypeError("Inscription NAP sans fiche ou club : verification requise.");
   const individual=await read("individual","SELECT g.id,g.engagement,g.course,g.tps FROM nageursengager e FORCE INDEX (livepalmes_compet_nageur_id) STRAIGHT_JOIN engagements g FORCE INDEX (engagements_clef) ON g.engagement=e.id WHERE e.compet=? ORDER BY e.nageur,e.id,g.course,g.id LIMIT 20001");
   const relays=await read("relays","SELECT r.id,r.compet,r.categorie,r.club,r.course,r.tps,d.course AS course_code,d.sexe,d.relais FROM engagements_relais r FORCE INDEX (livepalmes_compet_club_id) LEFT JOIN course_dispo d ON d.id=r.course WHERE r.compet=? ORDER BY r.club,r.id LIMIT 2001");
-  const members=await read("members",`SELECT m.id,m.relais,m.pos,m.nageur,n.nom,n.prenom,n.date,n.sexe,n.number,n.club,${licenseState.projection()} FROM engagements_relais r FORCE INDEX (livepalmes_compet_club_id) STRAIGHT_JOIN engagements_relayeurs m FORCE INDEX (livepalmes_relais_pos_id) ON m.relais=r.id LEFT JOIN nageurs n ON n.id=m.nageur ${licenseState.join()} WHERE r.compet=? ORDER BY r.club,r.id,m.pos,m.id LIMIT 8001`);
+  const members=await read("members",`SELECT m.id,m.relais,m.pos,m.nageur,n.nom,n.prenom,n.date,n.sexe,n.number,n.club,${licenseState.projection()} FROM engagements_relais r FORCE INDEX (livepalmes_compet_club_id) STRAIGHT_JOIN engagements_relayeurs m FORCE INDEX (livepalmes_relais_pos_id) ON m.relais=r.id LEFT JOIN nageurs n ON n.id=m.nageur ${licenseState.join()} WHERE r.compet=? ORDER BY r.club,r.id,m.pos,m.id LIMIT 12001`);
   const officials=await read("officials","SELECT e.id,e.compet,e.officiel,e.club,COALESCE(h.nom,o.nom) AS nom,COALESCE(h.prenom,o.prenom) AS prenom,COALESCE(h.date,o.date) AS date FROM officielsengager e FORCE INDEX (livepalmes_compet_club_id) LEFT JOIN officiels o ON o.id=e.officiel LEFT JOIN livepalmes_deleted_people_history h ON h.engagement_id=e.id AND h.person_id=e.officiel AND h.competition_id=e.compet AND h.entry_club=e.club WHERE e.compet=? ORDER BY e.club,e.id LIMIT 2001");
   const leaders=await read("leaders","SELECT id,compet,nom,prenom,date,club,pourclub FROM chefsdequipe FORCE INDEX (livepalmes_compet_id) WHERE compet=? ORDER BY id LIMIT 1001");
   const options=await read("options","SELECT * FROM livepalmes_club_entry_options FORCE INDEX (PRIMARY) WHERE competition_id=? ORDER BY club_id LIMIT 501");

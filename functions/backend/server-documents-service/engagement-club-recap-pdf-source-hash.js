@@ -34,6 +34,7 @@ function createDocumentsService_engagementClubRecapPdfSourceHash(backendContext)
         clubName: entry.clubName,
         regionId: entry.regionId,
         teamLeader: entry.teamLeader,
+        teamEntries: entry.teamEntries,
         officials: entry.officials,
         swimmers: entry.swimmers,
         relays: entry.relays,

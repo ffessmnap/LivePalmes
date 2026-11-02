@@ -4,7 +4,7 @@ const { positiveId } = require("./nap-calendar-values");
 const { bounded } = require("./nap-competition-query");
 const { listPortalClubSwimmers } = require("./nap-portal-swimmer-readers");
 const licenseState=require("./nap-license-state");
-const LIMITS = Object.freeze({ swimmers: 800, inscriptions: 800, individual: 5000, relays: 200, members: 1200, officials: 200, leaders: 20 });
+const LIMITS = Object.freeze({ swimmers: 800, inscriptions: 800, individual: 5000, relays: 400, members: 2400, officials: 200, leaders: 20 });
 const placeholders = rows => rows.map(() => "?").join(",");
 async function readNativeClubEntry(connection, input, authorize) {
   if (typeof authorize !== "function") throw new TypeError("Controle du dossier club requis.");
@@ -24,11 +24,11 @@ async function readNativeClubEntry(connection, input, authorize) {
     `SELECT id,engagement,course,tps FROM engagements FORCE INDEX (engagements_clef) WHERE engagement IN (${placeholders(inscriptionIds)}) ORDER BY engagement,course,id LIMIT 5001`,
     inscriptionIds, LIMITS.individual) : [];
   const relays = await bounded(connection,
-    "SELECT r.id,r.compet,r.categorie,r.club,r.course,r.tps,d.course AS course_code,d.sexe,d.relais FROM engagements_relais r FORCE INDEX (livepalmes_compet_club_id) LEFT JOIN course_dispo d ON d.id=r.course WHERE r.compet=? AND r.club=? ORDER BY r.id LIMIT 201",
+    "SELECT r.id,r.compet,r.categorie,r.club,r.course,r.tps,d.course AS course_code,d.sexe,d.relais FROM engagements_relais r FORCE INDEX (livepalmes_compet_club_id) LEFT JOIN course_dispo d ON d.id=r.course WHERE r.compet=? AND r.club=? ORDER BY r.id LIMIT 401",
     [competitionId, clubId], LIMITS.relays);
   const relayIds = relays.map(row => positiveId(row.id));
   const members = relayIds.length ? await bounded(connection,
-    `SELECT m.id,m.relais,m.pos,m.nageur,n.nom,n.prenom,n.date,n.sexe,n.number,n.club,${licenseState.projection()} FROM engagements_relayeurs m FORCE INDEX (livepalmes_relais_pos_id) LEFT JOIN nageurs n ON n.id=m.nageur ${licenseState.join()} WHERE m.relais IN (${placeholders(relayIds)}) ORDER BY m.relais,m.pos,m.id LIMIT 1201`,
+    `SELECT m.id,m.relais,m.pos,m.nageur,n.nom,n.prenom,n.date,n.sexe,n.number,n.club,${licenseState.projection()} FROM engagements_relayeurs m FORCE INDEX (livepalmes_relais_pos_id) LEFT JOIN nageurs n ON n.id=m.nageur ${licenseState.join()} WHERE m.relais IN (${placeholders(relayIds)}) ORDER BY m.relais,m.pos,m.id LIMIT 2401`,
     relayIds, LIMITS.members) : [];
   const officials = await bounded(connection,
     "SELECT e.id,e.compet,e.officiel,e.club,COALESCE(h.nom,o.nom) AS nom,COALESCE(h.prenom,o.prenom) AS prenom,COALESCE(h.date,o.date) AS date FROM officielsengager e FORCE INDEX (livepalmes_compet_club_id) LEFT JOIN officiels o ON o.id=e.officiel LEFT JOIN livepalmes_deleted_people_history h ON h.engagement_id=e.id AND h.person_id=e.officiel AND h.competition_id=e.compet AND h.entry_club=e.club WHERE e.compet=? AND e.club=? ORDER BY e.id LIMIT 201",

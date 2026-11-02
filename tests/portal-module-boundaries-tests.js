@@ -68,12 +68,13 @@ for (const file of fs.readdirSync("assets/portal/deferred").filter(name => name.
 }
 const styles = fs.readFileSync("assets/livepalmes-admin-portal.css", "utf8");
 const imports = [...styles.matchAll(/@import url\("([^"?]+)\?([^"?]+)"\);/g)];
-assert.equal(imports.length, 16);
+assert.equal(imports.length, 17);
 for (const match of imports) {
   assert.ok(fs.existsSync("assets/" + match[1]));
   assert.ok(html.includes('="assets/' + match[1] + '?' + match[2] + '"'), "Ordered stylesheet slot: " + match[1]);
 }
 const slots = [...html.matchAll(/data-portal-style="(\d+)"/g)].map(match => Number(match[1]));
-assert.deepEqual(slots, Array.from({length:16}, (_, index) => index), "Lazy CSS keeps the original cascade order");
-assert.equal((html.match(/data-portal-style="\d+" data-portal-style-src=/g) || []).length, 8, "Only home styles load initially");
+assert.deepEqual(slots, Array.from({length:17}, (_, index) => index), "Lazy CSS keeps the original cascade order");
+assert.equal((html.match(/data-portal-style="\d+" data-portal-style-src=/g) || []).length, 9, "Only home styles load initially; team styles stay deferred");
+assert.match(html,/data-portal-style="16" data-portal-style-src="assets\/portal\/styles\/16-team-entries\.css\?[^\"]+" data-portal-style-view="engagements"/);
 console.log("Portal boundaries: actual factories, no eager state access, unique functions, explicit live dependencies and ordered style preloads passed.");

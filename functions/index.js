@@ -4929,6 +4929,11 @@ function $serverEntryService_saveNativeClubIndividualEntries() {
 function $serverEntryService_saveNativeClubSwimmerSelections() {
   if (!$serverEntryService_saveNativeClubSwimmerSelections.instance) $serverEntryService_saveNativeClubSwimmerSelections.instance = require("./backend/server-entry-service/save-native-club-swimmer-selections").createEntryService_saveNativeClubSwimmerSelections({
     get ENGAGEMENT_EVENT_DEFINITION_BY_CODE() { return ENGAGEMENT_EVENT_DEFINITION_BY_CODE; },
+    get ENGAGEMENT_EVENT_FORBIDDEN_CATEGORIES() { return ENGAGEMENT_EVENT_FORBIDDEN_CATEGORIES; },
+    get importSeasonYear() { return importSeasonYear; },
+    get competitionYear() { return competitionYear; },
+    get birthYear() { return birthYear; },
+    get ageCategoryFromDates() { return ageCategoryFromDates; },
     get HttpsError() { return HttpsError; },
     get cleanIsoDate() { return cleanIsoDate; },
     get cleanText() { return cleanText; },
@@ -5820,6 +5825,7 @@ if (ENVIRONMENT.projectId === "livepalmes-test") {
     const noraClubs = request.method === "POST" && request.query.action === "approved-nora-performance-clubs";
     const portalSchema = request.method === "POST" && request.query.action === "approved-portal-schema";
     const closureSchema = request.method === "POST" && request.query.action === "approved-closure-schema";
+    const teamEntrySchema=request.method==='POST'&&request.query.action==='approved-team-entry-schema'&&ENVIRONMENT.projectId==='livepalmes-test';
     const peopleSchema = request.method === "POST" && request.query.action === "approved-people-schema";
     const dtnSchema = request.method === "POST" && request.query.action === "approved-dtn-schema";
     const licenseReports = request.method === "POST" && request.query.action === "approved-license-reports";
@@ -5828,7 +5834,7 @@ if (ENVIRONMENT.projectId === "livepalmes-test") {
     const homeRefresh = request.method === "POST" && request.query.action === "home-events-refresh";
     if (request.method === "GET" && request.query.action === "approved-club-account-emails") { response.status(405).json({ error: "Methode interdite." }); return; }
     if (request.method === "GET" && request.query.action === "home-events-refresh") { response.status(405).json({ error: "Methode interdite." }); return; }
-    if (request.method !== "GET" && !indexOperation && !swimmerCorrection && !noraClubs && !portalSchema && !closureSchema && !peopleSchema && !dtnSchema && !dtnSettings && !licenseReports && !accountEmails && !homeRefresh || request.method === "GET" && ["approved-index", "approved-swimmer-correction", "approved-nora-performance-clubs", "approved-portal-schema", "approved-closure-schema", "approved-people-schema", "approved-dtn-schema", "approved-dtn-settings", "approved-license-reports"].includes(request.query.action)) { response.status(405).json({ error: "Methode interdite." }); return; }
+    if (request.method !== "GET" && !teamEntrySchema && !indexOperation && !swimmerCorrection && !noraClubs && !portalSchema && !closureSchema && !peopleSchema && !dtnSchema && !dtnSettings && !licenseReports && !accountEmails && !homeRefresh || request.method === "GET" && ["approved-team-entry-schema","approved-index", "approved-swimmer-correction", "approved-nora-performance-clubs", "approved-portal-schema", "approved-closure-schema", "approved-people-schema", "approved-dtn-schema", "approved-dtn-settings", "approved-license-reports"].includes(request.query.action)) { response.status(405).json({ error: "Methode interdite." }); return; }
     try {
       if (!napPool) napPool = createNapPool(napPassword.value());
       const data = noraClubs ? await require("./nap-nora-performance-clubs").repair(napPool, request.body, {
@@ -5843,6 +5849,7 @@ if (ENVIRONMENT.projectId === "livepalmes-test") {
         : peopleSchema ? request.body?.confirmation === "nap-add-official-identity-fields"
           ? await require("./nap-approved-official-identity-schema").approvedOfficialIdentitySchema(napPool,request.body)
           : await require("./nap-approved-people-schema").approvedPeopleSchema(napPool, request.body)
+        : teamEntrySchema ? await require('./nap-approved-team-entry-schema').approvedTeamEntrySchema(napPool,request.body)
         : closureSchema ? await require("./nap-approved-closure-schema").approvedClosureSchema(napPool, request.body)
         : portalSchema ? await require("./nap-approved-portal-schema").approvedPortalSchema(napPool, request.body)
         : swimmerCorrection ? await require("./nap-approved-swimmer-correction").approvedSwimmerCorrection(napPool, request.body, {
@@ -6052,6 +6059,9 @@ const COURSE_META = {
   "400BI": ["400 m Bi-palmes", "400 BI", "BI", 400]
 };
 const ENGAGEMENT_RELAY_EVENTS = [
+  ["6X100SBI", "6 x 100 m Surface/Bi-palmes/Immersion", "6 x 100 SBI", "SBI", 100, 6],
+  ["6X50SF", "6 x 50 m Surface", "6 x 50 SF", "SF", 50, 6],
+  ["6X50SBA", "6 x 50 m Surface/Bi-palmes/Apnée", "6 x 50 SBA", "SBA", 50, 6],
   ["4X50SF", "4 x 50 m Surface", "4 x 50 SF", "SF", 50, 4, "mastersOnly"],
   ["4X100SF", "4 x 100 m Surface", "4 x 100 SF", "SF", 100, 4],
   ["4X200SF", "4 x 200 m Surface", "4 x 200 SF", "SF", 200, 4],

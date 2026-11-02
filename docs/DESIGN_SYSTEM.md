@@ -2,6 +2,12 @@
 
 <!-- description: Référence du langage visuel, des composants d’interface et des règles responsive déjà présents dans LivePalmes. -->
 
+## Engagements par équipes — variante du portail
+
+Le module conserve les panneaux Participants, Individuels, Relais et Récapitulatif du parcours existant. Une navigation compacte affiche les équipes par sexe et lettre, puis « Hors concours sans équipe ». Boutons, champs et messages reprennent les variables de thème du portail.
+
+Titulaires et remplaçant utilisent une grille de deux colonnes sur ordinateur et une sur mobile. La matrice défile horizontalement dans son cadre, avec nom fixe et cibles de 44 px pour les cases. Les six positions restent accessibles au toucher. L'enregistrement du dossier global est proposé dans chaque panneau, avec état non enregistré, en cours ou reprise explicite. Variante dans `assets/portal/styles/16-team-entries.css`, chargée dans la cascade existante.
+
 ## Reconnexion et chargement de rubrique — 2 novembre 2026
 
 La reconnexion du portail utilise un dialogue natif modal, largeur maximale 460 px, marge de 16 px et hauteur défilable bornée au viewport. Compte en lecture seule, mot de passe avec autocomplétion adaptée, message `aria-live` et actions d’au moins 44 px. Le fond privé reste masqué et inerte ; le focus va au mot de passe. Le dialogue conserve les saisies de la page en mémoire. Le chargement initial d’outils affiche un statut visible sans déplacer la page ; une erreur demande de relancer l’action, sans rejeu automatique d’enregistrement.

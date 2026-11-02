@@ -2,6 +2,16 @@
 
 <!-- description: Budgets actuels NAP, mesures après bascule et suivi des optimisations ; remplace les recommandations Firestore historiques. -->
 
+## Dossiers par équipes — budget et plafonds
+
+Conception avant implémentation : réutiliser les lecteurs de compétition et de dossier, aucun appel supplémentaire à l'ouverture, aucun listener. La capacité des trois colonnes provient des métadonnées des SELECT existants, même sans ligne complémentaire. L'annuaire utilise son lecteur paginé et son cache existants. Changement d'équipe, composition, choix de course et tarif local : zéro RPC ; retour en mémoire : zéro relecture ajoutée. Rafraîchissement : lecteurs existants, dossier au plus 26 requêtes SQL et 21 920 lignes théoriques, dont 400 relais et 2 400 membres bornés pour les six positions.
+
+Enregistrement : un RPC global, plafond dur 120 appels SQL (lectures groupées, contrôles, EXPLAIN et mutations), au plus 12 mutations groupées ; 800 personnes, 5 000 individuels, 400 relais et 2 400 membres. Historique : lots de 100 titulaires ayant des courses, au plus huit lectures indexées de 20 000 résultats bruts ; aucune requête par nageur. Audit Firestore existant : lecture de préparation, création avant écriture et trace finale idempotente. Les contrôles d'accès existants s'ajoutent à ces budgets. Reprise explicite du même identifiant après résultat incertain, aucune relance automatique ni reconstruction de cache.
+
+Export national : neuf SELECT groupés au plus, sans dossier lu par club ; borne des membres portée de 8 000 à 12 000 pour 2 000 relais à six, autres limites inchangées. Coût borné par la compétition et les listes demandées, jamais par le volume total NAP. Aucun nouvel index, table ou agrégat. Les mutations sont précédées d'EXPLAIN et refusent un parcours natif ALL. Tests SQL réels sur MySQL 5.7 isolé, sans connexion NAP ; latence réelle et import WinPalme restent à contrôler lors de la recette TEST.
+
+Ajout d'un relais à six au programme national : catalogue NAP existant réutilisé, aucune référence créée. Les paramètres particuliers des six références ont été constatés par le [diagnostic en lecture seule du 2 novembre](https://github.com/ffessmnap/LivePalmes/actions/runs/41528577288). Pour ce profil seulement, trois lectures groupées supplémentaires au plus : catégories avant et sous verrou (200 lignes chacune), profil sous verrou (une ligne). Aucun accès par relais ou par nageur ; tout écart du catalogue, des catégories ou du profil interdit l'ajout.
+
 ## Réactivité et session du portail — 2 novembre 2026
 
 Le [chantier approuvé jusqu’à TEST](PORTAIL_REACTIVITE.md) remplace le préchargement d’accueil du 30 octobre : calendrier et effectif ne sont plus lus avant l’ouverture de leur écran. Zéro SELECT de ces deux préchargements sur l’accueil, au lieu de deux/trois selon la période ; leurs bornes et fraîcheur à la consultation sont conservées. Huit lectures identiques simultanées sont mutualisées sans cache NAP temporisé. La session ajoute une lecture Firestore fixe par RPC privé TEST, avec budgets séparés documentés ; ce coût de sécurité n’est pas masqué par les économies SQL. Aucun index, donnée sportive, configuration MySQL ou envoi réel modifié.

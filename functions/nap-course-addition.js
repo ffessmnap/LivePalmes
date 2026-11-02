@@ -10,10 +10,10 @@ const {operationHash,authorityGuard}=require("./nap-portal-competition-change");
 const { positiveId } = require("./nap-calendar-values");
 const COLUMNS=["compet","pos","id_course","opencourse","cost","limitnageur"];
 const READ="SELECT id,compet,pos,id_course,opencourse,cost,limitnageur FROM compet_courses WHERE compet=? ORDER BY pos,id LIMIT 301";
-const CATALOG="SELECT id,course,sexe,final,relais,categorie,ld,mixte,actif FROM course_dispo FORCE INDEX(PRIMARY) WHERE id>0 ORDER BY id LIMIT 301";
+const CATALOG="SELECT id,course,sexe,final,relais,categorie,ld,mixte,nbnageur,actif FROM course_dispo FORCE INDEX(PRIMARY) WHERE id>0 ORDER BY id LIMIT 301";
 const project=row=>Object.fromEntries(COLUMNS.map(key=>[key,row[key]]));
 const same=(a,b)=>COLUMNS.every(key=>a[key]==null||b[key]==null ? a[key]===b[key] : String(a[key])===String(b[key]));
-function planAdditions(pack,raw,catalog,defaults,definitions){
+function planAdditions(pack,raw,catalog,defaults,definitions,categories=null){
   const water=pack.event.eventType==="openWater"||pack.event.competitionType==="openWater";
   if(!water&&pack.event.eventType!=="pool"&&pack.event.competitionType!=="pool")throw new TypeError("Type de competition incompatible avec l'ajout natif.");
   if(!Array.isArray(raw)||!raw.length||raw.length>80||new Set(raw.map(row=>row?.code)).size!==raw.length)throw new TypeError("Selection de courses invalide.");
@@ -39,7 +39,11 @@ function planAdditions(pack,raw,catalog,defaults,definitions){
     const definition=definitions?.get(event.code)||(waterRows.length?require('./nap-open-water-courses').definition(waterRows[0].course):null);
     if(!definition)throw new TypeError("Course inconnue du programme LivePalmes.");
     const mixed=definition.relayMixedRule==="required"||definition.relayMixedRule==="mastersOnly"&&event.relayMixedMode==="masters";
-    const rows=catalog.filter(row=>(water?require('./nap-open-water-courses').definition(row.course)?.code===event.code:nativeCourseCode(row.course)===event.code)&&Number(row.final)===0&&Number(row.actif)===1&&Number(row.ld)===(water?1:0)&&Number(row.categorie)===0&&Boolean(Number(row.relais))===(definition.type==="relay")&&Boolean(Number(row.mixte))===mixed);
+    const teamRelay=require('./nap-team-entries').profile(pack)?.format==='clubs'&&Object.hasOwn(require('./nap-team-entries').PROFILES.clubs.relays,event.code);
+    // Real NAP references 459–464: six swimmers, sex-specific senior
+    // category, mixte=1. That flag does not turn these teams into mixed teams.
+    const teamReference=row=>Array.isArray(categories)&&['F','M'].includes(row.sexe)&&Number(row.nbnageur)===6&&Number(row.mixte)===1&&Number(row.categorie)===require('./nap-relay-resolution').nativeCategory('S',row.sexe==='F'?'female':'male',categories);
+    const rows=catalog.filter(row=>(water?require('./nap-open-water-courses').definition(row.course)?.code===event.code:nativeCourseCode(row.course)===event.code)&&Number(row.final)===0&&Number(row.actif)===1&&Number(row.ld)===(water?1:0)&&Boolean(Number(row.relais))===(definition.type==="relay")&&(teamRelay?teamReference(row):Number(row.categorie)===0&&Boolean(Number(row.mixte))===mixed));
     if(mixed ? rows.length!==1||String(rows[0].sexe)!=="0" : rows.length!==2||new Set(rows.map(row=>row.sexe)).size!==2||!rows.every(row=>["M","F"].includes(row.sexe)))throw new TypeError(`Correspondance native absente ou ambigue : ${event.code}.`);
     for(const row of rows)if(!existing.has(Number(row.id))){additions.push({compet:positiveId(pack.event.id),pos:++pos,id_course:Number(row.id),...fallback});existing.add(Number(row.id));}
   }
@@ -65,20 +69,26 @@ async function addNativeCourses(pool,input,audit,authorize){
     let saved=await audit.read(operation);
     if(!saved&&fingerprint(pack)!==input.expectedFingerprint)throw new TypeError("La competition a change. Rechargez la fiche.");
     const catalog=await query(CATALOG);
+    const teamCatalog=require('./nap-team-entries').profile(pack)?.format==='clubs'&&input.patch.addNativeCourses.some(event=>Object.hasOwn(require('./nap-team-entries').PROFILES.clubs.relays,event.code));
+    const categories=teamCatalog?await require('./nap-entry-course-rules').readCategories(connection):null;
     const defaults=await query("SELECT COLUMN_NAME,COLUMN_TYPE,COLUMN_DEFAULT,IS_NULLABLE,EXTRA FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='compet_courses' AND COLUMN_NAME IN ('opencourse','cost','limitnageur') ORDER BY COLUMN_NAME LIMIT 4");
     if((await query("SELECT TRIGGER_NAME FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA=DATABASE() AND EVENT_OBJECT_TABLE='compet_courses' LIMIT 1")).length)throw new TypeError("Declencheur natif a verifier avant ajout.");
     const authority={competitions:pack.nativeSnapshot.competition,compet_parametres:pack.nativeSnapshot.parameters};
     if(saved){
       if(saved.kind!=="native-course-addition"||saved.operation!==operation||saved.actorUid!==input.actorUid||saved.competitionId!==id||saved.expectedFingerprint!==input.expectedFingerprint||!isDeepStrictEqual(saved.authority,authority)||!isDeepStrictEqual(saved.catalog,catalog)||!isDeepStrictEqual(saved.defaults,defaults)||!Array.isArray(saved.before)||!Array.isArray(saved.additions))throw new TypeError("Sauvegarde d'ajout incompatible.");
-      if(!isDeepStrictEqual(planAdditions({...pack,courses:saved.before},input.patch.addNativeCourses,catalog,defaults,input.eventDefinitions),saved.additions))throw new TypeError("Plan d'ajout incompatible.");
+      if(!isDeepStrictEqual(saved.categories||null,categories)||!isDeepStrictEqual(planAdditions({...pack,courses:saved.before},input.patch.addNativeCourses,catalog,defaults,input.eventDefinitions,categories),saved.additions))throw new TypeError("Plan d'ajout incompatible.");
     }else{
-      const additions=planAdditions(pack,input.patch.addNativeCourses,catalog,defaults,input.eventDefinitions);
+      const additions=planAdditions(pack,input.patch.addNativeCourses,catalog,defaults,input.eventDefinitions,categories);
       saved={kind:"native-course-addition",operation,actorUid:input.actorUid,competitionId:id,expectedFingerprint:input.expectedFingerprint,authority,catalog,defaults,before:pack.courses.map(row=>({id:row.id,compet:id,...project({...row,compet:id})})),additions};
+      if(teamCatalog)saved.categories=categories;
       await audit.prepare(operation,saved);
     }
     const plan=await query(`EXPLAIN ${READ}`,[id]);
     if(!plan.length||plan.some(row=>row.table&&(!row.key||row.type==="ALL")))throw new TypeError("Index des courses a verifier.");
-    await query("LOCK TABLES compet_courses WRITE, course_dispo READ, competitions AS scope_c READ, compet_parametres AS scope_p READ");locked=true;
+    await query("LOCK TABLES compet_courses WRITE, course_dispo READ, competitions AS scope_c READ, compet_parametres AS scope_p READ"+(teamCatalog?', categories READ, livepalmes_competition_options READ':''));locked=true;
+    if(teamCatalog){
+      if(!isDeepStrictEqual(await require('./nap-entry-course-rules').readCategories(connection),categories)||!isDeepStrictEqual((await query('SELECT * FROM livepalmes_competition_options WHERE competition_id=? LIMIT 1',[id]))[0]||null,pack.options))throw new TypeError('Le profil ou les catégories de référence ont changé.');
+    }
     if((await query("SELECT TRIGGER_NAME FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA=DATABASE() AND EVENT_OBJECT_TABLE='compet_courses' LIMIT 1")).length)throw new TypeError("Declencheur natif a verifier avant ajout.");
     const guard=authorityGuard("compet_courses",authority);
     if(!(await query(`SELECT 1 AS authorized FROM DUAL WHERE ${guard.sql}`,guard.values)).length)throw new TypeError("Le perimetre a change. Rechargez la fiche.");

@@ -34,6 +34,7 @@ const beforeNative=JSON.stringify(nativeEntry);
 const summaryContext={elements:{engagementsClubSummaryList:{},engagementsClubNativeSummary:{}},selectedEngagementCompetition:{napSource:true,fees:{enabled:false},officialsRequired:false},selectedEngagementClubEntry:nativeEntry,
   escapeHtml:value=>String(value).replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;"),engagementRowValueHtml:value=>String(value),currentEngagementClubSwimmersForSummary:entry=>entry.swimmers,
   selectedEngagementClubRelayRows:()=>nativeEntry.relays,engagementClubRelayNeedsCompletion:()=>true,currentEngagementClubOfficialCount:()=>0,engagementFeeAmount:()=>0,engagementExternalHttpUrl:()=>"",engagementTeamLeadersWhatsAppValue:()=>"",engagementClubSummaryTeamLeaderLabel:()=>"Leader",engagementEventDefinition:()=>null};
+summaryContext.teamEntrySection=()=>false; // Classic native recap fixture.
 vm.createContext(summaryContext);
 vm.runInContext(source.slice(source.indexOf("  function compareEngagementSwimmersByName("),source.indexOf("  function engagementPublicSwimmerProfileUrl(")),summaryContext);
 vm.runInContext(source.slice(source.indexOf("  function renderEngagementClubSummary("),source.indexOf("  function renderEngagementClubRelays(")),summaryContext);

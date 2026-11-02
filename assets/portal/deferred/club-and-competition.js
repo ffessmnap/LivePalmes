@@ -1209,6 +1209,7 @@
         values.entryDeadlineLocal = deadline ? `${deadline.replace("T", " ")}${deadline.length === 16 ? ":00" : ""}` : "";
         values.fees = portalActions.selectedEngagementFeesFromForm();
         values.programSessions = portalActions.selectedEngagementProgramSessionsFromForm();
+        const teamFormat=portalContext.elements.engagementsEditForm?.querySelector('select[name="teamEntryFormat"]');if(teamFormat&&!teamFormat.disabled)values.entryFormat=teamFormat.value;
         if(typeof portalActions.selectedEngagementEventsFromForm==='function' && portalContext.elements.engagementsEventsForm)values.courseOptions=portalActions.selectedEngagementEventsFromForm().map(event=>({code:event.code,categoryRestrictions:event.categoryRestrictions||[],...(event.type==='relay'?{relayMixedMode:event.relayMixedMode||'',multipleRelaysAllowed:event.multipleRelaysAllowed===true}:{})}));
         if(typeof portalState.qualificationEditor!=='undefined' && portalState.qualificationEditor && typeof portalActions.canUse==='function' && portalActions.canUse('engagements.national.manage') && !document.querySelector('#adminQualificationEditor')?.disabled)values.qualifications=portalState.qualificationEditor.read();
         return values;

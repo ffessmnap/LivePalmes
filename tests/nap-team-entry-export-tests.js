@@ -1,0 +1,10 @@
+"use strict";
+const assert=require('node:assert/strict');
+const {relayMemberIds,buildWinPalmeCompetitionTxt}=require('../functions/winpalme-export');
+const people=Array.from({length:6},(_,i)=>({swimmerIndexId:String(i+1),firstName:'Test'+i,lastName:'FICTIF',sex:'F',birthDate:'2000-01-01',category:'S',individualEntries:[]}));
+const relay={eventCode:'6X100SBI',relayLegs:6,category:'S',genderMode:'female',entryTime:'05:00.00',members:people};
+assert.deepEqual(relayMemberIds(relay),['1','2','3','4','5','6']);assert.deepEqual(relayMemberIds({...relay,members:[]}),['','','','','','']);assert.deepEqual(relayMemberIds({...relay,relayLegs:4}),['1','2','3','4']);
+const competition={id:'42',name:'Fixture',date:'2026-12-12',competitionType:'pool',winPalmeId:'CNNP2026121242'};
+const result=buildWinPalmeCompetitionTxt(competition,[{clubId:'12',clubCode:'FIC',clubName:'Club fictif',swimmers:people,relays:[relay]}],new Map([['12',{federalNumber:'12345678',regionId:'4'}]]));
+const text=result.buffer.toString("utf8");assert.ok(typeof text==='string');const line=text.split(/\r?\n/).find(x=>x.startsWith('REL;'));assert.deepEqual(line.split(';').slice(5,11),['1','2','3','4','5','6']);
+console.log('Team TXT: six native member positions, blank compositions and unchanged four-member relays passed.');

@@ -1465,6 +1465,7 @@
         );
       }
     function renderEngagementCompetitionDetail(competition = {}) {
+        if(competition.napSource===true&&(portalActions.isEngagementAdminMode()&&portalActions.canUse('engagements.national.manage')||portalContext.elements.engagementsDetail?.querySelector('[data-team-export]')))void global.LivePalmesPortalDeferred.invoke(portalContext,'team-entries','renderAdmin',[],{});
         if (portalContext.elements.engagementsDetailRetry) portalContext.elements.engagementsDetailRetry.hidden = true;
         portalActions.renderQualificationJobActions(competition);
         portalActions.setEngagementCompetitionDetailVisible(true);

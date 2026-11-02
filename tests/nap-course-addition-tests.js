@@ -12,6 +12,10 @@ const selected=[{code:'50SF'},{code:'4X100SB'}];
 const proposed=planAdditions(pack,selected,catalog,defaults,definitions);
 assert.deepEqual(proposed.map(row=>row.id_course),[1,2,285]);
 assert.deepEqual(proposed.map(row=>row.pos),[1,2,3]);
+const teams={...pack,options:{entry_format:'clubs',entry_rules_version:'2026-2027-v1'}},teamDefinitions=new Map([['6X100SBI',{type:'relay'}]]),teamCatalog=[{id:459,course:'6X100SBI',sexe:'F',final:0,relais:1,categorie:12,ld:0,mixte:1,nbnageur:6,actif:1},{id:460,course:'6X100SBI',sexe:'M',final:0,relais:1,categorie:6,ld:0,mixte:1,nbnageur:6,actif:1}],teamCategories=[{id:6,abbr:'HHH'},{id:12,abbr:'FFF'}];
+assert.deepEqual(planAdditions(teams,[{code:'6X100SBI'}],teamCatalog,defaults,teamDefinitions,teamCategories).map(x=>x.id_course),[459,460]);
+assert.throws(()=>planAdditions(pack,[{code:'6X100SBI'}],teamCatalog,defaults,teamDefinitions,teamCategories),/ambigue/,'special native flags are allowed only in the Clubs profile');
+assert.throws(()=>planAdditions(teams,[{code:'6X100SBI'}],teamCatalog.map(x=>({...x,nbnageur:4})),defaults,teamDefinitions,teamCategories),/ambigue/);
 assert.throws(()=>planAdditions(pack,[{code:'unknown'}],catalog,defaults,definitions),/inconnue/);
 assert.throws(()=>planAdditions(pack,[selected[0],selected[0]],catalog,defaults,definitions),/invalide/);
 assert.throws(()=>planAdditions(pack,selected,[...catalog,catalog[0]],defaults,definitions),/ambigue/);
@@ -31,10 +35,13 @@ assert.throws(()=>missingAdditions([old,{id:101,...retained[0],id_course:777}],[
 const original=native.readNativeCompetition;
 function fixture(options={}){
   const state={rows:[],saved:null,inserts:0,completed:0,released:0,locked:false,sql:[],...options};
-  const input={competitionId:5220,actorUid:'admin',expectedFingerprint:fingerprint(pack),patch:{addNativeCourses:selected},eventDefinitions:definitions};
+  const runtimePack=options.team?teams:pack;
+  const input={competitionId:5220,actorUid:'admin',expectedFingerprint:fingerprint(runtimePack),patch:{addNativeCourses:options.team?[{code:'6X100SBI'}]:selected},eventDefinitions:options.team?teamDefinitions:definitions};
   const connection={release:()=>state.released++,destroy:()=>{},execute:async({sql},values=[])=>{
     state.sql.push(sql);assert.equal((sql.match(/\?/g)||[]).length,values.length);
-    if(sql.startsWith('SELECT id,course'))return [structuredClone(catalog)];
+    if(sql.startsWith('SELECT id,course'))return [structuredClone(options.team?teamCatalog:catalog)];
+    if(sql.startsWith('SELECT id,abbr'))return [structuredClone(state.locked&&state.categoryDrift?[]:teamCategories)];
+    if(sql.startsWith('SELECT * FROM livepalmes_competition_options'))return [[runtimePack.options]];
     if(sql.includes('information_schema.COLUMNS'))return [structuredClone(defaults)];
     if(sql.includes('information_schema.TRIGGERS'))return [state.trigger?[{}]:[]];
     if(sql.startsWith('EXPLAIN'))return [[{table:'compet_courses',key:'compet',type:'ref'}]];
@@ -53,13 +60,15 @@ function fixture(options={}){
   };
   state.pool={getConnection:async()=>connection};
   state.audit={read:async()=>state.saved,prepare:async(_op,row)=>{state.saved=structuredClone(row);},complete:async()=>state.completed++};
-  native.readNativeCompetition=async(_c,_id,authorize)=>{await authorize(pack);return {...pack,courses:state.rows};};
+  native.readNativeCompetition=async(_c,_id,authorize)=>{await authorize(runtimePack);return {...runtimePack,courses:state.rows};};
   return {state,input};
 }
 (async()=>{try{
   let {state,input}=fixture();await addNativeCourses(state.pool,input,state.audit,()=>{});
   assert.equal(state.rows.length,3);assert.equal(state.inserts,1);assert.equal(state.completed,1);assert.equal(state.locked,false);
   await addNativeCourses(state.pool,input,state.audit,()=>{});assert.equal(state.inserts,1,'replay does not duplicate');
+  ({state,input}=fixture({team:true}));await addNativeCourses(state.pool,input,state.audit,()=>{});assert.deepEqual(state.rows.map(x=>x.id_course),[459,460]);assert.equal(state.sql.filter(sql=>sql.startsWith('SELECT id,abbr')).length,2,'grouped category witness before and under lock');
+  ({state,input}=fixture({team:true,categoryDrift:true}));await assert.rejects(addNativeCourses(state.pool,input,state.audit,()=>{}),/catégories/);assert.equal(state.inserts,0);assert.equal(state.locked,false);
   ({state,input}=fixture({interrupt:true}));await assert.rejects(addNativeCourses(state.pool,input,state.audit,()=>{}),/Uncertain/);assert.equal(state.rows.length,1);assert.equal(state.locked,false);
   await addNativeCourses(state.pool,input,state.audit,()=>{});assert.equal(state.rows.length,3);assert.equal(new Set(state.rows.map(row=>row.id_course)).size,3);
   ({state,input}=fixture({denied:true}));await assert.rejects(addNativeCourses(state.pool,input,state.audit,()=>{}),/perimetre/);assert.equal(state.inserts,0);

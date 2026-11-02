@@ -2,6 +2,7 @@
 function createEntryService_saveNativeClubSwimmerSelections(backendContext) {
   async function saveNativeClubSwimmerSelections(context,request,rawChanges) {
     try {
+      if(request.data?.teamDossier) return await require('../../nap-team-entry-service').saveNativeClubTeamDossier(backendContext,context,request);
       if(!Array.isArray(rawChanges) || !rawChanges.length || rawChanges.length>50) throw new TypeError("Selection de 1 a 50 nageurs requise.");
       const pool=require("../../nap-portal-pool").portalPool(process.env.LIVEPALMES_NAP_PASSWORD);
       const result=await require("../../nap-swimmer-entry-change").saveNativeSwimmerSelection(pool,{
