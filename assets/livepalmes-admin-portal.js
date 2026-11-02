@@ -3852,6 +3852,7 @@
     /* extracted-function: assets/portal/events.js#bindEngagementClubPeopleRetry */
     /* extracted-function: assets/portal/events.js#init */
 
+  global.LivePalmesPortalPreload?.attach(portalContext);
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", init, { once: true });
   } else {

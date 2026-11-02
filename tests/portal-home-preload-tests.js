@@ -22,3 +22,4 @@ for(const change of [f=>{f.state.activeAuthUid="other-user";},f=>{f.state.curren
 }
 const fallback=fixture(false);fallback.render();assert.deepEqual(fallback.calls,["home"]);fallback.run();assert.deepEqual(fallback.calls,["home"]);
 console.log("Home preloads: actual profile renderer, no calendar/roster reads, repeated renders, identity/club/rights/logout guards and fallback passed offline.");
+require("./portal-background-preload-tests");

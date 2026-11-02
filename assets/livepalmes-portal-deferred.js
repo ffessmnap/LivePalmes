@@ -1,6 +1,6 @@
 (function attachPortalDeferred(global) {
   "use strict";
-  const version = "20261102-reactivity-1";
+  const version = "20261102-prefetch-1";
   const factories = new Map(), requests = new Map(), instances = new WeakMap();
   let pending = 0, status, failed = false;
   function message(text, error = false) {

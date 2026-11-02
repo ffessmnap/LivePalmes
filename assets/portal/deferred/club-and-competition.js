@@ -1,10 +1,12 @@
 (function registerDeferredPortalModule(global) {
   global.LivePalmesPortalDeferred.register("club-and-competition", function create(portalContext, moduleActions) {
     const { state: portalState, actions: portalActions, config: portalConfig } = portalContext;
-    async function loadEngagementClubPeople({ force = false, silent = false, append = false } = {}) {
+    async function loadEngagementClubPeople({ force = false, silent = false, append = false, background = false } = {}) {
+        const visible = () => !background || portalContext.elements.engagementsView?.hidden === false;
         if (!portalActions.canUse("engagements.club.manage") || portalState.engagementClubPeopleLoading) return;
         if(append && !portalState.engagementClubPeopleHasMore) return;
         if (portalState.engagementClubPeopleLoaded && !force && !append) {
+          if (!visible()) return;
           if (portalState.activeEngagementsTab === "clubPeople") moduleActions.renderEngagementClubPeople();
           portalActions.renderEngagementClubPersonSwimmerOptions();
           portalActions.renderEngagementClubTeamPersonOptions(portalContext.elements.engagementsClubTeamPersonSelect?.value || "");
@@ -13,15 +15,17 @@
         }
         portalState.engagementClubPeopleLoading = true;
         const requestVersion = portalState.engagementClubPeopleRequestVersion;
-        if (portalContext.elements.engagementsClubPeopleRetry) {
-          portalContext.elements.engagementsClubPeopleRetry.hidden = true;
-          portalContext.elements.engagementsClubPeopleRetry.disabled = true;
-        }
-        if(portalContext.elements.engagementsClubPeopleAddButton && global.LivePalmesEnvironment?.sportingDataSource === "nap") portalContext.elements.engagementsClubPeopleAddButton.disabled = true;
-        if(portalContext.elements.engagementsClubPeopleLoadMore) portalContext.elements.engagementsClubPeopleLoadMore.disabled = true;
-        if (portalContext.elements.engagementsClubPeopleStatus && !silent) {
-          portalContext.elements.engagementsClubPeopleStatus.textContent = "Chargement de Mes officiels...";
-          portalContext.elements.engagementsClubPeopleStatus.dataset.tone = "loading";
+        if (visible()) {
+          if (portalContext.elements.engagementsClubPeopleRetry) {
+            portalContext.elements.engagementsClubPeopleRetry.hidden = true;
+            portalContext.elements.engagementsClubPeopleRetry.disabled = true;
+          }
+          if(portalContext.elements.engagementsClubPeopleAddButton && global.LivePalmesEnvironment?.sportingDataSource === "nap") portalContext.elements.engagementsClubPeopleAddButton.disabled = true;
+          if(portalContext.elements.engagementsClubPeopleLoadMore) portalContext.elements.engagementsClubPeopleLoadMore.disabled = true;
+          if (portalContext.elements.engagementsClubPeopleStatus && !silent) {
+            portalContext.elements.engagementsClubPeopleStatus.textContent = "Chargement de Mes officiels...";
+            portalContext.elements.engagementsClubPeopleStatus.dataset.tone = "loading";
+          }
         }
         try {
           const result = await portalActions.callFunction("listEngagementClubPeople", { includeInactive: true, ...(append ? {cursor:portalState.engagementClubPeopleCursor} : {}) });
@@ -31,28 +35,32 @@
           portalState.engagementClubPeopleCursor = result.nextCursor || null;
           portalState.engagementClubPeopleHasMore = result.source === "nap" && result.hasMore === true;
           portalState.engagementClubPeopleLoaded = true;
-          if (portalState.activeEngagementsTab === "clubPeople") moduleActions.renderEngagementClubPeople();
-          portalActions.renderEngagementClubPersonSwimmerOptions();
-          portalActions.renderEngagementClubTeamPersonOptions(portalContext.elements.engagementsClubTeamPersonSelect?.value || "");
-          if (portalState.activeEngagementsDetailTab === "officials") portalActions.renderEngagementClubOfficials();
-          if (portalContext.elements.engagementsClubPeopleStatus && !silent) {
-            portalContext.elements.engagementsClubPeopleStatus.textContent = "";
-            portalContext.elements.engagementsClubPeopleStatus.dataset.tone = "neutral";
+          if (visible()) {
+            if (portalState.activeEngagementsTab === "clubPeople") moduleActions.renderEngagementClubPeople();
+            portalActions.renderEngagementClubPersonSwimmerOptions();
+            portalActions.renderEngagementClubTeamPersonOptions(portalContext.elements.engagementsClubTeamPersonSelect?.value || "");
+            if (portalState.activeEngagementsDetailTab === "officials") portalActions.renderEngagementClubOfficials();
+            if (portalContext.elements.engagementsClubPeopleStatus && !silent) {
+              portalContext.elements.engagementsClubPeopleStatus.textContent = "";
+              portalContext.elements.engagementsClubPeopleStatus.dataset.tone = "neutral";
+            }
           }
         } catch (error) {
           if(requestVersion!==portalState.engagementClubPeopleRequestVersion) return;
-          if (portalContext.elements.engagementsClubPeopleRetry) portalContext.elements.engagementsClubPeopleRetry.hidden = false;
-          if (portalContext.elements.engagementsClubPeopleStatus && !silent) {
+          if (visible() && portalContext.elements.engagementsClubPeopleRetry) portalContext.elements.engagementsClubPeopleRetry.hidden = false;
+          if (visible() && portalContext.elements.engagementsClubPeopleStatus && (!silent || background)) {
             portalContext.elements.engagementsClubPeopleStatus.textContent = `Lecture impossible : ${error?.message || error}`;
             portalContext.elements.engagementsClubPeopleStatus.dataset.tone = "error";
           }
         } finally {
           if(requestVersion===portalState.engagementClubPeopleRequestVersion) {
             portalState.engagementClubPeopleLoading = false;
-            if (portalContext.elements.engagementsClubPeopleRetry) portalContext.elements.engagementsClubPeopleRetry.disabled = false;
-            moduleActions.renderEngagementClubPeople();
-            if(portalContext.elements.engagementsClubPeopleLoadMore) portalContext.elements.engagementsClubPeopleLoadMore.disabled = false;
-            if (portalState.activeEngagementsDetailTab === "officials") portalActions.renderEngagementClubOfficials();
+            if (visible()) {
+              if (portalContext.elements.engagementsClubPeopleRetry) portalContext.elements.engagementsClubPeopleRetry.disabled = false;
+              moduleActions.renderEngagementClubPeople();
+              if(portalContext.elements.engagementsClubPeopleLoadMore) portalContext.elements.engagementsClubPeopleLoadMore.disabled = false;
+              if (portalState.activeEngagementsDetailTab === "officials") portalActions.renderEngagementClubOfficials();
+            }
           }
         }
       }
