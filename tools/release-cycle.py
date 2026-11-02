@@ -561,7 +561,11 @@ def classify_test(paths, approved_top_files=False, approved_records_cleanup=Fals
         require(SHA.fullmatch(base), 'Base exacte requise pour les regles de session')
         spec = importlib.util.spec_from_file_location('portal_session_rules', ROOT / 'tools/test-portal-session-rules.py')
         policy = importlib.util.module_from_spec(spec); spec.loader.exec_module(policy)
-        policy.validate_sources(git('show', base + ':firestore.rules'), git('show', 'HEAD:firestore.rules'), 'livepalmes-test')
+        # Hash complete sources: the general git helper strips whitespace and
+        # would remove the final newline from both pinned rules files.
+        before = subprocess.check_output(['git', 'show', base + ':firestore.rules'], cwd=ROOT, text=True)
+        after = subprocess.check_output(['git', 'show', 'HEAD:firestore.rules'], cwd=ROOT, text=True)
+        policy.validate_sources(before, after, 'livepalmes-test')
         allowed.add('firestore.rules')
     if approved_home_routing and 'firebase.json' in paths:
         require(os.environ.get('TARGET_FIREBASE_PROJECT') == 'livepalmes-test', 'Routage accueil reserve a TEST')

@@ -34,11 +34,15 @@ class SessionRulesTests(unittest.TestCase):
     def test_ordinary_and_production_classification_unchanged(self):
         with self.assertRaises(ValueError): c.classify_test(['firestore.rules'])
         with self.assertRaises(ValueError): c.classify(['firestore.rules'])
-        with patch.dict(os.environ, {'TARGET_FIREBASE_PROJECT':p.PROJECT, 'BASE_SHA':'a'*40}), patch.object(c, 'git', side_effect=[before,after]):
+        with patch.dict(os.environ, {'TARGET_FIREBASE_PROJECT':p.PROJECT, 'BASE_SHA':'a'*40}), patch.object(c.subprocess, 'check_output', side_effect=[before,after]):
             self.assertEqual(c.classify_test(['firestore.rules','functions/portal-session.js'],approved_portal_session_rules=True), (['functions/portal-session.js'],True))
         for path in ['storage.rules','firestore.indexes.json','firebase.json','performances/public/data/private.json']:
-            with patch.dict(os.environ, {'TARGET_FIREBASE_PROJECT':p.PROJECT, 'BASE_SHA':'a'*40}), patch.object(c,'git',side_effect=[before,after]):
+            with patch.dict(os.environ, {'TARGET_FIREBASE_PROJECT':p.PROJECT, 'BASE_SHA':'a'*40}), patch.object(c.subprocess,'check_output',side_effect=[before,after]):
                 with self.assertRaises(ValueError): c.classify_test(['firestore.rules',path],approved_portal_session_rules=True)
+
+    def test_actual_git_sources_preserve_final_newline(self):
+        with patch.dict(os.environ, {'TARGET_FIREBASE_PROJECT':p.PROJECT, 'BASE_SHA':'3ebb91ed1ebd714d192d6bfe9457b47f8e05f964'}):
+            self.assertEqual(c.classify_test(['firestore.rules','functions/portal-session.js'],approved_portal_session_rules=True), (['functions/portal-session.js'],True))
 
     def test_exact_rules_only_deployment_and_drift(self):
         with tempfile.TemporaryDirectory() as directory:
