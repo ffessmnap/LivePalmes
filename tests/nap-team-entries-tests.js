@@ -1,7 +1,7 @@
 "use strict";
 const assert=require('node:assert/strict');
 const model=require('../functions/nap-team-entries');
-const {pending}=require('../functions/nap-team-entry-change');
+const {pending,complete}=require('../functions/nap-team-entry-change');
 const {period}=require('../functions/nap-team-entry-resolution');
 const {planCompetitionChange}=require('../functions/nap-portal-competition-change');
 const {fingerprint}=require('../functions/nap-competition-fingerprint');
@@ -35,6 +35,12 @@ const after=model.supplement(before,normalized);assert.deepEqual(after.qualifica
 const relayValue=structuredClone(normalized);relayValue.teams[0].relays[0].nativeRelayId='99';
 const decorated=model.decorate({nativeOptions:{submission_metadata:{[model.KEY]:relayValue}},swimmers:[],relays:[{relayId:'99',category:'NAP-42'}]},comp);
 assert.equal(decorated.relays[0].category,'S');assert.equal(decorated.relays[0].genderMode,'female');assert.equal(decorated.relays[0].relayLegs,6);
+const emptyTeam={teams:[{id:'empty',letter:'A',sex:'F',members:[],reserve:'',relays:[]}],outside:[],individuals:[]};
+const completedPack={inscriptions:[],individual:[],relays:[],members:[]};
+completedPack.options={submission_metadata:{other:{kept:true},[model.KEY]:{...emptyTeam,nativeWitness:model.witness(completedPack)}}};
+const nativeBefore=JSON.stringify(completedPack);
+assert.equal(complete(completedPack,{plan:{value:emptyTeam,people:[],individual:[],relays:[]},before:{options:{submission_metadata:{other:{kept:true}}}}}),true);
+assert.equal(JSON.stringify(completedPack),nativeBefore,'final verification never removes the JSON teams from the returned native dossier');
 assert.deepEqual(period('2026-12-12'),{start:'2023-09-01',end:'2026-11-30'});
 assert.deepEqual(period('2027-05-12'),{start:'2023-09-01',end:'2026-11-30'});
 const old=[{id:1,course:'50SF',tps:'2500'}],desired=[{course:'50SF',tps:'2600'}];
