@@ -24,7 +24,7 @@ function complete(pack,target){
   const mapped=value.teams.flatMap(t=>t.relays.map(r=>({key:t.id+'|'+r.eventCode,id:String(r.nativeRelayId)})));
   if(pack.relays.length!==target.plan.relays.length||mapped.length!==pack.relays.length)return false;
   for(const expected of target.plan.relays){const ref=mapped.find(x=>x.key===expected.key),row=pack.relays.find(x=>String(x.id)===ref?.id);if(!row||!['course','categorie','tps'].every(k=>String(row[k])===String(expected[k])))return false;const members=pack.members.filter(x=>String(x.relais)===ref.id).sort((a,b)=>a.pos-b.pos);if(!equal(members.map(x=>String(x.nageur)),expected.members)||members.some((x,i)=>Number(x.pos)!==i+1))return false;}
-  const withoutTeam=x=>{const copy=model.metadata(x?.submission_metadata);delete copy[model.KEY];return copy;};return equal(withoutTeam(pack.options),withoutTeam(target.before.options));
+  const withoutTeam=x=>{const copy={...model.metadata(x?.submission_metadata)};delete copy[model.KEY];return copy;};return equal(withoutTeam(pack.options),withoutTeam(target.before.options));
 }
 // An interrupted operation may contain only original or planned values. A third
 // value is never overwritten, even if it resembles the requested final dossier.
