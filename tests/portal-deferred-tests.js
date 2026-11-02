@@ -42,6 +42,12 @@ async function loader(){
   let syncCalls=0;f.api.register("sync",()=>({value:()=>++syncCalls}));
   assert.equal(f.api.sync(context,"sync","value",[],{}),1,"A ready synchronous helper preserves its return value");
   assert.throws(()=>f.api.sync(context,"missing","value",[],{}),/pas encore prêts/,"Missing synchronous helpers cannot silently return a promise");
+  const quiet=runtime();let speculative=0;
+  const quietRead=quiet.api.invoke(context,"competition-actions","loadEngagementClubSwimmers",[{silent:true,background:true}],{});
+  assert.equal(quiet.nodes.length,0,"Preparing background dependencies never shows a foreground status");
+  quiet.window.location.hash="#another-view";
+  for(const script of quiet.scripts){const key=/deferred\/([^/?]+)\.js/.exec(script.src)[1];quiet.api.register(key,()=>({loadEngagementClubSwimmers:()=>++speculative}));script.events.load();}
+  await assert.rejects(quietRead,/contexte a changé/);assert.equal(speculative,0);assert.equal(quiet.nodes.length,0,"An abandoned speculative read stays silent");
   console.log(`Deferred loader: ${chunks} real chunks, inert factories, shared loading, retry, warmed execution, identity/route guards and intent without data passed offline.`);
 }
 async function resources(){
