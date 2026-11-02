@@ -88,7 +88,7 @@
           const scripts = [
             ["performances/public/record-placeholders.js?v=20260613-mpf-relays-mixed-1", "adminRecordPlaceholdersScript"],
             ["performances/public/data/club-reference.js?v=20260813-national-clubs-3", "adminRecordReferenceScript"],
-            ["performances/public/store.js?v=20261012-records-cleanup-2", "adminRecordStoreScript"]
+            ["performances/public/store.js?v=20261102-session-1", "adminRecordStoreScript"]
           ];
           await Promise.all(scripts.map(([src, id]) => loadScriptOnce(src, id)));
           await loadScriptOnce("performances/public/admin-records.js?v=20261015-nap-suggestions-1", "adminRecordModuleScript");

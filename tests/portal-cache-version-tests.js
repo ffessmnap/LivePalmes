@@ -11,9 +11,9 @@ for (const source of ["/assets/livepalmes-admin-portal.js", "/assets/livepalmes-
   assert.equal(config.hosting.headers.find(h => h.source === source)?.headers.find(h => h.key === "Cache-Control")?.value,
     "public, max-age=31536000, immutable");
 }
-function versions(html, css) {
+function versions(html, css, loader = "", modules = "") {
   const result = new Map();
-  for (const match of html.matchAll(/src="(assets\/(?:portal\/[^"?]+|livepalmes-admin-portal\.js))\?v=([^"?]+)"/g)) {
+  for (const match of html.matchAll(/src="(assets\/(?:portal\/[^"?]+|livepalmes-(?:admin-portal|admin-auth|app-config|portal-session|portal-deferred)\.js))\?v=([^"?]+)"/g)) {
     assert.ok(!result.has(match[1]), "Duplicate module script: " + match[1]);
     result.set(match[1], match[2]);
   }
@@ -21,16 +21,22 @@ function versions(html, css) {
   assert.ok(stylesheet);
   result.set(stylesheet[1], stylesheet[2]);
   for (const match of css.matchAll(/@import url\("(portal\/styles\/[^"?]+)\?v=([^"?]+)"\);/g)) result.set("assets/" + match[1], match[2]);
+  const chunkVersion = /const version = "([^"]+)"/.exec(loader)?.[1];
+  if (chunkVersion) for (const name of fs.readdirSync("assets/portal/deferred")) result.set("assets/portal/deferred/"+name,chunkVersion);
+  const sessionStyle = /href="(assets\/livepalmes-portal-session\.css)\?v=([^"?]+)"/.exec(html);
+  if (sessionStyle) result.set(sessionStyle[1],sessionStyle[2]);
+  const store = /"(performances\/public\/store\.js)\?v=([^"?]+)"/.exec(modules);
+  if (store) result.set(store[1],store[2]);
   return result;
 }
-const current = versions(html, entry);
-assert.equal(current.size, 32);
+const current = versions(html, entry, fs.readFileSync("assets/livepalmes-portal-deferred.js","utf8"), fs.readFileSync("assets/portal/modules-and-clubs.js","utf8"));
+assert.equal(current.size, 49);
 const historical = file => {
   try { return execFileSync("git", ["show", "HEAD^:" + file], { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }); }
   catch { return null; } // New resources have no cached predecessor.
 };
 const oldHtml = historical("portail.html"), oldCss = historical("assets/livepalmes-admin-portal.css");
-const previous = oldHtml && oldCss ? versions(oldHtml, oldCss) : new Map();
+const previous = oldHtml && oldCss ? versions(oldHtml, oldCss, historical("assets/livepalmes-portal-deferred.js") || "", historical("assets/portal/modules-and-clubs.js") || "") : new Map();
 for (const [file, version] of current) {
   assert.ok(version.trim());
   const before = historical(file);

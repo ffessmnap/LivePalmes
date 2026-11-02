@@ -2,6 +2,10 @@
 
 <!-- description: Budgets actuels NAP, mesures après bascule et suivi des optimisations ; remplace les recommandations Firestore historiques. -->
 
+## Réactivité et session du portail — 2 novembre 2026
+
+Le [chantier approuvé jusqu’à TEST](PORTAIL_REACTIVITE.md) remplace le préchargement d’accueil du 30 octobre : calendrier et effectif ne sont plus lus avant l’ouverture de leur écran. Zéro SELECT de ces deux préchargements sur l’accueil, au lieu de deux/trois selon la période ; leurs bornes et fraîcheur à la consultation sont conservées. Huit lectures identiques simultanées sont mutualisées sans cache NAP temporisé. La session ajoute une lecture Firestore fixe par RPC privé TEST, avec budgets séparés documentés ; ce coût de sécurité n’est pas masqué par les économies SQL. Aucun index, donnée sportive, configuration MySQL ou envoi réel modifié.
+
 ## Lots regroupés : accueil et contexte des temps — 30 octobre 2026
 
 Antoine a approuvé le contexte des temps, puis explicitement le regroupement avec l'accueil plus rapide, y compris l'authentification et les Cloud Functions jusqu'à TEST. Aucune écriture réelle de base ni aucun mail pendant la recette.

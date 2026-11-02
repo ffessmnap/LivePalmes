@@ -5731,6 +5731,11 @@ const OPTIONAL_COMPETITION_MAIL_TYPES = new Set([
 const HASH_ITERATIONS = 120000;
 const HASH_BYTES = 32;
 const CALLABLE_OPTIONS = { region: REGION, invoker: "public" };
+function portalSessionService() {
+  const { createPortalSessions } = require("./portal-session");
+  return createPortalSessions({ getDb: () => db, HttpsError, enabled: ENVIRONMENT.name === "test",
+    readProfile: request => $portalAccessHandlers_getCurrentAccessUser().getCurrentAccessUser(request) });
+}
 // Public sporting reads use NAP; operational migration tools remain TEST-only.
 if (ENVIRONMENT.sportingDataSource === "nap") {
   const napPassword = defineSecret("LIVEPALMES_NAP_PASSWORD");
@@ -6973,6 +6978,7 @@ exports.verifyPin = onCall(CALLABLE_OPTIONS, /* extracted-handler: functions/bac
 });
 
 exports.createOrUpdateAccessUser = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/portal-account-handlers.js#createOrUpdateAccessUser#arrow */ async (request) => {
+  await portalSessionService().assertSession(request);
   return portalAccountHandlers().createOrUpdateAccessUser(request);
 });
 
@@ -7114,10 +7120,12 @@ exports.submitEngagementAccessRequest = onCall({ ...PORTAL_ACCESS_REQUEST_OPTION
 });
 
 exports.listEngagementAccessRequests = onCall(CALLABLE_OPTIONS, /* extracted-handler: functions/backend/portal-competition-handlers/list-engagement-access-requests.js#listEngagementAccessRequests#arrow */ async (request) => {
+  await portalSessionService().assertSession(request);
   return $portalCompetitionHandlers_listEngagementAccessRequests().listEngagementAccessRequests(request);
 });
 
 exports.resolveEngagementAccessRequest = onCall({ ...PORTAL_ACCESS_REQUEST_OPTIONS, secrets: ENVIRONMENT.sportingDataSource === "nap" ? [...ENGAGEMENT_MAIL_SECRETS, defineSecret("LIVEPALMES_NAP_PASSWORD") ] : ENGAGEMENT_MAIL_SECRETS }, async (request) => {
+  await portalSessionService().assertSession(request);
   const context = await engagementAccessContext(request);
   const requestId = cleanText(request.data?.requestId).slice(0, 80);
   const decision = cleanText(request.data?.decision);
@@ -7310,10 +7318,15 @@ exports.rebuildAccessDirectorySnapshotNextPage = onCall(CALLABLE_OPTIONS, /* ext
 });
 
 exports.listAccessUsers = onCall(CALLABLE_OPTIONS, /* extracted-handler: functions/backend/portal-access-handlers/list-access-users.js#listAccessUsers#arrow */ async (request) => {
+  await portalSessionService().assertSession(request);
+  if (request.data?._portalSnapshot === true) {
+    return require("./portal-session-directory").readPortalDirectorySnapshot({ db, HttpsError, managementContext:accessManagementContext }, request);
+  }
   return $portalAccessHandlers_listAccessUsers().listAccessUsers(request);
 });
 
 exports.setAccessUserStatus = onCall(CALLABLE_OPTIONS, /* extracted-handler: functions/backend/portal-access-handlers/set-access-user-status.js#setAccessUserStatus#arrow */ async (request) => {
+  await portalSessionService().assertSession(request);
   return $portalAccessHandlers_setAccessUserStatus().setAccessUserStatus(request);
 });
 
@@ -7323,22 +7336,27 @@ async function deleteAccessUserAccount(input0, input1) {
 }
 
 exports.deleteAccessUser = onCall(CALLABLE_OPTIONS, /* extracted-handler: functions/backend/portal-access-handlers/delete-access-user.js#deleteAccessUser#arrow */ async (request) => {
+  await portalSessionService().assertSession(request);
   return $portalAccessHandlers_deleteAccessUser().deleteAccessUser(request);
 });
 
 exports.requestAccessUserDeletion = onCall(CALLABLE_OPTIONS, /* extracted-handler: functions/backend/portal-access-handlers/request-access-user-deletion.js#requestAccessUserDeletion#arrow */ async (request) => {
+  await portalSessionService().assertSession(request);
   return $portalAccessHandlers_requestAccessUserDeletion().requestAccessUserDeletion(request);
 });
 
 exports.listAccessUserDeletionRequests = onCall(CALLABLE_OPTIONS, /* extracted-handler: functions/backend/portal-access-handlers/list-access-user-deletion-requests.js#listAccessUserDeletionRequests#arrow */ async (request) => {
+  await portalSessionService().assertSession(request);
   return $portalAccessHandlers_listAccessUserDeletionRequests().listAccessUserDeletionRequests(request);
 });
 
 exports.resolveAccessUserDeletionRequest = onCall(CALLABLE_OPTIONS, /* extracted-handler: functions/backend/portal-access-handlers/resolve-access-user-deletion-request.js#resolveAccessUserDeletionRequest#arrow */ async (request) => {
+  await portalSessionService().assertSession(request);
   return $portalAccessHandlers_resolveAccessUserDeletionRequest().resolveAccessUserDeletionRequest(request);
 });
 
 exports.updateCurrentAccountEmail = onCall(CALLABLE_OPTIONS, /* extracted-handler: functions/backend/portal-access-handlers/update-current-account-email.js#updateCurrentAccountEmail#arrow */ async (request) => {
+  await portalSessionService().assertSession(request);
   return $portalAccessHandlers_updateCurrentAccountEmail().updateCurrentAccountEmail(request);
 });
 
@@ -7348,6 +7366,7 @@ async function setCompetitionEmailNotificationPreference() {
 }
 
 exports.updateCurrentEmailNotificationPreferences = onCall(CALLABLE_OPTIONS, async (request) => {
+  await portalSessionService().assertSession(request);
   await assertLivePalmesAccess(request);
   const uid = cleanText(request.auth?.uid);
   const result = await setCompetitionEmailNotificationPreference(
@@ -7369,6 +7388,16 @@ exports.disableCompetitionEmailNotifications = onCall(NOTIFICATION_PREFERENCE_CA
 });
 
 exports.getCurrentAccessUser = onCall(CALLABLE_OPTIONS, /* extracted-handler: functions/backend/portal-access-handlers/get-current-access-user.js#getCurrentAccessUser#arrow */ async (request) => {
+  if (ENVIRONMENT.name === "test" && request.data?._portalSessionAction) {
+    const session = portalSessionService();
+    switch (request.data._portalSessionAction) {
+      case "open": return session.open(request);
+      case "touch": return session.touch(request);
+      case "close": return session.close(request);
+      case "profile": await session.assertSession(request); break;
+      default: throw new HttpsError("invalid-argument", "Action de session inconnue.");
+    }
+  }
   return $portalAccessHandlers_getCurrentAccessUser().getCurrentAccessUser(request);
 });
 
@@ -7658,6 +7687,7 @@ function qualificationService() {
 }
 
 exports.listEngagementQualificationSources = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")], maxInstances:2, concurrency:4, timeoutSeconds:60 } : {}) }, /* extracted-handler: functions/backend/portal-competition-handlers/list-engagement-qualification-sources.js#listEngagementQualificationSources#arrow */ async (request) => {
+  await portalSessionService().assertSession(request);
   return $portalCompetitionHandlers_listEngagementQualificationSources().listEngagementQualificationSources(request);
 });
 /* extracted-function: functions/backend/server-entry-model-service/native-qualification-services.js#nativeQualificationServices */
@@ -7671,12 +7701,15 @@ function nativeQualificationError(input0) {
   return $serverEntryModelService_nativeQualificationError().nativeQualificationError(...arguments);
 }
 exports.processEngagementQualificationJob = onCall({ ...CALLABLE_OPTIONS,...nativeQualificationOptions,timeoutSeconds:300 }, /* extracted-handler: functions/backend/portal-competition-handlers/process-engagement-qualification-job.js#processEngagementQualificationJob#arrow */ async (request) => {
+  await portalSessionService().assertSession(request);
   return $portalCompetitionHandlers_processEngagementQualificationJob().processEngagementQualificationJob(request);
 });
 exports.grantEngagementQualificationException = onCall({ ...CALLABLE_OPTIONS,...nativeQualificationOptions,timeoutSeconds:60 },/* extracted-handler: functions/backend/portal-competition-handlers/grant-engagement-qualification-exception.js#grantEngagementQualificationException#arrow */ async (request) => {
+  await portalSessionService().assertSession(request);
   return $portalCompetitionHandlers_grantEngagementQualificationException().grantEngagementQualificationException(request);
 });
 exports.acknowledgeEngagementQualificationAlert = onCall({ ...CALLABLE_OPTIONS,...nativeQualificationOptions,timeoutSeconds:60 },/* extracted-handler: functions/backend/portal-competition-handlers/acknowledge-engagement-qualification-alert.js#acknowledgeEngagementQualificationAlert#arrow */ async (request) => {
+  await portalSessionService().assertSession(request);
   return $portalCompetitionHandlers_acknowledgeEngagementQualificationAlert().acknowledgeEngagementQualificationAlert(request);
 });
 // Retired endpoints remain deny-only so previously deployed clients cannot use
@@ -8320,9 +8353,11 @@ function engagementMailPreparedStatus() {
 }
 
 exports.getEngagementAutomaticMailControl = onCall(CALLABLE_OPTIONS, /* extracted-handler: functions/backend/portal-competition-handlers/get-engagement-automatic-mail-control.js#getEngagementAutomaticMailControl#arrow */ async (request) => {
+  await portalSessionService().assertSession(request);
   return $portalCompetitionHandlers_getEngagementAutomaticMailControl().getEngagementAutomaticMailControl(request);
 });
 exports.updateEngagementAutomaticMailControl = onCall(CALLABLE_OPTIONS, /* extracted-handler: functions/backend/portal-competition-handlers/update-engagement-automatic-mail-control.js#updateEngagementAutomaticMailControl#arrow */ async (request) => {
+  await portalSessionService().assertSession(request);
   return $portalCompetitionHandlers_updateEngagementAutomaticMailControl().updateEngagementAutomaticMailControl(request);
 });
 
@@ -8858,42 +8893,52 @@ async function nativeClubEntryView(input0, input1, input2) {
 }
 
 exports.listEngagementCompetitions = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/backend/portal-competition-handlers/list-engagement-competitions.js#listEngagementCompetitions#arrow */ async (request) => {
+  await portalSessionService().assertSession(request);
   return $portalCompetitionHandlers_listEngagementCompetitions().listEngagementCompetitions(request);
 });
 
 exports.listEngagementCalendarEvents = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/backend/portal-competition-handlers/list-engagement-calendar-events.js#listEngagementCalendarEvents#arrow */ async (request) => {
+  await portalSessionService().assertSession(request);
   return $portalCompetitionHandlers_listEngagementCalendarEvents().listEngagementCalendarEvents(request);
 });
 
 exports.getEngagementCalendarEvent = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/backend/portal-competition-handlers/get-engagement-calendar-event.js#getEngagementCalendarEvent#arrow */ async (request) => {
+  await portalSessionService().assertSession(request);
   return $portalCompetitionHandlers_getEngagementCalendarEvent().getEngagementCalendarEvent(request);
 });
 
 exports.createEngagementCalendarEvent = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")], maxInstances:2, concurrency:4, timeoutSeconds:120 } : {}) }, /* extracted-handler: functions/backend/portal-competition-handlers/create-engagement-calendar-event.js#createEngagementCalendarEvent#arrow */ async (request) => {
+  await portalSessionService().assertSession(request);
   return $portalCompetitionHandlers_createEngagementCalendarEvent().createEngagementCalendarEvent(request);
 });
 
 exports.updateEngagementCalendarEvent = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")], maxInstances:2, concurrency:4, timeoutSeconds:120 } : {}) }, /* extracted-handler: functions/backend/portal-competition-handlers/update-engagement-calendar-event.js#updateEngagementCalendarEvent#arrow */ async (request) => {
+  await portalSessionService().assertSession(request);
   return $portalCompetitionHandlers_updateEngagementCalendarEvent().updateEngagementCalendarEvent(request);
 });
 
 exports.deleteEngagementCalendarEvent = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/backend/portal-competition-handlers/delete-engagement-calendar-event.js#deleteEngagementCalendarEvent#arrow */ async (request) => {
+  await portalSessionService().assertSession(request);
   return $portalCompetitionHandlers_deleteEngagementCalendarEvent().deleteEngagementCalendarEvent(request);
 });
 
 exports.listEngagementOpenWaterCourses = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/backend/portal-competition-handlers/list-engagement-open-water-courses.js#listEngagementOpenWaterCourses#arrow */ async (request) => {
+  await portalSessionService().assertSession(request);
   return $portalCompetitionHandlers_listEngagementOpenWaterCourses().listEngagementOpenWaterCourses(request);
 });
 
 exports.addEngagementOpenWaterCourse = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/backend/portal-competition-handlers/add-engagement-open-water-course.js#addEngagementOpenWaterCourse#arrow */ async (request) => {
+  await portalSessionService().assertSession(request);
   return $portalCompetitionHandlers_addEngagementOpenWaterCourse().addEngagementOpenWaterCourse(request);
 });
 
 exports.setEngagementOpenWaterCourseStatus = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/backend/portal-competition-handlers/set-engagement-open-water-course-status.js#setEngagementOpenWaterCourseStatus#arrow */ async (request) => {
+  await portalSessionService().assertSession(request);
   return $portalCompetitionHandlers_setEngagementOpenWaterCourseStatus().setEngagementOpenWaterCourseStatus(request);
 });
 
 exports.getEngagementCompetition = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/backend/portal-competition-handlers/get-engagement-competition.js#getEngagementCompetition#arrow */ async (request) => {
+  await portalSessionService().assertSession(request);
   return $portalCompetitionHandlers_getEngagementCompetition().getEngagementCompetition(request);
 });
 
@@ -8919,14 +8964,17 @@ async function engagementCompetitionDocumentContext(input0) {
 
 // Portal news use the live server profile, never a client-supplied role.
 exports.managePortalNews = onCall(CALLABLE_OPTIONS, async (request) => {
+  await portalSessionService().assertSession(request);
   return require("./portal-news").managePortalNews({ db, HttpsError, ADMIN_UIDS }, request);
 });
 
 // National document selection. No client-supplied role or actor is authoritative.
 exports.getNationalFeaturedDocuments = onCall({ ...CALLABLE_OPTIONS, secrets:[defineSecret("LIVEPALMES_NAP_PASSWORD")] }, /* extracted-handler: functions/backend/portal-national-handlers/get-national-featured-documents.js#getNationalFeaturedDocuments#arrow */ async (request) => {
+  await portalSessionService().assertSession(request);
   return $portalNationalHandlers_getNationalFeaturedDocuments().getNationalFeaturedDocuments(request);
 });
 exports.saveNationalFeaturedDocuments = onCall({ ...ENGAGEMENT_DOCUMENT_UPLOAD_OPTIONS, secrets:[defineSecret("LIVEPALMES_NAP_PASSWORD")] }, /* extracted-handler: functions/backend/portal-national-handlers/save-national-featured-documents.js#saveNationalFeaturedDocuments#arrow */ async (request) => {
+  await portalSessionService().assertSession(request);
   return $portalNationalHandlers_saveNationalFeaturedDocuments().saveNationalFeaturedDocuments(request);
 });
 // End national document selection.
@@ -8947,22 +8995,27 @@ async function mutateNativeCompetitionDocument(input0, input1) {
   return $serverCompetitionService_assertCanDeleteEngagementDocument().mutateNativeCompetitionDocument(...arguments);
 }
 exports.uploadEngagementCompetitionDocument = onCall({ ...ENGAGEMENT_DOCUMENT_UPLOAD_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/backend/portal-competition-handlers/upload-engagement-competition-document.js#uploadEngagementCompetitionDocument#arrow */ async (request) => {
+  await portalSessionService().assertSession(request);
   return $portalCompetitionHandlers_uploadEngagementCompetitionDocument().uploadEngagementCompetitionDocument(request);
 });
 
 exports.updateEngagementCompetitionDocument = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/backend/portal-competition-handlers/update-engagement-competition-document.js#updateEngagementCompetitionDocument#arrow */ async (request) => {
+  await portalSessionService().assertSession(request);
   return $portalCompetitionHandlers_updateEngagementCompetitionDocument().updateEngagementCompetitionDocument(request);
 });
 
 exports.deleteEngagementCompetitionDocument = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/backend/portal-competition-handlers/delete-engagement-competition-document.js#deleteEngagementCompetitionDocument#arrow */ async (request) => {
+  await portalSessionService().assertSession(request);
   return $portalCompetitionHandlers_deleteEngagementCompetitionDocument().deleteEngagementCompetitionDocument(request);
 });
 
 exports.previewEngagementCompetitionDocumentNotification = onCall(ENGAGEMENT_NOTIFICATION_PREVIEW_OPTIONS, /* extracted-handler: functions/backend/portal-competition-handlers/preview-engagement-competition-document-notification.js#previewEngagementCompetitionDocumentNotification#arrow */ async (request) => {
+  await portalSessionService().assertSession(request);
   return $portalCompetitionHandlers_previewEngagementCompetitionDocumentNotification().previewEngagementCompetitionDocumentNotification(request);
 });
 
 exports.notifyEngagementCompetitionDocuments = onCall(ENVIRONMENT.sportingDataSource === "nap" ? (ENVIRONMENT.projectId === "livepalmes-test" ? ENGAGEMENT_NOTIFICATION_PREVIEW_OPTIONS : { ...ENGAGEMENT_NOTIFICATION_PREVIEW_OPTIONS, timeoutSeconds:300, secrets:[defineSecret("LIVEPALMES_NAP_PASSWORD"),...ENGAGEMENT_NOTIFICATION_MAIL_SECRETS] }) : ENGAGEMENT_MAIL_CALLABLE_OPTIONS, async (request) => {
+  await portalSessionService().assertSession(request);
   if(request.data?.library===true)return notifyNationalLibraryDocument(request);
   if (ENVIRONMENT.sportingDataSource === "nap") return queueNativeDocumentNotification(request);
   const { context, competitionId, snapshot } = await engagementCompetitionDocumentContext(request);
@@ -9065,10 +9118,12 @@ exports.notifyEngagementCompetitionDocuments = onCall(ENVIRONMENT.sportingDataSo
 });
 
 exports.getEngagementClubEntry = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/backend/portal-club-handlers/get-engagement-club-entry.js#getEngagementClubEntry#arrow */ async (request) => {
+  await portalSessionService().assertSession(request);
   return $portalClubHandlers_getEngagementClubEntry().getEngagementClubEntry(request);
 });
 
 exports.preloadEngagementClubWorkspaces = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, async (request) => {
+  await portalSessionService().assertSession(request);
   const startedAt = Date.now();
   const context = await engagementClubAccessContext(request);
   // Native workspaces are read when actually opened. Prefetch must neither
@@ -9130,6 +9185,7 @@ async function generateNativeClubRecapPdf(input0, input1) {
 }
 
 exports.generateEngagementClubRecapPdf = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/backend/portal-club-handlers/generate-engagement-club-recap-pdf.js#generateEngagementClubRecapPdf#arrow */ async (request) => {
+  await portalSessionService().assertSession(request);
   return $portalClubHandlers_generateEngagementClubRecapPdf().generateEngagementClubRecapPdf(request);
 });
 
@@ -9179,6 +9235,7 @@ async function queueNativeDocumentNotification(input0) {
   return $serverCompetitionService_notifyNationalLibraryDocument().queueNativeDocumentNotification(...arguments);
 }
 exports.processNapCompetitionNotifications = onCall({ ...ENGAGEMENT_NOTIFICATION_PREVIEW_OPTIONS,secrets:[defineSecret('LIVEPALMES_NAP_PASSWORD'),...ENGAGEMENT_NOTIFICATION_MAIL_SECRETS],timeoutSeconds:300,memory:'1GiB' },async request=>{
+  await portalSessionService().assertSession(request);
   if(ENVIRONMENT.sportingDataSource !== "nap")throw new HttpsError('failed-precondition','Source NAP requise.');
   const context=await engagementAccessContext(request),automation=require('./nap-notification-automation');
   try{
@@ -9213,6 +9270,7 @@ exports.processNapCompetitionNotifications = onCall({ ...ENGAGEMENT_NOTIFICATION
   }catch(error){if(error instanceof HttpsError)throw error;throw new HttpsError(error instanceof TypeError?'failed-precondition':error instanceof RangeError?'resource-exhausted':'unavailable',error instanceof TypeError||error instanceof RangeError?error.message:'Preparation NAP interrompue : vous pouvez reprendre le traitement.');}
 });
 exports.listEngagementCompetitionClubRecaps = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/backend/portal-club-handlers/list-engagement-competition-club-recaps.js#listEngagementCompetitionClubRecaps#arrow */ async (request) => {
+  await portalSessionService().assertSession(request);
   return $portalClubHandlers_listEngagementCompetitionClubRecaps().listEngagementCompetitionClubRecaps(request);
 });
 
@@ -9235,22 +9293,27 @@ function engagementCompetitionStatisticsItem() {
 }
 
 exports.getEngagementCompetitionStatistics = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/backend/portal-competition-handlers/get-engagement-competition-statistics.js#getEngagementCompetitionStatistics#arrow */ async (request) => {
+  await portalSessionService().assertSession(request);
   return $portalCompetitionHandlers_getEngagementCompetitionStatistics().getEngagementCompetitionStatistics(request);
 });
 
 exports.generateEngagementClubRecapPdfForAdmin = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/backend/portal-club-handlers/generate-engagement-club-recap-pdf-for-admin.js#generateEngagementClubRecapPdfForAdmin#arrow */ async (request) => {
+  await portalSessionService().assertSession(request);
   return $portalClubHandlers_generateEngagementClubRecapPdfForAdmin().generateEngagementClubRecapPdfForAdmin(request);
 });
 
 exports.generateEngagementCompetitionClubRecapPdfs = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/backend/portal-club-handlers/generate-engagement-competition-club-recap-pdfs.js#generateEngagementCompetitionClubRecapPdfs#arrow */ async (request) => {
+  await portalSessionService().assertSession(request);
   return $portalClubHandlers_generateEngagementCompetitionClubRecapPdfs().generateEngagementCompetitionClubRecapPdfs(request);
 });
 
 exports.generateEngagementCompetitionTxtExport = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/backend/portal-competition-handlers/generate-engagement-competition-txt-export.js#generateEngagementCompetitionTxtExport#arrow */ async (request) => {
+  await portalSessionService().assertSession(request);
   return $portalCompetitionHandlers_generateEngagementCompetitionTxtExport().generateEngagementCompetitionTxtExport(request);
 });
 
 exports.listEngagementCompetitionMailJobs = onCall(ENGAGEMENT_NOTIFICATION_PREVIEW_OPTIONS, async (request) => {
+  await portalSessionService().assertSession(request);
   const context = await engagementAccessContext(request);
   let competitionId = cleanText(request.data?.competitionId).slice(0, 128);
   if (!competitionId) {
@@ -9316,6 +9379,7 @@ exports.listEngagementCompetitionMailJobs = onCall(ENGAGEMENT_NOTIFICATION_PREVI
 });
 
 exports.prepareEngagementOpeningNotificationEmails = onCall(ENGAGEMENT_NOTIFICATION_PREVIEW_OPTIONS, async (request) => {
+  await portalSessionService().assertSession(request);
   if (ENVIRONMENT.sportingDataSource === "nap") return nativeNotificationPreview(request, "opening");
   const context = await engagementAccessContext(request);
   const competitionId = cleanText(request.data?.competitionId).slice(0, 128);
@@ -9372,6 +9436,7 @@ async function prepareEngagementClubRecapEmailJobs(input0, input1) {
 }
 
 exports.prepareEngagementClubRecapEmails = onCall(ENGAGEMENT_NOTIFICATION_PREVIEW_OPTIONS, async (request) => {
+  await portalSessionService().assertSession(request);
   if (ENVIRONMENT.sportingDataSource === "nap") return nativeNotificationPreview(request, "club_recaps");
   const context = await engagementAccessContext(request);
   const competitionId = cleanText(request.data?.competitionId).slice(0, 128);
@@ -9418,6 +9483,7 @@ async function sendEngagementPreparedEmailJobs(input0, input1) {
 }
 
 exports.sendEngagementPreparedEmails = onCall(ENVIRONMENT.sportingDataSource === "nap" ? ENGAGEMENT_NOTIFICATION_PREVIEW_OPTIONS : ENGAGEMENT_MAIL_CALLABLE_OPTIONS, async (request) => {
+  await portalSessionService().assertSession(request);
   if (ENVIRONMENT.sportingDataSource === "nap") return nativeNotificationPreview(request, "send");
   const context = await engagementAccessContext(request);
   const competitionId = cleanText(request.data?.competitionId).slice(0, 128);
@@ -9517,14 +9583,17 @@ exports.closeDueEngagementCompetitions = onSchedule(ENGAGEMENT_CLOSURE_SCHEDULER
 });
 
 exports.saveEngagementClubTeamLeader = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/backend/portal-club-handlers/save-engagement-club-team-leader.js#saveEngagementClubTeamLeader#arrow */ async (request) => {
+  await portalSessionService().assertSession(request);
   return $portalClubHandlers_saveEngagementClubTeamLeader().saveEngagementClubTeamLeader(request);
 });
 
 exports.removeEngagementClubTeamLeader = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/backend/portal-club-handlers/remove-engagement-club-team-leader.js#removeEngagementClubTeamLeader#arrow */ async (request) => {
+  await portalSessionService().assertSession(request);
   return $portalClubHandlers_removeEngagementClubTeamLeader().removeEngagementClubTeamLeader(request);
 });
 
 exports.listEngagementClubPeople = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/backend/portal-club-handlers/list-engagement-club-people.js#listEngagementClubPeople#arrow */ async (request) => {
+  await portalSessionService().assertSession(request);
   return $portalClubHandlers_listEngagementClubPeople().listEngagementClubPeople(request);
 });
 
@@ -9534,10 +9603,12 @@ async function resolveEngagementClubPersonSwimmer(input0) {
 }
 
 exports.saveEngagementClubPerson = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/backend/portal-club-handlers/save-engagement-club-person.js#saveEngagementClubPerson#arrow */ async (request) => {
+  await portalSessionService().assertSession(request);
   return $portalClubHandlers_saveEngagementClubPerson().saveEngagementClubPerson(request);
 });
 
 exports.setEngagementClubPersonStatus = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/backend/portal-club-handlers/set-engagement-club-person-status.js#setEngagementClubPersonStatus#arrow */ async (request) => {
+  await portalSessionService().assertSession(request);
   return $portalClubHandlers_setEngagementClubPersonStatus().setEngagementClubPersonStatus(request);
 });
 
@@ -9547,14 +9618,17 @@ async function saveNativeClubOfficials(input0, input1) {
 }
 
 exports.saveEngagementClubOfficials = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/backend/portal-club-handlers/save-engagement-club-officials.js#saveEngagementClubOfficials#arrow */ async (request) => {
+  await portalSessionService().assertSession(request);
   return $portalClubHandlers_saveEngagementClubOfficials().saveEngagementClubOfficials(request);
 });
 
 exports.listEngagementClubSwimmers = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/backend/portal-club-handlers/list-engagement-club-swimmers.js#listEngagementClubSwimmers#arrow */ async (request) => {
+  await portalSessionService().assertSession(request);
   return $portalClubHandlers_listEngagementClubSwimmers().listEngagementClubSwimmers(request);
 });
 
 exports.setEngagementClubSwimmerActivityStatus = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/backend/portal-club-handlers/set-engagement-club-swimmer-activity-status.js#setEngagementClubSwimmerActivityStatus#arrow */ async (request) => {
+  await portalSessionService().assertSession(request);
   return $portalClubHandlers_setEngagementClubSwimmerActivityStatus().setEngagementClubSwimmerActivityStatus(request);
 });
 
@@ -9606,18 +9680,22 @@ async function importSwimmerCreation(input0, input1) {
   return $serverNationalService_importSwimmerCreation().importSwimmerCreation(...arguments);
 }
 exports.previewEngagementClubSwimmerCreation = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")], maxInstances:2, concurrency:4 } : {}) }, /* extracted-handler: functions/backend/portal-club-handlers/preview-engagement-club-swimmer-creation.js#previewEngagementClubSwimmerCreation#arrow */ async (request) => {
+  await portalSessionService().assertSession(request);
   return $portalClubHandlers_previewEngagementClubSwimmerCreation().previewEngagementClubSwimmerCreation(request);
 });
 
 exports.previewEngagementClubSwimmerRecovery = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")], maxInstances:2, concurrency:4 } : {}) }, /* extracted-handler: functions/backend/portal-club-handlers/preview-engagement-club-swimmer-recovery.js#previewEngagementClubSwimmerRecovery#arrow */ async (request) => {
+  await portalSessionService().assertSession(request);
   return $portalClubHandlers_previewEngagementClubSwimmerRecovery().previewEngagementClubSwimmerRecovery(request);
 });
 
 exports.recoverEngagementClubSwimmer = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")], maxInstances:2, concurrency:4 } : {}) }, /* extracted-handler: functions/backend/portal-club-handlers/recover-engagement-club-swimmer.js#recoverEngagementClubSwimmer#arrow */ async (request) => {
+  await portalSessionService().assertSession(request);
   return $portalClubHandlers_recoverEngagementClubSwimmer().recoverEngagementClubSwimmer(request);
 });
 
 exports.createEngagementClubSwimmer = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")], maxInstances:2, concurrency:4 } : {}) }, /* extracted-handler: functions/backend/portal-club-handlers/create-engagement-club-swimmer.js#createEngagementClubSwimmer#arrow */ async (request) => {
+  await portalSessionService().assertSession(request);
   return $portalClubHandlers_createEngagementClubSwimmer().createEngagementClubSwimmer(request);
 });
 
@@ -9664,6 +9742,7 @@ async function searchEngagementNationalSwimmerDocs(input0) {
 }
 
 exports.searchEngagementNationalSwimmers = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/backend/portal-national-handlers/search-engagement-national-swimmers.js#searchEngagementNationalSwimmers#arrow */ async (request) => {
+  await portalSessionService().assertSession(request);
   return $portalNationalHandlers_searchEngagementNationalSwimmers().searchEngagementNationalSwimmers(request);
 });
 
@@ -9683,6 +9762,7 @@ async function engagementLicenseReportRequest(input0, input1, input2) {
 }
 
 exports.prepareEngagementLicenseControlBatch = onCall(ENVIRONMENT.projectId === "livepalmes-test" ? ENGAGEMENT_NOTIFICATION_PREVIEW_OPTIONS : { ...ENGAGEMENT_NOTIFICATION_PREVIEW_OPTIONS, timeoutSeconds: 300, secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD"), ...ENGAGEMENT_NOTIFICATION_MAIL_SECRETS] }, async (request) => {
+  await portalSessionService().assertSession(request);
   const startedAt = Date.now();
   const context = await engagementAccessContext(request);
   if (!context.national) throw new HttpsError("permission-denied", "Controle des licences reserve au niveau national.");
@@ -9776,6 +9856,7 @@ exports.prepareEngagementLicenseControlBatch = onCall(ENVIRONMENT.projectId === 
 });
 
 exports.validateEngagementSwimmerLicenses = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/backend/portal-club-handlers/validate-engagement-swimmer-licenses.js#validateEngagementSwimmerLicenses#arrow */ async (request) => {
+  await portalSessionService().assertSession(request);
   return $portalClubHandlers_validateEngagementSwimmerLicenses().validateEngagementSwimmerLicenses(request);
 });
 
@@ -9845,10 +9926,12 @@ async function sendEngagementSwimmerChangeResolutionNotification() {
 }
 
 exports.requestEngagementClubSwimmerChange = onCall({ ...ENGAGEMENT_SWIMMER_CORRECTION_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/backend/portal-national-handlers/request-engagement-club-swimmer-change.js#requestEngagementClubSwimmerChange#arrow */ async (request) => {
+  await portalSessionService().assertSession(request);
   return $portalNationalHandlers_requestEngagementClubSwimmerChange().requestEngagementClubSwimmerChange(request);
 });
 
 exports.listEngagementSwimmerChangeRequests = onCall(CALLABLE_OPTIONS, /* extracted-handler: functions/backend/portal-national-handlers/list-engagement-swimmer-change-requests.js#listEngagementSwimmerChangeRequests#arrow */ async (request) => {
+  await portalSessionService().assertSession(request);
   return $portalNationalHandlers_listEngagementSwimmerChangeRequests().listEngagementSwimmerChangeRequests(request);
 });
 
@@ -9867,6 +9950,7 @@ exports.getEngagementNationalAdministrationOverview = onCall(CALLABLE_OPTIONS, a
 });
 
 exports.listEngagementNationalClubs = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/backend/portal-national-handlers/list-engagement-national-clubs.js#listEngagementNationalClubs#arrow */ async (request) => {
+  await portalSessionService().assertSession(request);
   return $portalNationalHandlers_listEngagementNationalClubs().listEngagementNationalClubs(request);
 });
 
@@ -9875,20 +9959,24 @@ exports.getPublicEngagementClubDirectory = onCall({ ...CALLABLE_OPTIONS, ...(ENV
 });
 
 exports.saveEngagementNationalClub = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/backend/portal-national-handlers/save-engagement-national-club.js#saveEngagementNationalClub#arrow */ async (request) => {
+  await portalSessionService().assertSession(request);
   return $portalNationalHandlers_saveEngagementNationalClub().saveEngagementNationalClub(request);
 });
 
 exports.deleteEngagementNationalClub = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/backend/portal-national-handlers/delete-engagement-national-club.js#deleteEngagementNationalClub#arrow */ async (request) => {
+  await portalSessionService().assertSession(request);
   return $portalNationalHandlers_deleteEngagementNationalClub().deleteEngagementNationalClub(request);
 });
 
 exports.getPortalPendingRequestOverview = onCall(CALLABLE_OPTIONS, /* extracted-handler: functions/backend/portal-competition-handlers/get-portal-pending-request-overview.js#getPortalPendingRequestOverview#arrow */ async (request) => {
+  await portalSessionService().assertSession(request);
   return $portalCompetitionHandlers_getPortalPendingRequestOverview().getPortalPendingRequestOverview(request);
 });
 
 exports.resolveEngagementSwimmerChangeRequest = onCall(ENVIRONMENT.sportingDataSource === "nap"
   ? { ...ENGAGEMENT_SWIMMER_CORRECTION_OPTIONS, secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] }
   : ENGAGEMENT_SWIMMER_CORRECTION_MAIL_OPTIONS, async (request) => {
+  await portalSessionService().assertSession(request);
   const context = await engagementAccessContext(request);
   if (!context.national) throw new HttpsError("permission-denied", "Validation reservee au niveau national.");
   const requestId = cleanText(request.data?.requestId).slice(0, 80);
@@ -10086,10 +10174,12 @@ exports.resolveEngagementSwimmerChangeRequest = onCall(ENVIRONMENT.sportingDataS
 });
 
 exports.updateEngagementNationalSwimmerIdentity = onCall({ ...ENGAGEMENT_SWIMMER_CORRECTION_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/backend/portal-performance-handlers/update-engagement-national-swimmer-identity.js#updateEngagementNationalSwimmerIdentity#arrow */ async (request) => {
+  await portalSessionService().assertSession(request);
   return $portalPerformanceHandlers_updateEngagementNationalSwimmerIdentity().updateEngagementNationalSwimmerIdentity(request);
 });
 
 exports.setEngagementNationalClubSwimmerStatus = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/backend/portal-national-handlers/set-engagement-national-club-swimmer-status.js#setEngagementNationalClubSwimmerStatus#arrow */ async (request) => {
+  await portalSessionService().assertSession(request);
   return $portalNationalHandlers_setEngagementNationalClubSwimmerStatus().setEngagementNationalClubSwimmerStatus(request);
 });
 
@@ -10104,6 +10194,7 @@ async function deleteEngagementClubSwimmerPermanently(input0, input1) {
 }
 
 exports.requestEngagementClubSwimmerDeletion = onCall(CALLABLE_OPTIONS, async (request) => {
+  await portalSessionService().assertSession(request);
   if (ENVIRONMENT.sportingDataSource === "nap") throw new HttpsError("failed-precondition", "Cette ancienne suppression Firebase est desactivee. Utilisez la gestion NAP de la fiche.");
   const context = await engagementClubAccessContext(request);
   const swimmerId = cleanText(request.data?.swimmerId).slice(0, 80);
@@ -10173,10 +10264,12 @@ exports.requestEngagementClubSwimmerDeletion = onCall(CALLABLE_OPTIONS, async (r
 });
 
 exports.deleteEngagementNationalClubSwimmer = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/backend/portal-national-handlers/delete-engagement-national-club-swimmer.js#deleteEngagementNationalClubSwimmer#arrow */ async (request) => {
+  await portalSessionService().assertSession(request);
   return $portalNationalHandlers_deleteEngagementNationalClubSwimmer().deleteEngagementNationalClubSwimmer(request);
 });
 
 exports.listEngagementSwimmerDeletionRequests = onCall(CALLABLE_OPTIONS, async (request) => {
+  await portalSessionService().assertSession(request);
   if (ENVIRONMENT.sportingDataSource === "nap") throw new HttpsError("failed-precondition", "Cette ancienne suppression Firebase est desactivee. Utilisez la gestion NAP de la fiche.");
   const context = await engagementAccessContext(request);
   if (!context.national) {
@@ -10218,6 +10311,7 @@ exports.listEngagementSwimmerDeletionRequests = onCall(CALLABLE_OPTIONS, async (
 });
 
 exports.resolveEngagementSwimmerDeletionRequest = onCall(CALLABLE_OPTIONS, async (request) => {
+  await portalSessionService().assertSession(request);
   if (ENVIRONMENT.sportingDataSource === "nap") throw new HttpsError("failed-precondition", "Cette ancienne suppression Firebase est desactivee. Utilisez la gestion NAP de la fiche.");
   const context = await engagementAccessContext(request);
   if (!context.national) {
@@ -10336,6 +10430,7 @@ async function searchEngagementNationalSwimmerMergeTargetDocs(input0) {
 }
 
 exports.searchEngagementNationalSwimmerMergeTargets = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/backend/portal-national-handlers/search-engagement-national-swimmer-merge-targets.js#searchEngagementNationalSwimmerMergeTargets#arrow */ async (request) => {
+  await portalSessionService().assertSession(request);
   return $portalNationalHandlers_searchEngagementNationalSwimmerMergeTargets().searchEngagementNationalSwimmerMergeTargets(request);
 });
 
@@ -10365,10 +10460,12 @@ async function readPerformanceDocsForNationalSwimmerMerge(input0) {
 }
 
 exports.mergeEngagementNationalClubSwimmer = onCall({ ...ENGAGEMENT_SWIMMER_CORRECTION_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/backend/portal-performance-handlers/merge-engagement-national-club-swimmer.js#mergeEngagementNationalClubSwimmer#arrow */ async (request) => {
+  await portalSessionService().assertSession(request);
   return $portalPerformanceHandlers_mergeEngagementNationalClubSwimmer().mergeEngagementNationalClubSwimmer(request);
 });
 
 exports.repairEngagementNationalSwimmerMergePublication = onCall(ENGAGEMENT_SWIMMER_CORRECTION_OPTIONS, async (request) => {
+  await portalSessionService().assertSession(request);
   const context = await engagementAccessContext(request);
   if (!context.national) throw new HttpsError("permission-denied", "Reparation reservee au niveau national.");
   if(ENVIRONMENT.sportingDataSource==="nap")throw new HttpsError("failed-precondition","Les fiches NAP sont lues directement. Utilisez Finaliser la fusion depuis la fiche fusionnee.");
@@ -10412,18 +10509,22 @@ exports.repairEngagementNationalSwimmerMergePublication = onCall(ENGAGEMENT_SWIM
 });
 
 exports.listEngagementNationalClubPeople = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/backend/portal-national-handlers/list-engagement-national-club-people.js#listEngagementNationalClubPeople#arrow */ async (request) => {
+  await portalSessionService().assertSession(request);
   return $portalNationalHandlers_listEngagementNationalClubPeople().listEngagementNationalClubPeople(request);
 });
 
 exports.setEngagementNationalClubPersonStatus = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/backend/portal-national-handlers/set-engagement-national-club-person-status.js#setEngagementNationalClubPersonStatus#arrow */ async (request) => {
+  await portalSessionService().assertSession(request);
   return $portalNationalHandlers_setEngagementNationalClubPersonStatus().setEngagementNationalClubPersonStatus(request);
 });
 
 exports.deleteEngagementNationalClubPerson = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/backend/portal-national-handlers/delete-engagement-national-club-person.js#deleteEngagementNationalClubPerson#arrow */ async (request) => {
+  await portalSessionService().assertSession(request);
   return $portalNationalHandlers_deleteEngagementNationalClubPerson().deleteEngagementNationalClubPerson(request);
 });
 
 exports.listEngagementNationalAuditLogs = onCall(CALLABLE_OPTIONS, /* extracted-handler: functions/backend/portal-national-handlers/list-engagement-national-audit-logs.js#listEngagementNationalAuditLogs#arrow */ async (request) => {
+  await portalSessionService().assertSession(request);
   return $portalNationalHandlers_listEngagementNationalAuditLogs().listEngagementNationalAuditLogs(request);
 });
 
@@ -10443,6 +10544,7 @@ function mergeEngagementClubEntryOfficials() {
 }
 
 exports.mergeEngagementNationalClubPerson = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/backend/portal-national-handlers/merge-engagement-national-club-person.js#mergeEngagementNationalClubPerson#arrow */ async (request) => {
+  await portalSessionService().assertSession(request);
   return $portalNationalHandlers_mergeEngagementNationalClubPerson().mergeEngagementNationalClubPerson(request);
 });
 
@@ -10483,6 +10585,7 @@ exports.previewEngagementClubEntryTimes = onCall(CALLABLE_OPTIONS, async (reques
 });
 
 exports.getEngagementClubEntryTimeHistory = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/backend/portal-club-handlers/get-engagement-club-entry-time-history.js#getEngagementClubEntryTimeHistory#arrow */ async (request) => {
+  await portalSessionService().assertSession(request);
   return $portalClubHandlers_getEngagementClubEntryTimeHistory().getEngagementClubEntryTimeHistory(request);
 });
 
@@ -10501,6 +10604,7 @@ exports.previewEngagementClubSwimmerEventTimes = onCall({ ...CALLABLE_OPTIONS, .
 });
 
 exports.previewEngagementClubSwimmerEventTimesBatch = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/backend/portal-club-handlers/preview-engagement-club-swimmer-event-times-batch.js#previewEngagementClubSwimmerEventTimesBatch#arrow */ async (request) => {
+  await portalSessionService().assertSession(request);
   return $portalClubHandlers_previewEngagementClubSwimmerEventTimesBatch().previewEngagementClubSwimmerEventTimesBatch(request);
 });
 
@@ -10510,6 +10614,7 @@ async function saveNativeClubIndividualEntries(input0, input1) {
 }
 
 exports.saveEngagementClubIndividualEntries = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/backend/portal-club-handlers/save-engagement-club-individual-entries.js#saveEngagementClubIndividualEntries#arrow */ async (request) => {
+  await portalSessionService().assertSession(request);
   return $portalClubHandlers_saveEngagementClubIndividualEntries().saveEngagementClubIndividualEntries(request);
 });
 
@@ -10523,10 +10628,12 @@ exports.saveEngagementClubSwimmerSelection = onCall({ ...CALLABLE_OPTIONS, ...(E
 });
 
 exports.saveEngagementClubSwimmerSelections = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/backend/portal-club-handlers/save-engagement-club-swimmer-selections.js#saveEngagementClubSwimmerSelections#arrow */ async (request) => {
+  await portalSessionService().assertSession(request);
   return $portalClubHandlers_saveEngagementClubSwimmerSelections().saveEngagementClubSwimmerSelections(request);
 });
 
 exports.saveEngagementClubSwimmers = onCall(CALLABLE_OPTIONS, async (request) => {
+  await portalSessionService().assertSession(request);
   if (ENVIRONMENT.sportingDataSource === "nap") throw new HttpsError("failed-precondition", "Cette ancienne saisie Firebase est desactivee. Utilisez les engagements NAP.");
   const context = await engagementClubAccessContext(request);
   const competitionId = cleanText(request.data?.competitionId).slice(0, 128);
@@ -10623,22 +10730,27 @@ async function saveNativeClubRelays(input0, input1) {
 }
 
 exports.saveEngagementClubRelays = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/backend/portal-club-handlers/save-engagement-club-relays.js#saveEngagementClubRelays#arrow */ async (request) => {
+  await portalSessionService().assertSession(request);
   return $portalClubHandlers_saveEngagementClubRelays().saveEngagementClubRelays(request);
 });
 
 exports.createEngagementCompetition = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")], maxInstances:2, concurrency:4, timeoutSeconds:120 } : {}) }, /* extracted-handler: functions/backend/portal-competition-handlers/create-engagement-competition.js#createEngagementCompetition#arrow */ async (request) => {
+  await portalSessionService().assertSession(request);
   return $portalCompetitionHandlers_createEngagementCompetition().createEngagementCompetition(request);
 });
 
 exports.updateEngagementCompetition = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")], maxInstances:2, concurrency:4, timeoutSeconds:120 } : {}) }, /* extracted-handler: functions/backend/portal-competition-handlers/update-engagement-competition.js#updateEngagementCompetition#arrow */ async (request) => {
+  await portalSessionService().assertSession(request);
   return $portalCompetitionHandlers_updateEngagementCompetition().updateEngagementCompetition(request);
 });
 
 exports.deleteEngagementCompetition = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/backend/portal-competition-handlers/delete-engagement-competition.js#deleteEngagementCompetition#arrow */ async (request) => {
+  await portalSessionService().assertSession(request);
   return $portalCompetitionHandlers_deleteEngagementCompetition().deleteEngagementCompetition(request);
 });
 
 exports.requestEngagementCompetitionDeletion = onCall(CALLABLE_OPTIONS, async (request) => {
+  await portalSessionService().assertSession(request);
   if (ENVIRONMENT.sportingDataSource === "nap") throw new HttpsError("failed-precondition", "Cette ancienne action Firebase est desactivee : utilisez la fiche NAP.");
   const context = await engagementAccessContext(request);
   if (context.national) {
@@ -10697,6 +10809,7 @@ exports.requestEngagementCompetitionDeletion = onCall(CALLABLE_OPTIONS, async (r
 });
 
 exports.listEngagementCompetitionDeletionRequests = onCall(CALLABLE_OPTIONS, async (request) => {
+  await portalSessionService().assertSession(request);
   const context = await engagementAccessContext(request);
   if (!context.national) {
     throw new HttpsError("permission-denied", "Lecture reservee au niveau national.");
@@ -10741,6 +10854,7 @@ exports.listEngagementCompetitionDeletionRequests = onCall(CALLABLE_OPTIONS, asy
 });
 
 exports.resolveEngagementCompetitionDeletionRequest = onCall(CALLABLE_OPTIONS, async (request) => {
+  await portalSessionService().assertSession(request);
   if (ENVIRONMENT.sportingDataSource === "nap") throw new HttpsError("failed-precondition", "Cette ancienne action Firebase est desactivee : utilisez la fiche NAP.");
   const context = await engagementAccessContext(request);
   if (!context.national) {
@@ -10816,6 +10930,7 @@ exports.resolveEngagementCompetitionDeletionRequest = onCall(CALLABLE_OPTIONS, a
 });
 
 exports.previewCompetitionImport = onCall(COMPETITION_IMPORT_CALLABLE_OPTIONS, /* extracted-handler: functions/backend/portal-performance-handlers/preview-competition-import.js#previewCompetitionImport#arrow */ async (request) => {
+  await portalSessionService().assertSession(request);
   return $portalPerformanceHandlers_previewCompetitionImport().previewCompetitionImport(request);
 });
 
@@ -10842,10 +10957,12 @@ async function stageCompetitionImportReplacement() {
 }
 
 exports.createCompetitionImport = onCall(COMPETITION_IMPORT_CALLABLE_OPTIONS, /* extracted-handler: functions/backend/portal-performance-handlers/create-competition-import.js#createCompetitionImport#arrow */ async (request) => {
+  await portalSessionService().assertSession(request);
   return $portalPerformanceHandlers_createCompetitionImport().createCompetitionImport(request);
 });
 
 exports.resumeCompetitionImportPublication = onCall(COMPETITION_IMPORT_CALLABLE_OPTIONS, async (request) => {
+  await portalSessionService().assertSession(request);
   if (ENVIRONMENT.sportingDataSource === "nap") throw new HttpsError("failed-precondition", "Cette ancienne action Firebase est désactivée : les résultats sont gérés dans NAP.");
   assertCapability(request, "competitions.import");
   const importId = cleanText(request.data?.importId).slice(0, 160);
@@ -10939,6 +11056,7 @@ exports.resumeCompetitionImportPublication = onCall(COMPETITION_IMPORT_CALLABLE_
 });
 
 exports.listCompetitionImports = onCall(COMPETITION_IMPORT_CALLABLE_OPTIONS, /* extracted-handler: functions/backend/portal-performance-handlers/list-competition-imports.js#listCompetitionImports#arrow */ async (request) => {
+  await portalSessionService().assertSession(request);
   return $portalPerformanceHandlers_listCompetitionImports().listCompetitionImports(request);
 });
 
@@ -10948,6 +11066,7 @@ async function markCompetitionImportDeleted(input0) {
 }
 
 exports.deleteCompetitionImport = onCall(PUBLIC_PERFORMANCE_CALLABLE_OPTIONS, async (request) => {
+  await portalSessionService().assertSession(request);
   if (ENVIRONMENT.sportingDataSource === "nap") throw new HttpsError("failed-precondition", "Cette ancienne action Firebase est désactivée : les résultats sont gérés dans NAP.");
   assertCapability(request, "competitions.import");
   const importId = cleanText(request.data?.importId).slice(0, 160);
@@ -11024,6 +11143,7 @@ exports.deleteCompetitionImport = onCall(PUBLIC_PERFORMANCE_CALLABLE_OPTIONS, as
 });
 
 exports.updateCompetitionImportRecordAlertDecision = onCall(CALLABLE_OPTIONS, async (request) => {
+  await portalSessionService().assertSession(request);
   if (ENVIRONMENT.sportingDataSource === "nap") throw new HttpsError("failed-precondition", "Cette ancienne action Firebase est désactivée : les résultats sont gérés dans NAP.");
   assertCapability(request, "competitions.import");
   const importId = cleanText(request.data?.importId).slice(0, 160);
@@ -11199,16 +11319,20 @@ const DTN_SEASON_OPTIONS = ENVIRONMENT.sportingDataSource === "nap" ? {
 async function invokeDtnSeason(input0, input1) {
   return $serverDtnService_invokeDtnSeason().invokeDtnSeason(...arguments);
 }
-exports.getDtnSeasons = onCall(DTN_SEASON_OPTIONS, /* extracted-handler: functions/backend/portal-performance-handlers/get-dtn-seasons.js#getDtnSeasons#expression */ (request) => {
+exports.getDtnSeasons = onCall(DTN_SEASON_OPTIONS, /* extracted-handler: functions/backend/portal-performance-handlers/get-dtn-seasons.js#getDtnSeasons#expression */ async (request) => {
+  await portalSessionService().assertSession(request);
   return $portalPerformanceHandlers_getDtnSeasons().getDtnSeasons(request);
 });
-exports.updateDtnSeason = onCall(DTN_SEASON_OPTIONS, /* extracted-handler: functions/backend/portal-performance-handlers/update-dtn-season.js#updateDtnSeason#expression */ (request) => {
+exports.updateDtnSeason = onCall(DTN_SEASON_OPTIONS, /* extracted-handler: functions/backend/portal-performance-handlers/update-dtn-season.js#updateDtnSeason#expression */ async (request) => {
+  await portalSessionService().assertSession(request);
   return $portalPerformanceHandlers_updateDtnSeason().updateDtnSeason(request);
 });
-exports.getDtnSeasonOverview = onCall(DTN_SEASON_OPTIONS, /* extracted-handler: functions/backend/portal-performance-handlers/get-dtn-season-overview.js#getDtnSeasonOverview#expression */ (request) => {
+exports.getDtnSeasonOverview = onCall(DTN_SEASON_OPTIONS, /* extracted-handler: functions/backend/portal-performance-handlers/get-dtn-season-overview.js#getDtnSeasonOverview#expression */ async (request) => {
+  await portalSessionService().assertSession(request);
   return $portalPerformanceHandlers_getDtnSeasonOverview().getDtnSeasonOverview(request);
 });
-exports.listDtnSeasonSources = onCall(DTN_SEASON_OPTIONS, /* extracted-handler: functions/backend/portal-performance-handlers/list-dtn-season-sources.js#listDtnSeasonSources#expression */ (request) => {
+exports.listDtnSeasonSources = onCall(DTN_SEASON_OPTIONS, /* extracted-handler: functions/backend/portal-performance-handlers/list-dtn-season-sources.js#listDtnSeasonSources#expression */ async (request) => {
+  await portalSessionService().assertSession(request);
   return $portalPerformanceHandlers_listDtnSeasonSources().listDtnSeasonSources(request);
 });
 
@@ -11360,6 +11484,7 @@ exports.buildDtnQualificationView = onDocumentCreated(DTN_QUALIFICATION_JOB_OPTI
 });
 
 exports.refreshDtnQualificationCache = onCall(CALLABLE_OPTIONS, async (request) => {
+  await portalSessionService().assertSession(request);
   assertCapability(request, "dtn.view");
   if (ENVIRONMENT.sportingDataSource === "nap") throw new HttpsError("failed-precondition", "Utilisez la DTN par saison pour recalculer les resultats.");
   const seasonYear = Number(request.data?.seasonYear || 0);
@@ -11385,6 +11510,7 @@ exports.refreshDtnQualificationCache = onCall(CALLABLE_OPTIONS, async (request) 
 });
 
 exports.getDtnQualificationOverview = onCall(CALLABLE_OPTIONS, async (request) => {
+  await portalSessionService().assertSession(request);
   const startedAt = Date.now();
   assertCapability(request, "dtn.view");
   if (ENVIRONMENT.sportingDataSource === "nap") throw new HttpsError("failed-precondition", "Utilisez la DTN par saison pour consulter les resultats.");
@@ -11477,6 +11603,7 @@ function normalizeDtnListingRules() {
 }
 
 exports.refreshDtnListingCache = onCall(CALLABLE_OPTIONS, async (request) => {
+  await portalSessionService().assertSession(request);
   assertCapability(request, "dtn.view");
   if (ENVIRONMENT.sportingDataSource === "nap") throw new HttpsError("failed-precondition", "Utilisez la DTN par saison pour recalculer les resultats.");
   const seasonYear = Number(request.data?.seasonYear || 0);
@@ -11499,6 +11626,7 @@ exports.refreshDtnListingCache = onCall(CALLABLE_OPTIONS, async (request) => {
 });
 
 exports.getDtnListingOverview = onCall(CALLABLE_OPTIONS, async (request) => {
+  await portalSessionService().assertSession(request);
   const startedAt = Date.now();
   assertCapability(request, "dtn.view");
   if (ENVIRONMENT.sportingDataSource === "nap") throw new HttpsError("failed-precondition", "Utilisez la DTN par saison pour consulter les resultats.");
@@ -12060,12 +12188,14 @@ async function publishAdditionalPerformanceDataSnapshot() {
 }
 
 exports.exportAdditionalPerformanceData = onCall(CALLABLE_OPTIONS, async (request) => {
+  await portalSessionService().assertSession(request);
   if (ENVIRONMENT.sportingDataSource === "nap") throw new HttpsError("failed-precondition", "Cette ancienne action Firebase est désactivée : les résultats sont gérés dans NAP.");
   assertCapability(request, "competitions.import");
   return buildAdditionalPerformanceDataSnapshot();
 });
 
 exports.publishPerformancePublicData = onCall(PUBLIC_PERFORMANCE_CALLABLE_OPTIONS, async (request) => {
+  await portalSessionService().assertSession(request);
   if (ENVIRONMENT.sportingDataSource === "nap") throw new HttpsError("failed-precondition", "Cette ancienne action Firebase est désactivée : les résultats sont gérés dans NAP.");
   assertAdmin(request);
   try {
@@ -12087,6 +12217,7 @@ exports.publishPerformancePublicData = onCall(PUBLIC_PERFORMANCE_CALLABLE_OPTION
 });
 
 exports.getPerformanceBaseMigrationStatus = onCall(MIGRATION_CALLABLE_OPTIONS, async (request) => {
+  await portalSessionService().assertSession(request);
   if (ENVIRONMENT.sportingDataSource === "nap") throw new HttpsError("failed-precondition", "Cette ancienne action Firebase est désactivée : les résultats sont gérés dans NAP.");
   assertAdmin(request);
   const manifest = await performanceBaseMigrationManifest();
@@ -12105,6 +12236,7 @@ exports.getPerformanceBaseMigrationStatus = onCall(MIGRATION_CALLABLE_OPTIONS, a
 });
 
 exports.migratePerformanceBaseNextChunk = onCall(MIGRATION_CALLABLE_OPTIONS, async (request) => {
+  await portalSessionService().assertSession(request);
   if (ENVIRONMENT.sportingDataSource === "nap") throw new HttpsError("failed-precondition", "Cette ancienne action Firebase est désactivée : les résultats sont gérés dans NAP.");
   assertAdmin(request);
   const manifest = await performanceBaseMigrationManifest();
@@ -12180,6 +12312,7 @@ exports.resumePerformancePublicationJobs = onSchedule(PERFORMANCE_PUBLICATION_SC
 });
 
 exports.getPerformancePublicationJobStatus = onCall(CALLABLE_OPTIONS, async (request) => {
+  await portalSessionService().assertSession(request);
   if (ENVIRONMENT.sportingDataSource === "nap") throw new HttpsError("failed-precondition", "Cette ancienne action Firebase est désactivée : les résultats sont gérés dans NAP.");
   assertCapability(request, "competitions.import");
   const jobId = cleanText(request.data?.jobId).slice(0, 80);
@@ -12190,6 +12323,7 @@ exports.getPerformancePublicationJobStatus = onCall(CALLABLE_OPTIONS, async (req
 });
 
 exports.retryPerformancePublicationJob = onCall(CALLABLE_OPTIONS, async (request) => {
+  await portalSessionService().assertSession(request);
   if (ENVIRONMENT.sportingDataSource === "nap") throw new HttpsError("failed-precondition", "Cette ancienne action Firebase est désactivée : les résultats sont gérés dans NAP.");
   assertCapability(request, "competitions.import");
   const jobId = cleanText(request.data?.jobId).slice(0, 80);
@@ -12256,9 +12390,11 @@ function authorizeNativePerformance(input0) {
 function nativePerformanceFailure(input0) {
   return $serverLegacyService_nativePerformanceFailure().nativePerformanceFailure(...arguments);
 }
-exports.getNapPerformanceAdministration=onCall(NAP_PERFORMANCE_OPTIONS,/* extracted-handler: functions/backend/portal-performance-handlers/get-nap-performance-administration.js#getNapPerformanceAdministration#arrow */ async (request) => {
+exports.getNapPerformanceAdministration = onCall(NAP_PERFORMANCE_OPTIONS,/* extracted-handler: functions/backend/portal-performance-handlers/get-nap-performance-administration.js#getNapPerformanceAdministration#arrow */ async (request) => {
+  await portalSessionService().assertSession(request);
   return $portalPerformanceHandlers_getNapPerformanceAdministration().getNapPerformanceAdministration(request);
 });
 exports.savePerformanceCorrection = onCall(NAP_PERFORMANCE_OPTIONS, /* extracted-handler: functions/backend/portal-performance-handlers/save-performance-correction.js#savePerformanceCorrection#arrow */ async (request) => {
+  await portalSessionService().assertSession(request);
   return $portalPerformanceHandlers_savePerformanceCorrection().savePerformanceCorrection(request);
 });

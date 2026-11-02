@@ -20,6 +20,7 @@
     let currentUser = null;
     let currentClaims = {};
     let currentProfile = null;
+    let accessError = null;
     let authReady = false;
     let authUnsubscribe = null;
     let accessRefreshPromise = null;
@@ -78,6 +79,7 @@
         try {
           const result = await functions.httpsCallable("getCurrentAccessUser")({});
           if (String(currentUser?.uid || "") !== refreshUid) return;
+          accessError = null;
           const capabilities = Array.isArray(result.data?.capabilities) ? result.data.capabilities : [];
           const activeProfile = result.data?.status === "active";
           const serverAccessAllowed = activeProfile && (!serverProfileAuthentication || capabilities.length > 0);
@@ -97,10 +99,15 @@
             }, {})
           };
           return true;
-        } catch {
+        } catch (error) {
           if (String(currentUser?.uid || "") === refreshUid) {
             currentProfile = null;
             if (serverProfileAuthentication) currentClaims = {};
+            const retryable = /unavailable|deadline-exceeded|internal|network/i.test(String(error?.code || error?.message || ""));
+            accessError = { retryable, message:error?.details?.portalSessionExpired
+              ? "Votre session a expiré. Reconnectez-vous."
+              : retryable ? "Le service de connexion est momentanément indisponible. Réessayez la vérification."
+              : "La vérification de votre accès a échoué. Reconnectez-vous ou contactez un administrateur." };
           }
           // En production, conserver les droits locaux existants ; en TEST, refuser par defaut.
           return false;
@@ -176,6 +183,7 @@
         currentUser = user || null;
         currentClaims = {};
         currentProfile = null;
+        accessError = null;
         if (currentUser?.getIdTokenResult) {
           try {
             // The portal still reads the authoritative server profile below.
@@ -202,6 +210,7 @@
         claims: currentClaims,
         email: currentUser?.email || "",
         profile: currentProfile,
+        accessError,
         ready: authReady,
         signedIn: isAllowedUser(),
         legacyFallbackEnabled: legacyFallback && !isConfigured()
@@ -268,6 +277,7 @@
     async function signOut() {
       const service = authService();
       if (!service) return;
+      await global.LivePalmesPortalSession?.end?.();
       await service.signOut();
     }
 
@@ -296,6 +306,12 @@
       legacyAdminPinFallbackEnabled: () => status().legacyFallbackEnabled,
       onChange,
       whenReady: () => readyPromise,
+      refreshProfile: async ({ notify: shouldNotify = true } = {}) => {
+        accessRefreshCompletedAt = 0;
+        const allowed = await refreshAccessFromServer();
+        if (shouldNotify) notify();
+        return allowed;
+      },
       sendPasswordReset,
       signIn,
       signOut,
@@ -304,4 +320,9 @@
   }
 
   global.LivePalmesAdminAuth = { init };
+  // Start Auth while the remaining portal scripts download and execute.
+  if (typeof document !== "undefined" && document.body?.classList?.contains("admin-portal-page") && global.LivePalmesAppConfig?.firebaseConfig && global.firebase?.auth) {
+    if (!global.firebase.apps?.length) global.firebase.initializeApp(global.LivePalmesAppConfig.firebaseConfig);
+    global.LivePalmesPortalAuth = init({ firebase: global.firebase, authConfig: global.LivePalmesAppConfig.adminAuth || {} });
+  }
 })(window);

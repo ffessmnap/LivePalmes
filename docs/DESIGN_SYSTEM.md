@@ -2,6 +2,10 @@
 
 <!-- description: Référence du langage visuel, des composants d’interface et des règles responsive déjà présents dans LivePalmes. -->
 
+## Reconnexion et chargement de rubrique — 2 novembre 2026
+
+La reconnexion du portail utilise un dialogue natif modal, largeur maximale 460 px, marge de 16 px et hauteur défilable bornée au viewport. Compte en lecture seule, mot de passe avec autocomplétion adaptée, message `aria-live` et actions d’au moins 44 px. Le fond privé reste masqué et inerte ; le focus va au mot de passe. Le dialogue conserve les saisies de la page en mémoire. Le chargement initial d’outils affiche un statut visible sans déplacer la page ; une erreur demande de relancer l’action, sans rejeu automatique d’enregistrement.
+
 ## Colonne NS de Mes nageurs — 1er novembre 2026
 
 Mes nageurs affiche une colonne NS de 32 px sur ordinateur, entre Licence et Action. La cellule indique uniquement « NS » si le champ natif est actif et reste vide sinon. Le nom ne porte plus de suffixe NS. Sur mobile, l'information apparaît dans le détail déplié, uniquement pour un nageur NS. La grille conserve ses lignes de 42 px et son défilement horizontal ; les actions tactiles existantes restent accessibles.

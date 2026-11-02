@@ -31,6 +31,7 @@
     <link rel="stylesheet" href="assets/livepalmes-whatsapp-qr.css?v=20260831-whatsapp-qr-1">
     <link rel="stylesheet" href="assets/livepalmes-portal-appearance.css?v=20261029-readable-text-1">
     <script src="assets/livepalmes-portal-appearance.js?v=20260920-appearance-1"></script>
+    <link rel="stylesheet" href="assets/livepalmes-portal-session.css?v=20261102-session-1">
     <link rel="stylesheet" href="assets/livepalmes-portal-shell.css?v=20261021-common-header">
     <link rel="stylesheet" href="assets/livepalmes-portal-workspaces.css?v=20260921-button-weight-1">
     <link rel="stylesheet" href="assets/livepalmes-featured-documents.css?v=20261023-documents-page-1">
@@ -134,6 +135,7 @@
           </div>
         </form>
         <p id="adminPortalMessage" class="admin-portal-message" aria-live="polite"></p>
+        <button id="adminPortalAuthRetry" class="ghost-button" type="button" hidden>Réessayer la vérification</button>
         <details class="admin-portal-login-access">
           <summary>Demander un acc&egrave;s pour mon club</summary>
           <form id="adminPublicAccessRequestForm" class="admin-access-form">
@@ -2833,9 +2835,10 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-check-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-functions-compat.js"></script>
-<script src="assets/livepalmes-app-config.js?v=20260727-functions-emulator-1"></script>
+<script src="assets/livepalmes-app-config.js?v=20261102-session-1"></script>
 <script src="assets/livepalmes-app-check.js?v=20260813-app-check-1"></script>
-<script src="assets/livepalmes-admin-auth.js?v=20261030-restored-session-2"></script>
+<script src="assets/livepalmes-portal-session.js?v=20261102-session-1"></script>
+<script src="assets/livepalmes-admin-auth.js?v=20261102-session-1"></script>
     <script src="assets/livepalmes-whatsapp-qr.js?v=20260831-whatsapp-qr-1"></script>
     <link rel="stylesheet" href="assets/livepalmes-engagement-qualifications.css">
     <script src="assets/livepalmes-engagement-qualifications.js?v=20260915-import-seconds"></script>
@@ -2845,20 +2848,21 @@
   <script src="assets/livepalmes-import-source.js?v=20261026-import-text-1"></script>
   <script src="assets/livepalmes-access-request-history.js?v=20261026-1"></script>
   <script src="assets/livepalmes-club-identity.js?v=20261026-identity-1"></script>
-    <script src="assets/portal/navigation.js?v=20261101-news-editor-1"></script>
-    <script src="assets/portal/modules-and-clubs.js?v=20261101-cmas-1"></script>
-    <script src="assets/portal/competition-settings.js?v=20261030-home-preloads-1"></script>
-    <script src="assets/portal/club-people.js?v=20261028-modules-1"></script>
-    <script src="assets/portal/club-entry-state.js?v=20261028-modules-1"></script>
-    <script src="assets/portal/club-entry-views.js?v=20261101-ns-column-1"></script>
-    <script src="assets/portal/documents-and-program.js?v=20261031-national-workspace-1"></script>
-    <script src="assets/portal/competition-actions.js?v=20261101-mail-preview-1"></script>
-    <script src="assets/portal/national-requests.js?v=20261101-ns-column-1"></script>
-    <script src="assets/portal/national-directories.js?v=20261031-fusion-engagements-2"></script>
-    <script src="assets/portal/activity-journal.js?v=20261030-lectures-paralleles-2"></script>
-    <script src="assets/portal/club-and-competition.js?v=20261031-club-compact-2"></script>
-    <script src="assets/portal/account-and-access.js?v=20261030-access-dialog-1"></script>
-    <script src="assets/portal/events.js?v=20261101-cmas-1"></script>
+    <script src="assets/livepalmes-portal-deferred.js?v=20261102-reactivity-1"></script>
+    <script src="assets/portal/navigation.js?v=20261102-reactivity-1"></script>
+    <script src="assets/portal/modules-and-clubs.js?v=20261102-reactivity-1"></script>
+    <script src="assets/portal/competition-settings.js?v=20261102-reactivity-1"></script>
+    <script src="assets/portal/club-people.js?v=20261102-reactivity-1"></script>
+    <script src="assets/portal/club-entry-state.js?v=20261102-reactivity-1"></script>
+    <script src="assets/portal/club-entry-views.js?v=20261102-reactivity-1"></script>
+    <script src="assets/portal/documents-and-program.js?v=20261102-reactivity-1"></script>
+    <script src="assets/portal/competition-actions.js?v=20261102-reactivity-1"></script>
+    <script src="assets/portal/national-requests.js?v=20261102-reactivity-1"></script>
+    <script src="assets/portal/national-directories.js?v=20261102-reactivity-1"></script>
+    <script src="assets/portal/activity-journal.js?v=20261102-reactivity-1"></script>
+    <script src="assets/portal/club-and-competition.js?v=20261102-reactivity-1"></script>
+    <script src="assets/portal/account-and-access.js?v=20261102-reactivity-1"></script>
+    <script src="assets/portal/events.js?v=20261102-reactivity-1"></script>
   <script src="assets/livepalmes-admin-portal.js?v=20261101-cmas-1"></script>
     <script src="assets/livepalmes-license-administration.js?v=20261027-license-closure"></script>
     <script src="assets/livepalmes-admin-calendar-events.js?v=20261027-competition-labels-1"></script>

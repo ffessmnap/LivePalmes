@@ -2,6 +2,13 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 2 novembre — Réactivité du portail et reconnexion après 24 heures
+
+- Demande et accord : « Ok je valide tout ce plan que tu peux mener de bout en bout jusqu'à TEST » ; démarrage, navigation, échanges serveur et session de 24 h, avec protections nécessaires. PROD, données sportives et envois réels exclus.
+- Périmètre : onze chunks pour 95 fonctions asynchrones, authentification démarrée plus tôt, préchargements d’accueil supprimés, lectures simultanées mutualisées, session technique et annuaire TEST protégés côté serveur. Les corps déplacés sont conservés ; SQL, fraîcheur, capacités et règles sportives inchangés. [Budgets, mesures et limites](../PORTAIL_REACTIVITE.md).
+- Preuves locales : 95 corps/paramètres comparés syntaxiquement ; tests ciblés client/serveur/chargeur et publication spécifique hors réseau ; navigateur 1280/390 px avec SDK/RPC fictifs, expiration/reconnexion/brouillon sans envoi. Environ 14 % de JavaScript initial en moins et un RPC au lieu de trois dans le scénario local ; aucune promesse de gain uniforme en secondes.
+- État : préparation et contrôles ciblés ; PR, CI du candidat exact et déploiement TEST commun à consigner après réussite. Parcours manuel de règle borné aux empreintes exactes, sans index ni PROD. Aucun test métier connecté ni validation utilisateur du résultat déduit de l’accord de développement.
+
 ### 1er novembre — NS visible et engagement des identités natives avec espaces
 
 - Demande : colonne NS dans Mes nageurs, vide sinon, détail déplié sur mobile et suppression de la recherche NS à l'ouverture du crayon ; diagnostic puis correction de l'engagement d'un nageur récupéré. Destination autorisée : TEST, aucune écriture métier PROD.
