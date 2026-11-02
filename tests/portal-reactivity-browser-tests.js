@@ -8,7 +8,7 @@ const { startStaticServer, launchBrowser, evaluate, waitFor } = require("../tool
 
 const fixture = `
 window.LIVEPALMES_ENVIRONMENT = 'test';
-try { localStorage.clear(); sessionStorage.clear(); } catch {}
+try { localStorage.clear(); if(!new URL(location.href).searchParams.has('keepCache'))sessionStorage.clear(); } catch {}
 const OriginalDate = Date;let clockOffset = 0;
 window.Date = class extends OriginalDate { constructor(...args){super(...(args.length?args:[OriginalDate.now()+clockOffset]));}static now(){return OriginalDate.now()+clockOffset;} };
 window.fixtureAdvance = ms => { clockOffset += ms; };
@@ -68,11 +68,31 @@ async function main() {
       const prepared = await evaluate(client,`return {home:!document.querySelector('#adminClubHomeView').hidden,homeAt:fixtureHomeAt,calls:fixtureCalls.filter(c=>['listEngagementCompetitions','listEngagementClubSwimmers','listEngagementClubPeople'].includes(c.name)),overlay:document.body.hasAttribute('data-portal-module-loading')};`);
       assert.equal(prepared.home,true);assert.equal(prepared.overlay,false);assert.equal(prepared.calls.length,3);
       assert.ok(prepared.calls.every(c=>c.at>prepared.homeAt),"Speculative reads must start after the authorised home paints");
-      await evaluate(client,`location.hash='#club-officiels';`);
+      await evaluate(client,`fixtureAdvance(6*60*1000);document.querySelector('a[href="#club-officiels"][data-engagements-nav]').click();`);
       assert.ok(await waitFor(client,"!document.querySelector('#adminEngagementsView').hidden && document.querySelector('#adminEngagementsClubPeopleStatus').dataset.tone!=='error'"));
       const reused = await evaluate(client,`return fixtureCalls.filter(c=>['listEngagementClubSwimmers','listEngagementClubPeople'].includes(c.name)).map(c=>c.name);`);
       assert.equal(reused.length,2,"The first officials visit reuses prepared people/swimmer data");
+      for(const hash of ['#club-nageurs','#club-competitions','#club-officiels','#club-nageurs','#club-competitions']){
+        await evaluate(client,`document.querySelector('a[href="${hash}"][data-engagements-nav]').click();`);
+        assert.ok(await waitFor(client,`location.hash==='${hash}' && !document.querySelector('#adminEngagementsView').hidden`));
+      }
+      assert.equal(await evaluate(client,`return fixtureCalls.filter(c=>['listEngagementCompetitions','listEngagementClubSwimmers','listEngagementClubPeople'].includes(c.name)).length;`),3,"Real sidebar clicks do not reload any prepared catalog, even after five minutes");
+      assert.equal(await evaluate(client,`return !!document.querySelector('.admin-portal-module-status:not([hidden])');`),false,"Fast catalog navigation must not show an abandoned restore as a module error");
+      for(const [hash,name] of [['#club-competitions','listEngagementCompetitions'],['#club-nageurs','listEngagementClubSwimmers'],['#club-officiels','listEngagementClubPeople']]){
+        await evaluate(client,`document.querySelector('a[href="${hash}"][data-engagements-nav]').click();`);
+        assert.ok(await waitFor(client,"!document.querySelector('#adminEngagementsCatalogRefresh').hidden"));
+        const control=await evaluate(client,`const b=document.querySelector('#adminEngagementsCatalogRefresh'),r=b.getBoundingClientRect(),head=b.parentElement;const overlap=Array.from(head.querySelectorAll('button')).filter(other=>other!==b&&other.getClientRects().length&&getComputedStyle(other).visibility!=='hidden').some(other=>{const a=other.getBoundingClientRect();return r.left<a.right&&r.right>a.left&&r.top<a.bottom&&r.bottom>a.top;});const t=document.querySelector('#adminEngagementsViewTitle').getBoundingClientRect();return {fits:r.left>=0&&r.right<=innerWidth+1,overlap:overlap||r.left<t.right&&r.right>t.left&&r.top<t.bottom&&r.bottom>t.top};`);
+        assert.equal(control.fits,true);assert.equal(control.overlap,false);
+        await evaluate(client,`document.querySelector('#adminEngagementsCatalogRefresh').click();`);
+        assert.ok(await waitFor(client,`fixtureCalls.filter(c=>c.name==='${name}').length===2 && !document.querySelector('#adminEngagementsCatalogRefresh').disabled`));
+      }
+      const headerShot=await client.send("Page.captureScreenshot",{format:"png"});fs.writeFileSync(path.join(output,`catalog-header-${width}.png`),Buffer.from(headerShot.data,"base64"));
       console.log(`${width}px: home paints before three quiet reads; first officials visit reuses the prepared data.`);
+      assert.equal(await evaluate(client,`return Object.values(sessionStorage).some(value=>{try{const c=JSON.parse(value);return c?.version===3&&Array.isArray(c.competitions)&&!c.loadedInPage;}catch{return false;}});`),true,"The stored calendar exists and contains no trusted page marker");
+      await client.send("Page.navigate",{url:baseUrl+`/portail.html?keepCache=${width}#espace-club`});
+      assert.ok(await waitFor(client,`['listEngagementCompetitions','listEngagementClubSwimmers','listEngagementClubPeople'].every(name=>fixtureCalls.some(c=>c.name===name))`));
+      assert.equal(await evaluate(client,`return fixtureCalls.filter(c=>['listEngagementCompetitions','listEngagementClubSwimmers','listEngagementClubPeople'].includes(c.name)).length;`),3,"A full page reload reads all three catalogs, even with persistent caches retained");
+      console.log(`${width}px: sidebar navigation stays local, Actualiser reads each catalog and full reload reads fresh data.`);
       const start = client.events.length;
       await evaluate(client, `location.hash='#mon-compte';`);
       assert.ok(await waitFor(client,"!document.querySelector('#adminAccountView').hidden"));
