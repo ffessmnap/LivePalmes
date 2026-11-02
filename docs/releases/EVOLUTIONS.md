@@ -2,6 +2,13 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 2 novembre — Listes sans bouton Actualiser
+
+- Demande : simplifier les listes nageurs, officiels et compétitions en utilisant le rechargement du navigateur ; accord pour passer au développement, destination TEST.
+- Périmètre : retrait du bouton commun, de son gestionnaire, des bascules de visibilité et des styles associés ; en-tête Club ramené à deux colonnes. Cache pendant la navigation, préchargement après accueil et mises à jour ciblées après enregistrement conservés. Aucun changement de session, de droits, de backend ou de données métier.
+- Budget avant/après : aucun accès ajouté ; premier chargement/préchargement limité aux trois RPC existants, retour aux listes zéro RPC catalogue, rechargement complet au plus trois RPC catalogue sous les plafonds documentés. Les reprises après erreur et les relectures ciblées après modification restent disponibles.
+- Contrôles ciblés réussis : cache, navigation et brouillons, chargement progressif, versions des ressources et limites des modules ; navigateur Edge local avec services fictifs et réseau externe bloqué à 1280/390/320 px : bouton absent, actions restantes accessibles, retours sans RPC catalogue et rechargement complet frais. Les tests existants des formulaires nageurs/officiels sont conservés. CI et publication TEST à suivre dans la PR ; validation utilisateur du résultat encore attendue.
+
 ### 2 novembre — Navigation depuis les listes en mémoire
 
 - Accord : « parfait tu peux lancer la modif? », après choix de conserver nageurs, officiels et compétitions dans la page, sans expiration automatique ni relecture au changement d’onglet ; actualisation volontaire, nouveau contexte et contrôles d’enregistrement conservés. Destination TEST, sans PROD ni modification backend/Firebase.
