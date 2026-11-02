@@ -1400,7 +1400,8 @@ assert.ok(portal.includes("teamLeadersWhatsAppUrl: engagementTeamLeadersWhatsApp
 assert.match(portalHtml, /livepalmes-admin-portal\.js\?v=[^"']+/);
 assert.ok(portal.includes('city: String(competition.city || "")'));
 assert.ok(portal.includes('address: String(competition.address || "")'));
-assert.ok(portalHtml.includes('livepalmes-admin-calendar-events.js?v=20261027-competition-labels-1'));
+assert.ok(read('assets/livepalmes-portal-deferred.js').includes('livepalmes-admin-calendar-events.js?v=20261027-competition-labels-1'));
+assert.ok(!portalHtml.includes('src="assets/livepalmes-admin-calendar-events.js'), 'Calendar editor remains deferred until the workspace opens');
 assert.ok(portal.includes("ENGAGEMENT_CALENDAR_CACHE_TTL_MS = 5 * 60 * 1000"));
 assert.ok(portal.includes("engagementCompetitionCalendarMemoryCache"));
 assert.ok(portal.includes("engagementCompetitionCalendarRequests"));

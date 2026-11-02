@@ -306,7 +306,8 @@ assert.ok(calendarPageSource.includes("sameMonth"));
 
 const portalHtml = fs.readFileSync(path.join(root, "portail.html"), "utf8");
 assert.ok(portalHtml.includes('value="training"'));
-assert.ok(portalHtml.includes("livepalmes-admin-calendar-events.js"));
+assert.ok(fs.readFileSync(path.join(root, "assets/livepalmes-portal-deferred.js"), "utf8").includes("livepalmes-admin-calendar-events.js"));
+assert.ok(!portalHtml.includes('src="assets/livepalmes-admin-calendar-events.js'), "Portal calendar editor loads on workspace demand");
 assert.ok(portalHtml.includes("Ces documents sont publics"));
 
 const functionsSource = fs.readFileSync(path.join(root, "functions", "index.js"), "utf8");

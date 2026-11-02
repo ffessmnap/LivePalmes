@@ -1,6 +1,7 @@
 "use strict";
 const assert=require("node:assert/strict"),fs=require("node:fs");
-const {startStaticServer,launchBrowser,evaluate,waitFor,presentationScript}=require("../tools/capture-portal-design");
+const {startStaticServer,launchBrowser,waitFor,presentationScript}=require("../tools/capture-portal-design");
+const {evaluate}=require("./helpers/portal-browser-evaluate");
 async function reopen(client,setup="",swimmer="nsSwimmer"){
   await client.send("Runtime.evaluate",{expression:"(async()=>{const dialog=document.querySelector('#adminEngagementsSwimmerCorrectionDialog');if(dialog.open){const closed=new Promise(resolve=>dialog.addEventListener('close',resolve,{once:true}));nsActions.closeEngagementSwimmerCorrectionDialog();await closed;}"+setup+";nsActions.openEngagementSwimmerCorrectionDialog("+swimmer+",'request');})()",awaitPromise:true});
 }
@@ -9,6 +10,9 @@ async function main(){
   try{for(const width of [1280,390,320])for(const theme of ["light","dark"]){
     await client.send("Emulation.setDeviceMetricsOverride",{width,height:950,deviceScaleFactor:1,mobile:width!==1280});
     await client.send("Page.navigate",{url:baseUrl+"/portail.html"});assert.ok(await waitFor(client,"document.readyState === 'complete'",12000));
+    // This isolated dialog fixture bypasses navigation; prepare the resources
+    // that the real workspace gate now loads before exposing its controls.
+    await evaluate(client,`await LivePalmesPortalDeferred.load('national-requests');await Promise.all(Array.from(document.querySelectorAll('[data-portal-style-src]')).map(link=>new Promise((resolve,reject)=>{link.onload=resolve;link.onerror=reject;link.href=link.dataset.portalStyleSrc;})));`);
     await evaluate(client,presentationScript({authenticated:true,hash:"mes-nageurs",selector:'[data-admin-view="club-swimmers"]',pinned:true}));
     await client.send("Runtime.evaluate",{expression:fs.readFileSync("assets/livepalmes-club-identity.js","utf8")});
     await evaluate(client,`
