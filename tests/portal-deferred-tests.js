@@ -35,6 +35,12 @@ async function loader(){
     const forbidden=new Proxy({},{get(){throw Error("Eager data/state access");}}),methods=factory({state:forbidden,actions:forbidden,config:forbidden},forbidden);
     for(const [name,value]of Object.entries(methods)){
       assert.equal(typeof value,"function");
+      if(file==='team-entries.js'){
+        assert.ok(['render','renderAdmin'].includes(name));
+        const caller=name==='render'?'club-entry-views.js':'deferred/competition-actions.js';
+        assert.match(fs.readFileSync('assets/portal/'+caller,'utf8'),new RegExp("'team-entries','"+name+"'"));
+        continue;
+      }
       if(file==="workspace-events.js")assert.equal(name,"bindWorkspaceEvents");
       else assert(fs.readFileSync("assets/portal/"+file,"utf8").includes('"'+name+'", args, moduleActions'));
     }chunks++;
