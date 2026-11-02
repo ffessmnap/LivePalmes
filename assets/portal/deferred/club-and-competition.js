@@ -221,8 +221,9 @@
         if (cachedEntry && shouldActivate) {
           portalActions.activateEngagementCalendarCache(cacheKey, requestedRange, cachedEntry);
         }
-        const nativeCalendar = cachedEntry?.source === "nap" || cachedEntry?.competitions?.some(competition => competition.napSource === true);
-        const cacheFresh = Boolean(!nativeCalendar && cachedEntry?.cachedAt && Date.now() - cachedEntry.cachedAt < portalConfig.ENGAGEMENT_CALENDAR_CACHE_TTL_MS);
+        // Only a successful read in this page is authoritative. Stored data may
+        // paint immediately, but never suppresses the first server read on F5.
+        const cacheFresh = cachedEntry?.loadedInPage === true;
         if (!force && cacheFresh) {
           if (requestedMode === "club") portalActions.scheduleEngagementClubWorkspacePreload(cachedEntry.competitions);
           return cachedEntry;
@@ -293,6 +294,7 @@
               competitions = competitions.filter((competition) => portalActions.canManageEngagementCompetitionScope(competition));
             }
             const entry = portalActions.writeEngagementCalendarCache(cacheKey, competitions, Date.now(), result.source === "nap" ? "nap" : "");
+            entry.loadedInPage = true;
             if (requestedMode === "club") portalActions.scheduleEngagementClubWorkspacePreload(entry.competitions);
             const currentFilters = portalActions.engagementCalendarFiltersPayload();
             const stillActive = shouldActivate && requestedMode === portalActions.engagementNavigationMode() &&

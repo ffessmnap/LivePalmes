@@ -30,11 +30,25 @@
           portalActions.clearEngagementClubWorkspaceSessionCaches();
           portalActions.clearEngagementClubSwimmersSessionCaches();
           portalActions.invalidateEngagementCalendarCaches();
+          portalState.engagementClubPeopleRequestVersion += 1;
+          portalState.engagementClubPeopleLoading = false;
+          portalState.engagementClubPeopleLoaded = false;
           if (!event.detail.changed) portalState.currentAccessProfile = event.detail.profile;
           // Preserve the current form in memory. No write or replay on resume;
           // server fingerprints still validate the next deliberate save.
         });
         bindEngagementClubPeopleRetry();
+        document.querySelector("#adminEngagementsCatalogRefresh")?.addEventListener("click", async (event) => {
+          const button = event.currentTarget;
+          if (button.disabled) return;
+          button.disabled = true;
+          button.textContent = "Actualisation…";
+          try {
+            if (portalState.activeEngagementsTab === "calendar") await portalActions.loadEngagementCompetitions({ force: true });
+            else if (portalState.activeEngagementsTab === "clubPeople") await portalActions.loadEngagementClubPeople({ force: true });
+            else if (portalState.activeEngagementsTab === "clubSwimmers") await portalActions.loadEngagementClubSwimmers({ force: true });
+          } finally { button.disabled = false; button.textContent = "Actualiser"; }
+        });
         portalContext.elements.form?.addEventListener("submit", portalActions.signIn);
         portalContext.elements.passwordToggle?.addEventListener("click", portalActions.toggleLoginPasswordVisibility);
         portalContext.elements.scopeClubButton?.addEventListener("click", portalActions.openClubSwitchDialog);
@@ -91,7 +105,7 @@
           portalState.engagementCompetitionsVisibleLimit = 24;
           portalState.engagementPastCompetitionsVisibleLimit = 24;
           portalState.engagementPastCompetitionsExpanded = false;
-          portalActions.loadEngagementCompetitions({ force: true });
+          portalActions.loadEngagementCompetitions();
         });
         portalContext.elements.engagementsStatusSegmentButtons?.forEach((button) => {
           button.addEventListener("click", () => {
@@ -108,7 +122,7 @@
           const filters = portalActions.engagementCalendarFiltersPayload();
           const requestedRange = portalActions.engagementCalendarRequestedRange(filters);
           if (portalState.engagementCompetitionsLoadedRange === requestedRange) portalActions.renderEngagementCompetitions();
-          else portalActions.loadEngagementCompetitions({ force: true });
+          else portalActions.loadEngagementCompetitions();
         });
         portalContext.elements.engagementsTabButtons?.forEach((button) => {
           button.addEventListener("click", () => {
@@ -166,7 +180,7 @@
             const filters = portalActions.engagementCalendarFiltersPayload();
             const requestedRange = portalActions.engagementCalendarRequestedRange(filters);
             if (portalState.engagementCompetitionsLoadedRange === requestedRange) portalActions.renderEngagementCompetitions();
-            else portalActions.loadEngagementCompetitions({ force: true });
+            else portalActions.loadEngagementCompetitions();
             return;
           }
           if (event.target.closest("[data-engagement-show-more]")) {
@@ -1585,7 +1599,7 @@
             }
             if (portalState.activeEngagementsTab === "clubPeople") {
               portalActions.closeEngagementCompetitionDetail();
-              portalActions.loadEngagementClubPeople({force:global.LivePalmesEnvironment?.sportingDataSource === "nap"});
+              portalActions.loadEngagementClubPeople();
               portalActions.loadEngagementClubSwimmers({ silent: true });
             }
             if (portalState.activeEngagementsTab === "clubSwimmers") {
