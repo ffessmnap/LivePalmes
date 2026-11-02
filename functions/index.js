@@ -10600,6 +10600,7 @@ async function previewNativeClubEntryTimes(input0, input1, input2, input3) {
 }
 
 exports.previewEngagementClubSwimmerEventTimes = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/backend/portal-club-handlers/preview-engagement-club-swimmer-event-times.js#previewEngagementClubSwimmerEventTimes#arrow */ async (request) => {
+  await portalSessionService().assertSession(request);
   return $portalClubHandlers_previewEngagementClubSwimmerEventTimes().previewEngagementClubSwimmerEventTimes(request);
 });
 
@@ -10624,6 +10625,7 @@ async function saveNativeClubSwimmerSelections(input0, input1, input2) {
 }
 
 exports.saveEngagementClubSwimmerSelection = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/backend/portal-club-handlers/save-engagement-club-swimmer-selection.js#saveEngagementClubSwimmerSelection#arrow */ async (request) => {
+  await portalSessionService().assertSession(request);
   return $portalClubHandlers_saveEngagementClubSwimmerSelection().saveEngagementClubSwimmerSelection(request);
 });
 
