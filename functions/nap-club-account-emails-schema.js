@@ -2,7 +2,7 @@
 const { TABLE } = require("./nap-club-account-emails");
 const CREATE_SQL = `CREATE TABLE ${TABLE} (
   firebase_uid VARCHAR(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL,
-  club_id VARCHAR(40) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL,
+  club_id INT NULL DEFAULT NULL,
   email VARCHAR(254) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL,
   status ENUM('active','inactive','deleted') NOT NULL,
   competition_notifications TINYINT UNSIGNED NOT NULL DEFAULT 0,
@@ -12,20 +12,22 @@ const CREATE_SQL = `CREATE TABLE ${TABLE} (
   KEY club_status (club_id, status)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin`;
 
-async function inspect(pool) {
+async function inspect(pool, { allowLegacy = true } = {}) {
   const [columns] = await pool.execute({ sql: `SELECT COLUMN_NAME, COLUMN_TYPE, IS_NULLABLE, COLLATION_NAME FROM information_schema.COLUMNS
     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? ORDER BY ORDINAL_POSITION`, timeout: 10000 }, [TABLE]);
   if (!columns.length) return { exists: false, compatible: true };
   const expected = [
     ["firebase_uid", "varchar(128)", "NO", "utf8mb4_bin"],
-    ["club_id", "varchar(40)", "YES", "utf8mb4_bin"],
+    ["club_id", "int", "YES", null],
     ["email", "varchar(254)", "YES", "utf8mb4_bin"],
     ["status", "enum('active','inactive','deleted')", "NO", "utf8mb4_bin"],
     ["competition_notifications", "tinyint(3) unsigned", "NO", null],
     ["source_version", "bigint(20) unsigned", "NO", null],
     ["synchronized_at", "timestamp(6)", "NO", null]
   ];
-  const normalize = type => String(type).replace(/^(tinyint|bigint)(?:\(\d+\))? unsigned$/, "$1 unsigned");
+  const legacy = columns[1]?.COLUMN_NAME === "club_id" && columns[1].COLUMN_TYPE === "varchar(40)";
+  if (legacy && allowLegacy) expected[1] = ["club_id", "varchar(40)", "YES", "utf8mb4_bin"];
+  const normalize = type => String(type).replace(/^(tinyint|bigint)(?:\(\d+\))? unsigned$/, "$1 unsigned").replace(/^int(?:\(\d+\))?$/, "int");
   if (columns.length !== expected.length || columns.some((column, i) =>
     column.COLUMN_NAME !== expected[i][0] || normalize(column.COLUMN_TYPE) !== normalize(expected[i][1]) ||
     column.IS_NULLABLE !== expected[i][2] || column.COLLATION_NAME !== expected[i][3])) {
@@ -38,7 +40,7 @@ async function inspect(pool) {
   if (tables[0]?.ENGINE !== "InnoDB" || JSON.stringify(keys) !== JSON.stringify([
     ["club_status", 1, 1, "club_id"], ["club_status", 1, 2, "status"], ["PRIMARY", 0, 1, "firebase_uid"]
   ])) throw new Error("Index ou moteur de la table des comptes NAP incompatible.");
-  return { exists: true, compatible: true };
+  return { exists: true, compatible: true, clubIdType: legacy ? "varchar" : "int" };
 }
 
 async function ensure(pool) {

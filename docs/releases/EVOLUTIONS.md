@@ -2,6 +2,13 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 2 novembre — Identifiants numériques de l'annuaire des adresses — préparation autorisée
+
+- Accord : correction du code et de `livepalmes_club_account_emails.club_id` validée dans « Analyser les échanges avec Franck », reprise automatique après livraison TEST et opération SQL équipes ; conditions vérifiées dans les preuves ci-dessous. Aucun envoi ni déploiement PROD autorisé.
+- État initial contrôlé en lecture seule à 21 h 41 : `clubs.num_club` INT(11) signé ; 253 lignes, 249 rattachements canoniques vers 132 clubs existants, quatre NULL, aucune anomalie. La migration refait ces contrôles avant écriture.
+- Périmètre : projection numérique bornée, compatibilité transitoire VARCHAR/INT, contrôles de reprise et de fusion ; outil opérateur limité à la conversion de colonne avec deux sauvegardes chiffrées vérifiées et retour arrière de schéma sans écraser les données courantes. Aucun changement Firebase, droit ou donnée sportive. [Contrat et budget](../droits-acces-livepalmes.md#copie-des-adresses-par-club-dans-nap--préparation-du-28-octobre-2026).
+- État : tests ciblés et préparation en cours ; PR/CI, TEST et éventuelle conversion SQL à consigner après preuve. Aucune validation utilisateur inventée.
+
 ### 2 novembre — Engagements par équipes Clubs 2026/2027 — livré sur TEST
 
 - Accord : développement TEST, exactement trois colonnes et aucune nouvelle table ; aucune PROD. Profils fixes Clubs et Clubs Masters, avant compétition uniquement.
