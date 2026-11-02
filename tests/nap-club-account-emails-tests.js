@@ -1,8 +1,8 @@
 "use strict";
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
-const { enabled, project, syncBatch, createSynchronizer, PAGE_SIZE } = require("../functions/nap-club-account-emails");
-const { CREATE_SQL, ensure } = require("../functions/nap-club-account-emails-schema");
+const { enabled, project, syncBatch, createSynchronizer, PAGE_SIZE, clubIdValue } = require("../functions/nap-club-account-emails");
+const { CREATE_SQL, ensure, inspect } = require("../functions/nap-club-account-emails-schema");
 const { scan, MAX_ACCOUNTS, loadFirebaseSdk, privateRequest } = require("../tools/rebuild-nap-club-account-emails");
 const maintenance = require("../functions/nap-club-account-emails-maintenance");
 
@@ -47,11 +47,11 @@ async function main() {
   f.profiles.set("u", { email: " Club@Example.org ", clubId: "17", status: "active" });
   await sync("u");
   let write = f.calls.filter(call => call.sql?.includes("competition_notifications, source_version)")).at(-1);
-  assert.deepEqual(write.values, ["u", "17", "club@example.org", "active", 1, "1000000"]);
+  assert.deepEqual(write.values, ["u", 17, "club@example.org", "active", 1, "1000000"]);
   f.profiles.set("u", { email: "new@example.org", clubId: "42", status: "active", emailPreferences: { competitionNotifications: false } });
   await sync("u"); // Delayed events reread current data, not an obsolete email or club.
   write = f.calls.filter(call => call.sql?.includes("competition_notifications, source_version)")).at(-1);
-  assert.deepEqual(write.values, ["u", "42", "new@example.org", "active", 0, "1000000"]);
+  assert.deepEqual(write.values, ["u", 42, "new@example.org", "active", 0, "1000000"]);
   f.profiles.set("u", { email: "new@example.org", clubId: "42", status: "disabled" });
   await sync("u");
   assert.equal(f.calls.filter(call => call.sql?.includes("competition_notifications, source_version)")).at(-1).values[3], "inactive");
@@ -61,7 +61,7 @@ async function main() {
     ["u", null, null, "deleted", 0, "1000000"]);
   f.profiles.set("u", { email: "return@example.org", clubId: "9", status: "active" });
   await sync("u"); // Recreated account, even after a delayed deletion event.
-  assert.equal(f.calls.filter(call => call.sql?.includes("competition_notifications, source_version)")).at(-1).values[1], "9");
+  assert.equal(f.calls.filter(call => call.sql?.includes("competition_notifications, source_version)")).at(-1).values[1], 9);
   assert.equal(f.calls.filter(call => call === "commit").length, 5);
   assert.equal(f.calls.filter(call => call === "release").length, 5);
   const grouped = fixture();
@@ -79,10 +79,16 @@ async function main() {
   }
   assert.throws(() => project(snapshot("u", { email: "bad address" })));
   assert.equal(project(snapshot("u", { email: "admin@example.org", status: "active" })).clubId, null);
+  for (const value of [null, undefined, ""]) assert.equal(clubIdValue(value), null);
+  for (const value of [1, "106", "2147483647"]) assert.equal(clubIdValue(value), Number(value));
+  for (const value of [0, "0", -1, "-1", "0106", " 106", "106 ", "106x", "1e2", "1.0", 1.5, "2147483648", false, {}, []]) {
+    assert.throws(() => clubIdValue(value));
+    assert.throws(() => project(snapshot("u", { clubId: value })));
+  }
   const sql = [];
   let created = false;
   const columns = [
-    ["firebase_uid", "varchar(128)", "NO", "utf8mb4_bin"], ["club_id", "varchar(40)", "YES", "utf8mb4_bin"],
+    ["firebase_uid", "varchar(128)", "NO", "utf8mb4_bin"], ["club_id", "int(11)", "YES", null],
     ["email", "varchar(254)", "YES", "utf8mb4_bin"], ["status", "enum('active','inactive','deleted')", "NO", "utf8mb4_bin"],
     ["competition_notifications", "tinyint(3) unsigned", "NO", null], ["source_version", "bigint(20) unsigned", "NO", null],
     ["synchronized_at", "timestamp(6)", "NO", null]
@@ -102,6 +108,14 @@ async function main() {
   assert.ok(sql.includes(CREATE_SQL));
   assert.equal((await ensure(schemaPool)).created, false);
   assert.equal(sql.filter(query => query === CREATE_SQL).length, 1);
+  assert.equal((await inspect(schemaPool)).clubIdType, "int");
+  columns[1].COLUMN_TYPE = "varchar(40)"; columns[1].COLLATION_NAME = "utf8mb4_bin";
+  assert.equal((await inspect(schemaPool)).clubIdType, "varchar");
+  await assert.rejects(inspect(schemaPool, { allowLegacy: false }), /incompatible/);
+  columns[1].COLUMN_TYPE = "int(11) unsigned"; columns[1].COLLATION_NAME = null;
+  await assert.rejects(inspect(schemaPool), /incompatible/);
+  columns[1].COLUMN_TYPE = "int";
+  assert.equal((await inspect(schemaPool)).clubIdType, "int");
   columns[0].COLLATION_NAME = "utf8mb4_general_ci";
   await assert.rejects(ensure(schemaPool), /incompatible/);
   assert.doesNotMatch(CREATE_SQL, /DROP|ALTER|password/i);
@@ -163,6 +177,7 @@ async function main() {
   await assert.rejects(maintenance.request(null, { sourceProject: "livepalmes", confirmation: "wrong", phase: "inspect" }, "livepalmes-test"));
   const row = project(snapshot("u", { email: "u@example.org", clubId: "1", status: "active" }));
   assert.equal(maintenance.validateRows([row])[0].version, "1000000");
+  assert.equal(maintenance.validateRows([{ ...row, clubId: "106" }])[0].clubId, 106);
   for (const bad of [{ ...row, version: "-1" }, { ...row, status: "deleted" }, { ...row, email: "line\n@example.org" }, { ...row, uid: "x/y" }]) {
     assert.throws(() => maintenance.validateRows([bad]));
   }
@@ -180,10 +195,14 @@ async function main() {
     }
     return [[]];
   };
-  fake.pool.execute = async () => [[...stored.values()].sort((a, b) => a.firebase_uid.localeCompare(b.firebase_uid))];
+  // Both the legacy VARCHAR and converted INT result types remain readable.
+  let legacyResults = true;
+  fake.pool.execute = async () => [[...stored.values()].map(r => ({ ...r, club_id: legacyResults && r.club_id !== null ? String(r.club_id) : r.club_id })).sort((a, b) => a.firebase_uid.localeCompare(b.firebase_uid))];
   const apply = rows => maintenance.request(fake.pool, { phase: "apply", sourceProject: "livepalmes", confirmation: maintenance.CONFIRMATION,
     planHash: maintenance.PLAN, rows, hash: maintenance.hash(rows) }, "livepalmes-test");
   await apply([{ ...row, email: "current@example.org", version: "2000000" }]);
+  assert.equal((await apply([row])).verified, true);
+  legacyResults = false;
   assert.equal((await apply([row])).verified, true);
   assert.equal(stored.get("u").email, "current@example.org");
   await apply([{ ...row, email: null, clubId: null, status: "deleted", notifications: 0, version: "3000000" }]);

@@ -50,10 +50,10 @@ function verifyProjection(plan,current,club) {
   const original = plan.projection.sql, found = current.projection.sql;
   if (original.length !== found.length) p.fail("NAP_ACCOUNT_SET_CHANGED");
   const uid = plan.firestore.find(d => d.path.startsWith("users/")).path.slice(6);
-  const business = row => Object.fromEntries(Object.entries(row).filter(([f]) => !["source_version","synchronized_at"].includes(f)));
+  const business = row => Object.fromEntries(Object.entries(row).filter(([f]) => !["source_version","synchronized_at"].includes(f)).map(([f,v]) => [f,f === "club_id" && v !== null ? String(v) : v]));
   for (const before of original) {
     const after = found.find(r => r.firebase_uid === before.firebase_uid), expected = business(before);
-    if (before.firebase_uid === uid) expected.club_id = club;
+    if (before.firebase_uid === uid) expected.club_id = String(club);
     if (!after || !p.equal(business(after),expected)) p.fail("NAP_ACCOUNT_PROJECTION_NOT_CONVERGED");
   }
   const stamp = current.docs.find(d => d.path === "users/"+uid)?.updateTime;
