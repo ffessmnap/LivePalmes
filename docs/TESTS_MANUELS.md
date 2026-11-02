@@ -2,6 +2,12 @@
 
 <!-- description: Checklist de tests manuels à exécuter avant une publication ou après une modification sensible. -->
 
+## Identifiants des clubs dans l'annuaire des adresses — 2 novembre 2026
+
+Hors réseau : `node tests/nap-club-account-emails-tests.js`, `node tests/nap-club-email-id-migration-tests.js` et tests de fusion concernés. La CI réutilise MySQL 5.7 isolé pour `tests/nap-club-account-emails-mysql-tests.js` : refus des valeurs ambiguës/inconnues, conversion et retour au texte sous verrous, conservation des NULL/adresses/préférences/versions, relance sans effet, ancien paramétrage texte et paramétrage numérique, protection des versions et index `(club_id,status)`.
+
+Sur NAP partagé, uniquement après accord spécifique : inspection bornée, sauvegardes chiffrées rouvertes/comparées, ALTER isolé, contrôle d'empreinte et schéma/index après opération. Aucun compte créé/modifié pour tester, aucune invocation de notification. L'intégration Winpalm reste à confirmer avec Franck, sans envoi réel automatique. Livraison TEST du code et conversion SQL ne valent pas publication du déclencheur PROD ni validation utilisateur.
+
 ## Module équipes Clubs / Masters — recette TEST
 
 Automatisation sur données fictives : profils et tarifs fixes, références dans la période, restrictions, doublons, équipes incomplètes, HC indépendant et remplaçant, compositions vides/complètes, fermeture et reprise à identifiant identique. MySQL 5.7 isolé : trois ALTER seulement, MyISAM/InnoDB, verrous réels, perte de réponse à chaque mutation et refus d'une valeur tierce. Navigateur local : vrais composants et CSS, 1280/736/390/320 px, réseau externe bloqué.

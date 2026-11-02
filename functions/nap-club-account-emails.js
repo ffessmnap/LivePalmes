@@ -7,6 +7,16 @@ const FIELDS = ["email", "clubId", "status", "emailPreferences.competitionNotifi
 
 function enabled(projectId) { return projectId === "livepalmes"; }
 
+// Firebase keeps its string IDs; only this private SQL projection uses INT.
+function clubIdValue(value) {
+  if (value === null || value === undefined || value === "") return null;
+  if (!["string", "number"].includes(typeof value) || !/^[1-9]\d{0,9}$/.test(String(value)) ||
+      !Number.isSafeInteger(Number(value)) || Number(value) > 2147483647) {
+    throw new Error("Identifiant club NAP entier positif requis.");
+  }
+  return Number(value);
+}
+
 function sourceVersion(snapshot) {
   const time = snapshot.exists ? snapshot.updateTime : snapshot.readTime;
   if (!time || !Number.isSafeInteger(time.seconds) || !Number.isInteger(time.nanoseconds)) throw new Error("Version du profil requise.");
@@ -18,11 +28,11 @@ function project(snapshot) {
   if (!snapshot.exists) return { uid: snapshot.id, clubId: null, email: null, status: "deleted", notifications: 0, version };
   const data = snapshot.data() || {};
   const email = String(data.email || "").trim().toLowerCase();
-  const clubId = String(data.clubId || "").trim();
-  if (email.length > 254 || clubId.length > 40 || email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+  const clubId = clubIdValue(data.clubId);
+  if (email.length > 254 || email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     throw new Error("Profil incompatible avec l'annuaire NAP ; synchronisation arretee.");
   }
-  return { uid: snapshot.id, clubId: clubId || null, email: email || null,
+  return { uid: snapshot.id, clubId, email: email || null,
     status: data.status === "active" ? "active" : "inactive",
     notifications: data.emailPreferences?.competitionNotifications === false ? 0 : 1, version };
 }
@@ -52,7 +62,7 @@ async function writeProjection(pool, uids, readRows) {
       ON DUPLICATE KEY UPDATE ${["club_id", "email", "status", "competition_notifications"].map(replace).join(", ")},
       synchronized_at = IF(VALUES(source_version) >= source_version, CURRENT_TIMESTAMP(6), synchronized_at),
       source_version = GREATEST(source_version, VALUES(source_version))`, timeout: 10000 },
-    rows.flatMap(row => [row.uid, row.clubId, row.email, row.status, row.notifications, row.version]));
+    rows.flatMap(row => [row.uid, clubIdValue(row.clubId), row.email, row.status, row.notifications, row.version]));
     await connection.commit();
     return { synchronized: rows.length };
   } catch {
@@ -79,4 +89,4 @@ function createSynchronizer({ projectId, createPool, db }) {
   };
 }
 
-module.exports = { TABLE, PAGE_SIZE, FIELDS, enabled, project, syncBatch, createSynchronizer, validateIds, writeProjection };
+module.exports = { TABLE, PAGE_SIZE, FIELDS, enabled, project, syncBatch, createSynchronizer, validateIds, writeProjection, clubIdValue };
