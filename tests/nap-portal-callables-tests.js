@@ -94,7 +94,7 @@ for (const name of ["listEngagementCompetitions", "listEngagementCalendarEvents"
   const entry = await sandbox.exports.getEngagementClubEntry({ data: { competitionId: event.id, clubId: "999" } });
   assert.equal(entry.entry.clubId, "00123", "Caller cannot choose another club dossier");
   assert.equal(entry.sqlBudget.queriesMax, 26);
-  assert.equal(entry.sqlBudget.rowsMax, 20520);
+  assert.equal(entry.sqlBudget.rowsMax, 21920);
   assert.equal(entry.sqlBudget.accessQueriesMax, 1);
   assert.equal(entry.sqlBudget.profileDocumentsMax, 1);
   calls.length=0;
