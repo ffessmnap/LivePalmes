@@ -26,8 +26,9 @@ for(const section of ["home","calendar","performances","documents","direct","leg
  const current=nav.children.filter(item=>item.attributes["aria-current"]==="page");assert.equal(current.length,section!=="home"?0:1);
  const portal=nodes.find(item=>item.className==="public-site-portal");assert.equal(portal.href,"/portail.html");assert.match(portal.textContent,/Portail/);
  const brand=nodes.find(item=>item.className==="public-site-brand");assert.equal(brand.href,"/");assert.equal(brand.children.length,2);assert.match(brand.children[0].src,/logo-ffessm-nage-avec-palmes/);assert.equal(brand.children[0].alt,"FFESSM Nage avec palmes");assert.equal(nodes.some(item=>item.className==="public-site-federal"),false);
- const context=nodes.find(item=>item.className==="public-site-context");assert.equal(Boolean(context),section!=="home");if(context)assert.equal(context.children.find(item=>item.attributes["aria-current"]==="page").textContent,"<Titre non interprété>");
- if(section==="calendar")assert.equal(nodes.find(item=>item.className==="public-site-back").href,"/calendrier.html");
+ const context=nodes.find(item=>item.className==="public-site-context");assert.equal(Boolean(context),["direct","legal"].includes(section));if(context)assert.equal(context.children.find(item=>item.attributes["aria-current"]==="page").textContent,"<Titre non interprété>");
+ const performanceLinks=nodes.find(item=>item.className==="public-site-performances").children[1].children;
+ assert.deepEqual(performanceLinks.slice(-2).map(item=>item.href),["/performances/nageur.html","/performances/damien-hebert.html"]);
 }
 const excluded=fixture("home","Accueil");excluded.body.className="console-page";vm.runInNewContext(source,{document:excluded.document,window:excluded.window});assert.equal(excluded.document.getElementById("publicSiteHeader"),undefined);
 const files=["index.html","public.html","bibliotheque.html","calendrier.html","competition.html","mentions-legales.html","conditions-utilisation.html","confidentialite.html","resultats.html","series-public.html","medailles.html","pdf.html","series-pdf.html","resultat-pdf.html",...['index','records','mpf','tops','nageur','construction'].map(name=>`performances/${name}.html`)];
