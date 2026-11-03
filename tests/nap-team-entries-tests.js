@@ -24,8 +24,13 @@ value=fresh();value.individuals[0].swimmerId='99';assert.throws(()=>normalize(va
 value=fresh();value.teams[0].members[0]='8';assert.throws(()=>normalize(value),/femmes\/hommes/);
 value=fresh();value.teams[0].relays[0].eventCode='4X50SF';assert.throws(()=>normalize(value),/programme/);
 const master={...comp,entryFormat:'clubs_masters',events:[...comp.events,{code:'4X100SB',type:'relay'}]};
-const m={teams:[{id:'m-a',letter:'A',sex:'X',members:['1','2','8','9'],reserve:'',relays:[{eventCode:'4X100SB',members:['1','8','2','9'],entryTime:'03:00.00'}]}],outside:[],individuals:[]};
-assert.equal(model.normalize(m,master,pack,{age:()=>47}).teams[0].members.length,4);
+const m={teams:[{id:'m-a',letter:'A',sex:'X',members:['1','2','8','9'],reserve:'',relays:[{eventCode:'4X100SB',members:['8','1','9','2'],entryTime:'03:00.00'}]}],outside:[],individuals:[]};
+assert.deepEqual(model.normalize(m,master,pack,{age:()=>47}).teams[0].relays[0].members,['8','1','9','2']);
+const wrongOrder=structuredClone(m);
+wrongOrder.teams[0].relays[0].members=['1','8','2','9'];
+assert.throws(()=>model.normalize(wrongOrder,master,pack,{age:()=>47}),/ordre obligatoire/);
+wrongOrder.teams[0].relays[0].members=[];
+assert.deepEqual(model.normalize(wrongOrder,master,pack,{age:()=>47}).teams[0].relays[0].members,[]);
 assert.throws(()=>model.normalize({...m,outside:['3']},master,pack,{age:()=>47}),/hors concours/);
 assert.throws(()=>model.normalize(m,master,pack,{age:()=>29}),/30 ans/);
 assert.throws(()=>model.profile({...comp,entryRulesVersion:'unknown'}),/règlement/);

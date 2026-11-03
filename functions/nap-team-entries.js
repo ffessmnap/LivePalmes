@@ -6,7 +6,7 @@ const {createHash}=require('node:crypto');
 const KEY='club_teams_v1',VERSION='2026-2027-v1';
 const PROFILES=Object.freeze({
   clubs:{size:6,reserve:true,individual:['50SF','100SF','200SF','400SF','800SF','50AP','100IS','200IS','50BI','100BI','200BI','400BI'],relays:{'6X100SBI':['BI','BI','SF','SF','SF','IS'],'6X50SF':['SF','SF','SF','SF','SF','SF'],'6X50SBA':['BI','BI','SF','SF','SF','AP']}},
-  clubs_masters:{size:4,reserve:false,individual:['50SF','100SF','200SF','400SF','200IS','50BI','100BI','200BI'],relays:{'4X100SB':['SB','SB','SB','SB']}}
+  clubs_masters:{size:4,reserve:false,individual:['50SF','100SF','200SF','400SF','200IS','50BI','100BI','200BI'],relays:{'4X100SB':['BI','BI','SF','SF']},relaySexes:['M','F','M','F']}
 });
 const code=x=>String(x||'').toUpperCase().replace(/\s+/g,'');
 function format(value){const x=value?.options?.entry_format??value?.entryFormat??'classic';if(!['classic',...Object.keys(PROFILES)].includes(x))throw new TypeError('Format des engagements inconnu.');return x;}
@@ -38,6 +38,9 @@ function normalize(raw,competition,pack,services={}){
       if(members.length!==p.size)throw new TypeError('Une équipe incomplète ne peut pas engager de relais.');
       if(!Array.isArray(r.members)||![0,p.size].includes(r.members.length))throw new TypeError('Complétez tous les relayeurs ou laissez la composition vide.');
       const relayMembers=r.members.map(id);if(new Set(relayMembers).size!==relayMembers.length||relayMembers.some(x=>!members.includes(x)))throw new TypeError('Les relayeurs doivent être les titulaires de cette équipe.');
+      if (p.relaySexes && relayMembers.some((key, index) => people.get(key).sex !== p.relaySexes[index])) {
+        throw new TypeError('Relais Masters : ordre obligatoire BI homme, BI femme, SF homme, SF femme.');
+      }
       const text=String(r.entryTime||'59:59.99').replace(/[:.]/g,'');if(!/^\d{1,6}$/.test(text)||!parseCompactTime(text))throw new TypeError('Temps de relais invalide.');
       return {eventCode,members:relayMembers,entryTime:text.padStart(6,'0'),...(r.nativeRelayId?{nativeRelayId:id(r.nativeRelayId)}:{})};
     });

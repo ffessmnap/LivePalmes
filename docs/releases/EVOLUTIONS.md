@@ -2,6 +2,10 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 3 novembre — Ordre du 4 × 100 SB Masters
+
+- Les quatre postes affichent BI homme, BI femme, SF homme, SF femme. Les choix sont filtrés et l’ordre est contrôlé lors de l’enregistrement. Une composition vide reste autorisée. Recette TEST attendue.
+
 ### 3 novembre — Tarif par équipe dans Général
 
 - Général affiche le forfait par équipe pour les Clubs et les Masters. Les tarifs individuels Clubs sont identifiés comme hors concours. Périmètre interface uniquement.

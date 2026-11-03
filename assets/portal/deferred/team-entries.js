@@ -136,17 +136,25 @@
       const cards = relayEvents().map(event => {
         const code = esc(event.code);
         const saved = team.relays.find(relay => relay.eventCode === event.code);
-        const legCodes = event.code === '6X100SBI' ? ['BI','BI','SF','SF','SF','IS']
+        const masters = event.code === '4X100SB';
+        const legSexes = masters ? ['M','F','M','F'] : [];
+        const legCodes = masters ? ['BI','BI','SF','SF']
+          : event.code === '6X100SBI' ? ['BI','BI','SF','SF','SF','IS']
           : event.code === '6X50SBA' ? ['BI','BI','SF','SF','SF','AP']
           : Array(size()).fill(event.discipline || 'SF');
         const action = btn(saved ? 'Retirer' : 'Engager', 'toggle-relay', `data-code="${code}"${disabled ? ' disabled' : ''}`);
         const title = `<header><strong>${esc(event.shortLabel || event.label || event.code)}</strong>${action}</header>`;
         if (!saved) return `<section class="portal-team-relay" data-team-sex="${esc(team.sex)}">${title}</section>`;
         const legs = legCodes.map((discipline, index) => {
-          const options = team.members.filter(Boolean).map(id => `<option value="${esc(id)}"${saved.members[index] === id ? ' selected' : ''}${saved.members.includes(id) && saved.members[index] !== id ? ' disabled' : ''}>${esc(name(id))}</option>`).join('');
-          return `<label><span>${index + 1} · ${esc(discipline)}</span><select data-team-field="relay-member" data-code="${code}" data-index="${index}"${disabled ? ' disabled' : ''}><option value="">À renseigner</option>${options}</select></label>`;
+          const sex = legSexes[index];
+          const current = saved.members[index];
+          const eligible = team.members.filter(id => id && (!sex || directory().byId.get(id)?.sex === sex || id === current));
+          const options = eligible.map(id => `<option value="${esc(id)}"${saved.members[index] === id ? ' selected' : ''}${saved.members.includes(id) && saved.members[index] !== id ? ' disabled' : ''}>${esc(name(id))}</option>`).join('');
+          return `<label><span>${index + 1} · ${esc(discipline)}${sex ? (sex === "M" ? " · Homme" : " · Femme") : ""}</span><select data-team-field="relay-member" data-code="${code}" data-index="${index}"${disabled ? ' disabled' : ''}><option value="">À renseigner</option>${options}</select></label>`;
         }).join('');
-        return `<section class="portal-team-relay" data-team-sex="${esc(team.sex)}">${title}<label><span>Temps</span><input aria-label="Temps d’engagement" data-team-field="relay-time" data-code="${code}" value="${esc(displayTime(saved.entryTime))}" placeholder="59:59.99"${disabled ? ' disabled' : ''}></label>${legs}${btn('Vider la composition', 'clear-relay', `data-code="${code}"${disabled ? ' disabled' : ''}`)}</section>`;
+        const invalidOrder = masters && saved.members.some((id, index) => id && directory().byId.get(id)?.sex !== legSexes[index]);
+        const warning = invalidOrder ? '<p class="admin-engagements-message" data-tone="warning">Corrige l’ordre des relayeurs pour enregistrer ce relais.</p>' : '';
+        return `<section class="portal-team-relay${masters ? ' portal-team-relay-masters' : ''}" data-team-sex="${esc(team.sex)}">${title}${warning}<label><span>Temps</span><input aria-label="Temps d’engagement" data-team-field="relay-time" data-code="${code}" value="${esc(displayTime(saved.entryTime))}" placeholder="59:59.99"${disabled ? ' disabled' : ''}></label>${legs}${btn('Vider la composition', 'clear-relay', `data-code="${code}"${disabled ? ' disabled' : ''}`)}</section>`;
       }).join('');
       return `<h4>Relais</h4>${cards ? `<p>La composition peut rester vide. Si tu désignes un relayeur, renseigne toutes les positions.</p><div class="portal-team-relays">${cards}</div>` : '<p>Aucun relais correspondant au profil dans le programme.</p>'}`;
     }
