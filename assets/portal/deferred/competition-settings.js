@@ -755,8 +755,18 @@
         return count > 0 ? `${count} épreuve${count > 1 ? "s" : ""}` : "Non limité";
       }
 
-    function engagementFeesSummary(fees = {}) {
+    function engagementFeesSummary(fees = {}, entryFormat = "classic") {
         if (fees.enabled === false) return "Aucun frais d'engagement";
+        if (entryFormat === "clubs" || entryFormat === "clubs_masters") {
+          const euro = value => moduleActions.engagementFeeAmount(value).toLocaleString("fr-FR", {
+            style: "currency", currency: "EUR", minimumFractionDigits: 0, maximumFractionDigits: 2
+          });
+          const rates = [`${euro(fees.teamFee)} par équipe`];
+          if (entryFormat === "clubs") {
+            rates.push(`${euro(fees.swimmerFee)} par nageur hors concours`, `${euro(fees.individualEventFee)} par course hors concours`);
+          }
+          return rates.join(" · ");
+        }
         const parts = [
           `nageur ${moduleActions.formatEngagementFee(fees.swimmerFee)}`,
           `course ${moduleActions.formatEngagementFee(fees.individualEventFee)}`,
@@ -822,7 +832,7 @@
         if (portalContext.elements.engagementsRelayFeeRead) portalContext.elements.engagementsRelayFeeRead.textContent = moduleActions.formatEngagementFee(fees.relayFee);
         if (portalContext.elements.engagementsHelloAssoUrlRead) portalContext.elements.engagementsHelloAssoUrlRead.textContent = fees.helloAssoUrl || "Lien en attente";
         moduleActions.updateEngagementFeesFormMode(canEdit);
-        if (portalContext.elements.engagementsFeesSummary) portalContext.elements.engagementsFeesSummary.textContent = moduleActions.engagementFeesSummary(fees);
+        if (portalContext.elements.engagementsFeesSummary) portalContext.elements.engagementsFeesSummary.textContent = moduleActions.engagementFeesSummary(fees, competition.entryFormat);
         portalActions.renderEngagementClubSummary();
         if (portalContext.elements.engagementsFeesSaveButton) {
           portalContext.elements.engagementsFeesSaveButton.hidden = true;

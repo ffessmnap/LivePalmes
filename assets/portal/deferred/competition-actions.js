@@ -1553,7 +1553,7 @@
           ["Max épreuves nageur", portalActions.engagementMaxEventsLabel(competition.maxEventsPerSwimmer)],
           ["Officiels", competition.officialsRequired ? "Requis" : "Non requis"],
           ["Programme", portalActions.engagementEventSummary(competition.events || [])],
-          ["Frais", portalActions.engagementFeesSummary(competition.fees || {})]
+          ["Frais", portalActions.engagementFeesSummary(competition.fees || {}, competition.entryFormat)]
         ];
         const clubRows = [
           ["Type", portalActions.engagementCompetitionTypeLabel(portalActions.engagementCompetitionType(competition))],
@@ -1568,7 +1568,7 @@
           ["Programme", portalActions.engagementCompetitionProgramOverview(competition)],
           ["Limite par nageur", portalActions.engagementMaxEventsLabel(competition.maxEventsPerSwimmer)],
           ...(!openWater ? [["Temps d'engagement", portalActions.engagementEntryTimeRulesLabel(competition)]] : []),
-          ["Frais d'engagement", portalActions.engagementFeesSummary(competition.fees || {})],
+          ["Frais d'engagement", portalActions.engagementFeesSummary(competition.fees || {}, competition.entryFormat)],
           ["Niveau", portalActions.engagementLevelLabel(competition.level)],
           ...(!nationalCompetition ? [["Région", portalActions.regionDisplayLabel(competition.regionId)]] : []),
           ["Officiels", competition.officialsRequired ? "À déclarer" : "Non requis"],
