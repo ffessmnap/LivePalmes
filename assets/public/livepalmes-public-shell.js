@@ -14,7 +14,7 @@
   function closeDropdowns(except){for(const menu of menus)if(menu.details!==except){menu.details.open=false;menu.hoverOpened=false;}}
   const shortcuts={
    calendar:[["Tout le calendrier","/calendrier.html"],["Événements nationaux","/calendrier.html?level=national"],["Événements en région","/calendrier.html?level=regions"]],
-   performances:[["Records de France","/performances/records.html"],["MPF","/performances/mpf.html"],["TOP","/performances/tops.html"],["Recherche nageur","/performances/nageur.html"]],
+   performances:[["Records de France","/performances/records.html"],["MPF","/performances/mpf.html"],["TOP","/performances/tops.html"],["Recherche nageur","/performances/nageur.html"],["Trophée Damien Hébert","/performances/damien-hebert.html"]],
    // Existing library theme routes: no extra catalogue request when opening a menu.
    documents:[["Tous les documents","/bibliotheque.html"],["Comités/clubs","/bibliotheque.html?theme=2"],["Compétitions","/bibliotheque.html?theme=3"],["Entraîneurs","/bibliotheque.html?theme=4"],["Juges","/bibliotheque.html?theme=5"],["Haut Niveau","/bibliotheque.html?theme=6"]]
   };
@@ -44,13 +44,12 @@
   }
   inner.append(brand,nav,portal,accountHost,toggle);header.append(inner);
   const banner=body.querySelector("[data-livepalmes-test-banner]");if(banner)banner.after(header);else body.prepend(header);
-  if(section!=="home"&&!isPortal){
+  if(!isPortal&&!["home","calendar","performances","documents"].includes(section)){
    const breadcrumb=document.createElement("nav");breadcrumb.className="public-site-context";breadcrumb.setAttribute("aria-label","Fil d’Ariane");
    const home=document.createElement("a");home.href="/";home.textContent="Accueil";breadcrumb.append(home);
    const addSeparator=()=>{const sep=document.createElement("span");sep.textContent="›";sep.setAttribute("aria-hidden","true");breadcrumb.append(sep);};
    if(body.dataset.publicParent){addSeparator();const parent=document.createElement("a");parent.href=body.dataset.publicParent;parent.textContent=body.dataset.publicParentLabel||"Retour";breadcrumb.append(parent);}
    addSeparator();const current=document.createElement("span");current.textContent=label;current.setAttribute("aria-current","page");breadcrumb.append(current);
-   if(section==="calendar"&&body.dataset.publicParent){const back=document.createElement("a");back.className="public-site-back";back.href=body.dataset.publicParent;back.textContent="← Retour au calendrier";breadcrumb.append(back);}
    header.after(breadcrumb);
   }
   body.classList.add("public-shell-ready");document.documentElement?.classList.add("livepalmes-site-shell");
