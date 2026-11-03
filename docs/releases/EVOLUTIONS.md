@@ -2,6 +2,10 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 3 novembre — Tarif par équipe dans Général
+
+- Général affiche le forfait par équipe pour les Clubs et les Masters. Les tarifs individuels Clubs sont identifiés comme hors concours. Périmètre interface uniquement. Recette TEST attendue.
+
 ### 3 novembre — Tableau classique partagé avec les engagements Clubs
 
 - Le tableau classique sert aux Clubs et aux Masters, y compris pour les hors concours. Nom, prénom, naissance, catégorie, sessions et défilement proviennent du même rendu. Le module Clubs conserve ses contrôles, ses temps et les relais sous le tableau. Interface seule.
