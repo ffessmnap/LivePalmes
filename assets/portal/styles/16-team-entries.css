@@ -5,25 +5,14 @@
 .portal-team-workspace [data-team-sex="M"]{--team-course-bg:#f7fbff;--team-participant-bg:#f5fbff;--team-sex-accent:#4f8fc5}
 html[data-portal-theme="dark"] .portal-team-workspace [data-team-sex="F"]{--team-course-bg:#322938;--team-participant-bg:#322938}
 html[data-portal-theme="dark"] .portal-team-workspace [data-team-sex="M"]{--team-course-bg:#203347;--team-participant-bg:#203347}
-.portal-team-table tbody tr[data-team-sex] > td,.portal-team-group-head,.portal-team-relay[data-team-sex]{background:var(--team-course-bg,var(--portal-color-surface))}
-.portal-team-group-head{padding:5px 9px;border-inline-start:3px solid var(--team-sex-accent)}
 .portal-team-fields label[data-team-sex] > select,.portal-team-participant[data-team-sex]{background:var(--team-participant-bg,var(--portal-color-field-background));box-shadow:inset 3px 0 0 var(--team-sex-accent,transparent)}
-html[data-portal-theme="dark"] .portal-team-table tbody tr:is([data-team-sex="F"],[data-team-sex="M"]) > td{background-color:var(--team-course-bg) !important}
 html[data-portal-theme="dark"] .portal-team-fields label:is([data-team-sex="F"],[data-team-sex="M"]) > select{background-color:var(--team-participant-bg) !important}
-.portal-team-relay[data-team-sex]{box-shadow:inset 3px 0 0 var(--team-sex-accent,transparent)}
+.portal-team-relay[data-team-sex]{background:var(--team-course-bg,var(--portal-color-surface));box-shadow:inset 3px 0 0 var(--team-sex-accent,transparent)}
 .portal-team-list{display:flex;flex-wrap:wrap;gap:6px}
 .portal-team-list [aria-pressed="true"]{background:var(--portal-color-accent);color:#fff;border-color:var(--portal-color-accent)}
 .portal-team-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;align-items:end}
 .portal-team-fields label{display:grid;gap:5px;font-size:.82rem;min-width:0}
 .portal-team-fields select{width:100%;max-width:100%;min-height:38px;border:1px solid var(--portal-color-field-border);border-radius:7px;padding:7px;background:var(--portal-color-field-background);color:var(--portal-color-text);font:inherit}
-.portal-team-table{width:100%;overflow-x:auto;border:1px solid var(--portal-color-border);border-radius:9px}
-.portal-team-table table{min-width:100%;border-collapse:separate;border-spacing:0;width:max-content;font-size:.76rem}
-.portal-team-table th,.portal-team-table td{padding:6px 8px;border-right:1px solid var(--portal-color-border-soft);border-bottom:1px solid var(--portal-color-border-soft);min-width:78px;text-align:center;font-weight:400}
-.portal-team-table th{background:var(--portal-color-field-background);font-weight:500}
-.portal-team-table thead tr:first-child th:first-child,.portal-team-table td:first-child{position:sticky;left:0;min-width:155px;max-width:180px;background:var(--portal-color-surface);text-align:left;z-index:1}
-#adminEngagementsDetailEntriesPanel .portal-team-table td.admin-engagements-club-entry-course{padding-block:1px}
-.portal-team-table small{display:block;font-size:.68rem;max-width:100px}
-.portal-team-table .portal-team-course-head th{border-top:1px solid var(--portal-color-border)}
 .portal-team-relays{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,16rem),1fr));gap:8px;align-items:start}
 .portal-team-relay{display:grid;gap:4px;min-width:0;padding:8px;border:1px solid var(--portal-color-border);border-radius:9px;font-size:.82rem}
 .portal-team-relay header{display:flex;justify-content:space-between;align-items:center;gap:6px}
@@ -32,10 +21,13 @@ html[data-portal-theme="dark"] .portal-team-fields label:is([data-team-sex="F"],
 .portal-team-relay > button{justify-self:start}
 .portal-team-save{justify-content:space-between;padding-top:12px;border-top:1px solid var(--portal-color-border-soft)}
 .portal-team-workspace details{padding:10px 0;border-bottom:1px solid var(--portal-color-border-soft)}
+html[data-portal-theme="dark"] .portal-team-workspace .admin-engagements-club-entry-row[data-sex="F"]{--team-entry-bg:#322938}
+html[data-portal-theme="dark"] .portal-team-workspace .admin-engagements-club-entry-row[data-sex="M"]{--team-entry-bg:#203347}
+html[data-portal-theme="dark"] .portal-team-workspace .admin-engagements-club-entry-row:is([data-sex="F"],[data-sex="M"]) > :not(.is-unavailable){background-color:var(--team-entry-bg) !important}
 .portal-team-workspace h5{margin:8px 0 3px}
 .portal-team-recap-list,.portal-team-recap-row ul{list-style:none;margin:0;padding:0}
 .portal-team-recap-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.4fr);gap:8px;padding:4px 6px;border-bottom:1px solid var(--portal-color-border-soft);font-size:.82rem;overflow-wrap:anywhere}
 .portal-team-recap-row small{display:block;color:var(--portal-color-muted)}
 .portal-team-recap-row ul li{display:flex;flex-wrap:wrap;gap:3px 10px;justify-content:space-between;font-variant-numeric:tabular-nums}
 .portal-team-workspace p{margin:4px 0;font-size:.82rem}
-@media(max-width:650px){.portal-team-fields{grid-template-columns:1fr}.portal-team-toolbar button{min-height:44px}.portal-team-fields select,.portal-team-relay select,.portal-team-relay input{font-size:16px}.portal-team-relay button{min-height:44px}.portal-team-table thead tr:first-child th:first-child,.portal-team-table td:first-child{min-width:125px}.portal-team-save button{width:100%}}
+@media(max-width:650px){.portal-team-fields{grid-template-columns:1fr}.portal-team-toolbar button{min-height:44px}.portal-team-fields select,.portal-team-relay select,.portal-team-relay input{font-size:16px}.portal-team-relay button{min-height:44px}.portal-team-save button{width:100%}}
