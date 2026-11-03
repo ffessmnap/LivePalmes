@@ -2,6 +2,10 @@
 
 <!-- description: Référence du langage visuel, des composants d’interface et des règles responsive déjà présents dans LivePalmes. -->
 
+## Trophée Damien Hébert
+
+Le classement utilise un tableau horizontal avec rang et nom fixes, un chrono au-dessus des points et un total en dernière colonne. Une confirmation ouvre la fiche publique du nageur. Dans l’administration nationale, les réglages de l’édition sont regroupés dans un panneau repliable avec aperçu.
+
 ## Engagements par équipes — variante du portail
 
 Le module conserve les panneaux Participants, Courses et relais, et Récapitulatif du parcours existant. Une navigation compacte affiche les équipes par sexe et lettre, puis « Hors concours sans équipe ». L’action principale « + Équipe » est séparée des boutons de navigation, dont seul le bouton de la vue ouverte est sélectionné. Les lignes de participants, d’engagements et de relais reprennent les repères rose et bleu du parcours classique, y compris en thème sombre.
