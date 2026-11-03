@@ -80,14 +80,14 @@
       if (remaining.length) sessions.push({label:sessions.length ? 'Autres courses' : 'Programme', columns:remaining});
       return sessions;
     }
-    function matrix(ids, outside = false) {
+    function matrix(ids, {outside = false, sex} = {}) {
       const team = selected();
-      const sessions = individualSessions(outside ? "" : team?.sex);
+      const sessions = individualSessions(outside ? sex : team?.sex);
       const columns = sessions.flatMap(session => session.columns);
       const {byId, savedById} = directory();
       const disabled = locked();
       const rows = ids.map(id => {
-        const isReserve = team?.reserve === id;
+        const isReserve = !outside && team?.reserve === id;
         const hc = outside || isReserve;
         const person = byId.get(id);
         const personName = esc(name(id));
@@ -104,19 +104,17 @@
           return `<td class="admin-engagements-club-entry-course"><label><input type="checkbox" aria-label="${personName} · ${esc(code)}" data-team-field="course" data-id="${esc(id)}" data-code="${esc(code)}"${checked?' checked':''}${unavailable?' disabled':''}>${checked?`<small data-engagement-club-entry-cell-time data-entry-time-mode="${hc || time ? 'known' : 'pending'}" title="${hc || time ? '' : 'Temps en attente d’enregistrement'}">${hc?'59:59.99':esc(time || 'En attente…')}</small>`:''}</label></td>`;
         }).join('');
         const roleLabel = isReserve ? '<small>Remplaçant · hors concours · 59:59.99 imposé</small>' : outside ? '<small>59:59.99 imposé</small>' : '';
-        const remove = outside ? `<td>${btn('Retirer', 'remove-outside', `data-id="${esc(id)}"${disabled?' disabled':''}`)}</td>` : '';
-        return `<tr><td>${personName}${roleLabel}</td>${cells}<td>${selectedCourses.length}/2</td>${remove}</tr>`;
+        return `<tr><td>${personName}${roleLabel}</td>${cells}<td>${selectedCourses.length}/2</td></tr>`;
       }).join('');
       const headers = columns.map(({event, sexes}) => `<th scope="col">${esc(event.shortLabel || event.label || event.code)}${(!team || outside || isMasters()) && sexes.length === 1 ? `<small>${sexes[0] === 'F' ? 'Femmes' : 'Hommes'}</small>` : ''}</th>`).join('');
       const groups = sessions.map(session => {
         const meta = [session.date && actions.formatShortDate(session.date), session.startTime].filter(Boolean).join(' · ');
         return `<th colspan="${session.columns.length}" scope="colgroup">${esc(session.label || 'Session')}${meta ? `<small>${esc(meta)}</small>` : ''}</th>`;
       }).join('');
-      const emptyRow = `<tr><td colspan="${columns.length + (outside ? 3 : 2)}">Aucun nageur déclaré.</td></tr>`;
+      const emptyRow = `<tr><td colspan="${columns.length + 2}">Aucun nageur déclaré.</td></tr>`;
       const heading = `<th scope="col"${groups ? ' rowspan="2"' : ''}>Nageur${outside ? ' hors concours' : ''}</th>`;
       const total = `<th scope="col"${groups ? ' rowspan="2"' : ''}>Total</th>`;
-      const action = outside ? `<th scope="col"${groups ? ' rowspan="2"' : ''}>Action</th>` : '';
-      return `<div class="portal-team-table"><table class="admin-engagements-table"><thead><tr>${heading}${groups}${total}${action}</tr>${groups ? `<tr class="portal-team-course-head">${headers}</tr>` : ''}</thead><tbody>${rows || emptyRow}</tbody></table></div>`;
+      return `<div class="portal-team-table"><table class="admin-engagements-table"><thead><tr>${heading}${groups}${total}</tr>${groups ? `<tr class="portal-team-course-head">${headers}</tr>` : ''}</thead><tbody>${rows || emptyRow}</tbody></table></div>`;
     }
     function relays(team) {
       const disabled = locked() || team.members.filter(Boolean).length !== size();
@@ -168,7 +166,31 @@
       const leader = actions.engagementClubSummaryTeamLeaderLabel?.(entry);
       return `<h4>Dossier global du club</h4>${leader ? `<p>Chef d’équipe · ${esc(leader)}</p>` : ''}${teams || '<p>Aucune équipe déclarée.</p>'}${outside}<p><strong>Frais estimatifs · ${stats.value.toLocaleString('fr-FR',{style:'currency',currency:'EUR'})}</strong> · ${d.value.teams.length} équipe(s) · ${stats.hcPeople} nageur(s) HC · ${stats.hcCount} course(s) HC</p>`;
     }
-    function body(section){const d=draft(),t=selected();if(section==='summary')return summary();if(d.tab==='outside'&&!isMasters())return `${teamNav()}<h4>Hors concours — sans équipe</h4><div class="portal-team-fields"><label>Nageur du club<select data-team-field="outside-choice"${locked()?' disabled':''}>${options('','',true)}</select></label>${btn('+ Engager ce nageur hors concours','add-outside',locked()?'disabled':'',true)}</div><p>Deux courses maximum, sans équipe ni points. Temps imposé : 59:59.99.</p>${matrix(d.value.outside,true)}`;if(!t)return teamNav()+'<p>Aucune équipe déclarée.</p>';return `${teamNav()}<h4>Équipe ${esc(title(t))}</h4>${section==='swimmers'?roster(t):matrix([...t.members.filter(Boolean), ...(t.reserve?[t.reserve]:[])])+relays(t)}`; }
+    function outsideParticipants(ids) {
+      const disabled = locked() ? ' disabled' : '';
+      const rows = ids.map(id => `<li class="portal-team-recap-row"><strong>${esc(name(id))}</strong><span>${btn('Retirer', 'remove-outside', `data-id="${esc(id)}"${disabled}`)}</span></li>`).join('');
+      return `<div class="portal-team-fields"><label>Nageur du club<select data-team-field="outside-choice"${disabled}>${options('', '', true)}</select></label>${btn('+ Déclarer ce nageur hors concours', 'add-outside', disabled, true)}</div>${rows ? `<ul class="portal-team-recap-list">${rows}</ul>` : '<p>Aucun nageur hors concours déclaré.</p>'}<p>Les courses se sélectionnent dans l’onglet Courses et relais.</p>`;
+    }
+    function outsideCourses(ids) {
+      const {byId} = directory();
+      const women = ids.filter(id => byId.get(id)?.sex === 'F');
+      const men = ids.filter(id => byId.get(id)?.sex === 'M');
+      const unclassified = ids.filter(id => !['F', 'M'].includes(byId.get(id)?.sex));
+      return `<p>Deux courses maximum, sans équipe ni points. Temps imposé : 59:59.99.</p><h5>Femmes</h5>${matrix(women, {outside:true, sex:'F'})}<h5>Hommes</h5>${matrix(men, {outside:true, sex:'M'})}${unclassified.length ? `<h5>Nageurs à vérifier</h5>${matrix(unclassified, {outside:true})}` : ''}`;
+    }
+    function body(section) {
+      const d = draft();
+      const team = selected();
+      if (section === 'summary') return summary();
+      const navigation = teamNav();
+      if (d.tab === 'outside' && !isMasters()) {
+        const content = section === 'swimmers' ? outsideParticipants(d.value.outside) : outsideCourses(d.value.outside);
+        return navigation + '<h4>Hors concours — sans équipe</h4>' + content;
+      }
+      if (!team) return navigation + '<p>Aucune équipe déclarée.</p>';
+      const content = section === 'swimmers' ? roster(team) : matrix([...team.members, team.reserve].filter(Boolean)) + relays(team);
+      return `${navigation}<h4>Équipe ${esc(title(team))}</h4>${content}`;
+    }
     function render(section){if(section==='relays')return;bindUnload();
       const panels={swimmers:'adminEngagementsDetailSwimmersPanel',entries:'adminEngagementsDetailEntriesPanel',relays:'adminEngagementsDetailRelaysPanel',summary:'adminEngagementsDetailSummaryPanel'},panel=document.getElementById(panels[section]);if(!panel)return;
       const summaryList = elements.engagementsClubSummaryList;
