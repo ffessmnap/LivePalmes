@@ -2,6 +2,11 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 3 novembre — Références des relais Clubs dans le programme
+
+- Les trois relais à six utilisent les catégories FSE/HSE du catalogue NAP lors de l’ajout au programme. Le [diagnostic en lecture seule](https://github.com/ffessmnap/LivePalmes/actions/runs/41604943700) a confirmé la distinction avec FFF/HHH. Tests ciblés avec les six références réelles du catalogue, budget SQL identique.
+- [PR #698](https://github.com/ffessmnap/LivePalmes/pull/698), [CI main](https://github.com/ffessmnap/LivePalmes/actions/runs/41606307561) et [TEST commun](https://github.com/ffessmnap/LivePalmes/actions/runs/41607693192) réussis sur `deff8caf515b379f6ca3c376ab3616e7d8eee36c`. Sélection de 1 fonction sur 106. Nouvel essai sur la compétition TEST attendu.
+
 ### 3 novembre — Correction de l’activation du format Clubs sur TEST
 
 - Le contrôle des engagements convertit l’identifiant du portail en identifiant NAP numérique avant ses lectures indexées. Les tests couvrent une compétition vide avant ouverture et le refus en présence d’un nageur ou d’un relais. Aucune modification de compétition ni de schéma.
