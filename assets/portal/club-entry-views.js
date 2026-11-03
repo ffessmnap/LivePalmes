@@ -256,19 +256,19 @@
         portalActions.updateEngagementClubSwimmersSummary();
       }
 
-    function renderEngagementClubEntriesTable({ sex = "", label = "Nageurs", rows = [], swimmersById, sessions = [] } = {}) {
-        if (!rows.length) return "";
+    function renderEngagementClubEntriesTable({ sex = "", label = "Nageurs", rows = [], swimmersById, sessions = [], teamCell } = {}) {
+        if (!rows.length && !teamCell) return "";
         const visibleSessions = portalActions.engagementClubProgramSessionsForSex(sessions, sex);
         const identityColumnLabel = sex === "F" ? "Nageuse" : "Nageur";
         const swimmerLabel = sex === "F"
           ? `${rows.length} nageuse${rows.length > 1 ? "s" : ""}`
           : `${rows.length} nageur${rows.length > 1 ? "s" : ""}`;
         const openWater = portalActions.engagementCompetitionType(portalState.selectedEngagementCompetition) === "openWater";
-        if (!visibleSessions.length) {
+        if (!rows.length || !visibleSessions.length) {
           return `
         <section class="admin-engagements-club-entry-group" data-entry-sex="${portalActions.escapeHtml(sex || "unknown")}">
           <div class="admin-engagements-club-entry-group-head"><h4>${portalActions.escapeHtml(label)}</h4><span>${portalActions.escapeHtml(swimmerLabel)}</span></div>
-          <p class="admin-engagements-empty">Aucune course individuelle ouverte pour ce groupe.</p>
+          <p class="admin-engagements-empty">${rows.length ? "Aucune course individuelle ouverte pour ce groupe." : "Aucun nageur déclaré."}</p>
         </section>
       `;
         }
@@ -296,7 +296,7 @@
                       const meta = [portalActions.formatShortDate(session.date), session.startTime].filter(Boolean).join(" · ");
                       return `<th class="admin-engagements-club-entry-session${sessionIndex ? " is-session-start" : ""}" colspan="${session.items.length}" scope="colgroup"><span>${portalActions.escapeHtml(session.label || `Session ${sessionIndex + 1}`)}</span>${meta ? `<small>${portalActions.escapeHtml(meta)}</small>` : ""}</th>`;
                     }).join("")}
-                <th class="admin-engagements-club-entry-action" rowspan="2" scope="col">${openWater ? "Courses" : "Temps"}</th>
+                <th class="admin-engagements-club-entry-action" rowspan="2" scope="col">${openWater || teamCell ? "Courses" : "Temps"}</th>
               </tr>
               <tr class="admin-engagements-club-entry-course-head">
                 ${columns.map((item) => {
@@ -319,38 +319,39 @@
                       birthDate: selected.birthDate || swimmer.birthDate || ""
                     }, portalState.selectedEngagementCompetition?.date || "") || "-";
                     const selectedCount = selectedCodes.size;
-                    const maxEvents = Number(portalState.selectedEngagementCompetition?.maxEventsPerSwimmer || 0);
+                    const maxEvents = teamCell ? 2 : Number(portalState.selectedEngagementCompetition?.maxEventsPerSwimmer || 0);
                     const countLabel = maxEvents > 0 ? `${selectedCount}/${maxEvents}` : String(selectedCount);
                     return `
-                  <tr class="admin-engagements-club-entry-row" data-engagement-club-entry-row data-engagement-club-entry-swimmer-id="${portalActions.escapeHtml(selected.swimmerIndexId)}" data-sex="${portalActions.escapeHtml(swimmer.sex || "")}">
-                    <th class="admin-engagements-club-entry-last-name admin-engagements-club-entry-swimmer" scope="row" title="${portalActions.escapeHtml(`${lastName} ${firstName}`.trim())}"><strong>${portalActions.escapeHtml(lastName)}</strong><span>${portalActions.escapeHtml(firstName || "-")}</span></th>
+                  <tr class="admin-engagements-club-entry-row" ${teamCell ? "" : `data-engagement-club-entry-row data-engagement-club-entry-swimmer-id="${portalActions.escapeHtml(selected.swimmerIndexId)}"`} data-sex="${portalActions.escapeHtml(swimmer.sex || "")}">
+                    <th class="admin-engagements-club-entry-last-name admin-engagements-club-entry-swimmer" scope="row" title="${portalActions.escapeHtml(`${lastName} ${firstName}`.trim())}"><strong>${portalActions.escapeHtml(lastName)}</strong><span>${portalActions.escapeHtml(firstName || "-")}</span>${teamCell && selected.roleLabel ? `<span>${portalActions.escapeHtml(selected.roleLabel)}</span>` : ""}</th>
                     <td>${portalActions.escapeHtml(portalActions.formatShortDate(swimmer.birthDate || selected.birthDate) || "-")}</td>
                     <td>${portalActions.escapeHtml(category)}</td>
                     ${columns.map((item) => {
-                          const allowed = portalActions.engagementClubProgramItemAllowsSwimmer(item, swimmer);
+                          const team = teamCell?.(item, swimmer, selected);
+                          const allowed = team ? team.allowed : portalActions.engagementClubProgramItemAllowsSwimmer(item, swimmer);
                           const checked = allowed && selectedCodes.has(item.eventCode);
                           const entry = entryByCode.get(item.eventCode) || {};
                           const manualValue = entry.entryTimeMode === "manual" ? (entry.manualEntryTime || entry.entryTime || "") : "";
-                          const timeLabel = checked ? portalActions.engagementEntryTimeDisplayLabel(entry) : "";
-                          const timeMode = checked ? (entry.entryTimeMode || "pending") : "";
+                          const timeLabel = checked ? (team ? team.time : portalActions.engagementEntryTimeDisplayLabel(entry)) : "";
+                          const timeMode = checked ? ((team ? team.mode : entry.entryTimeMode) || "pending") : "";
                           const itemLabel = portalActions.engagementClubProgramItemLabel(item);
                           return `
                         <td class="admin-engagements-club-entry-course${item.sessionStart ? " is-session-start" : ""}${allowed ? "" : " is-unavailable"}">
                           ${allowed ? `
                             <label data-event-selected title="${portalActions.escapeHtml(itemLabel.full)} pour ${portalActions.escapeHtml(`${lastName} ${firstName}`.trim())}">
-                              <input type="checkbox" data-engagement-club-swimmer-event="${portalActions.escapeHtml(item.eventCode)}" ${portalState.selectedEngagementCompetition?.qualifications?.enabled && !checked ? "disabled hidden" : ""} ${checked ? "checked" : ""} aria-label="${portalActions.escapeHtml(itemLabel.full)}">
-                              ${openWater ? "" : `<small data-engagement-club-entry-cell-time data-entry-time-mode="${portalActions.escapeHtml(timeMode)}" ${checked ? "" : "hidden"} title="${portalActions.escapeHtml(portalActions.engagementEntryTimeHelpLabel(entry, portalActions.engagementManualIndividualTimesAllowed()))}">${portalActions.escapeHtml(timeLabel)}</small>`}
+                              <input type="checkbox" ${team ? `data-team-field="course" data-id="${portalActions.escapeHtml(selected.swimmerIndexId)}" data-code="${portalActions.escapeHtml(item.eventCode)}" ${team.disabled ? "disabled" : ""}` : `data-engagement-club-swimmer-event="${portalActions.escapeHtml(item.eventCode)}" ${portalState.selectedEngagementCompetition?.qualifications?.enabled && !checked ? "disabled hidden" : ""}`} ${checked ? "checked" : ""} aria-label="${portalActions.escapeHtml(itemLabel.full)}">
+                              ${openWater ? "" : `<small data-engagement-club-entry-cell-time data-entry-time-mode="${portalActions.escapeHtml(timeMode)}" ${checked ? "" : "hidden"} title="${team ? "" : portalActions.escapeHtml(portalActions.engagementEntryTimeHelpLabel(entry, portalActions.engagementManualIndividualTimesAllowed()))}">${portalActions.escapeHtml(timeLabel)}</small>`}
                             </label>
-                            ${openWater ? "" : `<input type="hidden" data-engagement-club-swimmer-event-time="${portalActions.escapeHtml(item.eventCode)}" value="${portalActions.escapeHtml(manualValue)}" ${manualValue ? "" : "disabled"}>`}
+                            ${openWater || team ? "" : `<input type="hidden" data-engagement-club-swimmer-event-time="${portalActions.escapeHtml(item.eventCode)}" value="${portalActions.escapeHtml(manualValue)}" ${manualValue ? "" : "disabled"}>`}
                           ` : '<span aria-label="Course non ouverte pour ce nageur">—</span>'}
                         </td>
                       `;
                         }).join("")}
                     <td class="admin-engagements-club-entry-action">
-                      ${openWater
+                      ${openWater || teamCell
                             ? `<span class="admin-engagements-club-entry-count" aria-label="${selectedCount} course${selectedCount > 1 ? "s" : ""} sélectionnée${selectedCount > 1 ? "s" : ""}">${portalActions.escapeHtml(countLabel)}</span>`
                             : `<button class="ghost-button compact admin-engagements-club-times-open" type="button" data-engagement-club-times-open="${portalActions.escapeHtml(selected.swimmerIndexId)}" aria-label="Voir ou modifier les temps d'engagement, ${selectedCount} course${selectedCount > 1 ? "s" : ""}"><span>${portalActions.escapeHtml(countLabel)}</span><b aria-hidden="true">✎</b></button>`}
-                      <button type="button" class="ghost-button compact admin-engagements-club-swimmer-remove" data-engagement-club-swimmer-remove="${portalActions.escapeHtml(selected.swimmerIndexId)}" aria-label="Retirer ${portalActions.escapeHtml(`${firstName} ${lastName}`.trim())} de cette compétition" title="Retirer de cette compétition" ${!portalActions.canUse("engagements.club.manage") || portalActions.engagementClubSwimmerSelectionLockReason() ? "disabled" : ""}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M7 7l1 14h8l1-14"/></svg></button>
+                      ${teamCell ? "" : `<button type="button" class="ghost-button compact admin-engagements-club-swimmer-remove" data-engagement-club-swimmer-remove="${portalActions.escapeHtml(selected.swimmerIndexId)}" aria-label="Retirer ${portalActions.escapeHtml(`${firstName} ${lastName}`.trim())} de cette compétition" title="Retirer de cette compétition" ${!portalActions.canUse("engagements.club.manage") || portalActions.engagementClubSwimmerSelectionLockReason() ? "disabled" : ""}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M7 7l1 14h8l1-14"/></svg></button>`}
                     </td>
                   </tr>
                 `;
@@ -362,8 +363,7 @@
     `;
       }
 
-    function initializeEngagementCourseScrollHints() {
-        const mount = portalContext.elements.engagementsClubEntriesList;
+    function initializeEngagementCourseScrollHints(mount = portalContext.elements.engagementsClubEntriesList) {
         if (!mount) return;
         const competitionId = portalState.selectedEngagementCompetitionId;
         const dismissHints = () => {
@@ -454,7 +454,7 @@
         portalActions.renderQualificationExceptionToggle(mount);
         mount.querySelectorAll("[data-engagement-club-entry-row]").forEach((row) => portalActions.updateQualificationCheckboxes(row));
         portalActions.renderQualificationAlert(mount);
-        global.requestAnimationFrame?.(initializeEngagementCourseScrollHints);
+        global.requestAnimationFrame?.(() => initializeEngagementCourseScrollHints());
         if (portalState.selectedEngagementCompetition?.qualifications?.enabled) sortedSelectedRows.forEach((swimmer) => { void portalActions.ensureEngagementClubSwimmerEventTimes(swimmer); });
         portalActions.updateEngagementClubEntriesSummary();
       }
