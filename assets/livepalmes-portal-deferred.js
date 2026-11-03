@@ -6,7 +6,7 @@
   const secondaryKeys = ["account-and-access","activity-journal","club-and-competition","club-entry-state","club-entry-views","club-people","competition-actions","competition-settings","documents-and-program","national-directories","national-requests"];
   let pending = 0, status, failed = false;
   let viewRequest;
-  const viewScripts = {"news":["assets/livepalmes-portal-news.js?v=20261101-news-editor-1"],"nationalDocuments":["assets/public/livepalmes-home-model.js?v=20261014-home-2","assets/livepalmes-featured-documents-model.js?v=20261013-documents-1","assets/livepalmes-featured-documents.js?v=20261023-documents-page-1","assets/livepalmes-national-documents.js?v=20261025-documents-2mo-1"],"engagements":["assets/livepalmes-license-administration.js?v=20261027-license-closure","assets/livepalmes-admin-calendar-events.js?v=20261027-competition-labels-1"]};
+  const viewScripts = {"nationalHome":["assets/public/livepalmes-trophy-table.js?v=20261103","assets/livepalmes-national-trophy.js?v=20261103"],"news":["assets/livepalmes-portal-news.js?v=20261101-news-editor-1"],"nationalDocuments":["assets/public/livepalmes-home-model.js?v=20261014-home-2","assets/livepalmes-featured-documents-model.js?v=20261013-documents-1","assets/livepalmes-featured-documents.js?v=20261023-documents-page-1","assets/livepalmes-national-documents.js?v=20261025-documents-2mo-1"],"engagements":["assets/livepalmes-license-administration.js?v=20261027-license-closure","assets/livepalmes-admin-calendar-events.js?v=20261027-competition-labels-1"]};
   const resources = new Map();
   const boundContexts = new WeakSet();
   const loadedAssets = new Set();

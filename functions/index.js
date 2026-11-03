@@ -5746,6 +5746,18 @@ if (ENVIRONMENT.sportingDataSource === "nap") {
   const napPassword = defineSecret("LIVEPALMES_NAP_PASSWORD");
   let napPool;
   let homeEventsReader;
+  let trophyReader;
+  exports.manageDamienHebertEdition = onCall({ ...CALLABLE_OPTIONS, secrets: [napPassword] }, async request => {
+    const context = await engagementAccessContext(request);
+    if (!context.national) throw new HttpsError("permission-denied", "Administration nationale requise.");
+    try {
+      if (!napPool) napPool = createNapPool(napPassword.value());
+      return await require("./nap-damien-hebert-edition").manageEdition(db, napPool, request.data);
+    } catch (error) {
+      if (error instanceof TypeError) throw new HttpsError("invalid-argument", error.message);
+      throw new HttpsError("unavailable", "Classement du trophée indisponible.");
+    }
+  });
   exports.readNapPublicSwimmer = onRequest({
     region: REGION, invoker: "public", secrets: [napPassword], maxInstances: 2, concurrency: 4, timeoutSeconds: 30,
     cors: ENVIRONMENT.name === "test"
@@ -5758,6 +5770,11 @@ if (ENVIRONMENT.sportingDataSource === "nap") {
     try {
       if (!napPool) napPool = createNapPool(napPassword.value());
       const action = request.query.action || (request.query.id ? "swimmer" : ["/", "/index.html"].includes(request.path) ? "home-page" : "swimmer");
+      if (action === "damien-hebert") {
+        if (!trophyReader) trophyReader = require("./nap-damien-hebert-edition").createPublicReader(db, napPool);
+        response.json(await trophyReader());
+        return;
+      }
       if(action==="home-page"){
         const homePage=require("./nap-home-page");
         const page=await homePage.readPage(napPool);
