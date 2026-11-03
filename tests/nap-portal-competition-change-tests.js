@@ -119,6 +119,8 @@ function fixture(settings={}) {
   const tables=new Map([["competitions",structuredClone(pack.nativeSnapshot.competition)],["compet_parametres",structuredClone(pack.nativeSnapshot.parameters)]]);
   const state={writes:[],prepared:0,completed:0,released:0,saved:null,tables,failInsert:settings.failInsert};
   state.pool={getConnection:async()=>({release:()=>state.released++,execute:async({sql},values=[])=>{
+    const entryTable=sql.match(/^SELECT id FROM (nageursengager|engagements_relais) FORCE INDEX/);
+    if(entryTable){assert.deepEqual(values,[5140],"Use the numeric NAP ID, even when the portal sends legacy-nap-5140");return [settings.entryTable===entryTable[1]?[{id:99}]:[]];}
     if(sql.startsWith("SELECT")) { const table=sql.match(/FROM `([^`]+)`/)[1]; return [tables.has(table)?[structuredClone(tables.get(table))]:[]]; }
     const table=sql.match(/(?:UPDATE|INSERT INTO) `([^`]+)`/)[1];
     if(sql.startsWith("UPDATE")) {
@@ -139,6 +141,19 @@ function fixture(settings={}) {
 (async()=>{
   const original=native.readNativeCompetition;
   try {
+    const closedPack=structuredClone(pack);
+    closedPack.event.eventType="pool";
+    closedPack.event.entryStatus="upcoming";
+    closedPack.nativeSnapshot.parameters.actif=0;
+    closedPack.teamSchemaReady=true;
+    const activation={...input({entryFormat:"clubs"}),expectedFingerprint:fingerprint(closedPack)};
+    for(const entryTable of [undefined,"nageursengager","engagements_relais"]){
+      const team=fixture({entryTable});
+      native.readNativeCompetition=async(_,id,authorize)=>{await authorize(closedPack.event);return closedPack;};
+      team.audit.prepare=async()=>{throw new Error("Activation plan prepared");};
+      await assert.rejects(applyCompetitionChange(team.pool,activation,team.audit,()=>{}),entryTable?/Des engagements existent/:/Activation plan prepared/);
+      assert.deepEqual(team.writes,[]);
+    }
     let state=fixture(); native.readNativeCompetition=state.read;
     await assert.rejects(applyCompetitionChange(state.pool,input({entryStatus:"closed"}),state.audit,()=>{throw new Error("Scope denied");}),/Scope/);assert.equal(state.prepared,0);assert.equal(state.writes.length,0);
     await applyCompetitionChange(state.pool,input({entryStatus:"closed"}),state.audit,()=>{});assert.deepEqual(state.writes,["compet_parametres","livepalmes_competition_options"]);assert.equal(state.completed,1);

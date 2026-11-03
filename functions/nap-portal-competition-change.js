@@ -234,7 +234,10 @@ async function applyCompetitionChange(pool, input, audit, authorize) {
     if (!pack) throw new TypeError("Competition introuvable.");
     if(!saved) {
       if(input.patch?.entryFormat&&input.patch.entryFormat!=='classic'&&(pack.options?.entry_format||'classic')==='classic'){
-        if((await query('SELECT id FROM nageursengager FORCE INDEX (livepalmes_compet_nageur_id) WHERE compet=? LIMIT 1',[input.competitionId])).length||(await query('SELECT id FROM engagements_relais FORCE INDEX (livepalmes_compet_club_id) WHERE compet=? LIMIT 1',[input.competitionId])).length)throw new TypeError('Des engagements existent déjà : leur rattachement aux équipes doit être préparé avant activation.');
+        const competitionId=calendar.positiveId(input.competitionId);
+        const swimmers=await query('SELECT id FROM nageursengager FORCE INDEX (livepalmes_compet_nageur_id) WHERE compet=? LIMIT 1',[competitionId]);
+        const relays=swimmers.length ? [] : await query('SELECT id FROM engagements_relais FORCE INDEX (livepalmes_compet_club_id) WHERE compet=? LIMIT 1',[competitionId]);
+        if(swimmers.length||relays.length)throw new TypeError('Des engagements existent déjà : leur rattachement aux équipes doit être préparé avant activation.');
       }
       const plan=planCompetitionChange(pack,input);
       saved={...plan,actorUid:input.actorUid,expectedFingerprint:input.expectedFingerprint,operation,planHash:rowHash({operations:plan.operations})};
