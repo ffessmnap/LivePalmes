@@ -881,6 +881,7 @@
       }
 
     function renderEngagementClubSummary(entry = portalState.selectedEngagementClubEntry || {}) {
+        if (teamEntrySection("summary")) return;
         if (!portalContext.elements.engagementsClubSummaryList && !portalContext.elements.engagementsClubSummaryStatus) return;
         const competition = portalState.selectedEngagementCompetition || {};
         const fees = competition.fees || {};
@@ -923,6 +924,7 @@
         renderEngagementClubNativeSummary(nativeEntry ? entry : null);
         if (portalContext.elements.engagementsClubSummaryPdfButton) {
           const canGenerateRecap = Boolean(portalState.selectedEngagementCompetitionId && portalActions.engagementClubTeamComplete(entry) && portalActions.engagementClubEntryHasParticipants(entry));
+          portalContext.elements.engagementsClubSummaryPdfButton.textContent = "Télécharger le PDF";
           portalContext.elements.engagementsClubSummaryPdfButton.disabled = !canGenerateRecap;
           portalContext.elements.engagementsClubSummaryPdfButton.title = canGenerateRecap
             ? "Télécharger le récapitulatif PDF"
