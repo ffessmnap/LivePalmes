@@ -40,9 +40,13 @@ function planAdditions(pack,raw,catalog,defaults,definitions,categories=null){
     if(!definition)throw new TypeError("Course inconnue du programme LivePalmes.");
     const mixed=definition.relayMixedRule==="required"||definition.relayMixedRule==="mastersOnly"&&event.relayMixedMode==="masters";
     const teamRelay=require('./nap-team-entries').profile(pack)?.format==='clubs'&&Object.hasOwn(require('./nap-team-entries').PROFILES.clubs.relays,event.code);
-    // Real NAP references 459–464: six swimmers, sex-specific senior
-    // category, mixte=1. That flag does not turn these teams into mixed teams.
-    const teamReference=row=>Array.isArray(categories)&&['F','M'].includes(row.sexe)&&Number(row.nbnageur)===6&&Number(row.mixte)===1&&Number(row.categorie)===require('./nap-relay-resolution').nativeCategory('S',row.sexe==='F'?'female':'male',categories);
+    // The six-swimmer catalogue rows use FSE/HSE. The entered relays have
+    // their own all-category references (FFF/HHH).
+    const teamReference = row => {
+      const seniorCode = { F: 'FSE', M: 'HSE' }[row.sexe];
+      if (!seniorCode || Number(row.nbnageur) !== 6 || Number(row.mixte) !== 1) return false;
+      return categories?.some(category => category.abbr === seniorCode && category.sexe === row.sexe && Number(category.id) === Number(row.categorie));
+    };
     const rows=catalog.filter(row=>(water?require('./nap-open-water-courses').definition(row.course)?.code===event.code:nativeCourseCode(row.course)===event.code)&&Number(row.final)===0&&Number(row.actif)===1&&Number(row.ld)===(water?1:0)&&Boolean(Number(row.relais))===(definition.type==="relay")&&(teamRelay?teamReference(row):Number(row.categorie)===0&&Boolean(Number(row.mixte))===mixed));
     if(mixed ? rows.length!==1||String(rows[0].sexe)!=="0" : rows.length!==2||new Set(rows.map(row=>row.sexe)).size!==2||!rows.every(row=>["M","F"].includes(row.sexe)))throw new TypeError(`Correspondance native absente ou ambigue : ${event.code}.`);
     for(const row of rows)if(!existing.has(Number(row.id))){additions.push({compet:positiveId(pack.event.id),pos:++pos,id_course:Number(row.id),...fallback});existing.add(Number(row.id));}

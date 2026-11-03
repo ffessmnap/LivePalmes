@@ -12,8 +12,17 @@ const selected=[{code:'50SF'},{code:'4X100SB'}];
 const proposed=planAdditions(pack,selected,catalog,defaults,definitions);
 assert.deepEqual(proposed.map(row=>row.id_course),[1,2,285]);
 assert.deepEqual(proposed.map(row=>row.pos),[1,2,3]);
-const teams={...pack,options:{entry_format:'clubs',entry_rules_version:'2026-2027-v1'}},teamDefinitions=new Map([['6X100SBI',{type:'relay'}]]),teamCatalog=[{id:459,course:'6X100SBI',sexe:'F',final:0,relais:1,categorie:12,ld:0,mixte:1,nbnageur:6,actif:1},{id:460,course:'6X100SBI',sexe:'M',final:0,relais:1,categorie:6,ld:0,mixte:1,nbnageur:6,actif:1}],teamCategories=[{id:6,abbr:'HHH'},{id:12,abbr:'FFF'}];
+const teams={...pack,options:{entry_format:'clubs',entry_rules_version:'2026-2027-v1'}};
+const teamDefinitions=new Map(['6X100SBI','6X50SF','6X50SBA'].map(code=>[code,{type:'relay'}]));
+const teamCatalog=[
+  [459,'6X100SBI','F',12],[460,'6X100SBI','M',6],
+  [461,'6X50SF','M',6],[462,'6X50SF','F',12],
+  [463,'6X50SBA','F',12],[464,'6X50SBA','M',6]
+].map(([id,course,sexe,categorie])=>({id,course,sexe,categorie,final:0,relais:1,ld:0,mixte:1,nbnageur:6,actif:1}));
+const teamCategories=[{id:6,abbr:'HSE',sexe:'M'},{id:12,abbr:'FSE',sexe:'F'},{id:26,abbr:'HHH',sexe:'M'},{id:27,abbr:'FFF',sexe:'F'}];
 assert.deepEqual(planAdditions(teams,[{code:'6X100SBI'}],teamCatalog,defaults,teamDefinitions,teamCategories).map(x=>x.id_course),[459,460]);
+assert.deepEqual(planAdditions(teams,[...teamDefinitions.keys()].map(code=>({code})),teamCatalog,defaults,teamDefinitions,teamCategories).map(x=>x.id_course),[459,460,461,462,463,464]);
+assert.throws(()=>planAdditions(teams,[{code:'6X100SBI'}],teamCatalog.map(row=>({...row,categorie:row.sexe==='F'?27:26})),defaults,teamDefinitions,teamCategories),/ambigue/);
 assert.throws(()=>planAdditions(pack,[{code:'6X100SBI'}],teamCatalog,defaults,teamDefinitions,teamCategories),/ambigue/,'special native flags are allowed only in the Clubs profile');
 assert.throws(()=>planAdditions(teams,[{code:'6X100SBI'}],teamCatalog.map(x=>({...x,nbnageur:4})),defaults,teamDefinitions,teamCategories),/ambigue/);
 assert.throws(()=>planAdditions(pack,[{code:'unknown'}],catalog,defaults,definitions),/inconnue/);
