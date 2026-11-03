@@ -53,7 +53,8 @@ def build(directory, test_run, records):
     production = cycle.read(root/'production/baseline.json')['productionCommit']
     subprocess.run(['git', 'merge-base', '--is-ancestor', production, candidate], cwd=ROOT, check=True)
     paths = cycle.git('diff', '--name-only', '--no-renames', production, candidate).splitlines()
-    application, backend = cycle.classify(paths)
+    isolated = cycle.isolated_test_rules(paths, production, candidate)
+    application, backend = cycle.classify([p for p in paths if p not in isolated])
     changes, missing = changes_from_records(records, application, production, candidate)
     value = {'schema': 1, 'candidate': candidate, 'productionCommit': production,
              'productionHosting': state['hosting']['version'], 'testRun': test_run,

@@ -11,6 +11,15 @@ spec=importlib.util.spec_from_file_location('cycle',Path(__file__).parents[1]/'t
 m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m)
 
 class ReleaseTests(unittest.TestCase):
+    def test_prod_isolates_only_exact_test_session_rules(self):
+        base = '3ebb91ed1ebd714d192d6bfe9457b47f8e05f964'
+        candidate = 'e4ca772bc3aee5743139be9f5ce91a35d25cad14'
+        self.assertEqual(m.isolated_test_rules(['firestore.rules'], base, candidate), {'firestore.rules'})
+        with self.assertRaises(ValueError):
+            m.isolated_test_rules(['firestore.rules'], candidate, base)
+        with self.assertRaises(ValueError):
+            m.classify(['firestore.rules'])
+
     def setUp(self):
         # Mock deployments must not append fictitious lots to a real Actions summary.
         summary = patch.dict(os.environ, {'GITHUB_STEP_SUMMARY': ''})
