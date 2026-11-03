@@ -11,6 +11,26 @@ spec=importlib.util.spec_from_file_location('cycle',Path(__file__).parents[1]/'t
 m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m)
 
 class ReleaseTests(unittest.TestCase):
+    def test_team_closure_source_patch_never_changes_runtime_settings(self):
+        source = m.ROOT / 'tools/team-closure-test-sources.py'
+        spec = importlib.util.spec_from_file_location('team_closure_sources_test', source)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        name = 'processNapNotificationTask'
+        function = {'name':module.PREFIX+name,'state':'ACTIVE','environment':'GEN_2',
+                    'buildConfig':{'runtime':'nodejs22','entryPoint':name},
+                    'serviceConfig':{'timeoutSeconds':300},'labels':{'existing':'keep'}}
+        payload = module.patch_source(function,{'bucket':'fixture','object':'source.zip'})
+        self.assertEqual(set(payload),{'name','buildConfig','labels'})
+        self.assertEqual(payload['labels']['existing'],'keep')
+        self.assertEqual(set(payload['buildConfig']),{'source'})
+        with self.assertRaises(ValueError):
+            module.patch_source({**function,'name':function['name'].replace('livepalmes-test','livepalmes')},
+                                {'bucket':'fixture','object':'source.zip'})
+        with self.assertRaises(ValueError):
+            module.patch_source({**function,'name':module.PREFIX+'manageDamienHebertEdition'},
+                                {'bucket':'fixture','object':'source.zip'})
+
     def test_prod_isolates_only_exact_test_session_rules(self):
         base = '3ebb91ed1ebd714d192d6bfe9457b47f8e05f964'
         candidate = 'e4ca772bc3aee5743139be9f5ce91a35d25cad14'
