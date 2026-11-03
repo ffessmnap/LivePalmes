@@ -3,6 +3,12 @@
 const { readTrophyResults } = require("./nap-damien-hebert-results");
 const { COURSES, bestTrophyCourses, rankTrophyCategory } = require("./nap-damien-hebert-ranking");
 const { formatTime } = require("./nap-performance-time");
+const { gzipSync, gunzipSync } = require("node:zlib");
+
+function frozenRanking(published) {
+  if (!published?.frozenGzip) return published?.frozen || null;
+  return JSON.parse(gunzipSync(published.frozenGzip).toString("utf8"));
+}
 
 function editionRef(db) {
   return db.collection("engagementConfigurations").doc("damienHebert");
@@ -50,7 +56,7 @@ function createPublicReader(db, pool) {
     if (cached?.expires > Date.now()) return cached.value;
     if (!pending) pending = (async () => {
       const { published } = (await editionRef(db).get()).data() || {};
-      const value = published?.frozen || (published ? await buildEdition(pool, published.edition) : null);
+      const value = frozenRanking(published) || (published ? await buildEdition(pool, published.edition) : null);
       cached = { expires: Date.now() + 60000, value };
       return value;
     })().finally(() => { pending = null; });
@@ -63,7 +69,7 @@ async function manageEdition(db, pool, input) {
   const action = input?.action;
   const snapshot = await ref.get();
   const { draft = null, published = null } = snapshot.data() || {};
-  const publicEdition = published && { edition: published.edition, frozen: Boolean(published.frozen) };
+  const publicEdition = published && { edition: published.edition, frozen: Boolean(published.frozen || published.frozenGzip) };
   if (action === "read") return { draft, published: publicEdition };
   if (action === "preview") return { preview: await buildEdition(pool, normalizeEdition(input.edition)) };
   const changes = {};
@@ -73,8 +79,11 @@ async function manageEdition(db, pool, input) {
       await buildEdition(pool, changes.draft);
       changes.published = { edition: changes.draft };
     }
-  } else if (action === "freeze" && published && !published.frozen) {
-    changes.published = { edition: published.edition, frozen: { ...await buildEdition(pool, published.edition), final: true } };
+  } else if (action === "freeze" && published && !publicEdition.frozen) {
+    const ranking = { ...await buildEdition(pool, published.edition), final: true };
+    const frozenGzip = gzipSync(JSON.stringify(ranking));
+    if (frozenGzip.length > 900000) throw new RangeError("Classement arrêté trop volumineux.");
+    changes.published = { edition: published.edition, frozenGzip };
   } else {
     throw new TypeError("Action indisponible.");
   }
@@ -87,7 +96,7 @@ async function manageEdition(db, pool, input) {
     tx.set(ref, changes, { mergeFields: Object.keys(changes) });
   });
   const active = changes.published || published;
-  return { draft: changes.draft || draft, published: active && { edition: active.edition, frozen: Boolean(active.frozen) } };
+  return { draft: changes.draft || draft, published: active && { edition: active.edition, frozen: Boolean(active.frozen || active.frozenGzip) } };
 }
 
 module.exports = { createPublicReader, manageEdition, buildEdition };

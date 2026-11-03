@@ -8,13 +8,41 @@
 .trophy-table :is(th, td):first-child { position: sticky; left: 0; min-width: 3.5rem; width: 3.5rem; }
 .trophy-table :is(th, td):nth-child(2) { position: sticky; left: 3.5rem; }
 .trophy-table td:nth-child(-n+2) { background: #f3f9fa; color: #153c4a; }
-.trophy-table td:nth-child(n+6) { text-align: right; }
+.trophy-swimmer td:nth-child(n+4) { text-align: right; }
 .trophy-table td:last-child { font-weight: 700; }
 .trophy-table small { display: block; }
-.trophy-name { border: 0; background: transparent; color: inherit; padding: 0; text-decoration: underline; }
+.trophy-table .trophy-name,
+.trophy-table .trophy-name:hover {
+  border: 0; background: transparent; color: inherit; padding: 0; box-shadow: none;
+  font-weight: 400; text-decoration: underline; text-underline-offset: .16em;
+}
+.trophy-table .trophy-name:focus-visible { outline: 2px solid #086f7e; outline-offset: 3px; }
+.trophy-profile-dialog {
+  box-sizing: border-box; width: min(28rem, calc(100% - 2rem)); max-width: none;
+  padding: clamp(1rem, 4vw, 1.5rem); border: 1px solid #cfe1e5; border-radius: .875rem;
+  background: #fff; color: #153c4a; box-shadow: 0 18px 55px rgb(12 42 54 / .24);
+}
+.trophy-profile-dialog::backdrop { background: rgb(10 31 40 / .55); }
+.trophy-profile-dialog h3 { margin: 0; font-size: 1.25rem; color: inherit; }
+.trophy-profile-dialog .trophy-profile-person { margin: .5rem 0 1.25rem; color: #47636e; overflow-wrap: anywhere; }
+.trophy-profile-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: .5rem; }
+.trophy-profile-actions :is(a, button) {
+  display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box;
+  min-height: 44px; padding: .5rem .75rem; border-radius: .45rem; font: inherit;
+  font-weight: 600; text-align: center; text-decoration: none;
+}
+.trophy-profile-actions button { border: 1px solid #b8d4d9; background: #f3f9fa; color: #153c4a; }
+.trophy-profile-actions a { border: 1px solid #086f7e; background: #086f7e; color: #fff; }
+.trophy-profile-actions a:hover { background: #075a66; }
+.trophy-profile-actions :is(a, button):focus-visible { outline: 2px solid #086f7e; outline-offset: 2px; }
 .trophy-edition-fields { display: flex; flex-wrap: wrap; gap: .75rem; }
 .trophy-edition-fields label { display: grid; gap: .2rem; }
 .trophy-course-label { display: none; }
+.trophy-table .trophy-cutoff td {
+  position: static; width: auto; padding: .35rem .55rem;
+  background: #d4e7eb; border-top: 2px solid #527984; color: #153c4a;
+  font-size: .8rem; text-align: left; white-space: normal;
+}
 #trophyRanking .trophy-controls { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); max-width: 24rem; }
 
 @media (max-width: 700px) and (orientation: portrait) {
@@ -36,11 +64,9 @@
     min-width: 0; width: auto; position: static; padding: .15rem .2rem;
     border: 0; background: transparent; white-space: normal; overflow-wrap: anywhere;
   }
-  #trophyRanking .trophy-swimmer td:nth-child(-n+3) { align-self: center; }
-  #trophyRanking .trophy-swimmer td:nth-child(2),
-  #trophyRanking .trophy-swimmer td:nth-child(3) { grid-column: span 2; }
-  #trophyRanking .trophy-swimmer td:nth-child(4) { grid-column: 1; grid-row: 2; }
-  #trophyRanking .trophy-swimmer td:nth-child(5) { grid-column: 2 / 4; grid-row: 2; }
+  #trophyRanking .trophy-swimmer td:nth-child(-n+2) { align-self: center; }
+  #trophyRanking .trophy-swimmer td:nth-child(2) { grid-column: 2 / 6; }
+  #trophyRanking .trophy-swimmer td:nth-child(3) { grid-column: 1 / 4; grid-row: 2; }
   #trophyRanking .trophy-swimmer td:last-child { grid-column: 4 / 6; grid-row: 2; }
   #trophyRanking .trophy-swimmer .trophy-course {
     grid-row: 3; margin-top: .35rem; padding-top: .35rem; border-top: 1px solid #cfe1e5;
@@ -48,4 +74,6 @@
   }
   #trophyRanking .trophy-course-label { display: block; color: #47636e; font-size: .68rem; }
   #trophyRanking .trophy-name { text-align: left; }
+  #trophyRanking .trophy-cutoff { display: block; }
+  #trophyRanking .trophy-cutoff td { display: block; }
 }

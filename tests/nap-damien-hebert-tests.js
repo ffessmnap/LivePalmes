@@ -1,6 +1,7 @@
 "use strict";
 
 const assert = require("node:assert/strict");
+const { gzipSync } = require("node:zlib");
 const { bestTrophyCourses, rankTrophyCategory } = require("../functions/nap-damien-hebert-ranking");
 const { buildEdition, createPublicReader } = require("../functions/nap-damien-hebert-edition");
 
@@ -29,13 +30,13 @@ async function main() {
     swimmerId: index + 1, totalPoints: index === 32 ? 69 : 100 - index, complete: true
   }));
   const ranked = rankTrophyCategory(swimmers.reverse());
-  assert.equal(ranked.length, 33);
-  assert.deepEqual(ranked.slice(-2).map(row => row.rank), [32, 32]);
-  assert.equal(rankTrophyCategory([...swimmers, { swimmerId: 90, totalPoints: 2000, complete: false }]).length, 33);
+  assert.equal(ranked.length, 35);
+  assert.deepEqual(ranked.slice(31).map(row => row.rank), [32, 32, 34, 35]);
+  assert.equal(rankTrophyCategory([...swimmers, { swimmerId: 90, totalPoints: 2000, complete: false }]).at(-1).rank, 36);
   let configReads = 0;
   const db = { collection: () => ({ doc: () => ({ get() {
     configReads += 1;
-    return { data: () => ({ published: { edition, frozen: { ...data, final: true } } }) };
+    return { data: () => ({ published: { edition, frozenGzip: gzipSync(JSON.stringify({ ...data, final: true })) } }) };
   } }) }) };
   const read = createPublicReader(db, { execute() { assert.fail("Édition arrêtée : aucune lecture NAP"); } });
   const concurrent = await Promise.all([read(), read()]);
