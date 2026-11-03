@@ -12,6 +12,8 @@ Le classement complet regroupe le nom, le prénom et l’année de naissance dan
 
 Le nom du nageur est souligné et garde la même graisse au survol. La confirmation de navigation utilise une boîte de dialogue centrée, avec une action principale pour ouvrir la fiche et une action secondaire pour rester sur le classement.
 
+La saison et les dates du classement sont regroupées à gauche, avec les catégories à droite et les couleurs filles et garçons des Performances. Les en-têtes, chronos et points partagent le même alignement horizontal, tandis que les identités longues peuvent revenir à la ligne dans leur colonne.
+
 ## Engagements par équipes — variante du portail
 
 Le module conserve les panneaux Participants, Courses et relais, et Récapitulatif du parcours existant. Une navigation compacte affiche les équipes par sexe et lettre, puis « Hors concours sans équipe ». L’action principale « + Équipe » est séparée des boutons de navigation, dont seul le bouton de la vue ouverte est sélectionné. Les lignes de participants, d’engagements et de relais reprennent les repères rose et bleu du parcours classique, y compris en thème sombre.

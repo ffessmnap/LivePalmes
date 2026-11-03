@@ -1,20 +1,44 @@
 .trophy-controls { display: flex; flex-wrap: wrap; gap: .5rem; margin-block: .75rem; }
 .trophy-controls button, .trophy-name { min-height: 44px; }
-.trophy-controls [aria-pressed="true"] { background: #086f7e; color: #fff; }
+.trophy-toolbar {
+  display: flex; align-items: flex-end; justify-content: space-between; flex-wrap: wrap;
+  gap: .75rem 1.25rem; margin-block: 0 1rem;
+}
+.trophy-metadata { min-width: 0; }
+.trophy-metadata .trophy-heading { margin: 0 0 .35rem; }
+.trophy-metadata p { margin: .15rem 0; }
+.trophy-edition-name { font-weight: 600; }
+.trophy-updated { color: #47636e; font-size: .85rem; }
+.trophy-toolbar .trophy-categories {
+  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: 0 0 0 auto;
+}
+.trophy-categories button {
+  border: 1px solid var(--trophy-category-color); background: var(--trophy-category-soft);
+  color: var(--trophy-category-color); box-shadow: none; white-space: nowrap;
+}
+.trophy-category-f { --trophy-category-color: var(--women, #b01762); --trophy-category-soft: var(--women-soft, #fff2f7); }
+.trophy-category-m { --trophy-category-color: var(--men, #1769aa); --trophy-category-soft: var(--men-soft, #eff7ff); }
+.trophy-categories button[aria-pressed="true"],
+.trophy-categories button:hover { background: var(--trophy-category-color); color: #fff; }
+.trophy-categories button:focus-visible { outline: 2px solid var(--trophy-category-color); outline-offset: 2px; }
 .trophy-scroll { overflow-x: auto; max-width: 100%; }
-.trophy-table { width: 100%; min-width: 800px; border-collapse: separate; border-spacing: 0; font-variant-numeric: tabular-nums; }
-.trophy-table :is(th, td) { padding: .45rem .55rem; border-bottom: 1px solid #cfe1e5; white-space: nowrap; text-align: left; }
+.trophy-table { width: 100%; min-width: 800px; table-layout: fixed; border-collapse: separate; border-spacing: 0; font-variant-numeric: tabular-nums; }
+.trophy-table :is(th, td) { box-sizing: border-box; padding: .45rem .55rem; border-bottom: 1px solid #cfe1e5; white-space: nowrap; text-align: center; vertical-align: middle; }
 .trophy-table th { background: #e4f3f5; color: #153c4a; }
 .trophy-table :is(th, td):first-child { position: sticky; left: 0; min-width: 3.5rem; width: 3.5rem; }
-.trophy-table :is(th, td):nth-child(2) { position: sticky; left: 3.5rem; }
+.trophy-table :is(th, td):nth-child(2) { position: sticky; left: 3.5rem; text-align: left; }
+.trophy-table th:nth-child(2) { width: 29%; }
+.trophy-table th:nth-child(3) { width: 4.5rem; }
+.trophy-table th:last-child { width: 6rem; }
 .trophy-table td:nth-child(-n+2) { background: #f3f9fa; color: #153c4a; }
-.trophy-swimmer td:nth-child(n+4) { text-align: right; }
 .trophy-table td:last-child { font-weight: 700; }
 .trophy-table small { display: block; }
 .trophy-table .trophy-name,
 .trophy-table .trophy-name:hover {
   border: 0; background: transparent; color: inherit; padding: 0; box-shadow: none;
   font-weight: 400; text-decoration: underline; text-underline-offset: .16em;
+  max-width: 100%; white-space: normal; overflow-wrap: anywhere; text-align: left;
 }
 .trophy-table .trophy-name:focus-visible { outline: 2px solid #086f7e; outline-offset: 3px; }
 .trophy-profile-dialog {
@@ -43,10 +67,9 @@
   background: #d4e7eb; border-top: 2px solid #527984; color: #153c4a;
   font-size: .8rem; text-align: left; white-space: normal;
 }
-#trophyRanking .trophy-controls { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); max-width: 24rem; }
-
 @media (max-width: 700px) and (orientation: portrait) {
-  #trophyRanking .trophy-controls button { padding-inline: .25rem; font-size: .875rem; }
+  #trophyRanking .trophy-toolbar .trophy-categories { width: min(100%, 24rem); }
+  #trophyRanking .trophy-categories button { padding-inline: .25rem; font-size: .875rem; }
   #trophyRanking .trophy-scroll { overflow-x: visible; }
   #trophyRanking .trophy-table { display: block; min-width: 0; }
   #trophyRanking .trophy-table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
