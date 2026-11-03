@@ -2,6 +2,11 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 3 novembre — Saisie des équipes, nageurs et courses Clubs
+
+- Périmètre TEST : liste des nageurs actifs triée, navigation locale, dialogue d’ajout, remplaçant dans la matrice des titulaires et enregistrement automatique des courses avec affichage du temps confirmé.
+- Stockage et contrat NAP existants. Recette utilisateur attendue après livraison TEST.
+
 ### 3 novembre — Références des relais Clubs dans le programme
 
 - Les trois relais à six utilisent les catégories FSE/HSE du catalogue NAP lors de l’ajout au programme. Le [diagnostic en lecture seule](https://github.com/ffessmnap/LivePalmes/actions/runs/41604943700) a confirmé la distinction avec FFF/HHH. Tests ciblés avec les six références réelles du catalogue, budget SQL identique.
