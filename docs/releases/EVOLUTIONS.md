@@ -4,7 +4,8 @@
 
 ### 3 novembre — Séparer la déclaration hors concours du choix des courses
 
-- Les nageurs hors concours sans équipe sont déclarés dans Participants. Les courses sont cochées dans Courses et relais, avec tableaux Femmes et Hommes. Aucun accès aux données ajouté. Recette TEST attendue.
+- Les nageurs hors concours sans équipe sont déclarés dans Participants. Les courses sont cochées dans Courses et relais, avec tableaux Femmes et Hommes. Aucun accès aux données ajouté.
+- [PR #706](https://github.com/ffessmnap/LivePalmes/pull/706), [CI PR](https://github.com/ffessmnap/LivePalmes/actions/runs/41633924529) et [CI main](https://github.com/ffessmnap/LivePalmes/actions/runs/41635407603) réussies. Edge local : séparation des actions, répartition d’une nageuse et d’un nageur fictifs dans les deux tableaux, enregistrement conservé. [TEST commun réussi](https://github.com/ffessmnap/LivePalmes/actions/runs/41636950800) sur bdf017bff45be30b81a4964d5353eebf77c02ca7, hébergement seul. Trois ressources publiques vérifiées en HTTP 200. Recette utilisateur attendue.
 
 ### 3 novembre — Récapitulatif Clubs et cellules compactes
 
