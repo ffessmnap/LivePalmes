@@ -126,6 +126,21 @@ async function main() {
   assert.equal(context.engagementPdfFeeTotal(teamsEntry,teamCompetition),90);
   textCalls.length=0;await context.buildEngagementClubRecapPdf(teamCompetition,teamsEntry);
   assert.ok(textCalls.includes('Équipes déclarées'));assert.ok(textCalls.includes('Femmes A'));assert.ok(textCalls.includes('Sans équipe'));assert.ok(textCalls.includes('90,00 EUR'));
+  const {page} = require("../functions/nap-notification-pages");
+  const recipient = {clubId: teamsEntry.clubId,email:"fixture@example.invalid"};
+  textCalls.length = 0;
+  const closure = await page({kind:"closure",phase:"clubs",cursor:""}, teamCompetition, {
+    simulation:true,
+    recipients:async()=>[recipient],
+    clubRecipients:rows=>rows,
+    entries:async()=>({source:"nap",entries:[{...teamsEntry,teamLeaderComplete:true}],clubsById:new Map()}),
+    hasParticipants:row=>Boolean(row.teamEntries.teams.length),
+    clubPdf:context.buildEngagementClubRecapPdf,
+    mail:(_kind,_competition,_recipient,details)=>details
+  });
+  assert.equal(closure.attachmentCount,1);
+  assert.equal(closure.jobs[0].attachments[0].contentType,"application/pdf");
+  assert.ok(textCalls.includes("90,00 EUR"));
   assert.notEqual(context.engagementClubRecapPdfSourceHash(teamCompetition,teamsEntry),context.engagementClubRecapPdfSourceHash(teamCompetition,{...teamsEntry,teamEntries:{...teamsEntry.teamEntries,teams:[]}}));
   console.log('PDF équipes : rôles explicites, composition, hors concours, frais par équipe et empreinte vérifiés.');
 }

@@ -591,6 +591,26 @@ def classify(paths):
     return application, any(p.startswith('functions/') for p in application)
 
 
+def isolated_test_rules(paths, production, candidate):
+    """Recognize only the approved TEST restriction outside the PROD payload."""
+    if 'firestore.rules' not in paths:
+        return set()
+    for sha in (production, candidate):
+        require(SHA.fullmatch(sha), 'Commit exact requis pour isoler les regles TEST')
+    spec = importlib.util.spec_from_file_location('isolated_session_rules', ROOT / 'tools/test-portal-session-rules.py')
+    policy = importlib.util.module_from_spec(spec); spec.loader.exec_module(policy)
+    sources = [subprocess.check_output(['git', 'show', sha + ':firestore.rules'],
+               cwd=ROOT).decode('utf-8') for sha in (production, candidate)]
+    policy.validate_sources(*sources, policy.PROJECT)
+    config = json.loads(git('show', candidate + ':firebase.json'))
+    hosting = config.get('hosting', [])
+    targets = hosting if isinstance(hosting, list) else [hosting]
+    require(targets and all(isinstance(t, dict) and t.get('public') == '.'
+                and 'firestore.rules' in t.get('ignore', []) for t in targets),
+            'Les regles TEST doivent etre exclues de chaque cible Hosting')
+    return {'firestore.rules'}
+
+
 def validate_request(value, paths):
     require(value.get('schema') == 1, 'Schema inconnu')
     for key in ['candidate', 'productionCommit']:
@@ -611,6 +631,7 @@ def validate_request(value, paths):
             require(set(value).issubset(ordinary), 'Gel reserve au parcours ordinaire, sans contrat exceptionnel')
     path_set = set(paths)
     ignored = set(ignored_top_paths(paths, value['candidate']))
+    ignored |= isolated_test_rules(paths, value['productionCommit'], value['candidate'])
     cleanup = value.get('productionStaticCleanup')
     if cleanup is not None:
         require(isinstance(cleanup, dict) and set(cleanup) == {'records', 'publicExports', 'approval'}
