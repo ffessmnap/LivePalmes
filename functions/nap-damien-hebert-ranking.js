@@ -3,7 +3,6 @@
 const { parseCompactTime } = require("./nap-performance-time");
 
 const COURSES = Object.freeze(["50SF", "50BI", "100IS", "400SF", "800SF"]);
-const QUALIFYING_RANK = 32;
 
 // The caller supplies published, eligible individual results in the edition's
 // date window. It handles sporting eligibility and any official exceptions.
@@ -41,7 +40,6 @@ function rankTrophyCategory(swimmers) {
       || swimmer.totalPoints !== ordered[index - 1].totalPoints) {
       rank = index + 1;
     }
-    if (rank > QUALIFYING_RANK) break;
     result.push({ ...swimmer, rank });
   }
   return result;

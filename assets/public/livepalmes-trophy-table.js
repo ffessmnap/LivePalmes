@@ -1,7 +1,8 @@
 (function (global) {
   "use strict";
-  const headers = ["Rang", "Nom", "Prénom", "Année de naissance", "Club",
+  const headers = ["Rang", "Nageur", "Club",
     "50 m SF", "50 m BI", "100 m IS", "400 m SF", "800 m SF", "Total"];
+  const qualificationRank = 32;
   const number = new Intl.NumberFormat("fr-FR");
   const date = new Intl.DateTimeFormat("fr-FR", { dateStyle: "long", timeZone: "Europe/Paris" });
   const dateTime = new Intl.DateTimeFormat("fr-FR", { dateStyle: "medium", timeStyle: "short", timeZone: "Europe/Paris" });
@@ -57,29 +58,34 @@
         empty.colSpan = headers.length;
         empty.textContent = "Aucune performance dans cette catégorie.";
       }
-      for (const swimmer of groups[sex]) {
+      const swimmers = groups[sex];
+      for (const [position, swimmer] of swimmers.entries()) {
+        if (swimmer.rank > qualificationRank && swimmers[position - 1]?.rank <= qualificationRank) {
+          const separator = body.insertRow();
+          separator.className = "trophy-cutoff";
+          const label = separator.insertCell();
+          label.colSpan = headers.length;
+          label.textContent = "Limite des 32 places · ex æquo inclus";
+        }
         const row = body.insertRow();
         row.className = "trophy-swimmer";
         row.setAttribute("role", "row");
         const rank = node("td", swimmer.rank, row);
         rank.setAttribute("aria-label", `Rang ${swimmer.rank}`);
-        for (const value of [swimmer.lastName, swimmer.firstName]) {
-          const name = node("button", value, node("td", null, row));
-          name.className = "trophy-name";
-          name.addEventListener("click", () => {
-            person.textContent = `${swimmer.firstName} ${swimmer.lastName}`;
-            link.href = `/performances/nageur.html?id=${encodeURIComponent(swimmer.swimmerId)}`;
-            dialog.showModal();
-          });
-        }
-        const birth = node("td", swimmer.birthYear, row);
-        birth.setAttribute("aria-label", `Année de naissance ${swimmer.birthYear}`);
+        const fullName = `${swimmer.lastName} ${swimmer.firstName}`;
+        const name = node("button", `${fullName} · ${swimmer.birthYear}`, node("td", null, row));
+        name.className = "trophy-name";
+        name.addEventListener("click", () => {
+          person.textContent = fullName;
+          link.href = `/performances/nageur.html?id=${encodeURIComponent(swimmer.swimmerId)}`;
+          dialog.showModal();
+        });
         const club = node("td", swimmer.club || "—", row);
         club.setAttribute("aria-label", `Club ${swimmer.club || "non renseigné"}`);
         for (const [index, event] of swimmer.events.entries()) {
           const cell = node("td", null, row);
           cell.className = "trophy-course";
-          const label = node("span", headers[index + 5], cell);
+          const label = node("span", headers[index + 3], cell);
           label.className = "trophy-course-label";
           if (event) {
             node("strong", event.time, cell);
