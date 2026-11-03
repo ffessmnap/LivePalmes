@@ -2,6 +2,11 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 3 novembre — Correction de l’activation du format Clubs sur TEST
+
+- Le contrôle des engagements convertit l’identifiant du portail en identifiant NAP numérique avant ses lectures indexées. Les tests couvrent une compétition vide avant ouverture et le refus en présence d’un nageur ou d’un relais. Aucune modification de compétition ni de schéma.
+- [PR #696](https://github.com/ffessmnap/LivePalmes/pull/696), [CI main](https://github.com/ffessmnap/LivePalmes/actions/runs/41594201024) et [TEST commun](https://github.com/ffessmnap/LivePalmes/actions/runs/41595330220) réussis sur `58d9fb079133f094441504903500ff4187ae6566`. Le module de modification partagé a entraîné la sélection de 13 fonctions sur 106. Le nouvel essai utilisateur reste à faire.
+
 ### 3 novembre — Identifiants numériques de l'annuaire des adresses — SQL corrigé et code livré sur TEST
 
 - Accord : correction du code et de `livepalmes_club_account_emails.club_id` validée dans « Analyser les échanges avec Franck », reprise automatique après livraison TEST et opération SQL équipes ; conditions vérifiées dans les preuves ci-dessous. Aucun envoi ni déploiement PROD autorisé.
