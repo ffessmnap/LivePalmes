@@ -1,4 +1,16 @@
 .portal-team-workspace{display:grid;gap:12px;min-width:0;padding:12px 0}
+.portal-team-toolbar{display:flex;flex-wrap:wrap;align-items:flex-start;gap:8px 12px}
+.portal-team-toolbar > [data-team-action="add"]{margin-inline-start:auto;background:var(--portal-color-accent);color:#fff;border-color:var(--portal-color-accent)}
+.portal-team-workspace [data-team-sex="F"]{--team-course-bg:#fff8fb;--team-participant-bg:#fff7fb;--team-sex-accent:#cf6f9b}
+.portal-team-workspace [data-team-sex="M"]{--team-course-bg:#f7fbff;--team-participant-bg:#f5fbff;--team-sex-accent:#4f8fc5}
+html[data-portal-theme="dark"] .portal-team-workspace [data-team-sex="F"]{--team-course-bg:#322938;--team-participant-bg:#322938}
+html[data-portal-theme="dark"] .portal-team-workspace [data-team-sex="M"]{--team-course-bg:#203347;--team-participant-bg:#203347}
+.portal-team-table tbody tr[data-team-sex] > td,.portal-team-group-head,.portal-team-relay[data-team-sex]{background:var(--team-course-bg,var(--portal-color-surface))}
+.portal-team-group-head{padding:5px 9px;border-inline-start:3px solid var(--team-sex-accent)}
+.portal-team-fields label[data-team-sex] > select,.portal-team-participant[data-team-sex]{background:var(--team-participant-bg,var(--portal-color-field-background));box-shadow:inset 3px 0 0 var(--team-sex-accent,transparent)}
+html[data-portal-theme="dark"] .portal-team-table tbody tr:is([data-team-sex="F"],[data-team-sex="M"]) > td{background-color:var(--team-course-bg) !important}
+html[data-portal-theme="dark"] .portal-team-fields label:is([data-team-sex="F"],[data-team-sex="M"]) > select{background-color:var(--team-participant-bg) !important}
+.portal-team-relay[data-team-sex]{box-shadow:inset 3px 0 0 var(--team-sex-accent,transparent)}
 .portal-team-list{display:flex;flex-wrap:wrap;gap:6px}
 .portal-team-list [aria-pressed="true"]{background:var(--portal-color-accent);color:#fff;border-color:var(--portal-color-accent)}
 .portal-team-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;align-items:end}
@@ -26,4 +38,4 @@
 .portal-team-recap-row small{display:block;color:var(--portal-color-muted)}
 .portal-team-recap-row ul li{display:flex;flex-wrap:wrap;gap:3px 10px;justify-content:space-between;font-variant-numeric:tabular-nums}
 .portal-team-workspace p{margin:4px 0;font-size:.82rem}
-@media(max-width:650px){.portal-team-fields{grid-template-columns:1fr}.portal-team-list button{min-height:44px}.portal-team-fields select,.portal-team-relay select,.portal-team-relay input{font-size:16px}.portal-team-relay button{min-height:44px}.portal-team-table thead tr:first-child th:first-child,.portal-team-table td:first-child{min-width:125px}.portal-team-save button{width:100%}}
+@media(max-width:650px){.portal-team-fields{grid-template-columns:1fr}.portal-team-toolbar button{min-height:44px}.portal-team-fields select,.portal-team-relay select,.portal-team-relay input{font-size:16px}.portal-team-relay button{min-height:44px}.portal-team-table thead tr:first-child th:first-child,.portal-team-table td:first-child{min-width:125px}.portal-team-save button{width:100%}}

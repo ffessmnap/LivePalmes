@@ -2,6 +2,10 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 3 novembre — Couleurs et navigation des équipes Clubs
+
+- Reprise des repères Femmes et Hommes du parcours classique en thème clair et sombre. L’action d’ajout d’équipe est distincte. La vue HC ne conserve plus l’état sélectionné d’une équipe. Interface seule. Recette TEST attendue.
+
 ### 3 novembre — Séparer la déclaration hors concours du choix des courses
 
 - Les nageurs hors concours sans équipe sont déclarés dans Participants. Les courses sont cochées dans Courses et relais, avec tableaux Femmes et Hommes. Aucun accès aux données ajouté.

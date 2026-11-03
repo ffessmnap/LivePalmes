@@ -54,8 +54,26 @@
     function changeCourses(id,code,checked){const d=draft();let row=d.value.individuals.find(x=>x.swimmerId===id);if(!row){row={swimmerId:id,eventCodes:[]};d.value.individuals.push(row);}if(checked&&!row.eventCodes.includes(code)&&row.eventCodes.length<2)row.eventCodes.push(code);else if(!checked)row.eventCodes=row.eventCodes.filter(x=>x!==code);}
     function removePerson(id){const d=draft();d.value.individuals=d.value.individuals.filter(x=>x.swimmerId!==id);for(const t of d.value.teams)t.relays.forEach(r=>{if(r.members.includes(id))r.members=[];});}
     function options(current,sex='',outside=false){return `<option value="">${outside?'Choisir un nageur':'Non renseigné'}</option>`+directory().sorted.filter(p=>(p.id===current||directory().activeIds.has(p.id))&&(!sex||p.sex===sex)&&(!isMasters()||Number(profile().date.slice(0,4))+(Number(profile().date.slice(5,7))>=9?1:0)-Number(p.birthDate?.slice(0,4))>=30)).map(p=>{const used=role(p.id);return `<option value="${esc(p.id)}"${p.id===current?' selected':''}${used&&p.id!==current?' disabled':''}>${esc(name(p.id))}${used&&p.id!==current?' — '+(used.team?esc(title(used.team)):'HC sans équipe'):''}</option>`;}).join('');}
-    function teamNav(){const d=draft();return `<nav class="portal-team-list" aria-label="Équipes du club">${d.value.teams.map(t=>btn(esc(title(t))+' · '+t.members.filter(Boolean).length+'/'+size(),'select',`data-id="${esc(t.id)}" aria-pressed="${d.selected===t.id}"`)).join('')}${btn('+ Équipe','add',locked()?'disabled':'')}${!isMasters()?btn('Hors concours sans équipe · '+d.value.outside.length,'outside',`aria-pressed="${d.tab==='outside'}"`):''}</nav>`;}
-    function roster(t){return `<div class="portal-team-fields">${Array.from({length:size()},(_,i)=>`<label>Titulaire ${i+1}${isMasters()?' · '+(i<2?'Femme':'Homme'):''}<select data-team-field="member" data-index="${i}"${locked()?' disabled':''}>${options(t.members[i]||'',isMasters()?(i<2?'F':'M'):t.sex)}</select></label>`).join('')}${!isMasters()?`<label>Remplaçant facultatif<select data-team-field="reserve"${locked()?' disabled':''}>${options(t.reserve||'',t.sex)}</select></label>`:''}</div>${t.members.filter(Boolean).length<size()?'<p class="admin-engagements-message" data-tone="warning">Équipe incomplète : enregistrement autorisé, sans relais.</p>':''}<div class="admin-portal-actions">${btn('Retirer cette équipe','remove-team',locked()?'disabled':'')}</div>`;}
+    function teamNav() {
+      const d = draft();
+      const outside = d.tab === 'outside' && !isMasters();
+      const activeTeam = outside ? null : selected();
+      const teams = d.value.teams.map(team => btn(esc(title(team)) + ' · ' + team.members.filter(Boolean).length + '/' + size(), 'select', `data-id="${esc(team.id)}" aria-pressed="${team === activeTeam}"`)).join('');
+      const hc = isMasters() ? '' : btn('Hors concours sans équipe · ' + d.value.outside.length, 'outside', `aria-pressed="${outside}"`);
+      const add = `<button type="button" class="admin-primary-button admin-button-compact" data-team-action="add"${locked() ? ' disabled' : ''}>+ Équipe</button>`;
+      return `<div class="portal-team-toolbar"><nav class="portal-team-list" aria-label="Équipes du club">${teams}${hc}</nav>${add}</div>`;
+    }
+    function roster(team) {
+      const disabled = locked() ? ' disabled' : '';
+      const slots = Array.from({length:size()}, (_, index) => {
+        const sex = isMasters() ? (index < 2 ? 'F' : 'M') : team.sex;
+        const label = isMasters() ? (sex === 'F' ? ' · Femme' : ' · Homme') : '';
+        return `<label data-team-sex="${esc(sex)}">Titulaire ${index + 1}${label}<select data-team-field="member" data-index="${index}"${disabled}>${options(team.members[index] || '', sex)}</select></label>`;
+      }).join('');
+      const reserve = isMasters() ? '' : `<label data-team-sex="${esc(team.sex)}">Remplaçant facultatif<select data-team-field="reserve"${disabled}>${options(team.reserve || '', team.sex)}</select></label>`;
+      const warning = team.members.filter(Boolean).length < size() ? '<p class="admin-engagements-message" data-tone="warning">Équipe incomplète : enregistrement autorisé, sans relais.</p>' : '';
+      return `<div class="portal-team-fields">${slots}${reserve}</div>${warning}<div class="admin-portal-actions">${btn('Retirer cette équipe', 'remove-team', disabled)}</div>`;
+    }
     function individualSessions(sex) {
       const events = individualEvents();
       const byCode = new Map(events.map(event => [event.code, event]));
@@ -104,7 +122,7 @@
           return `<td class="admin-engagements-club-entry-course"><label><input type="checkbox" aria-label="${personName} · ${esc(code)}" data-team-field="course" data-id="${esc(id)}" data-code="${esc(code)}"${checked?' checked':''}${unavailable?' disabled':''}>${checked?`<small data-engagement-club-entry-cell-time data-entry-time-mode="${hc || time ? 'known' : 'pending'}" title="${hc || time ? '' : 'Temps en attente d’enregistrement'}">${hc?'59:59.99':esc(time || 'En attente…')}</small>`:''}</label></td>`;
         }).join('');
         const roleLabel = isReserve ? '<small>Remplaçant · hors concours · 59:59.99 imposé</small>' : outside ? '<small>59:59.99 imposé</small>' : '';
-        return `<tr><td>${personName}${roleLabel}</td>${cells}<td>${selectedCourses.length}/2</td></tr>`;
+        return `<tr data-team-sex="${esc(person?.sex || "")}"><td>${personName}${roleLabel}</td>${cells}<td>${selectedCourses.length}/2</td></tr>`;
       }).join('');
       const headers = columns.map(({event, sexes}) => `<th scope="col">${esc(event.shortLabel || event.label || event.code)}${(!team || outside || isMasters()) && sexes.length === 1 ? `<small>${sexes[0] === 'F' ? 'Femmes' : 'Hommes'}</small>` : ''}</th>`).join('');
       const groups = sessions.map(session => {
@@ -126,12 +144,12 @@
           : Array(size()).fill(event.discipline || 'SF');
         const action = btn(saved ? 'Retirer' : 'Engager', 'toggle-relay', `data-code="${code}"${disabled ? ' disabled' : ''}`);
         const title = `<header><strong>${esc(event.shortLabel || event.label || event.code)}</strong>${action}</header>`;
-        if (!saved) return `<section class="portal-team-relay">${title}</section>`;
+        if (!saved) return `<section class="portal-team-relay" data-team-sex="${esc(team.sex)}">${title}</section>`;
         const legs = legCodes.map((discipline, index) => {
           const options = team.members.filter(Boolean).map(id => `<option value="${esc(id)}"${saved.members[index] === id ? ' selected' : ''}${saved.members.includes(id) && saved.members[index] !== id ? ' disabled' : ''}>${esc(name(id))}</option>`).join('');
           return `<label><span>${index + 1} · ${esc(discipline)}</span><select data-team-field="relay-member" data-code="${code}" data-index="${index}"${disabled ? ' disabled' : ''}><option value="">À renseigner</option>${options}</select></label>`;
         }).join('');
-        return `<section class="portal-team-relay">${title}<label><span>Temps</span><input aria-label="Temps d’engagement" data-team-field="relay-time" data-code="${code}" value="${esc(displayTime(saved.entryTime))}" placeholder="59:59.99"${disabled ? ' disabled' : ''}></label>${legs}${btn('Vider la composition', 'clear-relay', `data-code="${code}"${disabled ? ' disabled' : ''}`)}</section>`;
+        return `<section class="portal-team-relay" data-team-sex="${esc(team.sex)}">${title}<label><span>Temps</span><input aria-label="Temps d’engagement" data-team-field="relay-time" data-code="${code}" value="${esc(displayTime(saved.entryTime))}" placeholder="59:59.99"${disabled ? ' disabled' : ''}></label>${legs}${btn('Vider la composition', 'clear-relay', `data-code="${code}"${disabled ? ' disabled' : ''}`)}</section>`;
       }).join('');
       return `<h4>Relais</h4>${cards ? `<p>La composition peut rester vide. Si tu désignes un relayeur, renseigne toutes les positions.</p><div class="portal-team-relays">${cards}</div>` : '<p>Aucun relais correspondant au profil dans le programme.</p>'}`;
     }
@@ -168,7 +186,7 @@
     }
     function outsideParticipants(ids) {
       const disabled = locked() ? ' disabled' : '';
-      const rows = ids.map(id => `<li class="portal-team-recap-row"><strong>${esc(name(id))}</strong><span>${btn('Retirer', 'remove-outside', `data-id="${esc(id)}"${disabled}`)}</span></li>`).join('');
+      const rows = ids.map(id => `<li class="portal-team-recap-row portal-team-participant" data-team-sex="${esc(directory().byId.get(id)?.sex || "")}"><strong>${esc(name(id))}</strong><span>${btn('Retirer', 'remove-outside', `data-id="${esc(id)}"${disabled}`)}</span></li>`).join('');
       return `<div class="portal-team-fields"><label>Nageur du club<select data-team-field="outside-choice"${disabled}>${options('', '', true)}</select></label>${btn('+ Déclarer ce nageur hors concours', 'add-outside', disabled, true)}</div>${rows ? `<ul class="portal-team-recap-list">${rows}</ul>` : '<p>Aucun nageur hors concours déclaré.</p>'}<p>Les courses se sélectionnent dans l’onglet Courses et relais.</p>`;
     }
     function outsideCourses(ids) {
@@ -176,7 +194,7 @@
       const women = ids.filter(id => byId.get(id)?.sex === 'F');
       const men = ids.filter(id => byId.get(id)?.sex === 'M');
       const unclassified = ids.filter(id => !['F', 'M'].includes(byId.get(id)?.sex));
-      return `<p>Deux courses maximum, sans équipe ni points. Temps imposé : 59:59.99.</p><h5>Femmes</h5>${matrix(women, {outside:true, sex:'F'})}<h5>Hommes</h5>${matrix(men, {outside:true, sex:'M'})}${unclassified.length ? `<h5>Nageurs à vérifier</h5>${matrix(unclassified, {outside:true})}` : ''}`;
+      return `<p>Deux courses maximum, sans équipe ni points. Temps imposé : 59:59.99.</p><h5 class="portal-team-group-head" data-team-sex="F">Femmes</h5>${matrix(women, {outside:true, sex:'F'})}<h5 class="portal-team-group-head" data-team-sex="M">Hommes</h5>${matrix(men, {outside:true, sex:'M'})}${unclassified.length ? `<h5>Nageurs à vérifier</h5>${matrix(unclassified, {outside:true})}` : ''}`;
     }
     function body(section) {
       const d = draft();
