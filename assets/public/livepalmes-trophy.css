@@ -14,3 +14,38 @@
 .trophy-name { border: 0; background: transparent; color: inherit; padding: 0; text-decoration: underline; }
 .trophy-edition-fields { display: flex; flex-wrap: wrap; gap: .75rem; }
 .trophy-edition-fields label { display: grid; gap: .2rem; }
+.trophy-course-label { display: none; }
+#trophyRanking .trophy-controls { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); max-width: 24rem; }
+
+@media (max-width: 700px) and (orientation: portrait) {
+  #trophyRanking .trophy-controls button { padding-inline: .25rem; font-size: .875rem; }
+  #trophyRanking .trophy-scroll { overflow-x: visible; }
+  #trophyRanking .trophy-table { display: block; min-width: 0; }
+  #trophyRanking .trophy-table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+  #trophyRanking .trophy-table tbody { display: grid; gap: .6rem; }
+  #trophyRanking .trophy-swimmer {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    background: #fff;
+    border: 1px solid #cfe1e5;
+    border-radius: .5rem;
+    padding: .35rem .4rem .5rem;
+    color: #153c4a;
+  }
+  #trophyRanking .trophy-swimmer td {
+    min-width: 0; width: auto; position: static; padding: .15rem .2rem;
+    border: 0; background: transparent; white-space: normal; overflow-wrap: anywhere;
+  }
+  #trophyRanking .trophy-swimmer td:nth-child(-n+3) { align-self: center; }
+  #trophyRanking .trophy-swimmer td:nth-child(2),
+  #trophyRanking .trophy-swimmer td:nth-child(3) { grid-column: span 2; }
+  #trophyRanking .trophy-swimmer td:nth-child(4) { grid-column: 1; grid-row: 2; }
+  #trophyRanking .trophy-swimmer td:nth-child(5) { grid-column: 2 / 4; grid-row: 2; }
+  #trophyRanking .trophy-swimmer td:last-child { grid-column: 4 / 6; grid-row: 2; }
+  #trophyRanking .trophy-swimmer .trophy-course {
+    grid-row: 3; margin-top: .35rem; padding-top: .35rem; border-top: 1px solid #cfe1e5;
+    text-align: center; font-size: .78rem;
+  }
+  #trophyRanking .trophy-course-label { display: block; color: #47636e; font-size: .68rem; }
+  #trophyRanking .trophy-name { text-align: left; }
+}
