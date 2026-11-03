@@ -17,16 +17,25 @@
   function render(root, data) {
     root.replaceChildren();
     const { edition, groups } = data;
-    const heading = node("h2", `${edition.title} · ${edition.seasonEndYear - 1}–${edition.seasonEndYear}`, root);
+    const toolbar = node("div", null, root);
+    toolbar.className = "trophy-toolbar";
+    const metadata = node("div", null, toolbar);
+    metadata.className = "trophy-metadata";
+    const heading = node("h2", `Saison ${edition.seasonEndYear - 1}/${edition.seasonEndYear}`, metadata);
     heading.className = "trophy-heading";
-    node("p", `${data.final ? "Classement arrêté" : "Classement provisoire"} · Du ${date.format(new Date(edition.from))} au ${date.format(new Date(edition.through))}`, root);
-    node("p", `Mis à jour le ${dateTime.format(new Date(data.updatedAt))}`, root);
-    const controls = node("div", null, root);
-    controls.className = "trophy-controls";
+    if (edition.title && !/^\d{4}(?:\s*[-–/]\s*\d{4})?$/.test(edition.title.trim())) {
+      node("p", edition.title, metadata).className = "trophy-edition-name";
+    }
+    node("p", `${data.final ? "Classement arrêté" : "Classement provisoire"} · Du ${date.format(new Date(edition.from))} au ${date.format(new Date(edition.through))}`, metadata);
+    node("p", `Mis à jour le ${dateTime.format(new Date(data.updatedAt))}`, metadata).className = "trophy-updated";
+    const controls = node("div", null, toolbar);
+    controls.className = "trophy-controls trophy-categories";
     controls.setAttribute("role", "group");
     controls.setAttribute("aria-label", "Catégorie");
     const girls = node("button", "Minimes filles", controls);
     const boys = node("button", "Minimes garçons", controls);
+    girls.className = "trophy-category-f";
+    boys.className = "trophy-category-m";
     const scroller = node("div", null, root);
     scroller.className = "trophy-scroll";
     scroller.tabIndex = 0;
@@ -70,7 +79,7 @@
           separator.className = "trophy-cutoff";
           const label = separator.insertCell();
           label.colSpan = headers.length;
-          label.textContent = "Limite des 32 places · ex æquo inclus";
+          label.textContent = "Limite des 32 places";
         }
         const row = body.insertRow();
         row.className = "trophy-swimmer";
