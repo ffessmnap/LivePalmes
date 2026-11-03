@@ -101,7 +101,7 @@
           const forbidden = Array.isArray(person?.nativeAllowedEventCodes) && !person.nativeAllowedEventCodes.includes(code);
           const unavailable = disabled || (!checked && (assigned || selectedCourses.length >= 2 || forbidden));
           const time = savedCourses.find(entry => entry.eventCode === code && !entry.horsConcours)?.entryTime;
-          return `<td><label class="portal-team-check"><input type="checkbox" aria-label="${personName} · ${esc(code)}" data-team-field="course" data-id="${esc(id)}" data-code="${esc(code)}"${checked?' checked':''}${unavailable?' disabled':''}>${checked?`<small>${hc?'59:59.99':esc(time || 'Temps en attente…')}</small>`:''}</label></td>`;
+          return `<td class="admin-engagements-club-entry-course"><label><input type="checkbox" aria-label="${personName} · ${esc(code)}" data-team-field="course" data-id="${esc(id)}" data-code="${esc(code)}"${checked?' checked':''}${unavailable?' disabled':''}>${checked?`<small data-engagement-club-entry-cell-time data-entry-time-mode="${hc || time ? 'known' : 'pending'}" title="${hc || time ? '' : 'Temps en attente d’enregistrement'}">${hc?'59:59.99':esc(time || 'En attente…')}</small>`:''}</label></td>`;
         }).join('');
         const roleLabel = isReserve ? '<small>Remplaçant · hors concours · 59:59.99 imposé</small>' : outside ? '<small>59:59.99 imposé</small>' : '';
         const remove = outside ? `<td>${btn('Retirer', 'remove-outside', `data-id="${esc(id)}"${disabled?' disabled':''}`)}</td>` : '';
@@ -139,14 +139,66 @@
     }
     function displayTime(raw){const x=String(raw||'595999');return /^\d{6}$/.test(x)?x.slice(0,2)+':'+x.slice(2,4)+'.'+x.slice(4):x;}
     function total(){const d=draft(),hc=d.value.individuals.filter(x=>role(x.swimmerId)?.role!=='titular'),hcPeople=new Set([...d.value.outside,...hc.filter(x=>x.eventCodes.length).map(x=>x.swimmerId)]),count=hc.reduce((n,x)=>n+x.eventCodes.length,0),f=profile().fees||{};return {hcPeople:hcPeople.size,hcCount:count,value:d.value.teams.length*Number(f.teamFee||0)+hcPeople.size*Number(f.swimmerFee||0)+count*Number(f.individualEventFee||0)};}
-    function summary(){const d=draft(),stats=total();return `<h4>Dossier global du club</h4>${d.value.teams.map(t=>{const n=t.members.filter(Boolean).length,events=t.members.reduce((sum,id)=>sum+courses(id).length,0);return `<details open><summary>Équipe ${esc(title(t))} · ${n}/${size()} titulaires</summary><p>${t.members.filter(Boolean).map(name).map(esc).join(' · ')||'Aucun titulaire'}</p>${t.reserve?`<p>Remplaçant : ${esc(name(t.reserve))} · ${courses(t.reserve).join(', ')||'sans course'}</p>`:''}<p>${events} courses individuelles · ${t.relays.length} relais</p>${n<size()||events<individualEvents().length||t.relays.length<relayEvents().length?'<p class="admin-engagements-message" data-tone="warning">Équipe ou programme incomplet : enregistrement autorisé.</p>':''}</details>`;}).join('')}${!isMasters()?`<h4>Hors concours sans équipe</h4>${d.value.outside.map(id=>`<p>${esc(name(id))} · ${courses(id).map(esc).join(', ')||'Aucune course'} · 59:59.99</p>`).join('')||'<p>Aucun nageur hors concours sans équipe.</p>'}`:''}<h4>Frais estimatifs</h4><p>${d.value.teams.length} équipes × ${Number(profile().fees?.teamFee||0)} € · ${stats.hcPeople} nageurs HC · ${stats.hcCount} courses HC</p><p><strong>Total : ${stats.value.toLocaleString('fr-FR',{style:'currency',currency:'EUR'})}</strong></p>`;}
+    function summary() {
+      const d = draft();
+      const entry = state.selectedEngagementClubEntry || {};
+      const stats = total();
+      const eventNames = new Map(individualEvents().concat(relayEvents()).map(event => [event.code, event.shortLabel || event.label || event.code]));
+      const eventName = code => esc(eventNames.get(code) || code);
+      const {savedById} = directory();
+      const swimmerRow = (id, role = '') => {
+        const entries = savedById.get(id)?.individualEntries || [];
+        const selectedCourses = courses(id).map(code => {
+          const time = role ? '59:59.99' : entries.find(item => item.eventCode === code && !item.horsConcours)?.entryTime;
+          return `<li><span>${eventName(code)}</span><strong>${esc(time || 'En attente')}</strong></li>`;
+        }).join('');
+        return `<li class="portal-team-recap-row"><span><strong>${esc(name(id))}</strong>${role ? `<small>${role}</small>` : ''}</span>${selectedCourses ? `<ul>${selectedCourses}</ul>` : '<span>Sans course</span>'}</li>`;
+      };
+      const teams = d.value.teams.map(team => {
+        const members = team.members.filter(Boolean);
+        const swimmers = members.map(id => swimmerRow(id)).join('') + (team.reserve ? swimmerRow(team.reserve, 'Remplaçant · HC') : '');
+        const relays = team.relays.map(relay => {
+          const names = relay.members.filter(Boolean).map(name).map(esc).join(' · ');
+          return `<li class="portal-team-recap-row"><strong>${eventName(relay.eventCode)}</strong><span><strong>${esc(displayTime(relay.entryTime))}</strong><small>${names || 'Composition non renseignée'}</small></span></li>`;
+        }).join('');
+        const incomplete = members.length < size() || members.reduce((count, id) => count + courses(id).length, 0) < individualEvents().length || team.relays.length < relayEvents().length;
+        return `<details open><summary>Équipe ${esc(title(team))} · ${members.length}/${size()} titulaires</summary>${swimmers ? `<ul class="portal-team-recap-list">${swimmers}</ul>` : '<p>Aucun titulaire</p>'}${relays ? `<h5>Relais</h5><ul class="portal-team-recap-list">${relays}</ul>` : '<p>Aucun relais engagé.</p>'}${incomplete ? '<p class="admin-engagements-message" data-tone="warning">Équipe ou programme incomplet.</p>' : ''}</details>`;
+      }).join('');
+      const outside = !isMasters() && d.value.outside.length ? `<details open><summary>Hors concours sans équipe</summary><ul class="portal-team-recap-list">${d.value.outside.map(id => swimmerRow(id, 'HC')).join('')}</ul></details>` : '';
+      const leader = actions.engagementClubSummaryTeamLeaderLabel?.(entry);
+      return `<h4>Dossier global du club</h4>${leader ? `<p>Chef d’équipe · ${esc(leader)}</p>` : ''}${teams || '<p>Aucune équipe déclarée.</p>'}${outside}<p><strong>Frais estimatifs · ${stats.value.toLocaleString('fr-FR',{style:'currency',currency:'EUR'})}</strong> · ${d.value.teams.length} équipe(s) · ${stats.hcPeople} nageur(s) HC · ${stats.hcCount} course(s) HC</p>`;
+    }
     function body(section){const d=draft(),t=selected();if(section==='summary')return summary();if(d.tab==='outside'&&!isMasters())return `${teamNav()}<h4>Hors concours — sans équipe</h4><div class="portal-team-fields"><label>Nageur du club<select data-team-field="outside-choice"${locked()?' disabled':''}>${options('','',true)}</select></label>${btn('+ Engager ce nageur hors concours','add-outside',locked()?'disabled':'',true)}</div><p>Deux courses maximum, sans équipe ni points. Temps imposé : 59:59.99.</p>${matrix(d.value.outside,true)}`;if(!t)return teamNav()+'<p>Aucune équipe déclarée.</p>';return `${teamNav()}<h4>Équipe ${esc(title(t))}</h4>${section==='swimmers'?roster(t):matrix([...t.members.filter(Boolean), ...(t.reserve?[t.reserve]:[])])+relays(t)}`; }
     function render(section){if(section==='relays')return;bindUnload();
       const panels={swimmers:'adminEngagementsDetailSwimmersPanel',entries:'adminEngagementsDetailEntriesPanel',relays:'adminEngagementsDetailRelaysPanel',summary:'adminEngagementsDetailSummaryPanel'},panel=document.getElementById(panels[section]);if(!panel)return;
-      let mount=panel.querySelector('[data-team-entry-mount]');if(!mount){for(const child of panel.children){child.dataset.teamEntryPreviousHidden=child.hidden?'true':'false';child.hidden=true;}mount=document.createElement('section');mount.dataset.teamEntryMount=section;mount.className='portal-team-workspace';panel.appendChild(mount);mount.addEventListener('click',onClick);mount.addEventListener('change',onChange);}
+      const summaryList = elements.engagementsClubSummaryList;
+      const summaryHost = section === 'summary' ? summaryList?.parentElement : null;
+      const host = summaryHost || panel;
+      let mount = host.querySelector('[data-team-entry-mount]');
+      if (!mount) {
+        const original = summaryHost ? [summaryList, elements.engagementsClubNativeSummary].filter(Boolean) : [...host.children];
+        for (const child of original) {
+          child.dataset.teamEntryPreviousHidden = child.hidden ? 'true' : 'false';
+          child.hidden = true;
+        }
+        mount = document.createElement('section');
+        mount.dataset.teamEntryMount = section;
+        mount.className = 'portal-team-workspace';
+        host.insertBefore(mount, summaryHost ? elements.engagementsClubSummaryStatus || null : null);
+        mount.addEventListener('click', onClick);
+        mount.addEventListener('change', onChange);
+      }
       const d=draft();if(!d.selected&&d.value.teams.length)d.selected=d.value.teams[0].id;
       const reason=writeReason()||(!actions.engagementClubTeamComplete()?'Déclarez le chef d’équipe avant les engagements.':'');
       mount.innerHTML=`${reason?`<p class="admin-engagements-message" data-tone="warning">${esc(reason)}</p>`:''}${d.message?`<p class="admin-engagements-message" role="status">${esc(d.message)}</p>`:''}${body(section)}<div class="admin-portal-actions portal-team-save"><span role="status">${d.busy?'Enregistrement…':d.pending?'Enregistrement à vérifier : reprendre la même opération.':d.dirty?'Modifications non enregistrées':'Dossier enregistré'}</span>${!writeReason()?btn(d.pending?'Reprendre l’enregistrement':'Enregistrer le dossier du club','save',d.busy||!actions.engagementClubTeamComplete()?'disabled':'',true):''}</div>`;
+      if (section === 'summary' && elements.engagementsClubSummaryPdfButton) {
+        const button = elements.engagementsClubSummaryPdfButton;
+        const hasRecap = actions.engagementClubTeamComplete() && actions.engagementClubEntryHasParticipants();
+        const loading = elements.engagementsClubSummaryStatus?.dataset.tone === 'loading';
+        button.disabled = !hasRecap || loading;
+        button.title = hasRecap ? 'Télécharger le PDF du dossier enregistré' : 'Enregistre au moins un participant pour télécharger le PDF.';
+        button.textContent = d.dirty || d.pending ? 'Télécharger le PDF enregistré' : 'Télécharger le PDF';
+      }
       if(!state.engagementClubSwimmersLoaded&&!state.engagementClubSwimmersLoading&&section!=='summary')void actions.loadEngagementClubSwimmers();
     }
     function redraw() {
