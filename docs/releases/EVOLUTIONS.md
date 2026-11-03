@@ -4,7 +4,8 @@
 
 ### 3 novembre — Tableau classique partagé avec les engagements Clubs
 
-- Le tableau classique sert aux Clubs et aux Masters, y compris pour les hors concours. Nom, prénom, naissance, catégorie, sessions et défilement proviennent du même rendu. Le module Clubs conserve ses contrôles, ses temps et les relais sous le tableau. Interface seule. Recette TEST attendue.
+- Le tableau classique sert aux Clubs et aux Masters, y compris pour les hors concours. Nom, prénom, naissance, catégorie, sessions et défilement proviennent du même rendu. Le module Clubs conserve ses contrôles, ses temps et les relais sous le tableau. Interface seule.
+- [PR #710](https://github.com/ffessmnap/LivePalmes/pull/710), [CI PR](https://github.com/ffessmnap/LivePalmes/actions/runs/41645526773) et [CI main](https://github.com/ffessmnap/LivePalmes/actions/runs/41647088310) réussies. Edge avec données fictives : naissance et catégorie, sessions, contrôles Clubs distincts, hors concours, relais et responsive de 320 à 1280 px. [TEST commun réussi](https://github.com/ffessmnap/LivePalmes/actions/runs/41648745507) sur d15d753b9dd0145f996fb6808edea2cc3b18aeca, hébergement seul. Quatre ressources publiques vérifiées en HTTP 200. Recette utilisateur attendue.
 
 ### 3 novembre — Couleurs et navigation des équipes Clubs
 
