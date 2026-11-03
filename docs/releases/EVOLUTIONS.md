@@ -4,7 +4,8 @@
 
 ### 3 novembre — Individuels par session et relais dans le même onglet
 
-- Interface Clubs et Masters : colonnes par session du programme, relais sous la matrice, bouton d’engagement et une ligne par relayeur. Aucun appel ni changement de stockage ajouté. Recette TEST attendue.
+- Interface Clubs et Masters : colonnes par session du programme, relais sous la matrice, bouton d’engagement et une ligne par relayeur. Aucun appel ni changement de stockage ajouté.
+- [PR #702](https://github.com/ffessmnap/LivePalmes/pull/702), [CI PR](https://github.com/ffessmnap/LivePalmes/actions/runs/41619309131) et [CI main](https://github.com/ffessmnap/LivePalmes/actions/runs/41620894464) réussies. Edge local de 320 à 1280 px avec données fictives. [TEST commun réussi](https://github.com/ffessmnap/LivePalmes/actions/runs/41622333943) sur 7a286826306329aba4ca6ebfa1e07ec2380313b3, hébergement seul. Quatre ressources publiques vérifiées en HTTP 200. Recette utilisateur attendue.
 
 ### 3 novembre — Saisie des équipes, nageurs et courses Clubs
 
