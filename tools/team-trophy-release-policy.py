@@ -109,9 +109,10 @@ def assert_new(function):
 def prepare_trophy_secret(destination):
     backend = Path(destination)/'functions/backend-index.js'
     source = backend.read_text(encoding='utf-8')
-    declaration = 'const napPassword = defineSecret("LIVEPALMES_NAP_PASSWORD");'
+    context = 'if (ENVIRONMENT.sportingDataSource === "nap") {\n  '
+    declaration = context + 'const napPassword = defineSecret("LIVEPALMES_NAP_PASSWORD");'
     require(source.count(declaration) == 1, 'Declaration du secret du trophee inconnue')
-    replacement = 'const napPassword = { name: "LIVEPALMES_NAP_PASSWORD", value: () => process.env.LIVEPALMES_NAP_PASSWORD };'
+    replacement = context + 'const napPassword = { name: "LIVEPALMES_NAP_PASSWORD", value: () => process.env.LIVEPALMES_NAP_PASSWORD };'
     backend.write_text(source.replace(declaration,replacement),encoding='utf-8')
 
 

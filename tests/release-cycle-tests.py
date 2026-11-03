@@ -45,11 +45,13 @@ class ReleaseTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             backend = Path(directory)/'functions'/'backend-index.js'
             backend.parent.mkdir()
-            backend.write_text('const napPassword = defineSecret("LIVEPALMES_NAP_PASSWORD");\n'
-                               'const unchanged = defineSecret("ANOTHER_SECRET");\n')
+            backend.write_text('if (ENVIRONMENT.sportingDataSource === "nap") {\n'
+                               '  const napPassword = defineSecret("LIVEPALMES_NAP_PASSWORD");\n}\n'
+                               'if (ENVIRONMENT.projectId === "livepalmes-test") {\n'
+                               '  const napPassword = defineSecret("LIVEPALMES_NAP_PASSWORD");\n}\n')
             policy.prepare_trophy_secret(directory)
             self.assertIn('process.env.LIVEPALMES_NAP_PASSWORD', backend.read_text())
-            self.assertIn('const unchanged = defineSecret("ANOTHER_SECRET");', backend.read_text())
+            self.assertEqual(backend.read_text().count('const napPassword = defineSecret("LIVEPALMES_NAP_PASSWORD");'),1)
 
     def test_team_closure_source_patch_never_changes_runtime_settings(self):
         source = m.ROOT / 'tools/team-closure-test-sources.py'
