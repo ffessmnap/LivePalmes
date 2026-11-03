@@ -126,6 +126,7 @@ def main(candidate, directory):
     cycle.require(live['hosting'] == proof['state']['hosting'],'Hosting TEST modifie')
     cycle.write(directory/'test-backend-proof.json', {
         'schema':1,'candidate':CANDIDATE,'commonTestRun':TEST_RUN,'currentTestState':live,
+        'toolingCommit':os.environ['GITHUB_SHA'],
         'state':{'functions':[f for f in live['functions'] if f['name'].split('/')[-1] in selected]},
         'selected':selected,'sourceArchiveSha256':archive_hash,'configurationsUnchanged':True,
         'mailSettingUnchanged':True,'schedulerUnchanged':True,'queueUnchanged':True,

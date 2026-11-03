@@ -39,6 +39,9 @@ _portal_spec.loader.exec_module(portal_access_ns)
 _validated_spec = importlib.util.spec_from_file_location('validated_portal_policy', ROOT / 'tools/validated-portal-release-policy.py')
 validated_portal = importlib.util.module_from_spec(_validated_spec)
 _validated_spec.loader.exec_module(validated_portal)
+_team_spec = importlib.util.spec_from_file_location('team_trophy_policy', ROOT / 'tools/team-trophy-release-policy.py')
+team_trophy = importlib.util.module_from_spec(_team_spec)
+_team_spec.loader.exec_module(team_trophy)
 
 
 def approved_license_report_functions(value):
@@ -86,6 +89,7 @@ def approved_extra_functions(value):
     approved_native_identity_secret(value)
     names = approved_pdf_functions(value) + approved_dtn_functions(value) + approved_notification_functions(value) + approved_public_nap_functions(value) + approved_access_request_functions(value) + approved_club_directory_functions(value) + approved_grouped_functions(value) + approved_bcc_functions(value) + approved_license_report_functions(value) + nap_retained.approved(value) + nap_account.approved(value) + portal_access_ns.approved(value)
     names += validated_portal.approved(value)
+    names += team_trophy.approved(value)
     require(len(names) == len(set(names)), 'Extensions de publication superposees')
     return names
 
@@ -147,6 +151,8 @@ def approved_club_directory_functions(value):
 
 
 def idf_preservation(value):
+    if team_trophy.approved(value):
+        return {'scope':'all'}
     if validated_portal.approved(value):
         return validated_portal.contract()['mailPreservation']
     # Existing reader authorization stays closed; this is a second, separately approved pair.
@@ -234,6 +240,7 @@ def approved_access_request_functions(value):
 
 
 def require_access_request_selection(request, selected):
+    team_trophy.selection(request, selected)
     validated_portal.selection(request, selected)
     portal_access_ns.selection(request, selected)
     nap_account.selection(request, selected)
@@ -823,10 +830,13 @@ def verify_test(directory, live=True):
         destination = root / ('test-targeted-' + str(run_id))
         bcc_reconciled = bool(approved_bcc_functions(request)) and not limited_oct27
         nap_targeted = bool(nap_retained.approved(request)) and run_id != nap_retained.contract()['napTestRun']
-        expected_workflow = nap_retained.TEST_WORKFLOW if nap_targeted else '.github/workflows/livepalmes-test-notifications-reconcile.yml' if bcc_reconciled else '.github/workflows/livepalmes-test-backend.yml'
+        team_targeted = bool(team_trophy.approved(request))
+        expected_workflow = team_trophy.TEST_WORKFLOW if team_targeted else nap_retained.TEST_WORKFLOW if nap_targeted else '.github/workflows/livepalmes-test-notifications-reconcile.yml' if bcc_reconciled else '.github/workflows/livepalmes-test-backend.yml'
         source = artifact(run_id, 'test-backend-proof', destination, expected_workflow)
         targeted = read(destination / 'test-backend-proof.json')
-        if nap_targeted:
+        if team_targeted:
+            team_trophy.test_proof(request, targeted, source)
+        elif nap_targeted:
             nap_retained.targeted(request, targeted, source, SimpleNamespace(**globals()))
         elif limited_oct27:
             bcc.for_request(request).verify_targeted(request, targeted, source, root, SimpleNamespace(**globals()))
@@ -848,6 +858,8 @@ def verify_test(directory, live=True):
         write(root / ('test-backend-' + str(run_id) + '.json'), targeted)
     if runs:
         evidence['state']['functions'] = sorted(functions.values(), key=lambda f: f['name'])
+    if team_trophy.approved(request):
+        require(evidence['state'] == targeted['currentTestState'], 'Preuve composee TEST equipes differente')
     if live:
         common_bcc = bool(approved_bcc_functions(request)) and bcc.for_request(request).contract().get('testProofMode') in ['common-exact','common-plus-targeted-sources']
         require(not common_bcc or not runs or limited_oct27, 'Preuve commune exacte CCI sans ajout cible attendu')
@@ -898,6 +910,7 @@ def prepare_selection(directory, candidate):
         names = {f['name'].split('/')[-1]: f for f in state['functions']}
         require(all(not needs_function(names.get(n), n, request['candidate'], project='livepalmes-test') for n in selected), 'Backend TEST incomplet ou pas au code valide')
         extra = approved_extra_functions(request)
+        require(all(not needs_function(names.get(n), n, request['candidate'], project='livepalmes-test') for n in team_trophy.approved(request)), 'Sources TEST equipes/trophee absentes ou incompatibles')
         require(all(not needs_function(names.get(n), n, request['candidate'], project='livepalmes-test') for n in validated_portal.approved(request)), 'Preuve TEST CMAS/CCI absente ou incompatible')
         notification = approved_notification_functions(request)
         require(all(not needs_function(names.get(n), n, request['candidate'], project='livepalmes-test') for n in notification + approved_public_nap_functions(request) + approved_access_request_functions(request) + approved_club_directory_functions(request) + approved_grouped_functions(request) + approved_bcc_functions(request) + approved_license_report_functions(request) + nap_retained.approved(request) + nap_account.approved(request) + portal_access_ns.approved(request)),
@@ -1061,6 +1074,9 @@ def freeze_plan(directory, evidence=False):
     selected = read(root / 'selection.json')
     selected = [n for n in selected if n in approved_extra_functions(request) or needs_function(names.get(n), n, request['candidate'])]
     require_access_request_selection(request, selected)
+    if team_trophy.approved(request):
+        require(read(root/'baseline.json')['productionRun'] == 41354381330 and len(names) == 115
+                and team_trophy.NEW not in names, 'Reference PROD equipes differente')
     if validated_portal.approved(request):
         write(root / 'validated-portal-proof.json', validated_portal.verify(request, read(root / 'baseline.json'), names))
     if portal_access_ns.approved(request):
@@ -1203,9 +1219,13 @@ def stage(candidate, project, destination, sha):
     index = Path(destination) / 'functions/index.js'
     if project == 'livepalmes' and os.environ.get('PLAN'):
         request = read(Path(os.environ['PLAN']) / 'request.json')
+        team_scope = team_trophy.approved(request)
         if approved_public_nap_functions(request):
             subprocess.run(['node', str(ROOT / 'tools/prepare-production-nap-reader.js'), destination], check=True)
         notification = approved_notification_functions(request) + approved_public_nap_functions(request) + approved_access_request_functions(request)
+        if team_scope:
+            team_trophy.prepare_trophy_secret(destination)
+            notification.append(team_trophy.NEW)
         if notification:
             index.write_text(index.read_text() + '\nfor (const name of ' + json.dumps(notification) + ') { if (!backend[name]?.__endpoint) throw new Error("Export notifications absent: " + name); exports[name] = backend[name]; }\n')
     index.write_text(index.read_text() + '\nfor (const fn of Object.values(exports)) { if (!fn.__endpoint) throw new Error("Endpoint absent"); fn.__endpoint.labels = { ...fn.__endpoint.labels, "livepalmes-commit": ' + json.dumps(sha) + ' }; }\n')
@@ -1240,6 +1260,8 @@ def deploy_batches(project, candidate, stage_path, selection_path, dry_run):
     extra = approved_extra_functions(read(Path(os.environ['PLAN']) / 'request.json')) if project == 'livepalmes' and os.environ.get('PLAN') else []
     require(len(selected) == len(set(selected)) and set(selected).issubset(set(safe_functions(candidate, project)) | set(extra)), 'Selection interdite')
     source_only = set(extra) - set(approved_notification_functions(read(Path(os.environ['PLAN']) / 'request.json'))) - set(approved_public_nap_functions(read(Path(os.environ['PLAN']) / 'request.json'))) - set(approved_access_request_functions(read(Path(os.environ['PLAN']) / 'request.json'))) if extra else set()
+    if extra and team_trophy.approved(read(Path(os.environ['PLAN']) / 'request.json')):
+        source_only.discard(team_trophy.NEW)
     if project == 'livepalmes' and os.environ.get('PLAN'):
         require_access_request_selection(read(Path(os.environ['PLAN']) / 'request.json'), selected)
     selected = [name for name in selected if name not in source_only]

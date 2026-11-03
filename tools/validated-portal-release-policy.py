@@ -106,9 +106,7 @@ def assert_new(function):
             and not function.get('serviceConfig', {}).get('secretVolumes'), 'Nouvelle callable hors configuration validee')
 
 
-def guard(directory, after=False):
-    directory = Path(directory)
-    require(approved(json.loads((directory/'request.json').read_text())), 'Garde sans accord')
+def observe_controls():
     require(json.loads(Path(os.environ['GOOGLE_APPLICATION_CREDENTIALS']).read_text()).get('project_id') == 'livepalmes',
             'Compte PROD requis')
     token = subprocess.check_output(['gcloud', 'auth', 'application-default', 'print-access-token'],
@@ -134,7 +132,13 @@ def guard(directory, after=False):
     scheduler = {k: v for k, v in scheduler.items() if k not in {'lastAttemptTime', 'scheduleTime', 'status'}}
     queue = {k: values['queue'][k] for k in ['name', 'state', 'purgeTime', 'rateLimits', 'retryConfig',
              'stackdriverLoggingConfig', 'httpTarget', 'appEngineRoutingOverride'] if k in values['queue']}
-    observed = {'mailSha256': digest(values['mail']), 'schedulerSha256': digest(scheduler), 'queueSha256': digest(queue)}
+    return {'mailSha256': digest(values['mail']), 'schedulerSha256': digest(scheduler), 'queueSha256': digest(queue)}
+
+
+def guard(directory, after=False):
+    directory = Path(directory)
+    require(approved(json.loads((directory/'request.json').read_text())), 'Garde sans accord')
+    observed = observe_controls()
     before = directory/'validated-portal-before.json'
     if before.exists():
         require(json.loads(before.read_text()) == observed, 'Derive des mails ou automates')

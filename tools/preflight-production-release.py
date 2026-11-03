@@ -150,6 +150,11 @@ def main():
         bcc_names = cycle.approved_bcc_functions(plan) if os.environ.get('PLAN') else []
         bcc_contract = cycle.bcc.for_request(plan).contract() if bcc_names else {}
         allowed_new = {bcc_contract['worker']} if bcc_names and not bcc_contract.get('existingWorker') else set()
+        team_scope = cycle.team_trophy.approved(plan) if os.environ.get('PLAN') else []
+        if team_scope:
+            cycle.team_trophy.initial(functions)
+            allowed_new = {cycle.team_trophy.NEW}
+        report['additionalTeamTrophyFunctions'] = cycle.team_trophy.SOURCE_ONLY if team_scope else []
         account_names = cycle.nap_account.approved(plan) if os.environ.get('PLAN') else []
         if account_names:
             allowed_new = {cycle.nap_account.NAME}
