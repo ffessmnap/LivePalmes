@@ -7,6 +7,7 @@
 .public-home-page .performance-card .public-home-card-icon{grid-column:1;grid-row:1;justify-self:start;align-self:center}
 .public-home-page .performance-card .public-home-card-actions{display:grid;grid-template-columns:repeat(4,minmax(0,160px));justify-content:center;gap:8px}
 .public-home-page .performance-card .public-home-card-actions .ghost-button{width:100%;min-width:0;min-height:34px;padding:5px 8px;text-decoration:none}
+.public-home-page .performance-card .public-home-card-actions .performance-trophy-button{grid-column:1/-1;justify-self:center;width:auto;max-width:100%;white-space:normal}
 .public-home-page .calendar-card{background:linear-gradient(160deg,#fff 35%,#f2f7fd);border-color:#c6daec}
 .public-home-page .documents-card{background:linear-gradient(160deg,#fff 35%,#f8f5fc);border-color:#ded3e9}
 .documents-icon{color:#715595;background:#ede7f6}
