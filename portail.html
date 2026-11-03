@@ -37,6 +37,7 @@
     <link rel="stylesheet" href="assets/livepalmes-portal-workspaces.css?v=20260921-button-weight-1">
     <link rel="stylesheet" data-portal-style-src="assets/livepalmes-featured-documents.css?v=20261023-documents-page-1" data-portal-style-view="nationalDocuments">
     <link rel="stylesheet" data-portal-style-src="assets/livepalmes-national-documents.css?v=20261023-documents-page-1" data-portal-style-view="nationalDocuments">
+    <link rel="stylesheet" data-portal-style-src="assets/public/livepalmes-trophy.css?v=20261103" data-portal-style-view="nationalHome">
     <link rel="stylesheet" href="/assets/public/livepalmes-public-shell.css?v=20261021-same-tab-1">
     <script src="/assets/public/livepalmes-public-shell.js?v=20261021-same-tab-1" defer></script>
   </head>
@@ -305,6 +306,28 @@
                 <a class="admin-national-module" href="#administration-notifications" data-national-module="notifications"><span><strong>Notifications</strong><span aria-hidden="true">→</span></span><small>État et activation des mails automatiques.</small></a>
                 <a class="admin-national-module" href="#administration-historique" data-national-module="audit"><span><strong>Journal d’activité</strong><span aria-hidden="true">→</span></span><small>Consulter les actions nationales.</small></a>
               </div>
+              <details id="adminTrophy">
+                <summary>Trophée Damien Hébert</summary>
+                <p data-trophy-state role="status"></p>
+                <form hidden>
+                  <fieldset>
+                    <legend>Réglages de l’édition</legend>
+                    <div class="trophy-edition-fields">
+                      <label>Nom de l’édition<input name="title" maxlength="100" required></label>
+                      <label>Année de fin de saison<input name="seasonEndYear" type="number" min="2000" max="2100" required></label>
+                      <label>Premier jour de qualification<input name="from" type="date" required></label>
+                      <label>Dernier jour de qualification<input name="through" type="date" required></label>
+                    </div>
+                    <div class="trophy-controls">
+                      <button class="ghost-button" name="action" value="save">Enregistrer le brouillon</button>
+                      <button class="ghost-button" name="action" value="preview">Prévisualiser</button>
+                      <button class="admin-primary-button" name="action" value="publish">Afficher au public</button>
+                      <button class="ghost-button" type="button" data-trophy-freeze hidden>Arrêter le classement</button>
+                    </div>
+                  </fieldset>
+                </form>
+                <section data-trophy-preview aria-label="Aperçu du classement" hidden></section>
+              </details>
             </section>
             <section id="adminNationalDirectoriesView" class="admin-national-workspace" data-admin-view="nationalDirectories" aria-labelledby="adminNationalDirectoriesTitle" hidden>
               <div class="admin-portal-workspace-head"><h2 id="adminNationalDirectoriesTitle">Annuaires</h2></div>
@@ -2402,7 +2425,7 @@
   <script src="assets/livepalmes-import-source.js?v=20261026-import-text-1"></script>
   <script src="assets/livepalmes-access-request-history.js?v=20261026-1"></script>
   <script src="assets/livepalmes-club-identity.js?v=20261026-identity-1"></script>
-    <script src="assets/livepalmes-portal-deferred.js?v=20261103-teams-12"></script>
+    <script src="assets/livepalmes-portal-deferred.js?v=20261103-trophy-1"></script>
     <script src="assets/livepalmes-portal-preload.js?v=20261102-prefetch-1"></script>
     <script src="assets/portal/navigation.js?v=20261103-teams-1"></script>
     <script src="assets/portal/modules-and-clubs.js?v=20261102-reactivity-1"></script>

@@ -2,6 +2,11 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 3 novembre — Classement du Trophée Damien Hébert
+
+- Besoin : rétablir le tableau public des qualifications et permettre à l’administration nationale de préparer, publier et arrêter une édition.
+- État : intégration proposée à la CI et au TEST commun. Validation utilisateur de la version déployée à recueillir.
+
 ### 3 novembre — Ordre du 4 × 100 SB Masters
 
 - Les quatre postes affichent BI homme, BI femme, SF homme, SF femme. Les choix sont filtrés et l’ordre est contrôlé lors de l’enregistrement. Une composition vide reste autorisée.
