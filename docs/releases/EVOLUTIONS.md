@@ -2,6 +2,11 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 3 novembre — Récapitulatif Clubs et cellules compactes
+
+- Le tableau adopte le format des cellules classiques. Le récapitulatif affiche les courses et les temps par nageur, les compositions par équipe et les hors concours. Le bouton PDF réutilise le parcours club et le générateur de la clôture, sur le dernier dossier enregistré.
+- Périmètre TEST, interface seule. Téléchargement demandé par le club, sans lecture ajoutée à l’ouverture du récapitulatif. Recette utilisateur attendue.
+
 ### 3 novembre — Individuels par session et relais dans le même onglet
 
 - Interface Clubs et Masters : colonnes par session du programme, relais sous la matrice, bouton d’engagement et une ligne par relayeur. Aucun appel ni changement de stockage ajouté.
