@@ -22,6 +22,8 @@
     node("p", `Mis à jour le ${dateTime.format(new Date(data.updatedAt))}`, root);
     const controls = node("div", null, root);
     controls.className = "trophy-controls";
+    controls.setAttribute("role", "group");
+    controls.setAttribute("aria-label", "Catégorie");
     const girls = node("button", "Minimes filles", controls);
     const boys = node("button", "Minimes garçons", controls);
     const scroller = node("div", null, root);
@@ -31,9 +33,11 @@
     scroller.setAttribute("aria-label", "Tableau des cinq courses");
     const table = node("table", null, scroller);
     table.className = "trophy-table";
+    table.setAttribute("role", "table");
     const head = table.createTHead().insertRow();
     for (const label of headers) node("th", label, head).scope = "col";
     const body = table.createTBody();
+    body.setAttribute("role", "rowgroup");
     const dialog = node("dialog", null, root);
     dialog.setAttribute("aria-label", "Ouvrir la fiche nageur ?");
     node("h3", "Ouvrir la fiche nageur ?", dialog);
@@ -55,7 +59,10 @@
       }
       for (const swimmer of groups[sex]) {
         const row = body.insertRow();
-        node("td", swimmer.rank, row);
+        row.className = "trophy-swimmer";
+        row.setAttribute("role", "row");
+        const rank = node("td", swimmer.rank, row);
+        rank.setAttribute("aria-label", `Rang ${swimmer.rank}`);
         for (const value of [swimmer.lastName, swimmer.firstName]) {
           const name = node("button", value, node("td", null, row));
           name.className = "trophy-name";
@@ -65,16 +72,25 @@
             dialog.showModal();
           });
         }
-        node("td", swimmer.birthYear, row);
-        node("td", swimmer.club || "—", row);
-        for (const event of swimmer.events) {
-          const cell = node("td", event ? null : "—", row);
+        const birth = node("td", swimmer.birthYear, row);
+        birth.setAttribute("aria-label", `Année de naissance ${swimmer.birthYear}`);
+        const club = node("td", swimmer.club || "—", row);
+        club.setAttribute("aria-label", `Club ${swimmer.club || "non renseigné"}`);
+        for (const [index, event] of swimmer.events.entries()) {
+          const cell = node("td", null, row);
+          cell.className = "trophy-course";
+          const label = node("span", headers[index + 5], cell);
+          label.className = "trophy-course-label";
           if (event) {
             node("strong", event.time, cell);
             node("small", `${number.format(event.points)} pts`, cell);
+          } else {
+            node("span", "—", cell);
           }
         }
-        node("td", `${number.format(swimmer.totalPoints)} pts`, row);
+        const total = node("td", `${number.format(swimmer.totalPoints)} pts`, row);
+        total.setAttribute("aria-label", `Total ${number.format(swimmer.totalPoints)} points`);
+        for (const cell of row.cells) cell.setAttribute("role", "cell");
       }
     }
     girls.addEventListener("click", () => show("F"));
