@@ -24,5 +24,23 @@ function reset(){queries=[];denied=orphan=overflow=missingClub=false;}
   reset();orphan=true;await assert.rejects(readAdminEntries(connection,input,authorize,services),/sans fiche/);assert.equal(queries.length,1);
   reset();overflow=true;await assert.rejects(readAdminEntries(connection,input,authorize,services),RangeError);
   reset();missingClub=true;await assert.rejects(readAdminEntries(connection,input,authorize,services),/incomplet/);
+  const masters = {...input, competition: {...input.competition, entryFormat:"clubs_masters", entryRulesVersion:"2026-2027-v1"}};
+  const declaration = {teams:[{id:"a",letter:"A",sex:"X",members:[],relays:[]}],outside:[],individuals:[]};
+  const optionsOnly = {execute: async ({sql}, values) => {
+    if (sql.startsWith("SELECT *")) return [[
+      {club_id:106,submission_metadata:{club_teams_v1:declaration}},
+      {club_id:107,submission_metadata:{}}
+    ]];
+    if (sql.startsWith("SELECT num_club")) {
+      assert.deepEqual(values,["106"]);
+      return [[{num_club:106,abre_club:"EX",nom_club:"Exemple"}]];
+    }
+    return [[]];
+  }};
+  reset();
+  const declared = await readAdminEntries(optionsOnly, masters, authorize, services);
+  assert.equal(declared.entries.length,1);
+  assert.deepEqual(declared.entries[0].teamEntries,declaration);
+  assert.equal(declared.sqlBudget.queriesMax,9);
   console.log("Admin native entries: nine grouped bounded reads, authorization before identities, native times/licences, strict missing references verified.");
 })().catch(error=>{console.error(error);process.exitCode=1;});

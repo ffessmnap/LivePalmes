@@ -23,6 +23,15 @@ async function readAdminEntries(connection,input,authorize,services) {
   const options=await read("options","SELECT * FROM livepalmes_club_entry_options FORCE INDEX (PRIMARY) WHERE competition_id=? ORDER BY club_id LIMIT 501");
   const clubId=row=>String(row.club),ids=new Set([...inscriptions,...relays,...officials].map(clubId));
   leaders.forEach(row=>ids.add(String(row.pourclub && row.pourclub!=="0" ? row.pourclub : row.club)));
+  const teamEntries = require("./nap-team-entries");
+  if (teamEntries.profile(input.competition)) {
+    for (const row of options) {
+      const declaration = teamEntries.stored({ options: row });
+      if (declaration.teams.length || declaration.outside.length || declaration.individuals.length) {
+        ids.add(String(row.club_id));
+      }
+    }
+  }
   if(ids.size>500 || [...ids].some(value=>!/^\d{1,16}$/.test(value) || !Number.isSafeInteger(Number(value)) || Number(value)<=0)) throw new TypeError("Clubs NAP absents ou ambigus : verification requise.");
   const clubs=ids.size ? await read("clubs",`SELECT num_club,abre_club,nom_club,federal_club,comite_club FROM clubs FORCE INDEX (PRIMARY) WHERE num_club IN (${[...ids].map(()=>"?").join(",")}) ORDER BY num_club LIMIT 501`,[...ids]) : [];
   if(clubs.length!==ids.size || clubs.some(row=>!ids.has(String(row.num_club)))) throw new TypeError("Referentiel des clubs NAP incomplet.");
