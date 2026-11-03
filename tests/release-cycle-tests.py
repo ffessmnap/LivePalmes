@@ -11,6 +11,68 @@ spec=importlib.util.spec_from_file_location('cycle',Path(__file__).parents[1]/'t
 m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m)
 
 class ReleaseTests(unittest.TestCase):
+    def test_team_trophy_release_is_bound_to_exact_candidate_and_safe_closure_window(self):
+        from datetime import datetime, timezone
+        policy = m.team_trophy
+        request = {'candidate':policy.CANDIDATE,'productionCommit':policy.BASE,
+                   'productionHosting':'sites/livepalmes/versions/073cb6f89178c29e',
+                   'testRun':policy.TEST_RUN,'testBackendRuns':[1234],
+                   'teamTrophyRelease':'20261104-equipes-trophee-sources'}
+        self.assertEqual(m.approved_extra_functions(request),policy.SOURCE_ONLY+[policy.NEW])
+        with self.assertRaises(ValueError):
+            m.approved_extra_functions({**request,'candidate':'f'*40})
+        with self.assertRaises(ValueError):
+            m.approved_extra_functions({**request,'notificationMaintenancePlan':{}})
+        with self.assertRaises(ValueError):
+            policy.selection(request,policy.SOURCE_ONLY+[policy.NEW])
+        now = datetime(2026,11,4,tzinfo=timezone.utc)
+        row = {'status':{'stringValue':'pending'},'runAt':{'stringValue':'2026-11-05T00:00:00Z'}}
+        policy.require_quiet_closures([row],now)
+        for changed in ({'status':{'stringValue':'processing'}},
+                        {'sourceHash':{'stringValue':'already-started'}},
+                        {'runAt':{'stringValue':'2026-11-04T01:00:00Z'}}):
+            with self.assertRaises(ValueError):
+                policy.require_quiet_closures([{**row,**changed}],now)
+        function = {'name':policy.PREFIX+policy.NEW,'state':'ACTIVE','environment':'GEN_2',
+                    'buildConfig':{'runtime':'nodejs22','entryPoint':policy.NEW},
+                    'labels':{'livepalmes-commit':policy.CANDIDATE},
+                    'serviceConfig':{'secretEnvironmentVariables':[{'key':'LIVEPALMES_NAP_PASSWORD',
+                        'secret':'LIVEPALMES_NAP_PASSWORD','projectId':'livepalmes'}]}}
+        policy.assert_new(function)
+        function['serviceConfig']['secretEnvironmentVariables'][0]['projectId'] = 'livepalmes-test'
+        with self.assertRaises(ValueError):
+            policy.assert_new(function)
+        with tempfile.TemporaryDirectory() as directory:
+            backend = Path(directory)/'functions'/'backend-index.js'
+            backend.parent.mkdir()
+            backend.write_text('if (ENVIRONMENT.sportingDataSource === "nap") {\n'
+                               '  const napPassword = defineSecret("LIVEPALMES_NAP_PASSWORD");\n}\n'
+                               'if (ENVIRONMENT.projectId === "livepalmes-test") {\n'
+                               '  const napPassword = defineSecret("LIVEPALMES_NAP_PASSWORD");\n}\n')
+            policy.prepare_trophy_secret(directory)
+            self.assertIn('process.env.LIVEPALMES_NAP_PASSWORD', backend.read_text())
+            self.assertEqual(backend.read_text().count('const napPassword = defineSecret("LIVEPALMES_NAP_PASSWORD");'),1)
+
+    def test_team_closure_source_patch_never_changes_runtime_settings(self):
+        source = m.ROOT / 'tools/team-closure-test-sources.py'
+        spec = importlib.util.spec_from_file_location('team_closure_sources_test', source)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        name = 'processNapNotificationTask'
+        function = {'name':module.PREFIX+name,'state':'ACTIVE','environment':'GEN_2',
+                    'buildConfig':{'runtime':'nodejs22','entryPoint':name},
+                    'serviceConfig':{'timeoutSeconds':300},'labels':{'existing':'keep'}}
+        payload = module.patch_source(function,{'bucket':'fixture','object':'source.zip'})
+        self.assertEqual(set(payload),{'name','buildConfig','labels'})
+        self.assertEqual(payload['labels']['existing'],'keep')
+        self.assertEqual(set(payload['buildConfig']),{'source'})
+        with self.assertRaises(ValueError):
+            module.patch_source({**function,'name':function['name'].replace('livepalmes-test','livepalmes')},
+                                {'bucket':'fixture','object':'source.zip'})
+        with self.assertRaises(ValueError):
+            module.patch_source({**function,'name':module.PREFIX+'manageDamienHebertEdition'},
+                                {'bucket':'fixture','object':'source.zip'})
+
     def test_prod_isolates_only_exact_test_session_rules(self):
         base = '3ebb91ed1ebd714d192d6bfe9457b47f8e05f964'
         candidate = 'e4ca772bc3aee5743139be9f5ce91a35d25cad14'

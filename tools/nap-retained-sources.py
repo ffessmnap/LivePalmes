@@ -122,7 +122,7 @@ def update(candidate, names, before, current, project, state, archive, value=Non
     return hashlib.sha256(data).hexdigest()
 
 
-def test_archive(candidate, sha, secrets):
+def test_archive(candidate, sha, secrets, exports=None):
     archive = load('nap_retained_raw_archive', 'publish-approved-pdf-functions.py').archive
     raw = archive(candidate, sha)
     output = io.BytesIO()
@@ -142,7 +142,8 @@ def test_archive(candidate, sha, secrets):
         wrapper += 'const environment = livePalmesEnvironment(process.env);\n'
         wrapper += 'if (environment.name !== "test" || environment.projectId !== "livepalmes-test") throw new Error("Code reserve a TEST");\n'
         wrapper += 'const backend = require("./backend-index");\n'
-        wrapper += 'for (const name of ' + json.dumps(policy.contract()['testSelected']) + ') {\n'
+        names = policy.contract()['testSelected'] if exports is None else exports
+        wrapper += 'for (const name of ' + json.dumps(names) + ') {\n'
         wrapper += 'if (!backend[name]) throw new Error("Export TEST absent"); exports[name] = backend[name];\n}\n'
         target.writestr('index.js', wrapper)
     return output.getvalue()
