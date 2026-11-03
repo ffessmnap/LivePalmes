@@ -28,7 +28,11 @@ await check('calls[1].expectedFingerprint==="b".repeat(64)&&calls[1].teamDossier
 await check('[...document.querySelectorAll("[data-team-field=course]")].filter(x=>x.dataset.id==="1"&&x.checked&&x.parentElement.textContent.includes("25.12")).length===2','confirmed times appear without manual save');
 await check('document.querySelector(".portal-team-table tbody tr").getBoundingClientRect().height===initialRowHeight&&initialRowHeight<40','classic row stays compact after confirmation');await check('[...document.querySelectorAll("[data-team-field=course]")].filter(x=>x.dataset.id==="1"&&x.disabled).length===10','third individual blocked');
 await click('[data-team-action="toggle-relay"][data-code="6X100SBI"]');await check('document.querySelectorAll("[data-team-field=relay-member]").length===6&&!!(document.querySelector(".portal-team-table").compareDocumentPosition(document.querySelector(".portal-team-relays"))&Node.DOCUMENT_POSITION_FOLLOWING)','six relay positions below individual events');await click('[data-team-action=clear-relay]');
+await check('!document.querySelector("[data-team-action=add]").closest("nav")&&document.querySelector("[data-team-action=add]").classList.contains("admin-primary-button")','add team is a distinct primary action');
+await check('[...document.querySelectorAll(".portal-team-list")].every(nav=>nav.querySelectorAll("[aria-pressed=true]").length===1&&nav.querySelector("[aria-pressed=true]").dataset.teamAction==="select")','one team is selected');
+await check('getComputedStyle(document.querySelector("[data-team-field=member]")).backgroundColor==="rgb(255, 247, 251)"','women participants use the classic pink');
 await click('[data-team-entry-mount=swimmers] [data-team-action=outside]');
+await check('[...document.querySelectorAll(".portal-team-list")].every(nav=>nav.querySelectorAll("[aria-pressed=true]").length===1&&nav.querySelector("[aria-pressed=true]").dataset.teamAction==="outside")','only standalone HC remains selected');
 await change('[data-team-field=outside-choice]','9');
 await click('[data-team-action=add-outside]');
 await change('[data-team-field=outside-choice]','12');
@@ -37,6 +41,10 @@ await check('!document.querySelector("[data-team-entry-mount=swimmers] [data-tea
 await check('!document.querySelector("[data-team-entry-mount=entries] [data-team-field=outside-choice]")','entries never show HC declaration controls');
 await check('[...document.querySelectorAll("[data-team-entry-mount=entries] h5")].map(h=>h.textContent).join(",")==="Femmes,Hommes"','HC entries have two gender tables');
 await check('[...document.querySelectorAll("[data-team-entry-mount=entries] .portal-team-table")].map(table=>table.querySelector("[data-team-field=course]").dataset.id).join(",")==="12,9"','each standalone HC swimmer appears in the proper table');
+await check('getComputedStyle(document.querySelector(".portal-team-table tbody tr[data-team-sex=F] td")).backgroundColor==="rgb(255, 248, 251)"&&getComputedStyle(document.querySelector(".portal-team-table tbody tr[data-team-sex=M] td")).backgroundColor==="rgb(247, 251, 255)"','HC rows use the classic pink and blue');
+await run('document.documentElement.dataset.portalTheme="dark";');
+await check('getComputedStyle(document.querySelector(".portal-team-table tbody tr[data-team-sex=F] td")).backgroundColor==="rgb(50, 41, 56)"&&getComputedStyle(document.querySelector(".portal-team-table tbody tr[data-team-sex=M] td")).backgroundColor==="rgb(32, 51, 71)"','HC rows retain the classic cues in dark mode');
+await run('delete document.documentElement.dataset.portalTheme;');
 await click('[data-team-entry-mount=swimmers] [data-team-action=remove-outside][data-id="12"]');
 await click('[data-team-entry-mount=entries] [data-team-field="course"][data-id="9"][data-code="50SF"]');
 assert.ok(await waitFor(c,'calls.length===3&&!document.body.textContent.includes("Enregistrement…")'));await check('calls[2].teamDossier.outside[0]==="9"','standalone HC sent with full dossier');await check('document.body.textContent.includes("Dossier du club enregistré")','actual queue boolean result accepted');
