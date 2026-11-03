@@ -1382,7 +1382,8 @@
         const allowedTabs = new Set(["general", "courses", "team", "officials", "swimmers", "entries", "relays", "summary", "statistics", "documents", "delivery"]);
         const adminOnlyTabs = new Set(["statistics", "delivery"]);
         const clubOnlyTabs = new Set(["team", "officials", "swimmers", "entries", "relays", "summary"]);
-        const requestedTab = allowedTabs.has(tab) ? tab : "general";
+        const teamCourses = ["clubs", "clubs_masters"].includes(portalState.selectedEngagementCompetition?.entryFormat);
+        const requestedTab = teamCourses && tab === "relays" ? "entries" : allowedTabs.has(tab) ? tab : "general";
         const clubWriteLocked = !isEngagementAdminMode() && engagementClubWriteLocked();
         const clubInformationOnly = engagementClubInformationOnly();
         const clubOfficialsNotRequired = !isEngagementAdminMode() && portalState.selectedEngagementCompetition?.officialsRequired === false;
@@ -1409,7 +1410,8 @@
           const lockedClubStep = !isEngagementAdminMode() && isClubEngagementWorkflowTab(buttonTab) && !canOpenClubEngagementTab(buttonTab);
           const hiddenForMode = (button.hasAttribute("data-engagements-club-documents-tab") && isEngagementAdminMode())
             || (button.hasAttribute("data-engagements-admin-documents-tab") && !isEngagementAdminMode());
-          button.hidden = hiddenForMode || (adminOnly && !isEngagementAdminMode()) || (clubOnly && (isEngagementAdminMode() || clubInformationOnly)) || hiddenByClubLock || hiddenBecauseOfficialsNotRequired;
+          if (buttonTab === "entries") button.textContent = teamCourses ? "Courses et relais" : "Courses individuelles";
+          button.hidden = (teamCourses && buttonTab === "relays") || hiddenForMode || (adminOnly && !isEngagementAdminMode()) || (clubOnly && (isEngagementAdminMode() || clubInformationOnly)) || hiddenByClubLock || hiddenBecauseOfficialsNotRequired;
           button.dataset.locked = lockedClubStep ? "true" : "false";
           button.setAttribute("aria-disabled", lockedClubStep ? "true" : "false");
           const selected = buttonTab === nextTab;

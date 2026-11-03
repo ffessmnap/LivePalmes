@@ -56,9 +56,34 @@
     function options(current,sex='',outside=false){return `<option value="">${outside?'Choisir un nageur':'Non renseigné'}</option>`+directory().sorted.filter(p=>(p.id===current||directory().activeIds.has(p.id))&&(!sex||p.sex===sex)&&(!isMasters()||Number(profile().date.slice(0,4))+(Number(profile().date.slice(5,7))>=9?1:0)-Number(p.birthDate?.slice(0,4))>=30)).map(p=>{const used=role(p.id);return `<option value="${esc(p.id)}"${p.id===current?' selected':''}${used&&p.id!==current?' disabled':''}>${esc(name(p.id))}${used&&p.id!==current?' — '+(used.team?esc(title(used.team)):'HC sans équipe'):''}</option>`;}).join('');}
     function teamNav(){const d=draft();return `<nav class="portal-team-list" aria-label="Équipes du club">${d.value.teams.map(t=>btn(esc(title(t))+' · '+t.members.filter(Boolean).length+'/'+size(),'select',`data-id="${esc(t.id)}" aria-pressed="${d.selected===t.id}"`)).join('')}${btn('+ Équipe','add',locked()?'disabled':'')}${!isMasters()?btn('Hors concours sans équipe · '+d.value.outside.length,'outside',`aria-pressed="${d.tab==='outside'}"`):''}</nav>`;}
     function roster(t){return `<div class="portal-team-fields">${Array.from({length:size()},(_,i)=>`<label>Titulaire ${i+1}${isMasters()?' · '+(i<2?'Femme':'Homme'):''}<select data-team-field="member" data-index="${i}"${locked()?' disabled':''}>${options(t.members[i]||'',isMasters()?(i<2?'F':'M'):t.sex)}</select></label>`).join('')}${!isMasters()?`<label>Remplaçant facultatif<select data-team-field="reserve"${locked()?' disabled':''}>${options(t.reserve||'',t.sex)}</select></label>`:''}</div>${t.members.filter(Boolean).length<size()?'<p class="admin-engagements-message" data-tone="warning">Équipe incomplète : enregistrement autorisé, sans relais.</p>':''}<div class="admin-portal-actions">${btn('Retirer cette équipe','remove-team',locked()?'disabled':'')}</div>`;}
+    function individualSessions(sex) {
+      const events = individualEvents();
+      const byCode = new Map(events.map(event => [event.code, event]));
+      const seen = new Map();
+      const sexes = sex === 'F' || sex === 'M' ? [sex] : ['F', 'M'];
+      const sessions = actions.engagementClubProgramSessionsForEntries().map(session => {
+        const columns = [];
+        for (const item of session.items || []) {
+          const event = byCode.get(item.eventCode);
+          if (!event) continue;
+          const previous = seen.get(event.code) || [];
+          const eligible = sexes.filter(value => !previous.includes(value)
+            && (item.genderMode !== 'female' || value === 'F')
+            && (item.genderMode !== 'male' || value === 'M'));
+          if (!eligible.length) continue;
+          columns.push({event, sexes:eligible});
+          seen.set(event.code, [...previous, ...eligible]);
+        }
+        return {...session, columns};
+      }).filter(session => session.columns.length);
+      const remaining = events.filter(event => !seen.has(event.code)).map(event => ({event, sexes}));
+      if (remaining.length) sessions.push({label:sessions.length ? 'Autres courses' : 'Programme', columns:remaining});
+      return sessions;
+    }
     function matrix(ids, outside = false) {
       const team = selected();
-      const events = individualEvents();
+      const sessions = individualSessions(outside ? "" : team?.sex);
+      const columns = sessions.flatMap(session => session.columns);
       const {byId, savedById} = directory();
       const disabled = locked();
       const rows = ids.map(id => {
@@ -68,8 +93,9 @@
         const personName = esc(name(id));
         const selectedCourses = courses(id);
         const savedCourses = savedById.get(id)?.individualEntries || [];
-        const cells = events.map(event => {
+        const cells = columns.map(({event, sexes}) => {
           const {code} = event;
+          if (person?.sex && !sexes.includes(person.sex)) return '<td aria-label="Course non proposée">–</td>';
           const checked = selectedCourses.includes(code);
           const assigned = !hc && team?.members.some(other => other !== id && courses(other).includes(code));
           const forbidden = Array.isArray(person?.nativeAllowedEventCodes) && !person.nativeAllowedEventCodes.includes(code);
@@ -81,16 +107,41 @@
         const remove = outside ? `<td>${btn('Retirer', 'remove-outside', `data-id="${esc(id)}"${disabled?' disabled':''}`)}</td>` : '';
         return `<tr><td>${personName}${roleLabel}</td>${cells}<td>${selectedCourses.length}/2</td>${remove}</tr>`;
       }).join('');
-      const headers = events.map(event => `<th>${esc(event.shortLabel || event.label || event.code)}</th>`).join('');
-      const emptyRow = `<tr><td colspan="${events.length + (outside ? 3 : 2)}">Aucun nageur déclaré.</td></tr>`;
-      return `<div class="portal-team-table"><table class="admin-engagements-table"><thead><tr><th>Nageur${outside?' hors concours':''}</th>${headers}<th>Total</th>${outside?'<th>Action</th>':''}</tr></thead><tbody>${rows || emptyRow}</tbody></table></div>`;
+      const headers = columns.map(({event, sexes}) => `<th scope="col">${esc(event.shortLabel || event.label || event.code)}${(!team || outside || isMasters()) && sexes.length === 1 ? `<small>${sexes[0] === 'F' ? 'Femmes' : 'Hommes'}</small>` : ''}</th>`).join('');
+      const groups = sessions.map(session => {
+        const meta = [session.date && actions.formatShortDate(session.date), session.startTime].filter(Boolean).join(' · ');
+        return `<th colspan="${session.columns.length}" scope="colgroup">${esc(session.label || 'Session')}${meta ? `<small>${esc(meta)}</small>` : ''}</th>`;
+      }).join('');
+      const emptyRow = `<tr><td colspan="${columns.length + (outside ? 3 : 2)}">Aucun nageur déclaré.</td></tr>`;
+      const heading = `<th scope="col"${groups ? ' rowspan="2"' : ''}>Nageur${outside ? ' hors concours' : ''}</th>`;
+      const total = `<th scope="col"${groups ? ' rowspan="2"' : ''}>Total</th>`;
+      const action = outside ? `<th scope="col"${groups ? ' rowspan="2"' : ''}>Action</th>` : '';
+      return `<div class="portal-team-table"><table class="admin-engagements-table"><thead><tr>${heading}${groups}${total}${action}</tr>${groups ? `<tr class="portal-team-course-head">${headers}</tr>` : ''}</thead><tbody>${rows || emptyRow}</tbody></table></div>`;
     }
-    function relays(t){return relayEvents().map(e=>{const saved=t.relays.find(r=>r.eventCode===e.code),legCodes=e.code==='6X100SBI'?['BI','BI','SF','SF','SF','IS']:e.code==='6X50SBA'?['BI','BI','SF','SF','SF','AP']:Array(size()).fill(e.discipline||'SF');return `<section class="portal-team-relay"><label class="admin-checkbox"><input type="checkbox" data-team-field="relay-entered" data-code="${esc(e.code)}"${saved?' checked':''}${locked()||t.members.filter(Boolean).length!==size()?' disabled':''}>${esc(e.label||e.code)}</label>${saved?`<label>Temps d’engagement<input data-team-field="relay-time" data-code="${esc(e.code)}" value="${esc(displayTime(saved.entryTime))}" placeholder="59:59.99"${locked()?' disabled':''}></label><div class="portal-team-fields">${Array.from({length:size()},(_,i)=>`<label>${i+1} · ${legCodes[i]}<select data-team-field="relay-member" data-code="${esc(e.code)}" data-index="${i}"${locked()?' disabled':''}><option value="">À renseigner</option>${t.members.filter(Boolean).map(id=>`<option value="${esc(id)}"${saved.members[i]===id?' selected':''}${saved.members.includes(id)&&saved.members[i]!==id?' disabled':''}>${esc(name(id))}</option>`).join('')}</select></label>`).join('')}</div>${btn('Laisser la composition vide','clear-relay',`data-code="${esc(e.code)}"${locked()?' disabled':''}`)}<p>Les noms peuvent rester entièrement vides ; une composition commencée doit être complète.</p>`:''}</section>`;}).join('')||'<p>Aucun relais correspondant au profil dans le programme. L’administration nationale doit compléter les courses.</p>';}
+    function relays(team) {
+      const disabled = locked() || team.members.filter(Boolean).length !== size();
+      const cards = relayEvents().map(event => {
+        const code = esc(event.code);
+        const saved = team.relays.find(relay => relay.eventCode === event.code);
+        const legCodes = event.code === '6X100SBI' ? ['BI','BI','SF','SF','SF','IS']
+          : event.code === '6X50SBA' ? ['BI','BI','SF','SF','SF','AP']
+          : Array(size()).fill(event.discipline || 'SF');
+        const action = btn(saved ? 'Retirer' : 'Engager', 'toggle-relay', `data-code="${code}"${disabled ? ' disabled' : ''}`);
+        const title = `<header><strong>${esc(event.shortLabel || event.label || event.code)}</strong>${action}</header>`;
+        if (!saved) return `<section class="portal-team-relay">${title}</section>`;
+        const legs = legCodes.map((discipline, index) => {
+          const options = team.members.filter(Boolean).map(id => `<option value="${esc(id)}"${saved.members[index] === id ? ' selected' : ''}${saved.members.includes(id) && saved.members[index] !== id ? ' disabled' : ''}>${esc(name(id))}</option>`).join('');
+          return `<label><span>${index + 1} · ${esc(discipline)}</span><select data-team-field="relay-member" data-code="${code}" data-index="${index}"${disabled ? ' disabled' : ''}><option value="">À renseigner</option>${options}</select></label>`;
+        }).join('');
+        return `<section class="portal-team-relay">${title}<label><span>Temps</span><input aria-label="Temps d’engagement" data-team-field="relay-time" data-code="${code}" value="${esc(displayTime(saved.entryTime))}" placeholder="59:59.99"${disabled ? ' disabled' : ''}></label>${legs}${btn('Vider la composition', 'clear-relay', `data-code="${code}"${disabled ? ' disabled' : ''}`)}</section>`;
+      }).join('');
+      return `<h4>Relais</h4>${cards ? `<p>La composition peut rester vide. Si tu désignes un relayeur, renseigne toutes les positions.</p><div class="portal-team-relays">${cards}</div>` : '<p>Aucun relais correspondant au profil dans le programme.</p>'}`;
+    }
     function displayTime(raw){const x=String(raw||'595999');return /^\d{6}$/.test(x)?x.slice(0,2)+':'+x.slice(2,4)+'.'+x.slice(4):x;}
     function total(){const d=draft(),hc=d.value.individuals.filter(x=>role(x.swimmerId)?.role!=='titular'),hcPeople=new Set([...d.value.outside,...hc.filter(x=>x.eventCodes.length).map(x=>x.swimmerId)]),count=hc.reduce((n,x)=>n+x.eventCodes.length,0),f=profile().fees||{};return {hcPeople:hcPeople.size,hcCount:count,value:d.value.teams.length*Number(f.teamFee||0)+hcPeople.size*Number(f.swimmerFee||0)+count*Number(f.individualEventFee||0)};}
     function summary(){const d=draft(),stats=total();return `<h4>Dossier global du club</h4>${d.value.teams.map(t=>{const n=t.members.filter(Boolean).length,events=t.members.reduce((sum,id)=>sum+courses(id).length,0);return `<details open><summary>Équipe ${esc(title(t))} · ${n}/${size()} titulaires</summary><p>${t.members.filter(Boolean).map(name).map(esc).join(' · ')||'Aucun titulaire'}</p>${t.reserve?`<p>Remplaçant : ${esc(name(t.reserve))} · ${courses(t.reserve).join(', ')||'sans course'}</p>`:''}<p>${events} courses individuelles · ${t.relays.length} relais</p>${n<size()||events<individualEvents().length||t.relays.length<relayEvents().length?'<p class="admin-engagements-message" data-tone="warning">Équipe ou programme incomplet : enregistrement autorisé.</p>':''}</details>`;}).join('')}${!isMasters()?`<h4>Hors concours sans équipe</h4>${d.value.outside.map(id=>`<p>${esc(name(id))} · ${courses(id).map(esc).join(', ')||'Aucune course'} · 59:59.99</p>`).join('')||'<p>Aucun nageur hors concours sans équipe.</p>'}`:''}<h4>Frais estimatifs</h4><p>${d.value.teams.length} équipes × ${Number(profile().fees?.teamFee||0)} € · ${stats.hcPeople} nageurs HC · ${stats.hcCount} courses HC</p><p><strong>Total : ${stats.value.toLocaleString('fr-FR',{style:'currency',currency:'EUR'})}</strong></p>`;}
-    function body(section){const d=draft(),t=selected();if(section==='summary')return summary();if(d.tab==='outside'&&!isMasters())return `${teamNav()}<h4>Hors concours — sans équipe</h4><div class="portal-team-fields"><label>Nageur du club<select data-team-field="outside-choice"${locked()?' disabled':''}>${options('','',true)}</select></label>${btn('+ Engager ce nageur hors concours','add-outside',locked()?'disabled':'',true)}</div><p>Deux courses maximum, sans équipe ni points. Temps imposé : 59:59.99.</p>${matrix(d.value.outside,true)}`;if(!t)return teamNav()+'<p>Aucune équipe déclarée.</p>';return `${teamNav()}<h4>Équipe ${esc(title(t))}</h4>${section==='swimmers'?roster(t):section==='relays'?relays(t):matrix([...t.members.filter(Boolean), ...(t.reserve?[t.reserve]:[])])}`; }
-    function render(section){bindUnload();
+    function body(section){const d=draft(),t=selected();if(section==='summary')return summary();if(d.tab==='outside'&&!isMasters())return `${teamNav()}<h4>Hors concours — sans équipe</h4><div class="portal-team-fields"><label>Nageur du club<select data-team-field="outside-choice"${locked()?' disabled':''}>${options('','',true)}</select></label>${btn('+ Engager ce nageur hors concours','add-outside',locked()?'disabled':'',true)}</div><p>Deux courses maximum, sans équipe ni points. Temps imposé : 59:59.99.</p>${matrix(d.value.outside,true)}`;if(!t)return teamNav()+'<p>Aucune équipe déclarée.</p>';return `${teamNav()}<h4>Équipe ${esc(title(t))}</h4>${section==='swimmers'?roster(t):matrix([...t.members.filter(Boolean), ...(t.reserve?[t.reserve]:[])])+relays(t)}`; }
+    function render(section){if(section==='relays')return;bindUnload();
       const panels={swimmers:'adminEngagementsDetailSwimmersPanel',entries:'adminEngagementsDetailEntriesPanel',relays:'adminEngagementsDetailRelaysPanel',summary:'adminEngagementsDetailSummaryPanel'},panel=document.getElementById(panels[section]);if(!panel)return;
       let mount=panel.querySelector('[data-team-entry-mount]');if(!mount){for(const child of panel.children){child.dataset.teamEntryPreviousHidden=child.hidden?'true':'false';child.hidden=true;}mount=document.createElement('section');mount.dataset.teamEntryMount=section;mount.className='portal-team-workspace';panel.appendChild(mount);mount.addEventListener('click',onClick);mount.addEventListener('change',onChange);}
       const d=draft();if(!d.selected&&d.value.teams.length)d.selected=d.value.teams[0].id;
@@ -193,12 +244,11 @@
         }
       }
     }
-    async function onClick(e){const b=e.target.closest('[data-team-action]');if(!b||b.disabled)return;const d=draft(),a=b.dataset.teamAction,t=selected();if(a==='save'){await save();return;}if(a==='select'){d.selected=b.dataset.id;d.tab='teams';redraw();return;}if(a==='outside'){d.tab=a;redraw();return;}if(locked())return;if(a==='add'){addTeam();return;}if(a==='remove-team'){if(!global.confirm('Retirer cette équipe et ses engagements du dossier ?'))return;t.members.filter(Boolean).concat(t.reserve||[]).forEach(removePerson);d.value.teams=d.value.teams.filter(x=>x.id!==t.id);d.selected=d.value.teams[0]?.id||'';dirty();return;}if(a==='add-outside'){const select=b.closest('[data-team-entry-mount]').querySelector('[data-team-field=outside-choice]'),id=select.value;if(id&&!role(id)){d.value.outside.push(id);dirty();}return;}if(a==='remove-outside'){const id=b.dataset.id;if(d.value.outside.includes(id)){if(!global.confirm('Retirer ce nageur hors concours et ses courses ?'))return;d.value.outside=d.value.outside.filter(x=>x!==id);removePerson(id);dirty();}return;}if(a==='clear-relay'){t.relays.find(x=>x.eventCode===b.dataset.code).members=[];dirty();}}
+    async function onClick(e){const b=e.target.closest('[data-team-action]');if(!b||b.disabled)return;const d=draft(),a=b.dataset.teamAction,t=selected();if(a==='save'){await save();return;}if(a==='select'){d.selected=b.dataset.id;d.tab='teams';redraw();return;}if(a==='outside'){d.tab=a;redraw();return;}if(locked())return;if(a==='add'){addTeam();return;}if(a==='remove-team'){if(!global.confirm('Retirer cette équipe et ses engagements du dossier ?'))return;t.members.filter(Boolean).concat(t.reserve||[]).forEach(removePerson);d.value.teams=d.value.teams.filter(x=>x.id!==t.id);d.selected=d.value.teams[0]?.id||'';dirty();return;}if(a==='add-outside'){const select=b.closest('[data-team-entry-mount]').querySelector('[data-team-field=outside-choice]'),id=select.value;if(id&&!role(id)){d.value.outside.push(id);dirty();}return;}if(a==='remove-outside'){const id=b.dataset.id;if(d.value.outside.includes(id)){if(!global.confirm('Retirer ce nageur hors concours et ses courses ?'))return;d.value.outside=d.value.outside.filter(x=>x!==id);removePerson(id);dirty();}return;}if(a==='toggle-relay'){const code=b.dataset.code;if(t.relays.some(r=>r.eventCode===code))t.relays=t.relays.filter(r=>r.eventCode!==code);else t.relays.push({eventCode:code,members:[],entryTime:'595999'});dirty();return;}if(a==='clear-relay'){t.relays.find(x=>x.eventCode===b.dataset.code).members=[];dirty();}}
     function onChange(e){const f=e.target,k=f.dataset.teamField,d=draft(),t=selected();if(!k||locked()||k==='outside-choice')return;const id=f.dataset.id,code=f.dataset.code;
       if(k==='member'){const index=Number(f.dataset.index),old=t.members[index];if(f.value&&role(f.value)&&f.value!==old)return;if(old&&old!==f.value)removePerson(old);t.members[index]=f.value;if(t.members.filter(Boolean).length<size())t.relays=[];dirty();return;}
       if(k==='reserve'){if(f.value&&role(f.value)&&f.value!==t.reserve)return;if(t.reserve&&f.value!==t.reserve)removePerson(t.reserve);t.reserve=f.value;dirty();return;}
       if(k==='course'){const r=role(id);if(!r)return;if(f.checked&&r.role==='titular'&&r.team.members.some(x=>x!==id&&courses(x).includes(code)))return;changeCourses(id,code,f.checked);d.autoRequested=true;dirty();return;}
-      if(k==='relay-entered'){if(f.checked)t.relays.push({eventCode:code,members:[],entryTime:'595999'});else t.relays=t.relays.filter(x=>x.eventCode!==code);dirty();return;}
       const relay=t?.relays.find(x=>x.eventCode===code);if(!relay)return;if(k==='relay-time'){relay.entryTime=f.value;dirty();return;}if(k==='relay-member'){if(f.value&&relay.members.includes(f.value)&&relay.members[Number(f.dataset.index)]!==f.value)return;while(relay.members.length<size())relay.members.push('');relay.members[Number(f.dataset.index)]=f.value;if(relay.members.every(x=>!x))relay.members=[];dirty();}
     }
     async function exportExcel(button){const {id:exportId,date:exportDate,entryFormat:exportFormat}=profile();button.disabled=true;try{const response=await actions.callFunction('listEngagementCompetitionClubRecaps',{competitionId:exportId,teamExport:true});if(!global.XLSX){spreadsheetRequest||=new Promise((resolve,reject)=>{const script=document.createElement('script');script.src='performances/public/vendor/xlsx.full.min.js?v=20260603-international-xlsx-1';script.onload=resolve;script.onerror=()=>{spreadsheetRequest=null;reject(new Error('Export Excel indisponible.'));};document.head.appendChild(script);});await spreadsheetRequest;}const workbook=global.XLSX.utils.book_new(),teamRows=[],individualRows=[],relayRows=[];for(const entry of response.entries){const map=new Map((entry.swimmers||[]).map(p=>[p.swimmerIndexId,p])),n=id=>{const p=map.get(id);return p?[p.lastName,p.firstName].join(' '):id;};for(const team of entry.teamEntries?.teams||[]){teamRows.push({Club:entry.clubCode||entry.clubName,Équipe:title(team),Titulaires:team.members.filter(Boolean).map(n).join(' / '),Remplaçant:team.reserve?n(team.reserve):''});for(const r of team.relays)relayRows.push({Club:entry.clubCode,Équipe:title(team),Relais:r.eventCode,Temps:displayTime(r.entryTime),...Object.fromEntries(Array.from({length:exportFormat==='clubs_masters'?4:6},(_,i)=>['Relayeur '+(i+1),r.members[i]?n(r.members[i]):'']))});}for(const p of entry.swimmers||[])for(const r of p.individualEntries||[])individualRows.push({Club:entry.clubCode,Nageur:n(p.swimmerIndexId),Rôle:({titular:'Titulaire',reserve:'Remplaçant',outside:'Hors concours sans équipe'})[p.teamRole]||'À affecter',Équipe:p.teamId?title(entry.teamEntries.teams.find(t=>t.id===p.teamId)||{sex:'',letter:'À vérifier'}):'',Course:r.eventCode,Temps:r.entryTime,'Hors concours':r.horsConcours?'Oui':'Non'});}for(const [name,rows]of [['Équipes',teamRows],['Individuels',individualRows],['Relais',relayRows],['Hors concours',individualRows.filter(x=>x['Hors concours']==='Oui')]])global.XLSX.utils.book_append_sheet(workbook,global.XLSX.utils.json_to_sheet(rows),name);global.XLSX.writeFile(workbook,'Engagements-equipes-'+String(exportDate)+'.xlsx');}catch(error){global.alert(error.message||'Export impossible.');}finally{button.disabled=false;}}

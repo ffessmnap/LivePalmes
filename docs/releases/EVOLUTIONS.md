@@ -2,6 +2,10 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 3 novembre — Individuels par session et relais dans le même onglet
+
+- Interface Clubs et Masters : colonnes par session du programme, relais sous la matrice, bouton d’engagement et une ligne par relayeur. Aucun appel ni changement de stockage ajouté. Recette TEST attendue.
+
 ### 3 novembre — Saisie des équipes, nageurs et courses Clubs
 
 - Périmètre TEST : liste des nageurs actifs triée, navigation locale, dialogue d’ajout, remplaçant dans la matrice des titulaires et enregistrement automatique des courses avec affichage du temps confirmé.
