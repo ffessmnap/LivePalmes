@@ -11,6 +11,9 @@
 
 - Présentation revue : [PR #721](https://github.com/ffessmnap/LivePalmes/pull/721), [CI main](https://github.com/ffessmnap/LivePalmes/actions/runs/41726842764) et [TEST commun](https://github.com/ffessmnap/LivePalmes/actions/runs/41728268240) réussis. Alignement, noms longs et catégories vérifiés dans Edge à 320, 390 et 1 280 px, ressources déployées confirmées.
 
+- Navigation publique : [PR #722](https://github.com/ffessmnap/LivePalmes/pull/722), [CI main](https://github.com/ffessmnap/LivePalmes/actions/runs/41731205753), [lot NAP TEST](https://github.com/ffessmnap/LivePalmes/actions/runs/41732452427) et [TEST commun](https://github.com/ffessmnap/LivePalmes/actions/runs/41733899607) réussis sur e4ca772bc3aee5743139be9f5ce91a35d25cad14. Menu du trophée et retrait du fil d’Ariane contrôlés dans Edge à 390 et 1 280 px et ressources servies sur TEST confirmées.
+- Validation utilisateur : Antoine a confirmé la présentation sur TEST puis a explicitement validé le périmètre commun des modifications encore absentes de PROD par « Toutes les modifications qui sont pas en prod, je les valide. » Accord et preuves transmis à Infra. Publication PROD à confirmer.
+
 ### 3 novembre — Ordre du 4 × 100 SB Masters
 
 - Les quatre postes affichent BI homme, BI femme, SF homme, SF femme. Les choix sont filtrés et l’ordre est contrôlé lors de l’enregistrement. Une composition vide reste autorisée.
