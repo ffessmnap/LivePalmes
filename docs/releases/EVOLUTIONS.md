@@ -5,7 +5,8 @@
 ### 3 novembre — Saisie des équipes, nageurs et courses Clubs
 
 - Périmètre TEST : liste des nageurs actifs triée, navigation locale, dialogue d’ajout, remplaçant dans la matrice des titulaires et enregistrement automatique des courses avec affichage du temps confirmé.
-- Stockage et contrat NAP existants. Recette utilisateur attendue après livraison TEST.
+- Stockage et contrat NAP existants. [PR #700](https://github.com/ffessmnap/LivePalmes/pull/700), [CI PR](https://github.com/ffessmnap/LivePalmes/actions/runs/41613701756) et [CI main](https://github.com/ffessmnap/LivePalmes/actions/runs/41615064880) réussies. Edge avec données fictives : tri et filtrage, panneau masqué préservé, écriture automatique, seconde saisie pendant la réponse et temps confirmé à 1280/736/390/320 px.
+- [TEST commun réussi](https://github.com/ffessmnap/LivePalmes/actions/runs/41616673212) sur `756269387d71b3b4f32ebf73e37eabdebc307e7e`. Hébergement seul après blocage de l’automatisme sur les règles Firestore historiques, sélection calculée de 0/106 fonctions et 117 révisions attestées. Les trois fichiers publics versionnés répondent en HTTP 200. Recette utilisateur sur legacy-nap-5240 attendue.
 
 ### 3 novembre — Références des relais Clubs dans le programme
 
