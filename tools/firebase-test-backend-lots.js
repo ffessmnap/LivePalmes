@@ -3,7 +3,7 @@
 const PROJECT_ID = "livepalmes-test";
 
 const LOTS = Object.freeze({
-  nap: ["getNapSwimmerPerformances", "exportNapPublicPage", "readNapPublicSwimmer", "syncNapClubAccountEmails"],
+  nap: ["getNapSwimmerPerformances", "exportNapPublicPage", "readNapPublicSwimmer", "syncNapClubAccountEmails", "manageDamienHebertEdition"],
   access: [
     "getCurrentAccessUser", "createOrUpdateAccessUser", "listAccessUsers", "setAccessUserStatus",
     "deleteAccessUser", "requestAccessUserDeletion", "listAccessUserDeletionRequests",

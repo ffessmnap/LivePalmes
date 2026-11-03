@@ -1,0 +1,16 @@
+.trophy-controls { display: flex; flex-wrap: wrap; gap: .5rem; margin-block: .75rem; }
+.trophy-controls button, .trophy-name { min-height: 44px; }
+.trophy-controls [aria-pressed="true"] { background: #086f7e; color: #fff; }
+.trophy-scroll { overflow-x: auto; max-width: 100%; }
+.trophy-table { width: 100%; min-width: 800px; border-collapse: separate; border-spacing: 0; font-variant-numeric: tabular-nums; }
+.trophy-table :is(th, td) { padding: .45rem .55rem; border-bottom: 1px solid #cfe1e5; white-space: nowrap; text-align: left; }
+.trophy-table th { background: #e4f3f5; color: #153c4a; }
+.trophy-table :is(th, td):first-child { position: sticky; left: 0; min-width: 3.5rem; width: 3.5rem; }
+.trophy-table :is(th, td):nth-child(2) { position: sticky; left: 3.5rem; }
+.trophy-table td:nth-child(-n+2) { background: #f3f9fa; color: #153c4a; }
+.trophy-table td:nth-child(n+6) { text-align: right; }
+.trophy-table td:last-child { font-weight: 700; }
+.trophy-table small { display: block; }
+.trophy-name { border: 0; background: transparent; color: inherit; padding: 0; text-decoration: underline; }
+.trophy-edition-fields { display: flex; flex-wrap: wrap; gap: .75rem; }
+.trophy-edition-fields label { display: grid; gap: .2rem; }
