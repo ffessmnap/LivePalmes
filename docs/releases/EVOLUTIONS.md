@@ -5,7 +5,8 @@
 ### 3 novembre — Classement du Trophée Damien Hébert
 
 - Besoin : rétablir le tableau public des qualifications et permettre à l’administration nationale de préparer, publier et arrêter une édition.
-- État : intégration proposée à la CI et au TEST commun. Validation utilisateur de la version déployée à recueillir.
+- Livraison : [PR #717](https://github.com/ffessmnap/LivePalmes/pull/717), [CI main](https://github.com/ffessmnap/LivePalmes/actions/runs/41689077152), [Hosting TEST commun](https://github.com/ffessmnap/LivePalmes/actions/runs/41690836387) et [lot backend NAP TEST](https://github.com/ffessmnap/LivePalmes/actions/runs/41691505315) réussis sur le commit `479d6e83a305456052607f854fd1967eb8696ee6`.
+- Contrôles : tableau à 1 280 et 390 px et formulaire national sur données fictives. Sur TEST, pages publiques et portail en HTTP 200, API publique en HTTP 200 sans édition active et lecture nationale anonyme refusée en HTTP 401. Validation utilisateur avec une édition et des résultats NAP à recueillir.
 
 ### 3 novembre — Ordre du 4 × 100 SB Masters
 
