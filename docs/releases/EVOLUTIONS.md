@@ -5,7 +5,8 @@
 ### 3 novembre — Récapitulatif Clubs et cellules compactes
 
 - Le tableau adopte le format des cellules classiques. Le récapitulatif affiche les courses et les temps par nageur, les compositions par équipe et les hors concours. Le bouton PDF réutilise le parcours club et le générateur de la clôture, sur le dernier dossier enregistré.
-- Périmètre TEST, interface seule. Téléchargement demandé par le club, sans lecture ajoutée à l’ouverture du récapitulatif. Recette utilisateur attendue.
+- Périmètre TEST, interface seule. Téléchargement demandé par le club, sans lecture ajoutée à l’ouverture du récapitulatif.
+- [PR #704](https://github.com/ffessmnap/LivePalmes/pull/704), [CI PR](https://github.com/ffessmnap/LivePalmes/actions/runs/41624512340) et [CI main](https://github.com/ffessmnap/LivePalmes/actions/runs/41626009216) réussies. Edge local avec données fictives, hauteur mesurée avant et après, vérification du récapitulatif et du contrat de téléchargement. [TEST commun réussi](https://github.com/ffessmnap/LivePalmes/actions/runs/41627475337) sur 74127b0630a0640799bf8e2132438348eb9eafda, hébergement seul. Quatre ressources publiques vérifiées en HTTP 200. Recette utilisateur attendue.
 
 ### 3 novembre — Individuels par session et relais dans le même onglet
 
