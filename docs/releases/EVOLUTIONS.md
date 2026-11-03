@@ -4,7 +4,8 @@
 
 ### 3 novembre — Tarif par équipe dans Général
 
-- Général affiche le forfait par équipe pour les Clubs et les Masters. Les tarifs individuels Clubs sont identifiés comme hors concours. Périmètre interface uniquement. Recette TEST attendue.
+- Général affiche le forfait par équipe pour les Clubs et les Masters. Les tarifs individuels Clubs sont identifiés comme hors concours. Périmètre interface uniquement.
+- [PR #712](https://github.com/ffessmnap/LivePalmes/pull/712), [CI PR](https://github.com/ffessmnap/LivePalmes/actions/runs/41654812669) et [CI main](https://github.com/ffessmnap/LivePalmes/actions/runs/41656328740) réussies. Formateur vérifié pour Clubs, Masters, classique et sans frais. [TEST commun réussi](https://github.com/ffessmnap/LivePalmes/actions/runs/41657976675) sur d55602b46b90c07b25eceb08c9cdad9890d46b17, hébergement seul. Trois ressources publiques vérifiées en HTTP 200. Recette utilisateur attendue.
 
 ### 3 novembre — Tableau classique partagé avec les engagements Clubs
 
