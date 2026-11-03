@@ -57,6 +57,14 @@ def check_after(backup, destination, require_success):
         if sorted(report['additionalBccFunctions']) != bcc_policy.contract()['selected']:
             raise ValueError('Selection CCI du rapport differente')
     errors = []
+    team_policy = None
+    if report.get('additionalTeamTrophyFunctions'):
+        spec = importlib.util.spec_from_file_location('team_state_policy', Path(__file__).with_name('team-trophy-release-policy.py'))
+        team_policy = importlib.util.module_from_spec(spec); spec.loader.exec_module(team_policy)
+        team_policy.require(report['additionalTeamTrophyFunctions'] == team_policy.SOURCE_ONLY
+                            and report['candidate'] == team_policy.CANDIDATE
+                            and report['newFunctions'] == [team_policy.NEW] and len(before) == 115,
+                            'Rapport equipes/trophee hors contrat')
     validated_policy = None
     if report.get('additionalValidatedPortalFunctions'):
         spec = importlib.util.spec_from_file_location('validated_portal_state', Path(__file__).with_name('validated-portal-release-policy.py'))
@@ -129,6 +137,14 @@ def check_after(backup, destination, require_success):
             errors.append("Commit Function different: " + name.split("/")[-1])
         elif not report.get("commitLabel") and name in before and f.get("updateTime") == before[name].get("updateTime"):
             errors.append("Function non actualisee: " + name.split("/")[-1])
+        if f and team_policy:
+            try:
+                if name == PREFIX+team_policy.NEW:
+                    team_policy.assert_new(f)
+                elif name.split('/')[-1] in team_policy.SOURCE_ONLY:
+                    team_policy.assert_config(before[name], f, SimpleNamespace(rollback_patch=rollback_patch))
+            except ValueError as error:
+                errors.append(str(error))
         if f and portal_policy and name.split('/')[-1] in [portal_policy.NAME, portal_policy.ACCOUNT]:
             try:
                 portal_policy.assert_config(before[name], f, SimpleNamespace(rollback_patch=rollback_patch))
