@@ -10,6 +10,8 @@ En portrait sur téléphone, le classement se lit verticalement avec une ligne d
 
 Le classement complet regroupe le nom, le prénom et l’année de naissance dans la colonne Nageur. Une séparation indique la limite des 32 places après les éventuels ex æquo.
 
+Le nom du nageur est souligné et garde la même graisse au survol. La confirmation de navigation utilise une boîte de dialogue centrée, avec une action principale pour ouvrir la fiche et une action secondaire pour rester sur le classement.
+
 ## Engagements par équipes — variante du portail
 
 Le module conserve les panneaux Participants, Courses et relais, et Récapitulatif du parcours existant. Une navigation compacte affiche les équipes par sexe et lettre, puis « Hors concours sans équipe ». L’action principale « + Équipe » est séparée des boutons de navigation, dont seul le bouton de la vue ouverte est sélectionné. Les lignes de participants, d’engagements et de relais reprennent les repères rose et bleu du parcours classique, y compris en thème sombre.
