@@ -4,7 +4,8 @@
 
 ### 3 novembre — Couleurs et navigation des équipes Clubs
 
-- Reprise des repères Femmes et Hommes du parcours classique en thème clair et sombre. L’action d’ajout d’équipe est distincte. La vue HC ne conserve plus l’état sélectionné d’une équipe. Interface seule. Recette TEST attendue.
+- Reprise des repères Femmes et Hommes du parcours classique en thème clair et sombre. L’action d’ajout d’équipe est distincte. La vue HC ne conserve plus l’état sélectionné d’une équipe. Interface seule.
+- [PR #708](https://github.com/ffessmnap/LivePalmes/pull/708), [CI PR](https://github.com/ffessmnap/LivePalmes/actions/runs/41638254773) et [CI main](https://github.com/ffessmnap/LivePalmes/actions/runs/41639737149) réussies. Edge local avec données fictives : couleurs en thèmes clair et sombre, bouton d’ajout distinct et une seule vue sélectionnée. [TEST commun réussi](https://github.com/ffessmnap/LivePalmes/actions/runs/41641295290) sur 0a2a0d1e174970452c1cd23a6ac753ec6c209691, hébergement seul. Trois ressources publiques vérifiées en HTTP 200. Recette utilisateur attendue.
 
 ### 3 novembre — Séparer la déclaration hors concours du choix des courses
 
