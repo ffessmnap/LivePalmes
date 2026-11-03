@@ -2,6 +2,10 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 3 novembre — Tableau classique partagé avec les engagements Clubs
+
+- Le tableau classique sert aux Clubs et aux Masters, y compris pour les hors concours. Nom, prénom, naissance, catégorie, sessions et défilement proviennent du même rendu. Le module Clubs conserve ses contrôles, ses temps et les relais sous le tableau. Interface seule. Recette TEST attendue.
+
 ### 3 novembre — Couleurs et navigation des équipes Clubs
 
 - Reprise des repères Femmes et Hommes du parcours classique en thème clair et sombre. L’action d’ajout d’équipe est distincte. La vue HC ne conserve plus l’état sélectionné d’une équipe. Interface seule.

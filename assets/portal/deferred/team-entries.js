@@ -89,7 +89,7 @@
             && (item.genderMode !== 'female' || value === 'F')
             && (item.genderMode !== 'male' || value === 'M'));
           if (!eligible.length) continue;
-          columns.push({event, sexes:eligible});
+          columns.push({event, sexes:eligible, genderMode:item.genderMode});
           seen.set(event.code, [...previous, ...eligible]);
         }
         return {...session, columns};
@@ -98,41 +98,38 @@
       if (remaining.length) sessions.push({label:sessions.length ? 'Autres courses' : 'Programme', columns:remaining});
       return sessions;
     }
-    function matrix(ids, {outside = false, sex} = {}) {
+    function matrix(ids, {outside = false, sex, label = 'Courses individuelles'} = {}) {
       const team = selected();
-      const sessions = individualSessions(outside ? sex : team?.sex);
-      const columns = sessions.flatMap(session => session.columns);
+      const groupSex = outside ? sex : team?.sex;
+      const sessions = individualSessions(groupSex).map(session => ({
+        ...session,
+        items: session.columns.map(({event, sexes, genderMode}) => ({eventCode:event.code, sexes, genderMode:genderMode || 'mixed'}))
+      }));
       const {byId, savedById} = directory();
       const disabled = locked();
       const rows = ids.map(id => {
-        const isReserve = !outside && team?.reserve === id;
-        const hc = outside || isReserve;
-        const person = byId.get(id);
-        const personName = esc(name(id));
-        const selectedCourses = courses(id);
-        const savedCourses = savedById.get(id)?.individualEntries || [];
-        const cells = columns.map(({event, sexes}) => {
-          const {code} = event;
-          if (person?.sex && !sexes.includes(person.sex)) return '<td aria-label="Course non proposée">–</td>';
-          const checked = selectedCourses.includes(code);
-          const assigned = !hc && team?.members.some(other => other !== id && courses(other).includes(code));
-          const forbidden = Array.isArray(person?.nativeAllowedEventCodes) && !person.nativeAllowedEventCodes.includes(code);
-          const unavailable = disabled || (!checked && (assigned || selectedCourses.length >= 2 || forbidden));
-          const time = savedCourses.find(entry => entry.eventCode === code && !entry.horsConcours)?.entryTime;
-          return `<td class="admin-engagements-club-entry-course"><label><input type="checkbox" aria-label="${personName} · ${esc(code)}" data-team-field="course" data-id="${esc(id)}" data-code="${esc(code)}"${checked?' checked':''}${unavailable?' disabled':''}>${checked?`<small data-engagement-club-entry-cell-time data-entry-time-mode="${hc || time ? 'known' : 'pending'}" title="${hc || time ? '' : 'Temps en attente d’enregistrement'}">${hc?'59:59.99':esc(time || 'En attente…')}</small>`:''}</label></td>`;
-        }).join('');
-        const roleLabel = isReserve ? '<small>Remplaçant · hors concours · 59:59.99 imposé</small>' : outside ? '<small>59:59.99 imposé</small>' : '';
-        return `<tr data-team-sex="${esc(person?.sex || "")}"><td>${personName}${roleLabel}</td>${cells}<td>${selectedCourses.length}/2</td></tr>`;
-      }).join('');
-      const headers = columns.map(({event, sexes}) => `<th scope="col">${esc(event.shortLabel || event.label || event.code)}${(!team || outside || isMasters()) && sexes.length === 1 ? `<small>${sexes[0] === 'F' ? 'Femmes' : 'Hommes'}</small>` : ''}</th>`).join('');
-      const groups = sessions.map(session => {
-        const meta = [session.date && actions.formatShortDate(session.date), session.startTime].filter(Boolean).join(' · ');
-        return `<th colspan="${session.columns.length}" scope="colgroup">${esc(session.label || 'Session')}${meta ? `<small>${esc(meta)}</small>` : ''}</th>`;
-      }).join('');
-      const emptyRow = `<tr><td colspan="${columns.length + 2}">Aucun nageur déclaré.</td></tr>`;
-      const heading = `<th scope="col"${groups ? ' rowspan="2"' : ''}>Nageur${outside ? ' hors concours' : ''}</th>`;
-      const total = `<th scope="col"${groups ? ' rowspan="2"' : ''}>Total</th>`;
-      return `<div class="portal-team-table"><table class="admin-engagements-table"><thead><tr>${heading}${groups}${total}</tr>${groups ? `<tr class="portal-team-course-head">${headers}</tr>` : ''}</thead><tbody>${rows || emptyRow}</tbody></table></div>`;
+        const reserve = !outside && team?.reserve === id;
+        return {
+          swimmerIndexId:id,
+          individualEventCodes:courses(id),
+          horsConcours:outside || reserve,
+          roleLabel:reserve ? 'Remplaçant · hors concours' : outside ? 'Hors concours' : ''
+        };
+      });
+      const teamCell = (item, person, row) => {
+        const code = item.eventCode;
+        const checked = row.individualEventCodes.includes(code);
+        const assigned = !row.horsConcours && team?.members.some(id => id !== row.swimmerIndexId && courses(id).includes(code));
+        const forbidden = Array.isArray(person.nativeAllowedEventCodes) && !person.nativeAllowedEventCodes.includes(code);
+        const time = row.horsConcours ? '59:59.99' : savedById.get(row.swimmerIndexId)?.individualEntries?.find(entry => entry.eventCode === code && !entry.horsConcours)?.entryTime;
+        return {
+          allowed:!person.sex || item.sexes.includes(person.sex),
+          disabled:disabled || (!checked && (assigned || row.individualEventCodes.length >= 2 || forbidden)),
+          time:time || 'En attente…',
+          mode:time ? 'known' : 'pending'
+        };
+      };
+      return actions.renderEngagementClubEntriesTable({sex:groupSex === 'X' ? '' : groupSex, label, rows, swimmersById:byId, sessions, teamCell});
     }
     function relays(team) {
       const disabled = locked() || team.members.filter(Boolean).length !== size();
@@ -194,7 +191,7 @@
       const women = ids.filter(id => byId.get(id)?.sex === 'F');
       const men = ids.filter(id => byId.get(id)?.sex === 'M');
       const unclassified = ids.filter(id => !['F', 'M'].includes(byId.get(id)?.sex));
-      return `<p>Deux courses maximum, sans équipe ni points. Temps imposé : 59:59.99.</p><h5 class="portal-team-group-head" data-team-sex="F">Femmes</h5>${matrix(women, {outside:true, sex:'F'})}<h5 class="portal-team-group-head" data-team-sex="M">Hommes</h5>${matrix(men, {outside:true, sex:'M'})}${unclassified.length ? `<h5>Nageurs à vérifier</h5>${matrix(unclassified, {outside:true})}` : ''}`;
+      return `<p>Deux courses maximum, sans équipe ni points. Temps imposé : 59:59.99.</p>${matrix(women, {outside:true, sex:'F', label:'Femmes'})}${matrix(men, {outside:true, sex:'M', label:'Hommes'})}${unclassified.length ? `${matrix(unclassified, {outside:true, label:'Nageurs à vérifier'})}` : ''}`;
     }
     function body(section) {
       const d = draft();
@@ -231,6 +228,7 @@
       const d=draft();if(!d.selected&&d.value.teams.length)d.selected=d.value.teams[0].id;
       const reason=writeReason()||(!actions.engagementClubTeamComplete()?'Déclarez le chef d’équipe avant les engagements.':'');
       mount.innerHTML=`${reason?`<p class="admin-engagements-message" data-tone="warning">${esc(reason)}</p>`:''}${d.message?`<p class="admin-engagements-message" role="status">${esc(d.message)}</p>`:''}${body(section)}<div class="admin-portal-actions portal-team-save"><span role="status">${d.busy?'Enregistrement…':d.pending?'Enregistrement à vérifier : reprendre la même opération.':d.dirty?'Modifications non enregistrées':'Dossier enregistré'}</span>${!writeReason()?btn(d.pending?'Reprendre l’enregistrement':'Enregistrer le dossier du club','save',d.busy||!actions.engagementClubTeamComplete()?'disabled':'',true):''}</div>`;
+      if (section === 'entries') actions.initializeEngagementCourseScrollHints(mount);
       if (section === 'summary' && elements.engagementsClubSummaryPdfButton) {
         const button = elements.engagementsClubSummaryPdfButton;
         const hasRecap = actions.engagementClubTeamComplete() && actions.engagementClubEntryHasParticipants();
@@ -244,7 +242,7 @@
     function redraw() {
       for (const node of document.querySelectorAll('[data-team-entry-mount]')) {
         if (node.closest('[hidden]')) continue;
-        const scroll = node.querySelector('.portal-team-table')?.scrollLeft;
+        const scroll = [...node.querySelectorAll('.admin-engagements-club-entries-table-shell')].map(shell => [shell.dataset.engagementClubEntriesSex, shell.scrollLeft]);
         const focused = document.activeElement;
         const focusData = node.contains(focused) ? focused.dataset : null;
         render(node.dataset.teamEntryMount);
