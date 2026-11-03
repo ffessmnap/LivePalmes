@@ -5,7 +5,7 @@
 ### 3 novembre — Ordre du 4 × 100 SB Masters
 
 - Les quatre postes affichent BI homme, BI femme, SF homme, SF femme. Les choix sont filtrés et l’ordre est contrôlé lors de l’enregistrement. Une composition vide reste autorisée.
-- [PR #714](https://github.com/ffessmnap/LivePalmes/pull/714), [CI PR](https://github.com/ffessmnap/LivePalmes/actions/runs/41661921439) et [CI main](https://github.com/ffessmnap/LivePalmes/actions/runs/41663620832) réussies. Edge sur données fictives et validation NAP pure : libellés, choix filtrés, ordre valide, refus du mauvais ordre et composition vide. [TEST commun réussi](https://github.com/ffessmnap/LivePalmes/actions/runs/41665655213) sur ceab6101d68cdb8aaf754bd5d43efe297b2da29b. Sélection calculée de 23/106 fonctions ordinaires liée au modèle équipes partagé entre enregistrement, lectures, exports et notifications. Trois ressources publiques vérifiées en HTTP 200. Recette utilisateur attendue.
+- [PR #714](https://github.com/ffessmnap/LivePalmes/pull/714), [CI PR](https://github.com/ffessmnap/LivePalmes/actions/runs/41661921439) et [CI main](https://github.com/ffessmnap/LivePalmes/actions/runs/41663620832) réussies. Edge sur données fictives et validation NAP pure : libellés, choix filtrés, ordre valide, refus du mauvais ordre et composition vide. [TEST commun réussi](https://github.com/ffessmnap/LivePalmes/actions/runs/41665655213) sur ceab6101d68cdb8aaf754bd5d43efe297b2da29b. Sélection calculée de 23/106 fonctions ordinaires liée au modèle équipes partagé entre enregistrement, lectures, exports et notifications. Trois ressources publiques vérifiées en HTTP 200. Validation utilisateur sur TEST : Antoine confirme « je valide ça » pour l’ordre du 4 × 100 SB Masters.
 
 ### 3 novembre — Tarif par équipe dans Général
 
