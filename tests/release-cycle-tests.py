@@ -11,6 +11,46 @@ spec=importlib.util.spec_from_file_location('cycle',Path(__file__).parents[1]/'t
 m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m)
 
 class ReleaseTests(unittest.TestCase):
+    def test_team_trophy_release_is_bound_to_exact_candidate_and_safe_closure_window(self):
+        from datetime import datetime, timezone
+        policy = m.team_trophy
+        request = {'candidate':policy.CANDIDATE,'productionCommit':policy.BASE,
+                   'productionHosting':'sites/livepalmes/versions/073cb6f89178c29e',
+                   'testRun':policy.TEST_RUN,'testBackendRuns':[1234],
+                   'teamTrophyRelease':'20261104-equipes-trophee-sources'}
+        self.assertEqual(m.approved_extra_functions(request),policy.SOURCE_ONLY+[policy.NEW])
+        with self.assertRaises(ValueError):
+            m.approved_extra_functions({**request,'candidate':'f'*40})
+        with self.assertRaises(ValueError):
+            m.approved_extra_functions({**request,'notificationMaintenancePlan':{}})
+        with self.assertRaises(ValueError):
+            policy.selection(request,policy.SOURCE_ONLY+[policy.NEW])
+        now = datetime(2026,11,4,tzinfo=timezone.utc)
+        row = {'status':{'stringValue':'pending'},'runAt':{'stringValue':'2026-11-05T00:00:00Z'}}
+        policy.require_quiet_closures([row],now)
+        for changed in ({'status':{'stringValue':'processing'}},
+                        {'sourceHash':{'stringValue':'already-started'}},
+                        {'runAt':{'stringValue':'2026-11-04T01:00:00Z'}}):
+            with self.assertRaises(ValueError):
+                policy.require_quiet_closures([{**row,**changed}],now)
+        function = {'name':policy.PREFIX+policy.NEW,'state':'ACTIVE','environment':'GEN_2',
+                    'buildConfig':{'runtime':'nodejs22','entryPoint':policy.NEW},
+                    'labels':{'livepalmes-commit':policy.CANDIDATE},
+                    'serviceConfig':{'secretEnvironmentVariables':[{'key':'LIVEPALMES_NAP_PASSWORD',
+                        'secret':'LIVEPALMES_NAP_PASSWORD','projectId':'livepalmes'}]}}
+        policy.assert_new(function)
+        function['serviceConfig']['secretEnvironmentVariables'][0]['projectId'] = 'livepalmes-test'
+        with self.assertRaises(ValueError):
+            policy.assert_new(function)
+        with tempfile.TemporaryDirectory() as directory:
+            backend = Path(directory)/'functions'/'backend-index.js'
+            backend.parent.mkdir()
+            backend.write_text('const napPassword = defineSecret("LIVEPALMES_NAP_PASSWORD");\n'
+                               'const unchanged = defineSecret("ANOTHER_SECRET");\n')
+            policy.prepare_trophy_secret(directory)
+            self.assertIn('process.env.LIVEPALMES_NAP_PASSWORD', backend.read_text())
+            self.assertIn('const unchanged = defineSecret("ANOTHER_SECRET");', backend.read_text())
+
     def test_team_closure_source_patch_never_changes_runtime_settings(self):
         source = m.ROOT / 'tools/team-closure-test-sources.py'
         spec = importlib.util.spec_from_file_location('team_closure_sources_test', source)

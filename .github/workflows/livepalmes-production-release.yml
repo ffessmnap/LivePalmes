@@ -280,6 +280,7 @@ jobs:
           ${{ runner.temp }}/release-plan/nap-account-*.json
           ${{ runner.temp }}/release-plan/portal-access-ns-*.json
           ${{ runner.temp }}/release-plan/validated-portal-*.json
+          ${{ runner.temp }}/release-plan/team-trophy-controls-*.json
         if-no-files-found: error
         retention-days: 14
     - uses: google-github-actions/auth@v3

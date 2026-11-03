@@ -67,6 +67,13 @@ def check_idf_preservation(document, preservation, directory, after=False):
 
 def main():
     request = json.loads((Path(os.environ['PLAN']) / 'request.json').read_text())
+    if request.get('teamTrophyRelease'):
+        spec = importlib.util.spec_from_file_location('team_trophy_guard', Path(__file__).with_name('team-trophy-release-policy.py'))
+        guard = importlib.util.module_from_spec(spec); spec.loader.exec_module(guard)
+        if sys.argv[1:] not in ([], ['--after']):
+            raise ValueError('Mode equipes/trophee invalide')
+        guard.guard(Path(os.environ['PLAN']), sys.argv[1:] == ['--after'])
+        return
     if request.get('validatedPortalRelease'):
         spec = importlib.util.spec_from_file_location('validated_portal_guard', Path(__file__).with_name('validated-portal-release-policy.py'))
         guard = importlib.util.module_from_spec(spec); spec.loader.exec_module(guard)
