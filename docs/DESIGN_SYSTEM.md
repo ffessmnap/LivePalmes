@@ -6,7 +6,7 @@
 
 Le module conserve les panneaux Participants, Individuels, Relais et Récapitulatif du parcours existant. Une navigation compacte affiche les équipes par sexe et lettre, puis « Hors concours sans équipe ». Boutons, champs et messages reprennent les variables de thème du portail.
 
-Titulaires et remplaçant utilisent une grille de deux colonnes sur ordinateur et une sur mobile. La matrice défile horizontalement dans son cadre, avec nom fixe et cibles de 44 px pour les cases. Les six positions restent accessibles au toucher. L'enregistrement du dossier global est proposé dans chaque panneau, avec état non enregistré, en cours ou reprise explicite. Variante dans `assets/portal/styles/16-team-entries.css`, chargée dans la cascade existante.
+Titulaires et remplaçant utilisent une grille de deux colonnes sur ordinateur et une sur mobile. La fenêtre « Ajouter une équipe » reprend l’en-tête, les champs et les actions du dialogue du portail. La ligne du remplaçant est identifiée sous les titulaires dans la même matrice. La matrice défile horizontalement dans son cadre, avec nom fixe et cibles de 44 px pour les cases. Les six positions restent accessibles au toucher. Les cases de course affichent le temps confirmé après enregistrement automatique. L'enregistrement manuel du dossier global est proposé dans chaque panneau, avec état non enregistré, en cours ou reprise explicite. Variante dans `assets/portal/styles/16-team-entries.css`, chargée dans la cascade existante.
 
 ## Reconnexion et chargement de rubrique — 2 novembre 2026
 
