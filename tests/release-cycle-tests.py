@@ -11,6 +11,41 @@ spec=importlib.util.spec_from_file_location('cycle',Path(__file__).parents[1]/'t
 m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m)
 
 class ReleaseTests(unittest.TestCase):
+    def test_team_hosting_resume_requires_complete_clean_proof_and_matching_guards(self):
+        policy = m.team_trophy
+        selected = policy.SOURCE_ONLY + [policy.NEW]
+        selected += [f'ordinary{i}' for i in range(116 - len(selected))]
+        request = {'candidate':policy.CANDIDATE,'productionCommit':policy.BASE,
+                   'productionHosting':'sites/livepalmes/versions/073cb6f89178c29e',
+                   'testRun':policy.TEST_RUN,'testBackendRuns':[1234],
+                   'teamTrophyRelease':'20261104-equipes-trophee-sources'}
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            guards = root / 'previous/guards'
+            guards.mkdir(parents=True)
+            before = guards / 'team-trophy-controls-before.json'
+            after = guards / 'team-trophy-controls-after.json'
+            proof = root / 'previous/production-after.json'
+            witness = {'mailRevision': 9}
+            functions = [{'name': policy.PREFIX + name, 'revision': 'new',
+                          'updateTime': 'verified', 'state': 'ACTIVE'} for name in selected]
+            report = {'candidate': policy.CANDIDATE, 'errors': [], 'functions': functions}
+            m.write(before, witness)
+            m.write(after, witness)
+            m.write(proof, report)
+            m.team_hosting_resume(root, request, selected)
+            self.assertEqual(m.read(root / before.name), witness)
+            m.write(proof, {**report, 'functions': functions[:-1]})
+            with self.assertRaisesRegex(ValueError, 'preuve complete'):
+                m.team_hosting_resume(root, request, selected)
+            m.write(proof, {**report, 'errors': ['drift']})
+            with self.assertRaisesRegex(ValueError, 'preuve complete'):
+                m.team_hosting_resume(root, request, selected)
+            m.write(proof, report)
+            m.write(after, {'mailRevision': 10})
+            with self.assertRaisesRegex(ValueError, 'incoherents'):
+                m.team_hosting_resume(root, request, selected)
+
     def test_team_trophy_release_is_bound_to_exact_candidate_and_safe_closure_window(self):
         from datetime import datetime, timezone
         policy = m.team_trophy
