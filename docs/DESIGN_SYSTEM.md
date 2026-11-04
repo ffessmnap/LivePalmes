@@ -2,6 +2,14 @@
 
 <!-- description: Référence du langage visuel, des composants d’interface et des règles responsive déjà présents dans LivePalmes. -->
 
+## Mode sombre du portail — 4 novembre 2026
+
+Le bandeau du portail suit désormais le thème sélectionné, y compris Système lorsque l’appareil est sombre. Sa disposition et ses dimensions restent identiques : surface `#192630`, marque et liens clairs, menus et compte assortis, survol et sélection sur une surface secondaire. Le logo fédéral conserve seul un petit support blanc. Le focus utilise un contour turquoise sur fond sombre ; le portail clair et les pages publiques gardent leur palette claire.
+
+Les fenêtres d’accès, sections de formulaire, groupes de courses, étapes et revues d’import adaptent leur fond avec leur texte. Les valeurs du journal restent lisibles une fois dépliées. Les qualifications conservent des états sélectionné, non sélectionné, sans minimum et avertissement distincts, sans changement sportif. Les statuts spécialisés et le chargement suivent la palette sombre. À l’impression navigateur, les titres, libellés et surfaces redeviennent noirs sur blanc ; les PDF métier ne sont pas modifiés.
+
+Ces variantes restent limitées à `.admin-portal-page` et au thème sombre dans `assets/livepalmes-portal-appearance.css`. Les régressions de contraste, fenêtres, menus, clavier et isolation du clair/public sont contrôlées par `tests/portal-dark-surfaces-browser-tests.js` avec services fictifs et HTTPS externe bloqué.
+
 ## Trophée Damien Hébert
 
 Le classement utilise un tableau horizontal avec rang et nom fixes, un chrono au-dessus des points et un total en dernière colonne. Une confirmation ouvre la fiche publique du nageur. Dans l’administration nationale, les réglages de l’édition sont regroupés dans un panneau repliable avec aperçu.
@@ -185,7 +193,7 @@ Dans le portail, seuls les h2 directement contenus dans admin-portal-workspace-h
 
 ## Continuité du bandeau public/portail — 21 octobre 2026
 
-Le cadre du bandeau est identique sur le public et le portail : largeur maximale 1 720 px, marges communes aux mêmes seuils et gouttière de défilement stable pour éviter le décalage entre pages courtes et longues. La largeur du contenu reste propre à chaque espace. Le bandeau utilise une palette claire commune, même lorsque le contenu du portail utilise le thème sombre ; les états actifs restent signalés sans changer les dimensions.
+Le cadre du bandeau est identique sur le public et le portail : largeur maximale 1 720 px, marges communes aux mêmes seuils et gouttière de défilement stable pour éviter le décalage entre pages courtes et longues. La largeur du contenu reste propre à chaque espace. Le bandeau utilise la palette claire sur le public et dans le portail clair ; depuis le 4 novembre, il suit la palette sombre du portail lorsqu’elle est sélectionnée. Les états actifs restent signalés sans changer les dimensions.
 
 L’accès « Portail » a un libellé et une largeur stables, avant et après connexion. Le compte utilise la même icône et le même emplacement : menu réel conservé dans le portail ; lien Mon compte vers /portail.html#mon-compte sur les pages publiques après ouverture de session. Le nom et le code club ne sont plus affichés dans le bouton du bandeau. Aucun nom, profil ou droit n’est copié dans le témoin local. L’emplacement du compte est réservé avant connexion, avec l’action masquée, afin de préserver les alignements.
 
@@ -825,7 +833,7 @@ Depuis le 29 octobre 2026, les textes secondaires du portail utilisent un jeton 
 
 Les menus dépliés de l’accueil, les informations de l’organisateur et les paires libellé/valeur du détail des compétitions utilisent les jetons du thème pour le fond et le texte ensemble. Les textes secondaires de l’accueil utilisent `--portal-color-muted`. Ne pas conserver un fond clair fixe sous un texte adapté au thème sombre. Contrôler ces composants dans les deux thèmes sur ordinateur et mobile (correction du 29 octobre 2026).
 
-Le bandeau commun conserve sa palette locale claire : les intitulés des menus, liens et éléments `summary` utilisent son jeton de texte, même quand le contenu du portail est sombre. L’en-tête et les onglets du détail d’une compétition utilisent la surface du thème du portail.
+Le bandeau du portail possède une palette locale correspondant au thème courant : intitulés, liens, menus, compte et éléments `summary` restent lisibles sur leur surface. Le public conserve son bandeau clair. L’en-tête et les onglets du détail d’une compétition utilisent également la surface du thème du portail.
 
 Le thème sombre reste limité au portail. Les encarts du compte, le contexte du club, les filtres, les états vides et les tableaux utilisent une palette commune : fond `#101a22`, carte `#192630`, surface secondaire `#20323e`, texte `#e1ebef` et texte secondaire `#d0dee6`. Les séparateurs restent discrets. Seul le logo fédéral conserve son support blanc. Les contenants des icônes reçoivent une teinte atténuée, sans ajouter de fond aux SVG de navigation. Les états succès, avertissement et erreur gardent leurs couleurs et libellés ; les lignes femmes/hommes conservent une distinction prune/bleu atténuée. Les règles sont conditionnées au thème sombre et ne changent ni les pages publiques ni les exports.
 

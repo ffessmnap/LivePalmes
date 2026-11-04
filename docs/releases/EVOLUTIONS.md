@@ -2,6 +2,13 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 4 novembre — Mode sombre complet et bandeau du portail
+
+- Besoin autorisé : appliquer le plan de correction du mode sombre et le bandeau sombre approuvé, sur TEST uniquement. Interface du portail, hors LivePalmes Direct ; aucune modification des droits, de l’authentification, des calculs sportifs, des données, des requêtes ou du backend. Budget de lectures supplémentaire nul à l’ouverture, à l’action et au rafraîchissement.
+- Correction : fonds et textes des fenêtres d’accès, formulaires, journal, étapes, statuts, qualifications et revues d’import ; bandeau, menus et compte assortis au thème ; impression navigateur lisible. Le portail clair et les pages publiques restent isolés.
+- Contrôles : régressions locales à 320, 390 et 1 280 px, plus de 350 couples texte/surface mesurés, clavier, fenêtres, Clair/Sombre et isolation publique ; préférences, cache et bandeau commun vérifiés. Données fictives et HTTPS externe bloqué, sans écriture réelle.
+- État : préparation de la PR et des contrôles obligatoires ; déploiement TEST non encore attesté. La validation des maquettes ne vaut pas recette de la version déployée. Aucune publication PROD autorisée par cette livraison.
+
 ### 3 novembre — Classement du Trophée Damien Hébert
 
 - Besoin : rétablir le tableau public des qualifications et permettre à l’administration nationale de préparer, publier et arrêter une édition.
