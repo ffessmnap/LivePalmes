@@ -69,6 +69,8 @@ html[data-portal-theme="dark"] .admin-portal-page {
   --portal-color-field-border:#48616f;
   --portal-color-hover-border:#65cbd9;
   --portal-color-field-background:#13212b;
+  --portal-color-women:#f2b5d1;
+  --portal-color-men:#9fceff;
   --portal-focus-ring:rgba(101,203,217,.3);
   --ink:#e1ebef; --muted:#d0dee6; --line:#3b515f;
   background:var(--portal-color-background) !important;
@@ -285,7 +287,7 @@ html[data-portal-theme="dark"] .admin-portal-page :is(.admin-overview-card-label
   .competition-imports-note, .competition-import-details span, .competition-import-actions span
 ) { color:var(--portal-color-muted) !important; }
 .admin-portal-page :is(input,textarea)::placeholder { color:var(--portal-color-muted); opacity:1; }
-/* The common header deliberately keeps its own light palette. */
+/* The light header keeps its local palette; the dark variant follows below. */
 .admin-portal-page .public-site-header { --portal-color-muted:#304650; }
 
 /* Neutral secondary surfaces must follow the brighter dark-theme text. */
@@ -300,3 +302,130 @@ html[data-portal-theme="dark"] .admin-portal-page :is(
   .admin-national-audit-entry, .admin-national-audit-entry > summary,
   .admin-national-audit-entry-details, .admin-license-admin-validation-bar
 ) { background:var(--portal-color-surface) !important; }
+
+/* Portal-only dark header. Keep public pages and the header geometry unchanged. */
+html[data-portal-theme="dark"] .admin-portal-page .public-site-header {
+  --portal-color-text:#e1ebef; --portal-color-brand:#edf5f7; --portal-color-muted:#d0dee6;
+  --portal-color-surface:#192630; --portal-color-field-background:#13212b;
+  --portal-color-accent:#65cbd9; --portal-color-accent-strong:#8bdeea;
+  --portal-color-border:#3b515f; --portal-color-field-border:#48616f; --portal-color-hover-border:#65cbd9;
+  color:var(--portal-color-text);
+}
+html[data-portal-theme="dark"] .admin-portal-page .public-site-brand { color:var(--portal-color-brand) !important; }
+html[data-portal-theme="dark"] .admin-portal-page .public-site-brand img { background:#fff; border-radius:4px; padding:3px; }
+html[data-portal-theme="dark"] .admin-portal-page .public-site-wordmark small { color:var(--portal-color-muted) !important; }
+html[data-portal-theme="dark"] .admin-portal-page .public-site-dropdown {
+  background:var(--portal-color-surface-raised); border-color:var(--portal-color-border); box-shadow:0 8px 24px #0005;
+}
+html[data-portal-theme="dark"] .admin-portal-page .admin-portal-account-actions {
+  background:var(--portal-color-surface) !important; border-color:var(--portal-color-border) !important;
+}
+html[data-portal-theme="dark"] .admin-portal-page .admin-portal-account-actions :is(a,button) { background:var(--portal-color-field-background) !important; }
+html[data-portal-theme="dark"] .admin-portal-page .admin-portal-account-actions :is(a,button):hover { background:var(--portal-color-surface-raised) !important; }
+html[data-portal-theme="dark"] .admin-portal-page .public-site-header :is(.public-site-portal,.public-site-menu-toggle,#adminPortalAccountToggle,.public-site-account-link) {
+  background:var(--portal-color-field-background) !important; color:var(--portal-color-text) !important; border-color:var(--portal-color-field-border) !important;
+}
+html[data-portal-theme="dark"] .admin-portal-page .public-site-header :is(a,button,summary):focus-visible {
+  outline:3px solid var(--portal-color-accent); outline-offset:3px;
+}
+
+/* Form sections and dialog children must change surface together with labels. */
+html[data-portal-theme="dark"] .admin-portal-page :is(
+  .admin-access-preview-head,.admin-access-request-review-head,.admin-engagements-access-request-edit,
+  .admin-engagements-form-section,.admin-engagements-form-section-grid > label,
+  .admin-engagements-club-person-identity-grid,.admin-engagements-club-person-roles,
+  .admin-engagements-club-person-roles label,.admin-engagements-club-person-form .admin-engagements-form-section-grid,
+  .admin-engagements-invited-regions-field,.admin-engagements-embedded-fees,.admin-engagements-no-fees-choice,
+  .admin-engagements-fees-grid label
+) { background:var(--portal-color-surface) !important; border-color:var(--portal-color-border) !important; }
+html[data-portal-theme="dark"] .admin-portal-page :is(
+  .admin-access-rights label,.admin-access-reset-choice,
+  .admin-portal-login-access summary,.admin-engagements-new-club-toggle
+) { background:var(--portal-color-field-background) !important; border-color:var(--portal-color-border) !important; }
+html[data-portal-theme="dark"] .admin-portal-page .admin-access-rights label:hover { background:var(--portal-color-surface-raised) !important; }
+html[data-portal-theme="dark"] .admin-portal-page :is(.admin-portal-login-heading > div > span,.admin-portal-workspace-head > span,.admin-access-request-review-head > span) { color:var(--portal-color-accent) !important; }
+html[data-portal-theme="dark"] .admin-portal-page .admin-access-new-club-toggle { color:var(--portal-color-text) !important; }
+html[data-portal-theme="dark"] .admin-portal-page .admin-access-new-club-toggle > span { color:var(--portal-color-text) !important; }
+html[data-portal-theme="dark"] .admin-portal-page :is(.admin-overview-space-tools a > span,.admin-overview-card-arrow) { color:var(--portal-color-accent) !important; }
+html[data-portal-theme="dark"] .admin-portal-page .admin-national-audit-entry-details dd { color:var(--portal-color-text) !important; }
+html[data-portal-theme="dark"] .admin-portal-page :is(.admin-engagements-swimmer-change-diff del,.admin-national-audit-change del) { color:#ffb4b4 !important; }
+html[data-portal-theme="dark"] .admin-portal-page .admin-national-audit-user-selected { color:#98dfbb !important; }
+
+/* Keep the course groups, step numbers and empty table gutters on dark surfaces. */
+html[data-portal-theme="dark"] .admin-portal-page :is(
+  .admin-engagements-club-entry-group-head,.admin-engagements-club-entries-table-shell,
+  .admin-engagements-detail-subtabs,.admin-engagements-detail-tab-group,.admin-engagements-competition-side
+) { background:var(--portal-color-surface-raised) !important; border-color:var(--portal-color-border) !important; }
+html[data-portal-theme="dark"] .admin-portal-page .admin-engagements-club-entry-group[data-entry-sex="F"] .admin-engagements-club-entry-group-head { background:#322938 !important; }
+html[data-portal-theme="dark"] .admin-portal-page .admin-engagements-club-entry-group[data-entry-sex="M"] .admin-engagements-club-entry-group-head { background:#203347 !important; }
+html[data-portal-theme="dark"] .admin-portal-page .admin-engagements-competition-status small { color:inherit !important; background:transparent !important; }
+html[data-portal-theme="dark"] .admin-portal-page .admin-engagements-club-swimmers-directory-license-missing { color:#f5d58c !important; }
+html[data-portal-theme="dark"] .admin-portal-page .admin-engagements-club-swimmers-directory-row[data-sex="F"] .admin-engagements-club-swimmers-directory-sex { color:var(--portal-color-women) !important; }
+html[data-portal-theme="dark"] .admin-portal-page .admin-engagements-club-swimmers-directory-row[data-sex="M"] .admin-engagements-club-swimmers-directory-sex { color:var(--portal-color-men) !important; }
+html[data-portal-theme="dark"] .admin-portal-page .admin-engagements-entry-status { background:var(--portal-color-surface-raised) !important; color:var(--portal-color-text) !important; }
+html[data-portal-theme="dark"] .admin-portal-page .admin-pending-badge { color:#fff !important; }
+html[data-portal-theme="dark"] .admin-portal-page .admin-engagements-detail-step-bar > button span { background:var(--portal-color-surface-raised) !important; color:var(--portal-color-text) !important; }
+html[data-portal-theme="dark"] .admin-portal-page .admin-engagements-detail-step-bar > button[aria-pressed="true"] span { background:#126f80 !important; color:#fff !important; }
+html[data-portal-theme="dark"] .admin-portal-page .admin-license-admin-import { background:#126f80 !important; color:#fff !important; }
+html[data-portal-theme="dark"] .admin-portal-page .admin-license-admin-import > span { color:inherit !important; }
+
+/* Qualification editor: active, unchecked, warning and no-minimum variants. */
+html[data-portal-theme="dark"] .admin-portal-page :is(.qualification-enable,.qualification-group,.qualification-button) {
+  background:var(--portal-color-surface) !important; border-color:var(--portal-color-border) !important;
+}
+html[data-portal-theme="dark"] .admin-portal-page :is(.qualification-fields > label > span,.qualification-options > span,.qualification-cell-blocked) { color:var(--portal-color-muted) !important; }
+html[data-portal-theme="dark"] .admin-portal-page .qualification-categories input + span {
+  background:var(--portal-color-field-background); color:var(--portal-color-text); border-color:var(--portal-color-border);
+}
+html[data-portal-theme="dark"] .admin-portal-page .qualification-categories input:checked + span { background:#203e4a; color:#9ae5ee; border-color:var(--portal-color-accent); }
+html[data-portal-theme="dark"] .admin-portal-page .qualification-grid-block h4 { background:#203e4a; }
+html[data-portal-theme="dark"] .admin-portal-page .qualification-grid td[data-q-none="true"] { background:var(--portal-color-surface-raised) !important; }
+html[data-portal-theme="dark"] .admin-portal-page .qualification-job-actions {
+  background:#403723; color:#f5d58c; border-color:#a88a46;
+}
+html[data-portal-theme="dark"] .admin-portal-page :is(.qualification-job-actions p,.qualification-exception-toggle small) { color:#f5d58c !important; }
+html[data-portal-theme="dark"] .admin-portal-page [data-q-error] { color:#ffb4b4 !important; }
+html[data-portal-theme="dark"] .admin-portal-page #adminQualificationEditor .qualification-enable input[type="checkbox"] { background:#48616f !important; }
+html[data-portal-theme="dark"] .admin-portal-page #adminQualificationEditor .qualification-enable input[type="checkbox"]:checked { background:#126f80 !important; }
+html[data-portal-theme="dark"] .admin-portal-page #adminQualificationEditor .qualification-enable input[type="checkbox"]:focus-visible,
+html[data-portal-theme="dark"] .admin-portal-page .qualification-categories input:focus-visible + span { outline:3px solid var(--portal-color-accent) !important; outline-offset:3px; }
+
+/* Shared import review stays scoped to the portal, including its semantic states. */
+html[data-portal-theme="dark"] .admin-portal-page :is(
+  .import-review-nav,.import-review-footer,.import-review-pane > details,
+  .import-profile-comparison article,.import-profile-option,.import-confirmation-message,
+  .import-swimmer,.import-swimmer-group,.import-creation-form
+) { background:var(--portal-color-surface) !important; border-color:var(--portal-color-border) !important; }
+html[data-portal-theme="dark"] .admin-portal-page :is(.import-swimmer,.import-swimmer-group)[data-state="matched"] { border-color:#98dfbb !important; }
+html[data-portal-theme="dark"] .admin-portal-page :is(.import-swimmer,.import-swimmer-group)[data-state="review"] { border-color:#f5d58c !important; }
+html[data-portal-theme="dark"] .admin-portal-page :is(.import-swimmer,.import-swimmer-group)[data-state="unknown"] { border-color:#ffb4b4 !important; }
+html[data-portal-theme="dark"] .admin-portal-page :is(.import-club-alert,.import-relay-problems) {
+  background:#403723 !important; color:#f5d58c !important; border-color:#a88a46 !important;
+}
+html[data-portal-theme="dark"] .admin-portal-page :is(.import-club-alert,.import-relay-problems) :is(strong,small,p,summary) { color:inherit !important; }
+html[data-portal-theme="dark"] .admin-portal-page .admin-portal-module-status {
+  background:var(--portal-color-surface-raised); color:var(--portal-color-text); border-color:var(--portal-color-field-border); box-shadow:0 3px 15px #0005;
+}
+
+/* Print overrides the dark palette and the more specific semantic text rules. */
+@media print {
+  html[data-portal-theme="dark"] .admin-portal-page,
+  html[data-portal-theme="dark"] .admin-portal-page .public-site-header {
+    --portal-color-background:#fff; --portal-color-surface:#fff; --portal-color-surface-raised:#fff;
+    --portal-color-field-background:#fff; --portal-color-text:#000; --portal-color-brand:#000;
+    --portal-color-heading:#000; --portal-color-muted:#000; --portal-color-accent:#000; --portal-color-accent-strong:#000;
+    --portal-color-women:#000; --portal-color-men:#000;
+    --portal-color-border:#777; --portal-color-field-border:#777;
+  }
+  html[data-portal-theme="dark"] .admin-portal-page :is(
+    h1,h2,h3,h4,strong,label,legend,summary,a,button,p,small,dd,span,del,
+    [data-tone],[data-entry-status],.danger-button,.qualification-job-actions,.import-club-alert,.import-relay-problems,
+    .admin-pending-badge,.admin-license-admin-import,
+    .admin-engagements-club-entry-row[data-sex],.admin-engagements-club-swimmers-directory-row[data-sex],
+    .admin-engagements-club-swimmer-row[data-sex],.admin-engagements-statistics-individual-row[data-sex],
+    .admin-dtn-listing-table tbody tr[data-sex] > td,.portal-team-workspace [data-team-sex]
+  ) { color:#000 !important; background:#fff !important; box-shadow:none !important; }
+  html[data-portal-theme="dark"] .portal-team-workspace :is([data-team-sex],[data-sex]) {
+    --team-entry-bg:#fff; --team-course-bg:#fff; --team-participant-bg:#fff;
+  }
+}
