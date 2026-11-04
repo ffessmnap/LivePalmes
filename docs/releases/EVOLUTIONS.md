@@ -6,8 +6,10 @@
 
 - Besoin autorisé : appliquer le plan de correction du mode sombre et le bandeau sombre approuvé, sur TEST uniquement. Interface du portail, hors LivePalmes Direct ; aucune modification des droits, de l’authentification, des calculs sportifs, des données, des requêtes ou du backend. Budget de lectures supplémentaire nul à l’ouverture, à l’action et au rafraîchissement.
 - Correction : fonds et textes des fenêtres d’accès, formulaires, journal, étapes, statuts, qualifications et revues d’import ; bandeau, menus et compte assortis au thème ; impression navigateur lisible. Le portail clair et les pages publiques restent isolés.
-- Contrôles : régressions locales à 320, 390 et 1 280 px, plus de 350 couples texte/surface mesurés, clavier, fenêtres, Clair/Sombre et isolation publique ; préférences, cache et bandeau commun vérifiés. Données fictives et HTTPS externe bloqué, sans écriture réelle.
-- État : préparation de la PR et des contrôles obligatoires ; déploiement TEST non encore attesté. La validation des maquettes ne vaut pas recette de la version déployée. Aucune publication PROD autorisée par cette livraison.
+- Contrôles : régressions locales à 320, 390 et 1 280 px, 381 couples texte/surface mesurés, clavier, fenêtres, Clair/Sombre et isolation publique ; préférences, cache et bandeau commun vérifiés. Données fictives et HTTPS externe bloqué, sans écriture réelle.
+- Livraison : [PR #727](https://github.com/ffessmnap/LivePalmes/pull/727), [CI PR](https://github.com/ffessmnap/LivePalmes/actions/runs/41919218860), [CI main](https://github.com/ffessmnap/LivePalmes/actions/runs/41920684247) et [TEST commun](https://github.com/ffessmnap/LivePalmes/actions/runs/41922007701) réussis sur le commit applicatif `8aa9d79377729defcf64c19c0f35b123b03d7f97`.
+- Déploiement confirmé : hébergement TEST seul, sans publication de Functions ni de règles. Page du portail et feuille de thème servies en HTTP 200, contenu comparé aux sources vérifiées. Aucune modification de PROD par cette livraison.
+- Retour utilisateur : plan et maquettes approuvés ; recette de la version effectivement déployée sur TEST à recueillir. Aucune publication PROD autorisée.
 
 ### 3 novembre — Classement du Trophée Damien Hébert
 
