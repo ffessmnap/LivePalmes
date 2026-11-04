@@ -11,6 +11,27 @@ spec=importlib.util.spec_from_file_location('cycle',Path(__file__).parents[1]/'t
 m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m)
 
 class ReleaseTests(unittest.TestCase):
+    def test_team_account_trigger_accepts_permutations_but_rejects_filter_changes(self):
+        from types import SimpleNamespace
+        policy = m.team_trophy
+        state = policy.load('test_release_state','production-release-state.py')
+        name = 'syncNapClubAccountEmails'
+        filters = [
+            {'attribute':'database','value':'(default)'},
+            {'attribute':'document','operator':'match-path-pattern','value':'users/{uid}'},
+            {'attribute':'namespace','value':'(default)'},
+        ]
+        before = {'name':policy.PREFIX+name,'state':'ACTIVE','environment':'GEN_2',
+                  'buildConfig':{'runtime':'nodejs22','entryPoint':name},'serviceConfig':{},
+                  'eventTrigger':{'eventFilters':filters}}
+        after = {**before,'labels':{'livepalmes-commit':policy.CANDIDATE},
+                 'eventTrigger':{'eventFilters':filters[::-1]}}
+        comparison = SimpleNamespace(rollback_patch=state.rollback_patch)
+        policy.assert_config(before,after,comparison)
+        after['eventTrigger']['eventFilters'] = filters[:-1]
+        with self.assertRaisesRegex(ValueError,'Filtres annuaire NAP modifies'):
+            policy.assert_config(before,after,comparison)
+
     def test_team_hosting_resume_requires_complete_clean_proof_and_matching_guards(self):
         policy = m.team_trophy
         selected = policy.SOURCE_ONLY + [policy.NEW]
