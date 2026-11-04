@@ -1292,6 +1292,23 @@ def deploy_batches(project, candidate, stage_path, selection_path, dry_run):
                 stream.write(f'\nLot {timing["batch"]} {project} ({timing["mode"]}) : {len(batch)} fonctions, {elapsed} s — ' + ', '.join(batch) + '\n')
 
 
+def team_hosting_resume(root, request, selected):
+    team_trophy.selection(request, selected)
+    after = read(root / 'previous/production-after.json')
+    functions = after['functions']
+    require(after['candidate'] == request['candidate'] and after['errors'] == []
+            and len(functions) == len(selected)
+            and {f['name'] for f in functions} == {team_trophy.PREFIX + name for name in selected}
+            and all(f['state'] == 'ACTIVE' and f['revision'] and f['updateTime'] for f in functions),
+            'Reprise Hosting interdite sans preuve complete des Functions')
+    witness = 'team-trophy-controls-before.json'
+    guards = root / 'previous/guards'
+    before = read(guards / witness)
+    require(before and before == read(guards / 'team-trophy-controls-after.json'),
+            'Temoins mails et automates de la tentative incoherents')
+    write(root / witness, before)
+
+
 def fetch_plan(preparation, resume, directory):
     root = Path(directory)
     if resume != '0':
@@ -1325,9 +1342,18 @@ def fetch_plan(preparation, resume, directory):
     value = read(root / 'request.json')
     require(not value.get('verificationOnly'), 'Bilan de verification uniquement : publication interdite')
     require(SHA.fullmatch(value['candidate']), 'Commit invalide')
+    selected = read(root / 'selection.json')
+    backend = bool(selected)
+    if resume != '0' and team_trophy.approved(value):
+        require(resume == '41743477574' and info['conclusion'] == 'failure'
+                and not (root / 'previous/production-hosting-after.json').exists(),
+                'Tentative equipes/trophee hors reprise Hosting approuvee')
+        artifact(resume, 'production-idf-preservation', root / 'previous/guards')
+        team_hosting_resume(root, value, selected)
+        backend = False
     evidence_path = root / 'test-proof.json'
     verified = reusable_verification(read(evidence_path), value['candidate']) if evidence_path.exists() else False
-    output(candidate=value['candidate'], backend=str(bool(read(root / 'selection.json'))).lower(), verified=str(verified).lower(),
+    output(candidate=value['candidate'], backend=str(backend).lower(), verified=str(verified).lower(),
            license_reports=str(bool(approved_license_report_functions(value))).lower(),
            idf_preservation=str(idf_preservation(value) is not None).lower(),
            nap_account=str(bool(nap_account.approved(value))).lower(),
