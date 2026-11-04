@@ -88,6 +88,18 @@ def assert_config(before,after,state):
     runtime(before,name)
     runtime(after,name)
     old, new = state.rollback_patch(before,{}), state.rollback_patch(after,{})
+    if name == 'syncNapClubAccountEmails':
+        # Eventarc returns these conjunctive filters in varying order.
+        expected = [
+            {'attribute':'database','value':'(default)'},
+            {'attribute':'document','operator':'match-path-pattern','value':'users/{uid}'},
+            {'attribute':'namespace','value':'(default)'},
+        ]
+        for config in (old,new):
+            trigger = config.get('eventTrigger',{})
+            filters = sorted(trigger.get('eventFilters',[]),key=lambda item:item['attribute'])
+            require(filters == expected,'Filtres annuaire NAP modifies')
+            config['eventTrigger'] = {**trigger,'eventFilters':filters}
     require(all(old.get(k)==new.get(k) for k in ('buildConfig','serviceConfig','eventTrigger'))
             and after.get('labels',{}) == {**before.get('labels',{}),'livepalmes-commit':CANDIDATE},
             'Configuration source protegee modifiee: '+name)
