@@ -2,6 +2,13 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 6 novembre — LivePalmes Direct multi-compétitions et stockage NAP
+
+- Besoin : ouvrir le Direct aux compétitions piscine du calendrier, avec bureau des performances, accès délégués, imports PDF et page publique inspirée de French Touch Taranto. Pilote demandé : IDF manche 1, Paris, 7 novembre, bassin de 50 m.
+- Accord : réalisation jusqu'à TEST, création de cinq tables dédiées, aucune modification des données existantes ; aucun accord PROD. Données TEST/PROD séparées dans les nouvelles tables. Les consoles terrain historiques sont préservées ; leurs rôles sont prévus dans le nouveau modèle.
+- État : développement et contrôles ciblés en cours. PR, CI, création additive et publication TEST à renseigner depuis leurs preuves authentiques. Aucune validation utilisateur de la version déployée à ce stade.
+- Contrôles ciblés : schéma additif, accès et limites, publication/reprise transactionnelle, conservation des autres séries, `595999` sans comparaison, imports existants et parcours navigateur 320/390/1 280 px sur données fictives. La simulation de 400 appels vérifie la mutualisation hors réseau ; elle ne constitue pas une mesure de charge de NAP réel.
+
 ### 4 novembre — Mode sombre complet et bandeau du portail
 
 - Besoin autorisé : appliquer le plan de correction du mode sombre et le bandeau sombre approuvé, sur TEST uniquement. Interface du portail, hors LivePalmes Direct ; aucune modification des droits, de l’authentification, des calculs sportifs, des données, des requêtes ou du backend. Budget de lectures supplémentaire nul à l’ouverture, à l’action et au rafraîchissement.

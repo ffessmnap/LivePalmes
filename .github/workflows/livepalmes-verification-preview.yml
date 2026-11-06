@@ -98,6 +98,7 @@ jobs:
           done
           node tests/nap-team-entry-mysql-tests.js
           node tests/nap-club-account-emails-mysql-tests.js
+          node tests/nap-direct-mysql-tests.js
 
       - name: Enregistrer la verification du commit main exact
         if: github.event_name == 'push' && steps.test-scope.outputs.documentation != 'true'

@@ -62,6 +62,7 @@ const LOTS = Object.freeze({
     "getPerformancePublicationJobStatus", "getNapPerformanceAdministration"
   ],
   publications: [
+    "manageLivePalmesDirect",
     "storeCompetitionPdf", "deleteCompetitionPdf", "syncOfficialResultToPublicIndex",
     "rebuildEngagementCompetitionCalendars",
     "syncEngagementCompetitionToCalendar", "syncEngagementCalendarEventToCalendar",
@@ -203,6 +204,7 @@ const TEST_NON_MAIL_FUNCTIONS = Object.freeze(["prepareEngagementLicenseControlB
 // un job qui y écrit, doit être déclarée ici. Les seules exceptions hors du lot
 // publications sont documentées : résolution email d'une identité et scheduler.
 const PUBLICATION_EFFECT_FUNCTIONS = Object.freeze([
+  "manageLivePalmesDirect",
   "storeCompetitionPdf", "deleteCompetitionPdf", "syncOfficialResultToPublicIndex",
   "rebuildEngagementCompetitionCalendars", "syncEngagementCompetitionToCalendar",
   "syncEngagementCalendarEventToCalendar", "syncPublicRecordsData", "publishPerformancePublicData",

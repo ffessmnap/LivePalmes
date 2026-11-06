@@ -47,9 +47,22 @@ async function wiringTests(){
   files.forEach(file=>visit(acorn.parse(fs.readFileSync(file,"utf8"),{ecmaVersion:"latest"})));
   // Include active historical variants even when the current UI no longer calls
   // them. Public/profile, Direct and maintenance keep their separate contracts.
-  const separateContracts=new Set(["getCurrentAccessUser","getPublicEngagementClubDirectory","setRolePins","verifyPin","storeCompetitionPdf","deleteCompetitionPdf","syncOfficialResultToPublicIndex","rebuildAccessDirectoryIndexNextPage","rebuildAccessDirectorySnapshotNextPage","syncEngagementMailRecipientIndex","rebuildEngagementMailRecipientIndexNextPage"]);
+  const separateContracts=new Set(["getCurrentAccessUser","getPublicEngagementClubDirectory","setRolePins","verifyPin","storeCompetitionPdf","deleteCompetitionPdf","syncOfficialResultToPublicIndex","manageLivePalmesDirect","rebuildAccessDirectoryIndexNextPage","rebuildAccessDirectorySnapshotNextPage","syncEngagementMailRecipientIndex","rebuildEngagementMailRecipientIndexNextPage"]);
   const lots=require("../tools/firebase-test-backend-lots");
   for(const name of lots.ALL_SAFE_LOTS.flatMap(lots.activeLotFunctions).concat(lots.TEST_NON_MAIL_FUNCTIONS))assert(separateContracts.has(name)||names.includes(name),"Active portal variant needs session authorization: "+name);
+  // Direct deliberately uses the active profile and competition grants, without
+  // opening/updating a portal session. Exercise the actual callable and service.
+  const directHandler=registrations.get('manageLivePalmesDirect').arguments.at(-1);
+  let directProfileReads=0,directBusinessReads=0;
+  const directCall=vm.runInNewContext('('+source.slice(directHandler.start,directHandler.end)+')',{
+    require:name=>{if(name==='./nap-direct-service')return require('../functions/nap-direct-service');directBusinessReads++;throw Error('No business access before Direct authorization');},
+    ENVIRONMENT:{name:'test'},ADMIN_UIDS:new Set(),HttpsError,
+    engagementRegionsMatch:()=>false,
+    db:{collection:name=>{assert.equal(name,'users');return {doc:()=>({get:async()=>{directProfileReads++;return {exists:true,data:()=>({status:'inactive',capabilities:{'admin.full':true}})};}})};}}
+  });
+  await assert.rejects(directCall({data:{action:'detail',competitionId:900001}}),error=>error.code==='unauthenticated');
+  await assert.rejects(directCall({auth:{uid:'inactive'},data:{action:'detail',competitionId:900001}}),error=>error.code==='permission-denied');
+  assert.equal(directProfileReads,1);assert.equal(directBusinessReads,0);
   for(const name of ["getEngagementCompetition","previewEngagementClubSwimmerEventTimes","saveEngagementClubSwimmerSelection"]){
   const handler=registrations.get(name).arguments.at(-1);let business=0;
   const code=source.slice(handler.start,handler.end),delegate=/return (\$\w+)\(\)\./.exec(code)[1];

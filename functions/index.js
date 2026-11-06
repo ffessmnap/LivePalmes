@@ -5782,6 +5782,11 @@ if (ENVIRONMENT.sportingDataSource === "nap") {
         response.set("Cache-Control","private, no-store");
         response.status(page.events&&page.documents?200:503).type("html").send(page.html);return;
       }
+      if (action === "direct") {
+        try { response.json(await require("./nap-direct-public").readPublic(napPool,ENVIRONMENT.name,request.query)); }
+        catch(error) { if(error.directCode==='not-found')response.status(404).json({error:error.message});else throw error; }
+        return;
+      }
       if (!["swimmer", "search", "top", "top-years", "top-metadata", "calendar-manifest", "calendar-season", "competition", "competition-results", "records", "documents-featured", "documents-catalogue", "home-events"].includes(action)) throw new TypeError("Action invalide.");
       if(action==="home-events"){
         const home=require("./nap-home-direct");
@@ -5793,8 +5798,8 @@ if (ENVIRONMENT.sportingDataSource === "nap") {
         : action === "documents-catalogue" ? {source:"nap",...await require("./nap-public-documents").readLibrary(napPool,require("./assets/nap-public-documents-index.json"),request.query)}
         : action === "records" ? await require("./nap-records-store").read(napPool)
         : action === "calendar-manifest" ? await require("./nap-direct-calendar").readCalendarManifest(napPool)
-        : action === "calendar-season" ? await require("./nap-direct-calendar").readCalendarSeason(napPool, request.query.year)
-        : action === "competition" ? await require("./nap-direct-calendar").readCompetition(napPool, request.query.id)
+        : action === "calendar-season" ? await require("./nap-direct-calendar").readCalendarSeason(napPool, request.query.year,ENVIRONMENT.name)
+        : action === "competition" ? await require("./nap-direct-calendar").readCompetition(napPool, request.query.id,ENVIRONMENT.name)
         : action === "competition-results" ? await require("./nap-direct-competition-results").readCompetitionResults(napPool, request.query.id)
         : action === "top" ? await require("./nap-direct-tops").readDirectTop(napPool, request.query)
         : action === "top-years" ? await require("./nap-direct-tops").readTopBirthYears(napPool, request.query)
@@ -5841,6 +5846,8 @@ if (ENVIRONMENT.projectId === "livepalmes-test") {
     const swimmerCorrection = request.method === "POST" && request.query.action === "approved-swimmer-correction";
     const noraClubs = request.method === "POST" && request.query.action === "approved-nora-performance-clubs";
     const portalSchema = request.method === "POST" && request.query.action === "approved-portal-schema";
+    const directSchema = request.method === "POST" && request.query.action === "approved-direct-schema";
+    if (request.method === "GET" && request.query.action === "approved-direct-schema") { response.status(405).json({error:"Methode interdite."});return; }
     const closureSchema = request.method === "POST" && request.query.action === "approved-closure-schema";
     const teamEntrySchema=request.method==='POST'&&request.query.action==='approved-team-entry-schema'&&ENVIRONMENT.projectId==='livepalmes-test';
     const peopleSchema = request.method === "POST" && request.query.action === "approved-people-schema";
@@ -5851,7 +5858,7 @@ if (ENVIRONMENT.projectId === "livepalmes-test") {
     const homeRefresh = request.method === "POST" && request.query.action === "home-events-refresh";
     if (request.method === "GET" && request.query.action === "approved-club-account-emails") { response.status(405).json({ error: "Methode interdite." }); return; }
     if (request.method === "GET" && request.query.action === "home-events-refresh") { response.status(405).json({ error: "Methode interdite." }); return; }
-    if (request.method !== "GET" && !teamEntrySchema && !indexOperation && !swimmerCorrection && !noraClubs && !portalSchema && !closureSchema && !peopleSchema && !dtnSchema && !dtnSettings && !licenseReports && !accountEmails && !homeRefresh || request.method === "GET" && ["approved-team-entry-schema","approved-index", "approved-swimmer-correction", "approved-nora-performance-clubs", "approved-portal-schema", "approved-closure-schema", "approved-people-schema", "approved-dtn-schema", "approved-dtn-settings", "approved-license-reports"].includes(request.query.action)) { response.status(405).json({ error: "Methode interdite." }); return; }
+    if (request.method !== "GET" && !directSchema && !teamEntrySchema && !indexOperation && !swimmerCorrection && !noraClubs && !portalSchema && !closureSchema && !peopleSchema && !dtnSchema && !dtnSettings && !licenseReports && !accountEmails && !homeRefresh || request.method === "GET" && ["approved-team-entry-schema","approved-index", "approved-swimmer-correction", "approved-nora-performance-clubs", "approved-portal-schema", "approved-closure-schema", "approved-people-schema", "approved-dtn-schema", "approved-dtn-settings", "approved-license-reports"].includes(request.query.action)) { response.status(405).json({ error: "Methode interdite." }); return; }
     try {
       if (!napPool) napPool = createNapPool(napPassword.value());
       const data = noraClubs ? await require("./nap-nora-performance-clubs").repair(napPool, request.body, {
@@ -5868,6 +5875,7 @@ if (ENVIRONMENT.projectId === "livepalmes-test") {
           : await require("./nap-approved-people-schema").approvedPeopleSchema(napPool, request.body)
         : teamEntrySchema ? await require('./nap-approved-team-entry-schema').approvedTeamEntrySchema(napPool,request.body)
         : closureSchema ? await require("./nap-approved-closure-schema").approvedClosureSchema(napPool, request.body)
+        : directSchema ? await require("./nap-direct-schema").approvedDirectSchema(napPool,request.body)
         : portalSchema ? await require("./nap-approved-portal-schema").approvedPortalSchema(napPool, request.body)
         : swimmerCorrection ? await require("./nap-approved-swimmer-correction").approvedSwimmerCorrection(napPool, request.body, {
         read: async () => {
@@ -12426,4 +12434,29 @@ exports.getNapPerformanceAdministration = onCall(NAP_PERFORMANCE_OPTIONS,/* extr
 exports.savePerformanceCorrection = onCall(NAP_PERFORMANCE_OPTIONS, /* extracted-handler: functions/backend/portal-performance-handlers/save-performance-correction.js#savePerformanceCorrection#arrow */ async (request) => {
   await portalSessionService().assertSession(request);
   return $portalPerformanceHandlers_savePerformanceCorrection().savePerformanceCorrection(request);
+});
+
+// Direct has competition-scoped grants; opening it never updates portal profiles.
+exports.manageLivePalmesDirect = onCall({...NAP_PERFORMANCE_OPTIONS,timeoutSeconds:120},async request => {
+  const direct=require("./nap-direct-service");
+  try {
+    return await direct.createService({
+      environment:ENVIRONMENT.name,
+      getPool:()=>require("./nap-portal-pool").portalPool(process.env.LIVEPALMES_NAP_PASSWORD),
+      authorize:input=>direct.readActor(input,{db,adminUids:ADMIN_UIDS}),
+      matchRegion:engagementRegionsMatch,
+      lookupUser:async email=>{
+        if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))throw new TypeError("Adresse de compte invalide.");
+        let user;try{user=await auth.getUserByEmail(email);}catch{return null;}
+        const profile=await db.collection("users").doc(user.uid).get();
+        return {uid:user.uid,active:!user.disabled&&profile.exists&&profile.data().status==="active"};
+      },
+      storeDocument:async(input,id)=>require("./nap-direct-documents").store(storage,ENVIRONMENT,input,id)
+    })(request);
+  }catch(error){
+    if(error.directCode)throw new HttpsError(error.directCode,error.message);
+    if(error instanceof TypeError||error instanceof RangeError)throw new HttpsError("invalid-argument",error.message);
+    if(error.code==='ER_NO_SUCH_TABLE')throw new HttpsError("failed-precondition","Les tables du Direct ne sont pas encore installées.");
+    throw new HttpsError("unavailable","Le Direct est momentanément indisponible. Actualiser pour vérifier l’état de la publication.");
+  }
 });
