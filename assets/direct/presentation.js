@@ -3,6 +3,15 @@
   const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const surname=row=>row.kind==='relay'||row.relay?String(row.lastName||''):String(row.lastName||'').toLocaleUpperCase('fr-FR');
   const name=row=>[surname(row),row.firstName].filter(Boolean).join(' ');
+  function categoryTone(value){
+    const normalized=String(value||'').trim().toLowerCase(),short=normalized.match(/^[fhmx]?(mi|ca|ju|se|ma)$/)?.[1];
+    const tones={mi:'minime',ca:'cadet',ju:'junior',se:'senior',ma:'master',minime:'minime',minimes:'minime',cadet:'cadet',cadets:'cadet',junior:'junior',juniors:'junior',senior:'senior',seniors:'senior',master:'master',masters:'master'};
+    if(tones[short||normalized])return tones[short||normalized];
+    const master=normalized.match(/^[fhm]?(\d+)\+?$/);
+    if(master&&Number(master[1])>0){const number=Number(master[1]),age=number<30?number*10+20:number;return 'master-'+[80,70,60,50,40,30].find(limit=>age>=limit);}
+    return 'other';
+  }
+  function categoryBadge(value){return `<span class="direct-category-badge direct-cat-${categoryTone(value)}" title="Catégorie : ${esc(value||'non renseignée')}">${esc(value||'—')}</span>`;}
   const resultLabel=row=>({dns:'Forfait',ab:'ABD',dsq:'DSQ'}[String(row.result?.status||'').toLowerCase()]||row.result?.status||'');
   const hasResult=row=>row.result?.cs!=null||Boolean(row.result?.status);
   function stats(event,entries){
@@ -55,6 +64,6 @@
     if(!points.length)return '';
     return `<div class="direct-inline-passages"><table class="direct-passage-table" aria-label="Temps de passage de ${esc(name(row))}"><caption>Passages</caption><thead><tr><th scope="col">Passage</th><th scope="col">Cumul</th><th scope="col">Split</th></tr></thead><tbody>${points.map(point=>`<tr><th scope="row">${esc(point.distance)}</th><td>${esc(point.time)}</td><td><span title="${esc(point.splitDistance)} m depuis le passage précédent">${esc(point.split)}</span></td></tr>`).join('')}</tbody></table></div>`;
   }
-  const api={esc,surname,name,resultLabel,stats,expected,status,badge,dot,distance,length,splits,dateRange,passageRows,passageTable};
+  const api={esc,surname,name,categoryTone,categoryBadge,resultLabel,stats,expected,status,badge,dot,distance,length,splits,dateRange,passageRows,passageTable};
   global.LivePalmesDirectPresentation=api;if(typeof module==='object'&&module.exports)module.exports=api;
 })(typeof window==='undefined'?globalThis:window);

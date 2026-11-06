@@ -4,6 +4,10 @@
 
 ## Direct multi-compétitions — 6 novembre 2026
 
+Catégories publiques : petite pastille autour du code reçu dans les tableaux scratch et séries, ancienne palette de `styles.css` reprise (minimes rose, cadets orange, juniors vert, seniors bleu, masters en teintes distinctes 30/40/50/60/70/80). Fond pâle et repère latéral coloré, texte foncé pour la lisibilité ; catégorie inconnue neutre et code toujours conservé. Aucun fond de ligne coloré, la mise en évidence du club reste prioritaire. Hauteur de ligne inchangée ; colonne catégorie mobile portée de 25 à 34 px pour les codes à quatre caractères. Aucun calcul de catégorie depuis l'année de naissance.
+
+Références publiques : un seul bouton natif « Records », replié par défaut à droite des informations session/heure/engagés/séries, ouvre les références disponibles dans un panneau borné à la largeur mobile. Chaque référence garde son détail dépliable ; aucune lecture à l'ouverture. RF/RFJ affichés seulement en 50 m avec chronométrage électronique déclaré ; sinon MPF des catégories présentes, seniors/juniors compris. Champ de chronométrage absent = MPF, sans supposer de chronométrage électronique. Codes H40+/H60+/F40+/F60+ contrôlés sans troncature à 320/390/1 280 px.
+
 Calendrier et fiche compétition : pastille verte « LivePalmes Direct », point animé doucement seulement aux dates de compétition active non annulée. Archive grise et fixe ; dates futures/passées fixes ; `prefers-reduced-motion` désactive la pulsation. Pas de clignotement du texte ni de rafraîchissement automatique.
 
 Import des séries et remise à zéro : boutons dans le bloc de compétition, import réservé aux séries PDF ; le dépôt de PDF complets reste disponible. Option par fichier « Publier aussi les PDF complets ? », décochée initialement, reprenant le fichier choisi et signalant l'attente des autres épreuves d'un document multisession. Filtre de session/date dans les aperçus et le suivi, affiché uniquement si plusieurs sessions existent ; publication explicitement limitée à la session visible. Une seule session garde les écrans sans filtre.
