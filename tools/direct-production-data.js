@@ -128,6 +128,15 @@ async function main() {
         assert.equal(detail.config.publicVisible, true);
         assert.equal(detail.events.length, 0, "Aucun programme TEST ne doit etre repris");
         report.activated = true;
+        const finalSnapshot = await snapshot(pool);
+        const finalRaw = Buffer.from(JSON.stringify(finalSnapshot));
+        const finalEncrypted = seal(finalRaw, credentials.private_key);
+        const finalFile = path.join(output, "direct-production-after-activation.enc");
+        fs.writeFileSync(finalFile, finalEncrypted, { mode: 0o600 });
+        const reopened = open(fs.readFileSync(finalFile), credentials.private_key);
+        assert.deepEqual(reopened, finalRaw);
+        await restoreIsolated(JSON.parse(reopened));
+        report.afterActivationBackupSha256 = hash(finalEncrypted);
       }
       report.directConfigurationPresent = Boolean(await store.config(5220));
       await admin.app().delete();

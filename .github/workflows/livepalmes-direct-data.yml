@@ -19,7 +19,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   direct:
-    if: github.ref == 'refs/heads/main' && github.run_attempt == 1
+    if: github.ref == 'refs/heads/main' && github.run_attempt == 1 && (github.event_name == 'workflow_dispatch' || vars.LIVEPALMES_DIRECT_BACKUP_ENABLED == 'true')
     runs-on: ubuntu-latest
     timeout-minutes: 12
     environment: production
