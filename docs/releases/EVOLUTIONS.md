@@ -2,6 +2,11 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 6 novembre — Pastilles discrètes des catégories Direct
+
+- Besoin complémentaire explicitement approuvé : ancienne palette sur de petites pastilles dans les séries et résultats (minimes rose, cadets orange, juniors vert, seniors bleu, masters distincts), sans augmenter les lignes ni masquer le club sélectionné.
+- Périmètre : présentation publique, styles et tests ; aucune règle sportive, catégorie stockée, lecture ou fonction serveur modifiée. Code source conservé, catégories inconnues neutres. État : préparation TEST ; publication et recette à confirmer.
+
 ### 6 novembre — Reprise TXT, doublons identiques et accès Direct visible
 
 - Besoin autorisé : conserver les premières lignes et associations lors d'une reprise, retirer la saisie du préfixe TXT, isoler les fichiers incompatibles, ignorer les lignes répétées à contenu identique, corriger « P… » et mieux signaler le Direct dans le calendrier. Antoine confirme que son blocage provenait de la première ligne laissée à 1 au lieu de 2. Bureau sur ordinateur, public également sur mobile.

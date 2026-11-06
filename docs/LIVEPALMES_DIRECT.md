@@ -8,6 +8,10 @@ LivePalmes Direct accompagne les compétitions piscine de tous niveaux issues du
 
 ## Direct multi-compétitions — livraison TEST du 6 novembre 2026
 
+### Pastilles de catégories — préparation TEST du 6 novembre
+
+Complément visuel approuvé par Antoine pendant la livraison précédente : reprendre l'ancienne palette sur le seul libellé de catégorie, dans les séries et les résultats. Le code reçu reste inchangé ; codes WinPalme et libellés déjà connus sont associés à leurs teintes historiques, inconnus neutres. Pas de calcul d'âge ou de reclassement, pas de lecture supplémentaire, pas de changement backend. Pastille compacte avec texte foncé, hauteur inchangée et surbrillance du club conservée ; largeur mobile de catégorie adaptée aux codes à quatre caractères.
+
 ### Reprise TXT et accès public — préparation TEST du 6 novembre
 
 Antoine confirme le 6 novembre que la remise à zéro et l'import précédent fonctionnent ; le refus de reprise provenait de la première ligne restée à 1 au lieu de 2. Nouveau lot autorisé : mémorisation locale des premières lignes et associations par origine, compte et compétition, revalidation contre le programme courant, confirmations toujours décochées et dossier choisi explicitement. Aucun préfixe à saisir : détection des noms `<préfixe>_AS_<session>_<épreuve>_<série>_<course>.txt`, y compris dossier initialement vide ; mélange de compétitions toujours bloquant.
