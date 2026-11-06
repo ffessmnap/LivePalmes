@@ -8,7 +8,9 @@ LivePalmes Direct accompagne les compétitions piscine de tous niveaux issues du
 
 ## Direct multi-compétitions — livraison TEST du 6 novembre 2026
 
-### Remise à zéro et import des séries par session — préparation TEST
+### Remise à zéro et import des séries par session — livré sur TEST, recette attendue
+
+[PR #742](https://github.com/ffessmnap/LivePalmes/pull/742), [publication TEST contrôlée](https://github.com/ffessmnap/LivePalmes/actions/runs/42292683226) du 6 novembre : candidat `90b77cd785746cb703fdbc2136650c444f4bb2f4`, Hosting `9e1c741fe1a6e453`. CI complète, vrais DELETE en MySQL 5.7 isolé et parcours du bureau sur données fictives réussis ; neuf fichiers servis identiques et page publique vérifiée à 1 280/390/320 px. Aucune remise à zéro ni publication de PDF réelles pendant les contrôles. Activation et accès préservés par les essais ; recette authentifiée par le pilote encore attendue.
 
 Antoine demande l'effacement définitif des imports du Direct, sans historique conservé, et confirme le maintien de l'activation et des accès. Le bouton « Tout réinitialiser » concerne la seule compétition choisie et l'environnement serveur. Confirmation par saisie de SUPPRIMER, arrêt de la veille, contrôle des droits Storage sans les modifier, puis suppression des participations, épreuves, PDF du préfixe dédié (anciennes versions incluses), historique et reçus. Le calendrier, les performances officielles, les comptes, les délégations et les réglages du Direct sont conservés. Aucune remise à zéro réelle n'est comprise dans les contrôles de livraison.
 
