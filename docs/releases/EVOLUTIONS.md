@@ -2,11 +2,12 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
-### 6 novembre — Pastilles discrètes et remplissage des TXT Direct
+### 6 novembre — Lecture mobile, références et remplissage des TXT Direct
 
 - Besoin complémentaire explicitement approuvé : ancienne palette sur de petites pastilles dans les séries et résultats (minimes rose, cadets orange, juniors vert, seniors bleu, masters distincts), sans augmenter les lignes ni masquer le club sélectionné.
 - Ajout précisé pendant les contrôles : ignorer les lignes de fin `;;` et celles dont le premier champ est `0000` ou `000000`, tout en conservant les vrais chronos commençant par 00. Un fichier de remplissage seul reste suivi sans publication ni alerte.
-- Périmètre : présentation publique, lecteur TXT, styles et tests ; aucune règle sportive, catégorie stockée, lecture ou fonction serveur modifiée. Code source conservé, catégories inconnues neutres. État : préparation TEST ; publication et recette à confirmer.
+- Ajout mobile approuvé ensuite : codes H40+/H60+ intégralement visibles, bouton Records replié à droite des informations de course ; RF/RFJ uniquement en 50 m électronique, MPF seniors/juniors incluses sinon. Métadonnée calendrier existante, aucun nouveau champ ni appel.
+- Périmètre : présentation publique, filtre de références validé ci-dessus, lecteur TXT, styles et tests ; catégories stockées, données officielles et fonctions serveur inchangées. Code source conservé, catégories inconnues neutres. État : préparation TEST ; publication et recette à confirmer.
 
 ### 6 novembre — Reprise TXT, doublons identiques et accès Direct visible
 
