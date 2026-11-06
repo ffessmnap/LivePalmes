@@ -2,6 +2,12 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 6 novembre — Passages à la ligne, décalage TXT et bureau compact
+
+- Besoin autorisé : appliquer et publier sur TEST le détail French Touch sous chaque ligne, club sur huit caractères et bandeau avec dates ; ajouts explicitement demandés pendant le travail : décalage première ligne TXT/PDF, surveillance prioritaire et alerte, sélecteur compétition replié et splits des relais.
+- Périmètre : interface et lecteur TXT côté client, tests et documentation ; aucune modification serveur, schéma, données natives, droits ou classement. Déplier les passages et traduire les lignes n'ajoutent aucune lecture. Résultats traduits vers les lignes physiques, contrôles de répartition et reprise idempotente conservés.
+- Préparation : branche `feature/direct-passages-ligne-bandeau`. Tests présentation/TXT/import et navigateur public/bureau à 1 280/390/320 px réussis ; maquette jusqu'à 305 px. Vérifications du décalage 1–6 → 2–7, bornes, identités, alerte/refus/reprise, clavier et zéro lecture pour le détail. Vérification globale confiée à la CI obligatoire. PR et preuve TEST à compléter ; recette utilisateur non acquise.
+
 ### 6 novembre — Lecture Direct, avancement des courses et bilan des imports
 
 - Besoin autorisé : nom de famille en majuscules, tiret pour engagement absent, bureau compact avec volumes importés, pastilles À venir/En cours/Terminée et passages publics. Comparaison demandée avec Auray, sans KB/M7 ; ordre 100/200/400/800/1500 confirmé par Antoine, le temps de 50 m restant le résultat final.
