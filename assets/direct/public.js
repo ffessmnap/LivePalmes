@@ -1,5 +1,6 @@
 (function(global){
   'use strict';
+  const ui=global.LivePalmesDirectPresentation;
   const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const format=value=>{const n=Number(value);if(!n)return '—';const minutes=Math.floor(n/6000),seconds=Math.floor(n%6000/100),cs=n%100;return `${minutes?minutes+':':''}${String(seconds).padStart(minutes?2:1,'0')}.${String(cs).padStart(2,'0')}`;};
   const category=value=>{let code=String(value||'').toUpperCase().replace(/^[FH](?=[A-Z0-9])/,'');code=({JU:'J',JUNIOR:'J',JUNIORS:'J',SE:'S',SENIOR:'S',SENIORS:'S',MI:'M',MINIME:'M',MINIMES:'M',CA:'C',CADET:'C',CADETS:'C',PO:'P',POUSSIN:'P',BE:'B',BENJAMIN:'B'})[code]||code;return /^\d+\+?$/.test(code)?'M'+code.replace(/\+?$/,'+'):code;};
@@ -41,7 +42,7 @@
     const dayNav=document.getElementById('dayNav'),showDays=days.length>1&&data.competition.endDate!==data.competition.date;
     dayNav.hidden=!showDays;if(!showDays)state.day='all';
     dayNav.innerHTML=showDays?[{key:'all',label:'Tous les jours'},...days.map(day=>({key:day,label:new Date(day+'T12:00:00').toLocaleDateString('fr-FR',{weekday:'short',day:'numeric',month:'short'})}))].map(day=>`<button type="button" data-day="${esc(day.key)}" aria-pressed="${state.day===day.key}">${esc(day.label)}</button>`).join(''):'';
-    document.getElementById('eventNav').innerHTML=data.events.filter(e=>state.day==='all'||e.date===state.day).map(e=>`<button type="button" data-event="${esc(e.id)}" data-sex="${esc(e.sex)}" title="${esc(e.eventLabel)} · ${{F:'Femmes',M:'Hommes',X:'Mixte'}[e.sex]}${e.phase!=='series'?' · '+esc(e.phase):''}" aria-label="${esc(e.eventLabel)} · ${{F:'Femmes',M:'Hommes',X:'Mixte'}[e.sex]}${e.phase!=='series'?' · '+esc(e.phase):''}" aria-pressed="${event?.id===e.id}">${esc(shortEventLabel(e))} · ${{F:'F',M:'H',X:'Mixte'}[e.sex]}${e.phase!=='series'?' · '+esc(e.phase):''}</button>`).join('');
+    document.getElementById('eventNav').innerHTML=data.events.filter(e=>state.day==='all'||e.date===state.day).map(e=>`<button type="button" data-event="${esc(e.id)}" data-sex="${esc(e.sex)}" title="${esc(e.eventLabel)} · ${{F:'Femmes',M:'Hommes',X:'Mixte'}[e.sex]}${e.phase!=='series'?' · '+esc(e.phase):''}" aria-label="${esc(e.eventLabel)} · ${{F:'Femmes',M:'Hommes',X:'Mixte'}[e.sex]}${e.phase!=='series'?' · '+esc(e.phase):''} · ${ui.status(e).label}" aria-pressed="${event?.id===e.id}">${ui.dot(e)}${esc(shortEventLabel(e))} · ${{F:'F',M:'H',X:'Mixte'}[e.sex]}${e.phase!=='series'?' · '+esc(e.phase):''}</button>`).join('');
     const content=document.getElementById('directContent');
     document.getElementById('directDocuments').innerHTML=(data.config.documents||[]).filter(d=>/^https:\/\//.test(d.url||'')).map(d=>`<a target="_blank" rel="noopener" href="${esc(d.url)}">${esc(d.title)}</a>`).join('');
     if(!event){content.innerHTML='<div class="direct-card direct-empty">Les séries et résultats seront disponibles après publication par le bureau des performances.</div>';return;}

@@ -2,6 +2,12 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 6 novembre — Lecture Direct, avancement des courses et bilan des imports
+
+- Besoin autorisé : nom de famille en majuscules, tiret pour engagement absent, bureau compact avec volumes importés, pastilles À venir/En cours/Terminée et passages publics. Comparaison demandée avec Auray, sans KB/M7 ; ordre 100/200/400/800/1500 confirmé par Antoine, le temps de 50 m restant le résultat final.
+- Périmètre : affichage Direct, lecture et présentation des passages TXT, nombre de séries attendu dans le JSON existant, agrégat SQL borné et partagé, tests et documentation. Pas de nouvelle table/colonne, migration, droits, donnée native, timer public ou règle de classement modifiée. Bilan actualisé par la réponse de publication ; aucune publication réelle pendant les contrôles.
+- Préparation : branche `feature/direct-lecture-suivi-courses`. Tests ciblés NAP/import/TXT/présentation réussis ; bureau et public vérifiés à 1 280/390/320 px, maquette à 305 px également. Vérification globale et MySQL isolé confiés à la CI obligatoire. Auray : 168 passages des 63 TXT concordent avec le protocole (108 individuels, 60 de relais). PR, preuves TEST et retour utilisateur à compléter ; aucun accord PROD.
+
 ### 6 novembre — Surveillance TXT WinPalme, relais et classements Direct
 
 - Besoin autorisé : commencer la surveillance dans Chrome/Edge sans attendre les séries TXT, corriger les équipes de relais homonymes et calculer scratch et places par catégorie. Antoine confirme ex æquo 1/2/2/4, statuts sans rang et place propre à chaque catégorie en multisélection. Destination TEST uniquement.
