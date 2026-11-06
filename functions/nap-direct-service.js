@@ -1,6 +1,6 @@
 "use strict";
 const model=require("./nap-direct-model"),{createStore,fail}=require("./nap-direct-store");
-function createService({getPool,environment,authorize,lookupUser,matchRegion,storeDocument}) {
+function createService({getPool,environment,authorize,lookupUser,matchRegion,storeDocument,purgeDocuments,checkResetDocuments}) {
   async function context(store,id,actor) {
     const competition=await store.native(id);
     const root=actor.national===true || actor.region===true && competition.level!=='national' && competition.level!=='international' && matchRegion(actor.regionId,competition.regionId);
@@ -25,6 +25,10 @@ function createService({getPool,environment,authorize,lookupUser,matchRegion,sto
     const canWrite=permissions.manage||permissions.roles.includes('computer');
     if(!canWrite)throw fail("Bureau des performances requis pour cette action.","permission-denied");
     if(input.action==='watchContext')return store.watchContext(id);
+    if(input.action==='reset'){
+      if(typeof purgeDocuments!=='function'||typeof checkResetDocuments!=='function')throw fail('Service de suppression des PDF indisponible. Aucune réinitialisation engagée.');
+      return store.reset(id,actor,input,purgeDocuments,checkResetDocuments);
+    }
     if(input.action==='settings') {
       if(!permissions.manage&&!permissions.roles.includes('computer'))throw fail("Gestion du Direct requise.","permission-denied");
       if(!await store.config(id)&&!permissions.root)throw fail("Activation réservée au responsable régional ou national.","permission-denied");
@@ -37,9 +41,7 @@ function createService({getPool,environment,authorize,lookupUser,matchRegion,sto
     if(input.action==='visibility')return store.visibility(id,actor,input);
     if(input.action==='history')return store.history(id,input.cursor);
     if(input.action==='document') {
-      const config=await store.config(id);if(!config||config.state!=='active'||Number(config.version)!==Number(input.version))throw fail("Actualiser la compétition avant de publier le document.","aborted");
-      const metadata=await storeDocument(input,id);
-      return store.document(id,actor,input,metadata);
+      return store.document(id,actor,input,()=>storeDocument(input,id));
     }
     if(input.action==='grants'||input.action==='grant') {
       if(!permissions.root)throw fail("Délégation réservée au responsable régional ou national.","permission-denied");

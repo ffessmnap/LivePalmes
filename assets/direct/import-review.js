@@ -1,6 +1,7 @@
 (function (global) {
   'use strict';
   const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const sessions=global.LivePalmesDirectSessions||(typeof module==='object'?require('./sessions'):null);
   const sexes = {F:'Femmes', M:'Hommes', X:'Mixte'};
   const isRelay = (row, event) => row.relay === true || /^\d+\s*[x×]\s*\d+/i.test(event.eventCode || '');
   function rowIssue(row, event) {
@@ -15,16 +16,18 @@
   }
   function mount(host, groups, actions) {
     let receipt = null, busy = false, message = '', error = false;
+    let selectedSession=actions.initialSession||'all';
     const open = new Set(), advanced = new Set();
     groups.forEach(group => {if (!group.error && group.selected == null) group.selected = true;});
-    const available = () => groups.filter(group => !group.error && !group.published);
+    const available = () => groups.filter(group => !group.error && !group.published&&sessions.matches(group.event,selectedSession));
     const selected = () => available().filter(group => group.selected);
     const count = list => list.reduce((n, group) => n + group.rows.filter(row => row.selected).length, 0);
     function invalidate(group) {if(group)group.operationKey=crypto.randomUUID();receipt = null; message = 'Sélection modifiée. Vérifier de nouveau avant de publier.'; error = false;}
     function render() {
       const chosen = selected(), total = count(chosen), all = available();
-      host.innerHTML = `<div class="direct-import-head"><div><h3>Épreuves à publier</h3><p class="direct-note">${all.length} épreuve${all.length > 1 ? 's' : ''} détectée${all.length > 1 ? 's' : ''} · détails repliés pour un contrôle rapide.</p></div><label class="direct-check-label"><input type="checkbox" data-select-all ${all.length && chosen.length === all.length ? 'checked' : ''} ${!all.length ? 'disabled' : ''}>Tout sélectionner</label></div>
+      host.innerHTML = `${sessions.filter(groups.filter(group=>!group.error).map(group=>group.event),selectedSession,'data-import-session')}<div class="direct-import-head"><div><h3>Épreuves à publier</h3><p class="direct-note">${all.length} épreuve${all.length > 1 ? 's' : ''} détectée${all.length > 1 ? 's' : ''} · détails repliés pour un contrôle rapide.</p></div><label class="direct-check-label"><input type="checkbox" data-select-all ${all.length && chosen.length === all.length ? 'checked' : ''} ${!all.length ? 'disabled' : ''}>Tout sélectionner</label></div>
         <div class="direct-import-list">${groups.map((group, index) => {
+          if(!group.error&&!sessions.matches(group.event,selectedSession))return '';
           if (group.error) return `<div class="direct-import-error" role="alert">${esc(group.error)}</div>`;
           const rows = group.rows.filter(row => row.selected), excluded = group.rows.length - rows.length;
           const issues = rows.filter(row => rowIssue(row, group.event));
@@ -34,7 +37,8 @@
           <details class="direct-import-advanced" data-advanced="${index}" ${advanced.has(index) ? 'open' : ''}><summary>Paramètres de l’épreuve</summary><div class="direct-grid">${[['eventCode','Code de l’épreuve'],['eventLabel','Intitulé'],['date','Date'],['sessionKey','Session'],['sessionLabel','Intitulé de session'],['order','Ordre au programme'],['phase','Phase']].map(([key, label]) => `<label>${label}<input data-field="${key}" type="${key === 'date' ? 'date' : key === 'order' ? 'number' : 'text'}" value="${esc(group.event[key])}" ${group.published ? 'disabled' : ''}></label>`).join('')}<label>Sexe<select data-field="sex" ${group.published ? 'disabled' : ''}>${Object.entries(sexes).map(([key,label]) => `<option value="${key}" ${key === group.event.sex ? 'selected' : ''}>${label}</option>`).join('')}</select></label><label>Numéro de série seul<input data-series-scope type="number" min="1" max="1000" placeholder="Vide : épreuve complète" value="${esc(group.seriesNumber || '')}" ${group.published ? 'disabled' : ''}></label></div></details>
           <div class="direct-table-wrap"><table><thead><tr><th>Inclure</th><th>Nageur / équipe</th><th>Club / cat.</th><th>${group.kind === 'series' ? 'Engagement' : 'Résultat'}</th></tr></thead><tbody>${group.rows.map((row, rowIndex) => `<tr><td><input type="checkbox" data-row="${rowIndex}" aria-label="Inclure ${esc(global.LivePalmesDirectPresentation.name(row))}" ${row.selected ? 'checked' : ''} ${group.published ? 'disabled' : ''}></td><td><span class="direct-person">${esc(global.LivePalmesDirectPresentation.name(row))}</span><span class="direct-person-meta ${rowIssue(row, group.event) ? 'direct-row-error' : ''}">${isRelay(row, group.event) ? 'Relais · année non requise' : esc(row.birthYear || 'Année manquante')}${rowIssue(row, group.event) && row.birthYear ? ' · ' + esc(rowIssue(row, group.event)) : ''}</span></td><td>${esc(row.club)}<span class="direct-person-meta">${esc(row.category)}</span></td><td class="direct-time">${esc(row.entryTime || row.resultTime || row.resultStatus || '—')}<span class="direct-person-meta">S${esc(row.series || '—')} · L${esc(row.lane ?? '—')}</span></td></tr>`).join('')}</tbody></table></div></div></details></div>`;
         }).join('')}</div>
-        <div class="direct-batch-actions"><div><strong>${chosen.length} épreuve${chosen.length > 1 ? 's' : ''} sélectionnée${chosen.length > 1 ? 's' : ''}</strong><span class="direct-person-meta">${total} participation${total > 1 ? 's' : ''} à publier</span></div><div class="direct-actions"><button type="button" class="secondary" data-batch-verify ${!chosen.length || busy ? 'disabled' : ''}>Vérifier la sélection</button><button type="button" data-batch-publish ${!receipt || busy ? 'disabled' : ''}>Tout publier${chosen.length ? ' (' + chosen.length + ')' : ''}</button></div><p data-batch-message role="status" aria-live="polite" class="direct-status ${error ? 'error' : ''}">${esc(message || 'Un seul contrôle pour toutes les épreuves sélectionnées.')}</p></div>`;
+        <div class="direct-batch-actions"><div><strong>${chosen.length} épreuve${chosen.length > 1 ? 's' : ''} sélectionnée${chosen.length > 1 ? 's' : ''}</strong><span class="direct-person-meta">${total} participation${total > 1 ? 's' : ''} à publier</span></div><div class="direct-actions"><button type="button" class="secondary" data-batch-verify ${!chosen.length || busy ? 'disabled' : ''}>Vérifier la sélection</button><button type="button" data-batch-publish ${!receipt || busy ? 'disabled' : ''}>${selectedSession==='all'?'Tout publier':'Publier la session'}${chosen.length ? ' (' + chosen.length + ')' : ''}</button></div><p data-batch-message role="status" aria-live="polite" class="direct-status ${error ? 'error' : ''}">${esc(message || 'Un seul contrôle pour toutes les épreuves sélectionnées.')}</p></div>`;
+      host.querySelector('[data-import-session]')?.addEventListener('change',event=>{selectedSession=event.target.value;actions.onSessionChange?.(selectedSession);invalidate();render();});
       const selectAll = host.querySelector('[data-select-all]');
       selectAll.indeterminate = chosen.length > 0 && chosen.length < all.length;
       selectAll.onchange = e => {all.forEach(group => group.selected = e.target.checked); invalidate(); render();};
