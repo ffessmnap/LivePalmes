@@ -90,12 +90,14 @@ async function main() {
   fs.mkdirSync(output, { recursive: true, mode: 0o700 });
   try {
     const value = await snapshot(pool);
+    console.log('Snapshot des cinq tables Direct production obtenu. Chiffrement et restauration isolee en cours.');
     const raw = Buffer.from(JSON.stringify(value)), encrypted = seal(raw, credentials.private_key);
     assert.deepEqual(open(encrypted, credentials.private_key), raw);
     const file = path.join(output, "direct-production.enc");
     fs.writeFileSync(file, encrypted, { mode: 0o600 });
     const verified = JSON.parse(open(fs.readFileSync(file), credentials.private_key));
     await restoreIsolated(verified);
+    console.log('Sauvegarde rouverte et restauration MySQL 5.7 isolee verifiees.');
     const report = { schema: 1, candidate: CANDIDATE, mode, environment: "production", tables: schema.tables.map(table => table.name),
       capturedAt: value.capturedAt, encryptedSha256: hash(encrypted), reopenedAndCompared: true, restoredInIsolatedMysql57: true,
       retentionDays: 14, counts: Object.fromEntries(Object.entries(value.data).map(([name, rows]) => [name, rows.length])), nativeRowsWritten: 0, testRowsCopied: 0 };
@@ -108,6 +110,7 @@ async function main() {
       assert.equal(user.disabled, false);
       const actor = await readActor({ auth: { uid } }, { db: admin.firestore(), adminUids: new Set(PROJECTS.livepalmes.legacyAdminUids) });
       assert.equal(actor.national, true);
+      console.log('Compte administrateur existant actif et autorise. Verification de Paris 5220.');
       const store = createStore(pool, "production"), competition = await store.native(5220);
       assert.equal(competition.date, "2026-11-07");
       assert.equal(competition.eventType, "pool");

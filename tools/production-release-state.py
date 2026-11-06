@@ -117,6 +117,8 @@ def check_after(backup, destination, require_success):
             try:
                 if name == PREFIX+direct_policy.NEW:
                     direct_policy.assert_new(f)
+                    direct_policy.require(f['serviceConfig']['serviceAccountEmail'] == report['directRuntimeAccount'],
+                                          'Compte runtime Direct different de la reference NAP')
                 else:
                     direct_policy.assert_reader(before[name], f, SimpleNamespace(rollback_patch=rollback_patch))
             except ValueError as error:
