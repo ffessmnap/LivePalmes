@@ -1,6 +1,7 @@
 "use strict";
 const model=require("./nap-direct-model"),{execute}=require("./nap-query");
 const {SELECT_EVENT,EVENT_JOINS,eventFromRow}=require("./nap-calendar-event");
+const progress=require('./nap-direct-progress');
 const json=JSON.stringify, read=model.parseJson;
 const fail=(message,code="failed-precondition")=>Object.assign(new Error(message),{directCode:code});
 const caches=new Map();
@@ -20,15 +21,16 @@ function createStore(pool,environment) {
   async function config(id,connection=pool,lock=false) {return (await execute(connection,`SELECT * FROM livepalmes_direct_competitions WHERE environment=? AND competition_id=? LIMIT 1${lock?' FOR UPDATE':''}`,scope(id)))[0]||null;}
   async function access(id,uid) {return (await q("SELECT * FROM livepalmes_direct_access WHERE environment=? AND competition_id=? AND user_uid=? AND active=1 AND (expires_at IS NULL OR expires_at>UTC_TIMESTAMP(6)) LIMIT 1",[...scope(id),uid]))[0]||null;}
   async function events(id,connection=pool) {return execute(connection,`SELECT * FROM livepalmes_direct_events WHERE environment=? AND competition_id=? ORDER BY program_order,id LIMIT ${model.MAX_EVENTS+1}`,scope(id));}
+  async function program(id){const [list,counts]=await Promise.all([events(id),progress.read(pool,scope(id))]);if(list.length>model.MAX_EVENTS)throw fail('Programme trop volumineux.');return list.map(row=>({...row,progress:counts.get(row.id)||progress.empty()}));}
   async function entries(id,eventId,connection=pool) {const rows=await execute(connection,`SELECT * FROM livepalmes_direct_entries WHERE environment=? AND competition_id=? AND event_id=? ORDER BY series_number,lane,participant_key LIMIT ${model.MAX_ENTRIES+1}`,[...scope(id),eventId]);if(rows.length>model.MAX_ENTRIES)throw fail("Épreuve trop volumineuse.");return rows;}
-  function eventView(row) {const publication=read(row.publication_state_json);return {id:row.id,eventCode:row.event_code,eventLabel:row.event_label,sex:row.sex,phase:row.phase,date:row.event_date,sessionKey:row.session_key,sessionLabel:row.session_label,order:row.program_order,eventNumber:row.event_number,scheduledAt:row.scheduled_at,heatSchedule:publication.heatSchedule||[],publication:{series:Boolean(publication.series),results:Boolean(publication.results)},version:Number(row.version)};}
+  function eventView(row) {const publication=read(row.publication_state_json);return {id:row.id,eventCode:row.event_code,eventLabel:row.event_label,sex:row.sex,phase:row.phase,date:row.event_date,sessionKey:row.session_key,sessionLabel:row.session_label,order:row.program_order,eventNumber:row.event_number,scheduledAt:row.scheduled_at,heatSchedule:publication.heatSchedule||[],...(Number(publication.expectedSeries)>0?{expectedSeries:Number(publication.expectedSeries)}:{}),...(row.progress?{progress:row.progress}:{}),publication:{series:Boolean(publication.series),results:Boolean(publication.results)},version:Number(row.version)};}
   function configView(row) {return row?{state:row.state,publicVisible:Boolean(row.public_visible),consoles:read(row.enabled_consoles_json,[]),documents:read(row.documents_json,[]),version:Number(row.version),revision:Number(row.public_revision)}:null;}
   async function detail(id,eventId,publicOnly=false) {
     const competition=await native(id);let current;
     try{current=await config(id);}catch(error){if(error.code==='ER_NO_SUCH_TABLE')throw fail("Les tables du Direct ne sont pas encore installées.");throw error;}
     if(publicOnly&&(!current||!current.public_visible||current.state==='disabled'))throw fail("Le Direct de cette compétition n’est pas ouvert.","not-found");
     if(!current)return {competition,config:null,events:[],entries:[]};
-    const list=await events(id);if(list.length>model.MAX_EVENTS)throw fail("Programme trop volumineux.");
+    const list=await program(id);
     const visible=publicOnly?list.filter(e=>{const p=read(e.publication_state_json);return p.series||p.results;}):list;
     const selected=eventId?visible.find(e=>e.id===eventId):visible[0];
     const rows=selected?await entries(id,selected.id):[],p=read(selected?.publication_state_json);
@@ -96,6 +98,7 @@ function createStore(pool,environment) {
       const e=prepared.event;
       if(!list.some(row=>row.id===e.id)&&list.length>=model.MAX_EVENTS)throw fail("Nombre maximal d’épreuves atteint.");
       const current=list.find(row=>row.id===e.id),publication={...read(current?.publication_state_json),[prepared.kind]:true};
+      if(prepared.kind==='series'&&e.expectedSeries){publication.expectedSeries=prepared.seriesNumber==null?e.expectedSeries:Math.max(Number(publication.expectedSeries)||0,e.expectedSeries);}
       if(prepared.kind==='series'&&prepared.event.heatSchedule){
         const incoming=new Map(prepared.event.heatSchedule.map(heat=>[heat.number,heat]));
         publication.heatSchedule=prepared.seriesNumber==null?prepared.event.heatSchedule:[...(publication.heatSchedule||[]).filter(heat=>!incoming.has(heat.number)),...incoming.values()].sort((a,b)=>a.number-b.number);
@@ -124,14 +127,11 @@ function createStore(pool,environment) {
       for(let offset=0;offset<values.length;offset+=200){const batch=values.slice(offset,offset+200);await execute(c,`INSERT INTO livepalmes_direct_entries (${columns},version,created_at,updated_at) VALUES ${batch.map(()=>`(${Array(28).fill('?').join(',')},1,UTC_TIMESTAMP(6),UTC_TIMESTAMP(6))`).join(',')} ON DUPLICATE KEY UPDATE ${[...facet,...shared].map(name=>`${name}=VALUES(${name})`).join(',')}${assignment},version=version+1,updated_at=UTC_TIMESTAMP(6),updated_by=VALUES(updated_by)`,batch.flat());}
       await execute(c,"DELETE FROM livepalmes_direct_entries WHERE environment=? AND competition_id=? AND event_id=? AND has_series=0 AND has_result=0",[...scope(id),e.id]);
       await journal(c,id,actor,{eventId:e.id,action:replaces?'replace':'publish',before:{event:current||null,entries:before},after:prepared,source:prepared.source,operationKey:input.operationKey,batchId:input.batchId});
-      const updated={...current,id:e.id,scheduled_at:scheduledAt,publication_state_json:json(publication)};
+      const base=current||{id:e.id,event_code:e.eventCode,sex:e.sex,phase:e.phase,event_date:e.date,session_key:e.sessionKey,session_label:e.sessionLabel,event_number:e.eventNumber};
+      const updated={...base,event_label:eventLabel,program_order:order,scheduled_at:scheduledAt,publication_state_json:json(publication),version:Number(current?.version||0)+1};
       const index=list.findIndex(row=>row.id===e.id);if(index<0)list.push(updated);else list[index]=updated;
   }
-  async function checkMeetLimit(c,id){
-    const count=await execute(c,`SELECT SUM(total) AS total,MAX(total) AS event_total FROM (SELECT event_id,COUNT(*) AS total FROM (SELECT event_id FROM livepalmes_direct_entries WHERE environment=? AND competition_id=? LIMIT ${model.MAX_MEET_ENTRIES+1}) bounded GROUP BY event_id) per_event`,scope(id));
-    if(Number(count[0]?.total)>model.MAX_MEET_ENTRIES)throw fail('Volume maximal du Direct dépassé (15 000 participations, phases comprises).');
-    if(Number(count[0]?.event_total)>model.MAX_ENTRIES)throw fail('Volume maximal par épreuve dépassé (1 000 participations).');
-  }
+  async function checkMeetLimit(c,id){return progress.read(c,scope(id));}
   function replacesScope(prepared,rows){return rows.some(row=>(prepared.seriesNumber==null||Number(row.series_number)===prepared.seriesNumber)&&(prepared.kind==='series'?Boolean(row.has_series):Boolean(row.has_result)));}
   function relayKey(row){return model.entry({relay:true,lastName:row.last_name??row.lastName,firstName:row.first_name??row.firstName,club:row.club_label??row.club}).key;}
   function checkRelayResultMapping(prepared,rows){
@@ -166,15 +166,15 @@ function createStore(pool,environment) {
     const previewed=await previewBatch(id,input);
     if(input.fingerprint!==previewed.fingerprint)throw fail('L’aperçu a changé. Contrôler de nouveau avant publication.','aborted');
     if(previewed.replacements.length&&input.confirmReplacement!==true)throw fail('Confirmer le remplacement des données déjà publiées.');
-    return transaction(id,actor,previewed.version,async(c)=>{
+    return transaction(id,actor,previewed.version,async(c,current)=>{
       for(let index=0;index<batch.groups.length;index++){
         const prepared=batch.groups[index];
         const before=(previewed.byEvent.get(prepared.event.id)||[]).filter(row=>prepared.seriesNumber==null||Number(row.series_number)===prepared.seriesNumber);
         await applyPrepared(c,id,actor,prepared,{operationKey:model.hash([batch.operationKey,input.groups[index].operationKey]),batchId:batch.operationKey},previewed.list,before,previewed.replaced[index],previewed.byEvent.get(prepared.event.id)||[]);
       }
-      await checkMeetLimit(c,id);
+      const counts=await checkMeetLimit(c,id);
       await journal(c,id,actor,{action:'publish-batch',operationKey:batch.operationKey,batchId:batch.operationKey,after:{contentHash:batch.contentHash,count:batch.count,groups:batch.groups.length}});
-      return {ok:true,count:batch.count,groups:batch.groups.length};
+      return {ok:true,count:batch.count,groups:batch.groups.length,version:Number(current.version)+1,revision:Number(current.public_revision)+1,events:previewed.list.map(row=>eventView({...row,progress:counts.get(row.id)||progress.empty()}))};
     });
   }
   async function visibility(id,actor,input) {
@@ -196,6 +196,6 @@ function createStore(pool,environment) {
   async function document(id,actor,input,metadata) {
     return transaction(id,actor,input.version,async(c,current)=>{const before=read(current.documents_json,[]),after=before.filter(d=>d.id!==metadata.id);after.push(metadata);if(after.length>20)throw new TypeError("20 documents complets au maximum.");await execute(c,"UPDATE livepalmes_direct_competitions SET documents_json=? WHERE environment=? AND competition_id=?",[json(after),...scope(id)]);await journal(c,id,actor,{action:'document',before,after,source:{type:'pdf',name:metadata.title,hash:metadata.hash},operationKey:input.operationKey});return {ok:true,document:metadata};});
   }
-  return {native,config,access,detail,watchContext,settings,preview,publish,previewBatch,publishBatch,visibility,grants,grant,history,document,scope,q,eventView,configView};
+  return {native,config,access,detail,program,watchContext,settings,preview,publish,previewBatch,publishBatch,visibility,grants,grant,history,document,scope,q,eventView,configView};
 }
 module.exports={createStore,fail};

@@ -1,6 +1,7 @@
 (function(global){
   'use strict';
   const fail=message=>{throw Error(message);};
+  const ui=global.LivePalmesDirectPresentation||(typeof module==='object'?require('./presentation'):null);
   const normalize=value=>String(value||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
   const code=value=>normalize(value).replace(/bix$/,'bi');
   async function digest(value){return [...new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(value)))].map(n=>n.toString(16).padStart(2,'0')).join('');}
@@ -27,9 +28,10 @@
       const final=status?null:time(fields[1]),splits=[];let previous=0;
       fields.slice(2).forEach((value,index)=>{
         if(!value||value==='000000')return;
-        const split=time(value);if(split.cs<=previous||final&&split.cs>=final.cs)fail('Passages TXT incohérents : '+name);
-        previous=split.cs;const relay=info.eventCode.match(/^\d+x(\d+)/);
-        splits.push({distance:relay?String(Number(relay[1])*(index+1))+' m':'Passage '+(index+1),time:split.raw});
+        const split=time(value),distance=ui.distance(info.eventCode,index),total=ui.length(info.eventCode);
+        if(final&&split.cs===final.cs&&(distance===total||total===50))return;
+        if(split.cs<=previous||final&&split.cs>=final.cs||distance&&total&&distance>=total)fail('Passages TXT incohérents : '+name);
+        previous=split.cs;splits.push({distance:distance?distance+' m':'Passage '+(index+1),time:split.raw});
       });return {lane,resultTime:final?.raw||'',resultStatus:status,splits};
     });return {...info,rows};
   }

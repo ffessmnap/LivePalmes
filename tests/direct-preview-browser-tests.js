@@ -20,7 +20,7 @@ async function main() {
       assert.ok(await waitFor(client,'!LivePalmesDirectPublic.state.loading',5000));
       assert.equal(await evaluate(client,'return document.documentElement.scrollWidth <= innerWidth'),true,`Public sans débordement à ${width}`);
       assert.equal(await evaluate(client,"return document.querySelector('#eventNav button').textContent"),'100 SF · F','Libellé court dans la navigation');
-      assert.equal(await evaluate(client,"return document.querySelector('#eventNav button').getAttribute('aria-label')"),'100 m Surface · Femmes','Libellé complet conservé pour l’accessibilité');
+      assert.equal(await evaluate(client,"return document.querySelector('#eventNav button').getAttribute('aria-label')"),'100 m Surface · Femmes · En cours','Libellé complet conservé pour l’accessibilité');
       const chips=await evaluate(client,"return {sizes:[...document.querySelectorAll('#dayNav button,#eventNav button,#directRefresh')].map(button=>button.getBoundingClientRect().height),female:getComputedStyle(document.querySelector('#eventNav [data-sex=F]')).backgroundColor,male:getComputedStyle(document.querySelector('#eventNav [data-sex=M]')).color,mixed:getComputedStyle(document.querySelector('#eventNav [data-sex=X]')).color}");
       assert.ok(chips.sizes.every(height=>Math.abs(height-30)<1),'Boutons de 30 px comme French Touch à '+width+' px');
       assert.ok(await evaluate(client,"return [...document.querySelectorAll('#dayNav button,#eventNav button,.direct-heat-nav button')].every(button=>getComputedStyle(button).fontWeight==='600')"),'Navigation en semi-gras léger');

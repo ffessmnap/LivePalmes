@@ -18,7 +18,7 @@
       if(!partial)rows.filter(row=>row.relay).forEach(row=>{if(relayNames.get(JSON.stringify([normalize(row.lastName),normalize(row.firstName),String(row.club).toLowerCase()]))===1)delete row.sourceEntryId;});
       matching.forEach(row=>{if(row.startTime&&!times.has(row.series))times.set(row.series,row.startTime);});
       const heatSchedule=heatNumbers.map(number=>({number,scheduledAt:times.get(number)||''})).sort((a,b)=>a.number-b.number);
-      return {kind:'series',seriesNumber:partial?heatNumbers[0]:null,event:{...fallback,eventCode:program.eventId,eventLabel:event?.label||program.label,sex:program.sex,phase:program.stage||'series',sessionKey:String(program.session||fallback.sessionKey||'1'),sessionLabel:program.sessionLabel||fallback.sessionLabel,order:program.order,scheduledAt:program.startTime||times.get(1)||'',heatSchedule},rows};
+      return {kind:'series',seriesNumber:partial?heatNumbers[0]:null,event:{...fallback,eventCode:program.eventId,eventLabel:event?.label||program.label,sex:program.sex,phase:program.stage||'series',sessionKey:String(program.session||fallback.sessionKey||'1'),sessionLabel:program.sessionLabel||fallback.sessionLabel,order:program.order,scheduledAt:program.startTime||times.get(1)||'',heatSchedule,expectedSeries:Math.max(...matching.map(row=>Number(row.seriesCount)||Number(row.series)||1))},rows};
     }).filter(group=>group.rows.length);
   }
   function resultHeader(line){

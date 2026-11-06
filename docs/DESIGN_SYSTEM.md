@@ -4,6 +4,14 @@
 
 ## Direct multi-compétitions — 6 novembre 2026
 
+Retouche de lecture : le nom de famille des nageurs est affiché en majuscules, prénom conservé, y compris dans les fenêtres et aperçus d'import ; les libellés d'équipes restent ceux de la source. Temps d'engagement absent ou sans référence : « — », sans écart, plus d'abréviation « SR ».
+
+Avancement public : pastille « À venir » sans résultat publié, « En cours » avec résultats partiels et classement provisoire, « Terminée » quand tous les engagements connus et toutes les séries attendues ont reçu un résultat ou statut final. La navigation garde ses boutons de 30 px et ajoute un point discret avec état dans le nom accessible. Les places scratch/catégorie restent visibles pendant la publication partielle. Ces états décrivent les publications, sans attester l'horaire réel de la course ou son homologation.
+
+Passages cumulés : section repliable sur le scratch des résultats et détail dans la fenêtre du nageur. Distances individuelles 100/200/400/800/1500 m selon les champs WinPalme confirmés ; seuls les passages disponibles avant la distance finale apparaissent. Un 50 m garde son seul temps final. Les lignes principales conservent leur hauteur ; le tableau des passages défile horizontalement si nécessaire.
+
+Bureau : « Suivi des imports » immédiatement sous la compétition, avant la surveillance. Quatre compteurs (épreuves avec nombre ayant des résultats, séries avec nombre complet, engagements, résultats avec reste/non-associés), puis tableau compact avec état et actions repliées. Les réponses de publication actualisent ce bilan sans recharger le bureau ni arrêter la surveillance.
+
 Surveillance TXT du bureau : carte dédiée, sélection explicite d'un dossier, associations session/épreuve en tableau défilable et confirmations distinctes de grille à jour et de publication automatique. Fichiers déjà présents exclus par défaut ; reprise proposée par case dédiée. Après démarrage, les paramètres sont masqués et restent les actions Arrêter / Reprendre, le statut et l'heure du dernier contrôle. Reconfiguration via Choisir le dossier. Chrome/Edge requis pour cette option ; l'import PDF reste disponible dans les autres navigateurs.
 
 Variante classement confirmée : sans filtre catégorie, places scratch recalculées ; avec filtre, en-tête « Pl. cat. » et place propre à chaque catégorie, même en multisélection, sans colonne supplémentaire. Ex æquo 1, 2, 2, 4 ; forfait, abandon et DSQ sans place. L'ordre des temps et la hauteur compacte des lignes sont conservés ; les places restent provisoires tant que toutes les séries ne sont pas publiées.
