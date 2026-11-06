@@ -918,6 +918,9 @@ def prepare_selection(directory, candidate):
         names = {f['name'].split('/')[-1]: f for f in state['functions']}
         require(all(not needs_function(names.get(n), n, request['candidate'], project='livepalmes-test') for n in selected), 'Backend TEST incomplet ou pas au code valide')
         extra = approved_extra_functions(request)
+        if direct_release.approved(request):
+            require(not needs_function(names.get(direct_release.READER), direct_release.READER,
+                        request['candidate'], project='livepalmes-test'), 'Lecteur Direct TEST absent ou incompatible')
         require(all(not needs_function(names.get(n), n, request['candidate'], project='livepalmes-test') for n in team_trophy.approved(request)), 'Sources TEST equipes/trophee absentes ou incompatibles')
         require(all(not needs_function(names.get(n), n, request['candidate'], project='livepalmes-test') for n in validated_portal.approved(request)), 'Preuve TEST CMAS/CCI absente ou incompatible')
         notification = approved_notification_functions(request)
