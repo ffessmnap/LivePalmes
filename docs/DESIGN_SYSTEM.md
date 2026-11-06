@@ -4,7 +4,7 @@
 
 ## Direct multi-compétitions — 6 novembre 2026
 
-Maquette locale validée le 6 novembre, intégration TEST en cours : scratch des résultats dès qu'ils existent, sinon scratch des engagements trié par temps, puis sélecteur de séries avec horaires et tableau par ligne. Aucun onglet Engagés/Résultats, filtre club ou champ de recherche au-dessus du scratch. Le lien série/ligne existe seulement dans le scratch des engagements ; le scratch des résultats conserve les places publiées et le seul filtre multisélection des catégories. Une ligne par nageur, club abrégé fourni par le PDF, catégorie et temps dans des colonnes distinctes. Sur petit écran, l'écart détaillé est consultable dans la fenêtre du nageur ; engagement et résultat restent visibles dans le tableau.
+Maquette locale validée et publiée sur TEST le 6 novembre : scratch des résultats dès qu'ils existent, sinon scratch des engagements trié par temps, puis sélecteur de séries avec horaires et tableau par ligne. Aucun onglet Engagés/Résultats, filtre club ou champ de recherche au-dessus du scratch. Le lien série/ligne existe seulement dans le scratch des engagements ; le scratch des résultats conserve les places publiées et le seul filtre multisélection des catégories. Une ligne par nageur, club abrégé fourni par le PDF, catégorie et temps dans des colonnes distinctes. Sur petit écran, l'écart détaillé est consultable dans la fenêtre du nageur ; engagement et résultat restent visibles dans le tableau.
 
 Une seule ligne de statut au-dessus de chaque tableau : « Engagements · Résultats non publiés » ou « Résultats publiés · 11/12 ». Le statut et le compteur sont propres au scratch ou à la série, sans bandeau supplémentaire ni répétition du compteur dans l'en-tête de l'épreuve. Le filtre des catégories ne modifie pas le compteur global des publications.
 
@@ -18,7 +18,7 @@ Le nom est un bouton ouvrant une fenêtre native avec programme sur tous les jou
 
 Contrôle d'import en liste compacte par épreuve, détails repliés, sélection globale et actions communes Vérifier / Tout publier ; année non requise pour une équipe de relais. Les écrans réels réutilisent les composants de la maquette ; la publication groupée est raccordée au service transactionnel, et reste simulée seulement dans l’outil local.
 
-`direct.html` et `direct-admin.html` utilisent `assets/direct/direct.css`, sans modifier le thème du portail ou les consoles historiques. Bandeau bleu LivePalmes, navigation horizontale défilante inspirée de French Touch Taranto et temps alignés en chiffres tabulaires. Les temps sans référence n'affichent aucun écart. La version TEST publiée avant cette maquette conserve encore les anciennes vues Séries/Résultats/Mon club.
+`direct.html` et `direct-admin.html` utilisent `assets/direct/direct.css`, sans modifier le thème du portail ou les consoles historiques. Bandeau bleu LivePalmes, navigation horizontale défilante inspirée de French Touch Taranto et temps alignés en chiffres tabulaires. Les temps sans référence n'affichent aucun écart. Cette présentation remplace les anciennes vues Séries/Résultats/Mon club sur TEST.
 
 Actualiser conserve son nom accessible et la sélection en cours. Aucun rafraîchissement automatique. L'erreur réseau conserve la dernière vue consultable et permet une reprise manuelle. Aperçu de publication avec cases par ligne et confirmation distincte des remplacements. Maquette contrôlée à 305, 320, 390 et 1 280 px sur données fictives, sans HTTPS externe.
 
