@@ -81,15 +81,30 @@ async function main() {
   const credentials = JSON.parse(fs.readFileSync(process.env.GOOGLE_APPLICATION_CREDENTIALS, "utf8"));
   assert.equal(credentials.project_id, "livepalmes");
   assert.equal(credentials.client_email, "github-actions-livepalmes-back@livepalmes.iam.gserviceaccount.com");
-  const secret = execFileSync("gcloud", ["secrets", "versions", "access", "latest", "--project=livepalmes", "--secret=LIVEPALMES_NAP_PASSWORD"],
-    { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] }).trim();
-  const { napPoolOptions } = require(path.join(app, "functions/nap-connection"));
-  const pool = mysql.createPool({ ...napPoolOptions(secret), jsonStrings: true });
+  let pool;
   const output = process.env.DIRECT_DATA_OUTPUT;
   assert(output);
   fs.mkdirSync(output, { recursive: true, mode: 0o700 });
   try {
-    const value = await snapshot(pool);
+    let value;
+    if (process.env.DIRECT_ENCRYPTED_SNAPSHOT) {
+      assert.equal(mode, 'backup');
+      assert(process.env.DIRECT_ENCRYPTED_SNAPSHOT.length < 50000);
+      const envelope = JSON.parse(Buffer.from(process.env.DIRECT_ENCRYPTED_SNAPSHOT, 'base64'));
+      value = JSON.parse(require('./direct-backup-transfer').unwrap(envelope, credentials));
+      assert.equal(value.schema, 1);
+      assert.equal(value.environment, 'production');
+      assert.equal(value.planHash, schema.planHash);
+      assert(Date.parse(value.capturedAt) > Date.now() - 30 * 60 * 1000 && Date.parse(value.capturedAt) <= Date.now() + 60000, 'Snapshot ponctuel trop ancien');
+      assert.deepEqual(Object.keys(value.data).sort(), schema.tables.map(table => table.name).sort());
+      assert(Object.values(value.data).every(rows => rows.length <= 200000 && rows.every(row => row.environment === 'production')));
+    } else {
+      const secret = execFileSync("gcloud", ["secrets", "versions", "access", "latest", "--project=livepalmes", "--secret=LIVEPALMES_NAP_PASSWORD"],
+        { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] }).trim();
+      const { napPoolOptions } = require(path.join(app, "functions/nap-connection"));
+      pool = mysql.createPool({ ...napPoolOptions(secret), jsonStrings: true });
+      value = await snapshot(pool);
+    }
     console.log('Snapshot des cinq tables Direct production obtenu. Chiffrement et restauration isolee en cours.');
     const raw = Buffer.from(JSON.stringify(value)), encrypted = seal(raw, credentials.private_key);
     assert.deepEqual(open(encrypted, credentials.private_key), raw);
@@ -143,7 +158,7 @@ async function main() {
     }
     fs.writeFileSync(path.join(output, "report.json"), JSON.stringify(report, null, 2));
     console.log(JSON.stringify(report));
-  } finally { await pool.end(); }
+  } finally { if (pool) await pool.end(); }
 }
 module.exports = { snapshot, restoreIsolated };
 if (require.main === module) main().catch(error => { console.error("Controle Direct interrompu", error.code || error.name, "Consulter les prerequis, aucun secret affiche"); process.exitCode = 1; });

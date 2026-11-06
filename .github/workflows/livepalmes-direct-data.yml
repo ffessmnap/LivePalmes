@@ -10,6 +10,10 @@ on:
       confirmation:
         type: string
         required: false
+      encrypted_snapshot:
+        description: Snapshot Direct local chiffre avec la cle publique de sauvegarde CI
+        type: string
+        required: false
   schedule:
     - cron: '17 * * * *'
 permissions:
@@ -29,6 +33,7 @@ jobs:
       DIRECT_DATA_MODE: ${{ inputs.mode || 'backup' }}
       DIRECT_ACTIVATION_CONFIRMATION: ${{ inputs.confirmation }}
       DIRECT_DATA_OUTPUT: ${{ runner.temp }}/direct-production
+      DIRECT_ENCRYPTED_SNAPSHOT: ${{ inputs.encrypted_snapshot }}
       DIRECT_RESTORE_ALLOWED: isolated-ci
       DIRECT_RESTORE_PASSWORD: direct-restore-isolated-only
     steps:
