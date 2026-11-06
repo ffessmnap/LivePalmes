@@ -56,5 +56,10 @@
     return start.toLocaleDateString("fr-FR", { weekday: options.weekday ? "long" : undefined, day: "numeric", month: "long", year: "numeric" });
   }
   function seasonLabel(endYear) { return `${Number(endYear) - 1}-${endYear}`; }
-  global.LivePalmesPublicCalendar = { LEVEL_LABELS, STATUS_LABELS, TYPE_LABELS, compare, escapeHtml, formatDate, json, seasonEndYear, seasonLabel, status, today };
+  function directBadge(event,referenceDate=today()) {
+    if(!event.direct)return '';
+    const archived=event.direct.state==='archived',live=!archived&&event.direct.state==='active'&&!event.canceled&&referenceDate>=event.date&&referenceDate<=(event.endDate||event.date);
+    return `<span class="calendar-direct-badge" data-live="${live}" data-archived="${archived}"><span class="calendar-direct-dot" aria-hidden="true"></span>${archived?'Archive du Direct':'LivePalmes Direct'}</span>`;
+  }
+  global.LivePalmesPublicCalendar = { LEVEL_LABELS, STATUS_LABELS, TYPE_LABELS, compare, directBadge, escapeHtml, formatDate, json, seasonEndYear, seasonLabel, status, today };
 })(window);

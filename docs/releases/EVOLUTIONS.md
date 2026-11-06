@@ -2,6 +2,12 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 6 novembre — Reprise TXT, doublons identiques et accès Direct visible
+
+- Besoin autorisé : conserver les premières lignes et associations lors d'une reprise, retirer la saisie du préfixe TXT, isoler les fichiers incompatibles, ignorer les lignes répétées à contenu identique, corriger « P… » et mieux signaler le Direct dans le calendrier. Antoine confirme que son blocage provenait de la première ligne laissée à 1 au lieu de 2. Bureau sur ordinateur, public également sur mobile.
+- Périmètre : client Direct et calendrier public, tests et documentation. Aucune modification backend, schéma, capacité ou donnée native. Réglages locaux par compte/compétition, confirmations explicites conservées, traitement borné et contrôles serveur inchangés. Un doublon contradictoire reste bloqué, les autres TXT poursuivent leur publication ; mélange de compétitions et erreur réseau restent bloquants.
+- État : préparation et contrôles ciblés locaux ; intégration et publication TEST à confirmer. Aucun accord PROD ni validation utilisateur de ce nouveau lot.
+
 ### 6 novembre — Remise à zéro Direct et import des séries par session
 
 - Besoin autorisé : bouton de suppression définitive des séries/résultats/historique/PDF, activation et accès conservés selon confirmation explicite d'Antoine ; import séries PDF en haut, retrait du choix résultats PDF, option de publication du même PDF complet et filtres par session. XML exclu.
@@ -9,7 +15,7 @@
 - Livraison : [PR #742](https://github.com/ffessmnap/LivePalmes/pull/742), candidat `90b77cd785746cb703fdbc2136650c444f4bb2f4`. [CI PR finale](https://github.com/ffessmnap/LivePalmes/actions/runs/42288791432) et [CI main](https://github.com/ffessmnap/LivePalmes/actions/runs/42289843773) réussies, dont vérification globale et vrais DELETE MySQL 5.7 isolés. Couverts : suppression complète sans historique, coupure/reprise, anciens appels refusés, accès/environnement voisin conservés, upload bloqué pendant le reset et cache public invalidé. Tests hors réseau et bureau à 1 280/390/320 px, maquette jusqu'à 305 px ; filtre de publication borné à la session et même PDF réutilisé après toutes ses épreuves. Un fichier corrigé remplace son lien public, des noms différents restent distincts dans une session.
 - TEST confirmé : [lot NAP](https://github.com/ffessmnap/LivePalmes/actions/runs/42291296770), puis [publication commune](https://github.com/ffessmnap/LivePalmes/actions/runs/42292683226), Hosting `9e1c741fe1a6e453`, preuve `test-proof` ID `13540382402`. Sélection par dépendances : lecteur public et gestionnaire Direct. Lot NAP fixe de cinq fonctions dont quatre équivalentes, puis seul `manageLivePalmesDirect` dans le circuit ordinaire ; 119 fonctions actives, six révisions actualisées, 113 conservées. Aucun déploiement règles/index, migration, changement de droits ou invocation de suppression réelle.
 - Après publication : neuf fichiers Direct servis identiques au candidat ; lecteur public HTTP 200 (28 épreuves, 27 participations dans la vue observée), gestionnaire sans connexion HTTP 401, page publique vérifiée à 1 280/390/320 px sans débordement. Les contrôles du bureau et de Storage utilisent des données fictives ; aucun reset ni PDF réellement publié par ces essais. Circuit après préparation : PR ouverte à 21 h 25 et TEST attesté à 21 h 59 (Paris), attente principalement CI/déploiements ; ce n'est pas la durée totale de développement.
-- Retour utilisateur : périmètre autorisé et conservation activation/accès confirmée explicitement ; recette de la version publiée encore à effectuer, notamment l'action destructive sur une compétition choisie par le pilote. Aucune validation PROD acquise.
+- Retour utilisateur : Antoine indique « OK, j'ai testé, ça marche bien », puis demande les retouches de reprise TXT et d'affichage ci-dessus. Pas de recette mobile déclarée ; aucun accord PROD acquis.
 
 ### 6 novembre — Passages à la ligne, décalage TXT et bureau compact
 
