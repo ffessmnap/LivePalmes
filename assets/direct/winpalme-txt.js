@@ -16,12 +16,14 @@
     return {raw:value.slice(0,2)+':'+value.slice(2,4)+'.'+value.slice(4),cs:(Number(value.slice(0,2))*60+Number(value.slice(2,4)))*100+Number(value.slice(4))};
   }
   function parse(name,text){
-    const info=fileInfo(name),lines=String(text).replace(/^\uFEFF/,'').trim().split(/\r?\n/).filter(line=>line.trim()),seen=new Set();
-    if(!lines.length||lines.length>21)fail('Série TXT vide ou trop volumineuse : '+name);
+    const info=fileInfo(name),lines=String(text).replace(/^\uFEFF/,'').trim().split(/\r?\n/).filter(line=>line.trim()),seen=new Map();
+    if(!lines.length||lines.length>1000)fail('Série TXT vide ou trop volumineuse : '+name);
     const rows=lines.map(line=>{
       const fields=line.trim().split(/[;:]/).map(s=>s.trim()),lane=Number(fields[0]);
-      if(fields.length!==7||!/^\d+$/.test(fields[0])||lane<0||lane>20||seen.has(lane))fail('Ligne d’eau invalide ou dupliquée : '+name);
-      seen.add(lane);const token=normalize(fields[1]);let status='';
+      if(fields.length!==7||!/^\d+$/.test(fields[0])||lane<0||lane>20)fail('Ligne d’eau invalide : '+name);
+      const signature=fields.join(';');
+      if(seen.has(lane)){if(seen.get(lane)===signature)return null;fail('Deux contenus différents pour la ligne '+lane+' : '+name);}
+      seen.set(lane,signature);const token=normalize(fields[1]);let status='';
       if(/^(forfait|absent|absence|abs|dns)$/.test(token))status='dns';
       else if(/^(abandon|abd|ab|dnf)$/.test(token))status='ab';
       else if(/^(disqualification|disqualifiee?|disqual|disq|dsq|dq)$/.test(token))status='dsq';
@@ -33,7 +35,7 @@
         if(split.cs<=previous||final&&split.cs>=final.cs||distance&&total&&distance>=total)fail('Passages TXT incohérents : '+name);
         previous=split.cs;splits.push({distance:distance?distance+' m':'Passage '+(index+1),time:split.raw});
       });return {lane,resultTime:final?.raw||'',resultStatus:status,splits};
-    });return {...info,rows};
+    }).filter(Boolean);return {...info,rows};
   }
   async function readDirectory(directory){
     const files=[];let total=0;
@@ -64,9 +66,14 @@
       if(row.lane<mapping.txtFirstLane||lane<0||lane>20)fail('Décalage de lignes incompatible : '+file.name+'. Contrôler les premières lignes TXT et séries.');
       return {...row,lane};
     });
-    if(!event||code(event.eventCode)!==parsed.eventCode||Number(event.sessionKey)!==parsed.session)fail('Association TXT / épreuve à contrôler : '+file.name);
+    if(!event||code(event.eventCode)!==parsed.eventCode||Number(event.sessionKey)!==parsed.session)fail('Association à vérifier : '+file.name+' · session '+parsed.session+', épreuve '+parsed.event+'. Choisir l’épreuve correspondante dans les réglages.');
     const entries=snapshot.entries.filter(row=>row.eventId===event.id&&Number(row.series)===parsed.series),fingerprint=snapshot.seriesFingerprints[event.id+':'+parsed.series];
-    if(!fingerprint||entries.length!==parsed.rows.length||new Set(entries.map(row=>row.lane)).size!==entries.length||parsed.rows.some(row=>!entries.some(entry=>entry.lane===row.lane)))fail('Répartition différente des séries importées : '+file.name+'. Réimporter les séries à jour.');
+    if(!fingerprint||!entries.length)fail(file.name+' · série '+parsed.series+' absente des séries publiées. Vérifier l’association ou importer cette série.');
+    if(entries.length!==parsed.rows.length||new Set(entries.map(row=>row.lane)).size!==entries.length||parsed.rows.some(row=>!entries.some(entry=>entry.lane===row.lane))){
+      const numbers=rows=>rows.map(row=>row.lane).sort((a,b)=>a-b).join(', ');
+      const original=parsed.rows.map(row=>({...row,lane:row.lane-mapping.offset}));
+      fail(file.name+' · série '+parsed.series+' : lignes TXT ['+numbers(original)+'], après décalage ['+numbers(parsed.rows)+'], séries importées ['+numbers(entries)+']. Vérifier les premières lignes et l’association ; réimporter le PDF seulement si la répartition a changé.');
+    }
     const eventInput={...event};delete eventInput.heatSchedule;
     return {kind:'results',event:eventInput,seriesNumber:parsed.series,seriesFingerprint:fingerprint,operationKey:crypto.randomUUID(),source:{type:'winpalme-txt',name:file.name,hash:file.hash},rows:parsed.rows.map(result=>{
       const entry=entries.find(row=>row.lane===result.lane);
@@ -74,8 +81,8 @@
     })};
   }
   function createRunner({read,build,publish,onState=()=>{},now=Date.now,interval=30000,schedule=setTimeout,cancel=clearTimeout}){
-    const acknowledged=new Map(),observed=new Map();let active=false,busy=false,timer=null,generation=0,pending=null,lastCheck=null,lastMessage='',lastError=false;
-    const emit=(message=lastMessage,error=lastError)=>{lastMessage=message;lastError=error;onState({active,busy,pending:Boolean(pending),lastCheck,message,error});};
+    const acknowledged=new Map(),observed=new Map(),blocked=new Map();let active=false,busy=false,timer=null,generation=0,pending=null,lastCheck=null,lastMessage='',lastError=false;
+    const emit=(message=lastMessage,error=lastError)=>{lastMessage=message;lastError=error;onState({active,busy,pending:Boolean(pending),lastCheck,message,error,issues:[...blocked.values()]});};
     function stop(){active=false;generation++;if(timer!=null)cancel(timer);timer=null;emit(busy?'Arrêt demandé · le lot déjà envoyé peut terminer.':'Surveillance arrêtée.',false);}
     async function check(){
       if(!active||busy)return;busy=true;const version=generation;
@@ -83,16 +90,21 @@
       try{
         if(pending){await publish(pending.groups,pending.receipt,saveReceipt);if(version!==generation)return;pending.files.forEach(f=>acknowledged.set(f.name,f.hash));pending=null;}
         const files=await read();if(version!==generation)return;
-        lastCheck=now();const changed=[];
+        lastCheck=now();const changed=[],present=new Set(files.map(file=>file.name));
+        for(const name of blocked.keys())if(!present.has(name))blocked.delete(name);
         for(const f of files){
-          if(acknowledged.get(f.name)===f.hash)continue;
+          if(acknowledged.get(f.name)===f.hash){blocked.delete(f.name);continue;}
           const previous=observed.get(f.name);
           if(previous?.hash===f.hash&&now()-previous.at>=1000)changed.push(f);
           else if(previous?.hash!==f.hash)observed.set(f.name,{hash:f.hash,at:now()});
         }
-        const batch=changed.slice(0,100);
+        const batch=[],groups=[];
+        for(const file of changed){
+          try{const group=build(file);blocked.delete(file.name);batch.push(file);groups.push(group);if(batch.length===100)break;}
+          catch(error){const message=error.message||'TXT non reconnu';blocked.set(file.name,{name:file.name,message:message.includes(file.name)?message:file.name+' · '+message});}
+        }
         if(batch.length){
-          const groups=batch.map(build);if(version!==generation)return;
+          if(version!==generation)return;
           pending={groups,files:batch,receipt:null};await publish(groups,null,saveReceipt);
           if(version!==generation)return;batch.forEach(f=>acknowledged.set(f.name,f.hash));pending=null;
           emit(batch.length+' fichier(s) publié(s). Le public peut actualiser.',false);
