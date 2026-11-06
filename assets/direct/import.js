@@ -2,14 +2,15 @@
   'use strict';
   const normalize=value=>String(value||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/\s+/g,' ').trim();
   const isRelay=(eventCode,row={})=>row.relay===true||/^relay\|/i.test(row.swimmerId||'')||/^\d+\s*[x×]\s*\d+/i.test(eventCode||'');
-  function options(){const pdf=global.LivePalmesPdfImport;return {...pdf,data:{events:[],entrants:[],series:[],program:[]},sampleData:{entrants:[]},importedSeriesTime:global.LivePalmesTime.importedSeriesTime,normalizePersonName:normalize,formatDisplayName:r=>[r.lastName,r.firstName].filter(Boolean).join(' '),eventSignature:normalize};}
+  function options(){const pdf=global.LivePalmesPdfImport;return {...pdf,includeCategoryProvenance:true,data:{events:[],entrants:[],series:[],program:[]},sampleData:{entrants:[]},importedSeriesTime:global.LivePalmesTime.importedSeriesTime,normalizePersonName:normalize,formatDisplayName:r=>[r.lastName,r.firstName].filter(Boolean).join(' '),eventSignature:normalize};}
   function parseSeries(lines,name,fallback){
     const parsed=global.LivePalmesSeriesImport.parseImportedSeriesLines(lines,name,options());
     return parsed.program.map(program=>{
       const event=parsed.events.find(e=>e.id===program.eventId),matching=parsed.series.filter(r=>r.eventId===program.eventId&&r.sex===program.sex&&String(r.session||'')===String(program.session||'')&&(r.stage||'series')===(program.stage||'series')),rows=matching.map(r=>{
         const entry=parsed.entrants.find(e=>e.swimmerId===r.swimmerId&&e.eventId===r.eventId&&e.sex===r.sex&&String(e.session||'')===String(r.session||''));
         if(!entry)return null;
-        return {lastName:entry.lastName,firstName:entry.firstName,birthYear:entry.birthDate,club:entry.clubCode||entry.club,category:entry.categoryCode||entry.category,series:r.series,lane:r.line,entryTime:entry.seedTime,relay:isRelay(r.eventId,entry),resultStatus:''};
+        const relay=isRelay(r.eventId,entry);
+        return {lastName:entry.lastName,firstName:entry.firstName,birthYear:entry.birthDate,club:entry.clubCode||entry.club,category:entry.categoryInferred?'':entry.categoryCode||entry.category,series:r.series,lane:r.line,entryTime:entry.seedTime,relay,...(relay?{sourceEntryId:`relay-slot|${r.eventId}|${r.sex}|${r.session||''}|${r.series}|${r.line}`} : {}),resultStatus:''};
       }).filter(Boolean);
       const heatNumbers=[...new Set(rows.map(row=>row.series))],partial=heatNumbers.length===1&&matching.some(r=>Number(r.seriesCount)>1),times=new Map();
       matching.forEach(row=>{if(row.startTime&&!times.has(row.series))times.set(row.series,row.startTime);});

@@ -34,6 +34,16 @@ function createStore(pool,environment) {
     const rows=selected?await entries(id,selected.id):[],p=read(selected?.publication_state_json);
     return {competition,config:configView(current),events:visible.map(eventView),selectedEventId:selected?.id||null,entries:publicOnly?rows.map(row=>model.publicEntry(row,Boolean(p.series),Boolean(p.results))):rows.map(row=>({...model.publicEntry(row,true,true),sourceEntryId:row.source_entry_id,swimmerId:row.swimmer_id,clubId:row.club_id}))};
   }
+  async function watchContext(id){
+    const competition=await native(id),current=await config(id);
+    if(!current||current.state!=='active')throw fail('Activer le Direct avant de configurer la surveillance.');
+    const list=await events(id);if(list.length>model.MAX_EVENTS)throw fail('Programme trop volumineux.');
+    const all=await q(`SELECT * FROM livepalmes_direct_entries WHERE environment=? AND competition_id=? ORDER BY event_id,series_number,lane,participant_key LIMIT ${model.MAX_MEET_ENTRIES+1}`,scope(id));
+    if(all.length>model.MAX_MEET_ENTRIES)throw fail('Compétition trop volumineuse.');
+    const visible=new Set(list.filter(row=>read(row.publication_state_json).series).map(row=>row.id)),rows=all.filter(row=>visible.has(row.event_id)&&row.has_series&&row.series_number!=null),heats=new Map();
+    for(const row of rows){const key=row.event_id+':'+Number(row.series_number);if(!heats.has(key))heats.set(key,[]);heats.get(key).push(row);}
+    return {competition,config:configView(current),events:list.filter(row=>visible.has(row.id)).map(eventView),entries:rows.map(row=>({...model.publicEntry(row,true,true),eventId:row.event_id,sourceEntryId:row.source_entry_id})),seriesFingerprints:Object.fromEntries([...heats].map(([key,values])=>[key,model.seriesFingerprint(values)]))};
+  }
   async function transaction(id,actor,expected,callback,{allowClosed=false,allowMissing=false}={}) {
     const c=await pool.getConnection();let started=false;
     try{await c.beginTransaction();started=true;const current=await config(id,c,true);
@@ -62,6 +72,7 @@ function createStore(pool,environment) {
   }
   async function preview(id,input) {
     const competition=await native(id),prepared=model.prepare(input,competition),current=await config(id);
+    if(prepared.seriesFingerprint)throw fail('Utiliser la publication groupée pour les résultats TXT contrôlés.');
     if(!current||current.state!=='active')throw fail("Activer le Direct avant la publication.");
     const before=await entries(id,prepared.event.id);
     return {prepared,version:Number(current.version),replaces:before.some(row=>prepared.kind==='series'?Boolean(row.entry_time_raw)||row.series_number!=null:Boolean(row.result_time_raw)||Boolean(row.result_status)),fingerprint:model.hash([prepared,Number(current.version)])};
@@ -118,6 +129,11 @@ function createStore(pool,environment) {
     const all=await q(`SELECT * FROM livepalmes_direct_entries WHERE environment=? AND competition_id=? ORDER BY event_id,series_number,lane,participant_key LIMIT ${model.MAX_MEET_ENTRIES+1}`,scope(id));
     if(all.length>model.MAX_MEET_ENTRIES)throw fail('Compétition trop volumineuse.');
     const byEvent=new Map();for(const row of all){if(!byEvent.has(row.event_id))byEvent.set(row.event_id,[]);byEvent.get(row.event_id).push(row);}
+    for(const group of batch.groups){if(!group.seriesFingerprint)continue;
+      const event=list.find(row=>row.id===group.event.id),before=(byEvent.get(group.event.id)||[]).filter(row=>row.has_series&&Number(row.series_number)===group.seriesNumber);
+      if(!event||!read(event.publication_state_json).series||!before.length||model.seriesFingerprint(before)!==group.seriesFingerprint)throw fail('La répartition des séries a changé. Arrêter et reconfigurer la surveillance.','aborted');
+      if(before.length!==group.rows.length||group.rows.some(row=>!before.some(old=>old.participant_key===row.key&&Number(old.series_number)===row.series&&Number(old.lane)===row.lane)))throw fail('Les lignes du TXT ne correspondent pas aux séries importées. Contrôler la répartition.');
+    }
     if(new Set([...list.map(row=>row.id),...batch.groups.map(group=>group.event.id)]).size>model.MAX_EVENTS)throw fail('Nombre maximal d’épreuves atteint.');
     const replaced=batch.groups.map(group=>replacesScope(group,byEvent.get(group.event.id)||[]));
     return {batch,version:Number(current.version),list,byEvent,replaced,fingerprint:model.hash([batch.groups,Number(current.version)]),replacements:batch.groups.filter((_,index)=>replaced[index]).map(group=>group.event.eventLabel+' · '+group.event.sex+' · '+group.event.sessionLabel+(group.seriesNumber?' · Série '+group.seriesNumber:''))};
@@ -163,6 +179,6 @@ function createStore(pool,environment) {
   async function document(id,actor,input,metadata) {
     return transaction(id,actor,input.version,async(c,current)=>{const before=read(current.documents_json,[]),after=before.filter(d=>d.id!==metadata.id);after.push(metadata);if(after.length>20)throw new TypeError("20 documents complets au maximum.");await execute(c,"UPDATE livepalmes_direct_competitions SET documents_json=? WHERE environment=? AND competition_id=?",[json(after),...scope(id)]);await journal(c,id,actor,{action:'document',before,after,source:{type:'pdf',name:metadata.title,hash:metadata.hash},operationKey:input.operationKey});return {ok:true,document:metadata};});
   }
-  return {native,config,access,detail,settings,preview,publish,previewBatch,publishBatch,visibility,grants,grant,history,document,scope,q,eventView,configView};
+  return {native,config,access,detail,watchContext,settings,preview,publish,previewBatch,publishBatch,visibility,grants,grant,history,document,scope,q,eventView,configView};
 }
 module.exports={createStore,fail};

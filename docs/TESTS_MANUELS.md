@@ -2,6 +2,15 @@
 
 <!-- description: Checklist de tests manuels à exécuter avant une publication ou après une modification sensible. -->
 
+## Direct : surveillance TXT navigateur et classements — 6 novembre 2026
+
+- Sur TEST, utiliser Chrome/Edge sur le poste WinPalme, importer les séries PDF à jour et vérifier les relais homonymes du même club. Une catégorie de relais absente reste « — ».
+- Choisir le dossier RésultatsSéries, contrôler code compétition, associations session/épreuve/sexe/phase et grille. Sans les deux confirmations, aucun démarrage ; les fichiers présents ne sont publiés qu'après choix explicite. Tester aussi un dossier initialement vide avec code renseigné.
+- Créer/corriger un TXT autorisé : après deux lectures stables, vérifier la série concernée, conservation des autres séries, engagement/résultat et historique. Arrêter puis modifier le fichier : aucun nouvel envoi. Reprendre après une coupure : même lot, sans doublon. Changer de compétition ou se déconnecter arrête la veille. Fermer/recharger exige une reconfiguration.
+- Une ligne ajoutée/manquante, un fichier incomplet, une association ambiguë ou une réimportation de grille pendant la veille doivent bloquer la publication. Une permutation extérieure de nageurs à effectif identique nécessite des séries à jour : elle est indétectable dans un TXT sans identités.
+- Vérifier scratch, filtre simple et multiple, places propres à chaque catégorie, ex æquo 1/2/2/4 et statuts sans place. Un résultat corrigé recalcule les rangs. Le public reste sur actualisation manuelle.
+- Les tests automatisés emploient des réponses fictives et MySQL isolé. Toute publication réelle par cette recette reste une action explicite du pilote ; aucun test automatique ne l'effectue.
+
 ## Identifiants des clubs dans l'annuaire des adresses — 2 novembre 2026
 
 Hors réseau : `node tests/nap-club-account-emails-tests.js`, `node tests/nap-club-email-id-migration-tests.js` et tests de fusion concernés. La CI réutilise MySQL 5.7 isolé pour `tests/nap-club-account-emails-mysql-tests.js` : refus des valeurs ambiguës/inconnues, conversion et retour au texte sous verrous, conservation des NULL/adresses/préférences/versions, relance sans effet, ancien paramétrage texte et paramétrage numérique, protection des versions et index `(club_id,status)`.

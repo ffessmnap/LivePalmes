@@ -19,4 +19,10 @@ assert.doesNotThrow(()=>model.prepare(relay[0],{id:'legacy-nap-900001',date:'202
 assert.equal(adapter.isRelay('4X100SF'),true);
 assert.equal(adapter.isRelay('100bix'),false,'Le suffixe bipalmes bix ne désigne pas un relais');
 assert.equal(adapter.isRelay('100sf',{swimmerId:'relay|source'}),true);
+const multipleTeams=adapter.parseSeries(['4 x 100 m Surface - Mixte','série : 1 / 2 Horaire indicatif : 09:00','2 EQUIPE CLUB XSE CLUB 04:10.00','3 EQUIPE CLUB XSE CLUB 04:20.00','série : 2 / 2 Horaire indicatif : 09:05','2 EQUIPE CLUB XSE CLUB 04:00.00'],'équipes.pdf',fallback);
+assert.equal(multipleTeams[0].rows.length,3);
+const preparedTeams=model.prepare(multipleTeams[0],{id:'legacy-nap-900001',date:'2026-11-07'});
+assert.equal(new Set(preparedTeams.rows.map(row=>row.key)).size,3,'Trois équipes homonymes du même club restent distinctes');
+assert.equal(adapter.parseSeries(['4 x 100 m Surface - Mixte','série : 1 / 1 Horaire indicatif : 09:00','2 EQUIPE CLUB CLUB 04:10.00'],'sans-catégorie.pdf',fallback)[0].rows[0].category,'','Aucune catégorie sportive déduite pour une équipe sans catégorie source');
+assert.deepEqual(multipleTeams[0].rows.map(row=>row.sourceEntryId),adapter.parseSeries(['4 x 100 m Surface - Mixte','série : 1 / 2 Horaire indicatif : 09:00','2 EQUIPE CLUB XSE CLUB 04:10.00','3 EQUIPE CLUB XSE CLUB 04:20.00','série : 2 / 2 Horaire indicatif : 09:05','2 EQUIPE CLUB XSE CLUB 04:00.00'],'équipes.pdf',fallback)[0].rows.map(row=>row.sourceEntryId),'Réimporter conserve les identifiants');
 console.log('Imports Direct : réutilisation des parseurs séries/résultats WinPalme, plusieurs épreuves, absence de référence et document non reconnu.');
