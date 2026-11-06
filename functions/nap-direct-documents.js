@@ -15,7 +15,7 @@ async function store(storage,environment,input,id) {
   const path=`competition-pdfs/direct/${environment.name}/${model.competitionId(id)}/${hash}.pdf`;
   const bucket=storage.bucket(environment.publicBucket);
   try{await bucket.file(path).save(buffer,{resumable:false,preconditionOpts:{ifGenerationMatch:0},contentType:'application/pdf',metadata:{cacheControl:'public, max-age=31536000, immutable',contentDisposition:'inline; filename="competition.pdf"'}});}catch(error){if(Number(error.code)!==412)throw error;}
-  return {id:`${input.documentKind}:${session}${input.fromSeriesImport===true?':'+hash.slice(0,16):''}`,title,kind:input.documentKind,session,hash,url:`https://storage.googleapis.com/${environment.publicBucket}/${path}`,size:buffer.length};
+  return {id:`${input.documentKind}:${session}${input.fromSeriesImport===true?':'+model.hash(title).slice(0,16):''}`,title,kind:input.documentKind,session,hash,url:`https://storage.googleapis.com/${environment.publicBucket}/${path}`,size:buffer.length};
 }
 async function purgeBatch(storage,environment,id){
   if(!['test','production'].includes(environment.name))throw new TypeError('Environnement PDF Direct invalide.');
