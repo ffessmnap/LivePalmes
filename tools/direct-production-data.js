@@ -7,9 +7,6 @@ const { seal, open } = require("./production-backup-crypto");
 const CANDIDATE = "5b76e1e37eddba618b25c41c92a8168446fe4115";
 const app = path.resolve(process.env.DIRECT_APP_DIRECTORY || path.join(__dirname, ".."));
 const schema = require(path.join(app, "functions/nap-direct-schema"));
-const { createStore } = require(path.join(app, "functions/nap-direct-store"));
-const { readActor } = require(path.join(app, "functions/nap-direct-service"));
-const { PROJECTS } = require(path.join(app, "functions/livepalmes-environment"));
 const mysql = require(path.join(app, "functions/node_modules/mysql2/promise"));
 const hash = value => createHash("sha256").update(value).digest("hex");
 const order = table => table.keys.find(key => key[0] === "PRIMARY").slice(2).map(name => "`" + name + "`").join(",");
@@ -74,37 +71,23 @@ async function restoreIsolated(value) {
   }
 }
 async function main() {
-  const mode = process.env.DIRECT_DATA_MODE;
-  assert(["check", "backup", "activate"].includes(mode));
   assert.equal(execFileSync("git", ["rev-parse", "HEAD"], { cwd: app, encoding: "utf8" }).trim(), CANDIDATE);
   assert.equal(process.env.TARGET_FIREBASE_PROJECT, "livepalmes");
   const credentials = JSON.parse(fs.readFileSync(process.env.GOOGLE_APPLICATION_CREDENTIALS, "utf8"));
   assert.equal(credentials.project_id, "livepalmes");
   assert.equal(credentials.client_email, "github-actions-livepalmes-back@livepalmes.iam.gserviceaccount.com");
-  let pool;
   const output = process.env.DIRECT_DATA_OUTPUT;
   assert(output);
   fs.mkdirSync(output, { recursive: true, mode: 0o700 });
-  try {
-    let value;
-    if (process.env.DIRECT_ENCRYPTED_SNAPSHOT) {
-      assert.equal(mode, 'backup');
-      assert(process.env.DIRECT_ENCRYPTED_SNAPSHOT.length < 50000);
-      const envelope = JSON.parse(Buffer.from(process.env.DIRECT_ENCRYPTED_SNAPSHOT, 'base64'));
-      value = JSON.parse(require('./direct-backup-transfer').unwrap(envelope, credentials));
-      assert.equal(value.schema, 1);
-      assert.equal(value.environment, 'production');
-      assert.equal(value.planHash, schema.planHash);
-      assert(Date.parse(value.capturedAt) > Date.now() - 30 * 60 * 1000 && Date.parse(value.capturedAt) <= Date.now() + 60000, 'Snapshot ponctuel trop ancien');
-      assert.deepEqual(Object.keys(value.data).sort(), schema.tables.map(table => table.name).sort());
-      assert(Object.values(value.data).every(rows => rows.length <= 200000 && rows.every(row => row.environment === 'production')));
-    } else {
-      const secret = execFileSync("gcloud", ["secrets", "versions", "access", "latest", "--project=livepalmes", "--secret=LIVEPALMES_NAP_PASSWORD"],
-        { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] }).trim();
-      const { napPoolOptions } = require(path.join(app, "functions/nap-connection"));
-      pool = mysql.createPool({ ...napPoolOptions(secret), jsonStrings: true });
-      value = await snapshot(pool);
-    }
+  assert(process.env.DIRECT_ENCRYPTED_SNAPSHOT.length < 50000);
+  const envelope = JSON.parse(Buffer.from(process.env.DIRECT_ENCRYPTED_SNAPSHOT, 'base64'));
+  const value = JSON.parse(require('./direct-backup-transfer').unwrap(envelope, credentials));
+  assert.equal(value.schema, 1);
+  assert.equal(value.environment, 'production');
+  assert.equal(value.planHash, schema.planHash);
+  assert(Date.parse(value.capturedAt) > Date.now() - 30 * 60 * 1000 && Date.parse(value.capturedAt) <= Date.now() + 60000, 'Snapshot ponctuel trop ancien');
+  assert.deepEqual(Object.keys(value.data).sort(), schema.tables.map(table => table.name).sort());
+  assert(Object.values(value.data).every(rows => rows.length <= 200000 && rows.every(row => row.environment === 'production')));
     console.log('Snapshot des cinq tables Direct production obtenu. Chiffrement et restauration isolee en cours.');
     const raw = Buffer.from(JSON.stringify(value)), encrypted = seal(raw, credentials.private_key);
     assert.deepEqual(open(encrypted, credentials.private_key), raw);
@@ -113,52 +96,11 @@ async function main() {
     const verified = JSON.parse(open(fs.readFileSync(file), credentials.private_key));
     await restoreIsolated(verified);
     console.log('Sauvegarde rouverte et restauration MySQL 5.7 isolee verifiees.');
-    const report = { schema: 1, candidate: CANDIDATE, mode, environment: "production", tables: schema.tables.map(table => table.name),
+    const report = { schema: 1, candidate: CANDIDATE, mode:'backup', environment: "production", tables: schema.tables.map(table => table.name),
       capturedAt: value.capturedAt, encryptedSha256: hash(encrypted), reopenedAndCompared: true, restoredInIsolatedMysql57: true,
       retentionDays: 14, counts: Object.fromEntries(Object.entries(value.data).map(([name, rows]) => [name, rows.length])), nativeRowsWritten: 0, testRowsCopied: 0 };
-    if (mode !== "backup") {
-      const admin = require(path.join(app, "functions/node_modules/firebase-admin"));
-      admin.initializeApp({ credential: admin.credential.cert(credentials) });
-      const uid = PROJECTS.livepalmes.legacyAdminUids[0];
-      assert.equal(PROJECTS.livepalmes.legacyAdminUids.length, 1);
-      const user = await admin.auth().getUser(uid);
-      assert.equal(user.disabled, false);
-      const actor = await readActor({ auth: { uid } }, { db: admin.firestore(), adminUids: new Set(PROJECTS.livepalmes.legacyAdminUids) });
-      assert.equal(actor.national, true);
-      console.log('Compte administrateur existant actif et autorise. Verification de Paris 5220.');
-      const store = createStore(pool, "production"), competition = await store.native(5220);
-      assert.equal(competition.date, "2026-11-07");
-      assert.equal(competition.eventType, "pool");
-      assert.equal(competition.canceled, false);
-      assert.match((competition.city + " " + competition.location).toLowerCase(), /paris/);
-      report.competition = { id: 5220, name: competition.name, date: competition.date, city: competition.city, level: competition.level, region: competition.regionLabel };
-      report.existingPilotActiveAndAuthorized = true;
-      const before = await store.config(5220);
-      if (mode === "activate") {
-        assert.equal(process.env.DIRECT_ACTIVATION_CONFIRMATION, "direct-production-paris-5220");
-        assert(!before || before.state === "active", "Etat Direct existant a examiner");
-        if (!before) await store.settings(5220, actor, { state: "active", publicVisible: true, consoles: ["computer"], operationKey: "production-paris-5220-20261107" });
-        const detail = await store.detail(5220);
-        assert.equal(detail.config.state, "active");
-        assert.equal(detail.config.publicVisible, true);
-        assert.equal(detail.events.length, 0, "Aucun programme TEST ne doit etre repris");
-        report.activated = true;
-        const finalSnapshot = await snapshot(pool);
-        const finalRaw = Buffer.from(JSON.stringify(finalSnapshot));
-        const finalEncrypted = seal(finalRaw, credentials.private_key);
-        const finalFile = path.join(output, "direct-production-after-activation.enc");
-        fs.writeFileSync(finalFile, finalEncrypted, { mode: 0o600 });
-        const reopened = open(fs.readFileSync(finalFile), credentials.private_key);
-        assert.deepEqual(reopened, finalRaw);
-        await restoreIsolated(JSON.parse(reopened));
-        report.afterActivationBackupSha256 = hash(finalEncrypted);
-      }
-      report.directConfigurationPresent = Boolean(await store.config(5220));
-      await admin.app().delete();
-    }
     fs.writeFileSync(path.join(output, "report.json"), JSON.stringify(report, null, 2));
     console.log(JSON.stringify(report));
-  } finally { if (pool) await pool.end(); }
 }
 module.exports = { snapshot, restoreIsolated };
 if (require.main === module) main().catch(error => { console.error("Controle Direct interrompu", error.code || error.name, "Consulter les prerequis, aucun secret affiche"); process.exitCode = 1; });
