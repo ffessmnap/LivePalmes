@@ -2,6 +2,14 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 6 novembre — Maquette Direct validée et publication groupée
+
+- Besoin : corriger l'import des relais et permettre un contrôle/publication compact de toutes les épreuves ; reprendre l'interface French Touch avec scratch automatique, horaires, fenêtre nageur et club mis en évidence.
+- Validation : Antoine valide explicitement la maquette locale et demande sa publication. Destination autorisée : TEST ; cette validation porte sur la présentation locale, pas sur une recette du service TEST déployé. Aucun accord PROD.
+- Périmètre : pages Direct, composants natifs, adaptateur PDF, service Direct et tests. Pas de framework, migration, nouvelle table ou colonne, modification de données natives, invocation métier réelle ou envoi.
+- Publication groupée : transaction unique, empreinte commune, confirmation des remplacements, reprise sans doublon, limites et refus des chevauchements. Horaires conservés dans le JSON des événements Direct existant ; aucune reprise silencieuse des anciennes données.
+- Préparation : branche `feature/direct-maquette-validation`, PR/CI et preuve TEST à compléter. Tests ciblés locaux réussis ; contrôles globaux et MySQL 5.7 isolé confiés à la CI obligatoire. Les parcours privés authentifiés de la version TEST publiée resteront à recetter par Antoine.
+
 ### 6 novembre — LivePalmes Direct multi-compétitions et stockage NAP
 
 - Besoin : ouvrir le Direct aux compétitions piscine du calendrier, avec bureau des performances, accès délégués, imports PDF et page publique inspirée de French Touch Taranto. Pilote demandé : IDF manche 1, Paris, 7 novembre, bassin de 50 m.
