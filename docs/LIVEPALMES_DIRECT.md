@@ -4,11 +4,13 @@
 
 ## Perimetre
 
-LivePalmes Direct accompagne les compétitions piscine de tous niveaux issues du calendrier NAP. Le nouveau parcours multi-compétitions est préparé sur TEST ; le dispositif national historique conserve ses pages et ses protections. La préparation des engagements reste dans le Portail LivePalmes.
+LivePalmes Direct accompagne les compétitions piscine de tous niveaux issues du calendrier NAP. Le nouveau parcours multi-compétitions est publié sur TEST ; le dispositif national historique conserve ses pages et ses protections. La préparation des engagements reste dans le Portail LivePalmes.
 
 ## Direct multi-compétitions — livraison TEST du 6 novembre 2026
 
-### Surveillance TXT et classements — préparation autorisée
+### Surveillance TXT et classements — livré sur TEST, recette attendue
+
+Version publiée et contrôlée le 6 novembre à 17 h 37 (Paris) ; [preuves de livraison et limites de validation](releases/EVOLUTIONS.md). La recette authentifiée WinPalme reste à effectuer par Antoine. Les tests automatisés et contrôles connectés n'ont publié aucune donnée réelle.
 
 Surveillance navigateur demandée par Antoine, sans attendre un export TXT des séries : les PDF importés fournissent les identités, catégories disponibles et positions. Le bureau choisit le dossier via Chrome/Edge, associe les numéros de session/épreuve WinPalme aux épreuves Direct et confirme la répartition à jour et la publication automatique des corrections. Les fichiers déjà présents sont ignorés par défaut, ou repris après choix explicite. Une seule surveillance par poste est prévue ; utiliser un seul poste émetteur par compétition. Arrêt au changement de compétition, de compte ou lors d'une autre action du bureau ; aucune reprise silencieuse après rechargement. L'onglet doit rester ouvert et le poste éveillé ; l'arrière-plan peut retarder les contrôles. Aucun outil local installé.
 
