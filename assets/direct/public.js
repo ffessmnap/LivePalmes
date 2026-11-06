@@ -4,11 +4,11 @@
   const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const format=value=>{const n=Number(value);if(!n)return '—';const minutes=Math.floor(n/6000),seconds=Math.floor(n%6000/100),cs=n%100;return `${minutes?minutes+':':''}${String(seconds).padStart(minutes?2:1,'0')}.${String(cs).padStart(2,'0')}`;};
   const category=value=>{let code=String(value||'').toUpperCase().replace(/^[FH](?=[A-Z0-9])/,'');code=({JU:'J',JUNIOR:'J',JUNIORS:'J',SE:'S',SENIOR:'S',SENIORS:'S',MI:'M',MINIME:'M',MINIMES:'M',CA:'C',CADET:'C',CADETS:'C',PO:'P',POUSSIN:'P',BE:'B',BENJAMIN:'B'})[code]||code;return /^\d+\+?$/.test(code)?'M'+code.replace(/\+?$/,'+'):code;};
-  const state={data:null,day:'all',mode:'series',highlightClub:'',refreshEpoch:0,categories:[],series:'all',records:null,loading:false};
+  const state={data:null,day:'all',mode:'series',highlightClub:'',refreshEpoch:0,categories:[],series:'all',records:null,loading:false,expandedSplits:new Set()};
   function rows(){return global.LivePalmesDirectEventView.scratch(state.data?.entries||[],state);}
   function shortEventLabel(event){const code=String(event.eventCode||'').match(/^(\d+(?:x\d+)?)([a-z]+)$/i);return code?code[1].replace(/x/i,'×')+' '+code[2].toUpperCase():event.eventLabel;}
   // One existing, bounded competition snapshot, shared by all person/club windows.
-  let allCache=null,allPending=null,savedClubCompetition='';
+  let allCache=null,allPending=null,savedClubCompetition='',expandedEvent='';
   const cacheKey=()=>[state.data?.competition.id,state.data?.config.revision??state.data?.config.version??'',state.refreshEpoch].join(':');
   async function allData(){
     const key=cacheKey();if(allCache?.key===key)return allCache.data;if(allPending?.key===key)return allPending.promise;
@@ -32,8 +32,9 @@
   }
   function render(){
     if(!state.data)return;const data=state.data,event=data.events.find(e=>e.id===data.selectedEventId),days=[...new Set(data.events.map(e=>e.date))].sort();
+    if(expandedEvent!==data.selectedEventId){state.expandedSplits.clear();expandedEvent=data.selectedEventId;}
     document.getElementById('meetTitle').textContent=data.competition.name;document.title=`${data.competition.name} — LivePalmes Direct`;
-    document.getElementById('meetMeta').textContent=[data.competition.city,`${data.competition.poolLength} m`,data.config.state==='archived'?'Archive du Direct':'Séries et résultats'].filter(Boolean).join(' · ');
+    document.getElementById('meetMeta').textContent=[data.competition.city,ui.dateRange(data.competition.date,data.competition.endDate),data.competition.poolLength?`Bassin de ${data.competition.poolLength} m`:'',data.config.state==='archived'?'Archive du Direct':''].filter(Boolean).join(' · ');
     document.getElementById('calendarLink').href=`competition.html?id=${encodeURIComponent(data.competition.id)}`;
     if(savedClubCompetition!==data.competition.id){savedClubCompetition=data.competition.id;try{state.highlightClub=localStorage.getItem('livepalmes-direct-club:'+data.competition.id)||'';}catch{state.highlightClub='';}}
     document.getElementById('clubHighlightLabel').textContent=state.highlightClub||'Mon club';
@@ -60,10 +61,11 @@
   global.LivePalmesDirectPublic={state,rows,references,render,load,format,allData,dialogs};
   document.addEventListener('click',e=>{
     if(state.loading)return;
+    const splits=e.target.closest('[data-splits]');if(splits){const detail=document.getElementById(splits.dataset.splits);if(detail){detail.hidden=!detail.hidden;splits.setAttribute('aria-expanded',String(!detail.hidden));if(detail.hidden)state.expandedSplits.delete(splits.dataset.splitsKey);else state.expandedSplits.add(splits.dataset.splitsKey);}return;}
     const person=e.target.closest('[data-person]');if(person){dialogs.openPerson(person.dataset.person);return;}
     const heat=e.target.closest('[data-heat],[data-heat-jump]');
     if(heat){state.series=heat.dataset.heat||heat.dataset.heatJump;render();if(heat.hasAttribute('data-heat-jump'))document.getElementById('eventHeats')?.scrollIntoView({block:'start'});return;}
-    const row=e.target.closest('.direct-race-table tbody tr');
+    const row=e.target.closest('.direct-race-table .direct-participant-row');
     if(row&&!e.target.closest('button,a,input,select,summary')){const name=row.querySelector('[data-person]');if(name){dialogs.openPerson(name.dataset.person);return;}}
     const day=e.target.closest('[data-day]'),event=e.target.closest('[data-event]');
     if(day){state.day=day.dataset.day;const next=state.data.events.find(e=>state.day==='all'||e.date===state.day);if(next&&state.day!=='all'&&state.data.events.find(e=>e.id===state.data.selectedEventId)?.date!==state.day)load(next.id);else render();}
