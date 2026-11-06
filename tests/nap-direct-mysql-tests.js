@@ -22,8 +22,8 @@ async function main(){
   },getConnection:async()=>{const connection=await pool.getConnection();return {beginTransaction:()=>connection.beginTransaction(),commit:()=>connection.commit(),rollback:()=>connection.rollback(),release:()=>connection.release(),execute:async(options,values)=>{const sql=typeof options==='string'?options:options.sql;if(sql.startsWith('INSERT INTO livepalmes_direct_publications')&&failJournal>0&&--failJournal===0)throw Error('Interruption de journal simulée');assert.ok(!/^(INSERT|UPDATE|DELETE)/.test(sql)||/^(?:INSERT INTO|UPDATE|DELETE FROM) livepalmes_direct_/.test(sql));return connection.execute(options,values);}};}};
   const actor={uid:'isolated-fixture'},store=createStore(wrapped,'test'),id=900009;
   const person=(name,series)=>({lastName:'EXEMPLE',firstName:name,birthYear:2008,club:'CLUB',category:'FJU',series,lane:4,entryTime:'595999'});
-  const event={eventCode:'100sf',sex:'F',sessionKey:'1',date:'2026-11-07'};
-  const request=(kind,rows,seriesNumber=null)=>({kind,event,rows,seriesNumber,source:{type:'pdf',name:'fixture.pdf'},operationKey:randomUUID()});
+  const event={eventCode:'100sf',sex:'F',sessionKey:'1',date:'2026-11-07',order:7};
+  const request=(kind,rows,seriesNumber=null)=>({kind,event:{...event,order:kind==='results'?undefined:event.order},rows,seriesNumber,source:{type:'pdf',name:'fixture.pdf'},operationKey:randomUUID()});
   const publish=async draft=>{const preview=await store.preview(id,draft);return store.publish(id,actor,{...draft,fingerprint:preview.fingerprint,confirmReplacement:true});};
   try{
     const before=await schema.approvedDirectSchema(pool,{phase:'prepare',confirmation:'nap-create-livepalmes-direct-tables'});
@@ -32,6 +32,7 @@ async function main(){
     await store.settings(id,actor,{consoles:['computer'],operationKey:randomUUID()});
     await publish(request('series',[person('Alice',1),person('Béatrice',2)]));
     for(const [name,series,time]of [['Béatrice',2,'01:12.34'],['Alice',1,'01:10.12']])await publish(request('results',[{...person(name,series),resultTime:time}],series));
+    assert.equal((await store.detail(id)).events[0].order,7,'Les résultats sans ordre ne déplacent pas la course dans le programme');
     let [rows]=await pool.query("SELECT * FROM livepalmes_direct_entries WHERE environment='test' ORDER BY series_number");assert.equal(rows.length,2);assert.ok(rows.every(row=>row.entry_time_cs===null&&row.entry_time_status==='no_reference'&&Number(row.has_series)===1&&Number(row.has_result)===1));assert.equal(Number(rows[1].result_time_cs),7234);
     const retry=request('results',[{...person('Alice',1),resultTime:'01:09.99'}],1);const receipt=await publish(retry);assert.equal(receipt.ok,true);assert.equal((await store.publish(id,actor,{...retry,fingerprint:'lost-response'})).replayed,true,'Une reprise survit à la normalisation JSON de MySQL');
     const snapshot=JSON.stringify((await pool.query('SELECT * FROM livepalmes_direct_entries ORDER BY participant_key'))[0]);
@@ -44,8 +45,8 @@ async function main(){
     const changedBatch={groups:batch.groups.map(group=>({...group,operationKey:randomUUID(),rows:group.rows.map(row=>({...row,entryTime:'01:01.00'}))}))},changedPreview=await store.previewBatch(id,changedBatch);
     failJournal=2;await assert.rejects(store.publishBatch(id,actor,{...changedBatch,fingerprint:changedPreview.fingerprint,confirmReplacement:true}),/Interruption/);failJournal=0;
     assert.equal(JSON.stringify((await pool.query('SELECT * FROM livepalmes_direct_entries ORDER BY event_id,participant_key'))[0]),beforeBatch,'Le second échec annule toutes les épreuves du lot');
-    const detail=await store.detail(id),version=detail.config.version;await store.visibility(id,actor,{version,eventId:detail.events[0].id,kind:'results',visible:false,operationKey:randomUUID()});
-    const publicHidden=await readPublic(wrapped,'test',{id});assert.ok(publicHidden.entries.every(row=>row.result.cs===null));
+    const detail=await store.detail(id),version=detail.config.version,target=detail.events.find(event=>event.eventCode==='100sf').id;await store.visibility(id,actor,{version,eventId:target,kind:'results',visible:false,operationKey:randomUUID()});
+    const publicHidden=await readPublic(wrapped,'test',{id,eventId:target});assert.ok(publicHidden.entries.every(row=>row.result.cs===null));
     await assert.rejects(readPublic(wrapped,'production',{id}),error=>error.directCode==='not-found','TEST et PROD restent indépendants dans la même base');
     const plans=[];for(const [sql,params]of [["SELECT * FROM livepalmes_direct_events WHERE environment=? AND competition_id=? ORDER BY program_order,id LIMIT 301",['test',id]],["SELECT * FROM livepalmes_direct_entries WHERE environment=? AND competition_id=? AND event_id=? ORDER BY series_number,lane,participant_key LIMIT 1001",['test',id,detail.events[0].id]]]){const [plan]=await pool.execute('EXPLAIN '+sql,params);plans.push(plan.map(row=>({table:row.table,key:row.key,rows:row.rows})));assert.ok(plan.every(row=>Number(row.rows)<=1001));}
     console.log('Direct MySQL 5.7 isolé : cinq tables, séries/résultats dans le désordre, remplacement partiel, reprise JSON, rollback, visibilité, environnements et plans indexés vérifiés. '+JSON.stringify(plans));
