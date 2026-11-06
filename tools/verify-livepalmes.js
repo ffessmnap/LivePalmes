@@ -54,6 +54,8 @@ function runUnitTests() {
     "release-backend-isolation-compatibility-tests.js",
     "backend-directory-outage-tests.js",
     "nap-mysql-tests.js",
+    "nap-direct-tests.js",
+    "direct-import-tests.js",
     "nap-club-account-emails-tests.js",
     "nap-club-email-id-migration-tests.js",
     "nap-direct-query-checks-tests.js",
@@ -441,6 +443,7 @@ function runBrowserSmokeIfRequested() {
   const requested = process.argv.includes("--browser") || process.env.LIVEPALMES_BROWSER_SMOKE === "1";
   if (!requested) return;
   printStep("Smoke test navigateur");
+  run(process.execPath, [path.join(rootDir, "tests", "direct-browser-tests.js")]);
   run(process.execPath, [path.join(rootDir, "tests", "portal-reactivity-browser-tests.js")]);
   run(process.execPath, [path.join(rootDir, "tests", "portal-news-browser-tests.js")]);
   run(process.execPath, [path.join(rootDir, "tests", "nap-swimmer-merge-conflicts-browser-tests.js")]);

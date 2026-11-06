@@ -2,6 +2,12 @@
 
 <!-- description: Référence du langage visuel, des composants d’interface et des règles responsive déjà présents dans LivePalmes. -->
 
+## Direct multi-compétitions — 6 novembre 2026
+
+`direct.html` et `direct-admin.html` utilisent `assets/direct/direct.css`, sans modifier le thème du portail ou les consoles historiques. Bandeau bleu LivePalmes, navigation horizontale défilante par jour et épreuve, vues Séries/Résultats/Mon club inspirées de French Touch Taranto. Les résultats conservent les catégories visibles et un panneau multisélection avec action Appliquer. Tableaux dans un conteneur défilant, identité/club regroupés et temps alignés en chiffres tabulaires. Les temps sans référence n'affichent aucun écart.
+
+Actualiser est un bouton flottant de 46 px sur mobile (icône avec nom accessible), avec texte sur ordinateur ; il respecte la zone sûre, ne recouvre aucune action fixe et conserve la sélection. Aucun rafraîchissement automatique. L'erreur réseau conserve la dernière vue consultable et permet une reprise manuelle. Aperçu de publication avec cases par ligne et confirmation distincte des remplacements. Contrôles à 320, 390 et 1 280 px sur données fictives, sans HTTPS externe.
+
 ## Mode sombre du portail — 4 novembre 2026
 
 Le bandeau du portail suit désormais le thème sélectionné, y compris Système lorsque l’appareil est sombre. Sa disposition et ses dimensions restent identiques : surface `#192630`, marque et liens clairs, menus et compte assortis, survol et sélection sur une surface secondaire. Le logo fédéral conserve seul un petit support blanc. Le focus utilise un contour turquoise sur fond sombre ; le portail clair et les pages publiques gardent leur palette claire.

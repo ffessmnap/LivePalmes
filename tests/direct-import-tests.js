@@ -1,0 +1,10 @@
+"use strict";
+const assert=require('node:assert/strict');global.window=global;
+for(const name of ['livepalmes-time','livepalmes-pdf-import','livepalmes-series-import-utils','livepalmes-series-import','livepalmes-result-parser','direct/import'])require('../assets/'+name+'.js');
+const adapter=global.LivePalmesDirectImport,fallback={eventCode:'100sf',sex:'F',phase:'series',date:'2026-11-07',sessionKey:'1'};
+const series=adapter.parseSeries(['100 m Surface - Femmes','série : 1 / 1 Horaire indicatif : 09:00','4 EXEMPLE Alice 08 FJU CLUB 59:59.99'],'fixture.pdf',fallback);
+assert.equal(series.length,1);assert.equal(series[0].rows[0].entryTime,'59:59.99');assert.equal(series[0].rows[0].birthYear,'2008');assert.equal(series[0].rows[0].lane,4);
+const results=adapter.parseResults(['100 m Surface - Femmes','1 EXEMPLE Alice 08 JU * CLUB 01:10.12','100 m Surface - Hommes','1 EXEMPLE Bob 07 SEN * CLUB 01:02.00'],'fixture.pdf',fallback);
+assert.equal(results.length,2);assert.equal(results[0].rows[0].resultTime,'01:10.12');assert.equal(results[1].event.sex,'M');
+assert.equal(adapter.parseResults(['Document illisible'],'fixture.pdf',fallback).length,0);
+console.log('Imports Direct : réutilisation des parseurs séries/résultats WinPalme, plusieurs épreuves, absence de référence et document non reconnu.');
