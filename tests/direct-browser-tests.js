@@ -83,7 +83,7 @@ async function main(){const {server,baseUrl}=await startStaticServer(),browser=a
     assert.equal(await evaluate(client,"return document.querySelector('#watchAlert').hidden"),true,'Alerte retirée après démarrage');
     assert.ok(await evaluate(client,"return document.querySelector('[data-watch-txt-first]').disabled&&document.querySelector('[data-watch-series-first]').disabled"),'Décalage verrouillé pendant la veille');
     assert.ok(await evaluate(client,"return document.querySelector('[data-watch-lane-summary]').textContent.includes('décalage +1')"));
-    await evaluate(client,"window.__txtBody=window.__txtBody.replace('011012','011011')");
+    await evaluate(client,"window.__txtBody=window.__txtBody.replace('011012','011011')+'\\n;;\\n000000;000000'");
     assert.ok(await waitFor(client,"window.__directCalls.filter(x=>x==='publishBatch').length===window.__publishBefore+2",5000),'Une correction du TXT est publiée');
     const watchShot=await client.send('Page.captureScreenshot',{format:'png'});fs.writeFileSync(path.join(output,`watch-${width}.png`),Buffer.from(watchShot.data,'base64'));
     await evaluate(client,"window.__txtBody=window.__txtBody.replace('3:011011','8:011011')");
