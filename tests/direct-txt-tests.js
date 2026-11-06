@@ -3,7 +3,7 @@ const assert=require('node:assert/strict'),txt=require('../assets/direct/winpalm
 global.window=global;require('../assets/direct/event-view');
 const view=global.LivePalmesDirectEventView;
 const name='DEMO_AS_01_02_01_100SF.txt',body='4:011012:000000:000000:000000:000000:000000\r\n5:forfait:::::\r\n';
-const snapshot={events:[{id:'event',eventCode:'100sf',sex:'F',phase:'series',date:'2026-11-07',sessionKey:'1'}],seriesFingerprints:{'event:1':'a'.repeat(64)},entries:[{eventId:'event',key:'a',lastName:'EXEMPLE',firstName:'Alice',birthYear:2008,club:'CLUB',category:'FJU',series:1,lane:4,kind:'individual',seed:{raw:'595999'},members:[]},{eventId:'event',key:'b',lastName:'ESSAI',firstName:'Béa',birthYear:2007,club:'CLUB',category:'FJU',series:1,lane:5,kind:'individual',seed:{raw:'011000'},members:[]}]};
+const snapshot={events:[{id:'event',eventCode:'100sf',sex:'F',phase:'series',date:'2026-11-07',sessionKey:'1',heatSchedule:[{number:1,scheduledAt:'09:00'},{number:2,scheduledAt:'09:03'}]}],seriesFingerprints:{'event:1':'a'.repeat(64)},entries:[{eventId:'event',key:'a',lastName:'EXEMPLE',firstName:'Alice',birthYear:2008,club:'CLUB',category:'FJU',series:1,lane:4,kind:'individual',seed:{raw:'595999'},members:[]},{eventId:'event',key:'b',lastName:'ESSAI',firstName:'Béa',birthYear:2007,club:'CLUB',category:'FJU',series:1,lane:5,kind:'individual',seed:{raw:'011000'},members:[]}]};
 async function main(){
  const parsed=txt.parse(name,body);assert.equal(parsed.session,1);assert.equal(parsed.event,2);assert.equal(parsed.rows[0].resultTime,'01:10.12');assert.equal(parsed.rows[1].resultStatus,'dns');
  assert.equal(txt.decode(Uint8Array.from([100,105,115,113,117,97,108,105,102,105,233])),'disqualifié');
@@ -18,6 +18,8 @@ async function main(){
  const relay=txt.parse('DEMO_AS_01_09_01_4X50SF.txt','1;020363;002996;010973;013798;000000;000000');assert.deepEqual(relay.rows[0].splits.map(s=>s.distance),['50 m','100 m','150 m']);
  const file={name,text:body,hash:await txt.digest(body),info:txt.fileInfo(name)},group=txt.buildGroup(file,snapshot,'event');
  assert.equal(group.seriesFingerprint,'a'.repeat(64));assert.equal(group.rows[0].entryTime,'595999');assert.equal(group.rows[1].resultStatus,'dns');assert.equal(group.rows[0].lastName,'EXEMPLE');
+ assert.doesNotThrow(()=>require('../functions/nap-direct-model').prepare(group,{id:'legacy-nap-900001',date:'2026-11-07'}),'Un TXT d’une série est accepté quand l’épreuve comporte plusieurs horaires');
+ assert.equal(snapshot.events[0].heatSchedule.length,2,'Les horaires du snapshot restent intacts');
  assert.throws(()=>txt.buildGroup(file,{...snapshot,entries:snapshot.entries.slice(0,1)},'event'),/Répartition/);
  assert.throws(()=>txt.buildGroup(file,snapshot,'missing'),/Association/);
  assert.throws(()=>txt.buildGroup(file,{...snapshot,events:[{...snapshot.events[0],eventCode:'200sf'}]},'event'),/Association/);
