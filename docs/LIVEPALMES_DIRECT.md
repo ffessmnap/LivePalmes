@@ -8,7 +8,9 @@ LivePalmes Direct accompagne les compétitions piscine de tous niveaux issues du
 
 ## Direct multi-compétitions — livraison TEST du 6 novembre 2026
 
-### Passages à la ligne et bureau compact — préparation TEST
+### Passages à la ligne et bureau compact — livré sur TEST, recette attendue
+
+[PR #740](https://github.com/ffessmnap/LivePalmes/pull/740), [publication TEST contrôlée](https://github.com/ffessmnap/LivePalmes/actions/runs/42280483794) du 6 novembre : candidat `722943d59f0c895ad46cdf256e57a260d29b582d`, Hosting `b04f8a27133cd6f0`. CI complète et tests locaux réussis ; dix fichiers servis identiques, page publique vérifiée à 1 280/390/320 px. Les 119 révisions serveur sont conservées. Aucun résultat réel publié pendant les contrôles ; recette WinPalme authentifiée encore attendue.
 
 Lot autorisé par Antoine : détail des passages sous chaque ligne comme French Touch, club sur huit caractères, bandeau public avec dates, bureau compact et décalage configurable entre lignes TXT et PDF. Code exclusivement client ; aucune nouvelle table/colonne, fonction serveur, permission, donnée native ou règle de classement. Budget inchangé : déplier un détail, calculer un split ou traduire une ligne réutilise les données reçues et ne déclenche aucun appel.
 
