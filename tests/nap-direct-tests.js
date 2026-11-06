@@ -12,6 +12,7 @@ function sqlFixture(){
     assert.equal((sql.match(/\?/g)||[]).length,values.length,`Nombre de paramètres : ${sql.slice(0,100)}`);
     if(/^(INSERT|UPDATE|DELETE)/.test(sql))assert.match(sql,/^(?:INSERT INTO|UPDATE|DELETE FROM) livepalmes_direct_/,'Aucune table native modifiable');
     if(sql.includes(' FROM competitions c'))return [[{...native,...(sql.includes('d.state AS')?{direct_state:config.state,direct_visible:config.public_visible,direct_revision:config.public_revision,direct_documents:config.documents_json}:{})}]];
+    if(sql.includes('bounded_direct_progress')){const groups=new Map();for(const row of entryRows){const key=row.event_id+'|'+row.series_number,group=groups.get(key)||{event_id:row.event_id,series_number:row.series_number,row_count:0,series_entries:0,result_entries:0,matched_results:0};group.row_count++;group.series_entries+=Number(Boolean(row.has_series));group.result_entries+=Number(Boolean(row.has_result));group.matched_results+=Number(Boolean(row.has_series&&row.has_result));groups.set(key,group);}return [[...groups.values()]];}
     if(sql.startsWith('SELECT SUM(total)')){const counts=new Map();entryRows.forEach(row=>counts.set(row.event_id,(counts.get(row.event_id)||0)+1));return [[{total:entryRows.length,event_total:Math.max(0,...counts.values())}]];}
     if(sql.startsWith('SELECT')&&sql.includes('livepalmes_direct_competitions'))return [[{...config}]];
     if(sql.startsWith('SELECT')&&sql.includes('livepalmes_direct_events'))return [[...eventRows]];
@@ -58,6 +59,8 @@ function schemaFixture(){const present=new Set();let created=0;
   const replacement={...draft,operationKey:'fixture-operation-00003',rows:[{...person,resultTime:'01:09.99'}]},p=await store.preview(900001,replacement);await assert.rejects(store.publish(900001,actor,{...replacement,fingerprint:p.fingerprint}),/Confirmer/);fixture.failJournal();await assert.rejects(store.publish(900001,actor,{...replacement,fingerprint:p.fingerprint,confirmReplacement:true}),/interrompu/);assert.equal(fixture.inspect().entryRows[0].result_time_cs,7012);assert.equal(fixture.inspect().rollbacks,1);
   const publicFixture=sqlFixture(),pubStore=createStore(publicFixture,'test');const pub=await pubStore.preview(900001,draft);await pubStore.publish(900001,actor,{...draft,fingerprint:pub.fingerprint});publicFixture.calls.length=0;
   const responses=await Promise.all(Array.from({length:400},()=>readPublic(publicFixture,'test',{id:900001})));assert.equal(responses.length,400);assert.equal(publicFixture.calls.filter(c=>c.sql.includes('SELECT * FROM livepalmes_direct_events')).length,1);assert.equal(publicFixture.calls.filter(c=>c.sql.includes('SELECT * FROM livepalmes_direct_entries')).length,1);assert.equal(responses[0].entries[0].delta,null);assert.ok(!JSON.stringify(responses[0]).includes('created_by'));
+  assert.equal(publicFixture.calls.filter(c=>c.sql.includes('bounded_direct_progress')).length,1,'Un agrégat partagé pour 400 ouvertures simultanées');
+  await readPublic(publicFixture,'test',{id:900001,eventId:responses[0].events[0].id});assert.equal(publicFixture.calls.filter(c=>c.sql.includes('bounded_direct_progress')).length,1,'Changer de sélection réutilise le même programme et son agrégat');
   const hidden={...publicFixture.inspect().entryRows[0],has_series:0,has_result:0,entry_time_raw:'',result_time_raw:'',result_status:'',series_number:null};assert.equal(model.visibleEntry(hidden,false,true),false);
   const partialFixture=sqlFixture(),partialStore=createStore(partialFixture,'test');
   for(const n of [2,1]){const chunk={...draft,seriesNumber:n,operationKey:'fixture-series-result-000'+n,rows:[{...person,firstName:'Alice'+n,series:n}]},preview=await partialStore.preview(900001,chunk);await partialStore.publish(900001,actor,{...chunk,fingerprint:preview.fingerprint,confirmReplacement:true});}
@@ -73,9 +76,11 @@ function schemaFixture(){const present=new Set();let created=0;
   assert.equal(bf.calls.filter(call=>call.sql.startsWith('SELECT * FROM livepalmes_direct_entries')).length,1,'Lecture groupée, indépendante du nombre d’épreuves');
   await assert.rejects(bs.publishBatch(900001,actor,{...batchInput,fingerprint:'stale'}),/aperçu/);
   assert.equal(bf.inspect().commits,0);
-  await bs.publishBatch(900001,actor,{...batchInput,fingerprint:bp.fingerprint});
+  const batchPublished=await bs.publishBatch(900001,actor,{...batchInput,fingerprint:bp.fingerprint});
+  assert.equal(batchPublished.events.length,3);assert.equal(batchPublished.events.find(e=>e.eventCode==='100sf').progress.seriesEntries,1);assert.equal(batchPublished.version,2);
   assert.equal(bf.inspect().commits,1,'Une transaction pour toutes les épreuves');
   assert.equal(bf.inspect().config.version,2,'Une seule révision publique pour le lot');
+  const countsDetail=await bs.detail(900001);assert.equal(countsDetail.events.reduce((n,e)=>n+e.progress.seriesEntries,0),3);assert.equal(countsDetail.events.filter(e=>e.progress.resultEntries>0).length,0);
   assert.equal(bf.inspect().entryRows.length,3);
   assert.deepEqual(bs.eventView(bf.inspect().eventRows[0]).heatSchedule,schedule,'Horaires conservés dans le JSON existant');
   assert.equal((await bs.publishBatch(900001,actor,{...batchInput,fingerprint:'response-lost'})).replayed,true);
@@ -114,6 +119,7 @@ function schemaFixture(){const present=new Set();let created=0;
   const watched=txt.buildGroup({name:fileName,text:fileBody,hash:'a'.repeat(64)},context,context.events[0].id),watchedPreview=await ws.previewBatch(900001,{groups:[watched]});
   await ws.publishBatch(900001,actor,{groups:[watched],fingerprint:watchedPreview.fingerprint});
   assert.equal(wf.inspect().entryRows.length,2,'Le résultat TXT rejoint les bonnes équipes de relais');
+  const watchedCounts=(await ws.detail(900001)).events[0].progress;assert.equal(watchedCounts.seriesEntries,2);assert.equal(watchedCounts.resultEntries,2);assert.equal(watchedCounts.completeSeriesCount,1,'Un abandon est un résultat reçu');
   assert.equal(wf.inspect().eventRows[0].event_label,'Libellé corrigé');assert.equal(wf.inspect().eventRows[0].program_order,11);assert.equal(wf.inspect().eventRows[0].scheduled_at,'12:34');
   assert.equal(JSON.parse(wf.inspect().entryRows[0].relay_members_json)[0].lastName,'COMPOSITION','Le TXT ne remplace pas une composition détaillée déjà publiée');
   assert.equal(wf.inspect().entryRows.find(row=>row.lane===2).result_time_cs,25000);assert.equal(wf.inspect().entryRows.find(row=>row.lane===3).result_status,'ab');

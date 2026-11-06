@@ -2,6 +2,14 @@
 
 <!-- description: Checklist de tests manuels à exécuter avant une publication ou après une modification sensible. -->
 
+## Direct : lecture, bilan compact et passages — 6 novembre 2026
+
+- Public sur ordinateur et téléphone : nom de famille en majuscules, prénom inchangé, une ligne compacte ; absent/595999 = tiret, sans écart. Ouvrir une fiche et vérifier la même présentation et les passages correctement nommés.
+- Importer toutes les séries puis publier une seule série de résultats : « En cours » et rangs provisoires visibles. Terminer les autres séries avec chronos, forfait/ABD/DSQ : « Terminée ». Une série attendue manquante, des résultats sans référence ou non associés ne doivent pas conclure à tort la course. Retirer les résultats : état sans résultat publié et compteurs publics masqués.
+- Vérifier « Suivi des imports » en tête de bureau : épreuves, séries, engagements et résultats ; tableau par course et actions Masquer/Rétablir. Une publication TXT met le bilan à jour sans arrêter la surveillance ni ajouter un aller-retour de lecture normal.
+- Auray uniquement pour cette comparaison : vérifier 100 m et 200 m des 200/400 m ; les autres champs 400/800/1500 sont testés fictivement faute de course correspondante dans cet exemple. Ne pas afficher de doublon final sur 50 m. Les relais exigent toujours la répartition à jour.
+- Tests automatisés sans publication réelle ; MySQL isolé pour agrégat, limites, index et masquage. La recette authentifiée de la version TEST reste à effectuer par le pilote.
+
 ## Direct : surveillance TXT navigateur et classements — 6 novembre 2026
 
 - Sur TEST, utiliser Chrome/Edge sur le poste WinPalme, importer les séries PDF à jour et vérifier les relais homonymes du même club. Une catégorie de relais absente reste « — ».
