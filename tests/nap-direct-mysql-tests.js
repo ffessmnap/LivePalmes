@@ -45,6 +45,11 @@ async function main(){
     const changedBatch={groups:batch.groups.map(group=>({...group,operationKey:randomUUID(),rows:group.rows.map(row=>({...row,entryTime:'01:01.00'}))}))},changedPreview=await store.previewBatch(id,changedBatch);
     failJournal=2;await assert.rejects(store.publishBatch(id,actor,{...changedBatch,fingerprint:changedPreview.fingerprint,confirmReplacement:true}),/Interruption/);failJournal=0;
     assert.equal(JSON.stringify((await pool.query('SELECT * FROM livepalmes_direct_entries ORDER BY event_id,participant_key'))[0]),beforeBatch,'Le second échec annule toutes les épreuves du lot');
+    const watch=await store.watchContext(id),watchedEvent=watch.events.find(e=>e.eventCode==='200sf'),watched={...request('results',[{...person('Même nageuse',1),resultTime:'01:12.00'}],1),event:watchedEvent,seriesFingerprint:watch.seriesFingerprints[watchedEvent.id+':1']};
+    const watchPreview=await store.previewBatch(id,{groups:[watched]});await store.publishBatch(id,actor,{groups:[watched],fingerprint:watchPreview.fingerprint});
+    const [watchedRows]=await pool.execute('SELECT * FROM livepalmes_direct_entries WHERE environment=? AND competition_id=? AND event_id=?',['test',id,watchedEvent.id]);assert.equal(watchedRows.length,1);assert.equal(watchedRows[0].result_time_cs,7200);
+    const moved={...batch.groups[0],operationKey:randomUUID(),rows:batch.groups[0].rows.map(row=>({...row,lane:5}))},movePreview=await store.previewBatch(id,{groups:[moved]});await store.publishBatch(id,actor,{groups:[moved],fingerprint:movePreview.fingerprint,confirmReplacement:true});
+    await assert.rejects(store.previewBatch(id,{groups:[{...watched,operationKey:randomUUID()}]}),/répartition des séries a changé/,'Un changement réel de ligne invalide la veille');
     const detail=await store.detail(id),version=detail.config.version,target=detail.events.find(event=>event.eventCode==='100sf').id;await store.visibility(id,actor,{version,eventId:target,kind:'results',visible:false,operationKey:randomUUID()});
     const publicHidden=await readPublic(wrapped,'test',{id,eventId:target});assert.ok(publicHidden.entries.every(row=>row.result.cs===null));
     await assert.rejects(readPublic(wrapped,'production',{id}),error=>error.directCode==='not-found','TEST et PROD restent indépendants dans la même base');

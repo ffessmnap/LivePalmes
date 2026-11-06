@@ -19,7 +19,8 @@
       try {
         const data = await getData();
         if (!person.open || request !== personRequest) return;
-        const rows = data.entries.filter(row => row.key === key), first = rows[0];
+        const ranked = data.events.flatMap(event => global.LivePalmesDirectEventView.rankings(data.entries.filter(row => row.eventId === event.id)));
+        const rows = ranked.filter(row => row.key === key), first = rows[0];
         if (!first) throw Error('Ce nageur ne figure plus dans les publications disponibles.');
         const events = new Map(data.events.map(event => [event.id,event]));
         const list = rows.filter(row => events.has(row.eventId)).sort((a,b) => {

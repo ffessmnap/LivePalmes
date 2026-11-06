@@ -435,6 +435,7 @@
           clubCode: club,
           category: importedCategoryLabel(catCode),
           categoryCode: catCode,
+          ...(context.includeCategoryProvenance?{categoryInferred:Boolean(relayMatch && !relayMatch.groups.cat)}:{}),
           seedTime,
           seedSource: "",
           importedStatus,
