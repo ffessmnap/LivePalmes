@@ -156,6 +156,11 @@ const browserContext = {
 };
 vm.runInNewContext(browserSource, browserContext);
 const browserCalendar = browserContext.window.LivePalmesPublicCalendar;
+assert.match(browserCalendar.directBadge({...ongoing,direct:{state:'active'}},'2026-08-19'),/data-live="true"/);
+assert.match(browserCalendar.directBadge({...upcoming,direct:{state:'active'}},'2026-08-19'),/data-live="false"/);
+assert.match(browserCalendar.directBadge({...ongoing,direct:{state:'archived'}},'2026-08-19'),/Archive du Direct/);
+assert.match(browserCalendar.directBadge({...ongoing,canceled:true,direct:{state:'active'}},'2026-08-19'),/data-live="false"/);
+assert.equal(browserCalendar.directBadge(ongoing),'');
 assert.equal(browserCalendar.BASE, undefined);
 assert.equal(browserCalendar.status(ongoing, "2026-08-19"), "ongoing");
 assert.equal(browserCalendar.TYPE_LABELS.training, "Formation");
@@ -284,8 +289,8 @@ for (const file of ["calendrier.html", "competition.html"]) {
   assert.ok(html.includes("mailto:livepalmes@nap-ffessm.fr"));
 }
 const competitionHtml = fs.readFileSync(path.join(root, "competition.html"), "utf8");
-assert.ok(competitionHtml.includes("competition.js?v=20261026-result-label-1"));
-assert.ok(competitionHtml.includes("livepalmes-public-calendar.css?v=20261026-relay-inline-1"));
+assert.ok(competitionHtml.includes("competition.js?v=20261106-direct-badge-1"));
+assert.ok(competitionHtml.includes("livepalmes-public-calendar.css?v=20261106-direct-badge-1"));
 assert.ok(competitionHtml.includes("livepalmes-whatsapp-qr.css?v=20260831-whatsapp-qr-1"));
 assert.ok(competitionHtml.includes("livepalmes-whatsapp-qr.js?v=20260831-whatsapp-qr-1"));
 assert.ok(competitionHtml.includes("LivePalmes – Calendrier fédéral"));
