@@ -4,7 +4,8 @@ const duration = require("./nap-duration");
 const ROLES = ["computer","live","speaker","referee","video","secretary"];
 const MAX_EVENTS = 300, MAX_ENTRIES = 1000, MAX_MEET_ENTRIES = 15000;
 const clean = (value,max=160) => String(value ?? "").replace(/[\u0000-\u001f]/g," ").trim().slice(0,max);
-const hash = value => createHash("sha256").update(JSON.stringify(value)).digest("hex");
+const canonical=value=>Array.isArray(value)?value.map(canonical):value&&typeof value==='object'?Object.fromEntries(Object.keys(value).sort().map(key=>[key,canonical(value[key])])):value;
+const hash = value => createHash("sha256").update(JSON.stringify(canonical(value))).digest("hex");
 const parseJson = (value,fallback={}) => value == null ? fallback : typeof value === "string" ? JSON.parse(value) : value;
 function competitionId(value) { const id=Number(String(value).replace(/^legacy-nap-/,"")); if(!Number.isSafeInteger(id)||id<=0)throw new TypeError("Compétition invalide.");return id; }
 function time(raw, engagement=false) {
