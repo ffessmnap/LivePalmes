@@ -16,8 +16,9 @@
     return {raw:value.slice(0,2)+':'+value.slice(2,4)+'.'+value.slice(4),cs:(Number(value.slice(0,2))*60+Number(value.slice(2,4)))*100+Number(value.slice(4))};
   }
   function parse(name,text){
-    const info=fileInfo(name),lines=String(text).replace(/^\uFEFF/,'').trim().split(/\r?\n/).filter(line=>line.trim()),seen=new Map();
-    if(!lines.length||lines.length>1000)fail('Série TXT vide ou trop volumineuse : '+name);
+    const info=fileInfo(name),rawLines=String(text).replace(/^\uFEFF/,'').trim().split(/\r?\n/).map(line=>line.trim()).filter(Boolean),seen=new Map();
+    const lines=rawLines.filter(line=>!/^0{4,}(?:\s*[:;]|$)/.test(line)&&/^\d+\s*[:;]/.test(line));
+    if(!rawLines.length||lines.length>1000)fail('Série TXT vide ou trop volumineuse : '+name);
     const rows=lines.map(line=>{
       const fields=line.trim().split(/[;:]/).map(s=>s.trim()),lane=Number(fields[0]);
       if(fields.length!==7||!/^\d+$/.test(fields[0])||lane<0||lane>20)fail('Ligne d’eau invalide : '+name);
@@ -59,7 +60,8 @@
     return {txtFirstLane:values[0],seriesFirstLane:values[1],offset:values[1]-values[0]};
   }
   function buildGroup(file,snapshot,eventId,lanes){
-    const parsed=parse(file.name,file.text),event=snapshot.events.find(e=>e.id===eventId);
+    const parsed=parse(file.name,file.text);if(!parsed.rows.length)return null;
+    const event=snapshot.events.find(e=>e.id===eventId);
     const mapping=laneMapping(lanes);
     parsed.rows=parsed.rows.map(row=>{
       const lane=row.lane+mapping.offset;
@@ -100,7 +102,7 @@
         }
         const batch=[],groups=[];
         for(const file of changed){
-          try{const group=build(file);blocked.delete(file.name);batch.push(file);groups.push(group);if(batch.length===100)break;}
+          try{const group=build(file);blocked.delete(file.name);if(!group){acknowledged.set(file.name,file.hash);continue;}batch.push(file);groups.push(group);if(batch.length===100)break;}
           catch(error){const message=error.message||'TXT non reconnu';blocked.set(file.name,{name:file.name,message:message.includes(file.name)?message:file.name+' · '+message});}
         }
         if(batch.length){

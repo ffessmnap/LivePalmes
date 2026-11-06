@@ -12,6 +12,8 @@ async function main(){
  assert.throws(()=>txt.parse(name,'4:016000:000000:000000:000000:000000:000000'),/Temps/);
  assert.throws(()=>txt.parse(name,'4:inconnu:::::'),/Temps/);
  assert.equal(txt.parse(name,body+body).rows.length,2,'Doublons strictement identiques ignorés');
+ assert.equal(txt.parse(name,body+';;\n0000;000000\n000000;000000;000000;000000;000000;000000;000000\n000000\nFin du fichier\n').rows.length,2,'Remplissage et lignes hors résultat après la dernière ligne ignorés');
+ assert.equal(txt.parse('DEMO_AS_01_01_01_50AP.txt','2;002500;000000;000000;000000;000000;000000\n;;').rows[0].resultTime,'00:25.00','Ne jamais ignorer un vrai chrono commençant par 00');
  assert.throws(()=>txt.parse(name,body+body.replace('011012','011013')),/Deux contenus différents/,'Même ligne avec temps différent : refus');
  assert.throws(()=>txt.parse(name,body+body.replace('forfait','abandon')),/Deux contenus différents/,'Même ligne avec statut différent : refus');
  assert.throws(()=>txt.parse(name,'4:011012:000000'),/invalide/);
@@ -19,6 +21,8 @@ async function main(){
  assert.throws(()=>txt.parse(name,'4:011012:011013:000000:000000:000000:000000'),/Passages/);
  const relay=txt.parse('DEMO_AS_01_09_01_4X50SF.txt','1;020363;002996;010973;013798;000000;000000');assert.deepEqual(relay.rows[0].splits.map(s=>s.distance),['50 m','100 m','150 m']);
  const file={name,text:body,hash:await txt.digest(body),info:txt.fileInfo(name)},group=txt.buildGroup(file,snapshot,'event');
+ assert.equal(txt.buildGroup({...file,text:';;\n000000;000000'},snapshot,'event'),null,'Aucune publication pour un fichier de remplissage seul');
+ assert.equal(txt.buildGroup({...file,text:body+body+';;\n000000'},snapshot,'event').rows.length,2,'Doublons et remplissage dédupliqués avant comparaison des lignes');
  assert.equal(group.seriesFingerprint,'a'.repeat(64));assert.equal(group.rows[0].entryTime,'595999');assert.equal(group.rows[1].resultStatus,'dns');assert.equal(group.rows[0].lastName,'EXEMPLE');
  assert.doesNotThrow(()=>require('../functions/nap-direct-model').prepare(group,{id:'legacy-nap-900001',date:'2026-11-07'}),'Un TXT d’une série est accepté quand l’épreuve comporte plusieurs horaires');
  assert.equal(snapshot.events[0].heatSchedule.length,2,'Les horaires du snapshot restent intacts');
@@ -49,6 +53,10 @@ async function main(){
  runner.start();await settle();assert.equal(attempts,3);assert.equal(received[1],received[2],'Réponse perdue : mêmes identifiants, même lot');assert.equal(runner.pending,false);
  runner.stop();current=[{...file,hash:'another'}];now=180000;await runner.check();assert.equal(attempts,3,'Arrêter interdit les prochains envois');
  const ignored=txt.createRunner({read:async()=>[file],build:()=>{throw Error('Ignoré');},publish:()=>{throw Error('Ignoré');},now:()=>now,schedule:()=>0,cancel:()=>{}});ignored.ignore([file]);ignored.start();await settle();await ignored.check();ignored.stop();
+ let fillerFile={...file,text:';;\n000000',hash:'filler'},fillerCalls=0,fillerState;
+ const filler=txt.createRunner({read:async()=>[fillerFile],build:f=>txt.buildGroup(f,snapshot,'event'),publish:async()=>{fillerCalls++;},onState:state=>{fillerState=state;},now:()=>now,schedule:()=>0,cancel:()=>{}});
+ filler.start();await settle();now+=30000;await filler.check();assert.equal(fillerCalls,0);assert.equal(fillerState.issues.length,0);assert.equal(filler.active,true,'Le remplissage seul ne déclenche ni alerte ni arrêt');
+ fillerFile=file;now+=30000;await filler.check();now+=30000;await filler.check();assert.equal(fillerCalls,1,'Le fichier reçoit ensuite ses vrais résultats et reste suivi');filler.stop();
  let repair=false,validCalls=0,partialState;
  const invalidFiles=Array.from({length:101},(_,i)=>({...file,name:'invalid-'+i,hash:'invalid'})),partial=txt.createRunner({read:async()=>[...invalidFiles,file],build:f=>{if(f.name.startsWith('invalid')&&!repair)throw Error('lignes incompatibles');return group;},publish:async()=>{validCalls++;},onState:state=>{partialState=state;},now:()=>now,schedule:()=>0,cancel:()=>{}});
  partial.start();await settle();now+=30000;await partial.check();assert.equal(validCalls,1,'101 TXT bloqués ne privent pas le fichier valide de publication');assert.equal(partial.active,true);assert.equal(partialState.issues.length,101);
