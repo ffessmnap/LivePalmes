@@ -39,6 +39,7 @@ function schemaFixture(){const present=new Set();let created=0;
   assert.equal(model.time('').cs,null);assert.equal(model.time('DSQ').status,'invalid');
   assert.throws(()=>model.prepare({...draft,rows:[person,person]},competition),/dupliquée/);
   assert.equal(model.entry(person).key,model.entry({...person,sourceEntryId:'future-winpalme-id'}).key);
+  assert.equal(model.hash({b:1,a:2}),model.hash({a:2,b:1}));
   assert.equal(model.event(draft.event,competition).id,model.event({...draft.event,sourceEventId:'future-winpalme-event'},competition).id);
   assert.throws(()=>model.prepare({...draft,rows:[{...person,birthYear:''}]},competition),/année/);
   assert.throws(()=>model.prepare({...draft,seriesNumber:2},competition),/Périmètre/);
