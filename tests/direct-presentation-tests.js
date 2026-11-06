@@ -6,6 +6,9 @@ const make=(n,s,r)=>({event_id:'event',series_number:n,row_count:s,series_entrie
 const empty=progress.aggregate([make(1,2,0),make(2,1,0)]).get('event'),partial=progress.aggregate([make(1,2,2),make(2,1,0)]).get('event'),complete=progress.aggregate([make(1,2,2),make(2,1,1)]).get('event');
 assert.equal(ui.name({lastName:'Éléonore-de Test',firstName:'Alice'}),'ÉLÉONORE-DE TEST Alice');
 assert.equal(ui.name({lastName:'Club Exemple',kind:'relay'}),'Club Exemple');
+for(const [category,tone] of [['FMI','minime'],['HCA','cadet'],['FJU','junior'],['HSE','senior'],['F30+','master-30'],['H40','master-40'],['M3','master-50'],['F60','master-60'],['H70+','master-70'],['M80','master-80'],['Masters','master'],['inconnue','other']])assert.equal(ui.categoryTone(category),tone);
+assert.match(ui.categoryBadge('FJU'),/>FJU<\/span>/,'Le code de catégorie est conservé');
+assert.ok(!ui.categoryBadge('<img src=x>').includes('<img'),'Libellé de catégorie échappé');
 assert.equal(view.seed({seed:{status:'no_reference',cs:null}}),'—');assert.equal(view.seed({seed:{status:'missing',cs:null}}),'—');
 assert.equal(ui.status({...event,progress:empty}).key,'upcoming');assert.equal(ui.status({...event,progress:partial}).key,'ongoing');assert.equal(ui.status({...event,progress:complete}).key,'complete');
 assert.equal(ui.status({...event,expectedSeries:3,progress:complete}).key,'ongoing','Un programme partiel ne peut pas être terminé');
