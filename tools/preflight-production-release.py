@@ -203,6 +203,10 @@ def main():
                 str(Path(__file__).with_name('prepare-production-notifications.js')), report['candidate']], text=True))
             report['notificationExpectedSecrets'] = contract['expectedSecrets']
         app_checks = set(f.get("serviceConfig", {}).get("environmentVariables", {}).get("LIVEPALMES_ENFORCE_APP_CHECK", "false") for f in selected_functions if f['name'].split('/')[-1] not in source_only)
+        if direct_names:
+            reference = next(f for f in functions if f['name'].split('/')[-1] == 'getNapPerformanceAdministration')
+            app_checks = {reference['serviceConfig'].get('environmentVariables', {}).get('LIVEPALMES_ENFORCE_APP_CHECK', 'false')}
+            report['directRuntimeAccount'] = reference['serviceConfig']['serviceAccountEmail']
         if not app_checks and set(selected).issubset(set(public_nap) | source_only):
             app_checks = {'false'}  # New public HTTP reader; no callable App Check setting.
         if selected and (len(app_checks) != 1 or not app_checks.issubset({"true", "false"})):
