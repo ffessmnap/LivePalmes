@@ -27,14 +27,16 @@ async function readCalendarManifest(pool) {
   if (!start || !end || end < start || end - start > 201) throw new RangeError("Saisons invalides.");
   return { source: "nap", seasons: Array.from({ length: end - start + 1 }, (_, index) => ({ endYear: end - index })) };
 }
-async function readCalendarSeason(pool, input) {
+async function readCalendarSeason(pool, input, directEnvironment) {
   const year = Number(input);
   if (!Number.isInteger(year) || year < 1901 || year > 2101) throw new TypeError("Saison invalide.");
   const rows = await execute(pool, `${SELECT_EVENT} FORCE INDEX (livepalmes_date_id)${EVENT_JOINS} WHERE c.date >= ? AND c.date < ? ORDER BY c.date,c.id LIMIT ${MAX_EVENTS + 1}`, [`${year - 1}-09-01`, `${year}-09-01`]);
   if (rows.length > MAX_EVENTS) throw new RangeError("Saison trop volumineuse.");
-  return { source: "nap", readAt: new Date().toISOString(), events: rows.map(eventFromRow).filter(event => event.date && event.name) };
+  let events=rows.map(eventFromRow).filter(event => event.date && event.name);
+  if(directEnvironment)events=await require("./nap-direct-public").attachLinks(pool,directEnvironment,events);
+  return { source: "nap", readAt: new Date().toISOString(), events };
 }
-async function readCompetition(pool, input) {
+async function readCompetition(pool, input, directEnvironment) {
   const id = positiveId(input);
   // Detailed program is loaded only on the single competition page, never for
   // every row of a season. The supplemental join is on its primary key.
@@ -62,6 +64,7 @@ async function readCompetition(pool, input) {
     Object.assign(event,details,{program:details.programSessions});
     delete event.programSessions;
   }
-  return { source: "nap", readAt: new Date().toISOString(), event };
+  const detailed=directEnvironment?(await require("./nap-direct-public").attachLinks(pool,directEnvironment,[event]))[0]:event;
+  return { source: "nap", readAt: new Date().toISOString(), event:detailed };
 }
 module.exports = { MAX_EVENTS, MAX_DOCUMENTS, MAX_PROGRAM, MAX_RESULTS, SELECT_EVENT, EVENT_JOINS, positiveId, date, text, publicUrl, eventFromRow, execute, readCalendarManifest, readCalendarSeason, readCompetition, nativeLevel };
