@@ -49,6 +49,14 @@ def check_after(backup, destination, require_success):
     before = {f["name"]: f for f in json.loads((backup / "functions.json").read_text())}
     after = {f["name"]: f for f in inventory()}
     selected = {f["name"] for f in report["functions"]} | {PREFIX + name for name in report["newFunctions"]}
+    direct_policy = None
+    if report.get('directRelease'):
+        spec = importlib.util.spec_from_file_location('direct_state_policy', Path(__file__).with_name('direct-production-policy.py'))
+        direct_policy = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(direct_policy)
+        direct_policy.require(report['candidate'] == direct_policy.CANDIDATE and len(before) == 116
+            and selected == {PREFIX+name for name in direct_policy.SELECTED}
+            and report['newFunctions'] == [direct_policy.NEW], 'Rapport Direct hors contrat')
     bcc_policy = None
     if report.get('additionalBccFunctions'):
         spec = importlib.util.spec_from_file_location('bcc_state_policy', Path(__file__).with_name('bcc-publication-policy.py'))
@@ -105,6 +113,14 @@ def check_after(backup, destination, require_success):
             errors.append("Function exclue modifiee: " + name.split("/")[-1])
     for name in selected:
         f = after.get(name)
+        if f and direct_policy:
+            try:
+                if name == PREFIX+direct_policy.NEW:
+                    direct_policy.assert_new(f)
+                else:
+                    direct_policy.assert_reader(before[name], f, SimpleNamespace(rollback_patch=rollback_patch))
+            except ValueError as error:
+                errors.append(str(error))
         if not f or f.get("state") != "ACTIVE":
             errors.append("Function non active: " + name.split("/")[-1])
         elif account_policy is not None:
