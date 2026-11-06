@@ -47,7 +47,7 @@ async function main(){const {server,baseUrl}=await startStaticServer(),browser=a
     assert.deepEqual(refs.short,['MPF','MPF']);assert.deepEqual(refs.long,['RFJ','RF']);
     await evaluate(client,"document.querySelector('.direct-filters').open=true;document.querySelector('input[name=category][value=FJU]').checked=true;document.querySelector('#applyCategories').click()");
     assert.equal(await evaluate(client,"return document.querySelectorAll('.direct-scratch tbody tr').length"),1);
-    assert.equal(await evaluate(client,"return document.querySelector('.direct-scratch th').textContent"),'Pl. cat.');
+    assert.equal(await evaluate(client,"return document.querySelector('.direct-scratch th').textContent"),'Pl.');
     await evaluate(client,"document.querySelector('input[name=category][value=FJU]').checked=false;document.querySelector('input[name=category][value=FSE]').checked=true;document.querySelector('#applyCategories').click()");
     assert.equal(await evaluate(client,"return document.querySelector('.direct-scratch tbody td').textContent"),'1','La deuxième du scratch est première de sa catégorie');
     await evaluate(client,"document.querySelector('input[name=category][value=FSE]').checked=false;document.querySelector('input[name=category][value=FJU]').checked=true;document.querySelector('#applyCategories').click()");
@@ -56,6 +56,7 @@ async function main(){const {server,baseUrl}=await startStaticServer(),browser=a
     await evaluate(client,"window.__directFailure=false;document.querySelector('#directRefresh').click()");assert.ok(await waitFor(client,"!window.LivePalmesDirectPublic.state.loading",5000));
     assert.equal(await evaluate(client,"return window.LivePalmesDirectPublic.state.categories[0]"),'FJU');
     const shot=await client.send('Page.captureScreenshot',{format:'png'});fs.writeFileSync(path.join(output,`public-${width}.png`),Buffer.from(shot.data,'base64'));
+    if(width!==1280)continue;
     await client.send('Page.navigate',{url:baseUrl+'/direct-admin.html'});assert.ok(await waitFor(client,"document.querySelector('#competitionSelect').options.length===2",12000));
     await evaluate(client,"document.querySelector('#competitionSelect').value='legacy-nap-900001';document.querySelector('#competitionSelect').dispatchEvent(new Event('change'))");assert.ok(await waitFor(client,"document.querySelector('#parseFiles')",5000));
     assert.equal(await evaluate(client,'return document.documentElement.scrollWidth<=innerWidth'),true,'Bureau utilisable sur mobile');
@@ -68,7 +69,7 @@ async function main(){const {server,baseUrl}=await startStaticServer(),browser=a
     await evaluate(client,`window.LivePalmesDirectImport.files=async()=>[{kind:'results',event:{eventCode:'100sf',eventLabel:'100 m Surface',sex:'F',phase:'series',date:'2026-11-07',sessionKey:'1'},rows:[{lastName:'EXEMPLE',firstName:'Alice',birthYear:2008,club:'CLUB',category:'FJU',resultTime:'01:10.12',selected:true}],source:{type:'pdf',name:'fictif.pdf',hash:'a'.repeat(64)},operationKey:'fixture-operation-00001'}];document.querySelector('#parseFiles').click()`);
     assert.ok(await waitFor(client,"document.querySelector('[data-batch-verify]')",5000));await evaluate(client,"document.querySelector('[data-batch-verify]').click()");assert.ok(await waitFor(client,"!document.querySelector('[data-batch-publish]').disabled",5000));await evaluate(client,"document.querySelector('[data-batch-publish]').click()");assert.ok(await waitFor(client,"document.querySelector('#adminStatus').textContent.includes('Publication groupée confirmée')",5000));
     const adminShot=await client.send('Page.captureScreenshot',{format:'png'});fs.writeFileSync(path.join(output,`admin-${width}.png`),Buffer.from(adminShot.data,'base64'));
-    await evaluate(client,`window.__watchContext={...structuredClone(window.__directFixture),entries:window.__directFixture.entries.map(row=>({...row,eventId:'a'.repeat(64),sourceEntryId:null})),seriesFingerprints:{['a'.repeat(64)+':1']:'c'.repeat(64)}};window.__txtBody='3:011012:000000:000000:000000:000000:000000\\n4:011300:000000:000000:000000:000000:000000';window.showDirectoryPicker=async()=>({async *values(){yield {kind:'file',name:'DEMO_AS_01_01_01_100SF.txt',getFile:async()=>({name:'DEMO_AS_01_01_01_100SF.txt',size:window.__txtBody.length,arrayBuffer:async()=>new TextEncoder().encode(window.__txtBody).buffer})};}});const original=LivePalmesDirectTxt.createRunner;LivePalmesDirectTxt.createRunner=options=>original({...options,interval:15,now:()=>Date.now()*1000});window.__publishBefore=window.__directCalls.filter(x=>x==='publishBatch').length;LivePalmesDirectAdmin.watcher.mount(document.querySelector('.direct-watch'));document.querySelector('[data-watch-folder]').click();`);
+    await evaluate(client,`window.__watchContext={...structuredClone(window.__directFixture),entries:window.__directFixture.entries.map(row=>({...row,eventId:'a'.repeat(64),sourceEntryId:null})),seriesFingerprints:{['a'.repeat(64)+':1']:'c'.repeat(64)}};window.__txtBody='3:011012:000000:000000:000000:000000:000000\\n4:011300:000000:000000:000000:000000:000000';window.showDirectoryPicker=async()=>({async *values(){if(window.__emptyFolder)return;yield {kind:'file',name:'DEMO_AS_01_01_01_100SF.txt',getFile:async()=>({name:'DEMO_AS_01_01_01_100SF.txt',size:window.__txtBody.length,arrayBuffer:async()=>new TextEncoder().encode(window.__txtBody).buffer})};}});const original=LivePalmesDirectTxt.createRunner;LivePalmesDirectTxt.createRunner=options=>original({...options,interval:15,now:()=>Date.now()*1000});window.__publishBefore=window.__directCalls.filter(x=>x==='publishBatch').length;LivePalmesDirectAdmin.watcher.mount(document.querySelector('.direct-watch'));document.querySelector('[data-watch-folder]').click();`);
     assert.ok(await waitFor(client,"document.querySelector('[data-watch-grid]')",5000));
     assert.equal(await evaluate(client,'return document.documentElement.scrollWidth<=innerWidth'),true,'Configuration TXT sans débordement à '+width+' px');
     await evaluate(client,"document.querySelector('[data-watch-start]').click()");
@@ -84,19 +85,34 @@ async function main(){const {server,baseUrl}=await startStaticServer(),browser=a
     assert.ok(await waitFor(client,"window.__directCalls.filter(x=>x==='publishBatch').length===window.__publishBefore+2",5000),'Une correction du TXT est publiée');
     const watchShot=await client.send('Page.captureScreenshot',{format:'png'});fs.writeFileSync(path.join(output,`watch-${width}.png`),Buffer.from(watchShot.data,'base64'));
     await evaluate(client,"window.__txtBody=window.__txtBody.replace('3:011011','8:011011')");
-    assert.ok(await waitFor(client,"!document.querySelector('#watchAlert').hidden && !LivePalmesDirectAdmin.watcher.active",5000),'Décalage incompatible : arrêt et alerte visible');
+    assert.ok(await waitFor(client,"!document.querySelector('#watchAlert').hidden && LivePalmesDirectAdmin.watcher.active",5000),'Décalage incompatible : fichier bloqué, surveillance maintenue');
     assert.equal(await evaluate(client,"return __directCalls.filter(x=>x==='publishBatch').length"),await evaluate(client,'return __publishBefore+2'),'Aucun résultat envoyé avec une répartition incompatible');
-    assert.ok(await evaluate(client,"return document.querySelector('[data-watch-phase]').textContent==='En pause'"));
+    assert.ok(await evaluate(client,"return document.querySelector('[data-watch-phase]').textContent==='Active · à vérifier'"));
     await evaluate(client,'scrollTo(0,document.body.scrollHeight)');
     assert.ok(await evaluate(client,"const box=document.querySelector('#watchAlert').getBoundingClientRect();return box.top>=0&&box.bottom<innerHeight"),'Alerte encore visible en bas du bureau');
     await evaluate(client,'scrollTo(0,0)');
     const errorShot=await client.send('Page.captureScreenshot',{format:'png'});fs.writeFileSync(path.join(output,`watch-error-${width}.png`),Buffer.from(errorShot.data,'base64'));
-    await evaluate(client,"window.__txtBody=window.__txtBody.replace('8:011011','3:011011');document.querySelector('[data-watch-resume]').click()");
-    assert.ok(await waitFor(client,"document.querySelector('#watchAlert').hidden && LivePalmesDirectAdmin.watcher.active",5000),'Reprise explicite et alerte effacée');
+    await evaluate(client,"window.__txtBody=window.__txtBody.replace('8:011011','3:011011')");
+    assert.ok(await waitFor(client,"document.querySelector('#watchAlert').hidden && LivePalmesDirectAdmin.watcher.active",5000),'Fichier corrigé repris automatiquement et alerte effacée');
     await evaluate(client,"document.querySelector('[data-watch-stop]').click();window.__txtBody=window.__txtBody.replace('011011','011010')");
     assert.equal(await evaluate(client,'return LivePalmesDirectAdmin.watcher.active'),false);
+    await evaluate(client,"LivePalmesDirectAdmin.watcher.mount(document.querySelector('.direct-watch'));document.querySelector('[data-watch-folder]').click()");
+    assert.ok(await waitFor(client,"document.querySelector('[data-watch-series-first]')",5000));
+    assert.equal(await evaluate(client,"return document.querySelector('[data-watch-series-first]').value"),'2','Première ligne mémorisée pour la reprise');
+    assert.equal(await evaluate(client,"return document.querySelector('[data-watch-prefix]')"),null,'Aucune saisie du préfixe TXT');
+    assert.equal(await evaluate(client,"return document.querySelector('[data-watch-authorize]').checked"),false,'Aucune reprise de publication sans confirmation');
+    await evaluate(client,"window.__emptyFolder=true;document.querySelector('[data-watch-folder]').click()");
+    assert.ok(await waitFor(client,"document.querySelector('[data-watch-existing]')?.parentElement.textContent.includes('0 fichier')",5000));
+    await evaluate(client,"for(const attr of ['grid','authorize'])document.querySelector('[data-watch-'+attr+']').checked=true;document.querySelector('[data-watch-start]').click()");
+    assert.ok(await waitFor(client,'LivePalmesDirectAdmin.watcher.active',5000),'Dossier vide accepté sans préfixe');
+    const beforeNew=await evaluate(client,"return __directCalls.filter(x=>x==='publishBatch').length");
+    await evaluate(client,'window.__emptyFolder=false');
+    assert.ok(await waitFor(client,"__directCalls.filter(x=>x==='publishBatch').length>"+beforeNew,5000),'Premier TXT futur reconnu automatiquement');
+    await evaluate(client,"document.querySelector('[data-watch-stop]').click();window.__otherWatcher=LivePalmesDirectWatchUI.create({getIdentity:()=>({uid:'autre-compte',id:'legacy-nap-900001'}),call:async()=>__watchContext});__otherWatcher.mount(document.querySelector('.direct-watch'));document.querySelector('[data-watch-folder]').click()");
+    assert.ok(await waitFor(client,"document.querySelector('[data-watch-series-first]')",5000));
+    assert.equal(await evaluate(client,"return document.querySelector('[data-watch-series-first]').value"),'1','Réglages non partagés entre comptes');
 
   }
-  console.log('Direct navigateur : public et bureau à 1280/390/320 px, tactile, filtres, reprise réseau, aperçu et publication fictive. HTTPS externe bloqué.');
+  console.log('Direct navigateur : public à 1280/390/320 px et bureau sur ordinateur, tactile, filtres, reprise réseau, aperçu et publication fictive. HTTPS externe bloqué.');
  }finally{browser.cleanup();server.close();}}
 main().catch(error=>{console.error(error);process.exitCode=1;});

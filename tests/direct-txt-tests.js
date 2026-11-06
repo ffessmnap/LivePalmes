@@ -11,7 +11,9 @@ async function main(){
  assert.throws(()=>txt.parse(name,'4:000000:000000:000000:000000:000000:000000'),/Temps/);
  assert.throws(()=>txt.parse(name,'4:016000:000000:000000:000000:000000:000000'),/Temps/);
  assert.throws(()=>txt.parse(name,'4:inconnu:::::'),/Temps/);
- assert.throws(()=>txt.parse(name,body+body),/dupliquée/);
+ assert.equal(txt.parse(name,body+body).rows.length,2,'Doublons strictement identiques ignorés');
+ assert.throws(()=>txt.parse(name,body+body.replace('011012','011013')),/Deux contenus différents/,'Même ligne avec temps différent : refus');
+ assert.throws(()=>txt.parse(name,body+body.replace('forfait','abandon')),/Deux contenus différents/,'Même ligne avec statut différent : refus');
  assert.throws(()=>txt.parse(name,'4:011012:000000'),/invalide/);
  assert.throws(()=>txt.fileInfo('autre.txt'),/Nom/);
  assert.throws(()=>txt.parse(name,'4:011012:011013:000000:000000:000000:000000'),/Passages/);
@@ -22,7 +24,7 @@ async function main(){
  assert.equal(snapshot.events[0].heatSchedule.length,2,'Les horaires du snapshot restent intacts');
  assert.deepEqual(txt.laneMapping({txtFirstLane:'1',seriesFirstLane:'2'}),{txtFirstLane:1,seriesFirstLane:2,offset:1});
  const shiftedBody=Array.from({length:6},(_,i)=>`${i+1}:0110${String(i).padStart(2,'0')}:000000:000000:000000:000000:000000`).join('\n'),shiftedFile={...file,text:shiftedBody},shiftedSnapshot={...snapshot,entries:Array.from({length:6},(_,i)=>({...snapshot.entries[0],key:'lane-'+i,lastName:'NAGEUR '+i,lane:i+2}))};
- assert.throws(()=>txt.buildGroup(shiftedFile,shiftedSnapshot,'event'),/Répartition/,'Un décalage ne doit jamais être deviné');
+ assert.throws(()=>txt.buildGroup(shiftedFile,shiftedSnapshot,'event'),/lignes TXT \[1, 2, 3, 4, 5, 6\].*séries importées \[2, 3, 4, 5, 6, 7\]/,'Un décalage est expliqué, jamais deviné');
  const shifted=txt.buildGroup(shiftedFile,shiftedSnapshot,'event',{txtFirstLane:1,seriesFirstLane:2});
  assert.deepEqual(shifted.rows.map(row=>row.lane),[2,3,4,5,6,7]);assert.deepEqual(shifted.rows.map(row=>row.lastName),Array.from({length:6},(_,i)=>'NAGEUR '+i));
  assert.deepEqual(txt.parse(name,shiftedBody).rows.map(row=>row.lane),[1,2,3,4,5,6],'TXT original intact');
@@ -30,7 +32,8 @@ async function main(){
  for(const value of ['',-1,21,1.5])assert.throws(()=>txt.laneMapping({txtFirstLane:value,seriesFirstLane:1}),/Premières lignes/);
  assert.throws(()=>txt.buildGroup(shiftedFile,shiftedSnapshot,'event',{txtFirstLane:1,seriesFirstLane:20}),/Décalage/);
  assert.throws(()=>txt.buildGroup(shiftedFile,shiftedSnapshot,'event',{txtFirstLane:2,seriesFirstLane:3}),/Décalage/);
- assert.throws(()=>txt.buildGroup(file,{...snapshot,entries:snapshot.entries.slice(0,1)},'event'),/Répartition/);
+ assert.throws(()=>txt.buildGroup(file,{...snapshot,entries:snapshot.entries.slice(0,1)},'event'),/premières lignes/);
+ assert.throws(()=>txt.buildGroup(file,{...snapshot,entries:[]},'event'),/série 1 absente/);
  assert.throws(()=>txt.buildGroup(file,snapshot,'missing'),/Association/);
  assert.throws(()=>txt.buildGroup(file,{...snapshot,events:[{...snapshot.events[0],eventCode:'200sf'}]},'event'),/Association/);
  const directory={async *values(){yield {kind:'file',name,getFile:async()=>({name,size:body.length,arrayBuffer:async()=>new TextEncoder().encode(body).buffer})};yield {kind:'file',name:'ignoré.pdf',getFile:()=>{throw Error('PDF non lu');}};}};
@@ -46,6 +49,10 @@ async function main(){
  runner.start();await settle();assert.equal(attempts,3);assert.equal(received[1],received[2],'Réponse perdue : mêmes identifiants, même lot');assert.equal(runner.pending,false);
  runner.stop();current=[{...file,hash:'another'}];now=180000;await runner.check();assert.equal(attempts,3,'Arrêter interdit les prochains envois');
  const ignored=txt.createRunner({read:async()=>[file],build:()=>{throw Error('Ignoré');},publish:()=>{throw Error('Ignoré');},now:()=>now,schedule:()=>0,cancel:()=>{}});ignored.ignore([file]);ignored.start();await settle();await ignored.check();ignored.stop();
+ let repair=false,validCalls=0,partialState;
+ const invalidFiles=Array.from({length:101},(_,i)=>({...file,name:'invalid-'+i,hash:'invalid'})),partial=txt.createRunner({read:async()=>[...invalidFiles,file],build:f=>{if(f.name.startsWith('invalid')&&!repair)throw Error('lignes incompatibles');return group;},publish:async()=>{validCalls++;},onState:state=>{partialState=state;},now:()=>now,schedule:()=>0,cancel:()=>{}});
+ partial.start();await settle();now+=30000;await partial.check();assert.equal(validCalls,1,'101 TXT bloqués ne privent pas le fichier valide de publication');assert.equal(partial.active,true);assert.equal(partialState.issues.length,101);
+ repair=true;now+=30000;await partial.check();now+=30000;await partial.check();assert.equal(validCalls,3,'Fichiers réparés repris en lots de 100 au plus');assert.equal(partialState.issues.length,0);partial.stop();
  let release,afterStop=0;const stopped=txt.createRunner({read:()=>new Promise(resolve=>{release=resolve;}),build:()=>{afterStop++;},publish:()=>{afterStop++;},schedule:()=>0,cancel:()=>{}});stopped.start();stopped.stop();release([file]);await settle();assert.equal(afterStop,0,'Une lecture retardée ne publie pas après arrêt');
  const rows=[['a','FJU',1000,''],['b','FSE',1100,''],['c','FJU',1100,''],['d','FJU',1200,''],['e','FJU',null,'dsq'],['f','FJU',1100,'']].map(([key,category,cs,status])=>({key,category,result:{cs,status}}));
  const ranked=view.rankings(rows);assert.deepEqual(ranked.map(r=>r.rank),[1,2,2,5,null,2]);assert.deepEqual(ranked.map(r=>r.categoryRank),[1,1,2,4,null,2]);assert.ok(rows.every(r=>r.rank==null),'Aucune mutation des données reçues');
