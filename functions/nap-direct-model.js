@@ -21,7 +21,17 @@ function event(input,competition) {
   if(!code||!/[FMX]/.test(sex)||!/^[a-z0-9_-]+$/i.test(code)||!/^\d{4}-\d\d-\d\d$/.test(input.date||competition.date))throw new TypeError("Épreuve, sexe ou date invalide.");
   if((input.date||competition.date)<competition.date||(input.date||competition.date)>(competition.endDate||competition.date))throw new TypeError("Date hors de la compétition du calendrier.");
   const identity=[competition.id,code,sex,phase,session];
-  return {id:hash(identity),eventCode:code,eventLabel:clean(input.eventLabel||code),sex,phase,date:input.date||competition.date,sessionKey:session,sessionLabel:clean(input.sessionLabel||`Session ${session}`,120),order:Math.max(0,Math.min(10000,Number(input.order)||0)),eventNumber:clean(input.eventNumber,16),scheduledAt:clean(input.scheduledAt,32),sourceEventId:clean(input.sourceEventId,100)||null};
+  const schedule={};
+  if(input.heatSchedule!=null){
+    if(!Array.isArray(input.heatSchedule)||input.heatSchedule.length>1000)throw new TypeError("Horaires des séries invalides.");
+    const seen=new Set();schedule.heatSchedule=input.heatSchedule.map(heat=>{
+      if(!heat||typeof heat!=='object')throw new TypeError("Horaire de série invalide.");
+      const number=Number(heat.number),scheduledAt=clean(heat.scheduledAt,32);
+      if(!Number.isInteger(number)||number<1||number>1000||seen.has(number)||scheduledAt&&!/^(?:[01]?\d|2[0-3]):[0-5]\d(?::[0-5]\d)?$/.test(scheduledAt))throw new TypeError("Horaire ou numéro de série invalide.");
+      seen.add(number);return {number,scheduledAt};
+    }).sort((a,b)=>a.number-b.number);
+  }
+  return {id:hash(identity),eventCode:code,eventLabel:clean(input.eventLabel||code),sex,phase,date:input.date||competition.date,sessionKey:session,sessionLabel:clean(input.sessionLabel||`Session ${session}`,120),order:Math.max(0,Math.min(10000,Number(input.order)||0)),eventNumber:clean(input.eventNumber,16),scheduledAt:clean(input.scheduledAt,32),sourceEventId:clean(input.sourceEventId,100)||null,...schedule};
 }
 function entry(row) {
   const firstName=clean(row.firstName),lastName=clean(row.lastName||row.displayName),club=clean(row.club||row.clubLabel,200),year=Number(row.birthYear)||null;
@@ -41,7 +51,7 @@ function prepare(input,competition) {
   const meet=event(input.event||{},competition),rows=input.rows.map(entry),seen=new Set(),sources=new Set();
   for(const row of rows){if(seen.has(row.key)||row.sourceEntryId&&sources.has(row.sourceEntryId))throw new TypeError("Participation ambiguë ou dupliquée dans le lot.");seen.add(row.key);if(row.sourceEntryId)sources.add(row.sourceEntryId);if(input.kind==='results'&&!row.result.cs&&!row.status)throw new TypeError("Résultat sans temps ni statut.");}
   const seriesNumber=input.seriesNumber==null?null:Number(input.seriesNumber);
-  if(seriesNumber!=null&&(!Number.isInteger(seriesNumber)||seriesNumber<1||seriesNumber>1000||rows.some(row=>row.series!==seriesNumber)))throw new TypeError("Périmètre de série incohérent.");
+  if(seriesNumber!=null&&(!Number.isInteger(seriesNumber)||seriesNumber<1||seriesNumber>1000||rows.some(row=>row.series!==seriesNumber)||meet.heatSchedule?.some(heat=>heat.number!==seriesNumber)))throw new TypeError("Périmètre de série incohérent.");
   return {kind:input.kind,seriesNumber,event:meet,rows,source:{type:clean(input.source?.type||"pdf",24),name:clean(input.source?.name,200),hash:clean(input.source?.hash,64)}};
 }
 function publicEntry(row,showSeries,showResults) {
@@ -50,5 +60,22 @@ function publicEntry(row,showSeries,showResults) {
   const result=showResults?{raw:row.result_time_raw,cs:row.result_time_cs==null?null:Number(row.result_time_cs),status:row.result_status}:{raw:"",cs:null,status:""};
   return {key:row.participant_key,firstName:row.first_name,lastName:row.last_name,birthYear:row.birth_year,club:row.club_label,category:row.category_code,series:row.series_number,lane:row.lane,kind:row.entry_kind,seed,result,rank:showResults?row.published_rank:null,delta:seed.status==="known"&&seed.cs&&result.cs&&!result.status?result.cs-seed.cs:null,members:parseJson(row.relay_members_json,[]),splits:showResults?parseJson(row.splits_json,[]):[]};
 }
+function prepareBatch(input,competition){
+  if(!Array.isArray(input.groups)||!input.groups.length||input.groups.length>MAX_EVENTS)throw new TypeError("Sélectionner de 1 à 300 épreuves par publication.");
+  const scopes=new Map(),identities=new Map(),perEvent=new Map(),keys=new Set();let count=0;
+  const groups=input.groups.map(group=>{
+    if(!/^[a-zA-Z0-9_-]{16,64}$/.test(group.operationKey||'')||keys.has(group.operationKey))throw new TypeError("Identifiant de demande dupliqué ou invalide.");
+    keys.add(group.operationKey);const prepared=prepare(group,competition),key=prepared.event.id+':'+prepared.kind;
+    const ranges=scopes.get(key)||[],seen=identities.get(key)||new Set();
+    if(ranges.some(scope=>scope==null||prepared.seriesNumber==null||scope===prepared.seriesNumber))throw new TypeError("Deux documents se recouvrent pour la même épreuve. Décocher le doublon avant publication.");
+    const participants=perEvent.get(prepared.event.id)||new Set();
+    for(const row of prepared.rows){if(seen.has(row.key))throw new TypeError("Participation dupliquée entre plusieurs séries du lot.");seen.add(row.key);participants.add(row.key);}
+    if(participants.size>MAX_ENTRIES)throw new TypeError("1 000 participations au maximum par épreuve.");
+    perEvent.set(prepared.event.id,participants);ranges.push(prepared.seriesNumber);scopes.set(key,ranges);identities.set(key,seen);count+=prepared.rows.length;
+    if(count>MAX_MEET_ENTRIES)throw new TypeError("15 000 participations au maximum par publication groupée.");return prepared;
+  });
+  if(count>MAX_MEET_ENTRIES)throw new TypeError("15 000 participations au maximum par publication groupée.");
+  return {groups,count,contentHash:hash(groups),operationKey:hash(['direct-batch',input.groups.map(group=>group.operationKey)])};
+}
 const visibleEntry=(row,series,results)=>Boolean(series&&row.has_series||results&&row.has_result);
-module.exports={ROLES,MAX_EVENTS,MAX_ENTRIES,MAX_MEET_ENTRIES,clean,hash,parseJson,competitionId,time,event,entry,prepare,publicEntry,visibleEntry};
+module.exports={ROLES,MAX_EVENTS,MAX_ENTRIES,MAX_MEET_ENTRIES,clean,hash,parseJson,competitionId,time,event,entry,prepare,prepareBatch,publicEntry,visibleEntry};

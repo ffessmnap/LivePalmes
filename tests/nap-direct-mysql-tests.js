@@ -10,7 +10,7 @@ async function main(){
   const settings={host:'127.0.0.1',port:33317,user:'root',password:process.env.NAP_TEAM_FIXTURE_PASSWORD,dateStrings:true,supportBigNumbers:true,bigNumberStrings:true,multipleStatements:false,connectionLimit:3};
   const admin=await mysql.createConnection(settings);const [[runtime]]=await admin.query('SELECT VERSION() AS version');assert.match(runtime.version,/^5\.7\./);
   await admin.query('CREATE DATABASE `'+database+'` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci');
-  const pool=mysql.createPool({...settings,database});let failJournal=false;
+  const pool=mysql.createPool({...settings,database});let failJournal=0;
   const native={id:900009,libelle:'Compétition fictive isolée',date:'2026-11-07',enddate:'2026-11-08',lieu:'Piscine fictive',type_label:'Piscine',native_level_code:1,comite:'09',bassin:50};
   const wrapped={execute:async(options,values=[])=>{
     const sql=typeof options==='string'?options:options.sql;
@@ -19,7 +19,7 @@ async function main(){
       return [[native]];
     }
     return pool.execute(options,values);
-  },getConnection:async()=>{const connection=await pool.getConnection();return {beginTransaction:()=>connection.beginTransaction(),commit:()=>connection.commit(),rollback:()=>connection.rollback(),release:()=>connection.release(),execute:async(options,values)=>{const sql=typeof options==='string'?options:options.sql;if(failJournal&&sql.startsWith('INSERT INTO livepalmes_direct_publications'))throw Error('Interruption de journal simulée');assert.ok(!/^(INSERT|UPDATE|DELETE)/.test(sql)||/^(?:INSERT INTO|UPDATE|DELETE FROM) livepalmes_direct_/.test(sql));return connection.execute(options,values);}};}};
+  },getConnection:async()=>{const connection=await pool.getConnection();return {beginTransaction:()=>connection.beginTransaction(),commit:()=>connection.commit(),rollback:()=>connection.rollback(),release:()=>connection.release(),execute:async(options,values)=>{const sql=typeof options==='string'?options:options.sql;if(sql.startsWith('INSERT INTO livepalmes_direct_publications')&&failJournal>0&&--failJournal===0)throw Error('Interruption de journal simulée');assert.ok(!/^(INSERT|UPDATE|DELETE)/.test(sql)||/^(?:INSERT INTO|UPDATE|DELETE FROM) livepalmes_direct_/.test(sql));return connection.execute(options,values);}};}};
   const actor={uid:'isolated-fixture'},store=createStore(wrapped,'test'),id=900009;
   const person=(name,series)=>({lastName:'EXEMPLE',firstName:name,birthYear:2008,club:'CLUB',category:'FJU',series,lane:4,entryTime:'595999'});
   const event={eventCode:'100sf',sex:'F',sessionKey:'1',date:'2026-11-07'};
@@ -36,6 +36,14 @@ async function main(){
     const retry=request('results',[{...person('Alice',1),resultTime:'01:09.99'}],1);const receipt=await publish(retry);assert.equal(receipt.ok,true);assert.equal((await store.publish(id,actor,{...retry,fingerprint:'lost-response'})).replayed,true,'Une reprise survit à la normalisation JSON de MySQL');
     const snapshot=JSON.stringify((await pool.query('SELECT * FROM livepalmes_direct_entries ORDER BY participant_key'))[0]);
     failJournal=true;await assert.rejects(publish(request('results',[{...person('Alice',1),resultTime:'01:00.00'}],1)),/Interruption/);failJournal=false;assert.equal(JSON.stringify((await pool.query('SELECT * FROM livepalmes_direct_entries ORDER BY participant_key'))[0]),snapshot,'Rollback réel des résultats et versions');
+    const batch={groups:['200sf','400sf'].map((code,index)=>({...request('series',[person('Même nageuse',1)]),event:{...event,eventCode:code,scheduledAt:`09:0${index}`,heatSchedule:[{number:1,scheduledAt:`09:0${index}`}]} }))};
+    const previewBatch=await store.previewBatch(id,batch);await store.publishBatch(id,actor,{...batch,fingerprint:previewBatch.fingerprint});
+    assert.equal((await store.publishBatch(id,actor,{...batch,fingerprint:'response-lost'})).replayed,true,'Reprise JSON MySQL du lot entier');
+    const scheduleView=(await store.detail(id)).events.filter(e=>['200sf','400sf'].includes(e.eventCode));assert.equal(scheduleView.length,2);assert.ok(scheduleView.every(e=>e.heatSchedule.length===1));
+    const beforeBatch=JSON.stringify((await pool.query('SELECT * FROM livepalmes_direct_entries ORDER BY event_id,participant_key'))[0]);
+    const changedBatch={groups:batch.groups.map(group=>({...group,operationKey:randomUUID(),rows:group.rows.map(row=>({...row,entryTime:'01:01.00'}))}))},changedPreview=await store.previewBatch(id,changedBatch);
+    failJournal=2;await assert.rejects(store.publishBatch(id,actor,{...changedBatch,fingerprint:changedPreview.fingerprint,confirmReplacement:true}),/Interruption/);failJournal=0;
+    assert.equal(JSON.stringify((await pool.query('SELECT * FROM livepalmes_direct_entries ORDER BY event_id,participant_key'))[0]),beforeBatch,'Le second échec annule toutes les épreuves du lot');
     const detail=await store.detail(id),version=detail.config.version;await store.visibility(id,actor,{version,eventId:detail.events[0].id,kind:'results',visible:false,operationKey:randomUUID()});
     const publicHidden=await readPublic(wrapped,'test',{id});assert.ok(publicHidden.entries.every(row=>row.result.cs===null));
     await assert.rejects(readPublic(wrapped,'production',{id}),error=>error.directCode==='not-found','TEST et PROD restent indépendants dans la même base');

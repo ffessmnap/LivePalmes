@@ -12,22 +12,22 @@ function sqlFixture(){
     assert.equal((sql.match(/\?/g)||[]).length,values.length,`Nombre de paramètres : ${sql.slice(0,100)}`);
     if(/^(INSERT|UPDATE|DELETE)/.test(sql))assert.match(sql,/^(?:INSERT INTO|UPDATE|DELETE FROM) livepalmes_direct_/,'Aucune table native modifiable');
     if(sql.includes(' FROM competitions c'))return [[{...native,...(sql.includes('d.state AS')?{direct_state:config.state,direct_visible:config.public_visible,direct_revision:config.public_revision,direct_documents:config.documents_json}:{})}]];
-    if(sql.includes('SELECT COUNT(*) AS total'))return [[{total:entryRows.length}]];
+    if(sql.startsWith('SELECT SUM(total)')){const counts=new Map();entryRows.forEach(row=>counts.set(row.event_id,(counts.get(row.event_id)||0)+1));return [[{total:entryRows.length,event_total:Math.max(0,...counts.values())}]];}
     if(sql.startsWith('SELECT')&&sql.includes('livepalmes_direct_competitions'))return [[{...config}]];
     if(sql.startsWith('SELECT')&&sql.includes('livepalmes_direct_events'))return [[...eventRows]];
-    if(sql.startsWith('SELECT')&&sql.includes('livepalmes_direct_entries'))return [[...entryRows]];
+    if(sql.startsWith('SELECT')&&sql.includes('livepalmes_direct_entries'))return [entryRows.filter(row=>!sql.includes(' AND event_id=?')||row.event_id===values[2])];
     if(sql.startsWith('SELECT')&&sql.includes('livepalmes_direct_publications'))return [logs.filter(r=>r.operation_key===values[2])];
     if(sql.startsWith('SELECT')&&sql.includes('livepalmes_direct_access'))return [[]];
     if(sql.startsWith('INSERT INTO livepalmes_direct_events')){const fields=sql.match(/\(([^)]+)\) VALUES/)[1].split(',');let row=Object.fromEntries(fields.slice(0,15).map((field,i)=>[field,values[i]]));const existing=eventRows.find(e=>e.id===row.id);if(existing)Object.assign(existing,row,{version:Number(existing.version)+1});else eventRows.push({...row,version:1});return [{affectedRows:1}];}
-    if(sql.startsWith('INSERT INTO livepalmes_direct_entries')){const columns=sql.match(/\(([^)]+)\) VALUES/)[1].split(',').slice(0,28);for(let i=0;i<values.length;i+=28){const row=Object.fromEntries(columns.map((field,j)=>[field,values[i+j]]));const existing=entryRows.find(r=>r.participant_key===row.participant_key);if(existing){const updates=[...sql.matchAll(/(\w+)=VALUES\(/g)].map(m=>m[1]);for(const field of updates)existing[field]=row[field];}else entryRows.push(row);}return [{affectedRows:1}];}
-    if(sql.startsWith('UPDATE livepalmes_direct_entries')){for(const row of entryRows){if(sql.endsWith('AND series_number=?')&&row.series_number!==values.at(-1))continue;if(sql.includes("entry_time_raw=''"))Object.assign(row,{entry_time_raw:'',entry_time_cs:null,entry_time_status:'missing',has_series:0,series_number:null,lane:null});else Object.assign(row,{has_result:0,result_time_raw:'',result_time_cs:null,result_status:'',published_rank:null,splits_json:'[]'});}return [{affectedRows:entryRows.length}];}
-    if(sql.startsWith('DELETE FROM livepalmes_direct_entries')){entryRows=entryRows.filter(row=>!(row.has_series===0&&row.has_result===0));return [{affectedRows:0}];}
-    if(sql.startsWith('INSERT INTO livepalmes_direct_publications')){if(failJournal)throw Error('Journal interrompu');logs.push({operation_key:values[5],after_json:values[11]});return [{affectedRows:1}];}
+    if(sql.startsWith('INSERT INTO livepalmes_direct_entries')){const columns=sql.match(/\(([^)]+)\) VALUES/)[1].split(',').slice(0,28);for(let i=0;i<values.length;i+=28){const row=Object.fromEntries(columns.map((field,j)=>[field,values[i+j]]));const existing=entryRows.find(r=>r.event_id===row.event_id&&r.participant_key===row.participant_key);if(existing){const updates=[...sql.matchAll(/(\w+)=VALUES\(/g)].map(m=>m[1]);for(const field of updates)existing[field]=row[field];}else entryRows.push(row);}return [{affectedRows:1}];}
+    if(sql.startsWith('UPDATE livepalmes_direct_entries')){for(const row of entryRows){if(row.event_id!==values[2])continue;if(sql.endsWith('AND series_number=?')&&row.series_number!==values.at(-1))continue;if(sql.includes("entry_time_raw=''"))Object.assign(row,{entry_time_raw:'',entry_time_cs:null,entry_time_status:'missing',has_series:0,series_number:null,lane:null});else Object.assign(row,{has_result:0,result_time_raw:'',result_time_cs:null,result_status:'',published_rank:null,splits_json:'[]'});}return [{affectedRows:entryRows.length}];}
+    if(sql.startsWith('DELETE FROM livepalmes_direct_entries')){entryRows=entryRows.filter(row=>row.event_id!==values[2]||!(row.has_series===0&&row.has_result===0));return [{affectedRows:0}];}
+    if(sql.startsWith('INSERT INTO livepalmes_direct_publications')){if(failJournal>0&&--failJournal===0)throw Error('Journal interrompu');logs.push({operation_key:values[5],after_json:values[11]});return [{affectedRows:1}];}
     if(sql.startsWith('UPDATE livepalmes_direct_competitions')){config.version++;config.public_revision++;return [{affectedRows:1}];}
     throw Error('SQL non prévu : '+sql);
   };
   const c={execute,beginTransaction:async()=>{saved=structuredClone({config,eventRows,entryRows,logs});},commit:async()=>{commits++;},rollback:async()=>{({config,eventRows,entryRows,logs}=saved);rollbacks++;},release(){}};
-  return {execute,getConnection:async()=>c,calls,native,inspect:()=>({config,eventRows,entryRows,logs,commits,rollbacks}),failJournal:()=>{failJournal=true;}};
+  return {execute,getConnection:async()=>c,calls,native,inspect:()=>({config,eventRows,entryRows,logs,commits,rollbacks}),failJournal:(at=1)=>{failJournal=at;}};
 }
 function schemaFixture(){const present=new Set();let created=0;
  const c={execute:async(query,values=[])=>{const sql=typeof query==='string'?query:query.sql;if(sql.includes('GET_LOCK'))return [[{acquired:1}]];if(sql.includes('RELEASE_LOCK'))return [[{released:1}]];const table=schema.tables.find(t=>t.name===values[0]);assert.ok(table);if(!present.has(table.name))return [[]];if(sql.includes('information_schema.TABLES'))return [[{ENGINE:'InnoDB',TABLE_COLLATION:'utf8mb4_unicode_ci'}]];if(sql.includes('information_schema.COLUMNS'))return [table.columns.map(c=>({COLUMN_NAME:c.name,COLUMN_TYPE:c.type,IS_NULLABLE:c.nullable?'YES':'NO',COLUMN_DEFAULT:c.defaultValue,EXTRA:''}))];return [table.keys.flatMap(([name,unique,...columns])=>columns.map((column,i)=>({INDEX_NAME:name,COLUMN_NAME:column,NON_UNIQUE:unique?0:1,SEQ_IN_INDEX:i+1,SUB_PART:null})))];},query:async({sql})=>{assert.ok(schema.sql.includes(sql));assert.match(sql,/^CREATE TABLE `livepalmes_direct_/);assert.doesNotMatch(sql,/\b(?:ALTER|DROP|TRUNCATE|INSERT|UPDATE|DELETE|REPLACE)\b/);present.add(schema.tables[schema.sql.indexOf(sql)].name);created++;},release(){},destroy(){}};
@@ -62,7 +62,39 @@ function schemaFixture(){const present=new Set();let created=0;
   const partialFixture=sqlFixture(),partialStore=createStore(partialFixture,'test');
   for(const n of [2,1]){const chunk={...draft,seriesNumber:n,operationKey:'fixture-series-result-000'+n,rows:[{...person,firstName:'Alice'+n,series:n}]},preview=await partialStore.preview(900001,chunk);await partialStore.publish(900001,actor,{...chunk,fingerprint:preview.fingerprint,confirmReplacement:true});}
   assert.equal(partialFixture.inspect().entryRows.filter(row=>row.has_result).length,2,'Le dépôt de la série 1 conserve la série 2');
+  const schedule=[{number:1,scheduledAt:'09:00'},{number:2,scheduledAt:'09:03'}];
+  assert.throws(()=>model.event({...draft.event,heatSchedule:[{number:1,scheduledAt:'25:00'}]},competition),/Horaire/);
+  assert.throws(()=>model.event({...draft.event,heatSchedule:[schedule[0],schedule[0]]},competition),/Horaire/);
+  const batchGroup=(code,name,kind='series')=>({...draft,kind,event:{...draft.event,eventCode:code,scheduledAt:'09:00',heatSchedule:schedule},rows:[{...person,firstName:name,resultTime:kind==='series'?'':'01:10.00'}],operationKey:model.hash([code,name,kind]).slice(0,40)});
+  const batchInput={groups:[batchGroup('100sf','Alice'),batchGroup('200sf','Béa'),{...batchGroup('4x100sf','Relais'),rows:[{...person,lastName:'EQUIPE',firstName:'',birthYear:'',relay:true,resultTime:''}]}]};
+  assert.throws(()=>model.prepareBatch({groups:[batchInput.groups[0],{...batchInput.groups[0],operationKey:'different-operation-00001'}]},competition),/recouvrent/);
+  assert.throws(()=>model.prepareBatch({groups:[]},competition),/1 à 300/);
+  const bf=sqlFixture(),bs=createStore(bf,'test'),bp=await bs.previewBatch(900001,batchInput);
+  assert.equal(bf.calls.filter(call=>call.sql.startsWith('SELECT * FROM livepalmes_direct_entries')).length,1,'Lecture groupée, indépendante du nombre d’épreuves');
+  await assert.rejects(bs.publishBatch(900001,actor,{...batchInput,fingerprint:'stale'}),/aperçu/);
+  assert.equal(bf.inspect().commits,0);
+  await bs.publishBatch(900001,actor,{...batchInput,fingerprint:bp.fingerprint});
+  assert.equal(bf.inspect().commits,1,'Une transaction pour toutes les épreuves');
+  assert.equal(bf.inspect().config.version,2,'Une seule révision publique pour le lot');
+  assert.equal(bf.inspect().entryRows.length,3);
+  assert.deepEqual(bs.eventView(bf.inspect().eventRows[0]).heatSchedule,schedule,'Horaires conservés dans le JSON existant');
+  assert.equal((await bs.publishBatch(900001,actor,{...batchInput,fingerprint:'response-lost'})).replayed,true);
+  assert.equal(bf.inspect().commits,1,'Aucune seconde écriture après une réponse perdue');
+  await assert.rejects(bs.publishBatch(900001,actor,{groups:batchInput.groups.map((group,index)=>index?group:{...group,rows:[{...group.rows[0],entryTime:'01:00.00'}]})}),/autre contenu/);
+  const replacementBatch={groups:batchInput.groups.map(group=>({...group,operationKey:group.operationKey+'-new'}))},br=await bs.previewBatch(900001,replacementBatch);
+  assert.equal(br.replacements.length,3);await assert.rejects(bs.publishBatch(900001,actor,{...replacementBatch,fingerprint:br.fingerprint}),/Confirmer/);
+  bf.failJournal(2);const prior=JSON.stringify(bf.inspect());await assert.rejects(bs.publishBatch(900001,actor,{...replacementBatch,fingerprint:br.fingerprint,confirmReplacement:true}),/interrompu/);
+  assert.equal(JSON.stringify(bf.inspect().entryRows),JSON.stringify(JSON.parse(prior).entryRows),'Échec de la seconde épreuve : toutes les participations sont restaurées');
+  assert.equal(bf.inspect().config.version,2);assert.equal(bf.inspect().logs.length,4);
+  const pf=sqlFixture(),ps=createStore(pf,'test'),chunks={groups:[2,1].map(n=>({...batchGroup('100sf','Alice'+n),seriesNumber:n,event:{...draft.event,scheduledAt:n===1?'09:00':'',heatSchedule:[schedule[n-1]]},rows:[{...person,firstName:'Alice'+n,series:n,resultTime:''}]}))};
+  const pp=await ps.previewBatch(900001,chunks);await ps.publishBatch(900001,actor,{...chunks,fingerprint:pp.fingerprint});
+  assert.deepEqual(ps.eventView(pf.inspect().eventRows[0]).heatSchedule,schedule,'Séries dans le désordre : horaires fusionnés');
+  assert.equal(pf.inspect().eventRows[0].scheduled_at,'09:00');
+  const resultsAfter={...draft,operationKey:'result-after-schedule-0001',rows:[{...person,firstName:'Alice1'}]};
+  const rp=await ps.preview(900001,resultsAfter);await ps.publish(900001,actor,{...resultsAfter,fingerprint:rp.fingerprint});
+  assert.deepEqual(ps.eventView(pf.inspect().eventRows[0]).heatSchedule,schedule,'Les résultats sans horaire ne suppriment pas les horaires des séries');
   const service=createService({getPool:()=>sqlFixture(),environment:'test',authorize:async()=>({uid:'outsider',national:false,region:false}),lookupUser:async()=>null,matchRegion:(a,b)=>a===b});await assert.rejects(service({data:{action:'detail',competitionId:900001}}),error=>error.directCode==='permission-denied');
+  for(const action of ['previewBatch','publishBatch'])await assert.rejects(service({data:{action,competitionId:900001,...batchInput}}),error=>error.directCode==='permission-denied');
   let reads=0;const db={collection:()=>({doc:()=>({get:async()=>{reads++;return {exists:true,data:()=>({status:'inactive',capabilities:{'admin.full':true}})};}})})};await assert.rejects(readActor({auth:{uid:'disabled'}},{db,adminUids:new Set()}));assert.equal(reads,1);
   await assert.rejects(readActor({},{db,adminUids:new Set()}),error=>error.directCode==='unauthenticated');assert.equal(reads,1);
   assert.throws(()=>decode({documentKind:'series',pdfDataUrl:'data:application/pdf;base64,'+Buffer.from('bad').toString('base64')}));assert.equal(decode({documentKind:'results',pdfDataUrl:'data:application/pdf;base64,'+Buffer.from('%PDF-fixture').toString('base64')}).length,12);

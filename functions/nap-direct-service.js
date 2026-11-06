@@ -31,6 +31,8 @@ function createService({getPool,environment,authorize,lookupUser,matchRegion,sto
     }
     if(input.action==='preview')return store.preview(id,input);
     if(input.action==='publish')return store.publish(id,actor,input);
+    if(input.action==='previewBatch'){const result=await store.previewBatch(id,input);return {version:result.version,fingerprint:result.fingerprint,replacements:result.replacements};}
+    if(input.action==='publishBatch')return store.publishBatch(id,actor,input);
     if(input.action==='visibility')return store.visibility(id,actor,input);
     if(input.action==='history')return store.history(id,input.cursor);
     if(input.action==='document') {
