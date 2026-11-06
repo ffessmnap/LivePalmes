@@ -51,8 +51,19 @@
   function associations(files){
     const groups=new Map();for(const f of files){const key=f.info.key,old=groups.get(key);if(old&&old.eventCode!==f.info.eventCode)fail('Épreuve TXT ambiguë : '+f.name);if(!old)groups.set(key,{...f.info,count:0});groups.get(key).count++;}return [...groups.values()];
   }
-  function buildGroup(file,snapshot,eventId){
+  function laneMapping({txtFirstLane=0,seriesFirstLane=0}={}){
+    const values=[txtFirstLane,seriesFirstLane].map(value=>value===''?NaN:Number(value));
+    if(values.some(value=>!Number.isInteger(value)||value<0||value>20))fail('Premières lignes invalides : choisir des numéros entiers entre 0 et 20.');
+    return {txtFirstLane:values[0],seriesFirstLane:values[1],offset:values[1]-values[0]};
+  }
+  function buildGroup(file,snapshot,eventId,lanes){
     const parsed=parse(file.name,file.text),event=snapshot.events.find(e=>e.id===eventId);
+    const mapping=laneMapping(lanes);
+    parsed.rows=parsed.rows.map(row=>{
+      const lane=row.lane+mapping.offset;
+      if(row.lane<mapping.txtFirstLane||lane<0||lane>20)fail('Décalage de lignes incompatible : '+file.name+'. Contrôler les premières lignes TXT et séries.');
+      return {...row,lane};
+    });
     if(!event||code(event.eventCode)!==parsed.eventCode||Number(event.sessionKey)!==parsed.session)fail('Association TXT / épreuve à contrôler : '+file.name);
     const entries=snapshot.entries.filter(row=>row.eventId===event.id&&Number(row.series)===parsed.series),fingerprint=snapshot.seriesFingerprints[event.id+':'+parsed.series];
     if(!fingerprint||entries.length!==parsed.rows.length||new Set(entries.map(row=>row.lane)).size!==entries.length||parsed.rows.some(row=>!entries.some(entry=>entry.lane===row.lane)))fail('Répartition différente des séries importées : '+file.name+'. Réimporter les séries à jour.');
@@ -93,6 +104,6 @@
     function ignore(files){if(active||busy||pending)fail('Arrêter la surveillance avant de choisir les fichiers à ignorer.');files.forEach(f=>acknowledged.set(f.name,f.hash));}
     return {start,stop,check,ignore,get active(){return active;},get busy(){return busy;},get pending(){return Boolean(pending);}};
   }
-  const api={digest,decode,fileInfo,time,parse,readDirectory,associations,buildGroup,createRunner,code};
+  const api={digest,decode,fileInfo,time,parse,readDirectory,associations,buildGroup,createRunner,code,laneMapping};
   if(typeof module==='object'&&module.exports)module.exports=api;else global.LivePalmesDirectTxt=api;
 })(typeof window==='undefined'?globalThis:window);

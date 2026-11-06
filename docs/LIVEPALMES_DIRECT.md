@@ -8,6 +8,16 @@ LivePalmes Direct accompagne les compétitions piscine de tous niveaux issues du
 
 ## Direct multi-compétitions — livraison TEST du 6 novembre 2026
 
+### Passages à la ligne et bureau compact — préparation TEST
+
+Lot autorisé par Antoine : détail des passages sous chaque ligne comme French Touch, club sur huit caractères, bandeau public avec dates, bureau compact et décalage configurable entre lignes TXT et PDF. Code exclusivement client ; aucune nouvelle table/colonne, fonction serveur, permission, donnée native ou règle de classement. Budget inchangé : déplier un détail, calculer un split ou traduire une ligne réutilise les données reçues et ne déclenche aucun appel.
+
+Le bureau masque le bloc saison/compétition après choix et propose « Changer de compétition ». Surveillance immédiatement sous l'en-tête de compétition, avant les compteurs ; import PDF replié quand les épreuves existent. Une erreur de veille affiche une alerte persistante et l'état « En pause », avec reprise explicite.
+
+Numérotation : l'informaticien renseigne la première ligne du TXT et celle des séries, identiques par défaut (1/1). Réglage 1/2 = +1 : TXT 1–6 associé aux lignes 2–7 des séries. Valeurs entières 0–20, traduction vérifiée avant le rapprochement et les contrôles serveur existants. Pas de décalage déduit automatiquement ; aucun nageur, club ou regroupement ne peut être deviné dans un TXT sans identité. Réglage verrouillé pendant la veille, reconfiguration via Choisir le dossier. Les résultats publiés conservent les numéros physiques des séries et leurs identifiants source ; aucune réécriture des séries ni des anciens résultats.
+
+Affichage des passages : tableau Passage/Cumul/Split sous le résultat, uniquement si des passages sont disponibles, également utilisé dans la fiche. Arrivée ajoutée au détail lorsqu'elle est connue pour le dernier intervalle. Relais : split par distance de relayeur, calculé seulement si les deux bornes nécessaires sont connues ; dernier 100 m inclus pour un 4 × 100 complet. Passage manquant ou résultat DSQ sans temps final : pas de split inventé. Aucun rang de passage calculé. Dates et huit caractères du club restent lisibles sur téléphone, avec défilement interne du tableau si nécessaire.
+
 ### Surveillance TXT et classements — livré sur TEST, recette attendue
 
 Retouches lecture/suivi livrées sur TEST le 6 novembre : majuscules d'affichage des noms, tiret pour absence de référence, passages cumulés nommés et avancement des publications. Le bureau affiche les volumes importés et les résultats reçus par épreuve. Les compteurs sont calculés par un agrégat SQL groupé par épreuve/série sur au plus 15 001 participations de la seule compétition ; limite de 1 000 par épreuve conservée. Aucune table, colonne, donnée native, règle sportive de classement ou capacité d'accès ajoutée. [Publication TEST contrôlée](https://github.com/ffessmnap/LivePalmes/actions/runs/42268312513), recette authentifiée attendue.
