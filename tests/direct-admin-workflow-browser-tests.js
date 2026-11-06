@@ -1,0 +1,53 @@
+'use strict';
+const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),{createHash}=require('node:crypto');
+const {startStaticServer,launchBrowser,evaluate,waitFor}=require('../tools/capture-portal-design');
+const pdf='%PDF-1.4\nDocument fictif de contrôle',hash=createHash('sha256').update(pdf).digest('hex');
+function install(input){
+  window.__pdf=input.pdf;window.__pdfHash=input.hash;window.__calls=[];window.__answer=null;window.__pickerCount=0;window.__failResetOnce=true;
+  const competition={id:'legacy-nap-900001',name:'Compétition fictive multisession',date:'2026-11-07',endDate:'2026-11-07',city:'Paris',poolLength:'50'};
+  const events=[1,2].map(number=>({id:String(number).repeat(64),eventCode:number===1?'100sf':'200sf',eventLabel:number===1?'100 m Surface':'200 m Surface',sex:'F',phase:'series',date:'2026-11-07',sessionKey:String(number),sessionLabel:number===1?'Matin':'Après-midi',publication:{series:true,results:false},progress:{entries:1,seriesEntries:1,resultEntries:0,matchedResults:0,seriesCount:1,completeSeriesCount:0,unassignedResults:0}}));
+  const data=window.__server={competition,events,entries:[],selectedEventId:events[0].id,permissions:{manage:true,delegate:false,roles:['computer']},config:{state:'active',publicVisible:true,consoles:['computer'],version:1,revision:1,documents:[]}};
+  const api=async request=>{
+    window.__calls.push(structuredClone(request));
+    if(request.action==='list')return {items:[competition]};
+    if(request.action==='detail')return structuredClone(data);
+    if(request.action==='previewBatch')return {fingerprint:'fixture',replacements:[]};
+    if(request.action==='publishBatch'){data.config.version++;data.config.revision++;return {ok:true,count:request.groups.reduce((n,group)=>n+group.rows.length,0),events:structuredClone(data.events),version:data.config.version,revision:data.config.revision};}
+    if(request.action==='document'){if(request.version!==data.config.version)throw Error('Version PDF périmée');const document={id:'series:'+request.sessionKey+':'+input.hash.slice(0,16),kind:'series',hash:input.hash,title:request.title};data.config.documents.push(document);return {ok:true,document,version:++data.config.version};}
+    if(request.action==='reset'){
+      if(request.version!==data.config.version)throw Error('Version reset périmée');
+      if(request.phase==='begin'){if(request.confirmation!=='supprimer-direct-900001')throw Error('Confirmation absente');data.config.state='resetting';data.config.publicVisible=false;data.resetProgress={phase:'files',files:0,entries:0,events:0};return {complete:false,version:++data.config.version,progress:data.resetProgress};}
+      if(window.__failResetOnce){window.__failResetOnce=false;throw Error('Coupure fictive');}
+      data.events=[];data.entries=[];data.selectedEventId=null;data.config.documents=[];data.config.state='active';data.config.publicVisible=true;delete data.resetProgress;return {complete:true,version:++data.config.version,progress:{files:1,entries:2,events:2}};
+    }
+    throw Error('Appel fictif non prévu : '+request.action);
+  };
+  const user={uid:'fixture'};window.prompt=()=>window.__answer;window.confirm=()=>true;
+  window.firebase={apps:[{}],auth:()=>({currentUser:user,onAuthStateChanged:callback=>queueMicrotask(()=>callback(user)),signOut:async()=>{}}),app:()=>({functions:()=>({httpsCallable:()=>async request=>({data:await api(request)})})})};
+  const nativeClick=HTMLInputElement.prototype.click;HTMLInputElement.prototype.click=function(){if(this.id==='importFiles'){window.__pickerCount++;return;}return nativeClick.call(this);};
+}
+(async()=>{const {server,baseUrl}=await startStaticServer();let browser;try{browser=await launchBrowser();const client=browser.client,output=path.resolve('tmp/direct-admin-workflow');fs.mkdirSync(output,{recursive:true});await client.send('Page.addScriptToEvaluateOnNewDocument',{source:'('+install.toString()+')('+JSON.stringify({pdf,hash})+')'});
+  for(const width of [1280,390,320]){
+    await client.send('Emulation.setDeviceMetricsOverride',{width,height:980,deviceScaleFactor:1,mobile:width<700});await client.send('Page.navigate',{url:baseUrl+'/direct-admin.html'});assert.ok(await waitFor(client,"document.querySelector('#competitionSelect')?.options.length===2",10000));
+    await evaluate(client,"document.querySelector('#competitionSelect').value='legacy-nap-900001';document.querySelector('#competitionSelect').dispatchEvent(new Event('change'))");assert.ok(await waitFor(client,"document.querySelector('#openSeriesImport')",5000));
+    assert.equal(await evaluate(client,"return Boolean(document.querySelector('.direct-meet-card #openSeriesImport'))&&!document.querySelector('#importKind')"),true,'Import séries en haut, aucun import de résultats PDF');
+    await evaluate(client,"document.querySelector('[data-summary-session]').value=document.querySelector('[data-summary-session]').options[2].value;window.__beforeFilter=__calls.length;document.querySelector('[data-summary-session]').dispatchEvent(new Event('change'))");
+    assert.equal(await evaluate(client,"return document.querySelectorAll('.direct-admin-program tbody tr').length"),1);assert.equal(await evaluate(client,'return __calls.length'),await evaluate(client,'return __beforeFilter'),'Filtre local sans lecture');
+    await evaluate(client,`window.LivePalmesDirectImport.files=async(files,kind)=>{if(kind!=='series')throw Error('Import résultats interdit dans ce bureau');return [1,2].map(number=>({kind:'series',selected:true,event:{eventCode:number===1?'100sf':'200sf',eventLabel:number===1?'100 m Surface':'200 m Surface',sex:'F',phase:'series',date:'2026-11-07',sessionKey:String(number),sessionLabel:number===1?'Matin':'Après-midi'},rows:[{lastName:'EXEMPLE',firstName:'Alice',birthYear:2008,club:'CLUBTEST',series:1,lane:1,entryTime:'01:00.00',selected:true}],source:{type:'pdf',name:files[0].name,hash:__pdfHash},operationKey:'fixture-operation-'+number}));};document.querySelector('#openSeriesImport').click();const transfer=new DataTransfer();transfer.items.add(new File([__pdf],'series.pdf',{type:'application/pdf'}));document.querySelector('#importFiles').files=transfer.files;document.querySelector('#importFiles').dispatchEvent(new Event('change'));`);
+    assert.ok(await waitFor(client,"document.querySelector('[data-series-pdf]')&&document.querySelector('[data-import-session]')",5000));assert.equal(await evaluate(client,'return __pickerCount'),1);
+    await evaluate(client,"document.querySelector('[data-series-pdf]').checked=true;document.querySelector('[data-series-pdf]').dispatchEvent(new Event('change'));const filter=document.querySelector('[data-import-session]');filter.value=filter.options[1].value;filter.dispatchEvent(new Event('change'))");
+    assert.equal(await evaluate(client,"return document.querySelectorAll('[data-group]').length"),1,'Une seule session en aperçu');
+    await evaluate(client,"document.querySelector('[data-batch-verify]').click()");assert.ok(await waitFor(client,"!document.querySelector('[data-batch-publish]').disabled",5000));await evaluate(client,"document.querySelector('[data-batch-publish]').click()");assert.ok(await waitFor(client,"__calls.filter(call=>call.action==='publishBatch').length===1&&!LivePalmesDirectAdmin.state.busy",5000));
+    assert.equal(await evaluate(client,"return __calls.find(call=>call.action==='publishBatch').groups.length"),1,'Aucune épreuve cachée publiée');assert.equal(await evaluate(client,"return __calls.filter(call=>call.action==='document').length"),0,'Le PDF multisession attend toutes ses épreuves');
+    await evaluate(client,"const filter=document.querySelector('[data-import-session]');filter.value=filter.options[2].value;filter.dispatchEvent(new Event('change'));document.querySelector('[data-batch-verify]').click()");assert.ok(await waitFor(client,"!document.querySelector('[data-batch-publish]').disabled",5000));await evaluate(client,"document.querySelector('[data-batch-publish]').click()");assert.ok(await waitFor(client,"__calls.filter(call=>call.action==='document').length===1&&!LivePalmesDirectAdmin.state.busy",5000));
+    const request=await evaluate(client,"return __calls.find(call=>call.action==='document')");assert.equal(request.fromSeriesImport,true);assert.equal(request.pdfDataUrl,'data:application/pdf;base64,'+Buffer.from(pdf).toString('base64'));assert.equal(request.sessionKey,'all');assert.equal(await evaluate(client,'return __pickerCount'),1,'Le PDF choisi est réutilisé');
+    assert.equal(await evaluate(client,'return document.documentElement.scrollWidth<=innerWidth'),true);let shot=await client.send('Page.captureScreenshot',{format:'png'});fs.writeFileSync(path.join(output,'import-'+width+'.png'),Buffer.from(shot.data,'base64'));
+    await evaluate(client,"document.querySelector('#resetDirect').click()");assert.equal(await evaluate(client,"return __calls.filter(call=>call.action==='reset').length"),0,'Annuler ne supprime rien');
+    await evaluate(client,"window.__answer='SUPPRIMER';document.querySelector('#resetDirect').click()");assert.ok(await waitFor(client,"document.querySelector('#resumeReset')&&!LivePalmesDirectAdmin.state.busy",5000),'Reprise proposée après coupure');assert.equal(await evaluate(client,'return __server.config.state'),'resetting');
+    shot=await client.send('Page.captureScreenshot',{format:'png'});fs.writeFileSync(path.join(output,'reset-pending-'+width+'.png'),Buffer.from(shot.data,'base64'));
+    await evaluate(client,"document.querySelector('#resumeReset').click()");assert.ok(await waitFor(client,"document.querySelector('#adminStatus').textContent.includes('Direct réinitialisé')",5000));assert.deepEqual(await evaluate(client,'return __server.config.consoles'),['computer']);assert.equal(await evaluate(client,'return __server.config.state'),'active');assert.equal(await evaluate(client,'return __server.events.length+__server.config.documents.length'),0);assert.equal(await evaluate(client,"return document.querySelectorAll('[data-summary-session],[data-import-session]').length"),0,'Pas de filtre avec aucune session');
+    assert.equal(await evaluate(client,'return document.documentElement.scrollWidth<=innerWidth'),true);
+  }
+  assert.deepEqual(browser.client.events.filter(event=>event.method==='Runtime.exceptionThrown').map(event=>event.params.exceptionDetails.text),[]);
+  console.log('Bureau Direct : import PDF en haut, filtres locaux, publication limitée à la session, PDF optionnel réutilisé après toutes ses épreuves, confirmation/annulation et reprise de reset à 1280/390/320 px. Aucun appel réel.');
+}finally{browser?.cleanup();server.close();}})().catch(error=>{console.error(error);process.exitCode=1;});

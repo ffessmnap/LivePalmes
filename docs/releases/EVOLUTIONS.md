@@ -2,6 +2,12 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 6 novembre — Remise à zéro Direct et import des séries par session
+
+- Besoin autorisé : bouton de suppression définitive des séries/résultats/historique/PDF, activation et accès conservés selon confirmation explicite d'Antoine ; import séries PDF en haut, retrait du choix résultats PDF, option de publication du même PDF complet et filtres par session. XML exclu.
+- Périmètre : bureau, helpers d'import/filtre, gestionnaire Direct et utilitaires SQL/Storage ; aucune table/colonne, capacité, règle Firebase ou donnée native modifiée. Suppression bornée avec reprise, marqueur temporaire effacé à la fin, contrôle des versions et état bloquant. Aucun reset réel du pilote dans la recette technique.
+- Préparation : branche `feature/direct-remise-zero-import-series`. Tests hors réseau de suppression/isolation/reprise, UI 1 280/390/320 px et maquette jusqu'à 305 px ; global et MySQL isolé confiés à la CI obligatoire. PR et preuve TEST à compléter, retour utilisateur non acquis.
+
 ### 6 novembre — Passages à la ligne, décalage TXT et bureau compact
 
 - Besoin autorisé : appliquer et publier sur TEST le détail French Touch sous chaque ligne, club sur huit caractères et bandeau avec dates ; ajouts explicitement demandés pendant le travail : décalage première ligne TXT/PDF, surveillance prioritaire et alerte, sélecteur compétition replié et splits des relais.

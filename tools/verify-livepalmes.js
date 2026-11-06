@@ -55,6 +55,7 @@ function runUnitTests() {
     "backend-directory-outage-tests.js",
     "nap-mysql-tests.js",
     "nap-direct-tests.js",
+    "nap-direct-reset-tests.js",
     "direct-import-tests.js",
     "direct-txt-tests.js",
     "direct-presentation-tests.js",
@@ -446,6 +447,7 @@ function runBrowserSmokeIfRequested() {
   if (!requested) return;
   printStep("Smoke test navigateur");
   run(process.execPath, [path.join(rootDir, "tests", "direct-browser-tests.js")]);
+  run(process.execPath, [path.join(rootDir, "tests", "direct-admin-workflow-browser-tests.js")]);
   run(process.execPath, [path.join(rootDir, "tests", "portal-reactivity-browser-tests.js")]);
   run(process.execPath, [path.join(rootDir, "tests", "portal-news-browser-tests.js")]);
   run(process.execPath, [path.join(rootDir, "tests", "nap-swimmer-merge-conflicts-browser-tests.js")]);
