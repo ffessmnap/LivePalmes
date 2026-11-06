@@ -20,3 +20,10 @@ assert.throws(() => transfer.unwrap(envelope, { private_key_id:'first', private_
 const damagedTransfer = { ...envelope, ciphertext:Buffer.from('altered').toString('base64') };
 assert.throws(() => transfer.unwrap(damagedTransfer, { private_key_id:'first', private_key:first.privateKey }));
 console.log('Transfert Direct chiffre pour les cles de sauvegarde existantes, cle et contenu invalides refuses.');
+const fs = require('node:fs'), path = require('node:path');
+const yaml = require('../tests/firestore-rules/node_modules/yaml');
+const workflow = yaml.parse(fs.readFileSync(path.join(__dirname, '../.github/workflows/livepalmes-direct-data.yml'), 'utf8'));
+assert.equal(workflow.on.schedule, undefined, 'La sauvegarde ponctuelle ne planifie aucun acces supplementaire');
+assert.equal(workflow.on.workflow_dispatch.inputs.encrypted_snapshot.required, true);
+assert(!JSON.stringify(workflow.jobs.direct.env).includes('runner.'), 'Le contexte runner est indisponible dans env au niveau job GitHub');
+assert(!fs.readFileSync(path.join(__dirname, '../tools/direct-production-data.js'), 'utf8').includes('LIVEPALMES_NAP_PASSWORD'), 'La restauration CI ne doit pas lire le secret NAP');
