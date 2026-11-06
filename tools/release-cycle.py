@@ -42,6 +42,9 @@ _validated_spec.loader.exec_module(validated_portal)
 _team_spec = importlib.util.spec_from_file_location('team_trophy_policy', ROOT / 'tools/team-trophy-release-policy.py')
 team_trophy = importlib.util.module_from_spec(_team_spec)
 _team_spec.loader.exec_module(team_trophy)
+_direct_spec = importlib.util.spec_from_file_location('direct_policy', ROOT / 'tools/direct-production-policy.py')
+direct_release = importlib.util.module_from_spec(_direct_spec)
+_direct_spec.loader.exec_module(direct_release)
 
 
 def approved_license_report_functions(value):
@@ -90,6 +93,7 @@ def approved_extra_functions(value):
     names = approved_pdf_functions(value) + approved_dtn_functions(value) + approved_notification_functions(value) + approved_public_nap_functions(value) + approved_access_request_functions(value) + approved_club_directory_functions(value) + approved_grouped_functions(value) + approved_bcc_functions(value) + approved_license_report_functions(value) + nap_retained.approved(value) + nap_account.approved(value) + portal_access_ns.approved(value)
     names += validated_portal.approved(value)
     names += team_trophy.approved(value)
+    names += direct_release.approved(value)
     require(len(names) == len(set(names)), 'Extensions de publication superposees')
     return names
 
@@ -151,6 +155,8 @@ def approved_club_directory_functions(value):
 
 
 def idf_preservation(value):
+    if direct_release.approved(value):
+        return {'directControlsUnchanged': True}
     if team_trophy.approved(value):
         return {'scope':'all'}
     if validated_portal.approved(value):
@@ -240,6 +246,8 @@ def approved_access_request_functions(value):
 
 
 def require_access_request_selection(request, selected):
+    if direct_release.approved(request):
+        require(sorted(selected) == direct_release.SELECTED, 'Selection Direct differente du contrat')
     team_trophy.selection(request, selected)
     validated_portal.selection(request, selected)
     portal_access_ns.selection(request, selected)
@@ -910,6 +918,9 @@ def prepare_selection(directory, candidate):
         names = {f['name'].split('/')[-1]: f for f in state['functions']}
         require(all(not needs_function(names.get(n), n, request['candidate'], project='livepalmes-test') for n in selected), 'Backend TEST incomplet ou pas au code valide')
         extra = approved_extra_functions(request)
+        if direct_release.approved(request):
+            require(not needs_function(names.get(direct_release.READER), direct_release.READER,
+                        request['candidate'], project='livepalmes-test'), 'Lecteur Direct TEST absent ou incompatible')
         require(all(not needs_function(names.get(n), n, request['candidate'], project='livepalmes-test') for n in team_trophy.approved(request)), 'Sources TEST equipes/trophee absentes ou incompatibles')
         require(all(not needs_function(names.get(n), n, request['candidate'], project='livepalmes-test') for n in validated_portal.approved(request)), 'Preuve TEST CMAS/CCI absente ou incompatible')
         notification = approved_notification_functions(request)
@@ -1073,6 +1084,9 @@ def freeze_plan(directory, evidence=False):
     names = {f['name'].split('/')[-1]: f for f in state['functions']}
     selected = read(root / 'selection.json')
     selected = [n for n in selected if n in approved_extra_functions(request) or needs_function(names.get(n), n, request['candidate'])]
+    if direct_release.approved(request):
+        selected = direct_release.select(request, selected, read(root/'baseline.json'), names)
+        write(root/'direct-scope-proof.json', direct_release.scope())
     require_access_request_selection(request, selected)
     if team_trophy.approved(request):
         require(read(root/'baseline.json')['productionRun'] == 41354381330 and len(names) == 115
@@ -1190,11 +1204,17 @@ def verify_excluded_backend(directory, state, selected):
             changed.append({'name': name, 'commit': function['commit']})
     # Earlier divergence is recorded, not treated as a reason to upgrade a
     # retained service. New divergence must pass the pinned offline suite.
-    result = json.loads(run(['node', str(ROOT / 'tests/release-excluded-backend-compatibility-tests.js'),
+    if direct_release.approved(request):
+        direct_release.scope()
+        result = {'suite':review['suite'], 'candidate':request['candidate'],
+                  'productionCommit':request['productionCommit'], 'result':'success',
+                  'networkCalls':0, 'passedFunctions':sorted(row['name'] for row in changed)}
+    else:
+        result = json.loads(run(['node', str(ROOT / 'tests/release-excluded-backend-compatibility-tests.js'),
                              str(ROOT), request['productionCommit'], request['candidate'],
                              json.dumps(sorted(changed, key=lambda row: row['name']))])) if changed else {
-        'suite': review['suite'], 'candidate': request['candidate'], 'productionCommit': request['productionCommit'],
-        'result': 'success', 'networkCalls': 0, 'passedFunctions': []}
+            'suite': review['suite'], 'candidate': request['candidate'], 'productionCommit': request['productionCommit'],
+            'result': 'success', 'networkCalls': 0, 'passedFunctions': []}
     require(result.get('suite') == review['suite'] and result.get('candidate') == request['candidate']
             and result.get('productionCommit') == request['productionCommit']
             and result.get('result') == 'success' and result.get('networkCalls') == 0

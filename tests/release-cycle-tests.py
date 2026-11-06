@@ -11,6 +11,23 @@ spec=importlib.util.spec_from_file_location('cycle',Path(__file__).parents[1]/'t
 m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m)
 
 class ReleaseTests(unittest.TestCase):
+    def test_direct_release_is_closed_and_preserves_the_structurally_unchanged_backend(self):
+        policy = m.direct_release
+        request = {'schema':1, 'candidate':policy.CANDIDATE, 'productionCommit':policy.BASE,
+                   'productionHosting':'sites/livepalmes/versions/18c1ef8d34dce98f', 'testRun':42306711779,
+                   'directRelease':'20261106-direct-paris'}
+        self.assertEqual(policy.approved(request), [policy.READER])
+        for changed in ({'candidate':'f'*40}, {'testRun':1}, {'additionalNotificationFunctions':[]}):
+            with self.assertRaises(ValueError):
+                policy.approved({**request, **changed})
+        proof = policy.scope()
+        self.assertTrue(proof['otherHandlersAndSharedInitializationUnchanged'])
+        origin = {'state':'ACTIVE', 'commit':'7a6eedb6ee8b6c5943c194e88611219602782fdf', 'revision':'verified'}
+        functions = {policy.READER:origin, **{f'old{i}':origin for i in range(115)}}
+        self.assertEqual(policy.select(request, policy.SELECTED, {'productionRun':41925812934}, functions), policy.SELECTED)
+        with self.assertRaises(ValueError):
+            policy.select(request, policy.SELECTED, {'productionRun':1}, functions)
+
     def test_team_account_trigger_accepts_permutations_but_rejects_filter_changes(self):
         from types import SimpleNamespace
         policy = m.team_trophy

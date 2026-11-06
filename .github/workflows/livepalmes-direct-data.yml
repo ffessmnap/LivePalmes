@@ -1,0 +1,81 @@
+name: Sauvegarder et preparer les seules donnees Direct PROD
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        type: choice
+        required: true
+        default: check
+        options: [check, backup, activate]
+      confirmation:
+        type: string
+        required: false
+      encrypted_snapshot:
+        description: Snapshot Direct local chiffre avec la cle publique de sauvegarde CI
+        type: string
+        required: false
+  schedule:
+    - cron: '17 * * * *'
+permissions:
+  contents: read
+concurrency:
+  group: livepalmes-direct-production-data
+  cancel-in-progress: false
+jobs:
+  direct:
+    if: github.ref == 'refs/heads/main' && github.run_attempt == 1 && (github.event_name == 'workflow_dispatch' || vars.LIVEPALMES_DIRECT_BACKUP_ENABLED == 'true')
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    environment: production
+    env:
+      TARGET_FIREBASE_PROJECT: livepalmes
+      DIRECT_APP_DIRECTORY: ${{ github.workspace }}/candidate
+      DIRECT_DATA_MODE: ${{ inputs.mode || 'backup' }}
+      DIRECT_ACTIVATION_CONFIRMATION: ${{ inputs.confirmation }}
+      DIRECT_DATA_OUTPUT: ${{ runner.temp }}/direct-production
+      DIRECT_ENCRYPTED_SNAPSHOT: ${{ inputs.encrypted_snapshot }}
+      DIRECT_RESTORE_ALLOWED: isolated-ci
+      DIRECT_RESTORE_PASSWORD: direct-restore-isolated-only
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@v7
+        with:
+          ref: 5b76e1e37eddba618b25c41c92a8168446fe4115
+          path: candidate
+          persist-credentials: false
+      - name: Controler le mode et la confirmation avant les acces
+        run: |
+          if [ "$DIRECT_DATA_MODE" = activate ]; then
+            test "$DIRECT_ACTIVATION_CONFIRMATION" = direct-production-paris-5220
+          fi
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          check-latest: true
+      - run: npm ci --prefix candidate/functions --ignore-scripts --no-audit --no-fund
+      - uses: google-github-actions/auth@v3
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_BACKEND }}
+          project_id: livepalmes
+      - uses: google-github-actions/setup-gcloud@v3
+      - name: Demarrer MySQL 5.7 de restauration isolee
+        run: |
+          docker run -d --name direct-restore -e MYSQL_ROOT_PASSWORD="$DIRECT_RESTORE_PASSWORD" -e MYSQL_ROOT_HOST=% -p 127.0.0.1:33317:3306 mysql:5.7.30
+          for attempt in $(seq 1 60); do
+            if docker exec direct-restore mysqladmin ping --protocol=TCP -h127.0.0.1 -uroot -p"$DIRECT_RESTORE_PASSWORD" --silent >/dev/null 2>&1; then break; fi
+            sleep 1
+          done
+      - name: Sauvegarder rouvrir restaurer et verifier le perimetre autorise
+        run: node tools/direct-production-data.js
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: direct-production-data
+          path: ${{ runner.temp }}/direct-production/*
+          if-no-files-found: error
+          retention-days: 14
+      - name: Fermer MySQL isole
+        if: always()
+        run: docker rm -f direct-restore >/dev/null 2>&1 || true
