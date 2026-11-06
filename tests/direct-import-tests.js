@@ -14,6 +14,8 @@ assert.equal(adapter.parseResults(['Document illisible'],'fixture.pdf',fallback)
 const relay=adapter.parseSeries(['4 x 100 m Surface - Mixte','série : 1 / 1 Horaire indicatif : 09:00','4 EQUIPE PARIS XSE CNP 04:10.00'],'relais.pdf',fallback);
 assert.equal(relay[0].rows[0].relay,true);
 assert.equal(relay[0].rows[0].birthYear,'');
+assert.equal(relay[0].rows[0].sourceEntryId,undefined,'Une équipe unique conserve son identité historique pour rejoindre les résultats PDF');
+assert.ok(adapter.parseSeries(['4 x 100 m Surface - Mixte','série : 2 / 3 Horaire indicatif : 09:00','2 EQUIPE CLUB CLUB 04:10.00'],'partiel.pdf',fallback)[0].rows[0].sourceEntryId,'Un PDF partiel conserve la position, sans supposer l’équipe unique dans les autres séries');
 const model=require('../functions/nap-direct-model');
 assert.doesNotThrow(()=>model.prepare(relay[0],{id:'legacy-nap-900001',date:'2026-11-07'}),'Une équipe de relais est publiable sans année de naissance');
 assert.equal(adapter.isRelay('4X100SF'),true);
