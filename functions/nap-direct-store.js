@@ -21,7 +21,7 @@ function createStore(pool,environment) {
   async function access(id,uid) {return (await q("SELECT * FROM livepalmes_direct_access WHERE environment=? AND competition_id=? AND user_uid=? AND active=1 AND (expires_at IS NULL OR expires_at>UTC_TIMESTAMP(6)) LIMIT 1",[...scope(id),uid]))[0]||null;}
   async function events(id,connection=pool) {return execute(connection,`SELECT * FROM livepalmes_direct_events WHERE environment=? AND competition_id=? ORDER BY program_order,id LIMIT ${model.MAX_EVENTS+1}`,scope(id));}
   async function entries(id,eventId,connection=pool) {const rows=await execute(connection,`SELECT * FROM livepalmes_direct_entries WHERE environment=? AND competition_id=? AND event_id=? ORDER BY series_number,lane,participant_key LIMIT ${model.MAX_ENTRIES+1}`,[...scope(id),eventId]);if(rows.length>model.MAX_ENTRIES)throw fail("Épreuve trop volumineuse.");return rows;}
-  function eventView(row) {return {id:row.id,eventCode:row.event_code,eventLabel:row.event_label,sex:row.sex,phase:row.phase,date:row.event_date,sessionKey:row.session_key,sessionLabel:row.session_label,order:row.program_order,eventNumber:row.event_number,scheduledAt:row.scheduled_at,publication:read(row.publication_state_json),version:Number(row.version)};}
+  function eventView(row) {const publication=read(row.publication_state_json);return {id:row.id,eventCode:row.event_code,eventLabel:row.event_label,sex:row.sex,phase:row.phase,date:row.event_date,sessionKey:row.session_key,sessionLabel:row.session_label,order:row.program_order,eventNumber:row.event_number,scheduledAt:row.scheduled_at,heatSchedule:publication.heatSchedule||[],publication:{series:Boolean(publication.series),results:Boolean(publication.results)},version:Number(row.version)};}
   function configView(row) {return row?{state:row.state,publicVisible:Boolean(row.public_visible),consoles:read(row.enabled_consoles_json,[]),documents:read(row.documents_json,[]),version:Number(row.version),revision:Number(row.public_revision)}:null;}
   async function detail(id,eventId,publicOnly=false) {
     const competition=await native(id);let current;
@@ -74,10 +74,22 @@ function createStore(pool,environment) {
     if(input.fingerprint!==previewed.fingerprint)throw fail("L’aperçu a changé. Contrôler de nouveau avant publication.","aborted");
     if(previewed.replaces&&input.confirmReplacement!==true)throw fail("Confirmer le remplacement des données déjà publiées.");
     return transaction(id,actor,previewed.version,async(c)=>{
-      const prepared=previewed.prepared,e=prepared.event,before=await entries(id,e.id,c),list=await events(id,c);
+      const prepared=previewed.prepared,list=await events(id,c),before=await entries(id,prepared.event.id,c);
+      await applyPrepared(c,id,actor,prepared,input,list,before,previewed.replaces);
+      await checkMeetLimit(c,id);
+      return {ok:true,eventId:prepared.event.id,count:prepared.rows.length};
+    });
+  }
+  async function applyPrepared(c,id,actor,prepared,input,list,before,replaces){
+      const e=prepared.event;
       if(!list.some(row=>row.id===e.id)&&list.length>=model.MAX_EVENTS)throw fail("Nombre maximal d’épreuves atteint.");
       const current=list.find(row=>row.id===e.id),publication={...read(current?.publication_state_json),[prepared.kind]:true};
-      await execute(c,"INSERT INTO livepalmes_direct_events (environment,competition_id,id,source_event_id,event_code,event_label,sex,phase,event_date,session_key,session_label,program_order,event_number,scheduled_at,publication_state_json,version,created_at,updated_at,created_by,updated_by) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,1,UTC_TIMESTAMP(6),UTC_TIMESTAMP(6),?,?) ON DUPLICATE KEY UPDATE source_event_id=COALESCE(VALUES(source_event_id),source_event_id),publication_state_json=VALUES(publication_state_json),event_label=VALUES(event_label),program_order=VALUES(program_order),scheduled_at=VALUES(scheduled_at),version=version+1,updated_at=UTC_TIMESTAMP(6),updated_by=VALUES(updated_by)",[...scope(id),e.id,e.sourceEventId,e.eventCode,e.eventLabel,e.sex,e.phase,e.date,e.sessionKey,e.sessionLabel,e.order,e.eventNumber,e.scheduledAt,json(publication),actor.uid,actor.uid]);
+      if(prepared.kind==='series'&&prepared.event.heatSchedule){
+        const incoming=new Map(prepared.event.heatSchedule.map(heat=>[heat.number,heat]));
+        publication.heatSchedule=prepared.seriesNumber==null?prepared.event.heatSchedule:[...(publication.heatSchedule||[]).filter(heat=>!incoming.has(heat.number)),...incoming.values()].sort((a,b)=>a.number-b.number);
+      }
+      const scheduledAt=prepared.kind==='series'&&prepared.seriesNumber==null?e.scheduledAt:e.scheduledAt||current?.scheduled_at||'';
+      await execute(c,"INSERT INTO livepalmes_direct_events (environment,competition_id,id,source_event_id,event_code,event_label,sex,phase,event_date,session_key,session_label,program_order,event_number,scheduled_at,publication_state_json,version,created_at,updated_at,created_by,updated_by) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,1,UTC_TIMESTAMP(6),UTC_TIMESTAMP(6),?,?) ON DUPLICATE KEY UPDATE source_event_id=COALESCE(VALUES(source_event_id),source_event_id),publication_state_json=VALUES(publication_state_json),event_label=VALUES(event_label),program_order=VALUES(program_order),scheduled_at=VALUES(scheduled_at),version=version+1,updated_at=UTC_TIMESTAMP(6),updated_by=VALUES(updated_by)",[...scope(id),e.id,e.sourceEventId,e.eventCode,e.eventLabel,e.sex,e.phase,e.date,e.sessionKey,e.sessionLabel,e.order,e.eventNumber,scheduledAt,json(publication),actor.uid,actor.uid]);
       // Each batch updates only its own facet. Series imported after results preserve results.
       const values=prepared.rows.map(row=>[...scope(id),e.id,row.key,row.sourceEntryId,row.kind,row.swimmerId,row.clubId,row.lastName,row.firstName,row.birthYear,row.club,row.category,row.series,row.lane,row.seed.raw,row.seed.cs,row.seed.status,row.result.raw,row.result.cs,row.status,row.rank,json(row.members),json(row.splits),prepared.kind==='series'?1:0,prepared.kind==='results'?1:0,actor.uid,actor.uid]);
       const columns='environment,competition_id,event_id,participant_key,source_entry_id,entry_kind,swimmer_id,club_id,last_name,first_name,birth_year,club_label,category_code,series_number,lane,entry_time_raw,entry_time_cs,entry_time_status,result_time_raw,result_time_cs,result_status,published_rank,relay_members_json,splits_json,has_series,has_result,created_by,updated_by';
@@ -88,10 +100,47 @@ function createStore(pool,environment) {
       const assignment=',source_entry_id=COALESCE(VALUES(source_entry_id),source_entry_id)'+(prepared.kind==='results'?',series_number=COALESCE(VALUES(series_number),series_number),lane=COALESCE(VALUES(lane),lane)':'');
       for(let offset=0;offset<values.length;offset+=200){const batch=values.slice(offset,offset+200);await execute(c,`INSERT INTO livepalmes_direct_entries (${columns},version,created_at,updated_at) VALUES ${batch.map(()=>`(${Array(28).fill('?').join(',')},1,UTC_TIMESTAMP(6),UTC_TIMESTAMP(6))`).join(',')} ON DUPLICATE KEY UPDATE ${[...facet,...shared].map(name=>`${name}=VALUES(${name})`).join(',')}${assignment},version=version+1,updated_at=UTC_TIMESTAMP(6),updated_by=VALUES(updated_by)`,batch.flat());}
       await execute(c,"DELETE FROM livepalmes_direct_entries WHERE environment=? AND competition_id=? AND event_id=? AND has_series=0 AND has_result=0",[...scope(id),e.id]);
-      const count=await execute(c,`SELECT COUNT(*) AS total FROM (SELECT participant_key FROM livepalmes_direct_entries WHERE environment=? AND competition_id=? LIMIT ${model.MAX_MEET_ENTRIES+1}) bounded`,scope(id));
-      if(Number(count[0]?.total)>model.MAX_MEET_ENTRIES)throw fail("Volume maximal du Direct dépassé (15 000 participations, phases comprises).");
-      await journal(c,id,actor,{eventId:e.id,action:previewed.replaces?'replace':'publish',before:{event:current||null,entries:before},after:prepared,source:prepared.source,operationKey:input.operationKey,batchId:input.batchId});
-      return {ok:true,eventId:e.id,count:prepared.rows.length};
+      await journal(c,id,actor,{eventId:e.id,action:replaces?'replace':'publish',before:{event:current||null,entries:before},after:prepared,source:prepared.source,operationKey:input.operationKey,batchId:input.batchId});
+      const updated={...current,id:e.id,scheduled_at:scheduledAt,publication_state_json:json(publication)};
+      const index=list.findIndex(row=>row.id===e.id);if(index<0)list.push(updated);else list[index]=updated;
+  }
+  async function checkMeetLimit(c,id){
+    const count=await execute(c,`SELECT SUM(total) AS total,MAX(total) AS event_total FROM (SELECT event_id,COUNT(*) AS total FROM (SELECT event_id FROM livepalmes_direct_entries WHERE environment=? AND competition_id=? LIMIT ${model.MAX_MEET_ENTRIES+1}) bounded GROUP BY event_id) per_event`,scope(id));
+    if(Number(count[0]?.total)>model.MAX_MEET_ENTRIES)throw fail('Volume maximal du Direct dépassé (15 000 participations, phases comprises).');
+    if(Number(count[0]?.event_total)>model.MAX_ENTRIES)throw fail('Volume maximal par épreuve dépassé (1 000 participations).');
+  }
+  function replacesScope(prepared,rows){return rows.some(row=>(prepared.seriesNumber==null||Number(row.series_number)===prepared.seriesNumber)&&(prepared.kind==='series'?Boolean(row.has_series):Boolean(row.has_result)));}
+  async function previewBatch(id,input){
+    const batch=model.prepareBatch(input,await native(id)),current=await config(id);
+    if(!current||current.state!=='active')throw fail('Activer le Direct avant la publication.');
+    const list=await events(id);if(list.length>model.MAX_EVENTS)throw fail('Programme trop volumineux.');
+    const all=await q(`SELECT * FROM livepalmes_direct_entries WHERE environment=? AND competition_id=? ORDER BY event_id,series_number,lane,participant_key LIMIT ${model.MAX_MEET_ENTRIES+1}`,scope(id));
+    if(all.length>model.MAX_MEET_ENTRIES)throw fail('Compétition trop volumineuse.');
+    const byEvent=new Map();for(const row of all){if(!byEvent.has(row.event_id))byEvent.set(row.event_id,[]);byEvent.get(row.event_id).push(row);}
+    if(new Set([...list.map(row=>row.id),...batch.groups.map(group=>group.event.id)]).size>model.MAX_EVENTS)throw fail('Nombre maximal d’épreuves atteint.');
+    const replaced=batch.groups.map(group=>replacesScope(group,byEvent.get(group.event.id)||[]));
+    return {batch,version:Number(current.version),list,byEvent,replaced,fingerprint:model.hash([batch.groups,Number(current.version)]),replacements:batch.groups.filter((_,index)=>replaced[index]).map(group=>group.event.eventLabel+' · '+group.event.sex+' · '+group.event.sessionLabel+(group.seriesNumber?' · Série '+group.seriesNumber:''))};
+  }
+  async function batchReceipt(id,batch){
+    const receipt=await q('SELECT after_json FROM livepalmes_direct_publications WHERE environment=? AND competition_id=? AND operation_key=? LIMIT 1',[...scope(id),model.hash([batch.operationKey,null])]);
+    if(!receipt.length)return null;
+    if(read(receipt[0].after_json).contentHash!==batch.contentHash)throw fail('Identifiant déjà utilisé pour un autre contenu.','aborted');
+    return {ok:true,count:batch.count,groups:batch.groups.length,replayed:true};
+  }
+  async function publishBatch(id,actor,input){
+    const batch=model.prepareBatch(input,await native(id)),previous=await batchReceipt(id,batch);if(previous)return previous;
+    const previewed=await previewBatch(id,input);
+    if(input.fingerprint!==previewed.fingerprint)throw fail('L’aperçu a changé. Contrôler de nouveau avant publication.','aborted');
+    if(previewed.replacements.length&&input.confirmReplacement!==true)throw fail('Confirmer le remplacement des données déjà publiées.');
+    return transaction(id,actor,previewed.version,async(c)=>{
+      for(let index=0;index<batch.groups.length;index++){
+        const prepared=batch.groups[index];
+        const before=(previewed.byEvent.get(prepared.event.id)||[]).filter(row=>prepared.seriesNumber==null||Number(row.series_number)===prepared.seriesNumber);
+        await applyPrepared(c,id,actor,prepared,{operationKey:model.hash([batch.operationKey,input.groups[index].operationKey]),batchId:batch.operationKey},previewed.list,before,previewed.replaced[index]);
+      }
+      await checkMeetLimit(c,id);
+      await journal(c,id,actor,{action:'publish-batch',operationKey:batch.operationKey,batchId:batch.operationKey,after:{contentHash:batch.contentHash,count:batch.count,groups:batch.groups.length}});
+      return {ok:true,count:batch.count,groups:batch.groups.length};
     });
   }
   async function visibility(id,actor,input) {
@@ -113,6 +162,6 @@ function createStore(pool,environment) {
   async function document(id,actor,input,metadata) {
     return transaction(id,actor,input.version,async(c,current)=>{const before=read(current.documents_json,[]),after=before.filter(d=>d.id!==metadata.id);after.push(metadata);if(after.length>20)throw new TypeError("20 documents complets au maximum.");await execute(c,"UPDATE livepalmes_direct_competitions SET documents_json=? WHERE environment=? AND competition_id=?",[json(after),...scope(id)]);await journal(c,id,actor,{action:'document',before,after,source:{type:'pdf',name:metadata.title,hash:metadata.hash},operationKey:input.operationKey});return {ok:true,document:metadata};});
   }
-  return {native,config,access,detail,settings,preview,publish,visibility,grants,grant,history,document,scope,q,eventView,configView};
+  return {native,config,access,detail,settings,preview,publish,previewBatch,publishBatch,visibility,grants,grant,history,document,scope,q,eventView,configView};
 }
 module.exports={createStore,fail};
