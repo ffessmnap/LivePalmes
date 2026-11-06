@@ -20,6 +20,16 @@ async function main(){
  assert.equal(group.seriesFingerprint,'a'.repeat(64));assert.equal(group.rows[0].entryTime,'595999');assert.equal(group.rows[1].resultStatus,'dns');assert.equal(group.rows[0].lastName,'EXEMPLE');
  assert.doesNotThrow(()=>require('../functions/nap-direct-model').prepare(group,{id:'legacy-nap-900001',date:'2026-11-07'}),'Un TXT d’une série est accepté quand l’épreuve comporte plusieurs horaires');
  assert.equal(snapshot.events[0].heatSchedule.length,2,'Les horaires du snapshot restent intacts');
+ assert.deepEqual(txt.laneMapping({txtFirstLane:'1',seriesFirstLane:'2'}),{txtFirstLane:1,seriesFirstLane:2,offset:1});
+ const shiftedBody=Array.from({length:6},(_,i)=>`${i+1}:0110${String(i).padStart(2,'0')}:000000:000000:000000:000000:000000`).join('\n'),shiftedFile={...file,text:shiftedBody},shiftedSnapshot={...snapshot,entries:Array.from({length:6},(_,i)=>({...snapshot.entries[0],key:'lane-'+i,lastName:'NAGEUR '+i,lane:i+2}))};
+ assert.throws(()=>txt.buildGroup(shiftedFile,shiftedSnapshot,'event'),/Répartition/,'Un décalage ne doit jamais être deviné');
+ const shifted=txt.buildGroup(shiftedFile,shiftedSnapshot,'event',{txtFirstLane:1,seriesFirstLane:2});
+ assert.deepEqual(shifted.rows.map(row=>row.lane),[2,3,4,5,6,7]);assert.deepEqual(shifted.rows.map(row=>row.lastName),Array.from({length:6},(_,i)=>'NAGEUR '+i));
+ assert.deepEqual(txt.parse(name,shiftedBody).rows.map(row=>row.lane),[1,2,3,4,5,6],'TXT original intact');
+ const reversed=txt.buildGroup(shiftedFile,{...shiftedSnapshot,entries:shiftedSnapshot.entries.map(row=>({...row,lane:row.lane-2}))},'event',{txtFirstLane:1,seriesFirstLane:0});assert.equal(reversed.rows[0].lane,0,'Décalage négatif explicite');
+ for(const value of ['',-1,21,1.5])assert.throws(()=>txt.laneMapping({txtFirstLane:value,seriesFirstLane:1}),/Premières lignes/);
+ assert.throws(()=>txt.buildGroup(shiftedFile,shiftedSnapshot,'event',{txtFirstLane:1,seriesFirstLane:20}),/Décalage/);
+ assert.throws(()=>txt.buildGroup(shiftedFile,shiftedSnapshot,'event',{txtFirstLane:2,seriesFirstLane:3}),/Décalage/);
  assert.throws(()=>txt.buildGroup(file,{...snapshot,entries:snapshot.entries.slice(0,1)},'event'),/Répartition/);
  assert.throws(()=>txt.buildGroup(file,snapshot,'missing'),/Association/);
  assert.throws(()=>txt.buildGroup(file,{...snapshot,events:[{...snapshot.events[0],eventCode:'200sf'}]},'event'),/Association/);

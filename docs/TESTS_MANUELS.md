@@ -2,6 +2,16 @@
 
 <!-- description: Checklist de tests manuels à exécuter avant une publication ou après une modification sensible. -->
 
+## Direct : passages sous la ligne, décalage et veille compacte — 6 novembre 2026
+
+- Vérifier ville, date/plage et bassin dans le bandeau public, sans « Séries et résultats ». Tester club sur huit caractères à 390/320 px, défilement limité au tableau et hauteur des lignes inchangée.
+- Sur un résultat avec passages, ouvrir/replier le bouton +/− au toucher, Entrée et Espace : détail immédiatement sous la ligne, sans ouvrir la fiche, aucun appel réseau et ouverture conservée lors du rendu. Le nom ouvre toujours le programme ; aucune commande si aucun passage. Tableau Passage/Cumul/Split lisible après défilement horizontal.
+- Relais 4 × 100 : vérifier les quatre splits dont le dernier par différence avec le temps final. Retirer un cumul intermédiaire : split correspondant « — », aucun temps inventé. Tester aussi relais 4 × 50, DSQ sans arrivée et individuel sans passage/50 m.
+- Choisir une compétition : bloc saison/compétition masqué, bouton Changer de compétition accessible ; veille avant le bilan, import PDF replié si épreuves présentes. Bilan actualisé pendant la veille.
+- Séries PDF en lignes 2–7 et TXT 1–6 : régler premières lignes TXT=1 et séries=2, vérifier le décalage +1 et les bonnes identités/numéros publiés. Sans ce réglage, refuser la répartition incompatible ; tester décalage négatif, zéro, valeur invalide et débordement. Les réglages restent verrouillés pendant la veille.
+- Provoquer un TXT incompatible : arrêt automatique, alerte persistante en haut (`role=alert`), pastille En pause, aucune publication de ce lot. Réparer puis reprendre explicitement ; vérifier la disparition de l'alerte et la reprise du suivi. Changer de compétition arrête la surveillance.
+- Tests automatisés et navigateur sur données fictives, sans publication réelle. La recette WinPalme authentifiée sur le poste du pilote reste à effectuer après TEST.
+
 ## Direct : lecture, bilan compact et passages — 6 novembre 2026
 
 - Public sur ordinateur et téléphone : nom de famille en majuscules, prénom inchangé, une ligne compacte ; absent/595999 = tiret, sans écart. Ouvrir une fiche et vérifier la même présentation et les passages correctement nommés.
