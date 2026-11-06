@@ -22,6 +22,7 @@ function event(input,competition) {
   if((input.date||competition.date)<competition.date||(input.date||competition.date)>(competition.endDate||competition.date))throw new TypeError("Date hors de la compétition du calendrier.");
   const identity=[competition.id,code,sex,phase,session];
   const schedule={};
+  if(input.expectedSeries!=null){const expected=Number(input.expectedSeries);if(!Number.isInteger(expected)||expected<1||expected>1000)throw new TypeError('Nombre de séries attendu invalide.');schedule.expectedSeries=expected;}
   if(input.heatSchedule!=null){
     if(!Array.isArray(input.heatSchedule)||input.heatSchedule.length>1000)throw new TypeError("Horaires des séries invalides.");
     const seen=new Set();schedule.heatSchedule=input.heatSchedule.map(heat=>{

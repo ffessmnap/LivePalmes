@@ -37,7 +37,7 @@
         } else group.rows.push({...row});
       });
     });
-    const events = source.map(group => ({...group.event,id:eventId(group.event),publication:group.publication}));
+    const events = source.map(group => ({...group.event,id:eventId(group.event),publication:group.publication,progress:global.LivePalmesDirectPresentation.stats(group.event,group.rows.map(row=>({series:row.series,seed:time(row.entryTime),result:{cs:time(row.resultTime).cs,status:row.resultStatus||''}})))}));
     const selectedEventId = events.some(e => e.id === event) ? event : events[0].id;
     const entries = source.flatMap((group,index) => (view === 'club' || eventId(group.event) === selectedEventId) ? group.rows.map((row,i) => {
       const seed = time(row.entryTime), parsed = time(row.resultTime), result = {raw:parsed.raw,cs:parsed.cs,status:row.resultStatus || ''};

@@ -1,7 +1,11 @@
 "use strict";
 const {createStore,fail}=require("./nap-direct-store"),model=require("./nap-direct-model");
 const {SELECT_EVENT,EVENT_JOINS,eventFromRow}=require("./nap-calendar-event");
-const cache=new Map(),pending=new Map();
+const cache=new Map(),pending=new Map(),programs=new Map();
+async function cachedProgram(store,id,key){
+  if(!programs.has(key)){if(programs.size>=100)programs.delete(programs.keys().next().value);const request=store.program(id).catch(error=>{programs.delete(key);throw error;});programs.set(key,request);}
+  return programs.get(key);
+}
 async function readPublic(pool,environment,input) {
   const id=model.competitionId(input.id),store=createStore(pool,environment);
   if(input.eventId&&!/^[a-f0-9]{64}$/.test(input.eventId))throw new TypeError("Épreuve invalide.");
@@ -14,7 +18,7 @@ async function readPublic(pool,environment,input) {
   let payload=cache.get(key);
   if(!payload) {
     if(!pending.has(key))pending.set(key,(async()=>{
-      const events=await store.q(`SELECT * FROM livepalmes_direct_events WHERE environment=? AND competition_id=? ORDER BY program_order,id LIMIT ${model.MAX_EVENTS+1}`,store.scope(id));
+      const events=await cachedProgram(store,id,`${environment}:${id}:${metadata.direct_revision}`);
       if(events.length>model.MAX_EVENTS)throw fail("Programme trop volumineux.");
       const visible=events.filter(e=>{const p=model.parseJson(e.publication_state_json);return p.series||p.results;});
       const selected=input.eventId?visible.find(e=>e.id===input.eventId):visible[0];
@@ -23,7 +27,7 @@ async function readPublic(pool,environment,input) {
       if(entries.length>limit)throw fail("Affichage trop volumineux.");
       const eventMap=new Map(visible.map(e=>[e.id,e]));
       const publicRows=entries.flatMap(row=>{const event=eventMap.get(row.event_id);if(!event)return [];const p=model.parseJson(event.publication_state_json);return model.visibleEntry(row,p.series,p.results)?[{...model.publicEntry(row,Boolean(p.series),Boolean(p.results)),eventId:row.event_id}]:[];});
-      const result={view:clubView?'club':'event',events:visible.map(store.eventView),selectedEventId:selected?.id||null,entries:publicRows};
+      const result={view:clubView?'club':'event',events:visible.map(row=>{const event=store.eventView(row);return {...event,progress:require('./nap-direct-progress').visible(event.progress,event.publication)};}),selectedEventId:selected?.id||null,entries:publicRows};
       if(cache.size>=100)cache.delete(cache.keys().next().value);cache.set(key,result);return result;
     })().finally(()=>pending.delete(key)));
     payload=await pending.get(key);
