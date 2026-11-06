@@ -64,6 +64,13 @@ async function main(){
     await pool.execute("INSERT INTO livepalmes_direct_access (environment,competition_id,user_uid,can_manage,allowed_consoles_json,active,expires_at,version,created_at,updated_at,created_by,updated_by) VALUES ('test',?,'fixture-delegate',1,JSON_ARRAY('computer'),1,NULL,1,UTC_TIMESTAMP(6),UTC_TIMESTAMP(6),'fixture','fixture')",[id]);
     const entryColumns=schema.tables.find(table=>table.name==='livepalmes_direct_entries').columns.map(column=>column.name),copyColumns=entryColumns.map(name=>name==='environment'?"'production'":'`'+name+'`');
     await pool.execute('INSERT INTO livepalmes_direct_entries ('+entryColumns.map(name=>'`'+name+'`').join(',')+') SELECT '+copyColumns.join(',')+' FROM livepalmes_direct_entries WHERE environment=? AND competition_id=? LIMIT 1',['test',id]);
+    const backup = require('../tools/direct-production-data');
+    const saved = await backup.snapshot(pool);
+    assert.equal(saved.data.livepalmes_direct_entries.length, 1);
+    assert.ok(Object.values(saved.data).flat().every(row => row.environment === 'production'), 'La sauvegarde exclut chaque ligne TEST');
+    process.env.DIRECT_RESTORE_ALLOWED = 'isolated-ci';
+    process.env.DIRECT_RESTORE_PASSWORD = process.env.NAP_TEAM_FIXTURE_PASSWORD;
+    await backup.restoreIsolated(JSON.parse(JSON.stringify(saved)));
     let resetResult=await store.reset(id,actor,{phase:'begin',version:Number(resetBefore.version),confirmation:'supprimer-direct-'+id},async()=>({deleted:0,more:false}));
     await assert.rejects(readPublic(wrapped,'test',{id}),error=>error.directCode==='not-found','Page publique masquée pendant le nettoyage');
     let uploads=0;await assert.rejects(store.document(id,actor,{version:resetResult.version,operationKey:randomUUID()},async()=>{uploads++;}),/Réinitialisation/);assert.equal(uploads,0,'Aucun upload concurrent au nettoyage');

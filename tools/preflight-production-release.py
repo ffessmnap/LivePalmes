@@ -147,9 +147,14 @@ def main():
         if os.environ.get('PLAN'):
             cycle.require_access_request_selection(plan, selected)
         source_only = set(extra) - set(notification) - set(public_nap) - set(access_requests)
+        direct_names = cycle.direct_release.approved(plan) if os.environ.get('PLAN') else []
+        report['directRelease'] = bool(direct_names)
         bcc_names = cycle.approved_bcc_functions(plan) if os.environ.get('PLAN') else []
         bcc_contract = cycle.bcc.for_request(plan).contract() if bcc_names else {}
         allowed_new = {bcc_contract['worker']} if bcc_names and not bcc_contract.get('existingWorker') else set()
+        if direct_names:
+            cycle.require(len(functions) == 116 and not any(f['name'].split('/')[-1] == cycle.direct_release.NEW for f in functions), 'Inventaire Direct initial different')
+            allowed_new = {cycle.direct_release.NEW}
         team_scope = cycle.team_trophy.approved(plan) if os.environ.get('PLAN') else []
         if team_scope:
             cycle.team_trophy.initial(functions)
@@ -198,6 +203,10 @@ def main():
                 str(Path(__file__).with_name('prepare-production-notifications.js')), report['candidate']], text=True))
             report['notificationExpectedSecrets'] = contract['expectedSecrets']
         app_checks = set(f.get("serviceConfig", {}).get("environmentVariables", {}).get("LIVEPALMES_ENFORCE_APP_CHECK", "false") for f in selected_functions if f['name'].split('/')[-1] not in source_only)
+        if direct_names:
+            reference = next(f for f in functions if f['name'].split('/')[-1] == 'getNapPerformanceAdministration')
+            app_checks = {reference['serviceConfig'].get('environmentVariables', {}).get('LIVEPALMES_ENFORCE_APP_CHECK', 'false')}
+            report['directRuntimeAccount'] = reference['serviceConfig']['serviceAccountEmail']
         if not app_checks and set(selected).issubset(set(public_nap) | source_only):
             app_checks = {'false'}  # New public HTTP reader; no callable App Check setting.
         if selected and (len(app_checks) != 1 or not app_checks.issubset({"true", "false"})):

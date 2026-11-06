@@ -102,6 +102,13 @@ def main():
             raise ValueError('Mode complement NAP invalide')
         guard.guard(Path(os.environ['PLAN']), sys.argv[1:] == ['--after'])
         return
+    if request.get('directRelease'):
+        spec = importlib.util.spec_from_file_location('direct_mail_guard', Path(__file__).with_name('direct-production-policy.py'))
+        guard = importlib.util.module_from_spec(spec); spec.loader.exec_module(guard)
+        if sys.argv[1:] not in ([], ['--after']):
+            raise ValueError('Mode garde Direct invalide')
+        guard.guard(Path(os.environ['PLAN']), sys.argv[1:] == ['--after'])
+        return
     if request.get('licenseReportRelease'):
         spec = importlib.util.spec_from_file_location('license_mail_guard', Path(__file__).with_name('check-license-report-release.py'))
         guard = importlib.util.module_from_spec(spec); spec.loader.exec_module(guard)
