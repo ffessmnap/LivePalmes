@@ -38,6 +38,7 @@ function entry(row) {
   const relay=row.relay===true,sourceId=clean(row.sourceEntryId,100)||null;
   if(!lastName||!club||(!relay&&(!Number.isInteger(year)||year<1900||year>2100)))throw new TypeError("Identité, année ou club manquant : ligne à contrôler.");
   const identity=[relay?'relay':'individual',lastName.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase(),firstName.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase(),year,club.toLowerCase()];
+  if(relay&&sourceId)identity.push(sourceId);
   const seed=time(row.entryTime,true),result=time(row.resultTime),status=clean(row.resultStatus,32);
   if(seed.status==="invalid"||result.status==="invalid")throw new TypeError("Temps non reconnu : ligne à contrôler.");
   const series=Number(row.series)||null,lane=row.lane==null||row.lane===''?null:Number(row.lane),rank=Number(row.rank)||null;
@@ -52,7 +53,15 @@ function prepare(input,competition) {
   for(const row of rows){if(seen.has(row.key)||row.sourceEntryId&&sources.has(row.sourceEntryId))throw new TypeError("Participation ambiguë ou dupliquée dans le lot.");seen.add(row.key);if(row.sourceEntryId)sources.add(row.sourceEntryId);if(input.kind==='results'&&!row.result.cs&&!row.status)throw new TypeError("Résultat sans temps ni statut.");}
   const seriesNumber=input.seriesNumber==null?null:Number(input.seriesNumber);
   if(seriesNumber!=null&&(!Number.isInteger(seriesNumber)||seriesNumber<1||seriesNumber>1000||rows.some(row=>row.series!==seriesNumber)||meet.heatSchedule?.some(heat=>heat.number!==seriesNumber)))throw new TypeError("Périmètre de série incohérent.");
-  return {kind:input.kind,seriesNumber,event:meet,rows,source:{type:clean(input.source?.type||"pdf",24),name:clean(input.source?.name,200),hash:clean(input.source?.hash,64)}};
+  const guard={};
+  if(input.seriesFingerprint!=null){
+    if(input.kind!=='results'||!seriesNumber||!/^[a-f0-9]{64}$/.test(input.seriesFingerprint))throw new TypeError('Répartition de série invalide.');
+    guard.seriesFingerprint=input.seriesFingerprint;
+  }
+  return {kind:input.kind,seriesNumber,event:meet,rows,...guard,source:{type:clean(input.source?.type||"pdf",24),name:clean(input.source?.name,200),hash:clean(input.source?.hash,64)}};
+}
+function seriesFingerprint(rows){
+  return hash(rows.filter(row=>Boolean(row.has_series)).map(row=>[row.participant_key,row.source_entry_id||null,Number(row.series_number),row.lane==null?null:Number(row.lane),row.category_code||'',row.entry_time_raw||'']).sort((a,b)=>String(a[0]).localeCompare(String(b[0]))));
 }
 function publicEntry(row,showSeries,showResults) {
   showSeries=showSeries&&Boolean(row.has_series);showResults=showResults&&Boolean(row.has_result);
@@ -78,4 +87,4 @@ function prepareBatch(input,competition){
   return {groups,count,contentHash:hash(groups),operationKey:hash(['direct-batch',input.groups.map(group=>group.operationKey)])};
 }
 const visibleEntry=(row,series,results)=>Boolean(series&&row.has_series||results&&row.has_result);
-module.exports={ROLES,MAX_EVENTS,MAX_ENTRIES,MAX_MEET_ENTRIES,clean,hash,parseJson,competitionId,time,event,entry,prepare,prepareBatch,publicEntry,visibleEntry};
+module.exports={ROLES,MAX_EVENTS,MAX_ENTRIES,MAX_MEET_ENTRIES,clean,hash,parseJson,competitionId,time,event,entry,prepare,prepareBatch,publicEntry,visibleEntry,seriesFingerprint};

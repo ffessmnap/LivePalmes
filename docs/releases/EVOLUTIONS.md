@@ -2,6 +2,13 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 6 novembre — Surveillance TXT WinPalme, relais et classements Direct
+
+- Besoin autorisé : commencer la surveillance dans Chrome/Edge sans attendre les séries TXT, corriger les équipes de relais homonymes et calculer scratch et places par catégorie. Antoine confirme ex æquo 1/2/2/4, statuts sans rang et place propre à chaque catégorie en multisélection. Destination TEST uniquement.
+- Périmètre : lecteur TXT local, confirmations de dossier/association/publication automatique, fichiers présents exclus par défaut, stabilité et reprise, contrôle serveur des répartitions, identités de relais distinctes, classements locaux et documentation. Source des séries toujours PDF ; aucune nouvelle table/colonne ni modification de droits ou de données natives. Aucun TXT brut stocké, aucune publication réelle par les essais.
+- Données examinées localement : 63 TXT d'Auray, 279 lignes, 246 chronos individuels et 13 forfaits/abandons conformes au protocole. Les 20 temps de relais figurent dans les résultats mais plusieurs positions diffèrent du PDF des séries ; le système exige donc une grille à jour. Pas d'exemple réel de DSQ disponible : prise en charge textuelle testée sur données fictives, recette WinPalme encore attendue. Après correction, les 18 épreuves du PDF et leurs 21 équipes de relais passent le modèle local.
+- Préparation : branche `feature/direct-txt-surveillance`, PR, CI et preuve TEST à compléter. Tests ciblés hors réseau et navigateur en cours ; MySQL 5.7 isolé et vérification globale requis dans la CI. Aucune validation utilisateur de la version déployée revendiquée.
+
 ### 6 novembre — Maquette Direct validée et publication groupée
 
 - Besoin : corriger l'import des relais et permettre un contrôle/publication compact de toutes les épreuves ; reprendre l'interface French Touch avec scratch automatique, horaires, fenêtre nageur et club mis en évidence.

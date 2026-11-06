@@ -24,6 +24,7 @@ function createService({getPool,environment,authorize,lookupUser,matchRegion,sto
     if(input.action==='detail')return {...await store.detail(id,input.eventId),permissions:{manage:permissions.manage,delegate:permissions.root,roles:permissions.roles}};
     const canWrite=permissions.manage||permissions.roles.includes('computer');
     if(!canWrite)throw fail("Bureau des performances requis pour cette action.","permission-denied");
+    if(input.action==='watchContext')return store.watchContext(id);
     if(input.action==='settings') {
       if(!permissions.manage&&!permissions.roles.includes('computer'))throw fail("Gestion du Direct requise.","permission-denied");
       if(!await store.config(id)&&!permissions.root)throw fail("Activation réservée au responsable régional ou national.","permission-denied");
