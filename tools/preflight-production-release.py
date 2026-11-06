@@ -147,9 +147,14 @@ def main():
         if os.environ.get('PLAN'):
             cycle.require_access_request_selection(plan, selected)
         source_only = set(extra) - set(notification) - set(public_nap) - set(access_requests)
+        direct_names = cycle.direct_release.approved(plan) if os.environ.get('PLAN') else []
+        report['directRelease'] = bool(direct_names)
         bcc_names = cycle.approved_bcc_functions(plan) if os.environ.get('PLAN') else []
         bcc_contract = cycle.bcc.for_request(plan).contract() if bcc_names else {}
         allowed_new = {bcc_contract['worker']} if bcc_names and not bcc_contract.get('existingWorker') else set()
+        if direct_names:
+            cycle.require(len(functions) == 116 and not any(f['name'].split('/')[-1] == cycle.direct_release.NEW for f in functions), 'Inventaire Direct initial different')
+            allowed_new = {cycle.direct_release.NEW}
         team_scope = cycle.team_trophy.approved(plan) if os.environ.get('PLAN') else []
         if team_scope:
             cycle.team_trophy.initial(functions)
