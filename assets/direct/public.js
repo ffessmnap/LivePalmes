@@ -16,7 +16,9 @@
     const categories=new Set((state.data.entries||[]).map(row=>category(row.category))),pool=String(state.data.competition.poolLength);
     return [...(data.franceRecords||[]),...(data.records||[])].filter(row=>{
       const type=String(row.recordType||''),cat=category(row.category),sex=String(row.sex||'');
-      if(String(row.course||'').toLowerCase()!==event.eventCode.toLowerCase().replace(/-mi$/,'')||sex!==event.sex||String(row.bassin)!==pool||row.placeholderRecord)return false;
+      // MPF are a common reference for both pools. `length` is the race distance.
+      if(String(row.course||'').toLowerCase()!==event.eventCode.toLowerCase().replace(/-mi$/,'')||sex!==event.sex||row.placeholderRecord)return false;
+      if((type==='RF'||type==='RFJ')&&row.bassin&&String(row.bassin)!=='50')return false;
       if(pool==='25')return type!=='RF'&&type!=='RFJ'&&categories.has(cat);
       if(pool==='50')return type==='RF'?categories.has('S')||categories.has('SE')||categories.has('SENIOR'):type==='RFJ'?categories.has('J')||categories.has('JU')||categories.has('JUNIOR'):categories.has(cat)&&!['S','SE','SENIOR','J','JU','JUNIOR'].includes(cat);
       return false;
