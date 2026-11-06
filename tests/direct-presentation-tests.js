@@ -41,4 +41,7 @@ assert.equal(ui.dateRange('2026-11-07','2026-11-07'),'7 novembre 2026');
 assert.equal(ui.dateRange('2026-11-07','2026-11-10').replace(/\s+/g,' '),'7–10 novembre 2026');
 assert.ok(ui.dateRange('2026-11-30','2026-12-02').includes('décembre'),'Plage sur deux mois');assert.equal(ui.dateRange('',''),'');
 const summary=LivePalmesDirectAdminSummary.render({events:[{...event,progress:partial}]});assert.ok(summary.includes('Épreuves importées'));assert.ok(summary.includes('complètes'));assert.ok(summary.includes('En cours'));assert.ok(summary.includes('data-visibility'));
+const sessions=require('../assets/direct/sessions'),morning={...event,date:'2026-11-07',sessionKey:'1',sessionLabel:'Matin'},afternoon={...event,date:'2026-11-07',sessionKey:'2',sessionLabel:'Après-midi'};
+assert.equal(sessions.filter([morning],'all','data-session'),'','Une seule session : pas de filtre');assert.equal(sessions.options([morning,{...morning,date:'2026-11-08'}]).length,2,'Même numéro sur deux dates distingué');
+const filtered=LivePalmesDirectAdminSummary.render({events:[{...morning,progress:partial},{...afternoon,progress:complete}]},sessions.key(afternoon));assert.ok(filtered.includes('data-summary-session'));assert.ok(!filtered.includes('Matin</span>'),'Le tableau suit la session choisie');
 console.log('Présentation Direct : noms, tirets, avancement partiel/complet/masqué, limites, bilans et distances des passages vérifiés.');
