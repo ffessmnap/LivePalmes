@@ -1,21 +1,11 @@
-name: Sauvegarder et preparer les seules donnees Direct PROD
+name: Verifier et conserver une sauvegarde Direct PROD chiffree
 on:
   workflow_dispatch:
     inputs:
-      mode:
-        type: choice
-        required: true
-        default: check
-        options: [check, backup, activate]
-      confirmation:
-        type: string
-        required: false
       encrypted_snapshot:
         description: Snapshot Direct local chiffre avec la cle publique de sauvegarde CI
         type: string
-        required: false
-  schedule:
-    - cron: '17 * * * *'
+        required: true
 permissions:
   contents: read
 concurrency:
@@ -23,20 +13,19 @@ concurrency:
   cancel-in-progress: false
 jobs:
   direct:
-    if: github.ref == 'refs/heads/main' && github.run_attempt == 1 && (github.event_name == 'workflow_dispatch' || vars.LIVEPALMES_DIRECT_BACKUP_ENABLED == 'true')
+    if: github.ref == 'refs/heads/main' && github.run_attempt == 1
     runs-on: ubuntu-latest
     timeout-minutes: 12
     environment: production
     env:
       TARGET_FIREBASE_PROJECT: livepalmes
       DIRECT_APP_DIRECTORY: ${{ github.workspace }}/candidate
-      DIRECT_DATA_MODE: ${{ inputs.mode || 'backup' }}
-      DIRECT_ACTIVATION_CONFIRMATION: ${{ inputs.confirmation }}
-      DIRECT_DATA_OUTPUT: ${{ runner.temp }}/direct-production
       DIRECT_ENCRYPTED_SNAPSHOT: ${{ inputs.encrypted_snapshot }}
       DIRECT_RESTORE_ALLOWED: isolated-ci
       DIRECT_RESTORE_PASSWORD: direct-restore-isolated-only
     steps:
+      - name: Initialiser le dossier temporaire de sauvegarde
+        run: echo "DIRECT_DATA_OUTPUT=$RUNNER_TEMP/direct-production" >> "$GITHUB_ENV"
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
@@ -45,11 +34,6 @@ jobs:
           ref: 5b76e1e37eddba618b25c41c92a8168446fe4115
           path: candidate
           persist-credentials: false
-      - name: Controler le mode et la confirmation avant les acces
-        run: |
-          if [ "$DIRECT_DATA_MODE" = activate ]; then
-            test "$DIRECT_ACTIVATION_CONFIRMATION" = direct-production-paris-5220
-          fi
       - uses: actions/setup-node@v7
         with:
           node-version: '22'
@@ -59,7 +43,6 @@ jobs:
         with:
           credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_BACKEND }}
           project_id: livepalmes
-      - uses: google-github-actions/setup-gcloud@v3
       - name: Demarrer MySQL 5.7 de restauration isolee
         run: |
           docker run -d --name direct-restore -e MYSQL_ROOT_PASSWORD="$DIRECT_RESTORE_PASSWORD" -e MYSQL_ROOT_HOST=% -p 127.0.0.1:33317:3306 mysql:5.7.30
