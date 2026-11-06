@@ -75,6 +75,7 @@ function createStore(pool,environment) {
     if(prepared.seriesFingerprint)throw fail('Utiliser la publication groupée pour les résultats TXT contrôlés.');
     if(!current||current.state!=='active')throw fail("Activer le Direct avant la publication.");
     const before=await entries(id,prepared.event.id);
+    checkRelayResultMapping(prepared,before);
     return {prepared,version:Number(current.version),replaces:before.some(row=>prepared.kind==='series'?Boolean(row.entry_time_raw)||row.series_number!=null:Boolean(row.result_time_raw)||Boolean(row.result_status)),fingerprint:model.hash([prepared,Number(current.version)])};
   }
   async function publish(id,actor,input) {
@@ -91,7 +92,7 @@ function createStore(pool,environment) {
       return {ok:true,eventId:prepared.event.id,count:prepared.rows.length};
     });
   }
-  async function applyPrepared(c,id,actor,prepared,input,list,before,replaces){
+  async function applyPrepared(c,id,actor,prepared,input,list,before,replaces,allBefore=before){
       const e=prepared.event;
       if(!list.some(row=>row.id===e.id)&&list.length>=model.MAX_EVENTS)throw fail("Nombre maximal d’épreuves atteint.");
       const current=list.find(row=>row.id===e.id),publication={...read(current?.publication_state_json),[prepared.kind]:true};
@@ -104,7 +105,16 @@ function createStore(pool,environment) {
       const eventLabel=prepared.seriesFingerprint?current.event_label:e.eventLabel;
       await execute(c,"INSERT INTO livepalmes_direct_events (environment,competition_id,id,source_event_id,event_code,event_label,sex,phase,event_date,session_key,session_label,program_order,event_number,scheduled_at,publication_state_json,version,created_at,updated_at,created_by,updated_by) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,1,UTC_TIMESTAMP(6),UTC_TIMESTAMP(6),?,?) ON DUPLICATE KEY UPDATE source_event_id=COALESCE(VALUES(source_event_id),source_event_id),publication_state_json=VALUES(publication_state_json),event_label=VALUES(event_label),program_order=VALUES(program_order),scheduled_at=VALUES(scheduled_at),version=version+1,updated_at=UTC_TIMESTAMP(6),updated_by=VALUES(updated_by)",[...scope(id),e.id,e.sourceEventId,e.eventCode,eventLabel,e.sex,e.phase,e.date,e.sessionKey,e.sessionLabel,order,e.eventNumber,scheduledAt,json(publication),actor.uid,actor.uid]);
       // Each batch updates only its own facet. Series imported after results preserve results.
-      const values=prepared.rows.map(row=>[...scope(id),e.id,row.key,row.sourceEntryId,row.kind,row.swimmerId,row.clubId,row.lastName,row.firstName,row.birthYear,row.club,row.category,row.series,row.lane,row.seed.raw,row.seed.cs,row.seed.status,row.result.raw,row.result.cs,row.status,row.rank,json(row.members),json(row.splits),prepared.kind==='series'?1:0,prepared.kind==='results'?1:0,actor.uid,actor.uid]);
+      const values=prepared.rows.map(row=>{
+        let key=row.key,sourceEntryId=row.sourceEntryId;
+        if(row.kind==='relay'&&!prepared.seriesFingerprint){
+          const base=relayKey(row),matches=allBefore.filter(old=>old.entry_kind==='relay'&&relayKey(old)===base),position=matches.filter(old=>row.series&&row.lane!=null&&Number(old.series_number)===row.series&&Number(old.lane)===row.lane);
+          const previous=position.length===1?position[0]:matches.length===1&&(prepared.kind==='results'||!row.sourceEntryId)?matches[0]:null;
+          if(previous){key=previous.participant_key;sourceEntryId=previous.source_entry_id||null;}
+          else if(prepared.kind==='series'&&matches.some(old=>old.has_result))throw fail('Un résultat de relais existe sans association certaine. Contrôler son association avec les séries complètes avant de réimporter.');
+        }
+        return [...scope(id),e.id,key,sourceEntryId,row.kind,row.swimmerId,row.clubId,row.lastName,row.firstName,row.birthYear,row.club,row.category,row.series,row.lane,row.seed.raw,row.seed.cs,row.seed.status,row.result.raw,row.result.cs,row.status,row.rank,json(row.members),json(row.splits),prepared.kind==='series'?1:0,prepared.kind==='results'?1:0,actor.uid,actor.uid];
+      });
       const columns='environment,competition_id,event_id,participant_key,source_entry_id,entry_kind,swimmer_id,club_id,last_name,first_name,birth_year,club_label,category_code,series_number,lane,entry_time_raw,entry_time_cs,entry_time_status,result_time_raw,result_time_cs,result_status,published_rank,relay_members_json,splits_json,has_series,has_result,created_by,updated_by';
       const facet=prepared.kind==='series'?['series_number','lane','entry_time_raw','entry_time_cs','entry_time_status','has_series']:['result_time_raw','result_time_cs','result_status','published_rank','splits_json','has_result'];
       const shared=prepared.seriesFingerprint?[]:['category_code','club_label','relay_members_json'];
@@ -123,6 +133,11 @@ function createStore(pool,environment) {
     if(Number(count[0]?.event_total)>model.MAX_ENTRIES)throw fail('Volume maximal par épreuve dépassé (1 000 participations).');
   }
   function replacesScope(prepared,rows){return rows.some(row=>(prepared.seriesNumber==null||Number(row.series_number)===prepared.seriesNumber)&&(prepared.kind==='series'?Boolean(row.has_series):Boolean(row.has_result)));}
+  function relayKey(row){return model.entry({relay:true,lastName:row.last_name??row.lastName,firstName:row.first_name??row.firstName,club:row.club_label??row.club}).key;}
+  function checkRelayResultMapping(prepared,rows){
+    if(prepared.kind!=='results'||prepared.seriesFingerprint)return;
+    if(prepared.rows.some(row=>row.kind==='relay'&&!row.sourceEntryId&&rows.filter(old=>old.entry_kind==='relay'&&relayKey(old)===relayKey(row)).length>1))throw fail('Plusieurs équipes de relais portent ce nom. Utiliser les résultats TXT associés aux séries pour éviter de confondre les équipes.');
+  }
   async function previewBatch(id,input){
     const batch=model.prepareBatch(input,await native(id)),current=await config(id);
     if(!current||current.state!=='active')throw fail('Activer le Direct avant la publication.');
@@ -130,6 +145,7 @@ function createStore(pool,environment) {
     const all=await q(`SELECT * FROM livepalmes_direct_entries WHERE environment=? AND competition_id=? ORDER BY event_id,series_number,lane,participant_key LIMIT ${model.MAX_MEET_ENTRIES+1}`,scope(id));
     if(all.length>model.MAX_MEET_ENTRIES)throw fail('Compétition trop volumineuse.');
     const byEvent=new Map();for(const row of all){if(!byEvent.has(row.event_id))byEvent.set(row.event_id,[]);byEvent.get(row.event_id).push(row);}
+    for(const group of batch.groups)checkRelayResultMapping(group,byEvent.get(group.event.id)||[]);
     for(const group of batch.groups){if(!group.seriesFingerprint)continue;
       const event=list.find(row=>row.id===group.event.id),before=(byEvent.get(group.event.id)||[]).filter(row=>row.has_series&&Number(row.series_number)===group.seriesNumber);
       if(!event||!read(event.publication_state_json).series||!before.length||model.seriesFingerprint(before)!==group.seriesFingerprint)throw fail('La répartition des séries a changé. Arrêter et reconfigurer la surveillance.','aborted');
@@ -154,7 +170,7 @@ function createStore(pool,environment) {
       for(let index=0;index<batch.groups.length;index++){
         const prepared=batch.groups[index];
         const before=(previewed.byEvent.get(prepared.event.id)||[]).filter(row=>prepared.seriesNumber==null||Number(row.series_number)===prepared.seriesNumber);
-        await applyPrepared(c,id,actor,prepared,{operationKey:model.hash([batch.operationKey,input.groups[index].operationKey]),batchId:batch.operationKey},previewed.list,before,previewed.replaced[index]);
+        await applyPrepared(c,id,actor,prepared,{operationKey:model.hash([batch.operationKey,input.groups[index].operationKey]),batchId:batch.operationKey},previewed.list,before,previewed.replaced[index],previewed.byEvent.get(prepared.event.id)||[]);
       }
       await checkMeetLimit(c,id);
       await journal(c,id,actor,{action:'publish-batch',operationKey:batch.operationKey,batchId:batch.operationKey,after:{contentHash:batch.contentHash,count:batch.count,groups:batch.groups.length}});
