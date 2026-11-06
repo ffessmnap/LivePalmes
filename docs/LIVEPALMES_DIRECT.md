@@ -8,7 +8,9 @@ LivePalmes Direct accompagne les compétitions piscine de tous niveaux issues du
 
 ## Direct multi-compétitions — livraison TEST du 6 novembre 2026
 
-### Pastilles de catégories — préparation TEST du 6 novembre
+Lot regroupé publié sur TEST le 6 novembre à 23 h 43 (Paris), candidat `5b76e1e37eddba618b25c41c92a8168446fe4115`, [publication commune réussie](https://github.com/ffessmnap/LivePalmes/actions/runs/42306711779). Contrôles connectés : quinze fichiers identiques au candidat, public à 1 280/390/320 px sans débordement, 119 fonctions actives avec toutes leurs révisions conservées. Tests de publication sur fixtures uniquement, aucune écriture métier réelle. [Preuves et limites](releases/EVOLUTIONS.md) ; recette de cette nouvelle version attendue.
+
+### Lecture mobile, références et remplissage TXT — livré sur TEST, recette attendue
 
 Complément visuel approuvé par Antoine pendant la livraison précédente : reprendre l'ancienne palette sur le seul libellé de catégorie, dans les séries et les résultats. Le code reçu reste inchangé ; codes WinPalme et libellés déjà connus sont associés à leurs teintes historiques, inconnus neutres. Pas de calcul d'âge ou de reclassement, pas de lecture supplémentaire, pas de changement backend. Pastille compacte avec texte foncé, hauteur inchangée et surbrillance du club conservée ; largeur mobile de catégorie adaptée aux codes à quatre caractères.
 
@@ -16,7 +18,7 @@ Complément TXT précisé ensuite : ignorer les lignes ne contenant que des sép
 
 Dernier complément explicitement demandé : vérifier les codes H40+/H60+ sur mobile, regrouper les références sous un bouton Records et réserver RF/RFJ au bassin 50 m avec chronométrage électronique. Le champ calendrier `competition.timingType`, déjà lu et exposé par le service Direct, pilote ce filtre local ; manuel ou inconnu = MPF de toutes les catégories présentes, seniors/juniors compris, comme en bassin 25 m. Aucun nouveau champ, appel ou calcul sportif. Budget inchangé : une lecture Records existante à l'ouverture, zéro requête pour déplier le panneau ou changer de catégorie.
 
-### Reprise TXT et accès public — préparation TEST du 6 novembre
+### Reprise TXT et accès public — livré sur TEST, recette attendue
 
 Antoine confirme le 6 novembre que la remise à zéro et l'import précédent fonctionnent ; le refus de reprise provenait de la première ligne restée à 1 au lieu de 2. Nouveau lot autorisé : mémorisation locale des premières lignes et associations par origine, compte et compétition, revalidation contre le programme courant, confirmations toujours décochées et dossier choisi explicitement. Aucun préfixe à saisir : détection des noms `<préfixe>_AS_<session>_<épreuve>_<série>_<course>.txt`, y compris dossier initialement vide ; mélange de compétitions toujours bloquant.
 
