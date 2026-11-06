@@ -54,7 +54,8 @@
     if(!event||code(event.eventCode)!==parsed.eventCode||Number(event.sessionKey)!==parsed.session)fail('Association TXT / épreuve à contrôler : '+file.name);
     const entries=snapshot.entries.filter(row=>row.eventId===event.id&&Number(row.series)===parsed.series),fingerprint=snapshot.seriesFingerprints[event.id+':'+parsed.series];
     if(!fingerprint||entries.length!==parsed.rows.length||new Set(entries.map(row=>row.lane)).size!==entries.length||parsed.rows.some(row=>!entries.some(entry=>entry.lane===row.lane)))fail('Répartition différente des séries importées : '+file.name+'. Réimporter les séries à jour.');
-    return {kind:'results',event:{...event},seriesNumber:parsed.series,seriesFingerprint:fingerprint,operationKey:crypto.randomUUID(),source:{type:'winpalme-txt',name:file.name,hash:file.hash},rows:parsed.rows.map(result=>{
+    const eventInput={...event};delete eventInput.heatSchedule;
+    return {kind:'results',event:eventInput,seriesNumber:parsed.series,seriesFingerprint:fingerprint,operationKey:crypto.randomUUID(),source:{type:'winpalme-txt',name:file.name,hash:file.hash},rows:parsed.rows.map(result=>{
       const entry=entries.find(row=>row.lane===result.lane);
       return {...result,series:parsed.series,lastName:entry.lastName,firstName:entry.firstName,birthYear:entry.birthYear,club:entry.club,category:entry.category,relay:entry.kind==='relay',sourceEntryId:entry.sourceEntryId||null,entryTime:entry.seed?.raw||'',relayMembers:entry.members||[]};
     })};
