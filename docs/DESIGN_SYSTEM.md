@@ -4,6 +4,10 @@
 
 ## Direct multi-compétitions — 6 novembre 2026
 
+Import des séries et remise à zéro : boutons dans le bloc de compétition, import réservé aux séries PDF ; le dépôt de PDF complets reste disponible. Option par fichier « Publier aussi les PDF complets ? », décochée initialement, reprenant le fichier choisi et signalant l'attente des autres épreuves d'un document multisession. Filtre de session/date dans les aperçus et le suivi, affiché uniquement si plusieurs sessions existent ; publication explicitement limitée à la session visible. Une seule session garde les écrans sans filtre.
+
+Suppression : bouton danger « Tout réinitialiser », confirmation mentionnant la compétition et saisie de SUPPRIMER. Pas de confirmation = aucune action. Activation et accès conservés, historique et copies PDF supprimés. Pendant la suppression, état bloquant avec compteurs et bouton de reprise après interruption ; aucune commande d'import tant que le nettoyage est en cours. Boutons du bloc de compétition resserrés sur mobile ; sous-titre redondant du bandeau du bureau retiré.
+
 Retouche de lecture : le nom de famille des nageurs est affiché en majuscules, prénom conservé, y compris dans les fenêtres et aperçus d'import ; les libellés d'équipes restent ceux de la source. Temps d'engagement absent ou sans référence : « — », sans écart, plus d'abréviation « SR ».
 
 Avancement public : pastille « À venir » sans résultat publié, « En cours » avec résultats partiels et classement provisoire, « Terminée » quand tous les engagements connus et toutes les séries attendues ont reçu un résultat ou statut final. La navigation garde ses boutons de 30 px et ajoute un point discret avec état dans le nom accessible. Les places scratch/catégorie restent visibles pendant la publication partielle. Ces états décrivent les publications, sans attester l'horaire réel de la course ou son homologation.

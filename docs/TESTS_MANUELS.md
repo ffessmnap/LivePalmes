@@ -2,6 +2,14 @@
 
 <!-- description: Checklist de tests manuels à exécuter avant une publication ou après une modification sensible. -->
 
+## Direct : remise à zéro et import PDF par session — 6 novembre 2026
+
+- Sur données fictives uniquement pour les essais automatisés : annuler la saisie SUPPRIMER ne doit envoyer aucun appel. Confirmer puis simuler une coupure : page publique masquée, autres publications bloquées, bouton Reprendre ; la reprise termine le nettoyage. Accès, activation, réglages, autres compétitions et environnement voisin restent intacts ; aucun import, historique ou reçu de reset ne subsiste. Ancienne version rejetée après de nouveaux imports.
+- MySQL 5.7 isolé : vrais DELETE par compétition/environnement, garde du verrou avant upload, rollback/reprise, marqueur JSON, délégation conservée et cache public invalidé. Storage fictif : préfixe exact, 51 résultats de liste, lots de 50 et au plus cinq suppressions simultanées ; curseur de page respecté et IAM manquant refusé avant le début. Aucun reset réel de la compétition pilote pendant ces contrôles.
+- Bureau à 1 280/390/320 px : bouton séries PDF en haut, pas de choix d'import des résultats PDF. Une seule sélection du fichier alimente aperçu et PDF public optionnel. Sans option, aucun upload ; avec option, même fichier, après toutes ses épreuves. Coupure upload : séries conservées et reprise PDF proposée.
+- Deux sessions : suivi filtrable sans requête ; aperçu filtré, Tout sélectionner et publication bornés à la session visible. Changer de session invalide le reçu. PDF multisession non publié tant que ses autres épreuves attendent. Une seule session : aucun filtre.
+- Originaux WinPalme et XML hors périmètre ; essai authentifié de la fonctionnalité destructive uniquement après choix explicite d'une compétition et confirmation du pilote.
+
 ## Direct : passages sous la ligne, décalage et veille compacte — 6 novembre 2026
 
 - Vérifier ville, date/plage et bassin dans le bandeau public, sans « Séries et résultats ». Tester club sur huit caractères à 390/320 px, défilement limité au tableau et hauteur des lignes inchangée.

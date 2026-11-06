@@ -30,6 +30,7 @@ function createStore(pool,environment) {
     try{current=await config(id);}catch(error){if(error.code==='ER_NO_SUCH_TABLE')throw fail("Les tables du Direct ne sont pas encore installées.");throw error;}
     if(publicOnly&&(!current||!current.public_visible||current.state==='disabled'))throw fail("Le Direct de cette compétition n’est pas ouvert.","not-found");
     if(!current)return {competition,config:null,events:[],entries:[]};
+    if(current.state==='resetting'){const resetModule=require('./nap-direct-reset');return {competition,config:configView(current),resetProgress:resetModule.progress(await resetModule.pending(pool,scope(id))),events:[],entries:[],selectedEventId:null};}
     const list=await program(id);
     const visible=publicOnly?list.filter(e=>{const p=read(e.publication_state_json);return p.series||p.results;}):list;
     const selected=eventId?visible.find(e=>e.id===eventId):visible[0];
@@ -46,11 +47,12 @@ function createStore(pool,environment) {
     for(const row of rows){const key=row.event_id+':'+Number(row.series_number);if(!heats.has(key))heats.set(key,[]);heats.get(key).push(row);}
     return {competition,config:configView(current),events:list.filter(row=>visible.has(row.id)).map(eventView),entries:rows.map(row=>({...model.publicEntry(row,true,true),eventId:row.event_id,sourceEntryId:row.source_entry_id})),seriesFingerprints:Object.fromEntries([...heats].map(([key,values])=>[key,model.seriesFingerprint(values)]))};
   }
-  async function transaction(id,actor,expected,callback,{allowClosed=false,allowMissing=false}={}) {
+  async function transaction(id,actor,expected,callback,{allowClosed=false,allowMissing=false,allowReset=false}={}) {
     const c=await pool.getConnection();let started=false;
     try{await c.beginTransaction();started=true;const current=await config(id,c,true);
       if(!current&&!allowMissing)throw fail("Activer le Direct avant cette action.");
       if(current&&Number(expected)!==Number(current.version))throw fail("La compétition a changé. Actualiser avant de confirmer.","aborted");
+      if(current?.state==='resetting'&&!allowReset)throw fail('Réinitialisation en cours. Terminer la suppression avant toute autre modification.');
       if(current&&current.state!=="active"&&!allowClosed)throw fail("Les consoles de cette compétition sont fermées.");
       const result=await callback(c,current);
       if(current)await execute(c,"UPDATE livepalmes_direct_competitions SET version=version+1,public_revision=public_revision+1,updated_at=UTC_TIMESTAMP(6),updated_by=? WHERE environment=? AND competition_id=?",[actor.uid,...scope(id)]);
@@ -193,9 +195,20 @@ function createStore(pool,environment) {
     const rows=await q(`SELECT id,action,source_name,source_type,created_at,created_by,event_id FROM livepalmes_direct_publications WHERE environment=? AND competition_id=?${split?' AND (created_at<? OR (created_at=? AND id<?))':''} ORDER BY created_at DESC,id DESC LIMIT 51`,[...scope(id),...(split?[split[0],split[0],split[1]]:[])]);
     const page=rows.slice(0,50),last=page.at(-1);return {items:page,nextCursor:rows.length>50?`${last.created_at}|${last.id}`:null};
   }
-  async function document(id,actor,input,metadata) {
-    return transaction(id,actor,input.version,async(c,current)=>{const before=read(current.documents_json,[]),after=before.filter(d=>d.id!==metadata.id);after.push(metadata);if(after.length>20)throw new TypeError("20 documents complets au maximum.");await execute(c,"UPDATE livepalmes_direct_competitions SET documents_json=? WHERE environment=? AND competition_id=?",[json(after),...scope(id)]);await journal(c,id,actor,{action:'document',before,after,source:{type:'pdf',name:metadata.title,hash:metadata.hash},operationKey:input.operationKey});return {ok:true,document:metadata};});
+  async function document(id,actor,input,writeDocument) {
+    if(!/^[a-zA-Z0-9_-]{16,64}$/.test(input.operationKey||''))throw new TypeError('Identifiant de demande requis.');
+    return transaction(id,actor,input.version,async(c,current)=>{const metadata=typeof writeDocument==='function'?await writeDocument():writeDocument;const before=read(current.documents_json,[]),after=before.filter(d=>d.id!==metadata.id);after.push(metadata);if(after.length>20)throw new TypeError("20 documents complets au maximum.");await execute(c,"UPDATE livepalmes_direct_competitions SET documents_json=? WHERE environment=? AND competition_id=?",[json(after),...scope(id)]);await journal(c,id,actor,{action:'document',before,after,source:{type:'pdf',name:metadata.title,hash:metadata.hash},operationKey:input.operationKey});return {ok:true,document:metadata,version:Number(current.version)+1};});
   }
-  return {native,config,access,detail,program,watchContext,settings,preview,publish,previewBatch,publishBatch,visibility,grants,grant,history,document,scope,q,eventView,configView};
+  async function reset(id,actor,input,purgeFiles,checkFiles=async()=>{}){
+    const resetModule=require('./nap-direct-reset');
+    if(!['begin','continue'].includes(input.phase))throw new TypeError('Étape de réinitialisation invalide.');
+    if(input.phase==='begin'&&input.confirmation!=='supprimer-direct-'+model.competitionId(id))throw new TypeError('Confirmation de suppression définitive requise.');
+    return transaction(id,actor,input.version,async(c,current)=>{
+      if(input.phase==='begin')await checkFiles();
+      const result=input.phase==='begin'?await resetModule.begin(c,scope(id),actor,current,input):await resetModule.step(c,scope(id),current,purgeFiles);
+      return {...result,version:Number(current.version)+1,revision:Number(current.public_revision)+1};
+    },{allowClosed:true,allowReset:true});
+  }
+  return {native,config,access,detail,program,watchContext,settings,preview,publish,previewBatch,publishBatch,visibility,grants,grant,history,document,reset,scope,q,eventView,configView};
 }
 module.exports={createStore,fail};

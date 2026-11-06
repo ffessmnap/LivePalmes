@@ -12451,7 +12451,9 @@ exports.manageLivePalmesDirect = onCall({...NAP_PERFORMANCE_OPTIONS,timeoutSecon
         const profile=await db.collection("users").doc(user.uid).get();
         return {uid:user.uid,active:!user.disabled&&profile.exists&&profile.data().status==="active"};
       },
-      storeDocument:async(input,id)=>require("./nap-direct-documents").store(storage,ENVIRONMENT,input,id)
+      storeDocument:async(input,id)=>require("./nap-direct-documents").store(storage,ENVIRONMENT,input,id),
+      purgeDocuments:async id=>require("./nap-direct-documents").purgeBatch(storage,ENVIRONMENT,id),
+      checkResetDocuments:async()=>require("./nap-direct-documents").checkReset(storage,ENVIRONMENT)
     })(request);
   }catch(error){
     if(error.directCode)throw new HttpsError(error.directCode,error.message);
