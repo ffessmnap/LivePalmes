@@ -5,6 +5,8 @@ const {hash,pointerId,initialReview,invalidateReview,sourceReference}=require(".
 const importId="a".repeat(64),competitionId=5162,operationId="11111111-1111-4111-8111-111111111111";
 const perf={id:10,nageur:168,compet:competitionId,course:"100SF",cat:"HSE",tps:"014200",points:"0",newpoints:"0",passage:0,club:"106",relais:0,pid:null,classement:1};
 const relay={id:20,club:"106",distance:"4X100SF",nageur1:168,nageur2:169,nageur3:170,nageur4:171,tps1:"010000",tps2:"020000",tps3:"030000",tps4:"040000",categorie:"HSE",pts:0,compet:competitionId};
+// MySQL binary JSON can reorder keys and mysql2 returns objects, not only text.
+const mysqlJson=value=>Array.isArray(value)?value.map(mysqlJson):value&&typeof value==='object'?Object.fromEntries(Object.keys(value).sort().map(key=>[key,mysqlJson(value[key])])):value;
 function fixture({national=true,lock=true,overflow=false}={}){
   const state={authorized:false,pools:0,locked:false,released:0,queries:[],mutations:[],lost:"",pointer:{currentImportId:importId,protocol:{documentId:12},textManifest:{hash:"kept"}},pointerStatus:"current",sourceStatus:"completed",review:initialReview(),receipts:new Map(),perfs:[perf,{...perf,id:11,passage:1,course:"50SF"},{...perf,id:12,tps:"010000"}],relays:[relay],visibility:[{performance_id:10,hidden:1,version:1,updated_at:"2026-11-07 12:00:00.000000",updated_by:"national"}],statuses:[{row_number:4,expected_row:JSON.stringify({table:"status",row:{kind:"NAG",status:"DSQ",swimmerId:172,clubId:"107"}})}]};
   const lose=stage=>{if(state.lost===stage){state.lost="";throw Error("lost "+stage+" reply");}};
@@ -17,7 +19,7 @@ function fixture({national=true,lock=true,overflow=false}={}){
     if(sql.startsWith("SELECT metadata"))return [[{metadata:structuredClone(state.pointer)}]];
     if(sql.startsWith("SELECT competition_id"))return [values[0]===importId?[{competition_id:competitionId,source_type:"ffessm-txt",status:state.sourceStatus}]:state.receipts.has(values[0])?[structuredClone(state.receipts.get(values[0]))]:[]];
     if(sql.startsWith("SELECT JSON_EXTRACT"))return [[{record_review:structuredClone(state.review)}]];
-    if(sql.startsWith("SELECT row_number"))return [structuredClone(state.statuses)];
+    if(sql.startsWith("SELECT row_number"))return [state.statuses.map(row=>({...row,expected_row:mysqlJson(typeof row.expected_row==='string'?JSON.parse(row.expected_row):row.expected_row)}))];
     if(sql.startsWith("SELECT")&&sql.includes("FROM perfs_relais"))return [structuredClone(state.relays)];
     if(sql.startsWith("SELECT")&&sql.includes("FROM perfs "))return [overflow?Array.from({length:LIMITS.perfs+1},(_,i)=>({...perf,id:i+1})):structuredClone(state.perfs)];
     if(sql.startsWith("SELECT")&&sql.includes("FROM livepalmes_performance_visibility"))return [structuredClone(state.visibility.filter(r=>values.includes(r.performance_id)))];
@@ -25,7 +27,7 @@ function fixture({national=true,lock=true,overflow=false}={}){
     state.mutations.push(sql);
     if(sql.startsWith("INSERT INTO livepalmes_performance_imports")){
       assert.match(sql,/'results-deletion'/);const saved=JSON.parse(values[3]);assert.ok(!JSON.stringify(saved).includes('"tps"'),"No copied sporting before-image");
-      state.receipts.set(values[0],{competition_id:values[1],source_type:"results-deletion",status:"prepared",metadata:saved});lose("receipt");return [{affectedRows:1}];
+      state.receipts.set(values[0],{competition_id:values[1],source_type:"results-deletion",status:"prepared",metadata:mysqlJson(saved)});lose("receipt");return [{affectedRows:1}];
     }
     if(sql.startsWith("UPDATE livepalmes_performance_imports SET metadata=?")){
       assert.equal(values[2],pointerId(competitionId));state.pointer=JSON.parse(values[0]);state.pointerStatus=values[1];lose(state.pointer.resultsDeleted?"final-pointer":"pointer");return [{affectedRows:1}];
@@ -52,6 +54,9 @@ function fixture({national=true,lock=true,overflow=false}={}){
   f=fixture({lock:false});await assert.rejects(f.preview(),/déjà en cours/);assert.equal(f.state.mutations.length,0);
   f=fixture({overflow:true});await assert.rejects(f.preview(),/limites/);assert.equal(f.state.mutations.length,0);
   f=fixture();preview=await f.preview();f.state.perfs[0]={...perf,tps:"014100"};await assert.rejects(f.run({data:f.payload(preview)}),/changé/);assert.equal(f.state.mutations.length,0);
+  f=fixture();preview=await f.preview();const changedStatus=JSON.parse(f.state.statuses[0].expected_row);changedStatus.row.status='FRT';f.state.statuses[0].expected_row=mysqlJson(changedStatus);await assert.rejects(f.run({data:f.payload(preview)}),/changé/);assert.equal(f.state.mutations.length,0,'Structured JSON status changes invalidate consent');
+  assert.equal(hash({a:1,nested:{x:2,y:3}}),hash({nested:{y:3,x:2},a:1}),'Receipt fingerprints survive native JSON key reordering');
+  assert.equal(pointerId(competitionId),require('node:crypto').createHash('sha256').update(JSON.stringify(['nap-results-current',competitionId])).digest('hex'),'Stable serialization preserves existing competition pointer ids');
   f=fixture();preview=await f.preview();await assert.rejects(f.run({data:{...f.payload(preview),confirmDeletion:false}}),/Confirmation/);assert.equal(f.state.mutations.length,0);
   f=fixture();f.state.pointer.activeImportId="b".repeat(64);await assert.rejects(f.preview(),/interrompu/);
   for(const stage of ["receipt","pointer","perfs","relays","visibility","review","source","completed","final-pointer"]){

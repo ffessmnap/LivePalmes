@@ -24,6 +24,8 @@ Les Records/MPF officiels et les résultats DTN déjà calculés restent inchang
 
 La livraison réactive uniquement `deleteCompetitionImport` dans le registre des fonctions NAP déployables : son parcours national natif remplace le refus historique en mode NAP. Les 40 autres fonctions retirées gardent leur exclusion et leurs tests d’inertie. Ce changement de registre est nécessaire à la publication du gestionnaire existant ; aucune sélection calculée n’est réduite manuellement.
 
+Les empreintes du reçu de suppression utilisent la sérialisation stable commune : le réordonnancement des clés par le JSON natif MySQL n’invalide pas une reprise. Le corps structuré des statuts est inclus dans l’empreinte, indépendamment de sa restitution en objet ou texte par mysql2 ; toute modification invalide la confirmation.
+
 Contrat réservé aux **nouveaux imports**, sans reprise ni détection historique :
 
 - `metadata.sourceContractVersion = 1`, `plan.perfs.sources[]` et `livepalmes_performance_import_rows.expected_row.source` relient chaque performance à son import, identifiant NAP, ligne source, origine `individual` / `passage` / `first-relay` et empreinte native. Clé source stable : `<importId>:perfs:<performanceId>`. Une performance inchangée conserve son identifiant natif mais reçoit la référence de sa nouvelle version d’import ; aucune égalité de temps seule ne prouve une provenance.

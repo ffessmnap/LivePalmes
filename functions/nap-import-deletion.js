@@ -36,7 +36,7 @@ async function readState(query,competitionId,pointer,visibilityIds){
 }
 function stateProof(competition,pointer,state){
   return {competition,importId:pointer.currentImportId||null,lastDeletionId:pointer.lastDeletionId||null,resultsDeleted:pointer.resultsDeleted===true,
-    perfs:entries(state.perfs,COLUMNS),relays:entries(state.relays,RELAY_COLUMNS),statuses:entries(state.statuses,["row_number","expected_row"],"row_number"),visibility:entries(state.visibility,VISIBILITY,"performance_id")};
+    perfs:entries(state.perfs,COLUMNS),relays:entries(state.relays,RELAY_COLUMNS),statuses:state.statuses.map(row=>[Number(row.row_number),hash(parse(row.expected_row))]).sort((a,b)=>a[0]-b[0]),visibility:entries(state.visibility,VISIBILITY,"performance_id")};
 }
 function createNativeResultDeletion({getPool,authorize}){
   return async request=>{
