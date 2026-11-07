@@ -74,3 +74,15 @@
 .direct-session-filter{display:flex;align-items:center;gap:7px;max-width:100%;font-size:.75rem;font-weight:400;margin:5px 0 9px}.direct-session-filter select{min-height:32px;padding:4px 7px;max-width:100%;font-size:.75rem}.direct-summary-head .direct-session-filter{margin:0}.direct-import-pdf-choice{margin:10px 0;padding:10px;border:1px solid var(--direct-line);border-radius:8px;background:#f5f9fc;font-size:.8rem}.direct-import-pdf-choice .direct-check-label{font-size:.75rem;min-height:32px;overflow-wrap:anywhere}.direct-import-pdf-choice .direct-note{font-size:.74rem;margin:5px 0}.direct-import-pdf-choice button{min-height:32px;padding:5px 8px;font-size:.75rem}.direct-meet-card .direct-actions .danger{background:#a92b35;color:#fff}
 
 @media(max-width:600px){.direct-meet-card .direct-actions button{font-size:.7rem;padding:5px 7px}}
+
+/* Raccourcis de catégorie et titre public sur une ligne. */
+.direct-public-topbar>div:first-child{flex:1}
+.direct-public-topbar h1{white-space:nowrap;overflow-x:auto;overflow-y:hidden;text-overflow:ellipsis;scrollbar-width:none}
+.direct-public-topbar h1::-webkit-scrollbar{display:none}
+.direct-public-topbar h1:focus-visible{outline:2px solid #a8edf1;outline-offset:2px}
+.direct-category-filter{display:inline-flex;align-items:center;justify-content:center;width:100%;min-height:32px;padding:0;border:0;border-radius:4px;background:transparent;color:inherit;font:inherit}
+.direct-category-filter:hover .direct-category-badge{text-decoration:underline}
+.direct-category-filter:focus-visible{outline-offset:-2px}
+.direct-category-tools{display:flex;align-items:center;gap:3px;flex-shrink:0}
+.direct-category-tools summary{max-width:130px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.direct-clear-categories{width:30px;min-height:32px;padding:0;border:1px solid var(--direct-line);border-radius:7px;background:transparent;color:var(--direct-blue);font-size:1.1rem;line-height:1}

@@ -2,6 +2,13 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 7 novembre — Direct public : raccourci catégorie et titre compact
+
+- Antoine demande le filtre automatique par clic sur une catégorie des résultats, un retrait compact des filtres et le titre du bandeau limité à une ligne ; livraison autorisée sur TEST. Les consoles des juges restent reportées.
+- Boutons natifs sur les pastilles des résultats, au scratch et dans les séries avec résultats : sélection de cette catégorie, classement de catégorie déjà existant, sans déclencher la fiche nageur. Séries complètes conservées. Sélecteur multiple maintenu, code actif ou compteur compact et petite croix pour revenir au scratch ; focus clavier conservé. Titre sur une ligne avec ellipse, texte complet défilable horizontalement au toucher/clavier.
+- Client public et styles uniquement, cache renouvelé, tests et documentation. Zéro appel supplémentaire pour filtrer, effacer ou lire le titre ; ouvertures/rafraîchissements/bornes inchangés. Aucune règle sportive, donnée réelle, table, fonction serveur ou permission modifiée.
+- Préparation et contrôles de livraison en cours. Recette utilisateur attendue sur la version TEST à publier ; aucun accord PROD de ce complément.
+
 ### 7 novembre — TXT Direct : préfixe strict de ligne d’eau
 
 - Antoine confirme que LivePalmes Direct a bien fonctionné pendant la compétition de Paris. Il demande ensuite de ne lire que les lignes commençant exactement par un chiffre de 1 à 8 suivi immédiatement de `;`, puis autorise cette correction sur TEST uniquement. Les consoles des juges restent hors périmètre.
