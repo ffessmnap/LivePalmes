@@ -85,7 +85,7 @@ function createNativeImportWriter({getPool,authorize,preview=previewNativeImport
           display:{metadata:{competitionName:competition.libelle,date:competition.date,location:competition.lieu,poolSize:String(competition.bassin),timingType:competition.chrono},summary:plan.summary},visibilityBefore:[]};
         saved.sourceText=sourceText;
         saved.sourceContractVersion=1;
-        saved.recordReview=lifecycle.initialReview();
+        saved.recordReview={...lifecycle.initialReview(),detectionVersion:1,status:"pending"};
         if(zip){
           if(hash(pack.existingProtocol||null)!==hash(currentPointer.protocol||null))throw new TypeError("Le protocole de l’import précédent a changé. Actualisez l’aperçu.");
           if(hash(pack.existingText||null)!==hash(currentPointer.textManifest||null))throw new TypeError("Le TXT du précédent import a changé. Actualisez l’aperçu.");

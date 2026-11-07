@@ -90,6 +90,15 @@
   let correctionFilterRows=[],nativeCorrectionRequestId=0;
   let nativeImportNational=false,nativeDeletionBusy=false;
   const pendingNativeDeletions=new Map();
+  const nativeRecordReview=elements.importsList&&global.LivePalmesImportRecordReview?.create({host:elements.importsList,call:callFunction,
+    canManage:()=>global.LivePalmesPortalAuth?.hasCapability?.('records.manage')===true,
+    onDraft:draft=>{
+      const rows=readQueuedRecordAlertDrafts().filter(row=>row.sourceKey!==draft.sourceKey);
+      if(rows.length>=100)throw new Error('100 brouillons en attente : publiez ou retirez les brouillons existants avant de continuer.');
+      global.localStorage.setItem(recordAlertDraftStorageKey,JSON.stringify([...rows,draft]));
+      global.dispatchEvent(new CustomEvent('livepalmes:import-record-draft'));
+      global.location.hash='#records-mpf';
+    }});
 
   function nativeCorrectionFilters() {
     return {course:elements.correctionCourse?.value||"",year:elements.correctionYear?.value||"",competitionId:elements.correctionCompetition?.value||""};
@@ -1606,6 +1615,7 @@
       currentPreview.canConfirm = false;
       nativeImportOperation=null;
       await loadImports();
+      if(!result.historical&&!result.deleted)await nativeRecordReview?.open(result.importId,'detect');
     } catch (error) {
       finishImportProgress('error', 'Enregistrement à vérifier', `${error.message || error} Conservez cette fenêtre et réessayez le même enregistrement sans créer de doublons. Les choix restent verrouillés pendant la reprise.`);
       button.disabled = false;
@@ -2033,6 +2043,7 @@
   function renderNativeImportHistory(items){
     elements.importsList.querySelectorAll('.competition-import-row[open][data-import-id]').forEach(row=>openImportIds.add(row.dataset.importId));
     importsCache=Array.isArray(items)?items:[];
+    nativeRecordReview?.reset(importsCache);
     if(elements.importsStatus){
       const selected=elements.importsStatus.value;
       elements.importsStatus.innerHTML='<option value="">Tous les statuts</option><option value="completed">Enregistrés</option><option value="replaced">Remplacés</option><option value="prepared">Interrompus</option><option value="deleted">Résultats supprimés</option>';
@@ -2048,6 +2059,7 @@
         <div class="competition-import-details"><div><span>Importé le</span><strong>${escapeHtml(item.importedAt?new Date(item.importedAt).toLocaleString('fr-FR'):'—')}</strong></div><div><span>Fichier</span><strong>${escapeHtml(item.fileName)}</strong></div>${details.map(([label,value])=>`<div><span>${label}</span><strong>${escapeHtml(number(value))}</strong></div>`).join('')}</div>
         <p class="competition-imports-note">Chiffres à l’enregistrement de cet import ; performances avec passages et premiers temps de relais inclus. Nageurs et clubs distincts, relais et statuts compris.</p>
         <div class="competition-import-actions">${nativeImportNational&&(item.canDelete||item.activeDeletionId)?`<button type="button" class="danger-button" data-delete-native-results="${escapeHtml(item.importId)}"${nativeDeletionBusy?' disabled':''}>${item.activeDeletionId?'Reprendre la suppression':'Supprimer tous les résultats de cette compétition'}</button>`:item.status==='deleted'?'<span>Compétition, engagements, documents et historique conservés.</span>':''}</div>
+        ${nativeRecordReview?.render(item)||''}
       </details>`;
     }).join(''):'<p class="admin-access-empty">Aucun import ne correspond aux filtres.</p>';
     if(elements.importsFilterSummary)elements.importsFilterSummary.textContent=`${visible.length} import(s) affiché(s) · Historique récent`;

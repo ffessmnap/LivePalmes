@@ -11,8 +11,8 @@ const ast = acorn.parse(source, {ecmaVersion:"latest"});
 const handlers = new Map(ast.body.filter(n => n.type === "ExpressionStatement" && n.expression.type === "AssignmentExpression" && n.expression.left.object?.name === "exports").map(n => [n.expression.left.property.name, n.expression.right.arguments.at(-1)]));
 class HttpsError extends Error { constructor(code, message) { super(message); this.code = code; } }
 (async () => {
-  assert.equal(NAP_RETIRED_FUNCTIONS.length, 40);
-  assert.equal(new Set(NAP_RETIRED_FUNCTIONS).size, 40);
+  assert.equal(NAP_RETIRED_FUNCTIONS.length, 39);
+  assert.equal(new Set(NAP_RETIRED_FUNCTIONS).size, 39);
   const retired = new Set([...NAP_RETIRED_FUNCTIONS, ...NAP_UNUSED_FUNCTIONS]);
   assert.deepEqual([...NAP_UNUSED_FUNCTIONS].sort(), ["getEngagementNationalAdministrationOverview", "listEngagementCompetitionDeletionRequests", "listEngagementNationalClubSwimmers", "syncPublicRecordsData"]);
   for (const lot of Object.keys(LOTS)) {
@@ -24,6 +24,7 @@ class HttpsError extends Error { constructor(code, message) { super(message); th
   // Only this former endpoint is reactivated for the national NAP deletion.
   // Its real authorization/dispatch is exercised by nap-import-deletion-callable-tests.
   assert.ok(!retired.has('deleteCompetitionImport'));
+  assert.ok(!retired.has('updateCompetitionImportRecordAlertDecision'));
   assert.ok(!active.includes("syncPublicRecordsData"));
   assert.ok(!handlers.has("syncPublicRecordsData"), "Le déclencheur Records historique doit rester absent");
   assert.ok(LOTS.publications.includes("syncPublicRecordsData"));

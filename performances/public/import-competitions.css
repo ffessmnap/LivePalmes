@@ -767,6 +767,11 @@
 .competition-import-native .competition-import-actions button { height: auto; padding: .5rem .75rem; white-space: normal; }
 .competition-import-native .competition-import-actions label { min-width: 0; overflow-wrap: anywhere; }
 .competition-import-native input[type="file"] { max-width: 100%; }
+.import-record-review { min-width: 0; padding: .75rem; border-top: 1px solid #d8e4e1; }
+.import-record-review > h4 { margin: 0 0 .5rem; }
+.import-record-review > p { margin: .5rem 0; }
+.import-record-review .competition-import-alert { margin-top: .5rem; }
+.import-record-review .competition-import-alert > div { min-width: 0; overflow-wrap: anywhere; }
 
 .competition-import-row summary {
   display: grid;
