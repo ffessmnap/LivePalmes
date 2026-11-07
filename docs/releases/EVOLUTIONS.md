@@ -2,6 +2,13 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 7 novembre — TXT Direct : préfixe strict de ligne d’eau
+
+- Antoine confirme que LivePalmes Direct a bien fonctionné pendant la compétition de Paris. Il demande ensuite de ne lire que les lignes commençant exactement par un chiffre de 1 à 8 suivi immédiatement de `;`, puis autorise cette correction sur TEST uniquement. Les consoles des juges restent hors périmètre.
+- Filtre local `^[1-8];` : bruit, chiffres isolés, `4 4`, `4-4`, séparateur `:`, numéros hors plage et espaces dans le préfixe ignorés. Temps, passages, forfait/absence, abandon, disqualification et contrôles de répartition restent obligatoires. Un TXT incomplet reste en attente pendant que les autres fichiers compatibles continuent ; aucun résultat incomplet publié.
+- Périmètre : lecteur client TXT, version de cache du bureau, fixtures et régressions ciblées, documentation. Aucun backend, table, droit, donnée réelle ou accès aux données supplémentaire ; aucune publication PROD autorisée pour ce complément.
+- État : préparation et contrôles en cours ; preuve de publication TEST à compléter après réussite. La réussite du pilote Paris porte sur la version PROD précédente, pas sur ce complément.
+
 ### 7 novembre — Accès ciblé CI au secret NAP pour les sauvegardes Direct
 
 - Après la publication, Antoine répond « Oui, autoriser cet accès ciblé » à la question nommant exactement `roles/secretmanager.secretAccessor`, le compte `github-actions-livepalmes-back@livepalmes.iam.gserviceaccount.com` et le seul secret PROD `LIVEPALMES_NAP_PASSWORD`. Cet accord spécifique complète celui de la livraison Direct.
