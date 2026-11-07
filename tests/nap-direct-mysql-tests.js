@@ -65,8 +65,12 @@ async function main(){
     const entryColumns=schema.tables.find(table=>table.name==='livepalmes_direct_entries').columns.map(column=>column.name),copyColumns=entryColumns.map(name=>name==='environment'?"'production'":'`'+name+'`');
     await pool.execute('INSERT INTO livepalmes_direct_entries ('+entryColumns.map(name=>'`'+name+'`').join(',')+') SELECT '+copyColumns.join(',')+' FROM livepalmes_direct_entries WHERE environment=? AND competition_id=? LIMIT 1',['test',id]);
     const backup = require('../tools/direct-production-data');
+    const productionStore = createStore(wrapped, 'production');
+    await productionStore.settings(id, actor, {consoles:['computer'], operationKey:randomUUID()});
     const saved = await backup.snapshot(pool);
     assert.equal(saved.data.livepalmes_direct_entries.length, 1);
+    assert.equal(saved.data.livepalmes_direct_competitions.length, 1);
+    assert.equal(saved.data.livepalmes_direct_publications[0].before_json, null, 'Le journal conserve un null JSON dans une colonne NOT NULL');
     assert.ok(Object.values(saved.data).flat().every(row => row.environment === 'production'), 'La sauvegarde exclut chaque ligne TEST');
     process.env.DIRECT_RESTORE_ALLOWED = 'isolated-ci';
     process.env.DIRECT_RESTORE_PASSWORD = process.env.NAP_TEAM_FIXTURE_PASSWORD;
