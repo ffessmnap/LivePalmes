@@ -16,6 +16,12 @@ Les sauvegardes ponctuelles avant publication et après activation sont rouverte
 
 Après accord ciblé d'Antoine, le compte CI backend reçoit le 7 novembre le rôle `roles/secretmanager.secretAccessor` sur le seul secret `LIVEPALMES_NAP_PASSWORD` du projet `livepalmes`, avec sauvegarde IAM vérifiée et contrôle de dérive. Les sauvegardes ponctuelles et leur mode de lancement restent ceux décrits ci-dessous.
 
+## Public — raccourci catégorie et titre sur une ligne (7 novembre 2026)
+
+Évolution TEST autorisée après le pilote Paris : cliquer une pastille de catégorie sur des résultats applique cette catégorie au scratch, avec ses places de catégorie existantes. La multisélection reste disponible ; une croix discrète près du sélecteur permet de tout effacer. Le raccourci ne déclenche pas la fiche nageur, ne filtre pas la composition des séries et ne lit aucune donnée supplémentaire. Le titre du bandeau tient sur une seule ligne, avec ellipse et défilement horizontal du texte complet au toucher/clavier. Périmètre : client public, styles, tests et documentation ; règles sportives, données, backend et consoles inchangés.
+
+Budget : ouverture, changement d'épreuve et rafraîchissement identiques à l'existant ; clic sur une catégorie, multisélection, suppression et lecture du titre = zéro appel. Aucun coût supplémentaire dans le pire cas de 1 000 participations par épreuve ; les classements réutilisent les données chargées et le calcul déjà présent, sans nouveau chargement de compétition.
+
 ## Lecture TXT — filtre de début de ligne du 7 novembre 2026
 
 Après le pilote Paris confirmé réussi par Antoine, règle explicitement demandée et [livrée sur TEST](https://github.com/ffessmnap/LivePalmes/actions/runs/42404070287) dans le candidat `26b7996b` : seules les lignes commençant exactement par un chiffre de 1 à 8 immédiatement suivi de `;` sont analysées (`^[1-8];`). Les préfixes `4 4`, `4-4`, `6` seul, `4:`, `04;`, `9;`, les espaces avant le chiffre ou entre le chiffre et `;`, le texte et le remplissage sont ignorés. Le BOM UTF-8 éventuel reste pris en charge. Cette règle remplace la tolérance historique du séparateur `:` en début de ligne.

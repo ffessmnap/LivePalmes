@@ -12,6 +12,11 @@ async function main(){const {server,baseUrl}=await startStaticServer(),browser=a
     await client.send('Page.navigate',{url:baseUrl+'/direct.html?id=900001'});assert.ok(await waitFor(client,"document.querySelector('#heatTable')",12000));
     assert.equal(await evaluate(client,'return document.documentElement.scrollWidth<=innerWidth'),true,'Pas de débordement global');
     assert.equal(await evaluate(client,'return LivePalmesDirectPublic.state.mode'),'results');
+    await evaluate(client,"LivePalmesDirectPublic.state.data.competition.name='Championnat régional Île-de-France de nage avec palmes — première manche de la saison 2026–2027 — toutes catégories';LivePalmesDirectPublic.render()");
+    assert.ok(await evaluate(client,"const title=document.querySelector('#meetTitle'),css=getComputedStyle(title);return css.whiteSpace==='nowrap'&&css.textOverflow==='ellipsis'&&title.clientHeight<=parseFloat(css.lineHeight)+1&&title.scrollWidth>title.clientWidth&&title.title===title.textContent&&title.tabIndex===0"),'Titre long conservé sur une ligne avec texte complet accessible');
+    assert.ok(await evaluate(client,"const title=document.querySelector('#meetTitle');title.scrollLeft=100;const scrolled=title.scrollLeft>0;title.scrollLeft=0;return scrolled"),'Le titre complet reste défilable sur téléphone et ordinateur');
+    assert.equal(await evaluate(client,'return document.documentElement.scrollWidth<=innerWidth'),true,'Titre long sans débordement de page');
+    const titleShot=await client.send('Page.captureScreenshot',{format:'png'});fs.writeFileSync(path.join(output,`title-${width}.png`),Buffer.from(titleShot.data,'base64'));
     assert.ok(await evaluate(client,"const cell=document.querySelector('.direct-scratch .direct-category-cell'),badge=cell.querySelector('.direct-category-badge'),row=cell.parentElement,html=cell.innerHTML,height=row.getBoundingClientRect().height;const color=getComputedStyle(badge).backgroundColor;cell.textContent=badge.textContent;const plain=row.getBoundingClientRect().height;cell.innerHTML=html;return height===plain&&color==='rgb(235, 251, 238)'"),'Pastille junior colorée sans augmenter la hauteur de ligne');
     assert.ok(await evaluate(client,"const cell=document.querySelector('.direct-heat-section .direct-category-cell');return cell.querySelector('.direct-cat-junior')!==null"),'Même couleur dans les séries');
     assert.ok(await evaluate(client,"const cell=document.querySelector('.direct-scratch .direct-category-cell'),html=cell.innerHTML;const fits=['H40+','H60+','F40+','F60+'].every(code=>{cell.innerHTML=LivePalmesDirectPresentation.categoryBadge(code);const badge=cell.firstElementChild;return badge.textContent===code&&badge.getBoundingClientRect().right<=cell.getBoundingClientRect().right&&cell.scrollWidth<=cell.clientWidth;});cell.innerHTML=html;return fits"),'Codes hommes/femmes à quatre caractères entièrement visibles');
@@ -22,6 +27,30 @@ async function main(){const {server,baseUrl}=await startStaticServer(),browser=a
     assert.equal(await evaluate(client,"return document.querySelector('[data-person=alice]').textContent"),'EXEMPLE Alice');
     assert.equal(await evaluate(client,"return document.querySelector('.direct-seed-cell[title=\"Sans référence\"]').textContent"),'—');
     assert.equal(await evaluate(client,"return document.querySelector('.direct-event-title .direct-race-status').textContent"),'Terminée');
+    const beforeCategories=await evaluate(client,'return __directCalls.length');
+    await evaluate(client,"document.querySelector('.direct-scratch [data-category-filter=FSE]').focus()");
+    await client.send('Input.dispatchKeyEvent',{type:'keyDown',key:'Enter',code:'Enter',windowsVirtualKeyCode:13,text:'\r'});
+    await client.send('Input.dispatchKeyEvent',{type:'keyUp',key:'Enter',code:'Enter',windowsVirtualKeyCode:13});
+    assert.equal(await evaluate(client,"return document.querySelector('.direct-scratch tbody td').textContent"),'1','Cliquer la catégorie passe au classement de celle-ci');
+    assert.equal(await evaluate(client,"return document.querySelectorAll('.direct-scratch .direct-participant-row').length"),1);
+    assert.equal(await evaluate(client,"return document.querySelectorAll('.direct-heat-section .direct-participant-row').length"),2,'Les séries restent complètes');
+    assert.equal(await evaluate(client,"return document.querySelectorAll('.direct-dialog[open]').length"),0,'La catégorie ne déclenche pas la fiche nageur');
+    assert.ok(await evaluate(client,"const head=document.querySelector('.direct-scratch .direct-section-head'),tools=head.querySelector('.direct-category-tools');return document.activeElement===tools.querySelector('summary')&&tools.getBoundingClientRect().top<head.querySelector('h3').getBoundingClientRect().bottom&&head.scrollWidth<=head.clientWidth"),'Filtre actif compact et focus conservé');
+    await evaluate(client,"document.querySelector('[data-clear-categories]').focus()");
+    await client.send('Input.dispatchKeyEvent',{type:'keyDown',key:' ',code:'Space',windowsVirtualKeyCode:32,text:' '});
+    await client.send('Input.dispatchKeyEvent',{type:'keyUp',key:' ',code:'Space',windowsVirtualKeyCode:32});
+    assert.equal(await evaluate(client,"return document.querySelectorAll('.direct-scratch .direct-participant-row').length"),2,'La croix rétablit tout le scratch');
+    assert.equal(await evaluate(client,"return document.querySelector('[data-clear-categories]')"),null);
+    if(width<700){
+      const point=await evaluate(client,"const box=document.querySelector('.direct-heat-section [data-category-filter=FJU]').getBoundingClientRect();return {x:box.left+box.width/2,y:box.top+box.height/2}");
+      await client.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[point]});await client.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+    }else await evaluate(client,"document.querySelector('.direct-heat-section [data-category-filter=FJU]').click()");
+    assert.equal(await evaluate(client,"return LivePalmesDirectPublic.state.categories.join(',')"),'FJU','Pastille de série en résultats utilisable au toucher');
+    await evaluate(client,"document.querySelector('.direct-filters').open=true;document.querySelector('input[name=category][value=FSE]').checked=true;document.querySelector('#applyCategories').click()");
+    assert.equal(await evaluate(client,"return document.querySelectorAll('.direct-scratch .direct-participant-row').length"),2,'Multisélection conservée');
+    assert.equal(await evaluate(client,"return document.querySelector('.direct-filters>summary').textContent"),'Cat. · 2');
+    await evaluate(client,"document.querySelector('[data-clear-categories]').click()");
+    assert.equal(await evaluate(client,'return __directCalls.length'),beforeCategories,'Filtrer et effacer ne lisent aucune donnée supplémentaire');
     await evaluate(client,"window.__directFixture.events[0].progress={entries:2,seriesEntries:2,resultEntries:1,matchedResults:1,seriesCount:1,resultSeriesCount:1,completeSeriesCount:0,unassignedResults:0};window.__directFixture.entries[0].splits=[{distance:'Passage 1',time:'00:35.00'}];window.__directFixture.events[0].eventCode='200sf';window.__directFixture.events[0].eventLabel='200 m Surface';window.__savedSecondResult=window.__directFixture.entries[1].result;window.__directFixture.entries[1].result={raw:'',cs:null,status:''};LivePalmesDirectPublic.state.data=structuredClone(window.__directFixture);LivePalmesDirectPublic.render()");
     assert.equal(await evaluate(client,"return document.querySelector('.direct-event-title .direct-race-status').textContent"),'En cours');
     assert.equal(await evaluate(client,"return document.querySelectorAll('.direct-passages').length"),0,'Plus de tableau collectif de passages');
@@ -124,5 +153,5 @@ async function main(){const {server,baseUrl}=await startStaticServer(),browser=a
 
   }
   console.log('Direct navigateur : public à 1280/390/320 px et bureau sur ordinateur, tactile, filtres, reprise réseau, aperçu et publication fictive. HTTPS externe bloqué.');
- }finally{browser.cleanup();server.close();}}
+ }finally{await browser.client.send('Browser.close').catch(()=>{});browser.cleanup();server.closeAllConnections();server.close();}}
 main().catch(error=>{console.error(error);process.exitCode=1;});

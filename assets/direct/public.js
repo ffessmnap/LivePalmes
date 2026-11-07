@@ -33,7 +33,7 @@
   function render(){
     if(!state.data)return;const data=state.data,event=data.events.find(e=>e.id===data.selectedEventId),days=[...new Set(data.events.map(e=>e.date))].sort();
     if(expandedEvent!==data.selectedEventId){state.expandedSplits.clear();expandedEvent=data.selectedEventId;}
-    document.getElementById('meetTitle').textContent=data.competition.name;document.title=`${data.competition.name} — LivePalmes Direct`;
+    const title=document.getElementById('meetTitle');title.textContent=data.competition.name;title.title=data.competition.name;document.title=`${data.competition.name} — LivePalmes Direct`;
     document.getElementById('meetMeta').textContent=[data.competition.city,ui.dateRange(data.competition.date,data.competition.endDate),data.competition.poolLength?`Bassin de ${data.competition.poolLength} m`:'',data.config.state==='archived'?'Archive du Direct':''].filter(Boolean).join(' · ');
     document.getElementById('calendarLink').href=`competition.html?id=${encodeURIComponent(data.competition.id)}`;
     if(savedClubCompetition!==data.competition.id){savedClubCompetition=data.competition.id;try{state.highlightClub=localStorage.getItem('livepalmes-direct-club:'+data.competition.id)||'';}catch{state.highlightClub='';}}
@@ -49,7 +49,12 @@
     if(!event){content.innerHTML='<div class="direct-card direct-empty">Les séries et résultats seront disponibles après publication par le bureau des performances.</div>';return;}
     state.mode=global.LivePalmesDirectEventView.resultMode(data.entries,event)?'results':'series';
     content.innerHTML=global.LivePalmesDirectEventView.render({data,event,state,records:references(event)});
-    document.getElementById('applyCategories')?.addEventListener('click',()=>{state.categories=[...content.querySelectorAll('input[name=category]:checked')].map(n=>n.value);render();});
+    document.getElementById('applyCategories')?.addEventListener('click',()=>filterCategories([...content.querySelectorAll('input[name=category]:checked')].map(n=>n.value)));
+  }
+  function filterCategories(categories,fromHeat=false){
+    state.categories=categories;render();
+    document.querySelector('.direct-filters>summary')?.focus({preventScroll:true});
+    if(fromHeat)document.querySelector('.direct-scratch')?.scrollIntoView({block:'nearest'});
   }
   async function load(eventId){
     if(state.loading)return;state.loading=true;const button=document.getElementById('directRefresh'),status=document.getElementById('directStatus');button.disabled=true;status.textContent='Actualisation…';status.classList.remove('error');
@@ -61,6 +66,9 @@
   global.LivePalmesDirectPublic={state,rows,references,render,load,format,allData,dialogs};
   document.addEventListener('click',e=>{
     if(state.loading)return;
+    const categoryFilter=e.target.closest('[data-category-filter]');
+    if(categoryFilter){if(state.mode==='results')filterCategories([categoryFilter.dataset.categoryFilter],Boolean(categoryFilter.closest('.direct-heat-section')));return;}
+    if(e.target.closest('[data-clear-categories]')){filterCategories([]);return;}
     const splits=e.target.closest('[data-splits]');if(splits){const detail=document.getElementById(splits.dataset.splits);if(detail){detail.hidden=!detail.hidden;splits.setAttribute('aria-expanded',String(!detail.hidden));if(detail.hidden)state.expandedSplits.delete(splits.dataset.splitsKey);else state.expandedSplits.add(splits.dataset.splitsKey);}return;}
     const person=e.target.closest('[data-person]');if(person){dialogs.openPerson(person.dataset.person);return;}
     const heat=e.target.closest('[data-heat],[data-heat-jump]');
