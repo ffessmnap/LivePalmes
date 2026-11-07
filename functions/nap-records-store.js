@@ -39,7 +39,7 @@ async function read(pool,{administration=false}={}){
   const result=unpack(await query(pool,READ_SQL));
   return {...result,data:administration?result.data:publicRecordsPayload(result.data)};
 }
-async function publish(pool,input,actor){
+async function publish(pool,input,actor,hooks={}){
   if(!actor?.uid || actor.uid.length>128 || !Number.isSafeInteger(input?.expectedRevision)||input.expectedRevision<1||!/^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(input.operationId||""))throw new TypeError("Publication Records/MPF incomplete.");
   const proposed=JSON.parse(JSON.stringify(validate(input.data)));
   const connection=await pool.getConnection();let transaction=false;
@@ -56,6 +56,7 @@ async function publish(pool,input,actor){
       return {...result,replayed:true};
     }
     if(Number(pointer[0].revision)!==input.expectedRevision)throw new TypeError("Un autre gestionnaire a publie. Rechargez les Records/MPF avant de recommencer.");
+    const context=hooks.beforePublish?await hooks.beforePublish({query:(text,values)=>query(connection,text,values),proposed}):null;
     const revision=input.expectedRevision+1;
     if(!Number.isSafeInteger(revision))throw new RangeError("Version Records/MPF hors limite.");
     // Generate attribution/date once on the server; replay returns that exact saved version.
@@ -65,6 +66,7 @@ async function publish(pool,input,actor){
     if(changed.affectedRows!==1)throw new TypeError("La version active a change.");
     const verified=unpack(await query(connection,READ_SQL));
     if(verified.revision!==revision || hash(verified.data)!==hash(data))throw new Error("Verification Records/MPF incomplete.");
+    if(hooks.afterPublish)await hooks.afterPublish({query:(text,values)=>query(connection,text,values),context,result:verified});
     await connection.commit();transaction=false;
     return verified;
   }finally{try{if(transaction)await connection.rollback();}finally{connection.release();}}
