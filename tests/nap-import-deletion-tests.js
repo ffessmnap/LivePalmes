@@ -20,6 +20,8 @@ function fixture({national=true,lock=true,overflow=false}={}){
     if(sql.startsWith("SELECT competition_id"))return [values[0]===importId?[{competition_id:competitionId,source_type:"ffessm-txt",status:state.sourceStatus}]:state.receipts.has(values[0])?[structuredClone(state.receipts.get(values[0]))]:[]];
     if(sql.startsWith("SELECT JSON_EXTRACT"))return [[{record_review:structuredClone(state.review)}]];
     if(sql.startsWith("SELECT row_number"))return [state.statuses.map(row=>({...row,expected_row:mysqlJson(typeof row.expected_row==='string'?JSON.parse(row.expected_row):row.expected_row)}))];
+    if(sql.startsWith('SELECT id,compet FROM perfs_relais '))return [[...state.relays,...(state.foreignRelays||[])].filter(row=>values.includes(row.id)).map(row=>({id:row.id,compet:row.compet}))];
+    if(sql.startsWith('SELECT id,compet FROM perfs '))return [[...state.perfs,...(state.foreignPerfs||[])].filter(row=>values.includes(row.id)).map(row=>({id:row.id,compet:row.compet}))];
     if(sql.startsWith("SELECT")&&sql.includes("FROM perfs_relais"))return [structuredClone(state.relays)];
     if(sql.startsWith("SELECT")&&sql.includes("FROM perfs "))return [overflow?Array.from({length:LIMITS.perfs+1},(_,i)=>({...perf,id:i+1})):structuredClone(state.perfs)];
     if(sql.startsWith("SELECT")&&sql.includes("FROM livepalmes_performance_visibility"))return [structuredClone(state.visibility.filter(r=>values.includes(r.performance_id)))];
@@ -64,7 +66,24 @@ function fixture({national=true,lock=true,overflow=false}={}){
     await assert.rejects(f.run({data}),/lost/);await f.run({data});assert.equal(f.state.perfs.length+f.state.relays.length+f.state.visibility.length,0,stage);assert.equal(f.state.pointer.resultsDeleted,true,stage);assert.equal(f.state.pointer.activeDeletionId,undefined);assert.equal(f.state.review.candidates[0].state,"invalidated");assert.equal(f.state.review.candidates[1].publishedRevision,7);assert.equal(f.state.review.candidates[1].requiresReview,true);assert.equal(f.state.locked,false);
   }
   f=fixture();preview=await f.preview();f.state.lost="perfs";await assert.rejects(f.run({data:f.payload(preview)}));const resume=await f.preview();assert.equal(resume.resume,true);assert.equal(resume.summary.performances,3);await f.run({data:f.payload(resume)});assert.equal(f.state.visibility.length,0,"Orphan visibility is recovered after performance deletion");
+  const guards=f.state.queries.filter(row=>row.sql.startsWith('SELECT id,compet'));assert.equal(guards.length,2,'One grouped ownership check per native table on recovery');assert.match(guards[0].sql,/FORCE INDEX \(PRIMARY\).*LIMIT 5001$/);assert.deepEqual(guards[0].values,[10,11,12]);assert.match(guards[1].sql,/FORCE INDEX \(PRIMARY\).*LIMIT 1001$/);assert.deepEqual(guards[1].values,[20]);
   f=fixture();preview=await f.preview();f.state.lost="perfs";await assert.rejects(f.run({data:f.payload(preview)}));f.state.perfs.push({...perf,id:99});await assert.rejects(f.run({data:f.payload(preview)}),/changé/);assert.equal(f.state.perfs[0].id,99,"Unexpected result is preserved");
+  f=fixture();preview=await f.preview();f.state.lost='perfs';await assert.rejects(f.run({data:f.payload(preview)}));f.state.foreignPerfs=[{...perf,compet:999}];await assert.rejects(f.run({data:f.payload(preview)}),/autre compétition/);assert.equal(f.state.visibility.length,1,'A moved/reclaimed id must not lose visibility in another competition');assert.equal(f.state.foreignPerfs[0].compet,999);
+  f=fixture();preview=await f.preview();f.state.lost='relays';await assert.rejects(f.run({data:f.payload(preview)}));f.state.foreignRelays=[{...relay,compet:999}];await assert.rejects(f.run({data:f.payload(preview)}),/autre compétition/);assert.equal(f.state.visibility.length,1,'A moved relay blocks recovery before associated visibility cleanup');assert.equal(f.state.foreignRelays[0].compet,999);
+  for(const change of ['performance','relay','visibility','pointer','active-pointer','source','receipt','request','receipt-request']){
+    f=fixture();preview=await f.preview();f.state.lost='perfs';const data=f.payload(preview);await assert.rejects(f.run({data}));const before=f.state.mutations.length;
+    if(change==='performance')f.state.perfs=[{...perf,tps:'015000'}];
+    if(change==='relay')f.state.relays[0]={...relay,tps4:'050000'};
+    if(change==='visibility')f.state.visibility[0].version=2;
+    if(change==='pointer')f.state.pointer.currentImportId='b'.repeat(64);
+    if(change==='active-pointer')f.state.pointer.activeDeletionId='b'.repeat(64);
+    if(change==='source')f.state.sourceStatus='replaced';
+    if(change==='receipt')f.state.receipts.values().next().value.metadata.proof.importId='b'.repeat(64);
+    if(change==='request')data.operationId='22222222-2222-4222-8222-222222222222';
+    if(change==='receipt-request'){data.deletionId=f.state.pointer.activeDeletionId;data.operationId='22222222-2222-4222-8222-222222222222';}
+    const expected=['request','active-pointer'].includes(change)?/suppression interrompue/:change==='receipt-request'?/ne correspond plus/:change==='source'?/import terminé/:/changé|courante/;
+    await assert.rejects(f.run({data}),expected);assert.equal(f.state.mutations.length,before,change+' refuses any further mutation');assert.equal(f.state.visibility.length,1,change+' preserves associated masking');
+  }
   const source=sourceReference(importId,{performanceId:10,sourceLine:7,origin:"passage",fingerprint:hash(perf)});assert.equal(source.key,`${importId}:perfs:10`);assert.equal(source.origin,"passage");
   const review=invalidateReview({version:1,state:"current",candidates:[{id:"x",state:"accepted"},{id:"y",state:"published",publishedRevision:3}]},{reason:"replaced",operationId:"b".repeat(64)});assert.equal(review.candidates[0].state,"invalidated");assert.equal(review.candidates[1].requiresReview,true);assert.equal(invalidateReview(null,{reason:"deleted",operationId:importId}),null,"No historical candidate creation");
   console.log("Native result deletion: national-only, bounded reads, all current results, no new before-images, stale/concurrent refusal, every lost-reply stage, orphan visibility recovery, immutable history/documents, no resurrection and Records review lifecycle verified offline.");
