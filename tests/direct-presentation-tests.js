@@ -17,11 +17,11 @@ assert.equal(ui.status({...event,progress:complete,publication:{series:false,res
 const hidden=progress.visible(complete,{series:true,results:false});assert.equal(hidden.resultEntries,0);assert.equal(hidden.completeSeriesCount,0);assert.equal(ui.status({...event,progress:hidden,publication:{series:true,results:false}}).key,'upcoming');
 assert.throws(()=>progress.aggregate([{...make(1,2,1),row_count:1001}]),/Volume maximal/);
 assert.throws(()=>progress.aggregate(Array.from({length:16},(_,i)=>({...make(1,1000,0),event_id:String(i)}))),/Volume maximal/);
-const file='DEMO_AS_01_01_01_400SF.txt',parsed=txt.parse(file,'2:044093:010682:021867:000000:000000:000000');assert.deepEqual(parsed.rows[0].splits,[{distance:'100 m',time:'01:06.82'},{distance:'200 m',time:'02:18.67'}]);
-assert.equal(txt.parse('DEMO_AS_01_01_01_50SF.txt','2:002500:000000:000000:000000:000000:000000').rows[0].splits.length,0);
-assert.equal(txt.parse('DEMO_AS_01_01_01_50SF.txt','2:002500:002500:000000:000000:000000:000000').rows[0].splits.length,0,'Le 50 m final ne devient pas un passage');
-assert.deepEqual(txt.parse('DEMO_AS_01_01_01_1500SF.txt','2:150000:010000:020000:040000:080000:150000').rows[0].splits.map(s=>s.distance),['100 m','200 m','400 m','800 m']);
-assert.deepEqual(txt.parse('DEMO_AS_01_01_01_1850SF.txt','2:190000:010000:020000:040000:080000:150000').rows[0].splits.map(s=>s.distance),['100 m','200 m','400 m','800 m','1500 m']);
+const file='DEMO_AS_01_01_01_400SF.txt',parsed=txt.parse(file,'2;044093;010682;021867;000000;000000;000000');assert.deepEqual(parsed.rows[0].splits,[{distance:'100 m',time:'01:06.82'},{distance:'200 m',time:'02:18.67'}]);
+assert.equal(txt.parse('DEMO_AS_01_01_01_50SF.txt','2;002500;000000;000000;000000;000000;000000').rows[0].splits.length,0);
+assert.equal(txt.parse('DEMO_AS_01_01_01_50SF.txt','2;002500;002500;000000;000000;000000;000000').rows[0].splits.length,0,'Le 50 m final ne devient pas un passage');
+assert.deepEqual(txt.parse('DEMO_AS_01_01_01_1500SF.txt','2;150000;010000;020000;040000;080000;150000').rows[0].splits.map(s=>s.distance),['100 m','200 m','400 m','800 m']);
+assert.deepEqual(txt.parse('DEMO_AS_01_01_01_1850SF.txt','2;190000;010000;020000;040000;080000;150000').rows[0].splits.map(s=>s.distance),['100 m','200 m','400 m','800 m','1500 m']);
 const row={key:'alice',lastName:'Exemple',firstName:'Alice',club:'CLUB',category:'FJU',series:1,lane:2,seed:{cs:null,status:'no_reference'},result:{cs:28093,status:''},splits:[{distance:'Passage 1',time:'01:06.82'},{distance:'Passage 2',time:'02:18.67'}]};
 assert.deepEqual(ui.splits(row,event).map(s=>s.distance),['100 m','200 m']);assert.equal(ui.splits({...row,splits:[{distance:'Passage 2',time:'02:18.67'}]},event)[0].distance,'200 m','Un ancien champ omis conserve sa distance d’origine');
 const html=view.render({data:{entries:[row],config:{state:'active'}},event:{...event,progress:partial},state:{mode:'results',series:1,categories:[],highlightClub:''}});

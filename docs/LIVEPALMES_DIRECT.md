@@ -16,6 +16,12 @@ Les sauvegardes ponctuelles avant publication et après activation sont rouverte
 
 Après accord ciblé d'Antoine, le compte CI backend reçoit le 7 novembre le rôle `roles/secretmanager.secretAccessor` sur le seul secret `LIVEPALMES_NAP_PASSWORD` du projet `livepalmes`, avec sauvegarde IAM vérifiée et contrôle de dérive. Les sauvegardes ponctuelles et leur mode de lancement restent ceux décrits ci-dessous.
 
+## Lecture TXT — filtre de début de ligne du 7 novembre 2026
+
+Après le pilote Paris confirmé réussi par Antoine, règle explicitement demandée pour la prochaine livraison TEST : seules les lignes commençant exactement par un chiffre de 1 à 8 immédiatement suivi de `;` sont analysées (`^[1-8];`). Les préfixes `4 4`, `4-4`, `6` seul, `4:`, `04;`, `9;`, les espaces avant le chiffre ou entre le chiffre et `;`, le texte et le remplissage sont ignorés. Le BOM UTF-8 éventuel reste pris en charge. Cette règle remplace la tolérance historique du séparateur `:` en début de ligne.
+
+Les sept champs, temps, passages, statuts forfait/absence, abandon et disqualification, doublons identiques ou contradictoires restent contrôlés comme auparavant. Ignorer une ligne ne permet pas de publier une série dont une participation attendue manque : seul le TXT concerné reste à vérifier, les autres continuent. Un fichier sans ligne reconnue reste suivi sans publication ni alerte. Périmètre client et fixtures de tests uniquement, sans évolution des tables, backend ou droits, sans écriture réelle ; budget de lectures serveur inchangé (zéro appel pour filtrer, appels groupés existants pour publier). Livraison limitée à TEST, consoles des juges reportées.
+
 ## Direct multi-compétitions — livraison TEST du 6 novembre 2026
 
 Lot regroupé publié sur TEST le 6 novembre à 23 h 43 (Paris), candidat `5b76e1e37eddba618b25c41c92a8168446fe4115`, [publication commune réussie](https://github.com/ffessmnap/LivePalmes/actions/runs/42306711779). Contrôles connectés : quinze fichiers identiques au candidat, public à 1 280/390/320 px sans débordement, 119 fonctions actives avec toutes leurs révisions conservées. Tests de publication sur fixtures uniquement, aucune écriture métier réelle. [Preuves et limites](releases/EVOLUTIONS.md) ; recette de cette nouvelle version attendue.

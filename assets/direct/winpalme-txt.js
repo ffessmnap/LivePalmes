@@ -16,8 +16,8 @@
     return {raw:value.slice(0,2)+':'+value.slice(2,4)+'.'+value.slice(4),cs:(Number(value.slice(0,2))*60+Number(value.slice(2,4)))*100+Number(value.slice(4))};
   }
   function parse(name,text){
-    const info=fileInfo(name),rawLines=String(text).replace(/^\uFEFF/,'').trim().split(/\r?\n/).map(line=>line.trim()).filter(Boolean),seen=new Map();
-    const lines=rawLines.filter(line=>!/^0{4,}(?:\s*[:;]|$)/.test(line)&&/^\d+\s*[:;]/.test(line));
+    const info=fileInfo(name),rawLines=String(text).replace(/^\uFEFF/,'').split(/\r?\n/).filter(line=>line.trim()),seen=new Map();
+    const lines=rawLines.filter(line=>/^[1-8];/.test(line));
     if(!rawLines.length||lines.length>1000)fail('Série TXT vide ou trop volumineuse : '+name);
     const rows=lines.map(line=>{
       const fields=line.trim().split(/[;:]/).map(s=>s.trim()),lane=Number(fields[0]);
