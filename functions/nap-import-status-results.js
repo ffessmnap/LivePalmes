@@ -6,7 +6,8 @@ async function readImportStatusResults(pool,competitionId,{withFirstRelays=false
   const pointer=createHash("sha256").update(JSON.stringify(["nap-results-current",competitionId])).digest("hex");
   const [pointers]=await pool.execute({sql:"SELECT metadata FROM livepalmes_performance_imports WHERE id=? LIMIT 1",timeout:10000},[pointer]);
   const data=typeof pointers[0]?.metadata==="string"?JSON.parse(pointers[0].metadata):pointers[0]?.metadata;
-  if(data?.activeImportId)throw new TypeError("Import de résultats en cours : réessayez après sa fin.");
+  if(data?.activeImportId||data?.activeDeletionId)throw new TypeError("Opération sur les résultats en cours : réessayez après sa fin.");
+  if(data?.resultsDeleted)return withFirstRelays?{statuses:[],firstRelayIds:[]}:[];
   if(!data?.currentImportId)return withFirstRelays?{statuses:[],firstRelayIds:[]}:[];
   const [rows]=await pool.execute({sql:"SELECT row_number,expected_row FROM livepalmes_performance_import_rows FORCE INDEX (PRIMARY) WHERE import_id=? AND status='status' ORDER BY row_number LIMIT 5001",timeout:10000},[data.currentImportId]);
   if(rows.length>5000)throw new RangeError("Trop de statuts de résultats.");
