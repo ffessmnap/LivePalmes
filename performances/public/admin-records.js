@@ -842,7 +842,12 @@ function rowFromQueuedRecordAlertDraft(draft = {}) {
     status: "Brouillon",
     recordAlertSourceKey: draft.sourceKey || ""
   };
-  if(draft.importCandidate)Object.assign(row,{importCandidate:draft.importCandidate,swimmerId:draft.swimmerId,competitionId:draft.competitionId,bassin:draft.bassin,chrono:draft.chrono});
+  if(draft.importCandidate){
+    Object.assign(row,{importCandidate:draft.importCandidate,swimmerId:draft.swimmerId,competitionId:draft.competitionId,competition:draft.competition,seasonYear:draft.seasonYear,age:draft.age,points:draft.points,bassin:draft.bassin,chrono:draft.chrono});
+    // allRows merges drafts over the official row; explicit undefined clears
+    // previous-holder metadata before the store serializes the new snapshot.
+    row.region=undefined;row.intermediateTimes=undefined;
+  }
   if (createTie || !target) {
     row.key = `manual-alert|${keySafePart(draft.sourceKey)}|${keySafePart(draft.scope)}|${keySafePart(draft.course)}|${keySafePart(draft.swimmer)}|${keySafePart(draft.date)}`;
   }
@@ -1263,7 +1268,8 @@ function editorValue(status = "Brouillon") {
   const normalizedTime = normalizeTimeInput(elements.fieldTime.value);
   elements.fieldTime.value = normalizedTime;
   return {
-    ...Object.fromEntries(['importCandidate','recordAlertSourceKey','swimmerId','competitionId','bassin','chrono'].filter(key=>state.drafts.get(state.selectedId)?.[key]!==undefined).map(key=>[key,state.drafts.get(state.selectedId)[key]])),
+    ...Object.fromEntries(['importCandidate','recordAlertSourceKey','swimmerId','competitionId','competition','seasonYear','age','points','bassin','chrono'].filter(key=>state.drafts.get(state.selectedId)?.[key]!==undefined).map(key=>[key,state.drafts.get(state.selectedId)[key]])),
+    ...(state.drafts.get(state.selectedId)?.importCandidate?{region:undefined,intermediateTimes:undefined}:{}),
     id: state.selectedId || `new|${Date.now()}`,
     scope,
     adminKind: scope,
