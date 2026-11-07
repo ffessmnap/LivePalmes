@@ -54,11 +54,12 @@ async function restoreIsolated(value) {
       const table = schema.tables[index], rows = value.data[table.name];
       await admin.query(schema.sql[index]);
       const columns = table.columns.map(column => column.name);
+      const jsonColumns = new Set(table.columns.filter(column => column.type === 'json').map(column => column.name));
       for (let offset = 0; offset < rows.length; offset += 200) {
         const batch = rows.slice(offset, offset + 200);
         const marks = batch.map(() => "(" + columns.map(() => "?").join(",") + ")").join(",");
         await admin.execute("INSERT INTO `" + table.name + "` (" + columns.map(name => "`" + name + "`").join(",") + ") VALUES " + marks,
-          batch.flatMap(row => columns.map(name => row[name] !== null && typeof row[name] === "object" ? JSON.stringify(row[name]) : row[name])));
+          batch.flatMap(row => columns.map(name => jsonColumns.has(name) ? JSON.stringify(row[name]) : row[name])));
       }
       const [restored] = await admin.execute("SELECT * FROM `" + table.name + "` ORDER BY " + order(table) + " LIMIT 200001");
       // Field order comes from the exact schema in both databases.
