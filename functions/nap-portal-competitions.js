@@ -11,8 +11,8 @@ const PARAMETERS = "cp.id AS parameter_id,cp.actif,cp.dateactif,cp.date_limit,cp
 // reference labels disagree for code 3 and omit 4/5/6. Never infer rights from them.
 const { portalEventFromRow } = require("./nap-portal-event");
 const { bounded } = require("./nap-competition-query");
-// Same season budget as the public calendar: one indexed SELECT, at most 500
-// competitions. Listing uses the same native scope as the detail reader.
+// Same season budget as the public calendar: one indexed competition SELECT
+// (500 rows) and one grouped public GED SELECT (100 documents per competition).
 const { readNativeCompetitionSeason } = require("./nap-portal-calendar-reader");
 async function readCompetition(connection, input, authorize, entryTimesOnly = false) {
   if (typeof authorize !== "function") throw new TypeError("Controle du perimetre requis.");

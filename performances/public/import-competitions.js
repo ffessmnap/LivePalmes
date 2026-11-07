@@ -1611,6 +1611,7 @@
         nativeImportOperation=operation;
       }
       const result = await callFunction('createCompetitionImport', nativeImportOperation);
+      global.dispatchEvent(new CustomEvent('livepalmes:competition-results-changed'));
       finishImportProgress('success', 'Résultats enregistrés dans NAP', `Import ${result.importId}. ${zip?'Le protocole PDF est rattaché à la compétition. ':''}Les données sont disponibles directement.`);
       currentPreview.canConfirm = false;
       nativeImportOperation=null;
@@ -2229,6 +2230,7 @@
       startImportProgress('Suppression des résultats en cours…','Les résultats de cette compétition sont supprimés ; ses documents et son historique sont conservés.','',elements.historyProgress);
       const result=await callFunction('deleteCompetitionImport',payload);
       if(result.deleted!==true)throw new Error('Suppression non confirmée par le serveur. Reprenez la même opération.');
+      global.dispatchEvent(new CustomEvent('livepalmes:competition-results-changed'));
       pendingNativeDeletions.delete(importId);
       finishImportProgress('success','Résultats supprimés',`${result.summary.performances} performances et ${result.summary.relays} relais supprimés ; ${result.summary.statuses} statuts retirés. Compétition et documents conservés.`,elements.historyProgress);
       nativeDeletionBusy=false;

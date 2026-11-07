@@ -136,6 +136,27 @@
   color: #245d70;
 }
 
+#adminEngagementsCalendarCard .admin-engagements-competition-entry-badge[data-entry-state="results"] {
+  background: #dff4ed;
+  color: #17634f;
+}
+
+#adminEngagementsCalendarCard .admin-engagements-competition-entry-badge[data-entry-state="calendar"] {
+  background: #e5f2f7;
+  color: #245d70;
+}
+
+#adminEngagementsCalendarCard .admin-engagements-competition-entry-badge[data-entry-state="unknown"],
+#adminEngagementsCalendarCard .admin-engagements-competition-entry-badge[data-entry-state="canceled"] {
+  background: #fff0d7;
+  color: #77500c;
+}
+
+#adminEngagementsCalendarCard [data-engagement-admin-status-id] {
+  text-align: center;
+  white-space: normal;
+}
+
 #adminEngagementsCalendarCard .admin-engagements-competition-status {
   display: flex;
   align-items: center;

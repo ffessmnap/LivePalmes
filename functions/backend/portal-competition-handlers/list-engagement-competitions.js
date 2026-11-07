@@ -44,7 +44,7 @@ function createCompetitionHandlers_listEngagementCompetitions(backendContext) {
           .filter(item => managementContext.national || (!item.nationalManagementOnly && backendContext.engagementRegionsMatch(item.regionId, managementContext.regionId)))
           .map(item => ({ ...item, sourceType: "calendarEvent", eventType: item.competitionType })) } : {}),
         readStats: backendContext.portalReadStats("listEngagementCompetitions", startedAt, { baseDocuments: 1, variableDocumentsMax: 0, cacheHit: false }),
-        sqlBudget: { queriesMax: seasonEndYears.length, rowsMax: seasonEndYears.length * 500 } };
+        sqlBudget: { queriesMax: seasonEndYears.length * 2, rowsMax: seasonEndYears.length * 50500 } };
     }
     const calendarRefs = seasonEndYears.map((endYear) => backendContext.engagementCompetitionCalendarRef(backendContext.db, endYear));
     const clubEntryIndexRef = clubContext ? backendContext.engagementClubCompetitionIndexRef(backendContext.db, clubContext.clubId) : null;

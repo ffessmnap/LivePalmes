@@ -164,7 +164,7 @@
           await loadScriptOnce("performances/public/import-swimmer-creation.js?v=20261025-import-creation-1", "adminImportSwimmerCreationScript");
           await loadScriptOnce("performances/public/import-swimmer-review.js?v=20261026-import-relay-alerts-1", "adminImportReviewScript");
           await loadScriptOnce("performances/public/import-record-review.js?v=20261107-import-records-1", "adminImportRecordReviewScript");
-          await loadScriptOnce("performances/public/import-competitions.js?v=20261107-import-records-1", "adminImportModuleScript");
+          await loadScriptOnce("performances/public/import-competitions.js?v=20261108-competition-status-1", "adminImportModuleScript");
           if (includeSpreadsheet) await loadImportSpreadsheet();
           watchImportWorkbench();
         })().catch((error) => {

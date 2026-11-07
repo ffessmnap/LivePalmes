@@ -829,6 +829,8 @@
     renderNativeCourseRemoval,
     renderEngagementCompetitions,
     renderEngagementCompetitionTable,
+    engagementCompetitionAdminStatus,
+    refreshEngagementCompetitionStatuses,
     setEngagementCompetitionDetailVisible,
     setEngagementClubEntryLoadingState,
     engagementNativeEditWarningKind,

@@ -109,6 +109,7 @@
         portalActions.closeEngagementCompetitionDocumentForm();
         if (portalContext.elements.engagementsDetailStatus) portalContext.elements.engagementsDetailStatus.textContent = "";
         portalActions.renderEngagementCompetitions();
+        if (portalState.engagementCompetitionsLoaded === false) void portalActions.loadEngagementCompetitions();
         return true;
       }
 

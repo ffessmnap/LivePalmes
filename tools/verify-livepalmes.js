@@ -44,6 +44,7 @@ function runUnitTests() {
     "portal-directory-recovery-tests.js",
     "portal-module-boundaries-tests.js",
     "portal-cache-version-tests.js",
+    "competition-status-tests.js",
     "portal-news-tests.js",
     "foreign-club-access-tests.js",
     "backend-module-boundaries-tests.js",
@@ -451,6 +452,7 @@ function runBrowserSmokeIfRequested() {
   const requested = process.argv.includes("--browser") || process.env.LIVEPALMES_BROWSER_SMOKE === "1";
   if (!requested) return;
   printStep("Smoke test navigateur");
+  run(process.execPath, [path.join(rootDir, "tests", "competition-status-browser-tests.js")]);
   run(process.execPath, [path.join(rootDir, "tests", "import-record-review-browser-tests.js")]);
   run(process.execPath, [path.join(rootDir, "tests", "direct-browser-tests.js")]);
   run(process.execPath, [path.join(rootDir, "tests", "direct-admin-workflow-browser-tests.js")]);
