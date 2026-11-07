@@ -4,7 +4,15 @@
 
 ## Perimetre
 
-LivePalmes Direct accompagne les compétitions piscine de tous niveaux issues du calendrier NAP. Le nouveau parcours multi-compétitions est publié sur TEST ; le dispositif national historique conserve ses pages et ses protections. La préparation des engagements reste dans le Portail LivePalmes.
+LivePalmes Direct accompagne les compétitions piscine de tous niveaux issues du calendrier NAP. Le nouveau parcours multi-compétitions est publié en PROD. Le dispositif national historique conserve ses pages et ses protections. La préparation des engagements reste dans le Portail LivePalmes.
+
+## Mise en service PROD pour Paris le 7 novembre 2026
+
+La [publication officielle](https://github.com/ffessmnap/LivePalmes/actions/runs/42314016120) promeut le candidat TEST `5b76e1e` après accord explicite d'Antoine et contrôles réussis. Le gestionnaire Direct et le lecteur public sont les deux seuls services actualisés. Les 115 autres révisions et les témoins mail et automates sont conservés. Les 23 fichiers applicatifs servis et le public à 1 280/390/320 px sont vérifiés.
+
+Paris 5220, Championnat régional IDF manche 1 du 7 novembre à la piscine Georges-Hermant, est activé dans le seul environnement `production`. Le compte national existant d'Antoine possède les droits nécessaires. [Bureau PROD](https://livepalmes.web.app/direct-admin.html) et [public Paris](https://livepalmes.web.app/direct.html?id=5220). Le pilote importe ses vrais PDF puis choisit son dossier WinPalme dans Chrome/Edge. Vérifier les premières lignes TXT/PDF à la première ouverture, notamment 1 vers 2 si cette répartition s'applique. L'onglet et le poste doivent rester ouverts et éveillés.
+
+Les sauvegardes ponctuelles avant publication et après activation sont rouvertes, comparées et restaurées dans MySQL 5.7 isolé, avec artefacts chiffrés conservés 14 jours. La restauration préserve notamment le JSON null du journal d'activation. Les sauvegardes ne sont pas automatisées et la couverture hébergeur n'est pas attestée. [Preuves, autorisation et limites](releases/EVOLUTIONS.md).
 
 ## Direct multi-compétitions — livraison TEST du 6 novembre 2026
 
