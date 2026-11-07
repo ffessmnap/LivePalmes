@@ -1,7 +1,8 @@
 "use strict";
 // Import provenance and review lifecycle only: no record detection or sporting write.
 const {createHash}=require("node:crypto");
-const hash=value=>createHash("sha256").update(JSON.stringify(value)).digest("hex");
+const {stableStringify}=require("./public-records-data");
+const hash=value=>createHash("sha256").update(stableStringify(value)).digest("hex");
 const pointerId=competitionId=>hash(["nap-results-current",competitionId]);
 const parse=value=>typeof value==="string"?JSON.parse(value):value;
 function initialReview(){return {version:1,state:"current",candidates:[]};}
