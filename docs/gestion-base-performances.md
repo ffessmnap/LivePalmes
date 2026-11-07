@@ -26,6 +26,8 @@ La livraison réactive uniquement `deleteCompetitionImport` dans le registre des
 
 Les empreintes du reçu de suppression utilisent la sérialisation stable commune : le réordonnancement des clés par le JSON natif MySQL n’invalide pas une reprise. Le corps structuré des statuts est inclus dans l’empreinte, indépendamment de sa restitution en objet ou texte par mysql2 ; toute modification invalide la confirmation.
 
+Une reprise ajoute un SELECT groupé par clés primaires, plafonné à 5 001 lignes, pour vérifier que les anciens identifiants de performances présents n’appartiennent pas désormais à une autre compétition. Ce cas bloque la reprise avant toute suppression de masquage associé. Le budget de reprise ci-dessus est donc augmenté d’une requête bornée au maximum ; aucun accès par résultat ni scan global.
+
 Contrat réservé aux **nouveaux imports**, sans reprise ni détection historique :
 
 - `metadata.sourceContractVersion = 1`, `plan.perfs.sources[]` et `livepalmes_performance_import_rows.expected_row.source` relient chaque performance à son import, identifiant NAP, ligne source, origine `individual` / `passage` / `first-relay` et empreinte native. Clé source stable : `<importId>:perfs:<performanceId>`. Une performance inchangée conserve son identifiant natif mais reçoit la référence de sa nouvelle version d’import ; aucune égalité de temps seule ne prouve une provenance.

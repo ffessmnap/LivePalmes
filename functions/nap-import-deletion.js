@@ -93,6 +93,11 @@ function createNativeResultDeletion({getPool,authorize}){
       if(saved.version!==1||hash(saved.proof)!==saved.fingerprint||hash(saved.proof.competition)!==hash(competition)||saved.proof.importId!==pointer.currentImportId||saved.proof.lastDeletionId!==(pointer.lastDeletionId||null)||saved.proof.resultsDeleted!==(pointer.resultsDeleted===true))throw new TypeError("L’état de la compétition a changé depuis cette suppression.");
       checkRemaining(state.perfs,saved.proof.perfs,COLUMNS);checkRemaining(state.relays,saved.proof.relays,RELAY_COLUMNS);checkRemaining(state.visibility,saved.proof.visibility,VISIBILITY,"performance_id");
       if(hash(proof.statuses)!==hash(saved.proof.statuses))throw new TypeError("Les statuts de résultats ont changé pendant la suppression.");
+      if(previous&&saved.proof.perfs.length){
+        const ids=saved.proof.perfs.map(row=>row[0]);
+        const claimed=await q(`SELECT id,compet FROM perfs FORCE INDEX (PRIMARY) WHERE id IN (${ids.map(()=>"?").join(",")}) LIMIT 5001`,ids);
+        if(claimed.some(row=>Number(row.compet)!==competitionId))throw new TypeError("Un identifiant de performance appartient désormais à une autre compétition. Vérification nationale requise avant reprise.");
+      }
       pointer={...pointer,activeDeletionId:id,deletionSummary:saved.summary};await writePointer(pointer);
       for(const [table,key,rows] of [["perfs","id",state.perfs],["perfs_relais","id",state.relays],["livepalmes_performance_visibility","performance_id",state.visibility]]){
         for(const chunk of chunks(rows))await q(`DELETE FROM ${table} WHERE ${table==="livepalmes_performance_visibility"?"":"compet=? AND "}${key} IN (${chunk.map(()=>"?").join(",")})`,[...(table==="livepalmes_performance_visibility"?[]:[competitionId]),...chunk.map(r=>r[key])]);
