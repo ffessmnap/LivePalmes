@@ -14,6 +14,8 @@ Paris 5220, Championnat régional IDF manche 1 du 7 novembre à la piscine Georg
 
 Les sauvegardes ponctuelles avant publication et après activation sont rouvertes, comparées et restaurées dans MySQL 5.7 isolé, avec artefacts chiffrés conservés 14 jours. La restauration préserve notamment le JSON null du journal d'activation. Les sauvegardes ne sont pas automatisées et la couverture hébergeur n'est pas attestée. [Preuves, autorisation et limites](releases/EVOLUTIONS.md).
 
+Après accord ciblé d'Antoine, le compte CI backend reçoit le 7 novembre le rôle `roles/secretmanager.secretAccessor` sur le seul secret `LIVEPALMES_NAP_PASSWORD` du projet `livepalmes`, avec sauvegarde IAM vérifiée et contrôle de dérive. Les sauvegardes ponctuelles et leur mode de lancement restent ceux décrits ci-dessous.
+
 ## Direct multi-compétitions — livraison TEST du 6 novembre 2026
 
 Lot regroupé publié sur TEST le 6 novembre à 23 h 43 (Paris), candidat `5b76e1e37eddba618b25c41c92a8168446fe4115`, [publication commune réussie](https://github.com/ffessmnap/LivePalmes/actions/runs/42306711779). Contrôles connectés : quinze fichiers identiques au candidat, public à 1 280/390/320 px sans débordement, 119 fonctions actives avec toutes leurs révisions conservées. Tests de publication sur fixtures uniquement, aucune écriture métier réelle. [Preuves et limites](releases/EVOLUTIONS.md) ; recette de cette nouvelle version attendue.
