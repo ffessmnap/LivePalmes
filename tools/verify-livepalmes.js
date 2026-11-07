@@ -312,6 +312,7 @@ function runUnitTests() {
     "nap-records-store-tests.js",
     "nap-import-record-review-tests.js",
     "nap-import-record-callable-tests.js",
+    "nap-import-record-editor-tests.js",
     "nap-records-browser-store-tests.js",
     "nap-records-callables-tests.js",
     "nap-records-console-source-tests.js",
