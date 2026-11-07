@@ -1135,7 +1135,7 @@ function openDraft(id) {
 function removeDraft(id) {
   const draft = state.drafts.get(id);
   state.drafts.delete(id);
-  for(const [peerId,peer] of state.drafts)if(peer.importReplacementFor===draft?.recordAlertSourceKey)state.drafts.delete(peerId);
+  if(draft?.recordAlertSourceKey)for(const [peerId,peer] of state.drafts)if(peer.importReplacementFor===draft.recordAlertSourceKey)state.drafts.delete(peerId);
   clearQueuedRecordAlertDrafts([draft?.recordAlertSourceKey]);
   if (state.selectedId === id) state.selectedId = "";
   renderTable();
