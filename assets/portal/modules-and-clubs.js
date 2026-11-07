@@ -88,10 +88,10 @@
           const scripts = [
             ["performances/public/record-placeholders.js?v=20260613-mpf-relays-mixed-1", "adminRecordPlaceholdersScript"],
             ["performances/public/data/club-reference.js?v=20260813-national-clubs-3", "adminRecordReferenceScript"],
-            ["performances/public/store.js?v=20261102-session-1", "adminRecordStoreScript"]
+            ["performances/public/store.js?v=20261107-import-records-1", "adminRecordStoreScript"]
           ];
           await Promise.all(scripts.map(([src, id]) => loadScriptOnce(src, id)));
-          await loadScriptOnce("performances/public/admin-records.js?v=20261015-nap-suggestions-1", "adminRecordModuleScript");
+          await loadScriptOnce("performances/public/admin-records.js?v=20261107-import-records-2", "adminRecordModuleScript");
           watchRecordWorkbench();
         })().catch((error) => {
           portalState.recordModuleLoadPromise = null;
@@ -163,7 +163,8 @@
           await loadScriptOnce("performances/public/import-confirmation-message.js?v=20261025-import-courses-1", "adminImportConfirmationScript");
           await loadScriptOnce("performances/public/import-swimmer-creation.js?v=20261025-import-creation-1", "adminImportSwimmerCreationScript");
           await loadScriptOnce("performances/public/import-swimmer-review.js?v=20261026-import-relay-alerts-1", "adminImportReviewScript");
-          await loadScriptOnce("performances/public/import-competitions.js?v=20261107-import-history-deletion-1", "adminImportModuleScript");
+          await loadScriptOnce("performances/public/import-record-review.js?v=20261107-import-records-1", "adminImportRecordReviewScript");
+          await loadScriptOnce("performances/public/import-competitions.js?v=20261107-import-records-1", "adminImportModuleScript");
           if (includeSpreadsheet) await loadImportSpreadsheet();
           watchImportWorkbench();
         })().catch((error) => {

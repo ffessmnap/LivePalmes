@@ -48,13 +48,14 @@
     return loadNapRecords(options);
   }
 
-  async function saveData(nextData) {
+  async function saveData(nextData, options = {}) {
     if (!usesNap()) throw new Error("Source Records/MPF NAP requise.");
     if (!Number.isSafeInteger(napRevision)) throw new Error("Rechargez les Records/MPF avant publication.");
     const data = cloneData(completeData(cloneData(nextData)));
     const sportingContent = value => JSON.stringify([value.records, value.franceRecords, value.filters, value.cutoffDate, value.generatedAt]);
     if (pendingNapPublication && sportingContent(pendingNapPublication.data) !== sportingContent(data)) throw new Error("Une publication reste à vérifier. Rechargez avant de modifier le brouillon.");
-    if (!pendingNapPublication) pendingNapPublication = { expectedRevision: napRevision, operationId: global.crypto.randomUUID(), data };
+    if (pendingNapPublication && JSON.stringify(pendingNapPublication.importCandidates||[])!==JSON.stringify(options.importCandidates||[])) throw new Error("Une publication reste à vérifier avec les mêmes candidatures.");
+    if (!pendingNapPublication) pendingNapPublication = { expectedRevision: napRevision, operationId: global.crypto.randomUUID(), data, ...(options.importCandidates?.length?{importCandidates:cloneData(options.importCandidates)}:{}) };
     const result = await napCall("savePerformanceCorrection", { ...pendingNapPublication, recordsAction: "publish" });
     napRevision = result.revision;
     pendingNapPublication = null;

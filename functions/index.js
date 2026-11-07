@@ -11187,9 +11187,14 @@ exports.deleteCompetitionImport = onCall(COMPETITION_IMPORT_CALLABLE_OPTIONS, as
   };
 });
 
-exports.updateCompetitionImportRecordAlertDecision = onCall(CALLABLE_OPTIONS, async (request) => {
+exports.updateCompetitionImportRecordAlertDecision = onCall(COMPETITION_IMPORT_CALLABLE_OPTIONS, async (request) => {
   await portalSessionService().assertSession(request);
-  if (ENVIRONMENT.sportingDataSource === "nap") throw new HttpsError("failed-precondition", "Cette ancienne action Firebase est désactivée : les résultats sont gérés dans NAP.");
+  if (ENVIRONMENT.sportingDataSource === "nap") {
+    const actor=authorizeNativePerformance(request);
+    if(["decision","draft"].includes(request.data?.action))authorizeNapRecords(request);
+    try{return await require("./nap-import-record-review").action(require("./nap-portal-pool").portalPool(process.env.LIVEPALMES_NAP_PASSWORD),request.data,actor);}
+    catch(error){throw nativePerformanceFailure(error);}
+  }
   assertCapability(request, "competitions.import");
   const importId = cleanText(request.data?.importId).slice(0, 160);
   const alertIndex = Number(request.data?.alertIndex);
