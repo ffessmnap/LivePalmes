@@ -26,6 +26,7 @@
           finally { button.disabled = false; }
         });
         document.addEventListener("livepalmes:portal-session-locked", () => portalActions.suspendEngagementClubWrites());
+        global.addEventListener("livepalmes:competition-results-changed", () => portalActions.invalidateEngagementCalendarCaches());
         document.addEventListener("livepalmes:portal-session-resumed", (event) => {
           portalActions.clearEngagementClubWorkspaceSessionCaches();
           portalActions.clearEngagementClubSwimmersSessionCaches();

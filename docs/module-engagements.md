@@ -562,6 +562,12 @@ Il est impossible de saisir un temps inferieur au record de France club applicab
 
 ## Gestion des competitions
 
+Dans la liste Compétitions des administrateurs régionaux et nationaux, une seule pastille est affichée selon la priorité validée : **Annulée → Résultats publiés → Engagements fermés → Engagements ouverts → Au calendrier**. Un protocole PDF effectivement publié dans les sources publiques, même sans résultats structurés, compte comme résultats publiés. Un simple journal d'import ne suffit pas : il faut des performances visibles, des relais ou des statuts sans temps de la version courante. Une suppression conserve les documents publiés, qui peuvent donc maintenir cette pastille.
+
+L'ouverture se fonde sur l'état réel et une échéance future valide ; une échéance atteinte ferme l'affichage même si le cache indique encore ouvert. Une fermeture n'atteste pas d'ouverture antérieure. Les données absentes/incohérentes affichent « État à vérifier ». Les dates futures ne programment pas une ouverture. Les formations, stages et réunions ne reçoivent pas d'état d'engagement sportif. Les règles métier et les droits restent inchangés.
+
+Budget NAP de cette liste : par saison, un SELECT indexé de 500 compétitions maximum et un SELECT groupé des seuls documents publics (plafond existant de 100 par compétition, 50 000 au maximum, sentinelles d'excès bloquantes). Au plus deux saisons : quatre appels SQL et 101 000 lignes retournées au plafond, hors sentinelles et vérification d'accès existante. Les tests d'existence des résultats restent indexés dans le SELECT des compétitions ; la vérification des statuts est bornée aux 15 000 lignes du journal de l'import courant (plafond existant), jamais à l'historique global ; le pointeur n'est probant que s'il reste des lignes de statut sans temps dans sa version courante non supprimée. Aucun RPC par ligne, aucune lecture Firestore sportive, aucun listener ou repli massif. Le calcul, les filtres et le rafraîchissement minute ne lisent rien ; le retour sur une liste encore valide réutilise son cache. Après import/suppression ou modification documentaire, le cache est invalidé sans lecture immédiate et rechargé une seule fois à la prochaine ouverture.
+
 Pour une competition, un niveau 2 ou 3 peut consulter :
 
 - les parametres ;

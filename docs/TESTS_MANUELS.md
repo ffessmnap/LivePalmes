@@ -2,6 +2,12 @@
 
 <!-- description: Checklist de tests manuels à exécuter avant une publication ou après une modification sensible. -->
 
+## Pastilles des compétitions — 8 novembre 2026
+
+Fixtures hors réseau : `node tests/competition-status-tests.js` et `node tests/competition-status-browser-tests.js`. La CI MySQL 5.7 isolée vérifie le SQL réel du signal dans la suite équipes existante : import seul, lignes toutes masquées, pointeur supprimé, statut sans temps courant, relais et variantes JSON booléen/nombre/chaîne/null. Aucun test d'écriture sur NAP réel.
+
+Sur 1440/390/320 px, en administration régionale puis nationale : une seule pastille par ligne, priorité Annulée/résultats/fermé/ouvert/calendrier, PDF public seul sans faux lien de résultats structurés, échéance atteinte sans relecture, champs absents/incohérents, cache mémoire/session, événements sans engagements. Vérifier les libellés visibles sans survol, l'absence de débordement, Administrer au toucher/clavier et le focus conservé au rafraîchissement. Après import, suppression ou modification du protocole, vérifier l'invalidation du cache et la nouvelle liste à sa prochaine ouverture, sans requête immédiate ni appel par compétition.
+
 ## Direct : remise à zéro et import PDF par session — 6 novembre 2026
 
 - Sur données fictives uniquement pour les essais automatisés : annuler la saisie SUPPRIMER ne doit envoyer aucun appel. Confirmer puis simuler une coupure : page publique masquée, autres publications bloquées, bouton Reprendre ; la reprise termine le nettoyage. Accès, activation, réglages, autres compétitions et environnement voisin restent intacts ; aucun import, historique ou reçu de reset ne subsiste. Ancienne version rejetée après de nouveaux imports.

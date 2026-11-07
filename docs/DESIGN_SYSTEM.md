@@ -2,6 +2,12 @@
 
 <!-- description: Référence du langage visuel, des composants d’interface et des règles responsive déjà présents dans LivePalmes. -->
 
+## Compétitions du portail : pastille unique — 8 novembre 2026
+
+La colonne administrateur « État » affiche une seule capsule textuelle, dans cet ordre de priorité : Annulée, Résultats publiés, Engagements fermés, Engagements ouverts, Au calendrier. Un protocole PDF publié seul suffit pour les résultats ; un historique d'import ne suffit pas. Les informations absentes ou incohérentes donnent « État à vérifier ». Ce choix d'affichage ne transforme pas les états métier indépendants en étapes exclusives.
+
+Les capsules réutilisent le composant de la liste : vert pour résultats/ouverture, gris pour fermeture, bleu pour calendrier, ambre pour annulation/état à vérifier. Le texte porte le sens sans dépendre de la couleur ni du survol. Sous 760 px, la pastille reste sur la ligne d'état de la carte, avec retour à la ligne autorisé ; le bouton Administrer reste accessible au toucher et au clavier. Le rafraîchissement de l'échéance conserve le focus.
+
 ## Historique des imports du portail — 7 novembre 2026
 
 La revue Records/MPF est intégrée au détail de la carte d’un nouvel import éligible. Elle réutilise `competition-import-alert` et les actions existantes, avec origine de la performance, comparaison et état humain/publication distincts. Le compteur n’est présenté comme un bilan qu’après détection réussie ; une panne apparaît explicitement. L’ouverture d’une carte reste locale, les actions de lecture/détection sont nommées et la liste distante est paginée par 50. La publication reste dans le module Records/MPF avec confirmation explicite.

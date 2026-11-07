@@ -12,6 +12,8 @@ const view = { competitionItem: __nativeMember0, readDocuments: __nativeMember1 
     competition.qualificationJobId=await require("../../nap-qualification-jobs").activeControl(pool,input);
     competition.nativeSelectionLockReason=require("../../nap-swimmer-entry-plan").selectionLockReason(competition);
     competition.clubDocuments = await view.readDocuments(pool, input, {includeUploader:includeUploaders});
+    require("../../nap-calendar-protocols").applyPublishedProtocol(competition, competition.clubDocuments);
+    competition.resultsPdfUrl = competition.results.pdfUrl;
     if(includeUploaders)competition.clubDocuments=await (0, backendContext.local$nativeDocumentAuthors)(competition.clubDocuments);
     competition.documentCount = competition.clubDocuments.length;
     return competition;
