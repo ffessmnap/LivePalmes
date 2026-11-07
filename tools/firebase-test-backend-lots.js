@@ -102,7 +102,6 @@ const NAP_RETIRED_FUNCTIONS = Object.freeze([
   "requestEngagementCompetitionDeletion",
   "resolveEngagementCompetitionDeletionRequest",
   "resumeCompetitionImportPublication",
-  "deleteCompetitionImport",
   "updateCompetitionImportRecordAlertDecision",
   "refreshDtnQualificationCache",
   "getDtnQualificationOverview",
