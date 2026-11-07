@@ -11,8 +11,8 @@ const ast = acorn.parse(source, {ecmaVersion:"latest"});
 const handlers = new Map(ast.body.filter(n => n.type === "ExpressionStatement" && n.expression.type === "AssignmentExpression" && n.expression.left.object?.name === "exports").map(n => [n.expression.left.property.name, n.expression.right.arguments.at(-1)]));
 class HttpsError extends Error { constructor(code, message) { super(message); this.code = code; } }
 (async () => {
-  assert.equal(NAP_RETIRED_FUNCTIONS.length, 41);
-  assert.equal(new Set(NAP_RETIRED_FUNCTIONS).size, 41);
+  assert.equal(NAP_RETIRED_FUNCTIONS.length, 40);
+  assert.equal(new Set(NAP_RETIRED_FUNCTIONS).size, 40);
   const retired = new Set([...NAP_RETIRED_FUNCTIONS, ...NAP_UNUSED_FUNCTIONS]);
   assert.deepEqual([...NAP_UNUSED_FUNCTIONS].sort(), ["getEngagementNationalAdministrationOverview", "listEngagementCompetitionDeletionRequests", "listEngagementNationalClubSwimmers", "syncPublicRecordsData"]);
   for (const lot of Object.keys(LOTS)) {
@@ -20,7 +20,10 @@ class HttpsError extends Error { constructor(code, message) { super(message); th
   }
   assert.throws(() => activeLotFunctions("unknown"));
   const active = ALL_SAFE_LOTS.flatMap(activeLotFunctions);
-  for (const name of ["getCurrentAccessUser","syncOfficialResultToPublicIndex","storeCompetitionPdf","savePerformanceCorrection","createCompetitionImport","getDtnSeasonOverview"]) assert.ok(active.includes(name), name);
+  for (const name of ["getCurrentAccessUser","syncOfficialResultToPublicIndex","storeCompetitionPdf","savePerformanceCorrection","createCompetitionImport","deleteCompetitionImport","getDtnSeasonOverview"]) assert.ok(active.includes(name), name);
+  // Only this former endpoint is reactivated for the national NAP deletion.
+  // Its real authorization/dispatch is exercised by nap-import-deletion-callable-tests.
+  assert.ok(!retired.has('deleteCompetitionImport'));
   assert.ok(!active.includes("syncPublicRecordsData"));
   assert.ok(!handlers.has("syncPublicRecordsData"), "Le déclencheur Records historique doit rester absent");
   assert.ok(LOTS.publications.includes("syncPublicRecordsData"));
@@ -112,5 +115,5 @@ class HttpsError extends Error { constructor(code, message) { super(message); th
   const ui={global:{LivePalmesEnvironment:{sportingDataSource:"nap"}},callFunction:()=>{calls++;throw Error("Legacy endpoint called");},updateEngagementDeletionRequestBadge:n=>{badge=n;},renderEngagementDeletionRequests:()=>{renders++;}};
   vm.runInNewContext("let engagementDeletionRequests,engagementDeletionRequestsLoaded;\n"+portal.slice(loader.start,loader.end)+"\nthis.load=loadEngagementDeletionRequests;",ui);
   await ui.load({force:true});assert.equal(calls,0);assert.equal(renders,1);assert.equal(badge,0);
-  console.log("NAP release cleanup: calendar and Records declarations absent, shared NAP module retained, classifier guards, 38 inert handlers and native UI verified offline.");
+  console.log("NAP release cleanup: calendar and Records declarations absent, shared NAP module retained, classifier guards, 37 inert handlers, native deletion reactivation and native UI verified offline.");
 })().catch(error=>{console.error(error);process.exitCode=1;});

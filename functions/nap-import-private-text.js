@@ -40,11 +40,11 @@ const calendar={ positiveId: __nativeMember0 },native={ bounded: __nativeMember1
   const pointerId=digest(Buffer.from(JSON.stringify(["nap-results-current",id])));
   const [pointers]=await pool.execute({sql:"SELECT metadata FROM livepalmes_performance_imports WHERE id=? LIMIT 1",timeout:10000},[pointerId]);
   const pointer=typeof pointers[0]?.metadata==="string"?JSON.parse(pointers[0].metadata):pointers[0]?.metadata;
-  if(pointer?.activeImportId)throw new TypeError("Import en cours : attendez sa fin avant de télécharger le TXT.");
+  if(pointer?.activeImportId||pointer?.activeDeletionId)throw new TypeError("Opération en cours : attendez sa fin avant de télécharger le TXT.");
   if(!pointer?.currentImportId)return {ok:true,file:null};
   if(!/^[a-f0-9]{64}$/.test(pointer.currentImportId))throw new TypeError("Référence d’import invalide.");
   const [imports]=await pool.execute({sql:"SELECT status,JSON_EXTRACT(metadata,'$.sourceText') AS source_text FROM livepalmes_performance_imports WHERE id=? AND competition_id=? LIMIT 1",timeout:10000},[pointer.currentImportId,id]);
-  const row=imports[0];if(!row||row.status!=="completed")throw new TypeError("Import courant à vérifier.");
+  const row=imports[0];if(!row||!(row.status==="completed"||pointer.resultsDeleted&&row.status==="deleted"))throw new TypeError("Import courant à vérifier.");
   const archive=typeof row.source_text==="string"?JSON.parse(row.source_text):row.source_text;
   return {ok:true,file:archive?restore(archive):null};
 }

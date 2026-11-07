@@ -11102,9 +11102,17 @@ async function markCompetitionImportDeleted(input0) {
   return $serverPerformanceService_markCompetitionImportDeleted().markCompetitionImportDeleted(...arguments);
 }
 
-exports.deleteCompetitionImport = onCall(PUBLIC_PERFORMANCE_CALLABLE_OPTIONS, async (request) => {
+exports.deleteCompetitionImport = onCall(COMPETITION_IMPORT_CALLABLE_OPTIONS, async (request) => {
   await portalSessionService().assertSession(request);
-  if (ENVIRONMENT.sportingDataSource === "nap") throw new HttpsError("failed-precondition", "Cette ancienne action Firebase est désactivée : les résultats sont gérés dans NAP.");
+  if (ENVIRONMENT.sportingDataSource === "nap") {
+    const actor=authorizeNativePerformance(request);
+    if(!actor.national)throw new HttpsError("permission-denied","Suppression des résultats réservée à l’administration nationale.");
+    try{return await require("./nap-import-deletion").createNativeResultDeletion({authorize:authorizeNativePerformance,getPool:()=>require("./nap-portal-pool").portalPool(process.env.LIVEPALMES_NAP_PASSWORD)})(request);}
+    catch(error){
+      if(error instanceof TypeError||error instanceof RangeError||error instanceof HttpsError)throw nativePerformanceFailure(error);
+      throw new HttpsError("unavailable","Suppression NAP interrompue. Reprenez la même opération pour terminer sa vérification ; aucune nouvelle sauvegarde n’est créée.");
+    }
+  }
   assertCapability(request, "competitions.import");
   const importId = cleanText(request.data?.importId).slice(0, 160);
   if (!importId) {

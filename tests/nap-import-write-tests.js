@@ -21,6 +21,7 @@ function fixture({denied=false,lock=true,triggers=false,lost="",withRelay=false,
   if(sql.includes("AUTO_INCREMENT FROM information_schema.TABLES"))return [[{TABLE_NAME:"perfs",ENGINE:"MyISAM",AUTO_INCREMENT:1000},{TABLE_NAME:"perfs_relais",ENGINE:"MyISAM",AUTO_INCREMENT:100}]];
   if(sql.startsWith("SELECT competition_id,created_by,status,metadata"))return [state.journal?[state.journal]:[]];
   if(sql.startsWith("SELECT metadata FROM livepalmes_performance_imports"))return [state.pointer?[{metadata:JSON.stringify(state.pointer)}]:[]];
+  if(sql.startsWith("SELECT JSON_EXTRACT(metadata,'$.recordReview')"))return [[]];
   if(sql.includes("FROM competitions"))return [[competition]];
   if(sql.includes("FROM nageurs"))return [people];
   if(sql.includes("FROM clubs"))return [[club]];
@@ -56,6 +57,15 @@ if(require.main===module)(async()=>{
  f=fixture({lost:"delete"});await assert.rejects(()=>f.writer({data:input}));f.state.rows.push({...old,id:1000,compet:999});await assert.rejects(()=>f.writer({data:input}),/Identifiant natif/);assert.equal(f.state.writes,1,"foreign allocated id is refused before further mutation");
  f=fixture({lost:"delete"});await assert.rejects(()=>f.writer({data:input}));const receipt=f.state.pointer.activeImportId;await f.writer({data:{resumeImportId:receipt}});assert.equal(f.state.writes,2);assert.equal(f.state.previews,1,"history resume needs neither source file nor new preview");assert.equal(f.state.journal.status,"completed");
  f=fixture({withRelay:true,lost:"relay"});await assert.rejects(()=>f.writer({data:input}),/lost relay/);assert.equal(f.state.relayRows.length,1);await f.writer({data:{resumeImportId:f.state.pointer.activeImportId}});assert.equal(f.state.relayRows.length,1,"lost native team insertion is not duplicated");assert.equal(f.state.relayRows[0].tps4,"040000");assert.equal(f.state.relayRows[0].nageur4,171);assert.equal(f.state.writes,3);assert.equal(f.state.lines.length,4);
+ f=fixture();await f.writer({data:input});const saved=JSON.parse(f.state.journal.metadata);assert.equal(saved.sourceContractVersion,1);assert.equal(saved.recordReview.version,1);assert.equal(f.state.lines[0].record.source.origin,'individual');assert.equal(f.state.lines[0].record.source.key,`${f.state.pointer.currentImportId}:perfs:1000`);
+ f.state.journal.status='deleted';f.state.rows=[];f.state.pointer.resultsDeleted=true;assert.equal((await f.writer({data:input})).deleted,true);assert.equal(f.state.rows.length,0,'Deleted imports cannot resurrect results');
+ f=fixture();f.state.pointer={activeDeletionId:'d'.repeat(64)};await assert.rejects(()=>f.writer({data:input}),/suppression/);assert.equal(f.state.writes,0);
+ let previousReview={version:1,state:'current',candidates:[{state:'pending',id:'pending'},{state:'published',id:'published',publishedRevision:9}]};
+ f=fixture({executeExtra:async(sql,values,state)=>{
+  if(sql.startsWith("SELECT JSON_EXTRACT(metadata,'$.recordReview')"))return [[{record_review:structuredClone(previousReview)}]];
+  if(sql.startsWith('UPDATE livepalmes_performance_imports SET metadata=JSON_SET')){previousReview=JSON.parse(values[0]);return [{affectedRows:1}];}
+  if(sql.startsWith("UPDATE livepalmes_performance_imports SET status='replaced'")){assert.equal(state.locked,true);return [{affectedRows:1}];}
+ }});f.state.pointer={currentImportId:'b'.repeat(64)};await f.writer({data:input});assert.equal(previousReview.state,'replaced');assert.equal(previousReview.candidates[0].state,'invalidated');assert.equal(previousReview.candidates[1].requiresReview,true);assert.equal(previousReview.candidates[1].publishedRevision,9);
  f=fixture({denied:true});await assert.rejects(()=>f.writer({data:input}),/denied/);assert.equal(f.state.pools,0);
  for(const options of [{lock:false},{triggers:true}]){f=fixture(options);await assert.rejects(()=>f.writer({data:input}));assert.equal(f.state.writes,0);assert.equal(f.state.released,1);}
  f=fixture();await assert.rejects(()=>f.writer({data:{...input,confirmReplacement:false}}),/explicitement/);assert.equal(f.state.journal,null);assert.equal(f.state.writes,0);

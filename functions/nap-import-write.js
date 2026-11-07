@@ -1,5 +1,6 @@
 "use strict";
 const {notMerged}=require("./nap-swimmer-merge-state");
+const lifecycle=require("./nap-import-lifecycle");
 // Native MyISAM import: immutable before/after journal before every sporting
 // mutation, bounded bulk statements and verified recovery, no fake rollback.
 const {COLUMNS,positiveId}=require("./nap-performance-change-plan");
@@ -61,7 +62,9 @@ function createNativeImportWriter({getPool,authorize,preview=previewNativeImport
       if((await q(`SELECT TRIGGER_NAME FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA=DATABASE() AND EVENT_OBJECT_TABLE IN ('perfs','perfs_relais'${zip?",'documents','livepalmes_document_options'":""}) LIMIT 1`)).length)throw new TypeError("Declencheurs NAP a verifier avant import.");
       await conn.query({sql:"LOCK TABLES perfs WRITE, perfs_relais WRITE, livepalmes_performance_imports WRITE, livepalmes_performance_import_rows WRITE, livepalmes_performance_visibility WRITE, competitions READ, nageurs READ, livepalmes_swimmer_merges READ, clubs READ"+(zip?", documents WRITE, documents AS d WRITE, documents_types AS t READ, livepalmes_document_options WRITE, livepalmes_document_options AS o WRITE, course_dispo READ":""),timeout:10000});locked=true;
       const currentPointer=await pointer();
+      if(currentPointer.activeDeletionId)throw new TypeError("Une suppression de résultats interrompue doit être terminée avant un import.");
       if(currentPointer.activeImportId&&currentPointer.activeImportId!==id)throw new TypeError("Un import interrompu doit etre repris avant un autre fichier.");
+      if(initial?.status==="deleted"||initial&&currentPointer.resultsDeleted&&currentPointer.currentImportId===id)return {ok:true,source:"nap",importId:id,replayed:true,historical:true,deleted:true,summary:saved.plan.summary};
       // A completed old receipt must never roll back a newer import.
       if(initial&&["completed","replaced"].includes(initial.status)&&currentPointer.currentImportId&&currentPointer.currentImportId!==id&&!currentPointer.activeImportId)return {ok:true,source:"nap",importId:id,replayed:true,historical:true,summary:saved.plan.summary};
       if(initial?.status==="completed"&&currentPointer.currentImportId===id&&!currentPointer.activeImportId)return {ok:true,source:"nap",importId:id,replayed:true,summary:saved.plan.summary};
@@ -81,6 +84,8 @@ function createNativeImportWriter({getPool,authorize,preview=previewNativeImport
         saved={requestHash,operationId:input.operationId,fileName:input.fileName,plan,competition,fileHash:pack.decoded.fileHash,people:pack.candidates.filter(r=>personIds.includes(r.id)),clubs:pack.clubs.filter(r=>clubIds.includes(String(r.num_club))),
           display:{metadata:{competitionName:competition.libelle,date:competition.date,location:competition.lieu,poolSize:String(competition.bassin),timingType:competition.chrono},summary:plan.summary},visibilityBefore:[]};
         saved.sourceText=sourceText;
+        saved.sourceContractVersion=1;
+        saved.recordReview=lifecycle.initialReview();
         if(zip){
           if(hash(pack.existingProtocol||null)!==hash(currentPointer.protocol||null))throw new TypeError("Le protocole de l’import précédent a changé. Actualisez l’aperçu.");
           if(hash(pack.existingText||null)!==hash(currentPointer.textManifest||null))throw new TypeError("Le TXT du précédent import a changé. Actualisez l’aperçu.");
@@ -131,12 +136,16 @@ function createNativeImportWriter({getPool,authorize,preview=previewNativeImport
         if(tableFingerprint(verified,columns)!==tableFingerprint(plan.after,columns))throw new Error("Native import verification incomplete");
       }
       for(const chunk of batches(saved.plan.perfs.removals))await q(`DELETE FROM livepalmes_performance_visibility WHERE performance_id IN (${chunk.map(()=>"?").join(",")})`,chunk.map(r=>r.id));
-      const records=[...saved.plan.perfs.after.map(row=>({table:"perfs",row})),...saved.plan.relays.after.map(row=>({table:"perfs_relais",row})),...saved.plan.statusRows.map(row=>({table:"status",row})),...saved.plan.excluded.map(row=>({table:"excluded",row}))];
+      const sources=new Map((saved.plan.perfs.sources||[]).map(source=>[source.performanceId,source]));
+      const records=[...saved.plan.perfs.after.map(row=>({table:"perfs",row,...(saved.sourceContractVersion===1?{source:lifecycle.sourceReference(id,sources.get(row.id))}:{})})),...saved.plan.relays.after.map(row=>({table:"perfs_relais",row})),...saved.plan.statusRows.map(row=>({table:"status",row})),...saved.plan.excluded.map(row=>({table:"excluded",row}))];
       const stored=await q("SELECT row_number,expected_row FROM livepalmes_performance_import_rows WHERE import_id=? ORDER BY row_number LIMIT 15001",[id]);
       if(stored.length>15000||stored.some(r=>!records[Number(r.row_number)-1]||hash(parse(r.expected_row))!==hash(records[Number(r.row_number)-1])))throw new TypeError("Journal des lignes incoherent.");
       const present=new Set(stored.map(r=>Number(r.row_number)));
       for(const chunk of batches(records.map((record,index)=>({record,rowNumber:index+1})).filter(r=>!present.has(r.rowNumber))))await q(`INSERT INTO livepalmes_performance_import_rows (import_id,row_number,performance_id,status,expected_row) VALUES ${chunk.map(()=>"(?,?,NULL,?,?)").join(",")}`,chunk.flatMap(r=>[id,r.rowNumber,r.record.table,JSON.stringify(r.record)]));
-      if(currentPointer.currentImportId&&currentPointer.currentImportId!==id)await q("UPDATE livepalmes_performance_imports SET status='replaced',updated_at=UTC_TIMESTAMP(6) WHERE id=? AND status='completed' LIMIT 1",[currentPointer.currentImportId]);
+      if(currentPointer.currentImportId&&currentPointer.currentImportId!==id){
+        await lifecycle.invalidateImportReview(q,currentPointer.currentImportId,{reason:"replaced",operationId:id});
+        await q("UPDATE livepalmes_performance_imports SET status='replaced',updated_at=UTC_TIMESTAMP(6) WHERE id=? AND status='completed' LIMIT 1",[currentPointer.currentImportId]);
+      }
       const publishedProtocol=saved.protocol?await protocol.publish(conn,saved.protocol):null;
       await q("UPDATE livepalmes_performance_imports SET status='completed',updated_at=UTC_TIMESTAMP(6) WHERE id=? LIMIT 1",[id]);
       await writePointer({currentImportId:id,...(saved.sourceText?{textManifest:require("./nap-import-private-text").manifest(saved.sourceText)}:{}),...(publishedProtocol?{protocol:publishedProtocol}:currentPointer.protocol?{protocol:currentPointer.protocol}:{})},"current");
