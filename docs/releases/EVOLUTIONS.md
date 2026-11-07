@@ -2,6 +2,13 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 7 novembre — Portail : historique des imports et suppression des résultats
+
+- Besoin/périmètre validé par Antoine : résumé compétition/date, performances, nageurs et clubs ; suppression définitive de tous les résultats actuels de la compétition, conservation compétition/engagements/documents/historique, aucune nouvelle sauvegarde. Développement et livraison TEST autorisés par la coordination du 7 novembre ; aucune suppression réelle ni PROD autorisée.
+- Préparation sur `codex/import-history-results-deletion` : historique NAP borné, confirmation sur compteurs actuels, suppression nationale récupérable sans nouvelle avant-image, conservation des documents/TXT et protection contre le rejeu d’un ancien import. Contrat de provenance v1 et invalidation préparés pour les candidatures Records/MPF des nouveaux imports seulement ; aucune détection, règle sportive ou version officielle modifiée.
+- Contrôles locaux : tests imports/remplacement/PDF/TXT/statuts/suppression et autorisation, frontières/isolation backend, cache et interface réelle à 1440/390/320 px hors réseau ; annulation, compteurs actuels, reprise identique et absence de débordement vérifiées. CI globale obligatoire et preuves finales à compléter après livraison. Aucun résultat réel modifié pendant les vérifications.
+- État : développement terminé, PR/CI et déploiement TEST en attente. Retour utilisateur sur la version livrée : non recueilli ; l’accord de périmètre ne vaut pas validation fonctionnelle TEST.
+
 ### 7 novembre — Direct public : raccourci catégorie et titre compact
 
 - Antoine demande le filtre automatique par clic sur une catégorie des résultats, un retrait compact des filtres et le titre du bandeau limité à une ligne ; livraison autorisée sur TEST. Les consoles des juges restent reportées.

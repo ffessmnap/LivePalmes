@@ -35,6 +35,7 @@
     validate: document.querySelector("#competitionImportValidateButton"),
     replace: document.querySelector("#competitionImportReplaceButton"),
     importsList: document.querySelector("#competitionImportsList"),
+    historyProgress: document.querySelector("#competitionImportsProgress"),
     importsRefresh: document.querySelector("#competitionImportsRefreshButton"),
     importsExport: document.querySelector("#competitionImportsExportButton"),
     importsSearch: document.querySelector("#competitionImportsSearch"),
@@ -87,6 +88,8 @@
   const nativeCorrections=()=>global.LivePalmesEnvironment?.sportingDataSource === "nap";
   let nativeCorrectionCursor=0,nativeCorrectionMore=false,nativeCorrectionNational=false;
   let correctionFilterRows=[],nativeCorrectionRequestId=0;
+  let nativeImportNational=false,nativeDeletionBusy=false;
+  const pendingNativeDeletions=new Map();
 
   function nativeCorrectionFilters() {
     return {course:elements.correctionCourse?.value||"",year:elements.correctionYear?.value||"",competitionId:elements.correctionCompetition?.value||""};
@@ -2027,16 +2030,39 @@
     return `${count} import${count > 1 ? "s" : ""}`;
   }
 
+  function renderNativeImportHistory(items){
+    elements.importsList.querySelectorAll('.competition-import-row[open][data-import-id]').forEach(row=>openImportIds.add(row.dataset.importId));
+    importsCache=Array.isArray(items)?items:[];
+    if(elements.importsStatus){
+      const selected=elements.importsStatus.value;
+      elements.importsStatus.innerHTML='<option value="">Tous les statuts</option><option value="completed">Enregistrés</option><option value="replaced">Remplacés</option><option value="prepared">Interrompus</option><option value="deleted">Résultats supprimés</option>';
+      elements.importsStatus.value=selected;
+    }
+    updateImportYearOptions();
+    const visible=filteredImports(),number=value=>Number.isSafeInteger(value)?value.toLocaleString('fr-FR'):'—';
+    const status=item=>item.activeDeletionId?'Suppression interrompue : à reprendre':item.status==='deleted'?'Résultats supprimés':item.status==='replaced'?'Ancienne version conservée':item.status==='completed'?'Enregistré dans NAP':'Enregistrement interrompu : à reprendre';
+    elements.importsList.innerHTML=visible.length?visible.map(item=>{
+      const m=item.metrics||{},details=[['Relais collectifs',m.relays],['Statuts sans temps',m.statuses]];
+      return `<details class="competition-import-row competition-import-native" data-import-id="${escapeHtml(item.importId)}"${openImportIds.has(item.importId)?' open':''}>
+        <summary><div><strong>${escapeHtml(item.metadata?.competitionName||`Compétition ${item.competitionId}`)} — ${escapeHtml(item.metadata?.date||'date non renseignée')}</strong><span class="competition-import-metrics">${escapeHtml(number(m.performances))} performances · ${escapeHtml(number(m.swimmers))} nageurs · ${escapeHtml(number(m.clubs))} clubs</span><span>${escapeHtml(status(item))}</span></div></summary>
+        <div class="competition-import-details"><div><span>Importé le</span><strong>${escapeHtml(item.importedAt?new Date(item.importedAt).toLocaleString('fr-FR'):'—')}</strong></div><div><span>Fichier</span><strong>${escapeHtml(item.fileName)}</strong></div>${details.map(([label,value])=>`<div><span>${label}</span><strong>${escapeHtml(number(value))}</strong></div>`).join('')}</div>
+        <p class="competition-imports-note">Chiffres à l’enregistrement de cet import ; performances avec passages et premiers temps de relais inclus. Nageurs et clubs distincts, relais et statuts compris.</p>
+        <div class="competition-import-actions">${nativeImportNational&&(item.canDelete||item.activeDeletionId)?`<button type="button" class="danger-button" data-delete-native-results="${escapeHtml(item.importId)}"${nativeDeletionBusy?' disabled':''}>${item.activeDeletionId?'Reprendre la suppression':'Supprimer tous les résultats de cette compétition'}</button>`:item.status==='deleted'?'<span>Compétition, engagements, documents et historique conservés.</span>':''}</div>
+      </details>`;
+    }).join(''):'<p class="admin-access-empty">Aucun import ne correspond aux filtres.</p>';
+    if(elements.importsFilterSummary)elements.importsFilterSummary.textContent=`${visible.length} import(s) affiché(s) · Historique récent`;
+    return visible;
+  }
+
   function renderImports(items = []) {
     if (nativeCorrections()) {
-      importsCache = Array.isArray(items) ? items : [];
-      elements.importsList.innerHTML = importsCache.length ? importsCache.map(item => `<article><h3>${escapeHtml(item.metadata?.competitionName || `Compétition ${item.competitionId}`)}</h3><p>${escapeHtml(item.fileName)} — ${escapeHtml(item.status === 'completed' ? 'Enregistré dans NAP' : item.status === 'replaced' ? 'Ancienne version conservée' : 'Enregistrement interrompu : reprendre avec le même fichier et les mêmes choix')}</p><small>${escapeHtml(item.importedAt || '')} — ${escapeHtml(item.importId)}</small></article>`).join('') : '<p>Aucun import NAP enregistré.</p>';
-      if (elements.importsFilterSummary) elements.importsFilterSummary.textContent = 'Derniers imports NAP (50 entrées maximum).';
-      importsCache.filter(item => item.status === 'prepared').forEach(item => {
+      const visible=renderNativeImportHistory(items);
+      visible.filter(item => item.status === 'prepared').forEach(item => {
+        const target=elements.importsList.querySelector(`[data-import-id="${item.importId}"] .competition-import-actions`);
         let protocolInput=null;
         if(item.sourceType==='winpalme-zip'){
           const label=document.createElement('label');label.textContent=`PDF ou ZIP original de ${item.fileName}, seulement si la sauvegarde du PDF doit être reprise`;
-          protocolInput=document.createElement('input');protocolInput.type='file';protocolInput.accept='.pdf,.zip';label.append(protocolInput);elements.importsList.append(label);
+          protocolInput=document.createElement('input');protocolInput.type='file';protocolInput.accept='.pdf,.zip';label.append(protocolInput);target.append(label);
         }
         const button = document.createElement('button');
         button.type = 'button'; button.textContent = `Reprendre ${item.fileName}`;
@@ -2055,7 +2081,7 @@
             await loadImports();
           } catch(error) { setMessage(elements.message, error.message || String(error)); button.disabled = false; }
         });
-        elements.importsList.append(button);
+        target.append(button);
       });
       return;
     }
@@ -2175,6 +2201,33 @@
     }
   }
 
+  async function deleteNativeCompetitionResults(button){
+    const importId=button?.dataset?.deleteNativeResults,item=importsCache.find(entry=>entry.importId===importId);
+    if(!nativeImportNational||nativeDeletionBusy||!item)return;
+    nativeDeletionBusy=true;button.disabled=true;
+    try{
+      let payload=pendingNativeDeletions.get(importId);
+      if(!payload){
+        const preview=await callFunction('deleteCompetitionImport',{action:'preview',competitionId:item.competitionId,importId});
+        const counts=preview.summary||{},title=preview.competition?.libelle||item.metadata?.competitionName;
+        if(!global.confirm(`${preview.resume?'Reprendre la suppression définitive':'Supprimer définitivement tous les résultats'} de « ${title} » (${preview.competition?.date||item.metadata?.date||''}) ?\n\n${counts.performances} performances (passages et premiers temps de relais inclus), ${counts.relays} relais collectifs et ${counts.statuses} statuts sans temps.\n${counts.swimmers} nageurs distincts et ${counts.clubs} clubs concernés.\n\nTous les résultats actuels sont concernés, y compris les résultats antérieurs ou corrigés. Aucune nouvelle sauvegarde ne sera créée.\nLa compétition, les engagements, les documents et l’historique seront conservés. Les Records/MPF officiels et les calculs DTN déjà enregistrés resteront inchangés.\n\nCette action écrit dans la base NAP réelle, y compris depuis TEST.`))return;
+        payload={action:'delete',competitionId:item.competitionId,importId,operationId:preview.operationId||global.crypto.randomUUID(),expectedFingerprint:preview.expectedFingerprint,confirmDeletion:true,...(preview.deletionId?{deletionId:preview.deletionId}:{})};
+        pendingNativeDeletions.set(importId,payload);
+      }
+      startImportProgress('Suppression des résultats en cours…','Les résultats de cette compétition sont supprimés ; ses documents et son historique sont conservés.','',elements.historyProgress);
+      const result=await callFunction('deleteCompetitionImport',payload);
+      if(result.deleted!==true)throw new Error('Suppression non confirmée par le serveur. Reprenez la même opération.');
+      pendingNativeDeletions.delete(importId);
+      finishImportProgress('success','Résultats supprimés',`${result.summary.performances} performances et ${result.summary.relays} relais supprimés ; ${result.summary.statuses} statuts retirés. Compétition et documents conservés.`,elements.historyProgress);
+      nativeDeletionBusy=false;
+      await loadImports();
+    }catch(error){
+      if(String(error.code||'').includes('failed-precondition'))pendingNativeDeletions.delete(importId);
+      finishImportProgress('error','Suppression à vérifier',error.message||String(error),elements.historyProgress);
+      if(pendingNativeDeletions.has(importId))button.textContent='Reprendre la suppression';
+    }finally{nativeDeletionBusy=false;elements.importsList.querySelectorAll('[data-delete-native-results]').forEach(control=>{control.disabled=false;});}
+  }
+
   async function deleteCompetitionImport(button) {
     const importId = button?.dataset?.deleteImport || "";
     const item = importsCache.find((entry) => entry.importId === importId);
@@ -2213,7 +2266,7 @@
     if (!ensureAdminAuth()?.isAdminAuthenticated?.()) return;
     if (importsLoadPromise) return importsLoadPromise;
     importsLoadPromise = callFunction("listCompetitionImports", {})
-      .then((result) => renderImports(Array.isArray(result.imports) ? result.imports : []))
+      .then((result) => {nativeImportNational=result.national===true;renderImports(Array.isArray(result.imports) ? result.imports : []);})
       .catch((error) => {
         if (elements.importsList) {
           elements.importsList.innerHTML = `<p class="admin-access-empty">Lecture des imports impossible : ${escapeHtml(error?.message || error)}</p>`;
@@ -2478,6 +2531,8 @@
     elements.importsYear?.addEventListener("input", applyImportFilters);
     elements.importsStatus?.addEventListener("input", applyImportFilters);
     elements.importsList?.addEventListener("click", (event) => {
+      const nativeDeleteButton=event.target.closest('[data-delete-native-results]');
+      if(nativeDeleteButton){void deleteNativeCompetitionResults(nativeDeleteButton);return;}
       const showMoreButton = event.target.closest("[data-show-more-imports]");
       if (showMoreButton) {
         importsVisibleCount += importsPageSize;
