@@ -4,6 +4,8 @@
 
 ## Historique des imports du portail — 7 novembre 2026
 
+La revue Records/MPF est intégrée au détail de la carte d’un nouvel import éligible. Elle réutilise `competition-import-alert` et les actions existantes, avec origine de la performance, comparaison et état humain/publication distincts. Le compteur n’est présenté comme un bilan qu’après détection réussie ; une panne apparaît explicitement. L’ouverture d’une carte reste locale, les actions de lecture/détection sont nommées et la liste distante est paginée par 50. La publication reste dans le module Records/MPF avec confirmation explicite.
+
 Le parcours NAP réutilise les cartes repliables `competition-import-row` : compétition/date, ligne compacte performances/nageurs/clubs et état dans le résumé ; fichier, date d’import, relais et statuts dans le détail. La variante `competition-import-native` permet les retours à la ligne des noms et actions longues sans débordement à 320 px. L’action destructive nationale nomme explicitement « tous les résultats de cette compétition » et ouvre une confirmation avec les compteurs actuels ; les anciens imports et résultats supprimés restent dans l’historique sans bouton de suppression actif. Aucun nouveau jeton de couleur ou composant global.
 
 ## Direct multi-compétitions — 6 novembre 2026

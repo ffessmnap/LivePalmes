@@ -310,6 +310,8 @@ function runUnitTests() {
     "nap-entry-time-competition-tests.js",
     "nap-entry-time-rules-tests.js",
     "nap-records-store-tests.js",
+    "nap-import-record-review-tests.js",
+    "nap-import-record-callable-tests.js",
     "nap-records-browser-store-tests.js",
     "nap-records-callables-tests.js",
     "nap-records-console-source-tests.js",
@@ -448,6 +450,7 @@ function runBrowserSmokeIfRequested() {
   const requested = process.argv.includes("--browser") || process.env.LIVEPALMES_BROWSER_SMOKE === "1";
   if (!requested) return;
   printStep("Smoke test navigateur");
+  run(process.execPath, [path.join(rootDir, "tests", "import-record-review-browser-tests.js")]);
   run(process.execPath, [path.join(rootDir, "tests", "direct-browser-tests.js")]);
   run(process.execPath, [path.join(rootDir, "tests", "direct-admin-workflow-browser-tests.js")]);
   run(process.execPath, [path.join(rootDir, "tests", "portal-reactivity-browser-tests.js")]);

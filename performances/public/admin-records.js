@@ -842,6 +842,7 @@ function rowFromQueuedRecordAlertDraft(draft = {}) {
     status: "Brouillon",
     recordAlertSourceKey: draft.sourceKey || ""
   };
+  if(draft.importCandidate)Object.assign(row,{importCandidate:draft.importCandidate,swimmerId:draft.swimmerId,competitionId:draft.competitionId,bassin:draft.bassin,chrono:draft.chrono});
   if (createTie || !target) {
     row.key = `manual-alert|${keySafePart(draft.sourceKey)}|${keySafePart(draft.scope)}|${keySafePart(draft.course)}|${keySafePart(draft.swimmer)}|${keySafePart(draft.date)}`;
   }
@@ -855,8 +856,20 @@ function applyQueuedRecordAlertDrafts() {
   const appliedRows = converted.map((item) => item.row).filter(Boolean);
   clearQueuedRecordAlertDrafts(converted.filter((item) => !item.row).map((item) => item.draft.sourceKey));
   if (!appliedRows.length) return;
-  appliedRows.forEach((row) => state.drafts.set(row.id, row));
-  openRestoredDraft(appliedRows[0]);
+  const staged=[];
+  appliedRows.forEach((row) => {
+    const existing=state.drafts.get(row.id),otherImport=Array.from(state.drafts.values()).some(draft=>draft.importCandidate&&row.importCandidate&&draft.importCandidate.importId!==row.importCandidate.importId);
+    if(row.importCandidate&&(otherImport||existing&&existing.recordAlertSourceKey!==row.recordAlertSourceKey)){
+      window.alert('Un autre brouillon vise cette référence ou provient d’un autre import. Publiez ou retirez ce brouillon avant de préparer cette candidature.');return;
+    }
+    if(row.importCandidate&&queued.find(draft=>draft.sourceKey===row.recordAlertSourceKey)?.alertStatus==='improved'){
+      const peers=sourceRows.filter(peer=>peer.id!==row.id&&peer.scope===row.scope&&peer.sex===row.sex&&peer.category===row.category&&peer.course===row.course&&peer.kind===row.kind);
+      if(peers.some(peer=>state.drafts.has(peer.id))){window.alert('Un titulaire ex æquo a déjà un brouillon. Vérifiez-le avant de remplacer la référence.');return;}
+      peers.forEach(peer=>state.drafts.set(peer.id,{...peer,status:'Supprimé',importReplacementFor:row.recordAlertSourceKey}));
+    }
+    state.drafts.set(row.id,row);staged.push(row);
+  });
+  if(staged.length)openRestoredDraft(staged[0]);
 }
 
 function isoDate(value) {
@@ -1122,6 +1135,7 @@ function openDraft(id) {
 function removeDraft(id) {
   const draft = state.drafts.get(id);
   state.drafts.delete(id);
+  for(const [peerId,peer] of state.drafts)if(peer.importReplacementFor===draft?.recordAlertSourceKey)state.drafts.delete(peerId);
   clearQueuedRecordAlertDrafts([draft?.recordAlertSourceKey]);
   if (state.selectedId === id) state.selectedId = "";
   renderTable();
@@ -1249,6 +1263,7 @@ function editorValue(status = "Brouillon") {
   const normalizedTime = normalizeTimeInput(elements.fieldTime.value);
   elements.fieldTime.value = normalizedTime;
   return {
+    ...Object.fromEntries(['importCandidate','recordAlertSourceKey','swimmerId','competitionId','bassin','chrono'].filter(key=>state.drafts.get(state.selectedId)?.[key]!==undefined).map(key=>[key,state.drafts.get(state.selectedId)[key]])),
     id: state.selectedId || `new|${Date.now()}`,
     scope,
     adminKind: scope,
@@ -1550,6 +1565,8 @@ function publicRecordFromAdminRow(row) {
   delete base.note;
   delete base.adminKind;
   delete base.recordAlertSourceKey;
+  delete base.importCandidate;
+  delete base.importReplacementFor;
   if (!base.placeholderRecord) delete base.placeholderRecord;
   if (row.scope === "MPF") {
     delete base.recordType;
@@ -1620,6 +1637,7 @@ function buildPublicationHistoryEntries(publishedAt) {
 }
 
 function historyActionLabel(action) {
+  if(action==='import-candidates')return 'Origine des candidatures importées';
   return {
     created: "Création",
     deleted: "Suppression",
@@ -1719,7 +1737,9 @@ async function publishDrafts() {
       recordHistory: [...historyEntries, ...previousHistory].slice(0, RECORD_HISTORY_LIMIT),
       sourceDate: publishedAt.slice(0, 10)
     };
-    data = await store.saveData(nextData);
+    const importCandidates=Array.from(state.drafts.values()).filter(draft=>draft.importCandidate&&draft.status!=='Supprimé').map(draft=>({...draft.importCandidate,rowKey:publicRecordFromAdminRow(draft).key}));
+    if(importCandidates.length&&!window.confirm(`Publier ces ${importCandidates.length} candidature(s) et les autres brouillons affichés ? Les Records/MPF officiels seront mis à jour.`))return;
+    data = await store.saveData(nextData,{importCandidates});
     clearQueuedRecordAlertDrafts(publishedAlertDraftKeys);
     state.drafts.clear();
     rebuildSourceRows();
@@ -1993,4 +2013,5 @@ elements.loginForm?.addEventListener("submit", async (event) => {
   }
 });
 
+window.addEventListener('livepalmes:import-record-draft',()=>{if(recordsDataLoaded)applyQueuedRecordAlertDrafts();});
 startAdmin();
