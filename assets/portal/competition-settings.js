@@ -705,6 +705,7 @@
       }
 
     function refreshEngagementDeadlineCountdowns() {
+        portalActions.refreshEngagementCompetitionStatuses?.();
         if (portalState.selectedEngagementCompetition && portalContext.elements.engagementsDetail && !portalContext.elements.engagementsDetail.hidden) renderEngagementDetailStatus(portalState.selectedEngagementCompetition);
         document.querySelectorAll("[data-engagement-deadline-competition-id]").forEach((node) => {
           const competition = portalState.engagementCompetitions.find((item) => item.id === node.dataset.engagementDeadlineCompetitionId);

@@ -498,6 +498,35 @@
       </details>` : "");
       }
 
+    function engagementCompetitionAdminStatus(competition = {}, now = Date.now()) {
+        if (competition.canceled) return { state: "canceled", label: "Annulée" };
+        if (competition.resultsPublishedAt || /\.pdf(?:$|[?#])/i.test(competition.resultsPdfUrl || competition.results?.pdfUrl || "")) {
+          return { state: "results", label: "Résultats publiés" };
+        }
+        const verify = { state: "unknown", label: "État à vérifier" };
+        if (competition.publicationStatus !== "published") return verify;
+        if (!["pool", "openWater"].includes(portalActions.engagementCompetitionType(competition))) {
+          return { state: "calendar", label: "Au calendrier" };
+        }
+        const status = competition.entryStatus;
+        const deadline = competition.entryDeadlineAt ? Date.parse(competition.entryDeadlineAt) : null;
+        if (competition.entryStatusKnown === false || competition.deadlineWarning ||
+          !["upcoming", "open", "closed"].includes(status) || deadline !== null && !Number.isFinite(deadline)) return verify;
+        if (status === "closed" || deadline !== null && deadline <= now) return { state: "closed", label: "Engagements fermés" };
+        if (status === "open") return deadline === null ? verify : { state: "open", label: "Engagements ouverts" };
+        return { state: "calendar", label: "Au calendrier" };
+      }
+
+    function refreshEngagementCompetitionStatuses() {
+        document.querySelectorAll("[data-engagement-admin-status-id]").forEach((badge) => {
+          const competition = portalState.engagementCompetitions.find(item => item.id === badge.dataset.engagementAdminStatusId);
+          if (!competition) return;
+          const status = engagementCompetitionAdminStatus(competition);
+          badge.textContent = status.label;
+          badge.dataset.entryState = status.state;
+        });
+      }
+
     function renderEngagementCompetitionTable(visibleCompetitions, period, limit) {
         const renderedCompetitions = visibleCompetitions.slice(0, limit);
         const groupedCompetitions = [];
@@ -516,7 +545,7 @@
           <span role="columnheader">Date</span>
           <span role="columnheader">Compétition</span>
           <span role="columnheader">Niveau / région</span>
-          <span role="columnheader">${portalActions.isEngagementAdminMode() ? "Publication" : "Engagements"}</span>
+          <span role="columnheader">${portalActions.isEngagementAdminMode() ? "État" : "Engagements"}</span>
           <span role="columnheader">Action</span>
         </div>
         ${groupedCompetitions.map((group, groupIndex) => `
@@ -528,6 +557,7 @@
                   const deadlineLabel = portalActions.engagementDeadlineDisplay(competition);
                   const showStatusBadge = entryStatus !== "open";
                   const calendarEvent = competition.sourceType === "calendarEvent";
+                  const adminStatus = engagementCompetitionAdminStatus(competition);
                   return `
                 <article class="admin-engagements-competition ${competition.id === portalState.selectedEngagementCompetitionId ? "selected" : ""}" role="row" data-competition-type="${portalActions.escapeHtml(portalActions.engagementCompetitionType(competition))}" data-engagement-competition-card-id="${portalActions.escapeHtml(competition.id)}" data-engagement-open-tab="${portalActions.escapeHtml(action.tab)}">
                   <time class="admin-engagements-competition-date" role="cell" data-label="Date" datetime="${portalActions.escapeHtml(competition.date || "")}">${portalActions.escapeHtml(portalActions.formatEngagementCompetitionDate(competition))}</time>
@@ -545,8 +575,10 @@
                     <span>${portalActions.escapeHtml(portalActions.engagementLevelLabel(competition.level))}</span>
                     ${competition.regionId ? `<small>${portalActions.escapeHtml(portalActions.regionDisplayLabel(competition.regionId))}</small>` : ""}
                   </div>
-                  <div class="admin-engagements-competition-status" role="cell" data-label="${portalActions.isEngagementAdminMode() ? "Publication" : "Engagements"}">
-                    ${calendarEvent || portalActions.isEngagementAdminMode()
+                  <div class="admin-engagements-competition-status" role="cell" data-label="${portalActions.isEngagementAdminMode() ? "État" : "Engagements"}">
+                    ${portalActions.isEngagementAdminMode()
+                          ? `<span class="admin-engagements-competition-entry-badge" data-engagement-admin-status-id="${portalActions.escapeHtml(competition.id)}" data-entry-state="${adminStatus.state}">${adminStatus.label}</span>`
+                          : calendarEvent
                           ? `<span class="admin-engagements-competition-entry-badge" data-entry-state="${competition.publicationStatus === "published" ? "open" : "upcoming"}">${portalActions.escapeHtml(portalActions.publicCalendarPublicationLabel(competition.publicationStatus))}</span>${competition.canceled ? "<small>Événement annulé</small>" : ""}`
                           : `${showStatusBadge ? `<span class="admin-engagements-competition-entry-badge" data-entry-state="${portalActions.escapeHtml(entryStatus)}">${portalActions.escapeHtml(portalActions.engagementStatusLabel(entryStatus))}</span>` : ""}${deadlineLabel ? `<small data-entry-status="${portalActions.escapeHtml(portalActions.engagementDeadlineTone(competition))}" data-engagement-deadline-competition-id="${portalActions.escapeHtml(competition.id)}">${portalActions.escapeHtml(deadlineLabel)}</small>` : ""}`}
                   </div>
@@ -692,6 +724,8 @@
       renderNativeCourseRemoval,
       renderEngagementCompetitions,
       renderEngagementCompetitionTable,
+      engagementCompetitionAdminStatus,
+      refreshEngagementCompetitionStatuses,
       setEngagementCompetitionDetailVisible,
       setEngagementClubEntryLoadingState,
       engagementNativeEditWarningKind,

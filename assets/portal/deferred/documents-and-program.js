@@ -324,6 +324,7 @@
       }
 
     function updateSelectedEngagementCompetitionDocuments(documents = []) {
+        portalActions.invalidateEngagementCalendarCaches();
         portalState.selectedEngagementCompetition = {
           ...(portalState.selectedEngagementCompetition || {}),
           clubDocuments: Array.isArray(documents) ? documents : []
