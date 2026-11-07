@@ -26,6 +26,12 @@ const row={key:'alice',lastName:'Exemple',firstName:'Alice',club:'CLUB',category
 assert.deepEqual(ui.splits(row,event).map(s=>s.distance),['100 m','200 m']);assert.equal(ui.splits({...row,splits:[{distance:'Passage 2',time:'02:18.67'}]},event)[0].distance,'200 m','Un ancien champ omis conserve sa distance d’origine');
 const html=view.render({data:{entries:[row],config:{state:'active'}},event:{...event,progress:partial},state:{mode:'results',series:1,categories:[],highlightClub:''}});
 assert.ok(html.includes('EXEMPLE Alice'));assert.ok(html.includes('En cours'));assert.ok(html.includes('Temps de passage'));assert.ok(html.includes('100 m'));assert.ok(!html.includes('>SR<'));
+assert.ok(html.includes('data-category-filter="FJU"'),'Pastille actionnable quand des résultats sont affichés');
+assert.ok(!html.includes('data-clear-categories'),'Pas de bouton de suppression sans filtre actif');
+const categoryFiltered=view.render({data:{entries:[row],config:{state:'active'}},event,state:{mode:'results',series:1,categories:['FJU'],highlightClub:''}});
+assert.ok(categoryFiltered.includes('data-clear-categories'));assert.ok(categoryFiltered.includes('Catégories sélectionnées : FJU'));
+const engagements=view.render({data:{entries:[row],config:{state:'active'}},event:{...event,publication:{series:true,results:false}},state:{mode:'series',series:1,categories:[],highlightClub:''}});
+assert.ok(!engagements.includes('data-category-filter'),'Aucun raccourci de classement sur les engagements');
 assert.ok(!html.includes('class="direct-passages"'),'Le bloc collectif des passages est supprimé');
 assert.equal((html.match(/class="direct-split-toggle"/g)||[]).length,2,'Un accès dans le scratch et dans la série');
 assert.equal((html.match(/class="direct-split-row" hidden/g)||[]).length,2,'Détails fermés par défaut');
