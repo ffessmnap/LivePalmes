@@ -13,7 +13,9 @@ function links(input){
 function matches(row,candidate){
   return row&&row.swimmer===candidate.swimmer&&String(row.swimmerId)===candidate.swimmerId&&Number(row.competitionId)===candidate.competitionId&&
     row.course===candidate.course&&row.sex===candidate.sex&&row.category===candidate.targetCategory&&Number(row.value)===candidate.timeValue&&
-    row.time===candidate.time&&row.date===candidate.date&&row.birthDate===candidate.birthDate&&row.club===candidate.club&&row.location===candidate.location;
+    row.time===candidate.time&&row.date===candidate.date&&row.birthDate===candidate.birthDate&&row.club===candidate.club&&row.location===candidate.location&&
+    row.competition===candidate.competition&&row.seasonYear===candidate.seasonYear&&row.age===candidate.age&&row.points===candidate.points&&row.bassin===candidate.bassin&&row.chrono===candidate.chrono&&
+    row.region===undefined&&row.intermediateTimes===undefined;
 }
 async function publish(pool,input,actor){
   const selected=links(input),importId=selected[0].importId;
@@ -36,6 +38,7 @@ async function publish(pool,input,actor){
         // in the same official cell when replacing an improved reference.
         const peers=rows.filter(row=>detection.recordKey(candidate.type,row)===candidate.recordKey&&(candidate.type==="MPF"||row.recordType===candidate.type));
         if(peers.some(peer=>Number(peer.value)!==candidate.timeValue))throw new TypeError("Plusieurs temps différents visent la même référence. Vérifiez les brouillons.");
+        if(peers.some(peer=>peer.key!==link.rowKey&&detection.sameName(peer.swimmer,candidate.swimmer)))throw new TypeError("Le même titulaire apparaît plusieurs fois pour cette référence. Conservez un seul brouillon pour ses performances égales.");
         return {...candidate,publishedKey:link.rowKey};
       });
       await review.verifySources(sourceQuery,saved,candidates.map(candidate=>candidate.source));
