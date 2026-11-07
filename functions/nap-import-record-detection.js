@@ -4,6 +4,7 @@ const {cleanText,normalizeIdentityText}=require("./nap-performance-identity");
 const {normalizePerformanceCategory,categoryCode}=require("./nap-performance-categories");
 const {parseCompactTime,formatTime}=require("./nap-duration");
 const {CURRENT_POOL_COURSES}=require("./nap-performance-courses");
+const {competitionSeasonYear,seasonAge}=require("./nap-performance-dates");
 const {hash,sourceReference}=require("./nap-import-lifecycle");
 const sameName=(a,b)=>normalizeIdentityText(a).split(/\s+/).sort().join(" ")===normalizeIdentityText(b).split(/\s+/).sort().join(" ");
 const scope=row=>row.recordType==="RFJ"?"RFJ":"RF";
@@ -38,6 +39,7 @@ function detect(importId,saved,official){
         referenceTime:ref.time,referenceSwimmer:refs.map(ref=>ref.swimmer).join(" / "),referenceDate:ref.date||"",type,sex,category,categoryCode:categoryCode(category,sex),
         targetCategory:ref.category,course:row.course,time:formatTime(value),timeValue:value,swimmer,swimmerId:String(row.nageur),birthDate:person.date||"",
         competitionId:Number(saved.competition.id),competition:saved.competition.libelle,date:saved.competition.date,location:saved.competition.lieu,
+        seasonYear:competitionSeasonYear(saved.competition.date),age:seasonAge(saved.competition.date,person.date),points:Number(row.points),
         clubId:String(row.club),club:clubs.get(String(row.club))?.nom_club||String(row.club),bassin:String(saved.competition.bassin),chrono:saved.competition.chrono,
         status:value<Number(ref.value)?"improved":"equal",state:"pending"});
     }
