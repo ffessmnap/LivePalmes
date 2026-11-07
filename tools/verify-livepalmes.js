@@ -148,6 +148,8 @@ function runUnitTests() {
     "nap-import-client-tests.js",
     "nap-import-callable-tests.js",
     "nap-import-history-tests.js",
+    "nap-import-deletion-tests.js",
+    "nap-import-deletion-callable-tests.js",
     "nap-import-status-results-tests.js",
     "nap-winpalme-results-tests.js",
     "winpalme-manual-download-tests.js",

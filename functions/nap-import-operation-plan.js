@@ -54,7 +54,7 @@ function prepareImportOperation(pack,next,input) {
     if(first+change.additions.length>2147483647)throw new RangeError("Identifiants natifs hors limite.");
     if(before.some(r=>r.id>=first))throw new TypeError("Allocation native incoherente.");
     const additions=change.additions.map((item,index)=>({...item,row:Object.fromEntries(columns.map(key=>[key,key==="id"?first+index:item.row[key]]))}));
-    return {before,after:[...change.unchanged.map(i=>i.row),...additions.map(i=>i.row)].sort((a,b)=>a.id-b.id),additions,removals:change.removals,...(columns===COLUMNS&&input.sourceType==="winpalme-zip-preview"?{firstRelayIds:[...change.unchanged,...additions].filter(i=>i.origin==="first-relay").map(i=>i.row.id)}:{})};
+    return {before,after:[...change.unchanged.map(i=>i.row),...additions.map(i=>i.row)].sort((a,b)=>a.id-b.id),additions,removals:change.removals,...(columns===COLUMNS?{sources:[...change.unchanged,...additions].map(i=>({performanceId:i.row.id,sourceLine:i.sourceLine,origin:i.origin||"individual",fingerprint:hash(canonical(i.row,COLUMNS))})).sort((a,b)=>a.performanceId-b.performanceId)}:{}),...(columns===COLUMNS&&input.sourceType==="winpalme-zip-preview"?{firstRelayIds:[...change.unchanged,...additions].filter(i=>i.origin==="first-relay").map(i=>i.row.id)}:{})};
   };
   return {competitionId:positiveId(pack.competition.id),expectedFingerprint:pack.expectedFingerprint,previewFingerprint:pack.previewFingerprint,
     perfs:assemble(pack.existing,diff.individual,next.perfs,COLUMNS),relays:assemble(pack.existingRelays,diff.relays,next.relays,RELAY_COLUMNS),

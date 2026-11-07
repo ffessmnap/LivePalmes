@@ -2,6 +2,10 @@
 
 <!-- description: Référence du langage visuel, des composants d’interface et des règles responsive déjà présents dans LivePalmes. -->
 
+## Historique des imports du portail — 7 novembre 2026
+
+Le parcours NAP réutilise les cartes repliables `competition-import-row` : compétition/date, ligne compacte performances/nageurs/clubs et état dans le résumé ; fichier, date d’import, relais et statuts dans le détail. La variante `competition-import-native` permet les retours à la ligne des noms et actions longues sans débordement à 320 px. L’action destructive nationale nomme explicitement « tous les résultats de cette compétition » et ouvre une confirmation avec les compteurs actuels ; les anciens imports et résultats supprimés restent dans l’historique sans bouton de suppression actif. Aucun nouveau jeton de couleur ou composant global.
+
 ## Direct multi-compétitions — 6 novembre 2026
 
 Catégories publiques : petite pastille autour du code reçu dans les tableaux scratch et séries, ancienne palette de `styles.css` reprise (minimes rose, cadets orange, juniors vert, seniors bleu, masters en teintes distinctes 30/40/50/60/70/80). Fond pâle et repère latéral coloré, texte foncé pour la lisibilité ; catégorie inconnue neutre et code toujours conservé. Aucun fond de ligne coloré, la mise en évidence du club reste prioritaire. Hauteur de ligne inchangée ; colonne catégorie mobile portée de 25 à 34 px pour les codes à quatre caractères. Aucun calcul de catégorie depuis l'année de naissance.

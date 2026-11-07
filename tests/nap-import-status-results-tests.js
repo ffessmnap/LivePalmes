@@ -5,5 +5,7 @@ const assert=require("node:assert/strict"),{readImportStatusResults}=require("..
  const rows=await readImportStatusResults(pool,5162);assert.equal(queries.length,2);assert.match(queries[1].query.sql,/FORCE INDEX \(PRIMARY\).*LIMIT 5001$/);assert.equal(rows[0].time,"Disqualification");assert.equal(rows[0].personalBest,false);assert.equal(rows[0].swimmerId,"168");assert.equal(rows[0].timeValue,undefined,"no valid sporting time published");
  await assert.rejects(readImportStatusResults({execute:async()=>[[{metadata:{activeImportId:"active"}}]]},5162),/en cours/);
  assert.deepEqual(await readImportStatusResults({execute:async()=>[[]]},5162),[]);
+ for(const withFirstRelays of [false,true])assert.deepEqual(await readImportStatusResults({execute:async()=>[[{metadata:{resultsDeleted:true,currentImportId:'old'}}]]},5162,{withFirstRelays}),withFirstRelays?{statuses:[],firstRelayIds:[]}:[]);
+ await assert.rejects(readImportStatusResults({execute:async()=>[[{metadata:{activeDeletionId:'active'}}]]},5162),/en cours/);
  console.log("NAP imported statuses: indexed current version, no valid sporting time and interrupted-import refusal verified.");
 })().catch(error=>{console.error(error);process.exitCode=1;});

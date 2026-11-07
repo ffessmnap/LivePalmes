@@ -759,6 +759,15 @@
   overflow: hidden;
 }
 
+.competition-import-row.competition-import-native > summary { grid-template-columns: minmax(0, 1fr) auto; }
+.competition-import-native summary > div { min-width: 0; overflow-wrap: anywhere; }
+.competition-import-native .competition-import-metrics { margin: .35rem 0; font-size: .9rem; }
+.competition-import-native > .competition-imports-note { margin: 0; padding: .6rem .75rem; }
+.competition-import-native .competition-import-actions { flex-wrap: wrap; }
+.competition-import-native .competition-import-actions button { height: auto; padding: .5rem .75rem; white-space: normal; }
+.competition-import-native .competition-import-actions label { min-width: 0; overflow-wrap: anywhere; }
+.competition-import-native input[type="file"] { max-width: 100%; }
+
 .competition-import-row summary {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;

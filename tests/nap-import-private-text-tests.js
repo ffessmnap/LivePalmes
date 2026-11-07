@@ -8,8 +8,8 @@ const source=fs.readFileSync("functions/index.js","utf8");
 const bytes=Buffer.from("REN;11/10/2026;Comp\xe9tition;Ville\r\nNAG;TEST;PERSONNE",'latin1'),rawText=new TextDecoder('windows-1252').decode(bytes);
 const textArchive={fileName:'Resultats.txt',encoding:'windows-1252',dataBase64:bytes.toString('base64')};
 const saved=archive.create({rawText,textArchive});
-function reader({level=1,region=1,active=false,missing=false,old=false}={}){
- const calls=[];return {calls,pool:{execute:async({sql},values)=>{calls.push({sql,values});assert.match(sql,/^SELECT/);if(sql.includes('FROM competitions'))return [[{id:5162,comite:region,niveau:level}]];if(sql.startsWith('SELECT metadata'))return [[{metadata:{currentImportId:'a'.repeat(64),...(active?{activeImportId:'b'.repeat(64)}:{})}}]];assert.match(sql,/JSON_EXTRACT\(metadata,'\$\.sourceText'\).*WHERE id=\? AND competition_id=\? LIMIT 1$/);return [missing?[]:[{status:'completed',source_text:old?null:JSON.stringify(saved)}]];}}};
+function reader({level=1,region=1,active=false,missing=false,old=false,deleted=false}={}){
+ const calls=[];return {calls,pool:{execute:async({sql},values)=>{calls.push({sql,values});assert.match(sql,/^SELECT/);if(sql.includes('FROM competitions'))return [[{id:5162,comite:region,niveau:level}]];if(sql.startsWith('SELECT metadata'))return [[{metadata:{currentImportId:'a'.repeat(64),...(deleted?{resultsDeleted:true}:{}),...(active?{activeImportId:'b'.repeat(64)}:{})}}]];assert.match(sql,/JSON_EXTRACT\(metadata,'\$\.sourceText'\).*WHERE id=\? AND competition_id=\? LIMIT 1$/);return [missing?[]:[{status:deleted?'deleted':'completed',source_text:old?null:JSON.stringify(saved)}]];}}};
 }
 class HttpsError extends Error{constructor(code,message){super(message);this.code=code;}}
 function callable({national=false,region=false,regionId='',inactive=false}={}){
@@ -36,6 +36,7 @@ function callable({national=false,region=false,regionId='',inactive=false}={}){
  r=reader();await assert.rejects(()=>archive.readCurrent(r.pool,5162,()=>{throw Error('foreign scope');}),/foreign/);assert.equal(r.calls.length,1,'No pointer or content before scope authorization');
  r=reader({active:true});await assert.rejects(()=>archive.readCurrent(r.pool,5162,()=>{}),/en cours/);assert.equal(r.calls.length,2);
  r=reader({old:true});assert.equal((await archive.readCurrent(r.pool,5162,()=>{})).file,null);
+ r=reader({deleted:true});assert.equal((await archive.readCurrent(r.pool,5162,()=>{})).file.hash,saved.hash,'Deleting active results preserves the archived TXT download');
  let c=callable({national:true});assert.equal((await c.run()).file.hash,saved.hash);c=callable({region:true,regionId:'1'});assert.equal((await c.run()).file.hash,saved.hash);
  c=callable({region:true,regionId:'2'});await assert.rejects(()=>c.run(),e=>e.code==='permission-denied');assert.equal(c.calls.length,1);
  for(const options of [{},{region:true},{inactive:true,national:true}]){c=callable(options);await assert.rejects(()=>c.run(),e=>e.code==='permission-denied');assert.equal(c.calls.length,0,'Club, no scope and disabled account denied before NAP');}
