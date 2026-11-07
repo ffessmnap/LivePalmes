@@ -6,7 +6,7 @@ function portalEventFromRow(row) {
   const code = row.niveau == null ? "" : String(row.niveau);
   const level = calendar.nativeLevel(code);
   const event = calendar.eventFromRow({ ...row, level_label: ({ departemental: "Départementale", regional: "Régionale", national: "Nationale", international: "International" })[level] || "Nationale", scope_label: "" });
-  return { ...event, ...entryState(row), competitionType: event.eventType, nativeLevelCode: row.niveau ?? null,
+  return { ...event, ...entryState(row), competitionType: event.eventType, entryStatusKnown: row.actif != null && ["0", "1"].includes(String(row.actif)), nativeLevelCode: row.niveau ?? null,
     nativeLevelRecognized: Boolean(level), nationalManagementOnly: !level || ["national", "international"].includes(level),
     // Unknown legacy codes fail closed for regional management.
     level: level || "national", regionId: level && ["regional", "departemental"].includes(level) ? event.regionId : "",

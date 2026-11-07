@@ -32,6 +32,7 @@ const sandbox = { exports: {}, ENVIRONMENT: {sportingDataSource:"nap", projectId
   assertEngagementClubWriteOpen:()=>calls.push("open-check"),
   db: { getAll: () => { throw new Error("Old sports read"); }, collection: name => { if(name!=="auditLogs") throw new Error("Old sports read");return {doc:()=>({get:async()=>({exists:false}),create:async()=>calls.push("audit-backup"),update:async()=>calls.push("audit-checkpoint")})}; } },
   require: name => {
+    if(name === "./nap-calendar-protocols") return require("../functions/nap-calendar-protocols");
     if(name==='node:util')return require('node:util');
     if(name==='./nap-qualification-control-start')return {beginControl:async(connection,input)=>{assert.equal(connection,pool);assert.equal(input.actorUid,management.uid);assert.equal(input.national,true);assert.equal(Object.hasOwn(input.patch,'qualifications'),false);startedControls++;return {qualificationJobId:'a'.repeat(64)};}};
     if(name === "./nap-qualification-jobs")return {activeControl:async()=>''};

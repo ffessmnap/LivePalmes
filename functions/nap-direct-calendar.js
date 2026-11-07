@@ -33,6 +33,7 @@ async function readCalendarSeason(pool, input, directEnvironment) {
   const rows = await execute(pool, `${SELECT_EVENT} FORCE INDEX (livepalmes_date_id)${EVENT_JOINS} WHERE c.date >= ? AND c.date < ? ORDER BY c.date,c.id LIMIT ${MAX_EVENTS + 1}`, [`${year - 1}-09-01`, `${year}-09-01`]);
   if (rows.length > MAX_EVENTS) throw new RangeError("Saison trop volumineuse.");
   let events=rows.map(eventFromRow).filter(event => event.date && event.name);
+  await require("./nap-calendar-protocols").attachPublishedProtocols(pool, events);
   if(directEnvironment)events=await require("./nap-direct-public").attachLinks(pool,directEnvironment,events);
   return { source: "nap", readAt: new Date().toISOString(), events };
 }
@@ -49,7 +50,7 @@ async function readCompetition(pool, input, directEnvironment) {
   event.documents = documents.map(({id,title,description,category,url})=>({id,title,description,category,url}));
   const poster = publicUrl(rows[0].affiche);
   if (poster && !event.documents.some(document => document.url === poster)) event.documents.push({ title: "Affiche", category: "poster", url: poster });
-  if (!event.results.pdfUrl) event.results.pdfUrl = event.documents.find(document => document.category === "results" && /\.pdf(?:$|[?#])/i.test(document.url))?.url || "";
+  require("./nap-calendar-protocols").applyPublishedProtocol(event, event.documents);
   const program = await execute(pool, `SELECT cc.pos,cd.course,cd.sexe,cd.relais FROM compet_courses cc LEFT JOIN course_dispo cd ON cd.id=cc.id_course WHERE cc.compet=? ORDER BY cc.pos,cc.id LIMIT ${MAX_PROGRAM + 1}`, [id]);
   if (program.length > MAX_PROGRAM) throw new RangeError("Programme trop volumineux.");
   if (program.length) event.program = [{ title: "Programme", date: event.date, items: program.map(row => ({ label: text(row.course) || "Épreuve", detail: [({ F: "Femmes", M: "Hommes", X: "Mixte" })[text(row.sexe)], Number(row.relais) ? "Relais" : ""].filter(Boolean).join(" · ") })) }];

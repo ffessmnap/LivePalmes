@@ -17,11 +17,13 @@ const { SPECS, approvedIndexOperation } = require("../functions/nap-approved-ind
   }
   let seasonReads = 0;
   const season = await readNativeCompetitionSeason({ execute: async ({sql}, values) => {
-    seasonReads++; assert.match(sql, /FORCE INDEX \(livepalmes_date_id\)/);
+    seasonReads++;
+    if (sql.includes("FROM documents d")) { assert.match(sql, /d.public='Y'.*LIMIT 101/); assert.deepEqual(values,[1]); return [[]]; }
+    assert.match(sql, /FORCE INDEX \(livepalmes_date_id\)/);
     assert.match(sql, /LIMIT 501$/); assert.deepEqual(values, ["2026-09-01", "2027-09-01"]);
     return [[{ id: 1, libelle: "France", date: "2027-03-01", niveau: 3, level_label: "Championnat de Zones" }]];
   } }, 2027);
-  assert.equal(seasonReads, 1); assert.equal(season.events[0].nationalManagementOnly, true);
+  assert.equal(seasonReads, 2); assert.equal(season.events[0].nationalManagementOnly, true);
   await assert.rejects(readNativeCompetitionSeason({}, "2027 OR 1=1"), TypeError);
   await assert.rejects(readNativeCompetitionSeason({execute: async () => [Array(501).fill({})]},2027),RangeError);
   await assert.rejects(readNativeCompetitionSeason({execute: async () => [[{id:1,niveau:3},{id:1,niveau:1}]]},2027),/ambigus/);
