@@ -231,6 +231,8 @@ function createNationalService(backendContext) {
   let cache10;
   function operation10() {
     if (!cache10) cache10 = require("./backend/server-national-service/send-engagement-swimmer-change-resolution-notification").createNationalService_sendEngagementSwimmerChangeResolutionNotification({
+      get db() { return backendContext.db; },
+      set db(value) { backendContext.db = value; },
       get cleanText() { return backendContext.cleanText; },
       set cleanText(value) { backendContext.cleanText = value; },
       get engagementMailSmtpConfig() { return backendContext.engagementMailSmtpConfig; },

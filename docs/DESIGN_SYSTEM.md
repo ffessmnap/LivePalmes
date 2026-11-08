@@ -2,6 +2,10 @@
 
 <!-- description: Référence du langage visuel, des composants d’interface et des règles responsive déjà présents dans LivePalmes. -->
 
+## Modèles de mails du Portail — 8 novembre 2026
+
+Dans Notifications, l’éditeur est chargé au clic. Formulaire en une colonne (54 rem maximum), champs à largeur disponible, texte redimensionnable et actions/variables passant à la ligne. Actions tactiles de 44 px minimum. Réutiliser les boutons principal/secondaire et les champs existants. L’aperçu fictif est inerte, en texte avec retours à la ligne et coupure des longs liens ; aucun contenu distant n’est chargé. Révision/auteur/date et état d’enregistrement restent visibles ; un conflit conserve le brouillon jusqu’à l’actualisation explicite.
+
 ## Compétitions du portail : pastille unique — 8 novembre 2026
 
 La colonne administrateur « État » affiche une seule capsule textuelle, dans cet ordre de priorité : Annulée, Résultats publiés, Engagements fermés, Engagements ouverts, Au calendrier. Un protocole PDF publié seul suffit pour les résultats ; un historique d'import ne suffit pas. Les informations absentes ou incohérentes donnent « État à vérifier ». Ce choix d'affichage ne transforme pas les états métier indépendants en étapes exclusives.

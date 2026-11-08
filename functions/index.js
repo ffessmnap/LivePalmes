@@ -4723,6 +4723,7 @@ function $serverNationalService_engagementSwimmerChangeRequestItem() {
 
 function $serverNationalService_sendEngagementSwimmerChangeResolutionNotification() {
   if (!$serverNationalService_sendEngagementSwimmerChangeResolutionNotification.instance) $serverNationalService_sendEngagementSwimmerChangeResolutionNotification.instance = require("./backend/server-national-service/send-engagement-swimmer-change-resolution-notification").createNationalService_sendEngagementSwimmerChangeResolutionNotification({
+    get db() { return db; },
     get cleanText() { return cleanText; },
     get engagementMailSmtpConfig() { return engagementMailSmtpConfig; },
     get engagementSwimmerChangeResolutionMail() { return engagementSwimmerChangeResolutionMail; },
