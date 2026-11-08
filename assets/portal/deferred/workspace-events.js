@@ -555,7 +555,7 @@
         });
         portalContext.elements.engagementsCreateForm?.addEventListener("submit", portalActions.createEngagementCompetition);
         portalContext.elements.engagementsEditForm?.addEventListener("submit", portalActions.saveEngagementCompetitionDetail);
-        portalContext.elements.engagementsEditForm?.addEventListener("input", () => portalActions.markEngagementDetailTabDirty("general"));
+        portalContext.elements.engagementsEditForm?.addEventListener("input", () => { portalActions.validateEngagementCompetitionContacts(); portalActions.markEngagementDetailTabDirty("general"); });
         portalContext.elements.engagementsEditForm?.addEventListener("change", () => portalActions.markEngagementDetailTabDirty("general"));
         portalContext.elements.engagementsEventsForm?.addEventListener("submit", portalActions.saveEngagementCompetitionDetail);
         portalContext.elements.engagementsOpenWaterCourseAdd?.addEventListener("click", portalActions.addEngagementOpenWaterCourse);

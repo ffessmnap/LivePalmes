@@ -4,7 +4,7 @@
 
 ## Contacts des compétitions — 8 novembre 2026
 
-Les trois champs de contact acceptent une liste d’adresses séparées par `;`, avec clavier e-mail mobile et aide visible partagée. Limite de 255 caractères par champ ; organisateur et informatique : dix contacts distincts maximum au total pour les copies. L’affichage reste dans les champs existants, sans troncation côté serveur ; les liens de contact composent un message aux adresses affichées. Les champs d’identification et de compte conservent leur saisie d’adresse unique.
+Les trois champs de contact acceptent une liste d’adresses séparées par `;`, avec clavier e-mail mobile. Chaque champ possède son aide visible et accessible : « Jusqu’à 3 adresses e-mail, séparées par un point-virgule. » Trois adresses distinctes maximum par champ à l’enregistrement, sans compter les doublons de casse ; les protections techniques de longueur restent internes. L’affichage reste dans les champs existants, sans troncation côté serveur ; les liens de contact composent un message aux adresses affichées. Les champs d’identification et de compte conservent leur saisie d’adresse unique.
 
 ## Décisions sur les demandes — 8 novembre 2026
 

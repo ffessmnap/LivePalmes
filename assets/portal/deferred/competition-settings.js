@@ -553,6 +553,7 @@
         if (portalContext.elements.engagementsEditDeadline) portalContext.elements.engagementsEditDeadline.value = moduleActions.isoToDatetimeLocal(competition.entryDeadlineAt);
         if (portalContext.elements.engagementsEditComputerEmail) portalContext.elements.engagementsEditComputerEmail.value = competition.computerEmail || "";
         if (portalContext.elements.engagementsEditOfficialsManagerEmail) portalContext.elements.engagementsEditOfficialsManagerEmail.value = competition.officialsManagerEmail || "";
+        for (const field of [portalContext.elements.engagementsEditOrganizerEmail, portalContext.elements.engagementsEditComputerEmail, portalContext.elements.engagementsEditOfficialsManagerEmail]) field?.setCustomValidity?.("");
         if (portalContext.elements.engagementsEditPoolLength) portalContext.elements.engagementsEditPoolLength.value = competition.poolLength || "";
         if (portalContext.elements.engagementsEditPoolLaneCount) portalContext.elements.engagementsEditPoolLaneCount.value = competition.poolLaneCount || "";
         if (portalContext.elements.engagementsEditTimingType) portalContext.elements.engagementsEditTimingType.value = competition.timingType || "";

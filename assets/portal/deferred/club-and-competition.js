@@ -1,6 +1,27 @@
 (function registerDeferredPortalModule(global) {
   global.LivePalmesPortalDeferred.register("club-and-competition", function create(portalContext, moduleActions) {
     const { state: portalState, actions: portalActions, config: portalConfig } = portalContext;
+    const competitionMailKeys = ["organizerEmail", "computerEmail", "officialsManagerEmail"];
+    function competitionMailFieldsError(fields, keys = competitionMailKeys) {
+      let firstError = "";
+      for (const key of competitionMailKeys) {
+        const field = fields[key];
+        if (!field) continue;
+        const raw = field.value || "";
+        const addresses = [...new Set(raw.split(";").map(value => value.trim().toLowerCase()).filter(Boolean))];
+        const error = !keys.includes(key) ? "" : raw.length > 255 || /[\r\n\x00-\x1f\x7f]/.test(raw) || addresses.some(value => !/^[^\s@;,<>]+@[^\s@;,<>]+\.[^\s@;,<>]+$/.test(value))
+          ? "Adresse e-mail invalide. Séparez les adresses par un point-virgule."
+          : addresses.length > 3 ? "3 adresses e-mail différentes maximum, séparées par un point-virgule." : "";
+        field.setCustomValidity?.(error);
+        firstError ||= error;
+      }
+      return firstError;
+    }
+    function validateEngagementCompetitionContacts() {
+      const fields = moduleActions.editCompetitionFields();
+      const baseline = portalState.selectedEngagementCompetition?.napSource === true ? portalState.nativeCompetitionEditBaseline : null;
+      return competitionMailFieldsError(fields, baseline ? competitionMailKeys.filter(key => (fields[key]?.value || "") !== baseline[key]) : competitionMailKeys);
+    }
     async function loadEngagementClubPeople({ force = false, silent = false, append = false, background = false } = {}) {
         const visible = () => !background || portalContext.elements.engagementsView?.hidden === false;
         if (!portalActions.canUse("engagements.club.manage") || portalState.engagementClubPeopleLoading) return;
@@ -341,6 +362,8 @@
           const selectionError=portalActions.engagementCompetitionType(portalState.selectedEngagementCompetition)==="openWater"&&(portalActions.selectedEngagementEventsCategoryError()||portalActions.selectedEngagementProgramError());
           if(selectionError)throw new Error(selectionError);
           const patch = moduleActions.nativeCompetitionPatchFromForm();
+          const contactsError = competitionMailFieldsError(moduleActions.editCompetitionFields(), Object.keys(patch));
+          if (contactsError) throw new Error(contactsError);
           const existingCodes = new Set((portalState.selectedEngagementCompetition.events || []).map(event => event.code));
           const additions = portalActions.selectedEngagementEventsFromForm().filter(event => !existingCodes.has(event.code));
           const selectedCodes=new Set(portalActions.selectedEngagementEventsFromForm().map(event=>event.code));
@@ -897,6 +920,8 @@
       }
 
     function engagementCompetitionPayloadFromFields(fields = {}) {
+        const contactsError = competitionMailFieldsError(fields);
+        if (contactsError) throw new Error(contactsError);
         const deadlineValue = portalActions.normalizeEngagementDeadlineField(fields.deadline) || fields.deadline?.value || "";
         const deadlineDate = deadlineValue ? new Date(deadlineValue) : null;
         const level = fields.level?.value || "regional";
@@ -1219,6 +1244,6 @@
         if (!portalState.nativeCompetitionEditBaseline) throw new Error("Rechargez la fiche avant de la modifier.");
         return Object.fromEntries(Object.entries(moduleActions.nativeCompetitionFormValues()).filter(([key, value]) => JSON.stringify(value) !== JSON.stringify(portalState.nativeCompetitionEditBaseline[key])));
       }
-    return { loadEngagementClubPeople, saveEngagementClubPerson, setEngagementClubPersonStatus, loadEngagementCompetitions, saveNativeCompetitionDetail, prepareAndSendEngagementOpeningEmails, createEngagementCompetition, completeNewlyCreatedEngagementCompetition, updateEngagementCompetition, saveEngagementCompetitionDetail, updateEngagementCompetitionEvents, updateEngagementCompetitionFees , selectedEngagementClubPersonFromForm, renderEngagementClubPeople, engagementCompetitionPayloadFromFields, createCompetitionFields, engagementCompetitionPayloadFromForm, engagementCompetitionPayloadFromEditForm, engagementOpeningDeadlineError, shouldSendEngagementOpeningMail, engagementOpeningMailScopeLabel, confirmEngagementOpeningMail, confirmEngagementReopeningMail, confirmOpenedCompetitionSensitiveChanges, engagementCompetitionPayloadFromSelection , openEngagementClubPersonForm, editCompetitionFields, nativeCompetitionFormValues, nativeCompetitionPatchFromForm };
+    return { validateEngagementCompetitionContacts, loadEngagementClubPeople, saveEngagementClubPerson, setEngagementClubPersonStatus, loadEngagementCompetitions, saveNativeCompetitionDetail, prepareAndSendEngagementOpeningEmails, createEngagementCompetition, completeNewlyCreatedEngagementCompetition, updateEngagementCompetition, saveEngagementCompetitionDetail, updateEngagementCompetitionEvents, updateEngagementCompetitionFees , selectedEngagementClubPersonFromForm, renderEngagementClubPeople, engagementCompetitionPayloadFromFields, createCompetitionFields, engagementCompetitionPayloadFromForm, engagementCompetitionPayloadFromEditForm, engagementOpeningDeadlineError, shouldSendEngagementOpeningMail, engagementOpeningMailScopeLabel, confirmEngagementOpeningMail, confirmEngagementReopeningMail, confirmOpenedCompetitionSensitiveChanges, engagementCompetitionPayloadFromSelection , openEngagementClubPersonForm, editCompetitionFields, nativeCompetitionFormValues, nativeCompetitionPatchFromForm };
   });
 })(window);
