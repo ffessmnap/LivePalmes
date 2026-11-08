@@ -2,6 +2,7 @@
 from copy import deepcopy
 import hashlib
 import importlib.util
+import io
 import json
 import os
 from pathlib import Path
@@ -11,6 +12,7 @@ from threading import Event
 from types import SimpleNamespace
 import unittest
 from unittest.mock import patch, MagicMock
+import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
 spec = importlib.util.spec_from_file_location('november_tests', ROOT / 'tools/november-validated-release-policy.py')
@@ -41,6 +43,84 @@ def inventory():
 
 
 class NovemberTests(unittest.TestCase):
+    def test_full_backup_with_all_existing_sources_and_two_new_callables(self):
+        backup_module = m.load('november_full_backup', 'preflight-production-release.py')
+        original_check_output = subprocess.check_output
+        archive = io.BytesIO()
+        with zipfile.ZipFile(archive, 'w') as zipped:
+            zipped.writestr('index.js', 'offline source fixture')
+        source = archive.getvalue()
+        for app_check in ['false', 'true', 'invalid']:
+            with self.subTest(app_check=app_check), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                rows = inventory()
+                for function in rows:
+                    function['buildConfig']['source'] = {'storageSource': {
+                        'bucket': 'offline-source', 'object': 'shared.zip', 'generation': '1'}}
+                reference = next(f for f in rows if f['name'] == m.PREFIX+'createCompetitionImport')
+                reference['serviceConfig']['environmentVariables']['LIVEPALMES_ENFORCE_APP_CHECK'] = app_check
+                (root/'credentials.json').write_text(json.dumps({'project_id':'livepalmes'}))
+                plan = root/'plan'; plan.mkdir()
+                (plan/'request.json').write_text(json.dumps(request()))
+                (plan/'selection.json').write_text(json.dumps(c['selected']))
+                calls = []
+
+                def check_output(arguments, **kwargs):
+                    if arguments[0] == 'gcloud':
+                        self.assertEqual(arguments, ['gcloud','auth','application-default','print-access-token'])
+                        return 'offline-token'
+                    self.assertEqual(arguments[0], 'node')
+                    return original_check_output(arguments, **kwargs)
+
+                def urlopen(req, **kwargs):
+                    url = req if isinstance(req, str) else req.full_url
+                    method = 'GET' if isinstance(req, str) else req.get_method()
+                    calls.append((method, url))
+                    if url == 'https://storage.googleapis.com/offline-source/shared.zip':
+                        return io.BytesIO(source)
+                    if url.endswith(':testIamPermissions'):
+                        self.assertEqual(method, 'POST')
+                        result = {'permissions':['cloudfunctions.functions.setIamPolicy']}
+                    elif url.endswith(':generateDownloadUrl'):
+                        self.assertEqual(method, 'POST')
+                        result = {'downloadUrl':'https://storage.googleapis.com/offline-source/shared.zip'}
+                    elif url.endswith('/releases?pageSize=1'):
+                        result = {'releases':[{'name':'offline-release', 'version':{'name':c['productionHosting']}}]}
+                    elif url.endswith('/'+c['productionHosting']):
+                        result = {'status':'FINALIZED'}
+                    elif url.endswith('/functions?pageSize=100'):
+                        result = {'functions':rows[:100], 'nextPageToken':'offline-page-two'}
+                    elif url.endswith('/functions?pageSize=100&pageToken=offline-page-two'):
+                        result = {'functions':rows[100:]}
+                    else:
+                        self.fail('Unexpected backup request: '+method+' '+url)
+                    return io.BytesIO(json.dumps(result).encode())
+
+                environment = {'GOOGLE_APPLICATION_CREDENTIALS':str(root/'credentials.json'),
+                    'CANDIDATE_DIRECTORY':str(ROOT), 'CANDIDATE_SHA':c['candidate'],
+                    'RUNNER_TEMP':str(root), 'RELEASE_BACKUP_DIRECTORY':str(root/'backup'),
+                    'EXPECTED_HOSTING_VERSION':c['productionHosting'], 'PLAN':str(plan),
+                    'RELEASE_SELECTION':str(plan/'selection.json'), 'GITHUB_STEP_SUMMARY':str(root/'summary'),
+                    'GITHUB_OUTPUT':str(root/'outputs')}
+                with patch.dict(os.environ, environment), \
+                     patch.object(backup_module.subprocess, 'check_output', side_effect=check_output), \
+                     patch.object(backup_module.urllib.request, 'urlopen', side_effect=urlopen):
+                    result = backup_module.main()
+                report = json.loads((root/'backup/report.json').read_text())
+                if app_check == 'invalid':
+                    self.assertEqual(result, 1)
+                    self.assertTrue(report['errors'])
+                    self.assertFalse(any(url.endswith(':generateDownloadUrl') for _,url in calls))
+                    continue
+                self.assertEqual(result, 0, report['errors'])
+                self.assertEqual(report['appCheck'], app_check)
+                self.assertEqual(report['newFunctions'], c['newFunctions'])
+                self.assertEqual(sorted(f['name'].split('/')[-1] for f in report['functions']), c['sourceOnly'])
+                self.assertEqual(json.loads((root/'backup/functions.json').read_text()), rows)
+                self.assertEqual(len(report['sources']), 1)
+                self.assertEqual(report['sources'][0]['sha256'], hashlib.sha256(source).hexdigest())
+                self.assertEqual(next((root/'backup/sources').glob('*.zip')).read_bytes(), source)
+
     def test_closed_version_options_and_selection(self):
         self.assertEqual(len(m.approved(request())), 115)
         self.assertEqual(len(c['selected']), 117)
