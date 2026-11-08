@@ -1,0 +1,71 @@
+name: Completer les sources mails TEST sans envoi
+on:
+  workflow_dispatch:
+    inputs:
+      release:
+        description: Lot ferme autorise (decisions reste bloque tant que son entree exacte est absente)
+        required: true
+        type: choice
+        options: [models, decisions]
+      expected_commit:
+        description: Commit main exact ayant reussi les deux suites CI
+        required: true
+        type: string
+      confirmation:
+        description: Saisir livepalmes-test ; sources seulement, etats deja suspendus inchanges
+        required: true
+        type: string
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: livepalmes-test-backend
+  cancel-in-progress: false
+jobs:
+  sources:
+    if: github.ref == 'refs/heads/main' && github.run_attempt == 1 && inputs.confirmation == 'livepalmes-test' && inputs.expected_commit == github.sha
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    environment: firebase-test
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      TARGET_FIREBASE_PROJECT: livepalmes-test
+      EXPECTED_COMMIT: ${{ inputs.expected_commit }}
+      CONFIRMATION: ${{ inputs.confirmation }}
+      RELEASE: ${{ inputs.release }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          path: tooling
+          ref: ${{ inputs.expected_commit }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/checkout@v7
+        with:
+          path: candidate
+          ref: ${{ inputs.expected_commit }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          check-latest: true
+      - name: Installer les outils verrouilles de verification des dependances
+        run: npm ci --prefix tooling/tests/firestore-rules --ignore-scripts --no-audit --no-fund
+      - uses: google-github-actions/auth@v3
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_TEST_BACKEND }}
+          project_id: livepalmes-test
+      - uses: google-github-actions/setup-gcloud@v3
+      - name: Authentifier les preuves et constater les preconditions deja satisfaites
+        run: python tooling/tools/publish-test-mail-sources.py prepare "$RELEASE" "$RUNNER_TEMP/test-mail-sources" candidate
+      - name: Publier seulement les sources calculees et autorisees
+        run: python tooling/tools/publish-test-mail-sources.py deploy "$RELEASE" "$RUNNER_TEMP/test-mail-sources" candidate
+      - name: Verifier revisions et preservation de tous les etats
+        run: python tooling/tools/publish-test-mail-sources.py verify "$RELEASE" "$RUNNER_TEMP/test-mail-sources" candidate
+      - uses: actions/upload-artifact@v4
+        with:
+          name: test-backend-proof
+          path: ${{ runner.temp }}/test-mail-sources/test-backend-proof.json
+          if-no-files-found: error
+          retention-days: 14
