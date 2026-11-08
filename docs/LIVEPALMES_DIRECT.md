@@ -2,6 +2,14 @@
 
 <!-- description: Périmètre, démarrage local, publication et fonctions propres aux consoles du dispositif LivePalmes Direct. -->
 
+## Mode opératoire régional et accès depuis le portail
+
+[Guide utilisateur sur TEST](https://livepalmes-test.web.app/direct-guide.html), avec PDF téléchargeable, accessible par « Mode opératoire » dans le bureau. Source : `direct-guide.html` et `assets/direct/guide.css`. Génération des deux copies identiques du PDF (livrable local sous `output/pdf/` et téléchargement Hosting) par `node tools/build-direct-guide.js` ; aucun accès métier ou service réel. Les pages générées sont contrôlées visuellement avant livraison.
+
+Le guide couvre le bureau seul, les consoles régionales, les décisions/forfaits/abandons, les finales et enfin la vidéo nationale. Chemin WinPalme confirmé par Antoine : Data → bonne bibliothèque → `renc` → rencontre concernée → `RésultatsSéries` (renc en minuscules ; R et S majuscules pour le dernier dossier, mots attachés et au pluriel).
+
+Le portail ouvre désormais ce bureau via « LivePalmes Direct », même icône, pour les profils régionaux/nationaux et admin.full. Aucun accès serveur changé ; ancien pilotage national encore disponible à son URL, retiré des liens du portail. Budget ajouté du menu, du guide et de son téléchargement : zéro lecture NAP/Firestore, écriture, appel métier ou listener. Les ouvertures du bureau conservent leurs contrôles et budgets existants.
+
 ## Six consoles multi-compétitions — ergonomie historique et bureau unique
 
 Une seule page bureau : `direct-admin.html?id=ID_NAP` réunit import PDF, surveillance TXT, décisions à traiter, finales et accès. L’URL du rôle bureau `direct-consoles.html?id=ID_NAP&role=computer` redirige vers ce bureau ; aucun second bureau, iframe ou second abonnement d’authentification. Les réglages et explications facultatives restent repliés ; seules les erreurs utiles sont mises en évidence. Les commandes privées ne coupent pas la surveillance TXT.

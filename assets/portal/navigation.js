@@ -1535,6 +1535,10 @@
         document.querySelectorAll("[data-capability-nav]").forEach((item) => {
           item.hidden = !canUse(item.dataset.capabilityNav);
         });
+        const canOpenDirect = canUse("admin.full") || canUse("engagements.region.manage") || canUse("engagements.national.manage");
+        document.querySelectorAll("[data-livepalmes-direct]").forEach((item) => {
+          item.hidden = !canOpenDirect;
+        });
         document.querySelectorAll("[data-engagements-nav], [data-engagements-panel]").forEach((item) => {
           item.hidden = !canAccessEngagementsView();
         });
