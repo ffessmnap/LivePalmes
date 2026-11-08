@@ -17,6 +17,7 @@ spec.loader.exec_module(shared)
 cycle, state = shared.cycle, shared.state
 require = shared.require
 PROJECT = 'livepalmes-test'
+REPOSITORY = 'ffessmnap/LivePalmes'
 RELEASE = 'trophy_departmental'
 ALLOWED = frozenset({'readNapPublicSwimmer', 'manageDamienHebertEdition'})
 PREFIX = f'projects/{PROJECT}/locations/europe-west1/functions/'
@@ -37,6 +38,7 @@ def contract():
 def guard(candidate, entry, env=os.environ):
     sha = cycle.run(['git', 'rev-parse', 'HEAD'], candidate)
     require(env.get('GITHUB_REF') == 'refs/heads/main' and env.get('GITHUB_RUN_ATTEMPT') == '1'
+            and env.get('GITHUB_REPOSITORY') == REPOSITORY
             and env.get('TARGET_FIREBASE_PROJECT') == PROJECT and env.get('CONFIRMATION') == PROJECT
             and env.get('RELEASE') == RELEASE and re.fullmatch('[a-f0-9]{40}', sha)
             and sha == env.get('GITHUB_SHA') == env.get('EXPECTED_COMMIT') == cycle.git('rev-parse', 'HEAD')
@@ -152,11 +154,28 @@ def verify(before, after, selected, candidate, sources):
 
 def baseline(entry, directory):
     expected = shared.baseline(entry, directory)
-    destination = directory / 'baseline-final'
-    info = cycle.artifact(entry['finalCheckRun'], 'test-proof', destination, '.github/workflows/livepalmes-test-common.yml')
-    proof = cycle.read(destination / 'test-proof.json')
-    require(info['head_sha'] == proof.get('candidate') == entry['baseCommit'] and proof.get('state') == expected,
-            'Controle final de reference trophee incompatible')
+    # verification_only deliberately skips the test-proof artifact. Authenticate
+    # its exact run and successful read-only control steps instead; the preceding
+    # common publication supplies the digest-checked state, compared live below.
+    endpoint = f"repos/{REPOSITORY}/actions/runs/{entry['finalCheckRun']}"
+    info = cycle.gh(endpoint)
+    require(info.get('head_sha') == entry['baseCommit'] and info.get('head_branch') == 'main'
+            and info.get('repository', {}).get('full_name') == REPOSITORY
+            and info.get('head_repository', {}).get('full_name') == REPOSITORY
+            and info.get('path') == '.github/workflows/livepalmes-test-common.yml'
+            and info.get('event') == 'workflow_dispatch' and info.get('run_attempt') == 1
+            and info.get('status') == 'completed' and info.get('conclusion') == 'success'
+            and info.get('display_title') == 'Verification TEST sans deploiement', 'Controle final trophee hors provenance')
+    jobs = cycle.gh(endpoint + '/jobs?per_page=100')['jobs']
+    require(len(jobs) < 100, 'Jobs de reference trophee tronques')
+    tests = [job for job in jobs if job.get('name') == 'test']
+    require(len(tests) == 1 and tests[0].get('status') == 'completed' and tests[0].get('conclusion') == 'success',
+            'Controle final trophee incomplet')
+    steps = {step['name']: step.get('conclusion') for step in tests[0]['steps']}
+    require(all(steps.get(name) == 'success' for name in ['Selectionner les Functions TEST reellement differentes',
+            'Controler le backend TEST et les Functions conservees']) and all(steps.get(name) == 'skipped' for name in
+            ['Publier et controler les Functions TEST', 'Publier TEST commun pour le commit exact verifie',
+             'Conserver la preuve de la version TEST']), 'Controle final trophee different du mode lecture seule')
     return expected
 
 
@@ -260,6 +279,7 @@ def main(mode, release, directory, candidate):
             and controls() == cycle.read(directory / 'controls.json'), 'Derive apres publication trophee')
     cycle.write(directory / 'test-backend-proof.json', {'schema': 1, 'candidate': sha, 'release': RELEASE,
                 'applicationAnchor': entry['applicationCommit'], 'contractSha256': CONTRACT_SHA256,
+                'baselineFinalCheckRun': entry['finalCheckRun'],
                 'state': {'functions': [f for f in snapshot['functions'] if f['name'].split('/')[-1] in plan['selected']]},
                 'currentTestState': snapshot, 'selected': plan['selected'], 'managedSources': managed,
                 'uploadedSources': uploads, 'configurationsUnchanged': True, 'otherFunctionsUnchanged': True,
