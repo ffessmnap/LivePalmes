@@ -33,8 +33,12 @@ function createDirectoryService_consumePublicAccessRequestRateLimit(backendConte
         reason: "Configuration SMTP incomplete."
       };
     }
-    const mail = backendContext.engagementAccessAcknowledgement(payload);
+    const original = backendContext.engagementAccessAcknowledgement(payload);
+    let contentReady = false;
     try {
+      const mail = require("../../mail-template-rendering").accessMail("access_acknowledgement",
+        await require("../../mail-templates").read(backendContext.db), original);
+      contentReady = true;
       const transporter = backendContext.nodemailer.createTransport(config.transport);
       await transporter.sendMail({
         from: `LivePalmes <${config.fromEmail}>`,
@@ -57,7 +61,7 @@ function createDirectoryService_consumePublicAccessRequestRateLimit(backendConte
       return {
         status: "failed",
         attemptedAt,
-        reason: "Envoi SMTP impossible."
+        reason: contentReady ? "Envoi SMTP impossible." : "Modèle de mail indisponible ou invalide."
       };
     }
   }
@@ -68,8 +72,12 @@ function createDirectoryService_consumePublicAccessRequestRateLimit(backendConte
     if (!config.ready) {
       return { status: "skipped_missing_config", attemptedAt, reason: "Configuration SMTP incomplete." };
     }
-    const mail = backendContext.engagementExistingAccountNotice(payload);
+    const original = backendContext.engagementExistingAccountNotice(payload);
+    let contentReady = false;
     try {
+      const mail = require("../../mail-template-rendering").accessMail("access_existing_account",
+        await require("../../mail-templates").read(backendContext.db), original);
+      contentReady = true;
       const transporter = backendContext.nodemailer.createTransport(config.transport);
       await transporter.sendMail({
         from: `LivePalmes <${config.fromEmail}>`,
@@ -84,7 +92,7 @@ function createDirectoryService_consumePublicAccessRequestRateLimit(backendConte
         "Notification de compte existant impossible.",
         backendContext.cleanText(error?.code || error?.name || "smtp-error").slice(0, 80)
       );
-      return { status: "failed", attemptedAt, reason: "Envoi SMTP impossible." };
+      return { status: "failed", attemptedAt, reason: contentReady ? "Envoi SMTP impossible." : "Modèle de mail indisponible ou invalide." };
     }
   }
 
@@ -141,22 +149,26 @@ function createDirectoryService_consumePublicAccessRequestRateLimit(backendConte
     if (!recipients.length) {
       return { status: "skipped_no_recipient", attemptedAt, recipientCount: 0, sentCount: 0, failedCount: 0, reason: "Aucun administrateur destinataire." };
     }
-    const transporter = backendContext.nodemailer.createTransport(config.transport);
+    let mailTemplates;
+    try { mailTemplates = await require("../../mail-templates").read(backendContext.db); }
+    catch (error) { return { status: "failed", attemptedAt, recipientCount: recipients.length, sentCount: 0, failedCount: 0, reason: "Modèles de mails indisponibles." }; }
     const notificationPayload = {
       ...payload,
       clubCode: backendContext.engagementClubCode(payload.clubId, payload.clubCode).slice(0, 40),
       clubName: backendContext.engagementClubName(payload.clubId, payload.clubName).slice(0, 140),
       regionName: backendContext.CLUB_REFERENCE_REGION_LABELS[backendContext.cleanText(payload.regionId)] || backendContext.cleanText(payload.regionId).slice(0, 80)
     };
+    let prepared;
+    try {
+      prepared = recipients.map(recipient => ({ recipient, mail: require("../../mail-template-rendering").accessMail("access_admin_notification", mailTemplates,
+        backendContext.engagementAccessAdminNotification({ ...notificationPayload, recipientFirstName: recipient.firstName })) }));
+    } catch (error) { return { status: "failed", attemptedAt, recipientCount: recipients.length, sentCount: 0, failedCount: 0, reason: "Modèle de mail indisponible ou invalide." }; }
+    const transporter = backendContext.nodemailer.createTransport(config.transport);
     let sentCount = 0;
     let failedCount = 0;
     for (let index = 0; index < recipients.length; index += 5) {
-      const batch = recipients.slice(index, index + 5);
-      const results = await Promise.allSettled(batch.map((recipient) => {
-        const mail = backendContext.engagementAccessAdminNotification({
-          ...notificationPayload,
-          recipientFirstName: recipient.firstName
-        });
+      const batch = prepared.slice(index, index + 5);
+      const results = await Promise.allSettled(batch.map(({ recipient, mail }) => {
         return transporter.sendMail({
           from: `LivePalmes <${config.fromEmail}>`,
           to: recipient.email,

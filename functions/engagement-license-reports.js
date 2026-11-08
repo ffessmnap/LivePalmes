@@ -13,7 +13,12 @@ const LABELS={valid:"Licence valide",licence_expiree:"Licence expirée",introuva
 function participants(batch,competition){return batch.people.filter(p=>p.competitionIds.map(id).includes(id(competition)));}
 function membership(batch,competition){return hash([batch.season.label,participants(batch,competition).map(p=>[p.livePalmesId,p.firstName,p.lastName,p.birthDate,p.clubId,p.licenseNumber]).sort((a,b)=>String(a[0]).localeCompare(String(b[0])))]);}
 function fingerprint(batch,competition){return hash([membership(batch,competition),participants(batch,competition).map(p=>[p.livePalmesId,p.seasonStatus,p.validatedAt||""]).sort((a,b)=>String(a[0]).localeCompare(String(b[0])))]);}
-function view(report){return report?{competitionId:report.competitionId,status:report.status,completedAt:report.completedAt,counts:report.counts,revision:report.revision,mail:report.mail||null,closure:report.closure||null}:null;}
+function view(report){
+  if(!report)return null;
+  const {mailTemplates,...receipt}=report.mail||{};
+  return {competitionId:report.competitionId,status:report.status,completedAt:report.completedAt,counts:report.counts,revision:report.revision,
+    mail:Object.keys(receipt).length?receipt:null,closure:report.closure||null};
+}
 async function summaries(db,season,store){if(store)return store.summaries(season);return {reports:(await summaryRef(db,season).get()).data()?.reports||{},readStats:{firestoreDocuments:1}};}
 async function attach(db,batch,store){
   if(store){const reports=await store.readMany(batch.season.label,batch.competitions.map(c=>c.id));batch.controlReports={};batch.controlMemberships={};for(const c of batch.competitions){const report=reports.get(id(c.id));batch.controlMemberships[id(c.id)]=membership(batch,c.id);batch.controlReports[id(c.id)]=report?{...view(report),current:report.fingerprint===fingerprint(batch,c.id)}:null;}return batch;}
@@ -93,7 +98,12 @@ function message(report){
 async function notify(db,batch,input,services,store){
   const competition=await services.competition(id(input.competitionId));
   const report=await readCurrent(db,batch,input.competitionId,store),selected=recipients(competition,await services.directory());
-  const setting=await services.setting(),mail=message(report),fingerprint=hash([report.revision,selected,setting]);
+  const setting=await services.setting(),original=message(report);
+  const templates=require('./mail-templates');
+  const firstJobId=selected.length?hash(["license-control",report.competitionId,report.revision,selected[0].email]):'';
+  const snapshot=report.mail?.mailTemplates || (report.mail?.sentAt ? templates.empty() : await templates.legacyDefault(db,templates.pick(await templates.read(db),['license_control_report']),firstJobId));
+  const mail=templates.render('license_control_report',snapshot,{'competition.nom':report.competitionName,'licences.bilan':original.text.split('\n\n').slice(1,-1).join('\n\n')},original);
+  const fingerprint=hash([report.revision,selected,setting,mail]);
   const disabled=services.projectId==="livepalmes-test"||!setting.enabled;
   const result={ok:true,report:view(report),recipients:selected,missingComputer:!competition.computerEmail,missingRegion:!competition.regionId,...mail,fingerprint,disabled,previewOnly:services.projectId==="livepalmes-test",sentCount:0};
   if(input.action==="previewReport")return result;
@@ -102,12 +112,23 @@ async function notify(db,batch,input,services,store){
   if(disabled)return {...result,done:true,reason:services.projectId==="livepalmes-test"?"test-emails-disabled":"mails-disabled"};
   if(!selected.length)throw new TypeError("Aucun destinataire configuré pour cette compétition.");
   const offset=input.offset??0;if(!Number.isInteger(offset)||offset<0||offset>selected.length||offset%20!==0)throw new TypeError("Avancement d’envoi invalide.");
+  if(!report.mail?.mailTemplates && !report.mail?.sentAt){
+    let receipt;
+    if(store)receipt=await store.markMail(report,{mailTemplates:snapshot});
+    else receipt=await db.runTransaction(async tx=>{
+      const ref=reportRef(db,report.season,report.competitionId),current=(await tx.get(ref)).data();
+      if(current?.revision!==report.revision)throw new TypeError("Le bilan a changé pendant la préparation.");
+      const receipt=current.mail||{mailTemplates:snapshot};
+      tx.set(ref,{mail:receipt},{merge:true});return receipt;
+    });
+    if(!templates.sameSnapshot(receipt.mailTemplates||templates.empty(),snapshot))throw new TypeError("La préparation utilise une autre version. Actualisez l’aperçu.");
+  }
   let sentCount=0;
   for(const r of selected.slice(offset,offset+20)){
     const gate=require("./engagement-mail-control").decision(await services.setting(),{source:"nap",type:"license_control_report",competitionRegionId:competition.regionId,toEmail:r.email,createdAt:new Date().toISOString()},services.projectId);
     if(!gate.allowed)throw new TypeError("Envoi bloqué par le réglage des notifications.");
     const key=hash(["license-control",report.competitionId,report.revision,r.email]),ref=db.collection("engagementMailJobs").doc(key),now=new Date().toISOString();
-    const job={source:"nap",type:"license_control_report",status:"sending",competitionId:report.competitionId,competitionRegionId:competition.regionId,recipientUid:r.uid,toEmail:r.email,subject:mail.subject,textBody:mail.text,createdAt:now,notificationDueAt:now};
+    const job={source:"nap",type:"license_control_report",status:"sending",competitionId:report.competitionId,competitionRegionId:competition.regionId,recipientUid:r.uid,toEmail:r.email,subject:mail.subject,textBody:mail.text,templateId:mail.templateId,templateRevision:mail.templateRevision,catalogRevision:mail.catalogRevision,createdAt:now,notificationDueAt:now};
     let claimed=false;
     await db.runTransaction(async tx=>{const current=(await tx.get(ref)).data();if(current){if(current.status!=="sent")throw new TypeError("Un envoi précédent reste à vérifier. Aucun renvoi automatique.");return;}tx.set(ref,job);claimed=true;});
     if(claimed){const sent=await services.send(ref,job);if(sent.status!=="sent")throw new TypeError("Envoi non confirmé. Vérifiez le journal avant de reprendre.");}sentCount++;
@@ -117,7 +138,7 @@ async function notify(db,batch,input,services,store){
   if(done&&!store)await db.runTransaction(async tx=>{
     const ref=reportRef(db,report.season,report.competitionId),summary=summaryRef(db,report.season),[snapshot,index]=await tx.getAll(ref,summary),current=snapshot.data();
     if(current?.revision!==report.revision)throw new TypeError("Le bilan a changé pendant l’envoi.");
-    const mail=current.mail?.sentAt?current.mail:{sentAt:new Date().toISOString(),recipientCount:selected.length};tx.set(ref,{mail},{merge:true});tx.set(summary,{reports:{...(index.data()?.reports||{}),[report.competitionId]:view({...report,mail})}},{merge:true});
+    const mail=current.mail?.sentAt?current.mail:{...current.mail,sentAt:new Date().toISOString(),recipientCount:selected.length};tx.set(ref,{mail},{merge:true});tx.set(summary,{reports:{...(index.data()?.reports||{}),[report.competitionId]:view({...report,mail})}},{merge:true});
   });
   return {...result,sentCount,done,nextOffset:offset+20};
 }

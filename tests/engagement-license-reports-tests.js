@@ -9,7 +9,7 @@ const batch={season,competitions:[{id:"1",name:"Coupe <test>"},{id:"2",name:"Mee
 ]};
 function database(){
   const data=new Map();let reads=0,writes=0;
-  const snapshot=ref=>{reads++;return {data:()=>structuredClone(data.get(ref.path))};};
+  const snapshot=ref=>{reads++;return {exists:data.has(ref.path),data:()=>structuredClone(data.get(ref.path))};};
   const db={data,get reads(){return reads;},get writes(){return writes;},collection:name=>({doc:key=>{const ref={path:name+"/"+key,get:async()=>snapshot(ref)};return ref;}}),getAll:async(...refs)=>refs.map(snapshot),runTransaction:async fn=>{
     const changes=[];const tx={get:async ref=>snapshot(ref),getAll:async(...refs)=>refs.map(snapshot),set:(ref,value,options)=>changes.push([ref,value,options])};
     const result=await fn(tx);for(const [ref,value,options]of changes){data.set(ref.path,structuredClone(options?.merge?{...data.get(ref.path),...value}:value));writes++;}return result;
@@ -61,5 +61,36 @@ const input={competitionId:"1",expectedMembership:reports.membership(batch,"1"),
   const uncertainPreview=await reports.notify(uncertainDb,batch,{action:"previewReport",competitionId:"1"},uncertain);
   const uncertainInput={...sendInput,expectedFingerprint:uncertainPreview.fingerprint};
   await assert.rejects(reports.notify(uncertainDb,batch,uncertainInput,uncertain));await assert.rejects(reports.notify(uncertainDb,batch,uncertainInput,uncertain),/Aucun renvoi automatique/);assert.equal(attempts,1);
+  // A customization during a paginated send must never alter the same report.
+  const pagedDb=database();await reports.complete(pagedDb,batch,input,"national");
+  const template={subject:"Bilan {{competition.nom}}",text:"Accompagnement initial\n\n{{licences.bilan}}",revision:1};
+  const config=revision=>({schema:1,revision,templates:{license_control_report:{...template,revision,text:revision===1?template.text:template.text.replace("initial","suivant")}}});
+  pagedDb.data.set("engagementConfigurations/mailTemplates",config(1));
+  const recipients=Array.from({length:25},(_,index)=>({uid:`regional-${index}`,email:`regional-${index}@example.invalid`,regionId:"Centre",capabilities:["engagements.region.manage"]}));
+  const bodies=[];const pagedServices={...live,directory:async()=>recipients,send:async(ref,job)=>{bodies.push(job.textBody);pagedDb.data.set(ref.path,{...job,status:"sent"});return {status:"sent"};}};
+  const initialPreview=await reports.notify(pagedDb,batch,{action:"previewReport",competitionId:"1"},pagedServices);
+  assert.match(initialPreview.text,/Accompagnement initial/);assert.match(initialPreview.text,/Une erreur technique/);
+  await reports.notify(pagedDb,batch,{action:"sendReport",competitionId:"1",expectedFingerprint:initialPreview.fingerprint},pagedServices);
+  const pinned=pagedDb.data.get(reports.reportRef(pagedDb,season.label,"1").path).mail;
+  assert.equal(pinned.sentAt,undefined);assert.equal(pinned.mailTemplates.revision,1);
+  pagedDb.data.set("engagementConfigurations/mailTemplates",config(2));
+  const laterPreview=await reports.notify(pagedDb,batch,{action:"previewReport",competitionId:"1"},pagedServices);
+  assert.equal(laterPreview.fingerprint,initialPreview.fingerprint);
+  await reports.notify(pagedDb,batch,{action:"sendReport",competitionId:"1",offset:20,expectedFingerprint:initialPreview.fingerprint},pagedServices);
+  assert.equal(bodies.length,26);assert.ok(bodies.every(body=>body===initialPreview.text));
+  assert.equal(pagedDb.data.get(reports.reportRef(pagedDb,season.label,"1").path).mail.mailTemplates.revision,1);
+  const legacyDb=database();await reports.complete(legacyDb,batch,input,"national");
+  const legacyBodies=[],legacyServices={...pagedServices,send:async(ref,job)=>{legacyBodies.push(job.textBody);legacyDb.data.set(ref.path,{...job,status:"sent"});return {status:"sent"};}};
+  const legacyPreview=await reports.notify(legacyDb,batch,{action:"previewReport",competitionId:"1"},legacyServices);
+  await reports.notify(legacyDb,batch,{action:"sendReport",competitionId:"1",expectedFingerprint:legacyPreview.fingerprint},legacyServices);
+  // Simulate a first page from the previous application, before snapshots existed.
+  legacyDb.data.get(reports.reportRef(legacyDb,season.label,"1").path).mail=null;
+  const oldJobs=JSON.stringify([...legacyDb.data].filter(([key])=>key.startsWith('engagementMailJobs/')));
+  legacyDb.data.set('engagementConfigurations/mailTemplates',config(2));
+  const legacyResume=await reports.notify(legacyDb,batch,{action:"previewReport",competitionId:"1"},legacyServices);
+  assert.equal(legacyResume.text,legacyPreview.text);assert.equal(legacyResume.catalogRevision,0);
+  assert.equal(JSON.stringify([...legacyDb.data].filter(([key])=>key.startsWith('engagementMailJobs/'))),oldJobs,'An old first job remains unchanged when previewing a resumed batch');
+  await reports.notify(legacyDb,batch,{action:"sendReport",competitionId:"1",offset:20,expectedFingerprint:legacyResume.fingerprint},legacyServices);
+  assert.equal(legacyBodies.length,26);assert.ok(legacyBodies.every(body=>body===legacyPreview.text));
   console.log("Bilans licences : statuts, provenance, concurrence, ciblage, détails et zéro envoi/écriture mail TEST : OK");
 })().catch(error=>{console.error(error);process.exitCode=1;});
