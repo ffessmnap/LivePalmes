@@ -1,0 +1,30 @@
+{
+  "schema": 1,
+  "project": "livepalmes-test",
+  "release": "trophy_departmental",
+  "approval": "Antoine, 8 novembre 2026 : inclusion explicite des départementales, correctif TEST confié à la coordination ; deux sources/labels seulement, aucun état/donnée/droit/PROD.",
+  "applicationCommit": "c6d81e8ee48551c17aeb86b63a09c8bddf3d845d",
+  "baseCommit": "a2372e76bcde844734bebb8ffa04301302345d34",
+  "baselineRuns": [
+    {
+      "id": 42481737517,
+      "artifact": "test-proof",
+      "workflow": ".github/workflows/livepalmes-test-common.yml"
+    }
+  ],
+  "fingerprints": {
+    "manageDamienHebertEdition": "ad723020b467aeb1b34cfc8cff0e8ce6ff2ab927a1e48196f98e9c4d0e52fa31",
+    "readNapPublicSwimmer": "2fb2611864510ea5b46dd7e597ca0cc1fbcb3de19cd985245e936099d4d5b278"
+  },
+  "toolingPaths": [
+    ".github/releases/evidence/20261108-trophy-departmental-contract.json",
+    "tools/publish-test-trophy-sources.py",
+    "tests/test-trophy-sources-tests.py",
+    ".github/workflows/livepalmes-test-mail-sources.yml",
+    ".github/workflows/livepalmes-verification-preview.yml",
+    "docs/releases/EVOLUTIONS.md",
+    "docs/releases/PROCEDURE.md",
+    "docs/agents/PUBLICATION.md"
+  ],
+  "finalCheckRun": 42482039649
+}

@@ -6,7 +6,7 @@ on:
         description: Lot autorise avec son contrat ferme au candidat applicatif exact
         required: true
         type: choice
-        options: [models, decisions, contacts, reminder, officials_txt]
+        options: [models, decisions, contacts, reminder, officials_txt, trophy_departmental]
       expected_commit:
         description: Commit main exact ayant reussi les deux suites CI
         required: true
@@ -33,7 +33,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   sources:
-    if: github.ref == 'refs/heads/main' && github.run_attempt == 1 && inputs.confirmation == 'livepalmes-test' && inputs.expected_commit == github.sha && !(inputs.identity_only && inputs.recover_models)
+    if: github.ref == 'refs/heads/main' && github.run_attempt == 1 && inputs.confirmation == 'livepalmes-test' && inputs.expected_commit == github.sha && !(inputs.identity_only && inputs.recover_models) && !(inputs.release == 'trophy_departmental' && (inputs.identity_only || inputs.recover_models))
     runs-on: ubuntu-latest
     timeout-minutes: 45
     environment: firebase-test
@@ -43,6 +43,7 @@ jobs:
       EXPECTED_COMMIT: ${{ inputs.expected_commit }}
       CONFIRMATION: ${{ inputs.confirmation }}
       RELEASE: ${{ inputs.release }}
+      SOURCE_TOOL: ${{ inputs.release == 'trophy_departmental' && 'publish-test-trophy-sources.py' || 'publish-test-mail-sources.py' }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -79,13 +80,13 @@ jobs:
           retention-days: 14
       - name: Authentifier les preuves et constater les preconditions deja satisfaites
         if: ${{ !inputs.identity_only && !inputs.recover_models }}
-        run: python tooling/tools/publish-test-mail-sources.py prepare "$RELEASE" "$RUNNER_TEMP/test-mail-sources" candidate
+        run: python tooling/tools/"$SOURCE_TOOL" prepare "$RELEASE" "$RUNNER_TEMP/test-mail-sources" candidate
       - name: Publier seulement les sources calculees et autorisees
         if: ${{ !inputs.identity_only && !inputs.recover_models }}
-        run: python tooling/tools/publish-test-mail-sources.py deploy "$RELEASE" "$RUNNER_TEMP/test-mail-sources" candidate
+        run: python tooling/tools/"$SOURCE_TOOL" deploy "$RELEASE" "$RUNNER_TEMP/test-mail-sources" candidate
       - name: Verifier revisions et preservation de tous les etats
         if: ${{ !inputs.identity_only && !inputs.recover_models }}
-        run: python tooling/tools/publish-test-mail-sources.py verify "$RELEASE" "$RUNNER_TEMP/test-mail-sources" candidate
+        run: python tooling/tools/"$SOURCE_TOOL" verify "$RELEASE" "$RUNNER_TEMP/test-mail-sources" candidate
       - name: Recuperer la preuve du run models engage sans publication
         if: inputs.recover_models && !inputs.identity_only
         run: python tooling/tools/publish-test-mail-sources.py recover "$RELEASE" "$RUNNER_TEMP/test-mail-sources" candidate
@@ -98,7 +99,7 @@ jobs:
           retention-days: 14
       - name: Conserver uniquement les temoins techniques non sensibles en cas d echec
         if: failure() && !inputs.identity_only
-        run: python tooling/tools/publish-test-mail-sources.py diagnostic "$RELEASE" "$RUNNER_TEMP/test-mail-sources" candidate
+        run: python tooling/tools/"$SOURCE_TOOL" diagnostic "$RELEASE" "$RUNNER_TEMP/test-mail-sources" candidate
       - uses: actions/upload-artifact@v4
         if: failure() && !inputs.identity_only
         with:
