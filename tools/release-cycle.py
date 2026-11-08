@@ -1220,7 +1220,13 @@ def verify_excluded_backend(directory, state, selected):
             changed.append({'name': name, 'commit': function['commit']})
     # Earlier divergence is recorded, not treated as a reason to upgrade a
     # retained service. New divergence must pass the pinned offline suite.
-    if direct_release.approved(request):
+    suite_path = ROOT / 'tests/release-excluded-backend-compatibility-tests.js'
+    if november_release.approved(request):
+        november_release.retained_test_origins(request, read(root / 'test-proof.json'))
+        require(sorted(retained) == november_release.contract()['retainedFunctions'], 'Revue November hors des deux preferences')
+        suite_path = ROOT / 'tools/verify-november-retained-scope.js'
+        result = json.loads(run(['node', str(suite_path), str(ROOT), request['productionCommit'], request['candidate']]))
+    elif direct_release.approved(request):
         direct_release.scope()
         result = {'suite':review['suite'], 'candidate':request['candidate'],
                   'productionCommit':request['productionCommit'], 'result':'success',
@@ -1237,7 +1243,7 @@ def verify_excluded_backend(directory, state, selected):
             and result.get('passedFunctions') == sorted(row['name'] for row in changed),
             'Compatibilite des consommateurs exclus non demontree')
     result['reviewSha256'] = hashlib.sha256(json.dumps(review, sort_keys=True).encode()).hexdigest()
-    result['suiteSha256'] = hashlib.sha256((ROOT / 'tests/release-excluded-backend-compatibility-tests.js').read_bytes()).hexdigest()
+    result['suiteSha256'] = hashlib.sha256(suite_path.read_bytes()).hexdigest()
     result['retainedFunctions'] = sorted(rows)
     write(root / 'excluded-backend-verification.json', result)
 

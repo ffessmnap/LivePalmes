@@ -33,15 +33,15 @@ def fixture(name):
 
 
 def inventory():
-    rows = [fixture(n) for n in c['sourceOnly']]
+    rows = [fixture(row['name'].split('/')[-1]) for row in c['origins']]
     next(f for f in rows if f['name'] == m.PREFIX+c['smtpReference'])['serviceConfig']['secretEnvironmentVariables'] = deepcopy(c['smtpBindings'])
     return rows
 
 
 class NovemberTests(unittest.TestCase):
     def test_closed_version_options_and_selection(self):
-        self.assertEqual(len(m.approved(request())), 117)
-        self.assertEqual(len(c['selected']), 119)
+        self.assertEqual(len(m.approved(request())), 115)
+        self.assertEqual(len(c['selected']), 117)
         self.assertEqual(set(c['selected'])-set(c['sourceOnly']), set(c['newFunctions']))
         m.selection(request(), c['selected'])
         for change in [{'candidate': 'a'*40}, {'testRun': 1}, {'productionCommit': 'b'*40},
@@ -192,7 +192,7 @@ class NovemberTests(unittest.TestCase):
             with patch.object(m, 'load', return_value=fake), patch.object(m, 'guard'), patch.object(m.urllib.request, 'urlopen', return_value=MagicMock()):
                 m.publish_sources(p, plan, backup, cycle, lambda _root, sha: b'fixture-source')
         patches = [r for r in requests if r[1]=='PATCH']
-        self.assertEqual(len(patches), 117)
+        self.assertEqual(len(patches), 115)
         self.assertEqual(sum('serviceConfig' in r[2] for r in patches), 1)
         self.assertEqual({r[2]['name'].split('/')[-1] for r in patches}, set(c['sourceOnly']))
         self.assertFalse(any('IamPolicy' in r[0] or 'run.app' in r[0] or 'cloudfunctions.net' in r[0] for r in requests))
@@ -257,7 +257,8 @@ class NovemberTests(unittest.TestCase):
     def test_common_postcheck_covers_every_existing_configuration_and_both_new_functions(self):
         before = inventory(); after = deepcopy(before)
         for f in after:
-            f['labels']['livepalmes-commit'] = c['candidate']
+            if f['name'].split('/')[-1] in c['sourceOnly']:
+                f['labels']['livepalmes-commit'] = c['candidate']
             if f['name'] == m.PREFIX+c['smtpFunction']:
                 f['serviceConfig']['secretEnvironmentVariables'] = deepcopy(c['smtpBindings'])
         for name in c['newFunctions']:
@@ -270,7 +271,7 @@ class NovemberTests(unittest.TestCase):
             p = Path(directory)
             (p/'functions.json').write_text(json.dumps(before))
             (p/'report.json').write_text(json.dumps({'candidate':c['candidate'],'commitLabel':True,
-                'functions':[{'name':f['name']} for f in before], 'newFunctions':c['newFunctions'],
+                'functions':[{'name':f['name']} for f in before if f['name'].split('/')[-1] in c['sourceOnly']], 'newFunctions':c['newFunctions'],
                 'appCheck':'false','additionalNovemberFunctions':c['sourceOnly']}))
             with patch.object(state, 'inventory', return_value=after), patch.dict(os.environ, {'GITHUB_STEP_SUMMARY':str(p/'summary')}):
                 state.check_after(p,p/'after.json',True)
@@ -279,6 +280,43 @@ class NovemberTests(unittest.TestCase):
                 del after[0]['serviceConfig']['maxInstanceCount']
                 after[-1]['serviceConfig']['availableMemory'] = '512Mi'
                 with self.assertRaisesRegex(ValueError, 'Controle'): state.check_after(p,p/'after.json',True)
+
+    def test_retained_preferences_require_the_real_test_origin(self):
+        rows = [{**row, 'name':row['name'].replace('projects/livepalmes/', 'projects/livepalmes-test/')}
+                for row in c['origins'] if row['name'].split('/')[-1] in c['retainedFunctions']]
+        proof = {'candidate':c['candidate'], 'state':{'functions':rows}}
+        m.retained_test_origins(request(), proof)
+        for key, replacement in [('commit', c['candidate']), ('state', 'FAILED'), ('updateTime', '')]:
+            changed = deepcopy(proof)
+            changed['state']['functions'][0][key] = replacement
+            with self.assertRaisesRegex(ValueError, 'Origines TEST'): m.retained_test_origins(request(), changed)
+        wrong = deepcopy(proof); wrong['state']['functions'].append(wrong['state']['functions'][0])
+        with self.assertRaisesRegex(ValueError, 'Origines TEST'): m.retained_test_origins(request(), wrong)
+
+    def test_common_retained_review_uses_the_closed_proof_without_weakening_other_sources(self):
+        cycle = m.load('november_retained_cycle', 'release-cycle.py')
+        retained = [r for r in c['reviewedLegacyOrigins'] if r['name'] in c['retainedFunctions']]
+        value = {**request(), 'excludedBackendEvidence':{'schema':1,'candidate':c['candidate'],
+            'productionRun':c['productionRun'],'suite':'retained-calendar-consumers-v1',
+            'functions':[{**r,'reason':'closed proof'} for r in retained]}}
+        rows = [{**row, 'name':row['name'].replace('projects/livepalmes/', 'projects/livepalmes-test/')}
+                for row in c['origins'] if row['name'].split('/')[-1] in c['retainedFunctions']]
+        maps = {c['candidate']:{r['name']:r['after'] for r in retained},
+                c['productionCommit']:{r['name']:'0'*64 for r in retained},
+                retained[0]['commit']:{r['name']:r['before'] for r in retained}}
+        with tempfile.TemporaryDirectory() as directory:
+            p = Path(directory)
+            (p/'request.json').write_text(json.dumps(value)); (p/'baseline.json').write_text(json.dumps({'productionRun':c['productionRun']}))
+            (p/'test-proof.json').write_text(json.dumps({'candidate':c['candidate'],'state':{'functions':rows}}))
+            with patch.object(cycle, 'backend_fingerprints', side_effect=maps.__getitem__):
+                cycle.verify_excluded_backend(p, {'functions':c['origins']}, c['selected'])
+            result = json.loads((p/'excluded-backend-verification.json').read_text())
+            self.assertEqual(result['retainedFunctions'], c['retainedFunctions'])
+            self.assertEqual(result['passedFunctions'], c['retainedFunctions'])
+            self.assertTrue(result['preferenceClosureUnchanged'])
+            source = (ROOT/'tools/release-cycle.py').read_text(encoding='utf-8')
+            self.assertIn('for n in november_release.approved(request)', source)
+            self.assertIn("'Preuve TEST du 8 novembre absente ou incompatible'", source)
 
 
 if __name__ == '__main__':
