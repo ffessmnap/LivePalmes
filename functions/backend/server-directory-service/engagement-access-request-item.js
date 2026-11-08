@@ -31,7 +31,7 @@ function createDirectoryService_engagementAccessRequestItem(backendContext) {
       resolvedByEmail: backendContext.cleanText(data.resolvedByEmail).slice(0, 180),
       resolutionReason: backendContext.cleanText(data.resolutionReason).slice(0, 600),
       resolutionNotification: data.resolutionNotification && typeof data.resolutionNotification === "object"
-        ? data.resolutionNotification
+        ? require("../../request-decision-mail").publicState(data.resolutionNotification)
         : null
     });
   }

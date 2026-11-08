@@ -5,6 +5,8 @@ function createAccessHandlers_listAccessUserDeletionRequests(backendContext) {
     if (!context.national) {
       throw new backendContext.HttpsError("permission-denied", "Admin national requis.");
     }
+    if (request.data?.status === "history") return require("../../request-decision-history").list(backendContext.db,
+      "accessUserDeletionRequests", request.data, backendContext.accessUserDeletionRequestItem);
     const snapshot = await backendContext.db.collection("accessUserDeletionRequests")
       .where("status", "==", "pending")
       .limit(100)

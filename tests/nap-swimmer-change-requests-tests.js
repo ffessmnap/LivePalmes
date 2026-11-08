@@ -47,11 +47,16 @@ function fixture(options = {}) {
     engagementSwimmerChangeRequestItem: doc => { const { nativeBefore, nativeResolution, expectedFingerprint, ...visible } = doc.data(); return visible; },
     writeAuditLogOnce: async () => {},
     sendEngagementSwimmerChangeResolutionNotification: async () => { notifications++; return { status: "sent" }; },
+    requestDecisionMailServices: () => ({ projectId: options.project || "livepalmes-test", readTemplates: async () => ({ schema: 1, revision: 0, templates: {} }) }),
     db: {
       collection: name => { assert.ok(["requests", "auditLogs"].includes(name), `old sports collection ${name} forbidden`); return { doc: id => refFor(name === "requests" ? records : audits, id) }; },
-      runTransaction: async callback => callback({ get: ref => ref.get(), set: (ref, value, config) => { records.set(ref.id, structuredClone(config?.merge ? { ...records.get(ref.id), ...value } : value)); } })
+      runTransaction: async callback => callback({ get: ref => ref.get(), set: (ref, value, config) => {
+        if (value.status === "approved" && failComplete) { failComplete = false; throw new Error("request store unavailable after SQL"); }
+        records.set(ref.id, structuredClone(config?.merge ? { ...records.get(ref.id), ...value } : value));
+      } })
     },
     require: name => {
+      if (name === "./request-decision-mail") return require("../functions/request-decision-mail");
       if (name === "./nap-swimmer-change-requests") return { prepareRequest, prepareResolution };
       assert.equal(name, "./nap-portal-swimmers");
       return { portalPool: () => ({ execute: connection.execute, getConnection: async () => connection }), correctPortalIdentity };
@@ -60,7 +65,7 @@ function fixture(options = {}) {
   vm.runInNewContext(requestCode + resolveCode, sandbox);
   return { sandbox, records, audits, row, count: () => ({ sqlWrites, notifications, queries, locked, releases }),
     submit: data => sandbox.exports.requestEngagementClubSwimmerChange({ data: data || input }),
-    resolve: data => sandbox.exports.resolveEngagementSwimmerChangeRequest({ data }) };
+    resolve: data => sandbox.exports.resolveEngagementSwimmerChangeRequest({ data: { ...(data.decision === "rejected" ? { resolutionNote: "Refus motivé" } : {}), ...data } }) };
 }
 (async () => {
   const settingsTest=fixture(),settingsProd=fixture({project:"livepalmes"});
@@ -103,7 +108,7 @@ function fixture(options = {}) {
   assert.equal(reported.request.reportType,"duplicate");assert.equal(report.count().queries,1);assert.equal(report.count().sqlWrites,0);
   assert.equal(reported.request.current.firstName,reported.request.proposed.firstName);
   await assert.rejects(report.submit(reportInput),e=>e.code==="already-exists");
-  await assert.rejects(report.resolve({requestId:reported.request.id,decision:"approved"}),e=>e.code==="invalid-argument");
+  assert.equal(require("../functions/request-decision-mail").options({decision:"approved"}).comment, "", "approval comment is optional, including report closure");
   await assert.rejects(report.resolve({requestId:reported.request.id,decision:"approved",resolutionNote:"Verifie",proposed:{lastName:"CHANGE"}}),e=>e.code==="invalid-argument");
   const beforeClose=report.count().queries;
   const closing={requestId:reported.request.id,decision:"approved",resolutionNote:"Verifie : aucune fusion automatique. Intervention separee si necessaire."};
@@ -123,7 +128,8 @@ function fixture(options = {}) {
   assert.ok(browser.includes('else if(payload.napSource&&!direct)delete payload.proposed.licenseNumber;'));
   const snapshotCode = source.slice(source.indexOf("function engagementSwimmerIdentitySnapshot("), source.indexOf("function cleanEngagementSwimmerIdentityCorrection("));
   const dtoCode = source.slice(source.indexOf("function engagementSwimmerChangeRequestItem("), source.indexOf("async function sendEngagementSwimmerChangeResolutionNotification("));
-  const dto = { cleanText: value => String(value || ""), cleanIsoDate: value => value || "", cleanFirestoreValue: value => value };
+  const dto = { cleanText: value => String(value || ""), cleanIsoDate: value => value || "", cleanFirestoreValue: value => value,
+    require: name => { assert.equal(name, "./request-decision-mail"); return require("../functions/request-decision-mail"); } };
   vm.runInNewContext(snapshotCode + dtoCode, dto);
   const visible = dto.engagementSwimmerChangeRequestItem({ id: "request", data: () => saved });
   assert.equal(visible.napSource, true); assert.equal(visible.current.napSource, true); assert.equal(visible.current.napFingerprint, input.expectedFingerprint);

@@ -238,6 +238,7 @@
           portalContext.elements.engagementsNationalAccountsStatus.textContent = "Chargement...";
           portalContext.elements.engagementsNationalAccountsStatus.dataset.tone = "loading";
         }
+        global.LivePalmesRequestDecision.history({root:portalContext.elements.engagementsNationalAccountsList?.closest('[data-engagements-national-panel]'),name:'accounts',callable:'listAccessUserDeletionRequests',resolver:'resolveAccessUserDeletionRequest',callFunction:portalActions.callFunction,valid:()=>portalActions.canDeleteAccessUserDirectly()});
         try {
           const result = await portalActions.callFunction("listAccessUserDeletionRequests", {});
           portalState.accessDeletionRequests = Array.isArray(result.requests) ? result.requests : [];
@@ -295,13 +296,14 @@
         const message = approve
           ? `Accepter la demande et supprimer définitivement ${label} ?`
           : `Refuser la demande de suppression de ${label} ?`;
-        if (!global.confirm(message)) return;
+        const choice = await global.LivePalmesRequestDecision.collect({ decision, title: message });
+        if (!choice) return;
         if (statusElement) {
           statusElement.textContent = approve ? "Suppression en cours..." : "Refus en cours...";
           statusElement.dataset.tone = "loading";
         }
         try {
-          await portalActions.callFunction("resolveAccessUserDeletionRequest", { requestId, decision: approve ? "approved" : "rejected" });
+          const result = await portalActions.callFunction("resolveAccessUserDeletionRequest", { requestId, decision: approve ? "approved" : "rejected", ...choice });
           portalState.portalPendingOverviewLoaded = false;
           portalState.accessDeletionRequestsLoaded = false;
           await moduleActions.refreshAccessUsersAfterMutation({ reset: true });
@@ -309,6 +311,7 @@
           await portalActions.loadPortalPendingOverview({ force: true });
           if (statusElement) {
           statusElement.textContent = approve ? "Demande acceptée et compte supprimé." : "Demande refusée.";
+            global.LivePalmesRequestDecision.report(statusElement, { ...result, requestId }, "resolveAccessUserDeletionRequest", portalActions.callFunction);
             statusElement.dataset.tone = "ok";
           }
         } catch (error) {
