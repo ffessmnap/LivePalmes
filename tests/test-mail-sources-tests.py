@@ -46,6 +46,38 @@ def credentials_file(directory, **overrides):
 
 
 class MailSources(unittest.TestCase):
+    def test_inventory_normalizes_only_complete_event_filter_order(self):
+        original = function('syncEngagementMailRecipientIndex')
+        original['eventTrigger'] = {'trigger': 'unchanged-trigger', 'eventType': 'unchanged-type',
+            'eventFilters': [{'attribute': 'database', 'value': '(default)'},
+                {'attribute': 'document', 'value': 'accounts/{id}', 'operator': 'match-path-pattern'},
+                {'attribute': 'namespace', 'value': '(default)', 'extra': 'preserved'}]}
+        original['serviceConfig']['secretEnvironmentVariables'].append({'key': 'KEEP', 'secret': 'KEEP', 'version': '3'})
+        def read(value):
+            with patch.object(p.cycle, 'api', return_value={'functions': [copy.deepcopy(value)]}):
+                return p.inventory()
+        reordered = copy.deepcopy(original)
+        reordered['eventTrigger']['eventFilters'].reverse()
+        before, after = read(original), read(reordered)
+        self.assertEqual(before, after)
+        p.verify(before, after, [], SHA, {})
+        mutations = [lambda f: f['eventTrigger']['eventFilters'][0].update(attribute='changed'),
+            lambda f: f['eventTrigger']['eventFilters'][0].update(value='changed'),
+            lambda f: f['eventTrigger']['eventFilters'][1].update(operator='changed'),
+            lambda f: f['eventTrigger']['eventFilters'][2].pop('extra'),
+            lambda f: f['eventTrigger']['eventFilters'].pop(),
+            lambda f: f['eventTrigger']['eventFilters'].append(copy.deepcopy(f['eventTrigger']['eventFilters'][0])),
+            lambda f: f['serviceConfig']['secretEnvironmentVariables'].reverse(),
+            lambda f: f.update(updateTime='changed'),
+            lambda f: f['buildConfig']['source']['storageSource'].update(object='changed')]
+        for mutate in mutations:
+            changed = copy.deepcopy(original); mutate(changed)
+            with self.assertRaisesRegex(ValueError, 'hors selection'):
+                p.verify(before, read(changed), [], SHA, {})
+        duplicate = copy.deepcopy(original)
+        duplicate['eventTrigger']['eventFilters'].append(copy.deepcopy(duplicate['eventTrigger']['eventFilters'][0]))
+        self.assertEqual(len(read(duplicate)[0]['eventTrigger']['eventFilters']), 4)
+
     def test_identity_diagnostic_checks_actual_credentials_without_cloud_access(self):
         with tempfile.TemporaryDirectory() as directory:
             credentials = credentials_file(directory)
