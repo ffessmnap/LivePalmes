@@ -25,6 +25,8 @@ OFFICIALS_TXT_CONTRACT = ROOT / '.github/releases/evidence/20261108-txt-official
 OFFICIALS_TXT_DIGEST = '72beac4d84dc509be953b22e6911816d6d558c416c9c324f5269a51f5266b7b7'
 CONTACTS_THREE_CONTRACT = ROOT / '.github/releases/evidence/20261108-competition-contacts-three-contract.json'
 CONTACTS_THREE_DIGEST = "67fa3ec313a974b4381bf3174524d4023a7d27eb40a6f8ba25f2de3a140f0ed6"
+OFFICIALS_DATES_CONTRACT = ROOT / '.github/releases/evidence/20261108-txt-official-dates-contract.json'
+OFFICIALS_DATES_DIGEST = 'ef0c95e0054eb9eded7a4bc845b363305fd5547c91255311d8bd03a8e40ae83a'
 WORKFLOW = '.github/workflows/livepalmes-test-mail-sources.yml'
 PROJECT = 'livepalmes-test'
 DEPLOYER = 'github-livepalmes-test-backend@livepalmes-test.iam.gserviceaccount.com'
@@ -57,7 +59,8 @@ def digest(value):
 def contract(release):
     separate = {'contacts': (CONTACTS_CONTRACT, CONTACTS_DIGEST), 'reminder': (REMINDER_CONTRACT, REMINDER_DIGEST),
                 'officials_txt': (OFFICIALS_TXT_CONTRACT, OFFICIALS_TXT_DIGEST),
-                'contacts_three': (CONTACTS_THREE_CONTRACT, CONTACTS_THREE_DIGEST)}.get(release)
+                'contacts_three': (CONTACTS_THREE_CONTRACT, CONTACTS_THREE_DIGEST),
+                'officials_dates': (OFFICIALS_DATES_CONTRACT, OFFICIALS_DATES_DIGEST)}.get(release)
     source, expected_digest = separate or (CONTRACT, DIGEST)
     raw = source.read_bytes().replace(b'\r\n', b'\n')
     require(hashlib.sha256(raw).hexdigest() == expected_digest, 'Contrat TEST mails modifie')
