@@ -30,7 +30,7 @@ async function readTrophyResults(pool, { from, through, seasonEndYear }) {
       FROM competitions c FORCE INDEX (livepalmes_date_id)
       WHERE c.date >= ? AND c.date < DATE_ADD(?, INTERVAL 1 DAY)
         AND COALESCE(c.ld, 0) = 0
-        AND EXISTS (SELECT 1 FROM compet_parametres cp WHERE cp.compet = c.id AND cp.niveau IN (1, 2, 3, 4, 5, 6, 7))
+        AND EXISTS (SELECT 1 FROM compet_parametres cp WHERE cp.compet = c.id AND cp.niveau IN (0, 1, 2, 3, 4, 5, 6, 7))
         AND NOT EXISTS (SELECT 1 FROM livepalmes_competition_options co WHERE co.competition_id = c.id AND co.canceled = 1)
       ORDER BY c.date, c.id LIMIT ${MAX_COMPETITIONS + 1}`,
     timeout: TIMEOUT_MS
