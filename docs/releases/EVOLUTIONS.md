@@ -2,6 +2,12 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 8 novembre — Consoles historiques et bureau unique (correction en préparation TEST)
+
+- Retour explicite d’Antoine sur le premier prototype : ergonomie différente de l’ancienne console JA et impression de deux bureaux. Demande de reprendre les affichages/clics/pastilles historiques des postes JA, vidéo, speaker et Live, optimiser les grandes tablettes et réunir tout le bureau dans une seule page, sans explications superflues. Les premières livraisons #787/#788 restent fonctionnelles mais ne valent pas validation de cette ergonomie.
+- Correction regroupée dans [#790](https://github.com/ffessmnap/LivePalmes/pull/790) : adaptateurs vers les vues pures et styles historiques, sans modifier les pages nationales générées ; bureau PDF/TXT/arbitrage/finales dans `direct-admin.html`, ancienne URL computer redirigée ; un seul état d’authentification et un seul cycle de lecture visible. Commandes privées séparées des imports pour conserver la surveillance TXT. Annulation délégué vidéo et choix du relayeur retrouvent leurs contrôles historiques. Aucune nouvelle table, collection, capacité globale, dépendance, donnée réelle, règle/index, activation ou PROD.
+- Contrôles locaux ciblés : client partagé (pause/reprise, idempotence, cache, déconnexion), modèle et service SQL isolé ; chaîne navigateur complète et annonce partielle/forfait/départage sur 1900/1366/1024/768/390 px, densité des lignes, impression, révocation. Public et bureau PDF/TXT contrôlés séparément avec les fixtures existantes, réseau externe bloqué. CI globale et MySQL 5.7 réels isolés obligatoires avant intégration ; preuve du nouveau déploiement TEST à ajouter après réussite. Aucun import ni essai connecté sous le compte du pilote.
+
 ### 8 novembre — Onze évolutions validées publiées en PROD
 
 - Accord final explicite d'Antoine dans Infra : « Oui, publier ce plan 42512948799 en PROD ». [Publication 42516868709 réussie](https://github.com/ffessmnap/LivePalmes/actions/runs/42516868709), Hosting terminé le 8 novembre à **21 h 33 (Paris)**. Candidat figé `a422125bc312f65362850f7a00bffe4262747998`, Hosting `a6f4457d54df4e5c` ; aucune évolution ultérieure de main incluse. Les onze lots du bilan sont publiés : imports/historique/suppression et revue Records/MPF, pastilles, modèles et décisions mail, contacts/copies/trois adresses, rappel J−1/PDF provisoires, TXT officiels/dates source, Trophée départemental et les deux compléments Direct (TXT strict, catégories/titre).

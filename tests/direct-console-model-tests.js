@@ -81,4 +81,12 @@ const dual=structuredClone(rows);dual[6].result.cs=dual[5].result.cs;dual[12].re
 let dualState=apply(configure(6,'ab'),'announceFinalists','speaker',{},dual);q=flow.qualification(dualState,event,dual);assert.equal(q.ties.length,2);assert.equal(q.roster.a.length,5);assert.equal(q.roster.b.length,4);
 dualState=apply(dualState,'resolveTie','referee',{tieId:q.ties[0].id,order:q.ties[0].keys.slice().reverse()},dual);q=flow.qualification(dualState,event,dual);assert.equal(q.ties.length,1);assert.equal(q.swimoff.status,'needed');assert.throws(()=>apply(dualState,'announceReplacement','speaker',{},dual),/départage/);
 dualState=apply(dualState,'resolveTie','referee',{tieId:q.ties[0].id,order:q.ties[0].keys.slice().reverse()},dual);dualState=apply(dualState,'announceReplacement','speaker',{},dual);assert.equal(dualState.races[event.id].announced.partial,false);
-console.log('Consoles : rôles, circuits vidéo/direct, accusés, annulations, finales 6/8 et A/A+B, départages, annonces, forfaits, reprises et sessions vérifiés hors réseau.');
+let delegate=apply(configure(8,'a'),'decision','referee',{participantKey:rows[0].key,type:'false_start'});
+delegate=apply(delegate,'videoConfirm','video',{alertId:delegate.alerts[0].id});
+delegate=apply(delegate,'cancel','video',{alertId:delegate.alerts[0].id});
+assert.equal(delegate.alerts.at(-1).type,'requalification');assert.equal(delegate.alerts.at(-1).computerStatus,'pending');assert.equal(delegate.alerts.at(-1).speakerStatus,'pending');
+for(const type of ['forfait','abandon']){const s=apply(configure(8,'a'),'decision','referee',{participantKey:rows[0].key,type});assert.throws(()=>apply(s,'cancel','video',{alertId:s.alerts[0].id}),/disqualifications/);}
+const relayEvent={...event,eventCode:'4x100sf'},relayRows=rows.map(row=>({...row,kind:'relay'}));
+const relayCommand=leg=>flow.next(configure(8,'a'),{command:'decision',operationKey:'fixture-relay-'+leg,participantKey:rows[0].key,type:'relay_early_start',relayLeg:leg},{role:'referee',actor:'fixture',event:relayEvent,entries:relayRows,consoles:flow.roles});
+assert.throws(()=>relayCommand(1),/relayeur/);assert.equal(relayCommand(2).alerts.at(-1).relayLeg,2);assert.throws(()=>relayCommand(5),/relayeur/);
+console.log('Consoles : rôles, circuits vidéo/direct, accusés, annulations JA/délégué vidéo, relais, finales 6/8 et A/A+B, départages, annonces, forfaits, reprises et sessions vérifiés hors réseau.');
