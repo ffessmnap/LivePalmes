@@ -12,7 +12,7 @@ async function start(){
     const url=new URL(req.url,'http://127.0.0.1');res.setHeader('Cache-Control','no-store');
     try{
       if(url.pathname==='/fixture-rpc'){
-        let text='';for await(const chunk of req)text+=chunk;const input=JSON.parse(text),job=tail.then(()=>service({auth:{uid:'root'},data:input}));tail=job.catch(()=>{});let value;
+        let text='';for await(const chunk of req)text+=chunk;const input=JSON.parse(text),job=tail.then(async()=>input.action==='list'?{items:[{...(await store.native(id)),id:'legacy-nap-'+id,direct:(await store.detail(id)).config}]}:service({auth:{uid:'root'},data:input}));tail=job.catch(()=>{});let value;
         try{value=await job;}catch(error){res.writeHead(400,{'Content-Type':'application/json'});res.end(JSON.stringify({message:error.message,code:error.directCode?'functions/'+error.directCode:'functions/invalid-argument'}));return;}
         res.writeHead(200,{'Content-Type':'application/json'});res.end(JSON.stringify(value));return;
       }
