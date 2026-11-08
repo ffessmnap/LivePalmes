@@ -5,6 +5,7 @@ import importlib.util
 import json
 import os
 from pathlib import Path
+import subprocess
 import tempfile
 from types import SimpleNamespace
 import unittest
@@ -301,9 +302,21 @@ class NovemberTests(unittest.TestCase):
             'functions':[{**r,'reason':'closed proof'} for r in retained]}}
         rows = [{**row, 'name':row['name'].replace('projects/livepalmes/', 'projects/livepalmes-test/')}
                 for row in c['origins'] if row['name'].split('/')[-1] in c['retainedFunctions']]
-        maps = {c['candidate']:{r['name']:r['after'] for r in retained},
-                c['productionCommit']:{r['name']:'0'*64 for r in retained},
-                retained[0]['commit']:{r['name']:r['before'] for r in retained}}
+        # Real fixed Git inputs, not an invented baseline hash. Reuse the
+        # batched reader with the unchanged historical fingerprint algorithm.
+        script = r'''
+const fp=require('./tools/release-function-fingerprints'),s=require('./tools/release-test-function-fingerprints').snapshot,crypto=require('crypto');
+const result={};for(const sha of JSON.parse(process.argv[1])){const v=s('.',sha,{production:true});
+const common=v.common.concat('tools/firebase-test-backend-lots.js:'+crypto.createHash('sha256').update(fp.retirementRegistrySignature(v.registrySource)).digest('hex')).sort();
+result[sha]=fp.fingerprints(v.source,common,v.files).functions;}
+console.log(JSON.stringify(result));'''
+        maps = json.loads(subprocess.check_output(['node', '-e', script,
+            json.dumps([retained[0]['commit'], c['productionCommit'], c['candidate']])], cwd=ROOT, encoding='utf-8'))
+        for row in c['reviewedLegacyOrigins']:
+            self.assertEqual(maps[row['commit']][row['name']], row['before'])
+            self.assertEqual(maps[c['candidate']][row['name']], row['after'])
+        for row in retained:
+            self.assertEqual(maps[c['productionCommit']][row['name']], row['after'])
         with tempfile.TemporaryDirectory() as directory:
             p = Path(directory)
             (p/'request.json').write_text(json.dumps(value)); (p/'baseline.json').write_text(json.dumps({'productionRun':c['productionRun']}))
@@ -312,8 +325,18 @@ class NovemberTests(unittest.TestCase):
                 cycle.verify_excluded_backend(p, {'functions':c['origins']}, c['selected'])
             result = json.loads((p/'excluded-backend-verification.json').read_text())
             self.assertEqual(result['retainedFunctions'], c['retainedFunctions'])
-            self.assertEqual(result['passedFunctions'], c['retainedFunctions'])
+            self.assertEqual(result['passedFunctions'], [])
+            self.assertEqual(result['reviewedFunctions'], c['retainedFunctions'])
             self.assertTrue(result['preferenceClosureUnchanged'])
+            # A future/new divergence must still stop before the closed proof.
+            maps[c['productionCommit']][retained[0]['name']] = '0'*64
+            with patch.object(cycle, 'backend_fingerprints', side_effect=maps.__getitem__):
+                with self.assertRaisesRegex(ValueError, 'Nouvelle divergence'):
+                    cycle.verify_excluded_backend(p, {'functions':c['origins']}, c['selected'])
+            maps[c['productionCommit']][retained[1]['name']] = '0'*64
+            with patch.object(cycle, 'backend_fingerprints', side_effect=maps.__getitem__):
+                with self.assertRaisesRegex(ValueError, 'Nouvelle divergence'):
+                    cycle.verify_excluded_backend(p, {'functions':c['origins']}, c['selected'])
             source = (ROOT/'tools/release-cycle.py').read_text(encoding='utf-8')
             self.assertIn('for n in november_release.approved(request)', source)
             self.assertIn("'Preuve TEST du 8 novembre absente ou incompatible'", source)

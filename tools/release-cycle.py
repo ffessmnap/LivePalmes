@@ -1224,8 +1224,15 @@ def verify_excluded_backend(directory, state, selected):
     if november_release.approved(request):
         november_release.retained_test_origins(request, read(root / 'test-proof.json'))
         require(sorted(retained) == november_release.contract()['retainedFunctions'], 'Revue November hors des deux preferences')
+        require(not changed, 'Nouvelle divergence des preferences hors de la preuve heritee November')
         suite_path = ROOT / 'tools/verify-november-retained-scope.js'
         result = json.loads(run(['node', str(suite_path), str(ROOT), request['productionCommit'], request['candidate']]))
+        require(result.get('passedFunctions') == sorted(retained), 'Perimetre de preuve November incomplet')
+        # The proof reviews both old packages, while the common result contract
+        # lists only NEW divergence since productionCommit. Both differences
+        # were already present in the previous, authenticated production plan.
+        result['reviewedFunctions'] = result['passedFunctions']
+        result['passedFunctions'] = []
     elif direct_release.approved(request):
         direct_release.scope()
         result = {'suite':review['suite'], 'candidate':request['candidate'],
