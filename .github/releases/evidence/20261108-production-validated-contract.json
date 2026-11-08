@@ -24,7 +24,6 @@
     "deleteEngagementNationalClub",
     "deleteEngagementNationalClubPerson",
     "deleteEngagementNationalClubSwimmer",
-    "disableCompetitionEmailNotifications",
     "generateEngagementClubRecapPdf",
     "generateEngagementClubRecapPdfForAdmin",
     "generateEngagementCompetitionClubRecapPdfs",
@@ -116,7 +115,6 @@
     "syncOfficialResultToPublicIndex",
     "updateCompetitionImportRecordAlertDecision",
     "updateCurrentAccountEmail",
-    "updateCurrentEmailNotificationPreferences",
     "updateDtnSeason",
     "updateEngagementAutomaticMailControl",
     "updateEngagementCalendarEvent",
@@ -144,7 +142,6 @@
     "deleteEngagementNationalClub",
     "deleteEngagementNationalClubPerson",
     "deleteEngagementNationalClubSwimmer",
-    "disableCompetitionEmailNotifications",
     "generateEngagementClubRecapPdf",
     "generateEngagementClubRecapPdfForAdmin",
     "generateEngagementCompetitionClubRecapPdfs",
@@ -235,7 +232,6 @@
     "syncNapClubAccountEmails",
     "syncOfficialResultToPublicIndex",
     "updateCurrentAccountEmail",
-    "updateCurrentEmailNotificationPreferences",
     "updateDtnSeason",
     "updateEngagementAutomaticMailControl",
     "updateEngagementCalendarEvent",
@@ -1242,5 +1238,9 @@
   "productionApproval": false,
   "mailPause": false,
   "historicalReplay": false,
-  "dataOperations": false
+  "dataOperations": false,
+  "retainedFunctions": [
+    "disableCompetitionEmailNotifications",
+    "updateCurrentEmailNotificationPreferences"
+  ]
 }

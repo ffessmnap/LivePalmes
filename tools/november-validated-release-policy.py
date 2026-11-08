@@ -20,7 +20,7 @@ import urllib.request
 
 ROOT = Path(__file__).resolve().parents[1]
 PATH = ROOT / '.github/releases/evidence/20261108-production-validated-contract.json'
-DIGEST = '7391343d8f25aa847f9d0200e82ea892a4fb6e07f021a0d6420d92be9269e963'
+DIGEST = '24189d6073ca25864324497db113bc2add8af5e969903d27339f7a5b91e1e97c'
 PREFIX = 'projects/livepalmes/locations/europe-west1/functions/'
 OPTION = 'novemberValidatedRelease'
 
@@ -74,6 +74,7 @@ def verify(value, baseline, functions, fingerprint):
                 'Empreinte du consommateur relu differente: ' + row['name'])
     return {'schema': 1, 'candidate': c['candidate'], 'contractSha256': DIGEST,
             'sourceOnly': c['sourceOnly'], 'newFunctions': c['newFunctions'],
+            'retainedFunctions': c['retainedFunctions'],
             'configurationException': {c['smtpFunction']: c['smtpBindings']},
             'mailPause': False, 'historicalReplay': False, 'networkCalls': 0}
 
@@ -95,7 +96,7 @@ def initial(functions):
     rows = {f['name'].split('/')[-1]: f for f in functions}
     require(len(rows) == len(functions) == c['inventoryCount']
             and not set(c['newFunctions']) & set(rows)
-            and set(c['selected']) - set(c['newFunctions']) == set(rows), 'Inventaire initial incomplet')
+            and set(c['sourceOnly']) | set(c['retainedFunctions']) == set(rows), 'Inventaire initial incomplet')
     for name in c['sourceOnly']:
         runtime(rows[name])
     target, reference = (rows[c[key]]['serviceConfig'] for key in ['smtpFunction', 'smtpReference'])
@@ -105,6 +106,18 @@ def initial(functions):
             'Configuration SMTP initiale ou compte runtime different')
     require([s for s in bindings(reference) if s['key'] in {v['key'] for v in c['smtpBindings']}]
             == bindings({'secretEnvironmentVariables': c['smtpBindings']}), 'References SMTP existantes differentes')
+
+
+def retained_test_origins(value, proof):
+    require(approved(value), 'Revue conservee hors contrat')
+    c = contract()
+    rows = [f for f in proof.get('state', {}).get('functions', []) if f['name'].split('/')[-1] in c['retainedFunctions']]
+    require(proof.get('candidate') == c['candidate'] and len(rows) == 2
+            and {f['name'].split('/')[-1] for f in rows} == set(c['retainedFunctions'])
+            and all(f['name'] == 'projects/livepalmes-test/locations/europe-west1/functions/' + f['name'].split('/')[-1]
+                    and f.get('state') == 'ACTIVE' and f.get('revision') and f.get('updateTime')
+                    and f.get('commit') == '7a6eedb6ee8b6c5943c194e88611219602782fdf' for f in rows),
+            'Origines TEST des deux preferences conservees non prouvees')
 
 
 def expected_config(before, state):
