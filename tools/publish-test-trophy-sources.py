@@ -17,6 +17,7 @@ spec.loader.exec_module(shared)
 cycle, state = shared.cycle, shared.state
 require = shared.require
 PROJECT = 'livepalmes-test'
+REPOSITORY = 'ffessmnap/LivePalmes'
 RELEASE = 'trophy_departmental'
 ALLOWED = frozenset({'readNapPublicSwimmer', 'manageDamienHebertEdition'})
 PREFIX = f'projects/{PROJECT}/locations/europe-west1/functions/'
@@ -37,6 +38,7 @@ def contract():
 def guard(candidate, entry, env=os.environ):
     sha = cycle.run(['git', 'rev-parse', 'HEAD'], candidate)
     require(env.get('GITHUB_REF') == 'refs/heads/main' and env.get('GITHUB_RUN_ATTEMPT') == '1'
+            and env.get('GITHUB_REPOSITORY') == REPOSITORY
             and env.get('TARGET_FIREBASE_PROJECT') == PROJECT and env.get('CONFIRMATION') == PROJECT
             and env.get('RELEASE') == RELEASE and re.fullmatch('[a-f0-9]{40}', sha)
             and sha == env.get('GITHUB_SHA') == env.get('EXPECTED_COMMIT') == cycle.git('rev-parse', 'HEAD')
@@ -155,9 +157,11 @@ def baseline(entry, directory):
     # verification_only deliberately skips the test-proof artifact. Authenticate
     # its exact run and successful read-only control steps instead; the preceding
     # common publication supplies the digest-checked state, compared live below.
-    endpoint = f"repos/{os.environ['GITHUB_REPOSITORY']}/actions/runs/{entry['finalCheckRun']}"
+    endpoint = f"repos/{REPOSITORY}/actions/runs/{entry['finalCheckRun']}"
     info = cycle.gh(endpoint)
     require(info.get('head_sha') == entry['baseCommit'] and info.get('head_branch') == 'main'
+            and info.get('repository', {}).get('full_name') == REPOSITORY
+            and info.get('head_repository', {}).get('full_name') == REPOSITORY
             and info.get('path') == '.github/workflows/livepalmes-test-common.yml'
             and info.get('event') == 'workflow_dispatch' and info.get('run_attempt') == 1
             and info.get('status') == 'completed' and info.get('conclusion') == 'success'

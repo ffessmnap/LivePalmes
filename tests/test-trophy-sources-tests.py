@@ -67,6 +67,7 @@ class TrophySources(unittest.TestCase):
         desired = {**entry['fingerprints'], 'ordinary': 'same'}
         baseline = {**{n: 'old' for n in p.ALLOWED}, 'ordinary': 'same'}
         env = {'GITHUB_REF': 'refs/heads/main', 'GITHUB_RUN_ATTEMPT': '1', 'TARGET_FIREBASE_PROJECT': p.PROJECT,
+               'GITHUB_REPOSITORY': p.REPOSITORY,
                'CONFIRMATION': p.PROJECT, 'RELEASE': p.RELEASE, 'GITHUB_SHA': SHA, 'EXPECTED_COMMIT': SHA}
         def git_run(args, *_):
             if 'rev-parse' in args:
@@ -193,6 +194,7 @@ class TrophySources(unittest.TestCase):
         entry = p.contract()
         expected = {'functions': [], 'hosting': {'version': 'baseline'}}
         run = {'head_sha': entry['baseCommit'], 'head_branch': 'main', 'path': '.github/workflows/livepalmes-test-common.yml',
+               'repository': {'full_name': p.REPOSITORY}, 'head_repository': {'full_name': p.REPOSITORY},
                'event': 'workflow_dispatch', 'run_attempt': 1, 'status': 'completed', 'conclusion': 'success',
                'display_title': 'Verification TEST sans deploiement'}
         steps = [{'name': name, 'conclusion': conclusion} for name, conclusion in [
@@ -208,7 +210,9 @@ class TrophySources(unittest.TestCase):
             self.assertEqual(p.baseline(entry, ROOT), expected)
             artifact.assert_not_called()
             self.assertTrue(all(str(entry['finalCheckRun']) in call.args[0] for call in github.call_args_list))
-            for key, value in [('head_sha', SHA), ('head_branch', 'other'), ('conclusion', 'failure'), ('run_attempt', 2)]:
+            for key, value in [('head_sha', SHA), ('head_branch', 'other'), ('conclusion', 'failure'), ('run_attempt', 2),
+                               ('path', '.github/workflows/other.yml'), ('event', 'pull_request'),
+                               ('repository', {'full_name': 'other/LivePalmes'}), ('head_repository', {'full_name': 'fork/LivePalmes'})]:
                 previous = run[key]
                 run[key] = value
                 with self.assertRaises(ValueError):
