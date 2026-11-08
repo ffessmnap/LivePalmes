@@ -31,15 +31,15 @@
     return ({ sent: "Demandeur informé par e-mail.", opted_out: "Notification désactivée pour cette décision.",
       blocked_test: "Notification préparée ; aucun e-mail envoyé sur TEST.", failed: "Décision enregistrée ; notification en échec.",
       uncertain: "Décision enregistrée ; envoi à vérifier, sans renvoi automatique.",
-      preparing: "Préparation du mail en cours ou à vérifier.", sending: "Envoi en cours ou à vérifier." })[state.status] || "Aucune notification enregistrée pour cette ancienne décision.";
+      pending: "Décision enregistrée ; notification en attente.", preparing: "Préparation du mail en cours ou à vérifier.", sending: "Envoi en cours ou à vérifier." })[state.status] || "Aucune notification enregistrée pour cette ancienne décision.";
   }
   function report(element, result, callable, callFunction) {
     if (!element) return;
     const state = result?.resolutionNotification || result?.request?.resolutionNotification || {};
     element.append(document.createTextNode(" " + message(state)));
-    if (!["failed", "preparing", "sending"].includes(state.status) || !state.key) return;
+    if (!["pending", "failed", "preparing", "sending"].includes(state.status) || !state.key) return;
     const button = document.createElement("button"); button.type = "button"; button.className = "ghost-button";
-    button.textContent = state.status === "failed" ? "Réessayer la notification" : "Vérifier la notification";
+    button.textContent = state.status === "pending" ? "Envoyer la notification" : state.status === "failed" ? "Réessayer la notification" : "Vérifier la notification";
     button.addEventListener("click", async () => {
       button.disabled = true;
       try {

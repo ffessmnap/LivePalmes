@@ -30,6 +30,8 @@ const { evaluate } = require("./helpers/portal-browser-evaluate");
         LivePalmesRequestDecision.report(status,{requestId:'fixture',resolutionNotification:{status:'failed',key:'fixed-key'}},'resolveAccessUserDeletionRequest',async(name,payload)=>{retryCalls.push({name,payload});return {resolutionNotification:{status:'blocked_test'}};});status.querySelector('button').click();`);
       assert.ok(await waitFor(client, "document.querySelector('#decision-fixture').textContent.includes('aucun e-mail')"));
       assert.equal(await evaluate(client, "return retryCalls[0].payload.action;"), "retryNotification");
+      await evaluate(client, `const status=document.querySelector('#decision-fixture');status.replaceChildren();LivePalmesRequestDecision.report(status,{requestId:'saved-before-interruption',resolutionNotification:{status:'pending',key:'pending-key'}},'resolveEngagementSwimmerChangeRequest',async(name,input)=>{retryCalls.push({name,input});return {resolutionNotification:{status:'blocked_test'}};});status.querySelector('button').click();`);
+      assert.ok(await waitFor(client, "retryCalls.some(c=>c.input?.notificationKey==='pending-key')"));
       await evaluate(client, `window.historyCalls=[];const root=document.createElement('section');root.id='history-fixture';document.body.append(root);
         LivePalmesRequestDecision.history({root,name:'accounts',callable:'listAccessUserDeletionRequests',resolver:'resolveAccessUserDeletionRequest',valid:()=>true,
           callFunction:async(name,input)=>{historyCalls.push({name,input});return {requests:[{id:'old',targetEmail:'fictif@example.test',status:'approved',resolutionNotification:{status:'uncertain',key:'old-key'}}],nextCursor:input.cursor?null:'old'};}});`);
