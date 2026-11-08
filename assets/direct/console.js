@@ -15,6 +15,7 @@
   async function call(action,data={}){if(!/^\d+$/.test(id||''))throw Error('Choisir une compétition depuis le bureau.');return (await rpc({action,competitionId:id,role:state.role,...data})).data;}
   async function allData(){const uid=auth.currentUser?.uid,key=[id,uid,state.role,state.data?.configVersion].join(':');if(allCache?.key===key)return allCache.data;if(allPending?.key===key)return allPending.promise;const promise=call('consoleAllData').then(data=>{if(auth.currentUser?.uid===uid)allCache={key,data};return data;}).finally(()=>{allPending=null;});allPending={key,promise};return promise;}
   const dialogs=global.LivePalmesDirectDialogs.create({getData:allData,onClubChange:()=>{},onEventSelect:(eventId,series)=>{state.eventId=eventId;state.series=series||null;load(true);}});
+  function closePrivateDialogs(){for(const dialog of [dialogs.person,dialogs.clubs,$('consoleDialog')]){if(dialog.open)dialog.close();}dialogs.person.replaceChildren();dialogs.clubs.replaceChildren();$('consoleDialogContent').replaceChildren();state.dialog=null;}
   function render(){
     const data=state.data;if(!data)return;
     const allowed=data.config.consoles.filter(role=>data.permissions.manage||data.permissions.roles.includes(role));
@@ -41,7 +42,7 @@
       if(request!==state.request||uid!==auth.currentUser?.uid)return;
       if(!result.unchanged){state.data=result;render();}
       $('consoleConnection').textContent='Connecté';$('consoleConnection').classList.remove('error');status('Synchronisé à '+new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit',second:'2-digit'})+' · échanges automatiques entre consoles');
-    }catch(error){if(request!==state.request||uid!==auth.currentUser?.uid)return;status(error.message,true);$('consoleConnection').textContent='À vérifier';$('consoleConnection').classList.add('error');if(/permission-denied|unauthenticated/.test(error.code||'')){$('consoleWorkspace').hidden=true;state.data=null;}}
+    }catch(error){if(request!==state.request||uid!==auth.currentUser?.uid)return;status(error.message,true);$('consoleConnection').textContent='À vérifier';$('consoleConnection').classList.add('error');if(/permission-denied|unauthenticated/.test(error.code||'')){$('consoleWorkspace').hidden=true;closePrivateDialogs();state.data=null;state.pending=null;removeRetry();}}
     finally{if(request===state.request)state.loading=false;schedule();}
   }
   const context=()=>({eventId:state.data?.selectedEventId,role:state.role,revision:state.data?.revision,configVersion:state.data?.configVersion});
@@ -102,6 +103,6 @@
   $('consoleLogin').onsubmit=async event=>{event.preventDefault();const form=new FormData(event.target);try{await auth.signInWithEmailAndPassword(form.get('email'),form.get('password'));event.target.reset();}catch(error){status(error.message,true);}};
   $('consoleSignOut').onclick=()=>auth.signOut();
   document.addEventListener('visibilitychange',()=>{if(!document.hidden&&!$('consoleDialog').open&&!state.dirty)load(false);});
-  auth.onAuthStateChanged(async user=>{clearTimeout(state.timer);state.request++;for(const dialog of [dialogs.person,dialogs.clubs]){if(dialog.open)dialog.close();dialog.replaceChildren();}if($('consoleDialog').open)$('consoleDialog').close();state.dialog=null;$('consoleDialogContent').innerHTML='';state.loading=false;state.data=null;state.pending=null;removeRetry();state.busy=false;state.dirty=false;state.settingsOpen=false;allCache=null;allPending=null;$('consoleWorkspace').hidden=true;$('consoleLogin').hidden=Boolean(user);$('consoleSignOut').hidden=!user;if(!user){status('Connexion LivePalmes requise.');return;}try{const data=await call('detail');if(auth.currentUser?.uid!==user.uid)return;const allowed=data.config?.consoles.filter(role=>data.permissions.manage||data.permissions.roles.includes(role))||[];if(!allowed.length)throw Error('Aucune console activée pour ce compte. Demander un accès au bureau.');if(!allowed.includes(state.role))state.role=allowed[0];await load(true);}catch(error){status(error.message,true);}});
+  auth.onAuthStateChanged(async user=>{clearTimeout(state.timer);state.request++;closePrivateDialogs();state.loading=false;state.data=null;state.pending=null;removeRetry();state.busy=false;state.dirty=false;state.settingsOpen=false;allCache=null;allPending=null;$('consoleWorkspace').hidden=true;$('consoleLogin').hidden=Boolean(user);$('consoleSignOut').hidden=!user;if(!user){status('Connexion LivePalmes requise.');return;}try{const data=await call('detail');if(auth.currentUser?.uid!==user.uid)return;const allowed=data.config?.consoles.filter(role=>data.permissions.manage||data.permissions.roles.includes(role))||[];if(!allowed.length)throw Error('Aucune console activée pour ce compte. Demander un accès au bureau.');if(!allowed.includes(state.role))state.role=allowed[0];await load(true);}catch(error){status(error.message,true);}});
   global.LivePalmesDirectConsole={state,load,send,view};
 })(window);
