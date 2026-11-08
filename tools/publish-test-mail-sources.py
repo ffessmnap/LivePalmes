@@ -16,7 +16,7 @@ import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
 CONTRACT = ROOT / '.github/releases/evidence/20261108-test-mail-sources-contract.json'
-DIGEST = '5e83e747193176f6c8d381c96e4aa2a4d2beca3b0759577ac5ab147a63ae9a39'
+DIGEST = "fc70b6b876be379aaaa983776aeb2216f40e3ac208280a609339698cd5a9778f"
 WORKFLOW = '.github/workflows/livepalmes-test-mail-sources.yml'
 PROJECT = 'livepalmes-test'
 DEPLOYER = 'github-livepalmes-test-backend@livepalmes-test.iam.gserviceaccount.com'
