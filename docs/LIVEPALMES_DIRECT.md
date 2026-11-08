@@ -10,7 +10,34 @@ Le bureau peut fonctionner seul. Activer une autre console rend le JA obligatoir
 
 Décisions : forfait vers bureau/secrétariat actif ; abandon vers bureau ; faux départ, départ anticipé de relais et coulée >15 m vers la vidéo lorsqu'elle est activée. Les autres DSQ et toutes les décisions sans vidéo vont directement au bureau et au speaker actif. Une confirmation vidéo crée les tâches officielles ; un refus reste dans l'historique. Annulations JA et réqualifications du délégué déclenchent les corrections nécessaires. Sans speaker, le bureau confirme les annonces effectuées hors application ; sans secrétariat, il saisit les forfaits depuis sa console tablette. La console Live consulte les informations officielles et peut les masquer sur son seul appareil.
 
-Le JA pointe sa série comme repère commun, sans déplacer les autres consoles ni la page publique. Les échanges privés sont relus toutes les 15 secondes, avec pause en onglet masqué, dialogue ouvert ou paramétrage non enregistré. Aucun mode Direct/Manuel supplémentaire. Le public conserve son actualisation manuelle. Les décisions des consoles ne remplacent jamais les temps/statuts des TXT : le bureau les saisit dans WinPalme et attend le fichier corrigé ; une divergence bloque l'annonce des finalistes.
+Le JA pointe sa série comme repère commun, sans déplacer les autres consoles ni la page publique. Les échanges privés sont relus toutes les 15 secondes, avec pause en onglet masqué, dialogue de saisie ouvert ou paramétrage non enregistré. Aucun mode Direct/Manuel supplémentaire. Le public conserve son actualisation manuelle. Les décisions des consoles ne remplacent jamais les temps/statuts des TXT : le bureau les saisit dans WinPalme et attend le fichier corrigé ; une divergence bloque l'annonce des finalistes.
+
+```mermaid
+flowchart TD
+  JA[Décision du JA] --> Motif{Motif}
+  Motif -->|Forfait| BF[Bureau + secrétariat actif]
+  Motif -->|Abandon| B[Bureau des performances]
+  Motif -->|Autre DSQ| O[Décision officielle]
+  Motif -->|Faux départ / relais anticipé / coulée| V{Vidéo activée ?}
+  V -->|Non| O
+  V -->|Oui, national| JV[Juge vidéo]
+  JV -->|Confirmation| O
+  JV -->|Refus| H[Historique, sans tâche officielle]
+  O --> B
+  O --> S[Speaker actif : annonce]
+  O --> L[Live actif : information]
+  BF --> W[Saisie dans WinPalme]
+  B --> W
+  W --> T[TXT corrigé validé]
+  T --> P[Résultats publics]
+  T --> F[Calcul scratch des finalistes]
+  F --> D{Ex æquo à une limite ?}
+  D -->|Oui| E[Départage explicite JA / bureau]
+  E --> A[Annonce officielle speaker ou bureau]
+  D -->|Non| A
+  A --> R[Forfait après annonce : secrétariat ou bureau]
+  R --> C[Composition proposée, puis changement annoncé]
+```
 
 Finales au scratch uniquement : réglage groupé ou par course « aucune / A / A+B », avec 6 ou 8 places par finale, indépendant du décalage de ligne TXT. Les séries du même code épreuve/sexe sont regroupées entre sessions, sans inclure les finales déjà importées. Une participation répétée ambiguë bloque le calcul. Toutes les séries doivent avoir leurs résultats ; DSQ, abandon et forfait sont exclus des qualifiés. Un ex æquo à une limite utile (6/7, 12/13, 8/9 ou 16/17) demande un départage explicite JA/bureau ; aucun choix automatique par nom ou ligne. Son ordre est enregistré sans changer les temps. Un swim-off prévu devenu inutile nécessite confirmation d'annulation et information du speaker.
 
@@ -20,7 +47,7 @@ Persistance : réutilisation des cinq tables Direct existantes, sans table/colon
 
 Budget de lectures prévu (indépendant du volume global NAP) :
 
-- Ouverture/actualisation complète : un profil Firestore actif, métadonnées natives/configuration/état par clé, une délégation par clé si nécessaire, programme limité à 301, agrégat de progression limité à 15 001 et participations sélectionnées limitées à 1 001. Les qualifications multisessions ajoutent une seule lecture `IN` bornée à 15 001 ; la source unique réutilise les participations sélectionnées.
+- Ouverture/actualisation complète : un profil Firestore actif, métadonnées natives/configuration/révision JSON/état par clé, une délégation par clé si nécessaire, programme limité à 301, agrégat de progression limité à 15 001 et participations sélectionnées limitées à 1 001. Les qualifications multisessions ajoutent une seule lecture `IN` bornée à 15 001 ; la source unique réutilise les participations sélectionnées.
 - Cycle inchangé : un profil, métadonnées natives, configuration et révision JSON par clé ; une délégation si nécessaire (3 requêtes SQL pour un responsable, 4 pour un délégué). Aucun programme ni tableau de participants relu. Dix consoles visibles pendant quatre heures représentent au plus 9 600 cycles, hors actions/changements ; les onglets masqués n'en font pas.
 - Action : contrôles d'accès existants, verrou de configuration, reçu et état par clé ; programme/épreuve bornés et une lecture groupée qualificative si nécessaire, puis deux écritures privées transactionnelles. Aucun appel par nageur ou course. Les imports conservent leur propre budget.
 - Fiche nageur : un lot privé de compétition limité à 15 001, mutualisé et mis en cache par compte/rôle/version ; aucune lecture par course. Records/MPF : un appel groupé existant au clic, mêmes filtres que le public, sans nouvelle règle sportive.
