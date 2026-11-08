@@ -8,7 +8,7 @@ async function run() {
     style: "SF", type_: 1, nbnageur: 1, mixte: 0, ld: 1, actif: 1, validation: 1 };
   const competition = { id: "5136", name: "Fixture", date: "2026-11-01", competitionType: "openWater",
     events: [{ code: "OW1500SF", type: "individual", nativeCourses: [row] }] };
-  const entries = [{ clubId: "1", clubCode: "TEST", relays: [], officials: [], swimmers: [
+  const entries = [{ clubId: "1", clubCode: "TEST", relays: [], officials: [{lastName:"FICTIF",firstName:"Élodie",birthDate:"1980-02-29"}], swimmers: [
     { firstName: "Test", lastName: "Nageur", birthDate: "2000-01-01", sex: "M", swimmerIndexId: "1",
       category: "NAP-unknown", individualEntries: [{ eventCode: "OW1500SF", nativeTime: "599999", entryTime: "59:59.99" }] },
     { firstName: "Test", lastName: "Sans course", birthDate: "2000-01-01", sex: "M", swimmerIndexId: "2", individualEntries: [] }
@@ -34,6 +34,8 @@ async function run() {
   assert.match(text, /DIS;LD1500;1500;1500;SF;1;1;120;0/);
   assert.match(text, /LD1500;000001;HSE/);
   assert.match(text, /NAG;Sans course;Test;01\/01\/2000;M;TEST;;REL;000000;;2;;/);
+  assert.equal(text.split("\r\n").filter(line=>line.startsWith("OFF;")).length,1);
+  assert.ok(text.indexOf("NAG;Sans course;")<text.indexOf("OFF;"));
   const native = await water.readManualOpenWaterCompetition(services.pool, competition);
   const manual = water.buildNativeManualOpenWaterTxt(native, water.prepareManualOpenWaterEntries(entries)
     .map(entry => ({ ...entry, swimmers: entry.swimmers.map(person => ({ ...person, category: "S" })) })), clubs);
@@ -46,6 +48,22 @@ async function run() {
   reads = 0;
   await build({ ...competition, competitionType: "pool" }, entries, clubs, services);
   assert.equal(poolCalls, 1); assert.equal(reads, 0, "pool keeps its existing builder and read budget");
+  // Exercise the real pool download handler and mail builder with no services.
+  const {createDocumentsService_buildEngagementCompetitionTxt}=require("../functions/backend/server-documents-service/build-engagement-competition-txt");
+  const builders=createDocumentsService_buildEngagementCompetitionTxt({ageCategoryFromDates:()=>"S",
+    buildWinPalmeCompetitionTxt:require("../functions/winpalme-export").buildWinPalmeCompetitionTxt,engagementPdfFileName:()=>"fixture"});
+  const poolCompetition={...competition,competitionType:"pool"},poolEntries=entries.map(entry=>({...entry,swimmers:entry.swimmers.map(person=>({...person,
+    individualEntries:person.individualEntries.map(course=>({...course,eventCode:"50SF"}))}))}));
+  const {createCompetitionHandlers_generateEngagementCompetitionTxtExport}=require("../functions/backend/portal-competition-handlers/generate-engagement-competition-txt-export");
+  const handler=createCompetitionHandlers_generateEngagementCompetitionTxtExport({...builders,ENVIRONMENT:{sportingDataSource:"nap"},
+    cleanText:value=>String(value||""),engagementAccessContext:async()=>({}),engagementClubEntryHasParticipants:()=>true,
+    nativeAdminCompetitionEntries:async()=>({competition:poolCompetition,entries:poolEntries,clubsById:clubs,sqlBudget:{queriesMax:24}})});
+  const downloaded=await handler.generateEngagementCompetitionTxtExport({data:{competitionId:competition.id}});
+  const mailed=await build(poolCompetition,poolEntries,clubs,{...services,poolTxt:builders.buildEngagementCompetitionTxt});
+  const downloadedBuffer=Buffer.from(downloaded.txtBase64,"base64");
+  assert.deepEqual(content(downloadedBuffer),content(mailed.buffer),"Real manual pool handler and mail serializer keep identical content");
+  assert.match(downloadedBuffer.toString("utf8"),/\r\nOFF;FICTIF;Élodie;TEST;29\/02\/1980;\r\n/);
+  assert.equal(downloaded.sqlBudget.queriesMax,24);assert.equal(reads,0,"Shared OFF serialization adds no data access");
   await assert.rejects(build({ ...competition, competitionType: "meeting" }, entries, clubs, services), /incompatible/);
   await assert.rejects(build(competition, entries, clubs, { ...services, pool: { execute: async () => [[]] } }), /Reference e-NAP/);
   await assert.rejects(build(competition, entries, clubs, { ...services, pool: { execute: async query =>

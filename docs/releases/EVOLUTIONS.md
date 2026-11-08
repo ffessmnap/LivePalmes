@@ -2,6 +2,13 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 8 novembre — Officiels dans le TXT commun piscine/eau libre
+
+- Antoine confirme le format E-NAP `OFF` à six champs déjà utilisé en eau libre ; développement séquencé après la clôture des deux lots mails, depuis `269a682e`. Références authentiques examinées : Beaumont 2024 (dix OFF) et 2025 (neuf OFF, dont une personne aussi chef d'équipe), sans recopier leurs identités dans les fixtures. Aucun grade, licence ou identifiant inventé.
+- Les déclarations NAP étaient déjà chargées et conservées par l'adaptateur et le filtre ; le sérialiseur piscine les omettait. Ajout dans le sérialiseur commun, retrait de l'injection eau libre et maintien des nageurs sans épreuve avant OFF, sans doublon ni modification des autres enregistrements. Téléchargement/préparation du mail alignés ; rôles cumulés, liens natifs distincts, ordre et blocs fédéraux conservés. Les pièces jointes déjà préparées ne sont pas régénérées.
+- Budget initial/action/rafraîchissement/pire cas : aucune lecture ni écriture ajoutée ; téléchargement piscine ≤ 24 requêtes SQL, eau libre ≤ 26, lecteur de dossiers ≤ neuf requêtes groupées, officiels ≤ 2 000 par compétition. Aucun accès réel NAP/Firebase, export réel, envoi, activation, IAM ou PROD dans la préparation.
+- Tests ciblés hors réseau réussis : sérialiseurs piscine/eau libre, lecteur NAP et clubs avec officiels seuls, parité du véritable téléchargement piscine avec la préparation mail, relais Clubs à six positions, callable, pages/automatisme de notifications et téléchargement manuel. Huit scénarios eau libre fictifs comparés à la version précédente : octets strictement identiques, y compris espaces, séparateurs et nageurs sans épreuve. CI exacte et livraison TEST non encore attestées ; validation utilisateur/import WinPalme non recueillis. La fermeture des lots mails précédents n'étend pas leurs contrats de sources à cette correction : consommateurs et complément TEST à examiner séparément avant publication.
+
 ### 8 novembre — Rappel J−1 et récapitulatif provisoire
 
 - Second lot autorisé après contacts : audience exacte du mail d’ouverture, y compris clubs sans déclaration (mail seul). Dossiers incomplets et officiels seuls : PDF propre au club, filigrane visible répété sur chaque page, pied et nom de fichier provisoires. Aucune validation métier ni modification du PDF définitif.
