@@ -64,6 +64,8 @@ Pour le trophée départemental uniquement, le point d’entrée reconnu `livepa
 
 Le contrôle final `verification_only` ne produit volontairement aucun artefact `test-proof`. Pour le lot trophée, sa provenance est vérifiée séparément par le run exact (workflow, branche, SHA, première tentative, réussite) et ses étapes : sélection/contrôle réussis, publication Functions/Hosting et production de preuve ignorées. L’état de référence reste exclusivement l’artefact authentifié du TEST commun précédent, comparé ensuite à l’état frais ; aucun instantané final inexistant n’est reconstitué.
 
+Pour les dates source OFF uniquement, `release=officials_dates` est fermé par `20261108-txt-official-dates-contract.json` à l'ancre `43122fa5bff72f3da3c916c28a420bd8eebded1b` et à la baseline TEST réelle `0ed4890b` / 42492806085 (`test-proof`), contrôlée par 42493447083 sans artefact. Le correctif et son contrat sont préparés ensemble avant la première CI et soumis à revue centrale avant publication. Les trois empreintes du sélecteur TEST standard concernent uniquement clôture/worker/tâche NAP ; treize consommateurs ordinaires du lecteur partagé restent dans la sélection complète. Nouveau digest et garde anti-mélange, aucun ancien contrat/ALLOWED/lot ordinaire changé. Après CI finale PR et main exactes : sources/labels fermés, TEST commun puis contrôle final sans déploiement. Préconditions mails désactivés et file/planificateur suspendus vérifiées et conservées, mêmes gardes de configuration/archives/générations/messages ; aucune donnée, lecture métier supplémentaire, export/import réel, invocation, programmation réelle, message, activation, permission, secret/binding ou PROD.
+
 ## 3. Préparer le bilan PROD
 
 ### Assembler plutôt que ressaisir
