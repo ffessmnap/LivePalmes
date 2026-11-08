@@ -103,6 +103,7 @@ function next(previous,input,{role,actor,actorLabel=actor,event,entries,consoles
   }else if(['withdraw','reinstate','preWithdraw'].includes(command)){
     if(!race.announced||!row)reject('Annoncer les finalistes et choisir un nageur.');
     const q=qualification(state,event,entries),before=q.roster,wasFinalist=[...before.a,...before.b].includes(row.key);
+    if(q.changed&&(!race.pendingRoster||race.pendingRoster.sourceHash!==q.sourceHash||race.pendingRoster.programVersionHash!==q.programVersionHash))reject('Les séries ou résultats ont changé : le bureau doit vérifier et préparer la composition corrigée avant de saisir les forfaits.');
     if(command==='withdraw'){
       if(!wasFinalist||race.withdrawals[row.key])reject('Ce nageur n’est pas un finaliste officiellement annoncé disponible.');
       const reference=race.announced.times?.[row.key]||race.announced.at;
