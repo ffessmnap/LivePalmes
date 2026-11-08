@@ -21,8 +21,16 @@ async function verify({pool,id,actor,native,failJournal}){
     const stable=await consoles.snapshot(id,{role:'computer',eventId},permissions),unchanged=await consoles.snapshot(id,{role:'computer',eventId,revision:stable.revision,configVersion:stable.configVersion},permissions);assert.equal(unchanged.unchanged,true);
     failJournal(2);await assert.rejects(send('progress','referee',{series:participant.series}),/Interruption/);failJournal(0);const after=await consoles.snapshot(id,{role:'computer',eventId},permissions);assert.equal(after.revision,stable.revision,'Le rollback du journal annule l’UPDATE JSON de l’état');
     assert.equal((await store.config(id)).version,publicationBefore,'Les consoles ne perturbent pas les versions des imports TXT');
+    const partialEvent={eventCode:'50ap',eventLabel:'50 m Apnée',sex:'M',sessionKey:'99',expectedSeries:1},partialRows=Array.from({length:7},(_,i)=>({lastName:'PARTIEL',firstName:String(i+1),birthYear:2006,club:'CLUB',category:'HJU',series:1,lane:i+1,entryTime:'595999',resultTime:'00:'+String(20+(i===6?5:i)).padStart(2,'0')+'.00'}));
+    for(const kind of ['series','results']){const batch={groups:[{kind,event:partialEvent,rows:partialRows,operationKey:randomUUID()}]},preview=await store.previewBatch(id,batch);await store.publishBatch(id,actor,{...batch,fingerprint:preview.fingerprint});}
+    const partialId=(await store.detail(id)).events.find(e=>e.eventCode==='50ap').id;
+    const partialSend=async(command,role,extra={})=>{const current=await consoles.snapshot(id,{role,eventId:partialId},permissions);return consoles.command(id,actor,{command,role,eventId:partialId,revision:current.revision,configVersion:current.configVersion,operationKey:randomUUID(),...extra},permissions);};
+    await partialSend('configure','computer',{lanes:6,events:[{id:partialId,format:'a',lanes:6}]});await partialSend('announceFinalists','speaker');
+    let partial=await consoles.snapshot(id,{role:'computer',eventId:partialId},permissions);assert.equal(partial.finals.partial,true);assert.equal(partial.finals.roster.a.length,5);
+    await partialSend('withdraw','secretary',{participantKey:partial.finals.roster.a[0]});await assert.rejects(partialSend('announceReplacement','speaker'),/confirmer l’annulation/);await partialSend('confirmSwimoffCancelled','referee');await partialSend('announceReplacement','speaker');
+    partial=await consoles.snapshot(id,{role:'computer',eventId:partialId},permissions);assert.equal(partial.finals.partial,false);assert.equal(partial.finals.roster.a.length,6,'Annonce partielle, forfait et annonce complète conservés dans le JSON MySQL');
     const other=createConsoleStore(pool,createStore(pool,'production'));await assert.rejects(other.snapshot(id,{role:'computer'},permissions),/fermées/,'État opérationnel isolé de production');
-    console.log('Consoles MySQL isolé : JSON privé, reçus, verrouillage concurrent, refus des versions anciennes, rollback et isolation environnement vérifiés.');
+    console.log('Consoles MySQL isolé : JSON privé, reçus, verrouillage concurrent, refus des versions anciennes, rollback, annonce partielle/forfait/annulation du swim-off et isolation environnement vérifiés.');
   }finally{native.native_level_code=originalLevel;failJournal(0);}
 }
 module.exports={verify};
