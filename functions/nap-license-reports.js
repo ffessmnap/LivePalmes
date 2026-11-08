@@ -62,9 +62,11 @@ function store(pool){return {
    const rows=await query(c,`SELECT version,revision FROM ${tables[0]} WHERE season=? AND competition_id=? LIMIT 1 FOR UPDATE`,args);
    if(rows[0]?.revision!==report.revision)throw new TypeError("Le bilan a changé pendant l’envoi.");
    const current=decode((await query(c,`SELECT report,mail FROM ${tables[1]} WHERE season=? AND competition_id=? AND version=? LIMIT 1 FOR UPDATE`,[...args,rows[0].version]))[0]);
-   const receipt=current.mail?.sentAt?current.mail:mail;
+   if(current.mail?.mailTemplates&&mail.mailTemplates&&!require("./mail-templates").sameSnapshot(current.mail.mailTemplates,mail.mailTemplates))throw new TypeError("La préparation utilise une autre version. Actualisez l’aperçu.");
+   const receipt=current.mail?.sentAt?current.mail:{...current.mail,...mail};
    await query(c,`UPDATE ${tables[1]} SET mail=?,summary=? WHERE season=? AND competition_id=? AND version=?`,[JSON.stringify(receipt),JSON.stringify(summary({...current,mail:receipt})),...args,rows[0].version]);
    await query(c,`UPDATE ${tables[0]} SET summary=? WHERE season=? AND competition_id=?`,[JSON.stringify(summary({...current,mail:receipt})),...args]);
+   return receipt;
   });
  }
 };}

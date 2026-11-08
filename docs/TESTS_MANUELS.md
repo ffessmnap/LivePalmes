@@ -325,6 +325,8 @@ Sur TEST, compétition ouverte et chef d’équipe déclaré ou renonciation con
 
 ## Contenus des cinq mails de compétition — 20 octobre
 
+Modèles nationaux (8 novembre) : suivre [le contrat et les budgets](MAIL_TEMPLATES.md). Sur fixtures hors réseau, contrôler sélection, objet/texte, blocs et liens obligatoires sur ligne distincte, aperçu fictif inerte, auteur/date/révision, sauvegarde et retour au défaut sans envoi. Vérifier absence/panne, conflit et brouillon conservé, refus national, clavier/toucher et absence de débordement à 1280/390/320 px. Contrôler versions figées entre pages/reprises automatiques, bibliothèque et bilans licences, ancien premier job et JSON réordonné ; aucun job préparé n’est réécrit. Aucun test sur données réelles requis.
+
 - Utiliser uniquement des fixtures, sans SMTP ni préparation de jobs réels : vérifier ouverture, récapitulatif club, documents texte/HTML, export WinPalme et officiels.
 - Vérifier jour/date en toutes lettres, heure de Paris en hiver/été et changement de jour ; lieu, adresse et ville séparés, ville non répétée en fin d'adresse, adresse absente non inventée ; échappement HTML des données.
 - Vérifier la signature « Nage avec Palmes FFESSM », les liens, les noms des pièces jointes et le rappel de vérification du récapitulatif. Conserver mot pour mot les mentions de paiement, montants et HelloAsso existants ; ne changer ni destinataires, ni statut d'envoi, ni file déjà préparée.

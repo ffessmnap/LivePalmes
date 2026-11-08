@@ -3,6 +3,12 @@ function createCompetitionHandlers_updateEngagementAutomaticMailControl(backendC
   async function updateEngagementAutomaticMailControl(request) {
     const context = await backendContext.engagementAccessContext(request);
     if (!context.national) throw new backendContext.HttpsError('permission-denied', 'Administration nationale requise.');
+    if (request.data?.action === "mailTemplate") {
+      try { return await require("../../mail-templates").update(backendContext.db, request.data, context); }
+      catch (error) { throw new backendContext.HttpsError(error instanceof TypeError ? "failed-precondition" : "unavailable",
+        error instanceof TypeError ? error.message : "Enregistrement du modèle indisponible. Actualisez pour vérifier la version enregistrée."); }
+    }
+    if (request.data?.action) throw new backendContext.HttpsError("invalid-argument", "Action inconnue.");
     try {
       const control = require("../../engagement-mail-control");
       const result = await control.update(backendContext.db, request.data, context);

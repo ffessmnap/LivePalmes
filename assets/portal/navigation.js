@@ -932,10 +932,24 @@
       }
 
     async function loadNationalAutomaticMailControl(force = false) {
+        global.LivePalmesMailTemplateEditor?.setIdentity(portalState.activeAuthUid || "");
         const panel = document.getElementById('adminNationalMailControl');
         const status = document.getElementById('adminNationalMailControlStatus');
         const button = document.getElementById('adminNationalMailControlToggle');
         if (!panel || !status || !button || !canDeleteEngagementCompetitionDirectly()) return;
+        const templatesButton = document.getElementById("adminNationalMailTemplatesOpen");
+        if (templatesButton && document.getElementById("adminNationalMailTemplates")?.hidden) templatesButton.setAttribute("aria-expanded", "false");
+        if (templatesButton) templatesButton.onclick = async () => {
+          if (!canDeleteEngagementCompetitionDirectly()) return;
+          templatesButton.disabled = true;
+          try {
+            await portalActions.loadScriptOnce("assets/livepalmes-mail-template-editor.js?v=20261108-mail-templates-1", "admin-mail-template-editor");
+            if (!canDeleteEngagementCompetitionDirectly()) return;
+            await global.LivePalmesMailTemplateEditor.open({ root: document.getElementById("adminNationalMailTemplates"), callFunction: portalActions.callFunction, identity: portalState.activeAuthUid || "" });
+            templatesButton.setAttribute("aria-expanded", "true");
+          } catch (error) { status.textContent = error.message || "Éditeur indisponible. Réessayez."; }
+          finally { templatesButton.disabled = false; }
+        };
         panel.hidden = false;
         if (portalState.nationalAutomaticMailLoading || (!force && Date.now() - portalState.nationalAutomaticMailLoadedAt < 30000)) return;
         portalState.nationalAutomaticMailLoading = true; button.disabled = true;

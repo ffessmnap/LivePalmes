@@ -64,8 +64,15 @@ function createDirectoryService_assertEngagementAccessRequestScope(backendContex
     if (!config.ready) {
       return { status: "skipped_missing_config", attemptedAt, reason: "Configuration SMTP incomplete." };
     }
-    const mail = backendContext.engagementAccessRejection(payload);
+    const original = backendContext.engagementAccessRejection(payload);
+    let contentReady = false;
     try {
+      const blocks = original.text.split("\n\n");
+      const mail = require("../../mail-template-rendering").requestMail(await require("../../mail-templates").read(backendContext.db), {
+        kind: "access", decision: "rejected", greeting: blocks[0], subject: original.subject, summary: blocks[1],
+        details: blocks[3], comment: payload.resolutionReason
+      }, original);
+      contentReady = true;
       const transporter = backendContext.nodemailer.createTransport(config.transport);
       await transporter.sendMail({
         from: `LivePalmes <${config.fromEmail}>`,
@@ -80,7 +87,7 @@ function createDirectoryService_assertEngagementAccessRequestScope(backendContex
         "Notification de refus de demande d'acces impossible.",
         backendContext.cleanText(error?.code || error?.name || "smtp-error").slice(0, 80)
       );
-      return { status: "failed", attemptedAt, reason: "Envoi SMTP impossible." };
+      return { status: "failed", attemptedAt, reason: contentReady ? "Envoi SMTP impossible." : "Modèle de mail indisponible ou invalide." };
     }
   }
 

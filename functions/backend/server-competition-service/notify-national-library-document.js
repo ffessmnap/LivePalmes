@@ -15,7 +15,16 @@ function createCompetitionService_notifyNationalLibraryDocument(backendContext) 
       const recipients=backendContext.engagementCompetitionNotificationRecipients(backendContext.engagementDedupMailRecipients(scoped))
         .filter(x=>x.clubId&&backendContext.engagementRecipientHasCapability(x,'engagements.club.manage')&&control.clubAllowed(setting,x))
         .sort((a,b)=>String(a.uid).localeCompare(String(b.uid))||String(a.email).localeCompare(String(b.email)));
-      const fingerprint=backendContext.crypto.createHash('sha256').update(JSON.stringify([document.fingerprint,setting,recipients])).digest('hex');
+      const templates=require("../../mail-templates");
+      const templateKey=backendContext.crypto.createHash('sha256').update(JSON.stringify(['national-document',document.id,document.fingerprint])).digest('hex');
+      const firstJobId=recipients.length?backendContext.crypto.createHash('sha256').update(JSON.stringify(['national-document',document.id,document.fingerprint,recipients[0].uid,recipients[0].email])).digest('hex'):'';
+      const snapshot=await templates.readManual(backendContext.db,templateKey,['national_library_document'],firstJobId);
+      const original={subject:`LivePalmes — ${document.title}`,text:`Un document est disponible dans la bibliothèque LivePalmes.\n\n${document.title}\n${document.description||''}\n${document.url}\n\n${backendContext.ENVIRONMENT.hostingOrigin}/bibliotheque.html`};
+      const rendered=templates.render('national_library_document',snapshot,{
+        'document.titre':document.title,'document.description':document.description||'','document.lien':document.url,
+        'bibliotheque.lien':`${backendContext.ENVIRONMENT.hostingOrigin}/bibliotheque.html`
+      },original);
+      const fingerprint=backendContext.crypto.createHash('sha256').update(JSON.stringify([document.fingerprint,setting,recipients,rendered])).digest('hex');
       const disabled=backendContext.ENVIRONMENT.projectId==='livepalmes-test'||!setting.enabled;
       const result={recipientCount:recipients.length,clubCount:new Set(recipients.map(x=>x.clubId)).size,scope:setting.scope,fingerprint,disabled,sentCount:0,errorCount:0,skippedCount:0,test:backendContext.ENVIRONMENT.projectId==='livepalmes-test'};
       if(input.action==='preview')return result;
@@ -24,6 +33,7 @@ function createCompetitionService_notifyNationalLibraryDocument(backendContext) 
       if(disabled)return {...result,done:true};
       const offset=input.offset??0;
       if(!Number.isSafeInteger(offset)||offset<0||offset>recipients.length||offset%20!==0)throw new TypeError('Page de notification invalide.');
+      await templates.freezeManual(backendContext.db,templateKey,snapshot);
       const config=backendContext.engagementMailSmtpConfig();if(!config.ready)throw new TypeError('Configuration des mails indisponible.');
       const transporter=backendContext.nodemailer.createTransport({...config.transport,pool:true,maxConnections:1,connectionTimeout:15000,greetingTimeout:15000,socketTimeout:30000});
       try{
@@ -31,7 +41,9 @@ function createCompetitionService_notifyNationalLibraryDocument(backendContext) 
           const now=new Date().toISOString();
           const jobId=backendContext.crypto.createHash('sha256').update(JSON.stringify(['national-document',document.id,document.fingerprint,recipient.uid,recipient.email])).digest('hex');
           const ref=backendContext.db.collection(backendContext.ENGAGEMENT_MAIL_JOBS_COLLECTION).doc(jobId);
-          const job={source:'nap',type:'competition_documents',status:'sending',competitionId:'national-library',notificationId:`national-document-${document.id}`,recipientUid:recipient.uid,toEmail:recipient.email,clubId:String(recipient.clubId),recipientRegionId:recipient.napClubRegionId,subject:`LivePalmes — ${document.title}`,textBody:`Un document est disponible dans la bibliothèque LivePalmes.\n\n${document.title}\n${document.description||''}\n${document.url}\n\n${backendContext.ENVIRONMENT.hostingOrigin}/bibliotheque.html`,createdAt:now,notificationDueAt:now,updatedAt:now,attemptedAt:now};
+          const job={source:'nap',type:'competition_documents',status:'sending',competitionId:'national-library',notificationId:`national-document-${document.id}`,recipientUid:recipient.uid,toEmail:recipient.email,clubId:String(recipient.clubId),recipientRegionId:recipient.napClubRegionId,
+            subject:rendered.subject,textBody:rendered.text,templateId:rendered.templateId,templateRevision:rendered.templateRevision,catalogRevision:rendered.catalogRevision,
+            createdAt:now,notificationDueAt:now,updatedAt:now,attemptedAt:now};
           const claimed=await backendContext.db.runTransaction(async transaction=>{if((await transaction.get(ref)).exists)return false;transaction.create(ref,job);return true;});
           if(!claimed){result.skippedCount++;continue;}
           const sent=await backendContext.sendEngagementMailJob(transporter,{id:jobId,ref,data:()=>job},config,context);

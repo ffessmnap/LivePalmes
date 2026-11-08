@@ -2183,3 +2183,13 @@
 #adminNewsPublishedEntries article { margin-block: 1rem 1.5rem; }
 #adminNewsPublishedEntries li { overflow-wrap: anywhere; }
 #adminNewsView button { min-height: 40px; }
+
+.admin-mail-template-form { display: grid; gap: .8rem; max-width: 54rem; min-width: 0; }
+.admin-mail-template-form[hidden] { display: none; }
+.admin-mail-template-form label { display: grid; gap: .35rem; min-width: 0; }
+.admin-mail-template-form input, .admin-mail-template-form textarea, .admin-mail-template-form select { width: 100%; min-width: 0; max-width: 100%; box-sizing: border-box; }
+.admin-mail-template-form textarea { resize: vertical; }
+.admin-mail-template-actions, .admin-mail-template-tokens { display: flex; flex-wrap: wrap; gap: .5rem; }
+#adminNationalMailTemplates button { min-height: 44px; max-width: 100%; overflow-wrap: anywhere; white-space: normal; }
+#adminNationalMailTemplates p { overflow-wrap: anywhere; }
+.admin-mail-template-preview { white-space: pre-wrap; overflow-wrap: anywhere; max-width: 54rem; }

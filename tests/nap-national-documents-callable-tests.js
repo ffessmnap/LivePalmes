@@ -1,6 +1,8 @@
 'use strict';
 const assert=require('node:assert/strict'),fs=require("./helpers/source-files"),vm=require('node:vm'),crypto=require('node:crypto');
 const source=fs.readFileSync(require.resolve('../functions/index.js'),'utf8');
+const {memoryDb}=require('./mail-templates-tests');
+const mailTemplates=require('../functions/mail-templates');
 let national=true,reads=0,smtp=0,writes=0,enabled=true;
 class HttpsError extends Error{constructor(code,message){super(message);this.code=code;}}
 const context={exports:{},CALLABLE_OPTIONS:{},ENGAGEMENT_DOCUMENT_UPLOAD_OPTIONS:{},ENGAGEMENT_NOTIFICATION_PREVIEW_OPTIONS:{secrets:['LIVEPALMES_NAP_PASSWORD']},ENGAGEMENT_MAIL_CALLABLE_OPTIONS:{},ENGAGEMENT_NOTIFICATION_MAIL_SECRETS:['SMTP_SECRET'],ENVIRONMENT:{sportingDataSource:'nap',projectId:'livepalmes-test'},process:{env:{}},crypto,HttpsError,Date,Set,
@@ -9,12 +11,13 @@ const context={exports:{},CALLABLE_OPTIONS:{},ENGAGEMENT_DOCUMENT_UPLOAD_OPTIONS
  engagementMailRecipientIndexStateRef:()=>({get:async()=>({data:()=>({status:'ready'})})}),engagementMailRecipientsFromIndex:async()=>[{uid:'club-user',email:'club@example.org',clubId:'12',capabilities:['engagements.club.manage'],napClubRegionId:'Ile de France'}],
  engagementCompetitionNotificationRecipients:r=>r.filter(x=>x.competitionNotificationsEnabled!==false),engagementDedupMailRecipients:r=>r,engagementRecipientHasCapability:(r,c)=>r.capabilities.includes(c),
  engagementMailSmtpConfig:()=>{smtp++;throw Error('SMTP forbidden on TEST');},
- db:{collection:()=>{writes++;throw Error('Outbox forbidden on TEST');}},
+ db:memoryDb(),
  require:name=>{
   if(name==='./nap-portal-swimmers')return {portalPool:()=>({})};
-  if(name==='./nap-national-documents')return {record:async()=>{reads++;return {};},view:()=>({id:42,title:'Test',fingerprint:'document'}),list:async()=>{reads++;return {documents:[]};}};
+  if(name==='./nap-national-documents')return {record:async()=>{reads++;return {};},view:()=>({id:42,title:'Test',description:'Document fictif',url:'https://example.invalid/document.pdf',fingerprint:'document'}),list:async()=>{reads++;return {documents:[]};}};
   if(name==='./nap-notification-preview')return {nativeClubScopes:async(_p,r)=>r};
   if(name==='./engagement-mail-control')return {read:async()=>({enabled,scope:'all',revision:1}),clubAllowed:()=>true};
+  if(name==='./mail-templates')return mailTemplates;
   throw Error(`Unexpected module ${name}`);
  }};
 vm.createContext(context);
@@ -26,6 +29,7 @@ vm.runInContext(source.slice(notifyStart,source.indexOf('\n});',notifyStart)+4),
  const request={auth:{uid:'trusted'},data:{library:true,action:'preview',documentId:42}};
  const preview=await context.exports.notifyEngagementCompetitionDocuments(request);assert.equal(preview.test,true);assert.equal(preview.disabled,true);assert.equal(preview.recipientCount,1);
  const sent=await context.exports.notifyEngagementCompetitionDocuments({...request,data:{library:true,action:'send',documentId:42,expectedFingerprint:preview.fingerprint}});assert.equal(sent.sentCount,0);assert.equal(sent.done,true);assert.equal(smtp,0);assert.equal(writes,0);
+ assert.equal(context.db.rows.size,0,'TEST preview and disabled send never write settings, snapshots or jobs');
  assert.deepEqual(Array.from(context.exports.notifyEngagementCompetitionDocuments.options.secrets),['LIVEPALMES_NAP_PASSWORD']);
  await assert.rejects(context.exports.notifyEngagementCompetitionDocuments({...request,data:{library:true,action:'send',documentId:42,expectedFingerprint:'stale'}}),/changé/);
  national=false;const count=reads;await assert.rejects(context.exports.getNationalFeaturedDocuments({...request,data:{library:true,action:'list',national:true}}),e=>e.code==='permission-denied');await assert.rejects(context.exports.notifyEngagementCompetitionDocuments(request),e=>e.code==='permission-denied');assert.equal(reads,count);
@@ -33,17 +37,22 @@ vm.runInContext(source.slice(notifyStart,source.indexOf('\n});',notifyStart)+4),
  // Exercise the future PROD branch with in-memory jobs and a fake transport.
  // No network, SMTP socket, Firebase or sporting write is permitted here.
  national=true;context.ENVIRONMENT.projectId='livepalmes';context.ENVIRONMENT.hostingOrigin='https://example.org';
- const jobs=new Map();let sentCount=0;
+ let sentCount=0;
  context.ENGAGEMENT_MAIL_JOBS_COLLECTION='engagementMailJobs';
  context.engagementMailRecipientsFromIndex=async()=>Array.from({length:45},(_,i)=>({uid:`club-${String(i).padStart(2,'0')}`,email:`club${i}@example.org`,clubId:String(i+1),capabilities:['engagements.club.manage']}));
- context.db={collection:()=>({doc:id=>({id})}),runTransaction:async fn=>fn({get:async ref=>({exists:jobs.has(ref.id)}),create:(ref,job)=>jobs.set(ref.id,job)})};
+ context.db=memoryDb();
+ const libraryTemplate={subject:'Document {{document.titre}}',text:'Texte initial\n{{document.titre}}\n{{document.lien}}\n{{bibliotheque.lien}}',revision:1};
+ context.db.rows.set('engagementConfigurations/mailTemplates',{schema:1,revision:1,templates:{national_library_document:libraryTemplate}});
  context.engagementMailSmtpConfig=()=>({ready:true,transport:{}});context.nodemailer={createTransport:()=>({close:()=>{}})};
  context.sendEngagementMailJob=async()=>{sentCount++;return {status:'sent'};};context.writeAuditLog=async()=>{};
  const prod=await context.exports.notifyEngagementCompetitionDocuments(request);assert.equal(prod.disabled,false);assert.equal(prod.recipientCount,45);
  const send=offset=>context.exports.notifyEngagementCompetitionDocuments({...request,data:{library:true,action:'send',documentId:42,expectedFingerprint:prod.fingerprint,offset}});
  const first=await send(0);assert.equal(first.sentCount,20);assert.equal(first.done,false);assert.equal(first.nextOffset,20);
+ context.db.rows.set('engagementConfigurations/mailTemplates',{schema:1,revision:2,templates:{national_library_document:{...libraryTemplate,text:libraryTemplate.text.replace('initial','suivant'),revision:2}}});
  const duplicate=await send(0);assert.equal(duplicate.sentCount,0,'Duplicate batch must never resend');assert.equal(duplicate.skippedCount,20);assert.equal(sentCount,20);
- await send(20);assert.equal((await send(40)).sentCount,5);assert.equal(sentCount,45);assert.equal(jobs.size,45);
+ await send(20);assert.equal((await send(40)).sentCount,5);assert.equal(sentCount,45);
+ const jobs=[...context.db.rows.entries()].filter(([key])=>key.startsWith('engagementMailJobs/')).map(([,value])=>value);
+ assert.equal(jobs.length,45);assert.ok(jobs.every(job=>job.textBody.startsWith('Texte initial')&&job.templateRevision===1),'All pages retain the first prepared template');
  await assert.rejects(send(1),/Page de notification invalide/);
  enabled=false;const stopped=await context.exports.notifyEngagementCompetitionDocuments(request);assert.equal(stopped.disabled,true);
  // The deployed callable metadata is evaluated separately for PROD.

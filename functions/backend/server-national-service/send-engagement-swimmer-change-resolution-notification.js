@@ -18,8 +18,16 @@ function createNationalService_sendEngagementSwimmerChangeResolutionNotification
         reason: "Configuration SMTP incomplete."
       };
     }
-    const mail = backendContext.engagementSwimmerChangeResolutionMail(payload);
+    const original = backendContext.engagementSwimmerChangeResolutionMail(payload);
+    let contentReady = false;
     try {
+      const blocks = original.text.split("\n\n");
+      const mail = require("../../mail-template-rendering").requestMail(await require("../../mail-templates").read(backendContext.db), {
+        kind: "swimmer_correction", decision: payload.decision, greeting: blocks[0], subject: original.subject, summary: blocks[1],
+        details: blocks.slice(2, -1).filter(block => !block.startsWith("Commentaire de l’administrateur national :")).join("\n\n"),
+        comment: payload.resolutionNote
+      }, original);
+      contentReady = true;
       const transporter = backendContext.nodemailer.createTransport(config.transport);
       await transporter.sendMail({
         from: `LivePalmes <${config.fromEmail}>`,
@@ -42,7 +50,7 @@ function createNationalService_sendEngagementSwimmerChangeResolutionNotification
       return {
         status: "failed",
         attemptedAt,
-        reason: "Envoi SMTP impossible."
+        reason: contentReady ? "Envoi SMTP impossible." : "Modèle de mail indisponible ou invalide."
       };
     }
   }

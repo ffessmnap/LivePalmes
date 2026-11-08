@@ -63,7 +63,14 @@ const report={version:1,competitionId:"1",competitionName:"Coupe fictive",season
  const cleanFinished=await reports.close(noFirestore,batchForClosure,{competitionId:"1",expectedRevision:conform.revision},"national",closureStore,"2026-10-27T13:00:00Z");assert.equal(cleanFinished.report.status,"ok");assert.equal(cleanFinished.report.closure.note,"");assert.equal(closurePool.rows.length,4);
  assert.equal((await store.save(report)).version,1);assert.deepEqual(await store.read(report.season,"1"),report);
  await assert.rejects(store.save({...report,revision:"b".repeat(64)},"stale"),/modifié/);assert.equal(pool.rows.length,1);
+ const frozenTemplate={schema:1,revision:3,templates:{license_control_report:{subject:"Bilan {{competition.nom}}",text:"{{licences.bilan}}",revision:3}}};
+ const preparation=await store.markMail(report,{mailTemplates:frozenTemplate});assert.equal(preparation.sentAt,undefined);
+ const reordered={templates:{license_control_report:{revision:3,text:"{{licences.bilan}}",subject:"Bilan {{competition.nom}}"}},revision:3,schema:1};
+ assert.deepEqual((await store.markMail(report,{mailTemplates:reordered})).mailTemplates,reordered,"Equivalent SQL JSON key ordering is not a concurrent conflict");
+ await assert.rejects(store.markMail(report,{mailTemplates:{...frozenTemplate,revision:4}}),/autre version/);
+ assert.deepEqual((await store.read(report.season,"1")).mail.mailTemplates,frozenTemplate);
  await store.markMail(report,{sentAt:"2026-10-27T11:00:00Z",recipientCount:2});assert.equal((await store.read(report.season,"1")).mail.recipientCount,2);
+ assert.deepEqual((await store.read(report.season,"1")).mail.mailTemplates,frozenTemplate,"Completion preserves the frozen mail version in the existing SQL JSON field");
  const initialPayload=pool.rows[0].report;
  let previous=report.revision;
  for(let n=2;n<=23;n++){const revision=native.hash(n);await store.save({...report,revision},previous);previous=revision;}
@@ -115,9 +122,11 @@ const report={version:1,competitionId:"1",competitionName:"Coupe fictive",season
  const batch={season:require("../functions/nap-license-state").seasonInfo(report.season),competitions:[{id:"1"}],people:[]};
  const current={...report,fingerprint:reports.fingerprint(batch,"1")};
  const services={projectId:"livepalmes-test",competition:async()=>({regionId:"r",computerEmail:"fake@example.test"}),directory:async()=>[],setting:async()=>({enabled:true}),send:async()=>{sends++;}};
- const db={collection:()=>{writes++;throw Error("No mail write expected");}},nativeStore={read:async()=>current,markMail:async()=>{writes++;}};
+ let templateReads=0;
+ const db={collection:name=>{assert.equal(name,"engagementConfigurations");return {doc:id=>{assert.equal(id,"mailTemplates");return {get:async()=>{templateReads++;return {exists:false};}};}};}},nativeStore={read:async()=>current,markMail:async()=>{writes++;}};
  const preview=await reports.notify(db,batch,{action:"previewReport",competitionId:"1"},services,nativeStore);
  const sent=await reports.notify(db,batch,{action:"sendReport",competitionId:"1",expectedFingerprint:preview.fingerprint},services,nativeStore);
  assert.equal(sent.reason,"test-emails-disabled");assert.equal(sends,0);assert.equal(writes,0);
+ assert.equal(templateReads,2,"One bounded template read per preview/request, no mail writes on TEST");
  console.log("Bilans NAP : historique immuable, concurrence, pagination, lectures bornées, source PROD ciblée et zéro mail TEST : OK");
 })().catch(error=>{console.error(error);process.exitCode=1;});

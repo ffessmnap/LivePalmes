@@ -1,0 +1,50 @@
+{
+  "schema": 1,
+  "project": "livepalmes-test",
+  "approval": "Antoine — coordination du 8 novembre 2026 : deux lots mails successifs, sources seulement, sans donnée/envoi/permission/PROD",
+  "allowedFunctions": [
+    "closeDueEngagementCompetitions",
+    "exportNapPublicPage",
+    "processNapCompetitionNotifications",
+    "processNapNotificationTask",
+    "resolveEngagementAccessRequest",
+    "submitEngagementAccessRequest"
+  ],
+  "releases": {
+    "models": {
+      "applicationCommit": "49c1f9eb33c2df000205d6c72afb549cd5a9f6ed",
+      "baseCommit": "a0814e3b9f750f7feb5103fc29763b66d9efb939",
+      "baselineRuns": [
+        {
+          "id": 42426407409,
+          "artifact": "test-proof",
+          "workflow": ".github/workflows/livepalmes-test-common.yml"
+        },
+        {
+          "id": 42427173681,
+          "artifact": "test-backend-proof",
+          "workflow": ".github/workflows/livepalmes-test-backend.yml"
+        }
+      ],
+      "fingerprints": {
+        "closeDueEngagementCompetitions": "e676c51e089228ebd9b1e0051d1b0df3067b1bc11a7f18eacb08f57517609bfc",
+        "exportNapPublicPage": "f3e7e3e9a1da809056956fa1045f32cccd42105854568e0d43ecc7c869ed3c24",
+        "processNapCompetitionNotifications": "01c6c1b2867ced61c10392e57e6257190f2f11e4d6cfa301abc44718d041482a",
+        "processNapNotificationTask": "3221d9c6e7a11f993304fbcfbd2c8131f084089184a06a63ae1a8581bb435681",
+        "resolveEngagementAccessRequest": "46066916de13a701f8b3d15bf929446e2413d5912c452a07a2b86a40d912a6c4",
+        "submitEngagementAccessRequest": "e6e7736eadf22dff943f89f418f3936ddd87cb5fc1566bc5b6ddc19953a670d8"
+      },
+      "toolingPaths": [
+        ".github/releases/evidence/20261108-test-mail-sources-contract.json",
+        ".github/workflows/livepalmes-test-mail-sources.yml",
+        ".github/workflows/livepalmes-verification-preview.yml",
+        "docs/MAIL_TEMPLATES.md",
+        "docs/agents/PUBLICATION.md",
+        "docs/releases/EVOLUTIONS.md",
+        "docs/releases/PROCEDURE.md",
+        "tests/test-mail-sources-tests.py",
+        "tools/publish-test-mail-sources.py"
+      ]
+    }
+  }
+}
