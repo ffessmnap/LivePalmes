@@ -269,6 +269,28 @@
         },
         "beforeCompactSha256": "2d65bd6e4517e7c42ee19d717575f85e73e1100e50ab5193d352c5f457fe061d"
       }
+    },
+    "decisions": {
+      "applicationCommit": "ba1694dbb3d16821f5a31294adb75b2919add76a",
+      "baseCommit": "00f8b4ef8fa38630f3ce2e0bb023ed3a6ee65d65",
+      "baselineRuns": [
+        {
+          "id": 42459898741,
+          "artifact": "test-proof",
+          "workflow": ".github/workflows/livepalmes-test-common.yml"
+        }
+      ],
+      "fingerprints": {
+        "submitEngagementAccessRequest": "e93b62a4df60c502ccbdb5e55a386163891401a16941c092a69dcc24da44bdea",
+        "resolveEngagementAccessRequest": "2c2e130e6a770114908dc15901cfdeabd634b2070904d0b050fe67140f531612"
+      },
+      "toolingPaths": [
+        ".github/releases/evidence/20261108-test-mail-sources-contract.json",
+        "tools/publish-test-mail-sources.py",
+        "tests/test-mail-sources-tests.py",
+        "docs/MAIL_TEMPLATES.md",
+        "docs/releases/EVOLUTIONS.md"
+      ]
     }
   }
 }
