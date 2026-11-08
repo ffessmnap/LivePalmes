@@ -1009,6 +1009,7 @@
 
   const portalClubAndCompetition = global.LivePalmesPortalClubAndCompetition.create(portalContext);
   const {
+    validateEngagementCompetitionContacts,
     openEngagementClubPersonForm,
     selectedEngagementClubPersonFromForm,
     renderEngagementClubPeople,
