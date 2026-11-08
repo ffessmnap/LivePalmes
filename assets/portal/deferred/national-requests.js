@@ -284,11 +284,7 @@
               ? " La fiche a été corrigée, mais sa publication publique devra être relancée."
               : "";
             const notificationStatus = result?.request?.resolutionNotification?.status || "";
-            const testMailDisabled = global.LivePalmesEnvironment?.isTest === true && result?.request?.resolutionNotification?.reason === "test-emails-disabled";
-            const mailWarning = notificationStatus && notificationStatus !== "sent" && !testMailDisabled && !duplicate && result?.request?.requestType !== "swimmer-ns"
-              ? " La demande a bien été traitée, mais l’e-mail au demandeur n’a pas été envoyé."
-              : "";
-            portalContext.elements.engagementsSwimmerChangeRequestsStatus.textContent = duplicate ? "Signalement clos. Aucune fiche n’a été modifiée ou fusionnée." : `${decision === "approved" ? "Correction validée." : "Demande refusée."}${publicWarning}${mailWarning}`;
+            portalContext.elements.engagementsSwimmerChangeRequestsStatus.textContent = duplicate ? "Signalement clos. Aucune fiche n’a été modifiée ou fusionnée." : `${decision === "approved" ? "Demande validée." : "Demande refusée."}${publicWarning}`;
             global.LivePalmesRequestDecision.report(portalContext.elements.engagementsSwimmerChangeRequestsStatus, { ...result, requestId }, "resolveEngagementSwimmerChangeRequest", portalActions.callFunction);
             portalContext.elements.engagementsSwimmerChangeRequestsStatus.dataset.tone = publicWarning || ["failed", "uncertain"].includes(notificationStatus) ? "warning" : "ok";
           }
