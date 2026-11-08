@@ -2,7 +2,7 @@
 
 <!-- description: Périmètre, démarrage local, publication et fonctions propres aux consoles du dispositif LivePalmes Direct. -->
 
-## Six consoles multi-compétitions — préparation TEST du 8 novembre 2026
+## Six consoles multi-compétitions — livré sur TEST le 8 novembre 2026
 
 Une seule implémentation réutilisable : `direct-admin.html` conserve les imports PDF, la surveillance TXT et la gestion des accès ; `direct-consoles.html?id=ID_NAP&role=ROLE` ouvre le bureau tablette (`computer`), le JA (`referee`), la vidéo (`video`), le speaker (`speaker`), le secrétariat (`secretary`) ou le Live (`live`). Les anciennes pages nationales générées restent indépendantes. Aucun environnement local métier parallèle, compte de démonstration ou PIN ajouté. Les contrôles automatisés utilisent exclusivement des fixtures isolées ; la recette réelle est prévue sur TEST avec les comptes et fichiers du pilote.
 
@@ -60,7 +60,7 @@ Budget de lectures prévu (indépendant du volume global NAP) :
 - Fiche nageur : un lot privé de compétition limité à 15 001, mutualisé et mis en cache par compte/rôle/version ; aucune lecture par course. Records/MPF : un appel groupé existant au clic, mêmes filtres que le public, sans nouvelle règle sportive.
 - Historique : les 300 dernières actions avec le snapshot, export imprimable/PDF en un appel borné aux 5 000 actions. Le bureau d'import ne consulte qu'un signal privé toutes les 15 secondes si des consoles terrain sont actives, sans relire les participations. Le public ne reçoit pas cet état.
 
-Les plans et transactions réels sont vérifiés dans le MySQL 5.7 isolé de la CI. Aucune écriture réelle NAP, import de données fictives sur TEST ou activation de console par les tests automatisés. Livraison TEST et validation utilisateur à consigner dans le registre ; cette préparation n'autorise aucune publication PROD.
+Les plans et transactions réels sont vérifiés dans le MySQL 5.7 isolé de la CI. Aucune écriture réelle NAP, import de données fictives sur TEST ou activation de console par les tests automatisés. [Livraison TEST contrôlée](https://github.com/ffessmnap/LivePalmes/actions/runs/42521333540), candidat 613b7d25, Hosting 594bf6b282b3901e ; [preuves et limites](releases/EVOLUTIONS.md). Recette authentifiée par le pilote attendue. Cette livraison TEST n’autorise aucune publication PROD.
 
 ## Perimetre
 
