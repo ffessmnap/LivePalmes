@@ -40,6 +40,11 @@ async function main(){
   const actorBefore=await call('consoleSnapshot',{role:'computer'});await store.grant(id,actor,{version:actorBefore.configVersion,consoles:[],active:false,operationKey:randomUUID()},{uid:'speaker'});await assert.rejects(call('consoleSnapshot',{role:'speaker'},'speaker'),e=>e.directCode==='permission-denied');
   const emptyOther=createStore(pool,'production');assert.equal(await emptyOther.config(id),null,'Le second environnement reste séparé');assert.ok(pool.calls.every(c=>!/^ALTER|^CREATE|^DROP/.test(c.sql)),'Aucune migration');
   assert.ok(pool.calls.filter(c=>c.sql.startsWith('SELECT')&&c.sql.includes('livepalmes_direct_')).every(c=>c.sql.includes('environment=?')&&c.sql.includes('competition_id=?')),'Toutes les lectures sont bornées par environnement et compétition');
-  console.log('Consoles SQL : cinq tables réutilisées, état partagé privé, accès par rôle/compétition, activation, finales, reçus idempotents, conflits et rollback vérifiés sans réseau.');
+  const delegatePerson=(await call('consoleSnapshot',{role:'referee',eventId},'referee')).entries[3].key;
+  await send('decision','referee',{participantKey:delegatePerson,type:'false_start'},'referee');
+  const delegateAlert=(await call('consoleSnapshot',{role:'video'},'video')).workflow.alerts.at(-1).id;
+  await send('videoConfirm','video',{alertId:delegateAlert},'video');await send('cancel','video',{alertId:delegateAlert},'video');
+  assert.equal((await call('consoleSnapshot',{role:'computer'})).workflow.alerts.at(-1).type,'requalification','Le compte vidéo existant retrouve l’annulation délégué sans capacité globale supplémentaire');
+  console.log('Consoles SQL : cinq tables réutilisées, état partagé privé, accès par rôle/compétition, activation, finales, annulation délégué vidéo, reçus idempotents, conflits et rollback vérifiés sans réseau.');
 }
 main().catch(error=>{console.error(error);process.exitCode=1;});

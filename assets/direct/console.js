@@ -1,21 +1,22 @@
 (function(global){
   'use strict';
   const $=id=>document.getElementById(id),view=global.LivePalmesConsoleView,ui=global.LivePalmesDirectPresentation,env=global.LivePalmesEnvironment,esc=ui.esc;
+  const params=new URLSearchParams(location.search),id=params.get('id');
+  if((params.get('role')||'computer')==='computer'){location.replace('direct-admin.html'+(id?'?id='+encodeURIComponent(id):''));return;}
   if(location.protocol==='file:'){ $('consoleStatus').textContent='Ouvrir les consoles depuis le serveur local ou TEST.';return; }
   if(!global.firebase){$('consoleStatus').textContent='Connexion indisponible. Recharger lorsque le réseau est disponible.';return;}
   env.assertSafe();if(!firebase.apps.length)firebase.initializeApp(env.firebaseConfig);
   const auth=firebase.auth(),rpc=firebase.app().functions(env.functionsRegion).httpsCallable('manageLivePalmesDirect');
-  const params=new URLSearchParams(location.search),id=params.get('id');
-  const state={data:null,role:params.get('role')||'computer',eventId:null,series:null,session:'all',request:0,busy:false,loading:false,timer:null,pending:null,dialog:null,dirty:false,settingsOpen:false,records:null,reserveOffset:0};
+  let terrain=null;
+  const client=global.LivePalmesDirectConsoleClient.create({role:params.get('role')||'secretary',competitionId:id,getUser:()=>auth.currentUser,call,onRender:render,onStatus:(message,error)=>{ $('consoleConnection').textContent=error?'À vérifier':'Connecté';$('consoleConnection').classList.toggle('error',error);status(message,error);},onAccessError:()=>{$('consoleWorkspace').hidden=true;closePrivateDialogs();},onRetry:needed=>needed?showRetry():removeRetry(),canPoll:()=>!$('consoleDialog').open&&!terrain?.modal.open});
+  const state=client.state,load=client.load,send=client.send,deliver=client.deliver,allData=client.allData;
   const finalActions=new Set(['announceFinalists','withdraw','reinstate','preWithdraw','announceReplacement','resolveTie','markSwimoff','confirmSwimoffCancelled','refreshFinalists','compositionDone']);
-  let allCache=null,allPending=null;
   const dismissedKey=()=>`livepalmes-console-dismiss:${id}:${auth.currentUser?.uid}`;
   const dismissed=()=>{try{return JSON.parse(localStorage.getItem(dismissedKey())||'[]');}catch{return [];}};
-  function status(message,error=false){$('consoleStatus').textContent=message;$('consoleStatus').classList.toggle('error',error);}
+  function status(message,error=false){$('consoleStatus').textContent=message;$('consoleStatus').classList.toggle('error',error);terrain?.notice(message,error);}
   async function call(action,data={}){if(!/^\d+$/.test(id||''))throw Error('Choisir une compétition depuis le bureau.');return (await rpc({action,competitionId:id,role:state.role,...data})).data;}
-  async function allData(){const uid=auth.currentUser?.uid,key=[id,uid,state.role,state.data?.configVersion].join(':');if(allCache?.key===key)return allCache.data;if(allPending?.key===key)return allPending.promise;const promise=call('consoleAllData').then(data=>{if(auth.currentUser?.uid===uid)allCache={key,data};return data;}).finally(()=>{allPending=null;});allPending={key,promise};return promise;}
   const dialogs=global.LivePalmesDirectDialogs.create({getData:allData,onClubChange:()=>{},onEventSelect:(eventId,series)=>{state.eventId=eventId;state.series=series||null;load(true);}});
-  function closePrivateDialogs(){for(const dialog of [dialogs.person,dialogs.clubs,$('consoleDialog')]){if(dialog.open)dialog.close();}dialogs.person.replaceChildren();dialogs.clubs.replaceChildren();$('consoleDialogContent').replaceChildren();state.dialog=null;}
+  function closePrivateDialogs(){terrain?.leave();for(const dialog of [dialogs.person,dialogs.clubs,$('consoleDialog')]){if(dialog.open)dialog.close();}dialogs.person.replaceChildren();dialogs.clubs.replaceChildren();$('consoleDialogContent').replaceChildren();state.dialog=null;}
   function render(){
     const data=state.data;if(!data)return;
     const allowed=data.config.consoles.filter(role=>data.permissions.manage||data.permissions.roles.includes(role));
@@ -23,41 +24,20 @@
     $('consoleRole').innerHTML=allowed.map(role=>`<option value="${role}" ${role===state.role?'selected':''}>${esc(view.labels[role])}</option>`).join('');
     $('consoleTitle').textContent=view.labels[state.role];$('consoleMeet').textContent=[data.competition.name,ui.dateRange(data.competition.date,data.competition.endDate),data.competition.city].filter(Boolean).join(' · ');
     $('consoleImports').href=env.hostingOrigin+'/direct-admin.html?id='+id;$('consoleImports').hidden=state.role!=='computer'&&!data.permissions.manage;
+    if(terrain.supports(state.role)){terrain.render();$('consoleWorkspace').hidden=false;return;}terrain.leave();
     const sessions=global.LivePalmesDirectSessions.options(data.events);if(!sessions.some(session=>session.key===state.session)&&state.session!=='all')state.session='all';
     $('consoleSessions').innerHTML=sessions.length>1?[{key:'all',label:'Toutes les sessions'},...sessions].map(session=>view.button(esc(session.label),'session',`data-session="${esc(session.key)}" aria-pressed="${state.session===session.key}"`)).join(''):'';
     $('consoleEvents').innerHTML=data.events.filter(e=>global.LivePalmesDirectSessions.matches(e,state.session)).map(event=>view.button(esc(event.eventLabel)+' · '+({F:'F',M:'H',X:'Mixte'}[event.sex])+' · '+esc(event.phase),'event',`data-event="${event.id}" aria-pressed="${event.id===data.selectedEventId}"`)).join('');
     $('consoleProgress').innerHTML=view.progress(data,state.role);$('consoleQueue').innerHTML=view.queue(data,state.role,dismissed())+view.finalTasks(data,state.role);
     $('consoleSettings').innerHTML=view.settings(data,state.role);if($('consoleFinalSettings'))$('consoleFinalSettings').open=state.settingsOpen;
     $('consoleFinals').innerHTML=view.finals(data,state.role,state.reserveOffset);$('consoleCourse').innerHTML=view.course(data,state.role,state.series);$('consoleHistory').innerHTML=view.history(data,state.role);
-    const order=state.role==='referee'?['Progress','Course','Queue','Settings','Finals','History']:state.role==='live'?['Progress','Queue','Course','Finals','Settings','History']:['Progress','Queue','Settings','Finals','Course','History'];for(const part of order)$('consoleWorkspace').append($('console'+part));
+    const order=state.role==='referee'?['Progress','Course','Queue','Settings','Finals','History']:state.role==='live'?['Progress','Queue','Course','Finals','Settings','History']:['Progress','Queue','Settings','Finals','Course','History'];for(const part of order)$('modernConsoleRoot').append($('console'+part));
     if(['referee','video','live'].includes(state.role)&&data.finals&&!data.finals.ties.length&&data.finals.swimoff?.status!=='unnecessary'){const section=$('consoleFinals').firstElementChild;if(section){const heading=section.querySelector('h2'),details=document.createElement('details'),summary=document.createElement('summary');summary.textContent=heading.textContent;heading.remove();details.append(summary,...section.childNodes);section.append(details);}}
     $('consoleWorkspace').hidden=false;state.eventId=data.selectedEventId;
   }
-  function schedule(){clearTimeout(state.timer);if(auth.currentUser)state.timer=setTimeout(()=>{if(!document.hidden&&!$('consoleDialog').open&&!state.dirty)load(false);else schedule();},15000);}
-  async function load(force=false){
-    if(state.loading||state.busy||!auth.currentUser)return;
-    const request=++state.request,uid=auth.currentUser.uid;state.loading=true;
-    try{
-      const result=await call('consoleSnapshot',{eventId:state.eventId,revision:force?-1:state.data?.revision,configVersion:force?-1:state.data?.configVersion});
-      if(request!==state.request||uid!==auth.currentUser?.uid)return;
-      if(!result.unchanged){state.data=result;render();}
-      $('consoleConnection').textContent='Connecté';$('consoleConnection').classList.remove('error');status('Synchronisé à '+new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit',second:'2-digit'})+' · échanges automatiques entre consoles');
-    }catch(error){if(request!==state.request||uid!==auth.currentUser?.uid)return;status(error.message,true);$('consoleConnection').textContent='À vérifier';$('consoleConnection').classList.add('error');if(/permission-denied|unauthenticated/.test(error.code||'')){$('consoleWorkspace').hidden=true;closePrivateDialogs();state.data=null;state.pending=null;removeRetry();}}
-    finally{if(request===state.request)state.loading=false;schedule();}
-  }
-  const context=()=>({eventId:state.data?.selectedEventId,role:state.role,revision:state.data?.revision,configVersion:state.data?.configVersion});
-  async function send(command,data={},expected=context()){
-    if(state.busy)throw Error('Une action est déjà en cours.');if(state.pending)throw Error('Un envoi reste à vérifier : réessayer cet envoi avant une nouvelle action.');
-    state.pending={...expected,...data,command,operationKey:crypto.randomUUID()};return deliver();
-  }
-  async function deliver(){
-    const input=state.pending,uid=auth.currentUser?.uid;if(!input||!uid)return;state.busy=true;
-    try{await call('consoleCommand',input);if(uid!==auth.currentUser?.uid)return;state.pending=null;state.dirty=false;state.settingsOpen=false;removeRetry();return true;}
-    catch(error){if(/invalid-argument|permission-denied|unauthenticated|aborted|failed-precondition/.test(error.code||'')){state.pending=null;removeRetry();}else showRetry();throw error;}
-    finally{state.busy=false;}
-  }
+  const context=client.context;
   function removeRetry(){$('consoleRetry')?.remove();}
-  function showRetry(){if($('consoleRetry'))return;const button=document.createElement('button');button.type='button';button.id='consoleRetry';button.textContent='Vérifier / réessayer le dernier envoi';button.onclick=async()=>{try{await deliver();if(!state.pending){$('consoleDialog').close();await load(true);}}catch(error){status(error.message,true);}};document.querySelector('.console-toolbar').append(button);}
+  function showRetry(){if($('consoleRetry'))return;const button=document.createElement('button');button.type='button';button.id='consoleRetry';button.textContent='Vérifier / réessayer le dernier envoi';button.onclick=async()=>{try{await deliver();if(!state.pending){$('consoleDialog').close();terrain?.close();await load(true);}}catch(error){status(error.message,true);}};(terrain?.active()?$('terrainActions'):document.querySelector('.console-toolbar')).append(button);}
   function modal(title,html,callback,expected=context()){
     $('consoleDialogContent').innerHTML=`<h2>${esc(title)}</h2>${html}`;$('consoleDialogError').textContent='';state.dialog={callback,expected};$('consoleDialogSubmit').textContent='Confirmer';document.querySelector('[data-close-console-dialog]').hidden=false;$('consoleDialog').showModal();
   }
@@ -95,15 +75,16 @@
   document.querySelector('[data-close-console-dialog]').onclick=()=>{if(!state.busy)$('consoleDialog').close();};
   document.addEventListener('click',event=>{const button=event.target.closest('[data-console-action]');if(button&&!state.busy)action(button).catch(error=>status(error.message,true));});
   $('consoleSettings').addEventListener('input',()=>{state.dirty=true;});$('consoleSettings').addEventListener('toggle',event=>{if(event.target.id==='consoleFinalSettings')state.settingsOpen=event.target.open;},true);
-  $('consoleRole').onchange=()=>{if(state.pending){status('Vérifier le dernier envoi avant de changer de console.',true);$('consoleRole').value=state.role;return;}state.role=$('consoleRole').value;state.dirty=false;state.settingsOpen=false;const url=new URL(location.href);url.searchParams.set('role',state.role);history.replaceState(null,'',url);load(true);};
+  $('consoleRole').onchange=()=>{if(state.pending){status('Vérifier le dernier envoi avant de changer de console.',true);$('consoleRole').value=state.role;return;}if($('consoleRole').value==='computer'){location.assign('direct-admin.html?id='+encodeURIComponent(id));return;}state.role=$('consoleRole').value;terrain?.restore(state.data?.events||[]);state.dirty=false;state.settingsOpen=false;const url=new URL(location.href);url.searchParams.set('role',state.role);history.replaceState(null,'',url);load(true);};
   $('consoleRefresh').onclick=()=>{if(!state.dirty||confirm('Abandonner les réglages non enregistrés et actualiser ?')){state.dirty=false;state.settingsOpen=false;load(true);}};
   function readOnly(title,html){modal(title,html,async()=>{});state.dialog.readOnly=true;$('consoleDialogSubmit').textContent='Fermer';document.querySelector('[data-close-console-dialog]').hidden=true;}
   $('consoleProgram').onclick=()=>{if(!state.data)return;readOnly('Programme de la compétition','<div class="direct-table-wrap"><table class="console-settings-table"><thead><tr><th>Session</th><th>Heure</th><th>Course</th><th>Phase</th></tr></thead><tbody>'+state.data.events.map(event=>'<tr><td>'+esc(event.sessionLabel)+'</td><td>'+esc(event.scheduledAt||'—')+'</td><td>'+view.button(esc(event.eventLabel)+' · '+event.sex,'event','data-event="'+event.id+'"')+'</td><td>'+esc(event.phase)+'</td></tr>').join('')+'</tbody></table></div>');};
   $('consoleRecords').onclick=async()=>{if(!state.data)return;try{if(!state.records){const url=new URL(env.napReaderUrl);url.searchParams.set('action','records');const response=await fetch(url,{cache:'no-store',signal:AbortSignal.timeout(15000)});if(!response.ok)throw Error('Références NAP indisponibles.');state.records=(await response.json()).data;}const event=state.data.events.find(e=>e.id===state.data.selectedEventId),references=ui.references(state.data.competition,state.data.entries,event,state.records);readOnly('Records et MPF — '+(event?.eventLabel||''),references.map(record=>'<p><strong>'+esc(record.recordType||'MPF')+' '+esc(record.categoryLabel||record.category)+' · '+esc(record.time||record.rawTime)+'</strong><br>'+esc(record.swimmer||'')+' · '+esc(record.club||'')+'<br>'+esc(record.date||'')+' · '+esc(record.location||'')+'</p>').join('')||'<p>Aucune référence disponible pour les catégories présentes et ce bassin.</p>');}catch(error){status(error.message,true);}};
-  $('consolePrint').onclick=async()=>{try{const result=await call('consoleHistory',{all:true}),items=result.items;state.data.workflow.history=items.reverse();$('consoleHistory').innerHTML=view.history(state.data,state.role);$('consoleHistoryDetails').open=true;window.print();}catch(error){status(error.message,true);}};
+  $('consolePrint').onclick=async()=>{try{const result=await call('consoleHistory',{all:true}),items=result.items;state.data.workflow.history=items.reverse();if(terrain?.active()){terrain.print();return;}$('consoleHistory').innerHTML=view.history(state.data,state.role);$('consoleHistoryDetails').open=true;window.print();}catch(error){status(error.message,true);}};
   $('consoleLogin').onsubmit=async event=>{event.preventDefault();const form=new FormData(event.target);try{await auth.signInWithEmailAndPassword(form.get('email'),form.get('password'));event.target.reset();}catch(error){status(error.message,true);}};
   $('consoleSignOut').onclick=()=>auth.signOut();
-  document.addEventListener('visibilitychange',()=>{if(!document.hidden&&!$('consoleDialog').open&&!state.dirty)load(false);});
-  auth.onAuthStateChanged(async user=>{clearTimeout(state.timer);state.request++;closePrivateDialogs();state.loading=false;state.data=null;state.pending=null;removeRetry();state.busy=false;state.dirty=false;state.settingsOpen=false;allCache=null;allPending=null;$('consoleWorkspace').hidden=true;$('consoleLogin').hidden=Boolean(user);$('consoleSignOut').hidden=!user;if(!user){status('Connexion LivePalmes requise.');return;}try{const data=await call('detail');if(auth.currentUser?.uid!==user.uid)return;const allowed=data.config?.consoles.filter(role=>data.permissions.manage||data.permissions.roles.includes(role))||[];if(!allowed.length)throw Error('Aucune console activée pour ce compte. Demander un accès au bureau.');if(!allowed.includes(state.role))state.role=allowed[0];await load(true);}catch(error){status(error.message,true);}});
-  global.LivePalmesDirectConsole={state,load,send,view};
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden&&!$('consoleDialog').open&&!terrain?.modal.open&&!state.dirty)load(false);});
+  terrain=global.LivePalmesDirectTerrain.create({client,competitionId:id,getUser:()=>auth.currentUser,onRole:role=>{$('consoleRole').value=role;$('consoleRole').dispatchEvent(new Event('change'));},onSignOut:()=>auth.signOut(),onPrint:()=>$('consolePrint').onclick(),dismiss:key=>{try{localStorage.setItem(dismissedKey(),JSON.stringify([...new Set([...dismissed(),key])].slice(-2000)));}catch{}},dismissed});
+  auth.onAuthStateChanged(async user=>{client.reset();closePrivateDialogs();$('consoleWorkspace').hidden=true;$('consoleLogin').hidden=Boolean(user);$('consoleSignOut').hidden=!user;if(!user){status('Connexion LivePalmes requise.');return;}try{const data=await call('detail');if(auth.currentUser?.uid!==user.uid)return;const allowed=data.config?.consoles.filter(role=>data.permissions.manage||data.permissions.roles.includes(role))||[];if(!allowed.length)throw Error('Aucune console activée pour ce compte. Demander un accès au bureau.');if(!allowed.includes(state.role))state.role=allowed[0];if(state.role==='computer'){location.replace('direct-admin.html?id='+encodeURIComponent(id));return;}terrain.restore(data.events);await load(true);}catch(error){status(error.message,true);}});
+  global.LivePalmesDirectConsole={state,load,send,view,client,terrain};
 })(window);
