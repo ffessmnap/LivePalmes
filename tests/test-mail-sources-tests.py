@@ -279,7 +279,7 @@ class MailSources(unittest.TestCase):
         with patch.object(p, 'CONTACTS_DIGEST', '0' * 64), self.assertRaisesRegex(ValueError, 'modifie'):
             p.contract('contacts')
         with self.assertRaisesRegex(ValueError, 'non ferme'):
-            p.contract('reminder')
+            p.contract('future-reminder')
         with tempfile.TemporaryDirectory() as directory, patch.object(p, 'guard', return_value=SHA), \
                 patch.object(p, 'controls') as controls, patch.object(p, 'inventory') as inventory, \
                 patch.object(p, 'load', return_value=SimpleNamespace(reusable=lambda *_: True)):
@@ -287,6 +287,24 @@ class MailSources(unittest.TestCase):
                 'contractSha256': p.DIGEST, 'selected': [], 'archives': []})
             with self.assertRaisesRegex(ValueError, 'Plan'):
                 p.main('deploy', 'contacts', directory, ROOT)
+            controls.assert_not_called(); inventory.assert_not_called()
+
+    def test_reminder_has_its_own_anchor_baseline_and_digest(self):
+        entry = p.contract('reminder')
+        self.assertEqual(entry['_contractSha256'], p.REMINDER_DIGEST)
+        self.assertNotIn(p.REMINDER_DIGEST, [p.DIGEST, p.CONTACTS_DIGEST])
+        self.assertEqual(entry['baseCommit'], '9b9dae56aa98ee5a9dfd21d62651deb670c500f0')
+        self.assertEqual(entry['baselineRuns'][0]['id'], 42472956878)
+        self.assertEqual(set(entry['fingerprints']), p.ALLOWED)
+        with patch.object(p, 'REMINDER_DIGEST', '0' * 64), self.assertRaisesRegex(ValueError, 'modifie'):
+            p.contract('reminder')
+        with tempfile.TemporaryDirectory() as directory, patch.object(p, 'guard', return_value=SHA), \
+                patch.object(p, 'controls') as controls, patch.object(p, 'inventory') as inventory, \
+                patch.object(p, 'load', return_value=SimpleNamespace(reusable=lambda *_: True)):
+            p.cycle.write(Path(directory) / 'plan.json', {'candidate': SHA, 'release': 'contacts',
+                'contractSha256': p.CONTACTS_DIGEST, 'selected': [], 'archives': []})
+            with self.assertRaisesRegex(ValueError, 'Plan'):
+                p.main('deploy', 'reminder', directory, ROOT)
             controls.assert_not_called(); inventory.assert_not_called()
 
     def test_exact_main_ci_candidate_and_application_anchor(self):

@@ -1,0 +1,45 @@
+{
+  "schema": 1,
+  "project": "livepalmes-test",
+  "approval": "Antoine — rappel J−1 avec récapitulatif provisoire, officiels seuls inclus ; second lot TEST après contacts, sources seulement, sans donnée/envoi/activation/permission/PROD",
+  "allowedFunctions": [
+    "closeDueEngagementCompetitions",
+    "exportNapPublicPage",
+    "processNapCompetitionNotifications",
+    "processNapNotificationTask",
+    "resolveEngagementAccessRequest",
+    "submitEngagementAccessRequest"
+  ],
+  "releases": {
+    "reminder": {
+      "applicationCommit": "589d32f4615dabea82554f23be9769592e2693fd",
+      "baseCommit": "9b9dae56aa98ee5a9dfd21d62651deb670c500f0",
+      "baselineRuns": [
+        {
+          "id": 42472956878,
+          "artifact": "test-proof",
+          "workflow": ".github/workflows/livepalmes-test-common.yml"
+        }
+      ],
+      "fingerprints": {
+        "exportNapPublicPage": "07684b762fa6b0f56bb15bb5435a5f6d293ea9c0aa6ae3055ed26014c1d85479",
+        "submitEngagementAccessRequest": "ec8521c53503e50baa3f5ce74120f33a4f3e0dad276cb8497d2c75f984041169",
+        "resolveEngagementAccessRequest": "50baeb866d5bee4891a56099aae492e51199dfd7a6c439733e8315ec3fbf1739",
+        "processNapNotificationTask": "4f84a88e99636a77c916e4108b271f0871ef0fcf02535d447c1a81c602bcd1d9",
+        "processNapCompetitionNotifications": "3dd83e96c2d8c91ebc7831c7f6049dea7a2c260cd34e7e11534fa546093c44fd",
+        "closeDueEngagementCompetitions": "8c157a0ebbf255d8bd4aa123753c1e1deeb3e631d112ef58a56cc66944c62944"
+      },
+      "toolingPaths": [
+        ".github/releases/evidence/20261108-competition-deadline-reminder-contract.json",
+        "tools/publish-test-mail-sources.py",
+        "tests/test-mail-sources-tests.py",
+        ".github/workflows/livepalmes-test-mail-sources.yml",
+        "docs/MAIL_TEMPLATES.md",
+        "docs/NOTIFICATIONS_COMPETITIONS.md",
+        "docs/releases/EVOLUTIONS.md",
+        "docs/releases/PROCEDURE.md",
+        "docs/agents/PUBLICATION.md"
+      ]
+    }
+  }
+}
