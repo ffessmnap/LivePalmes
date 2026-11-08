@@ -15,20 +15,59 @@ spec.loader.exec_module(m)
 
 
 class EvidenceTests(unittest.TestCase):
-    def test_parallel_installs_wait_for_both_and_fail_closed(self):
+    def installer(self):
         bash = shutil.which('bash')
+        if os.name == 'nt' and Path('C:/Program Files/Git/bin/bash.exe').exists():
+            bash = 'C:/Program Files/Git/bin/bash.exe'
         if not bash:
             self.skipTest('bash absent ; controle obligatoire sur CI Linux')
         script = "const y=require('./tests/firestore-rules/node_modules/js-yaml'),f=require('fs'); const w=y.load(f.readFileSync('.github/workflows/livepalmes-test-common.yml','utf8')); console.log(JSON.stringify(w.jobs.test.steps.find(s=>s.name==='Installer les dependances verrouillees en parallele').run));"
         install = json.loads(subprocess.check_output(['node', '-e', script], cwd=ROOT, text=True))
-        mocked = 'npm() { echo "SIMULATED $*"; if [[ "$*" == *"--prefix functions "* ]]; then return "$FUNCTIONS_EXIT"; else return "$RULES_EXIT"; fi; }\n'
+        return bash, install
+
+    def run_installer(self, install, bash, functions=0, rules=0, flags=None, existing=False, unexpected=False):
+        mocked = 'npm() { echo "SIMULATED $*"; if [[ "$*" == *"--prefix functions "* ]]; then return "$FUNCTIONS_EXIT"; else if [ "$UNEXPECTED_INSTALL" = true ]; then mkdir -p functions/node_modules; fi; return "$RULES_EXIT"; fi; }\n'
+        with tempfile.TemporaryDirectory() as directory:
+            if existing:
+                (Path(directory)/'functions/node_modules').mkdir(parents=True)
+            return subprocess.run([bash, '-e'], input=mocked + install, text=True, capture_output=True, cwd=directory,
+                env={**os.environ, 'TEST_VERIFICATION_ONLY': '', 'MAIN_VERIFIED': '', 'PUBLICATION_VERIFIED': '',
+                     **(flags or {}), 'FUNCTIONS_EXIT': str(functions), 'RULES_EXIT': str(rules),
+                     'UNEXPECTED_INSTALL': 'true' if unexpected else 'false'})
+
+    def test_parallel_installs_wait_for_both_and_fail_closed(self):
+        bash, install = self.installer()
         for functions, rules in [(0, 0), (1, 0), (0, 1), (1, 1)]:
-            result = subprocess.run([bash, '-e'], input=mocked + install, text=True, capture_output=True,
-                                    env={**os.environ, 'FUNCTIONS_EXIT': str(functions), 'RULES_EXIT': str(rules)})
+            result = self.run_installer(install, bash, functions, rules)
             self.assertEqual(result.returncode == 0, functions == rules == 0)
             self.assertEqual(result.stdout.count('SIMULATED'), 2)
         self.assertEqual(install.count('npm ci '), 2)
         self.assertEqual(install.count('--prefer-offline --no-audit --no-fund'), 2)
+
+    def test_only_read_only_with_both_authenticated_proofs_can_skip_functions(self):
+        bash, install = self.installer()
+        for mode, main, publication in [('true', 'true', 'true'), ('false', 'true', 'true'),
+                ('true', 'false', 'true'), ('true', 'true', 'false'), ('true', '', 'true'),
+                ('true', 'true', ''), ('', 'true', 'true'), ('true', 'false', 'false'),
+                ('true', 'True', 'true'), ('true', 'true', '1')]:
+            skip = mode == main == publication == 'true'
+            for rules in [0, 1]:
+                with self.subTest(mode=mode, main=main, publication=publication, rules=rules):
+                    result = self.run_installer(install, bash, functions=1 if skip else 0, rules=rules,
+                        flags={'TEST_VERIFICATION_ONLY': mode, 'MAIN_VERIFIED': main, 'PUBLICATION_VERIFIED': publication})
+                    self.assertEqual(result.returncode == 0, rules == 0, result.stderr)
+                    self.assertEqual(result.stdout.count('SIMULATED'), 1 if skip else 2)
+                    self.assertIn('--prefix tests/firestore-rules ', result.stdout)
+                    self.assertEqual('--prefix functions ' in result.stdout, not skip)
+                    self.assertEqual('functions/node_modules absent apres installation.' in result.stdout, skip and rules == 0)
+
+    def test_read_only_absence_attestation_refuses_existing_or_unexpected_sdk(self):
+        bash, install = self.installer()
+        flags = {'TEST_VERIFICATION_ONLY': 'true', 'MAIN_VERIFIED': 'true', 'PUBLICATION_VERIFIED': 'true'}
+        for values in [{'existing': True}, {'unexpected': True}]:
+            result = self.run_installer(install, bash, flags=flags, **values)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertNotIn('functions/node_modules absent apres installation.', result.stdout)
 
     def test_rendered_workflow_shell_is_valid(self):
         bash = shutil.which('bash')
@@ -111,6 +150,12 @@ class EvidenceTests(unittest.TestCase):
         steps = json.loads(subprocess.check_output(['node', '-e', script], cwd=ROOT, text=True))
         proof = next(step for step in steps if step.get('id') == 'verified-publication')
         self.assertIn('reuse-publication', proof['run'])
+        install = next(step for step in steps if step.get('name') == 'Installer les dependances verrouillees en parallele')
+        self.assertEqual(install['env'], {'TEST_VERIFICATION_ONLY': '${{ inputs.verification_only }}',
+            'MAIN_VERIFIED': '${{ steps.verified-main.outputs.verified }}',
+            'PUBLICATION_VERIFIED': '${{ steps.verified-publication.outputs.verified }}'})
+        backend = next(step for step in steps if step.get('name') == 'Controler le backend TEST et les Functions conservees')
+        self.assertEqual(backend['env'], {'TEST_VERIFICATION_ONLY': '${{ inputs.verification_only }}'})
         fallback = next(step for step in steps if step.get('name') == 'Verifier le circuit ou reutiliser la preuve exacte')
         self.assertEqual(fallback['if'], "steps.verified-publication.outputs.verified != 'true'")
         commands = [line.strip() for line in fallback['run'].splitlines() if line.strip()]
