@@ -2,6 +2,10 @@
 
 <!-- description: Référence du langage visuel, des composants d’interface et des règles responsive déjà présents dans LivePalmes. -->
 
+## Décisions sur les demandes — 8 novembre 2026
+
+La confirmation réutilise le dialogue du portail : commentaire public, obligatoire au refus même sans mail, puis case « Informer le demandeur par e-mail » cochée par défaut. Largeur maximale 560 px, marges mobiles 12 px, défilement vertical et actions tactiles de 44 px. Le statut de notification reste distinct de la décision ; échec et traitement interrompu proposent une reprise ciblée, sans renvoi d’un état incertain. Les décisions traitées restent consultables dans les historiques, chargés explicitement et bornés.
+
 ## Modèles de mails du Portail — 8 novembre 2026
 
 Dans Notifications, l’éditeur est chargé au clic. Formulaire en une colonne (54 rem maximum), champs à largeur disponible, texte redimensionnable et actions/variables passant à la ligne. Actions tactiles de 44 px minimum. Réutiliser les boutons principal/secondaire et les champs existants. L’aperçu fictif est inerte, en texte avec retours à la ligne et coupure des longs liens ; aucun contenu distant n’est chargé. Révision/auteur/date et état d’enregistrement restent visibles ; un conflit conserve le brouillon jusqu’à l’actualisation explicite.

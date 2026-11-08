@@ -45,6 +45,18 @@ Le chantier suivant reste responsable des déclenchements, du commentaire obliga
 
 Périmètre actif confirmé pour le lot suivant : `access`, `swimmer_correction`, `official_correction`, `swimmer_ns`, `duplicate_closure`, `account_deletion`. Les variantes de réactivation directe et d’anciennes suppressions NAP du catalogue n’ajoutent aucun parcours ni consommateur à cette livraison.
 
+## Notifications de décision — 8 novembre 2026
+
+Le lot décisions raccorde les six types actifs : accès, correction nageur, correction officiel (`person-change`), retrait NS, clôture de doublon et suppression de compte. Réactivations sans demande et anciennes suppressions NAP désactivées ne sont pas créées/réactivées. Le dialogue commun propose le commentaire public et `notifyRequester` coché par défaut. Tout refus exige un commentaire, même sans mail ; une approbation peut rester sans commentaire. Le destinataire est celui de la demande (adresse corrigée retenue pour l’accès, `requestedByEmail` pour les autres ; jamais le compte supprimé). Les messages Firebase Auth restent indépendants.
+
+La décision durable porte l’intention de notification. Réservation transactionnelle par type/demande/occurrence `requestedAt`/décision, puis `read`/`pick`/`requestMail` et gel du snapshot, destinataire, texte et versions dans le même document. Le transport suit seulement ce gel et la décision enregistrée. Finalisation vérifiant clé, jeton, occurrence et décision ; une occurrence suivante n’est jamais écrasée. Les anciens appels d’envoi directs ne sont plus invoqués par les résolveurs.
+
+États distincts : `opted_out`, `blocked_test`, `pending`, `preparing`, `sending`, `sent`, `failed`, `uncertain`. TEST n’ouvre jamais le transport SMTP. Aucune liaison SMTP ajoutée : celles des résolveurs sans liaison restent un sujet PROD ultérieur. Un échec n’annule pas la décision. Reprise explicite avec clé exacte via le résolveur, sans rejouer SQL/suppression/création. Un mail déjà gelé conserve destinataire, texte et snapshot malgré une édition ultérieure ; une préparation ayant échoué avant tout gel doit d’abord pouvoir lire son premier modèle. Une interruption `preparing` se reprend explicitement après un bail de cinq minutes, avec nouveau jeton empêchant l’ancien appel de continuer. `sending` expiré devient `uncertain`, sans renvoi ; un SMTP possiblement accepté n’est jamais rejoué automatiquement. Aucun rattrapage historique.
+
+L’historique d’accès réutilise ses pages existantes. Les deux listes nationales reçoivent une vue explicite « Décisions traitées » : filtre approved/rejected, ordre par identifiant et curseur, pages de 25 + sentinelle, sans profil par ligne. Statuts publics seulement (`publicState`), jamais snapshot/texte privé/jeton dans les réponses. Échec et opérations interrompues restent vérifiables après rechargement ; incertain n’offre pas de renvoi.
+
+Budget ajouté : ouverture/rafraîchissement des vues en attente = zéro lecture ; refus/accord sans mail = aucune lecture catalogue. Envoi préparé : un catalogue, réservation/gel/finalisation bornés (trois lectures transactionnelles, neuf au maximum avec trois tentatives), plus une lecture pour la décision durable lorsqu’elle n’était pas déjà transactionnelle. Reprise déjà gelée : zéro catalogue ; deux transactions, au plus six lectures. Premier gel absent après panne : une lecture catalogue supplémentaire explicite. Historique national uniquement au clic/changement de page/Actualiser : 26 documents maximum, aucun SQL ; fermeture/réouverture relit une page bornée. Le coût ne dépend ni du nombre total de demandes ni du nombre de personnes. Aucun job, collection, listener, reconstruction ou accès NAP ajouté.
+
 ## Budget supplémentaire
 
 | Situation | Budget du nouveau besoin |

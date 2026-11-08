@@ -9,7 +9,7 @@ async function main(){
   const ref=(name,id)=>({id,get:async()=>({id,exists:stores[name].has(id),data:()=>structuredClone(stores[name].get(id))}),
     create:async data=>{if(stores[name].has(id))throw Error("already exists");stores[name].set(id,structuredClone(data));},
     set:async(data,options)=>{if(name==="requests"&&data.status==="approved"&&failComplete){failComplete=false;throw Error("interrupted after SQL");}stores[name].set(id,structuredClone(options?.merge?{...stores[name].get(id),...data}:data));}});
-  const db={collection:name=>({doc:id=>ref(name,id)}),runTransaction:async fn=>fn({get:ref=>ref.get(),set:(ref,data,options)=>ref.set(data,options)})};
+  const db={collection:name=>({doc:id=>ref(name,id)}),runTransaction:async fn=>{const writes=[];const result=await fn({get:ref=>ref.get(),set:(ref,data,options)=>writes.push(ref.set(data,options))});await Promise.all(writes);return result;}};
   const connection={execute:async({sql:query},values)=>{
     sql++;
     if(query.includes("GET_LOCK")){if(locked)return [[{acquired:0}]];locked=true;return [[{acquired:1}]];}
@@ -27,7 +27,8 @@ async function main(){
   const handler=require("../functions/portal-national-handlers").createNationalHandlers(backend).requestEngagementClubSwimmerChange;
   const source=fs.readFileSync("functions/index.js","utf8"),code=source.slice(source.indexOf("exports.resolveEngagementSwimmerChangeRequest ="),source.indexOf("exports.updateEngagementNationalSwimmerIdentity ="));
   const sandbox={...backend,exports:{},process:{env:{}},onCall:(_options,fn)=>fn,ENGAGEMENT_SWIMMER_CORRECTION_OPTIONS:{},ENGAGEMENT_SWIMMER_CORRECTION_MAIL_OPTIONS:{},defineSecret:x=>x,TypeError,RangeError,
-    require:name=>{if(name==="./nap-swimmer-ns")return ns;if(name==="./nap-swimmer-ns-callables")return callables;if(name==="./nap-portal-swimmers")return native;throw Error("Forbidden dependency "+name);}};
+    requestDecisionMailServices:()=>({projectId:"livepalmes-test",readTemplates:async()=>({schema:1,revision:0,templates:{}})}),
+    require:name=>{if(name==="./request-decision-mail")return require("../functions/request-decision-mail");if(name==="./nap-swimmer-ns")return ns;if(name==="./nap-swimmer-ns-callables")return callables;if(name==="./nap-portal-swimmers")return native;throw Error("Forbidden dependency "+name);}};
   vm.runInNewContext(code,sandbox);
   const resolve=(id,decision)=>sandbox.exports.resolveEngagementSwimmerChangeRequest({data:{requestId:id,decision,resolutionNote:"Décision fictive"}});
   const submit=data=>handler({data:{swimmerId:"42",...data}});

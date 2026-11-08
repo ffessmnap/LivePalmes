@@ -250,8 +250,12 @@ class MailSources(unittest.TestCase):
     def test_closed_contract_and_future_lot_not_implicitly_enabled(self):
         entry = p.contract('models')
         self.assertEqual(set(entry['fingerprints']), p.ALLOWED)
+        decisions = p.contract('decisions')
+        self.assertEqual(decisions['baseCommit'], '00f8b4ef8fa38630f3ce2e0bb023ed3a6ee65d65')
+        self.assertEqual(set(decisions['fingerprints']), p.ALLOWED)
+        self.assertTrue(set(decisions['fingerprints']) <= p.ALLOWED)
         with self.assertRaisesRegex(ValueError, 'non ferme'):
-            p.contract('decisions')
+            p.contract('future')
         with patch.object(p, 'DIGEST', '0' * 64), self.assertRaisesRegex(ValueError, 'modifie'):
             p.contract('models')
         workflow = (ROOT / p.WORKFLOW).read_text(encoding='utf-8')

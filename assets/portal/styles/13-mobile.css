@@ -931,6 +931,18 @@
   }
 }
 
+.admin-request-decision {
+  box-sizing: border-box;
+  width: min(560px, calc(100vw - 24px));
+  max-height: calc(100dvh - 24px);
+  overflow: auto;
+}
+.admin-request-decision .admin-access-form { display: grid; gap: 16px; }
+.admin-request-decision textarea { box-sizing: border-box; width: 100%; min-height: 100px; font: inherit; }
+.admin-request-decision .admin-request-notify { display: flex; align-items: center; gap: 10px; min-height: 44px; }
+.admin-request-decision .admin-request-notify input { width: 20px; height: 20px; min-height: 20px; margin: 0; }
+.admin-request-decision button { min-height: 44px; }
+
 .admin-portal-field {
   display: grid;
   gap: 6px;

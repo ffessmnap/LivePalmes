@@ -40,7 +40,8 @@
         const message = approve
           ? `Valider la demande de ${label} et créer l'accès aux engagements du club ?`
           : `Refuser la demande de ${label} ?`;
-        if (approve && !global.confirm(message)) return false;
+        const choice = await global.LivePalmesRequestDecision.collect({ decision, comment: resolutionReason, title: approve ? "Valider la demande d’accès" : "Refuser la demande d’accès" });
+        if (!choice) return false;
         if (portalContext.elements.engagementsAccessRequestsStatus) {
           portalContext.elements.engagementsAccessRequestsStatus.textContent = approve ? "Validation en cours..." : "Refus en cours...";
           portalContext.elements.engagementsAccessRequestsStatus.dataset.tone = "loading";
@@ -50,7 +51,7 @@
             requestId: cleanId,
             decision: approve ? "approved" : "rejected",
             ...(approve && correctedRequest ? { correctedRequest } : {}),
-            ...(!approve ? { resolutionReason: String(resolutionReason || "").trim() } : {})
+            resolutionReason: choice.resolutionNote, notifyRequester: choice.notifyRequester
           });
           portalConfig.accessRequestHistory?.invalidate();
           if (approve && result.access?.email) {
@@ -65,13 +66,10 @@
           portalState.portalPendingOverviewLoaded = false;
           await portalActions.loadPortalPendingOverview({ force: true });
           if (portalContext.elements.engagementsAccessRequestsStatus) {
-            const notificationFailed = !approve && result.resolutionNotification?.status !== "sent";
-            portalContext.elements.engagementsAccessRequestsStatus.textContent = approve
-              ? "Demande validée. L'accès club est actif et un e-mail de mot de passe a été envoyé si possible."
-              : notificationFailed
-                ? "Demande refusée, mais l’e-mail d’information n’a pas pu être envoyé."
-                : "Demande refusée et demandeur informé par e-mail.";
-            portalContext.elements.engagementsAccessRequestsStatus.dataset.tone = notificationFailed ? "error" : "ok";
+            const notificationFailed = ["failed", "uncertain"].includes(result.resolutionNotification?.status);
+            portalContext.elements.engagementsAccessRequestsStatus.textContent = approve ? "Demande validée. L’accès club est actif." : "Demande refusée.";
+            global.LivePalmesRequestDecision.report(portalContext.elements.engagementsAccessRequestsStatus, { ...result, requestId: cleanId }, "resolveEngagementAccessRequest", portalActions.callFunction);
+            portalContext.elements.engagementsAccessRequestsStatus.dataset.tone = notificationFailed ? "warning" : "ok";
           }
           return true;
         } catch (error) {
@@ -221,6 +219,7 @@
           portalContext.elements.engagementsSwimmerChangeRequestsStatus.dataset.tone = "loading";
         }
         moduleActions.renderEngagementSwimmerChangeRequests();
+        global.LivePalmesRequestDecision.history({root:portalContext.elements.engagementsSwimmerChangeRequestsList.closest('[data-engagements-national-panel]'),name:'corrections',callable:'listEngagementSwimmerChangeRequests',resolver:'resolveEngagementSwimmerChangeRequest',callFunction:portalActions.callFunction,valid:()=>portalActions.canDeleteEngagementCompetitionDirectly()});
         try {
           const result = await portalActions.callFunction("listEngagementSwimmerChangeRequests", { status: "pending", limit: 50 });
           portalState.engagementSwimmerChangeRequests = Array.isArray(result.requests) ? result.requests : [];
@@ -245,8 +244,11 @@
         if (!requestId || !["approved", "rejected"].includes(decision) || !portalActions.canDeleteEngagementCompetitionDirectly()) return;
         const duplicate=portalState.engagementSwimmerChangeRequests.find(item=>item.id===requestId)?.reportType==="duplicate";
         const verb = decision === "approved" ? "Valider" : "Refuser";
-        if (options.confirm !== false && !global.confirm(duplicate ? "Clore ce signalement sans modifier ni fusionner de fiche ?" : `${verb} cette demande de correction ?`)) return;
-        const resolutionNote = String(options.resolutionNote ?? card?.querySelector("[data-engagement-swimmer-change-resolution-note]")?.value ?? "").trim();
+
+        const choice = await global.LivePalmesRequestDecision.collect({ decision, comment: String(options.resolutionNote ?? card?.querySelector("[data-engagement-swimmer-change-resolution-note]")?.value ?? "").trim(),
+          title: duplicate ? decision === "approved" ? "Clore le signalement de doublon" : "Refuser le signalement de doublon" : decision === "approved" ? "Valider la demande" : "Refuser la demande" });
+        if (!choice) return false;
+        const resolutionNote = choice.resolutionNote;
         const buttons = card?.querySelectorAll("button") || [];
         buttons.forEach((button) => { button.disabled = true; });
         if (portalContext.elements.engagementsSwimmerChangeRequestsStatus) {
@@ -257,7 +259,7 @@
           const result = await portalActions.callFunction("resolveEngagementSwimmerChangeRequest", {
             requestId,
             decision,
-            resolutionNote,
+            resolutionNote, notifyRequester: choice.notifyRequester,
             ...(options.proposed && typeof options.proposed === "object" ? { proposed: options.proposed } : {})
           });
           const correctedPerson=result?.result?.person;
@@ -282,12 +284,9 @@
               ? " La fiche a été corrigée, mais sa publication publique devra être relancée."
               : "";
             const notificationStatus = result?.request?.resolutionNotification?.status || "";
-            const testMailDisabled = global.LivePalmesEnvironment?.isTest === true && result?.request?.resolutionNotification?.reason === "test-emails-disabled";
-            const mailWarning = notificationStatus && notificationStatus !== "sent" && !testMailDisabled && !duplicate && result?.request?.requestType !== "swimmer-ns"
-              ? " La demande a bien été traitée, mais l’e-mail au demandeur n’a pas été envoyé."
-              : "";
-            portalContext.elements.engagementsSwimmerChangeRequestsStatus.textContent = duplicate ? "Signalement clos. Aucune fiche n’a été modifiée ou fusionnée." : `${decision === "approved" ? "Correction validée." : "Demande refusée."}${publicWarning}${mailWarning}`;
-            portalContext.elements.engagementsSwimmerChangeRequestsStatus.dataset.tone = publicWarning || mailWarning ? "warning" : "ok";
+            portalContext.elements.engagementsSwimmerChangeRequestsStatus.textContent = duplicate ? `Signalement ${decision === "approved" ? "clos" : "refusé"}. Aucune fiche n’a été modifiée ou fusionnée.` : `${decision === "approved" ? "Demande validée." : "Demande refusée."}${publicWarning}`;
+            global.LivePalmesRequestDecision.report(portalContext.elements.engagementsSwimmerChangeRequestsStatus, { ...result, requestId }, "resolveEngagementSwimmerChangeRequest", portalActions.callFunction);
+            portalContext.elements.engagementsSwimmerChangeRequestsStatus.dataset.tone = publicWarning || ["failed", "uncertain"].includes(notificationStatus) ? "warning" : "ok";
           }
           return result;
         } catch (error) {
@@ -735,11 +734,11 @@
           <p class="admin-engagements-request-note"><strong>Demandée par :</strong> ${portalActions.escapeHtml(requesterIdentity)}</p>
           <p class="admin-engagements-request-note"><strong>Motif du club :</strong> ${portalActions.escapeHtml(item.reason || "Non précisé")}</p>
           <label class="admin-engagements-swimmer-change-resolution-note">
-            <span>Commentaire national <small>(${duplicate ? "obligatoire" : "facultatif"})</small></span>
+            <span>Commentaire transmis au demandeur <small>(obligatoire au refus)</small></span>
             <input type="text" maxlength="500" placeholder="Précision pour le club" data-engagement-swimmer-change-resolution-note>
           </label>
           <div class="admin-engagements-request-actions">
-            ${duplicate ? `<button type="button" data-engagement-swimmer-change-decision="approved" data-engagement-swimmer-change-request-id="${portalActions.escapeHtml(item.id || "")}">Clore le signalement</button>` : `<button class="ghost-button" type="button" data-engagement-swimmer-change-decision="rejected" data-engagement-swimmer-change-request-id="${portalActions.escapeHtml(item.id || "")}">Refuser</button>
+            ${duplicate ? `<button class="ghost-button" type="button" data-engagement-swimmer-change-decision="rejected" data-engagement-swimmer-change-request-id="${portalActions.escapeHtml(item.id || "")}">Refuser le signalement</button><button type="button" data-engagement-swimmer-change-decision="approved" data-engagement-swimmer-change-request-id="${portalActions.escapeHtml(item.id || "")}">Clore le signalement</button>` : `<button class="ghost-button" type="button" data-engagement-swimmer-change-decision="rejected" data-engagement-swimmer-change-request-id="${portalActions.escapeHtml(item.id || "")}">Refuser</button>
             ${nsRequest ? "" : `<button class="ghost-button" type="button" data-engagement-swimmer-change-edit="${portalActions.escapeHtml(item.id || "")}">Modifier et valider</button>`}
             <button type="button" data-engagement-swimmer-change-decision="approved" data-engagement-swimmer-change-request-id="${portalActions.escapeHtml(item.id || "")}">Valider telle quelle</button>`}
           </div>
@@ -1066,14 +1065,8 @@
       }
 
     function openEngagementAccessRequestRejectDialog(requestId = "") {
-        const request = portalState.engagementAccessRequests.find((item) => item.id === requestId);
-        if (!request || !portalContext.elements.engagementsAccessRequestRejectDialog) return;
-        portalContext.elements.engagementsAccessRequestRejectForm?.reset();
-        if (portalContext.elements.engagementsAccessRequestRejectId) portalContext.elements.engagementsAccessRequestRejectId.value = requestId;
-        if (portalContext.elements.engagementsAccessRequestRejectMessage) portalContext.elements.engagementsAccessRequestRejectMessage.textContent = "";
-        portalContext.elements.engagementsAccessRequestRejectDialog.showModal();
-        portalContext.elements.engagementsAccessRequestRejectReason?.focus();
-      }
+      return moduleActions.resolveEngagementAccessRequest(requestId, "rejected");
+    }
 
     function closeEngagementAccessRequestRejectDialog() {
         if (portalContext.elements.engagementsAccessRequestRejectDialog?.open) portalContext.elements.engagementsAccessRequestRejectDialog.close();
@@ -1156,7 +1149,7 @@
         }
         if (portalContext.elements.engagementsSwimmerCorrectionTitle) portalContext.elements.engagementsSwimmerCorrectionTitle.textContent = duplicate ? "Signaler un doublon" : review ? "Modifier et valider la demande" : direct ? "Modifier le nageur" : "Demander une correction";
         if (portalContext.elements.engagementsSwimmerCorrectionContext) portalContext.elements.engagementsSwimmerCorrectionContext.textContent = `${name} · ${portalActions.clubDisplayLabel(swimmer, { fallback: "Club non renseigné" })}`;
-        if (portalContext.elements.engagementsSwimmerCorrectionReasonLabel) portalContext.elements.engagementsSwimmerCorrectionReasonLabel.textContent = duplicate ? "Précisez les fiches qui semblent en double" : review ? "Commentaire national (facultatif)" : direct ? "Motif de la correction" : swimmer.napSource ? "Motif de la demande" : "Motif de la demande (facultatif)";
+        if (portalContext.elements.engagementsSwimmerCorrectionReasonLabel) portalContext.elements.engagementsSwimmerCorrectionReasonLabel.textContent = duplicate ? "Précisez les fiches qui semblent en double" : review ? "Commentaire transmis au demandeur (facultatif)" : direct ? "Motif de la correction" : swimmer.napSource ? "Motif de la demande" : "Motif de la demande (facultatif)";
         for(const field of [portalContext.elements.engagementsSwimmerCorrectionLastName,portalContext.elements.engagementsSwimmerCorrectionFirstName,portalContext.elements.engagementsSwimmerCorrectionBirthDate,portalContext.elements.engagementsSwimmerCorrectionSex,portalContext.elements.engagementsSwimmerCorrectionLicense]) if(field) field.disabled=duplicate;
         for(const field of [portalContext.elements.engagementsSwimmerCorrectionLastName,portalContext.elements.engagementsSwimmerCorrectionFirstName,portalContext.elements.engagementsSwimmerCorrectionBirthDate,portalContext.elements.engagementsSwimmerCorrectionSex]) if(field)field.required=!official;
         const warning=portalContext.elements.engagementsSwimmerCorrectionForm?.querySelector?.(".admin-engagements-swimmer-correction-warning");

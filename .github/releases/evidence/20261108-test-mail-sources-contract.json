@@ -269,6 +269,32 @@
         },
         "beforeCompactSha256": "2d65bd6e4517e7c42ee19d717575f85e73e1100e50ab5193d352c5f457fe061d"
       }
+    },
+    "decisions": {
+      "applicationCommit": "4a27233469252c3d7159028c30a7d6c272785a8e",
+      "baseCommit": "00f8b4ef8fa38630f3ce2e0bb023ed3a6ee65d65",
+      "baselineRuns": [
+        {
+          "id": 42459898741,
+          "artifact": "test-proof",
+          "workflow": ".github/workflows/livepalmes-test-common.yml"
+        }
+      ],
+      "fingerprints": {
+        "exportNapPublicPage": "54eae51f6ad08c6b836b76821a7ce765cf13ef5b50886a221dcce86c65066d83",
+        "submitEngagementAccessRequest": "3b4f5e7d41abdfb2b4869b894ff16f38a2dedb6c56aa3c46ad5adb4294722a01",
+        "resolveEngagementAccessRequest": "33143960e32f081c526cb31a1ced117f10e08ead32871566f69e3dd220311e1a",
+        "processNapNotificationTask": "2724b6808473adb3133566780e6e3d9c06e9cb9ca25f29a8acc3ca89670e5f0a",
+        "processNapCompetitionNotifications": "2beb461b74a74a2878bc3b63afb282468c08a60f8e77268cc9ef2b5a34847559",
+        "closeDueEngagementCompetitions": "5cd6f012705f0c51fe41026dd6ad80d0dc73254311d5a88f940d6dd90955c427"
+      },
+      "toolingPaths": [
+        ".github/releases/evidence/20261108-test-mail-sources-contract.json",
+        "tools/publish-test-mail-sources.py",
+        "tests/test-mail-sources-tests.py",
+        "docs/MAIL_TEMPLATES.md",
+        "docs/releases/EVOLUTIONS.md"
+      ]
     }
   }
 }

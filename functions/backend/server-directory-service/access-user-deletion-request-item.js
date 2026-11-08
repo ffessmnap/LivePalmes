@@ -18,7 +18,9 @@ function createDirectoryService_accessUserDeletionRequestItem(backendContext) {
       requestedAt: data.requestedAt || "",
       resolvedBy: data.resolvedBy || "",
       resolvedAt: data.resolvedAt || "",
-      decision: data.decision || ""
+      decision: data.decision || "",
+      resolutionNote: data.resolutionNote || "",
+      resolutionNotification: require("../../request-decision-mail").publicState(data.resolutionNotification)
     };
   }
 

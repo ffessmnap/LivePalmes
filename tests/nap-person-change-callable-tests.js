@@ -25,13 +25,14 @@ function fixture(){
  const pool={execute:connection.execute,getConnection:async()=>connection};
  const sandbox={exports:{},onCall:(_,callback)=>callback,ENGAGEMENT_SWIMMER_CORRECTION_OPTIONS:{},ENGAGEMENT_SWIMMER_CORRECTION_MAIL_OPTIONS:{},ENVIRONMENT:{sportingDataSource:"nap"},defineSecret:v=>v,process:{env:{}},TypeError,RangeError,HttpsError:CallableError,
   ENGAGEMENT_SWIMMER_CHANGE_REQUESTS_COLLECTION:"requests",cleanText:v=>String(v||""),cleanFirestoreValue:v=>v,stableHash:v=>createHash("sha256").update(v).digest("hex"),
-  engagementClubAccessContext:async()=>({uid:"club",clubId:"106"}),engagementAccessContext:async()=>({uid:"national",national:state.national}),writeAuditLogOnce:async()=>{},engagementSwimmerChangeRequestItem:doc=>({id:doc.id,...doc.data()}),
-  db:{collection:name=>{assert.ok(["requests","auditLogs"].includes(name));return {doc:id=>ref(name==="requests"?state.records:state.audits,id)};},runTransaction:async callback=>callback({get:ref=>ref.get(),set:(ref,value,config)=>ref.set(value,config)})},
-  require:name=>{if(name==="./nap-person-change-requests")return helpers;if(name==="./nap-club-person-edit")return editor;if(name==="./nap-portal-swimmers")return {portalPool:()=>pool};throw Error("Unexpected module "+name);}
+  engagementClubAccessContext:async()=>({uid:"club",clubId:"106",email:"club@example.test"}),engagementAccessContext:async()=>({uid:"national",national:state.national}),writeAuditLogOnce:async()=>{},engagementSwimmerChangeRequestItem:doc=>({id:doc.id,...doc.data()}),
+  requestDecisionMailServices:()=>({projectId:"livepalmes-test",readTemplates:async()=>({schema:1,revision:0,templates:{}})}),
+  db:{collection:name=>{assert.ok(["requests","auditLogs"].includes(name));return {doc:id=>ref(name==="requests"?state.records:state.audits,id)};},runTransaction:async callback=>{const writes=[];const result=await callback({get:ref=>ref.get(),set:(ref,value,config)=>writes.push(ref.set(value,config))});await Promise.all(writes);return result;}},
+  require:name=>{if(name==="./request-decision-mail")return require("../functions/request-decision-mail");if(name==="./nap-person-change-requests")return helpers;if(name==="./nap-club-person-edit")return editor;if(name==="./nap-portal-swimmers")return {portalPool:()=>pool};throw Error("Unexpected module "+name);}
  };
  vm.runInNewContext(requestCode+resolveCode,sandbox);
  state.submit=()=>sandbox.exports.requestEngagementClubSwimmerChange({data:{personId:"nap-official-7",expectedFingerprint:person(state.row,"officials").napFingerprint,proposed:{lastName:"CORRIGE"},reason:"Erreur de saisie"}});
- state.resolve=(requestId,decision="approved")=>sandbox.exports.resolveEngagementSwimmerChangeRequest({data:{requestId,decision}});
+ state.resolve=(requestId,decision="approved")=>sandbox.exports.resolveEngagementSwimmerChangeRequest({data:{requestId,decision,...(decision==="rejected"?{resolutionNote:"Refus motivé"}:{})}});
  return state;
 }
 (async()=>{

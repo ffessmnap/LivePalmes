@@ -77,7 +77,7 @@ async function schemaTests(){
   for(const clubId of ["106","107"]){
     let rendered=0;const corrected={id:"nap-official-7",clubId:"106",lastName:"CORRIGE"};
     const ui={elements:{},engagementSwimmerChangeRequests:[],engagementClubPeople:[{id:corrected.id,clubId,lastName:"AVANT"}],engagementNationalPeopleLoaded:true,
-      canDeleteEngagementCompetitionDirectly:()=>true,global:{confirm:()=>true},callFunction:async()=>({result:{person:corrected}}),renderEngagementClubPeople:()=>rendered++,invalidateEngagementClubSwimmersCache:()=>{},loadEngagementSwimmerChangeRequests:async()=>{},loadPortalPendingOverview:async()=>{}};
+      canDeleteEngagementCompetitionDirectly:()=>true,global:{confirm:()=>true,LivePalmesRequestDecision:{collect:async()=>({resolutionNote:"",notifyRequester:true})}},callFunction:async()=>({result:{person:corrected}}),renderEngagementClubPeople:()=>rendered++,invalidateEngagementClubSwimmersCache:()=>{},loadEngagementSwimmerChangeRequests:async()=>{},loadPortalPendingOverview:async()=>{}};
     vm.createContext(ui);vm.runInContext(resolver,ui);await ui.resolveEngagementSwimmerChangeRequest("request","approved");
     assert.equal(ui.engagementNationalPeopleLoaded,false);assert.equal(ui.engagementClubPeople[0].lastName,clubId==="106"?"CORRIGE":"AVANT");assert.equal(rendered,clubId==="106"?1:0);
   }

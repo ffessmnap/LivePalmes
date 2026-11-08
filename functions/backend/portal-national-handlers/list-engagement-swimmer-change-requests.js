@@ -3,6 +3,8 @@ function createNationalHandlers_listEngagementSwimmerChangeRequests(backendConte
   async function listEngagementSwimmerChangeRequests(request) {
     const context = await backendContext.engagementAccessContext(request);
     if (!context.national) throw new backendContext.HttpsError("permission-denied", "Lecture reservee au niveau national.");
+    if (request.data?.status === "history") return require("../../request-decision-history").list(backendContext.db,
+      backendContext.ENGAGEMENT_SWIMMER_CHANGE_REQUESTS_COLLECTION, request.data, backendContext.engagementSwimmerChangeRequestItem);
     const status = ["pending", "approved", "rejected"].includes(backendContext.cleanText(request.data?.status))
       ? backendContext.cleanText(request.data.status)
       : "pending";
