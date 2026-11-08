@@ -78,6 +78,12 @@ def main(candidate, plan, backup):
     request = json.loads((plan / 'request.json').read_text())
     spec = importlib.util.spec_from_file_location('cycle', Path(__file__).with_name('release-cycle.py'))
     cycle = importlib.util.module_from_spec(spec); spec.loader.exec_module(cycle)
+    if cycle.november_release.approved(request):
+        # Protected sources were patched before ordinary Functions. The common
+        # state check that follows verifies every Function before Hosting.
+        cycle.november_release.selection(request, cycle.read(plan / 'selection.json'))
+        cycle.november_release.guard(plan)
+        return
     if cycle.direct_release.approved(request):
         cycle.direct_release.publish(candidate, plan, backup, cycle, archive)
         return

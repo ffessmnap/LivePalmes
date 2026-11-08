@@ -186,6 +186,9 @@ def main():
         report['additionalLicenseReportFunctions'] = cycle.approved_license_report_functions(plan) if os.environ.get('PLAN') else []
         report['additionalPortalAccessNsFunctions'] = cycle.portal_access_ns.approved(plan) if os.environ.get('PLAN') else []
         report['additionalValidatedPortalFunctions'] = cycle.validated_portal.approved(plan) if os.environ.get('PLAN') else []
+        report['additionalNovemberFunctions'] = cycle.november_release.approved(plan) if os.environ.get('PLAN') else []
+        if report['additionalNovemberFunctions']:
+            cycle.november_release.initial(functions)
         if report['additionalValidatedPortalFunctions']:
             cycle.validated_portal.initial(functions)
         if report['additionalPortalAccessNsFunctions']:

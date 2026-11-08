@@ -40,6 +40,7 @@ jobs:
         echo "PLAN=$RUNNER_TEMP/release-plan" >> "$GITHUB_ENV"
         echo "RELEASE_SELECTION=$RUNNER_TEMP/release-plan/selection.json" >> "$GITHUB_ENV"
         echo "RELEASE_BACKUP_DIRECTORY=$RUNNER_TEMP/prod-backup" >> "$GITHUB_ENV"
+        echo "NOVEMBER_RELEASE_STARTED_AT=$(date +%s)" >> "$GITHUB_ENV"
     - uses: actions/checkout@v7
       with:
         path: tooling
@@ -120,6 +121,7 @@ jobs:
         python tooling/tests/release-simplification-tests.py
         python tooling/tests/license-report-release-tests.py
         python tooling/tests/nap-retained-source-tests.py
+        python tooling/tests/november-validated-release-tests.py
         python tooling/tests/nap-account-release-tests.py
         node tooling/tests/release-nap-account-compatibility.js
         node tooling/tests/license-report-source-guard-tests.js
@@ -206,6 +208,7 @@ jobs:
       if: steps.plan.outputs.backend == 'true'
       continue-on-error: true
       run: |
+        python tooling/tools/november-validated-release-policy.py candidate "$PLAN" "$RELEASE_BACKUP_DIRECTORY"
         python tooling/tools/release-cycle.py batches livepalmes candidate "$RUNNER_TEMP/production-functions" "$RELEASE_SELECTION" deploy
         python tooling/tools/publish-approved-pdf-functions.py candidate "$PLAN" "$RELEASE_BACKUP_DIRECTORY"
     - name: Controler toutes les Functions et les exclusions
@@ -282,6 +285,7 @@ jobs:
           ${{ runner.temp }}/release-plan/validated-portal-*.json
           ${{ runner.temp }}/release-plan/team-trophy-controls-*.json
           ${{ runner.temp }}/release-plan/direct-controls-*.json
+          ${{ runner.temp }}/release-plan/november-*.json
         if-no-files-found: error
         retention-days: 14
     - uses: google-github-actions/auth@v3
