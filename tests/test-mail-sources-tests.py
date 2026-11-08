@@ -46,6 +46,21 @@ def credentials_file(directory, **overrides):
 
 
 class MailSources(unittest.TestCase):
+    def test_closed_run_logs_capture_ansi_with_old_and_new_cli_without_rendering(self):
+        marker = 'ValueError: Source distante differente de l’archive autorisee'
+        raw = ('\x1b[36m' + marker + '\x1b[0m').encode('utf-8')
+        with patch.dict(os.environ, {'GITHUB_REPOSITORY': 'ffessmnap/LivePalmes'}):
+            for help_text in [b'old CLI help', b'--allow-escape-sequences Allow printing terminal escape sequences']:
+                with patch.object(p.subprocess, 'check_output', side_effect=[help_text, raw]) as command, \
+                        contextlib.redirect_stdout(io.StringIO()) as output:
+                    self.assertIn(marker, p.closed_run_logs(128651255167))
+                    self.assertEqual(output.getvalue(), '')
+                    args = command.call_args_list[-1].args[0]
+                    self.assertEqual('--allow-escape-sequences' in args, b'--allow-escape-sequences' in help_text)
+            with patch.object(p.subprocess, 'check_output', side_effect=[b'help', b'x' * (4 * 1024**2)]), \
+                    self.assertRaisesRegex(ValueError, 'trop volumineux'):
+                p.closed_run_logs(128651255167)
+
     def test_managed_archive_requires_exact_generation_paths_bytes_and_stable_reference(self):
         name = 'processNapNotificationTask'
         current = function(name)
@@ -118,6 +133,7 @@ class MailSources(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory, patch.dict(os.environ, {'GITHUB_REPOSITORY': 'ffessmnap/LivePalmes'}), \
                 patch.object(p.cycle, 'gh', side_effect=lambda path: {'jobs': [{'id': 123, 'steps': steps}]} if '/jobs?' in path else run), \
                 patch.object(p.cycle, 'run', side_effect=lambda args, *_: logs if args[0] == 'gh' else ''), \
+                patch.object(p, 'closed_run_logs', return_value=logs), \
                 patch.object(p, 'baseline', return_value={'functions': p.compact(old), 'hosting': {}}), \
                 patch.object(p, 'inventory', side_effect=lambda: copy.deepcopy(current)), patch.object(p, 'controls', return_value={}), \
                 patch.object(p.cycle, 'snapshot', side_effect=lambda *_: {'functions': p.compact(current), 'hosting': {}}), \
