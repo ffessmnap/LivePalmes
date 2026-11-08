@@ -43,7 +43,7 @@ function reset(){queries=[];denied=orphan=overflow=missingClub=false;}
   assert.deepEqual(declared.entries[0].teamEntries,declaration);
   assert.equal(declared.sqlBudget.queriesMax,9);
   // Existing native declarations are exported, not the whole club directory.
-  const officialRows=[1,2].map(id=>({id,compet:5162,officiel:7,club:"106",nom:"FICTIF",prenom:"Élodie",date:"1980-02-29"}));
+  let officialRows=[1,2].map(id=>({id,compet:5162,officiel:7,club:"106",nom:"FICTIF",prenom:"Élodie",date:"1980-02-29"}));
   let officialReads=0;
   const officialsOnly={execute:async({sql},values)=>{
     officialReads++;assert.match(sql,/^SELECT .*LIMIT \d+/);
@@ -59,5 +59,14 @@ function reset(){queries=[];denied=orphan=overflow=missingClub=false;}
   assert.deepEqual(officialPack.entries[0].officials.map(person=>[person.nativeLinkId,person.nativeOfficialId,person.lastName,person.firstName,person.birthDate]),
     [["1","7","FICTIF","Élodie","1980-02-29"],["2","7","FICTIF","Élodie","1980-02-29"]]);
   assert.deepEqual(officialPack.entries[0].swimmers,[]);
+  assert.equal(officialPack.entries[0].officials.some(person=>Object.hasOwn(person,"txtBirthDate")),false,"Already preserved dates keep the existing DTO and notification source hash");
+  const dates=["0000-00-00","2000-00-00","2000-02-31","2000-13-40","2000-01-01",null,undefined,"","00/00/2000","inconnue"];
+  officialRows=dates.map((date,index)=>Object.freeze({id:index+1,compet:5162,officiel:index+1,club:"106",nom:"FICTIF",prenom:"Exemple",date}));
+  const sourceBefore=JSON.stringify(officialRows);officialReads=0;
+  const dated=await readAdminEntries(officialsOnly,input,authorize,services);
+  assert.equal(officialReads,8,"Raw OFF dates use the same bounded grouped queries");
+  assert.deepEqual(dated.entries[0].officials.map(person=>Object.hasOwn(person,"txtBirthDate")?person.txtBirthDate:person.birthDate),dates.map(value=>value??""));
+  assert.deepEqual(dated.entries[0].officials.map(person=>person.birthDate),dates.map(require("../functions/nap-calendar-values").date),"Existing normalized dates remain unchanged outside TXT");
+  assert.equal(JSON.stringify(officialRows),sourceBefore,"Source rows remain immutable");
   console.log("Admin native entries: nine grouped bounded reads, authorization before identities, native times/licences, strict missing references verified.");
 })().catch(error=>{console.error(error);process.exitCode=1;});

@@ -1,0 +1,40 @@
+{
+  "schema": 1,
+  "project": "livepalmes-test",
+  "approval": "Antoine — nouveau correctif TXT des dates OFF : conserver les composantes source même invalides, enchaînement TEST après les trois adresses ; sources seulement, sans donnée/export réel/envoi/activation/permission/PROD",
+  "allowedFunctions": [
+    "closeDueEngagementCompetitions",
+    "exportNapPublicPage",
+    "processNapCompetitionNotifications",
+    "processNapNotificationTask",
+    "resolveEngagementAccessRequest",
+    "submitEngagementAccessRequest"
+  ],
+  "releases": {
+    "officials_dates": {
+      "applicationCommit": "43122fa5bff72f3da3c916c28a420bd8eebded1b",
+      "baseCommit": "0ed4890ba8d2874d49cc73eaed2433b5a7617c19",
+      "baselineRuns": [
+        {
+          "id": 42492806085,
+          "artifact": "test-proof",
+          "workflow": ".github/workflows/livepalmes-test-common.yml"
+        }
+      ],
+      "fingerprints": {
+        "closeDueEngagementCompetitions": "4bdae20a3860140d3324e68a8b5431609eab2071ab04e447548f91b3f34271cd",
+        "processNapCompetitionNotifications": "b16ee59e517b83b514cd14115c46496069d1e295e2fc40c1d134c5058b742c51",
+        "processNapNotificationTask": "430eccba8c1047aac4b8dde89b6c2b1a0099080dec0802a6b3b0c83c6d762c1c"
+      },
+      "toolingPaths": [
+        ".github/releases/evidence/20261108-txt-official-dates-contract.json",
+        "tools/publish-test-mail-sources.py",
+        "tests/test-mail-sources-tests.py",
+        ".github/workflows/livepalmes-test-mail-sources.yml",
+        "docs/releases/EVOLUTIONS.md",
+        "docs/releases/PROCEDURE.md",
+        "docs/agents/PUBLICATION.md"
+      ]
+    }
+  }
+}

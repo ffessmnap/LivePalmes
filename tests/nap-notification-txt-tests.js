@@ -55,15 +55,32 @@ async function run() {
   const poolCompetition={...competition,competitionType:"pool"},poolEntries=entries.map(entry=>({...entry,swimmers:entry.swimmers.map(person=>({...person,
     individualEntries:person.individualEntries.map(course=>({...course,eventCode:"50SF"}))}))}));
   const {createCompetitionHandlers_generateEngagementCompetitionTxtExport}=require("../functions/backend/portal-competition-handlers/generate-engagement-competition-txt-export");
-  const handler=createCompetitionHandlers_generateEngagementCompetitionTxtExport({...builders,ENVIRONMENT:{sportingDataSource:"nap"},
+  const downloadPool=async downloadEntries=>createCompetitionHandlers_generateEngagementCompetitionTxtExport({...builders,ENVIRONMENT:{sportingDataSource:"nap"},
     cleanText:value=>String(value||""),engagementAccessContext:async()=>({}),engagementClubEntryHasParticipants:()=>true,
-    nativeAdminCompetitionEntries:async()=>({competition:poolCompetition,entries:poolEntries,clubsById:clubs,sqlBudget:{queriesMax:24}})});
-  const downloaded=await handler.generateEngagementCompetitionTxtExport({data:{competitionId:competition.id}});
+    nativeAdminCompetitionEntries:async()=>({competition:poolCompetition,entries:downloadEntries,clubsById:clubs,sqlBudget:{queriesMax:24}})})
+    .generateEngagementCompetitionTxtExport({data:{competitionId:competition.id}});
+  const downloaded=await downloadPool(poolEntries);
   const mailed=await build(poolCompetition,poolEntries,clubs,{...services,poolTxt:builders.buildEngagementCompetitionTxt});
   const downloadedBuffer=Buffer.from(downloaded.txtBase64,"base64");
   assert.deepEqual(content(downloadedBuffer),content(mailed.buffer),"Real manual pool handler and mail serializer keep identical content");
   assert.match(downloadedBuffer.toString("utf8"),/\r\nOFF;FICTIF;Élodie;TEST;29\/02\/1980;\r\n/);
   assert.equal(downloaded.sqlBudget.queriesMax,24);assert.equal(reads,0,"Shared OFF serialization adds no data access");
+  for(const [raw,expected] of [["0000-00-00","00/00/0000"],["2000-00-00","00/00/2000"],["2000-02-31","31/02/2000"],
+    ["2000-13-40","40/13/2000"],["2000-01-01","01/01/2000"],[null,""],[undefined,""],["",""],["00/00/2000","00/00/2000"],["inconnue","inconnue"]]) {
+    for(const event of [poolCompetition,competition]) {
+      const source=event.competitionType==="pool"?poolEntries:entries;
+      const datedEntries=source.map(entry=>({...entry,officials:entry.officials.map(person=>({...person,txtBirthDate:raw}))}));
+      const beforeDates=JSON.stringify(datedEntries);reads=0;
+      const prepared=await build(event,datedEntries,clubs,{...services,poolTxt:builders.buildEngagementCompetitionTxt});
+      assert.equal(reads,event.competitionType==="pool"?0:2,"Dates do not add queries");
+      const manualBuffer=event.competitionType==="pool"?Buffer.from((await downloadPool(datedEntries)).txtBase64,"base64"):
+        water.buildNativeManualOpenWaterTxt(native,water.prepareManualOpenWaterEntries(datedEntries)
+          .map(entry=>({...entry,swimmers:entry.swimmers.map(person=>({...person,category:"S"}))})),clubs).buffer;
+      assert.deepEqual(content(prepared.buffer),content(manualBuffer),"Pool/water manual and automatic TXT preserve the same OFF source date");
+      const off=prepared.buffer.toString("utf8").split("\r\n").find(line=>line.startsWith("OFF;")).split(";");
+      assert.equal(off[4],expected);assert.equal(off.length,6);assert.equal(JSON.stringify(datedEntries),beforeDates);
+    }
+  }
   await assert.rejects(build({ ...competition, competitionType: "meeting" }, entries, clubs, services), /incompatible/);
   await assert.rejects(build(competition, entries, clubs, { ...services, pool: { execute: async () => [[]] } }), /Reference e-NAP/);
   await assert.rejects(build(competition, entries, clubs, { ...services, pool: { execute: async query =>
