@@ -2,6 +2,12 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 8 novembre — Entrée Direct du portail et mode opératoire régional (préparation TEST)
+
+- Demande explicite : remplacer le lien des anciennes consoles par « LivePalmes Direct », garder l’icône et ouvrir le bureau pour les profils régionaux/nationaux ; conserver l’ancienne adresse en accès direct. Menu et raccourci d’accueil mis à jour à partir du profil chargé, sans changement Auth/claims/capacités, délégation, contrôle serveur, Firebase ou donnée. Zéro lecture métier supplémentaire au chargement, au clic ou au rafraîchissement du menu.
+- Mode opératoire de quatre pages : préparation, séries PDF et surveillance TXT, bureau seul ou consoles régionales, logigrammes DSQ/forfait/abandon, finales et vidéo nationale en fin de guide. Chemin fourni par Antoine : Data → bibliothèque → renc → rencontre → RésultatsSéries ; orthographe « LivePalmes » corrigée selon sa demande. Page responsive et PDF généré depuis la même source, lien d’aide compact dans le bureau. Aucune ancienne console supprimée.
+- Vérifications locales : vraie fabrique de navigation sur profils région/national/admin, exclusion club et anciennes capacités consoles seules, retrait du lien après perte de droits ; portail, guide et aide bureau sur 1440/1024/390/320 px ; versions de cache et frontières des modules. PDF de quatre pages rendu et relu. Aucune connexion ni lecture/écriture métier réelle. CI complète et déploiement TEST commun à confirmer ; validation utilisateur non recueillie, aucune PROD autorisée pour ce lot.
+
 ### 8 novembre — Consoles historiques et bureau unique (TEST déployé, recette attendue)
 
 - Retour explicite d’Antoine sur le premier prototype : ergonomie différente de l’ancienne console JA et impression de deux bureaux. Demande de reprendre les affichages/clics/pastilles historiques des postes JA, vidéo, speaker et Live, optimiser les grandes tablettes et réunir tout le bureau dans une seule page, sans explications superflues. Les premières livraisons #787/#788 restent fonctionnelles mais ne valent pas validation de cette ergonomie.

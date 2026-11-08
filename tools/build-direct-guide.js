@@ -1,0 +1,15 @@
+'use strict';
+// The HTML is the source. Both PDF copies are generated here; edit the HTML/CSS.
+const fs=require('node:fs'),path=require('node:path'),{startStaticServer,launchBrowser,waitFor}=require('./capture-portal-design');
+async function main(){
+  const {server,baseUrl}=await startStaticServer();let browser;
+  try{
+    browser=await launchBrowser();const client=browser.client;
+    await client.send('Page.navigate',{url:baseUrl+'/direct-guide.html'});
+    if(!await waitFor(client,"document.readyState==='complete'&&document.querySelectorAll('.guide-page').length===4",5000))throw Error('Guide non chargé');
+    const {data}=await client.send('Page.printToPDF',{printBackground:true,preferCSSPageSize:true});
+    const bytes=Buffer.from(data,'base64');
+    for(const file of ['output/pdf/LivePalmes-Direct-mode-operatoire.pdf','assets/direct/guide.pdf']){fs.mkdirSync(path.dirname(file),{recursive:true});fs.writeFileSync(file,bytes);console.log(file+' · '+bytes.length+' octets');}
+  }finally{if(browser){await browser.client.send('Browser.close').catch(()=>{});browser.cleanup();}server.closeAllConnections();server.close();}
+}
+main().catch(error=>{console.error(error);process.exitCode=1;});
