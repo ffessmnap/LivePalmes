@@ -271,7 +271,7 @@
       }
     },
     "decisions": {
-      "applicationCommit": "ba1694dbb3d16821f5a31294adb75b2919add76a",
+      "applicationCommit": "b21e70f762f840b43d901f8fd80806453e12f433",
       "baseCommit": "00f8b4ef8fa38630f3ce2e0bb023ed3a6ee65d65",
       "baselineRuns": [
         {
@@ -281,8 +281,12 @@
         }
       ],
       "fingerprints": {
-        "submitEngagementAccessRequest": "e93b62a4df60c502ccbdb5e55a386163891401a16941c092a69dcc24da44bdea",
-        "resolveEngagementAccessRequest": "2c2e130e6a770114908dc15901cfdeabd634b2070904d0b050fe67140f531612"
+        "exportNapPublicPage": "54eae51f6ad08c6b836b76821a7ce765cf13ef5b50886a221dcce86c65066d83",
+        "submitEngagementAccessRequest": "3b4f5e7d41abdfb2b4869b894ff16f38a2dedb6c56aa3c46ad5adb4294722a01",
+        "resolveEngagementAccessRequest": "33143960e32f081c526cb31a1ced117f10e08ead32871566f69e3dd220311e1a",
+        "processNapNotificationTask": "2724b6808473adb3133566780e6e3d9c06e9cb9ca25f29a8acc3ca89670e5f0a",
+        "processNapCompetitionNotifications": "2beb461b74a74a2878bc3b63afb282468c08a60f8e77268cc9ef2b5a34847559",
+        "closeDueEngagementCompetitions": "5cd6f012705f0c51fe41026dd6ad80d0dc73254311d5a88f940d6dd90955c427"
       },
       "toolingPaths": [
         ".github/releases/evidence/20261108-test-mail-sources-contract.json",
