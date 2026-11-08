@@ -1648,7 +1648,7 @@ assert.ok(portal.includes('organizerEmail: fields.organizerEmail?.value || ""'))
 assert.equal((portal.match(/\["Email organisateur", engagementEmailLinkValue\(competition\.organizerEmail\)\]/g) || []).length, 2);
 assert.ok(portalCss.includes(".admin-engagements-contact-link"));
 assert.ok(functions.includes('require("./competition-mail-addresses").payload(raw, HttpsError)'));
-assert.ok(functions.includes("organizerEmail: normalizeEmail(data.organizerEmail).slice(0, 255)"));
+assert.ok(functions.includes("organizerEmail: normalizeEmail(data.organizerEmail).slice(0, 180)"));
 assert.equal(functions.includes("recipientEmail: competition.organizerEmail"), false);
 assert.ok(portalHtml.includes('Équipement / site'));
 assert.ok(portalHtml.includes('>Ville<input id="adminEngagementsEditCity"'));
