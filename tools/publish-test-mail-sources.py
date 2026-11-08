@@ -275,6 +275,18 @@ def attest_source(function, expected):
         'allPathsAndFileBytesIdentical': True, 'generationReadAndReferencesRechecked': True}
 
 
+def closed_run_logs(job_id):
+    require(type(job_id) is int and job_id > 0, 'Job de preuve invalide')
+    args = ['gh', 'api', f'repos/{os.environ["GITHUB_REPOSITORY"]}/actions/jobs/{job_id}/logs']
+    help_text = subprocess.check_output(['gh', 'api', '--help']).decode('utf-8')
+    if '--allow-escape-sequences' in help_text:
+        # stdout is captured as bytes, never rendered in a terminal or proof.
+        args.append('--allow-escape-sequences')
+    raw = subprocess.check_output(args)
+    require(len(raw) < 4 * 1024**2, 'Logs de preuve trop volumineux')
+    return raw.decode('utf-8')
+
+
 def recover_models(entry, candidate, sha, directory):
     recovery = entry.get('recovery', {})
     require(recovery.get('run') == 42454743001 and recovery.get('sourceCandidate') == 'd9281070a7bd037d9383d844474269d19c8b3613'
@@ -289,7 +301,7 @@ def recover_models(entry, candidate, sha, directory):
     require(steps.get('Authentifier les preuves et constater les preconditions deja satisfaites') == 'success'
             and steps.get('Publier seulement les sources calculees et autorisees') == 'success'
             and steps.get('Verifier revisions et preservation de tous les etats') == 'failure', 'Etapes du run engage non confirmees')
-    logs = cycle.run(['gh', 'api', f'repos/{os.environ["GITHUB_REPOSITORY"]}/actions/jobs/{jobs[0]["id"]}/logs'])
+    logs = closed_run_logs(jobs[0]['id'])
     require(len(logs) < 4 * 1024**2 and 'ValueError: Source distante differente de l’archive autorisee : closeDueEngagementCompetitions' in logs
             and all(logs.count('Source TEST actualisee : ' + name) == 1 for name in ALLOWED), 'Trace du run engage incompatible')
     require(not cycle.run(['git', 'diff', '--name-only', recovery['sourceCandidate'], sha, '--', 'functions/'], candidate), 'Sources de reprise differentes')
