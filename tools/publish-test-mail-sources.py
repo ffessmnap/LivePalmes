@@ -19,6 +19,7 @@ CONTRACT = ROOT / '.github/releases/evidence/20261108-test-mail-sources-contract
 DIGEST = '768886367ef86391752aa9be7880b1880a22869b66d87965b20288d027d415b1'
 WORKFLOW = '.github/workflows/livepalmes-test-mail-sources.yml'
 PROJECT = 'livepalmes-test'
+DEPLOYER = 'github-livepalmes-test-backend@livepalmes-test.iam.gserviceaccount.com'
 PREFIX = f'projects/{PROJECT}/locations/europe-west1/functions/'
 ALLOWED = {'exportNapPublicPage', 'submitEngagementAccessRequest', 'resolveEngagementAccessRequest',
            'processNapNotificationTask', 'processNapCompetitionNotifications', 'closeDueEngagementCompetitions'}
@@ -114,9 +115,15 @@ def inventory():
     raise ValueError('Inventaire TEST trop volumineux')
 
 
-def controls():
+def credential_identity():
     credentials = cycle.read(os.environ['GOOGLE_APPLICATION_CREDENTIALS'])
-    require(credentials.get('project_id') == PROJECT, 'Compte du mauvais projet')
+    require(credentials.get('type') == 'service_account' and credentials.get('project_id') == PROJECT
+            and credentials.get('client_email') == DEPLOYER, 'Identite backend TEST inattendue')
+    return credentials['client_email']
+
+
+def controls():
+    credential_identity()
     token = cycle.run(['gcloud', 'auth', 'application-default', 'print-access-token'])
     def read(label, url, body=None):
         request = urllib.request.Request(url, data=None if body is None else json.dumps(body).encode(),
@@ -230,15 +237,21 @@ def baseline(entry, directory):
 
 
 def main(mode, release, directory, candidate):
-    require(mode in {'prepare', 'deploy', 'verify'}, 'Mode TEST interdit')
+    require(mode in {'identity', 'prepare', 'deploy', 'verify'}, 'Mode TEST interdit')
     directory, candidate = Path(directory).resolve(), Path(candidate).resolve()
     entry = contract(release)
     sha = guard(candidate, entry)
     directory.mkdir(parents=True, exist_ok=True)
-    if mode == 'prepare':
+    if mode in {'identity', 'prepare'}:
         evidence = load('test_mail_ci', 'test-verification-evidence.py')
         require(evidence.reusable(sha, directory / 'application')
                 and evidence.reusable(sha, directory / 'publication', 'publication-offline-v1'), 'CI main exacte non confirmee')
+        client_email = credential_identity()
+        print('Compte backend TEST confirme : ' + client_email, flush=True)
+        if mode == 'identity':
+            cycle.write(directory / 'identity-proof.json', {'candidate': sha, 'project': PROJECT,
+                'clientEmail': client_email, 'runId': os.environ['GITHUB_RUN_ID'], 'cloudMutation': False})
+            return
         expected = baseline(entry, directory)
         require(cycle.snapshot(PROJECT) == expected, 'TEST a change depuis la reference autorisee')
         before, witness = inventory(), controls()
