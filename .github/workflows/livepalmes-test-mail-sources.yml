@@ -3,10 +3,10 @@ on:
   workflow_dispatch:
     inputs:
       release:
-        description: Lot ferme autorise (decisions reste bloque tant que son entree exacte est absente)
+        description: Lot autorise avec son contrat ferme au candidat applicatif exact
         required: true
         type: choice
-        options: [models, decisions]
+        options: [models, decisions, contacts]
       expected_commit:
         description: Commit main exact ayant reussi les deux suites CI
         required: true

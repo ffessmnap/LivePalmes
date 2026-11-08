@@ -30,9 +30,7 @@ const day = value => {
   return value;
 };
 function optionalEmail(value) {
-  const email = string(value,255);
-  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new TypeError("Email invalide.");
-  return email;
+  return require("./competition-mail-addresses").canonical(value);
 }
 const nativeFields = {
   name: ["competitions","libelle",v => string(v,255,true)], location: ["competitions","lieu",v => string(v,64,true)],
@@ -67,6 +65,10 @@ function planCompetitionChange(pack, input, nowMs = Date.now()) {
   if (fingerprint(pack) !== input.expectedFingerprint) throw new TypeError("La competition a change. Rechargez avant d'enregistrer.");
   const patch = input.patch;
   if (!patch || typeof patch !== "object" || Array.isArray(patch) || !Object.keys(patch).length || Object.keys(patch).length > 25) throw new TypeError("Modification explicite requise.");
+  if (Object.hasOwn(patch,"organizerEmail") || Object.hasOwn(patch,"computerEmail")) require("./competition-mail-addresses").copies({
+    organizerEmail:Object.hasOwn(patch,"organizerEmail")?patch.organizerEmail:pack.options?.organizer_email,
+    computerEmail:Object.hasOwn(patch,"computerEmail")?patch.computerEmail:pack.nativeSnapshot?.parameters?.mailtxt
+  });
   const id = calendar.positiveId(input.competitionId);
   calendar.positiveId(pack.nativeSnapshot?.parameters?.id);
   if(Number(pack.nativeSnapshot?.competition?.id)!==id || Number(pack.nativeSnapshot.parameters.compet)!==id) throw new TypeError("Fiche native incompatible.");

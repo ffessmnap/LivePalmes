@@ -19,6 +19,8 @@ function createMailService_engagementMailJobItemFromData(backendContext) {
       failedCount: Number(data.failedCount || 0),
       uncertainCount: Number(data.uncertainCount || 0),
       cancelledCount: Number(data.cancelledCount || 0),
+      copyFailedCount: Number(data.copyFailedCount || 0),
+      copyUncertainCount: Number(data.copyUncertainCount || 0),
       subject: backendContext.cleanText(data.subject).slice(0, 220),
       attachmentCount: Array.isArray(data.attachments) ? data.attachments.length : 0,
       reason: backendContext.cleanText(data.reason).slice(0, 220),

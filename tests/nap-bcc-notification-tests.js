@@ -125,6 +125,34 @@ async function worker(){
   db.rows.set(ref.path,structuredClone(event));
   await tasks.run(db,ref.id,{...services,projectId:'livepalmes-test'});assert.equal(prepared,1);assert.equal(delivered,1);assert.equal(db.rows.get(ref.path).reason,'test-emails-disabled');
 }
+async function copies(){
+  const db=fixture(),ref=db.collection('engagementMailJobs').doc('copy-fixture');
+  db.rows.set('engagementConfigurations/notificationDelivery',{enabled:true,scope:'all',enabledSince:'2026-10-01'});
+  const base={source:'nap',deliveryMode:'bcc-v1',status:'ready',competitionId:'5135',type:'opening_notification',notificationEvent:{kind:'documents'},
+    notificationDueAt:now,subject:'Fixture',textBody:'Corps',attachments:[],cc:['org@example.org','info@example.org','removed@example.org'],
+    replyTo:['org@example.org','info@example.org','removed@example.org'],contactNotice:'Contactez les personnes en copie.',
+    recipients:[{email:'hidden@example.org',clubId:'1'},{email:'org@example.org',clubId:'2'}]};
+  const nodemailer=require('../functions/node_modules/nodemailer');let mime,sends=0;
+  const services={projectId:'livepalmes',fromEmail:'sender@example.org',attachments:async()=>[],eligible:()=>true,
+    copyEligible:address=>['org@example.org','info@example.org'].includes(address),
+    content:job=>({text:job.textBody+(job.deliveredCc.length?' '+job.contactNotice:'')}),
+    send:async message=>{sends++;mime=await nodemailer.createTransport({name:'memory-smtp',version:'1',send:(mail,callback)=>mail.message.build((error,buffer)=>callback(error,{message:buffer,envelope:mail.message.getEnvelope()}))}).sendMail(message);return {accepted:message.envelope.to,rejected:[]};}};
+  db.rows.set(ref.path,structuredClone(base));await delivery.deliver(db,ref,services);
+  const text=mime.message.toString();
+  assert.match(text,/Cc: org@example.org, info@example.org/);assert.match(text,/Reply-To: org@example.org, info@example.org/);
+  assert.ok(!text.includes('hidden@example.org'));assert.ok(!text.includes('removed@example.org'));assert.ok(!/^Bcc:/im.test(text));
+  assert.deepEqual([...mime.envelope.to].sort(),['hidden@example.org','info@example.org','org@example.org']);
+  assert.equal(db.rows.get(ref.path).sentCount,2);assert.equal(db.rows.get(ref.path).copyResults.length,2);
+  await delivery.deliver(db,ref,services);assert.equal(sends,1);
+  db.rows.set(ref.path,structuredClone(base));
+  await delivery.deliver(db,ref,{...services,send:async()=>({accepted:['hidden@example.org','org@example.org'],rejected:['info@example.org']})});
+  assert.equal(db.rows.get(ref.path).status,'partial');assert.equal(db.rows.get(ref.path).copyFailedCount,1);
+  // Old prepared jobs do not acquire contacts from the current competition.
+  db.rows.set(ref.path,{...structuredClone(base),cc:[],replyTo:[]});await delivery.deliver(db,ref,services);
+  assert.ok(!/^Cc:|^Reply-To:/im.test(mime.message.toString()));
+  db.rows.set(ref.path,structuredClone(base));const before=sends;
+  await delivery.deliver(db,ref,{...services,projectId:'livepalmes-test'});assert.equal(sends,before);
+}
 async function batches(){
   const db=fixture(),ref=db.collection(automation.COLLECTION).doc('batch');let tick=Date.parse(now),sends=0;
   db.rows.set('engagementConfigurations/notificationDelivery',{enabled:true,scope:'all'});
@@ -163,4 +191,4 @@ async function adapter(){
     assert.equal(captured.eligible({type:'club_recap_pdf',clubId:'1'},item,{data:()=>({...good,...change})}),false);
   sandbox.ENVIRONMENT.projectId='livepalmes-test';await services.deliver({get:()=>{throw Error('No business read on TEST');}});assert.equal(transports,1);
 }
-(async()=>{await groups();await smtp();await worker();await batches();await adapter();console.log('BCC notifications: fixed five-minute window, concurrent deposits/tasks, 246 => 5, club PDF isolation, fresh preferences, partial SMTP, MIME privacy, continuations and TEST hard stop verified without network.');})().catch(error=>{console.error(error);process.exitCode=1;});
+(async()=>{await groups();await smtp();await copies();await worker();await batches();await adapter();console.log('BCC notifications: fixed five-minute window, concurrent deposits/tasks, 246 => 5, club PDF isolation, fresh preferences, partial SMTP/copies, MIME privacy/Reply-To, continuations and TEST hard stop verified without network.');})().catch(error=>{console.error(error);process.exitCode=1;});
