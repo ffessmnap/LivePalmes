@@ -1,5 +1,5 @@
 "use strict";
-const model=require("./nap-direct-model"),{createStore,fail}=require("./nap-direct-store");
+const model=require("./nap-direct-model"),{createStore,fail}=require("./nap-direct-store"),{createConsoleStore}=require('./nap-direct-console-store');
 function createService({getPool,environment,authorize,lookupUser,matchRegion,storeDocument,purgeDocuments,checkResetDocuments}) {
   async function context(store,id,actor) {
     const competition=await store.native(id);
@@ -21,7 +21,16 @@ function createService({getPool,environment,authorize,lookupUser,matchRegion,sto
     }
     const id=model.competitionId(input.competitionId),permissions=await context(store,id,actor);
     if(!permissions.manage&&!permissions.roles.length)throw fail("Aucun accès au Direct de cette compétition.","permission-denied");
-    if(input.action==='detail')return {...await store.detail(id,input.eventId),permissions:{manage:permissions.manage,delegate:permissions.root,roles:permissions.roles}};
+    if(input.action==='detail'){
+      if(!permissions.manage){const config=await store.config(id);if(!config||config.state!=='active'||!permissions.roles.some(role=>model.parseJson(config.enabled_consoles_json,[]).includes(role)))throw fail('Aucune console active pour ce compte.','permission-denied');}
+      return {...await store.detail(id,input.eventId),permissions:{manage:permissions.manage,delegate:permissions.manage||permissions.roles.includes('computer'),roles:permissions.roles}};
+    }
+    const consoles=createConsoleStore(getPool(),store);
+    if(input.action==='consoleSignal')return consoles.signal(id,input,permissions);
+    if(input.action==='consoleSnapshot')return consoles.snapshot(id,input,permissions);
+    if(input.action==='consoleAllData')return consoles.allData(id,input,permissions);
+    if(input.action==='consoleHistory')return consoles.history(id,input,permissions);
+    if(input.action==='consoleCommand')return consoles.command(id,actor,input,permissions);
     const canWrite=permissions.manage||permissions.roles.includes('computer');
     if(!canWrite)throw fail("Bureau des performances requis pour cette action.","permission-denied");
     if(input.action==='watchContext')return store.watchContext(id);
@@ -44,7 +53,7 @@ function createService({getPool,environment,authorize,lookupUser,matchRegion,sto
       return store.document(id,actor,input,()=>storeDocument(input,id));
     }
     if(input.action==='grants'||input.action==='grant') {
-      if(!permissions.root)throw fail("Délégation réservée au responsable régional ou national.","permission-denied");
+      if(!canWrite)throw fail("Délégation réservée au bureau des performances de cette compétition.","permission-denied");
       if(input.action==='grants')return {items:await store.grants(id)};
       const target=await lookupUser(model.clean(input.email,180));
       if(!target?.uid||target.active!==true)throw fail("Compte LivePalmes actif existant requis.","not-found");
@@ -58,6 +67,6 @@ async function readActor(request,{db,adminUids}) {
   const snapshot=await db.collection('users').doc(uid).get(),data=snapshot.exists?snapshot.data():null;
   if(!data||data.status!=='active')throw fail("Compte LivePalmes désactivé ou absent.","permission-denied");
   const capabilities=data.capabilities||{},scope=data.accessScopes?.['engagements.region.manage']||{};
-  return {uid,national:adminUids.has(uid)||capabilities['admin.full']===true||capabilities['engagements.national.manage']===true,region:capabilities['engagements.region.manage']===true,regionId:scope.scopeId||data.regionId||''};
+  return {uid,label:model.clean(data.displayName||[data.firstName,data.lastName].filter(Boolean).join(' ')||data.email||'Compte LivePalmes',160),national:adminUids.has(uid)||capabilities['admin.full']===true||capabilities['engagements.national.manage']===true,region:capabilities['engagements.region.manage']===true,regionId:scope.scopeId||data.regionId||''};
 }
 module.exports={createService,readActor};

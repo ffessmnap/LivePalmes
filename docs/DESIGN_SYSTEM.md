@@ -2,6 +2,14 @@
 
 <!-- description: Référence du langage visuel, des composants d’interface et des règles responsive déjà présents dans LivePalmes. -->
 
+## Consoles Direct multi-compétitions — 8 novembre 2026
+
+Le nouveau gabarit privé `direct-consoles.html` réutilise les cartes, boutons, dialogues natifs et pastilles du Direct. Barre compacte : rôle, programme, références à la demande, connexion et actualisation ; liens d'ouverture par rôle dans la fiche du bureau. Pas de PIN ni de commutateur Direct/Manuel ajouté.
+
+La priorité de lecture dépend du poste : série et décision au premier plan pour le JA, demandes pour la vidéo, annonces pour le speaker, composition/forfaits pour le secrétariat et bureau. Les finales sans action sont repliées pour JA/vidéo/Live. Files d'actions partagées avec boutons explicites, état vidéo en attente ambré, correction/composition à vérifier sur fond discret. Les fenêtres de confirmation figent la course et la version choisies ; une version périmée exige actualisation.
+
+Tablette : actions au toucher et tableaux défilant dans leur propre conteneur, sans débordement de page. Sous 700 px, les groupes finale A/B/réservistes se superposent. Les réservistes sont paginés par 30 ; les pré-forfaits restent accessibles dans une liste distincte. Les propositions de repêchage sont identifiées comme non annoncées, avec le résumé des entrées/sorties. L'historique garde heure, compte, course/série/ligne, décision et commentaire ; impression/PDF dédiée aux postes JA/vidéo/bureau.
+
 ## Contacts des compétitions — 8 novembre 2026
 
 Les trois champs de contact acceptent une liste d’adresses séparées par `;`, avec clavier e-mail mobile. Chaque champ possède son aide visible et accessible : « Jusqu’à 3 adresses e-mail, séparées par un point-virgule. » Trois adresses distinctes maximum par champ à l’enregistrement, sans compter les doublons de casse ; les protections techniques de longueur restent internes. L’affichage reste dans les champs existants, sans troncation côté serveur ; les liens de contact composent un message aux adresses affichées. Les champs d’identification et de compte conservent leur saisie d’adresse unique.

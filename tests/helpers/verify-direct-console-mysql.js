@@ -1,0 +1,28 @@
+'use strict';
+const assert=require('node:assert/strict'),{randomUUID}=require('node:crypto'),{createStore}=require('../../functions/nap-direct-store'),{createConsoleStore}=require('../../functions/nap-direct-console-store'),flow=require('../../functions/nap-direct-console-model');
+async function verify({pool,id,actor,native,failJournal}){
+  const originalLevel=native.native_level_code;native.native_level_code=2;
+  try{
+    const store=createStore(pool,'test');await store.settings(id,actor,{version:(await store.config(id)).version,consoles:flow.roles,operationKey:randomUUID()});
+    const consoles=createConsoleStore(pool,store),permissions={manage:true,roles:flow.roles,competition:await store.native(id)};
+    let snapshot=await consoles.snapshot(id,{role:'computer'},permissions);const selected=snapshot.events.find(event=>event.phase==='series');assert.ok(selected);
+    const eventId=selected.id,send=async(command,role,extra={})=>{const s=await consoles.snapshot(id,{role,eventId},permissions);return consoles.command(id,actor,{command,role,eventId,revision:s.revision,configVersion:s.configVersion,operationKey:randomUUID(),...extra},permissions);};
+    const publicationBefore=(await store.config(id)).version;
+    await send('configure','computer',{lanes:6,events:[{id:eventId,format:'a',lanes:6}]});
+    snapshot=await consoles.snapshot(id,{role:'referee',eventId},permissions);const participant=snapshot.entries[0];
+    await send('decision','referee',{participantKey:participant.key,type:'false_start'});
+    snapshot=await consoles.snapshot(id,{role:'video',eventId},permissions);assert.equal(snapshot.workflow.alerts.at(-1).videoStatus,'pending');const alertId=snapshot.workflow.alerts.at(-1).id;
+    const input={command:'videoReject',role:'video',eventId,alertId,revision:snapshot.revision,configVersion:snapshot.configVersion,operationKey:randomUUID()};
+    const receipt=await consoles.command(id,actor,input,permissions),retry=await consoles.command(id,actor,input,permissions);assert.equal(retry.replayed,true);assert.equal(retry.revision,receipt.revision,'Reprise JSON MySQL idempotente');
+    for(const [sql,values]of [["SELECT JSON_UNQUOTE(JSON_EXTRACT(after_json,'$.revision')) FROM livepalmes_direct_publications WHERE environment=? AND competition_id=? AND id=? LIMIT 1",['test',id,require('../../functions/nap-direct-console-store').stateId]],["SELECT source_hash,after_json FROM livepalmes_direct_publications WHERE environment=? AND competition_id=? AND operation_key=? LIMIT 1",['test',id,require('../../functions/nap-direct-model').hash(['direct-console-command',input.operationKey])]]]){const [plan]=await pool.execute('EXPLAIN '+sql,values);assert.ok(plan.every(row=>row.key&&Number(row.rows)<=1),'État et reçu privés utilisent leurs clés sans scan');}
+    snapshot=await consoles.snapshot(id,{role:'referee',eventId},permissions);
+    const competing=[1,2].map(series=>consoles.command(id,actor,{command:'progress',role:'referee',eventId,series:participant.series,revision:snapshot.revision,configVersion:snapshot.configVersion,operationKey:randomUUID()},permissions));
+    const results=await Promise.allSettled(competing);assert.equal(results.filter(r=>r.status==='fulfilled').length,1,'Deux écritures concurrentes ne se remplacent pas silencieusement');assert.equal(results.find(r=>r.status==='rejected').reason.directCode,'aborted');
+    const stable=await consoles.snapshot(id,{role:'computer',eventId},permissions),unchanged=await consoles.snapshot(id,{role:'computer',eventId,revision:stable.revision,configVersion:stable.configVersion},permissions);assert.equal(unchanged.unchanged,true);
+    failJournal(2);await assert.rejects(send('progress','referee',{series:participant.series}),/Interruption/);failJournal(0);const after=await consoles.snapshot(id,{role:'computer',eventId},permissions);assert.equal(after.revision,stable.revision,'Le rollback du journal annule l’UPDATE JSON de l’état');
+    assert.equal((await store.config(id)).version,publicationBefore,'Les consoles ne perturbent pas les versions des imports TXT');
+    const other=createConsoleStore(pool,createStore(pool,'production'));await assert.rejects(other.snapshot(id,{role:'computer'},permissions),/fermées/,'État opérationnel isolé de production');
+    console.log('Consoles MySQL isolé : JSON privé, reçus, verrouillage concurrent, refus des versions anciennes, rollback et isolation environnement vérifiés.');
+  }finally{native.native_level_code=originalLevel;failJournal(0);}
+}
+module.exports={verify};

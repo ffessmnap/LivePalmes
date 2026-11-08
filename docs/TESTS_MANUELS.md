@@ -2,6 +2,18 @@
 
 <!-- description: Checklist de tests manuels à exécuter avant une publication ou après une modification sensible. -->
 
+## Six consoles Direct — recette TEST du 8 novembre 2026
+
+Recette authentifiée à effectuer sur TEST avec les fichiers de la compétition choisie par le pilote. Les tests automatiques utilisent une base et des comptes simulés isolés ; ils ne publient pas de données réelles. Les pages nationales historiques ne sont pas raccordées à ce nouveau parcours.
+
+- Bureau : choisir/activer une compétition du calendrier, importer ses séries PDF, vérifier l'aperçu puis publier ; reprendre le même dossier TXT dans Chrome/Edge en vérifiant la première ligne physique. Laisser un seul poste surveiller/publier le dossier. Réimporter une session ne doit pas effacer les autres.
+- Accès : bureau seul possible ; activer speaker/secrétariat/Live impose le JA ; vidéo impossible au régional. Déléguer un compte actif puis ouvrir deux postes/tablettes. Vérifier refus sans compte, sur une compétition non déléguée, pour un rôle désactivé et après révocation. Aucun PIN supplémentaire. N'activer/désactiver que les consoles de la compétition TEST choisie.
+- JA/vidéo : faux départ, départ anticipé relais (relayeur requis), coulée (départ/longueur) ; confirmation et refus vidéo, reprise par JA, refus de fermeture vidéo tant qu'une demande reste à traiter. Au régional sans vidéo, décision directement au bureau/speaker. Forfait vers secrétariat, abandon vers bureau. Vérifier annulation avant/après annonce et réqualification par le délégué.
+- Bureau/speaker/Live : cocher la saisie dans WinPalme, annoncer, vérifier les réceptions officielles et l'historique PDF. Une DSQ ne change pas le public avant TXT corrigé. Contrôler que le repère JA n'impose pas un changement de course aux autres postes. Masquer une information Live ne la supprime pas des autres consoles. Tester reprise d'onglet, coupure réseau, nouvel envoi après réponse perdue et conflit de deux consoles : aucune double décision ni perte silencieuse.
+- Finales : aucune/A/A+B, 6 et 8 places, réglage groupé et individuel, séries réparties entre sessions ; résultats incomplets ou décision non répercutée dans les TXT bloquent l'annonce. Tester ex æquo aux limites 6/7, 12/13, 8/9 et 16/17 ; enregistrer le départage, vérifier temps inchangés. Correction supprimant le départage : confirmation JA/bureau de l'annulation du swim-off, puis annonce speaker.
+- Aucun forfait avant annonce officielle. Après annonce, forfait/réintégration, passage B→A et repêchage, pré-forfait/annulation pour un réserviste ; comparer proposition et composition annoncée. Nouveau qualifié : forfait seulement après annonce du changement, délai propre de 30 minutes. Sans speaker, bureau confirme l'annonce ; sans secrétariat, bureau tablette saisit les forfaits. Correction de TXT/nouvelles séries après annonce : revue et nouvelle annonce explicites avant validation dans WinPalme.
+- Vérifier ordinateur et tablette (JA, secrétariat et bureau), programme, fiche nageur, références sur demande et file des finales de toutes les courses. La page publique conserve son rafraîchissement manuel. Une remise à zéro TEST autorisée efface aussi décisions et reçus, en conservant activation/accès ; ne jamais tester cette suppression sur une compétition réelle sans accord spécifique.
+
 ## Pastilles des compétitions — 8 novembre 2026
 
 Fixtures hors réseau : `node tests/competition-status-tests.js` et `node tests/competition-status-browser-tests.js`. La CI MySQL 5.7 isolée vérifie le SQL réel du signal dans la suite équipes existante : import seul, lignes toutes masquées, pointeur supprimé, statut sans temps courant, relais et variantes JSON booléen/nombre/chaîne/null. Aucun test d'écriture sur NAP réel.
