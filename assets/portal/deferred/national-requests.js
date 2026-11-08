@@ -246,7 +246,7 @@
         const verb = decision === "approved" ? "Valider" : "Refuser";
 
         const choice = await global.LivePalmesRequestDecision.collect({ decision, comment: String(options.resolutionNote ?? card?.querySelector("[data-engagement-swimmer-change-resolution-note]")?.value ?? "").trim(),
-          title: duplicate ? "Clore le signalement de doublon" : decision === "approved" ? "Valider la demande" : "Refuser la demande" });
+          title: duplicate ? decision === "approved" ? "Clore le signalement de doublon" : "Refuser le signalement de doublon" : decision === "approved" ? "Valider la demande" : "Refuser la demande" });
         if (!choice) return false;
         const resolutionNote = choice.resolutionNote;
         const buttons = card?.querySelectorAll("button") || [];
@@ -284,7 +284,7 @@
               ? " La fiche a été corrigée, mais sa publication publique devra être relancée."
               : "";
             const notificationStatus = result?.request?.resolutionNotification?.status || "";
-            portalContext.elements.engagementsSwimmerChangeRequestsStatus.textContent = duplicate ? "Signalement clos. Aucune fiche n’a été modifiée ou fusionnée." : `${decision === "approved" ? "Demande validée." : "Demande refusée."}${publicWarning}`;
+            portalContext.elements.engagementsSwimmerChangeRequestsStatus.textContent = duplicate ? `Signalement ${decision === "approved" ? "clos" : "refusé"}. Aucune fiche n’a été modifiée ou fusionnée.` : `${decision === "approved" ? "Demande validée." : "Demande refusée."}${publicWarning}`;
             global.LivePalmesRequestDecision.report(portalContext.elements.engagementsSwimmerChangeRequestsStatus, { ...result, requestId }, "resolveEngagementSwimmerChangeRequest", portalActions.callFunction);
             portalContext.elements.engagementsSwimmerChangeRequestsStatus.dataset.tone = publicWarning || ["failed", "uncertain"].includes(notificationStatus) ? "warning" : "ok";
           }
@@ -738,7 +738,7 @@
             <input type="text" maxlength="500" placeholder="Précision pour le club" data-engagement-swimmer-change-resolution-note>
           </label>
           <div class="admin-engagements-request-actions">
-            ${duplicate ? `<button type="button" data-engagement-swimmer-change-decision="approved" data-engagement-swimmer-change-request-id="${portalActions.escapeHtml(item.id || "")}">Clore le signalement</button>` : `<button class="ghost-button" type="button" data-engagement-swimmer-change-decision="rejected" data-engagement-swimmer-change-request-id="${portalActions.escapeHtml(item.id || "")}">Refuser</button>
+            ${duplicate ? `<button class="ghost-button" type="button" data-engagement-swimmer-change-decision="rejected" data-engagement-swimmer-change-request-id="${portalActions.escapeHtml(item.id || "")}">Refuser le signalement</button><button type="button" data-engagement-swimmer-change-decision="approved" data-engagement-swimmer-change-request-id="${portalActions.escapeHtml(item.id || "")}">Clore le signalement</button>` : `<button class="ghost-button" type="button" data-engagement-swimmer-change-decision="rejected" data-engagement-swimmer-change-request-id="${portalActions.escapeHtml(item.id || "")}">Refuser</button>
             ${nsRequest ? "" : `<button class="ghost-button" type="button" data-engagement-swimmer-change-edit="${portalActions.escapeHtml(item.id || "")}">Modifier et valider</button>`}
             <button type="button" data-engagement-swimmer-change-decision="approved" data-engagement-swimmer-change-request-id="${portalActions.escapeHtml(item.id || "")}">Valider telle quelle</button>`}
           </div>

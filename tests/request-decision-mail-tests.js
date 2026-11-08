@@ -39,6 +39,11 @@ function fixture(type = "swimmer_correction", decision = "approved", notifyReque
   assert.equal(mail.kind({ reportType: "duplicate" }), "duplicate_closure");
   assert.equal(mail.kind({ requestType: "person-change" }), "official_correction");
   assert.equal(mail.kind({ requestType: "swimmer-ns" }), "swimmer_ns");
+  const catalog = require("../functions/mail-template-catalog").catalog;
+  for (const item of catalog.filter(item => item.id.startsWith("request."))) {
+    const active = ["access", "swimmer_correction", "official_correction", "swimmer_ns", "duplicate_closure", "account_deletion"].includes(item.id.split(".")[1]);
+    assert.equal(item.pendingConsumer, !active);
+  }
   for (const type of ["access", "swimmer_correction", "official_correction", "swimmer_ns", "duplicate_closure", "account_deletion"]) {
     for (const decision of ["approved", "rejected"]) {
       const f = fixture(type, decision); f.data.internalNote = "SECRET INTERNE";
