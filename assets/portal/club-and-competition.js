@@ -3,6 +3,10 @@
   // Creating this module performs no reads, writes, listener registration or rendering.
   function create(portalContext) {
     const { state: portalState, actions: portalActions, config: portalConfig } = portalContext;
+    /* deferred-function: assets/portal/deferred/club-and-competition.js#validateEngagementCompetitionContacts */
+    function validateEngagementCompetitionContacts(...args) {
+      return global.LivePalmesPortalDeferred.sync(portalContext, "club-and-competition", "validateEngagementCompetitionContacts", args, moduleActions);
+    }
     /* deferred-function: assets/portal/deferred/club-and-competition.js#openEngagementClubPersonForm */
     function openEngagementClubPersonForm(...args) {
       return global.LivePalmesPortalDeferred.sync(portalContext, "club-and-competition", "openEngagementClubPersonForm", args, moduleActions);
@@ -148,8 +152,9 @@
       return global.LivePalmesPortalDeferred.invoke(portalContext, "club-and-competition", "updateEngagementCompetitionFees", args, moduleActions);
     }
 
-    const moduleActions = { openEngagementClubPersonForm, selectedEngagementClubPersonFromForm, renderEngagementClubPeople, loadEngagementClubPeople, saveEngagementClubPerson, setEngagementClubPersonStatus, loadEngagementCompetitions, engagementCompetitionPayloadFromFields, createCompetitionFields, editCompetitionFields, engagementCompetitionPayloadFromForm, engagementCompetitionPayloadFromEditForm, nativeCompetitionFormValues, nativeCompetitionPatchFromForm, saveNativeCompetitionDetail, engagementOpeningDeadlineError, shouldSendEngagementOpeningMail, engagementOpeningMailScopeLabel, confirmEngagementOpeningMail, confirmEngagementReopeningMail, confirmOpenedCompetitionSensitiveChanges, prepareAndSendEngagementOpeningEmails, createEngagementCompetition, completeNewlyCreatedEngagementCompetition, updateEngagementCompetition, saveEngagementCompetitionDetail, engagementCompetitionPayloadFromSelection, updateEngagementCompetitionEvents, updateEngagementCompetitionFees };
+    const moduleActions = { validateEngagementCompetitionContacts, openEngagementClubPersonForm, selectedEngagementClubPersonFromForm, renderEngagementClubPeople, loadEngagementClubPeople, saveEngagementClubPerson, setEngagementClubPersonStatus, loadEngagementCompetitions, engagementCompetitionPayloadFromFields, createCompetitionFields, editCompetitionFields, engagementCompetitionPayloadFromForm, engagementCompetitionPayloadFromEditForm, nativeCompetitionFormValues, nativeCompetitionPatchFromForm, saveNativeCompetitionDetail, engagementOpeningDeadlineError, shouldSendEngagementOpeningMail, engagementOpeningMailScopeLabel, confirmEngagementOpeningMail, confirmEngagementReopeningMail, confirmOpenedCompetitionSensitiveChanges, prepareAndSendEngagementOpeningEmails, createEngagementCompetition, completeNewlyCreatedEngagementCompetition, updateEngagementCompetition, saveEngagementCompetitionDetail, engagementCompetitionPayloadFromSelection, updateEngagementCompetitionEvents, updateEngagementCompetitionFees };
     return {
+      validateEngagementCompetitionContacts,
       openEngagementClubPersonForm,
       selectedEngagementClubPersonFromForm,
       renderEngagementClubPeople,
