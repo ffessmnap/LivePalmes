@@ -8,7 +8,12 @@ function list(raw, label = "Adresses e-mail") {
   if (addresses.some(value => !/^[^\s@;,<>]+@[^\s@;,<>]+\.[^\s@;,<>]+$/.test(value))) throw new TypeError(`${label} : adresse invalide. Séparez les adresses par un point-virgule.`);
   return [...new Set(addresses)];
 }
-function canonical(raw, label) { return list(raw, label).join(";"); }
+function canonical(raw, label = "Adresses e-mail") {
+  const addresses = list(raw, label);
+  // Write limit only: historical lists remain readable and deliverable unchanged.
+  if (addresses.length > 3) throw new TypeError(`${label} : 3 adresses e-mail différentes maximum, séparées par un point-virgule.`);
+  return addresses.join(";");
+}
 function copies(competition) {
   const cc = [...new Set([...list(competition.organizerEmail, "Organisateur"), ...list(competition.computerEmail, "Responsable informatique")])];
   // Keep 50 envelope recipients, <=250 jobs/page and <=1000 jobs/event,
