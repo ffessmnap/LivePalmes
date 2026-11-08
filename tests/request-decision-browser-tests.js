@@ -52,9 +52,12 @@ const { evaluate } = require("./helpers/portal-browser-evaluate");
           const elements={};for(const el of document.querySelectorAll('[id^="admin"]')){const n=el.id.slice(5);elements[n[0].toLowerCase()+n.slice(1)]=el;}
           const actions={canDeleteEngagementCompetitionDirectly:()=>true,canDeleteAccessUserDirectly:()=>true,canManageAccessDirectory:()=>true,updateEngagementNationalRequestsPresentation:()=>{},markLastRefresh:()=>{},
             callFunction:async(name,input)=>{routeCalls.push({name,input});return input.action==='retryNotification'?{resolutionNotification:{status:'blocked_test'}}:input.status==='history'?{requests:[{id:'route-fixture',targetEmail:'fictif@example.test',current:{firstName:'Fictif'},status:'rejected',resolutionNotification:{status:'failed',key:'route-key'}}]}:{requests:[]};}};
-          const state={};const noops={renderEngagementSwimmerChangeRequests:()=>{},updateEngagementNationalRequestsPresentation:()=>{},renderAccessDeletionRequests:()=>{}};
+          const state={};const noops={renderEngagementSwimmerChangeRequests:()=>{},updateEngagementNationalRequestsPresentation:()=>{},renderAccessDeletionRequests:()=>{},updateEngagementSwimmerChangeRequestsBadge:()=>{},engagementSwimmerChangeSummary:()=>[]};
           window.correctionFixture=decisionFactories['national-requests']({state,actions,elements,config:{}},noops);
           window.accountFixture=decisionFactories['account-and-access']({state,actions,elements,config:{}},noops);
+          Object.assign(actions,{engagementSwimmerDisplayName:()=> 'Fictif',escapeHtml:value=>String(value||''),clubDisplayLabel:()=> 'Club fictif',formatAccessDateTime:()=> '08/11/2026'});
+          state.engagementSwimmerChangeRequests=[{id:'duplicate-fixture',reportType:'duplicate',current:{}}];correctionFixture.renderEngagementSwimmerChangeRequests();
+          if(!document.querySelector('[data-engagement-swimmer-change-request="duplicate-fixture"] [data-engagement-swimmer-change-decision="rejected"]'))throw Error('Missing duplicate refusal');
           await correctionFixture.loadEngagementSwimmerChangeRequests();await accountFixture.loadAccessDeletionRequests();
           await correctionFixture.loadEngagementSwimmerChangeRequests({force:true});await accountFixture.loadAccessDeletionRequests({force:true});
           for(const name of ['accounts','corrections']){const d=document.querySelector('[data-decision-history="'+name+'"]');if(!d)throw Error('Missing real insertion '+name);d.open=true;}`);

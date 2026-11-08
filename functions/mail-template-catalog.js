@@ -52,7 +52,7 @@ for (const [kind, label] of Object.entries(requestKinds)) {
       "{{decision.objet}}", `{{salutation}}\n\n{{decision.resume}}\n\n{{decision.details}}\n\n{{decision.commentaire}}\n\n${accessSignature}`,
       ["salutation", "decision.objet", "decision.resume", "decision.details", "decision.commentaire"],
       ["decision.resume", "decision.details", "decision.commentaire"],
-      { pendingConsumer: true, note: "La décision, ses détails et le commentaire destiné au demandeur sont insérés automatiquement. Le commentaire ne contient aucune note interne." });
+      { pendingConsumer: !["access", "swimmer_correction", "official_correction", "swimmer_ns", "duplicate_closure", "account_deletion"].includes(kind), note: "La décision, ses détails et le commentaire destiné au demandeur sont insérés automatiquement. Le commentaire ne contient aucune note interne." });
   }
 }
 add("license_control_report", "Bilan du contrôle des licences", "LivePalmes — Contrôle des licences — {{competition.nom}}",
