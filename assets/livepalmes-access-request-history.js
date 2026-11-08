@@ -15,6 +15,7 @@
       <div class="admin-engagements-request-scope"><strong>${escape(row.clubName || "Club non renseigné")}</strong><small>${escape(row.regionId)}</small></div>
       <div class="admin-engagements-request-main"><strong>${approved ? "Compte validé" : "Demande refusée"}</strong><small>${escape(dateLabel(row.resolvedAt))} (heure de Paris)</small><small title="${escape(row.resolvedByEmail)}">Par ${escape(author)}</small></div>
       ${!approved && row.resolutionReason ? `<details class="admin-engagements-request-details"><summary>Motif du refus</summary><p>${escape(row.resolutionReason)}</p></details>` : ""}
+      <p data-request-notification="${escape(row.id)}"></p>
     </article>`;
   }
   function create({ root, callFunction, canReview, scopeKey, loadPending, closeEditor }) {
@@ -25,6 +26,10 @@
     let rows = [], cursor = null, loadedAt = 0, loading = false, active = false, generation = 0, scope = "";
     function render() {
       list.innerHTML = rows.length ? rows.map(card).join("") : '<p class="admin-engagements-empty">Aucune demande traitée dans ce périmètre.</p>';
+      list.querySelectorAll('[data-request-notification]').forEach(node=>{
+        const row=rows.find(item=>item.id===node.dataset.requestNotification);
+        global.LivePalmesRequestDecision?.report(node,{requestId:row.id,resolutionNotification:row.resolutionNotification},'resolveEngagementAccessRequest',callFunction);
+      });
       next.hidden = !cursor; next.disabled = loading; refresh.disabled = loading;
     }
     function reset() {

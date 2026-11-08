@@ -27,12 +27,8 @@ function createNationalService_engagementSwimmerChangeRequestItem(backendContext
       resolvedAt: backendContext.cleanText(data.resolvedAt).slice(0, 40),
       resolvedBy: backendContext.cleanText(data.resolvedBy).slice(0, 128),
       resolutionNote: backendContext.cleanText(data.resolutionNote).slice(0, 500),
-      resolutionNotification: {
-        status: backendContext.cleanText(data.resolutionNotification?.status).slice(0, 40),
-        attemptedAt: backendContext.cleanText(data.resolutionNotification?.attemptedAt).slice(0, 40),
-        sentAt: backendContext.cleanText(data.resolutionNotification?.sentAt).slice(0, 40),
-        reason: backendContext.cleanText(data.resolutionNotification?.reason).slice(0, 180)
-      }
+      notifyRequester: data.notifyRequester !== false,
+      resolutionNotification: require("../../request-decision-mail").publicState(data.resolutionNotification)
     });
   }
 
