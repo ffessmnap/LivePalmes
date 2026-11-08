@@ -43,6 +43,8 @@ Variables : `salutation`, `decision.objet`, `decision.resume`, `decision.details
 
 Le chantier suivant reste responsable des déclenchements, du commentaire obligatoire au refus même sans mail, de la case d’information du demandeur, des destinataires et de la traçabilité des envois. Ce lot n’ajoute aucun déclenchement de décision. Les modèles non encore raccordés sont signalés dans le catalogue ; les mails Firebase Auth restent indépendants.
 
+Périmètre actif confirmé pour le lot suivant : `access`, `swimmer_correction`, `official_correction`, `swimmer_ns`, `duplicate_closure`, `account_deletion`. Les variantes de réactivation directe et d’anciennes suppressions NAP du catalogue n’ajoutent aucun parcours ni consommateur à cette livraison.
+
 ## Budget supplémentaire
 
 | Situation | Budget du nouveau besoin |
@@ -63,4 +65,6 @@ Pire cas : ces suppléments restent identiques avec 10 ou 10 000 destinataires. 
 
 Tests hors réseau : `mail-templates-tests.js`, `mail-template-editor-browser-tests.js`, tests existants des cinq contenus, des demandes d’accès/corrections, du contrôle d’envoi, événements/pages NAP, bibliothèque nationale et bilans licences/NAP. Vérifier absence/panne, échappement, limites, variables/blocs, droits, CAS/audit, aperçu et enregistrement sans envoi, versions entre pages/reprises et anciens jobs. Recette ordinateur/390/320 px, clavier/toucher, thèmes et erreurs.
 
-CI obligatoire sur le candidat exact. TEST commun pour le périmètre ordinaire ; les consommateurs mail/scheduler conservés exigent un contrat TEST autorisé, sans changer file, planificateur, réglage, permissions, messages ou données. Aucun ancien contrat daté ne couvre automatiquement ce chantier. Aucun appel de préparation ou d’envoi réel requis pour cette livraison.
+CI obligatoire sur le candidat exact. Le complément de sources TEST est autorisé par Antoine dans la coordination du 8 novembre : contrat fermé `20261108-test-mail-sources-contract.json`, workflow `livepalmes-test-mail-sources.yml`, lot `models`. Le code est ancré au commit applicatif relu ; seules les différences d’outillage/documentation énumérées sont admises avant le main exact ayant sa propre CI. L’entrée `decisions` devra être ajoutée sur son propre candidat testé, sans inclure de code futur dans `models`. Aucun ancien contrat daté n’est modifié.
+
+Ordre : complément des seules sources conservées réellement différentes, puis TEST commun ordinaire/Hosting et contrôle commun final. Préconditions déjà satisfaites : mails désactivés, file et planificateur suspendus. Aucun changement de configuration, secret, identité, déclencheur, permission, réglage, message ou donnée ; aucun contenu de tâche, préparation ou envoi réel lu/invoqué. Les gardes, budgets et preuves sont détaillés dans [la procédure](releases/PROCEDURE.md).
