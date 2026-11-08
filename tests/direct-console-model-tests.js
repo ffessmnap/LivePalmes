@@ -55,4 +55,5 @@ tiedReplacement=apply(tiedReplacement,'announceReplacement','speaker',{},afterTi
 assert.equal(tiedReplacement.races[event.id].announced.roster.a.at(-1),rows[9].key);
 const versioned={...event,programVersionHash:'programme-1'},versionedState=flow.next(configure(8,'a'),{command:'announceFinalists',operationKey:'fixture-versioned'},{role:'speaker',actor:'fixture',event:versioned,entries:rows,consoles:flow.roles});
 assert.equal(flow.qualification(versionedState,{...versioned,programVersionHash:'programme-2'},rows).changed,true,'Une nouvelle répartition oblige à revoir la composition même à temps identiques');
+assert.throws(()=>flow.next(versionedState,{command:'withdraw',operationKey:'fixture-new-program',participantKey:rows[0].key},{role:'secretary',actor:'fixture',event:{...versioned,programVersionHash:'programme-2'},entries:rows,consoles:flow.roles}),/bureau doit vérifier/,'Les forfaits ne doivent pas valider implicitement une nouvelle répartition');
 console.log('Consoles : rôles, circuits vidéo/direct, accusés, annulations, finales 6/8 et A/A+B, départages, annonces, forfaits, reprises et sessions vérifiés hors réseau.');
