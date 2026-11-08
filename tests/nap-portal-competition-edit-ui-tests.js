@@ -8,6 +8,10 @@ const sandbox={nativeCompetitionEditBaseline:null,selectedEngagementCompetition:
   editCompetitionFields:()=>fields,selectedEngagementEventsFromForm:()=>[],selectedEngagementEventsCategoryError:()=>'',selectedEngagementProgramError:()=>'',engagementCompetitionType:()=> 'pool',selectedEngagementFeesFromForm:()=>({...fee}),selectedEngagementProgramSessionsFromForm:()=>structuredClone(program),global:{confirm:()=>approved},
   callFunction:async(name,input)=>{calls.push({name,input});return {competition:{id:input.competitionId,napSource:true}};},invalidateEngagementCalendarCaches:()=>{},loadEngagementCompetitions:async()=>{},upsertEngagementCalendarItemFromServer:()=>{},renderEngagementCompetitionDetail:()=>{},clearEngagementDetailTabDirty:()=>{},setEngagementEditMode:()=>{}};
 vm.createContext(sandbox);
+// This historical test isolates the save handler; keep its real contact closure
+// with it rather than replacing the new preflight with a permissive stub.
+const contactsSource=require("node:fs").readFileSync(require.resolve("../assets/portal/deferred/club-and-competition.js"),"utf8");
+vm.runInContext(contactsSource.slice(contactsSource.indexOf("    const competitionMailKeys"),contactsSource.indexOf("    function validateEngagementCompetitionContacts")),sandbox);
 const start=source.indexOf("  function nativeCompetitionFormValues("),end=source.indexOf("\n  function ",source.indexOf("  async function saveNativeCompetitionDetail(",start)+10);
 vm.runInContext(source.slice(start,end),sandbox);
 const genderSandbox={selectedEngagementCompetition:{napSource:true,events:[{code:"50BI",type:"individual",nativeCourses:[{sexe:"F"}]}]},engagementEventDefinition:()=>({}),ENGAGEMENT_PROGRAM_GENDER_MODES:[["female","Femmes"],["male","Hommes"],["mixed","Ensemble"]],engagementProgramGenderModeDisplayLabel:mode=>mode};
@@ -33,6 +37,10 @@ assert.equal(genderSandbox.engagementProgramGenderModesForEvent("50BI").length,3
   assert.deepEqual(JSON.parse(JSON.stringify(sandbox.nativeCompetitionPatchFromForm())),{});
   fields.name.value="Nom corrige";
   assert.deepEqual(JSON.parse(JSON.stringify(sandbox.nativeCompetitionPatchFromForm())),{name:"Nom corrige"});
+  fields.computerEmail={value:"a@example.org;b@example.org;c@example.org;d@example.org",setCustomValidity(message){this.error=message;}};
+  assert.equal(await sandbox.saveNativeCompetitionDetail(),false);assert.equal(calls.length,0);
+  assert.match(fields.computerEmail.error,/3 adresses/);
+  fields.computerEmail.value="";
   // A name change must never submit defaults for missing NAP options or a rounded deadline.
   await sandbox.saveNativeCompetitionDetail();assert.equal(calls.length,1);assert.deepEqual(JSON.parse(JSON.stringify(calls[0].input.patch)),{name:"Nom corrige"});
   assert.equal(calls[0].input.expectedFingerprint,"abc");assert.equal(calls[0].name,"updateEngagementCompetition");
