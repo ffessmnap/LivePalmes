@@ -4,9 +4,9 @@
 
 ## Mode opératoire régional et accès depuis le portail
 
-[Guide utilisateur sur TEST](https://livepalmes-test.web.app/direct-guide.html), avec PDF téléchargeable, accessible par « Mode opératoire » dans le bureau. Source : `direct-guide.html` et `assets/direct/guide.css`. Génération des deux copies identiques du PDF (livrable local sous `output/pdf/` et téléchargement Hosting) par `node tools/build-direct-guide.js` ; aucun accès métier ou service réel. Les pages générées sont contrôlées visuellement avant livraison.
+[Guide utilisateur sur TEST](https://livepalmes-test.web.app/direct-guide.html), avec PDF illustré téléchargeable, accessible par « Mode opératoire » dans le bureau. Source : `direct-guide.html` et `assets/direct/guide.css`. Captures générées par `node tools/capture-direct-guide.js`, exclusivement depuis le vrai HTML et une fixture SQL en mémoire, sans donnée ni accès métier réel. Génération des deux copies identiques du PDF (livrable local sous `output/pdf/` et téléchargement Hosting) par `node tools/build-direct-guide.js` ; aucun accès métier ou service réel. Les pages générées sont contrôlées visuellement avant livraison.
 
-Le guide couvre le bureau seul, les consoles régionales, les décisions/forfaits/abandons, les finales et enfin la vidéo nationale. Chemin WinPalme confirmé par Antoine : Data → bonne bibliothèque → `renc` → rencontre concernée → `RésultatsSéries` (renc en minuscules ; R et S majuscules pour le dernier dossier, mots attachés et au pluriel).
+Le guide couvre le bureau seul, les consoles régionales, les décisions/forfaits/abandons, les finales et enfin la vidéo nationale. Repère de navigation WinPalme fourni par Antoine : Data → bonne bibliothèque → `renc` → rencontre concernée → `ResultatsSeries`.
 
 Le portail ouvre désormais ce bureau via « LivePalmes Direct », même icône, pour les profils régionaux/nationaux et admin.full. Aucun accès serveur changé ; ancien pilotage national encore disponible à son URL, retiré des liens du portail. Budget ajouté du menu, du guide et de son téléchargement : zéro lecture NAP/Firestore, écriture, appel métier ou listener. Les ouvertures du bureau conservent leurs contrôles et budgets existants.
 
