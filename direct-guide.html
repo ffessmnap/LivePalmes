@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="fr">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>LivePalmes Direct · Mode opératoire régional</title><link rel="stylesheet" href="assets/direct/guide.css?v=1"></head>
+<body>
+<nav class="guide-actions" aria-label="Actions du guide"><a href="direct-admin.html">Ouvrir le bureau Direct</a><a href="assets/direct/guide.pdf" download="LivePalmes-Direct-mode-operatoire.pdf">Télécharger le PDF</a></nav>
+<main>
+<article class="guide-page" id="preparer">
+<header><img class="guide-logo" src="logo-ffessm-nage-avec-palmes.png" alt="FFESSM Nage avec Palmes"><span class="edition">VERSION TEST · 8 NOVEMBRE 2026</span><h1>LivePalmes Direct</h1><p class="subtitle">Mode opératoire pour les informaticiens régionaux</p></header>
+<p>LivePalmes Direct publie les séries et les résultats d’une compétition piscine sur une page accessible au public. WinPalme reste l’outil de saisie et de validation des résultats. Le bureau Direct lit ses PDF de séries et ses fichiers TXT de résultats.</p>
+<h2>Choisir son fonctionnement</h2>
+<table><thead><tr><th>Résultats seuls</th><th>Avec consoles terrain</th></tr></thead><tbody><tr><td>Le <strong>bureau des performances seul</strong> suffit. Importer les séries puis surveiller les TXT pour alimenter la page publique.</td><td>Le <strong>bureau et le juge arbitre</strong> sont obligatoires. Ajouter le speaker, le secrétariat ou le Live selon les besoins. La vidéo est réservée au national.</td></tr></tbody></table>
+<h2>Préparer la compétition</h2>
+<ol class="steps">
+<li><strong>Ouvrir le portail TEST</strong> sur <a href="https://livepalmes-test.web.app/portail.html">livepalmes-test.web.app/portail.html</a>, puis « LivePalmes Direct ». Utiliser son compte régional ou national habituel. Si la session est déjà ouverte sur TEST, elle est réutilisée. Un responsable régional retrouve les compétitions de son périmètre ; un autre intervenant peut recevoir une délégation.</li>
+<li><strong>Choisir la saison et la compétition du calendrier</strong>, puis activer le Direct si nécessaire. Vérifier le nom, les dates et le bassin. Ces informations proviennent du portail : les corriger dans le portail, puis actualiser le bureau.</li>
+<li><strong>Cliquer sur « Importer les séries (PDF) ».</strong> Choisir le PDF WinPalme, contrôler l’aperçu : courses, sessions, horaires, séries, lignes et relais. Vérifier puis utiliser la publication groupée pour publier tout le lot sélectionné. L’option de publication du PDF complet évite de le déposer une deuxième fois pour le public.</li>
+<li><strong>Ouvrir la page publique et contrôler le rendu.</strong> Le lien est disponible dans le bureau. Le transmettre aux clubs et au public. Les engagements restent affichés tant que les résultats ne sont pas publiés.</li>
+</ol>
+<figure class="screenshot"><img src="assets/direct/guide/bureau.png" alt="Bureau Direct sur une compétition fictive : bouton Importer les séries et liens des consoles"><figcaption>Le bureau regroupe l’import et les accès aux postes. Compétition et données fictives.</figcaption></figure>
+<aside class="note"><strong>Plusieurs sessions ou séries modifiées</strong><p>On peut importer toute la compétition, puis réimporter seulement une session mise à jour. Contrôler les épreuves reconnues et confirmer leur remplacement. Les autres sessions restent conservées. Toute modification de série ou de ligne dans WinPalme doit aussi être reportée dans les séries du Direct.</p></aside>
+<p class="page-footer">LivePalmes Direct · Essai sur TEST · 1 / 5</p>
+</article>
+
+<article class="guide-page" id="surveiller">
+<header><img class="guide-logo" src="logo-ffessm-nage-avec-palmes.png" alt="FFESSM Nage avec Palmes"><span class="edition">AU POSTE DU BUREAU DES PERFORMANCES</span><h1>Surveiller les résultats TXT</h1><p class="subtitle">Chrome ou Edge, sur l’ordinateur qui accède aux fichiers WinPalme</p></header>
+<ol class="steps">
+<li><strong>Dans le bureau, cliquer sur « Choisir le dossier »</strong> dans le bloc « Résultats WinPalme · surveillance TXT ». Autoriser l’accès demandé par le navigateur.</li>
+</ol>
+<aside class="folder"><strong>Où trouver le dossier à sélectionner</strong><p>Dans le dossier <strong>Data de WinPalme</strong>, ouvrir la bonne bibliothèque, puis <strong>renc</strong>, choisir la rencontre concernée et sélectionner <strong>ResultatsSeries</strong>.</p><p class="path">Data\&lt;bibliothèque&gt;\renc\&lt;rencontre&gt;\ResultatsSeries</p></aside>
+<ol class="steps" start="2">
+<li><strong>Contrôler les associations de courses</strong> proposées à partir des noms de fichiers. Aucun préfixe de nom n’est à saisir. Vérifier surtout la session, la course, le sexe et la série.</li>
+<li><strong>Vérifier la correspondance des lignes.</strong> Exemple : si le TXT commence à 1 et les séries à 2, choisir première ligne TXT <strong>1</strong>, première ligne des séries <strong>2</strong>. Ainsi TXT 1 correspond à la ligne 2, puis 2 à 3, etc. Le nombre de places en finale est un autre réglage.<figure class="screenshot"><img src="assets/direct/guide/lignes-txt.png" alt="Réglage réel : première ligne TXT 1 et première ligne des séries 2"><figcaption>Exemple de correspondance 1 → 2, sur des données fictives.</figcaption></figure></li>
+<li><strong>Choisir si les TXT déjà présents doivent être publiés.</strong> Cocher « Publier aussi les fichiers déjà présents » pour une reprise ou pour charger des résultats déjà validés. Confirmer que les séries et associations sont correctes et autoriser la publication automatique, puis démarrer.</li>
+<li><strong>Laisser ce poste ouvert et éveillé.</strong> Valider les séries dans WinPalme comme d’habitude. La surveillance contrôle le dossier toutes les 30 secondes, attend deux lectures identiques du fichier puis publie les résultats nouveaux ou modifiés. Le suivi des imports indique les séries et résultats reçus. Vérifier le dernier contrôle et les éventuelles alertes.</li>
+</ol>
+<div class="columns"><section><h2>Correction et reprise</h2><p>Corriger dans WinPalme et valider de nouveau : le TXT modifié remplace le résultat précédent. Après une fermeture du navigateur, rechoisir le dossier, contrôler les réglages de lignes mémorisés et relancer la surveillance.</p></section><section><h2>Si une alerte apparaît</h2><p>Lire le fichier indiqué. Vérifier d’abord le décalage des lignes, les associations et les séries à jour, puis reprendre le contrôle. Les lignes de remplissage et les doublons strictement identiques sont ignorés ; une ambiguïté réelle doit être corrigée.</p></section></div>
+<aside class="note"><strong>Côté public</strong><p>Les spectateurs actualisent eux-mêmes la page, avec le bouton flottant ou le navigateur. Après les premiers résultats, une course reste « en cours » tant que toutes ses séries n’ont pas leurs résultats. Un temps sans référence est affiché par un tiret et n’est pas comparé au résultat.</p></aside>
+<p class="page-footer">LivePalmes Direct · Essai sur TEST · 2 / 5</p>
+</article>
+
+<article class="guide-page" id="consoles">
+<header><img class="guide-logo" src="logo-ffessm-nage-avec-palmes.png" alt="FFESSM Nage avec Palmes"><span class="edition">OPTION AVEC CONSOLES · RÉGIONAL</span><h1>Coordonner les postes</h1><p class="subtitle">Les décisions circulent entre les consoles ; les résultats publics viennent des TXT</p></header>
+<p>Dans « Consoles et publication publique », activer les postes utiles puis enregistrer. Dès qu’un autre poste est activé, le juge arbitre est obligatoire. Ouvrir les liens de la compétition. Un même compte peut servir sur plusieurs appareils ; pour un autre compte actif, utiliser « Déléguer cette compétition », choisir ses consoles et sa date d’expiration.</p>
+<table class="roles"><thead><tr><th>Poste</th><th>Action principale</th></tr></thead><tbody>
+<tr><td>Juge arbitre</td><td>Choisit course et série, clique sur la ligne du nageur, choisit le motif et valide. « Pointer ici » pose un repère commun sans déplacer les autres postes.</td></tr>
+<tr><td>Bureau des performances</td><td>Traite les décisions dans « Arbitrage et finales », les saisit dans WinPalme, confirme leur prise en compte et contrôle l’arrivée du TXT corrigé.</td></tr>
+<tr><td>Speaker</td><td>Annonce la décision officielle, puis clique sur « Annoncé ». Sans speaker activé, le bureau confirme l’annonce des finalistes.</td></tr>
+<tr><td>Secrétariat</td><td>Prend en compte les forfaits et saisit les forfaits en finale. Sans ce poste activé, le bureau assure la saisie des forfaits en finale.</td></tr>
+<tr><td>Live</td><td>Consulte les informations officielles et peut masquer une carte sur son appareil. Ce poste est distinct de la page publique de résultats.</td></tr>
+</tbody></table>
+<h2>Exemple de décision du juge arbitre</h2>
+<div class="decision-example"><div><ol class="steps"><li>Choisir la course et la série.</li><li>Cliquer sur la ligne du nageur.</li><li>Choisir le motif. Si demandé, préciser le relayeur ou la longueur ; ajouter une remarque utile.</li><li>Valider la décision. Elle est transmise selon le circuit de la page suivante.</li></ol><p class="caption">La capture montre le vrai écran. « NAGEUR 1 », la compétition et les résultats sont fictifs.</p></div><figure class="screenshot decision-shot"><img src="assets/direct/guide/decision-ja.png" alt="Fenêtre JA avec le nageur fictif NAGEUR 1 et le motif DSQ faux départ sélectionné"><figcaption>Fenêtre ouverte depuis la ligne du nageur.</figcaption></figure></div>
+<p class="important">Une décision de console ne modifie pas à elle seule le résultat public. Le bureau doit la saisir dans WinPalme et recevoir le TXT corrigé.</p>
+<p class="page-footer">LivePalmes Direct · Essai sur TEST · 3 / 5</p>
+</article>
+
+<article class="guide-page" id="circuits-regionaux">
+<header><img class="guide-logo" src="logo-ffessm-nage-avec-palmes.png" alt="FFESSM Nage avec Palmes"><span class="edition">RÉGIONAL · SANS ARBITRAGE VIDÉO</span><h1>Circuits des décisions</h1><p class="subtitle">Notifications des postes et mise à jour des résultats publics</p></header>
+<h2>Disqualification</h2>
+<p>Selon l’épreuve, les motifs proposés sont : faux départ, départ anticipé de relais, coulée supérieure à 15 m, passage en immersion, faute de bouteille, gêne d’un concurrent ou autre motif. En régional, toutes ces disqualifications suivent le circuit ci-dessous.</p>
+<figure class="diagram"><div class="diagram-scroll"><img src="assets/direct/guide/region.svg" alt="JA : disqualification validée. En parallèle : bureau, speaker actif et Live actif. Le bureau saisit dans WinPalme ; le TXT corrigé actualise le public."></div><figcaption>Les postes actifs reçoivent la décision en parallèle. L’annonce du speaker ne remplace pas la correction du TXT.</figcaption></figure>
+<h2>Forfait et abandon</h2>
+<figure class="diagram"><div class="diagram-scroll"><img src="assets/direct/guide/forfait-abandon.svg" alt="Forfait : JA vers bureau et secrétariat actif. Abandon : JA vers bureau. Dans les deux cas, WinPalme puis le TXT mettent le public à jour."></div></figure>
+<p class="important">Après une annulation ou une réqualification, traiter la correction au bureau, dans WinPalme et dans les annonces concernées. Vérifier le nouveau TXT avant de considérer le résultat public comme corrigé.</p>
+<p class="page-footer">LivePalmes Direct · Essai sur TEST · 4 / 5</p>
+</article>
+
+<article class="guide-page" id="finales-video">
+<header><img class="guide-logo" src="logo-ffessm-nage-avec-palmes.png" alt="FFESSM Nage avec Palmes"><span class="edition">FINALES ET COMPLÉMENT NATIONAL</span><h1>Finales et arbitrage vidéo</h1><p class="subtitle">Configurer les finales avant la fin des séries qualificatives</p></header>
+<h2>Si la compétition comporte des finales</h2>
+<ol class="steps compact">
+<li><strong>Paramétrer au scratch</strong> : sans finale, A ou A + B ; 6 ou 8 places par finale. Appliquer par course ou en groupe, puis enregistrer.</li>
+<li><strong>Toutes les séries reçues et les décisions traitées</strong> : contrôler les qualifiés. Le speaker annonce et confirme ; sans speaker activé, le bureau confirme l’annonce effectuée hors application.</li>
+<li><strong>Ex æquo à une limite utile</strong> : annoncer les qualifiés certains et signaler le départage. Le JA ou le bureau enregistre l’ordre officiel, sans choisir automatiquement selon le nom ou la ligne.</li>
+<li><strong>Forfait après annonce nominative, sous 30 minutes</strong> : saisie par le secrétariat, ou par le bureau sans secrétariat activé. Annoncer les repêchages ; les nouveaux qualifiés ont leur propre délai. Le JA ou le bureau confirme l’annulation d’un swim-off devenu inutile.</li>
+</ol>
+<p class="caption">Les affectations de lignes et la composition des finales restent saisies dans WinPalme. Une modification des résultats ou des séries après annonce demande un nouveau contrôle de la composition.</p>
+<h2>Au national seulement · si la vidéo est activée</h2>
+<p>Ce circuit concerne les compétitions nationales avec la console vidéo activée. Sans vidéo activée, reprendre le circuit régional de la page 4.</p>
+<figure class="diagram video-diagram"><div class="diagram-scroll"><img src="assets/direct/guide/video.svg" alt="Au national avec vidéo : faux départ, départ anticipé de relais ou coulée supérieure à 15 mètres passent à l’examen vidéo. Confirmation : circuit officiel vers bureau, speaker et Live actifs. Invalidation : historique sans tâche de DSQ. Les autres motifs vont directement au circuit officiel."></div></figure>
+<p class="caption">La reprise explicite par le JA sans attendre la vidéo reste possible. Une annulation du JA ou une réqualification du délégué doit être traitée au bureau et reportée dans WinPalme ; les éventuelles nouvelles annonces restent à confirmer.</p>
+<aside class="note warning compact-warning"><strong>« Tout réinitialiser » est définitif.</strong> Séries, résultats, historique et PDF publics du Direct sont effacés. Activation et accès sont conservés. Garder les fichiers WinPalme.</aside>
+<p class="page-footer">LivePalmes Direct · Essai sur TEST · 5 / 5</p>
+</article>
+</main>
+</body></html>

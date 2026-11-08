@@ -466,6 +466,7 @@ function runBrowserSmokeIfRequested() {
   run(process.execPath, [path.join(rootDir, "tests", "direct-consoles-browser-tests.js")]);
   run(process.execPath, [path.join(rootDir, "tests", "direct-admin-workflow-browser-tests.js")]);
   run(process.execPath, [path.join(rootDir, "tests", "portal-reactivity-browser-tests.js")]);
+  run(process.execPath, [path.join(rootDir, "tests", "portal-direct-browser-tests.js")]);
   run(process.execPath, [path.join(rootDir, "tests", "portal-news-browser-tests.js")]);
   run(process.execPath, [path.join(rootDir, "tests", "mail-template-editor-browser-tests.js")]);
   run(process.execPath, [path.join(rootDir, "tests", "request-decision-browser-tests.js")]);
