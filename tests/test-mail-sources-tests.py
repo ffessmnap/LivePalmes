@@ -337,7 +337,7 @@ class MailSources(unittest.TestCase):
 
     def test_contacts_three_own_anchor_baseline_digest_and_no_cross_lot_plan(self):
         entry = p.contract('contacts_three')
-        self.assertEqual(entry['applicationCommit'], '64a0dddc8c5ff2def7c274a497b0f9e8737e42a6')
+        self.assertEqual(entry['applicationCommit'], '0f18ae53623947d1e984c2213d87bd2436efff3d')
         self.assertEqual(entry['baseCommit'], 'bb09ea8057943aff39b2600a3448fdd278a32908')
         self.assertEqual(entry['baselineRuns'], [{'id': 42487560642, 'artifact': 'test-proof',
             'workflow': '.github/workflows/livepalmes-test-common.yml'}])
