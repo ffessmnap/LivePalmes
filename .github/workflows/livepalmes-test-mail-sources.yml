@@ -6,7 +6,7 @@ on:
         description: Lot autorise avec son contrat ferme au candidat applicatif exact
         required: true
         type: choice
-        options: [models, decisions, contacts]
+        options: [models, decisions, contacts, reminder]
       expected_commit:
         description: Commit main exact ayant reussi les deux suites CI
         required: true

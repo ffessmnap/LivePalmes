@@ -173,12 +173,13 @@ async function adapter(){
   const fs=require("./helpers/source-files"),vm=require('node:vm'),source=fs.readFileSync('functions/index.js','utf8');
   const start=source.indexOf('function nativeNotificationTaskServices('),end=source.indexOf('async function enqueueNativeNotificationTask(',start);
   let captured,transports=0;
-  const sandbox={ENVIRONMENT:{projectId:'livepalmes',hostingOrigin:'https://example.org'},db:{},
-    nativeNotificationAutomationServices:()=>({competition:async()=>competition}),engagementMailSmtpConfig:()=>({ready:true,transport:{},fromEmail:'from@example.org'}),
+  const adapterDb=fixture();let freshCompetition={...competition,entryStatus:'open',entryDeadlineAt:'2050-11-12T21:00:00.000Z'};
+  const sandbox={ENVIRONMENT:{projectId:'livepalmes',hostingOrigin:'https://example.org'},db:adapterDb,
+    nativeNotificationAutomationServices:()=>({competition:async()=>competition,currentReminderCompetition:async()=>freshCompetition,select:(_kind,rows)=>rows}),engagementMailSmtpConfig:()=>({ready:true,transport:{},fromEmail:'from@example.org'}),
     nodemailer:{createTransport:()=>{transports++;return {close:()=>{},sendMail:()=>{throw Error('No SMTP allowed in fixture');}};}},
     engagementMailAttachments:async()=>[],livePalmesMailHtml:text=>text,normalizeEmail:text=>String(text||'').toLowerCase(),
     engagementMailRecipientFromUserDoc:snapshot=>snapshot.data(),engagementRecipientHasCapability:recipient=>recipient.capabilities.includes('engagements.club.manage'),
-    require:name=>{assert.equal(name,'./nap-bcc-delivery');return {drain:async(_db,_ref,services)=>{captured=services;return {done:true};}};}};
+    require:name=>{if(name==='./nap-notification-automation')return automation;assert.equal(name,'./nap-bcc-delivery');return {drain:async(_db,_ref,services)=>{captured=services;return {done:true};}};}};
   vm.runInNewContext(source.slice(start,end),sandbox);
   const services=sandbox.nativeNotificationTaskServices();
   await services.deliver({get:async()=>({data:()=>({competitionId:'5135'})})});
@@ -189,6 +190,17 @@ async function adapter(){
   assert.equal(captured.eligible({type:'club_recap_pdf',clubId:'1'},item,{data:()=>good}),true);
   for(const change of [{status:'disabled'},{clubId:'2'},{email:'changed@example.org'},{competitionNotificationsEnabled:false},{capabilities:[]}])
     assert.equal(captured.eligible({type:'club_recap_pdf',clubId:'1'},item,{data:()=>({...good,...change})}),false);
+  const notificationEvent={kind:'deadline_reminder',cycleKey:'cycle',reminderKey:'reminder',deadline:freshCompetition.entryDeadlineAt,reminderDueAt:'2000-01-01T00:00:00.000Z'};
+  const pointer=automation.stateRef(adapterDb,'5135');adapterDb.rows.set(pointer.path,{...notificationEvent,lifecycle:'open'});
+  const reminderJob={type:'deadline_reminder',competitionId:'5135',notificationEvent};
+  assert.equal(await captured.beforeSend(reminderJob),true);
+  for(const change of [{entryStatus:'closed'},{canceled:true},{entryDeadlineAt:'2050-11-13T21:00:00.000Z'}]){
+    freshCompetition={...competition,entryStatus:'open',entryDeadlineAt:notificationEvent.deadline,...change};
+    assert.equal(await captured.beforeSend(reminderJob),false,'real adapter blocks a new closure/cancellation/deadline after claim');
+  }
+  freshCompetition={...competition,entryStatus:'open',entryDeadlineAt:notificationEvent.deadline};adapterDb.rows.get(pointer.path).reminderKey='changed';
+  assert.equal(await captured.beforeSend(reminderJob),false);
+  assert.equal(captured.eligible({type:'deadline_reminder',clubId:'2'},item,{data:()=>good}),false,'another club cannot receive this PDF');
   sandbox.ENVIRONMENT.projectId='livepalmes-test';await services.deliver({get:()=>{throw Error('No business read on TEST');}});assert.equal(transports,1);
 }
 (async()=>{await groups();await smtp();await copies();await worker();await batches();await adapter();console.log('BCC notifications: fixed five-minute window, concurrent deposits/tasks, 246 => 5, club PDF isolation, fresh preferences, partial SMTP/copies, MIME privacy/Reply-To, continuations and TEST hard stop verified without network.');})().catch(error=>{console.error(error);process.exitCode=1;});

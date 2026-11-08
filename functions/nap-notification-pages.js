@@ -19,6 +19,7 @@ async function page(event,competition,services){
     const metadata=manifest(file,contentType);
     return services.simulation===true?metadata:services.persistAttachment(event,file,metadata);
   }
+  if(event.kind==='deadline_reminder')return require('./nap-deadline-reminder').page(event,competition,services,attachment,cursor);
   const recipients=await services.recipients();
   const control=require('./engagement-mail-control');
   const setting=services.mailSetting?await services.mailSetting():{scope:'all'};

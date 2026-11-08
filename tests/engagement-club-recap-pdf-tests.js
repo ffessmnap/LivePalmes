@@ -52,7 +52,7 @@ class RecordedPdf extends PDFDocument {
   text(text, ...args) { textCalls.push(String(text)); return super.text(text, ...args); }
 }
 const context = vm.createContext({
-  fs, crypto, Buffer, console, PDFDocument: RecordedPdf,
+  fs, crypto, Buffer, console, Date, PDFDocument: RecordedPdf,
   require:require('node:module').createRequire(path.join(root,'functions/index.js')),
   QRCode: require("../functions/node_modules/qrcode"),
   cleanPublicCalendarWhatsAppUrl: require("../functions/public-calendar").cleanPublicCalendarWhatsAppUrl,
@@ -120,6 +120,20 @@ async function main() {
   const many = { swimmers: Array.from({ length: 70 }, (_, i) => swimmer(`p${i}`, "Camille", `Exemple ${i}`, "F")), relays: [] };
   await context.buildEngagementClubRecapPdf(competition, many);
   assert.equal(textCalls.filter(text => text === "Aucune course engagée").length, 70, "Aucun inscrit perdu lors des sauts de page.");
+  assert.ok(!textCalls.includes('VERSION PROVISOIRE'), 'Le PDF définitif ne reçoit aucun filigrane.');
+  textCalls.length=0;
+  const provisionalOptions={provisional:true,generatedAt:'2026-11-10T10:00:00.000Z'};
+  const provisional=await context.buildEngagementClubRecapPdf(competition,many,provisionalOptions);
+  assert.ok(provisional.fileName.startsWith('PROVISOIRE-'));
+  assert.ok(textCalls.filter(text=>text==='VERSION PROVISOIRE').length>=6,'Filigrane répété sur les pages du dossier incomplet.');
+  assert.ok(textCalls.some(text=>text.startsWith('VERSION PROVISOIRE - ENGAGEMENTS EN COURS - généré')));
+  assert.ok(provisional.buffer.equals((await context.buildEngagementClubRecapPdf(competition,many,provisionalOptions)).buffer),'Même snapshot/date : mêmes octets PDF à la reprise.');
+  if(process.argv[3])fs.writeFileSync(process.argv[3],provisional.buffer);
+  textCalls.length=0;
+  const officialOnly=await context.buildEngagementClubRecapPdf({...competition,officialsRequired:false},{clubId:'fixture-officiels',clubName:'Club officiels fictif',swimmers:[],relays:[],officials:[{firstName:'Camille',lastName:'Juge Exemple',licenseNumber:'FICTIF'}]},provisionalOptions);
+  assert.ok(textCalls.includes('Camille Juge Exemple'),'Officiels seuls conservés dans le récapitulatif provisoire, même sans dossier complet.');
+  assert.ok(!textCalls.includes('Alice Martin'));
+  if(process.argv[4])fs.writeFileSync(process.argv[4],officialOnly.buffer);
   console.log("PDF club : inscrits sans course, relais, effectifs, frais, cache et pagination OK.");
   const teamsEntry={...entry,swimmers:entry.swimmers.map((p,i)=>({...p,teamRole:i===0?'outside':'titular'})),teamEntries:{teams:[{id:'f-a',letter:'A',sex:'F',members:['2','3','4','5','6'],reserve:'',relays:[]}],outside:['1'],individuals:[{swimmerId:'1',eventCodes:['50SF','100SF']}]}};
   const teamCompetition={...competition,entryFormat:'clubs',entryRulesVersion:'2026-2027-v1',fees:{enabled:true,teamFee:70,swimmerFee:10,individualEventFee:5,relayFee:0}};

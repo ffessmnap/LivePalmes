@@ -2,6 +2,16 @@
 
 <!-- description: Regroupement CCI, temporisation documentaire et tâches persistantes des notifications NAP ; budgets de lecture et limites de recette TEST. -->
 
+## Rappel J−1 — préparation du 8 novembre 2026
+
+Périmètre confirmé : audience exacte de l’ouverture (région organisatrice et régions invitées en régional/départemental, clubs éligibles en national/international), préférences et réglage national conservés. Un club sans déclaration reçoit le mail seul ; un dossier avec nageurs/relais ou seulement des officiels reçoit son propre récapitulatif provisoire, même incomplet. Aucune validation métier implicite. Organisateur/informatique en CC/Reply-To, clubs en CCI. Le PDF définitif reste inchangé.
+
+Programmation à l’échéance moins 24 heures réelles. Pas de rattrapage si l’échéance est créée/modifiée après J−1. Un retard du worker avant clôture reste compatible avec un texte indiquant l’échéance exacte ; après clôture, annulation ou changement de date, préparation/envoi annulés. Une clé par cycle et échéance évite le second rappel lors d’un retour à une date déjà traitée. Une ancienne occurrence non commencée peut être reprogrammée, sans recréer ses groupes. Les modèles, données et date de génération sont figés ; les reprises réutilisent ce snapshot privé et les octets PDF déterministes. Le modèle possède un bloc automatique obligatoire indiquant l’échéance et le caractère provisoire.
+
+Budget avant implémentation : zéro lecture à l’ouverture/rafraîchissement d’écran. Programmation : un événement technique supplémentaire, dans la collection existante ; aucune recherche de compétitions. À froid : annuaire existant borné à 10 000 adresses/1 000 clubs, une lecture SQL groupée des régions et les neuf lectures groupées existantes des dossiers (500 clubs maximum), sans lecture par club. Snapshot JSON privé limité à 20 Mio, une lecture/création conditionnelle puis cache par worker. Cinq PDF et 250 groupes maximum par page, au plus 500 PDF/750 groupes pour 10 000 adresses et 500 dossiers ; plafond existant de 1 000 groupes conservé. Avant chaque envoi de rappel : une requête SQL par clé primaire, au plus deux lignes avec garde d’unicité, et un pointeur Firestore frais ; aucune lecture par destinataire. Les transactions groupées de préférences et les contrôles nationaux restent en place.
+
+TEST uniquement, via un contrat de sources distinct après la clôture du lot contacts. Aucune invocation métier, donnée réelle, nouvelle collection/dépendance/permission, activation de mails/file/planificateur ou PROD. Les compétitions futures déjà gérées nécessiteront une programmation explicite au moment de l’activation autorisée, sans rejouer l’ouverture ni rattraper une échéance passée.
+
 ## Contacts multiples et copies — 8 novembre 2026
 
 À la demande explicite d’Antoine, les trois contacts de compétition acceptent des adresses séparées par `;` : organisateur, responsable informatique (`mailtxt`) et responsable juge (`mailjuges`). Validation de toute la liste, normalisation et déduplication sans distinction de casse ; aucune troncation ni migration, 255 caractères maximum par champ. Organisateur et informatique : dix contacts distincts au total maximum pour conserver les limites de livraison/préparation existantes. Le formulaire et les erreurs indiquent ces limites ; les champs de compte/Auth restent des adresses uniques.

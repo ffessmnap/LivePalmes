@@ -4,13 +4,21 @@ function createCompetitionService_nativeNotificationAutomationServices(backendCo
     if(backendContext.ENVIRONMENT.sportingDataSource !== "nap")throw new backendContext.HttpsError("failed-precondition","Source NAP requise.");
     const pool=require("../../nap-portal-pool").portalPool(process.env.LIVEPALMES_NAP_PASSWORD);
     let recipientPromise, mailSettingPromise;
-    const competitionPromises=new Map(),entryPromises=new Map();
+    const competitionPromises=new Map(),entryPromises=new Map(),reminderPromises=new Map();
     const services={simulation,deleteField:()=>backendContext.FieldValue.delete(),
       mailSetting: () => mailSettingPromise ||= require("../../engagement-mail-control").read(backendContext.db),
       freezeMailTemplates: (ref, event, lease) => require("../../mail-templates").freezeEvent(backendContext.db, ref, event, lease),
+      currentReminderCompetition:id=>require('../../nap-deadline-reminder').currentCompetition(pool,id),
+      reminderSnapshot:(event,build)=>{
+        if(!reminderPromises.has(event.operation))reminderPromises.set(event.operation,simulation?
+          Promise.resolve().then(build).then(value=>({...value,generatedAt:new Date().toISOString()})):
+          require('../../nap-deadline-reminder').frozen(backendContext.storage.bucket(backendContext.LIVEPALMES_STORAGE_BUCKET)
+            .file(`engagements/notification-mail/${event.competitionId}/${event.operation}/reminder-source.json`),event,build));
+        return reminderPromises.get(event.operation);
+      },
       allowEvent: simulation ? undefined : async event => {
         const control=require("../../engagement-mail-control");
-        return control.eventDecision(await services.mailSetting(),{createdAt:event.createdAt,notificationDueAt:event.automatic?event.deadline:event.createdAt}).allowed;
+        return control.eventDecision(await services.mailSetting(),{createdAt:event.createdAt,notificationDueAt:event.automatic?require('../../nap-deadline-reminder').due(event):event.createdAt}).allowed;
       },
       persistAttachment: simulation ? undefined : async (event,file,metadata) => {
         const storagePath=`engagements/notification-mail/${event.competitionId}/${event.operation}/${metadata.sha256}`;
@@ -42,17 +50,20 @@ function createCompetitionService_nativeNotificationAutomationServices(backendCo
       mail:(kind,competition,recipient,details)=>{
         const email=backendContext.normalizeEmail(recipient.email);
         if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email))throw new TypeError('Adresse de destinataire invalide : corrigez le contact avant de reprendre.');
+        const reminder=kind==='deadline_reminder';
         const type=kind==='opening'?'opening_notification':kind==='documents'?'competition_documents':kind==='club_recap'?'club_recap_pdf':kind;
-        const subject=kind==='opening'?backendContext.engagementOpeningMailSubject(competition):kind==='documents'?backendContext.engagementCompetitionDocumentMailSubject(competition,details.documents):kind==='club_recap'?backendContext.engagementClubRecapMailSubject(competition,details.entry):kind==='entries_txt'?backendContext.engagementTxtMailSubject(competition):backendContext.engagementOfficialsMailSubject(competition);
-        const text=kind==='opening'?backendContext.engagementOpeningMailText(competition):kind==='documents'?backendContext.engagementCompetitionDocumentMailText(competition,details.documents):kind==='club_recap'?backendContext.engagementClubRecapMailText(competition,details.entry):kind==='entries_txt'?backendContext.engagementTxtMailText(competition,details):backendContext.engagementOfficialsMailText(competition,details);
+        const subject=reminder?`Rappel — clôture des engagements — ${competition.name}`:kind==='opening'?backendContext.engagementOpeningMailSubject(competition):kind==='documents'?backendContext.engagementCompetitionDocumentMailSubject(competition,details.documents):kind==='club_recap'?backendContext.engagementClubRecapMailSubject(competition,details.entry):kind==='entries_txt'?backendContext.engagementTxtMailSubject(competition):backendContext.engagementOfficialsMailSubject(competition);
+        const text=reminder?`Bonjour,\n\n${require('../../engagement-competition-mail-format').competitionMailLines(competition).join('\n')}\n\n${require('../../nap-deadline-reminder').text(competition,details)}\n\n${backendContext.ENVIRONMENT.hostingOrigin}/portail.html#club-competitions\n\nSportivement,\nNage avec Palmes FFESSM`:kind==='opening'?backendContext.engagementOpeningMailText(competition):kind==='documents'?backendContext.engagementCompetitionDocumentMailText(competition,details.documents):kind==='club_recap'?backendContext.engagementClubRecapMailText(competition,details.entry):kind==='entries_txt'?backendContext.engagementTxtMailText(competition,details):backendContext.engagementOfficialsMailText(competition,details);
         return {type,competitionId:competition.id,competitionName:competition.name,competitionRegionId:String(competition.regionId||''),
-          recipientRegionId:String(recipient.napClubRegionId||''),clubId:String(recipient.clubId||''),toEmail:email,recipientUid:String(recipient.uid||''),subject,textBody:text,attachments:details.attachments||[]};
+          recipientRegionId:String(recipient.napClubRegionId||''),clubId:String(recipient.clubId||''),toEmail:email,recipientUid:String(recipient.uid||''),
+          subject,textBody:text,attachments:details.attachments||[]};
       },
       job:(event,competition,payload,now)=>{
         const data={...payload,notificationId:`${event.operation}:${Number(event.generation||0)}`,source:'nap',simulation,
           status:simulation?'disabled':'ready',reason:simulation?'test-emails-disabled':'',
-          notificationDueAt:event.automatic?event.deadline:event.createdAt,
-          notificationEvent:{kind:event.kind,cycleKey:event.cycleKey,closureKey:event.closureKey,automatic:event.automatic},
+          notificationDueAt:event.automatic?require('../../nap-deadline-reminder').due(event):event.createdAt,
+          notificationEvent:{kind:event.kind,cycleKey:event.cycleKey,closureKey:event.closureKey||'',automatic:event.automatic,
+            ...(event.kind==='deadline_reminder'?{reminderKey:event.reminderKey,deadline:event.deadline,reminderDueAt:event.reminderDueAt}:{})},
           createdAt:now,updatedAt:now,sentAt:''};
         return {...data,id:payload.deliveryMode==='bcc-v1'?require("../../nap-notification-automation").hash([
           'bcc-v1',data.type,data.competitionId,data.notificationId,data.clubId,payload.recipients.map(item=>item.email)
@@ -86,10 +97,16 @@ function createCompetitionService_nativeNotificationAutomationServices(backendCo
         connectionTimeout:15000,greetingTimeout:15000,socketTimeout:30000});
       try{return await require("../../nap-bcc-delivery").drain(backendContext.db,ref,{
         projectId:backendContext.ENVIRONMENT.projectId,fromEmail:config.fromEmail,send:mail=>transporter.sendMail(mail),attachments:backendContext.engagementMailAttachments,
+        beforeSend:async job=>{
+          if(job.type!=='deadline_reminder')return true;
+          const automation=require('../../nap-notification-automation'),fresh=await services.currentReminderCompetition(job.competitionId);
+          const pointer=(await automation.stateRef(backendContext.db,job.competitionId).get()).data()||{};
+          return !!fresh&&automation.currentEvent(job.notificationEvent,pointer)&&automation.eligible({...job.notificationEvent,competitionId:job.competitionId},fresh,new Date().toISOString());
+        },
         copyEligible:email=>require("../../competition-mail-addresses").copies(competition).includes(email),
         content:job=>{
           const footer=`\n\nVous pouvez gérer les notifications email dans la rubrique Mon compte :\n${backendContext.ENVIRONMENT.hostingOrigin}/portail.html#mon-compte`;
-          const text=String(job.textBody||'').slice(0,5000)+(job.deliveredCc?.length&&job.contactNotice?'\n\n'+job.contactNotice:'')+(['opening_notification','competition_documents','club_recap_pdf'].includes(job.type)?footer:'');
+          const text=String(job.textBody||'').slice(0,5000)+(job.deliveredCc?.length&&job.contactNotice?'\n\n'+job.contactNotice:'')+(['opening_notification','competition_documents','club_recap_pdf','deadline_reminder'].includes(job.type)?footer:'');
           return {text,html:backendContext.livePalmesMailHtml(text)};
         },
         eligible:(job,item,snapshot)=>{
@@ -99,7 +116,8 @@ function createCompetitionService_nativeNotificationAutomationServices(backendCo
           const recipient={...backendContext.engagementMailRecipientFromUserDoc(snapshot),napClubRegionId:item.recipientRegionId};
           if(recipient.email!==item.email||String(recipient.clubId)!==item.clubId||!recipient.competitionNotificationsEnabled)return false;
           if(job.type==='club_recap_pdf')return item.clubId===job.clubId&&backendContext.engagementRecipientHasCapability(recipient,'engagements.club.manage');
-          return services.select(job.type==='opening_notification'?'opening':'documents',[recipient],competition,event).length===1;
+          if(job.type==='deadline_reminder'&&job.clubId&&item.clubId!==job.clubId)return false;
+          return services.select(['opening_notification','deadline_reminder'].includes(job.type)?'opening':'documents',[recipient],competition,event).length===1;
         }
       });}finally{transporter.close();}
     };
