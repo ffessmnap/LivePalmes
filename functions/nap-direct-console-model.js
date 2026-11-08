@@ -47,7 +47,7 @@ function qualification(state,event,entries){
   return {format:race.format,lanes,capacity,sourceHash:digest,programVersionHash:event.programVersionHash||null,complete,ambiguous,ties,pendingKeys,certainRoster,partial:Boolean(race.announced?.partial),unresolvedDecision,decisionMismatch,proposal,roster:current,changed:Boolean(race.announced&&(race.announced.sourceHash!==digest||event.programVersionHash&&race.announced.programVersionHash!==event.programVersionHash)),announcedAt:race.announced?.at||null,withdrawals:race.withdrawals||{},pendingRoster:race.pendingRoster||null,withdrawalLog:race.withdrawalLog||[],swimoff};
 }
 function can(role,command,consoles){
-  const table={configure:['computer'],progress:['referee'],decision:['referee'],videoConfirm:['video'],videoReject:['video'],takeover:['referee'],cancel:['referee','computer'],computerDone:['computer'],announceDecision:['speaker'],announceFinalists:['speaker','computer'],withdraw:['secretary','computer'],reinstate:['secretary','computer'],preWithdraw:['secretary','computer'],announceReplacement:['speaker','computer'],resolveTie:['referee','computer'],markSwimoff:['referee','computer'],confirmSwimoffCancelled:['referee','computer'],refreshFinalists:['computer'],compositionDone:['computer'],secretaryDone:['secretary']};
+  const table={configure:['computer'],progress:['referee'],decision:['referee'],videoConfirm:['video'],videoReject:['video'],takeover:['referee'],cancel:['referee','computer','video'],computerDone:['computer'],announceDecision:['speaker'],announceFinalists:['speaker','computer'],withdraw:['secretary','computer'],reinstate:['secretary','computer'],preWithdraw:['secretary','computer'],announceReplacement:['speaker','computer'],resolveTie:['referee','computer'],markSwimoff:['referee','computer'],confirmSwimoffCancelled:['referee','computer'],refreshFinalists:['computer'],compositionDone:['computer'],secretaryDone:['secretary']};
   if(!table[command]?.includes(role))reject('Cette action n’est pas autorisée dans cette console.');
   if(role==='computer'&&['announceFinalists','announceReplacement'].includes(command)&&consoles.includes('speaker'))reject('L’annonce est réservée au speaker tant que sa console est activée.');
   if(role==='computer'&&['withdraw','reinstate','preWithdraw'].includes(command)&&consoles.includes('secretary'))reject('Utiliser le secrétariat tant que sa console est activée.');
@@ -73,7 +73,7 @@ function next(previous,input,{role,actor,actorLabel=actor,event,entries,consoles
     if(input.type==='relay_early_start'&&!relay||['underwater_15m','immersion'].includes(input.type)&&underwaterForbidden||input.type==='bottle_fault'&&!/\d+is$/.test(code)&&!/immersion/i.test(event.eventLabel))reject('Ce motif ne correspond pas à cette épreuve.');
     const needsLeg=relay&&['relay_early_start','underwater_15m','immersion','bottle_fault','interference','other_dsq'].includes(input.type),relayLeg=Number(input.relayLeg)||null;
     const legCount=Number(code.match(/^(\d+)x/)?.[1])||4;
-    if(needsLeg&&(!Number.isInteger(relayLeg)||relayLeg<1||relayLeg>legCount))reject('Préciser le relayeur concerné.');
+    if(needsLeg&&(!Number.isInteger(relayLeg)||relayLeg<(input.type==='relay_early_start'?2:1)||relayLeg>legCount))reject('Préciser le relayeur concerné.');
     if(input.type==='underwater_15m'&&!['start','length'].includes(input.lengthType))reject('Préciser le départ ou la longueur concernée.');
     if(input.lengthType==='length'&&(!Number.isInteger(Number(input.lengthNumber))||Number(input.lengthNumber)<1||Number(input.lengthNumber)>100))reject('Numéro de longueur invalide.');
     const video=videoTypes.has(input.type)&&consoles.includes('video'),official=!['forfait','abandon'].includes(input.type)&&!video;
@@ -83,9 +83,10 @@ function next(previous,input,{role,actor,actorLabel=actor,event,entries,consoles
     if(command!=='videoReject'){alert.computerStatus='pending';alert.speakerStatus=consoles.includes('speaker')?'pending':'none';alert.official=true;}
   }else if(command==='cancel'){
     requiredAlert();if(!motifs[alert.type])reject('Cette correction ou information ne peut pas être annulée à nouveau.');
-    const speaker=alert.speakerStatus==='done'||role==='computer',computer=alert.computerStatus==='done'||role==='computer';
+    if(role==='video'&&['forfait','abandon'].includes(alert.type))reject('L’annulation délégué en vidéo concerne les disqualifications.');
+    const delegate=role==='computer'||role==='video',speaker=alert.speakerStatus==='done'||delegate,computer=alert.computerStatus==='done'||delegate;
     alert.cancelledAt=now;alert.cancelledBy=actor;
-    if(speaker||computer)state.alerts.push({...alert,id:input.operationKey,originalAlertId:alert.id,type:role==='computer'?'requalification':'ja_cancellation',cancelledAt:null,cancelledBy:null,videoStatus:'none',computerStatus:computer?'pending':'none',speakerStatus:speaker&&consoles.includes('speaker')?'pending':'none',secretaryStatus:'none',official:alert.official,createdAt:now,createdBy:actor});
+    if(speaker||computer)state.alerts.push({...alert,id:input.operationKey,originalAlertId:alert.id,type:delegate?'requalification':'ja_cancellation',cancelledAt:null,cancelledBy:null,videoStatus:'none',computerStatus:computer?'pending':'none',speakerStatus:speaker&&consoles.includes('speaker')?'pending':'none',secretaryStatus:'none',official:alert.official,createdAt:now,createdBy:actor});
   }else if(command==='computerDone'||command==='announceDecision'||command==='secretaryDone'){
     requiredAlert();const field=command==='computerDone'?'computerStatus':command==='secretaryDone'?'secretaryStatus':'speakerStatus';if(alert[field]!=='pending')reject('Cette action est déjà traitée ou n’est pas destinée à cette console.');alert[field]='done';alert[command==='computerDone'?'computerAt':command==='secretaryDone'?'secretaryAt':'speakerAt']=now;
   }else if(command==='resolveTie'){

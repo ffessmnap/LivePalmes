@@ -58,6 +58,7 @@ function runUnitTests() {
     "nap-direct-tests.js",
     "direct-console-model-tests.js",
     "direct-console-service-tests.js",
+    "direct-console-client-tests.js",
     "nap-direct-reset-tests.js",
     "direct-import-tests.js",
     "direct-txt-tests.js",

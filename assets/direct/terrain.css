@@ -1,0 +1,42 @@
+/* Adapter the historical consoles to the shared authenticated Direct shell. */
+.terrain-mode > .direct-topbar,.terrain-mode > .direct-shell > #consoleStatus{display:none}
+.terrain-mode > .direct-shell{max-width:none;width:100%;padding:0;margin:0}
+.terrain-mode #consoleWorkspace{padding:0}
+.terrain-mode #terrainRoot{width:100%;min-width:0}
+.terrain-mode .firebase-header-status{font:inherit;cursor:pointer}
+.terrain-mode .firebase-header-status.error{background:#fff3df;color:#8c4c00}
+.terrain-notice{margin:8px 12px;padding:9px 12px;border:1px solid #edc16c;border-radius:6px;background:#fff8e8;color:#7b4800;font-size:.85rem}
+.terrain-mode .terrain-modal{width:100%;height:100%;max-width:none;max-height:none;border:0;margin:0;overflow:auto;color:var(--ink);font-family:inherit}
+.terrain-mode .terrain-modal:not([open]){display:none}
+.terrain-mode .terrain-modal::backdrop{background:transparent}
+.terrain-mode .terrain-modal-error{position:sticky;bottom:0;max-width:560px;padding:10px;background:#fff0f0;color:#a32323;border-radius:6px}
+.terrain-mode .terrain-modal-error[hidden]{display:none}
+.terrain-mode #terrainFinalTasks:empty{display:none}
+.terrain-mode .detail-row{min-width:0;flex-wrap:wrap}
+.terrain-mode .detail-row details{width:100%}
+.terrain-mode .detail-row details .direct-inline-passages{padding:5px 0}
+.terrain-mode .direct-passage-table{min-width:0}
+.terrain-mode .terrain-tie{border:1px solid #eed396;background:#fff9e9;padding:10px;border-radius:6px;display:grid;gap:8px}
+.terrain-mode .terrain-tie select{max-width:100%;min-height:40px}
+@media(max-width:1366px),(pointer:coarse){
+  .terrain-mode .top-actions button,.terrain-mode .series-chip,.terrain-mode .panel-actions button,.terrain-mode .queue-actions button,.terrain-mode .history-action,.terrain-mode .decision-choice,.terrain-mode .decision-extra-button,.terrain-mode .decision-modal-actions button,.terrain-mode .decision-actions button{min-height:44px}
+  .terrain-mode .sidebar select,.terrain-mode .top-session-field select{min-height:44px}
+  .terrain-mode .series-chip{min-width:44px}
+  .terrain-mode .decision-close{min-width:44px;min-height:44px}
+  .terrain-mode .decision-dialog{max-height:calc(100dvh - 28px)}
+  .terrain-mode .history-item,.terrain-mode .queue-item{touch-action:manipulation}
+}
+@media(max-width:700px){
+  .terrain-mode .live-mode .sidebar,.terrain-mode .sidebar{grid-template-columns:minmax(0,1fr)}
+  .terrain-mode .entrants-layout{grid-template-columns:minmax(0,1fr)}
+  .terrain-mode .panel-actions{flex-wrap:wrap}
+  .terrain-mode .terrain-modal{padding:8px}
+}
+@media print{
+  body.terrain-mode #consoleWorkspace>#terrainRoot{display:block!important}
+  body.terrain-mode #terrainRoot .sidebar,body.terrain-mode #terrainRoot .entrants-panel,body.terrain-mode #terrainRoot #officialAlerts,body.terrain-mode #terrainRoot #decisionPanel,body.terrain-mode #terrainRoot #roleQueue,body.terrain-mode #terrainRoot #terrainFinalTasks,body.terrain-mode .footer-status,body.terrain-mode .top-actions,body.terrain-mode .top-session-field,body.terrain-mode .history-actions,body.terrain-mode .history-action,body.terrain-mode #terrainNotice{display:none!important}
+  body.terrain-mode .history-list{max-height:none;overflow:visible}
+  body.terrain-mode .history-item{break-inside:avoid;grid-template-columns:50px 1fr 1fr}
+  body.terrain-mode .app-shell,body.terrain-mode .panel{box-shadow:none;padding:0;border:0}
+}
+.terrain-partial-roster ol{list-style:none;padding-left:0}
