@@ -197,6 +197,7 @@ function createAccessHandlers(backendContext) {
       set HttpsError(value) { backendContext.HttpsError = value; },
       get accessManagementContext() { return backendContext.accessManagementContext; },
       set accessManagementContext(value) { backendContext.accessManagementContext = value; },
+      get requestDecisionMailServices() { return backendContext.requestDecisionMailServices; },
       get deleteAccessUserAccount() { return backendContext.deleteAccessUserAccount; },
       set deleteAccessUserAccount(value) { backendContext.deleteAccessUserAccount = value; }
     });

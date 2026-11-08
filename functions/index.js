@@ -551,6 +551,7 @@ function $portalAccessHandlers_resolveAccessUserDeletionRequest() {
     get cleanText() { return cleanText; },
     get db() { return db; },
     get deleteAccessUserAccount() { return deleteAccessUserAccount; },
+    get requestDecisionMailServices() { return requestDecisionMailServices; },
     get writeAuditLog() { return writeAuditLog; }
   });
   return $portalAccessHandlers_resolveAccessUserDeletionRequest.instance;
@@ -7160,19 +7161,30 @@ exports.listEngagementAccessRequests = onCall(CALLABLE_OPTIONS, /* extracted-han
   return $portalCompetitionHandlers_listEngagementAccessRequests().listEngagementAccessRequests(request);
 });
 
+function requestDecisionMailServices() {
+  return { projectId: ENVIRONMENT.projectId, smtpConfig: engagementMailSmtpConfig,
+    send: (mail, config) => nodemailer.createTransport(config.transport).sendMail(mail) };
+}
+
 exports.resolveEngagementAccessRequest = onCall({ ...PORTAL_ACCESS_REQUEST_OPTIONS, secrets: ENVIRONMENT.sportingDataSource === "nap" ? [...ENGAGEMENT_MAIL_SECRETS, defineSecret("LIVEPALMES_NAP_PASSWORD") ] : ENGAGEMENT_MAIL_SECRETS }, async (request) => {
   await portalSessionService().assertSession(request);
   const context = await engagementAccessContext(request);
   const requestId = cleanText(request.data?.requestId).slice(0, 80);
   const decision = cleanText(request.data?.decision);
-  const resolutionReason = cleanText(request.data?.resolutionReason).slice(0, 600);
+  const decisionMail = require("./request-decision-mail");
+  let choice;
+  if (request.data?.action !== "retryNotification") {
+    try { choice = decisionMail.options(request.data, 600); }
+    catch (error) { throw new HttpsError("invalid-argument", error.message); }
+  }
+  const resolutionReason = choice?.comment || "";
   if (!requestId) {
     throw new HttpsError("invalid-argument", "Demande requise.");
   }
-  if (!["approved", "rejected"].includes(decision)) {
+  if (request.data?.action !== "retryNotification" && !["approved", "rejected"].includes(decision)) {
     throw new HttpsError("invalid-argument", "Decision invalide.");
   }
-  if (decision === "rejected" && !resolutionReason) {
+  if (request.data?.action !== "retryNotification" && decision === "rejected" && !resolutionReason) {
     throw new HttpsError("invalid-argument", "Le motif du refus est obligatoire.");
   }
   const ref = db.collection("engagementAccessRequests").doc(requestId);
@@ -7181,6 +7193,12 @@ exports.resolveEngagementAccessRequest = onCall({ ...PORTAL_ACCESS_REQUEST_OPTIO
     throw new HttpsError("not-found", "Demande introuvable.");
   }
   const data = snapshot.data() || {};
+  assertEngagementAccessRequestScope(context, data);
+  if (request.data?.action === "retryNotification") {
+    if (!cleanText(request.data?.notificationKey)) throw new HttpsError("invalid-argument", "Notification requise.");
+    const resolutionNotification = await decisionMail.deliver(db, ref, requestDecisionMailServices(), request.data.notificationKey);
+    return { ok: true, resolutionNotification };
+  }
   if (data.status !== "pending") {
     throw new HttpsError("failed-precondition", "Demande deja traitee.");
   }
@@ -7230,7 +7248,7 @@ exports.resolveEngagementAccessRequest = onCall({ ...PORTAL_ACCESS_REQUEST_OPTIO
     });
     accessResult = await saveAccessUserProfile(profile, context.uid);
   }
-  await ref.set({
+  await decisionMail.commit(db, ref, data, {
     ...(decision === "approved" ? {
       email: resolvedData.email,
       firstName: resolvedData.firstName,
@@ -7245,7 +7263,8 @@ exports.resolveEngagementAccessRequest = onCall({ ...PORTAL_ACCESS_REQUEST_OPTIO
         newClubCreated: clubCreationResult.created === true
       } : {})
     } : {}),
-    ...(decision === "rejected" ? { resolutionReason } : {}),
+    resolutionReason, notifyRequester: choice.notifyRequester,
+    resolutionNotification: decisionMail.intent(data, requestId, "access", decision, choice),
     status: decision,
     resolvedAt: now,
     resolvedBy: context.uid,
@@ -7253,7 +7272,7 @@ exports.resolveEngagementAccessRequest = onCall({ ...PORTAL_ACCESS_REQUEST_OPTIO
     updatedAt: now,
     updatedBy: context.uid,
     ...(accessResult ? { accessUid: accessResult.uid } : {})
-  }, { merge: true });
+  });
   await writeAuditLog("engagementAccessRequest.resolved", context.uid, {
     requestId,
     decision,
@@ -7265,16 +7284,7 @@ exports.resolveEngagementAccessRequest = onCall({ ...PORTAL_ACCESS_REQUEST_OPTIO
     resolutionReason: decision === "rejected" ? resolutionReason : "",
     createdClubId: cleanText(clubCreationResult?.club?.clubId).slice(0, 40)
   });
-  let resolutionNotification = null;
-  if (decision === "rejected") {
-    resolutionNotification = await sendEngagementAccessRejection({ ...data, resolutionReason });
-    await ref.set({ resolutionNotification, updatedAt: new Date().toISOString() }, { merge: true }).catch((error) => {
-      console.error(
-        "Statut de notification du refus non enregistre.",
-        cleanText(error?.code || error?.name || "firestore-error").slice(0, 80)
-      );
-    });
-  }
+  const resolutionNotification = await decisionMail.deliver(db, ref, requestDecisionMailServices(), decisionMail.intent(data, requestId, "access", decision, choice).key, false);
   const updated = await ref.get();
   return {
     ok: true,
@@ -10017,19 +10027,37 @@ exports.resolveEngagementSwimmerChangeRequest = onCall(ENVIRONMENT.sportingDataS
   if (!context.national) throw new HttpsError("permission-denied", "Validation reservee au niveau national.");
   const requestId = cleanText(request.data?.requestId).slice(0, 80);
   const decision = cleanText(request.data?.decision);
-  const resolutionNote = cleanText(request.data?.resolutionNote).slice(0, 500);
-  if (!requestId || !["approved", "rejected"].includes(decision)) {
+  const decisionMail = require("./request-decision-mail");
+  let choice;
+  if (request.data?.action !== "retryNotification") {
+    try { choice = decisionMail.options(request.data); }
+    catch (error) { throw new HttpsError("invalid-argument", error.message); }
+  }
+  const resolutionNote = choice?.comment || "";
+  if (!requestId || request.data?.action !== "retryNotification" && !["approved", "rejected"].includes(decision)) {
     throw new HttpsError("invalid-argument", "Demande et decision requises.");
   }
   const ref = db.collection(ENGAGEMENT_SWIMMER_CHANGE_REQUESTS_COLLECTION).doc(requestId);
   const snapshot = await ref.get();
   if (!snapshot.exists) throw new HttpsError("not-found", "Demande de correction introuvable.");
   const data = snapshot.data() || {};
+  if (request.data?.action === "retryNotification") {
+    if (!cleanText(request.data?.notificationKey)) throw new HttpsError("invalid-argument", "Notification requise.");
+    const resolutionNotification = await decisionMail.deliver(db, ref, requestDecisionMailServices(), request.data.notificationKey);
+    return { ok: true, resolutionNotification };
+  }
+  if (data.status !== "pending") {
+    if (data.status === decision && data.resolvedBy === context.uid && data.resolutionNote === resolutionNote) {
+      return { ok: true, request: engagementSwimmerChangeRequestItem(snapshot), result: data.result || {} };
+    }
+    throw new HttpsError("failed-precondition", "Demande deja traitee.");
+  }
+  const notificationIntent = decisionMail.intent(data, requestId, decisionMail.kind(data), decision, choice);
   if (ENVIRONMENT.sportingDataSource === "nap") {
     if (data.reportType === "duplicate") {
       // Close the report only. Merging remains a separate national operation.
       if (request.data?.proposed !== undefined) throw new HttpsError("invalid-argument", "Un signalement ne corrige pas l'identite.");
-      if (!resolutionNote) throw new HttpsError("invalid-argument", "Expliquez le traitement du signalement avant de le clore.");
+
       const now = new Date().toISOString();
       const result = { reportOnly: true, identityChanged: false, merged: false };
       await db.runTransaction(async transaction => {
@@ -10041,9 +10069,10 @@ exports.resolveEngagementSwimmerChangeRequest = onCall(ENVIRONMENT.sportingDataS
         }
         transaction.set(ref, { status: decision, resolutionNote, resolvedAt: now, resolvedBy: context.uid,
           updatedAt: now, updatedBy: context.uid, result,
-          resolutionNotification: { status: "skipped", reason: "report-only-no-email" } }, { merge: true });
+          notifyRequester: choice.notifyRequester, resolutionNotification: notificationIntent }, { merge: true });
       }, { maxAttempts: 3 });
       await writeAuditLogOnce("nap.swimmer.duplicateReportClosed", context.uid, { requestId, swimmerId: data.targetSwimmerId, clubId: data.clubId, decision }, stableHash([requestId, data.requestedAt, decision, context.uid, resolutionNote].join("|")));
+      await decisionMail.deliver(db, ref, requestDecisionMailServices(), notificationIntent.key, false);
       return { ok: true, request: engagementSwimmerChangeRequestItem(await ref.get()), result };
     }
     let nativeConnection, nativeLock, resolution, claimed = false, claimWasExisting = false, writeAttempted = false;
@@ -10098,14 +10127,12 @@ exports.resolveEngagementSwimmerChangeRequest = onCall(ENVIRONMENT.sportingDataS
         }, { prepare: async () => [], apply: async () => ({ entryUpdateCount: 0, relayUpdateCount: 0, oldLivepalmesLinksIgnored: true }) });
       }
       const now = new Date().toISOString();
-      const completed = { ...data, status: decision, resolutionNote, resolvedAt: now, resolvedBy: context.uid,
+      const completed = { ...data, status: decision, resolutionNote, notifyRequester: choice.notifyRequester, resolutionNotification: notificationIntent, resolvedAt: now, resolvedBy: context.uid,
         resolvedByEmail: context.email || "", updatedAt: now, updatedBy: context.uid,
         nativeResolution: { key: resolution.key, actorUid: context.uid, decision },
         ...(decision === "approved" ? { resolvedProposed: resolution.resolvedProposed, proposalAdjusted: resolution.proposalAdjusted } : {}), result: cleanFirestoreValue(result || {}) };
-      await ref.set(cleanFirestoreValue(completed), { merge: false });
-      // TEST has no automatic emails. The production notification below stays unchanged.
-      const resolutionNotification = { status: "skipped", reason: "test-emails-disabled" };
-      await ref.set({ resolutionNotification }, { merge: true });
+      await decisionMail.commit(db, ref, data, cleanFirestoreValue(completed));
+      const resolutionNotification = await decisionMail.deliver(db, ref, requestDecisionMailServices(), notificationIntent.key, false);
       await writeAuditLogOnce(`nap.swimmer.change${decision === "approved" ? "Approved" : "Rejected"}`, context.uid,
         { requestId, swimmerId: data.targetSwimmerId, clubId: data.clubId, notificationStatus: resolutionNotification.status }, resolution.key);
       return { ok: true, request: engagementSwimmerChangeRequestItem({ id: requestId, data: () => ({ ...completed, resolutionNotification }) }), result };
@@ -10167,6 +10194,7 @@ exports.resolveEngagementSwimmerChangeRequest = onCall(ENVIRONMENT.sportingDataS
   await ref.set({
     status: decision,
     resolutionNote,
+    notifyRequester: choice.notifyRequester, resolutionNotification: notificationIntent,
     resolvedAt: now,
     resolvedBy: context.uid,
     resolvedByEmail: context.email || "",
@@ -10175,21 +10203,7 @@ exports.resolveEngagementSwimmerChangeRequest = onCall(ENVIRONMENT.sportingDataS
     ...(decision === "approved" ? { resolvedProposed, proposalAdjusted } : {}),
     result: cleanFirestoreValue(result || {})
   }, { merge: true });
-  const resolutionNotification = await sendEngagementSwimmerChangeResolutionNotification({
-    decision,
-    requestedByEmail: data.requestedByEmail,
-    requestedByFirstName: data.requestedByFirstName,
-    requestedByLastName: data.requestedByLastName,
-    swimmer: current,
-    current,
-    resolvedProposed: resolvedProposed || data.proposed || {},
-    clubName: data.clubName,
-    resolutionNote
-  });
-  await ref.set({
-    resolutionNotification,
-    updatedAt: new Date().toISOString()
-  }, { merge: true });
+  const resolutionNotification = await decisionMail.deliver(db, ref, requestDecisionMailServices(), notificationIntent.key, false);
   await writeAuditLog(`engagementClubSwimmer.change${decision === "approved" ? "Approved" : "Rejected"}`, context.uid, {
     requestId,
     swimmerId: target.swimmerId,
