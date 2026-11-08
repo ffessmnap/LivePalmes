@@ -38,6 +38,8 @@ Pas de benchmark, audit général, rapport HTML ou refonte d'outillage ajouté �
 
 ## Protections conservées
 
+Préparation Infra du 8 novembre : le complément `novemberValidatedRelease` est fermé à l’application TEST `a422125b`, à la PROD Direct du 6 novembre et aux preuves nommées dans `20261108-production-validated-contract.json`. Il conserve la sélection calculée de 119 fonctions : sources/labels seulement pour les 117 existantes, deux créations ordinaires, puis Hosting. Seule exception de configuration préparée après l’accord ciblé d’Antoine : six liaisons SMTP existantes sur `resolveAccessUserDeletionRequest`, versions 1, compte runtime conservé. Aucun autre secret, IAM, règle, index, réglage, donnée ou activation ; mails tous clubs et automates restent actifs et inchangés, sans rattrapage. Cet accord de préparation ne vaut pas accord PROD ; preflight, prérequis et bilan final dans Infra restent requis.
+
 - Version exacte, diff applicatif entièrement couvert, validations authentiques et preuves GitHub vérifiées. Une évolution incluse et non validée bloque ; aucune sélection silencieuse de fichiers.
 - PROD : accord Infra sur le bilan précis, environnement `production` limité à `main`, contrôle frais de dérive, sauvegarde chiffrée rouverte et comparée avant écriture, retour arrière disponible et vérifications finales.
 - Aucune copie TEST→PROD, migration, correction/génération de données, publication Storage, règle/index, suppression, invocation métier ou envoi de test implicite. Fonctions email/schedulers et opérations sensibles restent dans leurs contrats autorisés.

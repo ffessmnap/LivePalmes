@@ -111,6 +111,7 @@ jobs:
         python tooling/tests/release-simplification-tests.py
         python tooling/tests/license-report-release-tests.py
         python tooling/tests/nap-retained-source-tests.py
+        python tooling/tests/november-validated-release-tests.py
         python tooling/tests/nap-account-release-tests.py
         node tooling/tests/release-nap-account-compatibility.js
         node tooling/tests/license-report-source-guard-tests.js
