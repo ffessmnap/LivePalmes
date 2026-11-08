@@ -111,6 +111,14 @@ def inventory():
         token = value.get('nextPageToken')
         if not token:
             require(len(rows) == len({f['name'] for f in rows}), 'Inventaire TEST duplique')
+            for function in rows:
+                filters = function.get('eventTrigger', {}).get('eventFilters')
+                if filters is not None:
+                    require(isinstance(filters, list) and all(isinstance(f, dict) for f in filters),
+                            'Filtres Eventarc TEST invalides')
+                    # The API returns these criteria in varying order. Keep every
+                    # complete entry (including duplicates) and all other fields.
+                    function['eventTrigger']['eventFilters'] = sorted(filters, key=lambda f: json.dumps(f, sort_keys=True))
             return sorted(rows, key=lambda f: f['name'])
     raise ValueError('Inventaire TEST trop volumineux')
 
