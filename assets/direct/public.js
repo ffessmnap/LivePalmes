@@ -3,7 +3,6 @@
   const ui=global.LivePalmesDirectPresentation;
   const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const format=value=>{const n=Number(value);if(!n)return '—';const minutes=Math.floor(n/6000),seconds=Math.floor(n%6000/100),cs=n%100;return `${minutes?minutes+':':''}${String(seconds).padStart(minutes?2:1,'0')}.${String(cs).padStart(2,'0')}`;};
-  const category=value=>{let code=String(value||'').toUpperCase().replace(/^[FH](?=[A-Z0-9])/,'');code=({JU:'J',JUNIOR:'J',JUNIORS:'J',SE:'S',SENIOR:'S',SENIORS:'S',MI:'M',MINIME:'M',MINIMES:'M',CA:'C',CADET:'C',CADETS:'C',PO:'P',POUSSIN:'P',BE:'B',BENJAMIN:'B'})[code]||code;return /^\d+\+?$/.test(code)?'M'+code.replace(/\+?$/,'+'):code;};
   const state={data:null,day:'all',mode:'series',highlightClub:'',refreshEpoch:0,categories:[],series:'all',records:null,loading:false,expandedSplits:new Set()};
   function rows(){return global.LivePalmesDirectEventView.scratch(state.data?.entries||[],state);}
   function shortEventLabel(event){const code=String(event.eventCode||'').match(/^(\d+(?:x\d+)?)([a-z]+)$/i);return code?code[1].replace(/x/i,'×')+' '+code[2].toUpperCase():event.eventLabel;}
@@ -17,19 +16,7 @@
     allPending={key,promise};return promise;
   }
   const dialogs=global.LivePalmesDirectDialogs.create({getData:allData,onClubChange:club=>{state.highlightClub=club;try{localStorage.setItem('livepalmes-direct-club:'+state.data.competition.id,club);}catch{}render();},onEventSelect:(eventId,series)=>{state.categories=[];state.series=series||'all';const event=state.data.events.find(event=>event.id===eventId);if(event&&state.day!=='all')state.day=event.date;load(eventId);}});
-  function references(event){
-    const data=state.records;if(!data||!event)return [];
-    const categories=new Set((state.data.entries||[]).map(row=>category(row.category))),pool=String(state.data.competition.poolLength),electronic=state.data.competition.timingType==='electronic';
-    return [...(data.franceRecords||[]),...(data.records||[])].filter(row=>{
-      const type=String(row.recordType||''),cat=category(row.category),sex=String(row.sex||'');
-      // MPF are a common reference for both pools. `length` is the race distance.
-      if(String(row.course||'').toLowerCase()!==event.eventCode.toLowerCase().replace(/-mi$/,'')||sex!==event.sex||row.placeholderRecord)return false;
-      if((type==='RF'||type==='RFJ')&&row.bassin&&String(row.bassin)!=='50')return false;
-      if(pool==='25'||pool==='50'&&!electronic)return type!=='RF'&&type!=='RFJ'&&categories.has(cat);
-      if(pool==='50')return type==='RF'?categories.has('S')||categories.has('SE')||categories.has('SENIOR'):type==='RFJ'?categories.has('J')||categories.has('JU')||categories.has('JUNIOR'):categories.has(cat)&&!['S','SE','SENIOR','J','JU','JUNIOR'].includes(cat);
-      return false;
-    });
-  }
+  function references(event){return ui.references(state.data?.competition,state.data?.entries,event,state.records);}
   function render(){
     if(!state.data)return;const data=state.data,event=data.events.find(e=>e.id===data.selectedEventId),days=[...new Set(data.events.map(e=>e.date))].sort();
     if(expandedEvent!==data.selectedEventId){state.expandedSplits.clear();expandedEvent=data.selectedEventId;}

@@ -1,0 +1,37 @@
+'use strict';
+const assert=require('node:assert/strict'),progress=require('../../functions/nap-direct-progress');
+function fixture(){
+  let db={configs:[],events:[],entries:[],logs:[],grants:[]};const calls=[];let breakJournal=false;
+  const native={id:900001,libelle:'Compétition nationale fictive',date:'2026-11-07',enddate:'2026-11-08',lieu:'Piscine fictive',type_label:'Piscine',native_level_code:2,comite:'09',bassin:50,chrono:'E'};
+  const scoped=(rows,values)=>rows.filter(row=>row.environment===values[0]&&Number(row.competition_id)===Number(values[1]));
+  async function execute(query,values=[]){
+    const sql=typeof query==='string'?query:query.sql;calls.push({sql,values});assert.equal((sql.match(/\?/g)||[]).length,values.length,sql.slice(0,150));
+    if(/^(INSERT|UPDATE|DELETE)/.test(sql))assert.match(sql,/^(?:INSERT INTO|UPDATE|DELETE FROM) livepalmes_direct_/);
+    const scope={environment:values[0],competition_id:Number(values[1])};
+    if(sql.includes(' FROM competitions c'))return [[{...native,id:Number(values.at(-1))||native.id}]];
+    if(sql.includes('bounded_direct_progress')){const groups=new Map();for(const row of scoped(db.entries,values)){const key=row.event_id+':'+row.series_number,v=groups.get(key)||{event_id:row.event_id,series_number:row.series_number,row_count:0,series_entries:0,result_entries:0,matched_results:0};v.row_count++;v.series_entries+=Number(Boolean(row.has_series));v.result_entries+=Number(Boolean(row.has_result));v.matched_results+=Number(Boolean(row.has_series&&row.has_result));groups.set(key,v);}return [[...groups.values()]];}
+    if(sql.startsWith('SELECT SUM(total)')){const counts=new Map();for(const row of scoped(db.entries,values))counts.set(row.event_id,(counts.get(row.event_id)||0)+1);return [[{total:[...counts.values()].reduce((a,b)=>a+b,0),event_total:Math.max(0,...counts.values())}]];}
+    if(sql.startsWith('SELECT')&&sql.includes('livepalmes_direct_competitions'))return [scoped(db.configs,values).map(row=>({...row}))];
+    if(sql.startsWith('SELECT')&&sql.includes('livepalmes_direct_events'))return [scoped(db.events,values).map(row=>({...row})).sort((a,b)=>a.program_order-b.program_order||a.id.localeCompare(b.id))];
+    if(sql.startsWith('SELECT')&&sql.includes('livepalmes_direct_entries')){let rows=scoped(db.entries,values);if(sql.includes(' AND event_id=?'))rows=rows.filter(r=>r.event_id===values[2]);if(sql.includes('event_id IN ('))rows=rows.filter(r=>values.slice(2).includes(r.event_id));return [structuredClone(rows)];}
+    if(sql.startsWith('SELECT')&&sql.includes('livepalmes_direct_publications')){const rows=scoped(db.logs,values).filter(r=>sql.includes('operation_key=?')?r.operation_key===values[2]:r.id===values[2]);if(sql.includes("JSON_EXTRACT(after_json,'$.revision')"))return [rows.map(row=>({revision:JSON.parse(row.after_json).revision}))];return [structuredClone(rows)];}
+    if(sql.startsWith('SELECT')&&sql.includes('livepalmes_direct_access'))return [scoped(db.grants,values).filter(row=>!sql.includes('user_uid=?')||row.user_uid===values[2]).filter(row=>row.active!==0&&(!row.expires_at||Date.parse(row.expires_at)>Date.now()))];
+    if(sql.startsWith('INSERT INTO livepalmes_direct_competitions')){db.configs.push({...scope,state:values[2],public_visible:values[3],enabled_consoles_json:values[4],documents_json:'[]',version:1,public_revision:1});return [{affectedRows:1}];}
+    if(sql.startsWith('UPDATE livepalmes_direct_competitions')){const rows=sql.includes('SET version=')?scoped(db.configs,values.slice(1)):scoped(db.configs,values.slice(-2));for(const row of rows){if(sql.includes('SET version=')){row.version++;row.public_revision++;}else if(sql.includes('SET state=')){row.state=values[0];row.public_visible=values[1];row.enabled_consoles_json=values[2];}else if(sql.includes('SET documents_json'))row.documents_json=values[0];}return [{affectedRows:rows.length}];}
+    if(sql.startsWith('INSERT INTO livepalmes_direct_events')){const fields=sql.match(/\(([^)]+)\) VALUES/)[1].split(','),row=Object.fromEntries(fields.slice(0,15).map((field,i)=>[field,values[i]])),old=scoped(db.events,values).find(r=>r.id===row.id);if(old)Object.assign(old,row,{version:Number(old.version)+1});else db.events.push({...row,version:1});return [{affectedRows:1}];}
+    if(sql.startsWith('INSERT INTO livepalmes_direct_entries')){const columns=sql.match(/\(([^)]+)\) VALUES/)[1].split(',').slice(0,28);for(let offset=0;offset<values.length;offset+=28){const row=Object.fromEntries(columns.map((field,j)=>[field,values[offset+j]])),old=scoped(db.entries,values.slice(offset,offset+2)).find(r=>r.event_id===row.event_id&&r.participant_key===row.participant_key);if(old){for(const match of sql.matchAll(/(\w+)=VALUES\(/g))old[match[1]]=row[match[1]];}else db.entries.push(row);}return [{affectedRows:1}];}
+    if(sql.startsWith('UPDATE livepalmes_direct_entries')){const rows=scoped(db.entries,values).filter(r=>r.event_id===values[2]&&(!sql.endsWith('AND series_number=?')||Number(r.series_number)===Number(values[3])));for(const row of rows)if(sql.includes("entry_time_raw=''"))Object.assign(row,{has_series:0,entry_time_raw:'',entry_time_cs:null,entry_time_status:'missing',series_number:null,lane:null});else Object.assign(row,{has_result:0,result_time_raw:'',result_time_cs:null,result_status:'',published_rank:null,splits_json:'[]'});return [{affectedRows:rows.length}];}
+    if(sql.startsWith('DELETE FROM livepalmes_direct_entries')){db.entries=db.entries.filter(r=>!(r.environment===values[0]&&r.competition_id===Number(values[1])&&r.event_id===values[2]&&!r.has_series&&!r.has_result));return [{affectedRows:1}];}
+    if(sql.startsWith('INSERT INTO livepalmes_direct_publications')){
+      if(breakJournal&&sql.includes("'console-command'"))throw Error('Journal interrompu');
+      let row;if(sql.includes("'console-state'"))row={...scope,id:values[2],operation_key:values[3],action:'console-state',after_json:values[4]};
+      else if(sql.includes("'console-command'"))row={...scope,id:values[2],event_id:values[3],operation_key:values[4],action:'console-command',source_name:values[5],source_hash:values[6],after_json:values[7]};
+      else row={...scope,id:values[2],operation_key:values[5],action:values[6],after_json:values[11]};
+      const old=scoped(db.logs,values).find(r=>r.id===row.id);if(old&&sql.includes('ON DUPLICATE KEY'))Object.assign(old,row);else{if(old)throw Error('Duplicate log');db.logs.push(row);}return [{affectedRows:1}];
+    }
+    if(sql.startsWith('INSERT INTO livepalmes_direct_access')){const row={...scope,user_uid:values[2],can_manage:values[3],allowed_consoles_json:values[4],active:values[5],expires_at:values[6]},old=scoped(db.grants,values).find(r=>r.user_uid===row.user_uid);if(old)Object.assign(old,row);else db.grants.push(row);return [{affectedRows:1}];}
+    throw Error('SQL de test non pris en charge : '+sql);
+  }
+  return {execute,native,calls,inspect:()=>structuredClone(db),failJournal:value=>{breakJournal=value;},getConnection:async()=>{let saved;return {execute,beginTransaction:async()=>{saved=structuredClone(db);},commit:async()=>{},rollback:async()=>{db=saved;},release(){}};}};
+}
+module.exports={fixture};
