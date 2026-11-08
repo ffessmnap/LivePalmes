@@ -67,6 +67,7 @@ class TrophySources(unittest.TestCase):
         desired = {**entry['fingerprints'], 'ordinary': 'same'}
         baseline = {**{n: 'old' for n in p.ALLOWED}, 'ordinary': 'same'}
         env = {'GITHUB_REF': 'refs/heads/main', 'GITHUB_RUN_ATTEMPT': '1', 'TARGET_FIREBASE_PROJECT': p.PROJECT,
+               'GITHUB_REPOSITORY': p.REPOSITORY,
                'CONFIRMATION': p.PROJECT, 'RELEASE': p.RELEASE, 'GITHUB_SHA': SHA, 'EXPECTED_COMMIT': SHA}
         def git_run(args, *_):
             if 'rev-parse' in args:
@@ -189,18 +190,40 @@ class TrophySources(unittest.TestCase):
             self.assertNotIn('never-log', json.dumps(witness))
             self.assertEqual(len(witness['trophyEditionSha256']), 64)
 
-    def test_exact_final_baseline_is_authenticated_without_a_second_reference(self):
+    def test_exact_final_read_only_run_has_no_artifact_and_requires_successful_steps(self):
         entry = p.contract()
         expected = {'functions': [], 'hosting': {'version': 'baseline'}}
-        with patch.object(p.shared, 'baseline', return_value=expected), \
-                patch.object(p.cycle, 'artifact', return_value={'head_sha': entry['baseCommit']}) as artifact, \
-                patch.object(p.cycle, 'read', return_value={'candidate': entry['baseCommit'], 'state': expected}):
+        run = {'head_sha': entry['baseCommit'], 'head_branch': 'main', 'path': '.github/workflows/livepalmes-test-common.yml',
+               'repository': {'full_name': p.REPOSITORY}, 'head_repository': {'full_name': p.REPOSITORY},
+               'event': 'workflow_dispatch', 'run_attempt': 1, 'status': 'completed', 'conclusion': 'success',
+               'display_title': 'Verification TEST sans deploiement'}
+        steps = [{'name': name, 'conclusion': conclusion} for name, conclusion in [
+            ('Selectionner les Functions TEST reellement differentes', 'success'),
+            ('Controler le backend TEST et les Functions conservees', 'success'),
+            ('Publier et controler les Functions TEST', 'skipped'),
+            ('Publier TEST commun pour le commit exact verifie', 'skipped'),
+            ('Conserver la preuve de la version TEST', 'skipped')]]
+        jobs = {'jobs': [{'name': 'test', 'status': 'completed', 'conclusion': 'success', 'steps': steps}]}
+        with patch.dict(os.environ, {'GITHUB_REPOSITORY': 'ffessmnap/LivePalmes'}), \
+                patch.object(p.shared, 'baseline', return_value=expected), patch.object(p.cycle, 'artifact') as artifact, \
+                patch.object(p.cycle, 'gh', side_effect=lambda path: jobs if '/jobs?' in path else run) as github:
             self.assertEqual(p.baseline(entry, ROOT), expected)
-            self.assertEqual(artifact.call_args.args[0], entry['finalCheckRun'])
-        with patch.object(p.shared, 'baseline', return_value=expected), \
-                patch.object(p.cycle, 'artifact', return_value={'head_sha': SHA}), \
-                patch.object(p.cycle, 'read', return_value={'candidate': SHA, 'state': expected}), self.assertRaises(ValueError):
-            p.baseline(entry, ROOT)
+            artifact.assert_not_called()
+            self.assertTrue(all(str(entry['finalCheckRun']) in call.args[0] for call in github.call_args_list))
+            for key, value in [('head_sha', SHA), ('head_branch', 'other'), ('conclusion', 'failure'), ('run_attempt', 2),
+                               ('path', '.github/workflows/other.yml'), ('event', 'pull_request'),
+                               ('repository', {'full_name': 'other/LivePalmes'}), ('head_repository', {'full_name': 'fork/LivePalmes'})]:
+                previous = run[key]
+                run[key] = value
+                with self.assertRaises(ValueError):
+                    p.baseline(entry, ROOT)
+                run[key] = previous
+            for step in steps:
+                previous = step['conclusion']
+                step['conclusion'] = 'failure' if previous == 'success' else 'success'
+                with self.assertRaises(ValueError):
+                    p.baseline(entry, ROOT)
+                step['conclusion'] = previous
 
     def test_complete_source_only_flow_patches_two_names_and_preserves_other_states(self):
         entry = p.contract()
