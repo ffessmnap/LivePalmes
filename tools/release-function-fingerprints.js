@@ -419,5 +419,5 @@ function fromGit(root, sha) {
   }).sort(); // Normalize before sorting: a selection-only blob hash must not reorder the common signature.
   return fingerprints(source, tree, files);
 }
-module.exports = { fingerprints, fromGit, retirementRegistrySignature, numericConstant };
+module.exports = { fingerprints, fromGit, retirementRegistrySignature, numericConstant, moduleGraph };
 if (require.main === module) console.log(JSON.stringify(fromGit(process.argv[2], process.argv[3])));
