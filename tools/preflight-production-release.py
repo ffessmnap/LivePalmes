@@ -210,6 +210,11 @@ def main():
             reference = next(f for f in functions if f['name'].split('/')[-1] == 'getNapPerformanceAdministration')
             app_checks = {reference['serviceConfig'].get('environmentVariables', {}).get('LIVEPALMES_ENFORCE_APP_CHECK', 'false')}
             report['directRuntimeAccount'] = reference['serviceConfig']['serviceAccountEmail']
+        if report['additionalNovemberFunctions']:
+            # Existing runtimes are source-only. The two new import callables
+            # inherit App Check from their existing import-family reference.
+            reference = next(f for f in functions if f['name'].split('/')[-1] == 'createCompetitionImport')
+            app_checks = {reference['serviceConfig'].get('environmentVariables', {}).get('LIVEPALMES_ENFORCE_APP_CHECK', 'false')}
         if not app_checks and set(selected).issubset(set(public_nap) | source_only):
             app_checks = {'false'}  # New public HTTP reader; no callable App Check setting.
         if selected and (len(app_checks) != 1 or not app_checks.issubset({"true", "false"})):

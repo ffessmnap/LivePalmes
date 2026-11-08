@@ -2,6 +2,12 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 8 novembre — Accord PROD reçu, correction du contrôle de sauvegarde
+
+- Accord final explicite dans Infra : « Oui, publier ce plan 42512948799 en PROD », après désignation de Hosting, des 115 mises à jour, des deux créations et des six liaisons SMTP. Candidat, contrat, sélection et exclusions identiques au bilan ci-dessous ; aucune activation des rappels existants ni sauvegarde Direct automatique.
+- Première tentative [42514676245](https://github.com/ffessmnap/LivePalmes/actions/runs/42514676245) arrêtée à la préparation de sauvegarde : contrôles frais TEST/PROD et garde mails réussis, chiffrement, publications Functions et Hosting non exécutés. Aucune écriture PROD. Le contrôle App Check ne trouvait aucun runtime ordinaire existant, car les 115 fonctions passent toutes par la préservation de configuration et les deux autres sont nouvelles.
+- Correction limitée au lecteur de sauvegarde : reprendre App Check sur `createCompetitionImport`, référence existante des deux nouvelles callables. Aucun changement de réglage App Check, d'application, de permission ou de contrat. Régression exécutant tout le lecteur avec inventaire paginé de 117 fonctions, 115 sauvegardes, deux absences attendues et archive commune vérifiée ; valeurs `false`/`true` conservées et valeur invalide refusée avant lecture d'archive. Échec reproduit avant correction, 19 tests ciblés réussis après, sans accès réseau ni opération réelle. CI obligatoire avant intégration et reprise par un nouveau run du même plan ; nouvelle sauvegarde vérifiée et nouveau contrôle frais de dérive requis.
+
 ### 8 novembre — Bilan PROD prêt, accord final Infra attendu
 
 - **Préparation terminée, aucune publication PROD.** Les onze évolutions sont validées ; il reste l’accord humain final sur le plan dans Infra. Aucun nouvel applicatif, redéploiement TEST, envoi, activation ou traitement de données pendant cette préparation.
