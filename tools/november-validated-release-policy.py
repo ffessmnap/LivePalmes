@@ -13,6 +13,7 @@ from pathlib import Path
 import re
 import subprocess
 import sys
+from threading import Event
 import time
 import urllib.error
 import urllib.parse
@@ -291,17 +292,35 @@ def publish_sources(candidate, plan, backup, cycle, archive, launch_deadline=Non
                                 headers={'Content-Type': 'application/zip'}), timeout=120):
         pass
 
+    stopped = Event()
+
     def update(name):
-        require(launch_deadline is None or time.time() < launch_deadline,
-                'Budget de publication atteint ; reprise attestee requise avant Hosting')
-        full = PREFIX + name
-        actual = state.request(state.API + full)
-        require(state.identity(actual) == state.identity(before[full]), 'Derive avant PATCH source')
-        body, mask = source_patch(before[full], upload['storageSource'])
-        state.wait_operation(state.request(state.API + full + '?updateMask=' + mask, 'PATCH', body))
-        assert_config(before[full], state.request(state.API + full), state)
+        try:
+            require(not stopped.is_set(), 'Publication source interrompue apres une erreur')
+            require(launch_deadline is None or time.time() < launch_deadline,
+                    'Budget de publication atteint ; reprise attestee requise avant Hosting')
+            full = PREFIX + name
+            actual = state.request(state.API + full)
+            require(state.identity(actual) == state.identity(before[full]), 'Derive avant PATCH source')
+            body, mask = source_patch(before[full], upload['storageSource'])
+            require(not stopped.is_set(), 'PATCH source annule apres une erreur precedente')
+            require(launch_deadline is None or time.time() < launch_deadline,
+                    'Budget de publication atteint avant PATCH ; reprise attestee requise')
+            state.wait_operation(state.request(state.API + full + '?updateMask=' + mask, 'PATCH', body))
+            # Already-started operations finish and are checked even if another
+            # worker fails. Queued consumers cannot start another PATCH.
+            assert_config(before[full], state.request(state.API + full), state)
+        except BaseException:
+            stopped.set()
+            raise
     with ThreadPoolExecutor(max_workers=3) as executor:
-        list(executor.map(update, pending))
+        try:
+            list(executor.map(update, pending))
+        except BaseException:
+            # Signal before __exit__ waits, including a main-thread interrupt
+            # or a submission/iterator error rather than a worker failure.
+            stopped.set()
+            raise
     guard(plan)
 
 

@@ -7,6 +7,7 @@ import os
 from pathlib import Path
 import subprocess
 import tempfile
+from threading import Event
 from types import SimpleNamespace
 import unittest
 from unittest.mock import patch, MagicMock
@@ -190,8 +191,10 @@ class NovemberTests(unittest.TestCase):
             (plan/'selection.json').write_text(json.dumps(c['selected']))
             (backup/'functions.json').write_text(json.dumps(before_rows))
             (backup/'report.json').write_text(json.dumps({'candidate': c['candidate'], 'additionalNovemberFunctions': c['sourceOnly']}))
-            with patch.object(m, 'load', return_value=fake), patch.object(m, 'guard'), patch.object(m.urllib.request, 'urlopen', return_value=MagicMock()):
+            with patch.object(m, 'load', return_value=fake), patch.object(m, 'guard'), patch.object(m.urllib.request, 'urlopen', return_value=MagicMock()), \
+                 patch.object(m, 'ThreadPoolExecutor', wraps=m.ThreadPoolExecutor) as executor:
                 m.publish_sources(p, plan, backup, cycle, lambda _root, sha: b'fixture-source')
+                executor.assert_called_once_with(max_workers=3)
         patches = [r for r in requests if r[1]=='PATCH']
         self.assertEqual(len(patches), 115)
         self.assertEqual(sum('serviceConfig' in r[2] for r in patches), 1)
@@ -216,6 +219,107 @@ class NovemberTests(unittest.TestCase):
                 m.guard(p)
             (source/'november-controls-before.json').write_text(json.dumps({**initial, 'mailSha256': '0'*64}))
             with self.assertRaisesRegex(ValueError, 'incompatible'): m.restore_witness(p, source)
+
+    def test_first_source_error_stops_queued_writes_at_every_failure_stage(self):
+        first = m.PREFIX+c['sourceOnly'][0]
+        for failure_stage in ['read', 'operation', 'configuration']:
+            with self.subTest(stage=failure_stage), tempfile.TemporaryDirectory() as directory:
+                before = inventory(); current = {f['name']:deepcopy(f) for f in before}
+                stop = Event(); writes = []; reads = []
+                def api(url, method='GET', body=None):
+                    if url.endswith(':generateUploadUrl'):
+                        return {'uploadUrl':'https://storage.googleapis.com/source/upload',
+                                'storageSource':{'bucket':'source','object':'code.zip'}}
+                    full = url.removeprefix(state.API).split('?')[0]
+                    if method == 'PATCH':
+                        writes.append(full)
+                        current[full]['buildConfig'].update(deepcopy(body['buildConfig']))
+                        current[full]['labels'] = deepcopy(body['labels'])
+                        current[full]['serviceConfig'].update(deepcopy(body.get('serviceConfig', {})))
+                        return {'done':True}
+                    self.assertEqual(method, 'GET'); reads.append(full)
+                    if full == first:
+                        if failure_stage == 'read': raise ValueError('injected initial read failure')
+                        value = deepcopy(current[full])
+                        if failure_stage == 'configuration' and full in writes:
+                            value['serviceConfig']['timeoutSeconds'] = 99
+                        return value
+                    # Two other workers may already be reading. They return
+                    # after the failure, so the second gate must prevent PATCH.
+                    self.assertTrue(stop.wait(3), 'first failure did not stop the publication')
+                    return deepcopy(current[full])
+                def wait(_):
+                    if failure_stage == 'operation': raise ValueError('injected operation failure')
+                fake = SimpleNamespace(API=state.API, inventory=lambda:list(current.values()), identity=state.identity,
+                    rollback_patch=state.rollback_patch, request=api, wait_operation=wait)
+                p = Path(directory); plan=p/'plan'; backup=p/'backup'; plan.mkdir(); backup.mkdir()
+                (plan/'request.json').write_text(json.dumps(request()))
+                (plan/'selection.json').write_text(json.dumps(c['selected']))
+                (backup/'functions.json').write_text(json.dumps(before))
+                (backup/'report.json').write_text(json.dumps({'candidate':c['candidate'],'additionalNovemberFunctions':c['sourceOnly']}))
+                cycle = SimpleNamespace(read=lambda path:json.loads(path.read_text()))
+                with patch.object(m,'Event',return_value=stop), patch.object(m,'load',return_value=fake), \
+                     patch.object(m,'guard'), patch.object(m.urllib.request,'urlopen',return_value=MagicMock()):
+                    with self.assertRaises(ValueError):
+                        m.publish_sources(p,plan,backup,cycle,lambda *_:b'fixture')
+                self.assertTrue(stop.is_set())
+                self.assertEqual(writes, [] if failure_stage == 'read' else [first])
+                self.assertLessEqual(len(set(reads)), 3, 'queued consumers still contacted the API')
+
+    def test_already_launched_operation_finishes_and_is_attested_after_stop(self):
+        first, second = [m.PREFIX+n for n in c['sourceOnly'][:2]]
+        stop, launched = Event(), Event()
+        before = inventory(); current = {f['name']:deepcopy(f) for f in before}; writes = []; checked = []
+        def api(url, method='GET', body=None):
+            if url.endswith(':generateUploadUrl'):
+                return {'uploadUrl':'https://storage.googleapis.com/source/upload','storageSource':{'bucket':'source','object':'code.zip'}}
+            full = url.removeprefix(state.API).split('?')[0]
+            if method == 'PATCH':
+                writes.append(full); self.assertEqual(full, second)
+                current[full]['buildConfig'].update(deepcopy(body['buildConfig']))
+                current[full]['labels'] = deepcopy(body['labels'])
+                launched.set(); return {'done':True}
+            if full == first:
+                self.assertTrue(launched.wait(3)); raise ValueError('first read failed after second launch')
+            if full != second:
+                self.assertTrue(stop.wait(3))
+            return deepcopy(current[full])
+        def wait(_): self.assertTrue(stop.wait(3))
+        original_check = m.assert_config
+        def attest(old, new, runtime):
+            original_check(old, new, runtime); checked.append((new['name'], stop.is_set()))
+        fake = SimpleNamespace(API=state.API,inventory=lambda:list(current.values()),identity=state.identity,
+            rollback_patch=state.rollback_patch,request=api,wait_operation=wait)
+        with tempfile.TemporaryDirectory() as directory:
+            p=Path(directory);plan=p/'plan';backup=p/'backup';plan.mkdir();backup.mkdir()
+            (plan/'request.json').write_text(json.dumps(request()));(plan/'selection.json').write_text(json.dumps(c['selected']))
+            (backup/'functions.json').write_text(json.dumps(before))
+            (backup/'report.json').write_text(json.dumps({'candidate':c['candidate'],'additionalNovemberFunctions':c['sourceOnly']}))
+            with patch.object(m,'Event',return_value=stop),patch.object(m,'load',return_value=fake),patch.object(m,'guard'), \
+                 patch.object(m,'assert_config',side_effect=attest),patch.object(m.urllib.request,'urlopen',return_value=MagicMock()):
+                with self.assertRaisesRegex(ValueError, 'first read failed'):
+                    m.publish_sources(p,plan,backup,SimpleNamespace(read=lambda path:json.loads(path.read_text())),lambda *_:b'fixture')
+        self.assertEqual(writes,[second]);self.assertEqual(checked,[(second,True)])
+
+    def test_main_thread_interrupt_signals_stop_before_executor_exit(self):
+        stop = Event(); observations = []
+        class InterruptedExecutor:
+            def __enter__(self): return self
+            def map(self, *_): raise KeyboardInterrupt('fixture interruption')
+            def __exit__(self, kind, *_): observations.append((kind,stop.is_set()))
+        fake = SimpleNamespace(API=state.API,inventory=inventory,identity=state.identity,
+            request=lambda *_:{'uploadUrl':'https://storage.googleapis.com/source/upload',
+                               'storageSource':{'bucket':'source','object':'code.zip'}})
+        with tempfile.TemporaryDirectory() as directory:
+            p=Path(directory);plan=p/'plan';backup=p/'backup';plan.mkdir();backup.mkdir()
+            (plan/'request.json').write_text(json.dumps(request()));(plan/'selection.json').write_text(json.dumps(c['selected']))
+            (backup/'functions.json').write_text(json.dumps(inventory()))
+            (backup/'report.json').write_text(json.dumps({'candidate':c['candidate'],'additionalNovemberFunctions':c['sourceOnly']}))
+            with patch.object(m,'Event',return_value=stop),patch.object(m,'load',return_value=fake),patch.object(m,'guard'), \
+                 patch.object(m,'ThreadPoolExecutor',return_value=InterruptedExecutor()),patch.object(m.urllib.request,'urlopen',return_value=MagicMock()):
+                with self.assertRaises(KeyboardInterrupt):
+                    m.publish_sources(p,plan,backup,SimpleNamespace(read=lambda path:json.loads(path.read_text())),lambda *_:b'fixture')
+        self.assertEqual(observations,[(KeyboardInterrupt,True)])
 
     def test_integration_and_workflow_order(self):
         cycle = m.load('november_test_cycle', 'release-cycle.py')
