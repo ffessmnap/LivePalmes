@@ -14,9 +14,10 @@ async function run(){
     deliverNativeNotificationJobs:async id=>{assert.equal(id,'5162');return {sent:eventData.kind==='opening'?1:0};},
     HttpsError:class extends Error{constructor(code,message){super(message);this.code=code;}},
     engagementAccessContext:async()=>({national}),assertCanManageEngagementCompetition:()=>{if(!allowed)throw Error('denied');},
-    nativePortalCompetition:async(id,authorize)=>{calls.push('competition');await authorize({id});},
+    nativePortalCompetition:async(id,authorize)=>{calls.push('competition');await authorize({id});return {id,entryStatus:'upcoming'};},
     nativeNotificationAutomationServices:()=>({simulation:true}),require:name=>{
       if(name==='./nap-notification-automation')return automation;
+      if(name==='./nap-deadline-reminder')return {arm:async()=>({queued:false})};
       if(['./nap-direct-calendar','./nap-calendar-values'].includes(name))return require('../functions/nap-direct-calendar');
       throw Error('Unexpected dependency '+name);
     },db:{collection:name=>{calls.push(name);assert.equal(name,'engagementClosureQueue');return {where:(key,_op,value)=>{
@@ -58,7 +59,7 @@ async function run(){
   let armed=0;
   const armSandbox={enqueueNativeNotificationTask:async()=>{},nativePortalCompetition:async(_id,authorize)=>{authorize({});return {id:'legacy-nap-5162',entryStatus:'open',entryDeadlineAt:'2026-11-06T18:00:00.000Z'};},
     assertCanManageEngagementCompetition:()=>{},db:{collection:name=>{assert.equal(name,'auditLogs');return {doc:()=>({get:async()=>({exists:true,data:()=>({target:{notificationOpeningRequested:true}})})})};}},
-    require:name=>['./nap-direct-calendar','./nap-calendar-values'].includes(name)?require('../functions/nap-direct-calendar'):{eventRef:()=>({id:'event'}),arm:async(_db,input)=>{armed++;assert.equal(input.deliveryMode,'bcc-v1');assert.equal(input.competitionId,'5162');assert.equal(input.openingRequested,true,'saved choice wins over later retry payload');}}};
+    require:name=>name==='./nap-deadline-reminder'?{arm:async()=>({queued:false})}:['./nap-direct-calendar','./nap-calendar-values'].includes(name)?require('../functions/nap-direct-calendar'):{eventRef:()=>({id:'event'}),arm:async(_db,input)=>{armed++;assert.equal(input.deliveryMode,'bcc-v1');assert.equal(input.competitionId,'5162');assert.equal(input.openingRequested,true,'saved choice wins over later retry payload');}}};
   vm.runInNewContext(source.slice(source.indexOf('async function armNativeCompetitionNotification('),source.indexOf('async function queueNativeDocumentNotification(')),armSandbox);
   await armSandbox.armNativeCompetitionNotification({uid:'admin'},{competitionId:'legacy-nap-5162',patch:{name:'renamed'}},'operation');
   assert.equal(armed,0);

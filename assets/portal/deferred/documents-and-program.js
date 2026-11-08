@@ -621,6 +621,7 @@
           opening_notification: "Ouverture",
           entries_txt: "TXT informatique",
           club_recap_pdf: "PDF club",
+          deadline_reminder: "Rappel J−1",
           competition_documents: "Documents"
         }[String(type || "")] || "Mail";
       }

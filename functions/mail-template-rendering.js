@@ -9,6 +9,7 @@ function competitionMail(id, snapshot, competition, details, original, origin) {
     "competition.echeance": format.competitionMailDateTime(competition.entryDeadlineAt),
     "portail.lien": `${origin}/portail.html#club-competitions`,
     "club.nom": entry.clubName || entry.clubId || "votre club",
+    "rappel.details": id === "deadline_reminder" ? require('./nap-deadline-reminder').text(competition,details) : "",
     // Preserve the existing financial policy verbatim, including its conditional
     // no-fees case. It is the penultimate paragraph of the established builder.
     "frais.details": id === "club_recap_pdf" ? original.text.split("\n\n").at(-2) : "",

@@ -58,6 +58,10 @@ async function main() {
       else await client.send("Input.dispatchMouseEvent", { type: "mouseReleased", ...point, button: "left", clickCount: 1 });
       assert.ok(await waitFor(client, "document.querySelector('[data-mail-form]')?.hidden===false"));
       assert.equal(calls.filter(call => call.action === "mailTemplates").length, 1);
+      await evaluate(client, `const selector=document.querySelector('[data-mail-type]');selector.value='deadline_reminder';selector.dispatchEvent(new Event('change'));document.querySelector('[data-mail-preview]').click();`);
+      assert.ok(await waitFor(client, "document.querySelector('[data-mail-preview-text]').textContent.includes('VERSION PROVISOIRE')"));
+      const reminderPreview=await evaluate(client,"return document.querySelector('[data-mail-preview-text]').textContent;");
+      assert.match(reminderPreview,/5 novembre 2026/);assert.match(reminderPreview,/validation du dossier/);
       await evaluate(client, `const selector=document.querySelector('[data-mail-type]');selector.value='club_recap_pdf';selector.dispatchEvent(new Event('change'));document.querySelector('[data-mail-preview]').click();`);
       assert.ok(await waitFor(client, "document.querySelector('[data-mail-preview-panel]').hidden===false"));
       assert.equal(db.rows.size, 0, "Preview never writes a configuration, event or job");
