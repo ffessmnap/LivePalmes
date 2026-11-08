@@ -27,7 +27,7 @@ function createCompetitionModelService_cleanEngagementPoolLaneCount(backendConte
       city: backendContext.cleanText(data.city || data.location).slice(0, 120),
       address: backendContext.cleanText(data.address).slice(0, 300),
       organizer: backendContext.cleanText(data.organizer).slice(0, 160),
-      organizerEmail: backendContext.normalizeEmail(data.organizerEmail).slice(0, 180),
+      organizerEmail: backendContext.normalizeEmail(data.organizerEmail).slice(0, 255),
       teamLeadersWhatsAppUrl: (0, backendContext.local$isNationalOnlyEngagementCompetitionLevel)(data.level)
         ? backendContext.cleanPublicCalendarWhatsAppUrl(data.teamLeadersWhatsAppUrl)
         : "",
@@ -38,8 +38,8 @@ function createCompetitionModelService_cleanEngagementPoolLaneCount(backendConte
       competitionType,
       waterBodyType: competitionType === "openWater" ? cleanEngagementWaterBodyType(data.waterBodyType) : "",
       entryDeadlineAt: backendContext.cleanText(data.entryDeadlineAt).slice(0, 40),
-      computerEmail: backendContext.normalizeEmail(data.computerEmail).slice(0, 180),
-      officialsManagerEmail: backendContext.normalizeEmail(data.officialsManagerEmail).slice(0, 180),
+      computerEmail: backendContext.normalizeEmail(data.computerEmail).slice(0, 255),
+      officialsManagerEmail: backendContext.normalizeEmail(data.officialsManagerEmail).slice(0, 255),
       entryStatus: (0, backendContext.local$cleanEngagementEntryStatus)(data.entryStatus || data.status),
       publicationStatus: backendContext.cleanPublicCalendarPublicationStatus(data.publicationStatus),
       canceled: data.canceled === true,

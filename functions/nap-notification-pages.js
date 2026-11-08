@@ -26,11 +26,13 @@ async function page(event,competition,services){
   const grouped=event.deliveryMode==='bcc-v1';
   function mails(kind,selected,details){
     if(!grouped)return selected.map(recipient=>services.mail(kind,competition,recipient,details));
+    const headers=require('./competition-mail-addresses').headers(competition,kind);
     const result=[];
     if(selected.some(recipient=>!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(String(recipient.email||''))))throw new TypeError('Adresse de destinataire invalide.');
-    for(let offset=0;offset<selected.length;offset+=50){
-      const batch=selected.slice(offset,offset+50),payload=services.mail(kind,competition,batch[0],details);
-      result.push({...payload,clubId:kind==='club_recap'?payload.clubId:'',toEmail:'',recipientUid:'',recipients:batch.map(recipient=>({
+    const size=50-(headers.cc||[]).length;
+    for(let offset=0;offset<selected.length;offset+=size){
+      const batch=selected.slice(offset,offset+size),payload=services.mail(kind,competition,batch[0],details);
+      result.push({...payload,...headers,clubId:kind==='club_recap'?payload.clubId:'',toEmail:'',recipientUid:'',recipients:batch.map(recipient=>({
         uid:String(recipient.uid||''),email:String(recipient.email).trim().toLowerCase(),clubId:String(recipient.clubId||''),
         recipientRegionId:String(recipient.napClubRegionId||'')
       })),deliveryMode:'bcc-v1'});
@@ -42,7 +44,8 @@ async function page(event,competition,services){
     const documents=event.kind==='documents'?(competition.clubDocuments||[]).filter(document=>event.documentIds.includes(String(document.id))):[];
     if(event.kind==='documents'&&documents.length!==new Set(event.documentIds).size&&!grouped)throw new TypeError('Document supprime ou inaccessible : reprenez la notification.');
     if(grouped&&event.kind==='documents'&&!documents.length)return {jobs:[],done:true,cancelled:true};
-    const offset=cursor(event.cursor,selected.length),batch=selected.slice(offset,offset+(grouped?1000:50));
+    const groupSize=grouped?50-(require('./competition-mail-addresses').headers(competition,event.kind).cc||[]).length:50;
+    const offset=cursor(event.cursor,selected.length),batch=selected.slice(offset,offset+(grouped?Math.min(1000,250*groupSize):50));
     return {jobs:mails(event.kind,batch,{documents}),done:offset+batch.length>=selected.length,
       nextCursor:String(offset+batch.length),sourceHash:hash([competition.napFingerprint,selected,documents]),attachmentCount:0};
   }
@@ -56,8 +59,16 @@ async function page(event,competition,services){
   if(event.sourceHash&&event.sourceHash!==sourceHash)throw new TypeError('Les donnees NAP ont change pendant la preparation. Reprenez la preparation depuis la fiche.');
   const jobs=[];let attachmentCount=0,skippedCount=0;
   if(event.phase==='clubs'){
-    const offset=cursor(event.cursor,entries.length),batch=entries.slice(offset,offset+5);
+    const offset=cursor(event.cursor,entries.length),batch=[];
     const selected=services.clubRecipients(recipients).filter(recipient=>control.clubAllowed(setting,recipient));
+    const groupSize=grouped?50-(require('./competition-mail-addresses').headers(competition,'club_recap').cc||[]).length:50;
+    let groupCount=0;
+    for(const entry of entries.slice(offset,offset+5)){
+      const needed=grouped?Math.ceil(selected.filter(recipient=>String(recipient.clubId)===String(entry.clubId)).length/groupSize):0;
+      if(needed>250)throw new RangeError('Trop de destinataires pour un club : réduisez les contacts ou vérifiez son annuaire avant de reprendre.');
+      if(batch.length&&groupCount+needed>250)break;
+      batch.push(entry);groupCount+=needed;
+    }
     for(const entry of batch){
       const clubRecipients=selected.filter(recipient=>String(recipient.clubId)===String(entry.clubId));
       if(!entry.teamLeaderComplete||!clubRecipients.length){skippedCount++;continue;}
@@ -69,11 +80,11 @@ async function page(event,competition,services){
   }
   if(['pool','openWater'].includes(competition.competitionType)&&competition.computerEmail&&control.audienceAllowed(setting,{source:'nap',type:'entries_txt',competitionRegionId:competition.regionId})){
     const file=await attachment(await services.txt(competition,entries,pack.clubsById),'text/plain; charset=utf-8');attachmentCount++;
-    jobs.push(...mails('entries_txt',[{email:competition.computerEmail,clubId:'informatique'}],{fileName:file.fileName,attachments:[file]}));
+    jobs.push(...mails('entries_txt',require('./competition-mail-addresses').list(competition.computerEmail).map(email=>({email,clubId:'informatique'})),{fileName:file.fileName,attachments:[file]}));
   }else skippedCount++;
   if(competition.officialsRequired===true&&competition.officialsManagerEmail&&control.audienceAllowed(setting,{source:'nap',type:'officials_pdf',competitionRegionId:competition.regionId})){
     const pdf=await services.officialsPdf(competition,entries),file=await attachment(pdf,'application/pdf');attachmentCount++;
-    jobs.push(...mails('officials_pdf',[{email:competition.officialsManagerEmail,clubId:'jury'}],{officialCount:pdf.officialCount,attachments:[file]}));
+    jobs.push(...mails('officials_pdf',require('./competition-mail-addresses').list(competition.officialsManagerEmail).map(email=>({email,clubId:'jury'})),{officialCount:pdf.officialCount,attachments:[file]}));
   }else skippedCount++;
   return {jobs,attachmentCount,skippedCount,sourceHash,done:true};
 }

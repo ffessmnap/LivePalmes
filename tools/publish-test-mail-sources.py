@@ -17,6 +17,8 @@ import zipfile
 ROOT = Path(__file__).resolve().parents[1]
 CONTRACT = ROOT / '.github/releases/evidence/20261108-test-mail-sources-contract.json'
 DIGEST = "82ee3c568601abee7963fcfa6c8cb10f5053de6382d3e0147b2b0bec5c246b9e"
+CONTACTS_CONTRACT = ROOT / '.github/releases/evidence/20261108-competition-mail-contacts-contract.json'
+CONTACTS_DIGEST = '0000000000000000000000000000000000000000000000000000000000000000'
 WORKFLOW = '.github/workflows/livepalmes-test-mail-sources.yml'
 PROJECT = 'livepalmes-test'
 DEPLOYER = 'github-livepalmes-test-backend@livepalmes-test.iam.gserviceaccount.com'
@@ -47,18 +49,20 @@ def digest(value):
 
 
 def contract(release):
-    raw = CONTRACT.read_bytes().replace(b'\r\n', b'\n')
-    require(hashlib.sha256(raw).hexdigest() == DIGEST, 'Contrat TEST mails modifie')
+    contacts = release == 'contacts'
+    source, expected_digest = (CONTACTS_CONTRACT, CONTACTS_DIGEST) if contacts else (CONTRACT, DIGEST)
+    raw = source.read_bytes().replace(b'\r\n', b'\n')
+    require(hashlib.sha256(raw).hexdigest() == expected_digest, 'Contrat TEST mails modifie')
     value = json.loads(raw)
     require(value.get('schema') == 1 and value.get('project') == PROJECT
             and set(value.get('allowedFunctions', [])) == ALLOWED
-            and set(value['releases']) <= {'models', 'decisions'} and release in value['releases'],
+            and set(value['releases']) <= ({'contacts'} if contacts else {'models', 'decisions'}) and release in value['releases'],
             'Lot TEST mails non ferme')
     entry = value['releases'][release]
     require(set(entry['fingerprints']) <= ALLOWED and entry['fingerprints']
             and all(re.fullmatch('[a-f0-9]{64}', v) for v in entry['fingerprints'].values()),
             'Empreintes TEST mails invalides')
-    return entry
+    return {**entry, '_contractSha256': expected_digest} if contacts else entry
 
 
 def guard(candidate, entry, env=os.environ):
@@ -387,6 +391,7 @@ def main(mode, release, directory, candidate):
     require(mode in {'identity', 'prepare', 'deploy', 'verify', 'recover', 'diagnostic'}, 'Mode TEST interdit')
     directory, candidate = Path(directory).resolve(), Path(candidate).resolve()
     entry = contract(release)
+    contract_sha = entry.get('_contractSha256', DIGEST)
     sha = guard(candidate, entry)
     directory.mkdir(parents=True, exist_ok=True)
     if mode == 'diagnostic':
@@ -425,11 +430,11 @@ def main(mode, release, directory, candidate):
             filename = f'source-{index}.zip'
             (directory / filename).write_bytes(data)
             archives.append({'file': filename, 'sha256': hashlib.sha256(data).hexdigest(), 'names': sorted(names)})
-        cycle.write(directory / 'plan.json', {'candidate': sha, 'release': release, 'contractSha256': DIGEST, 'selected': selected, 'archives': archives})
+        cycle.write(directory / 'plan.json', {'candidate': sha, 'release': release, 'contractSha256': contract_sha, 'selected': selected, 'archives': archives})
         print('Sources TEST calculees : ' + ', '.join(selected), flush=True)
         return
     plan = cycle.read(directory / 'plan.json')
-    require(plan['candidate'] == sha and plan['release'] == release and plan['contractSha256'] == DIGEST, 'Plan TEST modifie')
+    require(plan['candidate'] == sha and plan['release'] == release and plan['contractSha256'] == contract_sha, 'Plan TEST modifie')
     before = cycle.read(directory / 'before.json')
     require(plan['selected'] == select(before, sha, entry), 'Selection TEST modifiee')
     require(controls() == cycle.read(directory / 'controls.json'), 'Reglages, file, planificateur ou messages modifies')
@@ -488,7 +493,7 @@ def main(mode, release, directory, candidate):
     verify(before, after, plan['selected'], sha, {name: row['storageSource'] for name, row in managed.items()})
     snapshot = cycle.snapshot(PROJECT)
     require(snapshot['functions'] == compact(after), 'Inventaire TEST modifie pendant la verification')
-    proof = {'schema': 1, 'candidate': sha, 'release': release, 'contractSha256': DIGEST,
+    proof = {'schema': 1, 'candidate': sha, 'release': release, 'contractSha256': contract_sha,
         'applicationAnchor': entry['applicationCommit'], 'state': {'functions': [f for f in snapshot['functions'] if f['name'].split('/')[-1] in plan['selected']]},
         'currentTestState': snapshot, 'selected': plan['selected'], 'archives': plan['archives'],
         'uploadedSources': uploads,

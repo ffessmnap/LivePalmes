@@ -86,13 +86,14 @@ function createCompetitionService_nativeNotificationAutomationServices(backendCo
         connectionTimeout:15000,greetingTimeout:15000,socketTimeout:30000});
       try{return await require("../../nap-bcc-delivery").drain(backendContext.db,ref,{
         projectId:backendContext.ENVIRONMENT.projectId,fromEmail:config.fromEmail,send:mail=>transporter.sendMail(mail),attachments:backendContext.engagementMailAttachments,
+        copyEligible:email=>require("../../competition-mail-addresses").copies(competition).includes(email),
         content:job=>{
           const footer=`\n\nVous pouvez gérer les notifications email dans la rubrique Mon compte :\n${backendContext.ENVIRONMENT.hostingOrigin}/portail.html#mon-compte`;
-          const text=String(job.textBody||'').slice(0,5000)+(['opening_notification','competition_documents','club_recap_pdf'].includes(job.type)?footer:'');
+          const text=String(job.textBody||'').slice(0,5000)+(job.deliveredCc?.length&&job.contactNotice?'\n\n'+job.contactNotice:'')+(['opening_notification','competition_documents','club_recap_pdf'].includes(job.type)?footer:'');
           return {text,html:backendContext.livePalmesMailHtml(text)};
         },
         eligible:(job,item,snapshot)=>{
-          if(['entries_txt','officials_pdf'].includes(job.type))return !item.uid&&backendContext.normalizeEmail(item.email)===backendContext.normalizeEmail(job.type==='entries_txt'?competition.computerEmail:competition.officialsManagerEmail);
+          if(['entries_txt','officials_pdf'].includes(job.type))return !item.uid&&require("../../competition-mail-addresses").list(job.type==='entries_txt'?competition.computerEmail:competition.officialsManagerEmail).includes(backendContext.normalizeEmail(item.email));
           const user=snapshot?.data();
           if(!user||user.status!=='active')return false;
           const recipient={...backendContext.engagementMailRecipientFromUserDoc(snapshot),napClubRegionId:item.recipientRegionId};
