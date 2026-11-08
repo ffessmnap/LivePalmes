@@ -62,7 +62,7 @@ async function frozen(file,event,build){
   catch(error){if(Number(error.code)!==412)throw error;return validate(await read());}
 }
 
-async function page(event,competition,services,attachment){
+async function page(event,competition,services,attachment,readCursor){
   const source=await services.reminderSnapshot(event,async()=>{
     const recipients=await services.recipients(),setting=await services.mailSetting();
     if(!Array.isArray(recipients)||recipients.length>10000)throw new RangeError('Annuaire de rappel trop volumineux.');
@@ -88,11 +88,11 @@ async function page(event,competition,services,attachment){
   }
   if(event.phase==='empty'){
     const ids=new Set(source.entries.map(entry=>String(entry.clubId))),selected=source.recipients.filter(item=>!ids.has(item.clubId));
-    const offset=require('./nap-notification-pages').cursor(event.cursor,selected.length),batch=selected.slice(offset,offset+1000),done=offset+batch.length>=selected.length;
+    const offset=readCursor(event.cursor,selected.length),batch=selected.slice(offset,offset+1000),done=offset+batch.length>=selected.length;
     return {jobs:groups(batch,{}),sourceHash,done:done&&!source.entries.length,nextPhase:done?'clubs':'empty',nextCursor:done?'':String(offset+batch.length),attachmentCount:0};
   }
   if(event.phase!=='clubs')throw new TypeError('Phase de rappel invalide.');
-  const offset=require('./nap-notification-pages').cursor(event.cursor,source.entries.length),batch=[];let count=0;
+  const offset=readCursor(event.cursor,source.entries.length),batch=[];let count=0;
   for(const entry of source.entries.slice(offset,offset+5)){
     const needed=Math.ceil(source.recipients.filter(item=>item.clubId===String(entry.clubId)).length/size);
     if(needed>250)throw new RangeError('Trop de groupes pour un club.');
