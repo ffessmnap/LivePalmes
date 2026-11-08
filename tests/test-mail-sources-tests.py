@@ -307,6 +307,34 @@ class MailSources(unittest.TestCase):
                 p.main('deploy', 'reminder', directory, ROOT)
             controls.assert_not_called(); inventory.assert_not_called()
 
+    def test_officials_txt_is_closed_to_its_own_three_sources_and_cannot_mix_plans(self):
+        entry = p.contract('officials_txt')
+        names = {'closeDueEngagementCompetitions', 'processNapCompetitionNotifications', 'processNapNotificationTask'}
+        self.assertEqual(set(entry['fingerprints']), names)
+        self.assertEqual(len(p.ALLOWED), 6)
+        self.assertEqual(entry['applicationCommit'], '59ff046750ff9d102fb475e5d8284bfeed8ebb7b')
+        self.assertEqual(entry['baseCommit'], '257f4271ebe03fef889bbd668fb5418c96f66d9a')
+        self.assertEqual(entry['baselineRuns'][0]['id'], 42477367936)
+        self.assertEqual(entry['_contractSha256'], p.OFFICIALS_TXT_DIGEST)
+        self.assertNotIn(p.OFFICIALS_TXT_DIGEST, [p.DIGEST, p.CONTACTS_DIGEST, p.REMINDER_DIGEST])
+        actual = p.cycle.test_backend_fingerprints(entry['applicationCommit'])
+        self.assertEqual(entry['fingerprints'], {name: actual[name] for name in names})
+        self.assertFalse(any(path.startswith('functions/') for path in entry['toolingPaths']))
+        with patch.object(p, 'OFFICIALS_TXT_DIGEST', '0' * 64), self.assertRaisesRegex(ValueError, 'modifie'):
+            p.contract('officials_txt')
+        before = [function(name) for name in sorted(p.ALLOWED)]
+        with patch.object(p.cycle, 'test_backend_fingerprints', side_effect=lambda sha: {name: sha for name in p.ALLOWED}):
+            self.assertEqual(p.select(before, SHA, entry), sorted(names))
+        with tempfile.TemporaryDirectory() as directory, patch.object(p, 'guard', return_value=SHA), \
+                patch.object(p, 'controls') as controls, patch.object(p, 'inventory') as inventory, \
+                patch.object(p, 'load', return_value=SimpleNamespace(reusable=lambda *_: True)):
+            for other, digest in [('models', p.DIGEST), ('contacts', p.CONTACTS_DIGEST), ('reminder', p.REMINDER_DIGEST)]:
+                p.cycle.write(Path(directory) / 'plan.json', {'candidate': SHA, 'release': other,
+                    'contractSha256': digest, 'selected': [], 'archives': []})
+                with self.assertRaisesRegex(ValueError, 'Plan'):
+                    p.main('deploy', 'officials_txt', directory, ROOT)
+            controls.assert_not_called(); inventory.assert_not_called()
+
     def test_exact_main_ci_candidate_and_application_anchor(self):
         entry = p.contract('models')
         env = {'GITHUB_REF': 'refs/heads/main', 'GITHUB_RUN_ATTEMPT': '1', 'TARGET_FIREBASE_PROJECT': p.PROJECT,
