@@ -117,6 +117,9 @@ async function processEvent(db, ref, services, now = new Date().toISOString()) {
       return {skipped:true,reason:'automatic-mails-disabled-or-discarded'};
     }
     const competition=await services.competition(claimed.competitionId);
+    if (services.freezeMailTemplates && eligible(claimed,competition,now)) {
+      claimed.mailTemplates = await services.freezeMailTemplates(ref, claimed, lease);
+    }
     const result=eligible(claimed,competition,now)?await services.page(claimed,competition):{cancelled:true,jobs:[],done:true};
     if(!Array.isArray(result.jobs)||result.jobs.length>(claimed.deliveryMode==='bcc-v1'?250:100) || Number(result.attachmentCount||0)>7)throw new RangeError("Lot de notification trop volumineux.");
     if(result.sourceHash && claimed.sourceHash && result.sourceHash!==claimed.sourceHash)throw new TypeError("Les donnees NAP ont change pendant la preparation. Reprenez la preparation depuis la fiche.");

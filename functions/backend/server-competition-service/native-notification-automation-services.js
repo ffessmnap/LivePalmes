@@ -7,6 +7,7 @@ function createCompetitionService_nativeNotificationAutomationServices(backendCo
     const competitionPromises=new Map(),entryPromises=new Map();
     const services={simulation,deleteField:()=>backendContext.FieldValue.delete(),
       mailSetting: () => mailSettingPromise ||= require("../../engagement-mail-control").read(backendContext.db),
+      freezeMailTemplates: (ref, event, lease) => require("../../mail-templates").freezeEvent(backendContext.db, ref, event, lease),
       allowEvent: simulation ? undefined : async event => {
         const control=require("../../engagement-mail-control");
         return control.eventDecision(await services.mailSetting(),{createdAt:event.createdAt,notificationDueAt:event.automatic?event.deadline:event.createdAt}).allowed;
@@ -58,7 +59,15 @@ function createCompetitionService_nativeNotificationAutomationServices(backendCo
         ]).slice(0,40):backendContext.engagementMailJobId(data)};
       }
     };
-    services.page=(event,competition)=>require("../../nap-notification-pages").page(event,competition,services);
+    services.page=(event,competition)=>require("../../nap-notification-pages").page(event,competition,{
+      ...services, mail:(kind,competition,recipient,details)=>{
+        const original=services.mail(kind,competition,recipient,details);
+        const rendered=require("../../mail-template-rendering").competitionMail(original.type,event.mailTemplates,competition,details,
+          {subject:original.subject,text:original.textBody},backendContext.ENVIRONMENT.hostingOrigin);
+        return {...original,subject:rendered.subject,textBody:rendered.text,templateId:rendered.templateId,
+          templateRevision:rendered.templateRevision,catalogRevision:rendered.catalogRevision};
+      }
+    });
     return services;
   }
 
