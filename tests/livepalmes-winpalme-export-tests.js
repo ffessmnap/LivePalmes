@@ -289,6 +289,30 @@ assert.equal(officialTxt.split("\r\n").filter(l=>!l.startsWith("OFF;")).join("\r
 assert.throws(()=>buildWaterTxt(waterCompetition,[{...officialEntries[0],officials:[{lastName:"",firstName:""}]}],sameCodeClubs),/officiel.*incomplete/);
 console.log("IntraNAP OFF: six fields, accents/escaping, empty date, separate federal blocks, officials-only club, CEQ order, no private IDs or mutation verified.");
 
+// The approved pool format reuses E-NAP OFF, without changing other records.
+const poolOfficialEntries=officialEntries.map(entry=>({...entry,swimmers:entry.swimmers.map(person=>({...person,
+  individualEntries:person.individualEntries.map(course=>({...course,eventCode:"50SF"}))}))}));
+const poolOfficialTxt=buildWinPalmeCompetitionTxt(competition,poolOfficialEntries,sameCodeClubs,{generatedAt:"2026-10-24T12:00:00Z"}).buffer.toString("utf8");
+assert.deepEqual(poolOfficialTxt.split("\r\n").filter(l=>l.startsWith("OFF;")),officialLines.filter(l=>l.startsWith("OFF;")));
+assert.equal(poolOfficialTxt.split("\r\n").filter(l=>!l.startsWith("OFF;")).join("\r\n"),buildWinPalmeCompetitionTxt(competition,poolOfficialEntries.map(entry=>({...entry,officials:[]})),sameCodeClubs,{generatedAt:"2026-10-24T12:00:00Z"}).buffer.toString("utf8"));
+const sharedPerson={lastName:"Fictif",firstName:"Élodie",birthDate:"1980-02-29",sex:"F",category:"S",swimmerIndexId:"42"};
+for(const [event,build,eventCode] of [[competition,buildWinPalmeCompetitionTxt,"50SF"],[waterCompetition,buildWaterTxt,"OW1000SF"]]) {
+  const entry={clubId:"101",clubCode:"CPC",swimmers:[{...sharedPerson,individualEntries:[{eventCode}]}],relays:[],
+    teamLeader:{...sharedPerson,mode:"person"},officials:[{...sharedPerson,nativeLinkId:"1"},{...sharedPerson,nativeLinkId:"2"}]};
+  const before=JSON.stringify(entry),buffer=build(event,[entry],sameCodeClubs).buffer,txt=buffer.toString("utf8"),rows=txt.split("\r\n");
+  assert.equal(rows.filter(l=>l.startsWith("OFF;")).length,2,"Keep distinct native links, including a person also entered as swimmer and leader");
+  assert.equal(rows.filter(l=>l.startsWith("NAG;")).length,1);
+  assert.equal(rows.filter(l=>l.startsWith("CEQ;")).length,1);
+  assert.ok(txt.indexOf("NAG;")<txt.indexOf("OFF;")&&txt.lastIndexOf("OFF;")<txt.indexOf("CEQ;"));
+  assert.equal(rows.filter(l=>l.startsWith("OFF;")).every(l=>l.split(";").length===6),true);
+  assert.equal(/(^|[^\r])\n/.test(txt),false);assert.equal(buffer.subarray(0,3).equals(Buffer.from([239,187,191])),false);
+  assert.equal(JSON.stringify(entry),before);
+  const only=build(event,[{...entry,swimmers:[],teamLeader:{}}],sameCodeClubs).buffer.toString("utf8");
+  assert.equal(only.split("\r\n").filter(l=>l.startsWith("OFF;")).length,2,"Officials-only club remains in its federal block");
+  assert.throws(()=>build(event,[{...entry,officials:[{lastName:"",firstName:""}]}],sameCodeClubs),/officiel.*incomplete/);
+}
+console.log("Shared OFF: pool/water fields, native duplicate links, cumulative roles, officials-only clubs, unchanged other lines and encoding passed.");
+
 // Registered-only swimmers use the observed IntraNAP NAG/REL convention.
 const registeredEntries=[{...officialEntries[0],swimmers:[...officialEntries[0].swimmers,{swimmerIndexId:"14207",firstName:"Sans",lastName:"Course",birthDate:"1980-02-29",sex:"F",category:"M40+",individualEntries:[]},{swimmerIndexId:"14208",firstName:"Sans",lastName:"Épreuve",birthDate:"1970-01-01",sex:"M"}],relays:[{eventCode:"4X1000SBMIXTE",genderMode:"mixed",category:"S",members:[]}]}];
 const registeredBefore=JSON.stringify(registeredEntries);
@@ -298,6 +322,8 @@ assert.deepEqual(registeredLines,["NAG;Course;Sans;29/02/1980;F;CPC;;REL;000000;
 assert.ok(registeredLines.every(l=>l.split(";").length===13));
 assert.equal(registeredTxt.includes("DIS;REL;"),false);
 assert.ok(registeredTxt.indexOf(registeredLines[0])<registeredTxt.indexOf("REL;CPC;"));
+const noRelayRegistered=buildWaterTxt(waterCompetition,[{...registeredEntries[0],relays:[],teamLeader:{}}],sameCodeClubs).buffer.toString("utf8");
+assert.ok(noRelayRegistered.indexOf(registeredLines[0])<noRelayRegistered.indexOf("OFF;"),"Registered-only NAG records stay before OFF even without a relay or leader");
 assert.equal(JSON.stringify(registeredEntries),registeredBefore);
 const registeredOnlyTxt=buildWaterTxt(waterCompetition,[{...registeredEntries[0],swimmers:registeredEntries[0].swimmers.slice(1),relays:[],officials:[],teamLeader:{}}],sameCodeClubs).buffer.toString();
 assert.equal(registeredOnlyTxt.split("\r\n").filter(l=>l.startsWith("NAG;")).length,2,"A club with only registered swimmers stays in the TXT");

@@ -227,6 +227,13 @@ function buildWinPalmeCompetitionTxt(competition = {}, entries = [], clubsById =
         ...relayMemberIds(relay)
       ]));
     });
+    // E-NAP OFF has six fields, including its trailing empty field. Preserve
+    // declared roles and native order, independently of NAG and CEQ records.
+    (entry.officials || []).forEach((person) => {
+      if (!text(person.lastName) || !text(person.firstName)) throw new Error("Identite d'un officiel incomplete : verification requise.");
+      const field = value => String(value ?? "").trim().replace(/[;\r\n]+/g, " ");
+      lines.push(["OFF", person.lastName, person.firstName, entry.clubCode || club.clubCode, formatDate(person.birthDate), ""].map(field).join(";"));
+    });
     const leader = entry.teamLeader || {};
     if (leader.mode === "person") {
       lines.push(line(["CEQ", leader.lastName, leader.firstName, entry.clubCode || club.clubCode, formatDate(leader.birthDate), ""]));
