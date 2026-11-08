@@ -16,7 +16,7 @@ import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
 CONTRACT = ROOT / '.github/releases/evidence/20261108-test-mail-sources-contract.json'
-DIGEST = '768886367ef86391752aa9be7880b1880a22869b66d87965b20288d027d415b1'
+DIGEST = '5e83e747193176f6c8d381c96e4aa2a4d2beca3b0759577ac5ab147a63ae9a39'
 WORKFLOW = '.github/workflows/livepalmes-test-mail-sources.yml'
 PROJECT = 'livepalmes-test'
 DEPLOYER = 'github-livepalmes-test-backend@livepalmes-test.iam.gserviceaccount.com'
@@ -222,7 +222,134 @@ def compact(functions):
 
 def archive_identity(data):
     with zipfile.ZipFile(io.BytesIO(data)) as archive:
-        return digest(sorted((name, hashlib.sha256(archive.read(name)).hexdigest()) for name in archive.namelist()))
+        items = archive.infolist()
+        require(len(items) <= 5000 and sum(i.file_size for i in items) <= 64 * 1024**2
+                and len({i.filename for i in items}) == len(items), 'Archive source dupliquee ou hors limite')
+        require(all(not i.is_dir() and not i.filename.startswith('/') and '\\' not in i.filename
+                    and '..' not in i.filename.split('/') and (i.external_attr >> 28) != 10 for i in items),
+                'Chemin archive source invalide')
+        return digest(sorted((i.filename, hashlib.sha256(archive.read(i)).hexdigest()) for i in items))
+
+
+def configuration_identity(function):
+    value = state.rollback_patch(function, {})
+    return digest({k: value.get(k) for k in ['serviceConfig', 'buildConfig', 'eventTrigger']})
+
+
+def managed_source(function):
+    name = function['name'].split('/')[-1]
+    runtime(function, name)
+    source = function.get('buildConfig', {}).get('source', {}).get('storageSource', {})
+    require(source == function['buildConfig'].get('sourceProvenance', {}).get('resolvedStorageSource')
+            and source.get('bucket') == 'gcf-v2-sources-206080168534-europe-west1'
+            and source.get('object') == name + '/function-source.zip'
+            and re.fullmatch('[1-9][0-9]*', str(source.get('generation', ''))), 'Source geree TEST non attestee')
+    return source
+
+
+def attest_source(function, expected):
+    source = managed_source(function)
+    def same_reference():
+        current = state.request(state.API + function['name'])
+        require(managed_source(current) == source and all(current.get(k) == function.get(k) for k in ['labels', 'updateTime'])
+                and current['serviceConfig']['revision'] == function['serviceConfig']['revision'], 'Source modifiee pendant lecture')
+    same_reference()
+    # sourceCodeGet is already granted to the deployer. A signed read avoids
+    # requiring any additional Storage permission or exposing its URL/token.
+    download = state.request(state.API + function['name'] + ':generateDownloadUrl', 'POST', {})
+    url = urllib.parse.urlsplit(download['downloadUrl'])
+    require(url.scheme == 'https' and url.hostname == 'storage.googleapis.com'
+            and urllib.parse.unquote(url.path).lstrip('/') == source['bucket'] + '/' + source['object'], 'Destination lecture source interdite')
+    try:
+        with urllib.request.urlopen(download['downloadUrl'], timeout=120) as response:
+            require(response.headers.get('x-goog-generation') == source['generation'], 'Generation source lue differente')
+            data = response.read(64 * 1024**2 + 1)
+    except urllib.error.HTTPError as error:
+        raise ValueError('Lecture archive geree indisponible : HTTP ' + str(error.code)) from None
+    require(len(data) <= 64 * 1024**2, 'Archive geree trop volumineuse')
+    identity = archive_identity(data)
+    require(identity == archive_identity(expected), 'Contenu archive geree different du candidat')
+    same_reference()
+    return {'storageSource': source, 'archiveSha256': hashlib.sha256(data).hexdigest(),
+        'expectedArchiveSha256': hashlib.sha256(expected).hexdigest(), 'archiveIdentity': identity,
+        'allPathsAndFileBytesIdentical': True, 'generationReadAndReferencesRechecked': True}
+
+
+def recover_models(entry, candidate, sha, directory):
+    recovery = entry.get('recovery', {})
+    require(recovery.get('run') == 42454743001 and recovery.get('sourceCandidate') == 'd9281070a7bd037d9383d844474269d19c8b3613'
+            and set(recovery.get('selected', {})) == ALLOWED, 'Reprise models hors run ferme')
+    run = cycle.gh(f'repos/{os.environ["GITHUB_REPOSITORY"]}/actions/runs/42454743001')
+    require(run.get('head_sha') == recovery['sourceCandidate'] and run.get('head_branch') == 'main'
+            and run.get('path') == WORKFLOW and run.get('run_attempt') == 1
+            and run.get('status') == 'completed' and run.get('conclusion') == 'failure', 'Run engage non authentifie')
+    jobs = cycle.gh(f'repos/{os.environ["GITHUB_REPOSITORY"]}/actions/runs/42454743001/jobs?per_page=100')['jobs']
+    require(len(jobs) == 1, 'Jobs du run engage ambigus')
+    steps = {s['name']: s.get('conclusion') for s in jobs[0]['steps']}
+    require(steps.get('Authentifier les preuves et constater les preconditions deja satisfaites') == 'success'
+            and steps.get('Publier seulement les sources calculees et autorisees') == 'success'
+            and steps.get('Verifier revisions et preservation de tous les etats') == 'failure', 'Etapes du run engage non confirmees')
+    logs = cycle.run(['gh', 'api', f'repos/{os.environ["GITHUB_REPOSITORY"]}/actions/jobs/{jobs[0]["id"]}/logs'])
+    require(len(logs) < 4 * 1024**2 and 'ValueError: Source distante differente de l’archive autorisee : closeDueEngagementCompetitions' in logs
+            and all(logs.count('Source TEST actualisee : ' + name) == 1 for name in ALLOWED), 'Trace du run engage incompatible')
+    require(not cycle.run(['git', 'diff', '--name-only', recovery['sourceCandidate'], sha, '--', 'functions/'], candidate), 'Sources de reprise differentes')
+    expected = baseline(entry, directory)
+    require(recovery['beforeCompactSha256'] == digest(expected['functions']), 'Temoin local different de la baseline authentifiee')
+    before = inventory()
+    witness = controls()
+    require(cycle.snapshot(PROJECT)['hosting'] == expected['hosting'], 'Hosting modifie depuis le run engage')
+    require(set(recovery['beforeFunctionHashes']) == {f['name'] for f in before}, 'Inventaire reprise incomplet')
+    groups = {}
+    for function in before:
+        name = function['name'].split('/')[-1]
+        if name not in ALLOWED:
+            require(digest(function) == recovery['beforeFunctionHashes'][function['name']], 'Fonction hors reprise modifiee : ' + name)
+            continue
+        pinned = recovery['selected'][name]
+        require(digest(function) == pinned['afterFunctionSha256'] and managed_source(function) == pinned['source']
+                and configuration_identity(function) == recovery['beforeConfigurationHashes'][function['name']], 'Configuration ou revision reprise modifiee : ' + name)
+        keys = tuple(sorted(v['key'] for v in function.get('serviceConfig', {}).get('secretEnvironmentVariables', [])))
+        groups.setdefault(keys, []).append(name)
+    rows = {f['name'].split('/')[-1]: f for f in before}
+    sources = {}
+    for keys, names in groups.items():
+        archive = archive_helper.test_archive(candidate, sha, keys, sorted(names))
+        for name in names:
+            sources[name] = attest_source(rows[name], archive)
+            require(sources[name]['archiveSha256'] == recovery['selected'][name]['archiveSha256']
+                    and sources[name]['archiveIdentity'] == recovery['selected'][name]['archiveIdentity'], 'Archive reprise hors generation attestee')
+    require(inventory() == before and controls() == witness, 'Derive pendant reprise en lecture seule')
+    current = cycle.snapshot(PROJECT)
+    require(current['functions'] == compact(before) and current['hosting'] == expected['hosting'], 'Etat reprise instable')
+    cycle.write(directory / 'test-backend-proof.json', {'schema': 1, 'candidate': sha, 'release': 'models',
+        'recoveredRun': recovery['run'], 'sourceCandidate': recovery['sourceCandidate'], 'contractSha256': DIGEST,
+        'applicationAnchor': entry['applicationCommit'], 'readOnlyRecovery': True, 'currentTestState': current,
+        'state': {'functions': [f for f in current['functions'] if f['name'].split('/')[-1] in ALLOWED]},
+        'selected': sorted(ALLOWED), 'managedSources': sources, 'originalRunConclusion': 'failure',
+        'originalUploadReceiptsAvailable': False, 'originalControlsHashesAvailable': False,
+        'originalControlsEqualityAttestedByRunControlFlow': True, 'beforeInventorySha256': recovery['beforeInventorySha256'],
+        'freshControlsBefore': witness, 'freshControlsAfter': witness, 'otherFunctionsUnchanged': True,
+        'configurationsUnchanged': True, 'hostingUnchanged': True, 'taskContentsRead': False})
+
+
+def failure_diagnostic(directory, release, sha):
+    result = {'candidate': sha, 'release': release, 'runId': os.environ['GITHUB_RUN_ID'],
+        'outcome': 'failure-diagnostic-only', 'successProof': False}
+    def local(name):
+        path = directory / name
+        return cycle.read(path) if path.exists() else {}
+    plan = local('plan.json')
+    result['plan'] = {k: plan[k] for k in ['candidate', 'release', 'contractSha256', 'selected', 'archives'] if k in plan}
+    controls_value = local('controls.json')
+    result['controlsWitness'] = {k: controls_value[k] for k in ['mailSha256', 'schedulerSha256', 'queueSha256',
+        'taskMetadata', 'metadata', 'mailEnabled', 'schedulerSuspended', 'queuePaused'] if k in controls_value}
+    result['uploadedSources'] = {name: {k: value[k] for k in ['storageSource', 'archiveSha256'] if k in value}
+        for name, value in local('uploads.json').items() if name in ALLOWED}
+    before = local('before.json')
+    result['beforeFunctionWitnesses'] = {f['name']: {'functionSha256': digest(f),
+        'configurationSha256': configuration_identity(f), 'revision': f.get('serviceConfig', {}).get('revision'),
+        'updateTime': f.get('updateTime')} for f in before} if isinstance(before, list) else {}
+    cycle.write(directory / 'failure-diagnostic.json', result)
 
 
 def baseline(entry, directory):
@@ -245,17 +372,24 @@ def baseline(entry, directory):
 
 
 def main(mode, release, directory, candidate):
-    require(mode in {'identity', 'prepare', 'deploy', 'verify'}, 'Mode TEST interdit')
+    require(mode in {'identity', 'prepare', 'deploy', 'verify', 'recover', 'diagnostic'}, 'Mode TEST interdit')
     directory, candidate = Path(directory).resolve(), Path(candidate).resolve()
     entry = contract(release)
     sha = guard(candidate, entry)
     directory.mkdir(parents=True, exist_ok=True)
-    if mode in {'identity', 'prepare'}:
+    if mode == 'diagnostic':
+        failure_diagnostic(directory, release, sha)
+        return
+    if mode in {'identity', 'prepare', 'recover'}:
         evidence = load('test_mail_ci', 'test-verification-evidence.py')
         require(evidence.reusable(sha, directory / 'application')
                 and evidence.reusable(sha, directory / 'publication', 'publication-offline-v1'), 'CI main exacte non confirmee')
         client_email = credential_identity()
         print('Compte backend TEST confirme : ' + client_email, flush=True)
+        if mode == 'recover':
+            require(release == 'models', 'Reprise reservee au seul lot models')
+            recover_models(entry, candidate, sha, directory)
+            return
         if mode == 'identity':
             cycle.write(directory / 'identity-proof.json', {'candidate': sha, 'project': PROJECT,
                 'clientEmail': client_email, 'runId': os.environ['GITHUB_RUN_ID'], 'cloudMutation': False})
@@ -332,13 +466,21 @@ def main(mode, release, directory, candidate):
     uploads = cycle.read(directory / 'uploads.json') if plan['selected'] else {}
     require(set(uploads) == set(plan['selected']), 'Recu des sources incomplet')
     require(all(uploads[name]['archiveSha256'] == row['sha256'] for row in plan['archives'] for name in row['names']), 'Empreinte de source recue differente du plan')
-    verify(before, after, plan['selected'], sha, {name: row['storageSource'] for name, row in uploads.items()})
+    managed = {}
+    rows = {f['name'].split('/')[-1]: f for f in after}
+    for archive in plan['archives']:
+        data = (directory / archive['file']).read_bytes()
+        require(hashlib.sha256(data).hexdigest() == archive['sha256'], 'Archive candidate alteree avant verification')
+        for name in archive['names']:
+            managed[name] = attest_source(rows[name], data)
+    verify(before, after, plan['selected'], sha, {name: row['storageSource'] for name, row in managed.items()})
     snapshot = cycle.snapshot(PROJECT)
     require(snapshot['functions'] == compact(after), 'Inventaire TEST modifie pendant la verification')
     proof = {'schema': 1, 'candidate': sha, 'release': release, 'contractSha256': DIGEST,
         'applicationAnchor': entry['applicationCommit'], 'state': {'functions': [f for f in snapshot['functions'] if f['name'].split('/')[-1] in plan['selected']]},
         'currentTestState': snapshot, 'selected': plan['selected'], 'archives': plan['archives'],
         'uploadedSources': uploads,
+        'managedSources': managed,
         'mailSettingUnchanged': True, 'schedulerUnchanged': True, 'queueUnchanged': True, 'pendingMessagesPreserved': True,
         'configurationsUnchanged': True, 'otherFunctionsUnchanged': True, 'hostingUnchanged': True, 'taskContentsRead': False,
         'controlsBefore': cycle.read(directory / 'controls.json'), 'controlsAfter': controls()}

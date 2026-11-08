@@ -46,6 +46,121 @@ def credentials_file(directory, **overrides):
 
 
 class MailSources(unittest.TestCase):
+    def test_managed_archive_requires_exact_generation_paths_bytes_and_stable_reference(self):
+        name = 'processNapNotificationTask'
+        current = function(name)
+        source = {'bucket': 'gcf-v2-sources-206080168534-europe-west1', 'object': name + '/function-source.zip', 'generation': '123'}
+        current['buildConfig'].update(source={'storageSource': source}, sourceProvenance={'resolvedStorageSource': source})
+        data = zipped()
+        url = 'https://storage.googleapis.com/' + source['bucket'] + '/' + source['object'] + '?private-signature=never-log'
+        response = MagicMock(); response.__enter__.return_value.headers = {'x-goog-generation': '123'}
+        response.__enter__.return_value.read.return_value = data
+        def attest(answers=None):
+            with patch.object(p.state, 'request', side_effect=answers or [current, {'downloadUrl': url}, current]) as request, \
+                    patch.object(p.urllib.request, 'urlopen', return_value=response):
+                result = p.attest_source(current, data)
+                self.assertEqual([c.args[1] if len(c.args) > 1 else 'GET' for c in request.call_args_list], ['GET', 'POST', 'GET'])
+                self.assertTrue(request.call_args_list[1].args[0].endswith(':generateDownloadUrl'))
+                return result
+        result = attest()
+        self.assertEqual(result['archiveSha256'], p.hashlib.sha256(data).hexdigest())
+        self.assertTrue(result['generationReadAndReferencesRechecked'])
+        response.__enter__.return_value.read.assert_called_with(64 * 1024**2 + 1)
+        for changed_data, generation in [(zipped('changed file bytes'), '123'), (data, '124')]:
+            response.__enter__.return_value.read.return_value = changed_data
+            response.__enter__.return_value.headers = {'x-goog-generation': generation}
+            with self.assertRaises(ValueError): attest()
+        response.__enter__.return_value.read.return_value = data
+        response.__enter__.return_value.headers = {'x-goog-generation': '123'}
+        changed = copy.deepcopy(current); changed['buildConfig']['source']['storageSource']['generation'] = '124'
+        with self.assertRaises(ValueError): attest([current, {'downloadUrl': url}, changed])
+        with self.assertRaisesRegex(ValueError, 'Destination lecture'):
+            attest([current, {'downloadUrl': 'https://example.invalid/private-signature'}])
+        with patch.object(p.state, 'request', side_effect=[current, {'downloadUrl': url}]), \
+                patch.object(p.urllib.request, 'urlopen', side_effect=urllib.error.HTTPError(url, 403, 'private-signature', {}, None)), \
+                self.assertRaisesRegex(ValueError, 'HTTP 403') as error:
+            p.attest_source(current, data)
+        self.assertNotIn('private-signature', str(error.exception))
+        oversized = MagicMock(); oversized.file_size = 64 * 1024**2 + 1
+        fake_archive = MagicMock(); fake_archive.__enter__.return_value.infolist.return_value = [oversized]
+        with patch.object(p.zipfile, 'ZipFile', return_value=fake_archive), self.assertRaisesRegex(ValueError, 'hors limite'):
+            p.archive_identity(data)
+        stream = io.BytesIO()
+        with zipfile.ZipFile(stream, 'w') as archive:
+            archive.writestr('same.js', 'first')
+            with self.assertWarns(UserWarning): archive.writestr('same.js', 'second')
+        with self.assertRaisesRegex(ValueError, 'dupliquee'): p.archive_identity(stream.getvalue())
+        with self.assertRaisesRegex(ValueError, 'Chemin'): p.archive_identity(zipped().replace(b'index.js', b'../xx.js'))
+
+    def test_recovery_is_closed_read_only_and_preserves_every_other_function(self):
+        entry = copy.deepcopy(p.contract('models')); original_sha = entry['recovery']['sourceCandidate']
+        old = [function(name) for name in sorted(p.ALLOWED | {'ordinary'})]
+        current = copy.deepcopy(old)
+        for row in current:
+            name = row['name'].split('/')[-1]
+            if name not in p.ALLOWED: continue
+            source = {'bucket': 'gcf-v2-sources-206080168534-europe-west1', 'object': name + '/function-source.zip', 'generation': '123'}
+            row['buildConfig'].update(source={'storageSource': source}, sourceProvenance={'resolvedStorageSource': source})
+            row['labels']['livepalmes-commit'] = original_sha
+            row['updateTime'] = 'after'; row['serviceConfig']['revision'] = 'after'
+        recovery = entry['recovery']
+        recovery.update(beforeCompactSha256=p.digest(p.compact(old)), beforeFunctionHashes={f['name']: p.digest(f) for f in old},
+            beforeConfigurationHashes={f['name']: p.configuration_identity(f) for f in old}, selected={
+                f['name'].split('/')[-1]: {'afterFunctionSha256': p.digest(f), 'source': p.managed_source(f),
+                    'archiveSha256': 'archive', 'archiveIdentity': 'identity'}
+                for f in current if f['name'].split('/')[-1] in p.ALLOWED})
+        run = {'head_sha': original_sha, 'head_branch': 'main', 'path': p.WORKFLOW, 'run_attempt': 1, 'status': 'completed', 'conclusion': 'failure'}
+        steps = [{'name': name, 'conclusion': conclusion} for name, conclusion in [
+            ('Authentifier les preuves et constater les preconditions deja satisfaites', 'success'),
+            ('Publier seulement les sources calculees et autorisees', 'success'),
+            ('Verifier revisions et preservation de tous les etats', 'failure')]]
+        logs = '\n'.join('Source TEST actualisee : ' + name for name in p.ALLOWED) + '\nValueError: Source distante differente de l’archive autorisee : closeDueEngagementCompetitions'
+        with tempfile.TemporaryDirectory() as directory, patch.dict(os.environ, {'GITHUB_REPOSITORY': 'ffessmnap/LivePalmes'}), \
+                patch.object(p.cycle, 'gh', side_effect=lambda path: {'jobs': [{'id': 123, 'steps': steps}]} if '/jobs?' in path else run), \
+                patch.object(p.cycle, 'run', side_effect=lambda args, *_: logs if args[0] == 'gh' else ''), \
+                patch.object(p, 'baseline', return_value={'functions': p.compact(old), 'hosting': {}}), \
+                patch.object(p, 'inventory', side_effect=lambda: copy.deepcopy(current)), patch.object(p, 'controls', return_value={}), \
+                patch.object(p.cycle, 'snapshot', side_effect=lambda *_: {'functions': p.compact(current), 'hosting': {}}), \
+                patch.object(p.archive_helper, 'test_archive', return_value=zipped()), \
+                patch.object(p, 'attest_source', return_value={'archiveSha256': 'archive', 'archiveIdentity': 'identity'}), \
+                patch.object(p.state, 'request') as request:
+            p.recover_models(entry, ROOT, SHA, Path(directory))
+            proof = p.cycle.read(Path(directory) / 'test-backend-proof.json')
+            self.assertTrue(proof['readOnlyRecovery']); self.assertEqual(proof['originalRunConclusion'], 'failure')
+            self.assertFalse(proof['originalUploadReceiptsAvailable']); self.assertFalse(proof['originalControlsHashesAvailable'])
+            self.assertEqual(set(proof['managedSources']), p.ALLOWED)
+            request.assert_not_called()
+            ordinary = next(f for f in current if f['name'].endswith('/ordinary'))
+            ordinary['serviceConfig']['environmentVariables']['KEEP'] = 'changed'
+            with self.assertRaisesRegex(ValueError, 'reprise modifiee'): p.recover_models(entry, ROOT, SHA, Path(directory))
+            ordinary['serviceConfig']['environmentVariables'].pop('KEEP')
+            recovery['run'] = 42
+            with self.assertRaisesRegex(ValueError, 'hors run ferme'): p.recover_models(entry, ROOT, SHA, Path(directory))
+            recovery['run'] = 42454743001
+            run['head_sha'] = 'd' * 40
+            with self.assertRaisesRegex(ValueError, 'non authentifie'): p.recover_models(entry, ROOT, SHA, Path(directory))
+
+    def test_failure_diagnostic_never_exports_raw_configuration_credentials_or_sources(self):
+        with tempfile.TemporaryDirectory() as directory, patch.dict(os.environ, {'GITHUB_RUN_ID': '123'}), \
+                patch.object(p, 'guard', return_value=SHA), patch.object(p, 'credential_identity') as identity, \
+                patch.object(p.state, 'request') as request, patch.object(p.urllib.request, 'urlopen') as urlopen:
+            directory = Path(directory)
+            before = function('processNapNotificationTask')
+            before['serviceConfig']['environmentVariables']['PRIVATE'] = 'private-env-never-export'
+            p.cycle.write(directory / 'before.json', [before])
+            p.cycle.write(directory / 'controls.json', {'mailSha256': 'a' * 64, 'private': 'private-control-never-export'})
+            p.cycle.write(directory / 'plan.json', {'candidate': SHA, 'selected': ['processNapNotificationTask'], 'credentials': 'private-key-never-export'})
+            p.cycle.write(directory / 'uploads.json', {'processNapNotificationTask': {'storageSource': {'bucket': 'test', 'object': 'source.zip', 'generation': '123'}, 'archiveSha256': 'b' * 64}})
+            p.main('diagnostic', 'models', directory, ROOT)
+            raw = (directory / 'failure-diagnostic.json').read_text()
+            diagnostic = json.loads(raw)
+            self.assertFalse(diagnostic['successProof'])
+            self.assertEqual(diagnostic['outcome'], 'failure-diagnostic-only')
+            self.assertIn('functionSha256', diagnostic['beforeFunctionWitnesses'][before['name']])
+            self.assertNotIn('private-', raw); self.assertNotIn('environmentVariables', raw)
+            self.assertNotIn('before.json', raw); self.assertNotIn('credentials', raw)
+            for mock in [identity, request, urlopen]: mock.assert_not_called()
+
     def test_inventory_normalizes_only_complete_event_filter_order(self):
         original = function('syncEngagementMailRecipientIndex')
         original['eventTrigger'] = {'trigger': 'unchanged-trigger', 'eventType': 'unchanged-type',
@@ -109,11 +224,12 @@ class MailSources(unittest.TestCase):
     def test_both_main_ci_proofs_are_required_before_cloud_reads(self):
         with tempfile.TemporaryDirectory() as directory, patch.object(p, 'guard', return_value=SHA), \
                 patch.object(p, 'controls') as controls, patch.object(p.cycle, 'snapshot') as snapshot:
-            for answers in [[False], [True, False]]:
-                evidence = SimpleNamespace(reusable=MagicMock(side_effect=answers))
-                with patch.object(p, 'load', return_value=evidence), self.assertRaisesRegex(ValueError, 'CI main exacte'):
-                    p.main('prepare', 'models', directory, ROOT)
-                controls.assert_not_called(); snapshot.assert_not_called()
+            for mode in ['prepare', 'recover', 'identity']:
+                for answers in [[False], [True, False]]:
+                    evidence = SimpleNamespace(reusable=MagicMock(side_effect=answers))
+                    with patch.object(p, 'load', return_value=evidence), self.assertRaisesRegex(ValueError, 'CI main exacte'):
+                        p.main(mode, 'models', directory, ROOT)
+                    controls.assert_not_called(); snapshot.assert_not_called()
 
     def test_closed_contract_and_future_lot_not_implicitly_enabled(self):
         entry = p.contract('models')
@@ -129,7 +245,8 @@ class MailSources(unittest.TestCase):
         self.assertNotIn('actions: write', workflow)
         self.assertNotIn('production', workflow)
         self.assertIn('if: inputs.identity_only', workflow)
-        self.assertEqual(workflow.count('if: ${{ !inputs.identity_only }}'), 4)
+        self.assertEqual(workflow.count('if: ${{ !inputs.identity_only && !inputs.recover_models }}'), 3)
+        self.assertIn('!(inputs.identity_only && inputs.recover_models)', workflow)
 
     def test_exact_main_ci_candidate_and_application_anchor(self):
         entry = p.contract('models')
