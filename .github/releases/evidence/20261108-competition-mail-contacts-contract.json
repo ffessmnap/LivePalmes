@@ -1,0 +1,42 @@
+{
+  "schema": 1,
+  "project": "livepalmes-test",
+  "approval": "Antoine — contacts multiples et copies des mails de compétition, lot TEST distinct : sources seulement, sans donnée/envoi/permission/PROD",
+  "allowedFunctions": [
+    "closeDueEngagementCompetitions",
+    "exportNapPublicPage",
+    "processNapCompetitionNotifications",
+    "processNapNotificationTask",
+    "resolveEngagementAccessRequest",
+    "submitEngagementAccessRequest"
+  ],
+  "releases": {
+    "contacts": {
+      "applicationCommit": "bd53da9280f2e899e62cc85c69cb74ce6cd9b317",
+      "baseCommit": "450727138cc4c795c368465602f53379e28aafae",
+      "baselineRuns": [
+        {
+          "id": 42465038161,
+          "artifact": "test-proof",
+          "workflow": ".github/workflows/livepalmes-test-common.yml"
+        }
+      ],
+      "fingerprints": {
+        "exportNapPublicPage": "c1f6c9de36c67622873855bcc9a955878de0dcd53794e1f747d64af650b2e472",
+        "processNapNotificationTask": "5347f96e4b29f0b225406d4031eaec93186c2c42a605b12a9317ab0a9974b462",
+        "processNapCompetitionNotifications": "20409eeba70040c58a9557bab046bdec1a0a107b6c71c13677d6bb829a100798",
+        "closeDueEngagementCompetitions": "f4fa8a304d938ba18e1d922bb20b03e96388dcd7a569330b833b2c6151ed4a60"
+      },
+      "toolingPaths": [
+        ".github/releases/evidence/20261108-competition-mail-contacts-contract.json",
+        "tools/publish-test-mail-sources.py",
+        "tests/test-mail-sources-tests.py",
+        ".github/workflows/livepalmes-test-mail-sources.yml",
+        "docs/NOTIFICATIONS_COMPETITIONS.md",
+        "docs/releases/EVOLUTIONS.md",
+        "docs/releases/PROCEDURE.md",
+        "docs/agents/PUBLICATION.md"
+      ]
+    }
+  }
+}
