@@ -446,14 +446,20 @@ def backend_proof(directory, selector):
 
 def check_test(directory, candidate):
     root = Path(directory)
-    before = {f['name']: f for f in read(root / 'test-before.json')['functions']}
-    after = {f['name']: f for f in snapshot('livepalmes-test')['functions']}
+    before_state = read(root / 'test-before.json')
+    after_state = snapshot('livepalmes-test')
+    before = {f['name']: f for f in before_state['functions']}
+    after = {f['name']: f for f in after_state['functions']}
     selected = set(read(root / 'test-selection.json'))
     full_selected = {'projects/livepalmes-test/locations/europe-west1/functions/' + n for n in selected}
     require(set(after) == set(before) | full_selected, 'Inventaire TEST inattendu')
     require(all(after.get(n) == f for n, f in before.items() if n not in full_selected), 'Function TEST non selectionnee modifiee')
     names = {n.split('/')[-1]: f for n, f in after.items()}
     require(all(not needs_function(names.get(n), n, os.environ['CANDIDATE_SHA'], project='livepalmes-test') for n in safe_functions(candidate, 'livepalmes-test')), 'Backend TEST incomplet')
+    if os.environ.get('TEST_VERIFICATION_ONLY') == 'true':
+        require(after_state['hosting'] == before_state['hosting'], 'Hosting TEST modifie pendant la verification seule')
+        require(after == before, 'Functions TEST modifiees pendant la verification seule')
+        print(f"Verification seule TEST : {len(after)} Functions et Hosting inchanges ({after_state['hosting']['version']}).")
 
 
 TEST_TOP_FILES = {

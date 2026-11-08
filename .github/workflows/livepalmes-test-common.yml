@@ -142,14 +142,28 @@ jobs:
       id: verified-publication
       run: python tools/test-verification-evidence.py reuse-publication "$RUNNER_TEMP/publication-verification"
     - name: Installer les dependances verrouillees en parallele
+      env:
+        TEST_VERIFICATION_ONLY: ${{ inputs.verification_only }}
+        MAIN_VERIFIED: ${{ steps.verified-main.outputs.verified }}
+        PUBLICATION_VERIFIED: ${{ steps.verified-publication.outputs.verified }}
       run: |
-        npm ci --prefix functions --prefer-offline --no-audit --no-fund &
-        functions_pid=$!
+        functions_pid=""
+        if [ "$TEST_VERIFICATION_ONLY" = true ] && [ "$MAIN_VERIFIED" = true ] && [ "$PUBLICATION_VERIFIED" = true ]; then
+          test ! -e functions/node_modules
+          echo "Verification seule : installation Functions evitee avec les deux preuves CI main exactes."
+        else
+          npm ci --prefix functions --prefer-offline --no-audit --no-fund &
+          functions_pid=$!
+        fi
         npm ci --prefix tests/firestore-rules --prefer-offline --no-audit --no-fund &
         rules_pid=$!
         result=0
-        wait "$functions_pid" || result=1
+        if [ -n "$functions_pid" ]; then wait "$functions_pid" || result=1; fi
         wait "$rules_pid" || result=1
+        if [ -z "$functions_pid" ]; then
+          test ! -e functions/node_modules || result=1
+          if [ "$result" = 0 ]; then echo "Verification seule : functions/node_modules absent apres installation."; fi
+        fi
         exit "$result"
     - name: Verifier la version ou reutiliser la preuve exacte
       id: application-checks
@@ -209,6 +223,8 @@ jobs:
       run: python tools/release-cycle.py batches livepalmes-test . "$RUNNER_TEMP/.firebase-test-functions" "$RUNNER_TEMP/test-selection.json"
         deploy
     - name: Controler le backend TEST et les Functions conservees
+      env:
+        TEST_VERIFICATION_ONLY: ${{ inputs.verification_only }}
       run: python tools/release-cycle.py check-test "$RUNNER_TEMP" .
     - name: Publier uniquement la restriction de session Firestore TEST explicitement approuvee
       if: inputs.approved_portal_session_rules && !inputs.verification_only && !inputs.hosting_only

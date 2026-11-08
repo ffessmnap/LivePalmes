@@ -501,6 +501,28 @@ class ReleaseTests(unittest.TestCase):
             with patch.object(m,'snapshot',return_value={'functions':[{**f,'revision':'unexpected'}]}),self.assertRaisesRegex(ValueError,'non selectionnee'):
                 m.check_test(d,'.')
 
+    def test_read_only_checks_existing_snapshots_for_hosting_and_all_functions_drift(self):
+        one = self.function('one')
+        before = {'hosting': {'version': 'unchanged-version'}, 'functions': [one]}
+        for mode, changed, error in [
+                ('true', before, None),
+                ('true', {**before, 'hosting': {'version': 'unexpected'}}, 'Hosting TEST modifie'),
+                ('true', {**before, 'functions': [{**one, 'revision': 'unexpected'}]}, 'Functions TEST modifiees'),
+                ('false', {**before, 'hosting': {'version': 'published'}, 'functions': [{**one, 'revision': 'published'}]}, None)]:
+            with self.subTest(mode=mode, error=error), tempfile.TemporaryDirectory() as directory:
+                m.write(Path(directory)/'test-before.json', before)
+                m.write(Path(directory)/'test-selection.json', ['one'])
+                with patch.dict(os.environ, {'TEST_VERIFICATION_ONLY': mode, 'CANDIDATE_SHA': 'a'*40}), \
+                        patch.object(m, 'snapshot', return_value=changed) as snapshot, \
+                        patch.object(m, 'safe_functions', return_value=['one']), \
+                        patch.object(m, 'needs_function', return_value=False):
+                    if error:
+                        with self.assertRaisesRegex(ValueError, error):
+                            m.check_test(directory, '.')
+                    else:
+                        m.check_test(directory, '.')
+                    snapshot.assert_called_once_with('livepalmes-test')
+
     def test_pdf_extension_needs_specific_approval_and_exact_pair(self):
         for names, approval in [(['sendEmails'], 'accord'), (['closeDueEngagementCompetitions'], 'accord'), (list(m.PDF_FUNCTIONS), '')]:
             with self.assertRaises(ValueError):
