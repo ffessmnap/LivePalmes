@@ -8,7 +8,7 @@ function createCompetitionService_cleanEngagementCompetitionPayload(backendConte
     const city = backendContext.cleanText(raw.city || raw.location).slice(0, 120);
     const address = backendContext.cleanText(raw.address).slice(0, 300);
     const organizer = backendContext.cleanText(raw.organizer).slice(0, 160);
-    const organizerEmail = backendContext.cleanOptionalEmail(raw.organizerEmail, "Email organisateur");
+    const { organizerEmail, computerEmail, officialsManagerEmail } = require("../../competition-mail-addresses").payload(raw, backendContext.HttpsError);
     const publicDescription = backendContext.cleanText(raw.publicDescription).slice(0, 3000);
     const level = backendContext.cleanEngagementCompetitionLevel(raw.level);
     const requestedTeamLeadersWhatsAppUrl = backendContext.cleanText(raw.teamLeadersWhatsAppUrl).slice(0, 500);
@@ -16,8 +16,6 @@ function createCompetitionService_cleanEngagementCompetitionPayload(backendConte
       ? backendContext.cleanPublicCalendarWhatsAppUrl(requestedTeamLeadersWhatsAppUrl)
       : "";
     const entryDeadlineAt = backendContext.cleanEngagementDeadlineAt(raw.entryDeadlineAt);
-    const computerEmail = backendContext.cleanOptionalEmail(raw.computerEmail, "Email du responsable informatique");
-    const officialsManagerEmail = backendContext.cleanOptionalEmail(raw.officialsManagerEmail, "Email du responsable juge");
     const entryStatus = backendContext.cleanEngagementEntryStatus(raw.entryStatus);
     const publicationStatus = "published";
     const competitionType = backendContext.cleanEngagementCompetitionType(raw.competitionType);

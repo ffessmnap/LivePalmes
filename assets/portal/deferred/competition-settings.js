@@ -781,10 +781,10 @@
       }
 
     function engagementEmailLinkValue(value) {
-        const email = String(value || "").trim().toLocaleLowerCase("fr-FR");
-        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
-          ? { href: `mailto:${email}`, label: email, kind: "email" }
-          : email;
+        const emails = [...new Set(String(value || "").split(";").map(email=>email.trim().toLowerCase()).filter(Boolean))];
+        return emails.length && emails.every(email=>/^[^\s@;,<>]+@[^\s@;,<>]+\.[^\s@;,<>]+$/.test(email))
+          ? { href: `mailto:${emails.map(email=>encodeURIComponent(email).replace(/%40/gi,"@")).join(",")}`, label: emails.join(" ; "), kind: "email" }
+          : String(value || "");
       }
 
     function engagementCompetitionProgramOverview(competition = {}) {
