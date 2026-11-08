@@ -35,7 +35,8 @@
         "docs/NOTIFICATIONS_COMPETITIONS.md",
         "docs/releases/EVOLUTIONS.md",
         "docs/releases/PROCEDURE.md",
-        "docs/agents/PUBLICATION.md"
+        "docs/agents/PUBLICATION.md",
+        "tests/public-calendar-tests.js"
       ]
     }
   }
