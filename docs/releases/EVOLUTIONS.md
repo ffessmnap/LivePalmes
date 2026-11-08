@@ -2,6 +2,13 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 8 novembre — Trophée Damien Hébert : compétitions départementales
+
+- Décision explicite d’Antoine : « Il faudra inclure le niveau départemental aussi même si le règlement le prévoit pas ». Le lecteur du seul trophée accepte désormais les niveaux natifs 0 à 7 ; une valeur absente ou inconnue reste exclue. Cette décision ne réécrit pas le règlement officiel et ne change aucun autre classement.
+- Période publiée, cohorte minime, cinq courses, annulation, visibilité, relais/passages et sélection du meilleur chrono avec les points de cette même performance conservés. Les éditions distinctes TEST et PROD ne sont pas modifiées. Solesmes du 18 octobre 2026 (NAP 5206) est le cas signalé confirmé ; aucune promesse de nombre de lignes ajoutées, les meilleurs temps restant prioritaires.
+- Budget initial : un document Firestore et au plus deux requêtes NAP groupées après expiration du cache mémoire de 60 s ; aucune lecture par nageur, par ligne ou au changement d’onglet. Rafraîchissement : cache ou même budget ; édition arrêtée : aucune lecture NAP. Pire cas borné : 500 compétitions et 25 000 performances, sentinelles 501/25 001 et arrêts explicites conservés. Les index date/compétition et les plafonds restent identiques ; davantage de compétitions peuvent être admissibles, sans reconstruction ni repli silencieux.
+- Préparation TEST en cours ; tests hors réseau et preuves de livraison à compléter. Aucune donnée, saison, règle/index, permission, mail ou PROD modifiés. Validation fonctionnelle utilisateur non recueillie.
+
 ### 8 novembre — Officiels dans le TXT commun piscine/eau libre (TEST déployé)
 
 - Antoine confirme le format E-NAP `OFF` à six champs déjà utilisé en eau libre ; développement séquencé après la clôture des deux lots mails, depuis `269a682e`. Références authentiques examinées : Beaumont 2024 (dix OFF) et 2025 (neuf OFF, dont une personne aussi chef d'équipe), sans recopier leurs identités dans les fixtures. Aucun grade, licence ou identifiant inventé.
