@@ -271,7 +271,7 @@
       }
     },
     "decisions": {
-      "applicationCommit": "51be8dc7482a136b5c0304c16e7491f68494e81e",
+      "applicationCommit": "4a27233469252c3d7159028c30a7d6c272785a8e",
       "baseCommit": "00f8b4ef8fa38630f3ce2e0bb023ed3a6ee65d65",
       "baselineRuns": [
         {
