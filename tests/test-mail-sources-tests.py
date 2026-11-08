@@ -335,6 +335,34 @@ class MailSources(unittest.TestCase):
                     p.main('deploy', 'officials_txt', directory, ROOT)
             controls.assert_not_called(); inventory.assert_not_called()
 
+    def test_contacts_three_own_anchor_baseline_digest_and_no_cross_lot_plan(self):
+        entry = p.contract('contacts_three')
+        self.assertEqual(entry['applicationCommit'], '0f18ae53623947d1e984c2213d87bd2436efff3d')
+        self.assertEqual(entry['baseCommit'], 'bb09ea8057943aff39b2600a3448fdd278a32908')
+        self.assertEqual(entry['baselineRuns'], [{'id': 42487560642, 'artifact': 'test-proof',
+            'workflow': '.github/workflows/livepalmes-test-common.yml'}])
+        self.assertEqual(entry['_contractSha256'], p.CONTACTS_THREE_DIGEST)
+        self.assertNotIn(p.CONTACTS_THREE_DIGEST, [p.DIGEST, p.CONTACTS_DIGEST, p.REMINDER_DIGEST, p.OFFICIALS_TXT_DIGEST])
+        self.assertEqual(len(p.ALLOWED), 6)
+        actual = p.cycle.test_backend_fingerprints(entry['applicationCommit'])
+        base = p.cycle.test_backend_fingerprints(entry['baseCommit'])
+        self.assertEqual(entry['fingerprints'], {name: actual[name] for name in p.ALLOWED if actual[name] != base[name]})
+        self.assertEqual(set(entry['fingerprints']), p.ALLOWED)
+        self.assertFalse(any(path.startswith(('functions/', 'assets/')) for path in entry['toolingPaths']))
+        with patch.object(p, 'CONTACTS_THREE_DIGEST', '0' * 64), self.assertRaisesRegex(ValueError, 'modifie'):
+            p.contract('contacts_three')
+        with tempfile.TemporaryDirectory() as directory, patch.object(p, 'guard', return_value=SHA), \
+                patch.object(p, 'controls') as controls, patch.object(p, 'inventory') as inventory, \
+                patch.object(p, 'load', return_value=SimpleNamespace(reusable=lambda *_: True)):
+            for other in ['models', 'decisions', 'contacts', 'reminder', 'officials_txt']:
+                other_entry = p.contract(other)
+                for plan_release in [other, 'contacts_three']:
+                    p.cycle.write(Path(directory) / 'plan.json', {'candidate': SHA, 'release': plan_release,
+                        'contractSha256': other_entry.get('_contractSha256', p.DIGEST), 'selected': [], 'archives': []})
+                    with self.assertRaisesRegex(ValueError, 'Plan'):
+                        p.main('deploy', 'contacts_three', directory, ROOT)
+            controls.assert_not_called(); inventory.assert_not_called()
+
     def test_exact_main_ci_candidate_and_application_anchor(self):
         entry = p.contract('models')
         env = {'GITHUB_REF': 'refs/heads/main', 'GITHUB_RUN_ATTEMPT': '1', 'TARGET_FIREBASE_PROJECT': p.PROJECT,

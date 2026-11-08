@@ -16,6 +16,15 @@ assert.equal(contactsPlan.operations.find(item=>item.table==="livepalmes_competi
 assert.equal(contactsPlan.operations.find(item=>item.table==="compet_parametres").after.mailtxt,"pc@example.org;pc2@example.org");
 assert.equal(contactsPlan.operations.find(item=>item.table==="compet_parametres").after.mailjuges,"jury@example.org;jury2@example.org");
 assert.throws(()=>planCompetitionChange(pack,input({computerEmail:"ok@example.org;invalid"}),now),/invalide/);
+const fourContacts="a@example.org;b@example.org;c@example.org;d@example.org";
+for(const key of ["organizerEmail","computerEmail","officialsManagerEmail"])
+  assert.throws(()=>planCompetitionChange(pack,input({[key]:fourContacts}),now),/3 adresses/);
+const historical=fixturePack();
+historical.nativeSnapshot.parameters.mailtxt=fourContacts;
+historical.nativeSnapshot.parameters.mailjuges=fourContacts;
+historical.options={organizer_email:fourContacts};
+const unrelated=planCompetitionChange(historical,{...input({publicDescription:"Autre réglage"}),expectedFingerprint:fingerprint(historical)},now);
+assert.ok(unrelated.operations.every(operation=>operation.table==="competitions"));
 const commentsPlan=planCompetitionChange(pack,input({publicDescription:"Nouveau commentaire\n14h"}),now);
 assert.equal(commentsPlan.operations.length,1);
 assert.equal(commentsPlan.operations[0].table,"competitions");
@@ -160,6 +169,10 @@ function fixture(settings={}) {
       assert.deepEqual(team.writes,[]);
     }
     let state=fixture();native.readNativeCompetition=state.read;
+    for(const key of ["organizerEmail","computerEmail","officialsManagerEmail"]){
+      await assert.rejects(applyCompetitionChange(state.pool,input({[key]:fourContacts}),state.audit,()=>{}),/3 adresses/);
+      assert.equal(state.prepared,0);assert.deepEqual(state.writes,[]);
+    }
     const longOrganizers=["a","b","c"].map(letter=>letter.repeat(53)+"@example.org");
     assert.ok(longOrganizers.join(";").length>180&&longOrganizers.join(";").length<=255);
     await applyCompetitionChange(state.pool,input({organizerEmail:longOrganizers.join(";"),computerEmail:"pc@example.org;pc2@example.org",officialsManagerEmail:"jury@example.org;jury2@example.org"}),state.audit,()=>{});
