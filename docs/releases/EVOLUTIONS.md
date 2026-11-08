@@ -2,6 +2,13 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 8 novembre — Six consoles Direct multi-compétitions (préparation TEST)
+
+- Demande explicite d'Antoine : maquette fonctionnelle réaliste des six consoles sur TEST, avec séries PDF et résultats TXT existants, comptes LivePalmes et délégation par compétition. Bureau seul possible ; JA obligatoire avec terrain, vidéo nationale optionnelle ; sans vidéo circuit direct, sans speaker annonce confirmée par le bureau, sans secrétariat forfaits depuis le bureau tablette. Finales scratch A/A+B à 6 ou 8 places, départage explicite, annonce officielle avant tout forfait. L'annonce partielle n'est pas autorisée dans cette version. Aucun accord PROD pour ce lot.
+- Une implémentation réutilisable, sans application locale métier parallèle : nouveau gabarit `direct-consoles.html`, modules privés modèle/SQL/interface et liens dans le bureau existant. Les pages nationales historiques sont conservées. Cinq tables Direct réutilisées avec état et reçus privés transactionnels, aucune migration/colonne/collection, capacité globale, dépendance, règle Firebase, donnée native ou automatique modifiée. Les décisions ne remplacent jamais les résultats TXT ; versions et reprises empêchent les écrasements silencieux et doublons. Budgets et bornes dans `docs/LIVEPALMES_DIRECT.md`.
+- Contrôles ciblés hors réseau : modèle sportif, service avec SQL simulé, parcours navigateur des six rôles à 1280/768/390 px (JA→vidéo→bureau→TXT corrigé→speaker→forfait→repêchage). Extension du MySQL 5.7 isolé CI pour JSON, idempotence, concurrence réelle et rollback. Aucun import/activation/forfait réel pendant les tests automatisés. CI globale, PR, intégration et déploiement TEST restent à attester ; recette pilote non recueillie.
+- Travail isolé dans le sous-dossier ignoré `tmp/direct-six-consoles-worktree`, nécessaire pour préserver le checkout partagé occupé par Infra et ses modifications. La publication PROD regroupée du 8 novembre reste distincte ; ne pas remplacer TEST avant la fin de cette promotion figée. Les preuves et l'état final de cette livraison seront complétés dans cette même entrée.
+
 ### 8 novembre — Accord PROD reçu, correction du contrôle de sauvegarde
 
 - Accord final explicite dans Infra : « Oui, publier ce plan 42512948799 en PROD », après désignation de Hosting, des 115 mises à jour, des deux créations et des six liaisons SMTP. Candidat, contrat, sélection et exclusions identiques au bilan ci-dessous ; aucune activation des rappels existants ni sauvegarde Direct automatique.
