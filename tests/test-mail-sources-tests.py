@@ -252,7 +252,7 @@ class MailSources(unittest.TestCase):
         self.assertEqual(set(entry['fingerprints']), p.ALLOWED)
         decisions = p.contract('decisions')
         self.assertEqual(decisions['baseCommit'], '00f8b4ef8fa38630f3ce2e0bb023ed3a6ee65d65')
-        self.assertEqual(set(decisions['fingerprints']), {'submitEngagementAccessRequest', 'resolveEngagementAccessRequest'})
+        self.assertEqual(set(decisions['fingerprints']), p.ALLOWED)
         self.assertTrue(set(decisions['fingerprints']) <= p.ALLOWED)
         with self.assertRaisesRegex(ValueError, 'non ferme'):
             p.contract('future')
