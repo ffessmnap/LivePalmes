@@ -7,8 +7,18 @@ assert.equal(mail.canonical(" A@example.org ; b@example.org "),"a@example.org;b@
 for(const value of ["a@example.org;bad", "a@example.org,b@example.org", "a@example.org\r\nBcc:x@example.org", "x".repeat(256),{},"Name <a@example.org>"])
   assert.throws(()=>mail.list(value),TypeError);
 assert.deepEqual(mail.list(""),[]);
+const three="a@example.org;b@example.org;c@example.org",four=three+";d@example.org";
+assert.equal(mail.canonical(three+";A@EXAMPLE.ORG"),three);
+assert.equal(mail.canonical(""),"");
+assert.throws(()=>mail.canonical(four),/3 adresses/);
+assert.equal(mail.list(four).length,4,"historical lists stay readable");
+assert.equal(mail.headers({organizerEmail:four},"opening").cc.length,4);
 class HttpsError extends Error { constructor(code,message){super(message);this.code=code;} }
 assert.throws(()=>mail.payload({organizerEmail:"bad"},HttpsError),error=>error.code==="invalid-argument"&&/organisateur/.test(error.message));
+for(const key of ["organizerEmail","computerEmail","officialsManagerEmail"]){
+  assert.equal(mail.payload({[key]:three},HttpsError)[key],three);
+  assert.throws(()=>mail.payload({[key]:four},HttpsError),error=>error.code==="invalid-argument"&&/3 adresses/.test(error.message));
+}
 const competition={id:"5140",napFingerprint:"stable",competitionType:"pool",organizerEmail:"org@example.org;shared@example.org",computerEmail:"info@example.org;SHARED@example.org",officialsManagerEmail:"judge1@example.org;judge2@example.org",officialsRequired:true};
 assert.deepEqual(mail.copies(competition),["org@example.org","shared@example.org","info@example.org"]);
 assert.deepEqual(mail.headers(competition,"entries_txt"),{});
@@ -18,6 +28,27 @@ assert.match(mail.headers(competition,"opening").contactNotice,/Répondre/);
 const many=Array.from({length:50},(_,i)=>`a${i}@b.c`);
 assert.throws(()=>mail.copies({organizerEmail:many.slice(0,6).join(";"),computerEmail:many.slice(6,11).join(";")}),/10/);
 (async()=>{
+  const fs=require("node:fs"),vm=require("node:vm");let factory,calls=0;
+  vm.runInNewContext(fs.readFileSync("assets/portal/deferred/club-and-competition.js","utf8"),{window:{LivePalmesPortalDeferred:{register:(_,value)=>{factory=value;}}}});
+  const fields=Object.fromEntries(["organizerEmail","computerEmail","officialsManagerEmail"].map(key=>[key,{value:four,error:"",setCustomValidity(error){this.error=error;}}]));
+  const state={selectedEngagementCompetition:{napSource:true,events:[{code:"OLD",nativeRecognized:true,nativeCourses:[{id:7}]}]},nativeCompetitionEditBaseline:Object.fromEntries(Object.keys(fields).map(key=>[key,four]))};
+  const actions={engagementCompetitionType:()=>"openWater",selectedEngagementEventsCategoryError:()=>"",selectedEngagementProgramError:()=>"",selectedEngagementEventsFromForm:()=>[{code:"NEW"}],callFunction:async()=>{calls++;throw Error("Unexpected RPC");}};
+  const moduleActions={editCompetitionFields:()=>fields,nativeCompetitionPatchFromForm:()=>({computerEmail:four,courseOptions:[]})};
+  const client=factory({state,actions,config:{},elements:{engagementsDetailStatus:{dataset:{}}}},moduleActions);
+  assert.equal(client.validateEngagementCompetitionContacts(),"","untouched historical lists do not block unrelated edits");
+  for(const key of Object.keys(fields)){
+    moduleActions.nativeCompetitionPatchFromForm=()=>({[key]:four,courseOptions:[]});
+    assert.equal(await client.saveNativeCompetitionDetail(),false);
+    assert.match(fields[key].error,/3 adresses/);
+  }
+  assert.equal(calls,0,"invalid contacts block course addition/removal and settings RPCs");
+  fields.computerEmail.value=three+";A@EXAMPLE.ORG";
+  assert.equal(client.validateEngagementCompetitionContacts(),"");assert.equal(fields.computerEmail.error,"");
+  fields.computerEmail.value=four+";e@example.org";
+  assert.match(client.validateEngagementCompetitionContacts(),/3 adresses/);
+  fields.computerEmail.value=three;
+  assert.equal(client.validateEngagementCompetitionContacts(),"");
+  assert.throws(()=>client.engagementCompetitionPayloadFromFields({organizerEmail:{value:four}}),/3 adresses/);
   const recipients=Array.from({length:1001},(_,i)=>({email:`club${i}@example.org`,clubId:String(i+1)}));
   const file={buffer:Buffer.from("fixture"),fileName:"fixture.pdf"};let pdfs=0;
   const services={simulation:true,recipients:async()=>recipients,select:(_,items)=>items,clubRecipients:items=>items,
