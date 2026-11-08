@@ -17,7 +17,9 @@ const rejected=apply(apply(configure(8,'a'),'decision','referee',{participantKey
 const tied=structuredClone(rows);tied[8].result.cs=tied[7].result.cs;
 let q=flow.qualification(configure(8,'ab'),event,tied);assert.equal(q.ties.length,1);assert.deepEqual([q.ties[0].from,q.ties[0].to],[8,9]);
 const sameTimeInside=structuredClone(rows);sameTimeInside[1].result.cs=sameTimeInside[0].result.cs;assert.equal(flow.qualification(configure(8,'ab'),event,sameTimeInside).ties.length,0,'Un ex æquo sans conséquence sur les finales ne déclenche pas de départage');
-let tieState=configure(8,'ab');assert.throws(()=>apply(tieState,'announceFinalists','speaker',{},tied),/Ex æquo/);
+let tieState=configure(8,'ab');const partialAB=apply(tieState,'announceFinalists','speaker',{},tied);
+assert.equal(partialAB.races[event.id].announced.partial,true);assert.equal(partialAB.races[event.id].announced.roster.a.length,7);assert.equal(partialAB.races[event.id].announced.roster.b.length,7);
+assert.ok(![...partialAB.races[event.id].announced.roster.a,...partialAB.races[event.id].announced.roster.b].some(key=>[tied[7].key,tied[8].key].includes(key)),'Les places des ex æquo ne sont jamais attribuées arbitrairement dans l’annonce partielle');
 tieState=apply(tieState,'markSwimoff','referee',{},tied);q=flow.qualification(tieState,event,tied);assert.equal(q.swimoff.status,'needed');
 tieState=apply(tieState,'resolveTie','referee',{tieId:q.ties[0].id,order:[tied[8].key,tied[7].key]},tied);assert.equal(flow.qualification(tieState,event,tied).proposal.a[7],tied[8].key,'Le départage ne choisit pas arbitrairement selon la ligne ou le nom');assert.equal(tied[8].result.cs,tied[7].result.cs,'Les temps de qualification ne sont pas modifiés');
 const changed=structuredClone(tied);changed[8].result.cs+=1;const cancellation=apply(apply(configure(8,'ab'),'markSwimoff','referee',{},tied),'confirmSwimoffCancelled','computer',{},changed);assert.equal(cancellation.races[event.id].swimoff.status,'cancelled');assert.equal(cancellation.alerts.at(-1).type,'swimoff_cancelled');
@@ -56,4 +58,27 @@ assert.equal(tiedReplacement.races[event.id].announced.roster.a.at(-1),rows[9].k
 const versioned={...event,programVersionHash:'programme-1'},versionedState=flow.next(configure(8,'a'),{command:'announceFinalists',operationKey:'fixture-versioned'},{role:'speaker',actor:'fixture',event:versioned,entries:rows,consoles:flow.roles});
 assert.equal(flow.qualification(versionedState,{...versioned,programVersionHash:'programme-2'},rows).changed,true,'Une nouvelle répartition oblige à revoir la composition même à temps identiques');
 assert.throws(()=>flow.next(versionedState,{command:'withdraw',operationKey:'fixture-new-program',participantKey:rows[0].key},{role:'secretary',actor:'fixture',event:{...versioned,programVersionHash:'programme-2'},entries:rows,consoles:flow.roles}),/bureau doit vérifier/,'Les forfaits ne doivent pas valider implicitement une nouvelle répartition');
+// Qualifiés certains annoncés : un forfait peut rendre le départage inutile.
+let partialA=apply(configure(8,'a'),'announceFinalists','speaker',{},tied);
+assert.equal(flow.qualification(partialA,event,tied).roster.a.length,7);
+assert.throws(()=>apply(partialA,'withdraw','secretary',{participantKey:tied[7].key},tied),/officiellement annoncé/);
+assert.throws(()=>apply(partialA,'preWithdraw','secretary',{participantKey:tied[8].key},tied),/départage/);
+partialA=apply(partialA,'withdraw','secretary',{participantKey:tied[0].key},tied);q=flow.qualification(partialA,event,tied);
+assert.equal(q.ties.length,0);assert.equal(q.swimoff.status,'unnecessary');assert.equal(q.pendingRoster.a.length,8);
+assert.throws(()=>apply(partialA,'announceReplacement','speaker',{},tied),/confirmer l’annulation/);
+partialA=apply(partialA,'confirmSwimoffCancelled','referee',{},tied);
+partialA=apply(partialA,'announceReplacement','speaker',{},tied,flow.roles,'2026-11-08T12:20:00.000Z');
+assert.equal(partialA.races[event.id].announced.partial,false);
+assert.ok(partialA.races[event.id].announced.roster.a.includes(tied[7].key)&&partialA.races[event.id].announced.roster.a.includes(tied[8].key));
+assert.throws(()=>apply(partialA,'withdraw','secretary',{participantKey:tied[1].key},tied,flow.roles,'2026-11-08T12:40:00.000Z'),/30 minutes/,'Un qualifié certain conserve son heure initiale');
+partialA=apply(partialA,'withdraw','secretary',{participantKey:tied[7].key},tied,flow.roles,'2026-11-08T12:40:00.000Z');assert.ok(partialA.races[event.id].withdrawals[tied[7].key],'Le nageur nouvellement qualifié dispose de sa fenêtre après l’annonce complète');
+let partialResolved=apply(configure(8,'a'),'announceFinalists','speaker',{},tied);q=flow.qualification(partialResolved,event,tied);
+partialResolved=apply(partialResolved,'resolveTie','referee',{tieId:q.ties[0].id,order:[tied[8].key,tied[7].key]},tied);
+assert.ok(partialResolved.races[event.id].pendingRoster,'Le départage après annonce partielle prépare automatiquement la nouvelle annonce');
+partialResolved=apply(partialResolved,'announceReplacement','speaker',{},tied);assert.equal(partialResolved.races[event.id].announced.roster.a.at(-1),tied[8].key);
+const allTied=rows.map(row=>({...row,result:{cs:6000,status:''}}));assert.throws(()=>apply(configure(8,'a'),'announceFinalists','speaker',{},allTied),/Aucun qualifié certain/);
+const dual=structuredClone(rows);dual[6].result.cs=dual[5].result.cs;dual[12].result.cs=dual[11].result.cs;
+let dualState=apply(configure(6,'ab'),'announceFinalists','speaker',{},dual);q=flow.qualification(dualState,event,dual);assert.equal(q.ties.length,2);assert.equal(q.roster.a.length,5);assert.equal(q.roster.b.length,4);
+dualState=apply(dualState,'resolveTie','referee',{tieId:q.ties[0].id,order:q.ties[0].keys.slice().reverse()},dual);q=flow.qualification(dualState,event,dual);assert.equal(q.ties.length,1);assert.equal(q.swimoff.status,'needed');assert.throws(()=>apply(dualState,'announceReplacement','speaker',{},dual),/départage/);
+dualState=apply(dualState,'resolveTie','referee',{tieId:q.ties[0].id,order:q.ties[0].keys.slice().reverse()},dual);dualState=apply(dualState,'announceReplacement','speaker',{},dual);assert.equal(dualState.races[event.id].announced.partial,false);
 console.log('Consoles : rôles, circuits vidéo/direct, accusés, annulations, finales 6/8 et A/A+B, départages, annonces, forfaits, reprises et sessions vérifiés hors réseau.');

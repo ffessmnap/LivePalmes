@@ -32,16 +32,23 @@ flowchart TD
   T --> P[Résultats publics]
   T --> F[Calcul scratch des finalistes]
   F --> D{Ex æquo à une limite ?}
-  D -->|Oui| E[Départage explicite JA / bureau]
-  E --> A[Annonce officielle speaker ou bureau]
-  D -->|Non| A
+  D -->|Oui| AP[Annonce des seuls qualifiés certains]
+  AP --> E[Départage explicite JA / bureau]
+  AP --> RF[Forfaits des seuls qualifiés annoncés]
+  RF --> U{Départage encore nécessaire ?}
+  U -->|Oui| E
+  U -->|Non| X[JA / bureau confirme l’annulation du swim-off]
+  E --> AC[Annonce complémentaire des nouveaux qualifiés]
+  X --> AC
+  D -->|Non| A[Annonce officielle complète]
   A --> R[Forfait après annonce : secrétariat ou bureau]
+  AC --> R
   R --> C[Composition proposée, puis changement annoncé]
 ```
 
 Finales au scratch uniquement : réglage groupé ou par course « aucune / A / A+B », avec 6 ou 8 places par finale, indépendant du décalage de ligne TXT. Les séries du même code épreuve/sexe sont regroupées entre sessions, sans inclure les finales déjà importées. Une participation répétée ambiguë bloque le calcul. Toutes les séries doivent avoir leurs résultats ; DSQ, abandon et forfait sont exclus des qualifiés. Un ex æquo à une limite utile (6/7, 12/13, 8/9 ou 16/17) demande un départage explicite JA/bureau ; aucun choix automatique par nom ou ligne. Son ordre est enregistré sans changer les temps. Un swim-off prévu devenu inutile nécessite confirmation d'annulation et information du speaker.
 
-Aucun forfait de finale avant l'annonce officielle des finalistes, y compris pour un repêché encore proposé. La fenêtre existante de 30 minutes commence à l'annonce ; le nouveau réserviste qualifié a sa propre fenêtre après annonce du repêchage. Les pré-forfaits des réservistes ne s'ouvrent qu'après l'annonce initiale. Forfait/réintégration prépare une composition qui reste à annoncer ; l'ancienne composition annoncée est conservée jusqu'à confirmation. Une correction des résultats ou une nouvelle version des séries après annonce impose une revue explicite. Le placement dans les lignes et la saisie des compositions restent dans WinPalme. Avant l'annonce initiale, un départage non résolu bloque l'annonce complète ; aucune annonce partielle n'est autorisée dans cette version.
+Aucun forfait de finale avant l'annonce officielle des finalistes, y compris pour un repêché encore proposé. La fenêtre existante de 30 minutes commence à l'annonce ; le nouveau réserviste qualifié a sa propre fenêtre après annonce du repêchage. Les pré-forfaits des réservistes ne s'ouvrent qu'après l'annonce initiale. Forfait/réintégration prépare une composition qui reste à annoncer ; l'ancienne composition annoncée est conservée jusqu'à confirmation. Une correction des résultats ou une nouvelle version des séries après annonce impose une revue explicite. Le placement dans les lignes et la saisie des compositions restent dans WinPalme. En cas d’ex æquo, l’annonce initiale peut porter uniquement sur les qualifiés certains : les places restantes sont signalées en attente de départage. Seuls les nageurs nommément annoncés peuvent déclarer forfait ; les nageurs à départager ne peuvent pas être retirés par un pré-forfait. Si un forfait supprime le besoin de départage, le JA/bureau confirme l’annulation du swim-off avant l’annonce complémentaire. Un départage saisi après annonce partielle prépare automatiquement cette nouvelle annonce. Les nouveaux qualifiés obtiennent leur fenêtre de 30 minutes à cette annonce ; les qualifiés certains conservent l’heure initiale.
 
 Persistance : réutilisation des cinq tables Direct existantes, sans table/colonne/collection ou migration. `livepalmes_direct_publications` contient un état privé `console-state` déterministe et des reçus `console-command`, toujours isolés par environnement et compétition. Les commandes verrouillent la configuration, contrôlent sa version et celle du workflow, puis écrivent état et reçu dans une seule transaction. Une réponse perdue se rejoue avec le même identifiant ; une autre action avec cet identifiant est refusée. La révision privée ne modifie pas celle des publications TXT. Réinitialiser le Direct supprime également cet état et cet historique en conservant activation et accès. Bornes : état 2 Mio UTF-8, 2 000 décisions, 5 000 actions ; aucun effacement automatique silencieux.
 

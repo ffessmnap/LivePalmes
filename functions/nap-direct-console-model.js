@@ -40,9 +40,11 @@ function qualification(state,event,entries){
   const statusExpected=new Map();for(const alert of active.filter(alert=>motifs[alert.type]&&alert.videoStatus!=='pending')){const statuses=statusExpected.get(alert.participantKey)||new Set();statuses.add(alert.type==='forfait'?'dns':alert.type==='abandon'?'ab':'dsq');statusExpected.set(alert.participantKey,statuses);}
   const decisionMismatch=[...statusExpected].some(([key,statuses])=>statuses.size!==1||!entries.some(row=>row.key===key&&statuses.has(row.result?.status)))||active.some(alert=>['requalification','ja_cancellation'].includes(alert.type)&&!statusExpected.has(alert.participantKey)&&!entries.some(row=>row.key===alert.participantKey&&row.result?.cs>0&&!row.result.status));
   const proposal={a:rows.slice(0,Math.min(lanes,capacity)).map(identity),b:race.format==='ab'?rows.slice(lanes,capacity).map(identity):[],reserve:capacity?rows.slice(capacity).map(identity):[]};
+  const pendingKeys=[...new Set(ties.flatMap(tie=>tie.keys))],pending=new Set(pendingKeys),certainRoster=Object.fromEntries(Object.entries(proposal).map(([group,keys])=>[group,keys.filter(key=>!pending.has(key))]));
   const current=race.announced?.roster||proposal;
-  const swimoff=race.swimoff?.status==='needed'&&!ties.length?{...race.swimoff,status:'unnecessary'}:race.swimoff||null;
-  return {format:race.format,lanes,capacity,sourceHash:digest,programVersionHash:event.programVersionHash||null,complete,ambiguous,ties,unresolvedDecision,decisionMismatch,proposal,roster:current,changed:Boolean(race.announced&&(race.announced.sourceHash!==digest||event.programVersionHash&&race.announced.programVersionHash!==event.programVersionHash)),announcedAt:race.announced?.at||null,withdrawals:race.withdrawals||{},pendingRoster:race.pendingRoster||null,withdrawalLog:race.withdrawalLog||[],swimoff};
+  const departurePending=race.swimoff?.status==='needed'||race.announced?.partial&&!['resolved','cancelled'].includes(race.swimoff?.status);
+  const swimoff=departurePending&&!ties.length?{...race.swimoff,status:'unnecessary'}:race.swimoff||null;
+  return {format:race.format,lanes,capacity,sourceHash:digest,programVersionHash:event.programVersionHash||null,complete,ambiguous,ties,pendingKeys,certainRoster,partial:Boolean(race.announced?.partial),unresolvedDecision,decisionMismatch,proposal,roster:current,changed:Boolean(race.announced&&(race.announced.sourceHash!==digest||event.programVersionHash&&race.announced.programVersionHash!==event.programVersionHash)),announcedAt:race.announced?.at||null,withdrawals:race.withdrawals||{},pendingRoster:race.pendingRoster||null,withdrawalLog:race.withdrawalLog||[],swimoff};
 }
 function can(role,command,consoles){
   const table={configure:['computer'],progress:['referee'],decision:['referee'],videoConfirm:['video'],videoReject:['video'],takeover:['referee'],cancel:['referee','computer'],computerDone:['computer'],announceDecision:['speaker'],announceFinalists:['speaker','computer'],withdraw:['secretary','computer'],reinstate:['secretary','computer'],preWithdraw:['secretary','computer'],announceReplacement:['speaker','computer'],resolveTie:['referee','computer'],markSwimoff:['referee','computer'],confirmSwimoffCancelled:['referee','computer'],refreshFinalists:['computer'],compositionDone:['computer'],secretaryDone:['secretary']};
@@ -57,7 +59,7 @@ function next(previous,input,{role,actor,actorLabel=actor,event,entries,consoles
   const row=entries?.find(row=>row.key===input.participantKey),alert=state.alerts.find(row=>row.id===input.alertId);
   const requiredAlert=()=>{if(!alert||alert.cancelledAt)reject('Cette décision n’est plus disponible.');if(alert.eventId!==eventId)reject('Cette décision concerne une autre course.');return alert;};
   const putRace=()=>{state.races[eventId]=race;};
-  const announceAllowed=()=>{const q=qualification(state,event,entries);if(!q.capacity)reject('Cette course n’a pas de finale.');if(!q.complete)reject('Toutes les séries doivent avoir reçu leurs résultats.');if(q.ties.length)reject('Ex æquo : enregistrer le départage avant de confirmer les finalistes.');if(q.unresolvedDecision)reject('Une décision JA/vidéo reste à traiter par le bureau.');if(q.decisionMismatch)reject('Attendre le TXT corrigé : les résultats reçus ne concordent pas avec les décisions du JA.');return q;};
+  const announceAllowed=(partial=false)=>{const q=qualification(state,event,entries);if(!q.capacity)reject('Cette course n’a pas de finale.');if(!q.complete)reject('Toutes les séries doivent avoir reçu leurs résultats.');if(q.ties.length&&!partial)reject('Ex æquo : enregistrer le départage avant de confirmer tous les finalistes.');if(q.unresolvedDecision)reject('Une décision JA/vidéo reste à traiter par le bureau.');if(q.decisionMismatch)reject('Attendre le TXT corrigé : les résultats reçus ne concordent pas avec les décisions du JA.');return q;};
   if(command==='configure'){
     if(![6,8].includes(Number(input.lanes)))reject('Choisir 6 ou 8 places par finale.');
     state.lanes=Number(input.lanes);
@@ -89,17 +91,20 @@ function next(previous,input,{role,actor,actorLabel=actor,event,entries,consoles
   }else if(command==='resolveTie'){
     const q=qualification(state,event,entries),tie=q.ties.find(t=>t.id===input.tieId);
     if(!tie||!Array.isArray(input.order)||input.order.length!==tie.keys.length||new Set(input.order).size!==tie.keys.length||tie.keys.some(key=>!input.order.includes(key)))reject('Enregistrer un ordre de départage complet pour les nageurs ex æquo.');
-    race.resolutions={...race.resolutions,[tie.id]:{source:q.sourceHash,order:input.order,at:now,by:actor}};race.swimoff={status:'resolved',at:now};putRace();
-    if(race.pendingRoster){const updated=qualification(state,event,entries);race.pendingRoster={...updated.proposal,sourceHash:updated.sourceHash,programVersionHash:updated.programVersionHash,at:now,reason:'tie-resolution'};delete race.compositionDoneAt;putRace();}
+    race.resolutions={...race.resolutions,[tie.id]:{source:q.sourceHash,order:input.order,at:now,by:actor}};putRace();
+    const updated=qualification(state,event,entries);race.swimoff={status:updated.ties.length?'needed':'resolved',at:now};
+    if(race.pendingRoster||race.announced?.partial){race.pendingRoster={...updated.proposal,sourceHash:updated.sourceHash,programVersionHash:updated.programVersionHash,at:now,reason:'tie-resolution'};delete race.compositionDoneAt;}putRace();
   }else if(command==='markSwimoff'){
     const q=qualification(state,event,entries);if(!q.ties.length)reject('Aucun départage nécessaire à la limite de qualification.');race.swimoff={status:'needed',at:now,by:actor};putRace();
   }else if(command==='confirmSwimoffCancelled'){
     const q=qualification(state,event,entries);if(q.ties.length||q.swimoff?.status!=='unnecessary')reject('Le départage reste nécessaire ou aucune annulation n’est en attente.');race.swimoff={status:'cancelled',at:now,by:actor};putRace();
     if(consoles.includes('speaker'))state.alerts.push({id:input.operationKey,eventId,eventLabel:event.eventLabel,sex:event.sex,session:event.sessionKey,series:null,lane:null,displayName:'Départage — '+event.eventLabel,club:'',type:'swimoff_cancelled',comment:'Annulation du swim-off confirmée par le JA ou le bureau.',official:true,speakerStatus:'pending',computerStatus:'none',videoStatus:'none',secretaryStatus:'none',createdAt:now,createdBy:actor});
   }else if(command==='announceFinalists'){
-    const q=announceAllowed();if(race.announced)reject('Les finalistes sont déjà annoncés.');race.announced={at:now,by:actor,sourceHash:q.sourceHash,programVersionHash:q.programVersionHash,roster:q.proposal};race.pendingRoster=null;putRace();
+    const q=announceAllowed(true);if(race.announced)reject('Les finalistes sont déjà annoncés.');
+    if(q.ties.length&&!q.certainRoster.a.length&&!q.certainRoster.b.length)reject('Aucun qualifié certain à annoncer avant le départage.');
+    race.announced={at:now,by:actor,sourceHash:q.sourceHash,programVersionHash:q.programVersionHash,roster:q.ties.length?q.certainRoster:q.proposal,partial:Boolean(q.ties.length)};race.pendingRoster=null;putRace();
   }else if(command==='refreshFinalists'){
-    const q=announceAllowed();if(!race.announced)reject('Les finalistes ne sont pas encore annoncés.');race.pendingRoster={...q.proposal,sourceHash:q.sourceHash,programVersionHash:q.programVersionHash,at:now,reason:'result-correction'};delete race.compositionDoneAt;putRace();
+    const q=announceAllowed(true);if(!race.announced)reject('Les finalistes ne sont pas encore annoncés.');race.pendingRoster={...q.proposal,sourceHash:q.sourceHash,programVersionHash:q.programVersionHash,at:now,reason:'result-correction'};if(q.ties.length)race.swimoff={status:'needed',at:now};delete race.compositionDoneAt;putRace();
   }else if(['withdraw','reinstate','preWithdraw'].includes(command)){
     if(!race.announced||!row)reject('Annoncer les finalistes et choisir un nageur.');
     const q=qualification(state,event,entries),before=q.roster,wasFinalist=[...before.a,...before.b].includes(row.key);
@@ -111,23 +116,24 @@ function next(previous,input,{role,actor,actorLabel=actor,event,entries,consoles
       race.withdrawals[row.key]={at:now,by:actor};race.withdrawalLog.push({key:row.key,name:name(row),action:'withdraw',at:now,by:actor});
     }else if(command==='reinstate'){
       if(!race.withdrawals[row.key])reject('Ce nageur n’est pas forfait.');delete race.withdrawals[row.key];race.withdrawalLog.push({key:row.key,name:name(row),action:'reinstate',at:now,by:actor});
-    }else{if(wasFinalist||race.withdrawals[row.key])reject('Le pré-forfait est réservé aux réservistes.');race.preWithdrawals=race.preWithdrawals||{};if(race.preWithdrawals[row.key])delete race.preWithdrawals[row.key];else race.preWithdrawals[row.key]={at:now,by:actor};}
+    }else{if(wasFinalist||race.withdrawals[row.key])reject('Le pré-forfait est réservé aux réservistes.');if(q.pendingKeys.includes(row.key)&&!race.preWithdrawals?.[row.key])reject('Ce nageur attend un départage : attendre sa qualification officielle.');race.preWithdrawals=race.preWithdrawals||{};if(race.preWithdrawals[row.key])delete race.preWithdrawals[row.key];else race.preWithdrawals[row.key]={at:now,by:actor};}
     putRace();
     if(command!=='preWithdraw'||race.pendingRoster){
       const updated=qualification(state,event,entries);race.pendingRoster={...updated.proposal,at:now,reason:command,sourceHash:updated.sourceHash,programVersionHash:updated.programVersionHash};
-      if(updated.ties.length)race.swimoff={status:'needed',at:now};else if(race.swimoff?.status==='needed')race.swimoff={status:'unnecessary',at:now};delete race.compositionDoneAt;putRace();
+      if(updated.ties.length)race.swimoff={status:'needed',at:now};else if(race.swimoff?.status==='needed'||q.ties.length)race.swimoff={status:'unnecessary',at:now};delete race.compositionDoneAt;putRace();
     }
   }else if(command==='announceReplacement'){
     if(!race.pendingRoster)reject('Aucun changement de finale à annoncer.');const q=qualification(state,event,entries);if(q.ties.length||!q.complete||q.unresolvedDecision||q.decisionMismatch)reject('Vérifier les résultats, les décisions JA et le départage avant d’annoncer le changement.');
+    if(q.swimoff?.status==='unnecessary')reject('Le JA ou le bureau doit confirmer l’annulation du swim-off devenu inutile avant l’annonce complète.');
     if(race.pendingRoster.sourceHash!==q.sourceHash||race.pendingRoster.programVersionHash!==q.programVersionHash)reject('Les séries ou résultats ont changé depuis la préparation de la composition.');
     if(hash([race.pendingRoster.a,race.pendingRoster.b,race.pendingRoster.reserve])!==hash([q.proposal.a,q.proposal.b,q.proposal.reserve]))reject('La composition a changé : la préparer à nouveau avant l’annonce.');
     const times={...race.announced.times};for(const key of [...race.pendingRoster.a,...race.pendingRoster.b])if(![...race.announced.roster.a,...race.announced.roster.b].includes(key))times[key]=now;
-    race.announced={...race.announced,sourceHash:q.sourceHash,programVersionHash:q.programVersionHash,roster:{a:race.pendingRoster.a,b:race.pendingRoster.b,reserve:race.pendingRoster.reserve},times};race.pendingRoster=null;putRace();
+    race.announced={...race.announced,partial:false,sourceHash:q.sourceHash,programVersionHash:q.programVersionHash,roster:{a:race.pendingRoster.a,b:race.pendingRoster.b,reserve:race.pendingRoster.reserve},times};race.pendingRoster=null;putRace();
   }else if(command==='compositionDone'){
-    const q=qualification(state,event,entries);if(!race.announced||race.pendingRoster||q.changed||q.ties.length||q.unresolvedDecision||q.decisionMismatch)reject('Les finalistes et modifications doivent être vérifiés et annoncés avant confirmation dans WinPalme.');race.compositionDoneAt=now;putRace();
+    const q=qualification(state,event,entries);if(!race.announced||race.announced.partial||race.pendingRoster||q.changed||q.ties.length||q.unresolvedDecision||q.decisionMismatch||q.swimoff?.status==='unnecessary')reject('Les finalistes et modifications doivent être vérifiés et annoncés avant confirmation dans WinPalme.');race.compositionDoneAt=now;putRace();
   }
   if(state.alerts.length>2000||state.history.length>=5000)reject('Journal de la compétition trop volumineux : exporter l’historique et contacter le bureau.');
-  state.revision++;state.history.push({id:input.operationKey,command,eventId,eventLabel:event?.eventLabel||'',sex:event?.sex||'',series:row?.series??alert?.series??null,lane:row?.lane??alert?.lane??null,role,actor,actorLabel:clean(actorLabel,160),alertId:alert?.id||null,at:now,participant:row?name(row):alert?.displayName||'',type:input.type||alert?.type||'',comment:clean(input.comment||alert?.comment,500)});
+  state.revision++;state.history.push({id:input.operationKey,command,eventId,eventLabel:event?.eventLabel||'',sex:event?.sex||'',series:row?.series??alert?.series??null,lane:row?.lane??alert?.lane??null,role,actor,partial:command==='announceFinalists'&&Boolean(race?.announced?.partial),actorLabel:clean(actorLabel,160),alertId:alert?.id||null,at:now,participant:row?name(row):alert?.displayName||'',type:input.type||alert?.type||'',comment:clean(input.comment||alert?.comment,500)});
   return state;
 }
 module.exports={roles,motifs,videoTypes,enabled,empty,raceState,sourceHash,qualification,next,name};
