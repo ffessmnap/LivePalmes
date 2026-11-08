@@ -43,7 +43,12 @@ async function readAdminEntries(connection,input,authorize,services) {
     const pack={competitionId:String(id),clubId,readAt,swimmers:selected.map(person),inscriptions:links,individual:individual.filter(row=>linkIds.has(String(row.engagement))),relays:teams,members:members.filter(row=>teamIds.has(String(row.relais))),officials:officials.filter(row=>String(row.club)===clubId),leaders:leaders.filter(row=>String(row.club)===clubId || String(row.pourclub)===clubId),options:options.find(row=>String(row.club_id)===clubId)||null};
     const entry=entryItem(pack,{clubCode:club.abre_club,clubName:club.nom_club},birthDate=>services.category(input.competition.date,birthDate),input.competition);
     entry.relays.forEach((relay,index)=>{const detail=storedCategory(teams[index],categories,pack.options?.submission_metadata);if(detail) Object.assign(relay,detail);});
-    entries.push(entry);
+    // Keep the already-selected source date for OFF only. UI/PDF birthDate and
+    // the historical/native identity priority remain unchanged; no new read.
+    entries.push({...entry,officials:entry.officials.map((official,index)=>{
+      const raw=pack.officials[index].date;
+      return raw==null || raw===official.birthDate ? official : {...official,txtBirthDate:raw};
+    })});
   }
   return {source:"nap",entries,clubsById:new Map(clubs.map(club=>[String(club.num_club),{id:String(club.num_club),clubCode:club.abre_club,clubName:club.nom_club,federalNumber:club.federal_club,regionId:String(club.comite_club)}])),generatedAt:readAt,sqlBudget:{queriesMax:9,rowsMax:Object.values(LIMITS).reduce((sum,value)=>sum+value,0),writesMax:0}};
 }
