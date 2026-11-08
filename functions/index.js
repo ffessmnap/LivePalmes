@@ -9292,12 +9292,12 @@ exports.processNapCompetitionNotifications = onCall({ ...ENGAGEMENT_NOTIFICATION
     }
     if(!['process','restart'].includes(request.data?.action))throw new TypeError('Action de notification inconnue.');
     const competitionId=String(require("./nap-calendar-values").positiveId(request.data.competitionId));
-    await nativePortalCompetition(competitionId,event=>assertCanManageEngagementCompetition(context,event));
+    const competition=await nativePortalCompetition(competitionId,event=>assertCanManageEngagementCompetition(context,event));
     const snapshot=await db.collection(automation.COLLECTION).where('competitionId','==',competitionId).limit(101).get();
     if(snapshot.size>100)throw new RangeError('Historique technique trop volumineux : maintenance requise.');
     const now=new Date().toISOString(),services=nativeNotificationAutomationServices(false),results=[];
     const pointer=snapshot.docs.find(doc=>doc.id===`nap-state-${competitionId}`)?.data()||{};
-    const events=snapshot.docs.filter(doc=>doc.data().source==='nap'&&['opening','closure','documents'].includes(doc.data().kind)&&automation.currentEvent(doc.data(),pointer));
+    const events=snapshot.docs.filter(doc=>doc.data().source==='nap'&&['opening','closure','documents','deadline_reminder'].includes(doc.data().kind)&&automation.currentEvent(doc.data(),pointer));
     const blocked=events.filter(doc=>doc.data().status==='blocked');
     if(request.data.action==='restart'){
       const results=[];
@@ -9305,14 +9305,16 @@ exports.processNapCompetitionNotifications = onCall({ ...ENGAGEMENT_NOTIFICATION
       return {ok:true,disabled:true,sentCount:0,resumedCount:results.filter(result=>result.resumed).length,remaining:Math.max(0,blocked.length-results.length)};
     }
     if(blocked.length)throw new TypeError('Preparation interrompue apres une modification NAP. Une reprise explicite est necessaire.');
+    const reminder=await require('./nap-deadline-reminder').arm(db,{...competition,id:competitionId},now);
     // Explicit maintenance of an already managed competition also arms its
     // future closure. It neither replays an opening nor prepares mail early.
     const future=events.filter(doc=>doc.data().kind==='closure'&&doc.data().automatic&&doc.data().deliveryMode==='bcc-v1'&&doc.data().status==='pending'&&doc.data().runAt>now),schedules=[];
+    if(reminder.queued)schedules.push(await enqueueNativeNotificationTask(reminder.eventId));
     for(const doc of future.slice(0,2))schedules.push(await enqueueNativeNotificationTask(doc.id));
     const due=events.filter(doc=>doc.data().runAt&&doc.data().runAt<=now&&!['completed','cancelled'].includes(doc.data().status)).sort((a,b)=>a.data().runAt.localeCompare(b.data().runAt));
     for(const doc of due.slice(0,2))results.push(doc.data().deliveryMode==='bcc-v1'?await enqueueNativeNotificationTask(doc.id):await automation.processEvent(db,doc.ref,services,now));
     const delivery=await deliverNativeNotificationJobs(competitionId);
-    return {ok:true,source:'nap',disabled:false,scheduledCount:schedules.filter(result=>result.queued).length,schedulingPending:future.length-schedules.filter(result=>result.queued).length,sentCount:delivery.sent,processedCount:results.length,jobCount:results.reduce((sum,result)=>sum+(result.jobCount||0),0),attachmentCount:results.reduce((sum,result)=>sum+(result.attachmentCount||0),0),remaining:Math.max(0,due.length-results.filter(result=>result.done||result.skipped).length)};
+    return {ok:true,source:'nap',disabled:false,scheduledCount:schedules.filter(result=>result.queued).length,schedulingPending:future.length+Number(reminder.queued)-schedules.filter(result=>result.queued).length,sentCount:delivery.sent,processedCount:results.length,jobCount:results.reduce((sum,result)=>sum+(result.jobCount||0),0),attachmentCount:results.reduce((sum,result)=>sum+(result.attachmentCount||0),0),remaining:Math.max(0,due.length-results.filter(result=>result.done||result.skipped).length)};
   }catch(error){if(error instanceof HttpsError)throw error;throw new HttpsError(error instanceof TypeError?'failed-precondition':error instanceof RangeError?'resource-exhausted':'unavailable',error instanceof TypeError||error instanceof RangeError?error.message:'Preparation NAP interrompue : vous pouvez reprendre le traitement.');}
 });
 exports.listEngagementCompetitionClubRecaps = onCall({ ...CALLABLE_OPTIONS, ...(ENVIRONMENT.sportingDataSource === "nap" ? { secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] } : {}) }, /* extracted-handler: functions/backend/portal-club-handlers/list-engagement-competition-club-recaps.js#listEngagementCompetitionClubRecaps#arrow */ async (request) => {

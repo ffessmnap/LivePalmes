@@ -10,6 +10,8 @@ function createCompetitionService_armNativeCompetitionNotification(backendContex
     const automation=require("../../nap-notification-automation"),id=String(require("../../nap-calendar-values").positiveId(competition.id));
     await automation.arm(backendContext.db,{competitionId:id,operation,deliveryMode:'bcc-v1',
       action:competition.entryStatus,deadline:competition.entryDeadlineAt,openingRequested:requested,actorUid:context.uid,newCycle:requested});
+    const reminder=await require('../../nap-deadline-reminder').arm(backendContext.db,{...competition,id});
+    if(reminder.queued)await (0, backendContext.local$enqueueNativeNotificationTask)(reminder.eventId);
     for(const kind of competition.entryStatus==='open'?['opening','closure']:competition.entryStatus==='closed'?['closure']:[])
       await (0, backendContext.local$enqueueNativeNotificationTask)(automation.eventRef(backendContext.db,id,operation,kind).id);
   }

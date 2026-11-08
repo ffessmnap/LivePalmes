@@ -271,12 +271,12 @@ function createEngagementPdfRenderer_buildEngagementClubRecapPdf(backendContext)
     });
   }
 
-  function engagementPdfAddFooter(doc, generatedAt) {
+  function engagementPdfAddFooter(doc, generatedAt, provisional = false) {
     const range = doc.bufferedPageRange();
     for (let index = range.start; index < range.start + range.count; index += 1) {
       doc.switchToPage(index);
       doc.fontSize(6.3).fillColor("#6b7f7a");
-      doc.text(`Récapitulatif indicatif LivePalmes, sous réserve de modifications - généré le ${engagementPdfFormatDateTime(generatedAt)} - page ${index + 1}/${range.count}`, 42, doc.page.height - 52, {
+      doc.text(`${provisional ? "VERSION PROVISOIRE - ENGAGEMENTS EN COURS" : "Récapitulatif indicatif LivePalmes, sous réserve de modifications"} - généré le ${engagementPdfFormatDateTime(generatedAt)} - page ${index + 1}/${range.count}`, 42, doc.page.height - 52, {
         width: doc.page.width - 84,
         align: "center"
       });
@@ -470,8 +470,8 @@ function createEngagementPdfRenderer_buildEngagementClubRecapPdf(backendContext)
     return y + 10;
   }
 
-  async function buildEngagementClubRecapPdf(competition = {}, entry = {}) {
-    const generatedAt = new Date().toISOString();
+  async function buildEngagementClubRecapPdf(competition = {}, entry = {}, options = {}) {
+    const generatedAt = options.provisional && options.generatedAt ? new Date(options.generatedAt).toISOString() : new Date().toISOString();
     const whatsAppUrl = ["national", "international"].includes((0, backendContext.cleanEngagementCompetitionLevel)(competition.level))
       ? (0, backendContext.cleanPublicCalendarWhatsAppUrl)(competition.teamLeadersWhatsAppUrl)
       : "";
@@ -498,6 +498,7 @@ function createEngagementPdfRenderer_buildEngagementClubRecapPdf(backendContext)
       margin: 42,
       bufferPages: true,
       info: {
+        ...(options.provisional ? { CreationDate: new Date(generatedAt) } : {}),
         Title: `Récapitulatif engagements - ${competition.name || ""}`,
         Author: "LivePalmes",
         Subject: "Engagements compétition"
@@ -617,7 +618,7 @@ function createEngagementPdfRenderer_buildEngagementClubRecapPdf(backendContext)
           license: official.licenseNumber || "-",
           role: "Officiel"
         }));
-    y = competition.officialsRequired === false
+    y = competition.officialsRequired === false && !(options.provisional && officialRows.length)
       ? engagementPdfEmptyState(doc, "Officiels non requis pour cette compétition.", y)
       : officialRows.length
         ? engagementPdfTable(doc, [
@@ -634,12 +635,24 @@ function createEngagementPdfRenderer_buildEngagementClubRecapPdf(backendContext)
       ? engagementPdfEmptyState(doc, "Aucun frais d'engagement.", y)
       : engagementPdfFeesTable(doc, stats, fees, y, competition.entryFormat&&competition.entryFormat!=='classic'?require('../../nap-team-entries').fees(competition,entry):null);
 
-    engagementPdfAddFooter(doc, generatedAt);
+    engagementPdfAddFooter(doc, generatedAt, options.provisional === true);
+    if (options.provisional) {
+      const range = doc.bufferedPageRange();
+      for (let index = range.start; index < range.start + range.count; index++) {
+        doc.switchToPage(index);
+        doc.save().fillOpacity(0.14).fillColor("#a33242").rotate(-28, { origin: [doc.page.width / 2, doc.page.height / 2] });
+        for (const y of [230, 410, 590]) {
+          doc.font("Helvetica-Bold").fontSize(30).text("VERSION PROVISOIRE", 42, y, { width: doc.page.width - 84, align: "center", lineBreak: false });
+          doc.fontSize(21).text("ENGAGEMENTS EN COURS", 42, y + 36, { width: doc.page.width - 84, align: "center", lineBreak: false });
+        }
+        doc.restore();
+      }
+    }
     const buffer = await engagementPdfDocToBuffer(doc);
     return {
       buffer,
       generatedAt,
-      fileName: `recap-engagements-${(0, backendContext.local$engagementPdfFileName)(competition.name)}-${(0, backendContext.local$engagementPdfFileName)(entry.clubName || entry.clubId)}.pdf`
+      fileName: `${options.provisional ? "PROVISOIRE-" : ""}recap-engagements-${(0, backendContext.local$engagementPdfFileName)(competition.name)}-${(0, backendContext.local$engagementPdfFileName)(entry.clubName || entry.clubId)}.pdf`
     };
   }
 

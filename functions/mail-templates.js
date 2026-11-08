@@ -93,6 +93,7 @@ function sample(id) {
   const item = definition(id), values = Object.fromEntries(item.variables.map(token => [token, "Exemple fictif"]));
   return { ...values, "competition.nom": "Compétition fictive", "competition.details": "Compétition : Compétition fictive\nDate : samedi 7 novembre 2026\nLieu : Piscine Exemple", "competition.echeance": "jeudi 5 novembre 2026 à 23h59",
     "club.nom": "Club Exemple", "club.libelle": "123 — Club Exemple", "portail.lien": "https://example.invalid/portail.html#club-competitions",
+    "rappel.details": "Les engagements se clôturent le jeudi 5 novembre 2026 à 23h59. Le récapitulatif joint est une VERSION PROVISOIRE — ENGAGEMENTS EN COURS ; il ne constitue pas la version définitive ni une validation du dossier.",
     "frais.details": "Total indicatif des frais d'engagement : 12,00 €.\nPaiement HelloAsso : https://example.invalid/paiement\nRappel : paiement attendu avant la fin de la premiere journee de competition. Surplus forfaitaire de 50 EUR ensuite.",
     "documents.annonce": "Un document a été ajouté ou mis à jour", "documents.liste": "- Programme fictif\n  https://example.invalid/programme.pdf", "fichier.nom": "engagements-fictifs.txt", "officiels.nombre": "3",
     "licences.bilan": "Compétiteurs concernés : 3\nLicences valides : 2\nLicences expirées : 1\n\nUne erreur technique ou un contrôle non effectué ne démontre pas l’absence d’une licence dans la base fédérale.\nCe bilan correspond aux engagés et aux résultats connus à la date de la revue. Un nouveau contrôle est nécessaire en cas de modification.",
