@@ -64,6 +64,20 @@
     if(!points.length)return '';
     return `<div class="direct-inline-passages"><table class="direct-passage-table" aria-label="Temps de passage de ${esc(name(row))}"><caption>Passages</caption><thead><tr><th scope="col">Passage</th><th scope="col">Cumul</th><th scope="col">Split</th></tr></thead><tbody>${points.map(point=>`<tr><th scope="row">${esc(point.distance)}</th><td>${esc(point.time)}</td><td><span title="${esc(point.splitDistance)} m depuis le passage précédent">${esc(point.split)}</span></td></tr>`).join('')}</tbody></table></div>`;
   }
-  const api={esc,surname,name,categoryTone,categoryBadge,resultLabel,stats,expected,status,badge,dot,distance,length,splits,dateRange,passageRows,passageTable};
+  function references(competition,entries,event,data){
+    if(!data||!event||!competition)return [];
+  const category=value=>{let code=String(value||'').toUpperCase().replace(/^[FH](?=[A-Z0-9])/,'');code=({JU:'J',JUNIOR:'J',JUNIORS:'J',SE:'S',SENIOR:'S',SENIORS:'S',MI:'M',MINIME:'M',MINIMES:'M',CA:'C',CADET:'C',CADETS:'C',PO:'P',POUSSIN:'P',BE:'B',BENJAMIN:'B'})[code]||code;return /^\d+\+?$/.test(code)?'M'+code.replace(/\+?$/,'+'):code;};
+    const categories=new Set((entries||[]).map(row=>category(row.category))),pool=String(competition.poolLength),electronic=competition.timingType==='electronic';
+    return [...(data.franceRecords||[]),...(data.records||[])].filter(row=>{
+      const type=String(row.recordType||''),cat=category(row.category),sex=String(row.sex||'');
+      // MPF are a common reference for both pools. `length` is the race distance.
+      if(String(row.course||'').toLowerCase()!==event.eventCode.toLowerCase().replace(/-mi$/,'')||sex!==event.sex||row.placeholderRecord)return false;
+      if((type==='RF'||type==='RFJ')&&row.bassin&&String(row.bassin)!=='50')return false;
+      if(pool==='25'||pool==='50'&&!electronic)return type!=='RF'&&type!=='RFJ'&&categories.has(cat);
+      if(pool==='50')return type==='RF'?categories.has('S')||categories.has('SE')||categories.has('SENIOR'):type==='RFJ'?categories.has('J')||categories.has('JU')||categories.has('JUNIOR'):categories.has(cat)&&!['S','SE','SENIOR','J','JU','JUNIOR'].includes(cat);
+      return false;
+    });
+  }
+  const api={references,esc,surname,name,categoryTone,categoryBadge,resultLabel,stats,expected,status,badge,dot,distance,length,splits,dateRange,passageRows,passageTable};
   global.LivePalmesDirectPresentation=api;if(typeof module==='object'&&module.exports)module.exports=api;
 })(typeof window==='undefined'?globalThis:window);

@@ -61,6 +61,7 @@ function createStore(pool,environment) {
   }
   async function settings(id,actor,input) {
     return transaction(id,actor,input.version,async(c,current)=>{
+      await require('./nap-direct-console-store').createConsoleStore(pool,{native,scope}).validateSettings(id,input,c);
       const roles=[...new Set(['computer',...(input.consoles||[])])];if(roles.some(role=>!model.ROLES.includes(role)))throw new TypeError("Console inconnue.");
       const state=input.state||'active';if(!['active','archived','disabled'].includes(state))throw new TypeError("État Direct invalide.");
       if(current)await execute(c,"UPDATE livepalmes_direct_competitions SET state=?,public_visible=?,enabled_consoles_json=? WHERE environment=? AND competition_id=?",[state,input.publicVisible===false?0:1,json(roles),...scope(id)]);
@@ -209,6 +210,6 @@ function createStore(pool,environment) {
       return {...result,version:Number(current.version)+1,revision:Number(current.public_revision)+1};
     },{allowClosed:true,allowReset:true});
   }
-  return {native,config,access,detail,program,watchContext,settings,preview,publish,previewBatch,publishBatch,visibility,grants,grant,history,document,reset,scope,q,eventView,configView};
+  return {native,config,access,detail,program,events,entries,watchContext,settings,preview,publish,previewBatch,publishBatch,visibility,grants,grant,history,document,reset,scope,q,eventView,configView};
 }
 module.exports={createStore,fail};
