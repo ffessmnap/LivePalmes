@@ -15,6 +15,11 @@ on:
         description: Saisir livepalmes-test ; sources seulement, etats deja suspendus inchanges
         required: true
         type: string
+      identity_only:
+        description: Confirmer uniquement le client_email attendu, sans lecture metier ni publication
+        required: false
+        default: false
+        type: boolean
 permissions:
   contents: read
   actions: read
@@ -57,13 +62,27 @@ jobs:
           credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LIVEPALMES_TEST_BACKEND }}
           project_id: livepalmes-test
       - uses: google-github-actions/setup-gcloud@v3
+      - name: Confirmer uniquement le compte backend TEST attendu
+        if: inputs.identity_only
+        run: python tooling/tools/publish-test-mail-sources.py identity "$RELEASE" "$RUNNER_TEMP/test-mail-sources" candidate
+      - uses: actions/upload-artifact@v4
+        if: inputs.identity_only
+        with:
+          name: test-mail-identity-proof
+          path: ${{ runner.temp }}/test-mail-sources/identity-proof.json
+          if-no-files-found: error
+          retention-days: 14
       - name: Authentifier les preuves et constater les preconditions deja satisfaites
+        if: ${{ !inputs.identity_only }}
         run: python tooling/tools/publish-test-mail-sources.py prepare "$RELEASE" "$RUNNER_TEMP/test-mail-sources" candidate
       - name: Publier seulement les sources calculees et autorisees
+        if: ${{ !inputs.identity_only }}
         run: python tooling/tools/publish-test-mail-sources.py deploy "$RELEASE" "$RUNNER_TEMP/test-mail-sources" candidate
       - name: Verifier revisions et preservation de tous les etats
+        if: ${{ !inputs.identity_only }}
         run: python tooling/tools/publish-test-mail-sources.py verify "$RELEASE" "$RUNNER_TEMP/test-mail-sources" candidate
       - uses: actions/upload-artifact@v4
+        if: ${{ !inputs.identity_only }}
         with:
           name: test-backend-proof
           path: ${{ runner.temp }}/test-mail-sources/test-backend-proof.json

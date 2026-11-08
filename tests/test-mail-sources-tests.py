@@ -38,7 +38,42 @@ def zipped(source='const { defineBoolean, defineSecret } = require("firebase-fun
     return stream.getvalue()
 
 
+def credentials_file(directory, **overrides):
+    path = Path(directory) / 'test.json'
+    path.write_text(json.dumps({'type': 'service_account', 'project_id': p.PROJECT,
+        'client_email': p.DEPLOYER, 'private_key': 'private-key-never-logged', **overrides}))
+    return path
+
+
 class MailSources(unittest.TestCase):
+    def test_identity_diagnostic_checks_actual_credentials_without_cloud_access(self):
+        with tempfile.TemporaryDirectory() as directory:
+            credentials = credentials_file(directory)
+            with patch.dict(os.environ, {'GOOGLE_APPLICATION_CREDENTIALS': str(credentials), 'GITHUB_RUN_ID': '123'}), \
+                    patch.object(p, 'guard', return_value=SHA), \
+                    patch.object(p, 'load', return_value=SimpleNamespace(reusable=MagicMock(return_value=True))), \
+                    patch.object(p, 'inventory') as inventory, patch.object(p, 'controls') as controls, \
+                    patch.object(p.cycle, 'snapshot') as snapshot, patch.object(p.urllib.request, 'urlopen') as urlopen, \
+                    patch.object(p.state, 'request') as request, contextlib.redirect_stdout(io.StringIO()) as output:
+                p.main('identity', 'models', directory, ROOT)
+                proof = p.cycle.read(Path(directory) / 'identity-proof.json')
+                self.assertEqual(proof, {'candidate': SHA, 'project': p.PROJECT, 'clientEmail': p.DEPLOYER,
+                    'runId': '123', 'cloudMutation': False})
+                self.assertEqual(output.getvalue(), 'Compte backend TEST confirme : ' + p.DEPLOYER + '\n')
+                for mock in [inventory, controls, snapshot, urlopen, request]:
+                    mock.assert_not_called()
+                for wrong in [{'type': 'authorized_user'}, {'project_id': 'livepalmes'},
+                              {'client_email': 'other@example.invalid'}, {'client_email': None}]:
+                    credentials_file(directory, **wrong)
+                    with self.assertRaisesRegex(ValueError, 'Identite backend TEST inattendue') as error:
+                        p.credential_identity()
+                    self.assertNotIn('private-key', str(error.exception))
+                    self.assertNotIn('other@example.invalid', str(error.exception))
+                credentials_file(directory, client_email='other@example.invalid')
+                with self.assertRaisesRegex(ValueError, 'Identite backend TEST inattendue'):
+                    p.main('prepare', 'models', directory, ROOT)
+                inventory.assert_not_called(); snapshot.assert_not_called()
+
     def test_both_main_ci_proofs_are_required_before_cloud_reads(self):
         with tempfile.TemporaryDirectory() as directory, patch.object(p, 'guard', return_value=SHA), \
                 patch.object(p, 'controls') as controls, patch.object(p.cycle, 'snapshot') as snapshot:
@@ -61,6 +96,8 @@ class MailSources(unittest.TestCase):
         self.assertIn('cancel-in-progress: false', workflow)
         self.assertNotIn('actions: write', workflow)
         self.assertNotIn('production', workflow)
+        self.assertIn('if: inputs.identity_only', workflow)
+        self.assertEqual(workflow.count('if: ${{ !inputs.identity_only }}'), 4)
 
     def test_exact_main_ci_candidate_and_application_anchor(self):
         entry = p.contract('models')
@@ -169,7 +206,7 @@ class MailSources(unittest.TestCase):
 
     def test_metadata_only_bounded_reads_and_preconditions_are_never_corrected(self):
         with tempfile.TemporaryDirectory() as directory:
-            credentials = Path(directory) / 'test.json'; credentials.write_text('{"project_id":"livepalmes-test"}')
+            credentials = credentials_file(directory)
             with patch.dict(os.environ, {'GOOGLE_APPLICATION_CREDENTIALS': str(credentials)}), patch.object(p.cycle, 'run', return_value='private-token'):
                 calls, fetch = self.fixture_controls()
                 with patch.object(p.urllib.request, 'urlopen', side_effect=fetch):
@@ -195,7 +232,7 @@ class MailSources(unittest.TestCase):
         def task(index):
             return {'name': f'projects/{p.PROJECT}/locations/europe-west1/queues/processNapNotificationTask/tasks/{index}', 'createTime': 'created', 'scheduleTime': 'scheduled'}
         with tempfile.TemporaryDirectory() as directory:
-            credentials = Path(directory) / 'test.json'; credentials.write_text('{"project_id":"livepalmes-test"}')
+            credentials = credentials_file(directory)
             with patch.dict(os.environ, {'GOOGLE_APPLICATION_CREDENTIALS': str(credentials)}), patch.object(p.cycle, 'run', return_value='private-token'):
                 def witness(pages):
                     _, fetch = self.fixture_controls(task_pages=pages)
