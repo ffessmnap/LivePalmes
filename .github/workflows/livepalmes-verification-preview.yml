@@ -205,6 +205,8 @@ jobs:
           python tests/release-simplification-tests.py
           python tests/license-report-release-tests.py
           python tests/nap-retained-source-tests.py
+            python tests/november-validated-release-tests.py
+            node tests/november-retained-scope-tests.js
           python tests/test-mail-sources-tests.py
           python tests/test-trophy-sources-tests.py
           python tests/nap-account-release-tests.py

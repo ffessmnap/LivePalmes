@@ -45,6 +45,9 @@ _team_spec.loader.exec_module(team_trophy)
 _direct_spec = importlib.util.spec_from_file_location('direct_policy', ROOT / 'tools/direct-production-policy.py')
 direct_release = importlib.util.module_from_spec(_direct_spec)
 _direct_spec.loader.exec_module(direct_release)
+_november_spec = importlib.util.spec_from_file_location('november_policy', ROOT / 'tools/november-validated-release-policy.py')
+november_release = importlib.util.module_from_spec(_november_spec)
+_november_spec.loader.exec_module(november_release)
 
 
 def approved_license_report_functions(value):
@@ -94,6 +97,7 @@ def approved_extra_functions(value):
     names += validated_portal.approved(value)
     names += team_trophy.approved(value)
     names += direct_release.approved(value)
+    names += november_release.approved(value)
     require(len(names) == len(set(names)), 'Extensions de publication superposees')
     return names
 
@@ -155,6 +159,8 @@ def approved_club_directory_functions(value):
 
 
 def idf_preservation(value):
+    if november_release.approved(value):
+        return {'scope': 'all', 'novemberControlsUnchanged': True}
     if direct_release.approved(value):
         return {'directControlsUnchanged': True}
     if team_trophy.approved(value):
@@ -246,6 +252,7 @@ def approved_access_request_functions(value):
 
 
 def require_access_request_selection(request, selected):
+    november_release.selection(request, selected)
     if direct_release.approved(request):
         require(sorted(selected) == direct_release.SELECTED, 'Selection Direct differente du contrat')
     team_trophy.selection(request, selected)
@@ -929,6 +936,7 @@ def prepare_selection(directory, candidate):
                         request['candidate'], project='livepalmes-test'), 'Lecteur Direct TEST absent ou incompatible')
         require(all(not needs_function(names.get(n), n, request['candidate'], project='livepalmes-test') for n in team_trophy.approved(request)), 'Sources TEST equipes/trophee absentes ou incompatibles')
         require(all(not needs_function(names.get(n), n, request['candidate'], project='livepalmes-test') for n in validated_portal.approved(request)), 'Preuve TEST CMAS/CCI absente ou incompatible')
+        require(all(not needs_function(names.get(n), n, request['candidate'], project='livepalmes-test') for n in november_release.approved(request)), 'Preuve TEST du 8 novembre absente ou incompatible')
         notification = approved_notification_functions(request)
         require(all(not needs_function(names.get(n), n, request['candidate'], project='livepalmes-test') for n in notification + approved_public_nap_functions(request) + approved_access_request_functions(request) + approved_club_directory_functions(request) + approved_grouped_functions(request) + approved_bcc_functions(request) + approved_license_report_functions(request) + nap_retained.approved(request) + nap_account.approved(request) + portal_access_ns.approved(request)),
                 'Notifications TEST absentes ou pas au code valide')
@@ -1094,6 +1102,8 @@ def freeze_plan(directory, evidence=False):
         selected = direct_release.select(request, selected, read(root/'baseline.json'), names)
         write(root/'direct-scope-proof.json', direct_release.scope())
     require_access_request_selection(request, selected)
+    if november_release.approved(request):
+        write(root / 'november-scope-proof.json', november_release.verify(request, read(root / 'baseline.json'), names, backend_fingerprints))
     if team_trophy.approved(request):
         require(read(root/'baseline.json')['productionRun'] == 41354381330 and len(names) == 115
                 and team_trophy.NEW not in names, 'Reference PROD equipes differente')
@@ -1210,7 +1220,13 @@ def verify_excluded_backend(directory, state, selected):
             changed.append({'name': name, 'commit': function['commit']})
     # Earlier divergence is recorded, not treated as a reason to upgrade a
     # retained service. New divergence must pass the pinned offline suite.
-    if direct_release.approved(request):
+    suite_path = ROOT / 'tests/release-excluded-backend-compatibility-tests.js'
+    if november_release.approved(request):
+        november_release.retained_test_origins(request, read(root / 'test-proof.json'))
+        require(sorted(retained) == november_release.contract()['retainedFunctions'], 'Revue November hors des deux preferences')
+        suite_path = ROOT / 'tools/verify-november-retained-scope.js'
+        result = json.loads(run(['node', str(suite_path), str(ROOT), request['productionCommit'], request['candidate']]))
+    elif direct_release.approved(request):
         direct_release.scope()
         result = {'suite':review['suite'], 'candidate':request['candidate'],
                   'productionCommit':request['productionCommit'], 'result':'success',
@@ -1227,7 +1243,7 @@ def verify_excluded_backend(directory, state, selected):
             and result.get('passedFunctions') == sorted(row['name'] for row in changed),
             'Compatibilite des consommateurs exclus non demontree')
     result['reviewSha256'] = hashlib.sha256(json.dumps(review, sort_keys=True).encode()).hexdigest()
-    result['suiteSha256'] = hashlib.sha256((ROOT / 'tests/release-excluded-backend-compatibility-tests.js').read_bytes()).hexdigest()
+    result['suiteSha256'] = hashlib.sha256(suite_path.read_bytes()).hexdigest()
     result['retainedFunctions'] = sorted(rows)
     write(root / 'excluded-backend-verification.json', result)
 
@@ -1363,6 +1379,10 @@ def fetch_plan(preparation, resume, directory):
                 source = root/'previous/validated-guards'/witness
                 if source.exists():
                     write(root/witness, read(source))
+        if november_release.approved(read(root / 'request.json')):
+            guards = root / 'previous/november-guards'
+            artifact(resume, 'production-idf-preservation', guards, '.github/workflows/livepalmes-production-release.yml')
+            november_release.restore_witness(root, guards)
     else:
         artifact(preparation, 'release-plan', root, '.github/workflows/livepalmes-production-preflight.yml')
     value = read(root / 'request.json')

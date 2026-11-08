@@ -1,0 +1,39 @@
+{
+  "observedAtUtc": "2026-11-08T17:17:58.1154231Z",
+  "runtimeAccount": "serviceAccount:718081132564-compute@developer.gserviceaccount.com",
+  "checks": [
+    {
+      "secret": "LIVEPALMES_SMTP_HOST",
+      "version": "1",
+      "runtimeAccessViaUnconditionalSecretBinding": true
+    },
+    {
+      "secret": "LIVEPALMES_SMTP_PORT",
+      "version": "1",
+      "runtimeAccessViaUnconditionalSecretBinding": true
+    },
+    {
+      "secret": "LIVEPALMES_SMTP_USER",
+      "version": "1",
+      "runtimeAccessViaUnconditionalSecretBinding": true
+    },
+    {
+      "secret": "LIVEPALMES_SMTP_PASS",
+      "version": "1",
+      "runtimeAccessViaUnconditionalSecretBinding": true
+    },
+    {
+      "secret": "LIVEPALMES_SMTP_SECURE",
+      "version": "1",
+      "runtimeAccessViaUnconditionalSecretBinding": true
+    },
+    {
+      "secret": "LIVEPALMES_MAIL_FROM",
+      "version": "1",
+      "runtimeAccessViaUnconditionalSecretBinding": true
+    }
+  ],
+  "valuesRead": false,
+  "iamChanged": false,
+  "source": "Lecture gcloud secrets get-iam-policy, six secrets PROD seulement ; observation Infra du 8 novembre 2026."
+}

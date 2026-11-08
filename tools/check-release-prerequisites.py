@@ -95,13 +95,22 @@ def main(directory, run_id, kind):
             expected += ['cloudscheduler.jobs.get','cloudscheduler.jobs.update']
         if kind == 'backend' and cycle.nap_account.approved(request):
             expected += ['cloudfunctions.functions.create']
-        if kind == 'backend' and (cycle.validated_portal.approved(request) or cycle.team_trophy.approved(request) or cycle.direct_release.approved(request)):
+        if kind == 'backend' and (cycle.validated_portal.approved(request) or cycle.team_trophy.approved(request) or cycle.direct_release.approved(request) or cycle.november_release.approved(request)):
             expected += ['cloudfunctions.functions.create', 'cloudfunctions.functions.setIamPolicy']
         granted = read(IAM, {'permissions': expected}).get('permissions', [])
         report['missingPermissions'] = sorted(set(expected) - set(granted))
         if kind == 'backend' and selected:
             state = load('readiness_state', 'production-release-state.py')
             functions = state.inventory()
+            if cycle.november_release.approved(request):
+                cycle.november_release.initial(functions)
+                cycle.november_release.guard(directory)
+                report['novemberRelease'] = {'sourceOnly': cycle.november_release.approved(request),
+                    'newFunctions': cycle.november_release.contract()['newFunctions'],
+                    'smtpConfigurationException': cycle.november_release.contract()['smtpFunction'],
+                    'smtpBindings': cycle.november_release.contract()['smtpBindings'],
+                    'sameExistingRuntimeAccount': True, 'mailPause': False,
+                    'historicalReplay': False, 'iamChanges': False, 'smtpInvocation': False, 'secretValuesRead': False}
             if cycle.team_trophy.approved(request):
                 cycle.team_trophy.initial(functions)
                 cycle.team_trophy.guard(directory)

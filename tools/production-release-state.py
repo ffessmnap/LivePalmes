@@ -65,6 +65,16 @@ def check_after(backup, destination, require_success):
         if sorted(report['additionalBccFunctions']) != bcc_policy.contract()['selected']:
             raise ValueError('Selection CCI du rapport differente')
     errors = []
+    november_policy = None
+    if report.get('additionalNovemberFunctions'):
+        spec = importlib.util.spec_from_file_location('november_state_policy', Path(__file__).with_name('november-validated-release-policy.py'))
+        november_policy = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(november_policy)
+        c = november_policy.contract()
+        november_policy.require(report['additionalNovemberFunctions'] == c['sourceOnly']
+            and report['candidate'] == c['candidate'] and len(before) == c['inventoryCount']
+            and selected == {PREFIX+n for n in c['selected']} and report['newFunctions'] == c['newFunctions'],
+            'Rapport du 8 novembre hors contrat')
     team_policy = None
     if report.get('additionalTeamTrophyFunctions'):
         spec = importlib.util.spec_from_file_location('team_state_policy', Path(__file__).with_name('team-trophy-release-policy.py'))
@@ -125,6 +135,11 @@ def check_after(backup, destination, require_success):
                 errors.append(str(error))
         if not f or f.get("state") != "ACTIVE":
             errors.append("Function non active: " + name.split("/")[-1])
+        elif november_policy is not None and name.split('/')[-1] in november_policy.contract()['sourceOnly']:
+            try:
+                november_policy.assert_config(before[name], f, SimpleNamespace(rollback_patch=rollback_patch))
+            except ValueError as error:
+                errors.append(str(error))
         elif account_policy is not None:
             try:
                 if name == PREFIX+account_policy.NAME:
@@ -161,6 +176,11 @@ def check_after(backup, destination, require_success):
                     team_policy.assert_new(f)
                 elif name.split('/')[-1] in team_policy.SOURCE_ONLY:
                     team_policy.assert_config(before[name], f, SimpleNamespace(rollback_patch=rollback_patch))
+            except ValueError as error:
+                errors.append(str(error))
+        if f and november_policy and name.split('/')[-1] in november_policy.contract()['newFunctions']:
+            try:
+                november_policy.assert_new(f)
             except ValueError as error:
                 errors.append(str(error))
         if f and portal_policy and name.split('/')[-1] in [portal_policy.NAME, portal_policy.ACCOUNT]:
