@@ -129,14 +129,11 @@ La consultation du Journal d’activité est réservée à la capacité `admin.f
 
 ## Cas particulier de LivePalmes Direct
 
-Les consoles ajoutent un deuxième verrou :
+Le portail propose désormais « LivePalmes Direct » vers `direct-admin.html`, avec l’icône des anciennes consoles. Le lien du menu et son raccourci d’accueil sont visibles pour `admin.full`, `engagements.region.manage` ou `engagements.national.manage`. Cette visibilité utilise le profil déjà chargé : zéro lecture ou écriture supplémentaire à l’ouverture, au changement de vue ou au rafraîchissement du menu, même dans le pire cas.
 
-1. le compte doit posséder `consoles.access` ou `consoles.manage` ;
-2. le PIN de la console doit être validé.
+Le bureau réutilise la session TEST déjà ouverte, ou demande une connexion avec un compte existant. Le serveur Direct conserve ses contrôles : responsable régional dans son périmètre, responsable national, ou délégation active de la compétition avec les postes autorisés. Afficher le lien ne crée ni compte, ni habilitation, ni délégation ; aucune capacité globale, règle Firebase ou autorisation serveur n’est modifiée. Les postes multi-compétitions n’ajoutent pas de PIN.
 
-Le PIN n'est pas conservé en clair. Le serveur vérifie son empreinte puis crée une autorisation temporaire dans `consoleGrants`. Les règles Firestore contrôlent cette autorisation avant d'accepter les écritures du direct. Sa durée actuelle est de 12 heures.
-
-Les consoles restent ainsi séparées du portail d'engagements et ne sont utilisées que pour les compétitions nationales prévues à cet effet.
+Les anciennes consoles nationales restent accessibles par leur adresse `pilotage-livepalmes.html`, sans lien depuis le portail. Elles conservent leur ancien fonctionnement : `consoles.access` ou `consoles.manage`, puis PIN, empreinte serveur et autorisation temporaire `consoleGrants` de 12 heures. Les anciens droits et accès ne sont ni retirés ni convertis. [Mode opératoire Direct sur TEST](https://livepalmes-test.web.app/direct-guide.html).
 
 ## Compatibilité actuelle
 

@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 430" role="img" aria-labelledby="title desc">
+<title id="title">Circuit d’une disqualification en régional</title><desc id="desc">La décision validée par le juge arbitre est transmise en parallèle au bureau des performances, au speaker et au Live actifs. Le bureau la saisit dans WinPalme. Le TXT corrigé alimente le résultat public.</desc>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 10 5 0 10z" fill="#315e75"/></marker></defs>
+<style>text{font-family:Arial,sans-serif;font-size:15px;fill:#183a4e}.head{font-weight:700}.small{font-size:13px;fill:#4a6473}.box{fill:#f4f8fb;stroke:#a5becc;stroke-width:1.5}.start{fill:#e4f1f6;stroke:#5592ab}.end{fill:#edf7f0;stroke:#81b497}.optional{fill:#f3f1f9;stroke:#b3accd}.line{fill:none;stroke:#315e75;stroke-width:2;marker-end:url(#arrow)}.split{fill:#315e75}</style>
+<rect class="box start" x="190" y="12" width="380" height="54" rx="10"/><text x="380" y="35" text-anchor="middle" class="head">Juge arbitre</text><text x="380" y="55" text-anchor="middle">Disqualification validée</text>
+<path class="line" d="M380 66V88H210V114"/><path class="line" d="M380 88H588V114"/><circle class="split" cx="380" cy="88" r="3"/>
+<rect class="box" x="25" y="118" width="370" height="56" rx="9"/><text x="210" y="142" text-anchor="middle" class="head">Bureau des performances</text><text x="210" y="162" text-anchor="middle">Décision à traiter</text>
+<rect class="box optional" x="430" y="118" width="305" height="75" rx="9"/><text x="583" y="143" text-anchor="middle" class="head">Speaker actif</text><text x="583" y="165" text-anchor="middle">Annonce officielle</text><text x="583" y="184" text-anchor="middle">puis bouton « Annoncé »</text>
+<path class="line" d="M210 174V210"/><path class="line" d="M588 88H750V244H735"/><circle class="split" cx="588" cy="88" r="3"/>
+<rect class="box" x="25" y="214" width="370" height="56" rx="9"/><text x="210" y="238" text-anchor="middle" class="head">WinPalme</text><text x="210" y="258" text-anchor="middle">Saisir et valider la correction</text>
+<rect class="box optional" x="430" y="216" width="305" height="56" rx="9"/><text x="583" y="240" text-anchor="middle" class="head">Live actif</text><text x="583" y="260" text-anchor="middle">Consulte la décision officielle</text>
+<path class="line" d="M210 270V306"/><rect class="box" x="25" y="310" width="370" height="44" rx="9"/><text x="210" y="337" text-anchor="middle">TXT corrigé reçu par la surveillance</text>
+<path class="line" d="M210 354V383"/><rect class="box end" x="25" y="387" width="370" height="36" rx="9"/><text x="210" y="410" text-anchor="middle" class="head">Résultat public mis à jour</text>
+<text x="443" y="321" class="small">Les notifications sont parallèles.</text><text x="443" y="341" class="small">L’annonce n’attend pas le TXT.</text><text x="443" y="374" class="small">Le résultat public, lui, vient</text><text x="443" y="394" class="small">toujours du TXT WinPalme.</text>
+</svg>

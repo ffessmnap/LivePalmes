@@ -2,6 +2,12 @@
 
 <!-- description: Référence du langage visuel, des composants d’interface et des règles responsive déjà présents dans LivePalmes. -->
 
+## Accès Direct et mode opératoire régional
+
+L’entrée « LivePalmes Direct » du menu latéral et son raccourci d’accueil conservent l’icône écran existante et ouvrent le bureau dans un nouvel onglet. Leur visibilité repose sur les droits régionaux/nationaux et l’administration générale, sans nouvelle habilitation. Le bureau propose un seul lien « Mode opératoire » près du compte ; les deux actions se replient sur une ligne supplémentaire si l’écran est étroit.
+
+Le guide statique `direct-guide.html` comporte cinq sections imprimables A4, une lecture responsive sans défilement horizontal, trois captures de l’application sur des données fictives, le logo officiel FFESSM Nage avec Palmes et des logigrammes vectoriels avec branches et flèches reliées et un PDF téléchargeable. Les variantes bureau seul, consoles régionales et vidéo nationale sont séparées explicitement. Le PDF `assets/direct/guide.pdf` est généré par `node tools/build-direct-guide.js` depuis le HTML/CSS ; ne pas modifier ce fichier généré directement.
+
 ## Consoles Direct multi-compétitions — 8 novembre 2026
 
 Les postes JA, vidéo, speaker et Live de `direct-consoles.html` reprennent les composants historiques de `styles.css`, `console.css` et des vues pures existantes : barre haute compacte, course/session et séries horaires, tableau cinq colonnes, pastille catégorie, club sous le nom, clic sur la ligne, grille de décisions, cartes vidéo et historique. Les styles du nouveau bureau sont désactivés sur ces quatre postes pour conserver les dimensions historiques. Les données sont adaptées depuis la compétition sélectionnée, sans charger le programme national fixe ni ses anciens accès.

@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 490" role="img" aria-labelledby="title desc">
+<title id="title">Circuit national lorsque la vidéo est activée</title><desc id="desc">Faux départ, départ anticipé de relais et coulée supérieure à 15 mètres passent à la vidéo. Les autres motifs vont directement au bureau et aux postes officiels actifs. Une confirmation vidéo suit le même circuit. Une invalidation reste à l’historique sans créer de tâche officielle de disqualification.</desc>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 10 5 0 10z" fill="#315e75"/></marker></defs>
+<style>text{font-family:Arial,sans-serif;font-size:15px;fill:#183a4e}.head{font-weight:700}.label{font-size:14px;font-weight:700}.small{font-size:13px}.box{fill:#f4f8fb;stroke:#a5becc;stroke-width:1.5}.start{fill:#e4f1f6;stroke:#5592ab}.condition{fill:#fff8e9;stroke:#be9a4d;stroke-width:1.5}.end{fill:#edf7f0;stroke:#81b497}.optional{fill:#f3f1f9;stroke:#b3accd}.line{fill:none;stroke:#315e75;stroke-width:2;marker-end:url(#arrow)}</style>
+<rect class="box start" x="205" y="10" width="350" height="44" rx="9"/><text x="380" y="37" text-anchor="middle" class="head">JA · décision de disqualification</text><path class="line" d="M380 54V77"/>
+<path class="condition" d="M380 81 601 151 380 221 159 151z"/><text x="380" y="127" text-anchor="middle" class="head">Motif soumis à la vidéo ?</text><text x="380" y="148" text-anchor="middle">Faux départ · départ anticipé de relais</text><text x="380" y="169" text-anchor="middle">ou coulée supérieure à 15 m</text>
+<path class="line" d="M159 151H80V305"/><text class="label" x="24" y="202">NON</text><text class="small" x="18" y="222">Autres</text><text class="small" x="18" y="240">motifs</text>
+<path class="line" d="M601 151H620V243"/><text class="label" x="635" y="206">OUI</text>
+<rect class="box optional" x="480" y="247" width="260" height="50" rx="9"/><text x="610" y="277" text-anchor="middle" class="head">Examen par le juge vidéo</text>
+<path class="line" d="M610 297V318H350V343H315"/><text class="label" x="370" y="310">Confirmée</text>
+<path class="line" d="M610 318V368"/><text class="label" x="622" y="348">Invalidée</text>
+<rect class="box" x="15" y="309" width="300" height="70" rx="9"/><text x="165" y="331" text-anchor="middle" class="head">Circuit officiel direct</text><text x="165" y="353" text-anchor="middle">Bureau des performances</text><text x="165" y="372" text-anchor="middle">+ speaker et Live actifs</text>
+<rect class="box optional" x="480" y="372" width="260" height="91" rx="9"/><text x="610" y="397" text-anchor="middle" class="head">Historique conservé</text><text x="610" y="420" text-anchor="middle">Aucune tâche officielle</text><text x="610" y="441" text-anchor="middle">de disqualification créée</text>
+<path class="line" d="M165 379V413"/><rect class="box end" x="15" y="417" width="300" height="61" rx="9"/><text x="165" y="442" text-anchor="middle" class="head">Saisie et validation WinPalme</text><text x="165" y="465" text-anchor="middle">TXT corrigé → résultat public</text>
+</svg>
