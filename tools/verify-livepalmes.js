@@ -118,6 +118,7 @@ function runUnitTests() {
     "mail-templates-tests.js",
     "request-decision-mail-tests.js",
     "competition-mail-addresses-tests.js",
+    "nap-deadline-reminder-tests.js",
     "request-decision-routes-tests.js",
     "engagement-mail-send-guard-tests.js",
     "production-notification-preparation-tests.js",

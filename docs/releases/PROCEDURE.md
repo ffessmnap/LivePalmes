@@ -56,6 +56,8 @@ Ce complément précède le parcours commun : **sources conservées → TEST com
 
 Pour les nouveaux contacts multiples/copies demandés le 8 novembre, choisir `release=contacts` avec son contrat distinct `20261108-competition-mail-contacts-contract.json`. L’ancre applicative et la baseline commune de ce lot sont calculées sur sa version réelle ; les contrats historiques `models`/`decisions` et leur reprise ne sont pas modifiés ni utilisés pour publier ce nouveau périmètre. Même séquence CI main exacte → sources/labels autorisés → TEST commun → contrôle final, sans activation, message réel, nouveau binding, secret, permission ou état de file/planificateur. Le rappel J−1 est un second lot et exige son contrat propre après cette première livraison.
 
+Pour le rappel J−1, après clôture contacts attestée en `9b9dae56`, utiliser `release=reminder` et le contrat distinct `20261108-competition-deadline-reminder-contract.json`. Sa baseline est le TEST commun contacts 42472956878, contrôlé sans déploiement par 42473496899. Même séquence et garde maximal des six consommateurs calculés ; aucun contrat historique ou contacts modifié. Lors d’une activation PROD future expressément autorisée, l’action de maintenance `process` d’une compétition déjà gérée peut programmer son rappel futur (échéance à au moins 24 h), sans rejouer l’ouverture. Aucune telle invocation n’est incluse dans cette livraison TEST.
+
 ## 3. Préparer le bilan PROD
 
 ### Assembler plutôt que ressaisir

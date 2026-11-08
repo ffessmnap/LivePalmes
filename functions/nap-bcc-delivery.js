@@ -42,8 +42,8 @@ async function deliver(db,reference,services,now=new Date().toISOString()) {
     if(attachments.length!==(claimed.attachments||[]).length)throw new TypeError('Piece jointe manquante.');
     // The emergency switch is checked again after file retrieval, before DATA.
     const gate=control.eventDecision(await control.read(db),claimed);
-    if(!gate.allowed){
-      await reference.set({status:'cancelled',reason:gate.reason,recipients:claimed.recipients.map(item=>({...item,status:'cancelled'})),
+    if(!gate.allowed||services.beforeSend&&!await services.beforeSend(claimed)){
+      await reference.set({status:'cancelled',reason:gate.reason||'competition-no-longer-current',recipients:claimed.recipients.map(item=>({...item,status:'cancelled'})),
         cancelledCount:claimed.recipients.length,updatedAt:new Date().toISOString()},{merge:true});
       return {status:'cancelled'};
     }

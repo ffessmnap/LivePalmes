@@ -19,6 +19,8 @@ CONTRACT = ROOT / '.github/releases/evidence/20261108-test-mail-sources-contract
 DIGEST = "82ee3c568601abee7963fcfa6c8cb10f5053de6382d3e0147b2b0bec5c246b9e"
 CONTACTS_CONTRACT = ROOT / '.github/releases/evidence/20261108-competition-mail-contacts-contract.json'
 CONTACTS_DIGEST = 'a7004eba8a9d71d4ca4074730bb198e18b4157dbaa1f1028e681f42f849b471d'
+REMINDER_CONTRACT = ROOT / '.github/releases/evidence/20261108-competition-deadline-reminder-contract.json'
+REMINDER_DIGEST = 'cf3c6a1b218e03a20d435b174c62f063b14224d228a8de800fbbd5f0f28b52a2'
 WORKFLOW = '.github/workflows/livepalmes-test-mail-sources.yml'
 PROJECT = 'livepalmes-test'
 DEPLOYER = 'github-livepalmes-test-backend@livepalmes-test.iam.gserviceaccount.com'
@@ -49,20 +51,20 @@ def digest(value):
 
 
 def contract(release):
-    contacts = release == 'contacts'
-    source, expected_digest = (CONTACTS_CONTRACT, CONTACTS_DIGEST) if contacts else (CONTRACT, DIGEST)
+    separate = {'contacts': (CONTACTS_CONTRACT, CONTACTS_DIGEST), 'reminder': (REMINDER_CONTRACT, REMINDER_DIGEST)}.get(release)
+    source, expected_digest = separate or (CONTRACT, DIGEST)
     raw = source.read_bytes().replace(b'\r\n', b'\n')
     require(hashlib.sha256(raw).hexdigest() == expected_digest, 'Contrat TEST mails modifie')
     value = json.loads(raw)
     require(value.get('schema') == 1 and value.get('project') == PROJECT
             and set(value.get('allowedFunctions', [])) == ALLOWED
-            and set(value['releases']) <= ({'contacts'} if contacts else {'models', 'decisions'}) and release in value['releases'],
+            and set(value['releases']) <= ({release} if separate else {'models', 'decisions'}) and release in value['releases'],
             'Lot TEST mails non ferme')
     entry = value['releases'][release]
     require(set(entry['fingerprints']) <= ALLOWED and entry['fingerprints']
             and all(re.fullmatch('[a-f0-9]{64}', v) for v in entry['fingerprints'].values()),
             'Empreintes TEST mails invalides')
-    return {**entry, '_contractSha256': expected_digest} if contacts else entry
+    return {**entry, '_contractSha256': expected_digest} if separate else entry
 
 
 def guard(candidate, entry, env=os.environ):

@@ -16,6 +16,10 @@ add("opening_notification", "Ouverture des engagements", "Ouverture des engageme
 add("club_recap_pdf", "Clôture — récapitulatif du club", "Fermeture des engagements - Récapitulatif {{club.nom}} - {{competition.nom}}",
   `Bonjour,\n\nLes engagements sont désormais fermés pour la compétition suivante :\n\n{{competition.details}}\n\nVous trouverez en pièce jointe le récapitulatif des engagements de {{club.nom}}.\nMerci de vérifier les informations figurant dans ce document. Si vous constatez une anomalie, contactez l’organisateur de la compétition.\n\nVous pouvez également consulter votre dossier dans le portail LivePalmes :\n{{portail.lien}}\n\n{{frais.details}}\n\n${signature}`,
   [...competition, "club.nom", "frais.details"], ["competition.details", "club.nom", "portail.lien", "frais.details"]);
+add("deadline_reminder", "Rappel J−1 — engagements provisoires", "Rappel — clôture des engagements — {{competition.nom}}",
+  `Bonjour,\n\n{{competition.details}}\n\n{{rappel.details}}\n\nConsultez et complétez votre dossier dans le portail LivePalmes :\n{{portail.lien}}\n\n${signature}`,
+  [...competition, "club.nom", "rappel.details"], ["competition.details", "rappel.details", "portail.lien"],
+  { note: "Le bloc du rappel indique l’échéance exacte et précise si un récapitulatif provisoire est joint. Le PDF n’atteste pas la validation du dossier." });
 add("competition_documents", "Documents de compétition", "Documents disponibles - {{competition.nom}}",
   `Bonjour,\n\n{{documents.annonce}} pour la compétition suivante :\n\n{{competition.details}}\n\n{{documents.liste}}\n\nConsultez les documents depuis la fiche de la compétition dans le portail LivePalmes :\n\n{{portail.lien}}\n\n${signature}`,
   [...competition, "documents.annonce", "documents.liste"], ["competition.details", "documents.liste", "portail.lien"]);

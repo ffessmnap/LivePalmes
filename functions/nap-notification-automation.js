@@ -83,6 +83,7 @@ async function armDocuments(db,input,now=new Date().toISOString()) {
 function currentEvent(event,state) {
   if(event.kind==='documents')return true;
   if(event.cycleKey!==state.cycleKey)return false;
+  if(event.kind==='deadline_reminder')return state.lifecycle==='open'&&event.reminderKey===state.reminderKey&&event.deadline===state.deadline;
   if(event.kind==='closure')return event.closureKey===state.closureKey && (event.automatic?state.lifecycle==='open':state.lifecycle==='closed');
   return state.lifecycle==='open';
 }
@@ -90,6 +91,7 @@ function eligible(event, competition, now) {
   if(competition.source!=='nap'||competition.napSource!==true||String(competition.id)!==event.competitionId)throw new TypeError("Source NAP de notification incompatible.");
   if(competition.canceled===true)return false;
   if(event.kind==='documents')return true;
+  if(event.kind==='deadline_reminder')return competition.entryStatus==='open'&&date(competition.entryDeadlineAt)===event.deadline&&date(now)>=event.reminderDueAt&&date(now)<event.deadline;
   if(event.kind==='opening')return competition.entryStatus==='open';
   if(competition.entryStatus!=='closed')return false;
   return !event.automatic || date(competition.entryDeadlineAt)===event.deadline && date(now)>=event.deadline;
@@ -99,7 +101,7 @@ async function processEvent(db, ref, services, now = new Date().toISOString()) {
   const lease = randomUUID();
   const claimed = await db.runTransaction(async transaction=>{
     const snapshot=await transaction.get(ref),event=snapshot.data();
-    if(!event||event.source!=='nap'||!['opening','closure','documents'].includes(event.kind))return null;
+    if(!event||event.source!=='nap'||!['opening','closure','documents','deadline_reminder'].includes(event.kind))return null;
     if(['completed','cancelled','blocked'].includes(event.status)||!event.runAt||event.runAt>now||event.leaseUntil>now)return null;
     const pointer=await transaction.get(stateRef(db,event.competitionId));
     if(!currentEvent(event,pointer.data()||{})) {transaction.update(ref,{status:'cancelled',runAt:services.deleteField(),updatedAt:now});return null;}
@@ -120,7 +122,11 @@ async function processEvent(db, ref, services, now = new Date().toISOString()) {
     if (services.freezeMailTemplates && eligible(claimed,competition,now)) {
       claimed.mailTemplates = await services.freezeMailTemplates(ref, claimed, lease);
     }
-    const result=eligible(claimed,competition,now)?await services.page(claimed,competition):{cancelled:true,jobs:[],done:true};
+    let result=eligible(claimed,competition,now)?await services.page(claimed,competition):{cancelled:true,jobs:[],done:true};
+    if(claimed.kind==='deadline_reminder'&&services.currentReminderCompetition){
+      const fresh=await services.currentReminderCompetition(claimed.competitionId);
+      if(!fresh||!eligible(claimed,fresh,new Date((services.clock||Date.now)()).toISOString()))result={cancelled:true,jobs:[],done:true};
+    }
     if(!Array.isArray(result.jobs)||result.jobs.length>(claimed.deliveryMode==='bcc-v1'?250:100) || Number(result.attachmentCount||0)>7)throw new RangeError("Lot de notification trop volumineux.");
     if(result.sourceHash && claimed.sourceHash && result.sourceHash!==claimed.sourceHash)throw new TypeError("Les donnees NAP ont change pendant la preparation. Reprenez la preparation depuis la fiche.");
     // One grouped read/write transaction: retry preserves jobs already prepared
@@ -185,6 +191,7 @@ async function resumeBlocked(db,ref,services,now=new Date().toISOString()) {
   return db.runTransaction(async transaction=>{
     const snapshot=await transaction.get(ref),event=snapshot.data();
     if(!event||event.source!=='nap'||event.status!=='blocked')return {reused:true};
+    if(event.kind==='deadline_reminder')throw new TypeError('Un rappel interrompu ne peut pas être recréé : vérifiez ses groupes pour éviter un doublon.');
     const pointer=await transaction.get(stateRef(db,event.competitionId));
     if(!currentEvent(event,pointer.data()||{}))return {skipped:true,reason:'superseded'};
     transaction.update(ref,{status:'pending',phase:event.kind==='closure'?'clubs':event.kind,cursor:'',sourceHash:'',
