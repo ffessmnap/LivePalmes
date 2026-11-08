@@ -275,7 +275,9 @@ assert.ok(competitionPageSource.includes('label:"Afficher le groupe WhatsApp"'))
 assert.ok(competitionPageSource.includes('includes(event?.level)'));
 assert.ok(competitionPageSource.includes("teamLeadersWhatsAppHtml(event)"));
 assert.ok(competitionPageSource.includes("Email organisateur"));
-assert.ok(competitionPageSource.includes('href="mailto:${api.escapeHtml(event.organizerEmail)}"'));
+const organizerHref = competitionPageSource.match(/href="mailto:\$\{api.escapeHtml\((event\.organizerEmail\.split\([^]*?)\)\}"/)[1];
+assert.equal(vm.runInNewContext(organizerHref, { event: { organizerEmail: " club+sport@example.org ; autre@example.org " } }),
+  "club%2Bsport@example.org,autre@example.org", "Le lien public conserve chaque adresse et encode les caractères réservés.");
 assert.ok(competitionPageSource.includes('state==="resultsPublished"'));
 assert.ok(competitionPageSource.indexOf("resultsHtml(event.results)") < competitionPageSource.indexOf("calendar-detail-grid"));
 assert.ok(competitionPageSource.indexOf("Informations pratiques") < competitionPageSource.indexOf('<h2>Documents</h2>'));
@@ -289,7 +291,7 @@ for (const file of ["calendrier.html", "competition.html"]) {
   assert.ok(html.includes("mailto:livepalmes@nap-ffessm.fr"));
 }
 const competitionHtml = fs.readFileSync(path.join(root, "competition.html"), "utf8");
-assert.ok(competitionHtml.includes("competition.js?v=20261106-direct-badge-1"));
+assert.ok(competitionHtml.includes("competition.js?v=20261108-mail-contacts-1"));
 assert.ok(competitionHtml.includes("livepalmes-public-calendar.css?v=20261106-direct-badge-1"));
 assert.ok(competitionHtml.includes("livepalmes-whatsapp-qr.css?v=20260831-whatsapp-qr-1"));
 assert.ok(competitionHtml.includes("livepalmes-whatsapp-qr.js?v=20260831-whatsapp-qr-1"));
