@@ -313,6 +313,31 @@ for(const [event,build,eventCode] of [[competition,buildWinPalmeCompetitionTxt,"
 }
 console.log("Shared OFF: pool/water fields, native duplicate links, cumulative roles, officials-only clubs, unchanged other lines and encoding passed.");
 
+// Tolerance is restricted to OFF; NAG/CEQ and every other record keep their bytes.
+for(const [raw,expected] of [["0000-00-00","00/00/0000"],["2000-00-00","00/00/2000"],["2000-02-31","31/02/2000"],
+  ["2000-13-40","40/13/2000"],["2000-01-01","01/01/2000"],[null,""],[undefined,""],["",""],["00/00/2000","00/00/2000"],["inconnue","inconnue"]]) {
+  for(const [event,build,eventCode] of [[competition,buildWinPalmeCompetitionTxt,"50SF"],[waterCompetition,buildWaterTxt,"OW1000SF"]]) {
+    const person={...sharedPerson,birthDate:"2000-01-01"};
+    const entry={clubId:"101",clubCode:"CPC",swimmers:[{...person,individualEntries:[{eventCode}]}],relays:[],
+      teamLeader:{...person,mode:"person"},officials:[Object.freeze({...person,txtBirthDate:raw})]};
+    const options={generatedAt:"2026-11-08T12:00:00Z"},before=JSON.stringify(entry),buffer=build(event,[entry],sameCodeClubs,options).buffer;
+    const rows=buffer.toString("utf8").split("\r\n"),off=rows.find(line=>line.startsWith("OFF;")).split(";");
+    assert.equal(off[4],expected);assert.equal(off.length,6);
+    assert.equal(rows.find(line=>line.startsWith("NAG;")).split(";")[3],"01/01/2000");
+    assert.equal(rows.find(line=>line.startsWith("CEQ;")).split(";")[4],"01/01/2000");
+    assert.equal(rows.filter(line=>!line.startsWith("OFF;")).join("\r\n"),build(event,[{...entry,officials:[]}],sameCodeClubs,options).buffer.toString("utf8"));
+    assert.equal(JSON.stringify(entry),before);assert.equal(/(^|[^\r])\n/.test(buffer.toString("utf8")),false);
+    assert.equal(buffer.subarray(0,3).equals(Buffer.from([239,187,191])),false);
+  }
+}
+console.log("OFF source dates: zero, partial, impossible, valid, other shapes and genuine absence preserved; NAG/CEQ bytes unchanged in pool/water.");
+for(const [birthDate,expected] of [["2000-01-01T00:00:00Z","01/01/2000"],["inconnue",""]]) {
+  for(const [event,build] of [[competition,buildWinPalmeCompetitionTxt],[waterCompetition,buildWaterTxt]]) {
+    const txt=build(event,[{clubId:"101",officials:[{...sharedPerson,birthDate}],swimmers:[],relays:[]}],sameCodeClubs).buffer.toString("utf8");
+    assert.equal(txt.split("\r\n").find(line=>line.startsWith("OFF;")).split(";")[4],expected,"Without a dedicated source date, preserve the historical date formatter");
+  }
+}
+
 // Registered-only swimmers use the observed IntraNAP NAG/REL convention.
 const registeredEntries=[{...officialEntries[0],swimmers:[...officialEntries[0].swimmers,{swimmerIndexId:"14207",firstName:"Sans",lastName:"Course",birthDate:"1980-02-29",sex:"F",category:"M40+",individualEntries:[]},{swimmerIndexId:"14208",firstName:"Sans",lastName:"Épreuve",birthDate:"1970-01-01",sex:"M"}],relays:[{eventCode:"4X1000SBMIXTE",genderMode:"mixed",category:"S",members:[]}]}];
 const registeredBefore=JSON.stringify(registeredEntries);

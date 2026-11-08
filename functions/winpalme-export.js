@@ -15,6 +15,15 @@ function formatDate(value) {
   return match ? `${match[3]}/${match[2]}/${match[1]}` : "";
 }
 
+function formatOfficialDate(person) {
+  // OFF alone preserves the stored components, including zero/impossible dates.
+  // Other present source shapes pass through the existing TXT field escaping.
+  if (!Object.hasOwn(person, "txtBirthDate")) return formatDate(person.birthDate);
+  const value = String(person.txtBirthDate ?? "").trim();
+  const match = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  return match ? `${match[3]}/${match[2]}/${match[1]}` : value;
+}
+
 function formatGeneratedAt(value) {
   const date = value instanceof Date ? value : new Date(value || Date.now());
   const parts = new Intl.DateTimeFormat("fr-FR", {
@@ -232,7 +241,7 @@ function buildWinPalmeCompetitionTxt(competition = {}, entries = [], clubsById =
     (entry.officials || []).forEach((person) => {
       if (!text(person.lastName) || !text(person.firstName)) throw new Error("Identite d'un officiel incomplete : verification requise.");
       const field = value => String(value ?? "").trim().replace(/[;\r\n]+/g, " ");
-      lines.push(["OFF", person.lastName, person.firstName, entry.clubCode || club.clubCode, formatDate(person.birthDate), ""].map(field).join(";"));
+      lines.push(["OFF", person.lastName, person.firstName, entry.clubCode || club.clubCode, formatOfficialDate(person), ""].map(field).join(";"));
     });
     const leader = entry.teamLeader || {};
     if (leader.mode === "person") {
