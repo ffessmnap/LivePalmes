@@ -48,22 +48,28 @@ async function deliver(db,reference,services,now=new Date().toISOString()) {
       return {status:'cancelled'};
     }
     const to=claimed.active.map(item=>email(item.email));
-    const content=services.content(claimed);
+    const cc=[...new Set((claimed.cc||[]).map(email))].filter(address=>services.copyEligible?.(address)===true);
+    const replyTo=[...new Set((claimed.replyTo||[]).map(email))].filter(address=>cc.includes(address));
+    if(new Set([...to,...cc]).size>50)throw new TypeError('Plus de 50 destinataires dans le groupe : préparation invalide.');
+    const content=services.content({...claimed,deliveredCc:cc});
     smtpStarted=true;
-    const info=await services.send({from:`LivePalmes <${services.fromEmail}>`,to:services.fromEmail,bcc:to,
-      envelope:{from:services.fromEmail,to},subject:claimed.subject,...content,attachments});
+    const info=await services.send({from:`LivePalmes <${services.fromEmail}>`,to:services.fromEmail,bcc:to.filter(address=>!cc.includes(address)),
+      ...(cc.length?{cc,replyTo}:{}),envelope:{from:services.fromEmail,to:[...new Set([...to,...cc])]},subject:claimed.subject,...content,attachments});
     smtpAccepted=true;
     const accepted=new Set((info.accepted||[]).map(email)),rejected=new Set((info.rejected||[]).map(email));
     const recipients=claimed.recipients.map(item=>({...item,status:item.status==='cancelled'?'cancelled':
       accepted.has(email(item.email))?'sent':rejected.has(email(item.email))?'failed':'uncertain'}));
     const sentCount=recipients.filter(item=>item.status==='sent').length,failedCount=recipients.filter(item=>item.status==='failed').length;
     const uncertainCount=recipients.filter(item=>item.status==='uncertain').length;
-    const status=uncertainCount?'uncertain':failedCount?(sentCount?'partial':'failed'):'sent';
+    const copyResults=cc.map(address=>({email:address,status:accepted.has(address)?'sent':rejected.has(address)?'failed':'uncertain'}));
+    const copyFailedCount=copyResults.filter(item=>item.status==='failed').length,copyUncertainCount=copyResults.filter(item=>item.status==='uncertain').length;
+    const status=uncertainCount||copyUncertainCount?'uncertain':failedCount?(sentCount?'partial':'failed'):copyFailedCount?'partial':'sent';
     const rejectionStop=(info.rejectedErrors||[]).some(error=>legacy.failure(error,{smtpStarted:true}).stop);
-    await reference.set({status,recipients,sentCount,failedCount,uncertainCount,sentAt:sentCount?new Date().toISOString():'',
-      failedAt:failedCount?new Date().toISOString():'',
+    await reference.set({status,recipients,copyResults,copyFailedCount,copyUncertainCount,sentCount,failedCount,uncertainCount,sentAt:sentCount?new Date().toISOString():'',
+      failedAt:failedCount||copyFailedCount?new Date().toISOString():'',
+      reason:copyUncertainCount?'Envoi des copies incertain ; vérification requise, aucun renvoi automatique.':copyFailedCount?'Certaines adresses en copie ont été refusées.':'',
       providerMessageId:String(info.messageId||'').slice(0,180),updatedAt:new Date().toISOString()},{merge:true});
-    return {status,sentCount,stopDelivery:uncertainCount>0||rejectionStop};
+    return {status,sentCount,stopDelivery:uncertainCount>0||copyUncertainCount>0||rejectionStop};
   } catch(error){
     const outcome=legacy.failure(error,{smtpStarted,smtpAccepted});
     await reference.set({status:outcome.status,recipients:claimed.recipients.map(item=>({...item,

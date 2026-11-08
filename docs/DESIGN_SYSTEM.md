@@ -2,6 +2,10 @@
 
 <!-- description: Référence du langage visuel, des composants d’interface et des règles responsive déjà présents dans LivePalmes. -->
 
+## Contacts des compétitions — 8 novembre 2026
+
+Les trois champs de contact acceptent une liste d’adresses séparées par `;`, avec clavier e-mail mobile et aide visible partagée. Limite de 255 caractères par champ ; organisateur et informatique : dix contacts distincts maximum au total pour les copies. L’affichage reste dans les champs existants, sans troncation côté serveur ; les liens de contact composent un message aux adresses affichées. Les champs d’identification et de compte conservent leur saisie d’adresse unique.
+
 ## Décisions sur les demandes — 8 novembre 2026
 
 La confirmation réutilise le dialogue du portail : commentaire public, obligatoire au refus même sans mail, puis case « Informer le demandeur par e-mail » cochée par défaut. Largeur maximale 560 px, marges mobiles 12 px, défilement vertical et actions tactiles de 44 px. Le statut de notification reste distinct de la décision ; échec et traitement interrompu proposent une reprise ciblée, sans renvoi d’un état incertain. Les décisions traitées restent consultables dans les historiques, chargés explicitement et bornés.

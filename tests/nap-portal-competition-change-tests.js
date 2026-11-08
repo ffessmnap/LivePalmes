@@ -11,6 +11,11 @@ function fixturePack() {
 }
 const pack=fixturePack();
 const input=patch=>({competitionId:"legacy-nap-5140",actorUid:"admin",national:true,expectedFingerprint:fingerprint(pack),patch});
+const contactsPlan=planCompetitionChange(pack,input({organizerEmail:" Org@example.org ; other@example.org ",computerEmail:"pc@example.org;pc2@example.org",officialsManagerEmail:"jury@example.org;jury2@example.org"}),now);
+assert.equal(contactsPlan.operations.find(item=>item.table==="livepalmes_competition_options").after.organizer_email,"org@example.org;other@example.org");
+assert.equal(contactsPlan.operations.find(item=>item.table==="compet_parametres").after.mailtxt,"pc@example.org;pc2@example.org");
+assert.equal(contactsPlan.operations.find(item=>item.table==="compet_parametres").after.mailjuges,"jury@example.org;jury2@example.org");
+assert.throws(()=>planCompetitionChange(pack,input({computerEmail:"ok@example.org;invalid"}),now),/invalide/);
 const commentsPlan=planCompetitionChange(pack,input({publicDescription:"Nouveau commentaire\n14h"}),now);
 assert.equal(commentsPlan.operations.length,1);
 assert.equal(commentsPlan.operations[0].table,"competitions");
@@ -154,7 +159,18 @@ function fixture(settings={}) {
       await assert.rejects(applyCompetitionChange(team.pool,activation,team.audit,()=>{}),entryTable?/Des engagements existent/:/Activation plan prepared/);
       assert.deepEqual(team.writes,[]);
     }
-    let state=fixture(); native.readNativeCompetition=state.read;
+    let state=fixture();native.readNativeCompetition=state.read;
+    const longOrganizers=["a","b","c"].map(letter=>letter.repeat(53)+"@example.org");
+    assert.ok(longOrganizers.join(";").length>180&&longOrganizers.join(";").length<=255);
+    await applyCompetitionChange(state.pool,input({organizerEmail:longOrganizers.join(";"),computerEmail:"pc@example.org;pc2@example.org",officialsManagerEmail:"jury@example.org;jury2@example.org"}),state.audit,()=>{});
+    const stored=await state.read(null,input({}).competitionId,()=>{});
+    const reloaded=require("../functions/nap-competition-view").competitionItem({...stored,nativeParameters:{...stored.nativeParameters,...state.tables.get("compet_parametres")}});
+    assert.equal(reloaded.organizerEmail,longOrganizers.join(";"));
+    assert.equal(reloaded.computerEmail,"pc@example.org;pc2@example.org");
+    assert.deepEqual(require("../functions/competition-mail-addresses").list(reloaded.officialsManagerEmail),["jury@example.org","jury2@example.org"]);
+    assert.deepEqual(require("../functions/competition-mail-addresses").headers(reloaded,"club_recap").cc,[...longOrganizers,"pc@example.org","pc2@example.org"]);
+    assert.equal(state.prepared,1);assert.equal(state.completed,1);
+    state=fixture(); native.readNativeCompetition=state.read;
     await assert.rejects(applyCompetitionChange(state.pool,input({entryStatus:"closed"}),state.audit,()=>{throw new Error("Scope denied");}),/Scope/);assert.equal(state.prepared,0);assert.equal(state.writes.length,0);
     await applyCompetitionChange(state.pool,input({entryStatus:"closed"}),state.audit,()=>{});assert.deepEqual(state.writes,["compet_parametres","livepalmes_competition_options"]);assert.equal(state.completed,1);
     // Firestore may reorder fields: a saved plan must remain verifiable on retry.

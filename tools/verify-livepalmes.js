@@ -117,6 +117,7 @@ function runUnitTests() {
     "engagement-mail-control-callables-tests.js",
     "mail-templates-tests.js",
     "request-decision-mail-tests.js",
+    "competition-mail-addresses-tests.js",
     "request-decision-routes-tests.js",
     "engagement-mail-send-guard-tests.js",
     "production-notification-preparation-tests.js",
@@ -463,6 +464,7 @@ function runBrowserSmokeIfRequested() {
   run(process.execPath, [path.join(rootDir, "tests", "portal-news-browser-tests.js")]);
   run(process.execPath, [path.join(rootDir, "tests", "mail-template-editor-browser-tests.js")]);
   run(process.execPath, [path.join(rootDir, "tests", "request-decision-browser-tests.js")]);
+  run(process.execPath, [path.join(rootDir, "tests", "competition-mail-contacts-browser-tests.js")]);
   run(process.execPath, [path.join(rootDir, "tests", "nap-swimmer-merge-conflicts-browser-tests.js")]);
   run(process.execPath, [path.join(rootDir, "tests", "foreign-club-access-browser-tests.js")]);
   run(process.execPath, [path.join(rootDir, "tests", "portal-open-water-program-browser-tests.js")]);
