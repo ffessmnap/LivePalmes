@@ -19,6 +19,17 @@ new MutationObserver(()=>{if(!window.fixtureHomeAt&&document.body?.dataset.admin
 window.fixtureProfile = {uid:'reactivity-user',email:'fixture@example.test',status:'active',firstName:'Compte',lastName:'TEST',clubId:'106',clubName:'Club fictif',capabilities:['engagements.club.manage'],accessScopes:{'engagements.club.manage':{scopeId:'106'}}};
 if(new URL(location.href).searchParams.has('startupAdmin'))fixtureProfile.capabilities.push('admin.full','engagements.national.manage','records.manage','competitions.import','dtn.view');
 window.fixtureFragments=[];window.fixtureModuleViews={};
+// Hold only the business event chunk: the initial navigation must work without it.
+if(new URL(location.href).searchParams.has('navigationCheck')){
+  const append=Node.prototype.appendChild;window.fixtureHeldWorkspace=[];
+  Node.prototype.appendChild=function(node){
+    if(node.tagName==='SCRIPT'&&node.src.includes('/deferred/workspace-events.js')){fixtureHeldWorkspace.push({parent:this,node});return node;}
+    return append.call(this,node);
+  };
+  window.fixtureReleaseWorkspace=fail=>{for(const {parent,node} of fixtureHeldWorkspace.splice(0)){
+    if(fail)node.dispatchEvent(new Event('error'));else append.call(parent,node);
+  }};
+}
 const nativeFetch=window.fetch.bind(window);let failedFragment=false;
 window.fetch=async (url,...args)=>{
   if(String(url).includes('assets/portal/views/')){
@@ -46,6 +57,73 @@ window.firebase={apps:[{}],auth:authFactory,app:()=>({functions:()=>service}),fu
 if(new URL(location.href).searchParams.has('startupAdmin'))window.firebase.firestore=()=>({});
 `;
 
+async function navigationChecks(client, baseUrl, width) {
+  async function activate(id, keyboard = false) {
+    const selector=id.includes(' ')?id:'#'+id;
+    const point=await evaluate(client,`const el=document.querySelector(${JSON.stringify(selector)});el.scrollIntoView({block:'center'});el.focus();await new Promise(resolve=>setTimeout(resolve,250));const r=el.getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2};`);
+    if(keyboard){
+      await client.send('Input.dispatchKeyEvent',{type:'keyDown',key:'Enter',code:'Enter',text:'\r',windowsVirtualKeyCode:13});
+      await client.send('Input.dispatchKeyEvent',{type:'keyUp',key:'Enter',code:'Enter',windowsVirtualKeyCode:13});
+    }else if(width<700){
+      await client.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{...point,radiusX:1,radiusY:1,force:1,id:1}]});
+      await client.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+    }else{
+      await client.send('Input.dispatchMouseEvent',{type:'mousePressed',button:'left',clickCount:1,...point});
+      await client.send('Input.dispatchMouseEvent',{type:'mouseReleased',button:'left',clickCount:1,...point});
+    }
+  }
+  const start=client.events.length;
+  for(const club of [false,true]){
+    const hash=club?'espace-club':'accueil',query=club?'':'&startupAdmin';
+    await client.send('Page.navigate',{url:baseUrl+`/portail.html?navigationCheck${query}#${hash}`});
+    assert.ok(await waitFor(client,`document.body.dataset.adminAuth==='unlocked' && !document.querySelector('${club?'#adminClubHomeView':'#adminOverviewView'}').hidden`));
+    assert.equal(await evaluate(client,'return fixtureHeldWorkspace.length;'),0,'Home never requests business event handlers');
+    if(width<700){
+      // The existing mobile shell hides the sidebar and offers home tiles/bottom links.
+      await activate(club?'#adminClubHomeView a[href="#club-competitions"]':'#adminOverviewView a[href="#gestion-performances"]');
+      assert.ok(await waitFor(client,club?"location.hash==='#club-competitions'":"location.hash==='#gestion-performances'"),'First visible mobile shortcut works');
+      assert.ok(await waitFor(client,'fixtureHeldWorkspace.length===1'));
+      await activate('#livepalmesMobileNavigation a[aria-label="Accueil du portail"]');
+      assert.ok(await waitFor(client,`location.hash==='#${hash}'`),'Mobile home is reachable while tools are delayed');
+      await evaluate(client,'fixtureReleaseWorkspace(true);');
+      assert.ok(await waitFor(client,"document.querySelector('.admin-portal-module-status')?.hidden"));
+      await activate(club?'#adminClubHomeView a[href="#club-competitions"]':'#adminOverviewView a[href="#gestion-performances"]');
+      assert.ok(await waitFor(client,'fixtureHeldWorkspace.length===1'));
+      await evaluate(client,'fixtureReleaseWorkspace(false);');
+      assert.ok(await waitFor(client,club?"!document.querySelector('#adminEngagementsView').hidden":"!document.querySelector('#adminPerformanceHomeView').hidden"));
+      continue;
+    }
+    await activate(club?'adminPortalClubToggle':'adminPortalPerformanceToggle',true);
+    assert.ok(await waitFor(client,club?`document.querySelector('#adminPortalClubToggle').getAttribute('aria-expanded')==='false'`:`location.hash==='#gestion-performances'`),'The very first sidebar activation works before loading business handlers: '+JSON.stringify(await evaluate(client,"return {hash:location.hash,focus:document.activeElement?.id,club:document.querySelector('#adminPortalClubToggle').getAttribute('aria-expanded'),held:fixtureHeldWorkspace.length};")));
+    if(club)continue;
+    assert.ok(await waitFor(client,'fixtureHeldWorkspace.length===1'));
+    await activate('adminPortalClubToggle');
+    assert.ok(await waitFor(client,"location.hash==='#espace-club' && !document.querySelector('#adminClubHomeView').hidden"),'Club home remains reachable while tools are delayed');
+    await evaluate(client,'fixtureReleaseWorkspace(true);');
+    assert.ok(await waitFor(client,"document.querySelector('.admin-portal-module-status')?.hidden"));
+    await activate('adminPortalPerformanceToggle');
+    assert.ok(await waitFor(client,'fixtureHeldWorkspace.length===1'),'Deliberate reopening retries a failed chunk');
+    await evaluate(client,'fixtureReleaseWorkspace(false);');
+    assert.ok(await waitFor(client,"!document.querySelector('#adminPerformanceHomeView').hidden"));
+    // Loaded business handlers must not bind a second copy of navigation.
+    for(const [id,route] of [['Dtn','espace-dtn'],['Access','gestion-acces'],['National','administration-nationale'],['Performance','gestion-performances']]){
+      await activate('adminPortal'+id+'Toggle');
+      assert.ok(await waitFor(client,`location.hash==='#${route}'`),id+' first activation: '+JSON.stringify(await evaluate(client,"return {hash:location.hash,focus:document.activeElement?.id};")));
+    }
+    for(const expanded of ['false','true','false','true']){
+      await activate('adminPortalPerformanceToggle');
+      assert.equal(await evaluate(client,"return document.querySelector('#adminPortalPerformanceToggle').getAttribute('aria-expanded');"),expanded,'One activation toggles once after deferred binding');
+    }
+    await activate('adminPortalHomeLink');
+    assert.ok(await waitFor(client,"location.hash==='#accueil' && !document.querySelector('#adminOverviewView').hidden"));
+    await activate('adminPortalClubToggle');
+    assert.ok(await waitFor(client,"location.hash==='#espace-club'"));
+  }
+  assert.deepEqual(client.events.slice(start).filter(e=>e.method==='Runtime.exceptionThrown').map(e=>e.params.exceptionDetails.text),[]);
+  assert.equal(await evaluate(client,"return fixtureCalls.some(c=>/^(save|send|create|delete|update)/.test(c.name));"),false);
+  console.log(`${width}px: ${width<700?'visible touch shortcuts and bottom navigation':'first sidebar activation/keyboard, all spaces and single toggles'}, minimal homes, delayed/failed tools and return home passed offline.`);
+}
+
 async function main() {
   const baseline = process.env.PORTAL_MEASURE_BASELINE, overrides = new Map();
   if (baseline) {
@@ -71,7 +149,9 @@ async function main() {
     await client.send("Page.addScriptToEvaluateOnNewDocument", { source: fixture });
     for (const width of [1280, 390, 320]) {
       await client.send("Emulation.setDeviceMetricsOverride", { width, height: width === 320 ? 568 : 900, deviceScaleFactor: 1, mobile: width < 700 });
+      await client.send("Emulation.setTouchEmulationEnabled", {enabled:width<700});
       await client.send("Network.clearBrowserCache");
+      if(!baseline)await navigationChecks(client,baseUrl,width);
       for (const warm of [false, true]) {
         const eventStart = client.events.length;
         await client.send("Page.navigate", { url: baseUrl + `/portail.html?measure=${width}-${Number(warm)}#espace-club` });
@@ -133,6 +213,8 @@ async function main() {
       await evaluate(client, `document.querySelector('#adminPortalSessionPassword').value='correct';document.querySelector('#adminPortalSessionUnlockForm').requestSubmit();`);
       assert.ok(await waitFor(client,"!document.querySelector('#adminPortalSessionLock').open && document.body.dataset.portalSession==='active'"));
       assert.equal(await evaluate(client,"return document.querySelector('#adminAccountEmail').value;"),"draft@example.test");
+      await evaluate(client,"document.querySelector('#adminPortalClubToggle').click();");
+      assert.ok(await waitFor(client,"location.hash==='#espace-club' && !document.querySelector('#adminClubHomeView').hidden"),'Sidebar remains usable after session resume');
       await evaluate(client, `location.hash='#club-officiels';`);
       assert.ok(await waitFor(client,"fixtureCalls.some(c=>c.name==='listEngagementClubPeople') && document.querySelector('#adminEngagementsClubPeopleStatus').dataset.tone!=='error'"));
       assert.equal(await evaluate(client,"return document.documentElement.scrollWidth>innerWidth+1;"),false);
