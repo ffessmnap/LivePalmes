@@ -108,6 +108,8 @@ Les fenêtres d’accès, sections de formulaire, groupes de courses, étapes et
 
 Ces variantes restent limitées à `.admin-portal-page` et au thème sombre dans `assets/livepalmes-portal-appearance.css`. Les régressions de contraste, fenêtres, menus, clavier et isolation du clair/public sont contrôlées par `tests/portal-dark-surfaces-browser-tests.js` avec services fictifs et HTTPS externe bloqué.
 
+Complément de l’audit du 9 novembre : les réunions et lignes du programme, régions invitées, cellules vides des formulaires, documents, statistiques, journal Records/MPF, correction de performance et en-tête d’import utilisent aussi les surfaces du thème. Les bandeaux et export DTN, la pagination et le cadre du formulaire des officiels suivent la même règle. Les champs désactivés restent lisibles, avec fond secondaire, texte atténué et curseur d’indisponibilité ; les onglets sélectionnés conservent un fond turquoise distinct. Les traitements longs et bilans utilisent des couples fond/texte séparés pour attente, succès, erreur et poursuite en arrière-plan. Les repères féminins, masculins et mixtes du programme sont conservés sur des teintes sombres. Ces variantes redeviennent noires sur blanc à l’impression navigateur, sans modifier les PDF métier.
+
 ## Trophée Damien Hébert
 
 Le classement utilise un tableau horizontal avec rang et nom fixes, un chrono au-dessus des points et un total en dernière colonne. Une confirmation ouvre la fiche publique du nageur. Dans l’administration nationale, les réglages de l’édition sont regroupés dans un panneau repliable avec aperçu.
