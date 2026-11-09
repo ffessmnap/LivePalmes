@@ -395,6 +395,14 @@ def targeted_test_evidence(directory, current):
             trusted.update(matching_functions(proof, current))
         except (ValueError, KeyError, subprocess.CalledProcessError, urllib.error.HTTPError) as error:
             print(f"Preuve backend {info['id']} non reutilisable : {error}")
+    # Closed import source complement only. Its receipt never authorizes another
+    # mail-workflow lot or removes a dependency/revision selection requirement.
+    spec = importlib.util.spec_from_file_location('import_source_evidence', ROOT / 'tools/publish-test-import-sources.py')
+    import_sources = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(import_sources)
+    trusted.update(import_sources.trusted_revisions(directory, current, SimpleNamespace(
+        gh=gh, artifact=artifact, read=read, matching_functions=matching_functions,
+        test_backend_fingerprints=test_backend_fingerprints)))
     return trusted
 
 
