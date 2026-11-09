@@ -423,7 +423,8 @@ html[data-portal-theme="dark"] .admin-portal-page :is(
   .admin-engagements-region-choices,.admin-engagements-statistics-summary article,
   .admin-engagements-inline-save-actions,.admin-engagements-advanced-actions,
   .admin-access-pagination,.admin-dtn-edf-tabs,.admin-dtn-export,
-  .admin-engagements-club-swimmer-event-choice
+  .admin-engagements-club-swimmer-event-choice,.admin-engagements-club-step-form[data-locked="true"],
+  .admin-engagements-club-choice
 ) { background:var(--portal-color-surface-raised) !important; color:var(--portal-color-text) !important; border-color:var(--portal-color-border) !important; }
 /* Empty cells must share the form surface, rather than expose the light grid. */
 html[data-portal-theme="dark"] .admin-portal-page .admin-engagements-form-section-grid { background:var(--portal-color-surface) !important; }
@@ -442,7 +443,8 @@ html[data-portal-theme="dark"] .admin-portal-page :is(#performanceCorrectionHide
 }
 html[data-portal-theme="dark"] .admin-portal-page :is(
   [role="tab"][aria-selected="true"],.admin-dtn-edf-tabs button[aria-selected="true"],
-  .admin-engagements-club-swimmer-event-choice[data-event-selected="true"]
+  .admin-engagements-club-swimmer-event-choice[data-event-selected="true"],
+  .admin-engagements-club-choice:has(input:checked)
 ) { background:#203e4a !important; color:#9ae5ee !important; border-color:#65cbd9 !important; }
 html[data-portal-theme="dark"] .admin-portal-page .admin-engagements-program-session[data-active="true"] { border-color:var(--portal-color-accent) !important; box-shadow:inset 3px 0 0 var(--portal-color-accent); }
 html[data-portal-theme="dark"] .admin-portal-page .admin-engagements-program-row-main > em[data-gender-tone="female"] { background:#322938 !important; color:var(--portal-color-women) !important; }

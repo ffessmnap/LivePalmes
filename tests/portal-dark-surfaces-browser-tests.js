@@ -115,6 +115,17 @@ async function main() {
       await check(".admin-national-audit-entry-details dd");
       await load("club-courses");
       await check(".admin-engagements-detail-step-bar > button span,.admin-engagements-club-entry-group-head h4");
+      await run(`
+        document.querySelectorAll('[data-engagements-detail-tab-panel]').forEach(el=>el.hidden=true);
+        document.querySelector('#adminEngagementsDetailTeamPanel').hidden=false;
+        document.querySelector('#adminEngagementsClubTeamChoices').hidden=false;
+        document.querySelector('#adminEngagementsClubTeamForm').dataset.locked='true';
+        document.querySelector('#adminEngagementsClubTeamMessage').textContent='Renseignez le chef d’équipe avant de commencer les engagements.';
+        return true;
+      `);
+      await checkEach('#adminEngagementsClubTeamSummary','#adminEngagementsClubTeamMessage','.admin-engagements-club-choice span');
+      await run("document.querySelector('.admin-engagements-club-choice input').checked=true;return true;");
+      await check('.admin-engagements-club-choice span');
       await load("national-licenses");
       await check(".admin-license-admin-import > span");
       await load("access-users");
