@@ -9,16 +9,19 @@ function service({authorize,getPool,audit,formatAlert}) {
     const data=request.data||{};
     if(data.importReview!==true)throw new TypeError("Contexte de controle d’import requis.");
     if(write&&data.confirmNewSwimmer!==true)throw new TypeError("Confirmez la recherche prealable et l’absence de fiche existante.");
-    const input={clubId:data.clubId,swimmer:data.swimmer,creationId:data.creationId,confirmAlerts:data.confirmAlerts,actorUid:actor.uid};
+    // Server-owned option: the ordinary club creation path still requires a licence.
+    const input={clubId:data.clubId,swimmer:data.swimmer,creationId:data.creationId,confirmAlerts:data.confirmAlerts,actorUid:actor.uid,allowMissingLicense:true};
     creation.proposed(input);
+    let exactIdentity=false;
     const pool=await getPool(),scope=()=>{},format=(match,type)=>{
       // An exact identity must be selected, even when its licence/club differs.
+      if(!type)exactIdentity=true;
       if(write&&!type)throw new TypeError("Cette identite existe deja dans NAP. Selectionnez la fiche existante.");
       return formatAlert(match,type,input.clubId);
     };
     if(write)return creation.createSwimmer(pool,input,audit(actor),scope,format);
     const result=await creation.previewCreation(pool,input,scope,format);
-    return {...result,blocksCreation:result.blocksCreation||result.alerts.some(a=>a.type==="duplicate"||a.type==="club-change")};
+    return {...result,blocksCreation:result.blocksCreation||exactIdentity};
   };
 }
 module.exports={service};
