@@ -8,7 +8,7 @@ async function checkTimeAlignment(client,width,output){
  await evaluate(client,`window.__alignmentSaved=structuredClone(LivePalmesDirectPublic.state.data);
  const data=LivePalmesDirectPublic.state.data,source=data.entries[1];
  data.events[0].eventCode='1500sf';data.events[0].eventLabel='1500 m Surface';
- data.entries=[{cs:2300,delta:-200},{cs:7012,delta:12},{cs:111456,delta:0},{cs:7300,delta:null,noReference:true},{cs:null,status:'dsq'},{cs:null,status:'ab'},{cs:null,status:'dns'},{cs:10300,delta:-340,splits:[{distance:100,time:'00:50.00'}]}].map((row,i)=>({...structuredClone(source),key:'align-'+i,lastName:'Exemple '+i,lane:i+1,rank:i+1,seed:row.noReference?{cs:null,status:'no_reference'}:source.seed,result:{cs:row.cs,status:row.status||''},delta:row.delta,splits:row.splits||[]}));
+ data.entries=[{cs:2300,delta:-200},{cs:7012,delta:12},{cs:111456,delta:0},{cs:7300,delta:null,noReference:true},{cs:null,status:'dsq'},{cs:null,status:'ab'},{cs:null,status:'dns'},{cs:10300,delta:-340,splits:[{distance:100,time:'00:50.00'}]}].map((row,i)=>({...structuredClone(source),key:'align-'+i,qualification:i<3?['QA','QB','Q'][i]:undefined,lastName:'Exemple '+i,lane:i+1,rank:i+1,seed:row.noReference?{cs:null,status:'no_reference'}:source.seed,result:{cs:row.cs,status:row.status||''},delta:row.delta,splits:row.splits||[]}));
  LivePalmesDirectPublic.render();`);
  const layout=await evaluate(client,`return [...document.querySelectorAll('.direct-scratch>.direct-table-wrap>.direct-race-table,.direct-heat-section .direct-race-table')].map(table=>{
  const rows=[...table.querySelectorAll('.direct-participant-row')];
@@ -136,7 +136,7 @@ async function main(){const {server,baseUrl}=await startStaticServer(),browser=a
     await evaluate(client,"document.querySelector('#competitionSelect').value='legacy-nap-900001';document.querySelector('#competitionSelect').dispatchEvent(new Event('change'))");assert.ok(await waitFor(client,"document.querySelector('#parseFiles')",5000));
     assert.equal(await evaluate(client,'return document.documentElement.scrollWidth<=innerWidth'),true,'Bureau utilisable sur mobile');
     assert.ok(await evaluate(client,"return document.querySelector('#directImportSummary').textContent.includes('Épreuves importées')"));
-    assert.equal(await evaluate(client,"return document.querySelector('.direct-watch').getBoundingClientRect().top < document.querySelector('#directImportSummary').getBoundingClientRect().top"),true,'La surveillance est visible avant le bilan des imports');
+    assert.equal(await evaluate(client,"return Boolean(document.querySelector('.bureau-monitor .direct-watch'))&&document.querySelector('#directImportSummary').hidden"),true,'La surveillance reste dans le suivi permanent et les imports sont repliés');
     assert.equal(await evaluate(client,"return document.querySelector('#competitionPickerCard').hidden"),true,'Saison et compétition repliées après le choix');
     await evaluate(client,"document.querySelector('#changeCompetition').click()");
     assert.equal(await evaluate(client,"return document.querySelector('#competitionPickerCard').hidden"),false,'Changer de compétition reste accessible');

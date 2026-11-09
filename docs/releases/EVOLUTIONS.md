@@ -2,6 +2,13 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### Direct — intégration de la maquette bureau/secrétariat et qualifications publiques · 9 novembre 2026
+
+- Antoine valide la maquette, le mode bureau seul pleine largeur, le masquage des Finales vides et les libellés « Publication des résultats », puis autorise l’intégration et la publication TEST. Ajout autorisé en cours : contrôler l’ergonomie tablette du juge vidéo sans changer ses règles.
+- Bandeau compact, suivi permanent à droite avec les consoles / pleine largeur seul, historique unique, secrétariat sans programme, confirmation explicite des forfaits hors délai, Q/QA/QB publics suivant les annonces. Tables et accès existants conservés ; projection publique minimale, budgets documentés dans LIVEPALMES_DIRECT.md. Guide HTML/PDF et captures fictives mis à jour.
+- Contrôles locaux métier, service SQL simulé et responsive en cours ; la CI globale et MySQL isolé restent requis sur le candidat exact. Complément sources TEST limité aux consommateurs Direct calculés ; contrat distinct de celui de l’audit précédent, puis Hosting commun et contrôle final. Aucun déploiement ni validation utilisateur de la réalisation encore annoncé. Aucune PROD.
+
+
 ### 9 novembre — Mise en conformité du mode sombre du portail (TEST déployé, validation utilisateur attendue)
 
 - Audit visuel en lecture seule sur PROD puis accord d’Antoine pour corriger l’ensemble des constats, avec démarrage autorisé par la coordination après le chantier Direct. Correction limitée à la présentation : programme et configurations de compétition, engagements et documents, statistiques, officiels, journal Records/MPF, correction de performance, import, DTN et pagination. Champs désactivés lisibles, états sélectionnés et statuts distincts, impression préservée ; thème clair et espace public isolés.
