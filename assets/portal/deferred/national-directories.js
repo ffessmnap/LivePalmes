@@ -1,6 +1,7 @@
 (function registerDeferredPortalModule(global) {
   global.LivePalmesPortalDeferred.register("national-directories", function create(portalContext, moduleActions) {
     const { state: portalState, actions: portalActions, config: portalConfig } = portalContext;
+    let importClubRequest=null;
     async function loadEngagementNationalClubs({ force = false } = {}) {
         if (!portalActions.canDeleteEngagementCompetitionDirectly() || portalState.engagementNationalClubsLoading) return;
         if (portalState.engagementNationalClubsLoaded && !force) {
@@ -91,6 +92,9 @@
 
     async function saveEngagementNationalClub(event) {
         event.preventDefault();
+        const importRequest=importClubRequest;
+        if(importRequest?.busy)return;
+        if(importRequest)importRequest.busy=true;
         const clubId = portalContext.elements.engagementsNationalClubId?.value || "";
         const previousFederalNumber = String(portalContext.elements.engagementsNationalClubFederalNumber?.dataset.originalValue || "").trim().toUpperCase();
         const nextFederalNumber = String(portalContext.elements.engagementsNationalClubFederalNumber?.value || "").trim().toUpperCase();
@@ -128,6 +132,7 @@
           portalActions.mergeNationalClubsIntoAccessReference([saved]);
           portalState.engagementNationalClubsLoaded = true;
           portalActions.renderEngagementNationalClubs();
+          if(importRequest){importRequest.busy=false;importRequest.onSaved?.(saved);}
           moduleActions.closeEngagementNationalClubDialog();
         } catch (error) {
           if (portalContext.elements.engagementsNationalClubMessage) {
@@ -135,6 +140,7 @@
             portalContext.elements.engagementsNationalClubMessage.dataset.tone = "error";
           }
         } finally {
+          if(importRequest)importRequest.busy=false;
           if (submit) submit.disabled = false;
         }
       }
@@ -708,12 +714,19 @@
       }
 
     function closeEngagementNationalClubDialog() {
+        if(importClubRequest?.busy)return;
         if (portalContext.elements.engagementsNationalClubDialog?.open) portalContext.elements.engagementsNationalClubDialog.close();
       }
 
-    function openEngagementNationalClubDialog(clubId = "") {
+    function openEngagementNationalClubDialog(clubId = "", options = {}) {
+        importClubRequest=options.source?{...options,busy:false}:null;
+        const request=importClubRequest,dialog=portalContext.elements.engagementsNationalClubDialog;
+        if(request&&dialog){
+          const cancel=event=>{if(request.busy)event.preventDefault();};dialog.addEventListener('cancel',cancel);
+          dialog.addEventListener('close',()=>{dialog.removeEventListener('cancel',cancel);if(importClubRequest===request)importClubRequest=null;},{once:true});
+        }
         portalState.engagementNationalClubCreationRetry = null;
-        const club = portalState.engagementNationalClubs.find((item) => item.clubId === clubId) || {};
+        const club = portalState.engagementNationalClubs.find((item) => item.clubId === clubId) || (request?{clubCode:options.source.code,clubName:options.source.name,federalNumber:options.source.federalNumber}:{});
         if (portalContext.elements.engagementsNationalClubForm) portalContext.elements.engagementsNationalClubForm.reset();
         if (portalContext.elements.engagementsNationalClubId) portalContext.elements.engagementsNationalClubId.value = club.clubId || "";
         if (portalContext.elements.engagementsNationalClubFederalNumber) {
@@ -734,7 +747,7 @@
         if (portalContext.elements.engagementsNationalClubDelete) portalContext.elements.engagementsNationalClubDelete.hidden = !club.clubId || club.source !== "national";
         if (portalContext.elements.engagementsNationalClubDialogTitle) portalContext.elements.engagementsNationalClubDialogTitle.textContent = club.clubId ? `Modifier ${club.clubCode || club.clubName}` : "Ajouter un club";
         if (portalContext.elements.engagementsNationalClubMessage) {
-          portalContext.elements.engagementsNationalClubMessage.textContent = club.clubId && club.federalNumber
+          portalContext.elements.engagementsNationalClubMessage.textContent = request?'Vérifiez qu’aucun club existant ne correspond, puis complétez les informations. Enregistrer créera un club dans la base NAP réelle, y compris depuis TEST. Le rattachement à l’import sera vérifié après création.':club.clubId && club.federalNumber
             ? "Une correction du numéro fédéral demandera une confirmation et sera journalisée."
             : "";
           portalContext.elements.engagementsNationalClubMessage.dataset.tone = "loading";

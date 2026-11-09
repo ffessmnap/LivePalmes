@@ -24,7 +24,27 @@
     'incomplete-swimmer-identity':'L’identité du nageur est incomplète.',
     'missing-competition':'La date ou le nom de la compétition manque.'
   };
-  let open=new Map(),searches=new Map(),pending=new Map(),clubSearches=new Map(),courseSearches=new Map(),page=0,diffPage=0,relayPage=0,coursePage=0,activePanel='';
+  let open=new Map(),searches=new Map(),queries=new Map(),searchRequests=new Map(),createdClubs=new Map(),pending=new Map(),clubSearches=new Map(),courseSearches=new Map(),page=0,diffPage=0,relayPage=0,coursePage=0,issuePage=0,activePanel='',session=0;
+  function saveBlockers(result,payload,hasSave=true){
+    const reasons=[],add=(label,panel)=>reasons.push({label,panel});
+    if(!hasSave)add('L’enregistrement n’est pas disponible dans cet écran.');
+    if(result.previewOnly)add('Ce parcours est limité à l’aperçu : aucun enregistrement autorisé.');
+    if(result.requiresCompetitionChoice)add(result.competitions?.length?'Choisir la compétition NAP, puis actualiser l’aperçu.':'Aucune compétition proposée : créer ou vérifier sa fiche dans le calendrier, puis relancer l’analyse.','competition');
+    if(result.reviewStale)add('Les choix ont changé : actualiser l’aperçu pour les vérifier.','refresh');
+    if(!result.rows?.length)add('Aucun résultat conservé : réintégrer au moins une ligne valide.','excluded');
+    const unknown=(result.review?.groups||[]).filter(g=>g.state!=='matched').length||result.unresolved?.length||0;
+    if(unknown)add(`${unknown} nageur(s) à rapprocher ou à créer.`,(result.review?.groups||[]).find(g=>g.state!=='matched')?.id);
+    if(result.unresolvedClubs?.length)add(`${result.unresolvedClubs.length} club(s) à rattacher ou à créer.`,'clubs');
+    if(result.unresolvedMembers?.length)add(`${result.unresolvedMembers.length} relayeur(s) à rapprocher.`,'relays');
+    const courses=(result.courseReview?.sources||[]).filter(c=>!c.selectedId).length;
+    if(courses)add(`${courses} épreuve(s) à rattacher au catalogue NAP.`,'courses');
+    if(result.issues?.length)add(`${result.issues.length} alerte(s) de l’analyse à résoudre ou confirmer. Toutes sont consultables dans le dossier Alertes.`,'issues');
+    const automatic=new Set(result.automaticExcludedSourceLines||[]),excluded=(payload.excludedSourceLines||[]).filter(line=>!automatic.has(line));
+    if(excluded.length&&(!payload.confirmExclusions||payload.exclusionReviewFingerprint!==result.previewFingerprint))add(`Confirmer les ${excluded.length} exclusion(s) de cet aperçu pour l’import partiel.`,'excluded');
+    if(result.diff?.requiresReplacementConfirmation&&(!payload.confirmReplacement||payload.replacementReviewFingerprint!==result.previewFingerprint))add('Confirmer le bilan de remplacement et les fichiers de cet aperçu.','bilan');
+    if(!result.canConfirm&&!reasons.length)add('L’aperçu serveur n’autorise pas encore l’enregistrement. Actualiser ; si le refus persiste, consulter le rapport de contrôle.','refresh');
+    return reasons;
+  }
   function time(value) {
     const s=String(value??''),source=/^(\d{1,2})[ :](\d{2}):(\d{2})[.,](\d{2})$/.exec(s),native=/^(\d{1,2}) (\d{1,6})$/.exec(s);
     if(source&&Number(source[2])<60&&Number(source[3])<60)return `${Number(source[1])}:${source[2]}:${source[3]}.${source[4]}`;
@@ -32,7 +52,7 @@
     if(!/^\d{5,6}$/.test(s))return s;return `${Number(s.slice(0,-4))}:${s.slice(-4,-2)}.${s.slice(-2)}`;
   }
   function birth(value) { return /^\d{4}-\d{2}-\d{2}$/.test(value||'')?value.split('-').reverse().join('/'):value; }
-  function reset(){open=new Map();searches=new Map();pending=new Map();clubSearches=new Map();courseSearches=new Map();page=0;diffPage=0;relayPage=0;coursePage=0;activePanel='';global.LivePalmesImportSwimmerCreation?.reset();}
+  function reset(){session++;open=new Map();searches=new Map();queries=new Map();searchRequests=new Map();createdClubs=new Map();pending=new Map();clubSearches=new Map();courseSearches=new Map();page=0;diffPage=0;relayPage=0;coursePage=0;issuePage=0;activePanel='';global.LivePalmesImportSwimmerCreation?.reset();}
   const fold=value=>String(value||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase();
   function courseOptions(result,payload,source,query=''){
     const binding=(payload.courseBindings||[]).find(b=>b.sourceCode===source.sourceCode),chosen=binding?.courseId||'';
@@ -69,7 +89,7 @@
   }
   function search(key,items) {
     const extra=searches.get(key)||[];
-    return `<details ${key.startsWith('member:')?'':'open'}><summary>Choisir ou rechercher un profil NAP</summary><div class="import-profile-list">${candidates(key,items)}</div><div class="import-review-search"><label>Nom, prénom ou identifiant NAP<input type="search" maxlength="80" minlength="2" data-review-query="${escape(key)}"></label><button type="button" class="ghost-button" data-review-search="${escape(key)}">Rechercher dans NAP</button></div><div data-review-search-results="${escape(key)}" aria-live="polite">${candidates(key,extra)}</div></details>`;
+    return `<details ${key.startsWith('member:')?'':'open'}><summary>Choisir ou rechercher un profil NAP</summary><div class="import-profile-list">${candidates(key,items)}</div><div class="import-review-search"><label>Nom, prénom ou identifiant NAP<input type="search" maxlength="80" minlength="2" data-review-query="${escape(key)}" value="${escape(queries.get(key)||'')}"></label><button type="button" class="ghost-button" data-review-search="${escape(key)}">Rechercher dans NAP</button></div><div data-review-search-results="${escape(key)}" aria-live="polite">${searches.has(key)&&!extra.length?'<p>Aucun profil trouvé pour cette recherche. La création reste soumise au contrôle des doublons.</p>':candidates(key,extra)}</div></details>`;
   }
   function diffHtml(diff,payload,result) {
     if(!diff)return '<p>Le bilan détaillé de remplacement sera disponible après résolution des rapprochements et alertes.</p>';
@@ -117,16 +137,18 @@
     host.querySelector('[data-review-page-label]').hidden=groups.length<=100;
     const notice=host.querySelector('[data-review-write-notice]');if(notice&&panels.get('bilan'))panels.get('bilan').append(notice);
     for(const b of host.querySelectorAll('[data-review-refresh],[data-nap-save]'))footer.append(b);
-    workspace.append(nav,pane);host.append(workspace,footer);
+    workspace.append(nav,pane);host.append(workspace,host.querySelector('[data-save-blockers]'),footer);
     if(!panels.has(activePanel))activePanel=visible.find(g=>g.state!=='matched')?.id||visible[0]?.id||'issues';
     show(activePanel);
   }
-  function render({result,payload,host,summary,onChange,onRefresh,onSearch,onPreviewCreation,onCreateSwimmer,onSave}) {
-    const renderAgain=()=>render({result,payload,host,summary,onChange,onRefresh,onSearch,onPreviewCreation,onCreateSwimmer,onSave});
+  function render({result,payload,host,summary,onChange,onRefresh,onSearch,onPreviewCreation,onCreateSwimmer,onCreateClub,onSave}) {
+    const renderAgain=()=>render({result,payload,host,summary,onChange,onRefresh,onSearch,onPreviewCreation,onCreateSwimmer,onCreateClub,onSave});
     const remember=()=>host.querySelectorAll('details[data-review-open]').forEach(el=>open.set(el.dataset.reviewOpen,el.open));
     const review=result.review,profiles=new Map((review?.profiles||[]).map(p=>[p.id,p]));
     const groups=(review?.groups||[]).map(g=>({...g,candidates:(g.candidateIds||[]).map(id=>profiles.get(id)).filter(Boolean)})),total=Math.max(1,Math.ceil(groups.length/100));page=Math.min(page,total-1);
     const visible=groups.slice(page*100,(page+1)*100);
+    const issuePages=Math.max(1,Math.ceil((result.issues?.length||0)/100));issuePage=Math.min(issuePage,issuePages-1);
+    for(const g of groups)if(!queries.has(g.id))queries.set(g.id,`${g.source.lastName} ${g.source.firstName}`.slice(0,80));
     const excluded=new Set((payload.excludedSourceLines||[]).filter(line=>!(result.automaticExcludedSourceLines||[]).includes(line)));
     const automatic=result.excludedRows?.filter(r=>r.exclusionReason==='empty-relay')||[],problematic=relayProblems(result);
     const excludeControl=(line,label)=>`<label class="import-exclude-choice"><input type="checkbox" data-review-exclude="${line}" ${excluded.has(line)?'checked':''}> ${label}</label>`;
@@ -147,7 +169,7 @@
       ${result.requiresCompetitionChoice?`<label>Compétition existante<select data-review-competition><option value="">Choisir la compétition</option>${result.competitions.map(c=>`<option value="${c.id}">${escape(c.libelle)} — ${escape(c.lieu)} (${c.id})</option>`).join('')}</select></label>`:`<p>Compétition NAP : ${escape(result.competition?.libelle)} (${Number(result.competition?.id)})</p>`}
       ${review?'<button type="button" class="ghost-button" data-prepare-confirmation '+(result.reviewStale?'disabled':'')+'>Préparer un message pour l’informatique</button><div data-confirmation-host></div>':''}
       ${problematic.length?`<details class="import-relay-problems"><summary>${problematic.length} relais à contrôler — identités ou résultat incomplets</summary>${problematic.slice(0,20).map(r=>`<button type="button" class="ghost-button" data-issue-relay="${r.sourceLine}">${escape(r.course)} · ${escape(r.clubCode)} · ${escape(time(r.time))} — voir le problème</button>`).join('')}${problematic.length>20?'<p>La suite est accessible dans le dossier Relais.</p>':''}</details>`:''}
-      <details data-review-open="issues" ${open.get('issues')?'open':''}><summary>Alertes de l’analyse (${result.issues?.length||0})</summary>${(result.issues||[]).map(i=>global.LivePalmesImportConfirmation?.visibleIssue(result,i)??(global.LivePalmesImportConfirmation?null:i)).filter(Boolean).slice(0,100).map((i,index)=>{
+      <details data-review-open="issues" ${open.get('issues')?'open':''}><summary>Alertes de l’analyse (${result.issues?.length||0})</summary>${(result.issues||[]).slice(issuePage*100,(issuePage+1)*100).map(i=>global.LivePalmesImportConfirmation?.visibleIssue(result,i)??(global.LivePalmesImportConfirmation?null:i)).filter(Boolean).map((i,index)=>{
         const label=global.LivePalmesImportConfirmation?.describeIssue(result,i)||issueLabels[i.code]||i.code;
         const group=groups.find(g=>g.id===i.groupId||(i.context?.relatedSourceLines||[]).some(line=>g.sourceLines.includes(line)));
         return `<div class="import-club-alert"><p>${escape(label)}</p><small>Repère dans le fichier TXT : ${i.sourceLine?'ligne '+i.sourceLine:'en-tête'}</small>${group?` <button type="button" class="ghost-button" data-issue-person="${group.id}">Voir le nageur</button>`:''}${i.code==='source-club-unresolved'?` <button type="button" class="ghost-button" data-issue-club="${escape(i.context?.clubCode||'')}">Choisir le club</button>`:''}${i.code==='unmapped-course'?` <button type="button" class="ghost-button" data-issue-course="${escape(i.context?.sourceCode||'')}">Choisir l’épreuve</button>`:''}${i.code==='first-relay-incomplete'?` <button type="button" class="ghost-button" data-issue-relay="${i.sourceLine}">Voir le relais</button>`:''}</div>`;
@@ -160,12 +182,35 @@
       <details data-review-open="excluded" ${open.get('excluded')?'open':''}><summary>Exclusions (${excluded.size}) — import partiel</summary><p>Les lignes cochées ne seront pas importées, ni leurs passages ou temps de premier relayeur. Le PDF et le TXT originaux restent complets. Lors d’un remplacement, leurs anciens résultats peuvent apparaître dans les retraits à confirmer.</p>${[...(result.rows||[]),...(result.excludedRows||[])].filter(r=>excluded.has(r.sourceLine)||!r.status&&!r.time).map(r=>excludeControl(r.sourceLine,`${escape(r.lastName||'Relais')} ${escape(r.firstName||'')} · ${escape(r.course)} · ${escape(r.clubCode)} · ${escape(time(r.time))} (ligne ${r.sourceLine}) — décocher pour réintégrer`)).join('')}<label class="import-exclude-choice"><input type="checkbox" data-review-exclusions-confirm ${payload.confirmExclusions&&payload.exclusionReviewFingerprint===result.previewFingerprint?'checked':''} ${result.reviewStale?'disabled':''}> Je confirme les ${excluded.size} exclusions vérifiées de cet aperçu et l’import partiel.</label></details>
       ${review?`<details data-review-open="bilan"><summary>Bilan et fichiers</summary>${diffHtml(result.diff,payload,result)}</details>`:''}
       ${!result.previewOnly?'<p data-review-write-notice>Après confirmation, les résultats seront visibles dans la vraie base NAP, y compris depuis TEST. Le protocole PDF sera rattaché à la compétition et le TXT source archivé en accès réservé aux administrations habilitées, sans suppression manuelle. Le ZIP ne sera pas stocké. Les autres documents de la compétition sont conservés.</p>':''}
-      <button type="button" class="ghost-button" data-review-refresh>Actualiser l’aperçu avec mes choix</button><button type="button" class="primary-button" data-nap-save disabled>${result.previewOnly?'Aperçu uniquement — enregistrement désactivé':'Enregistrer les résultats et le PDF dans NAP'}</button>`;
+      <section class="import-save-status" data-save-blockers aria-live="polite"></section><button type="button" class="ghost-button" data-review-refresh>Actualiser l’aperçu avec mes choix</button><button type="button" class="primary-button" data-nap-save disabled>${result.previewOnly?'Aperçu uniquement — enregistrement désactivé':'Enregistrer les résultats et le PDF dans NAP'}</button>`;
+    const issuePanel=host.querySelector('[data-review-open="issues"]');
+    if(issuePages>1)issuePanel.insertAdjacentHTML('beforeend',`<p>Alertes : page ${issuePage+1}/${issuePages}. Aucune alerte n’est tronquée.</p><button type="button" class="ghost-button" data-issue-page="-1" ${!issuePage?'disabled':''}>Alertes précédentes</button><button type="button" class="ghost-button" data-issue-page="1" ${issuePage+1===issuePages?'disabled':''}>Alertes suivantes</button>`);
+    for(const c of (result.unresolvedClubs||[]).slice(0,20)){
+      const section=[...host.querySelectorAll('[data-review-club]')].find(el=>el.dataset.reviewClub===c.code)?.closest('section');
+      if(!section)continue;
+      const button=document.createElement('button'),status=document.createElement('p');button.type='button';button.className='ghost-button';button.dataset.reviewCreateClub=c.code;button.textContent=createdClubs.has(c.code)?'Reprendre le rattachement du club déjà créé':'Club absent de NAP → Créer un club';status.setAttribute('role','status');section.append(button,status);
+      button.onclick=async()=>{if(!onCreateClub){status.textContent='Ouvrez cet import depuis le portail pour utiliser le formulaire national de création des clubs.';return;}button.disabled=true;const current=session;try{
+        const source=(result.sourceClubs||[]).find(s=>s.code===c.code)||{code:c.code},saved=createdClubs.get(c.code)||await onCreateClub(source);
+        if(!saved||current!==session)return;
+        const id=String(saved.clubId||saved.id||'');if(!/^\d+$/.test(id))throw Error('Identifiant du club créé manquant : actualiser l’aperçu avant de continuer.');
+        createdClubs.set(c.code,saved);button.textContent='Reprendre le rattachement du club déjà créé';
+        payload.clubBindings=(payload.clubBindings||[]).filter(b=>b.code!==c.code).concat({code:c.code,clubId:id});payload.clubAcknowledgements=[];
+        invalidate();await onRefresh();
+      }catch(error){status.textContent=(error.message||String(error))+(createdClubs.has(c.code)?' Le club est déjà créé : reprendre son rattachement sans en créer un autre.':'');}finally{if(button.isConnected)button.disabled=false;}};
+    }
     for(const r of review?.relays||[]){const target=host.querySelector(`[data-review-open="relay:${r.sourceLine}"]`),problem=problematic.find(p=>p.sourceLine===r.sourceLine);if(problem&&target){target.classList.add('import-relay-problems');const title=target.querySelector(':scope > summary');title.textContent+=' — À CONTRÔLER';title.insertAdjacentHTML('afterend',`<div class="import-club-alert">${problem.messages.map(m=>`<p>${escape(m)}</p>`).join('')}<p>Renseigner les profils NAP ci-dessous ou ignorer ce relais.</p></div>`);}target?.insertAdjacentHTML('beforeend',excludeControl(r.sourceLine,'Ignorer ce relais entier et le temps de son premier relayeur'));}
     const exclusionPanel=host.querySelector('[data-review-open="excluded"]');
     host.querySelector('[data-review-exclusions-confirm]').closest('label').hidden=!excluded.size;
     if(automatic.length)exclusionPanel?.insertAdjacentHTML('beforeend',`<details><summary>Relais vides ignorés automatiquement (${automatic.length})</summary>${automatic.map(r=>`<p>${escape(r.course)} · ${escape(r.clubCode)} · ligne ${r.sourceLine} : temps nul, aucun relayeur.</p>`).join('')}</details>`);
-    const updateSave=()=>{host.querySelector('[data-nap-save]').disabled=!onSave||result.previewOnly||!result.canConfirm||result.reviewStale||Boolean(excluded.size&&(!payload.confirmExclusions||payload.exclusionReviewFingerprint!==result.previewFingerprint))||Boolean(result.diff?.requiresReplacementConfirmation&&(!payload.confirmReplacement||payload.replacementReviewFingerprint!==result.previewFingerprint));};
+    const updateSave=()=>{
+      const reasons=saveBlockers(result,payload,!!onSave),save=host.querySelector('[data-nap-save]'),status=host.querySelector('[data-save-blockers]');save.disabled=!!reasons.length;save.title=reasons.map(r=>r.label).join('\n');
+      status.innerHTML=reasons.length?`<strong>Avant d’enregistrer : ${reasons.length} point(s) à traiter</strong><ul>${reasons.map((r,i)=>`<li>${escape(r.label)}${r.panel?` <button type="button" class="ghost-button compact" data-save-reason="${i}">Voir</button>`:''}</li>`).join('')}</ul>`:'<strong>Tout est prêt pour l’enregistrement.</strong><p>Aucun résultat ni PDF n’a encore été enregistré.</p>';
+      status.querySelectorAll('[data-save-reason]').forEach(button=>button.onclick=()=>{const target=reasons[Number(button.dataset.saveReason)].panel;
+        if(target==='refresh'){host.querySelector('[data-review-refresh]').focus();return;}
+        if(target==='competition'){host.querySelector('[data-review-competition]')?.focus();return;}
+        remember();const index=groups.findIndex(g=>g.id===target);if(index>=0){page=Math.floor(index/100);open.set('group:'+groups[index].state,true);}activePanel=target;open.set(target,true);renderAgain();host.querySelector(`[data-review-open="${target}"]`)?.scrollIntoView({block:'nearest'});
+      });
+    };
     updateSave();host.querySelector('[data-nap-save]').onclick=()=>onSave?.();
     const redraw=()=>{remember();renderAgain();};
     const invalidate=()=>{payload.confirmExclusions=false;payload.exclusionReviewFingerprint='';payload.confirmReplacement=false;payload.replacementReviewFingerprint='';onChange();updateSave();for(const checkbox of host.querySelectorAll('[data-review-replacement],[data-review-exclusions-confirm]')){checkbox.checked=false;checkbox.disabled=true;}const prepare=host.querySelector('[data-prepare-confirmation]');if(prepare)prepare.disabled=true;const message=host.querySelector('[data-confirmation-host]');if(message)message.replaceChildren();host.querySelector('[data-review-status]').textContent='Choix modifiés : actualiser l’aperçu pour les vérifier.';};
@@ -194,18 +239,36 @@
     host.querySelectorAll('[data-review-course]').forEach(select=>select.onchange=()=>{const sourceCode=select.dataset.reviewCourse;payload.courseBindings=(payload.courseBindings||[]).filter(b=>b.sourceCode!==sourceCode);if(select.value)payload.courseBindings.push({sourceCode,courseId:select.value});invalidate();});
     host.querySelectorAll('[data-review-course-search]').forEach(input=>input.oninput=()=>{const code=input.dataset.reviewCourseSearch;courseSearches.set(code,input.value);const source=result.courseReview.sources.find(s=>s.sourceCode===code),options=courseOptions(result,payload,source,input.value),select=[...host.querySelectorAll('[data-review-course]')].find(el=>el.dataset.reviewCourse===code),count=[...host.querySelectorAll('[data-review-course-count]')].find(el=>el.dataset.reviewCourseCount===code);select.innerHTML=options.html;count.textContent=`${options.count} épreuve(s) compatible(s) avec le type et le sexe des lignes.`;});
     host.querySelectorAll('[data-course-page]').forEach(button=>button.onclick=()=>{coursePage+=Number(button.dataset.coursePage);redraw();});
-    host.querySelectorAll('[data-review-create]').forEach(button=>button.onclick=()=>{
-      const key=button.dataset.reviewCreate,g=groups.find(g=>g.id===key),target=host.querySelector(`[data-review-creation="${key}"]`);
-      if(!searches.has(key)){target.textContent='Recherchez d’abord le nageur dans NAP, puis vérifiez les profils proposés avant d’ouvrir la création.';return;}
+    host.querySelectorAll('[data-issue-page]').forEach(button=>button.onclick=()=>{issuePage+=Number(button.dataset.issuePage);redraw();});
+    const performSearch=async key=>{
+      if(searchRequests.has(key))return searchRequests.get(key);
+      const input=[...host.querySelectorAll('[data-review-query]')].find(el=>el.dataset.reviewQuery===key),query=(input?.value||queries.get(key)||'').trim();
+      if(query.length<2)throw Error('Saisissez au moins deux caractères pour rechercher le nageur.');
+      queries.set(key,query);const current=session;
+      const request=Promise.resolve().then(()=>onSearch(query)).then(rows=>{if(current!==session)return false;searches.set(key,rows);const target=[...host.querySelectorAll('[data-review-search-results]')].find(el=>el.dataset.reviewSearchResults===key);if(target){target.innerHTML=rows.length?candidates(key,rows):'<p>Aucun profil trouvé pour cette recherche. La création reste soumise au contrôle des doublons.</p>';wirePicks();}return true;}).finally(()=>{if(searchRequests.get(key)===request)searchRequests.delete(key);});
+      searchRequests.set(key,request);return request;
+    };
+    const openCreation=key=>{
+      const g=groups.find(g=>g.id===key),target=host.querySelector(`[data-review-creation="${key}"]`);
       if(!global.LivePalmesImportSwimmerCreation){target.textContent='Rechargez le portail pour ouvrir la création.';return;}
       const ids=[...new Set(g.clubs.map(c=>(payload.clubBindings||[]).find(b=>b.code===c.code)?.clubId||c.id).filter(Boolean).map(String))];
       global.LivePalmesImportSwimmerCreation.mount({host:target,group:g,clubs:result.clubs||[],selectedClubId:ids.length===1?ids[0]:'',onPreview:onPreviewCreation,onCreate:onCreateSwimmer,
         onPick:async p=>{searches.set(key,[...(searches.get(key)||[]).filter(c=>c.id!==p.id),p]);pick(key,p.id);await onRefresh();}});
+    };
+    host.querySelectorAll('[data-review-create]').forEach(button=>{
+      const key=button.dataset.reviewCreate;
+      button.textContent=searches.has(key)?'Aucun profil ne convient → Créer une fiche après vérification':'Rechercher dans NAP puis préparer une création';
+      button.onclick=async()=>{const target=host.querySelector(`[data-review-creation="${key}"]`);button.disabled=true;const current=session;try{
+        if(!searches.has(key)){target.textContent='Recherche préalable dans NAP…';if(!await performSearch(key))return;}
+        if(current===session&&button.isConnected)openCreation(key);
+      }catch(error){target.textContent=error.message||String(error);}finally{if(button.isConnected)button.disabled=false;}};
+      if(global.LivePalmesImportSwimmerCreation?.isOpen(key))openCreation(key);
     });
+    host.querySelectorAll('[data-review-query]').forEach(input=>input.oninput=()=>{queries.set(input.dataset.reviewQuery,input.value);});
     host.querySelectorAll('[data-review-search]').forEach(button=>button.onclick=async()=>{
-      const key=button.dataset.reviewSearch,input=[...host.querySelectorAll('[data-review-query]')].find(el=>el.dataset.reviewQuery===key),target=[...host.querySelectorAll('[data-review-search-results]')].find(el=>el.dataset.reviewSearchResults===key);
+      const key=button.dataset.reviewSearch,target=[...host.querySelectorAll('[data-review-search-results]')].find(el=>el.dataset.reviewSearchResults===key);
       button.disabled=true;
-      try{const rows=await onSearch(input.value);if(!button.isConnected)return;searches.set(key,rows);target.innerHTML=rows.length?candidates(key,rows):'<p>Aucun profil trouvé. Précisez la recherche ou vérifiez la fiche dans Mes nageurs.</p>';wirePicks();}catch(error){target.textContent=error.message;}finally{button.disabled=false;}
+      try{await performSearch(key);const create=[...host.querySelectorAll('[data-review-create]')].find(el=>el.dataset.reviewCreate===key);if(create)create.textContent='Aucun profil ne convient → Créer une fiche après vérification';}catch(error){target.textContent=error.message;}finally{button.disabled=false;}
     });
     host.querySelector('[data-review-competition]')?.addEventListener('change',e=>{payload.competitionId=Number(e.target.value)||undefined;invalidate();});
     host.querySelectorAll('[data-review-club]').forEach(el=>el.onchange=()=>{payload.clubBindings=(payload.clubBindings||[]).filter(b=>b.code!==el.dataset.reviewClub);if(el.value)payload.clubBindings.push({code:el.dataset.reviewClub,clubId:el.value});payload.clubAcknowledgements=[];invalidate();});
@@ -219,8 +282,8 @@
     host.querySelectorAll('[data-review-page]').forEach(el=>el.onclick=()=>{page+=Number(el.dataset.reviewPage);redraw();});
     host.querySelectorAll('[data-diff-page]').forEach(el=>el.onclick=()=>{diffPage+=Number(el.dataset.diffPage);redraw();});
     host.querySelectorAll('[data-relay-page]').forEach(el=>el.onclick=()=>{relayPage+=Number(el.dataset.relayPage);redraw();});
-    host.querySelector('[data-review-refresh]').onclick=async()=>{remember();await onRefresh();};
+    host.querySelector('[data-review-refresh]').onclick=async event=>{remember();event.currentTarget.disabled=true;try{await onRefresh();}catch(error){host.querySelector('[data-review-status]').textContent=error.message||String(error);}finally{const button=host.querySelector('[data-review-refresh]');if(button)button.disabled=false;}};
     compactLayout(host,groups,visible,result,redraw);
   }
-  global.LivePalmesImportReview={render,reset,settled:()=>pending.clear()};
+  global.LivePalmesImportReview={render,reset,saveBlockers,settled:()=>pending.clear()};
 })(window);

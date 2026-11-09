@@ -210,6 +210,7 @@ jobs:
             node tests/november-retained-scope-tests.js
           python tests/test-mail-sources-tests.py
           python tests/test-trophy-sources-tests.py
+          python tests/test-import-sources-tests.py
           python tests/nap-account-release-tests.py
           node tests/release-nap-account-compatibility.js
           node tests/license-report-source-guard-tests.js

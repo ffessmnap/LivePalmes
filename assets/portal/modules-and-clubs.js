@@ -161,10 +161,23 @@
           await Promise.all(scripts.map(([src, id]) => loadScriptOnce(src, id)));
           await loadScriptOnce("performances/public/winpalme-zip.js?v=20261026-import-text-1", "adminImportZipScript");
           await loadScriptOnce("performances/public/import-confirmation-message.js?v=20261025-import-courses-1", "adminImportConfirmationScript");
-          await loadScriptOnce("performances/public/import-swimmer-creation.js?v=20261025-import-creation-1", "adminImportSwimmerCreationScript");
-          await loadScriptOnce("performances/public/import-swimmer-review.js?v=20261026-import-relay-alerts-1", "adminImportReviewScript");
+          global.LivePalmesImportClubCreation=source=>{
+            if(!portalActions.canDeleteEngagementCompetitionDirectly())return Promise.reject(new Error('La création des clubs est réservée à l’administration nationale.'));
+            const dialog=portalContext.elements.engagementsNationalClubDialog;
+            if(!dialog||dialog.open)return Promise.reject(new Error('Le formulaire club est indisponible ou déjà ouvert.'));
+            return new Promise((resolve,reject)=>{
+              // Its usual national panel is hidden while the import is open.
+              const position=document.createComment('national club form');dialog.before(position);document.body.append(dialog);
+              const restore=()=>position.replaceWith(dialog);
+              const closed=()=>{restore();resolve(null);};dialog.addEventListener('close',closed,{once:true});
+              try{portalActions.openEngagementNationalClubDialog('',{source,onSaved:resolve});}
+              catch(error){dialog.removeEventListener('close',closed);restore();reject(error);}
+            });
+          };
+          await loadScriptOnce("performances/public/import-swimmer-creation.js?v=20261109-import-resolution-1", "adminImportSwimmerCreationScript");
+          await loadScriptOnce("performances/public/import-swimmer-review.js?v=20261109-import-resolution-1", "adminImportReviewScript");
           await loadScriptOnce("performances/public/import-record-review.js?v=20261107-import-records-1", "adminImportRecordReviewScript");
-          await loadScriptOnce("performances/public/import-competitions.js?v=20261108-competition-status-1", "adminImportModuleScript");
+          await loadScriptOnce("performances/public/import-competitions.js?v=20261109-import-resolution-1", "adminImportModuleScript");
           if (includeSpreadsheet) await loadImportSpreadsheet();
           watchImportWorkbench();
         })().catch((error) => {
