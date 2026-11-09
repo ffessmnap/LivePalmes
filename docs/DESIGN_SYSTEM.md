@@ -725,7 +725,7 @@ Dans les consoles, certains en-têtes restent visibles pendant le défilement ve
 
 ### États vides, chargement et erreurs
 
-Dans la fiche compétition en mode administrateur régional ou national, les statuts de fiche et d’aperçu des notifications ne réservent aucun espace lorsqu’ils sont vides. Ils restent présents pour afficher les chargements, confirmations et erreurs. Les boutons de vérification de la diffusion précisent « aperçu sans envoi » à leur point d’action.
+Dans la fiche compétition en mode administrateur régional ou national, le statut de fiche ne réserve aucun espace lorsqu’il est vide. Il reste présent pour afficher les chargements, confirmations et erreurs.
 
 L’écran de chargement initial du portail conserve un seul indicateur visuel : le rond tournant et son libellé accessible. Le point animé des messages de chargement ordinaires ne s’ajoute pas à cet écran.
 
@@ -905,7 +905,7 @@ Le formulaire compact place Nom puis Prénom sur une première ligne, Date de na
 
 Dans Administration nationale, l’onglet Notifications présente l’état des mails automatiques et leur activation/désactivation après confirmation. Le choix de périmètre du pilote IDF et son enregistrement ont été retirés. Aucune écriture de configuration n’est provoquée par cette suppression : le bouton conserve le périmètre et la révision renvoyés par le serveur. Une ancienne configuration autre que nationale bloque l’activation ; la désactivation d’urgence reste possible. Sur TEST, la redirection des destinataires reste indiquée. Aucun rattrapage des mails annulés à la réactivation.
 
-Dans Diffusion, le suivi des courriels propose « Actualiser le suivi » avec le bouton discret existant. Les compteurs concernent explicitement les lignes affichées (100 par page), sans actualisation permanente. L’en-tête se replie sur mobile. « Envoyé » signifie accepté par le serveur mail ; « À vérifier — ne pas renvoyer » distingue un résultat SMTP incertain ou un envoi resté en cours plus de cinq minutes. Une erreur n’est jamais renvoyée automatiquement.
+Dans Diffusion, le suivi des courriels propose « Actualiser le suivi » avec le bouton discret existant. Les aperçus d’ouverture et de fermeture ainsi que le traitement manuel des notifications ne sont pas proposés dans cette fiche ; les automatismes et les outils de maintenance restent distincts du suivi. Les compteurs concernent explicitement les lignes affichées (100 par page), sans actualisation permanente. L’en-tête se replie sur mobile. « Envoyé » signifie accepté par le serveur mail ; « À vérifier — ne pas renvoyer » distingue un résultat SMTP incertain ou un envoi resté en cours plus de cinq minutes. Une erreur n’est jamais renvoyée automatiquement.
 
 Pour un envoi groupé, la cellule Destinataire indique l'effectif et « CCI », sans publier les adresses du groupe. La cellule Statut détaille acceptés, rejetés, à vérifier et annulés. Le libellé « Partiellement accepté — ne pas renvoyer le groupe » distingue les rejets partiels. Les compteurs d'en-tête comptent les envois techniques, avec une mention explicite du regroupement ; les lignes historiques individuelles restent lisibles. Cette variante réutilise les cellules et styles existants.
 

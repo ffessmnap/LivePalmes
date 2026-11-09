@@ -112,10 +112,10 @@ async function run() {
     assert.equal(ui.elements.engagementsNotificationPreviewStatus.textContent, ui.elements.engagementsDocumentsSummary.textContent);
   }
   const html = fs.readFileSync("portail.html", "utf8");
-  for (const id of ["adminEngagementsPrepareOpeningEmailsButton", "adminEngagementsPrepareClubRecapEmailsButton", "adminEngagementsNotificationPreviewStatus"]) {
-    assert.equal(html.split(`id="${id}"`).length - 1, 1);
+  for (const id of ["adminEngagementsPrepareOpeningEmailsButton", "adminEngagementsPrepareClubRecapEmailsButton", "adminEngagementsProcessNativeNotificationsButton", "adminEngagementsNotificationPreviewStatus", "adminEngagementsNotificationPreviewActions"]) {
+    assert.equal(html.split(`id="${id}"`).length - 1, 0, "Les outils de maintenance ne sont plus proposés dans la fiche compétition.");
   }
-  assert.ok(html.includes('id="adminEngagementsNotificationPreviewActions" hidden'));
+  assert.ok(html.includes('id="adminEngagementsMailJobsList"'), "Le suivi des envois est conservé.");
   assert.ok(portal.includes('!adminMode || global.LivePalmesEnvironment?.sportingDataSource !== "nap" || competition.napSource !== true'));
   console.log("Aperçus notifications NAP : autorisation, sources, périmètres natifs, budgets et absence d'envoi OK.");
 }
