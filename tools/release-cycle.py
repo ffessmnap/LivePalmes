@@ -579,10 +579,21 @@ def approved_production_home_routing(value, paths):
     return {'firebase.json'}
 
 
-def classify_test(paths, approved_top_files=False, approved_records_cleanup=False, approved_public_export_cleanup=False, approved_home_routing=False, approved_portal_session_rules=False):
+def classify_test(paths, approved_top_files=False, approved_records_cleanup=False, approved_public_export_cleanup=False, approved_home_routing=False, approved_portal_session_rules=False, approved_static_asset_cache=False):
     # Exact files authorized by Antoine on TEST, 5 October 2026.
     # Ordinary and production classification remain unchanged.
     allowed = set(ignored_top_paths(paths, 'HEAD'))
+    if approved_static_asset_cache:
+        base = os.environ.get('BASE_SHA', '')
+        require(SHA.fullmatch(base), 'Base exacte requise pour le cache statique TEST')
+        spec = importlib.util.spec_from_file_location('test_static_cache_policy', ROOT / 'tools/test-static-cache-policy.py')
+        policy = importlib.util.module_from_spec(spec); spec.loader.exec_module(policy)
+        policy.validate_sources(json.loads(git('show', base + ':firebase.json')),
+                                json.loads(git('show', 'HEAD:firebase.json')),
+                                os.environ.get('TARGET_FIREBASE_PROJECT'),
+                                os.environ.get('STATIC_CACHE_HOSTING_MODE') == 'true',
+                                os.environ.get('STATIC_CACHE_AUTOMATIC_CANDIDATE', ''))
+        allowed.add('firebase.json')
     if approved_portal_session_rules or ('firestore.rules' in paths and os.environ.get('PORTAL_SESSION_RULES_REUSE') == 'true'):
         require(os.environ.get('TARGET_FIREBASE_PROJECT') == 'livepalmes-test', 'Session reservee a TEST')
         base = os.environ.get('BASE_SHA', '')
