@@ -89,4 +89,32 @@ async function reads(){
   const regionRead=api.callFunction("listAccessUsers",{});state.currentAccessProfile={...state.currentAccessProfile,regionId:"HDF"};response.resolve({data:{users:[{private:true}]}});await assert.rejects(regionRead,/compte ou le club actif a changé/);
   console.log("RPC sharing: identical simultaneous reads only, no freshness cache, fresh next consultation, stale identity rejected and writes separate passed offline.");
 }
-(async()=>{await loader();await reads();await resources();})().catch(error=>{console.error(error);process.exitCode=1;});
+function immediateNavigation(){
+  const node=()=>({listeners:{},hidden:true,addEventListener(name,fn){(this.listeners[name]||=[]).push(fn);},classList:{remove(){}},setAttribute(){}});
+  const elements={overviewSpaceToggles:[]};
+  for(const name of ['sidebar','clubToggle','performanceToggle','engagementsAdminToggle','dtnToggle','nationalToggle','accessToggle','nationalSubmenu'])elements[name]=node();
+  const ids=Object.fromEntries(['adminPortalNationalDisclosure','adminPortalNationalDirectoriesDisclosure','adminPortalNationalDirectoriesSubmenu'].map(id=>[id,node()]));
+  const window={location:{hash:'#accueil'},setInterval(){return 1;},addEventListener(){}};
+  const document={querySelector(){return null;},getElementById:id=>ids[id],addEventListener(){}};
+  let calls=[],allowDirectories=false;
+  const actions=new Proxy({
+    togglePortalSpace:(...args)=>calls.push(args.slice(0,3)),
+    collapsePortalNavigationAfterSelection:()=>calls.push('collapse'),
+    canDeleteEngagementCompetitionDirectly:()=>allowDirectories,
+    setNationalMenuOpen:open=>calls.push(['national',open])
+  },{get:(target,name)=>target[name]||(()=>{})});
+  vm.runInNewContext(fs.readFileSync('assets/portal/events.js','utf8'),{window,document});
+  window.LivePalmesPortalEvents.create({state:{},actions,config:{},elements}).init();
+  for(const [key,space,view,hash]of [['club','club','clubHome','espace-club'],['performance','performance','performanceHome','gestion-performances'],['dtn','dtn','dtnHome','espace-dtn'],['access','access','accessHome','gestion-acces']]){
+    calls=[];assert.equal(elements[key+'Toggle'].listeners.click?.length||0,1,'Primary navigation binds on the minimal home: '+key);
+    elements[key+'Toggle'].listeners.click[0]();assert.deepEqual(calls,[[space,view,hash],'collapse']);
+  }
+  elements.engagementsAdminToggle.listeners.click[0]();assert.equal(window.location.hash,'competitions-calendrier');
+  elements.nationalToggle.listeners.click[0]();assert.equal(window.location.hash,'administration-nationale');
+  calls=[];ids.adminPortalNationalDisclosure.listeners.click[0]();assert.deepEqual(calls,[['national',true]]);
+  const event={currentTarget:ids.adminPortalNationalDirectoriesDisclosure};
+  ids.adminPortalNationalDirectoriesDisclosure.listeners.click[0](event);assert.equal(ids.adminPortalNationalDirectoriesSubmenu.hidden,true,'Existing directory capability guard is preserved');
+  allowDirectories=true;ids.adminPortalNationalDirectoriesDisclosure.listeners.click[0](event);assert.equal(ids.adminPortalNationalDirectoriesSubmenu.hidden,false);
+  console.log('Immediate navigation: real startup handlers, all spaces/disclosures and unchanged capability guard, without deferred code or data calls.');
+}
+(async()=>{immediateNavigation();await loader();await reads();await resources();})().catch(error=>{console.error(error);process.exitCode=1;});
