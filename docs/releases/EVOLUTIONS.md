@@ -2,6 +2,13 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 9 novembre — Réduction du trafic statique (préparation, TEST non déployé)
+
+- Antoine valide les optimisations proposées après l'audit des coûts Google : images web allégées, URL du logo commune et cache statique ciblé. Sifflet : 1 216 842 → 4 829 octets (−99,6 %) ; logo : 54 314 → 22 267 octets (−59,0 %). Dessins, proportions et tailles CSS conservés ; originaux hors Hosting et générateur Windows dédié. Aucun accès aux données ajouté, coût SQL/Firestore inchangé à l'ouverture, à l'action et au rafraîchissement.
+- Cache préparé : un jour avec revalidation pour styles communs, logo/sifflet, scripts publics et modules/styles du portail ; seuls les scripts Séries/Résultats quittent `no-store`, leurs données et pages restent inchangées. Aucun cache annuel supplémentaire. Aucun backend, règle, droit, donnée ou message modifié.
+- Contrôles locaux : cadre public, versions du portail, synchronisation des consoles et de l'accueil serveur réussis ; Direct sur 1280/390/320 px avec données fictives et HTTPS externe bloqué. Images relues à 1280/390 px, densité 2, dimensions CSS conservées ; génération répétée identique et originaux vérifiés octet pour octet. Comparaison JSON : seuls les huit réglages de cache prévus diffèrent. L'émulateur Hosting local n'a pas restitué les en-têtes, y compris ceux préexistants : leur effet HTTP reste à confirmer sur TEST.
+- Livraison : refus de `classify(['firebase.json'])` confirmé hors réseau dans `tools/release-cycle.py`, qui exige un périmètre spécifique. Aucun contournement ni modification du circuit. CI et PR à compléter ; aucune publication TEST/PROD ni validation utilisateur de la réalisation à ce stade.
+
 ### 9 novembre — Entrée Direct du portail et mode opératoire régional (TEST déployé, recette attendue)
 
 - Demande explicite : remplacer le lien des anciennes consoles par « LivePalmes Direct », garder l’icône et ouvrir le bureau pour les profils régionaux/nationaux ; conserver l’ancienne adresse en accès direct. Menu et raccourci d’accueil mis à jour à partir du profil chargé, sans changement Auth/claims/capacités, délégation, contrôle serveur, Firebase ou donnée. Zéro lecture métier supplémentaire au chargement, au clic ou au rafraîchissement du menu.

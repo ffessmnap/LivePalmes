@@ -30,6 +30,8 @@ Les anciens fichiers principaux avaient déjà un cache immuable ; ce réglage e
 
 Chaque script, fragment et entrée possède une version d'URL. `portal-cache-version-tests.js` vérifie les versions et refuse un contenu changé sans renouvellement de son URL par rapport au parent testé. Garder cet ordre et ce contrôle lors des retouches futures.
 
+Préparation du 9 novembre 2026, non déployée : cache navigateur d'un jour avec revalidation à expiration pour les scripts et styles statiques ciblés, le logo et le sifflet. Les deux scripts des anciennes pages Séries/Résultats sont concernés, sans mise en cache supplémentaire de leurs données. Les HTML, réponses métier et caches immuables historiques restent inchangés. Ce delta `firebase.json` exige son périmètre de publication spécifique : le circuit commun refuse actuellement cette configuration ; ne pas retirer ce refus ni réutiliser une exception historique.
+
 ## Budget des données
 
 | Situation | Coût ajouté par le découpage |
