@@ -71,6 +71,30 @@
         ]
       },
       {
+        "source": "/styles.css",
+        "headers": [{ "key": "Cache-Control", "value": "public, max-age=86400, must-revalidate" }]
+      },
+      {
+        "source": "/logo-ffessm-nage-avec-palmes.png",
+        "headers": [{ "key": "Cache-Control", "value": "public, max-age=86400, must-revalidate" }]
+      },
+      {
+        "source": "/sifflet-ja.png",
+        "headers": [{ "key": "Cache-Control", "value": "public, max-age=86400, must-revalidate" }]
+      },
+      {
+        "source": "/assets/public/**/*.js",
+        "headers": [{ "key": "Cache-Control", "value": "public, max-age=86400, must-revalidate" }]
+      },
+      {
+        "source": "/assets/portal/**/*.js",
+        "headers": [{ "key": "Cache-Control", "value": "public, max-age=86400, must-revalidate" }]
+      },
+      {
+        "source": "/assets/portal/styles/*.css",
+        "headers": [{ "key": "Cache-Control", "value": "public, max-age=86400, must-revalidate" }]
+      },
+      {
         "source": "/logo-livepalmes.png",
         "headers": [
           {
@@ -120,7 +144,7 @@
         "headers": [
           {
             "key": "Cache-Control",
-            "value": "no-store"
+            "value": "public, max-age=86400, must-revalidate"
           }
         ]
       },
@@ -129,7 +153,7 @@
         "headers": [
           {
             "key": "Cache-Control",
-            "value": "no-store"
+            "value": "public, max-age=86400, must-revalidate"
           }
         ]
       },

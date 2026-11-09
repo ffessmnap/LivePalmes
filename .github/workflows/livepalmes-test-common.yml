@@ -52,6 +52,11 @@ run-name: ${{ inputs.verification_only && 'Verification TEST sans deploiement' |
         required: false
         type: boolean
         default: false
+      approved_static_asset_cache:
+        description: Huit changements de cache exacts approuves le 9 novembre, Hosting TEST manuel seulement
+        required: false
+        type: boolean
+        default: false
       followup_depth:
         description: Compteur technique de suivi main (laisser 0 au lancement manuel)
         required: false
@@ -112,6 +117,9 @@ jobs:
         APPROVED_PUBLIC_EXPORT_CLEANUP: ${{ inputs.approved_public_export_cleanup }}
         APPROVED_HOME_ROUTING: ${{ inputs.approved_home_routing }}
         APPROVED_PORTAL_SESSION_RULES: ${{ inputs.approved_portal_session_rules }}
+        APPROVED_STATIC_ASSET_CACHE: ${{ inputs.approved_static_asset_cache }}
+        STATIC_CACHE_HOSTING_MODE: ${{ inputs.hosting_only }}
+        STATIC_CACHE_AUTOMATIC_CANDIDATE: ${{ inputs.automatic_candidate }}
         PORTAL_SESSION_RULES_REUSE: 'true'
       run: '[[ "$BASE_SHA" =~ ^[0-9a-f]{40}$ ]]
 
@@ -132,7 +140,7 @@ jobs:
 
         paths=subprocess.check_output([''git'',''diff'',''--name-only'',''--no-renames'',os.environ[''BASE_SHA''],''HEAD''],text=True).splitlines()
 
-        m.classify_test(paths, os.environ[''APPROVED_TOP_FILES''] == ''true'', os.environ[''APPROVED_RECORDS_CLEANUP''] == ''true'', os.environ[''APPROVED_PUBLIC_EXPORT_CLEANUP''] == ''true'', os.environ[''APPROVED_HOME_ROUTING''] == ''true'', os.environ[''APPROVED_PORTAL_SESSION_RULES''] == ''true'')
+        m.classify_test(paths, os.environ[''APPROVED_TOP_FILES''] == ''true'', os.environ[''APPROVED_RECORDS_CLEANUP''] == ''true'', os.environ[''APPROVED_PUBLIC_EXPORT_CLEANUP''] == ''true'', os.environ[''APPROVED_HOME_ROUTING''] == ''true'', os.environ[''APPROVED_PORTAL_SESSION_RULES''] == ''true'', os.environ[''APPROVED_STATIC_ASSET_CACHE''] == ''true'')
 
         PYCODE'
     - name: Rechercher la verification du commit main exact
@@ -191,6 +199,8 @@ jobs:
         python tests/test-publication-coordination-tests.py
 
         python tests/portal-session-rules-tests.py
+
+        python tests/test-static-cache-policy-tests.py
 
         node tests/nap-source-diagnostic-tests.js
 

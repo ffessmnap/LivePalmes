@@ -476,6 +476,8 @@ Ressources de marque principales :
 
 Un logo informatif possède un texte alternatif. Un logo ou pictogramme purement décoratif utilise un `alt` vide.
 
+Optimisation web du 9 novembre 2026 : le sifflet conserve son dessin, sa transparence et son affichage de 23 px, avec un PNG de 96 × 96 px ; le logo fédéral web conserve ses proportions avec un PNG de 320 × 192 px. Les originaux restent dans `tools/static-image-sources/`, hors Hosting ; `tools/build-web-images.ps1` régénère les deux variantes sous Windows sans dépendance applicative. La copie du logo utilisée par les PDF serveur reste inchangée. Le portail et le Direct public réutilisent l'URL du logo du cadre public commun.
+
 ## Mise en page
 
 ### En-têtes publics
