@@ -41,8 +41,8 @@
 .direct-public .direct-race-table .direct-club-cell{font-family:ui-monospace,SFMono-Regular,Consolas,monospace}
 .direct-public .direct-club-cell abbr{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .direct-public .direct-race-table .direct-split-toggle{display:inline-flex;align-items:center;justify-content:flex-end;gap:3px;min-height:32px;max-width:100%;padding:0;border:0;border-radius:4px;background:transparent;color:inherit;font:inherit;font-weight:inherit;vertical-align:middle;white-space:nowrap}
-.direct-split-toggle>span{display:inline-grid;place-items:center;width:14px;height:14px;border:1px solid #b6d3dd;border-radius:50%;color:#166276;font-size:.68rem;font-weight:600;line-height:1}
-.direct-split-toggle>span:before{content:'+'}
+.direct-split-toggle>.direct-split-indicator{display:inline-grid;place-items:center;width:14px;height:14px;border:1px solid #b6d3dd;border-radius:50%;color:#166276;font-size:.68rem;font-weight:600;line-height:1}
+.direct-split-toggle>.direct-split-indicator:before{content:'+'}
 .direct-split-toggle[aria-expanded=true]>span:before{content:'−'}
 .direct-split-row[hidden]{display:none}
 .direct-public .direct-race-table .direct-split-row>td{height:auto;padding:7px 10px;white-space:normal;text-align:left;background:#fff;overflow:visible}
@@ -86,3 +86,7 @@
 .direct-category-tools{display:flex;align-items:center;gap:3px;flex-shrink:0}
 .direct-category-tools summary{max-width:130px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .direct-clear-categories{width:30px;min-height:32px;padding:0;border:1px solid var(--direct-line);border-radius:7px;background:transparent;color:var(--direct-blue);font-size:1.1rem;line-height:1}
+
+/* Temps publics : une même fin de colonne, avec un écart secondaire. */
+.direct-public .direct-result-line{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;column-gap:6px;min-height:32px}.direct-public .direct-result-value{grid-column:2;position:relative;min-width:calc(8ch + 18px);padding-right:18px;text-align:right}.direct-public .direct-race-table .direct-result-line>.direct-delta{grid-column:1;grid-row:1;display:block;min-width:0;margin:0;font-size:.65rem;font-weight:400;line-height:1.2;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;opacity:.8}.direct-public .direct-race-table .direct-result-value>.direct-split-toggle{position:static;gap:0}.direct-public .direct-result-value .direct-split-indicator{position:absolute;right:0;top:50%;transform:translateY(-50%)}
+@media(max-width:600px){.direct-public .direct-result-line{grid-template-columns:minmax(0,1fr);grid-template-rows:16px 10px;align-content:center;column-gap:0;row-gap:0;min-height:32px}.direct-public .direct-result-value{grid-column:1;grid-row:1;min-width:0;line-height:16px}.direct-public .direct-race-table .direct-result-line>.direct-delta{grid-column:1;grid-row:2;padding-right:18px;font-size:.54rem;line-height:10px}.direct-public .direct-race-table .direct-result-value>.direct-split-toggle{min-height:16px;line-height:16px}.direct-public .direct-result-value>.direct-split-toggle::after{content:"";position:absolute;inset:-8px 0 -8px 0}}
