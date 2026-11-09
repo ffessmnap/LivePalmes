@@ -2,16 +2,52 @@
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
 const {startStaticServer,launchBrowser,evaluate,waitFor}=require('../tools/capture-portal-design');
 const fixture={competition:{id:'legacy-nap-900001',name:'Compétition piscine — démonstration',date:'2026-11-07',endDate:'2026-11-08',city:'Paris',location:'Piscine de démonstration',poolLength:'50'},config:{state:'active',publicVisible:true,consoles:['computer'],version:1,revision:1,documents:[]},events:[{id:'a'.repeat(64),eventCode:'100sf',eventLabel:'100 m Surface',sex:'F',phase:'series',date:'2026-11-07',sessionKey:'1',sessionLabel:'Samedi matin',order:1,publication:{series:true,results:true},expectedSeries:1,progress:{entries:2,seriesEntries:2,resultEntries:2,matchedResults:2,seriesCount:1,resultSeriesCount:1,completeSeriesCount:1,unassignedResults:0}}],selectedEventId:'a'.repeat(64),entries:[{key:'alice',firstName:'Alice',lastName:'Exemple',clubCode:'WWWWWWWW',birthYear:2008,club:'Club de démonstration',category:'FJU',series:1,lane:4,kind:'individual',seed:{raw:'595999',cs:null,status:'no_reference'},result:{raw:'01:10.12',cs:7012,status:''},rank:1,delta:null,members:[],splits:[]},{key:'bea',firstName:'Béatrice',lastName:'ESSAI',birthYear:2005,club:'Autre club',category:'FSE',series:1,lane:5,kind:'individual',seed:{raw:'01:15.00',cs:7500,status:'known'},result:{raw:'01:13.00',cs:7300,status:''},rank:2,delta:-200,members:[],splits:[]}],permissions:{manage:true,delegate:true,roles:['computer']}};
+async function checkTimeAlignment(client,width,output){
+ const calls=await evaluate(client,'return __directCalls.length');
+ const baseline=await evaluate(client,"return document.querySelector('.direct-scratch .direct-participant-row').getBoundingClientRect().height");
+ await evaluate(client,`window.__alignmentSaved=structuredClone(LivePalmesDirectPublic.state.data);
+ const data=LivePalmesDirectPublic.state.data,source=data.entries[1];
+ data.events[0].eventCode='1500sf';data.events[0].eventLabel='1500 m Surface';
+ data.entries=[{cs:2300,delta:-200},{cs:7012,delta:12},{cs:111456,delta:0},{cs:7300,delta:null,noReference:true},{cs:null,status:'dsq'},{cs:null,status:'ab'},{cs:null,status:'dns'},{cs:10300,delta:-340,splits:[{distance:100,time:'00:50.00'}]}].map((row,i)=>({...structuredClone(source),key:'align-'+i,lastName:'Exemple '+i,lane:i+1,rank:i+1,seed:row.noReference?{cs:null,status:'no_reference'}:source.seed,result:{cs:row.cs,status:row.status||''},delta:row.delta,splits:row.splits||[]}));
+ LivePalmesDirectPublic.render();`);
+ const layout=await evaluate(client,`return [...document.querySelectorAll('.direct-scratch>.direct-table-wrap>.direct-race-table,.direct-heat-section .direct-race-table')].map(table=>{
+ const rows=[...table.querySelectorAll('.direct-participant-row')];
+ return rows.map(row=>{const number=row.querySelector('.direct-result-number'),delta=row.querySelector('.direct-delta'),n=number.getBoundingClientRect(),range=document.createRange();if(delta)range.selectNodeContents(delta);const d=delta?range.getBoundingClientRect():null,display=delta?getComputedStyle(delta).display:null,cell=number.closest('td').getBoundingClientRect(),height=row.getBoundingClientRect().height;
+ delta?.remove();const plainHeight=row.getBoundingClientRect().height;
+ return {text:number.textContent,right:n.right,left:n.left,bottom:n.bottom,cellRight:cell.right,height,plainHeight,delta:d?{right:d.right,top:d.top,display}:null};});});`);
+ assert.equal(layout.length,2,'Scratch et séries contrôlés');
+ for(const rows of layout){
+  assert.equal(rows.length,8);
+  assert.ok(Math.max(...rows.map(r=>r.right))-Math.min(...rows.map(r=>r.right))<1,'Tous les temps/statuts alignés, avec ou sans passages : '+JSON.stringify(rows));
+  assert.ok(rows.every(r=>r.right<=r.cellRight&&r.height===r.plainHeight&&r.height<=baseline),'Écarts sans agrandir ni déborder les lignes');
+  for(const row of rows.filter(r=>r.delta)){
+   assert.notEqual(row.delta.display,'none');
+   if(width<=600){assert.ok(row.delta.top>=row.bottom-1,'Écart sous le temps sur mobile');assert.ok(Math.abs(row.delta.right-row.right)<1,'Écart aligné sous le temps');}
+   else assert.ok(row.delta.right<=row.left-3,'Écart discret à gauche du temps');
+  }
+  assert.equal(rows.filter(r=>r.delta).length,4,'Sans écart pour une référence absente ou un statut');
+ }
+ await evaluate(client,"LivePalmesDirectPublic.render()");
+ const shot=await client.send('Page.captureScreenshot',{format:'png'});fs.writeFileSync(path.join(output,`times-${width}.png`),Buffer.from(shot.data,'base64'));
+ if(width<=600){
+  const point=await evaluate(client,"const button=document.querySelector('.direct-scratch [data-splits]');button.scrollIntoView({block:'center',inline:'center'});const box=button.getBoundingClientRect();return {x:box.left+box.width/2,y:box.top+box.height/2}");
+  await client.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[point]});await client.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+  assert.ok(await evaluate(client,"const button=document.querySelector('.direct-scratch [data-splits]');return button.getAttribute('aria-expanded')==='true'&&!document.getElementById(button.getAttribute('aria-controls')).hidden"),'Temps et passages restent utilisables au toucher');
+ }
+ await evaluate(client,"LivePalmesDirectPublic.state.data=window.__alignmentSaved;delete window.__alignmentSaved;LivePalmesDirectPublic.render()");
+ assert.equal(await evaluate(client,'return __directCalls.length'),calls,'Aligner les temps ne lit aucune donnée supplémentaire');
+}
 async function main(){const {server,baseUrl}=await startStaticServer(),browser=await launchBrowser(),client=browser.client,output=path.resolve('tmp/direct-browser');fs.mkdirSync(output,{recursive:true});
  try{
   const script=`window.__directFixture=${JSON.stringify(fixture)};window.__directCalls=[];window.__directFailure=false;window.fetch=async function(url){window.__directCalls.push(String(url));if(window.__directFailure)throw Error('Panne réseau fictive');return {ok:true,json:async()=>String(url).includes('action=records')?{source:'nap',data:{records:[],franceRecords:[]}}:{source:'nap',...structuredClone(window.__directFixture)}};};const fixtureUser={uid:'fixture'};window.firebase={apps:[{}],auth:()=>({currentUser:fixtureUser,onAuthStateChanged:callback=>queueMicrotask(()=>callback(fixtureUser)),signOut:async()=>{},signInWithEmailAndPassword:async()=>{}}),app:()=>({functions:()=>({httpsCallable:()=>async input=>{window.__directCalls.push(input.action);if(input.action==='watchContext')return {data:window.__watchContext};if(input.action==='list')return {data:{items:[window.__directFixture.competition]}};if(input.action==='detail')return {data:structuredClone(window.__directFixture)};if(input.action==='previewBatch')return {data:{fingerprint:'fixture',replacements:[]}};if(input.action==='publishBatch'){window.__lastPublishedGroups=structuredClone(input.groups);return {data:{ok:true,count:input.groups.reduce((n,group)=>n+group.rows.length,0),events:structuredClone(window.__directFixture.events),version:++window.__directFixture.config.version,revision:++window.__directFixture.config.revision}};}return {data:{ok:true}};}})})};`;
   await client.send('Page.addScriptToEvaluateOnNewDocument',{source:script});
-  for(const width of [1280,390,320]){
+  for(const width of [1280,768,390,320]){
     await client.send('Emulation.setDeviceMetricsOverride',{width,height:950,deviceScaleFactor:1,mobile:width<700});
     await client.send('Emulation.setTouchEmulationEnabled',{enabled:width<700});
     await client.send('Page.navigate',{url:baseUrl+'/direct.html?id=900001'});assert.ok(await waitFor(client,"document.querySelector('#heatTable')",12000));
     assert.equal(await evaluate(client,'return document.documentElement.scrollWidth<=innerWidth'),true,'Pas de débordement global');
     assert.equal(await evaluate(client,'return LivePalmesDirectPublic.state.mode'),'results');
+    await checkTimeAlignment(client,width,output);
     await evaluate(client,"LivePalmesDirectPublic.state.data.competition.name='Championnat régional Île-de-France de nage avec palmes — première manche de la saison 2026–2027 — toutes catégories';LivePalmesDirectPublic.render()");
     assert.ok(await evaluate(client,"const title=document.querySelector('#meetTitle'),css=getComputedStyle(title);return css.whiteSpace==='nowrap'&&css.textOverflow==='ellipsis'&&title.clientHeight<=parseFloat(css.lineHeight)+1&&title.scrollWidth>title.clientWidth&&title.title===title.textContent&&title.tabIndex===0"),'Titre long conservé sur une ligne avec texte complet accessible');
     assert.ok(await evaluate(client,"const title=document.querySelector('#meetTitle');title.scrollLeft=100;const scrolled=title.scrollLeft>0;title.scrollLeft=0;return scrolled"),'Le titre complet reste défilable sur téléphone et ordinateur');
@@ -152,6 +188,6 @@ async function main(){const {server,baseUrl}=await startStaticServer(),browser=a
     assert.equal(await evaluate(client,"return document.querySelector('[data-watch-series-first]').value"),'1','Réglages non partagés entre comptes');
 
   }
-  console.log('Direct navigateur : public à 1280/390/320 px et bureau sur ordinateur, tactile, filtres, reprise réseau, aperçu et publication fictive. HTTPS externe bloqué.');
+  console.log('Direct navigateur : public à 1280/768/390/320 px, temps alignés et lignes inchangées ; bureau sur ordinateur, tactile, filtres, reprise réseau, aperçu et publication fictive. HTTPS externe bloqué.');
  }finally{await browser.client.send('Browser.close').catch(()=>{});browser.cleanup();server.closeAllConnections();server.close();}}
 main().catch(error=>{console.error(error);process.exitCode=1;});
