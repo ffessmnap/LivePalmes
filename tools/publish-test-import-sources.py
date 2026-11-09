@@ -22,7 +22,7 @@ RELEASE = 'import_resolution'
 ALLOWED = frozenset({'createEngagementClubSwimmer', 'previewEngagementClubSwimmerCreation'})
 PREFIX = f'projects/{PROJECT}/locations/europe-west1/functions/'
 CONTRACT = ROOT / '.github/releases/evidence/20261109-import-resolution-contract.json'
-CONTRACT_SHA256 = '0d3c5d3fac61ba0e5bfdd049d4260ebb7f0855af662c313dadb9ecebc333da91'
+CONTRACT_SHA256 = '6dc8deb094c490b9e469e3f5380b4158907ad0d41076a282bb8acb296274b305'
 
 
 def contract():
