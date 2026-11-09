@@ -8,17 +8,17 @@
   function decode(bytes){try{return new TextDecoder('utf-8',{fatal:true}).decode(bytes);}catch{return new TextDecoder('windows-1252').decode(bytes);}}
   function fileInfo(name){
     const match=String(name).match(/^(.+)_AS_(\d{1,3})_(\d{1,3})_(\d{1,3})_([a-z0-9]+)\.txt$/i);
-    if(!match||name.length>200||match.slice(2,5).some(n=>Number(n)<1))fail('Nom TXT WinPalme non reconnu : '+name);
+    if(!match||name.length>200||match.slice(2,5).some(n=>Number(n)<1))fail('Nom de fichier WinPalme non reconnu : '+name);
     return {prefix:match[1],session:Number(match[2]),event:Number(match[3]),series:Number(match[4]),eventCode:code(match[5]),key:Number(match[2])+'|'+Number(match[3])};
   }
   function time(value){
-    if(!/^\d{6}$/.test(value)||Number(value.slice(2,4))>59||value==='000000')fail('Temps TXT incomplet ou non reconnu : '+value);
+    if(!/^\d{6}$/.test(value)||Number(value.slice(2,4))>59||value==='000000')fail('Temps du fichier incomplet ou non reconnu : '+value);
     return {raw:value.slice(0,2)+':'+value.slice(2,4)+'.'+value.slice(4),cs:(Number(value.slice(0,2))*60+Number(value.slice(2,4)))*100+Number(value.slice(4))};
   }
   function parse(name,text){
     const info=fileInfo(name),rawLines=String(text).replace(/^\uFEFF/,'').split(/\r?\n/).filter(line=>line.trim()),seen=new Map();
     const lines=rawLines.filter(line=>/^[1-8];/.test(line));
-    if(!rawLines.length||lines.length>1000)fail('Série TXT vide ou trop volumineuse : '+name);
+    if(!rawLines.length||lines.length>1000)fail('Fichier de série vide ou trop volumineuse : '+name);
     const rows=lines.map(line=>{
       const fields=line.trim().split(/[;:]/).map(s=>s.trim()),lane=Number(fields[0]);
       if(fields.length!==7||!/^\d+$/.test(fields[0])||lane<0||lane>20)fail('Ligne d’eau invalide : '+name);
@@ -33,7 +33,7 @@
         if(!value||value==='000000')return;
         const split=time(value),distance=ui.distance(info.eventCode,index),total=ui.length(info.eventCode);
         if(final&&split.cs===final.cs&&(distance===total||total===50))return;
-        if(split.cs<=previous||final&&split.cs>=final.cs||distance&&total&&distance>=total)fail('Passages TXT incohérents : '+name);
+        if(split.cs<=previous||final&&split.cs>=final.cs||distance&&total&&distance>=total)fail('Temps de passage incohérents : '+name);
         previous=split.cs;splits.push({distance:distance?distance+' m':'Passage '+(index+1),time:split.raw});
       });return {lane,resultTime:final?.raw||'',resultStatus:status,splits};
     }).filter(Boolean);return {...info,rows};
@@ -42,9 +42,9 @@
     const files=[];let total=0;
     for await(const handle of directory.values()){
       if(handle.kind!=='file'||!/\.txt$/i.test(handle.name))continue;
-      if(files.length>=2000)fail('Dossier limité à 2 000 TXT.');
+      if(files.length>=2000)fail('Dossier limité à 2 000 fichiers de résultats.');
       const file=await handle.getFile();total+=file.size;
-      if(file.size>65536||total>4*1024*1024)fail('TXT trop volumineux (64 Ko par fichier, 4 Mo par dossier).');
+      if(file.size>65536||total>4*1024*1024)fail('Fichier de résultats trop volumineux (64 Ko par fichier, 4 Mo par dossier).');
       const text=decode(await file.arrayBuffer());files.push({name:file.name,text,hash:await digest(text),info:fileInfo(file.name)});
     }
     files.sort((a,b)=>a.name.localeCompare(b.name));
@@ -52,7 +52,7 @@
     return files;
   }
   function associations(files){
-    const groups=new Map();for(const f of files){const key=f.info.key,old=groups.get(key);if(old&&old.eventCode!==f.info.eventCode)fail('Épreuve TXT ambiguë : '+f.name);if(!old)groups.set(key,{...f.info,count:0});groups.get(key).count++;}return [...groups.values()];
+    const groups=new Map();for(const f of files){const key=f.info.key,old=groups.get(key);if(old&&old.eventCode!==f.info.eventCode)fail('Épreuve du fichier ambiguë : '+f.name);if(!old)groups.set(key,{...f.info,count:0});groups.get(key).count++;}return [...groups.values()];
   }
   function laneMapping({txtFirstLane=0,seriesFirstLane=0}={}){
     const values=[txtFirstLane,seriesFirstLane].map(value=>value===''?NaN:Number(value));
@@ -65,7 +65,7 @@
     const mapping=laneMapping(lanes);
     parsed.rows=parsed.rows.map(row=>{
       const lane=row.lane+mapping.offset;
-      if(row.lane<mapping.txtFirstLane||lane<0||lane>20)fail('Décalage de lignes incompatible : '+file.name+'. Contrôler les premières lignes TXT et séries.');
+      if(row.lane<mapping.txtFirstLane||lane<0||lane>20)fail('Décalage de lignes incompatible : '+file.name+'. Contrôler les premières lignes du fichier et des séries.');
       return {...row,lane};
     });
     if(!event||code(event.eventCode)!==parsed.eventCode||Number(event.sessionKey)!==parsed.session)fail('Association à vérifier : '+file.name+' · session '+parsed.session+', épreuve '+parsed.event+'. Choisir l’épreuve correspondante dans les réglages.');
@@ -74,7 +74,7 @@
     if(entries.length!==parsed.rows.length||new Set(entries.map(row=>row.lane)).size!==entries.length||parsed.rows.some(row=>!entries.some(entry=>entry.lane===row.lane))){
       const numbers=rows=>rows.map(row=>row.lane).sort((a,b)=>a-b).join(', ');
       const original=parsed.rows.map(row=>({...row,lane:row.lane-mapping.offset}));
-      fail(file.name+' · série '+parsed.series+' : lignes TXT ['+numbers(original)+'], après décalage ['+numbers(parsed.rows)+'], séries importées ['+numbers(entries)+']. Vérifier les premières lignes et l’association ; réimporter le PDF seulement si la répartition a changé.');
+      fail(file.name+' · série '+parsed.series+' : lignes du fichier ['+numbers(original)+'], après décalage ['+numbers(parsed.rows)+'], séries importées ['+numbers(entries)+']. Vérifier les premières lignes et l’association ; réimporter le PDF seulement si la répartition a changé.');
     }
     const eventInput={...event};delete eventInput.heatSchedule;
     return {kind:'results',event:eventInput,seriesNumber:parsed.series,seriesFingerprint:fingerprint,operationKey:crypto.randomUUID(),source:{type:'winpalme-txt',name:file.name,hash:file.hash},rows:parsed.rows.map(result=>{
@@ -103,7 +103,7 @@
         const batch=[],groups=[];
         for(const file of changed){
           try{const group=build(file);blocked.delete(file.name);if(!group){acknowledged.set(file.name,file.hash);continue;}batch.push(file);groups.push(group);if(batch.length===100)break;}
-          catch(error){const message=error.message||'TXT non reconnu';blocked.set(file.name,{name:file.name,message:message.includes(file.name)?message:file.name+' · '+message});}
+          catch(error){const message=error.message||'Fichier de résultats non reconnu';blocked.set(file.name,{name:file.name,message:message.includes(file.name)?message:file.name+' · '+message});}
         }
         if(batch.length){
           if(version!==generation)return;

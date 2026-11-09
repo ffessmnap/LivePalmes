@@ -1,0 +1,37 @@
+{
+  "schema": 1,
+  "project": "livepalmes-test",
+  "release": "direct_bureau_layout",
+  "approval": "Antoine, chat Direct du 9 novembre 2026 : maquette et résumé métier validés, intégration, vérifications et publication TEST autorisées, puis QR codes autorisés. Périmètre calculé fermé à manageLivePalmesDirect et readNapPublicSwimmer : confirmation des forfaits hors délai et projection minimale Q/QA/QB annoncée, sources/labels seulement. Configurations, tables, accès, autres fonctions et données réelles conservés. Aucune PROD.",
+  "applicationCommit": "d660fae67101247b90e261a754eaea8f45af8f61",
+  "baseCommit": "2c0ebfdb3ad35b9917899fdd8154e09fdf69d23b",
+  "baselineRuns": [
+    {
+      "id": 42700410845,
+      "artifact": "test-proof",
+      "workflow": ".github/workflows/livepalmes-test-common.yml",
+      "artifactId": 13710793126,
+      "artifactSha256": "06d44b6a60487e9d149ab64c8a79003d98631203f4aba008ccc51ea57194d1c9"
+    }
+  ],
+  "baselineFunctionCount": 121,
+  "baselineHostingVersion": "sites/livepalmes-test/versions/85223705c14389f3",
+  "fingerprints": {
+    "readNapPublicSwimmer": "22972888eda3bece4f78cde229a1ef0e3a7a396ee532d212f0b68826e309a434",
+    "manageLivePalmesDirect": "b2b94eb98ea69d1a9972f15e4793eaf0926b89a663ae9c9a7aef7d520b428be1"
+  },
+  "toolingPaths": [
+    ".github/releases/evidence/20261109-direct-bureau-layout-contract.json",
+    "tools/publish-test-direct-layout-sources.py",
+    "tools/publish-test-direct-sources.py",
+    "tests/test-direct-layout-sources-tests.py",
+    "tests/test-direct-sources-tests.py",
+    "tools/release-cycle.py",
+    ".github/workflows/livepalmes-test-mail-sources.yml",
+    ".github/workflows/livepalmes-verification-preview.yml",
+    "docs/releases/EVOLUTIONS.md",
+    "docs/releases/PROCEDURE.md",
+    "docs/agents/PUBLICATION.md",
+    "tests/helpers/verify-direct-console-mysql.js"
+  ]
+}
