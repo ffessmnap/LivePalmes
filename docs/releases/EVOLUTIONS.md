@@ -2,6 +2,12 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 9 novembre — Temps alignés sur le Direct public (préparation TEST)
+
+- Demande d’Antoine : aligner tous les temps et placer les écarts discrètement à gauche ou en dessous sans agrandir les lignes. Dans les tableaux scratch et séries, même fin de colonne avec/sans écart ou bouton de passages ; écart secondaire à gauche sur ordinateur/tablette et en dessous à 600 px ou moins, dans la hauteur existante. Réserve fixe pour le bouton de passages ; résultats, statuts et références absentes conservés. Versions CSS/vue incrémentées sur les trois pages Direct partageant ces fichiers, aucune ancienne console générée modifiée.
+- Budget d’accès : zéro lecture SQL/Firestore supplémentaire à l’ouverture, à l’action, au rafraîchissement et au pire cas ; seules les données déjà reçues sont présentées. Aucun import, publication de résultats, calcul sportif, accès, table ou backend changé.
+- Contrôles locaux : présentation et syntaxe ; navigateur à 1280/768/390/320 px, avec temps courts/longs, écarts positifs/négatifs/nuls, sans référence, DSQ/abandon/forfait et passages. Alignement mesuré dans scratch et séries, hauteur comparée avec/sans écarts, ouverture des passages au clavier/toucher et réseau fictif isolé. Aucun compte connecté ni donnée réelle modifiée. CI, intégration et publication TEST à confirmer ; recette utilisateur non recueillie, aucune PROD pour ce lot.
+
 ### 9 novembre — Réduction du trafic statique (TEST déployé, recette attendue)
 
 - Antoine valide les optimisations proposées après l'audit des coûts Google : images web allégées, URL du logo commune et cache statique ciblé. Sifflet : 1 216 842 → 4 829 octets (−99,6 %) ; logo : 54 314 → 22 267 octets (−59,0 %). Dessins, proportions et tailles CSS conservés ; originaux hors Hosting et générateur Windows dédié. Aucun accès aux données ajouté, coût SQL/Firestore inchangé à l'ouverture, à l'action et au rafraîchissement.
