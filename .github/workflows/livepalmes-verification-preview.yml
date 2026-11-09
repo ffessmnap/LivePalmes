@@ -196,6 +196,7 @@ jobs:
           python tests/preview-scope-tests.py
           python tests/test-publication-coordination-tests.py
           python tests/portal-session-rules-tests.py
+          python tests/test-static-cache-policy-tests.py
           node tests/nap-source-diagnostic-tests.js
           python tests/test-verification-evidence-tests.py
           python tests/production-pdf-functions-tests.py

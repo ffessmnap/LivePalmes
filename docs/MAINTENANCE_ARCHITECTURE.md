@@ -30,7 +30,7 @@ Les anciens fichiers principaux avaient déjà un cache immuable ; ce réglage e
 
 Chaque script, fragment et entrée possède une version d'URL. `portal-cache-version-tests.js` vérifie les versions et refuse un contenu changé sans renouvellement de son URL par rapport au parent testé. Garder cet ordre et ce contrôle lors des retouches futures.
 
-Préparation du 9 novembre 2026, non déployée : cache navigateur d'un jour avec revalidation à expiration pour les scripts et styles statiques ciblés, le logo et le sifflet. Les deux scripts des anciennes pages Séries/Résultats sont concernés, sans mise en cache supplémentaire de leurs données. Les HTML, réponses métier et caches immuables historiques restent inchangés. Ce delta `firebase.json` exige son périmètre de publication spécifique : le circuit commun refuse actuellement cette configuration ; ne pas retirer ce refus ni réutiliser une exception historique.
+Préparation du 9 novembre 2026 : cache navigateur d'un jour avec revalidation à expiration pour les scripts et styles statiques ciblés, le logo et le sifflet. Les deux scripts des anciennes pages Séries/Résultats sont concernés, sans mise en cache supplémentaire de leurs données. Les HTML, réponses métier et caches immuables historiques restent inchangés. Antoine autorise une exception TEST explicite pour ces huit réglages seulement : `approved_static_asset_cache=true`, lancement manuel avec `hosting_only=true`, empreintes complètes de configuration avant/après contrôlées par `tools/test-static-cache-policy.py`. Tout autre delta, lancement automatique, nouvelle version main ou cible PROD reste refusé ; sélection et preuve backend conservées. Le déploiement et la recette restent à attester dans le registre.
 
 ## Budget des données
 

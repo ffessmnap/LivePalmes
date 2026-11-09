@@ -26,6 +26,15 @@ class CoordinationTests(unittest.TestCase):
         self.assertFalse(result['queued'])
         self.assertEqual(api.call_count, 1)
 
+    def test_static_cache_exception_never_follows_another_candidate(self):
+        inputs = dict(approved_static_asset_cache=True, hosting_only=True)
+        self.assertTrue(self.call('prepare', **inputs)[0]['publish'])
+        self.assertFalse(self.call('prepare', 'b', **inputs)[0]['publish'])
+        self.assertFalse(self.call('followup', 'b', **inputs)[0]['queued'])
+        for wrong in [dict(hosting_only=False), dict(automatic_candidate='a' * 40)]:
+            with self.subTest(wrong=wrong), self.assertRaises(ValueError):
+                self.call('prepare', **{**inputs, **wrong})
+
     def test_stale_queued_candidate_does_not_publish(self):
         self.assertFalse(self.call('prepare', 'b')[0]['publish'])
 
