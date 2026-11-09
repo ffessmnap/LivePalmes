@@ -13,7 +13,7 @@ async function main(){
         assert.ok(await evaluate(client,"return location.pathname.endsWith('/direct-admin.html')&&!document.querySelector('iframe')&&!document.querySelector('[data-direct-console=computer]')"));
         await evaluate(client,"document.querySelector('#bureauOperations').open=true");
         assert.ok(await waitFor(client,'window.LivePalmesDirectBureau?.instance?.state.data',5000),'Arbitrage chargé dans le bureau');
-        await evaluate(client,'window.testApi=LivePalmesDirectBureau.instance');assert.equal(await evaluate(client,'return window.__fixtureAuthCount'),1,'Un seul état de connexion dans le bureau');
+        await evaluate(client,"window.testApi=LivePalmesDirectBureau.instance;testApi.showTab('finals')");assert.equal(await evaluate(client,'return window.__fixtureAuthCount'),1,'Un seul état de connexion dans le bureau');
       }else{
         assert.ok(await waitFor(client,"window.LivePalmesDirectConsole?.state.data && !document.querySelector('#consoleWorkspace').hidden",10000),'Console '+role+' chargée');
         await evaluate(client,'window.testApi=LivePalmesDirectConsole');
@@ -21,7 +21,7 @@ async function main(){
       assert.ok(await waitFor(client,'!testApi.state.loading',5000));
       assert.deepEqual(await evaluate(client,'return window.__errors'),[],'Sans exception JavaScript '+role);
     }
-    async function click(selector){assert.ok(await evaluate(client,'return Boolean(document.querySelector('+JSON.stringify(selector)+'))'),'Bouton présent : '+selector);await evaluate(client,'document.querySelector('+JSON.stringify(selector)+').click()');}
+    async function click(selector){await waitFor(client,'!testApi.state.loading&&!testApi.state.busy',5000);assert.ok(await evaluate(client,'return Boolean(document.querySelector('+JSON.stringify(selector)+'))'),'Bouton présent : '+selector);await evaluate(client,'document.querySelector('+JSON.stringify(selector)+').click()');}
     async function changed(selector){const before=await evaluate(client,'return testApi.state.data.revision');await click(selector);assert.ok(await waitFor(client,'testApi.state.data.revision>'+before+'&&!testApi.state.loading&&!testApi.state.busy',5000),'Action enregistrée : '+selector+' '+await evaluate(client,"return document.querySelector('#terrainNotice')?.textContent||document.querySelector('#bureauConsoleStatus')?.textContent||''"));}
     async function secretarySubmit(){await changed('#consoleDialogSubmit');assert.ok(await evaluate(client,"return !document.querySelector('#consoleDialog').open"));}
     async function configure(format,active=setup){await ready('computer',1280,active);await evaluate(client,"document.querySelector('#consoleFinalSettings').open=true;document.querySelector('[data-format]').value='"+format+"';document.querySelector('[data-lanes]').value='6';document.querySelector('#consoleDefaultLanes').value='6'");await evaluate(client,'window.__watchStops=0;LivePalmesDirectAdmin.watcher.stop=()=>{window.__watchStops++}');await changed('[data-console-action=configure]');assert.equal(await evaluate(client,'return window.__watchStops'),0,'Les actions privées du bureau ne coupent pas la surveillance TXT');assert.equal(await evaluate(client,'return testApi.state.data.finals.format'),format);}
@@ -29,7 +29,7 @@ async function main(){
     await configure('ab');
     await ready('referee');await click('#entrantsBody tr[data-swimmer-id]');assert.ok(await evaluate(client,"return Boolean(document.querySelector('#terrainModal [data-decision-type]'))"));await click('[data-decision-type=false_start]');{const shot=await client.send('Page.captureScreenshot',{format:'png'});fs.writeFileSync(path.join(output,'referee-decision.png'),Buffer.from(shot.data,'base64'));}await changed('[data-submit-decision]');assert.ok(await evaluate(client,"return document.querySelector('#roleHistory').textContent.includes('En attente vidéo')"));
     await ready('video');assert.ok(await evaluate(client,"return document.querySelector('#roleQueue').textContent.includes('faux départ')"));await changed('[data-queue-action=confirm-video]');
-    await ready('computer');assert.ok(await evaluate(client,"return document.querySelector('#bureauOperations').textContent.includes('Saisi dans WinPalme')"));await changed('[data-console-action=computerDone]');assert.ok(await evaluate(client,"return document.querySelector('#bureauOperations').textContent.includes('TXT corrigé')"));
+    await ready('computer');await evaluate(client,"testApi.showTab('queue')");assert.ok(await evaluate(client,"return document.querySelector('#bureauOperations').textContent.includes('Saisi dans WinPalme')"));await changed('[data-console-action=computerDone]');assert.ok(await evaluate(client,"return document.querySelector('#bureauOperations').textContent.includes('TXT corrigé')"));
     await setup.publish('results',setup.people.map((row,i)=>({...row,resultTime:i===0?'':'01:'+String(10+i).padStart(2,'0')+'.00',resultStatus:i===0?'dsq':''})));
     await ready('speaker');await changed('#officialAlerts [data-alert-action]');await announce();assert.ok(await evaluate(client,'return testApi.state.data.finals.announcedAt'));
     await ready('secretary',1024);await click('[data-console-action=withdraw]');await secretarySubmit();assert.ok(await evaluate(client,"return document.querySelector('#consoleFinals').textContent.includes('annonce du repêchage')"));
@@ -50,6 +50,38 @@ async function main(){
     await ready('speaker',1280,partial);await click('[data-terrain-final]');assert.equal(await evaluate(client,"return document.querySelector('[data-finalists-announced]')"),null);
     await ready('referee',1280,partial);await click('[data-terrain-final]');await changed('[data-terrain-swimoff-cancel]');
     await ready('speaker',1280,partial);await changed('#officialAlerts [data-alert-action]');await announce();assert.equal(await evaluate(client,'return testApi.state.data.finals.partial'),false);assert.equal(await evaluate(client,'return testApi.state.data.finals.roster.a.length'),6);
+    // Audit regressions: actual service transactions in an isolated database,
+    // with another logical console writing while the browser keeps a draft open.
+    const audit=await start();fixtures.push(audit);await configure('a',audit);
+    async function remote(action,input={}){const response=await fetch(audit.baseUrl+'/fixture-rpc',{method:'POST',body:JSON.stringify({action,competitionId:audit.id,...input})}),result=await response.json();if(!response.ok)throw Error(result.message);return result;}
+    async function remoteCommand(command,role,input={}){const snapshot=await remote('consoleSnapshot',{role});return remote('consoleCommand',{role,eventId:snapshot.selectedEventId,revision:snapshot.revision,configVersion:snapshot.configVersion,command,operationKey:require('node:crypto').randomUUID(),...input});}
+    await ready('speaker',1024,audit,768);await click('#programBtn');
+    const remoteRows=(await remote('consoleSnapshot',{role:'referee'})).entries;
+    await remoteCommand('decision','referee',{participantKey:remoteRows[0].key,type:'other_dsq',comment:'AUDIT réception programme ouvert'});
+    assert.ok(await waitFor(client,"document.querySelector('#terrainModalUpdates')?.textContent.includes('NAGEUR 1')",5000),'Une décision est reçue ET visible pendant le programme');
+    assert.ok(await evaluate(client,"return document.querySelector('#terrainModal').open&&document.querySelector('#terrainModal').textContent.includes('Programme')"),'Le programme reste ouvert');
+    {const shot=await client.send('Page.captureScreenshot',{format:'png'});fs.writeFileSync(path.join(output,'audit-program-notification.png'),Buffer.from(shot.data,'base64'));}
+    assert.equal(await evaluate(client,"return LivePalmesDirectTerrainView.categoryLabel('M40+','F')"),'F40+');
+    assert.equal(await evaluate(client,"return LivePalmesDirectTerrainView.categoryLabel('M40+','M')"),'H40+');
+    await ready('referee',1024,audit,768);await click('#entrantsBody tr[data-swimmer-id]');await click('[data-decision-type=interference]');
+    await evaluate(client,"const input=document.querySelector('#modalDecisionComment');input.value='Brouillon à conserver';input.dispatchEvent(new Event('input',{bubbles:true}))");
+    const revision=await evaluate(client,'return testApi.state.data.revision');await remoteCommand('progress','referee',{series:1});assert.ok(await waitFor(client,'testApi.state.data.revision>'+revision,5000));
+    await click('[data-submit-decision]');assert.ok(await waitFor(client,"document.querySelector('[data-terrain-review]')",5000),'Reprise proposée sans fermeture du brouillon');
+    await click('[data-terrain-review]');assert.ok(await waitFor(client,"document.querySelector('#terrainModalError').textContent.includes('Données actualisées')",5000));assert.equal(await evaluate(client,"return document.querySelector('#modalDecisionComment').value"),'Brouillon à conserver');await changed('[data-submit-decision]');
+    const auditState=await remote('consoleSnapshot',{role:'computer'});assert.equal(auditState.workflow.alerts.filter(a=>a.comment==='Brouillon à conserver').length,1,'La reprise explicite n’a créé qu’une décision');
+    // Remove the test DSQs through the workflow before exercising finalists.
+    for(const alert of auditState.workflow.alerts)if(!alert.cancelledAt){await remoteCommand('computerDone','computer',{alertId:alert.id});await remoteCommand('cancel','referee',{alertId:alert.id});}
+    for(const alert of (await remote('consoleSnapshot',{role:'computer'})).workflow.alerts)if(!alert.cancelledAt&&alert.computerStatus==='pending')await remoteCommand('computerDone','computer',{alertId:alert.id});
+    await ready('live',1024,audit,768);assert.ok(await evaluate(client,"return document.querySelector('#officialAlerts').textContent.includes('par le juge arbitre')"),'L’annulation JA est attribuée au JA, pas au délégué');
+    await ready('speaker',1024,audit,768);await announce();
+    await ready('secretary',1024,audit,768);
+    assert.ok(await evaluate(client,"const r=document.querySelector('[data-console-action=withdraw]').getBoundingClientRect();return r.height>=44&&r.bottom<innerHeight"),'Forfait tactile visible dans le premier écran 1024 × 768');
+    const secretaryEvent=await evaluate(client,'return testApi.state.eventId');await ready('secretary',768,audit,900);assert.equal(await evaluate(client,'return testApi.state.eventId'),secretaryEvent);assert.ok(await evaluate(client,"return document.querySelector('[data-console-action=withdraw]').getBoundingClientRect().height>=44"));
+    await ready('computer',1280,audit,900);await evaluate(client,"testApi.showTab('history')");
+    const protectedEntries=JSON.stringify(audit.pool.inspect().entries);const originalHistory=await evaluate(client,'return testApi.state.data.workflow.historyCount');
+    await click('[data-bureau-reset]');assert.ok(await evaluate(client,"return document.querySelector('.direct-confirm[open]')"));assert.equal((await remote('consoleSnapshot',{role:'computer'})).workflow.historyCount,originalHistory,'Aucun reset avant confirmation');await click('[data-confirm-cancel]');assert.equal((await remote('consoleSnapshot',{role:'computer'})).workflow.historyCount,originalHistory);
+    await click('[data-bureau-reset]');await click('[data-confirm-accept]');assert.ok(await waitFor(client,'testApi.state.data.workflow.historyCount===0&&!testApi.state.busy',5000));assert.equal(JSON.stringify(audit.pool.inspect().entries),protectedEntries,'Reset consoles sans effacer les imports');
+    assert.ok(!client.events.some(e=>e.method==='Page.javascriptDialogOpening'),'Les confirmations modifiées n’ouvrent aucun dialogue natif bloquant');
     console.log('Six consoles : bureau unique PDF/TXT/arbitrage/finales ; ergonomie historique JA/vidéo/speaker/Live ; vrai service SQL isolé ; annonces partielles, forfait et départage ; 1900/1366/1024/768/390 px, impression et fermeture des données privées.');
   }finally{await client.send('Browser.close').catch(()=>{});browser.cleanup();for(const fixture of fixtures){fixture.server.closeAllConnections();fixture.server.close();}}
 }

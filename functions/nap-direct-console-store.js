@@ -37,6 +37,7 @@ function createConsoleStore(pool,store){
   async function history(id,input,permissions){ensure(await store.config(id),permissions,input.role);const state=await get(pool,id),offset=Number(input.offset)||0;if(!Number.isInteger(offset)||offset<0||offset>5000)throw TypeError('Page invalide.');if(input.all===true)return {items:state.history.slice().reverse(),nextOffset:null};return {items:state.history.slice().reverse().slice(offset,offset+100),nextOffset:state.history.length>offset+100?offset+100:null};}
   async function command(id,actor,input,permissions){
     if(!/^[a-zA-Z0-9_-]{16,64}$/.test(input.operationKey||''))throw TypeError('Identifiant d’action requis.');
+    if(input.command==='resetConsoles'&&input.confirmation!=='reset-consoles-'+id)throw TypeError('Confirmation de remise à zéro des consoles requise.');
     const receiptId=model.hash(['direct-console-command',input.operationKey]),contentHash=model.hash({...input,revision:undefined,configVersion:undefined});
     const c=await pool.getConnection();let started=false;
     try{
@@ -45,7 +46,7 @@ function createConsoleStore(pool,store){
       if(receipt){if(receipt.source_hash!==contentHash)throw fail('Cet identifiant concerne une autre action.');await c.commit();started=false;return {...model.parseJson(receipt.after_json),replayed:true};}
       const state=await get(c,id);
       if(Number(input.revision)!==state.revision||Number(input.configVersion)!==Number(config.version))throw fail('Une autre console ou les résultats ont changé. Actualiser avant de confirmer.','aborted');
-      const list=await store.events(id,c);if(list.length>model.MAX_EVENTS)throw fail('Programme trop volumineux.');let selected=list.find(e=>e.id===input.eventId),raw=selected?await store.entries(id,selected.id,c):[],context=selected?{event:store.eventView(selected),entries:rows(raw)}:{event:null,entries:[]};
+      const list=input.command==='resetConsoles'?[]:await store.events(id,c);if(list.length>model.MAX_EVENTS)throw fail('Programme trop volumineux.');let selected=list.find(e=>e.id===input.eventId),raw=selected?await store.entries(id,selected.id,c):[],context=selected?{event:store.eventView(selected),entries:rows(raw)}:{event:null,entries:[]};
       if(input.command==='configure'){
         if(!Array.isArray(input.events)||input.events.some(setting=>!list.some(e=>e.id===setting.id&&e.phase==='series')))throw TypeError('Choisir des courses de séries importées.');
         const keys=input.events.map(setting=>{const e=list.find(e=>e.id===setting.id);return e.event_code+'|'+e.sex;});if(new Set(keys).size!==keys.length)throw TypeError('Un seul réglage par épreuve et sexe, même sur plusieurs sessions.');
@@ -55,6 +56,7 @@ function createConsoleStore(pool,store){
       if(Buffer.byteLength(JSON.stringify(next),'utf8')>2*1024*1024)throw fail('État des consoles trop volumineux. Exporter l’historique et contacter le bureau.');
       await execute(c,"INSERT INTO livepalmes_direct_publications (environment,competition_id,id,batch_id,event_id,operation_key,action,source_type,source_name,source_hash,before_json,after_json,created_at,created_by) VALUES (?,?,?,'',NULL,?,'console-state','console','','','null',?,UTC_TIMESTAMP(6),?) ON DUPLICATE KEY UPDATE after_json=VALUES(after_json)",[...store.scope(id),stateId,stateId,JSON.stringify(next),actor.uid]);
       const result={ok:true,revision:next.revision,configVersion:Number(config.version)};
+      if(input.command==='resetConsoles')await execute(c,"DELETE FROM livepalmes_direct_publications WHERE environment=? AND competition_id=? AND action='console-command'",store.scope(id));
       await execute(c,"INSERT INTO livepalmes_direct_publications (environment,competition_id,id,batch_id,event_id,operation_key,action,source_type,source_name,source_hash,before_json,after_json,created_at,created_by) VALUES (?,?,?,'',?,?, 'console-command','console',?,?,'null',?,UTC_TIMESTAMP(6),?)",[...store.scope(id),receiptId,selected?.id||null,receiptId,model.clean(input.command,200),contentHash,JSON.stringify(result),actor.uid]);
       await c.commit();started=false;return result;
     }catch(error){if(started)await c.rollback();throw error;}finally{c.release();}

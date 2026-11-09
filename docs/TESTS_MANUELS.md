@@ -2,6 +2,14 @@
 
 <!-- description: Checklist de tests manuels à exécuter avant une publication ou après une modification sensible. -->
 
+## Corrections de l’audit Direct — recette TEST du 9 novembre 2026
+
+- Programme speaker ouvert et brouillon JA actif : recevoir une nouvelle décision au prochain cycle, voir l’encart dans la fenêtre sans fermer ni perdre la saisie. En onglet masqué, aucune lecture périodique ; retour visible relu immédiatement.
+- Deux postes agissent : refus de version périmée, brouillon intact, « Vérifier les changements », relecture puis confirmation manuelle. Ne créer qu’une décision. Pendant le chargement, course/rôle/actions neutralisés, aucune ancienne réponse ne remplace la sélection. Réponse réseau perdue : reprendre avec la même clé.
+- Bureau : un seul écran avec suivi TXT, volets Arbitrage/Finales/Imports/Historique ; reload conserve compétition, course et volet. Secrétariat 1024 × 768 et 768 × 900 : forfait visible dans le premier écran, cibles de 44 px. Délais individuels après annonce d’un nouveau qualifié ; aucun changement des règles ou fenêtres de 30 min.
+- Dix alertes : dernières en tête et accessibles malgré les précédentes, rappel flottant et zone bornée ; aucun empilement repoussant la série à 1 000 px. Annulation JA distincte du délégué, libellés F30+/F40+ sur MPF féminines, entrées/sorties explicites dans l’annonce d’un repêchage.
+- Remise à zéro des consoles sur fixture seulement : annuler ne fait rien ; mauvais rôle/confirmation refusés ; échec du reçu annule toute la transaction ; rejouer le reset ne double rien ; anciennes commandes refusées après reset. Décisions/finales/journal/repère seuls effacés, imports/PDF/configuration/délégations/autres environnements et compétitions inchangés. Le pilote n’a pas demandé d’effacer Paris dans cette recette.
+
 ## Six consoles Direct — recette TEST du 8 novembre 2026
 
 Recette authentifiée à effectuer sur TEST avec les fichiers de la compétition choisie par le pilote. Les tests automatiques utilisent une base et des comptes simulés isolés ; ils ne publient pas de données réelles. Les pages nationales historiques ne sont pas raccordées à ce nouveau parcours.

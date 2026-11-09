@@ -30,6 +30,14 @@ async function verify({pool,id,actor,native,failJournal}){
     await partialSend('withdraw','secretary',{participantKey:partial.finals.roster.a[0]});await assert.rejects(partialSend('announceReplacement','speaker'),/confirmer l’annulation/);await partialSend('confirmSwimoffCancelled','referee');await partialSend('announceReplacement','speaker');
     partial=await consoles.snapshot(id,{role:'computer',eventId:partialId},permissions);assert.equal(partial.finals.partial,false);assert.equal(partial.finals.roster.a.length,6,'Annonce partielle, forfait et annonce complète conservés dans le JSON MySQL');
     const other=createConsoleStore(pool,createStore(pool,'production'));await assert.rejects(other.snapshot(id,{role:'computer'},permissions),/fermées/,'État opérationnel isolé de production');
+    const protectedBefore=await store.detail(id),resetSnapshot=await consoles.snapshot(id,{role:'computer'},permissions);
+    const reset={command:'resetConsoles',role:'computer',confirmation:'reset-consoles-'+id,revision:resetSnapshot.revision,configVersion:resetSnapshot.configVersion,operationKey:randomUUID()};
+    failJournal(2);await assert.rejects(consoles.command(id,actor,reset,permissions),/Interruption/);failJournal(0);
+    assert.equal((await consoles.snapshot(id,{role:'computer'},permissions)).revision,resetSnapshot.revision,'Reset SQL annulé intégralement si son reçu échoue');
+    await consoles.command(id,actor,reset,permissions);assert.equal((await consoles.command(id,actor,reset,permissions)).replayed,true);
+    const cleared=await consoles.snapshot(id,{role:'computer'},permissions);assert.equal(cleared.workflow.historyCount,0);assert.equal(cleared.workflow.alerts.length,0);assert.equal(Object.keys(cleared.workflow.races).length,0);assert.equal(cleared.revision,resetSnapshot.revision+1);
+    assert.deepEqual(await store.detail(id),protectedBefore,'Le vrai DELETE privé ne change ni imports ni activation ni accès');
+    const [remaining]=await pool.execute("SELECT COUNT(*) AS total FROM livepalmes_direct_publications WHERE environment=? AND competition_id=? AND action='console-command'",['test',id]);assert.equal(Number(remaining[0].total),1);
     console.log('Consoles MySQL isolé : JSON privé, reçus, verrouillage concurrent, refus des versions anciennes, rollback, annonce partielle/forfait/annulation du swim-off et isolation environnement vérifiés.');
   }finally{native.native_level_code=originalLevel;failJournal(0);}
 }

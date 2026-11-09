@@ -48,12 +48,13 @@ function qualification(state,event,entries){
 }
 function can(role,command,consoles){
   const table={configure:['computer'],progress:['referee'],decision:['referee'],videoConfirm:['video'],videoReject:['video'],takeover:['referee'],cancel:['referee','computer','video'],computerDone:['computer'],announceDecision:['speaker'],announceFinalists:['speaker','computer'],withdraw:['secretary','computer'],reinstate:['secretary','computer'],preWithdraw:['secretary','computer'],announceReplacement:['speaker','computer'],resolveTie:['referee','computer'],markSwimoff:['referee','computer'],confirmSwimoffCancelled:['referee','computer'],refreshFinalists:['computer'],compositionDone:['computer'],secretaryDone:['secretary']};
-  if(!table[command]?.includes(role))reject('Cette action n’est pas autorisée dans cette console.');
+  if(!(command==='resetConsoles'?role==='computer':table[command]?.includes(role)))reject('Cette action n’est pas autorisée dans cette console.');
   if(role==='computer'&&['announceFinalists','announceReplacement'].includes(command)&&consoles.includes('speaker'))reject('L’annonce est réservée au speaker tant que sa console est activée.');
   if(role==='computer'&&['withdraw','reinstate','preWithdraw'].includes(command)&&consoles.includes('secretary'))reject('Utiliser le secrétariat tant que sa console est activée.');
 }
 function next(previous,input,{role,actor,actorLabel=actor,event,entries,consoles,now=new Date().toISOString()}){
   can(role,input.command,consoles);const state=structuredClone(previous),command=input.command;
+  if(command==='resetConsoles')return {...empty(),revision:state.revision+1};
   if(!event&&command!=='configure')reject('Choisir une course.');
   const eventId=event?.id;let race=eventId?raceState(state,eventId):null;
   const row=entries?.find(row=>row.key===input.participantKey),alert=state.alerts.find(row=>row.id===input.alertId);
