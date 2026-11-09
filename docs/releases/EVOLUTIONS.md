@@ -2,6 +2,11 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### Direct — sélection initiale d’une course avec finale · 9 novembre 2026
+
+- Contrôle complémentaire du cas où seules certaines courses ont des finales : ouverture automatique de la première course configurée au bureau et au secrétariat, sans afficher une liste vide sous un sélecteur déjà rempli. Au plus un snapshot ciblé supplémentaire à l’ouverture, aucun changement serveur ou de règle. Régression contrôlée sur une compétition fictive à deux courses dont seule la seconde a une finale.
+- Complément d’interface au lot #809 ; sources serveur du commit 2574e2e5 conservées et réutilisables par empreinte. CI puis Hosting TEST commun requis ; aucune publication ni validation utilisateur encore annoncée pour ce complément.
+
 ### Direct — intégration de la maquette bureau/secrétariat et qualifications publiques · 9 novembre 2026
 
 - Antoine valide la maquette, le mode bureau seul pleine largeur, le masquage des Finales vides et les libellés « Publication des résultats », puis autorise l’intégration et la publication TEST. Ajout autorisé en cours : contrôler l’ergonomie tablette du juge vidéo sans changer ses règles.
