@@ -17,8 +17,8 @@
   "baselineFunctionCount": 121,
   "baselineHostingVersion": "sites/livepalmes-test/versions/65553c4956ebc2a8",
   "fingerprints": {
-    "createEngagementClubSwimmer": "dcc9a327c31ab8a6616ab5f3b59fa2b26678d8c5f931b325598e87fd2893d056",
-    "previewEngagementClubSwimmerCreation": "26d166072c45614d7b335f9608877787698f163a36c0b4bd61b94ffc1e38d076"
+    "createEngagementClubSwimmer": "5e6622491dc6fe158e6b7eb8db3bb4be34847196e89b40eae9cd0fcca14979b2",
+    "previewEngagementClubSwimmerCreation": "cf5a5867eb84d2277495c33162a3f9e67d2b2557f1df706ee3e66d092e751e1b"
   },
   "toolingPaths": [
     ".github/releases/evidence/20261109-import-resolution-contract.json",

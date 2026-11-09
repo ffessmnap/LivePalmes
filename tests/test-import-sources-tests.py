@@ -47,6 +47,17 @@ def archive():
 
 
 class ImportSources(unittest.TestCase):
+    def test_contract_matches_the_real_test_selector_and_committed_application(self):
+        entry = p.contract()
+        anchored = p.cycle.test_backend_fingerprints(entry['applicationCommit'])
+        baseline = p.cycle.test_backend_fingerprints(entry['baseCommit'])
+        current = p.cycle.test_backend_fingerprints(p.cycle.git('rev-parse', 'HEAD'))
+        self.assertEqual({n: anchored[n] for n in p.ALLOWED}, entry['fingerprints'],
+                         'Use the deployed TEST selector, not the dependency diagnostic snapshot')
+        self.assertEqual(set(anchored), set(baseline))
+        self.assertEqual({n for n in anchored if anchored[n] != baseline[n]}, p.ALLOWED)
+        self.assertEqual(current, anchored, 'No later backend dependency may enter the closed import release')
+
     def test_contract_and_workflow_are_closed_without_changing_mail_permissions(self):
         entry = p.contract()
         self.assertEqual(set(entry['fingerprints']), p.ALLOWED)
