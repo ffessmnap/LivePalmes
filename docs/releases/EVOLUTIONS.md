@@ -5,7 +5,7 @@
 ### Direct — intégration de la maquette bureau/secrétariat et qualifications publiques · 9 novembre 2026
 
 - Antoine valide la maquette, le mode bureau seul pleine largeur, le masquage des Finales vides et les libellés « Publication des résultats », puis autorise l’intégration et la publication TEST. Ajout autorisé en cours : contrôler l’ergonomie tablette du juge vidéo sans changer ses règles.
-- Bandeau compact, suivi permanent à droite avec les consoles / pleine largeur seul, historique unique, secrétariat sans programme, confirmation explicite des forfaits hors délai, Q/QA/QB publics suivant les annonces. Tables et accès existants conservés ; projection publique minimale, budgets documentés dans LIVEPALMES_DIRECT.md. Guide HTML/PDF et captures fictives mis à jour.
+- Bandeau compact, suivi permanent à droite avec les consoles / pleine largeur seul, historique unique, secrétariat sans programme, confirmation explicite des forfaits hors délai, Q/QA/QB publics suivant les annonces. Tables et accès existants conservés ; projection publique minimale, budgets documentés dans LIVEPALMES_DIRECT.md. Guide HTML/PDF et captures fictives mis à jour. Complément demandé ensuite : QR code et copie du lien pour chaque console activée, génération locale sans nouvelle dépendance ni accès métier.
 - Contrôles locaux métier, service SQL simulé et responsive en cours ; la CI globale et MySQL isolé restent requis sur le candidat exact. Complément sources TEST limité aux consommateurs Direct calculés ; contrat distinct de celui de l’audit précédent, puis Hosting commun et contrôle final. Aucun déploiement ni validation utilisateur de la réalisation encore annoncé. Aucune PROD.
 
 
