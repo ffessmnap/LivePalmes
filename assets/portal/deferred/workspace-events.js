@@ -1348,48 +1348,6 @@
         [portalContext.elements.engagementsEditQualificationStart, portalContext.elements.engagementsEditQualificationEnd].forEach((field) => field?.addEventListener("change", () => portalState.qualificationEditor?.refreshPeriod()));
         portalContext.elements.engagementsEditMaxEventsUnlimited?.addEventListener("change", () => portalActions.updateEngagementMaxEventsFields("edit"));
         portalContext.elements.engagementsEditInvitedRegionChoices?.addEventListener("change", (event) => portalActions.syncInvitedRegionChoice(event, portalContext.elements.engagementsEditInvitedRegionIds));
-        portalContext.elements.sidebar?.addEventListener("pointerleave", () => {
-          portalContext.elements.sidebar.classList.remove("is-collapsed-after-navigation");
-        });
-        portalContext.elements.sidebar?.addEventListener("focusin", () => {
-          portalContext.elements.sidebar.classList.remove("is-collapsed-after-navigation");
-        });
-        portalContext.elements.clubToggle?.addEventListener("click", () => {
-          if (portalState.selectedEngagementCompetitionId && !portalActions.closeEngagementCompetitionDetail()) return;
-          portalActions.togglePortalSpace("club", "clubHome", "espace-club", portalContext.elements.clubToggle);
-          portalActions.collapsePortalNavigationAfterSelection();
-        });
-        portalContext.elements.performanceToggle?.addEventListener("click", () => {
-          portalActions.togglePortalSpace("performance", "performanceHome", "gestion-performances", portalContext.elements.performanceToggle);
-          portalActions.collapsePortalNavigationAfterSelection();
-        });
-        portalContext.elements.engagementsAdminToggle?.addEventListener("click", () => {
-          global.location.hash = "competitions-calendrier";
-          portalActions.collapsePortalNavigationAfterSelection();
-        });
-        portalContext.elements.dtnToggle?.addEventListener("click", () => {
-          portalActions.togglePortalSpace("dtn", "dtnHome", "espace-dtn", portalContext.elements.dtnToggle);
-          portalActions.collapsePortalNavigationAfterSelection();
-        });
-        portalContext.elements.nationalToggle?.addEventListener("click", () => {
-          if (global.location.hash === "#administration-nationale") portalActions.updateNavigationView();
-          else global.location.hash = "administration-nationale";
-          portalActions.collapsePortalNavigationAfterSelection();
-        });
-        document.getElementById("adminPortalNationalDisclosure")?.addEventListener("click", () => {
-          portalActions.setNationalMenuOpen(Boolean(portalContext.elements.nationalSubmenu?.hidden));
-        });
-        document.getElementById("adminPortalNationalDirectoriesDisclosure")?.addEventListener("click", (event) => {
-          if (!portalActions.canDeleteEngagementCompetitionDirectly()) return;
-          const submenu = document.getElementById("adminPortalNationalDirectoriesSubmenu");
-          if (!submenu) return;
-          submenu.hidden = !submenu.hidden;
-          event.currentTarget.setAttribute("aria-expanded", String(!submenu.hidden));
-        });
-        portalContext.elements.accessToggle?.addEventListener("click", () => {
-          portalActions.togglePortalSpace("access", "accessHome", "gestion-acces", portalContext.elements.accessToggle);
-          portalActions.collapsePortalNavigationAfterSelection();
-        });
         portalContext.elements.engagementsHomeLinks.forEach((link) => link.addEventListener("click", (event) => {
           const nextEntry = link.dataset.engagementsHomeEntry || "adminCalendar";
           const nextTab = link.dataset.engagementsHomeTab || "calendar";

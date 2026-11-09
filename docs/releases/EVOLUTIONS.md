@@ -2,6 +2,12 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 9 novembre — Navigation latérale disponible dès la connexion (préparation TEST)
+
+- Défaut constaté en lecture seule sur PROD : les boutons latéraux restent parfois inertes sur le premier accueil, puis fonctionnent après une navigation par une tuile. Cause reproduite localement : leurs gestionnaires étaient inscrits avec les outils métier différés, jamais chargés par les accueils minimalistes. Les mêmes gestionnaires sont désormais inscrits dans le module immédiat des événements ; ils sont retirés du lot différé pour éviter les doubles bascules. Disclosures nationaux et réouverture du panneau au focus conservés ; versions des scripts actualisées.
+- Budget supplémentaire nul à l'ouverture, au clic, au retour, au rafraîchissement et au pire cas : aucun RPC, SELECT NAP, document/écriture Firestore ou listener de données ajouté. Les outils, formulaires et données restent chargés selon les parcours existants. Authentification, PIN, capacités, droits, protections de session, backend et Firebase inchangés. Aucun changement visuel ni nouvelle règle de design.
+- Régression sur la vraie fabrique des événements : absence des gestionnaires confirmée avec le code précédent, puis premiers boutons/disclosures et garde de capacité existante vérifiés avec le correctif. Suites ciblées : chargement différé, préchargement de l'accueil, frontières et chargeur des modules, versions de cache, session et protection d'accès. Navigateur local à 1280/390/320 px : premiers accès, clavier sur ordinateur, raccourcis tactiles existants sur mobile (barre latérale masquée par le shell), chargement retardé/échoué puis reprise volontaire, absence de double bascule, retour accueil, liens directs, session reprise et brouillon conservé. Profils/services fictifs et HTTPS externe bloqué ; aucune donnée réelle ni écriture PROD/TEST. CI globale et déploiement TEST à compléter ; validation utilisateur attendue, aucune PROD autorisée.
+
 ### 9 novembre — Résolution des blocages de l’import ZIP (TEST déployé, recette attendue)
 
 - Demande d’Antoine : création/rattachement d’un nageur sans licence dans l’import, accès à la création d’un club absent et explication des blocages d’enregistrement. Recherche préparée au clic, saisies/contrôle conservés tant que les informations ne changent pas, doublons et reprises protégés ; formulaire national des clubs réutilisé, bilan visible et alertes paginées. [Parcours et budgets détaillés](../gestion-base-performances.md).
