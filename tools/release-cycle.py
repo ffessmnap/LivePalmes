@@ -410,6 +410,12 @@ def targeted_test_evidence(directory, current):
     trusted.update(direct_sources.trusted_revisions(directory, current, SimpleNamespace(
         gh=gh, artifact=artifact, read=read, matching_functions=matching_functions,
         test_backend_fingerprints=test_backend_fingerprints)))
+    spec = importlib.util.spec_from_file_location('direct_layout_evidence', ROOT / 'tools/publish-test-direct-layout-sources.py')
+    layout_sources = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(layout_sources)
+    trusted.update(layout_sources.publisher.trusted_revisions(directory, current, SimpleNamespace(
+        gh=gh, artifact=artifact, read=read, matching_functions=matching_functions,
+        test_backend_fingerprints=test_backend_fingerprints)))
     return trusted
 
 
