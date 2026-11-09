@@ -20,6 +20,7 @@
   function closePrivateDialogs(){global.LivePalmesDirectConfirm.close();terrain?.leave();for(const dialog of [dialogs.person,dialogs.clubs,$('consoleDialog')]){if(dialog.open)dialog.close();}dialogs.person.replaceChildren();dialogs.clubs.replaceChildren();$('consoleDialogContent').replaceChildren();state.dialog=null;}
   function render(){
     const data=state.data;if(!data)return;document.body.dataset.consoleRole=state.role;
+    if(state.role==='secretary'){const finals=(data.finalOptions||data.events).filter(e=>['a','ab'].includes(data.workflow.races[e.id]?.format));if(finals.length&&!finals.some(e=>e.id===(data.finalsEvent?.id||data.selectedEventId))){state.eventId=finals[0].id;state.series=null;Promise.resolve().then(()=>load(true));return;}}
     const allowed=data.config.consoles.filter(role=>data.permissions.manage||data.permissions.roles.includes(role));
     $('consolePrint').hidden=!['computer','referee','video'].includes(state.role);
     $('consoleRole').innerHTML=allowed.map(role=>`<option value="${role}" ${role===state.role?'selected':''}>${esc(view.labels[role])}</option>`).join('');
