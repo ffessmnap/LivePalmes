@@ -2,6 +2,12 @@
 
 <!-- description: Référence du langage visuel, des composants d’interface et des règles responsive déjà présents dans LivePalmes. -->
 
+## Consoles Direct — ergonomie après audit du 9 novembre 2026
+
+Bureau unique : onglets compacts Arbitrage, Finales, Imports, Historique dans le volet opérationnel ; surveillance TXT sur une ligne tant que ses paramètres sont repliés. Les actions de composition précèdent la liste et restent accessibles lors du défilement. Le secrétariat affiche la finale choisie avant le repère JA et les séries, repliés. Les réservistes et les autres finales sont dépliables ; les blocs d’actions vides sont absents. Boutons de forfait, annonce, programme et connexion : cible de 44 px sur tablette (largeur jusqu’à 1 366 px ou pointeur tactile), lignes historiques des nageurs inchangées.
+
+Speaker/Live : deux informations récentes visibles, informations plus anciennes dans une zone dépliable à hauteur bornée et bouton flottant de rappel. Dans les fenêtres ouvertes, encart discret mais visible de réception indépendante. Une erreur de concurrence propose de vérifier les changements sans fermer le brouillon ; la validation de la décision reste explicite après relecture. Les confirmations courantes sont des dialogues HTML accessibles au clavier et au toucher, compatibles avec une fenêtre de décision déjà ouverte. La remise à zéro des consoles utilise une confirmation destructive dont le périmètre est nommé, distincte de « Tout réinitialiser ».
+
 ## Accès Direct et mode opératoire régional
 
 L’entrée « LivePalmes Direct » du menu latéral et son raccourci d’accueil conservent l’icône écran existante et ouvrent le bureau dans un nouvel onglet. Leur visibilité repose sur les droits régionaux/nationaux et l’administration générale, sans nouvelle habilitation. Le bureau propose un seul lien « Mode opératoire » près du compte ; les deux actions se replient sur une ligne supplémentaire si l’écran est étroit.

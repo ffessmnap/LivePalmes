@@ -2,6 +2,12 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### 9 novembre — Corrections de l’audit LivePalmes Direct (préparation TEST)
+
+- Demande explicite d’Antoine : corriger les constats, compacter le bureau et adapter les consoles aux tablettes, publier TEST puis revérifier. Complément confirmé : bouton de remise à zéro du seul workflow privé, avec confirmation, sans supprimer séries/résultats/PDF/activation/accès.
+- Réception maintenue pendant fenêtres/saisies, encart et accès aux alertes, reprise explicite des conflits avec brouillon conservé, neutralisation pendant chargement, confirmations HTML ; bureau à volets et secrétariat centré sur la finale choisie, cibles tactiles, contexte local conservé, libellés et annonces clarifiés. [Comportements, périmètre et budgets](../LIVEPALMES_DIRECT.md#corrections-après-audit-des-consoles--9-novembre-2026).
+- Aucun changement de schéma, règle sportive, droit global, import TXT/PDF ou publication de performances. Le code modifié reste celui des commandes privées Direct ; le sélecteur réel calcule aussi le lecteur public via sa dépendance au store. Antoine autorise explicitement le complément fermé à ces deux sources TEST, sous contrat `20261109-direct-console-audit-contract.json`, sans changement des configurations ni des données. Contrôles ciblés locaux et tests navigateur réussis ; CI globale et preuve de publication TEST à rattacher à la PR du lot ; recette utilisateur finale attendue, aucune autorisation PROD.
+
 ### 9 novembre — Navigation latérale disponible dès la connexion (TEST validé)
 
 - Défaut constaté en lecture seule sur PROD : les boutons latéraux restent parfois inertes sur le premier accueil, puis fonctionnent après une navigation par une tuile. Cause reproduite localement : leurs gestionnaires étaient inscrits avec les outils métier différés, jamais chargés par les accueils minimalistes. Les mêmes gestionnaires sont désormais inscrits dans le module immédiat des événements ; ils sont retirés du lot différé pour éviter les doubles bascules. Disclosures nationaux et réouverture du panneau au focus conservés ; versions des scripts actualisées.

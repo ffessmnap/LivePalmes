@@ -40,3 +40,12 @@
   body.terrain-mode .app-shell,body.terrain-mode .panel{box-shadow:none;padding:0;border:0}
 }
 .terrain-partial-roster ol{list-style:none;padding-left:0}
+.terrain-mode #officialAlerts{max-height:245px;overflow:auto;overscroll-behavior:contain;border-radius:8px}
+.terrain-mode .terrain-older-alerts>summary{cursor:pointer;padding:10px 12px;background:#edf4f7;color:#165469;font-size:.8rem;min-height:44px;box-sizing:border-box}
+.terrain-mode .terrain-modal-updates{position:sticky;top:0;z-index:5;max-width:760px;margin:0 auto 10px;padding:9px 12px;border:1px solid #edc16c;border-radius:8px;background:#fff8e8;font-size:.8rem;color:#734400;box-shadow:0 3px 8px #122c4918}
+.terrain-mode .terrain-modal-updates[hidden]{display:none}.terrain-modal-updates strong,.terrain-modal-updates span{display:block}.terrain-modal-updates details{max-height:180px;overflow:auto}.terrain-modal-updates summary{cursor:pointer;min-height:32px;display:flex;align-items:center}.terrain-modal-updates p{margin:6px 0}
+.terrain-mode .terrain-loading .series-table{opacity:.45;pointer-events:none}.terrain-mode .terrain-modal-error{margin:10px auto;z-index:6}.terrain-mode .terrain-modal-error button{display:block;margin-top:8px;min-height:44px}
+.terrain-mode .console-roster-changes{padding:10px;background:#fff8e8;border:1px solid #edc16c;border-radius:8px}.console-roster-changes ul{padding-left:18px;margin:8px 0}
+@media(max-width:1366px),(pointer:coarse){.terrain-mode #programBtn,.terrain-mode #terrainConnection,.terrain-mode .record-chip,.terrain-mode #officialAlerts button,.terrain-mode #terrainFinalTasks button{min-height:44px}.terrain-mode #terrainConnection{padding:6px 10px}.terrain-mode #officialAlerts{max-height:210px}}
+
+.terrain-mode .terrain-inbox-button{position:fixed;right:16px;bottom:14px;z-index:20;min-height:44px;border:1px solid #dca537;border-radius:20px;padding:9px 14px;background:#fff4ce;color:#754400;box-shadow:0 3px 12px #122c4933;font:inherit;font-size:.8rem;cursor:pointer}

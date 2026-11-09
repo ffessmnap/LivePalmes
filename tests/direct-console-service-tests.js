@@ -45,6 +45,22 @@ async function main(){
   const delegateAlert=(await call('consoleSnapshot',{role:'video'},'video')).workflow.alerts.at(-1).id;
   await send('videoConfirm','video',{alertId:delegateAlert},'video');await send('cancel','video',{alertId:delegateAlert},'video');
   assert.equal((await call('consoleSnapshot',{role:'computer'})).workflow.alerts.at(-1).type,'requalification','Le compte vidéo existant retrouve l’annulation délégué sans capacité globale supplémentaire');
+  const {createConsoleStore}=require('../functions/nap-direct-console-store');
+  for(const [environment,meet] of [['production',id],['test',id+1]]){const separate=createStore(pool,environment);await separate.settings(meet,actor,{consoles:['computer'],operationKey:randomUUID()});await createConsoleStore(pool,separate).command(meet,actor,{command:'configure',role:'computer',events:[],lanes:8,revision:0,configVersion:1,operationKey:randomUUID()},{manage:true,roles:[],competition:await separate.native(meet)});}
+  const otherLogs=JSON.stringify(pool.inspect().logs.filter(r=>r.environment!=='test'||r.competition_id!==id));
+  const beforeReset=pool.inspect(),protectedRows=JSON.stringify({configs:beforeReset.configs,events:beforeReset.events,entries:beforeReset.entries,grants:beforeReset.grants});
+  await assert.rejects(send('resetConsoles','computer',{confirmation:'incorrect'}),/Confirmation/);
+  await assert.rejects(send('resetConsoles','referee',{confirmation:'reset-consoles-'+id},'referee'),/autorisée/);
+  assert.equal(JSON.stringify(pool.inspect()),JSON.stringify(beforeReset),'Confirmation et rôle incorrects ne modifient rien');
+  pool.failJournal(true);await assert.rejects(send('resetConsoles','computer',{confirmation:'reset-consoles-'+id}),/Journal interrompu/);pool.failJournal(false);
+  assert.equal(JSON.stringify(pool.inspect()),JSON.stringify(beforeReset),'Le reset privé et les suppressions de reçus sont transactionnels');
+  const resetSnapshot=await call('consoleSnapshot',{role:'computer'}),resetInput={role:'computer',command:'resetConsoles',revision:resetSnapshot.revision,configVersion:resetSnapshot.configVersion,confirmation:'reset-consoles-'+id,operationKey:randomUUID()};
+  const resetResult=await call('consoleCommand',resetInput);assert.equal((await call('consoleCommand',resetInput)).replayed,true,'Le reset est idempotent après une réponse perdue');
+  const resetState=await call('consoleSnapshot',{role:'computer'}),afterReset=pool.inspect();assert.equal(resetState.revision,resetSnapshot.revision+1);assert.equal(resetResult.revision,resetState.revision);assert.equal(resetState.workflow.historyCount,0);assert.deepEqual(resetState.workflow.alerts,[]);assert.deepEqual(resetState.workflow.races,{});assert.equal(resetState.workflow.progress,null);
+  assert.equal(JSON.stringify({configs:afterReset.configs,events:afterReset.events,entries:afterReset.entries,grants:afterReset.grants}),protectedRows,'Reset : séries/résultats/PDF/configuration et accès conservés');
+  assert.equal(afterReset.logs.filter(r=>r.action==='console-command'&&r.environment==='test'&&r.competition_id===id).length,1,'Seul le reçu technique du reset est conservé');
+  assert.equal(JSON.stringify(afterReset.logs.filter(r=>r.environment!=='test'||r.competition_id!==id)),otherLogs,'Les journaux de l’autre compétition et de production restent intacts');
+  await assert.rejects(call('consoleCommand',retry,'root'),e=>e.directCode==='aborted','Un ancien envoi ne ressuscite pas les décisions supprimées');
   console.log('Consoles SQL : cinq tables réutilisées, état partagé privé, accès par rôle/compétition, activation, finales, annulation délégué vidéo, reçus idempotents, conflits et rollback vérifiés sans réseau.');
 }
 main().catch(error=>{console.error(error);process.exitCode=1;});

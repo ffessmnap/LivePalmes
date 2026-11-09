@@ -1,35 +1,47 @@
 (function(global){
   'use strict';
-  function create({role='computer',competitionId,getUser,call,onRender=()=>{},onStatus=()=>{},onAccessError=()=>{},onRetry=()=>{},canPoll=()=>true}){
+  function create({role='computer',competitionId,getUser,call,onRender=()=>{},onStatus=()=>{},onAccessError=()=>{},onRetry=()=>{},onActivity=()=>{},canPoll=()=>true}){
     const initial=()=>({data:null,role,eventId:null,series:null,session:'all',request:0,busy:false,loading:false,timer:null,pending:null,dialog:null,dirty:false,settingsOpen:false,records:null,reserveOffset:0});
     const state=initial();let active=true,epoch=0,allCache=null,allPending=null,recordPending=null;
-    function schedule(){clearTimeout(state.timer);if(active&&getUser())state.timer=setTimeout(()=>{if(!document.hidden&&canPoll()&&!state.dirty)load(false);else schedule();},15000);}
+    const storageKey=()=>`direct-console-position:${competitionId}:${getUser()?.uid}:${state.role}`;
+    function remember(){try{localStorage.setItem(storageKey(),JSON.stringify({eventId:state.eventId,series:state.series,session:state.session}));}catch{}}
+    function restore(events=[]){try{const saved=JSON.parse(localStorage.getItem(storageKey())||'null');if(saved&&events.some(e=>e.id===saved.eventId)){state.eventId=saved.eventId;state.series=saved.series;state.session=saved.session||'all';}}catch{}}
+    function schedule(){clearTimeout(state.timer);if(active&&getUser())state.timer=setTimeout(()=>{if(!document.hidden&&canPoll())load(false);else schedule();},15000);}
     async function load(force=false){
       if(!active||state.loading||state.busy||!getUser())return false;
-      const request=++state.request,uid=getUser().uid;state.loading=true;
+      const request=++state.request,uid=getUser().uid,eventId=state.eventId,selectedRole=state.role;let moved=false;state.loading=true;onActivity();
       try{
         const result=await call('consoleSnapshot',{role:state.role,eventId:state.eventId,revision:force?-1:state.data?.revision,configVersion:force?-1:state.data?.configVersion});
         if(!active||request!==state.request||uid!==getUser()?.uid)return false;
-        if(!result.unchanged){state.data=result;state.eventId=result.selectedEventId;onRender();}
+        if(eventId!==state.eventId||selectedRole!==state.role){moved=true;return false;}
+        if(!result.unchanged){state.data=result;state.eventId=result.selectedEventId;onRender();remember();}
         onStatus('Synchronisé à '+new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit',second:'2-digit'}),false);return true;
       }catch(error){
         if(!active||request!==state.request||uid!==getUser()?.uid)return false;
         onStatus(error.message,true);
         if(/permission-denied|unauthenticated/.test(error.code||'')){state.data=null;state.pending=null;allCache=null;onRetry(false);onAccessError();}return false;
-      }finally{if(request===state.request)state.loading=false;schedule();}
+      }finally{if(request===state.request){state.loading=false;onActivity();}schedule();if(moved)Promise.resolve().then(()=>load(true));}
     }
     const context=()=>({eventId:state.data?.selectedEventId,role:state.role,revision:state.data?.revision,configVersion:state.data?.configVersion});
     async function deliver(){
-      const input=state.pending,uid=getUser()?.uid,generation=epoch;if(!active||!input||!uid)return false;state.busy=true;
-      try{await call('consoleCommand',input);if(!active||generation!==epoch||uid!==getUser()?.uid)return false;state.pending=null;state.dirty=false;state.settingsOpen=false;onRetry(false);return true;}
+      const input=state.pending,uid=getUser()?.uid,generation=epoch;if(!active||!input||!uid||state.loading||state.busy)return false;state.busy=true;onActivity();
+      try{await call('consoleCommand',input);if(!active||generation!==epoch||uid!==getUser()?.uid)return false;state.pending=null;state.dirty=false;onRetry(false);return true;}
       catch(error){if(active&&generation===epoch&&uid===getUser()?.uid){if(/invalid-argument|permission-denied|unauthenticated|aborted|failed-precondition/.test(error.code||'')){state.pending=null;onRetry(false);}else onRetry(true);}throw error;}
-      finally{if(generation===epoch)state.busy=false;}
+      finally{if(generation===epoch){state.busy=false;onActivity();}}
     }
     function send(command,data={},expected=context()){
       if(state.busy)return Promise.reject(Error('Une action est déjà en cours.'));
+      if(state.loading)return Promise.reject(Error('Chargement en cours. Attendre avant de confirmer.'));
       if(state.pending)return Promise.reject(Error('Un envoi reste à vérifier : réessayer cet envoi avant une nouvelle action.'));
       if(!active||!getUser())return Promise.reject(Error('Connexion LivePalmes requise.'));
       state.pending={...expected,...data,command,operationKey:crypto.randomUUID()};return deliver();
+    }
+    async function revalidate(expected){
+      if(state.pending)throw Error('Vérifier le dernier envoi avant de reprendre cette action.');
+      const eventId=expected.eventId;
+      if(!await load(true))throw Error('Actualisation impossible. Le brouillon est conservé.');
+      if(eventId&&!state.data.events.some(e=>e.id===eventId))throw Error('Cette course n’est plus disponible. Le brouillon est conservé.');
+      Object.assign(expected,context(),{eventId});return expected;
     }
     async function allData(){
       const uid=getUser()?.uid,generation=epoch,key=[competitionId,uid,state.role,state.data?.configVersion].join(':');
@@ -42,7 +54,7 @@
     }
     function stop(){active=false;epoch++;state.request++;clearTimeout(state.timer);allCache=null;allPending=null;}
     function reset(){const request=state.request+1;clearTimeout(state.timer);active=true;epoch++;const previousRole=state.role;Object.assign(state,initial(),{request,role:previousRole});allCache=null;allPending=null;onRetry(false);}
-    return {state,load,send,deliver,allData,records,context,stop,reset};
+    return {state,load,send,deliver,allData,records,context,revalidate,remember,restore,stop,reset};
   }
   global.LivePalmesDirectConsoleClient={create};
 })(window);
