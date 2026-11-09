@@ -12,7 +12,7 @@ async function main(){
  const noise=['4 4','4-4','6','6 6',';;','0000','000000',...['0','9','10','04','4 ',' 4','\t4'].map(record),record('4').replaceAll(';',':')].join('\n');
  assert.equal(txt.parse(name,noise).rows.length,0,'Sans chiffre de 1 à 8 immédiatement suivi de ; en début de ligne, aucun résultat');
  assert.equal(txt.parse(name,noise+'\n'+body+'\n'+noise).rows.length,2,'Le bruit avant et après ne bloque pas les vrais résultats');
- assert.throws(()=>txt.buildGroup({name,text:record(4)+'\n5 5'},snapshot,'event'),/lignes TXT \[4\].*séries importées \[4, 5\]/,'Une ligne ignorée ne permet pas de publier une série incomplète');
+ assert.throws(()=>txt.buildGroup({name,text:record(4)+'\n5 5'},snapshot,'event'),/lignes du fichier \[4\].*séries importées \[4, 5\]/,'Une ligne ignorée ne permet pas de publier une série incomplète');
  for(const [word,status]of [['absence','dns'],['abandon','ab'],['disqualifié','dsq'],['DSQ','dsq']])assert.equal(txt.parse(name,'4;'+word+';;;;;').rows[0].resultStatus,status);
  assert.throws(()=>txt.parse(name,'4;000000;000000;000000;000000;000000;000000'),/Temps/);
  assert.throws(()=>txt.parse(name,'4;016000;000000;000000;000000;000000;000000'),/Temps/);
@@ -24,7 +24,7 @@ async function main(){
  assert.throws(()=>txt.parse(name,body+body.replace('forfait','abandon')),/Deux contenus différents/,'Même ligne avec statut différent : refus');
  assert.throws(()=>txt.parse(name,'4;011012;000000'),/invalide/);
  assert.throws(()=>txt.fileInfo('autre.txt'),/Nom/);
- assert.throws(()=>txt.parse(name,'4;011012;011013;000000;000000;000000;000000'),/Passages/);
+ assert.throws(()=>txt.parse(name,'4;011012;011013;000000;000000;000000;000000'),/Temps de passage/);
  const relay=txt.parse('DEMO_AS_01_09_01_4X50SF.txt','1;020363;002996;010973;013798;000000;000000');assert.deepEqual(relay.rows[0].splits.map(s=>s.distance),['50 m','100 m','150 m']);
  const file={name,text:body,hash:await txt.digest(body),info:txt.fileInfo(name)},group=txt.buildGroup(file,snapshot,'event');
  assert.equal(txt.buildGroup({...file,text:';;\n000000;000000'},snapshot,'event'),null,'Aucune publication pour un fichier de remplissage seul');
@@ -34,7 +34,7 @@ async function main(){
  assert.equal(snapshot.events[0].heatSchedule.length,2,'Les horaires du snapshot restent intacts');
  assert.deepEqual(txt.laneMapping({txtFirstLane:'1',seriesFirstLane:'2'}),{txtFirstLane:1,seriesFirstLane:2,offset:1});
  const shiftedBody=Array.from({length:6},(_,i)=>`${i+1};0110${String(i).padStart(2,'0')};000000;000000;000000;000000;000000`).join('\n'),shiftedFile={...file,text:shiftedBody},shiftedSnapshot={...snapshot,entries:Array.from({length:6},(_,i)=>({...snapshot.entries[0],key:'lane-'+i,lastName:'NAGEUR '+i,lane:i+2}))};
- assert.throws(()=>txt.buildGroup(shiftedFile,shiftedSnapshot,'event'),/lignes TXT \[1, 2, 3, 4, 5, 6\].*séries importées \[2, 3, 4, 5, 6, 7\]/,'Un décalage est expliqué, jamais deviné');
+ assert.throws(()=>txt.buildGroup(shiftedFile,shiftedSnapshot,'event'),/lignes du fichier \[1, 2, 3, 4, 5, 6\].*séries importées \[2, 3, 4, 5, 6, 7\]/,'Un décalage est expliqué, jamais deviné');
  const shifted=txt.buildGroup(shiftedFile,shiftedSnapshot,'event',{txtFirstLane:1,seriesFirstLane:2});
  assert.deepEqual(shifted.rows.map(row=>row.lane),[2,3,4,5,6,7]);assert.deepEqual(shifted.rows.map(row=>row.lastName),Array.from({length:6},(_,i)=>'NAGEUR '+i));
  assert.deepEqual(txt.parse(name,shiftedBody).rows.map(row=>row.lane),[1,2,3,4,5,6],'TXT original intact');

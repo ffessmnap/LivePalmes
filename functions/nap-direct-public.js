@@ -27,7 +27,9 @@ async function readPublic(pool,environment,input) {
       if(entries.length>limit)throw fail("Affichage trop volumineux.");
       const eventMap=new Map(visible.map(e=>[e.id,e]));
       const publicRows=entries.flatMap(row=>{const event=eventMap.get(row.event_id);if(!event)return [];const p=model.parseJson(event.publication_state_json);return model.visibleEntry(row,p.series,p.results)?[{...model.publicEntry(row,Boolean(p.series),Boolean(p.results)),eventId:row.event_id}]:[];});
-      const result={view:clubView?'club':'event',events:visible.map(row=>{const event=store.eventView(row);return {...event,progress:require('./nap-direct-progress').visible(event.progress,event.publication)};}),selectedEventId:selected?.id||null,entries:publicRows};
+      const qualifications=require('./nap-direct-public-qualifications');
+      const state=publicRows.length?(await store.q("SELECT JSON_EXTRACT(after_json,'$.races') AS races_json FROM livepalmes_direct_publications WHERE environment=? AND competition_id=? AND id=? LIMIT 1",[...store.scope(id),qualifications.stateId]))[0]:null;
+      const result={view:clubView?'club':'event',events:visible.map(row=>{const event=store.eventView(row);return {...event,progress:require('./nap-direct-progress').visible(event.progress,event.publication)};}),selectedEventId:selected?.id||null,entries:qualifications.attach(events,publicRows,model.parseJson(state?.races_json,{}))};
       if(cache.size>=100)cache.delete(cache.keys().next().value);cache.set(key,result);return result;
     })().finally(()=>pending.delete(key)));
     payload=await pending.get(key);

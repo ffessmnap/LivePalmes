@@ -60,7 +60,7 @@ function next(previous,input,{role,actor,actorLabel=actor,event,entries,consoles
   const row=entries?.find(row=>row.key===input.participantKey),alert=state.alerts.find(row=>row.id===input.alertId);
   const requiredAlert=()=>{if(!alert||alert.cancelledAt)reject('Cette décision n’est plus disponible.');if(alert.eventId!==eventId)reject('Cette décision concerne une autre course.');return alert;};
   const putRace=()=>{state.races[eventId]=race;};
-  const announceAllowed=(partial=false)=>{const q=qualification(state,event,entries);if(!q.capacity)reject('Cette course n’a pas de finale.');if(!q.complete)reject('Toutes les séries doivent avoir reçu leurs résultats.');if(q.ties.length&&!partial)reject('Ex æquo : enregistrer le départage avant de confirmer tous les finalistes.');if(q.unresolvedDecision)reject('Une décision JA/vidéo reste à traiter par le bureau.');if(q.decisionMismatch)reject('Attendre le TXT corrigé : les résultats reçus ne concordent pas avec les décisions du JA.');return q;};
+  const announceAllowed=(partial=false)=>{const q=qualification(state,event,entries);if(!q.capacity)reject('Cette course n’a pas de finale.');if(!q.complete)reject('Toutes les séries doivent avoir reçu leurs résultats.');if(q.ties.length&&!partial)reject('Ex æquo : enregistrer le départage avant de confirmer tous les finalistes.');if(q.unresolvedDecision)reject('Une décision JA/vidéo reste à traiter par le bureau.');if(q.decisionMismatch)reject('Attendre le résultat corrigé : les résultats reçus ne concordent pas avec les décisions du JA.');return q;};
   if(command==='configure'){
     if(![6,8].includes(Number(input.lanes)))reject('Choisir 6 ou 8 places par finale.');
     state.lanes=Number(input.lanes);
@@ -114,8 +114,9 @@ function next(previous,input,{role,actor,actorLabel=actor,event,entries,consoles
     if(command==='withdraw'){
       if(!wasFinalist||race.withdrawals[row.key])reject('Ce nageur n’est pas un finaliste officiellement annoncé disponible.');
       const reference=race.announced.times?.[row.key]||race.announced.at;
-      if(Date.parse(now)>Date.parse(reference)+30*60000)reject('Le délai de forfait de 30 minutes est dépassé.');
-      race.withdrawals[row.key]={at:now,by:actor};race.withdrawalLog.push({key:row.key,name:name(row),action:'withdraw',at:now,by:actor});
+      const deadline=new Date(Date.parse(reference)+30*60000).toISOString(),late=Date.parse(now)>Date.parse(deadline);
+      if(late&&input.confirmLateWithdrawal!==true)reject('Le délai de 30 minutes est dépassé. Confirmer explicitement le forfait hors délai.');
+      race.withdrawals[row.key]={at:now,by:actor,...(late?{late:true,deadline}:{})};race.withdrawalLog.push({key:row.key,name:name(row),action:'withdraw',at:now,by:actor,...(late?{late:true,deadline}:{})});
     }else if(command==='reinstate'){
       if(!race.withdrawals[row.key])reject('Ce nageur n’est pas forfait.');delete race.withdrawals[row.key];race.withdrawalLog.push({key:row.key,name:name(row),action:'reinstate',at:now,by:actor});
     }else{if(wasFinalist||race.withdrawals[row.key])reject('Le pré-forfait est réservé aux réservistes.');if(q.pendingKeys.includes(row.key)&&!race.preWithdrawals?.[row.key])reject('Ce nageur attend un départage : attendre sa qualification officielle.');race.preWithdrawals=race.preWithdrawals||{};if(race.preWithdrawals[row.key])delete race.preWithdrawals[row.key];else race.preWithdrawals[row.key]={at:now,by:actor};}
@@ -135,7 +136,7 @@ function next(previous,input,{role,actor,actorLabel=actor,event,entries,consoles
     const q=qualification(state,event,entries);if(!race.announced||race.announced.partial||race.pendingRoster||q.changed||q.ties.length||q.unresolvedDecision||q.decisionMismatch||q.swimoff?.status==='unnecessary')reject('Les finalistes et modifications doivent être vérifiés et annoncés avant confirmation dans WinPalme.');race.compositionDoneAt=now;putRace();
   }
   if(state.alerts.length>2000||state.history.length>=5000)reject('Journal de la compétition trop volumineux : exporter l’historique et contacter le bureau.');
-  state.revision++;state.history.push({id:input.operationKey,command,eventId,eventLabel:event?.eventLabel||'',sex:event?.sex||'',series:row?.series??alert?.series??null,lane:row?.lane??alert?.lane??null,role,actor,partial:command==='announceFinalists'&&Boolean(race?.announced?.partial),actorLabel:clean(actorLabel,160),alertId:alert?.id||null,at:now,participant:row?name(row):alert?.displayName||'',type:input.type||alert?.type||'',comment:clean(input.comment||alert?.comment,500)});
+  state.revision++;state.history.push({...(command==='withdraw'&&race.withdrawals[row.key]?.late?{late:true,deadline:race.withdrawals[row.key].deadline}:{}),id:input.operationKey,command,eventId,eventLabel:event?.eventLabel||'',sex:event?.sex||'',series:row?.series??alert?.series??null,lane:row?.lane??alert?.lane??null,role,actor,partial:command==='announceFinalists'&&Boolean(race?.announced?.partial),actorLabel:clean(actorLabel,160),alertId:alert?.id||null,at:now,participant:row?name(row):alert?.displayName||'',type:input.type||alert?.type||'',comment:clean(input.comment||alert?.comment,500)});
   return state;
 }
 module.exports={roles,motifs,videoTypes,enabled,empty,raceState,sourceHash,qualification,next,name};
