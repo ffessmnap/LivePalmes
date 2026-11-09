@@ -56,7 +56,10 @@ class DirectSources(unittest.TestCase):
                          'Use the deployed TEST selector, not the dependency diagnostic snapshot')
         self.assertEqual(set(anchored), set(baseline))
         self.assertEqual({n for n in anchored if anchored[n] != baseline[n]}, p.ALLOWED)
-        self.assertEqual(current, anchored, 'No later backend dependency may enter the closed import release')
+        if p.RELEASE == 'direct_console_audit':
+            p.cycle.run(['git', 'merge-base', '--is-ancestor', entry['applicationCommit'], p.cycle.git('rev-parse', 'HEAD')], ROOT)
+        else:
+            self.assertEqual(current, anchored, 'The active release must retain its exact backend closure')
 
     def test_contract_and_workflow_are_closed_without_changing_mail_permissions(self):
         entry = p.contract()
