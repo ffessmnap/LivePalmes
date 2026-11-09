@@ -9,7 +9,7 @@ publisher = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(publisher)
 publisher.RELEASE = 'direct_bureau_layout'
 publisher.CONTRACT = ROOT / '.github/releases/evidence/20261109-direct-bureau-layout-contract.json'
-publisher.CONTRACT_SHA256 = '0c7329c588a4e59f7600f5769f2ce7910720db0899f0b3b2dff71c1cb1a68202'
+publisher.CONTRACT_SHA256 = 'eb3f976b9273465a409ff7eb57a6f50615ee35400db46b8374c3aaaeae2d4e8c'
 
 if __name__ == '__main__':
     publisher.main(*sys.argv[1:])
