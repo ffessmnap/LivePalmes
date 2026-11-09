@@ -159,8 +159,9 @@ class EvidenceTests(unittest.TestCase):
         fallback = next(step for step in steps if step.get('name') == 'Verifier le circuit ou reutiliser la preuve exacte')
         self.assertEqual(fallback['if'], "steps.verified-publication.outputs.verified != 'true'")
         commands = [line.strip() for line in fallback['run'].splitlines() if line.strip()]
-        self.assertEqual(len(commands), 9)
+        self.assertEqual(len(commands), 10)
         self.assertIn('python tests/portal-session-rules-tests.py', commands)
+        self.assertIn('python tests/test-static-cache-policy-tests.py', commands)
         ci = (ROOT/m.WORKFLOW).read_text(encoding='utf-8')
         for command in commands:
             self.assertIn(command, ci)
