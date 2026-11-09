@@ -16,5 +16,18 @@ function fixture({replacement=false,checked=false,lost=false}={}) {
  f=fixture({replacement:true,checked:true,lost:true});await f.context.saveNativeImport();assert.equal(f.button.disabled,false);await f.context.saveNativeImport();assert.equal(f.calls.length,2);assert.deepEqual(f.calls[0],f.calls[1]);assert.equal(f.calls[1].confirmReplacement,true);assert.equal(f.context.currentPreview.canConfirm,false);
  assert.deepEqual(f.events,["livepalmes:competition-results-changed"],"One cache invalidation after the confirmed retry, none after a lost response");
  f=fixture();await f.context.saveNativeImport();assert.equal(f.calls[0].expectedFingerprint,"before");assert.equal(f.calls[0].previewFingerprint,"preview");assert.equal(f.calls[0].fileName,"results.txt");assert.equal(f.calls.length,1,"no legacy publication worker request");assert.deepEqual(f.events,["livepalmes:competition-results-changed"]);
+ const review={window:{}};vm.runInNewContext(fs.readFileSync('performances/public/import-swimmer-review.js','utf8'),review);
+ const blockers=review.window.LivePalmesImportReview.saveBlockers,ready={rows:[{sourceLine:1}],canConfirm:true,previewFingerprint:'fresh',issues:[]};
+ assert.equal(blockers(ready,{}).length,0);
+ const pending={...ready,canConfirm:false,requiresCompetitionChoice:true,competitions:[],reviewStale:true,review:{groups:[{id:'unknown',state:'unknown'}]},unresolvedClubs:[{code:'ABC'}],unresolvedMembers:[{}],courseReview:{sources:[{selectedId:null}]},issues:[{code:'competition-pool-mismatch'}],diff:{requiresReplacementConfirmation:true}};
+ const all=blockers(pending,{excludedSourceLines:[1],confirmExclusions:true,exclusionReviewFingerprint:'old',confirmReplacement:true,replacementReviewFingerprint:'old'});
+ for(const panel of ['competition','refresh','unknown','clubs','relays','courses','issues','excluded','bilan'])assert.ok(all.some(r=>r.panel===panel),`Missing blocker: ${panel}`);
+ assert.match(all.find(r=>r.panel==='competition').label,/calendrier/);
+ assert.match(blockers({...ready,canConfirm:false},{}).at(0).label,/serveur/,'Unknown server refusal remains visible');
+ assert.match(blockers({...ready,rows:[]},{}).at(0).label,/Aucun résultat/);
+ assert.match(blockers({...ready,previewOnly:true},{}).at(0).label,/aperçu/);
+ assert.equal(blockers({...ready,automaticExcludedSourceLines:[1]},{excludedSourceLines:[1]}).length,0,'Automatic empty-relay exclusions require no manual consent');
+ assert.equal(blockers({...ready,diff:{requiresReplacementConfirmation:true}},{confirmReplacement:true,replacementReviewFingerprint:'fresh'}).length,0);
+ assert.equal(blockers(ready,{excludedSourceLines:[2],confirmExclusions:true,exclusionReviewFingerprint:'fresh'}).length,0);
  console.log("NAP import client: explicit removal confirmation, stable retry payload and direct native receipt verified without live writes.");
 })().catch(error=>{console.error(error);process.exitCode=1;});

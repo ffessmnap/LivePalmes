@@ -14,10 +14,11 @@ function proposed(input) {
   if(typeof input?.clubId!=="string" || !/^\d{1,16}$/.test(input.clubId)) throw new TypeError("Club NAP requis.");
   const raw=input.swimmer;
   if(!raw || typeof raw!=="object" || Array.isArray(raw) || Object.keys(raw).some(key=>!["firstName","lastName","birthDate","sex","licenseNumber"].includes(key))) throw new TypeError("Identite et licence seules requises.");
-  if(typeof raw.licenseNumber!=="string" || !/^[A-Z]-\d{2}-\d+$/.test(raw.licenseNumber) || raw.licenseNumber.length>100) throw new TypeError("Une licence est obligatoire pour creer un nageur.");
+  const licenseNumber=raw.licenseNumber??"";
+  if(typeof licenseNumber!=="string" || licenseNumber.length>100 || (licenseNumber?!/^[A-Z]-\d{2}-\d+$/.test(licenseNumber):input.allowMissingLicense!==true)) throw new TypeError(input.allowMissingLicense===true?"Numero de licence invalide ; laissez le champ vide si la licence est inconnue.":"Une licence est obligatoire pour creer un nageur.");
   const {after}=planIdentityChange({id:1,nom:"",prenom:"",date:"0000-00-00",sexe:"",club:input.clubId},{firstName:raw.firstName,lastName:raw.lastName,birthDate:raw.birthDate,sex:raw.sex});
   const {id,...native}=after;
-  return {...native,number:raw.licenseNumber,actif:1};
+  return {...native,number:licenseNumber,actif:1};
 }
 function tokens(value){return rules.normalizeIdentityText(value).split(/\s+/).filter(token=>token.length>=2);}
 async function previewCreation(connection,input,authorize,formatAlert) {
@@ -25,7 +26,7 @@ async function previewCreation(connection,input,authorize,formatAlert) {
   if(typeof authorize!=="function" || typeof formatAlert!=="function") throw new TypeError("Controle du club et des alertes requis.");
   await authorize({clubId:input.clubId});
   const query=async(sql,values)=>(await connection.execute({sql,timeout:10000},values))[0];
-  const matches=await query(`SELECT id FROM nageurs FORCE INDEX (livepalmes_license_number_id) WHERE number=? AND ${notMerged()} LIMIT 2`,[native.number]);
+  const matches=native.number?await query(`SELECT id FROM nageurs FORCE INDEX (livepalmes_license_number_id) WHERE number=? AND ${notMerged()} LIMIT 2`,[native.number]):[];
   if(matches.length) throw new TypeError("Cette licence existe deja dans NAP. Recherchez ou recuperez la fiche existante.");
   const candidates=new Map();
   const add=rows=>{for(const row of rows){if(!Number.isSafeInteger(Number(row.id)) || Number(row.id)<1) throw new TypeError("Fiche NAP incoherente.");candidates.set(String(row.id),person(row));}};
@@ -52,23 +53,26 @@ async function previewCreation(connection,input,authorize,formatAlert) {
   }
   alerts.sort((a,b)=>Number(b.type==="inverted-identity")-Number(a.type==="inverted-identity") || Number(b.type==="club-change")-Number(a.type==="club-change") || String(a.name).localeCompare(String(b.name),"fr"));
   const selected=alerts.slice(0,8),blocksCreation=alerts.some(alert=>alert.type==="inverted-identity");
-  return {ok:true,source:"nap",swimmer:person({id:0,...native}),alerts:selected,blocksCreation,requiresConfirmation:alerts.length>0 && !blocksCreation,sqlBudget:{queriesMax:4,rowsMax:426}};
+  return {ok:true,source:"nap",swimmer:person({id:0,...native}),alerts:selected,blocksCreation,requiresConfirmation:alerts.length>0 && !blocksCreation,sqlBudget:{queriesMax:native.number?4:3,rowsMax:native.number?426:424}};
 }
-function insertion(native,timestamp) {
+function insertion(native,timestamp,{identityGuard=false}={}) {
   const keys=["nom","prenom","date","sexe","club","number","actif","creation"];
-  return {sql:`INSERT INTO nageurs (${keys.map(key=>`\`${key}\``).join(",")}) SELECT ${keys.map(()=>"?").join(",")} FROM clubs cl FORCE INDEX (PRIMARY) WHERE cl.num_club=? AND NOT EXISTS (SELECT 1 FROM nageurs duplicate FORCE INDEX (livepalmes_license_number_id) WHERE duplicate.number=? AND ${notMerged("duplicate")} LIMIT 1) AND NOT EXISTS (SELECT 1 FROM nageurs inverted FORCE INDEX (nageurs_clef) WHERE inverted.nom=? AND inverted.prenom=? AND inverted.date=? AND ?<>? AND ${notMerged("inverted")} LIMIT 1)`,values:[...keys.map(key=>key==="creation"?timestamp:native[key]),native.club,native.number,native.prenom,native.nom,native.date,native.prenom,native.nom]};
+  const licence=native.number?` AND NOT EXISTS (SELECT 1 FROM nageurs duplicate FORCE INDEX (livepalmes_license_number_id) WHERE duplicate.number=? AND ${notMerged("duplicate")} LIMIT 1)`:"";
+  const exact=identityGuard?` AND NOT EXISTS (SELECT 1 FROM nageurs identity_match FORCE INDEX (nageurs_clef) WHERE identity_match.nom=? AND identity_match.prenom=? AND identity_match.date=? AND ${notMerged("identity_match")} LIMIT 1)`:"";
+  return {sql:`INSERT INTO nageurs (${keys.map(key=>`\`${key}\``).join(",")}) SELECT ${keys.map(()=>"?").join(",")} FROM clubs cl FORCE INDEX (PRIMARY) WHERE cl.num_club=?${licence}${exact} AND NOT EXISTS (SELECT 1 FROM nageurs inverted FORCE INDEX (nageurs_clef) WHERE inverted.nom=? AND inverted.prenom=? AND inverted.date=? AND ?<>? AND ${notMerged("inverted")} LIMIT 1)`,values:[...keys.map(key=>key==="creation"?timestamp:native[key]),native.club,...(native.number?[native.number]:[]),...(identityGuard?[native.nom,native.prenom,native.date]:[]),native.prenom,native.nom,native.date,native.prenom,native.nom]};
 }
 async function createSwimmer(pool,input,audit,authorize,formatAlert) {
   const native=proposed(input);
   if(typeof authorize!=="function" || typeof input.actorUid!=="string" || !input.actorUid || input.actorUid.length>128 || !/^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/.test(input.creationId||"")) throw new TypeError("Creation autorisee requise.");
   await authorize({clubId:input.clubId});
   const operation=createHash("sha256").update(JSON.stringify(["swimmer-create",input.actorUid,input.clubId,input.creationId])).digest("hex");
-  const lock=`lp-swimmer-${createHash("sha256").update(native.number).digest("hex").slice(0,40)}`;
-  const connection=await pool.getConnection();let locked=false;
+  const identityGuard=input.allowMissingLicense===true;
+  const names=[native.nom,native.prenom].map(rules.normalizeIdentityText).sort();
+  const locks=[...(native.number?[`lp-swimmer-${createHash("sha256").update(native.number).digest("hex").slice(0,40)}`]:[]),...(identityGuard?[`lp-import-person-${createHash("sha256").update(JSON.stringify([names,native.date])).digest("hex").slice(0,40)}`]:[])];
+  const connection=await pool.getConnection(),locked=[];
   const query=async(sql,values=[]) => (await connection.execute({sql,timeout:10000},values))[0];
   try {
-    if(Number((await query("SELECT GET_LOCK(?,0) AS acquired",[lock]))[0]?.acquired)!==1) throw new TypeError("Licence en cours de modification. Reessayez.");
-    locked=true;
+    for(const lock of locks){if(Number((await query("SELECT GET_LOCK(?,0) AS acquired",[lock]))[0]?.acquired)!==1) throw new TypeError("Licence ou identite en cours de modification. Reessayez.");locked.push(lock);}
     let plan=await audit.read(operation);
     if(plan && (plan.kind!=="native-swimmer-create" || plan.operation!==operation || plan.actorUid!==input.actorUid || plan.clubId!==input.clubId || plan.creationId!==input.creationId || !isDeepStrictEqual(plan.native,native) || !["prepared","writing","identified"].includes(plan.phase))) throw new TypeError("Reprise de creation incompatible. Conservez les valeurs initiales.");
     if(plan?.phase==="writing") throw new TypeError("Creation NAP a verifier : identifiant non confirme. Ne creez pas une seconde fiche.");
@@ -82,11 +86,13 @@ async function createSwimmer(pool,input,audit,authorize,formatAlert) {
         plan={kind:"native-swimmer-create",operation,actorUid:input.actorUid,clubId:input.clubId,creationId:input.creationId,native,alerts:preview.alerts,phase:"prepared",timestamp:new Date().toISOString().slice(0,19).replace("T"," ")};
         await audit.prepare(operation,plan);
       }
-      const statement=insertion(native,plan.timestamp),explain=await query(`EXPLAIN ${statement.sql}`,statement.values);
-      if(!explain.some(row=>row.table==="duplicate" && row.key==="livepalmes_license_number_id") || !explain.some(row=>row.table==="cl" && row.key==="PRIMARY")) throw new TypeError("Plan de creation NAP non indexe.");
+      const statement=insertion(native,plan.timestamp,{identityGuard}),explain=await query(`EXPLAIN ${statement.sql}`,statement.values);
+      const licenceIndexed=!native.number||explain.some(row=>row.table==="duplicate" && row.key==="livepalmes_license_number_id");
+      const identityIndexed=!identityGuard||explain.some(row=>row.table==="identity_match" && row.key==="nageurs_clef");
+      if(!licenceIndexed || !identityIndexed || !explain.some(row=>row.table==="cl" && row.key==="PRIMARY")) throw new TypeError("Plan de creation NAP non indexe.");
       plan={...plan,phase:"writing"};await audit.checkpoint(operation,plan);
       const inserted=await query(statement.sql,statement.values);
-      if(inserted.affectedRows===0) {await audit.checkpoint(operation,{...plan,phase:"prepared"});throw new TypeError("Club ou licence modifies. Aucun nageur cree.");}
+      if(inserted.affectedRows===0) {await audit.checkpoint(operation,{...plan,phase:"prepared"});throw new TypeError("Club, licence ou identite modifies. Aucun nageur cree.");}
       if(inserted.affectedRows!==1 || !Number.isSafeInteger(Number(inserted.insertId)) || Number(inserted.insertId)<1 || Number(inserted.insertId)>2147483647) throw new Error("Identifiant de creation non confirme.");
       plan={...plan,phase:"identified",nativeId:Number(inserted.insertId)};await audit.checkpoint(operation,plan);
     }
@@ -97,8 +103,8 @@ async function createSwimmer(pool,input,audit,authorize,formatAlert) {
     return {ok:true,source:"nap",operation,swimmer:{...person(row),alerts:plan.alerts,alertCount:plan.alerts.length},alerts:plan.alerts};
   } finally {
     let safe=true;
-    try {if(locked && Number((await query("SELECT RELEASE_LOCK(?) AS released",[lock]))[0]?.released)!==1) safe=false;}catch{safe=false;}
-    finally{if(safe) connection.release();else connection.destroy();}
+    for(const lock of locked.reverse()){try{if(Number((await query("SELECT RELEASE_LOCK(?) AS released",[lock]))[0]?.released)!==1)safe=false;}catch{safe=false;}}
+    if(safe) connection.release();else connection.destroy();
   }
 }
 module.exports={proposed,previewCreation,insertion,createSwimmer};
