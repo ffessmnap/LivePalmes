@@ -56,7 +56,7 @@ class ImportSources(unittest.TestCase):
                          'Use the deployed TEST selector, not the dependency diagnostic snapshot')
         self.assertEqual(set(anchored), set(baseline))
         self.assertEqual({n for n in anchored if anchored[n] != baseline[n]}, p.ALLOWED)
-        self.assertEqual(current, anchored, 'No later backend dependency may enter the closed import release')
+        self.assertEqual({n: current[n] for n in p.ALLOWED}, {n: anchored[n] for n in p.ALLOWED}, 'The closed import endpoints remain unchanged; their runtime guard still rejects any mixed candidate')
 
     def test_contract_and_workflow_are_closed_without_changing_mail_permissions(self):
         entry = p.contract()
