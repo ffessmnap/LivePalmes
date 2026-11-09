@@ -4,7 +4,7 @@
 
 ## Bureau Direct et secrétariat — maquette intégrée du 9 novembre 2026
 
-Bureau ordinateur : largeur disponible, compétition sur une ligne avec date, import et menu Consoles/réglages ; accès secondaires dans ce menu. Sans console terrain, onglet Suivi et surveillance/programme en pleine largeur. Avec consoles, grille flexible + colonne fixe de 352 px (382 px sur grand écran), surveillance et courses persistantes à droite. Historique unique filtrable ; réglages des finales toujours accessibles même si l’onglet Finales est masqué faute de course configurée.
+Bureau ordinateur : largeur disponible, compétition sur une ligne avec date, import et menu Consoles/réglages ; accès secondaires dans ce menu. Chaque console activée présente son lien, Copier et QR code ; dialogue à fond blanc avec QR noir de 256 px, marge de quatre modules et adresse sélectionnable. Sans console terrain, onglet Suivi et surveillance/programme en pleine largeur. Avec consoles, grille flexible + colonne fixe de 352 px (382 px sur grand écran), surveillance et courses persistantes à droite. Historique unique filtrable ; réglages des finales toujours accessibles même si l’onglet Finales est masqué faute de course configurée.
 
 Secrétariat tablette : navigation Finales / Notifications / Historique, choix de finale uniquement ; programme et navigation des séries absents. Outils de console/connexion repliés. Groupes A/B côte à côte sur grande tablette, noms et clubs sur deux lignes, temps alignés et bouton de forfait de 44 px. Confirmation de forfait hors délai dans un dialogue HTML avec échéance et libellé explicite, sans dialogue natif bloquant.
 
