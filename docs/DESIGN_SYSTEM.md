@@ -652,6 +652,8 @@ Dans les fiches de compétition, le formulaire de déclaration du chef d’équi
 
 L'aperçu d'import NAP du portail utilise les boutons existants et une liste de contrôle par pages de 100 lignes. Chaque ligne regroupe identité, course et temps, puis les éventuels champs de rattachement ou d'exclusion. Les champs restent bornés à la largeur disponible sur mobile. Les résultats retirés apparaissent séparément et exigent une confirmation explicite avant l'action principale d'enregistrement.
 
+Le bilan `.import-save-status`, placé avant les actions d’enregistrement, indique chaque famille de blocage avec accès au dossier concerné, puis l’état prêt. Les causes sont lisibles au toucher, sans dépendre de l’infobulle du bouton désactivé. Les alertes de plus de cent lignes restent paginées. La création d’un nageur conserve son formulaire et son contrôle lors des réaffichages ; le libellé « Numéro de licence (facultatif) » est réservé à la création depuis l’import. Le bouton d’un club absent ouvre le formulaire national existant sans quitter ni effacer l’aperçu.
+
 | Variante | Classes courantes | Usage |
 |---|---|---|
 | Primaire | `.primary-button`, bouton de formulaire principal | Action principale d’un bloc |

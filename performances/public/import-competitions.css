@@ -1165,6 +1165,10 @@
 .import-exclude-choice { display: flex !important; flex-direction: row !important; align-items: start; gap: .4rem; font-weight: 400; }
 .import-review-compact input[type="checkbox"] { width: auto; flex: 0 0 auto; margin: .2rem 0 0; }
 .import-review-footer { display: flex; justify-content: end; gap: .5rem; position: sticky; bottom: 0; padding: .5rem; background: #f3f6f5; border-top: 1px solid #d6dfda; z-index: 2; }
+.import-save-status { padding: .65rem; border: 1px solid #d6dfda; border-radius: .4rem; background: #f3f6f5; overflow-wrap: anywhere; }
+.import-save-status ul { margin: .4rem 0 0; padding-left: 1.25rem; }
+.import-save-status li + li { margin-top: .25rem; }
+.import-save-status p { margin: .35rem 0 0; }
 .import-review-compact .import-club-alert { padding: .45rem; }
 .competition-import-compact .import-review-compact label.import-club-alert,
 .import-review-compact label.import-club-alert { display: flex !important; flex-direction: row !important; align-items: start; gap: .4rem; font-weight: 400; }

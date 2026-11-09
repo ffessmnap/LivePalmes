@@ -1529,10 +1529,14 @@
         onRefresh:async()=>{
           const requestId=++previewRequestId;
           try{const response=await callFunction('previewCompetitionImport',currentPayload);if(requestId!==previewRequestId)return;global.LivePalmesImportReview.settled();renderNativeImportPreview(response);}
-          catch(error){if(requestId===previewRequestId)setMessage(elements.message,error.message||String(error));}
+          catch(error){if(requestId===previewRequestId)setMessage(elements.message,error.message||String(error));throw error;}
         },
         onPreviewCreation:data=>callFunction('previewEngagementClubSwimmerCreation',data),
         onCreateSwimmer:data=>callFunction('createEngagementClubSwimmer',data),
+        onCreateClub:source=>{
+          if(typeof global.LivePalmesImportClubCreation!=='function')throw Error('Ouvrez cet import depuis le portail pour créer le club avec le formulaire national.');
+          return global.LivePalmesImportClubCreation(source);
+        },
         onSearch:async query=>{
           const response=await callFunction('getNapPerformanceAdministration',{action:'search',query});
           return (response.swimmers||[]).map(p=>({...p,id:Number(p.id),clubCode:p.club,performanceCount:null}));
