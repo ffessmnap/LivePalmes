@@ -1,6 +1,6 @@
 'use strict';
 const model=require('./nap-direct-model'),flow=require('./nap-direct-console-model'),{execute}=require('./nap-query');
-const stateId=model.hash(['direct-console-state-v1']);
+const publicQualifications=require('./nap-direct-public-qualifications'),stateId=publicQualifications.stateId;
 const fail=(message,code='failed-precondition')=>Object.assign(new Error(message),{directCode:code});
 const finalCommands=new Set(['announceFinalists','withdraw','reinstate','preWithdraw','announceReplacement','resolveTie','markSwimoff','confirmSwimoffCancelled','refreshFinalists','compositionDone']);
 function createConsoleStore(pool,store){
@@ -55,6 +55,7 @@ function createConsoleStore(pool,store){
       const next=flow.next(state,input,{...context,role:input.role,actor:actor.uid,actorLabel:actor.label||'Compte LivePalmes',consoles:model.parseJson(config.enabled_consoles_json,[])});
       if(Buffer.byteLength(JSON.stringify(next),'utf8')>2*1024*1024)throw fail('État des consoles trop volumineux. Exporter l’historique et contacter le bureau.');
       await execute(c,"INSERT INTO livepalmes_direct_publications (environment,competition_id,id,batch_id,event_id,operation_key,action,source_type,source_name,source_hash,before_json,after_json,created_at,created_by) VALUES (?,?,?,'',NULL,?,'console-state','console','','','null',?,UTC_TIMESTAMP(6),?) ON DUPLICATE KEY UPDATE after_json=VALUES(after_json)",[...store.scope(id),stateId,stateId,JSON.stringify(next),actor.uid]);
+      if(publicQualifications.signature(state)!==publicQualifications.signature(next))await execute(c,'UPDATE livepalmes_direct_competitions SET public_revision=public_revision+1 WHERE environment=? AND competition_id=?',store.scope(id));
       const result={ok:true,revision:next.revision,configVersion:Number(config.version)};
       if(input.command==='resetConsoles')await execute(c,"DELETE FROM livepalmes_direct_publications WHERE environment=? AND competition_id=? AND action='console-command'",store.scope(id));
       await execute(c,"INSERT INTO livepalmes_direct_publications (environment,competition_id,id,batch_id,event_id,operation_key,action,source_type,source_name,source_hash,before_json,after_json,created_at,created_by) VALUES (?,?,?,'',?,?, 'console-command','console',?,?,'null',?,UTC_TIMESTAMP(6),?)",[...store.scope(id),receiptId,selected?.id||null,receiptId,model.clean(input.command,200),contentHash,JSON.stringify(result),actor.uid]);

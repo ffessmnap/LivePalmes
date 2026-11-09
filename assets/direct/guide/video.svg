@@ -11,5 +11,5 @@
 <path class="line" d="M610 318V368"/><text class="label" x="622" y="348">Invalidée</text>
 <rect class="box" x="15" y="309" width="300" height="70" rx="9"/><text x="165" y="331" text-anchor="middle" class="head">Circuit officiel direct</text><text x="165" y="353" text-anchor="middle">Bureau des performances</text><text x="165" y="372" text-anchor="middle">+ speaker et Live actifs</text>
 <rect class="box optional" x="480" y="372" width="260" height="91" rx="9"/><text x="610" y="397" text-anchor="middle" class="head">Historique conservé</text><text x="610" y="420" text-anchor="middle">Aucune tâche officielle</text><text x="610" y="441" text-anchor="middle">de disqualification créée</text>
-<path class="line" d="M165 379V413"/><rect class="box end" x="15" y="417" width="300" height="61" rx="9"/><text x="165" y="442" text-anchor="middle" class="head">Saisie et validation WinPalme</text><text x="165" y="465" text-anchor="middle">TXT corrigé → résultat public</text>
+<path class="line" d="M165 379V413"/><rect class="box end" x="15" y="417" width="300" height="61" rx="9"/><text x="165" y="442" text-anchor="middle" class="head">Saisie et validation WinPalme</text><text x="165" y="465" text-anchor="middle">Résultat corrigé → résultat public</text>
 </svg>

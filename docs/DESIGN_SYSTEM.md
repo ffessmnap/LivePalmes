@@ -2,6 +2,14 @@
 
 <!-- description: Référence du langage visuel, des composants d’interface et des règles responsive déjà présents dans LivePalmes. -->
 
+## Bureau Direct et secrétariat — maquette intégrée du 9 novembre 2026
+
+Bureau ordinateur : largeur disponible, compétition sur une ligne avec date, import et menu Consoles/réglages ; accès secondaires dans ce menu. Chaque console activée présente son lien, Copier et QR code ; dialogue à fond blanc avec QR noir de 256 px, marge de quatre modules et adresse sélectionnable. Sans console terrain, onglet Suivi et surveillance/programme en pleine largeur. Avec consoles, grille flexible + colonne fixe de 352 px (382 px sur grand écran), surveillance et courses persistantes à droite. Historique unique filtrable ; réglages des finales toujours accessibles même si l’onglet Finales est masqué faute de course configurée.
+
+Secrétariat tablette : navigation Finales / Notifications / Historique, choix de finale uniquement ; programme et navigation des séries absents. Outils de console/connexion repliés. Groupes A/B côte à côte sur grande tablette, noms et clubs sur deux lignes, temps alignés et bouton de forfait de 44 px. Confirmation de forfait hors délai dans un dialogue HTML avec échéance et libellé explicite, sans dialogue natif bloquant.
+
+Public : petite pastille Q ou QA vert/bleu et QB bleu près du temps, uniquement au scratch ; espace réservé pour garder les temps alignés, sans agrandir les lignes ni remplacer les pastilles de catégories. Écarts à gauche sur ordinateur, dessous sur mobile ; colonne de résultat adaptée pour conserver les temps complets et les passages tactiles. Vocabulaire utilisateur « Publication des résultats » ; le format de fichier reste limité aux explications techniques nécessaires.
+
 ## Consoles Direct — ergonomie après audit du 9 novembre 2026
 
 Bureau unique : onglets compacts Arbitrage, Finales, Imports, Historique dans le volet opérationnel ; surveillance TXT sur une ligne tant que ses paramètres sont repliés. Les actions de composition précèdent la liste et restent accessibles lors du défilement. Le secrétariat affiche la finale choisie avant le repère JA et les séries, repliés. Les réservistes et les autres finales sont dépliables ; les blocs d’actions vides sont absents. Boutons de forfait, annonce, programme et connexion : cible de 44 px sur tablette (largeur jusqu’à 1 366 px ou pointeur tactile), lignes historiques des nageurs inchangées.

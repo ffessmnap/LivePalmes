@@ -2,6 +2,20 @@
 
 <!-- description: Périmètre, démarrage local, publication et fonctions propres aux consoles du dispositif LivePalmes Direct. -->
 
+## Bureau et finales — maquette validée, intégration TEST du 9 novembre 2026
+
+Antoine valide la maquette puis autorise intégration, vérifications et TEST : bureau pleine largeur avec surveillance et programme quand il est seul ; arbitrage au centre et suivi permanent à droite avec les consoles. Bandeau compact, réglages et accès repliés ; historique unique avec filtres décisions/annonces et publications. L’onglet Finales n’apparaît que si une course est configurée ; son paramétrage reste accessible dans Réglages. Le secrétariat utilise Finales, Notifications et Historique, sans programme ni navigation des séries. La vidéo conserve ses règles et composants historiques ; les validations tactiles sont contrôlées à 1 024 × 768.
+
+Libellés utilisateurs : « Publication des résultats », « Surveillance active / en pause », « Dossier des résultats WinPalme », « Dernier contrôle », « Dernière publication » et « Dernier résultat reçu ». Le format .txt reste mentionné seulement pour identifier les fichiers. Le guide HTML, ses captures/logigrammes et son PDF sont régénérés depuis leurs sources. Les consoles activées proposent leur lien, « Copier » et « QR code » dans le menu Consoles/réglages : génération locale via le fournisseur QR déjà présent, aucun appel métier ou tiers ajouté, aucune connexion ni permission contournée.
+
+Un forfait après 30 minutes reste réservé au finaliste officiellement annoncé : bureau sans secrétariat actif ou secrétariat, avec confirmation explicite `confirmLateWithdrawal=true`. Le serveur refuse le dépassement sans cette confirmation. Échéance et caractère hors délai sont conservés dans le journal privé. Aucun nouveau rôle ni délai automatique.
+
+Le public reçoit uniquement Q (A seule), QA/QB (A+B) par participation, depuis la composition annoncée. Un forfait retire le marqueur au prochain rafraîchissement manuel ; une proposition de repêchage ne donne aucun Q avant son annonce. Les ex æquo non départagés restent sans Q. Aucune identité de compte, décision, heure privée ou liste de réservistes n’est exposée. Temps alignés, écarts discrets, catégories complètes et lignes compactes conservés.
+
+Budget conçu avant implémentation : réemploi des snapshots/agrégats et du minuteur privé existants pour le bureau, sans lecture par course ni nouveau minuteur. Une ouverture publique ou un rafraîchissement de révision non encore en cache ajoute une seule lecture SQL par clé (environnement, compétition, identifiant d’état), limitée à une ligne et à la projection JSON des courses ; zéro lecture supplémentaire sur un cache partagé déjà rempli, aucune lecture Firestore ajoutée. Une action qui change les marqueurs annoncés ajoute un UPDATE de la seule révision publique sous le verrou de configuration existant ; le rejeu idempotent n’écrit pas de nouveau. Les autres actions conservent leur budget. Pire cas : 400 ouvertures concurrentes d’une même sélection partagent la lecture d’état ; sélection privée inchangée, pas de N+1, nouvelle table, migration ou écriture réelle de test.
+
+Publication prévue par le complément fermé aux deux consommateurs Direct calculés, sources/labels TEST seulement, puis Hosting commun et contrôle final. Aucun autre service, configuration, permission ou PROD. Validation de la maquette acquise ; validation utilisateur de la réalisation TEST encore attendue.
+
 ## Corrections après audit des consoles — 9 novembre 2026
 
 Le bureau reste unique. Son volet ouvert propose Arbitrage / Finales / Imports / Historique ; le dossier TXT reste visible au-dessus, le détail des imports est affiché à la demande. Le volet, la course et la session sont conservés par compte, compétition et rôle sur cet appareil. L’identifiant de la compétition reste dans l’adresse du bureau. Les commandes sont neutralisées pendant les chargements ; une réponse tardive ne remplace pas une nouvelle sélection.

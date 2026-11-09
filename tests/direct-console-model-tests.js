@@ -90,3 +90,24 @@ const relayEvent={...event,eventCode:'4x100sf'},relayRows=rows.map(row=>({...row
 const relayCommand=leg=>flow.next(configure(8,'a'),{command:'decision',operationKey:'fixture-relay-'+leg,participantKey:rows[0].key,type:'relay_early_start',relayLeg:leg},{role:'referee',actor:'fixture',event:relayEvent,entries:relayRows,consoles:flow.roles});
 assert.throws(()=>relayCommand(1),/relayeur/);assert.equal(relayCommand(2).alerts.at(-1).relayLeg,2);assert.throws(()=>relayCommand(5),/relayeur/);
 console.log('Consoles : rôles, circuits vidéo/direct, accusés, annulations JA/délégué vidéo, relais, finales 6/8 et A/A+B, départages, annonces, forfaits, reprises et sessions vérifiés hors réseau.');
+
+// The deadline remains enforced unless the bureau or secretary explicitly reconfirms.
+for(const role of ['computer','secretary']){
+ const consoles=role==='computer'?['computer']:['computer','referee','secretary'];
+ let late=apply(configure(6,'ab'),'announceFinalists','computer',{},rows,consoles);
+ assert.throws(()=>apply(late,'withdraw',role,{participantKey:rows[0].key,confirmLateWithdrawal:'true'},rows,consoles,'2026-11-08T12:31:00.000Z'),/explicitement/);
+ late=apply(late,'withdraw',role,{participantKey:rows[0].key,confirmLateWithdrawal:true},rows,consoles,'2026-11-08T12:31:00.000Z');
+ assert.equal(late.races[event.id].withdrawals[rows[0].key].late,true);assert.equal(late.history.at(-1).late,true);assert.equal(late.history.at(-1).deadline,'2026-11-08T12:30:00.000Z');
+ assert.throws(()=>apply(late,'withdraw',role,{participantKey:rows[12].key,confirmLateWithdrawal:true},rows,consoles,'2026-11-08T12:32:00.000Z'),/officiellement annoncé/);
+}
+
+const publicQ=require('../functions/nap-direct-public-qualifications');
+const publicEvents=[{id:event.id,event_code:'100sf',sex:'M',phase:'series'},{id:hash('second-session'),event_code:'100sf',sex:'M',phase:'series'},{id:hash('other-sex'),event_code:'100sf',sex:'F',phase:'series'},{id:hash('finale'),event_code:'100sf',sex:'M',phase:'finale-A'}];
+const publicRows=rows.map((row,i)=>({...row,eventId:i<8?event.id:hash('second-session')}));
+let publicState=apply(configure(6,'ab'),'announceFinalists','speaker');
+let markers=publicQ.attach(publicEvents,publicRows,publicState.races);assert.equal(markers.filter(r=>r.qualification==='QA').length,6);assert.equal(markers.filter(r=>r.qualification==='QB').length,6);
+publicState=apply(publicState,'withdraw','secretary',{participantKey:rows[0].key});markers=publicQ.attach(publicEvents,publicRows,publicState.races);assert.ok(!markers[0].qualification);assert.equal(markers[6].qualification,'QB');assert.ok(!markers[12].qualification,'Aucun Q pour le réserviste seulement proposé');
+publicState=apply(publicState,'announceReplacement','speaker');markers=publicQ.attach(publicEvents,publicRows,publicState.races);assert.equal(markers[6].qualification,'QA');assert.equal(markers[12].qualification,'QB');
+assert.ok(!publicQ.attach(publicEvents,[{...publicRows[1],eventId:hash('other-sex')}],publicState.races)[0].qualification);assert.ok(!publicQ.attach(publicEvents,[{...publicRows[1],eventId:hash('finale')}],publicState.races)[0].qualification);
+const single=apply(configure(8,'a'),'announceFinalists','speaker');assert.equal(publicQ.attach(publicEvents,publicRows,single.races).filter(r=>r.qualification==='Q').length,8);
+const partial=publicQ.attach(publicEvents,tied.map(row=>({...row,eventId:event.id})),partialAB.races);assert.ok(!partial[7].qualification&&!partial[8].qualification,'Aucun Q arbitraire pour les ex æquo en attente');
