@@ -3,7 +3,7 @@
   "project": "livepalmes-test",
   "release": "direct_access",
   "approval": "Antoine, chat Direct du 10 novembre 2026 : bilan valide puis integration et publication TEST autorisees. Actions bureau, acces et delegations par compte, Mes competitions / Mes consoles. Deux consommateurs calcules, sources/labels seulement ; configurations, tables, autres fonctions, etats techniques et donnees reelles preserves. Aucune PROD.",
-  "applicationCommit": "43f264b645ab37b541ddc3670d468bf88203e549",
+  "applicationCommit": "601c67f00f587efacccc56742d6af4b5b7403019",
   "baseCommit": "d7fba644ff44fd1c3ef528975dde1d0fa6317371",
   "baselineRuns": [
     {
@@ -18,7 +18,7 @@
   "baselineHostingVersion": "sites/livepalmes-test/versions/564048bb74c41b41",
   "fingerprints": {
     "readNapPublicSwimmer": "1373967de276a78524dfe92cb43c090fe06f01e4628434cc48d2b3973cfee7e9",
-    "manageLivePalmesDirect": "6a6a1fb75a79c4d2429ca85e354f7f74f795c7c54d4544d743ca5bf3a64803aa"
+    "manageLivePalmesDirect": "ff827c4448258ab394b4fcb3e97e01ce5cc100349f3791694a5ed0614712cafa"
   },
   "toolingPaths": [
     ".github/releases/evidence/20261110-direct-access-contract.json",
