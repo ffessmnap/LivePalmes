@@ -5405,37 +5405,8 @@ function $serverLegacyService_publicPerformanceFilesBucket() {
   return $serverLegacyService_publicPerformanceFilesBucket.instance;
 }
 
-function $serverLegacyService_migrationChunkStatuses() {
-  if (!$serverLegacyService_migrationChunkStatuses.instance) $serverLegacyService_migrationChunkStatuses.instance = require("./backend/server-legacy-service/migration-chunk-statuses").createLegacyService_migrationChunkStatuses({
-    get HttpsError() { return HttpsError; },
-    get PERFORMANCE_BASE_MIGRATION_COLLECTION() { return PERFORMANCE_BASE_MIGRATION_COLLECTION; },
-    get PERFORMANCE_PUBLIC_DATA_URL() { return PERFORMANCE_PUBLIC_DATA_URL; },
-    get cleanText() { return cleanText; },
-    get db() { return db; }
-  });
-  return $serverLegacyService_migrationChunkStatuses.instance;
-}
 
-function $serverLegacyService_historicalRowsFromChunkPayload() {
-  if (!$serverLegacyService_historicalRowsFromChunkPayload.instance) $serverLegacyService_historicalRowsFromChunkPayload.instance = require("./backend/server-legacy-service/historical-rows-from-chunk-payload").createLegacyService_historicalRowsFromChunkPayload({
 
-  });
-  return $serverLegacyService_historicalRowsFromChunkPayload.instance;
-}
-
-function $serverLegacyService_migrateHistoricalPerformanceBaseChunk() {
-  if (!$serverLegacyService_migrateHistoricalPerformanceBaseChunk.instance) $serverLegacyService_migrateHistoricalPerformanceBaseChunk.instance = require("./backend/server-legacy-service/migrate-historical-performance-base-chunk").createLegacyService_migrateHistoricalPerformanceBaseChunk({
-    get HttpsError() { return HttpsError; },
-    get PERFORMANCE_BASE_MIGRATION_BATCH_SIZE() { return PERFORMANCE_BASE_MIGRATION_BATCH_SIZE; },
-    get PERFORMANCE_BASE_MIGRATION_COLLECTION() { return PERFORMANCE_BASE_MIGRATION_COLLECTION; },
-    get PERFORMANCE_PUBLIC_DATA_URL() { return PERFORMANCE_PUBLIC_DATA_URL; },
-    get cleanText() { return cleanText; },
-    get db() { return db; },
-    get writePerformanceBaseRows() { return writePerformanceBaseRows; },
-    get local$historicalRowsFromChunkPayload() { return $serverLegacyService_historicalRowsFromChunkPayload().historicalRowsFromChunkPayload; }
-  });
-  return $serverLegacyService_migrateHistoricalPerformanceBaseChunk.instance;
-}
 
 function $serverLegacyService_buildAdditionalPerformanceDataSnapshot() {
   if (!$serverLegacyService_buildAdditionalPerformanceDataSnapshot.instance) $serverLegacyService_buildAdditionalPerformanceDataSnapshot.instance = require("./backend/server-legacy-service/build-additional-performance-data-snapshot").createLegacyService_buildAdditionalPerformanceDataSnapshot({
@@ -5972,7 +5943,6 @@ const PUBLIC_PERFORMANCE_TOP_PREVIEW_LIMIT = 100;
 const MAX_COMPETITION_IMPORT_PERFORMANCES = 5000;
 const PERFORMANCE_BASE_COLLECTION = "performances";
 const PERFORMANCE_BASE_CHANGES_COLLECTION = "performanceChanges";
-const PERFORMANCE_BASE_MIGRATION_COLLECTION = "performanceMigrationJobs";
 const PERFORMANCE_PUBLICATION_JOBS_COLLECTION = "performancePublicationJobs";
 const PERFORMANCE_SWIMMERS_COLLECTION = "performanceSwimmerIndex";
 const PERFORMANCE_SWIMMER_PAGES_COLLECTION = "performanceSwimmerPages";
@@ -6050,7 +6020,6 @@ const ENGAGEMENT_SWIMMER_CORRECTION_MAX_PERFORMANCE_ROWS = 5000;
 const ENGAGEMENT_SWIMMER_CORRECTION_ENTRY_PAGE_SIZE = 250;
 const ENGAGEMENT_ENTRY_TIME_SOURCE_KEY_LIMIT = 3;
 const PERFORMANCE_PUBLIC_DATA_URL = `${ENVIRONMENT.hostingOrigin}/performances/public/data`;
-const PERFORMANCE_BASE_MIGRATION_BATCH_SIZE = 2000;
 const POOL_COURSES = ["50SF", "100SF", "200SF", "400SF", "800SF", "1500SF", "50AP", "100IS", "200IS", "400IS", "50BI", "100BI", "200BI", "400BI"];
 
 
@@ -12129,67 +12098,10 @@ async function rebuildPublicPerformanceFilesForAffectedRows() {
   return $legacyPerformancePublication_deletePublicPerformanceFile().rebuildPublicPerformanceFilesForAffectedRows(...arguments);
 }
 
-/* extracted-function: functions/backend/server-legacy-service/migration-chunk-statuses.js#performanceBaseMigrationManifest */
-async function performanceBaseMigrationManifest() {
-  return $serverLegacyService_migrationChunkStatuses().performanceBaseMigrationManifest(...arguments);
-}
 
-/* extracted-function: functions/backend/server-legacy-service/migration-chunk-statuses.js#migrationChunkStatuses */
-async function migrationChunkStatuses() {
-  return $serverLegacyService_migrationChunkStatuses().migrationChunkStatuses(...arguments);
-}
 
-/* extracted-function: functions/backend/server-legacy-service/historical-rows-from-chunk-payload.js#historicalRowsFromChunkPayload */
-function historicalRowsFromChunkPayload() {
-  return $serverLegacyService_historicalRowsFromChunkPayload().historicalRowsFromChunkPayload(...arguments);
-}
 
-exports.importHistoricalPerformanceRows = onCall(MIGRATION_CALLABLE_OPTIONS, async (request) => {
-  if (ENVIRONMENT.sportingDataSource === "nap") throw new HttpsError("failed-precondition", "Cette ancienne action Firebase est désactivée : les résultats sont gérés dans NAP.");
-  assertAdmin(request);
-  const data = request.data || {};
-  const source = cleanText(data.source || "intranap").slice(0, 80);
-  const rawRows = Array.isArray(data.rows)
-    ? data.rows
-    : historicalRowsFromChunkPayload(data.payload && typeof data.payload === "object" ? data.payload : {});
-  const rows = rawRows
-    .slice(0, 2000)
-    .map((row) => ({
-      ...row,
-      source: cleanText(row.source || source || "intranap")
-    }))
-    .filter((row) => POOL_COURSES.includes(normalizeCourseCode(row.course)) && Number(row.timeValue || 0) > 0);
-  if (!rows.length) {
-    throw new HttpsError("invalid-argument", "Aucune performance historique valide dans le lot.");
-  }
-  const now = new Date().toISOString();
-  const result = await writePerformanceBaseRows(rows, {
-    actorUid: request.auth.uid,
-    actorEmail: request.auth.token?.email || "",
-    now,
-    action: "historicalImport.batch",
-    changeSeed: cleanText(data.batchId || now),
-    status: "active",
-    logChanges: false
-  });
-  await db.collection(PERFORMANCE_BASE_MIGRATION_COLLECTION).doc(cleanText(data.batchId || stableHash(now).slice(0, 24))).set({
-    source,
-    status: "completed",
-    importedCount: result.written,
-    updatedAt: now,
-    importedBy: request.auth.uid,
-    importedByEmail: request.auth.token?.email || ""
-  }, { merge: true });
-  return {
-    ok: true,
-    written: result.written
-  };
-});
 
-/* extracted-function: functions/backend/server-legacy-service/migrate-historical-performance-base-chunk.js#migrateHistoricalPerformanceBaseChunk */
-async function migrateHistoricalPerformanceBaseChunk(input0, input1) {
-  return $serverLegacyService_migrateHistoricalPerformanceBaseChunk().migrateHistoricalPerformanceBaseChunk(...arguments);
-}
 
 /* extracted-function: functions/backend/server-legacy-service/build-additional-performance-data-snapshot.js#buildAdditionalPerformanceDataSnapshot */
 async function buildAdditionalPerformanceDataSnapshot() {
@@ -12230,50 +12142,7 @@ exports.publishPerformancePublicData = onCall(PUBLIC_PERFORMANCE_CALLABLE_OPTION
   }
 });
 
-exports.getPerformanceBaseMigrationStatus = onCall(MIGRATION_CALLABLE_OPTIONS, async (request) => {
-  await portalSessionService().assertSession(request);
-  if (ENVIRONMENT.sportingDataSource === "nap") throw new HttpsError("failed-precondition", "Cette ancienne action Firebase est désactivée : les résultats sont gérés dans NAP.");
-  assertAdmin(request);
-  const manifest = await performanceBaseMigrationManifest();
-  const chunks = await migrationChunkStatuses(manifest.chunks);
-  const completed = chunks.filter((chunk) => chunk.status === "completed").length;
-  return {
-    ok: true,
-    generatedAt: manifest.generatedAt || "",
-    totalChunks: chunks.length,
-    completedChunks: completed,
-    pendingChunks: chunks.length - completed,
-    totalPerformances: chunks.reduce((sum, chunk) => sum + Number(chunk.performanceCount || 0), 0),
-    migratedPerformances: chunks.reduce((sum, chunk) => sum + Number(chunk.migratedCount || 0), 0),
-    chunks
-  };
-});
 
-exports.migratePerformanceBaseNextChunk = onCall(MIGRATION_CALLABLE_OPTIONS, async (request) => {
-  await portalSessionService().assertSession(request);
-  if (ENVIRONMENT.sportingDataSource === "nap") throw new HttpsError("failed-precondition", "Cette ancienne action Firebase est désactivée : les résultats sont gérés dans NAP.");
-  assertAdmin(request);
-  const manifest = await performanceBaseMigrationManifest();
-  const chunks = await migrationChunkStatuses(manifest.chunks);
-  const next = chunks.find((chunk) => chunk.status !== "completed");
-  if (!next) {
-    return {
-      ok: true,
-      done: true,
-      message: "Tous les lots historiques sont deja migres."
-    };
-  }
-  const result = await migrateHistoricalPerformanceBaseChunk(next.name, request);
-  const updatedChunks = await migrationChunkStatuses(manifest.chunks);
-  return {
-    ...result,
-    done: false,
-    completedChunks: updatedChunks.filter((chunk) => chunk.status === "completed").length,
-    totalChunks: updatedChunks.length,
-    migratedPerformances: updatedChunks.reduce((sum, chunk) => sum + Number(chunk.migratedCount || 0), 0),
-    totalPerformances: updatedChunks.reduce((sum, chunk) => sum + Number(chunk.performanceCount || 0), 0)
-  };
-});
 
 /* extracted-function: functions/backend/server-legacy-service/enqueue-performance-publication-job.js#enqueuePerformancePublicationJob */
 async function enqueuePerformancePublicationJob() {
