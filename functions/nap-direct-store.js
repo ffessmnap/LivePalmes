@@ -35,7 +35,7 @@ function createStore(pool,environment) {
     const visible=publicOnly?list.filter(e=>{const p=read(e.publication_state_json);return p.series||p.results;}):list;
     const selected=eventId?visible.find(e=>e.id===eventId):visible[0];
     const rows=selected?await entries(id,selected.id):[],p=read(selected?.publication_state_json);
-    return {competition,config:configView(current),events:visible.map(eventView),selectedEventId:selected?.id||null,entries:publicOnly?rows.map(row=>model.publicEntry(row,Boolean(p.series),Boolean(p.results))):rows.map(row=>({...model.publicEntry(row,true,true),sourceEntryId:row.source_entry_id,swimmerId:row.swimmer_id,clubId:row.club_id}))};
+    return {competition,config:configView(current),events:visible.map(eventView),selectedEventId:selected?.id||null,entries:publicOnly?rows.map(row=>model.publicEntry(row,Boolean(p.series),Boolean(p.results),model.participationFor(p,row.participant_key))):rows.map(row=>({...model.publicEntry(row,true,true,model.participationFor(p,row.participant_key)),sourceEntryId:row.source_entry_id,swimmerId:row.swimmer_id,clubId:row.club_id}))};
   }
   async function watchContext(id){
     const competition=await native(id),current=await config(id);
@@ -43,9 +43,10 @@ function createStore(pool,environment) {
     const list=await events(id);if(list.length>model.MAX_EVENTS)throw fail('Programme trop volumineux.');
     const all=await q(`SELECT * FROM livepalmes_direct_entries WHERE environment=? AND competition_id=? ORDER BY event_id,series_number,lane,participant_key LIMIT ${model.MAX_MEET_ENTRIES+1}`,scope(id));
     if(all.length>model.MAX_MEET_ENTRIES)throw fail('Compétition trop volumineuse.');
+    const publications=new Map(list.map(event=>[event.id,read(event.publication_state_json)]));
     const visible=new Set(list.filter(row=>read(row.publication_state_json).series).map(row=>row.id)),rows=all.filter(row=>visible.has(row.event_id)&&row.has_series&&row.series_number!=null),heats=new Map();
     for(const row of rows){const key=row.event_id+':'+Number(row.series_number);if(!heats.has(key))heats.set(key,[]);heats.get(key).push(row);}
-    return {competition,config:configView(current),events:list.filter(row=>visible.has(row.id)).map(eventView),entries:rows.map(row=>({...model.publicEntry(row,true,true),eventId:row.event_id,sourceEntryId:row.source_entry_id})),seriesFingerprints:Object.fromEntries([...heats].map(([key,values])=>[key,model.seriesFingerprint(values)]))};
+    return {competition,config:configView(current),events:list.filter(row=>visible.has(row.id)).map(eventView),entries:rows.map(row=>({...model.publicEntry(row,true,true,model.participationFor(publications.get(row.event_id),row.participant_key)),eventId:row.event_id,sourceEntryId:row.source_entry_id})),seriesFingerprints:Object.fromEntries([...heats].map(([key,values])=>[key,model.seriesFingerprint(values)]))};
   }
   async function transaction(id,actor,expected,callback,{allowClosed=false,allowMissing=false,allowReset=false}={}) {
     const c=await pool.getConnection();let started=false;
@@ -109,8 +110,9 @@ function createStore(pool,environment) {
       const scheduledAt=prepared.seriesFingerprint?current.scheduled_at||'':prepared.kind==='series'&&prepared.seriesNumber==null?e.scheduledAt:e.scheduledAt||current?.scheduled_at||'';
       const order=prepared.seriesFingerprint?Number(current.program_order)||0:e.order||Number(current?.program_order)||0;
       const eventLabel=prepared.seriesFingerprint?current.event_label:e.eventLabel;
-      await execute(c,"INSERT INTO livepalmes_direct_events (environment,competition_id,id,source_event_id,event_code,event_label,sex,phase,event_date,session_key,session_label,program_order,event_number,scheduled_at,publication_state_json,version,created_at,updated_at,created_by,updated_by) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,1,UTC_TIMESTAMP(6),UTC_TIMESTAMP(6),?,?) ON DUPLICATE KEY UPDATE source_event_id=COALESCE(VALUES(source_event_id),source_event_id),publication_state_json=VALUES(publication_state_json),event_label=VALUES(event_label),program_order=VALUES(program_order),scheduled_at=VALUES(scheduled_at),version=version+1,updated_at=UTC_TIMESTAMP(6),updated_by=VALUES(updated_by)",[...scope(id),e.id,e.sourceEventId,e.eventCode,eventLabel,e.sex,e.phase,e.date,e.sessionKey,e.sessionLabel,order,e.eventNumber,scheduledAt,json(publication),actor.uid,actor.uid]);
+
       // Each batch updates only its own facet. Series imported after results preserve results.
+      const resolved=[];
       const values=prepared.rows.map(row=>{
         let key=row.key,sourceEntryId=row.sourceEntryId;
         if(row.kind==='relay'&&!prepared.seriesFingerprint){
@@ -119,8 +121,17 @@ function createStore(pool,environment) {
           if(previous){key=previous.participant_key;sourceEntryId=previous.source_entry_id||null;}
           else if(prepared.kind==='series'&&matches.some(old=>old.has_result))throw fail('Un résultat de relais existe sans association certaine. Contrôler son association avec les séries complètes avant de réimporter.');
         }
+        resolved.push({...row,key});
         return [...scope(id),e.id,key,sourceEntryId,row.kind,row.swimmerId,row.clubId,row.lastName,row.firstName,row.birthYear,row.club,row.category,row.series,row.lane,row.seed.raw,row.seed.cs,row.seed.status,row.result.raw,row.result.cs,row.status,row.rank,json(row.members),json(row.splits),prepared.kind==='series'?1:0,prepared.kind==='results'?1:0,actor.uid,actor.uid];
       });
+      // Participation annotations belong to this imported event, not the native swimmer identity.
+      // Reuse its bounded JSON metadata; TXT result updates cannot clear or replace them.
+      const surviving=new Set(allBefore.filter(row=>row.has_result||row.has_series&&(prepared.kind!=='series'||prepared.seriesNumber!=null&&Number(row.series_number)!==prepared.seriesNumber)).map(row=>row.participant_key));
+      resolved.forEach(row=>surviving.add(row.key));
+      const annotations=Object.fromEntries(Object.entries(publication.participationStatuses||{}).filter(([key])=>surviving.has(key)));
+      if(prepared.kind==='series')for(const row of resolved){if(row.participationStatus===undefined)continue;if(row.participationStatus)annotations[row.key]=row.participationStatus;else delete annotations[row.key];}
+      if(Object.keys(annotations).length)publication.participationStatuses=annotations;else delete publication.participationStatuses;
+      await execute(c,"INSERT INTO livepalmes_direct_events (environment,competition_id,id,source_event_id,event_code,event_label,sex,phase,event_date,session_key,session_label,program_order,event_number,scheduled_at,publication_state_json,version,created_at,updated_at,created_by,updated_by) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,1,UTC_TIMESTAMP(6),UTC_TIMESTAMP(6),?,?) ON DUPLICATE KEY UPDATE source_event_id=COALESCE(VALUES(source_event_id),source_event_id),publication_state_json=VALUES(publication_state_json),event_label=VALUES(event_label),program_order=VALUES(program_order),scheduled_at=VALUES(scheduled_at),version=version+1,updated_at=UTC_TIMESTAMP(6),updated_by=VALUES(updated_by)",[...scope(id),e.id,e.sourceEventId,e.eventCode,eventLabel,e.sex,e.phase,e.date,e.sessionKey,e.sessionLabel,order,e.eventNumber,scheduledAt,json(publication),actor.uid,actor.uid]);
       const columns='environment,competition_id,event_id,participant_key,source_entry_id,entry_kind,swimmer_id,club_id,last_name,first_name,birth_year,club_label,category_code,series_number,lane,entry_time_raw,entry_time_cs,entry_time_status,result_time_raw,result_time_cs,result_status,published_rank,relay_members_json,splits_json,has_series,has_result,created_by,updated_by';
       const facet=prepared.kind==='series'?['series_number','lane','entry_time_raw','entry_time_cs','entry_time_status','has_series']:['result_time_raw','result_time_cs','result_status','published_rank','splits_json','has_result'];
       const shared=prepared.seriesFingerprint?[]:['category_code','club_label','relay_members_json'];

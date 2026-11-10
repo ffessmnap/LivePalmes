@@ -12,6 +12,6 @@ function attach(events,entries,races){
     for(const group of ['a','b'])for(const key of race.announced.roster?.[group]||[])if(!withdrawn.has(key)&&!(group==='b'&&race.format==='a'))markers.set(key,race.format==='a'?'Q':group==='a'?'QA':'QB');
     groups.set(event.event_code+'|'+event.sex,markers);
   }
-  return entries.map(row=>{const event=byId.get(row.eventId),marker=event?.phase==='series'&&row.result?.cs>0&&!row.result.status&&groups.get(event.event_code+'|'+event.sex)?.get(row.key);return marker?{...row,qualification:marker}:row;});
+  return entries.map(row=>{const event=byId.get(row.eventId),marker=event?.phase==='series'&&row.participationStatus!=='HC'&&row.result?.cs>0&&!row.result.status&&groups.get(event.event_code+'|'+event.sex)?.get(row.key);return marker?{...row,qualification:marker}:row;});
 }
 module.exports={stateId,signature,attach};

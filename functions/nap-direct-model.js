@@ -34,6 +34,8 @@ function event(input,competition) {
   }
   return {id:hash(identity),eventCode:code,eventLabel:clean(input.eventLabel||code),sex,phase,date:input.date||competition.date,sessionKey:session,sessionLabel:clean(input.sessionLabel||`Session ${session}`,120),order:Math.max(0,Math.min(10000,Number(input.order)||0)),eventNumber:clean(input.eventNumber,16),scheduledAt:clean(input.scheduledAt,32),sourceEventId:clean(input.sourceEventId,100)||null,...schedule};
 }
+const participationStatus=value=>{const code=clean(value,8).toUpperCase();if(!['','NS','IN','HC'].includes(code))throw new TypeError('Mention de participation inconnue.');return code;};
+const participationFor=(publication,key)=>participationStatus(publication?.participationStatuses?.[key]||'');
 function entry(row) {
   const firstName=clean(row.firstName),lastName=clean(row.lastName||row.displayName),club=clean(row.club||row.clubLabel,200),year=Number(row.birthYear)||null;
   const relay=row.relay===true,sourceId=clean(row.sourceEntryId,100)||null;
@@ -46,7 +48,7 @@ function entry(row) {
   if(series!=null&&(!Number.isInteger(series)||series<1||series>1000)||lane!=null&&(!Number.isInteger(lane)||lane<0||lane>20)||rank!=null&&(!Number.isInteger(rank)||rank<1||rank>1000))throw new TypeError("Série, couloir ou rang invalide.");
   const members=Array.isArray(row.relayMembers)?row.relayMembers.slice(0,8).map(m=>({firstName:clean(m.firstName),lastName:clean(m.lastName||m.displayName),birthYear:Number(m.birthYear)||null,time:clean(m.time,32)})):[];
   const splits=Array.isArray(row.splits)?row.splits.slice(0,60).map(s=>({distance:clean(s.distance,20),time:clean(s.time,32)})):[];
-  return {key:hash(identity),sourceEntryId:sourceId,kind:relay?'relay':'individual',firstName,lastName,birthYear:year,club,clubId:clean(row.clubId,32)||null,swimmerId:Number.isSafeInteger(Number(row.swimmerId))&&Number(row.swimmerId)>0?Number(row.swimmerId):null,category:clean(row.category,32),series,lane,seed,result,status,rank,members,splits};
+  return {...(row.participationStatus!==undefined?{participationStatus:participationStatus(row.participationStatus)}:{}),key:hash(identity),sourceEntryId:sourceId,kind:relay?'relay':'individual',firstName,lastName,birthYear:year,club,clubId:clean(row.clubId,32)||null,swimmerId:Number.isSafeInteger(Number(row.swimmerId))&&Number(row.swimmerId)>0?Number(row.swimmerId):null,category:clean(row.category,32),series,lane,seed,result,status,rank,members,splits};
 }
 function prepare(input,competition) {
   if(!["series","results"].includes(input.kind)||!Array.isArray(input.rows)||!input.rows.length||input.rows.length>MAX_ENTRIES)throw new TypeError("Lot de publication invalide (1 à 1 000 lignes).");
@@ -64,11 +66,11 @@ function prepare(input,competition) {
 function seriesFingerprint(rows){
   return hash(rows.filter(row=>Boolean(row.has_series)).map(row=>[row.participant_key,row.source_entry_id||null,Number(row.series_number),row.lane==null?null:Number(row.lane),row.category_code||'',row.entry_time_raw||'']).sort((a,b)=>String(a[0]).localeCompare(String(b[0]))));
 }
-function publicEntry(row,showSeries,showResults) {
+function publicEntry(row,showSeries,showResults,participation="") {
   showSeries=showSeries&&Boolean(row.has_series);showResults=showResults&&Boolean(row.has_result);
   const seed=showSeries||showResults&&!row.has_series?{raw:row.entry_time_raw,cs:row.entry_time_cs==null?null:Number(row.entry_time_cs),status:row.entry_time_status}:{raw:"",cs:null,status:"missing"};
   const result=showResults?{raw:row.result_time_raw,cs:row.result_time_cs==null?null:Number(row.result_time_cs),status:row.result_status}:{raw:"",cs:null,status:""};
-  return {key:row.participant_key,firstName:row.first_name,lastName:row.last_name,birthYear:row.birth_year,club:row.club_label,category:row.category_code,series:row.series_number,lane:row.lane,kind:row.entry_kind,seed,result,rank:showResults?row.published_rank:null,delta:seed.status==="known"&&seed.cs&&result.cs&&!result.status?result.cs-seed.cs:null,members:parseJson(row.relay_members_json,[]),splits:showResults?parseJson(row.splits_json,[]):[]};
+  return {...(participation?{participationStatus:participationStatus(participation)}:{}),key:row.participant_key,firstName:row.first_name,lastName:row.last_name,birthYear:row.birth_year,club:row.club_label,category:row.category_code,series:row.series_number,lane:row.lane,kind:row.entry_kind,seed,result,rank:showResults?row.published_rank:null,delta:seed.status==="known"&&seed.cs&&result.cs&&!result.status?result.cs-seed.cs:null,members:parseJson(row.relay_members_json,[]),splits:showResults?parseJson(row.splits_json,[]):[]};
 }
 function prepareBatch(input,competition){
   if(!Array.isArray(input.groups)||!input.groups.length||input.groups.length>MAX_EVENTS)throw new TypeError("Sélectionner de 1 à 300 épreuves par publication.");
@@ -88,4 +90,4 @@ function prepareBatch(input,competition){
   return {groups,count,contentHash:hash(groups),operationKey:hash(['direct-batch',input.groups.map(group=>group.operationKey)])};
 }
 const visibleEntry=(row,series,results)=>Boolean(series&&row.has_series||results&&row.has_result);
-module.exports={ROLES,MAX_EVENTS,MAX_ENTRIES,MAX_MEET_ENTRIES,clean,hash,parseJson,competitionId,time,event,entry,prepare,prepareBatch,publicEntry,visibleEntry,seriesFingerprint};
+module.exports={participationStatus,participationFor,ROLES,MAX_EVENTS,MAX_ENTRIES,MAX_MEET_ENTRIES,clean,hash,parseJson,competitionId,time,event,entry,prepare,prepareBatch,publicEntry,visibleEntry,seriesFingerprint};
