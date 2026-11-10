@@ -724,6 +724,41 @@ class RecordsCleanupTests(unittest.TestCase):
         with patch.object(m,'git',side_effect=self.fixtures()),self.assertRaises(ValueError):
             m.classify_test(['firebase.json',m.RECORDS_STATIC_PATH,'performances/public/data/other.js'],False,True)
 
+class ClubReferenceCleanupTests(unittest.TestCase):
+    def fake(self, replacement=False, wrong_blob=False, dependent=False):
+        def git(*args):
+            if args[0] == 'merge-base':
+                return ''
+            if args[0] == 'rev-parse':
+                name = args[1].split(':', 1)[1]
+                return '0'*40 if wrong_blob else m.CLUB_REFERENCE_CLEANUP_FILES[name]
+            if args[0] == 'ls-tree':
+                return args[-1] if replacement else ''
+            if args[0] == 'show':
+                return 'club-reference.json' if dependent else 'native club reader'
+            raise AssertionError(args)
+        return git
+
+    def test_exact_deletion_is_manual_test_only_and_prod_still_refuses(self):
+        paths = list(m.CLUB_REFERENCE_CLEANUP_FILES)
+        with patch.dict(os.environ, {'TARGET_FIREBASE_PROJECT': 'livepalmes-test'}), patch.object(m, 'git', side_effect=self.fake()):
+            self.assertEqual(m.classify_test(paths + ['functions/nap-clubs-by-ids.js'], approved_club_reference_cleanup=True), (['functions/nap-clubs-by-ids.js'], True))
+            with self.assertRaises(ValueError):
+                m.classify_test(paths)
+            with self.assertRaises(ValueError):
+                m.classify(paths)
+            for extra in ['performances/public/data/other.json', 'firebase.json', 'firestore.rules']:
+                with self.subTest(extra=extra), self.assertRaises(ValueError):
+                    m.classify_test(paths + [extra], approved_club_reference_cleanup=True)
+        with patch.dict(os.environ, {'TARGET_FIREBASE_PROJECT': 'livepalmes'}), patch.object(m, 'git', side_effect=self.fake()), self.assertRaises(ValueError):
+            m.classify_test(paths, approved_club_reference_cleanup=True)
+
+    def test_replacement_changed_blob_or_dependency_refused(self):
+        for mutation in [{'replacement': True}, {'wrong_blob': True}, {'dependent': True}]:
+            with self.subTest(mutation=mutation), patch.dict(os.environ, {'TARGET_FIREBASE_PROJECT': 'livepalmes-test'}), patch.object(m, 'git', side_effect=self.fake(**mutation)), self.assertRaises(ValueError):
+                m.classify_test(list(m.CLUB_REFERENCE_CLEANUP_FILES), approved_club_reference_cleanup=True)
+
+
 class PublicExportCleanupTests(unittest.TestCase):
     def fake(self, replacement=False, config=False, dependent=False, unknown=False):
         def git(*args):

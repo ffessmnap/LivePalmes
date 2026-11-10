@@ -68,10 +68,6 @@ function createNationalHandlers(backendContext) {
       set AUDIT_PAGE_LIMIT(value) { backendContext.AUDIT_PAGE_LIMIT = value; },
       get AUDIT_PERSON_RESOLUTION_LIMIT() { return backendContext.AUDIT_PERSON_RESOLUTION_LIMIT; },
       set AUDIT_PERSON_RESOLUTION_LIMIT(value) { backendContext.AUDIT_PERSON_RESOLUTION_LIMIT = value; },
-      get CLUB_REFERENCE_BY_FEDERAL_NUMBER() { return backendContext.CLUB_REFERENCE_BY_FEDERAL_NUMBER; },
-      set CLUB_REFERENCE_BY_FEDERAL_NUMBER(value) { backendContext.CLUB_REFERENCE_BY_FEDERAL_NUMBER = value; },
-      get CLUB_REFERENCE_BY_ID() { return backendContext.CLUB_REFERENCE_BY_ID; },
-      set CLUB_REFERENCE_BY_ID(value) { backendContext.CLUB_REFERENCE_BY_ID = value; },
       get ENGAGEMENT_CLUBS_COLLECTION() { return backendContext.ENGAGEMENT_CLUBS_COLLECTION; },
       set ENGAGEMENT_CLUBS_COLLECTION(value) { backendContext.ENGAGEMENT_CLUBS_COLLECTION = value; },
       get ENGAGEMENT_CLUB_PEOPLE_ROSTERS_COLLECTION() { return backendContext.ENGAGEMENT_CLUB_PEOPLE_ROSTERS_COLLECTION; },
@@ -225,10 +221,6 @@ function createNationalHandlers(backendContext) {
   let cache6;
   function operation6() {
     if (!cache6) cache6 = require("./backend/portal-national-handlers/save-engagement-national-club").createNationalHandlers_saveEngagementNationalClub({
-      get CLUB_REFERENCE_BY_FEDERAL_NUMBER() { return backendContext.CLUB_REFERENCE_BY_FEDERAL_NUMBER; },
-      set CLUB_REFERENCE_BY_FEDERAL_NUMBER(value) { backendContext.CLUB_REFERENCE_BY_FEDERAL_NUMBER = value; },
-      get CLUB_REFERENCE_BY_ID() { return backendContext.CLUB_REFERENCE_BY_ID; },
-      set CLUB_REFERENCE_BY_ID(value) { backendContext.CLUB_REFERENCE_BY_ID = value; },
       get ENGAGEMENT_CLUBS_COLLECTION() { return backendContext.ENGAGEMENT_CLUBS_COLLECTION; },
       set ENGAGEMENT_CLUBS_COLLECTION(value) { backendContext.ENGAGEMENT_CLUBS_COLLECTION = value; },
       get ENVIRONMENT() { return backendContext.ENVIRONMENT; },
@@ -262,8 +254,6 @@ function createNationalHandlers(backendContext) {
   let cache7;
   function operation7() {
     if (!cache7) cache7 = require("./backend/portal-national-handlers/delete-engagement-national-club").createNationalHandlers_deleteEngagementNationalClub({
-      get CLUB_REFERENCE_BY_ID() { return backendContext.CLUB_REFERENCE_BY_ID; },
-      set CLUB_REFERENCE_BY_ID(value) { backendContext.CLUB_REFERENCE_BY_ID = value; },
       get ENGAGEMENT_CLUBS_COLLECTION() { return backendContext.ENGAGEMENT_CLUBS_COLLECTION; },
       set ENGAGEMENT_CLUBS_COLLECTION(value) { backendContext.ENGAGEMENT_CLUBS_COLLECTION = value; },
       get ENGAGEMENT_CLUB_PEOPLE_ROSTERS_COLLECTION() { return backendContext.ENGAGEMENT_CLUB_PEOPLE_ROSTERS_COLLECTION; },

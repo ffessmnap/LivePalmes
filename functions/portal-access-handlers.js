@@ -75,6 +75,7 @@ function createAccessHandlers(backendContext) {
   let cache2;
   function operation2() {
     if (!cache2) cache2 = require("./backend/portal-access-handlers/rebuild-access-directory-index-next-page").createAccessHandlers_rebuildAccessDirectoryIndexNextPage({
+      get resolveAccessUserClubRegions() { return backendContext.resolveAccessUserClubRegions; },
       get ACCESS_DIRECTORY_INDEX_VERSION() { return backendContext.ACCESS_DIRECTORY_INDEX_VERSION; },
       set ACCESS_DIRECTORY_INDEX_VERSION(value) { backendContext.ACCESS_DIRECTORY_INDEX_VERSION = value; },
       get FieldPath() { return backendContext.FieldPath; },
@@ -100,6 +101,7 @@ function createAccessHandlers(backendContext) {
   let cache3;
   function operation3() {
     if (!cache3) cache3 = require("./backend/portal-access-handlers/rebuild-access-directory-snapshot-next-page").createAccessHandlers_rebuildAccessDirectorySnapshotNextPage({
+      get resolveAccessUserClubRegions() { return backendContext.resolveAccessUserClubRegions; },
       get ACCESS_DIRECTORY_SNAPSHOTS_COLLECTION() { return backendContext.ACCESS_DIRECTORY_SNAPSHOTS_COLLECTION; },
       set ACCESS_DIRECTORY_SNAPSHOTS_COLLECTION(value) { backendContext.ACCESS_DIRECTORY_SNAPSHOTS_COLLECTION = value; },
       get ACCESS_DIRECTORY_SNAPSHOT_VERSION() { return backendContext.ACCESS_DIRECTORY_SNAPSHOT_VERSION; },
@@ -133,6 +135,7 @@ function createAccessHandlers(backendContext) {
   let cache4;
   function operation4() {
     if (!cache4) cache4 = require("./backend/portal-access-handlers/list-access-users").createAccessHandlers_listAccessUsers({
+      get resolveAccessUserClubRegions() { return backendContext.resolveAccessUserClubRegions; },
       get ACCESS_CAPABILITY_SET() { return backendContext.ACCESS_CAPABILITY_SET; },
       set ACCESS_CAPABILITY_SET(value) { backendContext.ACCESS_CAPABILITY_SET = value; },
       get ACCESS_DIRECTORY_INDEX_VERSION() { return backendContext.ACCESS_DIRECTORY_INDEX_VERSION; },
@@ -164,6 +167,7 @@ function createAccessHandlers(backendContext) {
   let cache5;
   function operation5() {
     if (!cache5) cache5 = require("./backend/portal-access-handlers/set-access-user-status").createAccessHandlers_setAccessUserStatus({
+      get resolveAccessUserClubRegions() { return backendContext.resolveAccessUserClubRegions; },
       get HttpsError() { return backendContext.HttpsError; },
       set HttpsError(value) { backendContext.HttpsError = value; },
       get accessDirectoryKeys() { return backendContext.accessDirectoryKeys; },
@@ -207,6 +211,7 @@ function createAccessHandlers(backendContext) {
   let cache7;
   function operation7() {
     if (!cache7) cache7 = require("./backend/portal-access-handlers/request-access-user-deletion").createAccessHandlers_requestAccessUserDeletion({
+      get resolveAccessUserClubRegions() { return backendContext.resolveAccessUserClubRegions; },
       get HttpsError() { return backendContext.HttpsError; },
       set HttpsError(value) { backendContext.HttpsError = value; },
       get accessManagementContext() { return backendContext.accessManagementContext; },

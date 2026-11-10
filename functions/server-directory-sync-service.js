@@ -19,15 +19,16 @@ function createDirectorySyncService(backendContext) {
 
       const currentData = userSnapshot.exists ? userSnapshot.data() || {} : null;
       const currentEntry = currentData ? backendContext.accessDirectorySnapshotEntry(uid, currentData) : null;
-      const currentRegionId = currentData ? backendContext.accessDirectorySnapshotRegionId(currentData) : "";
+      const [beforeProfile, afterProfile, currentProfile] = await backendContext.resolveAccessUserClubRegions([beforeData, afterData, currentData]);
+      const currentRegionId = currentProfile ? backendContext.accessDirectorySnapshotRegionId(currentProfile) : "";
       backendContext.mergeAccessDirectorySnapshotEntries(transaction, "national", "", {
         [key]: currentEntry || backendContext.FieldValue.delete()
       }, now);
 
       // Event regions are cleanup hints only, never a source of profile data.
       const regions = new Set([
-        beforeData ? backendContext.accessDirectorySnapshotRegionId(beforeData) : "",
-        afterData ? backendContext.accessDirectorySnapshotRegionId(afterData) : "",
+        beforeProfile ? backendContext.accessDirectorySnapshotRegionId(beforeProfile) : "",
+        afterProfile ? backendContext.accessDirectorySnapshotRegionId(afterProfile) : "",
         currentRegionId
       ].filter(Boolean));
       for (const regionId of regions) {

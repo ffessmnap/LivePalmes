@@ -12,9 +12,16 @@ async function main() {
     ["10", { clubId: "10", clubName: "Club français", regionId: "3" }],
     ["20", { clubId: "20", clubName: "Club étranger", regionId: "5" }]
   ]);
+  const initialPoolPath = require.resolve("../functions/nap-portal-pool"), initialPool = require.cache[initialPoolPath];
+  require.cache[initialPoolPath] = { exports: { portalPool: () => ({ execute: async query => {
+    reads++;
+    assert.match(query.sql, /FORCE INDEX \(PRIMARY\) WHERE num_club = \? LIMIT 1/);
+    const id = String(query.values[0]), item = clubs.get(id);
+    return [item ? [{ num_club: Number(id), nom_club: item.clubName, comite_club: Number(item.regionId), actif_club: 1 }] : []];
+  } }) } };
   const context = {
-    HttpsError, ENVIRONMENT: { sportingDataSource: "legacy" }, ENGAGEMENT_CLUBS_COLLECTION: "clubs",
-    CLUB_REFERENCE_BY_ID: clubs, cleanText: value => String(value ?? "").trim(),
+    HttpsError, ENVIRONMENT: { sportingDataSource: "nap" }, ENGAGEMENT_CLUBS_COLLECTION: "clubs",
+    cleanText: value => String(value ?? "").trim(),
     normalizeEmail: value => String(value).trim().toLowerCase(), assertEmail: value => assert.match(value, /@/),
     cleanClubPayload: club => club,
     engagementClubRegionId: club => ({ 3: "Ile de France", 5: "CMAS" }[club.regionId] || club.regionId),
@@ -74,6 +81,7 @@ async function main() {
     assert.equal((await service.resolveExistingClubForAccessRequest(input)).regionId, "CMAS");
     assert.equal(queries, 1);
   } finally { if (originalPool) require.cache[poolPath] = originalPool; else delete require.cache[poolPath]; }
+  if (initialPool) require.cache[initialPoolPath] = initialPool; else delete require.cache[initialPoolPath];
   console.log("Foreign club accounts: optional licence, trusted club region, bounded lookup, national decisions and recipients OK.");
 }
 main().catch(error => { console.error(error); process.exitCode = 1; });

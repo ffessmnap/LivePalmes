@@ -40,7 +40,7 @@ function fixture() {
   const start=source.indexOf("exports.syncEngagementMailRecipientIndex = onDocumentWritten("), end=source.indexOf("exports.rebuildEngagementMailRecipientIndexNextPage",start);
   if (start < 0 || end < 0) throw Error("PROJECTION_REPLAY_REVIEW_REQUIRED");
   const exports={};
-  vm.runInNewContext(source.slice(start,end),{exports,db,REGION:"offline",onDocumentWritten:(_,fn)=>fn,cleanText,FieldValue:{delete:()=>deleted},syncAccessDirectorySnapshotFromUserChange:async()=>{},...mail,console:{error:()=>{}}},{timeout:1000});
+  vm.runInNewContext(source.slice(start,end),{exports,db,REGION:"offline",defineSecret:name=>({name,value(){throw Error("OFFLINE_SECRET_ACCESS_FORBIDDEN");}}),onDocumentWritten:(_,fn)=>fn,cleanText,FieldValue:{delete:()=>deleted},syncAccessDirectorySnapshotFromUserChange:async()=>{},...mail,console:{error:()=>{}}},{timeout:1000});
   const uid="fiction-corbie", profile=club=>({clubId:club,clubName:"Fiction only",status:"active",email:"fiction@example.invalid",capabilities:{"engagements.club.manage":true},emailPreferences:{competitionNotifications:false}});
   const event=(a,b)=>({params:{uid},data:{before:{id:uid,exists:a!==null,data:()=>typeof a==="string"?profile(a):a},after:{id:uid,exists:b!==null,data:()=>typeof b==="string"?profile(b):b}}});
   const key=stableHash(uid).slice(0,24), shard=parseInt(stableHash(uid).slice(0,8),16)%32;

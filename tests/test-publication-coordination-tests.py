@@ -10,6 +10,13 @@ spec.loader.exec_module(m)
 
 
 class CoordinationTests(unittest.TestCase):
+    def test_club_reference_cleanup_never_follows_or_runs_automatically(self):
+        self.assertTrue(self.call('prepare', approved_club_reference_cleanup=True)[0]['publish'])
+        self.assertFalse(self.call('prepare', 'b', approved_club_reference_cleanup=True)[0]['publish'])
+        self.assertFalse(self.call('followup', 'b', approved_club_reference_cleanup=True)[0]['queued'])
+        with self.assertRaises(ValueError):
+            self.call('prepare', approved_club_reference_cleanup=True, automatic_candidate='a'*40)
+
     def call(self, phase, head='a', **inputs):
         responses = [{'object': {'sha': head*40}}]
         if head != 'a':

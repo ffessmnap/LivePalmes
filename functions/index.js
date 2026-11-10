@@ -443,6 +443,7 @@ function $portalAccessHandlers_verifyPin() {
 
 function $portalAccessHandlers_rebuildAccessDirectoryIndexNextPage() {
   if (!$portalAccessHandlers_rebuildAccessDirectoryIndexNextPage.instance) $portalAccessHandlers_rebuildAccessDirectoryIndexNextPage.instance = require("./backend/portal-access-handlers/rebuild-access-directory-index-next-page").createAccessHandlers_rebuildAccessDirectoryIndexNextPage({
+    get resolveAccessUserClubRegions() { return resolveAccessUserClubRegions; },
     get ACCESS_DIRECTORY_INDEX_VERSION() { return ACCESS_DIRECTORY_INDEX_VERSION; },
     get FieldPath() { return FieldPath; },
     get FieldValue() { return FieldValue; },
@@ -458,6 +459,7 @@ function $portalAccessHandlers_rebuildAccessDirectoryIndexNextPage() {
 
 function $portalAccessHandlers_rebuildAccessDirectorySnapshotNextPage() {
   if (!$portalAccessHandlers_rebuildAccessDirectorySnapshotNextPage.instance) $portalAccessHandlers_rebuildAccessDirectorySnapshotNextPage.instance = require("./backend/portal-access-handlers/rebuild-access-directory-snapshot-next-page").createAccessHandlers_rebuildAccessDirectorySnapshotNextPage({
+    get resolveAccessUserClubRegions() { return resolveAccessUserClubRegions; },
     get ACCESS_DIRECTORY_SNAPSHOTS_COLLECTION() { return ACCESS_DIRECTORY_SNAPSHOTS_COLLECTION; },
     get ACCESS_DIRECTORY_SNAPSHOT_VERSION() { return ACCESS_DIRECTORY_SNAPSHOT_VERSION; },
     get FieldPath() { return FieldPath; },
@@ -477,6 +479,7 @@ function $portalAccessHandlers_rebuildAccessDirectorySnapshotNextPage() {
 
 function $portalAccessHandlers_listAccessUsers() {
   if (!$portalAccessHandlers_listAccessUsers.instance) $portalAccessHandlers_listAccessUsers.instance = require("./backend/portal-access-handlers/list-access-users").createAccessHandlers_listAccessUsers({
+    get resolveAccessUserClubRegions() { return resolveAccessUserClubRegions; },
     get ACCESS_CAPABILITY_SET() { return ACCESS_CAPABILITY_SET; },
     get ACCESS_DIRECTORY_INDEX_VERSION() { return ACCESS_DIRECTORY_INDEX_VERSION; },
     get FieldPath() { return FieldPath; },
@@ -495,6 +498,7 @@ function $portalAccessHandlers_listAccessUsers() {
 
 function $portalAccessHandlers_setAccessUserStatus() {
   if (!$portalAccessHandlers_setAccessUserStatus.instance) $portalAccessHandlers_setAccessUserStatus.instance = require("./backend/portal-access-handlers/set-access-user-status").createAccessHandlers_setAccessUserStatus({
+    get resolveAccessUserClubRegions() { return resolveAccessUserClubRegions; },
     get HttpsError() { return HttpsError; },
     get accessDirectoryKeys() { return accessDirectoryKeys; },
     get activeCapabilitiesFromMap() { return activeCapabilitiesFromMap; },
@@ -521,6 +525,7 @@ function $portalAccessHandlers_deleteAccessUser() {
 
 function $portalAccessHandlers_requestAccessUserDeletion() {
   if (!$portalAccessHandlers_requestAccessUserDeletion.instance) $portalAccessHandlers_requestAccessUserDeletion.instance = require("./backend/portal-access-handlers/request-access-user-deletion").createAccessHandlers_requestAccessUserDeletion({
+    get resolveAccessUserClubRegions() { return resolveAccessUserClubRegions; },
     get HttpsError() { return HttpsError; },
     get accessManagementContext() { return accessManagementContext; },
     get accessUserDeletionRequestItem() { return accessUserDeletionRequestItem; },
@@ -1112,8 +1117,6 @@ function $portalNationalHandlers_requestEngagementClubSwimmerChange() {
     get AUDIT_LEGACY_VISIBLE_SINCE() { return AUDIT_LEGACY_VISIBLE_SINCE; },
     get AUDIT_PAGE_LIMIT() { return AUDIT_PAGE_LIMIT; },
     get AUDIT_PERSON_RESOLUTION_LIMIT() { return AUDIT_PERSON_RESOLUTION_LIMIT; },
-    get CLUB_REFERENCE_BY_FEDERAL_NUMBER() { return CLUB_REFERENCE_BY_FEDERAL_NUMBER; },
-    get CLUB_REFERENCE_BY_ID() { return CLUB_REFERENCE_BY_ID; },
     get ENGAGEMENT_CLUBS_COLLECTION() { return ENGAGEMENT_CLUBS_COLLECTION; },
     get ENGAGEMENT_CLUB_PEOPLE_ROSTERS_COLLECTION() { return ENGAGEMENT_CLUB_PEOPLE_ROSTERS_COLLECTION; },
     get ENGAGEMENT_CLUB_ROSTERS_COLLECTION() { return ENGAGEMENT_CLUB_ROSTERS_COLLECTION; },
@@ -1198,8 +1201,6 @@ function $portalNationalHandlers_listEngagementNationalClubs() {
 
 function $portalNationalHandlers_saveEngagementNationalClub() {
   if (!$portalNationalHandlers_saveEngagementNationalClub.instance) $portalNationalHandlers_saveEngagementNationalClub.instance = require("./backend/portal-national-handlers/save-engagement-national-club").createNationalHandlers_saveEngagementNationalClub({
-    get CLUB_REFERENCE_BY_FEDERAL_NUMBER() { return CLUB_REFERENCE_BY_FEDERAL_NUMBER; },
-    get CLUB_REFERENCE_BY_ID() { return CLUB_REFERENCE_BY_ID; },
     get ENGAGEMENT_CLUBS_COLLECTION() { return ENGAGEMENT_CLUBS_COLLECTION; },
     get ENVIRONMENT() { return ENVIRONMENT; },
     get HttpsError() { return HttpsError; },
@@ -1219,7 +1220,6 @@ function $portalNationalHandlers_saveEngagementNationalClub() {
 
 function $portalNationalHandlers_deleteEngagementNationalClub() {
   if (!$portalNationalHandlers_deleteEngagementNationalClub.instance) $portalNationalHandlers_deleteEngagementNationalClub.instance = require("./backend/portal-national-handlers/delete-engagement-national-club").createNationalHandlers_deleteEngagementNationalClub({
-    get CLUB_REFERENCE_BY_ID() { return CLUB_REFERENCE_BY_ID; },
     get ENGAGEMENT_CLUBS_COLLECTION() { return ENGAGEMENT_CLUBS_COLLECTION; },
     get ENGAGEMENT_CLUB_PEOPLE_ROSTERS_COLLECTION() { return ENGAGEMENT_CLUB_PEOPLE_ROSTERS_COLLECTION; },
     get ENGAGEMENT_CLUB_ROSTERS_COLLECTION() { return ENGAGEMENT_CLUB_ROSTERS_COLLECTION; },
@@ -1973,7 +1973,6 @@ function $serverAccessService_engagementClubRegionId() {
 function $serverAccessService_engagementClubCode() {
   if (!$serverAccessService_engagementClubCode.instance) $serverAccessService_engagementClubCode.instance = require("./backend/server-access-service/engagement-club-code").createAccessService_engagementClubCode({
     get cleanText() { return cleanText; },
-    get CLUB_REFERENCE_BY_ID() { return CLUB_REFERENCE_BY_ID; }
   });
   return $serverAccessService_engagementClubCode.instance;
 }
@@ -1981,7 +1980,6 @@ function $serverAccessService_engagementClubCode() {
 function $serverAccessService_engagementClubName() {
   if (!$serverAccessService_engagementClubName.instance) $serverAccessService_engagementClubName.instance = require("./backend/server-access-service/engagement-club-name").createAccessService_engagementClubName({
     get cleanText() { return cleanText; },
-    get CLUB_REFERENCE_BY_ID() { return CLUB_REFERENCE_BY_ID; }
   });
   return $serverAccessService_engagementClubName.instance;
 }
@@ -2012,8 +2010,8 @@ function $serverAccessService_publicEngagementClubDirectoryRef() {
 
 function $serverAccessService_engagementClubsByIds() {
   if (!$serverAccessService_engagementClubsByIds.instance) $serverAccessService_engagementClubsByIds.instance = require("./backend/server-access-service/engagement-clubs-by-ids").createAccessService_engagementClubsByIds({
+    get readNapClubsByIds() { return readNapClubsByIds; },
     get cleanText() { return cleanText; },
-    get CLUB_REFERENCE_BY_ID() { return CLUB_REFERENCE_BY_ID; },
     get ENGAGEMENT_CLUBS_COLLECTION() { return ENGAGEMENT_CLUBS_COLLECTION; },
     get db() { return db; },
     get local$engagementStoredClubItem() { return $serverAccessService_engagementStoredClubItem().engagementStoredClubItem; }
@@ -2236,8 +2234,9 @@ function $serverAccessService_auditManagementContext() {
 
 function $serverAccessService_accessUserRegionIdFromData() {
   if (!$serverAccessService_accessUserRegionIdFromData.instance) $serverAccessService_accessUserRegionIdFromData.instance = require("./backend/server-access-service/access-user-region-id-from-data").createAccessService_accessUserRegionIdFromData({
+    get HttpsError() { return HttpsError; },
+    get readNapClubsByIds() { return readNapClubsByIds; },
     get cleanText() { return cleanText; },
-    get CLUB_REFERENCE_BY_ID() { return CLUB_REFERENCE_BY_ID; },
     get local$canonicalAccessDirectoryRegionId() { return $serverAccessService_canonicalAccessDirectoryRegionId().canonicalAccessDirectoryRegionId; },
     get local$normalizedAccessScope() { return $serverAccessService_normalizedAccessScope().normalizedAccessScope; }
   });
@@ -2583,7 +2582,6 @@ function $serverConsoleService_assertComputerPdfAccess() {
 
 function $serverDirectoryService_cleanEngagementAccessRequestPayload() {
   if (!$serverDirectoryService_cleanEngagementAccessRequestPayload.instance) $serverDirectoryService_cleanEngagementAccessRequestPayload.instance = require("./backend/server-directory-service/clean-engagement-access-request-payload").createDirectoryService_cleanEngagementAccessRequestPayload({
-    get CLUB_REFERENCE_BY_FEDERAL_NUMBER() { return CLUB_REFERENCE_BY_FEDERAL_NUMBER; },
     get ENGAGEMENT_CLUBS_COLLECTION() { return ENGAGEMENT_CLUBS_COLLECTION; },
     get ENVIRONMENT() { return ENVIRONMENT; },
     get HttpsError() { return HttpsError; },
@@ -2634,7 +2632,6 @@ function $serverDirectoryService_consumePublicAccessRequestRateLimit() {
   if (!$serverDirectoryService_consumePublicAccessRequestRateLimit.instance) $serverDirectoryService_consumePublicAccessRequestRateLimit.instance = require("./backend/server-directory-service/consume-public-access-request-rate-limit").createDirectoryService_consumePublicAccessRequestRateLimit({
     get ENVIRONMENT() { return ENVIRONMENT; },
     get ENGAGEMENT_CLUBS_COLLECTION() { return ENGAGEMENT_CLUBS_COLLECTION; },
-    get CLUB_REFERENCE_BY_ID() { return CLUB_REFERENCE_BY_ID; },
     get engagementStoredClubItem() { return engagementStoredClubItem; },
     get CLUB_REFERENCE_REGION_LABELS() { return CLUB_REFERENCE_REGION_LABELS; },
     get HttpsError() { return HttpsError; },
@@ -5530,6 +5527,7 @@ function portalAccountHandlers() {
 
 function serverAccountWriteService() {
   if (!serverAccountWriteService.instance) serverAccountWriteService.instance = require("./server-account-write-service").createAccountWriteService({
+    get resolveAccessUserClubRegions() { return resolveAccessUserClubRegions; },
     get accessDirectoryKeys() { return accessDirectoryKeys; },
     get auth() { return auth; },
     get capabilitiesMap() { return capabilitiesMap; },
@@ -5544,6 +5542,7 @@ function serverAccountWriteService() {
 
 function serverDirectorySyncService() {
   if (!serverDirectorySyncService.instance) serverDirectorySyncService.instance = require("./server-directory-sync-service").createDirectorySyncService({
+    get resolveAccessUserClubRegions() { return resolveAccessUserClubRegions; },
     get FieldValue() { return FieldValue; },
     get accessDirectorySnapshotEntry() { return accessDirectorySnapshotEntry; },
     get accessDirectorySnapshotEntryKey() { return accessDirectorySnapshotEntryKey; },
@@ -5606,7 +5605,6 @@ const { defineBoolean, defineSecret } = require("firebase-functions/params");
 const { createNapPool } = require("./nap-connection");
 
 const { consoleRoleClaims, hasConsolePortalCapability } = require("./console-access");
-const clubReference = require("./assets/club-reference.json");
 const intranapSwimmersReference = require("./intranap-swimmers-reference.json");
 const intranapSwimmersIndex = require("./assets/intranap-swimmers-index.json");
 const { nextPublicResultsIndex } = require("./public-results-index");
@@ -6220,23 +6218,6 @@ function competitionNotificationPreferenceUrl() {
   return $serverAccessService_competitionNotificationPreferenceUrl().competitionNotificationPreferenceUrl(...arguments);
 }
 
-const CLUB_REFERENCE_BY_ID = new Map((Array.isArray(clubReference.clubs) ? clubReference.clubs : [])
-  .map((club) => [cleanText(club?.[0]), {
-    clubId: cleanText(club?.[0]),
-    clubCode: cleanText(club?.[1]),
-    clubName: cleanText(club?.[2]),
-    regionId: cleanText(club?.[3]).slice(0, 80),
-    federalNumber: cleanText(club?.[4]).slice(0, 24),
-    city: cleanText(club?.[5]).slice(0, 100),
-    postalCode: cleanText(club?.[6]).slice(0, 16),
-    active: club?.[7] !== false,
-    source: "intranap"
-  }])
-  .filter(([clubId]) => clubId));
-
-const CLUB_REFERENCE_BY_FEDERAL_NUMBER = new Map(Array.from(CLUB_REFERENCE_BY_ID.values())
-  .filter((club) => club.federalNumber)
-  .map((club) => [club.federalNumber.toUpperCase(), club]));
 
 const CLUB_REFERENCE_REGION_LABELS = {
   "5": "CMAS",
@@ -6430,6 +6411,15 @@ async function accessManagementContext(input0) {
 /* extracted-function: functions/backend/server-access-service/audit-management-context.js#auditManagementContext */
 async function auditManagementContext(input0) {
   return $serverAccessService_auditManagementContext().auditManagementContext(...arguments);
+}
+
+async function readNapClubsByIds(ids) {
+  return require("./nap-clubs-by-ids").readClubsByIds(require("./nap-portal-pool").portalPool(process.env.LIVEPALMES_NAP_PASSWORD), ids);
+}
+
+/* extracted-function: functions/backend/server-access-service/access-user-region-id-from-data.js#resolveAccessUserClubRegions */
+async function resolveAccessUserClubRegions(profiles) {
+  return $serverAccessService_accessUserRegionIdFromData().resolveAccessUserClubRegions(profiles);
 }
 
 /* extracted-function: functions/backend/server-access-service/access-user-region-id-from-data.js#accessUserRegionIdFromData */
@@ -7355,15 +7345,15 @@ async function searchAccessUserDocuments(input0, input1) {
   return $serverDirectoryService_accessUserContainsSearch().searchAccessUserDocuments(...arguments);
 }
 
-exports.rebuildAccessDirectoryIndexNextPage = onCall(CALLABLE_OPTIONS, /* extracted-handler: functions/backend/portal-access-handlers/rebuild-access-directory-index-next-page.js#rebuildAccessDirectoryIndexNextPage#arrow */ async (request) => {
+exports.rebuildAccessDirectoryIndexNextPage = onCall({ ...CALLABLE_OPTIONS, secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] }, /* extracted-handler: functions/backend/portal-access-handlers/rebuild-access-directory-index-next-page.js#rebuildAccessDirectoryIndexNextPage#arrow */ async (request) => {
   return $portalAccessHandlers_rebuildAccessDirectoryIndexNextPage().rebuildAccessDirectoryIndexNextPage(request);
 });
 
-exports.rebuildAccessDirectorySnapshotNextPage = onCall(CALLABLE_OPTIONS, /* extracted-handler: functions/backend/portal-access-handlers/rebuild-access-directory-snapshot-next-page.js#rebuildAccessDirectorySnapshotNextPage#arrow */ async (request) => {
+exports.rebuildAccessDirectorySnapshotNextPage = onCall({ ...CALLABLE_OPTIONS, secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] }, /* extracted-handler: functions/backend/portal-access-handlers/rebuild-access-directory-snapshot-next-page.js#rebuildAccessDirectorySnapshotNextPage#arrow */ async (request) => {
   return $portalAccessHandlers_rebuildAccessDirectorySnapshotNextPage().rebuildAccessDirectorySnapshotNextPage(request);
 });
 
-exports.listAccessUsers = onCall(CALLABLE_OPTIONS, /* extracted-handler: functions/backend/portal-access-handlers/list-access-users.js#listAccessUsers#arrow */ async (request) => {
+exports.listAccessUsers = onCall({ ...CALLABLE_OPTIONS, secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] }, /* extracted-handler: functions/backend/portal-access-handlers/list-access-users.js#listAccessUsers#arrow */ async (request) => {
   await portalSessionService().assertSession(request);
   if (request.data?._portalSnapshot === true) {
     return require("./portal-session-directory").readPortalDirectorySnapshot({ db, HttpsError, managementContext:accessManagementContext }, request);
@@ -7371,7 +7361,7 @@ exports.listAccessUsers = onCall(CALLABLE_OPTIONS, /* extracted-handler: functio
   return $portalAccessHandlers_listAccessUsers().listAccessUsers(request);
 });
 
-exports.setAccessUserStatus = onCall(CALLABLE_OPTIONS, /* extracted-handler: functions/backend/portal-access-handlers/set-access-user-status.js#setAccessUserStatus#arrow */ async (request) => {
+exports.setAccessUserStatus = onCall({ ...CALLABLE_OPTIONS, secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] }, /* extracted-handler: functions/backend/portal-access-handlers/set-access-user-status.js#setAccessUserStatus#arrow */ async (request) => {
   await portalSessionService().assertSession(request);
   return $portalAccessHandlers_setAccessUserStatus().setAccessUserStatus(request);
 });
@@ -7386,7 +7376,7 @@ exports.deleteAccessUser = onCall(CALLABLE_OPTIONS, /* extracted-handler: functi
   return $portalAccessHandlers_deleteAccessUser().deleteAccessUser(request);
 });
 
-exports.requestAccessUserDeletion = onCall(CALLABLE_OPTIONS, /* extracted-handler: functions/backend/portal-access-handlers/request-access-user-deletion.js#requestAccessUserDeletion#arrow */ async (request) => {
+exports.requestAccessUserDeletion = onCall({ ...CALLABLE_OPTIONS, secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")] }, /* extracted-handler: functions/backend/portal-access-handlers/request-access-user-deletion.js#requestAccessUserDeletion#arrow */ async (request) => {
   await portalSessionService().assertSession(request);
   return $portalAccessHandlers_requestAccessUserDeletion().requestAccessUserDeletion(request);
 });
@@ -8540,6 +8530,7 @@ exports.syncNapClubAccountEmails = onDocumentWritten({
 });
 
 exports.syncEngagementMailRecipientIndex = onDocumentWritten({
+  secrets: [defineSecret("LIVEPALMES_NAP_PASSWORD")],
   region: REGION,
   document: "users/{uid}",
   retry: true
