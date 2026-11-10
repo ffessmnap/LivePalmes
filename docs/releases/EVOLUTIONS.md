@@ -2,6 +2,13 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### Guide Direct et rapprochement des nageurs · 10 novembre 2026 (préparation commune, accord PROD acquis)
+
+- Accord explicite d’Antoine dans « Auditer l’erreur de création de nage », transmis puis vérifié dans Infra : validation du correctif des noms composés, autorisation de corriger les mentions/liens TEST du mode opératoire Direct destiné à la PROD, contrôles puis publication des deux besoins sans nouvelle attente après le plan final. La validation déclarée ne vaut pas création réelle ni recette manuelle inventée.
+- Nageurs : #827, candidat `3136c5d8`, [CI PR finale](https://github.com/ffessmnap/LivePalmes/actions/runs/42909101786), [CI main](https://github.com/ffessmnap/LivePalmes/actions/runs/42910273480) et [TEST commun](https://github.com/ffessmnap/LivePalmes/actions/runs/42912076583) réussis ; preuve et clôture #828 disponibles. Deux seules fonctions différentes calculées : `previewEngagementClubSwimmerCreation` et `createEngagementClubSwimmer`. Recherche des noms composés et variantes espace/tiret/apostrophe, croisements prénom/année avant limite et protections de doublons conservées ; plafond de quatre requêtes/426 lignes par aperçu. Accord final d’Antoine désormais acquis.
+- Guide : suppression des mentions TEST du contenu, lien relatif du portail et liens PROD du PDF généré. Les trois captures existantes ne comportent pas de contexte TEST ; aucune modification des consoles ni des résultats. Contrôles HTML à 1440/1024/390/320 px réussis, cinq pages PDF rendues et relues, deux copies identiques et lien PDF réel vers le portail PROD contrôlé par navigateur et pypdf. CI et TEST commun de la nouvelle version restent à effectuer.
+- Conserver toutes les exclusions, les mails actifs inchangés et les automates TEST suspendus. Aucun envoi, création réelle de nageur, import métier, migration, correction de données, droit, recalcul DTN, nettoyage Storage ni opération Paris/CNHC/Basile. Nouvelle sauvegarde vérifiée et contrôle de dérive avant la PROD autorisée ; ne pas élargir d’ancien contrat ni réduire la sélection calculée.
+
 ### Création des nageurs · noms composés — 10 novembre 2026 (TEST déployé, recette en attente)
 
 - Besoin : corriger le blocage « Trop de rapprochements possibles » rencontré par un club avec un nom composé, tout en conservant la prévention des doublons. Accord explicite d'Antoine sur la correction ciblée du serveur et sa livraison TEST ; aucune donnée réelle, migration ou PROD autorisée.
