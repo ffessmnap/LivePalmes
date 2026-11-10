@@ -2,8 +2,8 @@
   "schema": 1,
   "project": "livepalmes-test",
   "release": "direct_participations",
-  "approval": "Antoine, aparte explicitement transmis au chat Direct le 10 novembre 2026 : filtre categories dans les engagements ; NS/IN/HC conserves depuis les series PDF lors des corrections TXT, mentions discretes, numerotation publique sans consommer les places ordinaires ; NS admissible et HC exclu des qualifications automatiques. Quota IN par finale confirme par le bureau, annonce bloquee si requis et absent, reponse explicite dans le chat principal. TEST seulement, sans migration, table/colonne, donnee native, droit global ni PROD. Deux consommateurs calcules, sources/labels seulement.",
-  "applicationCommit": "6d2e983d09541914a0b597835563b1c4b7add5b1",
+  "approval": "Antoine, aparte explicitement transmis au chat Direct le 10 novembre 2026 : filtre categories en engagements ; NS/IN/HC conserves depuis les series PDF aux corrections WinPalme, mentions discretes avec definitions completes accessibles au toucher. Deux modes de places publiques : scratch integral ou compteur ordinaire excluant NS/IN/HC, ces mentions gardant leur vrai rang scratch. Ordre des temps conserve, reglage du bureau par competition avec defaut conservant le scratch integral existant. Aucun effet sur les finales : NS admissible, HC exclu du calcul automatique, quota IN par finale explicitement confirme par le bureau ; annonce bloquee si requis et absent, garde des B dependants d un departage mixte en A. TEST seulement, deux consommateurs calcules, sources/labels seuls. Aucun import/suppression ou autre donnee reelle/native, migration, table/colonne, configuration globale, permission ni PROD.",
+  "applicationCommit": "0fece048e8f3c2c292010527e2653365bcf715b7",
   "baseCommit": "5265c9abddc8a909744d6b4f22254f4798696c95",
   "baselineRuns": [
     {
@@ -17,8 +17,8 @@
   "baselineFunctionCount": 121,
   "baselineHostingVersion": "sites/livepalmes-test/versions/40c1b94c130c4c6e",
   "fingerprints": {
-    "readNapPublicSwimmer": "9cb0b8845a26aa1d2ab1a05c9f7e415e4e9120397573a2537b252c68ac66e470",
-    "manageLivePalmesDirect": "928332ba2a383ca5ceceee9e34e63ac6b2fe51677667cc3671ef14fdee9d97ef"
+    "readNapPublicSwimmer": "1aec5b21f933124c2ca782227c7c9794bae9b997c8392ddf05ec22753734bc56",
+    "manageLivePalmesDirect": "8b0de709998b6624d918f6014371372aaa9753f6f2ec3aa2896d00da1d837c0e"
   },
   "toolingPaths": [
     ".github/releases/evidence/20261110-direct-participations-contract.json",
