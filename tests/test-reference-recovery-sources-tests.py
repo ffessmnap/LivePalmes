@@ -78,6 +78,7 @@ def receipt():
         'configurationsUnchanged': False, 'configurationsUnchangedExceptApprovedNapBindings': True,
         'otherFunctionsUnchanged': True, 'hostingUnchanged': True, 'controlsUnchanged': True,
         'recoveredFunctionsUnchangedDuringResume': True, 'originalWritableConfigurationsVerified': True,
+        'canonicalTriggerReadVerifiedBeforeUpload': True,
         'taskContentsRead': False, 'originalDiagnosticIsSuccessProof': False, 'originalFullMetadataAvailable': False,
         'originalNonCommitLabelEqualityReconstructed': False, 'controlsBefore': CONTROLS, 'controlsAfter': CONTROLS}
 
@@ -229,6 +230,12 @@ class Recovery(unittest.TestCase):
             self.assertEqual(sum(len(item['names']) for item in plan['archives']), 7)
             self.assertEqual(len(r.cycle.read(directory / 'recovered.json')['managedSources']), 114)
             r.publisher.main('deploy', r.RELEASE, directory, ROOT)
+            drift = copy.deepcopy(next(row for row in rows if row['name'].endswith('/syncEngagementMailRecipientIndex')))
+            drift['eventTrigger']['eventFilters'][0]['value'] = 'changed-before-upload'
+            with patch.object(r, '_raw_request', return_value=drift), patch.object(r, 'recover_archives') as attest:
+                with self.assertRaisesRegex(ValueError, 'avant tout upload'):
+                    r.prepare(directory, ROOT)
+                attest.assert_not_called()
         self.assertEqual(len(changes), 7)
         self.assertEqual({body['name'].split('/')[-1] for _, body in changes}, r.PENDING)
         bindings = [(url, body) for url, body in changes if 'serviceConfig' in body]
@@ -263,6 +270,7 @@ class Recovery(unittest.TestCase):
         initial['managedSources'] = {name: managed(name) for name in r.PENDING}
         initial['addedNapBindings'] = {'syncEngagementMailRecipientIndex': BINDING}
         recovered = {'originalRun': r.ORIGIN, 'managedSources': {name: managed(name) for name in r.BASE_ALLOWED - r.PENDING},
+            'canonicalTriggerReadVerifiedBeforeUpload': True,
             'historicalBindings': {name: BINDING for name in r.HISTORICAL_BINDINGS}}
         with TemporaryDirectory() as directory:
             directory = Path(directory)

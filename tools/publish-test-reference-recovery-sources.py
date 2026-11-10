@@ -216,11 +216,19 @@ def prepare(directory, candidate):
     rows, historical = inspect_partial(before, diagnostic)
     selected = p.select(before, sha, entry)
     require(set(selected) == PENDING and len(selected) == 7, 'Selection calculee de reprise differente des sept fonctions')
+    trigger = rows['syncEngagementMailRecipientIndex']
+    observed = p._request(publisher.state.API + trigger['name'])
+    require(observed.get('state') == 'ACTIVE'
+            and publisher.configuration_identity(observed) == publisher.configuration_identity(trigger)
+            and all(observed.get(key) == trigger.get(key) for key in ['labels', 'updateTime'])
+            and observed['serviceConfig']['revision'] == trigger['serviceConfig']['revision'],
+            'Relecture canonique du declencheur refusee avant tout upload')
     recovered = recover_archives(candidate, sha, before, diagnostic)
     require(publisher.inventory() == before and publisher.controls() == witness, 'Derive pendant attestation partielle')
     cycle.write(directory / 'hosting.json', snapshot['hosting'])
     cycle.write(directory / 'recovered.json', {'managedSources': recovered, 'historicalBindings': historical,
-        'originalRun': ORIGIN, 'metadataSha256': {name: publisher.digest(row) for name, row in rows.items()}})
+        'originalRun': ORIGIN, 'canonicalTriggerReadVerifiedBeforeUpload': True,
+        'metadataSha256': {name: publisher.digest(row) for name, row in rows.items()}})
     groups = {}
     for name in selected:
         keys = tuple(sorted(secret['key'] for secret in rows[name].get('serviceConfig', {}).get('secretEnvironmentVariables', [])))
@@ -239,7 +247,8 @@ def prepare(directory, candidate):
 def finish(directory):
     proof = cycle.read(directory / 'test-backend-proof.json')
     recovered = cycle.read(directory / 'recovered.json')
-    require(recovered['originalRun'] == ORIGIN and set(proof['selected']) == PENDING, 'Recu de reprise different du plan')
+    require(recovered['originalRun'] == ORIGIN and set(proof['selected']) == PENDING
+            and recovered.get('canonicalTriggerReadVerifiedBeforeUpload') is True, 'Recu de reprise different du plan')
     current = proof['currentTestState']['functions']
     require({row['name'] for row in current} == {p.PREFIX + name for name in BASE_ALLOWED}, 'Etat final incomplet')
     for row in current:
@@ -251,6 +260,7 @@ def finish(directory):
         addedNapBindings={**recovered['historicalBindings'], **proof['addedNapBindings']},
         bindingsAddedInThisRun=proof['addedNapBindings'], recoveredFunctionsUnchangedDuringResume=True,
         originalFullMetadataAvailable=False, originalWritableConfigurationsVerified=True,
+        canonicalTriggerReadVerifiedBeforeUpload=True,
         originalNonCommitLabelEqualityReconstructed=False, originalDiagnosticIsSuccessProof=False)
     require(set(proof['managedSources']) == BASE_ALLOWED and set(proof['addedNapBindings']) == BASE_BINDINGS,
             'Preuve combinee de reprise incomplete')
@@ -306,7 +316,8 @@ def trusted_revisions(directory, current, api):
                     and added['syncEngagementMailRecipientIndex'] == changes['syncEngagementMailRecipientIndex']
                     and proof.get('configurationsUnchanged') is False
                     and all(proof.get(key) is True for key in ['configurationsUnchangedExceptApprovedNapBindings', 'otherFunctionsUnchanged',
-                        'hostingUnchanged', 'controlsUnchanged', 'recoveredFunctionsUnchangedDuringResume', 'originalWritableConfigurationsVerified'])
+                        'hostingUnchanged', 'controlsUnchanged', 'recoveredFunctionsUnchangedDuringResume',
+                        'originalWritableConfigurationsVerified', 'canonicalTriggerReadVerifiedBeforeUpload'])
                     and proof.get('taskContentsRead') is False and proof.get('originalDiagnosticIsSuccessProof') is False
                     and proof.get('originalFullMetadataAvailable') is False and proof.get('originalNonCommitLabelEqualityReconstructed') is False
                     and isinstance(controls, dict) and controls == proof.get('controlsAfter')
