@@ -124,12 +124,12 @@ function createNationalService(backendContext) {
       set engagementSwimmerLicenseId(value) { backendContext.engagementSwimmerLicenseId = value; },
       get engagementSwimmerLicenseItem() { return backendContext.engagementSwimmerLicenseItem; },
       set engagementSwimmerLicenseItem(value) { backendContext.engagementSwimmerLicenseItem = value; },
-      get findReferenceSwimmerCorrectionTarget() { return backendContext.findReferenceSwimmerCorrectionTarget; },
-      set findReferenceSwimmerCorrectionTarget(value) { backendContext.findReferenceSwimmerCorrectionTarget = value; },
+
+
       get getPerformanceBaseRowsBySwimmer() { return backendContext.getPerformanceBaseRowsBySwimmer; },
       set getPerformanceBaseRowsBySwimmer(value) { backendContext.getPerformanceBaseRowsBySwimmer = value; },
-      get intranapSwimmersIndex() { return backendContext.intranapSwimmersIndex; },
-      set intranapSwimmersIndex(value) { backendContext.intranapSwimmersIndex = value; }
+
+
     });
     return cache6;
   }

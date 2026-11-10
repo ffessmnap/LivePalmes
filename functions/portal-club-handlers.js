@@ -701,8 +701,8 @@ function createClubHandlers(backendContext) {
       set engagementReferenceSwimmerItem(value) { backendContext.engagementReferenceSwimmerItem = value; },
       get engagementTeamLeaderComplete() { return backendContext.engagementTeamLeaderComplete; },
       set engagementTeamLeaderComplete(value) { backendContext.engagementTeamLeaderComplete = value; },
-      get intranapSwimmersIndex() { return backendContext.intranapSwimmersIndex; },
-      set intranapSwimmersIndex(value) { backendContext.intranapSwimmersIndex = value; },
+
+
       get previewNativeClubEntryTimes() { return backendContext.previewNativeClubEntryTimes; },
       set previewNativeClubEntryTimes(value) { backendContext.previewNativeClubEntryTimes = value; },
       get resolveEngagementIndividualEntriesForSwimmer() { return backendContext.resolveEngagementIndividualEntriesForSwimmer; },

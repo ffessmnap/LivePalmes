@@ -2,6 +2,13 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### Portail — retrait des copies nageurs et anciennes migrations · 11 novembre 2026 (préparation)
+
+- Antoine autorise les lots 2 (nageurs) et 3 (anciennes migrations) jusqu’à TEST puis PROD dès réussite des contrôles, sans créneau imposé. Accord conditionnel donné avant exécution ; le bilan réel sera transmis dans Infra, sans inventer une recette utilisateur. Le lot clubs, déjà en PROD, reste acquis.
+- Lot 2 : retrait des deux JSON privés de nageurs et de leurs consommateurs ; parcours NAP natifs conservés, marqueur de sélection `source: reference` encore utilisé par NAP accepté. Les anciennes créations, sélections et imports sur copie refusent explicitement avant données sportives ; trois outils de licences sont neutralisés sans accès réseau ni écriture.
+- Contrôles ciblés hors ligne : identités/club/licence natifs, pagination et plafonds, indisponibilité NAP, refus des anciens chemins, créations et imports. Les correctifs des noms composés restent conservés ; aucune requête ni écriture ajoutée. CI complète, publication et preuve TEST restent à obtenir ; PROD non lancée.
+- Exclusions : aucune migration exécutée, donnée réelle corrigée, règle/index, droit, nouveau secret, envoi ni activation. Le lot 3 fera l’objet d’un contrôle de ses derniers consommateurs avant retrait. Les configurations et états techniques déployés restent protégés par le circuit existant.
+
 ### Guide Direct et rapprochement des nageurs · publication du 10/11/2026 à 23 h 59 (PROD publiée)
 
 - Accord humain d’Antoine relu dans « Auditer l’erreur de création de nage » : « OK, je valide ça » et « Je donne tous les accords possibles et imaginables », avec autorisation de corriger les mentions/liens TEST du mode opératoire Direct et de publier les deux besoins. Cet accord clôt l’attente de retour du correctif des noms composés à sa version livrée ; aucune recette manuelle ou création réelle n’est inventée. Préparation, contrôles et plan final couverts, sans nouvelle confirmation demandée.
