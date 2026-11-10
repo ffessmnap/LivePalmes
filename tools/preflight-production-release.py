@@ -187,6 +187,9 @@ def main():
         report['additionalPortalAccessNsFunctions'] = cycle.portal_access_ns.approved(plan) if os.environ.get('PLAN') else []
         report['additionalValidatedPortalFunctions'] = cycle.validated_portal.approved(plan) if os.environ.get('PLAN') else []
         report['additionalNovemberFunctions'] = cycle.november_release.approved(plan) if os.environ.get('PLAN') else []
+        report['additionalNovember10Functions'] = cycle.november10_release.approved(plan) if os.environ.get('PLAN') else []
+        if report['additionalNovember10Functions']:
+            report['november10NapBinding'] = cycle.november10_release.initial(functions)
         if report['additionalNovemberFunctions']:
             cycle.november_release.initial(functions)
         if report['additionalValidatedPortalFunctions']:
