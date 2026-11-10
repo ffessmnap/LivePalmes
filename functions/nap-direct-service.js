@@ -1,6 +1,6 @@
 "use strict";
 const model=require("./nap-direct-model"),{createStore,fail}=require("./nap-direct-store"),{createConsoleStore}=require('./nap-direct-console-store');
-function createService({getPool,environment,authorize,lookupUser,matchRegion,storeDocument,purgeDocuments,checkResetDocuments}) {
+function createService({getPool,environment,authorize,lookupUser,lookupAccounts,matchRegion,storeDocument,purgeDocuments,checkResetDocuments}) {
   async function context(store,id,actor) {
     const competition=await store.native(id);
     const root=actor.national===true || actor.region===true && competition.level!=='national' && competition.level!=='international' && matchRegion(actor.regionId,competition.regionId);
@@ -54,9 +54,22 @@ function createService({getPool,environment,authorize,lookupUser,matchRegion,sto
     }
     if(input.action==='grants'||input.action==='grant') {
       if(!canWrite)throw fail("Délégation réservée au bureau des performances de cette compétition.","permission-denied");
-      if(input.action==='grants')return {items:await store.grants(id)};
-      const target=await lookupUser(model.clean(input.email,180));
+      if(input.action==='grants'){
+        const [items,current]=await Promise.all([store.grants(id),store.config(id)]),accounts=items.length&&lookupAccounts?await lookupAccounts(items.map(item=>item.uid)):[],byUid=new Map(accounts.map(account=>[account.uid,account]));
+        return {version:Number(current.version),items:items.map(item=>({...item,account:byUid.get(item.uid)||{label:'Compte indisponible',email:'',active:false}}))};
+      }
+      let target;
+      if(input.uid){
+        const uid=model.clean(input.uid,128),existing=(await store.grants(id)).find(item=>item.uid===uid);
+        if(!existing)throw fail("Cet accès n’existe pas pour cette compétition.","not-found");
+        target=input.active===false?{uid,active:true}:(await lookupAccounts([uid]))[0];
+      }else target=await lookupUser(model.clean(input.email,180));
       if(!target?.uid||target.active!==true)throw fail("Compte LivePalmes actif existant requis.","not-found");
+      if(input.active!==false){
+        const current=await store.config(id),enabled=model.parseJson(current?.enabled_consoles_json,[]);
+        if(input.manage!==true&&!(input.consoles||[]).length)throw new TypeError('Choisir au moins une console.');
+        if((input.consoles||[]).some(role=>!enabled.includes(role)))throw new TypeError('Choisir uniquement les consoles activées pour cette compétition.');
+      }
       return store.grant(id,actor,input,target);
     }
     throw new TypeError("Action Direct inconnue.");

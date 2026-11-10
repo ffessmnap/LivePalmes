@@ -12481,6 +12481,14 @@ exports.manageLivePalmesDirect = onCall({...NAP_PERFORMANCE_OPTIONS,timeoutSecon
         const profile=await db.collection("users").doc(user.uid).get();
         return {uid:user.uid,active:!user.disabled&&profile.exists&&profile.data().status==="active"};
       },
+      lookupAccounts:async uids=>{
+        if(!Array.isArray(uids)||uids.length>100)throw new TypeError('Liste de comptes trop longue.');
+        if(!uids.length)return [];
+        const [accounts,profiles]=await Promise.all([auth.getUsers(uids.map(uid=>({uid}))),db.getAll(...uids.map(uid=>db.collection('users').doc(uid)))]);
+        const users=new Map(accounts.users.map(user=>[user.uid,user]));
+        return profiles.map(profile=>{const user=users.get(profile.id),data=profile.exists?profile.data():{};return {uid:profile.id,label:directAccountLabel(data,user),email:user?.email||'',active:Boolean(user&&!user.disabled&&data.status==='active')};});
+        function directAccountLabel(data,user){return String(data.displayName||[data.firstName,data.lastName].filter(Boolean).join(' ')||user?.displayName||user?.email||'Compte indisponible').slice(0,160);}
+      },
       storeDocument:async(input,id)=>require("./nap-direct-documents").store(storage,ENVIRONMENT,input,id),
       purgeDocuments:async id=>require("./nap-direct-documents").purgeBatch(storage,ENVIRONMENT,id),
       checkResetDocuments:async()=>require("./nap-direct-documents").checkReset(storage,ENVIRONMENT)
