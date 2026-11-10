@@ -12,13 +12,15 @@ import urllib.error
 ROOT = Path(__file__).resolve().parents[1]
 RELEASE = 'club_reference_cleanup'
 CONTRACT = ROOT / '.github/releases/evidence/20261110-club-reference-cleanup-contract.json'
-CONTRACT_SHA256 = '32350a2ce4a9ab160486915e9b7f697ad5c1bafb1b250ca314c9d675d46d3bfb'
+CONTRACT_SHA256 = '06eef7add943cfe0db7c76115ff04dbc3fbcecb1c5065f3eecc2bd7dcd1553c8'
 PROJECT = 'livepalmes-test'
 REPOSITORY = 'ffessmnap/LivePalmes'
 PREFIX = f'projects/{PROJECT}/locations/europe-west1/functions/'
 BINDING_FUNCTIONS = frozenset({'listAccessUsers', 'rebuildAccessDirectoryIndexNextPage',
     'rebuildAccessDirectorySnapshotNextPage', 'setAccessUserStatus', 'requestAccessUserDeletion',
     'syncEngagementMailRecipientIndex'})
+BINDING_READERS = ('readNapPublicSwimmer', 'getPublicEngagementClubDirectory',
+                   'getNapSwimmerPerformances', 'listEngagementCompetitions')
 
 spec = importlib.util.spec_from_file_location('reference_cleanup_source_primitives', ROOT / 'tools/publish-test-mail-sources.py')
 publisher = importlib.util.module_from_spec(spec)
@@ -63,7 +65,9 @@ def configure_bindings(before):
     rows = {f['name'].split('/')[-1]: f for f in before}
     require(set(rows) == ALLOWED, 'Inventaire nettoyage hors reference')
     existing = {}
-    for row in before:
+    for name in BINDING_READERS:
+        row = rows[name]
+        publisher.runtime(row, name)
         account = row.get('serviceConfig', {}).get('serviceAccountEmail')
         for binding in row.get('serviceConfig', {}).get('secretEnvironmentVariables', []):
             if valid_binding(binding):
