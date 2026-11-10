@@ -31,7 +31,7 @@ assert.ok(!html.includes('data-clear-categories'),'Pas de bouton de suppression 
 const categoryFiltered=view.render({data:{entries:[row],config:{state:'active'}},event,state:{mode:'results',series:1,categories:['FJU'],highlightClub:''}});
 assert.ok(categoryFiltered.includes('data-clear-categories'));assert.ok(categoryFiltered.includes('Catégories sélectionnées : FJU'));
 const engagements=view.render({data:{entries:[row],config:{state:'active'}},event:{...event,publication:{series:true,results:false}},state:{mode:'series',series:1,categories:[],highlightClub:''}});
-assert.ok(!engagements.includes('data-category-filter'),'Aucun raccourci de classement sur les engagements');
+assert.ok(engagements.includes('data-category-filter'),'Filtre catégorie également dans les engagements');
 assert.ok(!html.includes('class="direct-passages"'),'Le bloc collectif des passages est supprimé');
 assert.equal((html.match(/class="direct-split-toggle"/g)||[]).length,2,'Un accès dans le scratch et dans la série');
 assert.equal((html.match(/class="direct-split-row" hidden/g)||[]).length,2,'Détails fermés par défaut');
