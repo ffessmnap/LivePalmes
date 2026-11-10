@@ -2,7 +2,7 @@
 const model=require('./nap-direct-model');
 const stateId=model.hash(['direct-console-state-v1']);
 // Only announced places are public. Proposed replacements, accounts and decisions stay private.
-function signature(state){return model.hash(Object.entries(state.races||{}).filter(([,race])=>race.announced&&['a','ab'].includes(race.format)).map(([id,race])=>[id,race.format,...['a','b'].map(group=>(race.announced.roster?.[group]||[]).filter(key=>!race.withdrawals?.[key]).slice().sort())]).sort((a,b)=>a[0].localeCompare(b[0])));}
+function signature(state){return model.hash([model.rankingMode(state.rankingMode),Object.entries(state.races||{}).filter(([,race])=>race.announced&&['a','ab'].includes(race.format)).map(([id,race])=>[id,race.format,...['a','b'].map(group=>(race.announced.roster?.[group]||[]).filter(key=>!race.withdrawals?.[key]).slice().sort())]).sort((a,b)=>a[0].localeCompare(b[0]))]);}
 
 function attach(events,entries,races){
   const byId=new Map(events.map(event=>[event.id,event])),groups=new Map();

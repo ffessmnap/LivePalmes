@@ -15,7 +15,7 @@
     const promise=(async()=>{const response=await fetch(url,{cache:'no-store',signal:AbortSignal.timeout(20000)});if(!response.ok)throw Error('Programme indisponible. Réessayer.');const data=await response.json();if(data.source!=='nap'||!Array.isArray(data.entries)||data.entries.length>15000)throw Error('Programme reçu invalide.');if(cacheKey()===key)allCache={key,data};return data;})().finally(()=>{if(allPending?.promise===promise)allPending=null;});
     allPending={key,promise};return promise;
   }
-  const dialogs=global.LivePalmesDirectDialogs.create({getData:allData,onClubChange:club=>{state.highlightClub=club;try{localStorage.setItem('livepalmes-direct-club:'+state.data.competition.id,club);}catch{}render();},onEventSelect:(eventId,series)=>{state.categories=[];state.series=series||'all';const event=state.data.events.find(event=>event.id===eventId);if(event&&state.session!=='all')state.session=global.LivePalmesDirectSessions.key(event);load(eventId);}});
+  const dialogs=global.LivePalmesDirectDialogs.create({getData:allData,getRankingMode:()=>state.data?.rankingMode||'scratch',onClubChange:club=>{state.highlightClub=club;try{localStorage.setItem('livepalmes-direct-club:'+state.data.competition.id,club);}catch{}render();},onEventSelect:(eventId,series)=>{state.categories=[];state.series=series||'all';const event=state.data.events.find(event=>event.id===eventId);if(event&&state.session!=='all')state.session=global.LivePalmesDirectSessions.key(event);load(eventId);}});
   const navigationEvent=event=>({...event,progress:event.courseProgress||event.progress,publication:event.coursePublication||event.publication});
   function references(event){return ui.references(state.data?.competition,state.data?.entries,event,state.records);}
   function render(){
@@ -54,6 +54,7 @@
   global.LivePalmesDirectPublic={state,rows,references,render,load,format,allData,dialogs};
   document.addEventListener('click',e=>{
     if(state.loading)return;
+    if(e.target.closest('[data-participation-help]')){dialogs.openParticipation();return;}
     const categoryFilter=e.target.closest('[data-category-filter]');
     if(categoryFilter){filterCategories([categoryFilter.dataset.categoryFilter],Boolean(categoryFilter.closest('.direct-heat-section')));return;}
     if(e.target.closest('[data-clear-categories]')){filterCategories([]);return;}

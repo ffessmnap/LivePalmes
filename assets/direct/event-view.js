@@ -14,14 +14,14 @@
   const club = row => row.clubCode || row.clubAbbreviation || row.club || '—';
   const resultMode = (entries, event) => Boolean(event?.publication.results) && entries.some(hasResult);
   const phaseLabel=value=>['series','meilleure-serie'].includes(value)?'':value==='finale-A'?'Finale A':value==='finale-B'?'Finale B':String(value||'');
-  function rankings(entries){
+  function rankings(entries,rankingMode='scratch'){
     const rows=entries.map(row=>({...row,rank:null,categoryRank:null})),eligible=rows.filter(row=>row.result?.cs>0&&!row.result.status).sort((a,b)=>a.result.cs-b.result.cs),categories=new Map();
-    let previous=null,rank=0,count=0;
+    let previous=null,rank=0,count=0,scratchRank=0,total=0;
     eligible.forEach(row=>{
-      const classified=!['NS','IN','HC'].includes(row.participationStatus);
-      if(row.result.cs!==previous)rank=count+1;
-      row.rank=rank;previous=row.result.cs;if(classified)count++;
-      if(row.category){const category=categories.get(row.category)||{count:0,time:null,rank:0};if(category.time!==row.result.cs)category.rank=category.count+1;category.time=row.result.cs;row.categoryRank=category.rank;if(classified)category.count++;categories.set(row.category,category);}
+      const classified=rankingMode!=='classified'||!['NS','IN','HC'].includes(row.participationStatus);
+      if(row.result.cs!==previous){rank=count+1;scratchRank=total+1;}
+      row.rank=classified?rank:scratchRank;previous=row.result.cs;total++;if(classified)count++;
+      if(row.category){const category=categories.get(row.category)||{count:0,total:0,time:null,rank:0,scratchRank:0};if(category.time!==row.result.cs){category.rank=category.count+1;category.scratchRank=category.total+1;}category.time=row.result.cs;row.categoryRank=classified?category.rank:category.scratchRank;category.total++;if(classified)category.count++;categories.set(row.category,category);}
     });return rows;
   }
   const publicationStatus = (results,count,total) => `<span class="direct-publication-status" data-publication-status><strong>${results ? 'Résultats publiés' : 'Engagements'}</strong><span> · ${results ? count + '/' + total : 'Résultats non publiés'}</span></span>`;
@@ -29,7 +29,7 @@
     return event.heatSchedule?.find(heat => Number(heat.number) === Number(number))?.scheduledAt || (Number(number) === 1 ? event.scheduledAt : '') || '';
   }
   function scratch(entries, state) {
-    return (state.mode==='results'?rankings(entries):entries).filter(row => state.mode === 'results' ? hasResult(row) : row.series != null || row.seed?.raw)
+    return (state.mode==='results'?rankings(entries,state.rankingMode):entries).filter(row => state.mode === 'results' ? hasResult(row) : row.series != null || row.seed?.raw)
       .filter(row => !state.categories.length || state.categories.includes(row.category))
       .slice().sort((a, b) => state.mode === 'results'
         ? (a.result.cs>0&&!a.result.status?a.result.cs:Infinity) - (b.result.cs>0&&!b.result.status?b.result.cs:Infinity)
@@ -43,7 +43,7 @@
   function passageRow(row,splits,{id,columns,open,event}){
     return `<tr id="${id}" class="direct-split-row" ${open?'':'hidden'}><td colspan="${columns}">${ui.passageTable(row,event,splits)}</td></tr>`;
   }
-  function participationBadge(row){const labels={NS:'Non sélectionnable',IN:'Invité',HC:'Hors concours'},code=row.participationStatus;return labels[code]?`<abbr class="direct-participation-status" title="${labels[code]}">${code}</abbr>`:'';}
+  function participationBadge(row,extra=''){const labels={NS:'Nageurs étrangers non sélectionnables',IN:'Nageurs invités',HC:'Nageurs hors concours'},code=row.participationStatus;return labels[code]?`<button type="button" class="direct-participation-status ${extra}" data-participation-help aria-haspopup="dialog" aria-label="${code} — ${labels[code]} : signification des mentions" title="${labels[code]}">${code}</button>`:'';}
   function categoryCell(row,results){
     const badge=ui.categoryBadge(row.category);
     return row.category?`<button type="button" class="direct-category-filter" data-category-filter="${esc(row.category)}" aria-label="Filtrer la catégorie ${esc(row.category)}">${badge}</button>`:badge;
@@ -55,11 +55,11 @@
       const marker=qualifications?`<span class="direct-qualification ${row.qualification==='QB'?'final-b':''} ${!['Q','QA','QB'].includes(row.qualification)?'empty':''}" ${row.qualification?'title="Qualifié en finale '+(row.qualification==='QB'?'B':'A')+'"':'aria-hidden="true"'}>${esc(row.qualification||'Q')}</span>`:'';
       const number=`<span class="direct-result-number">${esc(result)}</span>`;
       const time=splits.length?`<button type="button" class="direct-split-toggle" data-splits="${id}" data-splits-key="${esc(key)}" aria-expanded="${open}" aria-controls="${id}" aria-label="${esc(result)} · Temps de passage de ${esc(ui.name(row))}">${number}<span class="direct-split-indicator" aria-hidden="true"></span></button>`:number;
-      return `<tr class="direct-participant-row${highlightClub && row.club === highlightClub ? ' direct-team-row' : ''}"><td class="direct-position">${esc(heat ? row.lane ?? '—' : results ? (categoryPlaces ? row.categoryRank : row.rank) || '—' : seedValue(row) < Infinity ? index + 1 : '—')+(results&&!heat&&row.participationStatus?'<span class="direct-position-status"> '+esc(row.participationStatus)+'</span>':'')}</td><td class="direct-name-cell"><span class="direct-name-line"><button type="button" class="direct-person direct-person-button" data-person="${esc(row.key)}" title="Programme et résultats de ${esc(ui.name(row))}">${esc(ui.name(row))}</button>${!results||heat?participationBadge(row):''}</span></td><td class="direct-club-cell"><abbr title="${esc(row.clubLabel || row.club)}">${esc(club(row))}</abbr></td><td class="direct-category-cell">${categoryCell(row,results)}</td><td class="direct-time direct-seed-cell" ${row.seed?.status === 'no_reference' ? 'title="Sans référence"' : ''}>${esc(seed(row))}</td>${results ? `<td class="direct-time direct-result-cell"><span class="direct-result-line">${delta(row)}<span class="direct-result-value">${marker}${time}</span></span></td>` : ''}${jump ? `<td><button type="button" class="direct-heat-link" data-heat-jump="${esc(row.series)}" aria-label="Voir la série ${esc(row.series)}, ligne ${esc(row.lane ?? 'non précisée')}">${esc(row.series ?? '—')}/${esc(row.lane ?? '—')}<span aria-hidden="true"> ↓</span></button></td>` : ''}</tr>${splits.length?passageRow(row,splits,{id,columns,open,event}):''}`;
+      return `<tr class="direct-participant-row${highlightClub && row.club === highlightClub ? ' direct-team-row' : ''}"><td class="direct-position">${esc(heat ? row.lane ?? '—' : results ? (categoryPlaces ? row.categoryRank : row.rank) || '—' : seedValue(row) < Infinity ? index + 1 : '—')+(results&&!heat&&row.participationStatus?' '+participationBadge(row,'direct-position-status'):'')}</td><td class="direct-name-cell"><span class="direct-name-line"><button type="button" class="direct-person direct-person-button" data-person="${esc(row.key)}" title="Programme et résultats de ${esc(ui.name(row))}">${esc(ui.name(row))}</button>${!results||heat?participationBadge(row):''}</span></td><td class="direct-club-cell"><abbr title="${esc(row.clubLabel || row.club)}">${esc(club(row))}</abbr></td><td class="direct-category-cell">${categoryCell(row,results)}</td><td class="direct-time direct-seed-cell" ${row.seed?.status === 'no_reference' ? 'title="Sans référence"' : ''}>${esc(seed(row))}</td>${results ? `<td class="direct-time direct-result-cell"><span class="direct-result-line">${delta(row)}<span class="direct-result-value">${marker}${time}</span></span></td>` : ''}${jump ? `<td><button type="button" class="direct-heat-link" data-heat-jump="${esc(row.series)}" aria-label="Voir la série ${esc(row.series)}, ligne ${esc(row.lane ?? 'non précisée')}">${esc(row.series ?? '—')}/${esc(row.lane ?? '—')}<span aria-hidden="true"> ↓</span></button></td>` : ''}</tr>${splits.length?passageRow(row,splits,{id,columns,open,event}):''}`;
     }).join('') || `<tr><td colspan="${columns}" class="direct-empty">Aucune participation pour cette sélection.</td></tr>`}</tbody></table></div>`;
   }
   function render({data, event, state, records = []}) {
-    const entries = data.entries, shown = scratch(entries, state), series = heats(entries), results = state.mode === 'results';
+    const entries = data.entries, shown = scratch(entries, {...state,rankingMode:data.rankingMode}), series = heats(entries), results = state.mode === 'results';
     const selected = series.includes(Number(state.series)) ? Number(state.series) : series[0];
     const heatRows = entries.filter(row => row.series === selected).slice().sort((a, b) => Number(a.lane ?? 99) - Number(b.lane ?? 99));
     const heatResults = Boolean(event.publication.results) && heatRows.some(hasResult);
