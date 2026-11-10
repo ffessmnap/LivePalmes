@@ -1,3 +1,8 @@
+// Retired sporting Firestore command; pure exports remain for compatibility tests.
+if (require.main === module) {
+  console.error("Ancien outil de migration retire. Utilisez les parcours NAP actuels. Aucune action effectuee.");
+  process.exit(1);
+}
 const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
@@ -182,7 +187,7 @@ async function main() {
   console.log(JSON.stringify({ ...result, reportPath }, null, 2));
 }
 
-main().catch((error) => {
+if (require.main === module) main().catch((error) => {
   console.error(error?.stack || error);
   process.exitCode = 1;
 });

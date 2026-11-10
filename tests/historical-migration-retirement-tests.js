@@ -47,6 +47,17 @@ for (const name of commands) {
   const program = acorn.parse(fs.readFileSync(script, "utf8"), { ecmaVersion: "latest" });
   assert.equal(program.body.length, 3, "Only strict mode, refusal and exit code remain");
 }
+for (const name of ["backfill-performance-import-timing", "backfill-performance-swimmer-index-licenses",
+  "import-performance-seed-to-firestore", "initialize-engagement-club-swimmer-activity", "dedupe-engagement-club-rosters",
+  "consolidate-antoine-fauveau-club-roster"]) {
+  const script = path.join(root, "tools", name + ".js");
+  const program = acorn.parse(fs.readFileSync(script, "utf8"), { ecmaVersion: "latest" });
+  assert.equal(program.body[0].type, "IfStatement", "Refusal precedes all imports: " + name);
+  const result = spawnSync(process.execPath, [script, "--write", "--apply", "--confirm-4287-performances", "--project", "livepalmes"],
+    { encoding: "utf8", timeout: 5000 });
+  assert.equal(result.status, 1, name); assert.match(result.stderr, /migration retire/);
+  assert.doesNotMatch(result.stderr, /ENOENT|Firebase|credentials|Cannot find module|Connexion/);
+}
 for (const name of ["run-legacy-final-repairs", "run-legacy-history-import", "run-legacy-results-repair-after-classification"]) {
   const file = path.join(root, "tools", name + ".ps1");
   assert.match(fs.readFileSync(file, "utf8"), /^\[Console\]::Error\.WriteLine\("Ancien outil de migration retire\.[^\n]*\)\r?\nexit 1\r?\n$/);
@@ -57,4 +68,4 @@ for (const name of ["run-legacy-final-repairs", "run-legacy-history-import", "ru
   assert.equal(result.status, 1, name + ": " + (result.error || result.stderr));
   assert.match(result.stderr, /migration retire/);
 }
-console.log("Historical migration retirement: absent declarations/helpers, deployment tombstones, current imports and 14 harmless command refusals verified offline.");
+console.log("Historical migration retirement: absent declarations/helpers, deployment tombstones, current imports and 20 harmless command refusals verified offline.");
