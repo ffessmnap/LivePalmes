@@ -22,6 +22,7 @@ async function read(connection,scope){
 function visible(stats,publication){
   if(!stats)return null;
   const series=publication.series?stats.seriesEntries:0,results=publication.results?stats.resultEntries:0,matched=publication.series&&publication.results?stats.matchedResults:0;
-  return {...stats,...(stats.heats?{heats:stats.heats.map(heat=>({...heat,seriesEntries:publication.series?heat.seriesEntries:0,resultEntries:publication.results?heat.resultEntries:0,matchedResults:publication.series&&publication.results?heat.matchedResults:0}))}:{}),entries:series+results-matched,seriesEntries:series,resultEntries:results,matchedResults:matched,seriesCount:publication.series?stats.seriesCount:0,resultSeriesCount:publication.results?stats.resultSeriesCount:0,completeSeriesCount:publication.series&&publication.results?stats.completeSeriesCount:0,unassignedResults:publication.results?results-matched:0};
+  const {heats,...publicStats}=stats;
+  return {...publicStats,entries:series+results-matched,seriesEntries:series,resultEntries:results,matchedResults:matched,seriesCount:publication.series?stats.seriesCount:0,resultSeriesCount:publication.results?stats.resultSeriesCount:0,completeSeriesCount:publication.series&&publication.results?stats.completeSeriesCount:0,unassignedResults:publication.results?results-matched:0};
 }
 module.exports={read,aggregate,visible,empty,QUERY};
