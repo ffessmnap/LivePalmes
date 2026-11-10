@@ -8,7 +8,8 @@ async function main(){
   await publish('series',people);await publish('results',people.map((p,i)=>({...p,resultTime:'01:'+String(10+i).padStart(2,'0')+'.00'})));
   const eventId=(await store.detail(id)).events[0].id;
   for(const role of flow.roles)if(role!=='computer')await store.grant(id,actor,{version:(await store.config(id)).version,consoles:[role],operationKey:randomUUID()},{uid:role});
-  const service=createService({getPool:()=>pool,environment:'test',authorize:async request=>({uid:request.auth.uid,national:request.auth.uid==='root'}),lookupUser:async email=>({uid:email,active:true}),matchRegion:()=>false});
+  const accountBatches=[];let accountActive=true;
+  const service=createService({getPool:()=>pool,environment:'test',authorize:async request=>({uid:request.auth.uid,national:request.auth.uid==='root'}),lookupUser:async email=>({uid:email,active:true}),lookupAccounts:async uids=>{accountBatches.push(uids);return uids.map(uid=>({uid,label:'Compte '+uid,email:uid+'@example.test',active:accountActive}));},matchRegion:()=>false});
   const call=(action,data={},uid='root')=>service({auth:{uid},data:{action,competitionId:id,...data}});
   let snapshot=await call('consoleSnapshot',{role:'computer'});assert.equal(snapshot.entries.length,10);assert.equal(snapshot.events.length,1);
   const originalVersion=snapshot.configVersion;const {readPublic}=require('../functions/nap-direct-public');const publicRead=()=>readPublic(pool,'test',{id,eventId});assert.ok((await publicRead()).entries.every(r=>!r.qualification));
@@ -61,6 +62,19 @@ async function main(){
   assert.equal(afterReset.logs.filter(r=>r.action==='console-command'&&r.environment==='test'&&r.competition_id===id).length,1,'Seul le reçu technique du reset est conservé');
   assert.equal(JSON.stringify(afterReset.logs.filter(r=>r.environment!=='test'||r.competition_id!==id)),otherLogs,'Les journaux de l’autre compétition et de production restent intacts');
   await assert.rejects(call('consoleCommand',retry,'root'),e=>e.directCode==='aborted','Un ancien envoi ne ressuscite pas les décisions supprimées');
+  const version=async()=>Number((await store.config(id)).version);
+  const grant=await call('grant',{version:await version(),email:'multi',consoles:['referee','speaker'],expiresAt:'2099-01-01T00:00:00Z',operationKey:randomUUID()});assert.equal(grant.version,await version());
+  const grantList=await call('grants');assert.equal(accountBatches.length,1,'Une seule résolution groupée de tous les comptes');assert.equal(grantList.items.find(item=>item.uid==='multi').account.email,'multi@example.test');
+  assert.equal((await call('consoleSnapshot',{role:'referee'},'multi')).permissions.manage,false);await call('consoleSnapshot',{role:'speaker'},'multi');await assert.rejects(call('consoleSnapshot',{role:'secretary'},'multi'),e=>e.directCode==='permission-denied');
+  const batchesBefore=accountBatches.length;await assert.rejects(call('grants',{},'multi'),e=>e.directCode==='permission-denied');assert.equal(accountBatches.length,batchesBefore,'Les comptes sont résolus seulement après autorisation bureau');
+  await assert.rejects(call('grant',{version:await version(),uid:'inconnu',active:false,consoles:[],operationKey:randomUUID()}),e=>e.directCode==='not-found');
+  await assert.rejects(call('grant',{version:await version(),uid:'multi',consoles:[],operationKey:randomUUID()}),/au moins une console/);
+  await call('grant',{version:await version(),uid:'multi',consoles:['secretary'],operationKey:randomUUID()});await assert.rejects(call('consoleSnapshot',{role:'speaker'},'multi'),e=>e.directCode==='permission-denied');await call('consoleSnapshot',{role:'secretary'},'multi');
+  accountActive=false;const beforeRevoke=accountBatches.length;await call('grant',{version:await version(),uid:'multi',consoles:['secretary'],active:false,operationKey:randomUUID()});assert.equal(accountBatches.length,beforeRevoke,'Retrait possible même si le compte a disparu ou est désactivé');
+  await assert.rejects(call('consoleSnapshot',{role:'secretary'},'multi'),e=>e.directCode==='permission-denied');assert.equal((await call('grants')).items.find(item=>item.uid==='multi').active,false,'Un accès retiré reste lisible');
+  await assert.rejects(call('grant',{version:await version(),uid:'multi',consoles:['secretary'],operationKey:randomUUID()}),e=>e.directCode==='not-found');accountActive=true;
+  await call('grant',{version:await version(),uid:'multi',consoles:['secretary'],expiresAt:'2000-01-01T00:00:00Z',operationKey:randomUUID()});await assert.rejects(call('consoleSnapshot',{role:'secretary'},'multi'),e=>e.directCode==='permission-denied');
+  await store.settings(id,actor,{version:await version(),consoles:['computer'],operationKey:randomUUID()});await assert.rejects(call('grant',{version:await version(),uid:'multi',consoles:['video'],operationKey:randomUUID()}),/uniquement les consoles activées/);
   console.log('Consoles SQL : cinq tables réutilisées, état partagé privé, accès par rôle/compétition, activation, finales, annulation délégué vidéo, reçus idempotents, conflits et rollback vérifiés sans réseau.');
 }
 main().catch(error=>{console.error(error);process.exitCode=1;});

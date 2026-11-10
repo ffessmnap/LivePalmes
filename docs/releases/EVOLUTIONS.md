@@ -2,6 +2,11 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### Direct — accès par compte et actions bureau · 10 novembre 2026 (préparation TEST)
+
+- Bilan validé puis intégration et TEST autorisés : contexte des décisions plus visible et confirmation à droite, retrait de « Voir la course » ; formulaire de délégation corrigé/remplacé par liste, ajout/modification/retrait confirmé et accès multiples par compte ; Mes compétitions / Mes consoles et ouverture automatique de l’unique compétition accessible. URL ou QR précis conservé à la connexion, pas d’outils bureau pour les seuls juges/speaker/secrétariat/Live.
+- Tables et périmètres d’accès existants conservés. Résolution privée des comptes en lot seulement à l’ouverture des accès, budget borné documenté ; aucun nouveau listener ni arrêt de surveillance pour gérer les délégations. Tests locaux sur fixtures puis CI globale/MySQL et complément sources/Hosting TEST requis. Aucune donnée réelle, migration ou PROD ; validation utilisateur de la réalisation attendue.
+
 ### Direct — maquette bureau/secrétariat, qualifications publiques et QR codes · 9 novembre 2026 (TEST déployé, retour utilisateur attendu)
 
 - Antoine valide la maquette, le mode bureau seul pleine largeur, le masquage des Finales vides et les libellés « Publication des résultats », puis autorise l’intégration et la publication TEST. Ajout autorisé en cours : contrôler l’ergonomie tablette du juge vidéo sans changer ses règles.
