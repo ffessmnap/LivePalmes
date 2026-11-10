@@ -1,6 +1,6 @@
 'use strict';
 // Shared sporting workflow, independent of SQL and of the UI.
-const {hash,clean}=require('./nap-direct-model');
+const {hash,clean,rankingMode}=require('./nap-direct-model');
 const roles=['computer','referee','video','speaker','secretary','live'];
 const motifs={forfait:'Forfait',abandon:'Abandon',false_start:'DSQ — faux départ',relay_early_start:'DSQ — départ anticipé',underwater_15m:'DSQ — coulée supérieure à 15 m',immersion:'DSQ — passage en immersion',bottle_fault:'DSQ — faute de bouteille',interference:'DSQ — gêne d’un concurrent',other_dsq:'DSQ — autre motif'};
 const videoTypes=new Set(['false_start','relay_early_start','underwater_15m']);
@@ -15,7 +15,7 @@ function enabled(input,level){
   if(result.includes('video')&&level!=='national')reject('La console vidéo est réservée aux compétitions nationales.');
   return roles.filter(role=>result.includes(role));
 }
-function empty(){return {revision:0,lanes:8,progress:null,alerts:[],races:{},history:[]};}
+function empty(){return {revision:0,lanes:8,rankingMode:'scratch',progress:null,alerts:[],races:{},history:[]};}
 function raceState(state,eventId){return state.races[eventId]||{format:'none',lanes:state.lanes,withdrawals:{},withdrawalLog:[],resolutions:{},announced:null,pendingRoster:null};}
 function sourceHash(entries){return hash(entries.map(row=>[row.key,row.series,row.lane,row.result,row.seed,...(row.participationStatus?[row.participationStatus]:[])]).sort((a,b)=>a[0].localeCompare(b[0])));}
 function qualification(state,event,entries){
@@ -41,21 +41,22 @@ function qualification(state,event,entries){
   return {format:race.format,lanes,capacity,invitedQuotaMissing,invitedAllocationPending,invitedLimit:race.invitedLimit??null,sourceHash:digest,programVersionHash:event.programVersionHash||null,complete,ambiguous,ties,pendingKeys,certainRoster,partial:Boolean(race.announced?.partial),unresolvedDecision,decisionMismatch,proposal,roster:current,changed:Boolean(race.announced&&(race.announced.sourceHash!==digest||event.programVersionHash&&race.announced.programVersionHash!==event.programVersionHash)),announcedAt:race.announced?.at||null,withdrawals:race.withdrawals||{},pendingRoster:race.pendingRoster||null,withdrawalLog:race.withdrawalLog||[],swimoff};
 }
 function can(role,command,consoles){
-  const table={configure:['computer'],progress:['referee'],decision:['referee'],videoConfirm:['video'],videoReject:['video'],takeover:['referee'],cancel:['referee','computer','video'],computerDone:['computer'],announceDecision:['speaker'],announceFinalists:['speaker','computer'],withdraw:['secretary','computer'],reinstate:['secretary','computer'],preWithdraw:['secretary','computer'],announceReplacement:['speaker','computer'],resolveTie:['referee','computer'],markSwimoff:['referee','computer'],confirmSwimoffCancelled:['referee','computer'],refreshFinalists:['computer'],compositionDone:['computer'],secretaryDone:['secretary']};
+  const table={rankingMode:['computer'],configure:['computer'],progress:['referee'],decision:['referee'],videoConfirm:['video'],videoReject:['video'],takeover:['referee'],cancel:['referee','computer','video'],computerDone:['computer'],announceDecision:['speaker'],announceFinalists:['speaker','computer'],withdraw:['secretary','computer'],reinstate:['secretary','computer'],preWithdraw:['secretary','computer'],announceReplacement:['speaker','computer'],resolveTie:['referee','computer'],markSwimoff:['referee','computer'],confirmSwimoffCancelled:['referee','computer'],refreshFinalists:['computer'],compositionDone:['computer'],secretaryDone:['secretary']};
   if(!(command==='resetConsoles'?role==='computer':table[command]?.includes(role)))reject('Cette action n’est pas autorisée dans cette console.');
   if(role==='computer'&&['announceFinalists','announceReplacement'].includes(command)&&consoles.includes('speaker'))reject('L’annonce est réservée au speaker tant que sa console est activée.');
   if(role==='computer'&&['withdraw','reinstate','preWithdraw'].includes(command)&&consoles.includes('secretary'))reject('Utiliser le secrétariat tant que sa console est activée.');
 }
 function next(previous,input,{role,actor,actorLabel=actor,event,entries,consoles,now=new Date().toISOString()}){
   can(role,input.command,consoles);const state=structuredClone(previous),command=input.command;
-  if(command==='resetConsoles')return {...empty(),revision:state.revision+1};
-  if(!event&&command!=='configure')reject('Choisir une course.');
+  if(command==='resetConsoles')return {...empty(),rankingMode:rankingMode(state.rankingMode),revision:state.revision+1};
+  if(!event&&!['configure','rankingMode'].includes(command))reject('Choisir une course.');
   const eventId=event?.id;let race=eventId?raceState(state,eventId):null;
   const row=entries?.find(row=>row.key===input.participantKey),alert=state.alerts.find(row=>row.id===input.alertId);
   const requiredAlert=()=>{if(!alert||alert.cancelledAt)reject('Cette décision n’est plus disponible.');if(alert.eventId!==eventId)reject('Cette décision concerne une autre course.');return alert;};
   const putRace=()=>{state.races[eventId]=race;};
   const announceAllowed=(partial=false)=>{const q=qualification(state,event,entries);if(!q.capacity)reject('Cette course n’a pas de finale.');if(q.invitedQuotaMissing)reject('Confirmer le nombre maximum d’invités IN par finale dans les réglages.');if(!q.complete)reject('Toutes les séries doivent avoir reçu leurs résultats.');if(q.ties.length&&!partial)reject('Ex æquo : enregistrer le départage avant de confirmer tous les finalistes.');if(q.unresolvedDecision)reject('Une décision JA/vidéo reste à traiter par le bureau.');if(q.decisionMismatch)reject('Attendre le résultat corrigé : les résultats reçus ne concordent pas avec les décisions du JA.');return q;};
-  if(command==='configure'){
+  if(command==='rankingMode'){if(!['scratch','classified'].includes(input.rankingMode))reject('Choisir le calcul des places.');state.rankingMode=rankingMode(input.rankingMode);
+  }else if(command==='configure'){
     if(![6,8].includes(Number(input.lanes)))reject('Choisir 6 ou 8 places par finale.');
     state.lanes=Number(input.lanes);
     if(!Array.isArray(input.events)||input.events.length>300)reject('Paramétrage des courses invalide.');

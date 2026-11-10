@@ -46,7 +46,7 @@ function createConsoleStore(pool,store){
       if(receipt){if(receipt.source_hash!==contentHash)throw fail('Cet identifiant concerne une autre action.');await c.commit();started=false;return {...model.parseJson(receipt.after_json),replayed:true};}
       const state=await get(c,id);
       if(Number(input.revision)!==state.revision||Number(input.configVersion)!==Number(config.version))throw fail('Une autre console ou les résultats ont changé. Actualiser avant de confirmer.','aborted');
-      const list=input.command==='resetConsoles'?[]:await store.events(id,c);if(list.length>model.MAX_EVENTS)throw fail('Programme trop volumineux.');let selected=list.find(e=>e.id===input.eventId),raw=selected?await store.entries(id,selected.id,c):[],context=selected?{event:store.eventView(selected),entries:rows(raw,list)}:{event:null,entries:[]};
+      const list=['resetConsoles','rankingMode'].includes(input.command)?[]:await store.events(id,c);if(list.length>model.MAX_EVENTS)throw fail('Programme trop volumineux.');let selected=list.find(e=>e.id===input.eventId),raw=selected?await store.entries(id,selected.id,c):[],context=selected?{event:store.eventView(selected),entries:rows(raw,list)}:{event:null,entries:[]};
       if(input.command==='configure'){
         if(!Array.isArray(input.events)||input.events.some(setting=>!list.some(e=>e.id===setting.id&&e.phase==='series')))throw TypeError('Choisir des courses de séries importées.');
         const keys=input.events.map(setting=>{const e=list.find(e=>e.id===setting.id);return e.event_code+'|'+e.sex;});if(new Set(keys).size!==keys.length)throw TypeError('Un seul réglage par épreuve et sexe, même sur plusieurs sessions.');
