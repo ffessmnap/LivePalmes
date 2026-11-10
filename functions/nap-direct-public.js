@@ -1,6 +1,7 @@
 "use strict";
 const {createStore,fail}=require("./nap-direct-store"),model=require("./nap-direct-model");
 const {SELECT_EVENT,EVENT_JOINS,eventFromRow}=require("./nap-calendar-event");
+const courses=require('./nap-direct-public-courses');
 const cache=new Map(),pending=new Map(),programs=new Map();
 async function cachedProgram(store,id,key){
   if(!programs.has(key)){if(programs.size>=100)programs.delete(programs.keys().next().value);const request=store.program(id).catch(error=>{programs.delete(key);throw error;});programs.set(key,request);}
@@ -21,15 +22,20 @@ async function readPublic(pool,environment,input) {
       const events=await cachedProgram(store,id,`${environment}:${id}:${metadata.direct_revision}`);
       if(events.length>model.MAX_EVENTS)throw fail("Programme trop volumineux.");
       const visible=events.filter(e=>{const p=model.parseJson(e.publication_state_json);return p.series||p.results;});
-      const selected=input.eventId?visible.find(e=>e.id===input.eventId):visible[0];
+      const views=visible.map(row=>{const event=store.eventView(row);return {...event,progress:require('./nap-direct-progress').visible(event.progress,event.publication)};});
+      const selected=input.eventId?views.find(e=>e.id===input.eventId):courses.choose(views);
+      let sources=courses.sourceEvents(views,selected),grouped=courses.course(selected,sources);
       const limit=clubView?model.MAX_MEET_ENTRIES:model.MAX_ENTRIES;
-      const entries=selected?await store.q(`SELECT * FROM livepalmes_direct_entries WHERE environment=? AND competition_id=?${clubView?'':' AND event_id=?'} ORDER BY ${clubView?'event_id,':''}series_number,lane,participant_key LIMIT ${limit+1}`,[...store.scope(id),...(clubView?[]:[selected.id])]):[];
+      let entries=selected?await store.q(`SELECT * FROM livepalmes_direct_entries WHERE environment=? AND competition_id=?${clubView?'':sources.length>1?' AND event_id IN ('+sources.map(()=>'?').join(',')+')':' AND event_id=?'} ORDER BY ${clubView?'event_id,':''}series_number,lane,participant_key LIMIT ${limit+1}`,[...store.scope(id),...(clubView?[]:sources.map(event=>event.id))]):[];
       if(entries.length>limit)throw fail("Affichage trop volumineux.");
       const eventMap=new Map(visible.map(e=>[e.id,e]));
+      entries=entries.filter(row=>{const event=eventMap.get(row.event_id);if(!event)return false;const p=model.parseJson(event.publication_state_json);return model.visibleEntry(row,p.series,p.results);});
+      if(!clubView&&sources.length>1&&courses.duplicateParticipants(entries)){sources=[selected];entries=entries.filter(row=>row.event_id===selected.id);grouped={...selected,groupingWarning:'Le classement commun est indisponible : les séries doivent être vérifiées par l’organisation.'};}
       const publicRows=entries.flatMap(row=>{const event=eventMap.get(row.event_id);if(!event)return [];const p=model.parseJson(event.publication_state_json);return model.visibleEntry(row,p.series,p.results)?[{...model.publicEntry(row,Boolean(p.series),Boolean(p.results)),eventId:row.event_id}]:[];});
       const qualifications=require('./nap-direct-public-qualifications');
       const state=publicRows.length?(await store.q("SELECT JSON_EXTRACT(after_json,'$.races') AS races_json FROM livepalmes_direct_publications WHERE environment=? AND competition_id=? AND id=? LIMIT 1",[...store.scope(id),qualifications.stateId]))[0]:null;
-      const result={view:clubView?'club':'event',events:visible.map(row=>{const event=store.eventView(row);return {...event,progress:require('./nap-direct-progress').visible(event.progress,event.publication)};}),selectedEventId:selected?.id||null,entries:qualifications.attach(events,publicRows,model.parseJson(state?.races_json,{}))};
+      const navigation=views.map(event=>{const fragments=courses.sourceEvents(views,event),summary=courses.course(event,fragments);return {...event,sessionState:courses.sessionState(event),...(fragments.length>1?{courseProgress:summary.progress,coursePublication:summary.publication}:{})};});
+      const result={view:clubView?'club':'event',events:navigation,selectedEventId:selected?.id||null,...(clubView?{rankingGroups:courses.rankingGroups(views,entries)}:grouped?{course:grouped}:{}),entries:qualifications.attach(events,publicRows,model.parseJson(state?.races_json,{}))};
       if(cache.size>=100)cache.delete(cache.keys().next().value);cache.set(key,result);return result;
     })().finally(()=>pending.delete(key)));
     payload=await pending.get(key);
