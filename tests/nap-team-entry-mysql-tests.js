@@ -46,6 +46,7 @@ async function main(){
   async function reset(){for(const table of ['engagements_relayeurs','engagements_relais','engagements','nageursengager','livepalmes_club_entry_options'])await q('DELETE FROM '+table);await q('UPDATE compet_parametres SET actif=1 WHERE id=42');journal.clear();mutations=0;failAfter=0;}
   async function input(dossier=raw()){return {competitionId:42,clubId:'12',actorUid:'fixture',mutationId:randomUUID(),expectedFingerprint:fingerprint(await entry(pool)),dossier};}
   try{
+    await require('./helpers/verify-nap-club-lookup').verify(pool);
     await require('./helpers/calendar-results-mysql').verifyCalendarResultSignal(pool);
     for(const [name,columns]of Object.entries(definitions))await q(`CREATE TABLE ${name} (${columns}) ENGINE=${name.startsWith('livepalmes_')?'InnoDB':'MyISAM'}`);
     const prepared=await schema.approvedTeamEntrySchema(pool,{phase:'prepare',confirmation:'nap-add-team-entry-columns'});await schema.approvedTeamEntrySchema(pool,{phase:'apply',confirmation:'nap-add-team-entry-columns',planHash:schema.planHash,schemaHash:prepared.schemaHash});const repeat=await schema.approvedTeamEntrySchema(pool,{phase:'prepare',confirmation:'nap-add-team-entry-columns'});assert.ok(repeat.alreadyPresent.every(Boolean));assert.equal((await q('SHOW TABLES')).length,Object.keys(definitions).length,'migration creates no table');

@@ -41,7 +41,7 @@ async function main() {
   cold.actions.canDeleteEngagementCompetitionDirectly = () => false;
   await cold.module.loadEngagementNationalClubs({ force: true }); assert.equal(cold.calls.length, 2, "Unauthorized opening performs no read");
   const legacy = nationalFixture("firestore"); await legacy.module.loadEngagementNationalClubs();
-  assert.equal(legacy.referenceCalls(), 1, "Other source keeps its existing reference loading");
+  assert.equal(legacy.referenceCalls(), 0, "No branch loads the retired static club reference");
   const f = nationalFixture(), pending = deferred(); f.setReply(() => pending.promise);
   const first = f.module.loadEngagementNationalClubs(); await Promise.resolve(); await Promise.resolve();
   await f.module.loadEngagementNationalClubs(); assert.equal(f.calls.length, 1, "One request for concurrent openings");

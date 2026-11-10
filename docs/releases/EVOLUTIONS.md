@@ -2,6 +2,13 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### Portail — retrait des référentiels clubs statiques · 10 novembre 2026 (préparation, TEST non déployé)
+
+- Antoine autorise le nettoyage successif clubs, nageurs puis anciennes migrations : backend/interfaces, tests, documentation, une PR par lot et TEST commun après contrôles. Consigne transmise ensuite : enchaîner les lots après validation technique de chacun, sans attendre une recette utilisateur ; ne pas inventer de validation. Aucune donnée réelle, migration, fusion, message ou PROD autorisé.
+- Lot clubs : retrait des deux copies statiques serveur/navigateur ; libellés NAP des dossiers conservés, annuaire partagé pour le portail et les choix Records/MPF, sigles ambigus non rapprochés arbitrairement. Périmètres explicites conservés, recours régional au club résolu par lecture NAP groupée avant les opérations, sans écriture du complément dans les comptes.
+- Tests ciblés hors réseau réussis : sources clubs, statistiques, accès/régions, reprise annuaire, PDF/TXT, résolution des imports et Records ; syntaxe et architecture contrôlées. Recette navigateur locale hors réseau réussie à 1280/390/320 px pour panne/reprise. Plan PRIMARY et actualisation des libellés prévus dans le MySQL 5.7 isolé de la CI existante. Les référentiels nageurs, anciennes migrations, données/sauvegardes et PROD restent intacts dans ce lot.
+- Livraison : la suppression du fichier public généré est refusée par le garde ordinaire ; exception exacte à examiner avant publication, sans étendre les anciennes autorisations. CI/PR, preuve de déploiement TEST et recette technique à compléter. Aucune recette utilisateur effectuée.
+
 ### Direct — catégories, mentions NS/IN/HC et calcul des places · 10 novembre 2026 (TEST déployé, retour utilisateur attendu)
 
 - Demandes d’Antoine transmises de l’aparté : filtre catégorie en engagements, multisélection/effacement et séries complètes ; mentions NS/IN/HC lues dans les séries PDF, conservées aux corrections WinPalme et visibles sans augmenter les lignes. Lecture locale de Limoges : 44 groupes, 818 participations dont dix NS et trois IN. Aucun réimport réel exécuté.

@@ -2,6 +2,12 @@
 
 <!-- description: Checklist de tests manuels à exécuter avant une publication ou après une modification sensible. -->
 
+## Nettoyage des référentiels clubs — préparation du 10 novembre 2026
+
+Sur fixtures hors réseau, vérifier un nom/sigle NAP différent de l'ancienne copie, un club absent de celle-ci, deux clubs au même sigle, région explicitement attribuée prioritaire, compte sans région résolu par son club, club étranger et erreur/reprise NAP. Statistiques individuelles/relais et récapitulatif clubs : noms NAP, participants et temps identiques. PDF/TXT et notifications : contrôle en mémoire uniquement, aucun fichier distant ni message réel. Records/MPF : choix de clubs natifs, aucune sélection arbitraire sur un sigle ambigu ; versions sportives inchangées. Contrôler ordinateur/390/320 px et absence de requête vers les anciens fichiers. La CI MySQL 5.7 isolée vérifie la lecture groupée, le plan PRIMARY, les conversions de comité et une actualisation des libellés.
+
+TEST partage la base NAP réelle : ne pas créer, modifier, fusionner ou supprimer un club/nageur, ni importer, générer un document distant ou envoyer un message pour cette recette. Aucune reconstruction d'annuaire ou migration réelle. La réussite technique et le déploiement TEST restent distincts de la recette utilisateur.
+
 ## Corrections de l’audit Direct — recette TEST du 9 novembre 2026
 
 - Programme speaker ouvert et brouillon JA actif : recevoir une nouvelle décision au prochain cycle, voir l’encart dans la fenêtre sans fermer ni perdre la saisie. En onglet masqué, aucune lecture périodique ; retour visible relu immédiatement.

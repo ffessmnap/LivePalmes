@@ -88,8 +88,6 @@ function createAccessService(backendContext) {
     if (!cache7) cache7 = require("./backend/server-access-service/engagement-club-code").createAccessService_engagementClubCode({
       get cleanText() { return backendContext.cleanText; },
       set cleanText(value) { backendContext.cleanText = value; },
-      get CLUB_REFERENCE_BY_ID() { return backendContext.CLUB_REFERENCE_BY_ID; },
-      set CLUB_REFERENCE_BY_ID(value) { backendContext.CLUB_REFERENCE_BY_ID = value; }
     });
     return cache7;
   }
@@ -99,8 +97,6 @@ function createAccessService(backendContext) {
     if (!cache8) cache8 = require("./backend/server-access-service/engagement-club-name").createAccessService_engagementClubName({
       get cleanText() { return backendContext.cleanText; },
       set cleanText(value) { backendContext.cleanText = value; },
-      get CLUB_REFERENCE_BY_ID() { return backendContext.CLUB_REFERENCE_BY_ID; },
-      set CLUB_REFERENCE_BY_ID(value) { backendContext.CLUB_REFERENCE_BY_ID = value; }
     });
     return cache8;
   }
@@ -139,10 +135,9 @@ function createAccessService(backendContext) {
   let cache12;
   function operation12() {
     if (!cache12) cache12 = require("./backend/server-access-service/engagement-clubs-by-ids").createAccessService_engagementClubsByIds({
+    get readNapClubsByIds() { return backendContext.readNapClubsByIds; },
       get cleanText() { return backendContext.cleanText; },
       set cleanText(value) { backendContext.cleanText = value; },
-      get CLUB_REFERENCE_BY_ID() { return backendContext.CLUB_REFERENCE_BY_ID; },
-      set CLUB_REFERENCE_BY_ID(value) { backendContext.CLUB_REFERENCE_BY_ID = value; },
       get ENGAGEMENT_CLUBS_COLLECTION() { return backendContext.ENGAGEMENT_CLUBS_COLLECTION; },
       set ENGAGEMENT_CLUBS_COLLECTION(value) { backendContext.ENGAGEMENT_CLUBS_COLLECTION = value; },
       get db() { return backendContext.db; },
@@ -445,10 +440,10 @@ function createAccessService(backendContext) {
   let cache36;
   function operation36() {
     if (!cache36) cache36 = require("./backend/server-access-service/access-user-region-id-from-data").createAccessService_accessUserRegionIdFromData({
+    get HttpsError() { return backendContext.HttpsError; },
+    get readNapClubsByIds() { return backendContext.readNapClubsByIds; },
       get cleanText() { return backendContext.cleanText; },
       set cleanText(value) { backendContext.cleanText = value; },
-      get CLUB_REFERENCE_BY_ID() { return backendContext.CLUB_REFERENCE_BY_ID; },
-      set CLUB_REFERENCE_BY_ID(value) { backendContext.CLUB_REFERENCE_BY_ID = value; },
       get local$canonicalAccessDirectoryRegionId() { return operation22().canonicalAccessDirectoryRegionId; },
       get local$normalizedAccessScope() { return operation31().normalizedAccessScope; }
     });
@@ -597,6 +592,7 @@ function createAccessService(backendContext) {
     accessManagementContext: operation34().accessManagementContext,
     auditManagementContext: operation35().auditManagementContext,
     accessUserRegionIdFromData: operation36().accessUserRegionIdFromData,
+    resolveAccessUserClubRegions: operation36().resolveAccessUserClubRegions,
     accessUserVisibleToRegional: operation28().accessUserVisibleToRegional,
     accessUserCanBeManagedByRegional: operation37().accessUserCanBeManagedByRegional,
     accessUserVisibleForAccessDirectory: operation28().accessUserVisibleForAccessDirectory,

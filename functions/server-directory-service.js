@@ -3,8 +3,6 @@ function createDirectoryService(backendContext) {
   let cache0;
   function operation0() {
     if (!cache0) cache0 = require("./backend/server-directory-service/clean-engagement-access-request-payload").createDirectoryService_cleanEngagementAccessRequestPayload({
-      get CLUB_REFERENCE_BY_FEDERAL_NUMBER() { return backendContext.CLUB_REFERENCE_BY_FEDERAL_NUMBER; },
-      set CLUB_REFERENCE_BY_FEDERAL_NUMBER(value) { backendContext.CLUB_REFERENCE_BY_FEDERAL_NUMBER = value; },
       get ENGAGEMENT_CLUBS_COLLECTION() { return backendContext.ENGAGEMENT_CLUBS_COLLECTION; },
       set ENGAGEMENT_CLUBS_COLLECTION(value) { backendContext.ENGAGEMENT_CLUBS_COLLECTION = value; },
       get ENVIRONMENT() { return backendContext.ENVIRONMENT; },
@@ -87,7 +85,6 @@ function createDirectoryService(backendContext) {
     if (!cache3) cache3 = require("./backend/server-directory-service/consume-public-access-request-rate-limit").createDirectoryService_consumePublicAccessRequestRateLimit({
       get ENVIRONMENT() { return backendContext.ENVIRONMENT; },
       get ENGAGEMENT_CLUBS_COLLECTION() { return backendContext.ENGAGEMENT_CLUBS_COLLECTION; },
-      get CLUB_REFERENCE_BY_ID() { return backendContext.CLUB_REFERENCE_BY_ID; },
       get engagementStoredClubItem() { return backendContext.engagementStoredClubItem; },
       get CLUB_REFERENCE_REGION_LABELS() { return backendContext.CLUB_REFERENCE_REGION_LABELS; },
       set CLUB_REFERENCE_REGION_LABELS(value) { backendContext.CLUB_REFERENCE_REGION_LABELS = value; },

@@ -18,65 +18,7 @@ function createNationalHandlers_deleteEngagementNationalClub(backendContext) {
       },()=>{if(!context.national)throw new backendContext.HttpsError("permission-denied","Suppression nationale requise.");});}
       catch(error){if(error instanceof backendContext.HttpsError)throw error;throw new backendContext.HttpsError(error instanceof TypeError||error instanceof RangeError?"failed-precondition":"unavailable",error instanceof TypeError||error instanceof RangeError?error.message:"Suppression club NAP a verifier. Reprenez la meme action ; sauvegarde conservee.");}
     }
-    if (backendContext.CLUB_REFERENCE_BY_ID.has(clubId)) {
-      throw new backendContext.HttpsError("failed-precondition", "Un club historique doit etre desactive et ne peut pas etre supprime.");
-    }
-    const clubRef = backendContext.db.collection(backendContext.ENGAGEMENT_CLUBS_COLLECTION).doc(clubId);
-    const clubSnapshot = await clubRef.get();
-    if (!clubSnapshot.exists || clubSnapshot.data()?.deleted === true) throw new backendContext.HttpsError("not-found", "Club introuvable.");
-    const club = backendContext.engagementStoredClubItem(clubSnapshot);
-    if (club.source !== "national") {
-      throw new backendContext.HttpsError("failed-precondition", "Seuls les clubs crees par l'administration nationale peuvent etre supprimes.");
-    }
-    const dependencyQueries = [
-      ["performance", backendContext.db.collection(backendContext.PERFORMANCE_BASE_COLLECTION).where("clubId", "==", clubId)],
-      ["compte", backendContext.db.collection("users").where("clubId", "==", clubId)],
-      ["demande d'accès en attente", backendContext.db.collection("engagementAccessRequests").where("clubId", "==", clubId).where("status", "==", "pending")],
-      ["nageur", backendContext.db.collection("engagementClubSwimmers").where("clubId", "==", clubId)],
-      ["officiel ou chef d'équipe", backendContext.db.collection("engagementClubPeople").where("clubId", "==", clubId)],
-      ["engagement", backendContext.db.collection("engagementClubEntries").where("clubId", "==", clubId)]
-    ];
-    const dependencySnapshots = await Promise.all(dependencyQueries.map(([, query]) => query.limit(1).get()));
-    const blockers = dependencyQueries
-      .filter((_, index) => !dependencySnapshots[index].empty)
-      .map(([, label]) => label);
-    if (blockers.length) {
-      throw new backendContext.HttpsError("failed-precondition", `Ce club reste lie a au moins un element : ${blockers.join(", ")}. Desactivez-le plutot.`);
-    }
-    const now = new Date().toISOString();
-    const startedAt = Date.now();
-    const batch = backendContext.db.batch();
-    batch.set(clubRef, {
-      clubId,
-      source: "national",
-      deleted: true,
-      active: false,
-      updatedAt: now,
-      updatedBy: context.uid,
-      deletedAt: now,
-      deletedBy: context.uid
-    });
-    batch.delete(backendContext.db.collection(backendContext.ENGAGEMENT_CLUB_ROSTERS_COLLECTION).doc(clubId));
-    batch.delete(backendContext.db.collection(backendContext.ENGAGEMENT_CLUB_PEOPLE_ROSTERS_COLLECTION).doc(clubId));
-    batch.set(backendContext.publicEngagementClubDirectoryRef(), {
-      clubs: { [clubId]: backendContext.FieldValue.delete() },
-      updatedAt: now
-    }, { merge: true });
-    await batch.commit();
-    await backendContext.writeAuditLog("engagementClub.deleted", context.uid, {
-      clubId,
-      federalNumber: club.federalNumber,
-      clubCode: club.clubCode,
-      clubName: club.clubName
-    });
-    return {
-      ok: true,
-      clubId,
-      readStats: backendContext.portalReadStats("deleteEngagementNationalClub", startedAt, {
-        baseDocuments: 2,
-        variableDocumentsMax: dependencyQueries.length
-      })
-    };
+    throw new backendContext.HttpsError("failed-precondition", "La gestion des clubs nécessite la source NAP.");
   }
 
   return { deleteEngagementNationalClub };
