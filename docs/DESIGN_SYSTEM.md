@@ -2,6 +2,12 @@
 
 <!-- description: Référence du langage visuel, des composants d’interface et des règles responsive déjà présents dans LivePalmes. -->
 
+## Accès et actions LivePalmes Direct — 10 novembre 2026
+
+Les actions du bureau affichent le contexte course/sexe/session en tête, série/ligne et nageur ensuite, puis le motif complet en gras. Une DSQ utilise un repère rouge sur fond rouge clair ; le texte conserve le sens sans dépendre uniquement de la couleur. La confirmation est alignée à droite sur ordinateur et passe sous le contenu à petite largeur. Aucun bouton « Voir la course » dans ces cartes. Le panneau « Accès et délégations », ouvert depuis Consoles et réglages, utilise un dialogue de 850 px maximum, 88 dvh avec défilement vertical local, une liste de comptes et un formulaire séparé. État en lecture seule, retrait explicite confirmé, cibles tactiles de 44 px et aucune superposition des actions.
+
+Mes compétitions présente des cartes compactes ; Mes consoles réserve de grands liens tactiles aux consoles activées et autorisées, avec copie et QR secondaires. Aucun formulaire bureau visible pour les personnes limitées aux autres consoles. La connexion et les permissions serveur restent nécessaires. Les cartes se répartissent selon la largeur, sans défilement horizontal global.
+
 ## Bureau Direct et secrétariat — maquette intégrée du 9 novembre 2026
 
 Bureau ordinateur : largeur disponible, compétition sur une ligne avec date, import et menu Consoles/réglages ; accès secondaires dans ce menu. Chaque console activée présente son lien, Copier et QR code ; dialogue à fond blanc avec QR noir de 256 px, marge de quatre modules et adresse sélectionnable. Sans console terrain, onglet Suivi et surveillance/programme en pleine largeur. Avec consoles, grille flexible + colonne fixe de 352 px (382 px sur grand écran), surveillance et courses persistantes à droite. Historique unique filtrable ; réglages des finales toujours accessibles même si l’onglet Finales est masqué faute de course configurée.

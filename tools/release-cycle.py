@@ -416,6 +416,12 @@ def targeted_test_evidence(directory, current):
     trusted.update(layout_sources.publisher.trusted_revisions(directory, current, SimpleNamespace(
         gh=gh, artifact=artifact, read=read, matching_functions=matching_functions,
         test_backend_fingerprints=test_backend_fingerprints)))
+    spec = importlib.util.spec_from_file_location('direct_access_evidence', ROOT / 'tools/publish-test-direct-access-sources.py')
+    access_sources = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(access_sources)
+    trusted.update(access_sources.publisher.trusted_revisions(directory, current, SimpleNamespace(
+        gh=gh, artifact=artifact, read=read, matching_functions=matching_functions,
+        test_backend_fingerprints=test_backend_fingerprints)))
     return trusted
 
 
@@ -1207,7 +1213,7 @@ def freeze_plan(directory, evidence=False):
         summary.write('\n## Bilan avant publication\n\n')
         summary.write(f"Version TEST : `{request['candidate']}`. Base PROD : `{request['productionCommit']}`.\n\n")
         for item in request['changes']:
-            summary.write('- ' + item['title'].replace('\n', ' ') + ' — ' + item['validation'].replace('\n', ' ') + '\n')
+            summary.write('- ' + item['title'].replace('\n', ' ') + ' â€” ' + item['validation'].replace('\n', ' ') + '\n')
         summary.write(f"\nFunctions selectionnees : {len(read(root / 'selection.json'))}. Regles/index/donnees exclus.\n")
         summary.write('\nTraitements : ' + (', '.join(selected) or 'aucun') + '.\n')
         if evidence:
@@ -1370,7 +1376,7 @@ def deploy_batches(project, candidate, stage_path, selection_path, dry_run):
         summary = os.environ.get('GITHUB_STEP_SUMMARY')
         if summary:
             with open(summary, 'a', encoding='utf-8') as stream:
-                stream.write(f'\nLot {timing["batch"]} {project} ({timing["mode"]}) : {len(batch)} fonctions, {elapsed} s — ' + ', '.join(batch) + '\n')
+                stream.write(f'\nLot {timing["batch"]} {project} ({timing["mode"]}) : {len(batch)} fonctions, {elapsed} s â€” ' + ', '.join(batch) + '\n')
 
 
 def team_hosting_resume(root, request, selected):
