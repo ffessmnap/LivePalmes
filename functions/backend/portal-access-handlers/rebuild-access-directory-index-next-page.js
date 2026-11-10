@@ -15,10 +15,11 @@ function createAccessHandlers_rebuildAccessDirectoryIndexNextPage(backendContext
     let query = backendContext.db.collection("users").orderBy(backendContext.FieldPath.documentId()).limit(pageSize);
     if (cursor) query = query.startAfter(cursor);
     const snapshot = await query.get();
+    const profiles = await backendContext.resolveAccessUserClubRegions(snapshot.docs.map(doc => doc.data() || {}));
     const now = new Date().toISOString();
     const batch = backendContext.db.batch();
-    snapshot.docs.forEach((doc) => {
-      const data = doc.data() || {};
+    snapshot.docs.forEach((doc, index) => {
+      const data = profiles[index];
       batch.set(doc.ref, {
         accessDirectoryKeys: backendContext.accessDirectoryKeys(data, data.status),
         accessDirectoryIndexedAt: now

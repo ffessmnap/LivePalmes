@@ -7,7 +7,7 @@ class HttpsError extends Error {constructor(code,message){super(message);this.co
 (async()=>{
  let caps={"engagements.region.manage":true}, region="1", clubRegion="1", reads=0,sql=0,writes=0,existing=false;
  const data=()=>({status:"active",regionId:region,capabilities:caps,accessScopes:{"engagements.region.manage":{scopeId:region}},clubId:"10"});
- const context={HttpsError,cleanText:x=>String(x??"").trim(),ADMIN_UIDS:new Set(),CLUB_REFERENCE_BY_ID:new Map(),CLUB_REFERENCE_REGION_LABELS:{1:"Region A",2:"Region B"},ENVIRONMENT:{sportingDataSource:"legacy"},
+ const context={HttpsError,cleanText:x=>String(x??"").trim(),ADMIN_UIDS:new Set(),readNapClubsByIds:async ids=>{sql++;return new Map(ids.map(id=>[id,{clubId:id,clubName:"Club reel",regionId:clubRegion}]));},CLUB_REFERENCE_REGION_LABELS:{1:"Region A",2:"Region B"},ENVIRONMENT:{sportingDataSource:"legacy"},
  db:{collection:()=>({doc:id=>({id,get:async()=>{reads++;return {exists:true,data};}})})}};
  const service=createAccessService(context);
  // Legacy lookup injected through its existing bounded batch helper.

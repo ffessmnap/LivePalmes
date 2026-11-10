@@ -228,11 +228,11 @@
         const clubScope = user.accessScopes?.["engagements.club.manage"] || {};
         const clubId = portalActions.engagementClubScope(user);
         const referencedClub = portalActions.accessClubFromId(clubId);
-        const clubName = user.clubName || clubScope.scopeName || referencedClub?.clubName || "";
+        const clubName = referencedClub?.clubName || user.clubName || clubScope.scopeName || "";
         const clubCode = portalActions.clubDisplayCode({ clubId, clubName }, "");
         const clubLabel = clubCode || clubName || (portalActions.canSwitchEngagementClub(portalState.currentAccessProfile || user) ? "Choisir un club" : "");
         const accountClubCode = String(
-          user.clubCode || referencedClub?.clubCode || portalState.portalClubCodeReferenceById.get(String(clubId || "").trim())?.clubCode || ""
+          referencedClub?.clubCode || user.clubCode || portalState.portalClubCodeReferenceById.get(String(clubId || "").trim())?.clubCode || ""
         ).trim();
 
         portalContext.elements.scopeContext.hidden = !clubLabel;

@@ -53,7 +53,7 @@ function fixture(current = profile(), status = "ready") {
       throw new Error("fictional contention exhausted");
     }
   };
-  const context = { db, FieldValue: { delete: () => DELETE }, ACCESS_DIRECTORY_SNAPSHOT_VERSION: 2,
+  const context = { resolveAccessUserClubRegions: async profiles => profiles, db, FieldValue: { delete: () => DELETE }, ACCESS_DIRECTORY_SNAPSHOT_VERSION: 2,
     activeCapabilitiesFromMap: values => Object.keys(values).filter(key => values[key] === true),
     accessUserRegionIdFromData: data => data.regionId,
     accessDirectorySnapshotStateRef: () => ({ key: "state/default" }),

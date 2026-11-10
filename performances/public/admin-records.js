@@ -1,5 +1,5 @@
 ﻿let data = window.LIVEPALMES_RECORDS || {};
-const reference = window.LIVEPALMES_CLUB_REFERENCE || { clubs: [] };
+const reference = window.LivePalmesRecordClubDirectory || { clubs: [] };
 const MASTER_RELAY_CATEGORY = window.LivePalmesRecordPlaceholders?.masterRelayCategory || "MASTER_RELAYS_MIXED";
 const MASTER_RELAY_LABEL = window.LivePalmesRecordPlaceholders?.masterRelayLabel || "Relais Masters mixtes";
 const RECORD_HISTORY_LIMIT = 50;
@@ -559,7 +559,8 @@ function normalizeBirthDateInput(value) {
 function clubIdForCode(code) {
   const normalized = normalizeLookup(code);
   if (!normalized) return "";
-  return String((reference.clubs || []).find((club) => normalizeLookup(club[1]) === normalized)?.[0] || "");
+  const matches = (reference.clubs || []).filter(club => normalizeLookup(club[1]) === normalized);
+  return matches.length === 1 ? String(matches[0][0]) : "";
 }
 
 function uniqueBirthDate(swimmers) {

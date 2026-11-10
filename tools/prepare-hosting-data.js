@@ -9,9 +9,9 @@ Utilisation :
   node tools/prepare-hosting-data.js --write
 
 Prépare explicitement les données statiques avant une publication Hosting complète :
-  - régénération du référentiel clubs du portail et des Functions.
+  - contrôle du retrait des anciens référentiels clubs.
 
-Cette commande lit Firebase de production et écrit des fichiers générés.
+Le référentiel clubs est lu dans NAP pendant les parcours ; aucune génération sportive.
 L'option --write est obligatoire.
 `);
 }
@@ -37,7 +37,7 @@ function main() {
     printHelp();
     throw new Error("Confirmation explicite requise : ajoutez --write.");
   }
-  run("tools/build-admin-club-reference.js");
+  run("tools/build-admin-club-reference.js", ["--check"]);
   console.log("Données Hosting préparées. Contrôlez les fichiers générés avant le déploiement.");
 }
 

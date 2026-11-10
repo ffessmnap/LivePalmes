@@ -10,8 +10,7 @@ function createDirectoryService_consumePublicAccessRequestRateLimit(backendConte
         existingClub = await require("../../nap-club-directory").findClub(
           require("../../nap-portal-pool").portalPool(process.env.LIVEPALMES_NAP_PASSWORD), payload.clubId);
       } else {
-        const snapshot = await backendContext.db.collection(backendContext.ENGAGEMENT_CLUBS_COLLECTION).doc(payload.clubId).get();
-        existingClub = snapshot.exists ? backendContext.engagementStoredClubItem(snapshot) : backendContext.CLUB_REFERENCE_BY_ID.get(payload.clubId);
+        throw new backendContext.HttpsError("failed-precondition", "La recherche des clubs nécessite la source NAP.");
       }
       if (!existingClub || existingClub.deleted === true) throw new TypeError("Club introuvable dans l'annuaire.");
     }

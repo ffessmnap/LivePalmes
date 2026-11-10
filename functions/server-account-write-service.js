@@ -29,6 +29,7 @@ function createAccountWriteService(backendContext) {
   }
 
   async function saveAccessUserProfile(profile, actorUid) {
+    const [directoryProfile] = await backendContext.resolveAccessUserClubRegions([profile]);
     const { user, created } = await userByEmailOrCreate(profile);
     const now = new Date().toISOString();
     const capabilityMap = backendContext.capabilitiesMap(profile.capabilities);
@@ -52,7 +53,7 @@ function createAccountWriteService(backendContext) {
       licenseNumber: profile.licenseNumber,
       status: "active",
       capabilities: capabilityMap,
-      accessDirectoryKeys: backendContext.accessDirectoryKeys({ ...profile, capabilities: profile.capabilities }, "active"),
+      accessDirectoryKeys: backendContext.accessDirectoryKeys({ ...directoryProfile, capabilities: profile.capabilities }, "active"),
       accessScopes: profile.accessScopes,
       updatedAt: now,
       updatedBy: actorUid,

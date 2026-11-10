@@ -17,7 +17,7 @@ function createAccessHandlers_requestAccessUserDeletion(backendContext) {
     if (!snapshot.exists) {
       throw new backendContext.HttpsError("not-found", "Acces LivePalmes introuvable.");
     }
-    const data = snapshot.data() || {};
+    const [data] = await backendContext.resolveAccessUserClubRegions([snapshot.data() || {}]);
     backendContext.assertRegionalAccessUserDeletionRequestAllowed(context, data);
 
     const pendingSnapshot = await backendContext.db.collection("accessUserDeletionRequests")
