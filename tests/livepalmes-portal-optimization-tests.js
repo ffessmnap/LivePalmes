@@ -1323,13 +1323,13 @@ assert.ok(functions.includes("const reviewedProposal = request.data?.proposed"))
 assert.ok(functions.includes("requestedProposed: requestedCorrection || data.proposed || {}"));
 assert.ok(functions.includes("exports.updateEngagementNationalSwimmerIdentity"));
 assert.ok(functions.includes("function assertNoEngagementSwimmerIdentityConflict"));
-assert.ok(functions.includes("findReferenceSwimmerCorrectionTarget(intranapSwimmersIndex"));
+assert.ok(!functions.includes("intranapSwimmersIndex"));
 assert.ok(functions.includes("async function findEngagementSwimmerCorrectionLicense"));
 assert.ok(functions.includes("licenseMatch.documentId"));
 assert.ok(functions.includes('source: "performance-base"'));
 assert.ok(functions.includes('resolvedBy: "performance-base"'));
 assert.ok(functions.includes("Array.isArray(target.performanceRows) && target.performanceRows.length"));
-assert.ok(functions.includes('resolvedBy: `reference-${referenceTarget.matchedBy || "fallback"}`'));
+assert.ok(!functions.includes('resolvedBy: `reference-${referenceTarget.matchedBy || "fallback"}`'));
 assert.ok(functions.includes("ENGAGEMENT_SWIMMER_CORRECTION_OPTIONS"));
 assert.ok(functions.includes("ENGAGEMENT_SWIMMER_CORRECTION_MAX_PERFORMANCE_ROWS"));
 assert.ok(functions.includes("ENGAGEMENT_SWIMMER_CORRECTION_ENTRY_PAGE_SIZE"));

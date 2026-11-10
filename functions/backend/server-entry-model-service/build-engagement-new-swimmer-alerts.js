@@ -62,13 +62,6 @@ function createEntryModelService_buildEngagementNewSwimmerAlerts(backendContext)
         const match = (0, backendContext.local$engagementNewSwimmerItem)(doc);
         addAlert(engagementNewSwimmerAlertFromMatch(match, context, alertTypeForMatch(match)));
       });
-      backendContext.intranapSwimmersIndex
-        .filter((match) => identityKeys.includes(backendContext.cleanText(match.identityKey)))
-        .slice(0, 10)
-        .forEach((match) => addAlert(engagementNewSwimmerAlertFromMatch({
-          ...match,
-          source: "reference"
-        }, context, alertTypeForMatch(match))));
     }
     const lastToken = backendContext.performanceSearchTokens(swimmer.lastName)[0] || "";
     if (lastToken.length >= 2) {
@@ -86,21 +79,6 @@ function createEntryModelService_buildEngagementNewSwimmerAlerts(backendContext)
         if (!sameBirthYear || !firstClose) return;
         addAlert(engagementNewSwimmerAlertFromMatch(match, context, "possible-duplicate"));
       });
-      backendContext.intranapSwimmersIndex
-        .filter((match) => {
-          if (identityKeys.includes(backendContext.cleanText(match.identityKey))) return false;
-          const sameBirthYear = backendContext.cleanText(match.birthDate).slice(0, 4) === backendContext.cleanText(swimmer.birthDate).slice(0, 4);
-          const lastClose = backendContext.performanceSearchTokens(match.lastName).some((token) => token.slice(0, Math.min(6, lastToken.length)) === lastToken.slice(0, Math.min(6, lastToken.length)));
-          const firstClose = backendContext.performanceSearchTokens(match.firstName).some((token) =>
-            backendContext.performanceSearchTokens(swimmer.firstName).some((inputToken) => token.slice(0, 3) === inputToken.slice(0, 3))
-          );
-          return sameBirthYear && lastClose && firstClose;
-        })
-        .slice(0, 12)
-        .forEach((match) => addAlert(engagementNewSwimmerAlertFromMatch({
-          ...match,
-          source: "reference"
-        }, context, "possible-duplicate")));
     }
     return alerts
       .sort((left, right) =>

@@ -31,11 +31,8 @@ function createEntryService_buildEngagementClubSwimmersFromRequest(backendContex
     requestedSwimmers.slice(0, 300).forEach((rawSwimmer) => {
       const swimmerIndexId = backendContext.cleanText(rawSwimmer?.swimmerIndexId).slice(0, 80);
       const requestedSource = backendContext.cleanText(rawSwimmer?.source);
-      const source = requestedSource === "engagement"
-        ? "engagement"
-        : requestedSource === "reference"
-          ? "reference"
-          : "performances";
+      if (requestedSource === "reference") throw new backendContext.HttpsError("failed-precondition", "Ancien referentiel nageurs retire : utilisez la selection NAP actuelle.");
+      const source = requestedSource === "engagement" ? "engagement" : "performances";
       const licenseNumber = backendContext.cleanText(rawSwimmer?.licenseNumber).toUpperCase().slice(0, 60);
       const individualEntries = backendContext.cleanEngagementEntryIndividualEntries(
         rawSwimmer?.individualEntries || rawSwimmer?.individualEventCodes || [],
@@ -55,26 +52,11 @@ function createEntryService_buildEngagementClubSwimmersFromRequest(backendContex
       uniqueSwimmers.push({ swimmerIndexId, source, licenseNumber, individualEntries });
     });
 
-    const referenceSwimmersById = new Map();
-    backendContext.intranapSwimmersIndex.forEach((item) => {
-      const swimmer = backendContext.engagementReferenceSwimmerItem(item);
-      [
-        item.id,
-        item.swimmerId,
-        ...(Array.isArray(item.aliases) ? item.aliases : []),
-        ...(Array.isArray(item.sourceIds) ? item.sourceIds : [])
-      ].map(backendContext.cleanText).filter(Boolean).forEach((id) => referenceSwimmersById.set(id, swimmer));
-    });
-    const firestoreSwimmers = uniqueSwimmers.filter((swimmer) => swimmer.source !== "reference");
+    const firestoreSwimmers = uniqueSwimmers;
     const firestoreRefs = firestoreSwimmers.map((swimmer) => backendContext.db
       .collection(swimmer.source === "engagement" ? "engagementClubSwimmers" : backendContext.PERFORMANCE_SWIMMERS_COLLECTION)
       .doc(swimmer.swimmerIndexId));
-    const requestedLicenseIds = Array.from(new Set(uniqueSwimmers.flatMap((requestedSwimmer) => {
-      const referenceSwimmer = requestedSwimmer.source === "reference"
-        ? referenceSwimmersById.get(requestedSwimmer.swimmerIndexId)
-        : null;
-      return [requestedSwimmer.swimmerIndexId, referenceSwimmer?.id].map(backendContext.cleanText).filter(Boolean);
-    })));
+    const requestedLicenseIds = Array.from(new Set(uniqueSwimmers.map(swimmer => swimmer.swimmerIndexId)));
     const licenseReads = [];
     for (let index = 0; index < requestedLicenseIds.length; index += 10) {
       licenseReads.push(backendContext.db.collection("engagementSwimmerLicenses")
@@ -100,15 +82,11 @@ function createEntryService_buildEngagementClubSwimmersFromRequest(backendContex
 
     let swimmers = await Promise.all(uniqueSwimmers.map(async (requestedSwimmer) => {
       let swimmer = null;
-      if (requestedSwimmer.source === "reference") {
-        swimmer = referenceSwimmersById.get(requestedSwimmer.swimmerIndexId) || null;
-      } else {
-        const doc = firestoreDocsByRequestedId.get(`${requestedSwimmer.source}:${requestedSwimmer.swimmerIndexId}`);
-        if (doc?.exists) {
-          swimmer = requestedSwimmer.source === "engagement"
-            ? backendContext.engagementNewSwimmerItem(doc)
-            : backendContext.engagementClubSwimmerItem(doc);
-        }
+      const doc = firestoreDocsByRequestedId.get(`${requestedSwimmer.source}:${requestedSwimmer.swimmerIndexId}`);
+      if (doc?.exists) {
+        swimmer = requestedSwimmer.source === "engagement"
+          ? backendContext.engagementNewSwimmerItem(doc)
+          : backendContext.engagementClubSwimmerItem(doc);
       }
       if (!swimmer) {
         throw new backendContext.HttpsError("invalid-argument", "Nageur inconnu dans la base LivePalmes.");

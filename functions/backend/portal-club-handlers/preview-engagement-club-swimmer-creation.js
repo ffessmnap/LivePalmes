@@ -14,6 +14,7 @@ function createClubHandlers_previewEngagementClubSwimmerCreation(backendContext)
         throw new backendContext.HttpsError(error instanceof TypeError || error instanceof RangeError?"failed-precondition":"unavailable",error instanceof TypeError || error instanceof RangeError?error.message:"Creation NAP a verifier. Reprenez la meme action ; sauvegarde conservee.");
       }
     }
+    throw new backendContext.HttpsError("failed-precondition", "Ancienne creation sur referentiel fichier retiree : utilisez le parcours NAP.");
     const swimmer = backendContext.cleanEngagementNewSwimmer(request.data?.swimmer || {}, context);
     await backendContext.assertNoEngagementSwimmerLicenseConflict(backendContext.db, swimmer);
     const alerts = await backendContext.buildEngagementNewSwimmerAlerts(swimmer, context);

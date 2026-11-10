@@ -47,8 +47,8 @@ function createEntryService(backendContext) {
       set engagementReferenceSwimmerItem(value) { backendContext.engagementReferenceSwimmerItem = value; },
       get engagementSwimmerLicenseItem() { return backendContext.engagementSwimmerLicenseItem; },
       set engagementSwimmerLicenseItem(value) { backendContext.engagementSwimmerLicenseItem = value; },
-      get intranapSwimmersIndex() { return backendContext.intranapSwimmersIndex; },
-      set intranapSwimmersIndex(value) { backendContext.intranapSwimmersIndex = value; },
+
+
       get loadPerformanceRecordsData() { return backendContext.loadPerformanceRecordsData; },
       set loadPerformanceRecordsData(value) { backendContext.loadPerformanceRecordsData = value; },
       get resolveEngagementIndividualEntriesForSwimmer() { return backendContext.resolveEngagementIndividualEntriesForSwimmer; },

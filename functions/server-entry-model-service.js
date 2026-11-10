@@ -441,8 +441,8 @@ function createEntryModelService(backendContext) {
       set db(value) { backendContext.db = value; },
       get engagementClubSwimmerItem() { return backendContext.engagementClubSwimmerItem; },
       set engagementClubSwimmerItem(value) { backendContext.engagementClubSwimmerItem = value; },
-      get intranapSwimmersIndex() { return backendContext.intranapSwimmersIndex; },
-      set intranapSwimmersIndex(value) { backendContext.intranapSwimmersIndex = value; },
+
+
       get performanceSearchTokens() { return backendContext.performanceSearchTokens; },
       set performanceSearchTokens(value) { backendContext.performanceSearchTokens = value; },
       get local$engagementNewSwimmerItem() { return operation22().engagementNewSwimmerItem; },
@@ -612,8 +612,8 @@ function createEntryModelService(backendContext) {
       set cleanIsoDate(value) { backendContext.cleanIsoDate = value; },
       get cleanText() { return backendContext.cleanText; },
       set cleanText(value) { backendContext.cleanText = value; },
-      get intranapSwimmersIndex() { return backendContext.intranapSwimmersIndex; },
-      set intranapSwimmersIndex(value) { backendContext.intranapSwimmersIndex = value; },
+
+
       get local$engagementSwimmerLicenseNumberId() { return operation26().engagementSwimmerLicenseNumberId; },
       get local$engagementSwimmerLicenseNumberKey() { return operation25().engagementSwimmerLicenseNumberKey; }
     });
