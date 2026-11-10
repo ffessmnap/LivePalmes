@@ -100,4 +100,6 @@
 
 .direct-name-line{display:flex;align-items:center;gap:4px;min-width:0}.direct-name-line .direct-person{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.direct-participation-status{flex-shrink:0;font-size:.65rem;color:var(--direct-muted);font-weight:400;text-decoration:none;line-height:1}.direct-position-status{font-size:.6rem;font-weight:400;white-space:nowrap}.direct-position:has(.direct-position-status){overflow:visible;text-overflow:clip}
 
-.direct-public .direct-race-table.direct-has-participation th:first-child{width:44px}.direct-position-status{display:inline-block;margin-left:2px}
+.direct-public .direct-race-table.direct-has-participation th:first-child{width:54px}.direct-position-status{display:inline-block;margin-left:2px}
+
+@media(max-width:600px){.direct-public .direct-race-table.direct-has-participation th:first-child{width:44px}}
