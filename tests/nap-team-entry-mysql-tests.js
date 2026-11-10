@@ -74,6 +74,7 @@ async function main(){
     await reset();await q('DELETE FROM nageurs');const empty=raw();empty.teams[0].members=[];empty.teams[0].reserve='';empty.teams[0].relays=[];empty.outside=[];empty.individuals=[];
     const declaration=await saveTeamEntries(scopedPool,await input(empty),services);assert.equal(declaration.nativeEntry.inscriptions.length,0);assert.equal(model.stored(declaration.nativeEntry).teams.length,1,'team declaration is allowed before any swimmer exists');
     await require('./helpers/verify-nap-club-lookup').verify(pool);
+    await require('./helpers/verify-nap-swimmer-creation-mysql').verify(pool);
     console.log('Isolated MySQL 5.7: additive three-column schema, real table locks, grouped SQL, six members, empty composition, removal, stale dossiers, closure and every write-response-loss recovery passed.');
   }finally{await pool.end();assert.match(database,/^lp_team_fixture_[0-9]+_[0-9]+$/);await admin.query('DROP DATABASE `'+database+'`');await admin.end();}
 }

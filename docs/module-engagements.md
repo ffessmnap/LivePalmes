@@ -475,6 +475,14 @@ Une confirmation malgre alerte doit etre tracee.
 
 Les alertes de doublons validees sont visibles par le niveau 3.
 
+### Recherche NAP des noms composés — 10 novembre 2026
+
+La vérification conserve tous les mots du nom composé et ne raccourcit que son dernier mot à six caractères pour rechercher les variantes proches : `DE FRANCO` ne devient plus `DE%`. Les deux orientations nom/prénom croisent aussi le début du prénom (trois caractères) et l'année de naissance avant la limite SQL de 201 témoins. Une particule commune ne suffit plus à produire une alerte entre deux noms composés différents. Les contrôles existants de licence, identité exacte, inversion, fusion et reprise de création restent conservés ; la tolérance aux erreurs d'année de naissance n'est pas élargie dans ce lot.
+
+Une recherche qui dépasse encore 200 témoins affinés reste bloquée, sans création ni demande nationale automatique. Le message invite à transmettre les informations saisies à un administrateur national ; aucune limite n'est augmentée et aucun résultat tronqué n'est présenté comme une vérification complète.
+
+Budget avant/après inchangé, hors contexte d'accès : ouverture du formulaire, zéro lecture de rapprochement ; aperçu explicite ou nouvelle vérification, quatre requêtes SQL maximum et 426 lignes retournées maximum (trois/424 pour l'import national sans licence). La création revérifie le même aperçu et conserve ses dix appels SQL maximum avec licence, contrôles et libération du verrou inclus. Le contrôle préalable de récupération reste distinct : une requête limitée à deux fiches si la licence est absente de NAP. Aucun listener, cache global, scan d'annuaire ou lecture par candidat ajouté. Les plages de noms utilisent `nageurs_clef`, les jointures les clés primaires ; les lignes effectivement parcourues dans une plage peuvent dépasser les témoins retournés. Les plans et le filtrage avant limite sont vérifiés sur MySQL 5.7 isolé avec 960 fiches fictives ; aucune mesure ni écriture dans la base NAP réelle n'est réalisée par ces tests.
+
 ## Engagements individuels
 
 Le nombre maximum d'epreuves est defini par nageur sur la competition.
