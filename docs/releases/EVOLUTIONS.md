@@ -2,6 +2,12 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### Direct — imports complets et bureau compact · 10 novembre 2026 (préparation TEST autorisée)
+
+- Feu vert d’Antoine dans le chat Direct : détail dépliable par série du suivi, correction/confirmation des lignes PDF problématiques avant validation, aucune participation omise, aperçu une ligne par nageur, sélection des finales par clic sur la ligne et réglages compacts. Limoges : 44 groupes/818 participations conservés ; le nom en 50 apnée hommes S1/L4 contient un caractère de contrôle et doit être corrigé explicitement.
+- Agrégat SQL existant enrichi des compteurs par série ; aucun nouvel appel, table, index, droit, règle sportive ou listener. Diagnostic local opt-in, aucun import/suppression/publication de donnée réelle de test. Deux consommateurs serveur Direct attendus, sélection réelle et garde de publication à vérifier avant TEST.
+- Contrôles ciblés parser/aperçu/modèle/store et navigateurs isolés ordinateur/tablette/mobile ; suite globale et MySQL réel attendus en CI du candidat exact. PR, preuves de publication et contrôle final seront liés à la clôture ; retour utilisateur sur la réalisation encore attendu. Aucun accord PROD.
+
 ### Portail — référentiels clubs NAP · 10 novembre 2026 (TEST déployé, contrôle technique confirmé)
 
 - Statistiques et annuaires conservent les noms/sigles NAP : copies `functions/assets/club-reference.json` et `performances/public/data/club-reference.js` retirées, génération historique arrêtée, annuaire partagé pour le portail et Records/MPF. Les abréviations ambiguës ne désignent plus arbitrairement un club. [PR #820](https://github.com/ffessmnap/LivePalmes/pull/820) et [reprise #821](https://github.com/ffessmnap/LivePalmes/pull/821) intégrées ; application `191c99f3`, main publié `565a6a85`.
