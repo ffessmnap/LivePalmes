@@ -23,7 +23,7 @@ function qualification(state,event,entries){
   const withdrawn=new Set([...Object.keys(race.withdrawals||{}),...Object.keys(race.preWithdrawals||{})]),all=entries.filter(row=>row.participationStatus!=='HC'&&row.result?.cs>0&&!row.result.status).sort((a,b)=>a.result.cs-b.result.cs||a.key.localeCompare(b.key));
   let rows=all.filter(row=>!withdrawn.has(row.key));const digest=sourceHash(entries);
   const invitedQuotaMissing=capacity>0&&all.some(row=>row.participationStatus==='IN')&&!Number.isInteger(race.invitedLimit);
-  const selection=require('./nap-direct-final-selection').select(rows,{lanes,capacity,invitedLimit:race.invitedLimit,resolutions:race.resolutions,source:digest}),ties=selection.ties;
+  const selection=require('./nap-direct-final-selection').select(rows,{lanes,capacity,invitedLimit:race.invitedLimit,resolutions:race.resolutions,source:digest,knownRows:all}),ties=selection.ties;
   const expected=Math.max(Number(event.expectedSeries)||0,...entries.map(row=>Number(row.series)||0));
   const heats=new Set(entries.filter(row=>Number(row.series)).map(row=>(row.sourceEventId||event.id)+':'+Number(row.series)));
   const ambiguous=new Set(entries.map(row=>row.key)).size!==entries.length;
