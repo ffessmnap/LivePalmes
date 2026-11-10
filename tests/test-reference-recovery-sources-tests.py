@@ -285,7 +285,7 @@ class Recovery(unittest.TestCase):
 
     def test_workflow_has_an_independent_release_and_forbids_old_recovery_modes(self):
         source = (ROOT / '.github/workflows/livepalmes-test-mail-sources.yml').read_text()
-        self.assertIn('club_reference_cleanup_recovery]', source)
+        self.assertRegex(source, r'options: \[[^\]\n]*\bclub_reference_cleanup_recovery(?:,|\])')
         self.assertIn("inputs.release == 'club_reference_cleanup_recovery' && (inputs.identity_only || inputs.recover_models)", source)
         self.assertIn("'publish-test-reference-recovery-sources.py'", source)
         for mode, release in [('recover', r.RELEASE), ('identity', r.RELEASE), ('deploy', 'models')]:

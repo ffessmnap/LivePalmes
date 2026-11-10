@@ -9,7 +9,7 @@ publisher = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(publisher)
 publisher.RELEASE = 'swimmer_reference_cleanup'
 publisher.CONTRACT = ROOT / '.github/releases/evidence/20261111-swimmer-reference-cleanup-contract.json'
-publisher.CONTRACT_SHA256 = 'e58d05d0246a85dcb22eaded27adfb4eaa656e4cb78fe4424c5c7ed3d8bb2b53'
+publisher.CONTRACT_SHA256 = '6abb2c5368faa5c06a35eadcf474fde13508d166bd8662a8d48e8ace5a7b19a7'
 publisher.BINDING_FUNCTIONS = frozenset()
 publisher.publisher.DIGEST = publisher.CONTRACT_SHA256
 # Validate the new contract independently of the historical club contract.

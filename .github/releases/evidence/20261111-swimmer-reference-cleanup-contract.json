@@ -274,6 +274,7 @@
     "tests/test-publication-coordination-tests.py",
     "tests/livepalmes-test-backend-workflow-tests.js",
     "tools/publish-test-swimmer-reference-cleanup-sources.py",
-    "tools/release-cycle.py"
+    "tools/release-cycle.py",
+    "tests/test-reference-recovery-sources-tests.py"
   ]
 }
