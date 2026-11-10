@@ -3,7 +3,7 @@
   "project": "livepalmes-test",
   "release": "direct_import_completeness",
   "approval": "Antoine, chat Direct du 10 novembre 2026 : feu vert pour le chantier jusqu a TEST. Suivi des imports depliable par serie ; lignes PDF problematiques visibles, correction/confirmation obligatoire avant validation sans omission ; apercu une ligne par nageur, finales et affichage public compacts, selection des courses par clic sur la ligne. Complement serveur necessaire : compteurs par serie de l agregat SQL existant, aucune requete ajoutee. Sources/labels des deux seuls consommateurs calcules. Aucune donnee reelle importee/supprimee, migration, table/colonne, configuration, permission, regle sportive ni PROD.",
-  "applicationCommit": "0e4a6216ceb531df8c69bffa311c04a7779e70ed",
+  "applicationCommit": "e2c29feb1c8668c86fb1ee977f5f6d6fa1bf5726",
   "baseCommit": "565a6a854fc3d3f2c753d914e09f8deb2724c427",
   "baselineRuns": [
     {
@@ -17,8 +17,8 @@
   "baselineFunctionCount": 121,
   "baselineHostingVersion": "sites/livepalmes-test/versions/7e533ebe2a12bccd",
   "fingerprints": {
-    "readNapPublicSwimmer": "e2b22c02b0eff4a2c06636ec6739bb16cfa7f2c803fa624f03136896f9b81623",
-    "manageLivePalmesDirect": "9a5a310468efcfa14d22366fe1c2e2ed6473572979fa4c04dfe3f3274bdb583b"
+    "readNapPublicSwimmer": "76dcf7fb4e21de34e9e57b7e101971b91360794325f0db2a91c1f6494f4f72b0",
+    "manageLivePalmesDirect": "f8a9e7022d2e7a279ea6a70ae851b15d91b743e8147530aca008733f2c977fa8"
   },
   "toolingPaths": [
     ".github/releases/evidence/20261110-direct-import-completeness-contract.json",

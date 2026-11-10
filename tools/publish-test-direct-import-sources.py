@@ -9,7 +9,7 @@ publisher = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(publisher)
 publisher.RELEASE = 'direct_import_completeness'
 publisher.CONTRACT = ROOT / '.github/releases/evidence/20261110-direct-import-completeness-contract.json'
-publisher.CONTRACT_SHA256 = '3321488c45008161e6e71272c97e028156074878bde7e2b12b7fe858cd56003d'
+publisher.CONTRACT_SHA256 = 'e862512160dff2567ec1fd5ff2ffeece93ea396c09dfb9e172e33db37cbddea6'
 
 if __name__ == '__main__':
     publisher.main(*sys.argv[1:])
