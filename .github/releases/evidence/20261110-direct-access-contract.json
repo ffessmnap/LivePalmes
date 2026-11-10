@@ -3,7 +3,7 @@
   "project": "livepalmes-test",
   "release": "direct_access",
   "approval": "Antoine, chat Direct du 10 novembre 2026 : bilan valide puis integration et publication TEST autorisees. Actions bureau, acces et delegations par compte, Mes competitions / Mes consoles. Deux consommateurs calcules, sources/labels seulement ; configurations, tables, autres fonctions, etats techniques et donnees reelles preserves. Aucune PROD.",
-  "applicationCommit": "601c67f00f587efacccc56742d6af4b5b7403019",
+  "applicationCommit": "fe3f8ba03b66ca1938dbc76f37b0a7bfb739275d",
   "baseCommit": "d7fba644ff44fd1c3ef528975dde1d0fa6317371",
   "baselineRuns": [
     {

@@ -9,7 +9,7 @@ publisher = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(publisher)
 publisher.RELEASE = 'direct_access'
 publisher.CONTRACT = ROOT / '.github/releases/evidence/20261110-direct-access-contract.json'
-publisher.CONTRACT_SHA256 = '67efe0c82ead59956eac34c29b9aee39af3dcd0dee93e82b6e27917bbfc7a6c7'
+publisher.CONTRACT_SHA256 = '2606e9142ac467786582ca5bc14ceb2f21e6df7b97c02082a4ef76b705f6bae7'
 
 if __name__ == '__main__':
     publisher.main(*sys.argv[1:])
