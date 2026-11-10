@@ -47,8 +47,8 @@
       if(name==='event'){showTab('finals');client.state.eventId=attrs.event;await client.load(true);return;}
       if(name==='reservePage'){reserveOffset=Math.max(0,Number(attrs.offset)||0);render();return;}
       if(name==='selectFormats'){const inputs=[...body.querySelectorAll('[data-format-check]')],checked=!inputs.every(input=>input.checked);inputs.forEach(input=>input.checked=checked);return;}
-      if(name==='bulkFormat'){for(const row of body.querySelectorAll('[data-format-event]'))if(row.querySelector('[data-format-check]').checked&&!row.querySelector('[data-format]').disabled){row.querySelector('[data-format]').value=body.querySelector('#consoleBulkFormat').value;row.querySelector('[data-lanes]').value=body.querySelector('#consoleDefaultLanes').value;}if(!client.state.dirty)settingsContext=client.context();client.state.dirty=true;return;}
-      if(name==='configure'){await send('configure',{lanes:Number(body.querySelector('#consoleDefaultLanes').value),events:[...body.querySelectorAll('[data-format-event]')].map(row=>({id:row.dataset.formatEvent,format:row.querySelector('[data-format]').value,lanes:Number(row.querySelector('[data-lanes]').value)}))},settingsContext||client.context());settingsContext=null;return;}
+      if(name==='bulkFormat'){for(const row of body.querySelectorAll('[data-format-event]'))if(row.querySelector('[data-format-check]').checked&&!row.querySelector('[data-format]').disabled){row.querySelector('[data-format]').value=body.querySelector('#consoleBulkFormat').value;row.querySelector('[data-lanes]').value=body.querySelector('#consoleDefaultLanes').value;view.syncInvitedLimit(row);}if(!client.state.dirty)settingsContext=client.context();client.state.dirty=true;return;}
+      if(name==='configure'){await send('configure',{lanes:Number(body.querySelector('#consoleDefaultLanes').value),events:[...body.querySelectorAll('[data-format-event]')].map(row=>({id:row.dataset.formatEvent,format:row.querySelector('[data-format]').value,lanes:Number(row.querySelector('[data-lanes]').value),invitedLimit:row.querySelector('[data-invited-limit]').value===''?null:Number(row.querySelector('[data-invited-limit]').value)}))},settingsContext||client.context());settingsContext=null;return;}
       const alert=s.workflow.alerts.find(a=>a.id===attrs.alert),key=attrs.key,eventId=attrs.event||s.finalsEvent?.id||s.selectedEventId,pinned={...client.context(),eventId};
       if(name==='computerDone'){await send(name,{alertId:attrs.alert},{...pinned,eventId:alert?.eventId||eventId});return;}
       if(name==='resolveTie'){
@@ -58,7 +58,7 @@
       if(!names[name])return;const late=name==='withdraw'?view.withdrawalConfirmation(s,key):null;const row=s.qualifyingEntries?.find(r=>r.key===key);open(late?.title||names[name],'<p>'+esc(alert?.displayName||row&&ui.name(row)||s.finalsEvent?.eventLabel||'')+'</p>'+(late?.html||''),()=>send(name,{alertId:attrs.alert,participantKey:key,...(late?.late?{confirmLateWithdrawal:true}:{})},alert?{...pinned,eventId:alert.eventId}:pinned),pinned);if(late?.late)dialog.querySelector('#bureauConsoleSubmit').textContent='Confirmer le forfait hors délai';
     }
     details.addEventListener('toggle',()=>{remember();if(details.open)client.load(false);});
-    body.addEventListener('input',e=>{if(e.target.closest('#consoleFinalSettings')){if(!client.state.dirty)settingsContext=client.context();client.state.dirty=true;}});
+    body.addEventListener('input',e=>{if(e.target.matches('[data-lanes]'))view.syncInvitedLimit(e.target.closest('[data-format-event]'));if(e.target.closest('#consoleFinalSettings')){if(!client.state.dirty)settingsContext=client.context();client.state.dirty=true;}});
     body.addEventListener('toggle',e=>{if(e.target.id==='consoleFinalSettings')client.state.settingsOpen=e.target.open;},true);
     body.addEventListener('click',async e=>{
       const button=e.target.closest('[data-console-action]');

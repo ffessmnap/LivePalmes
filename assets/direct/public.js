@@ -55,7 +55,7 @@
   document.addEventListener('click',e=>{
     if(state.loading)return;
     const categoryFilter=e.target.closest('[data-category-filter]');
-    if(categoryFilter){if(state.mode==='results')filterCategories([categoryFilter.dataset.categoryFilter],Boolean(categoryFilter.closest('.direct-heat-section')));return;}
+    if(categoryFilter){filterCategories([categoryFilter.dataset.categoryFilter],Boolean(categoryFilter.closest('.direct-heat-section')));return;}
     if(e.target.closest('[data-clear-categories]')){filterCategories([]);return;}
     const splits=e.target.closest('[data-splits]');if(splits){const detail=document.getElementById(splits.dataset.splits);if(detail){detail.hidden=!detail.hidden;splits.setAttribute('aria-expanded',String(!detail.hidden));if(detail.hidden)state.expandedSplits.delete(splits.dataset.splitsKey);else state.expandedSplits.add(splits.dataset.splitsKey);}return;}
     const person=e.target.closest('[data-person]');if(person){dialogs.openPerson(person.dataset.person);return;}

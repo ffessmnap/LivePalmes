@@ -201,7 +201,13 @@
     const finalHeatPattern = /^finale\s+([AB])\s+Horaire indicatif\s*:\s*(?:(\d{2}:\d{2})|non disponible)(?: \((\d+)\))?/i;
     const relayTitlePattern = /^(.+?) - (?:(Minimes|Seniors|Masters)\s+)?(Femmes|Hommes|Mixte)(?: M\s*eilleure s[eé]rie.*)?$/i;
     const heatPattern = /^s.{1,2}rie\s*:\s*(\d+)\s*\/\s*(\d+)\s+Horaire indicatif\s*:\s*(?:(\d{2}:\d{2})|non disponible)(?:\s+\((\d+)\))?/i;
-    const swimmerPattern = /^(\d+)\s+(.+?)\s*(\d{2})\s+([FH][A-Z0-9+]+)\s+(\S+)\s+([0-9:.]+)(?:\s+(IN|NS))?$/i;
+    const participationCode = value => {
+      if(!context.includeParticipationStatus)return "";
+      const trailing=String(value||"").match(/(?:^|\s)((?:NS|IN|HC)(?:\s+(?:NS|IN|HC))*)$/i),codes=[...new Set(trailing?trailing[1].toUpperCase().split(/\s+/):[])];
+      if(codes.length>1)throw new TypeError("Mentions de participation cumulées : contrôler NS, IN ou HC dans les séries.");
+      return codes[0]||"";
+    };
+    const swimmerPattern = /^(\d+)\s+(.+?)\s*(\d{2})\s+([FH][A-Z0-9+]+)\s+(\S+)\s+([0-9:.]+)(?:\s+(IN|NS|HC))?$/i;
     const speakerPattern = /^(\d+)\s+(.+?)\s*(\d{2})\s+([FH][A-Z0-9+]+)\s+\*\s+(\S+)\s+([0-9:.]+)(.*)$/;
     const tolerantSpeakerPattern = /^(\d+)\s+(.+?)\s*(\d{2})\s+([FH][A-Z0-9+]+)\s+\*?\s*([A-Z0-9]+)\s+([0-9:.]+)(.*)$/;
     const forfaitLinePattern = /^(\d+)\s+(.+?)\s*(\d{2})\s+([FH][A-Z0-9+]+)\s+(\S+)\s+FORFAIT\s+([0-9:.]+)(.*)$/i;
@@ -382,6 +388,7 @@
       const forfaitMatch = line.match(forfaitLinePattern);
       let importedStatus = "";
       let nonSelectable = false;
+      let participationStatus = "";
       let lastName = "";
       let firstName = "";
       let birthYear = "";
@@ -393,6 +400,7 @@
         club = relayMatch.groups.club;
         seedTime = relayMatch.groups.time;
         fullClub = fixPdfEncoding(String(relayMatch.groups.full || "").trim() || rawName);
+        participationStatus = participationCode(relayMatch.groups.full);
         lastName = rawName;
         swimmerId = `relay|${current.eventId}|${current.sex}|${club.toLowerCase()}|${lane}|${current.series}`;
       } else if (forfaitMatch || swimmerMatch || speakerMatch) {
@@ -406,7 +414,8 @@
         const trailingText = fixPdfEncoding(String(match[7] || "").trim());
         const trailingIsForfait = /\bFORFAIT\b/i.test(trailingText);
         const trailingIsNonSelectable = /\bNS\b/i.test(trailingText);
-        const trailingClubText = trailingText.replace(/\b(FORFAIT|NS|IN)\b/gi, "").replace(/\s+/g, " ").trim();
+        participationStatus = participationCode(trailingText);
+        const trailingClubText = trailingText.replace(/\b(FORFAIT|NS|IN|HC)\b/gi, "").replace(/\s+/g, " ").trim();
         importedStatus = forfaitMatch || trailingIsForfait ? "forfait" : "";
         nonSelectable = trailingIsNonSelectable;
         fullClub = (speakerMatch || forfaitMatch) && trailingClubText ? trailingClubText : club;
@@ -440,6 +449,7 @@
           seedSource: "",
           importedStatus,
           nonSelectable,
+          ...(context.includeParticipationStatus?{participationStatus}:{}),
           session: current.session,
           sessionLabel: current.sessionLabel,
           note: ""
@@ -467,6 +477,7 @@
           heatOrder: current.heatOrder,
           importedStatus,
           nonSelectable,
+          ...(context.includeParticipationStatus?{participationStatus}:{}),
           session: current.session,
           sessionLabel: current.sessionLabel,
           stage: current.stage

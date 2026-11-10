@@ -2,7 +2,7 @@
   'use strict';
   const normalize=value=>String(value||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/\s+/g,' ').trim();
   const isRelay=(eventCode,row={})=>row.relay===true||/^relay\|/i.test(row.swimmerId||'')||/^\d+\s*[x×]\s*\d+/i.test(eventCode||'');
-  function options(){const pdf=global.LivePalmesPdfImport;return {...pdf,includeCategoryProvenance:true,data:{events:[],entrants:[],series:[],program:[]},sampleData:{entrants:[]},importedSeriesTime:global.LivePalmesTime.importedSeriesTime,normalizePersonName:normalize,formatDisplayName:r=>[r.lastName,r.firstName].filter(Boolean).join(' '),eventSignature:normalize};}
+  function options(){const pdf=global.LivePalmesPdfImport;return {...pdf,includeCategoryProvenance:true,includeParticipationStatus:true,data:{events:[],entrants:[],series:[],program:[]},sampleData:{entrants:[]},importedSeriesTime:global.LivePalmesTime.importedSeriesTime,normalizePersonName:normalize,formatDisplayName:r=>[r.lastName,r.firstName].filter(Boolean).join(' '),eventSignature:normalize};}
   function parseSeries(lines,name,fallback){
     const parsed=global.LivePalmesSeriesImport.parseImportedSeriesLines(lines,name,options());
     return parsed.program.map(program=>{
@@ -10,7 +10,7 @@
         const entry=parsed.entrants.find(e=>e.swimmerId===r.swimmerId&&e.eventId===r.eventId&&e.sex===r.sex&&String(e.session||'')===String(r.session||''));
         if(!entry)return null;
         const relay=isRelay(r.eventId,entry);
-        return {lastName:entry.lastName,firstName:entry.firstName,birthYear:entry.birthDate,club:entry.clubCode||entry.club,category:entry.categoryInferred?'':entry.categoryCode||entry.category,series:r.series,lane:r.line,entryTime:entry.seedTime,relay,...(relay?{sourceEntryId:`relay-slot|${r.eventId}|${r.sex}|${r.session||''}|${r.series}|${r.line}`} : {}),resultStatus:''};
+        return {lastName:entry.lastName,firstName:entry.firstName,birthYear:entry.birthDate,club:entry.clubCode||entry.club,category:entry.categoryInferred?'':entry.categoryCode||entry.category,series:r.series,lane:r.line,entryTime:entry.seedTime,relay,...(relay?{sourceEntryId:`relay-slot|${r.eventId}|${r.sex}|${r.session||''}|${r.series}|${r.line}`} : {}),resultStatus:'',participationStatus:r.participationStatus||entry.participationStatus||''};
       }).filter(Boolean);
       const relayNames=new Map();
       rows.filter(row=>row.relay).forEach(row=>{const key=JSON.stringify([normalize(row.lastName),normalize(row.firstName),String(row.club).toLowerCase()]);relayNames.set(key,(relayNames.get(key)||0)+1);});

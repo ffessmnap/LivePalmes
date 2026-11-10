@@ -4,6 +4,8 @@
 
 ## Sessions du Direct public — 10 novembre 2026
 
+Les catégories sont aussi actionnables dans les engagements ; le scratch seul est filtré, les séries restent complètes. Même multisélection et croix d’effacement. Mentions NS/IN/HC en petit texte secondaire à côté du nom dans les séries/engagements, sans nouvelle ligne ; dans le scratch résultats, code discret à côté du rang, colonne Place élargie seulement en présence d’une mention pour éviter les chevauchements. Les réglages de finales du bureau incluent le quota IN par finale, avec « À confirmer si IN » ; un quota requis manquant donne un avertissement et désactive l’annonce, y compris chez le speaker.
+
 Les boutons compacts Tous / S1 / S2… remplacent la navigation par jour quand plusieurs sessions existent ; ils sont masqués avec une seule session. Hauteur de 30 px, une seule ligne défilante au toucher si nécessaire, intitulé complet et date disponible dans le titre et le nom accessible. L’heure de la dernière actualisation réussie est intégrée discrètement au bouton Actualiser ; aucune ligne de statut permanente ni mention « manuelle ». Le statut reste annoncé aux lecteurs d’écran, et les erreurs/indisponibilités restent visibles. Les boutons de courses conservent les couleurs femmes/hommes et les statuts ; en vue globale, un petit code S1/S2 distingue les créneaux. Les séries décalées partagent le scratch ; leurs boutons et leur en-tête portent session et horaire propres. Le code de session reste contrasté dans le bouton sélectionné. Hauteur des lignes nageurs, alignement des temps, filtres catégories, écarts et passages inchangés. Avertissement court si des séries ambiguës empêchent un classement commun.
 
 ## Accès et actions LivePalmes Direct — 10 novembre 2026

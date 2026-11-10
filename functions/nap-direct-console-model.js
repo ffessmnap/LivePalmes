@@ -17,19 +17,13 @@ function enabled(input,level){
 }
 function empty(){return {revision:0,lanes:8,progress:null,alerts:[],races:{},history:[]};}
 function raceState(state,eventId){return state.races[eventId]||{format:'none',lanes:state.lanes,withdrawals:{},withdrawalLog:[],resolutions:{},announced:null,pendingRoster:null};}
-function sourceHash(entries){return hash(entries.map(row=>[row.key,row.series,row.lane,row.result,row.seed]).sort((a,b)=>a[0].localeCompare(b[0])));}
+function sourceHash(entries){return hash(entries.map(row=>[row.key,row.series,row.lane,row.result,row.seed,...(row.participationStatus?[row.participationStatus]:[])]).sort((a,b)=>a[0].localeCompare(b[0])));}
 function qualification(state,event,entries){
   const race=raceState(state,event.id),lanes=race.lanes||state.lanes,capacity=race.format==='ab'?lanes*2:race.format==='a'?lanes:0;
-  const withdrawn=new Set([...Object.keys(race.withdrawals||{}),...Object.keys(race.preWithdrawals||{})]),all=entries.filter(row=>row.result?.cs>0&&!row.result.status).sort((a,b)=>a.result.cs-b.result.cs||a.key.localeCompare(b.key));
+  const withdrawn=new Set([...Object.keys(race.withdrawals||{}),...Object.keys(race.preWithdrawals||{})]),all=entries.filter(row=>row.participationStatus!=='HC'&&row.result?.cs>0&&!row.result.status).sort((a,b)=>a.result.cs-b.result.cs||a.key.localeCompare(b.key));
   let rows=all.filter(row=>!withdrawn.has(row.key));const digest=sourceHash(entries);
-  const groups=[];for(const row of rows){const last=groups[groups.length-1];if(last?.time===row.result.cs)last.rows.push(row);else groups.push({time:row.result.cs,rows:[row]});}
-  const ties=[];let position=0;
-  for(const group of groups){const resolution=race.resolutions?.[hash(group.rows.map(identity).sort())];
-    if(resolution?.source===digest&&resolution.order.length===group.rows.length&&group.rows.every(row=>resolution.order.includes(row.key)))group.rows.sort((a,b)=>resolution.order.indexOf(a.key)-resolution.order.indexOf(b.key));
-    else if(capacity&&[lanes,...(race.format==='ab'?[capacity]:[])].some(cut=>position<cut&&position+group.rows.length>cut))ties.push({id:hash(group.rows.map(identity).sort()),time:group.time,from:position+1,to:position+group.rows.length,keys:group.rows.map(identity),names:group.rows.map(name)});
-    position+=group.rows.length;
-  }
-  rows=groups.flatMap(group=>group.rows);
+  const invitedQuotaMissing=capacity>0&&all.some(row=>row.participationStatus==='IN')&&!Number.isInteger(race.invitedLimit);
+  const selection=require('./nap-direct-final-selection').select(rows,{lanes,capacity,invitedLimit:race.invitedLimit,resolutions:race.resolutions,source:digest}),ties=selection.ties;
   const expected=Math.max(Number(event.expectedSeries)||0,...entries.map(row=>Number(row.series)||0));
   const heats=new Set(entries.filter(row=>Number(row.series)).map(row=>(row.sourceEventId||event.id)+':'+Number(row.series)));
   const ambiguous=new Set(entries.map(row=>row.key)).size!==entries.length;
@@ -39,12 +33,12 @@ function qualification(state,event,entries){
   const unresolvedDecision=active.some(alert=>alert.videoStatus==='pending'||alert.computerStatus==='pending');
   const statusExpected=new Map();for(const alert of active.filter(alert=>motifs[alert.type]&&alert.videoStatus!=='pending')){const statuses=statusExpected.get(alert.participantKey)||new Set();statuses.add(alert.type==='forfait'?'dns':alert.type==='abandon'?'ab':'dsq');statusExpected.set(alert.participantKey,statuses);}
   const decisionMismatch=[...statusExpected].some(([key,statuses])=>statuses.size!==1||!entries.some(row=>row.key===key&&statuses.has(row.result?.status)))||active.some(alert=>['requalification','ja_cancellation'].includes(alert.type)&&!statusExpected.has(alert.participantKey)&&!entries.some(row=>row.key===alert.participantKey&&row.result?.cs>0&&!row.result.status));
-  const proposal={a:rows.slice(0,Math.min(lanes,capacity)).map(identity),b:race.format==='ab'?rows.slice(lanes,capacity).map(identity):[],reserve:capacity?rows.slice(capacity).map(identity):[]};
-  const pendingKeys=[...new Set(ties.flatMap(tie=>tie.keys))],pending=new Set(pendingKeys),certainRoster=Object.fromEntries(Object.entries(proposal).map(([group,keys])=>[group,keys.filter(key=>!pending.has(key))]));
+  const proposal=selection.proposal;
+  const pendingKeys=selection.pendingKeys,pending=new Set(pendingKeys),certainRoster=Object.fromEntries(Object.entries(proposal).map(([group,keys])=>[group,keys.filter(key=>!pending.has(key))]));
   const current=race.announced?.roster||proposal;
   const departurePending=race.swimoff?.status==='needed'||race.announced?.partial&&!['resolved','cancelled'].includes(race.swimoff?.status);
   const swimoff=departurePending&&!ties.length?{...race.swimoff,status:'unnecessary'}:race.swimoff||null;
-  return {format:race.format,lanes,capacity,sourceHash:digest,programVersionHash:event.programVersionHash||null,complete,ambiguous,ties,pendingKeys,certainRoster,partial:Boolean(race.announced?.partial),unresolvedDecision,decisionMismatch,proposal,roster:current,changed:Boolean(race.announced&&(race.announced.sourceHash!==digest||event.programVersionHash&&race.announced.programVersionHash!==event.programVersionHash)),announcedAt:race.announced?.at||null,withdrawals:race.withdrawals||{},pendingRoster:race.pendingRoster||null,withdrawalLog:race.withdrawalLog||[],swimoff};
+  return {format:race.format,lanes,capacity,invitedQuotaMissing,invitedLimit:race.invitedLimit??null,sourceHash:digest,programVersionHash:event.programVersionHash||null,complete,ambiguous,ties,pendingKeys,certainRoster,partial:Boolean(race.announced?.partial),unresolvedDecision,decisionMismatch,proposal,roster:current,changed:Boolean(race.announced&&(race.announced.sourceHash!==digest||event.programVersionHash&&race.announced.programVersionHash!==event.programVersionHash)),announcedAt:race.announced?.at||null,withdrawals:race.withdrawals||{},pendingRoster:race.pendingRoster||null,withdrawalLog:race.withdrawalLog||[],swimoff};
 }
 function can(role,command,consoles){
   const table={configure:['computer'],progress:['referee'],decision:['referee'],videoConfirm:['video'],videoReject:['video'],takeover:['referee'],cancel:['referee','computer','video'],computerDone:['computer'],announceDecision:['speaker'],announceFinalists:['speaker','computer'],withdraw:['secretary','computer'],reinstate:['secretary','computer'],preWithdraw:['secretary','computer'],announceReplacement:['speaker','computer'],resolveTie:['referee','computer'],markSwimoff:['referee','computer'],confirmSwimoffCancelled:['referee','computer'],refreshFinalists:['computer'],compositionDone:['computer'],secretaryDone:['secretary']};
@@ -60,12 +54,12 @@ function next(previous,input,{role,actor,actorLabel=actor,event,entries,consoles
   const row=entries?.find(row=>row.key===input.participantKey),alert=state.alerts.find(row=>row.id===input.alertId);
   const requiredAlert=()=>{if(!alert||alert.cancelledAt)reject('Cette décision n’est plus disponible.');if(alert.eventId!==eventId)reject('Cette décision concerne une autre course.');return alert;};
   const putRace=()=>{state.races[eventId]=race;};
-  const announceAllowed=(partial=false)=>{const q=qualification(state,event,entries);if(!q.capacity)reject('Cette course n’a pas de finale.');if(!q.complete)reject('Toutes les séries doivent avoir reçu leurs résultats.');if(q.ties.length&&!partial)reject('Ex æquo : enregistrer le départage avant de confirmer tous les finalistes.');if(q.unresolvedDecision)reject('Une décision JA/vidéo reste à traiter par le bureau.');if(q.decisionMismatch)reject('Attendre le résultat corrigé : les résultats reçus ne concordent pas avec les décisions du JA.');return q;};
+  const announceAllowed=(partial=false)=>{const q=qualification(state,event,entries);if(!q.capacity)reject('Cette course n’a pas de finale.');if(q.invitedQuotaMissing)reject('Confirmer le nombre maximum d’invités IN par finale dans les réglages.');if(!q.complete)reject('Toutes les séries doivent avoir reçu leurs résultats.');if(q.ties.length&&!partial)reject('Ex æquo : enregistrer le départage avant de confirmer tous les finalistes.');if(q.unresolvedDecision)reject('Une décision JA/vidéo reste à traiter par le bureau.');if(q.decisionMismatch)reject('Attendre le résultat corrigé : les résultats reçus ne concordent pas avec les décisions du JA.');return q;};
   if(command==='configure'){
     if(![6,8].includes(Number(input.lanes)))reject('Choisir 6 ou 8 places par finale.');
     state.lanes=Number(input.lanes);
     if(!Array.isArray(input.events)||input.events.length>300)reject('Paramétrage des courses invalide.');
-    for(const setting of input.events){if(!/^[a-f0-9]{64}$/.test(setting.id)||!['none','a','ab'].includes(setting.format)||![6,8].includes(Number(setting.lanes)))reject('Format de finale invalide.');const old=raceState(state,setting.id);if(old.announced&&(old.format!==setting.format||old.lanes!==Number(setting.lanes)))reject('Des finalistes sont déjà annoncés : leur format ne peut pas être changé.');state.races[setting.id]={...old,format:setting.format,lanes:Number(setting.lanes)};}
+    for(const setting of input.events){if(!/^[a-f0-9]{64}$/.test(setting.id)||!['none','a','ab'].includes(setting.format)||![6,8].includes(Number(setting.lanes)))reject('Format de finale invalide.');const old=raceState(state,setting.id),invitedLimit=setting.invitedLimit===undefined?old.invitedLimit??null:setting.invitedLimit;if(invitedLimit!==null&&(!Number.isInteger(invitedLimit)||invitedLimit<0||invitedLimit>Number(setting.lanes)))reject('Quota d’invités invalide : choisir de 0 au nombre de places par finale.');if(old.announced&&(old.format!==setting.format||old.lanes!==Number(setting.lanes)||old.invitedLimit!=null&&old.invitedLimit!==invitedLimit))reject('Des finalistes sont déjà annoncés : leur format ne peut pas être changé.');state.races[setting.id]={...old,format:setting.format,lanes:Number(setting.lanes),invitedLimit};}
   }else if(command==='progress'){
     const series=Number(input.series);if(!entries.some(row=>row.series===series))reject('Série absente du programme.');state.progress={eventId,series,at:now,by:actor};
   }else if(command==='decision'){
@@ -126,14 +120,14 @@ function next(previous,input,{role,actor,actorLabel=actor,event,entries,consoles
       if(updated.ties.length)race.swimoff={status:'needed',at:now};else if(race.swimoff?.status==='needed'||q.ties.length)race.swimoff={status:'unnecessary',at:now};delete race.compositionDoneAt;putRace();
     }
   }else if(command==='announceReplacement'){
-    if(!race.pendingRoster)reject('Aucun changement de finale à annoncer.');const q=qualification(state,event,entries);if(q.ties.length||!q.complete||q.unresolvedDecision||q.decisionMismatch)reject('Vérifier les résultats, les décisions JA et le départage avant d’annoncer le changement.');
+    if(!race.pendingRoster)reject('Aucun changement de finale à annoncer.');const q=qualification(state,event,entries);if(q.invitedQuotaMissing||q.ties.length||!q.complete||q.unresolvedDecision||q.decisionMismatch)reject('Vérifier les résultats, les décisions JA et le départage avant d’annoncer le changement.');
     if(q.swimoff?.status==='unnecessary')reject('Le JA ou le bureau doit confirmer l’annulation du swim-off devenu inutile avant l’annonce complète.');
     if(race.pendingRoster.sourceHash!==q.sourceHash||race.pendingRoster.programVersionHash!==q.programVersionHash)reject('Les séries ou résultats ont changé depuis la préparation de la composition.');
     if(hash([race.pendingRoster.a,race.pendingRoster.b,race.pendingRoster.reserve])!==hash([q.proposal.a,q.proposal.b,q.proposal.reserve]))reject('La composition a changé : la préparer à nouveau avant l’annonce.');
     const times={...race.announced.times};for(const key of [...race.pendingRoster.a,...race.pendingRoster.b])if(![...race.announced.roster.a,...race.announced.roster.b].includes(key))times[key]=now;
     race.announced={...race.announced,partial:false,sourceHash:q.sourceHash,programVersionHash:q.programVersionHash,roster:{a:race.pendingRoster.a,b:race.pendingRoster.b,reserve:race.pendingRoster.reserve},times};race.pendingRoster=null;putRace();
   }else if(command==='compositionDone'){
-    const q=qualification(state,event,entries);if(!race.announced||race.announced.partial||race.pendingRoster||q.changed||q.ties.length||q.unresolvedDecision||q.decisionMismatch||q.swimoff?.status==='unnecessary')reject('Les finalistes et modifications doivent être vérifiés et annoncés avant confirmation dans WinPalme.');race.compositionDoneAt=now;putRace();
+    const q=qualification(state,event,entries);if(q.invitedQuotaMissing||!race.announced||race.announced.partial||race.pendingRoster||q.changed||q.ties.length||q.unresolvedDecision||q.decisionMismatch||q.swimoff?.status==='unnecessary')reject('Les finalistes et modifications doivent être vérifiés et annoncés avant confirmation dans WinPalme.');race.compositionDoneAt=now;putRace();
   }
   if(state.alerts.length>2000||state.history.length>=5000)reject('Journal de la compétition trop volumineux : exporter l’historique et contacter le bureau.');
   state.revision++;state.history.push({...(command==='withdraw'&&race.withdrawals[row.key]?.late?{late:true,deadline:race.withdrawals[row.key].deadline}:{}),id:input.operationKey,command,eventId,eventLabel:event?.eventLabel||'',sex:event?.sex||'',series:row?.series??alert?.series??null,lane:row?.lane??alert?.lane??null,role,actor,partial:command==='announceFinalists'&&Boolean(race?.announced?.partial),actorLabel:clean(actorLabel,160),alertId:alert?.id||null,at:now,participant:row?name(row):alert?.displayName||'',type:input.type||alert?.type||'',comment:clean(input.comment||alert?.comment,500)});
