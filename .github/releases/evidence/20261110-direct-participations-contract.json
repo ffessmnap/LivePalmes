@@ -3,7 +3,7 @@
   "project": "livepalmes-test",
   "release": "direct_participations",
   "approval": "Antoine, aparte explicitement transmis au chat Direct le 10 novembre 2026 : filtre categories dans les engagements ; NS/IN/HC conserves depuis les series PDF lors des corrections TXT, mentions discretes, numerotation publique sans consommer les places ordinaires ; NS admissible et HC exclu des qualifications automatiques. Quota IN par finale confirme par le bureau, annonce bloquee si requis et absent, reponse explicite dans le chat principal. TEST seulement, sans migration, table/colonne, donnee native, droit global ni PROD. Deux consommateurs calcules, sources/labels seulement.",
-  "applicationCommit": "68213b9eed8a02c183fc4436d80c1ddbb391540f",
+  "applicationCommit": "6d2e983d09541914a0b597835563b1c4b7add5b1",
   "baseCommit": "5265c9abddc8a909744d6b4f22254f4798696c95",
   "baselineRuns": [
     {
@@ -17,8 +17,8 @@
   "baselineFunctionCount": 121,
   "baselineHostingVersion": "sites/livepalmes-test/versions/40c1b94c130c4c6e",
   "fingerprints": {
-    "readNapPublicSwimmer": "029b15007f47c66209affe98db1e228b4a15948c1d95dbe8cde53e6be3e5d0d6",
-    "manageLivePalmesDirect": "673ce63495efa946874443d11a84358d41b0a314ce3e4f3dff614bb1fbcdce87"
+    "readNapPublicSwimmer": "9cb0b8845a26aa1d2ab1a05c9f7e415e4e9120397573a2537b252c68ac66e470",
+    "manageLivePalmesDirect": "928332ba2a383ca5ceceee9e34e63ac6b2fe51677667cc3671ef14fdee9d97ef"
   },
   "toolingPaths": [
     ".github/releases/evidence/20261110-direct-participations-contract.json",
