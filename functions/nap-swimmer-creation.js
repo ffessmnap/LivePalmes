@@ -23,7 +23,12 @@ function proposed(input) {
 function tokens(value){return rules.normalizeIdentityText(value).split(/\s+/).filter(token=>token.length>=2);}
 // Keep the whole compound name, shortening only its final word. In particular,
 // DE FRANCO must never become the unrelated national range DE%.
-function namePrefix(value){return value.trim().replace(/[^\s'-]+$/,word=>word.slice(0,6));}
+function namePatterns(value){
+  const words=value.trim().split(/[\s'’\-]+/).filter(Boolean);
+  if(words.length)words[words.length-1]=words[words.length-1].slice(0,6);
+  const prefixes=[value.trim().replace(/[^\s'’\-]+$/,word=>word.slice(0,6)),...[' ',"-","'","’"].map(separator=>words.join(separator))];
+  return [...new Set(prefixes)].filter(Boolean).map(prefix=>`${likeLiteral(prefix)}%`);
+}
 function similarLastName(left,right){
   const a=rules.normalizeIdentityText(left).split(/\s+/),b=rules.normalizeIdentityText(right).split(/\s+/);
   return a.length===b.length && a.every((word,index)=>word.slice(0,6)===b[index].slice(0,6));
@@ -46,7 +51,8 @@ async function previewCreation(connection,input,authorize,formatAlert) {
   for(const [last,first] of searches) {
     // Refine before LIMIT: 201 people sharing a surname or a particle are not
     // 201 identity matches. Both orientations retain the existing indexes.
-    const rows=await query(`${select} (SELECT id FROM nageurs FORCE INDEX (nageurs_clef) WHERE nom LIKE ? ESCAPE '=' AND prenom LIKE ? ESCAPE '=' AND date BETWEEN ? AND ? AND ${notMerged()} LIMIT 201) candidates JOIN nageurs n FORCE INDEX (PRIMARY) ON n.id=candidates.id LEFT JOIN clubs cl FORCE INDEX (PRIMARY) ON cl.num_club=n.club AND CAST(cl.num_club AS CHAR)=n.club LIMIT 201`,[`${likeLiteral(namePrefix(last))}%`,`${likeLiteral(first.trim().slice(0,3))}%`,`${year}-01-01`,`${year}-12-31`]);
+    const patterns=namePatterns(last);
+    const rows=await query(`${select} (SELECT id FROM nageurs FORCE INDEX (nageurs_clef) WHERE (${patterns.map(()=>"nom LIKE ? ESCAPE '='").join(" OR ")}) AND prenom LIKE ? ESCAPE '=' AND date BETWEEN ? AND ? AND ${notMerged()} LIMIT 201) candidates JOIN nageurs n FORCE INDEX (PRIMARY) ON n.id=candidates.id LEFT JOIN clubs cl FORCE INDEX (PRIMARY) ON cl.num_club=n.club AND CAST(cl.num_club AS CHAR)=n.club LIMIT 201`,[...patterns,`${likeLiteral(first.trim().slice(0,3))}%`,`${year}-01-01`,`${year}-12-31`]);
     if(rows.length>200) throw new RangeError("La recherche reste trop ambigue pour verifier les doublons. Aucun nageur cree. Contactez un administrateur national en lui transmettant les informations saisies.");
     add(rows);
   }
