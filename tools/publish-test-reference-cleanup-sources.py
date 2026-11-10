@@ -12,7 +12,7 @@ import urllib.error
 ROOT = Path(__file__).resolve().parents[1]
 RELEASE = 'club_reference_cleanup'
 CONTRACT = ROOT / '.github/releases/evidence/20261110-club-reference-cleanup-contract.json'
-CONTRACT_SHA256 = '06eef7add943cfe0db7c76115ff04dbc3fbcecb1c5065f3eecc2bd7dcd1553c8'
+CONTRACT_SHA256 = 'ecce557a8898b7906e1dea8cce6775cec14318441ab893b29bc4c2b070871d45'
 PROJECT = 'livepalmes-test'
 REPOSITORY = 'ffessmnap/LivePalmes'
 PREFIX = f'projects/{PROJECT}/locations/europe-west1/functions/'
