@@ -434,6 +434,12 @@ def targeted_test_evidence(directory, current):
     trusted.update(participation_sources.publisher.trusted_revisions(directory, current, SimpleNamespace(
         gh=gh, artifact=artifact, read=read, matching_functions=matching_functions,
         test_backend_fingerprints=test_backend_fingerprints)))
+    spec = importlib.util.spec_from_file_location('reference_cleanup_evidence', ROOT / 'tools/publish-test-reference-cleanup-sources.py')
+    reference_sources = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(reference_sources)
+    trusted.update(reference_sources.trusted_revisions(directory, current, SimpleNamespace(
+        gh=gh, artifact=artifact, read=read, matching_functions=matching_functions,
+        test_backend_fingerprints=test_backend_fingerprints)))
     return trusted
 
 
