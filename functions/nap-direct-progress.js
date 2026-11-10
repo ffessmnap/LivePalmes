@@ -8,7 +8,7 @@ function aggregate(rows){
     const stats=result.get(row.event_id)||{...empty(),rowCount:0},series=Number(row.series_entries)||0,results=Number(row.result_entries)||0,matched=Number(row.matched_results)||0;
     stats.rowCount+=Number(row.row_count)||0;total+=Number(row.row_count)||0;
     stats.seriesEntries+=series;stats.resultEntries+=results;stats.matchedResults+=matched;
-    if(Number(row.series_number)>0){if(series)stats.seriesCount++;if(results)stats.resultSeriesCount++;if(series&&matched===series)stats.completeSeriesCount++;}
+    if(Number(row.series_number)>0){if(series)stats.seriesCount++;if(results)stats.resultSeriesCount++;if(series&&matched===series)stats.completeSeriesCount++;(stats.heats||(stats.heats=[])).push({number:Number(row.series_number),seriesEntries:series,resultEntries:results,matchedResults:matched});}
     stats.entries=stats.seriesEntries+stats.resultEntries-stats.matchedResults;stats.unassignedResults=stats.resultEntries-stats.matchedResults;
     if(total>model.MAX_MEET_ENTRIES||stats.rowCount>model.MAX_ENTRIES)throw Error('Volume maximal du Direct dépassé (15 000 participations, 1 000 par épreuve).');
     result.set(row.event_id,stats);
@@ -22,6 +22,7 @@ async function read(connection,scope){
 function visible(stats,publication){
   if(!stats)return null;
   const series=publication.series?stats.seriesEntries:0,results=publication.results?stats.resultEntries:0,matched=publication.series&&publication.results?stats.matchedResults:0;
-  return {...stats,entries:series+results-matched,seriesEntries:series,resultEntries:results,matchedResults:matched,seriesCount:publication.series?stats.seriesCount:0,resultSeriesCount:publication.results?stats.resultSeriesCount:0,completeSeriesCount:publication.series&&publication.results?stats.completeSeriesCount:0,unassignedResults:publication.results?results-matched:0};
+  const {heats,...publicStats}=stats;
+  return {...publicStats,entries:series+results-matched,seriesEntries:series,resultEntries:results,matchedResults:matched,seriesCount:publication.series?stats.seriesCount:0,resultSeriesCount:publication.results?stats.resultSeriesCount:0,completeSeriesCount:publication.series&&publication.results?stats.completeSeriesCount:0,unassignedResults:publication.results?results-matched:0};
 }
 module.exports={read,aggregate,visible,empty,QUERY};
