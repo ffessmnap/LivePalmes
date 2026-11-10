@@ -6,6 +6,7 @@
 
 - Demande d’Antoine pendant la livraison précédente : filtre par session et sélection initiale suivant l’avancement publié ; un scratch commun aux meilleures séries décalées, accessible depuis chacun de leurs créneaux, avec horaires propres. Lot séparé démarré après clôture TEST bureau/accès. Inspection des 38 pages du PDF de Limoges puis réemploi local du vrai parseur : 44 groupes, huit sessions, huit épreuves réparties entre deux sessions reconnues (individuelles et relais), phase réelle `meilleure-serie`. Aucune importation réelle exécutée par l’agent.
 - Identifiants, imports et suivi WinPalme par session conservés ; lecture publique groupée et bornée, classements provisoires/terminés cohérents, ex æquo et rang commun dans la fiche nageur ; finales et épreuves indépendantes séparées, repli sans classement commun si participations ambiguës. Tests ciblés et responsive en cours, CI/MySQL puis serveur et Hosting TEST requis ; aucune migration, écriture métier ou PROD.
+- Retour d’Antoine avant la première publication de ce lot : boutons Tous / S1 / S2… compacts, heure intégrée à Actualiser, suppression de la ligne permanente et de « manuelle ». Contrôles navigateur réussis de 320 à 1280 px. Ce complément est intégré au candidat avant les sources et Hosting, sans changement backend supplémentaire.
 
 ### Direct — accès par compte et actions bureau · 10 novembre 2026 (TEST déployé, retour utilisateur attendu)
 
