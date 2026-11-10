@@ -27,7 +27,14 @@ function select(rows,{lanes,capacity,invitedLimit,resolutions={},source,knownRow
     }
     return selected;
   }
-  const a=capacity?final(Math.min(lanes,capacity),0):[],b=capacity>lanes?final(lanes,lanes):[],reserve=capacity?rows.filter(row=>!chosen.has(row.key)).map(row=>row.key):[];
-  return {proposal:{a,b,reserve},ties:[...new Map(ties.map(tie=>[tie.id,tie])).values()],pendingKeys:[...pending]};
+  const a=capacity?final(Math.min(lanes,capacity),0):[];
+  // A mixed unresolved tie can change how many guests remain for B, and thus
+  // displace swimmers outside the tie itself. Only certain A places are safe
+  // to announce until its order (or the cancellation of the swim-off) is known.
+  const certainA=new Set(a.filter(key=>!pending.has(key)));
+  const invitedAllocationPending=capacity>lanes&&Number.isInteger(invitedLimit)&&invitedLimit<lanes&&rows.filter(row=>row.participationStatus==='IN'&&!certainA.has(row.key)).length>invitedLimit&&ties.some(tie=>tie.keys.some(key=>byKey.get(key).participationStatus==='IN')&&tie.keys.some(key=>byKey.get(key).participationStatus!=='IN'));
+  const b=capacity>lanes?final(lanes,lanes):[],reserve=capacity?rows.filter(row=>!chosen.has(row.key)).map(row=>row.key):[];
+  if(invitedAllocationPending)for(const row of rows)if(!certainA.has(row.key))pending.add(row.key);
+  return {proposal:{a,b,reserve},ties:[...new Map(ties.map(tie=>[tie.id,tie])).values()],pendingKeys:[...pending],invitedAllocationPending};
 }
 module.exports={select};
