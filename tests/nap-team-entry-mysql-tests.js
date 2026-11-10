@@ -46,7 +46,6 @@ async function main(){
   async function reset(){for(const table of ['engagements_relayeurs','engagements_relais','engagements','nageursengager','livepalmes_club_entry_options'])await q('DELETE FROM '+table);await q('UPDATE compet_parametres SET actif=1 WHERE id=42');journal.clear();mutations=0;failAfter=0;}
   async function input(dossier=raw()){return {competitionId:42,clubId:'12',actorUid:'fixture',mutationId:randomUUID(),expectedFingerprint:fingerprint(await entry(pool)),dossier};}
   try{
-    await require('./helpers/verify-nap-club-lookup').verify(pool);
     await require('./helpers/calendar-results-mysql').verifyCalendarResultSignal(pool);
     for(const [name,columns]of Object.entries(definitions))await q(`CREATE TABLE ${name} (${columns}) ENGINE=${name.startsWith('livepalmes_')?'InnoDB':'MyISAM'}`);
     const prepared=await schema.approvedTeamEntrySchema(pool,{phase:'prepare',confirmation:'nap-add-team-entry-columns'});await schema.approvedTeamEntrySchema(pool,{phase:'apply',confirmation:'nap-add-team-entry-columns',planHash:schema.planHash,schemaHash:prepared.schemaHash});const repeat=await schema.approvedTeamEntrySchema(pool,{phase:'prepare',confirmation:'nap-add-team-entry-columns'});assert.ok(repeat.alreadyPresent.every(Boolean));assert.equal((await q('SHOW TABLES')).length,Object.keys(definitions).length,'migration creates no table');
@@ -74,6 +73,7 @@ async function main(){
     await q('UPDATE compet_parametres SET actif=0 WHERE id=42');await assert.rejects(saveTeamEntries(scopedPool,await input(),services),/fermés/);
     await reset();await q('DELETE FROM nageurs');const empty=raw();empty.teams[0].members=[];empty.teams[0].reserve='';empty.teams[0].relays=[];empty.outside=[];empty.individuals=[];
     const declaration=await saveTeamEntries(scopedPool,await input(empty),services);assert.equal(declaration.nativeEntry.inscriptions.length,0);assert.equal(model.stored(declaration.nativeEntry).teams.length,1,'team declaration is allowed before any swimmer exists');
+    await require('./helpers/verify-nap-club-lookup').verify(pool);
     console.log('Isolated MySQL 5.7: additive three-column schema, real table locks, grouped SQL, six members, empty composition, removal, stale dossiers, closure and every write-response-loss recovery passed.');
   }finally{await pool.end();assert.match(database,/^lp_team_fixture_[0-9]+_[0-9]+$/);await admin.query('DROP DATABASE `'+database+'`');await admin.end();}
 }

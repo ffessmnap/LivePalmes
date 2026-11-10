@@ -142,7 +142,8 @@ async function main() {
   assert.match(index, /ENVIRONMENT.projectId === "livepalmes" \? \{ secrets: \[defineSecret\("LIVEPALMES_NAP_PASSWORD"\)\]/);
   assert.match(index, /exports.syncNapClubAccountEmails = onDocumentWritten\(/);
   const mailTrigger = index.slice(index.indexOf("exports.syncEngagementMailRecipientIndex ="), index.indexOf("exports.rebuildEngagementMailRecipientIndexNextPage ="));
-  assert.doesNotMatch(mailTrigger, /syncNapClubAccountEmail|LIVEPALMES_NAP_PASSWORD/);
+  assert.doesNotMatch(mailTrigger, /syncNapClubAccountEmail|nativeAccountEmailSynchronizer/);
+  assert.match(mailTrigger, /secrets: \[defineSecret\("LIVEPALMES_NAP_PASSWORD"\)\]/, "Native region fallback reads clubs without invoking the account-email writer");
   const routeContext = {
     ENVIRONMENT: require("../functions/livepalmes-environment").livePalmesEnvironment({ GCLOUD_PROJECT: "livepalmes-test" }),
     exports: {}, REGION: "europe-west1", CALLABLE_OPTIONS: {},
