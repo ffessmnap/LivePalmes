@@ -12,7 +12,6 @@ const {
 } = require("../functions/winpalme-export");
 const { cleanClubPayload, mergeClubDirectory } = require("../functions/engagement-clubs");
 const { parseCsvText, reconcileFederalNumber } = require("../tools/build-admin-club-reference");
-const generatedClubReference = require("../functions/assets/club-reference.json");
 
 assert.equal(formatDate("2026-06-06"), "06/06/2026");
 assert.equal(formatTime("26.84"), "002684");
@@ -70,9 +69,6 @@ assert.deepEqual(parseCsvText("name;number\r\nClub;07780252\r\n", ";"), [
   ["name", "number"],
   ["Club", "07780252"]
 ]);
-const generatedClubsByCode = new Map(generatedClubReference.clubs.map((club) => [club[1], club]));
-assert.equal(generatedClubsByCode.get("GSMP")?.[4], "03290017");
-assert.equal(generatedClubsByCode.get("CNHC - PF Aix")?.[4], "07780252");
 
 const competition = {
   id: "la-roche-sur-yon-2026-06-06",

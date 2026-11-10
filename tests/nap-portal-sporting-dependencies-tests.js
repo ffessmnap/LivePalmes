@@ -5,15 +5,23 @@ const vm = require("node:vm");
 const portal = fs.readFileSync("assets/livepalmes-admin-portal.js", "utf8");
 const records = fs.readFileSync("performances/public/admin-records.js", "utf8");
 async function loader(name, end) {
-  const loaded = [];
+  const loaded = []; let clubReads = 0;
   const context = { global: { LivePalmesEnvironment: { sportingDataSource: "nap" }, firebase: { firestore: {} } },
     elements: {}, recordModuleLoadPromise: null, importModuleLoadPromise: null,
+    accessClubReferenceLoadPromise: Promise.resolve(),
+    loadAccessClubReference: async () => { clubReads++; return [{ clubId: "10", clubCode: "NAP", clubName: "Club actuel", regionId: "1" }]; },
     loadScriptOnce: async src => { assert.ok(fs.existsSync(src.split("?")[0]), src); loaded.push(src); },
     watchRecordWorkbench() {}, watchImportWorkbench() {} };
   vm.runInNewContext(portal.slice(portal.indexOf(`  function ${name}(`), portal.indexOf(`  function ${end}(`)), context);
   assert.notEqual(await context[name](), null, "module loading must succeed");
   assert.ok(loaded.length);
   assert.ok(!loaded.some(src => /intranap-summary|performance-public/.test(src)), "NAP must not require removed exports");
+  assert.ok(!loaded.some(src => /data\/club-reference/.test(src)), "The retired club copy cannot be loaded");
+  assert.equal(clubReads, name === "loadRecordModule" ? 1 : 0);
+  if (name === "loadRecordModule") {
+    assert.equal(context.global.LivePalmesRecordClubDirectory.source, "nap");
+    assert.equal(context.global.LivePalmesRecordClubDirectory.clubs[0][0], "10");
+  }
 }
 (async () => {
   await loader("loadRecordModule", "watchImportWorkbench");

@@ -18,7 +18,7 @@ function createAccessHandlers_setAccessUserStatus(backendContext) {
     if (!snapshot.exists) {
       throw new backendContext.HttpsError("not-found", "Acces LivePalmes introuvable.");
     }
-    const data = snapshot.data() || {};
+    const [data] = await backendContext.resolveAccessUserClubRegions([snapshot.data() || {}]);
     const capabilities = backendContext.activeCapabilitiesFromMap(data.capabilities || {});
     const accessScopes = data.accessScopes || {};
     const email = data.email || "";

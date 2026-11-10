@@ -12,10 +12,16 @@ function createAccessHandlers_listAccessUsers(backendContext) {
     const search = backendContext.cleanText(request.data?.search).slice(0, 80);
     const cursor = request.data?.cursor && typeof request.data.cursor === "object" ? request.data.cursor : {};
 
+    async function regionalDocuments(documents) {
+      if (context.national) return documents;
+      const profiles = await backendContext.resolveAccessUserClubRegions(documents.map(doc => doc.data() || {}));
+      return documents.map((doc, index) => ({ id: doc.id, data: () => profiles[index] }));
+    }
+
     if (search) {
       const offset = Math.max(0, Math.trunc(Number(cursor.offset) || 0));
       const searchResult = await backendContext.searchAccessUserDocuments(search, context);
-      const matches = searchResult.documents
+      const matches = (await regionalDocuments(searchResult.documents))
         .filter((doc) => backendContext.accessUserMatchesFilters(doc, status, capability))
         .filter((doc) => backendContext.accessUserVisibleForAccessDirectory(context, doc));
       const page = matches.slice(offset, offset + pageSize);
@@ -73,7 +79,7 @@ function createAccessHandlers_listAccessUsers(backendContext) {
       const snapshot = await query.limit(batchSize).get();
       if (!snapshot.size) break;
       scannedCount += snapshot.size;
-      for (const doc of snapshot.docs) {
+      for (const doc of await regionalDocuments(snapshot.docs)) {
         queryCursor = { lastName: doc.data()?.lastName || "", uid: doc.id };
         if (backendContext.accessUserMatchesFilters(doc, status, capability) && backendContext.accessUserVisibleForAccessDirectory(context, doc)) matchingDocs.push(doc);
         if (matchingDocs.length > pageSize) break;

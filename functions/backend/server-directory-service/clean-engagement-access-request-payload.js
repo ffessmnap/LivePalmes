@@ -55,22 +55,7 @@ function createDirectoryService_cleanEngagementAccessRequestPayload(backendConte
 
   async function findEngagementClubByFederalNumber(federalNumber = "") {
     if (backendContext.ENVIRONMENT.sportingDataSource === "nap") return require("../../nap-club-access-request").findByFederalNumber(require("../../nap-portal-pool").portalPool(process.env.LIVEPALMES_NAP_PASSWORD), federalNumber);
-    const cleanNumber = backendContext.cleanText(federalNumber).toUpperCase().slice(0, 24);
-    if (!cleanNumber) return null;
-    const referenceClub = backendContext.CLUB_REFERENCE_BY_FEDERAL_NUMBER.get(cleanNumber);
-    if (referenceClub) {
-      const overrideSnapshot = await backendContext.db.collection(backendContext.ENGAGEMENT_CLUBS_COLLECTION).doc(referenceClub.clubId).get();
-      if (!overrideSnapshot.exists) return referenceClub;
-      const override = backendContext.engagementStoredClubItem(overrideSnapshot);
-      if (override.deleted === true || override.federalNumber.toUpperCase() !== cleanNumber) return null;
-      return { ...referenceClub, ...override };
-    }
-    const snapshot = await backendContext.db.collection(backendContext.ENGAGEMENT_CLUBS_COLLECTION)
-      .where("federalNumber", "==", cleanNumber)
-      .limit(2)
-      .get();
-    const storedClub = snapshot.docs.map(backendContext.engagementStoredClubItem).find((club) => club.deleted !== true);
-    return storedClub || null;
+    throw new backendContext.HttpsError("failed-precondition", "La recherche des clubs nécessite la source NAP.");
   }
 
   async function engagementExistingAccessAccount(email = "") {

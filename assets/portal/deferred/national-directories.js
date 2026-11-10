@@ -22,8 +22,7 @@
         try {
           // NAP returns the complete fresh directory below; reuse that response
           // for club labels instead of reading the same directory twice.
-          if (global.LivePalmesEnvironment?.sportingDataSource !== "nap") await portalActions.loadAccessClubReference();
-          const referenceRows = global.LivePalmesEnvironment?.sportingDataSource === "nap" ? [] : global.LIVEPALMES_CLUB_REFERENCE?.clubs || [];
+          const referenceRows = [];
           const cached = force ? { clubs: [], syncedThrough: "" } : portalActions.readEngagementNationalClubCache();
           const storedById = new Map(cached.clubs.map((club) => [club.clubId, club]));
           if (!force || !portalState.engagementNationalClubsLoaded) {

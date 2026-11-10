@@ -15,12 +15,13 @@ function createAccessHandlers_rebuildAccessDirectorySnapshotNextPage(backendCont
       throw new backendContext.HttpsError("failed-precondition", "Commence la reconstruction avec restart: true.");
     }
 
+    let clearBatch = null;
     if (restart) {
       const existingSnapshots = await backendContext.db.collection(backendContext.ACCESS_DIRECTORY_SNAPSHOTS_COLLECTION).limit(101).get();
       if (existingSnapshots.size > 100) {
         throw new backendContext.HttpsError("failed-precondition", "Trop de fragments d'annuaire a reinitialiser.");
       }
-      const clearBatch = backendContext.db.batch();
+      clearBatch = backendContext.db.batch();
       existingSnapshots.docs.forEach((doc) => clearBatch.delete(doc.ref));
       clearBatch.set(stateRef, {
         status: "building",
@@ -29,18 +30,20 @@ function createAccessHandlers_rebuildAccessDirectorySnapshotNextPage(backendCont
         indexedCount: 0,
         updatedAt: new Date().toISOString()
       });
-      await clearBatch.commit();
     }
 
     const cursor = restart ? "" : backendContext.cleanText(state.cursor).slice(0, 128);
     let query = backendContext.db.collection("users").orderBy(backendContext.FieldPath.documentId()).limit(pageSize);
     if (cursor) query = query.startAfter(cursor);
     const snapshot = await query.get();
+    const profiles = await backendContext.resolveAccessUserClubRegions(snapshot.docs.map(doc => doc.data() || {}));
+    // Resolve native regions before clearing any existing projection.
+    if (clearBatch) await clearBatch.commit();
     const now = new Date().toISOString();
     const nationalEntries = {};
     const regionalEntries = new Map();
-    snapshot.docs.forEach((doc) => {
-      const data = doc.data() || {};
+    snapshot.docs.forEach((doc, index) => {
+      const data = profiles[index];
       const key = backendContext.accessDirectorySnapshotEntryKey(doc.id);
       const entry = backendContext.accessDirectorySnapshotEntry(doc.id, data);
       nationalEntries[key] = entry;

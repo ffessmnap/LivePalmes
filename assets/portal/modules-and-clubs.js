@@ -29,14 +29,9 @@
     function loadPortalClubCodeReference() {
         if (portalState.portalClubCodeReferenceById.size) return Promise.resolve(portalState.portalClubCodeReferenceById);
         if (portalState.portalClubCodeReferenceLoadPromise) return portalState.portalClubCodeReferenceLoadPromise;
-        portalState.portalClubCodeReferenceLoadPromise = loadScriptOnce(
-          "performances/public/data/club-reference.js?v=20260813-national-clubs-3",
-          "adminAccessReferenceScript"
-        ).then(() => {
-          const clubs = (global.LIVEPALMES_CLUB_REFERENCE?.clubs || [])
-            .map(normalizeAccessClubReference)
-            .filter((club) => club.clubId && club.clubCode);
-          portalState.portalClubCodeReferenceById = new Map(clubs.map((club) => [club.clubId, club]));
+        portalState.portalClubCodeReferenceLoadPromise = loadAccessClubReference().then(clubs => {
+          if (!clubs.length && !portalState.accessClubReferenceLoadPromise) throw new Error("Référentiel NAP indisponible.");
+          portalState.portalClubCodeReferenceById = new Map(clubs.map(club => [club.clubId, club]));
           if (portalState.currentAccessProfile) portalActions.renderPortalScopeContext(portalState.currentAccessProfile);
           return portalState.portalClubCodeReferenceById;
         }).catch(() => {
@@ -85,13 +80,15 @@
               "adminRecordFirestoreScript"
             );
           }
+          const clubs = await loadAccessClubReference();
+          if (!clubs.length && !portalState.accessClubReferenceLoadPromise) throw new Error("Référentiel clubs NAP indisponible. Réessayez l’ouverture du module.");
+          global.LivePalmesRecordClubDirectory = { source: "nap", clubs: clubs.map(club => [club.clubId, club.clubCode, club.clubName, club.regionId]) };
           const scripts = [
             ["performances/public/record-placeholders.js?v=20260613-mpf-relays-mixed-1", "adminRecordPlaceholdersScript"],
-            ["performances/public/data/club-reference.js?v=20260813-national-clubs-3", "adminRecordReferenceScript"],
             ["performances/public/store.js?v=20261107-import-records-1", "adminRecordStoreScript"]
           ];
           await Promise.all(scripts.map(([src, id]) => loadScriptOnce(src, id)));
-          await loadScriptOnce("performances/public/admin-records.js?v=20261107-import-records-3", "adminRecordModuleScript");
+          await loadScriptOnce("performances/public/admin-records.js?v=20261110-nap-clubs-1", "adminRecordModuleScript");
           watchRecordWorkbench();
         })().catch((error) => {
           portalState.recordModuleLoadPromise = null;
@@ -662,7 +659,6 @@
     function loadAccessClubReference() {
         if (portalState.accessClubReference.length) return Promise.resolve(portalState.accessClubReference);
         if (portalState.accessClubReferenceLoadPromise) return portalState.accessClubReferenceLoadPromise;
-        if (global.LivePalmesEnvironment?.sportingDataSource === "nap") {
           portalState.accessClubReferenceLoadPromise = portalActions.callFunction("getPublicEngagementClubDirectory", {}).then(result=>{
             portalState.accessClubReference = (Array.isArray(result.clubs)?result.clubs:[]).map(normalizeAccessClubReference).filter(club=>club.clubId && club.clubName);
             portalState.accessClubReferenceById = new Map(portalState.accessClubReference.map(club=>[club.clubId,club]));
@@ -679,37 +675,6 @@
             return [];
           });
           return portalState.accessClubReferenceLoadPromise;
-        }
-        portalState.accessClubReferenceLoadPromise = loadScriptOnce(
-          "performances/public/data/club-reference.js?v=20260813-national-clubs-3",
-          "adminAccessReferenceScript"
-        ).then(async () => {
-          portalState.accessClubReference = (global.LIVEPALMES_CLUB_REFERENCE?.clubs || [])
-            .map(normalizeAccessClubReference)
-            .filter((club) => club.clubId && club.clubName);
-          if (!portalState.publicClubDirectoryLoadPromise) {
-            portalState.publicClubDirectoryLoadPromise = portalActions.callFunction("getPublicEngagementClubDirectory", {})
-              .then((result) => Array.isArray(result?.clubs) ? result.clubs : [])
-              .catch(() => []);
-          }
-          portalActions.mergeNationalClubsIntoAccessReference(await portalState.publicClubDirectoryLoadPromise);
-          portalState.accessClubReferenceById = new Map(portalState.accessClubReference.map((club) => [club.clubId, club]));
-          populateAccessRegionChoices();
-          populateAccessClubSelect(portalContext.elements.accessClubId?.value || "");
-          populatePublicAccessRequestClubSelect(portalContext.elements.publicAccessRequestClubId?.value || "");
-          populateEngagementAccessRequestEditClubSelect(portalContext.elements.engagementsAccessRequestEditClubId?.value || "");
-          if (portalState.currentAccessProfile) {
-            portalActions.renderPortalScopeContext(portalState.currentAccessProfile);
-            portalActions.renderEngagementsProfile(portalState.currentAccessProfile);
-          }
-          return portalState.accessClubReference;
-        }).catch((error) => {
-          portalState.accessClubReferenceLoadPromise = null;
-          portalActions.setAccessMessage(`Referentiel clubs indisponible : ${error?.message || error}`);
-          portalActions.setPublicAccessRequestMessage(`Referentiel clubs indisponible : ${error?.message || error}`);
-          return [];
-        });
-        return portalState.accessClubReferenceLoadPromise;
       }
 
     function renderClubSwitchResults() {
