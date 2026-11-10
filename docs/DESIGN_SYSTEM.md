@@ -4,7 +4,7 @@
 
 ## Accès et actions LivePalmes Direct — 10 novembre 2026
 
-Les actions du bureau affichent le contexte course/sexe/session en tête, série/ligne et nageur ensuite, puis le motif. La confirmation est alignée à droite sur ordinateur et passe sous le contenu à petite largeur. Aucun bouton « Voir la course » dans ces cartes. Le panneau « Accès et délégations », ouvert depuis Consoles et réglages, utilise un dialogue de 850 px maximum, 88 dvh avec défilement vertical local, une liste de comptes et un formulaire séparé. État en lecture seule, retrait explicite confirmé, cibles tactiles de 44 px et aucune superposition des actions.
+Les actions du bureau affichent le contexte course/sexe/session en tête, série/ligne et nageur ensuite, puis le motif complet en gras. Une DSQ utilise un repère rouge sur fond rouge clair ; le texte conserve le sens sans dépendre uniquement de la couleur. La confirmation est alignée à droite sur ordinateur et passe sous le contenu à petite largeur. Aucun bouton « Voir la course » dans ces cartes. Le panneau « Accès et délégations », ouvert depuis Consoles et réglages, utilise un dialogue de 850 px maximum, 88 dvh avec défilement vertical local, une liste de comptes et un formulaire séparé. État en lecture seule, retrait explicite confirmé, cibles tactiles de 44 px et aucune superposition des actions.
 
 Mes compétitions présente des cartes compactes ; Mes consoles réserve de grands liens tactiles aux consoles activées et autorisées, avec copie et QR secondaires. Aucun formulaire bureau visible pour les personnes limitées aux autres consoles. La connexion et les permissions serveur restent nécessaires. Les cartes se répartissent selon la largeur, sans défilement horizontal global.
 
