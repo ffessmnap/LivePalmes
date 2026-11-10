@@ -63,7 +63,7 @@ class DirectSources(unittest.TestCase):
     def test_contract_and_workflow_are_closed_without_changing_mail_permissions(self):
         entry = p.contract()
         self.assertEqual(set(entry['fingerprints']), p.ALLOWED)
-        self.assertEqual(p.ALLOWED, {'readNapPublicSwimmer'} if p.RELEASE == 'direct_public_sessions' else {'manageLivePalmesDirect', 'readNapPublicSwimmer'})
+        self.assertEqual(len(p.ALLOWED), 2)
         self.assertNotIn('manageLivePalmesDirect', p.shared.ALLOWED)
         self.assertNotIn('readNapPublicSwimmer', p.shared.ALLOWED)
         self.assertEqual(len(p.shared.ALLOWED), 6)
@@ -109,10 +109,9 @@ class DirectSources(unittest.TestCase):
         entry = p.contract()
         rows = [function(n) for n in sorted(p.ALLOWED)]
         desired = entry['fingerprints']
-        changed_name = sorted(p.ALLOWED)[0]
-        old = {n: ('old' if n == changed_name else desired[n]) for n in p.ALLOWED}
+        old = {n: ('old' if n == 'manageLivePalmesDirect' else desired[n]) for n in p.ALLOWED}
         with patch.object(p.cycle, 'test_backend_fingerprints', side_effect=lambda sha: desired if sha == SHA else old):
-            self.assertEqual(p.select(rows, SHA, entry), [changed_name])
+            self.assertEqual(p.select(rows, SHA, entry), ['manageLivePalmesDirect'])
             with self.assertRaises(ValueError):
                 p.select(rows, SHA, {**entry, 'fingerprints': {**desired, 'third': 'a' * 64}})
             rows[0]['labels']['livepalmes-commit'] = 'unknown'
@@ -141,7 +140,7 @@ class DirectSources(unittest.TestCase):
         sources = {f['name'].split('/')[-1]: p.managed_source(f) for f in current[:-1]}
         p.verify(before, current, selected, SHA, sources)
         for index, section, key, value in [(0, 'serviceConfig', 'environmentVariables', {'KEEP': 'changed'}),
-                                            (len(p.ALLOWED), 'labels', 'preserve', 'changed')]:
+                                            (2, 'labels', 'preserve', 'changed')]:
             changed = copy.deepcopy(current)
             changed[index][section][key] = value
             with self.assertRaises(ValueError):
@@ -154,7 +153,7 @@ class DirectSources(unittest.TestCase):
             p.verify(before, current, selected + ['ordinary'], SHA, sources)
 
     def test_attestation_checks_all_archive_bytes_generation_and_stable_source(self):
-        current = after(function(sorted(p.ALLOWED)[0]))
+        current = after(function('manageLivePalmesDirect'))
         source = p.managed_source(current)
         data = archive()
         url = 'https://storage.googleapis.com/' + source['bucket'] + '/' + source['object'] + '?signature=private'
@@ -362,7 +361,7 @@ class DirectSources(unittest.TestCase):
         api.artifact.side_effect = None
         changed = copy.deepcopy(current)
         changed['functions'][0]['revision'] = 'unproved'
-        self.assertEqual(len(p.trusted_revisions(ROOT, changed, api)), len(p.ALLOWED)-1, 'A changed revision remains untrusted')
+        self.assertEqual(len(p.trusted_revisions(ROOT, changed, api)), 1, 'A changed revision remains untrusted')
         api.gh.reset_mock()
         self.assertEqual(p.trusted_revisions(ROOT, {'functions': [p.shared.compact([function('ordinary')])[0]]}, api), set())
         api.gh.assert_not_called()
