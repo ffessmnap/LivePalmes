@@ -79,7 +79,7 @@
     const eventInput={...event};delete eventInput.heatSchedule;
     return {kind:'results',event:eventInput,seriesNumber:parsed.series,seriesFingerprint:fingerprint,operationKey:crypto.randomUUID(),source:{type:'winpalme-txt',name:file.name,hash:file.hash},rows:parsed.rows.map(result=>{
       const entry=entries.find(row=>row.lane===result.lane);
-      return {...result,series:parsed.series,lastName:entry.lastName,firstName:entry.firstName,birthYear:entry.birthYear,club:entry.club,category:entry.category,relay:entry.kind==='relay',sourceEntryId:entry.sourceEntryId||null,entryTime:entry.seed?.raw||'',relayMembers:entry.members||[]};
+      return {...result,series:parsed.series,lastName:entry.lastName,firstName:entry.firstName,birthYear:entry.birthYear,club:entry.club,category:entry.category,participationStatus:entry.participationStatus||'',relay:entry.kind==='relay',sourceEntryId:entry.sourceEntryId||null,entryTime:entry.seed?.raw||'',relayMembers:entry.members||[]};
     })};
   }
   function createRunner({read,build,publish,onState=()=>{},now=Date.now,interval=30000,schedule=setTimeout,cancel=clearTimeout}){
