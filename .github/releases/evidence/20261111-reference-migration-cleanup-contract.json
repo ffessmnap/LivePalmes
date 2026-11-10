@@ -3,7 +3,7 @@
   "project": "livepalmes-test",
   "release": "reference_migration_cleanup",
   "approval": "Antoine autorise explicitement les lots 2 nageurs et 3 anciennes migrations jusqu a TEST puis PROD conditionnee aux controles concluants, sans creneau impose, le 11 novembre 2026. Publication TEST groupee des deux lots pour ne publier les 121 sources calculees qu une fois. Sources et labels seulement, configurations et etats techniques conserves. Aucune migration executee, donnee, IAM, regle, secret nouveau, envoi ou activation.",
-  "applicationCommit": "a615dec5ddd7041ab770b157f6b4e5b8be39e971",
+  "applicationCommit": "d849ae175792f84bf2c2ed3d67a45326c8e3505c",
   "baseCommit": "69556eb0c81f113b85e163fe8bea2ba60f95b2fe",
   "baselineRuns": [
     {
