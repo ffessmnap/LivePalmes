@@ -5,14 +5,14 @@ const input={clubId:"106",actorUid:"club-admin",creationId:"11111111-1111-4111-8
 const native={id:7,nom:"EXEMPLE",prenom:"Test",date:"1980-01-02",sexe:"M",number:"A-05-000002",club:"107"};
 const format=(match,type)=>({type:type|| (match.clubId===input.clubId?"duplicate":"club-change"),name:match.name,swimmerIndexId:match.id});
 function fixture(){
-  const state={allowed:false,queries:[],exact:[],similar:[],licenseMatches:[],audit:null,native:null,writes:0,checkpoints:0};
+  const state={allowed:false,queries:[],statements:[],exact:[],similar:[],licenseMatches:[],audit:null,native:null,writes:0,checkpoints:0};
   const connection={execute:async({sql,timeout},values=[])=>{
-    assert.equal(state.allowed,true);assert.equal(timeout,10000);state.queries.push(sql);
+    assert.equal(state.allowed,true);assert.equal(timeout,10000);state.queries.push(sql);state.statements.push({sql,values});
     if(sql.includes("GET_LOCK")) return [[{acquired:state.busy?0:1}]];
     if(sql.includes("RELEASE_LOCK")) return [[{released:1}]];
     if(sql.startsWith("SELECT id FROM nageurs")) {assert.match(sql,/FORCE INDEX \(livepalmes_license_number_id\).*LIMIT 2$/);return [state.licenseMatches];}
     if(sql.includes(" UNION ")) return [state.exact];
-    if(sql.includes("nom LIKE")) {assert.match(sql,/ESCAPE '=' AND NOT EXISTS \(SELECT 1 FROM livepalmes_swimmer_merges WHERE swimmer_id=nageurs.id\) LIMIT 201/);return [state.similar];}
+    if(sql.includes("nom LIKE")) {assert.match(sql,/nom LIKE \? ESCAPE '='\) AND prenom LIKE \? ESCAPE '=' AND date BETWEEN \? AND \? AND NOT EXISTS \(SELECT 1 FROM livepalmes_swimmer_merges WHERE swimmer_id=nageurs.id\) LIMIT 201/);return [state.similar];}
     if(sql.includes("TRIGGERS")) return [state.trigger?[{}]:[]];
     if(sql.startsWith("EXPLAIN")) return [[{table:"duplicate",key:state.badPlan?null:"livepalmes_license_number_id"},{table:"cl",key:"PRIMARY"}]];
     if(sql.startsWith("INSERT INTO nageurs")) {
@@ -42,6 +42,16 @@ function fixture(){
   const inverted=fixture();inverted.exact=[{...native,nom:"Test",prenom:"EXEMPLE"}];warning=await inverted.preview();assert.equal(warning.blocksCreation,true);await assert.rejects(inverted.run({confirmAlerts:true}),/inverses/);assert.equal(inverted.writes,0);
   const similar=fixture();similar.similar=[{...native,date:"1980-04-03",prenom:"Tester"}];assert.equal((await similar.preview()).alerts[0].type,"possible-duplicate");
   similar.similar=[{...native,date:"1981-01-02"}];assert.equal((await similar.preview()).alerts.length,0);
+  const compoundInput={swimmer:{...input.swimmer,lastName:"DE FRANCO",firstName:"Michele"}},compound=fixture();
+  let compoundPreview=await compound.preview(compoundInput);assert.equal(compoundPreview.alerts.length,0);
+  assert.deepEqual(compound.statements.filter(s=>s.sql.includes("nom LIKE")).map(s=>s.values),[["DE FRANCO%","DE-FRANCO%","DE'FRANCO%","DE’FRANCO%","Mic%","1980-01-01","1980-12-31"],["Michel%","DE %","1980-01-01","1980-12-31"]]);
+  assert.equal(compoundPreview.sqlBudget.queriesMax,4);assert.equal(compoundPreview.sqlBudget.rowsMax,426);
+  compound.similar=[{...native,nom:"DE MARTIN",prenom:"Michel"}];assert.equal((await compound.preview(compoundInput)).alerts.length,0,"A shared particle does not make two surnames similar");
+  compound.similar=[{...native,nom:"DE FRANCON",prenom:"Michel",date:"1980-04-03"}];assert.equal((await compound.preview(compoundInput)).alerts[0].type,"possible-duplicate","A nearby compound surname still warns");
+  for(const nom of ["DE-FRANCO","DE'FRANCO","DE’FRANCO"]){compound.similar=[{...native,nom,prenom:"Michele"}];assert.equal((await compound.preview(compoundInput)).alerts.length,1,"Separator variants retain their identity alert");}
+  compound.similar=[];compound.exact=[{...native,nom:"Michele",prenom:"DE FRANCO"}];assert.equal((await compound.preview(compoundInput)).blocksCreation,true,"Compound-name inversion still blocks");
+  for(const lastName of ["VAN DER BERG","D'ANGELO","LE-GRAND","ÉVRARD","A_%=B"]){const names=fixture();await names.preview({swimmer:{...input.swimmer,lastName}});const pattern=names.statements.find(s=>s.sql.includes("nom LIKE")).values[0];assert.ok(pattern.length>2);if(lastName==="A_%=B")assert.equal(pattern,"A=_=%==B%");}
+  const overflow=fixture();overflow.similar=Array(201).fill(native);await assert.rejects(overflow.run(),/Aucun nageur cree.*administrateur national/);assert.equal(overflow.writes,0);assert.equal(overflow.audit,null,"An ambiguous preview creates no audit intent or swimmer");
   for(const patch of [{licenseNumber:""},{licenseNumber:123},{firstName:"x".repeat(65)},{birthDate:"1980-02-30"},{sex:"X"}]) assert.throws(()=>proposed({...input,swimmer:{...input.swimmer,...patch}}),TypeError);
   assert.equal(proposed(input).number,"A-05-000001");
   const denied=fixture();await assert.rejects(denied.run({},()=>{throw Error("denied");}),/denied/);assert.equal(denied.queries.length,0);
