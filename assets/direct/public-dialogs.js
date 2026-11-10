@@ -1,19 +1,22 @@
 (function (global) {
   'use strict';
-  function create({getData,onClubChange,onEventSelect}) {
+  function create({getData,onClubChange,onEventSelect,getRankingMode=()=>'scratch'}) {
     const ui=global.LivePalmesDirectPresentation;
     const {esc,format,seed,club,delta,scheduleFor,phaseLabel,participationBadge} = global.LivePalmesDirectEventView;
-    const person = document.createElement('dialog'), clubs = document.createElement('dialog');
-    person.className = clubs.className = 'direct-dialog';
+    const person = document.createElement('dialog'), clubs = document.createElement('dialog'), mentions=document.createElement('dialog');
+    person.className = clubs.className = mentions.className = 'direct-dialog';
     person.setAttribute('aria-label','Programme et résultats du nageur');
     clubs.setAttribute('aria-label','Choisir un club à mettre en évidence');
-    document.body.append(person,clubs);
+    mentions.setAttribute('aria-label','Signification des mentions NS, IN et HC');
+    document.body.append(person,clubs,mentions);
     let personRequest = 0, clubRequest = 0;
     const frame = (title,body) => `<div class="direct-dialog-head"><h2>${title}</h2><form method="dialog"><button type="submit" class="secondary" aria-label="Fermer la fenêtre">Fermer ×</button></form></div>${body}`;
     function loading(dialog,title) {
       dialog.innerHTML = frame(title,'<p class="direct-status" role="status">Chargement…</p>');
       if (!dialog.open) dialog.showModal();
     }
+    function openParticipation(){mentions.innerHTML=frame('Mentions de participation','<dl><dt>NS</dt><dd>Nageurs étrangers non sélectionnables</dd><dt>IN</dt><dd>Nageurs invités</dd><dt>HC</dt><dd>Nageurs hors concours</dd></dl><p>Ces mentions sont distinctes des forfaits, abandons et disqualifications. Un temps valide reste affiché.</p>'+(getRankingMode()==='classified'?'<p>Places recalculées : les nageurs ordinaires sont classés entre eux. NS / IN / HC gardent leur rang réel dans le classement incluant toutes les participations.</p>':'<p>Scratch intégral : toutes les participations comptent dans les places affichées.</p>'));if(!mentions.open)mentions.showModal();}
+    person.addEventListener('click',event=>{if(event.target.closest('[data-participation-help]')){event.stopPropagation();openParticipation();}});
     async function openPerson(key) {
       const request = ++personRequest;
       loading(person,'Programme et résultats');
@@ -21,7 +24,7 @@
         const data = await getData();
         if (!person.open || request !== personRequest) return;
         const byEvent=new Map();for(const row of data.entries){if(!byEvent.has(row.eventId))byEvent.set(row.eventId,[]);byEvent.get(row.eventId).push(row);}
-        const ranked = (data.rankingGroups||data.events.map(event=>[event.id])).flatMap(ids => global.LivePalmesDirectEventView.rankings(ids.flatMap(id=>byEvent.get(id)||[])));
+        const ranked = (data.rankingGroups||data.events.map(event=>[event.id])).flatMap(ids => global.LivePalmesDirectEventView.rankings(ids.flatMap(id=>byEvent.get(id)||[]),data.rankingMode));
         const rows = ranked.filter(row => row.key === key), first = rows[0];
         if (!first) throw Error('Ce nageur ne figure plus dans les publications disponibles.');
         const events = new Map(data.events.map(event => [event.id,event]));
@@ -60,7 +63,7 @@
         }
       }
     }
-    return {openPerson,openClub,person,clubs};
+    return {openPerson,openClub,openParticipation,person,clubs,mentions};
   }
   global.LivePalmesDirectDialogs = {create};
 })(window);
