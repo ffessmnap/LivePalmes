@@ -1,0 +1,37 @@
+{
+  "schema": 1,
+  "project": "livepalmes-test",
+  "release": "direct_public_sessions",
+  "approval": "Antoine, chat Direct du 10 novembre 2026 : apres le lot bureau/acces, corriger sur TEST les sessions publiques et le classement commun des series lentes/rapides du PDF de Limoges. Imports et identifiants WinPalme conserves. Deux consommateurs calcules (lecteur public et gestion Direct via le calendrier), sources/labels seulement. Configurations, tables, autres fonctions et donnees reelles conservees ; aucune PROD.",
+  "applicationCommit": "b507748e021fb7faa3b567734658486e97dd4700",
+  "baseCommit": "ca2f2f12b9e0d6d441cd6ac77e8ab6674833dcae",
+  "baselineRuns": [
+    {
+      "id": 42795623065,
+      "artifact": "test-proof",
+      "workflow": ".github/workflows/livepalmes-test-common.yml",
+      "artifactId": 13754100122,
+      "artifactSha256": "ff6a0b331a0b1fc06031d85cf41fe479d2a54e3432a3ef52f23662ee6fca5cc5"
+    }
+  ],
+  "baselineFunctionCount": 121,
+  "baselineHostingVersion": "sites/livepalmes-test/versions/1462972ed2e6baec",
+  "fingerprints": {
+    "readNapPublicSwimmer": "19108850d463ea9c44176940f133d8db7ea8a6398df81b3af4566b5b307bb866",
+    "manageLivePalmesDirect": "57b43e29ac783cae7552b0e0988e43d6a18188530d93b50aa5e0523ac9d9ad80"
+  },
+  "toolingPaths": [
+    ".github/releases/evidence/20261110-direct-public-sessions-contract.json",
+    "tools/publish-test-direct-public-sources.py",
+    "tools/publish-test-direct-sources.py",
+    "tests/test-direct-public-sources-tests.py",
+    "tests/test-direct-sources-tests.py",
+    "tests/helpers/verify-direct-console-mysql.js",
+    "tools/release-cycle.py",
+    ".github/workflows/livepalmes-test-mail-sources.yml",
+    ".github/workflows/livepalmes-verification-preview.yml",
+    "docs/releases/EVOLUTIONS.md",
+    "docs/releases/PROCEDURE.md",
+    "docs/agents/PUBLICATION.md"
+  ]
+}

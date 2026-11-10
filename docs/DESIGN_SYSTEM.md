@@ -2,6 +2,10 @@
 
 <!-- description: Référence du langage visuel, des composants d’interface et des règles responsive déjà présents dans LivePalmes. -->
 
+## Sessions du Direct public — 10 novembre 2026
+
+Un seul sélecteur Session, avec Toutes les sessions, remplace la navigation par jour quand plusieurs sessions existent ; il est masqué avec une seule session. Les dates présentes dans les données accompagnent les libellés, sans date déduite arbitrairement. Les boutons de courses conservent les couleurs femmes/hommes et les statuts ; en vue globale, un petit code S1/S2 distingue les créneaux. Les séries décalées partagent le scratch ; leurs boutons et leur en-tête portent session et horaire propres. Le code de session reste contrasté dans le bouton sélectionné. Hauteur des lignes nageurs, alignement des temps, filtres catégories, écarts et passages inchangés. Avertissement court si des séries ambiguës empêchent un classement commun.
+
 ## Accès et actions LivePalmes Direct — 10 novembre 2026
 
 Les actions du bureau affichent le contexte course/sexe/session en tête, série/ligne et nageur ensuite, puis le motif complet en gras. Une DSQ utilise un repère rouge sur fond rouge clair ; le texte conserve le sens sans dépendre uniquement de la couleur. La confirmation est alignée à droite sur ordinateur et passe sous le contenu à petite largeur. Aucun bouton « Voir la course » dans ces cartes. Le panneau « Accès et délégations », ouvert depuis Consoles et réglages, utilise un dialogue de 850 px maximum, 88 dvh avec défilement vertical local, une liste de comptes et un formulaire séparé. État en lecture seule, retrait explicite confirmé, cibles tactiles de 44 px et aucune superposition des actions.

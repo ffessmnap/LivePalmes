@@ -2,7 +2,7 @@
   'use strict';
   function create({getData,onClubChange,onEventSelect}) {
     const ui=global.LivePalmesDirectPresentation;
-    const {esc,format,seed,club,delta,scheduleFor} = global.LivePalmesDirectEventView;
+    const {esc,format,seed,club,delta,scheduleFor,phaseLabel} = global.LivePalmesDirectEventView;
     const person = document.createElement('dialog'), clubs = document.createElement('dialog');
     person.className = clubs.className = 'direct-dialog';
     person.setAttribute('aria-label','Programme et résultats du nageur');
@@ -20,7 +20,8 @@
       try {
         const data = await getData();
         if (!person.open || request !== personRequest) return;
-        const ranked = data.events.flatMap(event => global.LivePalmesDirectEventView.rankings(data.entries.filter(row => row.eventId === event.id)));
+        const byEvent=new Map();for(const row of data.entries){if(!byEvent.has(row.eventId))byEvent.set(row.eventId,[]);byEvent.get(row.eventId).push(row);}
+        const ranked = (data.rankingGroups||data.events.map(event=>[event.id])).flatMap(ids => global.LivePalmesDirectEventView.rankings(ids.flatMap(id=>byEvent.get(id)||[])));
         const rows = ranked.filter(row => row.key === key), first = rows[0];
         if (!first) throw Error('Ce nageur ne figure plus dans les publications disponibles.');
         const events = new Map(data.events.map(event => [event.id,event]));
@@ -31,7 +32,7 @@
         const days = [...new Set(list.map(row => events.get(row.eventId).date))];
         person.innerHTML = frame(`${esc(ui.name(first))}`, `<p class="direct-note">${esc(club(first))}${first.birthYear ? ' · ' + esc(first.birthYear) : ''} · ${esc(first.category || '')}</p>${days.map(day => `<section class="direct-person-day"><h3>${esc(new Date(day + 'T12:00:00').toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'}))}</h3>${list.filter(row => events.get(row.eventId).date === day).map(row => {
           const event = events.get(row.eventId), time = scheduleFor(event,row.series);
-          return `<article class="direct-program-row"><div><button type="button" class="direct-program-event" data-program-event="${esc(event.id)}" data-program-series="${esc(row.series || '')}">${esc(event.eventLabel)}${event.phase !== 'series' ? ' · ' + esc(event.phase) : ''} ↗</button><span class="direct-person-meta">${esc(event.sessionLabel)}${time ? ' · ' + esc(time) : ''}${row.series ? ' · S' + esc(row.series) : ''}${row.lane != null ? ' · L' + esc(row.lane) : ''}</span></div><div class="direct-program-times"><span>Eng. <strong title="${row.seed?.status === 'no_reference' ? 'Sans référence' : 'Temps d’engagement'}">${esc(seed(row))}</strong></span><span>Rés. <strong>${esc(ui.resultLabel(row) || format(row.result?.cs))}</strong>${delta(row)}</span>${row.rank ? `<span>Place ${esc(row.rank)}</span>` : ''}</div>${row.members?.length ? `<details><summary>Relayeurs</summary><div class="direct-split-list">${row.members.map(m => `${esc(ui.name(m))}`).join('<br>')}</div></details>` : ''}${ui.splits(row,event).length ? `<details><summary>Temps de passage</summary><div class="direct-split-list">${ui.passageTable(row,event)}</div></details>` : ''}</article>`;
+          return `<article class="direct-program-row"><div><button type="button" class="direct-program-event" data-program-event="${esc(event.id)}" data-program-series="${esc(row.series || '')}">${esc(event.eventLabel)}${phaseLabel(event.phase) ? ' · ' + esc(phaseLabel(event.phase)) : ''} ↗</button><span class="direct-person-meta">${esc(event.sessionLabel)}${time ? ' · ' + esc(time) : ''}${row.series ? ' · S' + esc(row.series) : ''}${row.lane != null ? ' · L' + esc(row.lane) : ''}</span></div><div class="direct-program-times"><span>Eng. <strong title="${row.seed?.status === 'no_reference' ? 'Sans référence' : 'Temps d’engagement'}">${esc(seed(row))}</strong></span><span>Rés. <strong>${esc(ui.resultLabel(row) || format(row.result?.cs))}</strong>${delta(row)}</span>${row.rank ? `<span>Place ${esc(row.rank)}</span>` : ''}</div>${row.members?.length ? `<details><summary>Relayeurs</summary><div class="direct-split-list">${row.members.map(m => `${esc(ui.name(m))}`).join('<br>')}</div></details>` : ''}${ui.splits(row,event).length ? `<details><summary>Temps de passage</summary><div class="direct-split-list">${ui.passageTable(row,event)}</div></details>` : ''}</article>`;
         }).join('')}</section>`).join('')}`);
         person.querySelectorAll('[data-program-event]').forEach(button => button.onclick = () => {
           person.close(); onEventSelect(button.dataset.programEvent,button.dataset.programSeries);
