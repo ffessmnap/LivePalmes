@@ -142,46 +142,6 @@ function createNationalService_findEngagementSwimmerCorrectionLicense(backendCon
         };
       }
     }
-    const referenceTarget = backendContext.findReferenceSwimmerCorrectionTarget(backendContext.intranapSwimmersIndex, {
-      swimmerId: cleanId,
-      identityKey: cleanIdentityKey
-    });
-    if (referenceTarget.ambiguous) {
-      throw new backendContext.HttpsError("failed-precondition", "Plusieurs fiches nationales correspondent a cet identifiant. Utilisez la fusion avant la correction.");
-    }
-    if (referenceTarget.stale) {
-      throw new backendContext.HttpsError("failed-precondition", "La fiche nationale a change depuis la recherche. Rechargez-la avant de corriger.");
-    }
-    const referenceSwimmer = referenceTarget.swimmer
-      ? backendContext.engagementReferenceSwimmerItem(referenceTarget.swimmer)
-      : null;
-    if (referenceSwimmer) {
-      const licenseMatch = await findEngagementSwimmerCorrectionLicense(db, [
-        cleanId,
-        referenceSwimmer.id,
-        ...(referenceSwimmer.sourceIds || [])
-      ]);
-      return {
-        requestedSource: cleanSource,
-        requestedSwimmerId: cleanId,
-        source: "reference",
-        swimmerId: cleanId,
-        ref: null,
-        snapshot: null,
-        licenseDocumentId: licenseMatch.documentId,
-        swimmer: {
-          ...referenceSwimmer,
-          ...(licenseMatch.license?.licenseNumber ? {
-            licenseNumber: licenseMatch.license.licenseNumber,
-            licenseVerificationStatus: licenseMatch.license.verificationStatus,
-            licenseSeasonLabel: licenseMatch.license.licenseSeasonLabel,
-            licenseSeasonStatus: licenseMatch.license.licenseSeasonStatus,
-            licenseSeasons: licenseMatch.license.licenseSeasons
-          } : {})
-        },
-        resolvedBy: `reference-${referenceTarget.matchedBy || "fallback"}`
-      };
-    }
     throw new backendContext.HttpsError("not-found", "Nageur introuvable dans la base nationale.");
   }
 

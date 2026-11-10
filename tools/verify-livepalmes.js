@@ -48,6 +48,7 @@ function runUnitTests() {
     "portal-news-tests.js",
     "foreign-club-access-tests.js",
     "nap-club-reference-cleanup-tests.js",
+    "nap-swimmer-reference-cleanup-tests.js",
     "backend-module-boundaries-tests.js",
     "backend-dependency-isolation-tests.js",
     "backend-factory-migration-tests.js",

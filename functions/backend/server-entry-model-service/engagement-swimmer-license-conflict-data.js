@@ -64,10 +64,6 @@ function createEntryModelService_engagementSwimmerLicenseConflictData(backendCon
         return engagementSwimmerLicenseConflictData({ ...(doc.data() || {}), swimmerIndexId: doc.id }, doc.id, "performances");
       }
     }
-    const referenceMatch = backendContext.intranapSwimmersIndex.find((match) => (0, backendContext.local$engagementSwimmerLicenseNumberKey)(match.licenseNumber) === licenseKey);
-    if (referenceMatch && !ignored.has(backendContext.cleanText(referenceMatch.id || referenceMatch.swimmerIndexId).slice(0, 80))) {
-      return engagementSwimmerLicenseConflictData(referenceMatch, backendContext.cleanText(referenceMatch.id || referenceMatch.swimmerIndexId), "reference");
-    }
     return null;
   }
 

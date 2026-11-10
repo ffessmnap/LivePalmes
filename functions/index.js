@@ -1761,7 +1761,7 @@ function $portalClubHandlers_previewEngagementClubSwimmerEventTimes() {
     get engagementNewSwimmerItem() { return engagementNewSwimmerItem; },
     get engagementReferenceSwimmerItem() { return engagementReferenceSwimmerItem; },
     get engagementTeamLeaderComplete() { return engagementTeamLeaderComplete; },
-    get intranapSwimmersIndex() { return intranapSwimmersIndex; },
+
     get previewNativeClubEntryTimes() { return previewNativeClubEntryTimes; },
     get resolveEngagementIndividualEntriesForSwimmer() { return resolveEngagementIndividualEntriesForSwimmer; }
   });
@@ -2427,10 +2427,7 @@ function $serverImportService_isAlreadyPublishedRecordAlert() {
 
 function $serverImportService_resolveIntranapSwimmer() {
   if (!$serverImportService_resolveIntranapSwimmer.instance) $serverImportService_resolveIntranapSwimmer.instance = require("./backend/server-import-service/resolve-intranap-swimmer").createImportService_resolveIntranapSwimmer({
-    get swimmerIdentityKey() { return swimmerIdentityKey; },
-    get cleanText() { return cleanText; },
-    get intranapSwimmerLookup() { return intranapSwimmerLookup; },
-    get local$normalizeCategoryCode() { return $serverImportService_normalizeCategoryCode().normalizeCategoryCode; }
+    get HttpsError() { return HttpsError; }
   });
   return $serverImportService_resolveIntranapSwimmer.instance;
 }
@@ -3300,7 +3297,7 @@ function $serverEntryModelService_buildEngagementNewSwimmerAlerts() {
     get cleanText() { return cleanText; },
     get db() { return db; },
     get engagementClubSwimmerItem() { return engagementClubSwimmerItem; },
-    get intranapSwimmersIndex() { return intranapSwimmersIndex; },
+
     get performanceSearchTokens() { return performanceSearchTokens; },
     get local$engagementNewSwimmerItem() { return $serverEntryModelService_engagementNewSwimmerItem().engagementNewSwimmerItem; },
     get local$engagementSwimmerIdentityKey() { return $serverEntryModelService_engagementSwimmerIdentityKey().engagementSwimmerIdentityKey; }
@@ -3423,7 +3420,7 @@ function $serverEntryModelService_engagementSwimmerLicenseConflictData() {
     get cleanFirestoreValue() { return cleanFirestoreValue; },
     get cleanIsoDate() { return cleanIsoDate; },
     get cleanText() { return cleanText; },
-    get intranapSwimmersIndex() { return intranapSwimmersIndex; },
+
     get local$engagementSwimmerLicenseNumberId() { return $serverEntryModelService_engagementSwimmerLicenseNumberId().engagementSwimmerLicenseNumberId; },
     get local$engagementSwimmerLicenseNumberKey() { return $serverEntryModelService_engagementSwimmerLicenseNumberKey().engagementSwimmerLicenseNumberKey; }
   });
@@ -4097,9 +4094,8 @@ function $serverClubPeopleService_engagementReferenceClubSwimmers() {
     get engagementClubRosterSwimmerKey() { return engagementClubRosterSwimmerKey; },
     get engagementLegacySwimmerLicensesByClub() { return engagementLegacySwimmerLicensesByClub; },
     get engagementNewSwimmerItem() { return engagementNewSwimmerItem; },
-    get intranapSwimmersIndex() { return intranapSwimmersIndex; },
+
     get local$engagementClubSwimmerItem() { return $serverClubPeopleService_engagementClubSwimmerItem().engagementClubSwimmerItem; },
-    get local$engagementReferenceSwimmerItem() { return $serverClubPeopleService_engagementReferenceSwimmerItem().engagementReferenceSwimmerItem; },
     get local$sortEngagementClubSwimmers() { return $serverClubPeopleService_engagementClubSwimmerMatchKeys().sortEngagementClubSwimmers; },
     get local$uniqueEngagementClubSwimmers() { return $serverClubPeopleService_engagementClubSwimmerMatchKeys().uniqueEngagementClubSwimmers; }
   });
@@ -4656,9 +4652,8 @@ function $serverNationalService_findEngagementSwimmerCorrectionLicense() {
     get engagementReferenceSwimmerItem() { return engagementReferenceSwimmerItem; },
     get engagementSwimmerLicenseId() { return engagementSwimmerLicenseId; },
     get engagementSwimmerLicenseItem() { return engagementSwimmerLicenseItem; },
-    get findReferenceSwimmerCorrectionTarget() { return findReferenceSwimmerCorrectionTarget; },
     get getPerformanceBaseRowsBySwimmer() { return getPerformanceBaseRowsBySwimmer; },
-    get intranapSwimmersIndex() { return intranapSwimmersIndex; }
+
   });
   return $serverNationalService_findEngagementSwimmerCorrectionLicense.instance;
 }
@@ -4868,7 +4863,7 @@ function $serverEntryService_buildEngagementClubSwimmersFromRequest() {
     get engagementNewSwimmerItem() { return engagementNewSwimmerItem; },
     get engagementReferenceSwimmerItem() { return engagementReferenceSwimmerItem; },
     get engagementSwimmerLicenseItem() { return engagementSwimmerLicenseItem; },
-    get intranapSwimmersIndex() { return intranapSwimmersIndex; },
+
     get loadPerformanceRecordsData() { return loadPerformanceRecordsData; },
     get resolveEngagementIndividualEntriesForSwimmer() { return resolveEngagementIndividualEntriesForSwimmer; },
     get validateEngagementIndividualEntryTimes() { return validateEngagementIndividualEntryTimes; }
@@ -5605,8 +5600,6 @@ const { defineBoolean, defineSecret } = require("firebase-functions/params");
 const { createNapPool } = require("./nap-connection");
 
 const { consoleRoleClaims, hasConsolePortalCapability } = require("./console-access");
-const intranapSwimmersReference = require("./intranap-swimmers-reference.json");
-const intranapSwimmersIndex = require("./assets/intranap-swimmers-index.json");
 const { nextPublicResultsIndex } = require("./public-results-index");
 const {
   decodePdfDataUrl,
@@ -5621,7 +5614,6 @@ const { competitionMailLines, competitionMailDateTime } = require("./engagement-
 const { escapeMailHtml, livePalmesMailHtml } = require("./livepalmes-mail-html");
 const { cleanClubPayload } = require("./engagement-clubs");
 const {
-  findReferenceSwimmerCorrectionTarget,
   swimmerMergeIds,
   recoveredPerformanceRowsAreComplete
 } = require("./engagement-swimmer-corrections");
@@ -6725,37 +6717,6 @@ function buildRecordAlert(input0, input1, input2) {
 function detectRecordAlerts() {
   return $serverImportService_activeCompetitionImportData().detectRecordAlerts(...arguments);
 }
-
-function buildIntranapSwimmerReference() {
-  const byId = new Map();
-  const byIdentity = new Map();
-  const groupedByIdentity = new Map();
-  intranapSwimmersReference.forEach((swimmer) => {
-    const key = swimmerIdentityKey(swimmer.firstName, swimmer.lastName, swimmer.birthDate);
-    if (!key) return;
-    if (!groupedByIdentity.has(key)) groupedByIdentity.set(key, []);
-    groupedByIdentity.get(key).push(swimmer);
-  });
-  groupedByIdentity.forEach((group, key) => {
-    const canonicalId = canonicalSwimmerId(group.map((swimmer) => swimmer.id));
-    const canonical = group.find((swimmer) => String(swimmer.id) === String(canonicalId)) || group[0];
-    const merged = {
-      ...canonical,
-      id: String(canonicalId || canonical.id),
-      identityKey: key,
-      aliases: group.map((swimmer) => String(swimmer.id)).filter((id) => id && id !== String(canonicalId)),
-      sourceIds: group.map((swimmer) => String(swimmer.id)).filter(Boolean)
-    };
-    byIdentity.set(key, merged);
-    group.forEach((swimmer) => byId.set(String(swimmer.id), merged));
-  });
-  intranapSwimmersReference.forEach((swimmer) => {
-    if (!byId.has(String(swimmer.id))) byId.set(String(swimmer.id), swimmer);
-  });
-  return { byId, byIdentity };
-}
-
-const intranapSwimmerLookup = buildIntranapSwimmerReference();
 
 /* extracted-function: functions/backend/server-import-service/resolve-intranap-swimmer.js#resolveIntranapSwimmer */
 function resolveIntranapSwimmer(input0, input1) {
@@ -8771,11 +8732,6 @@ function engagementClubSwimmerItem(input0) {
 /* extracted-function: functions/backend/server-club-people-service/engagement-reference-swimmer-item.js#engagementReferenceSwimmerItem */
 function engagementReferenceSwimmerItem() {
   return $serverClubPeopleService_engagementReferenceSwimmerItem().engagementReferenceSwimmerItem(...arguments);
-}
-
-/* extracted-function: functions/backend/server-club-people-service/engagement-reference-club-swimmers.js#engagementReferenceClubSwimmers */
-function engagementReferenceClubSwimmers() {
-  return $serverClubPeopleService_engagementReferenceClubSwimmers().engagementReferenceClubSwimmers(...arguments);
 }
 
 /* extracted-function: functions/backend/server-club-people-service/engagement-club-swimmer-match-keys.js#sortEngagementClubSwimmers */

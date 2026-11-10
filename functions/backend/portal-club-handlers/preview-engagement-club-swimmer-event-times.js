@@ -19,6 +19,8 @@ function createClubHandlers_previewEngagementClubSwimmerEventTimes(backendContex
       return {...result,swimmerIndexId,individualEntries:result.swimmers[0].individualEntries};
     }
 
+    if (source === "reference") throw new backendContext.HttpsError("failed-precondition", "Ancien referentiel nageurs retire : utilisez la fiche NAP actuelle.");
+
     const competitionRef = backendContext.db.collection("engagementCompetitions").doc(competitionId);
     const entryRef = backendContext.db.collection("engagementClubEntries").doc(backendContext.engagementClubEntryId(competitionId, context.clubId));
     const [competition, entry] = await backendContext.db.getAll(competitionRef, entryRef);
@@ -30,24 +32,14 @@ function createClubHandlers_previewEngagementClubSwimmerEventTimes(backendContex
     }
 
     let swimmer = null;
-    if (source === "reference") {
-      const reference = backendContext.intranapSwimmersIndex.find((item) => [
-        item.id,
-        item.swimmerId,
-        ...(Array.isArray(item.aliases) ? item.aliases : []),
-        ...(Array.isArray(item.sourceIds) ? item.sourceIds : [])
-      ].map(backendContext.cleanText).includes(swimmerIndexId));
-      if (reference) swimmer = backendContext.engagementReferenceSwimmerItem(reference);
-    } else {
-      const swimmerDoc = await backendContext.db
-        .collection(source === "engagement" ? "engagementClubSwimmers" : backendContext.PERFORMANCE_SWIMMERS_COLLECTION)
-        .doc(swimmerIndexId)
-        .get();
-      if (swimmerDoc.exists) {
-        swimmer = source === "engagement"
-          ? backendContext.engagementNewSwimmerItem(swimmerDoc)
-          : backendContext.engagementClubSwimmerItem(swimmerDoc);
-      }
+    const swimmerDoc = await backendContext.db
+      .collection(source === "engagement" ? "engagementClubSwimmers" : backendContext.PERFORMANCE_SWIMMERS_COLLECTION)
+      .doc(swimmerIndexId)
+      .get();
+    if (swimmerDoc.exists) {
+      swimmer = source === "engagement"
+        ? backendContext.engagementNewSwimmerItem(swimmerDoc)
+        : backendContext.engagementClubSwimmerItem(swimmerDoc);
     }
     if (!swimmer) throw new backendContext.HttpsError("not-found", "Nageur introuvable.");
     if (swimmer.clubId !== context.clubId) {

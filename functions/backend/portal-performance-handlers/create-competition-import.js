@@ -9,6 +9,7 @@ function createPerformanceHandlers_createCompetitionImport(backendContext) {
       try{return await require("../../nap-import-write").createNativeImportWriter({authorize:backendContext.authorizeNativePerformance,getPool:()=>require("../../nap-portal-pool").portalPool(process.env.LIVEPALMES_NAP_PASSWORD),protocolStorage:require("../../nap-import-protocol-storage").createProtocolStorage(backendContext.storage.bucket(backendContext.LIVEPALMES_STORAGE_BUCKET))})(request);}
       catch(error){throw backendContext.nativePerformanceFailure(error);}
     }
+    throw new backendContext.HttpsError("failed-precondition", "Ancien import sur referentiel fichier retire : utilisez le parcours NAP.");
     const fileName = backendContext.cleanText(request.data?.fileName).slice(0, 180);
     const confirmImportId = backendContext.cleanText(request.data?.importId);
     const parsed = backendContext.parseCompetitionImportPayload(request.data || {});
