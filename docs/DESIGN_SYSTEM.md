@@ -2,6 +2,12 @@
 
 <!-- description: Référence du langage visuel, des composants d’interface et des règles responsive déjà présents dans LivePalmes. -->
 
+## Bureau Direct — aperçu et réglages compacts · 10 novembre 2026
+
+- Suivi des courses : résumé compact avec chevron, détail par série masqué par défaut ; ouverture au toucher/clavier et conservée lors du rafraîchissement du suivi. Heures et compteurs tabulaires, état textuel en plus des couleurs. Même composant dans le bilan des imports.
+- Aperçu PDF : une ligne par nageur avec série/ligne, identité, année, club, catégorie et engagement ; bouton Modifier/Corriger. Les erreurs explicitent course/sexe/session/série/ligne, un compteur et un accès direct ; formulaire uniquement sur demande, aucune exclusion silencieuse. Sur bureau, rangée courante de 34–36 px ; tableau défilable sur écran étroit, formulaire adapté sans débordement de page.
+- Tableau des finales : cellules réduites et champs de 30 px sur ordinateur, sélection de la ligne par clic/toucher ou Entrée/Espace, surbrillance de sélection ; les contrôles internes restent indépendants. Affichage public : titre, choix et légende alignés, explication courte en dessous ; légende complète dépliable conservée.
+
 ## Sessions du Direct public — 10 novembre 2026
 
 Les catégories sont aussi actionnables dans les engagements ; le scratch seul est filtré, les séries restent complètes. Même multisélection et croix d’effacement. Mentions NS/IN/HC en petits boutons secondaires à côté du nom dans les séries/engagements, sans nouvelle ligne ; dans le scratch résultats, code discret à côté du rang, colonne Place élargie seulement en présence d’une mention pour éviter les chevauchements, même sur quatre chiffres. Le code ouvre une légende dans la fenêtre commune : définitions complètes et mode affiché, utilisables au clavier/toucher, sans survol obligatoire. Dans Réglages du bureau, Affichage public propose Calcul des places → Scratch intégral / Places recalculées hors NS / IN / HC et les définitions dépliables. Enregistrement immédiat ; contrôle désactivé tant qu’un brouillon de finales attend sa sauvegarde. Les réglages de finales incluent le quota IN par finale, avec « À confirmer si IN » ; un quota requis manquant donne un avertissement et désactive l’annonce, y compris chez le speaker.

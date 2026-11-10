@@ -61,10 +61,12 @@
     body.addEventListener('change',e=>{if(e.target.id==='consoleRankingMode'&&!client.state.dirty&&!client.state.loading&&!client.state.busy)send('rankingMode',{rankingMode:e.target.value}).catch(error=>status(error.message,true));});
     body.addEventListener('input',e=>{if(e.target.matches('[data-lanes]'))view.syncInvitedLimit(e.target.closest('[data-format-event]'));if(e.target.closest('#consoleFinalSettings')){if(!client.state.dirty)settingsContext=client.context();client.state.dirty=true;body.querySelector('#consoleRankingMode').disabled=true;}});
     body.addEventListener('toggle',e=>{if(e.target.id==='consoleFinalSettings')client.state.settingsOpen=e.target.open;},true);
+    body.addEventListener('keydown',e=>{if(!client.state.loading&&!client.state.busy)view.toggleFormatRow(e);});
     body.addEventListener('click',async e=>{
       const button=e.target.closest('[data-console-action]');
       try{
         if(client.state.loading||client.state.busy)return;
+        if(view.toggleFormatRow(e))return;
         if(button){await act(button);return;}
         if(e.target.closest('[data-bureau-tab]')){showTab(e.target.closest('[data-bureau-tab]').dataset.bureauTab);return;}
         if(e.target.closest('[data-bureau-history]')){historyFilter=e.target.closest('[data-bureau-history]').dataset.bureauHistory;if(historyFilter==='publications')await global.LivePalmesDirectAdmin.history();render();return;}

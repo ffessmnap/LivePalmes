@@ -23,6 +23,12 @@
     return {entries:entries.length,seriesEntries:series.length,resultEntries:results.length,matchedResults:matched,seriesCount:heats.size,resultSeriesCount:new Set(results.map(row=>row.series).filter(n=>n!=null)).size,completeSeriesCount:[...heats.values()].filter(rows=>rows.every(hasResult)).length,unassignedResults:results.length-matched};
   }
   function expected(event,progress){return Math.max(Number(event.expectedSeries)||0,...(event.heatSchedule||[]).map(heat=>Number(heat.number)||0),Number(progress.seriesCount)||0);}
+  function heatProgress(event,progress=stats(event)){
+    const heats=new Map((progress.heats||[]).map(heat=>[Number(heat.number),heat])),schedule=new Map((event.heatSchedule||[]).map(heat=>[Number(heat.number),heat.scheduledAt]));
+    const numbers=[...new Set([...heats.keys(),...schedule.keys()])].sort((a,b)=>a-b);
+    if(!numbers.length)return '<p class="bureau-empty">Détail disponible après la prochaine actualisation.</p>';
+    return `<div class="direct-heat-progress">${numbers.map(number=>{const heat=heats.get(number),series=heat?.seriesEntries||0,results=heat?.resultEntries||0,complete=series>0&&heat.matchedResults===series&&results===series,state=!heat?'À vérifier':!series?'Non importée':!results?'À venir':complete?'Terminée':'En cours';return `<div><strong>Série ${number}</strong><time>${esc(schedule.get(number)||'—')}</time><span>${results} / ${series||'—'} résultats</span><span class="bureau-course-state ${complete?'done':results?'ongoing':''}">${state}</span></div>`;}).join('')}</div>`;
+  }
   function status(event,entries){
     const progress=stats(event,entries),results=event.publication?.results?progress.resultEntries:0,total=expected(event,progress);
     if(!results)return {key:'upcoming',label:'À venir',title:'Aucun résultat publié pour cette course'};
@@ -78,6 +84,6 @@
       return false;
     });
   }
-  const api={references,esc,surname,name,categoryTone,categoryBadge,resultLabel,stats,expected,status,badge,dot,distance,length,splits,dateRange,passageRows,passageTable};
+  const api={references,esc,surname,name,categoryTone,categoryBadge,resultLabel,stats,expected,heatProgress,status,badge,dot,distance,length,splits,dateRange,passageRows,passageTable};
   global.LivePalmesDirectPresentation=api;if(typeof module==='object'&&module.exports)module.exports=api;
 })(typeof window==='undefined'?globalThis:window);

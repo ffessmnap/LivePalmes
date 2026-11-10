@@ -189,6 +189,7 @@
     const seenProgram = new Set();
     const seenEntrants = new Set();
     const seenSeriesRows = new Set();
+    const unparsedRows = [];
     let currentSession = { number: "", label: "" };
     let current = null;
     let pendingFinal = null;
@@ -425,6 +426,7 @@
         birthYear = importedBirthYear(birth);
         swimmerId = `${lastName.toLowerCase()}|${firstName.toLowerCase()}|${birthYear}|${current.sex}`;
       } else {
+        if(context.includeUnparsedSeriesRows && /^\d{1,2}\s+\S/.test(line))unparsedRows.push({...current,lane:Number(line.match(/^\d+/)[0]),rawSource:line});
         return;
       }
   
@@ -492,7 +494,8 @@
       series: seriesRows,
       program,
       sourceFile: fileName,
-      debugLines: normalizedLines.slice(0, 80)
+      debugLines: normalizedLines.slice(0, 80),
+      ...(context.includeUnparsedSeriesRows?{unparsedRows}:{})
     };
   }
   
