@@ -174,10 +174,9 @@ function createClubPeopleService(backendContext) {
       set engagementLegacySwimmerLicensesByClub(value) { backendContext.engagementLegacySwimmerLicensesByClub = value; },
       get engagementNewSwimmerItem() { return backendContext.engagementNewSwimmerItem; },
       set engagementNewSwimmerItem(value) { backendContext.engagementNewSwimmerItem = value; },
-      get intranapSwimmersIndex() { return backendContext.intranapSwimmersIndex; },
-      set intranapSwimmersIndex(value) { backendContext.intranapSwimmersIndex = value; },
+
+
       get local$engagementClubSwimmerItem() { return operation9().engagementClubSwimmerItem; },
-      get local$engagementReferenceSwimmerItem() { return operation10().engagementReferenceSwimmerItem; },
       get local$sortEngagementClubSwimmers() { return operation12().sortEngagementClubSwimmers; },
       get local$uniqueEngagementClubSwimmers() { return operation12().uniqueEngagementClubSwimmers; }
     });
@@ -284,7 +283,6 @@ function createClubPeopleService(backendContext) {
     syncEngagementClubPeopleRosterFromChange: operation8().syncEngagementClubPeopleRosterFromChange,
     engagementClubSwimmerItem: operation9().engagementClubSwimmerItem,
     engagementReferenceSwimmerItem: operation10().engagementReferenceSwimmerItem,
-    engagementReferenceClubSwimmers: operation11().engagementReferenceClubSwimmers,
     sortEngagementClubSwimmers: operation12().sortEngagementClubSwimmers,
     engagementClubSwimmerMatchKeys: operation12().engagementClubSwimmerMatchKeys,
     engagementClubSwimmerSourceRank: operation12().engagementClubSwimmerSourceRank,

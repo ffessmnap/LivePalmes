@@ -2,6 +2,14 @@
 
 <!-- description: Cahier des charges fonctionnel de référence du module de gestion des engagements en compétition, actuellement en finalisation et en test. -->
 
+## Référentiels nageurs — nettoyage NAP du 11 novembre 2026
+
+Les copies privées `functions/assets/intranap-swimmers-index.json` et `functions/intranap-swimmers-reference.json`, leur chargement au démarrage et leurs anciens rapprochements ne sont plus utilisés. Les listes, créations, licences, corrections, fusions et imports actifs conservent leurs services NAP existants, y compris la correction des noms composés. Le champ de protocole `source: "reference"` est conservé pour les fiches natives portant `napSource: true` ; ce libellé n’autorise aucun retour au JSON.
+
+Les anciennes branches sur copie sont retirées des effectifs, alertes, contrôles de licence, corrections et sélections. Une sélection, création ou import historiques refusent explicitement l’action avant accès aux données sportives ; les trois outils CLI de licences historiques sont arrêtés avant toute lecture de fichier, connexion ou écriture. Aucune association automatique d’anciens identifiants et aucun import Excel international débloqué.
+
+Budget additionnel à l’ouverture, par action, au rafraîchissement et au pire cas : zéro requête SQL/Firestore, zéro écriture et zéro listener. Les parcours natifs sont inchangés : effectif club un SELECT indexé limité à 801 lignes avec refus au-delà de 800 ; page nationale un SELECT/101 lignes pour 100 profils ; contrôle de création avec licence quatre requêtes/426 lignes maximum. Les rafraîchissements utilisent les mêmes bornes ; une indisponibilité ne lance ni repli Firestore ni reconstruction. Identités, sexes, licences, homonymes, fiches fusionnées, empreintes et reprises restent protégés. Les contrôles s’effectuent hors réseau et dans MySQL isolé ; aucune donnée métier réelle n’est modifiée.
+
 ## Référentiels clubs — nettoyage NAP du 10 novembre 2026
 
 Lot clubs autorisé par Antoine, avant les lots nageurs et anciennes migrations. Les copies statiques `functions/assets/club-reference.json` et `performances/public/data/club-reference.js` sont retirées de ce candidat. Les statistiques conservent les libellés NAP de leurs dossiers ; les fonctions communes ne les remplacent plus par un référentiel embarqué. Le portail mutualise son annuaire NAP pour le bandeau, les sélecteurs et les choix de clubs Records/MPF. Une abréviation partagée par plusieurs clubs ne sélectionne plus arbitrairement le premier identifiant. Les pièces et messages historiques conservent leurs informations enregistrées ; aucune réécriture de données ni régénération réelle n'est déclenchée.

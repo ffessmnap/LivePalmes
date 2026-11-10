@@ -1,15 +1,5 @@
 // Existing operation bodies; live services arrive through explicit accessors.
 function createClubPeopleService_engagementReferenceClubSwimmers(backendContext) {
-  function engagementReferenceClubSwimmers(clubId = "", limit = 800) {
-    const targetClubId = backendContext.cleanText(clubId);
-    if (!targetClubId) return [];
-    return backendContext.intranapSwimmersIndex
-      .filter((swimmer) => backendContext.cleanText(swimmer.clubId) === targetClubId)
-      .slice(0, limit)
-      .map(backendContext.local$engagementReferenceSwimmerItem)
-      .filter((swimmer) => swimmer.swimmerIndexId && swimmer.clubId === targetClubId);
-  }
-
   async function rebuildEngagementClubRoster(db, context = {}, limit = 800) {
     const clubId = backendContext.cleanText(context.clubId);
     if (!clubId) return [];
@@ -27,8 +17,7 @@ function createClubPeopleService_engagementReferenceClubSwimmers(backendContext)
     const legacyLicenses = await backendContext.engagementLegacySwimmerLicensesByClub(db, clubId);
     const swimmers = (0, backendContext.local$sortEngagementClubSwimmers)((0, backendContext.local$uniqueEngagementClubSwimmers)([
       ...newSwimmersSnapshot.docs.map(backendContext.engagementNewSwimmerItem),
-      ...snapshot.docs.map(backendContext.local$engagementClubSwimmerItem),
-      ...engagementReferenceClubSwimmers(clubId, limit)
+      ...snapshot.docs.map(backendContext.local$engagementClubSwimmerItem)
     ], limit).map((swimmer) => {
       const legacyLicense = legacyLicenses.get(swimmer.swimmerIndexId);
       return legacyLicense?.licenseNumber
@@ -59,7 +48,7 @@ function createClubPeopleService_engagementReferenceClubSwimmers(backendContext)
     return swimmers;
   }
 
-  return { engagementReferenceClubSwimmers, rebuildEngagementClubRoster };
+  return { rebuildEngagementClubRoster };
 }
 
 module.exports = { createClubPeopleService_engagementReferenceClubSwimmers };
