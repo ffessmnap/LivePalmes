@@ -9,7 +9,7 @@ publisher = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(publisher)
 publisher.RELEASE = 'direct_public_sessions'
 publisher.CONTRACT = ROOT / '.github/releases/evidence/20261110-direct-public-sessions-contract.json'
-publisher.CONTRACT_SHA256 = 'c0fc589b7792d9096ca801db85eb00fd2dca3453b0be2088b6214492e7ff17be'
+publisher.CONTRACT_SHA256 = 'f7d5036f6217064f6e98f204085caf2f776276ef4865ecf3869eee3f408bac85'
 
 if __name__ == '__main__':
     publisher.main(*sys.argv[1:])
