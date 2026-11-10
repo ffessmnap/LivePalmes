@@ -218,6 +218,7 @@ jobs:
           python tests/test-direct-access-sources-tests.py
           python tests/test-direct-public-sources-tests.py
           python tests/test-direct-participation-sources-tests.py
+          python tests/test-direct-import-sources-tests.py
           python tests/nap-account-release-tests.py
           node tests/release-nap-account-compatibility.js
           node tests/license-report-source-guard-tests.js
