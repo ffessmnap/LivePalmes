@@ -9,7 +9,7 @@ publisher = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(publisher)
 publisher.RELEASE = 'direct_participations'
 publisher.CONTRACT = ROOT / '.github/releases/evidence/20261110-direct-participations-contract.json'
-publisher.CONTRACT_SHA256 = '5a4cb507f2d8d81a1e6df3968e96d35c61046b37cad7e8561afe3afbbbd447cf'
+publisher.CONTRACT_SHA256 = 'b0862d52a01ff751bd2dfc319fcbe11f2edd931b246b84f2b7d148f5dc385a92'
 
 if __name__ == '__main__':
     publisher.main(*sys.argv[1:])
