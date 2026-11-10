@@ -16,6 +16,7 @@ for (const name of retired) {
   assert.equal(exportedNames.includes(name), false, "Historical migration declaration must be absent: " + name);
   assert.equal(NAP_RETIRED_FUNCTIONS.includes(name), true, "Retirement tombstone must remain: " + name);
   assert.equal(activeLotFunctions("performance").includes(name), false);
+  assert.equal(require("../functions/portal-session-endpoints.json").includes(name), false, "Removed declarations must leave the session test inventory");
 }
 for (const file of ["migration-chunk-statuses", "historical-rows-from-chunk-payload", "migrate-historical-performance-base-chunk"]) {
   assert.equal(fs.existsSync(path.join(root, "functions/backend/server-legacy-service", file + ".js")), false);
