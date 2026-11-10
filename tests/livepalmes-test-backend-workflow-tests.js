@@ -128,10 +128,12 @@ try {
   if(selectedLot==="all-safe") for (const name of TEST_NON_MAIL_FUNCTIONS) assert.deepEqual(JSON.parse(manifest).endpoints[name].secretEnvironmentVariables.map(item=>item.key),["LIVEPALMES_NAP_PASSWORD"]);
   if (selectedLot === "access" || selectedLot === "all-safe") {
     const endpoints = JSON.parse(manifest).endpoints;
+    const regionalNapReaders = new Set(["createOrUpdateAccessUser", "listAccessUsers", "setAccessUserStatus",
+      "requestAccessUserDeletion", "rebuildAccessDirectoryIndexNextPage", "rebuildAccessDirectorySnapshotNextPage"]);
     for (const name of activeLotFunctions("access")) {
       assert.deepEqual((endpoints[name].secretEnvironmentVariables || []).map(item => item.key),
-        name === "createOrUpdateAccessUser" ? ["LIVEPALMES_NAP_PASSWORD"] : [],
-        "La liaison NAP du lot acces reste limitee a la creation regionale");
+        regionalNapReaders.has(name) ? ["LIVEPALMES_NAP_PASSWORD"] : [],
+        "La liaison NAP du lot acces reste limitee aux lecteurs regionaux autorises : " + name);
     }
   }
   for (const secret of METADATA.email.secrets) {
