@@ -56,7 +56,7 @@ function createService({getPool,environment,authorize,lookupUser,lookupAccounts,
       if(!canWrite)throw fail("Délégation réservée au bureau des performances de cette compétition.","permission-denied");
       if(input.action==='grants'){
         const [items,current]=await Promise.all([store.grants(id),store.config(id)]),accounts=items.length&&lookupAccounts?await lookupAccounts(items.map(item=>item.uid)):[],byUid=new Map(accounts.map(account=>[account.uid,account]));
-        return {version:Number(current.version),items:items.map(item=>({...item,account:byUid.get(item.uid)||{label:'Compte indisponible',email:'',active:false}}))};
+        return {version:Number(current.version),items:items.map(item=>({...item,expiresAt:item.expiresAt?new Date(typeof item.expiresAt==='string'&&!item.expiresAt.includes('T')?item.expiresAt.replace(' ','T')+'Z':item.expiresAt).toISOString():null,account:byUid.get(item.uid)||{label:'Compte indisponible',email:'',active:false}}))};
       }
       let target;
       if(input.uid){
