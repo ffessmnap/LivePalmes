@@ -86,7 +86,7 @@ class DirectSources(unittest.TestCase):
             if 'rev-parse' in args:
                 return SHA
             if 'diff' in args:
-                return 'tools/publish-test-direct-sources.py'
+                return entry['toolingPaths'][0]
             return ''
         def fingerprints(sha):
             return baseline if sha == entry['baseCommit'] else desired
@@ -97,6 +97,8 @@ class DirectSources(unittest.TestCase):
                                ('GITHUB_RUN_ATTEMPT', '2'), ('GITHUB_REF', 'refs/heads/other'), ('RELEASE', 'contacts')]:
                 with self.assertRaises(ValueError):
                     p.guard(ROOT, entry, {**env, key: value})
+            with patch.object(p.cycle, 'run', side_effect=lambda args,*_: 'assets/direct/import.js' if 'diff' in args else git_run(args)), self.assertRaisesRegex(ValueError, 'Code applicatif'):
+                p.guard(ROOT, entry, env)
             baseline['ordinary'] = 'different'
             with self.assertRaisesRegex(ValueError, 'Dependances'):
                 p.guard(ROOT, entry, env)
