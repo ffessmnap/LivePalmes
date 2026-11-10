@@ -65,6 +65,17 @@ def check_after(backup, destination, require_success):
         if sorted(report['additionalBccFunctions']) != bcc_policy.contract()['selected']:
             raise ValueError('Selection CCI du rapport differente')
     errors = []
+    november10_policy = None
+    if report.get('additionalNovember10Functions'):
+        spec = importlib.util.spec_from_file_location('november10_state_policy', Path(__file__).with_name('november10-validated-release-policy.py'))
+        november10_policy = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(november10_policy)
+        c = november10_policy.contract()
+        november10_policy.require(report['additionalNovember10Functions'] == c['sourceOnly']
+            and report['candidate'] == c['candidate'] and len(before) == c['inventoryCount']
+            and selected == {PREFIX+n for n in c['selected']} and report['newFunctions'] == []
+            and report.get('november10NapBinding') == november10_policy.initial(list(before.values())),
+            'Rapport du 10 novembre hors contrat')
     november_policy = None
     if report.get('additionalNovemberFunctions'):
         spec = importlib.util.spec_from_file_location('november_state_policy', Path(__file__).with_name('november-validated-release-policy.py'))
@@ -135,6 +146,11 @@ def check_after(backup, destination, require_success):
                 errors.append(str(error))
         if not f or f.get("state") != "ACTIVE":
             errors.append("Function non active: " + name.split("/")[-1])
+        elif november10_policy is not None:
+            try:
+                november10_policy.assert_config(before[name], f, SimpleNamespace(rollback_patch=rollback_patch), report['november10NapBinding'])
+            except ValueError as error:
+                errors.append(str(error))
         elif november_policy is not None and name.split('/')[-1] in november_policy.contract()['sourceOnly']:
             try:
                 november_policy.assert_config(before[name], f, SimpleNamespace(rollback_patch=rollback_patch))
