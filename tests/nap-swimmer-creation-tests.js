@@ -12,7 +12,7 @@ function fixture(){
     if(sql.includes("RELEASE_LOCK")) return [[{released:1}]];
     if(sql.startsWith("SELECT id FROM nageurs")) {assert.match(sql,/FORCE INDEX \(livepalmes_license_number_id\).*LIMIT 2$/);return [state.licenseMatches];}
     if(sql.includes(" UNION ")) return [state.exact];
-    if(sql.includes("nom LIKE")) {assert.match(sql,/nom LIKE \? ESCAPE '=' AND prenom LIKE \? ESCAPE '=' AND date BETWEEN \? AND \? AND NOT EXISTS \(SELECT 1 FROM livepalmes_swimmer_merges WHERE swimmer_id=nageurs.id\) LIMIT 201/);return [state.similar];}
+    if(sql.includes("nom LIKE")) {assert.match(sql,/nom LIKE \? ESCAPE '='\) AND prenom LIKE \? ESCAPE '=' AND date BETWEEN \? AND \? AND NOT EXISTS \(SELECT 1 FROM livepalmes_swimmer_merges WHERE swimmer_id=nageurs.id\) LIMIT 201/);return [state.similar];}
     if(sql.includes("TRIGGERS")) return [state.trigger?[{}]:[]];
     if(sql.startsWith("EXPLAIN")) return [[{table:"duplicate",key:state.badPlan?null:"livepalmes_license_number_id"},{table:"cl",key:"PRIMARY"}]];
     if(sql.startsWith("INSERT INTO nageurs")) {
@@ -44,10 +44,11 @@ function fixture(){
   similar.similar=[{...native,date:"1981-01-02"}];assert.equal((await similar.preview()).alerts.length,0);
   const compoundInput={swimmer:{...input.swimmer,lastName:"DE FRANCO",firstName:"Michele"}},compound=fixture();
   let compoundPreview=await compound.preview(compoundInput);assert.equal(compoundPreview.alerts.length,0);
-  assert.deepEqual(compound.statements.filter(s=>s.sql.includes("nom LIKE")).map(s=>s.values),[["DE FRANCO%","Mic%","1980-01-01","1980-12-31"],["Michel%","DE %","1980-01-01","1980-12-31"]]);
+  assert.deepEqual(compound.statements.filter(s=>s.sql.includes("nom LIKE")).map(s=>s.values),[["DE FRANCO%","DE-FRANCO%","DE'FRANCO%","DE’FRANCO%","Mic%","1980-01-01","1980-12-31"],["Michel%","DE %","1980-01-01","1980-12-31"]]);
   assert.equal(compoundPreview.sqlBudget.queriesMax,4);assert.equal(compoundPreview.sqlBudget.rowsMax,426);
   compound.similar=[{...native,nom:"DE MARTIN",prenom:"Michel"}];assert.equal((await compound.preview(compoundInput)).alerts.length,0,"A shared particle does not make two surnames similar");
   compound.similar=[{...native,nom:"DE FRANCON",prenom:"Michel",date:"1980-04-03"}];assert.equal((await compound.preview(compoundInput)).alerts[0].type,"possible-duplicate","A nearby compound surname still warns");
+  for(const nom of ["DE-FRANCO","DE'FRANCO","DE’FRANCO"]){compound.similar=[{...native,nom,prenom:"Michele"}];assert.equal((await compound.preview(compoundInput)).alerts.length,1,"Separator variants retain their identity alert");}
   compound.similar=[];compound.exact=[{...native,nom:"Michele",prenom:"DE FRANCO"}];assert.equal((await compound.preview(compoundInput)).blocksCreation,true,"Compound-name inversion still blocks");
   for(const lastName of ["VAN DER BERG","D'ANGELO","LE-GRAND","ÉVRARD","A_%=B"]){const names=fixture();await names.preview({swimmer:{...input.swimmer,lastName}});const pattern=names.statements.find(s=>s.sql.includes("nom LIKE")).values[0];assert.ok(pattern.length>2);if(lastName==="A_%=B")assert.equal(pattern,"A=_=%==B%");}
   const overflow=fixture();overflow.similar=Array(201).fill(native);await assert.rejects(overflow.run(),/Aucun nageur cree.*administrateur national/);assert.equal(overflow.writes,0);assert.equal(overflow.audit,null,"An ambiguous preview creates no audit intent or swimmer");

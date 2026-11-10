@@ -28,6 +28,11 @@ async function verify(pool){
     assert.ok(plan.some(row=>row.table==="nageurs"&&row.key==="nageurs_clef"&&row.type==="range"),"The real MySQL plan must retain its surname index range: "+JSON.stringify(plan));
     assert.ok(plan.filter(row=>row.table==="n"||row.table==="cl").every(row=>row.key==="PRIMARY"),"Candidate and club joins use primary keys");
   }
+  for(const [index,nom]of ["DE-FRANCO","DE'FRANCO","DE’FRANCO"].entries()){
+    await q("INSERT INTO nageurs VALUES (?,?,'Michele','1980-01-02','M','1','')",[5500+index,nom]);
+    assert.equal((await preview()).alerts.length,index+1,"SQL retains separator variants of the same identity");
+  }
+  await q("DELETE FROM nageurs WHERE id>=5500");
   await q("INSERT INTO nageurs VALUES (5000,'DE FRANCON','Michel','1980-04-03','M','1','')");
   result=await preview();assert.equal(result.alerts.length,1);assert.equal(result.alerts[0].type,"possible-duplicate");
   await q("INSERT INTO nageurs VALUES (5001,'Michele','DE FRANCO','1980-01-02','M','1','')");
