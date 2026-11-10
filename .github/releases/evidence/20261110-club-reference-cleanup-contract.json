@@ -279,6 +279,7 @@
     "docs/releases/EVOLUTIONS.md",
     "docs/releases/PROCEDURE.md",
     "tests/nap-club-account-emails-tests.js",
+    "tests/nap-portal-sporting-dependencies-tests.js",
     "tests/nap-team-entry-mysql-tests.js",
     "tests/release-cycle-tests.py",
     "tests/test-import-sources-tests.py",
