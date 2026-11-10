@@ -21,6 +21,13 @@ function proposed(input) {
   return {...native,number:licenseNumber,actif:1};
 }
 function tokens(value){return rules.normalizeIdentityText(value).split(/\s+/).filter(token=>token.length>=2);}
+// Keep the whole compound name, shortening only its final word. In particular,
+// DE FRANCO must never become the unrelated national range DE%.
+function namePrefix(value){return value.trim().replace(/[^\s'-]+$/,word=>word.slice(0,6));}
+function similarLastName(left,right){
+  const a=rules.normalizeIdentityText(left).split(/\s+/),b=rules.normalizeIdentityText(right).split(/\s+/);
+  return a.length===b.length && a.every((word,index)=>word.slice(0,6)===b[index].slice(0,6));
+}
 async function previewCreation(connection,input,authorize,formatAlert) {
   const native=proposed(input);
   if(typeof authorize!=="function" || typeof formatAlert!=="function") throw new TypeError("Controle du club et des alertes requis.");
@@ -34,10 +41,13 @@ async function previewCreation(connection,input,authorize,formatAlert) {
   const exact=`SELECT id FROM nageurs FORCE INDEX (nageurs_clef) WHERE nom=? AND prenom=? AND date=? AND ${notMerged()} LIMIT 11`;
   const exactRows=await query(`${select} ((${exact}) UNION (${exact})) candidates JOIN nageurs n FORCE INDEX (PRIMARY) ON n.id=candidates.id LEFT JOIN clubs cl FORCE INDEX (PRIMARY) ON cl.num_club=n.club AND CAST(cl.num_club AS CHAR)=n.club LIMIT 22`,[native.nom,native.prenom,native.date,native.prenom,native.nom,native.date]);
   add(exactRows);
-  const prefixes=[...new Set([tokens(native.nom)[0],tokens(native.prenom)[0]].filter(Boolean).map(token=>token.slice(0,Math.min(6,token.length))))];
-  for(const prefix of prefixes) {
-    const rows=await query(`${select} (SELECT id FROM nageurs FORCE INDEX (nageurs_clef) WHERE nom LIKE ? ESCAPE '=' AND ${notMerged()} LIMIT 201) candidates JOIN nageurs n FORCE INDEX (PRIMARY) ON n.id=candidates.id LEFT JOIN clubs cl FORCE INDEX (PRIMARY) ON cl.num_club=n.club AND CAST(cl.num_club AS CHAR)=n.club LIMIT 201`,[`${likeLiteral(prefix)}%`]);
-    if(rows.length>200) throw new RangeError("Trop de rapprochements possibles. Verification nationale requise avant creation.");
+  const year=native.date.slice(0,4);
+  const searches=[[native.nom,native.prenom],[native.prenom,native.nom]];
+  for(const [last,first] of searches) {
+    // Refine before LIMIT: 201 people sharing a surname or a particle are not
+    // 201 identity matches. Both orientations retain the existing indexes.
+    const rows=await query(`${select} (SELECT id FROM nageurs FORCE INDEX (nageurs_clef) WHERE nom LIKE ? ESCAPE '=' AND prenom LIKE ? ESCAPE '=' AND date BETWEEN ? AND ? AND ${notMerged()} LIMIT 201) candidates JOIN nageurs n FORCE INDEX (PRIMARY) ON n.id=candidates.id LEFT JOIN clubs cl FORCE INDEX (PRIMARY) ON cl.num_club=n.club AND CAST(cl.num_club AS CHAR)=n.club LIMIT 201`,[`${likeLiteral(namePrefix(last))}%`,`${likeLiteral(first.trim().slice(0,3))}%`,`${year}-01-01`,`${year}-12-31`]);
+    if(rows.length>200) throw new RangeError("La recherche reste trop ambigue pour verifier les doublons. Aucun nageur cree. Contactez un administrateur national en lui transmettant les informations saisies.");
     add(rows);
   }
   const key=rules.swimmerIdentityKey(native.prenom,native.nom,native.date),inverted=rules.swimmerIdentityKey(native.nom,native.prenom,native.date),alerts=[];
@@ -45,8 +55,7 @@ async function previewCreation(connection,input,authorize,formatAlert) {
     let type="";
     if(inverted!==key && match.identityKey===inverted) type="inverted-identity";
     else if(match.identityKey!==key) {
-      const last=tokens(native.nom)[0]||"";
-      if(!last || match.birthDate.slice(0,4)!==native.date.slice(0,4) || !tokens(match.lastName).some(token=>token.slice(0,Math.min(6,last.length))===last.slice(0,Math.min(6,last.length))) || !tokens(match.firstName).some(token=>tokens(native.prenom).some(inputToken=>token.slice(0,3)===inputToken.slice(0,3)))) continue;
+      if(match.birthDate.slice(0,4)!==year || !similarLastName(native.nom,match.lastName) || !tokens(match.firstName).some(token=>tokens(native.prenom).some(inputToken=>token.slice(0,3)===inputToken.slice(0,3)))) continue;
       type="possible-duplicate";
     }
     alerts.push(formatAlert(match,type));
