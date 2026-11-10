@@ -58,6 +58,7 @@ function runUnitTests() {
     "nap-direct-tests.js",
     "direct-console-model-tests.js",
     "direct-console-service-tests.js",
+    "direct-public-sessions-tests.js",
     "direct-console-client-tests.js",
     "nap-direct-reset-tests.js",
     "direct-import-tests.js",
@@ -464,6 +465,7 @@ function runBrowserSmokeIfRequested() {
   run(process.execPath, [path.join(rootDir, "tests", "import-record-review-browser-tests.js")]);
   run(process.execPath, [path.join(rootDir, "tests", "import-resolution-browser-tests.js")]);
   run(process.execPath, [path.join(rootDir, "tests", "direct-browser-tests.js")]);
+  run(process.execPath, [path.join(rootDir, "tests", "direct-public-sessions-browser-tests.js")]);
   run(process.execPath, [path.join(rootDir, "tests", "direct-consoles-browser-tests.js")]);
   run(process.execPath, [path.join(rootDir, "tests", "direct-admin-workflow-browser-tests.js")]);
   run(process.execPath, [path.join(rootDir, "tests", "portal-reactivity-browser-tests.js")]);

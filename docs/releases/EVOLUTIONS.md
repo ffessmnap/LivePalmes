@@ -2,6 +2,11 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### Direct public — sessions et séries lentes/rapides · 10 novembre 2026 (préparation TEST)
+
+- Demande d’Antoine pendant la livraison précédente : filtre par session et sélection initiale suivant l’avancement publié ; un scratch commun aux meilleures séries décalées, accessible depuis chacun de leurs créneaux, avec horaires propres. Lot séparé démarré après clôture TEST bureau/accès. Inspection des 38 pages du PDF de Limoges puis réemploi local du vrai parseur : 44 groupes, huit sessions, huit épreuves réparties entre deux sessions reconnues (individuelles et relais), phase réelle `meilleure-serie`. Aucune importation réelle exécutée par l’agent.
+- Identifiants, imports et suivi WinPalme par session conservés ; lecture publique groupée et bornée, classements provisoires/terminés cohérents, ex æquo et rang commun dans la fiche nageur ; finales et épreuves indépendantes séparées, repli sans classement commun si participations ambiguës. Tests ciblés et responsive en cours, CI/MySQL puis serveur et Hosting TEST requis ; aucune migration, écriture métier ou PROD.
+
 ### Direct — accès par compte et actions bureau · 10 novembre 2026 (TEST déployé, retour utilisateur attendu)
 
 - Bilan validé puis intégration et TEST autorisés : contexte des décisions plus visible et confirmation à droite, retrait de « Voir la course » ; formulaire de délégation corrigé/remplacé par liste, ajout/modification/retrait confirmé et accès multiples par compte ; Mes compétitions / Mes consoles et ouverture automatique de l’unique compétition accessible. URL ou QR précis conservé à la connexion, pas d’outils bureau pour les seuls juges/speaker/secrétariat/Live.
