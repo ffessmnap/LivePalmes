@@ -2,8 +2,8 @@
   "schema": 1,
   "project": "livepalmes-test",
   "release": "direct_public_sessions",
-  "approval": "Antoine, chat Direct du 10 novembre 2026 : apres le lot bureau/acces, corriger sur TEST les sessions publiques et le classement commun des series lentes/rapides du PDF de Limoges. Imports et identifiants WinPalme conserves. Deux consommateurs calcules (lecteur public et gestion Direct via le calendrier), sources/labels seulement. Configurations, tables, autres fonctions et donnees reelles conservees ; aucune PROD.",
-  "applicationCommit": "b507748e021fb7faa3b567734658486e97dd4700",
+  "approval": "Antoine, chat Direct du 10 novembre 2026 : apres le lot bureau/acces, corriger sur TEST les sessions publiques et le classement commun des series lentes/rapides du PDF de Limoges. Imports et identifiants WinPalme conserves. Deux consommateurs calcules (lecteur public et gestion Direct via le calendrier), sources/labels seulement. Configurations, tables, autres fonctions et donnees reelles conservees ; aucune PROD. Complement de presentation valide avant premiere publication : boutons de session compacts et heure dans Actualiser, sans mention manuelle.",
+  "applicationCommit": "b22f6f4d7ea2a93420407868e581575212f2bd7e",
   "baseCommit": "ca2f2f12b9e0d6d441cd6ac77e8ab6674833dcae",
   "baselineRuns": [
     {
