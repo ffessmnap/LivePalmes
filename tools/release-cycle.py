@@ -440,6 +440,12 @@ def targeted_test_evidence(directory, current):
     trusted.update(reference_sources.trusted_revisions(directory, current, SimpleNamespace(
         gh=gh, artifact=artifact, read=read, matching_functions=matching_functions,
         test_backend_fingerprints=test_backend_fingerprints)))
+    spec = importlib.util.spec_from_file_location('club_recovery_evidence', ROOT / 'tools/publish-test-reference-recovery-sources.py')
+    recovery_sources = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(recovery_sources)
+    trusted.update(recovery_sources.trusted_revisions(directory, current, SimpleNamespace(
+        gh=gh, artifact=artifact, read=read, matching_functions=matching_functions,
+        test_backend_fingerprints=test_backend_fingerprints)))
     return trusted
 
 
