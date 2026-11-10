@@ -67,6 +67,13 @@ def check_idf_preservation(document, preservation, directory, after=False):
 
 def main():
     request = json.loads((Path(os.environ['PLAN']) / 'request.json').read_text())
+    if request.get('november10ValidatedRelease'):
+        spec = importlib.util.spec_from_file_location('november10_guard', Path(__file__).with_name('november10-validated-release-policy.py'))
+        guard = importlib.util.module_from_spec(spec); spec.loader.exec_module(guard)
+        if sys.argv[1:] not in ([], ['--after']):
+            raise ValueError('Mode du 10 novembre invalide')
+        guard.guard(Path(os.environ['PLAN']), sys.argv[1:] == ['--after'])
+        return
     if request.get('novemberValidatedRelease'):
         spec = importlib.util.spec_from_file_location('november_guard', Path(__file__).with_name('november-validated-release-policy.py'))
         guard = importlib.util.module_from_spec(spec); spec.loader.exec_module(guard)

@@ -102,6 +102,14 @@ def main(directory, run_id, kind):
         if kind == 'backend' and selected:
             state = load('readiness_state', 'production-release-state.py')
             functions = state.inventory()
+            if cycle.november10_release.approved(request):
+                nap = cycle.november10_release.initial(functions)
+                cycle.november10_release.guard(directory)
+                report['november10Release'] = {'existingSources': cycle.november10_release.approved(request),
+                    'napBindingFunctions': cycle.november10_release.contract()['napBindingFunctions'],
+                    'napBinding': nap, 'smtpBindingsPreserved': True, 'newFunctions': [],
+                    'sameExistingRuntimeAccount': True, 'mailPause': False,
+                    'historicalReplay': False, 'iamChanges': False, 'smtpInvocation': False, 'secretValuesRead': False}
             if cycle.november_release.approved(request):
                 cycle.november_release.initial(functions)
                 cycle.november_release.guard(directory)

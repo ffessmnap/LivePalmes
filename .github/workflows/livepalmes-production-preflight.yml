@@ -112,6 +112,7 @@ jobs:
         python tooling/tests/license-report-release-tests.py
         python tooling/tests/nap-retained-source-tests.py
         python tooling/tests/november-validated-release-tests.py
+        python tooling/tests/november10-validated-release-tests.py
         node tooling/tests/november-retained-scope-tests.js
         python tooling/tests/nap-account-release-tests.py
         node tooling/tests/release-nap-account-compatibility.js
