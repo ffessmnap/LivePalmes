@@ -618,10 +618,36 @@ def approved_production_home_routing(value, paths):
     return {'firebase.json'}
 
 
-def classify_test(paths, approved_top_files=False, approved_records_cleanup=False, approved_public_export_cleanup=False, approved_home_routing=False, approved_portal_session_rules=False, approved_static_asset_cache=False):
+CLUB_REFERENCE_CLEANUP_BASE = '7c5c54820c377546493614645b0f9a9735fcb606'
+CLUB_REFERENCE_CLEANUP_FILES = {
+    'functions/assets/club-reference.json': '165db79bffcdc98fe8e58149133c522f12555e10',
+    'performances/public/data/club-reference.js': 'e6306f53805915fc1fe8ac1f4ebc3b3dc277a13a',
+}
+
+
+def approved_club_reference_cleanup_paths(paths, candidate):
+    """TEST-only deletion of the two exact static club copies approved on 10 November."""
+    require(os.environ.get('TARGET_FIREBASE_PROJECT') == 'livepalmes-test', 'Retrait clubs reserve a TEST')
+    git('merge-base', '--is-ancestor', CLUB_REFERENCE_CLEANUP_BASE, candidate)
+    for name, blob in CLUB_REFERENCE_CLEANUP_FILES.items():
+        require(git('rev-parse', CLUB_REFERENCE_CLEANUP_BASE + ':' + name) == blob,
+                'Ancien referentiel clubs hors empreinte autorisee: ' + name)
+        require(not git('ls-tree', '-r', '--name-only', candidate, '--', name),
+                'Le referentiel clubs doit etre retire, jamais remplace: ' + name)
+    for name, forbidden in [('functions/index.js', 'club-reference.json'),
+                            ('assets/portal/modules-and-clubs.js', 'data/club-reference.js'),
+                            ('performances/public/admin-records.js', 'LIVEPALMES_CLUB_REFERENCE')]:
+        require(forbidden not in git('show', candidate + ':' + name),
+                'Dependance clubs statique encore active: ' + name)
+    return set(paths).intersection(CLUB_REFERENCE_CLEANUP_FILES)
+
+
+def classify_test(paths, approved_top_files=False, approved_records_cleanup=False, approved_public_export_cleanup=False, approved_home_routing=False, approved_portal_session_rules=False, approved_static_asset_cache=False, approved_club_reference_cleanup=False):
     # Exact files authorized by Antoine on TEST, 5 October 2026.
     # Ordinary and production classification remain unchanged.
     allowed = set(ignored_top_paths(paths, 'HEAD'))
+    if approved_club_reference_cleanup:
+        allowed |= approved_club_reference_cleanup_paths(paths, 'HEAD')
     if approved_static_asset_cache:
         base = os.environ.get('BASE_SHA', '')
         require(SHA.fullmatch(base), 'Base exacte requise pour le cache statique TEST')
