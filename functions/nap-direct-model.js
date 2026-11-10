@@ -34,6 +34,7 @@ function event(input,competition) {
   }
   return {id:hash(identity),eventCode:code,eventLabel:clean(input.eventLabel||code),sex,phase,date:input.date||competition.date,sessionKey:session,sessionLabel:clean(input.sessionLabel||`Session ${session}`,120),order:Math.max(0,Math.min(10000,Number(input.order)||0)),eventNumber:clean(input.eventNumber,16),scheduledAt:clean(input.scheduledAt,32),sourceEventId:clean(input.sourceEventId,100)||null,...schedule};
 }
+const rankingMode=value=>{const mode=clean(value||'scratch',24);if(!['scratch','classified'].includes(mode))throw new TypeError('Calcul des places inconnu.');return mode;};
 const participationStatus=value=>{const code=clean(value,8).toUpperCase();if(!['','NS','IN','HC'].includes(code))throw new TypeError('Mention de participation inconnue.');return code;};
 const participationFor=(publication,key)=>participationStatus(publication?.participationStatuses?.[key]||'');
 function entry(row) {
@@ -90,4 +91,4 @@ function prepareBatch(input,competition){
   return {groups,count,contentHash:hash(groups),operationKey:hash(['direct-batch',input.groups.map(group=>group.operationKey)])};
 }
 const visibleEntry=(row,series,results)=>Boolean(series&&row.has_series||results&&row.has_result);
-module.exports={participationStatus,participationFor,ROLES,MAX_EVENTS,MAX_ENTRIES,MAX_MEET_ENTRIES,clean,hash,parseJson,competitionId,time,event,entry,prepare,prepareBatch,publicEntry,visibleEntry,seriesFingerprint};
+module.exports={rankingMode,participationStatus,participationFor,ROLES,MAX_EVENTS,MAX_ENTRIES,MAX_MEET_ENTRIES,clean,hash,parseJson,competitionId,time,event,entry,prepare,prepareBatch,publicEntry,visibleEntry,seriesFingerprint};
