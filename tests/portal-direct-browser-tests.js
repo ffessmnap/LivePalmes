@@ -1,6 +1,7 @@
 'use strict';
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
 const {startStaticServer,launchBrowser,waitFor}=require('../tools/capture-portal-design'),{evaluate}=require('./helpers/portal-browser-evaluate');
+const {PUBLIC_ORIGIN,prepareLinksForPdf}=require('../tools/build-direct-guide');
 function install(){
   document.body.dataset.adminAuth='unlocked';document.querySelector('#adminPortalDashboard').hidden=false;document.querySelector('#adminPortalLoginPanel').hidden=true;document.querySelector('#adminPortalNavToggle').hidden=false;
   window.testCaps=[];window.testCalls=[];
@@ -26,6 +27,16 @@ async function main(){
       await evaluate(client,"testCaps=['engagements.region.manage'];testNav.updateCapabilityView();testNav.setMobilePortalNavigationOpen(true)");const shot=await client.send('Page.captureScreenshot',{format:'png'});fs.writeFileSync(path.join(output,'regional-'+width+'.png'),Buffer.from(shot.data,'base64'));
       await client.send('Page.navigate',{url:baseUrl+'/direct-guide.html'});assert.ok(await waitFor(client,"document.querySelectorAll('.guide-page').length===5&&document.readyState==='complete'",5000));assert.equal(await evaluate(client,'return document.documentElement.scrollWidth<=innerWidth'),true,'Guide sans débordement '+width);assert.equal(await evaluate(client,"return document.querySelectorAll('.guide-logo').length===5&&document.querySelectorAll('.screenshot img').length===3&&document.querySelectorAll('.diagram img').length===3&&[...document.images].every(image=>image.complete&&image.naturalWidth>0)"),true,'Illustrations et logo chargés');assert.ok(await evaluate(client,"return document.querySelector('.folder').textContent.includes('renc')&&document.querySelector('.path').textContent.includes('ResultatsSeries')"));
       const guide=await client.send('Page.captureScreenshot',{format:'png'});fs.writeFileSync(path.join(output,'guide-'+width+'.png'),Buffer.from(guide.data,'base64'));
+      assert.equal(await evaluate(client,"return /livepalmes-test|\\bTEST\\b/i.test(document.body.textContent)||[...document.links].some(link=>/livepalmes-test/i.test(link.href))"),false,'Guide sans contexte TEST');
+      assert.equal(await evaluate(client,"return document.querySelector('a[href=\"portail.html\"]').href"),baseUrl+'/portail.html','Portail dans le même environnement');
+      if(width===1440){
+        await evaluate(client,'('+prepareLinksForPdf.toString()+')('+JSON.stringify(PUBLIC_ORIGIN)+')');
+        const {data}=await client.send('Page.printToPDF',{printBackground:true,preferCSSPageSize:true});
+        const pdf=Buffer.from(data,'base64').toString('latin1');
+        assert.ok(pdf.includes('/URI (https://livepalmes.web.app/portail.html)'),'Lien PDF vers le portail PROD');
+        const uris=[...pdf.matchAll(/\/URI\s*\(([^)]*)\)/g)].map(match=>match[1]);
+        assert.ok(uris.length>0&&uris.every(uri=>!/(?:livepalmes-test|localhost|127\.0\.0\.1)/i.test(uri)),'Aucun lien PDF TEST ou serveur local');
+      }
       await client.send('Page.navigate',{url:baseUrl+'/direct-admin.html'});assert.ok(await waitFor(client,"document.readyState==='complete'",5000));await evaluate(client,"document.querySelector('#signOut').hidden=false");assert.equal(await evaluate(client,'return document.documentElement.scrollWidth<=innerWidth'),true,'Bureau avec aide et compte '+width);assert.equal(await evaluate(client,"return document.querySelector('.direct-header-actions a').getAttribute('href')"),'direct-guide.html');
     }
     assert.equal((await fetch(baseUrl+'/pilotage-livepalmes.html')).status,200,'Ancienne adresse préservée');console.log('Portail Direct : deux liens, rôles région/national/admin, révocation et exclusions club/consoles seules ; bureau avec aide et guide sur 1440/1024/390/320 px ; ancienne URL préservée. Aucun service réel.');
