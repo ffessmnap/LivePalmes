@@ -2,7 +2,7 @@
 // Real SQL for the new Direct tables, only inside the existing loopback CI container.
 // The native calendar SELECT is a fixture; no real NAP credentials are accepted.
 const assert=require('node:assert/strict'),mysql=require('../functions/node_modules/mysql2/promise');
-const schema=require('../functions/nap-direct-schema'),{createStore}=require('../functions/nap-direct-store'),{readPublic}=require('../functions/nap-direct-public');
+const schema=require('../functions/nap-direct-schema'),{createStore}=require('./helpers/direct-test-clock').storeModule,{readPublic}=require('./helpers/direct-test-clock').publicModule;
 const {randomUUID}=require('node:crypto');
 async function main(){
   assert.equal(process.env.NAP_TEAM_FIXTURE_ALLOWED,'isolated-ci');assert.ok(process.env.NAP_TEAM_FIXTURE_PASSWORD);
@@ -29,6 +29,9 @@ async function main(){
     const before=await schema.approvedDirectSchema(pool,{phase:'prepare',confirmation:'nap-create-livepalmes-direct-tables'});
     await schema.approvedDirectSchema(pool,{phase:'apply',confirmation:'nap-create-livepalmes-direct-tables',schemaHash:before.schemaHash,planHash:schema.planHash});
     assert.equal((await pool.query('SHOW TABLES'))[0].length,5);
+    // Only in this isolated database: native dates are joined by the real primary key.
+    await pool.execute('CREATE TABLE competitions (id INT PRIMARY KEY,date DATE,enddate DATE)');
+    await pool.execute('INSERT INTO competitions (id,date,enddate) VALUES (?,?,?)',[id,native.date,native.enddate]);
     await store.settings(id,actor,{consoles:['computer'],operationKey:randomUUID()});
     await publish(request('series',[person('Alice',1),person('Béatrice',2)]));
     for(const [name,series,time]of [['Béatrice',2,'01:12.34'],['Alice',1,'01:10.12']])await publish(request('results',[{...person(name,series),resultTime:time}],series));
@@ -61,6 +64,7 @@ async function main(){
     await assert.rejects(readPublic(wrapped,'production',{id}),error=>error.directCode==='not-found','TEST et PROD restent indépendants dans la même base');
     const plans=[];for(const [sql,params]of [["SELECT * FROM livepalmes_direct_events WHERE environment=? AND competition_id=? ORDER BY program_order,id LIMIT 301",['test',id]],["SELECT * FROM livepalmes_direct_entries WHERE environment=? AND competition_id=? AND event_id=? ORDER BY series_number,lane,participant_key LIMIT 1001",['test',id,detail.events[0].id]]]){const [plan]=await pool.execute('EXPLAIN '+sql,params);plans.push(plan.map(row=>({table:row.table,key:row.key,rows:row.rows})));assert.ok(plan.every(row=>Number(row.rows)<=1001));}
     await require('./helpers/verify-direct-console-mysql').verify({pool:wrapped,id,actor,native,failJournal:value=>{failJournal=value;}});
+    await require('./helpers/verify-direct-date-archive-mysql').verify({pool:wrapped,id,actor});
     const [[resetBefore]]=await pool.execute('SELECT * FROM livepalmes_direct_competitions WHERE environment=? AND competition_id=?',['test',id]);
     await pool.execute("INSERT INTO livepalmes_direct_access (environment,competition_id,user_uid,can_manage,allowed_consoles_json,active,expires_at,version,created_at,updated_at,created_by,updated_by) VALUES ('test',?,'fixture-delegate',1,JSON_ARRAY('computer'),1,NULL,1,UTC_TIMESTAMP(6),UTC_TIMESTAMP(6),'fixture','fixture')",[id]);
     const entryColumns=schema.tables.find(table=>table.name==='livepalmes_direct_entries').columns.map(column=>column.name),copyColumns=entryColumns.map(name=>name==='environment'?"'production'":'`'+name+'`');

@@ -2,6 +2,10 @@
 
 <!-- description: Référence du langage visuel, des composants d’interface et des règles responsive déjà présents dans LivePalmes. -->
 
+## Bureau Direct archivé — 11 novembre 2026
+
+La mention d’archivage automatique prend place dans la ligne de dates existante. L’action de correction des résultats reste dans les actions de compétition et ouvre le composant de publication WinPalme existant, en pleine largeur, sans second bureau ni console interactive. Les contrôles de visibilité et d’import de séries/PDF ne sont pas proposés en correction d’archive. Le suivi des imports reste lisible et dépliable. Aucun nouveau bandeau public ni ligne mobile supplémentaire.
+
 ## Navigation publique et liens de compétition — 11 novembre 2026
 
 Sur les pages publiques uniquement, le bandeau mobile utilise une rangée de marque / Portail / compte présent / « ☰ Menu », avec une cible d’au moins 44 px pour chaque action. L’emplacement d’un compte absent n’est plus réservé. À 380 px et moins, la marque se réduit au logo lorsque le compte est présent ; le lien conserve son nom accessible. Le menu garde une largeur naturelle même sur les pages Performances. Les rubriques mobiles portent un chevron explicite ; leurs liens restent utilisables au toucher et la navigation peut défiler en hauteur si l’écran est court. Le portail privé conserve sa présentation existante.

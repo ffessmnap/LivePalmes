@@ -12310,7 +12310,7 @@ exports.manageLivePalmesDirect = onCall({...NAP_PERFORMANCE_OPTIONS,timeoutSecon
       checkResetDocuments:async()=>require("./nap-direct-documents").checkReset(storage,ENVIRONMENT)
     })(request);
   }catch(error){
-    if(error.directCode)throw new HttpsError(error.directCode,error.message);
+    if(error.directCode)throw new HttpsError(error.directCode,error.message,error.directDetails);
     if(error instanceof TypeError||error instanceof RangeError)throw new HttpsError("invalid-argument",error.message);
     if(error.code==='ER_NO_SUCH_TABLE')throw new HttpsError("failed-precondition","Les tables du Direct ne sont pas encore installées.");
     throw new HttpsError("unavailable","Le Direct est momentanément indisponible. Actualiser pour vérifier l’état de la publication.");

@@ -1,11 +1,11 @@
 "use strict";
 const model=require("./nap-direct-model"),{execute}=require("./nap-query");
 const {SELECT_EVENT,EVENT_JOINS,eventFromRow}=require("./nap-calendar-event");
-const progress=require('./nap-direct-progress');
+const progress=require('./nap-direct-progress'),archive=require('./nap-direct-state');
 const json=JSON.stringify, read=model.parseJson;
 const fail=(message,code="failed-precondition")=>Object.assign(new Error(message),{directCode:code});
 const caches=new Map();
-function createStore(pool,environment) {
+function createStore(pool,environment,{clock=Date.now}={}) {
   if(!["test","production"].includes(environment))throw new TypeError("Environnement Direct invalide.");
   const scope=id=>[environment,model.competitionId(id)];
   const q=(sql,values=[])=>execute(pool,sql,values);
@@ -18,13 +18,14 @@ function createStore(pool,environment) {
     if(event.eventType!=="pool")throw fail("Le Direct est réservé aux compétitions piscine.");
     const result={...event,nativeId:id};nativeCache.set(id,result);return result;
   }
-  async function config(id,connection=pool,lock=false) {return (await execute(connection,`SELECT * FROM livepalmes_direct_competitions WHERE environment=? AND competition_id=? LIMIT 1${lock?' FOR UPDATE':''}`,scope(id)))[0]||null;}
+  async function config(id,connection=pool,lock=false) {return (await execute(connection,`SELECT d.*,c.date AS direct_date,c.enddate AS direct_enddate FROM livepalmes_direct_competitions d LEFT JOIN competitions c ON c.id=d.competition_id WHERE d.environment=? AND d.competition_id=? LIMIT 1${lock?' FOR UPDATE':''}`,scope(id)))[0]||null;}
   async function access(id,uid) {return (await q("SELECT * FROM livepalmes_direct_access WHERE environment=? AND competition_id=? AND user_uid=? AND active=1 AND (expires_at IS NULL OR expires_at>UTC_TIMESTAMP(6)) LIMIT 1",[...scope(id),uid]))[0]||null;}
   async function events(id,connection=pool) {return execute(connection,`SELECT * FROM livepalmes_direct_events WHERE environment=? AND competition_id=? ORDER BY program_order,id LIMIT ${model.MAX_EVENTS+1}`,scope(id));}
   async function program(id){const [list,counts]=await Promise.all([events(id),progress.read(pool,scope(id))]);if(list.length>model.MAX_EVENTS)throw fail('Programme trop volumineux.');return list.map(row=>({...row,progress:counts.get(row.id)||progress.empty()}));}
   async function entries(id,eventId,connection=pool) {const rows=await execute(connection,`SELECT * FROM livepalmes_direct_entries WHERE environment=? AND competition_id=? AND event_id=? ORDER BY series_number,lane,participant_key LIMIT ${model.MAX_ENTRIES+1}`,[...scope(id),eventId]);if(rows.length>model.MAX_ENTRIES)throw fail("Épreuve trop volumineuse.");return rows;}
   function eventView(row) {const publication=read(row.publication_state_json);return {id:row.id,eventCode:row.event_code,eventLabel:row.event_label,sex:row.sex,phase:row.phase,date:row.event_date,sessionKey:row.session_key,sessionLabel:row.session_label,order:row.program_order,eventNumber:row.event_number,scheduledAt:row.scheduled_at,heatSchedule:publication.heatSchedule||[],...(Number(publication.expectedSeries)>0?{expectedSeries:Number(publication.expectedSeries)}:{}),...(row.progress?{progress:row.progress}:{}),publication:{series:Boolean(publication.series),results:Boolean(publication.results)},version:Number(row.version)};}
-  function configView(row) {return row?{state:row.state,publicVisible:Boolean(row.public_visible),consoles:read(row.enabled_consoles_json,[]),documents:read(row.documents_json,[]),version:Number(row.version),revision:Number(row.public_revision)}:null;}
+  function configView(row) {return row?{state:effectiveState(row),configuredState:row.state,publicVisible:Boolean(row.public_visible),consoles:read(row.enabled_consoles_json,[]),documents:read(row.documents_json,[]),version:Number(row.version),revision:Number(row.public_revision)}:null;}
+  const effectiveState=row=>archive.fromRow(row,clock());
   async function detail(id,eventId,publicOnly=false) {
     const competition=await native(id);let current;
     try{current=await config(id);}catch(error){if(error.code==='ER_NO_SUCH_TABLE')throw fail("Les tables du Direct ne sont pas encore installées.");throw error;}
@@ -37,9 +38,9 @@ function createStore(pool,environment) {
     const rows=selected?await entries(id,selected.id):[],p=read(selected?.publication_state_json);
     return {competition,config:configView(current),events:visible.map(eventView),selectedEventId:selected?.id||null,entries:publicOnly?rows.map(row=>model.publicEntry(row,Boolean(p.series),Boolean(p.results),model.participationFor(p,row.participant_key))):rows.map(row=>({...model.publicEntry(row,true,true,model.participationFor(p,row.participant_key)),sourceEntryId:row.source_entry_id,swimmerId:row.swimmer_id,clubId:row.club_id}))};
   }
-  async function watchContext(id){
+  async function watchContext(id,input={}){
     const competition=await native(id),current=await config(id);
-    if(!current||current.state!=='active')throw fail('Activer le Direct avant de configurer la surveillance.');
+    archive.writable(current,input.archiveCorrection===true,clock());
     const list=await events(id);if(list.length>model.MAX_EVENTS)throw fail('Programme trop volumineux.');
     const all=await q(`SELECT * FROM livepalmes_direct_entries WHERE environment=? AND competition_id=? ORDER BY event_id,series_number,lane,participant_key LIMIT ${model.MAX_MEET_ENTRIES+1}`,scope(id));
     if(all.length>model.MAX_MEET_ENTRIES)throw fail('Compétition trop volumineuse.');
@@ -48,14 +49,15 @@ function createStore(pool,environment) {
     for(const row of rows){const key=row.event_id+':'+Number(row.series_number);if(!heats.has(key))heats.set(key,[]);heats.get(key).push(row);}
     return {competition,config:configView(current),events:list.filter(row=>visible.has(row.id)).map(eventView),entries:rows.map(row=>({...model.publicEntry(row,true,true,model.participationFor(publications.get(row.event_id),row.participant_key)),eventId:row.event_id,sourceEntryId:row.source_entry_id})),seriesFingerprints:Object.fromEntries([...heats].map(([key,values])=>[key,model.seriesFingerprint(values)]))};
   }
-  async function transaction(id,actor,expected,callback,{allowClosed=false,allowMissing=false,allowReset=false}={}) {
+  async function transaction(id,actor,expected,callback,{allowClosed=false,allowMissing=false,allowReset=false,archiveCorrection=false}={}) {
     const c=await pool.getConnection();let started=false;
     try{await c.beginTransaction();started=true;const current=await config(id,c,true);
       if(!current&&!allowMissing)throw fail("Activer le Direct avant cette action.");
       if(current&&Number(expected)!==Number(current.version))throw fail("La compétition a changé. Actualiser avant de confirmer.","aborted");
       if(current?.state==='resetting'&&!allowReset)throw fail('Réinitialisation en cours. Terminer la suppression avant toute autre modification.');
-      if(current&&current.state!=="active"&&!allowClosed)throw fail("Les consoles de cette compétition sont fermées.");
+      if(current&&!allowClosed)archive.writable(current,archiveCorrection,clock());
       const result=await callback(c,current);
+      if(current&&!allowClosed)archive.writable(current,archiveCorrection,clock());
       if(current)await execute(c,"UPDATE livepalmes_direct_competitions SET version=version+1,public_revision=public_revision+1,updated_at=UTC_TIMESTAMP(6),updated_by=? WHERE environment=? AND competition_id=?",[actor.uid,...scope(id)]);
       await c.commit();started=false;caches.delete(`${environment}:${id}`);return result;
     }catch(error){if(started)await c.rollback();throw error;}finally{c.release();}
@@ -79,7 +81,7 @@ function createStore(pool,environment) {
   async function preview(id,input) {
     const competition=await native(id),prepared=model.prepare(input,competition),current=await config(id);
     if(prepared.seriesFingerprint)throw fail('Utiliser la publication groupée pour les résultats TXT contrôlés.');
-    if(!current||current.state!=='active')throw fail("Activer le Direct avant la publication.");
+    archive.writable(current,false,clock());
     const before=await entries(id,prepared.event.id);
     checkRelayResultMapping(prepared,before);
     return {prepared,version:Number(current.version),replaces:before.some(row=>prepared.kind==='series'?Boolean(row.entry_time_raw)||row.series_number!=null:Boolean(row.result_time_raw)||Boolean(row.result_status)),fingerprint:model.hash([prepared,Number(current.version)])};
@@ -102,6 +104,7 @@ function createStore(pool,environment) {
       const e=prepared.event;
       if(!list.some(row=>row.id===e.id)&&list.length>=model.MAX_EVENTS)throw fail("Nombre maximal d’épreuves atteint.");
       const current=list.find(row=>row.id===e.id),publication={...read(current?.publication_state_json),[prepared.kind]:true};
+      if(input.archiveCorrection===true&&allBefore.some(row=>row.has_result))publication.results=Boolean(read(current.publication_state_json).results);
       if(prepared.kind==='series'&&e.expectedSeries){publication.expectedSeries=prepared.seriesNumber==null?e.expectedSeries:Math.max(Number(publication.expectedSeries)||0,e.expectedSeries);}
       if(prepared.kind==='series'&&prepared.event.heatSchedule){
         const incoming=new Map(prepared.event.heatSchedule.map(heat=>[heat.number,heat]));
@@ -154,7 +157,8 @@ function createStore(pool,environment) {
   }
   async function previewBatch(id,input){
     const batch=model.prepareBatch(input,await native(id)),current=await config(id);
-    if(!current||current.state!=='active')throw fail('Activer le Direct avant la publication.');
+    archive.writable(current,input.archiveCorrection===true,clock());
+    if(input.archiveCorrection===true&&batch.groups.some(group=>group.kind!=='results'||!group.seriesFingerprint||!group.seriesNumber||group.source.type!=='winpalme-txt'))throw fail('En archive, seuls les résultats WinPalme des séries existantes peuvent être corrigés.');
     const list=await events(id);if(list.length>model.MAX_EVENTS)throw fail('Programme trop volumineux.');
     const all=await q(`SELECT * FROM livepalmes_direct_entries WHERE environment=? AND competition_id=? ORDER BY event_id,series_number,lane,participant_key LIMIT ${model.MAX_MEET_ENTRIES+1}`,scope(id));
     if(all.length>model.MAX_MEET_ENTRIES)throw fail('Compétition trop volumineuse.');
@@ -164,10 +168,11 @@ function createStore(pool,environment) {
       const event=list.find(row=>row.id===group.event.id),before=(byEvent.get(group.event.id)||[]).filter(row=>row.has_series&&Number(row.series_number)===group.seriesNumber);
       if(!event||!read(event.publication_state_json).series||!before.length||model.seriesFingerprint(before)!==group.seriesFingerprint)throw fail('La répartition des séries a changé. Arrêter et reconfigurer la surveillance.','aborted');
       if(before.length!==group.rows.length||group.rows.some(row=>!before.some(old=>old.participant_key===row.key&&Number(old.series_number)===row.series&&Number(old.lane)===row.lane)))throw fail('Les lignes du TXT ne correspondent pas aux séries importées. Contrôler la répartition.');
+      if(input.archiveCorrection===true&&group.rows.some(row=>{const old=before.find(value=>value.participant_key===row.key);return row.lastName!==old.last_name||row.firstName!==old.first_name||Number(row.birthYear)!==Number(old.birth_year)||row.club!==old.club_label||row.category!==old.category_code||row.seed.raw!==old.entry_time_raw||model.hash(row.members)!==model.hash(read(old.relay_members_json,[]));}))throw fail('Les identités, engagements et catégories des séries doivent rester inchangés en archive.');
     }
     if(new Set([...list.map(row=>row.id),...batch.groups.map(group=>group.event.id)]).size>model.MAX_EVENTS)throw fail('Nombre maximal d’épreuves atteint.');
     const replaced=batch.groups.map(group=>replacesScope(group,byEvent.get(group.event.id)||[]));
-    return {batch,version:Number(current.version),list,byEvent,replaced,fingerprint:model.hash([batch.groups,Number(current.version)]),replacements:batch.groups.filter((_,index)=>replaced[index]).map(group=>group.event.eventLabel+' · '+group.event.sex+' · '+group.event.sessionLabel+(group.seriesNumber?' · Série '+group.seriesNumber:''))};
+    return {batch,version:Number(current.version),list,byEvent,replaced,fingerprint:model.hash(input.archiveCorrection===true?[batch.groups,Number(current.version),'archive-results']:[batch.groups,Number(current.version)]),replacements:batch.groups.filter((_,index)=>replaced[index]).map(group=>group.event.eventLabel+' · '+group.event.sex+' · '+group.event.sessionLabel+(group.seriesNumber?' · Série '+group.seriesNumber:''))};
   }
   async function batchReceipt(id,batch){
     const receipt=await q('SELECT after_json FROM livepalmes_direct_publications WHERE environment=? AND competition_id=? AND operation_key=? LIMIT 1',[...scope(id),model.hash([batch.operationKey,null])]);
@@ -176,7 +181,7 @@ function createStore(pool,environment) {
     return {ok:true,count:batch.count,groups:batch.groups.length,replayed:true};
   }
   async function publishBatch(id,actor,input){
-    const batch=model.prepareBatch(input,await native(id)),previous=await batchReceipt(id,batch);if(previous)return previous;
+    const batch=model.prepareBatch(input,await native(id)),previous=await batchReceipt(id,batch);if(previous){archive.writable(await config(id),input.archiveCorrection===true,clock());return previous;}
     const previewed=await previewBatch(id,input);
     if(input.fingerprint!==previewed.fingerprint)throw fail('L’aperçu a changé. Contrôler de nouveau avant publication.','aborted');
     if(previewed.replacements.length&&input.confirmReplacement!==true)throw fail('Confirmer le remplacement des données déjà publiées.');
@@ -184,12 +189,12 @@ function createStore(pool,environment) {
       for(let index=0;index<batch.groups.length;index++){
         const prepared=batch.groups[index];
         const before=(previewed.byEvent.get(prepared.event.id)||[]).filter(row=>prepared.seriesNumber==null||Number(row.series_number)===prepared.seriesNumber);
-        await applyPrepared(c,id,actor,prepared,{operationKey:model.hash([batch.operationKey,input.groups[index].operationKey]),batchId:batch.operationKey},previewed.list,before,previewed.replaced[index],previewed.byEvent.get(prepared.event.id)||[]);
+        await applyPrepared(c,id,actor,prepared,{operationKey:model.hash([batch.operationKey,input.groups[index].operationKey]),batchId:batch.operationKey,archiveCorrection:input.archiveCorrection===true},previewed.list,before,previewed.replaced[index],previewed.byEvent.get(prepared.event.id)||[]);
       }
       const counts=await checkMeetLimit(c,id);
       await journal(c,id,actor,{action:'publish-batch',operationKey:batch.operationKey,batchId:batch.operationKey,after:{contentHash:batch.contentHash,count:batch.count,groups:batch.groups.length}});
       return {ok:true,count:batch.count,groups:batch.groups.length,version:Number(current.version)+1,revision:Number(current.public_revision)+1,events:previewed.list.map(row=>eventView({...row,progress:counts.get(row.id)||progress.empty()}))};
-    });
+    },{archiveCorrection:input.archiveCorrection===true});
   }
   async function visibility(id,actor,input) {
     if(!['series','results'].includes(input.kind)||typeof input.visible!=='boolean')throw new TypeError("Publication à retirer ou rétablir invalide.");
@@ -221,6 +226,6 @@ function createStore(pool,environment) {
       return {...result,version:Number(current.version)+1,revision:Number(current.public_revision)+1};
     },{allowClosed:true,allowReset:true});
   }
-  return {native,config,access,detail,program,events,entries,watchContext,settings,preview,publish,previewBatch,publishBatch,visibility,grants,grant,history,document,reset,scope,q,eventView,configView};
+  return {native,config,access,detail,program,events,entries,watchContext,settings,preview,publish,previewBatch,publishBatch,visibility,grants,grant,history,document,reset,scope,q,eventView,configView,effectiveState,clock};
 }
 module.exports={createStore,fail};
