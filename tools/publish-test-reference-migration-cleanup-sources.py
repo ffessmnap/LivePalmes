@@ -9,7 +9,7 @@ publisher = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(publisher)
 publisher.RELEASE = 'reference_migration_cleanup'
 publisher.CONTRACT = ROOT / '.github/releases/evidence/20261111-reference-migration-cleanup-contract.json'
-publisher.CONTRACT_SHA256 = 'e12c1d62e2c3d201d38c9961163f35183ff0d1235e2957c3d19e6944350a1b30'
+publisher.CONTRACT_SHA256 = 'b50f98e900cc428a1c604e866074620219f4ae06426438160d11d507c92e0f31'
 publisher.BINDING_FUNCTIONS = frozenset()
 publisher.publisher.DIGEST = publisher.CONTRACT_SHA256
 # Validate the new contract independently of the historical club contract.

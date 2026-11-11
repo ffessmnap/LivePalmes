@@ -274,6 +274,7 @@
     "tests/test-reference-recovery-sources-tests.py",
     "tests/test-publication-coordination-tests.py",
     "tools/publish-test-reference-migration-cleanup-sources.py",
-    "tools/release-cycle.py"
+    "tools/release-cycle.py",
+    "tests/nap-release-cleanup-tests.js"
   ]
 }
