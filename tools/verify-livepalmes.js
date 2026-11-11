@@ -77,6 +77,7 @@ function runUnitTests() {
     "nap-public-swimmer-redirect-tests.js",
     "nap-direct-tops-tests.js",
     "nap-damien-hebert-tests.js",
+    "trophy-mobile-tests.js",
     "nap-top-requests-tests.js",
     "nap-public-reference-tests.js",
     "nap-source-inventory-tests.js",

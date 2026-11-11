@@ -2,6 +2,12 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### Public — trophée mobile compact · 11 novembre 2026 (réalisation autorisée)
+
+- Présentation validée sur maquette dans le chat du trophée : club abrégé uniquement, lignes resserrées, total et « pts » sur une seule ligne, chevron sans libellé visible et épreuves dépliables. Antoine demande : « C'est bien comme ça, tu peux appliquer cette présentation au trophée et la mettre sur TEST puis sur PROD car ce n'est que du visuel pas besoin de perdre du temps ». Cet accord porte sur le visuel présenté et la livraison demandée, sans recette d’une version TEST réalisée inventée ni suppression des contrôles de publication.
+- Périmètre public uniquement : rendu mobile jusqu’à 850 px, portrait/paysage ; tableau ordinateur et aperçu national conservés. Abréviation `abre_club` déjà fournie par NAP, mêmes points, temps, ordre, égalités et limite de 32 places. Zéro requête, lecture ou écriture supplémentaire à l’ouverture, au dépliage, au changement de catégorie et au rafraîchissement ; aucun changement serveur ou donnée sportive.
+- PR, CI, preuve TEST et bilan PROD à compléter après réalisation des contrôles. Aucun déploiement annoncé à ce stade ; accord Infra sur le bilan exact requis selon le circuit commun.
+
 ### Public / Direct — navigation et archivage · 11 novembre 2026 (PROD publiée)
 
 - Candidat applicatif `501ecab146b50da5944af25b9f728267a35defcd` : navigation mobile compacte et filtres Records/MPF avec chargement/panne/réessai de [#835](https://github.com/ffessmnap/LivePalmes/pull/835), archivage Direct à minuit Europe/Paris après le dernier jour et correction WinPalme des seules séries existantes de [#837](https://github.com/ffessmnap/LivePalmes/pull/837). Les trois retours humains authentiques sont consignés dans les deux sections ci-dessous, sans recette manuelle détaillée inventée. Accord explicite Infra pour l’adaptation limitée aux deux fonctions, puis « une fois que tout est bon tu peux publier en prod stp ».
