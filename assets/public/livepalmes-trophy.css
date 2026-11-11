@@ -104,12 +104,22 @@
   .trophy-mobile-summary button:focus-visible { outline: 2px solid #086f7e; outline-offset: -2px; }
   .trophy-mobile-detail { margin: 0 8px 10px 38px; padding: 8px; border-radius: 6px; background: #f3f9fa; }
   .trophy-mobile-detail[hidden] { display: none; }
-  .trophy-mobile-detail table { width: 100%; min-width: 0; table-layout: fixed; border-collapse: collapse; }
+  /* The shared Performances mobile stylesheet turns every table into cards.
+     Keep this small detail table tabular, including its header and row groups. */
+  .trophy-mobile-detail table { display: table; width: 100%; min-width: 0; table-layout: fixed; border-collapse: collapse; }
+  .trophy-mobile-detail thead { display: table-header-group; }
+  .trophy-mobile-detail tbody { display: table-row-group; padding: 0; gap: 0; }
+  .trophy-mobile-detail tr {
+    display: table-row; width: auto; max-width: none; overflow: visible;
+    border: 0; border-radius: 0; background: transparent;
+  }
   .trophy-mobile-detail :is(th, td) {
-    position: static; padding: 6px 2px; border-bottom: 1px solid #cfe1e5;
+    display: table-cell; width: auto; max-width: none; grid-template-columns: none; gap: 0;
+    position: static; padding: 4px 2px; border-bottom: 1px solid #cfe1e5;
     background: transparent; color: #153c4a; font-size: 13px; font-weight: 400;
     line-height: 1.5; text-align: right; white-space: normal; vertical-align: middle; text-transform: none;
   }
+  .trophy-mobile-detail td::before { content: none; display: none; }
   .trophy-mobile-detail :is(th, td):first-child { width: 36%; text-align: left; }
   .trophy-mobile-detail thead th { color: #47636e; font-size: 12px; }
   .trophy-mobile-detail tbody tr:last-child > * { border-bottom: 0; }
