@@ -217,7 +217,7 @@ assert.ok(competitionPageSource.includes("calendar-results-banner"));
 assert.ok(competitionPageSource.includes("calendar-detail-hero-content"));
 assert.ok(!competitionPageSource.includes("Retrouvez les résultats de cette compétition."));
 assert.ok(!competitionPageSource.includes("Résultats disponibles"));
-assert.ok(competitionPageSource.includes("Télécharger le protocole"));
+assert.ok(!competitionPageSource.includes("Télécharger le protocole"),"protocol shortcut removed; Documents retains the PDF");
 assert.ok(competitionPageSource.includes('title:"Protocole des résultats"'));
 assert.ok(competitionPageSource.includes("documentsHtml(event.documents,event.results)"));
 assert.ok(competitionPageSource.includes("!items.some(document=>String(document.url"));
@@ -260,7 +260,7 @@ const sharedAssociations = require("../functions/config/calendar-result-associat
 assert.deepEqual(sharedAssociations.e40fe3129ffd5d76286774193a2855ed, [{ calendarCompetitionId: "4980" }]);
 assert.ok(sharedAssociations.d18c4f3dc04b5cc5402f340fe2af1ca5.some((rule) => rule.calendarCompetitionId === "4981" && rule.categoryKind === "master"));
 assert.ok(sharedAssociations.d18c4f3dc04b5cc5402f340fe2af1ca5.some((rule) => rule.calendarCompetitionId === "5132" && rule.categoryKind === "minime"));
-assert.ok(competitionPageSource.includes("Télécharger le protocole"));
+assert.ok(competitionPageSource.includes("resultsHtml(event.results,event.direct)"));
 assert.ok(competitionPageSource.includes('pool:"Compétition piscine"'));
 assert.ok(competitionPageSource.includes('openWater:"Compétition eau libre"'));
 assert.ok(competitionPageSource.includes("Niveau ${String(label).toLocaleLowerCase"));
@@ -279,7 +279,7 @@ const organizerHref = competitionPageSource.match(/href="mailto:\$\{api.escapeHt
 assert.equal(vm.runInNewContext(organizerHref, { event: { organizerEmail: " club+sport@example.org ; autre@example.org " } }),
   "club%2Bsport@example.org,autre@example.org", "Le lien public conserve chaque adresse et encode les caractères réservés.");
 assert.ok(competitionPageSource.includes('state==="resultsPublished"'));
-assert.ok(competitionPageSource.indexOf("resultsHtml(event.results)") < competitionPageSource.indexOf("calendar-detail-grid"));
+assert.ok(competitionPageSource.indexOf("resultsHtml(event.results,event.direct)") < competitionPageSource.indexOf("calendar-detail-grid"));
 assert.ok(competitionPageSource.indexOf("Informations pratiques") < competitionPageSource.indexOf('<h2>Documents</h2>'));
 assert.ok(competitionPageSource.indexOf('<h2>Documents</h2>') < competitionPageSource.indexOf('<h2>Programme</h2>'));
 
@@ -291,8 +291,8 @@ for (const file of ["calendrier.html", "competition.html"]) {
   assert.ok(html.includes("mailto:livepalmes@nap-ffessm.fr"));
 }
 const competitionHtml = fs.readFileSync(path.join(root, "competition.html"), "utf8");
-assert.ok(competitionHtml.includes("competition.js?v=20261108-mail-contacts-1"));
-assert.ok(competitionHtml.includes("livepalmes-public-calendar.css?v=20261106-direct-badge-1"));
+assert.ok(competitionHtml.includes("competition.js?v=20261111-public-compact-1"));
+assert.ok(competitionHtml.includes("livepalmes-public-calendar.css?v=20261111-public-compact-1"));
 assert.ok(competitionHtml.includes("livepalmes-whatsapp-qr.css?v=20260831-whatsapp-qr-1"));
 assert.ok(competitionHtml.includes("livepalmes-whatsapp-qr.js?v=20260831-whatsapp-qr-1"));
 assert.ok(competitionHtml.includes("LivePalmes – Calendrier fédéral"));
@@ -351,3 +351,23 @@ assert.ok(!calendarCss.includes(".calendar-filters label:first-child"));
 assert.ok(competitionPageSource.indexOf("Accéder aux engagements LivePalmes") < competitionPageSource.indexOf("Les engagements sont effectués exclusivement"));
 
 console.log("Public calendar tests OK");
+
+// Exercise the real presentation functions independently of the data readers.
+const presentationApi=browserCalendar;
+const eventTemplate=calendarPageSource.match(/^  function eventHtml\(event\).*$/m)[0];
+const listHtml=event=>vm.runInNewContext(eventTemplate+";eventHtml(event)",{api:presentationApi,event,dateShort:()=>"1 nov.",displayStatus:()=>"resultsPublished"});
+const archivedEvent={id:"archived",name:"Compétition",date:"2026-11-01",city:"Angers",eventType:"pool",level:"national",direct:{state:"archived",url:"/archive.html"}};
+assert.doesNotMatch(listHtml(archivedEvent),/Archive du Direct/);
+assert.match(listHtml(archivedEvent),/Résultats publiés/);
+assert.match(listHtml(archivedEvent),/competition.html\?id=archived/);
+assert.match(listHtml({...archivedEvent,direct:{state:"active"}}),/LivePalmes Direct/);
+const actionsTemplate=competitionPageSource.match(/^  function resultsHtml\(.*$/m)[0];
+const actions=(results,direct)=>vm.runInNewContext(actionsTemplate+";resultsHtml(results,direct)",{api:presentationApi,results,direct});
+assert.equal(actions({pdfUrl:"/protocol.pdf"}),"","PDF-only competition exposes its protocol in Documents");
+assert.match(actions({url:"#competitionResultsTitle",pdfUrl:"/protocol.pdf"},archivedEvent.direct),/href="#competitionResultsTitle"/);
+assert.match(actions(null,archivedEvent.direct),/href="\/archive.html">Archive du Direct/);
+assert.doesNotMatch(actions({url:"#competitionResultsTitle",pdfUrl:"/protocol.pdf"},archivedEvent.direct),/protocol.pdf/);
+assert.equal(actions(null,null),"");
+const documentsTemplate=competitionPageSource.match(/^  function documentsHtml\(.*$/m)[0];
+const protocolDocuments=vm.runInNewContext(documentsTemplate+';documentsHtml([], {pdfUrl:"/protocol.pdf"})',{api:presentationApi,categoryLabels:{results:"Résultats"}});
+assert.match(protocolDocuments,/Protocole des résultats/);assert.match(protocolDocuments,/href="\/protocol.pdf"/);

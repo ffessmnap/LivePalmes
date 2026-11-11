@@ -1,0 +1,33 @@
+{
+  "schema": 1,
+  "project": "livepalmes-test",
+  "release": "public_navigation",
+  "approval": "Antoine, coordination du 11 novembre 2026 : Oui, complément ciblé sur TEST. Synchroniser le modèle d’accueil serveur et publier les seules sources/labels de readNapPublicSwimmer, pour les deux URL versionnées CSS/JS de l’en-tête public. Contrats et outillage strictement nécessaires autorisés ; configurations, droits, lectures métier, données, autres fonctions et PROD inchangés.",
+  "applicationCommit": "7eeed64b2326697f900e70e94d799dd207cdeed6",
+  "baseCommit": "49d0eefd5015c48e29e83c1ac9cae72643696518",
+  "baselineRuns": [
+    {
+      "id": 42936710507,
+      "artifact": "test-proof",
+      "workflow": ".github/workflows/livepalmes-test-common.yml",
+      "artifactId": 13819056549,
+      "artifactSha256": "fbdd44043c70c55482bf15649dc7b2360408618c27c008ca070a3d6153fe9e17"
+    }
+  ],
+  "baselineFunctionCount": 121,
+  "baselineHostingVersion": "sites/livepalmes-test/versions/d59bc2e0535873f0",
+  "fingerprints": {
+    "readNapPublicSwimmer": "3998eea3bace789776d0ec6b366218002f7746bebeccf059ef8f54f46b2485ff"
+  },
+  "toolingPaths": [
+    ".github/releases/evidence/20261111-public-navigation-contract.json",
+    "tools/publish-test-public-navigation-sources.py",
+    "tests/test-public-navigation-sources-tests.py",
+    "tools/release-cycle.py",
+    ".github/workflows/livepalmes-test-mail-sources.yml",
+    ".github/workflows/livepalmes-verification-preview.yml",
+    "docs/releases/EVOLUTIONS.md",
+    "docs/releases/PROCEDURE.md",
+    "docs/agents/PUBLICATION.md"
+  ]
+}
