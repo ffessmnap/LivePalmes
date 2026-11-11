@@ -65,6 +65,20 @@ def check_after(backup, destination, require_success):
         if sorted(report['additionalBccFunctions']) != bcc_policy.contract()['selected']:
             raise ValueError('Selection CCI du rapport differente')
     errors = []
+    public_navigation_direct_policy = None
+    if report.get('additionalPublicNavigationDirectFunctions'):
+        spec = importlib.util.spec_from_file_location('public_navigation_direct_state_policy', Path(__file__).with_name('public-navigation-direct-production-policy.py'))
+        public_navigation_direct_policy = importlib.util.module_from_spec(spec); spec.loader.exec_module(public_navigation_direct_policy)
+        c = public_navigation_direct_policy.contract()
+        public_navigation_direct_policy.require(report['additionalPublicNavigationDirectFunctions'] == c['sourceOnly']
+            and report['candidate'] == c['candidate'] and len(before) == c['inventoryCount']
+            and selected == {PREFIX+n for n in c['selected']} and report['newFunctions'] == []
+            and report.get('public_navigation_directNapBinding') == public_navigation_direct_policy.initial(list(before.values())),
+            'Rapport navigation publique/Direct hors contrat')
+        try:
+            public_navigation_direct_policy.assert_retained(before,after,SimpleNamespace(identity=identity,rollback_patch=rollback_patch))
+        except ValueError as error:
+            errors.append(str(error))
     reference_policy = None
     if report.get('additionalReferenceCleanupFunctions'):
         spec = importlib.util.spec_from_file_location('reference_cleanup_state_policy', Path(__file__).with_name('reference-cleanup-production-policy.py'))
@@ -155,6 +169,11 @@ def check_after(backup, destination, require_success):
                 errors.append(str(error))
         if not f or f.get("state") != "ACTIVE":
             errors.append("Function non active: " + name.split("/")[-1])
+        elif public_navigation_direct_policy is not None:
+            try:
+                public_navigation_direct_policy.assert_config(before[name], f, SimpleNamespace(rollback_patch=rollback_patch), report['public_navigation_directNapBinding'])
+            except ValueError as error:
+                errors.append(str(error))
         elif reference_policy is not None:
             try:
                 reference_policy.assert_config(before[name], f, SimpleNamespace(rollback_patch=rollback_patch), report['reference_cleanupNapBinding'])
