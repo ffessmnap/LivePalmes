@@ -2,6 +2,10 @@
 
 <!-- description: Référence du langage visuel, des composants d’interface et des règles responsive déjà présents dans LivePalmes. -->
 
+## Trophée public compact — 11 novembre 2026
+
+À 850 px et moins, en portrait comme en paysage, le classement public présente une liste continue : rang, nom puis abréviation officielle du club et année, total « nombre pts » sur une ligne et centré verticalement, chevron seul. Hauteur minimale de 48 px, avec commandes tactiles de 44 px ; les noms longs peuvent augmenter la hauteur sans être tronqués. La ligne hors bouton d’identité déplie les cinq épreuves (temps, points et absences), au toucher ou au clavier ; le chevron et l’état accessible suivent l’ouverture. Le nom conserve la confirmation de navigation vers la fiche nageur. L’ordre, les égalités et le séparateur « Limite des 32 places » sont conservés. Au-delà de 850 px et dans l’aperçu du portail national, le tableau existant demeure inchangé. Aucun nouvel accès aux données.
+
 ## Bureau Direct archivé — 11 novembre 2026
 
 La mention d’archivage automatique prend place dans la ligne de dates existante. L’action de correction des résultats reste dans les actions de compétition et ouvre le composant de publication WinPalme existant, en pleine largeur, sans second bureau ni console interactive. Les contrôles de visibilité et d’import de séries/PDF ne sont pas proposés en correction d’archive. Le suivi des imports reste lisible et dépliable. Aucun nouveau bandeau public ni ligne mobile supplémentaire.
