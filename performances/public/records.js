@@ -596,14 +596,34 @@ function initPage() {
   resetFilters();
 }
 
+function setLoadingState(loading, failed = false) {
+  const toolbar = document.querySelector(".records-toolbar");
+  toolbar.setAttribute("aria-busy", String(loading));
+  toolbar.querySelectorAll("button,input,select").forEach(control => { control.disabled = loading || failed; });
+  const status = document.getElementById("recordsLoadStatus");
+  status.hidden = !loading && !failed;
+  status.replaceChildren();
+  if (loading) status.textContent = "Chargement des Records/MPF…";
+  else if (failed) {
+    status.append(document.createTextNode("Filtres indisponibles : les données n’ont pas pu être chargées."));
+    const retry = document.createElement("button");
+    retry.type = "button";
+    retry.textContent = "Réessayer";
+    retry.addEventListener("click", () => window.location.reload());
+    status.append(retry);
+  }
+}
+
 (async function start() {
+  setLoadingState(true);
   try {
-    if (window.LivePalmesPerformanceStore?.loadData) {
-      refreshData(await window.LivePalmesPerformanceStore.loadData());
-      window.LIVEPALMES_RECORDS = data;
-    }
+    if (!window.LivePalmesPerformanceStore?.loadData) throw new Error("Consultation Records/MPF indisponible.");
+    refreshData(await window.LivePalmesPerformanceStore.loadData());
+    window.LIVEPALMES_RECORDS = data;
+    setLoadingState(false);
     initPage();
   } catch (error) {
+    setLoadingState(false, true);
     elements.recordsBody.replaceChildren();
     if (elements.cutoffText) elements.cutoffText.textContent = `Records/MPF indisponibles : ${error.message || error}`;
   }

@@ -2,6 +2,14 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### Public — navigation mobile et liens de compétition · 11 novembre 2026 (préparation TEST)
+
+- Maquette finale validée par Antoine dans le chat public, puis feu vert de réalisation transmis par la coordination. La validation porte sur la proposition, pas sur la version réalisée ou déployée. Lot suivi sur la branche `codex/public-mobile-compact` ; PR et preuves de livraison dans le bilan GitHub du chantier.
+- Bandeau public compact « ☰ Menu », étirement hérité des formulaires Performances neutralisé, compte absent sans emplacement vide et cibles tactiles de 44 px. Fermeture, focus, clavier, changement de largeur et retour de page harmonisés, sans changement du portail privé, des sessions ou des droits.
+- Fiche : Résultats et Archive du Direct regroupés en liens discrets ; protocole conservé dans Documents, seul son raccourci supérieur retiré. Liste calendrier : pastille d’archive seule masquée, carte/fiche/archive et Direct actif conservés, statut des résultats indépendant. Aucun calcul d’archivage dans ce lot.
+- Records/MPF : filtres explicitement indisponibles pendant le chargement ou après échec, état annoncé et réessai volontaire ; règles sportives et source existante conservées. Budget supplémentaire de données : zéro à l’ouverture, au filtrage et au rafraîchissement ; le réessai relance uniquement le chargement normal de la page.
+- Tests ciblés du shell, de la navigation, du calendrier, du store Records/MPF et de la cohérence des performances réussis. Recette locale sur les vrais fichiers avec fixtures : 320/390/768/1440 px sans débordement, bandeau mobile de 65 px, compte synthétique sans chevauchement, liens de fiche de 44 px, filtres après succès, panne/réessai, relais Masters, clavier/Échap/focus, transitions de largeur et retour calendrier/fiche/archive vérifiés. Aucun accès métier réel. CI globale PR puis main exacte, garde backend et TEST commun Hosting seul restent requis. Aucun backend, configuration, donnée réelle, génération, Storage ou PROD. Déploiement TEST et validation utilisateur de la réalisation encore à établir.
+
 ### Portail — retrait des copies nageurs et anciennes migrations · 11 novembre 2026 à 11 h 04 (PROD publiée)
 
 - Antoine autorise les seuls lots 2/3, le lot clubs étant déjà en PROD : accord technique préalable incluant explicitement les adaptations backend et gardes de publication nécessaires, accord conditionnel après contrôles concluants puis top départ. Messages humains relus dans le chat source et accord direct confirmé dans Infra, sans nouvelle attente après le plan final. L’accord ciblé sur les politiques/workflows/outils/tests a ensuite été confirmé directement dans Infra. Aucune recette humaine ni écriture métier n’est inventée.

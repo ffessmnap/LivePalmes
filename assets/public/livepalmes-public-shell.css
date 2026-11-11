@@ -134,6 +134,36 @@ html.livepalmes-site-shell{scrollbar-gutter:stable}
 }
 @media(max-width:380px){.public-site-header-inner{width:calc(100% - 20px);gap:4px}.public-site-brand{gap:5px}.public-site-brand img{width:66px}.public-site-wordmark{font-size:16px}.public-site-menu-toggle{font-size:11px}}
 
+/* Public presentation only: do not inherit full-width performance form buttons. */
+body.public-shell-page .public-site-menu-toggle{width:auto;flex:none}
+body.public-shell-page .public-site-menu-toggle:hover{background:#e4f3f5;color:#086f7e}
+body.public-shell-page #publicSiteAccount[hidden]{display:none}
+@media(max-width:850px){
+ body.public-shell-page .public-site-header-inner{display:grid;grid-template-columns:minmax(0,1fr) auto auto;min-height:64px;gap:6px}
+ body.public-shell-page.has-public-site-account .public-site-header-inner{grid-template-columns:minmax(0,1fr) auto auto auto}
+ body.public-shell-page .public-site-brand{min-width:0;margin:0;gap:6px}
+ body.public-shell-page .public-site-brand img{width:56px;height:44px}
+ body.public-shell-page .public-site-wordmark{font-size:16px}
+ body.public-shell-page .public-site-header .public-site-portal{width:68px}
+ body.public-shell-page #publicSiteAccount{width:44px;min-width:44px}
+ body.public-shell-page .public-site-account-link{width:44px;min-width:44px}
+ body.public-shell-page .public-site-menu-toggle{min-width:70px;padding:7px 8px}
+ body.public-shell-page .public-site-header-inner .public-site-nav{grid-column:1/-1;grid-template-columns:1fr;max-height:calc(100vh - var(--site-banner-height,0px) - 68px);max-height:calc(100dvh - var(--site-banner-height,0px) - 68px);overflow:auto;overscroll-behavior:contain}
+ body.public-shell-page .public-site-nav summary::after{content:"⌄";margin-left:auto}
+ body.public-shell-page .public-site-nav details[open]>summary::after{content:"⌃"}
+}
+@media(max-width:380px){
+ body.public-shell-page .public-site-brand{gap:5px}
+ body.public-shell-page .public-site-brand img{width:42px}
+ body.public-shell-page .public-site-wordmark{font-size:15px}
+ body.public-shell-page.has-public-site-account .public-site-wordmark{display:none}
+}
+
+/* Records/MPF loading and failure are distinct from an empty sporting list. */
+body.public-shell-page .performance-load-status{margin:12px 0;color:#56717d;font-size:.85rem;line-height:1.5}
+body.public-shell-page .performance-load-status button{width:auto;min-height:44px;margin-left:8px;padding:6px 10px;border:1px solid #b8d4d9;border-radius:6px;background:#fff;color:#086f7e;font:inherit;cursor:pointer}
+body.public-shell-page .toolbar :is(button,select,input):disabled{opacity:.55;cursor:not-allowed}
+
 /* Same decorative wash on every public page; it scrolls with the document. */
 body.public-shell-page{
  --public-intro-height:260px;
