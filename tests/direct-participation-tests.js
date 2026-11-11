@@ -2,7 +2,7 @@
 const assert=require('node:assert/strict'),{randomUUID}=require('node:crypto'),model=require('../functions/nap-direct-model'),flow=require('../functions/nap-direct-console-model');
 global.window=global;
 for(const name of ['livepalmes-time','livepalmes-pdf-import','livepalmes-series-import-utils','livepalmes-series-import','livepalmes-result-parser','direct/import','direct/presentation','direct/event-view'])require('../assets/'+name+'.js');
-const view=global.LivePalmesDirectEventView,adapter=global.LivePalmesDirectImport,{fixture}=require('./helpers/direct-console-sql-fixture'),{createStore}=require('../functions/nap-direct-store'),{createConsoleStore}=require('../functions/nap-direct-console-store'),{readPublic}=require('../functions/nap-direct-public'),txt=require('../assets/direct/winpalme-txt');
+const view=global.LivePalmesDirectEventView,adapter=global.LivePalmesDirectImport,{fixture}=require('./helpers/direct-console-sql-fixture'),{createStore}=require('./helpers/direct-test-clock').storeModule,{createConsoleStore}=require('../functions/nap-direct-console-store'),{readPublic}=require('./helpers/direct-test-clock').publicModule,txt=require('../assets/direct/winpalme-txt');
 async function main(){
   const event={eventCode:'100sf',eventLabel:'100 m Surface',sex:'F',date:'2026-11-07',sessionKey:'1',phase:'series',expectedSeries:1};
   {

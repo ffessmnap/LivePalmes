@@ -1,5 +1,5 @@
 'use strict';
-const assert=require('node:assert/strict'),{randomUUID}=require('node:crypto'),{fixture}=require('./helpers/direct-console-sql-fixture'),{createStore}=require('../functions/nap-direct-store'),{createService}=require('../functions/nap-direct-service'),flow=require('../functions/nap-direct-console-model');
+const assert=require('node:assert/strict'),{randomUUID}=require('node:crypto'),{fixture}=require('./helpers/direct-console-sql-fixture'),{createStore}=require('./helpers/direct-test-clock').storeModule,{createService}=require('./helpers/direct-test-clock').serviceModule,flow=require('../functions/nap-direct-console-model');
 async function main(){
   const pool=fixture(),id=900001,actor={uid:'root',national:true},store=createStore(pool,'test');
   await store.settings(id,actor,{consoles:flow.roles,operationKey:randomUUID()});
@@ -12,7 +12,7 @@ async function main(){
   const service=createService({getPool:()=>pool,environment:'test',authorize:async request=>({uid:request.auth.uid,national:request.auth.uid==='root'}),lookupUser:async email=>({uid:email,active:true}),lookupAccounts:async uids=>{accountBatches.push(uids);return uids.map(uid=>({uid,label:'Compte '+uid,email:uid+'@example.test',active:accountActive}));},matchRegion:()=>false});
   const call=(action,data={},uid='root')=>service({auth:{uid},data:{action,competitionId:id,...data}});
   let snapshot=await call('consoleSnapshot',{role:'computer'});assert.equal(snapshot.entries.length,10);assert.equal(snapshot.events.length,1);
-  const originalVersion=snapshot.configVersion;const {readPublic}=require('../functions/nap-direct-public');const publicRead=()=>readPublic(pool,'test',{id,eventId});assert.ok((await publicRead()).entries.every(r=>!r.qualification));
+  const originalVersion=snapshot.configVersion;const {readPublic}=require('./helpers/direct-test-clock').publicModule;const publicRead=()=>readPublic(pool,'test',{id,eventId});assert.ok((await publicRead()).entries.every(r=>!r.qualification));
   const send=async(command,role,more={},uid='root')=>{const current=await call('consoleSnapshot',{role,eventId});return call('consoleCommand',{role,eventId,command,revision:current.revision,configVersion:current.configVersion,operationKey:randomUUID(),...more},uid);};
   await send('configure','computer',{lanes:6,events:[{id:eventId,format:'ab',lanes:6}]});snapshot=await call('consoleSnapshot',{role:'computer'});assert.equal(snapshot.finals.proposal.a.length,6);assert.equal(snapshot.finals.proposal.b.length,4);
   const unchanged=await call('consoleSnapshot',{role:'computer',revision:snapshot.revision,configVersion:snapshot.configVersion});assert.equal(unchanged.unchanged,true);

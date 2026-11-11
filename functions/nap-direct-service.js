@@ -1,6 +1,6 @@
 "use strict";
 const model=require("./nap-direct-model"),{createStore,fail}=require("./nap-direct-store"),{createConsoleStore}=require('./nap-direct-console-store');
-function createService({getPool,environment,authorize,lookupUser,lookupAccounts,matchRegion,storeDocument,purgeDocuments,checkResetDocuments}) {
+function createService({getPool,environment,authorize,lookupUser,lookupAccounts,matchRegion,storeDocument,purgeDocuments,checkResetDocuments,clock=Date.now}) {
   async function context(store,id,actor) {
     const competition=await store.native(id);
     const root=actor.national===true || actor.region===true && competition.level!=='national' && competition.level!=='international' && matchRegion(actor.regionId,competition.regionId);
@@ -8,13 +8,13 @@ function createService({getPool,environment,authorize,lookupUser,lookupAccounts,
     return {competition,root,manage:root||Boolean(grant?.can_manage),roles:root?model.ROLES:model.parseJson(grant?.allowed_consoles_json,[])};
   }
   return async function manage(request) {
-    const actor=await authorize(request),input=request.data||{},store=createStore(getPool(),environment);
+    const actor=await authorize(request),input=request.data||{},store=createStore(getPool(),environment,{clock});
     if(input.action==='list') {
       const year=Number(input.year);if(!Number.isInteger(year)||year<1901||year>2101)throw new TypeError("Saison invalide.");
       const season=await require("./nap-direct-calendar").readCalendarSeason(getPool(),year);
       const all=season.events.filter(e=>e.eventType==='pool');if(!all.length)return {items:[]};
       const ids=all.map(e=>model.competitionId(e.id)),marks=ids.map(()=>'?').join(',');
-      const configurations=await store.q(`SELECT competition_id,state,public_visible,enabled_consoles_json,documents_json,version,public_revision FROM livepalmes_direct_competitions WHERE environment=? AND competition_id IN (${marks}) LIMIT 501`,[environment,...ids]);
+      const configurations=await store.q(`SELECT d.competition_id,d.state,d.public_visible,d.enabled_consoles_json,d.documents_json,d.version,d.public_revision,c.date AS direct_date,c.enddate AS direct_enddate FROM livepalmes_direct_competitions d LEFT JOIN competitions c ON c.id=d.competition_id WHERE d.environment=? AND d.competition_id IN (${marks}) LIMIT 501`,[environment,...ids]);
       const grants=await store.q(`SELECT competition_id,can_manage,allowed_consoles_json FROM livepalmes_direct_access WHERE environment=? AND user_uid=? AND active=1 AND (expires_at IS NULL OR expires_at>UTC_TIMESTAMP(6)) AND competition_id IN (${marks}) LIMIT 501`,[environment,actor.uid,...ids]);
       const byId=new Map(configurations.map(r=>[Number(r.competition_id),r])),byGrant=new Map(grants.map(r=>[Number(r.competition_id),r]));
       return {items:all.filter(e=>actor.national||actor.region&&!['national','international'].includes(e.level)&&matchRegion(actor.regionId,e.regionId)||byGrant.has(model.competitionId(e.id))).map(e=>({...e,direct:store.configView(byId.get(model.competitionId(e.id)))}))};
@@ -22,7 +22,11 @@ function createService({getPool,environment,authorize,lookupUser,lookupAccounts,
     const id=model.competitionId(input.competitionId),permissions=await context(store,id,actor);
     if(!permissions.manage&&!permissions.roles.length)throw fail("Aucun accès au Direct de cette compétition.","permission-denied");
     if(input.action==='detail'){
-      if(!permissions.manage){const config=await store.config(id);if(!config||config.state!=='active'||!permissions.roles.some(role=>model.parseJson(config.enabled_consoles_json,[]).includes(role)))throw fail('Aucune console active pour ce compte.','permission-denied');}
+      if(!permissions.manage){
+        const config=await store.config(id),effective=store.effectiveState(config),enabled=model.parseJson(config?.enabled_consoles_json,[]);
+        const allowed=effective==='active'?permissions.roles.some(role=>enabled.includes(role)):effective==='archived'&&permissions.roles.includes('computer')&&enabled.includes('computer');
+        if(!allowed)throw fail('Aucune console active pour ce compte.','permission-denied');
+      }
       return {...await store.detail(id,input.eventId),permissions:{manage:permissions.manage,delegate:permissions.manage||permissions.roles.includes('computer'),roles:permissions.roles}};
     }
     const consoles=createConsoleStore(getPool(),store);
@@ -33,7 +37,7 @@ function createService({getPool,environment,authorize,lookupUser,lookupAccounts,
     if(input.action==='consoleCommand')return consoles.command(id,actor,input,permissions);
     const canWrite=permissions.manage||permissions.roles.includes('computer');
     if(!canWrite)throw fail("Bureau des performances requis pour cette action.","permission-denied");
-    if(input.action==='watchContext')return store.watchContext(id);
+    if(input.action==='watchContext')return store.watchContext(id,input);
     if(input.action==='reset'){
       if(typeof purgeDocuments!=='function'||typeof checkResetDocuments!=='function')throw fail('Service de suppression des PDF indisponible. Aucune réinitialisation engagée.');
       return store.reset(id,actor,input,purgeDocuments,checkResetDocuments);
