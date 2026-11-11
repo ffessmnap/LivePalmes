@@ -9,7 +9,7 @@ publisher = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(publisher)
 publisher.RELEASE = 'direct_date_archive'
 publisher.CONTRACT = ROOT / '.github/releases/evidence/20261111-direct-date-archive-contract.json'
-publisher.CONTRACT_SHA256 = '2af914f184041eee1435e79cfc613d895f0847a4ff8bb899ee4a3f96be0f26bc'
+publisher.CONTRACT_SHA256 = 'f31c1c47970782b58f6ab13f695a5f9020c03055bebf1367d4de6f9cdaed9e89'
 
 if __name__ == '__main__':
     publisher.main(*sys.argv[1:])
