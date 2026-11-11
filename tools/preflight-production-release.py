@@ -190,6 +190,9 @@ def main():
         report['additionalReferenceCleanupFunctions'] = cycle.reference_cleanup.approved(plan) if os.environ.get('PLAN') else []
         if report['additionalReferenceCleanupFunctions']:
             report['reference_cleanupNapBinding'] = cycle.reference_cleanup.initial(functions)
+        report['additionalPublicNavigationDirectFunctions'] = cycle.public_navigation_direct.approved(plan) if os.environ.get('PLAN') else []
+        if report['additionalPublicNavigationDirectFunctions']:
+            report['public_navigation_directNapBinding'] = cycle.public_navigation_direct.initial(functions)
         report['additionalNovember10Functions'] = cycle.november10_release.approved(plan) if os.environ.get('PLAN') else []
         if report['additionalNovember10Functions']:
             report['november10NapBinding'] = cycle.november10_release.initial(functions)
