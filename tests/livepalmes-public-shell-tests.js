@@ -52,3 +52,16 @@ const late=fixture("home","Accueil");late.document.readyState="interactive";late
 vm.runInNewContext(source,{document:late.document,window:late.window,Event:class{}});assert.equal(measured["--site-header-bottom"],"70px");late.body.prepend(late.banner);late.events.load();resizeHeader();assert.equal(measured["--site-banner-height"],"70px");assert.equal(measured["--site-header-bottom"],"140px");assert.equal(measured["--site-workspace-top"],"140px");
 const blocked=fixture("home","Accueil");blocked.window.localStorage={getItem:()=>{throw Error("blocked")}};assert.doesNotThrow(()=>vm.runInNewContext(source,{document:blocked.document,window:blocked.window,Event:class{}}));
 console.log("Common shell: stable navigation, banner order, contextual links, safe text, idempotence and dynamic PDF headings preserved; 20 public pages and portal covered; consoles excluded.");
+
+const compact=fixture("performances","Records");let breakpointChanged;const breakpoint={matches:true,addEventListener:(name,callback)=>{assert.equal(name,"change");breakpointChanged=callback;}};
+compact.window.matchMedia=()=>breakpoint;
+vm.runInNewContext(source,{document:compact.document,window:compact.window,Event:class{}});
+const compactHeader=compact.document.getElementById("publicSiteHeader"),compactToggle=walk(compact.body).find(n=>n.className==="public-site-menu-toggle"),compactNav=walk(compact.body).find(n=>n.className==="public-site-nav"),compactBrand=walk(compact.body).find(n=>n.className==="public-site-brand"),compactAccount=compact.document.getElementById("publicSiteAccount");
+assert.equal(compactToggle.textContent,"☰ Menu");assert.equal(compactAccount.hidden,true);
+compact.storage.set("livepalmes:portal-session-display:v1","connected");compact.events.storage({key:"livepalmes:portal-session-display:v1"});assert.equal(compactAccount.hidden,false);assert.equal(compact.body.classList.contains("has-public-site-account"),true);
+compactToggle.events.click();compact.events.pageshow();assert.equal(compactToggle.getAttribute("aria-expanded"),"false","restored public page starts with the menu closed");
+compactToggle.events.click();compact.document.activeElement=compactToggle;breakpoint.matches=false;breakpointChanged();assert.equal(compactToggle.getAttribute("aria-expanded"),"false");assert.equal(compactBrand.focused,true,"desktop never keeps focus on its hidden toggle");
+compactToggle.events.click();compact.document.activeElement=compactNav.children[0];breakpoint.matches=true;breakpointChanged();assert.equal(compactToggle.focused,true);assert.equal(compactToggle.getAttribute("aria-expanded"),"false");
+compactToggle.events.click();compactHeader.events.click({target:{closest:()=>compactNav.children[0]}});assert.equal(compactToggle.getAttribute("aria-expanded"),"false","a public navigation link closes its menu before departure");
+compactToggle.events.click();compactHeader.events.focusout({relatedTarget:new Element("outside")});assert.equal(compactToggle.getAttribute("aria-expanded"),"false","tabbing out closes the public menu");
+assert.equal(walk(g.body).find(n=>n.className==="public-site-menu-toggle").textContent,"☰ Site","private portal presentation remains unchanged");

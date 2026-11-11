@@ -103,6 +103,11 @@ body.public-calendar-page::before { content:""; position:fixed; inset:0 0 auto; 
 .calendar-direct-badge[data-archived=true] { background:#edf1f4; color:#526570; }
 .calendar-direct-link { margin-top:8px; box-shadow:0 2px 9px #003c4b22; }
 .calendar-direct-link .calendar-direct-badge { padding:0; background:transparent; color:inherit; font-size:inherit; }
+.public-competition-page.public-shell-page .calendar-detail-hero { display:block; }
+.public-competition-page.public-shell-page .calendar-results-banner { justify-content:flex-start; margin-top:5px; }
+.public-competition-page.public-shell-page .calendar-results-actions { display:flex; flex-wrap:wrap; width:auto; gap:6px 18px; }
+.public-competition-page.public-shell-page :is(.calendar-results-primary,.calendar-results-secondary) { width:auto; min-height:44px; padding:6px 0; border:0; border-radius:3px; background:transparent; color:#086f7e; font-size:.81rem; font-weight:600; text-decoration:underline; text-underline-offset:3px; }
+.public-competition-page.public-shell-page .calendar-direct-link { margin:0; box-shadow:none; }
 @keyframes calendar-direct-pulse { 0%,100% { box-shadow:0 0 0 0 #09634900; } 35% { box-shadow:0 0 0 5px #09634925; } 75% { box-shadow:0 0 0 9px #09634900; } }
 @media (prefers-reduced-motion:reduce) { .calendar-direct-badge[data-live=true] .calendar-direct-dot { animation:none; } }
 .calendar-documents-card { padding:16px 18px; }
