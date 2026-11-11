@@ -2,6 +2,10 @@
 
 <!-- description: Référence du langage visuel, des composants d’interface et des règles responsive déjà présents dans LivePalmes. -->
 
+## Accueil public — ordre mobile · 11 novembre 2026
+
+À 700 px et moins, les trois rubriques de l’accueil public s’affichent dans l’ordre Performances (recherche nageur, Records, TOP, MPF, trophée), rendez-vous du calendrier, puis documents. Le conteneur de la colonne droite devient transparent à la grille (`display: contents`) et les trois blocs occupent les lignes 1, 2 et 3. Au-delà de 700 px, la grille existante, le calendrier à gauche et la colonne Performances/Documents à droite sont inchangés. Le DOM, les liens et les lectures de données restent identiques ; la navigation clavier suit donc l’ordre du document existant.
+
 ## Trophée public compact — 11 novembre 2026
 
 À 850 px et moins, en portrait comme en paysage, le classement public présente une liste continue : rang, nom puis abréviation officielle du club et année, total « nombre pts » sur une ligne et centré verticalement, chevron seul. Hauteur minimale de 48 px, avec commandes tactiles de 44 px ; les noms longs peuvent augmenter la hauteur sans être tronqués. La ligne hors bouton d’identité déplie les cinq épreuves (temps, points et absences), au toucher ou au clavier ; le chevron et l’état accessible suivent l’ouverture. Le nom conserve la confirmation de navigation vers la fiche nageur. L’ordre, les égalités et le séparateur « Limite des 32 places » sont conservés. Au-delà de 850 px et dans l’aperçu du portail national, le tableau existant demeure inchangé. Aucun nouvel accès aux données.
