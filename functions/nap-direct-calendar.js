@@ -34,7 +34,7 @@ async function readCalendarSeason(pool, input, directEnvironment) {
   if (rows.length > MAX_EVENTS) throw new RangeError("Saison trop volumineuse.");
   let events=rows.map(eventFromRow).filter(event => event.date && event.name);
   await require("./nap-calendar-protocols").attachPublishedProtocols(pool, events);
-  if(directEnvironment)events=await require("./nap-direct-public").attachLinks(pool,directEnvironment,events);
+  if(directEnvironment)events=await require("./nap-direct-public").attachLinks(pool,directEnvironment,events,new Map(rows.map(row=>[Number(row.id),row])));
   return { source: "nap", readAt: new Date().toISOString(), events };
 }
 async function readCompetition(pool, input, directEnvironment) {
@@ -65,7 +65,7 @@ async function readCompetition(pool, input, directEnvironment) {
     Object.assign(event,details,{program:details.programSessions});
     delete event.programSessions;
   }
-  const detailed=directEnvironment?(await require("./nap-direct-public").attachLinks(pool,directEnvironment,[event]))[0]:event;
+  const detailed=directEnvironment?(await require("./nap-direct-public").attachLinks(pool,directEnvironment,[event],new Map([[id,rows[0]]])))[0]:event;
   return { source: "nap", readAt: new Date().toISOString(), event:detailed };
 }
 module.exports = { MAX_EVENTS, MAX_DOCUMENTS, MAX_PROGRAM, MAX_RESULTS, SELECT_EVENT, EVENT_JOINS, positiveId, date, text, publicUrl, eventFromRow, execute, readCalendarManifest, readCalendarSeason, readCompetition, nativeLevel };

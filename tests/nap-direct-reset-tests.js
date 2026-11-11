@@ -1,5 +1,5 @@
 'use strict';
-const assert=require('node:assert/strict'),{createStore}=require('../functions/nap-direct-store'),{createService}=require('../functions/nap-direct-service'),documents=require('../functions/nap-direct-documents');
+const assert=require('node:assert/strict'),{createStore}=require('./helpers/direct-test-clock').storeModule,{createService}=require('./helpers/direct-test-clock').serviceModule,documents=require('../functions/nap-direct-documents');
 function fixture(){
   let configs=new Map(),entries=[],events=[],logs=[],saved;const calls=[];
   for(const [environment,id] of [['test',900001],['production',900001],['test',900002]]){

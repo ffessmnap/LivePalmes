@@ -163,8 +163,12 @@ class PublicNavigationSources(unittest.TestCase):
         paths = p.cycle.git('diff', '--name-only', entry['baseCommit'], entry['applicationCommit'], '--', 'functions').splitlines()
         self.assertEqual(paths, ['functions/assets/public-home-template.json'])
         p.cycle.run(['node', 'tools/build-public-home-template.js'], ROOT)
-        self.assertEqual(p.cycle.test_backend_fingerprints(p.cycle.git('rev-parse', 'HEAD')),
-                         p.cycle.test_backend_fingerprints(entry['applicationCommit']))
+        # Later backend releases may differ from this historical anchor. Check
+        # the generator's actual output against the current committed template;
+        # the closed contract and real selector still attest the old release.
+        generated = json.loads((ROOT / 'functions/assets/public-home-template.json').read_text(encoding='utf8'))
+        committed = json.loads(p.cycle.git('show', 'HEAD:functions/assets/public-home-template.json'))
+        self.assertEqual(generated, committed)
 
 
 if __name__ == '__main__':

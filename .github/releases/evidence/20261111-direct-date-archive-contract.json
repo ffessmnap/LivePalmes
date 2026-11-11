@@ -1,0 +1,35 @@
+{
+  "schema": 1,
+  "project": "livepalmes-test",
+  "release": "direct_date_archive",
+  "approval": "Antoine, chat Direct du 11 novembre 2026 et feu vert de la coordination apres le chantier mobile : archivage effectif a minuit Paris suivant le dernier jour, sans ecriture GET ni scheduler ; correction explicite des seuls resultats WinPalme des series existantes avec les droits bureau deja accordes, sans Live ni reouverture des consoles. Integration et complement ferme TEST autorises pour les deux consommateurs reels. Configurations, schemas, donnees natives, autres services et PROD exclus.",
+  "applicationCommit": "dc9048296b0850cc6ec5bc6f7b59aa759cd69220",
+  "baseCommit": "4efa079dd47b7fbb8e312b9d568738af9fe0d0f8",
+  "baselineRuns": [
+    {
+      "id": 43027771014,
+      "artifact": "test-proof",
+      "workflow": ".github/workflows/livepalmes-test-common.yml",
+      "artifactId": 13859300181,
+      "artifactSha256": "370c463b2beef536e9c94391740045ea9675f7ca9198f346edc368fca235a615"
+    }
+  ],
+  "baselineFunctionCount": 121,
+  "baselineHostingVersion": "sites/livepalmes-test/versions/cdb38c19f6250e5f",
+  "fingerprints": {
+    "readNapPublicSwimmer": "42967a8fad075277448167f5aa58bea573c5eb03c0b734122f562b9692ed1a7f",
+    "manageLivePalmesDirect": "b9031cc851694e9d97bd06d249fca6990fa301b8f3936961d1abacaccf9b27c4"
+  },
+  "toolingPaths": [
+    ".github/releases/evidence/20261111-direct-date-archive-contract.json",
+    "tools/publish-test-direct-archive-sources.py",
+    "tests/test-direct-archive-sources-tests.py",
+    "tools/release-cycle.py",
+    ".github/workflows/livepalmes-test-mail-sources.yml",
+    ".github/workflows/livepalmes-verification-preview.yml",
+    "docs/releases/EVOLUTIONS.md",
+    "docs/releases/PROCEDURE.md",
+    "docs/agents/PUBLICATION.md",
+    "tests/test-public-navigation-sources-tests.py"
+  ]
+}

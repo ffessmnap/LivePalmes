@@ -2,6 +2,13 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### Direct — archivage selon les dates et correction des résultats · 11 novembre 2026 (préparation TEST)
+
+- Périmètre validé par Antoine et feu vert de la coordination après livraison du chantier mobile #835 : statut effectif calculé au lendemain du dernier jour à minuit Paris, sans règle d’inactivité, écriture de statut ni scheduler. États manuel/désactivé/réinitialisation prioritaires ; dates incertaines sans déduction.
+- Mention discrète dans le bureau et distinction entre état effectif et réglage enregistré. Action explicite de correction des résultats WinPalme des seules séries existantes, réservée aux accès bureau déjà accordés, sans rouvrir le Live ou les consoles. Identités, lignes, catégories, engagements, PDF et réglages conservés ; confirmations, versions et transactions maintenues. Surveillance normale arrêtée au passage en archive.
+- Tests ciblés hors réseau et navigateur avec vrai service SQL simulé : limites Paris/DST/plusieurs jours, droits, cache, refus des imports et commandes hors périmètre, correction de temps/statuts/passages, reprise et rollback. Contrôle MySQL réel prévu dans le conteneur CI isolé ; aucune compétition réelle modifiée. Budgets de lecture documentés dans `docs/LIVEPALMES_DIRECT.md`.
+- PR [#837](https://github.com/ffessmnap/LivePalmes/pull/837), ancre finale `dc904829`. Première [CI 43031845921](https://github.com/ffessmnap/LivePalmes/actions/runs/43031845921) arrêtée sur une fixture de présentation sans état de configuration et l’assertion historique d’égalité de tout futur backend avec l’ancre mobile. Fixture rendue explicite, refus des actions d’archive vérifié et contrôle du générateur réellement comparé au modèle courant ; anciens contrats et vérification de leur portée conservés. Contrôles ciblés repris avec succès. CI exacte finale, complément serveur fermé, TEST commun et contrôle final : à renseigner après exécution. Aucune publication PROD ni validation utilisateur de la version réalisée.
+
 ### Public — navigation mobile et liens de compétition · 11 novembre 2026 (TEST déployé, retour utilisateur attendu)
 
 - Maquette finale validée par Antoine dans le chat public, puis feu vert de réalisation transmis par la coordination. La validation porte sur la proposition, pas sur la version réalisée ou déployée. Lot regroupé dans la PR [#835](https://github.com/ffessmnap/LivePalmes/pull/835), ancre applicative `7eeed64b`.

@@ -12,7 +12,7 @@
     const valid=()=>host.isConnected&&current().uid===identity.uid&&String(current().id)===String(id);
     const api=(action,input={})=>{if(!valid())throw Error('La compétition ou le compte a changé.');return call(action,{...input,role:'computer'});};
     const status=(message,error)=>{if(!valid())return;statusNode.hidden=!error;statusNode.textContent=error?message:'';statusNode.classList.toggle('error',Boolean(error));};
-    const client=global.LivePalmesDirectConsoleClient.create({role:'computer',competitionId:id,getUser:()=>valid()?{uid:identity.uid}:null,call:api,onRender:render,onStatus:status,onAccessError:()=>{body.replaceChildren();dialog.close();},canPoll:()=>details.open&&!current().busy,onRetry:retry,onActivity:activity});
+    const client=global.LivePalmesDirectConsoleClient.create({role:'computer',competitionId:id,getUser:()=>valid()?{uid:identity.uid}:null,call:api,onRender:render,onStatus:status,onAccessError:()=>{body.replaceChildren();dialog.close();},onClosed:()=>{if(valid())void global.LivePalmesDirectAdmin?.loadDetail().catch(()=>{});},canPoll:()=>details.open&&!current().busy,onRetry:retry,onActivity:activity});
     let modal=null,reserveOffset=0,settingsContext=null,tab=data.config.consoles.length===1?'follow':'queue',hasFinals=false,historyFilter='decisions';
     const positionKey=`direct-bureau-view:${id}:${identity.uid}`;
     try{const saved=JSON.parse(localStorage.getItem(positionKey)||'null');if(saved){tab=saved.tab||tab;details.open=true;}}catch{}

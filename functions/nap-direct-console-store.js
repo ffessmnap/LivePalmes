@@ -1,5 +1,6 @@
 'use strict';
 const model=require('./nap-direct-model'),flow=require('./nap-direct-console-model'),{execute}=require('./nap-query');
+const archive=require('./nap-direct-state');
 const publicQualifications=require('./nap-direct-public-qualifications'),stateId=publicQualifications.stateId;
 const fail=(message,code='failed-precondition')=>Object.assign(new Error(message),{directCode:code});
 const finalCommands=new Set(['announceFinalists','withdraw','reinstate','preWithdraw','announceReplacement','resolveTie','markSwimoff','confirmSwimoffCancelled','refreshFinalists','compositionDone']);
@@ -7,7 +8,7 @@ function createConsoleStore(pool,store){
   const get=async(connection,id)=>model.parseJson((await execute(connection,'SELECT after_json FROM livepalmes_direct_publications WHERE environment=? AND competition_id=? AND id=? LIMIT 1',[...store.scope(id),stateId]))[0]?.after_json,flow.empty());
   const ensure=(config,permissions,role)=>{
     if(!flow.roles.includes(role)||!permissions.manage&&!permissions.roles.includes(role))throw fail('Aucun accès à cette console.','permission-denied');
-    if(!config||config.state!=='active')throw fail('Les consoles de cette compétition sont fermées.');
+    if(store.effectiveState(config)!=='active')throw archive.closed(config,store.clock());
     if(!model.parseJson(config.enabled_consoles_json,[]).includes(role))throw fail('Cette console n’est pas activée pour cette compétition.','permission-denied');
     if(role==='video'&&permissions.competition.level!=='national')throw fail('La vidéo est réservée aux compétitions nationales.','permission-denied');
   };
@@ -59,6 +60,7 @@ function createConsoleStore(pool,store){
       const result={ok:true,revision:next.revision,configVersion:Number(config.version)};
       if(input.command==='resetConsoles')await execute(c,"DELETE FROM livepalmes_direct_publications WHERE environment=? AND competition_id=? AND action='console-command'",store.scope(id));
       await execute(c,"INSERT INTO livepalmes_direct_publications (environment,competition_id,id,batch_id,event_id,operation_key,action,source_type,source_name,source_hash,before_json,after_json,created_at,created_by) VALUES (?,?,?,'',?,?, 'console-command','console',?,?,'null',?,UTC_TIMESTAMP(6),?)",[...store.scope(id),receiptId,selected?.id||null,receiptId,model.clean(input.command,200),contentHash,JSON.stringify(result),actor.uid]);
+      if(store.effectiveState(config)!=='active')throw archive.closed(config,store.clock());
       await c.commit();started=false;return result;
     }catch(error){if(started)await c.rollback();throw error;}finally{c.release();}
   }

@@ -1,7 +1,7 @@
 "use strict";
 const assert=require('node:assert/strict'),model=require('../functions/nap-direct-model'),schema=require('../functions/nap-direct-schema');
-const {createStore}=require('../functions/nap-direct-store'),{createService,readActor}=require('../functions/nap-direct-service');
-const {readPublic,attachLinks}=require('../functions/nap-direct-public'),{decode}=require('../functions/nap-direct-documents');
+const {createStore}=require('./helpers/direct-test-clock').storeModule,{createService,readActor}=require('./helpers/direct-test-clock').serviceModule;
+const {readPublic,attachLinks}=require('./helpers/direct-test-clock').publicModule,{decode}=require('../functions/nap-direct-documents');
 const competition={id:'legacy-nap-900001',date:'2026-11-07'},person={lastName:'EXEMPLE',firstName:'Alice',birthYear:2008,club:'CLUB TEST',category:'FJU',series:1,lane:4,entryTime:'595999',resultTime:'01:10.12'};
 const draft={kind:'results',event:{eventCode:'100sf',sex:'F',sessionKey:'1'},rows:[person],operationKey:'fixture-operation-00001',source:{name:'fixture.pdf',type:'pdf'}};
 function sqlFixture(){
@@ -14,7 +14,7 @@ function sqlFixture(){
     if(sql.includes(' FROM competitions c'))return [[{...native,...(sql.includes('d.state AS')?{direct_state:config.state,direct_visible:config.public_visible,direct_revision:config.public_revision,direct_documents:config.documents_json}:{})}]];
     if(sql.includes('bounded_direct_progress')){const groups=new Map();for(const row of entryRows){const key=row.event_id+'|'+row.series_number,group=groups.get(key)||{event_id:row.event_id,series_number:row.series_number,row_count:0,series_entries:0,result_entries:0,matched_results:0};group.row_count++;group.series_entries+=Number(Boolean(row.has_series));group.result_entries+=Number(Boolean(row.has_result));group.matched_results+=Number(Boolean(row.has_series&&row.has_result));groups.set(key,group);}return [[...groups.values()]];}
     if(sql.startsWith('SELECT SUM(total)')){const counts=new Map();entryRows.forEach(row=>counts.set(row.event_id,(counts.get(row.event_id)||0)+1));return [[{total:entryRows.length,event_total:Math.max(0,...counts.values())}]];}
-    if(sql.startsWith('SELECT')&&sql.includes('livepalmes_direct_competitions'))return [[{...config}]];
+    if(sql.startsWith('SELECT')&&sql.includes('livepalmes_direct_competitions'))return [[{...config,...(sql.includes('direct_date')?{direct_date:native.date,direct_enddate:native.enddate}:{})}]];
     if(sql.startsWith('SELECT')&&sql.includes('livepalmes_direct_events'))return [[...eventRows]];
     if(sql.startsWith('SELECT')&&sql.includes('livepalmes_direct_entries'))return [entryRows.filter(row=>!sql.includes(' AND event_id=?')||row.event_id===values[2])];
     if(sql.startsWith('SELECT')&&sql.includes('livepalmes_direct_publications'))return [logs.filter(r=>r.operation_key===values[2])];
