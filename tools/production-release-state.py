@@ -65,6 +65,15 @@ def check_after(backup, destination, require_success):
         if sorted(report['additionalBccFunctions']) != bcc_policy.contract()['selected']:
             raise ValueError('Selection CCI du rapport differente')
     errors = []
+    reference_policy = None
+    if report.get('additionalReferenceCleanupFunctions'):
+        spec = importlib.util.spec_from_file_location('reference_cleanup_state_policy', Path(__file__).with_name('reference-cleanup-production-policy.py'))
+        reference_policy = importlib.util.module_from_spec(spec); spec.loader.exec_module(reference_policy)
+        c = reference_policy.contract()
+        reference_policy.require(report['additionalReferenceCleanupFunctions'] == c['sourceOnly']
+            and report['candidate'] == c['candidate'] and len(before) == c['inventoryCount']
+            and selected == {PREFIX+n for n in c['selected']} and report['newFunctions'] == []
+            and report.get('reference_cleanupNapBinding') == reference_policy.initial(list(before.values())), 'Rapport nageurs/migrations hors contrat')
     november10_policy = None
     if report.get('additionalNovember10Functions'):
         spec = importlib.util.spec_from_file_location('november10_state_policy', Path(__file__).with_name('november10-validated-release-policy.py'))
@@ -146,6 +155,11 @@ def check_after(backup, destination, require_success):
                 errors.append(str(error))
         if not f or f.get("state") != "ACTIVE":
             errors.append("Function non active: " + name.split("/")[-1])
+        elif reference_policy is not None:
+            try:
+                reference_policy.assert_config(before[name], f, SimpleNamespace(rollback_patch=rollback_patch), report['reference_cleanupNapBinding'])
+            except ValueError as error:
+                errors.append(str(error))
         elif november10_policy is not None:
             try:
                 november10_policy.assert_config(before[name], f, SimpleNamespace(rollback_patch=rollback_patch), report['november10NapBinding'])
