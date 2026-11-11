@@ -3,7 +3,7 @@
   "project": "livepalmes-test",
   "release": "direct_date_archive",
   "approval": "Antoine, chat Direct du 11 novembre 2026 et feu vert de la coordination apres le chantier mobile : archivage effectif a minuit Paris suivant le dernier jour, sans ecriture GET ni scheduler ; correction explicite des seuls resultats WinPalme des series existantes avec les droits bureau deja accordes, sans Live ni reouverture des consoles. Integration et complement ferme TEST autorises pour les deux consommateurs reels. Configurations, schemas, donnees natives, autres services et PROD exclus.",
-  "applicationCommit": "b2819f130b61314aa3a91a87495781bd337a919d",
+  "applicationCommit": "dc9048296b0850cc6ec5bc6f7b59aa759cd69220",
   "baseCommit": "4efa079dd47b7fbb8e312b9d568738af9fe0d0f8",
   "baselineRuns": [
     {
