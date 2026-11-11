@@ -2,6 +2,11 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### Accueil public — ordre des rubriques sur mobile · 11 novembre 2026 (réalisation demandée)
+
+- Antoine demande sur mobile le bloc Recherche nageur / TOP / MPF / Trophée en premier, puis le calendrier, puis les documents, sans modifier l’ordinateur. Réorganisation CSS seule à 700 px et moins ; mêmes contenus, liens et DOM, aucune requête ni lecture supplémentaire à l’ouverture, au rafraîchissement ou par action utilisateur. L’ordre clavier reste celui du document existant.
+- La feuille dédiée n’utilise pas de cache immuable ; l’URL et les paramètres de cache existants sont conservés. Aucun changement d’index.html, du modèle d’accueil généré, de fonction serveur ou de configuration Firebase. Contrôles et preuve TEST à compléter après publication ; aucune validation de la version réalisée ni accord PROD nouveau n’est inventé.
+
 ### Public — trophée mobile compact · 11 novembre 2026 (TEST publié, détail déplié à corriger)
 
 - Présentation validée sur maquette dans le chat du trophée : club abrégé uniquement, lignes resserrées, total et « pts » sur une seule ligne, chevron sans libellé visible et épreuves dépliables. Antoine demande : « C'est bien comme ça, tu peux appliquer cette présentation au trophée et la mettre sur TEST puis sur PROD car ce n'est que du visuel pas besoin de perdre du temps ». Cet accord porte sur le visuel présenté et la livraison demandée, sans recette d’une version TEST réalisée inventée ni suppression des contrôles de publication.
