@@ -465,6 +465,12 @@ def targeted_test_evidence(directory, current):
     trusted.update(swimmer_sources.publisher.trusted_revisions(directory, current, SimpleNamespace(
         gh=gh, artifact=artifact, read=read, matching_functions=matching_functions,
         test_backend_fingerprints=test_backend_fingerprints)))
+    spec = importlib.util.spec_from_file_location('reference_migration_cleanup_evidence', ROOT / 'tools/publish-test-reference-migration-cleanup-sources.py')
+    migration_sources = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(migration_sources)
+    trusted.update(migration_sources.publisher.trusted_revisions(directory, current, SimpleNamespace(
+        gh=gh, artifact=artifact, read=read, matching_functions=matching_functions,
+        test_backend_fingerprints=test_backend_fingerprints)))
     return trusted
 
 

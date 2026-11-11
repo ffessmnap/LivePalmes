@@ -214,6 +214,7 @@ jobs:
           python tests/test-import-sources-tests.py
           python tests/test-reference-cleanup-sources-tests.py
           python tests/test-swimmer-reference-cleanup-sources-tests.py
+          python tests/test-reference-migration-cleanup-sources-tests.py
           python tests/test-reference-recovery-sources-tests.py
           python tests/test-direct-sources-tests.py
           python tests/test-direct-layout-sources-tests.py

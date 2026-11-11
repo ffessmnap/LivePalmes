@@ -72,12 +72,13 @@ class HttpsError extends Error { constructor(code, message) { super(message); th
   assert.throws(() => checkLots(source + "\nexports.getCurrentAccessUser=onCall({},()=>{});"), /déclaré plusieurs fois/);
   assert.throws(() => checkLots(source, {NAP_UNUSED_FUNCTIONS: NAP_UNUSED_FUNCTIONS.filter(name => name !== "syncPublicRecordsData")}), /Chaque export/);
   assert.throws(() => checkLots(source.replace("exports.getEngagementNationalAdministrationOverview =", "missing.getEngagementNationalAdministrationOverview =")), /Chaque export/);
-  const removedCalendar = new Set(["rebuildEngagementCompetitionCalendars", "syncEngagementCompetitionToCalendar", "syncEngagementCalendarEventToCalendar"]);
+  const removedDeclarations = new Set(["rebuildEngagementCompetitionCalendars", "syncEngagementCompetitionToCalendar", "syncEngagementCalendarEventToCalendar",
+    "importHistoricalPerformanceRows", "getPerformanceBaseMigrationStatus", "migratePerformanceBaseNextChunk"]);
   for (const name of NAP_RETIRED_FUNCTIONS) {
     assert.ok(Object.values(LOTS).flat().includes(name), "Compatibility registration retained: " + name);
     const node = handlers.get(name);
-    if (removedCalendar.has(name)) {
-      assert.equal(node, undefined, "Calendar declaration must remain absent: " + name);
+    if (removedDeclarations.has(name)) {
+      assert.equal(node, undefined, "Retired declaration must remain absent: " + name);
       assert.ok(!active.includes(name));
       continue;
     }
@@ -116,5 +117,5 @@ class HttpsError extends Error { constructor(code, message) { super(message); th
   const ui={global:{LivePalmesEnvironment:{sportingDataSource:"nap"}},callFunction:()=>{calls++;throw Error("Legacy endpoint called");},updateEngagementDeletionRequestBadge:n=>{badge=n;},renderEngagementDeletionRequests:()=>{renders++;}};
   vm.runInNewContext("let engagementDeletionRequests,engagementDeletionRequestsLoaded;\n"+portal.slice(loader.start,loader.end)+"\nthis.load=loadEngagementDeletionRequests;",ui);
   await ui.load({force:true});assert.equal(calls,0);assert.equal(renders,1);assert.equal(badge,0);
-  console.log("NAP release cleanup: calendar and Records declarations absent, shared NAP module retained, classifier guards, 37 inert handlers, native deletion reactivation and native UI verified offline.");
+  console.log("NAP release cleanup: calendar, migration and Records declarations absent, shared NAP module retained, classifier guards, remaining inert handlers, native deletion reactivation and native UI verified offline.");
 })().catch(error=>{console.error(error);process.exitCode=1;});

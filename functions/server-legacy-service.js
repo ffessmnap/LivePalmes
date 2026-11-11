@@ -204,53 +204,6 @@ function createLegacyService(backendContext) {
     return cache9;
   }
 
-  let cache10;
-  function operation10() {
-    if (!cache10) cache10 = require("./backend/server-legacy-service/migration-chunk-statuses").createLegacyService_migrationChunkStatuses({
-      get HttpsError() { return backendContext.HttpsError; },
-      set HttpsError(value) { backendContext.HttpsError = value; },
-      get PERFORMANCE_BASE_MIGRATION_COLLECTION() { return backendContext.PERFORMANCE_BASE_MIGRATION_COLLECTION; },
-      set PERFORMANCE_BASE_MIGRATION_COLLECTION(value) { backendContext.PERFORMANCE_BASE_MIGRATION_COLLECTION = value; },
-      get PERFORMANCE_PUBLIC_DATA_URL() { return backendContext.PERFORMANCE_PUBLIC_DATA_URL; },
-      set PERFORMANCE_PUBLIC_DATA_URL(value) { backendContext.PERFORMANCE_PUBLIC_DATA_URL = value; },
-      get cleanText() { return backendContext.cleanText; },
-      set cleanText(value) { backendContext.cleanText = value; },
-      get db() { return backendContext.db; },
-      set db(value) { backendContext.db = value; }
-    });
-    return cache10;
-  }
-
-  let cache11;
-  function operation11() {
-    if (!cache11) cache11 = require("./backend/server-legacy-service/historical-rows-from-chunk-payload").createLegacyService_historicalRowsFromChunkPayload({
-
-    });
-    return cache11;
-  }
-
-  let cache12;
-  function operation12() {
-    if (!cache12) cache12 = require("./backend/server-legacy-service/migrate-historical-performance-base-chunk").createLegacyService_migrateHistoricalPerformanceBaseChunk({
-      get HttpsError() { return backendContext.HttpsError; },
-      set HttpsError(value) { backendContext.HttpsError = value; },
-      get PERFORMANCE_BASE_MIGRATION_BATCH_SIZE() { return backendContext.PERFORMANCE_BASE_MIGRATION_BATCH_SIZE; },
-      set PERFORMANCE_BASE_MIGRATION_BATCH_SIZE(value) { backendContext.PERFORMANCE_BASE_MIGRATION_BATCH_SIZE = value; },
-      get PERFORMANCE_BASE_MIGRATION_COLLECTION() { return backendContext.PERFORMANCE_BASE_MIGRATION_COLLECTION; },
-      set PERFORMANCE_BASE_MIGRATION_COLLECTION(value) { backendContext.PERFORMANCE_BASE_MIGRATION_COLLECTION = value; },
-      get PERFORMANCE_PUBLIC_DATA_URL() { return backendContext.PERFORMANCE_PUBLIC_DATA_URL; },
-      set PERFORMANCE_PUBLIC_DATA_URL(value) { backendContext.PERFORMANCE_PUBLIC_DATA_URL = value; },
-      get cleanText() { return backendContext.cleanText; },
-      set cleanText(value) { backendContext.cleanText = value; },
-      get db() { return backendContext.db; },
-      set db(value) { backendContext.db = value; },
-      get writePerformanceBaseRows() { return backendContext.writePerformanceBaseRows; },
-      set writePerformanceBaseRows(value) { backendContext.writePerformanceBaseRows = value; },
-      get local$historicalRowsFromChunkPayload() { return operation11().historicalRowsFromChunkPayload; }
-    });
-    return cache12;
-  }
-
   let cache13;
   function operation13() {
     if (!cache13) cache13 = require("./backend/server-legacy-service/build-additional-performance-data-snapshot").createLegacyService_buildAdditionalPerformanceDataSnapshot({
@@ -366,10 +319,6 @@ function createLegacyService(backendContext) {
     publishIncrementalPerformanceImport: operation8().publishIncrementalPerformanceImport,
     publishIncrementalPerformanceCorrection: operation6().publishIncrementalPerformanceCorrection,
     publicPerformanceFilesBucket: operation9().publicPerformanceFilesBucket,
-    performanceBaseMigrationManifest: operation10().performanceBaseMigrationManifest,
-    migrationChunkStatuses: operation10().migrationChunkStatuses,
-    historicalRowsFromChunkPayload: operation11().historicalRowsFromChunkPayload,
-    migrateHistoricalPerformanceBaseChunk: operation12().migrateHistoricalPerformanceBaseChunk,
     buildAdditionalPerformanceDataSnapshot: operation13().buildAdditionalPerformanceDataSnapshot,
     publishAdditionalPerformanceDataSnapshot: operation14().publishAdditionalPerformanceDataSnapshot,
     enqueuePerformancePublicationJob: operation15().enqueuePerformancePublicationJob,

@@ -6,6 +6,12 @@
 
 Les performances sont lues et écrites dans NAP via les fonctions authentifiées, sans ancienne base sportive Firestore ni republication de TOP statiques. TEST utilise la vraie base NAP : les essais d'écriture exigent un accord spécifique. Voir [la référence NAP](NAP_REFERENCE.md) et [les budgets](OPTIMISATION_NAP.md).
 
+## Anciennes migrations retirées — 11 novembre 2026
+
+Les trois déclarations historiques `importHistoricalPerformanceRows`, `getPerformanceBaseMigrationStatus` et `migratePerformanceBaseNextChunk`, déjà absentes des inventaires TEST et PROD authentifiés, sont retirées avec leurs auxiliaires dédiés et les commandes navigateur sans bouton associé. Leurs noms restent dans les exclusions de déploiement. Vingt commandes historiques refusent toute exécution avant import de module, accès fichier, réseau ou écriture : générateur du manifeste, treize anciennes commandes calendrier et six commandes sportives Firestore (import initial, reprises licences/chronométrage, initialisation et consolidation des listes). Les helpers purs encore testés restent disponibles à l’import, sans lancement de commande. Git conserve leurs anciennes versions.
+
+Le manifeste `performance-base-migration-manifest.json` était déjà ignoré par Git et absent des livraisons : aucun artefact local ignoré ni aucune donnée distante n’est supprimé. Les imports TXT/ZIP natifs, les migrations de schéma NAP encore utiles, la migration distincte des archives Direct et les protections de publication restent conservés. Budget ajouté : zéro lecture, requête, écriture ou listener à l’ouverture, par action, au rafraîchissement et au pire cas ; aucune migration exécutée. Les tests utilisent uniquement des sources et commandes neutralisées, hors ligne.
+
 ## Import TXT WinPalme
 
 ### Résoudre les blocages de l’import ZIP — 9 novembre 2026
