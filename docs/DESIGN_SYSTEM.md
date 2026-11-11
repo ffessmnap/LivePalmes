@@ -2,6 +2,16 @@
 
 <!-- description: Référence du langage visuel, des composants d’interface et des règles responsive déjà présents dans LivePalmes. -->
 
+## Navigation publique et liens de compétition — 11 novembre 2026
+
+Sur les pages publiques uniquement, le bandeau mobile utilise une rangée de marque / Portail / compte présent / « ☰ Menu », avec une cible d’au moins 44 px pour chaque action. L’emplacement d’un compte absent n’est plus réservé. À 380 px et moins, la marque se réduit au logo lorsque le compte est présent ; le lien conserve son nom accessible. Le menu garde une largeur naturelle même sur les pages Performances. Les rubriques mobiles portent un chevron explicite ; leurs liens restent utilisables au toucher et la navigation peut défiler en hauteur si l’écran est court. Le portail privé conserve sa présentation existante.
+
+Un lien public, un clic extérieur ou la sortie du focus ferme le menu. Échap ferme d’abord le sous-menu avec retour du focus à son intitulé, puis le menu avec retour au bouton. Le franchissement du seuil mobile/ordinateur et le retour de page réinitialisent les états ouverts ; le focus ne reste pas sur une commande devenue invisible. Les URL et les témoins anonymes de présentation ne changent pas.
+
+La fiche de compétition regroupe sous son titre les seuls liens disponibles Résultats et Archive du Direct (ou Direct actif), soulignés, de largeur naturelle, sans fond plein ni cadre, avec une cible de 44 px et 18 px entre liens. Le protocole PDF reste dans Documents ; son raccourci supérieur est supprimé. Dans la liste du calendrier, seule la pastille du Direct archivé est masquée ; la carte rejoint toujours la fiche. Direct actif et Résultats publiés restent indépendants, sans nouvelle règle de date.
+
+Records et MPF désactivent explicitement leurs filtres pendant le chargement et en cas d’échec, avec un état annoncé et une action Réessayer. Une réussite initialise les contrôles selon leurs règles existantes ; un échec ne présente pas une liste vide comme un succès. Réessayer recharge la page à la demande, sans boucle automatique, repli de données ou appel supplémentaire au chargement initial.
+
 ## Bureau Direct — aperçu et réglages compacts · 10 novembre 2026
 
 - Suivi des courses : résumé compact avec chevron, détail par série masqué par défaut ; ouverture au toucher/clavier et conservée lors du rafraîchissement du suivi. Heures et compteurs tabulaires, état textuel en plus des couleurs. Même composant dans le bilan des imports.

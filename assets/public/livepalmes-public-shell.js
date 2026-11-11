@@ -33,7 +33,7 @@
    }else{const link=document.createElement("a");link.href=href;link.textContent=title;if(section===key)link.setAttribute("aria-current","page");nav.append(link);}
   }
   const portal=document.createElement("a");portal.className="public-site-portal";portal.href="/portail.html";portal.textContent="Portail";if(isPortal)portal.setAttribute("aria-current","page");
-  const toggle=document.createElement("button");toggle.type="button";toggle.className="public-site-menu-toggle";toggle.textContent="☰ Site";toggle.setAttribute("aria-expanded","false");toggle.setAttribute("aria-controls","livepalmesSiteNavigation");nav.id="livepalmesSiteNavigation";
+  const toggle=document.createElement("button");toggle.type="button";toggle.className="public-site-menu-toggle";toggle.textContent=isPortal?"☰ Site":"☰ Menu";toggle.setAttribute("aria-expanded","false");toggle.setAttribute("aria-controls","livepalmesSiteNavigation");nav.id="livepalmesSiteNavigation";
   const accountHost=document.createElement("div");accountHost.id="publicSiteAccount";
   let publicAccount=null;
   if(!isPortal){
@@ -56,7 +56,7 @@
   const sessionKey="livepalmes:portal-session-display:v1";
   // Anonymous presentation hint only. The portal remains the sole access authority.
   function readHint(){try{return global.localStorage.getItem(sessionKey)==="connected";}catch{return false;}}
-  function refreshLabel(){const connected=isPortal?body.dataset.adminAuth==="unlocked":readHint();portal.textContent="Portail";if(publicAccount)publicAccount.hidden=!connected;}
+  function refreshLabel(){const connected=isPortal?body.dataset.adminAuth==="unlocked":readHint();portal.textContent="Portail";if(publicAccount){publicAccount.hidden=!connected;accountHost.hidden=!connected;body.classList.toggle("has-public-site-account",connected);}}
   function publishHint(){const state=body.dataset.adminAuth;if(state!=="unlocked"&&state!=="locked")return;try{if(state==="unlocked")global.localStorage.setItem(sessionKey,"connected");else global.localStorage.removeItem(sessionKey);}catch{}refreshLabel();}
   // The active portal link must never reload and discard its current dossier.
   if(isPortal)portal.addEventListener("click",event=>{if(body.dataset.adminAuth==="unlocked")event.preventDefault();});
@@ -64,13 +64,24 @@
   toggle.addEventListener("click",()=>{const open=toggle.getAttribute("aria-expanded")!=="true";if(!open)closeDropdowns();header.classList.toggle("is-site-menu-open",open);toggle.setAttribute("aria-expanded",String(open));});
   document.addEventListener("keydown",event=>{if(event.key!=="Escape")return;const details=nav.querySelector("details[open]");if(details){closeDropdowns();details.querySelector("summary").focus();}else if(toggle.getAttribute("aria-expanded")==="true"){closeMenu();toggle.focus();}});
   document.addEventListener("click",event=>{if(!header.contains(event.target)){closeMenu();}});
+  if(!isPortal){
+   header.addEventListener("click",event=>{if(event.target.closest?.("a"))closeMenu();});
+   header.addEventListener("focusout",event=>{if(event.relatedTarget&&!header.contains(event.relatedTarget))closeMenu();});
+   const mobileMenu=global.matchMedia?.("(max-width: 850px)");
+   mobileMenu?.addEventListener?.("change",()=>{
+    const focused=document.activeElement,focusedMenu=menus.find(menu=>menu.details.contains(focused));closeMenu();
+    if(mobileMenu.matches&&nav.contains(focused))toggle.focus();
+    else if(!mobileMenu.matches&&focused===toggle)brand.focus();
+    else if(focusedMenu)focusedMenu.details.querySelector("summary").focus();
+   });
+  }
   if(isPortal){
    const account=document.getElementById("adminPortalAccount");if(account){accountHost.append(account);const button=document.getElementById("adminPortalAccountToggle");if(button)button.setAttribute("aria-label","Mon compte");}
    // Public consultation must not unload the current dossier or pending saves.
    for(const link of [brand,...nav.querySelectorAll("a")]){link.target="livepalmes-public";link.rel="noopener";link.setAttribute("aria-label",link===brand?"Accueil LivePalmes (nouvel onglet)":link.textContent.trim()+" (nouvel onglet)");}
    new MutationObserver(publishHint).observe(body,{attributes:true,attributeFilter:["data-admin-auth"]});publishHint();
   }
-  refreshLabel();global.addEventListener("storage",event=>{if(event.key===sessionKey||event.key===null)refreshLabel();});global.addEventListener("pageshow",refreshLabel);
+  refreshLabel();global.addEventListener("storage",event=>{if(event.key===sessionKey||event.key===null)refreshLabel();});global.addEventListener("pageshow",()=>{refreshLabel();if(!isPortal)closeMenu();});
   function measureHeader(){const currentBanner=body.querySelector("[data-livepalmes-test-banner]");const bannerHeight=currentBanner?.getBoundingClientRect().height||0;const height=header.getBoundingClientRect().height;body.style.setProperty("--site-banner-height",bannerHeight+"px");body.style.setProperty("--site-header-bottom",(bannerHeight+height)+"px");const topbar=document.querySelector(".admin-portal-topbar");const toolbarHeight=topbar?.getBoundingClientRect().height||0;body.style.setProperty("--site-workspace-top",(bannerHeight+height+toolbarHeight)+"px");global.dispatchEvent(new Event("resize"));}
   if(document.readyState!=="complete")global.addEventListener("load",measureHeader,{once:true});
   if(global.ResizeObserver){const observer=new global.ResizeObserver(measureHeader);observer.observe(header);if(banner)observer.observe(banner);const topbar=document.querySelector(".admin-portal-topbar");if(topbar)observer.observe(topbar);}measureHeader();
