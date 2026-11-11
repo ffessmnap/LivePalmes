@@ -78,6 +78,10 @@ def main(candidate, plan, backup):
     request = json.loads((plan / 'request.json').read_text())
     spec = importlib.util.spec_from_file_location('cycle', Path(__file__).with_name('release-cycle.py'))
     cycle = importlib.util.module_from_spec(spec); spec.loader.exec_module(cycle)
+    if cycle.reference_cleanup.approved(request):
+        cycle.reference_cleanup.selection(request, cycle.read(plan / 'selection.json'))
+        cycle.reference_cleanup.guard(plan)
+        return
     if cycle.november10_release.approved(request):
         cycle.november10_release.selection(request, cycle.read(plan / 'selection.json'))
         cycle.november10_release.guard(plan)
