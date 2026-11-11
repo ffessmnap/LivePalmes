@@ -45,10 +45,6 @@
     superAdminPanel: document.querySelector("#performanceSuperAdminPanel"),
     publishPublicData: document.querySelector("#performancePublishPublicDataButton"),
     publishPublicDataMessage: document.querySelector("#performancePublishPublicDataMessage"),
-    migrationStatus: document.querySelector("#performanceMigrationStatus"),
-    migrationStatusButton: document.querySelector("#performanceMigrationStatusButton"),
-    migrationNext: document.querySelector("#performanceMigrationNextButton"),
-    migrationAll: document.querySelector("#performanceMigrationAllButton"),
     correctionProgress: document.querySelector("#performanceCorrectionProgress"),
     correctionRetryPublication: document.querySelector("#performanceCorrectionRetryPublication"),
     correctionSearch: document.querySelector("#performanceCorrectionSwimmer"),
@@ -127,7 +123,6 @@
   let correctionPublicationMonitorToken = 0;
   let correctionPublicationResumeStarted = "";
   const CORRECTION_PUBLICATION_JOB_SESSION_KEY = "livepalmes.performanceCorrectionPublicationJob";
-  let migrationAutoRunning = false;
   let importsCache = [];
   let importsLoadPromise = null;
   let spreadsheetLoadPromise = null;
@@ -233,9 +228,6 @@
       elements.importsRefresh,
       elements.importsExport,
       elements.publishPublicData,
-      elements.migrationStatusButton,
-      elements.migrationNext,
-      elements.migrationAll,
       ...Array.from(elements.importsList?.querySelectorAll("button") || [])
     ].filter(Boolean);
     if (busy) {
@@ -2399,104 +2391,9 @@
     }
   }
 
-  function renderMigrationStatus(status = {}) {
-    if (!elements.migrationStatus) return;
-    const chunks = Array.isArray(status.chunks) ? status.chunks : [];
-    const next = chunks.find((chunk) => chunk.status !== "completed");
-    elements.migrationStatus.hidden = false;
-    elements.migrationStatus.innerHTML = `
-      <div><span>Lots migres</span><strong>${escapeHtml(status.completedChunks || 0)} / ${escapeHtml(status.totalChunks || 0)}</strong></div>
-      <div><span>Performances migrees</span><strong>${escapeHtml(status.migratedPerformances || 0)} / ${escapeHtml(status.totalPerformances || 0)}</strong></div>
-      <div><span>Prochain lot</span><strong>${escapeHtml(next?.name || "Termine")}</strong></div>
-    `;
-  }
 
-  async function loadPerformanceMigrationStatus() {
-    if (!ensureAdminAuth()?.isAdminAuthenticated?.()) return;
-    if (elements.migrationStatusButton) elements.migrationStatusButton.disabled = true;
-    setMessage(elements.publishPublicDataMessage, "Lecture du statut de migration...", "ok");
-    try {
-      const result = await callFunction("getPerformanceBaseMigrationStatus", {});
-      renderMigrationStatus(result);
-      setMessage(elements.publishPublicDataMessage, "Statut de migration actualise.", "ok");
-    } catch (error) {
-      setMessage(elements.publishPublicDataMessage, `Statut migration impossible : ${error?.message || error}`);
-    } finally {
-      if (elements.migrationStatusButton) elements.migrationStatusButton.disabled = false;
-    }
-  }
 
-  async function migrateNextPerformanceBaseChunk() {
-    if (!ensureAdminAuth()?.isAdminAuthenticated?.()) return;
-    if (!global.confirm("Migrer le prochain lot historique vers la base LivePalmes officielle ?")) return;
-    if (elements.migrationNext) elements.migrationNext.disabled = true;
-    startImportProgress(
-      "Migration du prochain lot en cours...",
-      "Le lot historique est copié vers la base officielle puis son état est contrôlé."
-    );
-    try {
-      const result = await callFunction("migratePerformanceBaseNextChunk", {});
-      if (result.done) {
-        finishImportProgress("success", "Migration déjà terminée", "Tous les lots historiques sont déjà migrés.");
-      } else {
-        const chunkProgress = result.totalCount ? ` (${result.migratedCount || 0} / ${result.totalCount})` : "";
-        finishImportProgress(
-          "success",
-          `Lot ${result.chunk} migré`,
-          `${result.batchCount || 0} performances migrées${chunkProgress}.`
-        );
-      }
-      await loadPerformanceMigrationStatus();
-    } catch (error) {
-      finishImportProgress("error", "Migration impossible", error?.message || String(error));
-    } finally {
-      if (elements.migrationNext) elements.migrationNext.disabled = false;
-    }
-  }
 
-  async function migrateAllPerformanceBaseChunks() {
-    if (!ensureAdminAuth()?.isAdminAuthenticated?.()) return;
-    if (!global.confirm("Lancer la migration automatique complete ? La page doit rester ouverte jusqu'a la fin.")) return;
-    migrationAutoRunning = true;
-    if (elements.migrationAll) elements.migrationAll.disabled = true;
-    if (elements.migrationNext) elements.migrationNext.disabled = true;
-    startImportProgress(
-      "Migration historique complète en cours...",
-      "Les lots sont traités successivement. Gardez cette page ouverte jusqu'à la fin."
-    );
-    try {
-      while (migrationAutoRunning) {
-        const result = await callFunction("migratePerformanceBaseNextChunk", {});
-        if (result.done) {
-          finishImportProgress("success", "Migration historique terminée", "Tous les lots ont été migrés vers la base officielle.");
-          await loadPerformanceMigrationStatus();
-          break;
-        }
-        const total = result.totalPerformances || 0;
-        const migrated = result.migratedPerformances || 0;
-        const chunkProgress = result.totalCount ? `${result.migratedCount || 0} / ${result.totalCount}` : "";
-        updateImportProgress(
-          "Migration historique complète en cours...",
-          `${migrated} / ${total} performances traitées. Lot ${result.chunk}${chunkProgress ? ` (${chunkProgress})` : ""}. Gardez cette page ouverte.`
-        );
-        renderMigrationStatus({
-          completedChunks: result.completedChunks || 0,
-          totalChunks: result.totalChunks || 0,
-          migratedPerformances: migrated,
-          totalPerformances: total,
-          chunks: []
-        });
-        await new Promise((resolve) => setTimeout(resolve, 400));
-      }
-    } catch (error) {
-      finishImportProgress("error", "Migration automatique interrompue", error?.message || String(error));
-      await loadPerformanceMigrationStatus();
-    } finally {
-      migrationAutoRunning = false;
-      if (elements.migrationAll) elements.migrationAll.disabled = false;
-      if (elements.migrationNext) elements.migrationNext.disabled = false;
-    }
-  }
 
   function init() {
     const auth = ensureAdminAuth();
@@ -2577,9 +2474,6 @@
       updateRecordAlertDecision(button);
     });
     elements.publishPublicData?.addEventListener("click", publishPerformancePublicData);
-    elements.migrationStatusButton?.addEventListener("click", loadPerformanceMigrationStatus);
-    elements.migrationNext?.addEventListener("click", migrateNextPerformanceBaseChunk);
-    elements.migrationAll?.addEventListener("click", migrateAllPerformanceBaseChunks);
     elements.correctionSearch?.addEventListener("input", () => {
       resetCorrectionEditor({ keepRows: Boolean(correctionSelectedSwimmer) });
       Promise.all([ensureCorrectionReference(), loadCorrectionOverlay()]).then(renderCorrectionSuggestions);
