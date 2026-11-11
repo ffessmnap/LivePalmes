@@ -1,8 +1,9 @@
 (function(global){
   'use strict';
-  function create({role='computer',competitionId,getUser,call,onRender=()=>{},onStatus=()=>{},onAccessError=()=>{},onRetry=()=>{},onActivity=()=>{},canPoll=()=>true}){
+  function create({role='computer',competitionId,getUser,call,onRender=()=>{},onStatus=()=>{},onAccessError=()=>{},onClosed=()=>{},onRetry=()=>{},onActivity=()=>{},canPoll=()=>true}){
     const initial=()=>({data:null,role,eventId:null,series:null,session:'all',request:0,busy:false,loading:false,timer:null,pending:null,dialog:null,dirty:false,settingsOpen:false,records:null,reserveOffset:0});
     const state=initial();let active=true,epoch=0,allCache=null,allPending=null,recordPending=null;
+    function closed(error){if(!['archived','disabled','resetting'].includes(error.details?.directState))return false;stop();state.data=null;state.pending=null;onRetry(false);onAccessError();onClosed(error.details);return true;}
     const storageKey=()=>`direct-console-position:${competitionId}:${getUser()?.uid}:${state.role}`;
     function remember(){try{localStorage.setItem(storageKey(),JSON.stringify({eventId:state.eventId,series:state.series,session:state.session}));}catch{}}
     function restore(events=[]){try{const saved=JSON.parse(localStorage.getItem(storageKey())||'null');if(saved&&events.some(e=>e.id===saved.eventId)){state.eventId=saved.eventId;state.series=saved.series;state.session=saved.session||'all';}}catch{}}
@@ -19,6 +20,7 @@
       }catch(error){
         if(!active||request!==state.request||uid!==getUser()?.uid)return false;
         onStatus(error.message,true);
+        if(closed(error))return false;
         if(/permission-denied|unauthenticated/.test(error.code||'')){state.data=null;state.pending=null;allCache=null;onRetry(false);onAccessError();}return false;
       }finally{if(request===state.request){state.loading=false;onActivity();}schedule();if(moved)Promise.resolve().then(()=>load(true));}
     }
@@ -26,7 +28,7 @@
     async function deliver(){
       const input=state.pending,uid=getUser()?.uid,generation=epoch;if(!active||!input||!uid||state.loading||state.busy)return false;state.busy=true;onActivity();
       try{await call('consoleCommand',input);if(!active||generation!==epoch||uid!==getUser()?.uid)return false;state.pending=null;state.dirty=false;onRetry(false);return true;}
-      catch(error){if(active&&generation===epoch&&uid===getUser()?.uid){if(/invalid-argument|permission-denied|unauthenticated|aborted|failed-precondition/.test(error.code||'')){state.pending=null;onRetry(false);}else onRetry(true);}throw error;}
+      catch(error){if(active&&generation===epoch&&uid===getUser()?.uid&&!closed(error)){if(/invalid-argument|permission-denied|unauthenticated|aborted|failed-precondition/.test(error.code||'')){state.pending=null;onRetry(false);}else onRetry(true);}throw error;}
       finally{if(generation===epoch){state.busy=false;onActivity();}}
     }
     function send(command,data={},expected=context()){

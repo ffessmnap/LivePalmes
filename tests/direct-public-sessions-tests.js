@@ -1,7 +1,7 @@
 'use strict';
 const assert=require('node:assert/strict'),{randomUUID}=require('node:crypto'),courses=require('../functions/nap-direct-public-courses'),sessions=require('../assets/direct/sessions'),ui=require('../assets/direct/presentation');
 const context={window:{LivePalmesDirectPresentation:ui}};require('node:vm').runInNewContext(require('node:fs').readFileSync(require.resolve('../assets/direct/event-view'),'utf8'),context);const view=context.window.LivePalmesDirectEventView;
-const {fixture}=require('./helpers/direct-console-sql-fixture'),{createStore}=require('../functions/nap-direct-store'),{readPublic}=require('../functions/nap-direct-public');
+const {fixture}=require('./helpers/direct-console-sql-fixture'),{createStore}=require('./helpers/direct-test-clock').storeModule,{readPublic}=require('./helpers/direct-test-clock').publicModule;
 function event(session,heat,extra={}){return {id:String(session).repeat(64),eventCode:'1500sf',eventLabel:'1500 m Surface',sex:'F',phase:'meilleure-serie',date:'2026-05-22',sessionKey:String(session),sessionLabel:'Session '+session,order:session,expectedSeries:2,heatSchedule:[{number:heat,scheduledAt:session===1?'10:40':'18:40'}],publication:{series:true,results:false},progress:{entries:1,seriesEntries:1,seriesCount:1,resultEntries:0,matchedResults:0,completeSeriesCount:0,unassignedResults:0},...extra};}
 async function main(){
   const slow=event(1,1),fast=event(2,2),done=e=>({...e,publication:{series:true,results:true},progress:{...e.progress,resultEntries:1,matchedResults:1,completeSeriesCount:1}}),partial={...done(fast),progress:{...fast.progress,seriesEntries:2,resultEntries:1,matchedResults:1}};

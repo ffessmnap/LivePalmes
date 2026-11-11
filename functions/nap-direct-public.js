@@ -1,13 +1,13 @@
 "use strict";
 const {createStore,fail}=require("./nap-direct-store"),model=require("./nap-direct-model");
 const {SELECT_EVENT,EVENT_JOINS,eventFromRow}=require("./nap-calendar-event");
-const courses=require('./nap-direct-public-courses');
+const courses=require('./nap-direct-public-courses'),archive=require('./nap-direct-state');
 const cache=new Map(),pending=new Map(),programs=new Map();
 async function cachedProgram(store,id,key){
   if(!programs.has(key)){if(programs.size>=100)programs.delete(programs.keys().next().value);const request=store.program(id).catch(error=>{programs.delete(key);throw error;});programs.set(key,request);}
   return programs.get(key);
 }
-async function readPublic(pool,environment,input) {
+async function readPublic(pool,environment,input,{clock=Date.now}={}) {
   const id=model.competitionId(input.id),store=createStore(pool,environment);
   if(input.eventId&&!/^[a-f0-9]{64}$/.test(input.eventId))throw new TypeError("Épreuve invalide.");
   const selection=SELECT_EVENT.replace(' FROM competitions c',',d.state AS direct_state,d.public_visible AS direct_visible,d.public_revision AS direct_revision,d.documents_json AS direct_documents FROM competitions c');
@@ -40,15 +40,15 @@ async function readPublic(pool,environment,input) {
     })().finally(()=>pending.delete(key)));
     payload=await pending.get(key);
   }
-  return {source:'nap',competition,config:{state:metadata.direct_state,revision:Number(metadata.direct_revision),documents:model.parseJson(metadata.direct_documents,[])},...payload};
+  return {source:'nap',competition,config:{state:archive.effective(metadata.direct_state,metadata.date,metadata.enddate,clock()),revision:Number(metadata.direct_revision),documents:model.parseJson(metadata.direct_documents,[])},...payload};
 }
-async function attachLinks(pool,environment,events) {
+async function attachLinks(pool,environment,events,rawDates=new Map(),{clock=Date.now}={}) {
   if(!events.length)return events;
   const ids=events.map(e=>model.competitionId(e.id));
   let rows;
   try {rows=await require('./nap-query').execute(pool,`SELECT competition_id,state FROM livepalmes_direct_competitions WHERE environment=? AND public_visible=1 AND state IN ('active','archived') AND competition_id IN (${ids.map(()=>'?').join(',')}) LIMIT 501`,[environment,...ids]);}
   catch(error){if(error.code==='ER_NO_SUCH_TABLE')return events;throw error;}
   const byId=new Map(rows.map(r=>[Number(r.competition_id),r.state]));
-  return events.map(event=>byId.has(model.competitionId(event.id))?{...event,direct:{state:byId.get(model.competitionId(event.id)),url:`direct.html?id=${model.competitionId(event.id)}`}}:event);
+  return events.map(event=>byId.has(model.competitionId(event.id))?{...event,direct:{state:archive.effective(byId.get(model.competitionId(event.id)),(rawDates.get(model.competitionId(event.id))||event).date,(rawDates.get(model.competitionId(event.id))||event).enddate??event.endDate,clock()),url:`direct.html?id=${model.competitionId(event.id)}`}}:event);
 }
 module.exports={readPublic,attachLinks};
