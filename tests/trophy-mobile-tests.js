@@ -73,4 +73,20 @@ const preview = new Element("section"); preview.id = "adminTrophyPreview";
 window.LivePalmesTrophyTable.render(preview, data);
 assert.equal(byClass(preview, "trophy-mobile").length, 0, "portal preview stays unchanged");
 assert.equal(byClass(preview, "trophy-swimmer").length, 4);
+// Regression from the real iPhone TEST report: the shared stylesheet converts
+// tables/rows/cells to block/grid cards. The detail must opt out at every level.
+const css = fs.readFileSync("assets/public/livepalmes-trophy.css", "utf8");
+const rules = new Map([...css.matchAll(/([^{}]+)\{([^{}]+)\}/g)].map(match => [match[1].trim(), match[2]]));
+for (const [selector, display] of [
+  [".trophy-mobile-detail table", "table"],
+  [".trophy-mobile-detail thead", "table-header-group"],
+  [".trophy-mobile-detail tbody", "table-row-group"],
+  [".trophy-mobile-detail tr", "table-row"],
+  [".trophy-mobile-detail :is(th, td)", "table-cell"]
+]) assert.ok(rules.get(selector)?.includes(`display: ${display};`), `${selector} must override inherited mobile card display`);
+assert.match(rules.get(".trophy-mobile-detail tr"), /border: 0; border-radius: 0;/);
+assert.match(rules.get(".trophy-mobile-detail td::before"), /content: none; display: none;/);
+assert.match(rules.get(".trophy-mobile-detail tbody"), /padding: 0; gap: 0;/);
+const html = fs.readFileSync("performances/damien-hebert.html", "utf8");
+assert.ok(html.indexOf("public/styles.css") < html.indexOf("livepalmes-trophy.css"), "scoped reset follows shared stylesheet");
 console.log("Trophy mobile: supplied club abbreviation, ranks/ties/cutoff, five courses, absence, accessible disclosure/profile, categories and existing preview preserved; offline.");

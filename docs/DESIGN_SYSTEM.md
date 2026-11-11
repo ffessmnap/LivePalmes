@@ -4,6 +4,8 @@
 
 ## Trophée public compact — 11 novembre 2026
 
+Le détail des cinq épreuves conserve explicitement la structure d’un petit tableau en mobile : en-tête visible, groupes de lignes tabulaires, une ligne par épreuve et trois colonnes Épreuve / Temps / Points. Les styles mobiles génériques qui transforment les tableaux en cartes (affichage bloc/grille, cadres de lignes, marges internes et pseudo-libellés de cellules) sont neutralisés uniquement dans ce détail. Cellules de 13 px avec 4 px de marge verticale ; aucune nouvelle carte par course.
+
 À 850 px et moins, en portrait comme en paysage, le classement public présente une liste continue : rang, nom puis abréviation officielle du club et année, total « nombre pts » sur une ligne et centré verticalement, chevron seul. Hauteur minimale de 48 px, avec commandes tactiles de 44 px ; les noms longs peuvent augmenter la hauteur sans être tronqués. La ligne hors bouton d’identité déplie les cinq épreuves (temps, points et absences), au toucher ou au clavier ; le chevron et l’état accessible suivent l’ouverture. Le nom conserve la confirmation de navigation vers la fiche nageur. L’ordre, les égalités et le séparateur « Limite des 32 places » sont conservés. Au-delà de 850 px et dans l’aperçu du portail national, le tableau existant demeure inchangé. Aucun nouvel accès aux données.
 
 ## Bureau Direct archivé — 11 novembre 2026
