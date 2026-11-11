@@ -209,6 +209,7 @@ jobs:
             python tests/november-validated-release-tests.py
             python tests/november10-validated-release-tests.py
             python tests/reference-cleanup-production-tests.py
+            python tests/public-navigation-direct-production-tests.py
             node tests/november-retained-scope-tests.js
           python tests/test-mail-sources-tests.py
           python tests/test-trophy-sources-tests.py

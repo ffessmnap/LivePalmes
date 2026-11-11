@@ -102,6 +102,12 @@ def main(directory, run_id, kind):
         if kind == 'backend' and selected:
             state = load('readiness_state', 'production-release-state.py')
             functions = state.inventory()
+            if cycle.public_navigation_direct.approved(request):
+                cycle.public_navigation_direct.initial(functions)
+                cycle.public_navigation_direct.guard(directory)
+                report['publicNavigationDirectRelease'] = {'existingSources': cycle.public_navigation_direct.approved(request),
+                    'retainedFunctions': 117, 'newFunctions': [], 'configurationChanges': False,
+                    'bindingChanges': False, 'mailPause': False, 'historicalReplay': False, 'iamChanges': False}
             if cycle.reference_cleanup.approved(request):
                 cycle.reference_cleanup.initial(functions)
                 cycle.reference_cleanup.guard(directory)
