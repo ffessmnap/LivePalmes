@@ -2,6 +2,10 @@
 
 <!-- description: Référence du langage visuel, des composants d’interface et des règles responsive déjà présents dans LivePalmes. -->
 
+## Accueil public — ordre mobile · 11 novembre 2026
+
+À 700 px et moins, les trois rubriques de l’accueil public s’affichent dans l’ordre Performances (recherche nageur, Records, TOP, MPF, trophée), rendez-vous du calendrier, puis documents. Le conteneur de la colonne droite devient transparent à la grille (`display: contents`) et les trois blocs occupent les lignes 1, 2 et 3. Au-delà de 700 px, la grille existante, le calendrier à gauche et la colonne Performances/Documents à droite sont inchangés. Le DOM, les liens et les lectures de données restent identiques ; la navigation clavier suit donc l’ordre du document existant.
+
 ## Trophée public compact — 11 novembre 2026
 
 Le détail des cinq épreuves conserve explicitement la structure d’un petit tableau en mobile : en-tête visible, groupes de lignes tabulaires, une ligne par épreuve et trois colonnes Épreuve / Temps / Points. Les styles mobiles génériques qui transforment les tableaux en cartes (affichage bloc/grille, cadres de lignes, marges internes et pseudo-libellés de cellules) sont neutralisés uniquement dans ce détail. Cellules de 13 px avec 4 px de marge verticale ; aucune nouvelle carte par course.

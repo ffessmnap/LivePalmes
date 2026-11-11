@@ -90,3 +90,9 @@
 @media(max-width:700px){.public-home-upcoming-collapsed .public-home-events-extra{display:none}.public-home-events-toggle{display:inline-flex;align-items:center;justify-content:center;min-height:44px;margin-top:10px;padding:8px 12px;border:1px solid #b8d4d9;border-radius:6px;background:#e4f3f5;color:#075d69;font:inherit;font-size:.8rem;font-weight:600}.public-home-page .public-home-section-link.ghost-button{min-height:44px}.public-home-page .public-home-section-heading{flex-wrap:wrap}.public-home-welcome{margin-bottom:12px}}
 @media(max-width:700px){.public-home-page .public-home-grid{grid-template-columns:1fr;gap:16px}.public-home-welcome h1{font-size:1.5rem}.public-home-page .performance-card .public-home-card-actions{grid-auto-rows:auto}.public-home-page .performance-card .public-home-card-actions .ghost-button{height:auto;min-height:44px;white-space:normal}.public-home-page .public-home-event{grid-template-columns:64px minmax(0,1fr);gap:8px}.public-home-page .public-home-event-date strong{font-size:1.2rem}.public-home-page .public-home-clubs .ghost-button{min-height:44px}}
 @media(max-width:700px){.public-home-page .public-home-right{grid-template-rows:auto auto}.public-home-page .documents-card{grid-template-rows:auto auto auto}.public-home-page .public-home-clubs{display:flex;flex-direction:column;align-items:flex-start;gap:8px;margin-top:16px}.public-home-page .public-home-clubs .ghost-button{align-self:flex-start}}
+@media(max-width:700px){
+ .public-home-page .public-home-right{display:contents}
+ .public-home-page .public-home-grid>.calendar-card{grid-column:1;grid-row:2}
+ .public-home-page .public-home-grid>.public-home-right>.performance-card{grid-column:1;grid-row:1}
+ .public-home-page .public-home-grid>.public-home-right>.documents-card{grid-column:1;grid-row:3}
+}
