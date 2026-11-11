@@ -48,6 +48,9 @@
     for (const label of headers) node("th", label, head).scope = "col";
     const body = table.createTBody();
     body.setAttribute("role", "rowgroup");
+    // Public mobile view only; the national portal keeps its existing preview.
+    const mobile = root.id === "trophyRanking" ? node("div", null, root) : null;
+    if (mobile) mobile.className = "trophy-mobile";
     const dialog = node("dialog", null, root);
     dialog.className = "trophy-profile-dialog";
     const title = node("h3", "Ouvrir la fiche nageur ?", dialog);
@@ -63,6 +66,82 @@
     cancel.addEventListener("click", () => dialog.close());
     link.addEventListener("click", () => dialog.close());
 
+    function openProfile(swimmer) {
+      person.textContent = `${swimmer.lastName} ${swimmer.firstName}`;
+      link.href = `/performances/nageur.html?id=${encodeURIComponent(swimmer.swimmerId)}`;
+      dialog.showModal();
+    }
+
+    function showMobile(swimmers) {
+      if (!mobile) return;
+      mobile.replaceChildren();
+      if (!swimmers.length) {
+        node("p", "Aucune performance dans cette catégorie.", mobile).className = "trophy-mobile-empty";
+        return;
+      }
+      const columns = node("div", null, mobile);
+      columns.className = "trophy-mobile-columns";
+      columns.setAttribute("aria-hidden", "true");
+      for (const label of ["Rg", "Nageur · club", "Total", ""]) node("span", label, columns);
+      const list = node("div", null, mobile);
+      list.setAttribute("role", "list");
+      for (const [position, swimmer] of swimmers.entries()) {
+        if (swimmer.rank > qualificationRank && swimmers[position - 1]?.rank <= qualificationRank) {
+          const cutoff = node("p", "Limite des 32 places", list);
+          cutoff.className = "trophy-mobile-cutoff";
+          cutoff.setAttribute("role", "presentation");
+        }
+        const entry = node("div", null, list);
+        entry.className = "trophy-mobile-entry";
+        entry.setAttribute("role", "listitem");
+        const summary = node("div", null, entry);
+        summary.className = "trophy-mobile-summary";
+        node("span", swimmer.rank, summary).setAttribute("aria-label", `Rang ${swimmer.rank}`);
+        const name = node("button", null, summary);
+        name.type = "button";
+        name.className = "trophy-mobile-name";
+        const fullName = `${swimmer.lastName} ${swimmer.firstName}`;
+        node("span", fullName, name).className = "trophy-mobile-label";
+        // The reader already supplies NAP abre_club: never invent an acronym.
+        const club = node("span", `${swimmer.club || "—"} · ${swimmer.birthYear}`, name);
+        club.className = "trophy-mobile-club";
+        club.setAttribute("aria-label", `Club ${swimmer.club || "non renseigné"}, année ${swimmer.birthYear}`);
+        name.addEventListener("click", () => openProfile(swimmer));
+        const total = node("span", `${number.format(swimmer.totalPoints)} pts`, summary);
+        total.className = "trophy-mobile-total";
+        total.setAttribute("aria-label", `Total ${number.format(swimmer.totalPoints)} points`);
+        const toggle = node("button", null, summary);
+        toggle.type = "button";
+        toggle.className = "trophy-mobile-toggle";
+        toggle.setAttribute("aria-expanded", "false");
+        toggle.setAttribute("aria-label", `Afficher les cinq épreuves de ${fullName}`);
+        const chevron = node("span", null, toggle);
+        chevron.className = "trophy-mobile-chevron";
+        chevron.setAttribute("aria-hidden", "true");
+        const detail = node("div", null, entry);
+        detail.className = "trophy-mobile-detail";
+        detail.id = `${root.id}-courses-${position}`;
+        detail.hidden = true;
+        toggle.setAttribute("aria-controls", detail.id);
+        const courses = node("table", null, detail);
+        courses.setAttribute("aria-label", `Cinq épreuves de ${fullName}`);
+        const head = courses.createTHead().insertRow();
+        for (const label of ["Épreuve", "Temps", "Points"]) node("th", label, head).scope = "col";
+        const body = courses.createTBody();
+        for (const [index, event] of swimmer.events.entries()) {
+          const row = body.insertRow();
+          node("th", headers[index + 3], row).scope = "row";
+          node("td", event?.time || "—", row);
+          node("td", event ? number.format(event.points) : "—", row);
+        }
+        toggle.addEventListener("click", () => {
+          detail.hidden = !detail.hidden;
+          toggle.setAttribute("aria-expanded", String(!detail.hidden));
+          toggle.setAttribute("aria-label", `${detail.hidden ? "Afficher" : "Masquer"} les cinq épreuves de ${fullName}`);
+        });
+      }
+    }
+
     function show(sex) {
       girls.setAttribute("aria-pressed", String(sex === "F"));
       boys.setAttribute("aria-pressed", String(sex === "M"));
@@ -73,6 +152,7 @@
         empty.textContent = "Aucune performance dans cette catégorie.";
       }
       const swimmers = groups[sex];
+      showMobile(swimmers);
       for (const [position, swimmer] of swimmers.entries()) {
         if (swimmer.rank > qualificationRank && swimmers[position - 1]?.rank <= qualificationRank) {
           const separator = body.insertRow();
@@ -89,11 +169,7 @@
         const fullName = `${swimmer.lastName} ${swimmer.firstName}`;
         const name = node("button", `${fullName} · ${swimmer.birthYear}`, node("td", null, row));
         name.className = "trophy-name";
-        name.addEventListener("click", () => {
-          person.textContent = fullName;
-          link.href = `/performances/nageur.html?id=${encodeURIComponent(swimmer.swimmerId)}`;
-          dialog.showModal();
-        });
+        name.addEventListener("click", () => openProfile(swimmer));
         const club = node("td", swimmer.club || "—", row);
         club.setAttribute("aria-label", `Club ${swimmer.club || "non renseigné"}`);
         for (const [index, event] of swimmer.events.entries()) {
