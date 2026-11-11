@@ -102,6 +102,12 @@ def main(directory, run_id, kind):
         if kind == 'backend' and selected:
             state = load('readiness_state', 'production-release-state.py')
             functions = state.inventory()
+            if cycle.reference_cleanup.approved(request):
+                cycle.reference_cleanup.initial(functions)
+                cycle.reference_cleanup.guard(directory)
+                report['referenceCleanupRelease'] = {'existingSources': cycle.reference_cleanup.approved(request),
+                    'newFunctions': [], 'configurationChanges': False, 'bindingChanges': False,
+                    'mailPause': False, 'historicalReplay': False, 'iamChanges': False}
             if cycle.november10_release.approved(request):
                 nap = cycle.november10_release.initial(functions)
                 cycle.november10_release.guard(directory)
