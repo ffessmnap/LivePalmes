@@ -31,6 +31,8 @@ async function main(){
       await evaluate(client,"document.querySelector('#archiveCorrection').click()");assert.equal(await evaluate(client,"return Boolean(document.querySelector('.direct-watch'))"),false);
       assert.deepEqual(await evaluate(client,'return __errors'),[]);
     }
+    await evaluate(client,"document.querySelector('#saveSettings').click()");assert.ok(await waitFor(client,"__calls.some(c=>c.action==='settings')&&!LivePalmesDirectAdmin.state.busy",5000));
+    assert.equal(await evaluate(client,"return LivePalmesDirectAdmin.state.data.config.state"),'archived','Enregistrer les réglages conserve l’archivage automatique');
     assert.equal(pool.inspect().configs[0].state,'active');assert.equal(pool.inspect().entries.length,14);
     await client.send('Page.navigate',{url:baseUrl+'/direct-consoles.html?id=900001&role=referee'});assert.ok(await waitFor(client,"document.querySelector('#consoleStatus')?.textContent||document.querySelector('#terrainNotice')?.textContent||__calls.some(c=>c.action==='consoleSnapshot')",5000));
     assert.ok(await evaluate(client,"return !LivePalmesDirectConsole.state.data"),'Une adresse de console ne rouvre pas l’archive');
