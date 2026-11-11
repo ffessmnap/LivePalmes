@@ -25,6 +25,8 @@ Lire les consignes du dernier `main` et préserver le travail des autres convers
 
 ## Réutiliser le travail déjà fait
 
+Navigation publique du 11 novembre, complément ciblé TEST explicitement autorisé par Antoine dans la coordination : `release=public_navigation`, contrat distinct `20261111-public-navigation-contract.json`, ancre applicative `7eeed64b`, baseline authentifiée TEST `49d0eefd` / run `42936710507` / Hosting `d59bc2e0535873f0`, 121 fonctions. Le vrai comparateur TEST calcule uniquement `readNapPublicSwimmer` après régénération du modèle d’accueil : seules les deux URL versionnées CSS/JS du bandeau changent, modèle JavaScript identique. Wrapper isolé du moteur de sources existant, source/label uniquement et reconnaissance fermée de son reçu ; contrats historiques, configurations, bindings, lectures, données et autres fonctions inchangés. Après CI PR puis main exactes, complément ciblé puis Hosting commun avec `hosting_only=true`, sans ancien flag d’exception, et contrôle final `verification_only=true`. Aucun changement d’état mail/file/scheduler, aucune invocation métier ou PROD. Conserver l’ancre par commit de merge.
+
 | Situation | Action attendue |
 | --- | --- |
 | CI ou publication en cours | Attendre le run existant avec une attente bornée. Aucun second lancement identique ni annulation d'une publication engagée. |
