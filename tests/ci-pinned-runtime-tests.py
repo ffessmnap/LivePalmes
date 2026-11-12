@@ -109,6 +109,15 @@ class PinnedRuntimeTests(unittest.TestCase):
             m.execute(['node', '--version'])
         run.assert_not_called()
 
+    def test_missing_chromium_sandbox_remains_a_failure(self):
+        failed = subprocess.CompletedProcess([], 134, stdout='', stderr='isolated browser failed')
+        with patch.object(m, 'identity', return_value={}), \
+             patch.object(m.subprocess, 'run', return_value=failed), \
+             patch.object(m.Path, 'is_file', return_value=False), \
+             patch.dict(os.environ, {'EDGE_BIN': '/pinned/chrome'}), \
+             self.assertRaisesRegex(ValueError, 'Chromium refuse'):
+            m.check()
+
     def test_workflow_keeps_all_suites_gate_and_isolated_mysql(self):
         script = """const fs=require('node:fs'),y=require('./tests/firestore-rules/node_modules/js-yaml');
 console.log(JSON.stringify(y.load(fs.readFileSync('.github/workflows/livepalmes-verification-preview.yml','utf8'))));"""
