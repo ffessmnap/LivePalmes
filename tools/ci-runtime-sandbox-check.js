@@ -5,10 +5,11 @@ const { launchBrowserProcess } = require("./browser-test-launcher");
 
 function validateSandbox(rows) {
   assert(Array.isArray(rows), "Missing internal sandbox diagnostics");
-  for (const label of ["Namespace Sandbox", "Seccomp-BPF sandbox"]) {
+  for (const [label, expected] of [["Layer 1 Sandbox", "Namespace"], ["PID namespaces", "Yes"],
+    ["Network namespaces", "Yes"], ["Seccomp-BPF sandbox", "Yes"]]) {
     const matching = rows.filter(row => Array.isArray(row) && row[0]?.toLowerCase() === label.toLowerCase());
     assert.equal(matching.length, 1, "Missing or ambiguous " + label);
-    assert.equal(matching[0][1], "Yes", "Inactive " + label);
+    assert.equal(matching[0][1], expected, "Inactive " + label);
   }
   return { namespace: "Yes", seccomp: "Yes" };
 }
