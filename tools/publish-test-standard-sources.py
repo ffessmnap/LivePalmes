@@ -158,11 +158,21 @@ def trusted_revisions(directory, current, api):
     return trusted
 
 
+def read_request(raw):
+    require(len(raw.encode()) <= 65536, 'Manifeste TEST trop volumineux')
+    def unique(items):
+        result = {}
+        for key, value in items:
+            require(key not in result, 'Cle de manifeste TEST dupliquee')
+            result[key] = value
+        return result
+    return validate(json.loads(raw, object_pairs_hook=unique))
+
+
 def main(mode, release, directory, candidate):
     require(release == 'standard', 'Mode standard uniquement')
     raw = os.environ.get('STANDARD_SOURCE_REQUEST', '')
-    require(len(raw.encode()) <= 65536, 'Manifeste TEST trop volumineux')
-    value = validate(json.loads(raw))
+    value = read_request(raw)
     publisher = configured(value)
     if mode == 'deploy':
         # Keep the transport, adding a fresh identity/configuration gate to each PATCH.
