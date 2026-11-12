@@ -478,6 +478,7 @@ function runBrowserSmokeIfRequested() {
   browserRun(process.execPath, [path.join(rootDir, "tests", "import-resolution-browser-tests.js")]);
   browserRun(process.execPath, [path.join(rootDir, "tests", "direct-browser-tests.js")]);
   browserRun(process.execPath, [path.join(rootDir, "tests", "direct-date-archive-browser-tests.js")]);
+  browserRun(process.execPath, [path.join(rootDir, "tests", "direct-reliability-browser-tests.js")]);
   browserRun(process.execPath, [path.join(rootDir, "tests", "direct-public-sessions-browser-tests.js")]);
   browserRun(process.execPath, [path.join(rootDir, "tests", "direct-participation-browser-tests.js")]);
   browserRun(process.execPath, [path.join(rootDir, "tests", "direct-import-completeness-browser-tests.js")]);

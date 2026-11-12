@@ -90,6 +90,11 @@ async function main(){
     const [[grantCount]]=await pool.execute("SELECT COUNT(*) AS total FROM livepalmes_direct_access WHERE environment='test' AND competition_id=? AND user_uid='fixture-delegate'",[id]);assert.equal(Number(grantCount.total),1,'Accès conservé');
     const [[otherEnvironment]]=await pool.execute("SELECT COUNT(*) AS total FROM livepalmes_direct_entries WHERE environment='production' AND competition_id=?",[id]);assert.equal(Number(otherEnvironment.total),1,'Autre environnement intact');
     assert.equal((await readPublic(wrapped,'test',{id})).events.length,0,'Une nouvelle révision ne réutilise pas le cache avant reset');
+    const archivedStore=require('../functions/nap-direct-store').createStore(wrapped,'test',{clock:()=>Date.parse('2026-11-09T12:00:00Z')});
+    const rebuild={archiveCorrection:true,groups:[{...request('series',[person('Archive reconstruite',1)]),source:{type:'pdf',name:'series.pdf',hash:'a'.repeat(64)}}]};
+    const rebuildPreview=await archivedStore.previewBatch(id,rebuild);await archivedStore.publishBatch(id,actor,{...rebuild,fingerprint:rebuildPreview.fingerprint});
+    assert.equal((await archivedStore.detail(id)).config.state,'archived','Réinitialisation puis import PDF sans réouverture du Live');
+    assert.equal((await archivedStore.watchContext(id,{archiveCorrection:true})).entries.length,1,'Archive reconstruite en SQL réel isolé');
     await publish(request('series',[person('Nouveau départ',1)]));await assert.rejects(store.reset(id,actor,{phase:'continue',version:resetResult.version},async()=>({deleted:0,more:false})),error=>error.directCode==='aborted','Ancienne demande refusée après un nouvel import');
     console.log('Direct MySQL 5.7 isolé : séries/résultats, rollback, cache, reset sans historique, reprise, protection des accès et des autres environnements, upload bloqué et plans indexés vérifiés. '+JSON.stringify(plans));
   }finally{await pool.end();await admin.query('DROP DATABASE `'+database+'`');await admin.end();}

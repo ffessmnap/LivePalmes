@@ -46,8 +46,11 @@ async function main(){
   assert.equal((await call('publishBatch',complete,'bureau')).replayed,true,'Une réponse perdue ne publie pas deux fois');
   const changed=await readPublic(pool,'test',{id,eventId},{clock});assert.equal(changed.config.state,'archived');assert.equal(changed.entries[0].result.cs,12000);
   const check=groups=>call('previewBatch',{archiveCorrection:true,groups});
-  await assert.rejects(check(series.groups),/seuls les résultats/);
-  await assert.rejects(check([{...group,source:{type:'pdf'},operationKey:randomUUID()}]),/seuls les résultats/);
+  await assert.rejects(check(series.groups),/séparément/);
+  const archivedSeries={...series.groups[0],source:{type:'pdf',name:'series.pdf',hash:'a'.repeat(64)},operationKey:randomUUID()};
+  assert.ok((await check([archivedSeries])).fingerprint,'Le PDF des séries peut être vérifié en mode de mise à jour explicite');
+  await assert.rejects(check([archivedSeries,{...group,operationKey:randomUUID()}]),/séparément/,'Ne pas modifier les séries et leurs résultats dans le même lot');
+  await assert.rejects(check([{...group,source:{type:'pdf'},operationKey:randomUUID()}]),/séparément/);
   await assert.rejects(check([{...group,event:{...group.event,sessionKey:'2'},operationKey:randomUUID()}]),/répartition/);
   await assert.rejects(check([{...group,seriesFingerprint:'a'.repeat(64),operationKey:randomUUID()}]),/répartition/);
   await assert.rejects(check([{...group,rows:group.rows.map((row,i)=>i?row:{...row,club:'AUTRE'}),operationKey:randomUUID()}]),/correspondent|inchangés/);
@@ -69,6 +72,14 @@ async function main(){
   const relay={groups:[{kind:'series',event:{...event,eventCode:'4x100sf'},rows:[{relay:true,lastName:'CLUBTEST',firstName:'Équipe 1',club:'CLUBTEST',category:'HSE',series:1,lane:1,entryTime:'595999'}],operationKey:randomUUID()}]},relayPreview=await relayStore.previewBatch(id,relay);await relayStore.publishBatch(id,actor,{...relay,fingerprint:relayPreview.fingerprint});
   now=Date.parse('2026-11-08T23:00:00Z');const relayContext=await relayStore.watchContext(id,{archiveCorrection:true}),relayGroup=txt.buildGroup({name:'RELAIS_AS_01_01_01_4x100SF.txt',hash:model.hash('relay'),text:'1;040000;010000;020000;030000;000000;000000'},relayContext,relayContext.events[0].id,{txtFirstLane:1,seriesFirstLane:1}),relayInput={archiveCorrection:true,groups:[relayGroup]},relayChecked=await relayStore.previewBatch(id,relayInput);
   await relayStore.publishBatch(id,actor,{...relayInput,fingerprint:relayChecked.fingerprint});const relayAfter=await relayStore.detail(id);assert.equal(relayAfter.config.state,'archived');assert.equal(relayAfter.entries[0].result.cs,24000);assert.equal(relayAfter.entries[0].splits.length,3,'Passages du relais conservés sans année de naissance requise');
+  // Empty archive (including the state left by a completed reset) can be rebuilt explicitly.
+  const emptyPool=fixture(),emptyStore=createStore(emptyPool,'test',{clock:()=>Date.parse('2026-11-09T12:00:00Z')});
+  await emptyStore.settings(id,actor,{consoles:['computer'],operationKey:randomUUID()});
+  const rebuild={archiveCorrection:true,groups:[{...archivedSeries,operationKey:randomUUID()}]},rebuildPreview=await emptyStore.previewBatch(id,rebuild);
+  await assert.rejects(emptyStore.previewBatch(id,{groups:rebuild.groups}),closed);
+  await emptyStore.publishBatch(id,actor,{...rebuild,fingerprint:rebuildPreview.fingerprint});
+  assert.equal((await emptyStore.detail(id)).config.state,'archived');assert.equal((await emptyStore.watchContext(id,{archiveCorrection:true})).entries.length,people.length);
+  assert.equal(emptyPool.inspect().logs.filter(row=>row.action.startsWith('console')).length,0,'Reconstruction sans réouverture des consoles');
   console.log('Archivage Direct : minuit Paris, dernier jour/DST/dates incertaines, cache, absence d’écriture GET, corrections WinPalme fermées, rôles, identités, statuts, versions et rollback vérifiés hors réseau.');
 }
 main().catch(error=>{console.error(error);process.exitCode=1;});

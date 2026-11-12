@@ -16,6 +16,6 @@ function closed(row,now=Date.now(),message='Les consoles de cette compétition s
 }
 function writable(row,correction=false,now=Date.now()){
   const state=fromRow(row,now);
-  if(correction?state!=='archived':state!=='active')throw closed(row,now,state==='archived'?'Le Direct est archivé. Utiliser « Mettre à jour les résultats de l’archive » pour corriger les résultats.':correction&&state==='active'?'Le Direct n’est plus en archive. Actualiser avant de poursuivre.':'Les consoles de cette compétition sont fermées.');
+  if(correction?state!=='archived':state!=='active')throw closed(row,now,state==='archived'?'Le Direct est archivé. Utiliser « Mettre à jour l’archive » pour corriger les résultats.':correction&&state==='active'?'Le Direct n’est plus en archive. Actualiser avant de poursuivre.':'Les consoles de cette compétition sont fermées.');
 }
 module.exports={validDay,lastDay,effective,fromRow,closed,writable};
