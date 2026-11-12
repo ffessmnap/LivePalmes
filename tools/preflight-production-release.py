@@ -193,6 +193,9 @@ def main():
         report['additionalPublicNavigationDirectFunctions'] = cycle.public_navigation_direct.approved(plan) if os.environ.get('PLAN') else []
         if report['additionalPublicNavigationDirectFunctions']:
             report['public_navigation_directNapBinding'] = cycle.public_navigation_direct.initial(functions)
+        report['additionalDirectReliabilityFunctions'] = cycle.direct_reliability.approved(plan) if os.environ.get('PLAN') else []
+        if report['additionalDirectReliabilityFunctions']:
+            report['direct_reliabilityNapBinding'] = cycle.direct_reliability.initial(functions)
         if os.environ.get('PLAN') and cycle.standard_sources.enabled(plan):
             standard_manifest = cycle.standard_sources.manifest(Path(os.environ['PLAN']), plan)
             cycle.standard_sources.initial(functions, standard_manifest)

@@ -88,6 +88,10 @@ def main(candidate, plan, backup):
         cycle.public_navigation_direct.selection(request, cycle.read(plan / 'selection.json'))
         cycle.public_navigation_direct.guard(plan)
         return
+    if cycle.direct_reliability.approved(request):
+        cycle.direct_reliability.selection(request, cycle.read(plan / 'selection.json'))
+        cycle.direct_reliability.guard(plan)
+        return
     if cycle.public_navigation_touch.approved(request):
         cycle.public_navigation_touch.selection(request, cycle.read(plan / 'selection.json'))
         cycle.public_navigation_touch.guard(plan)

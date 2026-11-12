@@ -57,6 +57,9 @@ _reference_cleanup_spec.loader.exec_module(reference_cleanup)
 _public_navigation_direct_spec = importlib.util.spec_from_file_location('public_navigation_direct_policy', ROOT / 'tools/public-navigation-direct-production-policy.py')
 public_navigation_direct = importlib.util.module_from_spec(_public_navigation_direct_spec)
 _public_navigation_direct_spec.loader.exec_module(public_navigation_direct)
+_direct_reliability_spec = importlib.util.spec_from_file_location('direct_reliability_policy', ROOT / 'tools/direct-reliability-production-policy.py')
+direct_reliability = importlib.util.module_from_spec(_direct_reliability_spec)
+_direct_reliability_spec.loader.exec_module(direct_reliability)
 _public_navigation_touch_spec = importlib.util.spec_from_file_location('public_navigation_touch_policy', ROOT / 'tools/public-navigation-touch-production-policy.py')
 public_navigation_touch = importlib.util.module_from_spec(_public_navigation_touch_spec)
 _public_navigation_touch_spec.loader.exec_module(public_navigation_touch)
@@ -117,6 +120,7 @@ def approved_extra_functions(value):
     names += november10_release.approved(value)
     names += reference_cleanup.approved(value)
     names += public_navigation_direct.approved(value)
+    names += direct_reliability.approved(value)
     names += public_navigation_touch.approved(value) + standard_sources.approved(value)
     require(len(names) == len(set(names)), 'Extensions de publication superposees')
     return names
@@ -186,6 +190,8 @@ def idf_preservation(value):
         return {'scope': 'all', 'publicNavigationTouchControlsUnchanged': True}
     if public_navigation_direct.approved(value):
         return {'scope': 'all', 'publicNavigationDirectControlsUnchanged': True}
+    if direct_reliability.approved(value):
+        return {'scope': 'all', 'directReliabilityControlsUnchanged': True}
     if reference_cleanup.approved(value):
         return {'scope': 'all', 'referenceCleanupControlsUnchanged': True}
     if november10_release.approved(value):
@@ -285,6 +291,7 @@ def approved_access_request_functions(value):
 def require_access_request_selection(request, selected):
     reference_cleanup.selection(request, selected)
     public_navigation_direct.selection(request, selected)
+    direct_reliability.selection(request, selected)
     public_navigation_touch.selection(request, selected)
     november10_release.selection(request, selected)
     november_release.selection(request, selected)
@@ -846,6 +853,7 @@ def validate_request(value, paths):
     home_routing = approved_production_home_routing(value, paths)
     reference_cleanup.approved_paths(value, paths, git)
     public_navigation_direct.approved_paths(value, paths, git)
+    direct_reliability.approved_paths(value, paths, git)
     public_navigation_touch.approved_paths(value, paths, git)
     november10_paths = november10_release.approved_paths(value, paths, git)
     application, backend = classify([p for p in paths if p not in ignored | home_routing | november10_paths])
@@ -1117,6 +1125,7 @@ def prepare_selection(directory, candidate):
         require(all(not needs_function(names.get(n), n, request['candidate'], project='livepalmes-test') for n in november_release.approved(request)), 'Preuve TEST du 8 novembre absente ou incompatible')
         require(all(not needs_function(names.get(n), n, request['candidate'], project='livepalmes-test') for n in reference_cleanup.approved(request)), 'Preuve TEST nageurs/migrations absente ou incompatible')
         require(all(not needs_function(names.get(n), n, request['candidate'], project='livepalmes-test') for n in public_navigation_direct.approved(request)), 'Preuve TEST navigation publique/Direct absente ou incompatible')
+        require(all(not needs_function(names.get(n), n, request['candidate'], project='livepalmes-test') for n in direct_reliability.approved(request)), 'Preuve TEST fiabilisation Direct absente ou incompatible')
         require(all(not needs_function(names.get(n), n, request['candidate'], project='livepalmes-test') for n in public_navigation_touch.approved(request)), 'Preuve TEST navigation tactile absente ou incompatible')
         require(all(not needs_function(names.get(n), n, request['candidate'], project='livepalmes-test') for n in november10_release.approved(request)), 'Preuve TEST du 10 novembre absente ou incompatible')
         notification = approved_notification_functions(request)
@@ -1295,6 +1304,8 @@ def freeze_plan(directory, evidence=False):
         write(root / 'reference-cleanup-scope-proof.json', reference_cleanup.verify(request, read(root / 'baseline.json'), names, production_selection_fingerprints))
     if public_navigation_direct.approved(request):
         write(root / 'public-navigation-direct-scope-proof.json', public_navigation_direct.verify(request, read(root / 'baseline.json'), names, production_selection_fingerprints, backend_fingerprints))
+    if direct_reliability.approved(request):
+        write(root / 'direct-reliability-scope-proof.json', direct_reliability.verify(request, read(root / 'baseline.json'), names, production_selection_fingerprints, backend_fingerprints))
     if public_navigation_touch.approved(request):
         write(root / 'public-navigation-touch-scope-proof.json', public_navigation_touch.verify(request, read(root / 'baseline.json'), names, production_selection_fingerprints, backend_fingerprints))
     if november10_release.approved(request):
@@ -1593,6 +1604,10 @@ def fetch_plan(preparation, resume, directory):
             guards = root / 'previous/public-navigation-direct-guards'
             artifact(resume, 'production-idf-preservation', guards, '.github/workflows/livepalmes-production-release.yml')
             public_navigation_direct.restore_witness(root, guards)
+        if direct_reliability.approved(read(root / 'request.json')):
+            guards = root / 'previous/direct-reliability-guards'
+            artifact(resume, 'production-idf-preservation', guards, '.github/workflows/livepalmes-production-release.yml')
+            direct_reliability.restore_witness(root, guards)
         if public_navigation_touch.approved(read(root / 'request.json')):
             guards = root / 'previous/public-navigation-touch-guards'
             artifact(resume, 'production-idf-preservation', guards, '.github/workflows/livepalmes-production-release.yml')
@@ -1624,7 +1639,7 @@ def fetch_plan(preparation, resume, directory):
     evidence_path = root / 'test-proof.json'
     verified = reusable_verification(read(evidence_path), value['candidate']) if evidence_path.exists() else False
     output(candidate=value['candidate'], backend=str(backend).lower(), verified=str(verified).lower(),
-           preserved_sources_only=str(bool(standard_sources.enabled(value) or november10_release.approved(value) or reference_cleanup.approved(value) or public_navigation_direct.approved(value) or public_navigation_touch.approved(value))).lower(),
+           preserved_sources_only=str(bool(standard_sources.enabled(value) or november10_release.approved(value) or reference_cleanup.approved(value) or public_navigation_direct.approved(value) or direct_reliability.approved(value) or public_navigation_touch.approved(value))).lower(),
            license_reports=str(bool(approved_license_report_functions(value))).lower(),
            idf_preservation=str(idf_preservation(value) is not None).lower(),
            nap_account=str(bool(nap_account.approved(value))).lower(),
