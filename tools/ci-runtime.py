@@ -89,5 +89,155 @@ def timings():
     print(value)
 
 
+def comparison(repo, pr, main, pr_jobs, main_jobs, proofs):
+    """Measure one authenticated PR/merge pair; this never authorizes a skip."""
+    workflow = '.github/workflows/livepalmes-verification-preview.yml'
+    def require(value, reason):
+        if not value:
+            raise ValueError(reason)
+    for info, event in [(pr, 'pull_request'), (main, 'push')]:
+        require(info.get('event') == event and info.get('path') == workflow
+                and info.get('status') == 'completed' and info.get('conclusion') == 'success'
+                and info.get('run_attempt') == 1
+                and info.get('head_repository', {}).get('full_name') == repo,
+                'Runs CI reussis et authentiques requis')
+    require(pr['id'] != main['id'] and main.get('head_branch') == 'main', 'Paire PR/main invalide')
+    steps = {
+        'application': ('Verification applicative', 'Verifier LivePalmes'),
+        'firestore': ('Verification applicative', 'Tester les regles Firestore'),
+        'mysql': ('Verification applicative', 'Verifier les ecritures par equipes dans MySQL isole'),
+        'publication': ('Verification du circuit de publication', 'Tester le circuit de publication sans acces Firebase'),
+        'browser': ('Verification navigateur hors ligne', 'Verifier les parcours navigateur isoles'),
+    }
+    names = {job for job, _ in steps.values()} | {'Verification technique'}
+    def jobs_by_name(jobs):
+        result = {}
+        for name in names:
+            matching = [job for job in jobs if job.get('name') == name]
+            require(len(matching) == 1 and matching[0].get('conclusion') == 'success',
+                    'Jobs obligatoires incomplets ou ambigus')
+            result[name] = matching[0]
+        return result
+    before, after = jobs_by_name(pr_jobs), jobs_by_name(main_jobs)
+    def outcome(jobs, suite):
+        job, name = steps[suite]
+        found = [step for step in jobs[job].get('steps', []) if step.get('name') == name]
+        require(len(found) == 1, 'Etape de suite absente ou ambigue')
+        return found[0].get('conclusion')
+    require(set(proofs) == set(steps), 'Cinq preuves distinctes requises pour cette mesure')
+    reused = []
+    for suite, pair in proofs.items():
+        source, target, receipt = pair['pr'], pair['main'], pair['receipt']
+        for proof, info in [(source, pr), (target, main)]:
+            require(proof.get('schema') == 2 and proof.get('suite') == suite
+                    and proof.get('result') == 'success'
+                    and proof.get('origin', {}).get('repository') == repo
+                    and proof['origin'].get('run') == info['id']
+                    and proof['origin'].get('attempt') == 1
+                    and proof['origin'].get('event') == info['event'], 'Origine de preuve incompatible')
+        require(source.get('mode') == 'executed' and source.get('source') is None
+                and source['origin'].get('head') == pr['head_sha']
+                and source['origin'].get('headRepository') == repo
+                and source['origin'].get('baseBranch') == 'main'
+                and source.get('content') == target.get('content')
+                and target.get('candidate') == main['head_sha']
+                and target['origin'].get('head') == main['head_sha']
+                and outcome(before, suite) == 'success', 'Preuve PR/main ou execution PR incompatible')
+        if target.get('mode') == 'reused':
+            link = target.get('source') or {}
+            require(target.get('environment') == source.get('environment')
+                    and all(link.get(key) == receipt[key] for key in ('run', 'artifact', 'sha256'))
+                    and link.get('suite') == suite
+                    and link.get('pullRequest') == source['origin'].get('number')
+                    and outcome(after, suite) == 'skipped', 'Reutilisation non confirmee')
+            reused.append(suite)
+        else:
+            require(target.get('mode') == 'executed' and target.get('source') is None
+                    and outcome(after, suite) == 'success', 'Execution main non confirmee')
+    def elapsed(info, jobs):
+        starts = [j.get('started_at') for j in jobs.values()]
+        ends = [j.get('completed_at') for j in jobs.values()]
+        require(info.get('created_at') and all(starts) and all(ends), 'Horodatages CI incomplets')
+        return {'seconds': seconds(info['created_at'], max(ends)),
+                'initialRunnerWaitSeconds': seconds(info['created_at'], min(starts)),
+                'jobsWindowSeconds': seconds(min(starts), max(ends))}
+    pr_time, main_time = elapsed(pr, before), elapsed(main, after)
+    require(pr_time['seconds'] > 0 and main_time['seconds'] > 0, 'Duree CI non mesurable')
+    jobs = []
+    for name in sorted(names):
+        row = {'name': name}
+        for label, job in [('pr', before[name]), ('main', after[name])]:
+            totals = {key: 0 for key in ('installation', 'verification', 'autre')}
+            for step in job.get('steps', []):
+                totals[category(step)] += seconds(step.get('started_at'), step.get('completed_at'))
+            row[label] = {'seconds': seconds(job['started_at'], job['completed_at']), **totals}
+        jobs.append(row)
+    saved = pr_time['seconds'] - main_time['seconds']
+    return {'schema': 1, 'repository': repo, 'prRun': pr['id'], 'mainRun': main['id'],
+            'prHead': pr['head_sha'], 'mainCommit': main['head_sha'],
+            'reusedSuites': sorted(reused), 'executedMainSuites': sorted(set(steps) - set(reused)),
+            'pr': pr_time, 'main': main_time, 'savedSeconds': saved,
+            'reductionPercent': round(100 * saved / pr_time['seconds'], 1), 'jobs': jobs,
+            'measurement': 'Delai entre creation du run et fin des quatre jobs obligatoires, attente initiale incluse. Jobs paralleles non additionnes. Observation de cette paire, sans promesse de gain futur.'}
+
+
+def compare(pr_run, main_run, directory):
+    import importlib.util
+    def load(name, filename):
+        spec = importlib.util.spec_from_file_location(name, ROOT/'tools'/filename)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module
+    suites = load('ci_suites_measurement', 'ci-suite-evidence.py')
+    cycle = load('release_cycle_measurement', 'release-cycle.py')
+    suites.require(pr_run.isdecimal() and main_run.isdecimal() and pr_run != main_run, 'Runs distincts requis')
+    repo = os.environ['GITHUB_REPOSITORY']
+    suites.require(re.fullmatch(r'[\w.-]+/[\w.-]+', repo), 'Depot invalide')
+    directory = Path(directory)
+    directory.mkdir(parents=True, exist_ok=True)
+    proofs, pr_info, main_info = {}, None, None
+    metadata = suites.gh(f'repos/{repo}/actions/runs/{main_run}/artifacts?per_page=100')
+    suites.require(metadata.get('total_count', 0) <= 100, 'Inventaire artefacts tronque')
+    receipts = []
+    for group in sorted(set(suites.GROUPS.values())):
+        info, files, receipt = suites.artifact(pr_run, group)
+        target = directory/group
+        main = cycle.artifact(main_run, group, target, suites.WORKFLOW)
+        matching = [item for item in metadata['artifacts'] if item['name'] == group and not item['expired']]
+        suites.require(len(matching) == 1, 'Artefact main ambigu')
+        receipts.append({'group': group, 'pr': receipt, 'main': {
+            'run': int(main_run), 'artifact': matching[0]['id'], 'sha256': matching[0]['digest']}})
+        pr_info, main_info = info, main
+        for suite, selected in suites.GROUPS.items():
+            if selected == group:
+                proofs[suite] = {'pr': files[suite+'.json'],
+                                 'main': json.loads((target/(suite+'.json')).read_text()),
+                                 'receipt': receipt}
+    pr_number = proofs['application']['pr']['origin']['number']
+    suites.require(type(pr_number) is int and pr_number > 0, 'Numero PR invalide')
+    pr = suites.merged_pull_request(repo, pr_number)
+    suites.require(pr.get('number') == pr_number and pr.get('merged') is True and pr.get('state') == 'closed'
+                   and pr.get('merge_commit_sha') == main_info['head_sha']
+                   and pr.get('base', {}).get('ref') == 'main'
+                   and pr.get('base', {}).get('repo', {}).get('full_name') == repo
+                   and pr.get('base', {}).get('sha') == proofs['application']['pr']['origin']['base']
+                   and pr.get('head', {}).get('sha') == pr_info['head_sha']
+                   and (pr.get('head', {}).get('repo') or {}).get('full_name') == repo,
+                   'Fusion de la paire non confirmee')
+    job_sets = []
+    for run_id in (pr_run, main_run):
+        inventory = suites.gh(f'repos/{repo}/actions/runs/{run_id}/jobs?per_page=100')
+        suites.require(inventory.get('total_count', 0) <= 100, 'Inventaire jobs tronque')
+        job_sets.append(inventory['jobs'])
+    result = comparison(repo, pr_info, main_info, *job_sets, proofs)
+    result['pullRequest'] = pr_number
+    result['authenticatedArtifacts'] = receipts
+    (directory/'comparison.json').write_text(json.dumps(result, ensure_ascii=False, indent=2)+'\n', encoding='utf-8')
+    print(json.dumps(result, ensure_ascii=False, indent=2))
+
+
 if __name__ == '__main__':
-    {'validate': validate, 'timings': timings}[sys.argv[1]]()
+    if sys.argv[1] == 'compare':
+        compare(*sys.argv[2:])
+    else:
+        {'validate': validate, 'timings': timings}[sys.argv[1]]()
