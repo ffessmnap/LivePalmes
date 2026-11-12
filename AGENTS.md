@@ -1,99 +1,170 @@
 # AGENTS.md — LivePalmes
 
-## Principes
+## Principes et périmètre
 
-LivePalmes est un écosystème web bénévole dédié à la nage avec palmes. Son cœur est le Portail LivePalmes, actuellement en finalisation et en test, qui prépare les compétitions et les engagements et gère clubs, nageurs, officiels, comptes, droits, performances, Records/MPF et espaces autorisés. L'espace public diffuse les Records, MPF, TOP, performances et fiches nageurs. LivePalmes Direct est un dispositif distinct réservé aux compétitions nationales concernées, avec consoles terrain et publication en direct des séries, résultats, médailles et archives.
+LivePalmes est un écosystème web bénévole dédié à la nage avec palmes :
 
-Priorités : fiabilité, simplicité, performance, fonctionnalités. Faire évoluer l’existant, réutiliser ses conventions et limiter les changements au nécessaire. Ne pas introduire de framework, de dépendance ou de nouvelle architecture sans justification forte.
+- **Portail LivePalmes** : préparation des compétitions et engagements ; gestion des clubs, nageurs, officiels, comptes, droits, performances, Records/MPF et espaces autorisés.
+- **Espace public permanent** : calendrier des compétitions, documents, Records, MPF, TOP, performances, résultats et fiches nageurs.
+- **LivePalmes Direct** : suivi et diffusion des compétitions piscine de tous niveaux issues du calendrier NAP. Le parcours multi-compétitions repose sur un bureau utilisable seul ou avec des consoles selon les besoins et les accès autorisés : préparation des séries, diffusion des résultats issus de WinPalme, suivi des décisions et consultation publique, y compris des archives. La préparation des engagements reste dans le portail.
 
-Application statique en HTML, CSS et JavaScript natif, sans bundler racine. Les pages publiques et consoles restent à la racine pour préserver leurs URL. L’accueil public peut proposer un accès distinct et secondaire vers le Portail LivePalmes ; ne pas y réintroduire le pilotage. `app.js` étant proche de 1 000 lignes utiles, placer toute nouvelle logique métier dans un module existant ou dédié.
+Le nouveau Direct est le parcours de référence. Distinguer ses pages, modules et données du dispositif national historique. Le retrait prévu des anciennes pages, notamment des pages séries, ne doit pas être présenté comme réalisé avant livraison et contrôle. Leur suppression n’autorise pas celle des données, PDF ou archives associés.
 
-## Consignes spécialisées
+Priorités : fiabilité, simplicité, performance, fonctionnalités. Faire évoluer l’existant, réutiliser ses conventions et limiter les changements au besoin demandé. Ne pas introduire de framework, dépendance ou nouvelle architecture sans justification forte.
 
-Pour tout Markdown autre qu’un `AGENTS.md`, rechercher d’abord sa ligne `<!-- description: ... -->`, puis lire seulement les sections utiles. Ignorer les dépendances, sorties générées et dossiers tiers sauf besoin explicite.
+Application statique en HTML, CSS et JavaScript natif, sans bundler racine. Préserver les URL existantes hors retrait ou redirection explicitement autorisé. L’accueil public peut proposer un accès distinct et secondaire au portail ; ne pas y réintroduire le pilotage.
 
-- Portail LivePalmes : `docs/agents/PORTAIL.md`, puis uniquement la documentation métier correspondant à la demande.
-- Interface commune et responsive : `docs/agents/FRONTEND.md`.
-- LivePalmes Direct et consoles nationales : `docs/LIVEPALMES_DIRECT.md`, puis les seules sections utiles de `docs/agents/FRONTEND.md`.
-- Backend : lire `functions/AGENTS.md` avant toute intervention dans `functions/`.
-- Records, MPF et performances : `docs/agents/PERFORMANCES.md`.
-- Git, publication et déploiement : `docs/agents/PUBLICATION.md`.
-- Architecture : `docs/STRUCTURE_LIVEPALMES.md` ou `docs/ARCHITECTURE.md`.
-- Tests sensibles : `docs/TESTS_MANUELS.md`.
+Placer toute nouvelle logique métier dans un module existant ou dédié. Ne pas grossir `app.js` ni y ajouter du métier portail.
 
-Identifier avant toute lecture si la demande concerne le portail, l’espace public permanent, LivePalmes Direct ou une couche réellement partagée. Pour une tâche limitée au portail, ne pas charger la documentation, les pages, scripts ou tests du Direct. Pour une tâche limitée au Direct, ne pas charger les modules métier du portail. N’élargir la lecture que si une dépendance commune est effectivement touchée.
+## Documentation à consulter
 
-## Travail et sécurité
+Identifier d’abord le périmètre : portail, espace public permanent, Direct ou couche réellement partagée. Charger uniquement les fichiers, sections et tests utiles ; élargir lorsqu’une dépendance commune est effectivement touchée.
 
-Analyser le code existant avant modification, préserver la compatibilité et les changements utilisateur, éviter les refactorings massifs et conserver l’UTF-8. Agir directement pour une modification simple et localisée. Pour une intervention importante ou sensible, présenter l’approche et obtenir un accord sur le périmètre. Une demande explicite peut déjà apporter cet accord : continuer alors sans le redemander à chaque étape. Un nouveau risque ou un élargissement du périmètre demande un nouvel examen.
+Pour tout Markdown autre qu’un `AGENTS.md`, rechercher d’abord sa ligne `<!-- description: ... -->`, puis lire les sections nécessaires. Ignorer dépendances, sorties générées et dossiers tiers sauf besoin explicite.
 
-Travailler dans le dossier principal partagé. Ne pas créer de worktree sauf nécessité expliquée. Pour une demande de développement LivePalmes, la destination par défaut autorisée est TEST : préparation, commit, PR, intégration après contrôles et déploiement TEST du périmètre demandé sont inclus, sans demander de répéter « sur TEST ». Une demande d’analyse seule ne déclenche aucun développement. La PROD exige une demande explicite et un bilan approuvé dans la discussion Infra. Les opérations sur les données, migrations et envois réels restent soumis à un accord spécifique. Prévenir avant tout test susceptible d’utiliser Firebase de production ou d’écrire des données réelles.
+| Sujet | Consignes |
+| --- | --- |
+| Portail | `docs/agents/PORTAIL.md`, puis documentation métier nécessaire |
+| Interface commune et responsive | `docs/agents/FRONTEND.md` |
+| Direct, bureau et consoles | `docs/LIVEPALMES_DIRECT.md`, puis sections communes utiles du frontend |
+| Backend | `functions/AGENTS.md`, avant toute intervention dans `functions/` |
+| Records, MPF et performances | `docs/agents/PERFORMANCES.md` |
+| Git, intégration et publication | `docs/agents/PUBLICATION.md` |
+| Architecture | `docs/STRUCTURE_LIVEPALMES.md` ou `docs/ARCHITECTURE.md` |
+| Tests sensibles | `docs/TESTS_MANUELS.md` |
 
-Validation explicite obligatoire avant toute modification concernant :
+Une tâche limitée au portail ne nécessite pas de charger le Direct, et réciproquement. Le lien du portail vers le Direct ne justifie pas, à lui seul, de charger le métier des deux espaces.
 
-- authentification, PIN, capacités, droits administrateurs ou portail ;
+Distinguer fonctionnement actuel, évolutions prévues et historique. La présence d’un ancien fichier ou d’une autorisation passée ne prouve pas son usage actuel.
+
+## Travail et autorisations
+
+Analyser l’existant avant modification. Préserver compatibilité, UTF-8 et changements des autres intervenants ; éviter les refactorings massifs.
+
+Travailler dans le dossier principal partagé, sans worktree sauf nécessité expliquée. Revérifier l’état partagé avant toute écriture ou publication.
+
+Agir directement pour une modification simple et localisée. Pour une intervention importante ou sensible, présenter l’approche et obtenir l’accord sur le périmètre. La demande peut déjà constituer cet accord : ne pas le redemander pour les mêmes opérations. Un élargissement ou un nouveau risque impose un nouvel examen.
+
+### Autorisation par défaut
+
+- Une analyse ou une proposition dans le chat n’autorise aucune modification.
+- Une demande de développement autorise préparation, commit, PR, intégration après contrôles et déploiement **TEST** du besoin demandé, sous réserve des accords sensibles ci-dessous.
+- Une retouche documentaire seule ne déclenche aucun déploiement.
+- Une autorisation de préparation ou de déploiement du code ne vaut pas autorisation d’opération réelle sur les données ou d’envoi de messages.
+
+### Présentation et changements sensibles
+
+Une retouche de présentation relève de l’autorisation ordinaire lorsqu’elle ne modifie ni les règles métier, ni les informations rendues accessibles, ni les accès aux données : espacement, typographie, responsive ou libellé sans portée métier.
+
+Le classement dépend des effets du changement, pas uniquement du fichier modifié. Une correction CSS peut masquer une information essentielle ; un libellé peut modifier le sens d’une décision sportive.
+
+Obtenir un accord explicite sur le périmètre avant de modifier :
+
+- authentification, PIN, capacités et droits d’accès ;
 - règles, configuration, variables d’environnement ou Cloud Functions Firebase ;
-- structure globale des données ou nouvelle collection Firestore ;
-- records, MPF, catégories sportives, classements, médailles ou qualifications DTN ;
-- import, parsing ou publication des séries, résultats, PDF et archives ;
+- structure persistante des données, notamment tables NAP/MySQL ou collections Firestore ;
+- règles et calculs des Records, MPF, catégories, classements, médailles ou qualifications DTN ;
+- sélection, interprétation ou publication des données sportives ;
+- import et parsing des séries, résultats, PDF et archives ;
 - génération des consoles dédiées ;
-- migration, correction, génération ou publication des données de performances ;
-- fichiers générés de `performances/public/data/` ou publication Firebase Storage.
+- traitements de migration, correction ou génération des données de performances ;
+- mécanismes de publication Firebase Storage.
 
-L’accord peut figurer dans la demande si l’opération sensible et son périmètre y sont explicites. Une autorisation de préparation ne vaut pas autorisation de déployer en PROD, de modifier des données ou d’envoyer des messages réels.
+Une retouche visuelle d’une page Records/MPF ou d’une console ne constitue pas, à elle seule, un changement de règle sportive. Elle conserve les vérifications et précautions propres aux composants, générateurs et dépendances touchés.
 
-Ne jamais inventer une règle sportive ; demander validation en cas de doute métier. Ne jamais modifier directement une sortie générée : corriger sa source ou son générateur.
+L’accord peut figurer dans la demande si l’opération et ses limites sont explicites. Une autorisation historique reste bornée à son périmètre et à ses versions.
+
+Ne jamais inventer une règle sportive : demander validation en cas de doute métier.
+
+### Opérations réelles sur les données
+
+Migration, correction ou suppression de données réelles, génération ou publication de données sportives, restauration métier et envoi de messages réels exigent un accord spécifique couvrant leur cible et leurs limites.
+
+Cette exigence s’applique aussi depuis TEST. Certains parcours TEST partagent la base NAP réelle : TEST ne garantit pas l’isolation des données.
+
+Privilégier les fixtures et services fictifs pour les tests. Prévenir avant tout test susceptible d’utiliser Firebase de production ; obtenir l’accord spécifique avant toute écriture réelle, quel que soit le service utilisé.
+
+Ne jamais modifier directement une sortie générée : corriger sa source ou son générateur. Un ancien fichier ou outil n’autorise ni régénération ni publication. Le retrait de code et le nettoyage des données ou de Storage sont des opérations distinctes.
+
+### Accord PROD
+
+La PROD nécessite une instruction explicite d’Antoine dans Infra couvrant le périmètre présenté. Un accord déjà donné, éventuellement conditionné à la réussite des contrôles, suffit pour ce périmètre.
+
+L’assistant prépare et présente le bilan utile : contenu, validations, preuves, risques et éventuels blocages. Ne pas demander une seconde approbation lorsque l’accord couvre déjà la version présentée et que ses conditions sont remplies.
+
+Une validation TEST seule ne vaut pas accord PROD. Un changement de périmètre, une condition non remplie ou un risque nouveau impose un nouvel examen avant publication.
+
+Toute protection ou approbation GitHub encore requise reste obligatoire.
 
 ## Données et interface
 
-Adapter l’accès à la source réelle : NAP/MySQL pour les données métier qui y résident, Firestore pour les données qui y restent. Toute lecture doit être indexable et bornée ; estimer les documents Firestore ou les requêtes et lignes parcourues NAP. Interdire les lectures N+1, lectures par ligne, scans complets non bornés et listeners nombreux ou inutiles. Pour une petite liste NAP, privilégier une lecture serveur directe, ciblée et mesurée, avec cache court mutualisé si utile ; ne pas imposer un fichier généré. Conserver fichiers statiques, agrégats et pagination lorsque le volume, la fréquence ou la disponibilité le justifient. Firebase reste utilisé pour les services existants : ce choix ne constitue pas une suppression de Firebase.
+Utiliser la source réelle : NAP/MySQL pour les données qui y résident, Firestore pour celles qui y restent. Le nouveau Direct utilise ses tables NAP dédiées ; le dispositif historique conserve ses propres usages Firestore. Firebase reste utilisé pour ses services existants.
 
-Toute évolution qui ajoute ou modifie un accès aux données doit être conçue avec un budget de lectures avant son implémentation. Estimer séparément le coût de l’ouverture initiale, d’une action utilisateur, d’un rafraîchissement et du pire cas réaliste. Vérifier que ce coût ne croît pas avec la taille totale de la base ou le nombre de lignes affichées. Réutiliser en priorité les agrégats, index, caches, fichiers publics et appels groupés existants. Une donnée absente ou un cache périmé ne doit jamais déclencher silencieusement une reconstruction massive dans un parcours interactif.
+Avant toute évolution d’un accès aux données, établir un budget de lectures : ouverture initiale, action utilisateur, rafraîchissement et pire cas réaliste. Estimer les documents Firestore, les requêtes et les lignes parcourues NAP.
 
-Concevoir mobile first sans rendre une action essentielle inaccessible. Les actions doivent fonctionner au toucher ; adapter ou faire défiler les tableaux larges. Respecter les composants existants. Après un changement visuel, mettre à jour `docs/DESIGN_SYSTEM.md` uniquement pour les règles, composants ou variantes réellement modifiés.
+Les lectures doivent être bornées et indexables, sans requête supplémentaire par ligne, N+1, scan complet non borné ni multiplication inutile des listeners. Le coût d’un écran ou d’une action ne doit pas dépendre de la taille totale de la base ; borner et paginer les listes.
 
-## Vérifications et réponse
+Réutiliser agrégats, index, caches, fichiers publics et appels groupés existants lorsqu’ils correspondent à la source courante. Pour une petite liste NAP, privilégier une lecture serveur directe, ciblée et mesurée, avec cache court mutualisé si utile.
 
-- Documentation seule : relecture ciblée (cohérence, UTF-8, liens et descriptions). Aucun déploiement TEST/PROD ni test applicatif manuel pour cette seule retouche.
-- Modification localisée : syntaxe et test du comportement modifié ; interface : contrôle ordinateur/mobile et smoke test lorsque pertinent.
-- Architecture, consoles, plusieurs modules ou code sensible (Firebase, droits, PDF, données métier, migration) : faire exécuter la vérification globale `node tools/verify-livepalmes.js`, en priorité par la CI obligatoire, et les contrôles ciblés nécessaires. Ne pas doubler localement une suite déjà exécutée avec succès par la CI du commit exact ; une relance se justifie par un changement, un échec ou une preuve incompatible.
-- Promotion du commit exact déjà testé : réutiliser les preuves compatibles avec les outils existants. Le seul mot « publication » n’impose pas une nouvelle suite globale manuelle ni une nouvelle recette des parcours inchangés.
-- Conserver les contrôles CI et de publication imposés par les workflows. Une consigne de rapidité n’autorise ni à les contourner ni à modifier leurs sélections manuellement.
+Conserver fichiers statiques, agrégats et pagination lorsque volume, fréquence ou disponibilité le justifient. Ne pas réintroduire une ancienne source comme repli implicite. Un cache absent ou périmé ne doit jamais déclencher silencieusement une reconstruction massive dans un parcours interactif.
+
+Concevoir mobile first, avec actions essentielles accessibles au toucher et sur ordinateur. Adapter les tableaux larges et réutiliser les composants existants.
+
+Mettre à jour `docs/DESIGN_SYSTEM.md` seulement lorsque ses règles, composants ou variantes changent réellement.
+
+## Vérifications
+
+Adapter les contrôles au changement, sans retirer ceux imposés par les workflows :
+
+- **Documentation seule** : cohérence, UTF-8, liens et descriptions ; CI requise selon le classement courant. Aucun test applicatif manuel ni déploiement pour cette seule retouche.
+- **Modification localisée** : syntaxe et test du comportement modifié ; pour l’interface, contrôle ordinateur/mobile et smoke test pertinent.
+- **Architecture, consoles, plusieurs modules ou code sensible** : vérification globale `node tools/verify-livepalmes.js`, en priorité par la CI obligatoire, et contrôles ciblés nécessaires.
 
 Smoke test navigateur : `node tools/verify-livepalmes.js --browser`.
 
-Après chaque modification, indiquer les fichiers touchés, le résumé des changements, les vérifications effectuées et celles restant à faire. Répondre en français, directement et pédagogiquement ; expliquer les choix non évidents, incertitudes et risques.
+Avant la première CI, terminer le lot cohérent : code, tests ciblés et dépendances immédiates, documentation et contrat lorsqu’il est requis. Après un échec, corriger la cause et ses conséquences proches avant de relancer.
 
-## Conduite du travail
+Réutiliser les preuves compatibles et traçables du commit exact. Ne pas doubler localement une suite déjà réussie en CI ni refaire la recette des parcours inchangés pour une simple promotion.
 
-- Choisir le parcours adapté dans `docs/agents/PUBLICATION.md` et rester dans le besoin demandé. Lire uniquement les sections nécessaires ; les archives de publication servent à une ancienne reprise ou à une exception identifiée.
-- Regrouper code, tests et documentation utile dans une PR par besoin. Une correction nécessaire reste dans la PR ouverte ; après fusion, regrouper le suivi documentaire au lieu de créer une PR par résultat de contrôle.
-- Utiliser les outils en place. Une livraison ordinaire ne déclenche pas un chantier d’amélioration du circuit, un nouveau benchmark, un audit supplémentaire ou un nouveau rapport HTML sans nécessité pour le périmètre demandé.
-- Fournir par défaut un bilan court : résultat, périmètre, preuves de contrôle et éventuel blocage. Garder les détails techniques consultables dans GitHub et le registre ; ne pas demander à Antoine de gérer SHA, fichiers de manifeste ou numéros de runs.
-- Suivre le délai entre la demande et le résultat terminé. Distinguer les attentes externes et le temps d’une étape ; ne pas présenter le temps d’un sous-job comme celui de toute la livraison.
+Un changement, un échec ou une preuve incompatible justifie une nouvelle exécution. Conserver les contrôles frais de l’état déployé exigés par la procédure.
 
-## Économie de contexte et d’exécution
+Ne pas contourner un contrôle ni modifier manuellement une sélection CI ou de publication pour gagner du temps. Signaler le blocage.
 
-Réduire les lectures et étapes redondantes, jamais la qualité ni les contrôles obligatoires. Ces règles s’appliquent à toutes les conversations LivePalmes ; elles ne modifient aucune autorisation, exclusion ou exigence de preuve.
+## Intégration et publication
 
-- Chercher d’abord les fichiers et sections pertinents ; borner les sorties des outils. Regrouper les lectures et commandes indépendantes, examiner chaque résultat et garder séquentielles les opérations dépendantes ou susceptibles de modifier le même état. Ne pas relire un contenu inchangé déjà disponible ; revérifier l’état partagé avant toute écriture ou publication.
-- Pendant les corrections, exécuter les tests ciblés utiles ; conserver la validation finale requise sur le candidat exact. Réutiliser seulement les preuves compatibles et traçables. Relancer si le code concerné change, si un contrôle échoue ou si une incertitude invalide la preuve.
-- Pour la CI et les traitements longs, préférer une attente bornée ou une notification de fin aux interrogations rapprochées. Espacer les vérifications inchangées, examiner les échecs et confirmer le résultat final ; rester disponible pour les messages utilisateur.
-- Conserver le chat tant que son contexte reste utile. À la fin d’un chantier ou avant une reprise encombrée, préparer un résumé court : besoin, version, décisions, fichiers, preuves, autorisations et points ouverts. Ne pas recréer systématiquement un chat ni recopier les historiques et journaux complets.
-- Adapter l’effort de raisonnement à la difficulté lorsque le réglage est disponible, sans changer silencieusement le modèle choisi par l’utilisateur. Réserver l’effort élevé aux dépendances complexes et risques réels ; une économie ne justifie jamais une analyse sensible insuffisante.
-- Maintenir les instructions communes concises et la documentation spécialisée à la demande. Ne jamais supprimer pour économiser les contrôles CI, sécurité, droits, données, migrations, sauvegarde, dérive, retour arrière ou publication imposés. Signaler un blocage au lieu de contourner un contrôle.
+Avant toute intégration ou publication, récupérer les dernières consignes de `main` et lire le parcours utile dans `docs/agents/PUBLICATION.md`.
 
-## Circuit commun aux conversations
+`docs/agents/PUBLICATION.md` indique le parcours ; `docs/releases/PROCEDURE.md` décrit son exécution actuelle. Les archives servent uniquement à une reprise ou exception identifiée.
 
-- Lire `docs/agents/PUBLICATION.md` avant toute intégration ou publication et récupérer les dernières consignes de `main`. Une ancienne copie locale ne fait pas autorité.
-- `docs/agents/PUBLICATION.md` indique le parcours ; `docs/releases/PROCEDURE.md` décrit son exécution actuelle. Les autorisations historiques restent bornées à leurs versions et n’ajoutent aucune étape par défaut à une livraison courante.
-- Travailler par PR courte depuis le dernier `main`, préserver les autres évolutions, ne jamais remplacer TEST par une branche isolée.
-- Parcours rapide : suites applicative/publication en parallèle avec synthèse obligatoire ; TEST automatique pour les interfaces ordinaires connues après CI main réussie et contrôle backend. Les fonctions serveur et cas sensibles restent explicites. Assembler le bilan depuis les preuves et validations authentiques ; figer le candidat ordinaire validé sans inclure les ajouts suivants. Voir la procédure pour les limites et garde-fous.
-- TEST commun = commit intégré sur `main`, publié par `livepalmes-test-common.yml`. Les aperçus de PR sont séparés et ne constituent pas une validation de la version regroupée.
-- Tenir `docs/releases/EVOLUTIONS.md` à jour : besoin, PR/commit, état, preuve du déploiement TEST, retour utilisateur. « Déployé sur TEST » ne signifie pas « validé ». Ne jamais inventer une validation utilisateur.
-- Une modification ultérieure du code invalide la validation des parcours concernés ; faire vérifier la version regroupée avant PROD.
-- Pour « publier tout ce qui est validé », préparer un bilan complet. Toute évolution incluse mais non validée bloque la publication : la terminer ou préparer une autre version commune, sans sélection silencieuse de fichiers.
-- Aucune copie TEST vers PROD. Ne pas déployer les règles/index, migrations, fonctions email ou schedulers via le circuit ordinaire.
-- Simplicité des publications : réutiliser une preuve TEST encore valide, sans republier TEST à chaque demande PROD. L'assistant gère les références techniques et présente un bilan court. Le bilan exploite les preuves GitHub sans accès Google ; l'accord explicite d'Antoine dans Infra autorise la publication du périmètre présenté. Le fonctionnement cible du 29 septembre supprime la seconde validation GitHub, après activation du réglage décrit dans `docs/releases/PROCEDURE.md`. Conserver l'environnement `production` limité à `main`, et arrêter en cas de dérive ou de preuve manquante. Une approbation GitHub encore requise ne doit pas être contournée. Voir `docs/releases/PROCEDURE.md` pour les empreintes backend et les limites de réutilisation.
+- Travailler par PR courte depuis le dernier `main`, avec code, tests et documentation du même besoin. Préserver les autres évolutions.
+- TEST commun est un commit intégré sur `main`, publié par `livepalmes-test-common.yml`. Un aperçu de PR ne remplace pas la validation de cette version commune.
+- Suivre les automatismes et sélections par dépendances du circuit existant. Examiner la sélection calculée et expliquer les replis larges. Backend et opérations sensibles suivent leurs parcours autorisés.
+- Réutiliser une preuve TEST encore valide pour PROD ; ne republier TEST que si la version, l’état ou la validité de la preuve l’exige.
+- Tenir `docs/releases/EVOLUTIONS.md` à jour : besoin, PR/commit, état, preuve TEST et retour utilisateur.
+- Distinguer développement terminé, contrôles réussis, déploiement confirmé et validation utilisateur. Ne jamais inventer une validation.
+- Une modification ultérieure du code invalide la validation des parcours concernés. Faire vérifier la version regroupée avant PROD et figer le candidat validé pour exclure les ajouts suivants.
+- Pour « publier tout ce qui est validé », couvrir le périmètre complet. Une évolution incluse mais non validée bloque : la terminer ou préparer une autre version commune, sans sélection silencieuse de fichiers.
+- Aucune copie TEST vers PROD. Règles/index, migrations, fonctions email et schedulers restent hors du circuit ordinaire, sauf parcours explicitement autorisé.
 
-- Rapidité TEST/PROD : utiliser la sélection par dépendances du circuit commun, sans imposer tous les lots pour un simple helper modifié. Examiner la liste calculée et expliquer les replis larges ; ne jamais réduire manuellement une sélection sans preuve. Regrouper les retouches, réutiliser les tests attestés du commit exact en PROD, conserver les contrôles rapides et ne pas relancer TEST uniquement pour préparer PROD.
+Conserver les protections exigées : CI et synthèse obligatoires, preuves backend, exclusions, contrôle de dérive, sauvegarde vérifiée, retour arrière et contrôles finaux.
+
+Garder l’environnement `production` limité à `main`. Un accord dans le chat n’autorise pas à contourner une protection technique ni à élargir les permissions.
+
+Préparer le bilan depuis les preuves GitHub et les validations authentiques, sans dépendre d’un accès Google. L’assistant gère les références techniques nécessaires à la publication.
+
+## Exécution et restitution
+
+Réduire les étapes redondantes, jamais les garanties :
+
+- Chercher et lire de façon ciblée, borner les sorties et regrouper les commandes indépendantes. Garder séquentielles les opérations dépendantes ou modifiant le même état.
+- Utiliser les outils existants. Ne pas ajouter benchmark, audit général, rapport HTML, contrôle ou refonte du circuit sans nécessité démontrée.
+- Si une CI ou publication est en cours, attendre le traitement existant par attente bornée ou notification. Éviter interrogations rapprochées, doubles lancements et annulations injustifiées ; confirmer le résultat final.
+- Garder les corrections dans la PR ouverte. Après fusion, regrouper le suivi documentaire plutôt que créer une PR par résultat de contrôle.
+- Adapter l’effort à la difficulté sans changer silencieusement le modèle choisi.
+- Conserver le chat tant que son contexte reste utile. À la clôture ou avant une reprise encombrée, préparer un résumé court : besoin, version, décisions, fichiers, preuves, autorisations et points ouverts.
+
+Répondre en français, directement et pédagogiquement. Après modification, donner un bilan court : résultat, fichiers touchés, contrôles effectués, vérifications restantes et éventuel blocage.
+
+Expliquer les choix non évidents et les risques réels ; laisser les références techniques consultables dans GitHub et le registre. Ne pas demander à Antoine de gérer SHA, manifestes ou numéros de runs.
+
+Suivre le délai complet entre demande et résultat, en distinguant travail, attentes externes et reprises. Ne pas présenter la durée d’un sous-job comme celle de toute la livraison.

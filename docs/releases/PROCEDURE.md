@@ -4,7 +4,11 @@
 
 ## Périmètre et autorisation
 
-Choisir le parcours dans [PUBLICATION.md](../agents/PUBLICATION.md). Une demande de développement autorise TEST pour le besoin décrit ; une simple analyse ou une retouche documentaire ne déclenche pas de déploiement. Les opérations sensibles gardent leur accord explicite. Pour PROD, présenter le bilan précis et obtenir l’accord d’Antoine dans Infra avant l’écriture. Ne pas répéter une demande d’accord acquise pour ce périmètre ; une simple validation TEST ne vaut pas accord PROD. Un écart ou un nouveau risque impose un nouvel examen.
+Choisir le parcours dans [PUBLICATION.md](../agents/PUBLICATION.md). Une demande de développement autorise TEST pour le besoin décrit ; une simple analyse ou une retouche documentaire ne déclenche pas de déploiement. Les opérations sensibles gardent leur accord explicite.
+
+Une retouche visuelle reste dans le parcours ordinaire si elle ne change ni les règles métier, ni les accès, ni les données rendues accessibles. Le classement sensible dépend des effets réels du changement et ne retire aucun contrôle propre aux composants touchés. L'autorisation de publication du code ne vaut pas autorisation d'exécuter une opération réelle sur les données ou d'envoyer des messages, y compris depuis TEST lorsque la base NAP réelle est partagée.
+
+Pour PROD, présenter le périmètre et le bilan utile dans Infra. L'instruction explicite d'Antoine autorise la publication de ce périmètre, éventuellement après réussite des contrôles. Si cet accord est déjà acquis et que ses conditions sont remplies, poursuivre sans demander une seconde approbation du bilan. Un changement de périmètre, une condition non remplie ou un risque nouveau impose un nouvel examen. Une validation TEST seule ne vaut pas accord PROD. Toute approbation GitHub encore requise reste obligatoire.
 
 Préserver les exclusions du lot et le réglage des mails en place. Une autorisation ancienne, une source NAP existante ou une sauvegarde de code n’autorise ni migration, ni correction de données, ni envoi, ni restauration métier. Un rollback de code n’annule pas les écritures métier.
 
