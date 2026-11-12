@@ -225,6 +225,38 @@ class SuiteEvidenceTests(unittest.TestCase):
             self.assertEqual(receipt['application']['source']['run'], 71)
             self.assertEqual(receipt['publication']['source']['suite'], 'publication')
 
+    def test_http_503_publication_archive_runs_that_suite_and_preserves_four_verified_suites(self):
+        import subprocess
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory)/'outputs'
+            def git(*args):
+                return CANDIDATE if args == ('rev-parse', 'HEAD') else ' '.join([CANDIDATE, PARENT, HEAD])
+            failed = []
+            def artifact(run, group):
+                if group == 'ci-publication-suites':
+                    failed.append(group)
+                    raise subprocess.CalledProcessError(1, ['gh', 'api', 'isolated-fixture/zip'],
+                                                        stderr=b'gh: HTTP 503')
+                files = {suite+'.json': {**self.value(), 'suite': suite}
+                         for suite, selected in m.GROUPS.items() if selected == group}
+                return self.info(), files, {'run':71,'artifact':8,'sha256':'sha256:'+'1'*64}
+            with patch.dict(os.environ, {'GITHUB_EVENT_NAME':'push','GITHUB_REF':'refs/heads/main',
+                 'GITHUB_RUN_ATTEMPT':'1','GITHUB_OUTPUT':str(output)}), \
+                 patch.object(m,'git',side_effect=git), \
+                 patch.object(m,'gh',return_value={'workflow_runs':[self.info()]}), \
+                 patch.object(m,'artifact',side_effect=artifact), \
+                 patch.object(m,'content',return_value=CONTENT),patch.object(m,'environment',return_value=ENV):
+                m.reuse(list(m.GROUPS), directory)
+            decisions = dict(line.split('=') for line in output.read_text().splitlines())
+            self.assertEqual(decisions, {'application':'true','firestore':'true','mysql':'true',
+                                         'publication':'false','browser':'true'})
+            self.assertEqual(failed, ['ci-publication-suites'])
+            receipt = json.loads((Path(directory)/'reuse.json').read_text())
+            self.assertFalse(receipt['publication']['verified'])
+            self.assertNotIn('source', receipt['publication'])
+            self.assertEqual(receipt['publication']['reason'], 'Lecture de preuve indisponible')
+            self.assertTrue(all(receipt[s]['verified'] for s in ('application','firestore','mysql','browser')))
+
     def test_main_record_preserves_only_a_verified_authenticated_source(self):
         source={'run':71,'artifact':8,'sha256':'sha256:'+'1'*64,'suite':'application',
                 'pullRequest':13,'provenance':'merged-pull-request'}
