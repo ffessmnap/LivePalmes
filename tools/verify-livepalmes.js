@@ -467,30 +467,34 @@ function runBrowserSmokeIfRequested() {
   const requested = process.argv.includes("--browser") || process.argv.includes("--browser-only") || process.env.LIVEPALMES_BROWSER_SMOKE === "1";
   if (!requested) return;
   printStep("Smoke test navigateur");
-  run(process.execPath, [path.join(rootDir, "tests", "public-navigation-browser-tests.js")]);
-  run(process.execPath, [path.join(rootDir, "tests", "competition-status-browser-tests.js")]);
-  run(process.execPath, [path.join(rootDir, "tests", "import-record-review-browser-tests.js")]);
-  run(process.execPath, [path.join(rootDir, "tests", "import-resolution-browser-tests.js")]);
-  run(process.execPath, [path.join(rootDir, "tests", "direct-browser-tests.js")]);
-  run(process.execPath, [path.join(rootDir, "tests", "direct-date-archive-browser-tests.js")]);
-  run(process.execPath, [path.join(rootDir, "tests", "direct-public-sessions-browser-tests.js")]);
-  run(process.execPath, [path.join(rootDir, "tests", "direct-participation-browser-tests.js")]);
-  run(process.execPath, [path.join(rootDir, "tests", "direct-import-completeness-browser-tests.js")]);
-  run(process.execPath, [path.join(rootDir, "tests", "direct-consoles-browser-tests.js")]);
-  run(process.execPath, [path.join(rootDir, "tests", "direct-admin-workflow-browser-tests.js")]);
-  run(process.execPath, [path.join(rootDir, "tests", "portal-reactivity-browser-tests.js")]);
-  run(process.execPath, [path.join(rootDir, "tests", "portal-direct-browser-tests.js")]);
-  run(process.execPath, [path.join(rootDir, "tests", "portal-news-browser-tests.js")]);
-  run(process.execPath, [path.join(rootDir, "tests", "mail-template-editor-browser-tests.js")]);
-  run(process.execPath, [path.join(rootDir, "tests", "request-decision-browser-tests.js")]);
-  run(process.execPath, [path.join(rootDir, "tests", "competition-mail-contacts-browser-tests.js")]);
-  run(process.execPath, [path.join(rootDir, "tests", "nap-swimmer-merge-conflicts-browser-tests.js")]);
-  run(process.execPath, [path.join(rootDir, "tests", "foreign-club-access-browser-tests.js")]);
-  run(process.execPath, [path.join(rootDir, "tests", "portal-open-water-program-browser-tests.js")]);
-  run(process.execPath, [path.join(rootDir, "tests", "license-workspace-browser-tests.js")]);
-  run(process.execPath, [path.join(rootDir, "tests", "license-workspace-usability-browser-tests.js")]);
-  run(process.execPath, [path.join(rootDir, "tools", "livepalmes-browser-smoke.js")]);
-  run(process.execPath, [path.join(rootDir, "tests", "portal-team-entries-browser-tests.js")]);
+  function browserRun(command, args) {
+    console.log("Parcours navigateur : " + path.basename(args[0]));
+    run(command, args, { timeout: 120000 });
+  }
+  browserRun(process.execPath, [path.join(rootDir, "tests", "public-navigation-browser-tests.js")]);
+  browserRun(process.execPath, [path.join(rootDir, "tests", "competition-status-browser-tests.js")]);
+  browserRun(process.execPath, [path.join(rootDir, "tests", "import-record-review-browser-tests.js")]);
+  browserRun(process.execPath, [path.join(rootDir, "tests", "import-resolution-browser-tests.js")]);
+  browserRun(process.execPath, [path.join(rootDir, "tests", "direct-browser-tests.js")]);
+  browserRun(process.execPath, [path.join(rootDir, "tests", "direct-date-archive-browser-tests.js")]);
+  browserRun(process.execPath, [path.join(rootDir, "tests", "direct-public-sessions-browser-tests.js")]);
+  browserRun(process.execPath, [path.join(rootDir, "tests", "direct-participation-browser-tests.js")]);
+  browserRun(process.execPath, [path.join(rootDir, "tests", "direct-import-completeness-browser-tests.js")]);
+  browserRun(process.execPath, [path.join(rootDir, "tests", "direct-consoles-browser-tests.js")]);
+  browserRun(process.execPath, [path.join(rootDir, "tests", "direct-admin-workflow-browser-tests.js")]);
+  browserRun(process.execPath, [path.join(rootDir, "tests", "portal-reactivity-browser-tests.js")]);
+  browserRun(process.execPath, [path.join(rootDir, "tests", "portal-direct-browser-tests.js")]);
+  browserRun(process.execPath, [path.join(rootDir, "tests", "portal-news-browser-tests.js")]);
+  browserRun(process.execPath, [path.join(rootDir, "tests", "mail-template-editor-browser-tests.js")]);
+  browserRun(process.execPath, [path.join(rootDir, "tests", "request-decision-browser-tests.js")]);
+  browserRun(process.execPath, [path.join(rootDir, "tests", "competition-mail-contacts-browser-tests.js")]);
+  browserRun(process.execPath, [path.join(rootDir, "tests", "nap-swimmer-merge-conflicts-browser-tests.js")]);
+  browserRun(process.execPath, [path.join(rootDir, "tests", "foreign-club-access-browser-tests.js")]);
+  browserRun(process.execPath, [path.join(rootDir, "tests", "portal-open-water-program-browser-tests.js")]);
+  browserRun(process.execPath, [path.join(rootDir, "tests", "license-workspace-browser-tests.js")]);
+  browserRun(process.execPath, [path.join(rootDir, "tests", "license-workspace-usability-browser-tests.js")]);
+  browserRun(process.execPath, [path.join(rootDir, "tools", "livepalmes-browser-smoke.js")]);
+  browserRun(process.execPath, [path.join(rootDir, "tests", "portal-team-entries-browser-tests.js")]);
 }
 
 function runDiffCheck() {
