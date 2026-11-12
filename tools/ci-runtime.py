@@ -28,6 +28,13 @@ def validate():
                               ('npm_config_fetch_timeout', config['fetchTimeoutMs'])]:
             if not re.search(key + r": ['\"]?" + str(expected) + r"['\"]?\s*$", text, re.M):
                 raise ValueError('Telechargement non borne : ' + name)
+    runner = config['verificationRunner']
+    if not re.fullmatch(r'ubuntu-\d{2}\.04', runner):
+        raise ValueError('Label Ubuntu explicite requis pour la verification')
+    workflow = (ROOT/'.github/workflows/livepalmes-verification-preview.yml').read_text(encoding='utf-8')
+    labels = re.findall(r'(?m)^\s+runs-on: ([a-z0-9.-]+)\s*$', workflow)
+    if not labels or any(label != runner for label in labels):
+        raise ValueError('Runner CI divergent du pin explicite')
     print('Node ' + version + ' : chaine commune coherente, npm ci et caches conserves.')
 
 

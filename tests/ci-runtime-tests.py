@@ -22,6 +22,7 @@ for(const name of c.workflows){
   const w=y.load(f.readFileSync('.github/workflows/'+name,'utf8'));
   let installs=0, metrics=0;
   for(const job of Object.values(w.jobs)){
+    if(name==='livepalmes-verification-preview.yml'&&job['runs-on']!==c.verificationRunner)throw Error('Runner CI divergent');
     for(const s of job.steps||[]){
       if(/setup-node/.test(s.uses||'')){
         installs++;
@@ -34,6 +35,20 @@ for(const name of c.workflows){
 }
 """
         subprocess.run(['node', '-e', script], cwd=ROOT, check=True)
+
+    def test_rolling_or_divergent_runner_never_passes_validation(self):
+        import json,tempfile
+        from unittest.mock import patch
+        for label in ('ubuntu-latest','ubuntu-26.04'):
+            with tempfile.TemporaryDirectory() as directory:
+                root=Path(directory);(root/'.github/workflows').mkdir(parents=True)
+                config={'node':'22.23.5','verificationRunner':'ubuntu-24.04',
+                        'workflows':['livepalmes-verification-preview.yml'],'fetchRetries':2,'fetchTimeoutMs':30000}
+                (root/'.github/ci-runtime.json').write_text(json.dumps(config))
+                (root/'.node-version').write_text('22.23.5')
+                (root/'.github/workflows/livepalmes-verification-preview.yml').write_text(
+                    'env:\n  npm_config_fetch_retries: 2\n  npm_config_fetch_timeout: 30000\njobs:\n  test:\n    runs-on: '+label+'\n    steps:\n      - with:\n          node-version: 22.23.5\n')
+                with patch.object(m,'ROOT',root),self.assertRaises(ValueError): m.validate()
 
     def test_installation_timeout_is_not_reported_as_a_test_failure(self):
         value = m.report([{'name': 'app', 'conclusion': 'timed_out', 'steps': [
