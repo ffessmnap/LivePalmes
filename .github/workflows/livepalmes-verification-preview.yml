@@ -69,29 +69,36 @@ jobs:
           distribution: temurin
           java-version: '21'
 
-      - name: Installer les dependances des Functions
+      - name: Reutiliser les suites PR de contenu identique
+        id: reused
         if: steps.test-scope.outputs.documentation != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python tools/ci-suite-evidence.py reuse "$RUNNER_TEMP/ci-suites" application firestore mysql
+
+      - name: Installer les dependances des Functions
+        if: steps.test-scope.outputs.documentation != 'true' && (steps.reused.outputs.application != 'true' || steps.reused.outputs.mysql != 'true')
         run: npm ci --prefix functions
 
       - name: Installer les dependances des tests Firestore
-        if: steps.test-scope.outputs.documentation != 'true'
+        if: steps.test-scope.outputs.documentation != 'true' && (steps.reused.outputs.application != 'true' || (steps.test-scope.outputs.firestore == 'true' && steps.reused.outputs.firestore != 'true'))
         run: npm ci --prefix tests/firestore-rules
 
       - name: Tester les regles Firestore
-        if: steps.test-scope.outputs.firestore == 'true'
+        if: steps.test-scope.outputs.firestore == 'true' && steps.reused.outputs.firestore != 'true'
         run: npm --prefix tests/firestore-rules test
 
       - name: Verifier LivePalmes
-        if: steps.test-scope.outputs.documentation != 'true'
+        if: steps.test-scope.outputs.documentation != 'true' && steps.reused.outputs.application != 'true'
         run: node tools/verify-livepalmes.js
 
       - name: Verifier les ecritures par equipes dans MySQL isole
-        if: ${{ !cancelled() && steps.test-scope.outputs.documentation != 'true' }}
+        if: ${{ !cancelled() && steps.test-scope.outputs.documentation != 'true' && steps.reused.outputs.mysql != 'true' }}
         env:
           NAP_TEAM_FIXTURE_ALLOWED: isolated-ci
           NAP_TEAM_FIXTURE_PASSWORD: isolated-team-fixture-only
         run: |
-          docker run -d --name livepalmes-team-mysql -e MYSQL_ROOT_PASSWORD="$NAP_TEAM_FIXTURE_PASSWORD" -e MYSQL_ROOT_HOST=% -p 127.0.0.1:33317:3306 mysql:5.7.30
+          docker run -d --name livepalmes-team-mysql -e MYSQL_ROOT_PASSWORD="$NAP_TEAM_FIXTURE_PASSWORD" -e MYSQL_ROOT_HOST=% -p 127.0.0.1:33317:3306 mysql:5.7.30@sha256:32f9d9a069f7a735e28fd44ea944d53c61f990ba71460c5c183e610854ca4854
           trap 'docker rm -f livepalmes-team-mysql >/dev/null 2>&1 || true' EXIT
           for attempt in $(seq 1 60); do
             if docker exec livepalmes-team-mysql mysqladmin ping --protocol=TCP -h127.0.0.1 -uroot -p"$NAP_TEAM_FIXTURE_PASSWORD" --silent >/dev/null 2>&1; then break; fi
@@ -100,6 +107,23 @@ jobs:
           node tests/nap-team-entry-mysql-tests.js
           node tests/nap-club-account-emails-mysql-tests.js
           node tests/nap-direct-mysql-tests.js
+
+      - name: Enregistrer les preuves des suites applicatives
+        if: steps.test-scope.outputs.documentation != 'true'
+        env:
+          FIRESTORE_REQUIRED: ${{ steps.test-scope.outputs.firestore }}
+        run: python tools/ci-suite-evidence.py record "$RUNNER_TEMP/ci-suites" application firestore mysql
+
+      - uses: actions/upload-artifact@v4
+        if: steps.test-scope.outputs.documentation != 'true'
+        with:
+          name: ci-application-suites
+          path: |
+            ${{ runner.temp }}/ci-suites/application.json
+            ${{ runner.temp }}/ci-suites/firestore.json
+            ${{ runner.temp }}/ci-suites/mysql.json
+          if-no-files-found: error
+          retention-days: 14
 
       - name: Enregistrer la verification du commit main exact
         if: github.event_name == 'push' && steps.test-scope.outputs.documentation != 'true'
@@ -156,16 +180,23 @@ jobs:
           distribution: temurin
           java-version: '21'
 
-      - name: Installer les dependances des Functions
+      - name: Reutiliser les suites PR de contenu identique
+        id: reused
         if: steps.test-scope.outputs.documentation != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python tools/ci-suite-evidence.py reuse "$RUNNER_TEMP/ci-suites" publication
+
+      - name: Installer les dependances des Functions
+        if: steps.test-scope.outputs.documentation != 'true' && steps.reused.outputs.publication != 'true'
         run: npm ci --prefix functions
 
       - name: Installer les dependances des tests Firestore
-        if: steps.test-scope.outputs.documentation != 'true'
+        if: steps.test-scope.outputs.documentation != 'true' && steps.reused.outputs.publication != 'true'
         run: npm ci --prefix tests/firestore-rules
 
       - name: Tester le circuit de publication sans acces Firebase
-        if: steps.test-scope.outputs.documentation != 'true'
+        if: steps.test-scope.outputs.documentation != 'true' && steps.reused.outputs.publication != 'true'
         run: |
           # Covered by required application job: node tests/release-excluded-backend-compatibility-tests.js
           # Covered by required application job: node tests/nap-national-documents-callable-tests.js
@@ -195,6 +226,7 @@ jobs:
           node tests/nap-source-diagnostic-tests.js
           python tests/test-verification-evidence-tests.py
           python tests/ci-runtime-tests.py
+          python tests/ci-suite-evidence-tests.py
           python tests/production-pdf-functions-tests.py
           python tests/production-notification-release-tests.py
           python tests/production-access-request-release-tests.py
@@ -228,6 +260,18 @@ jobs:
           node tests/release-nap-account-compatibility.js
           node tests/license-report-source-guard-tests.js
 
+      - name: Enregistrer la preuve de la suite publication
+        if: steps.test-scope.outputs.documentation != 'true'
+        run: python tools/ci-suite-evidence.py record "$RUNNER_TEMP/ci-suites" publication
+
+      - uses: actions/upload-artifact@v4
+        if: steps.test-scope.outputs.documentation != 'true'
+        with:
+          name: ci-publication-suites
+          path: ${{ runner.temp }}/ci-suites/publication.json
+          if-no-files-found: error
+          retention-days: 14
+
       - name: Enregistrer la verification du circuit main exact
         if: github.event_name == 'push' && steps.test-scope.outputs.documentation != 'true'
         run: python tools/test-verification-evidence.py record-publication "$RUNNER_TEMP/publication-verification"
@@ -241,9 +285,73 @@ jobs:
           retention-days: 14
 
 
+  browser:
+    name: Verification navigateur hors ligne
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      EDGE_BIN: /usr/bin/google-chrome
+      LIVEPALMES_BROWSER_EXECUTABLE: /usr/bin/google-chrome
+      PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
+      NODE_PATH: ${{ github.workspace }}/tests/browser/node_modules
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Determiner les parcours necessaires
+        id: test-scope
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: python tools/test-verification-evidence.py scope
+
+      - name: Installer Node.js
+        if: steps.test-scope.outputs.documentation != 'true'
+        uses: actions/setup-node@v7
+        timeout-minutes: 3
+        with:
+          node-version: '22.23.5'
+          check-latest: false
+          cache: npm
+          cache-dependency-path: |
+            functions/package-lock.json
+            tests/firestore-rules/package-lock.json
+            tests/browser/package-lock.json
+
+      - name: Reutiliser la preuve navigateur de contenu identique
+        id: reused
+        if: steps.test-scope.outputs.documentation != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python tools/ci-suite-evidence.py reuse "$RUNNER_TEMP/ci-suites" browser
+
+      - name: Installer les dependances navigateur verrouillees
+        if: steps.test-scope.outputs.documentation != 'true' && steps.reused.outputs.browser != 'true'
+        run: |
+          npm ci --prefix functions
+          npm ci --prefix tests/firestore-rules
+          npm ci --prefix tests/browser --ignore-scripts
+
+      - name: Verifier les parcours navigateur isoles
+        if: steps.test-scope.outputs.documentation != 'true' && steps.reused.outputs.browser != 'true'
+        run: node tools/verify-livepalmes.js --browser-only
+
+      - name: Enregistrer la preuve navigateur
+        if: steps.test-scope.outputs.documentation != 'true'
+        run: python tools/ci-suite-evidence.py record "$RUNNER_TEMP/ci-suites" browser
+
+      - uses: actions/upload-artifact@v4
+        if: steps.test-scope.outputs.documentation != 'true'
+        with:
+          name: ci-browser-suites
+          path: ${{ runner.temp }}/ci-suites/browser.json
+          if-no-files-found: error
+          retention-days: 14
+
   verification:
     name: Verification technique
-    needs: [application, publication]
+    needs: [application, publication, browser]
     if: always()
     runs-on: ubuntu-latest
     outputs:
@@ -257,7 +365,8 @@ jobs:
         env:
           APPLICATION: ${{ needs.application.result }}
           PUBLICATION: ${{ needs.publication.result }}
-        run: test "$APPLICATION" = success && test "$PUBLICATION" = success
+          BROWSER: ${{ needs.browser.result }}
+        run: test "$APPLICATION" = success && test "$PUBLICATION" = success && test "$BROWSER" = success
 
       - name: Distinguer installations et tests
         if: always()
