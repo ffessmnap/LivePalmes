@@ -1,0 +1,9 @@
+{
+  "name": "livepalmes-browser-tests",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Outillage des parcours navigateur existants, fixtures locales uniquement",
+  "devDependencies": {
+    "playwright": "1.62.1"
+  }
+}

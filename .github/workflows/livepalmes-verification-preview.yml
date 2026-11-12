@@ -291,6 +291,9 @@ jobs:
     timeout-minutes: 15
     env:
       EDGE_BIN: /usr/bin/google-chrome
+      LIVEPALMES_BROWSER_EXECUTABLE: /usr/bin/google-chrome
+      PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
+      NODE_PATH: ${{ github.workspace }}/tests/browser/node_modules
     steps:
       - uses: actions/checkout@v7
         with:
@@ -314,6 +317,7 @@ jobs:
           cache-dependency-path: |
             functions/package-lock.json
             tests/firestore-rules/package-lock.json
+            tests/browser/package-lock.json
 
       - name: Reutiliser la preuve navigateur de contenu identique
         id: reused
@@ -327,6 +331,7 @@ jobs:
         run: |
           npm ci --prefix functions
           npm ci --prefix tests/firestore-rules
+          npm ci --prefix tests/browser --ignore-scripts
 
       - name: Verifier les parcours navigateur isoles
         if: steps.test-scope.outputs.documentation != 'true' && steps.reused.outputs.browser != 'true'
