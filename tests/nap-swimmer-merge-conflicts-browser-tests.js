@@ -9,7 +9,10 @@ const fs=require("node:fs"),assert=require("node:assert/strict"),path=require("n
   await page.setContent('<!doctype html><html lang="fr"><meta charset="utf-8"><body class="admin-portal-page"><button id="start">Fusionner</button><p id="status"></p></body></html>');
   const entry=fs.readFileSync("assets/livepalmes-admin-portal.css","utf8");
   for(const file of ["styles.css",...[...entry.matchAll(/@import url\("([^"?]+)\?v=[^"]+"\);/g)].map(match=>"assets/"+match[1]),"assets/livepalmes-portal-appearance.css"])await page.addStyleTag({content:fs.readFileSync(file,"utf8")});
-  await page.addScriptTag({content:fs.readFileSync("assets/portal/national-directories.js","utf8")});
+  // The shipped facade delegates to this registered module; load both on the
+  // isolated document instead of relying on the application bootstrap.
+  for(const file of ["assets/livepalmes-portal-deferred.js",...["club-entry-state","club-people","national-requests","national-directories"].map(name=>"assets/portal/deferred/"+name+".js"),"assets/portal/national-directories.js"])
+   await page.addScriptTag({content:fs.readFileSync(file,"utf8")});
   await page.evaluate(()=>{
    const source={id:"12",source:"reference",napSource:true,napFingerprint:"a".repeat(64),firstName:"Source",lastName:"FICTIF",clubId:"106"},target={...source,id:"13",firstName:"Cible",napFingerprint:"b".repeat(64)};
    window.calls=[];window.confirm=()=>true;window.LivePalmesSwimmerClubs={getTools:()=>({chooseFinalClub:async()=>({clubId:"106",label:"Club fictif"})})};

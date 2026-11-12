@@ -38,6 +38,7 @@ function runUnitTests() {
     "javascript-syntax-tests.js",
     "source-files-tests.js",
     "portal-module-loader-tests.js",
+    "browser-network-boundary-tests.js",
     "portal-deferred-tests.js",
     "portal-session-server-tests.js",
     "portal-rpc-failure-tests.js",
