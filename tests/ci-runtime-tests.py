@@ -116,6 +116,34 @@ class ComparisonTests(unittest.TestCase):
         self.assertEqual(result['reductionPercent'], 87.1)
         self.assertEqual(len(result['reusedSuites']), 5)
 
+    def test_immutable_userland_preserves_real_host_audit_in_measurement(self):
+        values = self.fixture()
+        for pair in values[-1].values():
+            for side, revision in [('pr', '20261101.360.1'), ('main', '20261111.370.1')]:
+                pair[side]['schema'] = 3
+                pair[side]['host'] = {'image': 'ubuntu24', 'version': revision, 'kernel': '6.11.0'}
+                pair[side]['environment']['runtime'] = {'image': 'mcr.microsoft.com/fixture@sha256:'+'a'*64}
+        result = m.comparison(*values)
+        self.assertEqual(len(result['reusedSuites']), 5)
+        self.assertEqual(result['hosts']['browser']['pr']['version'], '20261101.360.1')
+        self.assertEqual(result['hosts']['browser']['main']['version'], '20261111.370.1')
+        self.assertTrue(all(row['compatible'] for row in result['environments'].values()))
+        values[-1]['browser']['main']['host'] = {}
+        with self.assertRaisesRegex(ValueError, 'Audit'):
+            m.comparison(*values)
+
+    def test_historical_host_proof_cannot_be_reported_as_an_oci_proof(self):
+        values = self.fixture()
+        values[-1]['browser']['main']['schema'] = 3
+        with self.assertRaisesRegex(ValueError, 'Schemas'):
+            m.comparison(*values)
+
+    def test_global_ci_sequence_keeps_the_merge_wait_separate(self):
+        result = m.comparison(*self.fixture())
+        self.assertEqual(result['sequence']['ciSeconds'], 700)
+        self.assertEqual(result['sequence']['betweenRunsSeconds'], 6580)
+        self.assertEqual(result['sequence']['firstRunToFinalCheckSeconds'], 7280)
+
     def test_partial_hits_report_executed_suite_without_invented_reuse(self):
         values = self.fixture()
         values[-1]['application']['main'].update(mode='executed', source=None)
