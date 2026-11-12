@@ -2,6 +2,13 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### Consignes agents et documentation des espaces — 12 novembre 2026
+
+- Version complète d'`AGENTS.md` et corrections associées relues puis explicitement approuvées par Antoine dans le chat : application autorisée après clôture de la mesure Infra, confirmée par la PR #866 intégrée et ses CI réussies.
+- Périmètre documentaire : calendrier et bibliothèque dans l'espace public ; nouveau Direct multi-compétitions et distinction du dispositif historique ; retouches visuelles séparées des changements sensibles ; données NAP réelles également protégées depuis TEST ; accord PROD explicite sans seconde approbation pour le même périmètre et les conditions remplies.
+- Sources, budgets, protections et historiques conservés. Le retrait des anciennes pages reste prévu : aucune page, donnée, archive ou objet Storage supprimé. Aucun code applicatif, workflow ou contrôleur CI modifié ; aucun déploiement TEST/PROD ni test métier réel requis pour cette retouche.
+- Réalisation : [commit documentaire 7aebbf5c](https://github.com/ffessmnap/LivePalmes/commit/7aebbf5c). Relecture ciblée UTF-8/liens/descriptions et `git diff --check` réussis ; contrôles GitHub imposés à suivre dans la PR unique de ce besoin. L'approbation porte sur les textes présentés dans le chat ; aucune nouvelle recette applicative n'est revendiquée.
+
 ### Cache CI PR→main · 12 novembre 2026 (cinq suites réutilisées, gain global mesuré)
 
 - Demande explicite d’Antoine : finaliser l’optimisation et mesurer le gain réel en conservant tous les contrôles, les mails actifs et inchangés et les exclusions. Périmètre limité aux preuves et outils CI ; aucune application ni opération Firebase publiée.
