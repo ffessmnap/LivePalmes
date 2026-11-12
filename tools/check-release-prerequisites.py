@@ -108,6 +108,12 @@ def main(directory, run_id, kind):
                 report['publicNavigationDirectRelease'] = {'existingSources': cycle.public_navigation_direct.approved(request),
                     'retainedFunctions': 117, 'newFunctions': [], 'configurationChanges': False,
                     'bindingChanges': False, 'mailPause': False, 'historicalReplay': False, 'iamChanges': False}
+            if cycle.public_navigation_touch.approved(request):
+                cycle.public_navigation_touch.initial(functions)
+                cycle.public_navigation_touch.guard(directory)
+                report['publicNavigationTouchRelease'] = {'existingSources': cycle.public_navigation_touch.approved(request),
+                    'retainedFunctions': 118, 'newFunctions': [], 'configurationChanges': False,
+                    'bindingChanges': False, 'mailPause': False, 'historicalReplay': False, 'iamChanges': False}
             if cycle.reference_cleanup.approved(request):
                 cycle.reference_cleanup.initial(functions)
                 cycle.reference_cleanup.guard(directory)

@@ -57,6 +57,9 @@ _reference_cleanup_spec.loader.exec_module(reference_cleanup)
 _public_navigation_direct_spec = importlib.util.spec_from_file_location('public_navigation_direct_policy', ROOT / 'tools/public-navigation-direct-production-policy.py')
 public_navigation_direct = importlib.util.module_from_spec(_public_navigation_direct_spec)
 _public_navigation_direct_spec.loader.exec_module(public_navigation_direct)
+_public_navigation_touch_spec = importlib.util.spec_from_file_location('public_navigation_touch_policy', ROOT / 'tools/public-navigation-touch-production-policy.py')
+public_navigation_touch = importlib.util.module_from_spec(_public_navigation_touch_spec)
+_public_navigation_touch_spec.loader.exec_module(public_navigation_touch)
 
 
 def approved_license_report_functions(value):
@@ -110,6 +113,7 @@ def approved_extra_functions(value):
     names += november10_release.approved(value)
     names += reference_cleanup.approved(value)
     names += public_navigation_direct.approved(value)
+    names += public_navigation_touch.approved(value)
     require(len(names) == len(set(names)), 'Extensions de publication superposees')
     return names
 
@@ -171,6 +175,8 @@ def approved_club_directory_functions(value):
 
 
 def idf_preservation(value):
+    if public_navigation_touch.approved(value):
+        return {'scope': 'all', 'publicNavigationTouchControlsUnchanged': True}
     if public_navigation_direct.approved(value):
         return {'scope': 'all', 'publicNavigationDirectControlsUnchanged': True}
     if reference_cleanup.approved(value):
@@ -272,6 +278,7 @@ def approved_access_request_functions(value):
 def require_access_request_selection(request, selected):
     reference_cleanup.selection(request, selected)
     public_navigation_direct.selection(request, selected)
+    public_navigation_touch.selection(request, selected)
     november10_release.selection(request, selected)
     november_release.selection(request, selected)
     if direct_release.approved(request):
@@ -818,6 +825,7 @@ def validate_request(value, paths):
     home_routing = approved_production_home_routing(value, paths)
     reference_cleanup.approved_paths(value, paths, git)
     public_navigation_direct.approved_paths(value, paths, git)
+    public_navigation_touch.approved_paths(value, paths, git)
     november10_paths = november10_release.approved_paths(value, paths, git)
     application, backend = classify([p for p in paths if p not in ignored | home_routing | november10_paths])
     # The exact configuration still needs an explicitly validated change row.
@@ -1088,6 +1096,7 @@ def prepare_selection(directory, candidate):
         require(all(not needs_function(names.get(n), n, request['candidate'], project='livepalmes-test') for n in november_release.approved(request)), 'Preuve TEST du 8 novembre absente ou incompatible')
         require(all(not needs_function(names.get(n), n, request['candidate'], project='livepalmes-test') for n in reference_cleanup.approved(request)), 'Preuve TEST nageurs/migrations absente ou incompatible')
         require(all(not needs_function(names.get(n), n, request['candidate'], project='livepalmes-test') for n in public_navigation_direct.approved(request)), 'Preuve TEST navigation publique/Direct absente ou incompatible')
+        require(all(not needs_function(names.get(n), n, request['candidate'], project='livepalmes-test') for n in public_navigation_touch.approved(request)), 'Preuve TEST navigation tactile absente ou incompatible')
         require(all(not needs_function(names.get(n), n, request['candidate'], project='livepalmes-test') for n in november10_release.approved(request)), 'Preuve TEST du 10 novembre absente ou incompatible')
         notification = approved_notification_functions(request)
         require(all(not needs_function(names.get(n), n, request['candidate'], project='livepalmes-test') for n in notification + approved_public_nap_functions(request) + approved_access_request_functions(request) + approved_club_directory_functions(request) + approved_grouped_functions(request) + approved_bcc_functions(request) + approved_license_report_functions(request) + nap_retained.approved(request) + nap_account.approved(request) + portal_access_ns.approved(request)),
@@ -1260,6 +1269,8 @@ def freeze_plan(directory, evidence=False):
         write(root / 'reference-cleanup-scope-proof.json', reference_cleanup.verify(request, read(root / 'baseline.json'), names, production_selection_fingerprints))
     if public_navigation_direct.approved(request):
         write(root / 'public-navigation-direct-scope-proof.json', public_navigation_direct.verify(request, read(root / 'baseline.json'), names, production_selection_fingerprints, backend_fingerprints))
+    if public_navigation_touch.approved(request):
+        write(root / 'public-navigation-touch-scope-proof.json', public_navigation_touch.verify(request, read(root / 'baseline.json'), names, production_selection_fingerprints, backend_fingerprints))
     if november10_release.approved(request):
         write(root / 'november10-scope-proof.json', november10_release.verify(request, read(root / 'baseline.json'), names, production_selection_fingerprints))
     if team_trophy.approved(request):
@@ -1556,6 +1567,10 @@ def fetch_plan(preparation, resume, directory):
             guards = root / 'previous/public-navigation-direct-guards'
             artifact(resume, 'production-idf-preservation', guards, '.github/workflows/livepalmes-production-release.yml')
             public_navigation_direct.restore_witness(root, guards)
+        if public_navigation_touch.approved(read(root / 'request.json')):
+            guards = root / 'previous/public-navigation-touch-guards'
+            artifact(resume, 'production-idf-preservation', guards, '.github/workflows/livepalmes-production-release.yml')
+            public_navigation_touch.restore_witness(root, guards)
         if november10_release.approved(read(root / 'request.json')):
             guards = root / 'previous/november10-guards'
             artifact(resume, 'production-idf-preservation', guards, '.github/workflows/livepalmes-production-release.yml')
@@ -1577,7 +1592,7 @@ def fetch_plan(preparation, resume, directory):
     evidence_path = root / 'test-proof.json'
     verified = reusable_verification(read(evidence_path), value['candidate']) if evidence_path.exists() else False
     output(candidate=value['candidate'], backend=str(backend).lower(), verified=str(verified).lower(),
-           preserved_sources_only=str(bool(november10_release.approved(value) or reference_cleanup.approved(value) or public_navigation_direct.approved(value))).lower(),
+           preserved_sources_only=str(bool(november10_release.approved(value) or reference_cleanup.approved(value) or public_navigation_direct.approved(value) or public_navigation_touch.approved(value))).lower(),
            license_reports=str(bool(approved_license_report_functions(value))).lower(),
            idf_preservation=str(idf_preservation(value) is not None).lower(),
            nap_account=str(bool(nap_account.approved(value))).lower(),
