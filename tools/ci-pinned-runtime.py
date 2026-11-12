@@ -201,7 +201,17 @@ def check():
     result = subprocess.run(['dbus-run-session', '--', browser, '--headless=new', '--disable-gpu',
         '--disable-background-networking', '--no-first-run', '--disable-component-update',
         '--user-data-dir=/tmp/ci-sandbox-check', '--dump-dom', 'chrome://sandbox'],
-        check=True, text=True, capture_output=True, timeout=30)
+        check=False, text=True, capture_output=True, timeout=30)
+    if result.returncode:
+        # Only this internal, credential-free invocation is reported. Never
+        # dump the ambient environment or a page belonging to the application.
+        print(result.stderr[-6000:], file=sys.stderr)
+        for path in ['/proc/self/attr/current', '/proc/sys/kernel/apparmor_restrict_unprivileged_userns',
+                     '/proc/sys/kernel/unprivileged_userns_clone', '/proc/sys/user/max_user_namespaces']:
+            file = Path(path)
+            if file.is_file():
+                print(path+': '+file.read_text().strip(), file=sys.stderr)
+    require(result.returncode == 0, 'Chromium refuse le controle du sandbox')
     for label in ['Namespace Sandbox', 'Seccomp-BPF sandbox']:
         require(re.search(re.escape(label)+r'</td>\s*<td[^>]*>Yes', result.stdout, re.I),
                 'Sandbox Chromium non confirme : '+label)
