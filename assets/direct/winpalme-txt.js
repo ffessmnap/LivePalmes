@@ -17,7 +17,7 @@
   }
   function parse(name,text){
     const info=fileInfo(name),rawLines=String(text).replace(/^\uFEFF/,'').split(/\r?\n/).filter(line=>line.trim()),seen=new Map();
-    const lines=rawLines.filter(line=>/^[1-8];/.test(line));
+    const lines=rawLines.filter(line=>/^[1-8][;:]/.test(line));
     if(!rawLines.length||lines.length>1000)fail('Fichier de série vide ou trop volumineuse : '+name);
     const rows=lines.map(line=>{
       const fields=line.trim().split(/[;:]/).map(s=>s.trim()),lane=Number(fields[0]);
@@ -60,7 +60,11 @@
     return {txtFirstLane:values[0],seriesFirstLane:values[1],offset:values[1]-values[0]};
   }
   function buildGroup(file,snapshot,eventId,lanes){
-    const parsed=parse(file.name,file.text);if(!parsed.rows.length)return null;
+    const parsed=parse(file.name,file.text);if(!parsed.rows.length){
+      const content=String(file.text).replace(/^\uFEFF/,'').split(/\r?\n/).filter(line=>line.trim());
+      if(content.some(line=>!/^(?:\s*;*\s*|0.*|[1-8](?:\s.*|-.*)?|Fin du fichier\s*)$/i.test(line)))fail('Aucun résultat reconnu dans '+file.name+'. Format attendu : numéro de ligne de 1 à 8, suivi de ; ou : puis des informations du résultat.');
+      return null;
+    }
     const event=snapshot.events.find(e=>e.id===eventId);
     const mapping=laneMapping(lanes);
     parsed.rows=parsed.rows.map(row=>{
@@ -83,16 +87,17 @@
     })};
   }
   function createRunner({read,build,publish,onState=()=>{},now=Date.now,interval=30000,schedule=setTimeout,cancel=clearTimeout}){
-    const acknowledged=new Map(),observed=new Map(),blocked=new Map();let active=false,busy=false,timer=null,generation=0,pending=null,lastCheck=null,lastMessage='',lastError=false;
-    const emit=(message=lastMessage,error=lastError)=>{lastMessage=message;lastError=error;onState({active,busy,pending:Boolean(pending),lastCheck,message,error,issues:[...blocked.values()]});};
+    const acknowledged=new Map(),observed=new Map(),blocked=new Map(),ignored=new Set();let active=false,busy=false,timer=null,generation=0,pending=null,lastCheck=null,lastMessage='',lastError=false,filesCount=0;
+    const emit=(message=lastMessage,error=lastError)=>{lastMessage=message;lastError=error;onState({active,busy,pending:Boolean(pending),lastCheck,message,error,issues:[...blocked.values()],filesCount,publishedFiles:acknowledged.size-ignored.size,ignoredFiles:ignored.size});};
     function stop(){active=false;generation++;if(timer!=null)cancel(timer);timer=null;emit(busy?'Arrêt demandé · le lot déjà envoyé peut terminer.':'Surveillance arrêtée.',false);}
     async function check(){
       if(!active||busy)return;busy=true;const version=generation;
       const saveReceipt=receipt=>{if(version!==generation)return false;if(pending)pending.receipt=receipt;return true;};
       try{
-        if(pending){await publish(pending.groups,pending.receipt,saveReceipt);if(version!==generation)return;pending.files.forEach(f=>acknowledged.set(f.name,f.hash));pending=null;}
+        if(pending){await publish(pending.groups,pending.receipt,saveReceipt);if(version!==generation)return;pending.files.forEach(f=>{acknowledged.set(f.name,f.hash);ignored.delete(f.name);});pending=null;}
         const files=await read();if(version!==generation)return;
-        lastCheck=now();const changed=[],present=new Set(files.map(file=>file.name));
+        lastCheck=now();filesCount=files.length;const changed=[],present=new Set(files.map(file=>file.name));
+        for(const name of acknowledged.keys())if(!present.has(name)){acknowledged.delete(name);ignored.delete(name);}
         for(const name of blocked.keys())if(!present.has(name))blocked.delete(name);
         for(const f of files){
           if(acknowledged.get(f.name)===f.hash){blocked.delete(f.name);continue;}
@@ -102,20 +107,20 @@
         }
         const batch=[],groups=[];
         for(const file of changed){
-          try{const group=build(file);blocked.delete(file.name);if(!group){acknowledged.set(file.name,file.hash);continue;}batch.push(file);groups.push(group);if(batch.length===100)break;}
+          try{const group=build(file);blocked.delete(file.name);if(!group){acknowledged.set(file.name,file.hash);ignored.add(file.name);continue;}batch.push(file);groups.push(group);if(batch.length===100)break;}
           catch(error){const message=error.message||'Fichier de résultats non reconnu';blocked.set(file.name,{name:file.name,message:message.includes(file.name)?message:file.name+' · '+message});}
         }
         if(batch.length){
           if(version!==generation)return;
           pending={groups,files:batch,receipt:null};await publish(groups,null,saveReceipt);
-          if(version!==generation)return;batch.forEach(f=>acknowledged.set(f.name,f.hash));pending=null;
+          if(version!==generation)return;batch.forEach(f=>{acknowledged.set(f.name,f.hash);ignored.delete(f.name);});pending=null;
           emit(batch.length+' fichier(s) publié(s). Le public peut actualiser.',false);
         }else emit('Dossier contrôlé · aucun nouveau résultat stable à publier.',false);
       }catch(error){if(version===generation){active=false;emit(error.message||'Connexion interrompue. Reprendre la surveillance pour réessayer.',true);}}
       finally{busy=false;emit();if(version===generation&&active)timer=schedule(check,interval);}
     }
     function start(){if(active||busy)return;active=true;generation++;emit('Surveillance active · contrôle toutes les 30 secondes.',false);void check();}
-    function ignore(files){if(active||busy||pending)fail('Arrêter la surveillance avant de choisir les fichiers à ignorer.');files.forEach(f=>acknowledged.set(f.name,f.hash));}
+    function ignore(files){if(active||busy||pending)fail('Arrêter la surveillance avant de choisir les fichiers à ignorer.');files.forEach(f=>{acknowledged.set(f.name,f.hash);ignored.add(f.name);});}
     return {start,stop,check,ignore,get active(){return active;},get busy(){return busy;},get pending(){return Boolean(pending);}};
   }
   const api={digest,decode,fileInfo,time,parse,readDirectory,associations,buildGroup,createRunner,code,laneMapping};

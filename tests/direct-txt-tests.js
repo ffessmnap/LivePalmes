@@ -9,8 +9,10 @@ async function main(){
  assert.equal(txt.decode(Uint8Array.from([100,105,115,113,117,97,108,105,102,105,233])),'disqualifié');
  const record=lane=>lane+';011012;000000;000000;000000;000000;000000';
  assert.deepEqual(txt.parse(name,Array.from({length:8},(_,i)=>record(i+1)).join('\n')).rows.map(row=>row.lane),[1,2,3,4,5,6,7,8],'Toutes les lignes TXT de 1 à 8 sont acceptées');
- const noise=['4 4','4-4','6','6 6',';;','0000','000000',...['0','9','10','04','4 ',' 4','\t4'].map(record),record('4').replaceAll(';',':')].join('\n');
- assert.equal(txt.parse(name,noise).rows.length,0,'Sans chiffre de 1 à 8 immédiatement suivi de ; en début de ligne, aucun résultat');
+ assert.deepEqual(txt.parse(name,Array.from({length:8},(_,i)=>record(i+1).replaceAll(';',':')).join('\n')).rows.map(row=>row.lane),[1,2,3,4,5,6,7,8],'Les exports WinPalme à deux-points restent compatibles');
+ assert.equal(txt.parse(name,body.replaceAll(';',':')).rows[1].resultStatus,'dns');
+ const noise=['4 4','4-4','6','6 6',';;','0000','000000',...['0','9','10','04','4 ',' 4','\t4'].map(record)].join('\n');
+ assert.equal(txt.parse(name,noise).rows.length,0,'Sans chiffre de 1 à 8 immédiatement suivi de ; ou : en début de ligne, aucun résultat');
  assert.equal(txt.parse(name,noise+'\n'+body+'\n'+noise).rows.length,2,'Le bruit avant et après ne bloque pas les vrais résultats');
  assert.throws(()=>txt.buildGroup({name,text:record(4)+'\n5 5'},snapshot,'event'),/lignes du fichier \[4\].*séries importées \[4, 5\]/,'Une ligne ignorée ne permet pas de publier une série incomplète');
  for(const [word,status]of [['absence','dns'],['abandon','ab'],['disqualifié','dsq'],['DSQ','dsq']])assert.equal(txt.parse(name,'4;'+word+';;;;;').rows[0].resultStatus,status);
@@ -59,10 +61,11 @@ async function main(){
  runner.start();await settle();assert.equal(attempts,3);assert.equal(received[1],received[2],'Réponse perdue : mêmes identifiants, même lot');assert.equal(runner.pending,false);
  runner.stop();current=[{...file,hash:'another'}];now=180000;await runner.check();assert.equal(attempts,3,'Arrêter interdit les prochains envois');
  const ignored=txt.createRunner({read:async()=>[file],build:()=>{throw Error('Ignoré');},publish:()=>{throw Error('Ignoré');},now:()=>now,schedule:()=>0,cancel:()=>{}});ignored.ignore([file]);ignored.start();await settle();await ignored.check();ignored.stop();
- let fillerFile={...file,text:noise,hash:'filler'},fillerCalls=0,fillerState;
+ let fillerFile={...file,text:';;\n0000\n6\n4 4\n4-4\nFin du fichier',hash:'filler'},fillerCalls=0,fillerState;
  const filler=txt.createRunner({read:async()=>[fillerFile],build:f=>txt.buildGroup(f,snapshot,'event'),publish:async()=>{fillerCalls++;},onState:state=>{fillerState=state;},now:()=>now,schedule:()=>0,cancel:()=>{}});
  filler.start();await settle();now+=30000;await filler.check();assert.equal(fillerCalls,0);assert.equal(fillerState.issues.length,0);assert.equal(filler.active,true,'Le remplissage seul ne déclenche ni alerte ni arrêt');
  fillerFile=file;now+=30000;await filler.check();now+=30000;await filler.check();assert.equal(fillerCalls,1,'Le fichier reçoit ensuite ses vrais résultats et reste suivi');filler.stop();
+ assert.throws(()=>txt.buildGroup({...file,text:'ligne|temps'},snapshot,'event'),/Aucun résultat reconnu/,'Un fichier non vide dans un format inconnu doit être signalé');
  let prefixState,prefixCalls=0;
  const prefixRunner=txt.createRunner({read:async()=>[{...file,name:'DEMO_AS_1_02_01_100SF.txt',text:record(4)+'\n5 5',hash:'missing'}, {...file,text:body+'\n'+noise,hash:'valid-noisy'}],build:f=>txt.buildGroup(f,snapshot,'event'),publish:async groups=>{prefixCalls++;assert.equal(groups.length,1);assert.equal(groups[0].rows.length,2);},onState:state=>{prefixState=state;},now:()=>now,schedule:()=>0,cancel:()=>{}});
  prefixRunner.start();await settle();now+=30000;await prefixRunner.check();assert.equal(prefixCalls,1,'Un TXT valide avec bruit continue à être publié malgré un autre TXT incomplet');assert.equal(prefixRunner.active,true);assert.equal(prefixState.issues.length,1);prefixRunner.stop();

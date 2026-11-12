@@ -2,6 +2,12 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### Direct — fiabilité Auray, archives, bureau compact et recherche publique · 12 novembre 2026
+
+- Accord explicite d’Antoine sur le bilan de l’audit puis attente de la clôture effective de #867. Ajout public seul confirmé : recherche nom/prénom et barre Nageur / Actualiser ; flèche circulaire conservée, sans coche de succès.
+- Périmètre : deux séparateurs WinPalme, alertes/compteurs, reconstruction explicite des séries et résultats d’une archive sans Live ni console, ergonomie du bureau et outils publics à la demande. Mêmes accès et tables Direct ; aucune migration, opération réelle, modification du calendrier ou PROD. Sources serveur nécessaires : `manageLivePalmesDirect` et consommateur transitif `readNapPublicSwimmer`, à confirmer par sélection calculée ; parcours standard sources/labels existant, sans nouveau contrôleur ni ancien contrat modifié.
+- Contrôles ciblés réussis : formats/statuts/reprise, archive, services NAP/consoles, bureau, complétude, recherche publique à 1440/390/320 px et réimport PDF puis résultats d’une archive sans console. Guide régénéré depuis sa source, cinq pages, page modifiée rendue et vérifiée. Auray : 61 fichiers / 269 résultats acceptés ; bloc actif mesuré à 110 px (448 auparavant), dix courses visibles. Aucun résultat réel publié. CI globale puis publication TEST à confirmer ; aucune validation de la nouvelle version TEST revendiquée.
+
 ### Consignes agents et documentation des espaces — 12 novembre 2026
 
 - Version complète d'`AGENTS.md` et corrections associées relues puis explicitement approuvées par Antoine dans le chat : application autorisée après clôture de la mesure Infra, confirmée par la PR #866 intégrée et ses CI réussies.

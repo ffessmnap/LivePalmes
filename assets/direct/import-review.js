@@ -77,9 +77,11 @@
         receipt = await actions.verify(list.map(payload));
         message = `${list.length} épreuve${list.length > 1 ? 's' : ''} et ${count(list)} participations vérifiées.${receipt.replacements?.length ? ' ' + receipt.replacements.length + ' remplacement(s) à confirmer.' : ' Vous pouvez tout publier.'}`;
       });
-      host.querySelector('[data-batch-publish]').onclick = () => {
-        if (!receipt||editing.size||selected().some(group=>groupIssues(group).length)) return;
-        if (receipt.replacements?.length && !global.confirm(`Remplacer les publications existantes suivantes ?\n${receipt.replacements.map(label => '• ' + label).join('\n')}\nLes autres publications seront conservées.`)) return;
+      host.querySelector('[data-batch-publish]').onclick = async () => {
+        if (!receipt||busy||editing.size||selected().some(group=>groupIssues(group).length)) return;
+        const checked=receipt;
+        if (checked.replacements?.length && !await global.LivePalmesDirectConfirm.ask(`Remplacer les publications existantes suivantes ?\n${checked.replacements.map(label => '• ' + label).join('\n')}\nLes autres publications seront conservées.`,{title:'Remplacer les séries publiées',label:'Confirmer le remplacement'})) return;
+        if(receipt!==checked||busy||editing.size||selected().some(group=>groupIssues(group).length))return;
         run(async () => {
           const list = selected(), total = count(list);
           await actions.publish(list.map(payload), receipt);
