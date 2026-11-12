@@ -162,7 +162,7 @@ class SimplificationTests(unittest.TestCase):
         self.assertNotIn('needs', jobs['application'])
         self.assertNotIn('needs', jobs['publication'])
         self.assertEqual(set(jobs['verification']['needs']), {'application', 'publication'})
-        gate = jobs['verification']['steps'][0]
+        gate = next(step for step in jobs['verification']['steps'] if step.get('name') == 'Exiger toutes les verifications')
         self.assertEqual(gate['run'], 'test "$APPLICATION" = success && test "$PUBLICATION" = success')
         self.assertEqual(jobs['verification']['if'], 'always()')
         self.assertEqual(jobs['apercu']['needs'], 'verification')
