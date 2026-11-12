@@ -200,7 +200,8 @@ def check():
     browser = os.environ['EDGE_BIN']
     result = subprocess.run(['dbus-run-session', '--', browser, '--headless=new', '--disable-gpu',
         '--disable-background-networking', '--no-first-run', '--disable-component-update',
-        '--user-data-dir=/tmp/ci-sandbox-check', '--dump-dom', 'chrome://sandbox'],
+        '--user-data-dir=/tmp/ci-sandbox-check', '--allow-chrome-scheme-url',
+        '--timeout=10000', '--dump-dom', 'chrome://sandbox'],
         check=False, text=True, capture_output=True, timeout=30)
     if result.returncode:
         # Only this internal, credential-free invocation is reported. Never

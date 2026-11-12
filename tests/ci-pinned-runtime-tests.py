@@ -122,6 +122,24 @@ class PinnedRuntimeTests(unittest.TestCase):
              self.assertRaisesRegex(ValueError, 'Chromium refuse'):
             m.check()
 
+    def test_internal_sandbox_inspection_requires_both_sandboxes_and_bounded_capture(self):
+        good = '<td>Namespace Sandbox</td><td>Yes</td><td>Seccomp-BPF sandbox</td><td>Yes</td>'
+        for html in (good, good.replace('Yes', 'No', 1), ''):
+            result = subprocess.CompletedProcess([], 0, stdout=html, stderr='')
+            with patch.object(m, 'identity', return_value={}), \
+                 patch.object(m.subprocess, 'run', return_value=result) as run, \
+                 patch.dict(os.environ, {'EDGE_BIN': '/pinned/chrome'}):
+                if html == good:
+                    m.check()
+                    args = run.call_args.args[0]
+                    self.assertEqual(args[-1], 'chrome://sandbox')
+                    self.assertIn('--allow-chrome-scheme-url', args)
+                    self.assertIn('--timeout=10000', args)
+                    self.assertNotIn('--no-sandbox', args)
+                else:
+                    with self.assertRaisesRegex(ValueError, 'Sandbox Chromium non confirme'):
+                        m.check()
+
     def test_workflow_keeps_all_suites_gate_and_isolated_mysql(self):
         script = """const fs=require('node:fs'),y=require('./tests/firestore-rules/node_modules/js-yaml');
 console.log(JSON.stringify(y.load(fs.readFileSync('.github/workflows/livepalmes-verification-preview.yml','utf8'))));"""
