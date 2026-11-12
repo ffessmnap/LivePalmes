@@ -102,6 +102,13 @@ def main(directory, run_id, kind):
         if kind == 'backend' and selected:
             state = load('readiness_state', 'production-release-state.py')
             functions = state.inventory()
+            if cycle.standard_sources.enabled(request):
+                manifest = cycle.standard_sources.manifest(directory,request)
+                cycle.standard_sources.initial(functions,manifest)
+                cycle.standard_sources.guard(directory)
+                report['standardSources'] = {'manifestSha256':cycle.standard_sources.digest(manifest),
+                    'existingSources':manifest['selected'],'retainedFunctions':manifest['inventoryCount']-len(manifest['selected']),
+                    'configurationChanges':False,'bindingChanges':False,'mailPause':False,'newFunctions':[]}
             if cycle.public_navigation_direct.approved(request):
                 cycle.public_navigation_direct.initial(functions)
                 cycle.public_navigation_direct.guard(directory)
