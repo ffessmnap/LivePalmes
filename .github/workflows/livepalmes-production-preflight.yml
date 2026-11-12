@@ -115,6 +115,7 @@ jobs:
         python tooling/tests/november10-validated-release-tests.py
         python tooling/tests/reference-cleanup-production-tests.py
         python tooling/tests/public-navigation-direct-production-tests.py
+        python tooling/tests/public-navigation-touch-production-tests.py
         node tooling/tests/november-retained-scope-tests.js
         python tooling/tests/nap-account-release-tests.py
         node tooling/tests/release-nap-account-compatibility.js
