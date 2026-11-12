@@ -10,6 +10,16 @@ on:
         description: Retours utilisateur explicites avec titre, commits, status validated et validation exacte
         required: true
         type: string
+      sources_authorization_json:
+        description: Accord sources/labels optionnel avec candidat exact, fonctions et message humain source
+        required: false
+        default: ''
+        type: string
+      reuse_evidence_json:
+        description: References facultatives preflightRun et prerequisitesRun deja disponibles
+        required: false
+        default: '{}'
+        type: string
 permissions:
   contents: read
   actions: read
@@ -23,11 +33,18 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
+      - uses: actions/setup-node@v7
+        timeout-minutes: 3
+        with:
+          node-version: '22.23.5'
+          check-latest: false
       - name: Assembler les preuves sans acces Firebase ni publication
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TEST_RUN: ${{ inputs.test_run }}
           VALIDATIONS_JSON: ${{ inputs.validations_json }}
+          SOURCES_AUTHORIZATION_JSON: ${{ inputs.sources_authorization_json }}
+          REUSE_EVIDENCE_JSON: ${{ inputs.reuse_evidence_json }}
         run: python tools/prepare-release-draft.py "$RUNNER_TEMP/release-draft"
       - uses: actions/upload-artifact@v4
         with:
@@ -35,6 +52,9 @@ jobs:
           path: |
             ${{ runner.temp }}/release-draft/request-draft.json
             ${{ runner.temp }}/release-draft/draft-status.json
+            ${{ runner.temp }}/release-draft/full-diff.json
+            ${{ runner.temp }}/release-draft/proof-decisions.json
+            ${{ runner.temp }}/release-draft/standard-source-manifest.json
             ${{ runner.temp }}/release-draft/SUMMARY.md
           if-no-files-found: error
           retention-days: 14
