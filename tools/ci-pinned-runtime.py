@@ -197,12 +197,8 @@ def check():
         subprocess.run(args, check=True, timeout=15, capture_output=True)
     # No site, SDK, authentication, account or data endpoint: Chromium's own
     # internal sandbox page must report the namespace and seccomp sandboxes.
-    browser = os.environ['EDGE_BIN']
-    result = subprocess.run(['dbus-run-session', '--', browser, '--headless=new', '--disable-gpu',
-        '--disable-background-networking', '--no-first-run', '--disable-component-update',
-        '--user-data-dir=/tmp/ci-sandbox-check', '--allow-chrome-scheme-url',
-        '--timeout=10000', '--dump-dom', 'chrome://sandbox'],
-        check=False, text=True, capture_output=True, timeout=30)
+    result = subprocess.run(['node', 'tools/ci-runtime-sandbox-check.js'],
+        check=False, text=True, capture_output=True, timeout=45)
     if result.returncode:
         # Only this internal, credential-free invocation is reported. Never
         # dump the ambient environment or a page belonging to the application.
@@ -213,9 +209,8 @@ def check():
             if file.is_file():
                 print(path+': '+file.read_text().strip(), file=sys.stderr)
     require(result.returncode == 0, 'Chromium refuse le controle du sandbox')
-    for label in ['Namespace Sandbox', 'Seccomp-BPF sandbox']:
-        require(re.search(re.escape(label)+r'</td>\s*<td[^>]*>Yes', result.stdout, re.I),
-                'Sandbox Chromium non confirme : '+label)
+    require(json.loads(result.stdout.strip()) == {'namespace': 'Yes', 'seccomp': 'Yes'},
+            'Sandbox Chromium non confirme')
     print(json.dumps({'runtime': value, 'chromiumSandbox': 'namespace+seccomp verified'}))
 
 

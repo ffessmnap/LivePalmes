@@ -122,23 +122,28 @@ class PinnedRuntimeTests(unittest.TestCase):
              self.assertRaisesRegex(ValueError, 'Chromium refuse'):
             m.check()
 
-    def test_internal_sandbox_inspection_requires_both_sandboxes_and_bounded_capture(self):
-        good = '<td>Namespace Sandbox</td><td>Yes</td><td>Seccomp-BPF sandbox</td><td>Yes</td>'
-        for html in (good, good.replace('Yes', 'No', 1), ''):
-            result = subprocess.CompletedProcess([], 0, stdout=html, stderr='')
+    def test_internal_sandbox_inspection_requires_both_sandboxes(self):
+        for receipt in ({'namespace': 'Yes', 'seccomp': 'Yes'}, {'namespace': 'No', 'seccomp': 'Yes'}, {}):
+            result = subprocess.CompletedProcess([], 0, stdout=json.dumps(receipt), stderr='')
             with patch.object(m, 'identity', return_value={}), \
-                 patch.object(m.subprocess, 'run', return_value=result) as run, \
-                 patch.dict(os.environ, {'EDGE_BIN': '/pinned/chrome'}):
-                if html == good:
+                 patch.object(m.subprocess, 'run', return_value=result) as run:
+                if receipt == {'namespace': 'Yes', 'seccomp': 'Yes'}:
                     m.check()
-                    args = run.call_args.args[0]
-                    self.assertEqual(args[-1], 'chrome://sandbox')
-                    self.assertIn('--allow-chrome-scheme-url', args)
-                    self.assertIn('--timeout=10000', args)
-                    self.assertNotIn('--no-sandbox', args)
+                    self.assertEqual(run.call_args.args[0], ['node', 'tools/ci-runtime-sandbox-check.js'])
+                    self.assertEqual(run.call_args.kwargs['timeout'], 45)
                 else:
                     with self.assertRaisesRegex(ValueError, 'Sandbox Chromium non confirme'):
                         m.check()
+
+    def test_native_sandbox_status_parser_refuses_missing_inactive_or_ambiguous_rows(self):
+        script = """const assert=require('node:assert/strict');
+const {validateSandbox}=require('./tools/ci-runtime-sandbox-check');
+const good=[['Namespace Sandbox','Yes'],['Seccomp-BPF sandbox','Yes']];
+assert.deepEqual(validateSandbox(good),{namespace:'Yes',seccomp:'Yes'});
+for(const rows of [[],[['Namespace Sandbox','Yes']],good.concat(good),
+ [['Namespace Sandbox','No'],['Seccomp-BPF sandbox','Yes']],
+ [['Namespace Sandbox','Yes'],['Seccomp-BPF sandbox','No']]])assert.throws(()=>validateSandbox(rows));"""
+        subprocess.run(['node', '-e', script], cwd=ROOT, check=True)
 
     def test_workflow_keeps_all_suites_gate_and_isolated_mysql(self):
         script = """const fs=require('node:fs'),y=require('./tests/firestore-rules/node_modules/js-yaml');
