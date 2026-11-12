@@ -132,6 +132,7 @@ jobs:
         python tooling/tests/november10-validated-release-tests.py
         python tooling/tests/reference-cleanup-production-tests.py
         python tooling/tests/public-navigation-direct-production-tests.py
+        python tooling/tests/direct-reliability-production-tests.py
         python tooling/tests/public-navigation-touch-production-tests.py
         python tooling/tools/verify-release-acceleration.py
         node tooling/tests/november-retained-scope-tests.js
@@ -227,6 +228,7 @@ jobs:
         python tooling/tools/november10-validated-release-policy.py candidate "$PLAN" "$RELEASE_BACKUP_DIRECTORY"
         python tooling/tools/reference-cleanup-production-policy.py candidate "$PLAN" "$RELEASE_BACKUP_DIRECTORY"
         python tooling/tools/public-navigation-direct-production-policy.py candidate "$PLAN" "$RELEASE_BACKUP_DIRECTORY"
+        python tooling/tools/direct-reliability-production-policy.py candidate "$PLAN" "$RELEASE_BACKUP_DIRECTORY"
         python tooling/tools/public-navigation-touch-production-policy.py candidate "$PLAN" "$RELEASE_BACKUP_DIRECTORY"
         python tooling/tools/release-cycle.py batches livepalmes candidate "$RUNNER_TEMP/production-functions" "$RELEASE_SELECTION" deploy
         python tooling/tools/publish-approved-pdf-functions.py candidate "$PLAN" "$RELEASE_BACKUP_DIRECTORY"
@@ -274,6 +276,7 @@ jobs:
         python tooling/tools/november10-validated-release-policy.py hosting candidate "$PLAN" "$RUNNER_TEMP/production-november10-hosting-check.json"
         python tooling/tools/reference-cleanup-production-policy.py hosting candidate "$PLAN" "$RUNNER_TEMP/production-reference-cleanup-hosting-check.json"
         python tooling/tools/public-navigation-direct-production-policy.py hosting candidate "$PLAN" "$RUNNER_TEMP/production-public-navigation-direct-hosting-check.json"
+        python tooling/tools/direct-reliability-production-policy.py hosting candidate "$PLAN" "$RUNNER_TEMP/production-direct-reliability-hosting-check.json"
         python tooling/tools/public-navigation-touch-production-policy.py hosting candidate "$PLAN" "$RUNNER_TEMP/production-public-navigation-touch-hosting-check.json"
     - name: Relever Hosting apres la tentative
       if: always() && (steps.hosting.outcome == 'success' || steps.hosting.outcome == 'failure')
@@ -288,6 +291,7 @@ jobs:
           ${{ runner.temp }}/production-november10-hosting-check.json
           ${{ runner.temp }}/production-reference-cleanup-hosting-check.json
           ${{ runner.temp }}/production-public-navigation-direct-hosting-check.json
+          ${{ runner.temp }}/production-direct-reliability-hosting-check.json
           ${{ runner.temp }}/production-public-navigation-touch-hosting-check.json
         if-no-files-found: error
         retention-days: 14
@@ -319,6 +323,7 @@ jobs:
           ${{ runner.temp }}/release-plan/november10-*.json
           ${{ runner.temp }}/release-plan/reference_cleanup-*.json
           ${{ runner.temp }}/release-plan/public_navigation_direct-*.json
+          ${{ runner.temp }}/release-plan/direct_reliability-*.json
           ${{ runner.temp }}/release-plan/public_navigation_touch-*.json
           ${{ runner.temp }}/release-plan/standard-*.json
         if-no-files-found: error
