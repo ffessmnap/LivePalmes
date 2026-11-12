@@ -138,11 +138,10 @@ class PinnedRuntimeTests(unittest.TestCase):
     def test_native_sandbox_status_parser_refuses_missing_inactive_or_ambiguous_rows(self):
         script = """const assert=require('node:assert/strict');
 const {validateSandbox}=require('./tools/ci-runtime-sandbox-check');
-const good=[['Namespace Sandbox','Yes'],['Seccomp-BPF sandbox','Yes']];
+const good=[['Layer 1 Sandbox','Namespace'],['PID namespaces','Yes'],['Network namespaces','Yes'],['Seccomp-BPF sandbox','Yes']];
 assert.deepEqual(validateSandbox(good),{namespace:'Yes',seccomp:'Yes'});
-for(const rows of [[],[['Namespace Sandbox','Yes']],good.concat(good),
- [['Namespace Sandbox','No'],['Seccomp-BPF sandbox','Yes']],
- [['Namespace Sandbox','Yes'],['Seccomp-BPF sandbox','No']]])assert.throws(()=>validateSandbox(rows));"""
+for(const rows of [[],good.slice(1),good.concat(good),
+ ...good.map((row,i)=>good.map((other,j)=>i===j?[row[0],'No']:other))])assert.throws(()=>validateSandbox(rows));"""
         subprocess.run(['node', '-e', script], cwd=ROOT, check=True)
 
     def test_workflow_keeps_all_suites_gate_and_isolated_mysql(self):
