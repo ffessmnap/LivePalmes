@@ -2,11 +2,17 @@
 
 <!-- description: Référence du langage visuel, des composants d’interface et des règles responsive déjà présents dans LivePalmes. -->
 
+## Direct — suivi compact et outils publics · 12 novembre 2026
+
+En fonctionnement, le bureau affiche les courses et la publication, avec réglages/confirmations fermés. Aucun titre de préparation permanent : bouton « Réglages de publication » dans le bandeau, aussi à la réouverture d’une compétition déjà commencée. La carte active compacte réunit état, arrêt/reprise, heures et compteurs ; les alertes restent visibles. Confirmations désactivées et démarrage ne restent pas dans le suivi. La reconstruction d’archive reprend cette présentation avec une mention explicite, sans panneau ni polling de console.
+
+Le public regroupe Nageur et Actualiser dans une barre blanche à bordure fine et ombre légère : centrée en bas à 600 px et moins, en bas à droite au-delà. Boutons de 44 px, libellés conservés, heure discrète, rotation au chargement puis flèche fixe, sans coche. Recherche dans un panneau au-dessus, champ de 16 px, suggestions compactes, fermeture/effacement et focus clavier visibles. Marge de fin de page ; aucune ligne ajoutée au bandeau ni minuteur public.
+
 ## Bureau Direct — préparation guidée · 12 novembre 2026
 
 Le bandeau de compétition reste compact. Trois blocs numérotés regroupent fonctionnement bureau seul/avec consoles, séries PDF et lecture automatique des résultats. Le bouton « i », accessible au clavier et au toucher, ouvre une explication sur les tablettes/ordinateurs connectés ; aucune aide essentielle ne dépend du survol. Le chemin WinPalme et le champ unique de première ligne utilisée appartiennent au bloc 3. Le choix du dossier ne démarre aucune diffusion.
 
-Le panneau « Résultats en direct » distingue non démarrés/actifs/arrêtés/en pause par un texte et une couleur. L’attente utilise un encart ambre, sans faux pictogramme de pause. Les confirmations et le démarrage restent dans ce panneau ; Arrêter/Reprendre demeurent accessibles lorsque la préparation est rouverte. Pendant le fonctionnement ou un envoi engagé, les réglages concernés sont figés. Au démarrage, la préparation se replie pour privilégier le suivi existant ; son ouverture conserve le panneau de résultats visible. Sur écran étroit, les blocs et le panneau se suivent sans débordement global et l’aide du haut de page reste accessible.
+Le panneau « Résultats en direct » distingue non démarrés/actifs/arrêtés/en pause par un texte et une couleur. L’attente utilise un encart ambre, sans faux pictogramme de pause. Avant démarrage seulement, les confirmations et le démarrage restent dans ce panneau ; Arrêter/Reprendre demeurent accessibles lorsque la préparation est rouverte. Pendant le fonctionnement ou un envoi engagé, les réglages concernés sont figés. Au démarrage, la préparation se replie pour privilégier le suivi existant ; son ouverture conserve le panneau de résultats visible. Sur écran étroit, les blocs et le panneau se suivent sans débordement global et l’aide du haut de page reste accessible.
 
 ## Accueil public — ordre mobile · 11 novembre 2026
 

@@ -165,7 +165,7 @@ async function main(){const {server,baseUrl}=await startStaticServer(),browser=a
     await evaluate(client,"window.__txtBody=window.__txtBody.replace('3;011011','8;011011')");
     assert.ok(await waitFor(client,"!document.querySelector('#watchAlert').hidden && LivePalmesDirectAdmin.watcher.active",5000),'Décalage incompatible : fichier bloqué, surveillance maintenue');
     assert.equal(await evaluate(client,"return __directCalls.filter(x=>x==='publishBatch').length"),await evaluate(client,'return __publishBefore+2'),'Aucun résultat envoyé avec une répartition incompatible');
-    assert.ok(await evaluate(client,"return document.querySelector('[data-watch-phase]').textContent==='Résultats en direct actifs · à vérifier'"));
+    assert.ok(await evaluate(client,"return document.querySelector('[data-watch-phase]').textContent==='Publication automatique active · à vérifier'"));
     await evaluate(client,'scrollTo(0,document.body.scrollHeight)');
     assert.ok(await evaluate(client,"const box=document.querySelector('#watchAlert').getBoundingClientRect();return box.top>=0&&box.bottom<innerHeight"),'Alerte encore visible en bas du bureau');
     await evaluate(client,'scrollTo(0,0)');

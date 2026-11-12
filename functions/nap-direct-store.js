@@ -158,7 +158,10 @@ function createStore(pool,environment,{clock=Date.now}={}) {
   async function previewBatch(id,input){
     const batch=model.prepareBatch(input,await native(id)),current=await config(id);
     archive.writable(current,input.archiveCorrection===true,clock());
-    if(input.archiveCorrection===true&&batch.groups.some(group=>group.kind!=='results'||!group.seriesFingerprint||!group.seriesNumber||group.source.type!=='winpalme-txt'))throw fail('En archive, seuls les résultats WinPalme des séries existantes peuvent être corrigés.');
+    if(input.archiveCorrection===true){
+      const kinds=new Set(batch.groups.map(group=>group.kind));
+      if(kinds.size!==1||batch.groups.some((group,index)=>group.kind==='series'?group.source.type!=='pdf'||input.groups[index].source?.type!=='pdf':group.kind!=='results'||!group.seriesFingerprint||!group.seriesNumber||group.source.type!=='winpalme-txt'))throw fail('Mettre à jour séparément les séries PDF puis les résultats WinPalme associés aux séries de l’archive.');
+    }
     const list=await events(id);if(list.length>model.MAX_EVENTS)throw fail('Programme trop volumineux.');
     const all=await q(`SELECT * FROM livepalmes_direct_entries WHERE environment=? AND competition_id=? ORDER BY event_id,series_number,lane,participant_key LIMIT ${model.MAX_MEET_ENTRIES+1}`,scope(id));
     if(all.length>model.MAX_MEET_ENTRIES)throw fail('Compétition trop volumineuse.');
@@ -172,7 +175,7 @@ function createStore(pool,environment,{clock=Date.now}={}) {
     }
     if(new Set([...list.map(row=>row.id),...batch.groups.map(group=>group.event.id)]).size>model.MAX_EVENTS)throw fail('Nombre maximal d’épreuves atteint.');
     const replaced=batch.groups.map(group=>replacesScope(group,byEvent.get(group.event.id)||[]));
-    return {batch,version:Number(current.version),list,byEvent,replaced,fingerprint:model.hash(input.archiveCorrection===true?[batch.groups,Number(current.version),'archive-results']:[batch.groups,Number(current.version)]),replacements:batch.groups.filter((_,index)=>replaced[index]).map(group=>group.event.eventLabel+' · '+group.event.sex+' · '+group.event.sessionLabel+(group.seriesNumber?' · Série '+group.seriesNumber:''))};
+    return {batch,version:Number(current.version),list,byEvent,replaced,fingerprint:model.hash(input.archiveCorrection===true?[batch.groups,Number(current.version),'archive-update']:[batch.groups,Number(current.version)]),replacements:batch.groups.filter((_,index)=>replaced[index]).map(group=>group.event.eventLabel+' · '+group.event.sex+' · '+group.event.sessionLabel+(group.seriesNumber?' · Série '+group.seriesNumber:''))};
   }
   async function batchReceipt(id,batch){
     const receipt=await q('SELECT after_json FROM livepalmes_direct_publications WHERE environment=? AND competition_id=? AND operation_key=? LIMIT 1',[...scope(id),model.hash([batch.operationKey,null])]);
@@ -213,8 +216,9 @@ function createStore(pool,environment,{clock=Date.now}={}) {
     const page=rows.slice(0,50),last=page.at(-1);return {items:page,nextCursor:rows.length>50?`${last.created_at}|${last.id}`:null};
   }
   async function document(id,actor,input,writeDocument) {
+    if(input.archiveCorrection===true&&input.documentKind!=='series')throw fail('Seul le PDF des séries peut être publié pendant la mise à jour de l’archive.');
     if(!/^[a-zA-Z0-9_-]{16,64}$/.test(input.operationKey||''))throw new TypeError('Identifiant de demande requis.');
-    return transaction(id,actor,input.version,async(c,current)=>{const metadata=typeof writeDocument==='function'?await writeDocument():writeDocument;const before=read(current.documents_json,[]),after=before.filter(d=>d.id!==metadata.id);after.push(metadata);if(after.length>20)throw new TypeError("20 documents complets au maximum.");await execute(c,"UPDATE livepalmes_direct_competitions SET documents_json=? WHERE environment=? AND competition_id=?",[json(after),...scope(id)]);await journal(c,id,actor,{action:'document',before,after,source:{type:'pdf',name:metadata.title,hash:metadata.hash},operationKey:input.operationKey});return {ok:true,document:metadata,version:Number(current.version)+1};});
+    return transaction(id,actor,input.version,async(c,current)=>{const metadata=typeof writeDocument==='function'?await writeDocument():writeDocument;const before=read(current.documents_json,[]),after=before.filter(d=>d.id!==metadata.id);after.push(metadata);if(after.length>20)throw new TypeError("20 documents complets au maximum.");await execute(c,"UPDATE livepalmes_direct_competitions SET documents_json=? WHERE environment=? AND competition_id=?",[json(after),...scope(id)]);await journal(c,id,actor,{action:'document',before,after,source:{type:'pdf',name:metadata.title,hash:metadata.hash},operationKey:input.operationKey});return {ok:true,document:metadata,version:Number(current.version)+1};},{archiveCorrection:input.archiveCorrection===true});
   }
   async function reset(id,actor,input,purgeFiles,checkFiles=async()=>{}){
     const resetModule=require('./nap-direct-reset');
