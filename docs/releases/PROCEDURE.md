@@ -103,6 +103,16 @@ Lots nageurs et anciennes migrations du 11 novembre : le sélecteur réel impose
 
 ## 3. Préparer le bilan PROD
 
+### Parcours standard sources/labels existantes
+
+Le moteur permanent `standard-source-policy.py` / `standard-source-publish.py` accepte seulement une option `standardSources`, distincte des contrats historiques. Le preflight génère `standard-source-manifest.json` : candidat et référence PROD exacts, preuve TEST, sélection complète calculée depuis chaque origine, deux comparateurs concordants, inventaire, témoins techniques et référence de l’accord sensible. La liste autorisée doit être exactement la sélection calculée ; une différence bloque, sans réduction manuelle. Aucun ancien contrat n’est élargi et les plans déjà émis conservent leur ancien parcours.
+
+Sur TEST, le mode explicite `standard` de `livepalmes-test-mail-sources.yml` reçoit `standard_request` (candidat, baseline TEST authentifiée, fonctions et référence de l’accord), conserve le transport existant et produit un reçu fermé à ce manifeste. L’assistant calcule le manifeste ; Antoine n’a pas à manipuler ce JSON. CI main exacte, baseline complète, sources gérées et états TEST déjà suspendus sont contrôlés. Hosting reste publié par TEST commun, puis vérifié sans second déploiement de sources.
+
+Sur PROD, mêmes preflight/prérequis, accord Infra sur le bilan, sauvegarde chiffrée rouverte et comparée, contrôle frais avant chaque PATCH, configurations/bindings conservés et contrôle final. Le seul masque PATCH est `build_config.source,labels`. Les mails restent actifs (scope `all`) ; leurs champs, modèles, automates et six bindings SMTP sont témoins de conservation. Création/suppression distante, configuration, nouveau secret, IAM, donnée, migration et fonctions exclues restent refusés. Une reprise conserve le plan et la sauvegarde initiaux et exige les révisions partielles authentifiées ainsi que le témoin initial restauré ; aucun reset de baseline ou relancement ambigu.
+
+Transition vérifiée d’abord hors ligne avec `python tools/verify-release-acceleration.py` : comparaison au dossier historique du lecteur public et cas de refus/dérive/reprise. Ce développement du circuit ne publie rien ; l’utilisation réelle du mode standard reste soumise à l’autorisation propre à la prochaine livraison.
+
 ### Assembler plutôt que ressaisir
 
 `livepalmes-release-draft.yml` assemble un brouillon sans accès Firebase, depuis le run TEST explicitement choisi, la dernière publication PROD authentifiée et les retours utilisateur exacts. L’assistant fournit pour chaque évolution `title`, `commits` (SHA complets), `status: validated` et `validation` (citation et contexte authentiques). Les chemins sont calculés depuis Git, bornés au candidat et comparés au diff complet. Aucun retour utilisateur ne peut être déduit de la CI ou du seul registre.
