@@ -6,6 +6,7 @@
 
 - Antoine autorise explicitement la finalisation du cache et la mesure du gain réel, avec tous les contrôles, mails actifs et inchangés et exclusions conservées. Les métadonnées Actions peuvent omettre la PR : lecture ciblée de sa fiche officielle, fusion/parents/dépôt exacts ; toute incohérence, indisponibilité ou permission refusée conserve l’exécution complète. Aucun nouveau droit, secret, déploiement, donnée ou envoi.
 - Identité du contenu Git complet, contrôleurs fiables inchangés, environnement exact, succès du run entier et SHA-256 des ZIP restent requis. La modification du contrôleur impose les suites complètes sur sa propre fusion ; la mesure réelle suivra sur un contenu contrôlé sans nouvelle modification du contrôleur.
+- Correction de provenance [#858](https://github.com/ffessmnap/LivePalmes/pull/858) intégrée après CI complète. Comparaison ajoutée à l’outil de temps existant : artefacts PR/main authentifiés, cinq suites reliées à leurs étapes et synthèse obligatoire conservée. Le contrôleur reste inchangé pendant cette mesure ; aucune application ni configuration Firebase modifiée. Résultats réels à consigner après la fusion de ce second lot.
 
 ### Direct — préparation guidée du bureau · 12 novembre 2026 (PROD publiée et contrôlée)
 
