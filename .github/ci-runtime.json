@@ -1,6 +1,7 @@
 {
   "schema": 1,
   "node": "22.23.5",
+  "verificationRunner": "ubuntu-24.04",
   "workflows": [
     "livepalmes-verification-preview.yml",
     "livepalmes-test-common.yml",

@@ -26,7 +26,7 @@ env:
 jobs:
   application:
     name: Verification applicative
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     outputs:
       preview: ${{ steps.preview-scope.outputs.preview }}
@@ -139,7 +139,7 @@ jobs:
 
   publication:
     name: Verification du circuit de publication
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
       - name: Recuperer la version a verifier
@@ -288,7 +288,7 @@ jobs:
 
   browser:
     name: Verification navigateur hors ligne
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     env:
       EDGE_BIN: /usr/bin/google-chrome
@@ -354,7 +354,7 @@ jobs:
     name: Verification technique
     needs: [application, publication, browser]
     if: always()
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     outputs:
       preview: ${{ needs.application.outputs.preview }}
     steps:
@@ -385,7 +385,7 @@ jobs:
       needs.verification.outputs.preview == 'true' &&
       vars.FIREBASE_TEST_ENABLED == 'true'
     needs: verification
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
       checks: write
