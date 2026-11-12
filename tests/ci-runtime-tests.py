@@ -119,9 +119,11 @@ class ComparisonTests(unittest.TestCase):
     def test_partial_hits_report_executed_suite_without_invented_reuse(self):
         values = self.fixture()
         values[-1]['application']['main'].update(mode='executed', source=None)
+        values[-1]['application']['main']['environment']['node']='v22.23.4'
         next(j for j in values[-2] if j['name']=='Verification applicative')['steps'][0]['conclusion']='success'
         result = m.comparison(*values)
         self.assertEqual(result['executedMainSuites'], ['application'])
+        self.assertFalse(result['environments']['application']['compatible'])
         self.assertEqual(len(result['reusedSuites']), 4)
 
     def test_incompatible_proof_origin_content_environment_or_receipt_refuses(self):
