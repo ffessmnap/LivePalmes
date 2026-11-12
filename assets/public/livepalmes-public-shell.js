@@ -28,8 +28,9 @@
     details.addEventListener("pointerenter",()=>{if(global.matchMedia?.("(min-width: 851px) and (hover: hover) and (pointer: fine)").matches){closeDropdowns(details);menu.hoverOpened=!details.open;details.open=true;}});
     summary.addEventListener("click",event=>{closeDropdowns(details);if(menu.hoverOpened&&details.open){event.preventDefault();menu.hoverOpened=false;}});
     details.addEventListener("pointerleave",()=>{if(menu.hoverOpened&&!details.contains(document.activeElement)){details.open=false;menu.hoverOpened=false;}});
-    // Keep layout stable while focus moves to another summary before its click.
-    details.addEventListener("focusout",event=>{if(!nav.contains(event.relatedTarget)){details.open=false;menu.hoverOpened=false;}});
+    // A touch may blur without focusing its link. Do not hide the target before
+    // native activation; a known focus destination outside the nav still closes.
+    details.addEventListener("focusout",event=>{if((event.relatedTarget||isPortal)&&!nav.contains(event.relatedTarget)){details.open=false;menu.hoverOpened=false;}});
    }else{const link=document.createElement("a");link.href=href;link.textContent=title;if(section===key)link.setAttribute("aria-current","page");nav.append(link);}
   }
   const portal=document.createElement("a");portal.className="public-site-portal";portal.href="/portail.html";portal.textContent="Portail";if(isPortal)portal.setAttribute("aria-current","page");
@@ -65,7 +66,9 @@
   document.addEventListener("keydown",event=>{if(event.key!=="Escape")return;const details=nav.querySelector("details[open]");if(details){closeDropdowns();details.querySelector("summary").focus();}else if(toggle.getAttribute("aria-expanded")==="true"){closeMenu();toggle.focus();}});
   document.addEventListener("click",event=>{if(!header.contains(event.target)){closeMenu();}});
   if(!isPortal){
-   header.addEventListener("click",event=>{if(event.target.closest?.("a"))closeMenu();});
+   // Keep links visible throughout native activation (including new-tab clicks).
+   // Departure/return resets the menu without racing the browser's default action.
+   global.addEventListener("pagehide",closeMenu);
    header.addEventListener("focusout",event=>{if(event.relatedTarget&&!header.contains(event.relatedTarget))closeMenu();});
    const mobileMenu=global.matchMedia?.("(max-width: 850px)");
    mobileMenu?.addEventListener?.("change",()=>{

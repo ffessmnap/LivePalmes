@@ -467,6 +467,7 @@ function runBrowserSmokeIfRequested() {
   const requested = process.argv.includes("--browser") || process.env.LIVEPALMES_BROWSER_SMOKE === "1";
   if (!requested) return;
   printStep("Smoke test navigateur");
+  run(process.execPath, [path.join(rootDir, "tests", "public-navigation-browser-tests.js")]);
   run(process.execPath, [path.join(rootDir, "tests", "competition-status-browser-tests.js")]);
   run(process.execPath, [path.join(rootDir, "tests", "import-record-review-browser-tests.js")]);
   run(process.execPath, [path.join(rootDir, "tests", "import-resolution-browser-tests.js")]);
