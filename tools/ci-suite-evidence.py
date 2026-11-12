@@ -129,6 +129,13 @@ def artifact(run_id, group):
     return info, files, {'run': int(run_id), 'artifact': meta['id'], 'sha256': meta['digest']}
 
 
+@lru_cache(maxsize=16)
+def merged_pull_request(repo, number):
+    # Public repository metadata, using the existing read-only token. Any
+    # unavailable/denied response keeps the ordinary full-suite fallback.
+    return gh(f'repos/{repo}/pulls/{number}')
+
+
 def accepts(value, suite, candidate, info, parent, head):
     expected = content(candidate)
     require(set(value) == {'schema', 'suite', 'result', 'candidate', 'content',
@@ -144,11 +151,7 @@ def accepts(value, suite, candidate, info, parent, head):
             'number': provenance.get('number'),
             'headRepository': os.environ['GITHUB_REPOSITORY'], 'baseBranch': 'main'}
             and type(provenance['number']) is int and provenance['number'] > 0
-            and info['head_sha'] == head
-            and any(p.get('number') == provenance['number']
-                    and p.get('base', {}).get('ref') == 'main'
-                    and p.get('base', {}).get('sha') == parent
-                    and p.get('head', {}).get('sha') == head for p in info.get('pull_requests', [])),
+            and info['head_sha'] == head,
             'PR ou base de preuve differente de la fusion')
     # A PR cannot teach main to trust a modified workflow or proof writer.
     controllers = content(parent)['controllers']
@@ -156,6 +159,25 @@ def accepts(value, suite, candidate, info, parent, head):
             and expected['controllers'] == controllers
             and value['environment'] == environment(suite),
             'Contenu, controleur ou environnement different')
+    links = info.get('pull_requests', [])
+    require(isinstance(links, list), 'Metadonnees PR invalides')
+    if links:
+        # Contradictory metadata is never replaced by a more permissive lookup.
+        require(any(p.get('number') == provenance['number']
+                    and p.get('base', {}).get('ref') == 'main'
+                    and p.get('base', {}).get('sha') == parent
+                    and p.get('head', {}).get('sha') == head for p in links),
+                'PR ou base de preuve differente de la fusion')
+    else:
+        pr = merged_pull_request(os.environ['GITHUB_REPOSITORY'], provenance['number'])
+        require(pr.get('number') == provenance['number'] and pr.get('merged') is True
+                and pr.get('state') == 'closed' and pr.get('merge_commit_sha') == candidate
+                and pr.get('base', {}).get('ref') == 'main'
+                and pr.get('base', {}).get('sha') == parent
+                and pr.get('base', {}).get('repo', {}).get('full_name') == os.environ['GITHUB_REPOSITORY']
+                and pr.get('head', {}).get('sha') == head
+                and (pr.get('head', {}).get('repo') or {}).get('full_name') == os.environ['GITHUB_REPOSITORY'],
+                'PR fusionnee incompatible avec les parents du commit')
     return True
 
 
@@ -184,13 +206,16 @@ def reuse(suites, directory):
                         info, files, receipt = artifact(row['id'], GROUPS[suite])
                         accepts(files[suite + '.json'], suite, candidate, info, parent, head)
                         results[suite] = {'verified': True, 'reason': 'contenu PR identique authentifie',
-                                          'source': {**receipt, 'suite': suite}}
+                                          'source': {**receipt, 'suite': suite, 'pullRequest': files[suite + '.json']['origin']['number'],
+                                                     'provenance': 'workflow-run' if info.get('pull_requests') else 'merged-pull-request'}}
                         break
-                    except Exception:
+                    except Exception as error:
                         # No network, timeout, missing, failed or foreign proof can skip a test.
+                        results[suite]['reason'] = str(error) if isinstance(error, ValueError) else 'Lecture de preuve indisponible'
                         continue
-        except Exception:
-            pass
+        except Exception as error:
+            for result in results.values():
+                result['reason'] = str(error) if isinstance(error, ValueError) else 'Lecture de preuve indisponible'
     else:
         for result in results.values():
             result['reason'] = 'nouveau contenu PR ou evenement non reutilisable'

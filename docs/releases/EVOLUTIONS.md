@@ -2,6 +2,11 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### Cache CI PR→main · 12 novembre 2026 (correction de provenance et mesure en cours)
+
+- Antoine autorise explicitement la finalisation du cache et la mesure du gain réel, avec tous les contrôles, mails actifs et inchangés et exclusions conservées. Les métadonnées Actions peuvent omettre la PR : lecture ciblée de sa fiche officielle, fusion/parents/dépôt exacts ; toute incohérence, indisponibilité ou permission refusée conserve l’exécution complète. Aucun nouveau droit, secret, déploiement, donnée ou envoi.
+- Identité du contenu Git complet, contrôleurs fiables inchangés, environnement exact, succès du run entier et SHA-256 des ZIP restent requis. La modification du contrôleur impose les suites complètes sur sa propre fusion ; la mesure réelle suivra sur un contenu contrôlé sans nouvelle modification du contrôleur.
+
 ### Direct — préparation guidée du bureau · 12 novembre 2026 (PROD publiée et contrôlée)
 
 - Besoin et maquette validés directement par Antoine : trois blocs (fonctionnement, séries PDF, lecture automatique), bandeau compact, aide consoles sur tablettes/ordinateurs connectés et chemin WinPalme dans le seul bloc 3. TXT fixé à 1, première ligne des séries seule à renseigner, exemple 2 à 7 dans un bassin de 8 lignes. Réalisation/PR/TEST autorisées après relais explicite d’Infra ; ancien Direct et opérations réelles exclus. La publication PROD relève du relais Infra ci-dessous.
