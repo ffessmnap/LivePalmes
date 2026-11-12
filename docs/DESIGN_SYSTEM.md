@@ -2,6 +2,12 @@
 
 <!-- description: Référence du langage visuel, des composants d’interface et des règles responsive déjà présents dans LivePalmes. -->
 
+## Bureau Direct — préparation guidée · 12 novembre 2026
+
+Le bandeau de compétition reste compact. Trois blocs numérotés regroupent fonctionnement bureau seul/avec consoles, séries PDF et lecture automatique des résultats. Le bouton « i », accessible au clavier et au toucher, ouvre une explication sur les tablettes/ordinateurs connectés ; aucune aide essentielle ne dépend du survol. Le chemin WinPalme et le champ unique de première ligne utilisée appartiennent au bloc 3. Le choix du dossier ne démarre aucune diffusion.
+
+Le panneau « Résultats en direct » distingue non démarrés/actifs/arrêtés/en pause par un texte et une couleur. L’attente utilise un encart ambre, sans faux pictogramme de pause. Les confirmations et le démarrage restent dans ce panneau ; Arrêter/Reprendre demeurent accessibles lorsque la préparation est rouverte. Pendant le fonctionnement ou un envoi engagé, les réglages concernés sont figés. Au démarrage, la préparation se replie pour privilégier le suivi existant ; son ouverture conserve le panneau de résultats visible. Sur écran étroit, les blocs et le panneau se suivent sans débordement global et l’aide du haut de page reste accessible.
+
 ## Accueil public — ordre mobile · 11 novembre 2026
 
 À 700 px et moins, les trois rubriques de l’accueil public s’affichent dans l’ordre Performances (recherche nageur, Records, TOP, MPF, trophée), rendez-vous du calendrier, puis documents. Le conteneur de la colonne droite devient transparent à la grille (`display: contents`) et les trois blocs occupent les lignes 1, 2 et 3. Au-delà de 700 px, la grille existante, le calendrier à gauche et la colonne Performances/Documents à droite sont inchangés. Le DOM, les liens et les lectures de données restent identiques ; la navigation clavier suit donc l’ordre du document existant.

@@ -21,8 +21,9 @@ async function main(){
       assert.equal(await evaluate(client,"return [...document.querySelectorAll('[data-direct-console]')].some(node=>node.hasAttribute('href'))"),false);
       await evaluate(client,"document.querySelector('#archiveCorrection').click()");assert.ok(await waitFor(client,"document.querySelector('[data-watch-folder]')",5000));
       assert.equal(await evaluate(client,"return __calls.filter(c=>c.action==='settings').length"),0,'L’action ne modifie ni état ni accès');
-      await evaluate(client,"document.querySelector('[data-watch-folder]').click()");assert.ok(await waitFor(client,"document.querySelector('[data-watch-start]')",5000));
+      await evaluate(client,"document.querySelector('[data-watch-folder]').click()");assert.ok(await waitFor(client,"document.querySelector('[data-watch-authorize]')",5000));
       assert.ok(await evaluate(client,"return __calls.find(c=>c.action==='watchContext').archiveCorrection"));
+      assert.equal(await evaluate(client,"return document.querySelector('[data-watch-start]').textContent"),'Démarrer la mise à jour de l’archive','La correction ne propose jamais de démarrer un Direct');
       assert.equal(await evaluate(client,"return document.querySelector('[data-watch-authorize]').checked||document.querySelector('[data-watch-grid]').checked"),false,'Les confirmations restent obligatoires');
       await evaluate(client,"document.querySelector('[data-watch-start]').click()");assert.equal(await evaluate(client,"return LivePalmesDirectAdmin.watcher.active"),false);
       assert.ok(await evaluate(client,"return document.documentElement.scrollWidth<=innerWidth"),'Pas de débordement '+width);
