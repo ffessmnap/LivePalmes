@@ -38,7 +38,7 @@ class SuiteEvidenceTests(unittest.TestCase):
                                    'head': {'sha': HEAD}}], **extra}
 
     def value(self):
-        return {'schema': 2, 'suite': 'application', 'result': 'success',
+        return {'schema': 3, 'host': {'image': 'ubuntu24', 'version': '20261110.1', 'kernel': '6.11'}, 'suite': 'application', 'result': 'success',
                 'candidate': '9'*40, 'content': deepcopy(CONTENT), 'environment': deepcopy(ENV),
                 'origin': {'repository': 'ffessmnap/LivePalmes', 'run': 71, 'attempt': 1,
                            'event': 'pull_request', 'head': HEAD, 'base': PARENT, 'number': 13,
@@ -55,6 +55,16 @@ class SuiteEvidenceTests(unittest.TestCase):
         self.assertTrue(self.accepts())
         self.assertNotEqual(self.value()['candidate'], CANDIDATE)
 
+    def test_only_actual_container_identity_is_compatible_across_audited_host_updates(self):
+        value = self.value()
+        value['host']['version'] = 'another-audited-github-image'
+        self.assertTrue(self.accepts(value))
+        for key in ('image', 'imageId', 'policySha256', 'seccompSha256', 'tools'):
+            source = {**ENV, 'runtime': {key: 'pinned'}}
+            value['environment'] = source
+            with self.subTest(key=key), self.assertRaises(ValueError):
+                self.accepts(value, environment={**source, 'runtime': {key: 'changed'}})
+
     def test_sources_dependencies_tests_or_unknown_file_change_invalidates(self):
         for part in ['tree', 'manifestSha256', 'controllers']:
             value = self.value()
@@ -69,7 +79,7 @@ class SuiteEvidenceTests(unittest.TestCase):
             m.accepts(self.value(), 'application', CANDIDATE, self.info(), PARENT, HEAD)
 
     def test_missing_failed_reused_foreign_suite_or_environment_never_becomes_success(self):
-        for key, bad in [('schema', 1), ('result', 'failure'), ('result', 'cancelled'),
+        for key, bad in [('schema', 1), ('schema', 2), ('host', {}), ('result', 'failure'), ('result', 'cancelled'),
                          ('suite', 'publication'), ('mode', 'reused'), ('source', {}),
                          ('candidate', 'bad'), ('environment', {**ENV, 'node': 'v22.23.4'})]:
             with self.subTest(key=key, value=bad), self.assertRaises(ValueError):

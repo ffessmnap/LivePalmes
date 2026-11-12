@@ -1,0 +1,29 @@
+{
+  "schema": 1,
+  "image": "mcr.microsoft.com/playwright/python@sha256:51d31fdfacb0cff99a1a724152e34ae408d2bd4e7da310ff157450f49261cc59",
+  "imageId": "sha256:17c62ea0e231dc5999c470e5e0352549803953d2044b4b17c4cd2f56b4c1df88",
+  "provenance": "Microsoft Playwright Python v1.62.0-noble; OCI linux/amd64 manifest and config hashes verified from mcr.microsoft.com.",
+  "seccompSource": "https://github.com/microsoft/playwright/blob/v1.62.0/utils/docker/seccomp_profile.json",
+  "seccompLicense": "Apache-2.0; Microsoft Playwright and Docker/Moby default seccomp profile.",
+  "seccompSha256": "cc3e61cabda6bbc1e53e54d27ba4d55a9d3be829b6dd1a596f4a7b31b1cc7849",
+  "tools": {
+    "node": {
+      "url": "https://nodejs.org/dist/v22.23.5/node-v22.23.5-linux-x64.tar.xz",
+      "sha256": "cdeb8670a0c81f51b4dc4ac61919f9b1ad917b304bf8221eb939570663d240f8",
+      "version": "22.23.5",
+      "directory": "node-v22.23.5-linux-x64"
+    },
+    "java": {
+      "version": "jdk-21.0.13+9",
+      "url": "https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.13%2B9/OpenJDK21U-jdk_x64_linux_hotspot_21.0.13_9.tar.gz",
+      "sha256": "d7f5d5cf865a2902b70ff549b97586a7d3f234e016f041ab447ea740c7d66d1c",
+      "directory": "jdk-21.0.13+9"
+    },
+    "githubCLI": {
+      "version": "2.103.3",
+      "url": "https://github.com/cli/cli/releases/download/v2.103.3/gh_2.103.3_linux_amd64.tar.gz",
+      "sha256": "4c806978ffce1cec70853302a56d70ac6da4f19bae7adca4e1a8ab00633dd91d",
+      "directory": "gh_2.103.3_linux_amd64"
+    }
+  }
+}

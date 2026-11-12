@@ -2,6 +2,7 @@
 from functools import lru_cache
 import hashlib
 import io
+import importlib.util
 import json
 import os
 from pathlib import Path
@@ -15,7 +16,9 @@ import zipfile
 ROOT = Path(__file__).resolve().parents[1]
 WORKFLOW = '.github/workflows/livepalmes-verification-preview.yml'
 CONTROLLERS = (WORKFLOW, 'tools/ci-suite-evidence.py', 'tools/verify-livepalmes.js',
-               'tools/test-verification-evidence.py', '.github/ci-runtime.json', '.github/ci-suite-policy.json', '.node-version')
+               'tools/test-verification-evidence.py', '.github/ci-runtime.json', '.github/ci-suite-policy.json', '.node-version',
+               'tools/ci-pinned-runtime.py', '.github/ci-container.json', '.github/ci-seccomp.json',
+               'tests/ci-pinned-runtime-tests.py', '.gitattributes')
 DEADLINE = None
 GROUPS = {'application': 'ci-application-suites', 'firestore': 'ci-application-suites',
           'mysql': 'ci-application-suites', 'publication': 'ci-publication-suites',
@@ -53,12 +56,25 @@ def content(ref):
             'controllers': {p: git('rev-parse', ref + ':' + p) for p in CONTROLLERS}}
 
 
+def runtime_identity():
+    spec = importlib.util.spec_from_file_location('ci_pinned_runtime', ROOT/'tools/ci-pinned-runtime.py')
+    runtime = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(runtime)
+    return runtime.identity()
+
+
+def host_audit():
+    # Audit the rolling VM without pretending its userland ran the suites.
+    return {'image': os.environ.get('ImageOS', ''), 'version': os.environ.get('ImageVersion', ''),
+            'kernel': platform.release()}
+
+
 def environment(suite):
-    value = {'node': run(['node', '--version']), 'platform': sys.platform,
-             'architecture': platform.machine(), 'runnerImage': os.environ.get('ImageOS', ''),
-             'runnerVersion': os.environ.get('ImageVersion', '')}
+    value = {'runtime': runtime_identity(), 'node': run(['node', '--version']),
+             'platform': sys.platform, 'architecture': platform.machine(),
+             'python': run(['python3', '--version']), 'git': run(['git', '--version']),
+             'githubCLI': run(['gh', '--version']).splitlines()[0]}
     if suite == 'firestore':
-        # The lockfile fixes the Firebase CLI/emulator; bind the actual JDK too.
         result = subprocess.run(['java', '-version'], capture_output=True, text=True, check=True)
         value['java'] = result.stderr.strip().splitlines()[0]
     if suite == 'mysql':
@@ -66,7 +82,7 @@ def environment(suite):
         require(re.fullmatch(r'mysql:5\.7\.30@sha256:[0-9a-f]{64}', value['image']),
                 'Image MySQL immuable requise')
     if suite == 'browser':
-        value['browser'] = run([os.environ.get('EDGE_BIN', '/usr/bin/google-chrome'), '--version'])
+        value['browser'] = run([os.environ['EDGE_BIN'], '--version'])
     return value
 
 
@@ -91,7 +107,7 @@ def proof(suite, reused=None):
     require(provenance['event'] in ['push', 'pull_request'], 'Evenement de preuve interdit')
     if provenance['event'] == 'push':
         require(os.environ['GITHUB_REF'] == 'refs/heads/main', 'Push de preuve hors main')
-    return {'schema': 2, 'suite': suite, 'result': 'success', 'candidate': candidate,
+    return {'schema': 3, 'host': host_audit(), 'suite': suite, 'result': 'success', 'candidate': candidate,
             'content': content(candidate), 'environment': environment(suite),
             'origin': provenance, 'mode': 'reused' if reused else 'executed',
             'source': reused}
@@ -139,12 +155,15 @@ def merged_pull_request(repo, number):
 def accepts(value, suite, candidate, info, parent, head):
     expected = content(candidate)
     require(set(value) == {'schema', 'suite', 'result', 'candidate', 'content',
-                          'environment', 'origin', 'mode', 'source'}
-            and value['schema'] == 2 and value['suite'] == suite
+                          'environment', 'host', 'origin', 'mode', 'source'}
+            and value['schema'] == 3 and value['suite'] == suite
             and value['result'] == 'success' and value['mode'] == 'executed'
             and value['source'] is None
             and re.fullmatch('[0-9a-f]{40}', value['candidate'] or ''),
             'Resultat de suite absent ou incompatible')
+    require(set(value['host']) == {'image', 'version', 'kernel'}
+            and all(isinstance(v, str) and v for v in value['host'].values()),
+            'Audit de l hote GitHub absent')
     provenance = value['origin']
     require(provenance == {'repository': os.environ['GITHUB_REPOSITORY'], 'run': info['id'],
             'attempt': 1, 'event': 'pull_request', 'head': head, 'base': parent,
