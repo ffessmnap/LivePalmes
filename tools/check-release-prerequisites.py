@@ -115,6 +115,12 @@ def main(directory, run_id, kind):
                 report['publicNavigationDirectRelease'] = {'existingSources': cycle.public_navigation_direct.approved(request),
                     'retainedFunctions': 117, 'newFunctions': [], 'configurationChanges': False,
                     'bindingChanges': False, 'mailPause': False, 'historicalReplay': False, 'iamChanges': False}
+            if cycle.direct_reliability.approved(request):
+                cycle.direct_reliability.initial(functions)
+                cycle.direct_reliability.guard(directory)
+                report['directReliabilityRelease'] = {'existingSources': cycle.direct_reliability.approved(request),
+                    'retainedFunctions': 117, 'newFunctions': [], 'configurationChanges': False,
+                    'bindingChanges': False, 'mailPause': False, 'historicalReplay': False, 'iamChanges': False}
             if cycle.public_navigation_touch.approved(request):
                 cycle.public_navigation_touch.initial(functions)
                 cycle.public_navigation_touch.guard(directory)

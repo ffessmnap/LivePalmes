@@ -81,6 +81,13 @@ def main():
             raise ValueError('Mode navigation publique/Direct invalide')
         guard.guard(Path(os.environ['PLAN']), sys.argv[1:] == ['--after'])
         return
+    if request.get('directReliabilityRelease'):
+        spec = importlib.util.spec_from_file_location('direct_reliability_guard', Path(__file__).with_name('direct-reliability-production-policy.py'))
+        guard = importlib.util.module_from_spec(spec); spec.loader.exec_module(guard)
+        if sys.argv[1:] not in ([], ['--after']):
+            raise ValueError('Mode fiabilisation Direct invalide')
+        guard.guard(Path(os.environ['PLAN']), sys.argv[1:] == ['--after'])
+        return
     if request.get('publicNavigationTouchRelease'):
         spec = importlib.util.spec_from_file_location('public_navigation_touch_guard', Path(__file__).with_name('public-navigation-touch-production-policy.py'))
         guard = importlib.util.module_from_spec(spec); spec.loader.exec_module(guard)
