@@ -49,6 +49,14 @@ def check_after(backup, destination, require_success):
     before = {f["name"]: f for f in json.loads((backup / "functions.json").read_text())}
     after = {f["name"]: f for f in inventory()}
     selected = {f["name"] for f in report["functions"]} | {PREFIX + name for name in report["newFunctions"]}
+    standard_policy = None
+    if report.get('standardSourceManifestSha256'):
+        spec = importlib.util.spec_from_file_location('standard_state_policy', Path(__file__).with_name('standard-source-policy.py'))
+        standard_policy = importlib.util.module_from_spec(spec); spec.loader.exec_module(standard_policy)
+        standard_manifest = json.loads((backup/'standard-source-manifest.json').read_text())
+        standard_policy.require(standard_policy.digest(standard_manifest) == report['standardSourceManifestSha256']
+              and standard_manifest['candidate'] == report['candidate'] and report['newFunctions'] == []
+              and selected == {PREFIX+n for n in standard_manifest['selected']}, 'Rapport standard hors manifeste')
     direct_policy = None
     if report.get('directRelease'):
         spec = importlib.util.spec_from_file_location('direct_state_policy', Path(__file__).with_name('direct-production-policy.py'))
@@ -65,6 +73,11 @@ def check_after(backup, destination, require_success):
         if sorted(report['additionalBccFunctions']) != bcc_policy.contract()['selected']:
             raise ValueError('Selection CCI du rapport differente')
     errors = []
+    if standard_policy is not None:
+        try:
+            standard_policy.assert_retained(before, after, selected, SimpleNamespace(identity=identity))
+        except ValueError as error:
+            errors.append(str(error))
     public_navigation_direct_policy = None
     if report.get('additionalPublicNavigationDirectFunctions'):
         spec = importlib.util.spec_from_file_location('public_navigation_direct_state_policy', Path(__file__).with_name('public-navigation-direct-production-policy.py'))
@@ -183,6 +196,11 @@ def check_after(backup, destination, require_success):
                 errors.append(str(error))
         if not f or f.get("state") != "ACTIVE":
             errors.append("Function non active: " + name.split("/")[-1])
+        elif standard_policy is not None:
+            try:
+                standard_policy.assert_selected(before[name], f, report['candidate'])
+            except ValueError as error:
+                errors.append(str(error))
         elif public_navigation_direct_policy is not None:
             try:
                 public_navigation_direct_policy.assert_config(before[name], f, SimpleNamespace(rollback_patch=rollback_patch), report['public_navigation_directNapBinding'])
