@@ -656,7 +656,14 @@ Préparation des lots reportés — lecture seule, aucun fichier modifié ni PR/
 ### 3 novembre — Classement du Trophée Damien Hébert
 
 - Besoin : rétablir le tableau public des qualifications et permettre à l’administration nationale de préparer, publier et arrêter une édition.
-- État : intégration proposée à la CI et au TEST commun. Validation utilisateur de la version déployée à recueillir.
+- Livraison : [PR #717](https://github.com/ffessmnap/LivePalmes/pull/717), [CI main](https://github.com/ffessmnap/LivePalmes/actions/runs/41689077152), [Hosting TEST commun](https://github.com/ffessmnap/LivePalmes/actions/runs/41690836387) et [lot backend NAP TEST](https://github.com/ffessmnap/LivePalmes/actions/runs/41691505315) réussis sur le commit `479d6e83a305456052607f854fd1967eb8696ee6`.
+- Contrôles : tableau à 1 280 et 390 px et formulaire national sur données fictives. Sur TEST, pages publiques et portail en HTTP 200, API publique en HTTP 200 sans édition active et lecture nationale anonyme refusée en HTTP 401. Validation utilisateur avec une édition et des résultats NAP à recueillir.
+- Retouches : [PR #719](https://github.com/ffessmnap/LivePalmes/pull/719) pour le portrait et la cinquième position sur l’accueil, puis [PR #720](https://github.com/ffessmnap/LivePalmes/pull/720) pour le classement complet, la colonne Nageur et la confirmation de navigation. [CI main](https://github.com/ffessmnap/LivePalmes/actions/runs/41701868199), [backend TEST](https://github.com/ffessmnap/LivePalmes/actions/runs/41703199728) et [TEST commun](https://github.com/ffessmnap/LivePalmes/actions/runs/41705267432) réussis sur `43813e626029e2cc4ebce91b18f78f0636056bfe`. Accueil et ressources du trophée vérifiés sur TEST. Contrôles Edge à 320, 390 et 1 280 px avec données fictives, dont deux ex æquo au 32e rang.
+
+- Présentation revue : [PR #721](https://github.com/ffessmnap/LivePalmes/pull/721), [CI main](https://github.com/ffessmnap/LivePalmes/actions/runs/41726842764) et [TEST commun](https://github.com/ffessmnap/LivePalmes/actions/runs/41728268240) réussis. Alignement, noms longs et catégories vérifiés dans Edge à 320, 390 et 1 280 px, ressources déployées confirmées.
+
+- Navigation publique : [PR #722](https://github.com/ffessmnap/LivePalmes/pull/722), [CI main](https://github.com/ffessmnap/LivePalmes/actions/runs/41731205753), [lot NAP TEST](https://github.com/ffessmnap/LivePalmes/actions/runs/41732452427) et [TEST commun](https://github.com/ffessmnap/LivePalmes/actions/runs/41733899607) réussis sur e4ca772bc3aee5743139be9f5ce91a35d25cad14. Menu du trophée et retrait du fil d’Ariane contrôlés dans Edge à 390 et 1 280 px et ressources servies sur TEST confirmées.
+- Validation utilisateur : Antoine a confirmé la présentation sur TEST puis a explicitement validé le périmètre commun des modifications encore absentes de PROD par « Toutes les modifications qui sont pas en prod, je les valide. » Accord et preuves transmis à Infra. Publication PROD à confirmer.
 
 ### 3 novembre — Ordre du 4 × 100 SB Masters
 
