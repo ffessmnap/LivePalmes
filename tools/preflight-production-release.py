@@ -193,6 +193,9 @@ def main():
         report['additionalPublicNavigationDirectFunctions'] = cycle.public_navigation_direct.approved(plan) if os.environ.get('PLAN') else []
         if report['additionalPublicNavigationDirectFunctions']:
             report['public_navigation_directNapBinding'] = cycle.public_navigation_direct.initial(functions)
+        report['additionalPublicNavigationTouchFunctions'] = cycle.public_navigation_touch.approved(plan) if os.environ.get('PLAN') else []
+        if report['additionalPublicNavigationTouchFunctions']:
+            report['public_navigation_touchNapBinding'] = cycle.public_navigation_touch.initial(functions)
         report['additionalNovember10Functions'] = cycle.november10_release.approved(plan) if os.environ.get('PLAN') else []
         if report['additionalNovember10Functions']:
             report['november10NapBinding'] = cycle.november10_release.initial(functions)

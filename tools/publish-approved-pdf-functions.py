@@ -82,6 +82,10 @@ def main(candidate, plan, backup):
         cycle.public_navigation_direct.selection(request, cycle.read(plan / 'selection.json'))
         cycle.public_navigation_direct.guard(plan)
         return
+    if cycle.public_navigation_touch.approved(request):
+        cycle.public_navigation_touch.selection(request, cycle.read(plan / 'selection.json'))
+        cycle.public_navigation_touch.guard(plan)
+        return
     if cycle.reference_cleanup.approved(request):
         cycle.reference_cleanup.selection(request, cycle.read(plan / 'selection.json'))
         cycle.reference_cleanup.guard(plan)
