@@ -93,7 +93,9 @@ class SimplificationTests(unittest.TestCase):
     def test_draft_does_not_claim_readiness_when_backend_review_or_coverage_is_missing(self):
         proof = {'candidate': 'c'*40, 'verification': {'schema': 1, 'candidate': 'c'*40,
                  'suite': 'verify-livepalmes', 'result': 'success'}}
-        record = {'title': 'Interface', 'commits': ['b'*40], 'status': 'validated', 'validation': 'Retour utilisateur exact'}
+        record = {'title': 'Interface', 'commits': ['b'*40], 'status': 'validated', 'validation': 'Retour utilisateur exact',
+                  'source':{'threadId':'00000000-0000-0000-0000-000000000001',
+                            'messageId':'00000000-0000-0000-0000-000000000002','text':'Retour utilisateur exact'}}
         for backend, path, records in [(False, 'portail.css', [record]), (False, 'portail.css', []),
                                        (True, 'functions/index.js', [record])]:
             with tempfile.TemporaryDirectory() as directory, \
@@ -101,6 +103,7 @@ class SimplificationTests(unittest.TestCase):
                     patch.object(draft.cycle, 'read', side_effect=lambda p: proof if Path(p).name == 'test-proof.json' else {'productionCommit': 'a'*40}), \
                     patch.object(draft.cycle, 'production_evidence', return_value={'hosting': {'version': 'sites/livepalmes/versions/proven'}}), \
                     patch.object(draft.cycle, 'git', return_value=path+'\n'), patch.object(draft.subprocess, 'run'), \
+                    patch.object(draft, 'changed_after', return_value=frozenset()), \
                     patch.object(draft.cycle, 'validate_request') as validate:
                 blockers = draft.build(directory, 12, records)
                 self.assertEqual(bool(blockers), backend or not records)
@@ -113,11 +116,11 @@ class SimplificationTests(unittest.TestCase):
 
     def test_validation_records_never_infer_user_acceptance_or_future_changes(self):
         row = {'title': 'Boutons', 'commits': ['b'*40], 'status': 'validated', 'validation': 'Antoine : valide sur TEST'}
-        with patch.object(draft.subprocess, 'run') as git, patch.object(draft.cycle, 'git', return_value='portail.css\n'):
+        with patch.object(draft.subprocess, 'run') as git, patch.object(draft.cycle, 'git', return_value='portail.css\n'), patch.object(draft,'changed_after',return_value=frozenset()):
             changes, missing = draft.changes_from_records([row], ['portail.css', 'index.html'], 'a'*40, 'c'*40)
             self.assertEqual(missing, ['index.html'])
             self.assertEqual(changes[0]['validation'], row['validation'])
-            self.assertEqual(git.call_count, 2)
+            self.assertEqual(git.call_count, 3)
             for invalid in [{**row, 'validation': ''}, {**row, 'status': 'in-progress'}, {**row, 'commits': ['main']}]:
                 with self.assertRaises(ValueError):
                     draft.changes_from_records([invalid], ['portail.css'], 'a'*40, 'c'*40)

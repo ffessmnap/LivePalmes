@@ -264,8 +264,12 @@ class SourcePolicyTests(unittest.TestCase):
                  'baselineHosting':'sites/livepalmes-test/versions/before',
                  'functions':['readNapPublicSwimmer'],'approval':APPROVAL}
         self.assertEqual(test_sources.validate(value), value)
+        raw=json.dumps(value)
+        duplicate=raw.replace('\"schema\": 1','\"schema\": 1, \"schema\": 1',1)
+        with self.assertRaises(ValueError): test_sources.read_request(duplicate)
         for key, replacement in [('functions',['closeDueEngagementCompetitions']),('baselineRun',True),
-                                 ('candidate','branch-name'),('approval',{'text':'CI is green'})]:
+                                 ('candidate','branch-name'),('approval',{'text':'CI is green'}),
+                                 ('approval',{**APPROVAL,'messageId':'-'*36})]:
             wrong = deepcopy(value); wrong[key] = replacement
             with self.assertRaises(ValueError): test_sources.validate(wrong)
         wrong = deepcopy(value); wrong['configurationChanges'] = True
@@ -302,6 +306,14 @@ class SourcePolicyTests(unittest.TestCase):
                                 test_backend_fingerprints=lambda *a:{'readNapPublicSwimmer':'3'*64})
             result=test_sources.trusted_revisions(Path('unused'),{'functions':[row]},api)
             self.assertEqual(result,{row['name']} if corruption is None else set())
+
+    def test_static_removal_blocks_during_plan_instead_of_after_hosting(self):
+        def git(*args):
+            if args[-1].endswith(':removed.js'):
+                raise ValueError('not in candidate')
+            return '1'*40
+        with self.assertRaises(ValueError):
+            policy.static_paths(['removed.js'],'b'*40,git)
 
     def test_workflow_keeps_crypto_before_source_writers_and_required_synthesis(self):
         text = (ROOT/'.github/workflows/livepalmes-production-release.yml').read_text()

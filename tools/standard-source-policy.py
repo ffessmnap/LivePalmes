@@ -52,7 +52,7 @@ def approval(value):
     require(isinstance(value, dict) and set(value) == {'threadId', 'messageId', 'text'}
             and all(isinstance(value[k], str) and value[k].strip() for k in value),
             'Reference et texte de l accord humain authentique requis')
-    require(all(re.fullmatch(r'[0-9a-f-]{36}', value[k]) for k in ['threadId', 'messageId']),
+    require(all(re.fullmatch(r'[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}', value[k]) for k in ['threadId', 'messageId']),
             'Reference de message humain invalide')
     return value
 
@@ -113,6 +113,11 @@ def static_paths(paths, candidate, git):
             values.add(name)
         except Exception:
             raise ValueError('Fichier statique conserve absent : '+name) from None
+    for path in values:
+        try:
+            git('rev-parse',candidate+':'+path)
+        except Exception:
+            raise ValueError('Suppression statique hors parcours standard : '+path) from None
     require(all(not Path(p).is_absolute() and '..' not in Path(p).parts for p in values),
             'Chemin statique invalide')
     return sorted(values)
