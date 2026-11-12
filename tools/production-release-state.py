@@ -92,6 +92,20 @@ def check_after(backup, destination, require_success):
             public_navigation_direct_policy.assert_retained(before,after,SimpleNamespace(identity=identity,rollback_patch=rollback_patch))
         except ValueError as error:
             errors.append(str(error))
+    direct_reliability_policy = None
+    if report.get('additionalDirectReliabilityFunctions'):
+        spec = importlib.util.spec_from_file_location('direct_reliability_state_policy', Path(__file__).with_name('direct-reliability-production-policy.py'))
+        direct_reliability_policy = importlib.util.module_from_spec(spec); spec.loader.exec_module(direct_reliability_policy)
+        c = direct_reliability_policy.contract()
+        direct_reliability_policy.require(report['additionalDirectReliabilityFunctions'] == c['sourceOnly']
+            and report['candidate'] == c['candidate'] and len(before) == c['inventoryCount']
+            and selected == {PREFIX+n for n in c['selected']} and report['newFunctions'] == []
+            and report.get('direct_reliabilityNapBinding') == direct_reliability_policy.initial(list(before.values())),
+            'Rapport fiabilisation Direct hors contrat')
+        try:
+            direct_reliability_policy.assert_retained(before,after,SimpleNamespace(identity=identity,rollback_patch=rollback_patch))
+        except ValueError as error:
+            errors.append(str(error))
     public_navigation_touch_policy = None
     if report.get('additionalPublicNavigationTouchFunctions'):
         spec = importlib.util.spec_from_file_location('public_navigation_touch_state_policy', Path(__file__).with_name('public-navigation-touch-production-policy.py'))
@@ -204,6 +218,11 @@ def check_after(backup, destination, require_success):
         elif public_navigation_direct_policy is not None:
             try:
                 public_navigation_direct_policy.assert_config(before[name], f, SimpleNamespace(rollback_patch=rollback_patch), report['public_navigation_directNapBinding'])
+            except ValueError as error:
+                errors.append(str(error))
+        elif direct_reliability_policy is not None:
+            try:
+                direct_reliability_policy.assert_config(before[name], f, SimpleNamespace(rollback_patch=rollback_patch), report['direct_reliabilityNapBinding'])
             except ValueError as error:
                 errors.append(str(error))
         elif public_navigation_touch_policy is not None:
