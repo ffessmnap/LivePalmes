@@ -697,12 +697,8 @@
 			],
 			"action": "SCMP_ACT_ALLOW",
 			"args": [],
-			"comment": "",
-			"includes": {
-				"caps": [
-					"CAP_SYS_CHROOT"
-				]
-			},
+			"comment": "Chromium confines its child to an empty directory inside its own user namespace. No capability is granted in the parent namespace (cap-drop=ALL).",
+			"includes": {},
 			"excludes": {}
 		},
 		{

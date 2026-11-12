@@ -5,7 +5,7 @@
   "provenance": "Microsoft Playwright Python v1.62.0-noble; OCI linux/amd64 manifest and config hashes verified from mcr.microsoft.com.",
   "seccompSource": "https://github.com/microsoft/playwright/blob/v1.62.0/utils/docker/seccomp_profile.json",
   "seccompLicense": "Apache-2.0; Microsoft Playwright and Docker/Moby default seccomp profile.",
-  "seccompSha256": "cc3e61cabda6bbc1e53e54d27ba4d55a9d3be829b6dd1a596f4a7b31b1cc7849",
+  "seccompSha256": "392868b9e73bfe0c44b67bd4c25ea9df5ccaf821720777cb7e940b8dc13807ae",
   "tools": {
     "node": {
       "url": "https://nodejs.org/dist/v22.23.5/node-v22.23.5-linux-x64.tar.xz",
@@ -25,5 +25,7 @@
       "sha256": "4c806978ffce1cec70853302a56d70ac6da4f19bae7adca4e1a8ab00633dd91d",
       "directory": "gh_2.103.3_linux_amd64"
     }
-  }
+  },
+  "seccompAdaptation": "Allow chroot syscall under cap-drop=ALL for Chromium empty-dir confinement inside its own user namespace; Linux capability checks remain enforced. No added capability or unconfined profile.",
+  "seccompAdaptationSource": "https://github.com/chromium/chromium/blob/main/sandbox/linux/services/credentials.cc"
 }
