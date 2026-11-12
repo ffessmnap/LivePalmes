@@ -18,7 +18,8 @@ WORKFLOW = '.github/workflows/livepalmes-verification-preview.yml'
 CONTROLLERS = (WORKFLOW, 'tools/ci-suite-evidence.py', 'tools/verify-livepalmes.js',
                'tools/test-verification-evidence.py', '.github/ci-runtime.json', '.github/ci-suite-policy.json', '.node-version',
                'tools/ci-pinned-runtime.py', '.github/ci-container.json', '.github/ci-seccomp.json',
-               'tests/ci-pinned-runtime-tests.py', '.gitattributes')
+               'tests/ci-pinned-runtime-tests.py', '.gitattributes',
+               'tools/ci-runtime-sandbox-check.js', 'tools/browser-test-launcher.js')
 DEADLINE = None
 GROUPS = {'application': 'ci-application-suites', 'firestore': 'ci-application-suites',
           'mysql': 'ci-application-suites', 'publication': 'ci-publication-suites',
