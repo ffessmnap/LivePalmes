@@ -2,6 +2,16 @@
 
 <!-- description: Périmètre, démarrage local, publication et fonctions propres aux consoles du dispositif LivePalmes Direct. -->
 
+## Bureau — préparation guidée · 12 novembre 2026
+
+Maquette et finitions validées par Antoine, réalisation autorisée jusqu’à TEST : 1 fonctionnement bureau seul/avec consoles, 2 séries PDF, 3 lecture automatique regroupant dossier WinPalme et première ligne utilisée dans les séries. Bureau seul reste présélectionné ; le choix des consoles réutilise l’enregistrement existant, le JA obligatoire et la vidéo nationale. Le « i » explique les tablettes/ordinateurs connectés à Internet. Le bandeau est compact ; le chemin Data → bonne bibliothèque → renc → compétition → ResultatsSeries appartient uniquement au bloc 3. Le mode opératoire en ligne et ses deux copies PDF sont régénérés depuis leurs sources, avec captures fictives.
+
+La première ligne TXT est toujours 1 dans cette interface ; seul le premier numéro utilisé dans les séries est renseigné (bassin de 8 lignes utilisant 2 à 7 : indiquer 2). Le parseur reste inchangé. Une mémorisation standard conserve cette valeur ; une ancienne mémorisation TXT différente de 1 n’est jamais convertie automatiquement : associations revalidées, première ligne des séries à renseigner, explication locale et confirmations habituelles décochées. Aucun réglage ni résultat ancien n’est réécrit à l’ouverture. Dossier choisi, diffusion démarrée et visibilité publique restent distincts ; fichiers présents ignorés par défaut. Les contrôles, empreintes, reçus, confirmations et reprises existants sont conservés, y compris en correction explicite d’archive.
+
+« Résultats en direct non démarrés » est visible avant le lancement ; le bouton est « Démarrer les résultats en direct ». Les réglages concernés sont figés pendant la surveillance ou un envoi engagé. La préparation se replie au démarrage et reste réouvrable avec Arrêter/Reprendre accessibles. Reconfigurer la première ligne après un démarrage conserve le parcours existant : arrêter puis rechoisir le dossier. Aucun dossier obligatoire pour préparer les séries ou utiliser les consoles.
+
+Budget : guidage, aide, choix local du mode et états réutilisent le détail/les agrégats et le seul moteur de surveillance existants : zéro lecture NAP/Firestore/RPC ou minuteur supplémentaire à l’ouverture, à l’action locale, au rafraîchissement et au pire cas. Choix du dossier et diffusion conservent `watchContext`, puis les appels groupés `previewBatch`/`publishBatch`, sans appel par ligne. Aucun backend, règle sportive, droit, schéma, donnée réelle ou ancien Direct modifié. Contrôles ciblés avec fixtures et CI globale requis avant TEST ; recette utilisateur et accord Infra distincts avant toute PROD.
+
 ## Archivage selon les dates et correction des résultats · 11 novembre 2026
 
 Le serveur calcule l’archivage à **00 h Europe/Paris, au lendemain du dernier jour de la compétition** : `competitions.enddate`, sinon `date` pour une journée. Aucune règle d’inactivité, aucun délai de 24 h ni horaire de 8 h. Une date absente, invalide ou inversée ne permet pas d’archiver automatiquement. Les états enregistrés désactivé, archivé manuellement et réinitialisation gardent priorité. Corriger les dates peut rétablir un Direct archivé automatiquement, jamais une archive manuelle.

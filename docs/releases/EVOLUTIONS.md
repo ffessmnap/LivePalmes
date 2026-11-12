@@ -2,6 +2,13 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### Direct — préparation guidée du bureau · 12 novembre 2026 (réalisation, TEST à livrer)
+
+- Besoin et maquette validés directement par Antoine : trois blocs (fonctionnement, séries PDF, lecture automatique), bandeau compact, aide consoles sur tablettes/ordinateurs connectés et chemin WinPalme dans le seul bloc 3. TXT fixé à 1, première ligne des séries seule à renseigner, exemple 2 à 7 dans un bassin de 8 lignes. Autorisation de réalisation/PR/TEST transmise par la coordination après relais explicite d’Infra ; aucun PROD, ancien Direct ou opération réelle.
+- Présentation client uniquement, réemploi des contrôles et appels existants. Résultats en direct non démarrés/actifs/en pause distincts de la publication des séries et de la visibilité publique ; confirmations conservées, résultats déjà présents ignorés par défaut, arrêt/reprise accessibles et réglages concernés figés. Une ancienne mémorisation TXT non standard demande une re-saisie locale sans conversion, reconstruction ni republication automatique.
+- Mode opératoire HTML/PDF et captures fictives mis à jour dans le même lot. Budget d’accès supplémentaire nul : aucun RPC, lecture NAP/Firestore, minuteur ou appel par ligne ajouté ; parser, backend, droits et archives conservés.
+- Contrôles ciblés locaux sur fixtures réussis : TXT, bureau/import par session, reprise standard et ancien réglage, verrouillage, six consoles, complétude PDF, archives et guide ordinateur/mobile. PDF régénéré sur cinq pages, deux copies identiques et mise en page relue. CI obligatoire puis TEST commun à confirmer. Aucune validation de la réalisation TEST revendiquée ; elle sera demandée à Antoine après livraison.
+
 ### Circuit TEST/PROD — accélération après clôture · 12 novembre 2026 (étapes 3 et 4 : moteur et dossier)
 
 - Plan en quatre PR explicitement approuvé par Antoine dans la coordination (chat 01a1cf1d, réponse humaine 01a1cf6c), puis transmis à Infra pour mise en œuvre après la publication précédente clôturée. Aucun déploiement, donnée ou envoi autorisé par ce chantier ; mails actifs et toutes les exclusions conservés.
