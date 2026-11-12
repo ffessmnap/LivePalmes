@@ -43,7 +43,9 @@ def policy():
         require(re.fullmatch('[0-9a-f]{64}', tool['sha256']), 'Archive non epinglee')
         require(tool['url'].startswith(('https://nodejs.org/dist/',
             'https://github.com/adoptium/temurin21-binaries/releases/download/',
-            'https://github.com/cli/cli/releases/download/')), 'Origine outil inconnue')
+            'https://github.com/cli/cli/releases/download/',
+            'https://github.com/PowerShell/PowerShell/releases/download/')), 'Origine outil inconnue')
+        require(tool.get('binDirectory', 'bin') in ('bin', ''), 'Dossier executable invalide')
         require('/' not in tool['directory'] and tool['directory'] not in ('', '.', '..'),
                 'Racine archive invalide')
     return value
@@ -73,15 +75,22 @@ def fetch(tool, cache):
                 raise
 
 
-def extract(archive, destination, top):
+def extract(archive, destination, top, flat=False):
     destination.mkdir(parents=True, exist_ok=False)
+    target = destination/top if flat else destination
+    target.mkdir(parents=True, exist_ok=True)
     with tarfile.open(archive) as source:
         members = source.getmembers()
-        require(members and all(m.name == top or m.name.startswith(top + '/') for m in members),
+        require(members and (flat or all(m.name == top or m.name.startswith(top + '/') for m in members)),
                 'Archive outil hors racine')
-        # Reject devices, absolute paths and symlinks escaping this tool.
-        source.extractall(destination, members=members, filter='data')
-    require((destination/top/'bin').is_dir(), 'Outil extrait incomplet')
+        source.extractall(target, members=members, filter='data')
+    if flat:
+        # The official PowerShell archive is flat. Its launcher must keep its
+        # sibling .NET assemblies; no system-wide installation or rights.
+        require((target/'pwsh').is_file(), 'Archive PowerShell incomplete')
+        (target/'pwsh').chmod(0o555)
+    else:
+        require((destination/top/'bin').is_dir(), 'Outil extrait incomplet')
 
 
 def locations():
@@ -104,7 +113,7 @@ def prepare():
     tools.mkdir(exist_ok=False)
     def install(item):
         name, tool = item
-        extract(fetch(tool, cache), tools/name, tool['directory'])
+        extract(fetch(tool, cache), tools/name, tool['directory'], tool.get('flat', False))
     with ThreadPoolExecutor(max_workers=3) as pool:
         list(pool.map(install, config['tools'].items()))
     (tools/'bin').mkdir()
@@ -142,10 +151,11 @@ def container_command(command, environment, config, temporary, workspace, uid, g
     forwarded = {k: v for k, v in environment.items() if k in allowed
                  or k.startswith('npm_config_')
                  or (k.startswith(('GITHUB_', 'RUNNER_')) and k != 'GITHUB_TOKEN')}
-    binaries = [str(tools/'bin')] + [str(tools/name/tool['directory']/'bin') for name, tool in config['tools'].items()]
+    binaries = [str(tools/'bin')] + [str(tools/name/tool['directory']/tool.get('binDirectory', 'bin')) for name, tool in config['tools'].items()]
     forwarded.update(PATH=':'.join(binaries + ['/usr/local/bin', '/usr/bin', '/bin']),
         HOME=str(temporary/'ci-runtime-home'), LANG='C.UTF-8', LC_ALL='C.UTF-8', TZ='UTC',
         PYTHONDONTWRITEBYTECODE='1', LP_CI_CONTAINER='true',
+        POWERSHELL_TELEMETRY_OPTOUT='1', DOTNET_CLI_TELEMETRY_OPTOUT='1', POWERSHELL_UPDATECHECK='Off',
         LP_CI_POLICY_SHA256=digest(workspace/POLICY), LP_CI_IMAGE_ID=config['imageId'],
         npm_config_cache=str(npm_cache), PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD='1')
     # Values are inherited by Docker by name: no token appears in its argv/log.
@@ -193,8 +203,9 @@ def identity():
 def check():
     value = identity()
     for args in [['node', '--version'], ['python3', '--version'], ['git', '--version'],
-                 ['java', '-version'], ['gh', '--version'], ['dbus-run-session', '--version']]:
-        subprocess.run(args, check=True, timeout=15, capture_output=True)
+                 ['java', '-version'], ['gh', '--version'], ['pwsh', '--version'], ['dbus-run-session', '--version']]:
+        tool = subprocess.run(args, check=False, timeout=15, capture_output=True, text=True)
+        require(tool.returncode == 0, args[0]+' indisponible : '+tool.stderr[-2000:])
     # No site, SDK, authentication, account or data endpoint: Chromium's own
     # internal sandbox page must report the namespace and seccomp sandboxes.
     result = subprocess.run(['node', 'tools/ci-runtime-sandbox-check.js'],

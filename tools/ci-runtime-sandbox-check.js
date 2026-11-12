@@ -18,15 +18,13 @@ async function inspectSandbox() {
   let socket;
   const pending = new Map();
   try {
-    const pages = await (await fetch(`http://127.0.0.1:${browser.port}/json/list`,
+    const version = await (await fetch(`http://127.0.0.1:${browser.port}/json/version`,
       { signal: AbortSignal.timeout(5000) })).json();
-    assert.equal(pages.length, 1, "Expected only our fresh blank browser page");
-    assert.equal(pages[0].url, "about:blank");
-    const url = new URL(pages[0].webSocketDebuggerUrl);
+    const url = new URL(version.webSocketDebuggerUrl);
     assert.equal(url.protocol, "ws:");
     assert.equal(url.hostname, "127.0.0.1");
     assert.equal(url.port, String(browser.port));
-    assert.match(url.pathname, /^\/devtools\/page\/[A-Za-z0-9-]+$/);
+    assert.match(url.pathname, /^\/devtools\/browser\/[A-Za-z0-9-]+$/);
     socket = new WebSocket(url);
     await new Promise((resolve, reject) => {
       const timer = setTimeout(() => reject(Error("Owned browser connection timed out")), 5000);
@@ -43,19 +41,31 @@ async function inspectSandbox() {
       else request.resolve(message.result);
     });
     let id = 0;
-    const send = (method, params = {}) => new Promise((resolve, reject) => {
+    const send = (method, params = {}, sessionId = null) => new Promise((resolve, reject) => {
       const requestId = ++id;
       const timer = setTimeout(() => { pending.delete(requestId); reject(Error("Internal browser command timed out")); }, 5000);
       pending.set(requestId, { resolve, reject, timer });
-      socket.send(JSON.stringify({ id: requestId, method, params }));
+      socket.send(JSON.stringify({ id: requestId, method, params, ...(sessionId ? { sessionId } : {}) }));
     });
-    await send("Page.enable");
-    await send("Page.navigate", { url: "chrome://sandbox" });
+    // Address an explicitly created target, independent of Chromium's internal
+    // startup targets. The launcher owns this entire fresh profile and process.
+    const { targetId } = await send("Target.createTarget", { url: "about:blank" });
+    const { sessionId } = await send("Target.attachToTarget", { targetId, flatten: true });
+    assert(targetId && sessionId);
+    await send("Page.enable", {}, sessionId);
+    await send("Page.navigate", { url: "chrome://sandbox" }, sessionId);
     const deadline = Date.now() + 10000;
     let observed = [];
     while (Date.now() < deadline) {
-      const value = await send("Runtime.evaluate", { returnByValue: true, expression:
-        "({url:location.href,rows:Array.from(document.querySelectorAll('tr'),r=>Array.from(r.cells,c=>c.textContent.trim()))})" });
+      let value;
+      try {
+        value = await send("Runtime.evaluate", { returnByValue: true, expression:
+          "({url:location.href,rows:Array.from(document.querySelectorAll('tr'),r=>Array.from(r.cells,c=>c.textContent.trim()))})" }, sessionId);
+      } catch (error) {
+        if (!/Execution context was destroyed|Cannot find context/.test(error.message)) throw error;
+        await new Promise(resolve => setTimeout(resolve, 100));
+        continue;
+      }
       const page = value.result?.value;
       if (page?.url?.startsWith("chrome://sandbox")) {
         observed = page.rows;
@@ -68,8 +78,9 @@ async function inspectSandbox() {
     throw Error(error.message + "; browser: " + browser.diagnostic());
   } finally {
     for (const request of pending.values()) clearTimeout(request.timer);
-    socket?.close();
-    browser.cleanup(); // Existing owned process-group/profile cleanup, never a user profile.
+    try { socket?.close(); } finally {
+      browser.cleanup(); // Existing owned process-group/profile cleanup, never a user profile.
+    }
   }
 }
 
