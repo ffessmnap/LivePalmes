@@ -1,0 +1,5 @@
+{
+  "schema": 1,
+  "mysqlImage": "mysql:5.7.30@sha256:32f9d9a069f7a735e28fd44ea944d53c61f990ba71460c5c183e610854ca4854",
+  "provenance": "Image deja testee par la CI main 43191012292, journal du job 131098256431"
+}

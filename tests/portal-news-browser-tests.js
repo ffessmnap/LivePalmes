@@ -3,17 +3,25 @@
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const { INITIAL_ENTRY } = require("../functions/portal-news");
-const { startStaticServer, launchBrowser, evaluate, waitFor, presentationScript } = require("../tools/capture-portal-design");
+const { startStaticServer, launchBrowser, waitFor, presentationScript } = require("../tools/capture-portal-design");
+const { evaluate } = require("./helpers/portal-browser-evaluate");
 async function main() {
-  const { server, baseUrl } = await startStaticServer();
+  const html = fs.readFileSync("portail.html", "utf8").replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, "");
+  const { server, baseUrl } = await startStaticServer(new Map([["/portail.html", html]]));
   const browser = await launchBrowser(), client = browser.client;
   try {
     for (const width of [1280, 390]) {
       await client.send("Emulation.setDeviceMetricsOverride", { width, height: 950, deviceScaleFactor: 1, mobile: width === 390 });
       for (const theme of ["light", "dark"]) {
-        await client.send("Page.navigate", { url: baseUrl + "/portail.html#nouveautes" });
+        await client.send("Page.navigate", { url: baseUrl + "/portail.html?fixture=" + width + "-" + theme + "#nouveautes" });
         assert.ok(await waitFor(client, "document.readyState === 'complete'", 12000));
+        await evaluate(client, fs.readFileSync("assets/portal/navigation.js", "utf8"));
+        await evaluate(client, fs.readFileSync("assets/portal/events.js", "utf8"));
         await evaluate(client, presentationScript({ authenticated: true, hash: "nouveautes", selector: '[data-admin-view="news"]', pinned: true }));
+        // News is deferred by the shipped portal. Load its real module explicitly
+        // before installing the synthetic RPC; no Firebase or business call.
+        await evaluate(client, "window.newsCaps=[];window.LivePalmesPortalAuth={isAdminAuthenticated:()=>false,hasCapability:()=>false,onChange:()=>{}};");
+        await evaluate(client, fs.readFileSync("assets/livepalmes-portal-news.js", "utf8"));
         await evaluate(client, `
           document.documentElement.dataset.portalTheme = ${JSON.stringify(theme)};
           window.LivePalmesNationalDocuments = undefined;
@@ -37,12 +45,21 @@ async function main() {
               return structuredClone(newsData);
             }
           });
-          window.newsNavigation = LivePalmesPortalNavigation.create({
+          const context = {
             state: {adminAuth:{hasCapability:cap => newsCaps.includes(cap)}, activeEngagementsNavEntry:'', activeEngagementNationalTab:''},
-            config: {ENGAGEMENT_ROUTE_BY_HASH:{}}, actions: {}, elements: {
-              sidebar:document.querySelector('.admin-portal-sidebar'), navToggle:document.querySelector('#adminPortalNavToggle')
+            config: {ENGAGEMENT_ROUTE_BY_HASH:{}},
+            actions: new Proxy({}, {get:(object,key)=>object[key]||(()=>{})}),
+            elements: {
+              sidebar:document.querySelector('.admin-portal-sidebar'), navToggle:document.querySelector('#adminPortalNavToggle'),
+              accountToggle:document.querySelector('#adminPortalAccountToggle'),
+              accountActions:document.querySelector('#adminPortalAccountActions'),
+              accountControl:document.querySelector('#adminPortalAccount'),
+              overviewSpaceToggles:[]
             }
-          });
+          };
+          window.newsNavigation = LivePalmesPortalNavigation.create(context);
+          Object.assign(context.actions, newsNavigation);
+          LivePalmesPortalEvents.create(context).init();
         `);
         for (const caps of [["engagements.region.manage"], ["engagements.national.manage"], ["admin.full"], ["engagements.club.manage"], ["records.manage"], ["dtn.view"], []]) {
           const allowed = caps.some(cap => ["engagements.region.manage", "engagements.national.manage", "admin.full"].includes(cap));
@@ -62,7 +79,7 @@ async function main() {
           assert.equal(result.active, allowed ? "page" : null);
           assert.ok(result.afterHelp);
           if (allowed) {
-          assert.equal(result.items.length, 3);
+          assert.equal(result.items.length, 3, "Published fixture entries: " + JSON.stringify(result));
           assert.match(result.items[0], /administrateurs régionaux.*clubs de leur région/);
           assert.match(result.items[1], /NS.*étranger.*décision nationale/);
           assert.match(result.items[2], /distance et spécialité.*ajoutés ou retirés/);
