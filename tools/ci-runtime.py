@@ -136,7 +136,7 @@ def comparison(repo, pr, main, pr_jobs, main_jobs, proofs):
     for suite, pair in proofs.items():
         source, target, receipt = pair['pr'], pair['main'], pair['receipt']
         for proof, info in [(source, pr), (target, main)]:
-            require(proof.get('schema') == 2 and proof.get('suite') == suite
+            require(proof.get('schema') in (2, 3) and proof.get('suite') == suite
                     and proof.get('result') == 'success'
                     and proof.get('origin', {}).get('repository') == repo
                     and proof['origin'].get('run') == info['id']
@@ -188,6 +188,8 @@ def comparison(repo, pr, main, pr_jobs, main_jobs, proofs):
             'environments': {suite: {'pr': pair['pr']['environment'], 'main': pair['main']['environment'],
                                      'compatible': pair['pr']['environment'] == pair['main']['environment']}
                              for suite, pair in proofs.items()},
+            'hosts': {suite: {'pr': pair['pr'].get('host'), 'main': pair['main'].get('host')}
+                      for suite, pair in proofs.items()},
             'measurement': 'Delai entre creation du run et fin des quatre jobs obligatoires, attente initiale incluse. Jobs paralleles non additionnes. Observation de cette paire, sans promesse de gain futur.'}
 
 

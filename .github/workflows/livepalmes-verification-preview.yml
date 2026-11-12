@@ -28,6 +28,9 @@ jobs:
     name: Verification applicative
     runs-on: ubuntu-24.04
     timeout-minutes: 15
+    defaults:
+      run:
+        shell: python tools/ci-pinned-runtime.py shell {0}
     outputs:
       preview: ${{ steps.preview-scope.outputs.preview }}
     steps:
@@ -42,12 +45,14 @@ jobs:
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        shell: bash
         run: python tools/preview-scope.py "$BASE_SHA" "$HEAD_SHA" >> "$GITHUB_OUTPUT"
 
       - name: Determiner les tests Firestore necessaires
         id: test-scope
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+        shell: bash
         run: python tools/test-verification-evidence.py scope
 
       - name: Installer Node.js
@@ -68,6 +73,19 @@ jobs:
         with:
           distribution: temurin
           java-version: '21'
+
+      - name: Restaurer les archives du runtime immuable
+        if: steps.test-scope.outputs.documentation != 'true'
+        uses: actions/cache@v4
+        with:
+          path: ${{ runner.temp }}/ci-runtime-downloads
+          key: ci-runtime-linux-amd64-${{ hashFiles('.github/ci-container.json') }}
+
+      - name: Installer et controler le runtime immuable
+        if: steps.test-scope.outputs.documentation != 'true'
+        timeout-minutes: 5
+        shell: bash
+        run: python tools/ci-pinned-runtime.py prepare
 
       - name: Reutiliser les suites PR de contenu identique
         id: reused
@@ -93,6 +111,7 @@ jobs:
         run: node tools/verify-livepalmes.js
 
       - name: Verifier les ecritures par equipes dans MySQL isole
+        shell: bash
         if: ${{ !cancelled() && steps.test-scope.outputs.documentation != 'true' && steps.reused.outputs.mysql != 'true' }}
         env:
           NAP_TEAM_FIXTURE_ALLOWED: isolated-ci
@@ -104,9 +123,9 @@ jobs:
             if docker exec livepalmes-team-mysql mysqladmin ping --protocol=TCP -h127.0.0.1 -uroot -p"$NAP_TEAM_FIXTURE_PASSWORD" --silent >/dev/null 2>&1; then break; fi
             sleep 1
           done
-          node tests/nap-team-entry-mysql-tests.js
-          node tests/nap-club-account-emails-mysql-tests.js
-          node tests/nap-direct-mysql-tests.js
+          python tools/ci-pinned-runtime.py exec node tests/nap-team-entry-mysql-tests.js
+          python tools/ci-pinned-runtime.py exec node tests/nap-club-account-emails-mysql-tests.js
+          python tools/ci-pinned-runtime.py exec node tests/nap-direct-mysql-tests.js
 
       - name: Enregistrer les preuves des suites applicatives
         if: steps.test-scope.outputs.documentation != 'true'
@@ -141,6 +160,9 @@ jobs:
     name: Verification du circuit de publication
     runs-on: ubuntu-24.04
     timeout-minutes: 15
+    defaults:
+      run:
+        shell: python tools/ci-pinned-runtime.py shell {0}
     steps:
       - name: Recuperer la version a verifier
         uses: actions/checkout@v7
@@ -153,12 +175,14 @@ jobs:
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        shell: bash
         run: python tools/preview-scope.py "$BASE_SHA" "$HEAD_SHA" >> "$GITHUB_OUTPUT"
 
       - name: Determiner les tests Firestore necessaires
         id: test-scope
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+        shell: bash
         run: python tools/test-verification-evidence.py scope
 
       - name: Installer Node.js
@@ -179,6 +203,19 @@ jobs:
         with:
           distribution: temurin
           java-version: '21'
+
+      - name: Restaurer les archives du runtime immuable
+        if: steps.test-scope.outputs.documentation != 'true'
+        uses: actions/cache@v4
+        with:
+          path: ${{ runner.temp }}/ci-runtime-downloads
+          key: ci-runtime-linux-amd64-${{ hashFiles('.github/ci-container.json') }}
+
+      - name: Installer et controler le runtime immuable
+        if: steps.test-scope.outputs.documentation != 'true'
+        timeout-minutes: 5
+        shell: bash
+        run: python tools/ci-pinned-runtime.py prepare
 
       - name: Reutiliser les suites PR de contenu identique
         id: reused
@@ -227,6 +264,7 @@ jobs:
           python tests/test-verification-evidence-tests.py
           python tests/ci-runtime-tests.py
           python tests/ci-suite-evidence-tests.py
+          python tests/ci-pinned-runtime-tests.py
           python tests/production-pdf-functions-tests.py
           python tests/production-notification-release-tests.py
           python tests/production-access-request-release-tests.py
@@ -290,6 +328,9 @@ jobs:
     name: Verification navigateur hors ligne
     runs-on: ubuntu-24.04
     timeout-minutes: 15
+    defaults:
+      run:
+        shell: python tools/ci-pinned-runtime.py shell {0}
     env:
       EDGE_BIN: /usr/bin/google-chrome
       LIVEPALMES_BROWSER_EXECUTABLE: /usr/bin/google-chrome
@@ -305,6 +346,7 @@ jobs:
         id: test-scope
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+        shell: bash
         run: python tools/test-verification-evidence.py scope
 
       - name: Installer Node.js
@@ -319,6 +361,19 @@ jobs:
             functions/package-lock.json
             tests/firestore-rules/package-lock.json
             tests/browser/package-lock.json
+
+      - name: Restaurer les archives du runtime immuable
+        if: steps.test-scope.outputs.documentation != 'true'
+        uses: actions/cache@v4
+        with:
+          path: ${{ runner.temp }}/ci-runtime-downloads
+          key: ci-runtime-linux-amd64-${{ hashFiles('.github/ci-container.json') }}
+
+      - name: Installer et controler le runtime immuable
+        if: steps.test-scope.outputs.documentation != 'true'
+        timeout-minutes: 5
+        shell: bash
+        run: python tools/ci-pinned-runtime.py prepare
 
       - name: Reutiliser la preuve navigateur de contenu identique
         id: reused
