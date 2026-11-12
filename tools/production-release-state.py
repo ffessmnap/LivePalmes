@@ -79,6 +79,20 @@ def check_after(backup, destination, require_success):
             public_navigation_direct_policy.assert_retained(before,after,SimpleNamespace(identity=identity,rollback_patch=rollback_patch))
         except ValueError as error:
             errors.append(str(error))
+    public_navigation_touch_policy = None
+    if report.get('additionalPublicNavigationTouchFunctions'):
+        spec = importlib.util.spec_from_file_location('public_navigation_touch_state_policy', Path(__file__).with_name('public-navigation-touch-production-policy.py'))
+        public_navigation_touch_policy = importlib.util.module_from_spec(spec); spec.loader.exec_module(public_navigation_touch_policy)
+        c = public_navigation_touch_policy.contract()
+        public_navigation_touch_policy.require(report['additionalPublicNavigationTouchFunctions'] == c['sourceOnly']
+            and report['candidate'] == c['candidate'] and len(before) == c['inventoryCount']
+            and selected == {PREFIX+n for n in c['selected']} and report['newFunctions'] == []
+            and report.get('public_navigation_touchNapBinding') == public_navigation_touch_policy.initial(list(before.values())),
+            'Rapport navigation tactile hors contrat')
+        try:
+            public_navigation_touch_policy.assert_retained(before,after,SimpleNamespace(identity=identity,rollback_patch=rollback_patch))
+        except ValueError as error:
+            errors.append(str(error))
     reference_policy = None
     if report.get('additionalReferenceCleanupFunctions'):
         spec = importlib.util.spec_from_file_location('reference_cleanup_state_policy', Path(__file__).with_name('reference-cleanup-production-policy.py'))
@@ -172,6 +186,11 @@ def check_after(backup, destination, require_success):
         elif public_navigation_direct_policy is not None:
             try:
                 public_navigation_direct_policy.assert_config(before[name], f, SimpleNamespace(rollback_patch=rollback_patch), report['public_navigation_directNapBinding'])
+            except ValueError as error:
+                errors.append(str(error))
+        elif public_navigation_touch_policy is not None:
+            try:
+                public_navigation_touch_policy.assert_config(before[name], f, SimpleNamespace(rollback_patch=rollback_patch), report['public_navigation_touchNapBinding'])
             except ValueError as error:
                 errors.append(str(error))
         elif reference_policy is not None:
