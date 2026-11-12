@@ -23,6 +23,12 @@ permissions:
 concurrency:
   group: livepalmes-production
   cancel-in-progress: false
+env:
+  npm_config_fetch_retries: '2'
+  npm_config_fetch_timeout: '30000'
+  npm_config_fetch_retry_mintimeout: '1000'
+  npm_config_fetch_retry_maxtimeout: '10000'
+
 jobs:
   release:
     if: github.ref == 'refs/heads/main' && github.run_attempt == 1 && inputs.confirmation && vars.FIREBASE_PRODUCTION_ENABLED
@@ -65,9 +71,10 @@ jobs:
         fetch-depth: 0
         persist-credentials: false
     - uses: actions/setup-node@v7
+      timeout-minutes: 3
       with:
-        node-version: '22'
-        check-latest: true
+        node-version: '22.23.5'
+        check-latest: false
         cache: npm
         cache-dependency-path: |
           candidate/functions/package-lock.json
@@ -344,3 +351,14 @@ jobs:
          if [ "$BCC_PRESERVATION" = true ]; then test "$BCC_AFTER" = success; fi
 
         echo "Publication du commit $CANDIDATE_SHA terminee, code uniquement." >> "$GITHUB_STEP_SUMMARY"'
+    - name: Distinguer installations et tests
+      if: always()
+      timeout-minutes: 1
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        if [ -f "tooling/tools/ci-runtime.py" ]; then
+          python "tooling/tools/ci-runtime.py" timings
+        else
+          echo "Mesure indisponible pour ce candidat historique ; controles inchanges." >> "$GITHUB_STEP_SUMMARY"
+        fi

@@ -2,6 +2,13 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
+### Circuit TEST/PROD — accélération après clôture · 12 novembre 2026 (PR 1 : installations)
+
+- Plan en quatre PR explicitement approuvé par Antoine dans la coordination (chat 01a1cf1d, réponse humaine 01a1cf6c), puis transmis à Infra pour mise en œuvre après la publication précédente clôturée. Aucun déploiement, donnée ou envoi autorisé par ce chantier ; mails actifs et toutes les exclusions conservés.
+- Première étape : Node 22.23.5 exact sur le circuit commun, caches et lockfiles inchangés, téléchargements bornés, mesures séparées installations/vérifications à partir des horodatages GitHub. Le jeton CI reçoit seulement la lecture des métadonnées Actions pour ces mesures ; aucun droit d’écriture, IAM, secret ou configuration runtime supplémentaire.
+- Quatre tests de cohérence/mesure et treize tests existants de réutilisation réussis localement (quatre contrôles Bash réservés à la CI Linux). CI applicative/publication obligatoire avant intégration, sans suite globale locale en doublon. Les candidats historiques restent utilisables et les plans déjà émis gardent leur circuit.
+- Étapes suivantes : preuves distinctes réutilisables PR→main ; moteur standard avec manifeste immuable et comparaison historique hors ligne ; dossier automatique fondé sur des validations authentiques. Aucune activation générique de fonctions exclues et aucune réduction manuelle des sélections.
+
 ### Public — navigation tactile, trophée et accueil mobile · 12 novembre 2026 (PROD publiée et contrôlée)
 
 - Périmètre commun figé `17c4fdfcc2a86d7c6a985e277497f108ced4e32b` : liens tactiles [#847](https://github.com/ffessmnap/LivePalmes/pull/847), trophée compact et détail corrigé cinq lignes Épreuve / Temps / Points [#843](https://github.com/ffessmnap/LivePalmes/pull/843)/[#844](https://github.com/ffessmnap/LivePalmes/pull/844), accueil mobile Performances → Calendrier → Documents [#845](https://github.com/ffessmnap/LivePalmes/pull/845), ordinateur inchangé. Les 26 chemins applicatifs sont couverts, sans recomposition ni sélection silencieuse.

@@ -1,0 +1,17 @@
+{
+  "schema": 1,
+  "node": "22.23.5",
+  "workflows": [
+    "livepalmes-verification-preview.yml",
+    "livepalmes-test-common.yml",
+    "livepalmes-test-backend.yml",
+    "livepalmes-test-mail-sources.yml",
+    "livepalmes-production-preflight.yml",
+    "livepalmes-production-release.yml",
+    "livepalmes-production-readiness.yml",
+    "livepalmes-production-rollback.yml"
+  ],
+  "setupTimeoutMinutes": 3,
+  "fetchRetries": 2,
+  "fetchTimeoutMs": 30000
+}
