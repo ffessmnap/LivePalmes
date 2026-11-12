@@ -4,13 +4,17 @@ const os = require("node:os");
 const path = require("node:path");
 const { spawn } = require("node:child_process");
 
-async function launchBrowserProcess(executable, { spawnProcess = spawn, startTimeoutMs = 10000 } = {}) {
+async function launchBrowserProcess(executable, { spawnProcess = spawn, startTimeoutMs = 30000, platform = process.platform } = {}) {
   const tempRoot = path.resolve(os.tmpdir());
   const userDataDir = fs.mkdtempSync(path.join(tempRoot, "livepalmes-browser-"));
   let processRef, spawnError, stderr = "";
-  const diagnostic = () => stderr.slice(-1600).replace(/[\r\n]+/g, " ");
+  const diagnostic = () => stderr.slice(-4096).replace(/[\r\n]+/g, " ");
   function cleanup() {
-    try { processRef?.kill(); } catch {}
+    try {
+      if (platform === "linux" && Number.isInteger(processRef?.pid) && processRef.pid > 1) {
+        process.kill(-processRef.pid, "SIGTERM"); // Only our fresh detached browser/bus group.
+      } else processRef?.kill();
+    } catch { try { processRef?.kill(); } catch {} }
     // Delete only the fresh profile created by this invocation, never a user profile.
     if (path.dirname(userDataDir) !== tempRoot || !path.basename(userDataDir).startsWith("livepalmes-browser-")) {
       throw new Error("Browser fixture profile escaped its temporary directory");
@@ -18,10 +22,16 @@ async function launchBrowserProcess(executable, { spawnProcess = spawn, startTim
     try { fs.rmSync(userDataDir, { recursive: true, force: true }); } catch {}
   }
   try {
-    processRef = spawnProcess(executable, [
+    const args = [
       "--headless=new", "--disable-gpu", "--remote-debugging-address=127.0.0.1",
       "--remote-debugging-port=0", `--user-data-dir=${userDataDir}`, "about:blank"
-    ], { stdio: ["ignore", "ignore", "pipe"], windowsHide: true });
+    ];
+    // Chromium's headless test harness uses a private D-Bus session to avoid
+    // GLib auto-launch hangs. Never change the system bus or disable the sandbox.
+    const linux = platform === "linux";
+    processRef = spawnProcess(linux ? "dbus-run-session" : executable,
+      linux ? ["--", executable, ...args] : args,
+      { stdio: ["ignore", "ignore", "pipe"], windowsHide: true, detached: linux });
     processRef.once("error", error => { spawnError = error; });
     processRef.stderr?.setEncoding("utf8");
     processRef.stderr?.on("data", data => { stderr = (stderr + data).slice(-4096); });
