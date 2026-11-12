@@ -28,6 +28,10 @@ class PinnedRuntimeTests(unittest.TestCase):
         namespaces = [r for r in profile['syscalls'] if set(r['names']) == {'clone', 'setns', 'unshare'}]
         self.assertEqual(len(namespaces), 1)
         self.assertEqual(namespaces[0]['action'], 'SCMP_ACT_ALLOW')
+        chroot = [r for r in profile['syscalls'] if r['names'] == ['chroot']]
+        self.assertEqual(len(chroot), 1)
+        self.assertEqual(chroot[0]['includes'], {})
+        self.assertIn('--cap-drop=ALL', self.command()[0])
 
     def command(self, **extra):
         environment = {'GITHUB_OUTPUT': '/runner/output', 'GH_TOKEN': 'fixture-read-only-token',
