@@ -115,6 +115,10 @@ concurrency:
   cancel-in-progress: false
 
 env:
+  npm_config_fetch_retries: '2'
+  npm_config_fetch_timeout: '30000'
+  npm_config_fetch_retry_mintimeout: '1000'
+  npm_config_fetch_retry_maxtimeout: '10000'
   TARGET_FIREBASE_PROJECT: livepalmes-test
   GCLOUD_PROJECT: livepalmes-test
   GOOGLE_CLOUD_PROJECT: livepalmes-test
@@ -205,15 +209,11 @@ jobs:
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "$EXPECTED_COMMIT"
 
-      - name: Lire la version Node.js du projet
-        id: node-version
-        shell: bash
-        run: node -p '"version=" + require("./functions/package.json").engines.node' >> "$GITHUB_OUTPUT"
-
       - name: Installer Node.js
         uses: actions/setup-node@v7
+        timeout-minutes: 3
         with:
-          node-version: ${{ steps.node-version.outputs.version }}
+          node-version: '22.23.5'
           cache: npm
           cache-dependency-path: |
             functions/package-lock.json
@@ -456,6 +456,17 @@ jobs:
           rm -f "$RUNNER_TEMP/livepalmes-test-backend.json" "$RUNNER_TEMP/function-selector.txt" "$RUNNER_TEMP/required-apis.txt" "$RUNNER_TEMP/enabled-apis.txt"
           rm -rf .firebase-bootstrap .firebase-test-functions
 
+      - name: Distinguer installations et tests
+        if: always()
+        timeout-minutes: 1
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ -f "tools/ci-runtime.py" ]; then
+            python "tools/ci-runtime.py" timings
+          else
+            echo "Mesure indisponible pour ce candidat historique ; controles inchanges." >> "$GITHUB_STEP_SUMMARY"
+          fi
   benchmark-sources-test:
     name: Mesurer six sources identiques sur TEST uniquement
     if: inputs.benchmark_sources && github.ref == 'refs/heads/main' && github.run_attempt == 1
@@ -484,8 +495,9 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
       - uses: actions/setup-node@v7
+        timeout-minutes: 3
         with:
-          node-version: '22'
+          node-version: '22.23.5'
       - name: Exiger la CI exacte deja reussie
         id: verified
         run: python tools/test-verification-evidence.py reuse "$RUNNER_TEMP/benchmark-ci"
@@ -514,3 +526,14 @@ jobs:
           path: ${{ runner.temp }}/source-benchmark/test-backend-proof.json
           if-no-files-found: error
           retention-days: 14
+      - name: Distinguer installations et tests
+        if: always()
+        timeout-minutes: 1
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ -f "tools/ci-runtime.py" ]; then
+            python "tools/ci-runtime.py" timings
+          else
+            echo "Mesure indisponible pour ce candidat historique ; controles inchanges." >> "$GITHUB_STEP_SUMMARY"
+          fi
