@@ -8,7 +8,7 @@ Il sert a comprendre :
 
 - ce qui appartient au portail metier ;
 - ce qui est consultable en permanence par le public ;
-- ce qui appartient au dispositif Direct des competitions nationales ;
+- ce qui appartient au nouveau Direct et au dispositif national historique ;
 - ou sont stockees les donnees ;
 - quelles zones sont sensibles ;
 - quelles verifications faire avant de publier.
@@ -22,8 +22,8 @@ L'interface est faite principalement avec :
 - des pages HTML ;
 - des fichiers CSS pour l'apparence ;
 - des fichiers JavaScript pour les actions ;
-- MySQL NAP pour les données métier du portail et les lectures sportives publiques ;
-- Firebase pour les comptes, traitements serveur, réglages/traces techniques, fichiers, hébergement et LivePalmes Direct ;
+- MySQL NAP pour les données métier du portail, les lectures publiques et les tables du nouveau Direct ;
+- Firebase pour les comptes, traitements serveur, réglages/traces techniques, fichiers, hébergement et usages du Direct historique ;
 - les versions officielles Records/MPF dans NAP, consultées et administrées via les fonctions serveur existantes.
 
 Il n'y a pas de framework comme React, Vue ou Angular.
@@ -74,43 +74,29 @@ Exemples :
 - `performances/tops.html` : classements TOP ;
 - `performances/nageur.html` : fiches et historiques des nageurs.
 - `calendrier.html` : calendrier fédéral public filtrable ;
-- `competition.html?id=...` : fiche publique d'un événement.
+- `competition.html?id=...` : fiche publique d'un événement ;
+- `bibliotheque.html` : bibliothèque documentaire publique.
+
+Les documents proposés sur l'accueil et les fiches compétition complètent ce parcours.
 
 TOP, fiches nageurs, recherche, calendrier, résultats de compétition et Records/MPF lisent NAP via des endpoints bornés. Aucun accès MySQL direct depuis le navigateur ni repli Records/MPF sur un fichier statique.
 
 ### 3. LivePalmes Direct
 
-LivePalmes Direct est un dispositif distinct, utilise uniquement pour les competitions nationales concernees. Il ne faut pas le melanger avec la preparation des competitions et les engagements du portail.
+Le nouveau Direct suit les compétitions piscine de tous niveaux issues du calendrier NAP. Son bureau peut fonctionner seul ou avec des consoles selon les besoins et les accès autorisés. La préparation des engagements reste dans le portail.
 
-Il comprend les consoles terrain :
+Entrées principales :
 
-- `pilotage-livepalmes.html` : acces au pilotage du Direct ;
-- `live.html` : console Live ;
-- `speaker.html` : console Speaker ;
-- `ja.html` : console Juge Arbitre ;
-- `video.html` : console Juge Video ;
-- `bureau-perf.html` : bureau des performances ;
-- `secretariat.html` : secretariat.
+- `direct-admin.html?id=ID_NAP` : bureau ;
+- `direct-consoles.html?id=ID_NAP&role=ROLE` : consoles complémentaires ;
+- `direct.html?id=ID_NAP` : consultation publique ;
+- `direct-guide.html` : mode opératoire.
 
-Il comprend aussi les pages publiques liees au deroulement de cette competition :
+Le parcours utilise les modules de `assets/direct/`, les fonctions serveur et les tables Direct dédiées dans NAP. L'authentification et les services Firebase existants restent utilisés. Le stockage et la publication des PDF suivent leur circuit dédié.
 
-- `series-public.html` ou `/series` : series publiees ;
-- `resultats.html` ou `/resultats` : resultats publies ;
-- `medailles.html` : tableau des medailles ;
+Le dispositif national historique possède ses propres pages, son socle `app.js` et ses données Firestore. Ses entrées comprennent `pilotage-livepalmes.html`, les anciennes pages de rôles (`live.html`, `speaker.html`, `ja.html`, `video.html`, `bureau-perf.html`, `secretariat.html`) et les anciennes pages publiques (`series-public.html`, `resultats.html`, `medailles.html` et vues PDF associées).
 
-Les consoles utilisent notamment :
-
-- `app.js` ;
-- les modules `assets/livepalmes-*.js` ;
-- Firebase Authentication, Firestore et les Cloud Functions.
-
-Les pages publiques du Direct utilisent surtout :
-
-- `public.css` ;
-- les scripts `assets/pages/*.js` ;
-- des donnees publiees dans Firebase ou dans des fichiers publics.
-
-Elles ne chargent pas `app.js` et ne permettent pas de piloter la competition.
+Ne pas appliquer cette architecture historique au nouveau parcours ni confondre les deux sources. Le retrait prévu des anciennes pages ne vaut pas suppression de leurs données ou archives ; voir [le fonctionnement actuel et la transition](LIVEPALMES_DIRECT.md).
 
 ## Relations entre les composantes
 
@@ -125,16 +111,16 @@ Le portail gere les donnees metier durables :
 
 Les consultations sportives publiques interrogent NAP via le serveur. Les Records/MPF officiels disposent de leurs versions administrées dans NAP ; ils ne sont pas recalculés automatiquement à partir des TOP.
 
-Le Direct possede son propre parcours pour une competition nationale :
+Le nouveau Direct possède son propre parcours pour la compétition sélectionnée :
 
 ```text
-Consoles LivePalmes Direct
-  -> publient series, resultats, medailles, archives
-  -> Firebase / fichiers publics
-  -> pages publiques du Direct affichent ces informations
+Bureau et consoles
+  -> fonctions serveur et contrôles d'accès
+  -> tables Direct dédiées dans NAP
+  -> consultation publique sur direct.html
 ```
 
-Le fait que le Direct partage Firebase et certains composants techniques avec le portail ne signifie pas qu'il soit utilise pour toutes les competitions.
+Les PDF suivent leur circuit de stockage et de publication dédié. L'ancien parcours Firestore et ses pages publiques restent identifiés comme historiques. Le partage de services techniques avec le portail ne rend pas les consoles nécessaires à toutes les compétitions.
 
 ## Organisation des fichiers
 
@@ -143,9 +129,11 @@ Le fait que le Direct partage Firebase et certains composants techniques avec le
 - `portail.html` : portail metier principal ;
 - `index.html` : accueil public principal de l'ecosysteme ;
 - `public.html` : copie de compatibilite de l'accueil public ;
-- `pilotage-livepalmes.html` : page de pilotage ;
-- `live.html`, `speaker.html`, `ja.html`, `video.html`, `bureau-perf.html`, `secretariat.html` : consoles dediees ;
-- `resultats.html`, `series-public.html`, `medailles.html` : pages publiques ;
+- `calendrier.html`, `competition.html`, `bibliotheque.html` : calendrier, fiches compétition et documents publics ;
+- `direct-admin.html`, `direct-consoles.html`, `direct.html`, `direct-guide.html` : nouveau parcours Direct ;
+- `pilotage-livepalmes.html` : pilotage historique ;
+- `live.html`, `speaker.html`, `ja.html`, `video.html`, `bureau-perf.html`, `secretariat.html` : consoles dédiées historiques ;
+- `resultats.html`, `series-public.html`, `medailles.html` : pages publiques historiques du Direct ;
 - `pdf.html`, `resultat-pdf.html`, `series-pdf.html` : vues PDF.
 
 ### Styles
@@ -156,7 +144,12 @@ Le fait que le Direct partage Firebase et certains composants techniques avec le
 - `assets/livepalmes-admin-portal.css` : portail ;
 - `performances/public/styles.css` : espace performances.
 
-### JavaScript des consoles
+### JavaScript du nouveau Direct
+
+- `assets/direct/` : bureau, consoles, imports, surveillance WinPalme et consultation publique du nouveau parcours ;
+- certains composants historiques sont réutilisés : identifier leurs consommateurs avant modification.
+
+### JavaScript des consoles historiques
 
 - `app.js` : assembleur principal des consoles ;
 - `assets/livepalmes-app-*.js` : demarrage, etat, stockage, modules, DOM ;
@@ -185,6 +178,7 @@ Regle importante : `app.js` doit rester un assembleur court. Il ne faut pas y re
 - `assets/pages/resultats.js` ;
 - `assets/pages/medailles.js` ;
 - `assets/pages/calendrier.js` et `assets/pages/competition.js` ;
+- `assets/public/livepalmes-public-documents.js` : bibliothèque documentaire ;
 - `assets/public/livepalmes-public-calendar.js` : chargement et règles d'affichage du calendrier ;
 - `assets/pages/pdf.js` ;
 - `assets/pages/resultat-pdf.js` ;
@@ -230,11 +224,23 @@ La configuration principale est dans :
 - `assets/livepalmes-app-config.js` ;
 - `functions/index.js`.
 
-### Données de LivePalmes Direct (uniquement)
+### Données du nouveau Direct
 
-Les données des consoles et publications en direct restent rattachées à une compétition Firestore. Les compétitions et engagements du portail sont dans NAP ; ne pas confondre les deux périmètres.
+Le nouveau parcours utilise les cinq tables dédiées :
 
-La competition principale actuelle est :
+- `livepalmes_direct_competitions` ;
+- `livepalmes_direct_events` ;
+- `livepalmes_direct_entries` ;
+- `livepalmes_direct_publications` ;
+- `livepalmes_direct_access`.
+
+Les accès incluent l'environnement serveur TEST ou production. Ces tables ne doivent pas être confondues avec les données natives des compétitions, engagements et performances. Les identités et clubs importés n'autorisent aucune écriture sur les fiches natives.
+
+### Données du Direct historique
+
+Les chemins Firestore, index publics et mécanismes ci-dessous concernent l'ancien dispositif. Ils ne constituent pas la source du nouveau Direct.
+
+Le chemin de compétition historique est :
 
 ```text
 competitions/livepalmes-active
@@ -305,9 +311,9 @@ Les preuves de déplacement sont historiques : la phase fabriques est attestée 
 
 Les valeurs de calendrier, l'état d'activité, les références de personnes et les témoins de périmètre NAP sont des modules indépendants des lecteurs/écrivains qui les utilisent. Le graphe des imports serveur est contrôlé sans dépendance circulaire. Voir [la maintenance et ses contrôles](MAINTENANCE_ARCHITECTURE.md).
 
-## Pages consoles generees
+## Pages consoles générées du dispositif historique
 
-Les pages consoles dediees sont generees depuis `pilotage-livepalmes.html`.
+Les pages consoles dédiées historiques sont générées depuis `pilotage-livepalmes.html`. Ce générateur ne produit pas les nouvelles entrées `direct-admin.html` et `direct-consoles.html`.
 
 Commande :
 
@@ -330,28 +336,11 @@ La verification globale le controle automatiquement.
 
 ## Zones sensibles
 
-Ces zones doivent etre modifiees avec prudence.
+Appliquer la classification et les autorisations d'`AGENTS.md` : présentation, changements sensibles, opérations réelles sur les données et accord PROD. Une retouche visuelle ne modifiant ni règle métier, ni accès, ni données accessibles suit le parcours ordinaire, avec les contrôles propres aux composants touchés.
 
-Demander validation avant une modification importante sur :
+Les règles sportives, droits, imports/publications, générateurs, backend, configuration et structures persistantes restent soumis aux accords sensibles. Une écriture réelle NAP, Firestore ou Storage exige son accord spécifique, même depuis TEST.
 
-- authentification ;
-- codes PIN ;
-- droits d'acces ;
-- regles Firestore ;
-- configuration Firebase ;
-- Cloud Functions ;
-- structure des donnees Firestore ;
-- import PDF des series ;
-- lecture PDF des resultats ;
-- publication des resultats ;
-- finalistes, forfaits, repechages ;
-- records et MPF ;
-- categories sportives ;
-- classements ;
-- medailles ;
-- performances historiques ;
-- fichiers generes dans `performances/public/data/` ;
-- cache et rewrites dans `firebase.json`.
+Les anciens fichiers générés, notamment sous `performances/public/data/`, ne sont pas une source courante. Ne pas les modifier à la main ni relancer un ancien pipeline pour actualiser NAP ; voir [le circuit public](pipeline-performances-publiques.md).
 
 ## Regles simples pour modifier LivePalmes
 
@@ -414,8 +403,9 @@ Tester manuellement en particulier apres une modification sur :
 ```text
 LivePalmes
   -> Portail : preparation, engagements, comptes, droits et donnees sportives
-  -> Public : Records, MPF, TOP, performances et fiches nageurs
-  -> Direct national : consoles, series et resultats en direct
+  -> Public : calendrier, documents, Records, MPF, TOP, performances et fiches nageurs
+  -> Direct : bureau multi-compétitions, consoles facultatives et diffusion publique
+       avec un ancien dispositif national distinct
 ```
 
 Les trois composantes partagent une infrastructure technique, mais leurs responsabilites restent separees.
