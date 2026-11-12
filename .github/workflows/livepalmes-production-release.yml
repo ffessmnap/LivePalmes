@@ -133,6 +133,7 @@ jobs:
         python tooling/tests/reference-cleanup-production-tests.py
         python tooling/tests/public-navigation-direct-production-tests.py
         python tooling/tests/public-navigation-touch-production-tests.py
+        python tooling/tools/verify-release-acceleration.py
         node tooling/tests/november-retained-scope-tests.js
         python tooling/tests/nap-account-release-tests.py
         node tooling/tests/release-nap-account-compatibility.js
@@ -220,6 +221,8 @@ jobs:
       if: steps.plan.outputs.backend == 'true'
       continue-on-error: true
       run: |
+        set -euo pipefail
+        python tooling/tools/standard-source-publish.py candidate "$PLAN" "$RELEASE_BACKUP_DIRECTORY"
         python tooling/tools/november-validated-release-policy.py candidate "$PLAN" "$RELEASE_BACKUP_DIRECTORY"
         python tooling/tools/november10-validated-release-policy.py candidate "$PLAN" "$RELEASE_BACKUP_DIRECTORY"
         python tooling/tools/reference-cleanup-production-policy.py candidate "$PLAN" "$RELEASE_BACKUP_DIRECTORY"
@@ -267,6 +270,7 @@ jobs:
         HOSTING_CHECK_RECEIPT: ${{ runner.temp }}/production-hosting-check.json
       run: |
         python tooling/tools/check-production-hosting.py candidate
+        python tooling/tools/standard-source-publish.py hosting candidate "$PLAN" "$RUNNER_TEMP/production-standard-hosting-check.json"
         python tooling/tools/november10-validated-release-policy.py hosting candidate "$PLAN" "$RUNNER_TEMP/production-november10-hosting-check.json"
         python tooling/tools/reference-cleanup-production-policy.py hosting candidate "$PLAN" "$RUNNER_TEMP/production-reference-cleanup-hosting-check.json"
         python tooling/tools/public-navigation-direct-production-policy.py hosting candidate "$PLAN" "$RUNNER_TEMP/production-public-navigation-direct-hosting-check.json"
@@ -280,6 +284,7 @@ jobs:
         path: |
           ${{ runner.temp }}/production-hosting-after.json
           ${{ runner.temp }}/production-hosting-check.json
+          ${{ runner.temp }}/production-standard-hosting-check.json
           ${{ runner.temp }}/production-november10-hosting-check.json
           ${{ runner.temp }}/production-reference-cleanup-hosting-check.json
           ${{ runner.temp }}/production-public-navigation-direct-hosting-check.json
@@ -315,6 +320,7 @@ jobs:
           ${{ runner.temp }}/release-plan/reference_cleanup-*.json
           ${{ runner.temp }}/release-plan/public_navigation_direct-*.json
           ${{ runner.temp }}/release-plan/public_navigation_touch-*.json
+          ${{ runner.temp }}/release-plan/standard-*.json
         if-no-files-found: error
         retention-days: 14
     - uses: google-github-actions/auth@v3

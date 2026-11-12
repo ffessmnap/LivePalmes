@@ -61,6 +61,10 @@ _public_navigation_touch_spec = importlib.util.spec_from_file_location('public_n
 public_navigation_touch = importlib.util.module_from_spec(_public_navigation_touch_spec)
 _public_navigation_touch_spec.loader.exec_module(public_navigation_touch)
 
+_standard_spec = importlib.util.spec_from_file_location('standard_source_policy', ROOT/'tools/standard-source-policy.py')
+standard_sources = importlib.util.module_from_spec(_standard_spec)
+_standard_spec.loader.exec_module(standard_sources)
+
 
 def approved_license_report_functions(value):
     return license_release.approved(value)
@@ -113,7 +117,7 @@ def approved_extra_functions(value):
     names += november10_release.approved(value)
     names += reference_cleanup.approved(value)
     names += public_navigation_direct.approved(value)
-    names += public_navigation_touch.approved(value)
+    names += public_navigation_touch.approved(value) + standard_sources.approved(value)
     require(len(names) == len(set(names)), 'Extensions de publication superposees')
     return names
 
@@ -175,6 +179,9 @@ def approved_club_directory_functions(value):
 
 
 def idf_preservation(value):
+    if standard_sources.enabled(value):
+        standard_sources.approved(value)
+        return {'scope': 'all', 'standardControlsUnchanged': True}
     if public_navigation_touch.approved(value):
         return {'scope': 'all', 'publicNavigationTouchControlsUnchanged': True}
     if public_navigation_direct.approved(value):
@@ -429,6 +436,11 @@ def targeted_test_evidence(directory, current):
     import_sources = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(import_sources)
     trusted.update(import_sources.trusted_revisions(directory, current, SimpleNamespace(
+        gh=gh, artifact=artifact, read=read, matching_functions=matching_functions,
+        test_backend_fingerprints=test_backend_fingerprints)))
+    spec = importlib.util.spec_from_file_location('standard_test_evidence', ROOT/'tools/publish-test-standard-sources.py')
+    standard_test = importlib.util.module_from_spec(spec); spec.loader.exec_module(standard_test)
+    trusted.update(standard_test.trusted_revisions(directory, current, SimpleNamespace(
         gh=gh, artifact=artifact, read=read, matching_functions=matching_functions,
         test_backend_fingerprints=test_backend_fingerprints)))
     # Direct is independently closed to its two calculated consumers and contract.
@@ -793,6 +805,7 @@ def isolated_test_rules(paths, production, candidate):
 
 def validate_request(value, paths):
     require(value.get('schema') == 1, 'Schema inconnu')
+    standard_sources.paths(value, paths, git)
     for key in ['candidate', 'productionCommit']:
         require(isinstance(value.get(key), str) and SHA.fullmatch(value[key]), 'SHA complet requis: ' + key)
     require(re.fullmatch(r'sites/livepalmes/versions/[A-Za-z0-9_-]+', value.get('productionHosting', '')), 'Version Hosting PROD requise')
@@ -808,6 +821,8 @@ def validate_request(value, paths):
                 ordinary.add('portalAccessNsRelease')
             if validated_portal.approved(value):
                 ordinary.add('validatedPortalRelease')
+            if standard_sources.enabled(value):
+                ordinary.add(standard_sources.OPTION)
             require(set(value).issubset(ordinary), 'Gel reserve au parcours ordinaire, sans contrat exceptionnel')
     path_set = set(paths)
     ignored = set(ignored_top_paths(paths, value['candidate']))
@@ -1103,6 +1118,8 @@ def prepare_selection(directory, candidate):
                 'Notifications TEST absentes ou pas au code valide')
         if approved_dtn_functions(request):
             require(read(directory / 'test-proof.json').get('dtnExtensionVerification') == {'schema': 1, 'candidate': request['candidate'], 'suite': 'dtn-shared-invalidation', 'mode': 'offline-no-invocation', 'result': 'success', 'functions': sorted(DTN_FUNCTIONS)}, 'Preuve des dependances DTN absente ou incompatible')
+        require(all(not needs_function(names.get(n), n, request['candidate'], project='livepalmes-test')
+                    for n in standard_sources.approved(request)), 'Sources TEST standard absentes ou incompatibles')
         selected += [n for n in extra if n not in selected]
     write(directory / 'selection.json', selected)
 
@@ -1263,6 +1280,9 @@ def freeze_plan(directory, evidence=False):
         selected = direct_release.select(request, selected, read(root/'baseline.json'), names)
         write(root/'direct-scope-proof.json', direct_release.scope())
     require_access_request_selection(request, selected)
+    if standard_sources.enabled(request):
+        write(root/'standard-source-manifest.json', standard_sources.freeze(request, read(root/'baseline.json'),
+              names, selected, production_selection_fingerprints, backend_fingerprints, git, read(root/'paths.json')))
     if november_release.approved(request):
         write(root / 'november-scope-proof.json', november_release.verify(request, read(root / 'baseline.json'), names, backend_fingerprints))
     if reference_cleanup.approved(request):
@@ -1571,6 +1591,12 @@ def fetch_plan(preparation, resume, directory):
             guards = root / 'previous/public-navigation-touch-guards'
             artifact(resume, 'production-idf-preservation', guards, '.github/workflows/livepalmes-production-release.yml')
             public_navigation_touch.restore_witness(root, guards)
+        if standard_sources.enabled(read(root/'request.json')):
+            guards = root/'previous/standard-guards'
+            info = artifact(resume, 'production-idf-preservation', guards)
+            require(info['path'] == '.github/workflows/livepalmes-production-release.yml',
+                    'Temoins de reprise hors workflow officiel')
+            standard_sources.restore_witness(root, guards)
         if november10_release.approved(read(root / 'request.json')):
             guards = root / 'previous/november10-guards'
             artifact(resume, 'production-idf-preservation', guards, '.github/workflows/livepalmes-production-release.yml')
@@ -1592,7 +1618,7 @@ def fetch_plan(preparation, resume, directory):
     evidence_path = root / 'test-proof.json'
     verified = reusable_verification(read(evidence_path), value['candidate']) if evidence_path.exists() else False
     output(candidate=value['candidate'], backend=str(backend).lower(), verified=str(verified).lower(),
-           preserved_sources_only=str(bool(november10_release.approved(value) or reference_cleanup.approved(value) or public_navigation_direct.approved(value) or public_navigation_touch.approved(value))).lower(),
+           preserved_sources_only=str(bool(standard_sources.enabled(value) or november10_release.approved(value) or reference_cleanup.approved(value) or public_navigation_direct.approved(value) or public_navigation_touch.approved(value))).lower(),
            license_reports=str(bool(approved_license_report_functions(value))).lower(),
            idf_preservation=str(idf_preservation(value) is not None).lower(),
            nap_account=str(bool(nap_account.approved(value))).lower(),
