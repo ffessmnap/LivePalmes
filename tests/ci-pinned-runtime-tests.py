@@ -22,7 +22,7 @@ class PinnedRuntimeTests(unittest.TestCase):
         policy = m.policy()
         self.assertIn('@sha256:', policy['image'])
         self.assertEqual(policy['tools']['node']['version'], '22.23.5')
-        self.assertEqual(set(policy['tools']), {'node', 'java', 'githubCLI'})
+        self.assertEqual(set(policy['tools']), {'node', 'java', 'githubCLI', 'powershell'})
         profile = json.loads((ROOT/m.SECCOMP).read_text())
         self.assertEqual(profile['defaultAction'], 'SCMP_ACT_ERRNO')
         namespaces = [r for r in profile['syscalls'] if set(r['names']) == {'clone', 'setns', 'unshare'}]
@@ -116,7 +116,7 @@ class PinnedRuntimeTests(unittest.TestCase):
     def test_missing_chromium_sandbox_remains_a_failure(self):
         failed = subprocess.CompletedProcess([], 134, stdout='', stderr='isolated browser failed')
         with patch.object(m, 'identity', return_value={}), \
-             patch.object(m.subprocess, 'run', return_value=failed), \
+             patch.object(m.subprocess, 'run', side_effect=lambda args, **kw: failed if args[-1].endswith('ci-runtime-sandbox-check.js') else subprocess.CompletedProcess(args, 0, stdout='', stderr='')), \
              patch.object(m.Path, 'is_file', return_value=False), \
              patch.dict(os.environ, {'EDGE_BIN': '/pinned/chrome'}), \
              self.assertRaisesRegex(ValueError, 'Chromium refuse'):

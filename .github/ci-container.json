@@ -24,6 +24,15 @@
       "url": "https://github.com/cli/cli/releases/download/v2.103.3/gh_2.103.3_linux_amd64.tar.gz",
       "sha256": "4c806978ffce1cec70853302a56d70ac6da4f19bae7adca4e1a8ab00633dd91d",
       "directory": "gh_2.103.3_linux_amd64"
+    },
+    "powershell": {
+      "version": "7.6.10",
+      "directory": "powershell-7.6.10-linux-x64",
+      "binDirectory": "",
+      "flat": true,
+      "url": "https://github.com/PowerShell/PowerShell/releases/download/v7.6.10/powershell-7.6.10-linux-x64.tar.gz",
+      "sha256": "e261cabc91c78a9afe8d1e5f24731ab0d38204735ab2ec94b0af55102652e10d",
+      "provenance": "Same PowerShell version as actions/runner-images ubuntu24/20261111.370. Official release asset SHA-256."
     }
   },
   "seccompAdaptation": "Allow chroot syscall under cap-drop=ALL for Chromium empty-dir confinement inside its own user namespace; Linux capability checks remain enforced. No added capability or unconfined profile.",

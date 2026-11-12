@@ -74,7 +74,8 @@ def environment(suite):
     value = {'runtime': runtime_identity(), 'node': run(['node', '--version']),
              'platform': sys.platform, 'architecture': platform.machine(),
              'python': run(['python3', '--version']), 'git': run(['git', '--version']),
-             'githubCLI': run(['gh', '--version']).splitlines()[0]}
+             'githubCLI': run(['gh', '--version']).splitlines()[0],
+             'powershell': run(['pwsh', '--version'])}
     if suite == 'firestore':
         result = subprocess.run(['java', '-version'], capture_output=True, text=True, check=True)
         value['java'] = result.stderr.strip().splitlines()[0]
