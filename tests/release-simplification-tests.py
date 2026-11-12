@@ -161,9 +161,9 @@ class SimplificationTests(unittest.TestCase):
         jobs = workflow['jobs']
         self.assertNotIn('needs', jobs['application'])
         self.assertNotIn('needs', jobs['publication'])
-        self.assertEqual(set(jobs['verification']['needs']), {'application', 'publication'})
+        self.assertEqual(set(jobs['verification']['needs']), {'application', 'publication', 'browser'})
         gate = next(step for step in jobs['verification']['steps'] if step.get('name') == 'Exiger toutes les verifications')
-        self.assertEqual(gate['run'], 'test "$APPLICATION" = success && test "$PUBLICATION" = success')
+        self.assertEqual(gate['run'], 'test "$APPLICATION" = success && test "$PUBLICATION" = success && test "$BROWSER" = success')
         self.assertEqual(jobs['verification']['if'], 'always()')
         self.assertEqual(jobs['apercu']['needs'], 'verification')
         app = (ROOT/'tools/verify-livepalmes.js').read_text(encoding='utf-8')

@@ -2,12 +2,13 @@
 
 <!-- description: Registre commun des évolutions, déploiements TEST et validations utilisateur. -->
 
-### Circuit TEST/PROD — accélération après clôture · 12 novembre 2026 (PR 1 : installations)
+### Circuit TEST/PROD — accélération après clôture · 12 novembre 2026 (PR 2 : preuves par contenu)
 
 - Plan en quatre PR explicitement approuvé par Antoine dans la coordination (chat 01a1cf1d, réponse humaine 01a1cf6c), puis transmis à Infra pour mise en œuvre après la publication précédente clôturée. Aucun déploiement, donnée ou envoi autorisé par ce chantier ; mails actifs et toutes les exclusions conservés.
-- Première étape : Node 22.23.5 exact sur le circuit commun, caches et lockfiles inchangés, téléchargements bornés, mesures séparées installations/vérifications à partir des horodatages GitHub. Le jeton CI reçoit seulement la lecture des métadonnées Actions pour ces mesures ; aucun droit d’écriture, IAM, secret ou configuration runtime supplémentaire.
+- Première étape intégrée [#851](https://github.com/ffessmnap/LivePalmes/pull/851), [CI PR43208678015](https://github.com/ffessmnap/LivePalmes/actions/runs/43208678015) complète réussie : Node 22.23.5 exact sur le circuit commun, caches et lockfiles inchangés, téléchargements bornés, mesures séparées installations/vérifications à partir des horodatages GitHub. Le jeton CI reçoit seulement la lecture des métadonnées Actions pour ces mesures ; aucun droit d’écriture, IAM, secret ou configuration runtime supplémentaire.
 - Quatre tests de cohérence/mesure et treize tests existants de réutilisation réussis localement (quatre contrôles Bash réservés à la CI Linux). CI applicative/publication obligatoire avant intégration, sans suite globale locale en doublon. Les candidats historiques restent utilisables et les plans déjà émis gardent leur circuit.
-- Étapes suivantes : preuves distinctes réutilisables PR→main ; moteur standard avec manifeste immuable et comparaison historique hors ligne ; dossier automatique fondé sur des validations authentiques. Aucune activation générique de fonctions exclues et aucune réduction manuelle des sélections.
+- Deuxième étape : cinq preuves de suites distinctes, réutilisation PR→main fermée au contenu Git complet, à la provenance authentifiée et à l’environnement compatible. Un contrôleur modifié ou une preuve manquante impose les tests. MySQL existant figé par digest ; navigateur séparé, sans suite applicative répétée ; synthèse obligatoire et preuves main historiques conservées.
+- Étapes suivantes : moteur standard avec manifeste immuable et comparaison historique hors ligne ; dossier automatique fondé sur des validations authentiques. Aucune activation générique de fonctions exclues et aucune réduction manuelle des sélections.
 
 ### Public — navigation tactile, trophée et accueil mobile · 12 novembre 2026 (PROD publiée et contrôlée)
 

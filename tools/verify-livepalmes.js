@@ -464,7 +464,7 @@ function runConsolePageLoadChecks() {
 }
 
 function runBrowserSmokeIfRequested() {
-  const requested = process.argv.includes("--browser") || process.env.LIVEPALMES_BROWSER_SMOKE === "1";
+  const requested = process.argv.includes("--browser") || process.argv.includes("--browser-only") || process.env.LIVEPALMES_BROWSER_SMOKE === "1";
   if (!requested) return;
   printStep("Smoke test navigateur");
   run(process.execPath, [path.join(rootDir, "tests", "public-navigation-browser-tests.js")]);
@@ -546,15 +546,19 @@ function findGitCommand() {
 }
 
 try {
-  checkSyntax();
-  run(process.execPath, [path.join(rootDir, "tools", "check-firebase-test-backend-lots.js")]);
-  runUnitTests();
-  runTextChecks();
-  runArchitectureChecks();
-  runGeneratedPageChecks();
-  runConsolePageLoadChecks();
-  runBrowserSmokeIfRequested();
-  runDiffCheck();
+  if (process.argv.includes("--browser-only")) {
+    runBrowserSmokeIfRequested();
+  } else {
+    checkSyntax();
+    run(process.execPath, [path.join(rootDir, "tools", "check-firebase-test-backend-lots.js")]);
+    runUnitTests();
+    runTextChecks();
+    runArchitectureChecks();
+    runGeneratedPageChecks();
+    runConsolePageLoadChecks();
+    runBrowserSmokeIfRequested();
+    runDiffCheck();
+  }
   console.log("\nVerification LivePalmes OK.");
 } catch (error) {
   console.error(`\nVerification LivePalmes KO : ${error.message}`);
