@@ -1,0 +1,34 @@
+{
+  "schema": 1,
+  "project": "livepalmes-test",
+  "release": "direct_reliability",
+  "approval": "Antoine, chat Direct du 12 novembre 2026 : audit Auray approuve, lancement apres cloture AGENTS.md, accord global confirme par le message 01a1d191-e1e9-70a3-a9cb-5c12a533faff du chat 01a1af64-04e8-7a82-bda0-836c301aac2b. Le complement ferme TEST concerne seulement les sources/labels des deux consommateurs reels de la reconstruction explicite des archives. Accord explicite confirme dans l aparte, message 01a1d1b9-c8b1-7520-a96f-62f00f6aa375 ; le present contrat n autorise aucune PROD. Configurations, droits, schemas, donnees natives/reelles, etats techniques et autres fonctions exclus.",
+  "applicationCommit": "99beaaa0a41feabf85fd5383b0696e1b1db5a0ed",
+  "baseCommit": "1660e9b517b1cd00d897c061ade4c1ce64219bba",
+  "baselineRuns": [
+    {
+      "id": 43256887853,
+      "artifact": "test-proof",
+      "workflow": ".github/workflows/livepalmes-test-common.yml",
+      "artifactId": 13961703381,
+      "artifactSha256": "4304d66a85d19843bc975c25c1ab60599d45cbb5d3c4df32e3b5c8d208327f4b"
+    }
+  ],
+  "baselineFunctionCount": 121,
+  "baselineHostingVersion": "sites/livepalmes-test/versions/c3369ddbcbc2461a",
+  "fingerprints": {
+    "manageLivePalmesDirect": "ff70a40fd4aca4c16ed948fc6fb3e2b758ddf3fd0ed1dd9dd498b4c3f29682d9",
+    "readNapPublicSwimmer": "4d6686377b570ce5fc1f85ef4a0894ee0f94a7b1a62b3896e8e6323e9420b763"
+  },
+  "toolingPaths": [
+    ".github/releases/evidence/20261112-direct-reliability-contract.json",
+    "tools/publish-test-direct-reliability-sources.py",
+    "tests/test-direct-reliability-sources-tests.py",
+    "tools/release-cycle.py",
+    ".github/workflows/livepalmes-test-mail-sources.yml",
+    ".github/workflows/livepalmes-verification-preview.yml",
+    "docs/releases/EVOLUTIONS.md",
+    "docs/releases/PROCEDURE.md",
+    "docs/agents/PUBLICATION.md"
+  ]
+}
