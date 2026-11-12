@@ -1,0 +1,2 @@
+# Preserve the upstream seccomp profile byte digest on Windows too.
+.github/ci-seccomp.json text eol=lf
