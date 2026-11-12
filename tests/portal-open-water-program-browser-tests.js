@@ -1,7 +1,8 @@
 "use strict";
 // Real portal markup/styles/modules; synthetic in-memory services, HTTPS blocked.
 const fs=require('node:fs'),assert=require('node:assert/strict');
-const {startStaticServer,launchBrowser,evaluate,waitFor}=require('../tools/capture-portal-design');
+const {startStaticServer,launchBrowser,waitFor}=require('../tools/capture-portal-design');
+const {evaluate}=require('./helpers/portal-browser-evaluate');
 const html=fs.readFileSync('portail.html','utf8');
 const form=html.slice(html.indexOf('<form id="adminEngagementsEventsForm"'),html.indexOf('</form>',html.indexOf('<form id="adminEngagementsEventsForm"'))+7);
 const source=fs.readFileSync('assets/livepalmes-admin-portal.js','utf8');
@@ -11,12 +12,12 @@ const literal=name=>{const start=source.indexOf('  const '+name+' = ');if(start<
 const categoryLiteral=literal(literals[0]),relayLiteral=literal(literals[1]);
 const defaultsStart=source.indexOf('{ id: "150-elimination-SF"'),defaultsEnd=source.indexOf('\n  ];',defaultsStart);
 const waterDefaults='['+source.slice(defaultsStart,defaultsEnd)+']';
-const fixture='<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="/styles.css"><link rel="stylesheet" href="/assets/livepalmes-admin-portal.css"></head><body class="admin-portal-page"><section id="adminEngagementsDetail">'+form+'</section><script src="/assets/portal/navigation.js"></script><script src="/assets/portal/documents-and-program.js"></script></body></html>';
+const fixture='<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="/styles.css"><link rel="stylesheet" href="/assets/livepalmes-admin-portal.css"></head><body class="admin-portal-page"><section id="adminEngagementsDetail">'+form+'</section><script src="/assets/livepalmes-portal-deferred.js"></script><script src="/assets/portal/deferred/club-and-competition.js"></script><script src="/assets/portal/deferred/club-entry-views.js"></script><script src="/assets/portal/deferred/competition-actions.js"></script><script src="/assets/portal/deferred/competition-settings.js"></script><script src="/assets/portal/deferred/documents-and-program.js"></script><script src="/assets/portal/navigation.js"></script><script src="/assets/portal/documents-and-program.js"></script></body></html>';
 async function main(){
  const server=await startStaticServer(new Map([['/water-fixture.html',fixture]]));let browser;
  try{browser=await launchBrowser();const c=browser.client,ev=x=>evaluate(c,x),click=sel=>ev('document.querySelector('+JSON.stringify(sel)+').click();return true;');
  for(const width of [1280,390,320]){
-  await c.send('Emulation.setDeviceMetricsOverride',{width,height:1100,deviceScaleFactor:1,mobile:false});await c.send('Emulation.setTouchEmulationEnabled',{enabled:width<500});await c.send('Page.navigate',{url:server.baseUrl+'/water-fixture.html'});assert(await waitFor(c,'document.readyState==="complete"&&!!window.LivePalmesPortalDocumentsAndProgram'));
+  await c.send('Emulation.setDeviceMetricsOverride',{width,height:1100,deviceScaleFactor:1,mobile:false});await c.send('Emulation.setTouchEmulationEnabled',{enabled:width<500});await c.send('Page.navigate',{url:server.baseUrl+'/water-fixture.html?viewport='+width});assert(await waitFor(c,'document.readyState==="complete"&&!!window.LivePalmesPortalDocumentsAndProgram'));
   await ev(`
    ${categoryLiteral} ${relayLiteral}
    window.waterCalls=[];window.waterDirty=0;

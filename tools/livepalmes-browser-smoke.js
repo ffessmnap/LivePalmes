@@ -72,6 +72,7 @@ function smokeStorageScript() {
   const roleStates = Object.fromEntries(roles.map((role) => [role, { ...roleState, role }]));
   return `
     (() => {
+      window.LIVEPALMES_PUBLIC_CALENDAR_FIXTURES = true;
       window.LivePalmesConsoleGate = {
         role: "",
         adminBypass: () => true,
@@ -107,7 +108,26 @@ function mimeType(filePath) {
 
 function startStaticServer() {
   const server = http.createServer((request, response) => {
+    // These pages are real, their services are not: even SDK initialization
+    // must be unable to contact Auth, Firestore, NAP or another external origin.
+    response.setHeader("Content-Security-Policy", "default-src 'self' data: blob:; script-src 'self' 'unsafe-inline'; connect-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; object-src 'none'; form-action 'self'");
     const url = new URL(request.url, "http://127.0.0.1");
+    if (url.pathname === "/__smoke/nap") {
+      response.setHeader("Content-Type", "application/json");
+      const action = url.searchParams.get("action");
+      if (request.method !== "GET" || !["records", "home-events", "documents-featured"].includes(action)) {
+        response.writeHead(405); response.end("{}"); return;
+      }
+      if (action === "home-events" || action === "documents-featured") {
+        response.end(JSON.stringify({source:"nap",events:[],documents:[]})); return;
+      }
+      const franceRecords = smokeFixture.records.map((row, index) => ({
+        ...row, key: "smoke-record-" + index, course: row.eventId.toUpperCase(),
+        category: row.category === "Junior" ? "J" : "S",
+        recordType: row.category === "Junior" ? "RFJ" : "RF", swimmer: row.holder
+      }));
+      response.end(JSON.stringify({source:"nap",data:{records:[],franceRecords}})); return;
+    }
     const cleanPath = decodeURIComponent(url.pathname === "/" ? "/index.html" : url.pathname);
     const filePath = path.resolve(rootDir, `.${cleanPath}`);
     if (!filePath.startsWith(rootDir)) {
@@ -122,6 +142,17 @@ function startStaticServer() {
         return;
       }
       response.writeHead(200, { "content-type": mimeType(filePath) });
+      if (cleanPath.endsWith(".html")) {
+        // Only this fixture server substitutes Firebase transports. Application
+        // modules and every UI assertion remain real and unchanged.
+        content = Buffer.from(content.toString().replace(
+          /https:\/\/www\.gstatic\.com\/firebasejs\/10\.12\.5\/firebase-(app|auth|firestore|functions)-compat\.js/g,
+          "/tests/helpers/browser-smoke-services.js"));
+      }
+      if (cleanPath === "/assets/livepalmes-environment.js") {
+        const override = "\nwindow.LivePalmesEnvironment=Object.freeze({...window.LivePalmesEnvironment,napReaderUrl:new URL('/__smoke/nap',location.origin).href,firebaseConfig:Object.freeze({apiKey:'smoke-key',authDomain:'localhost',projectId:'demo-livepalmes-smoke',appId:'smoke-app'})});\n";
+        content = Buffer.concat([content, Buffer.from(override)]);
+      }
       response.end(content);
     });
   });
@@ -218,6 +249,7 @@ async function launchBrowser() {
   await client.send("Network.enable");
   await client.send("Network.setBlockedURLs", {
     urls: [
+      "https://*",
       "*firestore.googleapis.com/*",
       "*google.firestore.v1.Firestore*",
       "*donnees-speaker-france-2026.json*",
@@ -257,11 +289,13 @@ function collectErrors(client) {
   return client.events.flatMap((event) => {
     if (event.method === "Runtime.exceptionThrown") {
       const text = event.params.exceptionDetails.exception?.description || event.params.exceptionDetails.text || "exception";
-      return text.includes("TypeError: Failed to fetch") ? [] : [text];
+      return [text];
     }
     if (event.method === "Log.entryAdded" && event.params.entry.level === "error") {
       const text = event.params.entry.text || "";
-      return text.includes("Failed to load resource") ? [] : [text];
+      const intentionallyBlockedFixture = /^http:\/\/(?:localhost|127\.0\.0\.1):\d+\/(?:assets\/livepalmes-console-page-gate\.js|donnees-speaker-france-2026\.json)(?:\?|$)/.test(event.params.entry.url || "")
+        && /ERR_BLOCKED_BY_CLIENT/.test(text);
+      return intentionallyBlockedFixture ? [] : [text];
     }
     return [];
   });
@@ -500,7 +534,7 @@ async function testSpeakerActions(client, baseUrl) {
       text: (document.querySelector('#headerRefDetails')?.textContent || document.querySelector('#entrantsSubtitle')?.textContent || '').trim()
     };
   `);
-  assert(record.activeRefs > 0 && record.text, "Speaker : clic record KO.");
+  assert(record.activeRefs > 0 && record.text, "Speaker : clic record KO. " + JSON.stringify(record));
 
   await client.send("Runtime.evaluate", { expression: "document.querySelector('#programBtn')?.click()", awaitPromise: true });
   await sleep(300);
@@ -670,13 +704,13 @@ async function testPublicSeries(client, baseUrl) {
 
 async function testPublicHome(client, baseUrl) {
   await client.send("Page.navigate", { url: `${baseUrl}/public.html?smoke-public-home=${Date.now()}` });
-  const ready = await waitFor(client, "document.querySelector('#publicHomeTitle') && document.querySelectorAll('.public-home-card').length === 2", 6000);
+  const ready = await waitFor(client, "document.querySelector('#publicHomeTitle') && document.querySelectorAll('.public-home-grid .public-home-card').length === 3", 6000);
   assert(ready, "Accueil public : page non chargee.");
   const desktop = await evaluateJson(client, `
     return {
       title: document.querySelector('#publicHomeTitle')?.textContent.trim() || '',
       calendarLink: document.querySelector('a[href="calendrier.html"]')?.textContent.trim() || '',
-      portalLink: document.querySelector('.public-home-portal a[href="portail.html"]')?.textContent.trim() || '',
+      portalLink: document.querySelector('.public-home-clubs a[href="portail.html"]')?.textContent.trim() || '',
       liveCard: Boolean(document.querySelector('#publicHomeLiveCard')),
       firebaseScript: Boolean(document.querySelector('script[src*=\"firebasejs\"]')),
       overflow: document.documentElement.scrollWidth > document.documentElement.clientWidth + 2
@@ -689,11 +723,13 @@ async function testPublicHome(client, baseUrl) {
   await sleep(250);
   const mobile = await evaluateJson(client, `
     return {
-      cardCount: document.querySelectorAll('.public-home-card').length,
+      cardCount: document.querySelectorAll('.public-home-grid .public-home-card').length,
+      order: [...document.querySelectorAll('.public-home-grid .public-home-card')].sort((a,b)=>a.getBoundingClientRect().top-b.getBoundingClientRect().top).map(el=>['performance-card','calendar-card','documents-card'].find(name=>el.classList.contains(name))),
       overflow: document.documentElement.scrollWidth > document.documentElement.clientWidth + 2
     };
   `);
-  assert(mobile.cardCount === 2 && !mobile.overflow, "Accueil public : mise en page mobile KO.");
+  assert(mobile.cardCount === 3 && !mobile.overflow, "Accueil public : mise en page mobile KO.");
+  assert(JSON.stringify(mobile.order) === JSON.stringify(['performance-card','calendar-card','documents-card']), "Accueil public : ordre mobile KO.");
   await client.send("Emulation.clearDeviceMetricsOverride");
   console.log("Accueil public : OK");
 }
@@ -762,7 +798,9 @@ async function main() {
   }
 }
 
-main().catch((error) => {
+if (require.main === module) main().catch((error) => {
   console.error(`\nSmoke navigateur LivePalmes KO : ${error.message}`);
   process.exit(1);
 });
+
+module.exports = { startStaticServer, collectErrors };
