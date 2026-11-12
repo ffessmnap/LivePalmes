@@ -2,19 +2,20 @@
 
 <!-- description: Carte fonctionnelle des pages, dossiers et grandes zones du dépôt LivePalmes. -->
 
-> **Sources actuelles — 13 octobre 2026 :** NAP pour les données métier portail/public et les versions officielles Records/MPF ; Firebase pour les comptes, le technique et LivePalmes Direct. Voir [NAP_REFERENCE.md](NAP_REFERENCE.md). Les dossiers/outils historiques présents ne doivent pas être confondus avec les sources actives.
+> **Sources courantes :** NAP pour les données métier portail/public, les versions officielles Records/MPF et les tables du nouveau Direct. Firebase conserve les comptes, l'authentification, les services techniques et les usages historiques encore présents. Distinguer les sources actives des anciens fichiers et outils. Voir [NAP_REFERENCE.md](NAP_REFERENCE.md) et [LIVEPALMES_DIRECT.md](LIVEPALMES_DIRECT.md).
 
 Ce document sert de carte simple du projet. Il distingue les grandes parties fonctionnelles de l'ecosysteme LivePalmes sans imposer de deplacement de fichiers.
 
-Le Portail LivePalmes est le coeur fonctionnel actuel. Il est en cours de finalisation et de test. Les espaces publics permanents et le dispositif Direct national sont des composantes distinctes.
+Le Portail LivePalmes est le coeur fonctionnel actuel. Il est en cours de finalisation et de test. L'espace public permanent et LivePalmes Direct sont des composantes distinctes. Le nouveau Direct multi-compétitions et l'ancien dispositif national doivent être distingués.
 
 ## Principe important
 
 Les pages HTML publiques principales restent a la racine du projet pour conserver des URL simples et stables.
 
-Exemples :
+Exemples actuels : `/`, `calendrier.html`, `competition.html`, `bibliotheque.html`, `direct-admin.html`, `direct-consoles.html` et `direct.html`.
 
-- `/`
+Les URL historiques ci-dessous restent à préserver tant que leur retrait ou redirection n'a pas été explicitement autorisé :
+
 - `/resultats`
 - `/series`
 - `/live.html`
@@ -58,11 +59,20 @@ Scripts principaux :
 
 Le portail utilise aussi les Cloud Functions de `functions/` pour les operations sensibles et les traitements serveur.
 
-## 2. LivePalmes Direct - consoles nationales
+## 2. LivePalmes Direct — bureau et consoles
 
-Cette partie concerne les utilisateurs des competitions nationales equipees de LivePalmes Direct : juges, speaker, JA, video, secretariat, bureau performance et pilotage.
+Le parcours multi-compétitions concerne les compétitions piscine de tous niveaux issues du calendrier NAP. Le bureau fonctionne seul ou avec des consoles selon les besoins et les accès autorisés. La préparation des engagements reste dans le portail.
 
-Ces consoles ne sont pas utilisees pour toutes les competitions et ne doivent pas etre confondues avec leur preparation dans le portail.
+Entrées principales :
+
+- `direct-admin.html` : bureau ;
+- `direct-consoles.html` : consoles complémentaires ;
+- `assets/direct/` : modules et styles du nouveau parcours ;
+- `direct-guide.html` : guide utilisateur.
+
+### Dispositif national historique
+
+L'ancien pilotage national, ses pages de rôles, ses générateurs et son socle sont inventoriés ci-dessous. Certains composants sont réutilisés par le nouveau Direct ; vérifier les dépendances avant tout retrait.
 
 Pages principales :
 
@@ -108,9 +118,13 @@ Generation des pages consoles :
 
 ## 3. Publication publique du Direct
 
-Cette partie accompagne LivePalmes Direct pendant une competition nationale : series, resultats, medailles, archives et vues PDF.
+`direct.html?id=ID_NAP` est l'entrée publique du nouveau parcours : séries, résultats, documents et archives.
 
-Pages principales :
+### Pages publiques du dispositif historique
+
+Les anciennes pages `/series`, `/resultats` et leurs vues associées appartiennent au dispositif historique. Leur retrait suit son périmètre explicite ; il ne signifie pas suppression des archives ou des données.
+
+Pages historiques :
 
 - `resultats.html`
 - `series-public.html`
@@ -140,9 +154,9 @@ Scripts principaux :
 
 ## 4. Espace public permanent
 
-Cette partie concerne les Records, MPF, TOP, fiches nageurs et donnees publiques de performances consultables toute l'annee, sans connexion.
+Cette partie permet de consulter sans connexion l'accueil, le calendrier, les documents, les Records/MPF, les TOP, les performances, les résultats et les fiches nageurs. La gestion privée de ces contenus reste dans les modules autorisés du portail.
 
-Dossier principal :
+Dossier des performances :
 
 - `performances/`
 
@@ -150,6 +164,9 @@ Pages principales :
 
 - `index.html`
 - `public.html`
+- `calendrier.html`
+- `competition.html?id=...`
+- `bibliotheque.html`
 - `performances/index.html`
 - `performances/records.html`
 - `performances/mpf.html`
@@ -164,6 +181,9 @@ Les interfaces de gestion de ces donnees sont integrees au Portail LivePalmes :
 
 Scripts et styles principaux :
 
+- `assets/pages/calendrier.js` et `assets/pages/competition.js`
+- `assets/public/livepalmes-public-calendar.js`
+- `assets/public/livepalmes-public-documents.js`
 - `performances/public/app.js`
 - `performances/public/records.js`
 - `performances/public/tops.js`

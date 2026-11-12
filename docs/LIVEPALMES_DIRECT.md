@@ -1,6 +1,33 @@
 # LivePalmes Direct
 
-<!-- description: Périmètre, démarrage local, publication et fonctions propres aux consoles du dispositif LivePalmes Direct. -->
+<!-- description: Fonctionnement actuel du Direct multi-compétitions, bureau seul ou avec consoles, diffusion publique et distinction avec le dispositif historique. -->
+
+## Fonctionnement actuel
+
+LivePalmes Direct accompagne les compétitions piscine de tous niveaux issues du calendrier NAP. La préparation des engagements reste dans le Portail LivePalmes.
+
+Le parcours repose sur :
+
+- `direct-admin.html?id=ID_NAP` : bureau, préparation des séries, surveillance des résultats WinPalme, suivi et administration du Direct ;
+- `direct-consoles.html?id=ID_NAP&role=ROLE` : consoles complémentaires selon les accès autorisés ;
+- `direct.html?id=ID_NAP` : consultation publique ;
+- `direct-guide.html` : mode opératoire.
+
+Le bureau peut fonctionner seul. Les consoles complètent ce fonctionnement selon les besoins et les règles d'accès existantes. La vidéo reste réservée au niveau national ; cette restriction ne concerne pas tout le Direct.
+
+Le nouveau parcours utilise les tables Direct dédiées dans NAP, avec séparation des environnements serveur TEST et production. Il conserve les services Firebase existants pour l'authentification, les fonctions serveur et les autres usages prévus.
+
+La consultation publique donne accès aux séries, résultats et documents publiés ; les archives restent consultables après fermeture des consoles.
+
+## Dispositif historique et transition
+
+L'ancien pilotage national, ses consoles et ses pages publiques constituent un dispositif distinct. Leur présence dans le dépôt ne signifie pas qu'ils soient le parcours de référence.
+
+Le retrait des anciennes pages, notamment des pages séries, est prévu. Ne pas le présenter comme réalisé avant livraison et contrôle. Les fichiers, routes et données effectivement concernés doivent être inventoriés dans le chantier de retrait.
+
+La suppression d'une page n'autorise pas la suppression de ses données, PDF, archives ou objets Storage.
+
+Les sections datées ci-dessous conservent les étapes, budgets, preuves et limites des livraisons. Un statut TEST ou une autorisation du premier pilote décrit son lot à cette date ; il ne remplace pas le fonctionnement actuel ni les preuves ultérieures de `docs/releases/EVOLUTIONS.md`.
 
 ## Bureau — préparation guidée · 12 novembre 2026
 
@@ -281,7 +308,7 @@ Pour réutiliser la maquette hors connexion métier : `node tools/preview-direct
 - Gestion : `direct-admin.html`, connexion LivePalmes habituelle, sélection d'une compétition du calendrier, activation et bureau des performances. Public : `direct.html?id=5220`, lien calculé depuis l'identifiant NAP, sans colonne ajoutée à `competitions`.
 - Stockage : cinq tables InnoDB `livepalmes_direct_competitions`, `livepalmes_direct_events`, `livepalmes_direct_entries`, `livepalmes_direct_publications`, `livepalmes_direct_access`. Chaque clé et lecture comprend l'environnement serveur `test` ou `production`. Aucun déplacement, modification ou effacement de données natives. Les identités et clubs importés sont des instantanés ; les liens natifs éventuels n'autorisent aucune écriture de fiche ou de performance.
 - Création : opération privée TEST `approved-direct-schema`, workflow manuel `nap-authorized-direct-schema.yml`, confirmation `nap-create-livepalmes-direct-tables`. Préparation, sauvegarde du plan et des empreintes, création des seules tables absentes puis vérification exacte. Aucun `ALTER`, aucune ligne insérée par cette opération ; une structure préexistante incompatible bloque.
-- Autorisation : profil actif relu sans mise à jour de `lastLoginAt`. Gestion nationale explicite ou administration complète ; gestion régionale limitée aux compétitions non nationales de sa région ; délégations dans la nouvelle table, sans modifier les capacités des comptes existants. Le bureau peut régler les consoles. Les autres rôles sont prévus dans le modèle d'accès ; les consoles terrain historiques ne sont pas redirigées vers les données NAP par ce premier pilote.
+- Autorisation du premier pilote du 6 novembre : profil actif relu sans mise à jour de `lastLoginAt`. Gestion nationale explicite ou administration complète ; gestion régionale limitée aux compétitions non nationales de sa région ; délégations dans la nouvelle table, sans modifier les capacités des comptes existants. Le bureau peut régler les consoles. À cette étape, les autres rôles sont prévus dans le modèle d'accès ; les consoles terrain historiques ne sont pas redirigées vers les données NAP par ce premier pilote. Pour les consoles multi-compétitions ajoutées ensuite, voir la section « Six consoles multi-compétitions — ergonomie historique et bureau unique ».
 - Import : parseurs PDF existants, au maximum 20 documents de 10 Mo, aperçu local, choix des lignes et contrôle serveur avec empreinte avant publication. Une épreuve complète ou une seule série peut être remplacée après confirmation ; les autres séries et l'autre facette (séries/résultats) sont conservées. Résultats sans séries autorisés. Historique structuré, demandes de publication rejouables sans doublon, transaction commune aux tables nouvelles. Les PDF par course ne sont pas stockés ; les PDF complets sont publiés séparément dans un chemin Storage TEST/PROD distinct.
 - Temps : valeur reçue conservée, centièmes numériques, `595999` / `59:59.99` = absence de référence (`NULL`), sans écart ni couleur de comparaison. Les vues Direct recalculent scratch et places par catégorie selon les règles confirmées ci-dessus ; les places de la source restent conservées dans les données importées.
 - Public : navigation inspirée de French Touch Taranto (jours/tous les jours, épreuves, séries/résultats, vue club), catégories multiples sur les résultats, bouton flottant Actualiser. Aucune minuterie de rafraîchissement. Métadonnées du calendrier relues lors des appels ; données sportives mises en cache par révision publiée, avec mutualisation des appels identiques en cours. Les archives restent consultables quand les consoles sont fermées.
@@ -295,7 +322,9 @@ La sauvegarde générale `tools/nap-backup-config.json` reste désactivée. Le w
 
 Pour les sauvegardes ponctuelles de démarrage, `direct-backup-transfer.js` utilise l'accès Google existant de l'opérateur, puis chiffre le snapshot pour les clés publiques de sauvegarde CI. Le workflow le déchiffre, le contrôle et le rechiffre sous son format habituel, avec restauration isolée. Le mot de passe NAP n'est pas transféré à la CI. Ce transfert de démarrage est limité à 50 Ko chiffrés et trente minutes. La sauvegarde est ponctuelle, son activation reste manuelle. L'activation métier est limitée à Paris 5220 après vérification de ses métadonnées et des droits du compte national existant, avec les seules tables Direct.
 
-Le Direct comprend les consoles :
+## Dispositif national historique — fonctionnement et maintenance
+
+Le Direct historique comprend les consoles :
 
 - Live ;
 - Speaker ;
@@ -306,7 +335,9 @@ Le Direct comprend les consoles :
 
 Il comprend aussi la publication des series, resultats, medailles, PDF et archives de la competition nationale concernee.
 
-## Pages principales
+## Pages du dispositif historique
+
+Cette liste concerne l'ancien dispositif national. Les entrées du nouveau parcours sont décrites dans « Fonctionnement actuel ».
 
 - `pilotage-livepalmes.html` : accueil et pilotage du Direct ;
 - `live.html` ;
@@ -319,7 +350,7 @@ Il comprend aussi la publication des series, resultats, medailles, PDF et archiv
 - `medailles.html` : tableau des medailles ;
 - `pdf.html`, `series-pdf.html` et `resultat-pdf.html` : vues PDF.
 
-## Demarrage local
+## Démarrage local du dispositif historique
 
 Demarrer le serveur local depuis la racine du depot :
 
@@ -337,7 +368,7 @@ Ce serveur distribue les fichiers du depot sans les publier sur Internet. Il doi
 
 Attention : sauf utilisation explicite des emulateurs prevus, une page locale peut encore se connecter au projet Firebase configure. Ne pas effectuer d'import, de publication ou d'ecriture pendant un simple controle local sans avoir confirme l'environnement et obtenu l'autorisation necessaire.
 
-## Mettre a jour les series
+## Mettre à jour les séries du dispositif historique
 
 1. Ouvrir le pilotage de LivePalmes Direct avec un compte autorise.
 2. Utiliser l'action `Admin series`.
@@ -348,7 +379,7 @@ Attention : sauf utilisation explicite des emulateurs prevus, une page locale pe
 
 L'import et la publication de series touchent aux donnees de competition. Ils ne doivent pas etre testes sur Firebase de production sans validation explicite.
 
-## Pages consoles generees
+## Pages consoles générées du dispositif historique
 
 Les pages de roles sont generees depuis `pilotage-livepalmes.html` avec :
 

@@ -1,8 +1,12 @@
 # Performances, Records et MPF
 
-<!-- description: Règles sensibles concernant les performances historiques, Records, MPF, données générées et coûts Firestore. -->
+<!-- description: Sources NAP, règles sensibles des performances et Records/MPF, budgets de lectures et limites des anciens pipelines. -->
 
 ## Règles métier
+
+Une retouche de présentation des pages performances ou Records/MPF relève du parcours ordinaire si elle conserve les données accessibles, leur signification et les règles métier.
+
+Modifier les catégories retenues, les références affichées, les critères de classement, l'éligibilité ou les calculs constitue un changement sensible, même si l'implémentation est uniquement côté navigateur.
 
 Les calculs de Records, MPF, catégories, relais, classements, médailles et qualifications sont sensibles. Ne jamais inventer une règle sportive ni modifier leur logique sans validation explicite.
 
@@ -18,7 +22,11 @@ Les sorties générées historiques et `outputs/` restent des artefacts de trava
 
 ## Lectures NAP et Firebase conservé
 
-Les lecteurs doivent rester indexables, bornés et paginés, sans N+1 ni reconstruction silencieuse ; voir `docs/OPTIMISATION_NAP.md`. Ne pas modifier les temps natifs pour faciliter un tri : interprétation numérique obligatoire. Firestore reste utilisé pour les comptes, le technique et Direct ; les versions officielles Records/MPF sont dans NAP. TEST partage la base NAP réelle ; un test d'écriture demande un accord spécifique.
+Les lecteurs doivent rester indexables, bornés et paginés, sans N+1 ni reconstruction silencieuse ; voir `docs/OPTIMISATION_NAP.md`. Ne pas modifier les temps natifs pour faciliter un tri : interprétation numérique obligatoire. Les versions officielles Records/MPF sont dans NAP.
+
+Firebase conserve ses services existants, notamment les comptes, l'authentification et les usages techniques. Le nouveau Direct utilise ses tables NAP dédiées ; le dispositif historique conserve ses propres usages Firestore.
+
+TEST partage la base NAP réelle. Une écriture de test sur cette base exige un accord spécifique.
 
 ## Références
 

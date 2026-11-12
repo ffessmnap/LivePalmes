@@ -6,6 +6,10 @@
 
 Lire les consignes du dernier `main` et préserver le travail des autres conversations. Une demande de développement autorise PR, intégration après contrôles et TEST dans son périmètre. Une analyse seule ne déclenche aucun développement. Les accords sensibles d'`AGENTS.md` restent nécessaires ; un accord explicite déjà acquis ne se redemande pas.
 
+Une retouche visuelle reste dans le parcours ordinaire si elle ne change ni les règles métier, ni les accès, ni les données rendues accessibles. Le classement sensible dépend des effets réels du changement et ne retire aucun contrôle propre aux composants touchés.
+
+L'autorisation de publication du code ne vaut pas autorisation d'exécuter une opération réelle sur les données ou d'envoyer des messages, y compris depuis TEST lorsque la base NAP réelle est partagée.
+
 | Changement | Parcours |
 | --- | --- |
 | Documentation seule | Relecture et CI requise. Aucun déploiement ni preflight. |
@@ -20,7 +24,7 @@ Lire les consignes du dernier `main` et préserver le travail des autres convers
 1. Une PR courte par besoin depuis `main`, avec les tests et la documentation utiles. Attendre les contrôles GitHub obligatoires. L'aperçu `pr-N` est facultatif, sur demande via `apercu-test` ; il ne remplace pas TEST commun.
 2. Après CI main réussie, laisser l'automatisme publier les interfaces ordinaires connues sur TEST. Backend, chemins inconnus et cas sensibles suivent le parcours explicite. TEST commun reste un commit intégré de `main`, jamais une branche isolée. Conserver la preuve de réussite.
 3. Recueillir le retour utilisateur sur la version commune présentée. Une validation explicite de toute cette version couvre ses évolutions présentées, sans confirmation individuelle répétée ; une validation partielle reste partielle. Une modification ultérieure invalide les parcours concernés. Une CI verte ne vaut pas validation utilisateur.
-4. Assembler le bilan PROD depuis les preuves et retours authentiques, compléter les points bloquants et exécuter le preflight existant. Figer le candidat validé pour exclure les ajouts suivants. Présenter un bilan court dans Infra ; l'accord explicite d'Antoine autorise uniquement ce périmètre. La PR d'un manifeste seul n'est pas obligatoire.
+4. Assembler le bilan PROD depuis les preuves et retours authentiques, compléter les points bloquants et exécuter le preflight existant. Figer le candidat validé pour exclure les ajouts suivants. Présenter un bilan court dans Infra ; l'instruction explicite d'Antoine autorise uniquement ce périmètre, éventuellement après réussite des contrôles. Si cet accord est déjà acquis et que ses conditions sont remplies, poursuivre sans demander une seconde approbation du bilan. Un changement de périmètre, une condition non remplie ou un risque nouveau impose un nouvel examen. La PR d'un manifeste seul n'est pas obligatoire.
 5. Publier après cet accord, vérifier le résultat et fournir les liens utiles. Une approbation GitHub encore requise reste obligatoire.
 
 ## Réutiliser le travail déjà fait

@@ -6,7 +6,11 @@
 
 Le Portail LivePalmes est le cœur métier en cours de finalisation et de test. Il couvre la préparation des compétitions, les engagements, les clubs, nageurs, officiels, comptes, droits, performances, Records/MPF et espaces autorisés.
 
-LivePalmes Direct est un autre dispositif, réservé aux compétitions nationales concernées. Pour une demande portant sur le portail, ne pas lire ni modifier `app.js`, `pilotage-livepalmes.html`, les pages de consoles, les scripts de consoles ou `docs/LIVEPALMES_DIRECT.md`, sauf si le code démontre qu'une dépendance commune est réellement touchée.
+LivePalmes Direct est un parcours distinct de suivi et de diffusion des compétitions piscine de tous niveaux issues du calendrier NAP. Il repose sur un bureau multi-compétitions, utilisable seul ou avec des consoles selon les besoins et les accès autorisés.
+
+La préparation des compétitions et des engagements reste dans le portail. Son lien vers le Direct ne fusionne pas les responsabilités des deux espaces.
+
+Pour une tâche limitée au portail, ne pas charger les pages, scripts ou tests du Direct sauf dépendance commune effectivement identifiée dans le code. Distinguer le nouveau parcours Direct du dispositif national historique et de ses fichiers.
 
 ## Fichiers à examiner en premier
 
